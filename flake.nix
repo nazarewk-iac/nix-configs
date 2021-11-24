@@ -1,17 +1,17 @@
 {
   inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable-small";
-  inputs.nixpkgs-wayland.url = "github:nix-community/nixpkgs-wayland";
-  inputs.nixpkgs-keepass.url = "github:nazarewk/nixpkgs/keepass-keetraytotp";
-  inputs.nixpkgs-swayr-update.url = "github:polykernel/nixpkgs/swayr-update-patch-1";
+  inputs.wayland.url = "github:nix-community/nixpkgs-wayland";
+  inputs.keepass.url = "github:nazarewk/nixpkgs/keepass-keetraytotp";
+  inputs.swayr-update.url = "github:polykernel/nixpkgs/swayr-update-patch-1";
+  inputs.home-manager.url = "github:nix-community/home-manager";
+  inputs.home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
-  outputs = { self, nixpkgs, nixpkgs-wayland, nixpkgs-keepass, nixpkgs-swayr-update }: 
+  outputs = inputs:
   let 
     system = "x86_64-linux";
-    pkgs-keepass = nixpkgs-keepass.legacyPackages.${system};
-    pkgs-swayr-update = nixpkgs-swayr-update.legacyPackages.${system};
   in
   {
-    nixosConfigurations.nazarewk = nixpkgs.lib.nixosSystem {
+    nixosConfigurations.nazarewk = inputs.nixpkgs.lib.nixosSystem {
       inherit system;
       modules = [ 
         {
@@ -24,16 +24,23 @@
             "https://nixpkgs-wayland.cachix.org"
           ];
           nixpkgs.overlays = [
-            nixpkgs-wayland.overlay
+            inputs.wayland.overlay
             (final: prev: {
-              swayr = pkgs-swayr-update.swayr;
-              keepass-keetraytotp = pkgs-keepass.keepass-keetraytotp;
-              keepass-charactercopy = pkgs-keepass.keepass-charactercopy;
-              keepass-qrcodeview = pkgs-keepass.keepass-qrcodeview;
+              swayr = inputs.swayr-update.legacyPackages.${system}.swayr;
+              keepass-keetraytotp = inputs.keepass.legacyPackages.${system}.keepass-keetraytotp;
+              keepass-charactercopy = inputs.keepass.legacyPackages.${system}.keepass-charactercopy;
+              keepass-qrcodeview = inputs.keepass.legacyPackages.${system}.keepass-qrcodeview;
             })
           ];
         }
         ./legacy/nixos/configuration.nix
+
+        inputs.home-manager.nixosModules.home-manager
+        {
+          home-manager.useGlobalPkgs = true;
+          home-manager.useUserPackages = true;
+          home-manager.users.nazarewk = import ./legacy/hm/home.nix;
+        }
       ];
     };
   };
