@@ -1,0 +1,256 @@
+# Default config for sway
+#
+# Copy this to ~/.config/sway/config and edit it to your liking.
+#
+# Read `man 5 sway` for a complete reference.
+
+
+### Variables
+set $mod Mod4
+set $alt Mod1
+set $left h
+set $down j
+set $up k
+set $right l
+set $term alacritty
+set $menu wofi --show run
+
+output 'Dell Inc. DELL U2711 G606T29F0EWL' modeline 241.50 2560 2600 2632 2720 1440 1443 1448 1481 -hsync +vsync
+
+### Key bindings
+#
+# Basics:
+#
+    # Start a terminal
+    bindsym $mod+Return exec $term
+
+    # Kill focused window
+    bindsym $mod+Shift+q kill
+
+    # Start your launcher
+    bindsym $mod+d exec wofi --show drun
+    bindsym $alt+F2 exec wofi --show run
+
+    # Drag floating windows by holding down $mod and left mouse button.
+    # Resize them with right mouse button + $mod.
+    # Despite the name, also works for non-floating windows.
+    # Change normal to inverse to use left mouse button for resizing and right
+    # mouse button for dragging.
+    floating_modifier $mod normal
+
+    # Reload the configuration file
+    # bindsym $mod+Shift+c reload
+
+    # Exit sway (logs you out of your Wayland session)
+    bindsym $mod+Shift+e exec swaynag -t warning -m 'You pressed the exit shortcut. Do you really want to exit sway? This will end your Wayland session.' -b 'Yes, exit sway' 'swaymsg exit'
+#
+# Moving around:
+#
+    # Move your focus around
+    bindsym $mod+$left focus left
+    bindsym $mod+$down focus down
+    bindsym $mod+$up focus up
+    bindsym $mod+$right focus right
+    # Or use $mod+[up|down|left|right]
+    bindsym $mod+Left focus left
+    bindsym $mod+Down focus down
+    bindsym $mod+Up focus up
+    bindsym $mod+Right focus right
+    # bindsym $alt+tab focus right
+    # bindsym $alt+shift+tab focus left
+    bindsym --border --whole-window $mod+button5 focus right
+    bindsym --border --whole-window $mod+button4 focus left
+    bindsym --border --whole-window $mod+shift+button5 focus next sibling
+    bindsym --border --whole-window $mod+shift+button4 focus prev sibling
+
+    # Move the focused window with the same, but add Shift
+    bindsym $mod+Shift+$left move left
+    bindsym $mod+Shift+$down move down
+    bindsym $mod+Shift+$up move up
+    bindsym $mod+Shift+$right move right
+    # Ditto, with arrow keys
+    bindsym $mod+Shift+Left move left
+    bindsym $mod+Shift+Down move down
+    bindsym $mod+Shift+Up move up
+    bindsym $mod+Shift+Right move right
+#
+# Workspaces:
+#
+    # Switch to workspace
+    bindsym $mod+1 workspace number 1
+    bindsym $mod+2 workspace number 2
+    bindsym $mod+3 workspace number 3
+    bindsym $mod+4 workspace number 4
+    bindsym $mod+5 workspace number 5
+    bindsym $mod+6 workspace number 6
+    bindsym $mod+7 workspace number 7
+    bindsym $mod+8 workspace number 8
+    bindsym $mod+9 workspace number 9
+    bindsym $mod+0 workspace number 10
+    # Move focused container to workspace
+    bindsym $mod+Shift+1 move container to workspace number 1
+    bindsym $mod+Shift+2 move container to workspace number 2
+    bindsym $mod+Shift+3 move container to workspace number 3
+    bindsym $mod+Shift+4 move container to workspace number 4
+    bindsym $mod+Shift+5 move container to workspace number 5
+    bindsym $mod+Shift+6 move container to workspace number 6
+    bindsym $mod+Shift+7 move container to workspace number 7
+    bindsym $mod+Shift+8 move container to workspace number 8
+    bindsym $mod+Shift+9 move container to workspace number 9
+    bindsym $mod+Shift+0 move container to workspace number 10
+    # Note: workspaces can have any name you want, not just numbers.
+    # We just use 1-10 as the default.
+#
+# Layout stuff:
+#
+    # You can "split" the current object of your focus with
+    # $mod+b or $mod+v, for horizontal and vertical splits
+    # respectively.
+    #bindsym $mod+b splith
+    #bindsym $mod+v splitv
+
+    # Switch the current container between different layout styles
+    bindsym $mod+s layout stacking
+    bindsym $mod+w layout tabbed
+    bindsym $mod+e layout toggle split
+
+    # Make the current focus fullscreen
+    bindsym $mod+f fullscreen
+
+    # Toggle the current focus between tiling and floating mode
+    bindsym $mod+Shift+f floating toggle
+
+    # Swap focus between the tiling area and the floating area
+    # bindsym $mod+Space focus mode_toggle
+
+    # Move focus to the parent container
+    bindsym $mod+a focus parent
+#
+# Scratchpad:
+#
+    # Sway has a "scratchpad", which is a bag of holding for windows.
+    # You can send windows there and get them back later.
+
+    # Move the currently focused window to the scratchpad
+    bindsym $mod+Shift+minus move scratchpad
+
+    # Show the next scratchpad window or hide the focused scratchpad window.
+    # If there are multiple scratchpad windows, this command cycles through them.
+    bindsym $mod+minus scratchpad show
+#
+# Resizing containers:
+#
+mode "resize" {
+    # left will shrink the containers width
+    # right will grow the containers width
+    # up will shrink the containers height
+    # down will grow the containers height
+    bindsym $left resize shrink width 10px
+    bindsym $down resize grow height 10px
+    bindsym $up resize shrink height 10px
+    bindsym $right resize grow width 10px
+
+    # Ditto, with arrow keys
+    bindsym Left resize shrink width 10px
+    bindsym Down resize grow height 10px
+    bindsym Up resize shrink height 10px
+    bindsym Right resize grow width 10px
+
+    # Return to default mode
+    bindsym Return mode "default"
+    bindsym Escape mode "default"
+}
+bindsym $mod+r mode "resize"
+
+include /etc/sway/config.d/*
+
+# inputs
+input type:keyboard {
+    xkb_layout pl
+}
+
+input type:touchpad {
+    tap enabled
+    natural_scroll enabled
+}
+
+# Custom Keybindings
+    # Brightness
+    bindsym XF86MonBrightnessDown exec "brightnessctl set 2%-"
+    bindsym XF86MonBrightnessUp exec "brightnessctl set +2%"
+    
+    # Volume
+    bindsym XF86AudioRaiseVolume exec 'pactl set-sink-volume @DEFAULT_SINK@ +1%'
+    bindsym XF86AudioLowerVolume exec 'pactl set-sink-volume @DEFAULT_SINK@ -1%'
+    bindsym XF86AudioMute exec 'pactl set-sink-mute @DEFAULT_SINK@ toggle'
+    bindsym XF86AudioMicMute exec 'pactl set-source-mute @DEFAULT_SOURCE@ toggle'
+
+    # X parity
+    bindsym $alt+F4 kill
+
+# Autostart
+exec _sway-init 
+bar {
+    position top
+    swaybar_command waybar
+}
+exec _sway-wait && {
+    blueman-applet
+    nm-applet --indicator
+    nextcloud
+    element-desktop
+    signal-desktop
+    flameshot
+}
+
+### Idle configuration
+#
+# Example configuration:
+
+exec swayidle -w \
+    timeout 300 'swaylock -f -c 000000' \
+    timeout 360 'swaymsg "output * dpms off"' resume 'swaymsg "output * dpms on"' \
+    before-sleep 'swaylock -f -c 000000'
+
+# This will lock your screen after 300 seconds of inactivity, then turn off
+# your displays after another 300 seconds, and turn your screens back on when
+# resumed. It will also lock your screen before your computer goes to sleep.
+
+workspace_layout tabbed
+
+# Swayr window switcher
+
+exec env RUST_BACKTRACE=1 swayrd > /tmp/swayrd.log 2>&1
+
+bindsym $mod+Space exec env RUST_BACKTRACE=1 \
+    swayr switch-window >> /tmp/swayr.log 2>&1
+
+bindsym $mod+Delete exec env RUST_BACKTRACE=1 \
+    swayr quit-window > /tmp/swayr.log 2>&1
+
+#bindsym $mod+Tab exec env RUST_BACKTRACE=1 \
+#    swayr switch-to-urgent-or-lru-window >> /tmp/swayr.log 2>&1
+
+bindsym $alt+Tab exec env RUST_BACKTRACE=1 \
+    swayr prev-window all-workspaces >> /tmp/swayr.log 2>&1
+
+bindsym $alt+Shift+Tab exec env RUST_BACKTRACE=1 \
+    swayr next-window all-workspaces >> /tmp/swayr.log 2>&1
+
+bindsym $mod+Shift+Space exec env RUST_BACKTRACE=1 \
+    swayr switch-workspace-or-window >> /tmp/swayr.log 2>&1
+
+bindsym $mod+c exec env RUST_BACKTRACE=1 \
+    swayr execute-swaymsg-command >> /tmp/swayr.log 2>&1
+
+bindsym $mod+Shift+c exec env RUST_BACKTRACE=1 \
+    swayr execute-swayr-command >> /tmp/swayr.log 2>&1
+
+# Media controls
+# https://www.reddit.com/r/swaywm/comments/ju1609/control_spotify_with_bluetooth_headset_with_dbus/
+bindsym --locked XF86AudioPlay exec playerctl play-pause
+bindsym --locked XF86AudioPause exec playerctl play-pause
+bindsym --locked XF86AudioNext exec playerctl next
+bindsym --locked XF86AudioPrev exec playerctl previous
+
+
