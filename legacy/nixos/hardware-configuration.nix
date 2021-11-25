@@ -4,69 +4,68 @@
 { config, lib, pkgs, modulesPath, ... }:
 
 {
-  imports =
-    [ (modulesPath + "/installer/scan/not-detected.nix")
-    ];
+  imports = [ (modulesPath + "/installer/scan/not-detected.nix") ];
 
-  boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "nvme" "usbhid" "uas" "rtsx_pci_sdmmc" ];
+  boot.initrd.availableKernelModules =
+    [ "xhci_pci" "ahci" "nvme" "usbhid" "uas" "rtsx_pci_sdmmc" ];
   boot.initrd.kernelModules = [ "dm-snapshot" ];
   boot.kernelModules = [ "kvm-intel" ];
   boot.extraModulePackages = [ ];
 
-  fileSystems."/" =
-    { device = "nazarewk-zroot/nazarewk/root";
-      fsType = "zfs";
-    };
+  fileSystems."/" = {
+    device = "nazarewk-zroot/nazarewk/root";
+    fsType = "zfs";
+  };
 
-  fileSystems."/boot" =
-    { device = "/dev/disk/by-uuid/34E7-0AA1";
-      fsType = "vfat";
-    };
+  fileSystems."/boot" = {
+    device = "/dev/disk/by-uuid/34E7-0AA1";
+    fsType = "vfat";
+  };
 
-  fileSystems."/home" =
-    { device = "nazarewk-zroot/nazarewk/home";
-      fsType = "zfs";
-    };
+  fileSystems."/home" = {
+    device = "nazarewk-zroot/nazarewk/home";
+    fsType = "zfs";
+  };
 
-  fileSystems."/home/nazarewk" =
-    { device = "nazarewk-zroot/nazarewk/home/nazarewk";
-      fsType = "zfs";
-    };
+  fileSystems."/home/nazarewk" = {
+    device = "nazarewk-zroot/nazarewk/home/nazarewk";
+    fsType = "zfs";
+  };
 
-  fileSystems."/home/nazarewk/Downloads" =
-    { device = "nazarewk-zroot/nazarewk/home/nazarewk/Downloads";
-      fsType = "zfs";
-    };
+  fileSystems."/home/nazarewk/Downloads" = {
+    device = "nazarewk-zroot/nazarewk/home/nazarewk/Downloads";
+    fsType = "zfs";
+  };
 
-  fileSystems."/home/nazarewk/Nextcloud" =
-    { device = "nazarewk-zroot/nazarewk/home/nazarewk/Nextcloud";
-      fsType = "zfs";
-    };
+  fileSystems."/home/nazarewk/Nextcloud" = {
+    device = "nazarewk-zroot/nazarewk/home/nazarewk/Nextcloud";
+    fsType = "zfs";
+  };
 
-  fileSystems."/nix" =
-    { device = "nazarewk-zroot/local/nix";
-      fsType = "zfs";
-    };
+  fileSystems."/nix" = {
+    device = "nazarewk-zroot/local/nix";
+    fsType = "zfs";
+  };
 
-  fileSystems."/var" =
-    { device = "nazarewk-zroot/nazarewk/var";
-      fsType = "zfs";
-    };
+  fileSystems."/var" = {
+    device = "nazarewk-zroot/nazarewk/var";
+    fsType = "zfs";
+  };
 
-  fileSystems."/var/log" =
-    { device = "nazarewk-zroot/nazarewk/var/log";
-      fsType = "zfs";
-    };
+  fileSystems."/var/log" = {
+    device = "nazarewk-zroot/nazarewk/var/log";
+    fsType = "zfs";
+  };
 
-  fileSystems."/var/log/journal" =
-    { device = "nazarewk-zroot/nazarewk/var/log/journal";
-      fsType = "zfs";
-    };
+  fileSystems."/var/log/journal" = {
+    device = "nazarewk-zroot/nazarewk/var/log/journal";
+    fsType = "zfs";
+  };
 
-  fileSystems."/tmp" =
-    { device = "nazarewk-zroot/nazarewk/tmp";
-      fsType = "zfs";
-    };
+  fileSystems."/tmp" = {
+    device = "nazarewk-zroot/nazarewk/tmp";
+    fsType = "zfs";
+  };
 
   swapDevices = [ ];
 

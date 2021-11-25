@@ -16,22 +16,6 @@
         "type": "github"
       }
     },
-    "gnupg": {
-      "locked": {
-        "lastModified": 1637840283,
-        "narHash": "sha256-o6+tu+JRD/dM3q2wQF3fTe1o5soguLWnegDmvNyaK9g=",
-        "owner": "nazarewk",
-        "repo": "nixpkgs",
-        "rev": "771f09da496bbaf239c4056e1519163ed587e2a0",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nazarewk",
-        "ref": "gnupg-nixos-unstable",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -102,7 +86,6 @@
     },
     "root": {
       "inputs": {
-        "gnupg": "gnupg",
         "home-manager": "home-manager",
         "keepass": "keepass",
         "nixpkgs": "nixpkgs",

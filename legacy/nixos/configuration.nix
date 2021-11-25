@@ -17,20 +17,17 @@ let
     ];
   };
 
-in 
-
-{
-  imports =
-    [ # Include the results of the hardware scan.
-      ./hardware-configuration.nix
-    ];
+in {
+  imports = [ # Include the results of the hardware scan.
+    ./hardware-configuration.nix
+  ];
 
   # NIX / NIXOS
   nix.autoOptimiseStore = true;
   nix.package = pkgs.nixFlakes;
   nix.extraOptions = ''
-      experimental-features = nix-command flakes
-    '';
+    experimental-features = nix-command flakes
+  '';
   nixpkgs.config.allowUnfree = true;
   system.stateVersion = "21.05";
   location.provider = "geoclue2";
@@ -40,14 +37,12 @@ in
   boot.loader.grub.copyKernels = true;
   boot.loader.efi.canTouchEfiVariables = true;
   boot.loader.systemd-boot.enable = true;
-  boot.extraModulePackages = with config.boot.kernelPackages; [
-    v4l2loopback
-  ];
+  boot.extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
 
   boot.kernel.sysctl = {
-    "fs.inotify.max_user_watches"   = 1048576;   # default:  8192
-    "fs.inotify.max_user_instances" =    1024;   # default:   128
-    "fs.inotify.max_queued_events"  =   32768;   # default: 16384
+    "fs.inotify.max_user_watches" = 1048576; # default:  8192
+    "fs.inotify.max_user_instances" = 1024; # default:   128
+    "fs.inotify.max_queued_events" = 32768; # default: 16384
   };
 
   # ZFS
@@ -73,14 +68,14 @@ in
   hardware.opengl.enable = true;
   # https://github.com/NixOS/nixos-hardware/blob/4045d5f43aff4440661d8912fc6e373188d15b5b/common/cpu/intel/default.nix
   hardware.opengl.extraPackages = with pkgs; [
-      intel-media-driver # LIBVA_DRIVER_NAME=iHD
-      vaapiIntel         # LIBVA_DRIVER_NAME=i965 (older but works better for Firefox/Chromium)
-      vaapiVdpau
-      libvdpau-va-gl
+    intel-media-driver # LIBVA_DRIVER_NAME=iHD
+    vaapiIntel # LIBVA_DRIVER_NAME=i965 (older but works better for Firefox/Chromium)
+    vaapiVdpau
+    libvdpau-va-gl
   ];
   hardware.sane.enable = true;
   hardware.video.hidpi.enable = true;
-  
+
   # SOUND - PipeWire
   # see additional pavucontrol package
   security.rtkit.enable = true;
@@ -98,8 +93,8 @@ in
   networking.hostName = "nazarewk";
   networking.nameservers = [
     "2606:4700:4700::1111" # CloudFlare
-    "1.1.1.1"              # CloudFlare
-    "8.8.8.8"              # Google
+    "1.1.1.1" # CloudFlare
+    "8.8.8.8" # Google
   ];
   networking.networkmanager.enable = true;
   networking.networkmanager.wifi.powersave = true;
@@ -173,7 +168,7 @@ in
   # need to run nixos-install with extra-sandbox-paths '/bin/sh=...', see https://github.com/NixOS/nixpkgs/issues/124215#issuecomment-848305838
 
   # CUSTOM
- 
+
   # Enable CUPS to print documents.
   services.printing.enable = true;
   services.printing.drivers = with pkgs; [
@@ -202,7 +197,7 @@ in
   '';
 
   programs.seahorse.enable = true;
- 
+
   # Configure various Sway configs
   # see https://gist.github.com/mschwaig/195fe93ed85dea7aaceaf8e1fc6c0e99
   # see https://nixos.wiki/wiki/Sway#Systemd_integration
@@ -243,9 +238,7 @@ in
     swayr # window switcher
     kanshi # autorandr
   ];
-  programs.sway.extraOptions = [
-    "--debug"
-  ];
+  programs.sway.extraOptions = [ "--debug" ];
 
   # services.gnome.gnome-keyring.enable replacement goes below:
   services.dbus.packages = [ pkgs.gnome.gnome-keyring pkgs.gcr ];
@@ -301,19 +294,16 @@ in
     partOf = [ "graphical-session.target" ];
     path = [ pkgs.bash ];
     serviceConfig = {
-      ExecStart = '' ${pkgs.swayidle}/bin/swayidle -w -d \
-        timeout 300 '${pkgs.sway}/bin/swaymsg "output * dpms off"' \
-        resume '${pkgs.sway}/bin/swaymsg "output * dpms on"'
-      '';
+      ExecStart = ''
+        ${pkgs.swayidle}/bin/swayidle -w -d \
+               timeout 300 '${pkgs.sway}/bin/swaymsg "output * dpms off"' \
+               resume '${pkgs.sway}/bin/swaymsg "output * dpms on"'
+             '';
     };
   };
 
-  fonts.fonts = with pkgs; [
-    font-awesome
-    cantarell-fonts
-    noto-fonts
-  ];
-  
+  fonts.fonts = with pkgs; [ font-awesome cantarell-fonts noto-fonts ];
+
   programs.xwayland.enable = true;
   programs.qt5ct.enable = true;
   programs.dconf.enable = true;
@@ -361,9 +351,7 @@ in
   programs.gnupg.agent.enable = true;
   programs.gnupg.agent.pinentryFlavor = "qt";
 
-  environment.pathsToLink = [
-    "/libexec"
-  ];
+  environment.pathsToLink = [ "/libexec" ];
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
@@ -374,7 +362,7 @@ in
     xdg-utils
 
     zsh-completions
-    nix-zsh-completions 
+    nix-zsh-completions
 
     yubioath-desktop
     yubikey-personalization
@@ -391,7 +379,7 @@ in
 
     usbutils
     lshw
-    
+
     # to control pipewire
     pavucontrol
 
@@ -429,16 +417,15 @@ in
     cryptsetup
     qrcode
     libqrencode
-    (python39.withPackages(ps : with ps; [
-      pip
-      ipython
-      requests
-      #python-language-server
-      #sanitize-filename
-    ]))
-    ((pkgs.gradleGen.override {
-      java = jdk;
-    }).gradle_latest)
+    (python39.withPackages (ps:
+      with ps; [
+        pip
+        ipython
+        requests
+        #python-language-server
+        #sanitize-filename
+      ]))
+    ((pkgs.gradleGen.override { java = jdk; }).gradle_latest)
 
     libinput
     playerctl
@@ -459,10 +446,7 @@ in
     vlc
     evince
     (xfce.thunar.override {
-      thunarPlugins = [
-        xfce.thunar-archive-plugin
-        xfce.thunar-volman
-      ];
+      thunarPlugins = [ xfce.thunar-archive-plugin xfce.thunar-volman ];
     })
     xfce.ristretto
     xfce.exo
@@ -470,11 +454,12 @@ in
 
     (edid-generator.override {
       modelines = [
-        ''Modeline "2560x1440" 241.50 2560 2600 2632 2720 1440 1443 1448 1481 -hsync +vsync''
+        ''
+          Modeline "2560x1440" 241.50 2560 2600 2632 2720 1440 1443 1448 1481 -hsync +vsync''
       ];
     })
     edid-decode
-    read-edid 
+    read-edid
 
     (pkgs.writeScriptBin "startsway" ''
       #! ${pkgs.bash}/bin/bash
@@ -482,13 +467,13 @@ in
       exec systemctl --user start sway.service
     '')
     (pkgs.writeScriptBin "_sway-init" ''
-      #! ${pkgs.bash}/bin/bash
-      while ! systemctl --user show-environment | grep WAYLAND_DISPLAY && sleep 1; do
-	systemctl --user import-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP
-      done
-      dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP
-      /run/current-system/sw/libexec/polkit-gnome-authentication-agent-1
-    '')
+            #! ${pkgs.bash}/bin/bash
+            while ! systemctl --user show-environment | grep WAYLAND_DISPLAY && sleep 1; do
+      	      systemctl --user import-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP
+            done
+            dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP
+            /run/current-system/sw/libexec/polkit-gnome-authentication-agent-1
+          '')
     (pkgs.writeScriptBin "_sway-wait" ''
       #! ${pkgs.bash}/bin/bash
       interval=3
@@ -498,11 +483,10 @@ in
       echo 'Waybar started'
     '')
 
-# experiments
+    # experiments
     cachix
   ];
 
-  
   services.gvfs.enable = true; # Mount, trash, and other functionalities
   services.tumbler.enable = true; # Thumbnail support for images
   services.teamviewer.enable = true;

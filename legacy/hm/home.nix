@@ -35,7 +35,7 @@
     Host *.fresha.io *.shedul.io
         User krzysztof.nazarewski
   '';
-  
+
   programs.zsh.enable = true;
   # programs.zsh.enableSyntaxHighlighting = true;
   programs.zsh.initExtra = ''
