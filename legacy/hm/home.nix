@@ -22,6 +22,7 @@
     nodejs
     kubernetes-helm
     helmsman
+    kubectx
   ];
 
   programs.git.enable = true;
