@@ -2,7 +2,7 @@
   inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
   inputs.wayland.url = "github:nix-community/nixpkgs-wayland";
   inputs.keepass.url = "github:nazarewk/nixpkgs/keepass-keetraytotp";
-  inputs.gnupg.url = "github:colemickens/nixpkgs/gpg23";
+  inputs.gnupg.url = "github:nazarewk/nixpkgs/gnupg-nixos-unstable";
   inputs.swayr-update.url = "github:polykernel/nixpkgs/swayr-update-patch-1";
   inputs.home-manager.url = "github:nix-community/home-manager";
   inputs.home-manager.inputs.nixpkgs.follows = "nixpkgs";
@@ -19,10 +19,12 @@
           nix.binaryCachePublicKeys = [
             "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
             "nixpkgs-wayland.cachix.org-1:3lwxaILxMRkVhehr5StQprHdEo4IrE8sRho9R9HOLYA="
+            "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
           ];
           nix.binaryCaches = [
             "https://cache.nixos.org"
             "https://nixpkgs-wayland.cachix.org"
+            "https://nix-community.cachix.org"
           ];
           nixpkgs.overlays = [
             inputs.wayland.overlay

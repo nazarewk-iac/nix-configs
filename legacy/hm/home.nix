@@ -20,7 +20,7 @@
 
     k9s
     nodejs
-    helm # unsupported Mac
+    kubernetes-helm
     helmsman
   ];
 

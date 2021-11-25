@@ -18,16 +18,16 @@
     },
     "gnupg": {
       "locked": {
-        "lastModified": 1636591488,
-        "narHash": "sha256-rqlKCpXgDObwTt0Wb+IJ5zLENBYHyzzTNOqhF8GGPxs=",
-        "owner": "colemickens",
+        "lastModified": 1637840283,
+        "narHash": "sha256-o6+tu+JRD/dM3q2wQF3fTe1o5soguLWnegDmvNyaK9g=",
+        "owner": "nazarewk",
         "repo": "nixpkgs",
-        "rev": "062de00b5a4d1444f98a3f8ea42b24304075a0d6",
+        "rev": "771f09da496bbaf239c4056e1519163ed587e2a0",
         "type": "github"
       },
       "original": {
-        "owner": "colemickens",
-        "ref": "gpg23",
+        "owner": "nazarewk",
+        "ref": "gnupg-nixos-unstable",
         "repo": "nixpkgs",
         "type": "github"
       }
