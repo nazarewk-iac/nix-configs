@@ -1,7 +1,8 @@
 {
-  inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable-small";
+  inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
   inputs.wayland.url = "github:nix-community/nixpkgs-wayland";
   inputs.keepass.url = "github:nazarewk/nixpkgs/keepass-keetraytotp";
+  inputs.gnupg.url = "github:colemickens/nixpkgs/gpg23";
   inputs.swayr-update.url = "github:polykernel/nixpkgs/swayr-update-patch-1";
   inputs.home-manager.url = "github:nix-community/home-manager";
   inputs.home-manager.inputs.nixpkgs.follows = "nixpkgs";
@@ -34,6 +35,9 @@
           ];
         }
         ./legacy/nixos/configuration.nix
+        {
+          programs.gnupg.package = inputs.gnupg.legacyPackages.${system}.gnupg;
+        }
 
         inputs.home-manager.nixosModules.home-manager
         {

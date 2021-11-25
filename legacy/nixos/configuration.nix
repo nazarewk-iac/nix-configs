@@ -392,7 +392,6 @@ in
   environment.systemPackages = with pkgs; [
     wget
     curl
-    gnupg
     pstree
     xdg-utils
 
@@ -433,6 +432,8 @@ in
     nix-index
     nix-tree
     nix-du
+    nixfmt
+    nixpkgs-fmt
     system-config-printer
 
     #fprintd
