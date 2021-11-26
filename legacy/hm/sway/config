@@ -12,6 +12,7 @@ set $term alacritty
 set $menu wofi --show run
 
 output 'Dell Inc. DELL U2711 G606T29F0EWL' modeline 241.50 2560 2600 2632 2720 1440 1443 1448 1481 -hsync +vsync
+bindsym $mod+p output eDP-1 toggle
 
 ### Key bindings
 #
@@ -164,6 +165,7 @@ input type:touchpad {
     bindsym XF86AudioRaiseVolume exec 'pactl set-sink-volume @DEFAULT_SINK@ +1%'
     bindsym XF86AudioLowerVolume exec 'pactl set-sink-volume @DEFAULT_SINK@ -1%'
     bindsym XF86AudioMute exec 'pactl set-sink-mute @DEFAULT_SINK@ toggle'
+    bindsym $alt+XF86AudioMute exec 'pactl set-source-mute @DEFAULT_SOURCE@ toggle'
     bindsym XF86AudioMicMute exec 'pactl set-source-mute @DEFAULT_SOURCE@ toggle'
 
     # X parity
