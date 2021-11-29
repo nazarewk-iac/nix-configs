@@ -6,15 +6,15 @@
     "spacing": 4, // Gaps between modules (4px)
     // Choose the order of the modules
     "modules-left": [
-      "sway/workspaces", 
-      "sway/mode",
+      "sway/workspaces",
       "custom/media",
       "wlr/taskbar",
     ],
     "modules-center": ["sway/window"],
     "modules-right": [
       // "mpd", 
-      "idle_inhibitor", 
+      "idle_inhibitor",
+      "sway/mode",
       "pulseaudio", 
       // "network", 
       "cpu", 
@@ -44,6 +44,10 @@
     //         "default": ""
     //     }
     // },
+   "sway/mode": {
+     "format": " {}",
+     "max-length": 50
+   },
    "wlr/taskbar": {
       "format": "{icon}{short_state}|{app_id}",
       "icon-size": 14,
@@ -61,9 +65,6 @@
             "locked": "",
             "unlocked": ""
         }
-    },
-    "sway/mode": {
-        "format": "<span style=\"italic\">{}</span>"
     },
     "mpd": {
         "format": "{stateIcon} {consumeIcon}{randomIcon}{repeatIcon}{singleIcon}{artist} - {album} - {title} ({elapsedTime:%M:%S}/{totalTime:%M:%S}) ⸨{songPosition}|{queueLength}⸩ {volume}% ",
@@ -100,7 +101,8 @@
     },
     "tray": {
         // "icon-size": 21,
-        "spacing": 10
+        "spacing": 10,
+        "show-passive-items": true,
     },
     "clock": {
         // "timezone": "America/New_York",
@@ -170,7 +172,9 @@
             "car": "",
             "default": ["", "", ""]
         },
-        "on-click": "pavucontrol"
+        "on-click": "pactl set-sink-mute @DEFAULT_SINK@ toggle",
+        "on-click-middle": "pavucontrol",
+        "on-click-right": "pactl set-source-mute @DEFAULT_SOURCE@ toggle",
     },
 }
 

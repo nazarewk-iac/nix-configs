@@ -182,7 +182,6 @@ exec _sway-wait && {
     nm-applet --indicator
     nextcloud
     element-desktop
-    signal-desktop
     flameshot
 }
 
@@ -200,6 +199,7 @@ exec swayidle -w \
 # resumed. It will also lock your screen before your computer goes to sleep.
 
 workspace_layout tabbed
+focus_follows_mouse no
 
 # Swayr window switcher
 

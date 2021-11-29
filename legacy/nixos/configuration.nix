@@ -88,7 +88,6 @@ in {
   sound.mediaKeys.enable = true;
 
   # NETWORKING
-  networking.firewall.enable = false;
   networking.hostId = "f77614af"; # cut -c-8 </proc/sys/kernel/random/uuid
   networking.hostName = "nazarewk";
   networking.nameservers = [
@@ -96,6 +95,7 @@ in {
     "1.1.1.1" # CloudFlare
     "8.8.8.8" # Google
   ];
+  networking.firewall.enable = true;
   networking.networkmanager.enable = true;
   networking.networkmanager.wifi.powersave = true;
   systemd.services.ModemManager.enable = true;
@@ -214,6 +214,7 @@ in {
     alacritty
     dmenu
     libappindicator
+    libappindicator-gtk3
     pulseaudio
     grim
     wlogout
