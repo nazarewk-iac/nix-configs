@@ -6,6 +6,21 @@
   inputs.home-manager.url = "github:nix-community/home-manager";
   inputs.home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
+  inputs.flake-utils.url = "github:numtide/flake-utils";
+
+  inputs.poetry2nix.url = "github:nix-community/poetry2nix";
+  inputs.poetry2nix.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.poetry2nix.inputs.flake-utils.follows = "flake-utils";
+
+  inputs.nix-alien.url = "github:thiagokokada/nix-alien";
+  inputs.nix-alien.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.nix-alien.inputs.flake-utils.follows = "flake-utils";
+  inputs.nix-alien.inputs.poetry2nix.follows = "poetry2nix";
+
+  inputs.nix-ld.url = "github:Mic92/nix-ld";
+  inputs.nix-ld.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.nix-ld.inputs.utils.follows = "flake-utils";
+
   outputs = inputs:
     let system = "x86_64-linux";
     in {
@@ -37,6 +52,14 @@
             ];
           }
           ./legacy/nixos/configuration.nix
+
+          {
+            environment.systemPackages = [
+              inputs.nixpkgs.legacyPackages.${system}.nix-index
+              inputs.nix-alien.packages.${system}.nix-alien
+              inputs.nix-alien.packages.${system}.nix-index-update
+            ];
+          }
 
           {
             programs.gnupg.package =
