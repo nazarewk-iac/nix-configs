@@ -139,7 +139,7 @@ in {
 
   # VM
   virtualisation.docker.autoPrune.enable = true;
-  virtualisation.docker.enable = true;
+  virtualisation.docker.enable = false;
   virtualisation.docker.storageDriver = "zfs";
   virtualisation.libvirtd.enable = true;
 
