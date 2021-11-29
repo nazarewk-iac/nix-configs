@@ -99,6 +99,7 @@ in {
   networking.networkmanager.enable = true;
   networking.networkmanager.wifi.powersave = true;
   systemd.services.ModemManager.enable = true;
+  systemd.services.ModemManager.wantedBy = [ "NetworkManager.service" ];
 
   # LOCALE
   i18n.defaultLocale = "en_US.UTF-8";
