@@ -38,6 +38,7 @@ in {
   boot.loader.efi.canTouchEfiVariables = true;
   boot.loader.systemd-boot.enable = true;
   boot.extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
+  boot.cleanTmpDir = true;
 
   boot.kernel.sysctl = {
     "fs.inotify.max_user_watches" = 1048576; # default:  8192
@@ -427,7 +428,7 @@ in {
         #python-language-server
         #sanitize-filename
       ]))
-    ((pkgs.gradleGen.override { java = jdk; }).gradle_latest)
+    #((pkgs.gradleGen.override { java = jdk; }).gradle_latest)
 
     libinput
     playerctl

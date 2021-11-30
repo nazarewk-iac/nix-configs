@@ -50,6 +50,7 @@
             ];
           }
           ./legacy/nixos/configuration.nix
+          ./legacy/nixos/podman.nix
 
           {
             environment.systemPackages = [
