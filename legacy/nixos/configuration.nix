@@ -87,6 +87,9 @@ in {
   services.pipewire.pulse.enable = true;
   services.pipewire.jack.enable = true;
   sound.mediaKeys.enable = true;
+  hardware.pulseaudio.extraModules = [
+    pkgs.pulseaudio-modules-bt
+  ];
 
   # NETWORKING
   networking.hostId = "f77614af"; # cut -c-8 </proc/sys/kernel/random/uuid
@@ -217,12 +220,16 @@ in {
     dmenu
     libappindicator
     libappindicator-gtk3
-    pulseaudio
     grim
     wlogout
     libnotify
     slurp
     qt5.qtwayland
+
+    # audio
+    libopenaptx
+    libfreeaptx
+    pulseaudio
 
     # sway related
     brightnessctl
@@ -240,11 +247,15 @@ in {
     wev # wayland event viewer
     swayr # window switcher
     kanshi # autorandr
+    wshowkeys # display pressed keys
   ];
   programs.sway.extraOptions = [ "--debug" ];
 
   # services.gnome.gnome-keyring.enable replacement goes below:
-  services.dbus.packages = [ pkgs.gnome.gnome-keyring pkgs.gcr ];
+  services.dbus.packages = [
+    pkgs.gnome.gnome-keyring
+    pkgs.gcr
+  ];
   #security.wrappers.gnome-keyring-daemon = {
   #  source = "${pkgs.gnome.gnome-keyring}/bin/gnome-keyring-daemon";
   #  capabilities = "cap_ipc_lock=ep";
@@ -346,8 +357,6 @@ in {
   xdg.portal.gtkUsePortal = true;
   xdg.portal.wlr.enable = true;
   xdg.portal.extraPortals = with pkgs; [
-    xdg-desktop-portal-gtk
-    xdg-desktop-portal-wlr
     gnome.gnome-keyring
   ];
 
@@ -420,6 +429,7 @@ in {
     cryptsetup
     qrcode
     libqrencode
+    imagemagick
     (python39.withPackages (ps:
       with ps; [
         pip
@@ -484,6 +494,11 @@ in {
       echo 'WAYLAND_DISPLAY available'
       until pgrep -u $UID waybar ; do sleep "$interval"; done
       echo 'Waybar started'
+    '')
+
+    (pkgs.writeScriptBin "qrpaste" ''
+      #! ${pkgs.bash}/bin/bash
+      ${pkgs.wl-clipboard}/bin/wl-paste | ${pkgs.libqrencode}/bin/qrencode -o - | ${pkgs.imagemagick}/bin/display
     '')
 
     # experiments
