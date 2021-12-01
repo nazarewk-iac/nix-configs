@@ -51,6 +51,22 @@
         "type": "github"
       }
     },
+    "keepass": {
+      "locked": {
+        "lastModified": 1638360700,
+        "narHash": "sha256-sNZhnJhDsCARwnaDwrtU0M5LSj2j9DvONy9PN17EsUo=",
+        "owner": "nazarewk",
+        "repo": "nixpkgs",
+        "rev": "083348f608f8ef718a9343ecb1b2b6f5aac743b6",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nazarewk",
+        "ref": "keepass-user-config",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nix-alien": {
       "inputs": {
         "flake-utils": [
@@ -159,6 +175,7 @@
       "inputs": {
         "flake-utils": "flake-utils",
         "home-manager": "home-manager",
+        "keepass": "keepass",
         "nix-alien": "nix-alien",
         "nix-ld": "nix-ld",
         "nixpkgs": "nixpkgs",

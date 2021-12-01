@@ -1,7 +1,7 @@
 {
   inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
   inputs.wayland.url = "github:nix-community/nixpkgs-wayland";
-#  inputs.keepass.url = "github:nazarewk/nixpkgs/keepass-keetraytotp";
+  inputs.keepass.url = "github:nazarewk/nixpkgs/keepass-user-config";
   inputs.home-manager.url = "github:nix-community/home-manager";
   inputs.home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
@@ -39,14 +39,9 @@
             ];
             nixpkgs.overlays = [
               inputs.wayland.overlay
-#              (self: super: {
-#                keepass-keetraytotp =
-#                  inputs.keepass.legacyPackages.${system}.keepass-keetraytotp;
-#                keepass-charactercopy =
-#                  inputs.keepass.legacyPackages.${system}.keepass-charactercopy;
-#                keepass-qrcodeview =
-#                  inputs.keepass.legacyPackages.${system}.keepass-qrcodeview;
-#              })
+              (self: super: {
+                keepass = inputs.keepass.legacyPackages.${system}.keepass;
+              })
             ];
           }
           ./legacy/nixos/configuration.nix

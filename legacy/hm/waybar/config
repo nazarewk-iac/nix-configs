@@ -7,6 +7,7 @@
     // Choose the order of the modules
     "modules-left": [
       "sway/workspaces",
+      "sway/mode",
       "custom/media",
       "wlr/taskbar",
     ],
@@ -14,14 +15,13 @@
     "modules-right": [
       // "mpd", 
       "idle_inhibitor",
-      "sway/mode",
       "pulseaudio", 
       // "network", 
       "cpu", 
       "memory", 
       "temperature", 
       "backlight", 
-      "keyboard-state", 
+      // "keyboard-state",
       "sway/language", 
       "battery", 
       "battery#bat2", 
@@ -55,7 +55,7 @@
       "tooltip-format": "{title}",
       "on-click": "activate",
       "on-click-middle": "close",
-      "on-click-right": "",
+      "on-click-right": "minimize-raise",
     },
     "keyboard-state": {
         "numlock": true,
