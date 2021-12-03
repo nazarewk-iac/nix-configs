@@ -48,8 +48,6 @@ bindsym $mod+p output eDP-1 toggle
     bindsym $mod+Down focus down
     bindsym $mod+Up focus up
     bindsym $mod+Right focus right
-    # bindsym $alt+tab focus right
-    # bindsym $alt+shift+tab focus left
     bindsym --border --whole-window $mod+button5 focus right
     bindsym --border --whole-window $mod+button4 focus left
     bindsym --border --whole-window $mod+shift+button5 focus next sibling
