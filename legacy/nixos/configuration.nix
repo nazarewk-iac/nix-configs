@@ -254,6 +254,7 @@ in {
     swayr # window switcher
     kanshi # autorandr
     wshowkeys # display pressed keys
+    wdisplays # randr equivalent
   ];
   programs.sway.extraOptions = [ "--debug" ];
 
