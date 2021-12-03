@@ -20,6 +20,7 @@ let
 in {
   imports = [ # Include the results of the hardware scan.
     ./hardware-configuration.nix
+    ./nazarewk.nix
   ];
 
   # NIX / NIXOS
@@ -155,25 +156,6 @@ in {
 
   # USERS
   users.users.root.initialHashedPassword = "";
-  users.extraUsers.nazarewk.description = "Krzysztof Nazarewski";
-  users.extraUsers.nazarewk.isNormalUser = true;
-  users.extraUsers.nazarewk.extraGroups = [
-    "adbusers"
-    "audio"
-    "dialout"
-    "docker"
-    "kvm"
-    "libvirtd"
-    "lp"
-    "networkmanager"
-    "power"
-    "scanner"
-    "video"
-    "wheel"
-  ];
-  users.extraUsers.nazarewk.openssh.authorizedKeys.keys = [
-    "ssh-rsa ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAYEAvM4y0G5vZ2OYlSeGn2w7y/s+VZMzhGGb9rlUkDtWtwvsE2TWlApFyHggn6qObmQ5DUOu0Mhy6l/ojylyp2Q/C7FMoQWkeBorLKvxf8KFE1lJktCXCxJyptDn8kkNi6Fxszig/flrp5lSWWjDCafyVeyFhvMo22fblzjPOG//wu0+RnOLn9eiWC2CUvJjG11AH+AxWI4UMXY93gq5K1YVLd3EmhI/L1ITAoY3cXoheP0TW9epqe0Zq6lGO+gLiYeWgZJiolSqcHCkTzopbkIZ2cP+yEdeJrYp8ibdO7H0oyXOy48yPElkEobcISzQmTayXQfXyr9YzFPGdM0ZxxKPfpmMox2DTL+mpo1etLOf7ihJNBoR6aAcAWeYLdfqmIlWnVVySW1RPcq31tR4uCP6jpDsbEArXP7lttkWzb0EuBRKN94OVsl7gHuqSSdnrWJwU6jn8EAi9krRQtOKUrz62nOmAkWIe/4fM/3CVjuOgTSUkmuu15SgrbN9aLYp0ct/ nazarewk.id_rsa"
-  ];
 
   # FIXES
   # need to run nixos-install with extra-sandbox-paths '/bin/sh=...', see https://github.com/NixOS/nixpkgs/issues/124215#issuecomment-848305838
@@ -430,6 +412,9 @@ in {
     #fprintd
     #libnfc
 
+    gparted
+    tmux
+
     killall
     bintools
     mc
@@ -494,17 +479,20 @@ in {
     '')
     (pkgs.writeScriptBin "_sway-init" ''
             #! ${pkgs.bash}/bin/bash
+            set -x
             while ! systemctl --user show-environment | grep WAYLAND_DISPLAY && sleep 1; do
       	      systemctl --user import-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP
             done
             dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP
             /run/current-system/sw/libexec/polkit-gnome-authentication-agent-1
             systemctl --user start sway-session.target
+            touch /tmp/sway-started
           '')
     (pkgs.writeScriptBin "_sway-wait" ''
       #! ${pkgs.bash}/bin/bash
+      set -x
       interval=3
-      until systemctl --user show-environment | grep WAYLAND_DISPLAY ; do sleep "$interval"; done
+      until [ -f /tmp/sway-started ] ; do sleep "$interval"; done
       echo 'WAYLAND_DISPLAY available'
       until pgrep -u $UID waybar ; do sleep "$interval"; done
       echo 'Waybar started'

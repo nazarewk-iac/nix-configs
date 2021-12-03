@@ -20,11 +20,25 @@
   inputs.nix-ld.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nix-ld.inputs.utils.follows = "flake-utils";
 
-  outputs = inputs:
-    let system = "x86_64-linux";
-    in {
-      nixosConfigurations.nazarewk = inputs.nixpkgs.lib.nixosSystem {
-        inherit system;
+  outputs = {
+    nixpkgs,
+    wayland,
+    keepass,
+    home-manager,
+    flake-utils,
+    poetry2nix,
+    nix-alien,
+    nix-ld,
+    ...
+ } : {
+      nixosConfigurations.rpi4 = nixpkgs.lib.nixosSystem {
+        system = "aarch64-linux";
+        modules = [
+          ./rpi4/sd-image.nix
+        ];
+      };
+      nixosConfigurations.nazarewk = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
         modules = [
           {
             nix.binaryCachePublicKeys = [
@@ -38,9 +52,9 @@
               "https://nix-community.cachix.org"
             ];
             nixpkgs.overlays = [
-              inputs.wayland.overlay
+              wayland.overlay
               (self: super: {
-                keepass = inputs.keepass.legacyPackages.${system}.keepass;
+                keepass = keepass.legacyPackages.x86_64-linux.keepass;
               })
             ];
           }
@@ -49,21 +63,21 @@
 
           {
             environment.systemPackages = [
-              inputs.nixpkgs.legacyPackages.${system}.nix-index
-              inputs.nix-alien.packages.${system}.nix-alien
-              inputs.nix-alien.packages.${system}.nix-index-update
+              nixpkgs.legacyPackages.x86_64-linux.nix-index
+              nix-alien.packages.x86_64-linux.nix-alien
+              nix-alien.packages.x86_64-linux.nix-index-update
             ];
           }
 
           {
             programs.gnupg.package =
-              inputs.nixpkgs.legacyPackages.${system}.gnupg.overrideAttrs
+              nixpkgs.legacyPackages.x86_64-linux.gnupg.overrideAttrs
               (old: rec {
                 pname = "gnupg";
                 # version = "2.2.33";
                 version = "2.2.28";
 
-                src = inputs.nixpkgs.legacyPackages.${system}.fetchurl {
+                src = nixpkgs.legacyPackages.x86_64-linux.fetchurl {
                   url = "mirror://gnupg/gnupg/${pname}-${version}.tar.bz2";
                   # sha256 = "8688836e8c043d70410bb64d72de6ae15176e09ecede8d24528b4380c000e4e3";
                   sha256 =
@@ -72,7 +86,7 @@
               });
           }
 
-          inputs.home-manager.nixosModules.home-manager
+          home-manager.nixosModules.home-manager
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
