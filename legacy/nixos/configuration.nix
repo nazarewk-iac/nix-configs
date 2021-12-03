@@ -241,6 +241,7 @@ in {
     brightnessctl
     polkit_gnome
     lxappearance
+    xsettingsd
     gsettings-desktop-schemas
     gnome.networkmanagerapplet
     gtk_engines
@@ -269,8 +270,10 @@ in {
   #};
 
   programs.sway.extraSessionCommands = ''
+    # see https://wiki.debian.org/Wayland#Toolkits
+    export GDK_BACKEND=wayland
     export SDL_VIDEODRIVER=wayland
-    export QT_QPA_PLATFORM=wayland
+    export QT_QPA_PLATFORM='wayland;xcb'
     export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
     export _JAVA_AWT_WM_NONREPARENTING=1
     export MOZ_ENABLE_WAYLAND=1
@@ -308,20 +311,20 @@ in {
     };
   };
 
-  systemd.user.services.swayidle = {
-    description = "Idle Manager for Wayland";
-    documentation = [ "man:swayidle(1)" ];
-    wantedBy = [ "sway-session.target" ];
-    partOf = [ "graphical-session.target" ];
-    path = [ pkgs.bash ];
-    serviceConfig = {
-      ExecStart = ''
-        ${pkgs.swayidle}/bin/swayidle -w -d \
-               timeout 300 '${pkgs.sway}/bin/swaymsg "output * dpms off"' \
-               resume '${pkgs.sway}/bin/swaymsg "output * dpms on"'
-             '';
-    };
-  };
+#  systemd.user.services.swayidle = {
+#    description = "Idle Manager for Wayland";
+#    documentation = [ "man:swayidle(1)" ];
+#    wantedBy = [ "sway-session.target" ];
+#    partOf = [ "graphical-session.target" ];
+#    path = [ pkgs.bash ];
+#    serviceConfig = {
+#      ExecStart = ''
+#        ${pkgs.swayidle}/bin/swayidle -w -d \
+#               timeout 300 '${pkgs.sway}/bin/swaymsg "output * dpms off"' \
+#               resume '${pkgs.sway}/bin/swaymsg "output * dpms on"'
+#             '';
+#    };
+#  };
 
   fonts.fonts = with pkgs; [ font-awesome cantarell-fonts noto-fonts ];
 
@@ -408,6 +411,7 @@ in {
     gnome3.adwaita-icon-theme
     adwaita-qt
     glib # gsettings
+    gnome.dconf-editor
 
     firefox-wayland
     chromium
@@ -477,8 +481,7 @@ in {
 
     (edid-generator.override {
       modelines = [
-        ''
-          Modeline "2560x1440" 241.50 2560 2600 2632 2720 1440 1443 1448 1481 -hsync +vsync''
+        ''Modeline "2560x1440" 241.50 2560 2600 2632 2720 1440 1443 1448 1481 -hsync +vsync''
       ];
     })
     edid-decode
@@ -496,6 +499,7 @@ in {
             done
             dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP
             /run/current-system/sw/libexec/polkit-gnome-authentication-agent-1
+            systemctl --user start sway-session.target
           '')
     (pkgs.writeScriptBin "_sway-wait" ''
       #! ${pkgs.bash}/bin/bash
