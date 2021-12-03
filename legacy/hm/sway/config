@@ -227,6 +227,7 @@ bindsym $mod+c exec env RUST_BACKTRACE=1 \
 bindsym $mod+Shift+c exec env RUST_BACKTRACE=1 \
     swayr execute-swayr-command >> /tmp/swayr.log 2>&1
 
+bindsym $mod+E exec thunar
 bindsym $mod+L exec swaylock -f
 
 # Media controls
