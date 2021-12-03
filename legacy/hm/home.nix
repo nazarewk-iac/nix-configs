@@ -33,7 +33,7 @@
 
   programs.ssh.enable = true;
   programs.ssh.extraConfig = ''
-    Host *.fresha.io *.shedul.io
+    Host *.fresha.io
         User krzysztof.nazarewski
   '';
 
@@ -41,7 +41,7 @@
   # programs.zsh.enableSyntaxHighlighting = true;
   programs.zsh.initExtra = ''
     source ${pkgs.grml-zsh-config}/etc/zsh/zshrc
-    eval "$(aws-vault --completion-script-zsh)"
+    eval "$(${pkgs.aws-vault}/bin/aws-vault --completion-script-zsh)"
   '';
   programs.zsh.sessionVariables = {
     AWS_VAULT_PROMPT = "ykman";
