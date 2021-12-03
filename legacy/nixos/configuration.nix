@@ -38,6 +38,12 @@ in {
   boot.loader.efi.canTouchEfiVariables = true;
   boot.loader.systemd-boot.enable = true;
   boot.extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
+  boot.binfmt.emulatedSystems = [
+    "aarch64-linux"
+    "wasm32-wasi"
+    "wasm64-wasi"
+    "x86_64-windows"
+  ];
   boot.cleanTmpDir = true;
 
   boot.kernel.sysctl = {
