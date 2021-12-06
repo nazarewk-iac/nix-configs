@@ -147,7 +147,10 @@ include /etc/sway/config.d/*
 # inputs
 input type:keyboard {
     xkb_layout pl
+    xbk_numlock enable
 }
+
+input '1:1:AT_Translated_Set_2_keyboard' xbkp_numlock disable
 
 input type:touchpad {
     tap enabled
@@ -181,6 +184,7 @@ exec _sway-wait && {
     nextcloud
     element-desktop
     flameshot
+    wl-paste -t text --watch clipman store --no-persist
 }
 
 ### Idle configuration

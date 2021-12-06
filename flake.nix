@@ -32,6 +32,7 @@
     ...
  } : {
       nixosConfigurations.rpi4 = nixpkgs.lib.nixosSystem {
+        # nix build '.#nixosConfigurations.rpi4.config.system.build.sdImage' --system aarch64-linux
         system = "aarch64-linux";
         modules = [
           ./rpi4/sd-image.nix

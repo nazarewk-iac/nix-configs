@@ -463,6 +463,7 @@ in {
     xfce.ristretto
     xfce.exo
     shotwell
+    gimp
 
     (edid-generator.override {
       modelines = [
