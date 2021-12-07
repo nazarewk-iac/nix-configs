@@ -115,7 +115,7 @@ in {
   # LOCALE
   i18n.defaultLocale = "en_US.UTF-8";
   i18n.extraLocaleSettings = {
-    LC_TIME = "pl_PL.UTF-8";
+    LC_TIME = "en_GB.UTF-8"; # en_GB - Monday as first day of week
   };
   time.timeZone = "Europe/Warsaw";
 
@@ -182,6 +182,8 @@ in {
   programs.zsh.interactiveShellInit = ''
     source ${pkgs.grml-zsh-config}/etc/zsh/zshrc
     source ${pkgs.nix-index}/etc/profile.d/command-not-found.sh
+    [[ -z "$HOME" ]] || export PATH="$HOME/.asdf/shims:$PATH"
+    source ${pkgs.asdf-vm}/share/asdf-vm/lib/asdf.sh
   '';
   programs.zsh.promptInit = ""; # otherwise it'll override the grml prompt
   programs.zsh.syntaxHighlighting.enable = true;
@@ -361,8 +363,6 @@ in {
 
   environment.pathsToLink = [ "/libexec" ];
 
-  # List packages installed in system profile. To search, run:
-  # $ nix search wget
   environment.systemPackages = with pkgs; [
     wget
     curl
@@ -516,6 +516,24 @@ in {
 
     # experiments
     cachix
+
+    # asdf VM
+    asdf-vm
+    unzip
+    coreutils
+
+    # dev software
+    aws-vault
+    awscli2
+    sshuttle
+    kubectl
+    # terraform
+
+    k9s
+    nodejs
+    kubernetes-helm
+    helmsman
+    kubectx
   ];
 
   services.gvfs.enable = true; # Mount, trash, and other functionalities

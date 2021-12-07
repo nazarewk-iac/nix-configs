@@ -6,25 +6,6 @@
   xdg.configFile."waybar/config".source = ./waybar/config;
   xdg.configFile."waybar/style.css".source = ./waybar/style.css;
 
-  home.packages = with pkgs; [
-    vim
-    wget
-    bash
-    aws-vault
-    awscli2
-    sshuttle
-    jq
-    yubikey-manager
-    kubectl
-    terraform
-
-    k9s
-    nodejs
-    kubernetes-helm
-    helmsman
-    kubectx
-  ];
-
   programs.git.enable = true;
   programs.git.signing.key = "916D8B67241892AE";
   programs.git.signing.signByDefault = true;
