@@ -171,7 +171,8 @@ input type:touchpad {
     bindsym $alt+F4 kill
 
 # Autostart
-exec _sway-init 
+exec _sway-init
+exec _sway-polkit
 bar {
     position top
     swaybar_command waybar

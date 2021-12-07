@@ -114,6 +114,9 @@ in {
 
   # LOCALE
   i18n.defaultLocale = "en_US.UTF-8";
+  i18n.extraLocaleSettings = {
+    LC_TIME = "pl_PL.UTF-8";
+  };
   time.timeZone = "Europe/Warsaw";
 
   # INPUT
@@ -139,7 +142,7 @@ in {
 
   # SSH
   services.openssh.enable = true;
-  services.openssh.openFirewall = false;
+  services.openssh.openFirewall = true;
 
   # ANDROID
   programs.adb.enable = true;
@@ -349,6 +352,7 @@ in {
   xdg.portal.gtkUsePortal = true;
   xdg.portal.wlr.enable = true;
   xdg.portal.extraPortals = with pkgs; [
+    xdg-desktop-portal-gtk # xdg.portal.gtkUsePortal requires implementation in here (there is more than 1)
     gnome.gnome-keyring
   ];
 
@@ -475,28 +479,34 @@ in {
 
     (pkgs.writeScriptBin "startsway" ''
       #! ${pkgs.bash}/bin/bash
-      systemctl --user import-environment
+      set -x
+      systemctl --user import-environment $(${pkgs.jq}/bin/jq -rn 'env | keys[]')
       exec systemctl --user start sway.service
     '')
     (pkgs.writeScriptBin "_sway-init" ''
-            #! ${pkgs.bash}/bin/bash
-            set -x
-            while ! systemctl --user show-environment | grep WAYLAND_DISPLAY && sleep 1; do
-      	      systemctl --user import-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP
-            done
-            dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP
-            /run/current-system/sw/libexec/polkit-gnome-authentication-agent-1
-            systemctl --user start sway-session.target
-            touch /tmp/sway-started
-          '')
+      #! ${pkgs.bash}/bin/bash
+      set -x
+      while ! systemctl --user show-environment | grep WAYLAND_DISPLAY && sleep 1; do
+        systemctl --user import-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP
+      done
+      dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP
+      until pgrep -fu $UID polkit-gnome-authentication-agent-1 ; do sleep "$interval"; done
+      until pgrep -fu $UID waybar && sleep 3 ; do sleep "$interval"; done
+      systemctl --user start sway-session.target
+    '')
+    (pkgs.writeScriptBin "_sway-polkit" ''
+      #! ${pkgs.bash}/bin/bash
+      set -x
+      while ! systemctl --user show-environment | grep WAYLAND_DISPLAY && sleep 1; do
+        systemctl --user import-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP
+      done
+      /run/current-system/sw/libexec/polkit-gnome-authentication-agent-1
+    '')
     (pkgs.writeScriptBin "_sway-wait" ''
       #! ${pkgs.bash}/bin/bash
       set -x
       interval=3
-      until [ -f /tmp/sway-started ] ; do sleep "$interval"; done
-      echo 'WAYLAND_DISPLAY available'
-      until pgrep -u $UID waybar ; do sleep "$interval"; done
-      echo 'Waybar started'
+      until systemctl --user start sway-session.target ; do sleep "$interval"; done
     '')
 
     (pkgs.writeScriptBin "qrpaste" ''
