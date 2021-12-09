@@ -28,14 +28,14 @@ in
         name = "aws-shell";
         runtimeInputs = [ aws-vault ];
         text = ''
-          aws-vault exec -n "@"
+          aws-vault exec -n "$@"
         '';
       })
       (writeShellApplication {
         name = "aws-login";
         runtimeInputs = [ aws-vault ];
         text = ''
-          aws-vault login "@"
+          aws-vault login "$@"
         '';
       })
     ];
