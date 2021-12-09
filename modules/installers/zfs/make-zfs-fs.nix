@@ -17,7 +17,6 @@
 # , uuid ? "44444444-4444-4444-8888-888888888888"
 , perl
 , zfsUnstable
-, kmod
 }:
 
 let
@@ -26,7 +25,7 @@ in
 pkgs.stdenv.mkDerivation {
   name = "zfs-fs.img${lib.optionalString compressImage ".zst"}";
 
-  nativeBuildInputs = [ perl zfsUnstable kmod ]
+  nativeBuildInputs = [ perl zfsUnstable ]
   ++ lib.optional compressImage zstd;
 
   buildCommand =
@@ -61,7 +60,6 @@ pkgs.stdenv.mkDerivation {
       numDataBlocks=$(du -s -c -B 4096 --apparent-size ./rootImage | tail -1 | awk '{ print int($1 * 1.10) }')
       bytes=$((2 * 4096 * $numInodes + 4096 * $numDataBlocks))
       echo "Creating an ZFS image of $bytes bytes (numInodes=$numInodes, numDataBlocks=$numDataBlocks)"
-      modprobe zfs
 
       truncate -s $bytes $img
       zpool create \
