@@ -1,0 +1,1 @@
+this is a copy-without-modifications of parts of `nixpkgs` responsible for building Raspberry Pi 4 SD Card
