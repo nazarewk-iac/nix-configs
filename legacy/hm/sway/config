@@ -143,11 +143,9 @@ bindsym $mod+r mode "resize"
 include /etc/sway/config.d/*
 
 # inputs
-input type:keyboard {
-    xkb_layout pl
-    xkb_numlock enable
-}
+input type:keyboard xkb_layout pl
 
+input type:keyboard xkb_numlock enable
 input '1:1:AT_Translated_Set_2_keyboard' xkb_numlock disable
 
 input type:touchpad {
@@ -171,13 +169,11 @@ input type:touchpad {
     bindsym $alt+F4 kill
 
 # Autostart
-exec _sway-init
-exec _sway-polkit
 bar {
     position top
     swaybar_command waybar
 }
-exec _sway-wait && {
+exec _sway-wait-ready {
     blueman-applet
     nm-applet --indicator
     nextcloud

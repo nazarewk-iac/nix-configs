@@ -1,7 +1,6 @@
 {
   inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
   inputs.wayland.url = "github:nix-community/nixpkgs-wayland";
-  inputs.keepass.url = "github:nazarewk/nixpkgs/keepass-user-config";
   inputs.home-manager.url = "github:nix-community/home-manager";
   inputs.home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
@@ -23,7 +22,6 @@
   outputs = {
     nixpkgs,
     wayland,
-    keepass,
     home-manager,
     flake-utils,
     poetry2nix,
@@ -41,6 +39,9 @@
       nixosConfigurations.nazarewk = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         modules = [
+          ./modules/sway-systemd
+          ./modules/aws-vault
+          ./modules/nix-direnv
           {
             nix.binaryCachePublicKeys = [
               "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
@@ -55,9 +56,11 @@
             nixpkgs.overlays = [
               wayland.overlay
               (self: super: {
-                keepass = keepass.legacyPackages.x86_64-linux.keepass;
               })
             ];
+            programs.aws-vault.enable = true;
+            programs.nix-direnv.enable = true;
+            services.sway-systemd.enable = true;
           }
           ./legacy/nixos/configuration.nix
           ./legacy/nixos/podman.nix
