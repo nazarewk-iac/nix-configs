@@ -1,7 +1,7 @@
 { modulesPath, ... }: {
   imports = [
-    "${modulesPath}/installer/sd-card/sd-image-aarch64.nix"
-
+    ../modules/installers/zfs/sd-image-aarch64.nix
+    ../modules/zfs/default.nix
     ../legacy/nixos/nazarewk.nix
   ];
 }

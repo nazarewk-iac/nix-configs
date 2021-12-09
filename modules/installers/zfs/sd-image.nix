@@ -16,11 +16,11 @@
 with lib;
 
 let
-  rootfsImage = pkgs.callPackage ../make-ext4-fs.nix ({
-    inherit (config.sdImage) storePaths;
+  zpoolName = "nixos-root";
+  rootfsImage = pkgs.callPackage ./make-zfs-fs.nix ({
+    inherit (config.sdImage) storePaths zpoolName;
     compressImage = true;
     populateImageCommands = config.sdImage.populateRootCommands;
-    volumeLabel = "NIXOS_SD";
   } // optionalAttrs (config.sdImage.rootPartitionUUID != null) {
     uuid = config.sdImage.rootPartitionUUID;
   });
@@ -162,19 +162,32 @@ in
         # as an opaque blob instead of a discrete FAT32 filesystem.
         options = [ "nofail" "noauto" ];
       };
+
       "/" = {
-        device = "/dev/disk/by-label/NIXOS_SD";
-        fsType = "ext4";
+        device = "${zpoolName}/root";
+        fsType = "zfs";
+      };
+      "/nix" = {
+        device = "${zpoolName}/nix";
+        fsType = "zfs";
+      };
+      "/var" = {
+        device = "${zpoolName}/var";
+        fsType = "zfs";
+      };
+      "/home" = {
+        device = "${zpoolName}/home";
+        fsType = "zfs";
       };
     };
 
     sdImage.storePaths = [ config.system.build.toplevel ];
 
-    system.build.sdImage = pkgs.callPackage ({ stdenv, dosfstools, e2fsprogs,
+    system.build.sdImage = pkgs.callPackage ({ stdenv, dosfstools, zfsUnstable,
     mtools, libfaketime, util-linux, zstd }: stdenv.mkDerivation {
       name = config.sdImage.imageName;
 
-      nativeBuildInputs = [ dosfstools e2fsprogs mtools libfaketime util-linux zstd ];
+      nativeBuildInputs = [ dosfstools mtools libfaketime util-linux zstd zfsUnstable ];
 
       inherit (config.sdImage) compressImage;
 
@@ -252,7 +265,8 @@ in
         # Resize the root partition and the filesystem to fit the disk
         echo ",+," | sfdisk -N$partNum --no-reread $bootDevice
         ${pkgs.parted}/bin/partprobe
-        ${pkgs.e2fsprogs}/bin/resize2fs $rootPart
+        devices="$(zpool list -vLP ${zpoolName} | tail -n1 | cut -d' ' -f3)"
+        zpool online -e "${zpoolName}" $devices
 
         # Register the contents of the initial Nix store
         ${config.nix.package.out}/bin/nix-store --load-db < /nix-path-registration

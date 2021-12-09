@@ -1,4 +1,4 @@
-# Builds an ext4 image containing a populated /nix/store with the closure
+# Builds an zfs image containing a populated /nix/store with the closure
 # of store paths passed in the storePaths parameter, in addition to the
 # contents of a directory that can be populated with commands. The
 # generated image is sized to only fit its contents, with the expectation
@@ -12,21 +12,21 @@
 # Shell commands to populate the ./files directory.
 # All files in that directory are copied to the root of the FS.
 , populateImageCommands ? ""
-, volumeLabel
-, uuid ? "44444444-4444-4444-8888-888888888888"
-, e2fsprogs
-, libfaketime
+, zpoolName
+, defaultZpoolName ? "nixos-tank"
+# , uuid ? "44444444-4444-4444-8888-888888888888"
 , perl
-, fakeroot
+, zfsUnstable
+, kmod
 }:
 
 let
   sdClosureInfo = pkgs.buildPackages.closureInfo { rootPaths = storePaths; };
 in
 pkgs.stdenv.mkDerivation {
-  name = "ext4-fs.img${lib.optionalString compressImage ".zst"}";
+  name = "zfs-fs.img${lib.optionalString compressImage ".zst"}";
 
-  nativeBuildInputs = [ e2fsprogs.bin libfaketime perl fakeroot ]
+  nativeBuildInputs = [ perl zfsUnstable kmod ]
   ++ lib.optional compressImage zstd;
 
   buildCommand =
@@ -60,19 +60,33 @@ pkgs.stdenv.mkDerivation {
       numInodes=$(find ./rootImage | wc -l)
       numDataBlocks=$(du -s -c -B 4096 --apparent-size ./rootImage | tail -1 | awk '{ print int($1 * 1.10) }')
       bytes=$((2 * 4096 * $numInodes + 4096 * $numDataBlocks))
-      echo "Creating an EXT4 image of $bytes bytes (numInodes=$numInodes, numDataBlocks=$numDataBlocks)"
+      echo "Creating an ZFS image of $bytes bytes (numInodes=$numInodes, numDataBlocks=$numDataBlocks)"
+      modprobe zfs
 
       truncate -s $bytes $img
+      zpool create \
+        -O mountpoint=none \
+        -O atime=off \
+        -O compression=lz4 \
+        -O xattr=sa \
+        -O acltype=posixacl \
+        -o ashift=12 \
+        ${defaultZpoolName} \
+        $img
 
-      faketime -f "1970-01-01 00:00:01" fakeroot mkfs.ext4 -L ${volumeLabel} -U ${uuid} -d ./rootImage $img
+      create_and_mount() {
+        local name="$1"
+        local mountpoint="$2"
+        local dataset="${defaultZpoolName}/$1"
+        zfs create -o mountpoint=none "$dataset"
+        mkdir -p "$mountpoint"
+        mount.zfs "$dataset" "$mountpoint"
+      }
 
-      export EXT2FS_NO_MTAB_OK=yes
-      # I have ended up with corrupted images sometimes, I suspect that happens when the build machine's disk gets full during the build.
-      if ! fsck.ext4 -n -f $img; then
-        echo "--- Fsck failed for EXT4 image of $bytes bytes (numInodes=$numInodes, numDataBlocks=$numDataBlocks) ---"
-        cat errorlog
-        return 1
-      fi
+      create_and_mount root /
+      create_and_mount nix /nix
+      create_and_mount var /var
+      create_and_mount home /home
 
       # We may want to shrink the file system and resize the image to
       # get rid of the unnecessary slack here--but see

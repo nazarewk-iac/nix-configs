@@ -21,6 +21,7 @@ in {
   imports = [ # Include the results of the hardware scan.
     ./hardware-configuration.nix
     ./nazarewk.nix
+    ../../modules/zfs/default.nix
   ];
 
   # NIX / NIXOS
@@ -52,19 +53,6 @@ in {
     "fs.inotify.max_user_instances" = 1024; # default:   128
     "fs.inotify.max_queued_events" = 32768; # default: 16384
   };
-
-  # ZFS
-  boot.initrd.supportedFilesystems = [ "zfs" ];
-  boot.supportedFilesystems = [ "zfs" "ntfs" ];
-  boot.zfs.enableUnstable = true;
-  services.zfs.autoScrub.enable = true;
-  services.zfs.autoSnapshot.enable = true;
-  services.zfs.autoSnapshot.flags = "-k -p --utc";
-  services.zfs.autoSnapshot.frequent = 12;
-  services.zfs.autoSnapshot.daily = 7;
-  services.zfs.autoSnapshot.weekly = 6;
-  services.zfs.autoSnapshot.monthly = 1;
-  services.zfs.trim.enable = true;
 
   # HARDWARE
   hardware.bluetooth.enable = true;
@@ -152,9 +140,8 @@ in {
   services.davfs2.enable = true;
 
   # VM
-  virtualisation.docker.autoPrune.enable = true;
   virtualisation.docker.enable = false;
-  virtualisation.docker.storageDriver = "zfs";
+  virtualisation.docker.autoPrune.enable = true;
   virtualisation.libvirtd.enable = true;
 
   # USERS
