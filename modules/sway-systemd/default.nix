@@ -60,9 +60,9 @@ in {
         # wrapper already contains dbus-session-run
         ExecStart = "/run/current-system/sw/bin/sway";
         ExecStopPost = "systemctl --user unset-environment ${mandatoryEnvs}";
-        Restart = "on-failure";
+        Restart = "no";
         RestartSec = 1;
-        TimeoutStopSec = 10;
+        TimeoutStopSec = 60;
       };
     };
 

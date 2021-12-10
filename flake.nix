@@ -31,6 +31,7 @@
  } : {
       nixosConfigurations.rpi4 = nixpkgs.lib.nixosSystem {
         # nix build '.#nixosConfigurations.rpi4.config.system.build.sdImage' --system aarch64-linux -L
+        # see for a next step: https://matrix.to/#/!KqkRjyTEzAGRiZFBYT:nixos.org/$w4Zx8Y0vG0DhlD3zzWReWDaOdRSZvwyrn1tQsLhYDEU?via=nixos.org&via=matrix.org&via=tchncs.de
         system = "aarch64-linux";
         modules = [
           ./rpi4/sd-image.nix
@@ -94,7 +95,6 @@
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
-            home-manager.users.nazarewk = import ./legacy/hm/home.nix;
           }
         ];
       };

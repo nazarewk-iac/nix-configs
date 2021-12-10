@@ -7,15 +7,41 @@
   xdg.configFile."waybar/style.css".source = ./waybar/style.css;
   xdg.configFile."direnv/lib/nix-direnv.sh".source = ./direnv/lib/nix-direnv.sh;
 
+  home.file.".gnupg/scdaemon.conf".text = ''
+  pcsc-shared
+  disable-ccid
+  '';
+
   programs.git.enable = true;
   programs.git.signing.key = "916D8B67241892AE";
   programs.git.signing.signByDefault = true;
   programs.git.userName = "Krzysztof Nazarewski";
   programs.git.userEmail = "3494992+nazarewk@users.noreply.github.com";
+  programs.git.ignores = [
+    # editors
+    ".idea"
+    ".vscode"
+    "*~"
+    "*.swp"
+    "*.swo"
+    "*.iml"
+
+    # direnv
+    ".direnv"
+    ".envrc"
+
+    # OS
+    "._*"
+    ".DS_Store"
+    ".DS_Store?"
+    ".Spotlight-V100"
+    ".Trashes"
+    "Thumbs.db"
+  ];
 
   programs.ssh.enable = true;
   programs.ssh.extraConfig = ''
-    Host *.fresha.io
+    Host *.fresha.io *.shedul.io
         User krzysztof.nazarewski
   '';
 
