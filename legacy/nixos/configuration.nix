@@ -171,7 +171,7 @@ in {
   programs.zsh.enable = true;
   users.defaultUserShell = pkgs.zsh;
   programs.zsh.interactiveShellInit = ''
-    source ${pkgs.grml-zsh-config}/etc/zsh/zshrc
+    # source ${pkgs.grml-zsh-config}/etc/zsh/zshrc
   '';
   programs.zsh.promptInit = ""; # otherwise it'll override the grml prompt
   programs.zsh.syntaxHighlighting.enable = true;
@@ -183,7 +183,15 @@ in {
 
   programs.seahorse.enable = true;
 
-  fonts.fonts = with pkgs; [ font-awesome cantarell-fonts noto-fonts ];
+  fonts.fonts = with pkgs; [
+    cantarell-fonts
+    font-awesome
+    nerdfonts
+    noto-fonts
+    noto-fonts-emoji
+    noto-fonts-emoji-blob-bin
+    noto-fonts-extra
+  ];
 
   programs.xwayland.enable = true;
   programs.dconf.enable = true;

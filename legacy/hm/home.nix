@@ -5,12 +5,6 @@
   xdg.configFile."swayr/config.toml".source = ./swayr/config.toml;
   xdg.configFile."waybar/config".source = ./waybar/config;
   xdg.configFile."waybar/style.css".source = ./waybar/style.css;
-  xdg.configFile."direnv/lib/nix-direnv.sh".source = ./direnv/lib/nix-direnv.sh;
-
-  home.file.".gnupg/scdaemon.conf".text = ''
-  pcsc-shared
-  disable-ccid
-  '';
 
   programs.git.enable = true;
   programs.git.signing.key = "916D8B67241892AE";
@@ -46,4 +40,5 @@
   '';
 
   programs.zsh.enable = true;
+  programs.starship.enable = true;
 }

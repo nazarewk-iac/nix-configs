@@ -31,5 +31,13 @@ in {
     nixpkgs.overlays = [
       (self: super: { nix-direnv = super.nix-direnv.override { enableFlakes = true; }; } )
     ];
+
+    home-manager.sharedModules = [
+      {
+        xdg.configFile."direnv/lib/nix-direnv.sh".text = ''
+        source "/run/current-system/sw/share/nix-direnv/direnvrc"
+        '';
+      }
+    ];
   };
 }
