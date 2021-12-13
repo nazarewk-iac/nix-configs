@@ -47,6 +47,7 @@
           ./modules/development/cloud
           ./modules/packaging/asdf
           ./modules/hardware/yubikey
+          ./modules/obs-studio
           {
             nix.binaryCachePublicKeys = [
               "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
@@ -69,6 +70,11 @@
           }
           ./legacy/nixos/configuration.nix
           ./legacy/nixos/podman.nix
+          {
+            # use nix-index without `nix-channel`
+            # see https://github.com/bennofs/nix-index/issues/167
+            nix.nixPath = [ "nixpkgs=${nixpkgs}" ];
+          }
 
           {
             environment.systemPackages = [

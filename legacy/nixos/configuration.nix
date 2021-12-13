@@ -168,10 +168,11 @@ in {
     source ${pkgs.nix-index}/etc/profile.d/command-not-found.sh
   '';
 
+  programs.xonsh.enable = true;
   programs.zsh.enable = true;
   users.defaultUserShell = pkgs.zsh;
   programs.zsh.interactiveShellInit = ''
-    # source ${pkgs.grml-zsh-config}/etc/zsh/zshrc
+    source ${pkgs.grml-zsh-config}/etc/zsh/zshrc
   '';
   programs.zsh.promptInit = ""; # otherwise it'll override the grml prompt
   programs.zsh.syntaxHighlighting.enable = true;
