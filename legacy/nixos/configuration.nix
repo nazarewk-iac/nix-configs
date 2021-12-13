@@ -164,13 +164,14 @@ in {
   ];
   services.avahi.enable = true;
 
+  environment.interactiveShellInit = ''
+    source ${pkgs.nix-index}/etc/profile.d/command-not-found.sh
+  '';
+
   programs.zsh.enable = true;
   users.defaultUserShell = pkgs.zsh;
   programs.zsh.interactiveShellInit = ''
     source ${pkgs.grml-zsh-config}/etc/zsh/zshrc
-    source ${pkgs.nix-index}/etc/profile.d/command-not-found.sh
-    [[ -z "$HOME" ]] || export PATH="$HOME/.asdf/shims:$PATH"
-    source ${pkgs.asdf-vm}/share/asdf-vm/lib/asdf.sh
   '';
   programs.zsh.promptInit = ""; # otherwise it'll override the grml prompt
   programs.zsh.syntaxHighlighting.enable = true;
@@ -178,7 +179,6 @@ in {
 
   programs.command-not-found.enable = false;
   programs.bash.interactiveShellInit = ''
-    source ${pkgs.nix-index}/etc/profile.d/command-not-found.sh
   '';
 
   programs.seahorse.enable = true;
@@ -220,9 +220,6 @@ in {
     '';
   };
 
-  programs.gnupg.agent.enable = true;
-  programs.gnupg.agent.pinentryFlavor = "qt";
-
   environment.systemPackages = with pkgs; [
     wget
     curl
@@ -232,16 +229,13 @@ in {
     zsh-completions
     nix-zsh-completions
 
-    yubioath-desktop
-    yubikey-personalization
-    yubikey-personalization-gui
-    yubikey-manager
-    yubikey-manager-qt
-    yubico-pam
-
-    pinentry-qt
-    pinentry-curses
-    pinentry-gnome
+    (pkgs.keepass.override { plugins = with pkgs; [
+      keepass-keeagent
+      keepass-keepassrpc
+      keepass-keetraytotp
+      keepass-charactercopy
+      keepass-qrcodeview
+    ]; })
 
     usbutils
     lshw
@@ -252,7 +246,6 @@ in {
     firefox-wayland
     chromium
     google-chrome
-    keepassWithPlugins
     jetbrains.pycharm-professional
     jetbrains.idea-ultimate
     p7zip
@@ -262,9 +255,6 @@ in {
     nixfmt
     nixpkgs-fmt
     system-config-printer
-
-    #fprintd
-    #libnfc
 
     gparted
     tmux
@@ -326,34 +316,6 @@ in {
 
     # experiments
     cachix
-
-    # asdf VM
-    asdf-vm
-    unzip
-    coreutils
-
-    # python software
-    pipenv
-    poetry
-    (python39.withPackages (ps:
-      with ps; [
-        pip
-        ipython
-        requests
-        pip-tools
-      ]))
-
-    # dev software
-    awscli2
-    sshuttle
-    kubectl
-    # terraform
-
-    k9s
-    nodejs
-    kubernetes-helm
-    helmsman
-    kubectx
   ];
 
   services.gvfs.enable = true; # Mount, trash, and other functionalities

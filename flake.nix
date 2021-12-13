@@ -43,6 +43,10 @@
           ./modules/sway-systemd
           ./modules/aws-vault
           ./modules/nix-direnv
+          ./modules/development/python
+          ./modules/development/cloud
+          ./modules/packaging/asdf
+          ./modules/hardware/yubikey
           {
             nix.binaryCachePublicKeys = [
               "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
