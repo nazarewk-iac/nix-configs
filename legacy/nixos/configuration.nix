@@ -284,14 +284,6 @@ in {
     qrcode
     libqrencode
     imagemagick
-    (python39.withPackages (ps:
-      with ps; [
-        pip
-        ipython
-        requests
-        #python-language-server
-        #sanitize-filename
-      ]))
     #((pkgs.gradleGen.override { java = jdk; }).gradle_latest)
 
     libinput
@@ -339,6 +331,17 @@ in {
     asdf-vm
     unzip
     coreutils
+
+    # python software
+    pipenv
+    poetry
+    (python39.withPackages (ps:
+      with ps; [
+        pip
+        ipython
+        requests
+        pip-tools
+      ]))
 
     # dev software
     awscli2
