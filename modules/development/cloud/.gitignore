@@ -1,0 +1,7 @@
+# Terraform
+*tfstate*
+*.tfplan
+.terraform*
+
+# Terragrunt
+.terragrunt*

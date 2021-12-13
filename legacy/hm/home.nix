@@ -11,27 +11,8 @@
   programs.git.signing.signByDefault = true;
   programs.git.userName = "Krzysztof Nazarewski";
   programs.git.userEmail = "3494992+nazarewk@users.noreply.github.com";
-  programs.git.ignores = [
-    # editors
-    ".idea"
-    ".vscode"
-    "*~"
-    "*.swp"
-    "*.swo"
-    "*.iml"
-
-    # direnv
-    ".direnv"
-    ".envrc"
-
-    # OS
-    "._*"
-    ".DS_Store"
-    ".DS_Store?"
-    ".Spotlight-V100"
-    ".Trashes"
-    "Thumbs.db"
-  ];
+  programs.git.ignores = [ (builtins.readFile ./.gitignore) ];
+  programs.git.attributes = [ (builtins.readFile ./.gitattributes) ];
 
   programs.ssh.enable = true;
   programs.ssh.extraConfig = ''

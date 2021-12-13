@@ -1,4 +1,9 @@
 { pkgs, ... }: {
+  home-manager.sharedModules = [
+    {
+      programs.git.ignores = [ (builtins.readFile ./.gitignore) ];
+    }
+  ];
   environment.systemPackages = with pkgs; [
     # dev software
     awscli2

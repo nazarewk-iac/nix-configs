@@ -164,10 +164,6 @@ in {
   ];
   services.avahi.enable = true;
 
-  environment.interactiveShellInit = ''
-    source ${pkgs.nix-index}/etc/profile.d/command-not-found.sh
-  '';
-
   programs.xonsh.enable = true;
   programs.zsh.enable = true;
   users.defaultUserShell = pkgs.zsh;
@@ -258,7 +254,6 @@ in {
     jetbrains.pycharm-professional
     jetbrains.idea-ultimate
     p7zip
-    nix-index
     nix-tree
     nix-du
     nixfmt

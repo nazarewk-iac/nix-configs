@@ -37,6 +37,7 @@ in {
         xdg.configFile."direnv/lib/nix-direnv.sh".text = ''
         source "/run/current-system/sw/share/nix-direnv/direnvrc"
         '';
+        programs.git.ignores = [ (builtins.readFile ./.gitignore) ];
       }
     ];
   };

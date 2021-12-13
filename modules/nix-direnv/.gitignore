@@ -1,0 +1,4 @@
+# START direnv
+.direnv/
+.envrc
+# END direnv

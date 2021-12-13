@@ -9,3 +9,11 @@ Currently it's just a copy-paste of my learning experience of configuring:
 - Home Manager
 
 I'm planning to slowly migrate to proper structure of the repository moving stuff around.
+
+# Notes
+
+## How to find out what uses the specific store path?
+
+Find immediate parents: `nix-store --query --referrers <paths...>`.
+
+Find the root using paths: `nix-store --query --roots <paths...>`.
