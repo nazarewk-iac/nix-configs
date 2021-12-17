@@ -11,8 +11,17 @@ set $alt Mod1
 set $term alacritty
 set $menu wofi --show run
 
-output 'Dell Inc. DELL U2711 G606T29F0EWL' modeline 241.50 2560 2600 2632 2720 1440 1443 1448 1481 -hsync +vsync
-bindsym $mod+p output eDP-1 toggle
+set $displayDell 'Dell Inc. DELL U2711 G606T29F0EWL'
+set $displayLaptop eDP-1
+
+output $displayDell modeline 241.50 2560 2600 2632 2720 1440 1443 1448 1481 -hsync +vsync
+output $displayDell pos 0 0
+output $displayLaptop pos 2560 0
+
+bindsym $mod+p output $displayLaptop toggle
+
+bindswitch --reload --locked lid:on output $displayLaptop disable
+bindswitch --reload --locked lid:off output $displayLaptop enable
 
 ### Key bindings
 #
@@ -144,8 +153,10 @@ include /etc/sway/config.d/*
 
 # inputs
 input type:keyboard xkb_layout pl
-
 input type:keyboard xkb_numlock enable
+input type:keyboard repeat_delay 333
+input type:keyboard repeat_rate 50
+
 input '1:1:AT_Translated_Set_2_keyboard' xkb_numlock disable
 
 input type:touchpad {

@@ -8,13 +8,21 @@
     # dev software
     awscli2
     sshuttle
-    kubectl
+    nodejs
+
     # terraform
 
+    # kubernetes
+    kubectl # dep for: chart-testing
     k9s
-    nodejs
-    kubernetes-helm
-    helmsman
     kubectx
+
+    # Helm
+    kubernetes-helm # dep for: chart-testing
+    chart-testing
+    helmsman
+
+    yamale # dep for: chart-testing
+    yamllint # dep for: chart-testing
   ];
 }

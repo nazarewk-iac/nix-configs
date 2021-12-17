@@ -35,8 +35,10 @@ in {
   location.provider = "geoclue2";
 
   # BOOT
-  boot.kernelParams = [ "consoleblank=90" "nohibernate" ];
-  boot.loader.grub.copyKernels = true;
+  # # latest (5.15) is incompatible with ZFS,
+  # # see https://github.com/openzfs/zfs/issues/12786 https://github.com/NixOS/nixpkgs/issues/150517
+  # boot.kernelPackages = pkgs.linuxPackages_latest;
+  boot.kernelParams = [ "consoleblank=90" ];
   boot.loader.efi.canTouchEfiVariables = true;
   boot.loader.systemd-boot.enable = true;
   boot.extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
@@ -139,9 +141,9 @@ in {
   services.kbfs.enable = true;
   services.davfs2.enable = true;
 
-  # VM
+  # virtualization
   virtualisation.docker.enable = false;
-  virtualisation.docker.autoPrune.enable = true;
+  virtualisation.docker.autoPrune.enable = false;
   virtualisation.libvirtd.enable = true;
 
   # USERS

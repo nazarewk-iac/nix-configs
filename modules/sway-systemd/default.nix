@@ -121,11 +121,21 @@ in {
         until systemctl --user is-active --quiet sway-session.target ; do sleep "$interval"; done
         test "$#" -lt 1 || exec "$@"
       '')
+      (pkgs.writeScriptBin "_sway-root-gui" ''
+        #! ${pkgs.bash}/bin/bash
+        set -xeEuo pipefail
+        if [ "$1" == "--enable" ] ; then
+          ${pkgs.xlibs.xhost}/bin/xhost si:localuser:root
+        else
+          ${pkgs.xlibs.xhost}/bin/xhost -si:localuser:root
+        fi
+      '')
 
       swaylock
       swayidle
       waybar
       wl-clipboard
+      wl-clipboard-x11
       wf-recorder
       v4l-utils
       mako
@@ -138,6 +148,9 @@ in {
       libnotify
       slurp
       qt5.qtwayland
+
+      xorg.xeyes
+      xlibs.xhost
 
       # audio
       libopenaptx

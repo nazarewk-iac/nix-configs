@@ -49,10 +49,11 @@
      "max-length": 50
    },
    "wlr/taskbar": {
-      "format": "{icon}{short_state}|{app_id}",
-      "icon-size": 14,
+      "format": "{icon} {title}",
+      "markup": true,
+      "icon-size": 15,
       "active-first": false,
-      "tooltip-format": "{title}",
+      "tooltip-format": "{icon} {app_id}\n{title}",
       "on-click": "activate",
       "on-click-middle": "close",
       "on-click-right": "minimize-raise",
@@ -106,7 +107,9 @@
     },
     "clock": {
         "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
-        "format-alt": "{:%Y-%m-%d}"
+        "interval": 1,
+        "format": "{:%H:%M:%S}",
+        "format-alt": "{:%Y-%m-%d %H:%M}",
     },
     "cpu": {
         "format": "{usage}% ",

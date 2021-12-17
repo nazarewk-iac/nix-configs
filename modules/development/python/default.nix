@@ -14,6 +14,8 @@
         ipython
         requests
         pip-tools
+        pyaml
+        boto3
       ]))
   ];
 }

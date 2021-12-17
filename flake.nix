@@ -50,6 +50,8 @@
           ./modules/hardware/yubikey
           ./modules/obs-studio
           ./modules/nix-index
+          # # TODO: CNI plugin discovery
+          # ./modules/k3s/single-node
           {
             nix.binaryCachePublicKeys = [
               "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="

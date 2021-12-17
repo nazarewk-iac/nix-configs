@@ -5,7 +5,6 @@
     "adbusers"
     "audio"
     "dialout"
-    "docker"
     "kvm"
     "libvirtd"
     "lp"

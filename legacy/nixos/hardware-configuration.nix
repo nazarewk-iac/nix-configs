@@ -67,7 +67,17 @@
     fsType = "zfs";
   };
 
-  swapDevices = [ ];
+  zramSwap.enable = true;
+  zramSwap.memoryPercent = 50;
+  zramSwap.priority = 100;
+
+  swapDevices = [
+    {
+      device = "/dev/disk/by-partuuid/efd708db-6eb2-48ef-82c0-7760c1f3dd3e";
+      priority = -10;
+      randomEncryption.enable = true;
+    }
+  ];
 
   powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
 }

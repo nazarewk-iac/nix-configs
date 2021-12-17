@@ -1,5 +1,7 @@
 {
     # ZFS
+    boot.loader.grub.copyKernels = true;
+    boot.kernelParams = [ "nohibernate" ];
     boot.initrd.supportedFilesystems = [ "zfs" ];
     boot.supportedFilesystems = [ "zfs" ];
     boot.zfs.enableUnstable = true;
