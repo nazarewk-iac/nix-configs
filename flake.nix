@@ -48,7 +48,7 @@
           ./modules/development/cloud
           ./modules/packaging/asdf
           ./modules/hardware/yubikey
-          ./modules/obs-studio
+          # ./modules/obs-studio
           ./modules/nix-index
           # # TODO: CNI plugin discovery
           # ./modules/k3s/single-node
