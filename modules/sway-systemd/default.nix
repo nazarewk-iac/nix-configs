@@ -11,6 +11,13 @@ let
 in {
   options.services.sway-systemd = {
     enable = mkEnableOption "running Sway WM as a systemd service";
+    autostartTTY = mkOption {
+     type = types.str;
+     default = "tty1";
+     description = ''
+       TTY to automatically start Sway in.
+     '';
+    };
   };
 
   config = mkIf cfg.enable {
@@ -80,6 +87,12 @@ in {
   #             '';
   #    };
   #  };
+
+    environment.interactiveShellInit = ''
+    if [ -z $DISPLAY ] && [ $(tty) = "/dev/${cfg.autostartTTY}" ]; then
+      exec startsway
+    fi
+    '';
 
     environment.etc."sway/config.d/sway-systemd-init.conf".source = pkgs.writeText "sway-systemd-init.conf" ''
       exec _sway-init

@@ -6,9 +6,12 @@
   ];
   environment.systemPackages = with pkgs; [
     # dev software
-    awscli2
     sshuttle
     nodejs
+
+    # AWS
+    awscli2
+    eksctl
 
     # terraform
 
