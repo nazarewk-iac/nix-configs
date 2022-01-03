@@ -75,7 +75,7 @@
     }
   ];
 
-  powerManagement.cpuFreqGovernor = lib.mkDefault "performance";
+  powerManagement.cpuFreqGovernor = "performance";
 
   hardware.cpu.intel.updateMicrocode = true;
   boot.initrd.kernelModules = [ "dm-snapshot" "i915" ];

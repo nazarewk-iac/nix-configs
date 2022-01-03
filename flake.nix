@@ -66,6 +66,16 @@
             nixpkgs.overlays = [
               wayland.overlay
               (self: super: {
+#                # add --no-browser to exec
+#                # see https://github.com/99designs/aws-vault/pull/819
+#                aws-vault = super.aws-vault.overrideAttrs (old: {
+#                  src = super.fetchFromGitHub {
+#                    owner = "lsowen";
+#                    repo = "aws-vault";
+#                    rev = "11f3dcc2633456e3262d1b972659b4b1578d01d9";
+#                    sha256 = "sha256-Wj9KGqdbKAfHjbXrev9X4WmV3Bq5Dhl18eGbaeqGjZQ=";
+#                  };
+#                });
               })
             ];
             programs.aws-vault.enable = true;
