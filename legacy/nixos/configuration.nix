@@ -37,7 +37,7 @@ in {
   # BOOT
   # # latest (5.15) is incompatible with ZFS,
   # # see https://github.com/openzfs/zfs/issues/12786 https://github.com/NixOS/nixpkgs/issues/150517
-  # boot.kernelPackages = pkgs.linuxPackages_latest;
+  boot.kernelPackages = pkgs.linuxPackages_latest;
   boot.kernelParams = [ "consoleblank=90" ];
   boot.loader.efi.canTouchEfiVariables = true;
   boot.loader.systemd-boot.enable = true;
