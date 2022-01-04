@@ -50,10 +50,9 @@
    },
    "wlr/taskbar": {
       "format": "{icon} {title}",
-      "markup": true,
       "icon-size": 15,
       "active-first": false,
-      "tooltip-format": "{icon} {app_id}\n{title}",
+      "tooltip-format": "{title}",
       "on-click": "activate",
       "on-click-middle": "close",
       "on-click-right": "minimize-raise",

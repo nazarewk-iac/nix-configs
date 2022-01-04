@@ -44,8 +44,9 @@
           ./modules/sway-systemd
           ./modules/aws-vault
           ./modules/nix-direnv
-          ./modules/development/python
           ./modules/development/cloud
+          ./modules/development/python
+          ./modules/development/ruby
           ./modules/packaging/asdf
           ./modules/hardware/yubikey
           # ./modules/obs-studio
