@@ -13,6 +13,7 @@
         pip
         ipython
         requests
+        pipx
         # pip-tools
         pyaml
         boto3

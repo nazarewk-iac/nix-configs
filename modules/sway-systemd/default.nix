@@ -203,6 +203,8 @@ in {
       gcr
     ];
 
+    services.gnome.gnome-settings-daemon.enable = true;
+
     # services.gnome.gnome-keyring.enable replacement goes below:
     services.dbus.packages = [
       pkgs.gnome.gnome-keyring

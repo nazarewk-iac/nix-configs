@@ -110,18 +110,6 @@ in {
   services.xserver.libinput.touchpad.tapping = true;
   services.xserver.synaptics.twoFingerScroll = true;
 
-  # YubiKey
-  # https://nixos.wiki/wiki/Yubikey
-  services.udev.packages = [ pkgs.yubikey-personalization ];
-
-  security.pam.yubico = {
-    enable = true;
-    # debug = true;
-    mode = "challenge-response";
-  };
-
-  services.pcscd.enable = true;
-
   # SSH
   services.openssh.enable = true;
   services.openssh.openFirewall = true;
@@ -257,7 +245,12 @@ in {
     gparted
     tmux
 
+    # networking
+    dnsmasq
+    iw
+
     killall
+    inotify-tools
     bintools
     mc
     htop

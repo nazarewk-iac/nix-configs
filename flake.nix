@@ -1,6 +1,6 @@
 {
   inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-  inputs.wayland.url = "github:nix-community/nixpkgs-wayland";
+  inputs.wayland.url = "github:nix-community/nixpkgs-wayland/3716a3aea917103d20330c13cd40b956f8e51078";
   inputs.home-manager.url = "github:nix-community/home-manager";
   inputs.home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
@@ -53,6 +53,7 @@
           ./modules/nix-index
           # # TODO: CNI plugin discovery
           # ./modules/k3s/single-node
+
           {
             nix.binaryCachePublicKeys = [
               "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="

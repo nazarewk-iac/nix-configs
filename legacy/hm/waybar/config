@@ -49,7 +49,7 @@
      "max-length": 50
    },
    "wlr/taskbar": {
-      "format": "{icon} {title}",
+      "format": "{icon}",
       "icon-size": 15,
       "active-first": false,
       "tooltip-format": "{title}",
