@@ -16,7 +16,7 @@
         ipython
         requests
         pipx
-        # pip-tools
+        pip-tools
         pyaml
         boto3
       ]))
