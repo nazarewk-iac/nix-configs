@@ -15,8 +15,8 @@ set $displayDell 'Dell Inc. DELL U2711 G606T29F0EWL'
 set $displayLaptop eDP-1
 
 output $displayDell modeline 241.50 2560 2600 2632 2720 1440 1443 1448 1481 -hsync +vsync
-output $displayDell pos -2560 0
-output $displayLaptop pos 0 0
+output $displayDell pos 0 0
+output $displayLaptop pos 2560 0
 
 bindsym $mod+p output $displayLaptop toggle
 

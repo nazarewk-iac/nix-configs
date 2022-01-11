@@ -52,7 +52,7 @@
       "format": "{icon}",
       "icon-size": 15,
       "active-first": false,
-      "tooltip-format": "{title}",
+      "tooltip-format": "{app_id}: {title}",
       "on-click": "activate",
       "on-click-middle": "close",
       "on-click-right": "minimize-raise",
