@@ -46,7 +46,7 @@
     // },
    "sway/mode": {
      "format": " {}",
-     "max-length": 50
+     "max-length": 50,
    },
    "wlr/taskbar": {
       "format": "{icon}",

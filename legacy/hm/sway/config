@@ -9,7 +9,6 @@
 set $mod Mod4
 set $alt Mod1
 set $term alacritty
-set $menu wofi --show run
 
 set $displayDell 'Dell Inc. DELL U2711 G606T29F0EWL'
 set $displayLaptop eDP-1

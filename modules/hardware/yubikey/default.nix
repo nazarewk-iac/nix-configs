@@ -7,7 +7,18 @@
     {
       home.file.".gnupg/scdaemon.conf".text = ''
       pcsc-shared
+      # disable-ccid to make YubiKey work
+      # - https://support.yubico.com/hc/en-us/articles/360013714479-Troubleshooting-Issues-with-GPG
+      # - https://dev.gnupg.org/T5451
       disable-ccid
+
+      # PIN caching fix
+      # - https://github.com/drduh/YubiKey-Guide/issues/135
+      # - https://dev.gnupg.org/T3362
+      # fix from https://dev.gnupg.org/T5436#148656
+      disable-application piv
+      '';
+      home.file.".gnupg/gpg-agent.conf".text = ''
       '';
     }
   ];
