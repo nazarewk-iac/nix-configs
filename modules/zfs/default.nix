@@ -1,5 +1,6 @@
-{
+{ lib, pkgs, ... }: {
     # ZFS
+    boot.kernelPackages = pkgs.zfs.latestCompatibleLinuxPackages;
     boot.loader.grub.copyKernels = true;
     boot.kernelParams = [ "nohibernate" ];
     boot.initrd.supportedFilesystems = [ "zfs" ];
