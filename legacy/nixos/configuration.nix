@@ -38,6 +38,7 @@ in {
   boot.kernelParams = [ "consoleblank=90" ];
   boot.loader.efi.canTouchEfiVariables = true;
   boot.loader.systemd-boot.enable = true;
+  boot.loader.systemd-boot.memtest86.enable = true;
   boot.extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
   boot.binfmt.emulatedSystems = [
     "aarch64-linux"
