@@ -41,19 +41,6 @@
         system = "x86_64-linux";
         specialArgs = { inherit nixpkgs; };
         modules = [
-          ./modules/sway-systemd
-          ./modules/aws-vault
-          ./modules/nix-direnv
-          ./modules/development/cloud
-          ./modules/development/python
-          ./modules/development/ruby
-          ./modules/packaging/asdf
-          ./modules/hardware/yubikey
-          # ./modules/obs-studio
-          ./modules/nix-index
-          # # TODO: CNI plugin discovery
-          # ./modules/k3s/single-node
-
           {
             nix.binaryCachePublicKeys = [
               "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
@@ -81,10 +68,28 @@
             ];
             programs.aws-vault.enable = true;
             programs.nix-direnv.enable = true;
-            services.sway-systemd.enable = true;
+            nazarewk.sway.gdm.enable = true;
+            nazarewk.sway.systemd.enable = true;
           }
           ./legacy/nixos/configuration.nix
           ./legacy/nixos/podman.nix
+
+          ./modules/desktop/gnome/base
+          ./modules/desktop/sway/base
+          ./modules/desktop/sway/through-gdm
+          ./modules/desktop/sway/through-systemd
+          ./modules/aws-vault
+          ./modules/nix-direnv
+          ./modules/development/cloud
+          ./modules/development/python
+          ./modules/development/ruby
+          ./modules/packaging/asdf
+          ./modules/hardware/yubikey
+          # ./modules/obs-studio
+          ./modules/nix-index
+          # # TODO: CNI plugin discovery
+          # ./modules/k3s/single-node
+
 
           {
             environment.systemPackages = [

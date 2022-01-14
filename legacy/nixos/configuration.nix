@@ -67,6 +67,7 @@ in {
   # SOUND - PipeWire
   # see additional pavucontrol package
   security.rtkit.enable = true;
+  hardware.pulseaudio.enable = false;
   services.pipewire.enable = true;
   services.pipewire.media-session.enable = true;
   services.pipewire.alsa.enable = true;
@@ -170,9 +171,6 @@ in {
     noto-fonts-extra
   ];
 
-  programs.xwayland.enable = true;
-  programs.dconf.enable = true;
-  programs.qt5ct.enable = true;
   programs.java.enable = true;
   programs.vim.defaultEditor = true;
   programs.vim.package = pkgs.vim_configurable.customize {
