@@ -1,6 +1,6 @@
 {
   inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-  inputs.nixpkgs-mesa.url = "github:nixos/nixpkgs/f5db95a96aef57c945d4741c2134104da1026b7d";
+  # inputs.nixpkgs-mesa.url = "github:nixos/nixpkgs/f5db95a96aef57c945d4741c2134104da1026b7d";
   inputs.wayland.url = "github:nix-community/nixpkgs-wayland";
   inputs.home-manager.url = "github:nix-community/home-manager";
   inputs.home-manager.inputs.nixpkgs.follows = "nixpkgs";
@@ -22,7 +22,7 @@
 
   outputs = {
     nixpkgs,
-    nixpkgs-mesa,
+    # nixpkgs-mesa,
     wayland,
     home-manager,
     flake-utils,
@@ -54,14 +54,9 @@
               "https://nixpkgs-wayland.cachix.org"
               "https://nix-community.cachix.org"
             ];
-            # fix
-            environment.variables = {
-              MESA_LOADER_DRIVER_OVERRIDE = "i965";
-            };
             nixpkgs.overlays = [
               wayland.overlay
               (self: super: {
-                  # mesa = nixpkgs-mesa.legacyPackages.x86_64-linux.mesa;
 #                 yubikey-manager = super.yubikey-manager.overrideAttrs (old: {
 #                   src = super.fetchFromGitHub {
 #                     repo = "yubikey-manager";
@@ -120,23 +115,6 @@
               nix-alien.packages.x86_64-linux.nix-index-update
             ];
           }
-
-#          {
-#            programs.gnupg.package =
-#              nixpkgs.legacyPackages.x86_64-linux.gnupg.overrideAttrs
-#              (old: rec {
-#                pname = "gnupg";
-#                # version = "2.2.33";
-#                version = "2.2.28";
-#
-#                src = nixpkgs.legacyPackages.x86_64-linux.fetchurl {
-#                  url = "mirror://gnupg/gnupg/${pname}-${version}.tar.bz2";
-#                  # sha256 = "8688836e8c043d70410bb64d72de6ae15176e09ecede8d24528b4380c000e4e3";
-#                  sha256 =
-#                    "sha256-b/iR/HWDqcP7nwl+4NHeChJGnUtTmX57pQZJUGN9+uw=";
-#                };
-#              });
-#          }
 
           home-manager.nixosModules.home-manager
           {
