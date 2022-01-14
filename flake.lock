@@ -116,22 +116,6 @@
         "type": "github"
       }
     },
-    "nixpkgs-mesa": {
-      "locked": {
-        "lastModified": 1628846159,
-        "narHash": "sha256-tT7CZT0JC6355Nn3Nixm0yYs3zi43i59xf2iWK/aF8Q=",
-        "owner": "nixos",
-        "repo": "nixpkgs",
-        "rev": "f5db95a96aef57c945d4741c2134104da1026b7d",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nixos",
-        "repo": "nixpkgs",
-        "rev": "f5db95a96aef57c945d4741c2134104da1026b7d",
-        "type": "github"
-      }
-    },
     "nixpkgs_2": {
       "locked": {
         "lastModified": 1641528457,
@@ -178,7 +162,6 @@
         "nix-alien": "nix-alien",
         "nix-ld": "nix-ld",
         "nixpkgs": "nixpkgs",
-        "nixpkgs-mesa": "nixpkgs-mesa",
         "poetry2nix": "poetry2nix",
         "wayland": "wayland"
       }
