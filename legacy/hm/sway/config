@@ -9,7 +9,7 @@
 set $mod Mod4
 set $alt Mod1
 set $term alacritty
-set $launcher wofi --gtk-dark --allow-images -D key_expand=Super_L
+set $launcher wofi --gtk-dark --allow-images --define=key_expand=Super_L
 
 set $displayDell 'Dell Inc. DELL U2711 G606T29F0EWL'
 set $displayLaptop eDP-1
@@ -34,8 +34,8 @@ bindswitch --reload --locked lid:off output $displayLaptop enable
     bindsym $mod+Shift+q kill
 
     # Start your launcher
-    bindsym $mod+d exec $wofi --show drun
-    bindsym $alt+F2 exec $wofi --show run
+    bindsym $mod+d exec $launcher --show drun
+    bindsym $alt+F2 exec $launcher --show run
 
     # Drag floating windows by holding down $mod and left mouse button.
     # Resize them with right mouse button + $mod.
