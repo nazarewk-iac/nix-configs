@@ -1,5 +1,6 @@
 {
   inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+  inputs.nixpkgs-mesa.url = "github:nixos/nixpkgs/f5db95a96aef57c945d4741c2134104da1026b7d";
   inputs.wayland.url = "github:nix-community/nixpkgs-wayland";
   inputs.home-manager.url = "github:nix-community/home-manager";
   inputs.home-manager.inputs.nixpkgs.follows = "nixpkgs";
@@ -21,6 +22,7 @@
 
   outputs = {
     nixpkgs,
+    nixpkgs-mesa,
     wayland,
     home-manager,
     flake-utils,
@@ -52,9 +54,14 @@
               "https://nixpkgs-wayland.cachix.org"
               "https://nix-community.cachix.org"
             ];
+            # fix
+            environment.variables = {
+              MESA_LOADER_DRIVER_OVERRIDE = "i965";
+            };
             nixpkgs.overlays = [
               wayland.overlay
               (self: super: {
+                  # mesa = nixpkgs-mesa.legacyPackages.x86_64-linux.mesa;
 #                 yubikey-manager = super.yubikey-manager.overrideAttrs (old: {
 #                   src = super.fetchFromGitHub {
 #                     repo = "yubikey-manager";
@@ -89,6 +96,21 @@
           ./modules/nix-index
           # # TODO: CNI plugin discovery
           # ./modules/k3s/single-node
+
+          {
+            # should fix mesa crashes
+            # - https://gitlab.freedesktop.org/mesa/mesa/-/issues/5864
+            # - https://gitlab.freedesktop.org/mesa/mesa/-/issues/5600
+            # - https://matrix.to/#/!KqkRjyTEzAGRiZFBYT:nixos.org/$U1Qhgf2AX_tVar9LuBrzOnNFYeoGkIntkv5OLs0D-dM?via=nixos.org&via=matrix.org&via=tchncs.de
+            environment.variables = {
+              MESA_LOADER_DRIVER_OVERRIDE = "i965";
+            };
+            nixpkgs.overlays = [
+              (self: super: {
+                  # mesa = nixpkgs-mesa.legacyPackages.x86_64-linux.mesa;
+              })
+            ];
+          }
 
 
           {

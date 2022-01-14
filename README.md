@@ -17,3 +17,5 @@ I'm planning to slowly migrate to proper structure of the repository moving stuf
 Find immediate parents: `nix-store --query --referrers <paths...>`.
 
 Find the root using paths: `nix-store --query --roots <paths...>`.
+
+Find reverse dependencies: `nix-store --query --referrers <path>` 

@@ -222,10 +222,13 @@ in {
 
     usbutils
     lshw
+    glxinfo
+    inxi
 
     # to control pipewire
     pavucontrol
 
+    dex
     firefox-wayland
     chromium
     google-chrome
