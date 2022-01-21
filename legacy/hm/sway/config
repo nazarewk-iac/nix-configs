@@ -5,9 +5,14 @@
 # Read `man 5 sway` for a complete reference.
 
 
+### Modifier keys
+set $Super Mod4
+set $LAlt Mod1
+set $RAlt Mod5
+set $ctrl Control
+set $Shift Shift
+
 ### Variables
-set $mod Mod4
-set $alt Mod1
 set $term alacritty
 set $launcher wofi --gtk-dark --allow-images --define=key_expand=Super_L
 
@@ -18,7 +23,7 @@ output $displayDell modeline 241.50 2560 2600 2632 2720 1440 1443 1448 1481 -hsy
 output $displayDell pos 0 0
 output $displayLaptop pos 2560 0
 
-bindsym $mod+p output $displayLaptop toggle
+bindsym $Super+p output $displayLaptop toggle
 
 bindswitch --reload --locked lid:on output $displayLaptop disable
 bindswitch --reload --locked lid:off output $displayLaptop enable
@@ -28,95 +33,95 @@ bindswitch --reload --locked lid:off output $displayLaptop enable
 # Basics:
 #
     # Start a terminal
-    bindsym $mod+Return exec $term
+    bindsym $Super+Return exec $term
 
     # Kill focused window
-    bindsym $mod+Shift+q kill
+    bindsym $Super+$Shift+q kill
 
     # Start your launcher
-    bindsym $mod+d exec $launcher --show drun
-    bindsym $alt+F2 exec $launcher --show run
+    bindsym $Super+d exec $launcher --show drun
+    bindsym $LAlt+F2 exec $launcher --show run
 
-    # Drag floating windows by holding down $mod and left mouse button.
-    # Resize them with right mouse button + $mod.
+    # Drag floating windows by holding down $Super and left mouse button.
+    # Resize them with right mouse button + $Super.
     # Despite the name, also works for non-floating windows.
     # Change normal to inverse to use left mouse button for resizing and right
     # mouse button for dragging.
-    floating_modifier $mod normal
+    floating_modifier $Super normal
 
     # Reload the configuration file
-    # bindsym $mod+Shift+c reload
+    # bindsym $Super+$Shift+c reload
 
 #
 # Moving around:
 #
-    # Or use $mod+[up|down|left|right]
-    bindsym $mod+Left focus left
-    bindsym $mod+Down focus down
-    bindsym $mod+Up focus up
-    bindsym $mod+Right focus right
-    bindsym --border --whole-window $mod+button5 focus right
-    bindsym --border --whole-window $mod+button4 focus left
-    bindsym --border --whole-window $mod+shift+button5 focus next sibling
-    bindsym --border --whole-window $mod+shift+button4 focus prev sibling
+    # Or use $Super+[up|down|left|right]
+    bindsym $Super+Left focus left
+    bindsym $Super+Down focus down
+    bindsym $Super+Up focus up
+    bindsym $Super+Right focus right
+    bindsym --border --whole-window $Super+button5 focus right
+    bindsym --border --whole-window $Super+button4 focus left
+    bindsym --border --whole-window $Super+shift+button5 focus next sibling
+    bindsym --border --whole-window $Super+shift+button4 focus prev sibling
 
     # Ditto, with arrow keys
-    bindsym $mod+Shift+Left move left
-    bindsym $mod+Shift+Down move down
-    bindsym $mod+Shift+Up move up
-    bindsym $mod+Shift+Right move right
+    bindsym $Super+$Shift+Left move left
+    bindsym $Super+$Shift+Down move down
+    bindsym $Super+$Shift+Up move up
+    bindsym $Super+$Shift+Right move right
 #
 # Workspaces:
 #
     # Switch to workspace
-    bindsym $mod+1 workspace number 1
-    bindsym $mod+2 workspace number 2
-    bindsym $mod+3 workspace number 3
-    bindsym $mod+4 workspace number 4
-    bindsym $mod+5 workspace number 5
-    bindsym $mod+6 workspace number 6
-    bindsym $mod+7 workspace number 7
-    bindsym $mod+8 workspace number 8
-    bindsym $mod+9 workspace number 9
-    bindsym $mod+0 workspace number 10
+    bindsym $Super+1 workspace number 1
+    bindsym $Super+2 workspace number 2
+    bindsym $Super+3 workspace number 3
+    bindsym $Super+4 workspace number 4
+    bindsym $Super+5 workspace number 5
+    bindsym $Super+6 workspace number 6
+    bindsym $Super+7 workspace number 7
+    bindsym $Super+8 workspace number 8
+    bindsym $Super+9 workspace number 9
+    bindsym $Super+0 workspace number 10
     # Move focused container to workspace
-    bindsym $mod+Shift+1 move container to workspace number 1
-    bindsym $mod+Shift+2 move container to workspace number 2
-    bindsym $mod+Shift+3 move container to workspace number 3
-    bindsym $mod+Shift+4 move container to workspace number 4
-    bindsym $mod+Shift+5 move container to workspace number 5
-    bindsym $mod+Shift+6 move container to workspace number 6
-    bindsym $mod+Shift+7 move container to workspace number 7
-    bindsym $mod+Shift+8 move container to workspace number 8
-    bindsym $mod+Shift+9 move container to workspace number 9
-    bindsym $mod+Shift+0 move container to workspace number 10
+    bindsym $Super+$Shift+1 move container to workspace number 1
+    bindsym $Super+$Shift+2 move container to workspace number 2
+    bindsym $Super+$Shift+3 move container to workspace number 3
+    bindsym $Super+$Shift+4 move container to workspace number 4
+    bindsym $Super+$Shift+5 move container to workspace number 5
+    bindsym $Super+$Shift+6 move container to workspace number 6
+    bindsym $Super+$Shift+7 move container to workspace number 7
+    bindsym $Super+$Shift+8 move container to workspace number 8
+    bindsym $Super+$Shift+9 move container to workspace number 9
+    bindsym $Super+$Shift+0 move container to workspace number 10
     # Note: workspaces can have any name you want, not just numbers.
     # We just use 1-10 as the default.
 #
 # Layout stuff:
 #
     # You can "split" the current object of your focus with
-    # $mod+b or $mod+v, for horizontal and vertical splits
+    # $Super+b or $Super+v, for horizontal and vertical splits
     # respectively.
-    #bindsym $mod+b splith
-    #bindsym $mod+v splitv
+    #bindsym $Super+b splith
+    #bindsym $Super+v splitv
 
     # Switch the current container between different layout styles
-    bindsym $mod+Shift+s layout stacking
-    bindsym $mod+Shift+w layout tabbed
-    bindsym $mod+Shift+e layout toggle split
+    bindsym $Super+$Shift+s layout stacking
+    bindsym $Super+$Shift+w layout tabbed
+    bindsym $Super+$Shift+e layout toggle split
 
     # Make the current focus fullscreen
-    bindsym $mod+f fullscreen
+    bindsym $Super+f fullscreen
 
     # Toggle the current focus between tiling and floating mode
-    bindsym $mod+Shift+f floating toggle
+    bindsym $Super+$Shift+f floating toggle
 
     # Swap focus between the tiling area and the floating area
-    # bindsym $mod+Space focus mode_toggle
+    # bindsym $Super+Space focus mode_toggle
 
     # Move focus to the parent container
-    bindsym $mod+a focus parent
+    bindsym $Super+a focus parent
 #
 # Scratchpad:
 #
@@ -124,11 +129,11 @@ bindswitch --reload --locked lid:off output $displayLaptop enable
     # You can send windows there and get them back later.
 
     # Move the currently focused window to the scratchpad
-    bindsym $mod+Shift+minus move scratchpad
+    bindsym $Super+$Shift+minus move scratchpad
 
     # Show the next scratchpad window or hide the focused scratchpad window.
     # If there are multiple scratchpad windows, this command cycles through them.
-    bindsym $mod+minus scratchpad show
+    bindsym $Super+minus scratchpad show
 #
 # Resizing containers:
 #
@@ -138,16 +143,26 @@ mode "resize" {
     # up will shrink the containers height
     # down will grow the containers height
     # Ditto, with arrow keys
-    bindsym Left resize shrink width 10px
-    bindsym Down resize grow height 10px
-    bindsym Up resize shrink height 10px
-    bindsym Right resize grow width 10px
+    bindsym Left resize shrink width 10
+    bindsym Down resize grow height 10
+    bindsym Up resize shrink height 10
+    bindsym Right resize grow width 10
+
+    bindsym $LAlt+Left resize shrink width 50
+    bindsym $LAlt+Down resize grow height 50
+    bindsym $LAlt+Up resize shrink height 50
+    bindsym $LAlt+Right resize grow width 50
+
+    bindsym $Super+Left resize shrink width 100
+    bindsym $Super+Down resize grow height 100
+    bindsym $Super+Up resize shrink height 100
+    bindsym $Super+Right resize grow width 100
 
     # Return to default mode
     bindsym Return mode "default"
     bindsym Escape mode "default"
 }
-bindsym $mod+r mode "resize"
+bindsym $Super+r mode "resize"
 
 include /etc/sway/config.d/*
 
@@ -173,16 +188,16 @@ input type:touchpad {
     bindsym XF86AudioRaiseVolume exec 'pactl set-sink-volume @DEFAULT_SINK@ +1%'
     bindsym XF86AudioLowerVolume exec 'pactl set-sink-volume @DEFAULT_SINK@ -1%'
     bindsym XF86AudioMute exec 'pactl set-sink-mute @DEFAULT_SINK@ toggle'
-    bindsym $alt+XF86AudioMute exec 'pactl set-source-mute @DEFAULT_SOURCE@ toggle'
+    bindsym $LAlt+XF86AudioMute exec 'pactl set-source-mute @DEFAULT_SOURCE@ toggle'
     bindsym XF86AudioMicMute exec 'pactl set-source-mute @DEFAULT_SOURCE@ toggle'
 
     # X parity
-    bindsym $alt+F4 kill
+    bindsym $LAlt+F4 kill
 
 # Autostart
 bar {
     position top
-    swaybar_command launch-waybar
+    swaybar_command waybar
 }
 exec _sway-wait-ready {
     blueman-applet
@@ -202,6 +217,9 @@ exec swayidle -w \
     timeout 360 'swaymsg "output * dpms off"' resume 'swaymsg "output * dpms on"' \
     before-sleep 'swaylock -f -c 000000'
 
+# alternatives: https://kevinlocke.name/bits/2020/04/12/resolving-desktop-notifications-dbus-service-conflicts/
+exec mako
+
 # This will lock your screen after 300 seconds of inactivity, then turn off
 # your displays after another 300 seconds, and turn your screens back on when
 # resumed. It will also lock your screen before your computer goes to sleep.
@@ -213,32 +231,32 @@ focus_follows_mouse no
 
 exec env RUST_BACKTRACE=1 swayrd > /tmp/swayrd.log 2>&1
 
-bindsym $mod+Space exec env RUST_BACKTRACE=1 \
+bindsym $Super+Space exec env RUST_BACKTRACE=1 \
     swayr switch-window >> /tmp/swayr.log 2>&1
 
-bindsym $mod+Delete exec env RUST_BACKTRACE=1 \
+bindsym $Super+Delete exec env RUST_BACKTRACE=1 \
     swayr quit-window > /tmp/swayr.log 2>&1
 
-#bindsym $mod+Tab exec env RUST_BACKTRACE=1 \
+#bindsym $Super+Tab exec env RUST_BACKTRACE=1 \
 #    swayr switch-to-urgent-or-lru-window >> /tmp/swayr.log 2>&1
 
-bindsym $alt+Tab exec env RUST_BACKTRACE=1 \
+bindsym $LAlt+Tab exec env RUST_BACKTRACE=1 \
     swayr prev-window all-workspaces >> /tmp/swayr.log 2>&1
 
-bindsym $alt+Shift+Tab exec env RUST_BACKTRACE=1 \
+bindsym $LAlt+$Shift+Tab exec env RUST_BACKTRACE=1 \
     swayr next-window all-workspaces >> /tmp/swayr.log 2>&1
 
-bindsym $mod+Shift+Space exec env RUST_BACKTRACE=1 \
+bindsym $Super+$Shift+Space exec env RUST_BACKTRACE=1 \
     swayr switch-workspace-or-window >> /tmp/swayr.log 2>&1
 
-bindsym $mod+c exec env RUST_BACKTRACE=1 \
+bindsym $Super+c exec env RUST_BACKTRACE=1 \
     swayr execute-swaymsg-command >> /tmp/swayr.log 2>&1
 
-bindsym $mod+Shift+c exec env RUST_BACKTRACE=1 \
+bindsym $Super+$Shift+c exec env RUST_BACKTRACE=1 \
     swayr execute-swayr-command >> /tmp/swayr.log 2>&1
 
-bindsym $mod+E exec thunar
-bindsym $mod+L exec swaylock -f
+bindsym $Super+E exec thunar
+bindsym $Super+L exec swaylock -f
 
 # Media controls
 # https://www.reddit.com/r/swaywm/comments/ju1609/control_spotify_with_bluetooth_headset_with_dbus/

@@ -24,23 +24,24 @@
   programs.starship.enable = true;
 
   home.packages = [
-    (pkgs.writeScriptBin "launch-waybar" ''
-      #! ${pkgs.bash}/bin/bash
-      # based on https://github.com/Alexays/Waybar/issues/961#issuecomment-753533975
-      CONFIG_FILES=(
-        "$HOME/.config/waybar/config"
-        "$HOME/.config/waybar/style.css"
-      )
-      pid=
-      trap '[ -z "$pid" ] || kill $pid' EXIT
+    # # launch-waybar doesn't worth with nix changes
+    # (pkgs.writeScriptBin "launch-waybar" ''
+    #   #! ${pkgs.bash}/bin/bash
+    #   # based on https://github.com/Alexays/Waybar/issues/961#issuecomment-753533975
+    #   CONFIG_FILES=(
+    #     "$HOME/.config/waybar/config"
+    #     "$HOME/.config/waybar/style.css"
+    #   )
+    #   pid=
+    #   trap '[ -z "$pid" ] || kill $pid' EXIT
 
-      while true; do
-          ${pkgs.waybar}/bin/waybar "$@" &
-          pid=$!
-          ${pkgs.inotify-tools}/bin/inotifywait -e create,modify $CONFIG_FILES
-          kill $pid
-          pid=
-      done
-    '')
+    #   while true; do
+    #       ${pkgs.waybar}/bin/waybar "$@" &
+    #       pid=$!
+    #       ${pkgs.inotify-tools}/bin/inotifywait -e create,modify $CONFIG_FILES
+    #       kill $pid
+    #       pid=
+    #   done
+    # '')
   ];
 }

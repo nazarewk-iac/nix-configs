@@ -4,11 +4,12 @@ let
   cfg = config.nazarewk.sway.base;
 in {
   options.nazarewk.sway.base = {
-    enable = mkEnableOption "gnome base setup";
+    enable = mkEnableOption "Sway base setup";
   };
 
   config = mkIf cfg.enable {
     nazarewk.gnome.base.enable = true;
+    nazarewk.xfce.base.enable = true;
 
     # Configure various Sway configs
     # see https://gist.github.com/mschwaig/195fe93ed85dea7aaceaf8e1fc6c0e99
@@ -40,39 +41,20 @@ in {
       after = [ "graphical-session-pre.target" ];
     };
 
-    environment.etc."sway/config.d/sway-systemd-init.conf".source = pkgs.writeText "sway-systemd-init.conf" ''
-      exec _sway-init
-      exec _sway-init-polkit
-    '';
-
-    programs.sway.extraPackages = with pkgs; [
-      (pkgs.writeScriptBin "startsway" ''
-        #! ${pkgs.bash}/bin/bash
-        set -xeEuo pipefail
-        systemctl --user import-environment $(${pkgs.jq}/bin/jq -rn 'env | keys[]')
-        exec systemctl --user start sway.service
-      '')
-      # tray opens up too late https://github.com/Alexays/Waybar/issues/483
-      (pkgs.writeScriptBin "_sway-init" ''
-        #! ${pkgs.bash}/bin/bash
-        set -xeEuo pipefail
-        interval=2
-        until systemctl --user show-environment | grep WAYLAND_DISPLAY ; do
-          sleep "$interval"
-          dbus-update-activation-environment --systemd --all --verbose
-        done
-        until pgrep -fu $UID polkit-gnome-authentication-agent-1 ; do sleep "$interval"; done
-        until pgrep -fu $UID waybar && sleep 3 ; do sleep "$interval"; done
-        systemctl --user start sway-session.target
-        systemd-notify --ready || true
-        test "$#" -lt 1 || exec "$@"
-      '')
-      (pkgs.writeScriptBin "_sway-init-polkit" ''
+    environment.etc."sway/config.d/systemd-init-10.conf".source = let
+      initPolkit = (pkgs.writeScriptBin "_sway-init-polkit" ''
         #! ${pkgs.bash}/bin/bash
         set -xeEuo pipefail
         until systemctl --user show-environment | grep -q WAYLAND_DISPLAY ; do sleep 1; done
         exec ${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1
-      '')
+      '');
+      in pkgs.writeText "sway-systemd-init.conf" ''
+        exec ${initPolkit}/bin/_sway-init-polkit
+      '';
+
+    systemd.user.services.xfce4-notifyd.enable = false;
+
+    programs.sway.extraPackages = with pkgs; [
       (pkgs.writeScriptBin "_sway-wait-ready" ''
         #! ${pkgs.bash}/bin/bash
         set -xeEuo pipefail
@@ -107,6 +89,7 @@ in {
       libnotify
       slurp
       qt5.qtwayland
+      qt5Full
 
       xorg.xeyes
       xlibs.xhost
@@ -148,5 +131,11 @@ in {
     xdg.portal.enable = true;
     xdg.portal.gtkUsePortal = true;
     xdg.portal.wlr.enable = true;
+    xdg.portal.extraPortals = with pkgs; [
+      # # xdg.portal.gtkUsePortal requires implementation in here (there is more than 1)
+      # # it is provided by gnome at https://github.com/NixOS/nixpkgs/blob/b2737d4980a17cc2b7d600d7d0b32fd7333aca88/nixos/modules/services/x11/desktop-managers/gnome.nix#L377-L380
+      # xdg-desktop-portal-gtk
+
+    ];
   };
 }

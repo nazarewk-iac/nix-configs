@@ -71,12 +71,15 @@
             programs.aws-vault.enable = true;
             programs.nix-direnv.enable = true;
             nazarewk.sway.gdm.enable = true;
-            nazarewk.sway.systemd.enable = true;
+            nazarewk.sway.systemd.enable = false;
+
+            environment.variables.AWS_VAULT_BACKEND = "secret-service";
           }
           ./legacy/nixos/configuration.nix
           ./legacy/nixos/podman.nix
 
           ./modules/desktop/gnome/base
+          ./modules/desktop/xfce/base
           ./modules/desktop/sway/base
           ./modules/desktop/sway/through-gdm
           ./modules/desktop/sway/through-systemd

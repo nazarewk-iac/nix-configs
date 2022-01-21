@@ -10,17 +10,24 @@ in {
   config = mkIf cfg.enable {
     services.xserver.desktopManager.gnome.enable = true;
 
-    environment.gnome.excludePackages = with pkgs; [
-      gnome.gnome-music
-      gnome.gnome-terminal
-      gnome.gnome-characters
-      gnome.totem
-      gnome.tali
-      gnome.iagno
-      gnome.hitori
-      gnome.atomix
-      gnome-tour
-      gnome.geary
+    environment.gnome.excludePackages = with pkgs.gnome; [
+      epiphany
+      geary
+      gnome-calendar
+      gnome-clocks
+      gnome-contacts
+      gnome-font-viewer
+      gnome-maps
+      gnome-music
+      gnome-screenshot
+      gnome-weather
+      pkgs.gnome-connections
+      pkgs.gnome-photos
+      totem
+      yelp
     ];
+
+    services.gvfs.enable = true; # Mount, trash, and other functionalities
+    services.tumbler.enable = true; # Thumbnail support for images
   };
 }

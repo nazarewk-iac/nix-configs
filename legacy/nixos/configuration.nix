@@ -275,19 +275,14 @@ in {
     element-desktop
     nextcloud-client
     cadaver
-    gnome.cheese
     libreoffice
-    gnome.file-roller
-    gnome.gedit
     file
     flameshot
     vlc
     evince
-    (xfce.thunar.override {
-      thunarPlugins = [ xfce.thunar-archive-plugin xfce.thunar-volman ];
-    })
     xfce.ristretto
     xfce.exo
+    xfce.xfconf
     shotwell
     gimp
 
@@ -308,8 +303,8 @@ in {
     cachix
   ];
 
-  services.gvfs.enable = true; # Mount, trash, and other functionalities
-  services.tumbler.enable = true; # Thumbnail support for images
+  services.udisks2.enable = true;
+  services.devmon.enable = true;
   services.teamviewer.enable = true;
   programs.steam.enable = true;
 }
