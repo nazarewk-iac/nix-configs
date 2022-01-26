@@ -8,6 +8,7 @@ in {
   };
 
   config = mkIf cfg.enable {
+    nazarewk.desktop.base.enable = true;
     nazarewk.gnome.base.enable = true;
     nazarewk.xfce.base.enable = true;
 
@@ -88,16 +89,6 @@ in {
       wlogout
       libnotify
       slurp
-      qt5.qtwayland
-      qt5Full
-
-      xorg.xeyes
-      xlibs.xhost
-
-      # audio
-      libopenaptx
-      libfreeaptx
-      pulseaudio
 
       # sway related
       brightnessctl

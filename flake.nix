@@ -72,24 +72,27 @@
             programs.nix-direnv.enable = true;
             nazarewk.sway.gdm.enable = true;
             nazarewk.sway.systemd.enable = false;
+            nazarewk.modem.enable = true;
 
             environment.variables.AWS_VAULT_BACKEND = "secret-service";
           }
           ./legacy/nixos/configuration.nix
           ./legacy/nixos/podman.nix
 
+          ./modules/aws-vault
+          ./modules/desktop/base
           ./modules/desktop/gnome/base
-          ./modules/desktop/xfce/base
           ./modules/desktop/sway/base
           ./modules/desktop/sway/through-gdm
           ./modules/desktop/sway/through-systemd
-          ./modules/aws-vault
-          ./modules/nix-direnv
+          ./modules/desktop/xfce/base
           ./modules/development/cloud
           ./modules/development/python
           ./modules/development/ruby
-          ./modules/packaging/asdf
+          ./modules/hardware/modem
           ./modules/hardware/yubikey
+          ./modules/nix-direnv
+          ./modules/packaging/asdf
           # ./modules/obs-studio
           ./modules/nix-index
           # # TODO: CNI plugin discovery
