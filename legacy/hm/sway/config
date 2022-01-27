@@ -9,7 +9,7 @@
 set $Super Mod4
 set $LAlt Mod1
 set $RAlt Mod5
-set $ctrl Control
+set $Ctrl Control
 set $Shift Shift
 
 ### Variables
@@ -143,20 +143,30 @@ mode "resize" {
     # up will shrink the containers height
     # down will grow the containers height
     # Ditto, with arrow keys
-    bindsym Left resize shrink width 10
-    bindsym Down resize grow height 10
-    bindsym Up resize shrink height 10
-    bindsym Right resize grow width 10
+    bindsym $Super+$Ctrl+Left resize shrink width 1
+    bindsym $Super+$Ctrl+Down resize grow height 1
+    bindsym $Super+$Ctrl+Up resize shrink height 1
+    bindsym $Super+$Ctrl+Right resize grow width 1
+
+    bindsym $Ctrl+Left resize shrink width 5
+    bindsym $Ctrl+Down resize grow height 5
+    bindsym $Ctrl+Up resize shrink height 5
+    bindsym $Ctrl+Right resize grow width 5
+    
+    bindsym Left resize shrink width 15
+    bindsym Down resize grow height 15
+    bindsym Up resize shrink height 15
+    bindsym Right resize grow width 15
 
     bindsym $LAlt+Left resize shrink width 50
     bindsym $LAlt+Down resize grow height 50
     bindsym $LAlt+Up resize shrink height 50
     bindsym $LAlt+Right resize grow width 50
 
-    bindsym $Super+Left resize shrink width 100
-    bindsym $Super+Down resize grow height 100
-    bindsym $Super+Up resize shrink height 100
-    bindsym $Super+Right resize grow width 100
+    bindsym $Super+$LAlt+Left resize shrink width 100
+    bindsym $Super+$LAlt+Down resize grow height 100
+    bindsym $Super+$LAlt+Up resize shrink height 100
+    bindsym $Super+$LAlt+Right resize grow width 100
 
     # Return to default mode
     bindsym Return mode "default"
