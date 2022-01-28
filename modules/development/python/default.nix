@@ -25,6 +25,6 @@
   ];
 
   environment.interactiveShellInit = ''
-    [[ -z "$HOME" ]] || export PATH="$HOME/.local/bin:$PATH"
+    [ -z "$HOME" ] || export PATH="$HOME/.local/bin:$PATH"
   '';
 }

@@ -5,19 +5,7 @@
 # see https://gist.github.com/dysinger/2a768db5b6e3b729ec898d7d4208add3
 
 { config, pkgs, lib, ... }:
-
-let
-  keepassWithPlugins = pkgs.keepass.override {
-    plugins = with pkgs; [
-      keepass-keeagent
-      keepass-keepassrpc
-      keepass-keetraytotp
-      keepass-charactercopy
-      keepass-qrcodeview
-    ];
-  };
-
-in {
+{
   imports = [ # Include the results of the hardware scan.
     ./hardware-configuration.nix
     ./nazarewk.nix
@@ -210,14 +198,6 @@ in {
     zsh-completions
     nix-zsh-completions
 
-    (pkgs.keepass.override { plugins = with pkgs; [
-      keepass-keeagent
-      keepass-keepassrpc
-      keepass-keetraytotp
-      keepass-charactercopy
-      keepass-qrcodeview
-    ]; })
-
     usbutils
     lshw
     glxinfo
@@ -253,7 +233,6 @@ in {
     htop
     pciutils
     ncdu
-    pass
     jq
     lsof
     git
