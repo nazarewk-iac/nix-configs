@@ -74,6 +74,11 @@
             nazarewk.sway.systemd.enable = false;
             nazarewk.modem.enable = true;
 
+            home-manager.users.nazarewk = {
+              fresha.development.enable = true;
+              fresha.development.bastionUsername = "krzysztof.nazarewski";
+            };
+
             environment.variables.AWS_VAULT_BACKEND = "secret-service";
           }
           ./legacy/nixos/configuration.nix
@@ -89,6 +94,7 @@
           ./modules/development/cloud
           ./modules/development/python
           ./modules/development/ruby
+          ./modules/development/fresha
           ./modules/hardware/modem
           ./modules/hardware/yubikey
           ./modules/nix-direnv

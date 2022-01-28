@@ -15,10 +15,6 @@
   programs.git.attributes = [ (builtins.readFile ./.gitattributes) ];
 
   programs.ssh.enable = true;
-  programs.ssh.extraConfig = ''
-    Host *.fresha.io *.shedul.io
-        User krzysztof.nazarewski
-  '';
 
   programs.zsh.enable = true;
   programs.starship.enable = true;

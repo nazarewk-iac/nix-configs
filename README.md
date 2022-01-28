@@ -12,6 +12,10 @@ I'm planning to slowly migrate to proper structure of the repository moving stuf
 
 # Notes
 
+## Interaction between NixOS and Home Manager
+
+- https://jdisaacs.com/blog/nixos-config/
+
 ## How to find out what uses the specific store path?
 
 Find immediate parents: `nix-store --query --referrers <paths...>`.
