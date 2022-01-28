@@ -28,7 +28,7 @@ in {
       default = "git@github.com:surgeventures/$repo.git";
     };
   };
-  config = {
+  config = mkIf cfg.enable {
     programs.ssh.extraConfig = ''
       Host *.fresha.io *.shedul.io
           User ${cfg.bastionUsername}
@@ -50,7 +50,7 @@ in {
     home.packages = [
       (pkgs.writeShellApplication {
         name = "${cfg.prefix}gh-clone";
-        runtimeInputs = [ pkgs.git ];
+        runtimeInputs = with pkgs; [ git ];
         text = ''
           for repo in "$@"; do
             git clone "${cfg.git.remoteShellPattern}" "$FRESHA_DIR/$repo"
@@ -60,7 +60,7 @@ in {
 
       (pkgs.writeShellApplication {
         name = "${cfg.prefix}vpn";
-        runtimeInputs = [ pkgs.sshuttle ];
+        runtimeInputs = with pkgs; [ sshuttle ];
         text = ''
           bastion="''${1:-"''${FRESHA_BASTION_HOST}"}"
           cidr="''${2:-"''${FRESHA_BASTION_CIDR}"}"
@@ -71,12 +71,16 @@ in {
       })
 
       (pkgs.writeShellApplication {
-        name = "${cfg.prefix}kubeconfig";
-        runtimeInputs = [ pkgs.awscli2 ];
+        name = "${cfg.prefix}eksconfig";
+        runtimeInputs = with pkgs; [ awscli2 kubectl ];
         text = ''
           cluster_name="$1"
           profile="''${2:-"$AWS_PROFILE"}"
+          set -x
           aws eks update-kubeconfig --profile="$profile" --name="$cluster_name" --alias="$cluster_name"
+          # set ARN-based context
+          # shellcheck disable=SC2046
+          kubectl config set-context $(kubectl config get-contexts "$cluster_name" | tail -n1 | awk '{ print $3 " --cluster=" $3 " --user=" $4 }')
         '';
       })
     ];
