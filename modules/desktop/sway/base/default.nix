@@ -96,7 +96,7 @@ in {
       lxappearance
       xsettingsd
       gsettings-desktop-schemas
-      gnome.networkmanagerapplet
+      networkmanagerapplet
       gtk_engines
       gtk-engine-murrine
       # wayland programs

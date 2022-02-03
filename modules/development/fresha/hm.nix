@@ -38,12 +38,19 @@ in {
       export FRESHA_DIR="${shellDir}"
 
       ${cfg.prefix}cd() {
-        cd "$FRESHA_DIR''${1:-""}"
+        cd "$FRESHA_DIR/''${1:-""}"
       }
     '';
 
     home.file."${relDir}/.envrc" = {
-      source = ./files/.envrc;
+      text = ''
+      source_env .envrc.secret
+      env_vars_required FRESHA_BASTION_CIDR FRESHA_BASTION_HOST PASSWORD_STORE_DIR
+
+      export AWS_CONFIG_FILE="$PWD/.aws/config"
+      export AWS_SHARED_CREDENTIALS_FILE="$PWD/.aws/credentials"
+      export KUBECONFIG="$PWD/.kube/config"
+      '';
       onChange = ''${pkgs.direnv}/bin/direnv allow "$FRESHA_DIR/.envrc"'';
     };
 

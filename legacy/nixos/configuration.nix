@@ -13,7 +13,8 @@
   ];
 
   # NIX / NIXOS
-  nix.autoOptimiseStore = true;
+  # renamed from nix.autoOptimiseStore
+  nix.settings.auto-optimise-store = true;
   nix.package = pkgs.nixFlakes;
   nix.extraOptions = ''
     experimental-features = nix-command flakes
