@@ -36,9 +36,9 @@
   services.pcscd.enable = true;
 
   environment.systemPackages = with pkgs; [
-    # yubioath-desktop
-    # yubikey-manager
-    # yubikey-manager-qt
+    yubioath-desktop
+    yubikey-manager
+    yubikey-manager-qt
     yubikey-personalization
     yubikey-personalization-gui
     yubico-pam
