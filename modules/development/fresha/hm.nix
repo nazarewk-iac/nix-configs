@@ -51,7 +51,7 @@ in {
       export AWS_SHARED_CREDENTIALS_FILE="$PWD/.aws/credentials"
       export KUBECONFIG="$PWD/.kube/config"
       '';
-      onChange = ''${pkgs.direnv}/bin/direnv allow "$FRESHA_DIR/.envrc"'';
+      onChange = ''${pkgs.sudo}/bin/sudo -u ${config.home.username} ${pkgs.direnv}/bin/direnv allow "$FRESHA_DIR/.envrc"'';
     };
 
     home.packages = [
@@ -69,11 +69,11 @@ in {
         name = "${cfg.prefix}vpn";
         runtimeInputs = with pkgs; [ sshuttle ];
         text = ''
-          bastion="''${1:-"''${FRESHA_BASTION_HOST}"}"
+          host="''${1:-"''${FRESHA_BASTION_HOST}"}"
           cidr="''${2:-"''${FRESHA_BASTION_CIDR}"}"
           username="${cfg.bastionUsername}"
           set -x
-          sshuttle -r "$username@$bastion" "$cidr" --no-latency-control "''${@:3}"
+          sshuttle -r "$username@$host" "$cidr" --no-latency-control "''${@:3}"
         '';
       })
 
