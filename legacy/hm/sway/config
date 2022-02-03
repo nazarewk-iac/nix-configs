@@ -275,4 +275,5 @@ bindsym --locked XF86AudioPause exec playerctl play-pause
 bindsym --locked XF86AudioNext  exec playerctl next
 bindsym --locked XF86AudioPrev  exec playerctl previous
 
-
+# Screenshots
+bindsym Print exec flameshot gui
