@@ -53,20 +53,6 @@
   hardware.sane.enable = true;
   hardware.video.hidpi.enable = true;
 
-  # SOUND - PipeWire
-  # see additional pavucontrol package
-  security.rtkit.enable = true;
-  hardware.pulseaudio.enable = false;
-  services.pipewire.enable = true;
-  services.pipewire.media-session.enable = true;
-  services.pipewire.alsa.enable = true;
-  services.pipewire.alsa.support32Bit = true;
-  services.pipewire.pulse.enable = true;
-  services.pipewire.jack.enable = true;
-  sound.mediaKeys.enable = true;
-  hardware.pulseaudio.extraModules = [
-    pkgs.pulseaudio-modules-bt
-  ];
 
   # NETWORKING
   networking.hostId = "f77614af"; # cut -c-8 </proc/sys/kernel/random/uuid
@@ -203,9 +189,6 @@
     lshw
     glxinfo
     inxi
-
-    # to control pipewire
-    pavucontrol
 
     dex
     firefox-wayland
