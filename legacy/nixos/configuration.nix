@@ -246,6 +246,7 @@
     xfce.xfconf
     shotwell
     gimp
+    pdftk
 
     (edid-generator.override {
       modelines = [

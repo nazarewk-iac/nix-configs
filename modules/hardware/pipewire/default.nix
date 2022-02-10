@@ -7,11 +7,6 @@ in {
     nazarewk.hw.pipewire = {
       enable = mkEnableOption "Pipewire setup";
 
-      systemWide = lib.mkOption {
-        type = lib.types.bool;
-        default = false;
-      };
-
       useWireplumber = lib.mkOption {
         type = lib.types.bool;
         default = true;
@@ -20,8 +15,6 @@ in {
   };
 
   config = mkIf cfg.enable {
-    services.pipewire.systemWide = cfg.systemWide;
-
     # SOUND - PipeWire
     # see additional pavucontrol package
     security.rtkit.enable = true;

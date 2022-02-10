@@ -76,7 +76,6 @@
             nazarewk.sway.systemd.enable = false;
             nazarewk.modem.enable = true;
             nazarewk.hw.pipewire.enable = true;
-            nazarewk.hw.pipewire.systemWide = false;
             nazarewk.hw.pipewire.useWireplumber = true;
 
             home-manager.users.nazarewk = {
