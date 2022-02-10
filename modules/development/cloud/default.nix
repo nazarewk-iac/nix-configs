@@ -8,6 +8,8 @@
     # dev software
     sshuttle
     nodejs
+    yarn
+    zip
 
     # AWS
     awscli2
