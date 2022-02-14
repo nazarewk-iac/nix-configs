@@ -15,6 +15,9 @@
     awscli2
     eksctl
 
+    # Argo
+    argocd
+
     (pkgs.writeShellApplication {
       name = "tf-fmt";
       runtimeInputs = with pkgs; [ pkgs.gnugrep pkgs.gnused pkgs.coreutils pkgs.findutils ];

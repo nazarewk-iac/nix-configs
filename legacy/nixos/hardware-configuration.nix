@@ -28,6 +28,11 @@
     fsType = "zfs";
   };
 
+  fileSystems."/home/nazarewk/.cache" = {
+    device = "nazarewk-zroot/nazarewk/home/nazarewk/.cache";
+    fsType = "zfs";
+  };
+
   fileSystems."/home/nazarewk/Downloads" = {
     device = "nazarewk-zroot/nazarewk/home/nazarewk/Downloads";
     fsType = "zfs";
