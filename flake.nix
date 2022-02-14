@@ -70,7 +70,7 @@
 #                 });
               })
             ];
-            programs.aws-vault.enable = true;
+            nazarewk.programs.aws-vault.enable = true;
             programs.nix-direnv.enable = true;
             nazarewk.sway.gdm.enable = true;
             nazarewk.sway.systemd.enable = false;

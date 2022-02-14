@@ -203,6 +203,8 @@
     nixpkgs-fmt
     system-config-printer
 
+    ntfs3g
+    gptfdisk
     gparted
     tmux
 

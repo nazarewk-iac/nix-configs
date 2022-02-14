@@ -19,7 +19,7 @@
       text = ''
         [ -z "''${DEBUG:-}" ] || set -x
         resources_extra=()
-        grep -E -- '( |^)(-n|--namespace( )|--namespaced( |$))' <<<"$*" >/dev/null && extra+=(--namespaced)
+        grep -E -- '( |^)((-n [a-z-]+)|(--namespace( |=)[a-z-]+)|(--namespaced))( |$)' <<<"$*" >/dev/null && extra+=(--namespaced)
         # https://github.com/koalaman/shellcheck/wiki/SC2207
         mapfile -t resources < <(kubectl api-resources --verbs=list "''${resources_extra[@]}" -o name)
         kubectl get "$( tr ' ' ',' <<<"''${resources[*]}" )" "$@"
