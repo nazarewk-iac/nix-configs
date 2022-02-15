@@ -74,9 +74,9 @@
             nazarewk.programs.nix-direnv.enable = true;
             nazarewk.sway.gdm.enable = true;
             nazarewk.sway.systemd.enable = false;
-            nazarewk.modem.enable = true;
-            nazarewk.hw.pipewire.enable = true;
-            nazarewk.hw.pipewire.useWireplumber = true;
+            nazarewk.hardware.modem.enable = true;
+            nazarewk.hardware.pipewire.enable = true;
+            nazarewk.hardware.pipewire.useWireplumber = true;
             nazarewk.development.cloud.enable = true;
             nazarewk.development.k8s.enable = true;
             nazarewk.development.python.enable = true;

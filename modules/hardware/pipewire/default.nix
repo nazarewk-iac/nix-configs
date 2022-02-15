@@ -1,10 +1,10 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.hw.pipewire;
+  cfg = config.nazarewk.hardware.pipewire;
 in {
   options = {
-    nazarewk.hw.pipewire = {
+    nazarewk.hardware.pipewire = {
       enable = mkEnableOption "Pipewire setup";
 
       useWireplumber = lib.mkOption {
