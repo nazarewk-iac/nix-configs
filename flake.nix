@@ -7,6 +7,9 @@
 
   inputs.flake-utils.url = "github:numtide/flake-utils";
 
+  inputs.nixos-generators.url = "github:nix-community/nixos-generators";
+  inputs.nixos-generators.inputs.nixpkgs.follows = "nixpkgs";
+
   # inputs.nix-alien.url = "github:thiagokokada/nix-alien";
   # inputs.nix-alien.inputs.nixpkgs.follows = "nixpkgs";
   # inputs.nix-alien.inputs.flake-utils.follows = "flake-utils";
@@ -18,6 +21,7 @@
 
   outputs = {
     nixpkgs,
+    nixos-generators,
     ...
  }@flakeInputs : let
     makeSystem = {
@@ -35,16 +39,26 @@
       ];
     };
   in {
-    nixosConfigurations.nazarewk = makeSystem {
+    nixosConfigurations.nazarewk = makeSystem (let system = "x86_64-linux"; in {
+      inherit system;
       modules = [
         ./configurations/desktop
         ./machines/dell-latitude-e5470
         {
           nazarewk.filesystems.zfs.enable = true;
           nazarewk.hardware.modem.enable = true;
+
+          home-manager.users.nazarewk = {
+            fresha.development.enable = true;
+            fresha.development.bastionUsername = "krzysztof.nazarewski";
+          };
+
+          environment.systemPackages = [
+            nixos-generators.defaultPackage.${system}
+          ];
         }
       ];
-    };
+    });
 
     nixosConfigurations.rpi4 = nixpkgs.lib.nixosSystem {
       # nix build '.#nixosConfigurations.rpi4.config.system.build.sdImage' --system aarch64-linux -L
@@ -53,6 +67,17 @@
       modules = [
         ./rpi4/sd-image.nix
       ];
+    };
+
+    packages.x86_64-linux = {
+      basic-raw = nixos-generators.nixosGenerate {
+        pkgs = nixpkgs.legacyPackages.x86_64-linux;
+        modules = [
+          ./modules
+          ./configurations/basic
+        ];
+        format = "raw";
+      };
     };
   };
 }

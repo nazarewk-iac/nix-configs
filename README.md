@@ -21,6 +21,10 @@ This is incomplete list of incorporated software/systems worth noting:
 
 # Notes
 
+## Building an USB stick image
+
+`nix build '.#basic-raw'` see https://github.com/nix-community/nixos-generators#using-in-a-flake
+
 ## Interaction between NixOS and Home Manager
 
 - https://jdisaacs.com/blog/nixos-config/
