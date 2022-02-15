@@ -77,6 +77,7 @@
             nazarewk.hardware.modem.enable = true;
             nazarewk.hardware.pipewire.enable = true;
             nazarewk.hardware.pipewire.useWireplumber = true;
+            nazarewk.hardware.yubikey.enable = true;
             nazarewk.development.cloud.enable = true;
             nazarewk.development.k8s.enable = true;
             nazarewk.development.python.enable = true;
