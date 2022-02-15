@@ -80,6 +80,7 @@
             nazarewk.development.cloud.enable = true;
             nazarewk.development.k8s.enable = true;
             nazarewk.development.python.enable = true;
+            nazarewk.development.ruby.enable = true;
 
             home-manager.users.nazarewk = {
               fresha.development.enable = true;
