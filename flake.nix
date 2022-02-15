@@ -71,19 +71,26 @@
               })
             ];
             nazarewk.programs.aws-vault.enable = true;
-            programs.nix-direnv.enable = true;
+            nazarewk.programs.nix-direnv.enable = true;
             nazarewk.sway.gdm.enable = true;
             nazarewk.sway.systemd.enable = false;
             nazarewk.modem.enable = true;
             nazarewk.hw.pipewire.enable = true;
             nazarewk.hw.pipewire.useWireplumber = true;
+            nazarewk.development.cloud.enable = true;
 
             home-manager.users.nazarewk = {
               fresha.development.enable = true;
               fresha.development.bastionUsername = "krzysztof.nazarewski";
+              nazarewk.development.git.enable = true;
             };
 
             environment.variables.AWS_VAULT_BACKEND = "secret-service";
+
+            home-manager.sharedModules = [
+              ./modules/development/git/hm.nix
+              ./modules/development/fresha/hm.nix
+            ];
           }
           ./legacy/nixos/configuration.nix
           ./legacy/nixos/podman.nix
@@ -99,7 +106,6 @@
           ./modules/development/k8s
           ./modules/development/python
           ./modules/development/ruby
-          ./modules/development/fresha
           ./modules/hardware/modem
           ./modules/hardware/pipewire
           ./modules/hardware/yubikey
@@ -107,6 +113,7 @@
           ./modules/packaging/asdf
           # ./modules/obs-studio
           ./modules/nix-index
+
           # # TODO: CNI plugin discovery
           # ./modules/k3s/single-node
 

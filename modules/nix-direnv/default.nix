@@ -1,14 +1,13 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.programs.nix-direnv;
+  cfg = config.nazarewk.programs.nix-direnv;
 in {
-  options.programs.nix-direnv = {
+  options.nazarewk.programs.nix-direnv = {
     enable = mkEnableOption "nix-direnv";
   };
 
   config = mkIf cfg.enable {
-
     programs.zsh.interactiveShellInit = ''
       eval "$(${pkgs.direnv}/bin/direnv hook zsh)"
     '';

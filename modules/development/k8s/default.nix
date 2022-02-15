@@ -25,5 +25,20 @@
         kubectl get "$( tr ' ' ',' <<<"''${resources[*]}" )" "$@"
       '';
     })
+
+    (pkgs.writeShellApplication {
+      name = "kubectl-eks_config";
+      runtimeInputs = with pkgs; [ awscli2 kubectl coreutils gawk ];
+      text = ''
+        cluster_name="$1"
+        profile="''${2:-"$AWS_PROFILE"}"
+        alias="''${3:-"$cluster_name"}"
+        set -x
+        aws eks update-kubeconfig --profile="$profile" --name="$cluster_name" --alias="$alias"
+        # set ARN-based context
+        # shellcheck disable=SC2046
+        kubectl config set-context $(kubectl config get-contexts "$cluster_name" | tail -n1 | awk '{ print $3 " --cluster=" $3 " --user=" $4 }')
+      '';
+    })
   ];
 }

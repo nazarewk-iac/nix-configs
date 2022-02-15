@@ -76,20 +76,6 @@ in {
           sshuttle -r "$username@$host" "$cidr" --no-latency-control "''${@:3}"
         '';
       })
-
-      (pkgs.writeShellApplication {
-        name = "${cfg.prefix}eksconfig";
-        runtimeInputs = with pkgs; [ awscli2 kubectl ];
-        text = ''
-          cluster_name="$1"
-          profile="''${2:-"$AWS_PROFILE"}"
-          set -x
-          aws eks update-kubeconfig --profile="$profile" --name="$cluster_name" --alias="$cluster_name"
-          # set ARN-based context
-          # shellcheck disable=SC2046
-          kubectl config set-context $(kubectl config get-contexts "$cluster_name" | tail -n1 | awk '{ print $3 " --cluster=" $3 " --user=" $4 }')
-        '';
-      })
     ];
   };
 }

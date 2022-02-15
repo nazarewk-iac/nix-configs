@@ -1,44 +1,55 @@
-{ pkgs, ... }: {
-  home-manager.sharedModules = [
-    {
-      programs.git.ignores = [ (builtins.readFile ./.gitignore) ];
-    }
-  ];
-  environment.systemPackages = with pkgs; [
-    # dev software
-    sshuttle
-    nodejs
-    yarn
-    zip
+{ lib, pkgs, config, ... }:
+with lib;
+let
+  cfg = config.nazarewk.development.cloud;
+in {
+  options.nazarewk.development.cloud = {
+    enable = mkEnableOption "cloud development";
+  };
 
-    # AWS
-    awscli2
-    eksctl
+  config = mkIf cfg.enable {
+    home-manager.sharedModules = [
+      {
+        programs.git.ignores = [ (builtins.readFile ./.gitignore) ];
+      }
+    ];
 
-    # Argo
-    argocd
+    environment.systemPackages = with pkgs; [
+      # dev software
+      sshuttle
+      nodejs
+      yarn
+      zip
 
-    (pkgs.writeShellApplication {
-      name = "tf-fmt";
-      runtimeInputs = with pkgs; [ pkgs.gnugrep pkgs.gnused pkgs.coreutils pkgs.findutils ];
-      text = ''
-      since_revision="$1"
-      cd "$(git rev-parse --show-toplevel)"
+      # AWS
+      awscli2
+      eksctl
 
-      if command -v terraform ; then
-        git diff --name-only "$since_revision" | grep -E '.(tf|tfvars)$' | sed 's#/[^/]*$##g' | sort | uniq \
-          | xargs -n1 -r terraform fmt
-      else
-        echo 'terraform executable is missing, skipping...'
-      fi
+      # Argo
+      argocd
 
-      if command -v terragrunt ; then
-        git diff --name-only "$since_revision" | grep -E '.(hcl)$' \
-          | xargs -n1 -r terragrunt hclfmt --terragrunt-hclfmt-file
-      else
-        echo 'terragrunt executable is missing, skipping...'
-      fi
-      '';
-    })
-  ];
+      (pkgs.writeShellApplication {
+        name = "tf-fmt";
+        runtimeInputs = with pkgs; [ pkgs.gnugrep pkgs.gnused pkgs.coreutils pkgs.findutils ];
+        text = ''
+        since_revision="$1"
+        cd "$(git rev-parse --show-toplevel)"
+
+        if command -v terraform ; then
+          git diff --name-only "$since_revision" | grep -E '.(tf|tfvars)$' | sed 's#/[^/]*$##g' | sort | uniq \
+            | xargs -n1 -r terraform fmt
+        else
+          echo 'terraform executable is missing, skipping...'
+        fi
+
+        if command -v terragrunt ; then
+          git diff --name-only "$since_revision" | grep -E '.(hcl)$' \
+            | xargs -n1 -r terragrunt hclfmt --terragrunt-hclfmt-file
+        else
+          echo 'terragrunt executable is missing, skipping...'
+        fi
+        '';
+      })
+    ];
+  };
 }
