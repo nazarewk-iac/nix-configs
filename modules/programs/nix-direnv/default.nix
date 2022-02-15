@@ -4,7 +4,7 @@ let
   cfg = config.nazarewk.programs.nix-direnv;
 in {
   options.nazarewk.programs.nix-direnv = {
-    enable = mkEnableOption "nix-direnv";
+    enable = mkEnableOption "nix-direnv setup";
   };
 
   config = mkIf cfg.enable {

@@ -70,19 +70,23 @@
 #                 });
               })
             ];
-            nazarewk.programs.aws-vault.enable = true;
-            nazarewk.programs.nix-direnv.enable = true;
-            nazarewk.sway.gdm.enable = true;
-            nazarewk.sway.systemd.enable = false;
-            nazarewk.hardware.modem.enable = true;
-            nazarewk.hardware.pipewire.enable = true;
-            nazarewk.hardware.pipewire.useWireplumber = true;
-            nazarewk.hardware.yubikey.enable = true;
+
             nazarewk.development.cloud.enable = true;
             nazarewk.development.k8s.enable = true;
             nazarewk.development.python.enable = true;
             nazarewk.development.ruby.enable = true;
+            nazarewk.filesystems.zfs.enable = true;
+            nazarewk.hardware.modem.enable = true;
+            nazarewk.hardware.pipewire.enable = true;
+            nazarewk.hardware.pipewire.useWireplumber = true;
+            nazarewk.hardware.yubikey.enable = true;
             nazarewk.k3s.single-node.enable = false;
+            nazarewk.programs.aws-vault.enable = true;
+            nazarewk.programs.nix-direnv.enable = true;
+            nazarewk.programs.nix-index.enable = true;
+            nazarewk.programs.obs-studio.enable = false;
+            nazarewk.sway.gdm.enable = true;
+            nazarewk.sway.systemd.enable = false;
 
             home-manager.users.nazarewk = {
               fresha.development.enable = true;
@@ -111,15 +115,14 @@
           ./modules/development/k8s
           ./modules/development/python
           ./modules/development/ruby
+          ./modules/filesystems/zfs
           ./modules/hardware/modem
           ./modules/hardware/pipewire
           ./modules/hardware/yubikey
-          ./modules/nix-direnv
           ./modules/packaging/asdf
-          # ./modules/obs-studio
-          ./modules/nix-index
-
-          # # TODO: CNI plugin discovery
+          ./modules/programs/nix-direnv
+          ./modules/programs/nix-index
+          ./modules/programs/obs-studio
           ./modules/k3s/single-node
 
           {
@@ -134,15 +137,6 @@
               (self: super: {
                   # mesa = nixpkgs-mesa.legacyPackages.x86_64-linux.mesa;
               })
-            ];
-          }
-
-
-          {
-            environment.systemPackages = [
-              nixpkgs.legacyPackages.x86_64-linux.nix-index
-              # nix-alien.packages.x86_64-linux.nix-alien
-              # nix-alien.packages.x86_64-linux.nix-index-update
             ];
           }
 

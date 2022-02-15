@@ -1,3 +1,4 @@
+# TODO: CNI plugin discovery
 { lib, pkgs, config, ... }:
 with lib;
 let

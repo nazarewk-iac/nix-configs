@@ -9,7 +9,6 @@
   imports = [ # Include the results of the hardware scan.
     ./hardware-configuration.nix
     ./nazarewk.nix
-    ../../modules/zfs/default.nix
   ];
 
   # NIX / NIXOS
