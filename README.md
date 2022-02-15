@@ -1,14 +1,23 @@
 # nix-configs
-Repository containing my personal Nix (NixOS, Home Manager etc.) configurations
+Repository containing my personal Nix (NixOS, Home Manager etc.) configurations.
 
-Currently it's just a copy-paste of my learning experience of configuring:
-- first-time NixOS
+Basic structure:
+- `configurations/` - large NixOS configuration bundles
+- `machines/` - configurations of specific (physical) machines
+- `users/` - user specific profiles
+- `modules/` - all modules live here, they MUST be turned off by default (side-effect free imports),
+  - `modules/default.nix` - holds imports to all the modules and basic Nix package manager configuration,
+
+Generally I aim to hide everything behind Options, but bulk of configuration still lives in `configurations/desktop`. 
+
+
+## Overview
+
+This is incomplete list of incorporated software/systems worth noting:
 - ZFS
 - Sway WM
 - ZSH
 - Home Manager
-
-I'm planning to slowly migrate to proper structure of the repository moving stuff around.
 
 # Notes
 

@@ -64,4 +64,10 @@ in {
       '';
     })
   ];
+
+  fresha.development.enable = true;
+  fresha.development.bastionUsername = "krzysztof.nazarewski";
+  nazarewk.development.git.enable = true;
+
+  home.sessionVariables.AWS_VAULT_BACKEND = "secret-service";
 }

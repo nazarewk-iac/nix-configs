@@ -14,6 +14,7 @@ in {
       boot.initrd.supportedFilesystems = [ "zfs" ];
       boot.supportedFilesystems = [ "zfs" ];
       boot.zfs.enableUnstable = true;
+
       services.zfs.autoScrub.enable = true;
       services.zfs.autoSnapshot.enable = true;
       services.zfs.autoSnapshot.flags = "-k -p --utc";

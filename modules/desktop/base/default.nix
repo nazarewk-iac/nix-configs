@@ -1,4 +1,4 @@
-{ lib, pkgs, config, ... }:
+{ lib, pkgs, config, flakeInputs, ... }:
 with lib;
 let
   cfg = config.nazarewk.desktop.base;
@@ -8,6 +8,20 @@ in {
   };
 
   config = mkIf cfg.enable {
+    nixpkgs.overlays = [
+      flakeInputs.nixpkgs-wayland.overlay
+    ];
+
+    fonts.fonts = with pkgs; [
+      cantarell-fonts
+      font-awesome
+      nerdfonts
+      noto-fonts
+      noto-fonts-emoji
+      noto-fonts-emoji-blob-bin
+      noto-fonts-extra
+    ];
+
     environment.systemPackages = with pkgs; [
       qt5.qtwayland
       qt5Full
