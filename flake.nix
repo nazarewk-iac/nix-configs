@@ -82,6 +82,7 @@
             nazarewk.development.k8s.enable = true;
             nazarewk.development.python.enable = true;
             nazarewk.development.ruby.enable = true;
+            nazarewk.k3s.single-node.enable = false;
 
             home-manager.users.nazarewk = {
               fresha.development.enable = true;
@@ -119,7 +120,7 @@
           ./modules/nix-index
 
           # # TODO: CNI plugin discovery
-          # ./modules/k3s/single-node
+          ./modules/k3s/single-node
 
           {
             # should fix mesa crashes
