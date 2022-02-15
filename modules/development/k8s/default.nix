@@ -1,44 +1,54 @@
-{ pkgs, ... }: {
-  environment.systemPackages = with pkgs; [
-    # kubernetes
-    kubectl # dep for: chart-testing
-    k9s
-    kubectx
+{ lib, pkgs, config, ... }:
+with lib;
+let
+  cfg = config.nazarewk.development.k8s;
+in {
+  options.nazarewk.development.k8s = {
+    enable = mkEnableOption "k8s development";
+  };
 
-    # Helm
-    kubernetes-helm # dep for: chart-testing
-    chart-testing
-    helmsman
+  config = mkIf cfg.enable {
+    environment.systemPackages = with pkgs; [
+      # kubernetes
+      kubectl # dep for: chart-testing
+      k9s
+      kubectx
 
-    yamale # dep for: chart-testing
-    yamllint # dep for: chart-testing
+      # Helm
+      kubernetes-helm # dep for: chart-testing
+      chart-testing
+      helmsman
 
-    (pkgs.writeShellApplication {
-      name = "kubectl-get_all";
-      runtimeInputs = with pkgs; [ kubectl coreutils gnugrep util-linux ];
-      text = ''
-        [ -z "''${DEBUG:-}" ] || set -x
-        resources_extra=()
-        grep -E -- '( |^)((-n [a-z-]+)|(--namespace( |=)[a-z-]+)|(--namespaced))( |$)' <<<"$*" >/dev/null && extra+=(--namespaced)
-        # https://github.com/koalaman/shellcheck/wiki/SC2207
-        mapfile -t resources < <(kubectl api-resources --verbs=list "''${resources_extra[@]}" -o name)
-        kubectl get "$( tr ' ' ',' <<<"''${resources[*]}" )" "$@"
-      '';
-    })
+      yamale # dep for: chart-testing
+      yamllint # dep for: chart-testing
 
-    (pkgs.writeShellApplication {
-      name = "kubectl-eks_config";
-      runtimeInputs = with pkgs; [ awscli2 kubectl coreutils gawk ];
-      text = ''
-        cluster_name="$1"
-        profile="''${2:-"$AWS_PROFILE"}"
-        alias="''${3:-"$cluster_name"}"
-        set -x
-        aws eks update-kubeconfig --profile="$profile" --name="$cluster_name" --alias="$alias"
-        # set ARN-based context
-        # shellcheck disable=SC2046
-        kubectl config set-context $(kubectl config get-contexts "$cluster_name" | tail -n1 | awk '{ print $3 " --cluster=" $3 " --user=" $4 }')
-      '';
-    })
-  ];
+      (pkgs.writeShellApplication {
+        name = "kubectl-get_all";
+        runtimeInputs = with pkgs; [ kubectl coreutils gnugrep util-linux ];
+        text = ''
+          [ -z "''${DEBUG:-}" ] || set -x
+          resources_extra=()
+          grep -E -- '( |^)((-n [a-z-]+)|(--namespace( |=)[a-z-]+)|(--namespaced))( |$)' <<<"$*" >/dev/null && extra+=(--namespaced)
+          # https://github.com/koalaman/shellcheck/wiki/SC2207
+          mapfile -t resources < <(kubectl api-resources --verbs=list "''${resources_extra[@]}" -o name)
+          kubectl get "$( tr ' ' ',' <<<"''${resources[*]}" )" "$@"
+        '';
+      })
+
+      (pkgs.writeShellApplication {
+        name = "kubectl-eks_config";
+        runtimeInputs = with pkgs; [ awscli2 kubectl coreutils gawk ];
+        text = ''
+          cluster_name="$1"
+          profile="''${2:-"$AWS_PROFILE"}"
+          alias="''${3:-"$cluster_name"}"
+          set -x
+          aws eks update-kubeconfig --profile="$profile" --name="$cluster_name" --alias="$alias"
+          # set ARN-based context
+          # shellcheck disable=SC2046
+          kubectl config set-context $(kubectl config get-contexts "$cluster_name" | tail -n1 | awk '{ print $3 " --cluster=" $3 " --user=" $4 }')
+        '';
+      })
+    ];
+  };
 }
