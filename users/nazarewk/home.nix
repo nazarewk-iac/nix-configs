@@ -16,6 +16,9 @@ in {
   xdg.configFile."waybar/config".source = ./waybar/config;
   xdg.configFile."waybar/style.css".source = ./waybar/style.css;
 
+  home.file.".yubico".source = ./yubico;
+  home.file.".yubico".recursive = true;
+
   programs.git.enable = true;
   programs.git.signing.key = "916D8B67241892AE";
   programs.git.signing.signByDefault = true;
