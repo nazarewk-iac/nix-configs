@@ -1,9 +1,9 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.filesystems.zfs;
+  cfg = config.nazarewk.filesystems.zfs-root;
 in {
-  options.nazarewk.filesystems.zfs = {
+  options.nazarewk.filesystems.zfs-root = {
     enable = mkEnableOption "ZFS setup";
   };
 

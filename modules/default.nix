@@ -15,7 +15,7 @@
     ./development/python
     ./development/ruby
     ./filesystems/base
-    ./filesystems/zfs
+    ./filesystems/zfs-root
     ./hardware/intel-graphics-fix
     ./hardware/modem
     ./hardware/pipewire

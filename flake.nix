@@ -39,15 +39,30 @@
       ];
     };
   in {
+    nixosConfigurations.nazarewk-krul = makeSystem (let system = "x86_64-linux"; in {
+      inherit system;
+      modules = [
+        ./configurations/desktop
+        ./machines/krul
+        {
+          home-manager.users.nazarewk = {
+            fresha.development.enable = true;
+            fresha.development.bastionUsername = "krzysztof.nazarewski";
+          };
+
+          environment.systemPackages = [
+            nixos-generators.defaultPackage.${system}
+          ];
+        }
+      ];
+    });
+
     nixosConfigurations.nazarewk = makeSystem (let system = "x86_64-linux"; in {
       inherit system;
       modules = [
         ./configurations/desktop
         ./machines/dell-latitude-e5470
         {
-          nazarewk.filesystems.zfs.enable = true;
-          nazarewk.hardware.modem.enable = true;
-
           home-manager.users.nazarewk = {
             fresha.development.enable = true;
             fresha.development.bastionUsername = "krzysztof.nazarewski";
@@ -70,7 +85,7 @@
     };
 
     packages.x86_64-linux = {
-      basic-raw = nixos-generators.nixosGenerate {
+      generators.basic-raw = nixos-generators.nixosGenerate {
         pkgs = nixpkgs.legacyPackages.x86_64-linux;
         modules = [
           ./modules

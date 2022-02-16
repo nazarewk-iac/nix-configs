@@ -30,6 +30,7 @@
     LC_TIME = "en_GB.UTF-8"; # en_GB - Monday as first day of week
   };
   time.timeZone = "Europe/Warsaw";
+  location.provider = "geoclue2";
 
   # INPUT
   services.xserver.layout = "pl";
