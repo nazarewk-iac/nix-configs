@@ -12,6 +12,10 @@
     ./filesystem.nix
   ];
 
+  boot.loader.efi.canTouchEfiVariables = true;
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.systemd-boot.memtest86.enable = true;
+
   boot.initrd.kernelModules = [ "amdgpu" "kvm-amd" ];
   services.xserver.videoDrivers = [ "amdgpu" ];
 
