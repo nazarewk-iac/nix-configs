@@ -25,14 +25,14 @@ in {
     groupByUsername = input: builtins.mapAttrs (name: map (lib.removePrefix "${name}:")) (builtins.groupBy (e: lib.head (lib.splitString ":" e)) input);
     toOutputLines = lib.mapAttrsToList (name: values: (builtins.concatStringsSep ":" (lib.concatLists [[name] values])));
 
-    foldParts = path:
-      (builtins.concatStringsSep "\n"
-      (toOutputLines
-      (groupByUsername
-      (stripComments
-      (lib.splitString "\n"
-      (builtins.readFile path
-    ))))));
+    foldParts = path: lib.pipe path [
+      builtins.readFile
+      (lib.splitString "\n")
+      stripComments
+      groupByUsername
+      toOutputLines
+      (builtins.concatStringsSep "\n")
+    ];
    in foldParts ./yubico/u2f_keys.parts;
 
   programs.git.enable = true;
