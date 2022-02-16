@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 
 let
   keepassWithPlugins = pkgs.keepass.override {
@@ -16,8 +16,24 @@ in {
   xdg.configFile."waybar/config".source = ./waybar/config;
   xdg.configFile."waybar/style.css".source = ./waybar/style.css;
 
-  home.file.".yubico".source = ./yubico;
-  home.file.".yubico".recursive = true;
+  # pam-u2f expects a single line of configuration per user in format `username:entry1:entry2:entry3:...`
+  # `pamu2fcfg` generates lines of format `username:entry`
+  # For ease of use you can append those pamu2fcfg to ./yubico/u2f_keys.parts directly,
+  #  then below code will take care of stripping comments and folding it into a single line per user
+  xdg.configFile."Yubico/u2f_keys".text = let
+    stripComments = lib.filter (line: (builtins.match "\w*" line) != [] && (builtins.match "\w*#.*" line) != []);
+    groupByUsername = input: builtins.mapAttrs (name: map (lib.removePrefix "${name}:")) (builtins.groupBy (e: lib.head (lib.splitString ":" e)) input);
+    toOutputLines = lib.mapAttrsToList (name: values: (builtins.concatStringsSep ":" (lib.concatLists [[name] values])));
+
+    foldParts = path:
+      (builtins.concatStringsSep "\n"
+      (toOutputLines
+      (groupByUsername
+      (stripComments
+      (lib.splitString "\n"
+      (builtins.readFile path
+    ))))));
+   in foldParts ./yubico/u2f_keys.parts;
 
   programs.git.enable = true;
   programs.git.signing.key = "916D8B67241892AE";

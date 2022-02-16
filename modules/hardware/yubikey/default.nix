@@ -35,10 +35,15 @@ in {
     # https://nixos.wiki/wiki/Yubikey
     services.udev.packages = [ pkgs.yubikey-personalization ];
 
-    security.pam.yubico = {
+    # security.pam.yubico = {
+    #   enable = true;
+    #   # debug = true;
+    #   mode = "challenge-response";
+    # };
+
+    security.pam.u2f = {
       enable = true;
-      # debug = true;
-      mode = "challenge-response";
+      cue = true;
     };
 
     services.pcscd.enable = true;
