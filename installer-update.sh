@@ -18,7 +18,7 @@ to_file() {
   fi
 }
 
-[ -e "${bkp}" ] || cmd mv "${cfg}"
+[ -e "${bkp}" ] || cmd mv "${cfg}" "${bkp}"
 cat <<EOF | to_file "${cfg}"
 { config, pkgs, ... }:
 
