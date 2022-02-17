@@ -6,6 +6,7 @@
   networking.hostName = "nazarewk-krul";
 
   nazarewk.filesystems.zfs-root.enable = true;
+  hardware.cpu.amd.updateMicrocode = true;
 
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")

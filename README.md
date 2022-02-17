@@ -21,6 +21,39 @@ This is incomplete list of incorporated software/systems worth noting:
 
 # Notes
 
+## Building fresh system from `nixos-installer` stable image
+
+1. Add SSH keys from `curl https://api.github.com/users/nazarewk/keys` to `~/.ssh/authorized_keys`
+2. Disable suspend on idle in power settings of Gnome
+3. `ssh nixos@<whatever-machine-ip-is>`
+4. add below to the `/etc/nixos/configuration.nix`:
+   ```
+    nix.package = pkgs.nixFlakes;
+    nix.extraOptions = ''
+      experimental-features = nix-command flakes
+    '';
+    nixpkgs.config.allowUnfree = true;
+   ```
+5. set up `nixos-unstable` with:
+   ```
+   nix-channel --add https://nixos.org/channels/nixos-unstable nixos
+   nix-channel --update
+   nixos-rebuild switch
+   ```
+6. Set up your filesystem at `/mnt`
+7. checkout the repo:
+   ```
+   mkdir -p /mnt/home/nazarewk/dev/github.com/nazarewk-iac
+   git clone https://github.com/nazarewk-iac/nix-configs.git /mnt/home/nazarewk/dev/github.com/nazarewk-iac/nix-configs
+   chown -R 1000:100 /mnt/home/nazarewk
+   ```
+8. set up the system-level `flake.nix`:
+   ```
+   mkdir -p /mnt/etc/nixos
+   ln -s ../../home/nazarewk/dev/github.com/nazarewk-iac/nix-configs/flake.nix /mnt/etc/nixos/flake.nix
+   ```
+9. run the build with `nixos-install --show-trace --root /mnt --flake /mnt/home/nazarewk/dev/github.com/nazarewk-iac/nix-configs#<nixosConfigurationName>`
+
 ## Building an USB stick image
 
 `nix build '.#basic-raw'` see https://github.com/nix-community/nixos-generators#using-in-a-flake
