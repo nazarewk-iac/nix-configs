@@ -2,7 +2,9 @@
 set -xeEuo pipefail
 
 target="${1:-"/mnt"}"
-if [ -n "${APPLY:-}" ] ; then
+zpool="nazarewk-krul-primary"
+zfs_prefix="${zpool}/nazarewk-krul"
+if [ "${APPLY:-}" = 1 ] ; then
   cmd () { "$@"; }
 else
   cmd () { echo "$@"; }
@@ -18,8 +20,11 @@ mntZFS() {
   local prefix="${2:-}"
   local path="${3:-"${dataset}"}"
   path="${path%/}"
-  mnt -t zfs "nazarewk-krul-primary/nazarewk-krul${prefix}${dataset}" "${target}${path}"
+  mnt -t zfs "${zfs_prefix}${prefix}${dataset}" "${target}${path}"
 }
+
+zpool status "${zpool}" || cmd zpool import "${zpool}"
+cmd zfs load-key "${zpool}" || true
 
 mntZFS "/root" "/nixos" "/"
 mnt -t vfat "/dev/disk/by-uuid/2BFB-6A81" "${target}/boot"

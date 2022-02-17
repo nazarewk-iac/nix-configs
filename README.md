@@ -40,7 +40,10 @@ This is incomplete list of incorporated software/systems worth noting:
    nix-channel --update
    nixos-rebuild switch
    ```
-6. Set up your filesystem at `/mnt`
+6. Set up your filesystem at `/mnt`, eg:
+   ```
+   curl -L https://github.com/nazarewk-iac/nix-configs/raw/main/machines/krul/mount.sh | bash
+   ```
 7. checkout the repo:
    ```
    mkdir -p /mnt/home/nazarewk/dev/github.com/nazarewk-iac
