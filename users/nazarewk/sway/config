@@ -107,7 +107,7 @@ bindswitch --reload --locked lid:off output $displayLaptop enable
     #bindsym $Super+v splitv
 
     # Switch the current container between different layout styles
-    bindsym $Super+$Shift+s layout stacking
+    bindsym $Super+$Shift+d layout stacking
     bindsym $Super+$Shift+w layout tabbed
     bindsym $Super+$Shift+e layout toggle split
 
