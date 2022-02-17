@@ -75,6 +75,7 @@ in {
       lshw
       lsof
       pciutils
+      dmidecode
 
       glxinfo
       inxi

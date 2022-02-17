@@ -9,6 +9,7 @@
   nazarewk.filesystems.zfs-root.enable = true;
   nazarewk.hardware.intel-graphics-fix.enable = true;
   nazarewk.hardware.modem.enable = true;
+  services.cpupower-gui.enable = true;
 
   # BOOT
   boot.kernelParams = [ "consoleblank=90" ];
