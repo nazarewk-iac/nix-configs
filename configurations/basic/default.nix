@@ -13,6 +13,11 @@
   networking.networkmanager.enable = true;
   networking.networkmanager.wifi.powersave = true;
 
+  # REMOTE access
+  services.openssh.enable = true;
+  services.openssh.openFirewall = true;
+  services.openssh.passwordAuthentication = false;
+
 
   # HARDWARE
   services.cpupower-gui.enable = true;

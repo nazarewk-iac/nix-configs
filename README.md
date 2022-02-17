@@ -26,10 +26,10 @@ This is incomplete list of incorporated software/systems worth noting:
 1. Add SSH keys from `curl https://api.github.com/users/nazarewk/keys` to `~/.ssh/authorized_keys`
 2. Disable suspend on idle in power settings of Gnome
 3. `ssh nixos@<whatever-machine-ip-is>`
-4. `curl -L 'https://raw.githubusercontent.com/nazarewk-iac/nix-configs/main/installer-update.sh' | sudo APPLY=1 bash`:
+4. `APPLY=1 bash <(curl -L 'https://raw.githubusercontent.com/nazarewk-iac/nix-configs/main/installer-update.sh')`:
 5. Set up your filesystem at `/mnt`, eg to mount:
    ```
-   curl -L https://github.com/nazarewk-iac/nix-configs/raw/main/machines/krul/mount.sh | bash
+   APPLY=1 bash <(curl -L 'https://github.com/nazarewk-iac/nix-configs/raw/main/machines/krul/mount.sh')
    ```
 6. checkout the repo:
    ```
