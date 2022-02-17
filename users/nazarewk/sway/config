@@ -268,6 +268,8 @@ bindsym $Super+$Shift+c exec env RUST_BACKTRACE=1 \
 bindsym $Super+E exec thunar
 bindsym $Super+L exec swaylock -f
 
+bindsym $Super+S sticky toggle
+
 # Media controls
 # https://www.reddit.com/r/swaywm/comments/ju1609/control_spotify_with_bluetooth_headset_with_dbus/
 bindsym --locked XF86AudioPlay  exec playerctl play-pause
@@ -277,3 +279,9 @@ bindsym --locked XF86AudioPrev  exec playerctl previous
 
 # Screenshots
 bindsym Print exec flameshot gui
+
+for_window [title="Firefox — Sharing Indicator"] {
+  border none
+  floating enable
+  sticky enable
+}
