@@ -17,6 +17,7 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.systemd-boot.memtest86.enable = true;
 
+  boot.initrd.availableKernelModules = [ "nvme" "xhci_pci" "ahci" "usb_storage" "sd_mod" ];
   boot.initrd.kernelModules = [ "amdgpu" "kvm-amd" ];
   services.xserver.videoDrivers = [ "amdgpu" ];
 

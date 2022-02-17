@@ -16,15 +16,17 @@ mnt() {
 }
 
 mntZFS() {
-  local dataset="${1}"
+  local dataset_name="${1}"
   local prefix="${2:-}"
-  local path="${3:-"${dataset}"}"
+  local path="${3:-"${dataset_name}"}"
   path="${path%/}"
-  mnt -t zfs "${zfs_prefix}${prefix}${dataset}" "${target}${path}"
+  local mountpoint="${target}${path}"
+  local dataset="${zfs_prefix}${prefix}${dataset_name}"
+  mnt -t zfs "${dataset}" "${mountpoint}"
 }
 
 zpool status "${zpool}" || cmd zpool import "${zpool}"
-cmd zfs load-key "${zpool}" || true
+cmd zfs load-key -a
 
 mntZFS "/root" "/nixos" "/"
 mnt -t vfat "/dev/disk/by-uuid/2BFB-6A81" "${target}/boot"

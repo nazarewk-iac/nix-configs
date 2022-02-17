@@ -40,7 +40,7 @@ This is incomplete list of incorporated software/systems worth noting:
    nix-channel --update
    nixos-rebuild switch
    ```
-6. Set up your filesystem at `/mnt`, eg:
+6. Set up your filesystem at `/mnt`, eg to mount:
    ```
    curl -L https://github.com/nazarewk-iac/nix-configs/raw/main/machines/krul/mount.sh | bash
    ```
@@ -55,7 +55,10 @@ This is incomplete list of incorporated software/systems worth noting:
    mkdir -p /mnt/etc/nixos
    ln -s ../../home/nazarewk/dev/github.com/nazarewk-iac/nix-configs/flake.nix /mnt/etc/nixos/flake.nix
    ```
-9. run the build with `nixos-install --show-trace --root /mnt --flake /mnt/home/nazarewk/dev/github.com/nazarewk-iac/nix-configs#<nixosConfigurationName>`
+9. run the build, eg: 
+   ```
+   nixos-install --show-trace --root /mnt --flake '/mnt/home/nazarewk/dev/github.com/nazarewk-iac/nix-configs#<nixosConfigurationName>'
+   ```
 
 ## Building an USB stick image
 
