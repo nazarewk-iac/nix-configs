@@ -285,3 +285,9 @@ for_window [title="Firefox — Sharing Indicator"] {
   floating enable
   sticky enable
 }
+
+for_window [title="Meet - .* — Mozilla Firefox"] {
+  floating enable
+  sticky enable
+}
+
