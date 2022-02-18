@@ -36,7 +36,7 @@ bindswitch --reload --locked lid:off output $displayLaptop enable
     bindsym $Super+Return exec $term
 
     # Kill focused window
-    bindsym $Super+$Shift+q kill
+    bindsym $Super+Shift+q kill
 
     # Start your launcher
     bindsym $Super+d exec $launcher --show drun
@@ -50,7 +50,7 @@ bindswitch --reload --locked lid:off output $displayLaptop enable
     floating_modifier $Super normal
 
     # Reload the configuration file
-    # bindsym $Super+$Shift+c reload
+    # bindsym $Super+Shift+c reload
 
 #
 # Moving around:
@@ -62,14 +62,14 @@ bindswitch --reload --locked lid:off output $displayLaptop enable
     bindsym $Super+Right focus right
     bindsym --border --whole-window $Super+button5 focus right
     bindsym --border --whole-window $Super+button4 focus left
-    bindsym --border --whole-window $Super+shift+button5 focus next sibling
-    bindsym --border --whole-window $Super+shift+button4 focus prev sibling
+    bindsym --border --whole-window $Super+Shift+button5 focus next sibling
+    bindsym --border --whole-window $Super+Shift+button4 focus prev sibling
 
     # Ditto, with arrow keys
-    bindsym $Super+$Shift+Left move left
-    bindsym $Super+$Shift+Down move down
-    bindsym $Super+$Shift+Up move up
-    bindsym $Super+$Shift+Right move right
+    bindsym $Super+Shift+Left move left
+    bindsym $Super+Shift+Down move down
+    bindsym $Super+Shift+Up move up
+    bindsym $Super+Shift+Right move right
 #
 # Workspaces:
 #
@@ -85,16 +85,16 @@ bindswitch --reload --locked lid:off output $displayLaptop enable
     bindsym $Super+9 workspace number 9
     bindsym $Super+0 workspace number 10
     # Move focused container to workspace
-    bindsym $Super+$Shift+1 move container to workspace number 1
-    bindsym $Super+$Shift+2 move container to workspace number 2
-    bindsym $Super+$Shift+3 move container to workspace number 3
-    bindsym $Super+$Shift+4 move container to workspace number 4
-    bindsym $Super+$Shift+5 move container to workspace number 5
-    bindsym $Super+$Shift+6 move container to workspace number 6
-    bindsym $Super+$Shift+7 move container to workspace number 7
-    bindsym $Super+$Shift+8 move container to workspace number 8
-    bindsym $Super+$Shift+9 move container to workspace number 9
-    bindsym $Super+$Shift+0 move container to workspace number 10
+    bindsym $Super+Shift+1 move container to workspace number 1
+    bindsym $Super+Shift+2 move container to workspace number 2
+    bindsym $Super+Shift+3 move container to workspace number 3
+    bindsym $Super+Shift+4 move container to workspace number 4
+    bindsym $Super+Shift+5 move container to workspace number 5
+    bindsym $Super+Shift+6 move container to workspace number 6
+    bindsym $Super+Shift+7 move container to workspace number 7
+    bindsym $Super+Shift+8 move container to workspace number 8
+    bindsym $Super+Shift+9 move container to workspace number 9
+    bindsym $Super+Shift+0 move container to workspace number 10
     # Note: workspaces can have any name you want, not just numbers.
     # We just use 1-10 as the default.
 #
@@ -107,15 +107,16 @@ bindswitch --reload --locked lid:off output $displayLaptop enable
     #bindsym $Super+v splitv
 
     # Switch the current container between different layout styles
-    bindsym $Super+$Shift+d layout stacking
-    bindsym $Super+$Shift+w layout tabbed
-    bindsym $Super+$Shift+e layout toggle split
+    bindsym $Super+Shift+d layout stacking
+    bindsym $Super+Shift+w layout tabbed
+    bindsym $Super+Shift+e layout toggle split
 
     # Make the current focus fullscreen
     bindsym $Super+f fullscreen
 
     # Toggle the current focus between tiling and floating mode
-    bindsym $Super+$Shift+f floating toggle
+    bindsym $Super+Shift+f floating toggle
+    bindsym $Super+Shift+S sticky toggle
 
     # Swap focus between the tiling area and the floating area
     # bindsym $Super+Space focus mode_toggle
@@ -129,7 +130,7 @@ bindswitch --reload --locked lid:off output $displayLaptop enable
     # You can send windows there and get them back later.
 
     # Move the currently focused window to the scratchpad
-    bindsym $Super+$Shift+minus move scratchpad
+    bindsym $Super+Shift+minus move scratchpad
 
     # Show the next scratchpad window or hide the focused scratchpad window.
     # If there are multiple scratchpad windows, this command cycles through them.
@@ -253,22 +254,20 @@ bindsym $Super+Delete exec env RUST_BACKTRACE=1 \
 bindsym $LAlt+Tab exec env RUST_BACKTRACE=1 \
     swayr prev-window all-workspaces >> /tmp/swayr.log 2>&1
 
-bindsym $LAlt+$Shift+Tab exec env RUST_BACKTRACE=1 \
+bindsym $LAlt+Shift+Tab exec env RUST_BACKTRACE=1 \
     swayr next-window all-workspaces >> /tmp/swayr.log 2>&1
 
-bindsym $Super+$Shift+Space exec env RUST_BACKTRACE=1 \
+bindsym $Super+Shift+Space exec env RUST_BACKTRACE=1 \
     swayr switch-workspace-or-window >> /tmp/swayr.log 2>&1
 
 bindsym $Super+c exec env RUST_BACKTRACE=1 \
     swayr execute-swaymsg-command >> /tmp/swayr.log 2>&1
 
-bindsym $Super+$Shift+c exec env RUST_BACKTRACE=1 \
+bindsym $Super+Shift+c exec env RUST_BACKTRACE=1 \
     swayr execute-swayr-command >> /tmp/swayr.log 2>&1
 
 bindsym $Super+E exec thunar
 bindsym $Super+L exec swaylock -f
-
-bindsym $Super+$Shift+S sticky toggle
 
 # Media controls
 # https://www.reddit.com/r/swaywm/comments/ju1609/control_spotify_with_bluetooth_headset_with_dbus/
@@ -286,10 +285,10 @@ for_window [title="Firefox — Sharing Indicator"] {
   sticky enable
 }
 
-for_window [title="Meet - .* — Mozilla Firefox"] {
-  floating enable
-  sticky enable
-}
+# for_window [title="Meet - .* — Mozilla Firefox"] {
+#   floating enable
+#   sticky enable
+# }
 
 # title: "[628041]@nazarewk-krul (/nix/store/bxkp2nf9khi5xr2lw664hf4vw10xg0na-gnupg-2.3.3/bin/gpg2 --status-fd=2 -bsau 916D8B67241892AE)"
 for_window [title=".*@.* .*/nix/store/.*-gnupg-.*/bin/gpg2 .*"] {
