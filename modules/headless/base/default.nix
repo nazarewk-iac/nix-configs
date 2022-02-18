@@ -89,6 +89,8 @@ in {
 
       coreutils
       gnugrep
+
+      zip
     ];
   };
 }

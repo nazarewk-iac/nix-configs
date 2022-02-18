@@ -1,0 +1,11 @@
+# Terraform
+*tfstate*
+*.tfplan
+.terraform*
+
+# Terraform CLI configuration files
+!.terraformrc
+!*.tfrc
+
+# Terragrunt
+.terragrunt*

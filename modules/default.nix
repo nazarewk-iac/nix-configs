@@ -1,7 +1,6 @@
-{pkgs, flakeInputs, ...}: {
-  imports = [
-    flakeInputs.home-manager.nixosModules.home-manager
-
+{pkgs, flakeInputs, ...}:
+let
+  nixosModules = [
     ./desktop/base
     ./desktop/gnome/base
     ./desktop/sway/base
@@ -14,6 +13,7 @@
     ./development/podman
     ./development/python
     ./development/ruby
+    ./development/terraform
     ./filesystems/base
     ./filesystems/zfs-root
     ./hardware/intel-graphics-fix
@@ -28,6 +28,15 @@
     ./programs/nix-index
     ./programs/obs-studio
   ];
+  hmModules = [
+    ./development/git/hm.nix
+    ./development/fresha/hm.nix
+    ./development/terraform/hm.nix
+  ];
+in {
+  imports = [
+    flakeInputs.home-manager.nixosModules.home-manager
+  ] ++ nixosModules;
 
   config = {
     # renamed from nix.binaryCachePublicKeys
@@ -52,9 +61,6 @@
     home-manager.useGlobalPkgs = true;
     home-manager.useUserPackages = true;
 
-    home-manager.sharedModules = [
-      ./development/git/hm.nix
-      ./development/fresha/hm.nix
-    ];
+    home-manager.sharedModules = hmModules;
   };
 }

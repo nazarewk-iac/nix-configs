@@ -28,6 +28,7 @@ in {
       default = "git@github.com:surgeventures/$repo.git";
     };
   };
+
   config = mkIf cfg.enable {
     programs.ssh.extraConfig = ''
       Host *.fresha.io *.shedul.io

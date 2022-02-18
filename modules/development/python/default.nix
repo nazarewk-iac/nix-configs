@@ -17,9 +17,7 @@ in {
       # python software
       pipenv
       poetry
-      python37
-      python38
-      (python39.withPackages (ps:
+      (python310.withPackages (ps:
         with ps; [
           pip
           ipython
@@ -29,8 +27,6 @@ in {
           pyaml
           boto3
         ]))
-      python310
-      python311
     ];
 
     environment.interactiveShellInit = ''
