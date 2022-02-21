@@ -8,6 +8,7 @@ let
     ./desktop/sway/through-systemd
     ./desktop/xfce/base
     ./development/cloud
+    ./development/golang
     ./development/k8s
     ./development/nix
     ./development/podman

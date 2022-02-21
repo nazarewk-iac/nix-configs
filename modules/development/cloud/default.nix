@@ -19,6 +19,12 @@ in {
 
       # Argo
       argocd
+
+      (pkgs.writeShellApplication {
+        name = "aws-list-all-parameters";
+        runtimeInputs = with pkgs; [ awscli2 coreutils jq ];
+        text = builtins.readFile ./bin/aws-list-all-parameters.sh;
+      })
     ];
   };
 }

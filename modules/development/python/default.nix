@@ -19,13 +19,16 @@ in {
       poetry
       (python310.withPackages (ps:
         with ps; [
-          pip
-          ipython
-          requests
-          pipx
-          pip-tools
-          pyaml
           boto3
+          flake8
+          ipython
+          pip
+          pip-tools
+          pipx
+          pyaml
+          pytest
+          pyyaml
+          requests
         ]))
     ];
 
