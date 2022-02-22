@@ -9,9 +9,12 @@
   nazarewk.filesystems.zfs-root.enable = true;
   nazarewk.filesystems.zfs-root.sshUnlock.enable = true;
   nazarewk.filesystems.zfs-root.sshUnlock.authorizedKeys = config.users.users.nazarewk.openssh.authorizedKeys.keys;
-  nazarewk.filesystems.zfs-root.sshUnlock.secrets = {
-
-  };
+  nazarewk.filesystems.zfs-root.sshUnlock.hostKeys = [
+    # sudo ssh-keygen -t rsa -N "" -f /boot/nazarewk-ssh/ssh_host_rsa_key
+    # sudo ssh-keygen -t ed25519 -N "" -f /boot/nazarewk-ssh/ssh_host_ed25519_key
+    /boot/nazarewk-ssh/ssh_host_rsa_key
+    /boot/nazarewk-ssh/ssh_host_ed25519_key
+  ];
 
   nazarewk.hardware.intel-graphics-fix.enable = true;
   nazarewk.hardware.modem.enable = true;
@@ -19,7 +22,7 @@
 
   # BOOT
   boot.kernelParams = [ "consoleblank=90" ];
-  boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "nvme" "usbhid" "uas" "rtsx_pci_sdmmc" ];
+  boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "nvme" "usbhid" "uas" "rtsx_pci_sdmmc" "e1000e"];
   boot.kernelModules = [ "kvm-intel" ];
   boot.loader.efi.canTouchEfiVariables = true;
   boot.loader.systemd-boot.enable = true;

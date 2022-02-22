@@ -45,6 +45,7 @@ in {
     })
     (mkIf cfg.sshUnlock.enable {
       # see https://nixos.wiki/wiki/ZFS#Unlock_encrypted_zfs_via_ssh_on_boot
+      boot.kernelParams = [ "ip=dhcp" ];
       boot.initrd.secrets = cfg.sshUnlock.secrets;
       boot.initrd.network.enable = true;
       boot.initrd.network.ssh.enable = true;
