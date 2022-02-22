@@ -25,7 +25,6 @@ in {
   ];
 
   users.users.nazarewk.openssh.authorizedKeys.keys = sshKeys;
-  nazarewk.filesystems.zfs-root.sshUnlock.authorizedKeys = sshKeys;
 
   home-manager.users.nazarewk = import ./home.nix;
 }

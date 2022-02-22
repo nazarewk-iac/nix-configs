@@ -8,6 +8,11 @@
 
   nazarewk.filesystems.zfs-root.enable = true;
   nazarewk.filesystems.zfs-root.sshUnlock.enable = true;
+  nazarewk.filesystems.zfs-root.sshUnlock.authorizedKeys = config.users.users.nazarewk.openssh.authorizedKeys.keys;
+  nazarewk.filesystems.zfs-root.sshUnlock.secrets = {
+
+  };
+
   nazarewk.hardware.intel-graphics-fix.enable = true;
   nazarewk.hardware.modem.enable = true;
   services.cpupower-gui.enable = true;

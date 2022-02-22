@@ -12,6 +12,14 @@ in {
         type = types.listOf types.str;
         default = config.users.users.root.openssh.authorizedKeys.keys;
       };
+      hostKeys = mkOption {
+        type = types.listOf (types.either types.str types.path);
+        default = [];
+      };
+      secrets = mkOption {
+        default = {};
+        type = types.attrsOf (types.nullOr types.path);
+      };
     };
   };
 
@@ -37,11 +45,12 @@ in {
     })
     (mkIf cfg.sshUnlock.enable {
       # see https://nixos.wiki/wiki/ZFS#Unlock_encrypted_zfs_via_ssh_on_boot
+      boot.initrd.secrets = cfg.sshUnlock.secrets;
       boot.initrd.network.enable = true;
       boot.initrd.network.ssh.enable = true;
       boot.initrd.network.ssh.port = 9022;
       boot.initrd.network.ssh.authorizedKeys = cfg.sshUnlock.authorizedKeys;
-      # boot.initrd.network.ssh.hostKeys = [ /path/to/ssh_host_rsa_key ];
+      boot.initrd.network.ssh.hostKeys = cfg.sshUnlock.hostKeys;
       boot.initrd.network.postCommands = ''
        cat <<EOF > /root/.profile
        if pgrep -x "zfs" > /dev/null
