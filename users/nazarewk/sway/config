@@ -283,6 +283,8 @@ for_window [title="Firefox — Sharing Indicator"] {
   border none
   floating enable
   sticky enable
+  # it should fit itself to smalles possible size
+  resize set 10px 30px
 }
 
 # for_window [title="Meet - .* — Mozilla Firefox"] {
@@ -294,6 +296,7 @@ for_window [title="Firefox — Sharing Indicator"] {
 for_window [title=".*@.* .*/nix/store/.*-gnupg-.*/bin/gpg2 .*"] {
   floating enable
   sticky enable
+  move position center
 }
 
 

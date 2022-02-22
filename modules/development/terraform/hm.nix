@@ -20,6 +20,11 @@ in {
 
     home.file.".tool-versions".source = ./.tool-versions;
 
+    programs.bash.initExtra = config.programs.zsh.initExtra;
+    programs.zsh.initExtra = ''
+      mkdir -p "${config.xdg.cacheHome}/terraform/plugin-cache"
+    '';
+
     home.packages = with pkgs; [
       (pkgs.writeShellApplication {
         name = "tf-fmt";
