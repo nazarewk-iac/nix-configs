@@ -6,6 +6,7 @@
   networking.hostName = "nazarewk-krul";
 
   nazarewk.filesystems.zfs-root.enable = true;
+  nazarewk.filesystems.zfs-root.sshUnlock.enable = true;
   hardware.cpu.amd.updateMicrocode = true;
 
   imports = [

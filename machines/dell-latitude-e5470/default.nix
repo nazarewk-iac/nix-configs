@@ -8,13 +8,6 @@
 
   nazarewk.filesystems.zfs-root.enable = true;
   nazarewk.filesystems.zfs-root.sshUnlock.enable = true;
-  nazarewk.filesystems.zfs-root.sshUnlock.authorizedKeys = config.users.users.nazarewk.openssh.authorizedKeys.keys;
-  nazarewk.filesystems.zfs-root.sshUnlock.hostKeys = [
-    # sudo ssh-keygen -t rsa -N "" -f /boot/nazarewk-ssh/ssh_host_rsa_key
-    # sudo ssh-keygen -t ed25519 -N "" -f /boot/nazarewk-ssh/ssh_host_ed25519_key
-    /boot/nazarewk-ssh/ssh_host_rsa_key
-    /boot/nazarewk-ssh/ssh_host_ed25519_key
-  ];
 
   nazarewk.hardware.intel-graphics-fix.enable = true;
   nazarewk.hardware.modem.enable = true;

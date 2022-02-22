@@ -10,11 +10,17 @@ in {
       enable = mkEnableOption "ZFS unlocking over SSH setup";
       authorizedKeys = mkOption {
         type = types.listOf types.str;
-        default = config.users.users.root.openssh.authorizedKeys.keys;
+        default = config.users.users.nazarewk.openssh.authorizedKeys.keys;
       };
       hostKeys = mkOption {
         type = types.listOf (types.either types.str types.path);
-        default = [];
+        default = [
+          # sudo mkdir -p /boot/nazarewk-ssh
+          # sudo ssh-keygen -t rsa -N "" -f /boot/nazarewk-ssh/ssh_host_rsa_key
+          # sudo ssh-keygen -t ed25519 -N "" -f /boot/nazarewk-ssh/ssh_host_ed25519_key
+          /boot/nazarewk-ssh/ssh_host_rsa_key
+          /boot/nazarewk-ssh/ssh_host_ed25519_key
+        ];
       };
       secrets = mkOption {
         default = {};
