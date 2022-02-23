@@ -86,6 +86,7 @@
   programs.steam.enable = true;
 
   nazarewk.development.cloud.enable = true;
+  nazarewk.development.elixir.enable = true;
   nazarewk.development.golang.enable = true;
   nazarewk.development.k8s.enable = true;
   nazarewk.development.python.enable = true;
