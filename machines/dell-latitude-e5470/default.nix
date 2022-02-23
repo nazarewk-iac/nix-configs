@@ -7,7 +7,8 @@
   networking.hostName = "nazarewk";
 
   nazarewk.filesystems.zfs-root.enable = true;
-  nazarewk.filesystems.zfs-root.sshUnlock.enable = true;
+  # TODO: unlock hangs up on `ip=dhcp` when not connected to the router.
+  # nazarewk.filesystems.zfs-root.sshUnlock.enable = true;
 
   nazarewk.hardware.intel-graphics-fix.enable = true;
   nazarewk.hardware.modem.enable = true;
