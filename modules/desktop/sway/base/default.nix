@@ -17,7 +17,7 @@ in {
     # see https://nixos.wiki/wiki/Sway#Systemd_integration
     programs.sway.enable = true;
     programs.sway.wrapperFeatures.gtk = true;
-    programs.sway.extraOptions = [ "--debug" ];
+    programs.sway.extraOptions = [ "--verbose" "--debug" ];
     environment.pathsToLink = [ "/libexec" ];
 
     programs.sway.extraSessionCommands = ''
