@@ -33,8 +33,6 @@ in {
         ]))
     ];
 
-    environment.interactiveShellInit = ''
-      [ -z "$HOME" ] || export PATH="$HOME/.local/bin:$PATH"
-    '';
+    environment.localBinInPath = true;
   };
 }
