@@ -9,17 +9,18 @@ in {
   # - https://flameeyes.blog/2016/10/15/gnupg-agent-forwarding-with-openpgp-cards/
   # - https://wiki.gnupg.org/AgentForwarding
   options.nazarewk.programs.gnupg.forwarding = {
-    socketPath = mkOption {
-      default = ".gnupg/S.gpg-agent";
-    };
   };
+
   options.nazarewk.programs.gnupg.forwarding.client = {
     enable = mkEnableOption "GnuPG forwarding to remote systems";
     user = mkOption {
       default = server.user;
     };
+    uid = mkOption {
+      default = config.users.users.${client.user}.uid;
+    };
     socketPath =  mkOption {
-      default = "${cfg.socketPath}.local";
+      default = "/run/user/${client.uid}/gnupg/S.gpg-agent.extra";
     };
     sshConfig = {
       hosts = mkOption {
@@ -28,29 +29,33 @@ in {
       };
     };
   };
+
   options.nazarewk.programs.gnupg.forwarding.server = {
     enable = mkEnableOption "GnuPG forwarding from remote systems";
     socketPath =  mkOption {
-      default = "${cfg.socketPath}.remote";
+      default = "/run/user/${server.uid}/gnupg/S.gpg-agent.extra";
     };
     user = mkOption {
-      default = "nazarewk";
+      type = types.str;
+    };
+    uid = mkOption {
+      default = config.users.users.${server.user}.uid;
     };
   };
 
   config = mkMerge [
     (mkIf cfg.client.enable {
       nazarewk.programs.gnupg.enable = true;
+      programs.gnupg.agent.enableExtraSocket = true;
 
       home-manager.users.${client.user} = {
         programs.ssh.extraConfig = ''
           Host ${client.sshConfig.hosts}
-            RemoteForward /home/${server.user}/${server.socketPath} /home/${client.user}/${client.socketPath}
+            RemoteForward ${server.socketPath} ${client.socketPath}
             ExitOnForwardFailure yes
         '';
         home.file.".gnupg/gpg-agent.conf".text = ''
-          keep-display
-          extra-socket ~/${cfg.socketPath}
+          # keep-display
         '';
       };
 
