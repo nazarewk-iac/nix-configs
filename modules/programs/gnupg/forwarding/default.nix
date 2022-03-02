@@ -20,7 +20,7 @@ in {
       default = config.users.users.${client.user}.uid;
     };
     socketPath =  mkOption {
-      default = "/run/user/${client.uid}/gnupg/S.gpg-agent.extra";
+      default = "/run/user/${toString client.uid}/gnupg/S.gpg-agent.extra";
     };
     sshConfig = {
       hosts = mkOption {
@@ -33,7 +33,7 @@ in {
   options.nazarewk.programs.gnupg.forwarding.server = {
     enable = mkEnableOption "GnuPG forwarding from remote systems";
     socketPath =  mkOption {
-      default = "/run/user/${server.uid}/gnupg/S.gpg-agent.extra";
+      default = "/run/user/${toString server.uid}/gnupg/S.gpg-agent";
     };
     user = mkOption {
       type = types.str;
@@ -50,7 +50,7 @@ in {
 
       home-manager.users.${client.user} = {
         programs.ssh.extraConfig = ''
-          Host ${client.sshConfig.hosts}
+          Host ${builtins.concatStringsSep " " client.sshConfig.hosts}
             RemoteForward ${server.socketPath} ${client.socketPath}
             ExitOnForwardFailure yes
         '';

@@ -6,6 +6,8 @@
   networking.hostName = "nazarewk-krul";
 
   nazarewk.sway.remote.enable = true;
+  nazarewk.programs.gnupg.forwarding.server.enable = true;
+
   nazarewk.filesystems.zfs-root.enable = true;
   nazarewk.filesystems.zfs-root.sshUnlock.enable = true;
   hardware.cpu.amd.updateMicrocode = true;

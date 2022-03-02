@@ -6,6 +6,10 @@
   networking.hostId = "f77614af"; # cut -c-8 </proc/sys/kernel/random/uuid
   networking.hostName = "nazarewk";
 
+  nazarewk.programs.gnupg.forwarding.client.enable = true;
+  nazarewk.programs.gnupg.forwarding.client.sshConfig.hosts = [
+    "nazarewk-krul"
+  ];
   nazarewk.filesystems.zfs-root.enable = true;
   # TODO: unlock hangs up on `ip=dhcp` when not connected to the router.
   # nazarewk.filesystems.zfs-root.sshUnlock.enable = true;

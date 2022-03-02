@@ -8,7 +8,6 @@ in {
   nazarewk.hardware.yubikey.enable = true;
   nazarewk.programs.gnupg.enable = true;
 
-  nazarewk.programs.gnupg.forwarding.server.enable = true;
   nazarewk.programs.gnupg.forwarding.server.user = "nazarewk";
 
   users.users.nazarewk.description = "Krzysztof Nazarewski";
