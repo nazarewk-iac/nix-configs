@@ -8,7 +8,7 @@ in {
   };
 
   config = mkIf cfg.enable {
-    programs.gnupg.agent.enable = true;
+    nazarewk.programs.gnupg.enable = true;
     programs.gnupg.agent.pinentryFlavor = "qt";
 
     home-manager.sharedModules = [
@@ -55,10 +55,6 @@ in {
       yubikey-personalization
       yubikey-personalization-gui
       yubico-pam
-
-      pinentry-qt
-      pinentry-curses
-      pinentry-gnome
     ];
   };
 }

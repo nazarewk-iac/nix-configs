@@ -29,6 +29,7 @@ let
     ./k3s/single-node
     ./packaging/asdf
     ./programs/aws-vault
+    ./programs/gnupg
     ./programs/nix-direnv
     ./programs/nix-index
     ./programs/obs-studio
