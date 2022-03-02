@@ -13,6 +13,26 @@ in {
       nix-du
       nixfmt
       nixpkgs-fmt
+
+      (pkgs.writeShellApplication {
+        name = "nix-which";
+        runtimeInputs = with pkgs; [ nix ];
+        text = ''
+          help() {
+            cat <<EOF >&2
+            Usage: "$0" <binary> [options...]
+            Find immediate parents/reverse dependencies: nix-which --referrers <paths...>
+            Find the root using paths: nix-which --roots <paths...>
+          EOF
+          }
+          case "$1" in
+          -h|--help)
+            help;;
+          *)
+            nix-store --query "''${@:2}" "$(command -pv "$1")";;
+          esac
+        '';
+      })
     ];
   };
 }

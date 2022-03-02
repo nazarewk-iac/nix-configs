@@ -90,6 +90,7 @@
   nazarewk.development.elixir.enable = true;
   nazarewk.development.golang.enable = true;
   nazarewk.development.k8s.enable = true;
+  nazarewk.development.nix.enable = true;
   nazarewk.development.python.enable = true;
   nazarewk.development.ruby.enable = true;
   nazarewk.development.terraform.enable = true;
