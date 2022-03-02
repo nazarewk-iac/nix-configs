@@ -19,6 +19,7 @@ let
     ./development/terraform
     ./filesystems/base
     ./filesystems/zfs-root
+    ./hardware/discovery
     ./hardware/intel-graphics-fix
     ./hardware/modem
     ./hardware/pipewire

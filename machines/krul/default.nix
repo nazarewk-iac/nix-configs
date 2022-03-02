@@ -19,7 +19,15 @@
   boot.loader.systemd-boot.memtest86.enable = true;
   boot.loader.systemd-boot.configurationLimit = 20;
 
-  boot.initrd.availableKernelModules = [ "nvme" "xhci_pci" "ahci" "usb_storage" "sd_mod" ];
+  boot.initrd.availableKernelModules = [
+    "nvme" # NVMe disk
+    "xhci_pci"
+    "ahci"
+    "usb_storage"
+    "sd_mod"
+    "r8169" # Realtek Semiconductor Co., Ltd. RTL8125 2.5GbE Controller [10ec:8125] (rev 05)
+    "igb" # Intel Corporation I211 Gigabit Network Connection [8086:1539] (rev 03)
+  ];
   boot.initrd.kernelModules = [ "amdgpu" "kvm-amd" ];
   services.xserver.videoDrivers = [ "amdgpu" ];
 
