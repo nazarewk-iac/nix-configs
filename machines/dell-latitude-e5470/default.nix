@@ -6,7 +6,8 @@
   networking.hostId = "f77614af"; # cut -c-8 </proc/sys/kernel/random/uuid
   networking.hostName = "nazarewk";
 
-  nazarewk.programs.gnupg.forwarding.client.enable = true;
+  nazarewk.sway.remote.enable = true;
+  nazarewk.programs.gnupg.forwarding.client.enable = false;
   nazarewk.programs.gnupg.forwarding.client.sshConfig.hosts = [
     "nazarewk-krul"
   ];

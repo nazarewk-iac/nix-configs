@@ -5,12 +5,14 @@ let
 in {
   options.nazarewk.desktop.base = {
     enable = mkEnableOption "Desktop base setup";
+
+    wlrootsPatch = mkEnableOption "wlroots patch setup";
   };
 
   config = mkIf cfg.enable {
     nixpkgs.overlays = [
       flakeInputs.nixpkgs-wayland.overlay
-
+    ] ++ (if !cfg.wlrootsPatch then [] else [
       (self: super: {
         wlroots = super.wlroots.overrideAttrs (old: {
           src = super.fetchFromGitLab {
@@ -24,7 +26,7 @@ in {
           };
         });
       })
-    ];
+    ]);
 
     fonts.fonts = with pkgs; [
       cantarell-fonts

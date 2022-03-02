@@ -6,6 +6,7 @@
   networking.hostName = "nazarewk-krul";
 
   nazarewk.sway.remote.enable = true;
+  nazarewk.desktop.base.wlrootsPatch = true;
   nazarewk.programs.gnupg.forwarding.server.enable = true;
 
   nazarewk.filesystems.zfs-root.enable = true;
