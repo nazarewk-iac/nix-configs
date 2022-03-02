@@ -67,9 +67,9 @@ in {
         #! ${pkgs.bash}/bin/bash
         set -xeEuo pipefail
         if [ "$1" == "--enable" ] ; then
-          ${pkgs.xlibs.xhost}/bin/xhost si:localuser:root
+          ${pkgs.xorg.xhost}/bin/xhost si:localuser:root
         else
-          ${pkgs.xlibs.xhost}/bin/xhost -si:localuser:root
+          ${pkgs.xorg.xhost}/bin/xhost -si:localuser:root
         fi
       '')
 

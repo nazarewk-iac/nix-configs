@@ -43,7 +43,7 @@
     iw
 
     mc
-    libqrencode
+    qrencode
     imagemagick
     #((pkgs.gradleGen.override { java = jdk; }).gradle_latest)
 
@@ -68,7 +68,7 @@
 
     (pkgs.writeScriptBin "qrpaste" ''
       #! ${pkgs.bash}/bin/bash
-      ${pkgs.wl-clipboard}/bin/wl-paste | ${pkgs.libqrencode}/bin/qrencode -o - | ${pkgs.imagemagick}/bin/display
+      ${pkgs.wl-clipboard}/bin/wl-paste | ${pkgs.qrencode}/bin/qrencode -o - | ${pkgs.imagemagick}/bin/display
     '')
   ];
 

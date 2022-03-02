@@ -47,7 +47,7 @@ in {
       qt5Full
 
       xorg.xeyes
-      xlibs.xhost
+      xorg.xhost
 
       # audio
       libopenaptx
