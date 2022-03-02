@@ -21,8 +21,8 @@ in {
           help() {
             cat <<EOF >&2
             Usage: "$0" <binary> [options...]
-            Find immediate parents/reverse dependencies: nix-which --referrers <paths...>
-            Find the root using paths: nix-which --roots <paths...>
+            Find immediate parents/reverse dependencies: nix-which <binary> --referrers
+            Find the root using paths: nix-which <binary> --roots
           EOF
           }
           case "$1" in
