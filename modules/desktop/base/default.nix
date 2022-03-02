@@ -6,13 +6,17 @@ in {
   options.nazarewk.desktop.base = {
     enable = mkEnableOption "Desktop base setup";
 
-    wlrootsPatch = mkEnableOption "wlroots patch setup";
+    enableWlrootsPatch = mkEnableOption "patched wlroots";
+
+    nixpkgs-wayland = {
+      enable = mkEnableOption "use nixpkgs-wayland overlay for bleeding-edge wayland packages";
+    };
   };
 
   config = mkIf cfg.enable {
-    nixpkgs.overlays = [
+    nixpkgs.overlays = (if !cfg.nixpkgs-wayland.enable then [] else [
       flakeInputs.nixpkgs-wayland.overlay
-    ] ++ (if !cfg.wlrootsPatch then [] else [
+    ]) ++ (if !cfg.enableWlrootsPatch then [] else [
       (self: super: {
         wlroots = super.wlroots.overrideAttrs (old: {
           src = super.fetchFromGitLab {

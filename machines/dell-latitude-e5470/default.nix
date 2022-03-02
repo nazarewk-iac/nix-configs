@@ -7,6 +7,7 @@
   networking.hostName = "nazarewk";
 
   nazarewk.sway.remote.enable = true;
+  nazarewk.desktop.base.nixpkgs-wayland.enable = false;
   nazarewk.programs.gnupg.forwarding.client.enable = false;
   nazarewk.programs.gnupg.forwarding.client.sshConfig.hosts = [
     "nazarewk-krul"

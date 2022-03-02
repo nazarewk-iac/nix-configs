@@ -5,8 +5,10 @@
   networking.hostId = "81d86976"; # cut -c-8 </proc/sys/kernel/random/uuid
   networking.hostName = "nazarewk-krul";
 
+  nazarewk.desktop.base.nixpkgs-wayland.enable = false;
+  nazarewk.desktop.base.enableWlrootsPatch = false;
+
   nazarewk.sway.remote.enable = true;
-  nazarewk.desktop.base.wlrootsPatch = true;
   nazarewk.programs.gnupg.forwarding.server.enable = true;
 
   nazarewk.filesystems.zfs-root.enable = true;
