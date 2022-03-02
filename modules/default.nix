@@ -4,6 +4,7 @@ let
     ./desktop/base
     ./desktop/gnome/base
     ./desktop/sway/base
+    ./desktop/sway/remote
     ./desktop/sway/through-gdm
     ./desktop/sway/through-systemd
     ./desktop/xfce/base

@@ -5,6 +5,7 @@
   networking.hostId = "81d86976"; # cut -c-8 </proc/sys/kernel/random/uuid
   networking.hostName = "nazarewk-krul";
 
+  nazarewk.sway.remote.enable = true;
   nazarewk.filesystems.zfs-root.enable = true;
   nazarewk.filesystems.zfs-root.sshUnlock.enable = true;
   hardware.cpu.amd.updateMicrocode = true;
