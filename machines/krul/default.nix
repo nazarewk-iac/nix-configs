@@ -11,6 +11,9 @@
   nazarewk.sway.remote.enable = true;
   nazarewk.programs.gnupg.forwarding.server.enable = true;
 
+  # do not suspend on GDM login screen (waiting for remote sessions etc.)
+  services.xserver.displayManager.gdm.autoSuspend = false;
+
   nazarewk.filesystems.zfs-root.enable = true;
   nazarewk.filesystems.zfs-root.sshUnlock.enable = true;
   hardware.cpu.amd.updateMicrocode = true;
