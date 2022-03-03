@@ -13,6 +13,9 @@ in {
     environment.systemPackages = with pkgs; [
       wayvnc
       waypipe
+
+      remmina
+      tigervnc
     ];
   };
 }
