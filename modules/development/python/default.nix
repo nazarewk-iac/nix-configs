@@ -17,20 +17,22 @@ in {
       # python software
       pipenv
       poetry
-      (python310.withPackages (ps:
-        with ps; [
-          boto3
-          cookiecutter
-          flake8
-          ipython
-          pip
-          pip-tools
-          pipx
-          pyaml
-          pytest
-          pyyaml
-          requests
-        ]))
+      (python310.withPackages (ps: with ps; [
+        boto3
+        cookiecutter
+        flake8
+        ipython
+        pip
+        pip-tools
+        pipx
+        pyaml
+        pytest
+        pyyaml
+        requests
+        graphviz
+      ]))
+
+      graphviz
     ];
 
     environment.localBinInPath = true;

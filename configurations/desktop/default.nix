@@ -36,6 +36,8 @@
     p7zip
     system-config-printer
 
+    drawio
+
     gparted
 
     # networking
