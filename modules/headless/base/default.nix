@@ -60,8 +60,12 @@ in {
       wget
       curl
       pstree
-      xdg-utils
       tmux
+
+      # Working with XDG files
+      desktop-file-utils
+      xdg-utils
+      xdg-launch
 
       zsh-completions
       nix-zsh-completions

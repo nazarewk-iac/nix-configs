@@ -15,6 +15,7 @@ in {
     '';
 
     environment.systemPackages = with pkgs; [
+      lens # kubernetes IDE
       # kubernetes
       kubectl # dep for: chart-testing
       k9s

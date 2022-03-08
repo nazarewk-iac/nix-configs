@@ -37,6 +37,7 @@
     system-config-printer
 
     drawio
+    plantuml
 
     gparted
 
