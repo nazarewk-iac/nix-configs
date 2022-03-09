@@ -2,6 +2,8 @@
   inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
   inputs.nixpkgs-wayland.url = "github:nix-community/nixpkgs-wayland";
 
+  inputs.nixpkgs-update.url = "github:ryantm/nixpkgs-update";
+
   inputs.home-manager.url = "github:nix-community/home-manager";
   inputs.home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
@@ -31,7 +33,7 @@
     }@args: nixpkgs.lib.nixosSystem {
       inherit system;
       specialArgs = {
-        inherit flakeInputs;
+        inherit flakeInputs system;
       };
 
       modules = modules ++ [
@@ -49,10 +51,6 @@
             fresha.development.enable = true;
             fresha.development.bastionUsername = "krzysztof.nazarewski";
           };
-
-          environment.systemPackages = [
-            nixos-generators.defaultPackage.${system}
-          ];
         }
       ];
     });
@@ -67,10 +65,6 @@
             fresha.development.enable = true;
             fresha.development.bastionUsername = "krzysztof.nazarewski";
           };
-
-          environment.systemPackages = [
-            nixos-generators.defaultPackage.${system}
-          ];
         }
       ];
     });

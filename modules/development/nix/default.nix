@@ -1,4 +1,4 @@
-{ lib, pkgs, config, ... }:
+{ lib, pkgs, config, flakeInputs, system,  ... }:
 with lib;
 let
   cfg = config.nazarewk.development.nix;
@@ -13,6 +13,9 @@ in {
       nix-du
       nixfmt
       nixpkgs-fmt
+
+      flakeInputs.nixpkgs-update.defaultPackage.${system}
+      flakeInputs.nixos-generators.defaultPackage.${system}
 
       (pkgs.writeShellApplication {
         name = "nix-which";
