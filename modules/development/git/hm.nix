@@ -71,6 +71,8 @@ in {
       ghDir
       ghRemote
       ghClone
+
+      hub
     ];
   };
 }

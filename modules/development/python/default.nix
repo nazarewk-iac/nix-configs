@@ -17,6 +17,7 @@ in {
       # python software
       pipenv
       poetry
+      black
       (python310.withPackages (ps: with ps; [
         boto3
         cookiecutter
