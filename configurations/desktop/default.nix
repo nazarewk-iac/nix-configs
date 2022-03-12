@@ -71,6 +71,8 @@
     gimp
     pdftk
 
+    transmission-qt
+
     (pkgs.writeScriptBin "qrpaste" ''
       #! ${pkgs.bash}/bin/bash
       ${pkgs.wl-clipboard}/bin/wl-paste | ${pkgs.qrencode}/bin/qrencode -o - | ${pkgs.imagemagick}/bin/display
