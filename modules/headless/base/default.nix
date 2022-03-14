@@ -8,6 +8,7 @@ in {
   };
 
   config = mkIf cfg.enable {
+    nazarewk.development.data.enable = true;
     nazarewk.filesystems.base.enable = true;
 
     programs.xonsh.enable = true;

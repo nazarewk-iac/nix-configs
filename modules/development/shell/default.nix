@@ -12,8 +12,6 @@ in {
       bash
       zsh
       shellcheck
-      gnused
-      jq
     ];
   };
 }

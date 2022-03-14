@@ -9,6 +9,8 @@ in {
 
 
   config = mkIf cfg.enable {
+    nazarewk.development.data.enable = true;
+
     environment.interactiveShellInit = ''
       export KREW_ROOT="$HOME/.cache/krew"
       export PATH="$PATH:$KREW_ROOT/bin"
