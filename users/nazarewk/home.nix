@@ -44,6 +44,7 @@ in {
   programs.git.userEmail = "3494992+nazarewk@users.noreply.github.com";
   programs.git.ignores = [ (builtins.readFile ./.gitignore) ];
   programs.git.attributes = [ (builtins.readFile ./.gitattributes) ];
+  # to authenticate hub: ln -s ~/.config/gh/hosts.yml ~/.config/hub
   programs.git.extraConfig = {
     # use it separately because `gh` cli wants to write to ~/.config/gh/config.yml
     credential."https://github.com".helper = "${pkgs.gh}/bin/gh auth git-credential";
