@@ -35,6 +35,8 @@ in {
     ];
    in foldParts ./yubico/u2f_keys.parts;
 
+  programs.gh.enable = false;
+  programs.gh.enableGitCredentialHelper = false;
   programs.git.enable = true;
   programs.git.signing.key = "916D8B67241892AE";
   programs.git.signing.signByDefault = true;
@@ -42,6 +44,11 @@ in {
   programs.git.userEmail = "3494992+nazarewk@users.noreply.github.com";
   programs.git.ignores = [ (builtins.readFile ./.gitignore) ];
   programs.git.attributes = [ (builtins.readFile ./.gitattributes) ];
+  programs.git.extraConfig = {
+    # use it separately because `gh` cli wants to write to ~/.config/gh/config.yml
+    credential."https://github.com".helper = "${pkgs.gh}/bin/gh auth git-credential";
+    url."https://github.com/".insteadOf = "git@github.com:";
+  };
 
   programs.ssh.enable = true;
 

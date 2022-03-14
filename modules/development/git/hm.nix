@@ -73,6 +73,7 @@ in {
       ghClone
 
       hub
+      gh
     ];
   };
 }
