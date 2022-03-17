@@ -3,9 +3,8 @@ with lib;
 let
   cfg = config.nazarewk.development.data;
 
-  yjConverter = name: flags: pkgs.writeShellApplication {
+  converter = name: cmd: flags: pkgs.writeShellApplication {
     name = name;
-    runtimeInputs = with pkgs; [ yj ];
     text = ''
     args=(${flags})
     files=()
@@ -17,9 +16,9 @@ let
       fi
     done
     case "''${#files[@]}" in
-      0) yj "''${args[@]}" ;;
-      1) yj "''${args[@]}" < "''${files[0]}" ;;
-      2) yj "''${args[@]}" < "''${files[0]}" > "''${files[1]}" ;;
+      0) "${cmd}" "''${args[@]}" ;;
+      1) "${cmd}" "''${args[@]}" < "''${files[0]}" ;;
+      2) "${cmd}" "''${args[@]}" < "''${files[0]}" > "''${files[1]}" ;;
       *)
         echo 'only 2 files (input and output) can be passed!'
         exit 1
@@ -35,28 +34,30 @@ in {
 
   config = mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
+      yj
+      yq
       jq
       cue
 
       gnused
 
-      yj
-      (yjConverter "hcl2hcl"    "-cc")
-      (yjConverter "hcl2json"   "-cj")
-      (yjConverter "hcl2toml"   "-ct")
-      (yjConverter "hcl2yaml"   "-cy")
-      (yjConverter "json2hcl"   "-jc")
-      (yjConverter "json2json"  "-jj")
-      (yjConverter "json2toml"  "-jt")
-      (yjConverter "json2yaml"  "-jy")
-      (yjConverter "toml2hcl"   "-tc")
-      (yjConverter "toml2json"  "-tj")
-      (yjConverter "toml2toml"  "-tt")
-      (yjConverter "toml2yaml"  "-ty")
-      (yjConverter "yaml2hcl"   "-yc")
-      (yjConverter "yaml2json"  "-yj")
-      (yjConverter "yaml2toml"  "-yt")
-      (yjConverter "yaml2yaml"  "-yy")
+      (converter "hcl2hcl"   "${yj}/bin/yj" "-cc")
+      (converter "hcl2json"  "${yj}/bin/yj" "-cj")
+      (converter "hcl2toml"  "${yj}/bin/yj" "-ct")
+      (converter "hcl2yaml"  "${yj}/bin/yj" "-cy")
+      (converter "json2hcl"  "${yj}/bin/yj" "-jc")
+      (converter "json2json" "${yj}/bin/yj" "-jj")
+      (converter "json2toml" "${yj}/bin/yj" "-jt")
+      (converter "json2yaml" "${yj}/bin/yj" "-jy")
+      (converter "toml2hcl"  "${yj}/bin/yj" "-tc")
+      (converter "toml2json" "${yj}/bin/yj" "-tj")
+      (converter "toml2toml" "${yj}/bin/yj" "-tt")
+      (converter "toml2yaml" "${yj}/bin/yj" "-ty")
+      (converter "yaml2hcl"  "${yj}/bin/yj" "-yc")
+      (converter "yaml2json" "${yq}/bin/yq" "-M --")
+      (converter "yaml2toml" "${yj}/bin/yj" "-yt")
+      (converter "yaml2yaml" "${yj}/bin/yj" "-yy")
+      (converter "yamls2json" "${yq}/bin/yq" "-M '[inputs]' --")
     ];
   };
 }
