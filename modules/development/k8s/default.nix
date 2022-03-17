@@ -20,6 +20,7 @@ in {
       lens # kubernetes IDE
       # kubernetes
       kubectl # dep for: chart-testing
+      kustomize
       k9s
       kubectx
       krew
