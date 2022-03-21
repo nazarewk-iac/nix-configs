@@ -31,8 +31,6 @@
   environment.systemPackages = with pkgs; [
     dex # A program to generate and execute DesktopEntry files of the Application type
     firefox-wayland
-    chromium
-    google-chrome
     jetbrains.pycharm-professional
     jetbrains.idea-ultimate
     p7zip
