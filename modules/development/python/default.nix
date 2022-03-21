@@ -21,6 +21,7 @@ in {
       (python310.withPackages (ps: with ps; [
         boto3
         cookiecutter
+        diagrams
         flake8
         ipython
         pip
