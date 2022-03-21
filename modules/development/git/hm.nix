@@ -56,7 +56,7 @@ in {
     };
 
     remoteShellPattern = mkOption {
-      default = "git@github.com:$org/$repo.git";
+      default = "https://github.com/$org/$repo.git";
     };
   };
   config = mkIf cfg.enable {
