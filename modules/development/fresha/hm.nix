@@ -55,7 +55,9 @@ in {
       onChange = ''${pkgs.sudo}/bin/sudo -u ${config.home.username} ${pkgs.direnv}/bin/direnv allow "$FRESHA_DIR/.envrc"'';
     };
 
-    home.packages = [
+    home.packages = with pkgs; [
+      ansible
+
       (pkgs.writeShellApplication {
         name = "${cfg.prefix}gh-clone";
         runtimeInputs = with pkgs; [ git ];
