@@ -1,4 +1,4 @@
-{ lib, pkgs, config, ... }:
+{ lib, pkgs, config, flakeInputs, system, ... }:
 with lib;
 let
   cfg = config.nazarewk.development.cloud;
@@ -18,7 +18,8 @@ in {
       eksctl
 
       # Argo
-      argocd
+      #argocd
+      flakeInputs.nixpkgs-argocd-231.legacyPackages.${system}.argocd
 
       (pkgs.writeShellApplication {
         name = "aws-list-all-parameters";

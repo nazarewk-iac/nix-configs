@@ -169,6 +169,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-argocd-231": {
+      "locked": {
+        "lastModified": 1647827784,
+        "narHash": "sha256-raYJLhgWZwunsGfHjknoSl5bf5TzZtGor4Rs0cUVOhA=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "5e06fb8879749aa0dfe3fe636aa4824ef8021b72",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "5e06fb8879749aa0dfe3fe636aa4824ef8021b72",
+        "type": "github"
+      }
+    },
     "nixpkgs-for-manual": {
       "locked": {
         "lastModified": 1617080427,
@@ -310,6 +326,7 @@
         "home-manager": "home-manager",
         "nixos-generators": "nixos-generators",
         "nixpkgs": "nixpkgs",
+        "nixpkgs-argocd-231": "nixpkgs-argocd-231",
         "nixpkgs-update": "nixpkgs-update",
         "nixpkgs-wayland": "nixpkgs-wayland"
       }

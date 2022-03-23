@@ -1,5 +1,6 @@
 {
   inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+  inputs.nixpkgs-argocd-231.url = "github:nixos/nixpkgs/5e06fb8879749aa0dfe3fe636aa4824ef8021b72";
   inputs.nixpkgs-wayland.url = "github:nix-community/nixpkgs-wayland";
 
   inputs.nixpkgs-update.url = "github:ryantm/nixpkgs-update";
