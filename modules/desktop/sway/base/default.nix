@@ -82,6 +82,7 @@ in {
       v4l-utils
       mako
       alacritty
+      foot
       dmenu
       libappindicator
       libappindicator-gtk3

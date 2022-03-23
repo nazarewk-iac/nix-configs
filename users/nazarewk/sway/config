@@ -13,7 +13,7 @@ set $Ctrl Control
 set $Shift Shift
 
 ### Variables
-set $term alacritty
+set $term foot
 set $launcher wofi --gtk-dark --allow-images --define=key_expand=Super_L
 
 set $displayDell 'Dell Inc. DELL U2711 G606T29F0EWL'

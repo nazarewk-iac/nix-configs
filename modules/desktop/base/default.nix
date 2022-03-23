@@ -40,6 +40,7 @@ in {
       noto-fonts-emoji
       noto-fonts-emoji-blob-bin
       noto-fonts-extra
+      anonymousPro
     ];
 
     environment.systemPackages = with pkgs; [

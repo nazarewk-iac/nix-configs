@@ -15,6 +15,7 @@ in {
   xdg.configFile."swayr/config.toml".source = ./swayr/config.toml;
   xdg.configFile."waybar/config".source = ./waybar/config;
   xdg.configFile."waybar/style.css".source = ./waybar/style.css;
+  xdg.configFile."foot/foot.ini".source = ./foot/foot.ini;
 
   # pam-u2f expects a single line of configuration per user in format `username:entry1:entry2:entry3:...`
   # `pamu2fcfg` generates lines of format `username:entry`
