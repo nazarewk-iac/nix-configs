@@ -18,8 +18,7 @@ in {
       eksctl
 
       # Argo
-      #argocd
-      flakeInputs.nixpkgs-argocd-231.legacyPackages.${system}.argocd
+      argocd
 
       (pkgs.writeShellApplication {
         name = "aws-list-all-parameters";

@@ -1,21 +1,23 @@
-# TODO: CNI plugin discovery
 { lib, pkgs, config, ... }:
 with lib;
 let
   cfg = config.nazarewk.k3s.single-node;
+  cil = cfg.cilium;
+  
   valuesFormat = pkgs.formats.yaml {};
+  
   cilium-configure = (pkgs.writeShellApplication {
     name = "cilium-configure";
     runtimeInputs = with pkgs; [ kubernetes-helm kubectl ];
     text = ''
       export KUBECONFIG="/etc/rancher/k3s/k3s.yaml"
-      namespace="${cfg.cilium.namespace}"
+      namespace="${cil.namespace}"
       kubectl get namespace "$namespace" || kubectl create namespace "$namespace"
       args=(
         --repo=https://helm.cilium.io/
         --namespace="$namespace"
-        --version="${cfg.cilium.version}"
-        --values="${valuesFormat.generate "values.yaml" cfg.cilium.values}"
+        --version="${cil.version}"
+        --values="${valuesFormat.generate "values.yaml" cil.values}"
         --wait
         "$@"
       )
@@ -79,6 +81,11 @@ in {
         type = types.str;
       };
 
+      replaceKubeProxy = mkOption {
+        default = cfg.cni == "cilium";
+        type = lib.types.bool;
+      };
+
       values = mkOption {
         type = valuesFormat.type;
         default = {
@@ -92,6 +99,8 @@ in {
             requireIPv4PodCIDR = true;
           };
           ipam = {
+            mode = "kubernetes";
+
             operator = {
               clusterPoolIPv4PodCIDRList = [
                 cfg.podCIDR
@@ -152,43 +161,53 @@ in {
           ];
         };
         systemd.services.k3s = {
-          wants = ["containerd.service"];
+          requires = ["containerd.service"];
           after = ["containerd.service"];
         };
       })
-      (mkIf (cfg.cni == "cilium") {
-        environment.systemPackages = with pkgs; [
-          cilium-cli
-          cilium-configure
+      (mkIf (cfg.cni == "cilium") (mkMerge [
+        {
+          environment.systemPackages = with pkgs; [
+            cilium-cli
+            cilium-configure
 
-          (pkgs.writeShellApplication {
-            name = "k3s-cilium";
-            runtimeInputs = with pkgs; [ cilium-cli ];
-            text = ''
-              export KUBECONFIG="/etc/rancher/k3s/k3s.yaml"
-              cilium "$@"
-            '';
-          })
-        ];
+            (pkgs.writeShellApplication {
+              name = "k3s-cilium";
+              runtimeInputs = with pkgs; [ cilium-cli ];
+              text = ''
+                export KUBECONFIG="/etc/rancher/k3s/k3s.yaml"
+                cilium "$@"
+              '';
+            })
+          ];
 
-#        systemd.services.k3s.serviceConfig = {
-#          ExecStartPost = [
-#            "-${cilium-configure}/bin/cilium-configure"
-#          ];
-#        };
+  #        systemd.services.k3s.serviceConfig = {
+  #          ExecStartPost = [
+  #            "-${cilium-configure}/bin/cilium-configure"
+  #          ];
+  #        };
 
-        nazarewk.k3s.single-node.extraFlags = [
-          "--flannel-backend=none"
-          "--disable-network-policy"
-        ];
+          nazarewk.k3s.single-node.extraFlags = [
+            "--flannel-backend=none"
+            "--disable-network-policy"
+          ];
 
-        virtualisation.containerd.settings = {
-          plugins."io.containerd.grpc.v1.cri".cni = {
-            # calico installs binaries there
-            bin_dir = "/opt/cni/bin";
+          virtualisation.containerd.settings = {
+            plugins."io.containerd.grpc.v1.cri".cni = {
+              # calico installs binaries there
+              bin_dir = "/opt/cni/bin";
+            };
           };
-        };
-      })
+        }
+        (mkIf (cil.replaceKubeProxy) {
+          nazarewk.k3s.single-node.extraFlags = [
+            "--disable-kube-proxy"
+          ];
+          nazarewk.k3s.single-node.cilium.values = {
+            kubeProxyReplacement = "strict";
+          };
+        })
+      ]))
       (mkIf (cfg.cni == "calico") {
         # Calico doesn't work due to no FHS
         environment.shellAliases = {
