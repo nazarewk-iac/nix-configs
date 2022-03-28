@@ -57,7 +57,6 @@
     signal-desktop
     element-desktop
     nextcloud-client
-    cadaver
     libreoffice
     flameshot
     vlc

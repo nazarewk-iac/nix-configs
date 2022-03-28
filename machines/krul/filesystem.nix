@@ -4,6 +4,7 @@ let
     fsType = "zfs";
   };
   mkZFSMount = path: mkZFSMountBase { inherit path; };
+  mkContainerMount = path: mkZFSMountBase { inherit path; prefix = "/containers"; };
   mkNixOSMount = path: mkZFSMountBase { inherit path; prefix = "/nixos"; };
 in {
   zramSwap.enable = true;
@@ -25,6 +26,8 @@ in {
   fileSystems."/var/log" = mkNixOSMount "/var/log";
   fileSystems."/var/log/journal" = mkNixOSMount "/var/log/journal";
   fileSystems."/var/spool" = mkNixOSMount "/var/spool";
+
+  fileSystems."/var/lib/containerd" = mkContainerMount "/containerd";
 
   fileSystems."/home" = mkZFSMount "/home";
   fileSystems."/home/nazarewk" = mkZFSMount "/home/nazarewk";

@@ -26,7 +26,7 @@ let
     ./hardware/pipewire
     ./hardware/yubikey
     ./headless/base
-    ./k3s/single-node
+    ./containers/k3s/single-node
     ./packaging/asdf
     ./programs/aws-vault
     ./programs/gnupg

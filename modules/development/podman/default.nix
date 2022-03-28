@@ -9,7 +9,6 @@ in {
 
   config = mkIf cfg.enable {
     virtualisation.docker.enable = false;
-    virtualisation.docker.autoPrune.enable = false;
 
     virtualisation.oci-containers.backend = "podman";
     virtualisation.podman.enable = true;

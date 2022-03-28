@@ -48,6 +48,8 @@ in {
       source_env .envrc.secret
       env_vars_required FRESHA_BASTION_CIDR FRESHA_BASTION_HOST PASSWORD_STORE_DIR
 
+      source_env_if_exists .envrc.dynamic
+
       export AWS_CONFIG_FILE="$PWD/.aws/config"
       export AWS_SHARED_CREDENTIALS_FILE="$PWD/.aws/credentials"
       export KUBECONFIG="$PWD/.kube/config"

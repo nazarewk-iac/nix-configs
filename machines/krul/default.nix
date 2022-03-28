@@ -18,6 +18,11 @@
   nazarewk.filesystems.zfs-root.sshUnlock.enable = true;
   hardware.cpu.amd.updateMicrocode = true;
 
+  nazarewk.k3s.single-node.enable = true;
+  nazarewk.k3s.single-node.enableEraseScript = true;
+  nazarewk.k3s.single-node.zfsVolume = "nazarewk-krul-primary/nazarewk-krul/containers/containerd/io.containerd.snapshotter.v1.zfs";
+  # nazarewk.development.podman.enable = true;
+
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
     ./filesystem.nix
