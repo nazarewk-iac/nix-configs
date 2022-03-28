@@ -11,9 +11,9 @@ cgroups=(
 
 unmounts=(
   /run/cilium/cgroupv2
-  /var/lib/kubelet
-  /run/netns
   /run/containerd
+  /run/netns
+  /var/lib/kubelet
 )
 
 clear_dirs=(
@@ -21,9 +21,14 @@ clear_dirs=(
   /opt/cni
   /opt/containerd
   /run/containerd
+  /var/lib/calico
   /var/lib/cni
   /var/lib/containerd
+  /var/lib/kubelet
   /var/lib/rancher
+  /var/log/calico
+  /var/log/containers
+  /var/log/pods
   /var/run/calico
   /var/run/cilium
   /var/run/containerd

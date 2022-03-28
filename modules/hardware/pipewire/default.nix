@@ -33,9 +33,13 @@ in {
       pkgs.pulseaudio-modules-bt
     ];
 
+    # fixes missing pactl https://github.com/NixOS/nixpkgs/pull/165125
+    systemd.user.services.pipewire-pulse.path = [ pkgs.pulseaudio ];
+    hardware.bluetooth.package = pkgs.bluez5-experimental;
 
     environment.systemPackages = with pkgs; [
       pavucontrol
+      pulseaudio  # pactl
     ];
   };
 }

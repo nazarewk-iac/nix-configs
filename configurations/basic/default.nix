@@ -9,7 +9,6 @@
     "1.1.1.1" # CloudFlare
     "8.8.8.8" # Google
   ];
-  networking.firewall.enable = true;
   networking.networkmanager.enable = true;
   networking.networkmanager.wifi.powersave = true;
 

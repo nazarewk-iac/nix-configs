@@ -82,33 +82,18 @@ in {
       };
 
       replaceKubeProxy = mkOption {
-        default = cfg.cni == "cilium";
+        default = true;
+        type = lib.types.bool;
+      };
+
+      hubble = mkOption {
+        default = true;
         type = lib.types.bool;
       };
 
       values = mkOption {
         type = valuesFormat.type;
-        default = {
-          operator = {
-            replicas = 1;
-          };
-          containerRuntime = {
-            integration = "containerd";
-          };
-          k3s = {
-            requireIPv4PodCIDR = true;
-          };
-          ipam = {
-            mode = "kubernetes";
-
-            operator = {
-              clusterPoolIPv4PodCIDRList = [
-                cfg.podCIDR
-              ];
-              clusterPoolIPv4MaskSize = cfg.nodeCIDRMask;
-            };
-          };
-        };
+        default = {};
       };
     };
   };
@@ -129,7 +114,20 @@ in {
         # inspired by https://github.com/Mic92/dotfiles/tree/master/nixos/modules/k3s
 
         # This is required so that pod can reach the API server (running on port 6443 by default)
-        # networking.firewall.allowedTCPPorts = [ 6443 ];
+        networking.firewall.allowedTCPPorts = [
+          6443
+          443
+        ];
+
+        # TODO: figure out why firewall is preventing Cilium from working
+        networking.firewall.enable = false;
+
+        boot.initrd.kernelModules = [
+          "iptable_mangle"
+          "iptable_raw"
+          "iptable_filter"
+        ];
+
         services.k3s.enable = true;
         # also runs as agent
         services.k3s.role = "server";
@@ -147,6 +145,7 @@ in {
         ];
       }
       (mkIf (cfg.zfsVolume != "") {
+        # use external containerd on ZFS root
         # see https://nixos.wiki/wiki/K3s
         virtualisation.containerd.enable = true;
 
@@ -154,12 +153,13 @@ in {
           "--container-runtime-endpoint=unix:///run/containerd/containerd.sock"
         ];
 
-        systemd.services.containerd.serviceConfig = lib.mkIf config.boot.zfs.enabled {
+        systemd.services.containerd.serviceConfig = {
           ExecStartPre = [
             "-${pkgs.zfs}/bin/zfs create -o mountpoint=/var/lib/containerd/io.containerd.snapshotter.v1.zfs ${cfg.zfsVolume}"
             "-${pkgs.zfs}/bin/zfs mount ${cfg.zfsVolume} || true"
           ];
         };
+
         systemd.services.k3s = {
           requires = ["containerd.service"];
           after = ["containerd.service"];
@@ -167,9 +167,31 @@ in {
       })
       (mkIf (cfg.cni == "cilium") (mkMerge [
         {
+          # see Cilium at https://docs.cilium.io/en/stable/operations/system_requirements/#firewall-rules
+          networking.firewall.allowedTCPPorts = [
+            # 2379 2380 # etcd
+            4240  # health checks
+            4244  # hubble server
+            4245  # hubble relay
+            6060  # cilium-agent pprof server (listening on 127.0.0.1)
+            6061  # cilium-operator pprof server (listening on 127.0.0.1)
+            6062  # Hubble Relay pprof server (listening on 127.0.0.1)
+            6942  # operator Prometheus metrics
+            9090  # cilium-agent Prometheus metrics
+            9876  # cilium-agent health status API
+            9890  # cilium-agent gops server (listening on 127.0.0.1)
+            9891  # operator gops server (listening on 127.0.0.1)
+            9892  # clustermesh-apiserver gops server (listening on 127.0.0.1)
+            9893  # Hubble Relay gops server (listening on 127.0.0.1)
+          ];
+          networking.firewall.allowedUDPPorts = [
+            8472 # VXLAN overlay
+          ];
           environment.systemPackages = with pkgs; [
             cilium-cli
             cilium-configure
+
+            iptables  # for debugging
 
             (pkgs.writeShellApplication {
               name = "k3s-cilium";
@@ -198,6 +220,25 @@ in {
               bin_dir = "/opt/cni/bin";
             };
           };
+
+          nazarewk.k3s.single-node.cilium.values = {
+            hubble.relay.enabled = true;
+            hubble.ui.enabled = true;
+
+            operator.replicas = 1;
+            containerRuntime.integration = "containerd";
+            k8s.requireIPv4PodCIDR = true;
+            ipam.mode = "kubernetes";
+
+            ipam.operator.clusterPoolIPv4PodCIDRList = [ cfg.podCIDR ];
+            ipam.operator.clusterPoolIPv4MaskSize = cfg.nodeCIDRMask;
+          };
+
+          # systemd 245+ introduced defaults incompatible with Cilium, we need to fix it manually:
+          # see note at https://docs.cilium.io/en/stable/operations/system_requirements/#linux-distribution-compatibility-matrix
+          boot.kernel.sysctl = {
+            "net.ipv4.conf.lxc*.rp_filter" = 0;
+          };
         }
         (mkIf (cil.replaceKubeProxy) {
           nazarewk.k3s.single-node.extraFlags = [
@@ -206,6 +247,15 @@ in {
           nazarewk.k3s.single-node.cilium.values = {
             kubeProxyReplacement = "strict";
           };
+        })
+        (mkIf (cil.hubble) {
+          nazarewk.k3s.single-node.cilium.values = {
+            hubble.relay.enabled = true;
+            hubble.ui.enabled = true;
+          };
+          environment.systemPackages = with pkgs; [
+            hubble
+          ];
         })
       ]))
       (mkIf (cfg.cni == "calico") {
