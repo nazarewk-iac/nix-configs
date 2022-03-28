@@ -37,7 +37,6 @@ in {
       default = "cilium";
       type = types.enum [
         "cilium"
-        # "calico"
       ];
     };
 
@@ -203,11 +202,11 @@ in {
             })
           ];
 
-  #        systemd.services.k3s.serviceConfig = {
-  #          ExecStartPost = [
-  #            "-${cilium-configure}/bin/cilium-configure"
-  #          ];
-  #        };
+          systemd.services.k3s.serviceConfig = {
+            ExecStartPost = [
+              "-${cilium-configure}/bin/cilium-configure --kubeconfig=/etc/rancher/k3s/k3s.yaml"
+            ];
+          };
 
           nazarewk.k3s.single-node.extraFlags = [
             "--flannel-backend=none"
@@ -258,21 +257,6 @@ in {
           ];
         })
       ]))
-      (mkIf (cfg.cni == "calico") {
-        # Calico doesn't work due to no FHS
-        environment.shellAliases = {
-          # k3s kubectl apply -f https://projectcalico.docs.tigera.io/manifests/tigera-operator.yaml
-          # k3s kubectl apply -f https://projectcalico.docs.tigera.io/manifests/custom-resources.yaml
-          # k3s kubectl apply -f https://projectcalico.docs.tigera.io/manifests/calicoctl.yaml
-          calicoctl = "${k3s} kubectl exec -i -n kube-system calicoctl -- /calicoctl";
-        };
-        virtualisation.containerd.settings = {
-          plugins."io.containerd.grpc.v1.cri".cni = {
-            # calico installs binaries there
-            bin_dir = "/opt/cni/bin";
-          };
-        };
-      })
     ]))
   ];
 }
