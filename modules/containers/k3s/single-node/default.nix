@@ -4,7 +4,7 @@ let
   cfg = config.nazarewk.k3s.single-node;
   cil = cfg.cilium;
   
-  valuesFormat = pkgs.formats.yaml {};
+  yaml = pkgs.formats.yaml {};
   
   cilium-configure = (pkgs.writeShellApplication {
     name = "cilium-configure";
@@ -14,10 +14,11 @@ let
       namespace="${cil.namespace}"
       kubectl get namespace "$namespace" || kubectl create namespace "$namespace"
       args=(
+        --atomic
         --repo=https://helm.cilium.io/
         --namespace="$namespace"
         --version="${cil.version}"
-        --values="${valuesFormat.generate "values.yaml" cil.values}"
+        --values="${yaml.generate "values.yaml" cil.values}"
         --wait
         "$@"
       )
@@ -69,6 +70,23 @@ in {
       type = types.listOf types.str;
     };
 
+    config = {
+      k3s = mkOption {
+        type = yaml.type;
+        default = {};
+      };
+      
+      kubelet = mkOption {
+        type = yaml.type;
+        default = {};
+      };
+
+      kubeletArgs = mkOption {
+        type = types.listOf types.str;
+        default = [];
+      };
+    };
+
     cilium = {
       version = mkOption {
         default = "1.11.2";
@@ -81,7 +99,7 @@ in {
       };
 
       replaceKubeProxy = mkOption {
-        default = true;
+        default = false;
         type = lib.types.bool;
       };
 
@@ -91,7 +109,7 @@ in {
       };
 
       values = mkOption {
-        type = valuesFormat.type;
+        type = yaml.type;
         default = {};
       };
     };
@@ -109,6 +127,7 @@ in {
     })
     (mkIf cfg.enable (mkMerge [
       {
+        zramSwap.enable = false;
         # see Cilium https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/
         # inspired by https://github.com/Mic92/dotfiles/tree/master/nixos/modules/k3s
 
@@ -142,20 +161,32 @@ in {
         environment.systemPackages = with pkgs; [
           k3s
         ];
+
+        environment.etc."rancher/k3s/kubelet.config".source = yaml.generate "k3s-config.yaml" cfg.config.kubelet;
+        environment.etc."rancher/k3s/config.yaml".source = yaml.generate "k3s-config.yaml" cfg.config.k3s;
+        nazarewk.k3s.single-node.config.k3s.kubelet-arg = cfg.config.kubeletArgs;
+        nazarewk.k3s.single-node.config.kubeletArgs = [ "config=/etc/rancher/k3s/kubelet.config" ];
+        nazarewk.k3s.single-node.config.kubelet = {
+          apiVersion = "kubelet.config.k8s.io/v1beta1";
+          kind = "KubeletConfiguration";
+
+          shutdownGracePeriod = "30s";
+          shutdownGracePeriodCriticalPods = "30s";
+        };
+        nazarewk.k3s.single-node.config.k3s.disable = [ "traefik" ];
       }
       (mkIf (cfg.zfsVolume != "") {
         # use external containerd on ZFS root
         # see https://nixos.wiki/wiki/K3s
         virtualisation.containerd.enable = true;
 
-        nazarewk.k3s.single-node.extraFlags = [
-          "--container-runtime-endpoint=unix:///run/containerd/containerd.sock"
-        ];
+        nazarewk.k3s.single-node.config.k3s.container-runtime-endpoint = "/run/containerd/containerd.sock";
+        nazarewk.k3s.single-node.config.kubeletArgs = [ "containerd=unix:///run/containerd/containerd.sock" ];
 
         systemd.services.containerd.serviceConfig = {
           ExecStartPre = [
             "-${pkgs.zfs}/bin/zfs create -o mountpoint=/var/lib/containerd/io.containerd.snapshotter.v1.zfs ${cfg.zfsVolume}"
-            "-${pkgs.zfs}/bin/zfs mount ${cfg.zfsVolume} || true"
+            "-${pkgs.zfs}/bin/zfs mount ${cfg.zfsVolume}"
           ];
         };
 
@@ -191,27 +222,29 @@ in {
             cilium-configure
 
             iptables  # for debugging
-
-            (pkgs.writeShellApplication {
-              name = "k3s-cilium";
-              runtimeInputs = with pkgs; [ cilium-cli ];
-              text = ''
-                export KUBECONFIG="/etc/rancher/k3s/k3s.yaml"
-                cilium "$@"
-              '';
-            })
           ];
 
           systemd.services.k3s.serviceConfig = {
-            ExecStartPost = [
-              "-${cilium-configure}/bin/cilium-configure --kubeconfig=/etc/rancher/k3s/k3s.yaml"
+            TimeoutStartSec = 600;
+            Restart = mkForce "on-failure";
+            ExecStartPost = let
+              wait-for-k3s = (pkgs.writeShellApplication {
+                name = "wait-for-k3s";
+                runtimeInputs = with pkgs; [ pkgs.k3s ];
+                text = ''
+                  until ${pkgs.k3s}/bin/k3s kubectl get node >/dev/null ; do
+                    sleep 5
+                  done
+                '';
+              });
+            in [
+#              "${wait-for-k3s}/bin/wait-for-k3s"
+#              "-${cilium-configure}/bin/cilium-configure --kubeconfig=/etc/rancher/k3s/k3s.yaml"
             ];
           };
 
-          nazarewk.k3s.single-node.extraFlags = [
-            "--flannel-backend=none"
-            "--disable-network-policy"
-          ];
+          nazarewk.k3s.single-node.config.k3s.flannel-backend = "none";
+          nazarewk.k3s.single-node.config.k3s.disable-network-policy = true;
 
           virtualisation.containerd.settings = {
             plugins."io.containerd.grpc.v1.cri".cni = {
@@ -240,9 +273,7 @@ in {
           };
         }
         (mkIf (cil.replaceKubeProxy) {
-          nazarewk.k3s.single-node.extraFlags = [
-            "--disable-kube-proxy"
-          ];
+          nazarewk.k3s.single-node.config.k3s.disable-kube-proxy = true;
           nazarewk.k3s.single-node.cilium.values = {
             kubeProxyReplacement = "strict";
           };

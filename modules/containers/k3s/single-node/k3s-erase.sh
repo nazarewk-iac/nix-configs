@@ -17,7 +17,6 @@ unmounts=(
 )
 
 clear_dirs=(
-  /etc/rancher
   /opt/cni
   /opt/containerd
   /run/containerd
@@ -36,6 +35,7 @@ clear_dirs=(
 
 clear_files=(
   /etc/cni/net.d/*
+  /etc/rancher/k3s/k3s.yaml
 )
 
 function main {
@@ -55,8 +55,8 @@ function main {
 
   dataset="$( (grep /var/lib/containerd/io.containerd.snapshotter.v1.zfs /proc/mounts || :) | awk '{print $1}')"
   test "$dataset" = "" || zfs destroy -R "$dataset"
-  test "${#existing_clear_dirs[@]}" = 0 || find "${existing_clear_dirs[@]}" -mindepth 1 -maxdepth 1 -exec rm -rf '{}' \;
-  test "${#existing_clear_files[@]}" = 0 || rm "${existing_clear_files[@]}"
+  test "${#existing_clear_dirs[@]}" = 0 || find "${existing_clear_dirs[@]}" -mindepth 1 -maxdepth 1 -exec rm -vrf -- '{}' \;
+  test "${#existing_clear_files[@]}" = 0 || rm -v -- "${existing_clear_files[@]}"
 }
 
 function join_by {

@@ -1,3 +1,4 @@
+{ lib, ... }:
 let
   mkZFSMountBase = {path, prefix ? ""}: {
     device = "nazarewk-krul-primary/nazarewk-krul${prefix}${path}";
@@ -7,7 +8,7 @@ let
   mkContainerMount = path: mkZFSMountBase { inherit path; prefix = "/containers"; };
   mkNixOSMount = path: mkZFSMountBase { inherit path; prefix = "/nixos"; };
 in {
-  zramSwap.enable = true;
+  zramSwap.enable = lib.mkDefault true;
   zramSwap.memoryPercent = 50;
   zramSwap.priority = 100;
 

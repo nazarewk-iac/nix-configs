@@ -20,6 +20,7 @@
 
   nazarewk.k3s.single-node.enable = true;
   nazarewk.k3s.single-node.enableEraseScript = true;
+  nazarewk.k3s.single-node.cilium.replaceKubeProxy = false;
   nazarewk.k3s.single-node.zfsVolume = "nazarewk-krul-primary/nazarewk-krul/containers/containerd/io.containerd.snapshotter.v1.zfs";
   # nazarewk.development.podman.enable = true;
 

@@ -25,6 +25,8 @@ in {
       kubectx
       krew
 
+      istioctl
+
       # Helm
       kubernetes-helm # dep for: chart-testing
       chart-testing
