@@ -61,6 +61,35 @@ in {
       default = 18;
     };
 
+    maxPodsPerNode = mkOption {
+      type = types.ints.unsigned;
+      # TODO: calculate: 2 ** (32 - cfg.nodeCIDRMask) * 0.43
+      default = 7045;
+    };
+
+    reservations = {
+      system = {
+        cpu = mkOption {
+          type = types.str;
+          default = "500m";
+        };
+        memory = mkOption {
+          type = types.str;
+          default = "1G";
+        };
+      };
+      kube = {
+        cpu = mkOption {
+          type = types.str;
+          default = "500m";
+        };
+        memory = mkOption {
+          type = types.str;
+          default = "1G";
+        };
+      };
+    };
+
     zfsVolume = mkOption {
       type = types.str;
       default = "";
@@ -141,9 +170,14 @@ in {
         networking.firewall.enable = false;
 
         boot.initrd.kernelModules = [
+          # cilium
           "iptable_mangle"
           "iptable_raw"
           "iptable_filter"
+
+          # Rook Ceph
+          "rbd"
+          "nbd"
         ];
 
         services.k3s.enable = true;
@@ -165,15 +199,43 @@ in {
         environment.etc."rancher/k3s/kubelet.config".source = yaml.generate "k3s-config.yaml" cfg.config.kubelet;
         environment.etc."rancher/k3s/config.yaml".source = yaml.generate "k3s-config.yaml" cfg.config.k3s;
         nazarewk.k3s.single-node.config.k3s.kubelet-arg = cfg.config.kubeletArgs;
+        nazarewk.k3s.single-node.config.k3s.secrets-encryption = true;
         nazarewk.k3s.single-node.config.kubeletArgs = [ "config=/etc/rancher/k3s/kubelet.config" ];
         nazarewk.k3s.single-node.config.kubelet = {
+          # see https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/
           apiVersion = "kubelet.config.k8s.io/v1beta1";
           kind = "KubeletConfiguration";
 
-          shutdownGracePeriod = "30s";
-          shutdownGracePeriodCriticalPods = "30s";
+          shutdownGracePeriod = "180s";
+          shutdownGracePeriodCriticalPods = "60s";
+          maxPods = cfg.maxPodsPerNode;
+
+          containerLogMaxSize = "10Mi";
+          containerLogMaxFiles = 10;
+
+          systemReserved = cfg.reservations.system;
+          kubeReserved = cfg.reservations.kube;
+          logging = {
+            # format = "json"; # doesn't work for some reason
+          };
         };
-        nazarewk.k3s.single-node.config.k3s.disable = [ "traefik" ];
+        nazarewk.k3s.single-node.config.k3s.disable = [
+          "traefik"  # using Istio ingress instead
+          "local-storage"  # using Rook Ceph instead
+          "metrics-server"  # using Prometheus Operator instead
+        ];
+
+        systemd.services.k3s.serviceConfig = {
+          TimeoutStartSec = 600;
+          Restart = mkForce "on-failure";
+        };
+
+        system.activationScripts.rookLVMLinks = ''
+          mkdir -p /sbin
+          for file in $(find ${pkgs.lvm2.bin}/bin) ; do
+            ln -sf "$file" "/sbin/''${file##*/}"
+          done
+        '';
       }
       (mkIf (cfg.zfsVolume != "") {
         # use external containerd on ZFS root
@@ -225,8 +287,6 @@ in {
           ];
 
           systemd.services.k3s.serviceConfig = {
-            TimeoutStartSec = 600;
-            Restart = mkForce "on-failure";
             ExecStartPost = let
               wait-for-k3s = (pkgs.writeShellApplication {
                 name = "wait-for-k3s";

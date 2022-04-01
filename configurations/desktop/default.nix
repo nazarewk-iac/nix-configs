@@ -40,6 +40,7 @@
     plantuml
 
     gparted
+    qjournalctl
 
     # networking
     dnsmasq
@@ -52,6 +53,7 @@
 
     playerctl
     spotify
+    # spotify-tray  # spotify tray requires X11
     zoom-us
     slack
     signal-desktop

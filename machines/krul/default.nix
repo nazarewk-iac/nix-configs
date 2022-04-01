@@ -22,6 +22,10 @@
   nazarewk.k3s.single-node.enableEraseScript = true;
   nazarewk.k3s.single-node.cilium.replaceKubeProxy = false;
   nazarewk.k3s.single-node.zfsVolume = "nazarewk-krul-primary/nazarewk-krul/containers/containerd/io.containerd.snapshotter.v1.zfs";
+  nazarewk.k3s.single-node.reservations.system.cpu = "4";
+  nazarewk.k3s.single-node.reservations.system.memory = "32G";
+  nazarewk.k3s.single-node.reservations.kube.cpu = "4";
+  nazarewk.k3s.single-node.reservations.kube.memory = "4G";
   # nazarewk.development.podman.enable = true;
 
   imports = [
