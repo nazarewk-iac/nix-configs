@@ -95,10 +95,6 @@ in {
       default = "";
     };
 
-    extraFlags = mkOption {
-      type = types.listOf types.str;
-    };
-
     config = {
       k3s = mkOption {
         type = yaml.type;
@@ -109,11 +105,18 @@ in {
         type = yaml.type;
         default = {};
       };
+    };
 
-      kubeletArgs = mkOption {
-        type = types.listOf types.str;
-        default = [];
-      };
+    kube-prometheus = {
+      enable = mkEnableOption "kube-prometheus tweaks";
+    };
+
+    rook-ceph = {
+      enable = mkEnableOption "Rook Ceph tweaks";
+    };
+
+    istio = {
+      enable = mkEnableOption "Istio tweaks";
     };
 
     cilium = {
@@ -166,31 +169,21 @@ in {
           443
         ];
 
-        # TODO: figure out why firewall is preventing Cilium from working
-        networking.firewall.enable = false;
-
-        boot.initrd.kernelModules = [
-          # cilium
-          "iptable_mangle"
-          "iptable_raw"
-          "iptable_filter"
-
-          # Rook Ceph
-          "rbd"
-          "nbd"
-        ];
-
         services.k3s.enable = true;
         # also runs as agent
         services.k3s.role = "server";
-        services.k3s.extraFlags = lib.escapeShellArgs (map toString cfg.extraFlags);
-
-        nazarewk.k3s.single-node.extraFlags = [
-          "--cluster-cidr=${cfg.podCIDR}"
-          "--service-cidr=${cfg.serviceCIDR}"
-          "--cluster-dns=${cfg.clusterDNS}"
-          "--kube-controller-manager-arg=--node-cidr-mask-size=${toString cfg.nodeCIDRMask}"
-        ];
+        nazarewk.k3s.single-node.config.k3s = {
+          secrets-encryption = true;
+          cluster-cidr = cfg.podCIDR;
+          service-cidr = cfg.serviceCIDR;
+          cluster-dns = cfg.clusterDNS;
+          kube-apiserver-arg = [
+            "--event-ttl=72h"
+          ];
+          kube-controller-manager-arg = [
+            "--node-cidr-mask-size=${toString cfg.nodeCIDRMask}"
+          ];
+        };
 
         environment.systemPackages = with pkgs; [
           k3s
@@ -198,9 +191,6 @@ in {
 
         environment.etc."rancher/k3s/kubelet.config".source = yaml.generate "k3s-config.yaml" cfg.config.kubelet;
         environment.etc."rancher/k3s/config.yaml".source = yaml.generate "k3s-config.yaml" cfg.config.k3s;
-        nazarewk.k3s.single-node.config.k3s.kubelet-arg = cfg.config.kubeletArgs;
-        nazarewk.k3s.single-node.config.k3s.secrets-encryption = true;
-        nazarewk.k3s.single-node.config.kubeletArgs = [ "config=/etc/rancher/k3s/kubelet.config" ];
         nazarewk.k3s.single-node.config.kubelet = {
           # see https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/
           apiVersion = "kubelet.config.k8s.io/v1beta1";
@@ -219,31 +209,69 @@ in {
             # format = "json"; # doesn't work for some reason
           };
         };
-        nazarewk.k3s.single-node.config.k3s.disable = [
-          "traefik"  # using Istio ingress instead
-          "local-storage"  # using Rook Ceph instead
-          "metrics-server"  # using Prometheus Operator instead
-        ];
 
         systemd.services.k3s.serviceConfig = {
           TimeoutStartSec = 600;
           Restart = mkForce "on-failure";
         };
 
+      }
+      (mkIf cfg.kube-prometheus.enable {
+        nazarewk.k3s.single-node.config.k3s.disable = [
+          "metrics-server"  # using Prometheus Operator instead
+        ];
+      })
+      (mkIf cfg.istio.enable {
+        nazarewk.k3s.single-node.config.k3s.disable = [
+          "traefik"  # using Istio ingress instead
+        ];
+      })
+      (mkIf cfg.rook-ceph.enable {
+        nazarewk.k3s.single-node.config.k3s.disable = [
+          "local-storage"  # using Rook Ceph instead
+        ];
+        # Can be removed for Rook 1.8.9+ when the PR lands in a release
+        # https://github.com/rook/rook/pull/9967
         system.activationScripts.rookLVMLinks = ''
           mkdir -p /sbin
-          for file in $(find ${pkgs.lvm2.bin}/bin) ; do
+          files=(
+            ${pkgs.cryptsetup}/bin/*
+            ${pkgs.lvm2.bin}/bin/*
+            ${pkgs.parted}/bin/*
+            ${pkgs.util-linux.bin}/bin/*
+          )
+          for file in ''${files[@]}; do
             ln -sf "$file" "/sbin/''${file##*/}"
           done
         '';
-      }
+
+        environment.systemPackages = with pkgs; [
+          ceph
+          cryptsetup
+          lvm2
+          parted
+          util-linux
+        ];
+        boot.initrd.kernelModules = [
+          # Rook Ceph
+          "rbd"
+          "nbd"
+        ];
+      })
       (mkIf (cfg.zfsVolume != "") {
         # use external containerd on ZFS root
         # see https://nixos.wiki/wiki/K3s
         virtualisation.containerd.enable = true;
+        virtualisation.containerd.settings = {
+          plugins."io.containerd.grpc.v1.cri".containerd = {
+            snapshotter = "zfs";
+          };
+        };
 
-        nazarewk.k3s.single-node.config.k3s.container-runtime-endpoint = "/run/containerd/containerd.sock";
-        nazarewk.k3s.single-node.config.kubeletArgs = [ "containerd=unix:///run/containerd/containerd.sock" ];
+        nazarewk.k3s.single-node.config.k3s = {
+          container-runtime-endpoint = "/run/containerd/containerd.sock";
+          kubelet-arg = [ "containerd=unix:///run/containerd/containerd.sock" ];
+        };
 
         systemd.services.containerd.serviceConfig = {
           ExecStartPre = [
@@ -259,6 +287,9 @@ in {
       })
       (mkIf (cfg.cni == "cilium") (mkMerge [
         {
+          # TODO: figure out why firewall is preventing Cilium from working
+          networking.firewall.enable = false;
+
           # see Cilium at https://docs.cilium.io/en/stable/operations/system_requirements/#firewall-rules
           networking.firewall.allowedTCPPorts = [
             # 2379 2380 # etcd
@@ -286,6 +317,13 @@ in {
             iptables  # for debugging
           ];
 
+          boot.initrd.kernelModules = [
+            # cilium
+            "iptable_mangle"
+            "iptable_raw"
+            "iptable_filter"
+          ];
+
           systemd.services.k3s.serviceConfig = {
             ExecStartPost = let
               wait-for-k3s = (pkgs.writeShellApplication {
@@ -302,9 +340,10 @@ in {
 #              "-${cilium-configure}/bin/cilium-configure --kubeconfig=/etc/rancher/k3s/k3s.yaml"
             ];
           };
-
-          nazarewk.k3s.single-node.config.k3s.flannel-backend = "none";
-          nazarewk.k3s.single-node.config.k3s.disable-network-policy = true;
+          nazarewk.k3s.single-node.config.k3s = {
+            flannel-backend = "none";
+            disable-network-policy = true;
+          };
 
           virtualisation.containerd.settings = {
             plugins."io.containerd.grpc.v1.cri".cni = {
@@ -333,7 +372,9 @@ in {
           };
         }
         (mkIf (cil.replaceKubeProxy) {
-          nazarewk.k3s.single-node.config.k3s.disable-kube-proxy = true;
+          nazarewk.k3s.single-node.config.k3s = {
+            disable-kube-proxy = true;
+          };
           nazarewk.k3s.single-node.cilium.values = {
             kubeProxyReplacement = "strict";
           };

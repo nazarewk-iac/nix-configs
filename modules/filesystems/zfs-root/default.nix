@@ -29,8 +29,8 @@ in {
     };
   };
 
-  config = mkMerge [
-    (mkIf cfg.enable {
+  config = mkIf cfg.enable (mkMerge [
+    {
       boot.kernelPackages = pkgs.zfs.latestCompatibleLinuxPackages;
       boot.loader.grub.copyKernels = true;
       boot.kernelParams = [ "nohibernate" ];
@@ -47,8 +47,12 @@ in {
       services.zfs.autoSnapshot.monthly = 1;
       services.zfs.trim.enable = true;
 
+      environment.systemPackages = with pkgs; [
+        zfs-prune-snapshots
+      ];
+
       virtualisation.docker.storageDriver = "zfs";
-    })
+    }
     (mkIf cfg.sshUnlock.enable {
       # see https://nixos.wiki/wiki/ZFS#Unlock_encrypted_zfs_via_ssh_on_boot
       boot.kernelParams = [ "ip=dhcp" ];
@@ -70,5 +74,5 @@ in {
        EOF
      '';
     })
-  ];
+  ]);
 }
