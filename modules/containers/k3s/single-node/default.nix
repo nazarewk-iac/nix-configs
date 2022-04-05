@@ -183,6 +183,9 @@ in {
           kube-controller-manager-arg = [
             "--node-cidr-mask-size=${toString cfg.nodeCIDRMask}"
           ];
+          kubelet-arg = [
+            "config=/etc/rancher/k3s/kubelet.config"
+          ];
         };
 
         environment.systemPackages = with pkgs; [
