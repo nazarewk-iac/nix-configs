@@ -11,7 +11,7 @@ repeat(){
   until "${@:2}" ; do
     echo "Drain[${times}] failed:" "${@:2}"
     test "${times}" -lt "${limit}" || return 1
-    times+=1
+    times++
   done
 }
 
