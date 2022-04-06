@@ -19,6 +19,7 @@ in {
 
       # Argo
       argocd
+      vault
 
       (pkgs.writeShellApplication {
         name = "aws-list-all-parameters";
