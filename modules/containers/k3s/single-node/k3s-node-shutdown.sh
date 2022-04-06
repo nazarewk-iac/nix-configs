@@ -8,26 +8,28 @@ info() {
 repeat(){
   local times=0 limit="$1"
 
-  until "${@:2}" ; do
-    test "${times}" -lt "${limit}" || return 1
+  while test "${times}" -lt "${limit}" ; do
+    if "${@:2}" ; then
+      return 0
+    fi
     echo "Drain[${times}] failed:" "${@:2}"
     times++
   done
+  return 1
 }
 
 drain_initial() {
-  kubectl drain "${args[@]}" "${nodes[@]}" "$@"
+  kubectl drain "${args[@]}" --ignore-daemonsets "${nodes[@]}" "$@"
 }
 
 drain_full() {
-  kubectl drain "${args[@]}" --disable-eviction "${nodes[@]}"
+  kubectl drain "${args[@]}" --disable-eviction "${nodes[@]}" "$@"
 }
 
 main() {
   nodes=("$@")
   args=(
     --timeout="${INTERVAL:-"60s"}"
-    --ignore-daemonsets
     --delete-emptydir-data
   )
   if ! repeat "${DRAIN_INITIAL_COUNT:=2}" drain_initial ; then
