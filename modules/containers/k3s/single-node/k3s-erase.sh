@@ -25,6 +25,7 @@ clear_dirs=(
   /var/lib/containerd
   /var/lib/kubelet
   /var/lib/rancher
+  /var/lib/rook/*
   /var/log/calico
   /var/log/containers
   /var/log/pods
@@ -39,6 +40,10 @@ clear_files=(
 )
 
 function main {
+  if command -v k3s-node-shutdown ; then
+    readarray -t nodes < <(kubectl get node -o name)
+    k3s-node-shutdown "${nodes[@]}"
+  fi
   systemctl stop containerd k3s || :
 
   readarray -t existing_cgroups < <(only_existing "${cgroups[@]}")

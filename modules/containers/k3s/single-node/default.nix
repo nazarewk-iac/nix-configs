@@ -6,7 +6,7 @@ let
   
   yaml = pkgs.formats.yaml {};
   
-  cilium-configure = (pkgs.writeShellApplication {
+  cilium-configure = pkgs.writeShellApplication {
     name = "cilium-configure";
     runtimeInputs = with pkgs; [ kubernetes-helm kubectl ];
     text = ''
@@ -24,12 +24,18 @@ let
       )
       helm upgrade --install "''${args[@]}" cilium cilium
     '';
+  };
+
+  k3s-node-shutdown =  (pkgs.writeShellApplication {
+    name = "k3s-node-shutdown";
+    runtimeInputs = with pkgs; [ kubectl ];
+    text = builtins.readFile ./k3s-node-shutdown.sh;
   });
 in {
   options.nazarewk.k3s.single-node = {
     enable = mkEnableOption "local (single node) k3s setup";
 
-    enableEraseScript = mkOption {
+    enableScripts = mkOption {
       default = cfg.enable;
       type = lib.types.bool;
     };
@@ -148,11 +154,20 @@ in {
   };
 
   config = mkMerge [
-    (mkIf cfg.enableEraseScript {
+    (mkIf cfg.enableScripts {
       environment.systemPackages = [
+        k3s-node-shutdown
         (pkgs.writeShellApplication {
           name = "k3s-erase";
-          runtimeInputs = with pkgs; [ systemd findutils coreutils util-linux gawk ];
+          runtimeInputs = with pkgs; [
+            systemd
+            findutils
+            coreutils
+            util-linux
+            gawk
+            kubectl
+            net-tools # hostname
+          ];
           text = builtins.readFile ./k3s-erase.sh;
         })
       ];

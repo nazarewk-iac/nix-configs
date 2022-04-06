@@ -19,7 +19,7 @@
   hardware.cpu.amd.updateMicrocode = true;
 
   nazarewk.k3s.single-node.enable = true;
-  nazarewk.k3s.single-node.enableEraseScript = true;
+  nazarewk.k3s.single-node.enableScripts = true;
   nazarewk.k3s.single-node.rook-ceph.enable = true;
   nazarewk.k3s.single-node.kube-prometheus.enable = true;
   nazarewk.k3s.single-node.istio.enable = true;
