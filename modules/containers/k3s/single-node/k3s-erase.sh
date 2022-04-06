@@ -41,8 +41,7 @@ clear_files=(
 
 function main {
   if command -v k3s-node-shutdown ; then
-    readarray -t nodes < <(kubectl get node -o name)
-    k3s-node-shutdown "${nodes[@]}"
+    k3s-node-shutdown "$(hostname)"
   fi
   systemctl stop containerd k3s || :
 

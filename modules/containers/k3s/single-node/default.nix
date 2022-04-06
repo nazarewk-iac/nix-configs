@@ -31,6 +31,18 @@ let
     runtimeInputs = with pkgs; [ kubectl ];
     text = builtins.readFile ./k3s-node-shutdown.sh;
   });
+  k3s-erase = pkgs.writeShellApplication {
+    name = "k3s-erase";
+    runtimeInputs = with pkgs; [
+      systemd
+      findutils
+      coreutils
+      util-linux
+      gawk
+      nettools # hostname
+    ];
+    text = builtins.readFile ./k3s-erase.sh;
+  };
 in {
   options.nazarewk.k3s.single-node = {
     enable = mkEnableOption "local (single node) k3s setup";
@@ -157,19 +169,7 @@ in {
     (mkIf cfg.enableScripts {
       environment.systemPackages = [
         k3s-node-shutdown
-        (pkgs.writeShellApplication {
-          name = "k3s-erase";
-          runtimeInputs = with pkgs; [
-            systemd
-            findutils
-            coreutils
-            util-linux
-            gawk
-            kubectl
-            net-tools # hostname
-          ];
-          text = builtins.readFile ./k3s-erase.sh;
-        })
+        k3s-erase
       ];
     })
     (mkIf cfg.enable (mkMerge [

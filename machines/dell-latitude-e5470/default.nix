@@ -8,6 +8,7 @@
 
   nazarewk.sway.remote.enable = true;
   nazarewk.desktop.base.nixpkgs-wayland.enable = false;
+  nazarewk.k3s.single-node.enableScripts = true;
   nazarewk.programs.gnupg.forwarding.client.enable = false;
   nazarewk.programs.gnupg.forwarding.client.sshConfig.hosts = [
     "nazarewk-krul"
