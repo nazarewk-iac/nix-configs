@@ -56,6 +56,10 @@ in {
 
   programs.zsh.enable = true;
   programs.starship.enable = true;
+  programs.ssh.extraConfig = ''
+    Host *
+      Include ~/.ssh/config.local
+  '';
 
   home.packages = with pkgs; [
     # # launch-waybar doesn't worth with nix changes
