@@ -9,8 +9,8 @@ repeat(){
   local times=0 limit="$1"
 
   until "${@:2}" ; do
-    echo "Drain[${times}] failed:" "${@:2}"
     test "${times}" -lt "${limit}" || return 1
+    echo "Drain[${times}] failed:" "${@:2}"
     times++
   done
 }
@@ -30,8 +30,9 @@ main() {
     --ignore-daemonsets
     --delete-emptydir-data
   )
-  repeat "${DRAIN_INITIAL_COUNT:=2}" drain_initial
-  repeat "${DRAIN_FULL_COUNT:=10}" drain_full
+  if ! repeat "${DRAIN_INITIAL_COUNT:=2}" drain_initial ; then
+    repeat "${DRAIN_FULL_COUNT:=10}" drain_full
+  fi
 
   if [[ "${nodes[*]}" == *"$(hostname)"* ]] ; then
     sudo systemctl stop k3s.service
