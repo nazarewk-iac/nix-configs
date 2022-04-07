@@ -53,6 +53,11 @@
     cachix
   ];
 
+  environment.shellAliases = {
+    "userctl" = "systemctl --user";
+    "userjournal" = "journalctl --user";
+  };
+
   # KEYBASE
   services.davfs2.enable = true;
 
