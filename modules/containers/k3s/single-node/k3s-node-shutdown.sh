@@ -19,25 +19,27 @@ repeat(){
 }
 
 drain_initial() {
-  kubectl drain "${args[@]}" --ignore-daemonsets "${nodes[@]}" "$@"
+  kubectl drain "${args[@]}" "${nodes[@]}" "$@"
 }
 
 drain_full() {
-  kubectl drain "${args[@]}" --ignore-daemonsets --disable-eviction "${nodes[@]}" "$@"
+  kubectl drain "${args[@]}" --disable-eviction "${nodes[@]}" "$@"
 }
 
 main() {
   nodes=("$@")
   args=(
-    --timeout="${INTERVAL:-"60s"}"
     --delete-emptydir-data
+    --by-priority
+    --ignore-daemonsets
   )
-  if ! repeat "${DRAIN_INITIAL_COUNT:=2}" drain_initial ; then
-    repeat "${DRAIN_FULL_COUNT:=10}" drain_full
+
+  if test "${#nodes[@]}" = 0 ; then
+    nodes=("$(hostname)")
   fi
 
-  if [[ "${nodes[*]}" == *"$(hostname)"* ]] ; then
-    sudo systemctl stop k3s.service
+  if ! drain_initial --timeout="${INITIAL_DRAIN_TIMEOUT:-120}s"; then
+    drain_full --timeout="${FULL_DRAIN_TIMEOUT:-120}s"
   fi
 }
 

@@ -3,7 +3,12 @@ with lib;
 let
   cfg = config.nazarewk.k3s.single-node;
   cil = cfg.cilium;
-  
+
+  featureGatesString = lib.pipe cfg.featureGates [
+    (lib.mapAttrsToList (n: v: "${n}=${toString v}"))
+    (builtins.concatStringsSep ",")
+  ];
+
   yaml = pkgs.formats.yaml {};
   
   cilium-configure = pkgs.writeShellApplication {
@@ -83,6 +88,13 @@ in {
       type = types.ints.unsigned;
       # TODO: calculate: 2 ** (32 - cfg.nodeCIDRMask) * 0.43
       default = 7045;
+    };
+
+    featureGates = mkOption {
+      type = lib.types.attrsOf lib.types.bool;
+      default = {
+        GracefulNodeShutdownBasedOnPodPriority = true;
+      };
     };
 
     reservations = {
@@ -194,9 +206,14 @@ in {
           cluster-dns = cfg.clusterDNS;
           kube-apiserver-arg = [
             "--event-ttl=72h"
+            "--feature-gates=${featureGatesString}"
+          ];
+          kube-scheduler-arg = [
+            "--feature-gates=${featureGatesString}"
           ];
           kube-controller-manager-arg = [
             "--node-cidr-mask-size=${toString cfg.nodeCIDRMask}"
+            "--feature-gates=${featureGatesString}"
           ];
           kubelet-arg = [
             "config=/etc/rancher/k3s/kubelet.config"
@@ -219,6 +236,7 @@ in {
           # NAME                      VALUE        GLOBAL-DEFAULT   AGE
           # system-node-critical      2000001000   false            8d
           # system-cluster-critical   2000000000   false            8d
+          # WARNING: requires --feature-gates=GracefulNodeShutdownBasedOnPodPriority=true
           shutdownGracePeriodByPodPriority = [
             {
               priority = 2000001000; # system-node-critical
@@ -244,16 +262,53 @@ in {
 
           systemReserved = cfg.reservations.system;
           kubeReserved = cfg.reservations.kube;
+          featureGates = cfg.featureGates;
           logging = {
             # format = "json"; # doesn't work for some reason
           };
         };
 
-        systemd.services.k3s.serviceConfig = {
-          TimeoutStartSec = 600;
-          Restart = mkForce "on-failure";
+        systemd.services.k3s = {
+          # restartIfChanges seems to make a full stop, then full start which triggers drainer
+          restartIfChanged = false;
+          serviceConfig = {
+            TimeoutStartSec = 600;
+            Restart = mkForce "on-failure";
+          };
+          #unitConfig = {
+          #  Upholds = [ "k3s-drainer.service" ];
+          #};
         };
 
+        systemd.services.k3s-drainer = {
+          restartIfChanged = false;
+          description = "drains Kubernetes node before k3s stops";
+          wants = [ "k3s.service" ];
+          after = [ "k3s.service" ];
+          wantedBy = [ "multi-user.target" ];
+          unitConfig = {
+            StopPropagatedFrom = [ "k3s.service" ];
+          };
+          environment = {
+            KUBECONFIG = "/etc/rancher/k3s/k3s.yaml";
+          };
+          serviceConfig = let
+            k = "${pkgs.kubectl}/bin/kubectl";
+            drain = "${k} drain --by-priority --delete-emptydir-data --ignore-daemonsets";
+            timeoutInitialSec = 30;
+            timeoutForceSec = 90;
+            timeoutFullSec = timeoutInitialSec + timeoutForceSec;
+          in {
+            RemainAfterExit = true;
+            RestartSec = 30;
+            ExecStart = "${k} uncordon ${config.networking.hostName}";
+            TimeoutStopSec = toString timeoutFullSec;
+            ExecStop = [
+              "-${drain} --timeout ${toString timeoutInitialSec}s ${config.networking.hostName}"
+              "${drain} --timeout ${toString timeoutForceSec}s --disable-eviction ${config.networking.hostName}"
+            ];
+          };
+        };
       }
       (mkIf cfg.kube-prometheus.enable {
         nazarewk.k3s.single-node.config.k3s.disable = [
