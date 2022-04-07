@@ -214,8 +214,29 @@ in {
           apiVersion = "kubelet.config.k8s.io/v1beta1";
           kind = "KubeletConfiguration";
 
-          shutdownGracePeriod = "180s";
-          shutdownGracePeriodCriticalPods = "60s";
+          # see https://github.com/kubernetes/kubernetes/blob/21184400a4ac185e7e4c6ddb52eb9c25a4cc453f/pkg/kubelet/nodeshutdown/nodeshutdown_manager_linux.go#L420-L442
+          # $ kubectl get priorityclasses.scheduling.k8s.io -o wide
+          # NAME                      VALUE        GLOBAL-DEFAULT   AGE
+          # system-node-critical      2000001000   false            8d
+          # system-cluster-critical   2000000000   false            8d
+          shutdownGracePeriodByPodPriority = [
+            {
+              priority = 2000001000; # system-node-critical
+              shutdownGracePeriodSeconds = 60;
+            }
+            {
+              priority = 2000000000; # system-cluster-critical
+              shutdownGracePeriodSeconds = 60;
+            }
+            {
+              priority = 1; # give Pods with ANY priority set separate wave of evictions
+              shutdownGracePeriodSeconds = 60;
+            }
+            {
+              priority = 0; # default for all Pods
+              shutdownGracePeriodSeconds = 60;
+            }
+          ];
           maxPods = cfg.maxPodsPerNode;
 
           containerLogMaxSize = "10Mi";
