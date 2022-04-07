@@ -23,7 +23,7 @@ drain_initial() {
 }
 
 drain_full() {
-  kubectl drain "${args[@]}" --disable-eviction "${nodes[@]}" "$@"
+  kubectl drain "${args[@]}" --ignore-daemonsets --disable-eviction "${nodes[@]}" "$@"
 }
 
 main() {

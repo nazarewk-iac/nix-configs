@@ -13,14 +13,14 @@ in {
 
     nixpkgs.overlays = [
       (self: super: {
-        kubectl = super.kubectl.overrideAttrs (old: let commit = "043a887cf9c5bc6be4375a44a7442a49666b56cd"; in {
+        kubectl = super.kubectl.overrideAttrs (old: let commit = "8e20999c41f42cc871c0f014c2a818bdba961ff3"; in {
           version = "1.24.0-${commit}";
 
           src = super.fetchFromGitHub {
             owner = "nazarewk";
             repo = "kubernetes";
             rev = commit;
-            sha256 = "sha256-LK4pAVEc8eQZidI0sSoaHWU3fzzaCUaPIb+nayDpYcA=";
+            sha256 = "sha256-z4OQQSYNRvf1zAMFqbrAHgbLPaB4L//v9JW/7tVw+xg=";
           };
         });
       })
