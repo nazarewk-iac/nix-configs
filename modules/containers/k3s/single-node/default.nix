@@ -97,6 +97,24 @@ in {
       };
     };
 
+    drainer = {
+      enable = mkOption {
+        type = lib.types.bool;
+        default = true;
+      };
+
+      timeouts = {
+        initial =  mkOption {
+          type = types.ints.unsigned;
+          default = 30;
+        };
+        force = mkOption {
+          type = types.ints.unsigned;
+          default = 90;
+        };
+      };
+    };
+
     reservations = {
       system = {
         cpu = mkOption {
@@ -269,44 +287,9 @@ in {
         };
 
         systemd.services.k3s = {
-          # restartIfChanges seems to make a full stop, then full start which triggers drainer
-          restartIfChanged = false;
           serviceConfig = {
             TimeoutStartSec = 600;
             Restart = mkForce "on-failure";
-          };
-          #unitConfig = {
-          #  Upholds = [ "k3s-drainer.service" ];
-          #};
-        };
-
-        systemd.services.k3s-drainer = {
-          restartIfChanged = false;
-          description = "drains Kubernetes node before k3s stops";
-          wants = [ "k3s.service" ];
-          after = [ "k3s.service" ];
-          wantedBy = [ "multi-user.target" ];
-          unitConfig = {
-            StopPropagatedFrom = [ "k3s.service" ];
-          };
-          environment = {
-            KUBECONFIG = "/etc/rancher/k3s/k3s.yaml";
-          };
-          serviceConfig = let
-            k = "${pkgs.kubectl}/bin/kubectl";
-            drain = "${k} drain --by-priority --delete-emptydir-data --ignore-daemonsets";
-            timeoutInitialSec = 30;
-            timeoutForceSec = 90;
-            timeoutFullSec = timeoutInitialSec + timeoutForceSec;
-          in {
-            RemainAfterExit = true;
-            RestartSec = 30;
-            ExecStart = "${k} uncordon ${config.networking.hostName}";
-            TimeoutStopSec = toString timeoutFullSec;
-            ExecStop = [
-              "-${drain} --timeout ${toString timeoutInitialSec}s ${config.networking.hostName}"
-              "${drain} --timeout ${toString timeoutForceSec}s --disable-eviction ${config.networking.hostName}"
-            ];
           };
         };
       }
@@ -351,6 +334,41 @@ in {
           "rbd"
           "nbd"
         ];
+      })
+      (mkIf cfg.drainer.enable {
+        systemd.services.k3s = {
+          # restartIfChanges seems to make a full stop, then full start which triggers drainer
+          restartIfChanged = false;
+          #unitConfig = {
+          #  Upholds = [ "k3s-drainer.service" ];
+          #};
+        };
+        systemd.services.k3s-drainer = {
+          restartIfChanged = false;
+          description = "drains Kubernetes node before k3s stops";
+          wants = [ "k3s.service" ];
+          after = [ "k3s.service" ];
+          wantedBy = [ "multi-user.target" ];
+          unitConfig = {
+            StopPropagatedFrom = [ "k3s.service" ];
+          };
+          environment = {
+            KUBECONFIG = "/etc/rancher/k3s/k3s.yaml";
+          };
+          serviceConfig = let
+            k = "${pkgs.kubectl}/bin/kubectl";
+            drain = "${k} drain --by-priority --delete-emptydir-data --ignore-daemonsets";
+          in {
+            RemainAfterExit = true;
+            RestartSec = 30;
+            TimeoutStopSec = cfg.drainer.timeouts.initial + cfg.drainer.timeouts.force;
+            ExecStart = "${k} uncordon ${config.networking.hostName}";
+            ExecStop = [
+              "-${drain} --timeout ${toString cfg.drainer.timeouts.initial}s ${config.networking.hostName}"
+              "${drain} --timeout ${toString cfg.drainer.timeouts.force}s --disable-eviction ${config.networking.hostName}"
+            ];
+          };
+        };
       })
       (mkIf (cfg.zfsVolume != "") {
         # use external containerd on ZFS root
