@@ -83,22 +83,7 @@ in {
       (pkgs.writeShellApplication {
         name = "kubectl-eks_config";
         runtimeInputs = with pkgs; [ awscli2 kubectl coreutils gawk yq ];
-        text = ''
-          export cluster_name="$1"
-          export AWS_PROFILE="''${2:-"$AWS_PROFILE"}"
-          alias="''${3:-"$cluster_name"}"
-
-          set -x
-          aws eks update-kubeconfig --profile="$AWS_PROFILE" --name="$cluster_name" --alias="$alias"
-
-          cluster_arn="$(kubectl config view --minify | yq -r '.clusters[].name')"
-          user="$(kubectl config view --minify | yq -r '.users[].name')"
-
-          kubectl config set-context "$cluster_arn" --cluster="$cluster_arn" --user="$user"
-
-          readarray -t args < <(jq -rn 'env | to_entries[] | select(.key | startswith("AWS_")) | "--exec-env=\(.key)=\(.value)"')
-          kubectl config set-credentials "$user" "''${args[@]}"
-        '';
+        text = builtins.readFile ./kubectl-eks_config.sh;
       })
     ];
   };
