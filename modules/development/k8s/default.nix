@@ -32,7 +32,6 @@ in {
     '';
     environment.shellAliases = {
       "kc" = "${pkgs.kubecolor}/bin/kubecolor";
-      "kubectl" = "${pkgs.kubecolor}/bin/kubecolor";
     };
     environment.systemPackages = with pkgs; [
       lens # kubernetes IDE
