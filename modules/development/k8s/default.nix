@@ -50,6 +50,8 @@ in {
       # see https://olm.operatorframework.io/docs/getting-started/
       operator-sdk
 
+      cmctl # cert-manager CLI
+
       # Helm
       kubernetes-helm # dep for: chart-testing
       chart-testing
