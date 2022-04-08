@@ -28,6 +28,8 @@
   programs.java.enable = true;
   services.plantuml-server.enable = true;
 
+  nazarewk.docker.enable = true;
+
   environment.systemPackages = with pkgs; [
     dex # A program to generate and execute DesktopEntry files of the Application type
     firefox-wayland

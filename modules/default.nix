@@ -26,6 +26,7 @@ let
     ./hardware/pipewire
     ./hardware/yubikey
     ./headless/base
+    ./containers/docker
     ./containers/k3s/single-node
     ./packaging/asdf
     ./programs/aws-vault
