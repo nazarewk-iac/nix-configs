@@ -82,7 +82,7 @@ in {
 
       (pkgs.writeShellApplication {
         name = "kubectl-eks_config";
-        runtimeInputs = with pkgs; [ awscli2 kubectl coreutils gawk yq ];
+        runtimeInputs = with pkgs; [ awscli2 kubectl coreutils gawk yq gnused ];
         text = builtins.readFile ./kubectl-eks_config.sh;
       })
     ];
