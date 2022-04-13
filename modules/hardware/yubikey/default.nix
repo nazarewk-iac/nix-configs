@@ -49,6 +49,8 @@ in {
     services.pcscd.enable = true;
 
     environment.systemPackages = with pkgs; [
+      xkcdpass
+      pinentry-qt
       yubioath-desktop
       yubikey-manager
       yubikey-manager-qt

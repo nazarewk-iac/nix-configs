@@ -18,6 +18,8 @@
   nazarewk.filesystems.zfs-root.sshUnlock.enable = true;
   hardware.cpu.amd.updateMicrocode = true;
 
+  nazarewk.programs.obs-studio.enable = true;
+
   nazarewk.k3s.single-node.enable = true;
   nazarewk.k3s.single-node.enableScripts = true;
   nazarewk.k3s.single-node.rook-ceph.enable = true;

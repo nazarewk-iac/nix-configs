@@ -55,6 +55,7 @@
 
     playerctl
     spotify
+    spotify-qt
     # spotify-tray  # spotify tray requires X11
     zoom-us
     slack

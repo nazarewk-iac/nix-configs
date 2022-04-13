@@ -12,6 +12,10 @@ in {
   zramSwap.memoryPercent = 50;
   zramSwap.priority = 100;
 
+  boot.zfs.requestEncryptionCredentials = [
+    "nazarewk-krul-primary"
+  ];
+
   boot.tmpOnTmpfs = true;
   boot.tmpOnTmpfsSize = "10%"; # 10% of 128GB should be fine
 

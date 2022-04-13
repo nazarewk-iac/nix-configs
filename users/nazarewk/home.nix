@@ -39,7 +39,7 @@ in {
   programs.gh.enable = false;
   programs.gh.enableGitCredentialHelper = false;
   programs.git.enable = true;
-  programs.git.signing.key = "916D8B67241892AE";
+  programs.git.signing.key = "CDDFE1610327F6F7A693125698C23F71A188991B";
   programs.git.signing.signByDefault = true;
   programs.git.userName = "Krzysztof Nazarewski";
   programs.git.userEmail = "3494992+nazarewk@users.noreply.github.com";
