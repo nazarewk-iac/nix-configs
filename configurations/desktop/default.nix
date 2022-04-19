@@ -43,6 +43,8 @@
 
     gparted
     qjournalctl
+    gsmartcontrol
+    smartmontools
 
     # networking
     dnsmasq
