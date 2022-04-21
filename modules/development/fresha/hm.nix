@@ -53,7 +53,12 @@ in {
       export AWS_CONFIG_FILE="$PWD/.aws/config"
       export AWS_SHARED_CREDENTIALS_FILE="$PWD/.aws/credentials"
       export KUBECONFIG="$PWD/.kube/config"
+
+      # These are currently not configurable https://github.com/benkehoe/aws-sso-util/blob/7b72be6f495e0b95bbb8d7339f9734108aa0dc2a/lib/aws_sso_lib/sso.py#L40-L46
+      export AWS_SSO_UTIL_SSO_TOKEN_DIR="$PWD/.aws/sso/cache"
+      export AWS_SSO_UTIL_CREDENTIALS_CACHE_DIR="$PWD/.aws/cli/cache"
       '';
+
       onChange = ''${pkgs.sudo}/bin/sudo -u ${config.home.username} ${pkgs.direnv}/bin/direnv allow "$FRESHA_DIR/.envrc"'';
     };
 
