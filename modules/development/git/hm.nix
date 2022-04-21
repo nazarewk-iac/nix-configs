@@ -28,8 +28,8 @@ let
     '';
   });
 
-  ghClone = (pkgs.writeShellApplication {
-    name = "gh-clone";
+  ghGet = (pkgs.writeShellApplication {
+    name = "gh-get";
     runtimeInputs = with pkgs; [ git ghDir ghRemote ];
     text = ''
       for entry in "$@"; do
@@ -37,12 +37,34 @@ let
         remote="$(gh-remote "$entry")"
 
         if [ -d "$dir/.git" ] ; then
-          echo "$dir already exists, skipping..."
+          echo "$dir already exists, updating..."
+          git -C "$dir" fetch --all
+          git -C "$dir" pull || true
           continue
         fi
 
         git clone "$remote" "$dir"
       done
+    '';
+  });
+
+  ghRepos = (pkgs.writeShellApplication {
+    name = "gh-repos";
+    runtimeInputs = with pkgs; [ gh jq ];
+    text = ''
+      LIMIT="''${LIMIT:-999}"
+      for owner in "$@"; do
+        gh repo list "$owner" -L "$LIMIT" --json owner,name | jq -r '.[] | "\(.owner.login)/\(.name)"'
+      done
+    '';
+  });
+
+  ghGetAll = (pkgs.writeShellApplication {
+    name = "gh-get-all";
+    runtimeInputs = with pkgs; [ ghRepos ];
+    text = ''
+      readarray -t repos <<<"$(gh-repos "$@")"
+      gh-get "''${repos[@]}"
     '';
   });
 
@@ -70,7 +92,9 @@ in {
     home.packages = with pkgs; [
       ghDir
       ghRemote
-      ghClone
+      ghGet
+      ghGetAll
+      ghRepos
 
       hub
       gh
