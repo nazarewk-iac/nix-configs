@@ -38,8 +38,8 @@ let
 
         if [ -d "$dir/.git" ] ; then
           echo "$dir already exists, updating..."
-          git -C "$dir" fetch --all
-          git -C "$dir" pull || true
+          git -C "$dir" fetch --all --prune
+          git -C "$dir" pull --rebase || true
           continue
         fi
 
