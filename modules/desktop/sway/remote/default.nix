@@ -15,7 +15,8 @@ in {
       waypipe
 
       remmina
-      tigervnc
+      # didn't build on 2022-04-25
+      #tigervnc
     ];
   };
 }

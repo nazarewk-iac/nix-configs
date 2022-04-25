@@ -18,7 +18,9 @@
   nazarewk.filesystems.zfs-root.sshUnlock.enable = true;
   hardware.cpu.amd.updateMicrocode = true;
 
-  nazarewk.programs.obs-studio.enable = true;
+  # didn't build on 2022-04-25
+  # failed on /nix/store/h3xignaxqd14g4aniv3ajfx7mcihw3l3-gstreamermm-1.10.0.drv
+  nazarewk.programs.obs-studio.enable = false;
 
   nazarewk.k3s.single-node.enable = true;
   nazarewk.k3s.single-node.enableScripts = true;

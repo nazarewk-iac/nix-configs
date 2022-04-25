@@ -10,7 +10,8 @@ in {
   config = mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
       nix-tree
-      nix-du
+      # didn't build on 2022-04-25
+      # nix-du
       nixfmt
       nixpkgs-fmt
 
