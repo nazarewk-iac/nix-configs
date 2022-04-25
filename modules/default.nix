@@ -14,6 +14,7 @@ let
     ./development/golang
     ./development/k8s
     ./development/nix
+    ./development/nodejs
     ./development/podman
     ./development/python
     ./development/ruby

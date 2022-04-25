@@ -8,11 +8,8 @@ in {
   };
 
   config = mkIf cfg.enable {
+    nazarewk.development.nodejs.enable = true;
     environment.systemPackages = with pkgs; [
-      # dev software
-      nodejs
-      yarn
-
       # AWS
       awscli2
       eksctl
