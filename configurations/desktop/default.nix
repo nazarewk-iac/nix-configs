@@ -35,6 +35,9 @@
     firefox-wayland
     jetbrains.pycharm-professional
     jetbrains.idea-ultimate
+    jetbrains.clion
+    jetbrains.goland
+    jetbrains.ruby-mine
     p7zip
     system-config-printer
 
