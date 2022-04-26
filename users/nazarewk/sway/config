@@ -23,6 +23,8 @@ output $displayDell modeline 241.50 2560 2600 2632 2720 1440 1443 1448 1481 -hsy
 output $displayDell pos 0 0
 # output $displayLaptop pos 2560 0
 
+seat seat0 xcursor_theme Adwaita 24
+
 bindsym $Super+p output $displayLaptop toggle
 
 bindswitch --reload --locked lid:on output $displayLaptop disable

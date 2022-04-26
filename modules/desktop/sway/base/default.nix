@@ -20,10 +20,6 @@ in {
     programs.sway.extraOptions = [ "--verbose" "--debug" ];
     environment.pathsToLink = [ "/libexec" ];
 
-    # Multi-output directions:
-    # - https://www.reddit.com/r/swaywm/comments/k1zl41/thank_you_devs_free_ipad_repurposed_as_a_second/
-    # - https://github.com/swaywm/sway/issues/5553
-    # - https://wiki.archlinux.org/title/Sway#Create_headless_outputs
     programs.sway.extraSessionCommands = ''
       # see https://wiki.debian.org/Wayland#Toolkits
       export GDK_BACKEND=wayland
