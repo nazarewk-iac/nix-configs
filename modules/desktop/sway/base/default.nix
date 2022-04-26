@@ -29,6 +29,8 @@ in {
       export _JAVA_AWT_WM_NONREPARENTING=1
       export MOZ_ENABLE_WAYLAND=1
       export MOZ_DBUS_REMOTE=1
+      # see https://github.com/swaywm/wlroots/issues/3189#issuecomment-461608727
+      export WLR_NO_HARDWARE_CURSORS=1
 
       eval $(gnome-keyring-daemon --start)
       export SSH_AUTH_SOCK
