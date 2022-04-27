@@ -294,8 +294,14 @@ for_window [title="Firefox — Sharing Indicator"] {
 #   sticky enable
 # }
 
+for_window [title="File Operation Progress"] {
+  floating enable
+  sticky enable
+  move position center
+}
+
 # title: "[628041]@nazarewk-krul (/nix/store/bxkp2nf9khi5xr2lw664hf4vw10xg0na-gnupg-2.3.3/bin/gpg2 --status-fd=2 -bsau 916D8B67241892AE)"
-for_window [title=".*gpg.*"] {
+for_window [title=".*( gpg2? |/gpg).*"] {
   floating enable
   sticky enable
   move position center
