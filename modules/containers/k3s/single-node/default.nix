@@ -361,7 +361,7 @@ in {
           in {
             RemainAfterExit = true;
             RestartSec = 30;
-            TimeoutStopSec = cfg.drainer.timeouts.initial + cfg.drainer.timeouts.force;
+            TimeoutStopSec = cfg.drainer.timeouts.initial + cfg.drainer.timeouts.force + 5;
             ExecStart = "${k} uncordon ${config.networking.hostName}";
             ExecStop = [
               "-${drain} --timeout ${toString cfg.drainer.timeouts.initial}s ${config.networking.hostName}"
