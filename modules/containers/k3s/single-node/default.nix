@@ -304,6 +304,18 @@ in {
         ];
       })
       (mkIf cfg.istio.enable {
+        system.activationScripts.istioBinLinks = ''
+          mkdir -p /sbin /bin /usr/bin
+          files=(
+            ${pkgs.util-linux.bin}/bin/*
+            ${pkgs.iptables}/bin/*
+          )
+          for file in ''${files[@]}; do
+            name="''${file##*/}"
+            ln -sf "$file" "/bin/$name"
+            ln -sf "$file" "/usr/bin/$name"
+          done
+        '';
         nazarewk.k3s.single-node.config.k3s.disable = [
           "traefik"  # using Istio ingress instead
         ];
@@ -315,7 +327,7 @@ in {
         # Can be removed for Rook 1.8.9+ when the PR lands in a release
         # https://github.com/rook/rook/pull/9967
         system.activationScripts.rookLVMLinks = ''
-          mkdir -p /sbin
+          mkdir -p /sbin /bin /usr/bin
           files=(
             ${pkgs.cryptsetup}/bin/*
             ${pkgs.lvm2.bin}/bin/*
@@ -323,7 +335,8 @@ in {
             ${pkgs.util-linux.bin}/bin/*
           )
           for file in ''${files[@]}; do
-            ln -sf "$file" "/sbin/''${file##*/}"
+            name="''${file##*/}"
+            ln -sf "$file" "/sbin/$name"
           done
         '';
 
