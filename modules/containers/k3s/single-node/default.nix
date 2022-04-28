@@ -4,6 +4,11 @@ let
   cfg = config.nazarewk.k3s.single-node;
   cil = cfg.cilium;
 
+  totalShutdownTime = lib.pipe cfg.config.kubelet.shutdownGracePeriodByPodPriority [
+    (map (e: e.shutdownGracePeriodSeconds))
+    (lib.foldr (a: b: a + b) 0)
+  ];
+
   featureGatesString = lib.pipe cfg.featureGates [
     (lib.mapAttrsToList (n: v: "${n}=${toString v}"))
     (builtins.concatStringsSep ",")
@@ -106,11 +111,11 @@ in {
       timeouts = {
         initial =  mkOption {
           type = types.ints.unsigned;
-          default = 30;
+          default = totalShutdownTime * 1 / 4;
         };
         force = mkOption {
           type = types.ints.unsigned;
-          default = 90;
+          default = totalShutdownTime * 3 / 4;
         };
       };
     };
