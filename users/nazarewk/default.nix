@@ -28,6 +28,7 @@ in mkMerge [
       "video"
       "wheel"
       "pipewire"
+      "mlocate"
     ];
 
     users.users.nazarewk.openssh.authorizedKeys.keys = sshKeys;
