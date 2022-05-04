@@ -297,6 +297,19 @@ in {
             Restart = mkForce "on-failure";
           };
         };
+
+        system.activationScripts.k3sCNIBinaries = let
+          k3sDeps = lib.pipe pkgs.k3s.propagatedBuildInputs [
+            (map (e: {name = e.pname; value = e; }))
+            lib.listToAttrs
+          ];
+        in ''
+          mkdir -p /opt/cni/bin
+          ln -sf "${k3sDeps.k3s-cni-plugins}/bin/cni" "/opt/cni/bin/cni"
+          for link in loopback portmap ; do
+            ln -sf "./cni" "/opt/cni/bin/$link"
+          done
+        '';
       }
       (mkIf cfg.kube-prometheus.enable {
         nazarewk.k3s.single-node.config.k3s.disable = [
