@@ -41,6 +41,8 @@
     p7zip
     system-config-printer
 
+    mlocate
+
     drawio
     plantuml
 
