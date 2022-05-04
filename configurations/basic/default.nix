@@ -68,6 +68,7 @@
   nazarewk.sway.gdm.enable = true;
 
   services.locate.enable = true;
+  services.locate.localuser = null;
   services.locate.locate = pkgs.mlocate;
   services.locate.pruneBindMounts = true;
 }
