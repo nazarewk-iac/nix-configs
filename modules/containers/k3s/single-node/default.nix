@@ -305,8 +305,16 @@ in {
           ];
         in ''
           mkdir -p /opt/cni/bin
+          links=(
+            bridge
+            flannel
+            host-local
+            loopback
+            portmap
+          )
           ln -sf "${k3sDeps.k3s-cni-plugins}/bin/cni" "/opt/cni/bin/cni"
-          for link in loopback portmap ; do
+
+          for link in "''${links[@]}"; do
             ln -sf "./cni" "/opt/cni/bin/$link"
           done
         '';
