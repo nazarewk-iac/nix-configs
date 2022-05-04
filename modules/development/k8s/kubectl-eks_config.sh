@@ -23,7 +23,7 @@ main() {
     --exec-command=bash
     --exec-arg=-c
     --exec-arg="$(
-      kubectl config view --flatten -o json | jq -r '.users[].user.exec | [.command] + .args | join(" ") | "\(.) | sed s/v1alpha1/v1beta1/g"'
+      kubectl config view --minify --flatten -o json | jq -r '.users[].user.exec | [.command] + .args | join(" ") | "\(.) | sed s/v1alpha1/v1beta1/g"'
     )"
   )
   # jq -c '.apiVersion |= "client.authentication.k8s.io/v1beta1"'
