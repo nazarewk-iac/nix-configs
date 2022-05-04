@@ -23,7 +23,6 @@
   nazarewk.programs.obs-studio.enable = false;
 
   nazarewk.k3s.single-node.enable = true;
-  nazarewk.k3s.single-node.autostart = false;
   nazarewk.k3s.single-node.enableScripts = true;
   nazarewk.k3s.single-node.rook-ceph.enable = true;
   nazarewk.k3s.single-node.kube-prometheus.enable = true;

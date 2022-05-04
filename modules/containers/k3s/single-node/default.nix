@@ -62,11 +62,6 @@ in {
       type = lib.types.bool;
     };
 
-    autostart = mkOption {
-      default = cfg.enable;
-      type = lib.types.bool;
-    };
-
     cni = mkOption {
       default = "cilium";
       type = types.enum [
@@ -179,7 +174,7 @@ in {
 
     cilium = {
       version = mkOption {
-        default = "1.11.2";
+        default = "1.11.4";
         type = types.str;
       };
 
@@ -297,7 +292,6 @@ in {
         };
 
         systemd.services.k3s = {
-          enable = cfg.autostart;
           serviceConfig = {
             TimeoutStartSec = 600;
             Restart = mkForce "on-failure";
