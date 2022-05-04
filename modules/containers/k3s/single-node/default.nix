@@ -62,6 +62,11 @@ in {
       type = lib.types.bool;
     };
 
+    autostart = mkOption {
+      default = cfg.enable;
+      type = lib.types.bool;
+    };
+
     cni = mkOption {
       default = "cilium";
       type = types.enum [
@@ -292,6 +297,7 @@ in {
         };
 
         systemd.services.k3s = {
+          enable = cfg.autostart;
           serviceConfig = {
             TimeoutStartSec = 600;
             Restart = mkForce "on-failure";
@@ -362,6 +368,7 @@ in {
           #};
         };
         systemd.services.k3s-drainer = {
+          enable = config.systemd.services.k3s.enable;
           restartIfChanged = false;
           description = "drains Kubernetes node before k3s stops";
           wants = [ "k3s.service" ];
