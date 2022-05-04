@@ -66,4 +66,8 @@
   nazarewk.hardware.pipewire.useWireplumber = true;
   nazarewk.hardware.yubikey.enable = true;
   nazarewk.sway.gdm.enable = true;
+
+  services.locate.enable = true;
+  services.locate.locate = pkgs.mlocate;
+  services.locate.pruneBindMounts = true;
 }
