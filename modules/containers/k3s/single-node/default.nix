@@ -4,6 +4,16 @@ let
   cfg = config.nazarewk.k3s.single-node;
   cil = cfg.cilium;
 
+  getInputByName = pkg: name: lib.pipe (builtins.concatLists [
+    pkg.buildInputs
+    pkg.propagatedBuildInputs
+    pkg.nativeBuildInputs
+    pkg.propagatedNativeBuildInputs
+  ]) [
+    (builtins.filter (drv: (builtins.parseDrvName drv.name).name == name))
+    builtins.head
+  ];
+
   totalShutdownTime = lib.pipe cfg.config.kubelet.shutdownGracePeriodByPodPriority [
     (map (e: e.shutdownGracePeriodSeconds))
     (lib.foldr (a: b: a + b) 0)
@@ -298,12 +308,7 @@ in {
           };
         };
 
-        system.activationScripts.k3sCNIBinaries = let
-          k3sDeps = lib.pipe pkgs.k3s.propagatedBuildInputs [
-            (map (e: {name = e.pname; value = e; }))
-            lib.listToAttrs
-          ];
-        in ''
+        system.activationScripts.k3sCNIBinaries = ''
           mkdir -p /opt/cni/bin
           links=(
             bridge
@@ -312,7 +317,7 @@ in {
             loopback
             portmap
           )
-          ln -sf "${k3sDeps.k3s-cni-plugins}/bin/cni" "/opt/cni/bin/cni"
+          ln -sf "${getInputByName pkgs.k3s "k3s-cni-plugins"}/bin/cni" "/opt/cni/bin/cni"
 
           for link in "''${links[@]}"; do
             ln -sf "./cni" "/opt/cni/bin/$link"
