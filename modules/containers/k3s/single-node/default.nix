@@ -4,11 +4,11 @@ let
   cfg = config.nazarewk.k3s.single-node;
   cil = cfg.cilium;
 
-  getInputByName = pkg: name: lib.pipe (builtins.concatLists [
-    pkg.buildInputs
-    pkg.propagatedBuildInputs
-    pkg.nativeBuildInputs
-    pkg.propagatedNativeBuildInputs
+  getInputByName = drv: name: lib.pipe (builtins.concatLists [
+    drv.buildInputs
+    drv.propagatedBuildInputs
+    drv.nativeBuildInputs
+    drv.propagatedNativeBuildInputs
   ]) [
     (builtins.filter (drv: (builtins.parseDrvName drv.name).name == name))
     builtins.head
