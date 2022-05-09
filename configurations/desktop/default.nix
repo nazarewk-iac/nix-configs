@@ -96,9 +96,9 @@
 
   services.udisks2.enable = true;
   services.devmon.enable = true;
-  services.teamviewer.enable = true;
   programs.steam.enable = true;
 
+  nazarewk.desktop.remote-server.enable = true;
   nazarewk.development.cloud.enable = true;
   nazarewk.development.data.enable = true;
   nazarewk.development.elixir.enable = true;

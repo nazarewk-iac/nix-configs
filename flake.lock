@@ -173,6 +173,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-teamviewer": {
+      "locked": {
+        "lastModified": 1652090104,
+        "narHash": "sha256-Unj9XwUyaf8ldmXFMc1Cr4M5TvVEsw4FvvVdVlB0UP8=",
+        "owner": "nazarewk",
+        "repo": "nixpkgs",
+        "rev": "34cabcb9550347993e190da9e3f03bd04e783554",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nazarewk",
+        "ref": "pkgs/teamviewer/update",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs-update": {
       "inputs": {
         "flake-compat": "flake-compat",
@@ -250,6 +266,7 @@
         "home-manager": "home-manager",
         "nixos-generators": "nixos-generators",
         "nixpkgs": "nixpkgs",
+        "nixpkgs-teamviewer": "nixpkgs-teamviewer",
         "nixpkgs-update": "nixpkgs-update",
         "nixpkgs-wayland": "nixpkgs-wayland"
       }

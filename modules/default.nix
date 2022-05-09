@@ -3,6 +3,7 @@ let
   nixosModules = [
     ./desktop/base
     ./desktop/gnome/base
+    ./desktop/remote-server
     ./desktop/sway/base
     ./desktop/sway/remote
     ./desktop/sway/through-gdm
@@ -70,6 +71,15 @@ in {
 
     home-manager.useGlobalPkgs = true;
     home-manager.useUserPackages = true;
-    home-manager.sharedModules = hmModules;
+    home-manager.sharedModules = hmModules ++ [
+      (let
+        cfg = ''
+          { allowUnfree = true; }
+        '';
+      in {
+        xdg.configFile."nixpkgs/config.nix".text = cfg;
+        home.file.".nixpkgs/config.nix".text = cfg;
+      })
+    ];
   };
 }
