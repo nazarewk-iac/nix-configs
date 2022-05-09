@@ -15,6 +15,7 @@ set $Shift Shift
 ### Variables
 set $term foot
 set $launcher wofi --gtk-dark --allow-images --define=key_expand=Super_L
+set $lock swaylock -f -c 000000
 
 set $displayDell 'Dell Inc. DELL U2711 G606T29F0EWL'
 set $displayLaptop eDP-1
@@ -226,9 +227,10 @@ exec _sway-wait-ready {
 # Example configuration:
 
 exec swayidle -w \
-    timeout 300 'swaylock -f -c 000000' \
-    timeout 360 'swaymsg "output * dpms off"' resume 'swaymsg "output * dpms on"' \
-    before-sleep 'swaylock -f -c 000000'
+    timeout 300 '$lock' \
+    timeout 360 'swaymsg "output * dpms off"' \
+    resume 'swaymsg "output * dpms on"' \
+    before-sleep '$lock'
 
 # alternatives: https://kevinlocke.name/bits/2020/04/12/resolving-desktop-notifications-dbus-service-conflicts/
 exec mako
@@ -269,7 +271,7 @@ bindsym $Super+Shift+c exec env RUST_BACKTRACE=1 \
     swayr execute-swayr-command >> /tmp/swayr.log 2>&1
 
 bindsym $Super+E exec thunar
-bindsym $Super+L exec swaylock -f
+bindsym $Super+L exec $lock
 
 # Media controls
 # https://www.reddit.com/r/swaywm/comments/ju1609/control_spotify_with_bluetooth_headset_with_dbus/
