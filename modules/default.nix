@@ -77,6 +77,7 @@ in {
           { allowUnfree = true; }
         '';
       in {
+        nixpkgs.config.allowUnfree = true;
         xdg.configFile."nixpkgs/config.nix".text = cfg;
         home.file.".nixpkgs/config.nix".text = cfg;
       })

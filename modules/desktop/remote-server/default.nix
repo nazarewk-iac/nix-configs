@@ -1,4 +1,4 @@
-{ lib, pkgs, config, flakeInputs, ... }:
+{ lib, pkgs, config, flakeInputs, system, ... }:
 with lib;
 let
   cfg = config.nazarewk.desktop.remote-server;
@@ -10,8 +10,10 @@ in {
   config = mkIf cfg.enable {
     services.teamviewer.enable = true;
     nixpkgs.overlays = [
-      (self: super: {
-        teamviewer = flakeInputs.nixpkgs-teamviewer.legacyPackages.x86_64-linux.teamviewer;
+      (self: super: let
+        tvPkgs = import flakeInputs.nixpkgs-teamviewer { system = system; config = { allowUnfree = true; }; };
+      in {
+        teamviewer = tvPkgs.teamviewer;
       })
     ];
   };
