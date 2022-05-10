@@ -18,5 +18,18 @@ in {
       unzip
       coreutils
     ];
+
+    home-manager.sharedModules = [
+      ({ lib, ... }: {
+        home.activation = {
+          asdfReshim = lib.hm.dag.entryAfter ["writeBoundary"] ''
+            if [ -d "$HOME/.asdf/shims" ] ; then
+              $DRY_RUN_CMD rm -rf "$HOME/.asdf/shims"
+            fi
+            $DRY_RUN_CMD asdf reshim
+          '';
+        };
+      })
+    ];
   };
 }
