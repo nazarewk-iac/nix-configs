@@ -1,7 +1,6 @@
 { config, pkgs, lib, ... }:
 {
   imports = [
-    ../../users/nazarewk
     ../basic
   ];
 

@@ -70,6 +70,14 @@
       ];
     });
 
+    nixosConfigurations.wg-0 = makeSystem (let system = "x86_64-linux"; in {
+      inherit system;
+      modules = [
+        ./configurations/headless
+        ./machines/hetzner/wg-0
+      ];
+    });
+
     nixosConfigurations.rpi4 = nixpkgs.lib.nixosSystem {
       # nix build '.#nixosConfigurations.rpi4.config.system.build.sdImage' --system aarch64-linux -L
       # see for a next step: https://matrix.to/#/!KqkRjyTEzAGRiZFBYT:nixos.org/$w4Zx8Y0vG0DhlD3zzWReWDaOdRSZvwyrn1tQsLhYDEU?via=nixos.org&via=matrix.org&via=tchncs.de

@@ -30,6 +30,7 @@ let
     ./headless/base
     ./containers/docker
     ./containers/k3s/single-node
+    ./networking/wireguard/server
     ./packaging/asdf
     ./programs/aws-vault
     ./programs/gnupg
