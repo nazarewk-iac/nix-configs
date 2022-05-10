@@ -175,11 +175,11 @@
     },
     "nixpkgs-teamviewer": {
       "locked": {
-        "lastModified": 1652112292,
-        "narHash": "sha256-CfCxBmdr8HEzr5Su7TEbydpFdNVjDT8tDsNTLRqB9Qs=",
+        "lastModified": 1652113108,
+        "narHash": "sha256-Unj9XwUyaf8ldmXFMc1Cr4M5TvVEsw4FvvVdVlB0UP8=",
         "owner": "nazarewk",
         "repo": "nixpkgs",
-        "rev": "c88ac121f0ebecd89d57cb203630416a6abca32e",
+        "rev": "27424231b35c6b0b040afd6e2caf00d7a8887b36",
         "type": "github"
       },
       "original": {
