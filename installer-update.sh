@@ -34,6 +34,7 @@ cat <<EOF | to_file "${cfg}"
 }
 EOF
 
-cmd nix-channel --add https://nixos.org/channels/nixos-unstable nixos
-cmd nix-channel --update
+# not needed anymore in 2022
+#cmd nix-channel --add https://nixos.org/channels/nixos-unstable nixos
+#cmd nix-channel --update
 cmd nixos-rebuild switch
