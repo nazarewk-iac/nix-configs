@@ -25,12 +25,15 @@ cat <<EOF | to_file "${cfg}"
 {
   imports = [ ${bkp} ];
 
+  nix.package = pkgs.nixFlakes;
+  nix.extraOptions = ''
+    experimental-features = nix-command flakes
+  '';
+  nixpkgs.config.allowUnfree = true;
 
-    nix.package = pkgs.nixFlakes;
-    nix.extraOptions = ''
-      experimental-features = nix-command flakes
-    '';
-    nixpkgs.config.allowUnfree = true;
+  environment.systemPackages = with pkgs; [
+    git
+  ];
 }
 EOF
 
