@@ -2,8 +2,8 @@
 {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
-    (modulesPath + "/nixos/modules/profiles/qemu-guest.nix")
-    (modulesPath + "/nixos/modules/profiles/headless.nix")
+    (modulesPath + "/profiles/qemu-guest.nix")
+    (modulesPath + "/profiles/headless.nix")
   ];
 
   system.stateVersion = "21.11";
