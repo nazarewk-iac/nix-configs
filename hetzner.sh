@@ -50,4 +50,4 @@ cmd chown -R 1000:100 /mnt/home/nazarewk
 
 cmd mkdir -p /mnt/etc/nixos
 cmd ln -s "${repo_dir/"/mnt"/"../.."}/flake.nix" /mnt/etc/nixos/flake.nix
-cmd nixos-install --impure --show-trace --root /mnt --flake "${repo_dir}#${HOST}"
+cmd nixos-install -L --impure --show-trace --root /mnt --flake "${repo_dir}#${HOST}"
