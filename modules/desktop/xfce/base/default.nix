@@ -8,6 +8,7 @@ in {
   };
 
   config = mkIf cfg.enable {
+    # TODO: figure out why thunar.service does not consume session environment
     services.xserver.desktopManager.xfce.enable = true;
     services.xserver.desktopManager.xfce.thunarPlugins = with pkgs; [
       xfce.thunar-archive-plugin

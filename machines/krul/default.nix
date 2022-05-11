@@ -45,6 +45,9 @@
   boot.loader.systemd-boot.memtest86.enable = true;
   boot.loader.systemd-boot.configurationLimit = 20;
 
+  nazarewk.networking.wireguard.server.enable = true;
+  nazarewk.networking.wireguard.server.externalInterface = "enp6s0";
+
   boot.initrd.availableKernelModules = [
     "nvme" # NVMe disk
     "xhci_pci"
