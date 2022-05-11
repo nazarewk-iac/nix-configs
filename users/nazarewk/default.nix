@@ -16,18 +16,11 @@ in mkMerge [
     users.users.nazarewk.uid = 1000;
     users.users.nazarewk.isNormalUser = true;
     users.users.nazarewk.extraGroups = [
-      "adbusers"
-      "audio"
-      "dialout"
       "kvm"
       "libvirtd"
-      "lp"
       "networkmanager"
       "power"
-      "scanner"
-      "video"
       "wheel"
-      "pipewire"
       "mlocate"
     ];
 
@@ -38,6 +31,29 @@ in mkMerge [
   (mkIf config.nazarewk.docker.enable {
     users.users.nazarewk.extraGroups = [
       "docker"
+    ];
+  })
+  (mkIf config.programs.adb.enable {
+    users.users.nazarewk.extraGroups = [
+      "adbusers"
+    ];
+  })
+  (mkIf config.services.printing.enable {
+    users.users.nazarewk.extraGroups = [
+      "scanner"
+      "lp"
+    ];
+  })
+  (mkIf config.nazarewk.hardware.modem.enable {
+    users.users.nazarewk.extraGroups = [
+      "dialout"
+    ];
+  })
+  (lib.mkIf config.nazarewk.headless.enableGUI {
+    users.users.nazarewk.extraGroups = [
+      "audio"
+      "pipewire"
+      "video"
     ];
   })
 ]

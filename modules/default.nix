@@ -27,6 +27,7 @@ let
     ./hardware/modem
     ./hardware/pipewire
     ./hardware/yubikey
+    ./headless
     ./headless/base
     ./containers/docker
     ./containers/k3s/single-node
