@@ -26,7 +26,7 @@ installer_update() {
 
 script=(
   mklabel msdos
-  mkpart primary ext4 0 100%
+  mkpart primary ext4 1MiB -1Mib
 )
 
 cmd installer_update
