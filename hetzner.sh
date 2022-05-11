@@ -19,7 +19,9 @@ to_file() {
 }
 
 installer_update() {
-  bash <(curl -L 'https://raw.githubusercontent.com/nazarewk-iac/nix-configs/main/installer-update.sh')
+  if [ ! -e /etc/nixos/configuration.bkp.nix ] ; then
+    bash <(curl -L 'https://raw.githubusercontent.com/nazarewk-iac/nix-configs/main/installer-update.sh')
+  fi
 }
 
 script=(
