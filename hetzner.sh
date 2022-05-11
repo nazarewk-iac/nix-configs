@@ -30,7 +30,9 @@ script=(
 )
 
 cmd installer_update
-mountpoint /mnt || cmd umount /mnt
+if mountpoint /mnt ; then
+  cmd umount /mnt
+fi
 cmd parted -s /dev/sda -- "${script[@]}"
 cmd partprobe
 cmd mkfs.ext4 /dev/sda1
