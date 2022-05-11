@@ -46,6 +46,13 @@ This is incomplete list of incorporated software/systems worth noting:
    ```
    nixos-install --show-trace --root /mnt --flake '/mnt/home/nazarewk/dev/github.com/nazarewk-iac/nix-configs#nazarewk-krul'
    ```
+## Building on Hetzner Cloud from NixOS installer image
+
+1. mount the NixOS installer image
+2. run the build:
+   ```
+   APPLY=1 HOST="<HOST>" bash <(curl -L 'https://raw.githubusercontent.com/nazarewk-iac/nix-configs/main/hetzner.sh')
+   ```
 
 ## Building an USB stick image
 
