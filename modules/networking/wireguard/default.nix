@@ -27,7 +27,11 @@ let
         allowedIPs = [ "${getIP entry.hostnum}/32" ];
       })
       (mkIf entry.server.enable {
-        allowedIPs = [ "0.0.0.0/0" "::/0" ];
+        allowedIPs = [
+          cidr
+          # "0.0.0.0/0"
+          # "::/0"
+        ];
       })
       entry.cfg
     ]))
