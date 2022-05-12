@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -xeEuo pipefail
-#!/usr/bin/env bash
-set -xeEuo pipefail
+# Mount & boot from NixOS ISO before running this
+# WARNING: this will erase your /dev/sda drive!
+# can be started with: APPLY=1 HOST="<HOST>" bash <(curl -L 'https://raw.githubusercontent.com/nazarewk-iac/nix-configs/main/hetzner.sh')
 
 if [ "${APPLY:-}" = 1 ] ; then
   cmd () { "$@"; }
