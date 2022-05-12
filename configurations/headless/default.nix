@@ -45,4 +45,6 @@
   services.locate.localuser = null;
   services.locate.locate = pkgs.mlocate;
   services.locate.pruneBindMounts = true;
+
+  nazarewk.networking.wireguard.server.address = "wg.nazarewk.pw";
 }
