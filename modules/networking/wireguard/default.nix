@@ -121,7 +121,7 @@ in
     })
     (mkIf isServer {
       networking.nat.enable = true;
-      networking.nat.externalInterface = self.externalInterface;
+      networking.nat.externalInterface = self.server.externalInterface;
       networking.nat.internalInterfaces = [ cfg.interfaceName ];
 
       networking.wireguard.interfaces = {
