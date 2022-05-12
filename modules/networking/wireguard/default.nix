@@ -85,9 +85,6 @@ in
 
           privateKeyFile = "/root/wireguard-keys/main/private";
           generatePrivateKeyFile = true;
-
-          peers = [
-          ];
         };
       };
     })
@@ -100,6 +97,7 @@ in
               allowedIPs = [ cidr ];
               endpoint = "${cfg.server.address}:${toString cfg.port}";
               persistentKeepalive = 25;
+              dynamicEndpointRefreshSeconds = 60;
             }
           ];
         };

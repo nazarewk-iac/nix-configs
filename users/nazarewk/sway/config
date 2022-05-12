@@ -138,6 +138,13 @@ bindswitch --reload --locked lid:off output $displayLaptop enable
     # Show the next scratchpad window or hide the focused scratchpad window.
     # If there are multiple scratchpad windows, this command cycles through them.
     bindsym $Super+minus scratchpad show
+
+# passthrough mode for remote desktops
+mode passthrough {
+	bindsym $mod+Pause mode default
+}
+bindsym $mod+Pause mode passthrough
+
 #
 # Resizing containers:
 #

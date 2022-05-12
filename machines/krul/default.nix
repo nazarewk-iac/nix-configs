@@ -9,7 +9,7 @@
   nazarewk.desktop.base.enableWlrootsPatch = false;
 
   nazarewk.sway.remote.enable = true;
-  nazarewk.programs.gnupg.forwarding.server.enable = true;
+  nazarewk.programs.gnupg.forwarding.server.enable = false;
 
   # do not suspend on GDM login screen (waiting for remote sessions etc.)
   services.xserver.displayManager.gdm.autoSuspend = false;
