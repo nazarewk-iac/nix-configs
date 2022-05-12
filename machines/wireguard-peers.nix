@@ -26,5 +26,11 @@
         publicKey = "aaMWmmrCQM/wXhV7+i3Igp7D9Rz8jNorEsqt5/zF61s=";
       };
     };
+    nazarewk-mi9 = {
+      hostnum = 4;
+      cfg = {
+        publicKey = "K4p1ePw7eWofjAikvsiJPj4Q3QNl6p6lmpRz5BKnvEw=";
+      };
+    };
   };
 }
