@@ -12,6 +12,9 @@ in {
     nazarewk.gnome.base.enable = true;
     nazarewk.xfce.base.enable = true;
 
+    # TODO: figure out why thunar.service does not consume session environment
+    systemd.user.services.thunar.enable = false;
+
     # Configure various Sway configs
     # see https://gist.github.com/mschwaig/195fe93ed85dea7aaceaf8e1fc6c0e99
     # see https://nixos.wiki/wiki/Sway#Systemd_integration
