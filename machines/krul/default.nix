@@ -45,9 +45,6 @@
   boot.loader.systemd-boot.memtest86.enable = true;
   boot.loader.systemd-boot.configurationLimit = 20;
 
-  nazarewk.networking.wireguard.client.enable = true;
-  nazarewk.networking.wireguard.hostnum = 2;
-
   boot.initrd.availableKernelModules = [
     "nvme" # NVMe disk
     "xhci_pci"

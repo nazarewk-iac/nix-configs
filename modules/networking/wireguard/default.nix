@@ -5,44 +5,36 @@ let
   getIP = num: pipe cfg.subnet [
     (splitString ".")
     reverseList
-    (l: [ (toString num) ] ++ (tail l))
+    (l: [ (toString ((toInt (head l)) + num)) ] ++ (tail l))
     reverseList
     (concatStringsSep ".")
   ];
 
-  ip = getIP cfg.hostnum;
   cidr = "${cfg.subnet}/${toString cfg.netmask}";
+
+  activePeers = lib.filterAttrs (n: v: v.active) cfg.peers;
+  self = activePeers."${config.networking.hostName}" or { };
+
+  isActive = self.active or false;
+  isClient = isActive && !(self.server.enable or false);
+  isServer = isActive && (self.server.enable or false);
+
+  preparePeers = filters: lib.pipe activePeers (filters ++ [
+    (lib.filterAttrs (n: v: n != config.networking.hostName))
+    lib.attrValues
+    (builtins.map (entry: mkMerge [
+      {
+        allowedIPs = [ "${getIP entry.hostnum}/32" ];
+      }
+      entry.cfg
+    ]))
+  ]);
 in
 {
   options.nazarewk.networking.wireguard = {
     enable = mkOption {
       type = types.bool;
-      default = cfg.client.enable || cfg.server.enable;
-    };
-
-    server = {
-      enable = mkEnableOption "wireguard server setup";
-
-      externalInterface = mkOption {
-        type = types.str;
-        default = "eth0";
-      };
-
-      address = mkOption {
-        type = types.str;
-      };
-
-      pubKey = mkOption {
-        type = types.str;
-      };
-    };
-
-    client = {
-      enable = mkEnableOption "wireguard client setup";
-    };
-
-    hostnum = mkOption {
-      type = types.ints.unsigned;
+      default = isClient || isServer;
     };
 
     interfaceName = mkOption {
@@ -73,6 +65,14 @@ in
             default = true;
           };
 
+          server = {
+            enable = mkEnableOption "wireguard server setup";
+
+            externalInterface = mkOption {
+              type = types.str;
+            };
+          };
+
           hostnum = mkOption {
             type = types.ints.unsigned;
           };
@@ -92,7 +92,7 @@ in
         wireguard-tools
       ];
     }
-    (mkIf (cfg.client.enable || cfg.server.enable) {
+    (mkIf (isClient || isServer) {
       networking.firewall = {
         allowedUDPPorts = [ cfg.port ];
         trustedInterfaces = [ cfg.interfaceName ];
@@ -105,7 +105,7 @@ in
         # "wg0" is the network interface name. You can name the interface arbitrarily.
         ${cfg.interfaceName} = {
           # Determines the IP address and subnet of the server's end of the tunnel interface.
-          ips = [ "${ip}/${toString cfg.netmask}" ];
+          ips = [ "${getIP self.hostnum}/${toString cfg.netmask}" ];
 
           # The port that WireGuard listens to. Must be accessible by the client.
           listenPort = cfg.port;
@@ -113,22 +113,15 @@ in
           privateKeyFile = "/root/wireguard-keys/main/private";
           generatePrivateKeyFile = true;
 
-          peers = lib.pipe cfg.peers [
-            (lib.filterAttrs (n: v: v.active && n != config.networking.hostName))
-            lib.attrValues
-            (builtins.map (entry: mkMerge [
-              {
-                allowedIPs = [ "${getIP entry.hostnum}/32" ];
-              }
-              entry.cfg
-            ]))
+          peers = preparePeers [
+            (lib.filterAttrs (n: v: v.server.enable))
           ];
         };
       };
     })
-    (mkIf cfg.server.enable {
+    (mkIf isServer {
       networking.nat.enable = true;
-      networking.nat.externalInterface = cfg.server.externalInterface;
+      networking.nat.externalInterface = self.externalInterface;
       networking.nat.internalInterfaces = [ cfg.interfaceName ];
 
       networking.wireguard.interfaces = {
@@ -136,14 +129,15 @@ in
           # This allows the wireguard server to route your traffic to the internet and hence be like a VPN
           # For this to work you have to set the dnsserver IP of your router (or dnsserver of choice) in your clients
           postSetup = ''
-            ${pkgs.iptables}/bin/iptables -t nat -A POSTROUTING -s ${cidr} -o ${cfg.server.externalInterface} -j MASQUERADE
+            ${pkgs.iptables}/bin/iptables -t nat -A POSTROUTING -s ${cidr} -o ${self.server.externalInterface} -j MASQUERADE
           '';
 
           # This undoes the above command
           postShutdown = ''
-            ${pkgs.iptables}/bin/iptables -t nat -D POSTROUTING -s ${cidr} -o ${cfg.server.externalInterface} -j MASQUERADE
+            ${pkgs.iptables}/bin/iptables -t nat -D POSTROUTING -s ${cidr} -o ${self.server.externalInterface} -j MASQUERADE
           '';
 
+          peers = preparePeers [ ];
         };
       };
     })

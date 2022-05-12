@@ -3,6 +3,10 @@
   nazarewk.networking.wireguard.peers = {
     wg-0 = {
       hostnum = 1;
+      server = {
+        enable = true;
+        externalInterface = "ens3";
+      };
       cfg = {
         publicKey = "n46g2yMIQ169ZWJk0gpjnhlAlJci6KKv7pxbC6BkqwY=";
         endpoint = "wg.nazarewk.pw:${toString config.nazarewk.networking.wireguard.port}";

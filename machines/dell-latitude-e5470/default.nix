@@ -6,9 +6,6 @@
   networking.hostId = "f77614af"; # cut -c-8 </proc/sys/kernel/random/uuid
   networking.hostName = "nazarewk";
 
-  nazarewk.networking.wireguard.client.enable = true;
-  nazarewk.networking.wireguard.hostnum = 3;
-
   nazarewk.sway.remote.enable = true;
   nazarewk.desktop.base.nixpkgs-wayland.enable = false;
   nazarewk.k3s.single-node.enableScripts = true;
