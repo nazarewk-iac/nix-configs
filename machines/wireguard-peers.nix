@@ -18,9 +18,8 @@
     };
     nazarewk = {
       hostnum = 3;
-      active = false;
       cfg = {
-        publicKey = "FJV0gfKnCpiBEjaLTBp3fHrMSpMUsFSW010KIPedA24=";
+        publicKey = "aaMWmmrCQM/wXhV7+i3Igp7D9Rz8jNorEsqt5/zF61s=";
       };
     };
   };
