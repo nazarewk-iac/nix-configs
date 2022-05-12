@@ -29,8 +29,6 @@ let
       (mkIf entry.server.enable {
         allowedIPs = [
           cidr
-          # "0.0.0.0/0"
-          # "::/0"
         ];
       })
       entry.cfg
@@ -99,14 +97,11 @@ in
         wireguard-tools
       ];
     }
-    (mkIf (isClient || isServer) {
+    (mkIf (isActive) {
       networking.firewall = {
         allowedUDPPorts = [ cfg.port ];
         trustedInterfaces = [ cfg.interfaceName ];
       };
-
-      boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
-      boot.kernel.sysctl."net.ipv6.conf.all.forwarding" = 1;
 
       networking.wireguard.interfaces = {
         # "wg0" is the network interface name. You can name the interface arbitrarily.
@@ -130,6 +125,9 @@ in
       networking.nat.enable = true;
       networking.nat.externalInterface = self.server.externalInterface;
       networking.nat.internalInterfaces = [ cfg.interfaceName ];
+
+      boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
+      boot.kernel.sysctl."net.ipv6.conf.all.forwarding" = 1;
 
       networking.wireguard.interfaces = {
         ${cfg.interfaceName} = {
