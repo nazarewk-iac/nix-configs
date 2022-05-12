@@ -46,5 +46,7 @@
   services.locate.locate = pkgs.mlocate;
   services.locate.pruneBindMounts = true;
 
+  nazarewk.networking.wireguard.enable = true;
   nazarewk.networking.wireguard.server.address = "wg.nazarewk.pw";
+  nazarewk.networking.wireguard.server.pubKey = "n46g2yMIQ169ZWJk0gpjnhlAlJci6KKv7pxbC6BkqwY=";
 }

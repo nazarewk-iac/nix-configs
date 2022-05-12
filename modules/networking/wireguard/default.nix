@@ -31,6 +31,10 @@ in
       address = mkOption {
         type = types.str;
       };
+
+      pubKey = mkOption {
+        type = types.str;
+      };
     };
 
     client = {
@@ -93,7 +97,7 @@ in
         ${cfg.interfaceName} = {
           peers = [
             {
-              publicKey = "";
+              publicKey = cfg.server.pubKey;
               allowedIPs = [ cidr ];
               endpoint = "${cfg.server.address}:${toString cfg.port}";
               persistentKeepalive = 25;
@@ -107,6 +111,9 @@ in
       networking.nat.enable = true;
       networking.nat.externalInterface = cfg.server.externalInterface;
       networking.nat.internalInterfaces = [ cfg.interfaceName ];
+
+      boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
+      boot.kernel.sysctl."net.ipv6.conf.all.forwarding" = 1;
 
       networking.wireguard.interfaces = {
         ${cfg.interfaceName} = {
