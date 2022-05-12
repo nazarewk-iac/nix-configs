@@ -60,10 +60,23 @@ in
       default = 24;
     };
 
-
     port = mkOption {
       type = types.ints.unsigned;
       default = 51820;
+    };
+
+    peers = mkOption {
+      type = types.attrsOf (types.submodule {
+        options = {
+          hostnum = mkOption {
+            type = types.ints.unsigned;
+          };
+          cfg = mkOption {
+            type = types.attrs;
+          };
+        };
+      });
+      default = { };
     };
   };
 
@@ -89,20 +102,15 @@ in
 
           privateKeyFile = "/root/wireguard-keys/main/private";
           generatePrivateKeyFile = true;
-        };
-      };
-    })
-    (mkIf cfg.client.enable {
-      networking.wireguard.interfaces = {
-        ${cfg.interfaceName} = {
-          peers = [
-            {
-              publicKey = cfg.server.pubKey;
-              allowedIPs = [ cidr ];
-              endpoint = "${cfg.server.address}:${toString cfg.port}";
-              persistentKeepalive = 25;
-              dynamicEndpointRefreshSeconds = 60;
-            }
+          peers = lib.pipe cfg.peers [
+            (lib.filterAttrs (n: v: n != config.networking.hostName))
+            lib.attrValues
+            (builtins.map (entry: mkMerge [
+              {
+                allowedIPs = [ "${getIP entry.hostnum}/32" ];
+              }
+              entry.cfg
+            ]))
           ];
         };
       };
