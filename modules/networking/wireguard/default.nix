@@ -23,9 +23,12 @@ let
     (lib.filterAttrs (n: v: n != config.networking.hostName))
     lib.attrValues
     (builtins.map (entry: mkMerge [
-      {
+      (mkIf (!entry.server.enable) {
         allowedIPs = [ "${getIP entry.hostnum}/32" ];
-      }
+      })
+      (mkIf entry.server.enable {
+        allowedIPs = [ "0.0.0.0/0" "::/0" ];
+      })
       entry.cfg
     ]))
   ]);
