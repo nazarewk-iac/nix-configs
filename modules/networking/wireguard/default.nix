@@ -68,9 +68,15 @@ in
     peers = mkOption {
       type = types.attrsOf (types.submodule {
         options = {
+          active = mkOption {
+            type = types.bool;
+            default = true;
+          };
+
           hostnum = mkOption {
             type = types.ints.unsigned;
           };
+
           cfg = mkOption {
             type = types.attrs;
           };
@@ -102,8 +108,9 @@ in
 
           privateKeyFile = "/root/wireguard-keys/main/private";
           generatePrivateKeyFile = true;
+
           peers = lib.pipe cfg.peers [
-            (lib.filterAttrs (n: v: n != config.networking.hostName))
+            (lib.filterAttrs (n: v: v.active && n != config.networking.hostName))
             lib.attrValues
             (builtins.map (entry: mkMerge [
               {

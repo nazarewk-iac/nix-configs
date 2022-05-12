@@ -16,11 +16,12 @@
         publicKey = "FJV0gfKnCpiBEjaLTBp3fHrMSpMUsFSW010KIPedA24=";
       };
     };
-    #    nazarewk = {
-    #      hostnum = 3;
-    #      cfg = {
-    #        publicKey = "";
-    #      };
-    #    };
+    nazarewk = {
+      hostnum = 3;
+      active = false;
+      cfg = {
+        publicKey = "FJV0gfKnCpiBEjaLTBp3fHrMSpMUsFSW010KIPedA24=";
+      };
+    };
   };
 }
