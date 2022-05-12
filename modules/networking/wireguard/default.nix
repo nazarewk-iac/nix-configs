@@ -95,6 +95,7 @@ in
     (mkIf (cfg.client.enable || cfg.server.enable) {
       networking.firewall = {
         allowedUDPPorts = [ cfg.port ];
+        trustedInterfaces = [ cfg.interfaceName ];
       };
 
       boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
