@@ -2,7 +2,8 @@
 with lib;
 let
   cfg = config.nazarewk.programs.obs-studio;
-in {
+in
+{
   options.nazarewk.programs.obs-studio = {
     enable = mkEnableOption "OBS Studio setup";
   };

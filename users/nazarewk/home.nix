@@ -44,20 +44,22 @@
       # `pamu2fcfg` generates lines of format `username:entry`
       # For ease of use you can append those pamu2fcfg to ./yubico/u2f_keys.parts directly,
       #  then below code will take care of stripping comments and folding it into a single line per user
-      xdg.configFile."Yubico/u2f_keys".text = let
-        stripComments = lib.filter (line: (builtins.match "\w*" line) != [] && (builtins.match "\w*#.*" line) != []);
-        groupByUsername = input: builtins.mapAttrs (name: map (lib.removePrefix "${name}:")) (lib.groupBy (e: lib.head (lib.splitString ":" e)) input);
-        toOutputLines = lib.mapAttrsToList (name: values: (builtins.concatStringsSep ":" (lib.concatLists [[name] values])));
+      xdg.configFile."Yubico/u2f_keys".text =
+        let
+          stripComments = lib.filter (line: (builtins.match "\w*" line) != [ ] && (builtins.match "\w*#.*" line) != [ ]);
+          groupByUsername = input: builtins.mapAttrs (name: map (lib.removePrefix "${name}:")) (lib.groupBy (e: lib.head (lib.splitString ":" e)) input);
+          toOutputLines = lib.mapAttrsToList (name: values: (builtins.concatStringsSep ":" (lib.concatLists [ [ name ] values ])));
 
-        foldParts = path: lib.pipe path [
-          builtins.readFile
-          (lib.splitString "\n")
-          stripComments
-          groupByUsername
-          toOutputLines
-          (builtins.concatStringsSep "\n")
-        ];
-       in foldParts ./yubico/u2f_keys.parts;
+          foldParts = path: lib.pipe path [
+            builtins.readFile
+            (lib.splitString "\n")
+            stripComments
+            groupByUsername
+            toOutputLines
+            (builtins.concatStringsSep "\n")
+          ];
+        in
+        foldParts ./yubico/u2f_keys.parts;
 
       home.packages = with pkgs; [
         # # launch-waybar doesn't worth with nix changes

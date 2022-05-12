@@ -17,7 +17,7 @@
   # TODO: unlock hangs up on `ip=dhcp` when not connected to the router.
   # nazarewk.filesystems.zfs-root.sshUnlock.enable = true;
   environment.systemPackages = with pkgs; [
-    google-chrome  # easier on the CPU than Meet @ Firefox
+    google-chrome # easier on the CPU than Meet @ Firefox
   ];
 
   nazarewk.hardware.intel-graphics-fix.enable = true;

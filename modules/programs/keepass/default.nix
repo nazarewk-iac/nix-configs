@@ -2,7 +2,8 @@
 with lib;
 let
   cfg = config.nazarewk.programs.keepass;
-in {
+in
+{
   options.nazarewk.programs.keepass = {
     enable = mkEnableOption "keepass with plugins";
   };

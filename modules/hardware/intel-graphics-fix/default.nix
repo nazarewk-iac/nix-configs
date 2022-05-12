@@ -2,7 +2,8 @@
 with lib;
 let
   cfg = config.nazarewk.hardware.intel-graphics-fix;
-in {
+in
+{
   options.nazarewk.hardware.intel-graphics-fix = {
     enable = mkEnableOption "Intel HD Graphics fix";
   };
@@ -17,7 +18,7 @@ in {
     };
     nixpkgs.overlays = [
       (self: super: {
-          # mesa = nixpkgs-mesa.legacyPackages.x86_64-linux.mesa;
+        # mesa = nixpkgs-mesa.legacyPackages.x86_64-linux.mesa;
       })
     ];
   };

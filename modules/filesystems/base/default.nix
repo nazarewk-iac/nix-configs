@@ -2,7 +2,8 @@
 with lib;
 let
   cfg = config.nazarewk.filesystems.base;
-in {
+in
+{
   options.nazarewk.filesystems.base = {
     enable = mkEnableOption "basic filesystems related setup";
   };

@@ -2,7 +2,8 @@
 with lib;
 let
   cfg = config.nazarewk.development.cloud;
-in {
+in
+{
   options.nazarewk.development.cloud = {
     enable = mkEnableOption "cloud development";
   };

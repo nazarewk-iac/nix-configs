@@ -12,7 +12,8 @@ let
 
   ip = getIP cfg.hostnum;
   cidr = "${cfg.subnet}/${toString cfg.netmask}";
-in {
+in
+{
   options.nazarewk.networking.wireguard.server = {
     enable = mkEnableOption "wireguard setup setup";
 

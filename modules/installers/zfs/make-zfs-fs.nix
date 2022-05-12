@@ -5,16 +5,17 @@
 # that a script resizes the filesystem at boot time.
 { pkgs
 , lib
-# List of derivations to be included
+  # List of derivations to be included
 , storePaths
-# Whether or not to compress the resulting image with zstd
-, compressImage ? false, zstd
-# Shell commands to populate the ./files directory.
-# All files in that directory are copied to the root of the FS.
+  # Whether or not to compress the resulting image with zstd
+, compressImage ? false
+, zstd
+  # Shell commands to populate the ./files directory.
+  # All files in that directory are copied to the root of the FS.
 , populateImageCommands ? ""
 , zpoolName
 , defaultZpoolName ? "nixos-tank"
-# , uuid ? "44444444-4444-4444-8888-888888888888"
+  # , uuid ? "44444444-4444-4444-8888-888888888888"
 , perl
 , zfsUnstable
 }:
@@ -26,7 +27,7 @@ pkgs.stdenv.mkDerivation {
   name = "zfs-fs.img${lib.optionalString compressImage ".zst"}";
 
   nativeBuildInputs = [ perl zfsUnstable ]
-  ++ lib.optional compressImage zstd;
+    ++ lib.optional compressImage zstd;
 
   buildCommand =
     ''

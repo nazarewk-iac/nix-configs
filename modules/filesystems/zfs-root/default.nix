@@ -2,7 +2,8 @@
 with lib;
 let
   cfg = config.nazarewk.filesystems.zfs-root;
-in {
+in
+{
   options.nazarewk.filesystems.zfs-root = {
     enable = mkEnableOption "ZFS setup";
 
@@ -23,7 +24,7 @@ in {
         ];
       };
       secrets = mkOption {
-        default = {};
+        default = { };
         type = types.attrsOf (types.nullOr types.path);
       };
     };
@@ -63,16 +64,16 @@ in {
       boot.initrd.network.ssh.authorizedKeys = cfg.sshUnlock.authorizedKeys;
       boot.initrd.network.ssh.hostKeys = cfg.sshUnlock.hostKeys;
       boot.initrd.network.postCommands = ''
-       cat <<EOF > /root/.profile
-       if pgrep -x "zfs" > /dev/null
-       then
-         zfs load-key -a
-         killall zfs
-       else
-         echo "zfs not running -- maybe the pool is taking some time to load for some unforseen reason."
-       fi
-       EOF
-     '';
+        cat <<EOF > /root/.profile
+        if pgrep -x "zfs" > /dev/null
+        then
+          zfs load-key -a
+          killall zfs
+        else
+          echo "zfs not running -- maybe the pool is taking some time to load for some unforseen reason."
+        fi
+        EOF
+      '';
     })
   ]);
 }

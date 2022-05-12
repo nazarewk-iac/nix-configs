@@ -32,7 +32,7 @@
   nazarewk.sway.gdm.enable = true;
 
   home-manager.sharedModules = [
-    ({config, ...}: {
+    ({ config, ... }: {
       xdg.userDirs.enable = true;
     })
   ];

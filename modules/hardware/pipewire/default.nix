@@ -2,7 +2,8 @@
 with lib;
 let
   cfg = config.nazarewk.hardware.pipewire;
-in {
+in
+{
   options = {
     nazarewk.hardware.pipewire = {
       enable = mkEnableOption "Pipewire setup";
@@ -39,7 +40,7 @@ in {
 
     environment.systemPackages = with pkgs; [
       pavucontrol
-      pulseaudio  # pactl
+      pulseaudio # pactl
     ];
   };
 }

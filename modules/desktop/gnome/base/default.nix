@@ -2,7 +2,8 @@
 with lib;
 let
   cfg = config.nazarewk.gnome.base;
-in {
+in
+{
   options.nazarewk.gnome.base = {
     enable = mkEnableOption "gnome base setup";
   };

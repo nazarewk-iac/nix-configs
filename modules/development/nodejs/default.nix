@@ -2,7 +2,8 @@
 with lib;
 let
   cfg = config.nazarewk.development.nodejs;
-in {
+in
+{
   options.nazarewk.development.nodejs = {
     enable = mkEnableOption "Node JS development";
   };

@@ -2,7 +2,8 @@
 with lib;
 let
   cfg = config.nazarewk.programs.nix-index;
-in {
+in
+{
   options.nazarewk.programs.nix-index = {
     enable = mkEnableOption "nix-index setup";
   };

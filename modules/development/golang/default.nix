@@ -2,7 +2,8 @@
 with lib;
 let
   cfg = config.nazarewk.development.golang;
-in {
+in
+{
   options.nazarewk.development.golang = {
     enable = mkEnableOption "golang development";
   };

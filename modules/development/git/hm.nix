@@ -8,7 +8,7 @@ let
 
   ghDir = (pkgs.writeShellApplication {
     name = "gh-dir";
-    runtimeInputs = with pkgs; [  ];
+    runtimeInputs = with pkgs; [ ];
     text = ''
       for entry in "$@"; do
         echo "${shellDir}/$entry"
@@ -18,7 +18,7 @@ let
 
   ghRemote = (pkgs.writeShellApplication {
     name = "gh-remote";
-    runtimeInputs = with pkgs; [  ];
+    runtimeInputs = with pkgs; [ ];
     text = ''
       for entry in "$@"; do
         org="''${entry%/*}"
@@ -68,7 +68,8 @@ let
     '';
   });
 
-in {
+in
+{
   options.nazarewk.development.git = {
     enable = mkEnableOption "Git development utilities";
 

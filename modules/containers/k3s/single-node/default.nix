@@ -4,12 +4,13 @@ let
   cfg = config.nazarewk.k3s.single-node;
   cil = cfg.cilium;
 
-  getInputByName = drv: name: lib.pipe (builtins.concatLists [
-    drv.buildInputs
-    drv.propagatedBuildInputs
-    drv.nativeBuildInputs
-    drv.propagatedNativeBuildInputs
-  ]) [
+  getInputByName = drv: name: lib.pipe
+    (builtins.concatLists [
+      drv.buildInputs
+      drv.propagatedBuildInputs
+      drv.nativeBuildInputs
+      drv.propagatedNativeBuildInputs
+    ]) [
     (builtins.filter (drv: (builtins.parseDrvName drv.name).name == name))
     builtins.head
   ];
@@ -24,8 +25,8 @@ let
     (builtins.concatStringsSep ",")
   ];
 
-  yaml = pkgs.formats.yaml {};
-  
+  yaml = pkgs.formats.yaml { };
+
   cilium-configure = pkgs.writeShellApplication {
     name = "cilium-configure";
     runtimeInputs = with pkgs; [ kubernetes-helm kubectl ];
@@ -46,7 +47,7 @@ let
     '';
   };
 
-  k3s-node-shutdown =  (pkgs.writeShellApplication {
+  k3s-node-shutdown = (pkgs.writeShellApplication {
     name = "k3s-node-shutdown";
     runtimeInputs = with pkgs; [ kubectl ];
     text = builtins.readFile ./k3s-node-shutdown.sh;
@@ -63,7 +64,8 @@ let
     ];
     text = builtins.readFile ./k3s-erase.sh;
   };
-in {
+in
+{
   options.nazarewk.k3s.single-node = {
     enable = mkEnableOption "local (single node) k3s setup";
 
@@ -119,7 +121,7 @@ in {
       };
 
       timeouts = {
-        initial =  mkOption {
+        initial = mkOption {
           type = types.ints.unsigned;
           default = totalShutdownTime * 1 / 4;
         };
@@ -161,12 +163,12 @@ in {
     config = {
       k3s = mkOption {
         type = yaml.type;
-        default = {};
+        default = { };
       };
-      
+
       kubelet = mkOption {
         type = yaml.type;
-        default = {};
+        default = { };
       };
     };
 
@@ -205,7 +207,7 @@ in {
 
       values = mkOption {
         type = yaml.type;
-        default = {};
+        default = { };
       };
     };
   };
@@ -326,7 +328,7 @@ in {
       }
       (mkIf cfg.kube-prometheus.enable {
         nazarewk.k3s.single-node.config.k3s.disable = [
-          "metrics-server"  # using Prometheus Operator instead
+          "metrics-server" # using Prometheus Operator instead
         ];
       })
       (mkIf cfg.istio.enable {
@@ -343,12 +345,12 @@ in {
           done
         '';
         nazarewk.k3s.single-node.config.k3s.disable = [
-          "traefik"  # using Istio ingress instead
+          "traefik" # using Istio ingress instead
         ];
       })
       (mkIf cfg.rook-ceph.enable {
         nazarewk.k3s.single-node.config.k3s.disable = [
-          "local-storage"  # using Rook Ceph instead
+          "local-storage" # using Rook Ceph instead
         ];
         # Can be removed for Rook 1.8.9+ when the PR lands in a release
         # https://github.com/rook/rook/pull/9967
@@ -400,19 +402,21 @@ in {
           environment = {
             KUBECONFIG = "/etc/rancher/k3s/k3s.yaml";
           };
-          serviceConfig = let
-            k = "${pkgs.kubectl}/bin/kubectl";
-            drain = "${k} drain --by-priority --delete-emptydir-data --ignore-daemonsets";
-          in {
-            RemainAfterExit = true;
-            RestartSec = 30;
-            TimeoutStopSec = cfg.drainer.timeouts.initial + cfg.drainer.timeouts.force + 5;
-            ExecStart = "${k} uncordon ${config.networking.hostName}";
-            ExecStop = [
-              "-${drain} --timeout ${toString cfg.drainer.timeouts.initial}s ${config.networking.hostName}"
-              "${drain} --timeout ${toString cfg.drainer.timeouts.force}s --disable-eviction ${config.networking.hostName}"
-            ];
-          };
+          serviceConfig =
+            let
+              k = "${pkgs.kubectl}/bin/kubectl";
+              drain = "${k} drain --by-priority --delete-emptydir-data --ignore-daemonsets";
+            in
+            {
+              RemainAfterExit = true;
+              RestartSec = 30;
+              TimeoutStopSec = cfg.drainer.timeouts.initial + cfg.drainer.timeouts.force + 5;
+              ExecStart = "${k} uncordon ${config.networking.hostName}";
+              ExecStop = [
+                "-${drain} --timeout ${toString cfg.drainer.timeouts.initial}s ${config.networking.hostName}"
+                "${drain} --timeout ${toString cfg.drainer.timeouts.force}s --disable-eviction ${config.networking.hostName}"
+              ];
+            };
         };
       })
       (mkIf (cfg.zfsVolume != "") {
@@ -438,8 +442,8 @@ in {
         };
 
         systemd.services.k3s = {
-          requires = ["containerd.service"];
-          after = ["containerd.service"];
+          requires = [ "containerd.service" ];
+          after = [ "containerd.service" ];
         };
       })
       (mkIf (cfg.cni == "cilium") (mkMerge [
@@ -450,19 +454,19 @@ in {
           # see Cilium at https://docs.cilium.io/en/stable/operations/system_requirements/#firewall-rules
           networking.firewall.allowedTCPPorts = [
             # 2379 2380 # etcd
-            4240  # health checks
-            4244  # hubble server
-            4245  # hubble relay
-            6060  # cilium-agent pprof server (listening on 127.0.0.1)
-            6061  # cilium-operator pprof server (listening on 127.0.0.1)
-            6062  # Hubble Relay pprof server (listening on 127.0.0.1)
-            6942  # operator Prometheus metrics
-            9090  # cilium-agent Prometheus metrics
-            9876  # cilium-agent health status API
-            9890  # cilium-agent gops server (listening on 127.0.0.1)
-            9891  # operator gops server (listening on 127.0.0.1)
-            9892  # clustermesh-apiserver gops server (listening on 127.0.0.1)
-            9893  # Hubble Relay gops server (listening on 127.0.0.1)
+            4240 # health checks
+            4244 # hubble server
+            4245 # hubble relay
+            6060 # cilium-agent pprof server (listening on 127.0.0.1)
+            6061 # cilium-operator pprof server (listening on 127.0.0.1)
+            6062 # Hubble Relay pprof server (listening on 127.0.0.1)
+            6942 # operator Prometheus metrics
+            9090 # cilium-agent Prometheus metrics
+            9876 # cilium-agent health status API
+            9890 # cilium-agent gops server (listening on 127.0.0.1)
+            9891 # operator gops server (listening on 127.0.0.1)
+            9892 # clustermesh-apiserver gops server (listening on 127.0.0.1)
+            9893 # Hubble Relay gops server (listening on 127.0.0.1)
           ];
           networking.firewall.allowedUDPPorts = [
             8472 # VXLAN overlay
@@ -471,7 +475,7 @@ in {
             cilium-cli
             cilium-configure
 
-            iptables  # for debugging
+            iptables # for debugging
           ];
 
           boot.initrd.kernelModules = [
@@ -482,20 +486,22 @@ in {
           ];
 
           systemd.services.k3s.serviceConfig = {
-            ExecStartPost = let
-              wait-for-k3s = (pkgs.writeShellApplication {
-                name = "wait-for-k3s";
-                runtimeInputs = with pkgs; [ pkgs.k3s ];
-                text = ''
-                  until ${pkgs.k3s}/bin/k3s kubectl get node >/dev/null ; do
-                    sleep 5
-                  done
-                '';
-              });
-            in [
-#              "${wait-for-k3s}/bin/wait-for-k3s"
-#              "-${cilium-configure}/bin/cilium-configure --kubeconfig=/etc/rancher/k3s/k3s.yaml"
-            ];
+            ExecStartPost =
+              let
+                wait-for-k3s = (pkgs.writeShellApplication {
+                  name = "wait-for-k3s";
+                  runtimeInputs = with pkgs; [ pkgs.k3s ];
+                  text = ''
+                    until ${pkgs.k3s}/bin/k3s kubectl get node >/dev/null ; do
+                      sleep 5
+                    done
+                  '';
+                });
+              in
+              [
+                #              "${wait-for-k3s}/bin/wait-for-k3s"
+                #              "-${cilium-configure}/bin/cilium-configure --kubeconfig=/etc/rancher/k3s/k3s.yaml"
+              ];
           };
           nazarewk.k3s.single-node.config.k3s = {
             flannel-backend = "none";

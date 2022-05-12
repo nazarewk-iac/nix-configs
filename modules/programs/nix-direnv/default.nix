@@ -2,7 +2,8 @@
 with lib;
 let
   cfg = config.nazarewk.programs.nix-direnv;
-in {
+in
+{
   options.nazarewk.programs.nix-direnv = {
     enable = mkEnableOption "nix-direnv setup";
   };
@@ -28,13 +29,13 @@ in {
     # if you also want support for flakes (this makes nix-direnv use the
     # unstable version of nix):
     nixpkgs.overlays = [
-      (self: super: { nix-direnv = super.nix-direnv.override { enableFlakes = true; }; } )
+      (self: super: { nix-direnv = super.nix-direnv.override { enableFlakes = true; }; })
     ];
 
     home-manager.sharedModules = [
       {
         xdg.configFile."direnv/lib/nix-direnv.sh".text = ''
-        source "/run/current-system/sw/share/nix-direnv/direnvrc"
+          source "/run/current-system/sw/share/nix-direnv/direnvrc"
         '';
         programs.git.ignores = [ (builtins.readFile ./.gitignore) ];
       }

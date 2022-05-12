@@ -2,7 +2,8 @@
 with lib;
 let
   cfg = config.nazarewk.hardware.discovery;
-in {
+in
+{
   options.nazarewk.hardware.discovery = {
     enable = mkEnableOption "hardware discovery scripts";
   };

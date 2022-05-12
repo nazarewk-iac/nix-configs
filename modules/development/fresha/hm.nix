@@ -5,7 +5,8 @@ let
   relDir = "${cfg.baseDir}";
   absDir = "${config.home.homeDirectory}/${relDir}";
   shellDir = "$HOME/${relDir}";
-in {
+in
+{
   options.fresha.development = {
     enable = mkEnableOption "Fresha development utilities";
 
@@ -45,18 +46,18 @@ in {
 
     home.file."${relDir}/.envrc" = {
       text = ''
-      source_env .envrc.secret
-      env_vars_required FRESHA_BASTION_CIDR FRESHA_BASTION_HOST PASSWORD_STORE_DIR
+        source_env .envrc.secret
+        env_vars_required FRESHA_BASTION_CIDR FRESHA_BASTION_HOST PASSWORD_STORE_DIR
 
-      source_env_if_exists .envrc.dynamic
+        source_env_if_exists .envrc.dynamic
 
-      export AWS_CONFIG_FILE="$PWD/.aws/config"
-      export AWS_SHARED_CREDENTIALS_FILE="$PWD/.aws/credentials"
-      export KUBECONFIG="$PWD/.kube/config"
+        export AWS_CONFIG_FILE="$PWD/.aws/config"
+        export AWS_SHARED_CREDENTIALS_FILE="$PWD/.aws/credentials"
+        export KUBECONFIG="$PWD/.kube/config"
 
-      # These are currently not configurable, pending https://github.com/benkehoe/aws-sso-util/pull/63
-      export AWS_SSO_UTIL_SSO_TOKEN_DIR="$PWD/.aws/sso/cache"
-      export AWS_SSO_UTIL_CREDENTIALS_CACHE_DIR="$PWD/.aws/cli/cache"
+        # These are currently not configurable, pending https://github.com/benkehoe/aws-sso-util/pull/63
+        export AWS_SSO_UTIL_SSO_TOKEN_DIR="$PWD/.aws/sso/cache"
+        export AWS_SSO_UTIL_CREDENTIALS_CACHE_DIR="$PWD/.aws/cli/cache"
       '';
 
       onChange = ''${pkgs.sudo}/bin/sudo -u ${config.home.username} ${pkgs.direnv}/bin/direnv allow "$FRESHA_DIR/.envrc"'';

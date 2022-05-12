@@ -2,7 +2,8 @@
 with lib;
 let
   cfg = config.nazarewk.docker;
-in {
+in
+{
   options.nazarewk.docker = {
     enable = mkEnableOption "docker daemon setup";
   };

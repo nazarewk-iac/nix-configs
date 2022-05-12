@@ -2,7 +2,8 @@
 with lib;
 let
   cfg = config.nazarewk.desktop.base;
-in {
+in
+{
   options.nazarewk.desktop.base = {
     enable = mkEnableOption "Desktop base setup";
 
@@ -14,9 +15,9 @@ in {
   };
 
   config = mkIf cfg.enable {
-    nixpkgs.overlays = (if !cfg.nixpkgs-wayland.enable then [] else [
+    nixpkgs.overlays = (if !cfg.nixpkgs-wayland.enable then [ ] else [
       flakeInputs.nixpkgs-wayland.overlay
-    ]) ++ (if !cfg.enableWlrootsPatch then [] else [
+    ]) ++ (if !cfg.enableWlrootsPatch then [ ] else [
       (self: super: {
         wlroots = super.wlroots.overrideAttrs (old: {
           src = super.fetchFromGitLab {

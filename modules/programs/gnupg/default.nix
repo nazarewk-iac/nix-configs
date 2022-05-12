@@ -2,9 +2,10 @@
 with lib;
 let
   cfg = config.nazarewk.programs.gnupg;
-in {
+in
+{
   imports = [
-     ./forwarding
+    ./forwarding
   ];
 
   options.nazarewk.programs.gnupg = {

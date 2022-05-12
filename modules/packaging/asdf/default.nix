@@ -2,7 +2,8 @@
 with lib;
 let
   cfg = config.nazarewk.packaging.asdf;
-in {
+in
+{
   options.nazarewk.packaging.asdf = {
     enable = mkEnableOption "ASDF version manager";
   };
@@ -22,7 +23,7 @@ in {
     home-manager.sharedModules = [
       ({ lib, ... }: {
         home.activation = {
-          asdfReshim = lib.hm.dag.entryAfter ["writeBoundary"] ''
+          asdfReshim = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
             if [ -d "$HOME/.asdf/shims" ] ; then
               $DRY_RUN_CMD rm -rf "$HOME/.asdf/shims"
             fi

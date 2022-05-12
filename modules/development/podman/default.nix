@@ -2,7 +2,8 @@
 with lib;
 let
   cfg = config.nazarewk.development.podman;
-in {
+in
+{
   options.nazarewk.development.podman = {
     enable = mkEnableOption "Podman setup";
   };

@@ -1,8 +1,9 @@
-{ lib, pkgs, config, flakeInputs, system,  ... }:
+{ lib, pkgs, config, flakeInputs, system, ... }:
 with lib;
 let
   cfg = config.nazarewk.development.nix;
-in {
+in
+{
   options.nazarewk.development.nix = {
     enable = mkEnableOption "nix development/debugging";
   };

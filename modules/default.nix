@@ -1,4 +1,4 @@
-{pkgs, flakeInputs, ...}:
+{ pkgs, flakeInputs, ... }:
 let
   nixosModules = [
     ./desktop/base
@@ -44,7 +44,8 @@ let
     ./development/fresha/hm.nix
     ./development/terraform/hm.nix
   ];
-in {
+in
+{
   imports = [
     flakeInputs.home-manager.nixosModules.home-manager
   ] ++ nixosModules;
@@ -74,15 +75,18 @@ in {
     home-manager.useGlobalPkgs = true;
     home-manager.useUserPackages = true;
     home-manager.sharedModules = hmModules ++ [
-      (let
-        cfg = ''
-          { allowUnfree = true; }
-        '';
-      in {
-        nixpkgs.config.allowUnfree = true;
-        xdg.configFile."nixpkgs/config.nix".text = cfg;
-        home.file.".nixpkgs/config.nix".text = cfg;
-      })
+      (
+        let
+          cfg = ''
+            { allowUnfree = true; }
+          '';
+        in
+        {
+          nixpkgs.config.allowUnfree = true;
+          xdg.configFile."nixpkgs/config.nix".text = cfg;
+          home.file.".nixpkgs/config.nix".text = cfg;
+        }
+      )
     ];
   };
 }

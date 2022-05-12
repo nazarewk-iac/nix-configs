@@ -2,7 +2,8 @@
 with lib;
 let
   cfg = config.nazarewk.sway.remote;
-in {
+in
+{
   options.nazarewk.sway.remote = {
     enable = mkEnableOption "remote access setup for Sway";
   };

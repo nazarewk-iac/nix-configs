@@ -22,80 +22,91 @@
   # inputs.nix-ld.inputs.nixpkgs.follows = "nixpkgs";
   # inputs.nix-ld.inputs.utils.follows = "flake-utils";
 
-  outputs = {
-    nixpkgs,
-    nixos-generators,
-    ...
- }@flakeInputs : let
-    makeSystem = {
-      modules ? [],
-      system ? "x86_64-linux",
-      ...
-    }@args: nixpkgs.lib.nixosSystem {
-      inherit system;
-      specialArgs = {
-        inherit flakeInputs system;
-      };
-
-      modules = modules ++ [
-        ./modules
-      ];
-    };
-  in {
-    nixosConfigurations.nazarewk-krul = makeSystem (let system = "x86_64-linux"; in {
-      inherit system;
-      modules = [
-        ./configurations/desktop
-        ./machines/krul
-        {
-          home-manager.users.nazarewk = {
-            fresha.development.enable = true;
-            fresha.development.bastionUsername = "krzysztof.nazarewski";
+  outputs =
+    { nixpkgs
+    , nixos-generators
+    , ...
+    }@flakeInputs:
+    let
+      makeSystem =
+        { modules ? [ ]
+        , system ? "x86_64-linux"
+        , ...
+        }@args: nixpkgs.lib.nixosSystem {
+          inherit system;
+          specialArgs = {
+            inherit flakeInputs system;
           };
-        }
-      ];
-    });
 
-    nixosConfigurations.nazarewk = makeSystem (let system = "x86_64-linux"; in {
-      inherit system;
-      modules = [
-        ./configurations/desktop
-        ./machines/dell-latitude-e5470
+          modules = modules ++ [
+            ./modules
+          ];
+        };
+    in
+    {
+      nixosConfigurations.nazarewk-krul = makeSystem (
+        let system = "x86_64-linux"; in
         {
-          home-manager.users.nazarewk = {
-            fresha.development.enable = true;
-            fresha.development.bastionUsername = "krzysztof.nazarewski";
-          };
+          inherit system;
+          modules = [
+            ./configurations/desktop
+            ./machines/krul
+            {
+              home-manager.users.nazarewk = {
+                fresha.development.enable = true;
+                fresha.development.bastionUsername = "krzysztof.nazarewski";
+              };
+            }
+          ];
         }
-      ];
-    });
+      );
 
-    nixosConfigurations.wg-0 = makeSystem (let system = "x86_64-linux"; in {
-      inherit system;
-      modules = [
-        ./configurations/headless
-        ./machines/hetzner/wg-0
-      ];
-    });
+      nixosConfigurations.nazarewk = makeSystem (
+        let system = "x86_64-linux"; in
+        {
+          inherit system;
+          modules = [
+            ./configurations/desktop
+            ./machines/dell-latitude-e5470
+            {
+              home-manager.users.nazarewk = {
+                fresha.development.enable = true;
+                fresha.development.bastionUsername = "krzysztof.nazarewski";
+              };
+            }
+          ];
+        }
+      );
 
-    nixosConfigurations.rpi4 = nixpkgs.lib.nixosSystem {
-      # nix build '.#nixosConfigurations.rpi4.config.system.build.sdImage' --system aarch64-linux -L
-      # see for a next step: https://matrix.to/#/!KqkRjyTEzAGRiZFBYT:nixos.org/$w4Zx8Y0vG0DhlD3zzWReWDaOdRSZvwyrn1tQsLhYDEU?via=nixos.org&via=matrix.org&via=tchncs.de
-      system = "aarch64-linux";
-      modules = [
-        ./rpi4/sd-image.nix
-      ];
-    };
+      nixosConfigurations.wg-0 = makeSystem (
+        let system = "x86_64-linux"; in
+        {
+          inherit system;
+          modules = [
+            ./configurations/headless
+            ./machines/hetzner/wg-0
+          ];
+        }
+      );
 
-    packages.x86_64-linux = {
-      generators.basic-raw = nixos-generators.nixosGenerate {
-        pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      nixosConfigurations.rpi4 = nixpkgs.lib.nixosSystem {
+        # nix build '.#nixosConfigurations.rpi4.config.system.build.sdImage' --system aarch64-linux -L
+        # see for a next step: https://matrix.to/#/!KqkRjyTEzAGRiZFBYT:nixos.org/$w4Zx8Y0vG0DhlD3zzWReWDaOdRSZvwyrn1tQsLhYDEU?via=nixos.org&via=matrix.org&via=tchncs.de
+        system = "aarch64-linux";
         modules = [
-          ./modules
-          ./configurations/basic
+          ./rpi4/sd-image.nix
         ];
-        format = "raw";
+      };
+
+      packages.x86_64-linux = {
+        generators.basic-raw = nixos-generators.nixosGenerate {
+          pkgs = nixpkgs.legacyPackages.x86_64-linux;
+          modules = [
+            ./modules
+            ./configurations/basic
+          ];
+          format = "raw";
+        };
       };
     };
-  };
 }

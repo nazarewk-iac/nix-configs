@@ -2,7 +2,8 @@
 with lib;
 let
   cfg = config.nazarewk.development.elixir;
-in {
+in
+{
   options.nazarewk.development.elixir = {
     enable = mkEnableOption "elixir development";
   };

@@ -2,7 +2,8 @@
 with lib;
 let
   cfg = config.nazarewk.development.shell;
-in {
+in
+{
   options.nazarewk.development.shell = {
     enable = mkEnableOption "shell development";
   };

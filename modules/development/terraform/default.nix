@@ -2,7 +2,8 @@
 with lib;
 let
   cfg = config.nazarewk.development.terraform;
-in {
+in
+{
   options.nazarewk.development.terraform = {
     enable = mkEnableOption "Terraform development";
   };

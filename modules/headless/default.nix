@@ -2,7 +2,8 @@
 with lib;
 let
   cfg = config.nazarewk.headless;
-in {
+in
+{
   options.nazarewk.headless = {
     enableGUI = lib.mkOption {
       type = lib.types.bool;

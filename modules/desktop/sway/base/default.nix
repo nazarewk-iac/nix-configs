@@ -2,7 +2,8 @@
 with lib;
 let
   cfg = config.nazarewk.sway.base;
-in {
+in
+{
   options.nazarewk.sway.base = {
     enable = mkEnableOption "Sway base setup";
   };
@@ -47,14 +48,16 @@ in {
       after = [ "graphical-session-pre.target" ];
     };
 
-    environment.etc."sway/config.d/systemd-init-10.conf".source = let
-      initPolkit = (pkgs.writeScriptBin "_sway-init-polkit" ''
-        #! ${pkgs.bash}/bin/bash
-        set -xeEuo pipefail
-        until systemctl --user show-environment | grep -q WAYLAND_DISPLAY ; do sleep 1; done
-        exec ${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1
-      '');
-      in pkgs.writeText "sway-systemd-init.conf" ''
+    environment.etc."sway/config.d/systemd-init-10.conf".source =
+      let
+        initPolkit = (pkgs.writeScriptBin "_sway-init-polkit" ''
+          #! ${pkgs.bash}/bin/bash
+          set -xeEuo pipefail
+          until systemctl --user show-environment | grep -q WAYLAND_DISPLAY ; do sleep 1; done
+          exec ${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1
+        '');
+      in
+      pkgs.writeText "sway-systemd-init.conf" ''
         exec ${initPolkit}/bin/_sway-init-polkit
       '';
 

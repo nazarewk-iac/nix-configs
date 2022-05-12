@@ -2,7 +2,8 @@
 with lib;
 let
   cfg = config.nazarewk.hardware.modem;
-in {
+in
+{
   options.nazarewk.hardware.modem = {
     enable = mkEnableOption "modem (LTE + calls) setup";
   };

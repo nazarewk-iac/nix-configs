@@ -2,7 +2,8 @@
 with lib;
 let
   cfg = config.nazarewk.development.python;
-in {
+in
+{
   options.nazarewk.development.python = {
     enable = mkEnableOption "Python development";
   };

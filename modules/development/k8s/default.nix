@@ -2,7 +2,8 @@
 with lib;
 let
   cfg = config.nazarewk.development.k8s;
-in {
+in
+{
   options.nazarewk.development.k8s = {
     enable = mkEnableOption "k8s development";
   };
@@ -13,16 +14,18 @@ in {
 
     nixpkgs.overlays = [
       (self: super: {
-        kubectl = super.kubectl.overrideAttrs (old: let commit = "3a396c05a141b188120ce654141d724ca15ef887"; in {
-          version = "1.24.0-${commit}";
+        kubectl = super.kubectl.overrideAttrs (old:
+          let commit = "3a396c05a141b188120ce654141d724ca15ef887"; in
+          {
+            version = "1.24.0-${commit}";
 
-          src = super.fetchFromGitHub {
-            owner = "nazarewk";
-            repo = "kubernetes";
-            rev = commit;
-            sha256 = "sha256-jKYiGSRQpuPyjQZVEIoLqIgo4fqQWkRDeImcsCMNkio=";
-          };
-        });
+            src = super.fetchFromGitHub {
+              owner = "nazarewk";
+              repo = "kubernetes";
+              rev = commit;
+              sha256 = "sha256-jKYiGSRQpuPyjQZVEIoLqIgo4fqQWkRDeImcsCMNkio=";
+            };
+          });
       })
     ];
 
@@ -67,18 +70,18 @@ in {
           krew "$@"
         '';
       })
-#      (pkgs.writeShellApplication {
-#        name = "kubectl-get_all";
-#        runtimeInputs = with pkgs; [ kubectl coreutils gnugrep util-linux ];
-#        text = ''
-#          [ -z "''${DEBUG:-}" ] || set -x
-#          resources_extra=()
-#          grep -E -- '( |^)((-n [a-z-]+)|(--namespace( |=)[a-z-]+)|(--namespaced))( |$)' <<<"$*" >/dev/null && resources_extra+=(--namespaced)
-#          # https://github.com/koalaman/shellcheck/wiki/SC2207
-#          mapfile -t resources < <(kubectl api-resources --verbs=list "''${resources_extra[@]}" -o name)
-#          kubectl get "$( tr ' ' ',' <<<"''${resources[*]}" )" "$@"
-#        '';
-#      })
+      #      (pkgs.writeShellApplication {
+      #        name = "kubectl-get_all";
+      #        runtimeInputs = with pkgs; [ kubectl coreutils gnugrep util-linux ];
+      #        text = ''
+      #          [ -z "''${DEBUG:-}" ] || set -x
+      #          resources_extra=()
+      #          grep -E -- '( |^)((-n [a-z-]+)|(--namespace( |=)[a-z-]+)|(--namespaced))( |$)' <<<"$*" >/dev/null && resources_extra+=(--namespaced)
+      #          # https://github.com/koalaman/shellcheck/wiki/SC2207
+      #          mapfile -t resources < <(kubectl api-resources --verbs=list "''${resources_extra[@]}" -o name)
+      #          kubectl get "$( tr ' ' ',' <<<"''${resources[*]}" )" "$@"
+      #        '';
+      #      })
 
       (pkgs.writeShellApplication {
         name = "kubectl-eks_config";

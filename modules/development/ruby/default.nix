@@ -2,7 +2,8 @@
 with lib;
 let
   cfg = config.nazarewk.development.ruby;
-in {
+in
+{
   options.nazarewk.development.ruby = {
     enable = mkEnableOption "Ruby development";
   };

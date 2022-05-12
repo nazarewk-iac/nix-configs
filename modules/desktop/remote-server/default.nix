@@ -2,7 +2,8 @@
 with lib;
 let
   cfg = config.nazarewk.desktop.remote-server;
-in {
+in
+{
   options.nazarewk.desktop.remote-server = {
     enable = mkEnableOption "remote desktop server setup";
   };
@@ -10,11 +11,13 @@ in {
   config = mkIf cfg.enable {
     services.teamviewer.enable = true;
     nixpkgs.overlays = [
-      (self: super: let
-        tvPkgs = import flakeInputs.nixpkgs-teamviewer { system = system; config = { allowUnfree = true; }; };
-      in {
-        teamviewer = tvPkgs.teamviewer;
-      })
+      (self: super:
+        let
+          tvPkgs = import flakeInputs.nixpkgs-teamviewer { system = system; config = { allowUnfree = true; }; };
+        in
+        {
+          teamviewer = tvPkgs.teamviewer;
+        })
     ];
   };
 }
