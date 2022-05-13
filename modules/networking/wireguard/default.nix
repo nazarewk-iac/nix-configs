@@ -21,8 +21,7 @@ let
 
   preparePeers = filters: lib.pipe activePeers (filters ++ [
     (lib.filterAttrs (n: v: n != config.networking.hostName))
-    lib.attrValues
-    (builtins.map (entry: mkMerge [
+    (builtins.map (name: entry: mkMerge [
       (mkIf (!entry.server.enable) {
         allowedIPs = [ "${getIP entry.hostnum}/32" ];
       })
@@ -32,7 +31,9 @@ let
         ];
       })
       entry.cfg
+      (self.peersCfg."${name}" or { })
     ]))
+    lib.attrValues
   ]);
 in
 {
@@ -84,6 +85,11 @@ in
 
           cfg = mkOption {
             type = types.attrs;
+          };
+
+          peersCfg = mkOption {
+            type = types.attrsOf types.attrs;
+            default = { };
           };
         };
       });
