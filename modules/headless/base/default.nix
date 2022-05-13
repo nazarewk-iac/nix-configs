@@ -11,6 +11,7 @@ in
   config = mkIf cfg.enable {
     nazarewk.development.data.enable = true;
     nazarewk.filesystems.base.enable = true;
+    nazarewk.development.linux-utils.enable = true;
 
     programs.xonsh.enable = true;
     programs.zsh.enable = true;

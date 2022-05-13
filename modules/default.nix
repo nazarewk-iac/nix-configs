@@ -14,6 +14,7 @@ let
     ./development/elixir
     ./development/golang
     ./development/k8s
+    ./development/linux-utils
     ./development/nix
     ./development/nodejs
     ./development/podman
