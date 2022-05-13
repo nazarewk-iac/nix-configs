@@ -18,7 +18,7 @@
       hostnum = 2;
       cfg = {
         allowedIPs = [
-          "10.0.0.199/32"
+          # "10.0.0.199/32"
         ];
         publicKey = "FJV0gfKnCpiBEjaLTBp3fHrMSpMUsFSW010KIPedA24=";
       };
@@ -27,7 +27,7 @@
       hostnum = 3;
       cfg = {
         allowedIPs = [
-          "10.0.0.210/32"
+          # "10.0.0.210/32"
         ];
         publicKey = "aaMWmmrCQM/wXhV7+i3Igp7D9Rz8jNorEsqt5/zF61s=";
       };
