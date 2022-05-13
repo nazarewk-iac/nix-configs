@@ -11,7 +11,7 @@ in
   config = mkIf cfg.enable {
     nixpkgs.overlays = [
       (self: super: {
-        keepass = pkgs.keepass.override {
+        keepass = super.keepass.override {
           plugins = with pkgs; [
             keepass-keeagent
             keepass-keepassrpc
