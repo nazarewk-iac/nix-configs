@@ -21,7 +21,7 @@ let
 
   preparePeers = filters: lib.pipe activePeers (filters ++ [
     (lib.filterAttrs (n: v: n != config.networking.hostName))
-    (builtins.map (name: entry: mkMerge [
+    (builtins.mapAttrs (name: entry: mkMerge [
       (mkIf (!entry.server.enable) {
         allowedIPs = [ "${getIP entry.hostnum}/32" ];
       })
