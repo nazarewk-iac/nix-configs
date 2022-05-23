@@ -13,7 +13,8 @@ in
     nazarewk.filesystems.base.enable = true;
     nazarewk.development.linux-utils.enable = true;
 
-    programs.xonsh.enable = true;
+    # not building at 2022-05-23
+    # programs.xonsh.enable = true;
     programs.zsh.enable = true;
     users.defaultUserShell = pkgs.zsh;
     programs.zsh.interactiveShellInit = ''
