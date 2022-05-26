@@ -142,8 +142,10 @@ bindswitch --reload --locked lid:off output $displayLaptop enable
 # passthrough mode for remote desktops
 mode passthrough {
 	bindsym $Super+Pause mode default
+	bindsym $Super+Scroll_Lock mode default
 }
 bindsym $Super+Pause mode passthrough
+bindsym $Super+Scroll_Lock mode passthrough
 
 #
 # Resizing containers:
