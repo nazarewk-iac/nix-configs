@@ -1,6 +1,9 @@
 { config, pkgs, lib, modulesPath, ... }:
 {
-  imports = [ (modulesPath + "/installer/scan/not-detected.nix") ];
+  imports = [
+   (modulesPath + "/installer/scan/not-detected.nix")
+   ./prometheus-grafana.nix
+ ];
 
   system.stateVersion = "21.05";
   networking.hostId = "f77614af"; # cut -c-8 </proc/sys/kernel/random/uuid
