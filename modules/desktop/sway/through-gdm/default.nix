@@ -33,7 +33,7 @@ in
           until pgrep -fu $UID polkit-gnome-authentication-agent-1 ; do sleep "$interval"; done
           until pgrep -fu $UID waybar && sleep 3 ; do sleep "$interval"; done
           systemctl --user start sway-session.target
-          systemd-notify --ready || true
+          # systemd-notify --ready || true
           test "$#" -lt 1 || exec "$@"
         '';
       in
