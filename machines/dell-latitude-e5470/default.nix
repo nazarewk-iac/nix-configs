@@ -135,4 +135,21 @@
     vaapiVdpau
     libvdpau-va-gl
   ];
+
+  nixpkgs.overlays = [
+    (self: super:
+      {
+        zoom-us = super.runCommand "zoom-us-wrapper" {
+          buildInputs = [ super.makeWrapper ];
+        } ''
+          mkdir -p "$out/bin" "$out/share/applications"
+
+          makeWrapper ${super.zoom-us}/bin/zoom $out/bin/zoom --add-flags "--in-process-gpu"
+          ln -s "$out/bin/zoom" "$out/bin/zoom-us"
+          cp -a "${super.zoom-us}/share" "$out/share"
+          desktop_file="share/applications/Zoom.desktop"
+          sed "s#${super.zoom-us}#$out#g" "${super.zoom-us}/$desktop_file" > "$out/$desktop_file"
+        '';
+      })
+  ];
 }
