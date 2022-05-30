@@ -2,7 +2,7 @@
 with lib;
 let
   cfg = config.nazarewk.sway.systemd;
-  mandatoryEnvs = toString [
+  mandatoryEnvsString = toString [
     "DISPLAY"
     "WAYLAND_DISPLAY"
     "SWAYSOCK"
@@ -26,40 +26,40 @@ in
       # We explicitly unset PATH here, as we want it to be set by
       # systemctl --user import-environment in startsway
       environment.PATH = lib.mkForce null;
+      environment.NAZAREWK_SWAY_SYSTEMD = "1";
       serviceConfig = {
         Type = "notify";
         # NotifyAccess = "exec";
         NotifyAccess = "all";
         # wrapper already contains dbus-session-run
+        ExecStartPre = "systemctl --user unset-environment ${mandatoryEnvsString}";
         ExecStart = "/run/current-system/sw/bin/sway";
-        ExecStopPost = "systemctl --user unset-environment ${mandatoryEnvs}";
+        ExecStopPost = "systemctl --user unset-environment ${mandatoryEnvsString}";
         Restart = "no";
         RestartSec = 1;
         TimeoutStopSec = 60;
       };
     };
 
-    # because tray opens up too late https://github.com/Alexays/Waybar/issues/483
-    environment.etc."sway/config.d/systemd-init-00.conf".source =
-      let
-        init = pkgs.writeScriptBin "_sway-init" ''
-          #! ${pkgs.bash}/bin/bash
-          set -xeEuo pipefail
-          interval=2
-          until systemctl --user show-environment | grep WAYLAND_DISPLAY ; do
-            sleep "$interval"
-            dbus-update-activation-environment --systemd --all --verbose
-          done
-          until pgrep -fu $UID polkit-gnome-authentication-agent-1 ; do sleep "$interval"; done
-          until pgrep -fu $UID waybar && sleep 3 ; do sleep "$interval"; done
-          systemctl --user start sway-session.target
-          systemd-notify --ready || true
-          test "$#" -lt 1 || exec "$@"
-        '';
-      in
-      pkgs.writeText "sway-systemd-init.conf" ''
-        exec ${init}/bin/_sway-init
+    nazarewk.sway.base.initScripts.systemd = {
+      "01-wait-systemd-environment" = ''
+        #!${pkgs.bash}/bin/bash
+        set -xEeuo pipefail
+        test "''${NAZAREWK_SWAY_SYSTEMD:-}" = "1" || exit 0
+
+        until systemctl --user show-environment | grep WAYLAND_DISPLAY ; do
+          sleep 2
+          dbus-update-activation-environment --systemd --all --verbose
+        done
       '';
+      "99-notify-systemd-service" = ''
+        #!${pkgs.bash}/bin/bash
+        set -xEeuo pipefail
+        test "''${NAZAREWK_SWAY_SYSTEMD:-}" = "1" || exit 0
+
+        systemd-notify --ready || true
+      '';
+    };
 
     programs.sway.extraPackages = with pkgs; [
       (pkgs.writeScriptBin "startsway" ''

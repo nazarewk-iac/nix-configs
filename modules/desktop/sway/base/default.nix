@@ -6,6 +6,25 @@ in
 {
   options.nazarewk.sway.base = {
     enable = mkEnableOption "Sway base setup";
+
+    initScripts = mkOption {
+      type = types.attrsOf (types.attrsOf types.str);
+      default = {};
+    };
+
+    environmentDefaults = mkOption {
+      type = types.attrsOf types.str;
+      default = {};
+      apply = input: let
+          escapeDefault = arg: ''"${replaceStrings [''"''] [''\"''] (toString arg)}"'';
+        in (mapAttrsToList (n: v: "${n}=\"\${${n}:-${escapeDefault v}}\"") input);
+    };
+
+    environment = mkOption {
+      type = types.attrsOf types.str;
+      default = {};
+      apply = input: mapAttrsToList lib.toShellVar input;
+    };
   };
 
   config = mkIf cfg.enable {
@@ -24,19 +43,25 @@ in
     programs.sway.extraOptions = [ "--verbose" "--debug" ];
     environment.pathsToLink = [ "/libexec" ];
 
-    programs.sway.extraSessionCommands = ''
+    nazarewk.sway.base.environmentDefaults = {
       # see https://wiki.debian.org/Wayland#Toolkits
-      export GDK_BACKEND=wayland
-      export SDL_VIDEODRIVER=wayland
-      export QT_QPA_PLATFORM='wayland;xcb'
-      export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
-      export _JAVA_AWT_WM_NONREPARENTING=1
-      export MOZ_ENABLE_WAYLAND=1
-      export MOZ_DBUS_REMOTE=1
+      GDK_BACKEND = "wayland";
+      SDL_VIDEODRIVER = "wayland";
+      QT_QPA_PLATFORM = "wayland;xcb";
+      QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
+      _JAVA_AWT_WM_NONREPARENTING = "1";
+      MOZ_ENABLE_WAYLAND = "1";
+      MOZ_DBUS_REMOTE = "1";
       # see https://github.com/swaywm/wlroots/issues/3189#issuecomment-461608727
-      export WLR_NO_HARDWARE_CURSORS=1
+      WLR_NO_HARDWARE_CURSORS = "1";
+    };
 
-      eval $(gnome-keyring-daemon --start)
+    programs.sway.extraSessionCommands = ''
+      . /etc/profile
+
+      export ${lib.concatStringsSep " \\\n  " cfg.environmentDefaults}
+      export ${lib.concatStringsSep " \\\n  " cfg.environment}
+      eval $(${pkgs.gnome.gnome-keyring}/bin/gnome-keyring-daemon --start)
       export SSH_AUTH_SOCK
     '';
 
@@ -48,18 +73,57 @@ in
       after = [ "graphical-session-pre.target" ];
     };
 
-    environment.etc."sway/config.d/systemd-init-10.conf".source =
-      let
-        initPolkit = (pkgs.writeScriptBin "_sway-init-polkit" ''
-          #! ${pkgs.bash}/bin/bash
-          set -xeEuo pipefail
-          until systemctl --user show-environment | grep -q WAYLAND_DISPLAY ; do sleep 1; done
-          exec ${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1
-        '');
-      in
-      pkgs.writeText "sway-systemd-init.conf" ''
-        exec ${initPolkit}/bin/_sway-init-polkit
+    # because tray opens up too late https://github.com/Alexays/Waybar/issues/483
+
+    nazarewk.sway.base.initScripts.polkit = {
+      "00-init" = ''
+        #! ${pkgs.bash}/bin/bash
+        set -xeEuo pipefail
+
+        until systemctl --user show-environment | grep -q WAYLAND_DISPLAY ; do sleep 1; done
+        exec ${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1
       '';
+    };
+    nazarewk.sway.base.initScripts.systemd = {
+      "50-wait-polkit" = ''
+        #!${pkgs.bash}/bin/bash
+        set -xeEuo pipefail
+
+        until pgrep -fu $UID polkit-gnome-authentication-agent-1 ; do sleep 2; done
+      '';
+      # because tray opens up too late https://github.com/Alexays/Waybar/issues/483
+      "50-wait-waybar" = ''
+        #! ${pkgs.bash}/bin/bash
+        set -xeEuo pipefail
+
+        until pgrep -fu $UID waybar && sleep 3 ; do sleep 2; done
+      '';
+      "90-start-sway-session" = ''
+        #! ${pkgs.bash}/bin/bash
+        set -xeEuo pipefail
+
+        systemctl --user start sway-session.target
+      '';
+    };
+
+    environment.etc."sway/config.d/00-nazarewk-init.conf".text = lib.concatStringsSep "\n" (lib.mapAttrsToList (
+      execName: scripts:
+        let
+          scriptName = "nazarewk-sway-init-${execName}";
+          scriptContent = lib.concatStringsSep "\n" (lib.mapAttrsToList (
+            pieceName: piece:
+            let
+              pieceScriptName = "${scriptName}-${pieceName}";
+              pieceScript = pkgs.writeScriptBin pieceScriptName piece;
+            in "${pieceScript}/bin/${pieceScriptName}"
+          ) scripts);
+          script = pkgs.writeScriptBin scriptName ''
+            #!${pkgs.bash}/bin/bash
+            set -xEeuo pipefail
+            ${scriptContent}
+          '';
+        in "exec ${script}/bin/${scriptName}"
+    ) cfg.initScripts);
 
     systemd.user.services.xfce4-notifyd.enable = false;
 

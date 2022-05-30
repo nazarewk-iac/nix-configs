@@ -112,5 +112,4 @@
   nazarewk.programs.keepass.enable = true;
   nazarewk.programs.nix-direnv.enable = true;
   nazarewk.programs.nix-index.enable = true;
-  nazarewk.sway.gdm.enable = true;
 }

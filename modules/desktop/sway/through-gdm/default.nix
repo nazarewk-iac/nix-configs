@@ -16,29 +16,16 @@ in
     services.xserver.displayManager.gdm.enable = true;
     services.xserver.libinput.enable = true;
 
-    programs.sway.extraSessionCommands = ''
-      . /etc/set-environment
-    '';
+    nazarewk.sway.base.initScripts.systemd = {
+      "01-wait-gdm-environment" = ''
+        #! ${pkgs.bash}/bin/bash
+        set -xeEuo pipefail
+        test -n "''${GDMSESSION:-}" || exit 0
 
-    # because tray opens up too late https://github.com/Alexays/Waybar/issues/483
-    environment.etc."sway/config.d/systemd-init-00.conf".source =
-      let
-        init = pkgs.writeScriptBin "_sway-init" ''
-          #! ${pkgs.bash}/bin/bash
-          set -xeEuo pipefail
-          interval=2
-          until systemctl --user show-environment | grep WAYLAND_DISPLAY ; do
-           sleep "$interval"
-          done
-          until pgrep -fu $UID polkit-gnome-authentication-agent-1 ; do sleep "$interval"; done
-          until pgrep -fu $UID waybar && sleep 3 ; do sleep "$interval"; done
-          systemctl --user start sway-session.target
-          # systemd-notify --ready || true
-          test "$#" -lt 1 || exec "$@"
-        '';
-      in
-      pkgs.writeText "sway-systemd-init.conf" ''
-        exec ${init}/bin/_sway-init
+        until systemctl --user show-environment | grep WAYLAND_DISPLAY ; do
+         sleep 2
+        done
       '';
+    };
   };
 }

@@ -190,10 +190,12 @@ bindsym $Super+r mode "resize"
 include /etc/sway/config.d/*
 
 # inputs
-input type:keyboard xkb_layout pl
-input type:keyboard xkb_numlock enable
-input type:keyboard repeat_delay 333
-input type:keyboard repeat_rate 50
+input type:keyboard {
+  xkb_layout pl
+  xkb_numlock enable
+  repeat_delay 333
+  repeat_rate 50
+}
 
 input '1:1:AT_Translated_Set_2_keyboard' xkb_numlock disable
 
