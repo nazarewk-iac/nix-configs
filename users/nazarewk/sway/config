@@ -323,4 +323,7 @@ for_window [title=".+/gpg2?.+"] {
   move position center
 }
 
-
+for_window [title="^Picture-in-Picture$"] {
+  floating enable
+  sticky enable
+}
