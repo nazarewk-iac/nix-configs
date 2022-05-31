@@ -8,6 +8,13 @@ let
     "SWAYSOCK"
     "XDG_CURRENT_DESKTOP"
   ];
+
+  startsway = (pkgs.writeScriptBin "startsway" ''
+    #! ${pkgs.bash}/bin/bash
+    set -xeEuo pipefail
+    systemctl --user import-environment $(${pkgs.jq}/bin/jq -rn 'env | keys[]')
+    exec systemctl --wait --user start sway.service
+  '');
 in
 {
   options.nazarewk.sway.systemd = {
@@ -62,12 +69,15 @@ in
     };
 
     programs.sway.extraPackages = with pkgs; [
-      (pkgs.writeScriptBin "startsway" ''
-        #! ${pkgs.bash}/bin/bash
-        set -xeEuo pipefail
-        systemctl --user import-environment $(${pkgs.jq}/bin/jq -rn 'env | keys[]')
-        exec systemctl --user start sway.service
-      '')
+      startsway
+    ];
+
+    services.xserver.displayManager.session = [
+      # {  # this just does Xsession
+      #   manage = "desktop";
+      #   name = "sway-service";
+      #   start = "${startsway}/bin/startsway";
+      # }
     ];
   };
 }

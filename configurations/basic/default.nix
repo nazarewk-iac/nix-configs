@@ -30,6 +30,7 @@
   nazarewk.hardware.pipewire.useWireplumber = true;
   nazarewk.hardware.yubikey.enable = true;
   nazarewk.sway.gdm.enable = true;
+  nazarewk.sway.systemd.enable = true;
 
   home-manager.sharedModules = [
     ({ config, ... }: {
