@@ -127,6 +127,10 @@ in
 
     systemd.user.services.xfce4-notifyd.enable = false;
 
+    services.dbus.packages = with pkgs; [
+      mako
+    ];
+
     programs.sway.extraPackages = with pkgs; [
       (pkgs.writeScriptBin "_sway-wait-ready" ''
         #! ${pkgs.bash}/bin/bash
