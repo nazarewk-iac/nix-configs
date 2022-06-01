@@ -9,7 +9,6 @@ in
 mkMerge [
   {
     nazarewk.hardware.yubikey.enable = true;
-    nazarewk.programs.gnupg.enable = true;
 
     users.users.nazarewk.description = "Krzysztof Nazarewski";
     users.users.nazarewk.uid = 1000;
