@@ -9,9 +9,22 @@ let
     "XDG_CURRENT_DESKTOP"
   ];
 
+  startsway-headless = (pkgs.writeScriptBin "startsway-headless" ''
+    #! ${pkgs.bash}/bin/bash
+    set -xeEuo pipefail
+
+    export WAYLAND_DISPLAY="$1"
+    export WLR_BACKENDS=headless
+    export WLR_LIBINPUT_NO_DEVICES=1
+    export XDG_SESSION_TYPE=wayland
+
+    ${startsway}/bin/startsway
+  '');
+
   startsway = (pkgs.writeScriptBin "startsway" ''
     #! ${pkgs.bash}/bin/bash
     set -xeEuo pipefail
+
     systemctl --user import-environment $(${pkgs.jq}/bin/jq -rn 'env | keys[]')
     exec systemctl --wait --user start sway.service
   '');
@@ -39,7 +52,7 @@ in
         # NotifyAccess = "exec";
         NotifyAccess = "all";
         # wrapper already contains dbus-session-run
-        ExecStartPre = "systemctl --user unset-environment ${mandatoryEnvsString}";
+        # ExecStartPre = "systemctl --user unset-environment ${mandatoryEnvsString}";
         ExecStart = "/run/current-system/sw/bin/sway";
         ExecStopPost = "systemctl --user unset-environment ${mandatoryEnvsString}";
         Restart = "no";
@@ -70,6 +83,7 @@ in
 
     programs.sway.extraPackages = with pkgs; [
       startsway
+      startsway-headless
     ];
 
     services.xserver.displayManager.session = [
