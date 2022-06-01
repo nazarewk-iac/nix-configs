@@ -13,7 +13,6 @@ let
     #! ${pkgs.bash}/bin/bash
     set -xeEuo pipefail
 
-    export WAYLAND_DISPLAY="$1"
     export WLR_BACKENDS=headless
     export WLR_LIBINPUT_NO_DEVICES=1
     export XDG_SESSION_TYPE=wayland
@@ -26,7 +25,7 @@ let
     set -xeEuo pipefail
 
     systemctl --user import-environment $(${pkgs.jq}/bin/jq -rn 'env | keys[]')
-    exec systemctl --wait --user start sway.service
+    exec systemctl --user start sway.service
   '');
 in
 {
