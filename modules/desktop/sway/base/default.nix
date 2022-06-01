@@ -43,17 +43,21 @@ in
     programs.sway.extraOptions = [ "--verbose" "--debug" ];
     environment.pathsToLink = [ "/libexec" ];
 
+    # see https://wiki.debian.org/Wayland#Toolkits
     nazarewk.sway.base.environmentDefaults = {
+      QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
+      # see https://github.com/swaywm/wlroots/issues/3189#issuecomment-461608727
+      WLR_NO_HARDWARE_CURSORS = "1";
+    };
+
+    nazarewk.sway.base.environment = {
       # see https://wiki.debian.org/Wayland#Toolkits
       GDK_BACKEND = "wayland";
       SDL_VIDEODRIVER = "wayland";
       QT_QPA_PLATFORM = "wayland;xcb";
-      QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
       _JAVA_AWT_WM_NONREPARENTING = "1";
       MOZ_ENABLE_WAYLAND = "1";
       MOZ_DBUS_REMOTE = "1";
-      # see https://github.com/swaywm/wlroots/issues/3189#issuecomment-461608727
-      WLR_NO_HARDWARE_CURSORS = "1";
     };
 
     programs.sway.extraSessionCommands = ''
