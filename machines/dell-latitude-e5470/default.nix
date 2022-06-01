@@ -1,9 +1,9 @@
 { config, pkgs, lib, modulesPath, ... }:
 {
   imports = [
-   (modulesPath + "/installer/scan/not-detected.nix")
-   ./prometheus-grafana.nix
- ];
+    (modulesPath + "/installer/scan/not-detected.nix")
+    ./prometheus-grafana.nix
+  ];
 
   system.stateVersion = "21.05";
   networking.hostId = "f77614af"; # cut -c-8 </proc/sys/kernel/random/uuid
@@ -139,9 +139,10 @@
   nixpkgs.overlays = [
     (self: super:
       {
-        zoom-us = super.runCommand "zoom-us-wrapper" {
-          buildInputs = [ super.makeWrapper ];
-        } ''
+        zoom-us = super.runCommand "zoom-us-wrapper"
+          {
+            buildInputs = [ super.makeWrapper ];
+          } ''
           mkdir -p "$out/bin" "$out/share/applications"
 
           makeWrapper ${super.zoom-us}/bin/zoom $out/bin/zoom --add-flags "--in-process-gpu"

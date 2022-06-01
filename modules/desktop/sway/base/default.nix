@@ -9,20 +9,22 @@ in
 
     initScripts = mkOption {
       type = types.attrsOf (types.attrsOf types.str);
-      default = {};
+      default = { };
     };
 
     environmentDefaults = mkOption {
       type = types.attrsOf types.str;
-      default = {};
-      apply = input: let
+      default = { };
+      apply = input:
+        let
           escapeDefault = arg: ''"${replaceStrings [''"''] [''\"''] (toString arg)}"'';
-        in (mapAttrsToList (n: v: "${n}=\"\${${n}:-${escapeDefault v}}\"") input);
+        in
+        (mapAttrsToList (n: v: "${n}=\"\${${n}:-${escapeDefault v}}\"") input);
     };
 
     environment = mkOption {
       type = types.attrsOf types.str;
-      default = {};
+      default = { };
       apply = input: mapAttrsToList lib.toShellVar input;
     };
   };
@@ -110,24 +112,30 @@ in
       '';
     };
 
-    environment.etc."sway/config.d/00-nazarewk-init.conf".text = lib.concatStringsSep "\n" (lib.mapAttrsToList (
-      execName: scripts:
-        let
-          scriptName = "nazarewk-sway-init-${execName}";
-          scriptContent = lib.concatStringsSep "\n" (lib.mapAttrsToList (
-            pieceName: piece:
-            let
-              pieceScriptName = "${scriptName}-${pieceName}";
-              pieceScript = pkgs.writeScriptBin pieceScriptName piece;
-            in "${pieceScript}/bin/${pieceScriptName}"
-          ) scripts);
-          script = pkgs.writeScriptBin scriptName ''
-            #!${pkgs.bash}/bin/bash
-            set -xEeuo pipefail
-            ${scriptContent}
-          '';
-        in "exec ${script}/bin/${scriptName}"
-    ) cfg.initScripts);
+    environment.etc."sway/config.d/00-nazarewk-init.conf".text = lib.concatStringsSep "\n" (lib.mapAttrsToList
+      (
+        execName: scripts:
+          let
+            scriptName = "nazarewk-sway-init-${execName}";
+            scriptContent = lib.concatStringsSep "\n" (lib.mapAttrsToList
+              (
+                pieceName: piece:
+                  let
+                    pieceScriptName = "${scriptName}-${pieceName}";
+                    pieceScript = pkgs.writeScriptBin pieceScriptName piece;
+                  in
+                  "${pieceScript}/bin/${pieceScriptName}"
+              )
+              scripts);
+            script = pkgs.writeScriptBin scriptName ''
+              #!${pkgs.bash}/bin/bash
+              set -xEeuo pipefail
+              ${scriptContent}
+            '';
+          in
+          "exec ${script}/bin/${scriptName}"
+      )
+      cfg.initScripts);
 
     systemd.user.services.xfce4-notifyd.enable = false;
 
