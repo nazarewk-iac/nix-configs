@@ -16,9 +16,7 @@
   services.openssh.enable = true;
   services.openssh.openFirewall = true;
   services.openssh.passwordAuthentication = false;
-  services.openssh.extraConfig = ''
-    StreamLocalBindUnlink yes
-  '';
+  nazarewk.programs.gnupg.enable = true;
 
   # LOCALE
   i18n.defaultLocale = "en_US.UTF-8";

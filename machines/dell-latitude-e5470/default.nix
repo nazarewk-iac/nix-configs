@@ -12,10 +12,6 @@
   nazarewk.sway.remote.enable = true;
   nazarewk.desktop.base.nixpkgs-wayland.enable = false;
   nazarewk.k3s.single-node.enableScripts = true;
-  nazarewk.programs.gnupg.forwarding.client.enable = false;
-  nazarewk.programs.gnupg.forwarding.client.sshConfig.hosts = [
-    "nazarewk-krul"
-  ];
   nazarewk.filesystems.zfs-root.enable = true;
   # TODO: unlock hangs up on `ip=dhcp` when not connected to the router.
   # nazarewk.filesystems.zfs-root.sshUnlock.enable = true;

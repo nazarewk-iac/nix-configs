@@ -14,5 +14,6 @@ in
 
   config = mkIf cfg.enable {
     programs.gnupg.agent.enable = true;
+    programs.gnupg.agent.enableExtraSocket = true;
   };
 }
