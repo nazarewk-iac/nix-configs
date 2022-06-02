@@ -10,7 +10,6 @@ in
 
   config = mkIf cfg.enable {
     nazarewk.programs.gnupg.enable = true;
-    programs.gnupg.agent.pinentryFlavor = "qt";
 
     home-manager.sharedModules = [
       {
@@ -28,7 +27,6 @@ in
           disable-application piv
         '';
         home.file.".gnupg/gpg-agent.conf".text = ''
-          pinentry-program /run/current-system/sw/bin/pinentry
         '';
       }
     ];
@@ -50,7 +48,6 @@ in
 
     environment.systemPackages = with pkgs; [
       xkcdpass
-      pinentry-qt
       yubioath-desktop
       yubikey-manager
       yubikey-manager-qt
