@@ -29,6 +29,7 @@ in
         pip-tools
         pipx
         pyaml
+        pyheos
         pytest
         pyyaml
         requests
