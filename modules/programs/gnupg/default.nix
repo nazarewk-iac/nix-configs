@@ -13,6 +13,7 @@ in
   };
 
   config = mkIf cfg.enable {
+    services.pcscd.enable = true;
     programs.gnupg.agent.enable = true;
     programs.gnupg.agent.enableExtraSocket = true;
   };

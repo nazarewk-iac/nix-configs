@@ -8,8 +8,6 @@ let
 in
 mkMerge [
   {
-    nazarewk.hardware.yubikey.enable = true;
-
     users.users.nazarewk.description = "Krzysztof Nazarewski";
     users.users.nazarewk.uid = 1000;
     users.users.nazarewk.isNormalUser = true;

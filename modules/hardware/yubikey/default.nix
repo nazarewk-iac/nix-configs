@@ -28,6 +28,7 @@ in
           disable-application piv
         '';
         home.file.".gnupg/gpg-agent.conf".text = ''
+          pinentry-program /run/current-system/sw/bin/pinentry
         '';
       }
     ];
@@ -46,8 +47,6 @@ in
       enable = true;
       cue = true;
     };
-
-    services.pcscd.enable = true;
 
     environment.systemPackages = with pkgs; [
       xkcdpass
