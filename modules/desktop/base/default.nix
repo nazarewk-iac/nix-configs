@@ -57,7 +57,7 @@ in
       pulseaudio
 
       # graphics
-      libva-tools
+      libva-utils
     ];
   };
 }
