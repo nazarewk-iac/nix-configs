@@ -1,4 +1,4 @@
-{ config, pkgs, lib, modulesPath, ... }:
+{ config, pkgs, lib, modulesPath, flakeInputs, ... }:
 {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
@@ -17,6 +17,18 @@
   # nazarewk.filesystems.zfs-root.sshUnlock.enable = true;
   environment.systemPackages = with pkgs; [
     google-chrome # easier on the CPU than Meet @ Firefox
+
+    # hardware acceleration testing
+    intel-gpu-tools
+    (brave.override {
+      commandLineArgs = ''
+        --use-gl=egl \
+        --ignore-gpu-blocklist \
+        --enable-gpu-rasterization \
+        --enable-zero-copy
+      '';
+      vulkanSupport = true;
+    })
   ];
 
   nazarewk.hardware.intel-graphics-fix.enable = true;
@@ -147,6 +159,7 @@
           desktop_file="share/applications/Zoom.desktop"
           sed "s#${super.zoom-us}#$out#g" "${super.zoom-us}/$desktop_file" > "$out/$desktop_file"
         '';
+        mako = flakeInputs.nixpkgs-wayland.packages.x86_64-linux.mako;
       })
   ];
 }

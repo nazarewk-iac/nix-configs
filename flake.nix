@@ -1,6 +1,5 @@
 {
   inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-  inputs.nixpkgs-teamviewer.url = "github:nazarewk/nixpkgs/pkgs/teamviewer/update";
   inputs.nixpkgs-wayland.url = "github:nix-community/nixpkgs-wayland";
 
   inputs.nixpkgs-update.url = "github:ryantm/nixpkgs-update";

@@ -65,4 +65,8 @@
   ];
   hardware.opengl.driSupport = true;
   hardware.opengl.driSupport32Bit = true;
+
+  environment.systemPackages = with pkgs; [
+    radeontop
+  ];
 }

@@ -55,6 +55,9 @@ in
       libopenaptx
       libfreeaptx
       pulseaudio
+
+      # graphics
+      libva-tools
     ];
   };
 }
