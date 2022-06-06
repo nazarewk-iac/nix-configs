@@ -140,7 +140,16 @@ in
     systemd.user.services.xfce4-notifyd.enable = false;
 
     services.dbus.packages = with pkgs; [
-      mako
+      # mako
+    ];
+
+
+    home-manager.sharedModules = [
+      {
+        # according to Dunst FAQ https://dunst-project.org/faq/#cannot-acquire-orgfreedesktopnotifications
+        # you might need to create a file in home directory instead of system-wide to select proper notification daemon
+        home.file.".local/share/dbus-1/services/fr.emersion.mako.service".source = "${pkgs.mako}/share/dbus-1/services/fr.emersion.mako.service";
+      }
     ];
 
     programs.sway.extraPackages = with pkgs; [
