@@ -27,6 +27,7 @@ in
     services.pcscd.enable = true;
     programs.gnupg.agent.enable = true;
     programs.gnupg.agent.enableExtraSocket = true;
+    programs.gnupg.agent.pinentryFlavor = null;
 
     home-manager.sharedModules = [
       {
