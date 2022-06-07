@@ -28,6 +28,7 @@ let
     ./hardware/modem
     ./hardware/pipewire
     ./hardware/yubikey
+    ./hardware/usbip
     ./headless
     ./headless/base
     ./containers/docker

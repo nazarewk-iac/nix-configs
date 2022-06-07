@@ -48,4 +48,5 @@
   services.locate.pruneBindMounts = true;
 
   nazarewk.networking.wireguard.enable = true;
+  nazarewk.hardware.usbip.enable = true;
 }
