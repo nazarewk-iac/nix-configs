@@ -9,10 +9,16 @@ in
     nazarewk.hardware.usbip = {
       enable = mkEnableOption "USB/IP setup";
 
+      package = mkOption {
+        type = types.package;
+        default = config.boot.kernelPackages.usbip;
+      };
+
       bindInterface = mkOption {
         type = types.str;
         default = "wg0";
       };
+
       bindPort = mkOption {
         type = types.ints.unsigned;
         default = 3240;
@@ -27,9 +33,20 @@ in
         "usbip_host"
       ];
 
-      environment.systemPackages = with pkgs; [
-        config.boot.kernelPackages.usbip
+      environment.systemPackages = [
+        cfg.package
       ];
+
+      systemd.services.usbipd = {
+        description = "USB/IP daemon";
+        wants = [ "network-online.target" ];
+        after = [ "network-online.target" ];
+        wantedBy = [ "multi-user.target" ];
+
+        serviceConfig = {
+          ExecStart = "${cfg.package}/bin/usbipd --tcp-port=${toString cfg.bindPort}";
+        };
+      };
     }
     (mkIf (cfg.bindInterface == "*") {
       networking.firewall.allowedTCPPorts = [
