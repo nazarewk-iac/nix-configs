@@ -47,6 +47,21 @@ in
           ExecStart = "${cfg.package}/bin/usbipd --tcp-port=${toString cfg.bindPort}";
         };
       };
+
+      systemd.services."usbip-bind@" = {
+        description = "USB/IP daemon";
+        wants = [ "network-online.target" "usbipd.service" ];
+        after = [ "network-online.target" "usbipd.service" ];
+        wantedBy = [ "multi-user.target" ];
+
+        serviceConfig = {
+          Type = "oneshot";
+          ExecStart = "${cfg.package}/bin/usbip bind --busid %i";
+          ExecStop = "${cfg.package}/bin/usbip unbind --busid %i";
+          RemainAfterExit = true;
+        };
+      };
+      systemd.services."usbip-bind@multi-user".enable = false;
     }
     (mkIf (cfg.bindInterface == "*") {
       networking.firewall.allowedTCPPorts = [
