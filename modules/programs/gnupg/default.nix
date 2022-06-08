@@ -37,8 +37,9 @@ in
       }
     ];
 
-    environment.systemPackages = [
+    environment.systemPackages = with pkgs; [
       pinentry
+      opensc
     ];
   };
 }
