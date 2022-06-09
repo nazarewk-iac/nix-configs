@@ -63,19 +63,19 @@ in
       };
       systemd.services."usbip-bind@multi-user".enable = false;
 
-      security.polkit.extraConfig = ''
-        /* Log authorization checks. */
-        polkit.addRule(function(action, subject) {
-          polkit.log("user " +  subject.user + " is attempting action " + action.id + " from PID " + subject.pid);
-        });
-
-        polkit.addRule(function(action, subject) {
-        	if (action.id == "org.debian.pcsc-lite.access_pcsc" ||
-        	    action.id == "org.debian.pcsc-lite.access_card") {
-            return polkit.Result.YES;
-          }
-        });
-      '';
+#      security.polkit.extraConfig = ''
+#        /* Log authorization checks. */
+#        polkit.addRule(function(action, subject) {
+#          polkit.log("user " +  subject.user + " is attempting action " + action.id + " from PID " + subject.pid);
+#        });
+#
+#        polkit.addRule(function(action, subject) {
+#        	if (action.id == "org.debian.pcsc-lite.access_pcsc" ||
+#        	    action.id == "org.debian.pcsc-lite.access_card") {
+#            return polkit.Result.YES;
+#          }
+#        });
+#      '';
     }
     (mkIf (cfg.bindInterface == "*") {
       networking.firewall.allowedTCPPorts = [
