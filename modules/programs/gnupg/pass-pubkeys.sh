@@ -24,7 +24,7 @@ get_all_encryption_key_ids() {
   # prefixes them with 0x to be unambiguous
   # suffixes them with ! to force GPG to use that specific subkey instead of a single default for the identity
   local identity="$1"
-  gpg --list-keys --with-colons --with-fingerprint "${identity}" | awk -F ':' '$1 == "sub" && $12 == "e" {print "0x" $5 "!"}'
+  gpg --list-keys --with-colons "${identity}" | awk -F ':' '$1 == "sub" && $12 == "e" {print "0x" $5 "!"}'
 }
 
 main() {
