@@ -40,6 +40,17 @@ in
     environment.systemPackages = with pkgs; [
       pinentry
       opensc
+      pass
+
+      (pkgs.writeShellApplication {
+        name = "pass-pubkeys";
+        runtimeInputs = with pkgs; [
+          pass
+          gnupg
+          gawk
+        ];
+        text = builtins.readFile ./pass-pubkeys.sh;
+      })
     ];
   };
 }
