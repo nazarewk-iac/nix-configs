@@ -30,7 +30,8 @@ get_all_encryption_key_ids() {
   # $2 describes key's validity, some relevant examples are:
   # - `d` disabled
   # - `e` expired
-  # - `n` `m` `f` `u` not/marginal/fully/ultimately valid
+  # - `n` not valid
+  # - `m` `f` `u` marginally/fully/ultimately valid
   gpg --list-keys --with-colons "${identity}" | awk -F ':' '$1 == "sub" && $2 ~ /[mfu]/ && $12 == "e" && {print "0x" $5 "!"}'
 }
 
