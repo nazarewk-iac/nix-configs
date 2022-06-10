@@ -33,7 +33,12 @@ in
 
     # YubiKey
     # https://nixos.wiki/wiki/Yubikey
-    services.udev.packages = [ pkgs.yubikey-personalization ];
+    services.udev.packages = [
+      pkgs.yubikey-personalization
+      pkgs.libfido2  # pulls in https://github.com/Yubico/libfido2/blob/main/udev/70-u2f.rules
+    ];
+
+    users.groups.plugdev = {};
 
     # security.pam.yubico = {
     #   enable = true;
