@@ -21,7 +21,9 @@ in
 
       remmina
       # didn't build on 2022-04-25
-      #tigervnc
+      tigervnc
+      realvnc-vnc-viewer
+      turbovnc
     ];
   };
 }
