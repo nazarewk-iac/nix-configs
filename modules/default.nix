@@ -20,6 +20,7 @@ let
     ./development/podman
     ./development/python
     ./development/ruby
+    ./development/rust
     ./development/terraform
     ./filesystems/base
     ./filesystems/zfs-root

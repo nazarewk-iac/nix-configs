@@ -106,6 +106,7 @@
   nazarewk.development.nix.enable = true;
   nazarewk.development.python.enable = true;
   nazarewk.development.ruby.enable = true;
+  nazarewk.development.rust.enable = true;
   nazarewk.development.terraform.enable = true;
   nazarewk.hardware.discovery.enable = true;
   nazarewk.programs.aws-vault.enable = true;
