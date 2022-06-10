@@ -4,7 +4,10 @@
 #   1. import the keys
 #   2. trusts the keys
 #   3. parses out and stores all encryption-capable subkeys of identities
+#
 # Step 3: solves an issue where identity has many different Encryption keys and GPG selects only one of those by default
+# see https://github.com/gpg/gnupg/blob/master/doc/DETAILS for `gpg --{show,list}-keys --with-colons` format docs
+
 set -eEuo pipefail
 
 cd "${BASH_SOURCE[0]%/*}"
@@ -24,8 +27,11 @@ get_all_encryption_key_ids() {
   # prefixes them with 0x to be unambiguous
   # suffixes them with ! to force GPG to use that specific subkey instead of a single default for the identity
   local identity="$1"
-  # TODO: skip revoked keys
-  gpg --list-keys --with-colons "${identity}" | awk -F ':' '$1 == "sub" && $12 == "e" && $7 > systime() {print "0x" $5 "!"}'
+  # $2 describes key's validity, some relevant examples are:
+  # - `d` disabled
+  # - `e` expired
+  # - `n` `m` `f` `u` not/marginal/fully/ultimately valid
+  gpg --list-keys --with-colons "${identity}" | awk -F ':' '$1 == "sub" && $2 ~ /[mfu]/ && $12 == "e" && {print "0x" $5 "!"}'
 }
 
 main() {
