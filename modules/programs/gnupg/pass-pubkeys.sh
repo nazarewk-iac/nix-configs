@@ -32,7 +32,7 @@ get_all_encryption_key_ids() {
   # - `e` expired
   # - `n` not valid
   # - `m` `f` `u` marginally/fully/ultimately valid
-  gpg --list-keys --with-colons "${identity}" | awk -F ':' '$1 == "sub" && $2 ~ /[mfu]/ && $12 == "e" && {print "0x" $5 "!"}'
+  gpg --list-keys --with-colons "${identity}" | awk -F ':' '$1 == "sub" && $2 ~ /[mfu]/ && $12 == "e" {print "0x" $5 "!"}'
 }
 
 main() {
