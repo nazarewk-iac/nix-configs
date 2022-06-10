@@ -10,9 +10,8 @@ in
 
   config = mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
-      rustc
-      cargo
-      rustfmt
+      rustup
+      pkg-config
     ];
   };
 }
