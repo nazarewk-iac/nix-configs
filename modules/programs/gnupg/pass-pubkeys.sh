@@ -24,6 +24,8 @@ get_all_encryption_key_ids() {
   # prefixes them with 0x to be unambiguous
   # suffixes them with ! to force GPG to use that specific subkey instead of a single default for the identity
   local identity="$1"
+  # TODO: skip expired keys
+  # TODO: skip revoked keys
   gpg --list-keys --with-colons "${identity}" | awk -F ':' '$1 == "sub" && $12 == "e" {print "0x" $5 "!"}'
 }
 
