@@ -11,45 +11,26 @@ mkMerge [
     users.users.nazarewk.description = "Krzysztof Nazarewski";
     users.users.nazarewk.uid = 1000;
     users.users.nazarewk.isNormalUser = true;
-    users.users.nazarewk.extraGroups = [
+    users.users.nazarewk.extraGroups = lib.filter (group: lib.hasAttr group config.users.groups) [
+      "adbusers"
+      "audio"
+      "dialout"
+      "docker"
       "kvm"
       "libvirtd"
-      "networkmanager"
-      "power"
-      "wheel"
+      "lp"
       "mlocate"
+      "networkmanager"
+      "pipewire"
+      "plugdev"
+      "power"
+      "scanner"
+      "video"
+      "wheel"
     ];
 
     users.users.nazarewk.openssh.authorizedKeys.keys = sshKeys;
 
     home-manager.users.nazarewk = import ./home.nix;
   }
-  (mkIf config.nazarewk.docker.enable {
-    users.users.nazarewk.extraGroups = [
-      "docker"
-    ];
-  })
-  (mkIf config.programs.adb.enable {
-    users.users.nazarewk.extraGroups = [
-      "adbusers"
-    ];
-  })
-  (mkIf config.services.printing.enable {
-    users.users.nazarewk.extraGroups = [
-      "scanner"
-      "lp"
-    ];
-  })
-  (mkIf config.nazarewk.hardware.modem.enable {
-    users.users.nazarewk.extraGroups = [
-      "dialout"
-    ];
-  })
-  (lib.mkIf config.nazarewk.headless.enableGUI {
-    users.users.nazarewk.extraGroups = [
-      "audio"
-      "pipewire"
-      "video"
-    ];
-  })
 ]
