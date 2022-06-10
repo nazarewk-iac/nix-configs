@@ -28,15 +28,16 @@ get_all_encryption_key_ids() {
 }
 
 main() {
-  echo "" >"${GPG_ID}"
+  :>"${GPG_ID}.new"
 
   for filename in "${PUBKEYS}"/*; do
     key_fingerprint="$(get_identity_fingerprint "${filename}")"
     gpg --import "${filename}"
     gpg --import-ownertrust <<<"${key_fingerprint}:6:"
-    get_all_encryption_key_ids "${key_fingerprint}" >>"${GPG_ID}"
+    get_all_encryption_key_ids "${key_fingerprint}" >>"${GPG_ID}.new"
   done
 
+  mv "${GPG_ID}.new" "${GPG_ID}"
   # read a file to arguments array delimited by newlines
   mapfile -t gpg_ids <"${GPG_ID}"
   # reencrypt passwords with keys from .gpg-id file
