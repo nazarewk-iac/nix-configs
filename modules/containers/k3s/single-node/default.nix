@@ -428,6 +428,9 @@ in
             snapshotter = "zfs";
           };
         };
+        environment.systemPackages = with pkgs; [
+          cri-tools
+        ];
 
         nazarewk.k3s.single-node.config.k3s = {
           container-runtime-endpoint = "unix:///run/containerd/containerd.sock";
