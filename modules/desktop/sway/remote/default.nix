@@ -19,7 +19,7 @@ in
       wayvnc
       waypipe
 
-      remmina   # cannot type $ (dollar sign)
+      remmina # cannot type $ (dollar sign)
       # tigervnc  # hang up on: DecodeManager: Creating 4 decoder thread(s)
       # realvnc-vnc-viewer  # doesn't pass/locks up on left alt key combinations
       # turbovnc  # Algorithm negotiation fails
