@@ -15,7 +15,7 @@ in
     nixpkgs.overlays = [
       (self: super: {
         kubectl = super.kubectl.overrideAttrs (old:
-          let commit = "3a396c05a141b188120ce654141d724ca15ef887"; in
+          let commit = "955596ad054e442125c8353b6df8951fdc91a0f3"; in
           {
             version = "1.24.0-${commit}";
 
