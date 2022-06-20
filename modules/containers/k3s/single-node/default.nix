@@ -430,7 +430,7 @@ in
         };
 
         nazarewk.k3s.single-node.config.k3s = {
-          container-runtime-endpoint = "/run/containerd/containerd.sock";
+          container-runtime-endpoint = "unix:///run/containerd/containerd.sock";
           kubelet-arg = [ "containerd=unix:///run/containerd/containerd.sock" ];
         };
 
