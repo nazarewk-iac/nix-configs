@@ -11,6 +11,7 @@ in
   config = mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
       socat
+      arp-scan
       (pkgs.writeShellApplication {
         name = "get-proc-env";
         runtimeInputs = with pkgs; [ jq ];
