@@ -186,7 +186,7 @@ in
 
     cilium = {
       version = mkOption {
-        default = "1.11.4";
+        default = "1.11.6";
         type = types.str;
       };
 
