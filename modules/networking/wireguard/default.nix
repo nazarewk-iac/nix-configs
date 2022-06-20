@@ -137,6 +137,7 @@ in
 
       networking.wireguard.interfaces = {
         ${cfg.interfaceName} = {
+          # TODO: add manual routes creation and teardown, eg: ip r add 10.0.0.0/24 dev wg0 scope link
           allowedIPsAsRoutes = false;
           # This allows the wireguard server to route your traffic to the internet and hence be like a VPN
           # For this to work you have to set the dnsserver IP of your router (or dnsserver of choice) in your clients
