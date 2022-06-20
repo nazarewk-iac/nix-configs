@@ -24,7 +24,6 @@
   nazarewk.k3s.single-node.rook-ceph.enable = true;
   nazarewk.k3s.single-node.kube-prometheus.enable = true;
   nazarewk.k3s.single-node.istio.enable = true;
-  nazarewk.k3s.single-node.cilium.replaceKubeProxy = false;
   nazarewk.k3s.single-node.zfsVolume = "nazarewk-krul-primary/nazarewk-krul/containers/containerd/io.containerd.snapshotter.v1.zfs";
   nazarewk.k3s.single-node.reservations.system.cpu = "4";
   nazarewk.k3s.single-node.reservations.system.memory = "32G";

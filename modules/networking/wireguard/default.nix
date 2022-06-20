@@ -24,6 +24,7 @@ let
     (builtins.mapAttrs (name: entry: mkMerge [
       (mkIf (!entry.server.enable) {
         allowedIPs = [ "${getIP entry.hostnum}/32" ];
+        allowedIPsAsRoutes = false;
       })
       (mkIf entry.server.enable {
         allowedIPs = [
