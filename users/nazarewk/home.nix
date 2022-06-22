@@ -2,6 +2,8 @@
 {
   config = lib.mkMerge [
     {
+      home.stateVersion = "22.11";
+
       programs.gh.enable = false;
       programs.gh.enableGitCredentialHelper = false;
       programs.git.enable = true;
@@ -31,8 +33,6 @@
       ];
 
       nazarewk.development.git.enable = true;
-
-      home.sessionVariables.AWS_VAULT_BACKEND = "secret-service";
     }
     (lib.mkIf config.nazarewk.headless.enableGUI {
       xdg.configFile."sway/config".source = ./sway/config;
