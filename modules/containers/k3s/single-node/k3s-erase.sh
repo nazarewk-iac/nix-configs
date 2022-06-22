@@ -41,7 +41,7 @@ clear_files=(
 
 function main {
   if command -v k3s-node-shutdown ; then
-    k3s-node-shutdown "$(hostname)"
+    k3s-node-shutdown "$(hostname)" || :
   fi
   systemctl stop containerd k3s || :
 

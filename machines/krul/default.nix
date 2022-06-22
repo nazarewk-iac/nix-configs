@@ -19,8 +19,8 @@
 
   nazarewk.programs.obs-studio.enable = true;
 
-  nazarewk.k3s.single-node.enable = true;
-  nazarewk.k3s.single-node.enableScripts = true;
+  nazarewk.k3s.single-node.enable = false;
+  nazarewk.k3s.single-node.enableTools = true;
   nazarewk.k3s.single-node.rook-ceph.enable = true;
   nazarewk.k3s.single-node.kube-prometheus.enable = true;
   nazarewk.k3s.single-node.istio.enable = true;
@@ -30,6 +30,8 @@
   nazarewk.k3s.single-node.reservations.kube.cpu = "4";
   nazarewk.k3s.single-node.reservations.kube.memory = "4G";
   # nazarewk.development.podman.enable = true;
+
+  nazarewk.virtualization.nixops.libvirtd.enable = true;
 
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")

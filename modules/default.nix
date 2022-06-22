@@ -42,6 +42,7 @@ let
     ./programs/nix-direnv
     ./programs/nix-index
     ./programs/obs-studio
+    ./virtualization/nixops/libvirtd
   ];
   hmModules = [
     ./development/git/hm.nix

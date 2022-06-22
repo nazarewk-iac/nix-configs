@@ -69,7 +69,7 @@ in
   options.nazarewk.k3s.single-node = {
     enable = mkEnableOption "local (single node) k3s setup";
 
-    enableScripts = mkOption {
+    enableTools = mkOption {
       default = cfg.enable;
       type = lib.types.bool;
     };
@@ -213,10 +213,16 @@ in
   };
 
   config = mkMerge [
-    (mkIf cfg.enableScripts {
-      environment.systemPackages = [
+    (mkIf cfg.enableTools {
+      environment.systemPackages = with pkgs; [
         k3s-node-shutdown
         k3s-erase
+
+        ceph
+        cryptsetup
+        lvm2
+        parted
+        util-linux
       ];
     })
     (mkIf cfg.enable (mkMerge [
@@ -369,11 +375,7 @@ in
         '';
 
         environment.systemPackages = with pkgs; [
-          ceph
-          cryptsetup
-          lvm2
-          parted
-          util-linux
+          # already part of tools
         ];
         boot.initrd.kernelModules = [
           # Rook Ceph
