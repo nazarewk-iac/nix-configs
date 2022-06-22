@@ -14,6 +14,7 @@ in
 
     environment.systemPackages = with pkgs; [
       virt-manager
+      config.virtualisation.libvirtd.qemu.package
     ];
 
     system.activationScripts.nazarewkLibVirtdInit =
