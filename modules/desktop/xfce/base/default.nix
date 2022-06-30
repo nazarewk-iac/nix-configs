@@ -10,7 +10,7 @@ in
 
   config = mkIf cfg.enable {
     services.xserver.desktopManager.xfce.enable = true;
-    services.xserver.desktopManager.xfce.thunarPlugins = with pkgs; [
+    programs.thunar.plugins = with pkgs; [
       xfce.thunar-archive-plugin
       xfce.thunar-volman
     ];

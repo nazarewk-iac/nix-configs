@@ -1,7 +1,5 @@
 {
-  # inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-  # see https://github.com/NixOS/nixpkgs/pull/178313
-  inputs.nixpkgs.url = "github:nixos/nixpkgs/e4720277";
+  inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
   inputs.nixpkgs-wayland.url = "github:nix-community/nixpkgs-wayland";
 
   inputs.nixpkgs-update.url = "github:ryantm/nixpkgs-update";
