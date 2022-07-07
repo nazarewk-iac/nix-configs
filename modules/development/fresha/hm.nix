@@ -65,6 +65,7 @@ in
 
     home.packages = with pkgs; [
       ansible
+      circleci-cli
 
       (pkgs.writeShellApplication {
         name = "${cfg.prefix}gh-clone";
