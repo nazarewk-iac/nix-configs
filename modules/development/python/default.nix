@@ -14,6 +14,14 @@ in
         programs.git.ignores = [ (builtins.readFile ./.gitignore) ];
       }
     ];
+    nixpkgs.overlays = [
+      (self: super: {
+        matplotlib = super.matplotlib.override {
+          enableGtk3 = true;
+          enableQt = true;
+        };
+      })
+    ];
     environment.systemPackages = with pkgs; [
       # python software
       pipenv
@@ -24,7 +32,9 @@ in
         cookiecutter
         diagrams
         flake8
+        graphviz
         ipython
+        matplotlib
         pip
         pip-tools
         pipx
@@ -33,7 +43,6 @@ in
         pytest
         pyyaml
         requests
-        graphviz
       ]))
 
       graphviz
