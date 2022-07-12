@@ -1,6 +1,8 @@
 { pkgs, flakeInputs, ... }:
 let
   nixosModules = [
+    ./containers/docker
+    ./containers/k3s/single-node
     ./desktop/base
     ./desktop/gnome/base
     ./desktop/remote-server
@@ -28,12 +30,11 @@ let
     ./hardware/intel-graphics-fix
     ./hardware/modem
     ./hardware/pipewire
-    ./hardware/yubikey
     ./hardware/usbip
+    ./hardware/yubikey
     ./headless
     ./headless/base
-    ./containers/docker
-    ./containers/k3s/single-node
+    ./monitoring/prometheus-stack
     ./networking/wireguard
     ./packaging/asdf
     ./programs/aws-vault

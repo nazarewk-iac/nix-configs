@@ -2,7 +2,6 @@
 {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
-    ./prometheus-grafana.nix
   ];
 
   system.stateVersion = "21.05";

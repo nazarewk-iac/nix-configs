@@ -13,10 +13,9 @@
   # do not suspend on GDM login screen (waiting for remote sessions etc.)
   services.xserver.displayManager.gdm.autoSuspend = false;
 
-  nazarewk.filesystems.zfs-root.enable = true;
-  nazarewk.filesystems.zfs-root.sshUnlock.enable = true;
   hardware.cpu.amd.updateMicrocode = true;
 
+  nazarewk.monitoring.prometheus-stack.enable = true;
   nazarewk.programs.obs-studio.enable = true;
 
   nazarewk.k3s.single-node.enable = false;
