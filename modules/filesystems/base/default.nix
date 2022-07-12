@@ -14,7 +14,7 @@ in
       ntfs3g
       gptfdisk
       util-linux
-      exfat-utils
+      exfat
     ];
   };
 }
