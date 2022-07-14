@@ -219,7 +219,7 @@ in
     ];
 
     xdg.portal.enable = true;
-    xdg.portal.gtkUsePortal = true;
+    environment.sessionVariables.GTK_USE_PORTAL = "1";
     xdg.portal.wlr.enable = true;
     xdg.portal.extraPortals = with pkgs; [
       # # xdg.portal.gtkUsePortal requires implementation in here (there is more than 1)
