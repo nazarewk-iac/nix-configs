@@ -5,10 +5,7 @@ let
 in
 {
   options.nazarewk.headless = {
-    enableGUI = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-    };
+    enableGUI = mkEnableOption "tells the rest of configs to enable/disable GUI applications";
   };
 
   config = {

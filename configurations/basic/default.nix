@@ -32,6 +32,8 @@
   nazarewk.sway.gdm.enable = true;
   nazarewk.sway.systemd.enable = true;
 
+  nazarewk.headless.enableGUI = true;
+
   home-manager.sharedModules = [
     ({ config, ... }: {
       xdg.userDirs.enable = true;

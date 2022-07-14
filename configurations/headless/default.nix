@@ -49,4 +49,5 @@
 
   nazarewk.networking.wireguard.enable = true;
   nazarewk.hardware.usbip.enable = true;
+  nazarewk.hardware.qmk.enable = true;
 }

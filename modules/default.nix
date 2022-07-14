@@ -30,6 +30,7 @@ let
     ./hardware/intel-graphics-fix
     ./hardware/modem
     ./hardware/pipewire
+    ./hardware/qmk
     ./hardware/usbip
     ./hardware/yubikey
     ./headless
