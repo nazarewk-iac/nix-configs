@@ -6,15 +6,19 @@ in
 {
   options = {
     nazarewk.hardware.qmk = {
-      enable = mkEnableOption "QMK keyboard related software (eg: Moonlander)";
+      enable = mkEnableOption "QMK + ZSA keyboard related software (eg: Moonlander)";
     };
   };
 
   config = mkIf cfg.enable (mkMerge [{
+    services.udev.packages = with pkgs; [
+      qmk-udev-rules
+      zsa-udev-rules
+    ];
+
     environment.systemPackages = with pkgs; [
       keymapviz
       qmk
-      qmk-udev-rules
       wally-cli
 
       (pkgs.writeShellApplication {
