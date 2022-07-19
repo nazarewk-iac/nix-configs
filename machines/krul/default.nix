@@ -16,6 +16,8 @@
   hardware.cpu.amd.updateMicrocode = true;
 
   nazarewk.monitoring.prometheus-stack.enable = true;
+  nazarewk.monitoring.prometheus-stack.caddy.grafana = "grafana.nazarewk.pw";
+  nazarewk.programs.caddy.enable = true;
   nazarewk.programs.obs-studio.enable = true;
 
   nazarewk.k3s.single-node.enable = false;

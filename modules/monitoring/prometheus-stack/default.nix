@@ -7,6 +7,11 @@ in
   options.nazarewk.monitoring.prometheus-stack = {
     enable = mkEnableOption "prometheus + grafana";
 
+    caddy.grafana = mkOption {
+      type = types.str;
+      default = "";
+    };
+
     pushgateway = {
       enable = mkEnableOption "prometheus + grafana";
     };
@@ -31,7 +36,7 @@ in
     ({
       services.grafana = {
         enable = true;
-        domain = "grafana.localhost";
+        domain = mkDefault "grafana.localhost";
         port = 2342;
         addr = cfg.listenAddress;
 
@@ -73,5 +78,12 @@ in
         web.listen-address = "${cfg.listenAddress}:9091";
       };
     })
+    (mkIf (cfg.caddy.grafana != "") {
+      services.grafana.domain = cfg.caddy.grafana;
+      services.caddy.virtualHosts."${cfg.caddy.grafana}".extraConfig = ''
+        reverse_proxy ${cfg.listenAddress}:2342
+      '';
+    })
   ];
 }
+

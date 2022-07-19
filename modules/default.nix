@@ -39,6 +39,7 @@ let
     ./networking/wireguard
     ./packaging/asdf
     ./programs/aws-vault
+    ./programs/caddy
     ./programs/gnupg
     ./programs/keepass
     ./programs/nix-direnv
