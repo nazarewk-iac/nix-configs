@@ -203,6 +203,7 @@ in
       clipman
       wofi
       wev # wayland event viewer
+      evtest # listens for /dev/event* device events (eg: keyboard keys, function keys etc)
       swayr # window switcher
       kanshi # autorandr
       wshowkeys # display pressed keys
