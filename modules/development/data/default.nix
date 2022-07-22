@@ -3,6 +3,9 @@ with lib;
 let
   cfg = config.nazarewk.development.data;
 
+  yq = cfg.yq.package;
+  yj = cfg.yj.package;
+
   converter = name: cmd: flags: pkgs.writeShellApplication {
     name = name;
     text = ''
@@ -31,12 +34,22 @@ in
 {
   options.nazarewk.development.data = {
     enable = mkEnableOption "tools for working with data";
+
+    yq.package = mkOption {
+      type = types.package;
+      default = pkgs.yq-go;
+    };
+
+    yj.package = mkOption {
+      type = types.package;
+      default = pkgs.yj;
+    };
   };
 
   config = mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
-      yj
       yq
+      yj
       jq
       cue
 
