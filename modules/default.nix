@@ -36,6 +36,7 @@ let
     ./headless
     ./headless/base
     ./monitoring/prometheus-stack
+    ./monitoring/elasticsearch-stack
     ./networking/wireguard
     ./packaging/asdf
     ./programs/aws-vault

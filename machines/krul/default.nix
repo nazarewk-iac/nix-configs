@@ -17,6 +17,8 @@
 
   nazarewk.monitoring.prometheus-stack.enable = true;
   nazarewk.monitoring.prometheus-stack.caddy.grafana = "grafana.nazarewk.pw";
+  nazarewk.monitoring.elasticsearch-stack.enable = true;
+  nazarewk.monitoring.elasticsearch-stack.caddy.kibana = "kibana.nazarewk.pw";
   nazarewk.programs.caddy.enable = true;
   nazarewk.programs.obs-studio.enable = true;
 
