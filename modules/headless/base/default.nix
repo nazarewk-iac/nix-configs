@@ -94,6 +94,7 @@ in
       dig
       cryptsetup
       file
+      tree
 
       coreutils
       gnugrep
