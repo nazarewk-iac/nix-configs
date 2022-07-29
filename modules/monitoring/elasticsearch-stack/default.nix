@@ -27,7 +27,7 @@ in
   };
 
   config = mkMerge [
-    ({
+    (mkIf cfg.enable {
       services.elasticsearch = {
         enable = true;
         listenAddress = cfg.listenAddress;

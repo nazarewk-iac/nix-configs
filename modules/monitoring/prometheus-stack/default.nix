@@ -33,7 +33,7 @@ in
   };
 
   config = mkMerge [
-    ({
+    (mkIf cfg.enable {
       services.grafana = {
         enable = true;
         domain = mkDefault "grafana.localhost";
