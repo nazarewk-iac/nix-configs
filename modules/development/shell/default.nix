@@ -11,8 +11,9 @@ in
   config = mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
       bash
-      zsh
       shellcheck
+      shfmt
+      zsh
     ];
   };
 }
