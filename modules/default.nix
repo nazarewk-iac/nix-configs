@@ -23,6 +23,7 @@ let
     ./development/python
     ./development/ruby
     ./development/rust
+    ./development/shell
     ./development/terraform
     ./filesystems/base
     ./filesystems/zfs-root
