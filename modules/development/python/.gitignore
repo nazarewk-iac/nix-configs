@@ -7,7 +7,6 @@
 *.log
 *.manifest
 *.mo
-*.pot
 *.py,cover
 *.py[cod]
 *.sage.py
