@@ -59,8 +59,10 @@ env/
 htmlcov/
 instance/
 ipython_config.py
-lib/
-lib64/
+lib/*python*
+lib/pkgconfig/
+lib64/*python*
+lib64/pkgconfig/
 local_settings.py
 nosetests.xml
 parts/
