@@ -21,7 +21,9 @@ in
   ];
 
   boot.tmpOnTmpfs = true;
-  boot.tmpOnTmpfsSize = "10%"; # 10% of 128GB should be fine
+  # 20% of 128GB should be fine
+  # 12G was not enough for large rebuild
+  boot.tmpOnTmpfsSize = "20%";
 
   # legacy mountpoints
   fileSystems."/" = mkNixOSMount "/root";
