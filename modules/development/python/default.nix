@@ -34,6 +34,7 @@ in
         flake8
         graphviz
         ipython
+        isort
         matplotlib
         pip
         pip-tools
