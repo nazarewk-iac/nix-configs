@@ -43,6 +43,7 @@ in
         pytest
         pyyaml
         requests
+        ruamel-yaml
       ]))
 
       graphviz
