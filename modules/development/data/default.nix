@@ -48,10 +48,10 @@ let
     "toml2toml" = { pkgs = [ yj ]; args = [ "yj" "-tt" ]; };
     "toml2yaml" = { pkgs = [ yj ]; args = [ "yj" "-ty" ]; };
     "yaml2hcl" = { pkgs = [ yj ]; args = [ "yj" "-yc" ]; };
-    "yaml2json" = { pkgs = [ yq ]; args = [ "yq" "-M --" ]; };
+    "yaml2json" = { pkgs = [ yq ]; args = [ "yq" "-M" "--" ]; };
     "yaml2toml" = { pkgs = [ yj ]; args = [ "yj" "-yt" ]; };
     "yaml2yaml" = { pkgs = [ yj ]; args = [ "yj" "-yy" ]; };
-    "yamls2json" = { pkgs = [ yq ]; args = [ "yq" "-M '[inputs]' --" ]; };
+    "yamls2json" = { pkgs = [ yq ]; args = [ "yq" "-M" "[inputs]" "--" ]; };
   };
   conv = mapAttrs (name: pkg: "${pkg}/bin/${name}") converterPkgs;
 in
