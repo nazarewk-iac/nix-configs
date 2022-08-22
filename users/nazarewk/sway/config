@@ -20,19 +20,21 @@ set $lock swaylock -f -c 000000
 set $displayDell 'Dell Inc. DELL U2711 G606T29F0EWL'
 set $displayAsus 'DP-1'
 set $displayLaptop eDP-1
+set $headlessScreenshare HEADLESS-1
+set $headlessRemote HEADLESS-1
 
 
 output $displayDell modeline 241.50 2560 2600 2632 2720 1440 1443 1448 1481 -hsync +vsync
 # https://rizvir.com/articles/asus-PG278Q-in-linux/
 output $displayAsus modeline 241.50 2560 2608 2640 2720 1440 1443 1448 1481 -hsync +vsync
 
-output $displayDell pos 0 1120
+output $displayAsus pos 0 0
+output $displayDell pos 2560 0
+output $displayDell transform 90
 
-output $displayAsus pos 2560 0
-output $displayAsus transform 270
-
-output HEADLESS-1 resolution 1440x900
-output HEADLESS-2 resolution 1920x1080
+create_output
+output $headlessScreenshare resolution 1440x900
+output $headlessScreenshare disable
 
 seat seat0 xcursor_theme Adwaita 24
 
