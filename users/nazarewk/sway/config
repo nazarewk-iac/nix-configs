@@ -21,7 +21,7 @@ set $displayDell 'Dell Inc. DELL U2711 G606T29F0EWL'
 set $displayAsus 'DP-1'
 set $displayLaptop eDP-1
 set $headlessScreenshare HEADLESS-1
-set $headlessRemote HEADLESS-1
+set $headlessRemote HEADLESS-2
 
 
 output $displayDell modeline 241.50 2560 2600 2632 2720 1440 1443 1448 1481 -hsync +vsync
@@ -30,11 +30,15 @@ output $displayAsus modeline 241.50 2560 2608 2640 2720 1440 1443 1448 1481 -hsy
 
 output $displayAsus pos 0 0
 output $displayDell pos 2560 0
-output $displayDell transform 90
+output $displayDell transform 270
 
-create_output
+exec swaymsg create_output
 output $headlessScreenshare resolution 1440x900
 output $headlessScreenshare disable
+
+exec swaymsg create_output
+output $headlessRemote resolution 1920x1080
+output $headlessRemote disable
 
 seat seat0 xcursor_theme Adwaita 24
 
