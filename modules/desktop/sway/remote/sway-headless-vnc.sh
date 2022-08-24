@@ -13,6 +13,14 @@ get_detached_x() {
   swaymsg -rt get_outputs | jq 'map(.rect | .x + .width + 500) | max'
 }
 
+find_wayland_display() {
+  find "${XDG_RUNTIME_DIR}" -maxdepth 1 -name 'wayland-*.lock' | head -n1 | sed 's#^.*/\(.*\).lock#\1#g'
+}
+
+find_swaysock() {
+  find "${XDG_RUNTIME_DIR}" -maxdepth 1 -name 'sway-ipc.*.sock' | head -n1
+}
+
 main() {
   local output_num=1
   local host=127.0.0.2
@@ -42,6 +50,10 @@ main() {
 
   local args=("${@:${OPTIND}}")
   local output="HEADLESS-${output_num}"
+
+  export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-"/run/user/$(id -u)"}"
+  export SWAYSOCK="${SWAYSOCK:-"$(find_swaysock)"}"
+  export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-"$(find_wayland_display)"}"
 
   for ((n=1; n <= output_num; n++)) ; do
     local cur="HEADLESS-${n}"

@@ -5,7 +5,7 @@ let
 
   sway-headless-vnc = pkgs.writeShellApplication {
     name = "sway-headless-vnc";
-    runtimeInputs = with pkgs; [ wayvnc jq sway ];
+    runtimeInputs = with pkgs; [ wayvnc jq sway coreutils findutils gnused ];
     text = builtins.readFile ./sway-headless-vnc.sh;
   };
 in
