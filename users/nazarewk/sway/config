@@ -32,15 +32,6 @@ output $displayAsus pos 0 0
 output $displayDell pos 2560 0
 output $displayDell transform 270
 
-exec swaymsg create_output
-# put disconnected (far off) from other displays, to navigate in/out by keyboard only
-output HEADLESS-1 resolution 1280x720 pos 4500 0
-output HEADLESS-1 disable
-
-exec swaymsg create_output
-output $headlessRemote resolution 1920x1080
-output $headlessRemote disable
-
 seat seat0 xcursor_theme Adwaita 24
 
 bindsym $Super+p output $displayLaptop toggle
