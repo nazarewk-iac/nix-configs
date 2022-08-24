@@ -33,8 +33,9 @@ output $displayDell pos 2560 0
 output $displayDell transform 270
 
 exec swaymsg create_output
-output $headlessScreenshare resolution 1440x900
-output $headlessScreenshare disable
+# put disconnected (far off) from other displays, to navigate in/out by keyboard only
+output HEADLESS-1 resolution 1280x720 pos 4500 0
+output HEADLESS-1 disable
 
 exec swaymsg create_output
 output $headlessRemote resolution 1920x1080
