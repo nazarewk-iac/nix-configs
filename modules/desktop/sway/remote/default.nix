@@ -2,6 +2,12 @@
 with lib;
 let
   cfg = config.nazarewk.sway.remote;
+
+  sway-headless-vnc = pkgs.writeShellApplication {
+    name = "sway-headless-vnc";
+    runtimeInputs = with pkgs; [ wayvnc jq sway ];
+    text = builtins.readFile ./sway-headless-vnc.sh;
+  };
 in
 {
   options.nazarewk.sway.remote = {
@@ -18,6 +24,8 @@ in
     environment.systemPackages = with pkgs; [
       wayvnc
       waypipe
+
+      sway-headless-vnc
 
       remmina # cannot type $ (dollar sign)
       # tigervnc  # hang up on: DecodeManager: Creating 4 decoder thread(s)
