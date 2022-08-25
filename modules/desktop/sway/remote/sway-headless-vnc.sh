@@ -2,7 +2,25 @@
 set -xeEuo pipefail
 
 usage() {
- return
+  cat <<EOF
+Usage: $0 [options] [-- [WAYVNC_ARGS...]]
+
+  -h                  usage
+
+Output configuration:
+  -n NUMBER           output number, turns into HEADLESS-n, defaults to '1'
+  -r WIDTHxHEIGHT     resolution, defaults to '1280x720'
+  -p X,Y              position of the output,
+                      defaults to 500px off edge of existing outputs
+  -w WORKSPACE        workspace to assign to output, defaults to '9'
+
+wayvnc configuration:
+  -s                  starts wayvnc server
+  -D                  do not disable output after server is stopped
+  -H ADDRESS          address to listen on, defaults to '127.0.0.2'
+  -P PORT             port to listen on, defaults to '5900'
+  -- WAYVNC_ARGS...   arguments to pass down to wayvnc
+EOF
 }
 
 is_output_missing() {
@@ -23,40 +41,13 @@ find_swaysock() {
   find "${XDG_RUNTIME_DIR}" -maxdepth 1 -name 'sway-ipc.*.sock' | head -n1
 }
 
-main() {
-  local output_num=1
-  local host=127.0.0.2
-  local port=5900
-  local server=0
-  local resolution=''
-  local pos=''
-  local workspace=''
-
-  while getopts ":n:r:p:w:H:P:S" arg; do
-    case "${arg}" in
-      n) output_num="${OPTARG}" ;;
-      r) resolution="${OPTARG}" ;;
-      p) pos="${OPTARG}" ;;
-      w) workspace="${OPTARG}" ;;
-      H) host="${OPTARG}" ;;
-      P) port="${OPTARG}" ;;
-      S) server=1 ;;
-      ?)
-        echo "Invalid option: -${OPTARG}."
-        echo
-        usage
-        exit 1
-        ;;
-    esac
-  done
-
-  local args=("${@:${OPTIND}}")
-  local output="HEADLESS-${output_num}"
-
+discover_sway() {
   export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-"/run/user/$(id -u)"}"
   export SWAYSOCK="${SWAYSOCK:-"$(find_swaysock)"}"
   export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-"$(find_wayland_display)"}"
+}
 
+create_output() {
   for ((n=1; n <= output_num; n++)) ; do
     local cur="HEADLESS-${n}"
     if is_output_missing "${cur}"; then
@@ -68,7 +59,9 @@ main() {
       swaymsg create_output
     fi
   done
+}
 
+configure_output() {
   if [ -n "${resolution}" ]; then
     swaymsg "output ${output} resolution ${resolution}"
   fi
@@ -80,10 +73,58 @@ main() {
   if [ -n "${workspace}" ]; then
     swaymsg "workspace ${workspace} output ${output}"
   fi
+}
+
+cleanup() {
+  if [ "${disable}" = 1 ]; then
+    swaymsg "output ${output} disable"
+  fi
+}
+
+main() {
+  output_num=1
+  host=127.0.0.2
+  port=5900
+  server=0
+  disable=1
+  resolution=''
+  pos=''
+  workspace=''
+
+  while getopts ":n:r:p:w:H:P:shD" arg; do
+    case "${arg}" in
+      n) output_num="${OPTARG}" ;;
+      r) resolution="${OPTARG}" ;;
+      p) pos="${OPTARG}" ;;
+      w) workspace="${OPTARG}" ;;
+      H) host="${OPTARG}" ;;
+      P) port="${OPTARG}" ;;
+      s) server=1 ;;
+      D) disable=0 ;;
+      h)
+        usage
+        exit 0
+        ;;
+      ?)
+        echo "Invalid option: -${OPTARG}."
+        echo
+        usage
+        exit 1
+        ;;
+    esac
+  done
+
+  args=("${@:${OPTIND}}")
+  output="HEADLESS-${output_num}"
+
+  discover_sway
+  create_output
+  configure_output
   swaymsg "output ${output} enable"
 
   if [ "${server}" = 1 ]; then
-    exec wayvnc --output="${output}" "${args[@]}" "${host}" "${port}"
+    trap cleanup EXIT
+    wayvnc --output="${output}" "${args[@]}" "${host}" "${port}"
   fi
 }
 
