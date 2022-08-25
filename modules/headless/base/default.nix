@@ -95,6 +95,7 @@ in
       cryptsetup
       file
       tree
+      openssl
 
       coreutils
       gnugrep
