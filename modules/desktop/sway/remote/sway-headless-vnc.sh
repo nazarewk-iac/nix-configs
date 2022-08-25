@@ -32,7 +32,8 @@ get_detached_x() {
 }
 
 find_wayland_display() {
-  local lock="$(find "${XDG_RUNTIME_DIR}" -maxdepth 1 -name 'wayland-*.lock' | head -n1)"
+  local lock
+  lock="$(find "${XDG_RUNTIME_DIR}" -maxdepth 1 -name 'wayland-*.lock' | head -n1)"
   local sock="${lock%%.*}}"
   echo -n "${sock##*/}"
 }
