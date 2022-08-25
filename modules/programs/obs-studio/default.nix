@@ -2,17 +2,32 @@
 with lib;
 let
   cfg = config.nazarewk.programs.obs-studio;
+
+  obs-studio-with-plugins = pkgs.wrapOBS.override { obs-studio = cfg.package; } {
+    plugins = cfg.plugins;
+  };
 in
 {
   options.nazarewk.programs.obs-studio = {
     enable = mkEnableOption "OBS Studio setup";
+    package = mkOption {
+      type = types.package;
+      default = pkgs.obs-studio;
+    };
+    plugins = mkOption {
+      type = types.listOf types.package;
+      default = with pkgs.obs-studio-plugins; [
+        obs-gstreamer
+        obs-pipewire-audio-capture
+        obs-vkcapture
+        wlrobs
+      ];
+    };
   };
 
   config = mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
-      obs-studio
-      obs-studio-plugins.wlrobs
-      obs-studio-plugins.obs-gstreamer
+      obs-studio-with-plugins
     ];
   };
 }
