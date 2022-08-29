@@ -14,6 +14,8 @@ in
       shellcheck
       shfmt
       zsh
+
+      gnumake
     ];
   };
 }
