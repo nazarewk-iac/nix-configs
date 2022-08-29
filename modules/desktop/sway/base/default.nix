@@ -209,6 +209,7 @@ in
       wshowkeys # display pressed keys
       wdisplays # randr equivalent
       wlr-randr
+      wayland-utils
 
       # themes
       hicolor-icon-theme # see https://github.com/NixOS/nixpkgs/issues/32730
