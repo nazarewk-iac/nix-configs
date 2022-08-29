@@ -223,6 +223,14 @@ in
     xdg.portal.enable = true;
     environment.sessionVariables.GTK_USE_PORTAL = "1";
     xdg.portal.wlr.enable = true;
+    xdg.portal.wlr.settings = {
+      screencast = {
+        chooser_type = "dmenu";
+        # https://github.com/emersion/xdg-desktop-portal-wlr/blob/1cc5ff570d745facbde4237ac96634502ec0cae6/src/screencast/wlr_screencast.c#L471-L473
+        # use wofi instead
+        chooser_cmd = "${pkgs.wofi}/bin/wofi -d -n --prompt='Select the monitor to share:'";
+      };
+    };
     xdg.portal.extraPortals = with pkgs; [
       # # xdg.portal.gtkUsePortal requires implementation in here (there is more than 1)
       # # it is provided by gnome at https://github.com/NixOS/nixpkgs/blob/b2737d4980a17cc2b7d600d7d0b32fd7333aca88/nixos/modules/services/x11/desktop-managers/gnome.nix#L377-L380
