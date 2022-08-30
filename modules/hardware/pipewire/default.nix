@@ -41,6 +41,7 @@ in
     environment.systemPackages = with pkgs; [
       pavucontrol
       pulseaudio # pactl
+      helvum # A GTK patchbay for pipewire
     ];
   };
 }
