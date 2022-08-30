@@ -56,6 +56,7 @@
 
     mc
     qrencode
+    cobang # QR code scanner
     imagemagick
     #((pkgs.gradleGen.override { java = jdk; }).gradle_latest)
 
