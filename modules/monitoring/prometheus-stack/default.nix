@@ -51,7 +51,7 @@ in
       };
 
       services.grafana-image-renderer = {
-        enable = true;
+        enable = false; # grafana-image-renderer requires older Node JS
         provisionGrafana = true;
         settings.rendering.height = 1000;
         settings.rendering.width = 1900;

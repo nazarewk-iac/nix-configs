@@ -37,7 +37,7 @@ in
         isort
         matplotlib
         pip
-        pip-tools
+        # pip-tools  # 2022-08-31 fails on `assert out.exit_code == 2` @ test_bad_setup_file()
         pipx
         pyaml
         pyheos
