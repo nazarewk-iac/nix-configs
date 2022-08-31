@@ -14,6 +14,7 @@ in
     environment.gnome.excludePackages = with pkgs; [
       docker
       docker-client
+      docker-compose
     ];
   };
 }
