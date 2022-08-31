@@ -208,6 +208,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-gpg236": {
+      "locked": {
+        "lastModified": 1657109379,
+        "narHash": "sha256-8Qk0QLlFrUINhrn9jSYhN9UXYTfN5TDY0aQQ8dkEZWc=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "22e81f39ace64964bae3b6c89662d1221a11324c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "22e81f39ace64964bae3b6c89662d1221a11324c",
+        "type": "github"
+      }
+    },
     "nixpkgs-lib": {
       "locked": {
         "lastModified": 1661648408,
@@ -301,6 +317,7 @@
         "home-manager": "home-manager",
         "nixos-generators": "nixos-generators",
         "nixpkgs": "nixpkgs",
+        "nixpkgs-gpg236": "nixpkgs-gpg236",
         "nixpkgs-update": "nixpkgs-update",
         "nixpkgs-wayland": "nixpkgs-wayland"
       }

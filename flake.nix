@@ -4,6 +4,8 @@
 
   inputs.nixpkgs-update.url = "github:ryantm/nixpkgs-update";
 
+  inputs.nixpkgs-gpg236.url = "github:nixos/nixpkgs/22e81f39ace64964bae3b6c89662d1221a11324c";
+
   inputs.home-manager.url = "github:nix-community/home-manager";
   inputs.home-manager.inputs.nixpkgs.follows = "nixpkgs";
 

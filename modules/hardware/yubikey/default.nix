@@ -1,4 +1,4 @@
-{ lib, pkgs, config, ... }:
+{ lib, pkgs, config, flakeInputs, system, ... }:
 with lib;
 let
   cfg = config.nazarewk.hardware.yubikey;
@@ -60,5 +60,11 @@ in
       yubikey-personalization-gui
       yubico-pam
     ];
+
+    # stick to 2.3.6 due to errors in 2.3.7:
+    # Aug 31 11:45:58 gpg-agent[40089]: scdaemon[40089]: detected reader 'Yubico YubiKey OTP+FIDO+CCID 00 00'
+    # Aug 31 11:45:58 gpg-agent[40089]: scdaemon[40089]: DBG: Curve with OID not supported:  2b06010401da470f01
+    # Aug 31 11:45:58 gpg-agent[40089]: scdaemon[40089]: no supported card application found: Card error
+    programs.gnupg.package = flakeInputs.nixpkgs-gpg236.legacyPackages.${system}.gnupg;
   };
 }
