@@ -73,4 +73,7 @@
   environment.systemPackages = with pkgs; [
     radeontop
   ];
+
+  networking.interfaces.enp5s0.wakeOnLan.enable = true;
+  networking.interfaces.enp6s0.wakeOnLan.enable = true;
 }
