@@ -58,6 +58,9 @@ in
 
       # graphics
       libva-utils
+
+      # misc
+      libinput
     ];
   };
 }
