@@ -29,6 +29,7 @@ in
       (python310.withPackages (ps: with ps; [
         black
         boto3
+        build  # build a package, see https://realpython.com/pypi-publish-python-package/#build-your-package
         cookiecutter
         diagrams
         flake8
@@ -45,6 +46,7 @@ in
         pyyaml
         requests
         ruamel-yaml
+        twine  # upload to pypi, see https://realpython.com/pypi-publish-python-package/#upload-your-package
       ]))
 
       graphviz
