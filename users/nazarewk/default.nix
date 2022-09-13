@@ -25,6 +25,7 @@ mkMerge [
       "plugdev"
       "power"
       "scanner"
+      "tty"
       "video"
       "wheel"
     ];
