@@ -28,7 +28,7 @@ in
       sway-headless-vnc
 
       remmina # cannot type $ (dollar sign)
-      # tigervnc  # hang up on: DecodeManager: Creating 4 decoder thread(s)
+      tigervnc  # vncviewer 10.100.0.2::5900
       # realvnc-vnc-viewer  # doesn't pass/locks up on left alt key combinations
       # turbovnc  # Algorithm negotiation fails
     ];
