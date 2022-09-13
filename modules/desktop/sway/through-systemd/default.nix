@@ -83,6 +83,7 @@ in
     programs.sway.extraPackages = with pkgs; [
       startsway
       startsway-headless
+      seatd
     ];
 
     services.xserver.displayManager.session = [
