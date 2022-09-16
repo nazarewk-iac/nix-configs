@@ -10,12 +10,12 @@ in
     enableWlrootsPatch = mkEnableOption "patched wlroots";
 
     nixpkgs-wayland = {
-      enable = mkEnableOption "use nixpkgs-wayland overlay for bleeding-edge wayland packages";
+      enableFullOverlay = mkEnableOption "use nixpkgs-wayland overlay for bleeding-edge wayland packages";
     };
   };
 
   config = mkIf cfg.enable {
-    nixpkgs.overlays = (if !cfg.nixpkgs-wayland.enable then [ ] else [
+    nixpkgs.overlays = (if !cfg.nixpkgs-wayland.enableFullOverlay then [ ] else [
       flakeInputs.nixpkgs-wayland.overlay
     ]) ++ (if !cfg.enableWlrootsPatch then [ ] else [
       (self: super: {

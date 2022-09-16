@@ -1,27 +1,15 @@
 {
   inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+
   inputs.nixpkgs-wayland.url = "github:nix-community/nixpkgs-wayland";
-
-  inputs.nixpkgs-update.url = "github:ryantm/nixpkgs-update";
-
   inputs.nixpkgs-gpg236.url = "github:nixos/nixpkgs/22e81f39ace64964bae3b6c89662d1221a11324c";
 
+  inputs.nixpkgs-update.url = "github:ryantm/nixpkgs-update";
   inputs.home-manager.url = "github:nix-community/home-manager";
-  inputs.home-manager.inputs.nixpkgs.follows = "nixpkgs";
-
   inputs.flake-utils.url = "github:numtide/flake-utils";
-
   inputs.nixos-generators.url = "github:nix-community/nixos-generators";
-  inputs.nixos-generators.inputs.nixpkgs.follows = "nixpkgs";
-
   # inputs.nix-alien.url = "github:thiagokokada/nix-alien";
-  # inputs.nix-alien.inputs.nixpkgs.follows = "nixpkgs";
-  # inputs.nix-alien.inputs.flake-utils.follows = "flake-utils";
-  # inputs.nix-alien.inputs.poetry2nix.follows = "poetry2nix";
-
   # inputs.nix-ld.url = "github:Mic92/nix-ld";
-  # inputs.nix-ld.inputs.nixpkgs.follows = "nixpkgs";
-  # inputs.nix-ld.inputs.utils.follows = "flake-utils";
 
   outputs =
     { nixpkgs
@@ -37,6 +25,7 @@
           inherit system;
           specialArgs = {
             inherit flakeInputs system;
+            waylandPkgs = flakeInputs.nixpkgs-wayland.packages.${system};
           };
 
           modules = modules ++ [
@@ -99,15 +88,15 @@
         ];
       };
 
-      packages.x86_64-linux = {
-        generators.basic-raw = nixos-generators.nixosGenerate {
-          pkgs = nixpkgs.legacyPackages.x86_64-linux;
-          modules = [
-            ./modules
-            ./configurations/basic
-          ];
-          format = "raw";
-        };
-      };
+#      packages.x86_64-linux = {
+#        generators.basic-raw = nixos-generators.nixosGenerate {
+#          pkgs = nixpkgs.legacyPackages.x86_64-linux;
+#          modules = [
+#            ./modules
+#            ./configurations/basic
+#          ];
+#          format = "raw";
+#        };
+#      };
     };
 }

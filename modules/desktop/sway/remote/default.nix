@@ -1,4 +1,4 @@
-{ lib, pkgs, config, ... }:
+{ lib, pkgs, config, waylandPkgs, ... }:
 with lib;
 let
   cfg = config.nazarewk.sway.remote;
@@ -16,6 +16,13 @@ in
 
   config = mkIf cfg.enable {
     nazarewk.sway.base.enable = true;
+
+    nixpkgs.overlays = [
+      (self: super:
+        {
+          wayvnc = waylandPkgs.wayvnc;
+        })
+    ];
 
     # Multi-output directions:
     # - https://www.reddit.com/r/swaywm/comments/k1zl41/thank_you_devs_free_ipad_repurposed_as_a_second/

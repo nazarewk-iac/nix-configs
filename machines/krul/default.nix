@@ -5,7 +5,7 @@
   networking.hostId = "81d86976"; # cut -c-8 </proc/sys/kernel/random/uuid
   networking.hostName = "nazarewk-krul";
 
-  nazarewk.desktop.base.nixpkgs-wayland.enable = false;
+  nazarewk.desktop.base.nixpkgs-wayland.enableFullOverlay = false;
   nazarewk.desktop.base.enableWlrootsPatch = false;
 
   nazarewk.sway.remote.enable = true;

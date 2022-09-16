@@ -1,4 +1,4 @@
-{ config, pkgs, lib, modulesPath, flakeInputs, ... }:
+{ config, pkgs, lib, modulesPath, waylandPkgs, ... }:
 {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
@@ -9,7 +9,7 @@
   networking.hostName = "nazarewk";
 
   nazarewk.sway.remote.enable = true;
-  nazarewk.desktop.base.nixpkgs-wayland.enable = false;
+  nazarewk.desktop.base.nixpkgs-wayland.enableFullOverlay = false;
   nazarewk.k3s.single-node.enableTools = true;
   nazarewk.filesystems.zfs-root.enable = true;
   # TODO: unlock hangs up on `ip=dhcp` when not connected to the router.
@@ -158,7 +158,7 @@
           desktop_file="share/applications/Zoom.desktop"
           sed "s#${super.zoom-us}#$out#g" "${super.zoom-us}/$desktop_file" > "$out/$desktop_file"
         '';
-        mako = flakeInputs.nixpkgs-wayland.packages.x86_64-linux.mako;
+        mako = waylandPkgs.mako;
       })
   ];
 }

@@ -1,4 +1,4 @@
-{ lib, pkgs, config, flakeInputs, system, ... }:
+{ lib, pkgs, config, system, ... }:
 with lib;
 let
   cfg = config.nazarewk.development.nodejs;
