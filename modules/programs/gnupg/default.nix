@@ -41,6 +41,7 @@ in
       pinentry
       opensc
       pass
+      pcsctools
 
       (pkgs.writeShellApplication {
         name = "pass-pubkeys";
