@@ -53,5 +53,7 @@ in
         text = builtins.readFile ./pass-pubkeys.sh;
       })
     ];
+
+    security.polkit.extraConfig = builtins.readFile ./pcsc-lite-rules.js;
   };
 }
