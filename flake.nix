@@ -88,15 +88,15 @@
         ];
       };
 
-#      packages.x86_64-linux = {
-#        generators.basic-raw = nixos-generators.nixosGenerate {
-#          pkgs = nixpkgs.legacyPackages.x86_64-linux;
-#          modules = [
-#            ./modules
-#            ./configurations/basic
-#          ];
-#          format = "raw";
-#        };
-#      };
+      # packages.x86_64-linux = {
+      #   generators.basic-raw = nixos-generators.nixosGenerate {
+      #     pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      #     modules = [
+      #       ./modules
+      #       ./configurations/basic
+      #     ];
+      #     format = "raw";
+      #   };
+      # };
     };
 }
