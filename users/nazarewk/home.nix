@@ -35,6 +35,7 @@
       nazarewk.development.git.enable = true;
     }
     (lib.mkIf config.nazarewk.headless.enableGUI {
+      xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
       xdg.configFile."sway/config".source = ./sway/config;
       xdg.configFile."swayr/config.toml".source = ./swayr/config.toml;
       xdg.configFile."waybar/config".source = ./waybar/config;

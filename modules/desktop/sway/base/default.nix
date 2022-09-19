@@ -187,6 +187,7 @@ in
       wlogout
       libnotify
       slurp
+      gsimplecal
 
       # sway related
       brightnessctl

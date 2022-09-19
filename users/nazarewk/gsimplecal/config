@@ -1,0 +1,20 @@
+show_calendar = 1
+show_timezones = 1
+mark_today = 1
+show_week_numbers = 1
+close_on_unfocus = 1
+mainwindow_decorated = 0
+mainwindow_keep_above = 1
+mainwindow_sticky = 0
+mainwindow_skip_taskbar = 1
+mainwindow_resizable = 0
+mainwindow_position = mouse
+
+
+clock_format = %a, %H:%M:%S
+clock_label = Local
+clock_tz =
+clock_label = UTC
+clock_tz = :UTC
+clock_label = BST
+clock_tz = :Europe/London
