@@ -54,7 +54,9 @@ in
 
     nazarewk.sway.base.environment = {
       # see https://wiki.debian.org/Wayland#Toolkits
-      GDK_BACKEND = "wayland";
+
+      # Note that some Electron applications (Slack, Element, Discord, etc.) or chromium (861796) may break when setting GDK_BACKEND to "wayland".
+      # GDK_BACKEND = "wayland"; # teams does break
       SDL_VIDEODRIVER = "wayland";
       QT_QPA_PLATFORM = "wayland;xcb";
       _JAVA_AWT_WM_NONREPARENTING = "1";
