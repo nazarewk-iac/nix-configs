@@ -62,12 +62,15 @@
 
     playerctl
     spotify
-    spotify-qt
+    # spotify-qt
     # spotify-tray  # spotify tray requires X11
-    zoom-us
-    slack
-    signal-desktop
+
     element-desktop
+    signal-desktop
+    slack
+    teams
+    zoom-us
+
     nextcloud-client
     libreoffice
     flameshot
