@@ -3,8 +3,15 @@ with lib;
 let
   cfg = config.nazarewk.development.lua;
 
-  getLua = pkg: (pkg.withPackages (ps: map (n: ps.${n}) cfg.extraPackages));
+  mkLuaVersion = version:
+    let
+      pkg = pkgs."lua${lib.replaceStrings ["."] ["_"] version}";
+      selectedPackages = subtractLists (cfg.brokenPackages.${version} or [ ]) cfg.extraPackages;
+    in
+    pkg.withPackages (ps: map (n: ps.${n}) selectedPackages)
+  ;
 
+  mkSuffixedLuaVersion = v: suffixedBinaries (mkLuaVersion v) v;
 
   suffixedBinaries = pkg: suffix: pkgs.runCommand "${pkg.name}-suffixed-bin-${suffix}" { } ''
     mkdir -p $out/bin
@@ -21,21 +28,39 @@ in
     extraPackages = mkOption {
       type = types.listOf types.str;
       default = [
-        "lyaml"
-        "stdlib"
+        "luacheck"
         "luarepl"
         "luarocks"
+        "lyaml"
+        "stdlib"
+      ];
+    };
+    brokenPackages = mkOption {
+      type = types.attrsOf (types.listOf types.str);
+      default = {
+        "5.4" = [ "luacheck" ];
+      };
+    };
+
+    defaultVersion = mkOption {
+      type = types.str;
+      default = "5.4";
+    };
+
+    versions = mkOption {
+      type = types.listOf types.str;
+      default = [
+        "5.1" # argocd
+        "5.2"
+        "5.3"
+        "5.4"
       ];
     };
   };
 
   config = mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
-      (getLua lua5_4) # latest
-      (suffixedBinaries (getLua lua5_1) "5.1") # argocd
-      (suffixedBinaries (getLua lua5_2) "5.2")
-      (suffixedBinaries (getLua lua5_3) "5.3")
-      (suffixedBinaries (getLua lua5_4) "5.4")
-    ];
+      (mkLuaVersion cfg.defaultVersion) # latest
+    ] ++ (map mkSuffixedLuaVersion cfg.versions);
   };
 }
