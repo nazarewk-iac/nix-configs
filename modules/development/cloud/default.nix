@@ -10,6 +10,8 @@ in
 
   config = mkIf cfg.enable {
     nazarewk.development.nodejs.enable = true;
+    nazarewk.development.lua.enable = true;
+
     environment.systemPackages = with pkgs; [
       # AWS
       awscli2
