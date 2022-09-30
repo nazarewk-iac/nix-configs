@@ -91,6 +91,7 @@ in
 
       jiq
       cue
+      conftest
 
       gnused
     ]) ++ (attrValues converterPkgs);
