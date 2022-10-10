@@ -217,7 +217,7 @@ in
       # themes
       hicolor-icon-theme # see https://github.com/NixOS/nixpkgs/issues/32730
       gnome-icon-theme # see https://github.com/NixOS/nixpkgs/issues/43836#issuecomment-419217138
-      gnome3.adwaita-icon-theme
+      gnome.adwaita-icon-theme
       adwaita-qt
       glib # gsettings
       gnome.dconf-editor

@@ -3,7 +3,7 @@
 {
   imports = [ /etc/nixos/configuration.bkp.nix ];
 
-  nix.package = pkgs.nixFlakes;
+  nix.package = pkgs.nixVersions.stable;
   nix.extraOptions = ''
     experimental-features = nix-command flakes
   '';

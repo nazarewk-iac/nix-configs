@@ -77,7 +77,7 @@ in
       "https://nixpkgs-update.cachix.org"
     ];
     nix.settings.auto-optimise-store = true;
-    nix.package = pkgs.nixFlakes;
+    nix.package = pkgs.nixVersions.stable;
     nix.extraOptions = ''
       experimental-features = nix-command flakes
     '';
