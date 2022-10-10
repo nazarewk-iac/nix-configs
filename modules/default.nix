@@ -52,7 +52,7 @@ let
   ];
   hmModules = [
     ./development/git/hm.nix
-    ./development/fresha/hm.nix
+    ./development/work/hm.nix
     ./development/terraform/hm.nix
   ];
 in

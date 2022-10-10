@@ -42,10 +42,7 @@
             ./configurations/desktop
             ./machines/krul
             {
-              home-manager.users.nazarewk = {
-                fresha.development.enable = true;
-                fresha.development.bastionUsername = "krzysztof.nazarewski";
-              };
+              home-manager.users.nazarewk = { };
             }
           ];
         }
@@ -59,10 +56,7 @@
             ./configurations/desktop
             ./machines/dell-latitude-e5470
             {
-              home-manager.users.nazarewk = {
-                fresha.development.enable = true;
-                fresha.development.bastionUsername = "krzysztof.nazarewski";
-              };
+              home-manager.users.nazarewk = { };
             }
           ];
         }
