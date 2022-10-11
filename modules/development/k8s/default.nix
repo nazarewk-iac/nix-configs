@@ -13,13 +13,13 @@ in
     nazarewk.development.data.enable = true;
 
     nixpkgs.overlays = [
-      (self: super: {
-        kubectl = super.kubectl.overrideAttrs (old:
+      (final: prev: {
+        kubectl = prev.kubectl.overrideAttrs (old:
           let commit = "955596ad054e442125c8353b6df8951fdc91a0f3"; in
           {
             version = "1.24.0-${commit}";
 
-            src = super.fetchFromGitHub {
+            src = prev.fetchFromGitHub {
               owner = "nazarewk";
               repo = "kubernetes";
               rev = commit;

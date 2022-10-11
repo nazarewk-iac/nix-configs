@@ -18,7 +18,7 @@ in
     nazarewk.sway.base.enable = true;
 
     nixpkgs.overlays = [
-      (self: super:
+      (final: prev:
         {
           wayvnc = waylandPkgs.wayvnc;
         })

@@ -29,7 +29,7 @@ in
     # if you also want support for flakes (this makes nix-direnv use the
     # unstable version of nix):
     nixpkgs.overlays = [
-      (self: super: { nix-direnv = super.nix-direnv.override { enableFlakes = true; }; })
+      (final: prev: { nix-direnv = prev.nix-direnv.override { enableFlakes = true; }; })
     ];
 
     home-manager.sharedModules = [

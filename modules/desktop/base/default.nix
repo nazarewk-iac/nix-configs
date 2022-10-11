@@ -1,4 +1,4 @@
-{ lib, pkgs, config, flakeInputs, ... }:
+{ lib, pkgs, config, inputs, ... }:
 with lib;
 let
   cfg = config.nazarewk.desktop.base;
@@ -16,11 +16,11 @@ in
 
   config = mkIf cfg.enable {
     nixpkgs.overlays = (if !cfg.nixpkgs-wayland.enableFullOverlay then [ ] else [
-      flakeInputs.nixpkgs-wayland.overlay
+      inputs.nixpkgs-wayland.overlay
     ]) ++ (if !cfg.enableWlrootsPatch then [ ] else [
-      (self: super: {
-        wlroots = super.wlroots.overrideAttrs (old: {
-          src = super.fetchFromGitLab {
+      (final: prev: {
+        wlroots = prev.wlroots.overrideAttrs (old: {
+          src = prev.fetchFromGitLab {
             domain = "gitlab.freedesktop.org";
             owner = "wlroots";
             repo = "wlroots";

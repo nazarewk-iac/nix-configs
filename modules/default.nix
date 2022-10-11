@@ -1,4 +1,4 @@
-{ pkgs, flakeInputs, ... }:
+{ pkgs, inputs, self, ... }:
 let
   nixosModules = [
     ./containers/docker
@@ -29,6 +29,7 @@ let
     ./filesystems/base
     ./filesystems/zfs-root
     ./hardware/discovery
+    ./hardware/edid
     ./hardware/intel-graphics-fix
     ./hardware/modem
     ./hardware/pipewire
@@ -58,7 +59,7 @@ let
 in
 {
   imports = [
-    flakeInputs.home-manager.nixosModules.home-manager
+    inputs.home-manager.nixosModules.home-manager
   ] ++ nixosModules;
 
   config = {

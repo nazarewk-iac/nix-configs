@@ -1,4 +1,4 @@
-{ lib, pkgs, config, flakeInputs, ... }:
+{ lib, pkgs, config, inputs, ... }:
 with lib;
 let
   cfg = config.nazarewk.programs.nix-index;
@@ -15,7 +15,7 @@ in
 
     # use nix-index without `nix-channel`
     # see https://github.com/bennofs/nix-index/issues/167
-    nix.nixPath = [ "nixpkgs=${flakeInputs.nixpkgs}" ];
+    nix.nixPath = [ "nixpkgs=${inputs.nixpkgs}" ];
     environment.systemPackages = with pkgs; [ nix-index ];
   };
 }

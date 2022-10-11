@@ -17,7 +17,7 @@ in
       MESA_LOADER_DRIVER_OVERRIDE = "i965";
     };
     nixpkgs.overlays = [
-      (self: super: {
+      (final: prev: {
         # mesa = nixpkgs-mesa.legacyPackages.x86_64-linux.mesa;
       })
     ];

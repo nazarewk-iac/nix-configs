@@ -15,8 +15,8 @@ in
       }
     ];
     nixpkgs.overlays = [
-      (self: super: {
-        matplotlib = super.matplotlib.override {
+      (final: prev: {
+        matplotlib = prev.matplotlib.override {
           enableGtk3 = true;
           enableQt = true;
         };

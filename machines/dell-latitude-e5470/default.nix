@@ -144,19 +144,19 @@
   ];
 
   nixpkgs.overlays = [
-    (self: super:
+    (final: prev:
       {
-        zoom-us = super.runCommand "zoom-us-wrapper"
+        zoom-us = prev.runCommand "zoom-us-wrapper"
           {
-            buildInputs = [ super.makeWrapper ];
+            buildInputs = [ prev.makeWrapper ];
           } ''
           mkdir -p "$out/bin" "$out/share/applications"
 
-          makeWrapper ${super.zoom-us}/bin/zoom $out/bin/zoom --add-flags "--in-process-gpu"
+          makeWrapper ${prev.zoom-us}/bin/zoom $out/bin/zoom --add-flags "--in-process-gpu"
           ln -s "$out/bin/zoom" "$out/bin/zoom-us"
-          cp -a "${super.zoom-us}/share" "$out/share"
+          cp -a "${prev.zoom-us}/share" "$out/share"
           desktop_file="share/applications/Zoom.desktop"
-          sed "s#${super.zoom-us}#$out#g" "${super.zoom-us}/$desktop_file" > "$out/$desktop_file"
+          sed "s#${prev.zoom-us}#$out#g" "${prev.zoom-us}/$desktop_file" > "$out/$desktop_file"
         '';
         mako = waylandPkgs.mako;
       })

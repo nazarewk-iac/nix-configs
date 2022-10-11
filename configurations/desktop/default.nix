@@ -115,6 +115,7 @@
   nazarewk.development.rust.enable = true;
   nazarewk.development.terraform.enable = true;
   nazarewk.hardware.discovery.enable = true;
+  nazarewk.hardware.edid.enable = true;
   nazarewk.programs.aws-vault.enable = true;
   nazarewk.programs.keepass.enable = true;
   nazarewk.programs.nix-direnv.enable = true;
