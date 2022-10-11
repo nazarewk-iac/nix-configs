@@ -39,7 +39,7 @@ stdenv.mkDerivation rec {
   '';
 
   configurePhase = ''
-    ${lib.mkIf clean "rm *x*.S"}
+    test '${toString clean}' != 1 || rm *x*.S
     ${lib.concatMapStringsSep "\n" (m: "./modeline2edid - <<<'${m}'") modelines}
     make clean all
   '';

@@ -13,6 +13,11 @@
   # do not suspend on GDM login screen (waiting for remote sessions etc.)
   services.xserver.displayManager.gdm.autoSuspend = false;
 
+  nazarewk.hardware.edid.kernelOutputs = {
+    "DVI-D-1" = "U2711_2560x1440";
+    "DP-1" = "PG278Q_2560x1440";
+  };
+
   hardware.cpu.amd.updateMicrocode = true;
 
   nazarewk.monitoring.prometheus-stack.enable = true;
