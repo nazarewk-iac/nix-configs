@@ -13,9 +13,10 @@ in
   config = mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
       (kdn.edid-generator.override {
+        clean = true;
         modelines = [
           ''Modeline "PG278Q_2560x1440"       241.50   2560 2608 2640 2720   1440 1443 1448 1481   -hsync +vsync''
-          ''Modeline "PG278Q_2560x1440_120"   497.75   2560 2608 2640 2720   1440 1443 1448 1525   +hsync -vsync''
+          ''Modeline "PG278Q_2560x1440@120"   497.75   2560 2608 2640 2720   1440 1443 1448 1525   +hsync -vsync''
           ''Modeline "U2711_2560x1440"        241.50   2560 2600 2632 2720   1440 1443 1448 1481   -hsync +vsync''
         ];
       })
