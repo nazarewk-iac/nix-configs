@@ -1,60 +1,13 @@
-{ pkgs, inputs, self, ... }:
+{ lib, pkgs, inputs, self, ... }:
 let
-  nixosModules = [
-    ./containers/docker
-    ./containers/k3s/single-node
-    ./desktop/base
-    ./desktop/gnome/base
-    ./desktop/remote-server
-    ./desktop/sway/base
-    ./desktop/sway/remote
-    ./desktop/sway/through-gdm
-    ./desktop/sway/through-systemd
-    ./desktop/xfce/base
-    ./development/cloud
-    ./development/data
-    ./development/elixir
-    ./development/golang
-    ./development/k8s
-    ./development/linux-utils
-    ./development/lua
-    ./development/nix
-    ./development/nodejs
-    ./development/podman
-    ./development/python
-    ./development/ruby
-    ./development/rust
-    ./development/shell
-    ./development/terraform
-    ./filesystems/base
-    ./filesystems/zfs-root
-    ./hardware/discovery
-    ./hardware/edid
-    ./hardware/intel-graphics-fix
-    ./hardware/modem
-    ./hardware/pipewire
-    ./hardware/qmk
-    ./hardware/usbip
-    ./hardware/yubikey
-    ./headless
-    ./headless/base
-    ./monitoring/prometheus-stack
-    ./monitoring/elasticsearch-stack
-    ./networking/wireguard
-    ./packaging/asdf
-    ./programs/aws-vault
-    ./programs/caddy
-    ./programs/gnupg
-    ./programs/keepass
-    ./programs/nix-direnv
-    ./programs/nix-index
-    ./programs/obs-studio
-    ./virtualization/nixops/libvirtd
+  nixosModules = lib.pipe ./. [
+    lib.filesystem.listFilesRecursive
+    # lib.substring expands paths to nix-store paths: "/nix/store/6gv1rzszm9ly6924ndgzmmcpv4jz30qp-default.nix"
+    (lib.filter (path: (lib.hasSuffix "-default.nix" path) && path != ./default.nix))
   ];
-  hmModules = [
-    ./development/git/hm.nix
-    ./development/work/hm.nix
-    ./development/terraform/hm.nix
+  hmModules = lib.pipe ./. [
+    lib.filesystem.listFilesRecursive
+    (lib.filter (path: (lib.hasSuffix "-hm.nix" path)))
   ];
 in
 {

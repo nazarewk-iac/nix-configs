@@ -15,10 +15,6 @@ let
   };
 in
 {
-  imports = [
-    ./forwarding
-  ];
-
   options.nazarewk.programs.gnupg = {
     enable = mkEnableOption "GnuPG forwarding to remote systems";
   };
