@@ -1,16 +1,16 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.development.k8s;
+  cfg = config.kdn.development.k8s;
 in
 {
-  options.nazarewk.development.k8s = {
+  options.kdn.development.k8s = {
     enable = mkEnableOption "k8s development";
   };
 
 
   config = mkIf cfg.enable {
-    nazarewk.development.data.enable = true;
+    kdn.development.data.enable = true;
 
     nixpkgs.overlays = [
       (final: prev: {

@@ -1,17 +1,17 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.headless.base;
+  cfg = config.kdn.headless.base;
 in
 {
-  options.nazarewk.headless.base = {
+  options.kdn.headless.base = {
     enable = mkEnableOption "basic headless system configuration";
   };
 
   config = mkIf cfg.enable {
-    nazarewk.development.data.enable = true;
-    nazarewk.filesystems.base.enable = true;
-    nazarewk.development.linux-utils.enable = true;
+    kdn.development.data.enable = true;
+    kdn.filesystems.base.enable = true;
+    kdn.development.linux-utils.enable = true;
 
     # not building at 2022-05-23
     # programs.xonsh.enable = true;

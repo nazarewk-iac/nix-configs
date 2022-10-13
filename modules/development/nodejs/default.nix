@@ -1,10 +1,10 @@
 { lib, pkgs, config, system, ... }:
 with lib;
 let
-  cfg = config.nazarewk.development.nodejs;
+  cfg = config.kdn.development.nodejs;
 in
 {
-  options.nazarewk.development.nodejs = {
+  options.kdn.development.nodejs = {
     enable = mkEnableOption "Node JS development";
   };
 

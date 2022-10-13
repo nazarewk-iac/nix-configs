@@ -1,10 +1,10 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.sway.base;
+  cfg = config.kdn.sway.base;
 in
 {
-  options.nazarewk.sway.base = {
+  options.kdn.sway.base = {
     enable = mkEnableOption "Sway base setup";
 
     initScripts = mkOption {
@@ -30,9 +30,9 @@ in
   };
 
   config = mkIf cfg.enable {
-    nazarewk.desktop.base.enable = true;
-    nazarewk.gnome.base.enable = true;
-    nazarewk.xfce.base.enable = true;
+    kdn.desktop.base.enable = true;
+    kdn.gnome.base.enable = true;
+    kdn.xfce.base.enable = true;
 
     # TODO: figure out why thunar.service does not consume session environment
     systemd.user.services.thunar.enable = false;
@@ -46,13 +46,13 @@ in
     environment.pathsToLink = [ "/libexec" ];
 
     # see https://wiki.debian.org/Wayland#Toolkits
-    nazarewk.sway.base.environmentDefaults = {
+    kdn.sway.base.environmentDefaults = {
       QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
       # see https://github.com/swaywm/wlroots/issues/3189#issuecomment-461608727
       WLR_NO_HARDWARE_CURSORS = "1";
     };
 
-    nazarewk.sway.base.environment = {
+    kdn.sway.base.environment = {
       # see https://wiki.debian.org/Wayland#Toolkits
 
       # Note that some Electron applications (Slack, Element, Discord, etc.) or chromium (861796) may break when setting GDK_BACKEND to "wayland".
@@ -83,7 +83,7 @@ in
 
     # because tray opens up too late https://github.com/Alexays/Waybar/issues/483
 
-    nazarewk.sway.base.initScripts.polkit = {
+    kdn.sway.base.initScripts.polkit = {
       "00-init" = ''
         #! ${pkgs.bash}/bin/bash
         set -xeEuo pipefail
@@ -92,7 +92,7 @@ in
         exec ${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1
       '';
     };
-    nazarewk.sway.base.initScripts.systemd = {
+    kdn.sway.base.initScripts.systemd = {
       "50-wait-polkit" = ''
         #!${pkgs.bash}/bin/bash
         set -xeEuo pipefail

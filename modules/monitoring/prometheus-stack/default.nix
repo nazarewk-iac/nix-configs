@@ -1,10 +1,10 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.monitoring.prometheus-stack;
+  cfg = config.kdn.monitoring.prometheus-stack;
 in
 {
-  options.nazarewk.monitoring.prometheus-stack = {
+  options.kdn.monitoring.prometheus-stack = {
     enable = mkEnableOption "prometheus + grafana";
 
     caddy.grafana = mkOption {

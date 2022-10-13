@@ -1,20 +1,20 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.development.terraform;
+  cfg = config.kdn.development.terraform;
 in
 {
-  options.nazarewk.development.terraform = {
+  options.kdn.development.terraform = {
     enable = mkEnableOption "Terraform development";
   };
 
   config = mkIf cfg.enable {
-    nazarewk.packaging.asdf.enable = true;
+    kdn.packaging.asdf.enable = true;
 
     home-manager.sharedModules = [
       ./hm.nix
       {
-        nazarewk.development.terraform.enable = true;
+        kdn.development.terraform.enable = true;
       }
     ];
   };

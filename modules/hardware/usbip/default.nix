@@ -2,11 +2,11 @@
 with lib;
 let
   # https://wiki.archlinux.org/title/USB/IP
-  cfg = config.nazarewk.hardware.usbip;
+  cfg = config.kdn.hardware.usbip;
 in
 {
   options = {
-    nazarewk.hardware.usbip = {
+    kdn.hardware.usbip = {
       enable = mkEnableOption "USB/IP setup";
 
       package = mkOption {

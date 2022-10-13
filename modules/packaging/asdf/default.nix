@@ -1,10 +1,10 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.packaging.asdf;
+  cfg = config.kdn.packaging.asdf;
 in
 {
-  options.nazarewk.packaging.asdf = {
+  options.kdn.packaging.asdf = {
     enable = mkEnableOption "ASDF version manager";
   };
 

@@ -1,10 +1,10 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.xfce.base;
+  cfg = config.kdn.xfce.base;
 in
 {
-  options.nazarewk.xfce.base = {
+  options.kdn.xfce.base = {
     enable = mkEnableOption "gnome base setup";
   };
 

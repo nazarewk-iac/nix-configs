@@ -1,7 +1,7 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.development.git;
+  cfg = config.kdn.development.git;
   relDir = "${cfg.baseDir}";
   absDir = "${config.home.homeDirectory}/${relDir}";
   shellDir = "$HOME/${relDir}";
@@ -70,7 +70,7 @@ let
 
 in
 {
-  options.nazarewk.development.git = {
+  options.kdn.development.git = {
     enable = mkEnableOption "Git development utilities";
 
     baseDir = mkOption {

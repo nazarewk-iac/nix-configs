@@ -1,10 +1,10 @@
 { lib, pkgs, config, inputs, system, ... }:
 with lib;
 let
-  cfg = config.nazarewk.development.nix;
+  cfg = config.kdn.development.nix;
 in
 {
-  options.nazarewk.development.nix = {
+  options.kdn.development.nix = {
     enable = mkEnableOption "nix development/debugging";
   };
 

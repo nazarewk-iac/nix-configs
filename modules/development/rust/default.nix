@@ -1,10 +1,10 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.development.rust;
+  cfg = config.kdn.development.rust;
 in
 {
-  options.nazarewk.development.rust = {
+  options.kdn.development.rust = {
     enable = mkEnableOption "Rust development";
   };
 

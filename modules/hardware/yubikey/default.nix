@@ -1,15 +1,15 @@
 { lib, pkgs, config, inputs, system, ... }:
 with lib;
 let
-  cfg = config.nazarewk.hardware.yubikey;
+  cfg = config.kdn.hardware.yubikey;
 in
 {
-  options.nazarewk.hardware.yubikey = {
+  options.kdn.hardware.yubikey = {
     enable = mkEnableOption "YubiKey + GnuPG Smart Card config";
   };
 
   config = mkIf cfg.enable {
-    nazarewk.programs.gnupg.enable = true;
+    kdn.programs.gnupg.enable = true;
 
     home-manager.sharedModules = [
       {

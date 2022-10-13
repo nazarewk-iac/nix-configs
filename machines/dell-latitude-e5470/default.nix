@@ -8,12 +8,12 @@
   networking.hostId = "f77614af"; # cut -c-8 </proc/sys/kernel/random/uuid
   networking.hostName = "nazarewk";
 
-  nazarewk.sway.remote.enable = true;
-  nazarewk.desktop.base.nixpkgs-wayland.enableFullOverlay = false;
-  nazarewk.k3s.single-node.enableTools = true;
-  nazarewk.filesystems.zfs-root.enable = true;
+  kdn.sway.remote.enable = true;
+  kdn.desktop.base.nixpkgs-wayland.enableFullOverlay = false;
+  kdn.k3s.single-node.enableTools = true;
+  kdn.filesystems.zfs-root.enable = true;
   # TODO: unlock hangs up on `ip=dhcp` when not connected to the router.
-  # nazarewk.filesystems.zfs-root.sshUnlock.enable = true;
+  # kdn.filesystems.zfs-root.sshUnlock.enable = true;
   environment.systemPackages = with pkgs; [
     google-chrome # easier on the CPU than Meet @ Firefox
 
@@ -30,8 +30,8 @@
     })
   ];
 
-  nazarewk.hardware.intel-graphics-fix.enable = true;
-  nazarewk.hardware.modem.enable = true;
+  kdn.hardware.intel-graphics-fix.enable = true;
+  kdn.hardware.modem.enable = true;
   services.cpupower-gui.enable = true;
 
   # BOOT

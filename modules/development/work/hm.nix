@@ -1,13 +1,13 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.work.development;
+  cfg = config.kdn.work.development;
   relDir = "${cfg.baseDir}";
   absDir = "${config.home.homeDirectory}/${relDir}";
   shellDir = "$HOME/${relDir}";
 in
 {
-  options.nazarewk.work.development = {
+  options.kdn.work.development = {
     enable = mkEnableOption "development utilities";
 
     prefix = mkOption {

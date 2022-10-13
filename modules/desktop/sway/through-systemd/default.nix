@@ -1,7 +1,7 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.sway.systemd;
+  cfg = config.kdn.sway.systemd;
   mandatoryEnvsString = toString [
     "DISPLAY"
     "WAYLAND_DISPLAY"
@@ -29,12 +29,12 @@ let
   '');
 in
 {
-  options.nazarewk.sway.systemd = {
+  options.kdn.sway.systemd = {
     enable = mkEnableOption "running Sway WM as a systemd service";
   };
 
   config = mkIf cfg.enable {
-    nazarewk.sway.base.enable = true;
+    kdn.sway.base.enable = true;
 
     systemd.user.services.sway = {
       description = "Sway - Wayland window manager";
@@ -60,7 +60,7 @@ in
       };
     };
 
-    nazarewk.sway.base.initScripts.systemd = {
+    kdn.sway.base.initScripts.systemd = {
       "01-wait-systemd-environment" = ''
         #!${pkgs.bash}/bin/bash
         set -xEeuo pipefail

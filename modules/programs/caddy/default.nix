@@ -1,10 +1,10 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.programs.caddy;
+  cfg = config.kdn.programs.caddy;
 in
 {
-  options.nazarewk.programs.caddy = {
+  options.kdn.programs.caddy = {
     enable = mkEnableOption "Caddy web server";
   };
 

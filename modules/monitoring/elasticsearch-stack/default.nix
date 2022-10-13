@@ -1,13 +1,13 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.monitoring.elasticsearch-stack;
+  cfg = config.kdn.monitoring.elasticsearch-stack;
 
   esCfg = config.services.elasticsearch;
   kCfg = config.services.kibana;
 in
 {
-  options.nazarewk.monitoring.elasticsearch-stack = {
+  options.kdn.monitoring.elasticsearch-stack = {
     enable = mkEnableOption "elasticsearch + kibana";
 
     packages.elasticsearch = mkOption {

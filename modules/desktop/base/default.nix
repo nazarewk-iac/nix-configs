@@ -1,10 +1,10 @@
 { lib, pkgs, config, inputs, ... }:
 with lib;
 let
-  cfg = config.nazarewk.desktop.base;
+  cfg = config.kdn.desktop.base;
 in
 {
-  options.nazarewk.desktop.base = {
+  options.kdn.desktop.base = {
     enable = mkEnableOption "Desktop base setup";
 
     enableWlrootsPatch = mkEnableOption "patched wlroots";

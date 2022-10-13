@@ -1,10 +1,10 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.development.python;
+  cfg = config.kdn.development.python;
 in
 {
-  options.nazarewk.development.python = {
+  options.kdn.development.python = {
     enable = mkEnableOption "Python development";
   };
 

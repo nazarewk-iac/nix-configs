@@ -26,13 +26,13 @@
   # KEYBASE
   services.davfs2.enable = true;
 
-  nazarewk.hardware.pipewire.enable = true;
-  nazarewk.hardware.pipewire.useWireplumber = true;
-  nazarewk.hardware.yubikey.enable = true;
-  nazarewk.sway.gdm.enable = true;
-  nazarewk.sway.systemd.enable = true;
+  kdn.hardware.pipewire.enable = true;
+  kdn.hardware.pipewire.useWireplumber = true;
+  kdn.hardware.yubikey.enable = true;
+  kdn.sway.gdm.enable = true;
+  kdn.sway.systemd.enable = true;
 
-  nazarewk.headless.enableGUI = true;
+  kdn.headless.enableGUI = true;
 
   home-manager.sharedModules = [
     ({ config, ... }: {

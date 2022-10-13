@@ -1,10 +1,10 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.development.podman;
+  cfg = config.kdn.development.podman;
 in
 {
-  options.nazarewk.development.podman = {
+  options.kdn.development.podman = {
     enable = mkEnableOption "Podman setup";
   };
 

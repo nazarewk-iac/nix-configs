@@ -1,10 +1,10 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.hardware.discovery;
+  cfg = config.kdn.hardware.discovery;
 in
 {
-  options.nazarewk.hardware.discovery = {
+  options.kdn.hardware.discovery = {
     enable = mkEnableOption "hardware discovery scripts";
   };
 

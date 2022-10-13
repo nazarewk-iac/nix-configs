@@ -1,10 +1,10 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.virtualization.nixops.libvirtd;
+  cfg = config.kdn.virtualization.nixops.libvirtd;
 in
 {
-  options.nazarewk.virtualization.nixops.libvirtd = {
+  options.kdn.virtualization.nixops.libvirtd = {
     enable = mkEnableOption "libvirtd nixops setup";
   };
 

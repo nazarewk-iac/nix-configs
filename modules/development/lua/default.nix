@@ -1,7 +1,7 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.development.lua;
+  cfg = config.kdn.development.lua;
 
   mkLuaVersion = version:
     let
@@ -22,7 +22,7 @@ let
   '';
 in
 {
-  options.nazarewk.development.lua = {
+  options.kdn.development.lua = {
     enable = mkEnableOption "lua development";
 
     extraPackages = mkOption {

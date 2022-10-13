@@ -1,14 +1,14 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.programs.obs-studio;
+  cfg = config.kdn.programs.obs-studio;
 
   obs-studio-with-plugins = pkgs.wrapOBS.override { obs-studio = cfg.package; } {
     plugins = cfg.plugins;
   };
 in
 {
-  options.nazarewk.programs.obs-studio = {
+  options.kdn.programs.obs-studio = {
     enable = mkEnableOption "OBS Studio setup";
     package = mkOption {
       type = types.package;

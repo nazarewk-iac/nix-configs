@@ -27,7 +27,7 @@
   programs.java.enable = true;
   services.plantuml-server.enable = true;
 
-  nazarewk.docker.enable = true;
+  kdn.docker.enable = true;
 
   environment.systemPackages = with pkgs; [
     dex # A program to generate and execute DesktopEntry files of the Application type
@@ -103,21 +103,21 @@
   services.devmon.enable = true;
   programs.steam.enable = true;
 
-  nazarewk.desktop.remote-server.enable = true;
-  nazarewk.development.cloud.enable = true;
-  nazarewk.development.data.enable = true;
-  nazarewk.development.elixir.enable = true;
-  nazarewk.development.golang.enable = true;
-  nazarewk.development.k8s.enable = true;
-  nazarewk.development.nix.enable = true;
-  nazarewk.development.python.enable = true;
-  nazarewk.development.ruby.enable = true;
-  nazarewk.development.rust.enable = true;
-  nazarewk.development.terraform.enable = true;
-  nazarewk.hardware.discovery.enable = true;
-  nazarewk.hardware.edid.enable = true;
-  nazarewk.programs.aws-vault.enable = true;
-  nazarewk.programs.keepass.enable = true;
-  nazarewk.programs.nix-direnv.enable = true;
-  nazarewk.programs.nix-index.enable = true;
+  kdn.desktop.remote-server.enable = true;
+  kdn.development.cloud.enable = true;
+  kdn.development.data.enable = true;
+  kdn.development.elixir.enable = true;
+  kdn.development.golang.enable = true;
+  kdn.development.k8s.enable = true;
+  kdn.development.nix.enable = true;
+  kdn.development.python.enable = true;
+  kdn.development.ruby.enable = true;
+  kdn.development.rust.enable = true;
+  kdn.development.terraform.enable = true;
+  kdn.hardware.discovery.enable = true;
+  kdn.hardware.edid.enable = true;
+  kdn.programs.aws-vault.enable = true;
+  kdn.programs.keepass.enable = true;
+  kdn.programs.nix-direnv.enable = true;
+  kdn.programs.nix-index.enable = true;
 }

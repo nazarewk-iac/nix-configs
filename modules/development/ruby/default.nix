@@ -1,10 +1,10 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.development.ruby;
+  cfg = config.kdn.development.ruby;
 in
 {
-  options.nazarewk.development.ruby = {
+  options.kdn.development.ruby = {
     enable = mkEnableOption "Ruby development";
   };
 

@@ -1,11 +1,11 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.hardware.qmk;
+  cfg = config.kdn.hardware.qmk;
 in
 {
   options = {
-    nazarewk.hardware.qmk = {
+    kdn.hardware.qmk = {
       enable = mkEnableOption "QMK + ZSA keyboard related software (eg: Moonlander)";
     };
   };
@@ -34,7 +34,7 @@ in
       })
     ];
   }
-    (mkIf config.nazarewk.headless.enableGUI {
+    (mkIf config.kdn.headless.enableGUI {
       environment.systemPackages = with pkgs; [
         vial
       ];

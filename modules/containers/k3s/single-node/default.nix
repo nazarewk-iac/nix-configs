@@ -1,7 +1,7 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.k3s.single-node;
+  cfg = config.kdn.k3s.single-node;
   cil = cfg.cilium;
 
   getInputByName = drv: name: lib.pipe
@@ -66,7 +66,7 @@ let
   };
 in
 {
-  options.nazarewk.k3s.single-node = {
+  options.kdn.k3s.single-node = {
     enable = mkEnableOption "local (single node) k3s setup";
 
     enableTools = mkOption {
@@ -240,7 +240,7 @@ in
         services.k3s.enable = true;
         # also runs as agent
         services.k3s.role = "server";
-        nazarewk.k3s.single-node.config.k3s = {
+        kdn.k3s.single-node.config.k3s = {
           secrets-encryption = true;
           cluster-cidr = cfg.podCIDR;
           service-cidr = cfg.serviceCIDR;
@@ -267,7 +267,7 @@ in
 
         environment.etc."rancher/k3s/kubelet.config".source = yaml.generate "k3s-config.yaml" cfg.config.kubelet;
         environment.etc."rancher/k3s/config.yaml".source = yaml.generate "k3s-config.yaml" cfg.config.k3s;
-        nazarewk.k3s.single-node.config.kubelet = {
+        kdn.k3s.single-node.config.kubelet = {
           # see https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/
           apiVersion = "kubelet.config.k8s.io/v1beta1";
           kind = "KubeletConfiguration";
@@ -333,7 +333,7 @@ in
         '';
       }
       (mkIf cfg.kube-prometheus.enable {
-        nazarewk.k3s.single-node.config.k3s.disable = [
+        kdn.k3s.single-node.config.k3s.disable = [
           "metrics-server" # using Prometheus Operator instead
         ];
       })
@@ -350,12 +350,12 @@ in
             ln -sf "$file" "/usr/bin/$name"
           done
         '';
-        nazarewk.k3s.single-node.config.k3s.disable = [
+        kdn.k3s.single-node.config.k3s.disable = [
           "traefik" # using Istio ingress instead
         ];
       })
       (mkIf cfg.rook-ceph.enable {
-        nazarewk.k3s.single-node.config.k3s.disable = [
+        kdn.k3s.single-node.config.k3s.disable = [
           "local-storage" # using Rook Ceph instead
         ];
         # Can be removed for Rook 1.8.9+ when the PR lands in a release
@@ -434,7 +434,7 @@ in
           cri-tools
         ];
 
-        nazarewk.k3s.single-node.config.k3s = {
+        kdn.k3s.single-node.config.k3s = {
           container-runtime-endpoint = "unix:///run/containerd/containerd.sock";
           kubelet-arg = [ "containerd=unix:///run/containerd/containerd.sock" ];
         };
@@ -508,7 +508,7 @@ in
                 #              "-${cilium-configure}/bin/cilium-configure --kubeconfig=/etc/rancher/k3s/k3s.yaml"
               ];
           };
-          nazarewk.k3s.single-node.config.k3s = {
+          kdn.k3s.single-node.config.k3s = {
             flannel-backend = "none";
             disable-network-policy = true;
           };
@@ -520,7 +520,7 @@ in
             };
           };
 
-          nazarewk.k3s.single-node.cilium.values = {
+          kdn.k3s.single-node.cilium.values = {
             hubble.relay.enabled = true;
             hubble.ui.enabled = true;
 
@@ -540,15 +540,15 @@ in
           };
         }
         (mkIf (cil.replaceKubeProxy) {
-          nazarewk.k3s.single-node.config.k3s = {
+          kdn.k3s.single-node.config.k3s = {
             disable-kube-proxy = true;
           };
-          nazarewk.k3s.single-node.cilium.values = {
+          kdn.k3s.single-node.cilium.values = {
             kubeProxyReplacement = "strict";
           };
         })
         (mkIf (cil.hubble) {
-          nazarewk.k3s.single-node.cilium.values = {
+          kdn.k3s.single-node.cilium.values = {
             hubble.relay.enabled = true;
             hubble.ui.enabled = true;
           };

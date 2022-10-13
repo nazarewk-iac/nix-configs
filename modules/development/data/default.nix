@@ -1,7 +1,7 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.development.data;
+  cfg = config.kdn.development.data;
 
   yq = "${cfg.packages.yq}/bin/yq";
   yj = "${cfg.packages.yj}/bin/yj";
@@ -56,7 +56,7 @@ let
   conv = mapAttrs (name: pkg: "${pkg}/bin/${name}") converterPkgs;
 in
 {
-  options.nazarewk.development.data = {
+  options.kdn.development.data = {
     enable = mkEnableOption "tools for working with data";
 
     packages = {

@@ -1,10 +1,10 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.development.shell;
+  cfg = config.kdn.development.shell;
 in
 {
-  options.nazarewk.development.shell = {
+  options.kdn.development.shell = {
     enable = mkEnableOption "shell development";
   };
 

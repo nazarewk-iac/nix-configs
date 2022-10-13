@@ -1,7 +1,7 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.networking.wireguard;
+  cfg = config.kdn.networking.wireguard;
   getIP = num: pipe cfg.subnet [
     (splitString ".")
     reverseList
@@ -37,7 +37,7 @@ let
   ]);
 in
 {
-  options.nazarewk.networking.wireguard = {
+  options.kdn.networking.wireguard = {
     enable = mkOption {
       type = types.bool;
       default = isClient || isServer;

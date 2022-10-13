@@ -1,10 +1,10 @@
 { lib, pkgs, config, inputs, ... }:
 with lib;
 let
-  cfg = config.nazarewk.programs.nix-index;
+  cfg = config.kdn.programs.nix-index;
 in
 {
-  options.nazarewk.programs.nix-index = {
+  options.kdn.programs.nix-index = {
     enable = mkEnableOption "nix-index setup";
   };
 

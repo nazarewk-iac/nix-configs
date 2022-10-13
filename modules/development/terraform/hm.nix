@@ -1,10 +1,10 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.development.terraform;
+  cfg = config.kdn.development.terraform;
 in
 {
-  options.nazarewk.development.terraform = {
+  options.kdn.development.terraform = {
     enable = mkEnableOption "Terraform development";
   };
 

@@ -1,10 +1,10 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.hardware.intel-graphics-fix;
+  cfg = config.kdn.hardware.intel-graphics-fix;
 in
 {
-  options.nazarewk.hardware.intel-graphics-fix = {
+  options.kdn.hardware.intel-graphics-fix = {
     enable = mkEnableOption "Intel HD Graphics fix";
   };
 

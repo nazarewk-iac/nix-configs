@@ -1,10 +1,10 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.programs.nix-direnv;
+  cfg = config.kdn.programs.nix-direnv;
 in
 {
-  options.nazarewk.programs.nix-direnv = {
+  options.kdn.programs.nix-direnv = {
     enable = mkEnableOption "nix-direnv setup";
   };
 

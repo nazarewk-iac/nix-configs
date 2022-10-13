@@ -8,29 +8,31 @@ let
 in
 mkMerge [
   {
-    users.users.nazarewk.description = "Krzysztof Nazarewski";
-    users.users.nazarewk.uid = 1000;
-    users.users.nazarewk.isNormalUser = true;
-    users.users.nazarewk.extraGroups = lib.filter (group: lib.hasAttr group config.users.groups) [
-      "adbusers"
-      "audio"
-      "dialout"
-      "docker"
-      "kvm"
-      "libvirtd"
-      "lp"
-      "mlocate"
-      "networkmanager"
-      "pipewire"
-      "plugdev"
-      "power"
-      "scanner"
-      "tty"
-      "video"
-      "wheel"
-    ];
+    users.users.nazarewk = {
+      description = "Krzysztof Nazarewski";
+      uid = 1000;
+      isNormalUser = true;
+      extraGroups = lib.filter (group: lib.hasAttr group config.users.groups) [
+        "adbusers"
+        "audio"
+        "dialout"
+        "docker"
+        "kvm"
+        "libvirtd"
+        "lp"
+        "mlocate"
+        "networkmanager"
+        "pipewire"
+        "plugdev"
+        "power"
+        "scanner"
+        "tty"
+        "video"
+        "wheel"
+      ];
 
-    users.users.nazarewk.openssh.authorizedKeys.keys = sshKeys;
+      openssh.authorizedKeys.keys = sshKeys;
+    };
 
     home-manager.users.nazarewk = import ./home.nix;
   }

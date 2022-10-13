@@ -1,10 +1,10 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.programs.keepass;
+  cfg = config.kdn.programs.keepass;
 in
 {
-  options.nazarewk.programs.keepass = {
+  options.kdn.programs.keepass = {
     enable = mkEnableOption "keepass with plugins";
   };
 

@@ -1,10 +1,10 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.filesystems.base;
+  cfg = config.kdn.filesystems.base;
 in
 {
-  options.nazarewk.filesystems.base = {
+  options.kdn.filesystems.base = {
     enable = mkEnableOption "basic filesystems related setup";
   };
 

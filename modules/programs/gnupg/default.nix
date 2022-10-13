@@ -1,7 +1,7 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.programs.gnupg;
+  cfg = config.kdn.programs.gnupg;
 
   pinentry = pkgs.writeShellApplication {
     name = "pinentry";
@@ -15,7 +15,7 @@ let
   };
 in
 {
-  options.nazarewk.programs.gnupg = {
+  options.kdn.programs.gnupg = {
     enable = mkEnableOption "GnuPG forwarding to remote systems";
   };
 

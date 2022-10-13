@@ -1,10 +1,10 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.filesystems.zfs-root;
+  cfg = config.kdn.filesystems.zfs-root;
 in
 {
-  options.nazarewk.filesystems.zfs-root = {
+  options.kdn.filesystems.zfs-root = {
     enable = mkEnableOption "ZFS setup";
 
     sshUnlock = {

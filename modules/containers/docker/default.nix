@@ -1,10 +1,10 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.docker;
+  cfg = config.kdn.docker;
 in
 {
-  options.nazarewk.docker = {
+  options.kdn.docker = {
     enable = mkEnableOption "docker daemon setup";
   };
 

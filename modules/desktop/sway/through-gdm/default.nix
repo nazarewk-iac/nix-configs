@@ -1,22 +1,22 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.sway.gdm;
+  cfg = config.kdn.sway.gdm;
 in
 {
-  options.nazarewk.sway.gdm = {
+  options.kdn.sway.gdm = {
     enable = mkEnableOption "running Sway WM in GDM";
   };
 
   config = mkIf cfg.enable {
-    nazarewk.sway.base.enable = true;
+    kdn.sway.base.enable = true;
 
     services.xserver.enable = true;
     services.xserver.displayManager.defaultSession = "sway";
     services.xserver.displayManager.gdm.enable = true;
     services.xserver.libinput.enable = true;
 
-    nazarewk.sway.base.initScripts.systemd = {
+    kdn.sway.base.initScripts.systemd = {
       "01-wait-gdm-environment" = ''
         #! ${pkgs.bash}/bin/bash
         set -xeEuo pipefail

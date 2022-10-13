@@ -1,7 +1,7 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.hardware.edid;
+  cfg = config.kdn.hardware.edid;
 
   edids = (pkgs.kdn.linuxhw-edid-fetcher.override {
     displays = cfg.displays;
@@ -10,7 +10,7 @@ let
   initrdPaths = lib.mapAttrs (name: v: "edids/lib/firmware/edid/${name}.bin") cfg.displays;
 in
 {
-  options.nazarewk.hardware.edid = {
+  options.kdn.hardware.edid = {
     enable = mkEnableOption "EDID scripts & utils";
 
     displays = mkOption {

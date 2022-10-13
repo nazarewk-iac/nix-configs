@@ -1,16 +1,16 @@
 { lib, pkgs, config, system, ... }:
 with lib;
 let
-  cfg = config.nazarewk.development.cloud;
+  cfg = config.kdn.development.cloud;
 in
 {
-  options.nazarewk.development.cloud = {
+  options.kdn.development.cloud = {
     enable = mkEnableOption "cloud development";
   };
 
   config = mkIf cfg.enable {
-    nazarewk.development.nodejs.enable = true;
-    nazarewk.development.lua.enable = true;
+    kdn.development.nodejs.enable = true;
+    kdn.development.lua.enable = true;
 
     environment.systemPackages = with pkgs; [
       # AWS

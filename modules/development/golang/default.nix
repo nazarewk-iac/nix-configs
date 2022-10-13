@@ -1,10 +1,10 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.development.golang;
+  cfg = config.kdn.development.golang;
 in
 {
-  options.nazarewk.development.golang = {
+  options.kdn.development.golang = {
     enable = mkEnableOption "golang development";
   };
 

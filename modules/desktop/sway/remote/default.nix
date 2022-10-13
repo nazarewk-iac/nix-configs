@@ -1,7 +1,7 @@
 { lib, pkgs, config, waylandPkgs, ... }:
 with lib;
 let
-  cfg = config.nazarewk.sway.remote;
+  cfg = config.kdn.sway.remote;
 
   sway-headless-vnc = pkgs.writeShellApplication {
     name = "sway-headless-vnc";
@@ -10,12 +10,12 @@ let
   };
 in
 {
-  options.nazarewk.sway.remote = {
+  options.kdn.sway.remote = {
     enable = mkEnableOption "remote access setup for Sway";
   };
 
   config = mkIf cfg.enable {
-    nazarewk.sway.base.enable = true;
+    kdn.sway.base.enable = true;
 
     nixpkgs.overlays = [
       (final: prev:

@@ -1,10 +1,10 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.development.linux-utils;
+  cfg = config.kdn.development.linux-utils;
 in
 {
-  options.nazarewk.development.linux-utils = {
+  options.kdn.development.linux-utils = {
     enable = mkEnableOption "linux utils";
   };
 

@@ -1,10 +1,10 @@
 { lib, pkgs, config, system, ... }:
 with lib;
 let
-  cfg = config.nazarewk.desktop.remote-server;
+  cfg = config.kdn.desktop.remote-server;
 in
 {
-  options.nazarewk.desktop.remote-server = {
+  options.kdn.desktop.remote-server = {
     enable = mkEnableOption "remote desktop server setup";
   };
 

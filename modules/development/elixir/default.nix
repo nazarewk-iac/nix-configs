@@ -1,10 +1,10 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.development.elixir;
+  cfg = config.kdn.development.elixir;
 in
 {
-  options.nazarewk.development.elixir = {
+  options.kdn.development.elixir = {
     enable = mkEnableOption "elixir development";
   };
 

@@ -1,6 +1,6 @@
 { config, ... }:
 {
-  nazarewk.networking.wireguard.peers = {
+  kdn.networking.wireguard.peers = {
     wg-0 = {
       hostnum = 1;
       server = {
@@ -9,7 +9,7 @@
       };
       cfg = {
         publicKey = "n46g2yMIQ169ZWJk0gpjnhlAlJci6KKv7pxbC6BkqwY=";
-        endpoint = "wg.nazarewk.pw:${toString config.nazarewk.networking.wireguard.port}";
+        endpoint = "wg.kdn.pw:${toString config.kdn.networking.wireguard.port}";
         persistentKeepalive = 25;
         dynamicEndpointRefreshSeconds = 60;
       };

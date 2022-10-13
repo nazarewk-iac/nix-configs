@@ -16,7 +16,7 @@
   services.openssh.enable = true;
   services.openssh.openFirewall = true;
   services.openssh.passwordAuthentication = false;
-  nazarewk.programs.gnupg.enable = true;
+  kdn.programs.gnupg.enable = true;
 
   # LOCALE
   i18n.defaultLocale = "en_US.UTF-8";
@@ -40,15 +40,15 @@
     "userjournal" = "journalctl --user";
   };
 
-  nazarewk.headless.base.enable = true;
+  kdn.headless.base.enable = true;
 
   services.locate.enable = true;
   services.locate.localuser = null;
   services.locate.locate = pkgs.mlocate;
   services.locate.pruneBindMounts = true;
 
-  nazarewk.networking.wireguard.enable = true;
-  nazarewk.hardware.usbip.enable = true;
-  nazarewk.hardware.qmk.enable = true;
-  nazarewk.development.shell.enable = true;
+  kdn.networking.wireguard.enable = true;
+  kdn.hardware.usbip.enable = true;
+  kdn.hardware.qmk.enable = true;
+  kdn.development.shell.enable = true;
 }

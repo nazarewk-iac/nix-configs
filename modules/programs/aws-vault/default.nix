@@ -1,7 +1,7 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.nazarewk.programs.aws-vault;
+  cfg = config.kdn.programs.aws-vault;
 
   aws-vault = pkgs.writeShellApplication {
     name = "aws-vault";
@@ -21,7 +21,7 @@ let
   escapeDefault = arg: ''"${replaceStrings [''"''] [''\"''] (toString arg)}"'';
 in
 {
-  options.nazarewk.programs.aws-vault = {
+  options.kdn.programs.aws-vault = {
     enable = mkEnableOption "aws-vault + aliases";
 
     package = mkOption {
