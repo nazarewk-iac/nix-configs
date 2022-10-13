@@ -3,23 +3,22 @@ with lib;
 let
   cfg = config.nazarewk.hardware.edid;
 
-  edids = (pkgs.kdn.edid-generator.override {
-    clean = true;
-    modelines = lib.mapAttrsToList (name: line: ''Modeline "${name}" ${line}'') cfg.modelines;
+  edids = (pkgs.kdn.linuxhw-edid-fetcher.override {
+    displays = cfg.displays;
   });
 
-  initrdPaths = lib.mapAttrs (name: v: "edids/lib/firmware/edid/${name}.bin") cfg.modelines;
+  initrdPaths = lib.mapAttrs (name: v: "edids/lib/firmware/edid/${name}.bin") cfg.displays;
 in
 {
   options.nazarewk.hardware.edid = {
     enable = mkEnableOption "EDID scripts & utils";
 
-    modelines = mkOption {
-      type = types.attrsOf types.string;
+    displays = mkOption {
+      type = types.attrsOf (types.listOf types.string);
       default = {
-        "PG278Q_2560x1440" = ''     241.50   2560 2608 2640 2720   1440 1443 1448 1481   -hsync +vsync'';
-        "PG278Q_2560x1440@120" = '' 497.75   2560 2608 2640 2720   1440 1443 1448 1525   +hsync -vsync'';
-        "U2711_2560x1440" = ''      241.50   2560 2600 2632 2720   1440 1443 1448 1481   -hsync +vsync'';
+        "PG278Q_2014" = [ "PG278Q" "2014" ];
+        "U2711_2012_1" = [ "U2711" "2560x1440" "2012" "DELA055" ];
+        "U2711_2012_2" = [ "U2711" "2560x1440" "2012" "DELA057" ];
       };
     };
 
@@ -49,6 +48,7 @@ in
     })
     {
       environment.systemPackages = with pkgs; [
+        edids
         edid-decode
         read-edid
       ];

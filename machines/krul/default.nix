@@ -14,8 +14,8 @@
   services.xserver.displayManager.gdm.autoSuspend = false;
 
   nazarewk.hardware.edid.kernelOutputs = {
-    # "DVI-D-1" = "U2711_2560x1440";
-    # "DP-1" = "PG278Q_2560x1440";
+    # "DP-1" = "PG278Q_2014";
+    # "DVI-D-1" = "U2711_2012_1";
   };
 
   hardware.cpu.amd.updateMicrocode = true;

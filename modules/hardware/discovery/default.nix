@@ -10,6 +10,7 @@ in
 
   config = mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
+      hw-probe
       (pkgs.writeShellApplication {
         name = "list-device-drivers";
         runtimeInputs = with pkgs; [ coreutils ];
