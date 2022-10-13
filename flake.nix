@@ -33,6 +33,7 @@
         devShells = { };
         packages =
           let
+            # adapted from https://github.com/nix-community/nixpkgs-wayland/blob/b703de94dd7c3d73a03b5d30b248b8984ad8adb7/flake.nix#L119-L127
             pkgsFor = pkgs: overlays:
               import pkgs {
                 inherit system overlays;
