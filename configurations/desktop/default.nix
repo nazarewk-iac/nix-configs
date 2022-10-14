@@ -41,7 +41,6 @@
     jetbrains.ruby-mine
     p7zip
     rar
-    unrar
     system-config-printer
 
     drawio
