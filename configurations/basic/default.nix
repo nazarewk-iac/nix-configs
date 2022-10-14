@@ -30,7 +30,6 @@
   kdn.hardware.pipewire.useWireplumber = true;
   kdn.hardware.yubikey.enable = true;
   kdn.sway.gdm.enable = true;
-  kdn.sway.systemd.enable = true;
 
   kdn.headless.enableGUI = true;
 

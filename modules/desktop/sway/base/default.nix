@@ -73,7 +73,7 @@ in
       export SSH_AUTH_SOCK
     '';
 
-    systemd.user.targets.sway-session = {
+    systemd.user.targets.sway-session-kdn = {
       description = "Sway compositor session";
       documentation = [ "man:systemd.special(7)" ];
       bindsTo = [ "graphical-session.target" ];
@@ -106,11 +106,11 @@ in
 
         until pgrep -fu $UID waybar && sleep 3 ; do sleep 2; done
       '';
-      "90-start-sway-session" = ''
+      "90-start-sway-session-kdn" = ''
         #! ${pkgs.bash}/bin/bash
         set -xeEuo pipefail
 
-        systemctl --user start sway-session.target
+        systemctl --user start sway-session-kdn.target
       '';
     };
 
@@ -151,6 +151,10 @@ in
         # according to Dunst FAQ https://dunst-project.org/faq/#cannot-acquire-orgfreedesktopnotifications
         # you might need to create a file in home directory instead of system-wide to select proper notification daemon
         home.file.".local/share/dbus-1/services/fr.emersion.mako.service".source = "${pkgs.mako}/share/dbus-1/services/fr.emersion.mako.service";
+
+        wayland.windowManager.sway = {
+          inherit (config.programs.sway) extraSessionCommands extraOptions wrapperFeatures;
+        };
       }
     ];
 
@@ -159,7 +163,13 @@ in
         #! ${pkgs.bash}/bin/bash
         set -xeEuo pipefail
         interval=3
-        until systemctl --user is-active --quiet sway-session.target ; do sleep "$interval"; done
+        targets=(
+          # default/home-manager target
+          sway-session.target
+          # custom target
+          sway-session-kdn.target
+        )
+        until systemctl --user is-active --quiet sway-session-kdn.target ; do sleep "$interval"; done
         test "$#" -lt 1 || exec "$@"
       '')
       (pkgs.writeScriptBin "_sway-root-gui" ''

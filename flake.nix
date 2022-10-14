@@ -19,6 +19,7 @@
     , flake-utils
     , nixpkgs
     , nixos-generators
+    , home-manager
     , ...
     }@inputs:
     let
@@ -27,24 +28,31 @@
     in
     (flake-utils.lib.eachDefaultSystem
       (system:
+      let
+        # adapted from https://github.com/nix-community/nixpkgs-wayland/blob/b703de94dd7c3d73a03b5d30b248b8984ad8adb7/flake.nix#L119-L127
+        pkgsFor = pkgs: overlays:
+          import pkgs {
+            inherit system overlays;
+            config.allowUnfree = true;
+            config.allowAliases = false;
+          };
+        pkgs_ = lib.genAttrs (builtins.attrNames inputs) (inp: pkgsFor inputs."${inp}" [ ]);
+        opkgs_ = overlays: lib.genAttrs (builtins.attrNames inputs) (inp: pkgsFor inputs."${inp}" overlays);
+        kdnpkgs = (opkgs_ [ self.overlays.default ]).nixpkgs;
+      in
       {
         apps = { };
         checks = { };
         devShells = { };
-        packages =
-          let
-            # adapted from https://github.com/nix-community/nixpkgs-wayland/blob/b703de94dd7c3d73a03b5d30b248b8984ad8adb7/flake.nix#L119-L127
-            pkgsFor = pkgs: overlays:
-              import pkgs {
-                inherit system overlays;
-                config.allowUnfree = true;
-                config.allowAliases = false;
-              };
-            pkgs_ = lib.genAttrs (builtins.attrNames inputs) (inp: pkgsFor inputs."${inp}" [ ]);
-            opkgs_ = overlays: lib.genAttrs (builtins.attrNames inputs) (inp: pkgsFor inputs."${inp}" overlays);
-            kdnpkgs = (opkgs_ [ self.overlays.default ]).nixpkgs;
-          in
-          (opkgs_ [ self.overlays.default ]).nixpkgs;
+        packages = kdnpkgs;
+        homeConfigurations = {
+          nazarewk = home-manager.lib.homeManagerConfiguration {
+            pkgs = kdnpkgs;
+            modules = [
+              ./users/nazarewk/home.nix
+            ];
+          };
+        };
       }))
     // (
       let

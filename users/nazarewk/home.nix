@@ -35,8 +35,18 @@
       kdn.development.git.enable = true;
     }
     (lib.mkIf config.kdn.headless.enableGUI {
+      wayland.windowManager.sway = {
+        enable = true;
+        config = {
+          keybindings = { };
+          modes = { };
+          bars = [ ];
+        };
+        extraConfig = builtins.readFile ./sway/config;
+      };
+
       xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
-      xdg.configFile."sway/config".source = ./sway/config;
+      # xdg.configFile."sway/config".source = ./sway/config;
       xdg.configFile."swayr/config.toml".source = ./swayr/config.toml;
       xdg.configFile."waybar/config".source = ./waybar/config;
       xdg.configFile."waybar/style.css".source = ./waybar/style.css;
