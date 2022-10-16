@@ -85,6 +85,7 @@
     pdftk
 
     transmission-qt
+    megatools
 
     (pkgs.writeScriptBin "qrpaste" ''
       #! ${pkgs.bash}/bin/bash
