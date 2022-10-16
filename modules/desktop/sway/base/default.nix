@@ -154,6 +154,7 @@ in
 
         wayland.windowManager.sway = {
           inherit (config.programs.sway) extraSessionCommands extraOptions wrapperFeatures;
+          systemdIntegration = false;
         };
       }
     ];
@@ -165,11 +166,11 @@ in
         interval=3
         targets=(
           # default/home-manager target
-          sway-session.target
+          # sway-session.target
           # custom target
           sway-session-kdn.target
         )
-        until systemctl --user is-active --quiet sway-session-kdn.target ; do sleep "$interval"; done
+        until systemctl --user is-active --quiet "''${targets[@]}" ; do sleep "$interval"; done
         test "$#" -lt 1 || exec "$@"
       '')
       (pkgs.writeScriptBin "_sway-root-gui" ''
