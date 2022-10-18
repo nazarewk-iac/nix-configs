@@ -221,10 +221,6 @@ input type:touchpad {
     bindsym $LAlt+F4 kill
 
 # Autostart
-bar {
-    position top
-    swaybar_command waybar
-}
 exec _sway-wait-ready {
     element-desktop
     wl-paste -t text --watch clipman store --no-persist
