@@ -182,7 +182,6 @@ in
       wf-recorder
       v4l-utils
       mako
-      foot
       dmenu
       libappindicator
       libappindicator-gtk3

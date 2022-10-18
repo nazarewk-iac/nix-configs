@@ -28,7 +28,17 @@ in
       xdg.configFile."waybar/config".source = ./waybar/config;
       xdg.configFile."waybar/style.css".source = ./waybar/style.css;
       xdg.configFile."wofi/config".source = ./wofi/config;
-      xdg.configFile."foot/foot.ini".source = ./foot/foot.ini;
+
+      programs.foot = {
+        enable = true;
+        server.enable = false;
+        settings = {
+          main = {
+            font = "JetBrainsMono Nerd Font Mono:style=Regular:size=10";
+            dpi-aware = "yes";
+          };
+        };
+      };
 
       wayland.windowManager.sway.config.keybindings."${key.super}+L" = "exec ${lock}";
       services.swayidle = {
