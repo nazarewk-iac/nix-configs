@@ -1,10 +1,3 @@
-# Default config for sway
-#
-# Copy this to ~/.config/sway/config and edit it to your liking.
-#
-# Read `man 5 sway` for a complete reference.
-
-
 ### Modifier keys
 set $Super Mod4
 set $LAlt Mod1
@@ -15,7 +8,7 @@ set $Shift Shift
 ### Variables
 set $term foot
 set $launcher wofi
-set $lock swaylock -f -c 000000
+set $lock swaylock -f
 
 set $displayDell 'Dell Inc. DELL U2711 G606T29F0EWL'
 set $displayAsus 'DP-1'

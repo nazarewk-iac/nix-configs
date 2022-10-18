@@ -28,6 +28,31 @@
           Include ~/.ssh/config.local
       '';
 
+      services.gnome-keyring.enable = true;
+
+      home.packages = with pkgs; [
+        pass
+      ];
+
+      kdn.development.git.enable = true;
+    }
+    (lib.mkIf config.kdn.headless.enableGUI {
+      wayland.windowManager.sway = {
+        enable = true;
+        config.keybindings = { };
+        config.modes = { };
+        config.bars = [ ];
+        extraConfig = builtins.readFile ./sway/config;
+      };
+
+      xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
+      # xdg.configFile."sway/config".source = ./sway/config;
+      xdg.configFile."swayr/config.toml".source = ./swayr/config.toml;
+      xdg.configFile."waybar/config".source = ./waybar/config;
+      xdg.configFile."waybar/style.css".source = ./waybar/style.css;
+      xdg.configFile."wofi/config".source = ./wofi/config;
+      xdg.configFile."foot/foot.ini".source = ./foot/foot.ini;
+
       services.blueman-applet.enable = true;
       services.flameshot.enable = true;
       services.flameshot.settings = {
@@ -39,41 +64,20 @@
           filenamePattern = "screenshot-%F_%T";
           saveAfterCopy = true;
           saveAsFileExtension = "jpg";
-          savePath = "${home.homeDirectory}/Downloads/screenshots";
+          savePath = "${config.home.homeDirectory}/Downloads/screenshots";
           savePathFixed = true;
           showStartupLaunchMessage = false;
           uploadHistoryMax = 25;
           useJpgForClipboard = true;
         };
       };
-      services.gnome-keyring.enable = true;
       services.network-manager-applet.enable = true;
       services.nextcloud-client.enable = true;
 
-      home.packages = with pkgs; [
-        pass
-      ];
-
-      kdn.development.git.enable = true;
-    }
-    (lib.mkIf config.kdn.headless.enableGUI {
-      wayland.windowManager.sway = {
-        enable = true;
-        config = {
-          keybindings = { };
-          modes = { };
-          bars = [ ];
-        };
-        extraConfig = builtins.readFile ./sway/config;
+      programs.swaylock.settings = {
+        color = "000000";
+        show-failed-attempts = true;
       };
-
-      xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
-      # xdg.configFile."sway/config".source = ./sway/config;
-      xdg.configFile."swayr/config.toml".source = ./swayr/config.toml;
-      xdg.configFile."waybar/config".source = ./waybar/config;
-      xdg.configFile."waybar/style.css".source = ./waybar/style.css;
-      xdg.configFile."wofi/config".source = ./wofi/config;
-      xdg.configFile."foot/foot.ini".source = ./foot/foot.ini;
 
       # pam-u2f expects a single line of configuration per user in format `username:entry1:entry2:entry3:...`
       # `pamu2fcfg` generates lines of format `username:entry`
