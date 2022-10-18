@@ -76,7 +76,6 @@ in
 
       export ${lib.concatStringsSep " \\\n  " cfg.environmentDefaults}
       export ${lib.concatStringsSep " \\\n  " cfg.environment}
-      eval $(${pkgs.gnome.gnome-keyring}/bin/gnome-keyring-daemon --start)
       export SSH_AUTH_SOCK
     '';
 
