@@ -1,4 +1,4 @@
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, ... }@arguments:
 {
   config = lib.mkMerge [
     {
@@ -37,30 +37,10 @@
       kdn.development.git.enable = true;
     }
     (lib.mkIf config.kdn.headless.enableGUI {
-      imports = [
-        ./sway.nix
-      ];
-      xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
+      kdn.sway.base.enable = true;
 
-      services.blueman-applet.enable = true;
-      services.flameshot.enable = true;
-      services.flameshot.settings = {
-        General = {
-          checkForUpdates = false;
-          contrastOpacity = 188;
-          copyPathAfterSave = false;
-          drawColor = "#ffff00";
-          filenamePattern = "screenshot-%F_%T";
-          saveAfterCopy = true;
-          saveAsFileExtension = "jpg";
-          savePath = "${config.home.homeDirectory}/Downloads/screenshots";
-          savePathFixed = true;
-          showStartupLaunchMessage = false;
-          uploadHistoryMax = 25;
-          useJpgForClipboard = true;
-        };
-      };
-      services.network-manager-applet.enable = true;
+      services.flameshot.settings.General.savePath = "${config.home.homeDirectory}/Downloads/screenshots";
+      xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
       services.nextcloud-client.enable = true;
 
       # pam-u2f expects a single line of configuration per user in format `username:entry1:entry2:entry3:...`
@@ -85,25 +65,6 @@
         foldParts ./yubico/u2f_keys.parts;
 
       home.packages = with pkgs; [
-        # # launch-waybar doesn't worth with nix changes
-        # (pkgs.writeScriptBin "launch-waybar" ''
-        #   #! ${pkgs.bash}/bin/bash
-        #   # based on https://github.com/Alexays/Waybar/issues/961#issuecomment-753533975
-        #   CONFIG_FILES=(
-        #     "$HOME/.config/waybar/config"
-        #     "$HOME/.config/waybar/style.css"
-        #   )
-        #   pid=
-        #   trap '[ -z "$pid" ] || kill $pid' EXIT
-
-        #   while true; do
-        #       ${pkgs.waybar}/bin/waybar "$@" &
-        #       pid=$!
-        #       ${pkgs.inotify-tools}/bin/inotifywait -e create,modify $CONFIG_FILES
-        #       kill $pid
-        #       pid=
-        #   done
-        # '')
         (pkgs.writeShellApplication {
           name = ",drag0nius.kdbx";
           runtimeInputs = [ pkgs.pass pkgs.keepass ];
