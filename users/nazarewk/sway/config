@@ -8,7 +8,6 @@ set $Shift Shift
 ### Variables
 set $term foot
 set $launcher wofi
-set $lock swaylock -f
 
 set $displayDell 'Dell Inc. DELL U2711 G606T29F0EWL'
 set $displayAsus 'DP-1'
@@ -232,22 +231,7 @@ exec _sway-wait-ready {
     wl-paste -t text --watch clipman store --no-persist
 }
 
-### Idle configuration
-#
-# Example configuration:
-
-exec swayidle -w \
-    timeout 300 '$lock' \
-    timeout 360 'swaymsg "output * dpms off"' \
-    resume 'swaymsg "output * dpms on"' \
-    before-sleep '$lock'
-
-# This will lock your screen after 300 seconds of inactivity, then turn off
-# your displays after another 300 seconds, and turn your screens back on when
-# resumed. It will also lock your screen before your computer goes to sleep.
-
 workspace_layout tabbed
-focus_follows_mouse no
 
 # Swayr window switcher
 
@@ -278,7 +262,6 @@ bindsym $Super+Shift+c exec env RUST_BACKTRACE=1 \
     swayr execute-swayr-command >> /tmp/swayr.log 2>&1
 
 bindsym $Super+E exec thunar
-bindsym $Super+L exec $lock
 
 # Media controls
 # https://www.reddit.com/r/swaywm/comments/ju1609/control_spotify_with_bluetooth_headset_with_dbus/
