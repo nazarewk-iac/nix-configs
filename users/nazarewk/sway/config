@@ -236,7 +236,6 @@ bar {
 }
 exec _sway-wait-ready {
     element-desktop
-    flameshot
     wl-paste -t text --watch clipman store --no-persist
 }
 

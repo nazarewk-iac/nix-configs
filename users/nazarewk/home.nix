@@ -29,6 +29,23 @@
       '';
 
       services.blueman-applet.enable = true;
+      services.flameshot.enable = true;
+      services.flameshot.settings = {
+        General = {
+          checkForUpdates = false;
+          contrastOpacity = 188;
+          copyPathAfterSave = false;
+          drawColor = "#ffff00";
+          filenamePattern = "screenshot-%F_%T";
+          saveAfterCopy = true;
+          saveAsFileExtension = "jpg";
+          savePath = "${home.homeDirectory}/Downloads/screenshots";
+          savePathFixed = true;
+          showStartupLaunchMessage = false;
+          uploadHistoryMax = 25;
+          useJpgForClipboard = true;
+        };
+      };
       services.gnome-keyring.enable = true;
       services.network-manager-applet.enable = true;
       services.nextcloud-client.enable = true;
