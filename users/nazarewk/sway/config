@@ -199,13 +199,15 @@ include /etc/sway/config.d/*
 
 # inputs
 input type:keyboard {
-  xkb_layout pl
-  xkb_numlock enable
+  # https://major.io/2022/05/24/sway-reload-causes-a-firefox-crash/
+  # xkb_layout pl
+  # xkb_numlock enable
   repeat_delay 333
   repeat_rate 50
 }
 
-input '1:1:AT_Translated_Set_2_keyboard' xkb_numlock disable
+# https://major.io/2022/05/24/sway-reload-causes-a-firefox-crash/
+# input '1:1:AT_Translated_Set_2_keyboard' xkb_numlock disable
 
 input type:touchpad {
     tap enabled
