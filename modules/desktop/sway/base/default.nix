@@ -7,6 +7,11 @@ in
   options.kdn.sway.base = {
     enable = mkEnableOption "Sway base setup";
 
+    systemd.target = mkOption {
+      type = types.str;
+      default = "sway-session-kdn";
+    };
+
     initScripts = mkOption {
       type = types.attrsOf (types.attrsOf types.str);
       default = { };
@@ -35,7 +40,9 @@ in
     kdn.xfce.base.enable = true;
 
     # TODO: figure out why thunar.service does not consume session environment
-    systemd.user.services.thunar.enable = false;
+    systemd.user.services.thunar = {
+      requires = [ ];
+    };
 
     # Configure various Sway configs
     # see https://gist.github.com/mschwaig/195fe93ed85dea7aaceaf8e1fc6c0e99
@@ -73,62 +80,53 @@ in
       export SSH_AUTH_SOCK
     '';
 
-    systemd.user.targets.sway-session-kdn = {
+    systemd.user.targets."${cfg.systemd.target}" = {
       description = "Sway compositor session";
       documentation = [ "man:systemd.special(7)" ];
       bindsTo = [ "graphical-session.target" ];
       wants = [ "graphical-session-pre.target" ];
       after = [ "graphical-session-pre.target" ];
+      requires = [ "tray.target" ];
     };
-
-    # because tray opens up too late https://github.com/Alexays/Waybar/issues/483
 
     kdn.sway.base.initScripts.polkit = {
       "00-init" = ''
-        #! ${pkgs.bash}/bin/bash
-        set -xeEuo pipefail
-
+        export PATH="${pkgs.procps}/bin:$PATH"
         until systemctl --user show-environment | grep -q WAYLAND_DISPLAY ; do sleep 1; done
         exec ${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1
       '';
     };
     kdn.sway.base.initScripts.systemd = {
       "50-wait-polkit" = ''
-        #!${pkgs.bash}/bin/bash
-        set -xeEuo pipefail
-
+        export PATH="${pkgs.procps}/bin:$PATH"
         until pgrep -fu $UID polkit-gnome-authentication-agent-1 ; do sleep 2; done
       '';
       # because tray opens up too late https://github.com/Alexays/Waybar/issues/483
       "50-wait-waybar" = ''
-        #! ${pkgs.bash}/bin/bash
-        set -xeEuo pipefail
-
+        export PATH="${pkgs.procps}/bin:$PATH"
         until pgrep -fu $UID waybar && sleep 3 ; do sleep 2; done
       '';
-      "90-start-sway-session-kdn" = ''
-        #! ${pkgs.bash}/bin/bash
-        set -xeEuo pipefail
-
-        systemctl --user start sway-session-kdn.target
+      "99-start-${cfg.systemd.target}" = ''
+        systemctl --user start ${cfg.systemd.target}.target
       '';
     };
 
-    environment.etc."sway/config.d/00-nazarewk-init.conf".text = lib.concatStringsSep "\n" (lib.mapAttrsToList
-      (
-        execName: scripts:
+    environment.etc."sway/config.d/00-kdn-init.conf".text = lib.pipe cfg.initScripts [
+      (lib.mapAttrsToList (
+        execName: pieces:
           let
-            scriptName = "nazarewk-sway-init-${execName}";
-            scriptContent = lib.concatStringsSep "\n" (lib.mapAttrsToList
-              (
+            scriptName = "kdn-sway-init-${execName}";
+            scriptContent = lib.pipe pieces [
+              (lib.mapAttrsToList (
                 pieceName: piece:
                   let
                     pieceScriptName = "${scriptName}-${pieceName}";
                     pieceScript = pkgs.writeScriptBin pieceScriptName piece;
                   in
                   "${pieceScript}/bin/${pieceScriptName}"
-              )
-              scripts);
+              ))
+              (lib.concatStringsSep "\n")
+            ];
             script = pkgs.writeScriptBin scriptName ''
               #!${pkgs.bash}/bin/bash
               set -xEeuo pipefail
@@ -136,13 +134,13 @@ in
             '';
           in
           "exec ${script}/bin/${scriptName}"
-      )
-      cfg.initScripts);
+      ))
+      (lib.concatStringsSep "\n")
+    ];
 
     systemd.user.services.xfce4-notifyd.enable = false;
-
     services.dbus.packages = with pkgs; [
-      # mako
+      # mako # see `home.file.".local/share/dbus-1/services/fr.emersion.mako.service".source`
     ];
 
 
@@ -164,13 +162,7 @@ in
         #! ${pkgs.bash}/bin/bash
         set -xeEuo pipefail
         interval=3
-        targets=(
-          # default/home-manager target
-          # sway-session.target
-          # custom target
-          sway-session-kdn.target
-        )
-        until systemctl --user is-active --quiet "''${targets[@]}" ; do sleep "$interval"; done
+        until systemctl --user is-active --quiet "${cfg.systemd.target}.target" ; do sleep "$interval"; done
         test "$#" -lt 1 || exec "$@"
       '')
       (pkgs.writeScriptBin "_sway-root-gui" ''
@@ -191,7 +183,6 @@ in
       wf-recorder
       v4l-utils
       mako
-      alacritty
       foot
       dmenu
       libappindicator
