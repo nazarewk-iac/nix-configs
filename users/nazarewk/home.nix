@@ -31,6 +31,8 @@
       services.blueman-applet.enable = true;
       services.gnome-keyring.enable = true;
       services.network-manager-applet.enable = true;
+      services.nextcloud-client.enable = true;
+
       home.packages = with pkgs; [
         pass
       ];

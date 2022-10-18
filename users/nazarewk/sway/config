@@ -235,7 +235,6 @@ bar {
     swaybar_command waybar
 }
 exec _sway-wait-ready {
-    nextcloud
     element-desktop
     flameshot
     wl-paste -t text --watch clipman store --no-persist
