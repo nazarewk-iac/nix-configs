@@ -235,7 +235,6 @@ bar {
     swaybar_command waybar
 }
 exec _sway-wait-ready {
-    blueman-applet
     nm-applet --indicator
     nextcloud
     element-desktop
