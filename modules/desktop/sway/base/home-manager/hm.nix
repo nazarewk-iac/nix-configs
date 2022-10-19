@@ -61,6 +61,7 @@ in
       config.bars = [ ];
       config.focus.followMouse = false;
       config.floating.modifier = mod.super;
+      config.workspaceLayout = "tabbed";
       extraConfig = builtins.readFile ./sway/config;
     };
 

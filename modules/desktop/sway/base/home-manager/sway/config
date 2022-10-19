@@ -199,8 +199,6 @@ exec _sway-wait-ready {
     wl-paste -t text --watch clipman store --no-persist
 }
 
-workspace_layout tabbed
-
 for_window [title="File Operation Progress"] {
   floating enable
   sticky enable
