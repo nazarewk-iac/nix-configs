@@ -57,6 +57,7 @@ in
       QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
       # see https://github.com/swaywm/wlroots/issues/3189#issuecomment-461608727
       WLR_NO_HARDWARE_CURSORS = "1";
+      SSH_AUTH_SOCK = "$XDG_RUNTIME_DIR/keyring/ssh";
     };
 
     kdn.sway.base.environment = {
@@ -74,9 +75,11 @@ in
     programs.sway.extraSessionCommands = ''
       . /etc/profile
 
+      # cfg.environmentDefaults
       export ${lib.concatStringsSep " \\\n  " cfg.environmentDefaults}
+
+      # cfg.environment
       export ${lib.concatStringsSep " \\\n  " cfg.environment}
-      export SSH_AUTH_SOCK
     '';
 
     systemd.user.targets."${cfg.systemd.target}" = {
@@ -85,27 +88,31 @@ in
       bindsTo = [ "graphical-session.target" ];
       wants = [ "graphical-session-pre.target" ];
       after = [ "graphical-session-pre.target" ];
-      requires = [ "tray.target" ];
     };
 
     kdn.sway.base.initScripts.polkit = {
       "00-init" = ''
-        export PATH="${pkgs.procps}/bin:$PATH"
+        export PATH="${lib.makeBinPath (with pkgs; [ procps systemd ])}:$PATH"
         until systemctl --user show-environment | grep -q WAYLAND_DISPLAY ; do sleep 1; done
         exec ${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1
       '';
     };
     kdn.sway.base.initScripts.systemd = {
+      "01-update-systemd-environment" = ''
+        export PATH="${lib.makeBinPath (with pkgs; [ dbus systemd ])}:$PATH"
+
+        until systemctl --user show-environment | grep -q WAYLAND_DISPLAY ; do
+          sleep 1
+        done
+        dbus-update-activation-environment --systemd --all --verbose
+      '';
       "50-wait-polkit" = ''
-        export PATH="${pkgs.procps}/bin:$PATH"
-        until pgrep -fu $UID polkit-gnome-authentication-agent-1 ; do sleep 2; done
+        export PATH="${lib.makeBinPath (with pkgs; [ procps ])}:$PATH"
+        until pgrep -fu $UID polkit-gnome-authentication-agent-1 ; do sleep 1; done
       '';
       # because tray opens up too late https://github.com/Alexays/Waybar/issues/483
-      "50-wait-waybar" = ''
-        export PATH="${pkgs.procps}/bin:$PATH"
-        until pgrep -fu $UID waybar && sleep 3 ; do sleep 2; done
-      '';
       "99-start-${cfg.systemd.target}" = ''
+        export PATH="${lib.makeBinPath (with pkgs; [ dbus procps systemd ])}:$PATH"
         systemctl --user start ${cfg.systemd.target}.target
       '';
     };
@@ -138,17 +145,10 @@ in
     ];
 
     systemd.user.services.xfce4-notifyd.enable = false;
-    services.dbus.packages = with pkgs; [
-      # mako # see `home.file.".local/share/dbus-1/services/fr.emersion.mako.service".source`
-    ];
-
 
     home-manager.sharedModules = [
       {
-        # according to Dunst FAQ https://dunst-project.org/faq/#cannot-acquire-orgfreedesktopnotifications
-        # you might need to create a file in home directory instead of system-wide to select proper notification daemon
-        home.file.".local/share/dbus-1/services/fr.emersion.mako.service".source = "${pkgs.mako}/share/dbus-1/services/fr.emersion.mako.service";
-
+        kdn.sway.base.enable = true;
         wayland.windowManager.sway = {
           inherit (config.programs.sway) extraSessionCommands extraOptions wrapperFeatures;
           systemdIntegration = false;
@@ -183,8 +183,6 @@ in
       v4l-utils
       mako
       dmenu
-      libappindicator
-      libappindicator-gtk3
       grim
       wlogout
       libnotify
@@ -197,7 +195,6 @@ in
       lxappearance
       xsettingsd
       gsettings-desktop-schemas
-      networkmanagerapplet
       gtk_engines
       gtk-engine-murrine
       # wayland programs
@@ -224,7 +221,7 @@ in
     ];
 
     xdg.portal.enable = true;
-    environment.sessionVariables.GTK_USE_PORTAL = "1";
+    xdg.portal.gtkUsePortal = true;
     xdg.portal.wlr.enable = true;
     xdg.portal.wlr.settings = {
       screencast = {

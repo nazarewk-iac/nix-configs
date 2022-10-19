@@ -14,7 +14,6 @@ in
     services.xserver.enable = true;
     services.xserver.displayManager.defaultSession = "sway";
     services.xserver.displayManager.gdm.enable = true;
-    services.xserver.libinput.enable = true;
 
     kdn.sway.base.initScripts.systemd = {
       "01-wait-gdm-environment" = ''

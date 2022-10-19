@@ -173,6 +173,13 @@ in
         ${pkgs.procps}/bin/pkill -u $USER -USR2 waybar || true
       '';
     };
+
+    home.packages = with pkgs; [
+      libappindicator
+      libappindicator-gtk3
+    ];
+
+    systemd.user.services.waybar.Unit.BindsTo = [ "tray.target" ];
     programs.waybar = {
       enable = true;
       systemd.enable = true;

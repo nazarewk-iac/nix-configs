@@ -28,7 +28,8 @@
           Include ~/.ssh/config.local
       '';
 
-      services.gnome-keyring.enable = true;
+      # services.gnome-keyring.enable = true;
+      # services.gnome-keyring.components = [ "pkcs11" "secrets" "ssh" ];
 
       home.packages = with pkgs; [
         pass
@@ -37,11 +38,15 @@
       kdn.development.git.enable = true;
     }
     (lib.mkIf config.kdn.headless.enableGUI {
-      kdn.sway.base.enable = true;
-
       services.flameshot.settings.General.savePath = "${config.home.homeDirectory}/Downloads/screenshots";
       xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
-      services.nextcloud-client.enable = true;
+
+      systemd.user.services.nextcloud-client.Unit.After = [ "tray.target" ];
+      systemd.user.services.nextcloud-client.Unit.Requires = [ "tray.target" ];
+      services.nextcloud-client = {
+        enable = true;
+        startInBackground = true;
+      };
 
       # pam-u2f expects a single line of configuration per user in format `username:entry1:entry2:entry3:...`
       # `pamu2fcfg` generates lines of format `username:entry`

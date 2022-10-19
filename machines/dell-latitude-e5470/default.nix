@@ -32,7 +32,6 @@
 
   kdn.hardware.intel-graphics-fix.enable = true;
   kdn.hardware.modem.enable = true;
-  services.cpupower-gui.enable = true;
 
   # BOOT
   boot.kernelParams = [ "consoleblank=90" ];
@@ -130,8 +129,6 @@
       randomEncryption.enable = true;
     }
   ];
-
-  powerManagement.cpuFreqGovernor = "performance";
 
   hardware.cpu.intel.updateMicrocode = true;
   boot.initrd.kernelModules = [ "dm-snapshot" "i915" ];

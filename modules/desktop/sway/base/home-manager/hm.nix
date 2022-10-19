@@ -10,6 +10,7 @@ in
   imports = [
     ./waybar.nix
     ./swaylock.nix
+    ./notifications.nix
   ];
 
   config = lib.mkIf (config.kdn.headless.enableGUI && cfg.enable) {

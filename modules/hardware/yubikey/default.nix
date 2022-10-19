@@ -39,13 +39,6 @@ in
     ];
 
     users.groups.plugdev = { };
-
-    # security.pam.yubico = {
-    #   enable = true;
-    #   # debug = true;
-    #   mode = "challenge-response";
-    # };
-
     security.pam.u2f = {
       enable = true;
       cue = true;

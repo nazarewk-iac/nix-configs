@@ -101,7 +101,6 @@
 
   # CUSTOM
 
-  services.udisks2.enable = true;
   services.devmon.enable = true;
   programs.steam.enable = true;
 

@@ -17,7 +17,6 @@
   # INPUT
   services.xserver.layout = "pl";
   console.useXkbConfig = true;
-  services.xserver.libinput.enable = true;
   services.xserver.libinput.touchpad.disableWhileTyping = true;
   services.xserver.libinput.touchpad.naturalScrolling = true;
   services.xserver.libinput.touchpad.tapping = true;

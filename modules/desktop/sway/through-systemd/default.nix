@@ -66,10 +66,7 @@ in
         set -xEeuo pipefail
         test "''${NAZAREWK_SWAY_SYSTEMD:-}" = "1" || exit 0
 
-        until systemctl --user show-environment | grep WAYLAND_DISPLAY ; do
-          sleep 2
-          dbus-update-activation-environment --systemd --all --verbose
-        done
+        # do something if needed
       '';
       "99-notify-systemd-service" = ''
         #!${pkgs.bash}/bin/bash
