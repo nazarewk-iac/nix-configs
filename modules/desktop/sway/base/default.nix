@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.sway.base = {
-    enable = mkEnableOption "Sway base setup";
+    enable = lib.mkEnableOption "Sway base setup";
 
     systemd.target = mkOption {
       type = types.str;

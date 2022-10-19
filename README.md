@@ -1,19 +1,20 @@
 # nix-configs
+
 Repository containing my personal Nix (NixOS, Home Manager etc.) configurations.
 
 Basic structure:
-- `configurations/` - large NixOS configuration bundles
-- `machines/` - configurations of specific (physical) machines
-- `users/` - user specific profiles
+
 - `modules/` - all modules live here, they MUST be turned off by default (side-effect free imports),
-  - `modules/default.nix` - holds imports to all the modules and basic Nix package manager configuration,
+    - `modules/default.nix` - holds imports to all the modules and basic Nix package manager configuration,
+    - `modules/profile/machine` - large NixOS configuration bundles
+    - `modules/profile/user` - user specific profiles
 
-Generally I aim to hide everything behind Options, but bulk of configuration still lives in `configurations/desktop`. 
-
+Generally I aim to hide everything behind Options, but bulk of configuration still lives in `configurations/desktop`.
 
 ## Overview
 
 This is incomplete list of incorporated software/systems worth noting:
+
 - ZFS
 - Sway WM
 - ZSH
@@ -42,10 +43,11 @@ This is incomplete list of incorporated software/systems worth noting:
    mkdir -p /mnt/etc/nixos
    ln -s ../../home/nazarewk/dev/github.com/nazarewk-iac/nix-configs/flake.nix /mnt/etc/nixos/flake.nix
    ```
-8. run the build, eg: 
+8. run the build, eg:
    ```
    nixos-install --show-trace --root /mnt --flake '/mnt/home/nazarewk/dev/github.com/nazarewk-iac/nix-configs#nazarewk-krul'
    ```
+
 ## Building on Hetzner Cloud from NixOS installer image
 
 1. mount the NixOS installer image

@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.development.rust = {
-    enable = mkEnableOption "Rust development";
+    enable = lib.mkEnableOption "Rust development";
   };
 
   config = mkIf cfg.enable {

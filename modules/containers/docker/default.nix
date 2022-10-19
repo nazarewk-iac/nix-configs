@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.docker = {
-    enable = mkEnableOption "docker daemon setup";
+    enable = lib.mkEnableOption "docker daemon setup";
   };
 
   config = mkIf cfg.enable {

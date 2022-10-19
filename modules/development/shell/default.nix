@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.development.shell = {
-    enable = mkEnableOption "shell development";
+    enable = lib.mkEnableOption "shell development";
   };
 
   config = mkIf cfg.enable {

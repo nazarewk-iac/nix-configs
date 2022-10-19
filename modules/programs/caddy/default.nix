@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.programs.caddy = {
-    enable = mkEnableOption "Caddy web server";
+    enable = lib.mkEnableOption "Caddy web server";
   };
 
   config = mkIf cfg.enable {

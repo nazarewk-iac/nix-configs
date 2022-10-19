@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.desktop.remote-server = {
-    enable = mkEnableOption "remote desktop server setup";
+    enable = lib.mkEnableOption "remote desktop server setup";
   };
 
   config = mkIf cfg.enable {

@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.development.golang = {
-    enable = mkEnableOption "golang development";
+    enable = lib.mkEnableOption "golang development";
   };
 
   config = mkIf cfg.enable {

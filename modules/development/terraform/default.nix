@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.development.terraform = {
-    enable = mkEnableOption "Terraform development";
+    enable = lib.mkEnableOption "Terraform development";
   };
 
   config = mkIf cfg.enable {

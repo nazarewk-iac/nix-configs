@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.xfce.base = {
-    enable = mkEnableOption "XFCE4 base setup";
+    enable = lib.mkEnableOption "XFCE4 base setup";
     enableDesktop = mkEnableOption "enable XFCE desktop?";
   };
 

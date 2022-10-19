@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.development.ruby = {
-    enable = mkEnableOption "Ruby development";
+    enable = lib.mkEnableOption "Ruby development";
   };
 
   config = mkIf cfg.enable {

@@ -22,7 +22,7 @@ let
 in
 {
   options.kdn.programs.aws-vault = {
-    enable = mkEnableOption "aws-vault + aliases";
+    enable = lib.mkEnableOption "aws-vault + aliases";
 
     package = mkOption {
       type = types.package;

@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.desktop.base = {
-    enable = mkEnableOption "Desktop base setup";
+    enable = lib.mkEnableOption "Desktop base setup";
 
     enableWlrootsPatch = mkEnableOption "patched wlroots";
 

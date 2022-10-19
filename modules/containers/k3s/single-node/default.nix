@@ -67,7 +67,7 @@ let
 in
 {
   options.kdn.k3s.single-node = {
-    enable = mkEnableOption "local (single node) k3s setup";
+    enable = lib.mkEnableOption "local (single node) k3s setup";
 
     enableTools = mkOption {
       default = cfg.enable;
@@ -173,15 +173,15 @@ in
     };
 
     kube-prometheus = {
-      enable = mkEnableOption "kube-prometheus tweaks";
+      enable = lib.mkEnableOption "kube-prometheus tweaks";
     };
 
     rook-ceph = {
-      enable = mkEnableOption "Rook Ceph tweaks";
+      enable = lib.mkEnableOption "Rook Ceph tweaks";
     };
 
     istio = {
-      enable = mkEnableOption "Istio tweaks";
+      enable = lib.mkEnableOption "Istio tweaks";
     };
 
     cilium = {

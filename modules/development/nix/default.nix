@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.development.nix = {
-    enable = mkEnableOption "nix development/debugging";
+    enable = lib.mkEnableOption "nix development/debugging";
   };
 
   config = mkIf cfg.enable {

@@ -23,7 +23,7 @@ let
 in
 {
   options.kdn.development.lua = {
-    enable = mkEnableOption "lua development";
+    enable = lib.mkEnableOption "lua development";
 
     extraPackages = mkOption {
       type = types.listOf types.str;

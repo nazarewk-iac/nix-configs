@@ -72,7 +72,7 @@ in
           };
 
           server = {
-            enable = mkEnableOption "wireguard server setup";
+            enable = lib.mkEnableOption "wireguard server setup";
 
             externalInterface = mkOption {
               type = types.str;

@@ -8,7 +8,7 @@ let
 in
 {
   options.kdn.work.development = {
-    enable = mkEnableOption "development utilities";
+    enable = lib.mkEnableOption "development utilities";
 
     prefix = mkOption {
       default = "w";

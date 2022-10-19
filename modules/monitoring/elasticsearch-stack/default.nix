@@ -8,7 +8,7 @@ let
 in
 {
   options.kdn.monitoring.elasticsearch-stack = {
-    enable = mkEnableOption "elasticsearch + kibana";
+    enable = lib.mkEnableOption "elasticsearch + kibana";
 
     packages.elasticsearch = mkOption {
       type = types.package;

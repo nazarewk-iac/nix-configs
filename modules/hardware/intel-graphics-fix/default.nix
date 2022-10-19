@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.hardware.intel-graphics-fix = {
-    enable = mkEnableOption "Intel HD Graphics fix";
+    enable = lib.mkEnableOption "Intel HD Graphics fix";
   };
 
   config = mkIf cfg.enable {

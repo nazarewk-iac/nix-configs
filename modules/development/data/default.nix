@@ -57,7 +57,7 @@ let
 in
 {
   options.kdn.development.data = {
-    enable = mkEnableOption "tools for working with data";
+    enable = lib.mkEnableOption "tools for working with data";
 
     packages = {
       yq = mkOption {

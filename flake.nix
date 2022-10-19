@@ -49,7 +49,7 @@
           nazarewk = home-manager.lib.homeManagerConfiguration {
             pkgs = kdnpkgs;
             modules = [
-              ./users/nazarewk/home.nix
+              # TODO: wire up modules/profile/user/nazarewk/hm.nix
             ];
           };
         };
@@ -82,10 +82,8 @@
           {
             inherit system;
             modules = [
-              ./configurations/desktop
-              ./machines/krul
               {
-                home-manager.users.nazarewk = { };
+                kdn.profile.host.krul.enable = true;
               }
             ];
           }
@@ -96,10 +94,8 @@
           {
             inherit system;
             modules = [
-              ./configurations/desktop
-              ./machines/dell-latitude-e5470
               {
-                home-manager.users.nazarewk = { };
+                kdn.profile.host.dell-latitude-e5470.enable = true;
               }
             ];
           }
@@ -110,8 +106,10 @@
           {
             inherit system;
             modules = [
-              ./configurations/headless
               ./machines/hetzner/wg-0
+              {
+                kdn.profile.machine.headless.enable = true;
+              }
             ];
           }
         );

@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.gnome.base = {
-    enable = mkEnableOption "gnome base setup";
+    enable = lib.mkEnableOption "gnome base setup";
   };
 
   config = mkIf cfg.enable {

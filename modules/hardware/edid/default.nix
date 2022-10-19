@@ -11,7 +11,7 @@ let
 in
 {
   options.kdn.hardware.edid = {
-    enable = mkEnableOption "EDID scripts & utils";
+    enable = lib.mkEnableOption "EDID scripts & utils";
 
     displays = mkOption {
       type = types.attrsOf (types.listOf types.string);

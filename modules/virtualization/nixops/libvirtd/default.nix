@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.virtualization.nixops.libvirtd = {
-    enable = mkEnableOption "libvirtd nixops setup";
+    enable = lib.mkEnableOption "libvirtd nixops setup";
   };
 
   config = mkIf cfg.enable {

@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.monitoring.prometheus-stack = {
-    enable = mkEnableOption "prometheus + grafana";
+    enable = lib.mkEnableOption "prometheus + grafana";
 
     caddy.grafana = mkOption {
       type = types.str;
@@ -13,7 +13,7 @@ in
     };
 
     pushgateway = {
-      enable = mkEnableOption "prometheus + grafana";
+      enable = lib.mkEnableOption "prometheus + grafana";
     };
 
     retentionSize = mkOption {

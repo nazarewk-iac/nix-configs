@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.filesystems.base = {
-    enable = mkEnableOption "basic filesystems related setup";
+    enable = lib.mkEnableOption "basic filesystems related setup";
   };
 
   config = mkIf cfg.enable {

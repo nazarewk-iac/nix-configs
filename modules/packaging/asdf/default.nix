@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.packaging.asdf = {
-    enable = mkEnableOption "ASDF version manager";
+    enable = lib.mkEnableOption "ASDF version manager";
   };
 
   config = mkIf cfg.enable {

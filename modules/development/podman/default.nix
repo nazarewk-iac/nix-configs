@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.development.podman = {
-    enable = mkEnableOption "Podman setup";
+    enable = lib.mkEnableOption "Podman setup";
   };
 
   config = mkIf cfg.enable {

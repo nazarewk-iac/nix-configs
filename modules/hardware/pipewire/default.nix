@@ -6,7 +6,7 @@ in
 {
   options = {
     kdn.hardware.pipewire = {
-      enable = mkEnableOption "Pipewire setup";
+      enable = lib.mkEnableOption "Pipewire setup";
 
       useWireplumber = lib.mkOption {
         type = lib.types.bool;

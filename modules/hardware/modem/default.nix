@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.hardware.modem = {
-    enable = mkEnableOption "modem (LTE + calls) setup";
+    enable = lib.mkEnableOption "modem (LTE + calls) setup";
   };
 
   config = mkIf cfg.enable {

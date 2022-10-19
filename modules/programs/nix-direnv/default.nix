@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.programs.nix-direnv = {
-    enable = mkEnableOption "nix-direnv setup";
+    enable = lib.mkEnableOption "nix-direnv setup";
   };
 
   config = mkIf cfg.enable {

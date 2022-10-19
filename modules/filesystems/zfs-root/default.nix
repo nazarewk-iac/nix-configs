@@ -5,10 +5,10 @@ let
 in
 {
   options.kdn.filesystems.zfs-root = {
-    enable = mkEnableOption "ZFS setup";
+    enable = lib.mkEnableOption "ZFS setup";
 
     sshUnlock = {
-      enable = mkEnableOption "ZFS unlocking over SSH setup";
+      enable = lib.mkEnableOption "ZFS unlocking over SSH setup";
       authorizedKeys = mkOption {
         type = types.listOf types.str;
         default = config.users.users.nazarewk.openssh.authorizedKeys.keys;

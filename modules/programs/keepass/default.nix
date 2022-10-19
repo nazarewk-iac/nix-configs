@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.programs.keepass = {
-    enable = mkEnableOption "keepass with plugins";
+    enable = lib.mkEnableOption "keepass with plugins";
   };
 
   config = mkIf cfg.enable {

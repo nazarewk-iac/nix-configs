@@ -16,7 +16,7 @@ let
 in
 {
   options.kdn.programs.gnupg = {
-    enable = mkEnableOption "GnuPG forwarding to remote systems";
+    enable = lib.mkEnableOption "GnuPG forwarding to remote systems";
   };
 
   config = mkIf cfg.enable {

@@ -9,7 +9,7 @@ let
 in
 {
   options.kdn.programs.obs-studio = {
-    enable = mkEnableOption "OBS Studio setup";
+    enable = lib.mkEnableOption "OBS Studio setup";
     package = mkOption {
       type = types.package;
       default = pkgs.obs-studio;

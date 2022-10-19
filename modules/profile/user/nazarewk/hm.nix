@@ -1,6 +1,12 @@
 { config, pkgs, lib, ... }@arguments:
+let
+  cfg = config.kdn.profile.user.nazarewk;
+in
 {
-  config = lib.mkMerge [
+  options.kdn.profile.user.nazarewk = {
+    enable = lib.mkEnableOption "enable nazarewk user profile";
+  };
+  config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       home.stateVersion = "22.11";
 
@@ -81,5 +87,5 @@
         })
       ];
     })
-  ];
+  ]);
 }

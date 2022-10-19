@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.hardware.discovery = {
-    enable = mkEnableOption "hardware discovery scripts";
+    enable = lib.mkEnableOption "hardware discovery scripts";
   };
 
   config = mkIf cfg.enable {

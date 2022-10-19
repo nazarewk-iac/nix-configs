@@ -11,7 +11,7 @@ let
 in
 {
   options.kdn.sway.remote = {
-    enable = mkEnableOption "remote access setup for Sway";
+    enable = lib.mkEnableOption "remote access setup for Sway";
   };
 
   config = mkIf cfg.enable {

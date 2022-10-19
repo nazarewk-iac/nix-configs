@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.programs.nix-index = {
-    enable = mkEnableOption "nix-index setup";
+    enable = lib.mkEnableOption "nix-index setup";
   };
 
   config = mkIf cfg.enable {

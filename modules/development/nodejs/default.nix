@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.development.nodejs = {
-    enable = mkEnableOption "Node JS development";
+    enable = lib.mkEnableOption "Node JS development";
   };
 
   config = mkIf cfg.enable {

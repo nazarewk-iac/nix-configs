@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.development.linux-utils = {
-    enable = mkEnableOption "linux utils";
+    enable = lib.mkEnableOption "linux utils";
   };
 
   config = mkIf cfg.enable {

@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.headless.base = {
-    enable = mkEnableOption "basic headless system configuration";
+    enable = lib.mkEnableOption "basic headless system configuration";
   };
 
   config = mkIf cfg.enable {

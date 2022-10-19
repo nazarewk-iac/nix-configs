@@ -30,7 +30,7 @@ let
 in
 {
   options.kdn.sway.systemd = {
-    enable = mkEnableOption "running Sway WM as a systemd service";
+    enable = lib.mkEnableOption "running Sway WM as a systemd service";
   };
 
   config = mkIf cfg.enable {

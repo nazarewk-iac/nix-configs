@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.development.elixir = {
-    enable = mkEnableOption "elixir development";
+    enable = lib.mkEnableOption "elixir development";
   };
 
   config = mkIf cfg.enable {

@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.development.cloud = {
-    enable = mkEnableOption "cloud development";
+    enable = lib.mkEnableOption "cloud development";
   };
 
   config = mkIf cfg.enable {

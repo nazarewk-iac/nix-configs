@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.development.k8s = {
-    enable = mkEnableOption "k8s development";
+    enable = lib.mkEnableOption "k8s development";
   };
 
 

@@ -6,7 +6,7 @@ in
 {
   options = {
     kdn.hardware.qmk = {
-      enable = mkEnableOption "QMK + ZSA keyboard related software (eg: Moonlander)";
+      enable = lib.mkEnableOption "QMK + ZSA keyboard related software (eg: Moonlander)";
     };
   };
 

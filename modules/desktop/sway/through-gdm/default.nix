@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.sway.gdm = {
-    enable = mkEnableOption "running Sway WM in GDM";
+    enable = lib.mkEnableOption "running Sway WM in GDM";
   };
 
   config = mkIf cfg.enable {

@@ -7,7 +7,7 @@ in
 {
   options = {
     kdn.hardware.usbip = {
-      enable = mkEnableOption "USB/IP setup";
+      enable = lib.mkEnableOption "USB/IP setup";
 
       package = mkOption {
         type = types.package;

@@ -71,7 +71,7 @@ let
 in
 {
   options.kdn.development.git = {
-    enable = mkEnableOption "Git development utilities";
+    enable = lib.mkEnableOption "Git development utilities";
 
     baseDir = mkOption {
       default = "dev/github.com";

@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.hardware.yubikey = {
-    enable = mkEnableOption "YubiKey + GnuPG Smart Card config";
+    enable = lib.mkEnableOption "YubiKey + GnuPG Smart Card config";
   };
 
   config = mkIf cfg.enable {

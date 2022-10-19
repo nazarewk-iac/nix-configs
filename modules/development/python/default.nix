@@ -5,7 +5,7 @@ let
 in
 {
   options.kdn.development.python = {
-    enable = mkEnableOption "Python development";
+    enable = lib.mkEnableOption "Python development";
   };
 
   config = mkIf cfg.enable {
