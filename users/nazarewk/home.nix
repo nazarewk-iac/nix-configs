@@ -28,9 +28,6 @@
           Include ~/.ssh/config.local
       '';
 
-      # services.gnome-keyring.enable = true;
-      # services.gnome-keyring.components = [ "pkcs11" "secrets" "ssh" ];
-
       home.packages = with pkgs; [
         pass
       ];

@@ -39,5 +39,12 @@ in
     ];
 
     services.gvfs.enable = true; # Mount, trash, and other functionalities
+
+    home-manager.sharedModules = [
+      {
+        services.gnome-keyring.enable = true;
+        services.gnome-keyring.components = [ "pkcs11" "secrets" "ssh" ];
+      }
+    ];
   };
 }
