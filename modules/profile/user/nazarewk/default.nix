@@ -38,6 +38,7 @@ in
 
       openssh.authorizedKeys.keys = sshKeys;
     };
-    home-manager.sharedModules = [{ kdn.profile.user.nazarewk.enable = true; }];
+
+    home-manager.users.nazarewk = { kdn.profile.user.nazarewk.enable = true; };
   };
 }
