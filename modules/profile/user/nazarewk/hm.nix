@@ -1,6 +1,20 @@
 { config, pkgs, lib, ... }@arguments:
 let
   cfg = config.kdn.profile.user.nazarewk;
+
+
+  git-credential-keyring =
+    let
+      wrapped = pkgs.writeShellApplication {
+        name = "git-credential-keyring-wrapped";
+        runtimeInputs = [ pkgs.kdn.git-credential-keyring ];
+        text = ''
+          export KEYRING_PROPERTY_PASS_BINARY="${pkgs.pass}/bin/pass"
+          git-credential-keyring "$@"
+        '';
+      };
+    in
+    "${wrapped}/bin/git-credential-keyring";
 in
 {
   options.kdn.profile.user.nazarewk = {
@@ -22,9 +36,12 @@ in
       programs.git.attributes = [ (builtins.readFile ./.gitattributes) ];
       # to authenticate hub: ln -s ~/.config/gh/hosts.yml ~/.config/hub
       programs.git.extraConfig = {
+        credential.helper = git-credential-keyring;
         # use it separately because `gh` cli wants to write to ~/.config/gh/config.yml
         credential."https://github.com".helper = "${pkgs.gh}/bin/gh auth git-credential";
         url."https://github.com/".insteadOf = "git@github.com:";
+
+        credential."https://bitbucket.org/pakpobox".username = "kdn-alfred24";
       };
 
       programs.ssh.enable = true;

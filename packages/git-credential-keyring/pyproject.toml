@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "git-credential-keyring"
+version = "0.1.0"
+description = "Git Credential helper utilizing https://pypi.org/project/keyring/"
+authors = ["Krzysztof Nazarewski <3494992+nazarewk@users.noreply.github.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "git_credential_keyring.py"}]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+keyring = "^23.9.3"
+# TODO: figure out how to package separately
+keyring-pass = "^0.8.0"
+
+[tool.poetry.scripts]
+git-credential-keyring = 'git_credential_keyring:main'
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
