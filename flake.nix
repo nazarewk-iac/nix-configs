@@ -26,7 +26,8 @@
       inherit (inputs.lib-aggregate) lib;
       inherit (inputs) self;
     in
-    (flake-utils.lib.eachDefaultSystem
+    (flake-utils.lib.eachSystem
+      [ "x86_64-linux" "aarch64-linux" ]
       (system:
       let
         # adapted from https://github.com/nix-community/nixpkgs-wayland/blob/b703de94dd7c3d73a03b5d30b248b8984ad8adb7/flake.nix#L119-L127
@@ -107,9 +108,6 @@
             inherit system;
             modules = [
               ./machines/hetzner/wg-0
-              {
-                kdn.profile.machine.headless.enable = true;
-              }
             ];
           }
         );
