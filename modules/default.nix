@@ -36,6 +36,7 @@ in
       experimental-features = nix-command flakes
     '';
     nixpkgs.config.allowUnfree = true;
+    nixpkgs.config.allowAliases = false;
 
     home-manager.useGlobalPkgs = true;
     home-manager.useUserPackages = true;

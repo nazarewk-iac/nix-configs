@@ -14,4 +14,5 @@ lib.pipe ./. [
     value = pkgs.callPackage path { };
   }))
   builtins.listToAttrs
+  (packages: { kdn = packages; })
 ]
