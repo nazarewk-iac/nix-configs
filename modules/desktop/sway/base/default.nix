@@ -181,7 +181,6 @@ in
       wl-clipboard-x11
       wf-recorder
       v4l-utils
-      mako
       dmenu
       grim
       wlogout

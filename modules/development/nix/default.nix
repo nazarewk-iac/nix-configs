@@ -17,7 +17,6 @@ in
       nixpkgs-fmt
 
       inputs.nixpkgs-update.defaultPackage.${system}
-      inputs.nixos-generators.defaultPackage.${system}
 
       (pkgs.writeShellApplication {
         name = "nix-which";
