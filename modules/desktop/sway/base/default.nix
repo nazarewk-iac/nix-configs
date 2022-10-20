@@ -160,8 +160,8 @@ in
       (pkgs.writeScriptBin "_sway-wait-ready" ''
         #! ${pkgs.bash}/bin/bash
         set -xeEuo pipefail
-        interval=3
-        until systemctl --user is-active --quiet "${cfg.systemd.target}.target" ; do sleep "$interval"; done
+        until systemctl --user is-active --quiet "${cfg.systemd.target}.target" ; do sleep 1; done
+        until systemctl --user is-active --quiet "tray.target" ; do sleep 1; done
         test "$#" -lt 1 || exec "$@"
       '')
       (pkgs.writeScriptBin "_sway-root-gui" ''
