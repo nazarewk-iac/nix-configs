@@ -9,12 +9,13 @@ let
         name = "git-credential-keyring-wrapped";
         runtimeInputs = [ pkgs.kdn.git-credential-keyring ];
         text = ''
+          export PYTHON_KEYRING_BACKEND="keyring_pass.PasswordStoreBackend"
           export KEYRING_PROPERTY_PASS_BINARY="${pkgs.pass}/bin/pass"
           git-credential-keyring "$@"
         '';
       };
     in
-    "${wrapped}/bin/git-credential-keyring";
+    "${wrapped}/bin/git-credential-keyring-wrapped";
 in
 {
   options.kdn.profile.user.nazarewk = {
