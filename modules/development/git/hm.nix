@@ -11,6 +11,7 @@ let
     runtimeInputs = with pkgs; [ ];
     text = ''
       for entry in "$@"; do
+        entry="''${entry#*github.com/}"
         echo "${shellDir}/$entry"
       done
     '';
@@ -21,6 +22,7 @@ let
     runtimeInputs = with pkgs; [ ];
     text = ''
       for entry in "$@"; do
+        entry="''${entry#*github.com/}"
         org="''${entry%/*}"
         repo="''${entry#*/}"
         echo "${cfg.remoteShellPattern}"
