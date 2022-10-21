@@ -49,6 +49,10 @@ in
     environment.shellAliases = {
       "userctl" = "systemctl --user";
       "userjournal" = "journalctl --user";
+      "sc" = "systemctl";
+      "sj" = "journalctl";
+      "uc" = "systemctl --user";
+      "uj" = "journalctl --user";
     };
 
     kdn.headless.base.enable = true;
