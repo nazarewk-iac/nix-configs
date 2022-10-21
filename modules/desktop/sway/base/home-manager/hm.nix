@@ -1,6 +1,6 @@
-{ config, pkgs, lib, ... }:
+{ systemConfig, config, pkgs, lib, ... }:
 let
-  cfg = config.kdn.sway.base;
+  sysCfg = systemConfig.kdn.sway.base;
 
   mod = import ./_modifiers.nix;
 in
@@ -17,7 +17,7 @@ in
     ./waybar.nix
   ];
 
-  config = lib.mkIf (config.kdn.headless.enableGUI && cfg.enable) {
+  config = lib.mkIf (config.kdn.headless.enableGUI && sysCfg.enable) {
     services.blueman-applet.enable = true;
     services.network-manager-applet.enable = true;
 

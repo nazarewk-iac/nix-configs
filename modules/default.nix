@@ -1,4 +1,4 @@
-{ lib, pkgs, inputs, self, ... }:
+{ config, lib, pkgs, inputs, self, ... }:
 let
   nixosModules = lib.pipe ./. [
     lib.filesystem.listFilesRecursive
@@ -40,6 +40,8 @@ in
 
     home-manager.useGlobalPkgs = true;
     home-manager.useUserPackages = true;
+    home-manager.backupFileExtension = "backup";
+    home-manager.extraSpecialArgs = { systemConfig = config; };
     home-manager.sharedModules = hmModules ++ [
       (
         let

@@ -1,6 +1,7 @@
-{ config, pkgs, lib, ... }:
+{ systemConfig, config, pkgs, lib, ... }:
 let
   cfg = config.kdn.sway.base;
+  sysCfg = systemConfig.kdn.sway.base;
 
   swaylock = "${pkgs.swaylock}/bin/swaylock";
   lockCmd = "${swaylock} -f";
@@ -14,6 +15,7 @@ in
     wayland.windowManager.sway.config.keybindings."${mod.super}+L" = "exec ${lockCmd}";
     services.swayidle = {
       enable = true;
+      systemdTarget = sysCfg.systemd.target;
       events = [
         { event = "before-sleep"; command = lockCmd; }
       ];
