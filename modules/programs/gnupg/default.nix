@@ -36,6 +36,7 @@ in
     environment.systemPackages = with pkgs; [
       pinentry
       opensc
+      # TODO: figure out pass-secret-service instead of Gnome Keyring?
       pass
       pcsctools
 

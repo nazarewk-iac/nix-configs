@@ -53,7 +53,6 @@ in
       '';
 
       home.packages = with pkgs; [
-        pass
       ];
 
       kdn.development.git.enable = true;
