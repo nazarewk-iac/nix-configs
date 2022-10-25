@@ -36,6 +36,7 @@ in
     kdn.docker.enable = true;
 
     environment.systemPackages = with pkgs; [
+      kdn.klog-time-tracker
       dex # A program to generate and execute DesktopEntry files of the Application type
       brave
       # chromium
