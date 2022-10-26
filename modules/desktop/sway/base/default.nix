@@ -70,6 +70,8 @@ in
       _JAVA_AWT_WM_NONREPARENTING = "1";
       MOZ_ENABLE_WAYLAND = "1";
       MOZ_DBUS_REMOTE = "1";
+      # warning: The option `xdg.portal.gtkUsePortal' defined in `/nix/store/y48ib2rr4sd4y8v4wdxqiff2jydjir1z-source/modules/desktop/sway/base/default.nix' has been deprecated. Setting the variable globally with `environment.sessionVariables' NixOS option can have unforseen side-effects.
+      GTK_USE_PORTAL = "1";
     };
 
     programs.sway.extraSessionCommands = ''
@@ -220,7 +222,6 @@ in
     ];
 
     xdg.portal.enable = true;
-    xdg.portal.gtkUsePortal = true;
     xdg.portal.wlr.enable = true;
     xdg.portal.wlr.settings = {
       screencast = {
