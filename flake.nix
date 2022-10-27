@@ -39,10 +39,22 @@
           kdnpkgs = (opkgs_ [ self.overlays.default ]).nixpkgs;
         in
         {
-          apps = { };
+          apps = {
+            # see https://github.com/NixOS/nix/issues/3803#issuecomment-748612294
+            # usage: nix run '.#repl'
+            repl = {
+              type = "app";
+              program = "${pkgs.writeShellScriptBin "repl" ''
+                confnix=$(mktemp)
+                echo "builtins.getFlake (toString $(git rev-parse --show-toplevel))" >$confnix
+                trap "rm $confnix" EXIT
+                nix repl $confnix
+              ''}/bin/repl";
+            };
+          };
           checks = { };
           devShells = { };
-          packages.default = kdnpkgs;
+          packages = lib.filterAttrs (n: pkg: lib.isDerivation pkg) kdnpkgs.kdn;
         };
       flake = {
         overlays.default = final: prev: (
