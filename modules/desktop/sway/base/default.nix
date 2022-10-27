@@ -57,7 +57,6 @@ in
       QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
       # see https://github.com/swaywm/wlroots/issues/3189#issuecomment-461608727
       WLR_NO_HARDWARE_CURSORS = "1";
-      SSH_AUTH_SOCK = "$XDG_RUNTIME_DIR/keyring/ssh";
     };
 
     kdn.sway.base.environment = {

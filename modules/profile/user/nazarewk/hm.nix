@@ -45,6 +45,9 @@ in
         credential."https://bitbucket.org/pakpobox".username = "kdn-alfred24";
       };
 
+      programs.password-store.settings = {
+        PASSWORD_STORE_DIR = "${config.home.homeDirectory}/Nextcloud/drag0nius@nc.nazarewk.pw/important/password-store";
+      };
       programs.ssh.enable = true;
       programs.zsh.enable = true;
       programs.ssh.extraConfig = ''

@@ -1,0 +1,373 @@
+Index: pypass/command.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/pypass/command.py b/pypass/command.py
+--- a/pypass/command.py	(revision f86cf0ba0e5cb6a1236ff16d8f238b92bc49c517)
++++ b/pypass/command.py	(date 1666794020910)
+@@ -159,7 +159,7 @@
+
+     if clip:
+         xclip = subprocess.Popen(
+-            ['xclip', '-selection', 'clipboard'],
++            ['@xclip_exec@', '-selection', 'clipboard'],
+             stdin=subprocess.PIPE
+         )
+         xclip.stdin.write(password.encode())
+@@ -213,7 +213,7 @@
+     if clip:
+         xclip = subprocess.Popen(
+             [
+-                'xclip',
++                '@xclip_exec@',
+                 '-selection', 'clipboard'
+             ],
+             stdin=subprocess.PIPE
+@@ -246,7 +246,7 @@
+ def ls(config, subfolder):
+     tree = subprocess.Popen(
+         [
+-            'tree',
++            '@tree_exec@',
+             '-C',
+             '-l',
+             '--noreport',
+@@ -279,7 +279,7 @@
+
+     tree = subprocess.Popen(
+         [
+-            'tree',
++            '@tree_exec@',
+             '-C',
+             '-l',
+             '--noreport',
+@@ -313,7 +313,7 @@
+             config['password_store'].get_decrypted_password(password)
+
+         grep = subprocess.Popen(
+-            ['grep', '-e', search_string],
++            ['@grep_exec@', '-e', search_string],
+             stdout=subprocess.PIPE,
+             stdin=subprocess.PIPE
+         )
+@@ -437,7 +437,7 @@
+     else:
+         subprocess.call(
+             [
+-                'git',
++                "@git_exec@",
+                 '--git-dir=%s' % config['password_store'].git_dir,
+                 '--work-tree=%s' % config['password_store'].path,
+             ] + command_list,
+Index: Makefile
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Makefile b/Makefile
+--- a/Makefile	(revision f86cf0ba0e5cb6a1236ff16d8f238b92bc49c517)
++++ b/Makefile	(date 1666792361157)
+@@ -16,6 +16,6 @@
+ setup_gpg: pypass/tests/gnupg
+ pypass/tests/gnupg: pypass/tests/test_key_sec.asc pypass/tests/test_key_2_sec.asc pypass/tests/test_ownertrust.txt
+ 	mkdir -m 700 -p pypass/tests/gnupg
+-	GNUPGHOME=pypass/tests/gnupg gpg --allow-secret-key-import --import pypass/tests/test_key_sec.asc
+-	GNUPGHOME=pypass/tests/gnupg gpg --allow-secret-key-import --import pypass/tests/test_key_2_sec.asc
+-	GNUPGHOME=pypass/tests/gnupg gpg --import-ownertrust pypass/tests/test_ownertrust.txt
++	GNUPGHOME=pypass/tests/gnupg @gpg_exec@ --allow-secret-key-import --import pypass/tests/test_key_sec.asc
++	GNUPGHOME=pypass/tests/gnupg @gpg_exec@ --allow-secret-key-import --import pypass/tests/test_key_2_sec.asc
++	GNUPGHOME=pypass/tests/gnupg @gpg_exec@ --import-ownertrust pypass/tests/test_ownertrust.txt
+Index: pypass/tests/test_command.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/pypass/tests/test_command.py b/pypass/tests/test_command.py
+--- a/pypass/tests/test_command.py	(revision f86cf0ba0e5cb6a1236ff16d8f238b92bc49c517)
++++ b/pypass/tests/test_command.py	(date 1666794020911)
+@@ -48,7 +48,7 @@
+     def assertLastCommitMessage(self, text):
+         git_log = subprocess.Popen(
+             [
+-                'git',
++                "@git_exec@",
+                 '--git-dir=%s' % os.path.join(self.dir, '.git'),
+                 '--work-tree=%s' % self.dir,
+                 'log', '-1', '--pretty=%B'
+@@ -175,7 +175,7 @@
+
+         # Check if the password is in the clipoard
+         xclip = subprocess.Popen(
+-            ['xclip', '-o', '-selection', 'clipboard'],
++            ['@xclip_exec@', '-o', '-selection', 'clipboard'],
+             stdout=subprocess.PIPE)
+         xclip.wait()
+         self.assertEqual(xclip.stdout.read().decode('utf8'), 'clipme999')
+@@ -341,14 +341,14 @@
+         store = PasswordStore(self.dir)
+         store.insert_password('grep_test.com', 'GREPME')
+
+-        grep_result = self.run_cli(['grep', 'GREPME'])
++        grep_result = self.run_cli(['@grep_exec@', 'GREPME'])
+         self.assertEqual(
+             grep_result.output,
+             'grep_test.com:\nGREPME\n'
+         )
+
+     def test_git_init(self):
+-        self.run_cli(['git', 'init'])
++        self.run_cli(["@git_exec@", 'init'])
+
+         # git init should add a .gitattributes file
+         self.assertEqual(
+@@ -359,7 +359,7 @@
+         # git init should set diff.gpg.binary to True
+         diff_gpg_binary = subprocess.Popen(
+             [
+-                'git',
++                "@git_exec@",
+                 '--git-dir=%s' % os.path.join(self.dir, '.git'),
+                 '--work-tree=%s' % self.dir,
+                 'config',
+@@ -375,7 +375,7 @@
+         # git init should set diff.gpg.textconv to 'gpg -d'
+         gpg = subprocess.Popen(
+             [
+-                'git',
++                "@git_exec@",
+                 '--git-dir=%s' % os.path.join(self.dir, '.git'),
+                 '--work-tree=%s' % self.dir,
+                 'config',
+@@ -389,7 +389,7 @@
+         self.assertEqual(gpg.stdout.read().decode(), 'gpg -d\n')
+
+     def test_git_init_insert_and_show(self):
+-        self.run_cli(['git', 'init'])
++        self.run_cli(["@git_exec@", 'init'])
+
+         self.run_cli(
+             ['insert', 'test.com'],
+@@ -408,13 +408,13 @@
+         self.assertEqual(show_result.output, 'super_secret\n')
+
+     def test_git_forward_options(self):
+-        self.run_cli(['git', 'init'])
++        self.run_cli(["@git_exec@", 'init'])
+         self.run_cli(
+             ['insert', 'test.com'],
+             input='super_secret\nsuper_secret'
+         )
+
+-        self.run_cli(['git', 'commit', '--amend', '-m', 'Modified message.'])
++        self.run_cli(["@git_exec@", 'commit', '--amend', '-m', 'Modified message.'])
+         self.assertLastCommitMessage('Modified message.')
+
+     def test_init_clone(self):
+@@ -424,7 +424,7 @@
+
+         subprocess.Popen(
+             [
+-                'git',
++                "@git_exec@",
+                 '--git-dir=%s' % origin_git_dir,
+                 '--work-tree=%s' % origin_dir,
+                 'init',
+@@ -437,7 +437,7 @@
+
+         subprocess.call(
+             [
+-                'git',
++                "@git_exec@",
+                 '--git-dir=%s' % origin_git_dir,
+                 '--work-tree=%s' % origin_dir,
+                 'add', 'test_git_init_clone.gpg',
+@@ -446,7 +446,7 @@
+
+         subprocess.call(
+             [
+-                'git',
++                "@git_exec@",
+                 '--git-dir=%s' % origin_git_dir,
+                 '--work-tree=%s' % origin_dir,
+                 'commit',
+@@ -488,7 +488,7 @@
+         self.assertEqual(decoded, password)
+
+     def test_generate_in_place(self):
+-        self.run_cli(['git', 'init'])
++        self.run_cli(["@git_exec@", 'init'])
+         store = PasswordStore(self.dir)
+
+         generate = self.run_cli(
+@@ -516,7 +516,7 @@
+         self.assertEqual(generate.output, 'Copied clip.me to clipboard.\n')
+
+         xclip = subprocess.Popen(
+-            ['xclip', '-o', '-selection', 'clipboard'],
++            ['@xclip_exec@', '-o', '-selection', 'clipboard'],
+             stdout=subprocess.PIPE
+         )
+         xclip.wait()
+Index: setup.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/setup.py b/setup.py
+--- a/setup.py	(revision f86cf0ba0e5cb6a1236ff16d8f238b92bc49c517)
++++ b/setup.py	(date 1666792933894)
+@@ -18,6 +18,8 @@
+ #
+
+ import setuptools
++import os
++os.environ["PBR_VERSION"] = "@VERSION@"
+
+ setuptools.setup(
+     setup_requires=['pbr'],
+Index: pypass/tests/test_passwordstore.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/pypass/tests/test_passwordstore.py b/pypass/tests/test_passwordstore.py
+--- a/pypass/tests/test_passwordstore.py	(revision f86cf0ba0e5cb6a1236ff16d8f238b92bc49c517)
++++ b/pypass/tests/test_passwordstore.py	(date 1666793415173)
+@@ -195,7 +195,7 @@
+
+         subprocess.Popen(
+             [
+-                'git',
++                "@git_exec@",
+                 '--git-dir=%s' % os.path.join(origin_dir, '.git'),
+                 '--work-tree=%s' % origin_dir,
+                 'init',
+@@ -208,7 +208,7 @@
+
+         subprocess.Popen(
+             [
+-                'git',
++                "@git_exec@",
+                 '--git-dir=%s' % os.path.join(origin_dir, '.git'),
+                 '--work-tree=%s' % origin_dir,
+                 'add', 'test_git_init_clone.gpg',
+@@ -217,7 +217,7 @@
+
+         subprocess.Popen(
+             [
+-                'git',
++                "@git_exec@",
+                 '--git-dir=%s' % os.path.join(origin_dir, '.git'),
+                 '--work-tree=%s' % origin_dir,
+                 'commit',
+Index: pypass/passwordstore.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/pypass/passwordstore.py b/pypass/passwordstore.py
+--- a/pypass/passwordstore.py	(revision f86cf0ba0e5cb6a1236ff16d8f238b92bc49c517)
++++ b/pypass/passwordstore.py	(date 1666792256046)
+@@ -32,19 +32,7 @@
+     _system_random = random.SystemRandom()
+     choice = _system_random.choice
+
+-# Find the right gpg binary
+-if subprocess.call(
+-        ['which', 'gpg2'],
+-        stdout=subprocess.PIPE,
+-        stderr=subprocess.PIPE) == 0:
+-    GPG_BIN = 'gpg2'
+-elif subprocess.call(
+-        ['which', 'gpg'],
+-        stdout=subprocess.PIPE,
+-        stderr=subprocess.PIPE) == 0:
+-    GPG_BIN = 'gpg'
+-else:
+-    raise Exception("Could not find GPG")
++GPG_BIN = '@gpg_exec@'
+
+
+ class PasswordStore(object):
+@@ -268,7 +256,7 @@
+             # Init git repo
+             subprocess.call(
+                 [
+-                    "git",
++                    "@git_exec@",
+                     "--git-dir=%s" % git_dir,
+                     "--work-tree=%s" % git_work_tree,
+                     "init", path
+@@ -279,7 +267,7 @@
+             # Add remote repo
+             subprocess.call(
+                 [
+-                    "git",
++                    "@git_exec@",
+                     "--git-dir=%s" % git_dir,
+                     "--work-tree=%s" % git_work_tree,
+                     "remote",
+@@ -294,7 +282,7 @@
+             # TODO: add parameters for remote and branch ?
+             subprocess.call(
+                 [
+-                    "git",
++                    "@git_exec@",
+                     "--git-dir=%s" % git_dir,
+                     "--work-tree=%s" % git_work_tree,
+                     "pull",
+@@ -325,7 +313,7 @@
+
+         subprocess.call(
+             [
+-                'git',
++                "@git_exec@",
+                 "--git-dir=%s" % self.git_dir,
+                 "--work-tree=%s" % self.path,
+                 'init',
+@@ -351,7 +339,7 @@
+
+         subprocess.call(
+             [
+-                'git',
++                "@git_exec@",
+                 "--git-dir=%s" % self.git_dir,
+                 "--work-tree=%s" % self.path,
+                 'config',
+@@ -364,7 +352,7 @@
+
+         subprocess.call(
+             [
+-                'git',
++                "@git_exec@",
+                 "--git-dir=%s" % self.git_dir,
+                 "--work-tree=%s" % self.path,
+                 'config',
+@@ -379,7 +367,7 @@
+
+         subprocess.call(
+             [
+-                'git',
++                "@git_exec@",
+                 "--git-dir=%s" % self.git_dir,
+                 "--work-tree=%s" % self.path,
+                 'add',
+@@ -391,7 +379,7 @@
+         if message:
+             subprocess.call(
+                 [
+-                    'git',
++                    "@git_exec@",
+                     "--git-dir=%s" % self.git_dir,
+                     "--work-tree=%s" % self.path,
+                     'commit',
+@@ -403,7 +391,7 @@
+         else:
+             subprocess.call(
+                 [
+-                    'git',
++                    "@git_exec@",
+                     "--git-dir=%s" % self.git_dir,
+                     "--work-tree=%s" % self.path,
+                     'commit'

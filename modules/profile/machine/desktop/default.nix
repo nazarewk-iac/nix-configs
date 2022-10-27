@@ -77,6 +77,7 @@ in
       signal-desktop
       slack
       teams
+      discord
       zoom-us
 
       nextcloud-client

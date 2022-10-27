@@ -28,6 +28,7 @@ in
     services.openssh.openFirewall = true;
     services.openssh.passwordAuthentication = false;
     kdn.programs.gnupg.enable = true;
+    kdn.programs.gnupg.pass-secret-service.enable = true;
 
     # LOCALE
     i18n.defaultLocale = "en_US.UTF-8";
@@ -51,8 +52,10 @@ in
       "userjournal" = "journalctl --user";
       "sc" = "systemctl";
       "sj" = "journalctl";
-      "uc" = "systemctl --user";
-      "uj" = "journalctl --user";
+      "uc" = "userctl";
+      "uj" = "userjournal";
+      "scs" = "sc status";
+      "ucs" = "uc status";
     };
 
     kdn.headless.base.enable = true;

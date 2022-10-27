@@ -43,7 +43,11 @@ in
     home-manager.sharedModules = [
       {
         services.gnome-keyring.enable = true;
-        services.gnome-keyring.components = [ "pkcs11" "secrets" "ssh" ];
+        services.gnome-keyring.components = [
+          "pkcs11"
+          # "secrets"
+          "ssh"
+        ];
       }
     ];
   };
