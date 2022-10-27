@@ -36,10 +36,11 @@ in
     (mkIf cfg.enable {
       services.grafana = {
         enable = true;
-        domain = mkDefault "grafana.localhost";
-        port = 2342;
-        addr = cfg.listenAddress;
-
+        settings.server = {
+          domain = mkDefault "grafana.localhost";
+          port = 2342;
+          addr = cfg.listenAddress;
+        };
         provision.enable = true;
         provision.datasources = [
           {
@@ -79,7 +80,7 @@ in
       };
     })
     (mkIf (cfg.caddy.grafana != "") {
-      services.grafana.domain = cfg.caddy.grafana;
+      services.grafana.settings.server.domain = cfg.caddy.grafana;
       services.caddy.virtualHosts."${cfg.caddy.grafana}".extraConfig = ''
         reverse_proxy ${cfg.listenAddress}:2342
       '';

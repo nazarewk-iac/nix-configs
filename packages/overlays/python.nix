@@ -6,6 +6,11 @@
 { ... }:
 pkgs: final: prev:
 {
+  # https://github.com/NixOS/nixpkgs/issues/197408
+  dbus-next = prev.dbus-next.overridePythonAttrs (old: {
+    checkPhase = builtins.replaceStrings [ "not test_peer_interface" ] [ "not test_peer_interface and not test_tcp_connection_with_forwarding" ] old.checkPhase;
+  });
+
   pypass = prev.pypass.overrideAttrs (o:
     let
       pbr_version = "0.2.2dev";
