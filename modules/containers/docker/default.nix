@@ -1,10 +1,10 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.kdn.docker;
+  cfg = config.kdn.containers.docker;
 in
 {
-  options.kdn.docker = {
+  options.kdn.containers.docker = {
     enable = lib.mkEnableOption "docker daemon setup";
   };
 

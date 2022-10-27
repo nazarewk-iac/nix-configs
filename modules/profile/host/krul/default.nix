@@ -50,7 +50,7 @@ in
     kdn.k3s.single-node.reservations.system.memory = "32G";
     kdn.k3s.single-node.reservations.kube.cpu = "4";
     kdn.k3s.single-node.reservations.kube.memory = "4G";
-    # kdn.development.podman.enable = true;
+    # kdn.containers.podman.enable = true;
 
     kdn.virtualization.nixops.libvirtd.enable = true;
 

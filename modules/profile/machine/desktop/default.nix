@@ -33,7 +33,7 @@ in
     programs.java.enable = true;
     services.plantuml-server.enable = true;
 
-    kdn.docker.enable = true;
+    kdn.containers.dagger.enable = true;
 
     environment.systemPackages = with pkgs; [
       kdn.klog-time-tracker
