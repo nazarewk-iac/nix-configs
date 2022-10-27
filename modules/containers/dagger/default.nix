@@ -12,7 +12,7 @@ in
     kdn.containers.podman.enable = lib.mkDefault true;
     kdn.containers.docker.enable = lib.mkDefault false;
 
-    environment.gnome.excludePackages = with pkgs; [
+    environment.systemPackages = with pkgs; [
       cue
       dagger
       cuelsp
