@@ -30,6 +30,7 @@ in
         "pipewire"
         "plugdev"
         "power"
+        "podman"
         "scanner"
         "tty"
         "video"
