@@ -4,14 +4,19 @@ set -xeEuo pipefail
 target="${1:-"/mnt"}"
 zpool="nazarewk-krul-primary"
 zfs_prefix="${zpool}/nazarewk-krul"
-if [ "${APPLY:-}" = 1 ] ; then
-  cmd () { "$@"; }
+if [ "${APPLY:-}" = 1 ]; then
+  cmd() { "$@"; }
 else
-  cmd () { echo "$@"; }
-  set +x
+  cmd() { echo "$@"; }
+  test -n "${DEBUG:-}" || set +x
 fi
 
 mnt() {
+  local mountpoint="${!#}"
+  if mountpoint "${mountpoint}"; then
+    return 0
+  fi
+  cmd mkdir -p "${mountpoint}"
   cmd mount "$@"
 }
 
@@ -20,7 +25,7 @@ mntZFS() {
   local prefix="${2:-}"
   local path="${3:-"${dataset_name}"}"
   path="${path%/}"
-  local mountpoint="${target}${path}"
+  local mountpoint="${target%/}/${path#/}"
   local dataset="${zfs_prefix}${prefix}${dataset_name}"
   mnt -t zfs "${dataset}" "${mountpoint}"
 }
@@ -44,3 +49,6 @@ mntZFS "/home/nazarewk"
 mntZFS "/home/nazarewk/.cache"
 mntZFS "/home/nazarewk/Downloads"
 mntZFS "/home/nazarewk/Nextcloud"
+mntZFS "/home/nazarewk/.local"
+mntZFS "/home/nazarewk/.local/share"
+mntZFS "/home/nazarewk/.local/share/containers"

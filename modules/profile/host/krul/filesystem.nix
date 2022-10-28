@@ -2,13 +2,21 @@
 let
   cfg = config.kdn.profile.host.krul;
 
-  mkZFSMountBase = { path, prefix ? "" }: {
-    device = "nazarewk-krul-primary/nazarewk-krul${prefix}${path}";
-    fsType = "zfs";
-  };
-  mkZFSMount = path: mkZFSMountBase { inherit path; };
-  mkContainerMount = path: mkZFSMountBase { inherit path; prefix = "/containers"; };
-  mkNixOSMount = path: mkZFSMountBase { inherit path; prefix = "/nixos"; };
+  mkZFSMountBase =
+    { path
+    , at ? path
+    , hostname ? config.networking.hostName
+    , poolName ? "${hostname}-primary"
+    , poolPrefix ? ""
+    }: {
+      "${at}" = {
+        device = "${poolName}/${hostname}${poolPrefix}${path}";
+        fsType = "zfs";
+      };
+    };
+  mkZFSMount = path: opts: mkZFSMountBase ({ inherit path; } // opts);
+  mkContainerMount = path: opts: mkZFSMountBase ({ inherit path; poolPrefix = "/containers"; } // opts);
+  mkNixOSMount = path: opts: mkZFSMountBase ({ inherit path; poolPrefix = "/nixos"; } // opts);
 in
 {
   config = lib.mkIf cfg.enable {
@@ -29,26 +37,31 @@ in
     boot.tmpOnTmpfsSize = "20%";
 
     # legacy mountpoints
-    fileSystems."/" = mkNixOSMount "/root";
-    fileSystems."/boot" = {
-      device = "/dev/disk/by-uuid/2BFB-6A81";
-      fsType = "vfat";
-    };
-    fileSystems."/etc" = mkNixOSMount "/etc";
-    fileSystems."/nix" = mkNixOSMount "/nix";
-    fileSystems."/var" = mkNixOSMount "/var";
-    fileSystems."/var/lib/libvirt" = mkNixOSMount "/var/lib/libvirt";
-    fileSystems."/var/lib/rook" = mkNixOSMount "/var/lib/rook";
-    fileSystems."/var/log" = mkNixOSMount "/var/log";
-    fileSystems."/var/log/journal" = mkNixOSMount "/var/log/journal";
-    fileSystems."/var/spool" = mkNixOSMount "/var/spool";
-
-    fileSystems."/var/lib/containerd" = mkContainerMount "/containerd";
-
-    fileSystems."/home" = mkZFSMount "/home";
-    fileSystems."/home/nazarewk" = mkZFSMount "/home/nazarewk";
-    fileSystems."/home/nazarewk/.cache" = mkZFSMount "/home/nazarewk/.cache";
-    fileSystems."/home/nazarewk/Downloads" = mkZFSMount "/home/nazarewk/Downloads";
-    fileSystems."/home/nazarewk/Nextcloud" = mkZFSMount "/home/nazarewk/Nextcloud";
+    fileSystems = lib.mkMerge [
+      {
+        "/boot" = {
+          device = "/dev/disk/by-uuid/2BFB-6A81";
+          fsType = "vfat";
+        };
+      }
+      (mkNixOSMount "/root" { at = "/"; })
+      (mkNixOSMount "/etc" { })
+      (mkNixOSMount "/nix" { })
+      (mkNixOSMount "/var" { })
+      (mkNixOSMount "/var/lib/libvirt" { })
+      (mkNixOSMount "/var/lib/rook" { })
+      (mkNixOSMount "/var/log" { })
+      (mkNixOSMount "/var/log/journal" { })
+      (mkNixOSMount "/var/spool" { })
+      (mkContainerMount "/containerd" { at = "/var/lib/containerd"; })
+      (mkZFSMount "/home" { })
+      (mkZFSMount "/home/nazarewk" { })
+      (mkZFSMount "/home/nazarewk/.cache" { })
+      (mkZFSMount "/home/nazarewk/.local" { })
+      (mkZFSMount "/home/nazarewk/.local/share" { })
+      (mkZFSMount "/home/nazarewk/.local/share/containers" { })
+      (mkZFSMount "/home/nazarewk/Downloads" { })
+      (mkZFSMount "/home/nazarewk/Nextcloud" { })
+    ];
   };
 }
