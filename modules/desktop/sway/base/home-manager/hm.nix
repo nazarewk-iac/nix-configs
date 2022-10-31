@@ -1,6 +1,6 @@
-{ systemConfig, config, pkgs, lib, ... }:
+{ nixosConfig, config, pkgs, lib, ... }:
 let
-  sysCfg = systemConfig.kdn.sway.base;
+  sysCfg = nixosConfig.kdn.sway.base;
 
   mod = import ./_modifiers.nix;
 in

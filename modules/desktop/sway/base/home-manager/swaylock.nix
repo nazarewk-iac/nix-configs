@@ -1,7 +1,7 @@
-{ systemConfig, config, pkgs, lib, ... }:
+{ nixosConfig, config, pkgs, lib, ... }:
 let
   cfg = config.kdn.sway.base;
-  sysCfg = systemConfig.kdn.sway.base;
+  sysCfg = nixosConfig.kdn.sway.base;
 
   swaylock = "${pkgs.swaylock}/bin/swaylock";
   lockCmd = "${swaylock} -f";

@@ -88,6 +88,8 @@ in
       cfg.packages.yq
       cfg.packages.jq
       cfg.packages.yj
+      jq
+      gojq
 
       jiq
       cue

@@ -1,6 +1,7 @@
-{ config, pkgs, lib, ... }@arguments:
+{ nixosConfig, config, pkgs, lib, ... }@arguments:
 let
   cfg = config.kdn.profile.user.nazarewk;
+  nixosUser = nixosConfig.users.users.nazarewk;
 
 
   git-credential-keyring =
@@ -56,6 +57,40 @@ in
       '';
 
       home.packages = with pkgs; [
+        (pkgs.writeShellApplication {
+          name = "klog-report-csv";
+          runtimeInputs = with pkgs; [ kdn.klog-time-tracker gojq libreoffice ];
+          text =
+            let
+              script = ''
+                .records as $records |
+                ($records | map([
+                  "${nixosUser.description}",
+                  .date,
+                  .total,
+                  "Finished",
+                  (.entries | map("\(.total): \(.summary)") | join("\n")),
+                  .summary
+                ])) as $entries |
+                [
+                  ["Resource Name", "Date", "Hours", "Status", "Description", "Comments"]
+                ] + $entries + [
+                  ["total", "", (.records | map(.total_mins) | add | "\(./60|floor)h\(. % 60)m")]
+                ] | map(@csv)[]
+              '';
+            in
+            ''
+              output="$1"
+              outdir="''${output%/*}"
+              basename="''${output%.*}"
+              file="$basename.csv"
+              period="''${basename##*/}"
+              period="''${period%%_*}"
+              # shellcheck disable=SC2016
+              klog json --period="$period" "''${@:2}" | gojq -r ${lib.escapeShellArg script} > "$file"
+              libreoffice --headless --convert-to "''${output##*.}" --outdir "$outdir" "$file"
+            '';
+        })
       ];
 
       kdn.development.git.enable = true;

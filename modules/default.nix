@@ -41,7 +41,7 @@ in
     home-manager.useGlobalPkgs = true;
     home-manager.useUserPackages = true;
     home-manager.backupFileExtension = "backup";
-    home-manager.extraSpecialArgs = { systemConfig = config; };
+    home-manager.extraSpecialArgs = { nixosConfig = config; };
     home-manager.sharedModules = hmModules ++ [
       (
         let
