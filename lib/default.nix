@@ -12,11 +12,12 @@ in
     (lib.filter (path: (lib.hasSuffix "/default.nix" (toString path)) && path != ./default.nix))
     (map (path:
       let
+        cur = callLibs path;
         name =
           let pieces = lib.splitString "/" (toString path); len = builtins.length pieces;
           in builtins.elemAt pieces (len - 2);
       in
-      { "${name}" = callLibs path; }))
+      cur // { "${name}" = cur; }))
     attrsets.recursiveMerge
   ];
 })
