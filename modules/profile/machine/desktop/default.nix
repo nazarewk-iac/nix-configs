@@ -34,6 +34,7 @@ in
     services.plantuml-server.enable = true;
 
     kdn.containers.dagger.enable = true;
+    kdn.emulators.windows.enable = true;
 
     environment.systemPackages = with pkgs; [
       kdn.klog-time-tracker

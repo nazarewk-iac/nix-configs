@@ -4,7 +4,6 @@
 
     nixpkgs-wayland.url = "github:nix-community/nixpkgs-wayland";
     nixpkgs-gpg236.url = "github:nixos/nixpkgs/22e81f39ace64964bae3b6c89662d1221a11324c";
-    lib-aggregate = { url = "github:nix-community/lib-aggregate"; };
 
     nixpkgs-update.url = "github:ryantm/nixpkgs-update";
     home-manager.url = "github:nix-community/home-manager";
@@ -16,8 +15,8 @@
   outputs =
     inputs:
     let
-      inherit (inputs.lib-aggregate) lib;
       inherit (inputs) self flake-parts nixpkgs home-manager;
+      lib = nixpkgs.lib;
       args = {
         inherit self;
         specialArgs = { };

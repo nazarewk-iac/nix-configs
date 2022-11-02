@@ -81,21 +81,6 @@
         "type": "github"
       }
     },
-    "flake-utils_2": {
-      "locked": {
-        "lastModified": 1659877975,
-        "narHash": "sha256-zllb8aq3YO3h8B/U0/J1WBgAL8EX5yWf5pMj3G0NAmc=",
-        "owner": "numtide",
-        "repo": "flake-utils",
-        "rev": "c0e246b9b83f637f4681389ecabcb2681b4f3af0",
-        "type": "github"
-      },
-      "original": {
-        "owner": "numtide",
-        "repo": "flake-utils",
-        "type": "github"
-      }
-    },
     "home-manager": {
       "inputs": {
         "nixpkgs": "nixpkgs",
@@ -119,25 +104,6 @@
       "inputs": {
         "flake-utils": "flake-utils",
         "nixpkgs-lib": "nixpkgs-lib_2"
-      },
-      "locked": {
-        "lastModified": 1666527154,
-        "narHash": "sha256-Fb660SJRnfGehW8if/5Xt3tS4Wmk3ERfgKEdNtn5HfQ=",
-        "owner": "nix-community",
-        "repo": "lib-aggregate",
-        "rev": "e5c239154528eb90052c27ab6544fc0fc05ed040",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nix-community",
-        "repo": "lib-aggregate",
-        "type": "github"
-      }
-    },
-    "lib-aggregate_2": {
-      "inputs": {
-        "flake-utils": "flake-utils_2",
-        "nixpkgs-lib": "nixpkgs-lib_3"
       },
       "locked": {
         "lastModified": 1666527154,
@@ -256,21 +222,6 @@
         "type": "github"
       }
     },
-    "nixpkgs-lib_3": {
-      "locked": {
-        "lastModified": 1666487336,
-        "narHash": "sha256-KnumcE6UuNQPapsr32KjcRVDVuRGWB5PnAczHoo9nJc=",
-        "owner": "nix-community",
-        "repo": "nixpkgs.lib",
-        "rev": "f9d58ee370835f4c658cd0a62e8def4bda8b1f32",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nix-community",
-        "repo": "nixpkgs.lib",
-        "type": "github"
-      }
-    },
     "nixpkgs-update": {
       "inputs": {
         "flake-compat": "flake-compat",
@@ -295,7 +246,7 @@
       "inputs": {
         "cachix": "cachix",
         "flake-compat": "flake-compat_2",
-        "lib-aggregate": "lib-aggregate_2",
+        "lib-aggregate": "lib-aggregate",
         "nixpkgs": "nixpkgs_4"
       },
       "locked": {
@@ -363,7 +314,6 @@
       "inputs": {
         "flake-parts": "flake-parts",
         "home-manager": "home-manager",
-        "lib-aggregate": "lib-aggregate",
         "nixpkgs": "nixpkgs_2",
         "nixpkgs-gpg236": "nixpkgs-gpg236",
         "nixpkgs-update": "nixpkgs-update",
