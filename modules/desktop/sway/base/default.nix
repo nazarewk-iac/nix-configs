@@ -20,11 +20,7 @@ in
     environmentDefaults = mkOption {
       type = types.attrsOf types.str;
       default = { };
-      apply = input:
-        let
-          escapeDefault = arg: ''"${replaceStrings [''"''] [''\"''] (toString arg)}"'';
-        in
-        (mapAttrsToList (n: v: "${n}=\"\${${n}:-${escapeDefault v}}\"") input);
+      apply = lib.kdn.shell.makeShellDefaultAssignments;
     };
 
     environment = mkOption {

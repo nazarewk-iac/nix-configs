@@ -15,8 +15,8 @@
   outputs =
     inputs:
     let
-      inherit (inputs) self flake-parts nixpkgs home-manager;
-      lib = nixpkgs.lib;
+      inherit (inputs) self flake-parts home-manager;
+      lib = import ./lib { inherit (inputs.nixpkgs) lib; };
       args = {
         inherit self;
         specialArgs = { };
@@ -56,26 +56,9 @@
           packages = lib.filterAttrs (n: pkg: lib.isDerivation pkg) kdnpkgs.kdn;
         };
       flake = {
-        overlays.default = final: prev: (
-          let
-            pkgs = prev;
-            lib = pkgs.lib;
-          in
-          # automatically discover all packages with names of packages being names of their folders
-          lib.pipe ./packages [
-            lib.filesystem.listFilesRecursive
-            # lib.substring expands paths to nix-store paths: "/nix/store/6gv1rzszm9ly6924ndgzmmcpv4jz30qp-default.nix"
-            (lib.filter (path: (lib.hasSuffix "/default.nix" (toString path)) && path != ./default.nix))
-            (map (path: {
-              name =
-                let pieces = lib.splitString "/" (toString path); len = builtins.length pieces;
-                in builtins.elemAt pieces (len - 2);
-              value = pkgs.callPackage path { };
-            }))
-            builtins.listToAttrs
-            (packages: { kdn = packages; }) # namespace packages to kdn
-          ]
-        );
+        inherit lib;
+
+        overlays.default = final: prev: import ./packages { pkgs = prev; };
         nixosModules.default = ./modules;
 
         nixosConfigurations =
@@ -84,10 +67,10 @@
               { modules ? [ ]
               , system ? "x86_64-linux"
               , ...
-              }: nixpkgs.lib.nixosSystem {
+              }: lib.nixosSystem {
                 inherit system;
                 specialArgs = {
-                  inherit inputs system;
+                  inherit inputs system lib;
                   waylandPkgs = inputs.nixpkgs-wayland.packages.${system};
                 };
 
@@ -113,7 +96,7 @@
               modules = [ ./machines/hetzner/wg-0 ];
             };
 
-            rpi4 = nixpkgs.lib.nixosSystem {
+            rpi4 = lib.nixosSystem {
               # nix build '.#rpi4.config.system.build.sdImage' --system aarch64-linux -L
               # see for a next step: https://matrix.to/#/!KqkRjyTEzAGRiZFBYT:nixos.org/$w4Zx8Y0vG0DhlD3zzWReWDaOdRSZvwyrn1tQsLhYDEU?via=nixos.org&via=matrix.org&via=tchncs.de
               system = "aarch64-linux";

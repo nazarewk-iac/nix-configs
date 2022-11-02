@@ -1,23 +1,23 @@
 { lib, ... }:
 lib.extend (final: prev:
 let
-  lib = prev.pipe ./packages [
-    prev.filesystem.listFilesRecursive
-    # prev.substring expands paths to nix-store paths: "/nix/store/6gv1rzszm9ly6924ndgzmmcpv4jz30qp-default.nix"
-    (prev.filter (path: (prev.hasSuffix "/default.nix" (toString path)) && path != ./default.nix))
+  lib = final;
+  callLibs = path: import path { inherit lib; };
+  attrsets = callLibs ./attrsets/default.nix;
+in
+{
+  kdn = lib.pipe ./. [
+    lib.filesystem.listFilesRecursive
+    # lib.substring expands paths to nix-store paths: "/nix/store/6gv1rzszm9ly6924ndgzmmcpv4jz30qp-default.nix"
+    (lib.filter (path: (lib.hasSuffix "/default.nix" (toString path)) && path != ./default.nix))
     (map (path:
       let
-        fns = import path { prev = prev; };
         name =
-          let pieces = prev.splitString "/" (toString path); len = builtins.length pieces;
+          let pieces = lib.splitString "/" (toString path); len = builtins.length pieces;
           in builtins.elemAt pieces (len - 2);
       in
-      { "${name}" = fns; } // fns))
-    prev.mkMerge
-    (libs: prev //
-      { kdn = libs; }) # namespace packages to kdn
+      { "${name}" = callLibs path; }))
+    attrsets.recursiveMerge
   ];
-in
-lib
-)
+})
 

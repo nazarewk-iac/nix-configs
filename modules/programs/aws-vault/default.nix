@@ -16,9 +16,6 @@ let
     inherit name text;
     runtimeInputs = [ aws-vault ];
   };
-
-  # escapeShellArg = arg: "'${replaceStrings ["'"] ["'\\''"] (toString arg)}'";
-  escapeDefault = arg: ''"${replaceStrings [''"''] [''\"''] (toString arg)}"'';
 in
 {
   options.kdn.programs.aws-vault = {
@@ -41,7 +38,7 @@ in
         A set of default environment variables to be used in aws-vault invocations
       '';
       type = with types; attrsOf str;
-      apply = input: (mapAttrsToList (n: v: "${n}=\"\${${n}:-${escapeDefault v}}\"") input);
+      apply = lib.kdn.shell.makeShellDefaultAssignments;
     };
   };
 
