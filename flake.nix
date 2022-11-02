@@ -2,6 +2,9 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
+    microvm.url = "github:astro/microvm.nix";
+    microvm.inputs.nixpkgs.follows = "nixpkgs";
+
     nixpkgs-wayland.url = "github:nix-community/nixpkgs-wayland";
     nixpkgs-gpg236.url = "github:nixos/nixpkgs/22e81f39ace64964bae3b6c89662d1221a11324c";
 
@@ -63,36 +66,20 @@
 
         nixosConfigurations =
           let
-            makeSystem =
-              { modules ? [ ]
-              , system ? "x86_64-linux"
-              , ...
-              }: lib.nixosSystem {
-                inherit system;
-                specialArgs = {
-                  inherit system;
-                  inherit (self) inputs lib;
-                  waylandPkgs = inputs.nixpkgs-wayland.packages.${system};
-                };
-
-                modules = [
-                  self.nixosModules.default
-                  { nixpkgs.overlays = [ self.overlays.default ]; }
-                ] ++ modules;
-              };
+            nixosSystem = lib.kdn.flakes.nixosSystem self;
           in
           {
-            nazarewk-krul = makeSystem {
+            nazarewk-krul = nixosSystem {
               system = "x86_64-linux";
               modules = [{ kdn.profile.host.krul.enable = true; }];
             };
 
-            nazarewk = makeSystem {
+            nazarewk = nixosSystem {
               system = "x86_64-linux";
               modules = [{ kdn.profile.host.dell-latitude-e5470.enable = true; }];
             };
 
-            wg-0 = makeSystem {
+            wg-0 = nixosSystem {
               system = "x86_64-linux";
               modules = [ ./machines/hetzner/wg-0 ];
             };
