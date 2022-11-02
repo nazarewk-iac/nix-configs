@@ -70,7 +70,8 @@
               }: lib.nixosSystem {
                 inherit system;
                 specialArgs = {
-                  inherit inputs system lib;
+                  inherit system;
+                  inherit (self) inputs lib;
                   waylandPkgs = inputs.nixpkgs-wayland.packages.${system};
                 };
 
