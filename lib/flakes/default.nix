@@ -52,29 +52,11 @@
         (builtins.attrNames self.nixosConfigurations));
 
       microvm.host = { system ? "x86_64-linux", ... }@args: nixos.system (args // {
-        modules = [
-          self.inputs.microvm.nixosModules.host
-          { kdn.virtualization.microvm.host.enable = true; }
-        ] ++ args.modules;
+        modules = [{ kdn.virtualization.microvm.host.enable = true; }] ++ args.modules;
       });
 
-      guest = { name, hypervisor ? "qemu", system ? "x86_64-linux", ... }@args: nixos.system (args // {
-        modules = [
-          self.inputs.microvm.nixosModules.microvm
-          { kdn.virtualization.microvm.guest.enable = true; }
-          {
-            microvm.hypervisor = hypervisor;
-            microvm.shares = [{
-              # use "virtiofs" for MicroVMs that are started by systemd
-              proto = "9p";
-              tag = "ro-store";
-              # a host's /nix/store will be picked up so that the
-              # size of the /dev/vda can be reduced.
-              source = "/nix/store";
-              mountPoint = "/nix/.ro-store";
-            }];
-          }
-        ] ++ args.modules;
+      guest = { name, system ? "x86_64-linux", ... }@args: nixos.system (args // {
+        modules = [{ kdn.virtualization.microvm.guest.enable = true; }] ++ args.modules;
       });
 
       microvm.configuration = { name, ... }@args: { ${name} = guest args; };

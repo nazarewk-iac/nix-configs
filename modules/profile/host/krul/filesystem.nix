@@ -50,6 +50,7 @@ in
       (mkNixOSMount "/var" { })
       (mkNixOSMount "/var/lib/libvirt" { })
       (mkNixOSMount "/var/lib/rook" { })
+      (mkNixOSMount (config.microvm.stateDir or "/var/lib/microvms") { })
       (mkNixOSMount "/var/log" { })
       (mkNixOSMount "/var/log/journal" { })
       (mkNixOSMount "/var/spool" { })

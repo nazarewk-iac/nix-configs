@@ -83,11 +83,11 @@
     },
     "flake-utils_2": {
       "locked": {
-        "lastModified": 1667077288,
-        "narHash": "sha256-bdC8sFNDpT0HK74u9fUkpbf1MEzVYJ+ka7NXCdgBoaA=",
+        "lastModified": 1667395993,
+        "narHash": "sha256-nuEHfE/LcWyuSWnS8t12N1wc105Qtau+/OdUAjtQ0rA=",
         "owner": "numtide",
         "repo": "flake-utils",
-        "rev": "6ee9ebb6b1ee695d2cacc4faa053a7b9baa76817",
+        "rev": "5aed5285a952e0b949eb3ba02c12fa4fcfef535f",
         "type": "github"
       },
       "original": {
@@ -121,11 +121,11 @@
         "nixpkgs-lib": "nixpkgs-lib_2"
       },
       "locked": {
-        "lastModified": 1667131969,
-        "narHash": "sha256-iG/MW8c/QIKUkZfFk0Uj0QVO3CMTXY7ezSvumP2x0l0=",
+        "lastModified": 1667477514,
+        "narHash": "sha256-HdfInPjgO+bSKR8D3trmFDFJS9EbP48CiOlCsSm2Ce4=",
         "owner": "nix-community",
         "repo": "lib-aggregate",
-        "rev": "d0dad9ac0bf114ccec6afa7bf4028dfbc6011b8b",
+        "rev": "32f50a6c0dbf197f985dffb5e77b32b66329364a",
         "type": "github"
       },
       "original": {
@@ -142,15 +142,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1667337422,
-        "narHash": "sha256-kD+HUP/jEADTd9UUdk3G0vcHdI3e9NmnHR3RQDlka6c=",
-        "owner": "astro",
+        "lastModified": 1667479370,
+        "narHash": "sha256-2WNiCrmcVhmwh+sEfzwsbQM93FBI26w51+bvysl77+Q=",
+        "owner": "nazarewk",
         "repo": "microvm.nix",
-        "rev": "24136ffe7bb1e504bce29b25dcd46b272cbafd9b",
+        "rev": "f8d931e75226b1a1bc0ff34213779767930c4e83",
         "type": "github"
       },
       "original": {
-        "owner": "astro",
+        "owner": "nazarewk",
+        "ref": "side-effect-free-imports",
         "repo": "microvm.nix",
         "type": "github"
       }
@@ -286,11 +287,11 @@
         "nixpkgs": "nixpkgs_4"
       },
       "locked": {
-        "lastModified": 1667434031,
-        "narHash": "sha256-dwXo3sBdTmk+y+nrGWLjdntVdqhsy044A6dx0KfkVw0=",
+        "lastModified": 1667477532,
+        "narHash": "sha256-tGy6lGMf0ElLDDKxGX15tJRC44rbqtIU8vDvFUHfbNY=",
         "owner": "nix-community",
         "repo": "nixpkgs-wayland",
-        "rev": "d046e92ca78da53cdc3ae7e16b84220a06f038e6",
+        "rev": "6bc549f2f03a1f6ea7fa6536b8870b48b8c86ebe",
         "type": "github"
       },
       "original": {

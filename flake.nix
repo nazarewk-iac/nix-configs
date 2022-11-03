@@ -2,7 +2,7 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
-    microvm.url = "github:astro/microvm.nix";
+    microvm.url = "github:nazarewk/microvm.nix/side-effect-free-imports";
     microvm.inputs.nixpkgs.follows = "nixpkgs";
 
     nixpkgs-wayland.url = "github:nix-community/nixpkgs-wayland";
