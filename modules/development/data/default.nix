@@ -90,6 +90,13 @@ in
       cfg.packages.yj
       jq
       gojq
+      jc # convert commands output to JSON
+      gron # JSON to/from list of path-value assignments
+      (pkgs.writeShellApplication {
+        name = "ungron";
+        runtimeInputs = with pkgs; [ gron ];
+        text = ''gron --urgron "$@"'';
+      })
 
       jiq
       cue
