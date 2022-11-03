@@ -20,66 +20,61 @@
     let
       inherit (inputs) self flake-parts home-manager;
       lib = import ./lib { inherit (inputs.nixpkgs) lib; };
+      flakeLib = lib.kdn.flakes.for self;
       args = {
         inherit self;
         specialArgs = { };
       };
     in
-    flake-parts.lib.mkFlake args {
+    (flake-parts.lib.mkFlake args {
       systems = [ "x86_64-linux" "aarch64-linux" ];
-      perSystem = { config, self', inputs', pkgs, system, ... }:
-        let
-          # adapted from https://github.com/nix-community/nixpkgs-wayland/blob/b703de94dd7c3d73a03b5d30b248b8984ad8adb7/flake.nix#L119-L127
-          pkgsFor = pkgs: overlays:
-            import pkgs {
-              inherit system overlays;
-              config.allowUnfree = true;
-              config.allowAliases = false;
-            };
-          pkgs_ = lib.genAttrs (builtins.attrNames inputs) (inp: pkgsFor inputs."${inp}" [ ]);
-          opkgs_ = overlays: lib.genAttrs (builtins.attrNames inputs) (inp: pkgsFor inputs."${inp}" overlays);
-          kdnpkgs = (opkgs_ [ self.overlays.default ]).nixpkgs;
-        in
-        {
-          apps = {
-            # see https://github.com/NixOS/nix/issues/3803#issuecomment-748612294
-            # usage: nix run '.#repl'
-            repl = {
-              type = "app";
-              program = "${pkgs.writeShellScriptBin "repl" ''
+      perSystem = { config, self', inputs', pkgs, system, ... }: {
+        apps = {
+          # see https://github.com/NixOS/nix/issues/3803#issuecomment-748612294
+          # usage: nix run '.#repl'
+          repl = {
+            type = "app";
+            program = "${pkgs.writeShellScriptBin "repl" ''
                 confnix=$(mktemp)
-                echo "builtins.getFlake (toString $(git rev-parse --show-toplevel))" >$confnix
-                trap "rm $confnix" EXIT
+                trap "rm $confnix || true" EXIT
+                echo "builtins.getFlake (toString ./.)" >$confnix
                 nix repl $confnix
               ''}/bin/repl";
-            };
           };
-          checks = { };
-          devShells = { };
-          packages = lib.filterAttrs (n: pkg: lib.isDerivation pkg) kdnpkgs.kdn;
         };
+        checks = { };
+        devShells = { };
+        packages = lib.mkMerge [
+          (lib.filterAttrs (n: pkg: lib.isDerivation pkg) (flakeLib.packagesForOverlay { inherit system; }).kdn)
+          # (flakeLib.microvm.packages {
+          #   name = "hello-microvm";
+          #   hypervisor = "qemu";
+          #   system = "x86_64-linux";
+          # })
+        ];
+      };
       flake = {
         inherit lib;
 
         overlays.default = final: prev: import ./packages { pkgs = prev; };
         nixosModules.default = ./modules;
 
-        nixosConfigurations =
-          let
-            nixosSystem = lib.kdn.flakes.nixosSystem self;
-          in
+        nixosConfigurations = lib.mkMerge [
           {
-            nazarewk-krul = nixosSystem {
+            nazarewk-krul = flakeLib.nixos.system {
               system = "x86_64-linux";
-              modules = [{ kdn.profile.host.krul.enable = true; }];
+              modules = [{
+                kdn.profile.host.krul.enable = true;
+                kdn.virtualization.microvm.host.enable = true;
+              }];
             };
 
-            nazarewk = nixosSystem {
+            nazarewk = flakeLib.nixos.system {
               system = "x86_64-linux";
               modules = [{ kdn.profile.host.dell-latitude-e5470.enable = true; }];
             };
 
-            wg-0 = nixosSystem {
+            wg-0 = flakeLib.nixos.system {
               system = "x86_64-linux";
               modules = [ ./machines/hetzner/wg-0 ];
             };
@@ -90,7 +85,16 @@
               system = "aarch64-linux";
               modules = [ ./rpi4/sd-image.nix ];
             };
-          };
+          }
+          # (flakeLib.microvm.configuration {
+          #   name = "hello-microvm";
+          #   hypervisor = "qemu";
+          #   system = "x86_64-linux";
+          #   modules = [{
+          #     kdn.profile.machine.baseline.enable = true;
+          #   }];
+          # })
+        ];
       };
-    };
+    });
 }

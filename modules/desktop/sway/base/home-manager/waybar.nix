@@ -68,8 +68,8 @@ let
       "interval" = 1;
       "format" = "{:%H:%M:%S}";
       "format-alt" = "{:%Y-%m-%d %H:%M}";
-      "on-scroll-up" = "gsimplecal next_month";
-      "on-scroll-down" = "gsimplecal prev_month";
+      "on-scroll-up" = "gsimplecal prev_month";
+      "on-scroll-down" = "gsimplecal next_month";
     };
     "cpu" = {
       "format" = "{usage}% ";
