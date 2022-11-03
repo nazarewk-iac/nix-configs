@@ -57,11 +57,9 @@
 
         nixosConfigurations = lib.mkMerge [
           {
-            nazarewk-krul = flakeLib.microvm.host {
+            nazarewk-krul = flakeLib.nixos.system {
               system = "x86_64-linux";
-              modules = [{
-                kdn.profile.host.krul.enable = true;
-              }];
+              modules = [{ kdn.profile.host.krul.enable = true; }];
             };
 
             nazarewk = flakeLib.nixos.system {

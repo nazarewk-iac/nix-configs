@@ -1,4 +1,4 @@
-{ config, pkgs, lib, modulesPath, ... }:
+{ config, pkgs, lib, modulesPath, self, ... }:
 let
   cfg = config.kdn.profile.host.krul;
 in
@@ -89,5 +89,8 @@ in
 
     networking.interfaces.enp5s0.wakeOnLan.enable = true;
     networking.interfaces.enp6s0.wakeOnLan.enable = true;
+
+    kdn.virtualization.microvm.host.enable = true;
+    microvm.vms.hello-microvm = { flake = self; };
   };
 }
