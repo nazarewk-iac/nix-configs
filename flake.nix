@@ -46,11 +46,7 @@
         devShells = { };
         packages = lib.mkMerge [
           (lib.filterAttrs (n: pkg: lib.isDerivation pkg) (flakeLib.packagesForOverlay { inherit system; }).kdn)
-          # (flakeLib.microvm.packages {
-          #   name = "hello-microvm";
-          #   hypervisor = "qemu";
-          #   system = "x86_64-linux";
-          # })
+          (flakeLib.microvm.packages system)
         ];
       };
       flake = {
@@ -61,11 +57,10 @@
 
         nixosConfigurations = lib.mkMerge [
           {
-            nazarewk-krul = flakeLib.nixos.system {
+            nazarewk-krul = flakeLib.microvm.host {
               system = "x86_64-linux";
               modules = [{
                 kdn.profile.host.krul.enable = true;
-                kdn.virtualization.microvm.host.enable = true;
               }];
             };
 
@@ -79,21 +74,19 @@
               modules = [ ./machines/hetzner/wg-0 ];
             };
 
-            rpi4 = lib.nixosSystem {
-              # nix build '.#rpi4.config.system.build.sdImage' --system aarch64-linux -L
-              # see for a next step: https://matrix.to/#/!KqkRjyTEzAGRiZFBYT:nixos.org/$w4Zx8Y0vG0DhlD3zzWReWDaOdRSZvwyrn1tQsLhYDEU?via=nixos.org&via=matrix.org&via=tchncs.de
-              system = "aarch64-linux";
-              modules = [ ./rpi4/sd-image.nix ];
-            };
+            #rpi4 = lib.nixosSystem {
+            #  # nix build '.#rpi4.config.system.build.sdImage' --system aarch64-linux -L
+            #  # see for a next step: https://matrix.to/#/!KqkRjyTEzAGRiZFBYT:nixos.org/$w4Zx8Y0vG0DhlD3zzWReWDaOdRSZvwyrn1tQsLhYDEU?via=nixos.org&via=matrix.org&via=tchncs.de
+            #  system = "aarch64-linux";
+            #  modules = [ ./rpi4/sd-image.nix ];
+            #};
           }
-          # (flakeLib.microvm.configuration {
-          #   name = "hello-microvm";
-          #   hypervisor = "qemu";
-          #   system = "x86_64-linux";
-          #   modules = [{
-          #     kdn.profile.machine.baseline.enable = true;
-          #   }];
-          # })
+          (flakeLib.microvm.configuration {
+            name = "hello-microvm";
+            modules = [{
+              kdn.profile.machine.baseline.enable = true;
+            }];
+          })
         ];
       };
     });

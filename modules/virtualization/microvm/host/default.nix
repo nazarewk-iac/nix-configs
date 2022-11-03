@@ -1,4 +1,4 @@
-{ lib, pkgs, config, self, ... }:
+{ lib, pkgs, config, self, system, ... }:
 with lib;
 let
   cfg = config.kdn.virtualization.microvm.host;
@@ -28,6 +28,12 @@ in
 
     nix.settings.substituters = [
       "https://microvm.cachix.org"
+    ];
+
+    environment.systemPackages = with cfg.flake.microvm.packages.${system}; [
+      microvm
+      mktuntap
+      prebuilt # see https://github.com/astro/microvm.nix/blob/24136ffe7bb1e504bce29b25dcd46b272cbafd9b/flake.nix#L45-L55
     ];
   };
 }

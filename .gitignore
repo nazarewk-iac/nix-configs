@@ -19,3 +19,6 @@ Thumbs.db
 
 # nix
 result
+
+# microvm.nix
+*.img

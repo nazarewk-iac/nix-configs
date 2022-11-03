@@ -34,19 +34,37 @@
         };
       nixos.configuration = { name, ... }@args: { ${name} = nixos.system args; };
 
-      microvm.packages = { name, hypervisor, system, ... }:
-        let
-          cfg = self.nixosConfigurations.${name}.config;
-        in
-        lib.mkIf (system == cfg.system) {
-          ${name} = cfg.microvm.runner.${hypervisor};
-        };
+      # wrap self.nixosConfigurations in executable packages
+      # see https://github.com/astro/microvm.nix/blob/24136ffe7bb1e504bce29b25dcd46b272cbafd9b/flake.nix#L57-L69
+      microvm.packages = system: (builtins.foldl'
+        (result: systemName:
+          let
+            nixos = self.nixosConfigurations.${systemName};
+            name = builtins.replaceStrings [ "${system}-" ] [ "" ] systemName;
+            inherit (nixos.config.microvm) hypervisor;
+          in
+          if nixos.config ? microvm && nixos.pkgs.stdenv.system == system
+          then result // {
+            "${name}" = nixos.config.microvm.runner.${hypervisor};
+          }
+          else result)
+        { }
+        (builtins.attrNames self.nixosConfigurations));
 
-      microvm.system = { name, hypervisor, system ? "x86_64-linux", ... }@args: nixos.system (args // {
+      microvm.host = { system ? "x86_64-linux", ... }@args: nixos.system (args // {
         modules = [
-          self.microvm.nixosModules.microvm
+          self.inputs.microvm.nixosModules.host
+          { kdn.virtualization.microvm.host.enable = true; }
+        ] ++ args.modules;
+      });
+
+      guest = { name, hypervisor ? "qemu", system ? "x86_64-linux", ... }@args: nixos.system (args // {
+        modules = [
+          self.inputs.microvm.nixosModules.microvm
+          { kdn.virtualization.microvm.guest.enable = true; }
           {
-            shares = [{
+            microvm.hypervisor = hypervisor;
+            microvm.shares = [{
               # use "virtiofs" for MicroVMs that are started by systemd
               proto = "9p";
               tag = "ro-store";
@@ -55,13 +73,11 @@
               source = "/nix/store";
               mountPoint = "/nix/.ro-store";
             }];
-            socket = "control.socket";
-            microvm.hypervisor = hypervisor;
           }
         ] ++ args.modules;
       });
 
-      microvm.configuration = { name, ... }@args: { ${name} = microvm.system args; };
+      microvm.configuration = { name, ... }@args: { ${name} = guest args; };
     in
     {
       inherit
