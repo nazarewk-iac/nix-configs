@@ -1,8 +1,7 @@
-{ nixosConfig, config, pkgs, lib, ... }@arguments:
+{ config, pkgs, lib, ... }@arguments:
 let
-  cfg = config.kdn.profile.user.nazarewk;
-  nixosUser = nixosConfig.users.users.nazarewk;
-
+  cfg = config.kdn.profile.user.me;
+  systemUser = cfg.nixosConfig;
 
   git-credential-keyring =
     let
@@ -19,10 +18,10 @@ let
     "${wrapped}/bin/git-credential-keyring-wrapped";
 in
 {
-  options.kdn.profile.user.nazarewk = {
-    enable = lib.mkEnableOption "enable nazarewk user profile";
+  options.kdn.profile.user.me = {
+    nixosConfig = lib.mkOption { default = { }; };
   };
-  config = lib.mkIf cfg.enable (lib.mkMerge [
+  config = lib.mkIf (cfg != { }) (lib.mkMerge [
     {
       home.stateVersion = "22.11";
 
@@ -32,7 +31,7 @@ in
       # programs.git.signing.key = "CDDFE1610327F6F7A693125698C23F71A188991B";
       programs.git.signing.key = null;
       programs.git.signing.signByDefault = true;
-      programs.git.userName = "Krzysztof Nazarewski";
+      programs.git.userName = systemUser.description;
       programs.git.userEmail = "3494992+nazarewk@users.noreply.github.com";
       programs.git.ignores = [ (builtins.readFile ./.gitignore) ];
       programs.git.attributes = [ (builtins.readFile ./.gitattributes) ];
@@ -65,7 +64,7 @@ in
               script = ''
                 .records as $records |
                 ($records | map([
-                  "${nixosUser.description}",
+                  "${systemUser.description}",
                   .date,
                   .total,
                   "Finished",

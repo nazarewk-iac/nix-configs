@@ -61,6 +61,11 @@
 
         nixosConfigurations = lib.mkMerge [
           {
+            oams = flakeLib.nixos.system {
+              system = "x86_64-linux";
+              modules = [{ kdn.profile.host.oams.enable = true; }];
+            };
+
             nazarewk-krul = flakeLib.nixos.system {
               system = "x86_64-linux";
               modules = [{ kdn.profile.host.krul.enable = true; }];

@@ -10,8 +10,9 @@ in
   imports = [
     ../../../../machines/wireguard-peers.nix
   ];
+
   config = lib.mkIf cfg.enable {
-    kdn.profile.user.nazarewk.enable = true;
+    kdn.profile.user.me.enable = true;
 
     # (modulesPath + "/installer/scan/not-detected.nix")
     hardware.enableRedistributableFirmware = true;
