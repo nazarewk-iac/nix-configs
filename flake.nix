@@ -86,6 +86,7 @@
           (flakeLib.microvm.configuration {
             name = "hello-microvm";
             modules = [{
+              system.stateVersion = "22.11";
               kdn.profile.machine.baseline.enable = true;
             }];
           })

@@ -10,7 +10,7 @@ in
   config = lib.mkIf cfg.enable {
     kdn.profile.machine.desktop.enable = true;
 
-    system.stateVersion = "21.05";
+    system.stateVersion = "21.11";
     networking.hostId = "f77614af"; # cut -c-8 </proc/sys/kernel/random/uuid
     networking.hostName = "nazarewk";
 
