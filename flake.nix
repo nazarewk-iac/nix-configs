@@ -52,7 +52,11 @@
       flake = {
         inherit lib;
 
-        overlays.default = final: prev: import ./packages { pkgs = prev; };
+        overlays.default = final: prev: (import ./packages { pkgs = prev; }) // {
+          # work around not using flake-utils which sets it up on `pkgs.system`
+          # see https://github.com/numtide/flake-utils/blob/1ed9fb1935d260de5fe1c2f7ee0ebaae17ed2fa1/check-utils.nix#L4
+          system = final.stdenv.system;
+        };
         nixosModules.default = ./modules;
 
         nixosConfigurations = lib.mkMerge [
