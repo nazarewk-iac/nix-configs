@@ -20,7 +20,7 @@
     let
       inherit (inputs) self flake-parts home-manager;
       lib = import ./lib { inherit (inputs.nixpkgs) lib; };
-      flakeLib = lib.kdn.flakes.for self;
+      flakeLib = lib.kdn.flakes.forFlake self;
       args = {
         inherit self;
         specialArgs = { };

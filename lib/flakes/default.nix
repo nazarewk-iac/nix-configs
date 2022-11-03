@@ -1,5 +1,5 @@
 { lib, ... }: {
-  for = self:
+  forFlake = self:
     let
       packagesForOverlay = { system, overlay ? self.overlays.default }:
         let
