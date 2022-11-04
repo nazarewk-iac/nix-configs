@@ -29,18 +29,16 @@
     (flake-parts.lib.mkFlake args {
       systems = [ "x86_64-linux" "aarch64-linux" ];
       perSystem = { config, self', inputs', pkgs, system, ... }: {
-        apps = {
-          # see https://github.com/NixOS/nix/issues/3803#issuecomment-748612294
-          # usage: nix run '.#repl'
-          repl = {
-            type = "app";
-            program = "${pkgs.writeShellScriptBin "repl" ''
-                confnix=$(mktemp)
-                trap "rm $confnix || true" EXIT
-                echo "builtins.getFlake (toString ./.)" >$confnix
-                nix repl $confnix
-              ''}/bin/repl";
-          };
+        # inspired by https://github.com/NixOS/nix/issues/3803#issuecomment-748612294
+        # usage: nix run '.#repl'
+        apps.repl = {
+          type = "app";
+          program = "${pkgs.writeShellScriptBin "repl" ''
+            confnix=$(mktemp)
+            trap "rm '$confnix' || true" EXIT
+            echo "builtins.getFlake (toString "$PWD")" >$confnix
+            nix repl "$confnix"
+          ''}/bin/repl";
         };
         checks = { };
         devShells = { };
