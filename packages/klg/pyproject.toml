@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "klg"
 version = "0.1.0"
-description = ""
+description = "An opinionated utility for working with https://klog.jotaen.net/ time-tracking"
 authors = ["Krzysztof Nazarewski <3494992+nazarewk@users.noreply.github.com>"]
 license = "MIT"
 readme = "README.md"
