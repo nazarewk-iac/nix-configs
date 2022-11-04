@@ -17,10 +17,6 @@ in
     # programs.xonsh.enable = true;
     programs.zsh.enable = true;
     users.defaultUserShell = pkgs.zsh;
-    programs.zsh.interactiveShellInit = ''
-      source ${pkgs.grml-zsh-config}/etc/zsh/zshrc
-    '';
-    programs.zsh.promptInit = ""; # otherwise it'll override the grml prompt
     programs.zsh.syntaxHighlighting.enable = true;
     programs.zsh.histSize = 100000;
 
