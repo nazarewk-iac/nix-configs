@@ -1,0 +1,12 @@
+*
+!/**/*.py
+!/.envrc
+!/.gitignore
+!/README.md
+!/cue.mod/
+!/dagger.cue
+!/flake.lock
+!/flake.nix
+!/poetry.lock
+!/pyproject.toml
+!/klg

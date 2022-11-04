@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "klg"
+version = "0.1.0"
+description = ""
+authors = ["Krzysztof Nazarewski <3494992+nazarewk@users.noreply.github.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "klg"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+# HTTP
+
+# CLI
+click = "^8.1.3"
+
+# Trio
+
+# Time
+pendulum = "^2.1.2"
+
+# Logging
+structlog = "^22.1.0" # logging library at https://www.structlog.org/en/stable/getting-started.html
+rich = "^12.6.0"  # UX improvement for structlog
+
+[tool.poetry.scripts]
+"klg" = 'klg.cli:main'
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
