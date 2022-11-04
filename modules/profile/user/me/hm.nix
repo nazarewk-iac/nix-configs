@@ -50,6 +50,7 @@ in
       };
       programs.ssh.enable = true;
       programs.zsh.enable = true;
+      programs.zsh.completionInit = ""; # cancels out system-wide completions
       programs.ssh.extraConfig = ''
         Host *
           Include ~/.ssh/config.local

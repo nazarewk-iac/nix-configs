@@ -26,7 +26,7 @@ let
     twine # upload to pypi, see https://realpython.com/pypi-publish-python-package/#upload-your-package
   ]));
 
-  renamedBinaries = fmt: pkg: pkgs.runCommand "${pkg.name}-renamed-to-${builtins.replaceStrings [ "%s" ] [ "BIN" ] fmt}"
+  renamedBinariesOnly = fmt: pkg: pkgs.runCommand "${pkg.name}-renamed-to-${builtins.replaceStrings [ "%s" ] [ "BIN" ] fmt}"
     { buildInputs = [ ]; } ''
     set -x
     ${lib.toShellVar "srcDir" "${pkg}/bin"}
@@ -70,11 +70,11 @@ in
       # python software
       pipenv
       poetry
-      (renamedBinaries "%s3.8" python38)
-      (renamedBinaries "%s3.9" python39)
+      (renamedBinariesOnly "%s3.8" python38)
+      (renamedBinariesOnly "%s3.9" python39)
       (mkPython python310)
-      (renamedBinaries "%s3.10" (mkPython python310))
-      (renamedBinaries "%s3.11" python311)
+      (renamedBinariesOnly "%s3.10" (mkPython python310))
+      (renamedBinariesOnly "%s3.11" python311)
       (python310.withPackages (ps: with ps; [
         black
         boto3

@@ -13,10 +13,12 @@ in
     kdn.filesystems.base.enable = true;
     kdn.development.linux-utils.enable = true;
 
-    # not building at 2022-05-23
-    # programs.xonsh.enable = true;
-    programs.zsh.enable = true;
     users.defaultUserShell = pkgs.zsh;
+    programs.zsh.enable = true;
+    programs.zsh.enableCompletion = true;
+    programs.zsh.interactiveShellInit = ''
+      bindkey -e
+    '';
     programs.zsh.syntaxHighlighting.enable = true;
     programs.zsh.histSize = 100000;
 

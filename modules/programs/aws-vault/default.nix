@@ -3,13 +3,20 @@ with lib;
 let
   cfg = config.kdn.programs.aws-vault;
 
-  aws-vault = pkgs.writeShellApplication {
+  aws-vault-wrapper = pkgs.writeShellApplication {
     name = "aws-vault";
     runtimeInputs = [ cfg.package ];
     text = ''
       export ${concatStringsSep " \\\n  " cfg.defaultEnv}
       exec aws-vault "$@"
     '';
+  };
+
+  # symlinks the rest to provide completion scripts
+  aws-vault = pkgs.symlinkJoin {
+    name = "aws-vault";
+    paths = [ aws-vault-wrapper cfg.package ];
+    postBuild = "echo links added";
   };
 
   mkScript = name: text: pkgs.writeShellApplication {
@@ -43,13 +50,6 @@ in
   };
 
   config = mkIf cfg.enable {
-    programs.zsh.interactiveShellInit = ''
-      eval "$(${aws-vault}/bin/aws-vault --completion-script-zsh)"
-    '';
-    programs.bash.interactiveShellInit = ''
-      eval "$(${aws-vault}/bin/aws-vault --completion-script-bash)"
-    '';
-
     environment.systemPackages = [
       aws-vault
       (mkScript "aws-shell" ''aws-vault exec -n "$@"'')
