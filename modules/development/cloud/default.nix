@@ -11,6 +11,7 @@ in
   config = mkIf cfg.enable {
     kdn.development.nodejs.enable = true;
     kdn.development.lua.enable = true;
+    kdn.programs.aws-vault.enable = true;
 
     environment.systemPackages = with pkgs; [
       # AWS

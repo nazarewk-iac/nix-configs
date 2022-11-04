@@ -31,8 +31,6 @@ in
       default = {
         AWS_VAULT_PROMPT = "ykman";
         AWS_ASSUME_ROLE_TTL = "8h";
-        AWS_VAULT_BACKEND = "pass";
-        AWS_VAULT_PASS_PREFIX = "aws-vault";
       };
       description = ''
         A set of default environment variables to be used in aws-vault invocations
