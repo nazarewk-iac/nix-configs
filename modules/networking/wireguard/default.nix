@@ -104,6 +104,9 @@ in
       ];
     }
     (mkIf (isActive) {
+      # see https://github.com/NixOS/nixpkgs/issues/180175#issuecomment-1186152020
+      networking.networkmanager.unmanaged = [ cfg.interfaceName ];
+
       networking.firewall = {
         allowedUDPPorts = [ cfg.port ];
         trustedInterfaces = [ cfg.interfaceName ];
