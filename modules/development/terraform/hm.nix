@@ -26,12 +26,28 @@ in
       mkdir -p "${config.xdg.cacheHome}/terraform/plugin-cache"
     '';
 
-    home.shellAliases = {
-      tf = "terraform";
-      tg = "terragrunt";
-    };
+    home.shellAliases =
+      let
+        mkAliases = cmd: short: {
+          "${short}" = cmd;
+          "${short}f" = "${cmd} fmt";
+          "${short}i" = "${cmd} init";
+          "${short}iu" = "${cmd} init --upgrade";
+          "${short}p" = "${cmd} plan";
+          "${short}a" = "${cmd} apply";
+          "${short}aa" = "${cmd} apply --auto-approve";
+        };
+      in
+      (
+        mkAliases "terraform" "tf"
+      ) // (
+        mkAliases "terragrunt" "tf"
+      ) // {
+        "tgf" = "terragrunt hclfmt";
+      };
 
     home.packages = with pkgs; [
+      terraform-ls # see https://github.com/hashicorp/terraform-ls/blob/main/docs/USAGE.md
       (pkgs.writeShellApplication {
         name = "tf-fmt";
         runtimeInputs = with pkgs; [ pkgs.gnugrep pkgs.gnused pkgs.coreutils pkgs.findutils ];
