@@ -41,7 +41,7 @@ in
       (
         mkAliases "terraform" "tf"
       ) // (
-        mkAliases "terragrunt" "tf"
+        mkAliases "terragrunt" "tg"
       ) // {
         "tgf" = "terragrunt hclfmt";
       };
