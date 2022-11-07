@@ -5,6 +5,7 @@
 *.swp
 *.swo
 *.iml
+/lsp
 
 # OS
 ._*
