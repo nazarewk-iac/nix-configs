@@ -10,7 +10,7 @@ let
       export ${concatStringsSep " \\\n  " cfg.defaultEnv}
       if [[ -n "''${AWS_VAULT_CONFIG_FILE:-}" ]] ; then
         AWS_CONFIG_FILE="$AWS_VAULT_CONFIG_FILE"
-      elif [[ "$AWS_CONFIG_FILE" != *.vault ]] ; then
+      elif [[ "''${AWS_CONFIG_FILE:-}" != *.vault ]] ; then
         AWS_CONFIG_FILE="''${AWS_CONFIG_FILE:-"$HOME/.aws/config"}"
         AWS_CONFIG_FILE="$AWS_CONFIG_FILE.vault"
       fi
