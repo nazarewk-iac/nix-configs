@@ -12,6 +12,7 @@ in
   ];
 
   config = lib.mkIf cfg.enable {
+    kdn.enable = true;
     kdn.profile.user.me.enable = true;
 
     # (modulesPath + "/installer/scan/not-detected.nix")
