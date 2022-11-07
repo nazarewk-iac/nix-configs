@@ -15,6 +15,7 @@ in
       gptfdisk
       util-linux
       exfat
+      exfatprogs
     ];
   };
 }
