@@ -26,6 +26,11 @@ in
       mkdir -p "${config.xdg.cacheHome}/terraform/plugin-cache"
     '';
 
+    home.shellAliases = {
+      tf = "terraform";
+      tg = "terragrunt";
+    };
+
     home.packages = with pkgs; [
       (pkgs.writeShellApplication {
         name = "tf-fmt";
