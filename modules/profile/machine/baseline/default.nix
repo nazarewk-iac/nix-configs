@@ -71,5 +71,7 @@ in
     kdn.hardware.usbip.enable = true;
     kdn.hardware.qmk.enable = true;
     kdn.development.shell.enable = true;
+
+    home-manager.users.root = { kdn.profile.user.me.nixosConfig = config.users.users.root; };
   };
 }

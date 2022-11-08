@@ -49,8 +49,6 @@ in
         PASSWORD_STORE_DIR = "${config.home.homeDirectory}/Nextcloud/drag0nius@nc.nazarewk.pw/important/password-store";
       };
       programs.ssh.enable = true;
-      programs.zsh.enable = true;
-      programs.zsh.completionInit = ""; # cancels out system-wide completions
       programs.ssh.extraConfig = ''
         Host *
           Include ~/.ssh/config.local

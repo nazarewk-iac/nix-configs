@@ -14,13 +14,7 @@ in
     kdn.development.linux-utils.enable = true;
 
     users.defaultUserShell = pkgs.zsh;
-    programs.zsh.enable = true;
-    programs.zsh.enableCompletion = true;
-    programs.zsh.interactiveShellInit = ''
-      bindkey -e
-    '';
-    programs.zsh.syntaxHighlighting.enable = true;
-    programs.zsh.histSize = 100000;
+    kdn.programs.zsh.enable = true;
 
     programs.command-not-found.enable = false;
     programs.bash.interactiveShellInit = ''
