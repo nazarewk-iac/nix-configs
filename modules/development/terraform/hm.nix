@@ -31,7 +31,9 @@ in
         mkAliases = cmd: short: {
           "${short}" = cmd;
           "${short}f" = "${cmd} fmt";
+          "${short}g" = "${cmd} get";
           "${short}i" = "${cmd} init";
+          "${short}im" = "${cmd} import";
           "${short}iu" = "${cmd} init --upgrade";
           "${short}p" = "${cmd} plan";
           "${short}a" = "${cmd} apply";
