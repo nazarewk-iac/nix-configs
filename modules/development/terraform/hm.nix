@@ -46,6 +46,8 @@ in
         mkAliases "terragrunt" "tg"
       ) // {
         "tgf" = "terragrunt hclfmt";
+        "tgr" = "terragrunt render-json --terragrunt-json-out=/dev/stdout | jq";
+        "tgrm" = "terragrunt render-json --with-metadata --terragrunt-json-out=/dev/stdout | jq";
       };
 
     home.packages = with pkgs; [
