@@ -30,7 +30,6 @@ in
       let
         mkAliases = cmd: short: {
           "${short}" = cmd;
-          "${short}f" = "${cmd} fmt";
           "${short}g" = "${cmd} get";
           "${short}i" = "${cmd} init";
           "${short}im" = "${cmd} import";
@@ -42,7 +41,9 @@ in
       in
       (
         mkAliases "terraform" "tf"
-      ) // (
+      ) // {
+        "tff" = "terraform fmt --recursive";
+      } // (
         mkAliases "terragrunt" "tg"
       ) // {
         "tgf" = "terragrunt hclfmt";
@@ -54,25 +55,8 @@ in
       terraform-ls # see https://github.com/hashicorp/terraform-ls/blob/main/docs/USAGE.md
       (pkgs.writeShellApplication {
         name = "tf-fmt";
-        runtimeInputs = with pkgs; [ pkgs.gnugrep pkgs.gnused pkgs.coreutils pkgs.findutils ];
-        text = ''
-          since_revision="$1"
-          cd "$(git rev-parse --show-toplevel)"
-
-          if command -v terraform ; then
-            git diff --name-only "$since_revision" | grep -E '.(tf|tfvars)$' | sed 's#/[^/]*$##g' | sort | uniq \
-              | xargs -n1 -r terraform fmt
-          else
-            echo 'terraform executable is missing, skipping...'
-          fi
-
-          if command -v terragrunt ; then
-            git diff --name-only "$since_revision" | grep -E '.(hcl)$' \
-              | xargs -n1 -r terragrunt hclfmt --terragrunt-hclfmt-file
-          else
-            echo 'terragrunt executable is missing, skipping...'
-          fi
-        '';
+        runtimeInputs = with pkgs; [ gnugrep gnused coreutils findutils moreutils gojq ];
+        text = builtins.readFile ./tf-fmt.sh;
       })
     ];
   };

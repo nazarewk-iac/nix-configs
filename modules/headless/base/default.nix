@@ -90,6 +90,7 @@ in
       openssl
 
       coreutils
+      moreutils
       gnugrep
 
       zip
