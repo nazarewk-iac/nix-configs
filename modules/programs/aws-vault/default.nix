@@ -44,6 +44,8 @@ in
     defaultEnv = mkOption {
       default = {
         AWS_VAULT_PROMPT = "ykman";
+        AWS_SESSION_TOKEN_TTL = "8h";
+        AWS_MIN_TTL = "2h";
         AWS_VAULT_BACKEND = "pass";
         AWS_VAULT_PASS_PREFIX = "aws-vault";
       };
