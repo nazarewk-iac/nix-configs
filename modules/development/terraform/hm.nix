@@ -32,6 +32,7 @@ in
           "${short}" = cmd;
           "${short}g" = "${cmd} get";
           "${short}i" = "${cmd} init";
+          "${short}ir" = "${cmd} init --reconfigure";
           "${short}im" = "${cmd} import";
           "${short}iu" = "${cmd} init --upgrade";
           "${short}p" = "${cmd} plan";
