@@ -37,6 +37,7 @@ in
     kdn.emulators.windows.enable = true;
 
     environment.systemPackages = with pkgs; [
+      logseq
       kdn.klog-time-tracker
       dex # A program to generate and execute DesktopEntry files of the Application type
       brave
