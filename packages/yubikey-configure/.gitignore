@@ -1,0 +1,14 @@
+*
+!/**/*.py
+!/.envrc
+!/.gitignore
+!/README.md
+!/cue.mod/
+!/dagger.cue
+!/default.nix
+!/flake.lock
+!/flake.nix
+!/poetry.lock
+!/pyproject.toml
+!/yubikey_configure
+!/config.nix
