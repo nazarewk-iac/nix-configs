@@ -6,69 +6,21 @@ let
   absDir = "${config.home.homeDirectory}/${relDir}";
   shellDir = "$HOME/${relDir}";
 
-  ghDir = (pkgs.writeShellApplication {
-    name = "gh-dir";
-    runtimeInputs = with pkgs; [ ];
-    text = ''
-      for entry in "$@"; do
-        entry="''${entry#*github.com/}"
-        echo "${shellDir}/$entry"
-      done
+  gDir = lib.kdn.shell.writeShellScript pkgs ./bin/g-dir.sh {
+    prefix = ''
+      shellDir="${shellDir}"
     '';
-  });
-
-  ghRemote = (pkgs.writeShellApplication {
-    name = "gh-remote";
-    runtimeInputs = with pkgs; [ ];
-    text = ''
-      for entry in "$@"; do
-        entry="''${entry#*github.com/}"
-        org="''${entry%/*}"
-        repo="''${entry#*/}"
-        echo "${cfg.remoteShellPattern}"
-      done
-    '';
-  });
-
-  ghGet = (pkgs.writeShellApplication {
-    name = "gh-get";
-    runtimeInputs = with pkgs; [ git ghDir ghRemote ];
-    text = ''
-      for entry in "$@"; do
-        dir="$(gh-dir "$entry")"
-        remote="$(gh-remote "$entry")"
-
-        if [ -d "$dir/.git" ] ; then
-          echo "$dir already exists, updating..."
-          git -C "$dir" fetch --all --prune
-          git -C "$dir" pull --rebase || true
-          continue
-        fi
-
-        git clone "$remote" "$dir"
-      done
-    '';
-  });
-
-  ghRepos = (pkgs.writeShellApplication {
-    name = "gh-repos";
+  };
+  gGet = lib.kdn.shell.writeShellScript pkgs ./bin/g-get.sh {
+    runtimeInputs = with pkgs; [ git gDir gRemote ];
+  };
+  gRemote = lib.kdn.shell.writeShellScript pkgs ./bin/g-remote.sh { };
+  ghRepos = lib.kdn.shell.writeShellScript pkgs ./bin/gh-repos.sh {
     runtimeInputs = with pkgs; [ gh jq ];
-    text = ''
-      LIMIT="''${LIMIT:-999}"
-      for owner in "$@"; do
-        gh repo list "$owner" -L "$LIMIT" --json owner,name | jq -r '.[] | "\(.owner.login)/\(.name)"'
-      done
-    '';
-  });
-
-  ghGetAll = (pkgs.writeShellApplication {
-    name = "gh-get-all";
+  };
+  ghGetAll = lib.kdn.shell.writeShellScript pkgs ./bin/gh-get-all.sh {
     runtimeInputs = with pkgs; [ ghRepos ];
-    text = ''
-      readarray -t repos <<<"$(gh-repos "$@")"
-      gh-get "''${repos[@]}"
-    '';
-  });
+  };
 
 in
 {
@@ -76,7 +28,7 @@ in
     enable = lib.mkEnableOption "Git development utilities";
 
     baseDir = mkOption {
-      default = "dev/github.com";
+      default = "dev";
       description = "Base git checkout directory";
     };
 
@@ -88,14 +40,15 @@ in
     programs.bash.initExtra = config.programs.zsh.initExtra;
     programs.zsh.initExtra = ''
       gh-cd() {
-        cd "$(${ghDir}/bin/gh-dir $1)"
+        cd "$(${gDir}/bin/g-dir $1)"
       }
     '';
 
     home.packages = with pkgs; [
-      ghDir
-      ghRemote
-      ghGet
+      gDir
+      gRemote
+      gGet
+
       ghGetAll
       ghRepos
 
