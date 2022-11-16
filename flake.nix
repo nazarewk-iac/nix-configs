@@ -54,6 +54,7 @@
           # work around not using flake-utils which sets it up on `pkgs.system`
           # see https://github.com/numtide/flake-utils/blob/1ed9fb1935d260de5fe1c2f7ee0ebaae17ed2fa1/check-utils.nix#L4
           system = final.stdenv.system;
+          lib = import ./lib { inherit (prev) lib; };
         };
         nixosModules.default = ./modules;
 
