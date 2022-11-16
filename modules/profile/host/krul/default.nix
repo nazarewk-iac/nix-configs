@@ -92,5 +92,7 @@ in
 
     kdn.virtualization.microvm.host.enable = true;
     microvm.vms.hello-microvm = { flake = self; };
+
+    kdn.networking.netbird.enable = true;
   };
 }
