@@ -50,14 +50,26 @@ in
     ];
 
     environment.shellAliases = {
-      "userctl" = "systemctl --user";
-      "userjournal" = "journalctl --user";
-      "sc" = "systemctl";
-      "sj" = "journalctl";
-      "uc" = "userctl";
-      "uj" = "userjournal";
-      "scs" = "sc status";
-      "ucs" = "uc status";
+      userctl = "systemctl --user";
+      userjournal = "journalctl --user";
+
+      sc = "systemctl";
+      sj = "journalctl";
+
+      uc = "systemctl --user";
+      uj = "journalctl --user";
+
+      scs = "systemctl status";
+      ucs = "systemctl --user status";
+
+      scmr = "systemctl restart";
+      ucmr = "systemctl --user restart";
+
+      scms = "systemctl start";
+      ucms = "systemctl --user start";
+
+      scmS = "systemctl stop";
+      ucmS = "systemctl --user stop";
     };
 
     kdn.headless.base.enable = true;
