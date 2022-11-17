@@ -71,7 +71,8 @@ in
       #((pkgs.gradleGen.override { java = jdk; }).gradle_latest)
 
       playerctl
-      spotify
+
+      # spotify  # using spotify through Brave app
       # spotify-qt
       # spotify-tray  # spotify tray requires X11
 
