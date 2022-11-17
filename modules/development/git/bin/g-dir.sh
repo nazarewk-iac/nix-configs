@@ -11,10 +11,17 @@ for entry in "$@"; do
   # first segment
   service="${service%%/*}"
 
-  # last segment
-  repo="${entry##*/}"
+  # drop entry until service definition
+  org="${entry##*"${service}/"}"
+  # first segment
+  org="${org%%/*}"
+
+  # drop entry until service definition
+  repo="${entry##*"${service}/${org}/"}"
+  # first segment
+  repo="${repo%%/*}"
   # drop: .git
   repo="${repo%.git}"
 
-  echo "${shellDir}/${service}/${repo}"
+  echo "${shellDir}/${service}/${org}/${repo}"
 done
