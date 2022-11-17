@@ -11,6 +11,11 @@ for entry in "$@"; do
   # first segment
   service="${service%%/*}"
 
+  if command -v "g-dir-${service}"; then
+    "g-dir-${service}" "${entry}"
+    continue
+  fi
+
   # drop entry until service definition
   org="${entry##*"${service}/"}"
   # first segment
