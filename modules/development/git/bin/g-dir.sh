@@ -4,12 +4,12 @@ set -eEuo pipefail
 shellDir="${shellDir:-"$HOME/dev"}"
 
 for entry in "$@"; do
-  # first segment
-  service="${entry%%/*}"
   # drop: XXX://
-  service="${service#*://}"
+  service="${entry#*://}"
   # drop: git@
   service="${service#*@}"
+  # first segment
+  service="${service%%/*}"
 
   # last segment
   repo="${entry##*/}"
