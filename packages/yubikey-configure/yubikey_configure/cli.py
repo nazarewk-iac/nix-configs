@@ -9,6 +9,7 @@ import structlog
 from structlog.contextvars import bind_contextvars, bound_contextvars
 
 from . import configure
+from .password_store import PasswordStore
 
 configure.logging()
 logger: structlog.stdlib.BoundLogger = structlog.get_logger()
@@ -29,57 +30,23 @@ def path_setter(name: str, required=True):
     return setter
 
 
-def pass_get(path: Path):
-    proc = subprocess.run(
-        [PASS, "show", path],
-        stdout=subprocess.PIPE,
-        check=True,
-        encoding="utf8"
-    )
-    # pass adds a newline at the end
-    return proc.stdout[:-1]
-
-
-def pass_set(path: Path, value: str):
-    subprocess.run(
-        [PASS, "insert", "--force", path],
-        input=f"{value}\n" * 2,
-        check=True,
-        encoding="utf8",
-    )
-
-
-def populate_secrets(target: str, regenerate=False, **defaults):
+def populate_secrets(ps: PasswordStore, target: str, regenerate=False, **defaults: str):
     target_path = Path("yubikeys") / target
     defaults = {k: v for k, v in defaults.items() if v}
     data = dict(defaults)
 
-    # load current store data
-    pass_ls_prefix = "└── "
-    proc = subprocess.run(
-        [PASS, "ls", target_path],
-        check=False,
-        stdout=subprocess.PIPE,
-        encoding="utf8"
-    )
-    lines = proc.stdout.splitlines(False)
-    if proc.returncode == 0 and regenerate:
+    paths = list(ps.iter(target_path))
+    if paths and regenerate:
         logger.warning(f"resetting {target_path}")
-        subprocess.run(
-            [PASS, "rm", "--recursive", "--force", target_path],
-            check=True,
-        )
-        lines = []
+        ps.delete(target_path, recursive=True)
+        paths = []
 
     loaded_data = {}
-    for line in lines:
-        key = line.removeprefix(pass_ls_prefix)
-        if line != key:
-            continue
-        value = pass_get(target_path / key)
+    for path in paths:
+        value = ps[path]
         if not value:
             continue
-        loaded_data[key] = data[key] = value
+        loaded_data[str(path)] = data[str(path)] = value.decode()
 
     # store defaults in password-store
     for key, value in defaults.items():
@@ -87,7 +54,7 @@ def populate_secrets(target: str, regenerate=False, **defaults):
             continue
 
         logger.info(f"Inserted default {target_path / key} into password-store.")
-        pass_set(target_path / key, value)
+        ps[target_path / key] = value
 
     pins = {
         "gpg-pin": 6,
@@ -131,17 +98,13 @@ def populate_secrets(target: str, regenerate=False, **defaults):
 def main(target, config_target, gpg_passphrase_key, gpg_fpr, **configs):
     config_target = config_target or target
     bind_contextvars(config_target=config_target)
+    ps = PasswordStore(PASS)
 
-    secrets = populate_secrets(config_target, **{
+    secrets = populate_secrets(ps, config_target, **{
         k.replace("_", "-"): v
         for k, v in configs.items()
     })
-    gpg_passphrase = subprocess.run(
-        [PASS, "show", gpg_passphrase_key],
-        check=True,
-        stdout=subprocess.PIPE,
-        encoding="utf8"
-    ).stdout[:-1]
+    gpg_passphrase = ps[gpg_passphrase_key].decode()
     logger.info(json.dumps(secrets, indent=2))
     bind_contextvars(target=target)
 
