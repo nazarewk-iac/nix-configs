@@ -2,11 +2,15 @@ import json
 import re
 import shutil
 import subprocess
+import time
 from pathlib import Path
 
 import click
 import structlog
+from ykman import scripting
 from structlog.contextvars import bind_contextvars, bound_contextvars
+from ykman._openpgp import OpenPgpController
+from ykman.device import scan_devices, list_all_devices
 
 from . import configure
 from .password_store import PasswordStore
@@ -15,7 +19,6 @@ configure.logging()
 logger: structlog.stdlib.BoundLogger = structlog.get_logger()
 
 PASS: Path
-YKMAN: Path
 GPG: Path
 
 terminal_escape_code = re.compile(r"\x1b[^m]*m")
@@ -67,24 +70,24 @@ def populate_secrets(ps: PasswordStore, target: str, regenerate=False, **default
             if data.get(key, ""):
                 continue
             logger.info(f"generating new secret")
-            proc = subprocess.run(
-                [PASS, "generate", target_path / key, str(length)],
-                check=True,
-                stdout=subprocess.PIPE,
-                encoding="utf8",
-            )
-            value = proc.stdout.splitlines(False)[-1]
-            value = terminal_escape_code.sub("", value)
-            # pass adds a newline at the end
-            data[key] = value
+            data[key] = ps.generate(target_path / key, length)
 
     return data
+
+
+def get_yubikey(serial: int, interval=5.0):
+    while True:
+        for device, info in list_all_devices():
+            if info.serial == serial:
+                return scripting.ScriptingDevice(device, info)
+        logger.info(f"Still waiting for the YubiKey to be inserted...", serial=serial, interval=interval)
+        time.sleep(interval)
 
 
 @click.command(
     context_settings={"show_default": True},
 )
-@click.option("-t", "--target")
+@click.option("-t", "--target", type=int)
 @click.option("-c", "--config-target", default="")
 @click.option("--gpg-pin", default="")
 @click.option("--gpg-admin-pin", default="")
@@ -93,11 +96,14 @@ def populate_secrets(ps: PasswordStore, target: str, regenerate=False, **default
 @click.option("--gpg-passphrase-key", default="gpg-password")
 @click.option("--regenerate/--no-regenerate", default=False)
 @click.option("--pass-bin", default=shutil.which("pass"), callback=path_setter("PASS"), expose_value=False)
-@click.option("--ykman-bin", default=shutil.which("ykman"), callback=path_setter("YKMAN"), expose_value=False)
 @click.option("--gpg-bin", default=shutil.which("gpg"), callback=path_setter("GPG"), expose_value=False)
 def main(target, config_target, gpg_passphrase_key, gpg_fpr, **configs):
-    config_target = config_target or target
+    config_target = str(config_target or target)
     bind_contextvars(config_target=config_target)
+    yk = get_yubikey(target)
+
+    sc = yk.smart_card()
+    gpg = OpenPgpController(sc)
     ps = PasswordStore(PASS)
 
     secrets = populate_secrets(ps, config_target, **{
@@ -107,6 +113,8 @@ def main(target, config_target, gpg_passphrase_key, gpg_fpr, **configs):
     gpg_passphrase = ps[gpg_passphrase_key].decode()
     logger.info(json.dumps(secrets, indent=2))
     bind_contextvars(target=target)
+
+    wat = require_device(connections, device)
 
     cmd = [YKMAN, f"--device={target}"]
 

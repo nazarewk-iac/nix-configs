@@ -2,6 +2,7 @@ import dataclasses
 import itertools
 import logging
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -10,6 +11,9 @@ logger = logging.getLogger(__name__)
 
 def get_default_store_dir():
     return Path(os.environ.get("PASSWORD_STORE_DIR") or Path.home() / ".password-store")
+
+
+terminal_escape_code = re.compile(r"\x1b[^m]*m")
 
 
 @dataclasses.dataclass
@@ -60,3 +64,15 @@ class PasswordStore:
             if relative:
                 entry = entry.relative_to(path)
             yield entry
+
+    def generate(self, path: Path, length=6, symbols=True):
+        # see https://git.zx2c4.com/password-store/tree/src/password-store.sh#n561
+        args = ["generate"]
+        if not symbols:
+            args.append("--no-symbols")
+        proc = self.cmd(
+            [*args, path, str(length)],
+            stdout=subprocess.PIPE,
+        )
+        value = proc.stdout.splitlines(False)[-1].decode()
+        return terminal_escape_code.sub("", value)
