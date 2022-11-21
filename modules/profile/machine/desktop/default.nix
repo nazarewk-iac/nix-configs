@@ -41,6 +41,7 @@ in
       kdn.klog-time-tracker
       dex # A program to generate and execute DesktopEntry files of the Application type
       brave
+      kdn.rambox # browser/multi workspace
       # chromium
       firefox-wayland
       jetbrains.pycharm-professional
