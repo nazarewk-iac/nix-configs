@@ -39,6 +39,8 @@ in
           "${short}a" = "${cmd} apply";
           "${short}aa" = "${cmd} apply --auto-approve";
           "${short}u" = "${cmd} force-unlock --force";
+          "${short}o" = "${cmd} output";
+          "${short}oj" = "${cmd} output --json";
         };
       in
       (
