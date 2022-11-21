@@ -38,6 +38,7 @@ in
           "${short}p" = "${cmd} plan";
           "${short}a" = "${cmd} apply";
           "${short}aa" = "${cmd} apply --auto-approve";
+          "${short}u" = "${cmd} force-unlock --force";
         };
       in
       (
