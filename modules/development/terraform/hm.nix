@@ -8,7 +8,7 @@ in
     enable = lib.mkEnableOption "Terraform development";
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     programs.git.ignores = [ (builtins.readFile ./.gitignore) ];
 
     home.sessionVariables = {
@@ -28,7 +28,7 @@ in
 
     home.shellAliases =
       let
-        mkAliases = cmd: short: {
+        mkAliases = cmd: short: extra: {
           "${short}" = cmd;
           "${short}g" = "${cmd} get";
           "${short}i" = "${cmd} init";
@@ -41,19 +41,18 @@ in
           "${short}u" = "${cmd} force-unlock --force";
           "${short}o" = "${cmd} output";
           "${short}oj" = "${cmd} output --json";
-        };
+        } // (builtins.mapAttrs (short: entry: "${cmd} ${entry}") extra);
+
       in
-      (
-        mkAliases "terraform" "tf"
-      ) // {
+      (mkAliases "terraform" "tf" {
         "tff" = "terraform fmt --recursive";
-      } // (
-        mkAliases "terragrunt" "tg"
-      ) // {
-        "tgf" = "terragrunt hclfmt";
-        "tgr" = "terragrunt render-json --terragrunt-json-out=/dev/stdout | jq";
-        "tgrm" = "terragrunt render-json --with-metadata --terragrunt-json-out=/dev/stdout | jq";
-      };
+      }) // (mkAliases "TERRAGRUNT_FETCH_DEPENDENCY_OUTPUT_FROM_STATE=true terragrunt" "tg" {
+        "tgf" = "hclfmt";
+        "tgs" = "render-json --terragrunt-json-out=/dev/stdout | jq";
+        "tgsm" = "render-json --with-metadata --terragrunt-json-out=/dev/stdout | jq";
+        "tgr" = "run-all";
+        "tgrc" = "run-all --terragrunt-ignore-external-dependencies";
+      });
 
     home.packages = with pkgs; [
       terraform-ls # see https://github.com/hashicorp/terraform-ls/blob/main/docs/USAGE.md
