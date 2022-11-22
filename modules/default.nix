@@ -20,6 +20,10 @@ in
   };
 
   config = lib.mkIf config.kdn.enable {
+    nixpkgs.config.permittedInsecurePackages = [
+      "qtwebkit-5.212.0-alpha4"
+    ];
+
     nix.settings.trusted-public-keys = [
       "nixpkgs-wayland.cachix.org-1:3lwxaILxMRkVhehr5StQprHdEo4IrE8sRho9R9HOLYA="
       "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="

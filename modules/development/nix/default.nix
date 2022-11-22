@@ -16,7 +16,7 @@ in
       nixfmt
       nixpkgs-fmt
 
-      inputs.nixpkgs-update.defaultPackage.${system}
+      #inputs.nixpkgs-update.defaultPackage.${system}
 
       (pkgs.writeShellApplication {
         name = "nix-which";

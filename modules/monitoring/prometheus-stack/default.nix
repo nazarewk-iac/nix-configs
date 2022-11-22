@@ -42,11 +42,11 @@ in
           addr = cfg.listenAddress;
         };
         provision.enable = true;
-        provision.datasources = [
+        provision.datasources.settings.datasources = [
           {
-            url = "http://${cfg.listenAddress}:9090";
-            type = "prometheus";
             name = "Prometheus";
+            type = "prometheus";
+            url = "http://${cfg.listenAddress}:9090";
           }
         ];
       };

@@ -43,7 +43,7 @@ in
       brave
       kdn.rambox # browser/multi workspace
       # chromium
-      firefox-wayland
+      firefox
       jetbrains.pycharm-professional
       jetbrains.idea-ultimate
       jetbrains.clion

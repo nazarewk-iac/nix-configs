@@ -1,18 +1,60 @@
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-
-    microvm.url = "github:nazarewk/microvm.nix/side-effect-free-imports";
-    microvm.inputs.nixpkgs.follows = "nixpkgs";
-
-    nixpkgs-wayland.url = "github:nix-community/nixpkgs-wayland";
+    nixpkgs-lib.url = "github:NixOS/nixpkgs/nixos-unstable?dir=lib";
     nixpkgs-gpg236.url = "github:nixos/nixpkgs/22e81f39ace64964bae3b6c89662d1221a11324c";
 
-    nixpkgs-update.url = "github:ryantm/nixpkgs-update";
-    home-manager.url = "github:nix-community/home-manager";
-    flake-parts.url = "github:hercules-ci/flake-parts";
+    nixpkgs-wayland = {
+      url = "github:nix-community/nixpkgs-wayland";
+      inputs.flake-compat.follows = "flake-compat";
+      inputs.lib-aggregate.follows = "lib-aggregate";
+      inputs.nix-eval-jobs.follows = "nix-eval-jobs";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    lib-aggregate = {
+      url = "github:nix-community/lib-aggregate";
+      inputs.nixpkgs-lib.follows = "nixpkgs-lib";
+      inputs.flake-utils.follows = "flake-utils";
+    };
+    nix-eval-jobs = {
+      url = "github:nix-community/nix-eval-jobs";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
+    #nixpkgs-update = {
+    #  url = "github:ryantm/nixpkgs-update";
+    #  inputs.nixpkgs.follows = "nixpkgs";
+    #  inputs.flake-compat.follows = "flake-compat";
+    #};
+    flake-compat = {
+      url = "github:edolstra/flake-compat";
+      flake = false;
+    };
+    flake-utils = {
+      url = "github:numtide/flake-utils";
+    };
+    flake-parts = {
+      url = "github:hercules-ci/flake-parts";
+      inputs.nixpkgs-lib.follows = "nixpkgs-lib";
+    };
     # nix-alien.url = "github:thiagokokada/nix-alien";
     # nix-ld.url = "github:Mic92/nix-ld";
+    home-manager = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.utils.follows = "flake-utils";
+    };
+    poetry2nix = {
+      url = "github:nix-community/poetry2nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
+    microvm = {
+      url = "github:nazarewk/microvm.nix/side-effect-free-imports";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
   };
 
   outputs =
