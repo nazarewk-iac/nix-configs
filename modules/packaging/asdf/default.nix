@@ -1,21 +1,25 @@
 { lib, pkgs, config, ... }:
-with lib;
 let
   cfg = config.kdn.packaging.asdf;
 in
 {
   options.kdn.packaging.asdf = {
     enable = lib.mkEnableOption "ASDF version manager";
+
+    package = lib.mkOption {
+      type = lib.types.package;
+      default = pkgs.asdf-vm;
+    };
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     environment.interactiveShellInit = ''
       [[ -z "$HOME" ]] || export PATH="$HOME/.asdf/shims:$PATH"
-      source ${pkgs.asdf-vm}/share/asdf-vm/lib/asdf.sh
+      source ${cfg.package}/share/asdf-vm/lib/asdf.sh
     '';
 
     environment.systemPackages = with pkgs; [
-      asdf-vm
+      cfg.package
       unzip
       coreutils
     ];
@@ -27,7 +31,7 @@ in
             if [ -d "$HOME/.asdf/shims" ] ; then
               $DRY_RUN_CMD rm -rf "$HOME/.asdf/shims"
             fi
-            $DRY_RUN_CMD asdf reshim
+            $DRY_RUN_CMD "${cfg.package}/bin/asdf" reshim
           '';
         };
       })
