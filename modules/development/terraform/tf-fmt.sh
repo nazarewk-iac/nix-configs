@@ -46,7 +46,7 @@ function main() {
   fi
 
   jq="$(command -v jq || command -v gojq || true)"
-  if test -n "$jq" && command -v sponge; then
+  if test -n "$jq" && command -v sponge >/dev/null; then
     while read -r file; do
       "$jq" -S <"$file" | sponge "$file"
     done < <(match_extensions {hcl,tf,tfvars}.json)
