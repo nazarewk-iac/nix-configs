@@ -13,6 +13,7 @@ in
       go_1_19
       gccgo
       delve
+      goreleaser
     ];
   };
 }
