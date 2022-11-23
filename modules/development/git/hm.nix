@@ -54,6 +54,8 @@ in
 
       hub
       gh
+
+      git-remote-codecommit
     ];
   };
 }
