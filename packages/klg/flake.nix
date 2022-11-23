@@ -3,9 +3,10 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    poetry2nix.url = "github:nix-community/poetry2nix";
   };
 
-  outputs = { self, flake-parts, ... }: flake-parts.lib.mkFlake { inherit self; } {
+  outputs = { self, nixpkgs, flake-parts, poetry2nix, ... }: flake-parts.lib.mkFlake { inherit self; } {
     imports = [
     ];
 
@@ -15,35 +16,34 @@
       "aarch64-linux"
       "aarch64-darwin"
     ];
+    flake = {
+      # Nixpkgs overlay providing the application
+      overlays.default = nixpkgs.lib.composeManyExtensions [
+        poetry2nix.overlay
+      ];
+    };
 
-    perSystem = { config, self', inputs', pkgs, system, ... }:
+    perSystem = { config, self', inputs', system, ... }:
       let
-        cfg = builtins.fromTOML (builtins.readFile attrs.pyproject);
-        name = cfg.tool.poetry.name;
-        attrs = {
-          python = pkgs."python311";
-          projectDir = ./.;
-          pyproject = ./pyproject.toml;
-          poetrylock = ./poetry.lock;
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ self.overlays.default ];
         };
-        pkg = pkgs.poetry2nix.mkPoetryApplication (attrs // { });
-        env = pkgs.poetry2nix.mkPoetryEnv (attrs // {
-          editablePackageSources = { "${name}" = attrs.projectDir; };
-        });
+        conf = import ./config.nix { inherit pkgs; };
       in
       {
-        packages.default = pkg;
-        packages.container = pkgs.dockerTools.buildImage {
+        packages.default = conf.pkg;
+        packages.container = pkgs.dockerTools.buildLayeredImage {
           name = "hello-docker";
           tag = "latest";
           config = {
-            Cmd = [ "${pkg}/bin/${name}" ];
+            Cmd = [ conf.bin ];
           };
         };
         devShells = {
           default = pkgs.mkShellNoCC {
             packages = with pkgs; [
-              env
+              conf.env
               poetry
               dagger
             ];
@@ -61,6 +61,5 @@
           ''}/bin/repl";
         };
       };
-    flake = { };
   };
 }

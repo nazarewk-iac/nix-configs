@@ -9,4 +9,6 @@
 !/flake.nix
 !/poetry.lock
 !/pyproject.toml
+!/config.nix
+!/default.nix
 !/klg

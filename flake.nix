@@ -60,7 +60,7 @@
   outputs =
     inputs:
     let
-      inherit (inputs) self flake-parts home-manager;
+      inherit (inputs) self flake-parts home-manager nixpkgs poetry2nix;
       lib = import ./lib { inherit (inputs.nixpkgs) lib; };
       flakeLib = lib.kdn.flakes.forFlake self;
       args = {
@@ -70,34 +70,45 @@
     in
     (flake-parts.lib.mkFlake args {
       systems = [ "x86_64-linux" "aarch64-linux" ];
-      perSystem = { config, self', inputs', pkgs, system, ... }: {
-        # inspired by https://github.com/NixOS/nix/issues/3803#issuecomment-748612294
-        # usage: nix run '.#repl'
-        apps.repl = {
-          type = "app";
-          program = "${pkgs.writeShellScriptBin "repl" ''
+      perSystem = { config, self', inputs', system, ... }:
+        let
+          pkgs = import nixpkgs {
+            inherit system;
+            overlays = [ self.overlays.default ];
+          };
+        in
+        {
+          # inspired by https://github.com/NixOS/nix/issues/3803#issuecomment-748612294
+          # usage: nix run '.#repl'
+          apps.repl = {
+            type = "app";
+            program = "${pkgs.writeShellScriptBin "repl" ''
             confnix=$(mktemp)
             trap "rm '$confnix' || true" EXIT
             echo "builtins.getFlake (toString "$PWD")" >$confnix
             nix repl "$confnix"
           ''}/bin/repl";
+          };
+          checks = { };
+          devShells = { };
+          packages = lib.mkMerge [
+            (lib.filterAttrs (n: pkg: lib.isDerivation pkg) (flakeLib.packagesForOverlay { inherit system; }).kdn)
+            (flakeLib.microvm.packages system)
+          ];
         };
-        checks = { };
-        devShells = { };
-        packages = lib.mkMerge [
-          (lib.filterAttrs (n: pkg: lib.isDerivation pkg) (flakeLib.packagesForOverlay { inherit system; }).kdn)
-          (flakeLib.microvm.packages system)
-        ];
-      };
       flake = {
         inherit lib;
 
-        overlays.default = final: prev: (import ./packages { pkgs = prev; }) // {
-          # work around not using flake-utils which sets it up on `pkgs.system`
-          # see https://github.com/numtide/flake-utils/blob/1ed9fb1935d260de5fe1c2f7ee0ebaae17ed2fa1/check-utils.nix#L4
-          system = final.stdenv.system;
-          lib = import ./lib { inherit (prev) lib; };
-        };
+        overlays.default = lib.composeManyExtensions [
+          poetry2nix.overlay
+          (final: prev: (import ./packages { pkgs = prev; }))
+          (final: prev: {
+            # work around not using flake-utils which sets it up on `pkgs.system`
+            # see https://github.com/numtide/flake-utils/blob/1ed9fb1935d260de5fe1c2f7ee0ebaae17ed2fa1/check-utils.nix#L4
+            system = final.stdenv.system;
+            lib = import ./lib { inherit (prev) lib; };
+          })
+        ];
         nixosModules.default = ./modules;
 
         nixosConfigurations = lib.mkMerge [
