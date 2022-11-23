@@ -15,7 +15,7 @@ for entry in "$@"; do
     service="${service%%/*}"
   fi
 
-  if command -v "g-dir-${service}"; then
+  if command -v "g-dir-${service}" >/dev/null; then
     "g-dir-${service}" "${entry}"
     continue
   fi
