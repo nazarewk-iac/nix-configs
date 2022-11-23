@@ -4,12 +4,16 @@ set -eEuo pipefail
 shellDir="${shellDir:-"$HOME/dev"}"
 
 for entry in "$@"; do
-  # drop: XXX://
-  service="${entry#*://}"
-  # drop: git@
-  service="${service#*@}"
-  # first segment
-  service="${service%%/*}"
+  if [[ "${entry}" == codecommit:* ]]; then
+    service=codecommit
+  else
+    # drop: XXX://
+    service="${entry#*://}"
+    # drop: git@
+    service="${service#*@}"
+    # first segment
+    service="${service%%/*}"
+  fi
 
   if command -v "g-dir-${service}"; then
     "g-dir-${service}" "${entry}"

@@ -11,6 +11,11 @@ let
       shellDir="${shellDir}"
     '';
   };
+  gDirCodecommit = lib.kdn.shell.writeShellScript pkgs ./bin/g-dir-codecommit.sh {
+    prefix = ''
+      shellDir="${shellDir}"
+    '';
+  };
   gGet = lib.kdn.shell.writeShellScript pkgs ./bin/g-get.sh {
     runtimeInputs = with pkgs; [ git gDir gRemote ];
   };
@@ -46,6 +51,7 @@ in
 
     home.packages = with pkgs; [
       gDir
+      gDirCodecommit
       gRemote
       gGet
 
