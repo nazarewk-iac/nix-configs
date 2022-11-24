@@ -19,6 +19,12 @@ let
   gGet = lib.kdn.shell.writeShellScript pkgs ./bin/g-get.sh {
     runtimeInputs = with pkgs; [ git gDir gRemote ];
   };
+  gOpen = lib.kdn.shell.writeShellScript pkgs ./bin/g-open.sh {
+    prefix = ''
+      IDE="${cfg.IDE}"
+    '';
+    runtimeInputs = with pkgs; [ git gDir gRemote ];
+  };
   gRemote = lib.kdn.shell.writeShellScript pkgs ./bin/g-remote.sh { };
   ghRepos = lib.kdn.shell.writeShellScript pkgs ./bin/gh-repos.sh {
     runtimeInputs = with pkgs; [ gh jq ];
@@ -35,6 +41,11 @@ in
     baseDir = mkOption {
       default = "dev";
       description = "Base git checkout directory";
+    };
+
+    IDE = mkOption {
+      default = "idea-ultimate";
+      description = "IDE to use in g-open";
     };
 
     remoteShellPattern = mkOption {
@@ -54,6 +65,7 @@ in
       gDirCodecommit
       gRemote
       gGet
+      gOpen
 
       ghGetAll
       ghRepos
