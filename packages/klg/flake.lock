@@ -76,16 +76,15 @@
         ]
       },
       "locked": {
-        "lastModified": 1669279662,
-        "narHash": "sha256-zm9s3hz6qKtOBGxpfiUw/67RhCWbuWScMnmG1Zwzf0o=",
+        "lastModified": 1669280295,
+        "narHash": "sha256-3mC34FUL0HVp3899TTc6/wEdMWY8k3RTfxW5EUrpZwI=",
         "owner": "nazarewk",
         "repo": "poetry2nix",
-        "rev": "bbbb01b07e662dad2b89927a77357780d38fb26c",
+        "rev": "78642b600a00b9bc1c4a986f9ef62e5f17b2f29f",
         "type": "github"
       },
       "original": {
         "owner": "nazarewk",
-        "ref": "nicegui",
         "repo": "poetry2nix",
         "type": "github"
       }

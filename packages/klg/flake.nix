@@ -7,7 +7,7 @@
       url = "github:numtide/flake-utils";
     };
     poetry2nix = {
-      url = "github:nazarewk/poetry2nix/nicegui";
+      url = "github:nazarewk/poetry2nix";
       #url = "github:nix-community/poetry2nix";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
