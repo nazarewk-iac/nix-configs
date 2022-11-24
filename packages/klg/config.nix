@@ -8,8 +8,11 @@ let
     pyproject = ./pyproject.toml;
     poetrylock = ./poetry.lock;
     overrides = pkgs.poetry2nix.defaultPoetryOverrides.extend (final: prev: (builtins.listToAttrs [
-      #fido2 = prev.fido2.overridePythonAttrs (old: { buildInputs = (old.buildInputs or [ ]) ++ [ final.poetry ]; });
-    ]) // { });
+    ]) // {
+      nicegui = prev.nicegui.overridePythonAttrs (old: {
+        buildInputs = (old.buildInputs or [ ]) ++ (with final; [ ]);
+      });
+    });
   };
 
   cfg = builtins.fromTOML (builtins.readFile attrs.pyproject);

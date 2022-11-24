@@ -24,6 +24,7 @@ pendulum = "^2.1.2"
 structlog = "^22.1.0" # logging library at https://www.structlog.org/en/stable/getting-started.html
 rich = "^12.6.0"  # UX improvement for structlog
 nicegui = "^0.9.25"
+watchfiles = "^0.16.1"
 
 [tool.poetry.scripts]
 "klg" = 'klg.cli:main'
