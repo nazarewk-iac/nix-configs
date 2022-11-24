@@ -3,9 +3,18 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-utils = {
+      url = "github:numtide/flake-utils";
+    };
+    poetry2nix = {
+      url = "github:nazarewk/poetry2nix";
+      #url = "github:nix-community/poetry2nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
   };
 
-  outputs = { self, flake-parts, ... }: flake-parts.lib.mkFlake { inherit self; } {
+  outputs = { self, flake-parts, nixpkgs, poetry2nix, ... }: flake-parts.lib.mkFlake { inherit self; } {
     imports = [
     ];
 
@@ -15,9 +24,19 @@
       "aarch64-linux"
       "aarch64-darwin"
     ];
+    flake = {
+      # Nixpkgs overlay providing the application
+      overlays.default = nixpkgs.lib.composeManyExtensions [
+        poetry2nix.overlay
+      ];
+    };
 
-    perSystem = { config, self', inputs', pkgs, system, ... }:
+    perSystem = { config, self', inputs', system, ... }:
       let
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ self.overlays.default ];
+        };
         conf = import ./config.nix { inherit pkgs; };
       in
       {
@@ -50,6 +69,5 @@
           ''}/bin/repl";
         };
       };
-    flake = { };
   };
 }

@@ -7,21 +7,9 @@ let
     projectDir = ./.;
     pyproject = ./pyproject.toml;
     poetrylock = ./poetry.lock;
-    overrides = pkgs.poetry2nix.defaultPoetryOverrides.extend (final: prev:
-      let
-        addPackages = name: packages: {
-          name = name;
-          value = prev."${name}".overridePythonAttrs (old: {
-            buildInputs = (old.buildInputs or [ ]) ++ packages;
-          });
-        };
-      in
-      (builtins.listToAttrs [
-        (addPackages "justpy" (with final; [ flit-core ]))
-        (addPackages "starlette" (with final; [ hatchling ]))
-        (addPackages "structlog" (with final; [ hatchling hatch-fancy-pypi-readme hatch-vcs ]))
-        (addPackages "nicegui" (with final; [ poetry ]))
-      ]) // { });
+    overrides = pkgs.poetry2nix.defaultPoetryOverrides.extend (final: prev: (builtins.listToAttrs [
+      #fido2 = prev.fido2.overridePythonAttrs (old: { buildInputs = (old.buildInputs or [ ]) ++ [ final.poetry ]; });
+    ]) // { });
   };
 
   cfg = builtins.fromTOML (builtins.readFile attrs.pyproject);
