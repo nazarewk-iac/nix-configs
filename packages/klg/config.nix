@@ -9,8 +9,8 @@ let
     poetrylock = ./poetry.lock;
     overrides = pkgs.poetry2nix.defaultPoetryOverrides.extend (final: prev: (builtins.listToAttrs [
     ]) // {
-      nicegui = prev.nicegui.overridePythonAttrs (old: {
-        buildInputs = (old.buildInputs or [ ]) ++ (with final; [ ]);
+      async-cache = prev.async-cache.overridePythonAttrs (old: {
+        buildInputs = (old.buildInputs or [ ]) ++ (with final; [ setuptools ]);
       });
     });
   };

@@ -1,8 +1,8 @@
-import logging
+import logging as _logging
 
 import structlog
 
 
 def logging():
-    logging.basicConfig(level=logging.INFO)
+    _logging.basicConfig(level=_logging.INFO)
     structlog.configure(logger_factory=structlog.stdlib.LoggerFactory())
