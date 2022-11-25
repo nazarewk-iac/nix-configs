@@ -16,6 +16,7 @@ in
     environment.systemPackages = with pkgs; [
       # AWS
       awscli2
+      ssm-session-manager-plugin
       eksctl
 
       # Argo
