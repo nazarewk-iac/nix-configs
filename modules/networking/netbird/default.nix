@@ -9,6 +9,7 @@ in
 
   config = lib.mkIf cfg.enable {
     services.netbird.enable = true;
+    services.netbird.package = pkgs.kdn.netbird;
 
     networking.networkmanager.unmanaged = [ "interface-name:wt*" ];
     systemd.services.netbird = {
@@ -18,8 +19,9 @@ in
         ];
       };
     };
+
     environment.systemPackages = with pkgs; [
-      netbird-ui
+      kdn.netbird-ui
     ];
   };
 }
