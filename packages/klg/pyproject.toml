@@ -28,10 +28,17 @@ structlog = "^22.1.0" # logging library at https://www.structlog.org/en/stable/g
 rich = "^12.6.0"  # UX improvement for structlog
 nicegui = "^0.9.25"
 watchfiles = "^0.16.1"
+dacite = "^1.6.0"
 
 [tool.poetry.scripts]
 "klg" = 'klg.cli:main'
 "klg-web" = 'klg.web:main'
+
+# poetry2nix throws: error: attribute 'dev' missing
+[tool.poetry.group.dev.dependencies]
+
+[tool.poetry.group.test.dependencies]
+pytest = "^7.2.0"
 
 [build-system]
 requires = ["poetry-core"]

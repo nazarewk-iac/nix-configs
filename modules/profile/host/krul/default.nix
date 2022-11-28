@@ -68,20 +68,7 @@ in
       "r8169" # Realtek Semiconductor Co., Ltd. RTL8125 2.5GbE Controller [10ec:8125] (rev 05)
       "igb" # Intel Corporation I211 Gigabit Network Connection [8086:1539] (rev 03)
     ];
-    boot.initrd.kernelModules = [ "amdgpu" "kvm-amd" ];
-    services.xserver.videoDrivers = [ "amdgpu" ];
-
-    hardware.opengl.enable = true;
-    hardware.opengl.extraPackages = with pkgs; [
-      amdvlk
-      rocm-opencl-icd
-      rocm-opencl-runtime
-    ];
-    hardware.opengl.extraPackages32 = with pkgs; [
-      driversi686Linux.amdvlk
-    ];
-    hardware.opengl.driSupport = true;
-    hardware.opengl.driSupport32Bit = true;
+    kdn.hardware.gpu.amd.enable = true;
 
     environment.systemPackages = with pkgs; [
       radeontop

@@ -8,7 +8,7 @@ from .klog import Klog
 
 async def run(port: int = 8082):
     async def reload():
-        result = klog.read()
+        result = klog.to_json("@default")
         output.set_content("\n".join([
             "```",
             pprint.pformat(result),

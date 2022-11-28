@@ -137,14 +137,8 @@ in
     ];
 
     hardware.cpu.intel.updateMicrocode = true;
-    boot.initrd.kernelModules = [ "dm-snapshot" "i915" ];
-    # https://github.com/NixOS/nixos-hardware/blob/4045d5f43aff4440661d8912fc6e373188d15b5b/common/cpu/intel/default.nix
-    hardware.opengl.extraPackages = with pkgs; [
-      intel-media-driver # LIBVA_DRIVER_NAME=iHD
-      vaapiIntel # LIBVA_DRIVER_NAME=i965 (older but works better for Firefox/Chromium)
-      vaapiVdpau
-      libvdpau-va-gl
-    ];
+    boot.initrd.kernelModules = [ "dm-snapshot" ];
+    kdn.hardware.gpu.intel.enable = true;
 
     nixpkgs.overlays = [
       (final: prev:

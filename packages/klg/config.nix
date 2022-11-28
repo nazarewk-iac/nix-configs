@@ -9,9 +9,9 @@ let
     poetrylock = ./poetry.lock;
     overrides = pkgs.poetry2nix.defaultPoetryOverrides.extend (final: prev: (builtins.listToAttrs [
     ]) // {
-      async-cache = prev.async-cache.overridePythonAttrs (old: {
-        buildInputs = (old.buildInputs or [ ]) ++ (with final; [ setuptools ]);
-      });
+      # async-cache = prev.async-cache.overridePythonAttrs (old: {
+      #   buildInputs = (old.buildInputs or [ ]) ++ (with final; [ setuptools ]);
+      # });
     });
   };
 
@@ -19,6 +19,7 @@ let
   name = cfg.tool.poetry.name;
   pkg = pkgs.poetry2nix.mkPoetryApplication (attrs // { });
   env = pkgs.poetry2nix.mkPoetryEnv (attrs // {
+    groups = [ "test" ];
     editablePackageSources = { "${name}" = attrs.projectDir; };
   });
 in

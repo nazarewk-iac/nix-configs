@@ -1,9 +1,9 @@
 { stdenv, lib, buildGoModule, fetchFromGitHub, installShellFiles, buildPackages }:
 let
-  version = "5.3";
+  version = "5.4";
   shortCommit = "7996ca8";
-  sha256 = "sha256-8QOY7y58/bmc8soyDur2J7Xsm3Ml+sFlzSMN3HKCems=";
-  vendorSha256 = "sha256-CP6AwlqWbgQnXwAZHhWpLvkEucQdIDHdVyrN3K1ZHMY=";
+  sha256 = "sha256-6XMVXksxjAIXGloVfIQNWYvrnMnS0qtIBunMLScn0v0=";
+  vendorSha256 = "sha256-FSpChTBnOTR86KHcfQyIVbVJr/i8imjlsA5yeQ02njw=";
   tag = "v${version}";
 in
 buildGoModule {
