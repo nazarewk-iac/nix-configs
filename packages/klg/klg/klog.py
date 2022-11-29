@@ -9,6 +9,7 @@ from typing import Iterable
 import anyio
 import cache
 import itertools
+import pendulum
 import structlog
 
 from . import dto
@@ -105,11 +106,50 @@ class Klog:
         for record in result.records:
             for entry in record.entries:
                 if closed and isinstance(entry, dto.OpenRange):
-                    raise KlgException("A range is already opened!")
+                    raise KlgException("A range is already opened")
                 if range and not isinstance(entry, dto.Range):
                     continue
                 return entry
+        raise KlgException("No entry was found")
 
     async def resume(self, path, *args):
         latest = await self.find_latest(path, *args, range=True, closed=True)
         return await self.cmd("start", f"--summary={latest.summary}", *args, path)
+
+    async def plan_month(self, path, hours: int, day_summary: str,
+                         now: pendulum.DateTime = None,
+                         period: pendulum.DateTime = None,
+                         off_tags: set = None,
+                         manual_tags: set = None,
+                         weekend_tag="#off=weekend",
+                         ):
+        now = now or pendulum.now()
+        period = period or now
+        if off_tags is None:
+            off_tags = {"#off"}
+        if manual_tags is None:
+            manual_tags = {"#planner=manual"}
+        off_tags.add(weekend_tag)
+        plan_mins = hours * 60
+        result = await self.to_json(path, args=[f"--period={period.to_date_string()[:-3]}"])
+
+        def grouper(rec: dto.Record):
+            return pendulum.parse(rec.date)
+
+        by_date: dict[pendulum.DateTime, list[dto.Record]] = dict(sorted(itertools.groupby(result.records, grouper)))
+
+        # TODO: going by each day of the month make sure:
+        #   1) weekends are marked
+        #   2) dates have a should set
+        #   3) should is raised to total
+        # TODO: calculate remaining time to be assigned for future date of the month
+        #   - calculate manual_tags, but don't touch values
+        #   - skip days with `off_tags`
+        #   - distribute the should equally among all days
+        can_modify = False
+        planned_mins = sum(rec.should_total_mins for rec in result.records)
+
+        for date, records in by_date.items():
+            assert len(records) == 1
+            record = records[0]
+            can_modify = date.date() > now.date()
