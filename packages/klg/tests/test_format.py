@@ -2,18 +2,12 @@ import textwrap
 
 import pytest
 
-from klg.json_types import Range, OpenRange, Duration
+from . import common
 
 pytestmark = pytest.mark.anyio
 
 
-def cleanup(text):
-    text = text.removeprefix("\n")
-    ret = textwrap.dedent(text)
-    return ret
-
-
-@pytest.mark.parametrize("text", [
+@pytest.mark.parametrize("text", map(common.cleanup, [
     "2022-10-10\n",
     "2022-10-10 (1h!)\n",
     """
@@ -25,7 +19,18 @@ def cleanup(text):
         some summary
         another line
     """,
-])
+    """
+        2022-10-10
+          08:00  - 09:00  #test
+    """,
+    common.complete_formatted,
+]))
 async def test_unmodified(text, klog):
-    cleaned_up = cleanup(text)
-    assert format(await klog.to_json(cleaned_up), "klg") == cleaned_up
+    assert format(await klog.to_json(text), "klg") == text
+
+
+@pytest.mark.parametrize("text,result", [list(map(common.cleanup, args)) for args in [
+    [common.complete_unformatted, common.complete_formatted]
+]])
+async def test_modified(text, result, klog):
+    assert format(await klog.to_json(text), "klg") == result

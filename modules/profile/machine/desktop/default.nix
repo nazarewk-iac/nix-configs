@@ -39,6 +39,7 @@ in
     environment.systemPackages = with pkgs; [
       logseq
       kdn.klog-time-tracker
+      kdn.klg
       dex # A program to generate and execute DesktopEntry files of the Application type
       brave
       kdn.rambox # browser/multi workspace

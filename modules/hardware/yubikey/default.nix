@@ -46,7 +46,6 @@ in
 
     environment.systemPackages = with pkgs; [
       xkcdpass
-      yubioath-desktop
       yubikey-manager
       yubikey-manager-qt
       yubikey-personalization
