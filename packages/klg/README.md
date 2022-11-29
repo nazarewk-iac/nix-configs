@@ -23,8 +23,10 @@ field = "Employer"
 mappings = [
     { tag = '#emp1', value = "Employer 1" },
     { tag = '#emp2', value = "Employer 2" },
+    # don't track which employer is time off for
+    { tag = '#off', value = "-" },
     # fallback value
-    { tag = "", value = "" },
+    { tag = "", value = "myself" },
 ]
 
 [[reports.default.fields]]
@@ -34,8 +36,10 @@ mappings = [
     { tag = '#emp1="Project Y"', value = "Project Y" },
     { tag = '#emp2="Project A"', value = "Project A" },
     { tag = '#emp2="Project B"', value = "Project B" },
+    # don't track which project is time off for
+    { tag = '#off', value = "-" },
     { tag = '#emp1', value = "miscleanous work" },
-    { tag = '#emp2', value = "miscleanous work" },
+    { tag = '#emp2', value = "-" },
 ]
 
 ```
