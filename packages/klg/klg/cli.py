@@ -151,10 +151,8 @@ def report(paths, period, tags, output, report_name, resource):
         ("Resource Name", "Date", "Time spent", "Minutes", "Summary", *cfg.map_tags(set()))
     ]
 
-    total_mins = 0
     for record in result.records:
         for entry in record.entries:
-            total_mins += entry.total_mins
             row = [
                 cfg.resource,
                 record.date,
@@ -166,11 +164,28 @@ def report(paths, period, tags, output, report_name, resource):
             for name, value in tagged_values.items():
                 row.append(value)
             rows.append(row)
+
+    total_mins = sum(r.total_mins for r in result.records)
     rows.append((
         "total",
         "",
         dto.Base.format_duration(total_mins),
         total_mins,
+    ))
+
+    expected_mins = sum(r.should_total_mins for r in result.records)
+    rows.append((
+        "expected",
+        "",
+        dto.Base.format_duration(expected_mins),
+        expected_mins,
+    ))
+    diff_mins = sum(r.diff_mins for r in result.records)
+    rows.append((
+        "difference",
+        "",
+        dto.Base.format_duration(diff_mins),
+        diff_mins,
     ))
 
     with output.open("w") as f:
@@ -180,9 +195,6 @@ def report(paths, period, tags, output, report_name, resource):
     if not shutil.which("libreoffice"):
         print(output)
         return
-
-    # libreoffice seems not to pick up the changes right away
-    time.sleep(1)
 
     converted = output.with_suffix(".xlsx")
     subprocess.run([
