@@ -21,9 +21,10 @@ def main():
 
 @main.command()
 @click.argument("path", default="@default")
-@click.option("--check", is_flag=True)
+@click.option("--check/--no-check", is_flag=True)
 @click.option("--diff/--no-diff", is_flag=True, default=True)
-def fmt(path, check, diff):
+@click.option("--write/--no-write", is_flag=True, default=True)
+def fmt(path, check, diff, write):
     klog = Klog()
     if path.startswith("@"):
         path = anyio.run(klog.bookmark, path)
@@ -34,18 +35,18 @@ def fmt(path, check, diff):
 
     result = anyio.run(klog.to_json, path)
     formatted = format(result, "klg")
-    if check or diff:
-        diff_content = "".join(difflib.ndiff(
-            list(f"{line}\n" for line in result.lines),
-            formatted.splitlines(keepends=True)
-        ))
-        if diff:
+    diff_content = result.diff(formatted)
+    if diff:
+        if diff_content:
             print(diff_content, end="")
+        else:
+            print(f"OK: {path}")
 
-        if check and diff_content:
-            raise click.ClickException("File is not formatted.")
+    if check and diff_content:
+        raise click.ClickException("File is not formatted.")
 
-    path.write_text(formatted)
+    if diff_content and write:
+        path.write_text(formatted)
 
 
 if __name__ in ("__main__", "__mp_main__"):

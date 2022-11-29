@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import difflib
 import textwrap
 from abc import ABC
 from typing import Optional, Generator
@@ -83,6 +84,8 @@ class EntryBase(Base, ABC):
         def gen():
             for idx, line in enumerate(self.summary.splitlines(False)):
                 stripped = line.strip()
+                if not stripped:
+                    continue
                 if idx == 0:
                     yield stripped
                     continue
@@ -161,7 +164,8 @@ class Record(EntryBase):
         if self.summary:
             yield self.format_summary("")
         for entry in self.entries:
-            yield textwrap.indent(format(entry, format_name), self.indent_entry)
+            value = format(entry, format_name)
+            yield textwrap.indent(value, self.indent_entry)
         yield ""
 
 
@@ -226,8 +230,19 @@ class Result(Base):
     records: Optional[list[Record]]
     errors: Optional[list[GenericError]]
 
+    def diff(self, new: list[str] | str = None):
+        old = [f"{line}\n" for line in self.lines]
+
+        if new is None:
+            new = [f"{line}\n" for line in self.format_line_generator()]
+        if isinstance(new, str):
+            new = [f"{line}\n" for line in new.splitlines(keepends=False)]
+
+        return "".join(difflib.context_diff(old, new))
+
     def format_line_generator(self):
         yield from (format(rec, format_name) for rec in self.records)
+        yield ""
 
     def raise_errors(self):
         if not self.errors:
