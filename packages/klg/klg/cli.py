@@ -139,7 +139,7 @@ def report(paths, period, tags, output, report_name, resource):
     else:
         assert len(paths) == 1
         path = paths[0]
-        output = path.with_suffix(".csv").with_stem(f"{period}_report_{path.stem}")
+        output = path.with_name(f"{period}_report_{report_name}.csv")
 
     if tags:
         args.append(f"--tag={','.join(tags)}")
