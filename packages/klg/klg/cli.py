@@ -1,73 +1,26 @@
 from __future__ import annotations
+
 import csv
-import dataclasses
-import datetime
-import difflib
 import functools
 import shutil
 import subprocess
-import time
 import tomllib
-from collections import defaultdict
 from pathlib import Path
 
 import anyio
 import click
-import dacite
 import pendulum
 import structlog
 import xdg
 
 from . import configure, dto
+from .config import ReportConfig, Config
 from .klog import Klog
 
 configure.logging()
 logger: structlog.stdlib.BoundLogger = structlog.get_logger()
 
 CONFIG: Config = None
-
-
-@dataclasses.dataclass
-class TagMapping:
-    tag: str
-    value: str
-
-
-@dataclasses.dataclass
-class TagToFieldMapping:
-    field: str
-    mappings: list[TagMapping]
-
-
-@dataclasses.dataclass
-class ReportConfig:
-    resource: str = ""
-    tags: list[str] = dataclasses.field(default_factory=list)
-    fields: list[TagToFieldMapping] = dataclasses.field(default_factory=dict)
-
-    def map_tags(self, tags: set[str]):
-        ret = {}
-        for entry in self.fields:
-            field_name = entry.field
-            mappings = entry.mappings
-            if not mappings[-1].tag:
-                ret[field_name] = mappings[-1].value
-            else:
-                ret[field_name] = ""
-            for mapping in mappings:
-                if mapping.tag in tags:
-                    ret[field_name] = mapping.value
-                    break
-        return ret
-
-
-@dataclasses.dataclass
-class Config:
-    reports: dict[str, ReportConfig] = dataclasses.field(default_factory=dict)
-
-    @classmethod
-    def load(cls, data: dict):
-        return dacite.from_dict(cls, data)
 
 
 @click.group(
@@ -205,6 +158,20 @@ def report(paths, period, tags, output, report_name, resource):
         output,
     ], check=True)
     print(converted)
+
+
+@main.command()
+@click.argument("path", default="@default")
+@click.argument("args", nargs=-1)
+def stop(path, args):
+    anyio.run(Klog().stop, path, *args)
+
+
+@main.command()
+@click.argument("path", default="@default")
+@click.argument("args", nargs=-1)
+def resume(path, args):
+    anyio.run(Klog().resume, path, *args)
 
 
 if __name__ in ("__main__", "__mp_main__"):

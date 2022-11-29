@@ -4,6 +4,14 @@ An opinionated utility for working with https://klog.jotaen.net/ time-tracking
 
 ## Commands overview
 
+### `klg stop [args...]`
+
+just forwards to `klog stop`
+
+### `klg resume [args...]`
+
+issues a `klog start` using the last closed range's summary, errors out on finding open range.
+
 ### `klg fmt [file]`
 
 format a `*.klg` file in opinionated way, see [`tests/test_format.py`](tests/test_format.py) for details.

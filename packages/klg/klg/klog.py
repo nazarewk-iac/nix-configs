@@ -16,6 +16,10 @@ from . import dto
 logger: structlog.stdlib.BoundLogger = structlog.get_logger()
 
 
+class KlgException(Exception):
+    pass
+
+
 @dataclasses.dataclass
 class Klog:
     binary: Path = dataclasses.field(default_factory=lambda: Path(shutil.which("klog")))
@@ -92,3 +96,20 @@ class Klog:
         if raise_for_errors:
             result.raise_errors()
         return result
+
+    async def stop(self, path, *args):
+        return await self.cmd("stop", *args, path)
+
+    async def find_latest(self, path, *args, range=False, closed=False):
+        result = await self.to_json(path, args=["--sort=desc", *args])
+        for record in result.records:
+            for entry in record.entries:
+                if closed and isinstance(entry, dto.OpenRange):
+                    raise KlgException("A range is already opened!")
+                if range and not isinstance(entry, dto.Range):
+                    continue
+                return entry
+
+    async def resume(self, path, *args):
+        latest = await self.find_latest(path, *args, range=True, closed=True)
+        return await self.cmd("start", f"--summary={latest.summary}", *args, path)
