@@ -226,9 +226,9 @@ class KlogErrorGroup(ExceptionGroup):
 
 @dataclasses.dataclass
 class Result(Base):
-    lines: list[str]
     records: Optional[list[Record]]
     errors: Optional[list[GenericError]]
+    lines: list[str]
 
     def diff(self, new: list[str] | str = None):
         old = [f"{line}\n" for line in self.lines]

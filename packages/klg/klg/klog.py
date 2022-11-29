@@ -28,15 +28,15 @@ class Klog:
         logger.debug("running async command", argv=arguments)
         return await anyio.run_process(arguments, **kwargs)
 
-    def make_data(self, inputs: Iterable[Path | str | bytes]):
-        def gen():
+    async def prepare_data(self, inputs: Iterable[Path | str | bytes]):
+        async def gen():
             entry: Path | str | bytes
             for entry in inputs:
                 if isinstance(entry, bytes):
                     entry = entry.decode()
 
                 if isinstance(entry, str) and entry.startswith("@"):
-                    entry = anyio.run(self.bookmarks)[entry]
+                    entry = await self.bookmark(entry)
 
                 if isinstance(entry, Path):
                     entry = entry.read_bytes()
@@ -52,7 +52,10 @@ class Klog:
 
                 yield b""
 
-        return b"\n".join(gen())
+        data = []
+        async for out in gen():
+            data.append(out)
+        return b"\n".join(data)
 
     @cache.AsyncTTL()
     async def bookmark(self, name: str):
@@ -72,7 +75,7 @@ class Klog:
 
     async def to_json(self, *inputs: Path | str | bytes, args: list = None, raise_for_errors=True):
         args = args or []
-        data = self.make_data(inputs)
+        data = await self.prepare_data(inputs)
         if not data:
             args.append(os.devnull)
         proc = await self.cmd("json", *args, input=data)

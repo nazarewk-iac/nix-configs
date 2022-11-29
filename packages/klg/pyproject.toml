@@ -29,6 +29,7 @@ rich = "^12.6.0"  # UX improvement for structlog
 nicegui = "^0.9.25"
 watchfiles = "^0.16.1"
 dacite = "^1.6.0"
+xdg = "^5.1.1"
 
 [tool.poetry.scripts]
 "klg" = 'klg.cli:main'
