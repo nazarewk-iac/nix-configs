@@ -2,9 +2,16 @@
 
 An opinionated utility for working with https://klog.jotaen.net/ time-tracking
 
-## Reporting configuration
+## Commands overview
 
-example `~/.config/klg/config.toml`:
+### `klg fmt [file]`
+
+format a `*.klg` file in opinionated way, see [`tests/test_format.py`](tests/test_format.py) for details.
+
+### `klg report --report=NAME`
+
+generate a CSV (and xlsx if `libreoffice` is available) report for a selected period (current month by default) using
+`reports.NAME` configuration in `~/.config/klg/config.toml`:
 
 ```toml
 [reports.default]
