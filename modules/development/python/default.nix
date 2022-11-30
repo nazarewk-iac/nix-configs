@@ -100,7 +100,5 @@ in
 
       graphviz
     ];
-
-    environment.localBinInPath = true;
   };
 }

@@ -51,6 +51,8 @@ in
       '';
     };
 
+    environment.localBinInPath = true;
+
     environment.systemPackages = with pkgs; [
       openssh
       wget
@@ -62,6 +64,10 @@ in
       desktop-file-utils
       xdg-utils
       xdg-launch
+
+      # https://wiki.archlinux.org/title/Default%20applications#Resource_openers
+      handlr
+      mimeo
 
       zsh-completions
       nix-zsh-completions
