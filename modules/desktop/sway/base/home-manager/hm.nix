@@ -68,6 +68,22 @@ in
     xdg.configFile."swayr/config.toml".source = ./swayr/config.toml;
     xdg.configFile."wofi/config".source = ./wofi/config;
 
+    home.packages = with pkgs; [
+      # will override system-wide xdg-open
+      (pkgs.writeShellApplication {
+        name = "xdg-open";
+        runtimeInputs = with pkgs; [ handlr ];
+        text = ''handlr open "$@"'';
+      })
+    ];
+
+    home.sessionPath = [ "$HOME/.local/bin" ];
+
+    xdg.configFile."handlr/handlr.toml".source = (pkgs.formats.toml { }).generate "handlr.toml" {
+      enable_selector = true;
+      selector = "${pkgs.wofi}/bin/wofi -d -i -n --prompt='Open With: '";
+    };
+
     programs.foot = {
       enable = true;
       server.enable = false;
