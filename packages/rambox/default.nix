@@ -5,12 +5,12 @@ let
 in
 mkRambox rec {
   pname = "rambox";
-  version = "2.0.7";
+  version = "2.0.9";
 
   src = {
     x86_64-linux = fetchurl {
       url = "https://github.com/ramboxapp/download/releases/download/v${version}/Rambox-${version}-linux-x64.AppImage";
-      sha256 = "sha256-fxo0TmruzepI4/QpMS9CY+E/s9pdSxmGKH+S5GyEs10=";
+      sha256 = "sha256-o2ydZodmMAYeU0IiczKNlzY2hgTJbzyJWO/cZSTfAuM=";
     };
   }.${stdenv.system} or (throw "Unsupported system: ${stdenv.system}");
 
