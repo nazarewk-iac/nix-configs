@@ -55,40 +55,6 @@ in
       '';
 
       home.packages = with pkgs; [
-        (pkgs.writeShellApplication {
-          name = "klog-report-csv";
-          runtimeInputs = with pkgs; [ kdn.klog-time-tracker gojq libreoffice ];
-          text =
-            let
-              script = ''
-                .records as $records |
-                ($records | map([
-                  "${systemUser.description}",
-                  .date,
-                  .total,
-                  "Finished",
-                  (.entries | map("\(.total): \(.summary)") | join("\n")),
-                  .summary
-                ])) as $entries |
-                [
-                  ["Resource Name", "Date", "Hours", "Status", "Description", "Comments"]
-                ] + $entries + [
-                  ["total", "", (.records | map(.total_mins) | add | "\(./60|floor)h\(. % 60)m")]
-                ] | map(@csv)[]
-              '';
-            in
-            ''
-              output="$1"
-              outdir="''${output%/*}"
-              basename="''${output%.*}"
-              file="$basename.csv"
-              period="''${basename##*/}"
-              period="''${period%%_*}"
-              # shellcheck disable=SC2016
-              klog json --period="$period" "''${@:2}" | gojq -r ${lib.escapeShellArg script} > "$file"
-              libreoffice --headless --convert-to "''${output##*.}" --outdir "$outdir" "$file"
-            '';
-        })
       ];
 
       kdn.development.git.enable = true;
@@ -139,6 +105,51 @@ in
           '';
         })
       ];
+
+      xdg.mime.enable = true;
+      xdg.mimeApps.enable = true;
+      xdg.mimeApps.associations.added = { };
+      xdg.mimeApps.defaultApplications =
+        let
+          rss = [ "brave-browser.desktop" ];
+          ipfs = [ "brave-browser.desktop" ];
+          browser = [ "firefox.desktop" "brave-browser.desktop" ];
+          pdf = [ "org.gnome.Evince.desktop" ];
+          fileManager = [ "thunar.desktop" ];
+          remmina = [ "org.remmina.Remmina.desktop" ];
+          teams = [ "teams.desktop" ];
+          ide = [ "idea-ultimate.desktop" ];
+          vectorImages = [ "org.gnome.eog.desktop" ];
+        in
+        {
+          "application/pdf" = pdf;
+          "application/rdf+xml" = rss;
+          "application/rss+xml" = rss;
+          "application/x-extension-htm" = browser;
+          "application/x-extension-html" = browser;
+          "application/x-extension-shtml" = browser;
+          "application/x-extension-xht" = browser;
+          "application/x-extension-xhtml" = browser;
+          "application/x-gnome-saved-search" = fileManager;
+          "application/x-remmina" = remmina;
+          "application/xhtml+xml" = browser;
+          "application/xhtml_xml" = browser;
+          "image/svg+xml" = vectorImages;
+          "inode/directory" = fileManager;
+          "text/html" = browser;
+          "text/plain" = ide;
+          "text/xml" = browser;
+          "x-scheme-handler/chrome" = browser;
+          "x-scheme-handler/http" = browser;
+          "x-scheme-handler/https" = browser;
+          "x-scheme-handler/ipfs" = ipfs;
+          "x-scheme-handler/ipns" = ipfs;
+          "x-scheme-handler/msteams" = teams;
+          "x-scheme-handler/rdp" = remmina;
+          "x-scheme-handler/remmina" = remmina;
+          "x-scheme-handler/spice" = remmina;
+          "x-scheme-handler/vnc" = remmina;
+        };
     })
   ]);
 }
