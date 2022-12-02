@@ -54,6 +54,7 @@ in
           '';
         in
         {
+          home.enableNixpkgsReleaseCheck = true;
           nixpkgs.config.allowUnfree = true;
           nixpkgs.config.allowAliases = false;
           xdg.configFile."nixpkgs/config.nix".text = cfg;

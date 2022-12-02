@@ -195,7 +195,7 @@ input type:touchpad {
 
 # Autostart
 exec _sway-wait-ready {
-    element-desktop
+    ,launch desktop
     wl-paste -t text --watch clipman store --no-persist
 }
 

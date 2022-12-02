@@ -63,13 +63,6 @@ in
       services.flameshot.settings.General.savePath = "${config.home.homeDirectory}/Downloads/screenshots";
       xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
 
-      systemd.user.services.nextcloud-client.Unit.After = [ "tray.target" ];
-      systemd.user.services.nextcloud-client.Unit.Requires = [ "tray.target" ];
-      services.nextcloud-client = {
-        enable = true;
-        startInBackground = true;
-      };
-
       # pam-u2f expects a single line of configuration per user in format `username:entry1:entry2:entry3:...`
       # `pamu2fcfg` generates lines of format `username:entry`
       # For ease of use you can append those pamu2fcfg to ./yubico/u2f_keys.parts directly,
@@ -92,17 +85,30 @@ in
         foldParts ./yubico/u2f_keys.parts;
 
       home.packages = with pkgs; [
-        (pkgs.writeShellApplication {
-          name = ",drag0nius.kdbx";
-          runtimeInputs = [ pkgs.pass pkgs.keepass ];
-          text = ''
-            cmd_start () {
-                local db_path="$HOME/Nextcloud/drag0nius@nc.nazarewk.pw/Dropbox import/Apps/KeeAnywhere/drag0nius.kdbx"
-                pass KeePass/drag0nius.kdbx | keepass "$db_path" -pw-stdin
-            }
+        (lib.kdn.shell.writeShellScript pkgs (./bin + "/,launch.sh") {
+          runtimeInputs = with pkgs; [
+            coreutils
+            procps
+            libnotify
+            sway
+            jq
 
-            "cmd_''${1:-start}" "''${@:2}"
-          '';
+            nextcloud-client
+            pass
+            keepass
+
+            flameshot
+            blueman
+
+            firefox
+            jetbrains.idea-ultimate
+
+            element-desktop
+            signal-desktop
+            slack
+            teams
+            kdn.rambox
+          ];
         })
       ];
 

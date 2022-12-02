@@ -18,10 +18,8 @@ in
   ];
 
   config = lib.mkIf (config.kdn.headless.enableGUI && sysCfg.enable) {
-    services.blueman-applet.enable = true;
     services.network-manager-applet.enable = true;
 
-    services.flameshot.enable = true;
     services.flameshot.settings = {
       General = {
         checkForUpdates = false;
