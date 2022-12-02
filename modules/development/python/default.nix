@@ -99,6 +99,8 @@ in
       ]))
 
       graphviz
+
+      kdn.openapi-python-client-cli
     ];
   };
 }
