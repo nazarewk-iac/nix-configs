@@ -84,8 +84,8 @@ in
         in
         foldParts ./yubico/u2f_keys.parts;
 
-      home.packages = with pkgs; [
-        (lib.kdn.shell.writeShellScript pkgs (./bin + "/,launch.sh") {
+      home.packages = with pkgs; let
+        launch = (lib.kdn.shell.writeShellScript pkgs (./bin + "/,launch.sh") {
           runtimeInputs = with pkgs; [
             coreutils
             procps
@@ -95,7 +95,8 @@ in
 
             nextcloud-client
             pass
-            keepass
+            drag0nius_kdbx
+            keepass # must come from NixOS-level override
 
             flameshot
             blueman
@@ -109,7 +110,25 @@ in
             teams
             kdn.rambox
           ];
-        })
+        });
+        drag0nius_kdbx =
+          (pkgs.writeShellApplication {
+            name = "keepass-drag0nius.kdbx";
+            runtimeInputs = [ pkgs.pass pkgs.keepass ];
+            text = ''
+              cmd_start () {
+                  local db_path="$HOME/Nextcloud/drag0nius@nc.nazarewk.pw/Dropbox import/Apps/KeeAnywhere/drag0nius.kdbx"
+                  pass KeePass/drag0nius.kdbx | keepass "$db_path" -pw-stdin
+              }
+
+              "cmd_''${1:-start}" "''${@:2}"
+            '';
+          });
+      in
+      [
+        keepass
+        launch
+        drag0nius_kdbx
       ];
 
       xdg.mime.enable = true;

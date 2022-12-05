@@ -1,6 +1,6 @@
 { pkgs, ... }:
 let
-  lib = pkgs.lib;
+  inherit (pkgs) lib;
 
   attrs = {
     python = pkgs."python311";

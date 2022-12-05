@@ -101,5 +101,15 @@ in
 
       zip
     ];
+
+    boot.kernel.sysctl = let mb = 1024 * 1024; in {
+      # https://wiki.archlinux.org/title/Sysctl#Virtual_memory
+      "vm.dirty_background_bytes" = 4 * mb;
+      "vm.dirty_bytes" = 4 * mb;
+      "vm.vfs_cache_pressure" = 50;
+      "fs.inotify.max_user_watches" = 1048576; # default:  8192
+      "fs.inotify.max_user_instances" = 1024; # default:   128
+      "fs.inotify.max_queued_events" = 32768; # default: 16384
+    };
   };
 }

@@ -18,7 +18,7 @@ swaymsg() {
 }
 
 launch() {
-  if is_running "${1}"; then
+  if is_running "${pattern:-"${1}"}"; then
     return 0
   fi
   swaymsg exec "${@}"
@@ -41,6 +41,8 @@ start_priv() {
   launch nextcloud --background
   start_keepass
   start_comms
+  launch logseq
+  launch firefox
 }
 
 start_comms() {
@@ -51,11 +53,11 @@ start_comms() {
 }
 
 start_keepass() {
-  if is_running "KeePass.exe"; then
+  local pattern="KeePass.exe"
+  if is_running "${pattern}"; then
     return 0
   fi
-  local db_path="$HOME/Nextcloud/drag0nius@nc.nazarewk.pw/Dropbox import/Apps/KeeAnywhere/drag0nius.kdbx"
-  pass KeePass/drag0nius.kdbx | launch keepass "$db_path" -pw-stdin
+  pass KeePass/drag0nius.kdbx | pattern="${pattern}" launch keepass-drag0nius.kdbx
 }
 
 start_work() {
