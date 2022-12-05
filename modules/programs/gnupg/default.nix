@@ -30,6 +30,10 @@ in
       home-manager.sharedModules = [
         {
           programs.password-store.enable = true;
+          programs.password-store.settings = {
+            # for Android interoperability, see https://github.com/drduh/YubiKey-Guide/issues/152#issuecomment-852176877
+            PASSWORD_STORE_GPG_OPTS = "--no-throw-keyids";
+          };
           home.file.".gnupg/gpg-agent.conf".text = ''
             pinentry-program ${pinentry}/bin/pinentry
           '';
