@@ -4,6 +4,7 @@ import csv
 import functools
 import shutil
 import subprocess
+import textwrap
 import tomllib
 from pathlib import Path
 
@@ -34,6 +35,27 @@ def main(config):
     if config.exists():
         data = tomllib.loads(config.read_text())
     CONFIG = Config.load(data)
+
+
+@main.group()
+def entry():
+    pass
+
+
+@entry.command()
+@click.argument("path", default="@default")
+def latest(path):
+    klog = Klog()
+    if path.startswith("@"):
+        path = anyio.run(klog.bookmark, path)
+    else:
+        path = Path(path)
+
+    assert path.exists()
+
+    record, entry = anyio.run(klog.find_latest, path)
+    click.echo(record.date)
+    click.echo(textwrap.indent(entry.format(), "  "))
 
 
 @main.command()
@@ -164,14 +186,18 @@ def report(paths, period, tags, output, report_name, resource):
 @click.argument("path", default="@default")
 @click.argument("args", nargs=-1)
 def stop(path, args):
-    anyio.run(Klog().stop, path, *args)
+    klog = Klog()
+    anyio.run(klog.stop, path, *args)
+    anyio.run(klog.cmd, "today", "-d", path)
 
 
 @main.command()
 @click.argument("path", default="@default")
 @click.argument("args", nargs=-1)
 def resume(path, args):
-    anyio.run(Klog().resume, path, *args)
+    klog = Klog()
+    anyio.run(klog.resume, path, *args)
+    anyio.run(klog.cmd, "today", "-d", path)
 
 
 if __name__ in ("__main__", "__mp_main__"):

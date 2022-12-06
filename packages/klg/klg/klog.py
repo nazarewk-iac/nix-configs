@@ -102,18 +102,23 @@ class Klog:
         return await self.cmd("stop", *args, path)
 
     async def find_latest(self, path, *args, range=False, closed=False):
+        def entry_sort_key(e: dto.GenericEntry):
+            if getattr(e, "start_mins", None):
+                return [0, -e.start_mins]
+            return [1, 0]
+
         result = await self.to_json(path, args=["--sort=desc", *args])
         for record in result.records:
-            for entry in record.entries:
+            for entry in sorted(record.entries, key=entry_sort_key):
                 if closed and isinstance(entry, dto.OpenRange):
                     raise KlgException("A range is already opened")
                 if range and not isinstance(entry, dto.Range):
                     continue
-                return entry
+                return record, entry
         raise KlgException("No entry was found")
 
     async def resume(self, path, *args):
-        latest = await self.find_latest(path, *args, range=True, closed=True)
+        _, latest = await self.find_latest(path, *args, range=True, closed=True)
         return await self.cmd("start", f"--summary={latest.summary}", *args, path)
 
     async def plan_month(self, path, hours: int, day_summary: str,
