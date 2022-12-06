@@ -91,7 +91,7 @@ in
       "00-init" = ''
         export PATH="${lib.makeBinPath (with pkgs; [ procps systemd ])}:$PATH"
         until systemctl --user show-environment | grep -q WAYLAND_DISPLAY ; do sleep 1; done
-        exec ${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1
+        exec ${pkgs.libsForQt5.polkit-kde-agent}/libexec/polkit-kde-authentication-agent-1
       '';
     };
     kdn.sway.base.initScripts.systemd = {
@@ -185,9 +185,13 @@ in
       slurp
       gsimplecal
 
+      # polkit related
+      # lxqt.lxqt-policykit # lxqt crashes after authenticating with U2F
+      libsForQt5.polkit-kde-agent
+      # polkit_gnome # asks for U2F twice then fails for no reason
+
       # sway related
       brightnessctl
-      polkit_gnome
       lxappearance
       xsettingsd
       gsettings-desktop-schemas

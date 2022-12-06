@@ -61,6 +61,38 @@ in
       config.floating.modifier = mod.super;
       config.workspaceLayout = "tabbed";
       extraConfig = builtins.readFile ./sway/config;
+
+      config.floating = {
+        border = 0;
+        criteria = [
+          { app_id = "org.kde.polkit-kde-authentication-agent-1"; }
+          { app_id = "pinentry-qt"; }
+          { app_id = "firefox"; title = "Picture-in-Picture"; }
+          { app_id = "firefox"; title = "Firefox — Sharing Indicator"; }
+        ];
+      };
+
+      config.window.commands =
+        let
+          modal = [
+            "border none"
+            "floating enable"
+            "sticky enable"
+          ];
+          centerModal = modal ++ [
+            "move position center"
+          ];
+          entries = [
+            {
+              criteria = { app_id = "firefox"; title = "Firefox — Sharing Indicator"; };
+              commands = [ "resize set 10px 30px" ];
+            }
+          ];
+          expandEntry = entry: builtins.map
+            (command: { inherit (entry) criteria; inherit command; })
+            entry.commands;
+        in
+        lib.lists.flatten (builtins.map expandEntry entries);
     };
 
     xdg.configFile."swayr/config.toml".source = ./swayr/config.toml;

@@ -14,6 +14,7 @@ in
       gccgo
       delve
       goreleaser
+      golangci-lint # for netbird
     ];
   };
 }
