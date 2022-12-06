@@ -8,7 +8,7 @@ in
     enable = lib.mkEnableOption "basic headless system configuration";
   };
 
-  config = mkIf cfg.enable {
+  config = mkIf cfg.enable ({
     kdn.development.data.enable = true;
     kdn.filesystems.base.enable = true;
     kdn.development.linux-utils.enable = true;
@@ -115,7 +115,13 @@ in
     };
 
     security.polkit.enable = true;
-    security.polkit.debug = false;
-    security.pam.u2f.debug = false;
-  };
+  } // (
+    let
+      debugPolkit = false;
+    in
+    {
+      security.polkit.debug = debugPolkit;
+      security.pam.u2f.debug = debugPolkit;
+    }
+  ));
 }
