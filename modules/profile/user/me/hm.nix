@@ -89,7 +89,7 @@ in
         foldParts ./yubico/u2f_keys.parts;
 
       home.packages = with pkgs; let
-        launch = (lib.kdn.shell.writeShellScript pkgs (./bin + "/,launch.sh") {
+        launch = (lib.kdn.shell.writeShellScript pkgs (./bin + "/kdn-launch.sh") {
           runtimeInputs = with pkgs; [
             coreutils
             procps

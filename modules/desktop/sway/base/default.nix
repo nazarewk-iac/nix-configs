@@ -12,6 +12,11 @@ in
       default = "sway-session-kdn";
     };
 
+    polkitAgentCommand = mkOption {
+      type = types.str;
+      default = "${pkgs.libsForQt5.polkit-kde-agent}/libexec/polkit-kde-authentication-agent-1";
+    };
+
     initScripts = mkOption {
       type = types.attrsOf (types.attrsOf types.str);
       default = { };
@@ -91,7 +96,7 @@ in
       "00-init" = ''
         export PATH="${lib.makeBinPath (with pkgs; [ procps systemd ])}:$PATH"
         until systemctl --user show-environment | grep -q WAYLAND_DISPLAY ; do sleep 1; done
-        exec ${pkgs.libsForQt5.polkit-kde-agent}/libexec/polkit-kde-authentication-agent-1
+        exec "${cfg.polkitAgentCommand}"
       '';
     };
     kdn.sway.base.initScripts.systemd = {
@@ -105,7 +110,7 @@ in
       '';
       "50-wait-polkit" = ''
         export PATH="${lib.makeBinPath (with pkgs; [ procps ])}:$PATH"
-        until pgrep -fu $UID polkit-gnome-authentication-agent-1 ; do sleep 1; done
+        until pgrep -fu $UID "${cfg.polkitAgentCommand}" ; do sleep 1; done
       '';
       # because tray opens up too late https://github.com/Alexays/Waybar/issues/483
       "99-start-${cfg.systemd.target}" = ''
