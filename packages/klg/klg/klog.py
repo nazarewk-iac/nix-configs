@@ -1,6 +1,7 @@
 import dataclasses
 import json
 import os
+import shlex
 import shutil
 import subprocess
 from pathlib import Path
@@ -30,8 +31,19 @@ class Klog:
         kwargs.setdefault("stderr", None)
         kwargs.setdefault("check", True)
         arguments = list(map(str, itertools.chain([self.binary], args)))
-        logger.debug("running async command", argv=arguments)
+        logger.debug("running async command", command=shlex.join(arguments))
         return await anyio.run_process(arguments, **kwargs)
+
+    async def resolve_path(self, entry: Path | str | bytes):
+        if isinstance(entry, bytes):
+            entry = entry.decode()
+
+        if isinstance(entry, str) and entry.startswith("@"):
+            if entry.startswith("@"):
+                logger.info("resolving bookmark")
+                return await self.bookmark(entry)
+            return Path(entry)
+        return entry
 
     async def prepare_data(self, inputs: Iterable[Path | str | bytes]):
         async def gen():
@@ -41,7 +53,7 @@ class Klog:
                     entry = entry.decode()
 
                 if isinstance(entry, str) and entry.startswith("@"):
-                    entry = await self.bookmark(entry)
+                    entry = await self.resolve_path(entry)
 
                 if isinstance(entry, Path):
                     entry = entry.read_bytes()
@@ -101,10 +113,18 @@ class Klog:
     async def stop(self, path, *args):
         return await self.cmd("stop", *args, path)
 
+    async def report(self, path, *args):
+        proc = await self.cmd("report", "--diff", "--now", "--fill", *args, path)
+        return proc.stdout.decode()
+
+    async def day_summary(self, path, *args):
+        proc = await self.cmd("today", "--diff", "--now", *args, path)
+        return proc.stdout.decode()
+
     async def find_latest(self, path, *args, range=False, closed=False):
         def entry_sort_key(e: dto.GenericEntry):
-            if getattr(e, "start_mins", None):
-                return [0, -e.start_mins]
+            if start_mins := getattr(e, "start_mins", None):
+                return [0, -start_mins]
             return [1, 0]
 
         result = await self.to_json(path, args=["--sort=desc", *args])

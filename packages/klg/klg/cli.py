@@ -188,7 +188,7 @@ def report(paths, period, tags, output, report_name, resource):
 def stop(path, args):
     klog = Klog()
     anyio.run(klog.stop, path, *args)
-    anyio.run(klog.cmd, "today", "-d", path)
+    print(anyio.run(klog.day_summary, path))
 
 
 @main.command()
@@ -197,7 +197,33 @@ def stop(path, args):
 def resume(path, args):
     klog = Klog()
     anyio.run(klog.resume, path, *args)
-    anyio.run(klog.cmd, "today", "-d", path)
+    print(anyio.run(klog.day_summary, path))
+
+
+@main.command()
+@click.argument("path", default="@default")
+@click.argument("args", nargs=-1)
+def today(path, args):
+    klog = Klog()
+    print(anyio.run(klog.day_summary, path, *args))
+
+
+@main.command()
+@click.option("-p", "--period", default=pendulum.now().to_date_string()[:-3],
+              help="Records in period: YYYY (year), YYYY-MM (month), YYYY-Www (week), or YYYY-Qq (quarter)")
+@click.option("-t", "--tag", "tags", multiple=True,
+              help="Records (or entries) that match these tags")
+@click.argument("path", default="@default")
+@click.argument("args", nargs=-1)
+def report(path, args, period, tags):
+    klog = Klog()
+    args = [
+        f"--period={period}",
+        *args,
+    ]
+    if tags:
+        args.insert(0, f"--tag={','.join(tags)}")
+    print(anyio.run(klog.report, path, *args))
 
 
 if __name__ in ("__main__", "__mp_main__"):
