@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import dataclasses
 import difflib
+import functools
+import re
 import textwrap
 from abc import ABC
 from typing import Optional, Generator
@@ -12,6 +14,99 @@ import structlog
 logger: structlog.stdlib.BoundLogger = structlog.get_logger()
 
 format_name = "klg"
+
+
+class Tag(str):
+    """
+    Tag in formats:
+    - #tagName
+    - #tagName=simple-value
+    - #tagName="with spaces double-quoted"
+    - #tagName='with spaces single-quoted'
+    """
+
+    pattern = re.compile(
+        r"""#(?P<key>[^= ]+)(=(?P<value>('[^']*')|("[^"]*")|([^"' ]*)))?""",
+    )
+
+    def __repr__(self):
+        cls = self.__class__
+        return f"{cls.__name__}({repr(self.normalized)})"
+
+    def __format__(self, format_spec):
+        return self.normalized
+
+    def __hash__(self):
+        """
+        >>> hash(Tag('#Key')) == hash('#key')
+        True
+        """
+        return hash(self.normalized)
+
+    def __eq__(self, other):
+        """
+        >>> Tag('#UPPERCASE') == '#UPPERCASE'
+        True
+        >>> Tag('#UPPERCASE=UPPERCASE') == '#UPPERCASE=UPPERCASE'
+        True
+        >>> Tag('#UPPERCASE=UPPERCASE') == '#UPPERCASE=uppercase'
+        False
+        >>> Tag('#key=123') == '#key=123'
+        True
+        >>> Tag('#key="\\'"') == '#key="\\'"'
+        True
+        """
+        if not isinstance(other, self.__class__):
+            other = self.__class__(other)
+        return self.normalized == other.normalized
+
+    @classmethod
+    def parse_many(cls, text: str):
+        return list(cls.pattern.finditer(text))
+
+    @classmethod
+    def parse_single(cls, text: str):
+        return cls.pattern.fullmatch(text)
+
+    @functools.cached_property
+    def match(self):
+        match = self.parse_single(self)
+        assert match
+        return match
+
+    @functools.cached_property
+    def key(self):
+        return self.match.group("key")
+
+    @functools.cached_property
+    def value(self):
+        value = self.match.group("value") or ""
+        for c in ("'", '"'):
+            if value.startswith(c) and value.endswith(c):
+                value = value[1:-1]
+        return value
+
+    @functools.cached_property
+    def quoted_value(self):
+        if value := self.value:
+            if " " in value:
+                if '"' in value:
+                    value = f"'{value}'"
+                else:
+                    value = f'"{value}"'
+        return value
+
+    @functools.cached_property
+    def normalized(self):
+        pieces = [f"#{self.key.lower()}"]
+        if value := self.value:
+            if " " in value:
+                if '"' in value:
+                    value = f"'{value}'"
+                else:
+                    value = f'"{value}"'
+            pieces.append(f"={value}")
+        return ''.join(pieces)
 
 
 class Base:

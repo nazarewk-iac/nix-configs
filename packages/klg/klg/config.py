@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+from pathlib import Path
 
 import dacite
 
@@ -40,9 +41,24 @@ class ReportConfig:
 
 
 @dataclasses.dataclass
+class ProfileConfig:
+    name: str
+    dir: Path
+    write_tags: list[str] = dataclasses.field(default_factory=list)
+
+    def __post_init__(self):
+        self.write_tags = self.write_tags or [self.name]
+
+
+@dataclasses.dataclass
 class Config:
+    profiles: dict[str, ProfileConfig] = dataclasses.field(default_factory=dict)
     reports: dict[str, ReportConfig] = dataclasses.field(default_factory=dict)
 
     @classmethod
     def load(cls, data: dict):
         return dacite.from_dict(cls, data)
+
+
+dacite_config = dacite.Config(strict=True, strict_unions_match=True, type_hooks={
+})

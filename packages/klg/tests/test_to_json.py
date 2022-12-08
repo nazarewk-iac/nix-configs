@@ -12,6 +12,77 @@ async def test_empty(klog):
     assert not result.errors
 
 
+@pytest.mark.parametrize("text,tags", [
+    [
+        common.cleanup('''
+            2022-10-10
+            #key
+        '''),
+        ["#key"],
+    ],
+    [
+        common.cleanup('''
+            2022-10-10
+            ####key
+        '''),
+        ["#key"],
+    ],
+    [
+        common.cleanup('''
+            2022-10-10
+            #empty-value=
+        '''),
+        ["#empty-value"],
+    ],
+    [
+        common.cleanup('''
+            2022-10-10
+            #single-quotted-space=' '
+        '''),
+        ["#single-quotted-space", '#single-quotted-space=" "'],
+    ],
+    [
+        common.cleanup('''
+            2022-10-10
+            #multiCase=SomeValue
+        '''),
+        ["#multicase", "#multicase=SomeValue"],
+    ],
+    [
+        common.cleanup(r'''
+            2022-10-10
+            #key="try escaped \"value"
+        '''),
+        ["#key", r'#key="try escaped \"'],
+    ],
+    [
+        common.cleanup('''
+            2022-10-10
+            #key="some complex 'value'"
+        '''),
+        ["#key", '''#key="some complex 'value'"'''],
+    ],
+    [
+        common.cleanup('''
+            2022-10-10
+            #key='some complex "value"'
+        '''),
+        ["#key", """#key='some complex "value"'"""],
+    ],
+    [
+        common.cleanup('''
+            2022-10-10
+            #key='"'
+        '''),
+        ["#key", "#key='\"'"],
+    ],
+])
+async def test_tagging(klog, text, tags):
+    result = await klog.to_json(common.cleanup(text))
+    record = result.records[0]
+    assert set(record.tags) == set(tags)
+
+
 async def test_invalid(klog):
     with pytest.raises(dto.KlogErrorGroup) as exc_info:
         await klog.to_json(b"11")
