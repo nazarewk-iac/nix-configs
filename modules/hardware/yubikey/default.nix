@@ -6,6 +6,10 @@ in
 {
   options.kdn.hardware.yubikey = {
     enable = lib.mkEnableOption "YubiKey + GnuPG Smart Card config";
+    appId = mkOption {
+      type = types.str;
+      default = "pam://${config.networking.hostName}";
+    };
   };
 
   config = mkIf cfg.enable {
@@ -42,6 +46,8 @@ in
     security.pam.u2f = {
       enable = true;
       cue = true;
+      inherit (cfg) appId;
+      origin = cfg.appId;
     };
 
     environment.systemPackages = with pkgs; [

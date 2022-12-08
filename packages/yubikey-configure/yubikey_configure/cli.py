@@ -83,6 +83,7 @@ def get_yubikey(serial: int, interval=5.0):
         logger.info(f"Still waiting for the YubiKey to be inserted...", serial=serial, interval=interval)
         time.sleep(interval)
 
+# TODO: handle pamu2fcfg
 
 @click.command(
     context_settings={"show_default": True},

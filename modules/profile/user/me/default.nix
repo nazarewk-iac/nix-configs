@@ -42,6 +42,8 @@ in
       kdn = base // { uid = 31893; };
     in
     {
+      kdn.hardware.yubikey.appId = "pam://kdn";
+
       users.users.kdn = kdn;
       home-manager.users.kdn = { kdn.profile.user.me.nixosConfig = kdn; };
 

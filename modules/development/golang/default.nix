@@ -20,10 +20,12 @@ in
       ({ config, lib, ... }:
         let
           cmd = ''
-            for ide in ${config.xdg.dataHome}/Jetbrains/* ; do
-              mkdir -p "$ide/go/lib/dlv/linux"
-              ln -sf "${pkgs.delve}/bin/dlv" "$ide/go/lib/dlv/linux/dlv"
-            done
+            if [ -d '${config.xdg.dataHome}/Jetbrains' ] ; then
+              for ide in ${config.xdg.dataHome}/Jetbrains/* ; do
+                mkdir -p "$ide/go/lib/dlv/linux"
+                ln -sf "${pkgs.delve}/bin/dlv" "$ide/go/lib/dlv/linux/dlv"
+              done
+            fi
           '';
         in
         {

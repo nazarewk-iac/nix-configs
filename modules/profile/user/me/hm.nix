@@ -81,10 +81,6 @@ in
             toOutputLines
             (builtins.concatStringsSep "\n")
           ];
-          # TODO: reduce number of YubiKey key entries to speed up authentication, see:
-          # - https://developers.yubico.com/pam-u2f/Manuals/pam_u2f.8.html
-          # - security.pam.u2f.appId
-          # - security.pam.u2f.origin
         in
         foldParts ./yubico/u2f_keys.parts;
 

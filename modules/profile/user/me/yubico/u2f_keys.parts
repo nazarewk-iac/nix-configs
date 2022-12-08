@@ -1,16 +1,4 @@
-# YubiKey 9591518 @ nazarewk
-nazarewk:J4xcKotLkf0KkxEC1xcUJGTmfbLnaPCFZlpZ8upZA/vsm48TXFM9M28H3UBwFSUkAvGlrdEyo3nDBvQs2L4P2w==,6nte7NOk6AM7MvDI4MY8CI+VgS6PAbeC4Km7JoGTZoJxYzxoqTS+AKWP5j6w40Bq2buQwBcZiP9WF+D9JJKn4A==,es256,+presence
-# YubiKey 9591520 @ nazarewk
-nazarewk:htTeknjbHaY34yNx69we1z+2WStT3fK9bLaJyTcuLum2UoWpeAAMoRoy6FIt3TwhHZwZpi75U94FVTrgrHVQAw==,GIWEck82q3UPGOiMupGeh000dk3qD5cuhKVt9MuBb84DhHIXWkEH9upqSLOu5iaHtzeGSyMfjprQJiHfAS8T6A==,es256,+presence
-# YubiKey 16174039 @ nazarewk
-nazarewk:8YlOD/RYcxkQqNYyH6X83RdCij1/jknnTcYQlIVYHmGhxeFeCiztq+GugITlFOnlCTJ915lqtqgyzPEJfDWfeQ==,kUiP6ygUWoNCZgQsFi2ZPxnN0EuCfoBer6auWiZqtXJPJQ4q6pptJk6XTlMFXMwGKBlKNzOmKVbAC06fqVmVxw==,es256,+presence
-# YubiKey 16174038 @ nazarewk
-nazarewk:MtEeCxn8Tps+RBoUeC5a21CkMBg0rvOja0HjZsQbsOMiyQgKK4J1uQ0JabbDDBRr7agB2EEmMitfyw8AJeeX5A==,gyhUY9v9vMPcSKGTYN1yIltyURdPQsIy6JykE9qKvG4Xd7C8vqYB2O2lWnELgtd6V5wWjvc/o03n1Dl5Vn258Q==,es256,+presence
-# YubiKey 9591518 @ nazarewk-krul
-nazarewk:4cNsLonQCswJachJX+TAW9euZGQvwrdho22QWtp+GraygKAHB7wJBwihbqCSO3bVIqXN1n3uj9c35/dXwIvRgA==,FfVj/WncbXRdgwyx3fpiSPX2Ya9DdMU3dQYrtcEQUnpy4He9J48HbYdWloZFTBwp6z7OKdxxx0ZlbWpfR6tbmQ==,es256,+presence
-# YubiKey 9591520 @ nazarewk-krul
-nazarewk:IjS6839m6ql9broiZ5eRekfL7GsXmwtkufd5LA6+2Uz2F6AWbRo8+mCyD/fgICHeNNs8OJ3xg9KWkBgQGsbWhg==,Czv/YG2OnEZoruzG1WeYjQzZVSA0Z7tJMIOh1ZH8S+ktY+f237vBwk4aP+C/P2ANoZuQFPRJENOEdQZaNur7tQ==,es256,+presence
-# YubiKey 16174039 @ nazarewk-krul
-nazarewk:yNYScPoUgmfDVnUF7gChiHSnIXNLVtU5s/Iaj+EELTx7cN0DdFx9d/lk6u9I/eBpUu6Sru46mXHGfvJZ6qbRkw==,pVDCdD1kwepGNnqAhqTfDu8SBMuy5H88F7GP6AB7ZhstaCV6EtIOIraCV0a9IfTF5lZFogAyU1fj6GBN9HxgRw==,es256,+presence
-# YubiKey 16174038 @ nazarewk-krul
-nazarewk:2G3GAwbFZYtYaPUFVBQ4EdXLulEr4Is4m0tJ3L1+peNQzN0cNWjcBTts3EctLoYE1WCrkO4KBQag0Mnef/swMQ==,lkgEV+MuLsTbBcFq9cmEqPPTiZIv02DKzIIhGTYaoWxdddfs3rQ9142rgjK2yzaSa0ShXMzQRLzj3jMXWqQ3Hw==,es256,+presence
+# YubiKey 16174039: pamu2fcfg -o pam://kdn
+nazarewk:3WkeBOuNc1K2cH316wFLQGkBymoRxAAn8v1pU0HviRys3Vhr+kLMZuvLw1LXPkr6b6jC40qn0jgfhsLorKmyJQ==,qJchIkzWiwvbAg/++r3I1gHlq1vH5DAFLzkz26zPHTVRwelIgvvOvW61IGOe6nEVnm5T/PXopAISUoE47GjEbA==,es256,+presence
+# YubiKey 16174038: pamu2fcfg -o pam://kdn
+nazarewk:vCNfjd7S8X+0QbdxDznMq30s4OA5BQ8+MvPMWdrEZvPLioMBKn2fiiyGt/vKzfMPmmwOTkoZQ67Gg1b1LpflAw==,IfhTU2Oyt+LSb8cedPP6Ur7C+cgiqqS5uDFxxOdRFE4bWJtjnQW/IkwqHxka5fE8swEVCMByIn4ySHXAUYjfEA==,es256,+presence
