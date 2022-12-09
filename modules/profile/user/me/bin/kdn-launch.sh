@@ -72,10 +72,10 @@ start_work() {
 
 on_exit() {
   swaymsg workspace "${original_workspace}"
-  # subtract existing hosts https://unix.stackexchange.com/a/443579
-  were_running=($(comm -3 <(printf "%s\n" "${were_running[@]}" | sort -u) <(printf "%s\n" "${started[@]}" | sort -u)))
-  if [[ "${#were_running[@]}" -gt 0 ]]; then
-    notify-send "Apps already running" "$(printf "%s, " "${were_running[@]}")"
+  mapfile -t deduped < <(comm -3 <(printf "%s\n" "${were_running[@]}" | sort -u) <(printf "%s\n" "${started[@]}" | sort -u))
+
+  if [[ "${#deduped[@]}" -gt 0 ]]; then
+    notify-send "Apps already running" "$(printf "%s, " "${deduped[@]}")"
   fi
 }
 
