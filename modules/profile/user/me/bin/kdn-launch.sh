@@ -18,11 +18,13 @@ swaymsg() {
 }
 
 launch() {
-  if is_running "${pattern:-"${1}"}"; then
+  local name="${pattern:-"${1}"}"
+  if is_running "${name}"; then
     return 0
   fi
   swaymsg exec "${@}"
-  notify-send "${1}" "started"
+  started+=("${name}")
+  notify-send "${name}" "started"
 }
 
 start_all() {
@@ -70,13 +72,16 @@ start_work() {
 
 on_exit() {
   swaymsg workspace "${original_workspace}"
+  # subtract existing hosts https://unix.stackexchange.com/a/443579
+  were_running=($(comm -3 <(printf "%s\n" "${were_running[@]}" | sort -u) <(printf "%s\n" "${started[@]}" | sort -u)))
   if [[ "${#were_running[@]}" -gt 0 ]]; then
-    notify-send "Apps already running" "$(printf "> %s\n" "${were_running[@]}")"
+    notify-send "Apps already running" "$(printf "%s, " "${were_running[@]}")"
   fi
 }
 
 main() {
   were_running=()
+  started=()
   original_workspace="$(swaymsg -t get_workspaces --raw | jq -r 'map(select(.focused))[0].name')"
   trap on_exit EXIT
 
