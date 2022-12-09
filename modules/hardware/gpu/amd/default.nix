@@ -30,6 +30,10 @@ in
       driSupport32Bit = lib.mkDefault true;
     };
 
+    environment.systemPackages = with pkgs; [
+      radeontop
+    ];
+
     environment.variables.AMD_VULKAN_ICD = lib.mkDefault "RADV";
   };
 }

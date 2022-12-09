@@ -1,44 +1,36 @@
 { config, pkgs, lib, modulesPath, self, ... }:
 let
   cfg = config.kdn.profile.host.krul;
+
+  mkZFSMountBase =
+    { path
+    , at ? path
+    , hostname ? config.networking.hostName
+    , poolName ? "${hostname}-primary"
+    , poolPrefix ? ""
+    }: {
+      "${at}" = {
+        device = "${poolName}/${hostname}${poolPrefix}${path}";
+        fsType = "zfs";
+      };
+    };
+  mkZFSMount = path: opts: mkZFSMountBase ({ inherit path; } // opts);
+  mkContainerMount = path: opts: mkZFSMountBase ({ inherit path; poolPrefix = "/containers"; } // opts);
+  mkNixOSMount = path: opts: mkZFSMountBase ({ inherit path; poolPrefix = "/nixos"; } // opts);
 in
 {
   options.kdn.profile.host.krul = {
     enable = lib.mkEnableOption "enable krul host profile";
   };
 
-  imports = [
-    ./filesystem.nix
-  ];
-
   config = lib.mkIf cfg.enable {
-    kdn.profile.machine.desktop.enable = true;
+    kdn.profile.machine.workstation.enable = true;
+    kdn.hardware.gpu.amd.enable = true;
 
-    system.stateVersion = "22.11";
-    networking.hostId = "81d86976"; # cut -c-8 </proc/sys/kernel/random/uuid
-    networking.hostName = "nazarewk-krul";
-
-    kdn.desktop.base.nixpkgs-wayland.enableFullOverlay = false;
-    kdn.desktop.base.enableWlrootsPatch = false;
-
-    kdn.sway.remote.enable = true;
-
-    # do not suspend on GDM login screen (waiting for remote sessions etc.)
-    services.xserver.displayManager.gdm.autoSuspend = false;
-
-    kdn.hardware.edid.kernelOutputs = {
-      # "DP-1" = "PG278Q_2014";
-      # "DVI-D-1" = "U2711_2012_1";
-    };
-
-    hardware.cpu.amd.updateMicrocode = true;
-
-    kdn.monitoring.prometheus-stack.enable = true;
-    kdn.monitoring.prometheus-stack.caddy.grafana = "grafana.kdn.pw";
-    kdn.monitoring.elasticsearch-stack.enable = true;
-    kdn.monitoring.elasticsearch-stack.caddy.kibana = "kibana.kdn.pw";
-    kdn.programs.caddy.enable = true;
-    kdn.programs.obs-studio.enable = true;
+    boot.initrd.availableKernelModules = [
+      "r8169" # Realtek Semiconductor Co., Ltd. RTL8125 2.5GbE Controller [10ec:8125] (rev 05)
+      "igb" # Intel Corporation I211 Gigabit Network Connection [8086:1539] (rev 03)
+    ];
 
     kdn.k3s.single-node.enable = false;
     kdn.k3s.single-node.enableTools = true;
@@ -52,34 +44,52 @@ in
     kdn.k3s.single-node.reservations.kube.memory = "4G";
     # kdn.containers.podman.enable = true;
 
-    kdn.virtualization.nixops.libvirtd.enable = true;
-
-    boot.loader.efi.canTouchEfiVariables = true;
-    boot.loader.systemd-boot.enable = true;
-    boot.loader.systemd-boot.memtest86.enable = true;
-    boot.loader.systemd-boot.configurationLimit = 20;
-
-    boot.initrd.availableKernelModules = [
-      "nvme" # NVMe disk
-      "xhci_pci"
-      "ahci"
-      "usb_storage"
-      "sd_mod"
-      "r8169" # Realtek Semiconductor Co., Ltd. RTL8125 2.5GbE Controller [10ec:8125] (rev 05)
-      "igb" # Intel Corporation I211 Gigabit Network Connection [8086:1539] (rev 03)
-    ];
-    kdn.hardware.gpu.amd.enable = true;
-
-    environment.systemPackages = with pkgs; [
-      radeontop
-    ];
-
     networking.interfaces.enp5s0.wakeOnLan.enable = true;
     networking.interfaces.enp6s0.wakeOnLan.enable = true;
 
-    kdn.virtualization.microvm.host.enable = true;
-    microvm.vms.hello-microvm = { flake = self; };
+    kdn.filesystems.zfs-root.enable = true;
+    kdn.filesystems.zfs-root.sshUnlock.enable = true;
 
-    kdn.networking.netbird.enable = true;
+    zramSwap.enable = lib.mkDefault true;
+    zramSwap.memoryPercent = 50;
+    zramSwap.priority = 100;
+
+    boot.zfs.requestEncryptionCredentials = [
+      "nazarewk-krul-primary"
+    ];
+
+    boot.tmpOnTmpfs = true;
+    # 20% of 128GB should be fine
+    # 12G was not enough for large rebuild
+    boot.tmpOnTmpfsSize = "20%";
+
+    # legacy mountpoints
+    fileSystems = lib.mkMerge [
+      {
+        "/boot" = {
+          device = "/dev/disk/by-uuid/2BFB-6A81";
+          fsType = "vfat";
+        };
+      }
+      (mkNixOSMount "/root" { at = "/"; })
+      (mkNixOSMount "/etc" { })
+      (mkNixOSMount "/nix" { })
+      (mkNixOSMount "/var" { })
+      (mkNixOSMount "/var/lib/libvirt" { })
+      (mkNixOSMount "/var/lib/rook" { })
+      (mkNixOSMount (config.microvm.stateDir or "/var/lib/microvms") { })
+      (mkNixOSMount "/var/log" { })
+      (mkNixOSMount "/var/log/journal" { })
+      (mkNixOSMount "/var/spool" { })
+      (mkContainerMount "/containerd" { at = "/var/lib/containerd"; })
+      (mkZFSMount "/home" { })
+      (mkZFSMount "/home/nazarewk" { })
+      (mkZFSMount "/home/nazarewk/.cache" { })
+      (mkZFSMount "/home/nazarewk/.local" { })
+      (mkZFSMount "/home/nazarewk/.local/share" { })
+      (mkZFSMount "/home/nazarewk/.local/share/containers" { })
+      (mkZFSMount "/home/nazarewk/Downloads" { })
+      (mkZFSMount "/home/nazarewk/Nextcloud" { })
+    ];
   };
 }

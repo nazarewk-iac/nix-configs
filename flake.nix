@@ -116,12 +116,20 @@
           {
             oams = flakeLib.nixos.system {
               system = "x86_64-linux";
-              modules = [{ kdn.profile.host.oams.enable = true; }];
+              modules = [{ kdn.profile.host.oams.enable = true; }
+                {
+                  networking.hostId = "ce0f2f33"; # cut -c-8 </proc/sys/kernel/random/uuid
+                  networking.hostName = "oams";
+                }];
             };
 
             nazarewk-krul = flakeLib.nixos.system {
               system = "x86_64-linux";
-              modules = [{ kdn.profile.host.krul.enable = true; }];
+              modules = [{ kdn.profile.host.krul.enable = true; }
+                {
+                  networking.hostId = "81d86976"; # cut -c-8 </proc/sys/kernel/random/uuid
+                  networking.hostName = "nazarewk-krul";
+                }];
             };
 
             nazarewk = flakeLib.nixos.system {
