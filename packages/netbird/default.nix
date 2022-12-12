@@ -29,13 +29,13 @@ let
 in
 buildGoModule rec {
   pname = "netbird";
-  version = "0.11.2";
+  version = "0.11.5";
 
   src = fetchFromGitHub {
     owner = "netbirdio";
     repo = pname;
     rev = "v${version}";
-    sha256 = "sha256-kOEeYbtGyHmolQft0mNF+uWaqLYyQ7J1Tvy3RrIwcdA=";
+    sha256 = "sha256-MW0RAhBgragzRR+St6jy5GmiNdD+WDsmM/q7AIlO72w=";
   };
 
   vendorSha256 = "sha256-TfHBvcG3e+yjifPVo0ZgcvLvD16fni4m71nCr4cCBD4=";
