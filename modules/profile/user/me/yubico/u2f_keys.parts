@@ -1,4 +1,8 @@
-# YubiKey 16174039: pamu2fcfg -o pam://kdn
+# YubiKey 16174039: pamu2fcfg -u nazarewk -o pam://kdn
 nazarewk:3WkeBOuNc1K2cH316wFLQGkBymoRxAAn8v1pU0HviRys3Vhr+kLMZuvLw1LXPkr6b6jC40qn0jgfhsLorKmyJQ==,qJchIkzWiwvbAg/++r3I1gHlq1vH5DAFLzkz26zPHTVRwelIgvvOvW61IGOe6nEVnm5T/PXopAISUoE47GjEbA==,es256,+presence
-# YubiKey 16174038: pamu2fcfg -o pam://kdn
+# YubiKey 16174038: pamu2fcfg -u nazarewk -o pam://kdn
 nazarewk:vCNfjd7S8X+0QbdxDznMq30s4OA5BQ8+MvPMWdrEZvPLioMBKn2fiiyGt/vKzfMPmmwOTkoZQ67Gg1b1LpflAw==,IfhTU2Oyt+LSb8cedPP6Ur7C+cgiqqS5uDFxxOdRFE4bWJtjnQW/IkwqHxka5fE8swEVCMByIn4ySHXAUYjfEA==,es256,+presence
+# YubiKey 16174039: pamu2fcfg -u kdn -o pam://kdn
+kdn:2t+EzakhPHY+RREEzyilY3hrjMj7BZxF5D1Ym1mvo02j1PS9Xr82HWT0iSV0tsC9w/ff7mAHnkfMSSBYvQqSuQ==,a+0AhqV+C8Lg34xVbQklXyK+3O1hv6G/AzY5CKo0drYIZq4BbJ+cX4LYg+1XQlV00X5ozPB5rrFIN0Gp2cHtCA==,es256,+presence
+# YubiKey 16174038: pamu2fcfg -u kdn -o pam://kdn
+kdn:pSURk2oxrYvN/BEh0qKqOtH6s9FodjojYmEEyB7dr8X/TBhzJyK2r6QaiJcvGtN4+3L6ZovN13QHompbnjPc/w==,Ia2VlGTNkuildrRDk1g0ASyXHfu/8zrvgRul12Hmzq1gxHw+6N3bN1X00z/Fum0qh2SmovjyvMo8pMNR6tM6TA==,es256,+presence

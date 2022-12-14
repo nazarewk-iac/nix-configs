@@ -78,6 +78,7 @@ in
             (lib.splitString "\n")
             stripComments
             groupByUsername
+            (lib.attrsets.filterAttrs (n: v: n == config.home.username))
             toOutputLines
             (builtins.concatStringsSep "\n")
           ];
