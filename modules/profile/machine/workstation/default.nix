@@ -9,6 +9,7 @@ in
 
   config = lib.mkIf cfg.enable {
     kdn.profile.machine.desktop.enable = true;
+    kdn.profile.machine.dev.enable = true;
 
     system.stateVersion = "22.11";
 
