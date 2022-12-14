@@ -25,12 +25,21 @@ for entry in "$@"; do
   # first segment
   org="${org%%/*}"
 
-  # drop entry until service definition
-  repo="${entry##*"${service}/${org}/"}"
-  # first segment
-  repo="${repo%%/*}"
+  # drop: XXX://
+  repo="${entry#*://}"
   # drop: .git
   repo="${repo%.git}"
 
-  echo "${shellDir}/${service}/${org}/${repo}"
+  if [ "${repo}" == "${service}/${org}" ]; then
+    org=""
+  fi
+
+  # drop entry until service definition
+  repo="${repo##*"${service}/${org}/"}"
+  # last segment
+  repo="${repo##*/}"
+
+  dir="${shellDir}/${service}/${org}/${repo}"
+
+  echo "${dir//"//"/"/"}"
 done
