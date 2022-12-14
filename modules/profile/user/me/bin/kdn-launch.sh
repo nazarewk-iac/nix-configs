@@ -70,12 +70,17 @@ start_work() {
   launch idea-ultimate
 }
 
+skip_empty_lines() {
+  # https://stackoverflow.com/a/41541116
+  sed '/^[[:blank:]]*$/ d'
+}
+
 on_exit() {
   swaymsg workspace "${original_workspace}"
-  mapfile -t deduped < <(comm -3 <(printf "%s\n" "${were_running[@]}" | sort -u) <(printf "%s\n" "${started[@]}" | sort -u))
+  mapfile -t deduped < <(comm -3 <(printf "%s\n" "${were_running[@]}" | sort -u) <(printf "%s\n" "${started[@]}" | sort -u) | skip_empty_lines | sort)
 
   if [[ "${#deduped[@]}" -gt 0 ]]; then
-    notify-send "Apps already running" "$(printf "%s, " "${deduped[@]}")"
+    notify-send "Apps already running" "$(printf "%s, " "${deduped[@]}" | sed 's/, $//')"
   fi
 }
 
