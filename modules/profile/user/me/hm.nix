@@ -32,7 +32,7 @@ in
       programs.git.signing.key = null;
       programs.git.signing.signByDefault = true;
       programs.git.userName = systemUser.description;
-      programs.git.userEmail = "3494992+nazarewk@users.noreply.github.com";
+      programs.git.userEmail = "gpg@kdn.im";
       programs.git.ignores = [ (builtins.readFile ./.gitignore) ];
       programs.git.attributes = [ (builtins.readFile ./.gitattributes) ];
       # to authenticate hub: ln -s ~/.config/gh/hosts.yml ~/.config/hub
