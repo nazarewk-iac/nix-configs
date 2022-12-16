@@ -213,17 +213,26 @@ def today(path, args):
               help="Records in period: YYYY (year), YYYY-MM (month), YYYY-Www (week), or YYYY-Qq (quarter)")
 @click.option("-t", "--tag", "tags", multiple=True,
               help="Records (or entries) that match these tags")
+@click.option("--store/--no-store", default=True)
 @click.argument("path", default="@default")
 @click.argument("args", nargs=-1)
-def report(path, args, period, tags):
+def report(path: Path, args, period, tags, store):
     klog = Klog()
+    path = anyio.run(klog.resolve_path, path)
     args = [
         f"--period={period}",
         *args,
     ]
     if tags:
         args.insert(0, f"--tag={','.join(tags)}")
+
     print(anyio.run(klog.report, path, *args))
+
+    if store:
+        tags_repr = "".join(f"-{t}" for t in tags)
+        store_path = path.with_name(f"{period}{tags_repr}.txt")
+        store_path.write_text(anyio.run(klog.report, path, "--no-style", *args))
+        logger.info("report stored", path=str(store_path))
 
 
 if __name__ in ("__main__", "__mp_main__"):
