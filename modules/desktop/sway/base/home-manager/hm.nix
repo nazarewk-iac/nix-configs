@@ -20,6 +20,9 @@ in
   config = lib.mkIf (config.kdn.headless.enableGUI && sysCfg.enable) {
     services.network-manager-applet.enable = true;
 
+    # turn off service, but keep generating flameshot.ini
+    services.flameshot.enable = false;
+    xdg.configFile."flameshot/flameshot.ini".source = (pkgs.formats.ini { }).generate "flameshot.ini" config.services.flameshot.settings;
     services.flameshot.settings = {
       General = {
         checkForUpdates = false;
