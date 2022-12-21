@@ -22,6 +22,7 @@ in
 
     kdn.development.cloud.enable = true;
     kdn.development.data.enable = true;
+    kdn.development.db.mysql.enable = true;
     kdn.development.elixir.enable = true;
     kdn.development.golang.enable = true;
     kdn.development.java.enable = true;
