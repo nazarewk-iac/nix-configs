@@ -80,6 +80,7 @@ in
     services.locate.pruneBindMounts = true;
 
     kdn.networking.wireguard.enable = true;
+    kdn.hardware.disk-encryption.tools.enable = true;
     kdn.hardware.usbip.enable = true;
     kdn.hardware.qmk.enable = true;
     kdn.development.shell.enable = true;
