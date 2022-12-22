@@ -2,6 +2,8 @@
 let
   cfg = config.kdn.profile.host.oams;
 
+  debugBoot = true;
+
   trim = strip: txt: lib.pipe txt [
     (lib.strings.removePrefix strip)
     (lib.strings.removeSuffix strip)
@@ -60,37 +62,64 @@ in
     enable = lib.mkEnableOption "enable oams host profile";
   };
 
-  config = lib.mkIf cfg.enable {
-    kdn.profile.machine.workstation.enable = true;
-    kdn.hardware.gpu.amd.enable = true;
+  config = lib.mkIf cfg.enable (lib.mkMerge [
+    {
+      kdn.profile.machine.workstation.enable = true;
+      kdn.hardware.gpu.amd.enable = true;
 
-    boot.zfs.forceImportRoot = false;
-    boot.zfs.requestEncryptionCredentials = [ ];
+      boot.zfs.forceImportRoot = false;
+      boot.zfs.requestEncryptionCredentials = false;
 
-    boot.kernelParams = [
-      "rd.luks.name=${rootUUID}=${zpool}"
-      "rd.luks.options=${rootUUID}=header=/${headerFilename}:UUID=${bootUUID}"
-      "rd.luks.data=${rootUUID}=${luksDevice}"
-    ];
+      # enables systemd-cryptsetup-generator
+      # see https://github.com/nazarewk/nixpkgs/blob/04f574a1c0fde90b51bf68198e2297ca4e7cccf4/nixos/modules/system/boot/luksroot.nix#L997-L1012
+      boot.initrd.luks.forceLuksSupportInInitrd = true;
+      boot.initrd.systemd = {
+        enable = true;
+      };
 
-    fileSystems = lib.pipe [
-      {
-        "/boot" = {
-          device = bootPath;
-          fsType = "vfat";
-        };
-      }
-      (lib.pipe zfsMountPaths [
-        (builtins.map (path: {
-          "${path}" = {
-            device = "${zfsPrefix}/${path}";
-            fsType = "zfs";
+      boot.kernelParams = [
+        # https://www.freedesktop.org/software/systemd/man/systemd-cryptsetup-generator.html#
+        "rd.luks.name=${rootUUID}=${zpool}"
+        "rd.luks.options=${rootUUID}=header=/${headerFilename}:UUID=${bootUUID}"
+        "rd.luks.data=${rootUUID}=${luksDevice}"
+        # see https://www.thegeekdiary.com/how-to-debug-systemd-boot-process-in-centos-rhel-7-and-8-2/
+        "plymouth.enable=0"
+        #"systemd.confirm_spawn=true"
+        "systemd.debug-shell=1"
+        "systemd.log_level=debug"
+        "systemd.unit=multi-user.target"
+      ];
+
+      fileSystems = lib.pipe [
+        {
+          "/boot" = {
+            device = bootPath;
+            fsType = "vfat";
           };
-        }))
-      ])
-    ] [
-      lib.lists.flatten
-      lib.mkMerge
-    ];
-  };
+        }
+        (lib.pipe zfsMountPaths [
+          (builtins.map (path: {
+            "${path}" = {
+              device = "${zfsPrefix}/${path}";
+              fsType = "zfs";
+            };
+          }))
+        ])
+      ] [
+        lib.lists.flatten
+        lib.mkMerge
+      ];
+    }
+    (lib.mkIf debugBoot {
+      boot.initrd.systemd.emergencyAccess = true;
+      boot.kernelParams = [
+        # see https://www.thegeekdiary.com/how-to-debug-systemd-boot-process-in-centos-rhel-7-and-8-2/
+        "plymouth.enable=0"
+        #"systemd.confirm_spawn=true"  # this seems to ask and times out before executing anything during boot
+        "systemd.debug-shell=1"
+        "systemd.log_level=debug"
+        "systemd.unit=multi-user.target"
+      ];
+    })
+  ]);
 }

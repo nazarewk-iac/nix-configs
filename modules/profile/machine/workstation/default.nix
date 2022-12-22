@@ -45,6 +45,7 @@ in
     boot.initrd.availableKernelModules = [
       "nvme" # NVMe disk
       "xhci_pci"
+      "xhci_hcd" # usb disks
       "ahci"
       "usb_storage"
       "sd_mod"
