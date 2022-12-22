@@ -3,6 +3,12 @@ set -xeEuo pipefail
 
 target="${1:-"/mnt"}"
 zfs_prefix="oams-main/fs"
+luks_device="/dev/disk/by-id/ata-Samsung_Portable_SSD_T5_S49TNP0KC01288A"
+  # see https://wiki.archlinux.org/title/Dm-crypt/Specialties#Using_systemd_hook
+  # Replace XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX with the LUKS super block UUID. It can be acquired with `cryptsetup luksDump header.img` or `sudo blkid -s UUID -o value header.img`
+root_uuid="c4b9bdbc-900f-482e-8fa6-6c6824c560e9"
+header_dir="/nazarewk-iskaral/secrets/luks/oams"
+header_name="main-header.img"
 zpool="${zfs_prefix%%/*}"
 
 if [ "${APPLY:-}" = 1 ]; then
@@ -50,13 +56,27 @@ function setupZFS() {
   cmd zfs mount "${dataset}"
 }
 
+if ! zpool status "nazarewk-iskaral" ; then
+  zpool import nazarewk-iskaral
+fi
+
+if ! mountpoint "/nazarewk-iskaral/secrets/luks"; then
+  zfs load-key nazarewk-iskaral || :
+  zfs mount nazarewk-iskaral/secrets/luks
+fi
+
+if [ ! -e "/dev/mapper/${zpool}" ]; then
+  systemd-cryptsetup attach "${zpool}" "${luks_device}" - header="${header_dir}/${header_name}" fido2-device=auto
+fi
+
+zpool status "${zpool}" || cmd zpool import -N -R "${target}" "${zpool}"
+
 altroot="$(zpool list -o altroot "${zpool}" | tail -n 1)"
 if [ -n "${altroot}" ] && [ "${altroot}" != "${target}" ]; then
   echo "altroot=${altroot} does not equal target=${target}!"
   exit 1
 fi
 
-zpool status "${zpool}" || cmd zpool import -N -R "${target}" "${zpool}"
 cmd zfs load-key -a
 
 ensureZFS ""
