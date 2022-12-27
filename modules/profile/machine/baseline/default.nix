@@ -92,15 +92,19 @@ in
       "consoleblank=90"
     ];
 
+    # see https://nixos.wiki/wiki/Full_Disk_Encryption#Option_2:_Copy_Key_as_file_onto_a_vfat_usb_stick
+    # see https://bbs.archlinux.org/viewtopic.php?pid=329790#p329790
     boot.initrd.availableKernelModules = [
       "ahci"
       "nvme" # NVMe disk
-      "sd_mod" # SCSI disk support, see https://bbs.archlinux.org/viewtopic.php?pid=329790#p329790
+      "sd_mod" # SCSI disk support
       "uas" # USB Attached SCSI disks (eg. Samsung T5)
+      "usbcore"
       "usbhid"
       "usb_storage" # usb disks
       "xhci_hcd" # usb disks
       "xhci_pci"
+      "vfat" # mount vfat-formatted boot partition
     ];
   };
 }
