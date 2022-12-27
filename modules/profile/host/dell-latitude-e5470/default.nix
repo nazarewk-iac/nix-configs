@@ -40,13 +40,7 @@ in
     kdn.hardware.modem.enable = true;
 
     # BOOT
-    boot.kernelParams = [ "consoleblank=90" ];
     boot.initrd.availableKernelModules = [
-      "xhci_pci"
-      "ahci"
-      "nvme"
-      "usbhid"
-      "uas"
       "rtsx_pci_sdmmc"
       "e1000e" # ethernet card
     ];

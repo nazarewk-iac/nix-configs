@@ -13,7 +13,6 @@ in
     system.stateVersion = "22.11";
 
     # BOOT
-    boot.kernelParams = [ "consoleblank=90" ];
     boot.initrd.availableKernelModules = [
       "ata_piix"
       "virtio_pci"

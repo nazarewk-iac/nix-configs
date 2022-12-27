@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -xeEuo pipefail
 
+# TODO: switch to disko
+#   see https://bmcgee.ie/posts/2022/12/setting-up-my-new-laptop-nix-style/
+
 target="${1:-"/mnt"}"
 zfs_prefix="oams-main/fs"
 luks_device="/dev/disk/by-id/ata-Samsung_Portable_SSD_T5_S49TNP0KC01288A"
@@ -65,8 +68,14 @@ if ! mountpoint "/nazarewk-iskaral/secrets/luks"; then
   zfs mount nazarewk-iskaral/secrets/luks
 fi
 
+if ! mountpoint "/nazarewk-iskaral/secrets/gpg"; then
+  zfs load-key nazarewk-iskaral || :
+  zfs mount nazarewk-iskaral/secrets/gpg
+fi
+
 if [ ! -e "/dev/mapper/${zpool}" ]; then
   systemd-cryptsetup attach "${zpool}" "${luks_device}" - header="${header_dir}/${header_name}" fido2-device=auto
+  sleep 3
 fi
 
 zpool status "${zpool}" || cmd zpool import -N -R "${target}" "${zpool}"

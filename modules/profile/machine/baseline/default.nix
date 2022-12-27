@@ -86,5 +86,21 @@ in
     kdn.development.shell.enable = true;
 
     home-manager.users.root = { kdn.profile.user.me.nixosConfig = config.users.users.root; };
+
+    boot.kernelParams = [
+      # blank screen after 90 sec
+      "consoleblank=90"
+    ];
+
+    boot.initrd.availableKernelModules = [
+      "ahci"
+      "nvme" # NVMe disk
+      "sd_mod" # SCSI disk support, see https://bbs.archlinux.org/viewtopic.php?pid=329790#p329790
+      "uas" # USB Attached SCSI disks (eg. Samsung T5)
+      "usbhid"
+      "usb_storage" # usb disks
+      "xhci_hcd" # usb disks
+      "xhci_pci"
+    ];
   };
 }

@@ -42,14 +42,7 @@ in
     boot.loader.systemd-boot.memtest86.enable = true;
     boot.loader.systemd-boot.configurationLimit = 20;
 
-    boot.initrd.availableKernelModules = [
-      "nvme" # NVMe disk
-      "xhci_pci"
-      "xhci_hcd" # usb disks
-      "ahci"
-      "usb_storage"
-      "sd_mod"
-    ];
+    boot.initrd.availableKernelModules = [ ];
 
     kdn.virtualization.microvm.host.enable = true;
     microvm.vms.hello-microvm = { flake = self; };
