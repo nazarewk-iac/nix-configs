@@ -96,15 +96,18 @@ in
     # see https://bbs.archlinux.org/viewtopic.php?pid=329790#p329790
     boot.initrd.availableKernelModules = [
       "ahci"
+      "nls_cp437" # fixes unknown codepages when mounting vfat
+      "nls_iso8859_1" # fixes unknown codepages when mounting vfat
+      "nls_iso8859_2" # fixes unknown codepages when mounting vfat
       "nvme" # NVMe disk
       "sd_mod" # SCSI disk support
       "uas" # USB Attached SCSI disks (eg. Samsung T5)
+      "usb_storage" # usb disks
       "usbcore"
       "usbhid"
-      "usb_storage" # usb disks
+      "vfat" # mount vfat-formatted boot partition
       "xhci_hcd" # usb disks
       "xhci_pci"
-      "vfat" # mount vfat-formatted boot partition
     ];
   };
 }
