@@ -21,7 +21,7 @@ in
     '';
 
     programs.vim.defaultEditor = true;
-    programs.vim.package = pkgs.vim_configurable.customize {
+    programs.vim.package = pkgs.vim-full.customize {
       name = "vim";
       vimrcConfig.customRC = ''
         syntax on

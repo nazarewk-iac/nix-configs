@@ -6,6 +6,7 @@
 , unixtools
 , writeShellApplication
 , displays ? { } # { PG278Q_2014 = [ "PG278Q" "2014" ]; }
+, ...
 }:
 
 # Usage:

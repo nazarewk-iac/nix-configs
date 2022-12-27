@@ -1,4 +1,9 @@
-{ appimageTools, lib, fetchurl, makeDesktopItem }:
+{ appimageTools
+, lib
+, fetchurl
+, makeDesktopItem
+, ...
+}:
 
 let
   pname = "rambox";

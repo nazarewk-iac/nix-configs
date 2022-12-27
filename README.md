@@ -22,6 +22,13 @@ This is incomplete list of incorporated software/systems worth noting:
 
 # Notes
 
+## Building the iso installer
+
+see https://bmcgee.ie/posts/2022/12/setting-up-my-new-laptop-nix-style/
+
+1. `nix build '.#install-iso'`
+2. `sudo dd if="$(ls -1d ./result/iso/nixos-*.iso)" of=/dev/disk/by-id/usb-SanDisk_Cruzer_Blade_02000515031521144721-0:0 status=progress`
+
 ## Building fresh system from `nixos-installer` stable image
 
 1. Add SSH keys from `curl https://api.github.com/users/nazarewk/keys` to `~/.ssh/authorized_keys`

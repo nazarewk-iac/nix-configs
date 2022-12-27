@@ -56,6 +56,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
+    nixos-generators = {
+      url = "github:nix-community/nixos-generators";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixlib.follows = "nixpkgs-lib";
+    };
   };
 
   outputs =
@@ -65,7 +70,7 @@
       lib = import ./lib { inherit (inputs.nixpkgs) lib; };
       flakeLib = lib.kdn.flakes.forFlake self;
       args = {
-        inherit self;
+        inherit inputs;
         specialArgs = { };
       };
     in
@@ -93,7 +98,7 @@
           checks = { };
           devShells = { };
           packages = lib.mkMerge [
-            (lib.filterAttrs (n: pkg: lib.isDerivation pkg) (flakeLib.packagesForOverlay { inherit system; }).kdn)
+            (lib.filterAttrs (n: pkg: lib.isDerivation pkg) (flakeLib.overlayedInputs { inherit system; }).nixpkgs.kdn)
             (flakeLib.microvm.packages system)
           ];
         };
@@ -102,7 +107,7 @@
 
         overlays.default = lib.composeManyExtensions [
           poetry2nix.overlay
-          (final: prev: (import ./packages { pkgs = prev; }))
+          (final: prev: (import ./packages { inherit inputs self; pkgs = prev; }))
           (final: prev: {
             # work around not using flake-utils which sets it up on `pkgs.system`
             # see https://github.com/numtide/flake-utils/blob/1ed9fb1935d260de5fe1c2f7ee0ebaae17ed2fa1/check-utils.nix#L4

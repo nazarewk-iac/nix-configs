@@ -16,6 +16,7 @@
 , UserNotifications
 , WebKit
 , ui ? false
+, ...
 }:
 let
   modules =

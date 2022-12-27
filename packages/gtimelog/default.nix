@@ -2,6 +2,7 @@
 , pkgs
 , fetchFromGitHub
 , makeWrapper
+, ...
 }:
 let
   gtk3 = pkgs.gtk3;
