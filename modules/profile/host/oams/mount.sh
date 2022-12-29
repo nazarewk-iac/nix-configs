@@ -78,7 +78,7 @@ if [ ! -e "/dev/mapper/${zpool}" ]; then
   sleep 3
 fi
 
-zpool status "${zpool}" || cmd zpool import -N -R "${target}" "${zpool}"
+zpool status "${zpool}" || cmd zpool import -f -N -R "${target}" "${zpool}"
 
 altroot="$(zpool list -o altroot "${zpool}" | tail -n 1)"
 if [ -n "${altroot}" ] && [ "${altroot}" != "${target}" ]; then

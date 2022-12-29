@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -xeEuo pipefail
-umount -R /mnt || :
+target="${1:-"/mnt"}"
+umount -R "${target}" || :
 zpool export oams-main || :
 cryptsetup close oams-main || :

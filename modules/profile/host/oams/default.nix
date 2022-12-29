@@ -2,8 +2,6 @@
 let
   cfg = config.kdn.profile.host.oams;
 
-  debugBoot = true;
-
   trim = strip: txt: lib.pipe txt [
     (lib.strings.removePrefix strip)
     (lib.strings.removeSuffix strip)
@@ -73,23 +71,16 @@ in
       # enables systemd-cryptsetup-generator
       # see https://github.com/nazarewk/nixpkgs/blob/04f574a1c0fde90b51bf68198e2297ca4e7cccf4/nixos/modules/system/boot/luksroot.nix#L997-L1012
       boot.initrd.luks.forceLuksSupportInInitrd = true;
-      boot.initrd.systemd = {
-        enable = true;
-      };
+      boot.initrd.systemd.enable = true;
 
       boot.kernelParams = [
         # https://www.freedesktop.org/software/systemd/man/systemd-cryptsetup-generator.html#
         "rd.luks.name=${rootUUID}=${zpool}"
         "rd.luks.options=${rootUUID}=header=/${headerFilename}:UUID=${bootUUID}"
         "rd.luks.data=${rootUUID}=${luksDevice}"
-        # see https://www.thegeekdiary.com/how-to-debug-systemd-boot-process-in-centos-rhel-7-and-8-2/
-        "plymouth.enable=0"
-        #"systemd.confirm_spawn=true"
-        "systemd.debug-shell=1"
-        "systemd.log_level=debug"
-        "systemd.unit=multi-user.target"
       ];
 
+      # TODO: using `mount` from fstab instead of `zfs mount` and complaining about lack of legacy mount point
       fileSystems = lib.pipe [
         {
           "/boot" = {
@@ -100,7 +91,11 @@ in
         (lib.pipe zfsMountPaths [
           (builtins.map (path: {
             "${path}" = {
-              device = "${zfsPrefix}/${path}";
+              device = lib.pipe path [
+                (lib.strings.removePrefix "/")
+                (p: "${zfsPrefix}/${p}")
+                (lib.strings.removeSuffix "/")
+              ];
               fsType = "zfs";
             };
           }))
@@ -110,16 +105,5 @@ in
         lib.mkMerge
       ];
     }
-    (lib.mkIf debugBoot {
-      boot.initrd.systemd.emergencyAccess = true;
-      boot.kernelParams = [
-        # see https://www.thegeekdiary.com/how-to-debug-systemd-boot-process-in-centos-rhel-7-and-8-2/
-        "plymouth.enable=0"
-        #"systemd.confirm_spawn=true"  # this seems to ask and times out before executing anything during boot
-        "systemd.debug-shell=1"
-        "systemd.log_level=debug"
-        "systemd.unit=multi-user.target"
-      ];
-    })
   ]);
 }
