@@ -97,7 +97,7 @@ def fmt(path, check, diff, write):
 @click.option("-o", "--output", default="", help="Where to store csv/xlsx file?")
 @click.option("-r", "--report", "report_name", default="default")
 @click.argument("paths", nargs=-1)
-def report(paths, period, tags, output, report_name, resource):
+def generate_report(paths, period, tags, output, report_name, resource):
     klog = Klog()
     cfg = CONFIG.reports.get(report_name, ReportConfig())
     cfg.resource = resource or cfg.resource
