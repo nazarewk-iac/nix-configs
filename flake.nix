@@ -61,12 +61,19 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.nixlib.follows = "nixpkgs-lib";
     };
+
+    disko = {
+      # url = "github:nix-community/disko";
+      # https://github.com/nix-community/disko/pull/111
+      url = "github:nazarewk/disko/c97c52d6f5d06ab8839b5f73e3d60c123770e052";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
     inputs:
     let
-      inherit (inputs) self flake-parts home-manager nixpkgs poetry2nix;
+      inherit (inputs) self flake-parts home-manager nixpkgs poetry2nix disko;
       lib = import ./lib { inherit (inputs.nixpkgs) lib; };
       flakeLib = lib.kdn.flakes.forFlake self;
       args = {

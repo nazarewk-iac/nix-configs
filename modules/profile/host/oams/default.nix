@@ -54,6 +54,8 @@ let
       (trim ''"'')
     ]))
   ];
+
+  disko = import ./disko.nix { inherit lib; };
 in
 {
   options.kdn.profile.host.oams = {
@@ -79,31 +81,7 @@ in
         "rd.luks.options=${rootUUID}=header=/${headerFilename}:UUID=${bootUUID}"
         "rd.luks.data=${rootUUID}=${luksDevice}"
       ];
-
-      # TODO: using `mount` from fstab instead of `zfs mount` and complaining about lack of legacy mount point
-      fileSystems = lib.pipe [
-        {
-          "/boot" = {
-            device = bootPath;
-            fsType = "vfat";
-          };
-        }
-        (lib.pipe zfsMountPaths [
-          (builtins.map (path: {
-            "${path}" = {
-              device = lib.pipe path [
-                (lib.strings.removePrefix "/")
-                (p: "${zfsPrefix}/${p}")
-                (lib.strings.removeSuffix "/")
-              ];
-              fsType = "zfs";
-            };
-          }))
-        ])
-      ] [
-        lib.lists.flatten
-        lib.mkMerge
-      ];
+      disko.devices = disko;
     }
   ]);
 }

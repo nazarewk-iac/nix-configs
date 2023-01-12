@@ -13,6 +13,7 @@ in
 {
   imports = [
     inputs.home-manager.nixosModules.home-manager
+    inputs.disko.nixosModules.disko
   ] ++ nixosModules;
 
   options.kdn = {
@@ -20,6 +21,8 @@ in
   };
 
   config = lib.mkIf config.kdn.enable {
+    disko.enableConfig = lib.mkDefault false;
+
     nixpkgs.config.permittedInsecurePackages = [
       "qtwebkit-5.212.0-alpha4"
     ];

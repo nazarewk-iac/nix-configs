@@ -7,12 +7,20 @@ set -xeEuo pipefail
 target="${1:-"/mnt"}"
 zfs_prefix="oams-main/fs"
 luks_device="/dev/disk/by-id/ata-Samsung_Portable_SSD_T5_S49TNP0KC01288A"
-  # see https://wiki.archlinux.org/title/Dm-crypt/Specialties#Using_systemd_hook
-  # Replace XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX with the LUKS super block UUID. It can be acquired with `cryptsetup luksDump header.img` or `sudo blkid -s UUID -o value header.img`
+# see https://wiki.archlinux.org/title/Dm-crypt/Specialties#Using_systemd_hook
+# Replace XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX with the LUKS super block UUID. It can be acquired with `cryptsetup luksDump header.img` or `sudo blkid -s UUID -o value header.img`
 root_uuid="c4b9bdbc-900f-482e-8fa6-6c6824c560e9"
 header_dir="/nazarewk-iskaral/secrets/luks/oams"
 header_name="main-header.img"
 zpool="${zfs_prefix%%/*}"
+
+# required legacy mountpoints due to using `mount -t zfs` instead of `zfs mount` or `zpool import -R`
+# see https://github.com/NixOS/nixpkgs/blob/c07552f6f7d4eead7806645ec03f7f1eb71ba6bd/nixos/lib/utils.nix#L13-L13
+legacy_pattern="^"
+for mountpoint in "/" "/nix" "/nix/store" "/var" "/var/log" "/var/lib" "/var/lib/nixos" "/etc" "/usr" ; do
+  legacy_pattern+="${mountpoint}\|"
+done
+legacy_pattern="${legacy_pattern%"\|"}"
 
 if [ "${APPLY:-}" = 1 ]; then
   function cmd() { "$@"; }
@@ -22,11 +30,11 @@ else
 fi
 
 function mnt() {
-  local current_mountpoint="${!#}"
-  if mountpoint "${current_mountpoint}"; then
+  local new_mountpoint="${!#}"
+  if mountpoint "${new_mountpoint}"; then
     return 0
   fi
-  cmd mkdir -p "${current_mountpoint}"
+  cmd mkdir -p "${new_mountpoint}"
   cmd mount "$@"
 }
 
@@ -43,23 +51,32 @@ function setupZFS() {
   ensureZFS "${dataset_name}"
   local mountpoint="${dataset_name%/}"
   [[ -n "${mountpoint}" ]] || mountpoint=/
-  local current_mountpoint="${target%/}/${mountpoint#/}"
-  current_mountpoint="${current_mountpoint%/}"
+  local new_mountpoint="${target%/}/${mountpoint#/}"
+  new_mountpoint="${new_mountpoint%/}"
+  local mount_at="${new_mountpoint}"
   local dataset="${zfs_prefix}${dataset_name%/}"
   local old_mountpoint
   old_mountpoint="$(zfs list -o mountpoint "${dataset}" | tail -n 1)"
+  if grep "${legacy_pattern}" <<<"${new_mountpoint}" ; then
+    new_mountpoint=legacy
+  fi
   [ "${old_mountpoint}" != "none" ] || old_mountpoint=
-  if [ "${current_mountpoint}" != "${old_mountpoint}" ]; then
+  if [ "${new_mountpoint}" != "${old_mountpoint}" ]; then
     cmd zfs set "mountpoint=${mountpoint}" "${dataset}"
   fi
-  if mountpoint "${current_mountpoint}"; then
+  if mountpoint "${mount_at}"; then
     return 0
   fi
-  cmd mkdir -p "${current_mountpoint}"
-  cmd zfs mount "${dataset}"
+  cmd mkdir -p "${mount_at}"
+  cmd mount -t zfs "${dataset}" "${mount_at}"
 }
 
-if ! zpool status "nazarewk-iskaral" ; then
+if [ ! -e "/dev/mapper/${zpool}" ]; then
+  systemd-cryptsetup attach "${zpool}" "${luks_device}" - header="${header_dir}/${header_name}" fido2-device=auto
+  sleep 3
+fi
+
+if ! zpool status "nazarewk-iskaral"; then
   zpool import nazarewk-iskaral
 fi
 

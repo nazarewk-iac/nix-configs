@@ -22,3 +22,8 @@ result
 
 # microvm.nix
 *.img
+
+# disko scripts
+/disko-*-format
+/disko-*-mount
+/disko-*-recreate
