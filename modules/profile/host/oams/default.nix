@@ -81,6 +81,7 @@ in
         "rd.luks.options=${rootUUID}=header=/${headerFilename}:UUID=${bootUUID}"
         "rd.luks.data=${rootUUID}=${luksDevice}"
       ];
+      disko.enableConfig = true;
       disko.devices = disko;
     }
   ]);

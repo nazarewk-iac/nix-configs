@@ -128,7 +128,7 @@ in
               inherit mountpoint;
 
               # disko handles non-legacy mountpoints with `-o zfsutil` mount option
-              #options = { inherit mountpoint; };
+              options = { inherit mountpoint; };
               #options.mountpoint =
               #  # required legacy mountpoints due to using `mount -t zfs` instead of `zfs mount` or `zpool import -R`
               #  # see https://github.com/NixOS/nixpkgs/blob/c07552f6f7d4eead7806645ec03f7f1eb71ba6bd/nixos/lib/utils.nix#L13-L13
