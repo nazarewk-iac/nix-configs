@@ -108,7 +108,7 @@ in
 
     # CUSTOM
 
-    services.devmon.enable = true;
+    services.devmon.enable = false; # disable auto-mounting service devmon, it interferes with disko
     programs.steam.enable = true;
 
     kdn.desktop.remote-server.enable = true;
