@@ -75,6 +75,10 @@ skip_empty_lines() {
   sed '/^[[:blank:]]*$/ d'
 }
 
+notify-send() {
+  [ "${NOTIFY:-}" == "" ] || command notify-send "$@"
+}
+
 on_exit() {
   swaymsg workspace "${original_workspace}"
   mapfile -t deduped < <(comm -3 <(printf "%s\n" "${were_running[@]}" | sort -u) <(printf "%s\n" "${started[@]}" | sort -u) | skip_empty_lines | sort)

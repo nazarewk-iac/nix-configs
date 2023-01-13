@@ -95,6 +95,7 @@ in
             "/etc" = { } // snapshotsOn;
             "/home" = { } // snapshotsOn;
             "/home/kdn" = { };
+            # TODO: OOTB those mountpoints are owned by root:root instead of kdn:users, need to fix it
             "/home/kdn/.cache" = { } // snapshotsOff;
             "/home/kdn/.config" = { };
             "/home/kdn/.local" = { };

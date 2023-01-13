@@ -32,14 +32,14 @@ in
             (lib.strings.removePrefix "--${name}=")
           ];
 
-          zpool = crypted.content.content.pool;
+          luksOpenName = crypted.content.name;
           rootUUID = getArg "uuid";
           headerPath = getArg "header";
           luksDevice = crypted.device;
         in
         [
           # https://www.freedesktop.org/software/systemd/man/systemd-cryptsetup-generator.html#
-          "rd.luks.name=${rootUUID}=${zpool}"
+          "rd.luks.name=${rootUUID}=${luksOpenName}"
           "rd.luks.options=${rootUUID}=header=${headerPath}"
           "rd.luks.data=${rootUUID}=${luksDevice}"
         ];

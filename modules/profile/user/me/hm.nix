@@ -58,10 +58,6 @@ in
       ];
 
       kdn.development.git.enable = true;
-    }
-    (lib.mkIf config.kdn.headless.enableGUI {
-      services.flameshot.settings.General.savePath = "${config.home.homeDirectory}/Downloads/screenshots";
-      xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
 
       # pam-u2f expects a single line of configuration per user in format `username:entry1:entry2:entry3:...`
       # `pamu2fcfg` generates lines of format `username:entry`
@@ -84,6 +80,10 @@ in
           ];
         in
         foldParts ./yubico/u2f_keys.parts;
+    }
+    (lib.mkIf config.kdn.headless.enableGUI {
+      services.flameshot.settings.General.savePath = "${config.home.homeDirectory}/Downloads/screenshots";
+      xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
 
       home.packages = with pkgs; let
         launch = (lib.kdn.shell.writeShellScript pkgs (./bin + "/kdn-launch.sh") {
