@@ -1,61 +1,6 @@
 { config, pkgs, lib, ... }:
 let
   cfg = config.kdn.profile.host.oams;
-
-  trim = strip: txt: lib.pipe txt [
-    (lib.strings.removePrefix strip)
-    (lib.strings.removeSuffix strip)
-  ];
-
-  getValue = name: lib.pipe mountScriptLines [
-    (lib.filter (lib.hasPrefix "${name}="))
-    builtins.head
-    (lib.strings.splitString "=")
-    lib.lists.last
-    (trim ''"'')
-  ];
-
-  mountScriptLines = lib.pipe (builtins.readFile ./mount.sh) [
-    (lib.strings.splitString "\n")
-  ];
-
-  zfsPrefix = getValue "zfs_prefix";
-  luksDevice = getValue "luks_device";
-  rootUUID = getValue "root_uuid";
-  headerFilename = getValue "header_name";
-
-  zpool = lib.pipe zfsPrefix [
-    (lib.strings.splitString "/")
-    builtins.head
-  ];
-
-  bootPath = lib.pipe mountScriptLines [
-    (lib.filter (lib.hasInfix "/dev/disk/by-uuid"))
-    builtins.head
-    (lib.strings.splitString " ")
-    (lib.filter (lib.hasInfix "/dev/disk/by-uuid"))
-    builtins.head
-    (trim ''"'')
-  ];
-
-  bootUUID = lib.pipe bootPath [
-    (lib.strings.splitString "/")
-    lib.lists.last
-  ];
-
-  zfsMountPaths = lib.pipe mountScriptLines [
-    (lib.filter (lib.hasPrefix "setupZFS "))
-    (builtins.map (entry: lib.pipe entry [
-      # for whatever reason (lib.strings.splitString " ") was not working, using builtins.split then filter,
-      # becaus split is regex-based and returns match lists in between
-      (builtins.split " +")
-      (builtins.filter builtins.isString)
-      (l: builtins.elemAt l 1)
-      (trim ''"'')
-    ]))
-  ];
-
-  disko = import ./disko.nix { inherit lib; };
 in
 {
   options.kdn.profile.host.oams = {
@@ -75,14 +20,31 @@ in
       boot.initrd.luks.forceLuksSupportInInitrd = true;
       boot.initrd.systemd.enable = true;
 
-      boot.kernelParams = [
-        # https://www.freedesktop.org/software/systemd/man/systemd-cryptsetup-generator.html#
-        "rd.luks.name=${rootUUID}=${zpool}"
-        "rd.luks.options=${rootUUID}=header=/${headerFilename}:UUID=${bootUUID}"
-        "rd.luks.data=${rootUUID}=${luksDevice}"
-      ];
+      boot.kernelParams =
+        let
+          disko = config.disko.devices;
+          crypted = disko.disk.crypted-root;
+          boot = disko.disk.boot;
+
+          getArg = name: lib.pipe crypted.content.extraArgsFormat [
+            (builtins.filter (lib.strings.hasPrefix "--${name}="))
+            builtins.head
+            (lib.strings.removePrefix "--${name}=")
+          ];
+
+          zpool = crypted.content.content.pool;
+          rootUUID = getArg "uuid";
+          headerPath = getArg "header";
+          luksDevice = crypted.device;
+        in
+        [
+          # https://www.freedesktop.org/software/systemd/man/systemd-cryptsetup-generator.html#
+          "rd.luks.name=${rootUUID}=${zpool}"
+          "rd.luks.options=${rootUUID}=header=${headerPath}"
+          "rd.luks.data=${rootUUID}=${luksDevice}"
+        ];
       disko.enableConfig = true;
-      disko.devices = disko;
+      disko.devices = import ./disko.nix { inherit lib; };
     }
   ]);
 }

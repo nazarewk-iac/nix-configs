@@ -11,7 +11,7 @@ let
 in
 {
   disk = {
-    boot-usb = {
+    boot = {
       type = "disk";
       device = bootDevice;
       content = {
@@ -40,14 +40,14 @@ in
         ];
       };
     };
-    crypted = {
+    crypted-root = {
       type = "disk";
       device = rootDevice;
       content = {
         type = "luks";
         name = "${poolName}-crypted";
         keyFile = luksKeyFile;
-        extraArgs = [
+        extraArgsFormat = [
           "--uuid=${luksUUID}"
           "--header=${luksHeader}"
           "--header-backup-file=${luksHeaderBackup}"

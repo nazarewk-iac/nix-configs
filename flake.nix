@@ -65,7 +65,7 @@
     disko = {
       # url = "github:nix-community/disko";
       # https://github.com/nix-community/disko/pull/111
-      url = "github:nazarewk/disko/9eeafb271583e4fbe7c05580cf9debcb7554aea0";
+      url = "github:nazarewk/disko/b347b7a30944baff8877aff4c34e508b1da47535";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
