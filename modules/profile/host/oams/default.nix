@@ -49,6 +49,13 @@ in
       fileSystems."/boot".neededForBoot = true;
       fileSystems."/var/log/journal".neededForBoot = true;
       boot.kernelModules = ["kvm-amd"];
+
+      services.asusd.enable = true;
+      services.asusd.enableUserService = true;
+      environment.systemPackages = with pkgs; [
+        asusctl
+        supergfxctl
+      ];
     }
   ]);
 }
