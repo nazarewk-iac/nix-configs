@@ -45,6 +45,10 @@ in
         ];
       disko.enableConfig = true;
       disko.devices = import ./disko.nix { inherit lib; };
+
+      fileSystems."/boot".neededForBoot = true;
+      fileSystems."/var/log/journal".neededForBoot = true;
+      boot.kernelModules = ["kvm-amd"];
     }
   ]);
 }

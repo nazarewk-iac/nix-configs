@@ -7,7 +7,8 @@ let
   luksHeaderBackup = "${luksBackupDir}/luks-${poolName}-header.img";
   luksHeader = "${bootDevice}-part2";
   luksUUID = "c4b9bdbc-900f-482e-8fa6-6c6824c560e9";
-  rootDevice = "/dev/disk/by-id/ata-Samsung_Portable_SSD_T5_S49TNP0KC01288A";
+  #rootDevice = "/dev/disk/by-id/ata-Samsung_Portable_SSD_T5_S49TNP0KC01288A";
+  rootDevice = "/dev/disk/by-id/nvme-uuid.ae7c454b-9a04-ed11-a91a-efd50c9bff43";
 in
 {
   disk = {
