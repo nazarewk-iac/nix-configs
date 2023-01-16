@@ -45,7 +45,7 @@ in
       # We explicitly unset PATH here, as we want it to be set by
       # systemctl --user import-environment in startsway
       environment.PATH = lib.mkForce null;
-      environment.NAZAREWK_SWAY_SYSTEMD = "1";
+      environment.KDN_SWAY_SYSTEMD = "1";
       serviceConfig = {
         Type = "notify";
         # NotifyAccess = "exec";
@@ -64,14 +64,14 @@ in
       "01-wait-systemd-environment" = ''
         #!${pkgs.bash}/bin/bash
         set -xEeuo pipefail
-        test "''${NAZAREWK_SWAY_SYSTEMD:-}" = "1" || exit 0
+        test "''${KDN_SWAY_SYSTEMD:-}" = "1" || exit 0
 
         # do something if needed
       '';
       "99-notify-systemd-service" = ''
         #!${pkgs.bash}/bin/bash
         set -xEeuo pipefail
-        test "''${NAZAREWK_SWAY_SYSTEMD:-}" = "1" || exit 0
+        test "''${KDN_SWAY_SYSTEMD:-}" = "1" || exit 0
 
         systemd-notify --ready || true
       '';
