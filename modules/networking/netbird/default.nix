@@ -1,12 +1,16 @@
-{ lib, pkgs, config, ... }:
+{ lib
+, pkgs
+, config
+, ...
+}:
 let
-  # TODO: fix infinite recursion
   cfg = config.kdn.networking.netbird;
+
   mkEnvVars = alias: port: {
     NB_CONFIG = "/var/lib/netbird/${alias}/config.json";
     NB_DAEMON_ADDR = "unix:///var/run/netbird/${alias}/sock";
     NB_WG_IFACE = "wt-${alias}";
-  } ++ (lib.mkIf (port != 0) {
+  } // (lib.mkIf (port != 0) {
     NB_WG_PORT = lib.toString port;
   });
 in
@@ -36,7 +40,7 @@ in
       # based on https://github.com/nazarewk/nixpkgs/blob/befc83905c965adfd33e5cae49acb0351f6e0404/nixos/modules/services/networking/netbird.nix
       boot.extraModulePackages = lib.optional (lib.versionOlder config.boot.kernelPackages.kernel.version "5.6") config.boot.kernelPackages.wireguard;
 
-      environment.systemPackages = [ cfg.package ];
+      environment.systemPackages = [ config.services.netbird.package ];
 
       networking.dhcpcd.denyInterfaces = [ "wt*" ];
 
@@ -58,11 +62,11 @@ in
         wantedBy = [ "multi-user.target" ];
         environment = {
           NB_LOG_FILE = "console";
-        } ++ (mkEnvVars "%i" 0);
+        } // (mkEnvVars "%i" 0);
         serviceConfig = {
           AmbientCapabilities = [ "CAP_NET_ADMIN" ];
           DynamicUser = true;
-          ExecStart = "${cfg.package}/bin/netbird service run";
+          ExecStart = "${config.services.netbird.package}/bin/netbird service run";
           Restart = "always";
           RuntimeDirectory = "netbird/%i";
           StateDirectory = "netbird/%i";
@@ -76,6 +80,7 @@ in
       };
     }))
     (builtins.mapAttrs
+      # TODO: fix infinite recursion
       (alias: port:
         let
           envVars = mkEnvVars alias port;
@@ -83,15 +88,10 @@ in
         in
         {
           systemd.services."netbird@${alias}".environment = envVars;
-
           environment.shellAliases = {
             "netbird-${alias}" = "${aliasVars} netbird";
             "netbird-ui-${alias}" = "${aliasVars} netbird-ui";
           };
-
-          environment.systemPackages = with pkgs; [
-            kdn.netbird-ui
-          ];
         })
       cfg.instances)
   ];

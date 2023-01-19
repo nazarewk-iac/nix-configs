@@ -44,7 +44,7 @@ in
 
     boot.initrd.availableKernelModules = [ ];
 
-    kdn.virtualization.microvm.host.enable = true;
+    kdn.virtualization.microvm.host.enable = false;
     microvm.vms.hello-microvm = { flake = self; };
 
     kdn.networking.netbird.enable = true;
