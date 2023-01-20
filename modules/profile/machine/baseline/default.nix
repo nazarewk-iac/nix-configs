@@ -109,5 +109,7 @@ in
       "xhci_hcd" # usb disks
       "xhci_pci"
     ];
+
+    kdn.networking.netbird.instances.priv = 51821;
   };
 }

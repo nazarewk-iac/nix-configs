@@ -19,7 +19,7 @@ let
   isClient = isActive && !(self.server.enable or false);
   isServer = isActive && (self.server.enable or false);
 
-  preparePeers = filters: lib.pipe activePeers (filters ++ [
+  preparePeers = filters: lib.trivial.pipe activePeers (filters ++ [
     (lib.filterAttrs (n: v: n != config.networking.hostName))
     (builtins.mapAttrs (name: entry: mkMerge [
       (mkIf (!entry.server.enable) {

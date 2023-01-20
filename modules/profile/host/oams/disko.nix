@@ -125,7 +125,7 @@ in
         in
         (lib.attrsets.mapAttrs'
           (mountpoint: cfg: {
-            name = (lib.pipe mountpoint [
+            name = (lib.trivial.pipe mountpoint [
               (p: "${filesystemPrefix}${p}")
               (lib.strings.removeSuffix "/")
             ]);

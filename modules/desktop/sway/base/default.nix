@@ -119,12 +119,12 @@ in
       '';
     };
 
-    environment.etc."sway/config.d/00-kdn-init.conf".text = lib.pipe cfg.initScripts [
+    environment.etc."sway/config.d/00-kdn-init.conf".text = lib.trivial.pipe cfg.initScripts [
       (lib.mapAttrsToList (
         execName: pieces:
           let
             scriptName = "kdn-sway-init-${execName}";
-            scriptContent = lib.pipe pieces [
+            scriptContent = lib.trivial.pipe pieces [
               (lib.mapAttrsToList (
                 pieceName: piece:
                   let

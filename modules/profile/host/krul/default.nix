@@ -91,9 +91,6 @@ in
       (mkZFSMount "/home/nazarewk/Downloads" { })
       (mkZFSMount "/home/nazarewk/Nextcloud" { })
     ];
-
-    kdn.networking.netbird.instances = {
-      priv = 51821;
-    };
+    kdn.networking.netbird.instances.w1 = 51822;
   };
 }

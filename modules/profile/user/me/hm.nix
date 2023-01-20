@@ -69,7 +69,7 @@ in
           groupByUsername = input: builtins.mapAttrs (name: map (lib.removePrefix "${name}:")) (lib.groupBy (e: lib.head (lib.splitString ":" e)) input);
           toOutputLines = lib.mapAttrsToList (name: values: (builtins.concatStringsSep ":" (lib.concatLists [ [ name ] values ])));
 
-          foldParts = path: lib.pipe path [
+          foldParts = path: lib.trivial.pipe path [
             builtins.readFile
             (lib.splitString "\n")
             stripComments

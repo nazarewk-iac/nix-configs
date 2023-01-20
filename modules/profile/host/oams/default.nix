@@ -9,6 +9,7 @@ in
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
+      kdn.networking.netbird.instances.w1 = 51822;
       kdn.profile.machine.workstation.enable = true;
       kdn.hardware.gpu.amd.enable = true;
 
@@ -26,7 +27,7 @@ in
           crypted = disko.disk.crypted-root;
           boot = disko.disk.boot;
 
-          getArg = name: lib.pipe crypted.content.extraArgsFormat [
+          getArg = name: lib.trivial.pipe crypted.content.extraArgsFormat [
             (builtins.filter (lib.strings.hasPrefix "--${name}="))
             builtins.head
             (lib.strings.removePrefix "--${name}=")
@@ -48,7 +49,7 @@ in
 
       fileSystems."/boot".neededForBoot = true;
       fileSystems."/var/log/journal".neededForBoot = true;
-      boot.kernelModules = ["kvm-amd"];
+      boot.kernelModules = [ "kvm-amd" ];
 
       services.asusd.enable = true;
       services.asusd.enableUserService = false; # just strobes the LEDs, better turn it off

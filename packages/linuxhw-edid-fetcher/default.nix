@@ -44,7 +44,7 @@ stdenv.mkDerivation {
   version = revision;
   inherit src;
 
-  configurePhase = lib.pipe displays [
+  configurePhase = lib.trivial.pipe displays [
     (lib.mapAttrsToList (name: patterns: "${bin} ${lib.escapeShellArgs patterns} > '${name}.bin'"))
     (lines: [ "set -x" ] ++ lines ++ [ "set +x" ])
     (builtins.concatStringsSep "\n")

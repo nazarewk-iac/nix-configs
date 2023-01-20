@@ -9,7 +9,7 @@ let
 
   writeShellScript = pkgs: path: { runtimeInputs ? [ ], checkPhase ? null, ... }@args:
     let
-      name = args.name or (lib.pipe path [
+      name = args.name or (lib.trivial.pipe path [
         builtins.toString
         builtins.baseNameOf
         (lib.removeSuffix ".sh")
@@ -22,7 +22,7 @@ let
 
       drv = pkgs.writeShellApplication {
         inherit name runtimeInputs checkPhase;
-        text = lib.pipe path [
+        text = lib.trivial.pipe path [
           builtins.readFile
           (lib.strings.splitString "\n")
           (dropFirst "#!/usr/bin/env bash")

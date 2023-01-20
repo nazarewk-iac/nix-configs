@@ -19,7 +19,7 @@ in
       autosuggestions.enable = true;
       vteIntegration = true;
       histSize = 100000;
-      interactiveShellInit = lib.pipe ./. [
+      interactiveShellInit = lib.trivial.pipe ./. [
         builtins.readDir
         (lib.filterAttrs (path: type: type != "directory" && (lib.hasPrefix ".zshrc" path)))
         (lib.mapAttrsToList (path: t: ''

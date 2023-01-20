@@ -4,7 +4,7 @@ let
   cfg = config.kdn.k3s.single-node;
   cil = cfg.cilium;
 
-  getInputByName = drv: name: lib.pipe
+  getInputByName = drv: name: lib.trivial.pipe
     (builtins.concatLists [
       drv.buildInputs
       drv.propagatedBuildInputs
@@ -15,12 +15,12 @@ let
     builtins.head
   ];
 
-  totalShutdownTime = lib.pipe cfg.config.kubelet.shutdownGracePeriodByPodPriority [
+  totalShutdownTime = lib.trivial.pipe cfg.config.kubelet.shutdownGracePeriodByPodPriority [
     (map (e: e.shutdownGracePeriodSeconds))
     (lib.foldr (a: b: a + b) 0)
   ];
 
-  featureGatesString = lib.pipe cfg.featureGates [
+  featureGatesString = lib.trivial.pipe cfg.featureGates [
     (lib.mapAttrsToList (n: v: "${n}=${toString v}"))
     (builtins.concatStringsSep ",")
   ];

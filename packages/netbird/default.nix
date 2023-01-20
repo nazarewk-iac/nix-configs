@@ -36,9 +36,9 @@ buildGoModule rec {
     #owner = "netbirdio";
     #rev = "v${version}";
     owner = "nazarewk";
-    rev = "3ac26ee95f168c1ba887edc34dbcb960eef30b10";
+    rev = "f94c623a09194deb81d8b804918e63d8fd0fe87b";
     repo = pname;
-    sha256 = "sha256-xduzgxkuTJwTjuAdKSeHvlsdsajKI+NcsU40gnrUOhk=";
+    sha256 = "sha256-dRIDjvAsNEnJRLvD1OYb0MYWNKdffjobVQYeH5/Swcs=";
   };
 
   vendorSha256 = "sha256-3uEcb0nVHrfHZTZ/j/9l6zR1zMfLR0mVaN/Hydyam4Q=";
