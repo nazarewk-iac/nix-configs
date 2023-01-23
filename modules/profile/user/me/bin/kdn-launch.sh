@@ -36,11 +36,10 @@ start_all() {
 start_desktop() {
   launch blueman-applet
   launch flameshot
+  launch nextcloud --background
 }
 
 start_priv() {
-  swaymsg workspace 2
-  launch nextcloud --background
   start_keepass
   start_comms
   launch logseq
@@ -48,7 +47,6 @@ start_priv() {
 }
 
 start_comms() {
-  swaymsg workspace 2
   launch element-desktop
   launch slack
   launch signal-desktop
@@ -63,9 +61,7 @@ start_keepass() {
 }
 
 start_work() {
-  swaymsg workspace 2
   launch rambox
-  swaymsg workspace 1
   launch firefox
   launch idea-ultimate
 }
