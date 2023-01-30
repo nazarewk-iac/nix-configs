@@ -1,7 +1,8 @@
 { lib, ... }:
 let
   poolName = "oams-main";
-  bootDevice = "/dev/disk/by-id/usb-_Patriot_Memory_070133F17AC22052-0:0";
+  # sudo dd if=/dev/disk/by-id/usb-_Patriot_Memory_070133F17AC22052-0:0 of=/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_04UER08H5B7Y0NA5-0:0 status=progress
+  bootDevice = "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_04UER08H5B7Y0NA5-0:0";
   luksBackupDir = "/nazarewk-iskaral/secrets/luks/oams";
   luksKeyFile = "${luksBackupDir}/luks-${poolName}-keyfile.bin";
   luksHeaderBackup = "${luksBackupDir}/luks-${poolName}-header.img";
