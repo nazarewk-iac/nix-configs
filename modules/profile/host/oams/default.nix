@@ -57,6 +57,10 @@ in
         asusctl
         supergfxctl
       ];
+
+      services.transmission = {
+        enable = true;
+      };
     }
   ]);
 }
