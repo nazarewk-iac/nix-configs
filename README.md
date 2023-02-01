@@ -41,18 +41,18 @@ see https://bmcgee.ie/posts/2022/12/setting-up-my-new-laptop-nix-style/
    ```
 6. checkout the repo:
    ```
-   mkdir -p /mnt/home/nazarewk/dev/github.com/nazarewk-iac
-   git clone https://github.com/nazarewk-iac/nix-configs.git /mnt/home/nazarewk/dev/github.com/nazarewk-iac/nix-configs
-   chown -R 1000:100 /mnt/home/nazarewk
+   mkdir -p /mnt/home/kdn/dev/github.com/nazarewk-iac
+   git clone https://github.com/nazarewk-iac/nix-configs.git /mnt/home/kdn/dev/github.com/nazarewk-iac/nix-configs
+   chown -R 1000:100 /mnt/home/kdn
    ```
 7. set up the system-level `flake.nix`:
    ```
    mkdir -p /mnt/etc/nixos
-   ln -s ../../home/nazarewk/dev/github.com/nazarewk-iac/nix-configs/flake.nix /mnt/etc/nixos/flake.nix
+   ln -s ../../home/kdn/dev/github.com/nazarewk-iac/nix-configs/flake.nix /mnt/etc/nixos/flake.nix
    ```
 8. run the build, eg:
    ```
-   nixos-install --show-trace --root /mnt --flake '/mnt/home/nazarewk/dev/github.com/nazarewk-iac/nix-configs#nazarewk-krul'
+   nixos-install --show-trace --root /mnt --flake '/mnt/home/kdn/dev/github.com/nazarewk-iac/nix-configs#nazarewk-krul'
    ```
 
 ## Building on Hetzner Cloud from NixOS installer image

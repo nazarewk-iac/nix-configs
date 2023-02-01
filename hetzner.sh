@@ -39,7 +39,7 @@ cmd partprobe
 cmd mkfs.ext4 /dev/sda1
 cmd mount /dev/sda1 /mnt
 
-checkout_dir=/mnt/home/nazarewk/dev/github.com/nazarewk-iac
+checkout_dir=/mnt/home/kdn/dev/github.com/nazarewk-iac
 repo_dir="${checkout_dir}/nix-configs"
 cmd mkdir -p "${checkout_dir}"
 if [ -d "${repo_dir}" ] ; then
@@ -47,7 +47,7 @@ if [ -d "${repo_dir}" ] ; then
 else
   cmd git clone https://github.com/nazarewk-iac/nix-configs.git "${repo_dir}"
 fi
-cmd chown -R 1000:100 /mnt/home/nazarewk
+cmd chown -R 1000:100 /mnt/home/kdn
 
 cmd mkdir -p /mnt/etc/nixos
 cmd ln -s "${repo_dir/"/mnt"/"../.."}/flake.nix" /mnt/etc/nixos/flake.nix
