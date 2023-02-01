@@ -46,9 +46,6 @@ in
 
       users.users.kdn = kdn;
       home-manager.users.kdn = { kdn.profile.user.me.nixosConfig = kdn; };
-
-      users.users.nazarewk = nazarewk;
-      home-manager.users.nazarewk = { kdn.profile.user.me.nixosConfig = nazarewk; };
     }
   );
 }
