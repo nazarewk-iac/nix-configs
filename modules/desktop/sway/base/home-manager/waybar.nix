@@ -186,7 +186,7 @@ in
       systemd.enable = true;
       style = ./waybar/style.css;
       # TODO: resolve error and move from xdg.configFile."waybar/config":
-      #  A definition for option `home-manager.users.nazarewk.programs.waybar.settings.height' is not of type `JSON value'. Definition values: 30
+      #  A definition for option `home-manager.users.kdn.programs.waybar.settings.height' is not of type `JSON value'. Definition values: 30
       # settings = settings // { modules = settingsModules; };
     };
   };

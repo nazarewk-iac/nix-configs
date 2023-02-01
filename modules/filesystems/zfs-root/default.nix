@@ -11,7 +11,7 @@ in
       enable = lib.mkEnableOption "ZFS unlocking over SSH setup";
       authorizedKeys = mkOption {
         type = types.listOf types.str;
-        default = config.users.users.nazarewk.openssh.authorizedKeys.keys;
+        default = config.users.users.kdn.openssh.authorizedKeys.keys;
       };
       hostKeys = mkOption {
         type = types.listOf (types.either types.str types.path);
