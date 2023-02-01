@@ -83,13 +83,13 @@ in
       (mkNixOSMount "/var/spool" { })
       (mkContainerMount "/containerd" { at = "/var/lib/containerd"; })
       (mkZFSMount "/home" { })
-      (mkZFSMount "/home/nazarewk" { })
-      (mkZFSMount "/home/nazarewk/.cache" { })
-      (mkZFSMount "/home/nazarewk/.local" { })
-      (mkZFSMount "/home/nazarewk/.local/share" { })
-      (mkZFSMount "/home/nazarewk/.local/share/containers" { })
-      (mkZFSMount "/home/nazarewk/Downloads" { })
-      (mkZFSMount "/home/nazarewk/Nextcloud" { })
+      (mkZFSMount "/home/kdn" { })
+      (mkZFSMount "/home/kdn/.cache" { })
+      (mkZFSMount "/home/kdn/.local" { })
+      (mkZFSMount "/home/kdn/.local/share" { })
+      (mkZFSMount "/home/kdn/.local/share/containers" { })
+      (mkZFSMount "/home/kdn/Downloads" { })
+      (mkZFSMount "/home/kdn/Nextcloud" { })
     ];
     kdn.networking.netbird.instances.w1 = 51822;
   };
