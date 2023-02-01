@@ -80,6 +80,8 @@ in
           ];
         in
         foldParts ./yubico/u2f_keys.parts;
+
+      kdn.services.syncthing.enable = true;
     }
     (lib.mkIf config.kdn.headless.enableGUI {
       services.flameshot.settings.General.savePath = "${config.home.homeDirectory}/Downloads/screenshots";
