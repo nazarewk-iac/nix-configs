@@ -111,5 +111,7 @@ in
     ];
 
     kdn.networking.netbird.instances.priv = 51821;
+
+    services.devmon.enable = false; # disable auto-mounting service devmon, it interferes with disko
   };
 }

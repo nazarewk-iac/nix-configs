@@ -1,7 +1,9 @@
-{ config, pkgs, lib, ... }@arguments:
+{ config, pkgs, lib, nixosConfig, ... }@arguments:
 let
   cfg = config.kdn.profile.user.me;
   systemUser = cfg.nixosConfig;
+  hasGUI = config.kdn.headless.enableGUI;
+  hasWorkstation = nixosConfig.kdn.profile.machine.workstation.enable;
 
   git-credential-keyring =
     let
@@ -24,40 +26,11 @@ in
   config = lib.mkIf (cfg != { }) (lib.mkMerge [
     {
       home.stateVersion = "22.11";
-
-      programs.gh.enable = false;
-      programs.gh.enableGitCredentialHelper = false;
-      programs.git.enable = true;
-      # programs.git.signing.key = "CDDFE1610327F6F7A693125698C23F71A188991B";
-      programs.git.signing.key = null;
-      programs.git.signing.signByDefault = true;
-      programs.git.userName = systemUser.description;
-      programs.git.userEmail = "gpg@kdn.im";
-      programs.git.ignores = [ (builtins.readFile ./.gitignore) ];
-      programs.git.attributes = [ (builtins.readFile ./.gitattributes) ];
-      # to authenticate hub: ln -s ~/.config/gh/hosts.yml ~/.config/hub
-      programs.git.extraConfig = {
-        credential.helper = git-credential-keyring;
-        # use it separately because `gh` cli wants to write to ~/.config/gh/config.yml
-        credential."https://github.com".helper = "${pkgs.gh}/bin/gh auth git-credential";
-        url."https://github.com/".insteadOf = "git@github.com:";
-
-        credential."https://bitbucket.org/pakpobox".username = "kdn-alfred24";
-      };
-
-      programs.password-store.settings = {
-        PASSWORD_STORE_DIR = "${config.home.homeDirectory}/Nextcloud/drag0nius@nc.nazarewk.pw/important/password-store";
-      };
       programs.ssh.enable = true;
       programs.ssh.extraConfig = ''
         Host *
           Include ~/.ssh/config.local
       '';
-
-      home.packages = with pkgs; [
-      ];
-
-      kdn.development.git.enable = true;
 
       # pam-u2f expects a single line of configuration per user in format `username:entry1:entry2:entry3:...`
       # `pamu2fcfg` generates lines of format `username:entry`
@@ -83,9 +56,81 @@ in
 
       kdn.services.syncthing.enable = true;
     }
-    (lib.mkIf config.kdn.headless.enableGUI {
+    (lib.mkIf hasWorkstation {
+      programs.gh.enable = false;
+      programs.gh.enableGitCredentialHelper = false;
+      programs.git.enable = true;
+      kdn.development.git.enable = true;
+      # programs.git.signing.key = "CDDFE1610327F6F7A693125698C23F71A188991B";
+      programs.git.signing.key = null;
+      programs.git.signing.signByDefault = true;
+      programs.git.userName = systemUser.description;
+      programs.git.userEmail = "gpg@kdn.im";
+      programs.git.ignores = [ (builtins.readFile ./.gitignore) ];
+      programs.git.attributes = [ (builtins.readFile ./.gitattributes) ];
+      # to authenticate hub: ln -s ~/.config/gh/hosts.yml ~/.config/hub
+      programs.git.extraConfig = {
+        credential.helper = git-credential-keyring;
+        # use it separately because `gh` cli wants to write to ~/.config/gh/config.yml
+        credential."https://github.com".helper = "${pkgs.gh}/bin/gh auth git-credential";
+        url."https://github.com/".insteadOf = "git@github.com:";
+
+        credential."https://bitbucket.org/pakpobox".username = "kdn-alfred24";
+      };
+    })
+    (lib.mkIf hasGUI {
       services.flameshot.settings.General.savePath = "${config.home.homeDirectory}/Downloads/screenshots";
       xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
+
+      xdg.mime.enable = true;
+      xdg.mimeApps.enable = true;
+      xdg.mimeApps.associations.added = { };
+      xdg.mimeApps.defaultApplications =
+        let
+          rss = [ "brave-browser.desktop" ];
+          ipfs = [ "brave-browser.desktop" ];
+          browser = [ "firefox.desktop" "brave-browser.desktop" ];
+          pdf = [ "org.gnome.Evince.desktop" ];
+          fileManager = [ "thunar.desktop" ];
+          remmina = [ "org.remmina.Remmina.desktop" ];
+          teams = [ "teams.desktop" ];
+          ide = [ "idea-ultimate.desktop" ];
+          vectorImages = [ "org.gnome.eog.desktop" ];
+        in
+        {
+          "application/pdf" = pdf;
+          "application/rdf+xml" = rss;
+          "application/rss+xml" = rss;
+          "application/x-extension-htm" = browser;
+          "application/x-extension-html" = browser;
+          "application/x-extension-shtml" = browser;
+          "application/x-extension-xht" = browser;
+          "application/x-extension-xhtml" = browser;
+          "application/x-gnome-saved-search" = fileManager;
+          "application/x-remmina" = remmina;
+          "application/xhtml+xml" = browser;
+          "application/xhtml_xml" = browser;
+          "image/svg+xml" = vectorImages;
+          "inode/directory" = fileManager;
+          "text/html" = browser;
+          "text/plain" = ide;
+          "text/xml" = browser;
+          "x-scheme-handler/chrome" = browser;
+          "x-scheme-handler/http" = browser;
+          "x-scheme-handler/https" = browser;
+          "x-scheme-handler/ipfs" = ipfs;
+          "x-scheme-handler/ipns" = ipfs;
+          "x-scheme-handler/msteams" = teams;
+          "x-scheme-handler/rdp" = remmina;
+          "x-scheme-handler/remmina" = remmina;
+          "x-scheme-handler/spice" = remmina;
+          "x-scheme-handler/vnc" = remmina;
+        };
+    })
+    (lib.mkIf (hasWorkstation && hasGUI) {
+      programs.password-store.settings = {
+        PASSWORD_STORE_DIR = "${config.home.homeDirectory}/Nextcloud/drag0nius@nc.nazarewk.pw/important/password-store";
+      };
 
       home.packages = with pkgs; let
         launch = (lib.kdn.shell.writeShellScript pkgs (./bin + "/kdn-launch.sh") {
@@ -132,52 +177,41 @@ in
         keepass
         launch
         drag0nius_kdbx
-      ];
 
-      xdg.mime.enable = true;
-      xdg.mimeApps.enable = true;
-      xdg.mimeApps.associations.added = { };
-      xdg.mimeApps.defaultApplications =
-        let
-          rss = [ "brave-browser.desktop" ];
-          ipfs = [ "brave-browser.desktop" ];
-          browser = [ "firefox.desktop" "brave-browser.desktop" ];
-          pdf = [ "org.gnome.Evince.desktop" ];
-          fileManager = [ "thunar.desktop" ];
-          remmina = [ "org.remmina.Remmina.desktop" ];
-          teams = [ "teams.desktop" ];
-          ide = [ "idea-ultimate.desktop" ];
-          vectorImages = [ "org.gnome.eog.desktop" ];
-        in
-        {
-          "application/pdf" = pdf;
-          "application/rdf+xml" = rss;
-          "application/rss+xml" = rss;
-          "application/x-extension-htm" = browser;
-          "application/x-extension-html" = browser;
-          "application/x-extension-shtml" = browser;
-          "application/x-extension-xht" = browser;
-          "application/x-extension-xhtml" = browser;
-          "application/x-gnome-saved-search" = fileManager;
-          "application/x-remmina" = remmina;
-          "application/xhtml+xml" = browser;
-          "application/xhtml_xml" = browser;
-          "image/svg+xml" = vectorImages;
-          "inode/directory" = fileManager;
-          "text/html" = browser;
-          "text/plain" = ide;
-          "text/xml" = browser;
-          "x-scheme-handler/chrome" = browser;
-          "x-scheme-handler/http" = browser;
-          "x-scheme-handler/https" = browser;
-          "x-scheme-handler/ipfs" = ipfs;
-          "x-scheme-handler/ipns" = ipfs;
-          "x-scheme-handler/msteams" = teams;
-          "x-scheme-handler/rdp" = remmina;
-          "x-scheme-handler/remmina" = remmina;
-          "x-scheme-handler/spice" = remmina;
-          "x-scheme-handler/vnc" = remmina;
-        };
+        libreoffice
+        flameshot
+        vlc
+        evince
+        xfce.ristretto
+        xfce.exo
+        xfce.xfconf
+        shotwell
+        gimp
+
+        qrencode
+        cobang # QR code scanner
+        imagemagick
+
+        logseq
+        kdn.klog-time-tracker
+        kdn.klg
+        dex # A program to generate and execute DesktopEntry files of the Application type
+        brave
+        kdn.rambox # browser/multi workspace
+        drawio
+        plantuml
+
+        element-desktop
+        signal-desktop
+        slack
+        teams
+        discord
+        zoom-us
+        nextcloud-client
+
+        transmission-qt
+        megatools
+      ];
     })
   ]);
 }

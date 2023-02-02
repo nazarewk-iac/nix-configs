@@ -10,6 +10,11 @@ in
   config = lib.mkIf cfg.enable {
     kdn.profile.machine.basic.enable = true;
 
+    kdn.sway.gdm.enable = true;
+    kdn.sway.systemd.enable = true;
+
+    kdn.headless.enableGUI = true;
+
     boot.extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
     boot.binfmt.emulatedSystems = [
       "aarch64-linux"
@@ -30,92 +35,7 @@ in
     ];
     programs.seahorse.enable = true;
 
-    programs.java.enable = true;
-    services.plantuml-server.enable = true;
-
     kdn.containers.dagger.enable = true;
     kdn.emulators.windows.enable = true;
-
-    environment.systemPackages = with pkgs; [
-      logseq
-      kdn.klog-time-tracker
-      kdn.klg
-      dex # A program to generate and execute DesktopEntry files of the Application type
-      brave
-      kdn.rambox # browser/multi workspace
-      # chromium
-      firefox
-      p7zip
-      rar
-      system-config-printer
-
-      drawio
-      plantuml
-
-      gparted
-      qjournalctl
-      gsmartcontrol
-      smartmontools
-
-      # networking
-      dnsmasq
-      iw
-
-      mc
-      qrencode
-      cobang # QR code scanner
-      imagemagick
-
-      playerctl
-
-      # spotify  # using spotify through Brave app
-      # spotify-qt
-      # spotify-tray  # spotify tray requires X11
-
-      element-desktop
-      signal-desktop
-      slack
-      teams
-      discord
-      zoom-us
-
-      nextcloud-client
-      libreoffice
-      flameshot
-      vlc
-      evince
-      xfce.ristretto
-      xfce.exo
-      xfce.xfconf
-      shotwell
-      gimp
-      pdftk
-
-      transmission-qt
-      megatools
-
-      (pkgs.writeScriptBin "qrpaste" ''
-        #! ${pkgs.bash}/bin/bash
-        ${pkgs.wl-clipboard}/bin/wl-paste | ${pkgs.qrencode}/bin/qrencode -o - | ${pkgs.imagemagick}/bin/display
-      '')
-    ];
-
-    # ANDROID
-    programs.adb.enable = true;
-
-    # KEYBASE
-    services.kbfs.enable = true;
-
-    # CUSTOM
-
-    services.devmon.enable = false; # disable auto-mounting service devmon, it interferes with disko
-    programs.steam.enable = true;
-
-    kdn.desktop.remote-server.enable = true;
-    kdn.hardware.discovery.enable = true;
-    kdn.hardware.edid.enable = true;
-    kdn.programs.keepass.enable = true;
-    kdn.programs.nix-direnv.enable = true;
-    kdn.programs.nix-index.enable = true;
   };
 }

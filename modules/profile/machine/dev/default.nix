@@ -10,7 +10,6 @@ in
   config = lib.mkIf cfg.enable {
     kdn.profile.machine.desktop.enable = true;
 
-
     environment.systemPackages = with pkgs; [
       jetbrains.pycharm-professional
       jetbrains.idea-ultimate
@@ -33,5 +32,7 @@ in
     kdn.development.rust.enable = true;
     kdn.development.terraform.enable = true;
     kdn.programs.aws-vault.enable = true;
+    programs.java.enable = true;
+    services.plantuml-server.enable = true;
   };
 }

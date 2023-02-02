@@ -28,17 +28,31 @@ in
     services.xserver.libinput.touchpad.tapping = true;
     services.xserver.synaptics.twoFingerScroll = true;
 
-    # KEYBASE
-    services.davfs2.enable = true;
-
     kdn.hardware.pipewire.enable = true;
     kdn.hardware.pipewire.useWireplumber = true;
     kdn.hardware.yubikey.enable = true;
-    kdn.sway.gdm.enable = true;
-    kdn.sway.systemd.enable = true;
 
-    kdn.headless.enableGUI = true;
+    environment.systemPackages = with pkgs; [
+      # chromium
+      firefox
+      p7zip
+      rar
+      system-config-printer
 
+      gparted
+      gsmartcontrol
+      smartmontools
+
+      imagemagick
+
+      playerctl
+      pdftk
+
+      (pkgs.writeScriptBin "qrpaste" ''
+        #! ${pkgs.bash}/bin/bash
+        ${pkgs.wl-clipboard}/bin/wl-paste | ${pkgs.qrencode}/bin/qrencode -o - | ${pkgs.imagemagick}/bin/display
+      '')
+    ];
     home-manager.sharedModules = [
       ({ config, ... }: {
         xdg.userDirs.enable = true;

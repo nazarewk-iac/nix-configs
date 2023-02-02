@@ -11,7 +11,7 @@ in
     kdn.profile.machine.desktop.enable = true;
     kdn.profile.machine.dev.enable = true;
 
-    system.stateVersion = "22.11";
+    system.stateVersion = "23.05";
 
     kdn.desktop.base.nixpkgs-wayland.enableFullOverlay = false;
     kdn.desktop.base.enableWlrootsPatch = false;
@@ -46,5 +46,16 @@ in
 
     kdn.virtualization.microvm.host.enable = false;
     microvm.vms.hello-microvm = { flake = self; };
+
+    # CUSTOM
+
+    programs.steam.enable = true;
+
+    kdn.desktop.remote-server.enable = true;
+    kdn.hardware.discovery.enable = true;
+    kdn.hardware.edid.enable = true;
+    kdn.programs.keepass.enable = true;
+    kdn.programs.nix-direnv.enable = true;
+    kdn.programs.nix-index.enable = true;
   };
 }

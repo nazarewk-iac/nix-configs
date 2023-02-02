@@ -144,9 +144,9 @@
                 }];
             };
 
-            nazarewk = flakeLib.nixos.system {
+            obler = flakeLib.nixos.system {
               system = "x86_64-linux";
-              modules = [{ kdn.profile.host.dell-latitude-e5470.enable = true; }];
+              modules = [{ kdn.profile.host.obler.enable = true; }];
             };
 
             wg-0 = flakeLib.nixos.system {
