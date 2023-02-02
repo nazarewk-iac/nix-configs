@@ -15,15 +15,15 @@ in
     nixpkgs.overlays = [
       (final: prev: {
         kubectl = prev.kubectl.overrideAttrs (old:
-          let commit = "955596ad054e442125c8353b6df8951fdc91a0f3"; in
+          let commit = "b3aa60fae23aa4a27ca28d6564157150f2c397c1"; in
           {
-            version = "1.24.0-${commit}";
+            version = "1.24.x-${commit}";
 
             src = prev.fetchFromGitHub {
               owner = "nazarewk";
               repo = "kubernetes";
               rev = commit;
-              sha256 = "sha256-jKYiGSRQpuPyjQZVEIoLqIgo4fqQWkRDeImcsCMNkio=";
+              sha256 = "sha256-UNbohbzdMShE2CJ+CRF0DV7I4JviVMOIYDkUQZ0t/TM=";
             };
           });
       })
