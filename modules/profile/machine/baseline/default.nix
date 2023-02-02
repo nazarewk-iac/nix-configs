@@ -28,7 +28,7 @@ in
     # REMOTE access
     services.openssh.enable = true;
     services.openssh.openFirewall = true;
-    services.openssh.passwordAuthentication = false;
+    services.openssh.settings.PasswordAuthentication = false;
     kdn.programs.gnupg.enable = true;
     kdn.programs.gnupg.pass-secret-service.enable = true;
 

@@ -41,7 +41,8 @@ in
     environment.systemPackages = with pkgs; [
       pavucontrol
       pulseaudio # pactl
-      helvum # A GTK patchbay for pipewire
+      # TODO: 2023-02-02 error: https://github.com/NixOS/nixpkgs/issues/211610
+      #helvum # A GTK patchbay for pipewire
     ];
   };
 }
