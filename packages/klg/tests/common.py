@@ -7,7 +7,8 @@ def cleanup(text):
     return ret
 
 
-complete_unformatted = cleanup("""
+complete_unformatted = cleanup(
+    """
 2022-10-10
   8:00 - 10:00 #range
   30m #duration
@@ -21,9 +22,11 @@ complete_unformatted = cleanup("""
 
 2022-10-11
   <23:00 - 01:00> #range #day-shift-both
-""")
+"""
+)
 
-complete_formatted = cleanup("""
+complete_formatted = cleanup(
+    """
 2022-10-10
   08:00  - 10:00  #range
   30m             #duration
@@ -36,4 +39,5 @@ complete_formatted = cleanup("""
 
 2022-10-11
   <23:00 - 01:00> #range #day-shift-both
-""")
+"""
+)

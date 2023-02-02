@@ -16,6 +16,6 @@ in
       "--auditfile=--"
       "--gui-address=127.0.0.1:8384"
     ];
-    services.syncthing.tray.enable = true;
+    services.syncthing.tray.enable = false;
   };
 }

@@ -12,71 +12,92 @@ async def test_empty(klog):
     assert not result.errors
 
 
-@pytest.mark.parametrize("text,tags", [
+@pytest.mark.parametrize(
+    "text,tags",
     [
-        common.cleanup('''
+        [
+            common.cleanup(
+                """
             2022-10-10
             #key
-        '''),
-        ["#key"],
-    ],
-    [
-        common.cleanup('''
+        """
+            ),
+            ["#key"],
+        ],
+        [
+            common.cleanup(
+                """
             2022-10-10
             ####key
-        '''),
-        ["#key"],
-    ],
-    [
-        common.cleanup('''
+        """
+            ),
+            ["#key"],
+        ],
+        [
+            common.cleanup(
+                """
             2022-10-10
             #empty-value=
-        '''),
-        ["#empty-value"],
-    ],
-    [
-        common.cleanup('''
+        """
+            ),
+            ["#empty-value"],
+        ],
+        [
+            common.cleanup(
+                """
             2022-10-10
             #single-quotted-space=' '
-        '''),
-        ["#single-quotted-space", '#single-quotted-space=" "'],
-    ],
-    [
-        common.cleanup('''
+        """
+            ),
+            ["#single-quotted-space", '#single-quotted-space=" "'],
+        ],
+        [
+            common.cleanup(
+                """
             2022-10-10
             #multiCase=SomeValue
-        '''),
-        ["#multicase", "#multicase=SomeValue"],
-    ],
-    [
-        common.cleanup(r'''
+        """
+            ),
+            ["#multicase", "#multicase=SomeValue"],
+        ],
+        [
+            common.cleanup(
+                r"""
             2022-10-10
             #key="try escaped \"value"
-        '''),
-        ["#key", r'#key="try escaped \"'],
-    ],
-    [
-        common.cleanup('''
+        """
+            ),
+            ["#key", r'#key="try escaped \"'],
+        ],
+        [
+            common.cleanup(
+                """
             2022-10-10
             #key="some complex 'value'"
-        '''),
-        ["#key", '''#key="some complex 'value'"'''],
-    ],
-    [
-        common.cleanup('''
+        """
+            ),
+            ["#key", '''#key="some complex 'value'"'''],
+        ],
+        [
+            common.cleanup(
+                """
             2022-10-10
             #key='some complex "value"'
-        '''),
-        ["#key", """#key='some complex "value"'"""],
-    ],
-    [
-        common.cleanup('''
+        """
+            ),
+            ["#key", """#key='some complex "value"'"""],
+        ],
+        [
+            common.cleanup(
+                """
             2022-10-10
             #key='"'
-        '''),
-        ["#key", "#key='\"'"],
+        """
+            ),
+            ["#key", "#key='\"'"],
+        ],
     ],
-])
+)
 async def test_tagging(klog, text, tags):
     result = await klog.to_json(common.cleanup(text))
     record = result.records[0]
@@ -92,7 +113,9 @@ async def test_invalid(klog):
 
 
 async def test_entry_types(klog):
-    result = await klog.to_json(common.cleanup("""
+    result = await klog.to_json(
+        common.cleanup(
+            """
     2022-10-10
       08:00 - 10:00 #range
       30m #duration
@@ -103,15 +126,31 @@ async def test_entry_types(klog):
 
     2022-10-11
       <23:00 - 01:00> #range #day-shift-both
-    """))
+    """
+        )
+    )
 
     assert len(result.records) == 2
 
     record, nxt = result.records
     entries = record.entries
     assert len(entries) == 6
-    assert list(map(type, entries)) == [dto.Range, dto.Duration, dto.Duration, dto.OpenRange, dto.Range, dto.Range]
-    range, duration, negative_duration, open_range, day_shift_backward, day_shift_forward = entries
+    assert list(map(type, entries)) == [
+        dto.Range,
+        dto.Duration,
+        dto.Duration,
+        dto.OpenRange,
+        dto.Range,
+        dto.Range,
+    ]
+    (
+        range,
+        duration,
+        negative_duration,
+        open_range,
+        day_shift_backward,
+        day_shift_forward,
+    ) = entries
     assert negative_duration.total_mins == -30
 
     assert range.start == "8:00"  # it's normalized by klog
@@ -128,7 +167,9 @@ async def test_entry_types(klog):
 
 
 async def test_multiline_content(klog):
-    result = await klog.to_json(common.cleanup("""
+    result = await klog.to_json(
+        common.cleanup(
+            """
         2022-10-10
           30m  #indent=1
             #indent=0
@@ -157,11 +198,15 @@ async def test_multiline_content(klog):
         \t30m #indent=0
         \t\t #indent=1
         \t\t\t#indent=1
-    """))
+    """
+        )
+    )
 
     for record in result.records:
         for entry in record.entries:
-            found_indents = [line.index("#") for line in entry.summary.splitlines(False)]
+            found_indents = [
+                line.index("#") for line in entry.summary.splitlines(False)
+            ]
             expected_indents = [
                 int(line.split("#", 1)[1].split("=", 1)[1])
                 for line in entry.summary.splitlines(False)
@@ -171,12 +216,16 @@ async def test_multiline_content(klog):
 
 async def test_multiline_indentation_errors(klog):
     with pytest.raises(dto.KlogErrorGroup) as exc_info:
-        await klog.to_json(common.cleanup("""
+        await klog.to_json(
+            common.cleanup(
+                """
         2022-10-10
         4-space indent, but less than 4 space on entry summary
             30m #indent=0
               #indent=2
-        """))
+        """
+            )
+        )
     group = exc_info.value
     exc = group.exceptions[0]
     assert isinstance(exc, dto.UnexpectedIndentationError)

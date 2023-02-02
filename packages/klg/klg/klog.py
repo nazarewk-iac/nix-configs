@@ -90,7 +90,9 @@ class Klog:
             if line
         }
 
-    async def to_json(self, *inputs: Path | str | bytes, args: list = None, raise_for_errors=True):
+    async def to_json(
+        self, *inputs: Path | str | bytes, args: list = None, raise_for_errors=True
+    ):
         args = args or []
         data = await self.prepare_data(inputs)
         if not data:
@@ -98,14 +100,13 @@ class Klog:
         proc = await self.cmd("json", *args, input=data)
         raw = json.loads(proc.stdout)
         lines = data.decode().splitlines(False)
-        result = dto.Result.load({
-            "lines": lines,
-            "errors": [
-                {"lines": lines, **err}
-                for err in raw.pop("errors") or []
-            ],
-            **raw,
-        })
+        result = dto.Result.load(
+            {
+                "lines": lines,
+                "errors": [{"lines": lines, **err} for err in raw.pop("errors") or []],
+                **raw,
+            }
+        )
         if raise_for_errors:
             result.raise_errors()
         return result
@@ -141,27 +142,35 @@ class Klog:
         _, latest = await self.find_latest(path, *args, range=True, closed=True)
         return await self.cmd("start", f"--summary={latest.summary}", *args, path)
 
-    async def plan_month(self, path, hours: int, day_summary: str,
-                         now: pendulum.DateTime = None,
-                         period: pendulum.DateTime = None,
-                         off_tags: set = None,
-                         manual_tags: set = None,
-                         weekend_tag="#off=weekend",
-                         ):
+    async def plan_month(
+        self,
+        path,
+        hours: int,
+        day_summary: str="",
+        now: pendulum.DateTime = None,
+        period: pendulum.DateTime = None,
+        off_tags: set = None,
+        manual_tags: set = None,
+        weekend_tag="#off=weekend",
+    ):
         now = now or pendulum.now()
         period = period or now
         if off_tags is None:
             off_tags = {"#off"}
         if manual_tags is None:
-            manual_tags = {"#planner=manual"}
+            manual_tags = {"#noplan"}
         off_tags.add(weekend_tag)
         plan_mins = hours * 60
-        result = await self.to_json(path, args=[f"--period={period.to_date_string()[:-3]}"])
+        result = await self.to_json(
+            path, args=[f"--period={period.to_date_string()[:-3]}"]
+        )
 
         def grouper(rec: dto.Record):
             return pendulum.parse(rec.date)
 
-        by_date: dict[pendulum.DateTime, list[dto.Record]] = dict(sorted(itertools.groupby(result.records, grouper)))
+        by_date: dict[pendulum.DateTime, list[dto.Record]] = dict(
+            sorted(itertools.groupby(result.records, grouper))
+        )
 
         # TODO: going by each day of the month make sure:
         #   1) weekends are marked

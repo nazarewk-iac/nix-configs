@@ -9,14 +9,18 @@ from .klog import Klog
 async def run(port: int = 8082):
     async def reload():
         result = klog.to_json("@default")
-        output.set_content("\n".join([
-            "```",
-            pprint.pformat(result),
-            "```",
-        ]))
+        output.set_content(
+            "\n".join(
+                [
+                    "```",
+                    pprint.pformat(result),
+                    "```",
+                ]
+            )
+        )
 
     klog = Klog()
-    ui.button('reload', on_click=reload)
+    ui.button("reload", on_click=reload)
     output = ui.markdown()
     ui.run(port=port)
 

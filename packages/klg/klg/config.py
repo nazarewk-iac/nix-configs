@@ -60,5 +60,4 @@ class Config:
         return dacite.from_dict(cls, data)
 
 
-dacite_config = dacite.Config(strict=True, strict_unions_match=True, type_hooks={
-})
+dacite_config = dacite.Config(strict=True, strict_unions_match=True, type_hooks={})

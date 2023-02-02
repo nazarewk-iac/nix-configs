@@ -106,7 +106,7 @@ class Tag(str):
                 else:
                     value = f'"{value}"'
             pieces.append(f"={value}")
-        return ''.join(pieces)
+        return "".join(pieces)
 
 
 class Base:
@@ -287,7 +287,7 @@ class GenericError(Base, Exception):
 
         start = max(line_idx - context, 0)
         end = min(line_idx + context, len(self.lines))
-        for num, line in enumerate(self.lines[start: end], start=start):
+        for num, line in enumerate(self.lines[start:end], start=start):
             yield f"{num:0{number_width}d}:" + line
             if num == line_idx:
                 yield " " * number_width + ":" + " " * column_idx + "^" * self.length
@@ -345,7 +345,11 @@ class Result(Base):
         raise KlogErrorGroup("Error parsing klog text", self.errors)
 
 
-dacite_config = dacite.Config(strict=True, strict_unions_match=True, type_hooks={
-    GenericEntry: GenericEntry.transform,
-    GenericError: GenericError.transform,
-})
+dacite_config = dacite.Config(
+    strict=True,
+    strict_unions_match=True,
+    type_hooks={
+        GenericEntry: GenericEntry.transform,
+        GenericError: GenericError.transform,
+    },
+)

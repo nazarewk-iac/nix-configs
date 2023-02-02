@@ -8,8 +8,7 @@ import textwrap
 import tomllib
 from pathlib import Path
 
-import anyio
-import click
+import asyncclick as click
 import pendulum
 import structlog
 import xdg
@@ -28,7 +27,7 @@ CONFIG: Config = None
     context_settings={"show_default": True},
 )
 @click.option("--config", default=xdg.xdg_config_home() / "klg" / "config.toml")
-def main(config):
+async def main(config):
     config = Path(config)
     global CONFIG
     data = {}
@@ -38,22 +37,22 @@ def main(config):
 
 
 @main.group()
-def entry():
+async def entry():
     pass
 
 
 @entry.command()
 @click.argument("path", default="@default")
-def latest(path):
+async def latest(path):
     klog = Klog()
     if path.startswith("@"):
-        path = anyio.run(klog.bookmark, path)
+        path = await klog.bookmark(path)
     else:
         path = Path(path)
 
     assert path.exists()
 
-    record, entry = anyio.run(klog.find_latest, path)
+    record, entry = await klog.find_latest(path)
     click.echo(record.date)
     click.echo(textwrap.indent(entry.format(), "  "))
 
@@ -63,16 +62,16 @@ def latest(path):
 @click.option("--check/--no-check", is_flag=True)
 @click.option("--diff/--no-diff", is_flag=True, default=True)
 @click.option("--write/--no-write", is_flag=True, default=True)
-def fmt(path, check, diff, write):
+async def fmt(path, check, diff, write):
     klog = Klog()
     if path.startswith("@"):
-        path = anyio.run(klog.bookmark, path)
+        path = await klog.bookmark(path)
     else:
         path = Path(path)
 
     assert path.exists()
 
-    result = anyio.run(klog.to_json, path)
+    result = await klog.to_json(path)
     formatted = format(result, "klg")
     diff_content = result.diff(formatted)
     if diff_content:
@@ -90,21 +89,30 @@ def fmt(path, check, diff, write):
 
 @main.command()
 @click.option("--resource", default="")
-@click.option("-p", "--period", default=pendulum.now().to_date_string()[:-3],
-              help="Records in period: YYYY (year), YYYY-MM (month), YYYY-Www (week), or YYYY-Qq (quarter)")
-@click.option("-t", "--tag", "tags", multiple=True,
-              help="Records (or entries) that match these tags")
+@click.option(
+    "-p",
+    "--period",
+    default=pendulum.now().to_date_string()[:-3],
+    help="Records in period: YYYY (year), YYYY-MM (month), YYYY-Www (week), or YYYY-Qq (quarter)",
+)
+@click.option(
+    "-t",
+    "--tag",
+    "tags",
+    multiple=True,
+    help="Records (or entries) that match these tags",
+)
 @click.option("-o", "--output", default="", help="Where to store csv/xlsx file?")
 @click.option("-r", "--report", "report_name", default="default")
 @click.argument("paths", nargs=-1)
-def generate_report(paths, period, tags, output, report_name, resource):
+async def generate_report(paths, period, tags, output, report_name, resource):
     klog = Klog()
     cfg = CONFIG.reports.get(report_name, ReportConfig())
     cfg.resource = resource or cfg.resource
     cfg.tags = tags or cfg.tags
     paths = paths or ["@default"]
     paths = [
-        Path(raw) if not raw.startswith("@") else anyio.run(klog.bookmark, raw)
+        Path(raw) if not raw.startswith("@") else await klog.bookmark(raw)
         for raw in paths
     ]
     args = [f"--period={period}"]
@@ -120,10 +128,17 @@ def generate_report(paths, period, tags, output, report_name, resource):
         args.append(f"--tag={','.join(tags)}")
 
     fn = functools.partial(klog.to_json, *paths, args=args)
-    result: dto.Result = anyio.run(fn)
+    result: dto.Result = await fn()
 
     rows = [
-        ("Resource Name", "Date", "Time spent", "Minutes", "Summary", *cfg.map_tags(set()))
+        (
+            "Resource Name",
+            "Date",
+            "Time spent",
+            "Minutes",
+            "Summary",
+            *cfg.map_tags(set()),
+        )
     ]
 
     for record in result.records:
@@ -141,27 +156,33 @@ def generate_report(paths, period, tags, output, report_name, resource):
             rows.append(row)
 
     total_mins = sum(r.total_mins for r in result.records)
-    rows.append((
-        "total",
-        "",
-        dto.Base.format_duration(total_mins),
-        total_mins,
-    ))
+    rows.append(
+        (
+            "total",
+            "",
+            dto.Base.format_duration(total_mins),
+            total_mins,
+        )
+    )
 
     expected_mins = sum(r.should_total_mins for r in result.records)
-    rows.append((
-        "expected",
-        "",
-        dto.Base.format_duration(expected_mins),
-        expected_mins,
-    ))
+    rows.append(
+        (
+            "expected",
+            "",
+            dto.Base.format_duration(expected_mins),
+            expected_mins,
+        )
+    )
     diff_mins = sum(r.diff_mins for r in result.records)
-    rows.append((
-        "difference",
-        "",
-        dto.Base.format_duration(diff_mins),
-        diff_mins,
-    ))
+    rows.append(
+        (
+            "difference",
+            "",
+            dto.Base.format_duration(diff_mins),
+            diff_mins,
+        )
+    )
 
     with output.open("w") as f:
         writer = csv.writer(f)
@@ -172,53 +193,67 @@ def generate_report(paths, period, tags, output, report_name, resource):
         return
 
     converted = output.with_suffix(".xlsx")
-    subprocess.run([
-        "libreoffice",
-        "--headless",
-        "--convert-to", converted.suffix[1:],
-        "--outdir", output.parent,
-        output,
-    ], check=True)
+    subprocess.run(
+        [
+            "libreoffice",
+            "--headless",
+            "--convert-to",
+            converted.suffix[1:],
+            "--outdir",
+            output.parent,
+            output,
+        ],
+        check=True,
+    )
     print(converted)
 
 
 @main.command()
 @click.argument("path", default="@default")
 @click.argument("args", nargs=-1)
-def stop(path, args):
+async def stop(path, args):
     klog = Klog()
-    anyio.run(klog.stop, path, *args)
-    print(anyio.run(klog.day_summary, path))
+    await klog.stop(path, *args)
+    print(await klog.day_summary(path))
 
 
 @main.command()
 @click.argument("path", default="@default")
 @click.argument("args", nargs=-1)
-def resume(path, args):
+async def resume(path, args):
     klog = Klog()
-    anyio.run(klog.resume, path, *args)
-    print(anyio.run(klog.day_summary, path))
+    await klog.resume(path, *args)
+    print(await klog.day_summary(path))
 
 
 @main.command()
 @click.argument("path", default="@default")
 @click.argument("args", nargs=-1)
-def today(path, args):
+async def today(path, args):
     klog = Klog()
-    print(anyio.run(klog.day_summary, path, *args))
+    print(await klog.day_summary(path, *args))
 
 
 @main.command()
-@click.option("-p", "--period", default=pendulum.now().to_date_string()[:-3],
-              help="Records in period: YYYY (year), YYYY-MM (month), YYYY-Www (week), or YYYY-Qq (quarter)")
-@click.option("-t", "--tag", "tags", multiple=True,
-              help="Records (or entries) that match these tags")
+@click.option(
+    "-p",
+    "--period",
+    default=pendulum.now().to_date_string()[:-3],
+    help="Records in period: YYYY (year), YYYY-MM (month), YYYY-Www (week), or YYYY-Qq (quarter)",
+)
+@click.option(
+    "-t",
+    "--tag",
+    "tags",
+    multiple=True,
+    help="Records (or entries) that match these tags",
+)
 @click.option("--store/--no-store", default=True)
 @click.argument("path", default="@default")
 @click.argument("args", nargs=-1)
-def report(path: Path, args, period, tags, store):
+async def report(path: Path, args, period, tags, store):
     klog = Klog()
-    path = anyio.run(klog.resolve_path, path)
+    path = await klog.resolve_path(path)
     args = [
         f"--period={period}",
         *args,
@@ -226,14 +261,32 @@ def report(path: Path, args, period, tags, store):
     if tags:
         args.insert(0, f"--tag={','.join(tags)}")
 
-    print(anyio.run(klog.report, path, *args))
+    print(await klog.report(path, *args))
 
     if store:
         tags_repr = "".join(f"-{t}" for t in tags)
         store_path = path.with_name(f"{period}{tags_repr}.txt")
-        store_path.write_text(anyio.run(klog.report, path, "--no-style", *args))
+        store_path.write_text(await klog.report(path, "--no-style", *args))
         logger.info("report stored", path=str(store_path))
 
 
+@main.command()
+@click.option(
+    "-p",
+    "--period",
+    default=pendulum.now().to_date_string()[:-3],
+    help="Records in period: YYYY (year), YYYY-MM (month), YYYY-Www (week), or YYYY-Qq (quarter)",
+)
+@click.option("-h", "--hours", default=100)
+@click.argument("path", default="@default")
+async def plan_month(period, path, hours):
+    klog = Klog()
+    await klog.plan_month(
+        path,
+        hours=hours,
+        period=pendulum.parse(period),
+    )
+
+
 if __name__ in ("__main__", "__mp_main__"):
-    main()
+    main(_anyio_backend="trio")
