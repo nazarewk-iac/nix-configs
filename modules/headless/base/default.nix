@@ -77,11 +77,14 @@ in
       htop
       bintools
 
-      usbutils
+      # hardware related
+      dmidecode
+      hddtemp
+      lm_sensors
       lshw
       lsof
       pciutils
-      dmidecode
+      usbutils
 
       glxinfo
       inxi
