@@ -3,12 +3,11 @@ from __future__ import annotations
 import dataclasses
 import difflib
 import functools
-import itertools
 import re
 import textwrap
 from abc import ABC
 from collections import defaultdict
-from typing import Optional, Generator
+from typing import Generator, Optional
 
 import dacite
 import pendulum
@@ -386,13 +385,13 @@ class Result(Base):
     lines: list[str]
 
     def diff(self, new: list[str] | str = None):
+        old = list(f"{line}\n" for line in self.lines)
         if new is None:
-            new = list(self.format_line_generator())
-        elif isinstance(new, str):
-            new = new.splitlines(keepends=False)
-            # splitlines skips the last newline if nothing follows
-            new.append("")
-        diff = "".join(difflib.context_diff(self.lines, new))
+            new = list(f"{line}\n" for line in self.format_line_generator())
+        if isinstance(new, str):
+            new = new.splitlines(keepends=True)
+            new.append("\n")
+        diff = "".join(difflib.context_diff(old, new))
         return diff
 
     def format_line_generator(self):
@@ -404,13 +403,13 @@ class Result(Base):
         raise KlogErrorGroup("Error parsing klog text", self.errors)
 
     def plan_month(
-            self,
-            hours: int,
-            now: pendulum.DateTime = None,
-            period: pendulum.DateTime = None,
-            off_tags: set = None,
-            skip_tags: set = None,
-            weekend_tag="#off=weekend",
+        self,
+        hours: int,
+        now: pendulum.DateTime = None,
+        period: pendulum.DateTime = None,
+        off_tags: set = None,
+        skip_tags: set = None,
+        weekend_tag="#off=weekend",
     ):
         result = self
 

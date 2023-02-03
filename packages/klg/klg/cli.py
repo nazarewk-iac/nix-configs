@@ -14,7 +14,7 @@ import structlog
 import xdg
 
 from . import configure, dto
-from .config import ReportConfig, Config
+from .config import Config, ReportConfig
 from .klog import Klog
 
 configure.logging()

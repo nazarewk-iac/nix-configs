@@ -5,13 +5,11 @@ import os
 import shlex
 import shutil
 import subprocess
-from collections import defaultdict
 from pathlib import Path
 from typing import Iterable
 
 import anyio
 import cache
-import pendulum
 import structlog
 
 from . import dto
@@ -92,7 +90,7 @@ class Klog:
         }
 
     async def to_json(
-            self, *inputs: Path | str | bytes, args: list = None, raise_for_errors=True
+        self, *inputs: Path | str | bytes, args: list = None, raise_for_errors=True
     ):
         args = args or []
         data = await self.prepare_data(inputs)
