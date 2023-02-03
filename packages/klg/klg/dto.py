@@ -3,12 +3,15 @@ from __future__ import annotations
 import dataclasses
 import difflib
 import functools
+import itertools
 import re
 import textwrap
 from abc import ABC
+from collections import defaultdict
 from typing import Optional, Generator
 
 import dacite
+import pendulum
 import structlog
 
 logger: structlog.stdlib.BoundLogger = structlog.get_logger()
@@ -188,6 +191,29 @@ class EntryBase(Base, ABC):
 
         return "\n".join(gen())
 
+    def add_tags(self, *tags: str):
+        self.tags = sorted(set(self.tags) | set(tags))
+        missing = [tag for tag in self.tags if tag not in self.summary]
+        if missing:
+            self.summary = f"{self.summary} {' '.join(missing)}"
+
+    @staticmethod
+    def is_same_tag(tag1: str, tag2: str):
+        k1, *v1 = tag1.split("=", 1)
+        k2, *v2 = tag2.split("=", 1)
+        if k1 != k2:
+            return False
+        if v1 and v2:
+            return v1 == v2
+        return True
+
+    def has_tag(self, *tags: str):
+        for present in self.tags:
+            for checked in tags:
+                if self.is_same_tag(present, checked):
+                    return True
+        return False
+
 
 @dataclasses.dataclass
 class GenericEntry(EntryBase):
@@ -242,14 +268,48 @@ class OpenRange(GenericEntry):
 
 @dataclasses.dataclass
 class Record(EntryBase):
+    # a record representing day
     date: str  # "2022-10-10"
-    total: str  # "0m"
-    total_mins: int  # 0
-    should_total: str  # "0m!"
-    should_total_mins: int  # 0
-    diff: str  # "0m"
-    diff_mins: int  # 0
-    entries: list[GenericEntry]
+    total: str = ""  # "0m"
+    total_mins: int = 0  # 0
+    should_total: str = ""  # "0m!"
+    should_total_mins: int = 0  # 0
+    diff: str = ""  # "0m"
+    diff_mins: int = 0  # 0
+    entries: list[GenericEntry] = dataclasses.field(default_factory=list)
+
+    def __post_init__(self):
+        self.set_total(self.total_mins, diff=False)
+        self.set_should_total(self.should_total_mins, diff=False)
+        self.calculate_diff()
+
+    @functools.cached_property
+    def date_obj(self):
+        return pendulum.parse(self.date).date()
+
+    def make_totals(self):
+        self.total = self.format_duration(self.total_mins)
+
+    def calculate_diff(self):
+        self.diff_mins = self.should_total_mins - self.total_mins
+        self.diff = self.format_duration(self.diff_mins)
+
+    def set_total(self, mins: int, *, diff=True):
+        self.total_mins = mins
+        self.should_total = self.format_duration(self.total_mins)
+        if diff:
+            self.calculate_diff()
+
+    def set_should_total(self, expected_mins: int = None, *, diff=True):
+        if expected_mins is None:
+            expected_mins = self.should_total_mins
+        self.should_total_mins = max(expected_mins, self.total_mins)
+        if self.should_total_mins:
+            self.should_total = f"{self.format_duration(self.should_total_mins)}!"
+        else:
+            self.should_total = ""
+        if diff:
+            self.calculate_diff()
 
     def format_line_generator(self):
         if self.should_total_mins:
@@ -326,23 +386,88 @@ class Result(Base):
     lines: list[str]
 
     def diff(self, new: list[str] | str = None):
-        old = [f"{line}\n" for line in self.lines]
-
         if new is None:
-            new = [f"{line}\n" for line in self.format_line_generator()]
-        if isinstance(new, str):
-            new = [f"{line}\n" for line in new.splitlines(keepends=False)]
-
-        return "".join(difflib.context_diff(old, new))
+            new = list(self.format_line_generator())
+        elif isinstance(new, str):
+            new = new.splitlines(keepends=False)
+            # splitlines skips the last newline if nothing follows
+            new.append("")
+        diff = "".join(difflib.context_diff(self.lines, new))
+        return diff
 
     def format_line_generator(self):
         yield from (format(rec, format_name) for rec in self.records)
-        yield ""
 
     def raise_errors(self):
         if not self.errors:
             return
         raise KlogErrorGroup("Error parsing klog text", self.errors)
+
+    def plan_month(
+            self,
+            hours: int,
+            now: pendulum.DateTime = None,
+            period: pendulum.DateTime = None,
+            off_tags: set = None,
+            skip_tags: set = None,
+            weekend_tag="#off=weekend",
+    ):
+        result = self
+
+        now = now or pendulum.now()
+        now_date = now.date()
+        period = (period or now).replace(day=1)
+        period_date = period.date()
+        if off_tags is None:
+            off_tags = {"#off"}
+        if skip_tags is None:
+            skip_tags = {"#noplan"}
+        off_tags.add(weekend_tag)
+
+        by_date: dict[pendulum.Date, list[Record]] = defaultdict(list)
+        for record in result.records:
+            date = record.date_obj
+            if (date.year, date.month) == (period_date.year, period_date.month):
+                by_date[date].append(record)
+
+        to_plan_mins = hours * 60
+        modifiable_records: list[Record] = []
+        for i in range(1, period.days_in_month + 1):
+            date = period_date.replace(day=i)
+            records = by_date[date]
+            if not records:
+                record = Record(date=str(date), summary="", tags=[])
+                result.records.append(record)
+                records.append(record)
+            record = records[0]
+
+            is_past = date < now_date
+            is_skipped = record.has_tag(*skip_tags)
+            can_modify = not is_past and not is_skipped
+
+            # mark weekends
+            if can_modify and date.isoweekday() > 5:
+                record.add_tags(weekend_tag)
+
+            is_off = record.has_tag(*off_tags)
+            if can_modify and is_off:
+                record.set_should_total(0)
+
+            if is_past:
+                record.set_should_total(record.total_mins)
+            if is_past or is_skipped:
+                to_plan_mins -= record.should_total_mins
+            if can_modify and not is_off:
+                modifiable_records.append(record)
+
+        leftover_mins = to_plan_mins % len(modifiable_records)
+        expected_daily = int(to_plan_mins / len(modifiable_records))
+
+        for i, record in enumerate(modifiable_records):
+            expected = expected_daily
+            if i < leftover_mins:
+                expected += 1
+            record.set_should_total(expected)
 
 
 dacite_config = dacite.Config(

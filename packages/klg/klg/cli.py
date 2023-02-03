@@ -57,12 +57,19 @@ async def latest(path):
     click.echo(textwrap.indent(entry.format(), "  "))
 
 
+def format_result(result: dto.Result):
+    formatted = format(result, "klg")
+    diff_content = result.diff(formatted)
+    return formatted, diff_content
+
+
 @main.command()
 @click.argument("path", default="@default")
 @click.option("--check/--no-check", is_flag=True)
+@click.option("--sort/--no-sort", is_flag=True)
 @click.option("--diff/--no-diff", is_flag=True, default=True)
 @click.option("--write/--no-write", is_flag=True, default=True)
-async def fmt(path, check, diff, write):
+async def fmt(path, check, diff, write, sort):
     klog = Klog()
     if path.startswith("@"):
         path = await klog.bookmark(path)
@@ -72,8 +79,11 @@ async def fmt(path, check, diff, write):
     assert path.exists()
 
     result = await klog.to_json(path)
-    formatted = format(result, "klg")
-    diff_content = result.diff(formatted)
+
+    if sort:
+        result.records.sort(key=lambda r: r.date)
+
+    formatted, diff_content = format_result(result)
     if diff_content:
         if diff:
             print(diff_content, end="")
@@ -278,14 +288,28 @@ async def report(path: Path, args, period, tags, store):
     help="Records in period: YYYY (year), YYYY-MM (month), YYYY-Www (week), or YYYY-Qq (quarter)",
 )
 @click.option("-h", "--hours", default=100)
+@click.option("--write/--no-write", is_flag=True, default=True)
 @click.argument("path", default="@default")
-async def plan_month(period, path, hours):
+async def plan_month(period, path, hours, write):
     klog = Klog()
-    await klog.plan_month(
-        path,
+    if path.startswith("@"):
+        path = await klog.bookmark(path)
+    else:
+        path = Path(path)
+
+    result = await klog.to_json(path)
+    result.plan_month(
         hours=hours,
         period=pendulum.parse(period),
     )
+    formatted, diff_content = format_result(result)
+    if diff_content:
+        print(diff_content, end="")
+    else:
+        print(f"OK: {path}")
+
+    if diff_content and write:
+        path.write_text(formatted)
 
 
 if __name__ in ("__main__", "__mp_main__"):

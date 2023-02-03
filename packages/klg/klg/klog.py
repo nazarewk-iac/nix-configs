@@ -1,15 +1,16 @@
 import dataclasses
+import itertools
 import json
 import os
 import shlex
 import shutil
 import subprocess
+from collections import defaultdict
 from pathlib import Path
 from typing import Iterable
 
 import anyio
 import cache
-import itertools
 import pendulum
 import structlog
 
@@ -91,7 +92,7 @@ class Klog:
         }
 
     async def to_json(
-        self, *inputs: Path | str | bytes, args: list = None, raise_for_errors=True
+            self, *inputs: Path | str | bytes, args: list = None, raise_for_errors=True
     ):
         args = args or []
         data = await self.prepare_data(inputs)
@@ -99,7 +100,7 @@ class Klog:
             args.append(os.devnull)
         proc = await self.cmd("json", *args, input=data)
         raw = json.loads(proc.stdout)
-        lines = data.decode().splitlines(False)
+        lines = data.decode().splitlines(keepends=False)
         result = dto.Result.load(
             {
                 "lines": lines,
@@ -141,49 +142,3 @@ class Klog:
     async def resume(self, path, *args):
         _, latest = await self.find_latest(path, *args, range=True, closed=True)
         return await self.cmd("start", f"--summary={latest.summary}", *args, path)
-
-    async def plan_month(
-        self,
-        path,
-        hours: int,
-        day_summary: str="",
-        now: pendulum.DateTime = None,
-        period: pendulum.DateTime = None,
-        off_tags: set = None,
-        manual_tags: set = None,
-        weekend_tag="#off=weekend",
-    ):
-        now = now or pendulum.now()
-        period = period or now
-        if off_tags is None:
-            off_tags = {"#off"}
-        if manual_tags is None:
-            manual_tags = {"#noplan"}
-        off_tags.add(weekend_tag)
-        plan_mins = hours * 60
-        result = await self.to_json(
-            path, args=[f"--period={period.to_date_string()[:-3]}"]
-        )
-
-        def grouper(rec: dto.Record):
-            return pendulum.parse(rec.date)
-
-        by_date: dict[pendulum.DateTime, list[dto.Record]] = dict(
-            sorted(itertools.groupby(result.records, grouper))
-        )
-
-        # TODO: going by each day of the month make sure:
-        #   1) weekends are marked
-        #   2) dates have a should set
-        #   3) should is raised to total
-        # TODO: calculate remaining time to be assigned for future date of the month
-        #   - calculate manual_tags, but don't touch values
-        #   - skip days with `off_tags`
-        #   - distribute the should equally among all days
-        can_modify = False
-        planned_mins = sum(rec.should_total_mins for rec in result.records)
-
-        for date, records in by_date.items():
-            assert len(records) == 1
-            record = records[0]
-            can_modify = date.date() > now.date()
