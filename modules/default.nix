@@ -31,6 +31,7 @@ in
       "nixpkgs-wayland.cachix.org-1:3lwxaILxMRkVhehr5StQprHdEo4IrE8sRho9R9HOLYA="
       "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
       "nixpkgs-update.cachix.org-1:6y6Z2JdoL3APdu6/+Iy8eZX2ajf09e4EE9SnxSML1W8="
+      "krul.kdn.im:9D33FhBuxCj/20Ct2ASHx3SqJ5FmfT8+BgoSzTwAZMc="
     ];
     nix.settings.substituters = [
       "https://nixpkgs-wayland.cachix.org"

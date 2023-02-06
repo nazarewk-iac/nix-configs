@@ -1,9 +1,12 @@
-{ lib, ... }:
+{ lib, config, ... }:
 let
-  poolName = "obler-main";
+  hostname = config.networking.hostName;
+  poolName = "${hostname}-main";
   bootDevice = "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_04LZCR91M8UZPJW8-0:0";
-  luksBackupDir = "";
-  luksKeyFile = "${luksBackupDir}/luks-${poolName}-keyfile.bin";
+  luksBackupDir = "/nazarewk-iskaral/secrets/luks/${hostname}";
+  #luksKeyFile = "${luksBackupDir}/luks-${poolName}-keyfile.bin";
+  # cat be copied automatically using nixos-anywhere with: --disk-encryption-keys /keyfile.bin <(sudo cat /nazarewk-iskaral/secrets/luks/obler/luks-keyfile.bin)
+  luksKeyFile = "/keyfile.bin";
   luksHeaderBackup = "${luksBackupDir}/luks-${poolName}-header.img";
   luksHeader = "${bootDevice}-part2";
   luksUUID = "4971c81f-df4d-408c-a704-271b3423e762";
@@ -50,7 +53,7 @@ in
         extraArgsFormat = [
           "--uuid=${luksUUID}"
           "--header=${luksHeader}"
-          "--header-backup-file=${luksHeaderBackup}"
+          #"--header-backup-file=${luksHeaderBackup}"
         ];
         extraArgsOpen = [
           "--header=${luksHeader}"
@@ -95,6 +98,7 @@ in
             "/etc" = { } // snapshotsOn;
             "/home" = { } // snapshotsOn;
             "/home/kdn" = { };
+            "/home/kdn/.cache" = { } // snapshotsOff;
             "/home/sn" = { };
             "/home/sn/.cache" = { } // snapshotsOff;
             "/home/sn/.config" = { };

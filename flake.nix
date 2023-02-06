@@ -52,7 +52,7 @@
       inputs.flake-utils.follows = "flake-utils";
     };
     microvm = {
-      url = "github:nazarewk/microvm.nix/side-effect-free-imports";
+      url = "github:astro/microvm.nix";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
@@ -66,6 +66,27 @@
       # url = "github:nix-community/disko";
       # https://github.com/nix-community/disko/pull/111
       url = "github:nazarewk/disko/fixes";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    nixos-images = {
+      url = "github:nix-community/nixos-images";
+      inputs.nixos-unstable.follows = "nixpkgs";
+    };
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    nixos-anywhere = {
+      url = "github:numtide/nixos-anywhere";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-parts.follows = "flake-parts";
+      inputs.disko.follows = "disko";
+      inputs.nixos-images.follows = "nixos-images";
+      inputs.treefmt-nix.follows = "treefmt-nix";
+    };
+
+    nixinate = {
+      url = "github:matthewcroughan/nixinate";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -82,7 +103,10 @@
       };
     in
     (flake-parts.lib.mkFlake args {
-      systems = [ "x86_64-linux" "aarch64-linux" ];
+      systems = [
+        "x86_64-linux"
+        #"aarch64-linux"
+      ];
       perSystem = { config, self', inputs', system, ... }:
         let
           pkgs = import nixpkgs {
@@ -93,14 +117,16 @@
         {
           # inspired by https://github.com/NixOS/nix/issues/3803#issuecomment-748612294
           # usage: nix run '.#repl'
-          apps.repl = {
-            type = "app";
-            program = "${pkgs.writeShellScriptBin "repl" ''
-            confnix=$(mktemp)
-            trap "rm '$confnix' || true" EXIT
-            echo "builtins.getFlake (toString "$PWD")" >$confnix
-            nix repl "$confnix"
-          ''}/bin/repl";
+          apps = {
+            repl = {
+              type = "app";
+              program = "${pkgs.writeShellScriptBin "repl" ''
+                  confnix=$(mktemp)
+                  trap "rm '$confnix' || true" EXIT
+                  echo "builtins.getFlake (toString "$PWD")" >$confnix
+                  nix repl "$confnix"
+                ''}/bin/repl";
+            };
           };
           checks = { };
           devShells = { };
@@ -112,9 +138,14 @@
       flake = {
         inherit lib;
 
+        apps = inputs.nixinate.nixinate."x86_64-linux" self;
+
         overlays.default = lib.composeManyExtensions [
           poetry2nix.overlay
           (final: prev: (import ./packages { inherit inputs self; pkgs = prev; }))
+          (final: prev: {
+            nixos-anywhere = inputs.nixos-anywhere.packages."${final.stdenv.system}".nixos-anywhere;
+          })
           (final: prev: {
             # work around not using flake-utils which sets it up on `pkgs.system`
             # see https://github.com/numtide/flake-utils/blob/1ed9fb1935d260de5fe1c2f7ee0ebaae17ed2fa1/check-utils.nix#L4
@@ -130,6 +161,7 @@
               system = "x86_64-linux";
               modules = [{ kdn.profile.host.oams.enable = true; }
                 {
+                  system.stateVersion = "23.05";
                   networking.hostId = "ce0f2f33"; # cut -c-8 </proc/sys/kernel/random/uuid
                   networking.hostName = "oams";
                 }];
@@ -139,6 +171,7 @@
               system = "x86_64-linux";
               modules = [{ kdn.profile.host.krul.enable = true; }
                 {
+                  system.stateVersion = "23.05";
                   networking.hostId = "81d86976"; # cut -c-8 </proc/sys/kernel/random/uuid
                   networking.hostName = "nazarewk-krul";
                 }];
@@ -146,7 +179,21 @@
 
             obler = flakeLib.nixos.system {
               system = "x86_64-linux";
-              modules = [{ kdn.profile.host.obler.enable = true; }];
+              modules = [{ kdn.profile.host.obler.enable = true; }
+                {
+                  system.stateVersion = "23.05";
+                  networking.hostId = "f6345d38"; # cut -c-8 </proc/sys/kernel/random/uuid
+                  networking.hostName = "obler";
+
+                  _module.args.nixinate = {
+                    host = "obler";
+                    sshUser = "kdn";
+                    buildOn = "local"; # valid args are "local" or "remote"
+                    substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
+                    hermetic = true;
+                    nixOptions = [ "--show-trace" ];
+                  };
+                }];
             };
 
             wg-0 = flakeLib.nixos.system {

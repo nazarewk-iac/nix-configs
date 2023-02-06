@@ -1,3 +1,2 @@
-
-# YubiKey 22419034: pamu2fcfg -u kdn -o pam://kdn
-sn:PAqKY3fv99wz5V1CZY/creDNUSpTCoMcsjBUmrMsw7fb03r5Lkqaq46x7QXWdhGghyMr0aUEzvR2sRI9NBmrNw==,vjYHoiVTWa5+o29Ia7PiEVL58ja4hjG6KFqlO8yqu6BgL0UO1VrKwg2eLouKz0sztWgTiX5h7bseO76PstEZnQ==,es256,+presence
+# YubiKey 22419034: pamu2fcfg -u sn -o pam://kdn
+sn:dXWdi9jQimgbMd+UJ9Fj8WDF0Z8IDuQwMU3EYqp0vjIzhGSfAp7o9iI2EINpOAKbzM3Xsyq7+KoVAHfZjKNGMg==,8neOyn1dWhZ+puygcnCsuyB+wUW9iwOATfC/Ky581tHIcwMH+LlUYrMQA+Q4zU9SGuD3uW6gbSM+/91yaIH4qQ==,es256,+presence

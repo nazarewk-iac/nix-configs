@@ -18,6 +18,12 @@ in
     # (modulesPath + "/installer/scan/not-detected.nix")
     hardware.enableRedistributableFirmware = true;
 
+    # systemd-boot
+    boot.loader.efi.canTouchEfiVariables = true;
+    boot.loader.systemd-boot.enable = true;
+    boot.loader.systemd-boot.configurationLimit = 10;
+    boot.cleanTmpDir = true;
+
     networking.nameservers = [
       "2606:4700:4700::1111" # CloudFlare
       "1.1.1.1" # CloudFlare
@@ -32,12 +38,6 @@ in
     kdn.programs.gnupg.enable = true;
     kdn.programs.gnupg.pass-secret-service.enable = true;
 
-    # LOCALE
-    i18n.defaultLocale = "en_US.UTF-8";
-    i18n.extraLocaleSettings = {
-      LC_TIME = "en_GB.UTF-8"; # en_GB - Monday as first day of week
-    };
-    time.timeZone = "Europe/Warsaw";
     location.provider = "geoclue2";
 
     # USERS
@@ -113,5 +113,25 @@ in
     kdn.networking.netbird.instances.priv = 51821;
 
     services.devmon.enable = false; # disable auto-mounting service devmon, it interferes with disko
+
+
+    system.activationScripts.users-mountpoints.text =
+      let
+        users = lib.pipe config.users.users [
+          lib.attrsets.attrValues
+          (builtins.filter (u: u.isNormalUser))
+        ];
+      in
+      lib.trivial.pipe config.fileSystems [
+        (lib.attrsets.mapAttrsToList (name: cfg: cfg.mountPoint or name))
+        (builtins.map (mountpoint: lib.trivial.pipe users [
+          (builtins.map (user: lib.lists.optional
+            (lib.strings.hasPrefix user.home mountpoint)
+            ''chown ${builtins.toString (user.uid or user.name)}:users "${mountpoint}"''
+          ))
+        ]))
+        lib.lists.flatten
+        (builtins.concatStringsSep "\n")
+      ];
   };
 }

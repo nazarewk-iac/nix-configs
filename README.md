@@ -73,4 +73,14 @@ Find immediate parents: `nix-store --query --referrers <paths...>`.
 
 Find the root using paths: `nix-store --query --roots <paths...>`.
 
-Find reverse dependencies: `nix-store --query --referrers <path>` 
+Find reverse dependencies: `nix-store --query --referrers <path>`
+
+## GitHub rate-limiting unauthenticated requests
+
+see https://discourse.nixos.org/t/flakes-provide-github-api-token-for-rate-limiting/18609
+
+add token to `~/.config/nix/nix.conf`:
+
+```
+access-tokens = github.com=github_pat_XXXX
+```

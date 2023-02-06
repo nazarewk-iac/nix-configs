@@ -10,18 +10,26 @@ in
   config = lib.mkIf cfg.enable {
     kdn.profile.machine.basic.enable = true;
 
-    kdn.sway.gdm.enable = true;
-    kdn.sway.systemd.enable = true;
+    hardware.opengl.enable = true;
+    hardware.opengl.driSupport = true;
+    hardware.opengl.driSupport32Bit = true;
+    hardware.video.hidpi.enable = true;
+
+    # INPUT
+    services.xserver.layout = "pl";
+    console.useXkbConfig = true;
+    services.xserver.libinput.touchpad.disableWhileTyping = true;
+    services.xserver.libinput.touchpad.naturalScrolling = true;
+    services.xserver.libinput.touchpad.tapping = true;
+    services.xserver.synaptics.twoFingerScroll = true;
+
+    kdn.hardware.pipewire.enable = true;
+    kdn.hardware.pipewire.useWireplumber = true;
+    kdn.hardware.yubikey.enable = true;
 
     kdn.headless.enableGUI = true;
 
     boot.extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
-    boot.binfmt.emulatedSystems = [
-      "aarch64-linux"
-      "wasm32-wasi"
-      "wasm64-wasi"
-      "x86_64-windows"
-    ];
 
     # Enable CUPS to print documents.
     services.printing.enable = true;
@@ -33,9 +41,27 @@ in
       brgenml1lpr
       brgenml1cupswrapper
     ];
-    programs.seahorse.enable = true;
+    environment.systemPackages = with pkgs; [
+      libreoffice
+      # chromium
+      firefox
+      p7zip
+      rar
+      system-config-printer
 
-    kdn.containers.dagger.enable = true;
-    kdn.emulators.windows.enable = true;
+      gparted
+      gsmartcontrol
+      smartmontools
+
+      imagemagick
+
+      playerctl
+      pdftk
+
+      (pkgs.writeScriptBin "qrpaste" ''
+        #! ${pkgs.bash}/bin/bash
+        ${pkgs.wl-clipboard}/bin/wl-paste | ${pkgs.qrencode}/bin/qrencode -o - | ${pkgs.imagemagick}/bin/display
+      '')
+    ];
   };
 }

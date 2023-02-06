@@ -440,8 +440,8 @@ class Result(Base):
                 records.append(record)
             record = records[0]
 
-            is_past = date < now_date
             is_skipped = record.has_tag(*skip_tags)
+            is_past = date < now_date
             can_modify = not is_past and not is_skipped
 
             # mark weekends
@@ -452,7 +452,7 @@ class Result(Base):
             if can_modify and is_off:
                 record.set_should_total(0)
 
-            if is_past:
+            if is_past or record.total_mins > record.should_total_mins:
                 record.set_should_total(record.total_mins)
             if is_past or is_skipped:
                 to_plan_mins -= record.should_total_mins

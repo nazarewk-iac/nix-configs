@@ -11,6 +11,10 @@ in
     {
       home.stateVersion = "22.11";
 
+      home.packages = with pkgs; [
+        thunderbird
+      ];
+
       # pam-u2f expects a single line of configuration per user in format `username:entry1:entry2:entry3:...`
       # `pamu2fcfg` generates lines of format `username:entry`
       # For ease of use you can append those pamu2fcfg to ./yubico/u2f_keys.parts directly,

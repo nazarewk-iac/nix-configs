@@ -11,8 +11,6 @@ in
     kdn.profile.machine.desktop.enable = true;
     kdn.profile.machine.dev.enable = true;
 
-    system.stateVersion = "23.05";
-
     kdn.desktop.base.nixpkgs-wayland.enableFullOverlay = false;
     kdn.desktop.base.enableWlrootsPatch = false;
 
@@ -26,6 +24,10 @@ in
       # "DVI-D-1" = "U2711_2012_1";
     };
 
+    environment.systemPackages = with pkgs; [
+      nixos-anywhere
+    ];
+
     hardware.cpu.amd.updateMicrocode = true;
 
     kdn.monitoring.prometheus-stack.enable = true;
@@ -36,11 +38,6 @@ in
     kdn.programs.obs-studio.enable = true;
 
     kdn.virtualization.nixops.libvirtd.enable = true;
-
-    boot.loader.efi.canTouchEfiVariables = true;
-    boot.loader.systemd-boot.enable = true;
-    boot.loader.systemd-boot.memtest86.enable = true;
-    boot.loader.systemd-boot.configurationLimit = 20;
 
     boot.initrd.availableKernelModules = [ ];
 
@@ -57,5 +54,18 @@ in
     kdn.programs.keepass.enable = true;
     kdn.programs.nix-direnv.enable = true;
     kdn.programs.nix-index.enable = true;
+
+    kdn.containers.dagger.enable = true;
+    kdn.emulators.windows.enable = true;
+    programs.seahorse.enable = true;
+    boot.binfmt.emulatedSystems = [
+      "aarch64-linux"
+      "wasm32-wasi"
+      "wasm64-wasi"
+      "x86_64-windows"
+    ];
+
+    kdn.sway.gdm.enable = true;
+    kdn.sway.systemd.enable = true;
   };
 }

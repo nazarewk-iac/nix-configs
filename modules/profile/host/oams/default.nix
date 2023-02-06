@@ -21,34 +21,8 @@ in
       boot.initrd.luks.forceLuksSupportInInitrd = true;
       boot.initrd.systemd.enable = true;
 
-      boot.kernelParams =
-        let
-          disko = config.disko.devices;
-          crypted = disko.disk.crypted-root;
-          boot = disko.disk.boot;
-
-          getArg = name: lib.trivial.pipe crypted.content.extraArgsFormat [
-            (builtins.filter (lib.strings.hasPrefix "--${name}="))
-            builtins.head
-            (lib.strings.removePrefix "--${name}=")
-          ];
-
-          luksOpenName = crypted.content.name;
-          rootUUID = getArg "uuid";
-          headerPath = getArg "header";
-          luksDevice = crypted.device;
-        in
-        [
-          # https://www.freedesktop.org/software/systemd/man/systemd-cryptsetup-generator.html#
-          "rd.luks.name=${rootUUID}=${luksOpenName}"
-          "rd.luks.options=${rootUUID}=header=${headerPath}"
-          "rd.luks.data=${rootUUID}=${luksDevice}"
-        ];
-      disko.enableConfig = true;
+      kdn.filesystems.disko.luks-zfs.enable = true;
       disko.devices = import ./disko.nix { inherit lib; };
-
-      fileSystems."/boot".neededForBoot = true;
-      fileSystems."/var/log/journal".neededForBoot = true;
       boot.kernelModules = [ "kvm-amd" ];
 
       services.asusd.enable = true;

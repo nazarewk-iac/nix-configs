@@ -178,7 +178,6 @@ in
         launch
         drag0nius_kdbx
 
-        libreoffice
         flameshot
         vlc
         evince

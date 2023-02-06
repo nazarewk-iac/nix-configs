@@ -12,40 +12,38 @@ in
     enable = lib.mkEnableOption "enable my user profiles";
   };
 
-  config = lib.mkIf cfg.enable (
-    let
-      base = {
-        description = "Krzysztof Nazarewski";
-        isNormalUser = true;
-        openssh.authorizedKeys.keys = sshKeys;
-        extraGroups = lib.filter (group: lib.hasAttr group config.users.groups) [
-          "adbusers"
-          "audio"
-          "dialout"
-          "docker"
-          "kvm"
-          "libvirtd"
-          "lp"
-          "mlocate"
-          "networkmanager"
-          "pipewire"
-          "plugdev"
-          "power"
-          "podman"
-          "scanner"
-          "tty"
-          "video"
-          "wheel"
-        ];
-      };
-      nazarewk = base // { uid = 1000; };
-      kdn = base // { uid = 31893; };
-    in
-    {
-      kdn.hardware.yubikey.appId = "pam://kdn";
+  config = lib.mkIf cfg.enable ({
+    # required for remote-building using nixinate, see https://discourse.nixos.org/t/way-to-build-nixos-on-x86-64-machine-and-serve-to-aarch64-over-local-network/18660
+    # TODO: switch to signed store building?
+    nix.settings.trusted-users = [ "kdn" ];
+    kdn.hardware.yubikey.appId = "pam://kdn";
 
-      users.users.kdn = kdn;
-      home-manager.users.kdn = { kdn.profile.user.me.nixosConfig = kdn; };
-    }
-  );
+    users.users.kdn = {
+      uid = 31893;
+      description = "Krzysztof Nazarewski";
+      isNormalUser = true;
+      createHome = true; # makes sure ZFS mountpoints are properly owned?
+      openssh.authorizedKeys.keys = sshKeys;
+      extraGroups = lib.filter (group: lib.hasAttr group config.users.groups) [
+        "adbusers"
+        "audio"
+        "dialout"
+        "docker"
+        "kvm"
+        "libvirtd"
+        "lp"
+        "mlocate"
+        "networkmanager"
+        "pipewire"
+        "plugdev"
+        "power"
+        "podman"
+        "scanner"
+        "tty"
+        "video"
+        "wheel"
+      ];
+    };
+    home-manager.users.kdn = { kdn.profile.user.me.nixosConfig = config.users.users.kdn; };
+  });
 }

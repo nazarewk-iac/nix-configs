@@ -27,6 +27,11 @@ in
     kdn.profile.machine.workstation.enable = true;
     kdn.hardware.gpu.amd.enable = true;
 
+    services.nix-serve = {
+      enable = false;
+      secretKeyFile = "/var/nix-keys/krul.kdn.im/cache-priv-key.pem";
+    };
+
     boot.initrd.availableKernelModules = [
       "r8169" # Realtek Semiconductor Co., Ltd. RTL8125 2.5GbE Controller [10ec:8125] (rev 05)
       "igb" # Intel Corporation I211 Gigabit Network Connection [8086:1539] (rev 03)

@@ -11,9 +11,23 @@ in
   config = lib.mkIf cfg.enable {
     kdn.profile.machine.basic.enable = true;
     kdn.profile.user.sn.enable = true;
+    kdn.profile.hardware.dell-e5470.enable = true;
 
-    system.stateVersion = "23.05";
-    networking.hostId = "f6345d38"; # cut -c-8 </proc/sys/kernel/random/uuid
-    networking.hostName = "obler";
+    kdn.desktop.kde.enable = true;
+    services.teamviewer.enable = true;
+    services.xserver.displayManager.sddm.settings = {
+      Autologin = {
+        Session = "plasma.desktop";
+        User = "sn";
+      };
+    };
+
+    kdn.locale = {
+      primary = "pl_PL.UTF-8";
+      time = "pl_PL.UTF-8";
+    };
+
+    kdn.filesystems.disko.luks-zfs.enable = true;
+    disko.devices = import ./disko.nix { inherit lib config; };
   };
 }

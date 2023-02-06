@@ -25,7 +25,6 @@ in
     boot.loader.grub.enable = true;
     boot.loader.grub.version = 2;
     boot.loader.grub.device = "/dev/sda";
-    boot.cleanTmpDir = true;
 
     fileSystems."/" = {
       device = "/dev/sda1";
