@@ -9,7 +9,7 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    kdn.hardware.intel-graphics-fix.enable = true;
+    #kdn.hardware.intel-graphics-fix.enable = true;
     kdn.hardware.modem.enable = true;
 
     # BOOT

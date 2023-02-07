@@ -13,6 +13,9 @@ in
 
     services.xserver.displayManager.defaultSession = lib.mkDefault "plasma";
 
+    environment.systemPackages = with pkgs; [
+    ];
+
     services.xserver.enable = true;
     services.xserver.displayManager.sddm.enable = true;
     services.xserver.desktopManager.plasma5 = {

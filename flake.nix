@@ -164,6 +164,15 @@
                   system.stateVersion = "23.05";
                   networking.hostId = "ce0f2f33"; # cut -c-8 </proc/sys/kernel/random/uuid
                   networking.hostName = "oams";
+
+                  _module.args.nixinate = {
+                    host = "oams";
+                    sshUser = "kdn";
+                    buildOn = "local"; # valid args are "local" or "remote"
+                    substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
+                    hermetic = true;
+                    nixOptions = [ "--show-trace" ];
+                  };
                 }];
             };
 
