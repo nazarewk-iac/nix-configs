@@ -452,9 +452,12 @@ class Result(Base):
             if can_modify and is_off:
                 record.set_should_total(0)
 
-            if is_past or record.total_mins > record.should_total_mins:
+            if record.total_mins > record.should_total_mins or is_past:
                 record.set_should_total(record.total_mins)
-            if is_past or is_skipped:
+
+            if date == now_date and record.diff_mins == 0:
+                to_plan_mins -= record.should_total_mins
+            elif is_past or is_skipped:
                 to_plan_mins -= record.should_total_mins
             if can_modify and not is_off:
                 modifiable_records.append(record)
