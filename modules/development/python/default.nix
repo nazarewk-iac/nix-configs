@@ -4,6 +4,7 @@ let
   cfg = config.kdn.development.python;
 
   mkPython = pkg: (pkg.withPackages (ps: with ps; [
+    # pip-tools  # 2022-08-31 fails on `assert out.exit_code == 2` @ test_bad_setup_file()
     black
     boto3
     build # build a package, see https://realpython.com/pypi-publish-python-package/#build-your-package
@@ -14,8 +15,8 @@ let
     ipython
     isort
     matplotlib
+    pendulum
     pip
-    # pip-tools  # 2022-08-31 fails on `assert out.exit_code == 2` @ test_bad_setup_file()
     pipx
     pyaml
     pyheos
@@ -23,6 +24,7 @@ let
     pyyaml
     requests
     ruamel-yaml
+    tqdm
     twine # upload to pypi, see https://realpython.com/pypi-publish-python-package/#upload-your-package
   ]));
 
@@ -74,7 +76,7 @@ in
       (renamedBinariesOnly "%s3.9" python39)
       (mkPython python310)
       (renamedBinariesOnly "%s3.10" (mkPython python310))
-      (renamedBinariesOnly "%s3.11" python311)
+      (renamedBinariesOnly "%s3.11" (mkPython python311))
 
       graphviz
 
