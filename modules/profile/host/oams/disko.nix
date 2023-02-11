@@ -97,11 +97,6 @@ in
             "/etc" = { } // snapshotsOn;
             "/home" = { } // snapshotsOn;
             "/home/kdn" = { };
-            # TODO: OOTB those mountpoints are owned by root:root instead of kdn:users, need to fix it
-            #  - cannot set ownership on a Dataset, must mount it first https://serverfault.com/a/957682
-            #  - can use tmpfiles to fix permissions on mountpoints?
-            #    - see: man tmpfiles.d
-            #    - see: https://search.nixos.org/options?channel=22.11&show=systemd.tmpfiles.rules&from=0&size=50&sort=relevance&type=packages&query=systemd.tmpfiles.rules
             "/home/kdn/.cache" = { } // snapshotsOff;
             "/home/kdn/.config" = { };
             "/home/kdn/.local" = { };

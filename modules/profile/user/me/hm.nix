@@ -208,7 +208,8 @@ in
         zoom-us
         nextcloud-client
 
-        transmission-qt
+        #transmission-qt
+        deluge
         megatools
       ];
     })

@@ -27,6 +27,7 @@ in
       extraGroups = lib.filter (group: lib.hasAttr group config.users.groups) [
         "adbusers"
         "audio"
+        "deluge"
         "dialout"
         "docker"
         "kvm"
