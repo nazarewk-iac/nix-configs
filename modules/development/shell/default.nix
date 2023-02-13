@@ -1,5 +1,4 @@
 { lib, pkgs, config, ... }:
-with lib;
 let
   cfg = config.kdn.development.shell;
 in
@@ -8,7 +7,7 @@ in
     enable = lib.mkEnableOption "shell development";
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
       bash
       shellcheck

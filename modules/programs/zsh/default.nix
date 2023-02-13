@@ -10,6 +10,9 @@ in
   };
 
   config = mkIf cfg.enable {
+    environment.systemPackages = with pkgs; [
+      zsh-completions
+    ];
 
     programs.zsh.enable = true;
     # https://search.nixos.org/options?channel=unstable&from=0&size=50&sort=alpha_asc&type=packages&query=programs.zsh

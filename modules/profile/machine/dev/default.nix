@@ -11,11 +11,11 @@ in
     kdn.profile.machine.desktop.enable = true;
 
     environment.systemPackages = with pkgs; [
-      jetbrains.pycharm-professional
+      #jetbrains.pycharm-professional
       jetbrains.idea-ultimate
-      jetbrains.clion
-      jetbrains.goland
-      jetbrains.ruby-mine
+      #jetbrains.clion
+      #jetbrains.goland
+      #jetbrains.ruby-mine
     ];
     home-manager.sharedModules = [{ services.jetbrains-remote.enable = true; }];
 

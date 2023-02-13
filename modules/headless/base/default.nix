@@ -13,8 +13,9 @@ in
     kdn.filesystems.base.enable = true;
     kdn.development.linux-utils.enable = true;
 
-    users.defaultUserShell = pkgs.zsh;
+    users.defaultUserShell = pkgs.fish;
     kdn.programs.zsh.enable = true;
+    kdn.programs.fish.enable = true;
 
     programs.command-not-found.enable = false;
     programs.bash.interactiveShellInit = ''
@@ -69,8 +70,6 @@ in
       handlr
       mimeo
 
-      zsh-completions
-      nix-zsh-completions
 
       killall
       ncdu
