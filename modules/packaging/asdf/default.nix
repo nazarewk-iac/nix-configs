@@ -26,6 +26,10 @@ in
 
     home-manager.sharedModules = [
       ({ lib, ... }: {
+        programs.fish.interactiveShellInit = ''
+          set PATH "$HOME/.asdf/shims" $PATH
+          source ${cfg.package}/share/asdf-vm/lib/asdf.fish
+        '';
         home.activation = {
           asdfReshim = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
             if [ -d "$HOME/.asdf/shims" ] ; then
