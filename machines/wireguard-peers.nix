@@ -14,7 +14,7 @@
         dynamicEndpointRefreshSeconds = 60;
       };
     };
-    nazarewk-krul = {
+    krul = {
       hostnum = 2;
       cfg = {
         allowedIPs = [

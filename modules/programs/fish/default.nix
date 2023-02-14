@@ -8,10 +8,15 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    programs.fish = {
+      enable = true;
+      useBabelfish = false;
+    };
     home-manager.sharedModules = [{
       home.packages = with pkgs; [
         grc
         fzf
+        babelfish
       ];
       programs.fish = {
         enable = true;
@@ -22,7 +27,7 @@ in
           { name = "grc"; src = grc.src; }
           { name = "done"; src = done.src; }
           { name = "forgit"; src = forgit.src; }
-          { name = "hydro"; src = hydro.src; }
+          #{ name = "hydro"; src = hydro.src; }
           { name = "fzf"; src = fzf-fish.src; }
         ];
       };

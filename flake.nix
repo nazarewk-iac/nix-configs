@@ -176,13 +176,22 @@
                 }];
             };
 
-            nazarewk-krul = flakeLib.nixos.system {
+            krul = flakeLib.nixos.system {
               system = "x86_64-linux";
               modules = [{ kdn.profile.host.krul.enable = true; }
                 {
                   system.stateVersion = "23.05";
                   networking.hostId = "81d86976"; # cut -c-8 </proc/sys/kernel/random/uuid
-                  networking.hostName = "nazarewk-krul";
+                  networking.hostName = "krul";
+
+                  _module.args.nixinate = {
+                    host = "krul";
+                    sshUser = "kdn";
+                    buildOn = "local"; # valid args are "local" or "remote"
+                    substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
+                    hermetic = true;
+                    nixOptions = [ "--show-trace" ];
+                  };
                 }];
             };
 

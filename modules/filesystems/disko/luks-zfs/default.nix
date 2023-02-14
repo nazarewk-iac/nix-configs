@@ -9,6 +9,8 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    kdn.filesystems.zfs.enable = true;
+
     boot.zfs.forceImportRoot = false;
     boot.zfs.requestEncryptionCredentials = false;
 

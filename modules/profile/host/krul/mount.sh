@@ -2,8 +2,8 @@
 set -xeEuo pipefail
 
 target="${1:-"/mnt"}"
-zpool="nazarewk-krul-primary"
-zfs_prefix="${zpool}/nazarewk-krul"
+zpool="krul-primary"
+zfs_prefix="${zpool}/krul"
 if [ "${APPLY:-}" = 1 ]; then
   cmd() { "$@"; }
 else

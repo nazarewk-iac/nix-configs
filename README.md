@@ -52,7 +52,7 @@ see https://bmcgee.ie/posts/2022/12/setting-up-my-new-laptop-nix-style/
    ```
 8. run the build, eg:
    ```
-   nixos-install --show-trace --root /mnt --flake '/mnt/home/kdn/dev/github.com/nazarewk-iac/nix-configs#nazarewk-krul'
+   nixos-install --show-trace --root /mnt --flake '/mnt/home/kdn/dev/github.com/nazarewk-iac/nix-configs#krul'
    ```
 
 ## Building on Hetzner Cloud from NixOS installer image

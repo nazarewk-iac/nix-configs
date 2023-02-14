@@ -42,7 +42,7 @@ in
     kdn.k3s.single-node.rook-ceph.enable = true;
     kdn.k3s.single-node.kube-prometheus.enable = true;
     kdn.k3s.single-node.istio.enable = true;
-    kdn.k3s.single-node.zfsVolume = "nazarewk-krul-primary/nazarewk-krul/containers/containerd/io.containerd.snapshotter.v1.zfs";
+    kdn.k3s.single-node.zfsVolume = "krul-primary/krul/containers/containerd/io.containerd.snapshotter.v1.zfs";
     kdn.k3s.single-node.reservations.system.cpu = "4";
     kdn.k3s.single-node.reservations.system.memory = "32G";
     kdn.k3s.single-node.reservations.kube.cpu = "4";
@@ -60,7 +60,7 @@ in
     zramSwap.priority = 100;
 
     boot.zfs.requestEncryptionCredentials = [
-      "nazarewk-krul-primary"
+      "krul-primary"
     ];
 
     boot.tmpOnTmpfs = true;

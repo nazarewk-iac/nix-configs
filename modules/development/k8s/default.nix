@@ -36,6 +36,10 @@ in
     environment.shellAliases = {
       "kc" = "${pkgs.kubecolor}/bin/kubecolor";
     };
+    programs.fish.interactiveShellInit = ''
+      complete -c kc --wraps kubectl
+      complete -c kubecolor --wraps kubectl
+    '';
     environment.systemPackages = with pkgs; [
       lens # kubernetes IDE
       # kubernetes

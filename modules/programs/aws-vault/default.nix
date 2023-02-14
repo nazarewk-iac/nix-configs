@@ -63,12 +63,9 @@ in
       "avr" = "aws-vault rotate -n";
     };
 
-    environment.shellInit = (builtins.readFile ./avl.sh);
-
     environment.systemPackages = [
       aws-vault
-      (mkScript "aws-shell" ''aws-vault exec -n "$@"'')
-      (mkScript "aws-login" ''aws-vault login "$@"'')
+      (mkScript "avl" (builtins.readFile ./avl.sh))
       (mkScript "aws-profiles" ''grep '\[profile' "''${AWS_CONFIG_FILE:-"$HOME/.aws/config"}" | sed -r 's/^\[profile (.*)\]$/\1/' | sort'')
     ];
   };
