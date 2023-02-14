@@ -41,7 +41,9 @@ let
     fi
 
     for file in "$srcDir"/* ; do
-      test -x "$file" || continue
+      if test -e "$(printf "$fmt" "$file")" || ! test -x "$file" ; then
+        continue
+      fi
       filename="''${file##*/}"
       renamed="$(printf "$fmt" "$filename")"
       ln -sfT "$file" "$out/bin/$renamed"

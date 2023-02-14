@@ -1,16 +1,15 @@
 { config, pkgs, lib, modulesPath, self, ... }:
 let
   cfg = config.kdn.profile.host.krul;
+  hostname = config.networking.hostName;
 
   mkZFSMountBase =
     { path
     , at ? path
-    , hostname ? config.networking.hostName
-    , poolName ? "${hostname}-primary"
     , poolPrefix ? ""
     }: {
       "${at}" = {
-        device = "${poolName}/${hostname}${poolPrefix}${path}";
+        device = "${hostname}-primary/${hostname}${poolPrefix}${path}";
         fsType = "zfs";
       };
     };
@@ -52,6 +51,7 @@ in
     networking.interfaces.enp5s0.wakeOnLan.enable = true;
     networking.interfaces.enp6s0.wakeOnLan.enable = true;
 
+    boot.initrd.systemd.enable = true;
     kdn.filesystems.zfs-root.enable = true;
     kdn.filesystems.zfs-root.sshUnlock.enable = true;
 
@@ -60,7 +60,7 @@ in
     zramSwap.priority = 100;
 
     boot.zfs.requestEncryptionCredentials = [
-      "krul-primary"
+      "${hostname}-primary"
     ];
 
     boot.tmpOnTmpfs = true;
