@@ -459,7 +459,7 @@ class Result(Base):
                 to_plan_mins -= record.should_total_mins
             elif is_past or is_skipped:
                 to_plan_mins -= record.should_total_mins
-            if can_modify and not is_off:
+            elif can_modify and not is_off:
                 modifiable_records.append(record)
 
         leftover_mins = to_plan_mins % len(modifiable_records)
