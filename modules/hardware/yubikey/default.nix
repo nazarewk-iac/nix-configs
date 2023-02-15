@@ -64,6 +64,7 @@ in
     # Aug 31 11:45:58 gpg-agent[40089]: scdaemon[40089]: detected reader 'Yubico YubiKey OTP+FIDO+CCID 00 00'
     # Aug 31 11:45:58 gpg-agent[40089]: scdaemon[40089]: DBG: Curve with OID not supported:  2b06010401da470f01
     # Aug 31 11:45:58 gpg-agent[40089]: scdaemon[40089]: no supported card application found: Card error
-    programs.gnupg.package = inputs.nixpkgs-gpg236.legacyPackages.${system}.gnupg;
+    # TODO: keep track of it and remove code when 2.4 is fully working
+    programs.gnupg.package = if pkgs.gnupg.version == "2.3.7" then inputs.nixpkgs-gpg236.legacyPackages.${system}.gnupg else pkgs.gnupg;
   };
 }

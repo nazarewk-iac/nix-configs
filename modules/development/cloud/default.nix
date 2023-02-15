@@ -9,6 +9,7 @@ in
   };
 
   config = mkIf cfg.enable {
+    # TODO: error: Package ‘v8-8.8.278.14’ in /nix/store/yxcvhxxlq7q6284hmwzvnzcg1g5aph47-source/pkgs/development/libraries/v8/8_x.nix:166 is marked as broken, refusing to evaluate.
     kdn.development.nodejs.enable = true;
     kdn.development.lua.enable = true;
     kdn.programs.aws-vault.enable = true;
