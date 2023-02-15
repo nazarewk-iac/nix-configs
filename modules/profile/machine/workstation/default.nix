@@ -55,6 +55,7 @@ in
     kdn.programs.direnv.enable = true;
     kdn.programs.nix-index.enable = true;
 
+    kdn.development.android.enable = true;
     kdn.containers.dagger.enable = true;
     kdn.emulators.windows.enable = true;
     programs.seahorse.enable = true;

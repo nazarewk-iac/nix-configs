@@ -13,21 +13,13 @@ in
       jdk
 
       gradle-completion
-      (pkgs.callPackage
-        (pkgs.gradleGen {
-          version = "7.5.1";
-          nativeVersion = "0.22-milestone-23";
-          sha256 = "sha256-9rhZaxDM5QFZHpLyKYFqpARkJPOyTXcXUbBnedWMjsQ=";
-          defaultJava = jdk17;
-        })
-        {
-          javaToolchains = [
-            jdk8
-            jdk11
-            jdk17
-          ];
-        }
-      )
+      (pkgs.callPackage gradle-packages.gradle_7 {
+        javaToolchains = [
+          jdk8
+          jdk11
+          jdk17
+        ];
+      })
     ];
   };
 }
