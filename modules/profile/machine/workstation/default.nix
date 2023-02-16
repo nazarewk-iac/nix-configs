@@ -46,8 +46,6 @@ in
 
     # CUSTOM
 
-    programs.steam.enable = true;
-
     kdn.desktop.remote-server.enable = true;
     kdn.hardware.discovery.enable = true;
     kdn.hardware.edid.enable = true;

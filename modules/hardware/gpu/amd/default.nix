@@ -22,7 +22,12 @@ in
     ];
 
     hardware.opengl.extraPackages32 = with pkgs; [
-      driversi686Linux.amdvlk
+      # TODO: 2023-02-16: broken due to below
+      #  Failed to compile Vulkan shader config ShaderConfig< Path: RadixSort/ScanExclusiveInt4DLB.hlsl, EntryPoint: InitScanExclusiveInt4DLB, OutputName: None, BaseLogicalId: None, RootSignaturePath: None, Defines: None, GroupTag: BVH >
+      #  Compilation failed for shader DeserializeAS
+      # see https://github.com/NixOS/nixpkgs/pull/216465
+      # see https://github.com/NixOS/nixpkgs/issues/216294
+      # driversi686Linux.amdvlk # see above
     ];
 
     hardware.opengl = {
