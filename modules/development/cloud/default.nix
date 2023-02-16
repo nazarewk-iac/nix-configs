@@ -21,7 +21,8 @@ in
       eksctl
 
       # Argo
-      argocd
+      argo # workflowg
+      argocd # CD
       vault
 
       (pkgs.writeShellApplication {
