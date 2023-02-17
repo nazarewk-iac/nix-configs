@@ -69,11 +69,9 @@ see https://bmcgee.ie/posts/2022/12/setting-up-my-new-laptop-nix-style/
 
 ## How to find out what uses the specific store path?
 
-Find immediate parents: `nix-store --query --referrers <paths...>`.
+Find immediate parents/reverse dependencies: `nix-store --query --referrers <paths...>`.
 
 Find the root using paths: `nix-store --query --roots <paths...>`.
-
-Find reverse dependencies: `nix-store --query --referrers <path>`
 
 ## GitHub rate-limiting unauthenticated requests
 
