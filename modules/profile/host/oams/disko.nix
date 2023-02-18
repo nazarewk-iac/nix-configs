@@ -102,6 +102,9 @@ in
             "/home/kdn/.local" = { };
             "/home/kdn/.local/share" = { };
             "/home/kdn/.local/share/containers" = { } // snapshotsOff;
+            "/home/kdn/.local/share/Steam" = { } // snapshotsOff;
+            "/home/kdn/.local/share/Steam/steamapps" = { };
+            "/home/kdn/.local/share/Steam/steamapps/common" = { };
             "/home/kdn/Downloads" = { } // snapshotsOff;
             "/home/kdn/Nextcloud" = { } // snapshotsOff;
             "/home/kdn/dev" = { };
