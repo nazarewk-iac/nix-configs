@@ -15,6 +15,7 @@ let
     ipython
     isort
     matplotlib
+    mt-940
     pendulum
     pip
     pipx
@@ -76,7 +77,7 @@ in
       poetry
       (renamedBinariesOnly "%s3.8" python38)
       (renamedBinariesOnly "%s3.9" python39)
-      (mkPython python310)
+      (mkPython python311)
       (renamedBinariesOnly "%s3.10" (mkPython python310))
       (renamedBinariesOnly "%s3.11" (mkPython python311))
 
