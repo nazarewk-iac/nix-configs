@@ -11,8 +11,9 @@ in
   config = mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
       jdk
-
+      maven
       gradle-completion
+
       (pkgs.callPackage gradle-packages.gradle_7 {
         javaToolchains = [
           jdk8
