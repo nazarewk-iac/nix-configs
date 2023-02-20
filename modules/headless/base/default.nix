@@ -9,6 +9,7 @@ in
   };
 
   config = mkIf cfg.enable ({
+    kdn.hardware.info.enable = true;
     kdn.development.data.enable = true;
     kdn.filesystems.base.enable = true;
     kdn.development.linux-utils.enable = true;
@@ -70,23 +71,10 @@ in
       handlr
       mimeo
 
-
       killall
       ncdu
       htop
       bintools
-
-      # hardware related
-      dmidecode
-      hddtemp
-      lm_sensors
-      lshw
-      lsof
-      pciutils
-      usbutils
-
-      glxinfo
-      inxi
 
       inotify-tools
       jq
