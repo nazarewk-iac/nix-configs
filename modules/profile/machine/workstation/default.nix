@@ -47,7 +47,6 @@ in
     # CUSTOM
 
     kdn.desktop.remote-server.enable = true;
-    kdn.hardware.discovery.enable = true;
     kdn.hardware.edid.enable = true;
     kdn.programs.keepass.enable = true;
     kdn.programs.direnv.enable = true;

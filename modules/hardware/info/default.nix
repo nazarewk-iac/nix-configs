@@ -1,16 +1,27 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.kdn.hardware.discovery;
+  cfg = config.kdn.hardware.info;
 in
 {
-  options.kdn.hardware.discovery = {
+  options.kdn.hardware.info = {
     enable = lib.mkEnableOption "hardware discovery scripts";
   };
 
   config = mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
+      dmidecode
+      glxinfo
+      hardinfo
+      hddtemp
       hw-probe
+      inxi
+      lm_sensors
+      lshw
+      pciutils
+      usbutils
+      vulkan-caps-viewer
+
       (pkgs.writeShellApplication {
         name = "list-device-drivers";
         runtimeInputs = with pkgs; [ coreutils ];
