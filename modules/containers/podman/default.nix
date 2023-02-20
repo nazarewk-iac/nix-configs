@@ -15,5 +15,9 @@ in
     virtualisation.podman.dockerCompat = !config.virtualisation.docker.enable;
     virtualisation.podman.dockerSocket.enable = !config.virtualisation.docker.enable;
     virtualisation.containers.containersConf.settings.storage.driver = "zfs";
+
+    environment.systemPackages = with pkgs; [
+      buildah
+    ];
   };
 }
