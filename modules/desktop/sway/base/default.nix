@@ -40,6 +40,7 @@ in
     kdn.gnome.base.enable = true;
     kdn.xfce.base.enable = true;
 
+    systemd.user.services.thunar.enable = false; # doesn't pick up proper MIME files
     systemd.user.services.thunar = {
       after = [ "graphical-session-pre.target" ];
       partOf = [ "graphical-session.target" ];

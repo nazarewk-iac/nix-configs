@@ -26,7 +26,6 @@ in
         thunar-media-tags-plugin
       ];
 
-
       environment.gnome.excludePackages = with pkgs.gnome; [
         gnome-terminal
         nautilus
