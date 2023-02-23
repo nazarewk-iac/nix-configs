@@ -8,7 +8,7 @@ in
     enable = lib.mkEnableOption "intel GPU setup";
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     # https://github.com/NixOS/nixos-hardware/blob/4045d5f43aff4440661d8912fc6e373188d15b5b/common/cpu/intel/default.nix
     # see https://github.com/NixOS/nixos-hardware/blob/0099253ad0b5283f06ffe31cf010af3f9ad7837d/common/gpu/intel.nix
     boot.initrd.kernelModules = [ "i915" ];

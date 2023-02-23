@@ -8,7 +8,7 @@ in
     enable = lib.mkEnableOption "Rust development";
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
       rustup
       pkg-config

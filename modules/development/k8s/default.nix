@@ -9,7 +9,7 @@ in
   };
 
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     kdn.development.data.enable = true;
 
     nixpkgs.overlays = [

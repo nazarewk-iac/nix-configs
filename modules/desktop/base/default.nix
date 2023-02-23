@@ -14,7 +14,7 @@ in
     };
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     nixpkgs.overlays = (if !cfg.nixpkgs-wayland.enableFullOverlay then [ ] else [
       inputs.nixpkgs-wayland.overlay
     ]) ++ (if !cfg.enableWlrootsPatch then [ ] else [

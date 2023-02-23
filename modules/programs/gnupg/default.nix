@@ -20,7 +20,7 @@ in
     pass-secret-service.enable = lib.mkEnableOption "pass-secret-service";
   };
 
-  config = mkIf cfg.enable (lib.mkMerge [
+  config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       services.pcscd.enable = true;
       programs.gnupg.agent.enable = true;

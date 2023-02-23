@@ -97,7 +97,7 @@ in
     };
   };
 
-  config = mkIf cfg.enable (mkMerge [
+  config = lib.mkIf cfg.enable (mkMerge [
     {
       environment.systemPackages = with pkgs; [
         wireguard-tools

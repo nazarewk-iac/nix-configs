@@ -35,7 +35,7 @@ in
     };
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     kdn.desktop.base.enable = true;
     kdn.gnome.base.enable = true;
     kdn.xfce.base.enable = true;

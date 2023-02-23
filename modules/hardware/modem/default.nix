@@ -8,7 +8,7 @@ in
     enable = lib.mkEnableOption "modem (LTE + calls) setup";
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     networking.networkmanager.enable = true;
     systemd.services.ModemManager.enable = true;
     systemd.services.ModemManager.wantedBy = [ "NetworkManager.service" ];

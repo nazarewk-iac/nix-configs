@@ -14,7 +14,7 @@ in
     enable = lib.mkEnableOption "remote access setup for Sway";
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     kdn.sway.base.enable = true;
 
     nixpkgs.overlays = [

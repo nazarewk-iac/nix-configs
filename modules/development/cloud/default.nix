@@ -8,7 +8,7 @@ in
     enable = lib.mkEnableOption "cloud development";
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     kdn.development.nodejs.enable = true;
     kdn.development.lua.enable = true;
     kdn.programs.aws-vault.enable = true;

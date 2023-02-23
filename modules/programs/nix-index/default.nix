@@ -8,7 +8,7 @@ in
     enable = lib.mkEnableOption "nix-index setup";
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     environment.interactiveShellInit = ''
       source ${pkgs.nix-index}/etc/profile.d/command-not-found.sh
     '';

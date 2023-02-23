@@ -8,7 +8,7 @@ in
     enable = lib.mkEnableOption "gnome base setup";
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     services.xserver.desktopManager.gnome.enable = true;
     # see https://github.com/nazarewk/nixpkgs/blob/32096899af23d49010bd8cf6a91695888d9d9e73/nixos/modules/services/x11/desktop-managers/gnome.nix#L471-L531
     services.gnome.core-utilities.enable = true;

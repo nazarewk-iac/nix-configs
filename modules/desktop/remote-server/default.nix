@@ -8,7 +8,7 @@ in
     enable = lib.mkEnableOption "remote desktop server setup";
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     services.teamviewer.enable = true;
   };
 }

@@ -9,7 +9,7 @@ in
     enable = lib.mkEnableOption "ZSH shell config";
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
       zsh-completions
     ];

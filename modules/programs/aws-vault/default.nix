@@ -57,7 +57,7 @@ in
     };
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     environment.shellAliases = {
       "av" = "aws-vault";
       "avr" = "aws-vault rotate -n";

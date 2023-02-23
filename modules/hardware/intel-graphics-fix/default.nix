@@ -8,7 +8,7 @@ in
     enable = lib.mkEnableOption "Intel HD Graphics fix";
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     # should fix mesa crashes
     # - https://gitlab.freedesktop.org/mesa/mesa/-/issues/5864
     # - https://gitlab.freedesktop.org/mesa/mesa/-/issues/5600

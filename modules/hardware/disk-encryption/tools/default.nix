@@ -8,7 +8,7 @@ in
     enable = lib.mkEnableOption "disk encryption tooling setup";
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
       fido2luks
       (runCommand "systemd-cryptsetup-bin" { } ''

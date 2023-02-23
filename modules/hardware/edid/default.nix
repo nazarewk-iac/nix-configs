@@ -33,7 +33,7 @@ in
     };
   };
 
-  config = mkIf cfg.enable (lib.mkMerge [
+  config = lib.mkIf cfg.enable (lib.mkMerge [
     (lib.mkIf (cfg.kernelOutputs != { }) {
       boot.initrd.extraFiles."edids".source = edids;
       boot.kernelParams = lib.flatten (lib.mapAttrsToList

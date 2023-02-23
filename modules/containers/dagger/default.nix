@@ -8,7 +8,7 @@ in
     enable = lib.mkEnableOption "Dagger.io development setup";
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     kdn.containers.podman.enable = lib.mkDefault true;
     kdn.containers.docker.enable = lib.mkDefault false;
 

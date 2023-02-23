@@ -8,7 +8,7 @@ in
     enable = lib.mkEnableOption "gtimelog setup";
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     # doesn't discover gtk?
     environment.systemPackages = with pkgs; [
       kdn.gtimelog

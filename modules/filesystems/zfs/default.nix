@@ -8,7 +8,7 @@ in
     enable = lib.mkEnableOption "ZFS setup";
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     boot.kernelPackages = pkgs.zfs.latestCompatibleLinuxPackages;
     boot.loader.grub.copyKernels = true;
     boot.kernelParams = [ "nohibernate" ];

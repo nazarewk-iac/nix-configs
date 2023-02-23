@@ -10,7 +10,7 @@ in
     };
   };
 
-  config = mkIf cfg.enable (mkMerge [{
+  config = lib.mkIf cfg.enable (mkMerge [{
     services.udev.packages = with pkgs; [
       qmk-udev-rules
       zsa-udev-rules

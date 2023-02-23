@@ -8,5 +8,5 @@ in
     enable = lib.mkEnableOption "disk encryption wrapper setup";
   };
 
-  config = mkIf cfg.enable { };
+  config = lib.mkIf cfg.enable { };
 }

@@ -8,7 +8,7 @@ in
     enable = lib.mkEnableOption "basic headless system configuration";
   };
 
-  config = mkIf cfg.enable ({
+  config = lib.mkIf cfg.enable ({
     kdn.hardware.info.enable = true;
     kdn.development.data.enable = true;
     kdn.filesystems.base.enable = true;

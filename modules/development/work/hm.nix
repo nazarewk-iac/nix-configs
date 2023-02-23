@@ -33,7 +33,7 @@ in
     };
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     programs.ssh.extraConfig = ''
       Host ${cfg.domains}
           User ${cfg.bastionUsername}

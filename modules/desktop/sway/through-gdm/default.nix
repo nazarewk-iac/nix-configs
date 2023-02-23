@@ -8,7 +8,7 @@ in
     enable = lib.mkEnableOption "running Sway WM in GDM";
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     kdn.sway.base.enable = true;
 
     services.xserver.enable = true;

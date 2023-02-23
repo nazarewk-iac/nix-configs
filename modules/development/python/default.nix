@@ -57,7 +57,7 @@ in
     enable = lib.mkEnableOption "Python development";
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     home-manager.sharedModules = [
       {
         programs.git.ignores = [ (builtins.readFile ./.gitignore) ];

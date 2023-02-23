@@ -33,7 +33,7 @@ in
     enable = lib.mkEnableOption "running Sway WM as a systemd service";
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     kdn.sway.base.enable = true;
 
     systemd.user.services.sway = {

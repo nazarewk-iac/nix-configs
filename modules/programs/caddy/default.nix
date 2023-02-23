@@ -8,7 +8,7 @@ in
     enable = lib.mkEnableOption "Caddy web server";
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     services.caddy = {
       enable = true;
     };

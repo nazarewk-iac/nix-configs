@@ -8,7 +8,7 @@ in
     enable = lib.mkEnableOption "linux utils";
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
       socat
       arp-scan

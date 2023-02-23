@@ -52,7 +52,7 @@ in
       default = "https://github.com/$org/$repo.git";
     };
   };
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     programs.bash.initExtra = config.programs.zsh.initExtra;
     programs.zsh.initExtra = ''
       gh-cd() {

@@ -30,7 +30,7 @@ in
     };
   };
 
-  config = mkIf cfg.enable (mkMerge [
+  config = lib.mkIf cfg.enable (mkMerge [
     {
       kdn.filesystems.zfs.enable = true;
     }

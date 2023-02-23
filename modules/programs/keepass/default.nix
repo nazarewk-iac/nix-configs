@@ -8,7 +8,7 @@ in
     enable = lib.mkEnableOption "keepass with plugins";
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     nixpkgs.overlays = [
       (final: prev: {
         keepass = prev.keepass.override {

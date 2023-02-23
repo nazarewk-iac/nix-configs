@@ -15,7 +15,7 @@ in
     };
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     # SOUND - PipeWire
     # see additional pavucontrol package
     security.rtkit.enable = true;

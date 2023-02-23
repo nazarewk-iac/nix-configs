@@ -8,7 +8,7 @@ in
     enable = lib.mkEnableOption "golang development";
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
       go_1_19
       gccgo

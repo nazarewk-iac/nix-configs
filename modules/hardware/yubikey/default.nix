@@ -12,7 +12,7 @@ in
     };
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     kdn.programs.gnupg.enable = true;
 
     home-manager.sharedModules = [

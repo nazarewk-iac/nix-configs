@@ -8,7 +8,7 @@ in
     enable = lib.mkEnableOption "nix development/debugging";
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
       nix-tree
       nix-du

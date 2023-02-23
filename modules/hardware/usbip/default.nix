@@ -26,7 +26,7 @@ in
     };
   };
 
-  config = mkIf cfg.enable (lib.mkMerge [
+  config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       boot.kernelModules = [
         "vhci-hcd"

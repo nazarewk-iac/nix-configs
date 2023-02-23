@@ -8,7 +8,7 @@ in
     enable = lib.mkEnableOption "docker daemon setup";
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     virtualisation.docker.enable = true;
 
     environment.gnome.excludePackages = with pkgs; [
