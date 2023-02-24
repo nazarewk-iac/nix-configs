@@ -177,19 +177,21 @@ in
         fi
       '')
 
-      swaylock
+      dmenu
+      wofi
+
+      grim
+      libnotify
       swayidle
+      swaylock
       waybar
+      wf-recorder
       wl-clipboard
       wl-clipboard-x11
-      wf-recorder
-      v4l-utils
-      dmenu
-      grim
-      wlogout
-      libnotify
-      slurp
+
       gsimplecal
+      slurp
+      wlogout
 
       # polkit related
       # lxqt.lxqt-policykit # lxqt crashes after authenticating with U2F
@@ -197,33 +199,14 @@ in
       # polkit_gnome # asks for U2F twice then fails for no reason
 
       # sway related
-      brightnessctl
-      lxappearance
-      xsettingsd
-      gsettings-desktop-schemas
-      gtk_engines
-      gtk-engine-murrine
-      # wayland programs
       autotiling
-      gammastep
       clipman
-      wofi
-      wev # wayland event viewer
-      evtest # listens for /dev/event* device events (eg: keyboard keys, function keys etc)
-      swayr # window switcher
+      gammastep
       kanshi # autorandr
-      wshowkeys # display pressed keys
+      swayr # window switcher
+      wayland-utils
       wdisplays # randr equivalent
       wlr-randr
-      wayland-utils
-
-      # themes
-      hicolor-icon-theme # see https://github.com/NixOS/nixpkgs/issues/32730
-      gnome-icon-theme # see https://github.com/NixOS/nixpkgs/issues/43836#issuecomment-419217138
-      gnome.adwaita-icon-theme
-      adwaita-qt
-      glib # gsettings
-      gnome.dconf-editor
     ];
 
     xdg.portal.enable = true;

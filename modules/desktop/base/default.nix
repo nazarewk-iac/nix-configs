@@ -44,6 +44,8 @@ in
       anonymousPro
     ];
 
+    hardware.uinput.enable = true;
+
     environment.systemPackages = with pkgs; [
       qt5.qtwayland
       qt5Full
@@ -59,8 +61,29 @@ in
       # graphics
       libva-utils
 
-      # misc
+      # tools
+      brightnessctl
+      gsettings-desktop-schemas
+      gtk-engine-murrine
+      gtk_engines
+      lxappearance
+      xsettingsd
+
+      # debugging
+      evtest # listens for /dev/event* device events (eg: keyboard keys, function keys etc)
       libinput
+      v4l-utils
+      wev # wayland event viewer
+      wshowkeys # display pressed keys
+      ydotool
+
+      # themes
+      hicolor-icon-theme # see https://github.com/NixOS/nixpkgs/issues/32730
+      gnome-icon-theme # see https://github.com/NixOS/nixpkgs/issues/43836#issuecomment-419217138
+      gnome.adwaita-icon-theme
+      adwaita-qt
+      glib # gsettings
+      gnome.dconf-editor
     ];
   };
 }
