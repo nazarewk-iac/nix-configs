@@ -9,6 +9,10 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+
+    programs.fish.interactiveShellInit = ''
+      complete -c nix-which --wraps which
+    '';
     environment.systemPackages = with pkgs; [
       nix-tree
       nix-du

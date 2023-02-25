@@ -89,6 +89,9 @@ in
       moreutils
       gnugrep
 
+      strace
+      lurk
+
       zip
     ];
 
