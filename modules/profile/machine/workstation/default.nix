@@ -54,6 +54,9 @@ in
 
     kdn.development.android.enable = true;
     kdn.containers.dagger.enable = true;
+    kdn.containers.distrobox.enable = true;
+    kdn.containers.podman.enable = true;
+    kdn.containers.x11docker.enable = true;
     kdn.emulators.windows.enable = true;
     programs.seahorse.enable = true;
     boot.binfmt.emulatedSystems = [
