@@ -45,6 +45,7 @@ in
     ];
 
     hardware.uinput.enable = true;
+    kdn.programs.ydotool.enable = true;
 
     environment.systemPackages = with pkgs; [
       qt5.qtwayland
@@ -75,7 +76,6 @@ in
       v4l-utils
       wev # wayland event viewer
       wshowkeys # display pressed keys
-      ydotool
 
       # themes
       hicolor-icon-theme # see https://github.com/NixOS/nixpkgs/issues/32730
