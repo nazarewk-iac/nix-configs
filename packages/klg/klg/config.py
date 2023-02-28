@@ -21,6 +21,7 @@ class FieldFromTags:
 @dataclasses.dataclass
 class ReportConfig:
     resource: str = ""
+    name: str = ""
     tags: list[str] = dataclasses.field(default_factory=list)
     fields: list[FieldFromTags] = dataclasses.field(default_factory=dict)
 

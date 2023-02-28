@@ -115,11 +115,13 @@ async def fmt(path, check, diff, write, sort):
 @click.option("-o", "--output", default="", help="Where to store csv/xlsx file?")
 @click.option("-r", "--report", "report_name", default="default")
 @click.argument("paths", nargs=-1)
-async def generate_report(paths, period, tags, output, report_name, resource):
+async def generate_report(paths, period, tags, output, report_id, resource):
     klog = Klog()
-    cfg = CONFIG.reports.get(report_name, ReportConfig())
+    cfg = CONFIG.reports.get(report_id, ReportConfig())
     cfg.resource = resource or cfg.resource
     cfg.tags = tags or cfg.tags
+    cfg.name = cfg.name or report_id
+
     paths = paths or ["@default"]
     paths = [
         Path(raw) if not raw.startswith("@") else await klog.bookmark(raw)
@@ -132,7 +134,7 @@ async def generate_report(paths, period, tags, output, report_name, resource):
     else:
         assert len(paths) == 1
         path = paths[0]
-        output = path.with_name(f"{period}_report_{report_name}.csv")
+        output = path.with_name(f"{period}_report_{cfg.name}.csv")
 
     if tags:
         args.append(f"--tag={','.join(tags)}")
