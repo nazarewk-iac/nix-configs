@@ -12,12 +12,12 @@ in
 
     virtualisation.oci-containers.backend = "podman";
     virtualisation.podman.enable = true;
-    virtualisation.podman.dockerCompat = !config.virtualisation.docker.enable;
+    virtualisation.podman.dockerCompat = lib.mkDefault false;
     virtualisation.podman.dockerSocket.enable = !config.virtualisation.docker.enable;
     virtualisation.containers.containersConf.settings.storage.driver = "zfs";
 
     environment.systemPackages = with pkgs; [
-      podman
+      # podman # conflicts with option's wrapper
       buildah
     ];
   };

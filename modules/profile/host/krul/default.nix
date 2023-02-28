@@ -48,7 +48,6 @@ in
     kdn.k3s.single-node.reservations.system.memory = "32G";
     kdn.k3s.single-node.reservations.kube.cpu = "4";
     kdn.k3s.single-node.reservations.kube.memory = "4G";
-    # kdn.containers.podman.enable = true;
 
     networking.interfaces.enp5s0.wakeOnLan.enable = true;
     networking.interfaces.enp6s0.wakeOnLan.enable = true;

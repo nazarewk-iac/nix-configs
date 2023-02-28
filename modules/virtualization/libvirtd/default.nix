@@ -12,6 +12,7 @@ in
     # see https://nixos.wiki/wiki/Libvirt
     virtualisation.libvirtd = {
       enable = true;
+      qemu.package = pkgs.qemu_full;
       qemu.swtpm.enable = true;
       qemu.ovmf = {
         enable = true;
@@ -25,9 +26,10 @@ in
     networking.firewall.checkReversePath = false;
 
     environment.systemPackages = with pkgs; [
+      libguestfs
       libvirt
       virt-manager
-      libguestfs
+      virtiofsd
     ];
   };
 }
