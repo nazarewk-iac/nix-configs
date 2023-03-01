@@ -3,6 +3,14 @@ let
   sysCfg = nixosConfig.kdn.sway.base;
 
   mod = import ./_modifiers.nix;
+  ydotool-paste = pkgs.writeShellApplication {
+    name = "ydotool-paste";
+    runtimeInputs = with pkgs; [ ydotool wl-clipboard ];
+    text = ''
+      sleep "''${1:-0.5}"
+      wl-paste --no-newline | ydotool type --file=-
+    '';
+  };
 in
 {
   options.kdn.sway.base = {
@@ -46,6 +54,8 @@ in
           exec = cmd: "exec '${cmd}'";
         in
         {
+          "--release ${mod.super}+V" = exec "${ydotool-paste}/bin/ydotool-paste"; # fix using it by nix path
+          "--inhibited --release ${mod.super}+${mod.ctrl}+V" = exec "${ydotool-paste}/bin/ydotool-paste"; # fix using it by nix path
           # X parity
           "${mod.lalt}+F4" = "kill";
           "${mod.super}+E" = exec "thunar"; # fix using it by nix path
@@ -108,6 +118,7 @@ in
         runtimeInputs = with pkgs; [ handlr ];
         text = ''handlr open "$@"'';
       })
+      ydotool-paste
     ];
 
     home.sessionPath = [ "$HOME/.local/bin" ];
