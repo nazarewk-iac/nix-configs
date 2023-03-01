@@ -8,6 +8,7 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    virtualisation.spiceUSBRedirection.enable = true;
     # see https://nixos.wiki/wiki/Virt-manager
     # see https://nixos.wiki/wiki/Libvirt
     virtualisation.libvirtd = {
