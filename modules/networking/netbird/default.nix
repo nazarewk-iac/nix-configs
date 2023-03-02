@@ -23,7 +23,7 @@ in
   };
 
   config = lib.mkMerge [
-    { services.netbird.package = pkgs.netbird; }
+    { services.netbird.package = pkgs.kdn.netbird; }
     (lib.mkIf (cfg.instances != { }) {
 
       environment.systemPackages = [ config.services.netbird.package ];
