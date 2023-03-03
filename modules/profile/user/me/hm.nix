@@ -96,6 +96,7 @@ in
           teams = [ "teams.desktop" ];
           ide = [ "idea-ultimate.desktop" ];
           vectorImages = [ "org.gnome.eog.desktop" ];
+          terminal = [ "foot.desktop" ];
         in
         {
           "application/pdf" = pdf;
@@ -124,6 +125,7 @@ in
           "x-scheme-handler/rdp" = remmina;
           "x-scheme-handler/remmina" = remmina;
           "x-scheme-handler/spice" = remmina;
+          "x-scheme-handler/terminal" = terminal;
           "x-scheme-handler/vnc" = remmina;
         };
     })
