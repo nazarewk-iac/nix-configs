@@ -19,6 +19,8 @@ in
       ssm-session-manager-plugin
       eksctl
 
+      redis
+
       # Argo
       argo # workflows
       argocd # CD
