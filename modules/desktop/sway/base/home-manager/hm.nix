@@ -125,7 +125,17 @@ in
 
     xdg.configFile."handlr/handlr.toml".source = (pkgs.formats.toml { }).generate "handlr.toml" {
       enable_selector = true;
-      selector = "${pkgs.wofi}/bin/wofi -d -i -n --prompt='Open With: '";
+      selector =
+        let
+          app = (pkgs.writeShellApplication {
+            name = "handlr-selector";
+            runtimeInputs = with pkgs; [ wofi ];
+            text = ''
+              wofi --dmenu --insensitive --normal-window --prompt='Open With: '
+            '';
+          });
+        in
+        "${app}/bin/handlr-selector";
     };
 
     programs.foot = {
@@ -134,7 +144,7 @@ in
       settings = {
         main = {
           font = "JetBrainsMono Nerd Font Mono:style=Regular:size=12";
-          dpi-aware = "yes";
+          dpi-aware = "no";
         };
       };
     };
