@@ -125,6 +125,7 @@ in
           "x-scheme-handler/rdp" = remmina;
           "x-scheme-handler/remmina" = remmina;
           "x-scheme-handler/spice" = remmina;
+          # TODO: set thunar terminal https://github.com/chmln/handlr/issues/62
           "x-scheme-handler/terminal" = terminal;
           "x-scheme-handler/vnc" = remmina;
         };

@@ -53,7 +53,7 @@ in
     environment.systemPackages = with pkgs; [
       xkcdpass
       yubikey-manager
-      yubikey-manager-qt
+      #yubikey-manager-qt # TODO: 2023-03-03 failed to build with ERROR: Could not find a version that satisfies the requirement cryptography<39,>=2.1
       yubikey-personalization
       yubikey-personalization-gui
       yubico-pam

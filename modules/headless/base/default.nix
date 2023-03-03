@@ -63,6 +63,7 @@ in
       tmux
 
       # Working with XDG files
+      file
       desktop-file-utils
       xdg-utils
       xdg-launch
