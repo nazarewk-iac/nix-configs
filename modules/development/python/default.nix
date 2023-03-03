@@ -73,13 +73,16 @@ in
     ];
     environment.systemPackages = with pkgs; [
       # python software
+      black
       pipenv
       poetry
-      (renamedBinariesOnly "%s3.8" python38)
-      (renamedBinariesOnly "%s3.9" python39)
-      (mkPython python311)
-      (renamedBinariesOnly "%s3.10" (mkPython python310))
-      (renamedBinariesOnly "%s3.11" (mkPython python311))
+      # full packages contain tkinter https://github.com/NixOS/nixpkgs/blob/7f5639fa3b68054ca0b062866dc62b22c3f11505/pkgs/top-level/all-packages.nix#L16633-L16634
+      (renamedBinariesOnly "%s.3.8" python38Full)
+      (renamedBinariesOnly "%s.3.9" python39Full)
+      (mkPython python311Full)
+      (renamedBinariesOnly "%s.3.10" python310Full)
+      (renamedBinariesOnly "%s.3.11" (mkPython python311Full))
+      (renamedBinariesOnly "%s.3.12" python312)
 
       graphviz
 
