@@ -10,7 +10,10 @@ in
 
   config = lib.mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
+      cargo
+      rustc
       rustup
+      rust-analyzer
       pkg-config
     ];
   };
