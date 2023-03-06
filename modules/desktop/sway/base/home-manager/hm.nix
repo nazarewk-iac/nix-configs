@@ -131,7 +131,13 @@ in
             name = "handlr-selector";
             runtimeInputs = with pkgs; [ wofi ];
             text = ''
-              wofi --dmenu --insensitive --normal-window --prompt='Open With: '
+              cacheDir="$(mktemp -d -t handlr-selector.XXXX)"
+              trap 'rm -rf $cacheDir || true' EXIT
+              if wofi --dmenu --insensitive --normal-window --prompt='Open With: ' > "$cacheDir/stdout" ; then
+                cat "$cacheDir/stdout"
+              else
+                exit 1
+              fi
             '';
           });
         in
