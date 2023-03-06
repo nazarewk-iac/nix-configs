@@ -32,9 +32,9 @@ in
         text = builtins.readFile ./bin/aws-list-all-parameters.sh;
       })
       (pkgs.writeShellApplication {
-        name = "aws-argo-token";
+        name = "argo-eks-token";
         runtimeInputs = with pkgs; [ awscli2 jq ];
-        text = builtins.readFile ./bin/aws-argo-token.sh;
+        text = builtins.readFile ./bin/argo-eks-token.sh;
       })
     ];
   };
