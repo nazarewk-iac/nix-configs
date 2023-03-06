@@ -19,6 +19,7 @@ in
     environment.systemPackages = with pkgs; [
       # podman # conflicts with option's wrapper
       buildah
+      skopeo
     ];
   };
 }
