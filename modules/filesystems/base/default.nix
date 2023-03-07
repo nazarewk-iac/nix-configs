@@ -14,8 +14,8 @@ in
       ntfs3g
       gptfdisk
       util-linux
-      exfat
-      exfatprogs
+      # exfat # this is FUSE implementation https://github.com/relan/exfat
+      exfatprogs # this is userspace util for linux 5.7+ kernel module for exfat https://github.com/exfatprogs/exfatprogs
     ];
   };
 }
