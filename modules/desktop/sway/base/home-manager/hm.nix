@@ -115,7 +115,7 @@ in
       # will override system-wide xdg-open
       (pkgs.writeShellApplication {
         name = "xdg-open";
-        runtimeInputs = with pkgs; [ handlr ];
+        runtimeInputs = with pkgs; [ kdn.handlr ];
         text = ''handlr open "$@"'';
       })
       ydotool-paste

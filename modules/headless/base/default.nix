@@ -69,7 +69,7 @@ in
       xdg-launch
 
       # https://wiki.archlinux.org/title/Default%20applications#Resource_openers
-      handlr
+      kdn.handlr
       mimeo
 
       killall
