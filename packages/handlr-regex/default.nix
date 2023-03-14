@@ -1,16 +1,16 @@
 { lib, stdenv, rustPlatform, fetchFromGitHub, shared-mime-info, libiconv, installShellFiles, ... }:
 rustPlatform.buildRustPackage rec {
-  pname = "handlr";
+  pname = "handlr-regex";
   version = "unstable-2023-03-09";
 
   src = fetchFromGitHub {
     owner = "Anomalocaridid";
     repo = "handlr-regex";
-    rev = "90e78ba92d0355cb523abf268858f3123fd81238";
-    sha256 = "sha256-wENhlUBwfNg/r7yMKa1cQI1fbFw+qowwK8EdO912Yys=";
+    rev = "e7430fe930e6d70bc6ea5cc2a3ad8546e396b38e";
+    sha256 = "sha256-WWC+Z1LqfGKPtFKIocfBpVWJMg+igmt3u+yS+lIj1G4=";
   };
 
-  cargoSha256 = "sha256-zvBRt6J96RQTpwXuz474cOWOe1DOeltYElEPIqKMg/s=";
+  cargoSha256 = "sha256-86R00/VtiKaW0GQ1iOuCJW3phG1XxNl97+13QJ+ebIk=";
 
   nativeBuildInputs = [ installShellFiles shared-mime-info ];
   buildInputs = lib.optionals stdenv.isDarwin [ libiconv ];
@@ -19,17 +19,18 @@ rustPlatform.buildRustPackage rec {
     export HOME=$TEMPDIR
   '';
 
-  postInstall = ''
-    installShellCompletion \
-      --zsh  completions/_handlr \
-      --bash  completions/handlr \
-      --fish completions/handlr.fish
-  '';
+  # completions are not available for handlr-regex
+  #postInstall = ''
+  #  installShellCompletion \
+  #    --zsh   completions/_handlr \
+  #    --bash  completions/handlr \
+  #    --fish  completions/handlr.fish
+  #'';
 
   meta = with lib; {
     description = "Alternative to xdg-open to manage default applications with ease";
-    homepage = "https://github.com/chmln/handlr";
+    homepage = "https://github.com/Anomalocaridid/handlr-regex";
     license = licenses.mit;
-    maintainers = with maintainers; [ mredaelli artturin ];
+    maintainers = with maintainers; [ nazarewk ];
   };
 }
