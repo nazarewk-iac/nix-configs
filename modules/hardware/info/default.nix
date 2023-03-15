@@ -18,24 +18,30 @@ in
       inxi
       lm_sensors
       lshw
-      pciutils
-      usbutils
+      pciutils # lspci
+      sysfsutils # systool
+      usbutils # lsusb
+      util-linux # dmesg lsblk lscpu
       vulkan-caps-viewer
 
-      (pkgs.writeShellApplication {
-        name = "list-device-drivers";
-        runtimeInputs = with pkgs; [ coreutils ];
-        text = ''
-          # shellcheck disable=SC2086
-          ls -l /sys/class/''${1:-"*"}/''${2:-"*"}/device/driver
-        '';
+      (lib.kdn.shell.writeShellScript pkgs ./bin/lsiommu.sh {
+        runtimeInputs = with pkgs; [ findutils ];
       })
-      (pkgs.writeShellApplication {
-        name = "find-device-kernel-module";
+      (lib.kdn.shell.writeShellScript pkgs ./bin/gpu-passthrough-check.sh {
+        runtimeInputs = with pkgs; [
+          dmidecode
+          util-linux # dmesg lsblk lscpu
+          lshw
+          pciutils # lspci
+          usbutils # lsusb
+          sysfsutils # systool
+        ];
+      })
+      (lib.kdn.shell.writeShellScript pkgs ./bin/list-device-drivers.sh {
+        runtimeInputs = with pkgs; [ coreutils ];
+      })
+      (lib.kdn.shell.writeShellScript pkgs ./bin/find-device-kernel-module.sh {
         runtimeInputs = with pkgs; [ pciutils gnugrep ];
-        text = ''
-          lspci -nn -k | grep -i -A"''${2:-3}" "$1" "''${@:3}"
-        '';
       })
     ];
   };

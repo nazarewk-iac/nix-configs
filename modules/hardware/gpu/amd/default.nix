@@ -11,8 +11,8 @@ in
   config = lib.mkIf cfg.enable {
     # see https://github.com/NixOS/nixos-hardware/blob/0099253ad0b5283f06ffe31cf010af3f9ad7837d/common/gpu/amd/default.nix
     # see https://github.com/nixos-rocm/nixos-rocm
-    boot.kernelModules = [ "amdgpu" ];
-    services.xserver.videoDrivers = [ "amdgpu" ];
+    #boot.kernelModules = [ "amdgpu" ];
+    #services.xserver.videoDrivers = [ "amdgpu" ];
 
     hardware.opengl.enable = true;
     hardware.opengl.extraPackages = with pkgs; [

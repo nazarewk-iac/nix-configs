@@ -25,6 +25,7 @@ in
   config = lib.mkIf cfg.enable {
     kdn.profile.machine.workstation.enable = true;
     kdn.hardware.gpu.amd.enable = true;
+    kdn.hardware.cpu.amd.enable = true;
 
     services.nix-serve = {
       enable = false;

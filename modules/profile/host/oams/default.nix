@@ -12,7 +12,12 @@ in
       kdn.networking.netbird.instances.w1 = 51822;
       kdn.profile.machine.workstation.enable = true;
       kdn.hardware.gpu.amd.enable = true;
+      kdn.hardware.cpu.amd.enable = true;
       kdn.profile.machine.gaming.enable = true;
+      kdn.virtualization.libvirtd.vfio.gpuIDs = [
+        "1002:73df"
+        "1002:ab28"
+      ];
 
       # enables systemd-cryptsetup-generator
       # see https://github.com/nazarewk/nixpkgs/blob/04f574a1c0fde90b51bf68198e2297ca4e7cccf4/nixos/modules/system/boot/luksroot.nix#L997-L1012

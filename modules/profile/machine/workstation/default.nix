@@ -31,9 +31,9 @@ in
     hardware.cpu.amd.updateMicrocode = true;
 
     kdn.monitoring.prometheus-stack.enable = true;
-    kdn.monitoring.prometheus-stack.caddy.grafana = "grafana.kdn.pw";
+    kdn.monitoring.prometheus-stack.caddy.grafana = "grafana.${config.networking.hostName}.kdn.im";
     kdn.monitoring.elasticsearch-stack.enable = true;
-    kdn.monitoring.elasticsearch-stack.caddy.kibana = "kibana.kdn.pw";
+    kdn.monitoring.elasticsearch-stack.caddy.kibana = "kibana.${config.networking.hostName}.kdn.im";
     kdn.programs.caddy.enable = true;
     kdn.programs.obs-studio.enable = true;
 
