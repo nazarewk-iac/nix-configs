@@ -1,7 +1,0 @@
-*
-!/.gitignore
-!/pkg/
-!/pkg/**/*
-!/dagger.mod
-!/dagger.sum
-!/module.cue

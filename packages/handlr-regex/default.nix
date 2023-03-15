@@ -28,7 +28,7 @@ rustPlatform.buildRustPackage rec {
   #'';
 
   meta = with lib; {
-    description = "Alternative to xdg-open to manage default applications with ease";
+    description = "Alternative to xdg-open to manage default applications with ease (newer fork supporting regex)";
     homepage = "https://github.com/Anomalocaridid/handlr-regex";
     license = licenses.mit;
     maintainers = with maintainers; [ nazarewk ];
