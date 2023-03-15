@@ -1,10 +1,10 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.kdn.hardware.info;
+  cfg = config.kdn.hardware.basic;
 in
 {
-  options.kdn.hardware.info = {
+  options.kdn.hardware.basic = {
     enable = lib.mkEnableOption "hardware discovery scripts";
   };
 
@@ -43,6 +43,8 @@ in
       (lib.kdn.shell.writeShellScript pkgs ./bin/find-device-kernel-module.sh {
         runtimeInputs = with pkgs; [ pciutils gnugrep ];
       })
+
+      stress-ng
     ];
   };
 }

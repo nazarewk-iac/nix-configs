@@ -9,7 +9,7 @@ in
   };
 
   config = lib.mkIf cfg.enable ({
-    kdn.hardware.info.enable = true;
+    kdn.hardware.basic.enable = true;
     kdn.development.data.enable = true;
     kdn.filesystems.base.enable = true;
     kdn.development.linux-utils.enable = true;
