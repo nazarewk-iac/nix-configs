@@ -20,6 +20,7 @@ in
       # podman # conflicts with option's wrapper
       buildah
       skopeo
+      buildkit
     ];
   };
 }
