@@ -216,8 +216,8 @@ fi
 #sudo lshw -class display
 
 #if [ -n ${MOCK_SET+x} ]; then
-if [ "$MOCK_MODE" = true ]; then
-  log_red "[Warning] Remember, the above output has been generated using the given mock data and has nothing to do with this system!"
-else
-  $SHELL # This is just to keep the shell running when the script is automatically executed on startup.
-fi
+#if [ "$MOCK_MODE" = true ]; then
+#  log_red "[Warning] Remember, the above output has been generated using the given mock data and has nothing to do with this system!"
+#else
+#  $SHELL # This is just to keep the shell running when the script is automatically executed on startup.
+#fi
