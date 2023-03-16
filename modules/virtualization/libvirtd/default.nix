@@ -5,6 +5,18 @@ in
 {
   options.kdn.virtualization.libvirtd = {
     enable = lib.mkEnableOption "libvirtd setup";
+
+    lookingGlass = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+      };
+      instances = lib.mkOption {
+        type = lib.types.attrsOf lib.types.string;
+        default = { };
+      };
+    };
+
     vfio = {
       enable = lib.mkOption {
         type = lib.types.bool;
@@ -71,6 +83,35 @@ in
           (lib.lists.optional (cfg.vfio.gpuIDs != [ ]) ("vfio-pci.ids=" + lib.concatStringsSep "," cfg.vfio.gpuIDs))
         ];
       };
+    })
+    (lib.mkIf cfg.lookingGlass.enable {
+      environment.systemPackages = with pkgs; [
+        looking-glass-client
+        scream
+      ];
+
+      systemd.tmpfiles.rules = lib.trivial.pipe cfg.lookingGlass.instances [
+        (lib.attrsets.mapAttrsToList (name: username: [
+          "f /dev/shm/${name}-looking-glass 0660 ${username} qemu-libvirtd -"
+          "f /dev/shm/${name}-scream 0660 ${username} qemu-libvirtd -"
+        ]))
+        lib.lists.flatten
+      ];
+
+      # TODO: instantiate scream for user
+      #systemd.services = lib.attrsets.mapAttrs'
+      #  (name: username: lib.attrsets.nameValuePair
+      #    "scream-ivshmem-${name}"
+      #    {
+      #      description = "Scream IVSHMEM for ${name}";
+      #      serviceConfig = {
+      #        ExecStart = "${pkgs.scream}/bin/scream -m /dev/shm/${name}-scream -o pulse -n ${name}-scream";
+      #        Restart = "always";
+      #      };
+      #      wantedBy = [ "multi-user.target" ];
+      #      requires = [ "pipewire.service" ];
+      #    })
+      #  cfg.lookingGlass.instances;
     })
   ]);
 }

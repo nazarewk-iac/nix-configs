@@ -45,6 +45,8 @@ in
         "wheel"
       ];
     };
+
+    kdn.virtualization.libvirtd.lookingGlass.instances = { kdn-default = "kdn"; };
     home-manager.users.kdn = { kdn.profile.user.me.nixosConfig = config.users.users.kdn; };
   });
 }
