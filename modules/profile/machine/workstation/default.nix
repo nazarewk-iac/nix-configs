@@ -25,7 +25,6 @@ in
     };
 
     environment.systemPackages = with pkgs; [
-      nixos-anywhere
     ];
 
     hardware.cpu.amd.updateMicrocode = true;

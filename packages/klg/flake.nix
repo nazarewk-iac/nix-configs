@@ -44,6 +44,10 @@
         packages.container = pkgs.dockerTools.buildLayeredImage {
           name = "hello-docker";
           tag = "latest";
+          contents = with pkgs; [
+            bash
+            conf.pkg
+          ];
           config = {
             Cmd = [ conf.bin ];
           };

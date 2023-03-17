@@ -20,6 +20,8 @@ in
       nixfmt
       nixpkgs-fmt
 
+      devenv
+
       #inputs.nixpkgs-update.defaultPackage.${system}
 
       (pkgs.writeShellApplication {

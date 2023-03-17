@@ -75,18 +75,18 @@
       url = "github:numtide/treefmt-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    nixos-anywhere = {
-      url = "github:numtide/nixos-anywhere";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-parts.follows = "flake-parts";
-      inputs.disko.follows = "disko";
-      inputs.nixos-images.follows = "nixos-images";
-      inputs.treefmt-nix.follows = "treefmt-nix";
-    };
 
     nixinate = {
       url = "github:matthewcroughan/nixinate";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    devenv = {
+      url = "github:cachix/devenv/latest";
+      #inputs.nixpkgs.follows = "nixpkgs";
+      #inputs.flake-compat.follows = "flake-compat";
+      #inputs.pre-commit-hooks.follows = "pre-commit-hooks";
+      #inputs.nix.follows = "..."; # url = "github:domenkozar/nix/relaxed-flakes";
     };
   };
 
@@ -143,7 +143,7 @@
           poetry2nix.overlay
           (final: prev: (import ./packages { inherit inputs self; pkgs = prev; }))
           (final: prev: {
-            nixos-anywhere = inputs.nixos-anywhere.packages."${final.stdenv.system}".nixos-anywhere;
+            devenv = inputs.devenv.packages."${final.stdenv.system}".devenv;
           })
           (final: prev: {
             # work around not using flake-utils which sets it up on `pkgs.system`

@@ -5,7 +5,7 @@ let
   bootDevice = "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_04LZCR91M8UZPJW8-0:0";
   luksBackupDir = "/nazarewk-iskaral/secrets/luks/${hostname}";
   #luksKeyFile = "${luksBackupDir}/luks-${poolName}-keyfile.bin";
-  # cat be copied automatically using nixos-anywhere with: --disk-encryption-keys /keyfile.bin <(sudo cat /nazarewk-iskaral/secrets/luks/obler/luks-keyfile.bin)
+  # can be copied automatically using nixos-anywhere with: --disk-encryption-keys /keyfile.bin <(sudo cat /nazarewk-iskaral/secrets/luks/obler/luks-keyfile.bin)
   luksKeyFile = "/keyfile.bin";
   luksHeaderBackup = "${luksBackupDir}/luks-${poolName}-header.img";
   luksHeader = "${bootDevice}-part2";
