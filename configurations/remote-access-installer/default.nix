@@ -8,7 +8,7 @@
     experimental-features = nix-command flakes
   '';
   nixpkgs.config.allowUnfree = true;
-  nixpkgs.config.allowAliases = false;
+  nixpkgs.config.allowAliases = true;
 
   services.openssh.enable = true;
   services.openssh.openFirewall = true;

@@ -46,7 +46,7 @@ in
       experimental-features = nix-command flakes
     '';
     nixpkgs.config.allowUnfree = true;
-    nixpkgs.config.allowAliases = false;
+    nixpkgs.config.allowAliases = true;
 
     home-manager.useGlobalPkgs = true;
     home-manager.useUserPackages = true;
@@ -56,13 +56,13 @@ in
       (
         let
           cfg = ''
-            { allowUnfree = true; allowAliases = false; }
+            { allowUnfree = true; allowAliases = true; }
           '';
         in
         {
           home.enableNixpkgsReleaseCheck = true;
           nixpkgs.config.allowUnfree = true;
-          nixpkgs.config.allowAliases = false;
+          nixpkgs.config.allowAliases = true;
           xdg.configFile."nixpkgs/config.nix".text = cfg;
           home.file.".nixpkgs/config.nix".text = cfg;
         }

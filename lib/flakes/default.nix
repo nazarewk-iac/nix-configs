@@ -8,7 +8,7 @@
             import pkgs {
               inherit system overlays;
               config.allowUnfree = true;
-              config.allowAliases = false;
+              config.allowAliases = true;
             };
           _overlayedInputs = overlays: lib.genAttrs (builtins.attrNames self.inputs) (inp: pkgsFor self.inputs."${inp}" overlays);
         in
