@@ -76,7 +76,7 @@ in
       specialisation."VFIO".configuration = {
         system.nixos.tags = [ "with-vfio" ];
         boot.kernelParams = lib.concatLists [
-          (lib.lists.optional config.kdn.hardware.gpu.amd.enable "supergfxd.mode=vfio")
+          (lib.lists.optional config.kdn.hardware.gpu.amd.enable "supergfxd.mode=integrated")
           (lib.lists.optional config.kdn.hardware.cpu.amd.enable "amd_iommu=on")
           (lib.lists.optional config.kdn.hardware.cpu.intel.enable "intel_iommu=on")
           [ "iommu=pt" ]
