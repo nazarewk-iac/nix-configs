@@ -16,17 +16,11 @@ in
         default = { };
       };
     };
-
-    vfio = {
-      gpuIDs = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        default = [ ];
-      };
-    };
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
+      kdn.hardware.gpu.vfio.enable = true;
       virtualisation.spiceUSBRedirection.enable = true;
       # see https://nixos.wiki/wiki/Virt-manager
       # see https://nixos.wiki/wiki/Libvirt
@@ -45,33 +39,11 @@ in
       programs.dconf.enable = true;
       networking.firewall.checkReversePath = false;
 
-
       environment.systemPackages = with pkgs; [
         libguestfs
         libvirt
         virt-manager
         virtiofsd
-      ];
-      # see https://astrid.tech/2022/09/22/0/nixos-gpu-vfio/
-
-      boot.initrd.kernelModules = [
-        "vfio_pci"
-        "vfio"
-        "vfio_iommu_type1"
-        "vfio_virqfd"
-      ];
-
-      # see https://gist.github.com/k-amin07/47cb06e4598e0c81f2b42904c6909329#isolating-gpu
-      boot.extraModprobeConfig = ''
-        softdep amdgpu pre: vfio-pci
-        softdep snd_hda_intel pre: vfio-pci
-      '';
-      boot.kernelParams = lib.concatLists [
-        (lib.lists.optional config.kdn.hardware.gpu.amd.enable "supergfxd.mode=integrated")
-        (lib.lists.optional config.kdn.hardware.cpu.amd.enable "amd_iommu=on")
-        (lib.lists.optional config.kdn.hardware.cpu.intel.enable "intel_iommu=on")
-        [ "iommu=pt" ]
-        (lib.lists.optional (cfg.vfio.gpuIDs != [ ]) ("vfio-pci.ids=" + lib.concatStringsSep "," cfg.vfio.gpuIDs))
       ];
     }
     (lib.mkIf cfg.lookingGlass.enable {

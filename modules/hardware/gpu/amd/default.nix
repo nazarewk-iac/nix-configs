@@ -9,7 +9,6 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    kdn.hardware.gpu.enable = true;
     # see https://github.com/NixOS/nixos-hardware/blob/0099253ad0b5283f06ffe31cf010af3f9ad7837d/common/gpu/amd/default.nix
     # see https://github.com/nixos-rocm/nixos-rocm
     #boot.kernelModules = [ "amdgpu" ];

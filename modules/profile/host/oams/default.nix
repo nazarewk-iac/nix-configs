@@ -14,7 +14,7 @@ in
       kdn.hardware.gpu.amd.enable = true;
       kdn.hardware.cpu.amd.enable = true;
       kdn.profile.machine.gaming.enable = true;
-      kdn.virtualization.libvirtd.vfio.gpuIDs = [
+      kdn.hardware.gpu.vfio.gpuIDs = [
         "1002:73df"
         "1002:ab28"
       ];
@@ -63,6 +63,7 @@ in
       boot.kernelModules = [ "kvm-amd" ];
 
       services.asusd.enable = true;
+      kdn.hardware.gpu.multiGPU.enable = true;
       services.asusd.enableUserService = false; # just strobes the LEDs, better turn it off
       environment.systemPackages = with pkgs; [
         asusctl
