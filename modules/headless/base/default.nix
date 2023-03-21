@@ -81,6 +81,7 @@ in
       jq
       git
       dig
+      nmap
       cryptsetup
       file
       tree

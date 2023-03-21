@@ -66,7 +66,6 @@ in
       services.asusd.enableUserService = false; # just strobes the LEDs, better turn it off
       environment.systemPackages = with pkgs; [
         asusctl
-        supergfxctl
       ];
     }
   ]);

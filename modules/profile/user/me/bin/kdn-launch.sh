@@ -50,6 +50,7 @@ start_comms() {
   launch element-desktop
   launch slack
   launch signal-desktop
+  launch discord
 }
 
 start_keepass() {

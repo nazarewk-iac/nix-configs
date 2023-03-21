@@ -18,10 +18,6 @@ in
     };
 
     vfio = {
-      enable = lib.mkOption {
-        type = lib.types.bool;
-        default = true;
-      };
       gpuIDs = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         default = [ ];
@@ -56,8 +52,6 @@ in
         virt-manager
         virtiofsd
       ];
-    }
-    (lib.mkIf cfg.vfio.enable {
       # see https://astrid.tech/2022/09/22/0/nixos-gpu-vfio/
 
       boot.initrd.kernelModules = [
@@ -72,18 +66,14 @@ in
         softdep amdgpu pre: vfio-pci
         softdep snd_hda_intel pre: vfio-pci
       '';
-
-      specialisation."VFIO".configuration = {
-        system.nixos.tags = [ "with-vfio" ];
-        boot.kernelParams = lib.concatLists [
-          (lib.lists.optional config.kdn.hardware.gpu.amd.enable "supergfxd.mode=integrated")
-          (lib.lists.optional config.kdn.hardware.cpu.amd.enable "amd_iommu=on")
-          (lib.lists.optional config.kdn.hardware.cpu.intel.enable "intel_iommu=on")
-          [ "iommu=pt" ]
-          (lib.lists.optional (cfg.vfio.gpuIDs != [ ]) ("vfio-pci.ids=" + lib.concatStringsSep "," cfg.vfio.gpuIDs))
-        ];
-      };
-    })
+      boot.kernelParams = lib.concatLists [
+        (lib.lists.optional config.kdn.hardware.gpu.amd.enable "supergfxd.mode=integrated")
+        (lib.lists.optional config.kdn.hardware.cpu.amd.enable "amd_iommu=on")
+        (lib.lists.optional config.kdn.hardware.cpu.intel.enable "intel_iommu=on")
+        [ "iommu=pt" ]
+        (lib.lists.optional (cfg.vfio.gpuIDs != [ ]) ("vfio-pci.ids=" + lib.concatStringsSep "," cfg.vfio.gpuIDs))
+      ];
+    }
     (lib.mkIf cfg.lookingGlass.enable {
       environment.systemPackages = with pkgs; [
         looking-glass-client
