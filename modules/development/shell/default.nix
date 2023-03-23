@@ -14,6 +14,8 @@ in
       shfmt
       zsh
 
+      docopts
+
       gnumake
     ];
   };

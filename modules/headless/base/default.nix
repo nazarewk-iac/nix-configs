@@ -6,117 +6,136 @@ in
 {
   options.kdn.headless.base = {
     enable = lib.mkEnableOption "basic headless system configuration";
+    atuin.enable = mkOption {
+      default = cfg.enable;
+      type = lib.types.bool;
+    };
   };
 
-  config = lib.mkIf cfg.enable ({
-    kdn.hardware.basic.enable = true;
-    kdn.development.data.enable = true;
-    kdn.filesystems.base.enable = true;
-    kdn.development.linux-utils.enable = true;
+  config = lib.mkIf cfg.enable (lib.mkMerge [
+    ({
+      kdn.hardware.basic.enable = true;
+      kdn.development.data.enable = true;
+      kdn.filesystems.base.enable = true;
+      kdn.development.linux-utils.enable = true;
 
-    users.defaultUserShell = pkgs.fish;
-    kdn.programs.zsh.enable = true;
-    kdn.programs.fish.enable = true;
+      users.defaultUserShell = pkgs.fish;
+      kdn.programs.zsh.enable = true;
+      kdn.programs.fish.enable = true;
 
-    programs.command-not-found.enable = false;
-    programs.bash.interactiveShellInit = ''
-    '';
-
-    programs.vim.defaultEditor = true;
-    programs.vim.package = pkgs.vim-full.customize {
-      name = "vim";
-      vimrcConfig.customRC = ''
-        syntax on
-        set number  " Show line numbers
-        set linebreak  " Break lines at word (requires Wrap lines)
-        set showbreak=+++   " Wrap-broken line prefix
-        set textwidth=100  " Line wrap (number of cols)
-        set showmatch  " Highlight matching brace
-        set visualbell  " Use visual bell (no beeping)
-
-        set hlsearch  " Highlight all search results
-        set smartcase  " Enable smart-case search
-        set ignorecase  " Always case-insensitive
-        set incsearch  " Searches for strings incrementally
-
-        set autoindent  " Auto-indent new lines
-        set expandtab  " Use spaces instead of tabs
-        set shiftwidth=4  " Number of auto-indent spaces
-        set smartindent  " Enable smart-indent
-        set smarttab  " Enable smart-tabs
-        set softtabstop=4  " Number of spaces per Tab
-
-        set ruler  " Show row and column ruler information
-
-        set undolevels=1000  " Number of undo levels
-        set backspace=indent,eol,start  " Backspace behaviour
+      programs.command-not-found.enable = false;
+      programs.bash.interactiveShellInit = ''
       '';
-    };
 
-    environment.localBinInPath = true;
+      programs.vim.defaultEditor = true;
+      programs.vim.package = pkgs.vim-full.customize {
+        name = "vim";
+        vimrcConfig.customRC = ''
+          syntax on
+          set number  " Show line numbers
+          set linebreak  " Break lines at word (requires Wrap lines)
+          set showbreak=+++   " Wrap-broken line prefix
+          set textwidth=100  " Line wrap (number of cols)
+          set showmatch  " Highlight matching brace
+          set visualbell  " Use visual bell (no beeping)
 
-    environment.systemPackages = with pkgs; [
-      openssh
-      wget
-      curl
-      pstree
-      tmux
+          set hlsearch  " Highlight all search results
+          set smartcase  " Enable smart-case search
+          set ignorecase  " Always case-insensitive
+          set incsearch  " Searches for strings incrementally
 
-      # Working with XDG files
-      file
-      desktop-file-utils
-      xdg-utils
-      xdg-launch
+          set autoindent  " Auto-indent new lines
+          set expandtab  " Use spaces instead of tabs
+          set shiftwidth=4  " Number of auto-indent spaces
+          set smartindent  " Enable smart-indent
+          set smarttab  " Enable smart-tabs
+          set softtabstop=4  " Number of spaces per Tab
 
-      # https://wiki.archlinux.org/title/Default%20applications#Resource_openers
-      kdn.handlr-regex
-      mimeo
+          set ruler  " Show row and column ruler information
 
-      killall
-      ncdu
-      htop
-      bintools
+          set undolevels=1000  " Number of undo levels
+          set backspace=indent,eol,start  " Backspace behaviour
+        '';
+      };
 
-      inotify-tools
-      jq
-      git
-      dig
-      nmap
-      cryptsetup
-      file
-      tree
-      openssl
+      environment.localBinInPath = true;
 
-      coreutils
-      moreutils
-      gnugrep
+      environment.systemPackages = with pkgs; [
+        openssh
+        wget
+        curl
+        pstree
+        tmux
 
-      strace
-      lurk
+        # Working with XDG files
+        file
+        desktop-file-utils
+        xdg-utils
+        xdg-launch
 
-      zip
-    ];
+        # https://wiki.archlinux.org/title/Default%20applications#Resource_openers
+        kdn.handlr-regex
+        mimeo
 
-    boot.kernel.sysctl = let mb = 1024 * 1024; in {
-      # https://wiki.archlinux.org/title/Sysctl#Virtual_memory
-      "vm.dirty_background_bytes" = 4 * mb;
-      "vm.dirty_bytes" = 4 * mb;
+        killall
+        ncdu
+        htop
+        bintools
 
-      "vm.vfs_cache_pressure" = 50;
+        inotify-tools
+        jq
+        git
+        dig
+        nmap
+        cryptsetup
+        file
+        tree
+        openssl
 
-      "fs.inotify.max_user_watches" = 1048576; # default:  8192
-      "fs.inotify.max_user_instances" = 1024; # default:   128
-      "fs.inotify.max_queued_events" = 32768; # default: 16384
-    };
+        coreutils
+        moreutils
+        gnugrep
 
-    security.polkit.enable = true;
-  } // (
-    let
-      debugPolkit = false;
-    in
-    {
-      security.polkit.debug = debugPolkit;
-      security.pam.u2f.debug = debugPolkit;
-    }
-  ));
+        strace
+        lurk
+
+        zip
+      ];
+
+      boot.kernel.sysctl = let mb = 1024 * 1024; in {
+        # https://wiki.archlinux.org/title/Sysctl#Virtual_memory
+        "vm.dirty_background_bytes" = 4 * mb;
+        "vm.dirty_bytes" = 4 * mb;
+
+        "vm.vfs_cache_pressure" = 50;
+
+        "fs.inotify.max_user_watches" = 1048576; # default:  8192
+        "fs.inotify.max_user_instances" = 1024; # default:   128
+        "fs.inotify.max_queued_events" = 32768; # default: 16384
+      };
+
+      security.polkit.enable = true;
+    } // (
+      let
+        debugPolkit = false;
+      in
+      {
+        security.polkit.debug = debugPolkit;
+        security.pam.u2f.debug = debugPolkit;
+      }
+    ))
+    (lib.mkIf cfg.atuin.enable {
+      environment.systemPackages = [ pkgs.atuin ];
+      # TODO: embed it into package somehow?
+      programs.fish.interactiveShellInit = ''
+        ${pkgs.atuin}/bin/atuin init fish | source
+      '';
+      programs.zsh.interactiveShellInit = ''
+        eval "$(${pkgs.atuin}/bin/atuin init zsh)"
+      '';
+      # TODO: atuin for bash? https://atuin.sh/docs#bash
+      programs.bash.interactiveShellInit = ''
+      '';
+    })
+  ]);
 }

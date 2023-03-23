@@ -88,6 +88,12 @@
       #inputs.pre-commit-hooks.follows = "pre-commit-hooks";
       #inputs.nix.follows = "..."; # url = "github:domenkozar/nix/relaxed-flakes";
     };
+    atuin = {
+      url = "github:ellie/atuin";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-compat.follows = "flake-compat";
+      inputs.flake-utils.follows = "flake-utils";
+    };
   };
 
   outputs =
@@ -142,9 +148,14 @@
         overlays.default = lib.composeManyExtensions [
           poetry2nix.overlay
           (final: prev: (import ./packages { inherit inputs self; pkgs = prev; }))
-          (final: prev: {
-            devenv = inputs.devenv.packages."${final.stdenv.system}".devenv;
-          })
+          (final: prev: lib.concatMapAttrs
+            (name: { input ? name, package ? name }: {
+              ${name} = inputs.${input}.packages.${final.stdenv.system}.${package};
+            })
+            {
+              devenv = { };
+              atuin = { };
+            })
           (final: prev: {
             # work around not using flake-utils which sets it up on `pkgs.system`
             # see https://github.com/numtide/flake-utils/blob/1ed9fb1935d260de5fe1c2f7ee0ebaae17ed2fa1/check-utils.nix#L4

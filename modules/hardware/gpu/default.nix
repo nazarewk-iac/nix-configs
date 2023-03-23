@@ -18,6 +18,7 @@ in
   config = lib.mkMerge [
     (lib.mkIf cfg.multiGPU.enable {
       services.supergfxd.enable = true;
+      services.switcherooControl.enable = true;
       systemd.services.supergfxd.path = [ pkgs.kmod ];
       environment.systemPackages = with pkgs; [
         supergfxctl
