@@ -6,7 +6,7 @@ inputs.nixos-generators.nixosGenerate {
   inherit pkgs;
   format = "install-iso";
   modules = [{
-    # TODO: make custom modules available?ss
+    # TODO: make custom modules available?
     #kdn.profile.machine.baseline.enable = true;
 
     nix.package = pkgs.nixVersions.stable;

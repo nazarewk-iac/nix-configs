@@ -3,7 +3,8 @@
 main() {
   export cluster_name="$1"
   export AWS_PROFILE="${2:-"$AWS_PROFILE"}"
-  alias="${3:-"$cluster_name"}"
+  export AWS_REGION="${3:-"${AWS_REGION:-"${AWS_DEFAULT_REGION}"}"}"
+  alias="${4:-"$cluster_name"}"
 
   set -x
   aws eks update-kubeconfig --profile="$AWS_PROFILE" --name="$cluster_name" --alias="$alias"

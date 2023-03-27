@@ -73,6 +73,10 @@ Find immediate parents/reverse dependencies: `nix-store --query --referrers <pat
 
 Find the root using paths: `nix-store --query --roots <paths...>`.
 
+## Fix nix store errors
+
+Fix errors like `/nix/store/*-source not found`: `sudo nix-store --repair --verify --check-contents`.
+
 ## GitHub rate-limiting unauthenticated requests
 
 see https://discourse.nixos.org/t/flakes-provide-github-api-token-for-rate-limiting/18609
