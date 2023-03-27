@@ -68,6 +68,13 @@ in
       environment.systemPackages = with pkgs; [
         asusctl
       ];
+      home-manager.sharedModules = [
+        {
+          wayland.windowManager.sway.extraConfig = ''
+            output eDP-1 mode 2560x1440@60Hz
+          '';
+        }
+      ];
     }
   ]);
 }
