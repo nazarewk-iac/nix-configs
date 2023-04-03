@@ -183,6 +183,7 @@ in
 
         flameshot
         vlc
+        haruna
         evince
         xfce.ristretto
         xfce.exo
