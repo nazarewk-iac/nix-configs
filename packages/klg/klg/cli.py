@@ -113,7 +113,7 @@ async def fmt(path, check, diff, write, sort):
     help="Records (or entries) that match these tags",
 )
 @click.option("-o", "--output", default="", help="Where to store csv/xlsx file?")
-@click.option("-r", "--report", "report_name", default="default")
+@click.option("-r", "--report", "report_id", default="default")
 @click.argument("paths", nargs=-1)
 async def generate_report(paths, period, tags, output, report_id, resource):
     klog = Klog()
