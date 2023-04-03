@@ -7,10 +7,10 @@
 , ...
 }:
 let
-  version = "5.4";
-  shortCommit = "7996ca8";
-  sha256 = "sha256-6XMVXksxjAIXGloVfIQNWYvrnMnS0qtIBunMLScn0v0=";
-  vendorSha256 = "sha256-FSpChTBnOTR86KHcfQyIVbVJr/i8imjlsA5yeQ02njw=";
+  version = "6.0";
+  shortCommit = "91f5e2d";
+  sha256 = "sha256-PXtBwP6OCfAZTx06azC6ULW9Ges9B5PrL2IyLw9d0c0=";
+  vendorSha256 = "sha256-BDiVKrte1XIXJQkqj7GobPdHz74FgWMb/tNZChaaPCc=";
   tag = "v${version}";
 in
 buildGoModule {
