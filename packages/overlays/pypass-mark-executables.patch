@@ -222,7 +222,7 @@ diff --git a/setup.py b/setup.py
 
  import setuptools
 +import os
-+os.environ["PBR_VERSION"] = "@VERSION@"
++os.environ["PBR_VERSION"] = "@version@"
 
  setuptools.setup(
      setup_requires=['pbr'],

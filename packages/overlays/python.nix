@@ -31,7 +31,7 @@ pkgs: final: prev:
       patches = [
         (with pkgs; substituteAll {
           src = ./pypass-mark-executables.patch;
-          VERSION = pbr_version;
+          version = pbr_version;
           git_exec = "${git}/bin/git";
           grep_exec = "${gnugrep}/bin/grep";
           gpg_exec = "${gnupg}/bin/gpg2";

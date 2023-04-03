@@ -27,7 +27,6 @@ in
     services.pipewire.jack.enable = true;
 
     services.pipewire.wireplumber.enable = cfg.useWireplumber;
-    services.pipewire.media-session.enable = !cfg.useWireplumber;
 
     sound.mediaKeys.enable = true;
     hardware.pulseaudio.extraModules = [
