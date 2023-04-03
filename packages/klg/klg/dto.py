@@ -452,6 +452,7 @@ class Result(Base):
             if can_modify and is_off:
                 record.set_should_total(0)
 
+            # TODO: subtract open-ended range?
             if record.total_mins > record.should_total_mins or is_past:
                 record.set_should_total(record.total_mins)
 
