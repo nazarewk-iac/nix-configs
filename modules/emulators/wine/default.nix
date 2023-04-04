@@ -1,10 +1,10 @@
 { lib, pkgs, config, ... }:
 with lib;
 let
-  cfg = config.kdn.emulators.windows;
+  cfg = config.kdn.emulators.wine;
 in
 {
-  options.kdn.emulators.windows = {
+  options.kdn.emulators.wine = {
     enable = lib.mkEnableOption "WINE windows executables runner";
   };
 

@@ -9,18 +9,16 @@ in
 
   config = lib.mkIf cfg.enable {
     virtualisation.docker.enable = lib.mkDefault false;
+    virtualisation.podman.enable = true;
 
     virtualisation.oci-containers.backend = "podman";
-    virtualisation.podman.enable = true;
-    virtualisation.podman.dockerCompat = lib.mkDefault false;
+    virtualisation.podman.dockerCompat = !config.virtualisation.docker.enable;
     virtualisation.podman.dockerSocket.enable = !config.virtualisation.docker.enable;
     virtualisation.containers.containersConf.settings.storage.driver = "zfs";
 
     environment.systemPackages = with pkgs; [
       # podman # conflicts with option's wrapper
       buildah
-      skopeo
-      buildkit
     ];
   };
 }

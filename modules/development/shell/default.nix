@@ -14,7 +14,8 @@ in
       shfmt
       zsh
 
-      docopts
+      docopts # https://github.com/docopt/docopts
+      bats # https://github.com/bats-core/bats-core
 
       gnumake
     ];

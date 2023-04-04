@@ -9,9 +9,6 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    kdn.containers.podman.enable = lib.mkDefault true;
-    kdn.containers.docker.enable = lib.mkDefault false;
-
     environment.systemPackages = with pkgs; [
       cue
       dagger

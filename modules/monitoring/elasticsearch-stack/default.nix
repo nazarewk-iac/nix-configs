@@ -10,6 +10,8 @@ in
   options.kdn.monitoring.elasticsearch-stack = {
     enable = lib.mkEnableOption "elasticsearch + kibana";
 
+    onDemand = lib.mkEnableOption "starting services on demand";
+
     packages.elasticsearch = mkOption {
       type = types.package;
       default = pkgs.elasticsearch7;
@@ -26,8 +28,8 @@ in
     };
   };
 
-  config = mkMerge [
-    (mkIf cfg.enable {
+  config = mkIf cfg.enable (mkMerge [
+    {
       services.elasticsearch = {
         enable = true;
         listenAddress = cfg.listenAddress;
@@ -41,6 +43,10 @@ in
           "http://${cfg.listenAddress}:${toString esCfg.port}"
         ];
       };
+    }
+    (mkIf cfg.onDemand {
+      systemd.services.elasticsearch.wantedBy = lib.mkForce [ "kibana.service" ];
+      systemd.services.kibana.wantedBy = lib.mkForce [ ];
     })
     (mkIf (cfg.caddy.kibana != "") {
       services.caddy.virtualHosts."${cfg.caddy.kibana}".extraConfig = ''
@@ -49,6 +55,6 @@ in
         reverse_proxy ${cfg.listenAddress}:${toString kCfg.port}
       '';
     })
-  ];
+  ]);
 }
 

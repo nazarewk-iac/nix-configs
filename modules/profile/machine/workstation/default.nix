@@ -32,6 +32,7 @@ in
     kdn.monitoring.prometheus-stack.enable = true;
     kdn.monitoring.prometheus-stack.caddy.grafana = "grafana.${config.networking.hostName}.kdn.im";
     kdn.monitoring.elasticsearch-stack.enable = true;
+    kdn.monitoring.elasticsearch-stack.onDemand = true;
     kdn.monitoring.elasticsearch-stack.caddy.kibana = "kibana.${config.networking.hostName}.kdn.im";
     kdn.programs.caddy.enable = true;
     kdn.programs.obs-studio.enable = true;
@@ -52,11 +53,12 @@ in
     kdn.programs.nix-index.enable = true;
 
     kdn.development.android.enable = true;
-    kdn.containers.dagger.enable = true;
-    kdn.containers.distrobox.enable = true;
+    #kdn.containers.dagger.enable = true;
+    #kdn.containers.distrobox.enable = true;
+    kdn.containers.enable = true;
     kdn.containers.podman.enable = true;
-    kdn.containers.x11docker.enable = true;
-    kdn.emulators.windows.enable = true;
+    #kdn.containers.x11docker.enable = true;
+    #kdn.emulators.wine.enable = true;
     programs.seahorse.enable = true;
     boot.binfmt.emulatedSystems = [
       "aarch64-linux"
