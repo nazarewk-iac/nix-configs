@@ -34,14 +34,14 @@ in
     services.printing.enable = true;
     services.printing.drivers = with pkgs; [
       hplip
-      gutenprint
-      gutenprintBin
+      #gutenprint
+      #gutenprintBin
       brlaser
       brgenml1lpr
       brgenml1cupswrapper
     ];
     environment.systemPackages = with pkgs; [
-      libreoffice
+      libreoffice-qt # non-qt failed to build on 2023-04-07
       # chromium
       firefox
       p7zip

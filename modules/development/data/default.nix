@@ -102,6 +102,8 @@ in
       cue
       conftest
 
+      opensearch # opensearch-cli
+
       gnused
     ]) ++ (attrValues converterPkgs);
   };
