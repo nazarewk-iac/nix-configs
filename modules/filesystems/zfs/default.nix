@@ -16,6 +16,19 @@ in
     boot.supportedFilesystems = [ "zfs" ];
     boot.zfs.enableUnstable = true;
 
+    # see https://github.com/NixOS/nixpkgs/issues/169457
+    boot.kernelPatches = [{
+      name = "enable RT_FULL";
+      patch = null;
+      extraConfig = ''
+        PREEMPT y
+        PREEMPT_BUILD y
+        PREEMPT_VOLUNTARY n
+        PREEMPT_COUNT y
+        PREEMPTION y
+      '';
+    }];
+
     services.zfs.autoScrub.enable = true;
     services.zfs.autoSnapshot.enable = true;
     services.zfs.autoSnapshot.flags = "-k -p --utc";
