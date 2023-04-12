@@ -82,6 +82,9 @@ in
       services.flameshot.settings.General.savePath = "${config.home.homeDirectory}/Downloads/screenshots";
       xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
 
+      services.kdeconnect.enable = true;
+      services.kdeconnect.indicator = true;
+
       xdg.mime.enable = true;
       xdg.mimeApps.enable = true;
       xdg.mimeApps.associations.added = { };

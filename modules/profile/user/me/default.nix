@@ -48,5 +48,11 @@ in
 
     kdn.virtualization.libvirtd.lookingGlass.instances = { kdn-default = "kdn"; };
     home-manager.users.kdn = { kdn.profile.user.me.nixosConfig = config.users.users.kdn; };
+
+    # kde connect
+    networking.firewall = let ranges = [ { from = 1714; to = 1764; } ]; in {
+      allowedTCPPortRanges = ranges;
+      allowedUDPPortRanges = ranges;
+    };
   });
 }
