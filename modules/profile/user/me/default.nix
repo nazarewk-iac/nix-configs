@@ -50,9 +50,10 @@ in
     home-manager.users.kdn = { kdn.profile.user.me.nixosConfig = config.users.users.kdn; };
 
     # kde connect
-    networking.firewall = let ranges = [ { from = 1714; to = 1764; } ]; in {
+    networking.firewall = let ranges = [{ from = 1714; to = 1764; }]; in {
       allowedTCPPortRanges = ranges;
       allowedUDPPortRanges = ranges;
     };
+    nixpkgs.config.firefox.enablePlasmaBrowserIntegration = true;
   });
 }
