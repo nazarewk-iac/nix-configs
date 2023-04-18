@@ -32,7 +32,6 @@ in
     kdn.development.rust.enable = true;
     kdn.development.terraform.enable = true;
     kdn.programs.aws-vault.enable = true;
-    programs.java.enable = true;
     services.plantuml-server.enable = true;
   };
 }

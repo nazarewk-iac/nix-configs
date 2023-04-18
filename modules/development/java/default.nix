@@ -9,8 +9,10 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    programs.java.enable = true;
+    programs.java.package = pkgs.jdk;
+
     environment.systemPackages = with pkgs; [
-      jdk
       maven
       gradle-completion
 
