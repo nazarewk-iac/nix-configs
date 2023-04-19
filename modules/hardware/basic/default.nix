@@ -18,6 +18,7 @@ in
       inxi
       lm_sensors
       lshw
+      lsof
       pciutils # lspci
       sysfsutils # systool
       usbutils # lsusb
