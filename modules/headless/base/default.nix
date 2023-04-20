@@ -87,6 +87,7 @@ in
         git
         dig
         nmap
+        bandwhich
         cryptsetup
         file
         tree

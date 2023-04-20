@@ -24,7 +24,7 @@ in
       boot.loader.efi.canTouchEfiVariables = true;
       boot.loader.systemd-boot.enable = true;
       boot.loader.systemd-boot.configurationLimit = 10;
-      boot.cleanTmpDir = true;
+      boot.tmp.cleanOnBoot = true;
 
       networking.nameservers = [
         "2606:4700:4700::1111" # CloudFlare

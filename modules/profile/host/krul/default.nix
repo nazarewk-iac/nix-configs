@@ -65,10 +65,10 @@ in
       "${hostname}-primary"
     ];
 
-    boot.tmpOnTmpfs = true;
+    boot.tmp.useTmpfs = true;
     # 20% of 128GB should be fine
     # 12G was not enough for large rebuild
-    boot.tmpOnTmpfsSize = "20%";
+    boot.tmp.tmpfsSize = "20%";
 
     # legacy mountpoints
     fileSystems = lib.mkMerge [
