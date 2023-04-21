@@ -50,5 +50,8 @@ in
         ];
       }
     ];
+
+    # WARNING: desktop portal fails in non-GNOME https://gitlab.gnome.org/GNOME/xdg-desktop-portal-gnome/-/issues/74
+    systemd.user.services.xdg-desktop-portal-gnome.enable = false;
   };
 }
