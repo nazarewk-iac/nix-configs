@@ -1,5 +1,4 @@
 { lib, pkgs, config, ... }:
-with lib;
 let
   cfg = config.kdn.filesystems.zfs;
 in
@@ -9,25 +8,31 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    boot.kernelPackages = pkgs.zfs.latestCompatibleLinuxPackages;
+    boot.kernelPackages = lib.trivial.pipe pkgs.zfs.latestCompatibleLinuxPackages.kernel.version [
+      builtins.splitVersion
+      (lib.lists.sublist 0 2)
+      (lib.strings.concatStringsSep "_")
+      (version: pkgs."linuxPackages_rt_${version}")
+    ];
     boot.loader.grub.copyKernels = true;
     boot.kernelParams = [ "nohibernate" ];
     boot.initrd.supportedFilesystems = [ "zfs" ];
     boot.supportedFilesystems = [ "zfs" ];
     boot.zfs.enableUnstable = true;
 
-    # see https://github.com/NixOS/nixpkgs/issues/169457
-    boot.kernelPatches = [{
-      name = "enable RT_FULL";
-      patch = null;
-      extraConfig = ''
-        PREEMPT y
-        PREEMPT_BUILD y
-        PREEMPT_VOLUNTARY n
-        PREEMPT_COUNT y
-        PREEMPTION y
-      '';
-    }];
+    # for now trying rt kernel
+    ## see https://github.com/NixOS/nixpkgs/issues/169457
+    #boot.kernelPatches = [{
+    #  name = "enable RT_FULL";
+    #  patch = null;
+    #  extraConfig = ''
+    #    PREEMPT y
+    #    PREEMPT_BUILD y
+    #    PREEMPT_VOLUNTARY n
+    #    PREEMPT_COUNT y
+    #    PREEMPTION y
+    #  '';
+    #}];
 
     services.zfs.autoScrub.enable = true;
     services.zfs.autoSnapshot.enable = true;
