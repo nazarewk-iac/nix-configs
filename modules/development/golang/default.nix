@@ -10,6 +10,7 @@ in
 
   config = lib.mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
+      go_1_20
       go_1_19
       #gccgo
       delve

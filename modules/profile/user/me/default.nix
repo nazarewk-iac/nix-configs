@@ -49,10 +49,12 @@ in
     kdn.virtualization.libvirtd.lookingGlass.instances = { kdn-default = "kdn"; };
     home-manager.users.kdn = { kdn.profile.user.me.nixosConfig = config.users.users.kdn; };
 
-    # kde connect
-    networking.firewall = let ranges = [{ from = 1714; to = 1764; }]; in {
-      allowedTCPPortRanges = ranges;
-      allowedUDPPortRanges = ranges;
+    networking.firewall = let kdeConnectRange = [{ from = 1714; to = 1764; }]; in {
+      allowedTCPPortRanges = kdeConnectRange;
+      allowedUDPPortRanges = kdeConnectRange;
+      # syncthing ranges
+      allowedTCPPorts = [ 22000 ];
+      allowedUDPPorts = [ 21027 22000 ];
     };
     nixpkgs.config.firefox.enablePlasmaBrowserIntegration = true;
   });
