@@ -45,6 +45,7 @@ in
 
     environment.systemPackages = with pkgs; [
       zfs-prune-snapshots
+      sanoid
     ];
 
     virtualisation.docker.storageDriver = "zfs";

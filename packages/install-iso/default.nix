@@ -27,6 +27,8 @@ inputs.nixos-generators.nixosGenerate {
     environment.systemPackages = with pkgs; [
       git
       jq
+      zfs-prune-snapshots
+      sanoid
     ];
   }];
 }
