@@ -162,7 +162,7 @@ in
             signal-desktop
             slack
             teams
-            kdn.rambox
+            rambox
           ];
         });
         drag0nius_kdbx =
@@ -203,7 +203,7 @@ in
         kdn.klg
         dex # A program to generate and execute DesktopEntry files of the Application type
         brave
-        kdn.rambox # browser/multi workspace
+        rambox # browser/multi workspace
         drawio
         plantuml
 

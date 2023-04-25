@@ -81,17 +81,48 @@
     };
 
     devenv = {
-      url = "github:cachix/devenv/latest";
-      #inputs.nixpkgs.follows = "nixpkgs";
-      #inputs.flake-compat.follows = "flake-compat";
-      #inputs.pre-commit-hooks.follows = "pre-commit-hooks";
-      #inputs.nix.follows = "..."; # url = "github:domenkozar/nix/relaxed-flakes";
+      #url = "github:cachix/devenv/latest";
+      url = "github:nazarewk/devenv/flake-parts-container-usage";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-compat.follows = "flake-compat";
+
+      inputs.pre-commit-hooks.follows = "pre-commit-hooks";
+      inputs.nix.follows = "devenv-nix"; # url = "github:domenkozar/nix/relaxed-flakes";
     };
+
+    pre-commit-hooks = {
+      url = "github:cachix/pre-commit-hooks.nix";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-compat.follows = "flake-compat";
+      };
+    };
+
+    devenv-nix = {
+      url = "github:domenkozar/nix/relaxed-flakes";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    nix2container = {
+      url = "github:nlewo/nix2container";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    mk-shell-bin = {
+      url = "github:rrbutani/nix-mk-shell-bin";
+    };
+
     atuin = {
       url = "github:ellie/atuin";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-compat.follows = "flake-compat";
       inputs.flake-utils.follows = "flake-utils";
+    };
+
+    nix-on-droid = {
+      url = "github:t184256/nix-on-droid/release-22.11";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.home-manager.follows = "home-manager";
     };
   };
 
@@ -107,9 +138,12 @@
       };
     in
     (flake-parts.lib.mkFlake args {
+      imports = [
+        inputs.devenv.flakeModule
+      ];
       systems = [
         "x86_64-linux"
-        #"aarch64-linux"
+        "aarch64-linux"
       ];
       perSystem = { config, self', inputs', system, ... }:
         let
@@ -136,8 +170,22 @@
           devShells = { };
           packages = lib.mkMerge [
             (lib.filterAttrs (n: pkg: lib.isDerivation pkg) (flakeLib.overlayedInputs { inherit system; }).nixpkgs.kdn)
-            (flakeLib.microvm.packages system)
+            # adds nixosConfigurations as microvms as packages with microvm-* prefix
+            (lib.attrsets.mapAttrs' (name: value: lib.attrsets.nameValuePair "microvm-${name}" value) (flakeLib.microvm.packages system))
           ];
+
+          devenv.shells.default = {
+            name = "default";
+
+            # https://devenv.sh/reference/options/
+            packages = with pkgs; [
+              argo
+              kubectl
+              git
+              vim
+              gnupg
+            ];
+          };
         };
       flake = {
         inherit lib;
@@ -146,7 +194,6 @@
 
         overlays.default = lib.composeManyExtensions [
           poetry2nix.overlay
-          (final: prev: (import ./packages { inherit inputs self; pkgs = prev; }))
           (final: prev: lib.concatMapAttrs
             (name: { input ? name, package ? name }: {
               ${name} = inputs.${input}.packages.${final.stdenv.system}.${package};
@@ -161,6 +208,7 @@
             system = final.stdenv.system;
             lib = import ./lib { inherit (prev) lib; };
           })
+          (final: prev: (import ./packages { inherit inputs self; pkgs = prev; }))
         ];
         nixosModules.default = ./modules;
 
@@ -243,6 +291,41 @@
             }];
           })
         ];
+
+
+
+        nixOnDroidConfigurations.default =
+          let inherit (inputs) nix-on-droid home-manager;
+          in nix-on-droid.lib.nixOnDroidConfiguration {
+            modules = [
+              ./nix-on-droid/irp
+
+              # list of extra modules for Nix-on-Droid system
+              # { nix.registry.nixpkgs.flake = nixpkgs; }
+              # ./path/to/module.nix
+
+              # or import source out-of-tree modules like:
+              # flake.nixOnDroidModules.module
+            ];
+
+            # list of extra special args for Nix-on-Droid modules
+            extraSpecialArgs = {
+              # rootPath = ./.;
+            };
+
+            # set nixpkgs instance, it is recommended to apply `nix-on-droid.overlays.default`
+            pkgs = import nixpkgs {
+              system = "aarch64-linux";
+
+              overlays = [
+                nix-on-droid.overlays.default
+                # add other overlays
+              ];
+            };
+
+            # set path to home-manager flake
+            home-manager-path = home-manager.outPath;
+          };
       };
     });
 }

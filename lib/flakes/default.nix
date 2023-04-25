@@ -54,11 +54,11 @@
         modules = [{ kdn.virtualization.microvm.host.enable = true; }] ++ args.modules;
       });
 
-      guest = { name, system ? "x86_64-linux", ... }@args: nixos.system (args // {
+      microvm.guest = { name, system ? "x86_64-linux", ... }@args: nixos.system (args // {
         modules = [{ kdn.virtualization.microvm.guest.enable = true; }] ++ args.modules;
       });
 
-      microvm.configuration = { name, ... }@args: { ${name} = guest args; };
+      microvm.configuration = { name, ... }@args: { ${name} = microvm.guest args; };
     in
     {
       inherit

@@ -20,6 +20,9 @@ Thumbs.db
 # nix
 result
 
+# devenv
+!.envrc
+
 # microvm.nix
 *.img
 
