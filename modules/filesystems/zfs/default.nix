@@ -12,7 +12,7 @@ in
       builtins.splitVersion
       (lib.lists.sublist 0 2)
       (lib.strings.concatStringsSep "_")
-      (version: pkgs."linuxPackages_rt_${version}")
+      (version: pkgs."linuxPackages_rt_${version}" or pkgs.linuxPackages_rt_6_1)
     ];
     boot.loader.grub.copyKernels = true;
     boot.kernelParams = [ "nohibernate" ];
