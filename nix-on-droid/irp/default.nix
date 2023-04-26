@@ -34,9 +34,9 @@
       name = "irp-update";
       runtimeInputs = with pkgs; [ git ];
       text = ''
-        cd ~/dev/github.com/nazarewk-iac/nix-configs
+        cd "$HOME/dev/github.com/nazarewk-iac/nix-configs"
         git pull
-        nix-on-droid "''${1:-switch}" --flake "~/dev/github.com/nazarewk-iac/nix-configs" "''${@:2}"
+        nix-on-droid "''${1:-switch}" --flake "$HOME/dev/github.com/nazarewk-iac/nix-configs" "''${@:2}"
       '';
     })
   ];
