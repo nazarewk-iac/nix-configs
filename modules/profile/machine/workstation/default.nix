@@ -16,9 +16,6 @@ in
 
     kdn.sway.remote.enable = true;
 
-    # do not suspend on GDM login screen (waiting for remote sessions etc.)
-    services.xserver.displayManager.gdm.autoSuspend = false;
-
     kdn.hardware.edid.kernelOutputs = {
       # "DP-1" = "PG278Q_2014";
       # "DVI-D-1" = "U2711_2012_1";
@@ -67,7 +64,7 @@ in
       "x86_64-windows"
     ];
 
-    kdn.sway.gdm.enable = true;
+    kdn.sway.base.enable = true;
     kdn.sway.systemd.enable = true;
   };
 }

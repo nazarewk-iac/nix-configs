@@ -78,7 +78,10 @@ in
               ExecStart =
                 "${pkgs.kdn.pass-secret-service}/bin/pass_secret_service --path ${config.programs.password-store.settings.PASSWORD_STORE_DIR}";
             };
-            Install = { WantedBy = [ "default.target" "graphical-session.target" ]; };
+            Install = {
+              After = [ "tray.target" ];
+              WantedBy = [ "graphical-session.target" ];
+            };
           };
         })
       ];

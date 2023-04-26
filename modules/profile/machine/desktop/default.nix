@@ -8,6 +8,7 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    kdn.desktop.base.enable = true;
     kdn.profile.machine.basic.enable = true;
 
     hardware.opengl.enable = true;
@@ -17,6 +18,7 @@ in
     # INPUT
     services.xserver.layout = "pl";
     console.useXkbConfig = true;
+    services.xserver.libinput.enable = true;
     services.xserver.libinput.touchpad.disableWhileTyping = true;
     services.xserver.libinput.touchpad.naturalScrolling = true;
     services.xserver.libinput.touchpad.tapping = true;

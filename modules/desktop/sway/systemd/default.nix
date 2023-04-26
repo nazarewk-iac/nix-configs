@@ -53,6 +53,7 @@ in
         # wrapper already contains dbus-session-run
         # ExecStartPre = "systemctl --user unset-environment ${mandatoryEnvsString}";
         ExecStart = "/run/current-system/sw/bin/sway";
+        # TODO: prepare a diff of an environment maybe re-using direnv intead of using mandatoryEnvsString
         ExecStopPost = "systemctl --user unset-environment ${mandatoryEnvsString}";
         Restart = "no";
         RestartSec = 1;

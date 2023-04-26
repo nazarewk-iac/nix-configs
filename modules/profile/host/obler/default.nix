@@ -9,11 +9,11 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    kdn.profile.machine.basic.enable = true;
+    kdn.profile.machine.desktop.enable = true;
+    kdn.desktop.kde.enable = true;
     kdn.profile.user.sn.enable = true;
     kdn.profile.hardware.dell-e5470.enable = true;
 
-    kdn.desktop.kde.enable = true;
     services.teamviewer.enable = true;
     services.xserver.displayManager.sddm.settings = {
       Autologin = {

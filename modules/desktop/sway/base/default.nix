@@ -37,8 +37,9 @@ in
 
   config = lib.mkIf cfg.enable {
     kdn.desktop.base.enable = true;
-    kdn.gnome.base.enable = true;
-    kdn.xfce.base.enable = true;
+    #kdn.xfce.base.enable = true;
+
+    services.xserver.displayManager.defaultSession = "sway";
 
     systemd.user.services.thunar.enable = false; # doesn't pick up proper MIME files
     systemd.user.services.thunar = {
@@ -219,5 +220,14 @@ in
         chooser_cmd = "${pkgs.wofi}/bin/wofi -d -n --prompt='Select the monitor to share:'";
       };
     };
+
+    # XFCE pieces
+    services.tumbler.enable = true;
+    programs.thunar.enable = true;
+    programs.thunar.plugins = with pkgs.xfce; [
+      thunar-archive-plugin
+      thunar-volman
+      thunar-media-tags-plugin
+    ];
   };
 }
