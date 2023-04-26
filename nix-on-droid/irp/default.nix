@@ -3,28 +3,29 @@
 {
   # Simply install just the packages
   environment.packages = with pkgs; [
-    # User-facing stuff that you really really want to have
-    vim # or some other editor, e.g. nano or neovim
-
-    # Some common stuff that people expect to have
+    vim
+    bzip2
+    coreutils
     diffutils
+    direnv
     findutils
-    utillinux
-    tzdata
-    hostname
-    man
+    git
     gnugrep
     gnupg
     gnused
     gnutar
-    bzip2
     gzip
+    hostname
+    jq
+    man
+    nix
+    openssh
+    rsync
+    tzdata
+    unzip
+    utillinux
     xz
     zip
-    unzip
-
-    git
-    direnv
 
     atuin
     fish
