@@ -32,7 +32,7 @@
 
     (pkgs.writeShellApplication {
       name = "irp-update";
-      runtimeInputs = with pkgs; [ kdn.handlr-regex ];
+      runtimeInputs = with pkgs; [ git ];
       text = ''
         cd ~/dev/github.com/nazarewk-iac/nix-configs
         git pull
