@@ -1,7 +1,11 @@
 { pkgs
+, lib
 , inputs
 , ...
 }:
+let
+  ssh = import ../../modules/profile/user/me/ssh.nix { inherit lib; };
+in
 inputs.nixos-generators.nixosGenerate {
   inherit pkgs;
   format = "install-iso";
@@ -20,9 +24,7 @@ inputs.nixos-generators.nixosGenerate {
     services.openssh.openFirewall = true;
     services.openssh.settings.PasswordAuthentication = false;
 
-    users.users.root.openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIFngB2F2qfcXVbXkssSWozufmyc0n6akKYA8zgjNFdZ"
-    ];
+    users.users.root.openssh.authorizedKeys.keys = ssh.authorizedKeysList;
 
     environment.systemPackages = with pkgs; [
       git

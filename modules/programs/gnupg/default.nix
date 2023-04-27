@@ -72,15 +72,18 @@ in
           services.gnome-keyring.enable = lib.mkForce false;
           # copied from HM config
           systemd.user.services.pass-secret-service = {
-            Unit = { Description = "Pass libsecret service"; };
+            Unit = {
+              Description = "Pass libsecret service";
+              After = [ "graphical-session.target" ];
+              Before = [ "tray.target" ];
+              PartOf = [ "graphical-session.target" ];
+            };
+            Install.WantedBy = [ "graphical-session.target" ];
             Service = {
               # pass-secret-service doesn't use environment variables for some reason.
               ExecStart =
                 "${pkgs.kdn.pass-secret-service}/bin/pass_secret_service --path ${config.programs.password-store.settings.PASSWORD_STORE_DIR}";
-            };
-            Install = {
-              After = [ "tray.target" ];
-              WantedBy = [ "graphical-session.target" ];
+              ExecStartPost = "sleep 2";
             };
           };
         })

@@ -55,7 +55,6 @@ in
 
     boot.initrd.systemd.enable = true;
     kdn.filesystems.zfs-root.enable = true;
-    kdn.filesystems.zfs-root.sshUnlock.enable = true;
 
     zramSwap.enable = lib.mkDefault true;
     zramSwap.memoryPercent = 50;

@@ -27,6 +27,14 @@ let
     systemctl --user import-environment $(${pkgs.jq}/bin/jq -rn 'env | keys[]')
     exec systemctl --user start sway.service
   '');
+  systemctlClearEnv = pkgs.writeShellApplication {
+    name = "systemctl-clear-env";
+    runtimeInputs = with pkgs; [ systemd jq ];
+    text = ''
+      # shellcheck disable=SC2046
+      systemctl --user unset-environment $(systemctl --user show-environment -o json | jq -r 'keys[]')
+    '';
+  };
 in
 {
   options.kdn.sway.systemd = {
@@ -50,11 +58,9 @@ in
         Type = "notify";
         # NotifyAccess = "exec";
         NotifyAccess = "all";
-        # wrapper already contains dbus-session-run
-        # ExecStartPre = "systemctl --user unset-environment ${mandatoryEnvsString}";
         ExecStart = "/run/current-system/sw/bin/sway";
         # TODO: prepare a diff of an environment maybe re-using direnv intead of using mandatoryEnvsString
-        ExecStopPost = "systemctl --user unset-environment ${mandatoryEnvsString}";
+        ExecStopPost = "${systemctlClearEnv}/bin/systemd-clear-env";
         Restart = "no";
         RestartSec = 1;
         TimeoutStopSec = 60;
@@ -79,17 +85,10 @@ in
     };
 
     programs.sway.extraPackages = with pkgs; [
+      systemctlClearEnv
       startsway
       startsway-headless
       seatd
-    ];
-
-    services.xserver.displayManager.session = [
-      # {  # this just does Xsession
-      #   manage = "desktop";
-      #   name = "sway-service";
-      #   start = "${startsway}/bin/startsway";
-      # }
     ];
   };
 }

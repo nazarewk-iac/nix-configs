@@ -8,6 +8,7 @@ in
     enable = lib.mkEnableOption "ZFS setup";
 
     sshUnlock = {
+      # Note: this does not work with systemd stage 0
       enable = lib.mkEnableOption "ZFS unlocking over SSH setup";
       authorizedKeys = mkOption {
         type = types.listOf types.str;
