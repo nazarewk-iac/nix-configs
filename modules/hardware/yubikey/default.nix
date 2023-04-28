@@ -29,8 +29,10 @@ in
           # fix from https://dev.gnupg.org/T5436#148656
           disable-application piv
         '';
-        home.file.".gnupg/gpg-agent.conf".text = ''
+        home.file.".gnupg/gpg.conf".text = ''
           no-throw-keyids
+        '';
+        home.file.".gnupg/gpg-agent.conf".text = ''
         '';
       }
     ];
