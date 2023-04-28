@@ -1,32 +1,32 @@
 { lib, pkgs, config, inputs, system, ... }:
 let
-cfg = config.kdn.development.nix;
+  cfg = config.kdn.development.nix;
 in
 {
-options.kdn.development.nix = {
-enable = lib.mkEnableOption "nix development/debugging";
-};
+  options.kdn.development.nix = {
+    enable = lib.mkEnableOption "nix development/debugging";
+  };
 
-config = lib.mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
 
-programs.fish.interactiveShellInit = ''
+    programs.fish.interactiveShellInit = ''
       complete -c nix-which --wraps which
     '';
-environment.systemPackages = with pkgs; [
-nix-tree
-nix-du
-rnix-lsp
-nixfmt
-nixpkgs-fmt
+    environment.systemPackages = with pkgs; [
+      nix-tree
+      nix-du
+      rnix-lsp
+      nixfmt
+      nixpkgs-fmt
 
-devenv
+      devenv
 
-#inputs.nixpkgs-update.defaultPackage.${system}
+      #inputs.nixpkgs-update.defaultPackage.${system}
 
-(pkgs.writeShellApplication {
-name = "nix-which";
-runtimeInputs = with pkgs; [ nix ];
-text = ''
+      (pkgs.writeShellApplication {
+        name = "nix-which";
+        runtimeInputs = with pkgs; [ nix ];
+        text = ''
           help() {
             cat <<EOF >&2
             Usage: "$0" <binary> [options...]
@@ -41,7 +41,7 @@ text = ''
             nix-store --query "''${@:2}" "$(command -pv "$1")";;
           esac
         '';
-})
-];
-};
+      })
+    ];
+  };
 }
