@@ -1,5 +1,4 @@
 { lib, pkgs, config, system, ... }:
-with lib;
 let
   cfg = config.kdn.development.db.mysql;
 in
@@ -9,7 +8,6 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-
     environment.systemPackages = with pkgs; [
       mariadb
       # mysql80 # TODO: doesn't build https://github.com/NixOS/nixpkgs/issues/226673

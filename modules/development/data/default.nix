@@ -1,5 +1,4 @@
 { lib, pkgs, config, ... }:
-with lib;
 let
   cfg = config.kdn.development.data;
 
@@ -11,7 +10,7 @@ let
     name = name;
     runtimeInputs = opts.pkgs;
     text = ''
-      args=(${escapeShellArgs opts.args})
+      args=(${lib.escapeShellArgs opts.args})
       files=()
       for arg in "$@" ; do
         if [[ "$arg" = -* ]]; then
@@ -32,7 +31,7 @@ let
     '';
   };
 
-  converterPkgs = mapAttrs (name: opts: converter name opts) {
+  converterPkgs = lib.mapAttrs (name: opts: converter name opts) {
     "csv2json" = { pkgs = [ miller ]; args = [ "mlr" "--icsv" "--ojson" "cat" ]; };
     "csv2jsonl" = { pkgs = [ miller ]; args = [ "mlr" "--icsv" "--ojsonl" "cat" ]; };
     "hcl2hcl" = { pkgs = [ yj ]; args = [ "yj" "-cc" ]; };
@@ -53,30 +52,30 @@ let
     "yaml2yaml" = { pkgs = [ yj ]; args = [ "yj" "-yy" ]; };
     "yamls2json" = { pkgs = [ yq ]; args = [ "yq" "-M" "[inputs]" "--" ]; };
   };
-  conv = mapAttrs (name: pkg: "${pkg}/bin/${name}") converterPkgs;
+  conv = lib.mapAttrs (name: pkg: "${pkg}/bin/${name}") converterPkgs;
 in
 {
   options.kdn.development.data = {
     enable = lib.mkEnableOption "tools for working with data";
 
     packages = {
-      yq = mkOption {
-        type = types.package;
+      yq = lib.mkOption {
+        type = lib.types.package;
         default = pkgs.yq-go;
       };
 
-      yj = mkOption {
-        type = types.package;
+      yj = lib.mkOption {
+        type = lib.types.package;
         default = pkgs.yj;
       };
 
-      miller = mkOption {
-        type = types.package;
+      miller = lib.mkOption {
+        type = lib.types.package;
         default = pkgs.miller;
       };
 
-      jq = mkOption {
-        type = types.package;
+      jq = lib.mkOption {
+        type = lib.types.package;
         default = pkgs.jq;
       };
     };
@@ -105,6 +104,6 @@ in
       opensearch # opensearch-cli
 
       gnused
-    ]) ++ (attrValues converterPkgs);
+    ]) ++ (lib.attrValues converterPkgs);
   };
 }

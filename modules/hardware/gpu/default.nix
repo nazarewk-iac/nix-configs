@@ -1,5 +1,4 @@
 { lib, pkgs, config, ... }:
-with lib;
 let
   cfg = config.kdn.hardware.gpu;
 in
@@ -9,7 +8,7 @@ in
     vfio = {
       enable = lib.mkEnableOption "VFIO setup";
       gpuIDs = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
+        type = with lib.types; listOf str;
         default = [ ];
       };
     };

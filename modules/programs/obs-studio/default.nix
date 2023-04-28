@@ -1,5 +1,4 @@
 { lib, pkgs, config, ... }:
-with lib;
 let
   cfg = config.kdn.programs.obs-studio;
 
@@ -10,12 +9,12 @@ in
 {
   options.kdn.programs.obs-studio = {
     enable = lib.mkEnableOption "OBS Studio setup";
-    package = mkOption {
-      type = types.package;
+    package = lib.mkOption {
+      type = lib.types.package;
       default = pkgs.obs-studio;
     };
-    plugins = mkOption {
-      type = types.listOf types.package;
+    plugins = lib.mkOption {
+      type = lib.types.listOf lib.types.package;
       default = with pkgs.obs-studio-plugins; [
         obs-gstreamer
         obs-pipewire-audio-capture

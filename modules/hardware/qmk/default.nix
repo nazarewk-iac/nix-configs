@@ -1,5 +1,4 @@
 { lib, pkgs, config, ... }:
-with lib;
 let
   cfg = config.kdn.hardware.qmk;
 in
@@ -10,7 +9,7 @@ in
     };
   };
 
-  config = lib.mkIf cfg.enable (mkMerge [{
+  config = lib.mkIf cfg.enable (lib.mkMerge [{
     services.udev.packages = with pkgs; [
       qmk-udev-rules
       zsa-udev-rules
@@ -34,7 +33,7 @@ in
       })
     ];
   }
-    (mkIf config.kdn.headless.enableGUI {
+    (lib.mkIf config.kdn.headless.enableGUI {
       environment.systemPackages = with pkgs; [
         vial
       ];

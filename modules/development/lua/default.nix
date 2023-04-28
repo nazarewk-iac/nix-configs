@@ -1,12 +1,11 @@
 { lib, pkgs, config, ... }:
-with lib;
 let
   cfg = config.kdn.development.lua;
 
   mkLuaVersion = version:
     let
       pkg = pkgs."lua${lib.replaceStrings ["."] ["_"] version}";
-      selectedPackages = subtractLists (cfg.brokenPackages.${version} or [ ]) cfg.extraPackages;
+      selectedPackages = lib.subtractLists (cfg.brokenPackages.${version} or [ ]) cfg.extraPackages;
     in
     pkg.withPackages (ps: map (n: ps.${n}) selectedPackages)
   ;
@@ -25,8 +24,8 @@ in
   options.kdn.development.lua = {
     enable = lib.mkEnableOption "lua development";
 
-    extraPackages = mkOption {
-      type = types.listOf types.str;
+    extraPackages = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
       default = [
         "luacheck"
         "luarepl"
@@ -35,20 +34,20 @@ in
         "stdlib"
       ];
     };
-    brokenPackages = mkOption {
-      type = types.attrsOf (types.listOf types.str);
+    brokenPackages = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.listOf lib.types.str);
       default = {
         "5.4" = [ "luacheck" ];
       };
     };
 
-    defaultVersion = mkOption {
-      type = types.str;
+    defaultVersion = lib.mkOption {
+      type = lib.types.str;
       default = "5.4";
     };
 
-    versions = mkOption {
-      type = types.listOf types.str;
+    versions = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
       default = [
         "5.1" # argocd
         "5.2"

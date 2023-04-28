@@ -1,12 +1,11 @@
 { lib, pkgs, config, ... }:
-with lib;
 let
   cfg = config.kdn.headless.base;
 in
 {
   options.kdn.headless.base = {
     enable = lib.mkEnableOption "basic headless system configuration";
-    atuin.enable = mkOption {
+    atuin.enable = lib.mkOption {
       default = cfg.enable;
       type = lib.types.bool;
     };

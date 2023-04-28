@@ -1,12 +1,11 @@
 { lib, pkgs, config, ... }:
-with lib;
 let
-  cfg = config.kdn.hardware.disk-encryption;
+cfg = config.kdn.hardware.disk-encryption;
 in
 {
-  options.kdn.hardware.disk-encryption = {
-    enable = lib.mkEnableOption "disk encryption wrapper setup";
-  };
+options.kdn.hardware.disk-encryption = {
+enable = lib.mkEnableOption "disk encryption wrapper setup";
+};
 
-  config = lib.mkIf cfg.enable { };
+config = lib.mkIf cfg.enable { };
 }

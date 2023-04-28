@@ -1,6 +1,5 @@
 { config, lib, pkgs, ... }:
 
-with lib;
 
 let
   cfg = config.services.jetbrains-remote;
@@ -9,7 +8,7 @@ let
 
   mkStartScript = name: pkgs.writeShellScript "${name}.sh" ''
     set -eEuo pipefail
-    PATH=${makeBinPath (with pkgs; [ coreutils findutils inotify-tools patchelf gnused ])}
+    PATH=${lib.makeBinPath (with pkgs; [ coreutils findutils inotify-tools patchelf gnused ])}
     bin_dir="$HOME/.cache/JetBrains/RemoteDev/dist"
 
     mkdir -p "$bin_dir"
@@ -60,12 +59,12 @@ in
 {
   options = {
     services.jetbrains-remote = {
-      enable = mkEnableOption "jetbrains-remote";
+      enable = lib.mkEnableOption "jetbrains-remote";
     };
   };
 
-  config = mkMerge [
-    (mkIf cfg.enable {
+  config = lib.mkMerge [
+    (lib.mkIf cfg.enable {
       home.packages = [ ];
 
       systemd.user.services.${name} = {

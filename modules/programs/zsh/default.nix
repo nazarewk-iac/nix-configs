@@ -1,6 +1,5 @@
 { lib, pkgs, config, ... }:
 # many configs pulled from https://git.grml.org/?p=grml-etc-core.git;a=blob_plain;f=etc/zsh/zshrc;hb=HEAD
-with lib;
 let
   cfg = config.kdn.programs.zsh;
 in

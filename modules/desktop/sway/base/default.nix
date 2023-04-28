@@ -1,5 +1,4 @@
 { lib, pkgs, config, ... }:
-with lib;
 let
   cfg = config.kdn.sway.base;
 in
@@ -7,31 +6,26 @@ in
   options.kdn.sway.base = {
     enable = lib.mkEnableOption "Sway base setup";
 
-    systemd.target = mkOption {
-      type = types.str;
-      default = "sway-session-kdn";
-    };
-
-    polkitAgentCommand = mkOption {
-      type = types.str;
+    polkitAgentCommand = lib.mkOption {
+      type = lib.types.str;
       default = "${pkgs.libsForQt5.polkit-kde-agent}/libexec/polkit-kde-authentication-agent-1";
     };
 
-    initScripts = mkOption {
-      type = types.attrsOf (types.attrsOf types.str);
+    initScripts = lib.mkOption {
+      type = with lib.types; attrsOf (attrsOf str);
       default = { };
     };
 
-    environmentDefaults = mkOption {
-      type = types.attrsOf types.str;
+    environmentDefaults = lib.mkOption {
+      type = with lib.types; attrsOf str;
       default = { };
       apply = lib.kdn.shell.makeShellDefaultAssignments;
     };
 
-    environment = mkOption {
-      type = types.attrsOf types.str;
+    environment = lib.mkOption {
+      type = with lib.types; attrsOf str;
       default = { };
-      apply = input: mapAttrsToList lib.toShellVar input;
+      apply = input: lib.mapAttrsToList lib.toShellVar input;
     };
   };
 
@@ -41,10 +35,9 @@ in
 
     services.xserver.displayManager.defaultSession = "sway";
 
-    systemd.user.services.thunar.enable = false; # doesn't pick up proper MIME files
     systemd.user.services.thunar = {
-      after = [ "graphical-session-pre.target" ];
-      partOf = [ "graphical-session.target" ];
+      after = [ "kdn-sway-envs.target" ];
+      wantedBy = [ "kdn-sway-session.target" ];
     };
 
     # Configure various Sway configs
@@ -86,7 +79,7 @@ in
       export ${lib.concatStringsSep " \\\n  " cfg.environment}
     '';
 
-    systemd.user.targets."${cfg.systemd.target}" = {
+    systemd.user.targets."kdn-sway-session" = {
       description = "Sway compositor session";
       documentation = [ "man:systemd.special(7)" ];
       bindsTo = [ "graphical-session.target" ];
@@ -94,13 +87,26 @@ in
       after = [ "graphical-session-pre.target" ];
     };
 
-    kdn.sway.base.initScripts.polkit = {
-      "00-init" = ''
-        export PATH="${lib.makeBinPath (with pkgs; [ procps systemd ])}:$PATH"
-        until systemctl --user show-environment | grep -q WAYLAND_DISPLAY ; do sleep 1; done
-        exec "${cfg.polkitAgentCommand}"
-      '';
+    systemd.user.targets."kdn-sway-envs" = {
+      description = "Sway target after running dbus-update-activation-environment";
+      partOf = [ "kdn-sway-session.target" ];
     };
+
+    systemd.user.targets."kdn-sway-tray" = {
+      description = "Sway target after running dbus-update-activation-environment";
+      partOf = [ "kdn-sway-session.target" ];
+      before = [ "kdn-sway-session.target" ];
+      wantedBy = [ "kdn-sway-session.target" ];
+    };
+
+    systemd.user.services."kdn-sway-polkit-agent" = {
+      description = "Polkit Agent service";
+      partOf = [ "kdn-sway-session.target" ];
+      wants = [ "kdn-sway-envs.target" ];
+      after = [ "kdn-sway-envs.target" ];
+      serviceConfig.ExecStart = cfg.polkitAgentCommand;
+    };
+
     kdn.sway.base.initScripts.systemd = {
       "01-update-systemd-environment" = ''
         export PATH="${lib.makeBinPath (with pkgs; [ dbus systemd ])}:$PATH"
@@ -109,15 +115,15 @@ in
           sleep 1
         done
         dbus-update-activation-environment --systemd --all --verbose
+        systemctl --user start "kdn-sway-envs.target"
       '';
       "50-wait-polkit" = ''
-        export PATH="${lib.makeBinPath (with pkgs; [ procps ])}:$PATH"
-        until pgrep -fu $UID "${cfg.polkitAgentCommand}" ; do sleep 1; done
+        until systemctl --user is-active --quiet "kdn-sway-envs.target" ; do sleep 1; done
       '';
       # because tray opens up too late https://github.com/Alexays/Waybar/issues/483
-      "99-start-${cfg.systemd.target}" = ''
+      "99-start-kdn-sway" = ''
         export PATH="${lib.makeBinPath (with pkgs; [ dbus procps systemd ])}:$PATH"
-        systemctl --user start ${cfg.systemd.target}.target
+        systemctl --user start "kdn-sway-session.target"
       '';
       # TODO: pass-secret-service doesn't get the WAYLAND_DISPLAY etc.
       # - maybe it starts before graphical-session.target is activated?
@@ -213,7 +219,7 @@ in
       (pkgs.writeScriptBin "_sway-wait-ready" ''
         #! ${pkgs.bash}/bin/bash
         set -xeEuo pipefail
-        until systemctl --user is-active --quiet "${cfg.systemd.target}.target" ; do sleep 1; done
+        until systemctl --user is-active --quiet "${"kdn-sway-session.target"}" ; do sleep 1; done
         until systemctl --user is-active --quiet "tray.target" ; do sleep 1; done
         test "$#" -lt 1 || exec "$@"
       '')

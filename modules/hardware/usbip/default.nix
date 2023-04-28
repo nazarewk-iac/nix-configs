@@ -1,5 +1,4 @@
 { lib, pkgs, config, ... }:
-with lib;
 let
   # https://wiki.archlinux.org/title/USB/IP
   cfg = config.kdn.hardware.usbip;
@@ -9,18 +8,18 @@ in
     kdn.hardware.usbip = {
       enable = lib.mkEnableOption "USB/IP setup";
 
-      package = mkOption {
-        type = types.package;
+      package = lib.mkOption {
+        type = lib.types.package;
         default = config.boot.kernelPackages.usbip;
       };
 
-      bindInterface = mkOption {
-        type = types.str;
+      bindInterface = lib.mkOption {
+        type = lib.types.str;
         default = "wg0";
       };
 
-      bindPort = mkOption {
-        type = types.ints.unsigned;
+      bindPort = lib.mkOption {
+        type = lib.types.ints.unsigned;
         default = 3240;
       };
     };
@@ -63,12 +62,12 @@ in
       };
       systemd.services."usbip-bind@multi-user".enable = false;
     }
-    (mkIf (cfg.bindInterface == "*") {
+    (lib.mkIf (cfg.bindInterface == "*") {
       networking.firewall.allowedTCPPorts = [
         cfg.bindPort
       ];
     })
-    (mkIf (cfg.bindInterface != "*") {
+    (lib.mkIf (cfg.bindInterface != "*") {
       networking.firewall.interfaces.${cfg.bindInterface}.allowedTCPPorts = [
         cfg.bindPort
       ];

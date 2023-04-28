@@ -1,5 +1,4 @@
 { lib, pkgs, config, waylandPkgs, ... }:
-with lib;
 let
   cfg = config.kdn.sway.remote;
 

@@ -1,5 +1,4 @@
 { lib, pkgs, config, ... }:
-with lib;
 let
   cfg = config.kdn.development.git;
   relDir = "${cfg.baseDir}";
@@ -38,17 +37,17 @@ in
   options.kdn.development.git = {
     enable = lib.mkEnableOption "Git development utilities";
 
-    baseDir = mkOption {
+    baseDir = lib.mkOption {
       default = "dev";
       description = "Base git checkout directory";
     };
 
-    IDE = mkOption {
+    IDE = lib.mkOption {
       default = "idea-ultimate";
       description = "IDE to use in g-open";
     };
 
-    remoteShellPattern = mkOption {
+    remoteShellPattern = lib.mkOption {
       default = "https://github.com/$org/$repo.git";
     };
   };

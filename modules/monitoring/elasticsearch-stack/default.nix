@@ -1,5 +1,4 @@
 { lib, pkgs, config, ... }:
-with lib;
 let
   cfg = config.kdn.monitoring.elasticsearch-stack;
 
@@ -12,23 +11,23 @@ in
 
     onDemand = lib.mkEnableOption "starting services on demand";
 
-    packages.elasticsearch = mkOption {
-      type = types.package;
+    packages.elasticsearch = lib.mkOption {
+      type = lib.types.package;
       default = pkgs.elasticsearch7;
     };
 
-    listenAddress = mkOption {
-      type = types.str;
+    listenAddress = lib.mkOption {
+      type = lib.types.str;
       default = "127.0.0.1";
     };
 
-    caddy.kibana = mkOption {
-      type = types.str;
+    caddy.kibana = lib.mkOption {
+      type = lib.types.str;
       default = "";
     };
   };
 
-  config = mkIf cfg.enable (mkMerge [
+  config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       services.elasticsearch = {
         enable = true;
@@ -44,11 +43,11 @@ in
         ];
       };
     }
-    (mkIf cfg.onDemand {
+    (lib.mkIf cfg.onDemand {
       systemd.services.elasticsearch.wantedBy = lib.mkForce [ "kibana.service" ];
       systemd.services.kibana.wantedBy = lib.mkForce [ ];
     })
-    (mkIf (cfg.caddy.kibana != "") {
+    (lib.mkIf (cfg.caddy.kibana != "") {
       services.caddy.virtualHosts."${cfg.caddy.kibana}".extraConfig = ''
         @denied not remote_ip private_ranges
         abort @denied

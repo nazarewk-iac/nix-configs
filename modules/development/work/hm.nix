@@ -1,5 +1,4 @@
 { lib, pkgs, config, ... }:
-with lib;
 let
   cfg = config.kdn.work.development;
   relDir = "${cfg.baseDir}";
@@ -10,25 +9,25 @@ in
   options.kdn.work.development = {
     enable = lib.mkEnableOption "development utilities";
 
-    prefix = mkOption {
+    prefix = lib.mkOption {
       default = "w";
       description = "The prefix work tooling will take";
     };
 
-    domains = mkOption {
-      type = types.listOf types.str;
+    domains = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
     };
 
-    bastionUsername = mkOption {
+    bastionUsername = lib.mkOption {
       default = config.home.username;
       description = "SSH Username to use for bastion host";
     };
 
-    baseDir = mkOption {
+    baseDir = lib.mkOption {
       description = "Base development directory";
     };
 
-    git.remoteShellPattern = mkOption {
+    git.remoteShellPattern = lib.mkOption {
       # "git@github.com:<org>/$repo.git"
     };
   };

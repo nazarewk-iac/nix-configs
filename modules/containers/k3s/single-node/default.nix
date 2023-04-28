@@ -1,5 +1,4 @@
 { lib, pkgs, config, ... }:
-with lib;
 let
   cfg = config.kdn.k3s.single-node;
   cil = cfg.cilium;
@@ -69,45 +68,45 @@ in
   options.kdn.k3s.single-node = {
     enable = lib.mkEnableOption "local (single node) k3s setup";
 
-    enableTools = mkOption {
+    enableTools = lib.mkOption {
       default = cfg.enable;
       type = lib.types.bool;
     };
 
-    cni = mkOption {
+    cni = lib.mkOption {
       default = "cilium";
-      type = types.enum [
+      type = lib.types.enum [
         "cilium"
       ];
     };
 
-    podCIDR = mkOption {
-      type = types.str;
+    podCIDR = lib.mkOption {
+      type = lib.types.str;
       default = "10.42.0.0/16";
     };
 
-    serviceCIDR = mkOption {
-      type = types.str;
+    serviceCIDR = lib.mkOption {
+      type = lib.types.str;
       default = "10.43.0.0/16";
     };
 
-    clusterDNS = mkOption {
-      type = types.str;
+    clusterDNS = lib.mkOption {
+      type = lib.types.str;
       default = "10.43.0.10";
     };
 
-    nodeCIDRMask = mkOption {
-      type = types.ints.unsigned;
+    nodeCIDRMask = lib.mkOption {
+      type = lib.types.ints.unsigned;
       default = 18;
     };
 
-    maxPodsPerNode = mkOption {
-      type = types.ints.unsigned;
+    maxPodsPerNode = lib.mkOption {
+      type = lib.types.ints.unsigned;
       # TODO: calculate: 2 ** (32 - cfg.nodeCIDRMask) * 0.43
       default = 7045;
     };
 
-    featureGates = mkOption {
+    featureGates = lib.mkOption {
       type = lib.types.attrsOf lib.types.bool;
       default = {
         GracefulNodeShutdownBasedOnPodPriority = true;
@@ -115,18 +114,18 @@ in
     };
 
     drainer = {
-      enable = mkOption {
+      enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
       };
 
       timeouts = {
-        initial = mkOption {
-          type = types.ints.unsigned;
+        initial = lib.mkOption {
+          type = lib.types.ints.unsigned;
           default = totalShutdownTime * 1 / 4;
         };
-        force = mkOption {
-          type = types.ints.unsigned;
+        force = lib.mkOption {
+          type = lib.types.ints.unsigned;
           default = totalShutdownTime * 3 / 4;
         };
       };
@@ -134,39 +133,39 @@ in
 
     reservations = {
       system = {
-        cpu = mkOption {
-          type = types.str;
+        cpu = lib.mkOption {
+          type = lib.types.str;
           default = "500m";
         };
-        memory = mkOption {
-          type = types.str;
+        memory = lib.mkOption {
+          type = lib.types.str;
           default = "1G";
         };
       };
       kube = {
-        cpu = mkOption {
-          type = types.str;
+        cpu = lib.mkOption {
+          type = lib.types.str;
           default = "500m";
         };
-        memory = mkOption {
-          type = types.str;
+        memory = lib.mkOption {
+          type = lib.types.str;
           default = "1G";
         };
       };
     };
 
-    zfsVolume = mkOption {
-      type = types.str;
+    zfsVolume = lib.mkOption {
+      type = lib.types.str;
       default = "";
     };
 
     config = {
-      k3s = mkOption {
+      k3s = lib.mkOption {
         type = yaml.type;
         default = { };
       };
 
-      kubelet = mkOption {
+      kubelet = lib.mkOption {
         type = yaml.type;
         default = { };
       };
@@ -185,35 +184,35 @@ in
     };
 
     cilium = {
-      version = mkOption {
+      version = lib.mkOption {
         default = "1.11.6";
-        type = types.str;
+        type = lib.types.str;
       };
 
-      namespace = mkOption {
+      namespace = lib.mkOption {
         default = "kube-system";
-        type = types.str;
+        type = lib.types.str;
       };
 
-      replaceKubeProxy = mkOption {
+      replaceKubeProxy = lib.mkOption {
         default = false;
         type = lib.types.bool;
       };
 
-      hubble = mkOption {
+      hubble = lib.mkOption {
         default = true;
         type = lib.types.bool;
       };
 
-      values = mkOption {
+      values = lib.mkOption {
         type = yaml.type;
         default = { };
       };
     };
   };
 
-  config = mkMerge [
-    (mkIf cfg.enableTools {
+  config = lib.mkMerge [
+    (lib.mkIf cfg.enableTools {
       environment.systemPackages = with pkgs; [
         k3s-node-shutdown
         k3s-erase
@@ -225,7 +224,7 @@ in
         util-linux
       ];
     })
-    (mkIf cfg.enable (mkMerge [
+    (lib.mkIf cfg.enable (lib.mkMerge [
       {
         zramSwap.enable = false;
         # see Cilium https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/
@@ -312,7 +311,7 @@ in
         systemd.services.k3s = {
           serviceConfig = {
             TimeoutStartSec = 600;
-            Restart = mkForce "on-failure";
+            Restart = lib.mkForce "on-failure";
           };
         };
 
@@ -332,12 +331,12 @@ in
           done
         '';
       }
-      (mkIf cfg.kube-prometheus.enable {
+      (lib.mkIf cfg.kube-prometheus.enable {
         kdn.k3s.single-node.config.k3s.disable = [
           "metrics-server" # using Prometheus Operator instead
         ];
       })
-      (mkIf cfg.istio.enable {
+      (lib.mkIf cfg.istio.enable {
         system.activationScripts.istioBinLinks = ''
           mkdir -p /sbin /bin /usr/bin
           files=(
@@ -354,7 +353,7 @@ in
           "traefik" # using Istio ingress instead
         ];
       })
-      (mkIf cfg.rook-ceph.enable {
+      (lib.mkIf cfg.rook-ceph.enable {
         kdn.k3s.single-node.config.k3s.disable = [
           "local-storage" # using Rook Ceph instead
         ];
@@ -383,7 +382,7 @@ in
           "nbd"
         ];
       })
-      (mkIf cfg.drainer.enable {
+      (lib.mkIf cfg.drainer.enable {
         systemd.services.k3s = {
           # restartIfChanges seems to make a full stop, then full start which triggers drainer
           restartIfChanged = false;
@@ -421,7 +420,7 @@ in
             };
         };
       })
-      (mkIf (cfg.zfsVolume != "") {
+      (lib.mkIf (cfg.zfsVolume != "") {
         # use external containerd on ZFS root
         # see https://nixos.wiki/wiki/K3s
         virtualisation.containerd.enable = true;
@@ -451,7 +450,7 @@ in
           after = [ "containerd.service" ];
         };
       })
-      (mkIf (cfg.cni == "cilium") (mkMerge [
+      (lib.mkIf (cfg.cni == "cilium") (lib.mkMerge [
         {
           # TODO: figure out why firewall is preventing Cilium from working
           networking.firewall.enable = false;
@@ -539,7 +538,7 @@ in
             "net.ipv4.conf.lxc*.rp_filter" = 0;
           };
         }
-        (mkIf (cil.replaceKubeProxy) {
+        (lib.mkIf (cil.replaceKubeProxy) {
           kdn.k3s.single-node.config.k3s = {
             disable-kube-proxy = true;
           };
@@ -547,7 +546,7 @@ in
             kubeProxyReplacement = "strict";
           };
         })
-        (mkIf (cil.hubble) {
+        (lib.mkIf (cil.hubble) {
           kdn.k3s.single-node.cilium.values = {
             hubble.relay.enabled = true;
             hubble.ui.enabled = true;

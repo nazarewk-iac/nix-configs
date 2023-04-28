@@ -1,13 +1,12 @@
 { lib, pkgs, config, ... }:
-with lib;
 let
   cfg = config.kdn.networking.wireguard;
-  getIP = num: pipe cfg.subnet [
-    (splitString ".")
-    reverseList
-    (l: [ (toString ((toInt (head l)) + num)) ] ++ (tail l))
-    reverseList
-    (concatStringsSep ".")
+  getIP = num: lib.pipe cfg.subnet [
+    (lib.splitString ".")
+    lib.reverseList
+    (l: [ (builtins.toString ((lib.toInt (lib.head l)) + num)) ] ++ (lib.tail l))
+    lib.reverseList
+    (lib.concatStringsSep ".")
   ];
 
   cidr = "${cfg.subnet}/${toString cfg.netmask}";
@@ -21,11 +20,11 @@ let
 
   preparePeers = filters: lib.trivial.pipe activePeers (filters ++ [
     (lib.filterAttrs (n: v: n != config.networking.hostName))
-    (builtins.mapAttrs (name: entry: mkMerge [
-      (mkIf (!entry.server.enable) {
+    (builtins.mapAttrs (name: entry: lib.mkMerge [
+      (lib.mkIf (!entry.server.enable) {
         allowedIPs = [ "${getIP entry.hostnum}/32" ];
       })
-      (mkIf entry.server.enable {
+      (lib.mkIf entry.server.enable {
         allowedIPs = [
           cidr
         ];
@@ -38,57 +37,57 @@ let
 in
 {
   options.kdn.networking.wireguard = {
-    enable = mkOption {
-      type = types.bool;
+    enable = lib.mkOption {
+      type = lib.types.bool;
       default = isClient || isServer;
     };
 
-    interfaceName = mkOption {
-      type = types.str;
+    interfaceName = lib.mkOption {
+      type = lib.types.str;
       default = "wg0";
     };
 
-    subnet = mkOption {
-      type = types.str;
+    subnet = lib.mkOption {
+      type = lib.types.str;
       default = "10.100.0.0";
     };
 
-    netmask = mkOption {
-      type = types.ints.unsigned;
+    netmask = lib.mkOption {
+      type = lib.types.ints.unsigned;
       default = 24;
     };
 
-    port = mkOption {
-      type = types.ints.unsigned;
+    port = lib.mkOption {
+      type = lib.types.ints.unsigned;
       default = 51820;
     };
 
-    peers = mkOption {
-      type = types.attrsOf (types.submodule {
+    peers = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule {
         options = {
-          active = mkOption {
-            type = types.bool;
+          active = lib.mkOption {
+            type = lib.types.bool;
             default = true;
           };
 
           server = {
             enable = lib.mkEnableOption "wireguard server setup";
 
-            externalInterface = mkOption {
-              type = types.str;
+            externalInterface = lib.mkOption {
+              type = lib.types.str;
             };
           };
 
-          hostnum = mkOption {
-            type = types.ints.unsigned;
+          hostnum = lib.mkOption {
+            type = lib.types.ints.unsigned;
           };
 
-          cfg = mkOption {
-            type = types.attrs;
+          cfg = lib.mkOption {
+            type = lib.types.attrs;
           };
 
-          peersCfg = mkOption {
-            type = types.attrsOf types.attrs;
+          peersCfg = lib.mkOption {
+            type = lib.types.attrsOf lib.types.attrs;
             default = { };
           };
         };
@@ -97,13 +96,13 @@ in
     };
   };
 
-  config = lib.mkIf cfg.enable (mkMerge [
+  config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       environment.systemPackages = with pkgs; [
         wireguard-tools
       ];
     }
-    (mkIf (isActive) {
+    (lib.mkIf (isActive) {
       # see https://github.com/NixOS/nixpkgs/issues/180175#issuecomment-1186152020
       networking.networkmanager.unmanaged = [ cfg.interfaceName ];
 
@@ -130,7 +129,7 @@ in
         };
       };
     })
-    (mkIf isServer {
+    (lib.mkIf isServer {
       networking.nat.enable = true;
       networking.nat.externalInterface = self.server.externalInterface;
       networking.nat.internalInterfaces = [ cfg.interfaceName ];

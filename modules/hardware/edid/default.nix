@@ -1,5 +1,4 @@
 { lib, pkgs, config, ... }:
-with lib;
 let
   cfg = config.kdn.hardware.edid;
 
@@ -13,8 +12,8 @@ in
   options.kdn.hardware.edid = {
     enable = lib.mkEnableOption "EDID scripts & utils";
 
-    displays = mkOption {
-      type = types.attrsOf (types.listOf types.string);
+    displays = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.listOf lib.types.string);
       default = {
         "PG278Q_2014" = [ "PG278Q" "2014" ];
         "U2711_2012_1" = [ "U2711" "2560x1440" "2012" "DELA055" ];
@@ -22,13 +21,13 @@ in
       };
     };
 
-    kernelOutputs = mkOption {
-      type = types.attrsOf types.string;
+    kernelOutputs = lib.mkOption {
+      type = lib.types.attrsOf lib.types.string;
       default = { };
     };
 
-    package = mkOption {
-      type = types.package;
+    package = lib.mkOption {
+      type = lib.types.package;
       default = edids;
     };
   };

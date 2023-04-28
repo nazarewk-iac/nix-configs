@@ -1,13 +1,12 @@
 { lib, pkgs, config, inputs, system, ... }:
-with lib;
 let
   cfg = config.kdn.hardware.yubikey;
 in
 {
   options.kdn.hardware.yubikey = {
     enable = lib.mkEnableOption "YubiKey + GnuPG Smart Card config";
-    appId = mkOption {
-      type = types.str;
+    appId = lib.mkOption {
+      type = lib.types.str;
       default = "pam://${config.networking.hostName}";
     };
   };
@@ -31,6 +30,7 @@ in
           disable-application piv
         '';
         home.file.".gnupg/gpg-agent.conf".text = ''
+          no-throw-keyids
         '';
       }
     ];

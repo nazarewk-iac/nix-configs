@@ -1,5 +1,4 @@
 { lib, pkgs, config, ... }:
-with lib;
 let
   cfg = config.kdn.monitoring.prometheus-stack;
 in
@@ -7,8 +6,8 @@ in
   options.kdn.monitoring.prometheus-stack = {
     enable = lib.mkEnableOption "prometheus + grafana";
 
-    caddy.grafana = mkOption {
-      type = types.str;
+    caddy.grafana = lib.mkOption {
+      type = lib.types.str;
       default = "";
     };
 
@@ -16,28 +15,28 @@ in
       enable = lib.mkEnableOption "prometheus + grafana";
     };
 
-    retentionSize = mkOption {
-      type = types.str;
+    retentionSize = lib.mkOption {
+      type = lib.types.str;
       default = "5GB";
     };
 
-    retentionTime = mkOption {
-      type = types.str;
+    retentionTime = lib.mkOption {
+      type = lib.types.str;
       default = "90d";
     };
 
-    listenAddress = mkOption {
-      type = types.str;
+    listenAddress = lib.mkOption {
+      type = lib.types.str;
       default = "127.0.0.1";
     };
   };
 
-  config = mkMerge [
-    (mkIf cfg.enable {
+  config = lib.mkMerge [
+    (lib.mkIf cfg.enable {
       services.grafana = {
         enable = true;
         settings.server = {
-          domain = mkDefault "grafana.localhost";
+          domain = lib.mkDefault "grafana.localhost";
           port = 2342;
           addr = cfg.listenAddress;
         };
@@ -73,13 +72,13 @@ in
         opentsdb
       ];
     })
-    (mkIf cfg.pushgateway.enable {
+    (lib.mkIf cfg.pushgateway.enable {
       services.prometheus.pushgateway = {
         enable = true;
         web.listen-address = "${cfg.listenAddress}:9091";
       };
     })
-    (mkIf (cfg.caddy.grafana != "") {
+    (lib.mkIf (cfg.caddy.grafana != "") {
       services.grafana.settings.server.domain = cfg.caddy.grafana;
       services.caddy.virtualHosts."${cfg.caddy.grafana}".extraConfig = ''
         reverse_proxy ${cfg.listenAddress}:2342

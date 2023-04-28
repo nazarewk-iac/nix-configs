@@ -1,28 +1,27 @@
 { lib, pkgs, config, ... }:
-with lib;
 let
-  cfg = config.kdn.development.java;
+cfg = config.kdn.development.java;
 in
 {
-  options.kdn.development.java = {
-    enable = lib.mkEnableOption "java development";
-  };
+options.kdn.development.java = {
+enable = lib.mkEnableOption "java development";
+};
 
-  config = lib.mkIf cfg.enable {
-    programs.java.enable = true;
-    programs.java.package = pkgs.jdk;
+config = lib.mkIf cfg.enable {
+programs.java.enable = true;
+programs.java.package = pkgs.jdk;
 
-    environment.systemPackages = with pkgs; [
-      maven
-      gradle-completion
+environment.systemPackages = with pkgs; [
+maven
+gradle-completion
 
-      (pkgs.callPackage gradle-packages.gradle_7 {
-        javaToolchains = [
-          jdk8
-          jdk11
-          jdk17
-        ];
-      })
-    ];
-  };
+(pkgs.callPackage gradle-packages.gradle_7 {
+javaToolchains = [
+jdk8
+jdk11
+jdk17
+];
+})
+];
+};
 }

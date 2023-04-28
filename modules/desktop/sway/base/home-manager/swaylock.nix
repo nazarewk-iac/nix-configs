@@ -15,7 +15,7 @@ in
     wayland.windowManager.sway.config.keybindings."${mod.super}+L" = "exec ${lockCmd}";
     services.swayidle = {
       enable = true;
-      systemdTarget = "${sysCfg.systemd.target}.target";
+      systemdTarget = "kdn-sway-session.target";
       events = [
         { event = "before-sleep"; command = lockCmd; }
       ];

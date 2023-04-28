@@ -1,5 +1,4 @@
 { lib, pkgs, config, ... }:
-with lib;
 let
   cfg = config.kdn.programs.aws-vault;
 
@@ -7,7 +6,7 @@ let
     name = "aws-vault";
     runtimeInputs = [ cfg.package ];
     text = ''
-      export ${concatStringsSep " \\\n  " cfg.defaultEnv}
+      export ${lib.concatStringsSep " \\\n  " cfg.defaultEnv}
       if [[ -n "''${AWS_VAULT_CONFIG_FILE:-}" ]] ; then
         AWS_CONFIG_FILE="$AWS_VAULT_CONFIG_FILE"
       elif [[ "''${AWS_CONFIG_FILE:-}" != *.vault ]] ; then
@@ -35,13 +34,13 @@ in
   options.kdn.programs.aws-vault = {
     enable = lib.mkEnableOption "aws-vault + aliases";
 
-    package = mkOption {
-      type = types.package;
+    package = lib.mkOption {
+      type = lib.types.package;
       default = pkgs.aws-vault;
-      defaultText = literalExpression "pkgs.aws-vault";
+      defaultText = lib.literalExpression "pkgs.aws-vault";
     };
 
-    defaultEnv = mkOption {
+    defaultEnv = lib.mkOption {
       default = {
         AWS_VAULT_PROMPT = "terminal"; # ykman conflicts with GPG decryption
         AWS_SESSION_TOKEN_TTL = "12h";
@@ -52,7 +51,7 @@ in
       description = ''
         A set of default environment variables to be used in aws-vault invocations
       '';
-      type = with types; attrsOf str;
+      type = with lib.types; attrsOf str;
       apply = lib.kdn.shell.makeShellDefaultAssignments;
     };
   };

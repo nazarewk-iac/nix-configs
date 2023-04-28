@@ -1,5 +1,4 @@
 { lib, pkgs, config, inputs, ... }:
-with lib;
 let
   cfg = config.kdn.desktop.base;
 in
@@ -7,10 +6,10 @@ in
   options.kdn.desktop.base = {
     enable = lib.mkEnableOption "Desktop base setup";
 
-    enableWlrootsPatch = mkEnableOption "patched wlroots";
+    enableWlrootsPatch = lib.mkEnableOption "patched wlroots";
 
     nixpkgs-wayland = {
-      enableFullOverlay = mkEnableOption "use nixpkgs-wayland overlay for bleeding-edge wayland packages";
+      enableFullOverlay = lib.mkEnableOption "use nixpkgs-wayland overlay for bleeding-edge wayland packages";
     };
   };
 

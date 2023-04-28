@@ -1,5 +1,4 @@
 { lib, pkgs, config, ... }:
-with lib;
 let
   cfg = config.kdn.filesystems.zfs-root;
 in
@@ -10,12 +9,12 @@ in
     sshUnlock = {
       # Note: this does not work with systemd stage 0
       enable = lib.mkEnableOption "ZFS unlocking over SSH setup";
-      authorizedKeys = mkOption {
-        type = types.listOf types.str;
+      authorizedKeys = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
         default = config.users.users.kdn.openssh.authorizedKeys.keys;
       };
-      hostKeys = mkOption {
-        type = types.listOf (types.either types.str types.path);
+      hostKeys = lib.mkOption {
+        type = lib.types.listOf (lib.types.either lib.types.str lib.types.path);
         default = [
           # sudo mkdir -p /boot/nazarewk-ssh
           # sudo ssh-keygen -t rsa -N "" -f /boot/nazarewk-ssh/ssh_host_rsa_key
@@ -24,18 +23,18 @@ in
           /boot/nazarewk-ssh/ssh_host_ed25519_key
         ];
       };
-      secrets = mkOption {
+      secrets = lib.mkOption {
         default = { };
-        type = types.attrsOf (types.nullOr types.path);
+        type = lib.types.attrsOf (lib.types.nullOr lib.types.path);
       };
     };
   };
 
-  config = lib.mkIf cfg.enable (mkMerge [
+  config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       kdn.filesystems.zfs.enable = true;
     }
-    (mkIf cfg.sshUnlock.enable {
+    (lib.mkIf cfg.sshUnlock.enable {
       # see https://nixos.wiki/wiki/ZFS#Unlock_encrypted_zfs_via_ssh_on_boot
       boot.kernelParams = [ "ip=dhcp" ];
       boot.initrd.secrets = cfg.sshUnlock.secrets;

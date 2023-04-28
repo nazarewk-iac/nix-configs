@@ -1,16 +1,15 @@
 { lib, pkgs, config, ... }:
-with lib;
 let
   cfg = config.kdn.xfce.base;
 in
 {
   options.kdn.xfce.base = {
     enable = lib.mkEnableOption "XFCE4 base setup";
-    enableDesktop = mkEnableOption "enable XFCE desktop?";
+    enableDesktop = lib.mkEnableOption "enable XFCE desktop?";
   };
 
   config = lib.mkMerge [
-    (mkIf cfg.enable {
+    (lib.mkIf cfg.enable {
       services.xserver.desktopManager.xfce = {
         enable = true;
         noDesktop = !cfg.enableDesktop;

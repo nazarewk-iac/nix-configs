@@ -1,7 +1,7 @@
 { lib, pkgs, config, ... }:
-with lib;
 let
   cfg = config.kdn.sway.systemd;
+
   mandatoryEnvsString = toString [
     "DISPLAY"
     "WAYLAND_DISPLAY"
@@ -24,6 +24,7 @@ let
     #! ${pkgs.bash}/bin/bash
     set -xeEuo pipefail
 
+    ${systemctlClearEnv}/bin/systemctl-clear-env
     systemctl --user import-environment $(${pkgs.jq}/bin/jq -rn 'env | keys[]')
     exec systemctl --user start sway.service
   '');
