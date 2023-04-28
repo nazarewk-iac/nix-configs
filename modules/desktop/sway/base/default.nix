@@ -35,6 +35,7 @@ in
 
     services.xserver.displayManager.defaultSession = "sway";
 
+    systemd.user.services.thunar.enable = false; # doesn't pick up proper MIME files
     systemd.user.services.thunar = {
       after = [ "kdn-sway-envs.target" ];
       wantedBy = [ "kdn-sway-session.target" ];
