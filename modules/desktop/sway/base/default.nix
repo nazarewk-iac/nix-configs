@@ -92,8 +92,14 @@ in
       partOf = [ "kdn-sway-session.target" ];
     };
 
+    systemd.user.services."xdg-desktop-portal" = {
+      requires = [ "kdn-sway-envs.target" ];
+      after = [ "kdn-sway-envs.target" ];
+    };
+
     systemd.user.targets."kdn-sway-tray" = {
       description = "Sway target after running dbus-update-activation-environment";
+      bindsTo = [ "tray.target" ];
       partOf = [ "kdn-sway-session.target" ];
       before = [ "kdn-sway-session.target" ];
       wantedBy = [ "kdn-sway-session.target" ];
@@ -125,55 +131,6 @@ in
         export PATH="${lib.makeBinPath (with pkgs; [ dbus procps systemd ])}:$PATH"
         systemctl --user start "kdn-sway-session.target"
       '';
-      # TODO: pass-secret-service doesn't get the WAYLAND_DISPLAY etc.
-      # - maybe it starts before graphical-session.target is activated?
-      #      4d3@oams ~> diff /tmp/envkeys-*
-      #      < COLORTERM
-      #      7d5
-      #      < DISPLAY
-      #      9d6
-      #      < __ETC_PROFILE_DONE
-      #      11d7
-      #      < GDK_PIXBUF_MODULE_FILE
-      #      16d11
-      #      < GTK_USE_PORTAL
-      #      20d14
-      #      < I3SOCK
-      #      23d16
-      #      < _JAVA_AWT_WM_NONREPARENTING
-      #      27d19
-      #      < KDN_SWAY_SYSTEMD
-      #      39,40d30
-      #      < MOZ_DBUS_REMOTE
-      #      < MOZ_ENABLE_WAYLAND
-      #      48d37
-      #      < NOTIFY_SOCKET
-      #      58d46
-      #      < QT_QPA_PLATFORM
-      #      60d47
-      #      < QT_WAYLAND_DISABLE_WINDOWDECORATION
-      #      62d48
-      #      < SDL_VIDEODRIVER
-      #      67,68d52
-      #      < SWAYSOCK
-      #      < _SWAY_WRAPPER_ALREADY_EXECUTED
-      #      70d53
-      #      < TERM
-      #      72,74c55
-      #      < TERMINFO
-      #      < TERM_PROGRAM
-      #      < TERM_PROGRAM_VERSION
-      #      ---
-      #      > TERM
-      #      78,79d58
-      #      < WAYLAND_DISPLAY
-      #      < WLR_NO_HARDWARE_CURSORS
-      #      81,82d59
-      #      < XCURSOR_SIZE
-      #      < XCURSOR_THEME
-      #      84d60
-      #      < XDG_CURRENT_DESKTOP
-      #      kdn@oams ~ [1]>
     };
 
     environment.etc."sway/config.d/00-kdn-init.conf".text = lib.trivial.pipe cfg.initScripts [
@@ -219,7 +176,7 @@ in
       (pkgs.writeScriptBin "_sway-wait-ready" ''
         #! ${pkgs.bash}/bin/bash
         set -xeEuo pipefail
-        until systemctl --user is-active --quiet "${"kdn-sway-session.target"}" ; do sleep 1; done
+        until systemctl --user is-active --quiet "kdn-sway-session.target" ; do sleep 1; done
         until systemctl --user is-active --quiet "tray.target" ; do sleep 1; done
         test "$#" -lt 1 || exec "$@"
       '')

@@ -74,10 +74,9 @@ in
             Unit = {
               Description = "Pass libsecret service";
               Requires = [ "kdn-sway-envs.target" ];
-              Before = [ "tray.target" ];
-              PartOf = [ "graphical-session.target" ];
+              After = [ "kdn-sway-envs.target" ];
             };
-            Install.WantedBy = [ "graphical-session.target" ];
+            Install.WantedBy = [ "kdn-sway-envs.target" ];
             Service = {
               # pass-secret-service doesn't use environment variables for some reason.
               ExecStart =

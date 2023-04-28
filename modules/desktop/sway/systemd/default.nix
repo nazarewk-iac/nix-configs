@@ -61,7 +61,7 @@ in
         NotifyAccess = "all";
         ExecStart = "/run/current-system/sw/bin/sway";
         # TODO: prepare a diff of an environment maybe re-using direnv intead of using mandatoryEnvsString
-        ExecStopPost = "${systemctlClearEnv}/bin/systemd-clear-env";
+        ExecStopPost = "${systemctlClearEnv}/bin/systemctl-clear-env";
         Restart = "no";
         RestartSec = 1;
         TimeoutStopSec = 60;

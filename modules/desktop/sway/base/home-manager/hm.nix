@@ -26,7 +26,7 @@ in
   ];
 
   config = lib.mkIf (config.kdn.headless.enableGUI && sysCfg.enable) {
-    services.network-manager-applet.enable = true;
+    services.network-manager-applet.enable = false; # doesn't work
 
     # turn off service, but keep generating flameshot.ini
     services.flameshot.enable = false;

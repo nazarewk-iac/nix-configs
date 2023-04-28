@@ -85,6 +85,10 @@ in
       services.kdeconnect.enable = true;
       services.kdeconnect.indicator = true;
 
+      systemd.user.services.kdeconnect-indicator.Unit.After = [
+        "tray.target"
+      ];
+
       xdg.mime.enable = true;
       xdg.mimeApps.enable = true;
       xdg.mimeApps.associations.added = { };
