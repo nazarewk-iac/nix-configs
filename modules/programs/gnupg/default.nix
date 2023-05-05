@@ -78,6 +78,10 @@ in
             };
             Install.WantedBy = [ "kdn-sway-envs.target" ];
             Service = {
+              ExecStartPre = [
+                # TODO: doesn't improve the state, something else changes on the way too
+                "${pkgs.jq}/bin/jq -Sn env && ${config.kdn.helpers.waitForUserTarget} kdn-sway-envs.target && ${pkgs.jq}/bin/jq -Sn env"
+              ];
               # pass-secret-service doesn't use environment variables for some reason.
               ExecStart =
                 "${pkgs.kdn.pass-secret-service}/bin/pass_secret_service --path ${config.programs.password-store.settings.PASSWORD_STORE_DIR}";

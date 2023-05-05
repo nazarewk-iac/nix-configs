@@ -35,11 +35,7 @@ in
 
     services.xserver.displayManager.defaultSession = "sway";
 
-    systemd.user.services.thunar.enable = false; # doesn't pick up proper MIME files
-    systemd.user.services.thunar = {
-      after = [ "kdn-sway-envs.target" ];
-      wantedBy = [ "kdn-sway-session.target" ];
-    };
+    systemd.user.services.thunar.enable = false; # doesn't pick up proper MIME types when run as daemon
 
     # Configure various Sway configs
     # see https://gist.github.com/mschwaig/195fe93ed85dea7aaceaf8e1fc6c0e99
@@ -96,10 +92,17 @@ in
     systemd.user.services."xdg-desktop-portal" = {
       requires = [ "kdn-sway-envs.target" ];
       after = [ "kdn-sway-envs.target" ];
+      serviceConfig.ExecStartPre = "${config.kdn.helpers.waitForUserTarget} kdn-sway-envs.target";
+    };
+
+    systemd.user.services."xdg-desktop-portal-gtk" = {
+      requires = [ "kdn-sway-envs.target" ];
+      after = [ "kdn-sway-envs.target" ];
+      serviceConfig.ExecStartPre = "${config.kdn.helpers.waitForUserTarget} kdn-sway-envs.target";
     };
 
     systemd.user.targets."kdn-sway-tray" = {
-      description = "Sway target after running dbus-update-activation-environment";
+      description = "tray target for kdn Sway";
       bindsTo = [ "tray.target" ];
       partOf = [ "kdn-sway-session.target" ];
       before = [ "kdn-sway-session.target" ];
@@ -124,12 +127,10 @@ in
         dbus-update-activation-environment --systemd --all --verbose
         systemctl --user start "kdn-sway-envs.target"
       '';
-      "50-wait-polkit" = ''
-        until systemctl --user is-active --quiet "kdn-sway-envs.target" ; do sleep 1; done
-      '';
       # because tray opens up too late https://github.com/Alexays/Waybar/issues/483
       "99-start-kdn-sway" = ''
         export PATH="${lib.makeBinPath (with pkgs; [ dbus procps systemd ])}:$PATH"
+        ${config.kdn.helpers.waitForUserTarget} "kdn-sway-tray.target"
         systemctl --user start "kdn-sway-session.target"
       '';
     };
