@@ -40,6 +40,7 @@ in
         "podman"
         "scanner"
         "tty"
+        "ydotool"
         "video"
         "wheel"
       ];

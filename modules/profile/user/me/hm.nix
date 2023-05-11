@@ -83,11 +83,17 @@ in
       xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
 
       services.kdeconnect.enable = true;
+      systemd.user.services.kdeconnect.Unit = {
+        Requisite = [ "kdn-sway-envs.target" ];
+        After = [ "kdn-sway-envs.target" ];
+        PartOf = [ "kdn-sway-session.target" ];
+      };
       services.kdeconnect.indicator = true;
-
-      systemd.user.services.kdeconnect-indicator.Unit.After = [
-        "tray.target"
-      ];
+      systemd.user.services.kdeconnect-indicator.Unit = {
+        Requisite = [ "kdn-sway-envs.target" ];
+        After = [ "tray.target" ];
+        PartOf = [ "kdn-sway-session.target" ];
+      };
 
       xdg.mime.enable = true;
       xdg.mimeApps.enable = true;
@@ -138,10 +144,6 @@ in
         };
     })
     (lib.mkIf (hasWorkstation && hasGUI) {
-      programs.password-store.settings = {
-        PASSWORD_STORE_DIR = "${config.home.homeDirectory}/Nextcloud/drag0nius@nc.nazarewk.pw/important/password-store";
-      };
-
       home.packages = with pkgs; let
         launch = (lib.kdn.shell.writeShellScript pkgs (./bin + "/kdn-launch.sh") {
           runtimeInputs = with pkgs; [

@@ -89,17 +89,6 @@ in
       partOf = [ "kdn-sway-session.target" ];
     };
 
-    systemd.user.services."xdg-desktop-portal" = {
-      requires = [ "kdn-sway-envs.target" ];
-      after = [ "kdn-sway-envs.target" ];
-      serviceConfig.ExecStartPre = "${config.kdn.helpers.waitForUserTarget} kdn-sway-envs.target";
-    };
-
-    systemd.user.services."xdg-desktop-portal-gtk" = {
-      requires = [ "kdn-sway-envs.target" ];
-      after = [ "kdn-sway-envs.target" ];
-      serviceConfig.ExecStartPre = "${config.kdn.helpers.waitForUserTarget} kdn-sway-envs.target";
-    };
 
     systemd.user.targets."kdn-sway-tray" = {
       description = "tray target for kdn Sway";
@@ -109,12 +98,30 @@ in
       wantedBy = [ "kdn-sway-session.target" ];
     };
 
+    systemd.user.services."xdg-desktop-portal" = {
+      requisite = [ "kdn-sway-envs.target" ];
+      after = [ "kdn-sway-envs.target" ];
+      partOf = [ "kdn-sway-session.target" ];
+      serviceConfig = { Restart = "on-failure"; RestartSec = 1; };
+    };
+
+    systemd.user.services."xdg-desktop-portal-gtk" = {
+      requisite = [ "kdn-sway-envs.target" ];
+      after = [ "kdn-sway-envs.target" ];
+      partOf = [ "kdn-sway-session.target" ];
+      serviceConfig = { Restart = "on-failure"; RestartSec = 1; };
+    };
+
     systemd.user.services."kdn-sway-polkit-agent" = {
       description = "Polkit Agent service";
       partOf = [ "kdn-sway-session.target" ];
-      wants = [ "kdn-sway-envs.target" ];
+      requisite = [ "kdn-sway-envs.target" ];
       after = [ "kdn-sway-envs.target" ];
-      serviceConfig.ExecStart = cfg.polkitAgentCommand;
+      serviceConfig = {
+        Restart = "on-failure";
+        RestartSec = 1;
+        ExecStart = cfg.polkitAgentCommand;
+      };
     };
 
     kdn.sway.base.initScripts.systemd = {

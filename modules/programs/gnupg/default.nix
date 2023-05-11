@@ -27,16 +27,23 @@ in
       programs.gnupg.agent.pinentryFlavor = null;
 
       home-manager.sharedModules = [
-        {
+        ({ lib, config, ... }: {
+          home.activation = {
+            linkPasswordStore =
+              lib.hm.dag.entryBetween [ "linkGeneration" ] [ "writeBoundary" ] ''
+                #$DRY_RUN_CMD ln -sfT "Nextcloud/drag0nius@nc.nazarewk.pw/important/password-store" "$HOME/.password-store"
+              '';
+          };
           programs.password-store.enable = true;
           programs.password-store.settings = {
+            PASSWORD_STORE_DIR = "${config.home.homeDirectory}/.password-store";
             # for Android interoperability, see https://github.com/drduh/YubiKey-Guide/issues/152#issuecomment-852176877
             PASSWORD_STORE_GPG_OPTS = "--no-throw-keyids";
           };
           home.file.".gnupg/gpg-agent.conf".text = ''
             pinentry-program ${pinentry}/bin/pinentry
           '';
-        }
+        })
       ];
 
       environment.systemPackages = with pkgs; [
@@ -59,6 +66,14 @@ in
       security.polkit.extraConfig = builtins.readFile ./pcsc-lite-rules.js;
     }
     (lib.mkIf cfg.pass-secret-service.enable {
+      services.passSecretService.enable = true;
+      services.passSecretService.package = pkgs.kdn.pass-secret-service;
+      systemd.user.services."dbus-org.freedesktop.secrets" = {
+        requisite = [ "kdn-sway-envs.target" ];
+        after = [ "kdn-sway-envs.target" ];
+        partOf = [ "kdn-sway-session.target" ];
+        serviceConfig = { Restart = "on-failure"; RestartSec = 1; };
+      };
       environment.systemPackages = with pkgs; [
         libsecret
       ];
@@ -69,25 +84,6 @@ in
       home-manager.sharedModules = [
         ({ config, ... }: {
           services.gnome-keyring.enable = lib.mkForce false;
-          # copied from HM config
-          systemd.user.services.pass-secret-service = {
-            Unit = {
-              Description = "Pass libsecret service";
-              Requires = [ "kdn-sway-envs.target" ];
-              After = [ "kdn-sway-envs.target" ];
-            };
-            Install.WantedBy = [ "kdn-sway-envs.target" ];
-            Service = {
-              ExecStartPre = [
-                # TODO: doesn't improve the state, something else changes on the way too
-                "${pkgs.jq}/bin/jq -Sn env && ${config.kdn.helpers.waitForUserTarget} kdn-sway-envs.target && ${pkgs.jq}/bin/jq -Sn env"
-              ];
-              # pass-secret-service doesn't use environment variables for some reason.
-              ExecStart =
-                "${pkgs.kdn.pass-secret-service}/bin/pass_secret_service --path ${config.programs.password-store.settings.PASSWORD_STORE_DIR}";
-              ExecStartPost = "${pkgs.coreutils}/bin/sleep 2";
-            };
-          };
         })
       ];
     })
