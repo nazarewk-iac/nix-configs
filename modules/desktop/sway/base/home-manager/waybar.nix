@@ -180,7 +180,10 @@ in
     ];
 
     systemd.user.services.waybar.Unit.BindsTo = [ "tray.target" ];
+    systemd.user.services.waybar.Unit.Requires = [ "kdn-sway-envs.target" ];
+    systemd.user.services.waybar.Unit.After = [ "kdn-sway-envs.target" ];
     systemd.user.services.waybar.Service.ExecStartPost = [ "${pkgs.coreutils}/bin/sleep 3" ];
+
     programs.waybar = {
       enable = true;
       systemd.enable = true;

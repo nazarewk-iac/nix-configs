@@ -2,6 +2,7 @@
 set -xeEuo pipefail
 
 target="${1:-"/mnt"}"
+boot_disk="/dev/disk/by-uuid/2BFB-6A81"
 zpool="krul-primary"
 zfs_prefix="${zpool}/krul"
 if [ "${APPLY:-}" = 1 ]; then
@@ -34,7 +35,11 @@ zpool status "${zpool}" || cmd zpool import "${zpool}"
 cmd zfs load-key -a
 
 mntZFS "/root" "/nixos" "/"
-mnt -t vfat "/dev/disk/by-uuid/2BFB-6A81" "${target}/boot"
+
+if test -e "${boot_disk}" ; then
+  mnt -t vfat "${boot_disk}" "${target}/boot"
+fi
+
 mntZFS "/etc" "/nixos"
 mntZFS "/nix" "/nixos"
 mntZFS "/var" "/nixos"

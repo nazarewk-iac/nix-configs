@@ -28,22 +28,23 @@ in
   config = lib.mkIf (config.kdn.headless.enableGUI && sysCfg.enable) {
     services.clipman.enable = true; # wl-paste clipman
     services.clipman.systemdTarget = "tray.target";
+    systemd.user.services.clipman.Unit = {
+      After = [ "tray.target" "kdn-sway-envs.target" ];
+    };
 
     services.network-manager-applet.enable = false; # doesn't work/show up in tray
     systemd.user.services.network-manager-applet.Unit = {
-      After = [ "tray.target" ];
+      After = [ "tray.target" "kdn-sway-envs.target" ];
       PartOf = [ "kdn-sway-session.target" ];
-      Requisite = [ "tray.target" "kdn-sway-envs.target" ];
-      Requires = lib.mkForce [ ];
+      Requires = lib.mkForce [ "tray.target" "kdn-sway-envs.target" ];
     };
 
 
     services.blueman-applet.enable = true;
     systemd.user.services.blueman-applet.Unit = {
-      After = [ "tray.target" ];
+      After = [ "tray.target" "bluetooth.target" "kdn-sway-envs.target" ];
       PartOf = [ "kdn-sway-session.target" ];
-      Requisite = [ "tray.target" "kdn-sway-envs.target" ];
-      Requires = lib.mkForce [ ];
+      Requires = lib.mkForce [ "tray.target" "kdn-sway-envs.target" ];
     };
 
     services.flameshot.enable = true;
@@ -63,10 +64,9 @@ in
       };
     };
     systemd.user.services.flameshot.Unit = {
-      After = [ "tray.target" ];
       PartOf = [ "kdn-sway-session.target" ];
-      Requisite = [ "tray.target" "kdn-sway-envs.target" ];
-      Requires = lib.mkForce [ ];
+      After = [ "tray.target" "kdn-sway-envs.target" ];
+      Requires = lib.mkForce [ "tray.target" "kdn-sway-envs.target" ];
     };
 
     wayland.windowManager.sway = {

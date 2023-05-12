@@ -85,22 +85,24 @@ in
 
       services.nextcloud-client.enable = true;
       systemd.user.services.nextcloud-client.Unit = {
-        Requires = lib.mkForce [ "pass-secret-service.service" ];
-        Requisite = [ "kdn-sway-envs.target" ];
+        Requires = lib.mkForce [ "pass-secret-service.service" "kdn-sway-envs.target" ];
         After = [ "kdn-sway-envs.target" ];
         PartOf = [ "kdn-sway-session.target" ];
+      };
+      systemd.user.services.nextcloud-client.Install = {
+        WantedBy = [ "kdn-sway-session.target" ];
       };
 
       services.kdeconnect.enable = true;
       systemd.user.services.kdeconnect.Unit = {
-        Requisite = [ "kdn-sway-envs.target" ];
+        Requires = [ "kdn-sway-envs.target" ];
         After = [ "kdn-sway-envs.target" ];
         PartOf = [ "kdn-sway-session.target" ];
       };
       services.kdeconnect.indicator = true;
       systemd.user.services.kdeconnect-indicator.Unit = {
-        Requisite = [ "kdn-sway-envs.target" ];
-        After = [ "tray.target" ];
+        Requires = [ "kdn-sway-envs.target" "kdeconnect.service" ];
+        After = [ "tray.target" "kdn-sway-envs.target" "kdeconnect.service" ];
         PartOf = [ "kdn-sway-session.target" ];
       };
 
@@ -165,8 +167,6 @@ in
             pass
             drag0nius_kdbx
             keepass # must come from NixOS-level override
-
-            blueman
 
             firefox
             jetbrains.idea-ultimate

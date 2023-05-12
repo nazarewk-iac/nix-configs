@@ -64,6 +64,6 @@ in
       "x86_64-windows"
     ];
 
-    kdn.sway.systemd.enable = true;
+    kdn.sway.base.enable = true;
   };
 }

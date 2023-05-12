@@ -31,6 +31,12 @@ in
         }
       ];
     };
+    systemd.user.services.swayidle.Unit = {
+      Before = [ "kdn-sway-session.target" ];
+      PartOf = [ "kdn-sway-session.target" ];
+      After = [ "kdn-sway-envs.target" ];
+      Requires = [ "kdn-sway-envs.target" ];
+    };
 
     programs.swaylock.settings = {
       color = "000000";
