@@ -28,15 +28,8 @@ launch() {
 }
 
 start_all() {
-  start_desktop
   start_priv
   start_work
-}
-
-start_desktop() {
-  launch blueman-applet
-  launch flameshot
-  launch nextcloud --background
 }
 
 start_priv() {

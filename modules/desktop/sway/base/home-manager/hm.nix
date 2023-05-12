@@ -26,11 +26,27 @@ in
   ];
 
   config = lib.mkIf (config.kdn.headless.enableGUI && sysCfg.enable) {
-    services.network-manager-applet.enable = false; # doesn't work
+    services.clipman.enable = true; # wl-paste clipman
+    services.clipman.systemdTarget = "tray.target";
 
-    # turn off service, but keep generating flameshot.ini
-    services.flameshot.enable = false;
-    xdg.configFile."flameshot/flameshot.ini".source = (pkgs.formats.ini { }).generate "flameshot.ini" config.services.flameshot.settings;
+    services.network-manager-applet.enable = false; # doesn't work/show up in tray
+    systemd.user.services.network-manager-applet.Unit = {
+      After = [ "tray.target" ];
+      PartOf = [ "kdn-sway-session.target" ];
+      Requisite = [ "tray.target" "kdn-sway-envs.target" ];
+      Requires = lib.mkForce [ ];
+    };
+
+
+    services.blueman-applet.enable = true;
+    systemd.user.services.blueman-applet.Unit = {
+      After = [ "tray.target" ];
+      PartOf = [ "kdn-sway-session.target" ];
+      Requisite = [ "tray.target" "kdn-sway-envs.target" ];
+      Requires = lib.mkForce [ ];
+    };
+
+    services.flameshot.enable = true;
     services.flameshot.settings = {
       General = {
         checkForUpdates = false;
@@ -45,6 +61,12 @@ in
         uploadHistoryMax = 25;
         useJpgForClipboard = true;
       };
+    };
+    systemd.user.services.flameshot.Unit = {
+      After = [ "tray.target" ];
+      PartOf = [ "kdn-sway-session.target" ];
+      Requisite = [ "tray.target" "kdn-sway-envs.target" ];
+      Requires = lib.mkForce [ ];
     };
 
     wayland.windowManager.sway = {

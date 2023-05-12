@@ -193,12 +193,6 @@ input type:touchpad {
     natural_scroll enabled
 }
 
-# Autostart
-exec _sway-wait-ready {
-    kdn-launch desktop
-    wl-paste -t text --watch clipman store --no-persist
-}
-
 for_window [title="File Operation Progress"] {
   floating enable
   sticky enable

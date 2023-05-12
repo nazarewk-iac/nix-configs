@@ -69,6 +69,8 @@ in
       services.passSecretService.enable = true;
       services.passSecretService.package = pkgs.kdn.pass-secret-service;
       systemd.user.services."dbus-org.freedesktop.secrets" = {
+        aliases = [ "pass-secret-service.service" ];
+        requires = [ "gpg-agent.service" ];
         requisite = [ "kdn-sway-envs.target" ];
         after = [ "kdn-sway-envs.target" ];
         partOf = [ "kdn-sway-session.target" ];

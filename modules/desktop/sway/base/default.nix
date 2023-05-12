@@ -31,8 +31,6 @@ in
 
   config = lib.mkIf cfg.enable {
     kdn.desktop.base.enable = true;
-    #kdn.xfce.base.enable = true;
-
     services.xserver.displayManager.defaultSession = "sway";
 
     systemd.user.services.thunar.enable = false; # doesn't pick up proper MIME types when run as daemon

@@ -82,6 +82,15 @@ in
       services.flameshot.settings.General.savePath = "${config.home.homeDirectory}/Downloads/screenshots";
       xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
 
+
+      services.nextcloud-client.enable = true;
+      systemd.user.services.nextcloud-client.Unit = {
+        Requires = lib.mkForce [ "pass-secret-service.service" ];
+        Requisite = [ "kdn-sway-envs.target" ];
+        After = [ "kdn-sway-envs.target" ];
+        PartOf = [ "kdn-sway-session.target" ];
+      };
+
       services.kdeconnect.enable = true;
       systemd.user.services.kdeconnect.Unit = {
         Requisite = [ "kdn-sway-envs.target" ];
@@ -153,12 +162,10 @@ in
             sway
             jq
 
-            nextcloud-client
             pass
             drag0nius_kdbx
             keepass # must come from NixOS-level override
 
-            flameshot
             blueman
 
             firefox

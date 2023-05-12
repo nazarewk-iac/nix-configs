@@ -51,28 +51,22 @@ in
         cachix
       ];
 
-      environment.shellAliases = {
-        userctl = "systemctl --user";
-        userjournal = "journalctl --user";
-
-        sc = "systemctl";
-        sj = "journalctl";
-
-        uc = "systemctl --user";
-        uj = "journalctl --user";
-
-        scs = "systemctl status";
-        ucs = "systemctl --user status";
-
-        scmr = "systemctl restart";
-        ucmr = "systemctl --user restart";
-
-        scms = "systemctl start";
-        ucms = "systemctl --user start";
-
-        scmS = "systemctl stop";
-        ucmS = "systemctl --user stop";
-      };
+      environment.shellAliases =
+        let
+          commands = n: prefix: {
+            "${n}" = prefix;
+            "${n}c" = "${prefix} cat";
+            "${n}r" = "${prefix} restart";
+            "${n}s" = "${prefix} status";
+            "${n}uS" = "${prefix} stop";
+            "${n}us" = "${prefix} start";
+            "${n}ur" = "${prefix} restart";
+          };
+        in
+        {
+          sj = "journalctl";
+          uj = "journalctl --user";
+        } // (commands "sc" "systemctl") // (commands "uc" "systemctl --user");
 
       kdn.headless.base.enable = true;
 
