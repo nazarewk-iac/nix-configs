@@ -4,6 +4,9 @@ set -eEuo pipefail
 shellDir="${shellDir:-"$HOME/dev"}"
 
 for entry in "$@"; do
+  # strip trailing /
+  entry="${entry%/}"
+
   if [[ "${entry}" == codecommit:* ]]; then
     service=codecommit
   else
