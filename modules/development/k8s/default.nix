@@ -91,6 +91,11 @@ in
         runtimeInputs = with pkgs; [ awscli2 kubectl coreutils gawk yq gnused ];
         text = builtins.readFile ./kubectl-eks_config.sh;
       })
+
+      # Argo
+      argo # workflows
+      argocd # CD
+      vault
     ];
   };
 }
