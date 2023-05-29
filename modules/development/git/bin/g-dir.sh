@@ -3,12 +3,20 @@ set -eEuo pipefail
 
 shellDir="${shellDir:-"$HOME/dev"}"
 
+bin_suffix=""
+if [[ "${BASH_SOURCE[0]##*/}" == *.sh ]]; then
+  bin_suffix=".sh"
+  export PATH="${BASH_SOURCE[0]%/*}:${PATH}"
+fi
+
 for entry in "$@"; do
   # strip trailing /
   entry="${entry%/}"
 
   if [[ "${entry}" == codecommit:* ]]; then
     service=codecommit
+  elif [[ "${entry}" == *dev.azure.com* ]]; then
+    service=dev.azure.com
   else
     # drop: XXX://
     service="${entry#*://}"
@@ -18,8 +26,8 @@ for entry in "$@"; do
     service="${service%%/*}"
   fi
 
-  if command -v "g-dir-${service}" >/dev/null; then
-    "g-dir-${service}" "${entry}"
+  if command -v "g-dir-${service}${bin_suffix}" >/dev/null; then
+    "g-dir-${service}${bin_suffix}" "${entry}"
     continue
   fi
 

@@ -10,6 +10,11 @@ let
       shellDir="${shellDir}"
     '';
   };
+  gDirAzureDevops = lib.kdn.shell.writeShellScript pkgs ./bin/g-dir-dev.azure.com.sh {
+    prefix = ''
+      shellDir="${shellDir}"
+    '';
+  };
   gDirCodecommit = lib.kdn.shell.writeShellScript pkgs ./bin/g-dir-codecommit.sh {
     prefix = ''
       shellDir="${shellDir}"
@@ -61,6 +66,7 @@ in
 
     home.packages = with pkgs; [
       gDir
+      gDirAzureDevops
       gDirCodecommit
       gRemote
       gGet
