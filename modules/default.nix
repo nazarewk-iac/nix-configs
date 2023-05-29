@@ -25,6 +25,10 @@ in
 
     nixpkgs.config.permittedInsecurePackages = [
       "qtwebkit-5.212.0-alpha4"
+
+      # see https://github.com/NixOS/nixpkgs/blob/1c4d9e9a752232eb35579ab9d213ab217897cb6f/pkgs/top-level/release.nix#LL22C1-L30C7
+      "openssl-1.1.1t"
+      "nodejs-16.20.0" # required by kibana
     ];
 
     nix.settings.trusted-public-keys = [

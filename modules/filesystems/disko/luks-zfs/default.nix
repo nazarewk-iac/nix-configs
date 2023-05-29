@@ -25,7 +25,7 @@ in
         crypted = disko.disk.crypted-root;
         boot = disko.disk.boot;
 
-        getArg = name: lib.trivial.pipe crypted.content.extraArgsFormat [
+        getArg = name: lib.trivial.pipe crypted.content.extraFormatArgs [
           (builtins.filter (lib.strings.hasPrefix "--${name}="))
           builtins.head
           (lib.strings.removePrefix "--${name}=")

@@ -28,6 +28,10 @@ in
     };
 
     kdn.filesystems.disko.luks-zfs.enable = true;
-    disko.devices = import ./disko.nix { inherit lib config; };
+    disko.devices = import ./disko.nix {
+      inherit lib;
+      hostname = config.networking.hostName;
+      inMicroVM = config.kdn.virtualization.microvm.guest.enable;
+    };
   };
 }

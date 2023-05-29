@@ -34,19 +34,19 @@ let
   converterPkgs = lib.mapAttrs (name: opts: converter name opts) {
     "csv2json" = { pkgs = [ miller ]; args = [ "mlr" "--icsv" "--ojson" "cat" ]; };
     "csv2jsonl" = { pkgs = [ miller ]; args = [ "mlr" "--icsv" "--ojsonl" "cat" ]; };
-    "hcl2hcl" = { pkgs = [ yj ]; args = [ "yj" "-cc" ]; };
-    "hcl2json" = { pkgs = [ yj ]; args = [ "yj" "-cj" ]; };
-    "hcl2toml" = { pkgs = [ yj ]; args = [ "yj" "-ct" ]; };
-    "hcl2yaml" = { pkgs = [ yj ]; args = [ "yj" "-cy" ]; };
-    "json2hcl" = { pkgs = [ yj ]; args = [ "yj" "-jc" ]; };
+    "hcl12hcl1" = { pkgs = [ yj ]; args = [ "yj" "-cc" ]; };
+    "hcl12json" = { pkgs = [ yj ]; args = [ "yj" "-cj" ]; };
+    "hcl12toml" = { pkgs = [ yj ]; args = [ "yj" "-ct" ]; };
+    "hcl12yaml" = { pkgs = [ yj ]; args = [ "yj" "-cy" ]; };
+    "json2hcl1" = { pkgs = [ yj ]; args = [ "yj" "-jc" ]; };
     "json2json" = { pkgs = [ yj ]; args = [ "yj" "-jj" ]; };
     "json2toml" = { pkgs = [ yj ]; args = [ "yj" "-jt" ]; };
     "json2yaml" = { pkgs = [ yj ]; args = [ "yj" "-jy" ]; };
-    "toml2hcl" = { pkgs = [ yj ]; args = [ "yj" "-tc" ]; };
+    "toml2hcl1" = { pkgs = [ yj ]; args = [ "yj" "-tc" ]; };
     "toml2json" = { pkgs = [ yj ]; args = [ "yj" "-tj" ]; };
     "toml2toml" = { pkgs = [ yj ]; args = [ "yj" "-tt" ]; };
     "toml2yaml" = { pkgs = [ yj ]; args = [ "yj" "-ty" ]; };
-    "yaml2hcl" = { pkgs = [ yj ]; args = [ "yj" "-yc" ]; };
+    "yaml2hcl1" = { pkgs = [ yj ]; args = [ "yj" "-yc" ]; };
     "yaml2json" = { pkgs = [ yq ]; args = [ "yq" "-M" "--" ]; };
     "yaml2toml" = { pkgs = [ yj ]; args = [ "yj" "-yt" ]; };
     "yaml2yaml" = { pkgs = [ yj ]; args = [ "yj" "-yy" ]; };
@@ -87,8 +87,9 @@ in
       cfg.packages.yq
       cfg.packages.jq
       cfg.packages.yj
-      jq
+
       gojq
+      jiq # interactive JQ
       jc # convert commands output to JSON
       gron # JSON to/from list of path-value assignments
       (pkgs.writeShellApplication {
@@ -97,13 +98,16 @@ in
         text = ''gron --urgron "$@"'';
       })
 
-      jiq
       cue
       conftest
 
       opensearch # opensearch-cli
 
       gnused
+
+      # Convert HCL <-> JSON
+      python3Packages.bc-python-hcl2
+      hcl2json
     ]) ++ (lib.attrValues converterPkgs);
   };
 }

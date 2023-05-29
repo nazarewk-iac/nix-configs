@@ -50,7 +50,8 @@
       inputs.flake-utils.follows = "flake-utils";
     };
     microvm = {
-      url = "github:astro/microvm.nix";
+      url = "github:nazarewk/microvm.nix/opt-out-mounts";
+      #url = "github:astro/microvm.nix";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
@@ -61,14 +62,13 @@
     };
 
     disko = {
-      # url = "github:nix-community/disko";
-      # https://github.com/nix-community/disko/pull/111
-      url = "github:nazarewk/disko/fixes";
+      url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nixos-images = {
       url = "github:nix-community/nixos-images";
       inputs.nixos-unstable.follows = "nixpkgs";
+      inputs.disko.follows = "disko";
     };
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";
@@ -155,23 +155,22 @@
         {
           # inspired by https://github.com/NixOS/nix/issues/3803#issuecomment-748612294
           # usage: nix run '.#repl'
-          apps = {
-            repl = {
-              type = "app";
-              program = "${pkgs.writeShellScriptBin "repl" ''
-                  confnix=$(mktemp)
-                  trap "rm '$confnix' || true" EXIT
-                  echo "builtins.getFlake (toString "$PWD")" >$confnix
-                  nix repl "$confnix"
-                ''}/bin/repl";
-            };
+          apps.repl = {
+            type = "app";
+            program = "${pkgs.writeShellScriptBin "repl" ''
+              confnix=$(mktemp)
+              trap "rm '$confnix' || true" EXIT
+              echo "builtins.getFlake (toString "$PWD")" >$confnix
+              nix repl "$confnix"
+            ''}/bin/repl";
           };
           checks = { };
           devShells = { };
           packages = lib.mkMerge [
             (lib.filterAttrs (n: pkg: lib.isDerivation pkg) (flakeLib.overlayedInputs { inherit system; }).nixpkgs.kdn)
             # adds nixosConfigurations as microvms as packages with microvm-* prefix
-            (lib.attrsets.mapAttrs' (name: value: lib.attrsets.nameValuePair "microvm-${name}" value) (flakeLib.microvm.packages system))
+            # TODO: fix /nix/store filesystem type conflict before re-enabling
+            #(lib.attrsets.mapAttrs' (name: value: lib.attrsets.nameValuePair "microvm-${name}" value) (flakeLib.microvm.packages system))
           ];
 
           devenv.shells.default = {

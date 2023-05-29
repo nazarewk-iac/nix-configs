@@ -84,6 +84,7 @@ in
 
 
       services.nextcloud-client.enable = true;
+      services.nextcloud-client.startInBackground = true;
       systemd.user.services.nextcloud-client.Unit = {
         Requires = lib.mkForce [ "pass-secret-service.service" "kdn-sway-envs.target" ];
         After = [ "kdn-sway-envs.target" "tray.target" ];

@@ -1,6 +1,5 @@
-{ lib, config, ... }:
+{ lib, hostname ? "obler", inMicroVM ? false, ... }:
 let
-  hostname = config.networking.hostName;
   poolName = "${hostname}-main";
   bootDevice = "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_04LZCR91M8UZPJW8-0:0";
   luksBackupDir = "/nazarewk-iskaral/secrets/luks/${hostname}";
@@ -22,7 +21,6 @@ in
         format = "gpt";
         partitions = [
           {
-            type = "partition";
             name = "ESP";
             start = "1MiB";
             end = "4096MiB";
@@ -35,7 +33,6 @@ in
             };
           }
           {
-            type = "partition";
             name = "${poolName}-header";
             start = "4096MiB";
             end = "4128MiB";
@@ -50,12 +47,12 @@ in
         type = "luks";
         name = "${poolName}-crypted";
         keyFile = luksKeyFile;
-        extraArgsFormat = [
+        extraFormatArgs = [
           "--uuid=${luksUUID}"
           "--header=${luksHeader}"
           #"--header-backup-file=${luksHeaderBackup}"
         ];
-        extraArgsOpen = [
+        extraOpenArgs = [
           "--header=${luksHeader}"
         ];
         content = {
@@ -66,56 +63,58 @@ in
     };
   };
 
-  zpool = {
-    "${poolName}" = {
-      type = "zpool";
-      name = poolName;
-      rootFsOptions = {
-        acltype = "posixacl";
-        relatime = "on";
-        xattr = "sa";
-        dnodesize = "auto";
-        normalization = "formD";
-        mountpoint = "none";
-        canmount = "off";
-        devices = "off";
-        compression = "lz4";
-        "com.sun:auto-snapshot" = "false";
-      };
+  zpool."${poolName}" = {
+    type = "zpool";
+    name = poolName;
+    mountRoot = "/mnt";
+    rootFsOptions = {
+      acltype = "posixacl";
+      relatime = "on";
+      xattr = "sa";
+      dnodesize = "auto";
+      normalization = "formD";
+      mountpoint = "none";
+      canmount = "off";
+      devices = "off";
+      compression = "lz4";
+      "com.sun:auto-snapshot" = "false";
+    };
 
-      options = {
-        ashift = "12";
-        "feature@large_dnode" = "enabled"; # required by dnodesize!=legacy
-      };
+    options = {
+      ashift = "12";
+      "feature@large_dnode" = "enabled"; # required by dnodesize!=legacy
+    };
 
-      datasets =
-        let
-          filesystemPrefix = "fs";
-          snapshotsOn = { options."com.sun:auto-snapshot" = "true"; };
-          snapshotsOff = { options."com.sun:auto-snapshot" = "false"; };
-          mounts = {
-            "/" = { };
-            "/etc" = { } // snapshotsOn;
-            "/home" = { } // snapshotsOn;
-            "/home/kdn" = { };
-            "/home/kdn/.cache" = { } // snapshotsOff;
-            "/home/sn" = { };
-            "/home/sn/.cache" = { } // snapshotsOff;
-            "/home/sn/.config" = { };
-            "/home/sn/.local" = { };
-            "/home/sn/Downloads" = { } // snapshotsOff;
-            "/nix" = { };
-            "/nix/store" = { };
-            "/nix/var" = { };
-            "/usr" = { };
-            "/var" = { } // snapshotsOn;
-            "/var/lib" = { };
-            "/var/lib/nixos" = { };
-            "/var/log" = { } // snapshotsOff;
-            "/var/log/journal" = { };
-            "/var/spool" = { };
-          };
-        in
+    datasets =
+      let
+        filesystemPrefix = "fs";
+        snapshotsOn = { options."com.sun:auto-snapshot" = "true"; };
+        snapshotsOff = { options."com.sun:auto-snapshot" = "false"; };
+        mounts = {
+          "/" = { };
+          "/etc" = { } // snapshotsOn;
+          "/home" = { } // snapshotsOn;
+          "/home/kdn" = { };
+          "/home/kdn/.cache" = { } // snapshotsOff;
+          "/home/sn" = { };
+          "/home/sn/.cache" = { } // snapshotsOff;
+          "/home/sn/.config" = { };
+          "/home/sn/.local" = { };
+          "/home/sn/Downloads" = { } // snapshotsOff;
+          "/nix" = { };
+          "/nix/store" = { };
+          "/nix/var" = { };
+          "/usr" = { };
+          "/var" = { } // snapshotsOn;
+          "/var/lib" = { };
+          "/var/lib/nixos" = { };
+          "/var/log" = { } // snapshotsOff;
+          "/var/log/journal" = { };
+          "/var/spool" = { };
+        };
+      in
+      lib.trivial.pipe mounts [
+        (lib.attrsets.filterAttrs (n: v: !(n == "/nix/store" && inMicroVM)))
         (lib.attrsets.mapAttrs'
           (mountpoint: cfg: {
             name = (lib.trivial.pipe mountpoint [
@@ -123,7 +122,7 @@ in
               (lib.strings.removeSuffix "/")
             ]);
             value = ({
-              zfs_type = "filesystem";
+              type = "zfs_fs";
               inherit mountpoint;
 
               # disko handles non-legacy mountpoints with `-o zfsutil` mount option
@@ -136,8 +135,7 @@ in
               #  then "legacy"
               #  else mountpoint;
             } // cfg);
-          })
-          mounts);
-    };
+          }))
+      ];
   };
 }

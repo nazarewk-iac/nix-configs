@@ -12,6 +12,7 @@ in
   };
 
   config = lib.mkMerge [
+    # `microvm.guest.enable` defaults to `true`
     { microvm.guest.enable = cfg.enable; }
     (lib.mkIf cfg.enable {
       microvm.shares = [{
@@ -23,6 +24,8 @@ in
         source = "/nix/store";
         mountPoint = "/nix/.ro-store";
       }];
+      # see https://github.com/astro/microvm.nix/blob/c022372b917ecc4ed7df51ff30395421a74b0495/nixos-modules/microvm/mounts.nix#L23-L35
+      fileSystems."/nix/store".fsType = lib.mkForce config.microvm.bootDiskType;
     })
     (lib.mkIf cfg.nonMinimal (
       let default = lib.mkOverride (lib.modules.defaultPriority + 1); in {
