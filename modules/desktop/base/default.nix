@@ -61,11 +61,9 @@ in
     xdg.mime.enable = true;
 
     environment.systemPackages = with pkgs; [
-      qt5.qtwayland
-      qt5Full
-
       xorg.xeyes
       xorg.xhost
+      xorg.xlsclients
 
       # audio
       libopenaptx
@@ -97,10 +95,9 @@ in
       sound-theme-freedesktop
     ];
 
-    qt = {
-      enable = true;
-      platformTheme = "gtk2";
-      style = "gtk2";
-    };
+    gtk.iconCache.enable = true;
+    qt.enable = true;
+    qt.platformTheme = "kde";
+    qt.style = "cleanlooks";
   };
 }
