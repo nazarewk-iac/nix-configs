@@ -23,17 +23,29 @@ logger: structlog.stdlib.BoundLogger = structlog.get_logger()
 CONFIG: Config = None
 
 
+async def get_profile_path(klog: Klog, config: Config, path: str, profile: str = None):
+    if not path:
+        # TODO: change to using multiple paths
+        path = next(config.profile_paths(id=profile))
+    else:
+        path = await klog.resolve_path(path)
+
+    assert path.exists(), path
+    return path
+
+
 @click.group(
     context_settings={"show_default": True},
 )
+@click.option("--profile", "-p", default="default")
 @click.option("--config", default=xdg.xdg_config_home() / "klg" / "config.toml")
-async def main(config):
-    config = Path(config)
+async def main(config, profile):
+    config = Path(config).resolve()
     global CONFIG
     data = {}
     if config.exists():
         data = tomllib.loads(config.read_text())
-    CONFIG = Config.load(data)
+    CONFIG = Config.load(data, path=config, selected_profile=profile)
 
 
 @main.group()
@@ -42,15 +54,10 @@ async def entry():
 
 
 @entry.command()
-@click.argument("path", default="@default")
+@click.argument("path", default="")
 async def latest(path):
     klog = Klog()
-    if path.startswith("@"):
-        path = await klog.bookmark(path)
-    else:
-        path = Path(path)
-
-    assert path.exists()
+    path = await get_profile_path(klog, CONFIG, path)
 
     record, entry = await klog.find_latest(path)
     click.echo(record.date)
@@ -64,19 +71,14 @@ def format_result(result: dto.Result):
 
 
 @main.command()
-@click.argument("path", default="@default")
+@click.argument("path", default="")
 @click.option("--check/--no-check", is_flag=True)
 @click.option("--sort/--no-sort", is_flag=True)
 @click.option("--diff/--no-diff", is_flag=True, default=True)
 @click.option("--write/--no-write", is_flag=True, default=True)
 async def fmt(path, check, diff, write, sort):
     klog = Klog()
-    if path.startswith("@"):
-        path = await klog.bookmark(path)
-    else:
-        path = Path(path)
-
-    assert path.exists()
+    path = await get_profile_path(klog, CONFIG, path)
 
     result = await klog.to_json(path)
 
@@ -117,15 +119,15 @@ async def fmt(path, check, diff, write, sort):
 @click.argument("paths", nargs=-1)
 async def generate_report(paths, period, tags, output, report_id, resource):
     klog = Klog()
-    cfg = CONFIG.reports.get(report_id, ReportConfig())
-    cfg.resource = resource or cfg.resource
-    cfg.tags = tags or cfg.tags
-    cfg.name = cfg.name or report_id
+    profile = CONFIG.get_profile()
+    report = profile.reports.get(report_id, ReportConfig())
+    report.resource = resource or report.resource
+    report.tags = tags or report.tags
+    report.name = report.name or f"{profile.name}-{report_id}"
 
-    paths = paths or ["@default"]
+    paths = paths or [""]
     paths = [
-        Path(raw) if not raw.startswith("@") else await klog.bookmark(raw)
-        for raw in paths
+        await get_profile_path(klog, CONFIG, raw, profile=profile.name) for raw in paths
     ]
     args = [f"--period={period}"]
 
@@ -134,7 +136,7 @@ async def generate_report(paths, period, tags, output, report_id, resource):
     else:
         assert len(paths) == 1
         path = paths[0]
-        output = path.with_name(f"{period}_report_{cfg.name}.csv")
+        output = path.with_name(f"{period}_report_{report.name}.csv")
 
     if tags:
         args.append(f"--tag={','.join(tags)}")
@@ -149,20 +151,20 @@ async def generate_report(paths, period, tags, output, report_id, resource):
             "Time spent",
             "Minutes",
             "Summary",
-            *cfg.map_tags(set()),
+            *report.map_tags(set()),
         )
     ]
 
     for record in result.records:
         for entry in record.entries:
             row = [
-                cfg.resource,
+                report.resource,
                 record.date,
                 entry.total,
                 entry.total_mins,
                 entry.summary.strip(),
             ]
-            tagged_values = cfg.map_tags(set(record.tags) | set(entry.tags))
+            tagged_values = report.map_tags(set(record.tags) | set(entry.tags))
             for name, value in tagged_values.items():
                 row.append(value)
             rows.append(row)
@@ -221,28 +223,31 @@ async def generate_report(paths, period, tags, output, report_id, resource):
 
 
 @main.command()
-@click.argument("path", default="@default")
+@click.argument("path", default="")
 @click.argument("args", nargs=-1)
 async def stop(path, args):
     klog = Klog()
+    path = await get_profile_path(klog, CONFIG, path)
     await klog.stop(path, *args)
     print(await klog.day_summary(path))
 
 
 @main.command()
-@click.argument("path", default="@default")
+@click.argument("path", default="")
 @click.argument("args", nargs=-1)
 async def resume(path, args):
     klog = Klog()
+    path = await get_profile_path(klog, CONFIG, path)
     await klog.resume(path, *args)
     print(await klog.day_summary(path))
 
 
 @main.command()
-@click.argument("path", default="@default")
+@click.argument("path", default="")
 @click.argument("args", nargs=-1)
 async def today(path, args):
     klog = Klog()
+    path = await get_profile_path(klog, CONFIG, path)
     print(await klog.day_summary(path, *args))
 
 
@@ -261,11 +266,11 @@ async def today(path, args):
     help="Records (or entries) that match these tags",
 )
 @click.option("--store/--no-store", default=True)
-@click.argument("path", default="@default")
+@click.argument("path", default="")
 @click.argument("args", nargs=-1)
 async def report(path: Path, args, period, tags, store):
     klog = Klog()
-    path = await klog.resolve_path(path)
+    path = await get_profile_path(klog, CONFIG, path)
     args = [
         f"--period={period}",
         *args,
@@ -291,13 +296,10 @@ async def report(path: Path, args, period, tags, store):
 )
 @click.option("-h", "--hours", default=100)
 @click.option("--write/--no-write", is_flag=True, default=True)
-@click.argument("path", default="@default")
+@click.argument("path", default="")
 async def plan_month(period, path, hours, write):
     klog = Klog()
-    if path.startswith("@"):
-        path = await klog.bookmark(path)
-    else:
-        path = Path(path)
+    path = await get_profile_path(klog, CONFIG, path)
 
     result = await klog.to_json(path)
     result.plan_month(
@@ -315,4 +317,4 @@ async def plan_month(period, path, hours, write):
 
 
 if __name__ in ("__main__", "__mp_main__"):
-    main(_anyio_backend="trio")
+    main(_anyio_backend="trio", auto_envvar_prefix="KLG")

@@ -46,6 +46,7 @@ class ProfileConfig:
     name: str
     dir: Path
     write_tags: list[str] = dataclasses.field(default_factory=list)
+    reports: dict[str, ReportConfig] = dataclasses.field(default_factory=dict)
 
     def __post_init__(self):
         self.write_tags = self.write_tags or [self.name]
@@ -53,12 +54,44 @@ class ProfileConfig:
 
 @dataclasses.dataclass
 class Config:
+    path: Path = None
+    selected_profile: str = None
     profiles: dict[str, ProfileConfig] = dataclasses.field(default_factory=dict)
-    reports: dict[str, ReportConfig] = dataclasses.field(default_factory=dict)
 
     @classmethod
-    def load(cls, data: dict):
-        return dacite.from_dict(cls, data)
+    def load(cls, data: dict, path: Path, **extra):
+        return dacite.from_dict(
+            cls, {"path": path, **extra, **data}, config=dacite_config
+        )
+
+    @property
+    def base_dir(self):
+        return self.path.parent
+
+    def get_profile(self, id: str = None):
+        return self.profiles[id or self.selected_profile]
+
+    def profile_dir(self, id: str = None):
+        profile_dir = self.get_profile(id).dir
+        return self.mkpath(profile_dir)
+
+    def profile_paths(self, id: str = None):
+        dir = self.profile_dir(id)
+        yield dir / "default.klg"
+
+    def mkpath(self, path: str | Path):
+        path = Path(path)
+        if not path.is_absolute():
+            path = self.base_dir / path
+        return path.resolve()
 
 
-dacite_config = dacite.Config(strict=True, strict_unions_match=True, type_hooks={})
+def path_hook(*args, **kwargs):
+    print(args)
+    print(kwargs)
+    return
+
+
+dacite_config = dacite.Config(
+    strict=True, strict_unions_match=True, type_hooks={Path: Path}
+)

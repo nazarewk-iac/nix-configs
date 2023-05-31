@@ -37,9 +37,9 @@ class Klog:
         if isinstance(entry, bytes):
             entry = entry.decode()
 
-        if isinstance(entry, str) and entry.startswith("@"):
+        if isinstance(entry, str):
             if entry.startswith("@"):
-                logger.info("resolving bookmark")
+                logger.debug("resolving bookmark")
                 return await self.bookmark(entry)
             return Path(entry)
         return entry
@@ -138,5 +138,4 @@ class Klog:
         raise KlgException("No entry was found")
 
     async def resume(self, path, *args):
-        _, latest = await self.find_latest(path, *args, range=True, closed=True)
-        return await self.cmd("start", f"--summary={latest.summary}", *args, path)
+        return await self.cmd("start", f"--resume", *args, path)
