@@ -19,6 +19,19 @@ in
       steamcmd
       steam-tui
       steamPackages.steam-runtime
+
+      # non-steam
+      lutris
+
+      # proton utils
+      protonup-qt
+      protonup-ng
+      protontricks
+
+      # wine utils
+      winetricks
+      bottles
+      (if config.kdn.sway.base.enable then wine-wayland else wine)
     ];
   };
 }

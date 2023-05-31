@@ -55,7 +55,6 @@ in
     kdn.containers.enable = true;
     kdn.containers.podman.enable = true;
     #kdn.containers.x11docker.enable = true;
-    #kdn.emulators.wine.enable = true;
     programs.seahorse.enable = true;
     boot.binfmt.emulatedSystems = [
       "aarch64-linux"
