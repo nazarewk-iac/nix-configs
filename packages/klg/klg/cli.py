@@ -116,8 +116,9 @@ async def fmt(path, check, diff, write, sort):
 )
 @click.option("-o", "--output", default="", help="Where to store csv/xlsx file?")
 @click.option("-r", "--report", "report_id", default="default")
+@click.option("--diff/--no-diff", default=False)
 @click.argument("paths", nargs=-1)
-async def generate_report(paths, period, tags, output, report_id, resource):
+async def generate_report(paths, period, tags, output, report_id, resource, diff):
     klog = Klog()
     profile = CONFIG.get_profile()
     report = profile.reports.get(report_id, ReportConfig())
@@ -178,25 +179,25 @@ async def generate_report(paths, period, tags, output, report_id, resource):
             total_mins,
         )
     )
-
-    expected_mins = sum(r.should_total_mins for r in result.records)
-    rows.append(
-        (
-            "expected",
-            "",
-            dto.Base.format_duration(expected_mins),
-            expected_mins,
+    if diff:
+        expected_mins = sum(r.should_total_mins for r in result.records)
+        rows.append(
+            (
+                "expected",
+                "",
+                dto.Base.format_duration(expected_mins),
+                expected_mins,
+            )
         )
-    )
-    diff_mins = sum(r.diff_mins for r in result.records)
-    rows.append(
-        (
-            "difference",
-            "",
-            dto.Base.format_duration(diff_mins),
-            diff_mins,
+        diff_mins = sum(r.diff_mins for r in result.records)
+        rows.append(
+            (
+                "difference",
+                "",
+                dto.Base.format_duration(diff_mins),
+                diff_mins,
+            )
         )
-    )
 
     with output.open("w") as f:
         writer = csv.writer(f)

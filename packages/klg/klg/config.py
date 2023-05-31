@@ -56,6 +56,7 @@ class ProfileConfig:
 class Config:
     path: Path = None
     selected_profile: str = None
+    resolve_symlinks: bool = True
     profiles: dict[str, ProfileConfig] = dataclasses.field(default_factory=dict)
 
     @classmethod
@@ -66,6 +67,8 @@ class Config:
 
     @property
     def base_dir(self):
+        if self.resolve_symlinks:
+            return self.path.parent.resolve()
         return self.path.parent
 
     def get_profile(self, id: str = None):
@@ -83,7 +86,7 @@ class Config:
         path = Path(path)
         if not path.is_absolute():
             path = self.base_dir / path
-        return path.resolve()
+        return path
 
 
 def path_hook(*args, **kwargs):
