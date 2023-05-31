@@ -7,9 +7,9 @@
 , ...
 }:
 let
-  version = "6.0";
-  shortCommit = "91f5e2d";
-  sha256 = "sha256-PXtBwP6OCfAZTx06azC6ULW9Ges9B5PrL2IyLw9d0c0=";
+  version = "6.1";
+  shortCommit = "cd1bf7c";
+  sha256 = "sha256-I3IrzeK/zJNRs+JFyzcxaCgWdP5cvqXOSnP4in8kZKY=";
   vendorSha256 = "sha256-BDiVKrte1XIXJQkqj7GobPdHz74FgWMb/tNZChaaPCc=";
   tag = "v${version}";
 in
