@@ -86,7 +86,7 @@ class Config:
         path = Path(path)
         if not path.is_absolute():
             path = self.base_dir / path
-        return path
+        return path.resolve()
 
 
 def path_hook(*args, **kwargs):
