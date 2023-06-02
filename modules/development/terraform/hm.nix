@@ -49,6 +49,7 @@ in
           "${short}oj" = "${cmd} output --json";
           "${short}p" = "${cmd} plan";
           "${short}u" = "${cmd} force-unlock --force";
+          "${short}v" = "${cmd} validate";
         } // (builtins.mapAttrs (short: entry: "${cmd} ${entry}") extra);
 
       in

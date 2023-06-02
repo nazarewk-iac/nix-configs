@@ -211,11 +211,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1685189510,
-        "narHash": "sha256-Hq5WF7zIixojPgvhgcd6MBvywwycVZ9wpK/8ogOyoaA=",
+        "lastModified": 1685573051,
+        "narHash": "sha256-zrpbdQVJFpNVFK3SlA6mE0le8qnKjUjcuY4OzL+wSHw=",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "2d963854ae2499193c0c72fd67435fee34d3e4fd",
+        "rev": "3876cc613ac3983078964ffb5a0c01d00028139e",
         "type": "github"
       },
       "original": {
@@ -273,16 +273,15 @@
         ]
       },
       "locked": {
-        "lastModified": 1685351512,
+        "lastModified": 1685384827,
         "narHash": "sha256-lEEMXGKQY5cUWO9vS08a5VLPbVAJm6xGBTd3Cnfg99c=",
-        "owner": "nazarewk",
+        "owner": "astro",
         "repo": "microvm.nix",
-        "rev": "d767a912c67b814d119a731f4f5bd07fd7e11f1f",
+        "rev": "3683f43a37568fbc14bdc1c952acb41b0bb09a01",
         "type": "github"
       },
       "original": {
-        "owner": "nazarewk",
-        "ref": "opt-out-mounts",
+        "owner": "astro",
         "repo": "microvm.nix",
         "type": "github"
       }

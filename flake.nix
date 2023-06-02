@@ -50,8 +50,7 @@
       inputs.flake-utils.follows = "flake-utils";
     };
     microvm = {
-      url = "github:nazarewk/microvm.nix/opt-out-mounts";
-      #url = "github:astro/microvm.nix";
+      url = "github:astro/microvm.nix";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
@@ -217,7 +216,7 @@
               system = "x86_64-linux";
               modules = [{ kdn.profile.host.oams.enable = true; }
                 {
-                  system.stateVersion = "23.05";
+                  system.stateVersion = "23.11";
                   networking.hostId = "ce0f2f33"; # cut -c-8 </proc/sys/kernel/random/uuid
                   networking.hostName = "oams";
 
@@ -236,7 +235,7 @@
               system = "x86_64-linux";
               modules = [{ kdn.profile.host.krul.enable = true; }
                 {
-                  system.stateVersion = "23.05";
+                  system.stateVersion = "23.11";
                   networking.hostId = "81d86976"; # cut -c-8 </proc/sys/kernel/random/uuid
                   networking.hostName = "krul";
 
@@ -255,7 +254,7 @@
               system = "x86_64-linux";
               modules = [{ kdn.profile.host.obler.enable = true; }
                 {
-                  system.stateVersion = "23.05";
+                  system.stateVersion = "23.11";
                   networking.hostId = "f6345d38"; # cut -c-8 </proc/sys/kernel/random/uuid
                   networking.hostName = "obler";
 
