@@ -4,6 +4,8 @@ let
 
   sway-headless-vnc = pkgs.writeShellApplication {
     name = "sway-headless-vnc";
+    # TODO: make wayvnc build
+
     runtimeInputs = with pkgs; [ wayvnc jq sway coreutils findutils ];
     text = builtins.readFile ./sway-headless-vnc.sh;
   };
@@ -28,10 +30,10 @@ in
     # - https://github.com/swaywm/sway/issues/5553
     # - https://wiki.archlinux.org/title/Sway#Create_headless_outputs
     environment.systemPackages = with pkgs; [
-      wayvnc
+      #wayvnc
       waypipe
 
-      sway-headless-vnc
+      #sway-headless-vnc
 
       remmina # cannot type $ (dollar sign)
       tigervnc # vncviewer 10.100.0.2::5900
