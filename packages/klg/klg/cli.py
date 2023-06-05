@@ -37,15 +37,17 @@ async def get_profile_path(klog: Klog, config: Config, path: str, profile: str =
 @click.group(
     context_settings={"show_default": True},
 )
-@click.option("--profile", "-p", default="default")
+@click.option("--profile", "-p", default="")
 @click.option("--config", default=xdg.xdg_config_home() / "klg" / "config.toml")
 async def main(config, profile):
     config = Path(config).resolve()
     global CONFIG
-    data = {}
+    data = dict(path=config)
     if config.exists():
         data = tomllib.loads(config.read_text())
-    CONFIG = Config.load(data, path=config, selected_profile=profile)
+    if profile:
+        data["selected_profile"] = profile
+    CONFIG = Config.load(data)
 
 
 @main.group()

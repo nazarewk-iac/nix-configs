@@ -54,16 +54,14 @@ class ProfileConfig:
 
 @dataclasses.dataclass
 class Config:
-    path: Path = None
+    path: Path
     selected_profile: str = None
     resolve_symlinks: bool = True
     profiles: dict[str, ProfileConfig] = dataclasses.field(default_factory=dict)
 
     @classmethod
-    def load(cls, data: dict, path: Path, **extra):
-        return dacite.from_dict(
-            cls, {"path": path, **extra, **data}, config=dacite_config
-        )
+    def load(cls, data: dict, **extra):
+        return dacite.from_dict(cls, {**data, **extra}, config=dacite_config)
 
     @property
     def base_dir(self):
