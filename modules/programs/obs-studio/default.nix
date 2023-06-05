@@ -28,5 +28,9 @@ in
     environment.systemPackages = with pkgs; [
       obs-studio-with-plugins
     ];
+
+    boot.kernelModules = [
+      v4l2loopback # for getting OBS virtual camera to work
+    ];
   };
 }

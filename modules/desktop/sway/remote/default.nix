@@ -26,7 +26,7 @@ in
 
     nixpkgs.overlays = [
       (final: prev: {
-        wayvnc = final.waylandPkgs.wayvnc;
+        #wayvnc = final.waylandPkgs.wayvnc;
       })
     ];
 
