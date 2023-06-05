@@ -42,9 +42,10 @@ async def get_profile_path(klog: Klog, config: Config, path: str, profile: str =
 async def main(config, profile):
     config = Path(config).resolve()
     global CONFIG
-    data = dict(path=config)
+    data = {}
     if config.exists():
         data = tomllib.loads(config.read_text())
+    data["path"] = config
     if profile:
         data["selected_profile"] = profile
     CONFIG = Config.load(data)

@@ -60,8 +60,8 @@ class Config:
     profiles: dict[str, ProfileConfig] = dataclasses.field(default_factory=dict)
 
     @classmethod
-    def load(cls, data: dict, **extra):
-        return dacite.from_dict(cls, {**data, **extra}, config=dacite_config)
+    def load(cls, data: dict):
+        return dacite.from_dict(cls, data, config=dacite_config)
 
     @property
     def base_dir(self):
