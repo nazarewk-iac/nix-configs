@@ -1,4 +1,4 @@
-{ config, pkgs, lib, modulesPath, waylandPkgs, ... }:
+{ config, pkgs, lib, modulesPath, ... }:
 # Dell Latitude E5470
 let
   cfg = config.kdn.profile.host.obler;

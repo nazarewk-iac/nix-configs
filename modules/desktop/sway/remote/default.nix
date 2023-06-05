@@ -1,4 +1,4 @@
-{ lib, pkgs, config, waylandPkgs, ... }:
+{ lib, pkgs, config, ... }:
 let
   cfg = config.kdn.sway.remote;
 
@@ -6,7 +6,13 @@ let
     name = "sway-headless-vnc";
     # TODO: make wayvnc build
 
-    runtimeInputs = with pkgs; [ wayvnc jq sway coreutils findutils ];
+    runtimeInputs = with pkgs; [
+      wayvnc
+      jq
+      sway
+      coreutils
+      findutils
+    ];
     text = builtins.readFile ./sway-headless-vnc.sh;
   };
 in
@@ -19,10 +25,9 @@ in
     kdn.sway.base.enable = true;
 
     nixpkgs.overlays = [
-      (final: prev:
-        {
-          wayvnc = waylandPkgs.wayvnc;
-        })
+      (final: prev: {
+        wayvnc = final.waylandPkgs.wayvnc;
+      })
     ];
 
     # Multi-output directions:
@@ -30,10 +35,10 @@ in
     # - https://github.com/swaywm/sway/issues/5553
     # - https://wiki.archlinux.org/title/Sway#Create_headless_outputs
     environment.systemPackages = with pkgs; [
-      #wayvnc
+      wayvnc
       waypipe
 
-      #sway-headless-vnc
+      sway-headless-vnc
 
       remmina # cannot type $ (dollar sign)
       tigervnc # vncviewer 10.100.0.2::5900

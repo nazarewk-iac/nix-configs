@@ -23,7 +23,6 @@
           specialArgs = {
             inherit self system;
             inherit (self) inputs lib;
-            waylandPkgs = self.inputs.nixpkgs-wayland.packages.${system};
           };
 
           modules = [

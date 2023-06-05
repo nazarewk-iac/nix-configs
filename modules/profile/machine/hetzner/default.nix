@@ -1,4 +1,4 @@
-{ config, pkgs, lib, modulesPath, waylandPkgs, ... }:
+{ config, pkgs, lib, modulesPath, ... }:
 let
   cfg = config.kdn.profile.machine.hetzner;
 in

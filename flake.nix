@@ -207,6 +207,9 @@
             lib = import ./lib { inherit (prev) lib; };
           })
           (final: prev: (import ./packages { inherit inputs self; pkgs = prev; }))
+          (final: prev: {
+            waylandPkgs = self.inputs.nixpkgs-wayland.packages.${final.stdenv.system};
+          })
         ];
         nixosModules.default = ./modules;
 
