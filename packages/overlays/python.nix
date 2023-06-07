@@ -14,8 +14,8 @@ pkgs: final: prev:
   pypass = prev.pypass.overrideAttrs (o:
     let
       pbr_version = "0.2.2dev";
-      version = "f86cf0ba0e5cb6a1236ff16d8f238b92bc49c517";
-      sha256 = "sha256-PEPgWdsBjyHpgqPx2MNtYnn0wxI0KtlE+uCD7xO0pvE=";
+      version = "6f51145a3bc12ee79d2881204b88a82d149f3228";
+      sha256 = "sha256-iJZe/Ljae9igkpfz9WJQK48wZZJWcOt4Z3kdp5VILqE=";
     in
     {
       inherit version;
