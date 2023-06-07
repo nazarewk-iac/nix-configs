@@ -58,6 +58,8 @@ in
               NB_LOG_FILE = "console";
             } // (mkEnvVars alias port);
             serviceConfig = {
+              AmbientCapabilities = [ "CAP_NET_ADMIN" "CAP_NET_RAW" ];
+              DynamicUser = true;
               ExecStart = "${cmd} service run";
               Restart = "always";
               RuntimeDirectory = "netbird-${alias}";

@@ -13,6 +13,7 @@ in
     environment.systemPackages = with pkgs; [
       # AWS
       awscli2
+      amazon-ecs-cli
       ssm-session-manager-plugin
       eksctl
 
