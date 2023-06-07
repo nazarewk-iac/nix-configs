@@ -51,12 +51,13 @@ in
             documentation = [ "https://netbird.io/docs/" ];
             after = [ "network.target" ];
             wantedBy = [ "multi-user.target" ];
+            path = with pkgs; [
+              openresolv
+            ];
             environment = {
               NB_LOG_FILE = "console";
             } // (mkEnvVars alias port);
             serviceConfig = {
-              AmbientCapabilities = [ "CAP_NET_ADMIN" ];
-              DynamicUser = true;
               ExecStart = "${cmd} service run";
               Restart = "always";
               RuntimeDirectory = "netbird-${alias}";
