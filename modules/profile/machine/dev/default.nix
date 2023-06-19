@@ -13,6 +13,7 @@ in
     environment.systemPackages = with pkgs; [
       #jetbrains.pycharm-professional
       jetbrains.idea-ultimate
+      jetbrains-toolbox
       #jetbrains.clion
       #jetbrains.goland
       #jetbrains.ruby-mine
