@@ -250,7 +250,7 @@ in
           kdn.sway.base.enable = true;
           wayland.windowManager.sway = {
             inherit (config.programs.sway) extraSessionCommands extraOptions wrapperFeatures;
-            systemdIntegration = false;
+            systemd.enable = false;
           };
         }
       ];
