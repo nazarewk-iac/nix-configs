@@ -29,6 +29,7 @@ in
     kdn.development.golang.enable = true;
     kdn.development.java.enable = true;
     kdn.development.k8s.enable = true;
+    kdn.development.nickel.enable = true;
     kdn.development.nix.enable = true;
     kdn.development.python.enable = true;
     kdn.development.ruby.enable = true;

@@ -73,6 +73,15 @@ in
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
+      nixpkgs.overlays = [
+        (final: prev: {
+          # see https://github.com/NixOS/nixpkgs/issues/238416
+          # TODO: pin older electron version
+          #element-desktop = prev.element-desktop.overrideAttrs (old: {
+          #  electron = pkgs.electron_24;
+          #});
+        })
+      ];
       ## systemd
       programs.sway.extraPackages = with pkgs; [
         sessionLoadEnv
