@@ -15,7 +15,6 @@ in
   config = lib.mkIf cfg.enable {
     environment.interactiveShellInit = ''
       [[ -z "$HOME" ]] || export PATH="$HOME/.asdf/shims:$PATH"
-      source ${cfg.package}/share/asdf-vm/lib/asdf.sh
     '';
 
     environment.systemPackages = with pkgs; [
@@ -28,7 +27,6 @@ in
       ({ lib, ... }: {
         programs.fish.interactiveShellInit = ''
           set PATH "$HOME/.asdf/shims" $PATH
-          source ${cfg.package}/share/asdf-vm/lib/asdf.fish
         '';
         home.activation = {
           asdfReshim = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
