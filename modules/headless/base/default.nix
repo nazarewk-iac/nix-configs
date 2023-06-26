@@ -79,6 +79,7 @@ in
         killall
         ncdu
         htop
+        btop
         bintools
 
         inotify-tools
