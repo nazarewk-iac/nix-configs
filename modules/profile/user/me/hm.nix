@@ -115,7 +115,7 @@ in
           rss = [ "brave-browser.desktop" ];
           ipfs = [ "brave-browser.desktop" ];
           browser = [ "firefox.desktop" "brave-browser.desktop" ];
-          pdf = [ "okular.desktop" ];
+          pdf = [ "org.kde.okular.desktop" ];
           fileManager = [ "pcmanfm-qt.desktop" ];
           remmina = [ "org.remmina.Remmina.desktop" ];
           teams = [ "teams.desktop" ];
