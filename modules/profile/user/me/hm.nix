@@ -115,8 +115,8 @@ in
           rss = [ "brave-browser.desktop" ];
           ipfs = [ "brave-browser.desktop" ];
           browser = [ "firefox.desktop" "brave-browser.desktop" ];
-          pdf = [ "org.gnome.Evince.desktop" ];
-          fileManager = [ "thunar.desktop" ];
+          pdf = [ "okular.desktop" ];
+          fileManager = [ "pcmanfm-qt.desktop" ];
           remmina = [ "org.remmina.Remmina.desktop" ];
           teams = [ "teams.desktop" ];
           ide = [ "idea-ultimate.desktop" ];
@@ -201,10 +201,10 @@ in
         flameshot
         vlc
         haruna
-        evince
-        xfce.ristretto
-        xfce.exo
-        xfce.xfconf
+        libsForQt5.okular # pdf viewer
+        libsForQt5.ark # archive manager
+        libsForQt5.gwenview # image viewer & editor
+        libsForQt5.pix # image gallery viewer
         shotwell
         gimp
 

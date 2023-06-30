@@ -307,6 +307,11 @@ in
         wlr-randr
 
         ashpd-demo # Tool for playing with XDG desktop portals
+
+        lxqt.pcmanfm-qt
+        # deps of pcmanfm-qt, see https://github.com/lxqt/pcmanfm-qt/issues/1198
+        lxde.lxmenu-data
+        menu-cache
       ];
 
       xdg.portal.enable = true;
@@ -324,15 +329,6 @@ in
           chooser_cmd = "${pkgs.wofi}/bin/wofi -d -n --prompt='Select the monitor to share:'";
         };
       };
-
-      # XFCE pieces
-      services.tumbler.enable = true;
-      programs.thunar.enable = true;
-      programs.thunar.plugins = with pkgs.xfce; [
-        thunar-archive-plugin
-        thunar-volman
-        thunar-media-tags-plugin
-      ];
     }
   ]);
 }

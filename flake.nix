@@ -67,7 +67,6 @@
     nixos-images = {
       url = "github:nix-community/nixos-images";
       inputs.nixos-unstable.follows = "nixpkgs";
-      inputs.disko.follows = "disko";
     };
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";

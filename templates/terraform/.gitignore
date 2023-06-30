@@ -1,0 +1,12 @@
+.envrc
+!/.envrc
+.direnv/
+.devenv/
+
+.terraform*/
+.terragrunt*/
+
+*_override.tf
+*_override.tf.json
+override.tf
+override.tf.json

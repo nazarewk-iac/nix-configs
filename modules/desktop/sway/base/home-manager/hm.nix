@@ -80,7 +80,7 @@ in
           "--inhibited --release ${mod.super}+${mod.ctrl}+V" = exec "${ydotool-paste}/bin/ydotool-paste"; # fix using it by nix path
           # X parity
           "${mod.lalt}+F4" = "kill";
-          "${mod.super}+E" = exec "thunar"; # fix using it by nix path
+          "${mod.super}+E" = exec "${pkgs.pcmanfm-qt}/bin/pcmanfm-qt"; # fix using it by nix path
           # Scratchpad:
           #   Sway has a "scratchpad", which is a bag of holding for windows.
           #   You can send windows there and get them back later.

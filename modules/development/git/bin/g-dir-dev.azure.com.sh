@@ -10,7 +10,7 @@ for entry in "$@"; do
 
   # https://ORGANIZATION@dev.azure.com/ORGANIZATION/PROJECT/_git/REPOSITORY
   # git@ssh.dev.azure.com:v3/ORGANIZATION/PROJECT/REPOSITORY
-  if [[ "${entry}" != https://*@dev.azure.com/*/*/_git/* && "${entry}" != git@ssh.dev.azure.com:v3/*/*/* ]]; then
+  if [[ "${entry}" != https://*dev.azure.com/*/*/_git/* && "${entry}" != git@ssh.dev.azure.com:v3/*/*/* ]]; then
     echo "dev.azure.com url must be in format:" >&2
     echo " - https://ORGANIZATION@dev.azure.com/ORGANIZATION/PROJECT/_git/REPOSITORY" >&2
     echo " - git@ssh.dev.azure.com:v3/ORGANIZATION/PROJECT/REPOSITORY" >&2
@@ -21,7 +21,7 @@ for entry in "$@"; do
   service=dev.azure.com
 
   stripped="${entry#"git@ssh.dev.azure.com:v3/"}"
-  stripped="${stripped#https://*@dev.azure.com/}"
+  stripped="${stripped#https://*dev.azure.com/}"
 
   org="${stripped%%/*}"
   proj="${stripped#"${org}/"}"
