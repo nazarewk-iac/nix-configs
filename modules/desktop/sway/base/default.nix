@@ -298,7 +298,6 @@ in
 
         # sway related
         autotiling
-        clipman
         gammastep
         kanshi # autorandr
         swayr # window switcher
