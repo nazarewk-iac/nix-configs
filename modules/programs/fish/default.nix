@@ -22,6 +22,8 @@ in
         enable = true;
         interactiveShellInit = ''
           set fish_greeting # Disable greeting
+          # see https://github.com/franciscolourenco/done
+          set -U __done_sway_ignore_visible 1
         '';
         plugins = with pkgs.fishPlugins; [
           { name = "grc"; src = grc.src; }
