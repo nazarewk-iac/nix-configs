@@ -10,15 +10,7 @@ in
   config = lib.mkIf cfg.enable {
     kdn.profile.machine.desktop.enable = true;
 
-    environment.systemPackages = with pkgs; [
-      #jetbrains.pycharm-professional
-      jetbrains.idea-ultimate
-      jetbrains-toolbox
-      #jetbrains.clion
-      #jetbrains.goland
-      #jetbrains.ruby-mine
-    ];
-    home-manager.sharedModules = [{ services.jetbrains-remote.enable = true; }];
+    home-manager.sharedModules = [{ kdn.development.jetbrains.enable = true; }];
 
     kdn.development.cloud.enable = true;
     kdn.development.cloud.aws.enable = true;

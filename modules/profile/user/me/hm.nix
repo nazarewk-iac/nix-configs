@@ -170,7 +170,6 @@ in
             keepass # must come from NixOS-level override
 
             firefox
-            jetbrains.idea-ultimate
 
             element-desktop
             signal-desktop
