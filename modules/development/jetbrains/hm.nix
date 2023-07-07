@@ -8,7 +8,7 @@ in
     go.enable = lib.mkEnableOption "Go specific fixes";
   };
 
-  config = lib.mkIf cfg.enable lib.mkMerge [
+  config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       programs.fish.shellInit = ''
         export PATH="$PATH:$HOME/.local/share/JetBrains/Toolbox/scripts"
@@ -82,7 +82,7 @@ in
     }
     (lib.mkIf cfg.go.enable (
       let
-        cmd = ''
+        cmdSh = ''
           if [ -d '${config.xdg.dataHome}/Jetbrains' ] ; then
             for ide in ${config.xdg.dataHome}/Jetbrains/* ; do
               mkdir -p "$ide/go/lib/dlv/linux"
@@ -92,10 +92,17 @@ in
         '';
       in
       {
-        programs.bash.profileExtra = cmd;
-        programs.zsh.profileExtra = cmd;
-        programs.fish.shellInit = cmd;
+        programs.bash.profileExtra = cmdSh;
+        programs.zsh.profileExtra = cmdSh;
+        programs.fish.shellInit = ''
+          if [ -d '${config.xdg.dataHome}/Jetbrains' ]
+            for ide in ${config.xdg.dataHome}/Jetbrains/*
+              mkdir -p "$ide/go/lib/dlv/linux"
+              ln -sf "${pkgs.delve}/bin/dlv" "$ide/go/lib/dlv/linux/dlv"
+            end
+          end
+        '';
       }
     ))
-  ];
+  ]);
 }
