@@ -9,7 +9,7 @@ let
     , poolPrefix ? ""
     }: {
       "${at}" = {
-        device = "${hostname}-primary/${hostname}${poolPrefix}${path}";
+        device = "${hostname}-main/${hostname}${poolPrefix}${path}";
         fsType = "zfs";
       };
     };
@@ -22,7 +22,7 @@ in
     enable = lib.mkEnableOption "enable krul host profile";
   };
 
-  config = lib.mkIf cfg.enable {
+  config = lib.mkIf cfg.enable ({
     kdn.profile.machine.workstation.enable = true;
     kdn.hardware.gpu.amd.enable = true;
     kdn.hardware.cpu.amd.enable = true;
@@ -44,7 +44,7 @@ in
     kdn.k3s.single-node.rook-ceph.enable = true;
     kdn.k3s.single-node.kube-prometheus.enable = true;
     kdn.k3s.single-node.istio.enable = true;
-    kdn.k3s.single-node.zfsVolume = "krul-primary/krul/containers/containerd/io.containerd.snapshotter.v1.zfs";
+    kdn.k3s.single-node.zfsVolume = "krul-main/krul/containers/containerd/io.containerd.snapshotter.v1.zfs";
     kdn.k3s.single-node.reservations.system.cpu = "4";
     kdn.k3s.single-node.reservations.system.memory = "32G";
     kdn.k3s.single-node.reservations.kube.cpu = "4";
@@ -53,16 +53,45 @@ in
     networking.interfaces.enp5s0.wakeOnLan.enable = true;
     networking.interfaces.enp6s0.wakeOnLan.enable = true;
 
-    boot.initrd.systemd.enable = true;
     kdn.filesystems.zfs-root.enable = true;
 
     zramSwap.enable = lib.mkDefault true;
     zramSwap.memoryPercent = 50;
     zramSwap.priority = 100;
 
-    boot.zfs.requestEncryptionCredentials = [
-      "${hostname}-primary"
-    ];
+    disko.enableConfig = true;
+    disko.devices = import ./disko.nix {
+      inherit lib;
+      hostname = config.networking.hostName;
+      inMicroVM = config.kdn.virtualization.microvm.guest.enable;
+    };
+    boot.zfs.forceImportRoot = false;
+    boot.zfs.requestEncryptionCredentials = false;
+    boot.initrd.luks.forceLuksSupportInInitrd = true;
+    boot.initrd.systemd.enable = true;
+    boot.kernelParams =
+      let
+        disko = config.disko.devices;
+        crypted = disko.disk.crypted-root;
+        boot = disko.disk.boot;
+
+        getArg = name: lib.trivial.pipe crypted.content.extraFormatArgs [
+          (builtins.filter (lib.strings.hasPrefix "--${name}="))
+          builtins.head
+          (lib.strings.removePrefix "--${name}=")
+        ];
+
+        luksOpenName = crypted.content.name;
+        rootUUID = getArg "uuid";
+        headerPath = getArg "header";
+        luksDevice = crypted.device;
+      in
+      [
+        # https://www.freedesktop.org/software/systemd/man/systemd-cryptsetup-generator.html#
+        "rd.luks.name=${rootUUID}=${luksOpenName}"
+        "rd.luks.options=${rootUUID}=header=${headerPath}"
+        "rd.luks.data=${rootUUID}=${luksDevice}"
+      ];
 
     boot.tmp.useTmpfs = true;
     # 20% of 128GB should be fine
@@ -71,12 +100,6 @@ in
 
     # legacy mountpoints
     fileSystems = lib.mkMerge [
-      {
-        "/boot" = {
-          device = "/dev/disk/by-uuid/2BFB-6A81";
-          fsType = "vfat";
-        };
-      }
       (mkNixOSMount "/root" { at = "/"; })
       (mkNixOSMount "/etc" { })
       (mkNixOSMount "/nix" { })
@@ -96,7 +119,11 @@ in
       (mkZFSMount "/home/kdn/.local/share/containers" { })
       (mkZFSMount "/home/kdn/Downloads" { })
       (mkZFSMount "/home/kdn/Nextcloud" { })
+      {
+        "/boot".neededForBoot = true;
+        "/var/log/journal".neededForBoot = true;
+      }
     ];
     kdn.networking.netbird.instances.w1 = 51822;
-  };
+  });
 }
