@@ -68,6 +68,7 @@ in
           nixpkgs.config.allowAliases = true;
           xdg.configFile."nixpkgs/config.nix".text = cfg;
           home.file.".nixpkgs/config.nix".text = cfg;
+          xdg.enable = true;
         }
       )
     ];

@@ -27,6 +27,8 @@ in
         name = "nix-which";
         runtimeInputs = with pkgs; [ nix ];
         text = ''
+          set -eEuo pipefail
+
           help() {
             cat <<EOF >&2
             Usage: "$0" <binary> [options...]
@@ -38,7 +40,7 @@ in
           -h|--help)
             help;;
           *)
-            nix-store --query "''${@:2}" "$(command -pv "$1")";;
+            nix-store --query "''${@:2}" "$(command -v "$1" || command -pv "$1")";;
           esac
         '';
       })

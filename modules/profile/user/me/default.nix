@@ -42,6 +42,7 @@ in
         "tty"
         "ydotool"
         "video"
+        "weechat"
         "wheel"
       ];
     };

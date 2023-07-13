@@ -57,6 +57,7 @@ in
       kdn.services.syncthing.enable = true;
     }
     (lib.mkIf hasWorkstation {
+      kdn.programs.weechat.enable = true;
       programs.gh.enable = false;
       programs.gh.enableGitCredentialHelper = false;
       programs.git.enable = true;
