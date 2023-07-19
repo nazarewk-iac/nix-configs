@@ -27,6 +27,8 @@ in
     kdn.hardware.gpu.amd.enable = true;
     kdn.hardware.cpu.amd.enable = true;
 
+    kdn.programs.photoprism.enable = false;
+
     services.nix-serve = {
       enable = false;
       secretKeyFile = "/var/nix-keys/krul.kdn.im/cache-priv-key.pem";

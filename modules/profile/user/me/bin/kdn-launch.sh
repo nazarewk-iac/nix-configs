@@ -40,7 +40,7 @@ start_priv() {
 }
 
 start_comms() {
-  launch element-desktop
+  #launch element-desktop
   launch slack
   launch signal-desktop
   launch discord

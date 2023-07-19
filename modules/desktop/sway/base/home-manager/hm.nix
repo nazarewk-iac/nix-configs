@@ -41,6 +41,8 @@ in
       Requires = lib.mkForce [ "tray.target" "kdn-sway-envs.target" ];
     };
 
+    # segfaults https://github.com/NixOS/nixpkgs/issues/183730
+    # cliboard not working https://github.com/NixOS/nixpkgs/issues/181759
     services.flameshot.enable = true;
     services.flameshot.settings = {
       General = {
