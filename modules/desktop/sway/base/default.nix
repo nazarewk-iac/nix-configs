@@ -75,11 +75,9 @@ in
     {
       nixpkgs.overlays = [
         (final: prev: {
-          # see https://github.com/NixOS/nixpkgs/issues/238416
-          # TODO: pin older electron version
-          #element-desktop = prev.element-desktop.overrideAttrs (old: {
-          #  electron = pkgs.electron_24;
-          #});
+          # see https://github.com/NixOS/nixpkgs/issues/238416#issuecomment-1618662374
+          # TODO: remove after https://github.com/NixOS/nixpkgs/issues/238416 is resolved upstream
+          element-desktop = prev.element-desktop.override { electron = prev.electron_24; };
         })
       ];
       ## systemd
