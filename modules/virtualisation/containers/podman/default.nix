@@ -47,7 +47,7 @@ in
             runtimeInputs = with pkgs; [ podman ];
             text = ''
               if [[ "$EUID" != 0 ]]; then
-                exec sudo --preserve-env podman "$@"
+                exec sudo podman "$@"
               fi
               exec podman "$@"
             '';
