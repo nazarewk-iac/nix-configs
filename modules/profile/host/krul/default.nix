@@ -55,8 +55,6 @@ in
     networking.interfaces.enp5s0.wakeOnLan.enable = true;
     networking.interfaces.enp6s0.wakeOnLan.enable = true;
 
-    kdn.filesystems.zfs-root.enable = true;
-
     zramSwap.enable = lib.mkDefault true;
     zramSwap.memoryPercent = 50;
     zramSwap.priority = 100;

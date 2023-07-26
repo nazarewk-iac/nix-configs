@@ -4,7 +4,10 @@ let
 in
 {
   options.kdn.filesystems.zfs-root = {
-    enable = lib.mkEnableOption "ZFS setup";
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = builtins.any (fs: fs.fsType == "zfs" && fs.mountPoint == "/") (builtins.attrValues config.fileSystems);
+    };
 
     sshUnlock = {
       # Note: this does not work with systemd stage 0

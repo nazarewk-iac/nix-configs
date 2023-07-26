@@ -50,11 +50,11 @@ in
     kdn.programs.nix-index.enable = true;
 
     kdn.development.android.enable = true;
-    #kdn.containers.dagger.enable = true;
-    #kdn.containers.distrobox.enable = true;
-    kdn.containers.enable = true;
-    kdn.containers.podman.enable = true;
-    #kdn.containers.x11docker.enable = true;
+    #kdn.virtualisation.containers.dagger.enable = true;
+    #kdn.virtualisation.containers.distrobox.enable = true;
+    kdn.virtualisation.containers.enable = true;
+    kdn.virtualisation.containers.podman.enable = true;
+    #kdn.virtualisation.containers.x11docker.enable = true;
     programs.seahorse.enable = true;
     boot.binfmt.emulatedSystems = [
       "aarch64-linux"

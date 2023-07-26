@@ -19,6 +19,7 @@ in
 
     users.users.kdn = {
       uid = 31893;
+      autoSubUidGidRange = true;
       description = "Krzysztof Nazarewski";
       isNormalUser = true;
       createHome = true; # makes sure ZFS mountpoints are properly owned?

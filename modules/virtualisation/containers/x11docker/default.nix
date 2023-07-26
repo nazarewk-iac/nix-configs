@@ -1,9 +1,9 @@
 { lib, pkgs, config, ... }:
 let
-  cfg = config.kdn.containers.x11docker;
+  cfg = config.kdn.virtualisation.containers.x11docker;
 in
 {
-  options.kdn.containers.x11docker = {
+  options.kdn.virtualisation.containers.x11docker = {
     enable = lib.mkEnableOption "x11docker setup";
   };
 
