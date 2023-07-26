@@ -4,7 +4,10 @@ let
 in
 {
   options.kdn.filesystems.zfs = {
-    enable = lib.mkEnableOption "ZFS setup";
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = builtins.any (fs: fs.fsType == "zfs") (builtins.attrValues config.fileSystems);
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -48,6 +51,8 @@ in
       sanoid
     ];
 
-    virtualisation.docker.storageDriver = "zfs";
+    virtualisation.docker.storageDriver = lib.mkDefault "zfs";
+    virtualisation.containers.storage.settings.storage.driver = lib.mkDefault "zfs";
+    virtualisation.podman.extraPackages = [ pkgs.zfs ];
   };
 }
