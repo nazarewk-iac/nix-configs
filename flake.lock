@@ -1,31 +1,5 @@
 {
   "nodes": {
-    "atuin": {
-      "inputs": {
-        "flake-compat": [
-          "flake-compat"
-        ],
-        "flake-utils": [
-          "flake-utils"
-        ],
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1690361265,
-        "narHash": "sha256-NsKszPRcrbhNH6/aP/ttgRloMIqEV4+8VFuWcSnwuns=",
-        "owner": "ellie",
-        "repo": "atuin",
-        "rev": "a184afeecd70b3ff9d7f057c9c6c060cd4df8f61",
-        "type": "github"
-      },
-      "original": {
-        "owner": "ellie",
-        "repo": "atuin",
-        "type": "github"
-      }
-    },
     "devenv": {
       "inputs": {
         "flake-compat": [
@@ -711,7 +685,6 @@
     },
     "root": {
       "inputs": {
-        "atuin": "atuin",
         "devenv": "devenv",
         "devenv-nix": "devenv-nix",
         "disko": "disko",

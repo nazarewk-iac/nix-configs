@@ -110,12 +110,12 @@
       url = "github:rrbutani/nix-mk-shell-bin";
     };
 
-    atuin = {
-      url = "github:ellie/atuin";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-compat.follows = "flake-compat";
-      inputs.flake-utils.follows = "flake-utils";
-    };
+    #atuin = {
+    #  url = "github:ellie/atuin";
+    #  inputs.nixpkgs.follows = "nixpkgs";
+    #  inputs.flake-compat.follows = "flake-compat";
+    #  inputs.flake-utils.follows = "flake-utils";
+    #};
 
     nix-on-droid = {
       url = "github:t184256/nix-on-droid/release-22.11";
@@ -197,7 +197,7 @@
             })
             {
               devenv = { };
-              atuin = { };
+              #atuin = { };
             })
           (final: prev: {
             # work around not using flake-utils which sets it up on `pkgs.system`
