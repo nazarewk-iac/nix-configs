@@ -28,7 +28,7 @@ in
 
     kdn.monitoring.prometheus-stack.enable = true;
     kdn.monitoring.prometheus-stack.caddy.grafana = "grafana.${config.networking.hostName}.kdn.im";
-    kdn.monitoring.elasticsearch-stack.enable = true;
+    kdn.monitoring.elasticsearch-stack.enable = false;
     kdn.monitoring.elasticsearch-stack.onDemand = true;
     kdn.monitoring.elasticsearch-stack.caddy.kibana = "kibana.${config.networking.hostName}.kdn.im";
     kdn.programs.caddy.enable = true;

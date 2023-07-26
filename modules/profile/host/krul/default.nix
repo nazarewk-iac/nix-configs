@@ -116,7 +116,7 @@ in
       (mkZFSMount "/home/kdn/.cache" { })
       (mkZFSMount "/home/kdn/.local" { })
       (mkZFSMount "/home/kdn/.local/share" { })
-      (mkZFSMount "/home/kdn/.local/share/containers" { })
+      #(mkZFSMount "/home/kdn/.local/share/containers" { })
       (mkZFSMount "/home/kdn/Downloads" { })
       (mkZFSMount "/home/kdn/Nextcloud" { })
       {

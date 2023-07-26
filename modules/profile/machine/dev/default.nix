@@ -14,9 +14,9 @@ in
 
     kdn.development.cloud.enable = true;
     kdn.development.cloud.aws.enable = true;
-    kdn.development.cloud.azure.enable = true;
+    kdn.development.cloud.azure.enable = false;
     kdn.development.data.enable = true;
-    kdn.development.db.mysql.enable = true;
+    kdn.development.db.mysql.enable = false;
     kdn.development.elixir.enable = true;
     kdn.development.golang.enable = true;
     kdn.development.java.enable = true;

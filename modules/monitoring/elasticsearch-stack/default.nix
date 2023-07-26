@@ -38,6 +38,9 @@ in
       services.kibana = {
         enable = true;
         listenAddress = cfg.listenAddress;
+        elasticsearch.ca = null;
+        # TODO: report undefined variable https://github.com/NixOS/nixpkgs/blob/12303c652b881435065a98729eb7278313041e49/nixos/modules/services/search/kibana.nix#L124-L138
+        elasticsearch.certificateAuthorities = [ ];
         elasticsearch.hosts = [
           "http://${cfg.listenAddress}:${toString esCfg.port}"
         ];

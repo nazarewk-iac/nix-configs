@@ -32,7 +32,8 @@ in
           enable = true;
           packages = [
             pkgs.OVMFFull.fd
-            pkgs.pkgsCross.aarch64-multiplatform.OVMF.fd
+            # TODO: wait to resolve https://github.com/NixOS/nixpkgs/issues/245188
+            #pkgs.pkgsCross.aarch64-multiplatform.OVMF.fd
           ];
         };
       };

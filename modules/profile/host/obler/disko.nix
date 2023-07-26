@@ -66,7 +66,6 @@ in
   zpool."${poolName}" = {
     type = "zpool";
     name = poolName;
-    mountRoot = "/mnt";
     rootFsOptions = {
       acltype = "posixacl";
       relatime = "on";
