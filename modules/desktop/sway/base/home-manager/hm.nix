@@ -85,6 +85,7 @@ in
           # Show the next scratchpad window or hide the focused scratchpad window.
           # If there are multiple scratchpad windows, this command cycles through them.
           #"$Super+minus" = "scratchpad show";
+          "${mod.super}+K" = exec "${pkgs.qalculate-qt}/bin/qalculate-qt";
         };
       config.modes = { };
       config.bars = [ ];
@@ -137,6 +138,9 @@ in
         text = ''handlr open "$@"'';
       })
       ydotool-paste
+
+      qalculate-qt
+      libqalculate
     ];
 
     home.sessionPath = [ "$HOME/.local/bin" ];
