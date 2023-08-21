@@ -25,8 +25,6 @@ output $displayDell transform 270
 
 seat seat0 xcursor_theme Adwaita 24
 
-bindsym $Super+p output $displayLaptop toggle
-
 bindswitch --reload --locked lid:on output $displayLaptop disable
 bindswitch --reload --locked lid:off output $displayLaptop enable
 

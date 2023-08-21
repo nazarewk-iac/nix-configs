@@ -59,7 +59,7 @@ in
     (lib.mkIf hasWorkstation {
       kdn.programs.weechat.enable = true;
       programs.gh.enable = false;
-      programs.gh.enableGitCredentialHelper = false;
+      programs.gh.gitCredentialHelper.enable = false;
       programs.git.enable = true;
       kdn.development.git.enable = true;
       # programs.git.signing.key = "CDDFE1610327F6F7A693125698C23F71A188991B";
@@ -209,7 +209,7 @@ in
         gimp
 
         qrencode
-        cobang # QR code scanner
+        #cobang # QR code scanner
         imagemagick
 
         logseq
