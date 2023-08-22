@@ -5,6 +5,8 @@ let
 in
 {
   options.kdn.profile.user.sn = {
+    enable = lib.mkEnableOption "sn account setup";
+
     nixosConfig = lib.mkOption { default = { }; };
   };
   config = lib.mkIf (cfg != { }) (lib.mkMerge [

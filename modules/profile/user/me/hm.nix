@@ -1,6 +1,6 @@
 { config, pkgs, lib, nixosConfig, ... }@arguments:
 let
-  cfg = config.kdn.profile.user.me;
+  cfg = config.kdn.profile.user.kdn;
   systemUser = cfg.nixosConfig;
   hasGUI = config.kdn.headless.enableGUI;
   hasWorkstation = nixosConfig.kdn.profile.machine.workstation.enable;
@@ -20,10 +20,12 @@ let
     "${wrapped}/bin/git-credential-keyring-wrapped";
 in
 {
-  options.kdn.profile.user.me = {
+  options.kdn.profile.user.kdn = {
+    enable = lib.mkEnableOption "me (kdn) account setup";
+
     nixosConfig = lib.mkOption { default = { }; };
   };
-  config = lib.mkIf (cfg != { }) (lib.mkMerge [
+  config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       home.stateVersion = "22.11";
       programs.ssh.enable = true;

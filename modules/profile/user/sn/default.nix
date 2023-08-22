@@ -27,6 +27,11 @@ in
         "video"
       ];
     };
-    home-manager.users.sn = { kdn.profile.user.sn.nixosConfig = config.users.users.sn; };
+    home-manager.users.sn = {
+      kdn.profile.user.sn = {
+        enable = true;
+        nixosConfig = config.users.users.sn;
+      };
+    };
   });
 }

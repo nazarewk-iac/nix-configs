@@ -12,7 +12,7 @@ in
         default = true;
       };
       instances = lib.mkOption {
-        type = lib.types.attrsOf lib.types.string;
+        type = lib.types.attrsOf lib.types.str;
         default = { };
       };
     };

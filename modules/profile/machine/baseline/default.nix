@@ -14,7 +14,7 @@ in
   config = lib.mkMerge [
     (lib.mkIf cfg.enable {
       kdn.enable = true;
-      kdn.profile.user.me.enable = true;
+      kdn.profile.user.kdn.enable = true;
 
       # (modulesPath + "/installer/scan/not-detected.nix")
       hardware.enableRedistributableFirmware = true;
@@ -81,7 +81,7 @@ in
       kdn.hardware.qmk.enable = true;
       kdn.development.shell.enable = true;
 
-      home-manager.users.root = { kdn.profile.user.me.nixosConfig = config.users.users.root; };
+      home-manager.users.root = { kdn.profile.user.kdn.nixosConfig = config.users.users.root; };
 
       boot.kernelParams = [
         # blank screen after 90 sec

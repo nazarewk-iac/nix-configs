@@ -13,7 +13,7 @@ in
     enable = lib.mkEnableOption "EDID scripts & utils";
 
     displays = lib.mkOption {
-      type = lib.types.attrsOf (lib.types.listOf lib.types.string);
+      type = lib.types.attrsOf (lib.types.listOf lib.types.str);
       default = {
         "PG278Q_2014" = [ "PG278Q" "2014" ];
         "U2711_2012_1" = [ "U2711" "2560x1440" "2012" "DELA055" ];
@@ -22,7 +22,7 @@ in
     };
 
     kernelOutputs = lib.mkOption {
-      type = lib.types.attrsOf lib.types.string;
+      type = lib.types.attrsOf lib.types.str;
       default = { };
     };
 

@@ -1,9 +1,9 @@
 { lib, config, ... }:
 let
-  cfg = config.kdn.profile.user.me;
+  cfg = config.kdn.profile.user.kdn;
 in
 {
-  options.kdn.profile.user.me = {
+  options.kdn.profile.user.kdn = {
     enable = lib.mkEnableOption "enable my user profiles";
     ssh = lib.mkOption {
       readOnly = true;
@@ -49,7 +49,12 @@ in
     };
 
     kdn.virtualization.libvirtd.lookingGlass.instances = { kdn-default = "kdn"; };
-    home-manager.users.kdn = { kdn.profile.user.me.nixosConfig = config.users.users.kdn; };
+    home-manager.users.kdn = {
+      kdn.profile.user.kdn = {
+        enable = true;
+        nixosConfig = config.users.users.kdn;
+      };
+    };
 
     networking.firewall = let kdeConnectRange = [{ from = 1714; to = 1764; }]; in {
       allowedTCPPortRanges = kdeConnectRange;
