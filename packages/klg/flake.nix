@@ -33,15 +33,18 @@
       ];
     };
 
-    perSystem = { config, self', inputs', system, ... }:
+    perSystem = { config, self', inputs', system, pkgs, ... }:
       let
-        pkgs = import nixpkgs {
-          inherit system;
-          overlays = [ self.overlays.default ];
-        };
         conf = import ./config.nix { inherit pkgs; };
       in
       {
+        _module.args.pkgs = import inputs.nixpkgs {
+          inherit system;
+          overlays = [
+            self.overlays.default
+          ];
+        };
+
         packages.default = conf.pkg;
         devenv.shells.default = {
           name = "default";
