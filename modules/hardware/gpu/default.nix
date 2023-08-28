@@ -5,12 +5,10 @@ in
 {
   options.kdn.hardware.gpu = {
     multiGPU.enable = lib.mkEnableOption "multiple GPUs setup";
-    vfio = {
-      enable = lib.mkEnableOption "VFIO setup";
-      gpuIDs = lib.mkOption {
-        type = with lib.types; listOf str;
-        default = [ ];
-      };
+    vfio.enable = lib.mkEnableOption "VFIO setup";
+    vfio.gpuIDs = lib.mkOption {
+      type = with lib.types; listOf str;
+      default = [ ];
     };
   };
 

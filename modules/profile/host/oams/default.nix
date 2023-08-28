@@ -13,7 +13,9 @@ in
       kdn.profile.machine.workstation.enable = true;
       kdn.hardware.gpu.amd.enable = true;
       kdn.hardware.cpu.amd.enable = true;
+
       kdn.profile.machine.gaming.enable = true;
+      kdn.hardware.gpu.vfio.enable = lib.mkForce false;
       kdn.hardware.gpu.vfio.gpuIDs = [
         "1002:73df"
         "1002:ab28"

@@ -13,6 +13,11 @@ in
       enable = true;
       remotePlay.openFirewall = true; # Open ports in the firewall for Steam Remote Play
     };
+    nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
+      "steam"
+      "steam-original"
+      "steam-run"
+    ];
     environment.systemPackages = with pkgs; [
       # steam  # both covered by programs.steam.enable
       # steam-run
