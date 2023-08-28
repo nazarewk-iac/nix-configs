@@ -82,26 +82,27 @@ in
     }
     (lib.mkIf cfg.go.enable (
       let
-        cmdSh = ''
-          if [ -d '${config.xdg.dataHome}/Jetbrains' ] ; then
-            for ide in ${config.xdg.dataHome}/Jetbrains/* ; do
-              mkdir -p "$ide/go/lib/dlv/linux"
-              ln -sf "${pkgs.delve}/bin/dlv" "$ide/go/lib/dlv/linux/dlv"
+        name = "symlink-jetbrains-delve";
+        pkg = pkgs.writeShellApplication {
+          name = name;
+          runtimeInputs = with pkgs; [ ];
+          text = ''
+            shopt -s nocaseglob # not sure whether JetBrains folder name is consistent
+            shopt -s globstar
+            shopt -s nullglob
+
+            # TODO: could be specifically dlv/{linux,linuxarm,mac,macarm}/dlv, but shouldn't hurt for local use
+            for dlv in "$XDG_DATA_HOME"/JetBrains/**/dlv/*/dlv ; do
+              ln -sf "${pkgs.delve}/bin/dlv" "$dlv"
             done
-          fi
-        '';
+          '';
+        };
+        bin = "${pkg}/bin/${name}";
       in
       {
-        programs.bash.profileExtra = cmdSh;
-        programs.zsh.profileExtra = cmdSh;
-        programs.fish.shellInit = ''
-          if [ -d '${config.xdg.dataHome}/Jetbrains' ]
-            for ide in ${config.xdg.dataHome}/Jetbrains/*
-              mkdir -p "$ide/go/lib/dlv/linux"
-              ln -sf "${pkgs.delve}/bin/dlv" "$ide/go/lib/dlv/linux/dlv"
-            end
-          end
-        '';
+        programs.bash.profileExtra = bin;
+        programs.zsh.profileExtra = bin;
+        programs.fish.shellInit = bin;
       }
     ))
   ]);
