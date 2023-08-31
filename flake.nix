@@ -44,6 +44,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     poetry2nix = {
+      # TODO: wait for poetry2nix fixes to land, currently totally breaking the system, see https://github.com/nix-community/poetry2nix/pull/1290
       #url = "github:nazarewk/poetry2nix";
       url = "github:nix-community/poetry2nix";
       inputs.nixpkgs.follows = "nixpkgs";
