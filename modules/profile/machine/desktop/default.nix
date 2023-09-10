@@ -46,6 +46,7 @@ in
       libreoffice-qt # non-qt failed to build on 2023-04-07
       # chromium
       firefox
+      thunderbird
       p7zip
       rar
       system-config-printer

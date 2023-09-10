@@ -233,7 +233,6 @@ in
 
         #transmission-qt
         deluge
-        megatools
       ];
     })
   ]);

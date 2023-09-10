@@ -6,15 +6,9 @@
     flake-utils = {
       url = "github:numtide/flake-utils";
     };
-    poetry2nix = {
-      url = "github:nazarewk/poetry2nix";
-      #url = "github:nix-community/poetry2nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
-    };
   };
 
-  outputs = inputs@{ self, flake-parts, nixpkgs, poetry2nix, ... }: flake-parts.lib.mkFlake { inherit inputs; } {
+  outputs = inputs@{ self, flake-parts, nixpkgs, ... }: flake-parts.lib.mkFlake { inherit inputs; } {
     imports = [
     ];
 
@@ -24,12 +18,7 @@
       "aarch64-linux"
       "aarch64-darwin"
     ];
-    flake = {
-      # Nixpkgs overlay providing the application
-      overlays.default = nixpkgs.lib.composeManyExtensions [
-        poetry2nix.overlay
-      ];
-    };
+    flake = { };
 
     perSystem = { config, self', inputs', system, ... }:
       let

@@ -13,14 +13,9 @@
     nix2container.inputs.flake-utils.follows = "flake-utils";
     mk-shell-bin.url = "github:rrbutani/nix-mk-shell-bin";
     flake-utils.url = "github:numtide/flake-utils";
-
-    #poetry2nix.url = "github:nazarewk/poetry2nix";
-    poetry2nix.url = "github:nix-community/poetry2nix";
-    poetry2nix.inputs.nixpkgs.follows = "nixpkgs";
-    poetry2nix.inputs.flake-utils.follows = "flake-utils";
   };
 
-  outputs = inputs@{ self, nixpkgs, flake-parts, poetry2nix, ... }: flake-parts.lib.mkFlake { inherit inputs; } {
+  outputs = inputs@{ self, nixpkgs, flake-parts, ... }: flake-parts.lib.mkFlake { inherit inputs; } {
     imports = [
       inputs.devenv.flakeModule
     ];
@@ -28,9 +23,7 @@
 
     flake = {
       # Nixpkgs overlay providing the application
-      overlays.default = nixpkgs.lib.composeManyExtensions [
-        poetry2nix.overlay
-      ];
+      overlays.default = nixpkgs.lib.composeManyExtensions [ ];
     };
 
     perSystem = { config, self', inputs', system, pkgs, ... }:

@@ -43,13 +43,6 @@
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    poetry2nix = {
-      # TODO: wait for poetry2nix fixes to land, currently totally breaking the system, see https://github.com/nix-community/poetry2nix/pull/1290
-      #url = "github:nazarewk/poetry2nix";
-      url = "github:nix-community/poetry2nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
-    };
     microvm = {
       url = "github:astro/microvm.nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -128,7 +121,7 @@
   outputs =
     inputs:
     let
-      inherit (inputs) self flake-parts home-manager nixpkgs poetry2nix disko;
+      inherit (inputs) self flake-parts home-manager nixpkgs disko;
       lib = import ./lib { inherit (inputs.nixpkgs) lib; };
       flakeLib = lib.kdn.flakes.forFlake self;
       args = {
@@ -191,7 +184,6 @@
         apps = inputs.nixinate.nixinate."x86_64-linux" self;
 
         overlays.default = lib.composeManyExtensions [
-          poetry2nix.overlay
           (final: prev: lib.concatMapAttrs
             (name: { input ? name, package ? name }: {
               ${name} = inputs.${input}.packages.${final.stdenv.system}.${package};
