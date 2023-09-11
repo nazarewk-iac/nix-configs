@@ -22,18 +22,22 @@ This is incomplete list of incorporated software/systems worth noting:
 
 # Notes
 
-## Building the iso installer
+## Custom ISO installer
 
 see https://bmcgee.ie/posts/2022/12/setting-up-my-new-laptop-nix-style/
 
-1. `nix build '.#install-iso'`
-2. `sudo dd if="$(ls -1d ./result/iso/nixos-*.iso)" of=/dev/disk/by-id/usb-SanDisk_Cruzer_Blade_02000515031521144721-0:0 status=progress`
+```shell
+# building the installer from packages/install-iso
+sudo dd if="$(nix build '.#install-iso' --no-link --print-out-paths)/iso/nixos.iso" of=/dev/disk/by-id/usb-SanDisk_Cruzer_Blade_02000515031521144721-0:0 status=progress
+# boot the machine and ssh into it
+ssh -o StrictHostKeyChecking=no root@nixos
+```
 
 ## Building fresh system from `nixos-installer` stable image
 
 1. Add SSH keys from `curl https://api.github.com/users/nazarewk/keys` to `~/.ssh/authorized_keys`
 2. Disable suspend on idle in power settings of Gnome
-3. `ssh nixos@<whatever-machine-ip-is>`
+3. `ssh -o StrictHostKeyChecking=no nixos@<whatever-machine-ip-is>`
 4. `APPLY=1 bash <(curl -L 'https://raw.githubusercontent.com/nazarewk-iac/nix-configs/main/installer-update.sh')`:
 5. Set up your filesystem at `/mnt`, eg to mount:
    ```
