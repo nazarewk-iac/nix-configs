@@ -211,7 +211,8 @@ in
         gimp
 
         qrencode
-        #cobang # QR code scanner
+        cobang # QR code scanner
+        zbar # QR/BAR CODE READER: `zbarimg /path/to.img
         imagemagick
 
         logseq
