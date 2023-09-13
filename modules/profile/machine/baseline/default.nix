@@ -75,6 +75,7 @@ in
       services.locate.locate = pkgs.mlocate;
       services.locate.pruneBindMounts = true;
 
+      kdn.networking.openvpn.enable = true;
       kdn.networking.wireguard.enable = true;
       kdn.hardware.disk-encryption.tools.enable = true;
       kdn.hardware.usbip.enable = true;

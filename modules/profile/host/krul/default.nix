@@ -125,8 +125,12 @@ in
       }
     ];
 
-    kdn.networking.openvpn.instances = [
-      "aws-goggles-humongous"
-    ];
+    kdn.networking.openvpn.instances = {
+      goggles-humongous = { };
+      chance-acuteness = { };
+      senorita-recant = { };
+      fracture-outage = { };
+      scientist-properly = { };
+    };
   });
 }
