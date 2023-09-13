@@ -132,12 +132,6 @@ in
     xdg.configFile."wofi/config".source = ./wofi/config;
 
     home.packages = with pkgs; [
-      # will override system-wide xdg-open
-      (pkgs.writeShellApplication {
-        name = "xdg-open";
-        runtimeInputs = with pkgs; [ handlr-regex ];
-        text = ''handlr open "$@"'';
-      })
       ydotool-paste
 
       qalculate-qt

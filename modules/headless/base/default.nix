@@ -21,6 +21,7 @@ in
       users.defaultUserShell = pkgs.fish;
       kdn.programs.zsh.enable = true;
       kdn.programs.fish.enable = true;
+      kdn.programs.handlr.enable = true;
 
       programs.command-not-found.enable = false;
       programs.bash.interactiveShellInit = ''
