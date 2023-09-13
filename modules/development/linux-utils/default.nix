@@ -9,7 +9,8 @@ in
 
   config = lib.mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
-      inetutils # telnet etc.
+      nettools # hostname
+      (lib.meta.hiPrio inetutils) # telnet etc.
       socat
       arp-scan
       (pkgs.writeShellApplication {
