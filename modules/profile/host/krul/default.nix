@@ -124,6 +124,5 @@ in
         "/var/log/journal".neededForBoot = true;
       }
     ];
-    kdn.networking.netbird.instances.w1 = 51822;
   });
 }

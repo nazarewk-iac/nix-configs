@@ -9,7 +9,6 @@ in
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
-      kdn.networking.netbird.instances.w1 = 51822;
       kdn.profile.machine.workstation.enable = true;
       kdn.hardware.gpu.amd.enable = true;
       kdn.hardware.cpu.amd.enable = true;
