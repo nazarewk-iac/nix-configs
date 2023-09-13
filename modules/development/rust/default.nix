@@ -12,7 +12,7 @@ in
       #cargo
       #rustc
       rustup
-      rust-analyzer
+      #rust-analyzer # duplicated by rustup
       pkg-config
     ];
   };
