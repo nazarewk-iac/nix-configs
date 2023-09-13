@@ -124,5 +124,9 @@ in
         "/var/log/journal".neededForBoot = true;
       }
     ];
+
+    kdn.networking.openvpn.instances = [
+      "aws-goggles-humongous"
+    ];
   });
 }

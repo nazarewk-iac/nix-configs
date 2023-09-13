@@ -92,7 +92,6 @@ in
         builtins.attrValues
         (lib.lists.foldl (a: b: a // b) { })
       ];
-    }
-    )
+    })
   ];
 }
