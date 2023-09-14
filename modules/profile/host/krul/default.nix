@@ -131,6 +131,7 @@ in
       senorita-recant = { };
       fracture-outage = { };
       scientist-properly = { };
+      baguette-geology = { };
     };
   });
 }
