@@ -77,8 +77,6 @@ in
         # use it separately because `gh` cli wants to write to ~/.config/gh/config.yml
         credential."https://github.com".helper = "${pkgs.gh}/bin/gh auth git-credential";
         url."https://github.com/".insteadOf = "git@github.com:";
-
-        credential."https://bitbucket.org/pakpobox".username = "kdn-alfred24";
       };
     })
     (lib.mkIf hasGUI {
