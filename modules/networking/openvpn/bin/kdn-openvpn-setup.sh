@@ -23,14 +23,19 @@ confirm() {
 }
 
 main() {
+  if [ "${EUID:-}" != 0 ] ; then
+    err "must run as root!"
+  fi
 
   in_config_path="$1"
   in_config_name="${in_config_path##*/}"
 
-  name="${2:-}"
+  name="${name:-}"
   if [ -z "$name"  ]; then
     name="$(xkcdpass --numwords 2 --delimiter=-)"
     confirm "generated name is '${name}'"
+  else
+    msg "the name is '${name}'"
   fi
 
   base_path=/etc/kdn/openvpn
@@ -47,20 +52,31 @@ main() {
 
   if [ ! -e "$out_path" ]; then
     msg "creating $out_path"
-    sudo mkdir -p "$out_path"
+    mkdir -p "$out_path"
+  else
+    msg "reusing $out_path"
   fi
   if [ -f "$in_config_path" ]; then
     msg "moving $in_config_path to $in_dst"
-    sudo mv "$in_config_path" "$in_dst"
+    mv "$in_config_path" "$in_dst"
   fi
   if [ "$out_config_name" != "$in_config_name" ]; then
     msg "symlinking $out_config_path to $in_config_name"
-    sudo ln -s "$in_config_name" "$out_config_path"
+    ln -sfT "$in_config_name" "$out_config_path"
   fi
 
+  for file in "${@:2}"; do
+    if [ -e "$file"  ]; then
+    msg "moving $in_config_path to $in_dst"
+      mv "$file" "$out_path"
+    else
+      msg "extra file $file does not exist, ignoring."
+    fi
+  done
+
   msg "preventing non-root users from accessing $out_path"
-  sudo chmod -R og= "$out_path"
-  sudo chown -R root:root "$out_path"
+  chmod -R og= "$out_path"
+  chown -R root:root "$out_path"
 }
 
 main "$@"
