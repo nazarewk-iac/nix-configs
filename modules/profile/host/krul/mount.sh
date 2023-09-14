@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -xeEuo pipefail
+set -eEuo pipefail
 
 target="${1:-"/mnt"}"
 boot_disk="/dev/disk/by-uuid/2BFB-6A81"
@@ -9,7 +9,7 @@ if [ "${APPLY:-}" = 1 ]; then
   cmd() { "$@"; }
 else
   cmd() { echo "$@"; }
-  test -n "${DEBUG:-}" || set +x
+  test -z "${DEBUG:-}" || set -x
 fi
 
 mnt() {

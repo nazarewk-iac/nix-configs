@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -eEuo pipefail
+test -z "${DEBUG:-}" || set -x
 
 msg() {
   echo "$@" >&2
