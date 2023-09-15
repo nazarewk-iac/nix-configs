@@ -22,6 +22,11 @@ in
         autoStart = lib.mkDefault false;
       })
       cfg.instances;
+    systemd.services = lib.attrsets.mapAttrs'
+      (instance: extra: lib.nameValuePair "openvpn-${instance}" {
+        serviceConfig.WorkingDirectory = "/etc/kdn/openvpn/${instance}";
+      })
+      cfg.instances;
 
     environment.systemPackages = [
       (lib.kdn.shell.writeShellScript pkgs ./bin/kdn-openvpn-setup.sh {
