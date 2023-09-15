@@ -10,7 +10,18 @@ in
   options.kdn.networking.openvpn = {
     enable = lib.mkEnableOption "OpenVPN setup wrapper";
     instances = lib.mkOption {
-      type = with lib.types; attrsOf attrs;
+      type = with lib.types; attrsOf (submodule {
+        options = {
+          config = lib.mkOption {
+            type = types.lines;
+            default = "";
+          };
+          ignoreRoutes = lib.mkOption {
+            type = types.bool;
+            default = false;
+          };
+        };
+      });
       default = { };
     };
   };
@@ -18,7 +29,11 @@ in
   config = lib.mkIf cfg.enable {
     services.openvpn.servers = lib.attrsets.mapAttrs
       (instance: extra: {
-        config = "config /etc/kdn/openvpn/${instance}/config.ovpn";
+        config = ''
+          config /etc/kdn/openvpn/${instance}/config.ovpn
+          ${lib.optionalString extra.ignoreRoutes "pull-filter ignore redirect-gateway"}
+          ${extra.config}
+        '';
         autoStart = lib.mkDefault false;
       })
       cfg.instances;

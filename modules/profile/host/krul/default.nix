@@ -129,8 +129,8 @@ in
       goggles-humongous = { };
       chance-acuteness = { };
       senorita-recant = { };
-      fracture-outage = { };
-      scientist-properly = { };
+      fracture-outage = { ignoreRoutes = true; };
+      scientist-properly = { ignoreRoutes = true; };
       baguette-geology = { };
     };
   });
