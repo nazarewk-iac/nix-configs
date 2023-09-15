@@ -31,8 +31,11 @@ in
       (instance: extra: {
         config = ''
           config /etc/kdn/openvpn/${instance}/config.ovpn
-          ${lib.optionalString extra.ignoreRoutes "pull-filter ignore redirect-gateway"}
           ${extra.config}
+          ${lib.optionalString extra.ignoreRoutes ''
+            route-noexec
+            route-nopull
+          ''}
         '';
         autoStart = lib.mkDefault false;
       })
