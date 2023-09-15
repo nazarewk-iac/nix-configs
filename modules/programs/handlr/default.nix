@@ -37,6 +37,13 @@ in
       environment.systemPackages = with pkgs; [
         cfg.package
       ];
+
+      home-manager.sharedModules = [{
+        xdg.configFile."handlr/handlr.toml".source = (pkgs.formats.toml { }).generate "handlr.toml" {
+          enable_selector = true;
+          selector = "${pkgs.wofi}/bin/wofi --dmenu --insensitive --normal-window --prompt='Open With: '";
+        };
+      }];
     }
     (lib.mkIf cfg.xdg-utils.enable {
       environment.systemPackages = with pkgs; [

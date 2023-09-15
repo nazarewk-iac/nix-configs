@@ -126,7 +126,7 @@ in
           vectorImages = [ "org.gnome.eog.desktop" ];
           terminal = [ "foot.desktop" ];
         in
-        {
+        lib.mkForce {
           "application/pdf" = pdf;
           "application/rdf+xml" = rss;
           "application/rss+xml" = rss;

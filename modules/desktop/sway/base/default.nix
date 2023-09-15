@@ -273,7 +273,6 @@ in
           fi
         '')
 
-        dmenu
         wofi
 
         grim
