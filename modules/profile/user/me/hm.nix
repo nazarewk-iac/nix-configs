@@ -55,10 +55,9 @@ in
           ];
         in
         foldParts ./yubico/u2f_keys.parts;
-
-      kdn.services.syncthing.enable = true;
     }
     (lib.mkIf hasWorkstation {
+      kdn.services.syncthing.enable = true;
       kdn.programs.weechat.enable = true;
       programs.gh.enable = false;
       programs.gh.gitCredentialHelper.enable = false;
@@ -84,7 +83,6 @@ in
     (lib.mkIf hasGUI {
       services.flameshot.settings.General.savePath = "${config.home.homeDirectory}/Downloads/screenshots";
       xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
-
 
       services.nextcloud-client.enable = true;
       services.nextcloud-client.startInBackground = true;
@@ -117,7 +115,7 @@ in
         let
           rss = [ "brave-browser.desktop" ];
           ipfs = [ "brave-browser.desktop" ];
-          browser = [ "firefox.desktop" "brave-browser.desktop" ];
+          browser = [ "uri-to-clipboard.desktop" "firefox.desktop" "brave-browser.desktop" ];
           pdf = [ "org.kde.okular.desktop" ];
           fileManager = [ "pcmanfm-qt.desktop" ];
           remmina = [ "org.remmina.Remmina.desktop" ];
@@ -157,6 +155,14 @@ in
           "x-scheme-handler/terminal" = terminal;
           "x-scheme-handler/vnc" = remmina;
         };
+
+      xdg.desktopEntries.uri-to-clipboard = {
+        name = "Copy URI to clipboard";
+        genericName = "uri-to-clipboard";
+        exec = "${pkgs.wl-clipboard}/bin/wl-copy %U";
+        categories = [ "Network" "WebBrowser" ];
+      };
+
     })
     (lib.mkIf (hasWorkstation && hasGUI) {
       home.packages = with pkgs; let
