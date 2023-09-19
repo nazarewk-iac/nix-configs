@@ -126,7 +126,11 @@ in
     ];
 
     kdn.networking.openvpn.instances = {
-      goggles-humongous = { };
+      goggles-humongous = {
+        config = ''
+          route 10.40.0.0 255.255.0.0
+        '';
+      };
       chance-acuteness = { };
       senorita-recant = { };
       fracture-outage = { ignoreRoutes = true; };
