@@ -157,13 +157,23 @@ in
           "x-scheme-handler/vnc" = remmina;
         };
 
-      xdg.desktopEntries.uri-to-clipboard = {
-        name = "Copy URI to clipboard";
-        noDisplay = true;
-        genericName = "uri-to-clipboard";
-        exec = "${pkgs.wl-clipboard}/bin/wl-copy %U";
-        categories = [ "Network" "WebBrowser" ];
-      };
+      xdg.desktopEntries.uri-to-clipboard =
+        let
+          bin = pkgs.writeShellScript "uri-to-clipboard" ''
+            set -eEuo pipefail
+
+            url="$1"
+            ${pkgs.libnotify}/bin/notify-send --expire-time=3000 "copied to clipboard" "$url"
+            ${pkgs.wl-clipboard}/bin/wl-copy "$url"
+          '';
+        in
+        {
+          name = "Copy URI to clipboard";
+          noDisplay = true;
+          genericName = "uri-to-clipboard";
+          exec = "${bin} %U";
+          categories = [ "Network" "WebBrowser" ];
+        };
 
     })
     (lib.mkIf (hasWorkstation && hasGUI) {
