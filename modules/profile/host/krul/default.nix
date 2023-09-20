@@ -140,7 +140,12 @@ in
           { network = "172.18.0.0"; netmask = "255.255.0.0"; }
         ];
       };
-      scientist-properly = { routes.ignore = true; };
+      scientist-properly = {
+        routes.ignore = true;
+        routes.add = [
+          { network = "10.241.0.0"; netmask = "255.255.0.0"; }
+        ];
+      };
       baguette-geology = { };
     };
   });
