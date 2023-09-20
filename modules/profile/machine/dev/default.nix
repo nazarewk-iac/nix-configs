@@ -12,9 +12,9 @@ in
 
     home-manager.sharedModules = [{ kdn.development.jetbrains.enable = true; }];
 
-    kdn.development.cloud.enable = true;
     kdn.development.cloud.aws.enable = true;
     kdn.development.cloud.azure.enable = false;
+    kdn.development.cloud.enable = true;
     kdn.development.data.enable = true;
     kdn.development.db.mysql.enable = false;
     kdn.development.elixir.enable = true;
@@ -24,6 +24,7 @@ in
     kdn.development.nickel.enable = true;
     kdn.development.nix.enable = true;
     kdn.development.python.enable = true;
+    kdn.development.rpi.enable = true;
     kdn.development.ruby.enable = true;
     kdn.development.rust.enable = true;
     kdn.development.terraform.enable = true;

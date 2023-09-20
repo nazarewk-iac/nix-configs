@@ -113,16 +113,17 @@ in
       xdg.mimeApps.associations.added = { };
       xdg.mimeApps.defaultApplications =
         let
-          rss = [ "brave-browser.desktop" ];
-          ipfs = [ "brave-browser.desktop" ];
-          browser = [ "uri-to-clipboard.desktop" "firefox.desktop" "brave-browser.desktop" ];
-          pdf = [ "org.kde.okular.desktop" ];
+          brave = [ "brave-browser.desktop" ];
+          browser = [ "uri-to-clipboard.desktop" "firefox.desktop" ] ++ brave;
           fileManager = [ "pcmanfm-qt.desktop" ];
-          remmina = [ "org.remmina.Remmina.desktop" ];
-          teams = [ "teams.desktop" ];
           ide = [ "idea-ultimate.desktop" ];
-          vectorImages = [ "org.gnome.eog.desktop" ];
+          ipfs = brave;
+          pdf = [ "org.kde.okular.desktop" ];
+          remmina = [ "org.remmina.Remmina.desktop" ];
+          rss = brave;
+          teams = brave;
           terminal = [ "foot.desktop" ];
+          vectorImages = [ "org.gnome.eog.desktop" ];
         in
         lib.mkForce {
           "application/pdf" = pdf;
@@ -158,6 +159,7 @@ in
 
       xdg.desktopEntries.uri-to-clipboard = {
         name = "Copy URI to clipboard";
+        noDisplay = true;
         genericName = "uri-to-clipboard";
         exec = "${pkgs.wl-clipboard}/bin/wl-copy %U";
         categories = [ "Network" "WebBrowser" ];
@@ -183,7 +185,6 @@ in
             element-desktop
             signal-desktop
             slack
-            teams
             rambox
           ];
         });
@@ -233,7 +234,6 @@ in
         element-desktop
         signal-desktop
         slack
-        teams
         discord
         zoom-us
         nextcloud-client
