@@ -125,16 +125,22 @@ in
       }
     ];
 
+    kdn.networking.openvpn.debug = true;
     kdn.networking.openvpn.instances = {
       goggles-humongous = {
-        config = ''
-          route 10.40.0.0 255.255.0.0
-        '';
+        routes.add = [
+          { network = "10.40.0.0"; netmask = "255.255.0.0"; }
+        ];
       };
       chance-acuteness = { };
       senorita-recant = { };
-      fracture-outage = { ignoreRoutes = true; };
-      scientist-properly = { ignoreRoutes = true; };
+      fracture-outage = {
+        routes.ignore = true;
+        routes.add = [
+          { network = "172.18.0.0"; netmask = "255.255.0.0"; }
+        ];
+      };
+      scientist-properly = { routes.ignore = true; };
       baguette-geology = { };
     };
   });
