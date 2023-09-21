@@ -37,6 +37,13 @@ let
     runtimeInputs = with pkgs; [ ghRepos ];
   };
 
+  glRepos = lib.kdn.shell.writeShellScript pkgs ./bin/gl-repos.sh {
+    runtimeInputs = with pkgs; [ git curl jq ];
+  };
+  glGetAll = lib.kdn.shell.writeShellScript pkgs ./bin/gl-get-all.sh {
+    runtimeInputs = with pkgs; [ glRepos ];
+  };
+
 in
 {
   options.kdn.development.git = {
@@ -74,6 +81,9 @@ in
 
       ghGetAll
       ghRepos
+
+      glGetAll
+      glRepos
 
       hub
       gh
