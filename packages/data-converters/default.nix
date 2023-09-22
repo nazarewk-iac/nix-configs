@@ -1,0 +1,58 @@
+{ lib
+, symlinkJoin
+, writeShellApplication
+, yq
+, yj
+, miller
+, ...
+}:
+let
+  mkConverterScript = name: args: writeShellApplication {
+    name = name;
+    text = ''
+      args=(${lib.escapeShellArgs args})
+      files=()
+      for arg in "$@" ; do
+        if [[ "$arg" = -* ]]; then
+          args+=("$arg")
+        else
+          files+=("$arg")
+        fi
+      done
+      case "''${#files[@]}" in
+        0) "''${args[@]}" ;;
+        1) "''${args[@]}" < "''${files[0]}" ;;
+        2) "''${args[@]}" < "''${files[0]}" > "''${files[1]}" ;;
+        *)
+          echo 'only 2 files (input and output) can be passed!' >&2
+          exit 1
+        ;;
+      esac
+    '';
+  };
+in
+symlinkJoin {
+  name = "data-converters";
+  paths = lib.attrsets.mapAttrsToList mkConverterScript {
+    "csv2json" = [ "${miller}/bin/mlr" "--icsv" "--ojson" "cat" ];
+    "csv2jsonl" = [ "${miller}/bin/mlr" "--icsv" "--ojsonl" "cat" ];
+    "hcl12hcl1" = [ "${yj}/bin/yj" "-cc" ];
+    "hcl12json" = [ "${yj}/bin/yj" "-cj" ];
+    "hcl12toml" = [ "${yj}/bin/yj" "-ct" ];
+    "hcl12yaml" = [ "${yj}/bin/yj" "-cy" ];
+    "json2hcl1" = [ "${yj}/bin/yj" "-jc" ];
+    "json2json" = [ "${yj}/bin/yj" "-jj" ];
+    "json2toml" = [ "${yj}/bin/yj" "-jt" ];
+    "json2yaml" = [ "${yj}/bin/yj" "-jy" ];
+    "toml2hcl1" = [ "${yj}/bin/yj" "-tc" ];
+    "toml2json" = [ "${yj}/bin/yj" "-tj" ];
+    "toml2toml" = [ "${yj}/bin/yj" "-tt" ];
+    "toml2yaml" = [ "${yj}/bin/yj" "-ty" ];
+    "yaml2hcl1" = [ "${yj}/bin/yj" "-yc" ];
+    "yaml2json" = [ "${yq}/bin/yq" "eval" "--indent=0" "--no-colors" "--output-format=json" "--" ];
+    "yaml2toml" = [ "${yj}/bin/yj" "-yt" ];
+    "yaml2yaml" = [ "${yj}/bin/yj" "-yy" ];
+    # see for making array out of documents https://github.com/mikefarah/yq/discussions/993
+    "yamls2json" = [ "${yq}/bin/yq" "eval-all" "--indent=0" "--no-colors" "--output-format=json" "[.]" "--" ];
+  };
+}
