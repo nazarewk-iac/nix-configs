@@ -2,9 +2,6 @@
 let
   cfg = config.kdn.development.data;
 
-  yq = "${cfg.packages.yq}/bin/yq";
-  yj = "${cfg.packages.yj}/bin/yj";
-  miller = "${cfg.packages.miller}/bin/mlr";
 
   converter = name: opts: pkgs.writeShellApplication {
     name = name;
@@ -32,26 +29,26 @@ let
   };
 
   converterPkgs = lib.mapAttrs (name: opts: converter name opts) {
-    "csv2json" = { pkgs = [ miller ]; args = [ "mlr" "--icsv" "--ojson" "cat" ]; };
-    "csv2jsonl" = { pkgs = [ miller ]; args = [ "mlr" "--icsv" "--ojsonl" "cat" ]; };
-    "hcl12hcl1" = { pkgs = [ yj ]; args = [ "yj" "-cc" ]; };
-    "hcl12json" = { pkgs = [ yj ]; args = [ "yj" "-cj" ]; };
-    "hcl12toml" = { pkgs = [ yj ]; args = [ "yj" "-ct" ]; };
-    "hcl12yaml" = { pkgs = [ yj ]; args = [ "yj" "-cy" ]; };
-    "json2hcl1" = { pkgs = [ yj ]; args = [ "yj" "-jc" ]; };
-    "json2json" = { pkgs = [ yj ]; args = [ "yj" "-jj" ]; };
-    "json2toml" = { pkgs = [ yj ]; args = [ "yj" "-jt" ]; };
-    "json2yaml" = { pkgs = [ yj ]; args = [ "yj" "-jy" ]; };
-    "toml2hcl1" = { pkgs = [ yj ]; args = [ "yj" "-tc" ]; };
-    "toml2json" = { pkgs = [ yj ]; args = [ "yj" "-tj" ]; };
-    "toml2toml" = { pkgs = [ yj ]; args = [ "yj" "-tt" ]; };
-    "toml2yaml" = { pkgs = [ yj ]; args = [ "yj" "-ty" ]; };
-    "yaml2hcl1" = { pkgs = [ yj ]; args = [ "yj" "-yc" ]; };
-    "yaml2json" = { pkgs = [ yq ]; args = [ "yq" "eval" "--indent=0" "--no-colors" "--output-format=json" "--" ]; };
-    "yaml2toml" = { pkgs = [ yj ]; args = [ "yj" "-yt" ]; };
-    "yaml2yaml" = { pkgs = [ yj ]; args = [ "yj" "-yy" ]; };
+    "csv2json" = { pkgs = [ cfg.packages.miller ]; args = [ "mlr" "--icsv" "--ojson" "cat" ]; };
+    "csv2jsonl" = { pkgs = [ cfg.packages.miller ]; args = [ "mlr" "--icsv" "--ojsonl" "cat" ]; };
+    "hcl12hcl1" = { pkgs = [ cfg.packages.yj ]; args = [ "yj" "-cc" ]; };
+    "hcl12json" = { pkgs = [ cfg.packages.yj ]; args = [ "yj" "-cj" ]; };
+    "hcl12toml" = { pkgs = [ cfg.packages.yj ]; args = [ "yj" "-ct" ]; };
+    "hcl12yaml" = { pkgs = [ cfg.packages.yj ]; args = [ "yj" "-cy" ]; };
+    "json2hcl1" = { pkgs = [ cfg.packages.yj ]; args = [ "yj" "-jc" ]; };
+    "json2json" = { pkgs = [ cfg.packages.yj ]; args = [ "yj" "-jj" ]; };
+    "json2toml" = { pkgs = [ cfg.packages.yj ]; args = [ "yj" "-jt" ]; };
+    "json2yaml" = { pkgs = [ cfg.packages.yj ]; args = [ "yj" "-jy" ]; };
+    "toml2hcl1" = { pkgs = [ cfg.packages.yj ]; args = [ "yj" "-tc" ]; };
+    "toml2json" = { pkgs = [ cfg.packages.yj ]; args = [ "yj" "-tj" ]; };
+    "toml2toml" = { pkgs = [ cfg.packages.yj ]; args = [ "yj" "-tt" ]; };
+    "toml2yaml" = { pkgs = [ cfg.packages.yj ]; args = [ "yj" "-ty" ]; };
+    "yaml2hcl1" = { pkgs = [ cfg.packages.yj ]; args = [ "yj" "-yc" ]; };
+    "yaml2json" = { pkgs = [ cfg.packages.yq ]; args = [ "yq" "eval" "--indent=0" "--no-colors" "--output-format=json" "--" ]; };
+    "yaml2toml" = { pkgs = [ cfg.packages.yj ]; args = [ "yj" "-yt" ]; };
+    "yaml2yaml" = { pkgs = [ cfg.packages.yj ]; args = [ "yj" "-yy" ]; };
     # see for making array out of documents https://github.com/mikefarah/yq/discussions/993
-    "yamls2json" = { pkgs = [ yq ]; args = [ "yq" "eval-all" "--indent=0" "--no-colors" "--output-format=json" "[.]" "--" ]; };
+    "yamls2json" = { pkgs = [ cfg.packages.yq ]; args = [ "yq" "eval-all" "--indent=0" "--no-colors" "--output-format=json" "[.]" "--" ]; };
   };
   conv = lib.mapAttrs (name: pkg: "${pkg}/bin/${name}") converterPkgs;
 in
