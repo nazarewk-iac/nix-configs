@@ -1,12 +1,13 @@
 { lib
+, miller
+, pkgs
 , symlinkJoin
 , writeShellApplication
-, yq-qo
 , yj
-, miller
 , ...
 }:
 let
+  inherit (pkgs) yq-go;
   mkConverterScript = name: args: writeShellApplication {
     name = name;
     text = ''
