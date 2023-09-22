@@ -11,7 +11,7 @@ in
     kdn.profile.machine.desktop.enable = true;
 
     home-manager.sharedModules = [{ kdn.development.jetbrains.enable = true; }];
-
+    kdn.development.ansible.enable = true;
     kdn.development.cloud.aws.enable = true;
     kdn.development.cloud.azure.enable = false;
     kdn.development.cloud.enable = true;
