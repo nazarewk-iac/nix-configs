@@ -198,7 +198,10 @@
             system = final.stdenv.system;
             lib = import ./lib { inherit (prev) lib; };
           })
-          (final: prev: (import ./packages { inherit inputs self; pkgs = prev; }))
+          (final: prev: import ./packages {
+            inherit (inputs.nixos-generators) nixosGenerate;
+            pkgs = prev;
+          })
           (final: prev: {
             waylandPkgs = self.inputs.nixpkgs-wayland.packages.${final.stdenv.system};
           })

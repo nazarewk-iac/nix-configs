@@ -1,12 +1,12 @@
 { pkgs
 , lib
-, inputs
+, nixosGenerate
 , ...
 }:
 let
   ssh = import ../../modules/profile/user/me/ssh.nix { inherit lib; };
 in
-inputs.nixos-generators.nixosGenerate {
+nixosGenerate {
   inherit pkgs;
   format = "install-iso";
   modules = [{
