@@ -10,7 +10,7 @@ in
   config = lib.mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
       miller
-      yq
+      yq-qo
       jq
       yj
 
