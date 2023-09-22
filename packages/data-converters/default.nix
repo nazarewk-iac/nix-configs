@@ -10,19 +10,13 @@ let
   mkConverterScript = name: args: writeShellApplication {
     name = name;
     text = ''
-      args=(${lib.escapeShellArgs args})
-      files=()
-      for arg in "$@" ; do
-        if [[ "$arg" = -* ]]; then
-          args+=("$arg")
-        else
-          files+=("$arg")
-        fi
-      done
-      case "''${#files[@]}" in
-        0) "''${args[@]}" ;;
-        1) "''${args[@]}" < "''${files[0]}" ;;
-        2) "''${args[@]}" < "''${files[0]}" > "''${files[1]}" ;;
+      run() {
+        ${lib.escapeShellArgs args}
+      }
+      case "$#" in
+        0) run ;;
+        1) run < "$1" ;;
+        2) run < "$1" > "$2" ;;
         *)
           echo 'only 2 files (input and output) can be passed!' >&2
           exit 1
