@@ -47,10 +47,11 @@ let
     "toml2toml" = { pkgs = [ yj ]; args = [ "yj" "-tt" ]; };
     "toml2yaml" = { pkgs = [ yj ]; args = [ "yj" "-ty" ]; };
     "yaml2hcl1" = { pkgs = [ yj ]; args = [ "yj" "-yc" ]; };
-    "yaml2json" = { pkgs = [ yq ]; args = [ "yq" "-M" "--" ]; };
+    "yaml2json" = { pkgs = [ yq ]; args = [ "yq" "eval" "--indent=0" "--no-colors" "--output-format=json" "--" ]; };
     "yaml2toml" = { pkgs = [ yj ]; args = [ "yj" "-yt" ]; };
     "yaml2yaml" = { pkgs = [ yj ]; args = [ "yj" "-yy" ]; };
-    "yamls2json" = { pkgs = [ yq ]; args = [ "yq" "-M" "[inputs]" "--" ]; };
+    # see for making array out of documents https://github.com/mikefarah/yq/discussions/993
+    "yamls2json" = { pkgs = [ yq ]; args = [ "yq" "eval-all" "--indent=0" "--no-colors" "--output-format=json" "[.]" "--" ]; };
   };
   conv = lib.mapAttrs (name: pkg: "${pkg}/bin/${name}") converterPkgs;
 in
