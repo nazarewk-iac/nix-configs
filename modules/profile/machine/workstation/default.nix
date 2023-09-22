@@ -67,5 +67,35 @@ in
 
     # services.offlineimap.enable or manually with `systemctl --user start`
     services.offlineimap.install = true;
+
+    kdn.networking.openvpn.debug = true;
+    kdn.networking.openvpn.instances = {
+      goggles-humongous = {
+        routes.add = [
+          { network = "10.40.0.0"; netmask = "255.255.0.0"; }
+        ];
+      };
+      chance-acuteness = { };
+      senorita-recant = {
+        routes.ignore = true;
+        routes.add = [
+          { network = "10.34.0.0"; netmask = "255.255.0.0"; }
+          { network = "192.168.107.0"; netmask = "255.255.255.0"; }
+        ];
+      };
+      fracture-outage = {
+        routes.ignore = true;
+        routes.add = [
+          { network = "172.18.0.0"; netmask = "255.255.0.0"; }
+        ];
+      };
+      scientist-properly = {
+        routes.ignore = true;
+        routes.add = [
+          { network = "10.241.0.0"; netmask = "255.255.0.0"; }
+        ];
+      };
+      baguette-geology = { };
+    };
   };
 }
