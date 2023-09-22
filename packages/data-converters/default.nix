@@ -4,10 +4,10 @@
 , symlinkJoin
 , writeShellApplication
 , yj
+, yq-go
 , ...
 }:
 let
-  inherit (pkgs) yq-go;
   mkConverterScript = name: args: writeShellApplication {
     name = name;
     text = ''
