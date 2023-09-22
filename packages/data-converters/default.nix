@@ -1,7 +1,7 @@
 { lib
 , symlinkJoin
 , writeShellApplication
-, yq
+, yq-qo
 , yj
 , miller
 , ...
@@ -43,10 +43,10 @@ symlinkJoin {
     "toml2toml" = [ "${yj}/bin/yj" "-tt" ];
     "toml2yaml" = [ "${yj}/bin/yj" "-ty" ];
     "yaml2hcl1" = [ "${yj}/bin/yj" "-yc" ];
-    "yaml2json" = [ "${yq}/bin/yq" "eval" "--indent=0" "--no-colors" "--output-format=json" "--" ];
+    "yaml2json" = [ "${yq-go}/bin/yq" "eval" "--indent=0" "--no-colors" "--output-format=json" "--" ];
     "yaml2toml" = [ "${yj}/bin/yj" "-yt" ];
     "yaml2yaml" = [ "${yj}/bin/yj" "-yy" ];
     # see for making array out of documents https://github.com/mikefarah/yq/discussions/993
-    "yamls2json" = [ "${yq}/bin/yq" "eval-all" "--indent=0" "--no-colors" "--output-format=json" "[.]" "--" ];
+    "yamls2json" = [ "${yq-go}/bin/yq" "eval-all" "--indent=0" "--no-colors" "--output-format=json" "[.]" "--" ];
   };
 }
