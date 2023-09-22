@@ -129,6 +129,9 @@ in
           lib.lists.flatten
           (builtins.concatStringsSep "\n")
         ];
+
+      documentation.man.man-db.enable = true;
+      documentation.man.generateCaches = true;
     })
     (lib.mkIf config.boot.initrd.systemd.enable {
       specialisation.boot-debug = {
