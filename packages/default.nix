@@ -1,4 +1,4 @@
-{ pkgs, nixosGenerate, ... }:
+{ pkgs, ... }:
 let
   lib = pkgs.lib;
   customPackages = pkgs.callPackage ./custom.nix { };
@@ -15,7 +15,7 @@ in
           len = builtins.length pieces;
         in
         builtins.elemAt pieces (len - 2);
-      value = pkgs.callPackage path { inherit nixosGenerate; };
+      value = pkgs.callPackage path { };
     }))
     (builtins.filter (e: !(customPackages ? e.name)))
     builtins.listToAttrs
