@@ -40,7 +40,7 @@ let
     drv // { bin = "${drv}/bin/${name}"; };
 in
 symlinkJoin {
-  name = "git-utils-kdn";
+  name = "git-utils";
   paths = lib.attrsets.attrValues (rec {
     g-dir = writeShellScript ./bin/g-dir.sh {
       prefix = ''

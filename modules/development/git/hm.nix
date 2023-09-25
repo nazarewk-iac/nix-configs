@@ -10,12 +10,12 @@ in
     programs.bash.initExtra = config.programs.zsh.initExtra;
     programs.zsh.initExtra = ''
       gh-cd() {
-        cd "$(${pkgs.kdn.git-utils-kdn}/bin/g-dir $1)"
+        cd "$(${pkgs.kdn.git-utils}/bin/g-dir $1)"
       }
     '';
 
     home.packages = with pkgs; [
-      kdn.git-utils-kdn
+      kdn.git-utils
 
       hub
       gh

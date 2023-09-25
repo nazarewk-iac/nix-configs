@@ -31,7 +31,7 @@ test_g_dir() {
 main() {
   errors=()
   export SHELLOPTS
-  export GIT_UTILS_KDN_BASE_DIR="/tmp/git-utils-kdn-test"
+  export GIT_UTILS_KDN_BASE_DIR="/tmp/git-utils-test"
 
   test_g_dir
 
