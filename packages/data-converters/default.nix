@@ -39,6 +39,7 @@ symlinkJoin {
     "json2json" = [ "${yj}/bin/yj" "-jj" ];
     "json2toml" = [ "${yj}/bin/yj" "-jt" ];
     "json2yaml" = [ "${yj}/bin/yj" "-jy" ];
+    "json2yamls" = [ "${yq-go}/bin/yq" "eval-all" "--input-format=json" "--output-format=yaml" ];
     "toml2hcl1" = [ "${yj}/bin/yj" "-tc" ];
     "toml2json" = [ "${yj}/bin/yj" "-tj" ];
     "toml2toml" = [ "${yj}/bin/yj" "-tt" ];
