@@ -1,89 +1,21 @@
 { lib, pkgs, config, ... }:
 let
   cfg = config.kdn.development.git;
-  relDir = "${cfg.baseDir}";
-  absDir = "${config.home.homeDirectory}/${relDir}";
-  shellDir = "$HOME/${relDir}";
-
-  gDir = lib.kdn.shell.writeShellScript pkgs ./bin/g-dir.sh {
-    prefix = ''
-      shellDir="${shellDir}"
-    '';
-  };
-  gDirAzureDevops = lib.kdn.shell.writeShellScript pkgs ./bin/g-dir-dev.azure.com.sh {
-    prefix = ''
-      shellDir="${shellDir}"
-    '';
-  };
-  gDirCodecommit = lib.kdn.shell.writeShellScript pkgs ./bin/g-dir-codecommit.sh {
-    prefix = ''
-      shellDir="${shellDir}"
-    '';
-  };
-  gGet = lib.kdn.shell.writeShellScript pkgs ./bin/g-get.sh {
-    runtimeInputs = with pkgs; [ git gDir gRemote ];
-  };
-  gOpen = lib.kdn.shell.writeShellScript pkgs ./bin/g-open.sh {
-    prefix = ''
-      IDE="${cfg.IDE}"
-    '';
-    runtimeInputs = with pkgs; [ git gDir gRemote ];
-  };
-  gRemote = lib.kdn.shell.writeShellScript pkgs ./bin/g-remote.sh { };
-  ghRepos = lib.kdn.shell.writeShellScript pkgs ./bin/gh-repos.sh {
-    runtimeInputs = with pkgs; [ gh jq ];
-  };
-  ghGetAll = lib.kdn.shell.writeShellScript pkgs ./bin/gh-get-all.sh {
-    runtimeInputs = with pkgs; [ ghRepos ];
-  };
-
-  glRepos = lib.kdn.shell.writeShellScript pkgs ./bin/gl-repos.sh {
-    runtimeInputs = with pkgs; [ git curl jq ];
-  };
-  glGetAll = lib.kdn.shell.writeShellScript pkgs ./bin/gl-get-all.sh {
-    runtimeInputs = with pkgs; [ glRepos ];
-  };
-
 in
 {
   options.kdn.development.git = {
     enable = lib.mkEnableOption "Git development utilities";
-
-    baseDir = lib.mkOption {
-      default = "dev";
-      description = "Base git checkout directory";
-    };
-
-    IDE = lib.mkOption {
-      default = "idea-ultimate";
-      description = "IDE to use in g-open";
-    };
-
-    remoteShellPattern = lib.mkOption {
-      default = "https://github.com/$org/$repo.git";
-    };
   };
   config = lib.mkIf cfg.enable {
     programs.bash.initExtra = config.programs.zsh.initExtra;
     programs.zsh.initExtra = ''
       gh-cd() {
-        cd "$(${gDir}/bin/g-dir $1)"
+        cd "$(${pkgs.kdn.git-utils-kdn}/bin/g-dir $1)"
       }
     '';
 
     home.packages = with pkgs; [
-      gDir
-      gDirAzureDevops
-      gDirCodecommit
-      gRemote
-      gGet
-      gOpen
-
-      ghGetAll
-      ghRepos
-
-      glGetAll
-      glRepos
+      kdn.git-utils-kdn
 
       hub
       gh
