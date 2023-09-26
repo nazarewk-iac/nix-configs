@@ -78,8 +78,8 @@ in
         credential."https://github.com".helper = "${pkgs.gh}/bin/gh auth git-credential";
         url."https://github.com/".insteadOf = "git@github.com:";
 
-        credential."https://gitlab.com/signicat".username = "signicat-krznaz";
-        url."https://gitlab.com/signicat".insteadOf = "git@gitlab.com:signicat/";
+        credential."https://gitlab.com/signicat/".username = "signicat-krznaz";
+        url."https://gitlab.com/signicat/".insteadOf = "git@gitlab.com:signicat/";
 
         credential."https://gitlab.electronicid.eu/".username = "krznaz";
         url."https://gitlab.electronicid.eu/".insteadOf = "git@gitlab.electronicid.eu:";
