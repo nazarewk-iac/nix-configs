@@ -86,6 +86,7 @@ in
       fracture-outage = {
         routes.ignore = true;
         routes.add = [
+          { network = "172.16.0.0"; netmask = "255.255.0.0"; }
           { network = "172.18.0.0"; netmask = "255.255.0.0"; }
         ];
       };
