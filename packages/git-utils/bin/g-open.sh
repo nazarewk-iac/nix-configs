@@ -15,7 +15,7 @@ for entry in "$@"; do
   dir="$(self g-dir "$entry")"
 
   if [ ! -d "$dir/.git" ]; then
-    git clone "$(self g-remote "$entry")" "$dir"
+    git clone "$entry" "$dir"
   fi
 
   "${IDE}" "${dir}"

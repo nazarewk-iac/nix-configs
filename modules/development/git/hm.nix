@@ -1,6 +1,8 @@
 { lib, pkgs, config, ... }:
 let
   cfg = config.kdn.development.git;
+
+  inherit (pkgs.kdn) git-utils;
 in
 {
   options.kdn.development.git = {
@@ -10,12 +12,20 @@ in
     programs.bash.initExtra = config.programs.zsh.initExtra;
     programs.zsh.initExtra = ''
       gh-cd() {
-        cd "$(${pkgs.kdn.git-utils}/bin/g-dir $1)"
+        cd "$(${git-utils}/bin/g-dir $1)"
       }
     '';
 
+    programs.git.ignores = [
+      ''
+        # START kdn.git-utils
+        /${git-utils.passthru.worktreesDir}/
+        # END kdn.git-utils
+      ''
+    ];
+
     home.packages = with pkgs; [
-      kdn.git-utils
+      git-utils
 
       hub
       gh

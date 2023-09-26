@@ -11,7 +11,7 @@ self() {
 
 for entry in "$@"; do
   dir="$(self g-dir "$entry")"
-  remote="$(self g-remote "$entry")"
+  remote="$entry"
 
   if [ -d "$dir/.git" ]; then
     echo "$dir already exists, updating..."

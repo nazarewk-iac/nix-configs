@@ -28,7 +28,7 @@ for entry in "$@"; do
     service="${service%%/*}"
   fi
 
-  if self "g-dir-${service}" "${entry}" >/dev/null; then
+  if self "g-dir-${service}" "${entry}" 2>/dev/null; then
     continue
   fi
 

@@ -1,6 +1,7 @@
 { lib
-, GIT_UTILS_KDN_BASE_DIR ? "$HOME/dev"
-, GIT_UTILS_KDN_IDE ? "idea-ultimate"
+, baseDir ? "$HOME/dev"
+, ide ? "idea-ultimate"
+, worktreesDir ? ".worktrees"
 , curl
 , gh
 , git
@@ -41,32 +42,44 @@ let
 in
 symlinkJoin {
   name = "git-utils";
+  passthru = { inherit baseDir ide worktreesDir; };
   paths = lib.attrsets.attrValues (rec {
     g-dir = writeShellScript ./bin/g-dir.sh {
       prefix = ''
-        GIT_UTILS_KDN_BASE_DIR="''${GIT_UTILS_KDN_BASE_DIR:-"${GIT_UTILS_KDN_BASE_DIR}"}"
+        GIT_UTILS_KDN_BASE_DIR="''${GIT_UTILS_KDN_BASE_DIR:-"${baseDir}"}"
       '';
     };
     g-dir-azure-devops = writeShellScript ./bin/g-dir-dev.azure.com.sh {
       prefix = ''
-        GIT_UTILS_KDN_BASE_DIR="''${GIT_UTILS_KDN_BASE_DIR:-"${GIT_UTILS_KDN_BASE_DIR}"}"
+        GIT_UTILS_KDN_BASE_DIR="''${GIT_UTILS_KDN_BASE_DIR:-"${baseDir}"}"
       '';
     };
     g-dir-codecommit = writeShellScript ./bin/g-dir-codecommit.sh {
       prefix = ''
-        GIT_UTILS_KDN_BASE_DIR="''${GIT_UTILS_KDN_BASE_DIR:-"${GIT_UTILS_KDN_BASE_DIR}"}"
+        GIT_UTILS_KDN_BASE_DIR="''${GIT_UTILS_KDN_BASE_DIR:-"${baseDir}"}"
       '';
     };
+    g-wt-dir = writeShellScript ./bin/g-wt-dir.sh {
+      prefix = ''
+        GIT_UTILS_KDN_WORKTREES_DIR="''${GIT_UTILS_KDN_WORKTREES_DIR:-"${worktreesDir}"}"
+      '';
+      runtimeInputs = [ g-dir ];
+    };
+    g-wt-get = writeShellScript ./bin/g-wt-get.sh {
+      runtimeInputs = [ g-dir g-wt-dir ];
+    };
+    g-wt-rm = writeShellScript ./bin/g-wt-rm.sh {
+      runtimeInputs = [ g-dir g-wt-dir ];
+    };
     g-get = writeShellScript ./bin/g-get.sh {
-      runtimeInputs = [ git g-dir g-remote ];
+      runtimeInputs = [ git g-dir ];
     };
     g-open = writeShellScript ./bin/g-open.sh {
       prefix = ''
-        GIT_UTILS_KDN_IDE="''${GIT_UTILS_KDN_IDE:-"${GIT_UTILS_KDN_IDE}"}"
+        GIT_UTILS_KDN_IDE="''${GIT_UTILS_KDN_IDE:-"${ide}"}"
       '';
-      runtimeInputs = [ git g-dir g-remote ];
+      runtimeInputs = [ git g-dir ];
     };
-    g-remote = writeShellScript ./bin/g-remote.sh { };
     gh-repos = writeShellScript ./bin/gh-repos.sh {
       runtimeInputs = [ gh jq ];
     };
