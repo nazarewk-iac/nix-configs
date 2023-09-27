@@ -49,8 +49,6 @@ for entry in "$@"; do
 
   # drop entry until service definition
   repo="${repo##*"${service}/${org}/"}"
-  # last segment
-  #repo="${repo##*/}"
 
   dir="${GIT_UTILS_KDN_BASE_DIR}/${service}/${org}/${repo}"
 
