@@ -80,6 +80,7 @@ in
         routes.ignore = true;
         routes.add = [
           { network = "10.34.0.0"; netmask = "255.255.0.0"; }
+          { network = "10.44.0.0"; netmask = "255.255.0.0"; }
           { network = "192.168.107.0"; netmask = "255.255.255.0"; }
         ];
       };
