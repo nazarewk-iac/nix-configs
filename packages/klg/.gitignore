@@ -1,15 +1,15 @@
+# ignore everything by default except directories and .gitignores
+#  note: it wouldn't look inside of any directory otherwise
+#  note: you can debug ignores using git check-ignore -v testfile.json
 *
-!/**/*.py
-!/.envrc
+!*/
 !/.gitignore
-!/README.md
-!/cue.mod/
-!/dagger.cue
+
+!*.md
+!*.nix
+!*.py
+!/.envrc
 !/flake.lock
 !/flake.nix
-!/poetry.lock
-!/pyproject.toml
-!/config.nix
-!/default.nix
-!/klg
-!/tests
+!poetry.lock
+!pyproject.toml
