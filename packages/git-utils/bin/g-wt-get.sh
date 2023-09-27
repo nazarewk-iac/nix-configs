@@ -27,5 +27,5 @@ for branch in "$@"; do
     continue
   fi
 
-  git -C "$repo_dir" worktree add "$dir"
+  git -C "$repo_dir" worktree add "$dir" "origin/$branch"
 done
