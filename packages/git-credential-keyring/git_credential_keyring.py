@@ -1,4 +1,5 @@
 import hashlib
+import os
 import sys
 
 import keyring
@@ -37,6 +38,12 @@ def set(service: str, username: str, password: str):
 
 def delete(service: str, username: str):
     service, username = normalize(service, username)
+    if os.environ.get("GIT_CREDENTIAL_KEYRING_IGNORE_DELETIONS", "") == "1":
+        print(
+            f"not deleting {username}@{service} because of $GIT_CREDENTIAL_KEYRING_IGNORE_DELETIONS == 1",
+            file=sys.stderr,
+        )
+        return
     keyring.delete_password(service, username)
 
 
