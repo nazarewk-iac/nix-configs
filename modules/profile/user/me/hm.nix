@@ -13,6 +13,7 @@ let
         text = ''
           export PYTHON_KEYRING_BACKEND="keyring_pass.PasswordStoreBackend"
           export KEYRING_PROPERTY_PASS_BINARY="${pkgs.pass}/bin/pass"
+          export GIT_CREDENTIAL_KEYRING_IGNORE_DELETIONS=1
           git-credential-keyring "$@"
         '';
       };
