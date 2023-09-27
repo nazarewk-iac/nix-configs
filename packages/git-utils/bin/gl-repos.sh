@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -eEuo pipefail
+test -z "${DEBUG:-}" || set -x
 
 git_creds_json() {
   git credential fill <<<"url=${1}" | jq -cMsR 'split("\n") | map(select(contains("=")) | split("=") | {key: .[0], value: (.[1:] | join("="))}) | from_entries'

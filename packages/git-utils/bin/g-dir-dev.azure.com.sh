@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -eEuo pipefail
+test -z "${DEBUG:-}" || set -x
 
 GIT_UTILS_KDN_BASE_DIR="${GIT_UTILS_KDN_BASE_DIR:-"$HOME/dev"}"
 

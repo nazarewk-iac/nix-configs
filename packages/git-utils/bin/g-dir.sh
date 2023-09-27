@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 set -eEuo pipefail
+test -z "${DEBUG:-}" || set -x
 
 GIT_UTILS_KDN_BASE_DIR="${GIT_UTILS_KDN_BASE_DIR:-"$HOME/dev"}"
 
 self() {
   if [[ "${BASH_SOURCE[0]##*/}" == *.sh ]]; then
-    "${BASH_SOURCE[0]%/*}$1.sh" "${@:2}"
+    "${BASH_SOURCE[0]%/*}/$1.sh" "${@:2}"
   else
     "$@"
   fi
@@ -49,7 +50,7 @@ for entry in "$@"; do
   # drop entry until service definition
   repo="${repo##*"${service}/${org}/"}"
   # last segment
-  repo="${repo##*/}"
+  #repo="${repo##*/}"
 
   dir="${GIT_UTILS_KDN_BASE_DIR}/${service}/${org}/${repo}"
 

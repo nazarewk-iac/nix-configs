@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -eEuo pipefail
+test -z "${DEBUG:-}" || set -x
 
 self() {
   if [[ "${BASH_SOURCE[0]##*/}" == *.sh ]]; then
-    "${BASH_SOURCE[0]%/*}$1.sh" "${@:2}"
+    "${BASH_SOURCE[0]%/*}/$1.sh" "${@:2}"
   else
     "$1" "$@"
   fi
@@ -13,6 +14,7 @@ declare -A dir_tests
 dir_tests['https://Organization@dev.azure.com/Organization/Project/_git/Repository']="dev.azure.com/Organization/Project/Repository"
 dir_tests['git@ssh.dev.azure.com:v3/Organization/Project/Repository']="dev.azure.com/Organization/Project/Repository"
 dir_tests['https://github.com/nazarewk-iac/nix-configs.git']="github.com/nazarewk-iac/nix-configs"
+dir_tests['https://gitlab.example.com/GROUP/SUBGROUP/REPO.git']="gitlab.example.com/GROUP/SUBGROUP/REPO"
 dir_tests['codecommit::REGION://PROFILE@REPO']='codecommit/PROFILE/REGION/REPO'
 
 test_g_dir() {

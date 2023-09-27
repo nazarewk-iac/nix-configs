@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 set -eEuo pipefail
+test -z "${DEBUG:-}" || set -x
 # unifed location of git worktrees
 
 GIT_UTILS_KDN_WORKTREES_DIR="${GIT_UTILS_KDN_WORKTREES_DIR:-".worktrees"}"
 
 self() {
   if [[ "${BASH_SOURCE[0]##*/}" == *.sh ]]; then
-    "${BASH_SOURCE[0]%/*}$1.sh" "${@:2}"
+    "${BASH_SOURCE[0]%/*}/$1.sh" "${@:2}"
   else
     "$@"
   fi
