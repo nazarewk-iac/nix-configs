@@ -21,7 +21,7 @@ output $displayAsus modeline 241.50 2560 2608 2640 2720 1440 1443 1448 1481 -hsy
 
 output $displayAsus pos 0 0
 output $displayDell pos 2560 0
-output $displayDell transform 270
+output $displayDell transform 0
 
 seat seat0 xcursor_theme Adwaita 24
 
