@@ -25,6 +25,7 @@ in
   config = lib.mkIf config.kdn.enable {
     disko.enableConfig = lib.mkDefault false;
 
+    nix.registry.nixpkgs.flake = inputs.nixpkgs;
     nix.settings.auto-optimise-store = true;
     nix.package = pkgs.nixVersions.stable;
 
