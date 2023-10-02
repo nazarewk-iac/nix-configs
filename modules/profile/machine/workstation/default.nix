@@ -68,6 +68,7 @@ in
     # services.offlineimap.enable or manually with `systemctl --user start`
     services.offlineimap.install = true;
 
+    kdn.networking.openfortivpn.enable = true;
     kdn.networking.openvpn.debug = true;
     kdn.networking.openvpn.instances = {
       goggles-humongous = {
