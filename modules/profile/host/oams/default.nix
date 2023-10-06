@@ -62,7 +62,10 @@ in
         ];
       disko.enableConfig = true;
 
-      boot.initrd.systemd.initrdBin = with pkgs; [ ];
+      boot.initrd.systemd.services.zfs-import-oams-main = {
+        requiredBy = [ "sysusr-usr.mount" ];
+        before = [ "sysusr-usr.mount" ];
+      };
 
       fileSystems."/boot".neededForBoot = true;
       fileSystems."/var/log/journal".neededForBoot = true;
