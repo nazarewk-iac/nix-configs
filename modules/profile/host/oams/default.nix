@@ -62,6 +62,8 @@ in
         ];
       disko.enableConfig = true;
 
+      boot.initrd.systemd.initrdBin = with pkgs; [ ];
+
       fileSystems."/boot".neededForBoot = true;
       fileSystems."/var/log/journal".neededForBoot = true;
       boot.kernelModules = [ "kvm-amd" ];
