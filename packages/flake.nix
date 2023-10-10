@@ -13,9 +13,9 @@
     ];
 
     perSystem = { config, self', inputs', system, pkgs, ... }: {
-      packages = (import ./default.nix {
-        inherit pkgs;
-      }).kdn;
+      packages = pkgs.callPackages ./default.nix { };
     };
+
+    flake.overlays.default = final: prev: { kdn = prev.callPackages ./default.nix { }; };
   };
 }

@@ -240,9 +240,7 @@
             system = final.stdenv.system;
             lib = import ./lib { inherit (prev) lib; };
           })
-          (final: prev: import ./packages {
-            pkgs = prev;
-          })
+          (final: prev: { kdn = prev.callPackages ./packages { }; })
           (final: prev: {
             waylandPkgs = self.inputs.nixpkgs-wayland.packages.${final.stdenv.system};
           })
