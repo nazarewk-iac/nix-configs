@@ -51,7 +51,6 @@ stdenv.mkDerivation {
   ];
 
   installPhase = ''
-    set -x
     mkdir -p "$out/bin"
     ln -s "${bin}" "$out/bin"
     for file in *.bin ; do
