@@ -51,9 +51,12 @@ stdenv.mkDerivation {
   ];
 
   installPhase = ''
+    set -x
     mkdir -p "$out/bin"
     ln -s "${bin}" "$out/bin"
-    install -Dm 444 *.bin -t "$out/lib/firmware/edid"
+    for file in *.bin ; do
+      install -Dm 444 "$file" -t "$out/lib/firmware/edid"
+    done
   '';
 
   meta = {
