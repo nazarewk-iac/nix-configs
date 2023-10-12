@@ -143,12 +143,11 @@ in
     programs.foot = {
       enable = true;
       server.enable = false;
-      settings = {
-        main = {
-          font = "JetBrainsMono Nerd Font Mono:style=Regular:size=12";
-          dpi-aware = "no";
-        };
+      settings.main = {
+        font = "JetBrainsMono Nerd Font Mono:style=Regular:size=12";
+        dpi-aware = "no";
       };
+      settings.scrollback.lines = 100000;
     };
   };
 }
