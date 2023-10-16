@@ -93,6 +93,12 @@ in
         "rd.luks.data=${rootUUID}=${luksDevice}"
       ];
 
+    kdn.hardware.edid.enable = true;
+    kdn.hardware.edid.kernelOutputs = {
+      "DP-1" = "PG278Q_2014";
+      "DVI-D-1" = "U2711_2012_1";
+    };
+
     boot.tmp.useTmpfs = true;
     # 20% of 128GB should be fine
     # 12G was not enough for large rebuild

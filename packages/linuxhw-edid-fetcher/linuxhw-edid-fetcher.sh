@@ -5,7 +5,7 @@ test -z "${DEBUG:-}" || set -x
 usage() {
   cat <<'EOF'
 Example usage:
-  linuxhw-get-edid-bin PG278Q 2014 >edid.bin
+  linuxhw-edid-fetcher PG278Q 2014 >edid.bin
   edid-decode <edid.bin
   parse-edid <edid.bin
   cat edid.bin >/sys/kernel/debug/dri/0/DP-1/edid_override
