@@ -1,7 +1,5 @@
 { pkgs, lib, ... }:
 let
-  klog = pkgs.callPackage ../klog-time-tracker { };
-
   pyproject = builtins.fromTOML (builtins.readFile attrs.common.pyproject);
   poetryName = pyproject.tool.poetry.name;
 
@@ -18,11 +16,13 @@ let
 
   attrs.app = attrs.common // {
     buildInputs = with pkgs; [
-      klog
+      # additional non-python dependencies
+      #jq
+      #difftastic
     ];
   };
   attrs.env = attrs.common // {
-    groups = [ "test" ];
+    # groups = [ "dev" "test" ];
     editablePackageSources = { "${poetryName}" = attrs.common.projectDir; };
   };
 
@@ -120,7 +120,5 @@ in
   inherit attrs pyproject;
   inherit poetryApp poetryEnv;
   inherit app dev container;
-  inherit klog;
   inherit (attrs.common) python;
 }
-

@@ -11,9 +11,6 @@ in
     kdn.profile.machine.desktop.enable = true;
     kdn.profile.machine.dev.enable = true;
 
-    kdn.desktop.base.nixpkgs-wayland.enableFullOverlay = false;
-    kdn.desktop.base.enableWlrootsPatch = false;
-
     environment.systemPackages = with pkgs; [
     ];
 

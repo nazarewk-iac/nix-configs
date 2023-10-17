@@ -23,7 +23,7 @@ in
   };
 
   config = lib.mkIf cfg.enable ({
-    kdn.sway.base.enable = true;
+    kdn.desktop.kde.enable = true;
 
     kdn.profile.machine.workstation.enable = true;
     kdn.hardware.gpu.amd.enable = true;
@@ -96,8 +96,8 @@ in
 
     kdn.hardware.edid.enable = true;
     kdn.hardware.edid.kernelOutputs = {
-      "DP-1" = "PG278Q_2014";
-      "DVI-D-1" = "U2711_2012_2";
+      "DP-1" = "PG278Q_60";
+      # "DVI-D-1" = "U2711_60";
     };
 
     boot.tmp.useTmpfs = true;

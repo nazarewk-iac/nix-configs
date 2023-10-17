@@ -1,14 +1,24 @@
+# ignore everything by default
 *
-!/**/*.py
+# do not ignore directories (still ignores their content)
+!*/
+# still ignore directiories with a leading dot
+.*/
+# do not ignore .gitignore files
+!.gitignore
+
+# shareable Jetbrains files
+!.idea/modules.xml
+!.idea/watcherTasks.xml
+!.idea/vcs.xml
+!.idea/misc.xml
+!*.iml
+
+!*.nix
 !/.envrc
-!/.gitignore
-!/README.md
-!/cue.mod/
-!/dagger.cue
-!/default.nix
 !/flake.lock
-!/flake.nix
-!/poetry.lock
-!/pyproject.toml
-!/yubikey_configure
-!/config.nix
+
+!*.md
+!*.py
+!poetry.lock
+!pyproject.toml

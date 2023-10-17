@@ -5,33 +5,9 @@ in
 {
   options.kdn.desktop.base = {
     enable = lib.mkEnableOption "Desktop base setup";
-
-    enableWlrootsPatch = lib.mkEnableOption "patched wlroots";
-
-    nixpkgs-wayland = {
-      enableFullOverlay = lib.mkEnableOption "use nixpkgs-wayland overlay for bleeding-edge wayland packages";
-    };
   };
 
   config = lib.mkIf cfg.enable {
-    nixpkgs.overlays = (if !cfg.nixpkgs-wayland.enableFullOverlay then [ ] else [
-      inputs.nixpkgs-wayland.overlay
-    ]) ++ (if !cfg.enableWlrootsPatch then [ ] else [
-      (final: prev: {
-        wlroots = prev.wlroots.overrideAttrs (old: {
-          src = prev.fetchFromGitLab {
-            domain = "gitlab.freedesktop.org";
-            owner = "wlroots";
-            repo = "wlroots";
-            # report: https://github.com/swaywm/sway/issues/6856
-            # overriden version: https://gitlab.freedesktop.org/wlroots/wlroots/-/merge_requests/3469/commits
-            rev = "15008750db82115fbdcf77d1fccbde9a91d70a06";
-            sha256 = "sha256-T3LhUaczQVp0mj/vKpxRb7PLwZk0iEsejOqSWtQMw8k=";
-          };
-        });
-      })
-    ]);
-
     fonts.packages = with pkgs; [
       cantarell-fonts
       font-awesome
@@ -85,6 +61,17 @@ in
       v4l-utils
       wev # wayland event viewer
       wshowkeys # display pressed keys
+      ashpd-demo # Tool for playing with XDG desktop portals
+
+
+      # carry-overs from modules/desktop/sway/base/default.nix
+      libnotify
+      wofi
+      wl-clipboard
+      wl-clipboard-x11
+      grim
+      libnotify
+
 
       # themes
       hicolor-icon-theme # nm-applet, see https://github.com/NixOS/nixpkgs/issues/32730

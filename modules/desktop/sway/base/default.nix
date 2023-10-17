@@ -281,8 +281,6 @@ in
         swaylock
         waybar
         wf-recorder
-        wl-clipboard
-        wl-clipboard-x11
 
         gsimplecal
         slurp

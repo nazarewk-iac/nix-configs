@@ -3,6 +3,7 @@ let
   cfg = config.kdn.profile.user.kdn;
   systemUser = cfg.nixosConfig;
   hasGUI = config.kdn.headless.enableGUI;
+  hasSway = config.kdn.sway.base.enable;
   hasWorkstation = nixosConfig.kdn.profile.machine.workstation.enable;
 
   git-credential-keyring =
@@ -92,27 +93,9 @@ in
 
       services.nextcloud-client.enable = true;
       services.nextcloud-client.startInBackground = true;
-      systemd.user.services.nextcloud-client.Unit = {
-        Requires = lib.mkForce [ "pass-secret-service.service" "kdn-sway-envs.target" ];
-        After = [ "kdn-sway-envs.target" "tray.target" ];
-        PartOf = [ "kdn-sway-session.target" ];
-      };
-      systemd.user.services.nextcloud-client.Install = {
-        WantedBy = [ "kdn-sway-session.target" ];
-      };
 
       services.kdeconnect.enable = true;
-      systemd.user.services.kdeconnect.Unit = {
-        Requires = [ "kdn-sway-envs.target" ];
-        After = [ "kdn-sway-envs.target" ];
-        PartOf = [ "kdn-sway-session.target" ];
-      };
       services.kdeconnect.indicator = true;
-      systemd.user.services.kdeconnect-indicator.Unit = {
-        Requires = [ "kdn-sway-envs.target" "kdeconnect.service" ];
-        After = [ "tray.target" "kdn-sway-envs.target" "kdeconnect.service" ];
-        PartOf = [ "kdn-sway-session.target" ];
-      };
 
       xdg.mime.enable = true;
       xdg.mimeApps.enable = true;
@@ -182,7 +165,25 @@ in
         };
 
     })
-    (lib.mkIf (hasWorkstation && hasGUI) {
+    (lib.mkIf (hasSway) {
+      systemd.user.services.nextcloud-client.Unit = {
+        Requires = lib.mkForce [ "pass-secret-service.service" "kdn-sway-envs.target" ];
+        After = [ "kdn-sway-envs.target" "tray.target" ];
+        PartOf = [ "kdn-sway-session.target" ];
+      };
+      systemd.user.services.nextcloud-client.Install = {
+        WantedBy = [ "kdn-sway-session.target" ];
+      };
+      systemd.user.services.kdeconnect.Unit = {
+        Requires = [ "kdn-sway-envs.target" ];
+        After = [ "kdn-sway-envs.target" ];
+        PartOf = [ "kdn-sway-session.target" ];
+      };
+      systemd.user.services.kdeconnect-indicator.Unit = {
+        Requires = [ "kdn-sway-envs.target" "kdeconnect.service" ];
+        After = [ "tray.target" "kdn-sway-envs.target" "kdeconnect.service" ];
+        PartOf = [ "kdn-sway-session.target" ];
+      };
       home.packages = with pkgs; let
         launch = (lib.kdn.shell.writeShellScript pkgs (./bin + "/kdn-launch.sh") {
           runtimeInputs = with pkgs; [
@@ -204,6 +205,13 @@ in
             rambox
           ];
         });
+      in
+      [
+        launch
+      ];
+    })
+    (lib.mkIf (hasWorkstation && hasGUI) {
+      home.packages = with pkgs; let
         drag0nius_kdbx =
           (pkgs.writeShellApplication {
             name = "keepass-drag0nius.kdbx";
@@ -220,7 +228,6 @@ in
       in
       [
         keepass
-        launch
         drag0nius_kdbx
 
         flameshot
@@ -241,6 +248,7 @@ in
         logseq
         kdn.klog-time-tracker
         kdn.klg
+        kdn.ss-util
         dex # A program to generate and execute DesktopEntry files of the Application type
         brave
         rambox # browser/multi workspace
