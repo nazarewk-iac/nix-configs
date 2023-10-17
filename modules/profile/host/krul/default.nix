@@ -92,6 +92,8 @@ in
         "rd.luks.name=${rootUUID}=${luksOpenName}"
         "rd.luks.options=${rootUUID}=header=${headerPath}"
         "rd.luks.data=${rootUUID}=${luksDevice}"
+
+        "video=DP-1:e" # edid fix see https://gitlab.freedesktop.org/drm/amd/-/issues/615#note_1987392
       ];
 
     kdn.hardware.edid.enable = true;
