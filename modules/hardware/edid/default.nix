@@ -1,20 +1,7 @@
 { lib, pkgs, config, ... }:
 let
   cfg = config.kdn.hardware.edid;
-  bin = "${pkgs.kdn.linuxhw-edid-fetcher}/bin/linuxhw-edid-fetcher";
-  extraFilesKey = "edids";
 
-  pkg = pkgs.runCommand "kdn-hardware-edids" { } (lib.trivial.pipe cfg.displays [
-    (lib.mapAttrsToList (name: patterns: ''${bin} ${lib.escapeShellArgs patterns} > "${name}.bin"''))
-    (lines: lines ++ [
-      "set -x"
-      "mkdir -p $out/lib/firmware/edid"
-      "mv *.bin $out/lib/firmware/edid/"
-      "set +x"
-    ])
-    lib.flatten
-    (builtins.concatStringsSep "\n")
-  ]);
 in
 {
   options.kdn.hardware.edid = {
@@ -37,13 +24,21 @@ in
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     (lib.mkIf (cfg.kernelOutputs != { }) {
-      boot.initrd.extraFiles = lib.mapAttrs'
-        (output: name: lib.attrsets.nameValuePair
-          "${name}.bin"
-          { source = "${pkg}/lib/firmware/edid/${name}.bin"; })
-        cfg.kernelOutputs;
+      hardware.firmware =
+        # putting package containing `lib/firmware/edid/XXX.bin` should enable using `edid/XXX.bin` in kernel params
+        # see https://docs.kernel.org/admin-guide/kernel-parameters.html?highlight=edid_firmware
+        let
+          fetch = "${pkgs.kdn.linuxhw-edid-fetcher}/bin/linuxhw-edid-fetcher";
+          pkg =
+            pkgs.runCommand "kdn-hardware-edids" { } (lib.trivial.pipe cfg.displays [
+              (lib.mapAttrsToList (name: patterns: ''${fetch} ${lib.escapeShellArgs patterns} > "$out/lib/firmware/edid/${name}.bin"''))
+              (l: [ "mkdir -p $out/lib/firmware/edid" ] ++ l)
+              (builtins.concatStringsSep "\n")
+            ]);
+        in
+        [ pkg ];
       boot.kernelParams = lib.trivial.pipe cfg.kernelOutputs [
-        (lib.mapAttrsToList (output: name: ''${output}:${name}.bin''))
+        (lib.mapAttrsToList (output: name: ''${output}:edid/${name}.bin''))
         (builtins.concatStringsSep ",")
         # see https://wiki.archlinux.org/title/Kernel_mode_setting#Forcing_modes_and_EDID
         (p: [ "drm.edid_firmware=${p}" ])

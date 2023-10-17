@@ -96,7 +96,7 @@ in
     kdn.hardware.edid.enable = true;
     kdn.hardware.edid.kernelOutputs = {
       "DP-1" = "PG278Q_2014";
-      "DVI-D-1" = "U2711_2012_1";
+      "DVI-D-1" = "U2711_2012_2";
     };
 
     boot.tmp.useTmpfs = true;
