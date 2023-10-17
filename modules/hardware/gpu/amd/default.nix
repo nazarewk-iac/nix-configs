@@ -15,10 +15,11 @@ in
 
     hardware.opengl.enable = true;
     hardware.opengl.extraPackages = with pkgs; [
-      rocm-opencl-icd
-      rocm-opencl-runtime
       amdvlk
-    ];
+    ] ++ (with pkgs.rocmPackages;[
+      clr
+      clr.icd
+    ]);
 
     hardware.opengl.extraPackages32 = with pkgs; [
       # TODO: 2023-02-16: broken due to below

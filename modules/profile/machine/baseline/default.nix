@@ -74,7 +74,7 @@ in
 
       services.locate.enable = true;
       services.locate.localuser = null;
-      services.locate.locate = pkgs.mlocate;
+      services.locate.package = pkgs.mlocate;
       services.locate.pruneBindMounts = true;
 
       kdn.networking.openvpn.enable = true;

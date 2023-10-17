@@ -1,32 +1,21 @@
-# Editors
-.vscode/
-*~
-*.swp
-*.swo
-# JetBrains
-!/.idea/
-/.idea/*
-!/.idea/runConfigurations
-*.iml
+# ignore everything by default
+*
+# do not ignore directories (still ignores their content)
+!*/
+# still ignore directiories with a leading dot
+.*/
+# do not ignore .gitignore files
+!.gitignore
 
-# OS
-._*
-.DS_Store
-.DS_Store?
-.Spotlight-V100
-.Trashes
-Thumbs.db
+# shareable Jetbrains files
+!.idea/modules.xml
+!.idea/watcherTasks.xml
+!.idea/vcs.xml
+!.idea/misc.xml
+!*.iml
 
-# nix
-result
-
-# devenv
-!.envrc
-
-# microvm.nix
-*.img
-
-# disko scripts
-/disko-*-format
-/disko-*-mount
-/disko-*-recreate
+!*.nix
+!*.sh
+!*.md
+!/.envrc
+!/flake.lock
