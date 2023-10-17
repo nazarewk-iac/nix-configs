@@ -24,6 +24,7 @@ in
       boot.loader.efi.canTouchEfiVariables = true;
       boot.loader.systemd-boot.enable = true;
       boot.loader.systemd-boot.configurationLimit = 10;
+      boot.initrd.systemd.enable = true;
       boot.tmp.cleanOnBoot = true;
 
       networking.nameservers = [
@@ -49,6 +50,7 @@ in
 
       environment.systemPackages = with pkgs; [
         cachix
+        dracut # for lsinitrd
       ];
 
       environment.shellAliases =

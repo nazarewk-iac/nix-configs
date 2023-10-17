@@ -68,7 +68,6 @@ in
     boot.zfs.forceImportRoot = false;
     boot.zfs.requestEncryptionCredentials = false;
     boot.initrd.luks.forceLuksSupportInInitrd = true;
-    boot.initrd.systemd.enable = true;
     boot.kernelParams =
       let
         disko = config.disko.devices;

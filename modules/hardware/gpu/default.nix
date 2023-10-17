@@ -39,7 +39,8 @@ in
         softdep snd_hda_intel pre: vfio-pci
       '';
       boot.kernelParams = lib.concatLists [
-        (lib.lists.optional config.kdn.hardware.cpu.amd.enable "amd_iommu=on")
+        # see https://docs.kernel.org/admin-guide/kernel-parameters.html?highlight=amd_iommu
+        (lib.lists.optional config.kdn.hardware.cpu.amd.enable "amd_iommu=pgtbl_v2")
         (lib.lists.optional config.kdn.hardware.cpu.intel.enable "intel_iommu=on")
         [ "iommu=pt" ]
         (lib.lists.optional (cfg.vfio.gpuIDs != [ ]) ("vfio-pci.ids=" + lib.concatStringsSep "," cfg.vfio.gpuIDs))
