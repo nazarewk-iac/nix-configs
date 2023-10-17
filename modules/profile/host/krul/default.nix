@@ -23,6 +23,8 @@ in
   };
 
   config = lib.mkIf cfg.enable ({
+    kdn.sway.base.enable = true;
+
     kdn.profile.machine.workstation.enable = true;
     kdn.hardware.gpu.amd.enable = true;
     kdn.hardware.cpu.amd.enable = true;

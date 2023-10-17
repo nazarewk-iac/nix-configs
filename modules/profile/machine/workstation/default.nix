@@ -14,8 +14,6 @@ in
     kdn.desktop.base.nixpkgs-wayland.enableFullOverlay = false;
     kdn.desktop.base.enableWlrootsPatch = false;
 
-    kdn.sway.remote.enable = true;
-
     environment.systemPackages = with pkgs; [
     ];
 
@@ -57,7 +55,6 @@ in
       "x86_64-windows"
     ];
 
-    kdn.sway.base.enable = true;
 
     # services.offlineimap.enable or manually with `systemctl --user start`
     services.offlineimap.install = true;

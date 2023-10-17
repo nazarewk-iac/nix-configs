@@ -36,7 +36,7 @@ in
       # wine utils
       winetricks
       bottles
-      (if config.kdn.sway.base.enable then wine-wayland else wine)
+      wine-wayland
     ];
   };
 }

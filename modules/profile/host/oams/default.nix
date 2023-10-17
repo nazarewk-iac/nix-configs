@@ -9,6 +9,9 @@ in
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
+      kdn.sway.base.enable = false;
+      kdn.desktop.kde.enable = true;
+
       kdn.profile.machine.workstation.enable = true;
       kdn.hardware.gpu.amd.enable = true;
       kdn.hardware.cpu.amd.enable = true;
