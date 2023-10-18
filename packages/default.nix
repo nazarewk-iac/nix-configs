@@ -15,5 +15,6 @@
   openapi-python-client-cli = pkgs.callPackage ./openapi-python-client-cli { };
   pass-secret-service = pkgs.callPackage ./pass-secret-service { };
   ss-util = pkgs.callPackage ./ss-util { };
+  tc-redirect-tap = pkgs.callPackage ./tc-redirect-tap { };
   yubikey-configure = pkgs.callPackage ./yubikey-configure { };
 }

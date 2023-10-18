@@ -43,6 +43,7 @@ in
     #kdn.virtualisation.containers.distrobox.enable = true;
     kdn.virtualisation.containers.enable = true;
     kdn.virtualisation.containers.podman.enable = true;
+    kdn.virtualisation.containers.talos.enable = true;
     #kdn.virtualisation.containers.x11docker.enable = true;
     programs.seahorse.enable = true;
     boot.binfmt.emulatedSystems = [
