@@ -15,9 +15,10 @@ in
     services.gnome.gnome-keyring.enable = lib.mkForce false;
 
     environment.systemPackages = (with pkgs;[
+      latte-dock
     ]) ++ (with pkgs.libsForQt5; [
       kleopatra
-      bismuth
+      #bismuth  # bismuth is abandoned (no update for a year)
     ]);
 
     services.xserver.enable = true;

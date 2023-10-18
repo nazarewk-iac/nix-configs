@@ -98,6 +98,40 @@ in
       services.kdeconnect.indicator = true;
 
       xdg.mime.enable = true;
+
+      xdg.desktopEntries.uri-to-clipboard =
+        let
+          bin = pkgs.writeShellScript "uri-to-clipboard" ''
+            set -eEuo pipefail
+
+            url="$1"
+            ${pkgs.libnotify}/bin/notify-send --expire-time=3000 "copied to clipboard" "$url"
+            ${pkgs.wl-clipboard}/bin/wl-copy "$url"
+          '';
+        in
+        {
+          name = "Copy URI to clipboard";
+          noDisplay = false;
+          genericName = "uri-to-clipboard";
+          exec = "${bin} %U";
+          categories = [ "Network" "WebBrowser" ];
+          mimeType = [
+            "application/x-extension-htm"
+            "application/x-extension-html"
+            "application/x-extension-shtml"
+            "application/x-extension-xht"
+            "application/x-extension-xhtml"
+            "application/xhtml+xml"
+            "application/xhtml_xml"
+            "x-scheme-handler/chrome"
+            "x-scheme-handler/http"
+            "x-scheme-handler/https"
+          ];
+        };
+
+    })
+    (lib.mkIf (hasSway) {
+      # mime gets messed up by KDE
       xdg.mimeApps.enable = true;
       xdg.mimeApps.associations.added = { };
       xdg.mimeApps.defaultApplications =
@@ -146,26 +180,6 @@ in
           "x-scheme-handler/vnc" = remmina;
         };
 
-      xdg.desktopEntries.uri-to-clipboard =
-        let
-          bin = pkgs.writeShellScript "uri-to-clipboard" ''
-            set -eEuo pipefail
-
-            url="$1"
-            ${pkgs.libnotify}/bin/notify-send --expire-time=3000 "copied to clipboard" "$url"
-            ${pkgs.wl-clipboard}/bin/wl-copy "$url"
-          '';
-        in
-        {
-          name = "Copy URI to clipboard";
-          noDisplay = true;
-          genericName = "uri-to-clipboard";
-          exec = "${bin} %U";
-          categories = [ "Network" "WebBrowser" ];
-        };
-
-    })
-    (lib.mkIf (hasSway) {
       systemd.user.services.nextcloud-client.Unit = {
         Requires = lib.mkForce [ "pass-secret-service.service" "kdn-sway-envs.target" ];
         After = [ "kdn-sway-envs.target" "tray.target" ];
