@@ -4,7 +4,7 @@ let
 in
 {
   # Read the changelog before changing this value
-  home.stateVersion = "22.11";
+  home.stateVersion = "23.11";
 
   # insert home-manager config
   home.file.".ssh/authorized_keys".text = ssh.authorizedKeysText;

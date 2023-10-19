@@ -8,6 +8,10 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    home-manager.sharedModules = [{
+      kdn.desktop.base.enable = cfg.enable;
+    }];
+
     fonts.packages = with pkgs; [
       cantarell-fonts
       font-awesome
@@ -71,7 +75,7 @@ in
       wl-clipboard-x11
       grim
       libnotify
-
+      wayland-utils
 
       # themes
       hicolor-icon-theme # nm-applet, see https://github.com/NixOS/nixpkgs/issues/32730
@@ -81,8 +85,8 @@ in
     ];
 
     gtk.iconCache.enable = true;
-    qt.enable = true;
-    qt.platformTheme = "kde";
-    qt.style = "cleanlooks";
+
+    xdg.portal.enable = true;
+    xdg.portal.xdgOpenUsePortal = true;
   };
 }

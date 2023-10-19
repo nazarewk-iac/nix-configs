@@ -30,9 +30,12 @@ in
     nix.package = pkgs.nixVersions.stable;
 
     home-manager.extraSpecialArgs = { nixosConfig = config; };
-    home-manager.sharedModules = hmModules ++ [{
-      home.enableNixpkgsReleaseCheck = true;
-      xdg.enable = true;
-    }];
+    home-manager.sharedModules = hmModules ++ [
+      inputs.plasma-manager.homeManagerModules.plasma-manager
+      {
+        home.enableNixpkgsReleaseCheck = true;
+        xdg.enable = true;
+      }
+    ];
   };
 }

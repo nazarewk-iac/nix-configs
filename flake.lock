@@ -615,6 +615,29 @@
         "type": "gitlab"
       }
     },
+    "plasma-manager": {
+      "inputs": {
+        "home-manager": [
+          "home-manager"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1690827734,
+        "narHash": "sha256-zcNLTSKGZ5zcx0RQkDKH4dN2MBx+KTfrYN7HfmD0N7c=",
+        "owner": "pjones",
+        "repo": "plasma-manager",
+        "rev": "b6241a2f7c625d0b0bee8e203d78232d0a6535e9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pjones",
+        "repo": "plasma-manager",
+        "type": "github"
+      }
+    },
     "pre-commit-hooks": {
       "inputs": {
         "flake-compat": [
@@ -662,6 +685,7 @@
         "nixpkgs": "nixpkgs",
         "nixpkgs-lib": "nixpkgs-lib",
         "nixpkgs-wayland": "nixpkgs-wayland",
+        "plasma-manager": "plasma-manager",
         "pre-commit-hooks": "pre-commit-hooks",
         "treefmt-nix": "treefmt-nix_2"
       }

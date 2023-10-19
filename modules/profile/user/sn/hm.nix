@@ -11,7 +11,7 @@ in
   };
   config = lib.mkIf (cfg != { }) (lib.mkMerge [
     {
-      home.stateVersion = "22.11";
+      home.stateVersion = "23.11";
 
       home.packages = with pkgs; [
         vlc
@@ -39,42 +39,7 @@ in
         in
         foldParts ./yubico/u2f_keys.parts;
 
-      services.flameshot.settings.General.savePath = "${config.home.homeDirectory}/Downloads/screenshots";
-
       xdg.mime.enable = true;
-      xdg.mimeApps.enable = true;
-      xdg.mimeApps.associations.added = { };
-      xdg.mimeApps.defaultApplications =
-        let
-          rss = [ "brave-browser.desktop" ];
-          ipfs = [ "brave-browser.desktop" ];
-          browser = [ "firefox.desktop" ];
-          pdf = [ "org.gnome.Evince.desktop" ];
-          fileManager = [ "thunar.desktop" ];
-          vectorImages = [ "org.gnome.eog.desktop" ];
-        in
-        {
-          "application/pdf" = pdf;
-          "application/rdf+xml" = rss;
-          "application/rss+xml" = rss;
-          "application/x-extension-htm" = browser;
-          "application/x-extension-html" = browser;
-          "application/x-extension-shtml" = browser;
-          "application/x-extension-xht" = browser;
-          "application/x-extension-xhtml" = browser;
-          "application/x-gnome-saved-search" = fileManager;
-          "application/xhtml+xml" = browser;
-          "application/xhtml_xml" = browser;
-          "image/svg+xml" = vectorImages;
-          "inode/directory" = fileManager;
-          "text/html" = browser;
-          "text/xml" = browser;
-          "x-scheme-handler/chrome" = browser;
-          "x-scheme-handler/http" = browser;
-          "x-scheme-handler/https" = browser;
-          "x-scheme-handler/ipfs" = ipfs;
-          "x-scheme-handler/ipns" = ipfs;
-        };
     }
   ]);
 }
