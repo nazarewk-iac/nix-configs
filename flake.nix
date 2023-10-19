@@ -117,7 +117,7 @@
       inputs.home-manager.follows = "home-manager";
     };
 
-    plasma-manager.url = "github:pjones/plasma-manager";
+    plasma-manager.url = "github:nazarewk/plasma-manager";
     plasma-manager.inputs.nixpkgs.follows = "nixpkgs";
     plasma-manager.inputs.home-manager.follows = "home-manager";
   };
@@ -159,7 +159,7 @@
               confnix=$(mktemp)
               trap "rm '$confnix' || true" EXIT
               echo "builtins.getFlake (toString "$PWD")" >$confnix
-              nix repl "$confnix"
+              nix repl "$confnix" "$@"
             ''}/bin/repl";
           };
           checks = { };

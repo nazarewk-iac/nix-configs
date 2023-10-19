@@ -8,6 +8,9 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    home-manager.sharedModules = [{
+      kdn.desktop.kde.enable = cfg.enable;
+    }];
     services.xserver.displayManager.defaultSession = "plasmawayland";
     # conflicts with seahorse https://github.com/NixOS/nixpkgs/blob/898cb2064b6e98b8c5499f37e81adbdf2925f7c5/nixos/modules/programs/seahorse.nix#L34
     programs.ssh.askPassword = "${pkgs.libsForQt5.ksshaskpass.out}/bin/ksshaskpass";

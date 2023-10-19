@@ -62,14 +62,53 @@ in
       programs.plasma.enable = true;
       programs.plasma = {
         workspace.clickItemTo = "select";
+        shortcuts.kwin."Show Desktop" = [
+          #"Meta+D"
+        ];
+        shortcuts."org.kde.krunner.desktop"._launch = [
+          "Search"
+          #"Alt+F2"
+          "Alt+Space"
+        ];
         hotkeys.commands = {
-          "Launch Foot" = {
-            key = "Meta+Enter";
+          "foot" = {
+            name = "Foot Terminal";
+            key = "Meta+Return";
             command = "foot";
           };
-          "Launch Qalculate" = {
+          "qalculate" = {
+            name = "Qalculate";
             key = "Meta+K";
             command = "${pkgs.qalculate-qt}/bin/qalculate-qt";
+          };
+          "wofi-drun" = {
+            name = "wofi Application Launcher";
+            key = "Meta+D";
+            command = "wofi --show drun";
+          };
+          "wofi-run" = {
+            name = "wofi Command Launcher";
+            key = "Alt+F2";
+            command = "wofi --show run";
+          };
+          "get-kwallet-password" = {
+            name = "Copy KWallet Password to clipboard";
+            key = "Meta+Shift+P";
+            command =
+              let
+                script = pkgs.writeScript "get-kwallet-password" ''
+                  set -eEuo pipefail
+                  pass show kwallet | wl-copy -n
+                  notify-send "KWallet password" "copied to clipboard"
+                  sleep 10
+                  for i in {1..10} ; do
+                    echo "password cleared" | wl-copy
+                  done
+                  wl-copy --clear
+                  notify-send "KWallet password" "clipboard cleared"
+                '';
+              in
+              "${script}";
           };
         };
       };

@@ -12,10 +12,7 @@ let
 in
 {
   options.kdn.desktop.base = {
-    enable = lib.mkOption {
-      type = lib.types.bool;
-      default = nixosConfig.kdn.desktop.base.enable;
-    };
+    enable = lib.mkEnableOption "shared desktop setup";
   };
   config = lib.mkIf (config.kdn.headless.enableGUI && cfg.enable) {
     xdg.configFile."wofi/config".source = ./wofi/config;
