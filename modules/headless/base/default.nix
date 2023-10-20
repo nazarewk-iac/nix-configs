@@ -71,7 +71,7 @@ in
         file
         desktop-file-utils
         xdg-utils
-        xdg-launch
+        # xdg-launch # this coredumps under KDE, probably poorly written
 
         # https://wiki.archlinux.org/title/Default%20applications#Resource_openers
         handlr-regex
