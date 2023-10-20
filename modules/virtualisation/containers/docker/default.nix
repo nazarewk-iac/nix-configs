@@ -10,8 +10,7 @@ in
   config = lib.mkIf cfg.enable {
     virtualisation.docker.enable = true;
 
-    environment.gnome.excludePackages = with pkgs; [
-      docker
+    environment.systemPackages = with pkgs; [
       docker-client
       docker-compose
     ];
