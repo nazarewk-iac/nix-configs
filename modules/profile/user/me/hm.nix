@@ -20,6 +20,21 @@ let
       };
     in
     "${wrapped}/bin/git-credential-keyring-wrapped";
+
+  get-kwallet-password = pkgs.writeShellApplication {
+    name = "get-kwallet-password";
+    runtimeInputs = with pkgs; [ pass wl-clipboard libnotify jq ];
+    text = ''
+      pass show kwallet | wl-copy -n
+
+      notify-send --expire-time=10000 --wait "KWallet password" "is available in clipboard until this notificaton closes"
+
+      for i in {1..10} ; do
+        echo "password cleared $i times" | wl-copy
+      done
+      wl-copy --clear
+    '';
+  };
 in
 {
   options.kdn.profile.user.kdn = {
@@ -59,6 +74,10 @@ in
         foldParts ./yubico/u2f_keys.parts;
     }
     (lib.mkIf hasKDE {
+      home.packages = with pkgs; [
+        get-kwallet-password
+      ];
+      xdg.desktopEntries.plasma-manager-commands.exec = "true";
       programs.plasma.enable = true;
       programs.plasma = {
         workspace.clickItemTo = "select";
@@ -93,22 +112,8 @@ in
           };
           "get-kwallet-password" = {
             name = "Copy KWallet Password to clipboard";
-            key = "Meta+Shift+P";
-            command =
-              let
-                script = pkgs.writeScript "get-kwallet-password" ''
-                  set -eEuo pipefail
-                  pass show kwallet | wl-copy -n
-                  notify-send "KWallet password" "copied to clipboard"
-                  sleep 10
-                  for i in {1..10} ; do
-                    echo "password cleared" | wl-copy
-                  done
-                  wl-copy --clear
-                  notify-send "KWallet password" "clipboard cleared"
-                '';
-              in
-              "${script}";
+            keys = [ "Meta+Shift+P" "Meta+J" ];
+            command = "get-kwallet-password";
           };
         };
       };
