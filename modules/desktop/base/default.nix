@@ -53,7 +53,6 @@ in
 
       # tools
       brightnessctl
-      gsettings-desktop-schemas
       gtk-engine-murrine
       gtk_engines
       lxappearance
@@ -76,12 +75,6 @@ in
       grim
       libnotify
       wayland-utils
-
-      # themes
-      hicolor-icon-theme # nm-applet, see https://github.com/NixOS/nixpkgs/issues/32730
-      gnome-icon-theme # nm-applet, see https://github.com/NixOS/nixpkgs/issues/43836#issuecomment-419217138
-      glib # gsettings
-      sound-theme-freedesktop
     ];
 
     gtk.iconCache.enable = true;
