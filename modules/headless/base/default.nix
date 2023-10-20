@@ -102,6 +102,8 @@ in
         lurk
 
         zip
+
+        kdn.path-search
       ];
 
       boot.kernel.sysctl = let mb = 1024 * 1024; in {
