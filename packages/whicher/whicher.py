@@ -12,6 +12,42 @@ import sys
 
 
 @dataclasses.dataclass
+class Result:
+    source: str
+    match: Path
+    resolved: Path = dataclasses.field(init=False)
+
+    def __post_init__(self):
+        self.resolved = self.match.resolve()
+
+    def __str__(self):
+        return self.__format__("auto")
+
+    def __format__(self, format_spec):
+        match format_spec:
+            case "j" | "json":
+                return json.dumps(
+                    {
+                        "source": self.source,
+                        "match": str(self.match),
+                        "resolved": str(self.resolved),
+                    }
+                )
+            case "a" | "auto":
+                if self.match == self.resolved:
+                    return str(self.resolved)
+                return f"{self.match} -> {self.resolved}"
+            case "b" | "both":
+                return f"{self.match} -> {self.resolved}"
+            case "m" | "match":
+                return str(self.match)
+            case "r" | "resolved":
+                return str(self.resolved)
+            case _:
+                raise ValueError(f"Unknown formatter: {format_spec}")
+
+
+@dataclasses.dataclass
 class Program:
     source: str
     recursive: bool
@@ -43,11 +79,11 @@ class Program:
         sub_path, *_ = self.source.rsplit("@", maxsplit=1)
         return Path(sub_path)
 
-    def iter_matches(self):
+    def iter_matches(self) -> Generator[Result, None, None]:
         def iter_pattern(pattern: str):
             for globber in self.globbers:
                 for match in globber(pattern):
-                    yield match, match.resolve()
+                    yield Result(source=self.source, match=match)
                     if self.single:
                         return
 
@@ -60,17 +96,17 @@ class Program:
                 print(f"{pattern} was not found in {self.source}", file=sys.stderr)
 
     @functools.cached_property
-    def matches(self) -> dict[Path, Path]:
-        ret = {}
+    def results(self) -> list[Result]:
+        ret = []
         occurrences = set()
-        for match, resolved in self.iter_matches():
+        for result in self.iter_matches():
             if 0 <= self.limit <= len(ret):
-                return ret
+                break
             if self.unique:
-                if resolved in occurrences:
+                if result.resolved in occurrences:
                     continue
-                occurrences.add(resolved)
-            ret[match] = resolved
+                occurrences.add(result.resolved)
+            ret.append(result)
         return ret
 
     @classmethod
@@ -145,42 +181,9 @@ class Program:
         args = parser.parse_args(args=args)
         return cls(**args.__dict__)
 
-    @functools.cached_property
-    def formatter(self) -> Callable[[Path, Path], str]:
-        def fmt_json(m, r):
-            return json.dumps({"match": str(m), "resolved": str(r)})
-
-        def fmt_auto(m, r):
-            if m.resolve() == r:
-                return fmt_match(m, r)
-            return fmt_both(m, r)
-
-        def fmt_both(m, r):
-            return f"{m} -> {r}"
-
-        def fmt_match(m, r):
-            return str(m)
-
-        def fmt_resolved(m, r):
-            return str(r)
-
-        match self.output:
-            case "j" | "json":
-                return fmt_json
-            case "a" | "auto":
-                return fmt_auto
-            case "b" | "both":
-                return fmt_both
-            case "m" | "match":
-                return fmt_match
-            case "r" | "resolved":
-                return fmt_resolved
-            case _:
-                sys.exit(1)
-
     def run(self):
-        for match, resolved in self.matches.items():
-            print(self.formatter(match, resolved))
+        for result in self.results:
+            print(f"{result:{self.output}}")
 
 
 def main():

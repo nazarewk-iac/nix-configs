@@ -14,7 +14,7 @@
   netbird-ui = netbird.override { ui = true; };
   openapi-python-client-cli = pkgs.callPackage ./openapi-python-client-cli { };
   pass-secret-service = pkgs.callPackage ./pass-secret-service { };
-  path-search = pkgs.callPackage ./path-search { };
+  whicher = pkgs.callPackage ./whicher { };
   ss-util = pkgs.callPackage ./ss-util { };
   tc-redirect-tap = pkgs.callPackage ./tc-redirect-tap { };
   yubikey-configure = pkgs.callPackage ./yubikey-configure { };
