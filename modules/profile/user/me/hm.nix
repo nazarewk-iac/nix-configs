@@ -232,10 +232,6 @@ in
         flameshot
         vlc
         haruna
-        libsForQt5.okular # pdf viewer
-        libsForQt5.ark # archive manager
-        libsForQt5.gwenview # image viewer & editor
-        libsForQt5.pix # image gallery viewer
         shotwell
         gimp
 
@@ -248,7 +244,6 @@ in
         kdn.klog-time-tracker
         kdn.klg
         kdn.ss-util
-        dex # A program to generate and execute DesktopEntry files of the Application type
         brave
         rambox # browser/multi workspace
         drawio
@@ -263,7 +258,13 @@ in
 
         #transmission-qt
         deluge
-      ];
+      ] ++ (with pkgs.libsForQt5; [
+        okular # pdf viewer
+        ark # archive manager
+        gwenview # image viewer & editor
+        pix # image gallery viewer
+        kontact
+      ]);
     })
   ]);
 }

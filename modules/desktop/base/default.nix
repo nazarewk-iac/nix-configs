@@ -57,6 +57,7 @@ in
       gtk_engines
       lxappearance
       xsettingsd
+      dex # A program to generate and execute DesktopEntry files of the Application type
 
       # debugging
       evtest # listens for /dev/event* device events (eg: keyboard keys, function keys etc)
@@ -72,8 +73,6 @@ in
       wofi
       wl-clipboard
       wl-clipboard-x11
-      grim
-      libnotify
       wayland-utils
     ];
 
