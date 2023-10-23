@@ -16,32 +16,32 @@ in
 
     home-manager.sharedModules = [
       {
-        home.file.".gnupg/scdaemon.conf".text = ''
-          pcsc-shared
+        programs.gpg.enable = true;
+        programs.gpg.scdaemonSettings = {
           # disable-ccid to make YubiKey work
           # - https://support.yubico.com/hc/en-us/articles/360013714479-Troubleshooting-Issues-with-GPG
           # - https://dev.gnupg.org/T5451
-          disable-ccid
+          disable-ccid = true;
+          pcsc-shared = true;
 
           # PIN caching fix
           # - https://github.com/drduh/YubiKey-Guide/issues/135
           # - https://dev.gnupg.org/T3362
           # fix from https://dev.gnupg.org/T5436#148656
-          disable-application piv
-        '';
-        home.file.".gnupg/gpg.conf".text = ''
-          no-throw-keyids
-        '';
-        home.file.".gnupg/gpg-agent.conf".text = ''
-        '';
+          disable-application = "piv";
+        };
+
+        # for Android interoperability, see https://github.com/drduh/YubiKey-Guide/issues/152#issuecomment-852176877
+        programs.password-store.settings.PASSWORD_STORE_GPG_OPTS = "--no-throw-keyids";
+        programs.gpg.settings.no-throw-keyids = true;
       }
     ];
 
     # YubiKey
     # https://nixos.wiki/wiki/Yubikey
-    services.udev.packages = [
-      pkgs.yubikey-personalization
-      pkgs.libfido2 # pulls in https://github.com/Yubico/libfido2/blob/main/udev/70-u2f.rules
+    services.udev.packages = with pkgs;[
+      yubikey-personalization
+      libfido2 # pulls in https://github.com/Yubico/libfido2/blob/main/udev/70-u2f.rules
     ];
 
     users.groups.plugdev = { };

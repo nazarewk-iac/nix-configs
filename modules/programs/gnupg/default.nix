@@ -7,8 +7,6 @@ let
     runtimeInputs = with pkgs; [
       pinentry-qt
       pinentry-curses
-      pinentry-gtk2
-      pinentry-gnome
     ];
     text = builtins.readFile ./pinentry.sh;
   };
@@ -22,8 +20,11 @@ in
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       services.pcscd.enable = true;
+      hardware.gpgSmartcards.enable = true;
       programs.gnupg.agent.enable = true;
+      programs.gnupg.agent.enableBrowserSocket = true;
       programs.gnupg.agent.enableExtraSocket = true;
+      programs.gnupg.agent.enableSSHSupport = true;
       programs.gnupg.agent.pinentryFlavor = null;
 
       home-manager.sharedModules = [
@@ -37,8 +38,7 @@ in
           programs.password-store.enable = true;
           programs.password-store.settings = {
             PASSWORD_STORE_DIR = "${config.home.homeDirectory}/.password-store";
-            # for Android interoperability, see https://github.com/drduh/YubiKey-Guide/issues/152#issuecomment-852176877
-            PASSWORD_STORE_GPG_OPTS = "--no-throw-keyids";
+            PASSWORD_STORE_CLIP_TIME = "10";
           };
           home.file.".gnupg/gpg-agent.conf".text = ''
             pinentry-program ${pinentry}/bin/pinentry
@@ -77,8 +77,6 @@ in
       environment.systemPackages = with pkgs; [
         libsecret
       ];
-
-      programs.ssh.startAgent = true;
 
       services.gnome.gnome-keyring.enable = lib.mkForce false;
       home-manager.sharedModules = [
