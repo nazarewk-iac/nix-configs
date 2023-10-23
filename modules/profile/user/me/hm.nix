@@ -91,34 +91,29 @@ in
         ];
         hotkeys.commands = {
           "foot" = {
-            name = "Foot Terminal";
+            comment = "Foot Terminal";
             key = "Meta+Return";
             command = "foot";
           };
           "qalculate" = {
-            name = "Qalculate";
+            comment = "Qalculate";
             key = "Meta+K";
             command = "${pkgs.qalculate-qt}/bin/qalculate-qt";
           };
           "wofi-drun" = {
-            name = "wofi Application Launcher";
+            comment = "wofi Application Launcher";
             key = "Meta+D";
             command = "wofi --show drun";
           };
           "wofi-run" = {
-            name = "wofi Command Launcher";
+            comment = "wofi Command Launcher";
             key = "Alt+F2";
             command = "wofi --show run";
           };
           "get-kwallet-password" = {
-            name = "Copy KWallet Password to clipboard";
+            comment = "Copy KWallet Password to clipboard";
             keys = [ "Meta+Shift+P" "Meta+J" ];
-            # a shortcut has some of stdout/stderr closed
-            # wl-copy fails because wayland display has FD number less than 3/4
-            # TODO: report the issue
-            # commit: https://github.com/bugaevc/wl-clipboard/commit/84f16d447fee126a5f19a46d7c300941081832b6
-
-            command = "${pkgs.systemd}/bin/systemd-cat -t get-kwallet-password ${get-kwallet-password}/bin/get-kwallet-password";
+            command = "${get-kwallet-password}/bin/get-kwallet-password";
           };
         };
       };

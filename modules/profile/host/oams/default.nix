@@ -11,8 +11,6 @@ in
     {
       kdn.desktop.kde.enable = true;
 
-      kdn.programs.gnupg.pass-secret-service.enable = lib.mkForce false;
-
       kdn.profile.machine.workstation.enable = true;
       kdn.hardware.gpu.amd.enable = true;
       kdn.hardware.cpu.amd.enable = true;

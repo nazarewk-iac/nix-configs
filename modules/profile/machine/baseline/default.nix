@@ -39,7 +39,6 @@ in
       services.openssh.openFirewall = true;
       services.openssh.settings.PasswordAuthentication = false;
       kdn.programs.gnupg.enable = true;
-      kdn.programs.gnupg.pass-secret-service.enable = true;
 
       location.provider = "geoclue2";
 
