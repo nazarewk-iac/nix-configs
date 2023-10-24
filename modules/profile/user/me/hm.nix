@@ -263,7 +263,7 @@ in
         ark # archive manager
         gwenview # image viewer & editor
         pix # image gallery viewer
-        kontact
+        # kontact # doesn't work, see https://github.com/NixOS/nixpkgs/issues/190658
       ]);
     })
   ]);

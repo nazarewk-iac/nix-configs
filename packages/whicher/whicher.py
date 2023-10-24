@@ -39,12 +39,14 @@ class SourceSpec:
             value = name
         else:
             value = os.environ.get(name, "")
-        return value.split(os.path.pathsep)
+        return [entry for entry in value.split(os.path.pathsep) if entry]
 
     @functools.cached_property
     def sub_path(self):
-        sub_path, *_ = self.spec.rsplit("@", maxsplit=1)
-        return Path(sub_path)
+        if "@" in self.spec:
+            sub_path, *_ = self.spec.rsplit("@", maxsplit=1)
+            return Path(sub_path)
+        return Path(".")
 
 
 @dataclasses.dataclass
@@ -154,12 +156,11 @@ class Program:
         parser.add_argument(
             "-s",
             "--source",
-            nargs="+",
             dest="sources",
             help=f"Where to look for patterns? examples: {', '.join(source_examples)}",
         )
         parser.add_argument(
-            "--xdg-apps",
+            "--xdg",
             action=ActionExtendConst,
             const=[
                 "applications@XDG_DATA_HOME",
@@ -172,13 +173,11 @@ class Program:
             "--kde",
             action=ActionExtendConst,
             const=[
-                "KDEHOME",
-                "XDG_DATA_HOME",
-                "KDEDIRS",
-                "XDG_DATA_DIRS",
+                "XDG_CONFIG_HOME",
+                "XDG_CONFIG_DIRS",
             ],
             dest="sources",
-            help="search for KDE files",
+            help="search for KDE config files",
         )
         parser.add_argument(
             "-R",
@@ -198,7 +197,7 @@ class Program:
             "-u",
             "--unique",
             action="store_true",
-            help="do not return same pattern more than once",
+            help="do not return same (resolved)  file more than once",
         )
         parser.add_argument(
             "-o",

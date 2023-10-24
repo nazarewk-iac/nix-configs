@@ -54,7 +54,12 @@ in
         cmctl # cert-manager CLI
 
         # Helm
-        kubernetes-helm # dep for: chart-testing
+        (wrapHelm kubernetes-helm {
+          plugins = with pkgs.kubernetes-helmPlugins; [
+            helm-diff
+            helm-git
+          ];
+        })
         chart-testing
         helmsman
 
