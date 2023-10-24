@@ -156,8 +156,18 @@ class Program:
         parser.add_argument(
             "-s",
             "--source",
+            action="append",
             dest="sources",
             help=f"Where to look for patterns? examples: {', '.join(source_examples)}",
+        )
+        parser.add_argument(
+            "--path",
+            action=ActionExtendConst,
+            const=[
+                "PATH",
+            ],
+            dest="sources",
+            help="PATH",
         )
         parser.add_argument(
             "--xdg",
