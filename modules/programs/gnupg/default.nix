@@ -2,14 +2,22 @@
 let
   cfg = config.kdn.programs.gnupg;
 
-  pinentry = pkgs.writeShellApplication {
-    name = "pinentry";
-    runtimeInputs = with pkgs; [
-      pinentry-qt
-      pinentry-curses
-    ];
-    text = builtins.readFile ./pinentry.sh;
-  };
+  pinentry =
+    let
+      python = pkgs.python3;
+      runtimeInputs = with pkgs; [
+        coreutils
+        gnused
+        pinentry-curses
+        pinentry-qt
+      ];
+    in
+    pkgs.writeScriptBin "pinentry" ''
+      #!${python}/bin/python
+      import os
+      os.environ["PATH"] = f'${lib.makeBinPath runtimeInputs}:os.environ.get("PATH", "")'.strip(os.path.pathsep)
+      ${builtins.readFile ./pinentry.py}
+    '';
 in
 {
   options.kdn.programs.gnupg = {
@@ -47,7 +55,10 @@ in
       ];
 
       environment.systemPackages = with pkgs; [
-        pinentry
+        (lib.hiPrio pinentry)
+        pinentry-curses
+        pinentry-qt
+
         opensc
         pcsctools
 
