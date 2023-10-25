@@ -1,8 +1,14 @@
 import hashlib
+import json
+import logging
 import os
 import sys
 
 import keyring
+
+logging.basicConfig(
+    level=os.environ.get("GIT_CREDENTIAL_KEYRING_LOG_LEVEL") or logging.WARNING
+)
 
 
 def trim(component: str):
@@ -53,6 +59,8 @@ def main():
         for line in sys.stdin
         if "=" in line
     }
+    logging.debug(f"{sys.argv}")
+    logging.debug(json.dumps(params, indent=2))
 
     protocolless_url = params["host"]
     if "path" in params:
@@ -82,7 +90,9 @@ def main():
 
             if "username" not in params and username is not None:
                 print("username=" + username)
+                logging.debug("username=" + username)
             print("password=" + password)
+            logging.debug("password=" + password)
 
         case "store":
             set(service, username, password)
@@ -91,8 +101,8 @@ def main():
             delete(service, username)
 
         case _:
-            print("Invalid usage", file=sys.stderr)
-            sys.exit(1)
+            logging.error("Invalid usage")
+            # helpers should silently ignore unknown commands.
 
 
 if __name__ == "__main__":

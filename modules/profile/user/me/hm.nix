@@ -6,20 +6,6 @@ let
   hasWorkstation = nixosConfig.kdn.profile.machine.workstation.enable;
   hasKDE = nixosConfig.services.xserver.desktopManager.plasma5.enable;
 
-  git-credential-keyring =
-    let
-      wrapped = pkgs.writeShellApplication {
-        name = "git-credential-keyring-wrapped";
-        runtimeInputs = [ pkgs.kdn.git-credential-keyring ];
-        text = ''
-          export PYTHON_KEYRING_BACKEND="keyring_pass.PasswordStoreBackend"
-          export KEYRING_PROPERTY_PASS_BINARY="${pkgs.pass}/bin/pass"
-          export GIT_CREDENTIAL_KEYRING_IGNORE_DELETIONS=1
-          git-credential-keyring "$@"
-        '';
-      };
-    in
-    "${wrapped}/bin/git-credential-keyring-wrapped";
 
 in
 {
@@ -152,10 +138,22 @@ in
       programs.git.attributes = [ (builtins.readFile ./.gitattributes) ];
       # to authenticate hub: ln -s ~/.config/gh/hosts.yml ~/.config/hub
       programs.git.extraConfig = {
-        credential.helper = git-credential-keyring;
+        credential.helper =
+          let
+            wrapped = pkgs.writeShellApplication {
+              name = "git-credential-keyring-wrapped";
+              runtimeInputs = [ pkgs.kdn.git-credential-keyring ];
+              text = ''
+                export PYTHON_KEYRING_BACKEND="keyring_pass.PasswordStoreBackend"
+                export KEYRING_PROPERTY_PASS_BINARY="${pkgs.pass}/bin/pass"
+                export GIT_CREDENTIAL_KEYRING_IGNORE_DELETIONS=1
+                git-credential-keyring "$@"
+              '';
+            };
+          in
+          "${wrapped}/bin/git-credential-keyring-wrapped";
 
-        # use it separately because `gh` cli wants to write to ~/.config/gh/config.yml
-        credential."https://github.com".helper = "${pkgs.gh}/bin/gh auth git-credential";
+        credential."https://github.com".username = "nazarewk";
         url."https://github.com/".insteadOf = "git@github.com:";
 
         credential."https://gitlab.com/signicat/".username = "signicat-krznaz";
