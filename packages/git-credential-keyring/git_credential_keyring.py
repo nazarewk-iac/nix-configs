@@ -65,8 +65,8 @@ def main():
     ]
 
     service = "git/" + protocolless_url
-    username = params.get("username")
-    password = params.get("password")
+    username = params.get("username", "")
+    password = params.get("password", "")
 
     match sys.argv[-1]:
         case "get":
