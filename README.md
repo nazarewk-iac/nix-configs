@@ -90,3 +90,7 @@ add token to `~/.config/nix/nix.conf`:
 ```
 access-tokens = github.com=github_pat_XXXX
 ```
+
+## example of standalone Nix module
+
+https://gist.github.com/nazarewk/8988facb6118f73d2db3d28b64463cba

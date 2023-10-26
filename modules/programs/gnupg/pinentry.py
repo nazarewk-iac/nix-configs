@@ -9,6 +9,8 @@ from pathlib import Path
 
 import sys
 
+# TODO: handle some entries by itself: https://gist.github.com/Cimbali/862a430a0f28ffe07f8ae618e8b73973
+
 log_dir = Path(os.environ.get("GPGHOME") or Path.home() / ".gnupg")
 debug = True
 logging.basicConfig(filename=log_dir / "pinentry.log", level=logging.DEBUG)
