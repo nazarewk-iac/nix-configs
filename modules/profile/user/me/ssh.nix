@@ -10,5 +10,4 @@ in
   inherit authorizedKeysList authorizedKeysPath;
 
   authorizedKeysText = builtins.concatStringsSep "\n" authorizedKeysList;
-  sshdConfigPath = ./.ssh/authorized_keys;
 }

@@ -32,7 +32,8 @@ in
       programs.gnupg.agent.enable = true;
       programs.gnupg.agent.enableBrowserSocket = true;
       programs.gnupg.agent.enableExtraSocket = true;
-      programs.gnupg.agent.enableSSHSupport = true;
+      # cannot remove keys from the agent and YubiKey GPG is not set up/set up with unknown password
+      programs.gnupg.agent.enableSSHSupport = false;
       programs.gnupg.agent.pinentryFlavor = null;
 
       home-manager.sharedModules = [

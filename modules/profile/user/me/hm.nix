@@ -17,6 +17,7 @@ in
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       home.stateVersion = "23.11";
+      services.ssh-agent.enable = true;
       programs.ssh.enable = true;
       programs.ssh.extraConfig = ''
         Host *
