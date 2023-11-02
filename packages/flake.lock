@@ -38,6 +38,7 @@
     "nix-github-actions": {
       "inputs": {
         "nixpkgs": [
+          "poetry2nix",
           "nixpkgs"
         ]
       },
@@ -91,19 +92,13 @@
     },
     "poetry2nix": {
       "inputs": {
-        "flake-utils": [
-          "flake-utils"
-        ],
-        "nix-github-actions": [
-          "nix-github-actions"
-        ],
+        "flake-utils": "flake-utils",
+        "nix-github-actions": "nix-github-actions",
         "nixpkgs": [
           "nixpkgs"
         ],
         "systems": "systems_2",
-        "treefmt-nix": [
-          "treefmt-nix"
-        ]
+        "treefmt-nix": "treefmt-nix"
       },
       "locked": {
         "lastModified": 1698918091,
@@ -122,12 +117,9 @@
     "root": {
       "inputs": {
         "flake-parts": "flake-parts",
-        "flake-utils": "flake-utils",
-        "nix-github-actions": "nix-github-actions",
         "nixpkgs": "nixpkgs",
         "poetry2nix": "poetry2nix",
-        "systems": "systems_3",
-        "treefmt-nix": "treefmt-nix"
+        "systems": "systems_3"
       }
     },
     "systems": {
@@ -177,6 +169,7 @@
     "treefmt-nix": {
       "inputs": {
         "nixpkgs": [
+          "poetry2nix",
           "nixpkgs"
         ]
       },
