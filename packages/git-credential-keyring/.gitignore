@@ -2,3 +2,4 @@
 !/devenv.lock
 !/devenv.yaml
 /devenv.local.nix
+!/flake.lock
