@@ -30,7 +30,7 @@ in
         "vfio_pci"
         "vfio"
         "vfio_iommu_type1"
-        "vfio_virqfd"
+        # "vfio_virqfd" # in 6.2+ part of kernel, see https://www.reddit.com/r/archlinux/comments/11dqiy5/vfio_virqfd_missing_in_linux621arch11/
       ];
 
       # see https://gist.github.com/k-amin07/47cb06e4598e0c81f2b42904c6909329#isolating-gpu
