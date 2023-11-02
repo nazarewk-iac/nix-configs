@@ -15,6 +15,7 @@
 !*.iml
 
 !*.nix
+.*.nix
 !*.sh
 !*.md
 !/.envrc
