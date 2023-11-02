@@ -1,0 +1,4 @@
+!/.envrc
+!/devenv.lock
+!/devenv.yaml
+/devenv.local.nix
