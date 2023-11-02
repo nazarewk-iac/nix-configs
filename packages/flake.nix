@@ -3,19 +3,21 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixlib.url = "github:nix-community/nixpkgs.lib";
+    systems.url = "github:nix-systems/default";
+    poetry2nix.url = "github:nix-community/poetry2nix";
+    poetry2nix.inputs.nixpkgs.follows = "nixpkgs";
+    poetry2nix.inputs.systems.follows = "systems";
   };
+
   outputs = inputs@{ flake-parts, self, ... }: flake-parts.lib.mkFlake { inherit inputs; } {
-    systems = [
-      "x86_64-linux"
-      "x86_64-darwin"
-      "aarch64-linux"
-      "aarch64-darwin"
-    ];
-
+    systems = import inputs.systems;
+    flake.overlays.default = (inputs.nixpkgs.lib.composeManyExtensions [
+      inputs.poetry2nix.overlays.default
+      (final: prev: { kdn = final.callPackages ./. { }; })
+    ]);
     perSystem = { config, self', inputs', system, pkgs, ... }: {
-      packages = pkgs.callPackages ./default.nix { };
+      _module.args.pkgs = inputs'.nixpkgs.legacyPackages.extend self.overlays.default;
+      packages = pkgs.kdn;
     };
-
-    flake.overlays.default = final: prev: { kdn = prev.callPackages ./default.nix { }; };
   };
 }
