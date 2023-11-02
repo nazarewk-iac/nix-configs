@@ -1,5 +1,4 @@
-{ lib, ... }:
-lib.extend (final: prev:
+{ lib, ... }: lib.extend (final: prev:
 let
   lib = final;
   callLibs = path: import path { inherit lib; };

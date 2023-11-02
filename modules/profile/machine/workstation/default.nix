@@ -43,7 +43,8 @@ in
     #kdn.virtualisation.containers.distrobox.enable = true;
     kdn.virtualisation.containers.enable = true;
     kdn.virtualisation.containers.podman.enable = true;
-    kdn.virtualisation.containers.talos.enable = true;
+    # TODO: enable after fixed https://github.com/NixOS/nixpkgs/issues/264127
+    kdn.virtualisation.containers.talos.enable = false;
     #kdn.virtualisation.containers.x11docker.enable = true;
     programs.seahorse.enable = true;
     boot.binfmt.emulatedSystems = [
