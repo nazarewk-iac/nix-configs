@@ -261,13 +261,7 @@ in
 
         #transmission-qt
         deluge
-      ] ++ (with pkgs.libsForQt5; [
-        okular # pdf viewer
-        ark # archive manager
-        gwenview # image viewer & editor
-        pix # image gallery viewer
-        # kontact # doesn't work, see https://github.com/NixOS/nixpkgs/issues/190658
-      ]);
+      ];
     })
   ]);
 }
