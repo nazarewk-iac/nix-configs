@@ -45,7 +45,8 @@ for entry in "$@"; do
     service="${service%%/*}"
   fi
 
-  if svc_bin="$(self-which "g-dir-${service}" 2>/dev/null)"; then
+  svc_bin="$(self-which "g-dir-${service}" 2>/dev/null || true)"
+  if test -n "$svc_bin"; then
     "${svc_bin}" "${entry}"
     continue
   fi
