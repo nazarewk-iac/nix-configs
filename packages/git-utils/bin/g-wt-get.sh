@@ -21,9 +21,13 @@ for branch in "$@"; do
   mkdir -p "${dir%/*}"
 
   if [ -d "$dir" ]; then
-    echo "$dir already exists, updating..."
-    git -C "$dir" fetch --all --prune
-    git -C "$dir" pull --rebase || :
+    if [ "${GIT_UTILS_KDN_UPDATE:-}" != 0 ]; then
+      echo "$dir already exists, updating..." >&2
+      git -C "$dir" fetch --all --prune
+      git -C "$dir" pull --rebase || :
+    else
+      echo "$dir already exists, skipping..." >&2
+    fi
     continue
   fi
 

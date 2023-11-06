@@ -72,7 +72,10 @@ symlinkJoin {
       runtimeInputs = [ g-dir g-wt-dir ];
     };
     g-get = writeShellScript ./bin/g-get.sh {
-      runtimeInputs = [ git g-dir ];
+      runtimeInputs = [ git g-dir g-remote ];
+    };
+    g-remote = writeShellScript ./bin/g-remote.sh {
+      runtimeInputs = [ ];
     };
     g-open = writeShellScript ./bin/g-open.sh {
       prefix = ''

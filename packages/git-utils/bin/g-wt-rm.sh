@@ -17,6 +17,9 @@ repo_dir="$(self g-dir "$repo")"
 
 for branch in "$@"; do
   dir="$(self g-wt-dir "$repo" "$branch")"
-  mkdir -p "${dir%/*}"
-  git -C "$repo_dir" worktree remove "$dir" || :
+  if [ -d "$dir" ]; then
+    git -C "$repo_dir" worktree remove "$dir" || :
+  else
+    git -C "$repo_dir" worktree prune || :
+  fi
 done

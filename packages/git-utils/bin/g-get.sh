@@ -12,12 +12,16 @@ self() {
 
 for entry in "$@"; do
   dir="$(self g-dir "$entry")"
-  remote="$entry"
+  remote="$(self g-remote "$entry")"
 
   if [ -d "$dir/.git" ]; then
-    echo "$dir already exists, updating..."
-    git -C "$dir" fetch --all --prune
-    git -C "$dir" pull --rebase || true
+    if [ "${GIT_UTILS_KDN_UPDATE:-}" != 0 ]; then
+      echo "$dir already exists, updating..." >&2
+      git -C "$dir" fetch --all --prune
+      git -C "$dir" pull --rebase || true
+    else
+      echo "$dir already exists, skipping..." >&2
+    fi
     continue
   fi
 
