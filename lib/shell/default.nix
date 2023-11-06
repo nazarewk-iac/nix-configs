@@ -1,7 +1,8 @@
 { lib, ... }:
 let
   # escapeShellArg = arg: "'${replaceStrings ["'"] ["'\\''"] (toString arg)}'";
-  escapeShellDefaultValue = arg: ''"${builtins.replaceStrings [''"''] [''\"''] (builtins.toString arg)}"'';
+  # similar lib.escapeShellArg, but escapes double-quotes and dollar signs instead of single-quotes
+  escapeShellDefaultValue = arg: ''"${builtins.replaceStrings [''"'' "$"] [''\"'' "\$"] (builtins.toString arg)}"'';
   escapeShellDefault = n: v: "\"\${${n}:-${escapeShellDefaultValue v}}\"";
 
   escapeShellDefaultAssignment = n: v: "${n}=${escapeShellDefault n v}";
