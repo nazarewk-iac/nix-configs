@@ -18,8 +18,8 @@ repo_dir="$(self g-dir "$repo")"
 for branch in "$@"; do
   dir="$(self g-wt-dir "$repo" "$branch")"
   if [ -d "$dir" ]; then
-    git -C "$repo_dir" worktree remove "$dir" || :
+    git -C "$repo_dir" worktree remove "$dir" || true
   else
-    git -C "$repo_dir" worktree prune || :
+    git -C "$repo_dir" worktree prune || true
   fi
 done
