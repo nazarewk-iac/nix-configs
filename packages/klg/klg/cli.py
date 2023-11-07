@@ -23,7 +23,12 @@ logger: structlog.stdlib.BoundLogger = structlog.get_logger()
 CONFIG: Config = None
 
 
-async def get_profile_path(klog: Klog, config: Config, path: str, profile: str = None):
+async def get_profile_path(
+    klog: Klog,
+    config: Config,
+    path: str = "",
+    profile: str = None,
+) -> Path:
     if not path:
         # TODO: change to using multiple paths
         path = next(config.profile_paths(id=profile))
@@ -57,7 +62,7 @@ async def entry():
 
 
 @entry.command()
-@click.argument("path", default="")
+@click.option("-p", "--path", default="")
 async def latest(path):
     klog = Klog()
     path = await get_profile_path(klog, CONFIG, path)
@@ -74,7 +79,7 @@ def format_result(result: dto.Result):
 
 
 @main.command()
-@click.argument("path", default="")
+@click.option("-p", "--path", default="")
 @click.option("--check/--no-check", is_flag=True)
 @click.option("--sort/--no-sort", is_flag=True)
 @click.option("--diff/--no-diff", is_flag=True, default=True)
@@ -226,8 +231,8 @@ async def generate_report(paths, period, tags, output, report_id, resource, diff
     print(converted)
 
 
-@main.command()
-@click.argument("path", default="")
+@main.command(context_settings={"ignore_unknown_options": True})
+@click.option("-p", "--path", default="")
 @click.argument("args", nargs=-1)
 async def stop(path, args):
     klog = Klog()
@@ -236,8 +241,8 @@ async def stop(path, args):
     print(await klog.day_summary(path))
 
 
-@main.command()
-@click.argument("path", default="")
+@main.command(context_settings={"ignore_unknown_options": True})
+@click.option("-p", "--path", default="")
 @click.argument("args", nargs=-1)
 async def resume(path, args):
     klog = Klog()
@@ -246,8 +251,18 @@ async def resume(path, args):
     print(await klog.day_summary(path))
 
 
-@main.command()
-@click.argument("path", default="")
+@main.command(context_settings={"ignore_unknown_options": True})
+@click.option("-p", "--path", default="")
+@click.argument("args", nargs=-1)
+async def switch(path, args):
+    klog = Klog()
+    path = await get_profile_path(klog, CONFIG, path)
+    await klog.switch(path, *args)
+    print(await klog.day_summary(path))
+
+
+@main.command(context_settings={"ignore_unknown_options": True})
+@click.option("-p", "--path", default="")
 @click.argument("args", nargs=-1)
 async def today(path, args):
     klog = Klog()
@@ -270,9 +285,9 @@ async def today(path, args):
     help="Records (or entries) that match these tags",
 )
 @click.option("--store/--no-store", default=True)
-@click.argument("path", default="")
+@click.option("-p", "--path", default="")
 @click.argument("args", nargs=-1)
-async def report(path: Path, args, period, tags, store):
+async def report(path, args, period, tags, store):
     klog = Klog()
     path = await get_profile_path(klog, CONFIG, path)
     args = [
@@ -293,21 +308,23 @@ async def report(path: Path, args, period, tags, store):
 
 @main.command()
 @click.option(
-    "-p",
+    "-P",
     "--period",
     default=pendulum.now().to_date_string()[:-3],
     help="Records in period: YYYY (year), YYYY-MM (month), YYYY-Www (week), or YYYY-Qq (quarter)",
 )
-@click.option("-h", "--hours", default=100)
+@click.option("-h", "--hours", default=None, type=int)
+@click.option("-d", "--daily-hours", "--daily", "daily_hours", default=8, type=int)
 @click.option("--write/--no-write", is_flag=True, default=True)
-@click.argument("path", default="")
-async def plan_month(period, path, hours, write):
+@click.option("-p", "--path", default="")
+async def plan_month(period, path, write, hours, daily_hours):
     klog = Klog()
     path = await get_profile_path(klog, CONFIG, path)
 
     result = await klog.to_json(path)
     result.plan_month(
         hours=hours,
+        daily_hours=daily_hours,
         period=pendulum.parse(period),
     )
     formatted, diff_content = format_result(result)
@@ -318,6 +335,26 @@ async def plan_month(period, path, hours, write):
 
     if diff_content and write:
         path.write_text(formatted)
+
+
+@main.command(name="raw", context_settings={"ignore_unknown_options": True})
+@click.option("-p", "--path", default="")
+@click.option(
+    "--with-path/--without-path",
+    "-i/-I",
+    "include_path",
+    is_flag=True,
+    default=False,
+)
+@click.argument("args", nargs=-1)
+async def raw(path, include_path, args):
+    klog = Klog()
+    include_path = include_path or bool(path)
+    path = await get_profile_path(klog, CONFIG, path=path)
+    args = [*args]
+    if include_path:
+        args.append(path)
+    await klog.cmd(*args, stdout=None)
 
 
 if __name__ in ("__main__", "__mp_main__"):

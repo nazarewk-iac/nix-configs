@@ -12,7 +12,7 @@
       <excludePattern pattern=".direnv" />
       <excludePattern pattern="result" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.11 (klg)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="nix-configs:klg" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>

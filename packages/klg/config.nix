@@ -23,7 +23,7 @@ let
   };
   attrs.env = attrs.common // {
     groups = [ "test" ];
-    editablePackageSources = { "${poetryName}" = attrs.common.projectDir; };
+    editablePackageSources = { "${poetryName}" = "./"; };
   };
 
   envvars = {

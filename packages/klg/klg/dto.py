@@ -404,7 +404,8 @@ class Result(Base):
 
     def plan_month(
         self,
-        hours: int,
+        hours: int = None,
+        daily_hours: int = 8,
         now: pendulum.DateTime = None,
         period: pendulum.DateTime = None,
         off_tags: set = None,
@@ -429,8 +430,10 @@ class Result(Base):
             if (date.year, date.month) == (period_date.year, period_date.month):
                 by_date[date].append(record)
 
-        to_plan_mins = hours * 60
+        to_plan_mins = 0
         modifiable_records: list[Record] = []
+        workdays = 0
+        offdays = 0
         for i in range(1, period.days_in_month + 1):
             date = period_date.replace(day=i)
             records = by_date[date]
@@ -449,6 +452,10 @@ class Result(Base):
                 record.add_tags(weekend_tag)
 
             is_off = record.has_tag(*off_tags)
+            if is_off:
+                offdays += 1
+            else:
+                workdays += 1
             if can_modify and is_off:
                 record.set_should_total(0)
 
@@ -463,6 +470,10 @@ class Result(Base):
             elif can_modify and not is_off:
                 modifiable_records.append(record)
 
+        if hours is not None:
+            to_plan_mins += hours * 60
+        else:
+            to_plan_mins += workdays * daily_hours * 60
         leftover_mins = to_plan_mins % len(modifiable_records)
         expected_daily = int(to_plan_mins / len(modifiable_records))
 
