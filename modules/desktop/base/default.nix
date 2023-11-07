@@ -8,10 +8,6 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    home-manager.sharedModules = [{
-      kdn.desktop.base.enable = cfg.enable;
-    }];
-
     fonts.packages = with pkgs; [
       cantarell-fonts
       font-awesome
@@ -34,6 +30,11 @@ in
     services.power-profiles-daemon.enable = true;
     services.udisks2.enable = true;
     services.upower.enable = config.powerManagement.enable;
+    services.xserver.displayManager.sddm.enable = true;
+    # default maximum user is 30000, but I'm assigning higher than that
+    services.xserver.displayManager.sddm.settings.Users.MaximumUid = config.ids.uids.nobody - 1;
+    services.xserver.displayManager.sddm.wayland.enable = true;
+    services.xserver.enable = true;
     services.xserver.updateDbusEnvironment = true;
     xdg.icons.enable = true;
     xdg.mime.enable = true;
@@ -53,6 +54,7 @@ in
 
       # tools
       brightnessctl
+      gsettings-desktop-schemas
       gtk-engine-murrine
       gtk_engines
       lxappearance
@@ -74,11 +76,29 @@ in
       wl-clipboard
       wl-clipboard-x11
       wayland-utils
-    ];
+      grim
+      libnotify
+
+      # themes
+      hicolor-icon-theme # nm-applet, see https://github.com/NixOS/nixpkgs/issues/32730
+      gnome-icon-theme # nm-applet, see https://github.com/NixOS/nixpkgs/issues/43836#issuecomment-419217138
+      glib # gsettings
+      sound-theme-freedesktop
+    ] ++ (with pkgs.libsForQt5; [
+      dolphin # file manager
+      okular # pdf viewer
+      ark # archive manager
+      gwenview # image viewer & editor
+      pix # image gallery viewer
+    ]);
 
     gtk.iconCache.enable = true;
 
     xdg.portal.enable = true;
     xdg.portal.xdgOpenUsePortal = true;
+
+    qt.enable = true;
+    qt.platformTheme = "kde";
+    qt.style = "cleanlooks";
   };
 }

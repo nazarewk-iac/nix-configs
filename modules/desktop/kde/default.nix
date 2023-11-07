@@ -16,22 +16,11 @@ in
 
       services.gnome.gnome-keyring.enable = lib.mkForce false;
 
-      environment.systemPackages = (with pkgs;[
+      environment.systemPackages = with pkgs; [
         latte-dock
-      ]) ++ (with pkgs.libsForQt5; [
-        kleopatra # GPG management
-        okular # pdf viewer
-        ark # archive manager
-        gwenview # image viewer & editor
-        pix # image gallery viewer
-        # kontact # doesn't work, see https://github.com/NixOS/nixpkgs/issues/190658
-      ]);
+      ];
 
-      services.xserver.enable = true;
-      services.xserver.displayManager.sddm.enable = true;
-      services.xserver.displayManager.sddm.wayland.enable = true;
       services.xserver.desktopManager.plasma5.enable = true;
-      programs.dconf.enable = true;
     }
     # styling
     {

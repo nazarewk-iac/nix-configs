@@ -3,10 +3,23 @@ let
   cfg = config.kdn.profile.user.kdn;
   systemUser = cfg.nixosConfig;
   hasGUI = config.kdn.headless.enableGUI;
+  hasSway = config.kdn.desktop.sway.enable;
   hasWorkstation = nixosConfig.kdn.profile.machine.workstation.enable;
   hasKDE = nixosConfig.services.xserver.desktopManager.plasma5.enable;
 
+  drag0nius_kdbx =
+    (pkgs.writeShellApplication {
+      name = "keepass-drag0nius.kdbx";
+      runtimeInputs = [ pkgs.pass pkgs.keepass ];
+      text = ''
+        cmd_start () {
+            local db_path="$HOME/Nextcloud/drag0nius@nc.nazarewk.pw/Dropbox import/Apps/KeeAnywhere/drag0nius.kdbx"
+            pass KeePass/drag0nius.kdbx | keepass "$db_path" -pw-stdin
+        }
 
+        "cmd_''${1:-start}" "''${@:2}"
+      '';
+    });
 in
 {
   options.kdn.profile.user.kdn = {
@@ -16,7 +29,6 @@ in
   };
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
-      home.stateVersion = "23.11";
       services.ssh-agent.enable = true;
       programs.ssh.enable = true;
       programs.ssh.extraConfig = ''
@@ -51,20 +63,6 @@ in
         get-kwallet-password = pkgs.writeShellApplication {
           name = "get-kwallet-password";
           runtimeInputs = with pkgs; [ pass wl-clipboard libnotify ];
-          text = ''
-            pass show kwallet | wl-copy -n
-
-            notify-send --expire-time=10000 --wait "KWallet password" "is available in clipboard until this notificaton closes"
-
-            for i in {1..10} ; do
-              echo "password cleared $i times" | wl-copy
-            done
-            wl-copy --clear
-          '';
-        };
-        kdn-launch-all = pkgs.writeShellApplication {
-          name = "kdn-launch-all";
-          runtimeInputs = with pkgs; [ kde-cli-tools ];
           text = ''
             pass show kwallet | wl-copy -n
 
@@ -207,23 +205,102 @@ in
         };
 
     })
-    (lib.mkIf (hasWorkstation && hasGUI) {
-      home.packages = with pkgs; let
-        drag0nius_kdbx =
-          (pkgs.writeShellApplication {
-            name = "keepass-drag0nius.kdbx";
-            runtimeInputs = [ pkgs.pass pkgs.keepass ];
-            text = ''
-              cmd_start () {
-                  local db_path="$HOME/Nextcloud/drag0nius@nc.nazarewk.pw/Dropbox import/Apps/KeeAnywhere/drag0nius.kdbx"
-                  pass KeePass/drag0nius.kdbx | keepass "$db_path" -pw-stdin
-              }
+    (lib.mkIf (hasSway) {
+      # mime gets messed up by KDE
+      xdg.mimeApps.enable = true;
+      xdg.mimeApps.associations.added = { };
+      xdg.mimeApps.defaultApplications =
+        let
+          brave = [ "brave-browser.desktop" ];
+          browser = [ "uri-to-clipboard.desktop" "firefox.desktop" ] ++ brave;
+          fileManager = [ "org.kde.dolphin.desktop" ];
+          ide = [ "idea-ultimate.desktop" ];
+          ipfs = brave;
+          pdf = [ "org.kde.okular.desktop" ];
+          remmina = [ "org.remmina.Remmina.desktop" ];
+          rss = brave;
+          teams = brave;
+          terminal = [ "foot.desktop" ];
+          vectorImages = [ "org.gnome.eog.desktop" ];
+        in
+        lib.mkForce {
+          "application/pdf" = pdf;
+          "application/rdf+xml" = rss;
+          "application/rss+xml" = rss;
+          "application/x-extension-htm" = browser;
+          "application/x-extension-html" = browser;
+          "application/x-extension-shtml" = browser;
+          "application/x-extension-xht" = browser;
+          "application/x-extension-xhtml" = browser;
+          "application/x-gnome-saved-search" = fileManager;
+          "application/x-remmina" = remmina;
+          "application/xhtml+xml" = browser;
+          "application/xhtml_xml" = browser;
+          "image/svg+xml" = vectorImages;
+          "inode/directory" = fileManager;
+          "text/html" = browser;
+          "text/plain" = ide;
+          "text/xml" = browser;
+          "x-scheme-handler/chrome" = browser;
+          "x-scheme-handler/http" = browser;
+          "x-scheme-handler/https" = browser;
+          "x-scheme-handler/ipfs" = ipfs;
+          "x-scheme-handler/ipns" = ipfs;
+          "x-scheme-handler/msteams" = teams;
+          "x-scheme-handler/rdp" = remmina;
+          "x-scheme-handler/remmina" = remmina;
+          "x-scheme-handler/spice" = remmina;
+          # TODO: set thunar terminal https://github.com/chmln/handlr/issues/62
+          "x-scheme-handler/terminal" = terminal;
+          "x-scheme-handler/vnc" = remmina;
+        };
 
-              "cmd_''${1:-start}" "''${@:2}"
-            '';
-          });
+      systemd.user.services.nextcloud-client.Unit = {
+        Requires = lib.mkForce [ "pass-secret-service.service" "kdn-sway-envs.target" ];
+        After = [ "kdn-sway-envs.target" "tray.target" ];
+        PartOf = [ "kdn-sway-session.target" ];
+      };
+      systemd.user.services.nextcloud-client.Install = {
+        WantedBy = [ "kdn-sway-session.target" ];
+      };
+      systemd.user.services.kdeconnect.Unit = {
+        Requires = [ "kdn-sway-envs.target" ];
+        After = [ "kdn-sway-envs.target" ];
+        PartOf = [ "kdn-sway-session.target" ];
+      };
+      systemd.user.services.kdeconnect-indicator.Unit = {
+        Requires = [ "kdn-sway-envs.target" "kdeconnect.service" ];
+        After = [ "tray.target" "kdn-sway-envs.target" "kdeconnect.service" ];
+        PartOf = [ "kdn-sway-session.target" ];
+      };
+      home.packages = with pkgs; let
+        launch = (lib.kdn.shell.writeShellScript pkgs (./bin + "/kdn-launch.sh") {
+          runtimeInputs = with pkgs; [
+            coreutils
+            procps
+            libnotify
+            sway
+            jq
+
+            pass
+            drag0nius_kdbx
+            keepass # must come from NixOS-level override
+
+            firefox
+
+            element-desktop
+            signal-desktop
+            slack
+            rambox
+          ];
+        });
       in
       [
+        launch
+      ];
+    })
+    (lib.mkIf (hasWorkstation && hasGUI) {
+      home.packages = with pkgs; [
         keepass
         keepassxc
         drag0nius_kdbx

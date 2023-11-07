@@ -82,7 +82,8 @@ in
       services.passSecretService.package = pkgs.kdn.pass-secret-service;
       systemd.user.services."dbus-org.freedesktop.secrets" = {
         aliases = [ "pass-secret-service.service" ];
-        after = [ "graphical-session-pre.target" ];
+        requires = [ "kdn-sway-envs.target" ];
+        after = [ "graphical-session-pre.target" "kdn-sway-envs.target" ];
         partOf = [ "graphical-session.target" ];
         serviceConfig = { Restart = "on-failure"; RestartSec = 1; ExecStartPost = "${pkgs.coreutils}/bin/sleep 2"; };
       };
