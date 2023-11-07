@@ -43,7 +43,7 @@ if not flavor:
 
 
 @contextlib.contextmanager
-def tee(out, tee_kwargs=None) -> subprocess.Popen:
+def tee(out, name: str, tee_kwargs=None) -> subprocess.Popen:
     tee_kwargs = tee_kwargs or {}
     read_fd, write_fd = os.pipe()
     with subprocess.Popen([bins["cat"], "-n"], stdin=read_fd, stdout=out) as processor:
@@ -51,11 +51,11 @@ def tee(out, tee_kwargs=None) -> subprocess.Popen:
         with subprocess.Popen(
             [bins["tee"], f"/dev/fd/{write_fd}"], pass_fds=[write_fd], **tee_kwargs
         ) as tee:
-            logging.debug(f"started: {tee.args=}")
+            logging.debug(f"started {name=}: {tee.args=}")
             yield tee
-        logging.debug(f"exited: {tee.args=}")
+        logging.debug(f"exited {name=}: {tee.args=}")
         os.close(write_fd)
-    logging.debug(f"exited: {processor.args=}")
+    logging.debug(f"exited {name=}: {processor.args=}")
 
 
 logging.info(f"{flavor=}")
@@ -77,16 +77,26 @@ match flavor:
             out_fp.write(f"=== {os.getpid()} ===\n".encode())
             out_fp.flush()
             with (
-                tee(in_fp, tee_kwargs=dict(stdout=subprocess.PIPE)) as tee_in,
-                tee(out_fp, tee_kwargs=dict(stdin=subprocess.PIPE)) as tee_out,
+                tee(
+                    in_fp,
+                    "tee_in",
+                    tee_kwargs=dict(stdout=subprocess.PIPE),
+                ) as tee_in,
+                tee(
+                    out_fp,
+                    "tee_out",
+                    tee_kwargs=dict(stdin=subprocess.PIPE),
+                ) as tee_out,
             ):
                 with subprocess.Popen(
                     [bins[f"pinentry-{flavor}"], *sys.argv[1:]],
-                    # ["sed", "s/^/processed: /g"],
                     stdin=tee_in.stdout,
                     stdout=tee_out.stdin,
                 ) as proc:
                     logging.debug(f"started: {proc.args=}")
                 logging.debug(f"exited: {proc.args=}")
+                # it's just easier to kill `tee_in` than cleanup `properly`
+                tee_in.kill()
+                tee_out.kill()
             logging.debug("exited all tees")
         sys.exit(proc.returncode)
