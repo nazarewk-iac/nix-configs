@@ -47,15 +47,15 @@ def tee(out, name: str, tee_kwargs=None) -> subprocess.Popen:
     tee_kwargs = tee_kwargs or {}
     read_fd, write_fd = os.pipe()
     with subprocess.Popen([bins["cat"], "-n"], stdin=read_fd, stdout=out) as processor:
-        logging.debug(f"started: {processor.args=}")
+        logging.debug(f"started {name=} {processor.pid=}: {processor.args=}")
         with subprocess.Popen(
             [bins["tee"], f"/dev/fd/{write_fd}"], pass_fds=[write_fd], **tee_kwargs
         ) as tee:
-            logging.debug(f"started {name=}: {tee.args=}")
+            logging.debug(f"started {name=} {tee.pid=}: {tee.args=}")
             yield tee
-        logging.debug(f"exited {name=}: {tee.args=}")
+        logging.debug(f"exited {name=} {tee.pid=}: {tee.args=}")
         os.close(write_fd)
-    logging.debug(f"exited {name=}: {processor.args=}")
+    logging.debug(f"exited {name=} {processor.pid=}: {processor.args=}")
 
 
 logging.info(f"{flavor=}")
@@ -93,8 +93,8 @@ match flavor:
                     stdin=tee_in.stdout,
                     stdout=tee_out.stdin,
                 ) as proc:
-                    logging.debug(f"started: {proc.args=}")
-                logging.debug(f"exited: {proc.args=}")
+                    logging.debug(f"started pinentry {proc.pid=}: {proc.args=}")
+                logging.debug(f"exited pinentry {proc.pid=}: {proc.args=}")
                 # it's just easier to kill `tee_in` than cleanup `properly`
                 tee_in.kill()
                 tee_out.kill()
