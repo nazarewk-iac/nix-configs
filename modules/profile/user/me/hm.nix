@@ -205,14 +205,20 @@ in
         };
 
       systemd.user.services.keepassxc = {
-        Unit.Description = "KeePassXC password manager";
-        Unit.BindsTo = lib.optional hasSway config.kdn.desktop.sway.systemd.secrets-service.service;
-        Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
-        After = [ config.kdn.desktop.sway.systemd.envs.target ];
-        PartOf = [ config.kdn.desktop.sway.systemd.session.target ];
-        Service.Slice = "background.slice";
-        Service.ExecStart = "${drag0nius_kdbx}/bin/keepass-drag0nius.kdbx start";
-        Install.WantedBy = [ "graphical-session.target" ] ++ lib.optional hasSway config.kdn.desktop.sway.systemd.secrets-service.service;
+        Unit = {
+          Description = "KeePassXC password manager";
+          BindsTo = lib.optional hasSway config.kdn.desktop.sway.systemd.secrets-service.service;
+          Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
+          After = [ config.kdn.desktop.sway.systemd.envs.target ];
+          PartOf = [ config.kdn.desktop.sway.systemd.session.target ];
+        };
+        Service = {
+          Slice = "background.slice";
+          ExecStart = "${drag0nius_kdbx}/bin/keepass-drag0nius.kdbx start";
+        };
+        Install = {
+          WantedBy = [ "graphical-session.target" ] ++ lib.optional hasSway config.kdn.desktop.sway.systemd.secrets-service.service;
+        };
       };
     })
     (lib.mkIf (hasSway) {

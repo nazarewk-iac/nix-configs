@@ -286,7 +286,7 @@ in
         '';
       };
       systemd.user.targets."${config.kdn.desktop.sway.systemd.secrets-service.name}" = {
-        description = "secrets-service implementation target for kdn Sway";
+        description = config.kdn.desktop.sway.systemd.secrets-service.target;
         bindsTo = [ config.kdn.desktop.sway.systemd.secrets-service.service ];
         after = [ config.kdn.desktop.sway.systemd.envs.target ];
         requires = [ config.kdn.desktop.sway.systemd.envs.target ];
@@ -303,7 +303,7 @@ in
       };
 
       systemd.user.targets."${config.kdn.desktop.sway.systemd.tray.name}" = {
-        description = "tray target for kdn Sway";
+        description = config.kdn.desktop.sway.systemd.tray.target;
         bindsTo = [ "tray.target" ];
         before = [ config.kdn.desktop.sway.systemd.session.target "tray.target" ];
         after = [ config.kdn.desktop.sway.systemd.envs.target ];
@@ -325,7 +325,7 @@ in
       };
 
       systemd.user.services."${config.kdn.desktop.sway.systemd.polkit-agent.name}" = {
-        description = "Polkit Agent service";
+        description = config.kdn.desktop.sway.systemd.polkit-agent.target;
         partOf = [ config.kdn.desktop.sway.systemd.session.target ];
         requires = [ config.kdn.desktop.sway.systemd.envs.target ];
         after = [ config.kdn.desktop.sway.systemd.envs.target ];
