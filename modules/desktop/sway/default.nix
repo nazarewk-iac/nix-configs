@@ -220,7 +220,7 @@ in
 
 
       systemd.user.services."${config.kdn.desktop.sway.systemd.sway.name}" = {
-        description = "Sway - Wayland window manager";
+        description = config.kdn.desktop.sway.systemd.sway.service;
         documentation = [ "man:sway(5)" ];
         bindsTo = [ "graphical-session.target" config.kdn.desktop.sway.systemd.session.target ];
         wants = [ "graphical-session-pre.target" ];
@@ -245,7 +245,7 @@ in
       };
 
       systemd.user.targets."${config.kdn.desktop.sway.systemd.session.name}" = {
-        description = "Sway compositor session";
+        description = config.kdn.desktop.sway.systemd.session.target;
         documentation = [ "man:systemd.special(7)" ];
         bindsTo = [
           "graphical-session.target"
@@ -265,14 +265,14 @@ in
       };
 
       systemd.user.targets."${config.kdn.desktop.sway.systemd.envs.name}" = {
-        description = "Sway target active after loading env";
+        description = config.kdn.desktop.sway.systemd.envs.target;
         partOf = [ config.kdn.desktop.sway.systemd.session.target ];
         bindsTo = [ config.kdn.desktop.sway.systemd.envs.service ];
         requires = [ config.kdn.desktop.sway.systemd.envs.service ];
         after = [ config.kdn.desktop.sway.systemd.envs.service ];
       };
       systemd.user.services."${config.kdn.desktop.sway.systemd.envs.name}" = {
-        description = "Wait for envs being present";
+        description = config.kdn.desktop.sway.systemd.envs.service;
         serviceConfig.Type = "oneshot";
         serviceConfig.RemainAfterExit = true;
         script = ''
@@ -293,6 +293,7 @@ in
       };
 
       systemd.user.services."${config.kdn.desktop.sway.systemd.secrets-service.name}" = {
+        description = config.kdn.desktop.sway.systemd.secrets-service.service;
         requires = [ config.kdn.desktop.sway.systemd.envs.target ];
         after = [ config.kdn.desktop.sway.systemd.envs.target ];
         partOf = [ config.kdn.desktop.sway.systemd.session.target ];
@@ -325,7 +326,7 @@ in
       };
 
       systemd.user.services."${config.kdn.desktop.sway.systemd.polkit-agent.name}" = {
-        description = config.kdn.desktop.sway.systemd.polkit-agent.target;
+        description = config.kdn.desktop.sway.systemd.polkit-agent.service;
         partOf = [ config.kdn.desktop.sway.systemd.session.target ];
         requires = [ config.kdn.desktop.sway.systemd.envs.target ];
         after = [ config.kdn.desktop.sway.systemd.envs.target ];
