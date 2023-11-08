@@ -233,6 +233,9 @@ in
         serviceConfig.Slice = "session.slice";
         serviceConfig = {
           Type = "notify";
+          # TODO: change NotifyAccess to something else to prevent Podman from killing Sway
+          # see https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html#NotifyAccess=
+          # see https://gist.github.com/nazarewk/9e071fd43e1803ffaa1726a273f30419?permalink_comment_id=4754291#gistcomment-4754291
           NotifyAccess = "all";
           ExecStart = "/run/current-system/sw/bin/sway";
           ExecStopPost = "${cfg.bundle}/bin/${cfg.prefix}-session-clear-env";

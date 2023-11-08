@@ -14,7 +14,7 @@ let
       text = ''
         cmd_start () {
             local db_path="$HOME/Nextcloud/drag0nius@nc.nazarewk.pw/Dropbox import/Apps/KeeAnywhere/drag0nius.kdbx"
-            pass KeePass/drag0nius.kdbx | keepassxc "$db_path" --pw-stdin
+            pass KeePass/drag0nius.kdbx | keepassxc --pw-stdin "$db_path"
         }
 
         "cmd_''${1:-start}" "''${@:2}"
