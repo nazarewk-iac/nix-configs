@@ -1,56 +1,132 @@
 { lib, pkgs, config, ... }:
 let
   cfg = config.kdn.desktop.sway;
-
-  startsway-headless = pkgs.writeShellApplication {
-    name = "startsway-headless";
-    runtimeInputs = with pkgs; [ startsway ];
-    text = ''
-      export WLR_BACKENDS=headless
-      export WLR_LIBINPUT_NO_DEVICES=1
-      export XDG_SESSION_TYPE=wayland
-
-      exec startsway
-    '';
-  };
-
-  startsway = pkgs.writeShellApplication {
-    name = "startsway";
-    runtimeInputs = with pkgs; [ systemd sessionClearEnv sessionLoadEnv ];
-    text = ''
-      sway-session-clear-env
-      sway-session-load-env
-      exec systemctl --user start sway.service "$@"
-    '';
-  };
-
-  sessionLoadEnv = pkgs.writeShellApplication {
-    name = "sway-session-load-env";
-    runtimeInputs = with pkgs; [ dbus jq ];
-    text = ''
-      readarray -t envs <<<"$(jq -rn 'env | to_entries[] | "\(.key)=\(.value)"')"
-      dbus-update-activation-environment --systemd "''${envs[@]}"
-    '';
-  };
-
-  sessionClearEnv = pkgs.writeShellApplication {
-    name = "sway-session-clear-env";
-    runtimeInputs = with pkgs; [ dbus systemd jq ];
-    text = ''
-      readarray -t set_empty < <(systemctl --user show-environment -o json | jq -r 'keys[] | "\(.)="')
-      dbus-update-activation-environment "''${set_empty[@]}"
-      readarray -t keys < <(systemctl --user show-environment -o json | jq -r 'keys[]')
-      systemctl --user unset-environment "''${keys[@]}"
-    '';
-  };
 in
 {
   options.kdn.desktop.sway = {
     enable = lib.mkEnableOption "Sway base setup";
 
-    polkitAgentCommand = lib.mkOption {
-      type = lib.types.str;
-      default = "${pkgs.libsForQt5.polkit-kde-agent}/libexec/polkit-kde-authentication-agent-1";
+    prefix = lib.mkOption { default = "kdn-sway"; };
+    desktopSessionName = lib.mkOption { default = cfg.prefix; };
+
+    bundle = lib.mkOption {
+      type = with lib.types; package;
+      default =
+        let
+          startsway-headless = pkgs.writeShellApplication {
+            name = "startsway-headless";
+            runtimeInputs = with pkgs; [ startsway ];
+            text = ''
+              export WLR_BACKENDS=headless
+              export WLR_LIBINPUT_NO_DEVICES=1
+              export XDG_SESSION_TYPE=wayland
+
+              exec startsway
+            '';
+          };
+
+          startsway = pkgs.writeShellApplication {
+            name = "startsway";
+            runtimeInputs = with pkgs; [ systemd sessionClearEnv sessionLoadEnv ];
+            text = ''
+              ${cfg.prefix}-session-clear-env
+              ${cfg.prefix}-session-load-env
+              exec systemctl --user start ${config.kdn.desktop.sway.systemd.sway.service} "$@"
+            '';
+          };
+
+          sessionLoadEnv = pkgs.writeShellApplication {
+            name = "${cfg.prefix}-session-load-env";
+            runtimeInputs = with pkgs; [ dbus jq ];
+            text = ''
+              readarray -t envs <<<"$(jq -rn 'env | to_entries[] | "\(.key)=\(.value)"')"
+              dbus-update-activation-environment --systemd "''${envs[@]}"
+            '';
+          };
+
+          sessionClearEnv = pkgs.writeShellApplication {
+            name = "${cfg.prefix}-session-clear-env";
+            runtimeInputs = with pkgs; [ dbus systemd jq ];
+            text = ''
+              readarray -t set_empty < <(systemctl --user show-environment -o json | jq -r 'keys[] | "\(.)="')
+              dbus-update-activation-environment "''${set_empty[@]}"
+              readarray -t keys < <(systemctl --user show-environment -o json | jq -r 'keys[]')
+              systemctl --user unset-environment "''${keys[@]}"
+            '';
+          };
+
+          waylandSessionEntry = pkgs.writeTextFile {
+            name = "${cfg.desktopSessionName}-wayland-session";
+            destination = "/share/wayland-sessions/${cfg.desktopSessionName}.desktop";
+
+            text = ''
+              [Desktop Entry]
+              Name=${cfg.desktopSessionName} Sway
+              Comment=An i3-compatible Wayland compositor
+              Exec=${startsway}/bin/startsway --wait
+              Type=Application
+            '';
+          };
+        in
+        pkgs.symlinkJoin {
+          name = "${cfg.prefix}-bundle";
+          passthru.providedSessions = [ cfg.desktopSessionName ];
+          paths = [
+            sessionClearEnv
+            waylandSessionEntry
+            sessionLoadEnv
+            startsway
+            startsway-headless
+          ];
+        };
+    };
+
+    systemd = lib.mkOption {
+      type = with lib.types; attrsOf (submodule ({ name, ... }@args: {
+        options = {
+          prefix = lib.mkOption {
+            type = with lib.types; str;
+            default = config.kdn.desktop.sway.prefix;
+          };
+          suffix = lib.mkOption {
+            type = with lib.types; str;
+            default = "-${name}";
+          };
+          name = lib.mkOption {
+            type = with lib.types; str;
+            default = "${args.config.prefix}${args.config.suffix}";
+          };
+          units = lib.mkOption {
+            type = with lib.types; listOf str;
+          };
+        };
+      }));
+      default = {
+        sway.suffix = "";
+        sway.units = [ "service" ];
+        session.units = [ "target" ];
+        envs.units = [ "service" "target" ];
+        tray.units = [ "target" ];
+        polkit-agent.units = [ "service" ];
+        secrets-service.units = [ "service" "target" ];
+      };
+      apply = builtins.mapAttrs (key: value: (lib.trivial.pipe value.units [
+        (builtins.map (unit: {
+          name = unit;
+          value = "${value.name}.${unit}";
+        }))
+        builtins.listToAttrs
+        (attrs: attrs // value)
+      ]));
+    };
+
+    polkitAgent.package = lib.mkOption {
+      type = with lib.types; package;
+      default = pkgs.libsForQt5.polkit-kde-agent;
+    };
+    polkitAgent.command = lib.mkOption {
+      type = with lib.types; str;
+      default = "${cfg.polkitAgent.package}/libexec/polkit-kde-authentication-agent-1";
     };
 
     initScripts = lib.mkOption {
@@ -77,38 +153,48 @@ in
         (final: prev: {
           # see https://github.com/NixOS/nixpkgs/issues/238416#issuecomment-1618662374
           # TODO: remove after https://github.com/NixOS/nixpkgs/issues/238416 is resolved upstream
-          element-desktop = prev.element-desktop.override { electron = prev.electron_24; };
+          #element-desktop = prev.element-desktop.override { electron = prev.electron_24; };
         })
       ];
-      ## systemd
-      programs.sway.extraPackages = with pkgs; [
-        sessionLoadEnv
-        sessionClearEnv
-        startsway
-        startsway-headless
-        seatd
-      ];
+      programs.sway.extraPackages = [ cfg.bundle ];
     }
     {
-      services.xserver.displayManager.defaultSession = "sway";
-      services.xserver.displayManager.session = [{
-        manage = "desktop";
-        name = "kdn-sway";
-        start = ''${startsway}/bin/startsway --wait'';
-      }];
-    }
-    {
-      kdn.desktop.base.enable = true;
-
-      systemd.user.services.thunar.enable = false; # doesn't pick up proper MIME types when run as daemon
-
       # Configure various Sway configs
       # see https://gist.github.com/mschwaig/195fe93ed85dea7aaceaf8e1fc6c0e99
       # see https://nixos.wiki/wiki/Sway#Systemd_integration
       programs.sway.enable = true;
       programs.sway.wrapperFeatures.gtk = true;
       programs.sway.extraOptions = [ "--verbose" "--debug" ];
-      #environment.pathsToLink = [ "/libexec" ];
+      programs.sway.extraSessionCommands = ''
+        . /etc/profile
+
+        # cfg.environmentDefaults
+        export \
+          ${lib.concatStringsSep " \\\n  " cfg.environmentDefaults}
+
+        # cfg.environment
+        export \
+          ${lib.concatStringsSep " \\\n  " cfg.environment}
+      '';
+
+      services.xserver.displayManager.defaultSession = cfg.desktopSessionName;
+      services.xserver.displayManager.sessionPackages = [ cfg.bundle ];
+    }
+    {
+      home-manager.sharedModules = [{
+        kdn.desktop.sway = {
+          inherit (cfg) enable prefix systemd;
+        };
+        wayland.windowManager.sway = {
+          inherit (config.programs.sway) package;
+          systemd.enable = false;
+        };
+      }];
+    }
+    {
+      kdn.desktop.base.enable = true;
+
+      systemd.user.services.thunar.enable = false; # doesn't pick up proper MIME types when run as daemon
 
       # see https://wiki.debian.org/Wayland#Toolkits
       kdn.desktop.sway.environmentDefaults = {
@@ -132,20 +218,11 @@ in
         NIXOS_OZONE_WL = "1";
       };
 
-      programs.sway.extraSessionCommands = ''
-        . /etc/profile
 
-        # cfg.environmentDefaults
-        export ${lib.concatStringsSep " \\\n  " cfg.environmentDefaults}
-
-        # cfg.environment
-        export ${lib.concatStringsSep " \\\n  " cfg.environment}
-      '';
-
-      systemd.user.services.sway = {
+      systemd.user.services."${config.kdn.desktop.sway.systemd.sway.name}" = {
         description = "Sway - Wayland window manager";
         documentation = [ "man:sway(5)" ];
-        bindsTo = [ "graphical-session.target" "kdn-sway-session.target" ];
+        bindsTo = [ "graphical-session.target" config.kdn.desktop.sway.systemd.session.target ];
         wants = [ "graphical-session-pre.target" ];
         after = [ "graphical-session-pre.target" ];
         before = [ "graphical-session.target" ];
@@ -159,7 +236,7 @@ in
           # NotifyAccess = "exec";
           NotifyAccess = "all";
           ExecStart = "/run/current-system/sw/bin/sway";
-          ExecStopPost = "${sessionClearEnv}/bin/sway-session-clear-env";
+          ExecStopPost = "${cfg.bundle}/bin/${cfg.prefix}-session-clear-env";
           Restart = "no";
           RestartSec = 1;
           TimeoutStopSec = 60;
@@ -167,23 +244,34 @@ in
         };
       };
 
-      systemd.user.targets."kdn-sway-session" = {
+      systemd.user.targets."${config.kdn.desktop.sway.systemd.session.name}" = {
         description = "Sway compositor session";
         documentation = [ "man:systemd.special(7)" ];
-        bindsTo = [ "graphical-session.target" "sway.service" ];
-        requires = [ "kdn-sway-envs.target" "kdn-sway-tray.target" "sway.service" ];
-        after = [ "graphical-session-pre.target" "kdn-sway-envs.target" "sway.service" ];
+        bindsTo = [
+          "graphical-session.target"
+          config.kdn.desktop.sway.systemd.sway.service
+        ];
+        requires = [
+          config.kdn.desktop.sway.systemd.envs.target
+          config.kdn.desktop.sway.systemd.tray.target
+          config.kdn.desktop.sway.systemd.sway.service
+        ];
+        after = [
+          "graphical-session-pre.target"
+          config.kdn.desktop.sway.systemd.envs.target
+          config.kdn.desktop.sway.systemd.sway.service
+        ];
         wants = [ "graphical-session-pre.target" ];
       };
 
-      systemd.user.targets."kdn-sway-envs" = {
+      systemd.user.targets."${config.kdn.desktop.sway.systemd.envs.name}" = {
         description = "Sway target active after loading env";
-        partOf = [ "kdn-sway-session.target" ];
-        bindsTo = [ "kdn-sway-envs.service" ];
-        requires = [ "kdn-sway-envs.service" ];
-        after = [ "kdn-sway-envs.service" ];
+        partOf = [ config.kdn.desktop.sway.systemd.session.target ];
+        bindsTo = [ config.kdn.desktop.sway.systemd.envs.service ];
+        requires = [ config.kdn.desktop.sway.systemd.envs.service ];
+        after = [ config.kdn.desktop.sway.systemd.envs.service ];
       };
-      systemd.user.services."kdn-sway-envs" = {
+      systemd.user.services."${config.kdn.desktop.sway.systemd.envs.name}" = {
         description = "Wait for envs being present";
         serviceConfig.Type = "oneshot";
         serviceConfig.RemainAfterExit = true;
@@ -197,48 +285,64 @@ in
           done
         '';
       };
+      systemd.user.targets."${config.kdn.desktop.sway.systemd.secrets-service.name}" = {
+        description = "secrets-service implementation target for kdn Sway";
+        bindsTo = [ config.kdn.desktop.sway.systemd.secrets-service.service ];
+        after = [ config.kdn.desktop.sway.systemd.envs.target ];
+        requires = [ config.kdn.desktop.sway.systemd.envs.target ];
+      };
 
-      systemd.user.targets."kdn-sway-tray" = {
+      systemd.user.services."${config.kdn.desktop.sway.systemd.secrets-service.name}" = {
+        requires = [ config.kdn.desktop.sway.systemd.envs.target ];
+        after = [ config.kdn.desktop.sway.systemd.envs.target ];
+        partOf = [ config.kdn.desktop.sway.systemd.session.target ];
+        script = lib.mkDefault "${pkgs.coreutils}/bin/sleep infinity";
+        serviceConfig.Slice = "background.slice";
+        serviceConfig.Type = "dbus";
+        serviceConfig.BusName = "org.freedesktop.secrets";
+      };
+
+      systemd.user.targets."${config.kdn.desktop.sway.systemd.tray.name}" = {
         description = "tray target for kdn Sway";
         bindsTo = [ "tray.target" ];
-        before = [ "kdn-sway-session.target" "tray.target" ];
-        after = [ "kdn-sway-envs.target" ];
-        requires = [ "kdn-sway-envs.target" ];
+        before = [ config.kdn.desktop.sway.systemd.session.target "tray.target" ];
+        after = [ config.kdn.desktop.sway.systemd.envs.target ];
+        requires = [ config.kdn.desktop.sway.systemd.envs.target ];
       };
 
       systemd.user.services."xdg-desktop-portal" = {
-        requires = [ "kdn-sway-envs.target" ];
-        after = [ "kdn-sway-envs.target" ];
-        partOf = [ "kdn-sway-session.target" ];
+        requires = [ config.kdn.desktop.sway.systemd.envs.target ];
+        after = [ config.kdn.desktop.sway.systemd.envs.target ];
+        partOf = [ config.kdn.desktop.sway.systemd.session.target ];
         serviceConfig.Slice = "background.slice";
       };
 
       systemd.user.services."xdg-desktop-portal-gtk" = {
-        requires = [ "kdn-sway-envs.target" ];
-        after = [ "kdn-sway-envs.target" ];
-        partOf = [ "kdn-sway-session.target" ];
+        requires = [ config.kdn.desktop.sway.systemd.envs.target ];
+        after = [ config.kdn.desktop.sway.systemd.envs.target ];
+        partOf = [ config.kdn.desktop.sway.systemd.session.target ];
         serviceConfig.Slice = "background.slice";
       };
 
-      systemd.user.services."kdn-sway-polkit-agent" = {
+      systemd.user.services."${config.kdn.desktop.sway.systemd.polkit-agent.name}" = {
         description = "Polkit Agent service";
-        partOf = [ "kdn-sway-session.target" ];
-        requires = [ "kdn-sway-envs.target" ];
-        after = [ "kdn-sway-envs.target" ];
-        script = cfg.polkitAgentCommand;
+        partOf = [ config.kdn.desktop.sway.systemd.session.target ];
+        requires = [ config.kdn.desktop.sway.systemd.envs.target ];
+        after = [ config.kdn.desktop.sway.systemd.envs.target ];
+        script = cfg.polkitAgent.command;
         serviceConfig.Slice = "background.slice";
       };
 
       kdn.desktop.sway.initScripts.systemd = {
-        "00-update-systemd-environment" = "${sessionLoadEnv}/bin/sway-session-load-env";
+        "00-update-systemd-environment" = "${cfg.bundle}/bin/${cfg.prefix}-session-load-env";
         "99-notify-systemd-service" = "${pkgs.systemd}/bin/systemd-notify --ready";
       };
 
-      environment.etc."sway/config.d/00-kdn-init.conf".text = lib.trivial.pipe cfg.initScripts [
+      environment.etc."sway/config.d/00-${config.kdn.desktop.sway.prefix}-init.conf".text = lib.trivial.pipe cfg.initScripts [
         (lib.mapAttrsToList (
           execName: pieces:
             let
-              scriptName = "kdn-sway-init-${execName}";
+              scriptName = "${config.kdn.desktop.sway.prefix}-init-${execName}";
               scriptContent = lib.trivial.pipe pieces [
                 (lib.mapAttrsToList (
                   pieceName: piece:
@@ -263,15 +367,6 @@ in
 
       systemd.user.services.xfce4-notifyd.enable = false;
 
-      home-manager.sharedModules = [
-        {
-          kdn.desktop.sway.enable = true;
-          wayland.windowManager.sway = {
-            inherit (config.programs.sway) extraSessionCommands extraOptions wrapperFeatures;
-            systemd.enable = false;
-          };
-        }
-      ];
 
       programs.sway.extraPackages = with pkgs; [
         (pkgs.writeScriptBin "_sway-root-gui" ''
@@ -297,10 +392,7 @@ in
         slurp
         wlogout
 
-        # polkit related
-        # lxqt.lxqt-policykit # lxqt crashes after authenticating with U2F
-        libsForQt5.polkit-kde-agent
-        # polkit_gnome # asks for U2F twice then fails for no reason
+        cfg.polkitAgent.package
 
         # sway related
         autotiling

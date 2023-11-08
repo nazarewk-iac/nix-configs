@@ -33,7 +33,6 @@ start_all() {
 }
 
 start_priv() {
-  start_keepass
   start_comms
   launch logseq
   launch firefox
@@ -44,14 +43,6 @@ start_comms() {
   launch slack
   launch signal-desktop
   launch discord
-}
-
-start_keepass() {
-  local pattern="KeePass.exe"
-  if is_running "${pattern}"; then
-    return 0
-  fi
-  pass KeePass/drag0nius.kdbx | pattern="${pattern}" launch keepass-drag0nius.kdbx
 }
 
 start_work() {

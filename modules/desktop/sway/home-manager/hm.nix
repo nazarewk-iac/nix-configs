@@ -15,6 +15,8 @@ in
 {
   options.kdn.desktop.sway = {
     enable = lib.mkEnableOption "Sway base setup";
+    prefix = lib.mkOption { type = with lib.types; str; };
+    systemd = lib.mkOption { readOnly = true; };
   };
 
   imports = [
@@ -28,17 +30,16 @@ in
   config = lib.mkIf (config.kdn.headless.enableGUI && sysCfg.enable) {
     services.network-manager-applet.enable = false; # doesn't work/show up in tray
     systemd.user.services.network-manager-applet.Unit = {
-      After = [ "tray.target" "kdn-sway-envs.target" ];
-      PartOf = [ "kdn-sway-session.target" ];
-      Requires = lib.mkForce [ "tray.target" "kdn-sway-envs.target" ];
+      After = [ "tray.target" config.kdn.desktop.sway.systemd.envs.target ];
+      PartOf = [ config.kdn.desktop.sway.systemd.session.target ];
+      Requires = lib.mkForce [ "tray.target" config.kdn.desktop.sway.systemd.envs.target ];
     };
-
 
     services.blueman-applet.enable = true;
     systemd.user.services.blueman-applet.Unit = {
-      After = [ "tray.target" "bluetooth.target" "kdn-sway-envs.target" ];
-      PartOf = [ "kdn-sway-session.target" ];
-      Requires = lib.mkForce [ "tray.target" "kdn-sway-envs.target" ];
+      After = [ "tray.target" "bluetooth.target" config.kdn.desktop.sway.systemd.envs.target ];
+      PartOf = [ config.kdn.desktop.sway.systemd.session.target ];
+      Requires = lib.mkForce [ "tray.target" config.kdn.desktop.sway.systemd.envs.target ];
     };
 
     # segfaults https://github.com/NixOS/nixpkgs/issues/183730
@@ -60,9 +61,9 @@ in
       };
     };
     systemd.user.services.flameshot.Unit = {
-      PartOf = [ "kdn-sway-session.target" ];
-      After = [ "tray.target" "kdn-sway-envs.target" ];
-      Requires = lib.mkForce [ "tray.target" "kdn-sway-envs.target" ];
+      PartOf = [ config.kdn.desktop.sway.systemd.session.target ];
+      After = [ "tray.target" config.kdn.desktop.sway.systemd.envs.target ];
+      Requires = lib.mkForce [ "tray.target" config.kdn.desktop.sway.systemd.envs.target ];
     };
 
     wayland.windowManager.sway = {

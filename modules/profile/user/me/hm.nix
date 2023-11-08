@@ -10,11 +10,11 @@ let
   drag0nius_kdbx =
     (pkgs.writeShellApplication {
       name = "keepass-drag0nius.kdbx";
-      runtimeInputs = [ pkgs.pass pkgs.keepass ];
+      runtimeInputs = [ pkgs.pass pkgs.keepassxc ];
       text = ''
         cmd_start () {
             local db_path="$HOME/Nextcloud/drag0nius@nc.nazarewk.pw/Dropbox import/Apps/KeeAnywhere/drag0nius.kdbx"
-            pass KeePass/drag0nius.kdbx | keepass "$db_path" -pw-stdin
+            pass KeePass/drag0nius.kdbx | keepassxc "$db_path" --pw-stdin
         }
 
         "cmd_''${1:-start}" "''${@:2}"
@@ -204,6 +204,16 @@ in
           ];
         };
 
+      systemd.user.services.keepassxc = {
+        Unit.Description = "KeePassXC password manager";
+        Unit.BindsTo = lib.optional hasSway config.kdn.desktop.sway.systemd.secrets-service.service;
+        Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
+        After = [ config.kdn.desktop.sway.systemd.envs.target ];
+        PartOf = [ config.kdn.desktop.sway.systemd.session.target ];
+        Service.Slice = "background.slice";
+        Service.ExecStart = "${drag0nius_kdbx}/bin/keepass-drag0nius.kdbx start";
+        Install.WantedBy = [ "graphical-session.target" ] ++ lib.optional hasSway config.kdn.desktop.sway.systemd.secrets-service.service;
+      };
     })
     (lib.mkIf (hasSway) {
       # mime gets messed up by KDE
@@ -256,22 +266,25 @@ in
         };
 
       systemd.user.services.nextcloud-client.Unit = {
-        Requires = lib.mkForce [ "pass-secret-service.service" "kdn-sway-envs.target" ];
-        After = [ "kdn-sway-envs.target" "tray.target" ];
-        PartOf = [ "kdn-sway-session.target" ];
+        Requires = lib.mkForce [
+          config.kdn.desktop.sway.systemd.envs.target
+          config.kdn.desktop.sway.systemd.secrets-service.service
+        ];
+        After = [ config.kdn.desktop.sway.systemd.envs.target "tray.target" ];
+        PartOf = [ config.kdn.desktop.sway.systemd.session.target ];
       };
       systemd.user.services.nextcloud-client.Install = {
-        WantedBy = [ "kdn-sway-session.target" ];
+        WantedBy = [ config.kdn.desktop.sway.systemd.session.target ];
       };
       systemd.user.services.kdeconnect.Unit = {
-        Requires = [ "kdn-sway-envs.target" ];
-        After = [ "kdn-sway-envs.target" ];
-        PartOf = [ "kdn-sway-session.target" ];
+        Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
+        After = [ config.kdn.desktop.sway.systemd.envs.target ];
+        PartOf = [ config.kdn.desktop.sway.systemd.session.target ];
       };
       systemd.user.services.kdeconnect-indicator.Unit = {
-        Requires = [ "kdn-sway-envs.target" "kdeconnect.service" ];
-        After = [ "tray.target" "kdn-sway-envs.target" "kdeconnect.service" ];
-        PartOf = [ "kdn-sway-session.target" ];
+        Requires = [ config.kdn.desktop.sway.systemd.envs.target "kdeconnect.service" ];
+        After = [ "tray.target" config.kdn.desktop.sway.systemd.envs.target "kdeconnect.service" ];
+        PartOf = [ config.kdn.desktop.sway.systemd.session.target ];
       };
       home.packages = with pkgs; let
         launch = (lib.kdn.shell.writeShellScript pkgs (./bin + "/kdn-launch.sh") {
@@ -284,7 +297,6 @@ in
 
             pass
             drag0nius_kdbx
-            keepass # must come from NixOS-level override
 
             firefox
 
@@ -301,7 +313,6 @@ in
     })
     (lib.mkIf (hasWorkstation && hasGUI) {
       home.packages = with pkgs; [
-        keepass
         keepassxc
         drag0nius_kdbx
 

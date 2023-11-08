@@ -15,7 +15,7 @@ in
     wayland.windowManager.sway.config.keybindings."${mod.super}+L" = "exec ${lockCmd}";
     services.swayidle = {
       enable = true;
-      systemdTarget = "kdn-sway-session.target";
+      systemdTarget = config.kdn.desktop.sway.systemd.session.target;
       events = [
         { event = "before-sleep"; command = lockCmd; }
       ];
@@ -32,10 +32,10 @@ in
       ];
     };
     systemd.user.services.swayidle.Unit = {
-      Before = [ "kdn-sway-session.target" ];
-      PartOf = [ "kdn-sway-session.target" ];
-      After = [ "kdn-sway-envs.target" ];
-      Requires = [ "kdn-sway-envs.target" ];
+      Before = [ config.kdn.desktop.sway.systemd.session.target ];
+      PartOf = [ config.kdn.desktop.sway.systemd.session.target ];
+      After = [ config.kdn.desktop.sway.systemd.envs.target ];
+      Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
     };
 
     programs.swaylock.settings = {

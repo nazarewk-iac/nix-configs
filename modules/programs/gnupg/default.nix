@@ -77,26 +77,26 @@ in
       # allow usb-ip access to Yubikeys
       security.polkit.extraConfig = builtins.readFile ./pcsc-lite-rules.js;
     }
-    (lib.mkIf cfg.pass-secret-service.enable {
-      services.passSecretService.enable = true;
-      services.passSecretService.package = pkgs.kdn.pass-secret-service;
-      systemd.user.services."dbus-org.freedesktop.secrets" = {
-        aliases = [ "pass-secret-service.service" ];
-        requires = [ "kdn-sway-envs.target" ];
-        after = [ "graphical-session-pre.target" "kdn-sway-envs.target" ];
-        partOf = [ "graphical-session.target" ];
-        serviceConfig = { Restart = "on-failure"; RestartSec = 1; ExecStartPost = "${pkgs.coreutils}/bin/sleep 2"; };
-      };
-      environment.systemPackages = with pkgs; [
-        libsecret
-      ];
+    (lib.mkIf cfg.pass-secret-service.enable (lib.mkMerge [
+      {
+        services.passSecretService.enable = true;
+        services.passSecretService.package = pkgs.kdn.pass-secret-service;
+        systemd.user.services."dbus-org.freedesktop.secrets" = {
+          aliases = [ "pass-secret-service.service" ];
+          after = [ "graphical-session-pre.target" ];
+          partOf = [ "graphical-session.target" ];
+          serviceConfig = { Restart = "on-failure"; RestartSec = 1; ExecStartPost = "${pkgs.coreutils}/bin/sleep 2"; };
+        };
 
-      services.gnome.gnome-keyring.enable = lib.mkForce false;
-      home-manager.sharedModules = [
-        ({ config, ... }: {
-          services.gnome-keyring.enable = lib.mkForce false;
-        })
-      ];
-    })
+        services.gnome.gnome-keyring.enable = lib.mkForce false;
+        home-manager.sharedModules = [{ services.gnome-keyring.enable = lib.mkForce false; }];
+      }
+      (lib.mkIf config.kdn.desktop.sway.enable {
+        systemd.user.services."dbus-org.freedesktop.secrets" = {
+          requires = [ config.kdn.desktop.sway.systemd.envs.target ];
+          after = [ config.kdn.desktop.sway.systemd.envs.target ];
+        };
+      })
+    ]))
   ]);
 }

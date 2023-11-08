@@ -71,13 +71,13 @@ in
 
 
       # carry-overs from modules/desktop/sway/base/default.nix
-      libnotify
-      wofi
-      wl-clipboard
-      wl-clipboard-x11
-      wayland-utils
       grim
       libnotify
+      libsecret
+      wayland-utils
+      wl-clipboard
+      wl-clipboard-x11
+      wofi
 
       # themes
       hicolor-icon-theme # nm-applet, see https://github.com/NixOS/nixpkgs/issues/32730
