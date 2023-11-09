@@ -27,30 +27,50 @@ in
 
           startsway = pkgs.writeShellApplication {
             name = "startsway";
-            runtimeInputs = with pkgs; [ systemd sessionClearEnv sessionLoadEnv ];
+            runtimeInputs = with pkgs; [ systemd envClear envLoad ];
             text = ''
               ${cfg.prefix}-session-clear-env
-              ${cfg.prefix}-session-load-env
+              ${cfg.prefix}-session-set-env
               exec systemctl --user start ${config.kdn.desktop.sway.systemd.sway.service} "$@"
             '';
           };
 
-          sessionLoadEnv = pkgs.writeShellApplication {
-            name = "${cfg.prefix}-session-load-env";
+          envLoad = pkgs.writeShellApplication {
+            name = "${cfg.prefix}-session-set-env";
             runtimeInputs = with pkgs; [ dbus jq ];
             text = ''
-              readarray -t envs <<<"$(jq -rn 'env | to_entries[] | "\(.key)=\(.value)"')"
+              envs=()
+              keys=()
+              for arg in "$@"; do
+                if [[ "$arg" == *=* ]]; then
+                  envs+=("$arg")
+                else
+                  keys+=("$arg")
+                fi
+              done
+              if [[ "$#" == 0 ]]; then
+                readarray -t keys < <(jq -rn 'env|keys[]')
+              fi
+              for key in "''${keys[@]}"; do
+                envs+=("$key=''${!key}")
+              done
               dbus-update-activation-environment --systemd "''${envs[@]}"
             '';
           };
 
-          sessionClearEnv = pkgs.writeShellApplication {
+          envClear = pkgs.writeShellApplication {
             name = "${cfg.prefix}-session-clear-env";
             runtimeInputs = with pkgs; [ dbus systemd jq ];
             text = ''
-              readarray -t set_empty < <(systemctl --user show-environment -o json | jq -r 'keys[] | "\(.)="')
+              keys=("$@")
+              if [[ "$#" == 0 ]]; then
+                readarray -t keys < <(systemctl --user show-environment -o json | jq -r 'keys[]')
+              fi
+              set_empty=()
+              for key in "''${keys[@]}"; do
+                set_empty+=("$key=")
+              done
               dbus-update-activation-environment "''${set_empty[@]}"
-              readarray -t keys < <(systemctl --user show-environment -o json | jq -r 'keys[]')
               systemctl --user unset-environment "''${keys[@]}"
             '';
           };
@@ -72,9 +92,9 @@ in
           name = "${cfg.prefix}-bundle";
           passthru.providedSessions = [ cfg.desktopSessionName ];
           paths = [
-            sessionClearEnv
+            envClear
             waylandSessionEntry
-            sessionLoadEnv
+            envLoad
             startsway
             startsway-headless
           ];
@@ -166,6 +186,10 @@ in
       programs.sway.wrapperFeatures.gtk = true;
       programs.sway.extraOptions = [ "--verbose" "--debug" ];
       programs.sway.extraSessionCommands = ''
+        # rename NOTIFY_SOCKET to workaround podman systemd detection
+        # can be removed when NotifyAccess=all pattern is changed
+        export KDN_SWAY_NOTIFY_SOCKET="''${NOTIFY_SOCKET:-}"
+        test -z "$KDN_SWAY_NOTIFY_SOCKET" || unset NOTIFY_SOCKET
         . /etc/profile
 
         # cfg.environmentDefaults
@@ -233,9 +257,12 @@ in
         serviceConfig.Slice = "session.slice";
         serviceConfig = {
           Type = "notify";
-          # TODO: change NotifyAccess to something else to prevent Podman from killing Sway
-          # see https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html#NotifyAccess=
-          # see https://gist.github.com/nazarewk/9e071fd43e1803ffaa1726a273f30419?permalink_comment_id=4754291#gistcomment-4754291
+          /*
+            TODO: change NotifyAccess to something else to prevent Podman from killing Sway
+              KDN_SWAY_NOTIFY_SOCKET rename can be removed after this one is working
+              see https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html#NotifyAccess=
+              see https://gist.github.com/nazarewk/9e071fd43e1803ffaa1726a273f30419#resolution
+          */
           NotifyAccess = "all";
           ExecStart = "/run/current-system/sw/bin/sway";
           ExecStopPost = "${cfg.bundle}/bin/${cfg.prefix}-session-clear-env";
@@ -337,8 +364,13 @@ in
       };
 
       kdn.desktop.sway.initScripts.systemd = {
-        "00-update-systemd-environment" = "${cfg.bundle}/bin/${cfg.prefix}-session-load-env";
-        "99-notify-systemd-service" = "${pkgs.systemd}/bin/systemd-notify --ready";
+        "00-update-systemd-environment" = "${cfg.bundle}/bin/${cfg.prefix}-session-set-env";
+        "99-notify-systemd-service" = ''
+          # use renamed NOTIFY_SOCKET to workaround podman systemd detection
+          # can be removed when NotifyAccess=all pattern is changed
+          NOTIFY_SOCKET="$KDN_SWAY_NOTIFY_SOCKET" ${pkgs.systemd}/bin/systemd-notify --ready
+          ${cfg.bundle}/bin/${cfg.prefix}-session-clear-env NOTIFY_SOCKET
+        '';
       };
 
       environment.etc."sway/config.d/00-${config.kdn.desktop.sway.prefix}-init.conf".text = lib.trivial.pipe cfg.initScripts [
