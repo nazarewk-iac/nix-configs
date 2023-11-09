@@ -154,6 +154,8 @@ in
 
         credential."https://github.com".username = "nazarewk";
         url."https://github.com/".insteadOf = "git@github.com:";
+        credential."https://gist.github.com".username = "nazarewk";
+        url."https://gist.github.com/".insteadOf = "git@gist.github.com:";
 
         credential."https://gitlab.com/signicat/".username = "signicat-krznaz";
         url."https://gitlab.com/signicat/".insteadOf = "git@gitlab.com:signicat/";
