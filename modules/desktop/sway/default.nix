@@ -369,7 +369,6 @@ in
           # use renamed NOTIFY_SOCKET to workaround podman systemd detection
           # can be removed when NotifyAccess=all pattern is changed
           NOTIFY_SOCKET="$KDN_SWAY_NOTIFY_SOCKET" ${pkgs.systemd}/bin/systemd-notify --ready
-          ${cfg.bundle}/bin/${cfg.prefix}-session-clear-env NOTIFY_SOCKET
         '';
       };
 
