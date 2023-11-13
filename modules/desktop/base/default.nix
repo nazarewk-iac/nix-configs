@@ -85,20 +85,51 @@ in
       glib # gsettings
       sound-theme-freedesktop
     ] ++ (with pkgs.libsForQt5; [
-      dolphin # file manager
       okular # pdf viewer
       ark # archive manager
       gwenview # image viewer & editor
       pix # image gallery viewer
+    ]) ++ (with cinnamon; [
+      nemo
+      nemo-fileroller
     ]);
 
-    gtk.iconCache.enable = true;
 
     xdg.portal.enable = true;
     xdg.portal.xdgOpenUsePortal = true;
 
     qt.enable = true;
-    qt.platformTheme = "kde";
-    qt.style = "cleanlooks";
+    qt.platformTheme = "gnome";
+    qt.style = "adwaita-dark";
+    gtk.iconCache.enable = true;
+
+    home-manager.sharedModules = [
+      ({ config, ... }: {
+        gtk.enable = true;
+        gtk.iconTheme.name = "Adwaita-Dark";
+        gtk.theme.name = "Adwaita-Dark";
+        gtk.gtk2.configLocation = "${config.xdg.configHome}/gtk-2.0/gtkrc";
+        gtk.gtk2.extraConfig = ''
+          gtk-enable-animations=0
+          gtk-menu-images=1
+          gtk-button-images=1
+        '';
+        gtk.gtk3.extraConfig = {
+          gtk-application-prefer-dark-theme = true;
+          gtk-button-images = true;
+          gtk-enable-animations = false;
+          gtk-menu-images = true;
+        };
+        gtk.gtk4.extraConfig = {
+          gtk-application-prefer-dark-theme = true;
+          gtk-enable-animations = false;
+        };
+
+        home.file."${config.xdg.configHome}/gtk-2.0/gtkrc".force = true;
+        xdg.configFile."fontconfig/conf.d/10-hm-fonts.conf".force = true;
+        xdg.configFile."gtk-3.0/settings.ini".force = true;
+        xdg.configFile."gtk-4.0/settings.ini".force = true;
+      })
+    ];
   };
 }

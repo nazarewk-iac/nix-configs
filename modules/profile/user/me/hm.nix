@@ -63,7 +63,7 @@ in
       home.activation = {
         linkPasswordStore =
           lib.hm.dag.entryBetween [ "linkGeneration" ] [ "writeBoundary" ] ''
-            #$DRY_RUN_CMD ln -sfT "Nextcloud/drag0nius@nc.nazarewk.pw/important/password-store" "$HOME/.password-store"
+            $DRY_RUN_CMD ln -sfT "Nextcloud/drag0nius@nc.nazarewk.pw/important/password-store" "$HOME/.password-store"
           '';
       };
       programs.password-store.enable = true;
@@ -72,69 +72,6 @@ in
         PASSWORD_STORE_CLIP_TIME = "10";
       };
     }
-    (lib.mkIf hasKDE (
-      let
-        get-kwallet-password = pkgs.writeShellApplication {
-          name = "get-kwallet-password";
-          runtimeInputs = with pkgs; [ pass wl-clipboard libnotify ];
-          text = ''
-            pass show kwallet | wl-copy -n
-
-            notify-send --expire-time=10000 --wait "KWallet password" "is available in clipboard until this notificaton closes"
-
-            for i in {1..10} ; do
-              echo "password cleared $i times" | wl-copy
-            done
-            wl-copy --clear
-          '';
-        };
-      in
-      {
-        home.packages = with pkgs; [
-          get-kwallet-password
-        ];
-        xdg.desktopEntries.plasma-manager-commands.exec = "true";
-        programs.plasma.enable = true;
-        programs.plasma = {
-          workspace.clickItemTo = "select";
-          shortcuts.kwin."Show Desktop" = [
-            #"Meta+D"
-          ];
-          shortcuts."org.kde.krunner.desktop"._launch = [
-            "Search"
-            #"Alt+F2"
-            "Alt+Space"
-          ];
-          hotkeys.commands = {
-            "foot" = {
-              comment = "Foot Terminal";
-              key = "Meta+Return";
-              command = "foot";
-            };
-            "qalculate" = {
-              comment = "Qalculate";
-              key = "Meta+K";
-              command = "${pkgs.qalculate-qt}/bin/qalculate-qt";
-            };
-            "wofi-drun" = {
-              comment = "wofi Application Launcher";
-              key = "Meta+D";
-              command = "wofi --show drun";
-            };
-            "wofi-run" = {
-              comment = "wofi Command Launcher";
-              key = "Alt+F2";
-              command = "wofi --show run";
-            };
-            "get-kwallet-password" = {
-              comment = "Copy KWallet Password to clipboard";
-              keys = [ "Meta+Shift+P" "Meta+J" ];
-              command = "${get-kwallet-password}/bin/get-kwallet-password";
-            };
-          };
-        };
-      }
-    ))
     (lib.mkIf hasWorkstation {
       kdn.services.syncthing.enable = true;
       kdn.programs.weechat.enable = true;
@@ -245,7 +182,7 @@ in
         let
           brave = [ "brave-browser.desktop" ];
           browser = [ "uri-to-clipboard.desktop" "firefox.desktop" ] ++ brave;
-          fileManager = [ "org.kde.dolphin.desktop" ];
+          fileManager = [ "nemo.desktop" ];
           ide = [ "idea-ultimate.desktop" ];
           ipfs = brave;
           pdf = [ "org.kde.okular.desktop" ];
