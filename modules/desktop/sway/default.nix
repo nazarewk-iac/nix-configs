@@ -270,6 +270,7 @@ in
           RestartSec = 1;
           TimeoutStopSec = 60;
           TimeoutStartSec = 300;
+          AmbientCapabilities = [ "CAP_SYS_NICE" ];
         };
       };
 
