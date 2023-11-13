@@ -36,25 +36,6 @@ in
       programs.gnupg.agent.enableSSHSupport = false;
       programs.gnupg.agent.pinentryFlavor = null;
 
-      home-manager.sharedModules = [
-        ({ lib, config, ... }: {
-          home.activation = {
-            linkPasswordStore =
-              lib.hm.dag.entryBetween [ "linkGeneration" ] [ "writeBoundary" ] ''
-                #$DRY_RUN_CMD ln -sfT "Nextcloud/drag0nius@nc.nazarewk.pw/important/password-store" "$HOME/.password-store"
-              '';
-          };
-          programs.password-store.enable = true;
-          programs.password-store.settings = {
-            PASSWORD_STORE_DIR = "${config.home.homeDirectory}/.password-store";
-            PASSWORD_STORE_CLIP_TIME = "10";
-          };
-          home.file.".gnupg/gpg-agent.conf".text = ''
-            pinentry-program ${pinentry}/bin/pinentry
-          '';
-        })
-      ];
-
       environment.systemPackages = with pkgs; [
         (lib.hiPrio pinentry)
         pinentry-curses

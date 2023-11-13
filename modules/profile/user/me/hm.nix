@@ -58,6 +58,20 @@ in
         in
         foldParts ./yubico/u2f_keys.parts;
     }
+    {
+      # GPG
+      home.activation = {
+        linkPasswordStore =
+          lib.hm.dag.entryBetween [ "linkGeneration" ] [ "writeBoundary" ] ''
+            #$DRY_RUN_CMD ln -sfT "Nextcloud/drag0nius@nc.nazarewk.pw/important/password-store" "$HOME/.password-store"
+          '';
+      };
+      programs.password-store.enable = true;
+      programs.password-store.settings = {
+        PASSWORD_STORE_DIR = "${config.home.homeDirectory}/.password-store";
+        PASSWORD_STORE_CLIP_TIME = "10";
+      };
+    }
     (lib.mkIf hasKDE (
       let
         get-kwallet-password = pkgs.writeShellApplication {
