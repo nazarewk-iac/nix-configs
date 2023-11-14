@@ -78,7 +78,7 @@ in
           waylandSessionEntry = pkgs.writeTextFile {
             name = "${cfg.desktopSessionName}-wayland-session";
             destination = "/share/wayland-sessions/${cfg.desktopSessionName}.desktop";
-
+            # TODO: SDDM doesn't properly exit this session
             text = ''
               [Desktop Entry]
               Name=${cfg.desktopSessionName} Sway
