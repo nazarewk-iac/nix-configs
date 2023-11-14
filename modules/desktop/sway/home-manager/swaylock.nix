@@ -38,6 +38,7 @@ in
       Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
     };
 
+    programs.swaylock.enable = true;
     programs.swaylock.settings = {
       color = "000000";
       show-failed-attempts = true;
