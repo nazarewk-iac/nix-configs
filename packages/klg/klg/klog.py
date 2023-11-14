@@ -138,7 +138,8 @@ class Klog:
         raise KlgException("No entry was found")
 
     async def resume(self, path, *args):
-        return await self.cmd("start", f"--resume", *args, path)
+        _, latest = await self.find_latest(path, *args, range=True, closed=True)
+        return await self.cmd("start", f"--summary={latest.summary}", *args, path)
 
     async def switch(self, path, *args):
         return await self.cmd("switch", f"--resume", *args, path)
