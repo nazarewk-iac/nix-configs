@@ -1,27 +1,29 @@
 { lib, pkgs, config, ... }:
 let
   cfg = config.kdn.programs.gnupg;
-
-  pinentry =
-    let
-      python = pkgs.python3;
-      runtimeInputs = with pkgs; [
-        coreutils
-        gnused
-        pinentry-curses
-        pinentry-qt
-      ];
-    in
-    pkgs.writeScriptBin "pinentry" ''
-      #!${python}/bin/python
-      import os
-      os.environ["PATH"] = f'${lib.makeBinPath runtimeInputs}:os.environ.get("PATH", "")'.strip(os.path.pathsep)
-      ${builtins.readFile ./pinentry.py}
-    '';
 in
 {
   options.kdn.programs.gnupg = {
     enable = lib.mkEnableOption "GnuPG forwarding to remote systems";
+    pinentry = lib.mkOption {
+      type = lib.types.package;
+      default =
+        let
+          python = pkgs.python3;
+          runtimeInputs = with pkgs; [
+            coreutils
+            gnused
+            pinentry-curses
+            pinentry-qt
+          ];
+        in
+        pkgs.writeScriptBin "pinentry" ''
+          #!${python}/bin/python
+          import os
+          os.environ["PATH"] = f'${lib.makeBinPath runtimeInputs}:os.environ.get("PATH", "")'.strip(os.path.pathsep)
+          ${builtins.readFile ./pinentry.py}
+        '';
+    };
     pass-secret-service.enable = lib.mkEnableOption "pass-secret-service";
   };
 
@@ -37,7 +39,7 @@ in
       programs.gnupg.agent.pinentryFlavor = null;
 
       environment.systemPackages = with pkgs; [
-        (lib.hiPrio pinentry)
+        (lib.hiPrio cfg.pinentry)
         pinentry-curses
         pinentry-qt
 
@@ -54,6 +56,12 @@ in
           text = builtins.readFile ./pass-pubkeys.sh;
         })
       ];
+
+      home-manager.sharedModules = [{
+        home.file.".gnupg/gpg-agent.conf".text = ''
+          pinentry-program ${cfg.pinentry}/bin/pinentry
+        '';
+      }];
 
       # allow usb-ip access to Yubikeys
       security.polkit.extraConfig = builtins.readFile ./pcsc-lite-rules.js;

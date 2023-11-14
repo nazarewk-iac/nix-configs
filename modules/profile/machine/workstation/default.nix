@@ -8,6 +8,12 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    home-manager.users.kdn = {
+      # while debugging pinentry wrapper
+      home.file.".gnupg/gpg-agent.conf".force = true;
+    };
+    kdn.programs.gnupg.pinentry = pkgs.kdn.pinentry;
+
     kdn.profile.machine.desktop.enable = true;
     kdn.profile.machine.dev.enable = true;
 

@@ -14,6 +14,7 @@
   netbird-ui = netbird.override { ui = true; };
   openapi-python-client-cli = pkgs.callPackage ./openapi-python-client-cli { };
   pass-secret-service = pkgs.callPackage ./pass-secret-service { };
+  pinentry = pkgs.callPackage ./pinentry { };
   rambox = pkgs.callPackage ./rambox { };
   rambox-wayland = pkgs.callPackage ./rambox-wayland { };
   whicher = pkgs.callPackage ./whicher { };
