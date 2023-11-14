@@ -264,13 +264,14 @@ in
               see https://gist.github.com/nazarewk/9e071fd43e1803ffaa1726a273f30419#resolution
           */
           NotifyAccess = "all";
-          ExecStart = "/run/current-system/sw/bin/sway";
+          #ExecStart = "/run/current-system/sw/bin/sway";
+          ExecStart = "/run/wrappers/bin/sway";
           ExecStopPost = "${cfg.bundle}/bin/${cfg.prefix}-session-clear-env";
           Restart = "no";
           RestartSec = 1;
           TimeoutStopSec = 60;
           TimeoutStartSec = 300;
-          AmbientCapabilities = [ "CAP_SYS_NICE" ];
+          #AmbientCapabilities = [ "CAP_SYS_NICE" ];
         };
       };
 

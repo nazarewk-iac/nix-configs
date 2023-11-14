@@ -1,6 +1,4 @@
 #!/run/current-system/sw/bin/python3
-from __future__ import annotations
-
 import dataclasses
 import functools
 import json
@@ -179,7 +177,7 @@ class PinentryConfigExec:
             for key, patterns in self.set_patterns.items()
         }
 
-    def matches(self, pinentry: Pinentry):
+    def matches(self, pinentry: "Pinentry"):
         return all(
             pattern.matches(pinentry.options.get(name, ""))
             for name, patterns in self.option_patterns.items()
