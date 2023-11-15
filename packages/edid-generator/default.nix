@@ -19,15 +19,15 @@
 
 stdenv.mkDerivation {
   pname = "edid-generator";
-  version = "master-2023-10-17";
+  version = "master-2023-11-15";
 
   # so `hardware.firmware` doesn't compress it
   compressFirmware = false;
 
   src = fetchFromGitHub {
-    owner = "nazarewk";
+    owner = "akatrevorjay";
     repo = "edid-generator";
-    rev = "f7fd645fbd106db508954f1a3e01b6a38e95d65b";
+    rev = "9430c121e0b31d8d60799379f73722f08f2e62a1";
     sha256 = "sha256-CoEcAl5680fCOF2XxxGSiBs6AqdsbBbaM+ENAC2lOU8=";
   };
 
@@ -62,7 +62,7 @@ stdenv.mkDerivation {
 
   meta = {
     description = "Hackerswork to generate an EDID blob from given Xorg Modelines";
-    homepage = "https://github.com/nazarewk/edid-generator";
+    homepage = "https://github.com/akatrevorjay/edid-generator";
     license = lib.licenses.gpl3;
     maintainers = with lib.maintainers; [ flokli nazarewk ];
     platforms = lib.platforms.all;
