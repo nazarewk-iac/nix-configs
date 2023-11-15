@@ -123,7 +123,10 @@ in
     (lib.mkIf hasGUI {
       # Firefox
       # TODO: manage settings?
-      # TODO: generate a profile and/or container selector?
+      /* TODO: integrate with link opener?
+          - addon https://github.com/nix-community/nur-combined/blob/959f71d785bcf7f241ebaa0c8c054eac4d6c19dd/repos/rycee/pkgs/firefox-addons/generated-firefox-addons.nix#L5876
+          - launcher https://github.com/honsiorovskyi/open-url-in-container/blob/master/bin/launcher.sh
+      */
       programs.firefox = {
         enable = true;
         profiles.kdn = {
