@@ -1,6 +1,7 @@
 { lib
 , stdenv
 , fetchFromGitHub
+, fetchpatch
 , dos2unix
 , edid-decode
 , hexdump
@@ -25,13 +26,18 @@ stdenv.mkDerivation {
   compressFirmware = false;
 
   src = fetchFromGitHub {
-    # switch back after https://github.com/akatrevorjay/edid-generator/pull/29 is merged
-    #owner = "akatrevorjay";
-    owner = "nazarewk";
+    owner = "akatrevorjay";
     repo = "edid-generator";
-    rev = "cc9572bb94cdde0ff6e930bfd9354a3c8badc168";
-    sha256 = "sha256-UGxze273VB5cQDWrv9X/Lam6WbOu9U3bro8GcVbEvws=";
+    rev = "9430c121e0b31d8d60799379f73722f08f2e62a1";
+    sha256 = "sha256-CoEcAl5680fCOF2XxxGSiBs6AqdsbBbaM+ENAC2lOU8=";
   };
+  patches = [
+    (fetchpatch {
+      # https://github.com/akatrevorjay/edid-generator/pull/29
+      url = "https://github.com/nazarewk/edid-generator/compare/9430c121e0b31d8d60799379f73722f08f2e62a1...cc9572bb94cdde0ff6e930bfd9354a3c8badc168.patch";
+      sha256 = "sha256-7uj3Vf8bnNtv0imSDcBS4Rc0Zeq+/s1Ua04DeL71Gss=";
+    })
+  ];
 
   nativeBuildInputs = [ dos2unix edid-decode hexdump zsh ];
 
