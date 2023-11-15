@@ -25,10 +25,12 @@ stdenv.mkDerivation {
   compressFirmware = false;
 
   src = fetchFromGitHub {
-    owner = "akatrevorjay";
+    # switch back after https://github.com/akatrevorjay/edid-generator/pull/29 is merged
+    #owner = "akatrevorjay";
+    owner = "nazarewk";
     repo = "edid-generator";
-    rev = "9430c121e0b31d8d60799379f73722f08f2e62a1";
-    sha256 = "sha256-CoEcAl5680fCOF2XxxGSiBs6AqdsbBbaM+ENAC2lOU8=";
+    rev = "cc9572bb94cdde0ff6e930bfd9354a3c8badc168";
+    sha256 = "sha256-UGxze273VB5cQDWrv9X/Lam6WbOu9U3bro8GcVbEvws=";
   };
 
   nativeBuildInputs = [ dos2unix edid-decode hexdump zsh ];
@@ -49,15 +51,23 @@ stdenv.mkDerivation {
       echo "--- $file"
       cat "$file"
     done
-    make clean all
+    make clean
+  '';
+
+  buildPhase = ''
+    make all
+  '';
+
+  doCheck = true;
+  checkPhase = ''
+    for file in *.bin ; do
+      echo "validating $file"
+      edid-decode <"$file"
+    done
   '';
 
   installPhase = ''
-    for file in *.bin ; do
-      # validate
-      edid-decode <"$file"
-      install -Dm 444 "$file" -t "$out/lib/firmware/edid"
-    done
+    install -Dm 444 *.bin -t "$out/lib/firmware/edid"
   '';
 
   meta = {
