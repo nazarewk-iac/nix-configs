@@ -4,11 +4,7 @@ let
 
   generated = pkgs.kdn.edid-generator.overrideAttrs {
     clean = true;
-    modelines = lib.trivial.pipe cfg.modelines [
-      (lib.mapAttrsToList (name: value: ''Modeline "${name}" ${value}''))
-      (builtins.map (line: "${line}\n"))
-      (lib.strings.concatStringsSep "")
-    ];
+    modelines = cfg.modelines;
   };
 in
 {
@@ -23,6 +19,11 @@ in
         "PG278Q_120" = ''   497.75   2560 2608 2640 2720   1440 1443 1448 1525   +hsync -vsync'';
         "U2711_60" = ''     241.50   2560 2600 2632 2720   1440 1443 1448 1481   -hsync +vsync'';
       };
+      apply = modelines: lib.trivial.pipe modelines [
+        (lib.mapAttrsToList (name: value: ''Modeline "${name}" ${value}''))
+        (builtins.map (line: "${line}\n"))
+        (lib.strings.concatStringsSep "")
+      ];
     };
 
     kernelOutputs = lib.mkOption {
