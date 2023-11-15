@@ -116,17 +116,27 @@ in
       };
     })
     (lib.mkIf hasGUI {
+      # KDE Connect
+      services.kdeconnect.enable = true;
+      services.kdeconnect.indicator = true;
+    })
+    (lib.mkIf hasGUI {
+      # Firefox
+      # TODO: manage profiles and settings?
+      programs.firefox.enable = true;
+      programs.firefox.nativeMessagingHosts.packages = with pkgs; [
+        libsForQt5.plasma-browser-integration
+        keepassxc
+      ];
+    })
+    (lib.mkIf hasGUI {
       services.flameshot.settings.General.savePath = "${config.home.homeDirectory}/Downloads/screenshots";
       xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
 
       services.nextcloud-client.enable = true;
       services.nextcloud-client.startInBackground = true;
 
-      services.kdeconnect.enable = true;
-      services.kdeconnect.indicator = true;
-
       xdg.mime.enable = true;
-
       xdg.desktopEntries.uri-to-clipboard =
         let
           bin = pkgs.writeShellScript "uri-to-clipboard" ''
@@ -257,7 +267,7 @@ in
             pass
             drag0nius_kdbx
 
-            firefox
+            config.programs.firefox.finalPackage
 
             element-desktop
             signal-desktop

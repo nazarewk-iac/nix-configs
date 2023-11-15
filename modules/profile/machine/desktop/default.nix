@@ -45,7 +45,6 @@ in
     environment.systemPackages = with pkgs; [
       libreoffice-qt # non-qt failed to build on 2023-04-07
       # chromium
-      firefox
       thunderbird
       p7zip
       rar
@@ -64,6 +63,23 @@ in
         #! ${pkgs.bash}/bin/bash
         ${pkgs.wl-clipboard}/bin/wl-paste | ${pkgs.qrencode}/bin/qrencode -o - | ${pkgs.imagemagick}/bin/display
       '')
+    ];
+    home-manager.sharedModules = [
+      ({ config, ... }: {
+        options.programs.firefox.nativeMessagingHosts.packages = lib.mkOption {
+          type = with lib.types; listOf package;
+          default = [ ];
+          description = lib.mdDoc ''
+            Additional packages containing native messaging hosts that should be made available to Firefox extensions.
+          '';
+        };
+        config = {
+          programs.firefox.enable = true;
+          programs.firefox.package = pkgs.firefox.override (old: {
+            nativeMessagingHosts = config.programs.firefox.nativeMessagingHosts.packages;
+          });
+        };
+      })
     ];
   };
 }

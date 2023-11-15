@@ -63,7 +63,5 @@ in
       allowedTCPPorts = [ 22000 ];
       allowedUDPPorts = [ 21027 22000 ];
     };
-    # TODO: warning: The cfg.enablePlasmaBrowserIntegration argument for `firefox.override` is deprecated, please add `pkgs.plasma-browser-integration` to `nativeMessagingHosts` instead
-    nixpkgs.config.firefox.enablePlasmaBrowserIntegration = true;
   });
 }
