@@ -23,6 +23,9 @@ in
   };
 
   config = lib.mkIf cfg.enable ({
+    home-manager.users.kdn.programs.firefox.profiles.kdn.path = "owvm95ih.kdn";
+    home-manager.users.kdn.home.file.".mozilla/firefox/profiles.ini".force = true;
+
     kdn.desktop.kde.enable = false;
     kdn.desktop.sway.enable = true;
 

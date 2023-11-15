@@ -122,12 +122,19 @@ in
     })
     (lib.mkIf hasGUI {
       # Firefox
-      # TODO: manage profiles and settings?
-      programs.firefox.enable = true;
-      programs.firefox.nativeMessagingHosts.packages = with pkgs; [
-        libsForQt5.plasma-browser-integration
-        keepassxc
-      ];
+      # TODO: manage settings?
+      # TODO: generate a profile and/or container selector?
+      programs.firefox = {
+        enable = true;
+        profiles.kdn = {
+          id = 0;
+          isDefault = true;
+        };
+        nativeMessagingHosts.packages = with pkgs; [
+          libsForQt5.plasma-browser-integration
+          keepassxc
+        ];
+      };
     })
     (lib.mkIf hasGUI {
       services.flameshot.settings.General.savePath = "${config.home.homeDirectory}/Downloads/screenshots";
