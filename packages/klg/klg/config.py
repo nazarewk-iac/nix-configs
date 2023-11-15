@@ -8,8 +8,11 @@ import dacite
 
 @dataclasses.dataclass
 class TagMapping:
-    tag: str
+    tags: list[str]
     value: str
+
+    def matches(self, tags: set[str]):
+        return set(self.tags) & set(tags) == self.tags
 
 
 @dataclasses.dataclass
@@ -30,12 +33,12 @@ class ReportConfig:
         for entry in self.fields:
             field_name = entry.field
             mappings = entry.mappings
-            if not mappings[-1].tag:
+            if not mappings[-1].tags:
                 ret[field_name] = mappings[-1].value
             else:
                 ret[field_name] = ""
             for mapping in mappings:
-                if mapping.tag in tags:
+                if mapping.matches(tags):
                     ret[field_name] = mapping.value
                     break
         return ret
