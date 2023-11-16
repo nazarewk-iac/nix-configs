@@ -264,8 +264,7 @@ in
               see https://gist.github.com/nazarewk/9e071fd43e1803ffaa1726a273f30419#resolution
           */
           NotifyAccess = "all";
-          #ExecStart = "/run/current-system/sw/bin/sway";
-          ExecStart = "/run/wrappers/bin/sway";
+          ExecStart = "/run/current-system/sw/bin/sway";
           ExecStopPost = "${cfg.bundle}/bin/${cfg.prefix}-session-clear-env";
           Restart = "no";
           RestartSec = 1;
