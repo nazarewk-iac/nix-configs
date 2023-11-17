@@ -26,9 +26,6 @@ in
     home-manager.users.kdn.programs.firefox.profiles.kdn.path = "owvm95ih.kdn";
     home-manager.users.kdn.home.file.".mozilla/firefox/profiles.ini".force = true;
 
-    kdn.desktop.kde.enable = false;
-    kdn.desktop.sway.enable = true;
-
     kdn.profile.machine.workstation.enable = true;
     kdn.hardware.gpu.amd.enable = true;
     kdn.hardware.cpu.amd.enable = true;

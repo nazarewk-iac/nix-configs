@@ -11,8 +11,6 @@ in
     {
       home-manager.users.kdn.programs.firefox.profiles.kdn.path = "v6uzqa6m.default";
       home-manager.users.kdn.home.file.".mozilla/firefox/profiles.ini".force = true;
-      kdn.desktop.kde.enable = false;
-      kdn.desktop.sway.enable = true;
 
       kdn.profile.machine.workstation.enable = true;
       kdn.hardware.gpu.amd.enable = true;

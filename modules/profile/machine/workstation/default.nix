@@ -8,6 +8,10 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    kdn.desktop.kde.enable = false;
+    kdn.desktop.sway.enable = true;
+    kdn.desktop.sway.remote.enable = true;
+
     home-manager.users.kdn = {
       # while debugging pinentry wrapper
       home.file.".gnupg/gpg-agent.conf".force = true;
