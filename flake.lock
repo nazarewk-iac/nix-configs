@@ -424,6 +424,21 @@
         "type": "github"
       }
     },
+    "nur": {
+      "locked": {
+        "lastModified": 1700127871,
+        "narHash": "sha256-Vc+CZ/Ev/MhzYdKGIX/qp8GGiKfztvfL6bJZSW2m6zE=",
+        "owner": "nix-community",
+        "repo": "NUR",
+        "rev": "7cf29aef2e074a1ad6c12a196f3e4a140837f33f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "NUR",
+        "type": "github"
+      }
+    },
     "plasma-manager": {
       "inputs": {
         "home-manager": [
@@ -520,10 +535,12 @@
         "nixos-generators": "nixos-generators",
         "nixpkgs": "nixpkgs_2",
         "nixpkgs-lib": "nixpkgs-lib",
+        "nur": "nur",
         "plasma-manager": "plasma-manager",
         "poetry2nix": "poetry2nix",
         "systems": "systems_4",
-        "treefmt-nix": "treefmt-nix_2"
+        "treefmt-nix": "treefmt-nix_2",
+        "ulauncher": "ulauncher"
       }
     },
     "systems": {
@@ -623,6 +640,30 @@
       "original": {
         "owner": "numtide",
         "repo": "treefmt-nix",
+        "type": "github"
+      }
+    },
+    "ulauncher": {
+      "inputs": {
+        "flake-parts": [
+          "flake-parts"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1700208278,
+        "narHash": "sha256-mQgTHwpEHt48FDSb6E27leiPB9qqA3W2NqUXeGBXT/g=",
+        "owner": "nazarewk",
+        "repo": "Ulauncher",
+        "rev": "7ab829bd4e7e991d81132cf0a6bc470348d85adc",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nazarewk",
+        "ref": "nix-build",
+        "repo": "Ulauncher",
         "type": "github"
       }
     }

@@ -25,6 +25,7 @@
     nixos-generators.inputs.nixlib.follows = "nixpkgs-lib";
     nixos-generators.inputs.nixpkgs.follows = "nixpkgs";
     nixos-generators.url = "github:nix-community/nixos-generators";
+    nur.url = "github:nix-community/NUR";
     plasma-manager.inputs.home-manager.follows = "home-manager";
     plasma-manager.inputs.nixpkgs.follows = "nixpkgs";
     plasma-manager.url = "github:nazarewk/plasma-manager";
@@ -36,6 +37,10 @@
     systems.url = "github:nix-systems/default";
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
     treefmt-nix.url = "github:numtide/treefmt-nix";
+    ulauncher.inputs.flake-parts.follows = "flake-parts";
+    ulauncher.inputs.nixpkgs.follows = "nixpkgs";
+    #ulauncher.url = "github:Ulauncher/Ulauncher/v6";
+    ulauncher.url = "github:nazarewk/Ulauncher/nix-build";
   };
 
   outputs =
@@ -49,6 +54,7 @@
       systems = import inputs.systems;
       flake.overlays.default = (inputs.nixpkgs.lib.composeManyExtensions [
         inputs.poetry2nix.overlays.default
+        inputs.ulauncher.overlays.default
         (final: prev: {
           kdn = final.callPackages ./packages { };
           devenv = inputs.devenv.packages.${final.stdenv.system}.default;

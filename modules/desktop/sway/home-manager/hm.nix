@@ -87,6 +87,7 @@ in
           #"$Super+minus" = "scratchpad show";
           "${mod.super}+K" = exec "${pkgs.qalculate-qt}/bin/qalculate-qt";
           "${mod.super}+P" = exec "${pkgs.foot}/bin/foot --title=ipython ipython";
+          "${mod.super}+U" = exec "${pkgs.ulauncher6}/bin/ulauncher";
         };
       config.modes = { };
       config.bars = [ ];
@@ -135,6 +136,7 @@ in
 
       qalculate-qt
       libqalculate
+      ulauncher6
     ];
 
     home.sessionPath = [ "$HOME/.local/bin" ];
