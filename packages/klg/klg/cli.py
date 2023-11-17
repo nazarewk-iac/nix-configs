@@ -14,7 +14,7 @@ import structlog
 import xdg
 
 from . import configure, dto
-from .config import Config, ReportConfig
+from .config import Config, ReportConfig, TagsType
 from .klog import Klog
 
 configure.logging()
@@ -160,23 +160,39 @@ async def generate_report(paths, period, tags, output, report_id, resource, diff
             "Time spent",
             "Minutes",
             "Summary",
-            *report.map_tags(set()),
+            *report.map_tags(),
         )
     ]
 
     for record in result.records:
-        for entry in record.entries:
-            row = [
+        rows.append(
+            [
                 report.resource,
                 record.date,
-                entry.total,
-                entry.total_mins,
-                entry.summary.strip(),
+                "0h",
+                0,
+                record.summary.strip(),
+                *report.map_tags(
+                    type=TagsType.record,
+                    record_tags=record.tags,
+                ).values(),
             ]
-            tagged_values = report.map_tags(set(record.tags) | set(entry.tags))
-            for name, value in tagged_values.items():
-                row.append(value)
-            rows.append(row)
+        )
+        for entry in record.entries:
+            rows.append(
+                [
+                    report.resource,
+                    record.date,
+                    entry.total,
+                    entry.total_mins,
+                    entry.summary.strip(),
+                    *report.map_tags(
+                        type=TagsType.entry,
+                        entry_tags=entry.tags,
+                        record_tags=record.tags,
+                    ).values(),
+                ]
+            )
 
     total_mins = sum(r.total_mins for r in result.records)
     rows.append(

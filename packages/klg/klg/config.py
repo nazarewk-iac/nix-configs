@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import enum
+
 import dataclasses
 from pathlib import Path
 
@@ -8,11 +10,24 @@ import dacite
 
 @dataclasses.dataclass
 class TagMapping:
-    tags: list[str]
+    tags: set[str]
     value: str
+    strict: bool = False
+    record: bool = True
+    entry: bool = True
 
-    def matches(self, tags: set[str]):
-        return set(self.tags) & set(tags) == self.tags
+    def matches(
+        self,
+        type: TagsType,
+        entry_tags: set[str] = frozenset(),
+        record_tags: set[str] = frozenset(),
+    ):
+        ret = False
+        if not self.strict or type == TagsType.entry:
+            ret |= self.entry and self.tags.issubset(entry_tags)
+        if not self.strict or type == TagsType.record:
+            ret |= self.record and self.tags.issubset(record_tags)
+        return ret
 
 
 @dataclasses.dataclass
@@ -21,14 +36,25 @@ class FieldFromTags:
     mappings: list[TagMapping]
 
 
+class TagsType(enum.StrEnum):
+    none = ""
+    record = "record"
+    entry = "entry"
+
+
 @dataclasses.dataclass
 class ReportConfig:
     resource: str = ""
     name: str = ""
-    tags: list[str] = dataclasses.field(default_factory=list)
+    tags: set[str] = dataclasses.field(default_factory=list)
     fields: list[FieldFromTags] = dataclasses.field(default_factory=dict)
 
-    def map_tags(self, tags: set[str]):
+    def map_tags(
+        self,
+        type: TagsType = TagsType.none,
+        entry_tags: set[str] = frozenset(),
+        record_tags: set[str] = frozenset(),
+    ):
         ret = {}
         for entry in self.fields:
             field_name = entry.field
@@ -38,7 +64,9 @@ class ReportConfig:
             else:
                 ret[field_name] = ""
             for mapping in mappings:
-                if mapping.matches(tags):
+                if mapping.matches(
+                    type=type, entry_tags=entry_tags, record_tags=record_tags
+                ):
                     ret[field_name] = mapping.value
                     break
         return ret
@@ -97,5 +125,12 @@ def path_hook(*args, **kwargs):
 
 
 dacite_config = dacite.Config(
-    strict=True, strict_unions_match=True, type_hooks={Path: Path}
+    strict=True,
+    strict_unions_match=True,
+    cast=[
+        set,
+    ],
+    type_hooks={
+        Path: Path,
+    },
 )

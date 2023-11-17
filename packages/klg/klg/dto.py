@@ -119,7 +119,7 @@ class Base:
 
     @classmethod
     def load(cls, data: dict):
-        return dacite.from_dict(cls, data, dacite_config)
+        return dacite.from_dict(cls, data, config=dacite_config)
 
     def __format__(self, format_spec):
         match format_spec:
@@ -172,7 +172,7 @@ class Base:
 @dataclasses.dataclass
 class EntryBase(Base, ABC):
     summary: str  # "welcome call",
-    tags: list[str]  # ["#X"]
+    tags: set[str]  # ["#X"]
 
     def format_summary(self, prefix: str = None):
         if prefix is None:
@@ -191,7 +191,7 @@ class EntryBase(Base, ABC):
         return "\n".join(gen())
 
     def add_tags(self, *tags: str):
-        self.tags = sorted(set(self.tags) | set(tags))
+        self.tags = set(self.tags) | set(tags)
         missing = [tag for tag in self.tags if tag not in self.summary]
         if missing:
             self.summary = f"{self.summary} {' '.join(missing)}"
@@ -438,7 +438,7 @@ class Result(Base):
             date = period_date.replace(day=i)
             records = by_date[date]
             if not records:
-                record = Record(date=str(date), summary="", tags=[])
+                record = Record(date=str(date), summary="", tags=set())
                 result.records.append(record)
                 records.append(record)
             record = records[0]
@@ -487,6 +487,9 @@ class Result(Base):
 dacite_config = dacite.Config(
     strict=True,
     strict_unions_match=True,
+    cast=[
+        set,
+    ],
     type_hooks={
         GenericEntry: GenericEntry.transform,
         GenericError: GenericError.transform,
