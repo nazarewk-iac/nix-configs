@@ -20,8 +20,8 @@ in
         "${mod.lalt }+Tab" = exec (swayr "prev-window all-workspaces");
         "${mod.lalt }+${mod.shift}+Tab" = exec (swayr "next-window all-workspaces");
         "${mod.super}+${mod.shift}+Space" = exec (swayr "switch-workspace-or-window");
-        "${mod.super}+c" = exec (swayr "execute-swaymsg-command");
-        "${mod.super}+${mod.shift}+c" = exec (swayr "execute-swayr-command");
+        "${mod.super}+C" = exec (swayr "execute-swaymsg-command");
+        "${mod.super}+${mod.shift}+C" = exec (swayr "execute-swayr-command");
       };
     };
   };

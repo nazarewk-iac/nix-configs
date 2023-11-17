@@ -20,16 +20,14 @@ in
       default = true;
       description = "takes over parts of pkgs.xdg-utils (xdg-open)";
     };
-    #glib.enable = lib.mkOption {
-    #  type = lib.types.bool;
-    #  default = true;
-    #  description = "takes over parts of pkgs.glib (Gnome): gio open/launch";
-    #};
-    #exo.enable = lib.mkOption {
-    #  type = lib.types.bool;
-    #  default = true;
-    #  description = "takes over parts of pkgs.exo (XFCE): exo-open";
-    #};
+    xdg-utils.package = lib.mkOption {
+      type = lib.types.package;
+      default = pkgs.writeShellApplication {
+        name = "xdg-open";
+        runtimeInputs = [ cfg.package ];
+        text = ''handlr open "$@"'';
+      };
+    };
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
@@ -47,30 +45,16 @@ in
     }
     (lib.mkIf cfg.xdg-utils.enable {
       environment.systemPackages = with pkgs; [
-        (lib.meta.hiPrio (pkgs.writeShellApplication {
-          name = "xdg-open";
-          runtimeInputs = [ cfg.package ];
-          text = ''handlr open "$@"'';
-        }))
+        (lib.meta.hiPrio cfg.xdg-utils.package)
+      ];
+      nixpkgs.overlays = [
+        (self: super: {
+          ulauncher6 = super.ulauncher6.override {
+            withXorg = false;
+            xdg-open = cfg.xdg-utils.package;
+          };
+        })
       ];
     })
-    #(lib.mkIf cfg.glib.enable {
-    #  environment.systemPackages = with pkgs; [
-    #    (lib.meta.hiPrio (pkgs.writeShellApplication {
-    #      name = "gio";
-    #      runtimeInputs = [ cfg.package ];
-    #      text = ''
-    #        case $1 in
-    #          open|launch)
-    #            handlr open "$@"
-    #            ;;
-    #          *)
-    #            gio "$@"
-    #            ;;
-    #        esac
-    #      '';
-    #    }))
-    #  ];
-    #})
   ]);
 }

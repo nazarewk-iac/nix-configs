@@ -87,13 +87,29 @@ in
           #"$Super+minus" = "scratchpad show";
           "${mod.super}+K" = exec "${pkgs.qalculate-qt}/bin/qalculate-qt";
           "${mod.super}+P" = exec "${pkgs.foot}/bin/foot --title=ipython ipython";
-          "${mod.super}+U" = exec "${pkgs.ulauncher6}/bin/ulauncher";
+          "${mod.super}+Return" = exec "${pkgs.foot}/bin/foot";
+          # Launchers
+          "${mod.super}+D" = exec "${pkgs.ulauncher6}/bin/ulauncher";
+          "${mod.lalt}+F2" = exec "${pkgs.wofi}/bin/wofi --show run";
+          # Kill focused window
+          "${mod.super}+${mod.shift}+Q" = "kill";
         };
       config.modes = { };
       config.bars = [ ];
       config.focus.followMouse = false;
-      config.floating.modifier = mod.super;
+      config.floating.modifier = "${mod.super} normal";
       config.workspaceLayout = "tabbed";
+      config.input."type:touchpad" = {
+        tap = "enabled";
+        natural_scroll = "enabled";
+      };
+      config.input."type:keyboard" = {
+        xkb_layout = "pl";
+        # https://major.io/2022/05/24/sway-reload-causes-a-firefox-crash/
+        # xkb_numlock = "enable";
+        repeat_delay = "333";
+        repeat_rate = "50";
+      };
       extraConfig = builtins.readFile ./sway/config;
 
       config.floating = {
@@ -120,6 +136,10 @@ in
             {
               criteria = { app_id = "firefox"; title = "Firefox — Sharing Indicator"; };
               commands = [ "resize set 10px 30px" ];
+            }
+            {
+              criteria = { title = "File Operation Progress"; };
+              commands = centerModal;
             }
           ];
           expandEntry = entry: builtins.map

@@ -6,9 +6,6 @@ set $Ctrl Control
 set $Shift Shift
 
 ### Variables
-set $term foot
-set $launcher wofi
-
 set $displayDell 'Dell Inc. DELL U2711 G606T29F0EWL'
 set $displayAsus 'DP-1'
 set $displayLaptop eDP-1
@@ -23,30 +20,6 @@ seat seat0 xcursor_theme Adwaita 24
 
 bindswitch --reload --locked lid:on output $displayLaptop disable
 bindswitch --reload --locked lid:off output $displayLaptop enable
-
-### Key bindings
-#
-# Basics:
-#
-    # Start a terminal
-    bindsym $Super+Return exec $term
-
-    # Kill focused window
-    bindsym $Super+Shift+q kill
-
-    # Start your launcher
-    bindsym $Super+d exec $launcher --show drun
-    bindsym $LAlt+F2 exec $launcher --show run
-
-    # Drag floating windows by holding down $Super and left mouse button.
-    # Resize them with right mouse button + $Super.
-    # Despite the name, also works for non-floating windows.
-    # Change normal to inverse to use left mouse button for resizing and right
-    # mouse button for dragging.
-    floating_modifier $Super normal
-
-    # Reload the configuration file
-    # bindsym $Super+Shift+c reload
 
 #
 # Moving around:
@@ -169,26 +142,3 @@ mode "resize" {
 bindsym $Super+r mode "resize"
 
 include /etc/sway/config.d/*
-
-# inputs
-input type:keyboard {
-  xkb_layout pl
-  # https://major.io/2022/05/24/sway-reload-causes-a-firefox-crash/
-  # xkb_numlock enable
-  repeat_delay 333
-  repeat_rate 50
-}
-
-# https://major.io/2022/05/24/sway-reload-causes-a-firefox-crash/
-# input '1:1:AT_Translated_Set_2_keyboard' xkb_numlock disable
-
-input type:touchpad {
-    tap enabled
-    natural_scroll enabled
-}
-
-for_window [title="File Operation Progress"] {
-  floating enable
-  sticky enable
-  move position center
-}
