@@ -653,11 +653,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1700234944,
-        "narHash": "sha256-bZ+tp08jWbPkBlvvZm+lCtgarJwaYZNmguATWOasKr0=",
+        "lastModified": 1700582071,
+        "narHash": "sha256-/QBDNZ187xPFvSR9mKB0mjExCCOamj0SXTn5OrxKvyg=",
         "owner": "nazarewk",
         "repo": "Ulauncher",
-        "rev": "74b6cd0c6f740d7f61761da47eeb34cb6edb44a4",
+        "rev": "22e13b60af29abc15d1ec43588ac9704c6e29383",
         "type": "github"
       },
       "original": {

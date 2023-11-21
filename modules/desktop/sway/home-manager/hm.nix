@@ -11,6 +11,8 @@ let
       wl-paste --no-newline | ydotool type --file=-
     '';
   };
+
+  runUlauncher = "${config.kdn.programs.ulauncher.package}/bin/ulauncher-toggle";
 in
 {
   options.kdn.desktop.sway = {
@@ -65,6 +67,12 @@ in
       Requires = lib.mkForce [ "tray.target" config.kdn.desktop.sway.systemd.envs.target ];
     };
 
+    kdn.programs.ulauncher.enable = true;
+    systemd.user.services.ulauncher.Unit = {
+      After = lib.mkForce [ "tray.target" config.kdn.desktop.sway.systemd.envs.target ];
+      Requires = lib.mkForce [ "tray.target" config.kdn.desktop.sway.systemd.envs.target ];
+    };
+
     wayland.windowManager.sway = {
       enable = true;
       config.keybindings =
@@ -89,7 +97,7 @@ in
           "${mod.super}+P" = exec "${pkgs.foot}/bin/foot --title=ipython ipython";
           "${mod.super}+Return" = exec "${pkgs.foot}/bin/foot";
           # Launchers
-          "${mod.super}+D" = exec "${pkgs.ulauncher6}/bin/ulauncher";
+          "${mod.super}+D" = exec runUlauncher;
           "${mod.lalt}+F2" = exec "${pkgs.wofi}/bin/wofi --show run";
           # Kill focused window
           "${mod.super}+${mod.shift}+Q" = "kill";
@@ -156,7 +164,6 @@ in
 
       qalculate-qt
       libqalculate
-      ulauncher6
     ];
 
     home.sessionPath = [ "$HOME/.local/bin" ];
