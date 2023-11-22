@@ -69,8 +69,8 @@ in
 
     kdn.programs.ulauncher.enable = true;
     systemd.user.services.ulauncher.Unit = {
-      After = lib.mkForce [ "tray.target" config.kdn.desktop.sway.systemd.envs.target ];
-      Requires = lib.mkForce [ "tray.target" config.kdn.desktop.sway.systemd.envs.target ];
+      After = [ config.kdn.desktop.sway.systemd.envs.target ];
+      Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
     };
 
     wayland.windowManager.sway = {

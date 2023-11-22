@@ -16,5 +16,25 @@ in
   config = lib.mkIf cfg.enable {
     home.file.".local/share/dbus-1/services/io.ulauncher.Ulauncher.service".source = "${cfg.package}/share/dbus-1/services/io.ulauncher.Ulauncher.service";
     home.packages = [ cfg.package ];
+
+    systemd.user.services.ulauncher = {
+      # mostly taken from https://github.com/Ulauncher/Ulauncher/blob/v6/ulauncher.service
+      Service = {
+        BusName = "io.ulauncher.Ulauncher";
+        Type = "dbus";
+        Restart = "on-failure";
+        RestartSec = 3;
+        ExecStart = "${cfg.package}/bin/ulauncher --no-window";
+      };
+      Install = {
+        WantedBy = [ "graphical-session.target" ];
+      };
+      Unit = {
+        Description = "Ulauncher service";
+        Documentation = "https://ulauncher.io/";
+        After = [ "tray.target" "graphical-session.target" ];
+        Requires = [ "tray.target" ];
+      };
+    };
   };
 }
