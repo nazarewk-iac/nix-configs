@@ -20,7 +20,7 @@
 
 stdenv.mkDerivation {
   pname = "edid-generator";
-  version = "master-2023-11-15";
+  version = "master-2023-11-20";
 
   # so `hardware.firmware` doesn't compress it
   compressFirmware = false;
@@ -28,16 +28,9 @@ stdenv.mkDerivation {
   src = fetchFromGitHub {
     owner = "akatrevorjay";
     repo = "edid-generator";
-    rev = "9430c121e0b31d8d60799379f73722f08f2e62a1";
-    sha256 = "sha256-CoEcAl5680fCOF2XxxGSiBs6AqdsbBbaM+ENAC2lOU8=";
+    rev = "476a016d8b488df749bf6d6efbf7b9fbfb2e3cb8";
+    sha256 = "sha256-UGxze273VB5cQDWrv9X/Lam6WbOu9U3bro8GcVbEvws=";
   };
-  patches = [
-    (fetchpatch {
-      # https://github.com/akatrevorjay/edid-generator/pull/29
-      url = "https://github.com/nazarewk/edid-generator/compare/9430c121e0b31d8d60799379f73722f08f2e62a1...cc9572bb94cdde0ff6e930bfd9354a3c8badc168.patch";
-      sha256 = "sha256-7uj3Vf8bnNtv0imSDcBS4Rc0Zeq+/s1Ua04DeL71Gss=";
-    })
-  ];
 
   nativeBuildInputs = [ dos2unix edid-decode hexdump zsh ];
 
@@ -50,11 +43,11 @@ stdenv.mkDerivation {
   modelines = "";
 
   configurePhase = ''
-    test "$clean" == 0 || rm *x*.S
+    test "$clean" != 1 || rm *x*.S
     ./modeline2edid - <"$modelinesPath"
 
     for file in *.S ; do
-      echo "--- $file"
+      echo "--- generated file: $file"
       cat "$file"
     done
     make clean
