@@ -40,7 +40,7 @@
     ulauncher.inputs.flake-parts.follows = "flake-parts";
     ulauncher.inputs.nixpkgs.follows = "nixpkgs";
     #ulauncher.url = "github:Ulauncher/Ulauncher/v6";
-    ulauncher.url = "github:nazarewk/Ulauncher/nix-build";
+    ulauncher.url = "github:nazarewk/Ulauncher/search-all-xdg-data-dirs";
   };
 
   outputs =

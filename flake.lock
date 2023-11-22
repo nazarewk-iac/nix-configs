@@ -653,16 +653,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1700582071,
-        "narHash": "sha256-/QBDNZ187xPFvSR9mKB0mjExCCOamj0SXTn5OrxKvyg=",
+        "lastModified": 1700661456,
+        "narHash": "sha256-MBEVjRKDlTmqM0IgLgfy+7sujQCLDtm0LTpp4ZnuvxM=",
         "owner": "nazarewk",
         "repo": "Ulauncher",
-        "rev": "22e13b60af29abc15d1ec43588ac9704c6e29383",
+        "rev": "26dcb625ea53a49d5054f316fb87847ff03cd17f",
         "type": "github"
       },
       "original": {
         "owner": "nazarewk",
-        "ref": "nix-build",
+        "ref": "search-all-xdg-data-dirs",
         "repo": "Ulauncher",
         "type": "github"
       }
