@@ -25,7 +25,6 @@ in
     kdn.development.nix.enable = true;
     kdn.development.python.enable = true;
     kdn.development.rpi.enable = true;
-    kdn.development.ruby.enable = true;
     kdn.development.rust.enable = true;
     kdn.development.terraform.enable = true;
     kdn.programs.aws-vault.enable = true;
