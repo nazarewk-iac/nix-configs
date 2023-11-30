@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import enum
-
-import dataclasses
-from pathlib import Path
-
 import dacite
+import dataclasses
+import enum
+import tomllib
+from pathlib import Path
 
 
 @dataclasses.dataclass
@@ -32,8 +31,9 @@ class TagMapping:
 
 @dataclasses.dataclass
 class FieldFromTags:
-    field: str
+    header: str
     mappings: list[TagMapping]
+    multiplier: bool = False
 
 
 class TagsType(enum.StrEnum):
@@ -42,32 +42,43 @@ class TagsType(enum.StrEnum):
     entry = "entry"
 
 
+class ReportType(enum.StrEnum):
+    complete = "complete"
+    daily = "daily"
+
+
 @dataclasses.dataclass
 class ReportConfig:
     resource: str = ""
     name: str = ""
+    type: ReportType = ReportType.complete
     tags: set[str] = dataclasses.field(default_factory=list)
     fields: list[FieldFromTags] = dataclasses.field(default_factory=dict)
 
     def map_tags(
         self,
+        value: float,
         type: TagsType = TagsType.none,
         entry_tags: set[str] = frozenset(),
         record_tags: set[str] = frozenset(),
     ):
         ret = {}
-        for entry in self.fields:
-            field_name = entry.field
-            mappings = entry.mappings
-            if not mappings[-1].tags:
-                ret[field_name] = mappings[-1].value
+        for field in self.fields:
+            field_name = field.header
+            mappings = field.mappings
+            if field.multiplier:
+                ret[field_name] = 0.0
             else:
                 ret[field_name] = ""
+
             for mapping in mappings:
                 if mapping.matches(
                     type=type, entry_tags=entry_tags, record_tags=record_tags
                 ):
-                    ret[field_name] = mapping.value
+                    if field.multiplier:
+                        ret[field_name] = float(mapping.value) * value
+                    else:
+                        ret[field_name] = mapping.value
                     break
         return ret
 
@@ -76,11 +87,13 @@ class ReportConfig:
 class ProfileConfig:
     name: str
     dir: Path
-    write_tags: list[str] = dataclasses.field(default_factory=list)
     reports: dict[str, ReportConfig] = dataclasses.field(default_factory=dict)
 
-    def __post_init__(self):
-        self.write_tags = self.write_tags or [self.name]
+    def load_child(self, data: dict):
+        data.setdefault("name", self.name)
+        data.setdefault("dir", self.dir)
+        child = dacite.from_dict(ProfileConfig, data, config=dacite_config)
+        self.reports.update(child.reports)
 
 
 @dataclasses.dataclass
@@ -92,7 +105,13 @@ class Config:
 
     @classmethod
     def load(cls, data: dict):
-        return dacite.from_dict(cls, data, config=dacite_config)
+        self: Config = dacite.from_dict(cls, data, config=dacite_config)
+        for profile in self.profiles.values():
+            path = self.mkpath(profile.dir) / "klg.toml"
+            if path.exists():
+                data = tomllib.loads(path.read_text())
+                profile.load_child(data)
+        return self
 
     @property
     def base_dir(self):
@@ -129,8 +148,8 @@ dacite_config = dacite.Config(
     strict_unions_match=True,
     cast=[
         set,
+        Path,
+        ReportType,
     ],
-    type_hooks={
-        Path: Path,
-    },
+    type_hooks={},
 )

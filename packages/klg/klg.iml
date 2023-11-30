@@ -3,14 +3,10 @@
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
     <content url="file://$MODULE_DIR$">
-      <excludeFolder url="file://$MODULE_DIR$/.devenv/state/venv/bin" />
-      <excludeFolder url="file://$MODULE_DIR$/.devenv/state/venv/lib" />
-      <excludeFolder url="file://$MODULE_DIR$/.devenv/state/venv/share" />
-      <excludeFolder url="file://$MODULE_DIR$/.pytest_cache/v" />
-      <excludeFolder url="file://$MODULE_DIR$/.venv" />
-      <excludeFolder url="file://$MODULE_DIR$/tests/.pytest_cache/v" />
-      <excludePattern pattern=".direnv" />
+      <excludePattern pattern=".devenv" />
       <excludePattern pattern="result" />
+      <excludePattern pattern=".pytest-cache" />
+      <excludePattern pattern=".venv" />
     </content>
     <orderEntry type="jdk" jdkName="nix-configs:klg" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />

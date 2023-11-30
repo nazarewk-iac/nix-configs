@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import datetime
+
 import dataclasses
 import difflib
 import functools
@@ -220,6 +222,14 @@ class GenericEntry(EntryBase):
     total: str  # "1h",
     total_mins: int  # 60,
 
+    @property
+    def current_minutes(self):
+        return self.total_mins
+
+    @property
+    def current_hours(self):
+        return self.current_minutes / 60.0
+
     @classmethod
     def transform(cls, value: dict):
         match value.get("type"):
@@ -259,6 +269,11 @@ class Range(GenericEntry):
 class OpenRange(GenericEntry):
     start: str  # "12:00",
     start_mins: int  # 720,
+
+    @property
+    def current_minutes(self):
+        now = datetime.datetime.now()
+        return (60 * now.hour + now.minute) - self.start_mins
 
     def format_line_generator(self):
         value = f"{self.format_time(self.start_mins):<{self.len_shifted_time}s} - {'?':<{self.len_shifted_time}s}"

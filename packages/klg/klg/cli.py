@@ -1,20 +1,21 @@
 from __future__ import annotations
 
+import tempfile
+
+import asyncclick as click
 import csv
 import functools
+import pendulum
 import shutil
+import structlog
 import subprocess
 import textwrap
 import tomllib
+import xdg
 from pathlib import Path
 
-import asyncclick as click
-import pendulum
-import structlog
-import xdg
-
 from . import configure, dto
-from .config import Config, ReportConfig, TagsType
+from .config import Config, ReportConfig, TagsType, ReportType
 from .klog import Klog
 
 configure.logging()
@@ -153,6 +154,8 @@ async def generate_report(paths, period, tags, output, report_id, resource, diff
     fn = functools.partial(klog.to_json, *paths, args=args)
     result: dto.Result = await fn()
 
+    tags_header = report.map_tags(value=0.0)
+
     rows = [
         (
             "Resource Name",
@@ -160,47 +163,92 @@ async def generate_report(paths, period, tags, output, report_id, resource, diff
             "Time spent",
             "Minutes",
             "Summary",
-            *report.map_tags(),
+            *tags_header,
         )
     ]
-
-    for record in result.records:
-        rows.append(
-            [
-                report.resource,
-                record.date,
-                "0h",
-                0,
-                record.summary.strip(),
-                *report.map_tags(
+    fields_totals = {key: 0.0 for key in tags_header}
+    match report.type:
+        case ReportType.daily:
+            for record in result.records:
+                summaries = {record.summary: True}
+                total_minutes = 0
+                fields = report.map_tags(
+                    value=1.0,
                     type=TagsType.record,
                     record_tags=record.tags,
-                ).values(),
-            ]
-        )
-        for entry in record.entries:
-            rows.append(
-                [
-                    report.resource,
-                    record.date,
-                    entry.total,
-                    entry.total_mins,
-                    entry.summary.strip(),
-                    *report.map_tags(
+                )
+                for entry in record.entries:
+                    total_minutes += entry.current_minutes
+                    if entry.summary:
+                        summaries[entry.summary] = True
+                    entry_fields = report.map_tags(
+                        value=entry.current_hours,
                         type=TagsType.entry,
                         entry_tags=entry.tags,
                         record_tags=record.tags,
-                    ).values(),
-                ]
-            )
+                    )
+                    for key, value in entry_fields.items():
+                        match value:
+                            case str():
+                                fields[key] = f"{fields[key]}\n{value}"
+                            case float() | int():
+                                fields[key] += value
 
-    total_mins = sum(r.total_mins for r in result.records)
+                for key, value in fields.items():
+                    if isinstance(value, float):
+                        fields_totals[key] += value
+
+                row = [
+                    report.resource,
+                    record.date,
+                    dto.Base.format_duration(total_minutes),
+                    total_minutes,
+                    "\n".join(summaries),
+                    *fields.values(),
+                ]
+                rows.append(row)
+        case ReportType.complete:
+            for record in result.records:
+                rows.append(
+                    [
+                        report.resource,
+                        record.date,
+                        "0h",
+                        0,
+                        record.summary.strip(),
+                        *report.map_tags(
+                            value=1.0,
+                            type=TagsType.record,
+                            record_tags=record.tags,
+                        ).values(),
+                    ]
+                )
+                for entry in record.entries:
+                    rows.append(
+                        [
+                            report.resource,
+                            record.date,
+                            entry.total,
+                            entry.current_minutes,
+                            entry.summary.strip(),
+                            *report.map_tags(
+                                value=entry.current_hours,
+                                type=TagsType.entry,
+                                entry_tags=entry.tags,
+                                record_tags=record.tags,
+                            ).values(),
+                        ]
+                    )
+
+    total_mins = sum(e.current_minutes for r in result.records for e in r.entries)
     rows.append(
         (
             "total",
             "",
             dto.Base.format_duration(total_mins),
             total_mins,
+            "",
+            *fields_totals.values(),
         )
     )
     if diff:
@@ -232,18 +280,22 @@ async def generate_report(paths, period, tags, output, report_id, resource, diff
         return
 
     converted = output.with_suffix(".xlsx")
-    subprocess.run(
-        [
-            "libreoffice",
-            "--headless",
-            "--convert-to",
-            converted.suffix[1:],
-            "--outdir",
-            output.parent,
-            output,
-        ],
-        check=True,
-    )
+    # run libreoffice with a temporary user profile, so it does not interact with another running instance
+    # see https://ask.libreoffice.org/t/how-to-not-connect-to-a-running-instance/534/2
+    with tempfile.TemporaryDirectory() as lo_profile:
+        subprocess.run(
+            [
+                "libreoffice",
+                f"-env:UserInstallation=file://{lo_profile}",
+                "--headless",
+                "--convert-to",
+                converted.suffix[1:],
+                "--outdir",
+                output.parent,
+                output,
+            ],
+            check=True,
+        )
     print(converted)
 
 
