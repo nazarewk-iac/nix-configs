@@ -42,6 +42,7 @@ for entry in "$@"; do
     # drop: git@
     service="${service#*@}"
     # first segment
+    service="${service%%:*}"
     service="${service%%/*}"
   fi
 
@@ -51,22 +52,20 @@ for entry in "$@"; do
     continue
   fi
 
+  serviceless="${entry}"
   # drop entry until service definition
-  org="${entry##*"${service}/"}"
+  serviceless="${serviceless##*"${service}/"}"
+  serviceless="${serviceless##*"${service}:"}"
+  # drop: .git
+  serviceless="${serviceless%.git}"
+
+  org="${serviceless}"
   # first segment
   org="${org%%/*}"
 
-  # drop: XXX://
-  repo="${entry#*://}"
-  # drop: .git
-  repo="${repo%.git}"
-
-  if [ "${repo}" == "${service}/${org}" ]; then
-    org=""
-  fi
-
-  # drop entry until service definition
-  repo="${repo##*"${service}/${org}/"}"
+  repo="${serviceless}"
+  # drop org
+  repo="${repo#"${org}/"}"
 
   dir="${GIT_UTILS_KDN_BASE_DIR}/${service}/${org}/${repo}"
   echo "${dir//"//"/"/"}"

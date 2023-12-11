@@ -11,13 +11,17 @@ self() {
 }
 
 declare -A dir_tests
-dir_tests['https://Organization@dev.azure.com/Organization/Project/_git/Repository']='dev.azure.com/Organization/Project/Repository'
-dir_tests['git@ssh.dev.azure.com:v3/Organization/Project/Repository']='dev.azure.com/Organization/Project/Repository'
-dir_tests['https://github.com/nazarewk-iac/nix-configs.git']='github.com/nazarewk-iac/nix-configs'
-dir_tests['https://gitlab.example.com/GROUP/SUBGROUP/REPO.git']='gitlab.example.com/GROUP/SUBGROUP/REPO'
 dir_tests['codecommit::REGION://PROFILE@REPO']='codecommit/PROFILE/REGION/REPO'
-dir_tests['https://github.com/nazarewk-iac/nix-configs.git=REL_PATH']='REL_PATH'
+dir_tests['git+ssh://git@gitlab.example.com/GROUP/SUBGROUP/REPO.git']='gitlab.example.com/GROUP/SUBGROUP/REPO'
+dir_tests['git@github.com:nazarewk-iac/nix-configs.git']='github.com/nazarewk-iac/nix-configs'
+dir_tests['git@gitlab.example.com/GROUP/SUBGROUP/REPO.git']='gitlab.example.com/GROUP/SUBGROUP/REPO'
+dir_tests['git@gitlab.example.com:GROUP/SUBGROUP/REPO.git']='gitlab.example.com/GROUP/SUBGROUP/REPO'
+dir_tests['git@ssh.dev.azure.com:v3/Organization/Project/Repository']='dev.azure.com/Organization/Project/Repository'
+dir_tests['https://Organization@dev.azure.com/Organization/Project/_git/Repository']='dev.azure.com/Organization/Project/Repository'
+dir_tests['https://github.com/nazarewk-iac/nix-configs.git']='github.com/nazarewk-iac/nix-configs'
 dir_tests['https://github.com/nazarewk-iac/nix-configs.git=/ABS_PATH']='/ABS_PATH'
+dir_tests['https://github.com/nazarewk-iac/nix-configs.git=REL_PATH']='REL_PATH'
+dir_tests['https://gitlab.example.com/GROUP/SUBGROUP/REPO.git']='gitlab.example.com/GROUP/SUBGROUP/REPO'
 
 declare -A remote_tests
 remote_tests['https://github.com/nazarewk-iac/nix-configs.git=REL_PATH']='https://github.com/nazarewk-iac/nix-configs.git'
