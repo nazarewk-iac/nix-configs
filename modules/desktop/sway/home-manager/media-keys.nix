@@ -19,6 +19,8 @@ in
         "XF86MonBrightnessDown" = exec "${brightnessctl} set 2%-";
         "XF86MonBrightnessUp" = exec "${brightnessctl} set +2%";
         # Volume
+        # "XF86AudioRaiseVolume" = exec "${playerctl} volume +0.01";
+        # "XF86AudioLowerVolume" = exec "${playerctl} volume -0.01";
         "XF86AudioRaiseVolume" = exec "${pactl} set-sink-volume @DEFAULT_SINK@ +1%";
         "XF86AudioLowerVolume" = exec "${pactl} set-sink-volume @DEFAULT_SINK@ -1%";
         "XF86AudioMute" = exec "${pactl} set-sink-mute @DEFAULT_SINK@ toggle";
