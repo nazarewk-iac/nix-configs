@@ -140,7 +140,9 @@ in
       };
     })
     (lib.mkIf hasGUI {
-      services.flameshot.settings.General.savePath = "${config.home.homeDirectory}/Downloads/screenshots";
+      # see https://github.com/nix-community/home-manager/issues/2104#issuecomment-861676751
+      home.file."Nextcloud/drag0nius@nc.nazarewk.pw/images/screenshots/.keep".source = builtins.toFile "keep" "";
+      services.flameshot.settings.General.savePath = "${config.home.homeDirectory}/Nextcloud/drag0nius@nc.nazarewk.pw/images/screenshots";
       xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
 
       services.nextcloud-client.enable = true;
