@@ -7,13 +7,16 @@ let
   hasWorkstation = nixosConfig.kdn.profile.machine.workstation.enable;
   hasKDE = nixosConfig.services.xserver.desktopManager.plasma5.enable;
 
+  nc.rel = "Nextcloud/drag0nius@nc.nazarewk.pw";
+  nc.abs = "${config.home.homeDirectory}/${nc.rel}";
+
   drag0nius_kdbx =
     (pkgs.writeShellApplication {
       name = "keepass-drag0nius.kdbx";
       runtimeInputs = [ pkgs.pass pkgs.keepassxc ];
       text = ''
         cmd_start () {
-            local db_path="$HOME/Nextcloud/drag0nius@nc.nazarewk.pw/Dropbox import/Apps/KeeAnywhere/drag0nius.kdbx"
+            local db_path="$HOME/${nc.rel}/Dropbox import/Apps/KeeAnywhere/drag0nius.kdbx"
             pass KeePass/drag0nius.kdbx | keepassxc --pw-stdin "$db_path"
         }
 
@@ -63,7 +66,7 @@ in
       home.activation = {
         linkPasswordStore =
           lib.hm.dag.entryBetween [ "linkGeneration" ] [ "writeBoundary" ] ''
-            $DRY_RUN_CMD ln -sfT "Nextcloud/drag0nius@nc.nazarewk.pw/important/password-store" "$HOME/.password-store"
+            $DRY_RUN_CMD ln -sfT "${nc.rel}/important/password-store" "$HOME/.password-store"
           '';
       };
       programs.password-store.enable = true;
@@ -141,8 +144,8 @@ in
     })
     (lib.mkIf hasGUI {
       # see https://github.com/nix-community/home-manager/issues/2104#issuecomment-861676751
-      home.file."Nextcloud/drag0nius@nc.nazarewk.pw/images/screenshots/.keep".source = builtins.toFile "keep" "";
-      services.flameshot.settings.General.savePath = "${config.home.homeDirectory}/Nextcloud/drag0nius@nc.nazarewk.pw/images/screenshots";
+      home.file."${nc.rel}/images/screenshots/.keep".source = builtins.toFile "keep" "";
+      services.flameshot.settings.General.savePath = "${nc.abs}/images/screenshots";
       xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
 
       services.nextcloud-client.enable = true;
@@ -196,7 +199,12 @@ in
         };
       };
     })
-    (lib.mkIf (hasSway) {
+    (lib.mkIf hasSway {
+      wayland.windowManager.sway.config = {
+        output."*".background = "${nc.abs}/images/wallpapers/13754-mushrooms-toadstools-glow-photoshop-3840x2160.jpg fit";
+      };
+    })
+    (lib.mkIf hasSway {
       # mime gets messed up by KDE
       xdg.mimeApps.enable = true;
       xdg.mimeApps.associations.added = { };
