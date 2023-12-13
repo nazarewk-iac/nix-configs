@@ -7,12 +7,10 @@ let
   lockCmd = "${swaylock} -f";
   swayPkg = config.wayland.windowManager.sway.package;
   swaymsg = "${swayPkg}/bin/swaymsg";
-
-  mod = import ./_modifiers.nix;
 in
 {
   config = lib.mkIf (config.kdn.headless.enableGUI && cfg.enable) {
-    wayland.windowManager.sway.config.keybindings."${mod.super}+L" = "exec ${lockCmd}";
+    wayland.windowManager.sway.config.keybindings."${cfg.keys.super}+L" = "exec ${lockCmd}";
     services.swayidle = {
       enable = true;
       systemdTarget = config.kdn.desktop.sway.systemd.session.target;

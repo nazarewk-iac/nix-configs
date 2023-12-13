@@ -2,7 +2,6 @@
 let
   cfg = config.kdn.desktop.sway;
 
-  mod = import ./_modifiers.nix;
   systemd-cat = name: "${pkgs.systemd}/bin/systemd-cat --identifier=${config.home.username}-${name}";
   exec = cmd: "exec '${cmd}'";
 
@@ -13,15 +12,15 @@ in
   config = lib.mkIf (config.kdn.headless.enableGUI && cfg.enable) {
     wayland.windowManager.sway = {
       extraConfig = exec swayrd;
-      config.keybindings = {
-        "${mod.super}+Space" = exec (swayr "switch-window");
-        "${mod.super}+Delete" = exec (swayr "quit-window");
-        "${mod.super}+Tab" = exec (swayr "switch-to-urgent-or-lru-window");
-        "${mod.lalt }+Tab" = exec (swayr "prev-window all-workspaces");
-        "${mod.lalt }+${mod.shift}+Tab" = exec (swayr "next-window all-workspaces");
-        "${mod.super}+${mod.shift}+Space" = exec (swayr "switch-workspace-or-window");
-        "${mod.super}+C" = exec (swayr "execute-swaymsg-command");
-        "${mod.super}+${mod.shift}+C" = exec (swayr "execute-swayr-command");
+      config.keybindings = with cfg.keys; {
+        "${super}+Space" = exec (swayr "switch-window");
+        "${super}+Delete" = exec (swayr "quit-window");
+        "${super}+Tab" = exec (swayr "switch-to-urgent-or-lru-window");
+        "${lalt }+Tab" = exec (swayr "prev-window all-workspaces");
+        "${lalt }+${shift}+Tab" = exec (swayr "next-window all-workspaces");
+        "${super}+${shift}+Space" = exec (swayr "switch-workspace-or-window");
+        "${super}+C" = exec (swayr "execute-swaymsg-command");
+        "${super}+${shift}+C" = exec (swayr "execute-swayr-command");
       };
     };
   };

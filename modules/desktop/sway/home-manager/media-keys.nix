@@ -2,7 +2,6 @@
 let
   cfg = config.kdn.desktop.sway;
 
-  mod = import ./_modifiers.nix;
   getBinPkg = pkg: name: "${pkg}/bin/${name}";
   getBin = name: getBinPkg pkgs."${name}" name;
   exec = cmd: "exec '${cmd}'";
@@ -24,7 +23,7 @@ in
         "XF86AudioRaiseVolume" = exec "${pactl} set-sink-volume @DEFAULT_SINK@ +1%";
         "XF86AudioLowerVolume" = exec "${pactl} set-sink-volume @DEFAULT_SINK@ -1%";
         "XF86AudioMute" = exec "${pactl} set-sink-mute @DEFAULT_SINK@ toggle";
-        "${mod.lalt}+XF86AudioMute" = exec "${pactl} set-source-mute @DEFAULT_SOURCE@ toggle";
+        "${cfg.keys.lalt}+XF86AudioMute" = exec "${pactl} set-source-mute @DEFAULT_SOURCE@ toggle";
         "XF86AudioMicMute" = exec "${pactl} set-source-mute @DEFAULT_SOURCE@ toggle";
         "Print" = exec "${getBin "flameshot"} gui";
         # Media controls

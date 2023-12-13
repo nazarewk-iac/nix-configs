@@ -6,6 +6,8 @@ in
   options.kdn.desktop.sway = {
     enable = lib.mkEnableOption "Sway base setup";
 
+    keys = lib.mkOption { readOnly = true; default = import ./keys.nix; };
+
     prefix = lib.mkOption { default = "kdn-sway"; };
     desktopSessionName = lib.mkOption { default = cfg.prefix; };
 
@@ -210,7 +212,7 @@ in
     {
       home-manager.sharedModules = [{
         kdn.desktop.sway = {
-          inherit (cfg) enable prefix systemd;
+          inherit (cfg) enable prefix systemd keys;
         };
         wayland.windowManager.sway = {
           inherit (config.programs.sway) package;

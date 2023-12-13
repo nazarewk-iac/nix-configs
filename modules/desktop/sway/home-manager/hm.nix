@@ -1,8 +1,8 @@
 { nixosConfig, config, pkgs, lib, ... }:
 let
+  cfg = config.kdn.desktop.sway;
   sysCfg = nixosConfig.kdn.desktop.sway;
 
-  mod = import ./_modifiers.nix;
   ydotool-paste = pkgs.writeShellApplication {
     name = "ydotool-paste";
     runtimeInputs = with pkgs; [ ydotool wl-clipboard ];
@@ -19,6 +19,7 @@ in
     enable = lib.mkEnableOption "Sway base setup";
     prefix = lib.mkOption { type = with lib.types; str; };
     systemd = lib.mkOption { readOnly = true; };
+    keys = lib.mkOption { readOnly = true; };
   };
 
   imports = [
@@ -30,11 +31,12 @@ in
   ];
 
   config = lib.mkIf (config.kdn.headless.enableGUI && sysCfg.enable) {
-    services.network-manager-applet.enable = false; # doesn't work/show up in tray
+    xsession.preferStatusNotifierItems = true;
+    services.network-manager-applet.enable = true;
     systemd.user.services.network-manager-applet.Unit = {
-      After = [ "tray.target" config.kdn.desktop.sway.systemd.envs.target ];
+      After = [ config.kdn.desktop.sway.systemd.envs.target ];
       PartOf = [ config.kdn.desktop.sway.systemd.session.target ];
-      Requires = lib.mkForce [ "tray.target" config.kdn.desktop.sway.systemd.envs.target ];
+      Requires = lib.mkForce [ config.kdn.desktop.sway.systemd.envs.target ];
     };
 
     services.blueman-applet.enable = true;
@@ -79,12 +81,12 @@ in
         let
           exec = cmd: "exec '${cmd}'";
         in
-        {
-          "--release ${mod.super}+V" = exec "${ydotool-paste}/bin/ydotool-paste"; # fix using it by nix path
-          "--inhibited --release ${mod.super}+${mod.ctrl}+V" = exec "${ydotool-paste}/bin/ydotool-paste"; # fix using it by nix path
+        with cfg.keys; {
+          "--release ${super}+V" = exec "${ydotool-paste}/bin/ydotool-paste"; # fix using it by nix path
+          "--inhibited --release ${super}+${ctrl}+V" = exec "${ydotool-paste}/bin/ydotool-paste"; # fix using it by nix path
           # X parity
-          "${mod.lalt}+F4" = "kill";
-          "${mod.super}+E" = exec "${pkgs.cinnamon.nemo}/bin/nemo";
+          "${lalt}+F4" = "kill";
+          "${super}+E" = exec "${pkgs.cinnamon.nemo}/bin/nemo";
           # Scratchpad:
           #   Sway has a "scratchpad", which is a bag of holding for windows.
           #   You can send windows there and get them back later.
@@ -93,19 +95,111 @@ in
           # Show the next scratchpad window or hide the focused scratchpad window.
           # If there are multiple scratchpad windows, this command cycles through them.
           #"$Super+minus" = "scratchpad show";
-          "${mod.super}+K" = exec "${pkgs.qalculate-qt}/bin/qalculate-qt";
-          "${mod.super}+P" = exec "${pkgs.foot}/bin/foot --title=ipython ipython";
-          "${mod.super}+Return" = exec "${pkgs.foot}/bin/foot";
+          "${super}+K" = exec "${pkgs.qalculate-qt}/bin/qalculate-qt";
+          "${super}+P" = exec "${pkgs.foot}/bin/foot --title=ipython ipython";
+          "${super}+Return" = exec "${pkgs.foot}/bin/foot";
           # Launchers
-          "${mod.super}+D" = exec runUlauncher;
-          "${mod.lalt}+F2" = exec "${pkgs.wofi}/bin/wofi --show run";
+          "${super}+D" = exec runUlauncher;
+          "${lalt}+F2" = exec "${pkgs.wofi}/bin/wofi --show run";
           # Kill focused window
-          "${mod.super}+${mod.shift}+Q" = "kill";
+          "${super}+${shift}+Q" = "kill";
+
+          # layout stuff
+          # Switch the current container between different layout styles
+          "${super}+${ctrl}+S" = "layout stacking";
+          "${super}+${ctrl}+T" = "layout tabbed";
+          "${super}+${ctrl}+E" = "layout toggle split";
+
+          # Make the current focus fullscreen
+          "${super}+F" = "fullscreen";
+          # Toggle the current focus between tiling and floating mode
+          "${super}+${shift}+F" = "floating toggle";
+          "${super}+${shift}+S" = "sticky toggle";
+          # moving around
+
+          # mode switching
+          "${super}+R" = "mode resize";
+          "${super}+Pause" = "mode passthrough";
+          "${super}+Scroll_Lock" = "mode passthrough";
+
+          # moving around
+          "${super}+A" = "focus parent";
+          "${super}+Left" = "focus left";
+          "${super}+Down" = "focus down";
+          "${super}+Up" = "focus up";
+          "${super}+Right" = "focus right";
+          "--border --whole-window ${super}+${mouse-up}" = "focus right";
+          "--border --whole-window ${super}+${mouse-down}" = "focus left";
+          "--border --whole-window ${super}+${shift}+${mouse-up}" = "focus next sibling";
+          "--border --whole-window ${super}+${shift}+${mouse-down}" = "focus prev sibling";
+
+          "${super}+${shift}+Left" = "move left";
+          "${super}+${shift}+Down" = "move down";
+          "${super}+${shift}+Up" = "move up";
+          "${super}+${shift}+Right" = "move right";
+
+          # workspaces
+          "${super}+1" = "workspace number 1";
+          "${super}+2" = "workspace number 2";
+          "${super}+3" = "workspace number 3";
+          "${super}+4" = "workspace number 4";
+          "${super}+5" = "workspace number 5";
+          "${super}+6" = "workspace number 6";
+          "${super}+7" = "workspace number 7";
+          "${super}+8" = "workspace number 8";
+          "${super}+9" = "workspace number 9";
+          "${super}+0" = "workspace number 10";
+
+          "${super}+${shift}+1" = "move container to workspace number 1";
+          "${super}+${shift}+2" = "move container to workspace number 2";
+          "${super}+${shift}+3" = "move container to workspace number 3";
+          "${super}+${shift}+4" = "move container to workspace number 4";
+          "${super}+${shift}+5" = "move container to workspace number 5";
+          "${super}+${shift}+6" = "move container to workspace number 6";
+          "${super}+${shift}+7" = "move container to workspace number 7";
+          "${super}+${shift}+8" = "move container to workspace number 8";
+          "${super}+${shift}+9" = "move container to workspace number 9";
+          "${super}+${shift}+0" = "move container to workspace number 10";
         };
-      config.modes = { };
+
+      config.modes.passthrough = with cfg.keys; {
+        "${super}+Pause" = "mode default";
+        "${super}+Scroll_Lock" = "mode default";
+      };
+
+      config.modes.resize = with cfg.keys; {
+        "${super}+${ctrl}+Left" = "resize shrink width 1";
+        "${super}+${ctrl}+Down" = "resize grow height 1";
+        "${super}+${ctrl}+Up" = "resize shrink height 1";
+        "${super}+${ctrl}+Right" = "resize grow width 1";
+
+        "${ctrl}+Left" = "resize shrink width 5";
+        "${ctrl}+Down" = "resize grow height 5";
+        "${ctrl}+Up" = "resize shrink height 5";
+        "${ctrl}+Right" = "resize grow width 5";
+
+        "Left" = "resize shrink width 15";
+        "Down" = "resize grow height 15";
+        "Up" = "resize shrink height 15";
+        "Right" = "resize grow width 15";
+
+        "${lalt}+Left" = "resize shrink width 50";
+        "${lalt}+Down" = "resize grow height 50";
+        "${lalt}+Up" = "resize shrink height 50";
+        "${lalt}+Right" = "resize grow width 50";
+
+        "${super}+${lalt}+Left" = "resize shrink width 100";
+        "${super}+${lalt}+Down" = "resize grow height 100";
+        "${super}+${lalt}+Up" = "resize shrink height 100";
+        "${super}+${lalt}+Right" = "resize grow width 100";
+
+        # Return to default mode
+        "Return" = "mode default";
+        "Escape" = "mode default";
+      };
       config.bars = [ ];
       config.focus.followMouse = false;
-      config.floating.modifier = "${mod.super} normal";
+      config.floating.modifier = "${cfg.keys.super} normal";
       config.workspaceLayout = "tabbed";
       config.input."type:touchpad" = {
         tap = "enabled";
@@ -118,7 +212,23 @@ in
         repeat_delay = "333";
         repeat_rate = "50";
       };
-      extraConfig = builtins.readFile ./sway/config;
+      extraConfig = ''
+        bindswitch --reload --locked lid:on output eDP-1 disable
+        bindswitch --reload --locked lid:off output eDP-1 enable
+
+        include /etc/sway/config.d/*
+      '';
+
+      config.seat."*".xcursor_theme = "Adwaita 24";
+
+      # name is derived from forced edid profile, could be DP-1
+      config.output."The Linux Foundation PG278Q_60 Linux #0" = {
+        pos = "0 0";
+      };
+      config.output."Dell Inc. DELL U2711 G606T29F0EWL" = {
+        pos = "2560 0";
+        transform = "0";
+      };
 
       config.floating = {
         border = 0;
