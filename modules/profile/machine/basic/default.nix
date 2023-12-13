@@ -15,6 +15,10 @@ in
     boot.loader.systemd-boot.memtest86.enable = true;
 
     # HARDWARE
+    hardware.usb-modeswitch.enable = true;
+    environment.systemPackages = with pkgs; [
+      usb-modeswitch
+    ];
     hardware.bluetooth.enable = true;
     services.blueman.enable = true;
 
