@@ -176,6 +176,9 @@ in
           #element-desktop = prev.element-desktop.override { electron = prev.electron_24; };
         })
       ];
+    }
+    {
+      environment.systemPackages = [ (lib.meta.hiPrio pkgs.xwayland) ];
       programs.sway.extraPackages = [ cfg.bundle ];
     }
     {
