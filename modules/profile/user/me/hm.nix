@@ -201,7 +201,7 @@ in
     })
     (lib.mkIf hasSway {
       wayland.windowManager.sway.config = {
-        output."*".background = "${nc.abs}/images/wallpapers/13754-mushrooms-toadstools-glow-photoshop-3840x2160.jpg fit";
+        output."*".background = "${nc.abs}/images/wallpapers/13754-mushrooms-toadstools-glow-photoshop-3840x2160.jpg fill";
       };
     })
     (lib.mkIf hasSway {
