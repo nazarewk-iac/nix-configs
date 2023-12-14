@@ -77,6 +77,7 @@ in
 
     wayland.windowManager.sway = {
       enable = true;
+      config.defaultWorkspace = "workspace number 1";
       config.keybindings =
         let
           exec = cmd: "exec '${cmd}'";
