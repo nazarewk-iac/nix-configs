@@ -24,12 +24,6 @@ in
   config = lib.mkIf cfg.enable {
     kdn.desktop.sway.enable = true;
 
-    nixpkgs.overlays = [
-      (final: prev: {
-        #wayvnc = final.waylandPkgs.wayvnc;
-      })
-    ];
-
     # Multi-output directions:
     # - https://www.reddit.com/r/swaywm/comments/k1zl41/thank_you_devs_free_ipad_repurposed_as_a_second/
     # - https://github.com/swaywm/sway/issues/5553

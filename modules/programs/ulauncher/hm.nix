@@ -14,7 +14,6 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    home.file.".local/share/dbus-1/services/io.ulauncher.Ulauncher.service".source = "${cfg.package}/share/dbus-1/services/io.ulauncher.Ulauncher.service";
     home.packages = [ cfg.package ];
 
     systemd.user.services.ulauncher = {

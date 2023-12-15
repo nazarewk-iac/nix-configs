@@ -13,94 +13,10 @@ in
 
     bundle = lib.mkOption {
       type = with lib.types; package;
-      default =
-        let
-          startsway-headless = pkgs.writeShellApplication {
-            name = "startsway-headless";
-            runtimeInputs = with pkgs; [ startsway ];
-            text = ''
-              export WLR_BACKENDS=headless
-              export WLR_LIBINPUT_NO_DEVICES=1
-              export XDG_SESSION_TYPE=wayland
-
-              exec startsway
-            '';
-          };
-
-          startsway = pkgs.writeShellApplication {
-            name = "startsway";
-            runtimeInputs = with pkgs; [ systemd envClear envLoad ];
-            text = ''
-              ${cfg.prefix}-session-clear-env
-              ${cfg.prefix}-session-set-env
-              exec systemctl --user start ${config.kdn.desktop.sway.systemd.sway.service} "$@"
-            '';
-          };
-
-          envLoad = pkgs.writeShellApplication {
-            name = "${cfg.prefix}-session-set-env";
-            runtimeInputs = with pkgs; [ dbus jq ];
-            text = ''
-              envs=()
-              keys=()
-              for arg in "$@"; do
-                if [[ "$arg" == *=* ]]; then
-                  envs+=("$arg")
-                else
-                  keys+=("$arg")
-                fi
-              done
-              if [[ "$#" == 0 ]]; then
-                readarray -t keys < <(jq -rn 'env|keys[]')
-              fi
-              for key in "''${keys[@]}"; do
-                envs+=("$key=''${!key}")
-              done
-              dbus-update-activation-environment --systemd "''${envs[@]}"
-            '';
-          };
-
-          envClear = pkgs.writeShellApplication {
-            name = "${cfg.prefix}-session-clear-env";
-            runtimeInputs = with pkgs; [ dbus systemd jq ];
-            text = ''
-              keys=("$@")
-              if [[ "$#" == 0 ]]; then
-                readarray -t keys < <(systemctl --user show-environment -o json | jq -r 'keys[]')
-              fi
-              set_empty=()
-              for key in "''${keys[@]}"; do
-                set_empty+=("$key=")
-              done
-              dbus-update-activation-environment "''${set_empty[@]}"
-              systemctl --user unset-environment "''${keys[@]}"
-            '';
-          };
-
-          waylandSessionEntry = pkgs.writeTextFile {
-            name = "${cfg.desktopSessionName}-wayland-session";
-            destination = "/share/wayland-sessions/${cfg.desktopSessionName}.desktop";
-            # TODO: SDDM doesn't properly exit this session
-            text = ''
-              [Desktop Entry]
-              Name=${cfg.desktopSessionName} Sway
-              Comment=An i3-compatible Wayland compositor
-              Exec=${startsway}/bin/startsway --wait
-              Type=Application
-            '';
-          };
-        in
-        pkgs.symlinkJoin {
-          name = "${cfg.prefix}-bundle";
-          passthru.providedSessions = [ cfg.desktopSessionName ];
-          paths = [
-            envClear
-            waylandSessionEntry
-            envLoad
-            startsway
-            startsway-headless
-          ];
-        };
+      default = pkgs.callPackage ./bundle.nix {
+        inherit (cfg) prefix desktopSessionName;
+        serviceName = config.kdn.desktop.sway.systemd.sway.service;
+      };
     };
 
     systemd = lib.mkOption {
@@ -252,11 +168,11 @@ in
         description = config.kdn.desktop.sway.systemd.sway.service;
         documentation = [ "man:sway(5)" ];
         bindsTo = [ "graphical-session.target" config.kdn.desktop.sway.systemd.session.target ];
-        wants = [ "graphical-session-pre.target" ];
+        requires = [ "graphical-session-pre.target" ];
         after = [ "graphical-session-pre.target" ];
         before = [ "graphical-session.target" ];
         # We explicitly unset PATH here, as we want it to be set by
-        # systemctl --user import-environment in startsway
+        # systemctl --user import-environment in start logic
         environment.PATH = lib.mkForce null;
         environment.KDN_SWAY_SYSTEMD = "1";
         serviceConfig.Slice = "session.slice";
@@ -269,13 +185,12 @@ in
               see https://gist.github.com/nazarewk/9e071fd43e1803ffaa1726a273f30419#resolution
           */
           NotifyAccess = "all";
-          ExecStart = "/run/current-system/sw/bin/sway";
-          ExecStopPost = "${cfg.bundle}/bin/${cfg.prefix}-session-clear-env";
+          ExecStart = lib.meta.getExe config.programs.sway.package;
+          ExecStopPost = cfg.bundle.exes.env-clear;
           Restart = "no";
           RestartSec = 1;
           TimeoutStopSec = 60;
           TimeoutStartSec = 300;
-          #AmbientCapabilities = [ "CAP_SYS_NICE" ];
         };
       };
 
@@ -287,38 +202,33 @@ in
           config.kdn.desktop.sway.systemd.sway.service
         ];
         requires = [
+          "graphical-session-pre.target"
           config.kdn.desktop.sway.systemd.envs.target
           config.kdn.desktop.sway.systemd.tray.target
-          config.kdn.desktop.sway.systemd.sway.service
         ];
+        before = [ "graphical-session.target" ];
         after = [
           "graphical-session-pre.target"
           config.kdn.desktop.sway.systemd.envs.target
           config.kdn.desktop.sway.systemd.sway.service
         ];
-        wants = [ "graphical-session-pre.target" ];
       };
 
       systemd.user.targets."${config.kdn.desktop.sway.systemd.envs.name}" = {
         description = config.kdn.desktop.sway.systemd.envs.target;
         partOf = [ config.kdn.desktop.sway.systemd.session.target ];
         bindsTo = [ config.kdn.desktop.sway.systemd.envs.service ];
-        requires = [ config.kdn.desktop.sway.systemd.envs.service ];
         after = [ config.kdn.desktop.sway.systemd.envs.service ];
       };
       systemd.user.services."${config.kdn.desktop.sway.systemd.envs.name}" = {
         description = config.kdn.desktop.sway.systemd.envs.service;
         serviceConfig.Type = "oneshot";
         serviceConfig.RemainAfterExit = true;
-        script = ''
-          set -x
-          until systemctl --user show-environment | grep -q WAYLAND_DISPLAY ; do
-            sleep 1
-          done
-          until systemctl --user show-environment | grep -q KDN_SWAY_SYSTEMD ; do
-            sleep 1
-          done
-        '';
+        serviceConfig.ExecStart = [
+          "${cfg.bundle.exes.env-wait} --show --progress"
+          "${pkgs.coreutils}/bin/sleep 2"
+          "${pkgs.coreutils}/bin/echo ${config.kdn.desktop.sway.systemd.envs.service} finished executing."
+        ];
       };
       systemd.user.targets."${config.kdn.desktop.sway.systemd.secrets-service.name}" = {
         description = config.kdn.desktop.sway.systemd.secrets-service.target;
@@ -370,7 +280,7 @@ in
       };
 
       kdn.desktop.sway.initScripts.systemd = {
-        "00-update-systemd-environment" = "${cfg.bundle}/bin/${cfg.prefix}-session-set-env";
+        "00-update-systemd-environment" = cfg.bundle.exes.env-load;
         "99-notify-systemd-service" = ''
           # use renamed NOTIFY_SOCKET to workaround podman systemd detection
           # can be removed when NotifyAccess=all pattern is changed
