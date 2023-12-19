@@ -1,11 +1,18 @@
-{ config, lib, ... }:
-{
+{ config, lib, ... }: {
   home-manager.useGlobalPkgs = true;
   home-manager.useUserPackages = true;
+  home-manager.extraSpecialArgs = { osConfig = config; };
   home-manager.sharedModules = [{
+    home.enableNixpkgsReleaseCheck = true;
+    xdg.enable = true;
+
     home.stateVersion = lib.mkDefault "23.11";
     nixpkgs.config = config.nixpkgs.config;
     xdg.configFile."nixpkgs/config.nix".text = lib.generators.toPretty { } config.nixpkgs.config;
     home.file.".nixpkgs/config.nix".text = lib.generators.toPretty { } config.nixpkgs.config;
-  }];
+  }] ++ lib.trivial.pipe ./. [
+    # find all hm.nix files
+    lib.filesystem.listFilesRecursive
+    (lib.filter (path: (lib.hasSuffix "/hm.nix" (toString path))))
+  ];
 }

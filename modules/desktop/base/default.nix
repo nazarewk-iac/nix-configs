@@ -7,129 +7,124 @@ in
     enable = lib.mkEnableOption "Desktop base setup";
   };
 
-  config = lib.mkIf cfg.enable {
-    fonts.packages = with pkgs; [
-      cantarell-fonts
-      font-awesome
-      nerdfonts
-      noto-fonts
-      noto-fonts-emoji
-      noto-fonts-emoji-blob-bin
-      noto-fonts-extra
-      anonymousPro
-    ];
+  config = lib.mkIf cfg.enable (lib.mkMerge [
+    {
+      services.xserver.displayManager.sddm.enable = true;
+      # default maximum user is 30000, but I'm assigning higher than that
+      services.xserver.displayManager.sddm.settings.Users.MaximumUid = config.ids.uids.nobody - 1;
+      services.xserver.displayManager.sddm.wayland.enable = true;
+      services.xserver.displayManager.sddm.theme = "chili";
+      environment.systemPackages = with pkgs; [
+        sddm-chili-theme
+      ];
+    }
+    {
+      stylix.fonts.monospace.name = "Fira Code";
+      stylix.fonts.monospace.package = pkgs.fira-code;
+      stylix.polarity = "dark";
+      stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/darcula.yaml";
 
-    hardware.uinput.enable = true;
-    kdn.programs.ydotool.enable = true;
-    programs.dconf.enable = true;
-    security.polkit.enable = true;
-    services.accounts-daemon.enable = true;
-    services.dleyna-renderer.enable = true;
-    services.dleyna-server.enable = true;
-    services.gvfs.enable = true;
-    services.power-profiles-daemon.enable = true;
-    services.udisks2.enable = true;
-    services.upower.enable = config.powerManagement.enable;
-    services.xserver.displayManager.sddm.enable = true;
-    # default maximum user is 30000, but I'm assigning higher than that
-    services.xserver.displayManager.sddm.settings.Users.MaximumUid = config.ids.uids.nobody - 1;
-    services.xserver.displayManager.sddm.wayland.enable = true;
-    services.xserver.enable = true;
-    services.xserver.updateDbusEnvironment = true;
-    xdg.icons.enable = true;
-    xdg.mime.enable = true;
+      fonts.fontDir.enable = true;
+      fonts.packages = with pkgs; [
+        cantarell-fonts
+        font-awesome
+        nerdfonts
+        noto-fonts
+        noto-fonts-emoji
+        noto-fonts-emoji-blob-bin
+        noto-fonts-extra
+        anonymousPro
+        fira-code
+        fira-code-symbols
+      ];
 
-    environment.systemPackages = with pkgs; [
-      xorg.xeyes
-      xorg.xhost
-      xorg.xlsclients
+      gtk.iconCache.enable = true;
+      home-manager.sharedModules = [
+        ({ config, ... }: {
+          home.file."${config.gtk.gtk2.configLocation}".force = true;
+          xdg.configFile."fontconfig/conf.d/10-hm-fonts.conf".force = true;
+          xdg.configFile."gtk-3.0/gtk.css".force = true;
+          xdg.configFile."gtk-3.0/settings.ini".force = true;
+          xdg.configFile."gtk-4.0/gtk.css".force = true;
+          xdg.configFile."gtk-4.0/settings.ini".force = true;
+        })
+      ];
+    }
+    {
 
-      # audio
-      libopenaptx
-      libfreeaptx
-      pulseaudio
+      hardware.uinput.enable = true;
+      kdn.programs.ydotool.enable = true;
+      programs.dconf.enable = true;
+      security.polkit.enable = true;
+      services.accounts-daemon.enable = true;
+      services.dleyna-renderer.enable = true;
+      services.dleyna-server.enable = true;
+      services.gvfs.enable = true;
+      services.power-profiles-daemon.enable = true;
+      services.udisks2.enable = true;
+      services.upower.enable = config.powerManagement.enable;
+      services.xserver.enable = true;
+      services.xserver.updateDbusEnvironment = true;
+      xdg.icons.enable = true;
+      xdg.mime.enable = true;
 
-      # graphics
-      libva-utils
+      environment.systemPackages = with pkgs; [
+        xorg.xeyes
+        xorg.xhost
+        xorg.xlsclients
 
-      # tools
-      brightnessctl
-      gsettings-desktop-schemas
-      gtk-engine-murrine
-      gtk_engines
-      lxappearance
-      xsettingsd
-      dex # A program to generate and execute DesktopEntry files of the Application type
+        # audio
+        libopenaptx
+        libfreeaptx
+        pulseaudio
 
-      # debugging
-      evtest # listens for /dev/event* device events (eg: keyboard keys, function keys etc)
-      libinput
-      v4l-utils
-      wev # wayland event viewer
-      wshowkeys # display pressed keys
-      ashpd-demo # Tool for playing with XDG desktop portals
+        # graphics
+        libva-utils
 
+        # tools
+        brightnessctl
+        gsettings-desktop-schemas
+        gtk-engine-murrine
+        gtk_engines
+        lxappearance
+        xsettingsd
+        dex # A program to generate and execute DesktopEntry files of the Application type
 
-      # carry-overs from modules/desktop/sway/base/default.nix
-      grim
-      libnotify
-      libsecret
-      wayland-utils
-      wl-clipboard
-      wl-clipboard-x11
-      wofi
-
-      # themes
-      hicolor-icon-theme # nm-applet, see https://github.com/NixOS/nixpkgs/issues/32730
-      gnome-icon-theme # nm-applet, see https://github.com/NixOS/nixpkgs/issues/43836#issuecomment-419217138
-      glib # gsettings
-      sound-theme-freedesktop
-    ] ++ (with pkgs.libsForQt5; [
-      okular # pdf viewer
-      ark # archive manager
-      gwenview # image viewer & editor
-      pix # image gallery viewer
-    ]) ++ (with cinnamon; [
-      nemo
-      nemo-fileroller
-    ]);
+        # debugging
+        evtest # listens for /dev/event* device events (eg: keyboard keys, function keys etc)
+        libinput
+        v4l-utils
+        wev # wayland event viewer
+        wshowkeys # display pressed keys
+        ashpd-demo # Tool for playing with XDG desktop portals
 
 
-    xdg.portal.enable = true;
-    xdg.portal.xdgOpenUsePortal = true;
+        # carry-overs from modules/desktop/sway/base/default.nix
+        grim
+        libnotify
+        libsecret
+        wayland-utils
+        wl-clipboard
+        wl-clipboard-x11
+        wofi
 
-    qt.enable = true;
-    qt.platformTheme = "gnome";
-    qt.style = "adwaita-dark";
-    gtk.iconCache.enable = true;
+        # themes
+        hicolor-icon-theme # nm-applet, see https://github.com/NixOS/nixpkgs/issues/32730
+        gnome-icon-theme # nm-applet, see https://github.com/NixOS/nixpkgs/issues/43836#issuecomment-419217138
+        glib # gsettings
+        sound-theme-freedesktop
+      ] ++ (with pkgs.libsForQt5; [
+        okular # pdf viewer
+        ark # archive manager
+        gwenview # image viewer & editor
+        pix # image gallery viewer
+      ]) ++ (with cinnamon; [
+        nemo
+        nemo-fileroller
+      ]);
 
-    home-manager.sharedModules = [
-      ({ config, ... }: {
-        gtk.enable = true;
-        gtk.iconTheme.name = "Adwaita-Dark";
-        gtk.theme.name = "Adwaita-Dark";
-        gtk.gtk2.configLocation = "${config.xdg.configHome}/gtk-2.0/gtkrc";
-        gtk.gtk2.extraConfig = ''
-          gtk-enable-animations=0
-          gtk-menu-images=1
-          gtk-button-images=1
-        '';
-        gtk.gtk3.extraConfig = {
-          gtk-application-prefer-dark-theme = true;
-          gtk-button-images = true;
-          gtk-enable-animations = false;
-          gtk-menu-images = true;
-        };
-        gtk.gtk4.extraConfig = {
-          gtk-application-prefer-dark-theme = true;
-          gtk-enable-animations = false;
-        };
-
-        home.file."${config.xdg.configHome}/gtk-2.0/gtkrc".force = true;
-        xdg.configFile."fontconfig/conf.d/10-hm-fonts.conf".force = true;
-        xdg.configFile."gtk-3.0/settings.ini".force = true;
-        xdg.configFile."gtk-4.0/settings.ini".force = true;
-      })
-    ];
-  };
+      xdg.portal.enable = true;
+      xdg.portal.xdgOpenUsePortal = true;
+    }
+  ]);
 }

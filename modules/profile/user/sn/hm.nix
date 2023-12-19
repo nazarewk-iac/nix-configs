@@ -1,13 +1,13 @@
 { config, pkgs, lib, ... }@arguments:
 let
   cfg = config.kdn.profile.user.sn;
-  systemUser = cfg.nixosConfig;
+  systemUser = cfg.osConfig;
 in
 {
   options.kdn.profile.user.sn = {
     enable = lib.mkEnableOption "sn account setup";
 
-    nixosConfig = lib.mkOption { default = { }; };
+    osConfig = lib.mkOption { default = { }; };
   };
   config = lib.mkIf cfg.enable {
     home.packages = with pkgs; [

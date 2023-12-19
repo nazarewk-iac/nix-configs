@@ -1,7 +1,7 @@
-{ nixosConfig, config, pkgs, lib, ... }:
+{ osConfig, config, pkgs, lib, ... }:
 let
   cfg = config.kdn.desktop.sway;
-  sysCfg = nixosConfig.kdn.desktop.sway;
+  sysCfg = osConfig.kdn.desktop.sway;
 
   swaylock = "${pkgs.swaylock}/bin/swaylock";
   lockCmd = "${swaylock} -f";
@@ -38,7 +38,6 @@ in
 
     programs.swaylock.enable = true;
     programs.swaylock.settings = {
-      color = "000000";
       show-failed-attempts = true;
     };
   };

@@ -83,7 +83,7 @@ in
       kdn.hardware.qmk.enable = true;
       kdn.development.shell.enable = true;
 
-      home-manager.users.root = { kdn.profile.user.kdn.nixosConfig = config.users.users.root; };
+      home-manager.users.root = { kdn.profile.user.kdn.osConfig = config.users.users.root; };
 
       boot.kernelParams = [
         # blank screen after 90 sec

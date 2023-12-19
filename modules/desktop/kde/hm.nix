@@ -1,4 +1,4 @@
-{ nixosConfig, config, pkgs, lib, ... }:
+{ osConfig, config, pkgs, lib, ... }:
 let
   cfg = config.kdn.desktop.kde;
 in

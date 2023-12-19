@@ -52,7 +52,7 @@ in
     home-manager.users.kdn = {
       kdn.profile.user.kdn = {
         enable = true;
-        nixosConfig = config.users.users.kdn;
+        osConfig = config.users.users.kdn;
       };
     };
 

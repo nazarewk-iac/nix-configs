@@ -20,11 +20,11 @@ in
     security.rtkit.enable = true;
     hardware.pulseaudio.enable = false;
     services.pipewire.enable = true;
+
     services.pipewire.alsa.enable = true;
     services.pipewire.alsa.support32Bit = true;
-    services.pipewire.pulse.enable = true;
     services.pipewire.jack.enable = true;
-
+    services.pipewire.pulse.enable = true;
     services.pipewire.wireplumber.enable = cfg.useWireplumber;
 
     sound.mediaKeys.enable = true;
@@ -39,8 +39,12 @@ in
     environment.systemPackages = with pkgs; [
       pavucontrol
       pulseaudio # pactl
-      # TODO: 2023-02-02 error: https://github.com/NixOS/nixpkgs/issues/211610
-      #helvum # A GTK patchbay for pipewire
+      helvum # A GTK patchbay for pipewire
     ];
+    # required by easyeffects
+    programs.dconf.enable = true;
+    home-manager.sharedModules = [{
+      services.easyeffects.enable = true;
+    }];
   };
 }

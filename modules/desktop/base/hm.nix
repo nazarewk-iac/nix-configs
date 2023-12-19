@@ -1,4 +1,4 @@
-{ nixosConfig, config, pkgs, lib, ... }:
+{ osConfig, config, pkgs, lib, ... }:
 let
   cfg = config.kdn.desktop.base;
   ydotool-paste = pkgs.writeShellApplication {
@@ -14,7 +14,7 @@ in
   options.kdn.desktop.base = {
     enable = lib.mkOption {
       type = lib.types.bool;
-      default = nixosConfig.kdn.desktop.base.enable;
+      default = osConfig.kdn.desktop.base.enable;
     };
   };
   config = lib.mkIf (config.kdn.headless.enableGUI && cfg.enable) {
@@ -33,10 +33,7 @@ in
       enable = true;
 
       server.enable = false;
-      settings.main = {
-        font = "JetBrainsMono Nerd Font Mono:style=Regular:size=12";
-        dpi-aware = "no";
-      };
+      settings.main.dpi-aware = "no";
       settings.scrollback.lines = 100000;
     };
   };

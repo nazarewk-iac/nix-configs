@@ -30,7 +30,7 @@ in
     home-manager.users.sn = {
       kdn.profile.user.sn = {
         enable = true;
-        nixosConfig = config.users.users.sn;
+        osConfig = config.users.users.sn;
       };
     };
   });

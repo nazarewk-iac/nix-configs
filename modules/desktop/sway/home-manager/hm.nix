@@ -1,7 +1,7 @@
-{ nixosConfig, config, pkgs, lib, ... }:
+{ osConfig, config, pkgs, lib, ... }:
 let
   cfg = config.kdn.desktop.sway;
-  sysCfg = nixosConfig.kdn.desktop.sway;
+  sysCfg = osConfig.kdn.desktop.sway;
 
   ydotool-paste = pkgs.writeShellApplication {
     name = "ydotool-paste";
@@ -220,8 +220,6 @@ in
         include /etc/sway/config.d/*
       '';
 
-      config.seat."*".xcursor_theme = "Adwaita 24";
-
       # name is derived from forced edid profile, could be DP-1
       config.output."The Linux Foundation PG278Q_60 Linux #0" = {
         pos = "0 0";
@@ -278,15 +276,5 @@ in
     ];
 
     home.sessionPath = [ "$HOME/.local/bin" ];
-
-    programs.foot = {
-      enable = true;
-      server.enable = false;
-      settings.main = {
-        font = "JetBrainsMono Nerd Font Mono:style=Regular:size=12";
-        dpi-aware = "no";
-      };
-      settings.scrollback.lines = 100000;
-    };
   };
 }

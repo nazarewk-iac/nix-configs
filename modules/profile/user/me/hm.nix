@@ -1,11 +1,11 @@
-{ config, pkgs, lib, nixosConfig, ... }@arguments:
+{ config, pkgs, lib, osConfig, ... }@arguments:
 let
   cfg = config.kdn.profile.user.kdn;
-  systemUser = cfg.nixosConfig;
+  systemUser = cfg.osConfig;
   hasGUI = config.kdn.headless.enableGUI;
   hasSway = config.kdn.desktop.sway.enable;
-  hasWorkstation = nixosConfig.kdn.profile.machine.workstation.enable;
-  hasKDE = nixosConfig.services.xserver.desktopManager.plasma5.enable;
+  hasWorkstation = osConfig.kdn.profile.machine.workstation.enable;
+  hasKDE = osConfig.services.xserver.desktopManager.plasma5.enable;
 
   nc.rel = "Nextcloud/drag0nius@nc.nazarewk.pw";
   nc.abs = "${config.home.homeDirectory}/${nc.rel}";
@@ -28,7 +28,7 @@ in
   options.kdn.profile.user.kdn = {
     enable = lib.mkEnableOption "me (kdn) account setup";
 
-    nixosConfig = lib.mkOption { default = { }; };
+    osConfig = lib.mkOption { default = { }; };
   };
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
@@ -197,11 +197,6 @@ in
         Install = {
           WantedBy = [ "graphical-session.target" ] ++ lib.optional hasSway config.kdn.desktop.sway.systemd.secrets-service.service;
         };
-      };
-    })
-    (lib.mkIf hasSway {
-      wayland.windowManager.sway.config = {
-        output."*".background = "${nc.abs}/images/wallpapers/13754-mushrooms-toadstools-glow-photoshop-3840x2160.jpg fill";
       };
     })
     (lib.mkIf hasSway {

@@ -3,12 +3,14 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixpkgs-lib.url = "github:NixOS/nixpkgs/nixos-unstable?dir=lib";
 
+    base16.url = "github:SenchoPens/base16.nix";
     devenv.url = "github:cachix/devenv";
     disko.inputs.nixpkgs.follows = "nixpkgs";
     disko.url = "github:nix-community/disko";
     flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs-lib";
     flake-parts.url = "github:hercules-ci/flake-parts";
     flake-utils.url = "github:numtide/flake-utils";
+    flake-compat.url = "github:edolstra/flake-compat";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
     home-manager.url = "github:nix-community/home-manager";
     microvm.inputs.flake-utils.follows = "flake-utils";
@@ -26,14 +28,15 @@
     nixos-generators.inputs.nixpkgs.follows = "nixpkgs";
     nixos-generators.url = "github:nix-community/nixos-generators";
     nur.url = "github:nix-community/NUR";
-    plasma-manager.inputs.home-manager.follows = "home-manager";
-    plasma-manager.inputs.nixpkgs.follows = "nixpkgs";
-    plasma-manager.url = "github:nazarewk/plasma-manager";
     poetry2nix.inputs.flake-utils.follows = "flake-utils";
     poetry2nix.inputs.nix-github-actions.follows = "nix-github-actions";
     poetry2nix.inputs.nixpkgs.follows = "nixpkgs";
     poetry2nix.inputs.treefmt-nix.follows = "treefmt-nix";
     poetry2nix.url = "github:nix-community/poetry2nix";
+    stylix.inputs.nixpkgs.follows = "nixpkgs";
+    stylix.inputs.flake-compat.follows = "flake-compat";
+    stylix.inputs.home-manager.follows = "home-manager";
+    stylix.url = "github:danth/stylix";
     systems.url = "github:nix-systems/default";
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
     treefmt-nix.url = "github:numtide/treefmt-nix";
