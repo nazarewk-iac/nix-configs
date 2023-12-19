@@ -149,7 +149,7 @@ let
   settings = {
     layer = "top";
     position = "top";
-    height = 30;
+    height = 36;
     spacing = 4;
     modules-left = [ "sway/workspaces" "sway/mode" "custom/media" "wlr/taskbar" ];
     modules-center = [ "sway/window" ];
