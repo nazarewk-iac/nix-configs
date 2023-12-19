@@ -122,21 +122,27 @@ let
       "format" = "{volume}% {icon} {format_source}";
       "format-bluetooth" = "{volume}% {icon} {format_source}";
       "format-bluetooth-muted" = " {icon} {format_source}";
-      "format-muted" = " {format_source}";
+      "format-muted" = "🔇 {format_source}";
       "format-source" = "{volume}% ";
       "format-source-muted" = "";
       "format-icons" = {
-        "headphone" = "";
+        "default" = [ "" "" "" ];
+
+        # see https://github.com/Alexays/Waybar/blob/f5370fcff585419dcce67712b561217d33e8b65e/src/modules/pulseaudio.cpp#L40-L42
+        "car" = "";
         "hands-free" = "";
+        "hdmi" = "🖵";
+        "headphone" = "";
         "headset" = "";
+        "hifi" = "📻";
         "phone" = "";
         "portable" = "";
-        "car" = "";
-        "default" = [ "" "" "" ];
+        "speaker" = "";
       };
       "on-click" = "pactl set-sink-mute @DEFAULT_SINK@ toggle";
       "on-click-middle" = "pavucontrol";
       "on-click-right" = "pactl set-source-mute @DEFAULT_SOURCE@ toggle";
+      "ignored-sinks" = [ "Easy Effects Sink" ];
     };
   };
 
@@ -187,8 +193,6 @@ in
     programs.waybar = {
       enable = true;
       systemd.enable = true;
-      # TODO: waybar style was provided by stylix
-      #style = ./waybar/style.css;
       # TODO: resolve error and move from xdg.configFile."waybar/config":
       #  A definition for option `home-manager.users.kdn.programs.waybar.settings.height' is not of type `JSON value'. Definition values: 30
       # settings = settings // { modules = settingsModules; };

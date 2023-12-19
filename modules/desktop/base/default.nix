@@ -19,10 +19,15 @@ in
       ];
     }
     {
-      stylix.fonts.monospace.name = "Fira Code";
-      stylix.fonts.monospace.package = pkgs.fira-code;
       stylix.polarity = "dark";
       stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/darcula.yaml";
+
+      stylix.cursor.name = "phinger-cursors";
+      stylix.cursor.package = pkgs.phinger-cursors;
+      stylix.fonts.monospace.name = "Fira Code";
+      stylix.fonts.monospace.package = pkgs.fira-code;
+
+      stylix.opacity.desktop = 0.7;
 
       fonts.fontDir.enable = true;
       fonts.packages = with pkgs; [
