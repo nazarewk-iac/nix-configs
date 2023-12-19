@@ -20,7 +20,7 @@ in
     }
     {
       stylix.polarity = "dark";
-      stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/darcula.yaml";
+      stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/tomorrow-night.yaml";
 
       stylix.cursor.name = "phinger-cursors";
       stylix.cursor.package = pkgs.phinger-cursors;
