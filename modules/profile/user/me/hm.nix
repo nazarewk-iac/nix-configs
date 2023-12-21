@@ -316,11 +316,11 @@ in
         kdn.klg
         kdn.ss-util
         brave
-        kdn.rambox # browser/multi workspace
-        (runCommand "rambox-wayland-bin" { } ''
-          mkdir -p $out/bin
-          ln -sf ${kdn.rambox-wayland}/bin/rambox $out/bin/rambox-wayland
-        '')
+        rambox # browser/multi workspace
+        #(runCommand "rambox-wayland-bin" { } ''
+        #  mkdir -p $out/bin
+        #  ln -sf ${kdn.rambox-wayland}/bin/rambox $out/bin/rambox-wayland
+        #'')
         drawio
         plantuml
 
