@@ -25,7 +25,7 @@ in
 
       (pkgs.writeShellApplication {
         name = "nix-which";
-        runtimeInputs = with pkgs; [ nix ];
+        runtimeInputs = with pkgs; [ nix coreutils ];
         text = ''
           set -eEuo pipefail
 
@@ -36,12 +36,28 @@ in
             Find the root using paths: nix-which <binary> --roots
           EOF
           }
-          case "$1" in
-          -h|--help)
-            help;;
-          *)
-            nix-store --query "''${@:2}" "$(command -v "$1" || command -pv "$1")";;
-          esac
+          type_immediate() {
+            command -v "$1" || command -pv "$1"
+          }
+          type_resolved() {
+            realpath "$(type_immediate "$1")"
+          }
+          type="resolved"
+          args=()
+
+          while test "$#" -gt 0 ; do
+            case "$1" in
+            -h|--help) help && exit 0 ;;
+            -i|--immediate) type="immediate" ;;
+            -r|--resolved) type="resolved" ;;
+            *) args+=("$1") ;;
+            esac
+            shift
+          done
+
+          name="''${args[0]}"
+          args=("''${args[@]:1}")
+          nix-store --query "''${args[@]}" "$(type_"$type" "$name")"
         '';
       })
     ];
