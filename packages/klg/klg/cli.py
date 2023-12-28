@@ -130,6 +130,10 @@ async def fmt(path, check, diff, write, sort):
 async def generate_report(paths, period, tags, output, report_id, resource, diff):
     klog = Klog()
     profile = CONFIG.get_profile()
+    if report_id != "default" and report_id not in profile.reports:
+        raise click.ClickException(
+            f"Unknown report id {report_id}, available reports are: {', '.join(profile.reports)}"
+        )
     report = profile.reports.get(report_id, ReportConfig())
     report.resource = resource or report.resource
     report.tags = tags or report.tags
