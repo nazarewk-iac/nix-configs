@@ -154,8 +154,6 @@ async def generate_report(paths, period, tags, output, report_id, resource, diff
     fn = functools.partial(klog.to_json, *paths, args=args)
     result: dto.Result = await fn()
 
-    tags_header = report.map_tags(value=0.0)
-
     rows = [
         (
             "Resource Name",
@@ -163,10 +161,10 @@ async def generate_report(paths, period, tags, output, report_id, resource, diff
             "Time spent",
             "Minutes",
             "Summary",
-            *tags_header,
+            *report.headers,
         )
     ]
-    fields_totals = {key: 0.0 for key in tags_header}
+    fields_totals = {key: 0.0 for key in report.headers}
     match report.type:
         case ReportType.daily:
             for record in result.records:
@@ -190,7 +188,8 @@ async def generate_report(paths, period, tags, output, report_id, resource, diff
                     for key, value in entry_fields.items():
                         match value:
                             case str():
-                                fields[key] = f"{fields[key]}\n{value}"
+                                if fields[key].strip():
+                                    fields[key] = f"{fields[key]}\n{value}"
                             case float() | int():
                                 fields[key] += value
 

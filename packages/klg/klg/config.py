@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import functools
+
 import dacite
 import dataclasses
 import enum
@@ -7,37 +9,7 @@ import tomllib
 from pathlib import Path
 
 
-@dataclasses.dataclass
-class TagMapping:
-    tags: set[str]
-    value: str
-    strict: bool = False
-    record: bool = True
-    entry: bool = True
-
-    def matches(
-        self,
-        type: TagsType,
-        entry_tags: set[str] = frozenset(),
-        record_tags: set[str] = frozenset(),
-    ):
-        ret = False
-        if not self.strict or type == TagsType.entry:
-            ret |= self.entry and self.tags.issubset(entry_tags)
-        if not self.strict or type == TagsType.record:
-            ret |= self.record and self.tags.issubset(record_tags)
-        return ret
-
-
-@dataclasses.dataclass
-class FieldFromTags:
-    header: str
-    mappings: list[TagMapping]
-    multiplier: bool = False
-
-
 class TagsType(enum.StrEnum):
-    none = ""
     record = "record"
     entry = "entry"
 
@@ -48,6 +20,98 @@ class ReportType(enum.StrEnum):
 
 
 @dataclasses.dataclass
+class TagMapping:
+    value: str
+    tags: set[str] = frozenset()
+    record_tags: set[str] = frozenset()
+    entry_tags: set[str] = frozenset()
+    not_tags: set[str] = frozenset()
+    not_record_tags: set[str] = frozenset()
+    not_entry_tags: set[str] = frozenset()
+
+    @staticmethod
+    def _matches(
+        *,
+        tags: set[str],
+        include: set[str],
+        exclude: set[str],
+    ):
+        if include and not include.issubset(tags):
+            return False
+        if exclude and exclude.issubset(tags):
+            return False
+        return True
+
+    def matches(
+        self,
+        type: TagsType | None = None,
+        entry_tags: set[str] = frozenset(),
+        record_tags: set[str] = frozenset(),
+    ):
+        if not self._matches(
+            include=self.tags,
+            exclude=self.not_tags,
+            tags=entry_tags | record_tags,
+        ):
+            return False
+        if not self._matches(
+            include=self.record_tags,
+            exclude=self.not_record_tags,
+            tags=record_tags,
+        ):
+            return False
+        if type == TagsType.entry and not self._matches(
+            include=self.entry_tags,
+            exclude=self.not_entry_tags,
+            tags=entry_tags,
+        ):
+            return False
+
+        return True
+
+
+@dataclasses.dataclass
+class FieldFromTags:
+    header: str
+    mappings: list[TagMapping]
+    default: str = ""
+    type: TagsType = TagsType.entry
+    multiplier: bool = False
+
+    @staticmethod
+    def to_float(value: str, default="0.0"):
+        return float(value.strip() or default)
+
+    def get_value(
+        self,
+        *,
+        value,
+        type: TagsType,
+        record_tags: set[str],
+        entry_tags: set[str],
+    ):
+        default = self.default
+        if self.multiplier:
+            default = self.to_float(default)
+
+        if type is not None and type != self.type:
+            return default
+
+        for mapping in self.mappings:
+            if not mapping.matches(
+                type=type,
+                entry_tags=entry_tags,
+                record_tags=record_tags,
+            ):
+                continue
+            default = mapping.value
+            if self.multiplier:
+                return self.to_float(mapping.value) * value
+            return default
+        return default
+
+
+@dataclasses.dataclass
 class ReportConfig:
     resource: str = ""
     name: str = ""
@@ -55,31 +119,30 @@ class ReportConfig:
     tags: set[str] = dataclasses.field(default_factory=list)
     fields: list[FieldFromTags] = dataclasses.field(default_factory=dict)
 
+    @functools.cached_property
+    def headers(self):
+        return list(f.header for f in self.fields)
+
+    @functools.cached_property
+    def fields_map(self):
+        return {f.header: f for f in self.fields}
+
     def map_tags(
         self,
         value: float,
-        type: TagsType = TagsType.none,
+        type: TagsType | None = None,
         entry_tags: set[str] = frozenset(),
         record_tags: set[str] = frozenset(),
     ):
         ret = {}
+        field: FieldFromTags
         for field in self.fields:
-            field_name = field.header
-            mappings = field.mappings
-            if field.multiplier:
-                ret[field_name] = 0.0
-            else:
-                ret[field_name] = ""
-
-            for mapping in mappings:
-                if mapping.matches(
-                    type=type, entry_tags=entry_tags, record_tags=record_tags
-                ):
-                    if field.multiplier:
-                        ret[field_name] = float(mapping.value) * value
-                    else:
-                        ret[field_name] = mapping.value
-                    break
+            ret[field.header] = field.get_value(
+                value=value,
+                type=type,
+                record_tags=record_tags,
+                entry_tags=entry_tags,
+            )
         return ret
 
 
@@ -150,6 +213,7 @@ dacite_config = dacite.Config(
         set,
         Path,
         ReportType,
+        TagsType,
     ],
     type_hooks={},
 )

@@ -176,6 +176,9 @@ class EntryBase(Base, ABC):
     summary: str  # "welcome call",
     tags: set[str]  # ["#X"]
 
+    def __post_init__(self):
+        self.summary = self.summary.lstrip()
+
     def format_summary(self, prefix: str = None):
         if prefix is None:
             prefix = self.indent_summary
