@@ -20,8 +20,13 @@ in
       "sr_mod"
     ];
     boot.kernelModules = [ ];
+
+    # TODO: not sure whether it's mandatory to use grub on Hetzner?
+    boot.loader.systemd-boot.enable = lib.mkForce false;
+
     boot.loader.grub.enable = true;
-    boot.loader.grub.version = 2;
+    # conflict in specialisation.boot-debug
+    boot.loader.grub.splashImage = lib.mkForce null;
     boot.loader.grub.device = "/dev/sda";
 
     fileSystems."/" = {
