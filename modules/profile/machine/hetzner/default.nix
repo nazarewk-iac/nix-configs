@@ -10,8 +10,6 @@ in
   config = lib.mkIf cfg.enable {
     kdn.profile.machine.baseline.enable = true;
 
-    system.stateVersion = "22.11";
-
     # BOOT
     boot.initrd.availableKernelModules = [
       "ata_piix"

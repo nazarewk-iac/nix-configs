@@ -8,7 +8,7 @@ in
   };
 
   imports = [
-    ../../../../machines/wireguard-peers.nix
+    ../../../../data/wireguard-peers.nix
   ];
 
   config = lib.mkMerge [
