@@ -10,6 +10,7 @@ in
   config = lib.mkIf cfg.enable {
     kdn.desktop.base.enable = true;
     kdn.profile.machine.basic.enable = true;
+    kdn.hardware.qmk.enable = true;
 
     hardware.opengl.enable = true;
     hardware.opengl.driSupport = true;

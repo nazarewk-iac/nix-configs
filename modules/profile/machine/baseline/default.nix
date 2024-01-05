@@ -21,10 +21,10 @@ in
 
       # systemd-boot
       boot.initrd.systemd.emergencyAccess = "$y$j9T$fioAEKxXi2LmH.9HyzVJ4/$Ot4PUjYdz7ELvJBOnS1YgQFNW89SCxB/yyGVaq4Aux0";
-      boot.loader.efi.canTouchEfiVariables = true;
-      boot.loader.systemd-boot.enable = true;
-      boot.loader.systemd-boot.configurationLimit = 10;
       boot.initrd.systemd.enable = true;
+      boot.loader.efi.canTouchEfiVariables = true;
+      boot.loader.systemd-boot.configurationLimit = 10;
+      boot.loader.systemd-boot.enable = true;
       boot.tmp.cleanOnBoot = true;
 
       networking.nameservers = [
@@ -38,14 +38,11 @@ in
       services.openssh.enable = true;
       services.openssh.openFirewall = true;
       services.openssh.settings.PasswordAuthentication = false;
-      kdn.programs.gnupg.enable = true;
 
       location.provider = "geoclue2";
 
       # USERS
       users.users.root.initialHashedPassword = "";
-
-      services.avahi.enable = true;
 
       environment.systemPackages = with pkgs; [
         cachix
@@ -76,11 +73,9 @@ in
       services.locate.package = pkgs.mlocate;
       services.locate.pruneBindMounts = true;
 
-      kdn.networking.openvpn.enable = true;
       kdn.networking.wireguard.enable = true;
       kdn.hardware.disk-encryption.tools.enable = true;
       kdn.hardware.usbip.enable = true;
-      kdn.hardware.qmk.enable = true;
       kdn.development.shell.enable = true;
 
       home-manager.users.root = { kdn.profile.user.kdn.osConfig = config.users.users.root; };

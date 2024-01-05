@@ -6,9 +6,6 @@
 let
   cfg = config.kdn.networking.openvpn;
 
-
-
-
   mkOpenVPNConfig = instance: instanceConfig:
     let
       joinNonEmpty = entries: lib.trivial.pipe entries [
