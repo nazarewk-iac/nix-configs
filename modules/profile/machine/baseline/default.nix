@@ -4,15 +4,15 @@ let
 in
 {
   options.kdn.profile.machine.baseline = {
-    enable = lib.mkEnableOption "enable baseline machine profile";
+    enable = lib.mkEnableOption "baseline machine profile for server/non-interactive use";
   };
 
   imports = [
     ../../../../data/wireguard-peers.nix
   ];
 
-  config = lib.mkMerge [
-    (lib.mkIf cfg.enable {
+  config = lib.mkIf cfg.enable (lib.mkMerge [
+    {
       kdn.enable = true;
       kdn.profile.user.kdn.enable = true;
 
@@ -42,7 +42,8 @@ in
       location.provider = "geoclue2";
 
       # USERS
-      users.users.root.initialHashedPassword = "";
+      users.mutableUsers = false;
+      users.users.root.initialHashedPassword = "$y$j9T$AhbnpYZawNWNGfuq1h9/p0$jmitwtZwTr72nBgvg2TEmrGmhRR30sQ.hQ7NZk1NqJD";
 
       environment.systemPackages = with pkgs; [
         cachix
@@ -125,26 +126,6 @@ in
           lib.lists.flatten
           (builtins.concatStringsSep "\n")
         ];
-
-      documentation.man.man-db.enable = true;
-      documentation.man.generateCaches = true;
-    })
-    (lib.mkIf config.boot.initrd.systemd.enable {
-      specialisation.boot-debug = {
-        inheritParentConfig = true;
-        configuration = lib.mkMerge [
-          {
-            system.nixos.tags = [ "boot-debug" ];
-            boot.kernelParams = [
-              # see https://www.thegeekdiary.com/how-to-debug-systemd-boot-process-in-centos-rhel-7-and-8-2/
-              #"systemd.confirm_spawn=true"  # this seems to ask and times out before executing anything during boot
-              "systemd.debug-shell=1"
-              "systemd.log_level=debug"
-              "systemd.unit=multi-user.target"
-            ];
-          }
-        ];
-      };
-    })
-  ];
+    }
+  ]);
 }

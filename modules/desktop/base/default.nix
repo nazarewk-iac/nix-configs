@@ -19,16 +19,6 @@ in
       ];
     }
     {
-      stylix.polarity = "dark";
-      stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/tomorrow-night.yaml";
-
-      stylix.cursor.name = "phinger-cursors";
-      stylix.cursor.package = pkgs.phinger-cursors;
-      stylix.fonts.monospace.name = "Fira Code";
-      stylix.fonts.monospace.package = pkgs.fira-code;
-
-      stylix.opacity.desktop = 0.7;
-
       fonts.fontDir.enable = true;
       fonts.packages = with pkgs; [
         cantarell-fonts
@@ -38,9 +28,6 @@ in
         noto-fonts-emoji
         noto-fonts-emoji-blob-bin
         noto-fonts-extra
-        anonymousPro
-        fira-code
-        fira-code-symbols
       ];
 
       gtk.iconCache.enable = true;
