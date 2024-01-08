@@ -205,13 +205,13 @@ testing = ["pytest (>=6)", "pytest-black (>=0.3.7)", "pytest-checkdocs (>=2.4)",
 
 [[package]]
 name = "keyring-pass"
-version = "0.9.0"
+version = "0.9.1"
 description = "https://www.passwordstore.org/ backend for https://pypi.org/project/keyring/"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "keyring_pass-0.9.0-py3-none-any.whl", hash = "sha256:857e01394acd7121f4cf37b09a2c2a32ceda6b2f2bf0f7c69985fa90f2d8f2d9"},
-    {file = "keyring_pass-0.9.0.tar.gz", hash = "sha256:e5155a78fb312b72cd87c566be1a36ebeae4e7027b6dd8de9d5c71657e9029b4"},
+    {file = "keyring_pass-0.9.1-py3-none-any.whl", hash = "sha256:ed67ba650d84430447e0c435381cc78968a17ed7c5a7c35fbbe1117d3b2d0ef7"},
+    {file = "keyring_pass-0.9.1.tar.gz", hash = "sha256:dbe2388455790b0885738fde5a7412637e0a95aa29e24b2ac034639292b5fab1"},
 ]
 
 [package.dependencies]
@@ -284,4 +284,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "7c81903184b4df9cc19d2d5012148275f3b74badfa00d3f58430b03f31d747eb"
+content-hash = "6eb120e2f9d244c24e042f391352b9c690f213cd4c9d53e2e39006a42c437f9a"
