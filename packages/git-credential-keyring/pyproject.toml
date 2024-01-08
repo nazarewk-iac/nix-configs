@@ -9,9 +9,7 @@ packages = [{include = "git_credential_keyring.py"}]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-keyring = "^23.9.3"
-# TODO: figure out how to package separately
-keyring-pass = "^0.8.0"
+keyring-pass = ">=0.9.0"
 
 [tool.poetry.scripts]
 git-credential-keyring = 'git_credential_keyring:main'
