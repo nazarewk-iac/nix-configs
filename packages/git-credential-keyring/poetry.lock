@@ -205,13 +205,13 @@ testing = ["pytest (>=6)", "pytest-black (>=0.3.7)", "pytest-checkdocs (>=2.4)",
 
 [[package]]
 name = "keyring-pass"
-version = "0.9.1"
+version = "0.9.2"
 description = "https://www.passwordstore.org/ backend for https://pypi.org/project/keyring/"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "keyring_pass-0.9.1-py3-none-any.whl", hash = "sha256:ed67ba650d84430447e0c435381cc78968a17ed7c5a7c35fbbe1117d3b2d0ef7"},
-    {file = "keyring_pass-0.9.1.tar.gz", hash = "sha256:dbe2388455790b0885738fde5a7412637e0a95aa29e24b2ac034639292b5fab1"},
+    {file = "keyring_pass-0.9.2-py3-none-any.whl", hash = "sha256:2e5780d85805583ab30b8ac10d254ae14b8ae260f0201826586c23d592fa4131"},
+    {file = "keyring_pass-0.9.2.tar.gz", hash = "sha256:d4236dfae4df15eff4d8bca1b3088b0b212e976cd34f8b39ab739dae72badf9f"},
 ]
 
 [package.dependencies]
