@@ -29,46 +29,59 @@ in
             (version: pkgs."linuxPackages_rt_${version}" or cfg.rt.defaultPackages)
           ];
     };
+
+    containers.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+    };
+    containers.fsname = lib.mkOption {
+      type = lib.types.str;
+    };
   };
 
-  config = lib.mkIf cfg.enable {
-    boot.kernelPackages = cfg.kernelPackages;
-    boot.loader.grub.copyKernels = true;
-    boot.kernelParams = [ "nohibernate" ];
-    boot.initrd.supportedFilesystems = [ "zfs" ];
-    boot.supportedFilesystems = [ "zfs" ];
-    boot.zfs.enableUnstable = true;
+  config = lib.mkIf cfg.enable (lib.mkMerge [
+    {
+      boot.kernelPackages = cfg.kernelPackages;
+      boot.loader.grub.copyKernels = true;
+      boot.kernelParams = [ "nohibernate" ];
+      boot.initrd.supportedFilesystems = [ "zfs" ];
+      boot.supportedFilesystems = [ "zfs" ];
+      boot.zfs.enableUnstable = true;
 
-    # for now trying rt kernel
-    ## see https://github.com/NixOS/nixpkgs/issues/169457
-    #boot.kernelPatches = [{
-    #  name = "enable RT_FULL";
-    #  patch = null;
-    #  extraConfig = ''
-    #    PREEMPT y
-    #    PREEMPT_BUILD y
-    #    PREEMPT_VOLUNTARY n
-    #    PREEMPT_COUNT y
-    #    PREEMPTION y
-    #  '';
-    #}];
+      # for now trying rt kernel
+      ## see https://github.com/NixOS/nixpkgs/issues/169457
+      #boot.kernelPatches = [{
+      #  name = "enable RT_FULL";
+      #  patch = null;
+      #  extraConfig = ''
+      #    PREEMPT y
+      #    PREEMPT_BUILD y
+      #    PREEMPT_VOLUNTARY n
+      #    PREEMPT_COUNT y
+      #    PREEMPTION y
+      #  '';
+      #}];
 
-    services.zfs.autoScrub.enable = true;
-    services.zfs.autoSnapshot.enable = true;
-    services.zfs.autoSnapshot.flags = "-k -p --utc";
-    services.zfs.autoSnapshot.frequent = 12;
-    services.zfs.autoSnapshot.daily = 7;
-    services.zfs.autoSnapshot.weekly = 6;
-    services.zfs.autoSnapshot.monthly = 1;
-    services.zfs.trim.enable = true;
+      services.zfs.autoScrub.enable = true;
+      services.zfs.autoSnapshot.enable = true;
+      services.zfs.autoSnapshot.flags = "-k -p --utc";
+      services.zfs.autoSnapshot.frequent = 12;
+      services.zfs.autoSnapshot.daily = 7;
+      services.zfs.autoSnapshot.weekly = 6;
+      services.zfs.autoSnapshot.monthly = 1;
+      services.zfs.trim.enable = true;
 
-    environment.systemPackages = with pkgs; [
-      zfs-prune-snapshots
-      sanoid
-    ];
+      environment.systemPackages = with pkgs; [
+        zfs-prune-snapshots
+        sanoid
+      ];
 
-    virtualisation.docker.storageDriver = lib.mkDefault "zfs";
-    virtualisation.containers.storage.settings.storage.driver = lib.mkDefault "zfs";
-    virtualisation.podman.extraPackages = [ pkgs.zfs ];
-  };
+      virtualisation.docker.storageDriver = lib.mkDefault "zfs";
+      virtualisation.podman.extraPackages = [ pkgs.zfs ];
+    }
+    (lib.mkIf (config.kdn.virtualisation.containers.enable && cfg.containers.enable) {
+      virtualisation.containers.storage.settings.storage.driver = "zfs";
+      virtualisation.containers.storage.settings.storage.options.zfs.fsname = cfg.containers.fsname;
+    })
+  ]);
 }

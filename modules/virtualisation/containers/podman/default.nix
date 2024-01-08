@@ -15,10 +15,6 @@ in
       virtualisation.oci-containers.backend = "podman";
       virtualisation.podman.dockerCompat = !config.virtualisation.docker.enable;
       virtualisation.podman.dockerSocket.enable = !config.virtualisation.docker.enable;
-      environment.systemPackages = with pkgs; [
-        # podman # conflicts with option's wrapper
-        buildah
-      ];
 
       boot.kernel.sysctl."user.max_user_namespaces" = 15000;
     }
