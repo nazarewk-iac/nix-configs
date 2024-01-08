@@ -12,6 +12,7 @@
     inherit (pkgs.darwin.apple_sdk_11_0.frameworks) Cocoa IOKit Kernel UserNotifications WebKit;
   };
   netbird-ui = netbird.override { ui = true; };
+  netmaker-scripts = pkgs.callPackage ./netmaker-scripts { };
   openapi-python-client-cli = pkgs.callPackage ./openapi-python-client-cli { };
   pass-secret-service = pkgs.callPackage ./pass-secret-service { };
   pinentry = pkgs.callPackage ./pinentry { };
