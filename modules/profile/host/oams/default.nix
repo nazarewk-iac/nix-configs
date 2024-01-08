@@ -16,8 +16,6 @@ in
       kdn.hardware.gpu.amd.enable = true;
       kdn.hardware.cpu.amd.enable = true;
 
-      kdn.filesystems.zfs.containers.fsname = "oams-main/containers/storage";
-
       kdn.profile.machine.gaming.enable = true;
       kdn.hardware.gpu.vfio.enable = lib.mkForce false;
       kdn.hardware.gpu.vfio.gpuIDs = [
@@ -88,6 +86,13 @@ in
           '';
         }
       ];
+    }
+    {
+      kdn.networking.netmaker.server.enable = true;
+      kdn.networking.netmaker.server = {
+        domain = "spoof-gotten.kdn.im";
+        publicIp = "100.79.80.79"; # Netbird IP
+      };
     }
   ]);
 }

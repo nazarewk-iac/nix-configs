@@ -36,10 +36,12 @@ stdenv.mkDerivation rec {
     rev = "v${version}";
     hash = "sha256-0KyBRIMXGqg4MdTyN3Kw1rVbZ7ULlfW6M9DSfAUQF8A=";
   };
+  patches = [
+    ./remove-compose-links.patch
+  ];
 
   postPatch = ''
     for file in scripts/nm-{quick,upgrade}.sh ; do
-      patchShebangs "$file"
       ${pkgs.gawk}/bin/gawk -i inplace \
         '/.*SCRIPT_DIR=.*/{system("cat ${./extra.sh}");next} 1' \
         "$file"
@@ -49,15 +51,25 @@ stdenv.mkDerivation rec {
         --replace "unset BUILD_TAG" "BUILD_TAG=v${version}" \
         --replace "/usr/" '"$PREFIX"/' \
         --subst-var-by "path" "${lib.makeBinPath deps}" \
-        --subst-var-by "dynmic" "rm -rf netmaker-tmp "
+        --subst-var-by "src" "$out/src/modified"
       echo "###################### $file ######################"
       ${pkgs.diffutils}/bin/diff "${src}/$file" "$file" || :
     done
   '';
 
   installPhase = ''
-    install -Dm 555 scripts/nm-{quick,upgrade}.sh -t "$out/bin"
+    mkdir -p $out/src/{original,modified}
+    cp -a . "$out/src/modified"
+    ln -s ${src} "$out/src/original"
+
+    mkdir -p "$out/bin"
+    for file in scripts/nm-{quick,upgrade}.sh ; do
+      ln -s "../src/modified/$file" "$out/bin/''${file##*/}"
+    done
+    chmod 555 scripts/nm-{quick,upgrade}.sh
   '';
+
+  passthru.deps = deps;
 
   meta = with lib;{
     description = "nm-{quick,upgrade}.sh for Netmaker: WireGuard automation from homelab to enterprise";

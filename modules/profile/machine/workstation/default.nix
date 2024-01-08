@@ -28,7 +28,7 @@ in
 
     kdn.monitoring.prometheus-stack.enable = true;
     kdn.monitoring.prometheus-stack.caddy.grafana = "grafana.${config.networking.hostName}.kdn.im";
-    kdn.programs.caddy.enable = true;
+    kdn.services.caddy.enable = true;
     kdn.programs.obs-studio.enable = true;
 
     kdn.virtualization.libvirtd.enable = true;

@@ -1,16 +1,14 @@
 { lib, pkgs, config, ... }:
 let
-  cfg = config.kdn.programs.caddy;
+  cfg = config.kdn.services.caddy;
 in
 {
-  options.kdn.programs.caddy = {
+  options.kdn.services.caddy = {
     enable = lib.mkEnableOption "Caddy web server";
   };
 
   config = lib.mkIf cfg.enable {
-    services.caddy = {
-      enable = true;
-    };
+    services.caddy.enable = true;
 
     networking.firewall.allowedTCPPorts = [ 80 443 ];
 
