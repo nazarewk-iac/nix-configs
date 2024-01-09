@@ -2,7 +2,10 @@
 let
   cfg = config.kdn.hardware.edid;
 
-  generated = pkgs.kdn.edid-generator.overrideAttrs {
+  #  edid-generator = pkgs.kdn.edid-generator;
+  edid-generator = pkgs.edid-generator;
+
+  generated = edid-generator.overrideAttrs {
     clean = true;
     modelines = cfg.modelines;
   };
