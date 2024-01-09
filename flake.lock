@@ -606,16 +606,16 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1704804959,
+        "lastModified": 1704805933,
         "narHash": "sha256-sGr1OFGBRwRJokaAjFigDRp7xUgytg3yKUQ/JOAX49I=",
         "owner": "nazarewk",
         "repo": "nixpkgs",
-        "rev": "99d259807468ad9f9c00e31d0ebd8da65aa89019",
+        "rev": "bad1e9dd6e0732de1fc7e7c743c69d187aa8205b",
         "type": "github"
       },
       "original": {
         "owner": "nazarewk",
-        "ref": "hardware-firmware-edid-ergonomy",
+        "ref": "edids",
         "repo": "nixpkgs",
         "type": "github"
       }
