@@ -10,12 +10,12 @@ let
   version = "6.2";
   shortCommit = "a0e34b0";
   sha256 = "sha256-PFYPthrschw6XEf128L7yBygrVR3E3rtATCpxXGFRd4=";
-  vendorSha256 = "sha256-X5xL/4blWjddJsHwwfLpGjHrfia1sttmmqHjaAIVXVo=";
+  vendorHash = "sha256-X5xL/4blWjddJsHwwfLpGjHrfia1sttmmqHjaAIVXVo=";
   tag = "v${version}";
 in
 buildGoModule {
   pname = "klog-time-tracker";
-  inherit version vendorSha256;
+  inherit version vendorHash;
 
   src = fetchFromGitHub {
     owner = "jotaen";

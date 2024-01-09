@@ -6,16 +6,16 @@
 let
   #commit = "b0b6aaadcb15dd5a35f3677db6bd8529037a568f";
   #sha256 = "sha256-k0cIF8GWVmsX0C/DzCoVpKz5s2jJsnnsK6lJfv8J1UM=";
-  #vendorSha256 = "sha256-CWoyeom5kmMf5PceXUkay/NTNj286wYrkG23rsmREpc=";
+  #vendorHash = "sha256-CWoyeom5kmMf5PceXUkay/NTNj286wYrkG23rsmREpc=";
   commit = "6539e2343c1601e0a3de318c784d77b2d8fb9a3d";
   sha256 = "sha256-SyDb14lehaTQ+/yWpFb+93Yy/AaNtN5pEqzzH+vtpmA=";
-  vendorSha256 = "sha256-j5/08CEPBdFcJg/2weBpV4gG2STH6ZNJ3odaFa4r5NQ=";
+  vendorHash = "sha256-j5/08CEPBdFcJg/2weBpV4gG2STH6ZNJ3odaFa4r5NQ=";
 in
 buildGoModule {
   pname = "tc-redirect-tap";
 
   version = "2023-09-07-${commit}";
-  inherit vendorSha256;
+  inherit vendorHash;
 
   src = fetchFromGitHub {
     #owner = "awslabs";

@@ -57,19 +57,19 @@ in
       ];
     };
 
-    ports.turn = {
+    ports.turn = lib.mkOption {
       type = lib.types.ints.u16;
       default = 3479;
     };
-    ports.turnApi = {
+    ports.turnApi = lib.mkOption {
       type = lib.types.ints.u16;
       default = 8089;
     };
-    ports.networks.start = {
+    ports.networks.start = lib.mkOption {
       type = lib.types.ints.u16;
       default = 51821;
     };
-    ports.networks.capacity = {
+    ports.networks.capacity = lib.mkOption {
       type = lib.types.ints.u16;
       default = 10;
     };
@@ -83,6 +83,19 @@ in
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     (lib.mkIf (cfg.mode == "nm-quick") {
+      kdn.virtualisation.containers.enable = true;
+      virtualisation.podman.dockerSocket.enable = true;
+
+      /* TODO: fix errors
+          + netclient install
+          {"time":"2024-01-09T21:29:29.859945417+01:00","level":"ERROR","source":"common_linux.go 178}","msg":"error checking /sbin/init","error":"exit status 2"}
+          {"time":"2024-01-09T21:29:31.881457607+01:00","level":"ERROR","source":"common_linux.go 29}","msg":"open /sbin/netclient: no such file or directory"}
+          {"time":"2024-01-09T21:29:31.881985779+01:00","level":"ERROR","source":"install.go 33}","msg":"daemon install error","error":"open /sbin/netclient: no such file or directory"}
+
+          see https://github.com/gravitl/netclient/blob/79ffc7d2ea343a19f2a8157ae265dd1cffd9950f/daemon/common_linux.go#L177-L180
+          Why is it even installed on system level if it could be a Docker service? https://docs.netmaker.org/netclient.html#docker
+      */
+
       # TODO: move Caddy out of docker-compose?
       # TODO: fix certificates issuance (switch to DNS challenge?)
       # TODO: issue certificates for wildcard domain instead, see https://caddyserver.com/docs/caddyfile/patterns#wildcard-certificates
@@ -94,15 +107,13 @@ in
       kdn.services.caddy.enable = lib.mkForce false;
 
       networking.firewall = {
-        #allowedTCPPorts = [
-        #  cfg.ports.turn
-        #  cfg.ports.turnApi
-        #];
+        allowedTCPPorts = [
+          cfg.ports.turn
+          cfg.ports.turnApi
+        ];
         allowedUDPPortRanges = [{
-          #from = with cfg.ports.networks; start;
-          #to = with cfg.ports.networks; start + capacity - 1;
-          from = 51821;
-          to = 51830;
+          from = with cfg.ports.networks; start;
+          to = with cfg.ports.networks; start + capacity - 1;
         }];
       };
     }

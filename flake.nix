@@ -193,31 +193,27 @@
 
           wg-0 = flakeLib.nixos.system {
             system = "x86_64-linux";
-            modules = [
+            modules = [{ kdn.profile.host.wg-0.enable = true; }
+              {
+                system.stateVersion = "23.11";
+                networking.hostId = "550ded62"; # cut -c-8 </proc/sys/kernel/random/uuid
+                networking.hostName = "wg-0";
+
+                _module.args.nixinate = {
+                  host = "wg.nazarewk.pw";
+                  sshUser = "kdn";
+                  buildOn = "local"; # valid args are "local" or "remote"
+                  substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
+                  hermetic = true;
+                  nixOptions = [ "--show-trace" ];
+                };
+              }
               ({ modulesPath, ... }: {
                 imports = [
                   (modulesPath + "/profiles/qemu-guest.nix")
                   (modulesPath + "/profiles/headless.nix")
                 ];
-                config = {
-                  kdn.profile.machine.hetzner.enable = true;
-
-                  system.stateVersion = "23.11";
-
-                  networking.hostId = "550ded62"; # cut -c-8 </proc/sys/kernel/random/uuid
-                  networking.hostName = "wg-0";
-
-                  _module.args.nixinate = {
-                    host = "wg.nazarewk.pw";
-                    sshUser = "kdn";
-                    buildOn = "local"; # valid args are "local" or "remote"
-                    substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
-                    hermetic = true;
-                    nixOptions = [ "--show-trace" ];
-                  };
-                };
-              })
-            ];
+              })];
           };
 
           #rpi4 = lib.nixosSystem {

@@ -50,6 +50,9 @@ stdenv.mkDerivation rec {
         --replace "unset BUILD_TYPE" "BUILD_TYPE=local" \
         --replace "unset BUILD_TAG" "BUILD_TAG=v${version}" \
         --replace "/usr/" '"$PREFIX"/' \
+        --replace 'wget -qO netclient' 'wget -qO "$PREFIX/bin/netclient"' \
+        --replace 'chmod +x netclient' 'chmod +x "$PREFIX/bin/netclient"' \
+        --replace './netclient' 'netclient' \
         --subst-var-by "path" "${lib.makeBinPath deps}" \
         --subst-var-by "src" "$out/src/modified"
       echo "###################### $file ######################"

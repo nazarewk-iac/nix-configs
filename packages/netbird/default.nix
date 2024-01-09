@@ -41,7 +41,7 @@ buildGoModule rec {
     sha256 = "sha256-XphzUC3+mD7vXzW5Ka+mqPhKGuPS34qDjPJlBobYesE=";
   };
 
-  vendorSha256 = "sha256-D2jPpaPkbou/upkiOUhA8QJONyKTlTqx9Ylgkq+nBfo=";
+  vendorHash = "sha256-D2jPpaPkbou/upkiOUhA8QJONyKTlTqx9Ylgkq+nBfo=";
 
   nativeBuildInputs = [ installShellFiles ] ++ lib.optional ui pkg-config;
 

@@ -16,6 +16,9 @@ in
       virtualisation.podman.dockerCompat = !config.virtualisation.docker.enable;
       virtualisation.podman.dockerSocket.enable = !config.virtualisation.docker.enable;
 
+      # see https://github.com/NixOS/nixpkgs/issues/226365#issuecomment-1814296639
+      networking.firewall.interfaces."podman+".allowedUDPPorts = [ 53 ];
+
       boot.kernel.sysctl."user.max_user_namespaces" = 15000;
     }
   ]);

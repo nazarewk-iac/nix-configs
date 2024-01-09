@@ -136,12 +136,5 @@ in
         }
       ];
     }
-    {
-      kdn.networking.netmaker.server.enable = true;
-      kdn.networking.netmaker.server = {
-        domain = "subsidize-stroller.kdn.im";
-        publicIp = "89.74.5.125";
-      };
-    }
   ]);
 }
