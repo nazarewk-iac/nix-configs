@@ -8,7 +8,7 @@
       "krul.kdn.im:9D33FhBuxCj/20Ct2ASHx3SqJ5FmfT8+BgoSzTwAZMc="
     ];
     substituters = [
-      "https://nix-community.cachix.org"
+      #"https://nix-community.cachix.org"
       "https://nixpkgs-update.cachix.org"
       "https://devenv.cachix.org"
     ];

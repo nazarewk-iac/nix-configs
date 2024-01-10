@@ -83,6 +83,8 @@ in
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     (lib.mkIf (cfg.mode == "nm-quick") {
+      kdn.programs.direnv.enable = true; # to work with it
+
       kdn.virtualisation.containers.enable = true;
       virtualisation.podman.dockerSocket.enable = true;
 

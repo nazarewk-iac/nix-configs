@@ -201,6 +201,7 @@
 
                 _module.args.nixinate = {
                   host = "wg.nazarewk.pw";
+                  # host = "10.100.0.1"; # wireguard
                   sshUser = "kdn";
                   buildOn = "local"; # valid args are "local" or "remote"
                   substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
