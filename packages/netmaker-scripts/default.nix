@@ -36,8 +36,8 @@ stdenv.mkDerivation rec {
     #hash = "sha256-0KyBRIMXGqg4MdTyN3Kw1rVbZ7ULlfW6M9DSfAUQF8A=";
     owner = "nazarewk";
     repo = "netmaker";
-    rev = "9e0b875325a7e80830cebcd2275472c568f598a1";
-    hash = "sha256-aMs4E+NtYiuN2SqBrFlhItDdeaFS2D3bW9JzHtThGD0=";
+    rev = "364f21a578dae11269f8930b6fd148d2968b62d9";
+    hash = "sha256-cAR2AN/d558V6elGsQlPjTIhog4d0ffQyJCqs+JrO2Y=";
   };
   patches = [
     ./remove-compose-links.patch
@@ -50,8 +50,8 @@ stdenv.mkDerivation rec {
         "$file"
       substituteInPlace "$file" \
         --replace "LATEST=" "LATEST=v${version} # " \
-        --replace "unset BUILD_TYPE" "BUILD_TYPE=local" \
-        --replace "unset BUILD_TAG" "BUILD_TAG=v${version}" \
+        --replace "BUILD_TYPE='''" "BUILD_TYPE=local" \
+        --replace "BUILD_TAG='''" "BUILD_TAG=v${version}" \
         --replace 'BUILD_TAG="$OPTARG"' 'test "$OPTARG" = "$BUILD_TAG" || echo "only $BUILD_TAG is supported!" && exit 1' \
         --subst-var-by "path" "${lib.makeBinPath deps}" \
         --subst-var-by "src" "$out/src/modified"
