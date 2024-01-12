@@ -26,13 +26,35 @@ in
             type = with lib.types; str;
             default = config.kdn.desktop.sway.prefix;
           };
+          prefixes = lib.mkOption {
+            type = with lib.types; listOf str;
+            default = [
+              args.config.prefix
+              config.kdn.desktop.sway.prefix
+            ];
+            apply = builtins.filter (s: s != "");
+          };
+          shortName = lib.mkOption {
+            readOnly = true;
+            type = with lib.types; str;
+            default = name;
+          };
           suffix = lib.mkOption {
             type = with lib.types; str;
-            default = "-${name}";
+            default = "";
+          };
+          suffixes = lib.mkOption {
+            type = with lib.types; listOf str;
+            default = [ args.config.suffix ];
+            apply = builtins.filter (s: s != "");
           };
           name = lib.mkOption {
             type = with lib.types; str;
-            default = "${args.config.prefix}${args.config.suffix}";
+            default = builtins.concatStringsSep "-" (builtins.filter (s: s != "") (
+              args.config.prefixes ++ [
+                args.config.shortName
+              ] ++ args.config.suffixes
+            ));
           };
           units = lib.mkOption {
             type = with lib.types; listOf str;
@@ -46,6 +68,7 @@ in
         envs.units = [ "service" "target" ];
         tray.units = [ "target" ];
         polkit-agent.units = [ "service" ];
+        secrets-service.prefix = "dbus";
         secrets-service.units = [ "service" "target" ];
       };
       apply = builtins.mapAttrs (key: value: (lib.trivial.pipe value.units [
@@ -230,23 +253,6 @@ in
           "${pkgs.coreutils}/bin/echo ${config.kdn.desktop.sway.systemd.envs.service} finished executing."
         ];
       };
-      systemd.user.targets."${config.kdn.desktop.sway.systemd.secrets-service.name}" = {
-        description = config.kdn.desktop.sway.systemd.secrets-service.target;
-        bindsTo = [ config.kdn.desktop.sway.systemd.secrets-service.service ];
-        after = [ config.kdn.desktop.sway.systemd.envs.target ];
-        requires = [ config.kdn.desktop.sway.systemd.envs.target ];
-      };
-
-      systemd.user.services."${config.kdn.desktop.sway.systemd.secrets-service.name}" = {
-        description = config.kdn.desktop.sway.systemd.secrets-service.service;
-        requires = [ config.kdn.desktop.sway.systemd.envs.target ];
-        after = [ config.kdn.desktop.sway.systemd.envs.target ];
-        partOf = [ config.kdn.desktop.sway.systemd.session.target ];
-        script = lib.mkDefault "${pkgs.coreutils}/bin/sleep infinity";
-        serviceConfig.Slice = "background.slice";
-        serviceConfig.Type = "dbus";
-        serviceConfig.BusName = "org.freedesktop.secrets";
-      };
 
       systemd.user.targets."${config.kdn.desktop.sway.systemd.tray.name}" = {
         description = config.kdn.desktop.sway.systemd.tray.target;
@@ -317,7 +323,6 @@ in
 
       systemd.user.services.xfce4-notifyd.enable = false;
 
-
       programs.sway.extraPackages = with pkgs; [
         (pkgs.writeScriptBin "_sway-root-gui" ''
           #! ${pkgs.bash}/bin/bash
@@ -370,6 +375,37 @@ in
           # use wofi instead
           chooser_cmd = "${pkgs.wofi}/bin/wofi -d -n --prompt='Select the monitor to share:'";
         };
+      };
+    }
+    {
+      services.dbus.packages = [
+        (pkgs.writeTextFile {
+          name = lib.strings.removePrefix "dbus-" config.kdn.desktop.sway.systemd.secrets-service.service;
+          destination = "/share/dbus-1/services";
+          text = ''
+            [D-BUS Service]
+            Name=org.freedesktop.secrets
+            Exec=${pkgs.coreutils}/bin/false
+            SystemdService=${config.kdn.desktop.sway.systemd.secrets-service.service}
+          '';
+        })
+      ];
+      systemd.user.targets."${config.kdn.desktop.sway.systemd.secrets-service.name}" = {
+        description = config.kdn.desktop.sway.systemd.secrets-service.target;
+        bindsTo = [ config.kdn.desktop.sway.systemd.secrets-service.service ];
+        after = [ config.kdn.desktop.sway.systemd.envs.target ];
+        requires = [ config.kdn.desktop.sway.systemd.envs.target ];
+      };
+
+      systemd.user.services."${config.kdn.desktop.sway.systemd.secrets-service.name}" = {
+        description = config.kdn.desktop.sway.systemd.secrets-service.service;
+        requires = [ config.kdn.desktop.sway.systemd.envs.target ];
+        after = [ config.kdn.desktop.sway.systemd.envs.target ];
+        partOf = [ config.kdn.desktop.sway.systemd.session.target ];
+        script = lib.mkDefault "${pkgs.coreutils}/bin/sleep infinity";
+        serviceConfig.Slice = "background.slice";
+        serviceConfig.Type = "dbus";
+        serviceConfig.BusName = "org.freedesktop.secrets";
       };
     }
     (lib.mkIf config.programs.gnupg.agent.enable {
