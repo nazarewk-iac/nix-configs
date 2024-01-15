@@ -251,7 +251,11 @@ in
           config.kdn.desktop.sway.systemd.envs.target
           config.kdn.desktop.sway.systemd.secrets-service.service
         ];
-        After = [ config.kdn.desktop.sway.systemd.envs.target "tray.target" ];
+        After = [
+          config.kdn.desktop.sway.systemd.secrets-service.service
+          config.kdn.desktop.sway.systemd.envs.target
+          "tray.target"
+        ];
         PartOf = [ config.kdn.desktop.sway.systemd.session.target ];
       };
       systemd.user.services.nextcloud-client.Install = {
