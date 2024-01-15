@@ -379,16 +379,24 @@ in
     }
     {
       services.dbus.packages = [
-        (pkgs.writeTextFile {
-          name = lib.strings.removePrefix "dbus-" config.kdn.desktop.sway.systemd.secrets-service.service;
-          destination = "/share/dbus-1/services";
-          text = ''
-            [D-BUS Service]
-            Name=org.freedesktop.secrets
-            Exec=${pkgs.coreutils}/bin/false
-            SystemdService=${config.kdn.desktop.sway.systemd.secrets-service.service}
-          '';
-        })
+        (
+          let
+            name = lib.pipe config.kdn.desktop.sway.systemd.secrets-service.service [
+              (lib.strings.removePrefix "dbus-")
+              (lib.strings.removeSuffix ".service")
+            ];
+          in
+          pkgs.writeTextFile {
+            name = "${name}.service";
+            destination = "/share/dbus-1/services/${name}.service";
+            text = ''
+              [D-BUS Service]
+              Name=org.freedesktop.secrets
+              Exec=${pkgs.coreutils}/bin/false
+              SystemdService=${config.kdn.desktop.sway.systemd.secrets-service.service}
+            '';
+          }
+        )
       ];
       systemd.user.targets."${config.kdn.desktop.sway.systemd.secrets-service.name}" = {
         description = config.kdn.desktop.sway.systemd.secrets-service.target;
