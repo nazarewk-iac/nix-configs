@@ -87,12 +87,5 @@ in
         }
       ];
     }
-    {
-      kdn.networking.netmaker.server.enable = true;
-      kdn.networking.netmaker.server = {
-        domain = "spoof-gotten.kdn.im";
-        publicIp = "100.79.80.79"; # Netbird IP
-      };
-    }
   ]);
 }

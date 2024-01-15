@@ -75,6 +75,7 @@ in
       services.locate.pruneBindMounts = true;
 
       kdn.networking.wireguard.enable = true;
+      kdn.networking.netmaker.client.enable = true;
       kdn.hardware.disk-encryption.tools.enable = true;
       kdn.hardware.usbip.enable = true;
       kdn.development.shell.enable = true;
