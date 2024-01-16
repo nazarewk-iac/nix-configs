@@ -49,6 +49,7 @@ in
       # TODO: issue certificates for wildcard domain instead, see https://caddyserver.com/docs/caddyfile/patterns#wildcard-certificates
       environment.systemPackages = [
         pkgs.kdn.netmaker-scripts
+        pkgs.sqlite
       ] ++ pkgs.kdn.netmaker-scripts.passthru.deps;
     })
     {
