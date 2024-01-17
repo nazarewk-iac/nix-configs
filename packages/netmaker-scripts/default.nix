@@ -27,7 +27,7 @@ let
 in
 stdenv.mkDerivation rec {
   pname = "netmaker-scripts";
-  version = "0.21.2";
+  version = "0.22.0";
 
   src = pkgs.fetchFromGitHub {
     #owner = "gravitl";
@@ -36,8 +36,8 @@ stdenv.mkDerivation rec {
     #hash = "sha256-0KyBRIMXGqg4MdTyN3Kw1rVbZ7ULlfW6M9DSfAUQF8A=";
     owner = "nazarewk";
     repo = "netmaker";
-    rev = "364f21a578dae11269f8930b6fd148d2968b62d9";
-    hash = "sha256-cAR2AN/d558V6elGsQlPjTIhog4d0ffQyJCqs+JrO2Y=";
+    rev = "630c95c48b43ac8b0cdff1c3de13339c8b322889";
+    hash = "sha256-5W9LgzEfGXKz3IBEyMlkorA9TwJ/QKiJSrzkCL/5bXM=";
   };
   patches = [
     ./remove-compose-links.patch
