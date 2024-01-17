@@ -56,7 +56,8 @@ in
       kdn.services.caddy.enable = lib.mkForce false;
 
       networking.firewall = with cfg.firewall.ports; {
-        allowedTCPPorts = [ turn turnApi ];
+        # note: TURN was removed in 0.22.0
+        # allowedTCPPorts = [ turn turnApi ];
         allowedUDPPortRanges = [{
           from = networks.start;
           to = networks.start + networks.capacity - 1;
