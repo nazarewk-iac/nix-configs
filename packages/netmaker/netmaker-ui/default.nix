@@ -1,7 +1,7 @@
 { lib
 , buildNpmPackage
 , fetchFromGitHub
-, tree
+, caddy
 , ...
 }:
 
@@ -13,8 +13,11 @@ buildNpmPackage rec {
   inherit (inputs.netmaker-ui) version src npmDepsHash;
 
   installPhase = ''
-    mkdir -p "$out"
-    mv dist "$out/www"
+    mkdir -p "$out/var" "$out/etc/caddy" "$out/bin"
+    mv dist "$out/var/www"
+    install -Dm644 ${./Caddyfile} "$out/etc/caddy/Caddyfile"
+    install -Dm755 ${./netmaker-ui.sh} "$out/bin/netmaker-ui"
+    sed -i 's#^caddy#"${lib.getExe caddy}"#g' "$out/bin/netmaker-ui"
   '';
 
   meta = with lib; {
