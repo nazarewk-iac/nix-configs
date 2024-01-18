@@ -13,6 +13,7 @@
 , gawk
 , git
 , gnugrep
+, gnused
 , jq
 , wget
 , wireguard-tools
@@ -27,13 +28,14 @@ let
     yq-go
     wget
     # see https://github.com/gravitl/netmaker/blob/54a3afc19ac610714d5d4454cd18a06219127b2f/scripts/nm-quick.sh#L383-L422
-    git
-    wireguard-tools
     dnsutils
-    jq
     docker-compose
-    gnugrep
     gawk
+    git
+    gnugrep
+    gnused
+    jq
+    wireguard-tools
   ];
 in
 let

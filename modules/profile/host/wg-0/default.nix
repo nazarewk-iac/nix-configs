@@ -12,6 +12,8 @@ in
     {
       kdn.profile.machine.hetzner.enable = true;
       kdn.networking.netmaker.server.enable = true;
+      kdn.networking.netmaker.server.domain = "subsidize-stroller.kdn.im";
+      kdn.networking.netmaker.server.email = "subsidize-stroller@kdn.im";
     }
   ]);
 }

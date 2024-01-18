@@ -9,7 +9,10 @@ let
 in
 {
   options.kdn.networking.netmaker.client = {
-    enable = lib.mkEnableOption "Netmaker client";
+    enable = lib.mkOption {
+      type = with lib.types; bool;
+      default = srvCfg.enable;
+    };
 
     firewall.trusted = lib.mkEnableOption "trust all traffic coming from Netmaker interfaces";
 
@@ -59,7 +62,6 @@ in
       };
     }
     {
-
       networking.firewall = with cfg.firewall; {
         trustedInterfaces = lib.mkIf trusted [ "netmaker+" ];
         interfaces."netmaker+" = lib.mkIf (!trusted) {

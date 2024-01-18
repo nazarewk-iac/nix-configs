@@ -1,18 +1,30 @@
 #!/usr/bin/env bash
 set -eEuo pipefail
 
-script_dir="${BASH_SOURCE[0]%/*}"
+prefix="${BASH_SOURCE[0]%/*/*}"
 
-: "${CADDYFILE:="${script_dir%/*}/etc/caddy/Caddyfile"}"
-: "${ROOT_DIR:="${script_dir%/*}/var/www"}"
-: "${AMUI_URL:=https://account.staging.netmaker.io}"
-: "${BACKEND_URL:=http://localhost:8081}"
-: "${INTERCOM_APP_ID:=}"
+: "${NM_UI_CADDYFILE_ROOT:="${prefix%/*}/etc/caddy/Caddyfile-root"}"
+: "${NM_UI_CADDYFILE:="${prefix%/*}/etc/caddy/Caddyfile"}"
+: "${NM_UI_ROOT_DIR:="${prefix%/*}/var/www"}"
+: "${NM_UI_AMUI_URL:=https://account.staging.netmaker.io}"
+: "${NM_UI_BACKEND_URL:=http://localhost:8081}"
+: "${NM_UI_INTERCOM_APP_ID:=}"
 
-for var in CADDYFILE ROOT_DIR AMUI_URL BACKEND_URL INTERCOM_APP_ID; do
+vars=(
+  NM_UI_CADDYFILE
+  NM_UI_CADDYFILE_ROOT
+  # used by Caddy
+  NM_UI_ROOT_DIR
+  NM_UI_AMUI_URL
+  NM_UI_NM_BACKEND_URL
+  NM_UI_INTERCOM_APP_ID
+)
+
+for var in "${vars[@]}"; do
   # shellcheck disable=SC2163
   export "$var"
   echo ">>>> $var set to: '${!var}' <<<<<"
 done
 
-caddy run --config="$CADDYFILE" "$@"
+pushd "${NM_UI_CADDYFILE%/*}"
+caddy run --config="$NM_UI_CADDYFILE_ROOT" "$@"

@@ -16,6 +16,7 @@ buildNpmPackage rec {
     mkdir -p "$out/var" "$out/etc/caddy" "$out/bin"
     mv dist "$out/var/www"
     install -Dm644 ${./Caddyfile} "$out/etc/caddy/Caddyfile"
+    install -Dm644 ${./Caddyfile-root} "$out/etc/caddy/Caddyfile-root"
     install -Dm755 ${./netmaker-ui.sh} "$out/bin/netmaker-ui"
     sed -i 's#^caddy#"${lib.getExe caddy}"#g' "$out/bin/netmaker-ui"
   '';

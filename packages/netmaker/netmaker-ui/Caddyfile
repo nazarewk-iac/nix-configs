@@ -1,26 +1,17 @@
-{
-	admin off
-	auto_https off
+# see https://github.com/gravitl/netmaker-ui-2/blob/b305a96fc19160346f7cd59439d4625f262aaedf/generate-config.sh#L20-L22
+handle /nmui-config.js {
+	header Content-Type text/javascript
+	respond <<EOF
+	window.NMUI_AMUI_URL='{$NM_UI_AMUI_URL:https://account.staging.netmaker.io}';
+	window.NMUI_BACKEND_URL='{$NM_UI_BACKEND_URL:http://localhost:8081}';
+	window.NMUI_INTERCOM_APP_ID='{$NM_UI_INTERCOM_APP_ID:}';
+	EOF
 }
 
-http://*:{$HTTP_PORT:8080} {
-	encode zstd gzip
+handle {
+	# see https://github.com/gravitl/netmaker-ui-2/blob/b305a96fc19160346f7cd59439d4625f262aaedf/nginx.conf#L7-L7
+	try_files {path} {path}/ /index.html
 
-	# see https://github.com/gravitl/netmaker-ui-2/blob/b305a96fc19160346f7cd59439d4625f262aaedf/generate-config.sh#L20-L22
-	handle /nmui-config.js {
-		header Content-Type text/javascript
-		respond <<EOF
-		window.NMUI_AMUI_URL='{$AMUI_URL:https://account.staging.netmaker.io}';
-		window.NMUI_BACKEND_URL='{$BACKEND_URL:http://localhost:8081}';
-		window.NMUI_INTERCOM_APP_ID='{$INTERCOM_APP_ID:}';
-		EOF
-	}
-
-	handle {
-		# see https://github.com/gravitl/netmaker-ui-2/blob/b305a96fc19160346f7cd59439d4625f262aaedf/nginx.conf#L7-L7
-		try_files {path} {path}/ /index.html
-
-		root * {$ROOT_DIR:./}
-		file_server
-	}
+	root * {$NM_UI_ROOT_DIR:./}
+	file_server
 }
