@@ -1,14 +1,14 @@
 { lib
 , fetchFromGitHub
 , buildGoModule
+, ...
 }:
 let
   inputs = import ../inputs.nix { inherit fetchFromGitHub; };
 in
 buildGoModule rec {
   pname = "netmaker";
-  inherit (inputs) version;
-  inherit (inputs.netmaker) src vendorHash;
+  inherit (inputs.netmaker) version src vendorHash;
 
   subPackages = [ "." ];
 

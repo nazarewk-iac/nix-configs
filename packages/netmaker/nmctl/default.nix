@@ -2,14 +2,14 @@
 , fetchFromGitHub
 , buildGoModule
 , installShellFiles
+, ...
 }:
 let
   inputs = import ../inputs.nix { inherit fetchFromGitHub; };
 in
 buildGoModule rec {
   pname = "nmctl";
-  inherit (inputs) version;
-  inherit (inputs.netmaker) src vendorHash;
+  inherit (inputs.netmaker) version src vendorHash;
 
   subPackages = [ "cli" ];
   nativeBuildInputs = [

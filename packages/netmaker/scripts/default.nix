@@ -17,6 +17,7 @@
 , wget
 , wireguard-tools
 , yq-go
+, ...
 }:
 let
   deps = [
@@ -40,8 +41,7 @@ let
 in
 stdenv.mkDerivation rec {
   pname = "netmaker-scripts";
-  inherit (inputs) version;
-  inherit (inputs.netmaker) src;
+  inherit (inputs.all.netmaker.scripts) version src;
 
   patches = [
     ./remove-compose-links.patch
