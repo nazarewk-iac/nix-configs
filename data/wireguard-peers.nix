@@ -9,7 +9,7 @@
       };
       cfg = {
         publicKey = "n46g2yMIQ169ZWJk0gpjnhlAlJci6KKv7pxbC6BkqwY=";
-        endpoint = "wg.kdn.pw:${toString config.kdn.networking.wireguard.port}";
+        endpoint = "wg.nazarewk.pw:${toString config.kdn.networking.wireguard.port}";
         persistentKeepalive = 25;
         dynamicEndpointRefreshSeconds = 60;
       };
@@ -38,13 +38,13 @@
         publicKey = "K4p1ePw7eWofjAikvsiJPj4Q3QNl6p6lmpRz5BKnvEw=";
       };
     };
-    belkin-rt3200-nazarewk = {
+    drek = {
       hostnum = 5;
       cfg = {
         allowedIPs = [
           "10.0.0.0/24"
         ];
-        publicKey = "xlTLfN0bz8JQ81gMQPxWFVJgCxkeiHKwKxUE15bGVyk=";
+        publicKey = "fBy7t2IeoOF+NKuKpPuqp8PtQiMcRldtUnvzzfzarxQ=";
       };
     };
   };
