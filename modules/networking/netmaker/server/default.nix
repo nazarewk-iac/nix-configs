@@ -18,6 +18,10 @@ in
       default = "nm-quick";
     };
     firewall.ports = {
+      dns = lib.mkOption {
+        type = with lib.types; port;
+        default = 53;
+      };
       turn = lib.mkOption {
         type = with lib.types; port;
         default = 3479;
@@ -56,8 +60,15 @@ in
       kdn.services.caddy.enable = lib.mkForce false;
 
       networking.firewall = with cfg.firewall.ports; {
-        # note: TURN was removed in 0.22.0
-        # allowedTCPPorts = [ turn turnApi ];
+        allowedTCPPorts = [
+          # note: TURN was removed in 0.22.0
+          #turn
+          #turnApi
+          dns
+        ];
+        allowedUDPPorts = [
+          dns
+        ];
         allowedUDPPortRanges = [{
           from = networks.start;
           to = networks.start + networks.capacity - 1;

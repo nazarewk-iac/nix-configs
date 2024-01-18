@@ -45,6 +45,8 @@ in
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       services.netclient.enable = true;
+      services.netclient.package = pkgs.kdn.netclient;
+
       # required for detection by https://github.com/gravitl/netclient/blob/51f4458db0a5560d102d337a342567cb347399a6/config/config.go#L430-L443
       systemd.services."netclient".path = let fw = config.networking.firewall; in lib.optionals fw.enable [ fw.package ];
       networking.networkmanager.unmanaged = [ "interface-name:netmaker*" ];

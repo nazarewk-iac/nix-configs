@@ -1,4 +1,8 @@
-{ pkgs, lib, ... }: rec {
+{ pkgs, lib, ... }:
+let
+  netmaker = pkgs.callPackage ./netmaker { };
+in
+(rec {
   # changed to manual list due to infinite recursion errors
   data-converters = pkgs.callPackage ./data-converters { };
   edid-generator = pkgs.callPackage ./edid-generator { };
@@ -12,7 +16,6 @@
     inherit (pkgs.darwin.apple_sdk_11_0.frameworks) Cocoa IOKit Kernel UserNotifications WebKit;
   };
   netbird-ui = netbird.override { ui = true; };
-  netmaker-scripts = pkgs.callPackage ./netmaker-scripts { };
   openapi-python-client-cli = pkgs.callPackage ./openapi-python-client-cli { };
   pass-secret-service = pkgs.callPackage ./pass-secret-service { };
   pinentry = pkgs.callPackage ./pinentry { };
@@ -22,4 +25,4 @@
   ss-util = pkgs.callPackage ./ss-util { };
   tc-redirect-tap = pkgs.callPackage ./tc-redirect-tap { };
   yubikey-configure = pkgs.callPackage ./yubikey-configure { };
-}
+}) // netmaker
