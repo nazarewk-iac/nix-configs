@@ -38,8 +38,8 @@ let
     src = fetchFromGitHub {
       owner = "nazarewk";
       repo = "netmaker";
-      rev = "9ca6b44228847d246dd5617b73f69ec26778f396";
-      hash = "sha256-Jy4T7Ncx0i30waP/cy733U1RYWyrNOC1QquQU24jhkY=";
+      rev = "306a1b544c544578c0e986a90a16e48f02fd45e6";
+      hash = "sha256-R2Zle6uqV/oE3OsA3IIKPGLoEnM/WMwB+eXBD9fU4dw=";
     };
     vendorHash = "sha256-t7g6Tozq/QLq0/5bpXNDCJrOPTjMlvcDUaD6EGqII3Y=";
   };
