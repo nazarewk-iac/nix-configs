@@ -67,6 +67,11 @@ in
       default = "127.0.0.2";
     };
 
+    verbosity = lib.mkOption {
+      type = with lib.types; enum [ 1 2 3 4 ];
+      default = 4;
+    };
+
     telemetry.enable = lib.mkEnableOption "sending telemetry to Netmaker developers";
 
     package = lib.mkOption {
@@ -232,13 +237,14 @@ in
         envFile.user.secrets
       ];
       kdn.networking.netmaker.server.env.server = {
+        VERBOSITY = builtins.toString cfg.verbosity;
         TELEMETRY = if cfg.telemetry.enable then "on" else "off";
         STUN_LIST = builtins.concatStringsSep "," cfg.stunList;
         SERVER_NAME = cfg.domain;
         API_PORT = builtins.toString cfg.api.internal.port;
         SERVER_API_CONN_STRING = "${cfg.api.domain}:443";
         SERVER_HOST = cfg.api.internal.host;
-        SERVER_HTTP_HOST = cfg.api.internal.host;
+        SERVER_HTTP_HOST = cfg.api.domain;
         BROKER_TYPE = cfg.mq.type;
         BROKER_ENDPOINT = "wss://${cfg.mq.domain}";
         # don't set to anything, see https://github.com/nazarewk/netmaker/blob/9ca6b44228847d246dd5617b73f69ec26778f396/servercfg/serverconf.go#L215-L223
@@ -283,6 +289,8 @@ in
     (lib.mkIf (cfg.webserver.type == "caddy") {
       kdn.services.caddy.enable = true;
       systemd.services.caddy.requires = [ "netmaker-configure.service" ];
+      systemd.services.netmaker.after = [ "caddy.service" ];
+      systemd.services.netmaker.requires = [ "caddy.service" ];
 
       services.caddy.virtualHosts."https://${cfg.api.domain}".extraConfig = ''
         header {
@@ -325,12 +333,18 @@ in
     })
     (lib.mkIf (cfg.db.type == "sqlite") { })
     (lib.mkIf (cfg.mq.type == "mosquitto" && cfg.webserver.type == "caddy") {
+      # see https://www.reddit.com/r/selfhosted/comments/14wqwa4/comment/jrp07gq/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
       services.caddy.virtualHosts."https://${cfg.mq.domain}".extraConfig = ''
-        reverse_proxy http://${cfg.mq.internal.addr}
+        reverse_proxy ${cfg.mq.internal.addr} {
+          stream_timeout 6h
+          stream_close_delay 1m
+        }
       '';
     })
     (lib.mkIf (cfg.mq.type == "mosquitto") {
       systemd.services.mosquitto.requires = [ "netmaker-configure.service" ];
+      systemd.services.netmaker.after = [ "mosquitto.service" ];
+      systemd.services.netmaker.requires = [ "mosquitto.service" ];
 
       services.mosquitto.enable = true;
       services.mosquitto.listeners = [{

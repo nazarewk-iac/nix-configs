@@ -48,8 +48,8 @@ let
     src = fetchFromGitHub {
       owner = "nazarewk";
       repo = "netclient";
-      rev = "54cf103a0ee36f725c5b0340ff3953f8340a11d9";
-      hash = "sha256-d3b/kQQ/0ZvDhn+SXD88x2e99XQ/Wc5fpYPZ5EzfBzQ=";
+      rev = "6aa38082d46ead697135fdc6d1d286a8f5784367";
+      hash = "sha256-vNmQPkOOLobZD8fXhcRH9jlGmtIPGZVg1nUpt69I1dM=";
     };
     vendorHash = "sha256-lRXZ9iSWQEKWmeQV1ei/G4+HvqhW9U8yUv1Qb/d2jvY=";
   };
