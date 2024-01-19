@@ -5,7 +5,6 @@ let
   packages.netmaker-ui = pkgs.callPackage ./netmaker-ui { };
   packages.netclient = pkgs.callPackage ./netclient { };
   #packages.netclient-gui = pkgs.callPackage ./netclient-gui { };
-  packages.netmaker-scripts = pkgs.callPackage ./scripts { };
 in
 packages // {
   netmaker-full = pkgs.symlinkJoin {
