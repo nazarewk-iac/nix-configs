@@ -187,8 +187,7 @@ in
       ];
       default = "mosquitto";
     };
-    mq.public = internalAddressOption { port = 8883; };
-    mq.internal = internalAddressOption { port = 1883; };
+    mq.internal = internalAddressOption { port = 8883; };
     mq.domain = lib.mkOption {
       type = with lib.types; str;
       default = "broker.${cfg.domain}";
@@ -240,8 +239,10 @@ in
         SERVER_API_CONN_STRING = "${cfg.api.domain}:443";
         SERVER_HOST = cfg.api.internal.host;
         SERVER_HTTP_HOST = cfg.api.internal.host;
+        BROKER_TYPE = cfg.mq.type;
         BROKER_ENDPOINT = "wss://${cfg.mq.domain}";
-        COREDNS_ADDR = cfg.coredns.internal.host;
+        # don't set to anything, see https://github.com/nazarewk/netmaker/blob/9ca6b44228847d246dd5617b73f69ec26778f396/servercfg/serverconf.go#L215-L223
+        COREDNS_ADDR = lib.mkDefault null;
         DATABASE = cfg.db.type;
         JWT_VALIDITY_DURATION = builtins.toString cfg.jwtValidityDuration;
         SERVER_BROKER_ENDPOINT = "ws://${cfg.mq.internal.addr}";
@@ -332,22 +333,13 @@ in
       systemd.services.mosquitto.requires = [ "netmaker-configure.service" ];
 
       services.mosquitto.enable = true;
-      services.mosquitto.listeners = [
-        {
-          address = cfg.mq.public.host;
-          port = cfg.mq.public.port;
-          users."${cfg.mq.username}".passwordFile = cfg.mq.passwordFile;
-          settings.allow_anonymous = false;
-          settings.protocol = "websockets";
-        }
-        {
-          address = cfg.mq.internal.host;
-          port = cfg.mq.internal.port;
-          users."${cfg.mq.username}".passwordFile = cfg.mq.passwordFile;
-          settings.allow_anonymous = false;
-          settings.protocol = "websockets";
-        }
-      ];
+      services.mosquitto.listeners = [{
+        address = cfg.mq.internal.host;
+        port = cfg.mq.internal.port;
+        users."${cfg.mq.username}".passwordFile = cfg.mq.passwordFile;
+        settings.allow_anonymous = false;
+        settings.protocol = "websockets";
+      }];
     })
   ]);
 }
