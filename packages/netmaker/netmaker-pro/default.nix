@@ -1,16 +1,17 @@
 { lib
 , fetchFromGitHub
 , buildGoModule
+, nmInputs
 , ...
 }:
-let
-  inputs = import ../inputs.nix { inherit fetchFromGitHub; };
-in
 buildGoModule rec {
   pname = "netmaker-pro";
-  inherit (inputs.netmaker) version src vendorHash;
+  inherit (nmInputs.netmaker) version src vendorHash;
 
   subPackages = [ "." ];
+
+  CGO_ENABLED = true;
+  tags = [ "ee" ];
 
   postInstall = ''
     mv $out/bin/netmaker{,-pro}

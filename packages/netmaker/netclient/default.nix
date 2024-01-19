@@ -2,16 +2,15 @@
 , buildGoModule
 , fetchFromGitHub
 , installShellFiles
+, nmInputs
 , ...
 }:
-let
-  inputs = import ../inputs.nix { inherit fetchFromGitHub; };
-in
 buildGoModule rec {
   pname = "netclient";
-  inherit (inputs.netclient) version src vendorHash;
+  inherit (nmInputs.netclient) version src vendorHash;
 
   subPackages = [ "." ];
+  CGO_ENABLED = false;
   hardeningEnabled = [ "pie" ];
   nativeBuildInputs = [
     installShellFiles

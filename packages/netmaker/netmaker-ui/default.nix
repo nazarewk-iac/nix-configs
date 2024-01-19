@@ -2,15 +2,12 @@
 , buildNpmPackage
 , fetchFromGitHub
 , caddy
+, nmInputs
 , ...
 }:
-
-let
-  inputs = import ../inputs.nix { inherit fetchFromGitHub; };
-in
 buildNpmPackage rec {
   pname = "netmaker-ui";
-  inherit (inputs.netmaker-ui) version src npmDepsHash;
+  inherit (nmInputs.netmaker-ui) version src npmDepsHash;
 
   installPhase = ''
     mkdir -p "$out/var" "$out/etc/caddy" "$out/bin"

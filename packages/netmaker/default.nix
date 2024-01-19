@@ -1,15 +1,17 @@
 { pkgs, ... }:
 let
-  packages.nmctl = pkgs.callPackage ./nmctl { };
-  packages.netmaker = pkgs.callPackage ./netmaker { };
-  packages.netmaker-pro = pkgs.callPackage ./netmaker-pro { };
-  packages.netmaker-ui = pkgs.callPackage ./netmaker-ui { };
-  packages.netclient = pkgs.callPackage ./netclient { };
-  #packages.netclient-gui = pkgs.callPackage ./netclient-gui { };
+  extra = { nmInputs = pkgs.callPackage ./inputs.nix { }; };
+
+  packages.nmctl = pkgs.callPackage ./nmctl extra;
+  packages.netmaker = pkgs.callPackage ./netmaker extra;
+  packages.netmaker-pro = pkgs.callPackage ./netmaker-pro extra;
+  packages.netmaker-ui = pkgs.callPackage ./netmaker-ui extra;
+  packages.netclient = pkgs.callPackage ./netclient extra;
+  #packages.netclient-gui = pkgs.callPackage ./netclient-gui extra;
 in
 packages // {
-  netmaker-full = pkgs.symlinkJoin {
-    name = "netmaker-full-${packages.netmaker.version}";
+  netmaker-bundle = pkgs.symlinkJoin {
+    name = "netmaker-bundle-${packages.netmaker.version}";
     paths = builtins.attrValues packages;
   };
 }

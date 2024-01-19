@@ -6,14 +6,12 @@
 , stdenv
 , darwin
 , installShellFiles
+, nmInputs
 , ...
 }:
-let
-  inputs = import ../inputs.nix { inherit fetchFromGitHub; };
-in
 buildGoModule rec {
   pname = "netclient-gui";
-  inherit (inputs.netclient) version src vendorHash;
+  inherit (nmInputs.netclient) version src vendorHash;
 
   buildInputs = lib.optional stdenv.isDarwin darwin.apple_sdk.frameworks.Cocoa
     ++ lib.optional stdenv.isLinux libX11;
