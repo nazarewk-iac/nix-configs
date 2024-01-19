@@ -80,11 +80,6 @@ ensure_master_key() {
 }
 
 configure() {
-  for file in "${SECRETS}" "${ENV}"; do
-    mkdir -p "${file%/*}"
-    test -f "${file}" || touch "${file}"
-  done
-
   ensure_corefile
   ensure_mq_password
   ensure_master_key

@@ -6,8 +6,10 @@
 let
   cfg = config.kdn.networking.netmaker.server;
 
-  configureEnvFile = "${cfg.configDir}/env.generated";
-  secretsEnvFile = "${cfg.secretsDir}/env.generated";
+  envFile.generated.config = "${cfg.configDir}/env.generated";
+  envFile.generated.secrets = "${cfg.secretsDir}/env.generated";
+  envFile.user.config = "${cfg.configDir}/env.editable";
+  envFile.user.secrets = "${cfg.secretsDir}/env.editable";
 
   configureScript = pkgs.writeShellApplication {
     name = "netmaker-configure";
@@ -21,11 +23,30 @@ let
       COREFILE="${cfg.dataDir}/config/dnsconfig/Corefile"
       MQ_PASSWORD_FILE="${cfg.mq.passwordFile}"
 
-      SECRETS="${secretsEnvFile}"
-      ENV="${configureEnvFile}"
+      SECRETS="${envFile.generated.secrets}"
+      ENV="${envFile.generated.config}"
 
       ${builtins.readFile ./netmaker-configure.sh}
     '';
+  };
+  internalAddressType = lib.types.submodule ({ config, ... }: {
+    options = {
+      host = lib.mkOption {
+        type = with lib.types; str;
+      };
+      port = lib.mkOption {
+        type = with lib.types; port;
+      };
+      addr = lib.mkOption {
+        type = with lib.types; str;
+        readOnly = true;
+        default = "${config.host}:${builtins.toString config.port}";
+      };
+    };
+  });
+  internalAddressOption = { host ? cfg.internalAddress, port }: lib.mkOption {
+    type = internalAddressType;
+    default = { inherit host port; };
   };
 in
 {
@@ -41,22 +62,19 @@ in
       type = with lib.types; str;
     };
 
-    mode = lib.mkOption {
-      type = with lib.types; enum [
-        "nm-quick"
-        "nixos"
-      ];
-      default = "nixos";
-    };
-
     internalAddress = lib.mkOption {
       type = with lib.types; str;
       default = "127.0.0.2";
     };
 
+    telemetry.enable = lib.mkEnableOption "sending telemetry to Netmaker developers";
+
     package = lib.mkOption {
       type = with lib.types; package;
-      default = pkgs.kdn.netmaker;
+      default =
+        if cfg.installType == "ce"
+        then pkgs.kdn.netmaker
+        else pkgs.kdn.netmaker-pro;
     };
 
     installType = lib.mkOption {
@@ -66,6 +84,7 @@ in
       ];
       default = "ce";
     };
+
     dataDir = lib.mkOption {
       type = with lib.types; path;
       default = "/var/lib/netmaker";
@@ -92,14 +111,16 @@ in
       default = 24 * 60 * 60;
     };
 
+    cors.maxAge = lib.mkOption {
+      type = with lib.types; int;
+      default = 5 * 60;
+    };
+
     api.domain = lib.mkOption {
       type = with lib.types; str;
       default = "api.${cfg.domain}";
     };
-    api.port = lib.mkOption {
-      type = with lib.types; port;
-      default = 8081;
-    };
+    api.internal = internalAddressOption { port = 8081; };
 
     ui.enable = lib.mkOption {
       type = with lib.types; bool;
@@ -133,10 +154,6 @@ in
     };
 
     firewall.ports = {
-      dns = lib.mkOption {
-        type = with lib.types; port;
-        default = 53;
-      };
       networks.start = lib.mkOption {
         type = with lib.types; port;
         default = 51821;
@@ -161,20 +178,16 @@ in
       default = "sqlite";
     };
 
+    coredns.internal = internalAddressOption { port = 53; };
+
     mq.type = lib.mkOption {
       type = with lib.types; enum [
         "mosquitto"
       ];
       default = "mosquitto";
     };
-    mq.public.port = lib.mkOption {
-      type = with lib.types; port;
-      default = 8883;
-    };
-    mq.internal.port = lib.mkOption {
-      type = with lib.types; port;
-      default = 1883;
-    };
+    mq.public = internalAddressOption { port = 8883; };
+    mq.internal = internalAddressOption { port = 1883; };
     mq.domain = lib.mkOption {
       type = with lib.types; str;
       default = "broker.${cfg.domain}";
@@ -190,27 +203,48 @@ in
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
-    (lib.mkIf (cfg.mode == "nixos") {
+    {
+      environment.systemPackages = with pkgs.kdn; [
+        nmctl
+      ];
+
+      networking.firewall = with cfg.firewall.ports; {
+        allowedTCPPorts = [ cfg.coredns.internal.port ];
+        allowedUDPPorts = [ cfg.coredns.internal.port ];
+        allowedUDPPortRanges = [{
+          from = networks.start;
+          to = networks.start + networks.capacity - 1;
+        }];
+      };
+    }
+    {
       systemd.tmpfiles.rules = [
         "d ${cfg.secretsDir} 1700 root root"
+        "f ${envFile.generated.config} 1644 root root"
+        "f ${envFile.generated.secrets} 1600 root root"
+        "f ${envFile.user.config} 1644 root root"
+        "f ${envFile.user.secrets} 1600 root root"
       ];
       kdn.networking.netmaker.server.envFiles.server = [
-        configureEnvFile
-        secretsEnvFile
+        envFile.generated.config
+        envFile.generated.secrets
+        envFile.user.config
+        envFile.user.secrets
       ];
       kdn.networking.netmaker.server.env.server = {
-        # from https://github.com/gravitl/netmaker/blob/630c95c48b43ac8b0cdff1c3de13339c8b322889/compose/docker-compose.yml#L5-L27
+        TELEMETRY = if cfg.telemetry.enable then "on" else "off";
         STUN_LIST = builtins.concatStringsSep "," cfg.stunList;
-        NM_DOMAIN = cfg.domain;
         SERVER_NAME = cfg.domain;
-        API_PORT = builtins.toString cfg.api.port;
+        API_PORT = builtins.toString cfg.api.internal.port;
         SERVER_API_CONN_STRING = "${cfg.api.domain}:443";
-        SERVER_HOST = builtins.toString cfg.internalAddress;
-        SERVER_HTTP_HOST = builtins.toString cfg.internalAddress;
+        SERVER_HOST = cfg.api.internal.host;
+        SERVER_HTTP_HOST = cfg.api.internal.host;
         BROKER_ENDPOINT = "wss://${cfg.mq.domain}";
-        COREDNS_ADDR = builtins.toString cfg.internalAddress;
+        COREDNS_ADDR = cfg.coredns.internal.host;
         DATABASE = cfg.db.type;
         JWT_VALIDITY_DURATION = builtins.toString cfg.jwtValidityDuration;
+        SERVER_BROKER_ENDPOINT = "ws://${cfg.mq.internal.addr}";
+        MQ_USERNAME = cfg.mq.username;
       };
 
       systemd.services.netmaker-configure = {
@@ -233,33 +267,38 @@ in
         serviceConfig.RestartSec = "15s";
         serviceConfig.WorkingDirectory = cfg.dataDir;
       };
-    })
-    (lib.mkIf (cfg.mode == "nixos") {
+    }
+    {
+      # CoreDNS related config
       services.coredns.enable = true;
       systemd.services.coredns.requires = [ "netmaker-configure.service" ];
       services.coredns.extraArgs = [
         "-conf=${cfg.dataDir}/config/dnsconfig/Corefile"
       ];
-    })
-    (lib.mkIf (cfg.mode == "nixos" && cfg.webserver.type == "caddy") {
+    }
+    (lib.mkIf (cfg.webserver.type == "caddy") {
       kdn.services.caddy.enable = true;
       systemd.services.caddy.requires = [ "netmaker-configure.service" ];
 
       services.caddy.virtualHosts."https://${cfg.api.domain}".extraConfig = ''
-        reverse_proxy http://${cfg.internalAddress}:${builtins.toString cfg.api.port}
+        header {
+          Access-Control-Allow-Origin *
+          Access-Control-Max-Age ${builtins.toString cfg.cors.maxAge}
+          -Server
+        }
+        reverse_proxy http://${cfg.api.internal.addr}
       '';
-      # Jan 18 20:32:35 wg-0 caddy[140830]: Error: adapting config using caddyfile: server block 2, key 0 (wss://broker.subsidize-stroller.kdn.im): determining listener address: the scheme wss:// is only supported in browsers; use https:// instead
       services.caddy.virtualHosts."https://${cfg.mq.domain}".extraConfig = ''
-        # Jan 18 20:28:34 wg-0 caddy[140329]: Error: adapting config using caddyfile: parsing caddyfile tokens for 'reverse_proxy': parsing upstream 'ws://127.0.0.2:8883': the scheme ws:// is only supported in browsers; use http:// instead, at /etc/caddy/caddy_config:57
-        reverse_proxy http://${cfg.internalAddress}:${builtins.toString cfg.mq.public.port}
+        reverse_proxy http://${cfg.mq.internal.addr}
       '';
     })
-    (lib.mkIf (cfg.mode == "nixos" && cfg.webserver.type == "caddy" && cfg.ui.enable) {
+    (lib.mkIf (cfg.webserver.type == "caddy" && cfg.ui.enable) {
       # see https://github.com/gravitl/netmaker/blob/630c95c48b43ac8b0cdff1c3de13339c8b322889/docker/Caddyfile#L1-L20
       services.caddy.virtualHosts."https://${cfg.ui.domain}".extraConfig = ''
         header {
           # Enable cross origin access to *.${cfg.domain}
-          Access-Control-Allow-Origin *.${cfg.domain}
+          Access-Control-Allow-Origin https://${cfg.ui.domain}
+          Access-Control-Max-Age ${builtins.toString cfg.cors.maxAge}
           # Enable HTTP Strict Transport Security (HSTS)
           Strict-Transport-Security "max-age=31536000;"
           # Enable cross-site filter (XSS) and tell browser to block detected attacks
@@ -289,63 +328,27 @@ in
         }
       '';
     })
-    (lib.mkIf (cfg.mode == "nixos" && cfg.db.type == "sqlite") { })
-    (lib.mkIf (cfg.mode == "nixos" && cfg.mq.type == "mosquitto") {
+    (lib.mkIf (cfg.db.type == "sqlite") { })
+    (lib.mkIf (cfg.mq.type == "mosquitto") {
       systemd.services.mosquitto.requires = [ "netmaker-configure.service" ];
 
       services.mosquitto.enable = true;
       services.mosquitto.listeners = [
         {
-          address = cfg.internalAddress;
+          address = cfg.mq.public.host;
           port = cfg.mq.public.port;
-          users."${cfg.mq.username}".hashedPassword = cfg.mq.passwordFile;
+          users."${cfg.mq.username}".passwordFile = cfg.mq.passwordFile;
           settings.allow_anonymous = false;
           settings.protocol = "websockets";
         }
         {
-          address = cfg.internalAddress;
+          address = cfg.mq.internal.host;
           port = cfg.mq.internal.port;
           users."${cfg.mq.username}".passwordFile = cfg.mq.passwordFile;
           settings.allow_anonymous = false;
           settings.protocol = "websockets";
         }
       ];
-      kdn.networking.netmaker.server.env.server.SERVER_BROKER_ENDPOINT = "ws://localhost:${builtins.toString cfg.mq.internal.port}";
-      kdn.networking.netmaker.server.env.server.MQ_USERNAME = cfg.mq.username;
-    })
-    {
-      environment.systemPackages = with pkgs.kdn; [
-        nmctl
-      ];
-
-      networking.firewall = with cfg.firewall.ports; {
-        allowedTCPPorts = [
-          dns
-        ];
-        allowedUDPPorts = [
-          dns
-        ];
-        allowedUDPPortRanges = [{
-          from = networks.start;
-          to = networks.start + networks.capacity - 1;
-        }];
-      };
-    }
-    (lib.mkIf (cfg.mode == "nm-quick") {
-      kdn.services.caddy.enable = lib.mkForce false;
-
-      kdn.programs.direnv.enable = true; # to work with it
-
-      kdn.virtualisation.containers.enable = true;
-      virtualisation.podman.dockerSocket.enable = true;
-
-      # TODO: move Caddy out of docker-compose?
-      # TODO: fix certificates issuance (switch to DNS challenge?)
-      # TODO: issue certificates for wildcard domain instead, see https://caddyserver.com/docs/caddyfile/patterns#wildcard-certificates
-      environment.systemPackages = [
-        pkgs.kdn.netmaker-scripts
-        pkgs.sqlite
-      ] ++ pkgs.kdn.netmaker-scripts.passthru.deps;
     })
   ]);
 }
