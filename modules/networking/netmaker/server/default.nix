@@ -183,6 +183,7 @@ in
     mq.type = lib.mkOption {
       type = with lib.types; enum [
         "mosquitto"
+        "external"
       ];
       default = "mosquitto";
     };
@@ -260,12 +261,14 @@ in
         wants = [ "network-online.target" ];
         requires = [ "netmaker-configure.service" ];
         wantedBy = [ "multi-user.target" ];
+
         environment = cfg.env.server;
         serviceConfig.EnvironmentFile = cfg.envFiles.server;
-        script = lib.getExe cfg.package;
+        serviceConfig.WorkingDirectory = cfg.dataDir;
+        serviceConfig.ExecStart = lib.getExe cfg.package;
+
         serviceConfig.Restart = "on-failure";
         serviceConfig.RestartSec = "15s";
-        serviceConfig.WorkingDirectory = cfg.dataDir;
       };
     }
     {
@@ -288,26 +291,17 @@ in
         }
         reverse_proxy http://${cfg.api.internal.addr}
       '';
-      services.caddy.virtualHosts."https://${cfg.mq.domain}".extraConfig = ''
-        reverse_proxy http://${cfg.mq.internal.addr}
-      '';
     })
     (lib.mkIf (cfg.webserver.type == "caddy" && cfg.ui.enable) {
       # see https://github.com/gravitl/netmaker/blob/630c95c48b43ac8b0cdff1c3de13339c8b322889/docker/Caddyfile#L1-L20
       services.caddy.virtualHosts."https://${cfg.ui.domain}".extraConfig = ''
         header {
-          # Enable cross origin access to *.${cfg.domain}
           Access-Control-Allow-Origin https://${cfg.ui.domain}
           Access-Control-Max-Age ${builtins.toString cfg.cors.maxAge}
-          # Enable HTTP Strict Transport Security (HSTS)
           Strict-Transport-Security "max-age=31536000;"
-          # Enable cross-site filter (XSS) and tell browser to block detected attacks
           X-XSS-Protection "1; mode=block"
-          # Disallow the site to be rendered within a frame on a foreign domain (clickjacking protection)
           X-Frame-Options "SAMEORIGIN"
-          # Prevent search engines from indexing
           X-Robots-Tag "none"
-          # Remove the server name
           -Server
         }
 
@@ -329,6 +323,11 @@ in
       '';
     })
     (lib.mkIf (cfg.db.type == "sqlite") { })
+    (lib.mkIf (cfg.mq.type == "mosquitto" && cfg.webserver.type == "caddy") {
+      services.caddy.virtualHosts."https://${cfg.mq.domain}".extraConfig = ''
+        reverse_proxy http://${cfg.mq.internal.addr}
+      '';
+    })
     (lib.mkIf (cfg.mq.type == "mosquitto") {
       systemd.services.mosquitto.requires = [ "netmaker-configure.service" ];
 
