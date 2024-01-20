@@ -11,6 +11,7 @@ let
     diagrams
     flake8
     graphviz
+    httpx
     ipython
     isort
     matplotlib
