@@ -99,10 +99,8 @@ in
         ];
 
       kdn.hardware.edid.enable = true;
-      kdn.hardware.edid.kernelOutputs = {
-        "DP-1" = "PG278Q_60";
-        # "DVI-D-1" = "U2711_60";
-      };
+      hardware.display.outputs."DP-1".edid = "PG278Q_60.bin";
+      hardware.display.outputs."DP-1".mode = "e";
 
       boot.tmp.useTmpfs = true;
       # 20% of 128GB should be fine
