@@ -13,11 +13,12 @@ in
       complete -c nix-which --wraps which
     '';
     environment.systemPackages = with pkgs; [
-      nix-tree
       nix-du
-      rnix-lsp
+      nix-tree
+      nix-update
       nixfmt
       nixpkgs-fmt
+      rnix-lsp
 
       devenv
 
