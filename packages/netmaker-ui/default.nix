@@ -1,21 +1,26 @@
 { lib
 , buildNpmPackage
 , fetchFromGitHub
-, caddy
-, nmInputs
+, nix-update-script
 , ...
 }:
 buildNpmPackage rec {
   pname = "netmaker-ui";
-  inherit (nmInputs.netmaker-ui) version src npmDepsHash;
+
+  passthru.updateScript = nix-update-script { extraArgs = [ "--version=branch=master" ]; };
+  version = "unstable-2024-01-22";
+
+  src = fetchFromGitHub {
+    owner = "nazarewk";
+    repo = "netmaker-ui-2";
+    rev = "3e3cb89d95819cbaee9a43f0507a89024f9d7e13";
+    hash = "sha256-oDcgoerE4W7kd8fpDl3SAwsYNXpRrUSUp7PYeXkaS1g=";
+  };
+  npmDepsHash = "sha256-B7MdaHbwMxZKWc6KARlDqp4tzPVS0O8ChmHfspYR7Co=";
 
   installPhase = ''
-    mkdir -p "$out/var" "$out/etc/caddy" "$out/bin"
+    mkdir -p "$out/var"
     mv dist "$out/var/www"
-    install -Dm644 ${./Caddyfile} "$out/etc/caddy/Caddyfile"
-    install -Dm644 ${./Caddyfile-root} "$out/etc/caddy/Caddyfile-root"
-    install -Dm755 ${./netmaker-ui.sh} "$out/bin/netmaker-ui"
-    sed -i 's#^caddy#"${lib.getExe caddy}"#g' "$out/bin/netmaker-ui"
   '';
 
   meta = with lib; {

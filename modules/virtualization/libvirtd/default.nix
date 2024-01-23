@@ -26,7 +26,8 @@ in
       # see https://nixos.wiki/wiki/Libvirt
       virtualisation.libvirtd = {
         enable = true;
-        qemu.package = pkgs.qemu_full;
+        #qemu.package = pkgs.qemu_full; # 2024-01-23 fails while building ceph, see https://github.com/NixOS/nixpkgs/issues/281027
+        qemu.package = pkgs.qemu;
         qemu.swtpm.enable = true;
         qemu.ovmf = {
           enable = true;

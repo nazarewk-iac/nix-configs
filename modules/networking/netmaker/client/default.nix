@@ -16,7 +16,7 @@ in
 
     package = lib.mkOption {
       type = with lib.types; package;
-      default = pkgs.kdn.netclient;
+      default = pkgs.kdn.netclient.override { overrideInitType = "systemd"; };
     };
 
     verbosity = lib.mkOption {
@@ -58,14 +58,11 @@ in
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       services.netclient.enable = true;
-      services.netclient.package = pkgs.writeShellScriptBin "netclient" ''
-        export NETCLIENT_INIT_TYPE="''${NETCLIENT_INIT_TYPE:-"systemd"}"
-        export NETCLIENT_AUTO_UPDATE="''${NETCLIENT_AUTO_UPDATE:-"disabled"}"
-        exec ${lib.getExe cfg.package} "$@"
-      '';
+      services.netclient.package = cfg.package;
 
       # required for detection by https://github.com/gravitl/netclient/blob/51f4458db0a5560d102d337a342567cb347399a6/config/config.go#L430-L443
       systemd.services."netclient".path = let fw = config.networking.firewall; in lib.optionals fw.enable [ fw.package ];
+      systemd.services."netclient".wants = [ "network-online.target" ];
       systemd.services."netclient".serviceConfig.ExecStart = lib.mkForce "${lib.getExe config.services.netclient.package} daemon --verbosity=${builtins.toString cfg.verbosity}";
       networking.networkmanager.unmanaged = [ "interface-name:netmaker*" ];
 

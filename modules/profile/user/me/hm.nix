@@ -308,7 +308,7 @@ in
         gimp
 
         qrencode
-        cobang # QR code scanner
+        #cobang # QR code scanner # 2024-01-23: dependency failed to build
         zbar # QR/BAR CODE READER: `zbarimg /path/to.img
         imagemagick
 

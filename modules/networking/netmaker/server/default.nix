@@ -209,9 +209,7 @@ in
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
-      environment.systemPackages = with pkgs.kdn; [
-        nmctl
-      ];
+      environment.systemPackages = [ cfg.package ];
 
       networking.firewall = with cfg.firewall.ports; {
         allowedTCPPorts = [ cfg.coredns.internal.port ];
@@ -243,10 +241,12 @@ in
         SERVER_NAME = cfg.domain;
         API_PORT = builtins.toString cfg.api.internal.port;
         SERVER_API_CONN_STRING = "${cfg.api.domain}:443";
+        NETMAKER_API_LISTENER_ADDRESS = cfg.api.internal.host;
         SERVER_HOST = cfg.api.internal.host;
         SERVER_HTTP_HOST = cfg.api.domain;
         BROKER_TYPE = cfg.mq.type;
         BROKER_ENDPOINT = "wss://${cfg.mq.domain}";
+        FRONTEND_URL = "https://${cfg.ui.domain}";
         # don't set to anything, see https://github.com/nazarewk/netmaker/blob/9ca6b44228847d246dd5617b73f69ec26778f396/servercfg/serverconf.go#L215-L223
         COREDNS_ADDR = lib.mkDefault null;
         DATABASE = cfg.db.type;
