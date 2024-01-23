@@ -45,17 +45,6 @@ in
         "igb" # Intel Corporation I211 Gigabit Network Connection [8086:1539] (rev 03)
       ];
 
-      kdn.k3s.single-node.enable = false;
-      kdn.k3s.single-node.enableTools = true;
-      kdn.k3s.single-node.rook-ceph.enable = true;
-      kdn.k3s.single-node.kube-prometheus.enable = true;
-      kdn.k3s.single-node.istio.enable = true;
-      kdn.k3s.single-node.zfsVolume = "krul-main/krul/containers/containerd/io.containerd.snapshotter.v1.zfs";
-      kdn.k3s.single-node.reservations.system.cpu = "4";
-      kdn.k3s.single-node.reservations.system.memory = "32G";
-      kdn.k3s.single-node.reservations.kube.cpu = "4";
-      kdn.k3s.single-node.reservations.kube.memory = "4G";
-
       networking.interfaces.enp5s0.wakeOnLan.enable = true;
       networking.interfaces.enp6s0.wakeOnLan.enable = true;
 
