@@ -11,9 +11,9 @@ in
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       kdn.profile.machine.hetzner.enable = true;
-      kdn.networking.netmaker.server.enable = true;
-      kdn.networking.netmaker.server.domain = "subsidize-stroller.kdn.im";
-      kdn.networking.netmaker.server.email = "subsidize-stroller@kdn.im";
+      services.netmaker.enable = true;
+      services.netmaker.domain = "subsidize-stroller.kdn.im";
+      services.netmaker.email = "subsidize-stroller@kdn.im";
     }
   ]);
 }

@@ -65,6 +65,7 @@
           kdn = final.callPackages ./packages { };
           devenv = inputs.devenv.packages.${final.stdenv.system}.default;
           inherit lib;
+          inherit (kdn) netmaker netmaker-pro netmaker-ui netclient;
         })
       ]);
       perSystem = { config, self', inputs', system, pkgs, ... }: {

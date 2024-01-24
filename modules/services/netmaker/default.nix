@@ -4,12 +4,12 @@
 , ...
 }:
 let
-  cfg = config.kdn.networking.netmaker.server;
+  cfg = config.services.netmaker;
 
   envFile.generated.config = "${cfg.configDir}/env.generated";
   envFile.generated.secrets = "${cfg.secretsDir}/env.generated";
-  envFile.user.config = "${cfg.configDir}/env.editable";
-  envFile.user.secrets = "${cfg.secretsDir}/env.editable";
+  envFile.user.config = "${cfg.configDir}/env";
+  envFile.user.secrets = "${cfg.secretsDir}/env";
 
   configureScript = pkgs.writeShellApplication {
     name = "netmaker-configure";
@@ -29,37 +29,43 @@ let
       ${builtins.readFile ./netmaker-configure.sh}
     '';
   };
-  internalAddressType = lib.types.submodule ({ config, ... }: {
-    options = {
-      host = lib.mkOption {
-        type = with lib.types; str;
+  mkInternalAddressOption = { host ? cfg.internalAddress, port }: lib.mkOption {
+    type = lib.types.submodule ({ config, ... }: {
+      options = {
+        host = lib.mkOption {
+          type = with lib.types; str;
+        };
+        port = lib.mkOption {
+          type = lib.types.port;
+        };
+        addr = lib.mkOption {
+          type = with lib.types; str;
+          readOnly = true;
+          default = "${config.host}:${builtins.toString config.port}";
+        };
       };
-      port = lib.mkOption {
-        type = with lib.types; port;
-      };
-      addr = lib.mkOption {
-        type = with lib.types; str;
-        readOnly = true;
-        default = "${config.host}:${builtins.toString config.port}";
-      };
-    };
-  });
-  internalAddressOption = { host ? cfg.internalAddress, port }: lib.mkOption {
-    type = internalAddressType;
+    });
     default = { inherit host port; };
   };
 in
 {
-  options.kdn.networking.netmaker.server = {
+  options.services.netmaker = {
     enable = lib.mkEnableOption "Netmaker server";
 
     domain = lib.mkOption {
       type = with lib.types; str;
     };
 
-    # TODO: use it in Caddy certs?
     email = lib.mkOption {
       type = with lib.types; str;
+    };
+
+    package = lib.mkOption {
+      type = with lib.types; package;
+      default =
+        if cfg.installType == "ce"
+        then pkgs.netmaker
+        else pkgs.netmaker-pro;
     };
 
     internalAddress = lib.mkOption {
@@ -72,14 +78,32 @@ in
       default = 4;
     };
 
-    telemetry.enable = lib.mkEnableOption "sending telemetry to Netmaker developers";
+    telemetry = lib.mkEnableOption "sending telemetry to Netmaker developers";
 
-    package = lib.mkOption {
-      type = with lib.types; package;
-      default =
-        if cfg.installType == "ce"
-        then pkgs.kdn.netmaker
-        else pkgs.kdn.netmaker-pro;
+    environment = lib.mkOption {
+      type = with lib.types; attrsOf str;
+      default = { };
+      apply = envAttrs: pkgs.writeText "environment-env" (lib.trivial.pipe envAttrs [
+        (lib.attrsets.mapAttrsToList (name: value: "${name}=${lib.strings.escapeShellArg value}"))
+        (builtins.concatStringsSep "\n")
+      ]);
+    };
+
+    environmentFiles = lib.mkOption {
+      type = with lib.types; listOf path;
+      default = [ ];
+    };
+
+    config = lib.mkOption {
+      type = with lib.types; anything;
+      description = lib.mdDoc ''
+        Content of Netmaker configuration file.
+
+        see for more information:
+        - https://github.com/gravitl/netmaker/blob/dc8f9b1bc74d262669bf96fab5f0e545f5906432/config/config.go
+      '';
+      default = { };
+      apply = value: pkgs.writeText "netmaker-config.json" (builtins.toJSON value);
     };
 
     installType = lib.mkOption {
@@ -94,25 +118,19 @@ in
       type = with lib.types; path;
       default = "/var/lib/netmaker";
     };
-    stunList = lib.mkOption {
-      type = with lib.types; listOf str;
-      default = [
-        "stun1.netmaker.io:3478"
-        "stun2.netmaker.io:3478"
-        "stun1.l.google.com:19302"
-        "stun2.l.google.com:19302"
-      ];
-    };
+
     configDir = lib.mkOption {
       type = with lib.types; path;
       default = "/etc/netmaker";
     };
+
     secretsDir = lib.mkOption {
       type = with lib.types; path;
       default = "${cfg.configDir}/secrets";
     };
-    jwtValidityDuration = lib.mkOption {
-      type = with lib.types; int;
+
+    jwtValiditySeconds = lib.mkOption {
+      type = with lib.types; ints.u32;
       default = 24 * 60 * 60;
     };
 
@@ -125,7 +143,7 @@ in
       type = with lib.types; str;
       default = "api.${cfg.domain}";
     };
-    api.internal = internalAddressOption { port = 8081; };
+    api.internal = mkInternalAddressOption { port = 8081; };
 
     ui.enable = lib.mkOption {
       type = with lib.types; bool;
@@ -146,16 +164,6 @@ in
     ui.intercomAppID = lib.mkOption {
       type = with lib.types; str;
       default = "";
-    };
-
-    env.server = lib.mkOption {
-      type = with lib.types; attrsOf (nullOr str);
-      default = { };
-      apply = lib.attrsets.filterAttrs (n: v: v != null);
-    };
-    envFiles.server = lib.mkOption {
-      type = with lib.types; listOf path;
-      default = [ ];
     };
 
     firewall.ports = {
@@ -183,16 +191,15 @@ in
       default = "sqlite";
     };
 
-    coredns.internal = internalAddressOption { port = 53; };
+    coredns.internal = mkInternalAddressOption { port = 53; };
 
     mq.type = lib.mkOption {
       type = with lib.types; enum [
         "mosquitto"
-        "external"
       ];
       default = "mosquitto";
     };
-    mq.internal = internalAddressOption { port = 8883; };
+    mq.internal = mkInternalAddressOption { port = 8883; };
     mq.domain = lib.mkOption {
       type = with lib.types; str;
       default = "broker.${cfg.domain}";
@@ -228,31 +235,32 @@ in
         "f ${envFile.user.config} 1644 root root"
         "f ${envFile.user.secrets} 1600 root root"
       ];
-      kdn.networking.netmaker.server.envFiles.server = [
+
+      services.netmaker.environmentFiles = [
         envFile.generated.config
         envFile.generated.secrets
         envFile.user.config
         envFile.user.secrets
+        (lib.mkAfter cfg.environment)
       ];
-      kdn.networking.netmaker.server.env.server = {
-        VERBOSITY = builtins.toString cfg.verbosity;
-        TELEMETRY = if cfg.telemetry.enable then "on" else "off";
-        STUN_LIST = builtins.concatStringsSep "," cfg.stunList;
-        SERVER_NAME = cfg.domain;
-        API_PORT = builtins.toString cfg.api.internal.port;
-        SERVER_API_CONN_STRING = "${cfg.api.domain}:443";
-        NETMAKER_API_LISTENER_ADDRESS = cfg.api.internal.host;
-        SERVER_HOST = cfg.api.internal.host;
-        SERVER_HTTP_HOST = cfg.api.domain;
-        BROKER_TYPE = cfg.mq.type;
-        BROKER_ENDPOINT = "wss://${cfg.mq.domain}";
-        FRONTEND_URL = "https://${cfg.ui.domain}";
+
+      services.netmaker.config = {
+        server.apiconn = "${cfg.api.domain}:443";
+        server.apihost = cfg.api.domain;
+        server.apilistenaddress = cfg.api.internal.host;
+        server.apiport = builtins.toString cfg.api.internal.port;
+        server.broker = "wss://${cfg.mq.domain}";
+        server.brokertype = cfg.mq.type;
+        server.database = cfg.db.type;
+        server.frontendurl = "https://${cfg.ui.domain}";
+        server.jwt_validity_seconds = cfg.jwtValiditySeconds;
+        server.mqusername = cfg.mq.username;
+        server.server = cfg.domain;
+        server.serverbrokerendpoint = "ws://${cfg.mq.internal.addr}";
+        server.telemetry = if cfg.telemetry then "on" else "off";
+        server.verbosity = cfg.verbosity;
         # don't set to anything, see https://github.com/nazarewk/netmaker/blob/9ca6b44228847d246dd5617b73f69ec26778f396/servercfg/serverconf.go#L215-L223
-        COREDNS_ADDR = lib.mkDefault null;
-        DATABASE = cfg.db.type;
-        JWT_VALIDITY_DURATION = builtins.toString cfg.jwtValidityDuration;
-        SERVER_BROKER_ENDPOINT = "ws://${cfg.mq.internal.addr}";
-        MQ_USERNAME = cfg.mq.username;
+        server.corednsaddr = "";
       };
 
       systemd.services.netmaker-configure = {
@@ -264,15 +272,14 @@ in
       # based on https://github.com/gravitl/netclient/blob/b9ea9c9841f01297955b03c2b5bbf4b5139aa40c/daemon/systemd_linux.go#L14-L30
       systemd.services.netmaker = {
         description = "Netmaker Daemon";
-        after = [ "network-online.target" ];
+        after = [ "network-online.target" "netmaker-configure.service" ];
         wants = [ "network-online.target" ];
         requires = [ "netmaker-configure.service" ];
         wantedBy = [ "multi-user.target" ];
 
-        environment = cfg.env.server;
-        serviceConfig.EnvironmentFile = cfg.envFiles.server;
+        serviceConfig.EnvironmentFile = cfg.environmentFiles;
         serviceConfig.WorkingDirectory = cfg.dataDir;
-        serviceConfig.ExecStart = lib.getExe cfg.package;
+        serviceConfig.ExecStart = "${lib.getExe cfg.package} -c ${cfg.config}";
 
         serviceConfig.Restart = "on-failure";
         serviceConfig.RestartSec = "15s";
@@ -281,18 +288,17 @@ in
     {
       # CoreDNS related config
       services.coredns.enable = true;
-      systemd.services.coredns.requires = [ "netmaker-configure.service" ];
       services.coredns.extraArgs = [
         "-conf=${cfg.dataDir}/config/dnsconfig/Corefile"
       ];
     }
     (lib.mkIf (cfg.webserver.type == "caddy") {
       kdn.services.caddy.enable = true;
-      systemd.services.caddy.requires = [ "netmaker-configure.service" ];
       systemd.services.netmaker.after = [ "caddy.service" ];
       systemd.services.netmaker.requires = [ "caddy.service" ];
 
       services.caddy.virtualHosts."https://${cfg.api.domain}".extraConfig = ''
+        ${lib.optionalString (cfg.email != "") "tls ${cfg.email}"}
         header {
           Access-Control-Allow-Origin *
           Access-Control-Max-Age ${builtins.toString cfg.cors.maxAge}
@@ -304,6 +310,7 @@ in
     (lib.mkIf (cfg.webserver.type == "caddy" && cfg.ui.enable) {
       # see https://github.com/gravitl/netmaker/blob/630c95c48b43ac8b0cdff1c3de13339c8b322889/docker/Caddyfile#L1-L20
       services.caddy.virtualHosts."https://${cfg.ui.domain}".extraConfig = ''
+        ${lib.optionalString (cfg.email != "") "tls ${cfg.email}"}
         header {
           Access-Control-Allow-Origin https://${cfg.ui.domain}
           Access-Control-Max-Age ${builtins.toString cfg.cors.maxAge}
@@ -335,6 +342,7 @@ in
     (lib.mkIf (cfg.mq.type == "mosquitto" && cfg.webserver.type == "caddy") {
       # see https://www.reddit.com/r/selfhosted/comments/14wqwa4/comment/jrp07gq/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
       services.caddy.virtualHosts."https://${cfg.mq.domain}".extraConfig = ''
+        ${lib.optionalString (cfg.email != "") "tls ${cfg.email}"}
         reverse_proxy ${cfg.mq.internal.addr} {
           stream_timeout 6h
           stream_close_delay 1m
@@ -342,6 +350,7 @@ in
       '';
     })
     (lib.mkIf (cfg.mq.type == "mosquitto") {
+      systemd.services.mosquitto.after = [ "netmaker-configure.service" ];
       systemd.services.mosquitto.requires = [ "netmaker-configure.service" ];
       systemd.services.netmaker.after = [ "mosquitto.service" ];
       systemd.services.netmaker.requires = [ "mosquitto.service" ];

@@ -6,7 +6,7 @@ set -x
 
 # note: -u/--use-update-script doesn't work combined with --flake
 
-nix-update --flake --version=branch=develop netmaker
-nix-update --flake --version=branch=master netclient
+nix-update --flake --version=branch=fix-sso netmaker
+nix-update --flake --version=branch=fix-sso netclient
 nix-update --flake --version=branch=master netmaker-ui
 nix-update --flake netmaker-pro

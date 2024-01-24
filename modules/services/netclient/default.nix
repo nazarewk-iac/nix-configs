@@ -5,7 +5,7 @@
 }:
 let
   cfg = config.kdn.networking.netmaker.client;
-  srvCfg = config.kdn.networking.netmaker.server;
+  srvCfg = config.services.netmaker;
 in
 {
   options.kdn.networking.netmaker.client = {
@@ -16,7 +16,7 @@ in
 
     package = lib.mkOption {
       type = with lib.types; package;
-      default = pkgs.kdn.netclient.override { overrideInitType = "systemd"; };
+      default = pkgs.netclient.override { overrideInitType = "systemd"; };
     };
 
     verbosity = lib.mkOption {

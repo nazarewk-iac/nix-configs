@@ -9,13 +9,13 @@ buildGoModule rec {
   pname = "netmaker";
 
   passthru.updateScript = nix-update-script { extraArgs = [ "--version=branch=develop" ]; };
-  version = "unstable-2024-01-23";
+  version = "unstable-2024-01-24";
 
   src = fetchFromGitHub {
     owner = "nazarewk";
     repo = "netmaker";
-    rev = "3dead4dcca5995b7c165538d7d6b432663eb5b54";
-    hash = "sha256-MHbv0eFaeAs+8HX0GJH4ukA06IZveyPsVzxrDtX8RJE=";
+    rev = "c2f7a40024ab087ade019e82f2d6f797a894f282";
+    hash = "sha256-P19fGDMFKjiR5LP1kQitTVMLKYiPs0z3ICZaIFfgRzQ=";
     postFetch = ''
       rm -r $out/pro
       rm $out/main_ee.go
