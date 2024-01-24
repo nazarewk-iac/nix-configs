@@ -16,7 +16,7 @@ in
 
     package = lib.mkOption {
       type = with lib.types; package;
-      default = pkgs.netclient.override { overrideInitType = "systemd"; };
+      default = pkgs.netclient;
     };
 
     verbosity = lib.mkOption {

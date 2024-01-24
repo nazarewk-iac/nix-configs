@@ -38,12 +38,12 @@ buildGoModule rec {
     mv $out/bin/netmaker{,-pro}
   '';
 
-  meta = with lib; {
+  meta = {
     description = "WireGuard automation from homelab to enterprise - Professional Edition";
     homepage = "https://netmaker.io";
     changelog = "https://github.com/gravitl/netmaker/-/releases/v${version}";
-    license = licenses.unfree;
-    maintainers = with maintainers; [ urandom qjoly nazarewk ];
+    license = lib.licenses.unfree;
+    maintainers = with lib.maintainers; [ urandom qjoly nazarewk ];
     mainProgram = "netmaker-pro";
   };
 }

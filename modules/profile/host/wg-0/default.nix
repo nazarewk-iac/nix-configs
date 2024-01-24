@@ -12,6 +12,7 @@ in
     {
       kdn.profile.machine.hetzner.enable = true;
       services.netmaker.enable = true;
+      services.netmaker.debug = true;
       services.netmaker.domain = "subsidize-stroller.kdn.im";
       services.netmaker.email = "subsidize-stroller@kdn.im";
     }

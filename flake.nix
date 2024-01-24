@@ -63,10 +63,10 @@
         inputs.ulauncher.overlays.default
         (final: prev: {
           kdn = final.callPackages ./packages { };
-          devenv = inputs.devenv.packages.${final.stdenv.system}.default;
+          inherit (final.kdn) netmaker netmaker-pro netmaker-ui netclient;
           inherit lib;
-          inherit (kdn) netmaker netmaker-pro netmaker-ui netclient;
         })
+        (final: prev: { devenv = inputs.devenv.packages.${final.stdenv.system}.default; })
       ]);
       perSystem = { config, self', inputs', system, pkgs, ... }: {
         _module.args.pkgs = inputs'.nixpkgs.legacyPackages.extend self.overlays.default;

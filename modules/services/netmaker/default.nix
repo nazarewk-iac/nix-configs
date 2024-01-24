@@ -52,6 +52,8 @@ in
   options.services.netmaker = {
     enable = lib.mkEnableOption "Netmaker server";
 
+    debug = lib.mkEnableOption "debugging mode (log levels and CLI)";
+
     domain = lib.mkOption {
       type = with lib.types; str;
     };
@@ -75,7 +77,7 @@ in
 
     verbosity = lib.mkOption {
       type = with lib.types; enum [ 1 2 3 4 ];
-      default = 4;
+      default = if cfg.debug then 4 else 1;
     };
 
     telemetry = lib.mkEnableOption "sending telemetry to Netmaker developers";
@@ -183,6 +185,10 @@ in
       ];
       default = "caddy";
     };
+    webserver.debug = lib.mkOption {
+      type = with lib.types; bool;
+      default = cfg.debug;
+    };
 
     db.type = lib.mkOption {
       type = with lib.types; enum [
@@ -199,7 +205,7 @@ in
       ];
       default = "mosquitto";
     };
-    mq.internal = mkInternalAddressOption { port = 8883; };
+    mq.internal = mkInternalAddressOption { port = 9001; };
     mq.domain = lib.mkOption {
       type = with lib.types; str;
       default = "broker.${cfg.domain}";
@@ -212,11 +218,19 @@ in
       type = with lib.types; path;
       default = "${cfg.secretsDir}/MQ_PASSWORD";
     };
+    mq.debug = lib.mkOption {
+      type = with lib.types; bool;
+      default = cfg.debug;
+    };
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
-      environment.systemPackages = [ cfg.package ];
+      environment.systemPackages =
+        [ cfg.package ]
+        ++ lib.optionals cfg.mq.debug (with pkgs; [
+          mqttui
+        ]);
 
       networking.firewall = with cfg.firewall.ports; {
         allowedTCPPorts = [ cfg.coredns.internal.port ];
@@ -294,6 +308,7 @@ in
     }
     (lib.mkIf (cfg.webserver.type == "caddy") {
       kdn.services.caddy.enable = true;
+      services.caddy.logFormat = if cfg.webserver.debug then "level DEBUG" else "level ERROR";
       systemd.services.netmaker.after = [ "caddy.service" ];
       systemd.services.netmaker.requires = [ "caddy.service" ];
 
@@ -343,7 +358,7 @@ in
       # see https://www.reddit.com/r/selfhosted/comments/14wqwa4/comment/jrp07gq/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
       services.caddy.virtualHosts."https://${cfg.mq.domain}".extraConfig = ''
         ${lib.optionalString (cfg.email != "") "tls ${cfg.email}"}
-        reverse_proxy ${cfg.mq.internal.addr} {
+        reverse_proxy http://${cfg.mq.internal.addr} {
           stream_timeout 6h
           stream_close_delay 1m
         }

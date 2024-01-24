@@ -4,7 +4,8 @@
 , installShellFiles
 , makeWrapper
 , nix-update-script
-, overrideInitType ? ""
+, stdenv
+, systemd
 , ...
 }:
 buildGoModule rec {
@@ -29,23 +30,30 @@ buildGoModule rec {
     installShellFiles
   ];
 
-  makeWrapperArgs = [
-    "--set NETCLIENT_AUTO_UPDATE disabled"
-  ] ++ lib.optional (overrideInitType != "") "--set NETCLIENT_INIT_TYPE ${overrideInitType}";
+  NETCLIENT_AUTO_UPDATE = "disabled";
+  NETCLIENT_INIT_TYPE = if lib.meta.availableOn stdenv.hostPlatform systemd then "systemd" else "";
 
   postInstall = ''
+    wrapperArgs=()
+    for var in "''${!NETCLIENT_@}" ; do
+      test -n "''${!var}" || continue
+      wrapperArgs+=( --set "$var" "''${!var}" )
+    done
+
+    wrapProgram "$out/bin/netclient" "''${wrapperArgs[@]}"
+
     installShellCompletion --cmd netclient \
       --bash <($out/bin/netclient completion bash) \
       --fish <($out/bin/netclient completion fish) \
       --zsh <($out/bin/netclient completion zsh)
   '';
 
-  meta = with lib; {
+  meta = {
     description = "Automated WireGuard® Management Client";
     homepage = "https://netmaker.io";
     changelog = "https://github.com/gravitl/netclient/releases/tag/v${version}";
-    license = licenses.asl20;
-    maintainers = with maintainers; [ wexder nazarewk ];
+    license = lib.licenses.asl20;
+    maintainers = with lib.maintainers; [ wexder nazarewk ];
     mainProgram = "netclient";
   };
 }
