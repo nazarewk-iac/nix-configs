@@ -606,16 +606,16 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1705998172,
-        "narHash": "sha256-0cGLo+Xhjp91l+kIoxB5lqwVHaLvJmL/XUp/FxLWgTk=",
+        "lastModified": 1706189114,
+        "narHash": "sha256-aJFwsZlRntouQ7PbxiCOiSg7xc6zPKYF4FoCpUj+o9w=",
         "owner": "nazarewk",
         "repo": "nixpkgs",
-        "rev": "676662f4824b459d32e9e8a8305f25e9848c045c",
+        "rev": "1ef8c057a44ada46d3db13d079f83927ebd57d67",
         "type": "github"
       },
       "original": {
         "owner": "nazarewk",
-        "ref": "hardware-firmware-edid-fix",
+        "ref": "nixos-unstable",
         "repo": "nixpkgs",
         "type": "github"
       }

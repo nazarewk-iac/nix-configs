@@ -1,7 +1,8 @@
 {
   inputs = {
     #nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nixpkgs.url = "github:nazarewk/nixpkgs/hardware-firmware-edid-fix";
+    nixpkgs.url = "github:nazarewk/nixpkgs/nixos-unstable";
+    #nixpkgs.url = "github:nazarewk/nixpkgs/hardware-firmware-edid-fix";
     nixpkgs-lib.url = "github:NixOS/nixpkgs/nixos-unstable?dir=lib";
 
     base16.url = "github:SenchoPens/base16.nix";
@@ -63,7 +64,6 @@
         inputs.ulauncher.overlays.default
         (final: prev: {
           kdn = final.callPackages ./packages { };
-          inherit (final.kdn) netmaker netmaker-pro netmaker-ui netclient;
           inherit lib;
         })
         (final: prev: { devenv = inputs.devenv.packages.${final.stdenv.system}.default; })

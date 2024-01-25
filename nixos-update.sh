@@ -3,4 +3,4 @@ set -eEuo pipefail
 cd "${BASH_SOURCE[0]%/*}"
 
 git pull
-./nixos-switch.sh
+./nixos-switch.sh "$@"
