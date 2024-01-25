@@ -11,6 +11,7 @@ in
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       kdn.profile.machine.hetzner.enable = true;
+      security.sudo.wheelNeedsPassword = false;
       services.netmaker.enable = true;
       services.netmaker.debug = true;
       services.netmaker.domain = "subsidize-stroller.kdn.im";

@@ -12,7 +12,7 @@ let
   envFile.user.secrets = "${cfg.secretsDir}/env";
 
   configureScript = pkgs.writeShellApplication {
-    name = "netmaker-configure";
+    name = "netmaker-generate-config";
     runtimeInputs = with pkgs; [
       coreutils
       gawk
@@ -26,7 +26,7 @@ let
       SECRETS="${envFile.generated.secrets}"
       ENV="${envFile.generated.config}"
 
-      ${builtins.readFile ./netmaker-configure.sh}
+      ${builtins.readFile ./netmaker-generate-config.sh}
     '';
   };
   mkInternalAddressOption = { host ? cfg.internalAddress, port }: lib.mkOption {
@@ -218,6 +218,7 @@ in
       type = with lib.types; path;
       default = "${cfg.secretsDir}/MQ_PASSWORD";
     };
+    mq.acl.restricted = lib.mkEnableOption "allow full access to MQTT instance";
     mq.debug = lib.mkOption {
       type = with lib.types; bool;
       default = cfg.debug;
@@ -226,11 +227,7 @@ in
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
-      environment.systemPackages =
-        [ cfg.package ]
-        ++ lib.optionals cfg.mq.debug (with pkgs; [
-          mqttui
-        ]);
+      environment.systemPackages = [ cfg.package ];
 
       networking.firewall = with cfg.firewall.ports; {
         allowedTCPPorts = [ cfg.coredns.internal.port ];
@@ -294,6 +291,12 @@ in
         serviceConfig.EnvironmentFile = cfg.environmentFiles;
         serviceConfig.WorkingDirectory = cfg.dataDir;
         serviceConfig.ExecStart = "${lib.getExe cfg.package} -c ${cfg.config}";
+        serviceConfig.ExecStartPost = pkgs.writeShellScript "configure-nmctl" ''
+          export HOME=/root
+          ${cfg.package}/bin/nmctl context set default \
+            --endpoint="https://${cfg.api.domain}" \
+            --master_key="$MASTER_KEY"
+        '';
 
         serviceConfig.Restart = "on-failure";
         serviceConfig.RestartSec = "15s";
@@ -308,7 +311,6 @@ in
     }
     (lib.mkIf (cfg.webserver.type == "caddy") {
       kdn.services.caddy.enable = true;
-      services.caddy.logFormat = if cfg.webserver.debug then "level DEBUG" else "level ERROR";
       systemd.services.netmaker.after = [ "caddy.service" ];
       systemd.services.netmaker.requires = [ "caddy.service" ];
 
@@ -374,10 +376,55 @@ in
       services.mosquitto.listeners = [{
         address = cfg.mq.internal.host;
         port = cfg.mq.internal.port;
-        users."${cfg.mq.username}".passwordFile = cfg.mq.passwordFile;
+        users."${cfg.mq.username}" = {
+          passwordFile = cfg.mq.passwordFile;
+          acl =
+            if !cfg.mq.acl.restricted then [
+              "readwrite #"
+            ] else [
+              # search for `client.Subscribe` in:
+              # - https://github.com/gravitl/netmaker
+              # - https://github.com/gravitl/netclient
+              # https://github.com/gravitl/netclient
+              "readwrite peers/host/+/+"
+              "readwrite host/update/+/+"
+              "readwrite node/update/+/+"
+              # https://github.com/gravitl/netmaker
+              "readwrite update/+/#"
+              "readwrite host/serverupdate/+/#"
+              "readwrite signal/+/#"
+              "readwrite metrics/+/#"
+            ];
+        };
         settings.allow_anonymous = false;
         settings.protocol = "websockets";
       }];
+    })
+    (lib.mkIf (cfg.mq.type == "mosquitto" && cfg.mq.debug) {
+      services.mosquitto.logType = [ "all" ];
+    })
+    (lib.mkIf (cfg.mq.debug) {
+      environment.systemPackages = with pkgs; [
+        mqttui
+        (pkgs.writeShellApplication {
+          name = "netmaker-mqttui";
+          runtimeInputs = with pkgs; [ mqttui jq ];
+          text = ''
+            get() {
+              test -n "''${info:-}" || info="$(nmctl server info -o json | jq -c)"
+              jq -r "$@" <<<"$info"
+            }
+
+            export MQTTUI_PASSWORD="''${MQTTUI_PASSWORD:-"$(get '.MQPassword')"}"
+            export MQTTUI_USERNAME="''${MQTTUI_USERNAME:-"$(get '.MQUserName')"}"
+            export MQTTUI_BROKER="''${MQTTUI_BROKER:-"$(get '.Broker')"}"
+            exec mqttui "$@"
+          '';
+        })
+      ];
+    })
+    (lib.mkIf (cfg.webserver.type == "caddy" && cfg.webserver.debug) {
+      services.caddy.logFormat = "level DEBUG";
     })
   ]);
 }

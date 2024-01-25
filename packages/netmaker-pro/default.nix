@@ -29,13 +29,13 @@ buildGoModule rec {
   ];
 
   postInstall = ''
-    mv $out/bin/{cli,nmctl-pro}
-    installShellCompletion --cmd nmctl-pro \
-      --bash <($out/bin/nmctl-pro completion bash) \
-      --fish <($out/bin/nmctl-pro completion fish) \
-      --zsh <($out/bin/nmctl-pro completion zsh)
+    mv $out/bin/{cli,nmctl}
+    installShellCompletion --cmd nmctl \
+      --bash <($out/bin/nmctl completion bash) \
+      --fish <($out/bin/nmctl completion fish) \
+      --zsh <($out/bin/nmctl completion zsh)
 
-    mv $out/bin/netmaker{,-pro}
+    mv $out/bin/netmaker
   '';
 
   meta = {
@@ -44,6 +44,6 @@ buildGoModule rec {
     changelog = "https://github.com/gravitl/netmaker/-/releases/v${version}";
     license = lib.licenses.unfree;
     maintainers = with lib.maintainers; [ urandom qjoly nazarewk ];
-    mainProgram = "netmaker-pro";
+    mainProgram = "netmaker";
   };
 }
