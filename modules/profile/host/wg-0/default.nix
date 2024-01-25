@@ -13,7 +13,7 @@ in
       kdn.profile.machine.hetzner.enable = true;
       security.sudo.wheelNeedsPassword = false;
       services.netmaker.enable = true;
-      services.netmaker.debug = true;
+      services.netmaker.debugTools = true;
       services.netmaker.domain = "subsidize-stroller.kdn.im";
       services.netmaker.email = "subsidize-stroller@kdn.im";
     }
