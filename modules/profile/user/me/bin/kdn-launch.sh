@@ -42,7 +42,7 @@ start_comms() {
   launch element-desktop
   launch slack
   launch signal-desktop
-  launch discord
+  #launch discord # 2024-01-26 outdated client, using rambox instead
 }
 
 start_work() {
