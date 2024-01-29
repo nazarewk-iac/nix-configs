@@ -16,6 +16,7 @@
   };
 
   config = lib.mkIf config.kdn.enable {
+    # lib.mkDefault is 1000, lib.mkOptionDefault is 1500
     disko.enableConfig = lib.mkDefault false;
 
     nix.registry.nixpkgs.flake = inputs.nixpkgs;

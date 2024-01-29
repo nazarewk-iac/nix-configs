@@ -35,7 +35,7 @@ in
         - https://github.com/openzfs/zfs/issues/15369
         - https://www.reddit.com/r/zfs/comments/17uf8wg/can_i_remove_an_old_entry_in/
       */
-      "d /etc/exports/d 1755 root root"
+      "d /etc/exports.d 1755 root root"
     ];
 
     kdn.filesystems.disko.luks-zfs.enable = true;

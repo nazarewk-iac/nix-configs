@@ -115,26 +115,23 @@ in
       lib.trivial.pipe mounts [
         (lib.attrsets.filterAttrs (n: v: !(n == "/nix/store" && inMicroVM)))
         (lib.attrsets.mapAttrs'
-          (mountpoint: cfg: {
-            name = (lib.trivial.pipe mountpoint [
-              (p: "${filesystemPrefix}${p}")
-              (lib.strings.removeSuffix "/")
-            ]);
-            value = ({
-              type = "zfs_fs";
-              inherit mountpoint;
+          (mp: cfg:
+            let
+              mountpoint = cfg.options.mountpoint or cfg.mountpoint or mp;
+            in
+            {
+              name = (lib.trivial.pipe mp [
+                (p: "${cfg.prefix or filesystemPrefix}${p}")
+                (lib.strings.removeSuffix "/")
+              ]);
+              value = ({
+                type = "zfs_fs";
+                mountpoint = if mountpoint != "none" then mountpoint else null;
 
-              # disko handles non-legacy mountpoints with `-o zfsutil` mount option
-              options = { inherit mountpoint; };
-              #options.mountpoint =
-              #  # required legacy mountpoints due to using `mount -t zfs` instead of `zfs mount` or `zpool import -R`
-              #  # see https://github.com/NixOS/nixpkgs/blob/c07552f6f7d4eead7806645ec03f7f1eb71ba6bd/nixos/lib/utils.nix#L13-L13
-              #  # ["/" "/nix" "/nix/store" "/var" "/var/log" "/var/lib" "/var/lib/nixos" "/etc" "/usr"];
-              #  if builtins.elem mountpoint [ "/" "/nix" "/nix/store" "/var" "/var/log" "/var/lib" "/var/lib/nixos" "/etc" "/usr" ]
-              #  then "legacy"
-              #  else mountpoint;
-            } // cfg);
-          }))
+                # note: disko handles non-legacy mountpoints with `-o zfsutil` mount option
+                options = { mountpoint = if mountpoint != null then mountpoint else "none"; } // cfg.options or { };
+              } // (builtins.removeAttrs cfg [ "prefix" "options" ]));
+            }))
       ];
   };
 }

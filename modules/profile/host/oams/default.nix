@@ -27,16 +27,12 @@ in
         "f /dev/shm/looking-glass 0660 kdn qemu-libvirtd -"
       ];
 
-      # enables systemd-cryptsetup-generator
-      # see https://github.com/nazarewk/nixpkgs/blob/04f574a1c0fde90b51bf68198e2297ca4e7cccf4/nixos/modules/system/boot/luksroot.nix#L997-L1012
-      boot.initrd.luks.forceLuksSupportInInitrd = true;
+      kdn.filesystems.disko.luks-zfs.enable = true;
       disko.devices = import ./disko.nix {
         inherit lib;
         hostname = config.networking.hostName;
         inMicroVM = config.kdn.virtualization.microvm.guest.enable;
       };
-
-      kdn.filesystems.disko.luks-zfs.enable = true;
 
       boot.initrd.systemd.services.zfs-import-oams-main = {
         requiredBy = [ "sysusr-usr.mount" ];

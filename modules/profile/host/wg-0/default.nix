@@ -16,6 +16,10 @@ in
       services.netmaker.debugTools = true;
       services.netmaker.domain = "subsidize-stroller.kdn.im";
       services.netmaker.email = "subsidize-stroller@kdn.im";
+
+      environment.systemPackages = with pkgs; [
+        sqlite
+      ];
     }
   ]);
 }

@@ -23,16 +23,16 @@
         publicKey = "FJV0gfKnCpiBEjaLTBp3fHrMSpMUsFSW010KIPedA24=";
       };
     };
-    nazarewk = {
+    obler = {
       hostnum = 3;
       cfg = {
         allowedIPs = [
           # "10.0.0.210/32"
         ];
-        publicKey = "aaMWmmrCQM/wXhV7+i3Igp7D9Rz8jNorEsqt5/zF61s=";
+        publicKey = "GYc/ZfHtTbmnWpCD44V37I6PawS9g5WzvnRPXbvwbSs=";
       };
     };
-    nazarewk-mi9 = {
+    irp = {
       hostnum = 4;
       cfg = {
         publicKey = "K4p1ePw7eWofjAikvsiJPj4Q3QNl6p6lmpRz5BKnvEw=";
@@ -45,6 +45,12 @@
           "10.0.0.0/24"
         ];
         publicKey = "fBy7t2IeoOF+NKuKpPuqp8PtQiMcRldtUnvzzfzarxQ=";
+      };
+    };
+    oams = {
+      hostnum = 6;
+      cfg = {
+        publicKey = "fLuhNEP1GJJgy69FFTmjKbqVJXXT/Q0Pwa58HhPgqg8=";
       };
     };
   };
