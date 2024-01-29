@@ -1,7 +1,6 @@
 { config, pkgs, lib, modulesPath, ... }:
-# Dell Latitude E5470
 let
-  cfg = config.kdn.profile.hardware.dell-e5470;
+  cfg = config.kdn.filesystems.disko.luks-zfs;
 in
 {
   options.kdn.filesystems.disko.luks-zfs = {
