@@ -133,7 +133,7 @@ in
           id = 0;
           isDefault = true;
         };
-        nativeMessagingHosts.packages = with pkgs; [
+        nativeMessagingHosts = with pkgs; [
           libsForQt5.plasma-browser-integration
           keepassxc
         ];
@@ -180,23 +180,24 @@ in
         };
 
       systemd.user.services.keepassxc = {
-        Unit = {
-          Description = "KeePassXC password manager";
-          BindsTo = lib.optional hasSway config.kdn.desktop.sway.systemd.secrets-service.service;
-          Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
-          After = [ config.kdn.desktop.sway.systemd.envs.target ];
-          PartOf = [ config.kdn.desktop.sway.systemd.session.target ];
-        };
+        Unit.Description = "KeePassXC password manager";
         Service = {
           Slice = "background.slice";
           ExecStart = "${drag0nius_kdbx}/bin/keepass-drag0nius.kdbx start";
         };
-        Install = {
-          WantedBy = [ "graphical-session.target" ] ++ lib.optional hasSway config.kdn.desktop.sway.systemd.secrets-service.service;
-        };
+        Install.WantedBy = [ "graphical-session.target" ];
       };
     })
     (lib.mkIf hasSway {
+      systemd.user.services.keepassxc.Unit = {
+        BindsTo = config.kdn.desktop.sway.systemd.secrets-service.service;
+        Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
+
+        After = [ config.kdn.desktop.sway.systemd.envs.target ];
+        PartOf = [ config.kdn.desktop.sway.systemd.session.target ];
+      };
+      systemd.user.services.keepassxc.Install.WantedBy = [ config.kdn.desktop.sway.systemd.secrets-service.service ];
+
       # mime gets messed up by KDE
       xdg.mimeApps.enable = true;
       xdg.mimeApps.associations.added = { };

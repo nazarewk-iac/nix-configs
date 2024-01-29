@@ -36,41 +36,13 @@ in
         inMicroVM = config.kdn.virtualization.microvm.guest.enable;
       };
 
-      # kdn.filesystems.disko.luks-zfs.enable = true;
-      boot.zfs.forceImportRoot = false;
-      boot.zfs.requestEncryptionCredentials = false;
-      boot.kernelParams =
-        let
-          disko = config.disko.devices;
-          crypted = disko.disk.crypted-root;
-          boot = disko.disk.boot;
-
-          getArg = name: lib.trivial.pipe crypted.content.extraFormatArgs [
-            (builtins.filter (lib.strings.hasPrefix "--${name}="))
-            builtins.head
-            (lib.strings.removePrefix "--${name}=")
-          ];
-
-          luksOpenName = crypted.content.name;
-          rootUUID = getArg "uuid";
-          headerPath = getArg "header";
-          luksDevice = crypted.device;
-        in
-        [
-          # https://www.freedesktop.org/software/systemd/man/systemd-cryptsetup-generator.html#
-          "rd.luks.name=${rootUUID}=${luksOpenName}"
-          "rd.luks.options=${rootUUID}=header=${headerPath}"
-          "rd.luks.data=${rootUUID}=${luksDevice}"
-        ];
-      disko.enableConfig = true;
+      kdn.filesystems.disko.luks-zfs.enable = true;
 
       boot.initrd.systemd.services.zfs-import-oams-main = {
         requiredBy = [ "sysusr-usr.mount" ];
         before = [ "sysusr-usr.mount" ];
       };
 
-      fileSystems."/boot".neededForBoot = true;
-      fileSystems."/var/log/journal".neededForBoot = true;
       boot.kernelModules = [ "kvm-amd" ];
 
       services.asusd.enable = true;
@@ -79,13 +51,11 @@ in
       environment.systemPackages = with pkgs; [
         asusctl
       ];
-      home-manager.sharedModules = [
-        {
-          wayland.windowManager.sway.extraConfig = ''
-            output eDP-1 mode 2560x1440@60Hz
-          '';
-        }
-      ];
+      home-manager.sharedModules = [{
+        wayland.windowManager.sway.extraConfig = ''
+          output eDP-1 mode 2560x1440@60Hz
+        '';
+      }];
     }
   ]);
 }

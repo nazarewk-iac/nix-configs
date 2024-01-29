@@ -12,6 +12,7 @@ in
     users.users.sn.initialHashedPassword = "$y$j9T$WGU0Qrlm0.jq7Y4QfyVYC0$HiYyLZMDX8M/A7WNshB5PjtZEGufQ.Qa93FY4WIlcw8";
     users.users.sn = {
       uid = 48378;
+      description = "Staś";
       isNormalUser = true;
       createHome = true; # makes sure ZFS mountpoints are properly owned?
       extraGroups = lib.filter (group: lib.hasAttr group config.users.groups) [

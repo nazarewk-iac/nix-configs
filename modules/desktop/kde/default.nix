@@ -16,10 +16,6 @@ in
 
       services.gnome.gnome-keyring.enable = lib.mkForce false;
 
-      environment.systemPackages = with pkgs; [
-        latte-dock
-      ];
-
       services.xserver.desktopManager.plasma5.enable = true;
     }
     # styling
@@ -35,10 +31,10 @@ in
     }
     {
       # see https://discourse.nixos.org/t/kde-widgets-look-off-on-a-freshly-installed-nixos/13098
-      environment.systemPackages = (with pkgs.libsForQt5; [
+      environment.systemPackages = with pkgs.libsForQt5; [
         qqc2-breeze-style
         qqc2-desktop-style
-      ]);
+      ];
       environment.sessionVariables.QT_QUICK_CONTROLS_STYLE = "org.kde.desktop";
     }
   ]);
