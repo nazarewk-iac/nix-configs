@@ -10,9 +10,14 @@ in
 
   config = lib.mkIf cfg.enable {
     kdn.profile.machine.desktop.enable = true;
-    kdn.desktop.kde.enable = true;
-    kdn.profile.user.sn.enable = true;
     kdn.profile.hardware.dell-e5470.enable = true;
+    security.sudo.wheelNeedsPassword = false;
+
+    kdn.desktop.kde.enable = true;
+    home-manager.users.root.stylix.targets.kde.enable = false;
+    home-manager.users.kdn.stylix.targets.kde.enable = false;
+
+    kdn.profile.user.sn.enable = true;
 
     services.teamviewer.enable = true;
     services.xserver.displayManager.sddm.settings = {
@@ -44,5 +49,6 @@ in
       hostname = config.networking.hostName;
       inMicroVM = config.kdn.virtualization.microvm.guest.enable;
     };
+
   };
 }

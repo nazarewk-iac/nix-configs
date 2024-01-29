@@ -19,6 +19,7 @@ in
         "audio"
         "dialout"
         "lp"
+        "lpadmin"
         "mlocate"
         "networkmanager"
         "pipewire"

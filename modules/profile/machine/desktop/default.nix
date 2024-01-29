@@ -34,16 +34,7 @@ in
 
       boot.extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
 
-      # Enable CUPS to print documents.
-      services.printing.enable = true;
-      services.printing.drivers = with pkgs; [
-        hplip
-        #gutenprint
-        #gutenprintBin
-        brlaser
-        brgenml1lpr
-        brgenml1cupswrapper
-      ];
+      kdn.services.printing.enable = true;
       environment.systemPackages = with pkgs; [
         libreoffice-qt # non-qt failed to build on 2023-04-07
         # chromium

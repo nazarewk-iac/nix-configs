@@ -47,7 +47,6 @@ in
       hardware.uinput.enable = true;
       kdn.programs.ydotool.enable = true;
       programs.dconf.enable = true;
-      security.polkit.enable = true;
       services.accounts-daemon.enable = true;
       services.dleyna-renderer.enable = true;
       services.dleyna-server.enable = true;

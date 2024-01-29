@@ -13,6 +13,7 @@ in
     home.packages = with pkgs; [
       vlc
     ];
+    programs.firefox.enable = true;
 
     # pam-u2f expects a single line of configuration per user in format `username:entry1:entry2:entry3:...`
     # `pamu2fcfg` generates lines of format `username:entry`
