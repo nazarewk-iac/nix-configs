@@ -32,7 +32,7 @@ in
         ];
       in
       ''
-        # passwordless printer admins
+        // passwordless printer admins
         polkit.addRule(function(action, subject) {
           if (action.id == "org.opensuse.cupspkhelper.mechanism.all-edit" && ${isAllowedGroup}){
             return polkit.Result.YES;
