@@ -74,7 +74,9 @@ in
       services.locate.package = pkgs.mlocate;
       services.locate.pruneBindMounts = true;
 
+      services.avahi.enable = false; # conficts with `services.resolved.llmnr`
       services.resolved.enable = true;
+      services.resolved.llmnr = "true";
       kdn.networking.wireguard.enable = true;
       services.netclient.enable = true;
       kdn.hardware.disk-encryption.tools.enable = true;
@@ -106,9 +108,7 @@ in
         "xhci_pci"
       ];
 
-      kdn.networking.netbird.instances.priv = 51821;
-      # required, so netclient doesn't take over port 51821
-      systemd.services.netclient.after = [ "netbird-priv.service" ];
+      kdn.networking.netbird.instances.priv.port = 51819;
 
       services.devmon.enable = false; # disable auto-mounting service devmon, it interferes with disko
 

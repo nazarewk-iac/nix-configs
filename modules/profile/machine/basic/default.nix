@@ -12,7 +12,6 @@ in
       kdn.profile.machine.baseline.enable = true;
       kdn.programs.gnupg.enable = true;
 
-      services.avahi.enable = true;
       networking.networkmanager.wifi.powersave = true;
 
       boot.loader.systemd-boot.memtest86.enable = true;

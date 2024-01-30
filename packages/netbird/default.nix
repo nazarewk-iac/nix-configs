@@ -1,6 +1,7 @@
 { stdenv
 , lib
 , nixosTests
+, nix-update-script
 , buildGoModule
 , fetchFromGitHub
 , installShellFiles
@@ -16,7 +17,7 @@
 , UserNotifications
 , WebKit
 , ui ? false
-, ...
+, netbird-ui
 }:
 let
   modules =
@@ -30,18 +31,16 @@ let
 in
 buildGoModule rec {
   pname = "netbird";
-  version = "0.21.1";
+  version = "unstable-2024-01-30";
 
   src = fetchFromGitHub {
-    #owner = "netbirdio";
-    #rev = "v${version}";
-    owner = "nazarewk";
-    rev = "54ccf5f0d076ebe80324311a3f1f28536408450b";
-    repo = pname;
-    sha256 = "sha256-XphzUC3+mD7vXzW5Ka+mqPhKGuPS34qDjPJlBobYesE=";
+    owner = "netbirdio";
+    repo = "netbird";
+    rev = "846d486366874ff73603305cff8287b8d50ccc31";
+    hash = "sha256-jcI1KXNAdZ6eGX7X4m0kvBFAD2B2sKy9JOxiFmEQLvk=";
   };
 
-  vendorHash = "sha256-D2jPpaPkbou/upkiOUhA8QJONyKTlTqx9Ylgkq+nBfo=";
+  vendorHash = "sha256-vdGF7mIpE1PgCRsRCWE7cziKp9ZaIcxYUU6FREsFb70=";
 
   nativeBuildInputs = [ installShellFiles ] ++ lib.optional ui pkg-config;
 
@@ -64,7 +63,7 @@ buildGoModule rec {
   ldflags = [
     "-s"
     "-w"
-    "-X github.com/netbirdio/netbird/client/system.version=${version}"
+    "-X github.com/netbirdio/netbird/version.version=${version}"
     "-X main.builtBy=nix"
   ];
 
@@ -91,7 +90,7 @@ buildGoModule rec {
       '')
       modules) + lib.optionalString (stdenv.isLinux && ui) ''
     mkdir -p $out/share/pixmaps
-    cp $src/client/ui/disconnected.png $out/share/pixmaps/netbird.png
+    cp $src/client/ui/netbird-systemtray-default.png $out/share/pixmaps/netbird.png
 
     mkdir -p $out/share/applications
     cp $src/client/ui/netbird.desktop $out/share/applications/netbird.desktop
@@ -100,7 +99,11 @@ buildGoModule rec {
       --replace "Exec=/usr/bin/netbird-ui" "Exec=$out/bin/netbird-ui"
   '';
 
-  passthru.tests.netbird = nixosTests.netbird;
+  passthru = {
+    tests.netbird = nixosTests.netbird;
+    tests.netbird-ui = netbird-ui;
+    updateScript = nix-update-script { };
+  };
 
   meta = with lib; {
     homepage = "https://netbird.io";
