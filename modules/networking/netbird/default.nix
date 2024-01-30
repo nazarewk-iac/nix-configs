@@ -6,20 +6,21 @@
 let
   cfg = config.kdn.networking.netbird;
 
-  instances = builtins.attrValues cfg.instances;
+  instancesList = builtins.attrValues cfg.instances;
 
-  exe = {
-    netbird = lib.getExe' config.services.netbird.package "netbird";
-    netbird-mgmt = lib.getExe' config.services.netbird.package "netbird-mgmt";
-    netbird-signal = lib.getExe' config.services.netbird.package "netbird-signal";
-  };
-
-  mkEnvVars = alias: port: {
-    NB_CONFIG = "/var/lib/netbird-${alias}/config.json";
-    NB_DAEMON_ADDR = "unix:///var/run/netbird-${alias}/sock";
-    NB_INTERFACE_NAME = "wt-${alias}";
-    NB_WIREGUARD_PORT = builtins.toString port;
-  };
+  mkWrappers = instance:
+    let
+      vars = lib.trivial.pipe instance.envVars [
+        (lib.mapAttrsToList lib.strings.toShellVar)
+        (lib.strings.concatStringsSep " ")
+      ];
+      mkBinary = tool: pkgs.writeScriptBin "${tool}-${instance.alias}" ''
+        #!${lib.getExe pkgs.bash}
+        export ${vars}
+        ${lib.getExe' config.services.netbird.package tool} "$@"
+      '';
+    in
+    builtins.map mkBinary [ "netbird" "netbird-mgmt" "netbird-signal" ];
 in
 {
   options.kdn.networking.netbird = {
@@ -85,7 +86,7 @@ in
       services.netbird.package = pkgs.kdn.netbird;
     }
     (lib.mkIf (cfg.instances != { }) {
-      environment.systemPackages = [ config.services.netbird.package ];
+      environment.systemPackages = lib.lists.flatten (builtins.map mkWrappers instancesList);
 
       boot.extraModulePackages = lib.optional (lib.versionOlder config.boot.kernelPackages.kernel.version "5.6") config.boot.kernelPackages.wireguard;
 
@@ -102,8 +103,8 @@ in
         };
       };
 
-      systemd.services = lib.trivial.pipe cfg.instances [
-        (builtins.mapAttrs (_: instance: {
+      systemd.services = lib.trivial.pipe instancesList [
+        (builtins.map (instance: {
           name = instance.name;
           value = {
             description = "A WireGuard-based mesh network that connects your devices into a single private network";
@@ -129,7 +130,11 @@ in
                 # required for eBPF, used to be subset of CAP_SYS_ADMIN
                 ++ lib.optional (lib.versionAtLeast kernelVersion "5.8") "CAP_BPF";
               DynamicUser = true;
-              ExecStart = "${exe.netbird} service run";
+              ExecStart =
+                let
+                  binary = lib.getExe' config.services.netbird.package "netbird";
+                in
+                "${binary} service run";
               Restart = "always";
               RuntimeDirectory = instance.name;
               StateDirectory = instance.name;
@@ -143,29 +148,15 @@ in
             stopIfChanged = false;
           };
         }))
-        builtins.attrValues
         builtins.listToAttrs
       ];
 
-      networking.firewall.allowedUDPPorts = builtins.map (instance: instance.port) instances;
+      networking.firewall.allowedUDPPorts = builtins.map (instance: instance.port) instancesList;
 
-      environment.shellAliases = lib.trivial.pipe cfg.instances [
-        (builtins.mapAttrs (alias: instance:
-          let
-            vars = lib.trivial.pipe instance.envVars [
-              (lib.mapAttrsToList lib.strings.toShellVar)
-              (lib.strings.concatStringsSep " ")
-            ];
-          in
-          lib.mapAttrs' (name: binary: { name = "${name}-${instance.alias}"; value = "${vars} ${binary}"; }) exe
-        ))
-        builtins.attrValues
-        (lib.lists.foldl (a: b: a // b) { })
-      ];
       # see https://github.com/systemd/systemd/blob/17f3e91e8107b2b29fe25755651b230bbc81a514/src/resolve/org.freedesktop.resolve1.policy#L43-L43
       security.polkit.extraConfig = lib.mkIf config.services.resolved.enable (
         let
-          isAllowedUser = lib.pipe instances [
+          isAllowedUser = lib.pipe instancesList [
             (builtins.map (instance: ''subject.user == ${builtins.toJSON instance.name}''))
             (builtins.concatStringsSep " || ")
             (v: "( ${v} )")
