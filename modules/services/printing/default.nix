@@ -25,7 +25,7 @@ in
     ];
     security.polkit.extraConfig =
       let
-        groups = lib.pipe cfg.extraAdminGroups [
+        isAllowedGroup = lib.pipe cfg.extraAdminGroups [
           (builtins.map (group: ''subject.isInGroup("${group}")''))
           (builtins.concatStringsSep " || ")
           (v: "( ${v} )")
@@ -34,7 +34,7 @@ in
       ''
         # passwordless printer admins
         polkit.addRule(function(action, subject) {
-          if (action.id == "org.opensuse.cupspkhelper.mechanism.all-edit" && ${groups}){
+          if (action.id == "org.opensuse.cupspkhelper.mechanism.all-edit" && ${isAllowedGroup}){
             return polkit.Result.YES;
           }
         });
