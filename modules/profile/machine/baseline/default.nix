@@ -74,6 +74,7 @@ in
       services.locate.package = pkgs.mlocate;
       services.locate.pruneBindMounts = true;
 
+      services.resolved.enable = true;
       kdn.networking.wireguard.enable = true;
       services.netclient.enable = true;
       kdn.hardware.disk-encryption.tools.enable = true;
