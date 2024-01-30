@@ -10,8 +10,8 @@ let
   mkEnvVars = alias: port: {
     NB_CONFIG = "/var/lib/netbird-${alias}/config.json";
     NB_DAEMON_ADDR = "unix:///var/run/netbird-${alias}/sock";
-    NB_WG_IFACE = "wt-${alias}";
-    NB_WG_PORT = builtins.toString port;
+    NB_INTERFACE_NAME = "wt-${alias}";
+    NB_WIREGUARD_PORT = builtins.toString port;
   };
 in
 {

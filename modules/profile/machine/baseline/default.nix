@@ -107,7 +107,7 @@ in
 
       kdn.networking.netbird.instances.priv = 51821;
       # required, so netclient doesn't take over port 51821
-      systemd.services.netclient.after = [ "netbird.service" ];
+      systemd.services.netclient.after = [ "netbird-priv.service" ];
 
       services.devmon.enable = false; # disable auto-mounting service devmon, it interferes with disko
 
