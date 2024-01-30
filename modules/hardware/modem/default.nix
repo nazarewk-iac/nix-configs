@@ -13,6 +13,6 @@ in
     systemd.services.ModemManager.wantedBy = [ "NetworkManager.service" ];
 
     # Phone calls
-    programs.calls.enable = true;
+    programs.calls.enable = false;
   };
 }
