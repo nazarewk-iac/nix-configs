@@ -49,6 +49,10 @@ in
       hostname = config.networking.hostName;
       inMicroVM = config.kdn.virtualization.microvm.guest.enable;
     };
-
+    stylix.image = pkgs.fetchurl {
+      # non-expiring share link
+      url = "https://nc.nazarewk.pw/s/q63pjY9H93faf5t/download/lake-view-with-light-blue-water-a6cnqa1pki4g69jt.jpg";
+      sha256 = "sha256-0Dyc9Kj9IkStIJDXw9zlEFHqc2Q5WruPSk/KapM7KgM=";
+    };
   };
 }
