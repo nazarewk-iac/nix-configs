@@ -119,16 +119,16 @@ in
                 in [
                   # see https://man7.org/linux/man-pages/man7/capabilities.7.html
                   # see https://docs.netbird.io/how-to/installation#running-net-bird-in-docker
+                  # seems to work fine without CAP_SYS_ADMIN and CAP_SYS_RESOURCE
+                  # CAP_NET_BIND_SERVICE could be added to allow binding on low ports, but is not required, see https://github.com/netbirdio/netbird/pull/1513
+
+                  # failed creating tunnel interface wt-priv: [operation not permitted
                   "CAP_NET_ADMIN"
-                  "CAP_SYS_ADMIN"
-                  "CAP_SYS_RESOURCE"
                   # failed to pull up wgInterface [wt-priv]: failed to create ipv4 raw socket: socket: operation not permitted
                   "CAP_NET_RAW"
-                  # binding dns on 127.0.0.1:53 is not available, error: listen udp 127.0.0.1:53: bind: permission denied
-                  "CAP_NET_BIND_SERVICE"
-                ]
-                # required for eBPF, used to be subset of CAP_SYS_ADMIN
-                ++ lib.optional (lib.versionAtLeast kernelVersion "5.8") "CAP_BPF";
+                  # required for eBPF, used to be subset of CAP_SYS_ADMIN
+                  (if lib.versionAtLeast kernelVersion "5.8" then "CAP_BPF" else "CAP_SYS_ADMIN")
+                ];
               DynamicUser = true;
               ExecStart =
                 let
