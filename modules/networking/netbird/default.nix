@@ -43,6 +43,7 @@ in
               The port Netbird's wireguard interface will listen on.
             '';
           };
+          autoStart = lib.mkEnableOption "start the service manually";
           logLevel = lib.mkOption {
             type = with lib.types; enum [
               # logrus loglevels
@@ -110,7 +111,7 @@ in
             description = "A WireGuard-based mesh network that connects your devices into a single private network";
             documentation = [ "https://netbird.io/docs/" ];
             after = [ "network.target" ];
-            wantedBy = [ "multi-user.target" ];
+            wantedBy = lib.optional instance.autoStart "multi-user.target";
             path = lib.optional (!config.services.resolved.enable) pkgs.openresolv;
             environment = instance.envVars;
             serviceConfig = {

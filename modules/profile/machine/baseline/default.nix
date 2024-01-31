@@ -109,6 +109,7 @@ in
       ];
 
       kdn.networking.netbird.instances.priv.port = 51819;
+      kdn.networking.netbird.instances.priv.autoStart = true;
       kdn.networking.netbird.instances.priv.logLevel = "trace";
 
       services.devmon.enable = false; # disable auto-mounting service devmon, it interferes with disko
