@@ -114,6 +114,23 @@ in
             path = lib.optional (!config.services.resolved.enable) pkgs.openresolv;
             environment = instance.envVars;
             serviceConfig = {
+              Restart = "always";
+              ExecStart =
+                let
+                  binary = lib.getExe' config.services.netbird.package "netbird";
+                in
+                "${binary} service run";
+
+              # User/Group names for DynamicUser
+              User = instance.name;
+              Group = instance.name;
+              # Restrict permissinos
+              DynamicUser = true;
+              RuntimeDirectory = instance.name;
+              StateDirectory = instance.name;
+              StateDirectoryMode = "0700";
+              WorkingDirectory = instance.workDir;
+
               AmbientCapabilities =
                 let kernelVersion = config.boot.kernelPackages.kernel.version;
                 in [
@@ -126,20 +143,11 @@ in
                   "CAP_NET_ADMIN"
                   # failed to pull up wgInterface [wt-priv]: failed to create ipv4 raw socket: socket: operation not permitted
                   "CAP_NET_RAW"
-                  # required for eBPF, used to be subset of CAP_SYS_ADMIN
-                  (if lib.versionAtLeast kernelVersion "5.8" then "CAP_BPF" else "CAP_SYS_ADMIN")
-                ];
-              DynamicUser = true;
-              ExecStart =
-                let
-                  binary = lib.getExe' config.services.netbird.package "netbird";
-                in
-                "${binary} service run";
-              Restart = "always";
-              RuntimeDirectory = instance.name;
-              StateDirectory = instance.name;
-              StateDirectoryMode = "0700";
-              WorkingDirectory = instance.workDir;
+                ]
+                # required for eBPF filter, used to be subset of CAP_SYS_ADMIN
+                ++ lib.optional (lib.versionAtLeast kernelVersion "5.8") "CAP_BPF"
+                ++ lib.optional (lib.versionOlder kernelVersion "5.8") "CAP_SYS_ADMIN"
+              ;
             };
             unitConfig = {
               StartLimitInterval = 5;

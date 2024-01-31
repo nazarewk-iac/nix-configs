@@ -119,6 +119,9 @@ in
       };
 
       security.polkit.enable = true;
+
+      # `dbus` seems to be bugged when combined with DynamicUser services
+      services.dbus.implementation = "broker";
     } // (
       let
         debugPolkit = false;

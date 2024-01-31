@@ -182,7 +182,8 @@
                 networking.hostName = "obler";
 
                 _module.args.nixinate = {
-                  host = "obler";
+                  #host = "obler";
+                  host = "obler.netbird.cloud";
                   sshUser = "kdn";
                   buildOn = "local"; # valid args are "local" or "remote"
                   substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
