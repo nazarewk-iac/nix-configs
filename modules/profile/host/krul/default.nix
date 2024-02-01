@@ -96,6 +96,8 @@ in
       # 12G was not enough for large rebuild
       boot.tmp.tmpfsSize = "20%";
 
+      kdn.networking.netbird.instances.sc.firewall.tcp = [ 7080 ];
+
       # legacy mountpoints
       fileSystems = lib.mkMerge [
         (mkNixOSMount "/root" { at = "/"; })

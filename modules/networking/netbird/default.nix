@@ -21,6 +21,11 @@ let
       '';
     in
     builtins.map mkBinary [ "netbird" "netbird-mgmt" "netbird-signal" ];
+
+  mkInstancesMap = keyFn: valueFn: lib.trivial.pipe instancesList [
+    (builtins.map (instance: lib.attrsets.nameValuePair (keyFn instance) (valueFn instance)))
+    builtins.listToAttrs
+  ];
 in
 {
   options.kdn.networking.netbird = {
@@ -75,6 +80,14 @@ in
               NB_WIREGUARD_PORT = builtins.toString config.port;
             } // new;
           };
+          firewall.tcp = lib.mkOption {
+            type = with lib.types; listOf port;
+            default = [ ];
+          };
+          firewall.udp = lib.mkOption {
+            type = with lib.types; listOf port;
+            default = [ ];
+          };
         };
       }));
       default = { };
@@ -94,7 +107,7 @@ in
       # ignore wt* interfaces
       networking.dhcpcd.denyInterfaces = [ "wt*" ];
       networking.networkmanager.unmanaged = [ "interface-name:wt*" ];
-      systemd.network.networks."50-netbird-instantiated" = lib.mkIf config.networking.useNetworkd {
+      systemd.network.networks."50-netbird" = lib.mkIf config.networking.useNetworkd {
         matchConfig = {
           Name = lib.mkForce "wt*";
         };
@@ -104,63 +117,56 @@ in
         };
       };
 
-      systemd.services = lib.trivial.pipe instancesList [
-        (builtins.map (instance: {
-          name = instance.name;
-          value = {
-            description = "A WireGuard-based mesh network that connects your devices into a single private network";
-            documentation = [ "https://netbird.io/docs/" ];
-            after = [ "network.target" ];
-            wantedBy = lib.optional instance.autoStart "multi-user.target";
-            path = lib.optional (!config.services.resolved.enable) pkgs.openresolv;
-            environment = instance.envVars;
-            serviceConfig = {
-              Restart = "always";
-              ExecStart =
-                let
-                  binary = lib.getExe' config.services.netbird.package "netbird";
-                in
-                "${binary} service run";
+      systemd.services = mkInstancesMap (instance: instance.name) (instance: {
+        description = "A WireGuard-based mesh network that connects your devices into a single private network";
+        documentation = [ "https://netbird.io/docs/" ];
+        after = [ "network.target" ];
+        wantedBy = lib.optional instance.autoStart "multi-user.target";
+        path = lib.optional (!config.services.resolved.enable) pkgs.openresolv;
+        environment = instance.envVars;
+        serviceConfig = {
+          Restart = "always";
+          ExecStart = "${lib.getExe' config.services.netbird.package "netbird"} service run";
 
-              # User/Group names for DynamicUser
-              User = instance.name;
-              Group = instance.name;
-              # Restrict permissinos
-              DynamicUser = true;
-              RuntimeDirectory = instance.name;
-              StateDirectory = instance.name;
-              StateDirectoryMode = "0700";
-              WorkingDirectory = instance.workDir;
+          # User/Group names for DynamicUser
+          User = instance.name;
+          Group = instance.name;
+          # Restrict permissinos
+          DynamicUser = true;
+          RuntimeDirectory = instance.name;
+          StateDirectory = instance.name;
+          StateDirectoryMode = "0700";
+          WorkingDirectory = instance.workDir;
 
-              AmbientCapabilities =
-                let kernelVersion = config.boot.kernelPackages.kernel.version;
-                in [
-                  # see https://man7.org/linux/man-pages/man7/capabilities.7.html
-                  # see https://docs.netbird.io/how-to/installation#running-net-bird-in-docker
-                  # seems to work fine without CAP_SYS_ADMIN and CAP_SYS_RESOURCE
-                  # CAP_NET_BIND_SERVICE could be added to allow binding on low ports, but is not required, see https://github.com/netbirdio/netbird/pull/1513
+          AmbientCapabilities =
+            let kernelVersion = config.boot.kernelPackages.kernel.version;
+            in [
+              # see https://man7.org/linux/man-pages/man7/capabilities.7.html
+              # see https://docs.netbird.io/how-to/installation#running-net-bird-in-docker
+              # seems to work fine without CAP_SYS_ADMIN and CAP_SYS_RESOURCE
+              # CAP_NET_BIND_SERVICE could be added to allow binding on low ports, but is not required, see https://github.com/netbirdio/netbird/pull/1513
 
-                  # failed creating tunnel interface wt-priv: [operation not permitted
-                  "CAP_NET_ADMIN"
-                  # failed to pull up wgInterface [wt-priv]: failed to create ipv4 raw socket: socket: operation not permitted
-                  "CAP_NET_RAW"
-                ]
-                # required for eBPF filter, used to be subset of CAP_SYS_ADMIN
-                ++ lib.optional (lib.versionAtLeast kernelVersion "5.8") "CAP_BPF"
-                ++ lib.optional (lib.versionOlder kernelVersion "5.8") "CAP_SYS_ADMIN"
-              ;
-            };
-            unitConfig = {
-              StartLimitInterval = 5;
-              StartLimitBurst = 10;
-            };
-            stopIfChanged = false;
-          };
-        }))
-        builtins.listToAttrs
-      ];
+              # failed creating tunnel interface wt-priv: [operation not permitted
+              "CAP_NET_ADMIN"
+              # failed to pull up wgInterface [wt-priv]: failed to create ipv4 raw socket: socket: operation not permitted
+              "CAP_NET_RAW"
+            ]
+            # required for eBPF filter, used to be subset of CAP_SYS_ADMIN
+            ++ lib.optional (lib.versionAtLeast kernelVersion "5.8") "CAP_BPF"
+            ++ lib.optional (lib.versionOlder kernelVersion "5.8") "CAP_SYS_ADMIN"
+          ;
+        };
+        unitConfig = {
+          StartLimitInterval = 5;
+          StartLimitBurst = 10;
+        };
+        stopIfChanged = false;
+      });
 
-      networking.firewall.allowedUDPPorts = builtins.map (instance: instance.port) instancesList;
+      networking.firewall.interfaces = mkInstancesMap (instance: instance.envVars.NB_INTERFACE_NAME) (instance: {
+        allowedUDPPorts = instance.firewall.udp;
+        allowedTCPPorts = instance.firewall.tcp;
+      });
 
       # see https://github.com/systemd/systemd/blob/17f3e91e8107b2b29fe25755651b230bbc81a514/src/resolve/org.freedesktop.resolve1.policy#L43-L43
       security.polkit.extraConfig = lib.mkIf config.services.resolved.enable (
