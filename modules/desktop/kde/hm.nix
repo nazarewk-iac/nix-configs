@@ -10,6 +10,6 @@ in
     # fix something is reformatting the fontconfigs (removing empty lines) when running KDE Plasma
     xdg.configFile."fontconfig/conf.d/10-hm-fonts.conf".force = true;
     services.gnome-keyring.enable = lib.mkForce false;
-    programs.firefox.nativeMessagingHosts = with pkgs; [ libsForQt5.plasma-browser-integration ];
+    kdn.programs.firefox.overrides.nativeMessagingHosts = with pkgs; [ libsForQt5.plasma-browser-integration ];
   };
 }
