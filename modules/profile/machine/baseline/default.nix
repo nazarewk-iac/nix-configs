@@ -78,7 +78,6 @@ in
       services.resolved.enable = true;
       services.resolved.llmnr = "true";
       kdn.networking.wireguard.enable = true;
-      services.netclient.enable = true;
       kdn.hardware.disk-encryption.tools.enable = true;
       kdn.hardware.usbip.enable = true;
       kdn.development.shell.enable = true;
