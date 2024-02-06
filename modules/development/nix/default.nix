@@ -23,6 +23,33 @@ in
       devenv
 
       #inputs.nixpkgs-update.defaultPackage.${system}
+      (pkgs.writeShellApplication {
+        name = "kdn-nix-collect-garbage";
+        runtimeInputs = with pkgs; [
+          nix
+          coreutils
+          gnugrep
+          glibc # getent
+        ];
+        text = ''
+          if [[ $EUID -ne 0 ]];
+          then
+              exec sudo ${lib.getExe bash} "$0" "$@"
+          fi
+          nix-collect-garbage -d
+          mapfile -t users < <(getent passwd | cut -d: -f1,6 | grep ':/home/' | cut -d: -f1)
+          for user in "''${users[@]}"; do
+            sudo -u "$user" -- nix-collect-garbage -d
+          done
+        '';
+      })
+      (pkgs.writeShellApplication {
+        name = "kdn-nix-list-roots";
+        runtimeInputs = with pkgs; [ nix gnugrep ];
+        text = ''
+          nix-store --gc --print-roots | grep -v -E "^(/nix/var|/run/\w+-system|\{memory|/proc)"
+        '';
+      })
 
       (pkgs.writeShellApplication {
         name = "nix-which";
