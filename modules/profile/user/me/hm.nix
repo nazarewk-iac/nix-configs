@@ -188,6 +188,7 @@ in
         Install.WantedBy = [ "graphical-session.target" ];
       };
     })
+    (lib.mkIf hasSway (import ./mimeapps.nix arguments).config)
     (lib.mkIf hasSway {
       systemd.user.services.keepassxc.Unit = {
         BindsTo = config.kdn.desktop.sway.systemd.secrets-service.service;
@@ -198,54 +199,6 @@ in
       };
       systemd.user.services.keepassxc.Install.WantedBy = [ config.kdn.desktop.sway.systemd.secrets-service.service ];
 
-      # mime gets messed up by KDE
-      xdg.mimeApps.enable = true;
-      xdg.mimeApps.associations.added = { };
-      xdg.mimeApps.defaultApplications =
-        let
-          brave = [ "brave-browser.desktop" ];
-          browser = [ "uri-to-clipboard.desktop" "firefox.desktop" ] ++ brave;
-          fileManager = [ "nemo.desktop" ];
-          ide = [ "idea-ultimate.desktop" ];
-          ipfs = brave;
-          pdf = [ "org.kde.okular.desktop" ];
-          remmina = [ "org.remmina.Remmina.desktop" ];
-          rss = brave;
-          teams = brave;
-          terminal = [ "foot.desktop" ];
-          vectorImages = [ "org.gnome.eog.desktop" ];
-        in
-        lib.mkForce {
-          "application/pdf" = pdf;
-          "application/rdf+xml" = rss;
-          "application/rss+xml" = rss;
-          "application/x-extension-htm" = browser;
-          "application/x-extension-html" = browser;
-          "application/x-extension-shtml" = browser;
-          "application/x-extension-xht" = browser;
-          "application/x-extension-xhtml" = browser;
-          "application/x-gnome-saved-search" = fileManager;
-          "application/x-remmina" = remmina;
-          "application/xhtml+xml" = browser;
-          "application/xhtml_xml" = browser;
-          "image/svg+xml" = vectorImages;
-          "inode/directory" = fileManager;
-          "text/html" = browser;
-          "text/plain" = ide;
-          "text/xml" = browser;
-          "x-scheme-handler/chrome" = browser;
-          "x-scheme-handler/http" = browser;
-          "x-scheme-handler/https" = browser;
-          "x-scheme-handler/ipfs" = ipfs;
-          "x-scheme-handler/ipns" = ipfs;
-          "x-scheme-handler/msteams" = teams;
-          "x-scheme-handler/rdp" = remmina;
-          "x-scheme-handler/remmina" = remmina;
-          "x-scheme-handler/spice" = remmina;
-          # TODO: set thunar terminal https://github.com/chmln/handlr/issues/62
-          "x-scheme-handler/terminal" = terminal;
-          "x-scheme-handler/vnc" = remmina;
-        };
 
       systemd.user.services.nextcloud-client.Unit = {
         Requires = lib.mkForce [
@@ -317,7 +270,7 @@ in
         kdn.klog-time-tracker
         kdn.klg
         kdn.ss-util
-        brave
+        ungoogled-chromium
         rambox # browser/multi workspace
         #(runCommand "rambox-wayland-bin" { } ''
         #  mkdir -p $out/bin
