@@ -34,7 +34,8 @@ in
         text = ''
           if [[ $EUID -ne 0 ]];
           then
-              exec sudo ${lib.getExe bash} "$0" "$@"
+            echo "restarting as root..." >&2
+            exec sudo ${lib.getExe bash} "$0" "$@"
           fi
           nix-collect-garbage -d
           mapfile -t users < <(getent passwd | cut -d: -f1,6 | grep ':/home/' | cut -d: -f1)
