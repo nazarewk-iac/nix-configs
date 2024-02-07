@@ -18,7 +18,7 @@ in
       hardware.opengl.driSupport32Bit = true;
 
       # INPUT
-      services.xserver.layout = "pl";
+      services.xserver.xkb.layout = "pl";
       console.useXkbConfig = true;
       services.xserver.libinput.enable = true;
       services.xserver.libinput.touchpad.disableWhileTyping = true;
