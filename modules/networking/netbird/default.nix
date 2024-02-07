@@ -97,6 +97,7 @@ in
 
   config = lib.mkMerge [
     {
+      # TODO: update nixpkgs as there is a good base already merged at https://github.com/NixOS/nixpkgs/pull/246055
       services.netbird.package = pkgs.kdn.netbird;
     }
     (lib.mkIf (cfg.instances != { }) {
