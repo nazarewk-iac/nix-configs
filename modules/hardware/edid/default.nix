@@ -15,7 +15,7 @@ in
     };
 
     environment.systemPackages = with pkgs; [
-      kdn.linuxhw-edid-fetcher
+      linuxhw-edid-fetcher
       edid-decode
       read-edid
     ];
