@@ -12,8 +12,7 @@ in
       export PATH="$PATH:$HOME/.cache/go/bin"
     '';
     environment.systemPackages = with pkgs; [
-      (lib.meta.hiPrio go_1_20)
-      go_1_19
+      (lib.meta.hiPrio go)
       #gccgo
       delve
       goreleaser
