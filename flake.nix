@@ -44,10 +44,7 @@
     treefmt-nix.url = "github:numtide/treefmt-nix";
     ulauncher.inputs.flake-parts.follows = "flake-parts";
     ulauncher.inputs.nixpkgs.follows = "nixpkgs";
-    #ulauncher.url = "github:Ulauncher/Ulauncher/v6";
-    # TODO: fix errors in latest v6/mypy
-    ulauncher.url = "github:Ulauncher/Ulauncher/b5766869291816067397ca96b3f88f6fa4f24bf9";
-    # ulauncher.url = "github:nazarewk/Ulauncher/fix-nix-build";
+    ulauncher.url = "github:Ulauncher/Ulauncher/v6";
   };
 
   outputs =

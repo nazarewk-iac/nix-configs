@@ -65,8 +65,8 @@ in
     # services.offlineimap.enable or manually with `systemctl --user start`
     services.offlineimap.install = true;
 
-    kdn.networking.netbird.instances.sc.port = 51818;
-    kdn.networking.netbird.instances.sc.logLevel = "trace";
+    services.netbird.clients.sc.autoStart = false;
+    services.netbird.clients.sc.port = 51818;
 
     kdn.networking.openvpn.enable = true;
     kdn.networking.openfortivpn.enable = true;

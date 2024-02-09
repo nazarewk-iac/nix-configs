@@ -107,9 +107,7 @@ in
         "xhci_pci"
       ];
 
-      kdn.networking.netbird.instances.priv.port = 51819;
-      kdn.networking.netbird.instances.priv.autoStart = true;
-      kdn.networking.netbird.instances.priv.logLevel = "trace";
+      services.netbird.clients.priv.port = 51819;
 
       services.devmon.enable = false; # disable auto-mounting service devmon, it interferes with disko
 
