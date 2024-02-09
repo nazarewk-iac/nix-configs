@@ -40,6 +40,7 @@ in
       };
       programs.dconf.enable = true;
       networking.firewall.checkReversePath = false;
+      networking.networkmanager.unmanaged = [ "interface-name:virbr*" ];
 
       environment.systemPackages = with pkgs; [
         libguestfs
