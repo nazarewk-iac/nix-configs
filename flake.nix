@@ -74,11 +74,11 @@
         apps.repl = {
           type = "app";
           program = "${pkgs.writeShellScriptBin "repl" ''
-              confnix=$(mktemp)
-              trap "rm '$confnix' || true" EXIT
-              echo "builtins.getFlake (toString "$PWD")" >$confnix
-              nix repl "$confnix" "$@"
-            ''}/bin/repl";
+            confnix=$(mktemp)
+            trap "rm '$confnix' || true" EXIT
+            echo "builtins.getFlake (toString "$PWD")" >$confnix
+            nix repl "$confnix" "$@"
+          ''}/bin/repl";
         };
         checks = { };
         devShells = { };
