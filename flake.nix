@@ -45,12 +45,8 @@
     ulauncher.inputs.flake-parts.follows = "flake-parts";
     ulauncher.inputs.nixpkgs.follows = "nixpkgs";
     #ulauncher.url = "github:Ulauncher/Ulauncher/v6";
-    /*
-      TODO:
-        Ulauncher is not properly installed on your system.
-        Please install or reinstall Ulauncher, and ensure you are not overriding your system Python version
-    */
-    ulauncher.url = "github:Ulauncher/Ulauncher/b5766869291816067397ca96b3f88f6fa4f24bf9";
+    # see https://github.com/Ulauncher/Ulauncher/pull/1344
+    ulauncher.url = "github:nazarewk/Ulauncher/fix-nix-build";
   };
 
   outputs =
