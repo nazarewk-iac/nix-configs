@@ -914,11 +914,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1707768339,
-        "narHash": "sha256-KO+EiGqWQ9fKtVPJVte5qzOk4VQV3s7xIUAC49AxK/8=",
+        "lastModified": 1707770882,
+        "narHash": "sha256-D3FFM+OyEak+VauEfZmA45DawEQr7OY18y2N9HXTMlM=",
         "owner": "nazarewk",
         "repo": "Ulauncher",
-        "rev": "1ad6bd8488b0f2b09f5fbf762f809ccdded2fdab",
+        "rev": "c506d5b7c6c59fdca22acc51208dc3d57976accc",
         "type": "github"
       },
       "original": {
