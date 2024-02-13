@@ -7,10 +7,6 @@ rec {
   gtimelog = pkgs.callPackage ./gtimelog { };
   klg = pkgs.callPackage ./klg { };
   klog-time-tracker = pkgs.callPackage ./klog-time-tracker { };
-  netbird = pkgs.callPackage ./netbird {
-    inherit (pkgs.darwin.apple_sdk_11_0.frameworks) Cocoa IOKit Kernel UserNotifications WebKit;
-  };
-  netbird-ui = netbird.override { ui = true; };
   openapi-python-client-cli = pkgs.callPackage ./openapi-python-client-cli { };
   pass-secret-service = pkgs.callPackage ./pass-secret-service { };
   pinentry = pkgs.callPackage ./pinentry { };

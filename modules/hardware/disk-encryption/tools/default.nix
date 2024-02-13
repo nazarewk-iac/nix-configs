@@ -9,7 +9,7 @@ in
 
   config = lib.mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
-      fido2luks
+      # fido2luks # TODO: 2024-02-13 didn't work
       (runCommand "systemd-cryptsetup-bin" { } ''
         mkdir -p $out/bin
         ln -sf ${pkgs.systemd}/lib/systemd/systemd-cryptsetup $out/bin/

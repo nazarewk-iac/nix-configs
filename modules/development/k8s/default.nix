@@ -95,7 +95,7 @@ in
         # Argo
         argo # workflows
         argocd # CD
-        vault
+        # vault # TODO: 2024-02-13: builds for a VERY long time on the laptop
       ];
     })
     (lib.mkIf cfg.patchedKubectl.enable {
