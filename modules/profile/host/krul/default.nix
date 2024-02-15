@@ -123,9 +123,5 @@ in
         }
       ];
     }
-    {
-      services.netbird.enable = true;
-      services.netbird.clients.wt0.port = 51831;
-    }
   ]);
 }
