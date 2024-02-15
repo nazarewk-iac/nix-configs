@@ -8,6 +8,7 @@ in
   };
 
   config = {
+    kdn.headless.enableGUI = lib.mkDefault (config.services.xserver.displayManager.sessionPackages != [ ]);
     boot.kernelParams = [
       "plymouth.enable=0" # disable boot splash screen
     ];

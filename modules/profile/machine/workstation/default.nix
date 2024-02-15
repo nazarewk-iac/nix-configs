@@ -21,14 +21,6 @@ in
     kdn.profile.machine.desktop.enable = true;
     kdn.profile.machine.dev.enable = true;
 
-
-    services.netbird.enable = false;
-    services.netbird.clients.wt0.port = 51821;
-    # TODO: netbird-ui overrides port to 51820
-    environment.systemPackages = with pkgs; [
-      netbird-ui
-    ];
-
     hardware.cpu.amd.updateMicrocode = true;
 
     kdn.monitoring.prometheus-stack.enable = true;

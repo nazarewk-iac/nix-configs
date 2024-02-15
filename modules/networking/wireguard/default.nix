@@ -59,7 +59,7 @@ in
 
     port = lib.mkOption {
       type = lib.types.ints.unsigned;
-      default = 51820;
+      default = 51810;
     };
 
     peers = lib.mkOption {
