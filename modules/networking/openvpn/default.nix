@@ -154,6 +154,8 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    programs.openvpn3.enable = true;
+
     services.openvpn.servers = lib.attrsets.mapAttrs mkOpenVPNConfig cfg.instances;
     systemd.services = lib.attrsets.mapAttrs' mkServiceConfig cfg.instances;
 
