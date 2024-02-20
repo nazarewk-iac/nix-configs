@@ -5,17 +5,6 @@ in
 {
   options.kdn.development.k8s = {
     enable = lib.mkEnableOption "k8s development";
-
-    patchedKubectl.enable = lib.mkEnableOption "patched kubectl";
-    # https://github.com/kubernetes/kubernetes/pull/109361
-    patchedKubectl.commit = lib.mkOption {
-      readOnly = true;
-      default = "b3aa60fae23aa4a27ca28d6564157150f2c397c1";
-    };
-    patchedKubectl.checksum = lib.mkOption {
-      readOnly = true;
-      default = "sha256-UNbohbzdMShE2CJ+CRF0DV7I4JviVMOIYDkUQZ0t/TM=";
-    };
   };
 
 
@@ -96,23 +85,6 @@ in
         argo # workflows
         argocd # CD
         # vault # TODO: 2024-02-13: builds for a VERY long time on the laptop
-      ];
-    })
-    (lib.mkIf cfg.patchedKubectl.enable {
-      nixpkgs.overlays = [
-        (final: prev: {
-          kubectl = prev.kubectl.overrideAttrs (old:
-            {
-              version = "1.24.x-${cfg.patchedKubectl.commit}";
-
-              src = prev.fetchFromGitHub {
-                owner = "nazarewk";
-                repo = "kubernetes";
-                rev = cfg.patchedKubectl.commit;
-                sha256 = cfg.patchedKubectl.checksum;
-              };
-            });
-        })
       ];
     })
   ];
