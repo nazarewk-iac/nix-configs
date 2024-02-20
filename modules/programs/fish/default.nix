@@ -24,6 +24,7 @@ in
           set fish_greeting # Disable greeting
           # see https://github.com/franciscolourenco/done
           set -U __done_sway_ignore_visible 1
+          fish_vi_key_bindings --no-erase
         '';
         plugins = with pkgs.fishPlugins; [
           { name = "grc"; src = grc.src; }
