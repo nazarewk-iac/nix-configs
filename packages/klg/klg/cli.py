@@ -384,19 +384,22 @@ async def report(path, args, period, tags, store):
     default=pendulum.now().to_date_string()[:-3],
     help="Records in period: YYYY (year), YYYY-MM (month), YYYY-Www (week), or YYYY-Qq (quarter)",
 )
-@click.option("-h", "--hours", default=None, type=int)
-@click.option("-d", "--daily-hours", "--daily", "daily_hours", default=8, type=int)
 @click.option("--write/--no-write", is_flag=True, default=True)
 @click.option("-p", "--path", default="")
-async def plan_month(period, path, write, hours, daily_hours):
+async def plan_month(period, path, write):
     klog = Klog()
     path = await get_profile_path(klog, CONFIG, path)
+    plan = CONFIG.get_profile().plan
 
     result = await klog.to_json(path)
     result.plan_month(
-        hours=hours,
-        daily_hours=daily_hours,
+        monthly_hours=plan.monthly_hours,
+        daily_hours=plan.daily_hours,
         period=pendulum.parse(period),
+        day_off_tags=plan.day_off_tags,
+        day_skip_tags=plan.day_skip_tags,
+        weekend_tag=plan.weekend_tag,
+        entry_skip_tags=plan.entry_skip_tags,
     )
     formatted, diff_content = format_result(result)
     if diff_content:

@@ -8,6 +8,8 @@ import enum
 import tomllib
 from pathlib import Path
 
+from klg import dto
+
 
 class TagsType(enum.StrEnum):
     record = "record"
@@ -147,16 +149,36 @@ class ReportConfig:
 
 
 @dataclasses.dataclass
+class PlanConfig:
+    monthly_hours: int | None = None
+    daily_hours: int | None = 8
+    day_off_tags: set = frozenset(["#off"])
+    day_skip_tags: set = frozenset(["#noplan"])
+    entry_skip_tags: set = frozenset()
+    weekend_tag: str = "#off=weekend"
+
+    def __post_init__(self):
+        self.day_off_tags = set(self.day_off_tags)
+        self.day_skip_tags = set(self.day_skip_tags)
+        self.entry_skip_tags = set(self.entry_skip_tags)
+
+
+@dataclasses.dataclass
 class ProfileConfig:
     name: str
     dir: Path
+    plan: PlanConfig = dataclasses.field(default_factory=PlanConfig)
     reports: dict[str, ReportConfig] = dataclasses.field(default_factory=dict)
 
     def load_child(self, data: dict):
         data.setdefault("name", self.name)
         data.setdefault("dir", self.dir)
         child = dacite.from_dict(ProfileConfig, data, config=dacite_config)
-        self.reports.update(child.reports)
+        self.update(child)
+
+    def update(self, other: ProfileConfig):
+        self.plan = other.plan
+        self.reports.update(other.reports)
 
 
 @dataclasses.dataclass

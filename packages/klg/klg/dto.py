@@ -301,7 +301,7 @@ class Record(EntryBase):
         self.calculate_diff()
 
     @functools.cached_property
-    def date_obj(self):
+    def date_obj(self) -> pendulum.Date:
         return pendulum.parse(self.date).date()
 
     def make_totals(self):
@@ -317,10 +317,12 @@ class Record(EntryBase):
         if diff:
             self.calculate_diff()
 
-    def set_should_total(self, expected_mins: int = None, *, diff=True):
+    def set_should_total(self, expected_mins: int = None, *, force=False, diff=True):
         if expected_mins is None:
             expected_mins = self.should_total_mins
-        self.should_total_mins = max(expected_mins, self.total_mins)
+        if not force:
+            expected_mins = max(expected_mins, self.total_mins)
+        self.should_total_mins = expected_mins
         if self.should_total_mins:
             self.should_total = f"{self.format_duration(self.should_total_mins)}!"
         else:
@@ -422,12 +424,13 @@ class Result(Base):
 
     def plan_month(
         self,
-        hours: int = None,
+        monthly_hours: int = None,
         daily_hours: int = 8,
         now: pendulum.DateTime = None,
         period: pendulum.DateTime = None,
-        off_tags: set = None,
-        skip_tags: set = None,
+        day_off_tags: set = frozenset(["#off"]),
+        day_skip_tags: set = frozenset(["#noplan"]),
+        entry_skip_tags: set = frozenset(),
         weekend_tag="#off=weekend",
     ):
         result = self
@@ -436,12 +439,9 @@ class Result(Base):
         now_date = now.date()
         period = (period or now).replace(day=1)
         period_date = period.date()
-        if off_tags is None:
-            off_tags = {"#off"}
-        if skip_tags is None:
-            skip_tags = {"#noplan"}
-        off_tags.add(weekend_tag)
+        day_off_tags = day_off_tags | {weekend_tag}
 
+        date: pendulum.Date
         by_date: dict[pendulum.Date, list[Record]] = defaultdict(list)
         for record in result.records:
             date = record.date_obj
@@ -449,9 +449,9 @@ class Result(Base):
                 by_date[date].append(record)
 
         to_plan_mins = 0
-        modifiable_records: list[Record] = []
-        workdays = 0
-        offdays = 0
+        modifiable_records: dict[pendulum.Date, list[Record]] = defaultdict(list)
+        workdays = set()
+        offdays = set()
         for i in range(1, period.days_in_month + 1):
             date = period_date.replace(day=i)
             records = by_date[date]
@@ -459,43 +459,54 @@ class Result(Base):
                 record = Record(date=str(date), summary="", tags=set())
                 result.records.append(record)
                 records.append(record)
-            record = records[0]
+            for record in records:
+                is_skipped = record.has_tag(*day_skip_tags)
+                is_past = date < now_date
+                can_modify = not is_past and not is_skipped
 
-            is_skipped = record.has_tag(*skip_tags)
-            is_past = date < now_date
-            can_modify = not is_past and not is_skipped
+                total_mins = sum(entry.total_mins for entry in record.entries)
+                skipped_mins = sum(
+                    entry.total_mins
+                    for entry in record.entries
+                    if entry.has_tag(*entry_skip_tags)
+                )
+                total_mins -= skipped_mins
 
-            # mark weekends
-            if can_modify and date.isoweekday() > 5:
-                record.add_tags(weekend_tag)
+                # mark weekends
+                if can_modify and date.isoweekday() > 5:
+                    record.add_tags(weekend_tag)
 
-            is_off = record.has_tag(*off_tags)
-            if is_off:
-                offdays += 1
-            else:
-                workdays += 1
-            if can_modify and is_off:
-                record.set_should_total(0)
+                is_off = record.has_tag(*day_off_tags)
+                if is_off:
+                    offdays.add(record.date_obj)
+                else:
+                    workdays.add(record.date_obj)
+                if can_modify and is_off:
+                    record.set_should_total(0)
 
-            # TODO: subtract open-ended range?
-            if record.total_mins > record.should_total_mins or is_past:
-                record.set_should_total(record.total_mins)
+                # TODO: subtract open-ended range?
+                if total_mins > record.should_total_mins or (
+                    is_past and total_mins != record.should_total_mins
+                ):
+                    record.set_should_total(total_mins, force=True)
 
-            if date == now_date and record.diff_mins == 0:
-                to_plan_mins -= record.should_total_mins
-            elif is_past or is_skipped:
-                to_plan_mins -= record.should_total_mins
-            elif can_modify and not is_off:
-                modifiable_records.append(record)
+                diff_mins = record.should_total_mins - total_mins
+                if date == now_date and diff_mins == 0:
+                    to_plan_mins -= record.should_total_mins
+                elif is_past or is_skipped:
+                    to_plan_mins -= record.should_total_mins
+                elif can_modify and not is_off:
+                    modifiable_records[record.date_obj].append(record)
 
-        if hours is not None:
-            to_plan_mins += hours * 60
+        if monthly_hours is not None:
+            to_plan_mins += monthly_hours * 60
         else:
-            to_plan_mins += workdays * daily_hours * 60
+            to_plan_mins += len(workdays) * daily_hours * 60
         leftover_mins = to_plan_mins % len(modifiable_records)
         expected_daily = int(to_plan_mins / len(modifiable_records))
 
-        for i, record in enumerate(modifiable_records):
+        for i, records in enumerate(modifiable_records.values()):
+            record = records[-1]
             expected = expected_daily
             if i < leftover_mins:
                 expected += 1
