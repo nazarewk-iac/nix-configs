@@ -13,6 +13,7 @@ in
       complete -c nix-which --wraps which
     '';
     environment.systemPackages = with pkgs; [
+      nix-derivation # pretty-derivation
       nix-du
       nix-tree
       nix-update
