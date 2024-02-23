@@ -317,7 +317,7 @@ class Record(EntryBase):
         if diff:
             self.calculate_diff()
 
-    def set_should_total(self, expected_mins: int = None, *, force=False, diff=True):
+    def set_should_total(self, expected_mins: int = None, *, force=True, diff=True):
         if expected_mins is None:
             expected_mins = self.should_total_mins
         if not force:
@@ -488,7 +488,7 @@ class Result(Base):
                 if total_mins > record.should_total_mins or (
                     is_past and total_mins != record.should_total_mins
                 ):
-                    record.set_should_total(total_mins, force=True)
+                    record.set_should_total(total_mins)
 
                 diff_mins = record.should_total_mins - total_mins
                 if date == now_date and diff_mins == 0:
