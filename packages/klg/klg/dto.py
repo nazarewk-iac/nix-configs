@@ -313,7 +313,7 @@ class Record(EntryBase):
 
     def set_total(self, mins: int, *, diff=True):
         self.total_mins = mins
-        self.should_total = self.format_duration(self.total_mins)
+        self.total = self.format_duration(self.total_mins)
         if diff:
             self.calculate_diff()
 
