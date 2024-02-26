@@ -15,6 +15,7 @@ in
     environment.systemPackages = with pkgs; [
       nix-derivation # pretty-derivation
       nix-du
+      nix-output-monitor
       nix-tree
       nix-update
       nixfmt
