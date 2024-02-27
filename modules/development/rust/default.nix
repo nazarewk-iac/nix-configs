@@ -8,6 +8,7 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    home-manager.sharedModules = [{ kdn.development.rust.enable = true; }];
     environment.systemPackages = with pkgs; [
       #cargo
       #rustc

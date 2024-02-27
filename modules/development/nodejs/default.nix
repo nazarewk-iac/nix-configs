@@ -15,6 +15,7 @@ in
     ];
 
     home-manager.sharedModules = [
+      { kdn.development.nodejs.enable = true; }
       {
         home.file.".npmrc".text = ''
           cache=~/.cache/npm

@@ -10,11 +10,6 @@ in
   config = lib.mkIf cfg.enable {
     kdn.packaging.asdf.enable = true;
 
-    home-manager.sharedModules = [
-      ./hm.nix
-      {
-        kdn.development.terraform.enable = true;
-      }
-    ];
+    home-manager.sharedModules = [{ kdn.development.terraform.enable = true; }];
   };
 }

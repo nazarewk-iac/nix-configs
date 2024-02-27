@@ -8,6 +8,7 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    home-manager.sharedModules = [{ kdn.development.data.enable = true; }];
     environment.systemPackages = with pkgs; [
       miller
       yq-go

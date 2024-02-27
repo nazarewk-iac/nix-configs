@@ -17,6 +17,7 @@ in
     kdn.development.cloud.enable = true;
     kdn.development.data.enable = true;
     kdn.development.db.mysql.enable = false;
+    kdn.development.documents.enable = true;
     kdn.development.elixir.enable = true;
     kdn.development.golang.enable = true;
     kdn.development.java.enable = true;
@@ -27,6 +28,7 @@ in
     kdn.development.rpi.enable = true;
     kdn.development.rust.enable = true;
     kdn.development.terraform.enable = true;
+    kdn.development.web.enable = true;
     kdn.programs.aws-vault.enable = true;
     services.plantuml-server.enable = false; # TODO: fix this?
   };

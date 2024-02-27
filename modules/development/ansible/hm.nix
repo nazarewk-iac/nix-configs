@@ -1,6 +1,6 @@
 { lib, pkgs, config, ... }:
 let
-  cfg = config.kdn.development.ansible;
+  cfg = config.kdn.development.terraform;
 in
 {
   options.kdn.development.ansible = {
@@ -8,9 +8,8 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    home-manager.sharedModules = [{ kdn.development.ansible.enable = true; }];
-    environment.systemPackages = with pkgs; [
-      ansible
+    programs.helix.extraPackages = with pkgs;[
+      ansible-language-server
     ];
   };
 }

@@ -8,7 +8,7 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-
+    home-manager.sharedModules = [{ kdn.development.nix.enable = true; }];
     programs.fish.interactiveShellInit = ''
       complete -c nix-which --wraps which
     '';

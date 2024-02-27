@@ -8,6 +8,7 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    home-manager.sharedModules = [{ kdn.development.shell.enable = true; }];
     environment.systemPackages = with pkgs; [
       bash
       shellcheck

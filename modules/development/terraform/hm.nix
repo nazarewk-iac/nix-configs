@@ -66,12 +66,14 @@ in
     home.packages = with pkgs; [
       terranix
       terraformer
-      terraform-ls # see https://github.com/hashicorp/terraform-ls/blob/main/docs/USAGE.md
       (pkgs.writeShellApplication {
         name = "tf-fmt";
         runtimeInputs = with pkgs; [ gnugrep gnused coreutils findutils moreutils gojq ];
         text = builtins.readFile ./tf-fmt.sh;
       })
+    ];
+    programs.helix.extraPackages = with pkgs;[
+      terraform-ls
     ];
   };
 }

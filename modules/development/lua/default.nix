@@ -58,6 +58,7 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    home-manager.sharedModules = [{ kdn.development.lua.enable = true; }];
     environment.systemPackages = with pkgs; [
       (mkLuaVersion cfg.defaultVersion) # latest
     ] ++ (map mkSuffixedLuaVersion cfg.versions);

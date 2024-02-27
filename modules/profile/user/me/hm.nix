@@ -290,5 +290,8 @@ in
         deluge
       ];
     })
+    ({
+      programs.helix.enable = true;
+    })
   ]);
 }

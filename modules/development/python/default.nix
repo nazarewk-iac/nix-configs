@@ -59,9 +59,8 @@ in
 
   config = lib.mkIf cfg.enable {
     home-manager.sharedModules = [
-      {
-        programs.git.ignores = [ (builtins.readFile ./.gitignore) ];
-      }
+      { kdn.development.python.enable = true; }
+      { programs.git.ignores = [ (builtins.readFile ./.gitignore) ]; }
     ];
     nixpkgs.overlays = [
       (final: prev: {
