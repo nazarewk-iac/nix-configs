@@ -503,11 +503,11 @@ class Result(Base):
         else:
             to_plan_mins += len(workdays) * daily_hours * 60
 
-        leftover_mins = 0
-        expected_daily = 0
-        if len(modifiable_records) > 0:
-            leftover_mins = to_plan_mins % len(modifiable_records)
-            expected_daily = int(to_plan_mins / len(modifiable_records))
+        if not modifiable_records:
+            return
+
+        leftover_mins = to_plan_mins % len(modifiable_records)
+        expected_daily = int(to_plan_mins / len(modifiable_records))
 
         for i, records in enumerate(modifiable_records.values()):
             record = records[-1]
