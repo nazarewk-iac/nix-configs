@@ -1,5 +1,11 @@
 {
+  nix.extraOptions = ''
+    # run as kdn:
+    #   begin; set file nix/nix.sensitive.conf ; pass show "$file" | sudo tee "/etc/$file" >/dev/null && sudo chmod 0640 "/etc/$file" && sudo chown root:wheel "/etc/$file"; end
+    !include /etc/nix/nix.sensitive.conf
+  '';
   nix.settings = {
+    show-trace = true;
     experimental-features = [ "nix-command" "flakes" ];
     trusted-public-keys = [
       "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
@@ -12,6 +18,8 @@
       "https://nixpkgs-update.cachix.org"
       "https://devenv.cachix.org"
     ];
+    allowed-users = [ "@wheel" ];
+    trusted-users = [ "@wheel" ];
   };
 
   nixpkgs.config = {
