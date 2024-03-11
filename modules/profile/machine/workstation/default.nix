@@ -55,7 +55,24 @@ in
       "aarch64-linux"
       "wasm32-wasi"
       "wasm64-wasi"
-      "x86_64-windows"
+      /*
+        2024-03-11:
+        error: builder for '/nix/store/sd233q3n28m8qkzq210yn5xpmy1pplqr-wine64-9.0.drv' failed with exit code 1;
+               last 10 log lines:
+               > checking for x86_64-w64-mingw32-clang... no
+               > checking for amd64-w64-mingw32-clang... no
+               > checking for clang... no
+               > checking for pthread_create... yes
+               > checking how to run the C preprocessor... gcc -m64 -E
+               > checking for X... no
+               > configure: error: X 64-bit development files not found. Wine will be built
+               > without X support, which probably isn't what you want. You will need
+               > to install 64-bit development packages of Xlib at the very least.
+               > Use the --without-x option if you really want this.
+               For full logs, run 'nix log /nix/store/sd233q3n28m8qkzq210yn5xpmy1pplqr-wine64-9.0.drv'.
+      */
+      # "x86_64-windows"
+      # "i686-windows"
     ];
 
 

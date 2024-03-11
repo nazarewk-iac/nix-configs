@@ -108,7 +108,7 @@ in
         (mkNixOSMount "/var/log" { })
         (mkNixOSMount "/var/log/journal" { })
         (mkNixOSMount "/var/spool" { })
-        (mkContainerMount "/containerd" { at = "/var/lib/containerd"; })
+        #(mkContainerMount "/containerd" { at = "/var/lib/containerd"; })
         (mkZFSMount "/home" { })
         (mkZFSMount "/home/kdn" { })
         (mkZFSMount "/home/kdn/.cache" { })
