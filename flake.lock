@@ -914,16 +914,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1707768339,
-        "narHash": "sha256-KO+EiGqWQ9fKtVPJVte5qzOk4VQV3s7xIUAC49AxK/8=",
-        "owner": "nazarewk",
+        "lastModified": 1709496112,
+        "narHash": "sha256-klCC8kqTeCS6icFnK/6cFqtm5pumhG9WArU2lAgB/sM=",
+        "owner": "Ulauncher",
         "repo": "Ulauncher",
-        "rev": "1ad6bd8488b0f2b09f5fbf762f809ccdded2fdab",
+        "rev": "c183d65dfe82024991d7be3a5843cf55a4994e77",
         "type": "github"
       },
       "original": {
-        "owner": "nazarewk",
-        "ref": "fix-nix-build",
+        "owner": "Ulauncher",
+        "ref": "v6",
         "repo": "Ulauncher",
         "type": "github"
       }

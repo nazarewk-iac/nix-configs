@@ -44,9 +44,7 @@
     treefmt-nix.url = "github:numtide/treefmt-nix";
     ulauncher.inputs.flake-parts.follows = "flake-parts";
     ulauncher.inputs.nixpkgs.follows = "nixpkgs";
-    #ulauncher.url = "github:Ulauncher/Ulauncher/v6";
-    # see https://github.com/Ulauncher/Ulauncher/pull/1344
-    ulauncher.url = "github:nazarewk/Ulauncher/fix-nix-build";
+    ulauncher.url = "github:Ulauncher/Ulauncher/v6";
   };
 
   outputs =
