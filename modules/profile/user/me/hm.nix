@@ -225,30 +225,6 @@ in
         After = [ "tray.target" config.kdn.desktop.sway.systemd.envs.target "kdeconnect.service" ];
         PartOf = [ config.kdn.desktop.sway.systemd.session.target ];
       };
-      home.packages = with pkgs; let
-        launch = (lib.kdn.shell.writeShellScript pkgs (./bin + "/kdn-launch.sh") {
-          runtimeInputs = with pkgs; [
-            coreutils
-            procps
-            libnotify
-            sway
-            jq
-
-            pass
-            drag0nius_kdbx
-
-            config.programs.firefox.finalPackage
-
-            element-desktop
-            signal-desktop
-            slack
-            rambox
-          ];
-        });
-      in
-      [
-        launch
-      ];
     })
     (lib.mkIf (hasWorkstation && hasGUI) {
       home.packages = with pkgs; [
