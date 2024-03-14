@@ -87,7 +87,8 @@ in
         inotify-tools
         jq
         git
-        dig
+        bind # provides: dnssec-*, named-*, ...
+        dnsutils # another output of `pkgs.bind`, provides: dig, delv, nslookup, nsupdate
         nmap
         bandwhich
         cryptsetup
