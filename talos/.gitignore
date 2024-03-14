@@ -12,18 +12,3 @@
 ###
 ### END ignore everything
 ###
-
-# shareable Jetbrains files
-!.idea/modules.xml
-!.idea/watcherTasks.xml
-!.idea/vcs.xml
-!.idea/misc.xml
-!*.iml
-
-!*.nix
-.*.nix
-!*.patch
-!*.sh
-!*.md
-!/.envrc
-!/flake.lock

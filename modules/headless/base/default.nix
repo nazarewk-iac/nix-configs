@@ -13,15 +13,16 @@ in
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     ({
-      kdn.hardware.basic.enable = true;
-      kdn.development.data.enable = true;
-      kdn.filesystems.base.enable = true;
-      kdn.development.linux-utils.enable = true;
-
       users.defaultUserShell = pkgs.fish;
-      kdn.programs.zsh.enable = true;
+
+      kdn.development.data.enable = true;
+      kdn.development.linux-utils.enable = true;
+      kdn.filesystems.base.enable = true;
+      kdn.hardware.basic.enable = true;
       kdn.programs.fish.enable = true;
       kdn.programs.handlr.enable = true;
+      kdn.programs.nix-utils.enable = true;
+      kdn.programs.zsh.enable = true;
 
       programs.command-not-found.enable = false;
       programs.bash.interactiveShellInit = ''
