@@ -190,13 +190,13 @@
               }];
           };
 
-          wg-0 = flakeLib.nixos.system {
+          moss = flakeLib.nixos.system {
             system = "x86_64-linux";
-            modules = [{ kdn.profile.host.wg-0.enable = true; }
+            modules = [{ kdn.profile.host.moss.enable = true; }
               {
                 system.stateVersion = "23.11";
                 networking.hostId = "550ded62"; # cut -c-8 </proc/sys/kernel/random/uuid
-                networking.hostName = "wg-0";
+                networking.hostName = "moss";
 
                 _module.args.nixinate = {
                   host = "wg.nazarewk.pw";

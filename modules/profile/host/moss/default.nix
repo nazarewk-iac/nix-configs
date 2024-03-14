@@ -1,11 +1,11 @@
 { config, pkgs, lib, modulesPath, self, ... }:
 let
-  cfg = config.kdn.profile.host.wg-0;
+  cfg = config.kdn.profile.host.moss;
   hostname = config.networking.hostName;
 in
 {
-  options.kdn.profile.host.wg-0 = {
-    enable = lib.mkEnableOption "enable wg-0 host profile";
+  options.kdn.profile.host.moss = {
+    enable = lib.mkEnableOption "enable moss host profile";
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [

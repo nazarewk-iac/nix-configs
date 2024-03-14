@@ -1,7 +1,7 @@
 { config, ... }:
 {
   kdn.networking.wireguard.peers = {
-    wg-0 = {
+    moss = {
       hostnum = 1;
       server = {
         enable = true;
