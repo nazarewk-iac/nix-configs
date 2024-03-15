@@ -10,8 +10,6 @@ rec {
   openapi-python-client-cli = pkgs.callPackage ./openapi-python-client-cli { };
   pass-secret-service = pkgs.callPackage ./pass-secret-service { };
   pinentry = pkgs.callPackage ./pinentry { };
-  rambox = pkgs.callPackage ./rambox { };
-  rambox-wayland = pkgs.callPackage ./rambox-wayland { };
   whicher = pkgs.callPackage ./whicher { };
   ss-util = pkgs.callPackage ./ss-util { };
   tc-redirect-tap = pkgs.callPackage ./tc-redirect-tap { };
