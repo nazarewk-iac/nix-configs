@@ -248,21 +248,15 @@ in
         kdn.ss-util
         ungoogled-chromium
         rambox # browser/multi workspace
-        #(runCommand "rambox-wayland-bin" { } ''
-        #  mkdir -p $out/bin
-        #  ln -sf ${kdn.rambox-wayland}/bin/rambox $out/bin/rambox-wayland
-        #'')
         drawio
         plantuml
 
         element-desktop
         signal-desktop
         slack
-        discord
         zoom-us
         nextcloud-client
 
-        #transmission-qt
         deluge
       ];
     })
