@@ -36,7 +36,7 @@ in
       programs.gnupg.agent.enableExtraSocket = true;
       # cannot remove keys from the agent and YubiKey GPG is not set up/set up with unknown password
       programs.gnupg.agent.enableSSHSupport = false;
-      programs.gnupg.agent.pinentryFlavor = null;
+      programs.gnupg.agent.pinentryPackage = cfg.pinentry;
 
       environment.systemPackages = with pkgs; [
         (lib.hiPrio cfg.pinentry)
@@ -56,12 +56,6 @@ in
           text = builtins.readFile ./pass-pubkeys.sh;
         })
       ];
-
-      home-manager.sharedModules = [{
-        home.file.".gnupg/gpg-agent.conf".text = ''
-          pinentry-program ${cfg.pinentry}/bin/pinentry
-        '';
-      }];
 
       # allow usb-ip access to Yubikeys
       security.polkit.extraConfig = builtins.readFile ./pcsc-lite-rules.js;

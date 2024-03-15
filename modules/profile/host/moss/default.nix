@@ -24,10 +24,6 @@ in
       kdn.profile.machine.hetzner.enable = true;
       security.sudo.wheelNeedsPassword = false;
 
-      environment.systemPackages = with pkgs; [
-        sqlite
-      ];
-
       services.coredns.enable = true;
       services.coredns.config = ''
         (defaults) {

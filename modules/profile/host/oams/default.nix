@@ -51,6 +51,14 @@ in
         wayland.windowManager.sway.extraConfig = ''
           output eDP-1 mode 2560x1440@60Hz
         '';
+        wayland.windowManager.sway.config =
+          {
+            output."eDP-1".pos = "0 0";
+            workspaceOutputAssign = [
+              { workspace = "1"; output = "eDP-1"; }
+            ];
+          };
+
       }];
     }
   ]);

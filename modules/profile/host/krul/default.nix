@@ -123,5 +123,25 @@ in
         }
       ];
     }
+    {
+      home-manager.sharedModules = [{
+        wayland.windowManager.sway.config =
+          let
+            # name is derived from forced edid profile, could be DP-1
+            asus = "The Linux Foundation PG278Q_60 Linux #0";
+            dell = "Dell Inc. DELL U2711 G606T29F0EWL";
+          in
+          {
+            output."${asus}".pos = "0 0";
+            output."${dell}".pos = "2560 0";
+            workspaceOutputAssign = [
+              { workspace = "1"; output = dell; }
+              { workspace = "2"; output = asus; }
+              { workspace = "3"; output = asus; }
+              { workspace = "4"; output = dell; }
+            ];
+          };
+      }];
+    }
   ]);
 }

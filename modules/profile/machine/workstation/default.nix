@@ -12,10 +12,6 @@ in
     kdn.desktop.sway.enable = true;
     kdn.desktop.sway.remote.enable = true;
 
-    home-manager.users.kdn = {
-      # while debugging pinentry wrapper
-      home.file.".gnupg/gpg-agent.conf".force = true;
-    };
     kdn.programs.gnupg.pinentry = pkgs.kdn.pinentry;
 
     kdn.profile.machine.desktop.enable = true;

@@ -47,7 +47,7 @@ in
       boot.kernelParams = [ "nohibernate" ];
       boot.initrd.supportedFilesystems = [ "zfs" ];
       boot.supportedFilesystems = [ "zfs" ];
-      boot.zfs.enableUnstable = true;
+      boot.zfs.package = pkgs.zfs_unstable;
 
       # for now trying rt kernel
       ## see https://github.com/NixOS/nixpkgs/issues/169457
