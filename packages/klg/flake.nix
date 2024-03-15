@@ -5,14 +5,14 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     #devenv.url = "github:cachix/devenv/latest";
     #devenv.url = "github:cachix/devenv/main";
-    # see https://github.com/cachix/devenv/pull/503
     devenv.url = "github:nazarewk/devenv/flake-parts-container-usage";
-    #devenv.url = "/home/kdn/dev/github.com/cachix/devenv";
     nix2container.url = "github:nlewo/nix2container";
     nix2container.inputs.nixpkgs.follows = "nixpkgs";
     nix2container.inputs.flake-utils.follows = "flake-utils";
     mk-shell-bin.url = "github:rrbutani/nix-mk-shell-bin";
     flake-utils.url = "github:numtide/flake-utils";
+    poetry2nix.inputs.nixpkgs.follows = "nixpkgs";
+    poetry2nix.url = "github:nix-community/poetry2nix";
   };
 
   outputs = inputs@{ self, nixpkgs, flake-parts, ... }: flake-parts.lib.mkFlake { inherit inputs; } {
@@ -35,6 +35,7 @@
           inherit system;
           overlays = [
             self.overlays.default
+            inputs.poetry2nix.overlays.default
             (final: prev: {
               nix2container = inputs'.nix2container.packages.nix2container;
             })
