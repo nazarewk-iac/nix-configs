@@ -109,13 +109,32 @@ in
         ark # archive manager
         gwenview # image viewer & editor
         pix # image gallery viewer
-      ]) ++ (with cinnamon; [
-        nemo
-        nemo-fileroller
       ]);
 
       xdg.portal.enable = true;
       xdg.portal.xdgOpenUsePortal = true;
+    }
+    {
+      # Nemo file browser
+      # based on https://github.com/NixOS/nixpkgs/blob/2dbd317f56128ddc550ca337c7c6977d4bbec887/nixos/modules/services/x11/desktop-managers/cinnamon.nix
+
+      services.gnome.glib-networking.enable = true;
+      programs.file-roller.enable = true;
+      programs.file-roller.package = pkgs.cinnamon.nemo-fileroller;
+
+      environment.systemPackages = with pkgs.cinnamon // pkgs; [
+        nemo-with-extensions
+        gtk3.out
+        xdg-user-dirs
+        desktop-file-utils
+      ];
+      services.dbus.packages = with pkgs.cinnamon // pkgs; [
+        nemo-with-extensions
+      ];
+      fonts.packages = with pkgs; [
+        dejavu_fonts # Default monospace font in LMDE 6+
+        ubuntu_font_family # required for default theme
+      ];
     }
   ]);
 }
