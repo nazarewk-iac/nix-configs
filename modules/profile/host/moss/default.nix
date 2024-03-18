@@ -39,13 +39,13 @@ in
             servfail  1s
           }
           log
+          errors
         }
 
         nb.kdn.im:${builtins.toString coredns.port} {
           import defaults
           rewrite name suffix .nb.kdn.im. .netbird.cloud. answer auto
           forward netbird.cloud. /etc/resolv.conf
-          errors
         }
 
         nb.nazarewk.pw:${builtins.toString coredns.port} {
@@ -53,7 +53,6 @@ in
           import defaults
           rewrite name suffix .nb.nazarewk.pw. .netbird.cloud. answer auto
           forward netbird.cloud. /etc/resolv.conf
-          errors
         }
 
         .:${builtins.toString coredns.port} {
