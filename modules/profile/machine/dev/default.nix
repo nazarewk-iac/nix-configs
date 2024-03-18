@@ -16,7 +16,7 @@ in
     kdn.development.cloud.azure.enable = false;
     kdn.development.cloud.enable = true;
     kdn.development.data.enable = true;
-    kdn.development.db.mysql.enable = true;
+    kdn.development.db.enable = true;
     kdn.development.documents.enable = true;
     kdn.development.elixir.enable = true;
     kdn.development.golang.enable = true;

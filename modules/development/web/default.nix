@@ -1,6 +1,6 @@
 { lib, pkgs, config, system, ... }:
 let
-  cfg = config.kdn.development.db.mysql;
+  cfg = config.kdn.development.db;
 in
 {
   options.kdn.development.web = {

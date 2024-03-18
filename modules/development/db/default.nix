@@ -1,9 +1,9 @@
 { lib, pkgs, config, system, ... }:
 let
-  cfg = config.kdn.development.db.mysql;
+  cfg = config.kdn.development.db;
 in
 {
-  options.kdn.development.db.mysql = {
+  options.kdn.development.db = {
     enable = lib.mkEnableOption "SQL development and access";
   };
 
