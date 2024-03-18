@@ -11,18 +11,19 @@ in
     programs.git.ignores = [ (builtins.readFile ./.gitignore) ];
 
     home.sessionVariables = {
-      TF_CLI_CONFIG_FILE = "${config.xdg.configHome}/terraform/.terraformrc";
+      TF_CLI_CONFIG_FILE = "${config.xdg.configHome}/tofu/.tofurc";
+      TERRAGRUNT_TFPATH = "tofu";
     };
 
     xdg.configFile."terraform/.terraformrc".text = ''
-      plugin_cache_dir = "${config.xdg.cacheHome}/terraform/plugin-cache"
+      plugin_cache_dir = "${config.xdg.cacheHome}/tofu/plugin-cache"
     '';
 
     home.file.".tool-versions".source = ./.tool-versions;
 
     programs.bash.initExtra = config.programs.zsh.initExtra;
     programs.zsh.initExtra = ''
-      mkdir -p "${config.xdg.cacheHome}/terraform/plugin-cache"
+      mkdir -p "${config.xdg.cacheHome}/tofu/plugin-cache"
     '';
 
     home.shellAliases =
@@ -53,8 +54,8 @@ in
         } // (builtins.mapAttrs (short: entry: "${cmd} ${entry}") extra);
 
       in
-      (mkAliases "terraform" "tf" {
-        "tff" = "terraform fmt --recursive";
+      (mkAliases "tofu" "tf" {
+        "tff" = "tofu fmt --recursive";
       }) // (mkAliases "TERRAGRUNT_FETCH_DEPENDENCY_OUTPUT_FROM_STATE=true terragrunt" "tg" {
         "tgf" = "hclfmt";
         "tgs" = "render-json --terragrunt-json-out=/dev/stdout | jq";
@@ -64,8 +65,9 @@ in
       });
 
     home.packages = with pkgs; [
+      opentofu
+      terragrunt
       terranix
-      terraformer
       (pkgs.writeShellApplication {
         name = "tf-fmt";
         runtimeInputs = with pkgs; [ gnugrep gnused coreutils findutils moreutils gojq ];
@@ -73,6 +75,7 @@ in
       })
     ];
     programs.helix.extraPackages = with pkgs;[
+      # TODO: replace with https://github.com/gamunu/vscode-opentofu
       terraform-ls
     ];
   };

@@ -29,12 +29,12 @@ function main() {
 
   diff="$(git diff --name-only "$since_revision")"
 
-  if command -v terraform; then
+  if command -v tofu; then
     while read -r dir; do
-      terraform fmt "$dir"
+      tofu fmt "$dir"
     done < <(match_extensions tf tfvars | sed 's#/[^/]*$##g' | sort | uniq)
   else
-    echo 'terraform executable is missing, skipping...'
+    echo 'tofu executable is missing, skipping...'
   fi
 
   if command -v terragrunt; then

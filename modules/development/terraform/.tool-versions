@@ -1,2 +1,2 @@
-terraform 1.3.5
-terragrunt 0.40.2
+opentofu 1.6.2
+terragrunt 0.55.16
