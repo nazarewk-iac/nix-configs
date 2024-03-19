@@ -15,7 +15,7 @@ in
       TERRAGRUNT_TFPATH = "tofu";
     };
 
-    xdg.configFile."terraform/.terraformrc".text = ''
+    xdg.configFile."tofu/.tofurc".text = ''
       plugin_cache_dir = "${config.xdg.cacheHome}/tofu/plugin-cache"
     '';
 
