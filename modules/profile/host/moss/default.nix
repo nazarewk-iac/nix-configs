@@ -24,7 +24,7 @@ in
       kdn.profile.machine.hetzner.enable = true;
       security.sudo.wheelNeedsPassword = false;
 
-      services.coredns.enable = true;
+      services.coredns.enable = false;
       services.coredns.config = ''
         (defaults) {
           bind ${builtins.concatStringsSep " " coredns.interfaces}
@@ -57,7 +57,6 @@ in
 
         .:${builtins.toString coredns.port} {
           import defaults
-
           forward . ${builtins.concatStringsSep " " coredns.upstreams} {
             tls
             policy random
