@@ -18,7 +18,11 @@ let
     mt-940
     pendulum
     pip
-    pipx
+    /*
+      2024-03-25: pipx.util.PipxError: Error installing pycowsay from spec 'pycowsay==0.0.0.2'.
+        related to https://github.com/NixOS/nixpkgs/issues/298439 ?
+      pipx
+    */
     pyaml
     pyheos
     pytest

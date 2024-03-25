@@ -14,23 +14,49 @@
         in
         _overlayedInputs [ overlay ];
 
-      nixos.system =
+      mkNixosSystemArgs =
         { modules ? [ ]
         , system ? "x86_64-linux"
         , ...
-        }: lib.nixosSystem {
+        }: {
           inherit system;
           specialArgs = {
             inherit self system;
             inherit (self) inputs lib;
           };
 
-          modules = [
-            self.nixosModules.default
-            { nixpkgs.overlays = [ self.overlays.default ]; }
-          ] ++ modules;
+          modules = [ self.nixosModules.default ] ++ modules;
         };
+
+      nixos.system = args: lib.nixosSystem (mkNixosSystemArgs args);
       nixos.configuration = { name, ... }@args: { ${name} = nixos.system args; };
+      nixos.install-iso = args:
+        let
+          prev = mkNixosSystemArgs args;
+        in
+        self.inputs.nixos-generators.nixosGenerate (prev // {
+          inherit (prev.specialArgs) lib;
+          inherit (lib) nixosSystem;
+
+          modules = prev.modules ++ [{
+            /* `isoImage.isoName` gives a stable image filename */
+            /* `lib.mkForce` is a fix for:
+                error: The option `isoImage.isoName' has conflicting definition values:
+                  - In `/nix/store/v7l65f0mfszidw5z6napdsiyq0nnnvxn-source/nixos/modules/installer/cd-dvd/installation-cd-base.nix': "nixos-23.11.20230527.e108023-aarch64-linux.iso"
+                  - In `/nix/store/ld9rn0fc23j6cp92v9r31fq2nwc4s96b-source/formats/install-iso.nix': "nixos.iso"
+                  Use `lib.mkForce value` or `lib.mkDefault value` to change the priority on any of these definitions.
+            */
+            isoImage.isoName = lib.mkForce "nixos.iso";
+
+            /* `install-iso` uses some weird GRUB booting chimera
+              see https://github.com/NixOS/nixpkgs/blob/9fbeebcc35c2fbc9a3fb96797cced9ea93436097/nixos/modules/installer/cd-dvd/iso-image.nix#L780-L787
+            */
+            boot.initrd.systemd.enable = lib.mkForce false;
+            boot.loader.systemd-boot.enable = lib.mkForce false;
+          }];
+
+          format = "install-iso";
+        });
 
       # wrap self.nixosConfigurations in executable packages
       # see https://github.com/astro/microvm.nix/blob/24136ffe7bb1e504bce29b25dcd46b272cbafd9b/flake.nix#L57-L69

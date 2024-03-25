@@ -1,4 +1,4 @@
-{ config, lib, pkgs, inputs, ... }: {
+{ config, lib, pkgs, inputs, self, ... }: {
   imports = [
     inputs.home-manager.nixosModules.home-manager
     inputs.disko.nixosModules.disko
@@ -22,5 +22,6 @@
     nix.registry.nixpkgs.flake = inputs.nixpkgs;
     nix.settings.auto-optimise-store = true;
     nix.package = pkgs.nixVersions.stable;
+    nixpkgs.overlays = [ self.overlays.default ];
   };
 }

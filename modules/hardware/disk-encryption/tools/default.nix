@@ -1,6 +1,11 @@
 { lib, pkgs, config, ... }:
 let
   cfg = config.kdn.hardware.disk-encryption.tools;
+
+  systemd-cryptsetup = pkgs.runCommand "systemd-cryptsetup-bin" { } ''
+    mkdir -p $out/bin
+    ln -sf ${pkgs.systemd}/lib/systemd/systemd-cryptsetup $out/bin/
+  '';
 in
 {
   options.kdn.hardware.disk-encryption.tools = {
@@ -10,10 +15,32 @@ in
   config = lib.mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
       # fido2luks # TODO: 2024-02-13 didn't work
-      (runCommand "systemd-cryptsetup-bin" { } ''
-        mkdir -p $out/bin
-        ln -sf ${pkgs.systemd}/lib/systemd/systemd-cryptsetup $out/bin/
-      '')
+      systemd-cryptsetup
+      (pkgs.writeShellApplication {
+        name = "kdn-systemd-zfs-decrypt";
+        runtimeInputs = [ systemd-cryptsetup ];
+        text = ''
+          set -eEuo pipefail
+          set -x
+
+          usage() {
+            cat <<'EOF' >&2
+          kdn-systemd-zfs-decrypt XXX-main-crypted /dev/disk/by-id/encrypted-zpool /dev/disk/by-id/header-partition
+          EOF
+            exit 1
+          }
+
+          main() {
+            name="$1"
+            disk="$2"
+            header="$3"
+
+            systemd-cryptsetup attach "$name" "$disk" - header="$header"
+          }
+
+          main "$@" || usage
+        '';
+      })
     ];
   };
 }

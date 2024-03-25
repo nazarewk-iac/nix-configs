@@ -23,7 +23,7 @@ in
       gron # JSON to/from list of path-value assignments
       (pkgs.writeShellApplication {
         name = "ungron";
-        text = ''${gron}/bin/gron --urgron "$@"'';
+        text = ''${gron}/bin/gron --ungron "$@"'';
       })
 
       cue

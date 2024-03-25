@@ -65,49 +65,34 @@
         })
         (final: prev: { devenv = inputs.devenv.packages.${final.stdenv.system}.default; })
       ]);
-      perSystem = { config, self', inputs', system, pkgs, ... }: {
-        _module.args.pkgs = inputs'.nixpkgs.legacyPackages.extend self.overlays.default;
-        # inspired by https://github.com/NixOS/nix/issues/3803#issuecomment-748612294
-        # usage: nix run '.#repl'
-        apps.repl = {
-          type = "app";
-          program = "${pkgs.writeShellScriptBin "repl" ''
+      perSystem = { config, self', inputs', system, pkgs, ... }:
+        let kdnNixpkgs = inputs'.nixpkgs.legacyPackages.extend self.overlays.default; in {
+          _module.args.pkgs = kdnNixpkgs;
+          # inspired by https://github.com/NixOS/nix/issues/3803#issuecomment-748612294
+          # usage: nix run '.#repl'
+          apps.repl = {
+            type = "app";
+            program = "${pkgs.writeShellScriptBin "repl" ''
             confnix=$(mktemp)
             trap "rm '$confnix' || true" EXIT
             echo "builtins.getFlake (toString "$PWD")" >$confnix
             nix repl "$confnix" "$@"
           ''}/bin/repl";
-        };
-        checks = { };
-        devShells = { };
-        packages = lib.mkMerge [
-          (lib.filterAttrs (n: pkg: lib.isDerivation pkg) (flakeLib.overlayedInputs { inherit system; }).nixpkgs.kdn)
-          # adds nixosConfigurations as microvms as packages with microvm-* prefix
-          # TODO: fix /nix/store filesystem type conflict before re-enabling
-          #(lib.attrsets.mapAttrs' (name: value: lib.attrsets.nameValuePair "microvm-${name}" value) (flakeLib.microvm.packages system))
-          {
-            install-iso = inputs.nixos-generators.nixosGenerate {
-              inherit pkgs;
-              format = "install-iso";
-              modules = [{
-                imports = [
-                  ./modules/nix.nix
-                ];
-                config = {
-                  # TODO: make custom modules available?
-                  #kdn.profile.machine.baseline.enable = true;
-
-                  nix.package = pkgs.nixVersions.stable;
-
-                  services.openssh.enable = true;
-                  services.openssh.openFirewall = true;
-                  services.openssh.settings.PasswordAuthentication = false;
-
-                  users.users.root.openssh.authorizedKeys.keys =
-                    let
-                      ssh = import ./modules/profile/user/me/ssh.nix { inherit lib; };
-                    in
-                    ssh.authorizedKeysList;
+          };
+          checks = { };
+          devShells = { };
+          packages = lib.mkMerge [
+            (lib.filterAttrs (n: pkg: lib.isDerivation pkg) (flakeLib.overlayedInputs { inherit system; }).nixpkgs.kdn)
+            # adds nixosConfigurations as microvms as packages with microvm-* prefix
+            # TODO: fix /nix/store filesystem type conflict before re-enabling
+            #(lib.attrsets.mapAttrs' (name: value: lib.attrsets.nameValuePair "microvm-${name}" value) (flakeLib.microvm.packages system))
+            {
+              install-iso = flakeLib.nixos.install-iso {
+                inherit system;
+                modules = [{
+                  kdn.profile.machine.baseline.enable = true;
+                  kdn.filesystems.zfs.enable = true;
+                  kdn.hardware.disk-encryption.tools.enable = true;
 
                   environment.systemPackages = with pkgs; [
                     git
@@ -115,18 +100,11 @@
                     zfs-prune-snapshots
                     sanoid
                   ];
-                  # fix for:
-                  #   error: The option `isoImage.isoName' has conflicting definition values:
-                  #     - In `/nix/store/v7l65f0mfszidw5z6napdsiyq0nnnvxn-source/nixos/modules/installer/cd-dvd/installation-cd-base.nix': "nixos-23.11.20230527.e108023-aarch64-linux.iso"
-                  #     - In `/nix/store/ld9rn0fc23j6cp92v9r31fq2nwc4s96b-source/formats/install-iso.nix': "nixos.iso"
-                  #     Use `lib.mkForce value` or `lib.mkDefault value` to change the priority on any of these definitions.
-                  isoImage.isoName = lib.mkForce "nixos.iso";
-                };
-              }];
-            };
-          }
-        ];
-      };
+                }];
+              };
+            }
+          ];
+        };
       flake.lib = lib;
       flake.apps = inputs.nixinate.nixinate."x86_64-linux" self;
       flake.nixosModules.default = ./modules;

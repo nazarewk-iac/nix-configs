@@ -43,10 +43,10 @@ in
 
       # USERS
       users.mutableUsers = false;
-      users.users.root.initialHashedPassword = "$y$j9T$AhbnpYZawNWNGfuq1h9/p0$jmitwtZwTr72nBgvg2TEmrGmhRR30sQ.hQ7NZk1NqJD";
+      # conflicts with <nixos/modules/profiles/installation-device.nix>
+      users.users.root.initialHashedPassword = lib.mkForce "$y$j9T$AhbnpYZawNWNGfuq1h9/p0$jmitwtZwTr72nBgvg2TEmrGmhRR30sQ.hQ7NZk1NqJD";
 
       environment.systemPackages = with pkgs; [
-        cachix
         dracut # for lsinitrd
       ];
 
