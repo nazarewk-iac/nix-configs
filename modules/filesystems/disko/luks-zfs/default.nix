@@ -5,6 +5,20 @@ in
 {
   options.kdn.filesystems.disko.luks-zfs = {
     enable = lib.mkEnableOption "enable setup using ZFS on LUKS2 set up using disko";
+
+    luksRoot = lib.mkOption {
+      default = config.disko.devices.disko.disk.crypted-root;
+      internal = true;
+    };
+    args = lib.mkOption {
+      default = lib.trivial.pipe (cfg.luksRoot.content.extraFormatArgs or [ ]) [
+        (builtins.filter (v: (builtins.match "--[^=]+=.+") v) != null)
+        (builtins.map (builtins.match "--([^=]+)=(.+)"))
+        (v: lib.attrsets.nameValuePair (builtins.elemAt v 0) (builtins.elemAt v 1))
+        builtins.listToAttrs
+      ];
+      internal = true;
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -20,19 +34,12 @@ in
 
     boot.kernelParams =
       let
-        disko = config.disko.devices;
-        crypted = disko.disk.crypted-root;
-        boot = disko.disk.boot;
-
-        getArg = name: lib.trivial.pipe crypted.content.extraFormatArgs [
-          (builtins.filter (lib.strings.hasPrefix "--${name}="))
-          builtins.head
-          (lib.strings.removePrefix "--${name}=")
-        ];
+        crypted = cfg.luksRoot;
+        args = cfg.args;
 
         luksOpenName = crypted.content.name;
-        rootUUID = getArg "uuid";
-        headerPath = getArg "header";
+        rootUUID = args.uuid;
+        headerPath = args.header;
         luksDevice = crypted.device;
       in
       [

@@ -44,11 +44,12 @@ in
     ];
 
     kdn.filesystems.disko.luks-zfs.enable = true;
-    disko.devices = import ./disko.nix {
+    kdn.filesystems.disko.luks-zfs.luksRoot = config.disko.devices.disk.root.content.partitions.luks;
+    disko.devices = (import ./disko.nix {
       inherit lib;
       hostname = config.networking.hostName;
       inMicroVM = config.kdn.virtualization.microvm.guest.enable;
-    };
+    }).disko.devices;
     stylix.image = pkgs.fetchurl {
       # non-expiring share link
       url = "https://nc.nazarewk.pw/s/q63pjY9H93faf5t/download/lake-view-with-light-blue-water-a6cnqa1pki4g69jt.jpg";
