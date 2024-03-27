@@ -110,9 +110,9 @@
                       sanoid
                     ];
                   }
-                  {
+                  ({ config, ... }: {
                     users.users.root.openssh.authorizedKeys.keys = config.users.users.kdn.openssh.authorizedKeys.keys;
-                  }
+                  })
                 ];
               };
             }
