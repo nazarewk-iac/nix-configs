@@ -128,7 +128,6 @@ in
           - launcher https://github.com/honsiorovskyi/open-url-in-container/blob/master/bin/launcher.sh
       */
       kdn.programs.firefox.overrides.nativeMessagingHosts = with pkgs; [
-        libsForQt5.plasma-browser-integration
         keepassxc
       ];
       programs.firefox = {

@@ -22,10 +22,25 @@ in
       # systemd-boot
       boot.initrd.systemd.emergencyAccess = "$y$j9T$fioAEKxXi2LmH.9HyzVJ4/$Ot4PUjYdz7ELvJBOnS1YgQFNW89SCxB/yyGVaq4Aux0";
       boot.initrd.systemd.enable = true;
+      fileSystems."/boot".options = [ "fmask=0077" "dmask=0077" "defaults" ];
       boot.loader.efi.canTouchEfiVariables = true;
       boot.loader.systemd-boot.configurationLimit = 10;
       boot.loader.systemd-boot.enable = true;
       boot.tmp.cleanOnBoot = true;
+
+      boot.initrd.systemd.additionalUpstreamUnits = [ "debug-shell.service" ];
+      boot.initrd.systemd.users.root.shell = lib.getExe pkgs.bashInteractive;
+      boot.initrd.systemd.storePaths = with pkgs; [
+        (lib.getExe bashInteractive)
+      ];
+      boot.initrd.systemd.initrdBin = with pkgs; [
+        gnugrep
+        gnused
+        coreutils
+        findutils
+        moreutils
+        which
+      ];
 
       networking.nameservers = [
         "2606:4700:4700::1111" # CloudFlare

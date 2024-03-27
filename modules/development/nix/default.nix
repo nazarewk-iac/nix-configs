@@ -18,6 +18,7 @@ in
       devenv
 
       #inputs.nixpkgs-update.defaultPackage.${system}
+      nixos-anywhere
     ];
   };
 }

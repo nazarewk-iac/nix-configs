@@ -43,12 +43,23 @@ in
       "d /etc/exports.d 1755 root root"
     ];
 
+    # fails on wallpaper
+    systemd.services."home-manager-sn".serviceConfig = {
+      Restart = "on-failure";
+      RestartSec = 5;
+      StartLimitBurst = 3;
+      StartLimitIntervalSec = 24 * 60 * 60;
+    };
+
     kdn.filesystems.disko.luks-zfs.enable = true;
-    disko.devices = import ./disko.nix {
+    kdn.filesystems.disko.luks-zfs.decryptRequiresUnits = [
+      "dev-bus-usb-001-002.device"
+    ];
+    disko.devices = (import ./disko.nix {
       inherit lib;
       hostname = config.networking.hostName;
       inMicroVM = config.kdn.virtualization.microvm.guest.enable;
-    };
+    }).disko.devices;
     stylix.image = pkgs.fetchurl {
       # non-expiring share link
       url = "https://nc.nazarewk.pw/s/q63pjY9H93faf5t/download/lake-view-with-light-blue-water-a6cnqa1pki4g69jt.jpg";

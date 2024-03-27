@@ -9,6 +9,7 @@ in
 
   config = lib.mkIf cfg.enable ({
     kdn.hardware.yubikey.appId = "pam://kdn";
+    nix.settings.allowed-users = [ "sn" ];
     users.users.sn.initialHashedPassword = "$y$j9T$WGU0Qrlm0.jq7Y4QfyVYC0$HiYyLZMDX8M/A7WNshB5PjtZEGufQ.Qa93FY4WIlcw8";
     users.users.sn = {
       uid = 48378;

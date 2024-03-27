@@ -34,11 +34,6 @@ in
         inMicroVM = config.kdn.virtualization.microvm.guest.enable;
       };
 
-      boot.initrd.systemd.services.zfs-import-oams-main = {
-        requiredBy = [ "sysusr-usr.mount" ];
-        before = [ "sysusr-usr.mount" ];
-      };
-
       boot.kernelModules = [ "kvm-amd" ];
 
       services.asusd.enable = true;

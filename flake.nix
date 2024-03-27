@@ -45,6 +45,11 @@
     ulauncher.inputs.flake-parts.follows = "flake-parts";
     ulauncher.inputs.nixpkgs.follows = "nixpkgs";
     ulauncher.url = "github:Ulauncher/Ulauncher/v6";
+    nixos-anywhere.url = "github:numtide/nixos-anywhere";
+    nixos-anywhere.inputs.nixpkgs.follows = "nixpkgs";
+    nixos-anywhere.inputs.flake-parts.follows = "flake-parts";
+    nixos-anywhere.inputs.disko.follows = "disko";
+    nixos-anywhere.inputs.treefmt-nix.follows = "treefmt-nix";
   };
 
   outputs =
@@ -63,7 +68,10 @@
           kdn = final.callPackages ./packages { };
           inherit lib;
         })
-        (final: prev: { devenv = inputs.devenv.packages.${final.stdenv.system}.default; })
+        (final: prev: {
+          nixos-anywhere = inputs.nixos-anywhere.packages."${final.stdenv.system}".default;
+          devenv = inputs.devenv.packages.${final.stdenv.system}.default;
+        })
       ]);
       perSystem = { config, self', inputs', system, pkgs, ... }:
         let kdnNixpkgs = inputs'.nixpkgs.legacyPackages.extend self.overlays.default; in {
@@ -89,18 +97,23 @@
             {
               install-iso = flakeLib.nixos.install-iso {
                 inherit system;
-                modules = [{
-                  kdn.profile.machine.baseline.enable = true;
-                  kdn.filesystems.zfs.enable = true;
-                  kdn.hardware.disk-encryption.tools.enable = true;
+                modules = [
+                  {
+                    kdn.profile.machine.baseline.enable = true;
+                    kdn.filesystems.zfs.enable = true;
+                    kdn.hardware.disk-encryption.tools.enable = true;
 
-                  environment.systemPackages = with pkgs; [
-                    git
-                    jq
-                    zfs-prune-snapshots
-                    sanoid
-                  ];
-                }];
+                    environment.systemPackages = with pkgs; [
+                      git
+                      jq
+                      zfs-prune-snapshots
+                      sanoid
+                    ];
+                  }
+                  {
+                    users.users.root.openssh.authorizedKeys.keys = config.users.users.kdn.openssh.authorizedKeys.keys;
+                  }
+                ];
               };
             }
           ];

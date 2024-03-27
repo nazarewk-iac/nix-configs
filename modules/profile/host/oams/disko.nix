@@ -1,7 +1,7 @@
 { lib
 , hostname ? "oams"
 , bootDevice ? "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_04S631EMZERE01LQ-0:0"
-#, bootDevice ? "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_04UER08H5B7Y0NA5-0:0"
+  #, bootDevice ? "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_04UER08H5B7Y0NA5-0:0"
   # uuidgen
 , luksUUID ? "c4b9bdbc-900f-482e-8fa6-6c6824c560e9"
 , rootDevice ? "/dev/disk/by-id/nvme-eui.00000000000000016479a723dac0001d"
@@ -50,7 +50,8 @@ in
     content = {
       type = "luks";
       name = "${poolName}-crypted-0";
-      keyFile = luksKeyFile;
+      settings.crypttabExtraOpts = [ "fido2-device=auto" ];
+      additionalKeyFiles = [ luksKeyFile ];
       extraFormatArgs = [
         "--uuid=${luksUUID}"
         "--header=${luksHeaderPartition}"

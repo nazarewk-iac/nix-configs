@@ -7,6 +7,7 @@
     '';
   };
   config = lib.mkIf config.programs.firefox.enable {
+    kdn.programs.firefox.overrides.nativeMessagingHosts = with pkgs; [ libsForQt5.plasma-browser-integration ];
     programs.firefox.package = pkgs.firefox.override (old: {
       inherit (config.kdn.programs.firefox.overrides) nativeMessagingHosts;
     });
