@@ -5,10 +5,6 @@ in
 {
   options.kdn.headless.base = {
     enable = lib.mkEnableOption "basic headless system configuration";
-    atuin.enable = lib.mkOption {
-      default = cfg.enable;
-      type = lib.types.bool;
-    };
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
@@ -23,10 +19,9 @@ in
       kdn.programs.handlr.enable = true;
       kdn.programs.nix-utils.enable = true;
       kdn.programs.zsh.enable = true;
+      kdn.programs.atuin.enable = true;
 
       programs.command-not-found.enable = false;
-      programs.bash.interactiveShellInit = ''
-      '';
 
       programs.vim.defaultEditor = true;
       programs.vim.package = pkgs.vim-full.customize {
@@ -48,8 +43,8 @@ in
           set autoindent  " Auto-indent new lines
           set expandtab  " Use spaces instead of tabs
           set shiftwidth=4  " Number of auto-indent spaces
-          set smartindent  " Enable smart-indent
-          set smarttab  " Enable smart-tabs
+          "set smartindent  " Enable smart-indent
+          "set smarttab  " Enable smart-tabs
           set softtabstop=4  " Number of spaces per Tab
 
           set ruler  " Show row and column ruler information
@@ -133,18 +128,5 @@ in
         security.pam.u2f.debug = debugPolkit;
       }
     ))
-    (lib.mkIf cfg.atuin.enable {
-      environment.systemPackages = [ pkgs.atuin ];
-      # TODO: embed it into package somehow?
-      programs.fish.interactiveShellInit = ''
-        ${pkgs.atuin}/bin/atuin init fish | source
-      '';
-      programs.zsh.interactiveShellInit = ''
-        eval "$(${pkgs.atuin}/bin/atuin init zsh)"
-      '';
-      # TODO: atuin for bash? https://atuin.sh/docs#bash
-      programs.bash.interactiveShellInit = ''
-      '';
-    })
   ]);
 }
