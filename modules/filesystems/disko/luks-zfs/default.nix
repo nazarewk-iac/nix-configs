@@ -18,7 +18,7 @@ in
       default = [ ];
     };
 
-    root = lib.mkOption {
+    luks = lib.mkOption {
       default = lib.trivial.pipe cleanDisko [
         (lib.collect (v:
           (v.type or "") == "luks"
@@ -36,8 +36,8 @@ in
       ];
       internal = true;
     };
-    luks.args = lib.mkOption {
-      default = lib.trivial.pipe (cfg.root.extraFormatArgs or [ ]) [
+    luksArgs = lib.mkOption {
+      default = lib.trivial.pipe (cfg.luks.extraFormatArgs or [ ]) [
         (builtins.filter (v: (builtins.match "--[^=]+=.+") v != null))
         (builtins.map (builtins.match "--([^=]+)=(.+)"))
         (builtins.map (v: lib.attrsets.nameValuePair (builtins.elemAt v 0) (builtins.elemAt v 1)))
@@ -45,15 +45,15 @@ in
       ];
       internal = true;
       apply = args: assert lib.assertMsg (args ? uuid) ''
-        `--uuid=XXXXX` argument is missing from `.type.extraFormatArgs` on `kdn.filesystems.disko.luks-zfs.root`.
+        `--uuid=XXXXX` argument is missing from `.type.extraFormatArgs` on `kdn.filesystems.disko.luks-zfs.luks`.
       ''; args;
     };
 
     kernelParams = lib.mkOption {
       default =
         let
-          root = cfg.root;
-          args = cfg.luks.args;
+          root = cfg.luks;
+          args = cfg.luksArgs;
         in
         [
           # https://www.freedesktop.org/software/systemd/man/systemd-cryptsetup-generator.html#
@@ -85,6 +85,7 @@ in
     boot.initrd.systemd.services."systemd-cryptsetup" = {
       requires = cfg.decryptRequiresUnits;
       after = cfg.decryptRequiresUnits;
+      wants = [ "systemd-udev-settle.service" ];
     };
 
     fileSystems."/boot".neededForBoot = true;

@@ -28,11 +28,6 @@ in
       ];
 
       kdn.filesystems.disko.luks-zfs.enable = true;
-      disko.devices = import ./disko.nix {
-        inherit lib;
-        hostname = config.networking.hostName;
-        inMicroVM = config.kdn.virtualization.microvm.guest.enable;
-      };
 
       boot.kernelModules = [ "kvm-amd" ];
 
@@ -56,5 +51,6 @@ in
 
       }];
     }
+    (import ./disko.nix { inherit lib; hostname = config.networking.hostName; })
   ]);
 }

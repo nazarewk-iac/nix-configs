@@ -26,7 +26,10 @@ in
       boot.loader.efi.canTouchEfiVariables = true;
       boot.loader.systemd-boot.configurationLimit = 10;
       boot.loader.systemd-boot.enable = true;
-      boot.tmp.cleanOnBoot = true;
+
+      boot.tmp.cleanOnBoot = lib.mkDefault (!config.boot.tmp.useTmpfs);
+      boot.tmp.useTmpfs = lib.mkDefault true;
+      boot.tmp.tmpfsSize = lib.mkDefault "10%";
 
       boot.initrd.systemd.additionalUpstreamUnits = [ "debug-shell.service" ];
       boot.initrd.systemd.users.root.shell = lib.getExe pkgs.bashInteractive;
