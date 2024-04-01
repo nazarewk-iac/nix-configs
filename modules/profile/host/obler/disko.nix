@@ -1,13 +1,12 @@
 { lib
 , hostname ? "obler"
-, luksUUID ? "4971c81f-df4d-408c-a704-271b3423e762"
-, rootDevice ? "/dev/disk/by-id/nvme-CX2-8B256-Q11_NVMe_LITEON_256GB_TW09F8D155085668010W"
+, luksUUID ? "c7f78f0a-9da2-408a-bd89-9688b8440add"
+, rootDevice ? "/dev/disk/by-id/ata-SK_hynix_SC311_SATA_256GB_MS83N489310403C1D"
 , ...
 }:
 let
   poolName = "${hostname}-main";
-  # this is used with `nixos-anywhere`
-  luksKeyFile = "/tmp/luks-${poolName}-crypted-keyfile.bin";
+  luksKeyFile = "/run/media/kdn/df4ba496-1af2-45d7-ae05-0186c608aeb6/obler/luks-keyfile.bin";
 in
 {
   disko.devices = {
