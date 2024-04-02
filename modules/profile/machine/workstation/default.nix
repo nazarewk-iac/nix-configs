@@ -19,7 +19,7 @@ in
 
     hardware.cpu.amd.updateMicrocode = true;
 
-    kdn.monitoring.prometheus-stack.enable = true;
+    kdn.monitoring.prometheus-stack.enable = false;
     kdn.monitoring.prometheus-stack.caddy.grafana = "grafana.${config.networking.hostName}.kdn.im";
     kdn.services.caddy.enable = true;
     kdn.programs.obs-studio.enable = true;
