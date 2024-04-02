@@ -38,19 +38,22 @@ in
       zramSwap.memoryPercent = 50;
       zramSwap.priority = 100;
 
+      # 12G was not enough for large rebuild
+      boot.tmp.tmpfsSize = "16G";
+    }
+    {
       kdn.hardware.edid.enable = true;
       hardware.display.outputs."DP-1".edid = "PG278Q_120.bin";
       hardware.display.outputs."DP-1".mode = "e";
-
-      # 12G was not enough for large rebuild
-      boot.tmp.tmpfsSize = "16G";
+      hardware.display.edid.applyAtRuntime = true;
     }
     {
       home-manager.sharedModules = [{
         wayland.windowManager.sway.config =
           let
             # name is derived from forced edid profile, could be DP-1
-            asus = "The Linux Foundation ${lib.removeSuffix ".bin" config.hardware.display.outputs."DP-1".edid} Linux #0";
+            #asus = "The Linux Foundation ${lib.removeSuffix ".bin" config.hardware.display.outputs."DP-1".edid} Linux #0";
+            asus = "DP-1";
             dell = "Dell Inc. DELL U2711 G606T29F0EWL";
           in
           {
