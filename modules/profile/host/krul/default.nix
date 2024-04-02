@@ -50,7 +50,7 @@ in
         wayland.windowManager.sway.config =
           let
             # name is derived from forced edid profile, could be DP-1
-            asus = "The Linux Foundation PG278Q_60 Linux #0";
+            asus = "The Linux Foundation ${lib.removeSuffix ".bin" config.hardware.display.outputs."DP-1".edid} Linux #0";
             dell = "Dell Inc. DELL U2711 G606T29F0EWL";
           in
           {
@@ -64,86 +64,6 @@ in
             ];
           };
       }];
-    }
-    (
-      # TODO: remove it after reconfiguring zpool
-      {
-        disko.enableConfig = true;
-        kdn.filesystems.disko.luks-zfs.enable = lib.mkForce false;
-        boot.zfs.forceImportRoot = false;
-        boot.zfs.requestEncryptionCredentials = false;
-        boot.initrd.luks.forceLuksSupportInInitrd = true;
-        boot.kernelParams =
-          let
-            disko = config.disko.devices;
-            crypted = disko.disk.crypted-root;
-            boot = disko.disk.boot;
-
-            getArg = name: lib.trivial.pipe crypted.content.extraFormatArgs [
-              (builtins.filter (lib.strings.hasPrefix "--${name}="))
-              builtins.head
-              (lib.strings.removePrefix "--${name}=")
-            ];
-
-            luksOpenName = crypted.content.name;
-            rootUUID = getArg "uuid";
-            headerPath = getArg "header";
-            luksDevice = crypted.device;
-          in
-          [
-            # https://www.freedesktop.org/software/systemd/man/systemd-cryptsetup-generator.html#
-            "rd.luks.name=${rootUUID}=${luksOpenName}"
-            "rd.luks.options=${rootUUID}=header=${headerPath}"
-            "rd.luks.data=${rootUUID}=${luksDevice}"
-
-            "video=DP-1:e" # edid fix see https://gitlab.freedesktop.org/drm/amd/-/issues/615#note_1987392
-          ];
-        # legacy mountpoints
-        fileSystems =
-          let
-            mkZFSMountBase =
-              { path
-              , at ? path
-              , poolPrefix ? ""
-              }: {
-                "${at}" = {
-                  device = "${hostname}-main/${hostname}${poolPrefix}${path}";
-                  fsType = "zfs";
-                };
-              };
-            mkZFSMount = path: opts: mkZFSMountBase ({ inherit path; } // opts);
-            mkContainerMount = path: opts: mkZFSMountBase ({ inherit path; poolPrefix = "/containers"; } // opts);
-            mkNixOSMount = path: opts: mkZFSMountBase ({ inherit path; poolPrefix = "/nixos"; } // opts);
-          in
-          lib.mkMerge [
-            (mkNixOSMount "/root" { at = "/"; })
-            (mkNixOSMount "/etc" { })
-            (mkNixOSMount "/nix" { })
-            (mkNixOSMount "/var" { })
-            (mkNixOSMount "/var/lib/libvirt" { })
-            (mkNixOSMount "/var/lib/rook" { })
-            (mkNixOSMount (config.microvm.stateDir or "/var/lib/microvms") { })
-            (mkNixOSMount "/var/log" { })
-            (mkNixOSMount "/var/log/journal" { })
-            (mkNixOSMount "/var/spool" { })
-            #(mkContainerMount "/containerd" { at = "/var/lib/containerd"; })
-            (mkZFSMount "/home" { })
-            (mkZFSMount "/home/kdn" { })
-            (mkZFSMount "/home/kdn/.cache" { })
-            (mkZFSMount "/home/kdn/.local" { })
-            (mkZFSMount "/home/kdn/.local/share" { })
-            #(mkZFSMount "/home/kdn/.local/share/containers" { })
-            (mkZFSMount "/home/kdn/Downloads" { })
-            (mkZFSMount "/home/kdn/Nextcloud" { })
-            {
-              "/boot".neededForBoot = true;
-              "/var/log/journal".neededForBoot = true;
-            }
-          ];
-
-      }
-    )
-    {
       kdn.filesystems.disko.luks-zfs.enable = true;
     }
     (import ./disko.nix { inherit lib; hostname = config.networking.hostName; })

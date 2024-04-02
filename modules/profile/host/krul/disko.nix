@@ -97,7 +97,7 @@ in
           }]);
         in
         {
-          /* TODO: reconfigure the whole zpool to accomodate this
+          "${hostname}/root" = ds "/root" [ ];
           "${hostname}/home" = ds "/home" [ snapOn ];
           "${hostname}/home/kdn" = ds "/home/kdn" [ ];
           "${hostname}/home/kdn/.cache" = ds "/home/kdn/.cache" [ snapOff ];
@@ -107,7 +107,7 @@ in
           "${hostname}/home/kdn/Nextcloud" = ds "/home/kdn/Nextcloud" [ snapOff ];
           "${hostname}/nixos/etc" = ds "/etc" [ snapOn ];
           "${hostname}/nixos/nix" = ds "/nix" [ ];
-          "${hostname}/nixos/root" = ds "/" [ ];
+          "${hostname}/nixos/root" = ds "/obler-main/${hostname}/nixos/root" [ ];
           "${hostname}/nixos/var" = ds "/var" [ snapOn ];
           "${hostname}/nixos/var/lib/libvirt" = ds "/var/lib/libvirt" [ ];
           "${hostname}/nixos/var/lib/microvms" = ds "/var/lib/microvms" [ ];
@@ -115,8 +115,16 @@ in
           "${hostname}/nixos/var/log" = ds "/var/log" [ snapOff ];
           "${hostname}/nixos/var/log/journal" = ds "/var/log/journal" [ ];
           "${hostname}/nixos/var/spool" = ds "/var/spool" [ ];
-          */
         };
+    };
+    nodev = {
+      "/" = {
+        fsType = "tmpfs";
+        mountOptions = [
+          "size=32M"
+          "mode=755"
+        ];
+      };
     };
   };
 }
