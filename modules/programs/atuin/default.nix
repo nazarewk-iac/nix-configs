@@ -28,6 +28,7 @@ let
         litestream.cmd = cmd: args: lib.escapeShellArgs ([ (lib.getExe pkgs.litestream) cmd "-config" litestream.configPath ] ++ args);
       in
       lib.nameValuePair username {
+        uid = user.uid;
         litestream.restores = builtins.map
           (db: litestream.cmd "restore" [ "-if-replica-exists" "-if-db-not-exists" db.path ])
           litestream.config.dbs;
@@ -64,6 +65,8 @@ in
         (username: user:
           lib.nameValuePair "atuin-zfs-workaround-${username}" {
             wantedBy = [ "multi-user.target" ];
+            requires = [ "user-runtime-dir@${toString user.uid}.service" ];
+            after = [ "user-runtime-dir@${toString user.uid}.service" ];
             description = "Synchronize Atuin database on tmpfs for ${username}";
 
             serviceConfig.User = username;
