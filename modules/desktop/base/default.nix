@@ -108,7 +108,9 @@ in
         okular # pdf viewer
         ark # archive manager
         gwenview # image viewer & editor
+        /* TODO: didn't build on 2024-04-02
         pix # image gallery viewer
+        */
       ]);
 
       xdg.portal.enable = true;
