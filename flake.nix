@@ -132,7 +132,8 @@
                 networking.hostName = "oams";
 
                 _module.args.nixinate = {
-                  host = "oams";
+                  #host = "oams";
+                  host = "oams.lan.";
                   sshUser = "kdn";
                   buildOn = "local"; # valid args are "local" or "remote"
                   substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
@@ -151,7 +152,7 @@
                 networking.hostName = "krul";
 
                 _module.args.nixinate = {
-                  host = "krul";
+                  host = "krul.lan.";
                   sshUser = "kdn";
                   buildOn = "local"; # valid args are "local" or "remote"
                   substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"

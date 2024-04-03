@@ -1,4 +1,4 @@
-{ config, pkgs, lib, modulesPath, ... }:
+{ config, pkgs, lib, utils, modulesPath, ... }:
 let
   cfg = config.kdn.filesystems.disko.luks-zfs;
 
@@ -7,6 +7,11 @@ in
 {
   options.kdn.filesystems.disko.luks-zfs = {
     enable = lib.mkEnableOption "enable setup using ZFS on LUKS2 set up using disko";
+
+    timeout = lib.mkOption {
+      type = with lib.types; int;
+      default = 15;
+    };
 
     poolName = lib.mkOption {
       default = "${config.networking.hostName}-main";
@@ -49,22 +54,17 @@ in
       ''; args;
     };
 
-    kernelParams = lib.mkOption {
+    luksHeader = lib.mkOption {
       default =
-        let
-          root = cfg.luks;
-          args = cfg.luksArgs;
-        in
-        [
-          # https://www.freedesktop.org/software/systemd/man/systemd-cryptsetup-generator.html#
-          "rd.luks.uuid=${args.uuid}"
-          "rd.luks.name=${args.uuid}=${root.name}"
-        ] ++ lib.optionals (args ? header) [
-          "rd.luks.options=${args.uuid}=header=${args.header}"
-          "rd.luks.data=${args.uuid}=${root.device}"
-        ];
+        if cfg.luksArgs ? header then cfg.luksArgs.header
+        else if cfg.luks.content ? settings && cfg.luks.content.settings ? header then cfg.luks.content.settings.header
+        else null;
+      internal = true;
+    };
 
-      readOnly = true;
+    cryptsetupName = lib.mkOption {
+      default = "systemd-cryptsetup@${utils.escapeSystemdPath cfg.luks.name}";
+      internal = true;
     };
   };
 
@@ -72,6 +72,7 @@ in
     kdn.filesystems.zfs.enable = true;
 
     boot.zfs.forceImportRoot = false;
+    boot.zfs.extraPools = [ cfg.poolName ];
     boot.zfs.requestEncryptionCredentials = false;
 
     # enables systemd-cryptsetup-generator
@@ -79,13 +80,22 @@ in
     boot.initrd.luks.forceLuksSupportInInitrd = true;
     boot.initrd.systemd.enable = true;
 
-    boot.kernelParams = cfg.kernelParams;
     disko.enableConfig = true;
 
-    boot.initrd.systemd.services."systemd-cryptsetup" = {
+    boot.initrd.systemd.services."${cfg.cryptsetupName}" = {
+      overrideStrategy = "asDropin";
       requires = cfg.decryptRequiresUnits;
       after = cfg.decryptRequiresUnits;
       wants = [ "systemd-udev-settle.service" ];
+      onFailure = [ "emergency.target" ];
+      serviceConfig.TimeoutSec = cfg.timeout;
+    };
+
+    boot.initrd.systemd.services."zfs-import-${cfg.poolName}" = {
+      requires = [ "${cfg.cryptsetupName}.service" ];
+      requiredBy = [ "initrd-fs.target" ];
+      onFailure = [ "emergency.target" ];
+      serviceConfig.TimeoutSec = cfg.timeout;
     };
 
     fileSystems."/boot".neededForBoot = true;

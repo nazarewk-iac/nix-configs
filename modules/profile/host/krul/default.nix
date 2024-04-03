@@ -27,6 +27,7 @@ in
       kdn.profile.machine.gaming.enable = true;
 
       boot.initrd.availableKernelModules = [
+        "mt7921e" # MEDIATEK Corp. MT7921K (RZ608) Wi-Fi 6E 80MHz
         "r8169" # Realtek Semiconductor Co., Ltd. RTL8125 2.5GbE Controller [10ec:8125] (rev 05)
         "igb" # Intel Corporation I211 Gigabit Network Connection [8086:1539] (rev 03)
       ];
@@ -70,5 +71,25 @@ in
       kdn.filesystems.disko.luks-zfs.enable = true;
     }
     (import ./disko.nix { inherit lib; hostname = config.networking.hostName; })
+    {
+      # automated unlock using Clevis through Tang server
+      boot.initrd.network.flushBeforeStage2 = true;
+      networking.interfaces.enp5s0.useDHCP = true;
+      networking.interfaces.enp6s0.useDHCP = true;
+
+      boot.initrd.network.enable = true; # this is systemd-networkd all he way through anyway
+      boot.initrd.systemd.network.wait-online.enable = true;
+      boot.initrd.systemd.network.wait-online.anyInterface = true;
+      boot.initrd.systemd.network.wait-online.timeout = 15;
+
+      boot.initrd.clevis.enable = true;
+      boot.initrd.clevis.useTang = true;
+
+      environment.systemPackages = with pkgs; [
+        clevis
+        jose
+      ];
+      boot.initrd.clevis.devices."krul-main-crypted".secretFile = ./krul-main-crypted.jwe;
+    }
   ]);
 }

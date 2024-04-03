@@ -11,7 +11,10 @@ let
   poolName = "${hostname}-main";
   bootPartition = "${bootDevice}-part1";
   luksBackupDir = "${backupDir}/${hostname}";
-  luksKeyFile = "${luksBackupDir}/luks-${poolName}-keyfile.bin";
+  luksKeyFiles = [
+    "${luksBackupDir}/luks-${poolName}-keyfile.bin"
+    "${luksBackupDir}/luks-${poolName}-keyfile.clevis.bin"
+  ];
   luksHeaderBackup = "${luksBackupDir}/luks-${poolName}-header.img";
   luksHeaderPartition = "${bootDevice}-part2";
 in
@@ -49,8 +52,10 @@ in
       content = {
         type = "luks";
         name = "${poolName}-crypted";
-        settings.crypttabExtraOpts = [ "fido2-device=auto" ];
-        additionalKeyFiles = [ luksKeyFile ];
+        settings.keyFile = "/clevis-${poolName}-crypted/decrypted";
+        settings.header = luksHeaderPartition;
+        settings.crypttabExtraOpts = [ ];
+        additionalKeyFiles = luksKeyFiles;
         extraFormatArgs = [
           "--uuid=${luksUUID}"
           "--header=${luksHeaderPartition}"

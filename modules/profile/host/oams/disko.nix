@@ -51,6 +51,7 @@ in
         type = "luks";
         name = "${poolName}-crypted-0";
         settings.crypttabExtraOpts = [ "fido2-device=auto" ];
+        settings.header = luksHeaderPartition;
         additionalKeyFiles = [ luksKeyFile ];
         extraFormatArgs = [
           "--uuid=${luksUUID}"
