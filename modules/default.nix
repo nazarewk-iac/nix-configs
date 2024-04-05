@@ -21,7 +21,8 @@
 
     nix.registry.nixpkgs.flake = inputs.nixpkgs;
     nix.settings.auto-optimise-store = true;
-    nix.package = pkgs.nixVersions.stable;
+    # 2024-04-04: .stable is quite old at 2.18
+    nix.package = pkgs.nixVersions.unstable;
     nixpkgs.overlays = [ self.overlays.default ];
   };
 }
