@@ -19,11 +19,6 @@ in
 
       kdn.programs.photoprism.enable = false;
 
-      services.nix-serve = {
-        enable = false;
-        secretKeyFile = "/var/nix-keys/krul.kdn.im/cache-priv-key.pem";
-      };
-
       kdn.profile.machine.gaming.enable = true;
 
       boot.initrd.availableKernelModules = [
