@@ -47,6 +47,7 @@ in
         libvirt
         virt-manager
         virtiofsd
+        cloud-utils # cloud-localds for https://blog.programster.org/create-ubuntu-22-kvm-guest-from-cloud-image
       ];
     }
     (lib.mkIf cfg.lookingGlass.enable {
