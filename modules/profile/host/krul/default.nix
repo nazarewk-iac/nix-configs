@@ -51,15 +51,17 @@ in
             #asus = "The Linux Foundation ${lib.removeSuffix ".bin" config.hardware.display.outputs."DP-1".edid} Linux #0";
             asus = "DP-1";
             dell = "Dell Inc. DELL U2711 G606T29F0EWL";
+            #m32uc = "GIGA-BYTE TECHNOLOGY CO., LTD. M32UC 22090B013112";
+            m32uc = "HDMI-A-1";
           in
           {
             output."${asus}".pos = "0 0";
-            output."${dell}".pos = "2560 0";
+            output."${m32uc}".pos = "2560 0";
             workspaceOutputAssign = [
-              { workspace = "1"; output = dell; }
+              { workspace = "1"; output = m32uc; }
               { workspace = "2"; output = asus; }
               { workspace = "3"; output = asus; }
-              { workspace = "4"; output = dell; }
+              { workspace = "4"; output = m32uc; }
             ];
           };
       }];
