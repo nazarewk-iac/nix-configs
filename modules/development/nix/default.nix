@@ -12,7 +12,7 @@ in
     home-manager.sharedModules = [{ kdn.development.nix.enable = true; }];
     environment.systemPackages = with pkgs; [
       nix-update
-      nixfmt
+      nixfmt-classic
       nixpkgs-fmt
 
       devenv
