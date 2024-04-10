@@ -4,22 +4,25 @@ let
 
   exec = cmd: "exec '${cmd}'";
   playerctl = lib.getExe pkgs.playerctl;
-  osd = lib.getExe' pkgs.swayosd "swayosd-client";
+  volumectl = "${lib.getExe' pkgs.avizo "volumectl"} -d";
+  lightctl = "${lib.getExe' pkgs.avizo "lightctl"} -d";
 in
 {
   config = lib.mkIf (config.kdn.headless.enableGUI && cfg.enable) {
-    services.swayosd.enable = true;
+    services.avizo.enable = true;
+    services.avizo.settings = { };
     wayland.windowManager.sway = {
       config.keybindings = {
         # Brightness
-        "XF86MonBrightnessDown" = exec "${osd} --brightness=-2";
-        "XF86MonBrightnessUp" = exec "${osd} --brightness=+2";
+        "XF86MonBrightnessDown" = exec "${lightctl} down 2";
+        "XF86MonBrightnessUp" = exec "${lightctl} up 2";
         # Volume
-        "XF86AudioRaiseVolume" = exec "${osd} --output-volume=+1";
-        "XF86AudioLowerVolume" = exec "${osd} --output-volume=-1";
-        "XF86AudioMute" = exec "${osd} --output-volume=mute-toggle";
-        "${cfg.keys.lalt}+XF86AudioMute" = exec "${osd} --input-volume=mute-toggle";
-        "XF86AudioMicMute" = exec "${osd} --input-volume=mute-toggle";
+        "XF86AudioRaiseVolume" = exec "${volumectl} up 1";
+        "XF86AudioLowerVolume" = exec "${volumectl} down 1";
+
+        "XF86AudioMute" = exec "${volumectl} toggle-mute";
+        "${cfg.keys.lalt}+XF86AudioMute" = exec "${volumectl} -m toggle-mute";
+        "XF86AudioMicMute" = exec "${volumectl} -m toggle-mute";
         # Media controls
         # https://www.reddit.com/r/swaywm/comments/ju1609/control_spotify_with_bluetooth_headset_with_dbus/
         "--locked XF86AudioPlay" = exec "${playerctl} play-pause";
