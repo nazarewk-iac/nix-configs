@@ -35,7 +35,7 @@ in
       zramSwap.priority = 100;
 
       # 12G was not enough for large rebuild
-      boot.tmp.tmpfsSize = "16G";
+      boot.tmp.tmpfsSize = "32G";
     }
     {
       kdn.hardware.edid.enable = true;
