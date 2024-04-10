@@ -407,6 +407,13 @@ in
         serviceConfig.BusName = "org.freedesktop.secrets";
       };
     }
+    {
+      # SwayOSD
+      systemd.user.services.swayosd-libinput-backend.enable = false;
+      environment.systemPackages = [ pkgs.swayosd ];
+      services.dbus.packages = [ pkgs.swayosd ];
+      services.udev.packages = [ pkgs.swayosd ];
+    }
     (lib.mkIf config.programs.gnupg.agent.enable {
       systemd.user.services."gpg-agent" = {
         unitConfig.Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
