@@ -31,7 +31,6 @@ in
       boot.tmp.useTmpfs = lib.mkDefault true;
       boot.tmp.tmpfsSize = lib.mkDefault "10%";
 
-      boot.initrd.systemd.additionalUpstreamUnits = [ "debug-shell.service" ];
       boot.initrd.systemd.users.root.shell = lib.getExe pkgs.bashInteractive;
       boot.initrd.systemd.storePaths = with pkgs; [
         (lib.getExe bashInteractive)
