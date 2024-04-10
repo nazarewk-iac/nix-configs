@@ -110,15 +110,6 @@ in
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
-      nixpkgs.overlays = [
-        (final: prev: {
-          # see https://github.com/NixOS/nixpkgs/issues/238416#issuecomment-1618662374
-          # TODO: remove after https://github.com/NixOS/nixpkgs/issues/238416 is resolved upstream
-          #element-desktop = prev.element-desktop.override { electron = prev.electron_24; };
-        })
-      ];
-    }
-    {
       environment.systemPackages = [ (lib.meta.hiPrio pkgs.xwayland) ];
       programs.sway.extraPackages = [ cfg.bundle ];
     }
