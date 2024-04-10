@@ -42,6 +42,9 @@ in
       hardware.display.outputs."DP-1".edid = "PG278Q_120.bin";
       hardware.display.outputs."DP-1".mode = "e";
       hardware.display.edid.applyAtRuntime = true;
+      systemd.services.display-edid-apply.preStart = ''
+        echo on >/sys/kernel/debug/dri/1/DP-1/force
+      '';
     }
     {
       home-manager.sharedModules = [{
