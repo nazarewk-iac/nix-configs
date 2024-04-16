@@ -6,13 +6,19 @@
     nixpkgs-lib.url = "github:NixOS/nixpkgs/nixos-unstable?dir=lib";
 
     base16.url = "github:SenchoPens/base16.nix";
-    devenv.url = "github:cachix/devenv";
+    crane.inputs.nixpkgs.follows = "nixpkgs";
+    crane.url = "github:ipetkov/crane";
     disko.inputs.nixpkgs.follows = "nixpkgs";
     disko.url = "github:nix-community/disko";
+    flake-compat.url = "github:edolstra/flake-compat";
     flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs-lib";
     flake-parts.url = "github:hercules-ci/flake-parts";
     flake-utils.url = "github:numtide/flake-utils";
-    flake-compat.url = "github:edolstra/flake-compat";
+    helix-editor.inputs.crane.follows = "crane";
+    helix-editor.inputs.flake-utils.follows = "flake-utils";
+    helix-editor.inputs.nixpkgs.follows = "nixpkgs";
+    helix-editor.inputs.rust-overlay.follows = "rust-overlay";
+    helix-editor.url = "github:helix-editor/helix/24.03";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
     home-manager.url = "github:nix-community/home-manager";
     microvm.inputs.flake-utils.follows = "flake-utils";
@@ -26,6 +32,11 @@
     nix-github-actions.url = "github:nix-community/nix-github-actions";
     nixinate.inputs.nixpkgs.follows = "nixpkgs";
     nixinate.url = "github:matthewcroughan/nixinate";
+    nixos-anywhere.inputs.disko.follows = "disko";
+    nixos-anywhere.inputs.flake-parts.follows = "flake-parts";
+    nixos-anywhere.inputs.nixpkgs.follows = "nixpkgs";
+    nixos-anywhere.inputs.treefmt-nix.follows = "treefmt-nix";
+    nixos-anywhere.url = "github:numtide/nixos-anywhere";
     nixos-generators.inputs.nixlib.follows = "nixpkgs-lib";
     nixos-generators.inputs.nixpkgs.follows = "nixpkgs";
     nixos-generators.url = "github:nix-community/nixos-generators";
@@ -35,9 +46,12 @@
     poetry2nix.inputs.nixpkgs.follows = "nixpkgs";
     poetry2nix.inputs.treefmt-nix.follows = "treefmt-nix";
     poetry2nix.url = "github:nix-community/poetry2nix";
-    stylix.inputs.nixpkgs.follows = "nixpkgs";
+    rust-overlay.inputs.flake-utils.follows = "flake-utils";
+    rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
+    rust-overlay.url = "github:oxalica/rust-overlay";
     stylix.inputs.flake-compat.follows = "flake-compat";
     stylix.inputs.home-manager.follows = "home-manager";
+    stylix.inputs.nixpkgs.follows = "nixpkgs";
     stylix.url = "github:danth/stylix";
     systems.url = "github:nix-systems/default";
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
@@ -45,11 +59,6 @@
     ulauncher.inputs.flake-parts.follows = "flake-parts";
     ulauncher.inputs.nixpkgs.follows = "nixpkgs";
     ulauncher.url = "github:Ulauncher/Ulauncher/v6";
-    nixos-anywhere.url = "github:numtide/nixos-anywhere";
-    nixos-anywhere.inputs.nixpkgs.follows = "nixpkgs";
-    nixos-anywhere.inputs.flake-parts.follows = "flake-parts";
-    nixos-anywhere.inputs.disko.follows = "disko";
-    nixos-anywhere.inputs.treefmt-nix.follows = "treefmt-nix";
   };
 
   outputs =
@@ -64,13 +73,13 @@
       flake.overlays.default = (inputs.nixpkgs.lib.composeManyExtensions [
         inputs.poetry2nix.overlays.default
         inputs.ulauncher.overlays.default
+        inputs.helix-editor.overlays.default
         (final: prev: {
           kdn = final.callPackages ./packages { };
           inherit lib;
         })
         (final: prev: {
           nixos-anywhere = inputs.nixos-anywhere.packages."${final.stdenv.system}".default;
-          devenv = inputs.devenv.packages.${final.stdenv.system}.default;
         })
       ]);
       perSystem = { config, self', inputs', system, pkgs, ... }:
