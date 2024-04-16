@@ -261,6 +261,8 @@ in
     })
     ({
       programs.helix.enable = true;
+      programs.helix.settings.theme = "default";
+      stylix.targets.helix.enable = false;
     })
   ]);
 }
