@@ -14,9 +14,6 @@ in
       nix-update
       nixfmt-classic
       nixpkgs-fmt
-
-      devenv
-
       #inputs.nixpkgs-update.defaultPackage.${system}
       nixos-anywhere
     ];
