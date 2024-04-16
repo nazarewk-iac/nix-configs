@@ -261,7 +261,7 @@ in
     })
     ({
       programs.helix.enable = true;
-      programs.helix.settings.theme = "default";
+      programs.helix.settings.theme = "darcula-solid";
       stylix.targets.helix.enable = false;
     })
   ]);
