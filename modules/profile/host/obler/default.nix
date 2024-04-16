@@ -21,7 +21,7 @@ in
       kdn.profile.user.sn.enable = true;
 
       services.teamviewer.enable = true;
-      services.xserver.displayManager.sddm.settings = {
+      services.displayManager.sddm.settings = {
         Autologin = {
           Session = "plasma.desktop";
           User = "sn";

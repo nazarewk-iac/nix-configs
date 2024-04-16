@@ -22,7 +22,7 @@ in
         jetbrains.idea-ultimate
         #jetbrains-toolbox
         #jetbrains.jdk
-        jetbrains.gateway
+        #jetbrains.gateway
         #jetbrains.clion
         #jetbrains.goland
         #jetbrains.ruby-mine

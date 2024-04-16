@@ -136,8 +136,8 @@ in
           ${lib.concatStringsSep " \\\n  " cfg.environment}
       '';
 
-      services.xserver.displayManager.defaultSession = cfg.desktopSessionName;
-      services.xserver.displayManager.sessionPackages = [ cfg.bundle ];
+      services.displayManager.defaultSession = cfg.desktopSessionName;
+      services.displayManager.sessionPackages = [ cfg.bundle ];
     }
     {
       home-manager.sharedModules = [{

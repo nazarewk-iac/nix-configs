@@ -102,6 +102,7 @@ in
 
         kdn.whicher
         diffoscope
+        difftastic
       ];
 
       boot.kernel.sysctl = let mb = 1024 * 1024; in {

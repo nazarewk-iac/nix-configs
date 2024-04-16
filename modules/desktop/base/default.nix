@@ -9,11 +9,11 @@ in
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
-      services.xserver.displayManager.sddm.enable = true;
+      services.displayManager.sddm.enable = true;
       # default maximum user is 30000, but I'm assigning higher than that
-      services.xserver.displayManager.sddm.settings.Users.MaximumUid = config.ids.uids.nobody - 1;
-      services.xserver.displayManager.sddm.wayland.enable = true;
-      services.xserver.displayManager.sddm.theme = "chili";
+      services.displayManager.sddm.settings.Users.MaximumUid = config.ids.uids.nobody - 1;
+      services.displayManager.sddm.wayland.enable = true;
+      services.displayManager.sddm.theme = "chili";
       environment.systemPackages = with pkgs; [
         sddm-chili-theme
       ];
@@ -108,7 +108,7 @@ in
         okular # pdf viewer
         ark # archive manager
         gwenview # image viewer & editor
-        /* TODO: didn't build on 2024-04-02
+        /* TODO: didn't build on 2024-04-16
         pix # image gallery viewer
         */
       ]);
