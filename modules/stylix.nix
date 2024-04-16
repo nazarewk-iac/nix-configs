@@ -10,7 +10,7 @@
       sha256 = "sha256-1d/kdFn8v0i1PTeOPytYNUB1TxsuBLNf4+nRgSOYQu4=";
     });
     stylix.polarity = lib.mkDefault "dark";
-    stylix.base16Scheme = lib.mkDefault "${pkgs.base16-schemes}/share/themes/tomorrow-night.yaml";
+    stylix.base16Scheme = lib.mkDefault "${pkgs.base16-schemes}/share/themes/darcula.yaml";
 
     stylix.cursor.name = lib.mkDefault "phinger-cursors";
     stylix.cursor.package = lib.mkDefault pkgs.phinger-cursors;
