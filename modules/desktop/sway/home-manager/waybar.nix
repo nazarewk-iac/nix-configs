@@ -139,9 +139,9 @@ let
         "portable" = "";
         "speaker" = "";
       };
-      "on-click" = "pactl set-sink-mute @DEFAULT_SINK@ toggle";
+      "on-click" = "${lib.getExe' pkgs.avizo "volumectl"} toggle-mute";
       "on-click-middle" = "pavucontrol";
-      "on-click-right" = "pactl set-source-mute @DEFAULT_SOURCE@ toggle";
+      "on-click-right" = "${lib.getExe' pkgs.avizo "volumectl"} -m toggle-mute";
       "ignored-sinks" = [ "Easy Effects Sink" ];
     };
   };
