@@ -36,30 +36,43 @@ in
 
       # 12G was not enough for large rebuild
       boot.tmp.tmpfsSize = "32G";
+
+      kdn.filesystems.disko.luks-zfs.enable = true;
     }
-    {
-      kdn.hardware.edid.enable = true;
-      hardware.display.outputs."DP-1".edid = "PG278Q_120.bin";
-      hardware.display.outputs."DP-1".mode = "e";
-      hardware.display.edid.applyAtRuntime = true;
-      systemd.services.display-edid-apply.preStart = ''
-        echo on >/sys/kernel/debug/dri/1/DP-1/force
-      '';
-    }
-    {
-      home-manager.sharedModules = [{
-        wayland.windowManager.sway.config =
-          let
-            # name is derived from forced edid profile, could be DP-1
-            #asus = "The Linux Foundation ${lib.removeSuffix ".bin" config.hardware.display.outputs."DP-1".edid} Linux #0";
-            asus = "DP-1";
-            dell = "Dell Inc. DELL U2711 G606T29F0EWL";
-            #m32uc = "GIGA-BYTE TECHNOLOGY CO., LTD. M32UC 22090B013112";
-            m32uc = "HDMI-A-1";
-          in
-          {
-            output."${asus}".pos = "0 0";
-            output."${m32uc}".pos = "2560 0";
+    (
+      let
+        asusConn = "DP-4";
+        # name is derived from forced edid profile, could be DP-1
+        #asus = "The Linux Foundation ${lib.removeSuffix ".bin" config.hardware.display.outputs."DP-1".edid} Linux #0";
+        asus = asusConn;
+        dell = "Dell Inc. DELL U2711 G606T29F0EWL";
+        m32uc = "GIGA-BYTE TECHNOLOGY CO., LTD. M32UC 22090B013112";
+      in
+      {
+        kdn.hardware.edid.enable = true;
+        hardware.display.outputs."${asusConn}" = {
+          edid = "PG278Q_120.bin";
+          mode = "e";
+        };
+        hardware.display.edid.applyAtRuntime = true;
+        hardware.display.edid.applyWithKernelParameters = true;
+        systemd.services.display-edid-apply.preStart = ''
+          conn="/sys/kernel/debug/dri/1/${asusConn}"
+          if test -d "$conn" ; then
+            echo on >"$conn/force"
+            echo 1 >"$conn/trigger_hotplug"
+          fi
+        '';
+        home-manager.sharedModules = [{
+          wayland.windowManager.sway.config = {
+            output."${asus}" = {
+              pos = "0 0";
+              modeline = "241.50 2560 2608 2640 2720 1440 1443 1448 1481 -hsync +vsync"; # 2560x1440 @ 60 Hz
+            };
+            output."${m32uc}" = {
+              pos = "2560 0";
+              mode = "3840x2160@144Hz";
+            };
             workspaceOutputAssign = [
               { workspace = "1"; output = m32uc; }
               { workspace = "2"; output = asus; }
@@ -67,9 +80,9 @@ in
               { workspace = "4"; output = m32uc; }
             ];
           };
-      }];
-      kdn.filesystems.disko.luks-zfs.enable = true;
-    }
+        }];
+      }
+    )
     (import ./disko.nix { inherit lib; hostname = config.networking.hostName; })
     {
       # automated unlock using Clevis through Tang server
