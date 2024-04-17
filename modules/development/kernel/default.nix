@@ -37,8 +37,8 @@ in
       bc
       sphinx
     ])
-    ++ config.boot.kernelPackages.nativeBuildInputs
-    ++ config.boot.kernelPackages.depsBuildBuild
+    ++ config.boot.kernelPackages.kernel.nativeBuildInputs
+    ++ config.boot.kernelPackages.kernel.depsBuildBuild
     ;
   };
 }
