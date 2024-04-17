@@ -8,10 +8,37 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    environment.systemPackages = with pkgs; [
+    # see https://www.kernel.org/doc/html/v5.6/process/changes.html
+    environment.systemPackages = (with pkgs; [
       gcc
       gnumake
       binutils
-    ];
+      flex
+      bison
+      util-linux
+      kmod
+      e2fsprogs
+      jfsutils
+      reiserfsprogs
+      xfsprogs
+      squashfs-tools-ng
+      btrfs-progs
+      pcmciaUtils
+      unixtools.quota
+      ppp
+      nfs-utils
+      procps
+      oprofile
+      eudev # udev
+      grub2
+      mcelog
+      iptables
+      openssl
+      bc
+      sphinx
+    ])
+    ++ config.boot.kernelPackages.nativeBuildInputs
+    ++ config.boot.kernelPackages.depsBuildBuild
+    ;
   };
 }
