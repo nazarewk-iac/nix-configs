@@ -23,7 +23,7 @@ in
         #jetbrains-toolbox
         #jetbrains.jdk
         #jetbrains.gateway
-        #jetbrains.clion
+        jetbrains.clion
         #jetbrains.goland
         #jetbrains.ruby-mine
       ];

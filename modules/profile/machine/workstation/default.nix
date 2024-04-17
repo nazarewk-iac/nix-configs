@@ -39,6 +39,7 @@ in
     kdn.programs.nix-index.enable = true;
 
     kdn.development.android.enable = true;
+    kdn.development.kernel.enable = true;
     #kdn.virtualisation.containers.dagger.enable = true;
     #kdn.virtualisation.containers.distrobox.enable = true;
     kdn.virtualisation.containers.enable = true;
