@@ -51,6 +51,11 @@ in
         bc
         openssl
       ])
+      # /home/kdn/dev/git.kernel.org/pub/scm/linux/kernel/git/stable/linux/tools/objtool/include/objtool/elf.h:10:10: fatal error: gelf.h: No such file or directory
+      ++ (with pkgs; [
+        libelf
+        elfutils
+      ])
       ++ config.boot.kernelPackages.kernel.nativeBuildInputs
       ++ config.boot.kernelPackages.kernel.depsBuildBuild
     ;
