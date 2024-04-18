@@ -248,6 +248,8 @@ in
           name = "kdn-drag0nius.kdbx";
           text = "${lib.getExe kdn-keepass} drag0nius.kdbx";
         })
+        bitwarden
+        bitwarden-cli
 
         flameshot
         vlc
