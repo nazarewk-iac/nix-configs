@@ -10,19 +10,35 @@ let
   nc.rel = "Nextcloud/drag0nius@nc.nazarewk.pw";
   nc.abs = "${config.home.homeDirectory}/${nc.rel}";
 
-  drag0nius_kdbx =
-    (pkgs.writeShellApplication {
-      name = "keepass-drag0nius.kdbx";
-      runtimeInputs = [ pkgs.pass pkgs.keepassxc ];
-      text = ''
-        cmd_start () {
-            local db_path="$HOME/${nc.rel}/Dropbox import/Apps/KeeAnywhere/drag0nius.kdbx"
-            pass KeePass/drag0nius.kdbx | keepassxc --pw-stdin "$db_path"
-        }
+  kdn-keepass = pkgs.writeShellApplication {
+    name = "kdn-keepass";
+    runtimeInputs = [ pkgs.pass pkgs.keepassxc ];
+    runtimeEnv.nextcloud = nc.abs;
+    text = ''
+      set -eEuo pipefail
 
-        "cmd_''${1:-start}" "''${@:2}"
-      '';
-    });
+      pass_path="KeePass"
+      search_dirs=(
+        "$nextcloud/important/keepass"
+        "$nextcloud/Dropbox import/Apps/KeeAnywhere"
+      )
+
+      find_db() {
+        local dbname="$1"
+        for dir in "''${search_dirs[@]}"; do
+          local candidate="$dir/$dbname"
+          test -e "$candidate" || continue
+          echo -n "$candidate"
+          return
+        done
+        echo "error: database $dbname not found!" >&2
+        return 1
+      }
+
+      dbname="$1"
+      pass "$pass_path/$dbname" | keepassxc --pw-stdin "$(find_db "$dbname")"
+    '';
+  };
 in
 {
   options.kdn.profile.user.kdn = {
@@ -182,7 +198,7 @@ in
         Unit.Description = "KeePassXC password manager";
         Service = {
           Slice = "background.slice";
-          ExecStart = "${drag0nius_kdbx}/bin/keepass-drag0nius.kdbx start";
+          ExecStart = "${lib.getExe kdn-keepass} drag0nius.kdbx";
         };
         Install.WantedBy = [ "graphical-session.target" ];
       };
@@ -228,7 +244,10 @@ in
     (lib.mkIf (hasWorkstation && hasGUI) {
       home.packages = with pkgs; [
         keepassxc
-        drag0nius_kdbx
+        (pkgs.writeShellApplication {
+          name = "kdn-drag0nius.kdbx";
+          text = "${lib.getExe kdn-keepass} drag0nius.kdbx";
+        })
 
         flameshot
         vlc
