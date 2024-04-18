@@ -55,19 +55,11 @@ in
           mode = "e";
         };
         hardware.display.edid.applyAtRuntime = true;
-        hardware.display.edid.applyWithKernelParameters = true;
-        systemd.services.display-edid-apply.preStart = ''
-          conn="/sys/kernel/debug/dri/1/${asusConn}"
-          if test -d "$conn" ; then
-            echo on >"$conn/force"
-            echo 1 >"$conn/trigger_hotplug"
-          fi
-        '';
         home-manager.sharedModules = [{
           wayland.windowManager.sway.config = {
             output."${asus}" = {
               pos = "0 0";
-              modeline = "241.50 2560 2608 2640 2720 1440 1443 1448 1481 -hsync +vsync"; # 2560x1440 @ 60 Hz
+              modeline = config.hardware.display.edid.modelines.config.PG278Q_120;
             };
             output."${m32uc}" = {
               pos = "2560 0";
