@@ -31,6 +31,8 @@ let
     ruamel-yaml
     tqdm
     twine # upload to pypi, see https://realpython.com/pypi-publish-python-package/#upload-your-package
+
+    pycrypto
   ]));
 
   renamedBinariesOnly = fmt: pkg: pkgs.runCommand "${pkg.name}-renamed-to-${builtins.replaceStrings [ "%s" ] [ "BIN" ] fmt}"
