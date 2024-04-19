@@ -241,6 +241,7 @@ in
     (lib.mkIf (hasWorkstation && hasGUI) {
       home.packages = with pkgs; [
         keepassxc
+        kdn-keepass
         (pkgs.writeShellApplication {
           name = "kdn-drag0nius.kdbx";
           text = "${lib.getExe kdn-keepass} drag0nius.kdbx";
