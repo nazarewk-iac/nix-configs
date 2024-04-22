@@ -125,7 +125,9 @@ in
         # can be removed when NotifyAccess=all pattern is changed
         export KDN_SWAY_NOTIFY_SOCKET="''${NOTIFY_SOCKET:-}"
         test -z "$KDN_SWAY_NOTIFY_SOCKET" || unset NOTIFY_SOCKET
-        . /etc/profile
+        if test -e /etc/profile ; then
+          . /etc/profile
+        fi
 
         # cfg.environmentDefaults
         export \
@@ -348,6 +350,7 @@ in
         wayland-utils
         wdisplays # randr equivalent
         wlr-randr
+        wl-color-picker
 
         ashpd-demo # Tool for playing with XDG desktop portals
       ];
