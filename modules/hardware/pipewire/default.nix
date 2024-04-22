@@ -44,7 +44,7 @@ in
     # required by easyeffects
     programs.dconf.enable = true;
     home-manager.sharedModules = [{
-      services.easyeffects.enable = true;
+      #services.easyeffects.enable = true;
     }];
   };
 }
