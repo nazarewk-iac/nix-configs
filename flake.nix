@@ -49,6 +49,7 @@
     rust-overlay.inputs.flake-utils.follows = "flake-utils";
     rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
     rust-overlay.url = "github:oxalica/rust-overlay";
+    stylix.inputs.base16-foot.follows = "base16-foot";
     stylix.inputs.flake-compat.follows = "flake-compat";
     stylix.inputs.home-manager.follows = "home-manager";
     stylix.inputs.nixpkgs.follows = "nixpkgs";
@@ -59,6 +60,10 @@
     ulauncher.inputs.flake-parts.follows = "flake-parts";
     ulauncher.inputs.nixpkgs.follows = "nixpkgs";
     ulauncher.url = "github:Ulauncher/Ulauncher/v6";
+
+    # themes
+    base16-foot.flake = false;
+    base16-foot.url = "github:tinted-theming/base16-foot";
   };
 
   outputs =

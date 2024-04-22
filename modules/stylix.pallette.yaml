@@ -1,9 +1,9 @@
 slug: "darcula-kdn"
 scheme: "Darcula by kdn"
 author: "jetbrains, modified by kdn"
-base00: "2b2b2b" # background
-base01: "323232" # line cursor
-base02: "323232" # statusline
+base00: "1e1e1e" # background
+base01: "464646" # line cursor
+base02: "555555" # statusline
 base03: "606366" # line numbers
 base04: "a4a3a3" # selected line number
 base05: "a9b7c6" # foreground
