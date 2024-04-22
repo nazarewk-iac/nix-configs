@@ -89,8 +89,6 @@ in
       (renamedBinariesOnly "%s.3.12" python312)
 
       graphviz
-
-      kdn.openapi-python-client-cli
     ];
   };
 }
