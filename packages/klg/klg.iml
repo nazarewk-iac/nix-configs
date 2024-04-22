@@ -3,6 +3,7 @@
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
     <content url="file://$MODULE_DIR$">
+      <excludePattern pattern=".direnv" />
       <excludePattern pattern=".devenv" />
       <excludePattern pattern="result" />
       <excludePattern pattern=".pytest-cache" />
