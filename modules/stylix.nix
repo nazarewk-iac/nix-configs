@@ -12,7 +12,7 @@
     stylix.polarity = lib.mkDefault "dark";
     stylix.base16Scheme = lib.mkDefault ./stylix.pallette.yaml;
 
-    stylix.cursor.name = lib.mkDefault "phinger-cursors";
+    stylix.cursor.name = lib.mkDefault "phinger-cursors-${config.stylix.polarity}";
     stylix.cursor.package = lib.mkDefault pkgs.phinger-cursors;
     stylix.fonts.monospace.name = lib.mkDefault "Fira Code";
     stylix.fonts.monospace.package = lib.mkDefault pkgs.fira-code;
