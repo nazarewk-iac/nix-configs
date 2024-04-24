@@ -159,6 +159,10 @@ in
 
       services.nextcloud-client.enable = true;
       services.nextcloud-client.startInBackground = true;
+      systemd.user.services.nextcloud-client.Service = {
+        Restart = "on-failure";
+        RestartSec = 3;
+      };
 
       xdg.mime.enable = true;
       xdg.desktopEntries.uri-to-clipboard =

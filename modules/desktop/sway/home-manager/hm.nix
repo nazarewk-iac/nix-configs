@@ -11,8 +11,6 @@ let
       wl-paste --no-newline | ydotool type --file=-
     '';
   };
-
-  runUlauncher = "${config.kdn.programs.ulauncher.package}/bin/ulauncher-toggle";
 in
 {
   options.kdn.desktop.sway = {
@@ -20,17 +18,22 @@ in
     prefix = lib.mkOption { type = with lib.types; str; };
     systemd = lib.mkOption { readOnly = true; };
     keys = lib.mkOption { readOnly = true; };
+    launcher = lib.mkOption {
+      type = with lib.types; listOf str;
+    };
+    fileManager = lib.mkOption {
+      type = with lib.types; str;
+      default = lib.getExe pkgs.cinnamon.nemo-with-extensions;
+    };
   };
 
   imports = [
     ./media-keys.nix
-    ./notifications.nix
     ./swaylock.nix
     ./swayr.nix
-    ./waybar.nix
   ];
 
-  config = lib.mkIf (config.kdn.headless.enableGUI && sysCfg.enable) (lib.mkMerge [
+  config = lib.mkIf (config.kdn.headless.enableGUI && cfg.enable) (lib.mkMerge [
     {
       xsession.preferStatusNotifierItems = true;
       services.network-manager-applet.enable = true;
@@ -70,11 +73,11 @@ in
         Requires = lib.mkForce [ "tray.target" config.kdn.desktop.sway.systemd.envs.target ];
       };
 
-      kdn.programs.ulauncher.enable = true;
-      systemd.user.services.ulauncher.Unit = {
-        After = [ config.kdn.desktop.sway.systemd.envs.target ];
-        Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
-      };
+      #kdn.programs.ulauncher.enable = true;
+      #systemd.user.services.ulauncher.Unit = {
+      #  After = [ config.kdn.desktop.sway.systemd.envs.target ];
+      #  Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
+      #};
 
       wayland.windowManager.sway.enable = true;
 
@@ -88,14 +91,18 @@ in
         defaultWorkspace = "workspace number 1";
         keybindings =
           let
-            exec = cmd: "exec '${cmd}'";
+            exec = cmd:
+              let
+                cmdString = if builtins.typeOf cmd == "list" then lib.escapeShellArgs cmd else "'${cmd}'";
+              in
+              "exec ${cmdString}";
           in
           with cfg.keys; {
-            "--release ${super}+V" = exec "${ydotool-paste}/bin/ydotool-paste"; # fix using it by nix path
-            "--inhibited --release ${super}+${ctrl}+V" = exec "${ydotool-paste}/bin/ydotool-paste"; # fix using it by nix path
+            "--release ${super}+V" = exec (lib.getExe ydotool-paste); # fix using it by nix path
+            "--inhibited --release ${super}+${ctrl}+V" = exec (lib.getExe ydotool-paste); # fix using it by nix path
             # X parity
             "${lalt}+F4" = "kill";
-            "${super}+E" = exec "${pkgs.cinnamon.nemo}/bin/nemo";
+            "${super}+E" = exec cfg.fileManager;
             # Scratchpad:
             #   Sway has a "scratchpad", which is a bag of holding for windows.
             #   You can send windows there and get them back later.
@@ -104,11 +111,11 @@ in
             # Show the next scratchpad window or hide the focused scratchpad window.
             # If there are multiple scratchpad windows, this command cycles through them.
             #"$Super+minus" = "scratchpad show";
-            "${super}+K" = exec "${pkgs.qalculate-qt}/bin/qalculate-qt";
-            "${super}+P" = exec "${pkgs.foot}/bin/foot --title=ipython ipython";
-            "${super}+Return" = exec "${pkgs.foot}/bin/foot";
+            "${super}+K" = exec (lib.getExe pkgs.qalculate-qt);
+            "${super}+P" = exec "${lib.getExe pkgs.foot} --title=ipython ipython";
+            "${super}+Return" = exec "${lib.getExe pkgs.foot}";
             # Launchers
-            "${super}+D" = exec runUlauncher;
+            "${super}+D" = exec cfg.launcher;
             "${lalt}+F2" = exec "${pkgs.wofi}/bin/wofi --show run";
             # Kill focused window
             "${super}+${shift}+Q" = "kill";
@@ -271,5 +278,20 @@ in
 
       home.sessionPath = [ "$HOME/.local/bin" ];
     }
+    (
+      let nwg = config.services.nwg-shell; in lib.mkMerge [
+        {
+          services.nwg-shell.enable = true;
+          services.nwg-shell.drawer.opts.fm = cfg.fileManager;
+          kdn.desktop.sway.launcher = nwg.drawer.exec;
+          systemd.user.services.nwg-panel.Unit.BindsTo = [ "tray.target" ];
+          systemd.user.services.nwg-panel.Unit.Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
+          systemd.user.services.nwg-panel.Unit.After = [ config.kdn.desktop.sway.systemd.envs.target ];
+        }
+        {
+          services.nwg-shell.panel.config.panel-bottom.enable = false;
+        }
+      ]
+    )
   ]);
 }
