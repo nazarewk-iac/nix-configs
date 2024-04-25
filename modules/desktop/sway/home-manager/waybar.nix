@@ -151,8 +151,15 @@ let
     position = "top";
     height = 36;
     spacing = 4;
-    modules-left = [ "sway/workspaces" "sway/mode" "custom/media" "wlr/taskbar" ];
-    modules-center = [ "sway/window" ];
+    modules-left = [
+      #"sway/workspaces"
+      #"sway/mode"
+      #"custom/media"
+      #"wlr/taskbar"
+    ];
+    modules-center = [
+      "sway/window"
+    ];
     modules-right = [
       # "mpd"
       "idle_inhibitor"

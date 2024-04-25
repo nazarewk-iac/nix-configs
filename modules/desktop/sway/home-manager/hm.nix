@@ -31,6 +31,7 @@ in
     ./media-keys.nix
     ./swaylock.nix
     ./swayr.nix
+    ./waybar.nix
   ];
 
   config = lib.mkIf (config.kdn.headless.enableGUI && cfg.enable) (lib.mkMerge [
@@ -283,7 +284,7 @@ in
         {
           services.nwg-shell.enable = true;
           services.nwg-shell.drawer.opts.fm = cfg.fileManager;
-          kdn.desktop.sway.launcher = nwg.drawer.exec;
+          kdn.desktop.sway.launcher = [ nwg.drawer.exec ];
           systemd.user.services.nwg-panel.Unit.BindsTo = [ "tray.target" ];
           systemd.user.services.nwg-panel.Unit.Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
           systemd.user.services.nwg-panel.Unit.After = [ config.kdn.desktop.sway.systemd.envs.target ];

@@ -78,7 +78,7 @@ in
       };
       config = lib.mkOption {
         type = (pkgs.formats.json { }).type;
-        apply = panelConfigFrom;
+        #apply = panelConfigFrom;
       };
       style = lib.mkOption {
         type = with lib.types; str;
@@ -96,16 +96,23 @@ in
       ];
     }
     (lib.mkIf cfg.panel.enable {
+      # TODO: declarative config building on top of default configs: https://github.com/nwg-piotr/nwg-panel/issues/289
+      # see https://github.com/nwg-piotr/nwg-panel/issues/289#issuecomment-2075997316
+      services.nwg-shell.panel.config = lib.pipe ./nwg-panel/default-config.json [
+        builtins.readFile
+        builtins.fromJSON
+        panelConfigTo
+      ];
+    })
+    (lib.mkIf cfg.panel.enable {
+      # TODO: missing tray icons for electron based apps https://github.com/nwg-piotr/nwg-panel/issues/224
       home.packages = with pkgs; [
         gopsuinfo # for various executors
       ];
       services.nwg-shell.panel.style = builtins.readFile "${cfg.panel.package}/${pkgs.python3.sitePackages}/nwg_panel/config/style.css";
-      services.nwg-shell.panel.config = lib.pipe "${cfg.panel.defaults}/config/config" [
-        builtins.readFile
-        builtins.fromJSON
-        panelConfigTo
-      ]
-      ;
+      services.nwg-shell.panel.config.panel-top.output = "All";
+      services.nwg-shell.panel.config.panel-bottom.output = "All";
+
       systemd.user.services.nwg-panel = {
         Install = {
           WantedBy = [ "graphical-session.target" ];
