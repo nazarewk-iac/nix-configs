@@ -6,6 +6,7 @@ rec {
   git-credential-keyring = pkgs.callPackage ./git-credential-keyring { };
   git-utils = pkgs.callPackage ./git-utils { };
   gtimelog = pkgs.callPackage ./gtimelog { };
+  kdn-keepass = pkgs.callPackage ./kdn-keepass { };
   kdn-nix = pkgs.callPackage ./kdn-nix { };
   klg = pkgs.callPackage ./klg { };
   klog-time-tracker = pkgs.callPackage ./klog-time-tracker { };

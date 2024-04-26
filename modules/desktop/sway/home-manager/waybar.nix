@@ -152,10 +152,10 @@ let
     height = 36;
     spacing = 4;
     modules-left = [
-      #"sway/workspaces"
-      #"sway/mode"
-      #"custom/media"
-      #"wlr/taskbar"
+      "sway/workspaces"
+      "sway/mode"
+      "custom/media"
+      "wlr/taskbar"
     ];
     modules-center = [
       "sway/window"
@@ -169,7 +169,7 @@ let
       "memory"
       "temperature"
       "backlight"
-      # "keyboard-state"
+      "keyboard-state"
       "sway/language"
       "battery"
       "battery#bat2"

@@ -9,36 +9,6 @@ let
 
   nc.rel = "Nextcloud/drag0nius@nc.nazarewk.pw";
   nc.abs = "${config.home.homeDirectory}/${nc.rel}";
-
-  kdn-keepass = pkgs.writeShellApplication {
-    name = "kdn-keepass";
-    runtimeInputs = [ pkgs.pass pkgs.keepassxc ];
-    runtimeEnv.nextcloud = nc.abs;
-    text = ''
-      set -eEuo pipefail
-
-      pass_path="KeePass"
-      search_dirs=(
-        "$nextcloud/important/keepass"
-        "$nextcloud/Dropbox import/Apps/KeeAnywhere"
-      )
-
-      find_db() {
-        local dbname="$1"
-        for dir in "''${search_dirs[@]}"; do
-          local candidate="$dir/$dbname"
-          test -e "$candidate" || continue
-          echo -n "$candidate"
-          return
-        done
-        echo "error: database $dbname not found!" >&2
-        return 1
-      }
-
-      dbname="$1"
-      pass "$pass_path/$dbname" | keepassxc --pw-stdin "$(find_db "$dbname")"
-    '';
-  };
 in
 {
   options.kdn.profile.user.kdn = {
@@ -195,11 +165,15 @@ in
           ];
         };
 
+      home.sessionVariables = {
+        KEEPASS_PATH = "${nc.abs}/important/keepass";
+      };
       systemd.user.services.keepassxc = {
         Unit.Description = "KeePassXC password manager";
         Service = {
+          Environment = [ "KEEPASS_PATH=${nc.abs}/important/keepass" ];
           Slice = "background.slice";
-          ExecStart = "${lib.getExe kdn-keepass} drag0nius.kdbx";
+          ExecStart = "${lib.getExe pkgs.kdn.kdn-keepass} drag0nius.kdbx";
         };
         Install.WantedBy = [ "graphical-session.target" ];
       };
@@ -214,7 +188,6 @@ in
         PartOf = [ config.kdn.desktop.sway.systemd.session.target ];
       };
       systemd.user.services.keepassxc.Install.WantedBy = [ config.kdn.desktop.sway.systemd.secrets-service.service ];
-
 
       systemd.user.services.nextcloud-client.Unit = {
         Requires = lib.mkForce [
@@ -245,10 +218,10 @@ in
     (lib.mkIf (hasWorkstation && hasGUI) {
       home.packages = with pkgs; [
         keepassxc
-        kdn-keepass
+        kdn.kdn-keepass
         (pkgs.writeShellApplication {
           name = "kdn-drag0nius.kdbx";
-          text = "${lib.getExe kdn-keepass} drag0nius.kdbx";
+          text = "${lib.getExe pkgs.kdn.kdn-keepass} drag0nius.kdbx";
         })
         bitwarden
         bitwarden-cli

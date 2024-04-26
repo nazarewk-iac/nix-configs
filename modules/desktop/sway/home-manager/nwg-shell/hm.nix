@@ -34,9 +34,7 @@ in
         description = ''
           see https://github.com/nwg-piotr/nwg-drawer
         '';
-        default = {
-          wm = ''"$XDG_CURRENT_DESKTOP"'';
-        };
+        default = { };
         apply = opts: lib.pipe opts [
           (lib.attrsets.mapAttrsToList (name: value: [ "-${name}" ] ++ lib.optional (builtins.typeOf value == "string") value))
           lib.lists.flatten
@@ -94,6 +92,7 @@ in
         builtins.attrValues
         (builtins.map (v: v.package))
       ];
+      services.nwg-shell.drawer.opts.wm = ''"$XDG_CURRENT_DESKTOP"'';
     }
     (lib.mkIf cfg.panel.enable {
       # TODO: declarative config building on top of default configs: https://github.com/nwg-piotr/nwg-panel/issues/289
