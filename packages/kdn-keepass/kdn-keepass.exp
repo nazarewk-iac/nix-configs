@@ -5,4 +5,6 @@ spawn keepassxc --pw-stdin "$dbpath"
 expect "Database password: "
 set password [exec pass "$passpath"]
 send "$password\n"
-send_user "$dbpath unlocked"
+send_user "\n"
+send_user "$dbpath unlocked\n"
+interact
