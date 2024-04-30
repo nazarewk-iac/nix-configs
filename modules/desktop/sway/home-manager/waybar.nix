@@ -169,7 +169,7 @@ let
       "memory"
       "temperature"
       "backlight"
-      "keyboard-state"
+      #"keyboard-state"
       "sway/language"
       "battery"
       "battery#bat2"
@@ -183,7 +183,7 @@ in
     xdg.configFile."waybar/config" = {
       source = (pkgs.formats.json { }).generate "waybar-config.json" (settings // settingsModules);
       onChange = ''
-        ${pkgs.procps}/bin/pkill -u $USER -USR2 waybar || true
+        ${lib.getExe' pkgs.procps "pkill"} -u '${config.home.username}' -USR2 waybar || :
       '';
     };
 
