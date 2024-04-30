@@ -171,6 +171,8 @@ in
       systemd.user.services.keepassxc = {
         Unit.Description = "KeePassXC password manager";
         Service = {
+          Type = "notify";
+          NotifyAccess = "all";
           Environment = [ "KEEPASS_PATH=${nc.abs}/important/keepass" ];
           Slice = "background.slice";
           ExecStart = "${lib.getExe pkgs.kdn.kdn-keepass} drag0nius.kdbx";

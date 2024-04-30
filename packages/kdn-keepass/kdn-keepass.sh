@@ -12,4 +12,4 @@ if test -z "$dbpath"; then
   echo "error: database $dbname not found in '${KEEPASS_PATH}'!" >&2
   exit 1
 fi
-expect "${expect_script}" "$dbpath" "$keepass_pass_path/$dbname"
+exec expect "${expect_script}" "$dbpath" "$keepass_pass_path/$dbname"

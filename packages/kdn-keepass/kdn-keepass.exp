@@ -1,10 +1,40 @@
 #!/usr/bin/env expect
 
+proc log {logger message} {
+  send_user -- "$logger: $message\n"
+}
+
 lassign $argv dbpath passpath
 spawn keepassxc --pw-stdin "$dbpath"
-expect "Database password: "
+set keepassxc_spawn_id $spawn_id
+set keepassxc_pid [exp_pid]
+log keepassxc "started as PID=$keepassxc_pid SPAWN_ID=$spawn_id"
+
+if {[info exists ::env(NOTIFY_SOCKET)]} {
+  system systemd-notify --pid="$keepassxc_pid"
+  log systemd "MAINPID set to $keepassxc_pid"
+}
+
 set password [exec pass "$passpath"]
-send "$password\n"
-send_user "\n"
-send_user "$dbpath unlocked\n"
-interact
+expect {
+  "Another instance of KeePassXC is already running." { exit 1 }
+  "Database password: " {
+    send "$password\n"
+    send_user "\n"
+    log keepassxc "password submitted"
+  }
+  timeout { exit 1 }
+}
+log keepassxc "wait to be ready"
+if {[info exists ::env(SWAYSOCK)]} {
+  spawn bash -c { swaymsg -t subscribe -m '["window"]' | gron --stream --monochrome }
+  expect -i $spawn_id {*app_id = "org.keepassxc.KeePassXC";} { close -i $spawn_id }
+  log sway {"org.keepassxc.KeePassXC" window created}
+}
+if {[info exists ::env(NOTIFY_SOCKET)]} {
+  system systemd-notify --ready
+  log systemd "ready signal sent"
+} else {
+  interact -i $keepassxc_spawn_id
+}
+
