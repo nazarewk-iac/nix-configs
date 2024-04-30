@@ -19,6 +19,8 @@ in
       bats # https://github.com/bats-core/bats-core
 
       gnumake
+
+      expect
     ];
   };
 }

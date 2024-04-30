@@ -1,0 +1,8 @@
+#!/usr/bin/env expect
+
+lassign $argv dbpath passpath
+spawn keepassxc --pw-stdin "$dbpath"
+expect "Database password: "
+set password [exec pass "$passpath"]
+send "$password\n"
+send_user "$dbpath unlocked"
