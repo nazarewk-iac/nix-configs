@@ -74,6 +74,8 @@ main() {
   for action in "${actions[@]}"; do
     clean_"${action}"
   done
+
+  nix-store --repair --verify --check-contents
 }
 
 main "$@"
