@@ -20,10 +20,10 @@ in
       # INPUT
       services.xserver.xkb.layout = "pl";
       console.useXkbConfig = true;
-      services.xserver.libinput.enable = true;
-      services.xserver.libinput.touchpad.disableWhileTyping = true;
-      services.xserver.libinput.touchpad.naturalScrolling = true;
-      services.xserver.libinput.touchpad.tapping = true;
+      services.libinput.enable = true;
+      services.libinput.touchpad.disableWhileTyping = true;
+      services.libinput.touchpad.naturalScrolling = true;
+      services.libinput.touchpad.tapping = true;
       services.xserver.synaptics.twoFingerScroll = true;
 
       kdn.hardware.pipewire.enable = true;

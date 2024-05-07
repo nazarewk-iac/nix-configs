@@ -77,11 +77,11 @@ in
         sanoid
       ];
 
-      virtualisation.docker.storageDriver = lib.mkDefault "zfs";
+      virtualisation.docker.storageDriver = "zfs";
       virtualisation.podman.extraPackages = [ pkgs.zfs ];
     }
     (lib.mkIf (config.kdn.virtualisation.containers.enable && cfg.containers.enable) {
-      virtualisation.containers.storage.settings.storage.driver = "zfs";
+      virtualisation.containers.storage.settings.storage.driver = lib.mkForce "zfs";
       virtualisation.containers.storage.settings.storage.options.zfs.fsname = cfg.containers.fsname;
     })
   ]);
