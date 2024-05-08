@@ -70,7 +70,7 @@ in
               output."${internal}" = {
                 pos = "3840 0";
                 transform = "270";
-                scale = "2";
+                scale = "1.5";
               };
               output."${m32uc}" = {
                 pos = "0 0";
