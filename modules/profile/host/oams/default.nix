@@ -5,6 +5,14 @@ in
 {
   options.kdn.profile.host.oams = {
     enable = lib.mkEnableOption "enable oams host profile";
+
+    displayProfile = lib.mkOption {
+      type = with lib.types; enum [
+        "standalone"
+        "m32uc-sideways"
+      ];
+      default = "m32uc-sideways";
+    };
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
@@ -45,24 +53,37 @@ in
         m32uc = "GIGA-BYTE TECHNOLOGY CO., LTD. M32UC 22090B013112";
       in
       {
-        home-manager.sharedModules = [{
-          wayland.windowManager.sway.config = {
-            output."${internal}" = {
-              pos = "3840 720";
-              mode = "2560x1440@60Hz";
+        home-manager.sharedModules = [
+          {
+            wayland.windowManager.sway.config = {
+              output."${internal}" = {
+                mode = "2560x1440@165Hz";
+              };
+              output."${m32uc}" = {
+                mode = "3840x2160@144Hz";
+              };
             };
-            output."${m32uc}" = {
-              pos = "0 0";
-              mode = "3840x2160@144Hz";
+          }
+          (lib.mkIf (cfg.displayProfile == "standalone") { })
+          (lib.mkIf (cfg.displayProfile == "m32uc-sideways") {
+            wayland.windowManager.sway.config = {
+              output."${internal}" = {
+                pos = "3840 0";
+                transform = "270";
+                scale = "2";
+              };
+              output."${m32uc}" = {
+                pos = "0 0";
+              };
+              workspaceOutputAssign = [
+                { workspace = "1"; output = m32uc; }
+                { workspace = "2"; output = internal; }
+                { workspace = "3"; output = internal; }
+                { workspace = "4"; output = m32uc; }
+              ];
             };
-            workspaceOutputAssign = [
-              { workspace = "1"; output = m32uc; }
-              { workspace = "2"; output = internal; }
-              { workspace = "3"; output = internal; }
-              { workspace = "4"; output = m32uc; }
-            ];
-          };
-        }];
+          })
+        ];
       }
     )
   ]);
