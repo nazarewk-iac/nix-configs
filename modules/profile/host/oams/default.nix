@@ -37,20 +37,33 @@ in
       environment.systemPackages = with pkgs; [
         asusctl
       ];
-      home-manager.sharedModules = [{
-        wayland.windowManager.sway.extraConfig = ''
-          output eDP-1 mode 2560x1440@60Hz
-        '';
-        wayland.windowManager.sway.config =
-          {
-            output."eDP-1".pos = "0 0";
-            workspaceOutputAssign = [
-              { workspace = "1"; output = "eDP-1"; }
-            ];
-          };
-
-      }];
     }
     (import ./disko.nix { inherit lib; hostname = config.networking.hostName; })
+    (
+      let
+        internal = "Chimei Innolux Corporation 0x1540 Unknown";
+        m32uc = "GIGA-BYTE TECHNOLOGY CO., LTD. M32UC 22090B013112";
+      in
+      {
+        home-manager.sharedModules = [{
+          wayland.windowManager.sway.config = {
+            output."${internal}" = {
+              pos = "3840 720";
+              mode = "2560x1440@60Hz";
+            };
+            output."${m32uc}" = {
+              pos = "0 0";
+              mode = "3840x2160@144Hz";
+            };
+            workspaceOutputAssign = [
+              { workspace = "1"; output = m32uc; }
+              { workspace = "2"; output = internal; }
+              { workspace = "3"; output = internal; }
+              { workspace = "4"; output = m32uc; }
+            ];
+          };
+        }];
+      }
+    )
   ]);
 }
