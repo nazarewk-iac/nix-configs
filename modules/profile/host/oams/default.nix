@@ -11,7 +11,7 @@ in
         "standalone"
         "m32uc-sideways"
       ];
-      default = "m32uc-sideways";
+      default = "standalone";
     };
   };
 
