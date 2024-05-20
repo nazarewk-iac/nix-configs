@@ -39,6 +39,9 @@ in
 
       boot.kernelModules = [ "kvm-amd" ];
 
+      # 12G was not enough for large rebuild
+      boot.tmp.tmpfsSize = "32G";
+
       services.asusd.enable = true;
       kdn.hardware.gpu.multiGPU.enable = true;
       services.asusd.enableUserService = false; # just strobes the LEDs, better turn it off
