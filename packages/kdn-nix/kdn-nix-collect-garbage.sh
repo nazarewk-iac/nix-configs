@@ -34,7 +34,7 @@ handle_leftover_profile() {
 
 handle_leftover_result() {
   local link="$1"
-  [[ "${link##*/}" == result* ]] || return 0
+  [[ "${link##*/}" == result || "${link##*/}" == result-* ]] || return 0
   log info "[REMOVE] '${link}' seems to be a nix build result"
   rm "${link}"
   ((deleted += 1))
@@ -64,6 +64,7 @@ clean_leftovers() {
   log info "[SUMMARY] kept ${kept} links, deleted ${deleted} links"
   if test "${deleted}" -gt 0; then
     nix-store --gc
+    nix-store --repair --verify --check-contents
   fi
 }
 
