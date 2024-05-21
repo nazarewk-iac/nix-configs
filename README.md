@@ -28,7 +28,7 @@ see https://bmcgee.ie/posts/2022/12/setting-up-my-new-laptop-nix-style/
 
 ```shell
 # building the installer from packages/install-iso
-sudo dd if="$(nom build '.#install-iso' --no-link --print-out-paths)/iso/nixos.iso" of=/dev/disk/by-id/usb-SanDisk_Cruzer_Blade_02000515031521144721-0:0 status=progress
+sudo dd if="$(nom build '.#install-iso' --no-link --print-out-paths --print-build-logs)/iso/nixos.iso" of=/dev/disk/by-id/usb-SanDisk_Cruzer_Blade_02000515031521144721-0:0 status=progress
 # boot the machine and ssh into it
 ssh -o StrictHostKeyChecking=no kdn@nixos
 ```
