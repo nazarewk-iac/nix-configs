@@ -34,7 +34,6 @@ in
         builtins.readFile
         builtins.fromJSON
         panelConfigToNix
-        #(lib.attrsets.mapAttrsRecursive (path: value: let t = builtins.typeOf value; in if t == "list" || t == "set" then value else lib.mkDefault value))
       ];
     }
     {
@@ -45,7 +44,6 @@ in
       services.nwg-shell.panel.style = builtins.readFile "${cfg.package}/${pkgs.python3.sitePackages}/nwg_panel/config/style.css";
       services.nwg-shell.panel.config.panel-top.output = lib.mkForce "All";
       services.nwg-shell.panel.config.panel-bottom.output = lib.mkForce "All";
-      xdg.configFile."nwg-panel/config.managed.json".text = builtins.toJSON cfg.config;
       systemd.user.services.nwg-panel = {
         Install = {
           WantedBy = [ "graphical-session.target" ];
@@ -62,19 +60,31 @@ in
           ExecStartPre = lib.getExe (pkgs.writeShellApplication {
             name = "nwg-panel-set-configs";
             runtimeInputs = with pkgs; [ diffutils jq ];
+            runtimeEnv.config_path = "${config.xdg.configHome}/nwg-panel/config";
+            runtimeEnv.calendar_path = "${config.xdg.configHome}/nwg-panel/calendar.json";
+            runtimeEnv.managed_config_path = pkgs.runCommand "nwg-panel.config.json"
+              {
+                # see https://github.com/NixOS/nixpkgs/blob/92678837b311e85ab8d9f94bf6755c6ecb0f569f/pkgs/pkgs-lib/formats.nix#L64-L70
+                nativeBuildInputs = with pkgs; [ jq ];
+                value = builtins.toJSON cfg.config;
+                passAsFile = [ "value" ];
+              } ''jq -S . "$valuePath"> $out'';
             text = ''
-              config_dir="$XDG_CONFIG_HOME/nwg-panel"
-              jq -S '.' "$config_dir/config.managed.json" >"$config_dir/config.managed.pretty.json"
-              if test -e "$config_dir/config" ; then
-                jq -S '.' "$config_dir/config" > "$config_dir/config.pretty.json"
+              tempdir="$(mktemp -d /tmp/nwg-panel-set-configs.XXXXXX)"
+              trap 'rm -rf "$tempdir" || :' EXIT
+              mkdir -p "$tempdir"
+              calendar_path=
+              test -e "$calendar_path" || jq -n '{}' >"$calendar_path"
+              if test -e "$config_path" ; then
+                jq -S '.' "$config_path" > "$tempdir/config.json"
               else
-                jq -n '{}' >"$config_dir/config.pretty.json"
+                jq -n '{}' >"$config_path"
               fi
-              if ! diff "$config_dir/config.managed.pretty.json" "$config_dir/config.pretty.json" ; then
+              if ! diff "$managed_config_path" "$tempdir/config.json" ; then
                 echo "current config has changed, replacing with managed"
-                cp "$config_dir/config.managed.json" "$config_dir/config"
+                cp "$managed_config_path" "$config_path"
               fi
-              rm "$config_dir/config"*".pretty.json"
+              rm -r "$tempdir"
             '';
           });
           ExecStart = lib.getExe cfg.package;
