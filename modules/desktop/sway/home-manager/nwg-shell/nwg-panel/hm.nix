@@ -73,7 +73,6 @@ in
               tempdir="$(mktemp -d /tmp/nwg-panel-set-configs.XXXXXX)"
               trap 'rm -rf "$tempdir" || :' EXIT
               mkdir -p "$tempdir"
-              calendar_path=
               test -e "$calendar_path" || jq -n '{}' >"$calendar_path"
               if test -e "$config_path" ; then
                 jq -S '.' "$config_path" > "$tempdir/config.json"
