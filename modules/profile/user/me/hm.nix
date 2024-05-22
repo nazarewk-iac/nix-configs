@@ -219,6 +219,8 @@ in
     })
     (lib.mkIf (hasWorkstation && hasGUI) {
       home.packages = with pkgs; [
+        kdn.ente-photos-desktop
+
         keepassxc
         kdn.kdn-keepass
         (pkgs.writeShellApplication {

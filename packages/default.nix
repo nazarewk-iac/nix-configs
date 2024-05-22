@@ -2,6 +2,7 @@
 rec {
   # changed to manual list due to infinite recursion errors
   data-converters = pkgs.callPackage ./data-converters { };
+  ente-photos-desktop = pkgs.callPackage ./ente-photos-desktop { };
   fortitoken-decrypt = pkgs.callPackage ./fortitoken-decrypt { };
   git-credential-keyring = pkgs.callPackage ./git-credential-keyring { };
   git-utils = pkgs.callPackage ./git-utils { };
