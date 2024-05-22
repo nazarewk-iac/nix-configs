@@ -221,6 +221,8 @@ in
       home.packages = with pkgs; [
         kdn.ente-photos-desktop
 
+        spotifywm
+
         keepassxc
         kdn.kdn-keepass
         (pkgs.writeShellApplication {
