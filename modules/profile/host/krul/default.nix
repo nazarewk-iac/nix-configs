@@ -92,7 +92,7 @@ in
 
       environment.systemPackages = with pkgs; [
         clevis
-        jose
+        # jose
       ];
       boot.initrd.clevis.devices."krul-main-crypted".secretFile = ./krul-main-crypted.jwe;
     }

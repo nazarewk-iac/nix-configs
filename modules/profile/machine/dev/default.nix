@@ -10,6 +10,10 @@ in
   config = lib.mkIf cfg.enable {
     kdn.profile.machine.desktop.enable = true;
 
+    environment.systemPackages = with pkgs; [
+      jose # JSON Web Token tool, https://github.com/latchset/jose
+    ];
+
     home-manager.sharedModules = [{ kdn.development.jetbrains.enable = true; }];
     kdn.development.ansible.enable = true;
     kdn.development.cloud.aws.enable = true;
