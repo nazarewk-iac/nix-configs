@@ -2,8 +2,10 @@
 let
   cfg = config.kdn.development.python;
 
+  defaultPython = pkgs.python312;
+
   mkPython = pkg: (pkg.withPackages (ps: with ps; [
-    # pip-tools  # 2022-08-31 fails on `assert out.exit_code == 2` @ test_bad_setup_file()
+    pip-tools
     black
     boto3
     build # build a package, see https://realpython.com/pypi-publish-python-package/#build-your-package
@@ -12,17 +14,14 @@ let
     flake8
     graphviz
     httpx
+    httpie
     ipython
     isort
     matplotlib
     mt-940
     pendulum
     pip
-    /*
-      2024-03-25: pipx.util.PipxError: Error installing pycowsay from spec 'pycowsay==0.0.0.2'.
-        related to https://github.com/NixOS/nixpkgs/issues/298439 ?
-      pipx
-    */
+    pipx
     pyaml
     pyheos
     pytest
@@ -33,6 +32,8 @@ let
     twine # upload to pypi, see https://realpython.com/pypi-publish-python-package/#upload-your-package
 
     pycrypto
+
+    (pkgs.http-prompt.override { python3Packages = ps; httpie = ps.httpie; })
   ]));
 
   renamedBinariesOnly = fmt: pkg: pkgs.runCommand "${pkg.name}-renamed-to-${builtins.replaceStrings [ "%s" ] [ "BIN" ] fmt}"
@@ -57,6 +58,7 @@ let
     done
     set +x
   '';
+
 in
 {
   options.kdn.development.python = {
@@ -81,9 +83,11 @@ in
       # python software not available in `python.withPackages`
       pipenv
       poetry
+
+      (http-prompt.override (let pp = defaultPython.pkgs; in { python3Packages = pp; httpie = pp.httpie; }))
+      (mkPython defaultPython)
       # full packages contain tkinter https://github.com/NixOS/nixpkgs/blob/7f5639fa3b68054ca0b062866dc62b22c3f11505/pkgs/top-level/all-packages.nix#L16633-L16634
       (renamedBinariesOnly "%s.3.9" python39)
-      (mkPython python311)
       (renamedBinariesOnly "%s.3.10" python310)
       (renamedBinariesOnly "%s.3.11" python311)
       (renamedBinariesOnly "%s.3.12" python312)

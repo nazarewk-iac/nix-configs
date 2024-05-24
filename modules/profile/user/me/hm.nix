@@ -259,6 +259,8 @@ in
         nextcloud-client
 
         deluge
+
+        httpie-desktop
       ];
     })
     ({
