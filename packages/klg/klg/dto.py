@@ -429,6 +429,7 @@ class Result(Base):
         now: pendulum.DateTime = None,
         period: pendulum.DateTime = None,
         day_off_tags: set = frozenset(["#off"]),
+        not_day_off_tags: set = frozenset(["#nooff"]),
         day_skip_tags: set = frozenset(["#noplan"]),
         entry_skip_tags: set = frozenset(),
         weekend_tag="#off=weekend",
@@ -439,7 +440,6 @@ class Result(Base):
         now_date = now.date()
         period = (period or now).replace(day=1)
         period_date = period.date()
-        day_off_tags = day_off_tags | {weekend_tag}
 
         date: pendulum.Date
         by_date: dict[pendulum.Date, list[Record]] = defaultdict(list)
@@ -476,7 +476,9 @@ class Result(Base):
                 if can_modify and date.isoweekday() > 5:
                     record.add_tags(weekend_tag)
 
-                is_off = record.has_tag(*day_off_tags)
+                has_off_tag = record.has_tag(weekend_tag, *day_off_tags)
+                has_not_off_tag = record.has_tag(*not_day_off_tags)
+                is_off = has_off_tag and not has_not_off_tag
                 if is_off:
                     offdays.add(record.date_obj)
                 else:

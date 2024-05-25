@@ -397,6 +397,7 @@ async def plan_month(period, path, write):
         daily_hours=plan.daily_hours,
         period=pendulum.parse(period),
         day_off_tags=plan.day_off_tags,
+        not_day_off_tags=plan.not_day_off_tags,
         day_skip_tags=plan.day_skip_tags,
         weekend_tag=plan.weekend_tag,
         entry_skip_tags=plan.entry_skip_tags,

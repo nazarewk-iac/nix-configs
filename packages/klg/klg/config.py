@@ -153,12 +153,14 @@ class PlanConfig:
     monthly_hours: int | None = None
     daily_hours: int | None = 8
     day_off_tags: set = frozenset(["#off"])
+    not_day_off_tags: set = frozenset(["#nooff"])
     day_skip_tags: set = frozenset(["#noplan"])
     entry_skip_tags: set = frozenset()
     weekend_tag: str = "#off=weekend"
 
     def __post_init__(self):
         self.day_off_tags = set(self.day_off_tags)
+        self.not_day_off_tags = set(self.not_day_off_tags)
         self.day_skip_tags = set(self.day_skip_tags)
         self.entry_skip_tags = set(self.entry_skip_tags)
 
