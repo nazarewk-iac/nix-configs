@@ -124,6 +124,15 @@ in
         "xhci_pci"
       ];
 
+      services.netbird.package = pkgs.netbird.overrideAttrs (old: {
+        patches = old.patches or [ ] ++ [
+          (pkgs.fetchpatch {
+            url = "https://github.com/netbirdio/netbird/pull/2026/commits/3f2eff10772aeda98799110cfceaf6712fc9690a.patch";
+            name = "route-read-envs.patch";
+            hash = "sha256-0Up0ongOvgCxEX2fKznd1ZVcJ6ars3i0j8e3bx978xw=";
+          })
+        ];
+      });
       services.netbird.clients.priv.port = 51819;
 
       services.devmon.enable = false; # disable auto-mounting service devmon, it interferes with disko
