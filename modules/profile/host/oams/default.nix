@@ -41,14 +41,18 @@ in
 
       # 12G was not enough for large rebuild
       boot.tmp.tmpfsSize = "32G";
-
     }
     {
       services.asusd.enable = true;
       kdn.hardware.gpu.multiGPU.enable = true;
+      programs.ryzen-monitor-ng.enable = true;
+      hardware.cpu.amd.ryzen-smu.enable = true;
       programs.rog-control-center.enable = true;
       programs.rog-control-center.autoStart = true;
       services.asusd.enableUserService = true;
+      environment.systemPackages = with pkgs; [
+        ryzenadj
+      ];
       home-manager.sharedModules = [
         (args:
           let
