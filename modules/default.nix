@@ -1,5 +1,6 @@
 { config, lib, pkgs, inputs, self, ... }: {
   imports = [
+    ./ascii-workaround.nix
     inputs.home-manager.nixosModules.home-manager
     inputs.disko.nixosModules.disko
     ./nix.nix

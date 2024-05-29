@@ -156,6 +156,5 @@ in
           (builtins.concatStringsSep "\n")
         ];
     }
-    (lib.mkIf (lib.trivial.codeName == "Vicuña") { system.nixos.codeName = lib.mkForce "Vicuna"; })
   ]);
 }
