@@ -9,6 +9,7 @@ in
 
   config = lib.mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
+      duckdb # read many different files as databases
       usql # universal DB client
     ];
   };
