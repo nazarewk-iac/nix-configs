@@ -131,13 +131,10 @@ in
       }
     ))
     {
-
-    {
       home-manager.sharedModules = [{
         programs.zellij.enable = true;
         xdg.userDirs.enable = true;
       }];
-    }
     }
   ]);
 }
