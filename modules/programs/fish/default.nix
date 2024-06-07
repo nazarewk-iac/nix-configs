@@ -18,6 +18,7 @@ in
         fzf
         babelfish
       ];
+      programs.zellij.enableFishIntegration = true;
       programs.fish = {
         enable = true;
         interactiveShellInit = ''

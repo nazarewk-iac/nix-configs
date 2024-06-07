@@ -22,8 +22,6 @@ in
       hardware.bluetooth.enable = true;
       services.blueman.enable = true;
 
-      home-manager.sharedModules = [{ xdg.userDirs.enable = true; }];
-
       documentation.man.man-db.enable = true;
       documentation.man.generateCaches = true;
     }

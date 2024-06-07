@@ -130,5 +130,14 @@ in
         security.pam.u2f.debug = debugPolkit;
       }
     ))
+    {
+
+    {
+      home-manager.sharedModules = [{
+        programs.zellij.enable = true;
+        xdg.userDirs.enable = true;
+      }];
+    }
+    }
   ]);
 }
