@@ -27,7 +27,11 @@ in
       documentation.man.man-db.enable = true;
       documentation.man.generateCaches = true;
     }
-
+    {
+      environment.systemPackages = with pkgs; [
+        lsix # image thumbnails in terminal
+      ];
+    }
     (lib.mkIf config.boot.initrd.systemd.enable {
       specialisation.boot-debug = {
         inheritParentConfig = true;
