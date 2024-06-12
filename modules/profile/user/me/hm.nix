@@ -236,7 +236,6 @@ in
         vlc
         haruna
         shotwell
-        gimp
 
         qrencode
         #cobang # QR code scanner # 2024-01-23: dependency failed to build
