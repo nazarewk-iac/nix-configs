@@ -10,8 +10,9 @@ in
       type = with lib.types; enum [
         "standalone"
         "m32uc-sideways"
+        "m32uc"
       ];
-      default = "standalone";
+      default = "m32uc";
     };
   };
 
@@ -123,13 +124,8 @@ in
             };
           }
           (lib.mkIf (cfg.displayProfile == "standalone") { })
-          (lib.mkIf (cfg.displayProfile == "m32uc-sideways") {
+          (lib.mkIf (lib.strings.hasPrefix cfg.displayProfile "m32uc") {
             wayland.windowManager.sway.config = {
-              output."${internal}" = {
-                pos = "3840 0";
-                transform = "270";
-                scale = "1.5";
-              };
               output."${m32uc}" = {
                 pos = "0 0";
               };
@@ -139,6 +135,23 @@ in
                 { workspace = "3"; output = internal; }
                 { workspace = "4"; output = m32uc; }
               ];
+            };
+          })
+          (lib.mkIf (cfg.displayProfile == "m32uc-sideways") {
+            wayland.windowManager.sway.config = {
+              output."${internal}" = {
+                pos = "3840 0";
+                transform = "90";
+                scale = "1.5";
+              };
+            };
+          })
+          (lib.mkIf (cfg.displayProfile == "m32uc") {
+            wayland.windowManager.sway.config = {
+              output."${internal}" = {
+                pos = "3840 1008";
+                scale = "1.25";
+              };
             };
           })
         ];
