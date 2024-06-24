@@ -10,12 +10,9 @@ in
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       kdn.desktop.base.enable = true;
-      kdn.profile.machine.basic.enable = true;
+      kdn.hardware.gpu.enable = true;
       kdn.hardware.qmk.enable = true;
-
-      hardware.opengl.enable = true;
-      hardware.opengl.driSupport = true;
-      hardware.opengl.driSupport32Bit = true;
+      kdn.profile.machine.basic.enable = true;
 
       # INPUT
       services.xserver.xkb.layout = "pl";
@@ -57,6 +54,14 @@ in
           ${pkgs.wl-clipboard}/bin/wl-paste | ${pkgs.qrencode}/bin/qrencode -o - | ${pkgs.imagemagick}/bin/display
         '')
       ];
+    }
+    {
+      home-manager.sharedModules = [{
+        # do not drop into ZelliJ automatically OOTB on desktop computers as it's pretty annoying
+        programs.zellij.enableFishIntegration = false;
+        programs.zellij.enableZshIntegration = false;
+        programs.zellij.enableBashIntegration = false;
+      }];
     }
   ]);
 }

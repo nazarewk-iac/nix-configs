@@ -26,11 +26,7 @@
     allowUnfree = true;
 
     permittedInsecurePackages = [
-      "electron-25.9.0" # loqseq dependency
-      "qtwebkit-5.212.0-alpha4"
-
-      # see https://github.com/NixOS/nixpkgs/blob/1c4d9e9a752232eb35579ab9d213ab217897cb6f/pkgs/top-level/release.nix#LL22C1-L30C7
-      "openssl-1.1.1t"
+      "electron-28.3.3" # loqseq dependency
     ];
   };
 

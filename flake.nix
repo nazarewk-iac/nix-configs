@@ -46,7 +46,6 @@
     poetry2nix.inputs.nixpkgs.follows = "nixpkgs";
     poetry2nix.inputs.treefmt-nix.follows = "treefmt-nix";
     poetry2nix.url = "github:nix-community/poetry2nix";
-    rust-overlay.inputs.flake-utils.follows = "flake-utils";
     rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
     rust-overlay.url = "github:oxalica/rust-overlay";
     stylix.inputs.base16-foot.follows = "base16-foot";

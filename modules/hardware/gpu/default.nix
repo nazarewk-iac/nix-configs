@@ -4,6 +4,7 @@ let
 in
 {
   options.kdn.hardware.gpu = {
+    enable = lib.mkEnableOption "GPU setup";
     multiGPU.enable = lib.mkEnableOption "multiple GPUs setup";
     vfio.enable = lib.mkEnableOption "VFIO setup";
     vfio.gpuIDs = lib.mkOption {
@@ -12,7 +13,10 @@ in
     };
   };
 
-  config = lib.mkMerge [
+  config = lib.mkIf cfg.enable (lib.mkMerge [
+    {
+      hardware.graphics.enable = true;
+    }
     (lib.mkIf cfg.multiGPU.enable {
       services.supergfxd.enable = true;
       services.switcherooControl.enable = true;
@@ -46,5 +50,5 @@ in
         (lib.lists.optional (cfg.vfio.gpuIDs != [ ]) ("vfio-pci.ids=" + lib.concatStringsSep "," cfg.vfio.gpuIDs))
       ];
     })
-  ];
+  ]);
 }

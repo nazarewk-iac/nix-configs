@@ -78,7 +78,7 @@ in
 
     home-manager.sharedModules = [
       {
-        programs.zellij.enableZshIntegration = true;
+        programs.zellij.enableZshIntegration = lib.mkDefault true;
         programs.zsh.enable = true;
         # https://nix-community.github.io/home-manager/options.html#opt-programs.zsh.enable
         programs.zsh.enableCompletion = false; # interferes with NixOS config
