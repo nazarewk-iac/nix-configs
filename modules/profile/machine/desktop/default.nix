@@ -55,13 +55,5 @@ in
         '')
       ];
     }
-    {
-      home-manager.sharedModules = [{
-        # do not drop into ZelliJ automatically OOTB on desktop computers as it's pretty annoying
-        programs.zellij.enableFishIntegration = false;
-        programs.zellij.enableZshIntegration = false;
-        programs.zellij.enableBashIntegration = false;
-      }];
-    }
   ]);
 }

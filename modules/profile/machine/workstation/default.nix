@@ -75,7 +75,6 @@ in
     kdn.programs.editors.photo.enable = true;
     kdn.programs.editors.video.enable = true;
 
-
     # services.offlineimap.enable or manually with `systemctl --user start`
     services.offlineimap.install = true;
 
