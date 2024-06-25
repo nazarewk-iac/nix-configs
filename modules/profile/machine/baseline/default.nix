@@ -12,6 +12,10 @@ in
   ];
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
+    (lib.mkIf config.disko.enableConfig {
+      # WARNING: without depending on `config.disko.enableConfig` it fails on machines without dedicated `/boot` partition
+      fileSystems."/boot".options = [ "fmask=0077" "dmask=0077" ];
+    })
     {
       kdn.enable = true;
       kdn.profile.user.kdn.enable = true;
@@ -22,7 +26,6 @@ in
       # systemd-boot
       boot.initrd.systemd.emergencyAccess = "$y$j9T$fioAEKxXi2LmH.9HyzVJ4/$Ot4PUjYdz7ELvJBOnS1YgQFNW89SCxB/yyGVaq4Aux0";
       boot.initrd.systemd.enable = true;
-      fileSystems."/boot".options = [ "fmask=0077" "dmask=0077" "defaults" ];
       boot.loader.efi.canTouchEfiVariables = true;
       boot.loader.systemd-boot.configurationLimit = 10;
       boot.loader.systemd-boot.enable = true;
