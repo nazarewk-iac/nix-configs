@@ -13,7 +13,7 @@ in
       glxinfo
       hardinfo
       hddtemp
-      hw-probe
+      hw-probe # note: 2024-06-25: weights ~560 MiB
       inxi
       lm_sensors
       lshw
