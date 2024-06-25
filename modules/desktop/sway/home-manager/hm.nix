@@ -290,6 +290,7 @@ in
           systemd.user.services.nwg-panel.Unit.After = [ config.kdn.desktop.sway.systemd.envs.target ];
         }
         {
+          services.nwg-shell.panel.enable = false; # disable because it seems to often hang up
           services.nwg-shell.panel.config.panel-bottom.enable = false;
         }
       ]
