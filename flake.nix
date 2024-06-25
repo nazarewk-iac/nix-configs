@@ -204,7 +204,7 @@
                 networking.hostName = "moss";
 
                 _module.args.nixinate = {
-                  host = "wg.nazarewk.pw";
+                  host = "moss.kdn.im";
                   # host = "10.100.0.1"; # wireguard
                   sshUser = "kdn";
                   buildOn = "local"; # valid args are "local" or "remote"

@@ -9,7 +9,7 @@
       };
       cfg = {
         publicKey = "n46g2yMIQ169ZWJk0gpjnhlAlJci6KKv7pxbC6BkqwY=";
-        endpoint = "wg.nazarewk.pw:${toString config.kdn.networking.wireguard.port}";
+        endpoint = "moss.kdn.im:${toString config.kdn.networking.wireguard.port}";
         persistentKeepalive = 25;
         dynamicEndpointRefreshSeconds = 60;
       };
