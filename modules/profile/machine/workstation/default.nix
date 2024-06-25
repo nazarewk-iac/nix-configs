@@ -7,7 +7,7 @@ in
     enable = lib.mkEnableOption "enable workstation machine profile";
   };
 
-  config = lib.mkIf cfg.enable {
+  config = lib.mkIf cfg.enable (lib.mkMerge [{
     kdn.desktop.kde.enable = false;
     kdn.desktop.sway.enable = true;
     kdn.desktop.sway.remote.enable = true;
@@ -116,5 +116,12 @@ in
       };
       baguette-geology = { };
     };
-  };
+  }
+    {
+      boot.initrd.clevis.enable = true;
+      environment.systemPackages = with pkgs; [
+        clevis
+        jose
+      ];
+    }]);
 }

@@ -87,13 +87,7 @@ in
       boot.initrd.systemd.network.wait-online.anyInterface = true;
       boot.initrd.systemd.network.wait-online.timeout = 15;
 
-      boot.initrd.clevis.enable = true;
       boot.initrd.clevis.useTang = true;
-
-      environment.systemPackages = with pkgs; [
-        clevis
-        # jose
-      ];
       boot.initrd.clevis.devices."krul-main-crypted".secretFile = ./krul-main-crypted.jwe;
     }
   ]);
