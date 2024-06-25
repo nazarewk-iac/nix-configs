@@ -156,5 +156,8 @@ in
           (builtins.concatStringsSep "\n")
         ];
     }
+    {
+      home-manager.sharedModules = [{ kdn.development.git.enable = true; }];
+    }
   ]);
 }

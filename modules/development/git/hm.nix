@@ -9,13 +9,6 @@ in
     enable = lib.mkEnableOption "Git development utilities";
   };
   config = lib.mkIf cfg.enable {
-    programs.bash.initExtra = config.programs.zsh.initExtra;
-    programs.zsh.initExtra = ''
-      gh-cd() {
-        cd "$(${git-utils}/bin/g-dir $1)"
-      }
-    '';
-
     programs.git.ignores = [
       ''
         # START kdn.git-utils
