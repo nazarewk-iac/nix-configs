@@ -3,7 +3,9 @@
 , bootDevice ? "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_04MBA03UR5RXVOGO-0:0"
   # uuidgen
 , luksUUID ? "c388dd7f-564a-4c82-a94e-85110d97d041"
-, rootDevice ? "/dev/disk/by-id/nvme-XPG_GAMMIX_S70_BLADE_2L482L2B1Q1J"
+  # this got changed after bios update
+, rootDevice ? "/dev/disk/by-id/nvme-nvme.1dbe-5353442d35323336-4d4e2d35323336-00000001"
+  #, rootDevice ? "/dev/disk/by-id/nvme-XPG_GAMMIX_S70_BLADE_2L482L2B1Q1J"
 , backupDir ? "/nazarewk-iskaral/secrets/luks"
 , ...
 }:

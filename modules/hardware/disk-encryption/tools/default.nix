@@ -14,7 +14,6 @@ in
 
   config = lib.mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
-      # fido2luks # TODO: 2024-02-13 didn't work
       systemd-cryptsetup
       (pkgs.writeShellApplication {
         name = "kdn-systemd-zfs-decrypt";
@@ -41,6 +40,8 @@ in
           main "$@" || usage
         '';
       })
+      clevis
+      jose
     ];
   };
 }

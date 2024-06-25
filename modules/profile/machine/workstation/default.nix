@@ -119,9 +119,5 @@ in
   }
     {
       boot.initrd.clevis.enable = true;
-      environment.systemPackages = with pkgs; [
-        clevis
-        jose
-      ];
     }]);
 }
