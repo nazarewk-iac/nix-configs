@@ -5,15 +5,6 @@ in
 {
   options.kdn.profile.host.oams = {
     enable = lib.mkEnableOption "enable oams host profile";
-
-    displayProfile = lib.mkOption {
-      type = with lib.types; enum [
-        "standalone"
-        "m32uc-sideways"
-        "m32uc"
-      ];
-      default = "m32uc";
-    };
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
@@ -106,56 +97,5 @@ in
       ];
     }
     (import ./disko.nix { inherit lib; hostname = config.networking.hostName; })
-    (
-      let
-        internal = "Chimei Innolux Corporation 0x1540 Unknown";
-        m32uc = "GIGA-BYTE TECHNOLOGY CO., LTD. M32UC 22090B013112";
-      in
-      {
-        home-manager.sharedModules = [
-          {
-            wayland.windowManager.sway.config = {
-              output."${internal}" = {
-                mode = "2560x1440@165Hz";
-              };
-              output."${m32uc}" = {
-                mode = "3840x2160@144Hz";
-              };
-            };
-          }
-          (lib.mkIf (cfg.displayProfile == "standalone") { })
-          (lib.mkIf (lib.strings.hasPrefix cfg.displayProfile "m32uc") {
-            wayland.windowManager.sway.config = {
-              output."${m32uc}" = {
-                pos = "0 0";
-              };
-              workspaceOutputAssign = [
-                { workspace = "1"; output = m32uc; }
-                { workspace = "2"; output = internal; }
-                { workspace = "3"; output = internal; }
-                { workspace = "4"; output = m32uc; }
-              ];
-            };
-          })
-          (lib.mkIf (cfg.displayProfile == "m32uc-sideways") {
-            wayland.windowManager.sway.config = {
-              output."${internal}" = {
-                pos = "3840 0";
-                transform = "90";
-                scale = "1.5";
-              };
-            };
-          })
-          (lib.mkIf (cfg.displayProfile == "m32uc") {
-            wayland.windowManager.sway.config = {
-              output."${internal}" = {
-                pos = "3840 1008";
-                scale = "1.25";
-              };
-            };
-          })
-        ];
-      }
-    )
   ]);
 }

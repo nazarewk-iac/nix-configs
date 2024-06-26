@@ -57,14 +57,6 @@ in
         hardware.display.edid.applyAtRuntime = true;
         home-manager.sharedModules = [{
           wayland.windowManager.sway.config = {
-            output."${asus}" = {
-              pos = "0 0";
-              modeline = config.hardware.display.edid.modelines.config.PG278Q_120;
-            };
-            output."${m32uc}" = {
-              pos = "2560 0";
-              mode = "3840x2160@144Hz";
-            };
             workspaceOutputAssign = [
               { workspace = "1"; output = m32uc; }
               { workspace = "2"; output = asus; }
