@@ -12,7 +12,7 @@ set -eEuo pipefail
 
 cd "${BASH_SOURCE[0]%/*}"
 
-PREFIX="${PASSWORD_STORE_DIR:-$HOME/.password-store}"
+PREFIX="${PASSWORD_STORE_DIR:-"$HOME/.password-store"}"
 GPG_ID="${PREFIX}/.gpg-id"
 PUBKEYS="${PREFIX}/.pubkeys"
 
