@@ -2,10 +2,17 @@
 let
   cfg = config.kdn.profile.host.moss;
 
+  netbird.interface = "nb-priv";
+  netbird.trusted = false;
+
+  coredns.openToInternet = false;
+  coredns.onNetbird = true;
   coredns.port = 53;
   coredns.interfaces = [
-    "ens3"
-  ];
+    "lo"
+  ]
+  ++ lib.optional coredns.openToInternet "ens3"
+  ++ lib.optional coredns.onNetbird netbird.interface;
   coredns.upstreams = [
     "tls://1.1.1.1"
     "tls://8.8.8.8"
@@ -24,7 +31,7 @@ in
       kdn.profile.machine.hetzner.enable = true;
       security.sudo.wheelNeedsPassword = false;
 
-      services.coredns.enable = false;
+      services.coredns.enable = true;
       services.coredns.config = ''
         (defaults) {
           bind ${builtins.concatStringsSep " " coredns.interfaces}
@@ -64,10 +71,17 @@ in
           }
         }
       '';
-      networking.firewall = {
+    }
+    (lib.mkIf coredns.openToInternet {
+      networking.firewall.allowedTCPPorts = [ coredns.port ];
+      networking.firewall.allowedUDPPorts = [ coredns.port ];
+    })
+    (lib.mkIf netbird.trusted { networking.firewall.trustedInterfaces = [ netbird.interface ]; })
+    (lib.mkIf (!netbird.trusted && coredns.onNetbird) {
+      networking.firewall.interfaces."${netbird.interface}" = {
         allowedTCPPorts = [ coredns.port ];
         allowedUDPPorts = [ coredns.port ];
       };
-    }
+    })
   ]);
 }
