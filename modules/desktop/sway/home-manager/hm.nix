@@ -429,7 +429,7 @@ in
                 {
                   inherit (oams) criteria;
                   position = pos2 devices ({ x, y }: {
-                    x = (x.manta-50lun120d - x.oams) / 2;
+                    x = lib.trivial.max ((x.manta-50lun120d - x.oams) / 2) 0;
                     y = y.manta-50lun120d;
                   });
                 }
