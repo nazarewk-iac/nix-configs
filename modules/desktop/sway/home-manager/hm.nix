@@ -351,7 +351,8 @@ in
                 mode = "2560x1440@120Hz";
               };
               manta-50lun120d = {
-                criteria = "TODO: Manta 50LUN120D"; # TODO: Manta 50LUN120D https://manta.com.pl/produkt/50lun120d/
+                # Manta 50LUN120D https://manta.com.pl/produkt/50lun120d/
+                criteria = "XXX AAA Unknown";
                 mode = "3840x2160@60Hz";
                 scale = 2.0;
               };
@@ -417,6 +418,28 @@ in
                   position = pos2 devices ({ x, y }: { x = x.asus-pg78q; y = y.asus-pg78q - y.oams; });
                 }
               ];
+            };
+            oams-tv = {
+              # manta-50lun120d
+              outputs = with devices; [
+                {
+                  inherit (manta-50lun120d) criteria;
+                  position = pos 0 0;
+                }
+                {
+                  inherit (oams) criteria;
+                  position = pos2 devices ({ x, y }: {
+                    x = (x.manta-50lun120d - x.oams) / 2;
+                    y = y.manta-50lun120d;
+                  });
+                }
+              ];
+            };
+            tv = {
+              outputs = with devices; [{
+                inherit (manta-50lun120d) criteria;
+                position = pos 0 0;
+              }];
             };
           };
         in
