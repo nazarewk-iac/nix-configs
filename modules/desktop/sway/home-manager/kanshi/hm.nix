@@ -86,6 +86,12 @@ let
         (mkOutput asus-pg78q 0 0 { mode = "3840x2160@165Hz"; })
         (mkOutput gb-m32uc asus-pg78q.w 0 { })
       ];
+      exec = mkWorkspaces {
+        "1" = gb-m32uc;
+        "2" = asus-pg78q;
+        "3" = asus-pg78q;
+        "4" = gb-m32uc;
+      };
     };
     oams = {
       outputs = [
@@ -99,8 +105,9 @@ let
         (mkOutput oams (asus-pg78q.w + gb-m32uc.w) (gb-m32uc.h - oams.h) { })
       ];
       exec = mkWorkspaces {
-        "2" = asus-pg78q;
         "1" = gb-m32uc;
+        "2" = asus-pg78q;
+        "3" = gb-m32uc;
         "4" = oams;
       };
     };
