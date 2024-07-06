@@ -13,7 +13,8 @@ let
   swaymsg = lib.getExe' config.wayland.windowManager.sway.package "swaymsg";
 
   mkWorkspaces = lib.attrsets.mapAttrsToList (ws: dev:
-    "${swaymsg} workspace ${ws}, move workspace to output '${dev.criteria}'");
+    "${swaymsg} workspace ${ws}, move workspace to output '${builtins.toJSON dev.criteria}'"
+  );
 
   recalc = d:
     let
