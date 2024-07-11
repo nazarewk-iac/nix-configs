@@ -139,6 +139,7 @@ in
       let
         sudoCfg = ''
           Defaults  env_keep += ZELLIJ
+          Defaults  env_keep += KDN_ZELLIJ_SKIP
           Defaults  env_keep += TERMINAL_EMULATOR
         '';
       in
@@ -149,16 +150,18 @@ in
             xdg.userDirs.enable = true;
 
             programs.zellij.enableFishIntegration = false;
-            programs.fish.interactiveShellInit = lib.mkOrder 200 ''
-              if string match --quiet --ignore-case "jetbrains-*" "$TERMINAL_EMULATOR"
-                set KDN_ZELLIJ_SKIP "inside jetbrains terminal"
-              end
-              if test -n "$KDN_ZELLIJ_SKIP"
-                echo "zellij skip because: $KDN_ZELLIJ_SKIP" >&2
-              else
-                eval (${lib.getExe hm.config.programs.zellij.package} setup --generate-auto-start fish | string collect)
-              end
-            '';
+            ## auto-starting zellij gets a little too annyoing in nested sessions
+            ## TODO: try also passing `SendEnv` (client) / `AcceptEnv` (server), https://superuser.com/a/702751
+            #programs.fish.interactiveShellInit = lib.mkOrder 200 ''
+            #  if string match --quiet --ignore-case "jetbrains-*" "$TERMINAL_EMULATOR"
+            #    set KDN_ZELLIJ_SKIP "inside jetbrains terminal"
+            #  end
+            #  if test -n "$KDN_ZELLIJ_SKIP"
+            #    echo "zellij skip because: $KDN_ZELLIJ_SKIP" >&2
+            #  else
+            #    eval (${lib.getExe hm.config.programs.zellij.package} setup --generate-auto-start fish | string collect)
+            #  end
+            #'';
           })
         ];
         security.sudo.extraConfig = sudoCfg;
