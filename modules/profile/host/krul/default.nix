@@ -54,7 +54,6 @@ in
           edid = "PG278Q_120.bin";
           mode = "e";
         };
-        hardware.display.edid.applyAtRuntime = true;
         home-manager.sharedModules = [{
           wayland.windowManager.sway.config = {
             workspaceOutputAssign = [

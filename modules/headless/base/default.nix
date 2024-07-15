@@ -23,6 +23,7 @@ in
 
       programs.command-not-found.enable = false;
 
+      programs.vim.enable = true;
       programs.vim.defaultEditor = true;
       programs.vim.package = pkgs.vim-full.customize {
         name = "vim";
@@ -132,7 +133,7 @@ in
       in
       {
         security.polkit.debug = debugPolkit;
-        security.pam.u2f.debug = debugPolkit;
+        security.pam.u2f.settings.debug = debugPolkit;
       }
     ))
     (

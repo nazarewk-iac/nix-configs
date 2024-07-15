@@ -18,6 +18,7 @@ in
       linuxhw-edid-fetcher
       edid-decode
       read-edid
+      edido
     ];
   };
 }

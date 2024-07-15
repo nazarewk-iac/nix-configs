@@ -27,6 +27,7 @@
 
     permittedInsecurePackages = [
       "electron-28.3.3" # loqseq dependency
+      "electron-27.3.11" # loqseq dependency? 2024-07-12
     ];
   };
 

@@ -35,6 +35,13 @@ in
       boot.tmp.tmpfsSize = "32G";
     }
     {
+      kdn.hardware.edid.enable = true;
+      hardware.display.outputs."DP-1" = {
+        edid = "PG278Q_120.bin";
+        mode = "e";
+      };
+    }
+    {
       services.asusd.enable = true;
       kdn.hardware.gpu.multiGPU.enable = true;
       programs.ryzen-monitor-ng.enable = true;

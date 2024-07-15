@@ -61,15 +61,20 @@ let
         criteria = "GIGA-BYTE TECHNOLOGY CO., LTD. M32UC 22090B013112";
         /* M32UC supports:
           - 144/160 Hz over DisplayPort
-          - only <120 Hz over HDMI 2.1 on Linux (licensing issue)
+          - only <=120 Hz over HDMI 2.1 on Linux (licensing issue)
           - 144/120 Hz over HDMI 2.1 on other systems
         */
         mode = "3840x2160@120Hz";
       };
-      asus-pg78q = {
-        # ASUS ROG PG278Q
-        # it started reporting own name when connected to laptop/through HUB o.O
+      asus-pg78q-hub = {
+        /* ASUS ROG PG278Q, it started reporting own name when connected to laptop/through a HUB
+            see https://zenwire.eu/pl/p/HUB-USB-C-10w1-Display-Port-1.4-HDMI-2.1-8K-4K-120Hz-60Hz-Full-HD-144Hz-USB-3.0-SD-Power-Delivery-100W-Macbook-M1-M2-Zenwire/288
+         */
         criteria = "Ancor Communications Inc ROG PG278Q #ASNeZkML0ePd";
+        mode = "2560x1440@120Hz";
+      };
+      asus-pg78q-dp = {
+        criteria = "DP-1";
         mode = "2560x1440@120Hz";
       };
       manta-50lun120d = {
@@ -84,13 +89,13 @@ let
   profiles = with devices; {
     desktop-full = {
       outputs = [
-        (mkOutput asus-pg78q 0 0 { mode = "3840x2160@165Hz"; })
-        (mkOutput gb-m32uc asus-pg78q.w 0 { })
+        (mkOutput asus-pg78q-dp 0 0 { mode = "3840x2160@165Hz"; })
+        (mkOutput gb-m32uc asus-pg78q-dp.w 0 { })
       ];
       exec = mkWorkspaces {
         "1" = gb-m32uc;
-        "2" = asus-pg78q;
-        "3" = asus-pg78q;
+        "2" = asus-pg78q-dp;
+        "3" = asus-pg78q-dp;
         "4" = gb-m32uc;
       };
     };
@@ -101,13 +106,13 @@ let
     };
     oams-desktop-full = {
       outputs = [
-        (mkOutput asus-pg78q 0 0 { })
-        (mkOutput gb-m32uc asus-pg78q.w 0 { })
-        (mkOutput oams (asus-pg78q.w + gb-m32uc.w) (gb-m32uc.h - oams.h) { })
+        (mkOutput asus-pg78q-dp 0 0 { })
+        (mkOutput gb-m32uc asus-pg78q-dp.w 0 { })
+        (mkOutput oams (asus-pg78q-dp.w + gb-m32uc.w) (gb-m32uc.h - oams.h) { })
       ];
       exec = mkWorkspaces {
         "1" = gb-m32uc;
-        "2" = asus-pg78q;
+        "2" = asus-pg78q-dp;
         "3" = gb-m32uc;
         "4" = oams;
       };
@@ -126,8 +131,8 @@ let
     };
     oams-desktop-pg78q = {
       outputs = [
-        (mkOutput asus-pg78q 0 0 { })
-        (mkOutput oams (asus-pg78q.w) (asus-pg78q.h - oams.h) { })
+        (mkOutput asus-pg78q-dp 0 0 { })
+        (mkOutput oams (asus-pg78q-dp.w) (asus-pg78q-dp.h - oams.h) { })
       ];
     };
     oams-tv = {
