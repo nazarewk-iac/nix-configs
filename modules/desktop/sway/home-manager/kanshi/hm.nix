@@ -74,7 +74,9 @@ let
         mode = "2560x1440@120Hz";
       };
       asus-pg78q-dp = {
-        criteria = "DP-1";
+        #criteria = "DP-1";
+        # this is the name set through EDID file
+        criteria = "The Linux Foundation PG278Q_120 Linux #0";
         mode = "2560x1440@120Hz";
       };
       manta-50lun120d = {
