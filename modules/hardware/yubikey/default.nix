@@ -45,10 +45,11 @@ in
     ];
 
     users.groups.plugdev = { };
+    security.pam.u2f.enable = true;
     security.pam.u2f.settings = {
       enable = true;
       cue = true;
-      inherit (cfg) appId;
+      appid = cfg.appId;
       origin = cfg.appId;
     };
 
