@@ -8,17 +8,19 @@ Basic structure:
     - `modules/default.nix` - holds imports to all the modules and basic Nix package manager configuration,
     - `modules/profile/machine` - large NixOS configuration bundles
     - `modules/profile/user` - user specific profiles
+- `packages/`, some personal/in-house/out-of-band tools
 
-Generally I aim to hide everything behind Options, but bulk of configuration still lives in `configurations/desktop`.
+Generally I aim to hide as much as possible behind `*.enable` options.
 
 ## Overview
 
-This is incomplete list of incorporated software/systems worth noting:
+This is an incomplete list of incorporated software/systems:
 
-- ZFS
-- Sway WM
-- ZSH
-- Home Manager
+- disks: ZFS on LUKS through `disko`
+- desktop: Sway (Wayland), as much as possible through Home Manager
+- shell: Fish 
+- users: Home Manager
+- MISSING: development environment 
 
 # Notes
 
@@ -29,6 +31,7 @@ see https://bmcgee.ie/posts/2022/12/setting-up-my-new-laptop-nix-style/
 ```shell
 # building the installer from packages/install-iso
 sudo dd if="$(nom build '.#install-iso' --no-link --print-out-paths --print-build-logs)/iso/nixos.iso" of=/dev/disk/by-id/usb-SanDisk_Cruzer_Blade_02000515031521144721-0:0 status=progress
+sudo dd if="$(nom build '.#install-iso' --no-link --print-out-paths --print-build-logs)/iso/nixos.iso" of=/dev/disk/by-id/usb-_Patriot_Memory_070133F17AC22052-0:0 status=progress
 # boot the machine and ssh into it
 ssh -o StrictHostKeyChecking=no kdn@nixos
 ```
