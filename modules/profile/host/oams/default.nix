@@ -17,7 +17,7 @@ in
       kdn.hardware.cpu.amd.enable = true;
 
       kdn.profile.machine.gaming.enable = true;
-      kdn.hardware.gpu.vfio.enable = lib.mkForce false;
+      #kdn.hardware.gpu.vfio.enable = lib.mkForce false;
       kdn.hardware.gpu.vfio.gpuIDs = [
         "1002:73df"
         "1002:ab28"
@@ -34,13 +34,13 @@ in
       # 12G was not enough for large rebuild
       boot.tmp.tmpfsSize = "32G";
     }
-    {
+    /*{
       kdn.hardware.edid.enable = true;
       hardware.display.outputs."DP-1" = {
         edid = "PG278Q_120.bin";
         mode = "e";
       };
-    }
+    }*/
     {
       services.asusd.enable = true;
       kdn.hardware.gpu.multiGPU.enable = true;

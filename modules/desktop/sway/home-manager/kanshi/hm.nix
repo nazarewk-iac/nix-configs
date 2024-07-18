@@ -91,13 +91,13 @@ let
   profiles = with devices; {
     desktop-full = {
       outputs = [
-        (mkOutput asus-pg78q-dp 0 0 { mode = "3840x2160@165Hz"; })
-        (mkOutput gb-m32uc asus-pg78q-dp.w 0 { })
+        (mkOutput asus-pg78q-hub 0 0 { mode = "3840x2160@165Hz"; })
+        (mkOutput gb-m32uc asus-pg78q-hub.w 0 { })
       ];
       exec = mkWorkspaces {
         "1" = gb-m32uc;
-        "2" = asus-pg78q-dp;
-        "3" = asus-pg78q-dp;
+        "2" = asus-pg78q-hub;
+        "3" = asus-pg78q-hub;
         "4" = gb-m32uc;
       };
     };
@@ -108,13 +108,13 @@ let
     };
     oams-desktop-full = {
       outputs = [
-        (mkOutput asus-pg78q-dp 0 0 { })
-        (mkOutput gb-m32uc asus-pg78q-dp.w 0 { })
-        (mkOutput oams (asus-pg78q-dp.w + gb-m32uc.w) (gb-m32uc.h - oams.h) { })
+        (mkOutput asus-pg78q-hub 0 0 { })
+        (mkOutput gb-m32uc asus-pg78q-hub.w 0 { })
+        (mkOutput oams (asus-pg78q-hub.w + gb-m32uc.w) (gb-m32uc.h - oams.h) { })
       ];
       exec = mkWorkspaces {
         "1" = gb-m32uc;
-        "2" = asus-pg78q-dp;
+        "2" = asus-pg78q-hub;
         "3" = gb-m32uc;
         "4" = oams;
       };
@@ -133,8 +133,8 @@ let
     };
     oams-desktop-pg78q = {
       outputs = [
-        (mkOutput asus-pg78q-dp 0 0 { })
-        (mkOutput oams (asus-pg78q-dp.w) (asus-pg78q-dp.h - oams.h) { })
+        (mkOutput asus-pg78q-hub 0 0 { })
+        (mkOutput oams (asus-pg78q-hub.w) (asus-pg78q-hub.h - oams.h) { })
       ];
     };
     oams-tv = {
