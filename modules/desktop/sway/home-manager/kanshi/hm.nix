@@ -79,10 +79,9 @@ let
         criteria = "The Linux Foundation PG278Q_120 Linux #0";
         mode = "2560x1440@120Hz";
       };
-      manta-50lun120d = {
-        # Manta 50LUN120D https://manta.com.pl/produkt/50lun120d/
-        criteria = "XXX AAA Unknown";
-        mode = "3840x2160@60Hz";
+      living-room-tv = {
+        criteria = "LG Electronics LG TV SSCR2 0x01010101";
+        mode = "3840x2160@120Hz";
         # looks like it affects VLC's video output?
         # scale = 2.0;
         scale = 1.0;
@@ -137,21 +136,15 @@ let
         (mkOutput oams (asus-pg78q-hub.w) (asus-pg78q-hub.h - oams.h) { })
       ];
     };
-    oams-tv = {
-      outputs = [
-        (mkOutput manta-50lun120d 0 0 { })
-        (mkOutput oams (lib.trivial.max ((manta-50lun120d.w - oams.w) / 2) 0) manta-50lun120d.h { })
-      ];
-    };
     oams-tv-only = {
       outputs = [
-        (mkOutput manta-50lun120d 0 0 { })
-        (mkOutput oams (lib.trivial.max ((manta-50lun120d.w - oams.w) / 2) 0) manta-50lun120d.h { status = "disable"; })
+        (mkOutput living-room-tv 0 0 { })
+        (mkOutput oams (lib.trivial.max ((living-room-tv.w - oams.w) / 2) 0) living-room-tv.h { status = "disable"; })
       ];
     };
     tv = {
       outputs = [
-        (mkOutput manta-50lun120d 0 0 { })
+        (mkOutput living-room-tv 0 0 { })
       ];
     };
   };
