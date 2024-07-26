@@ -8,7 +8,7 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    # nix options for derivations to persist garbage collection
+    # nix options for derivations to persist garbage collection in devenv
     nix.extraOptions = ''
       keep-outputs = true
       keep-derivations = true

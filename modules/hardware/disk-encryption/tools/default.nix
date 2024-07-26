@@ -15,6 +15,11 @@ in
   config = lib.mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
       systemd-cryptsetup
+      sbctl
+      cryptsetup
+      clevis
+      jose
+
       (pkgs.writeShellApplication {
         name = "kdn-systemd-zfs-decrypt";
         runtimeInputs = [ systemd-cryptsetup ];
@@ -40,8 +45,6 @@ in
           main "$@" || usage
         '';
       })
-      clevis
-      jose
     ];
   };
 }

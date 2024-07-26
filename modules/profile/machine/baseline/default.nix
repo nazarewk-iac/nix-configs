@@ -68,6 +68,8 @@ in
 
       environment.systemPackages = with pkgs; [
         dracut # for lsinitrd
+        jq
+        sshfs
       ];
 
       environment.shellAliases =
@@ -160,7 +162,9 @@ in
         ];
     }
     {
-      home-manager.sharedModules = [{ kdn.development.git.enable = true; }];
+      home-manager.sharedModules = [{
+        kdn.development.git.enable = true;
+      }];
     }
   ]);
 }

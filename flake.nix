@@ -115,12 +115,10 @@
                     kdn.profile.machine.baseline.enable = true;
                     kdn.filesystems.zfs.enable = true;
                     kdn.hardware.disk-encryption.tools.enable = true;
+                    kdn.hardware.yubikey.enable = true;
+                    kdn.programs.direnv.enable = true;
 
                     environment.systemPackages = with pkgs; [
-                      git
-                      jq
-                      zfs-prune-snapshots
-                      sanoid
                     ];
                   }
                   ({ config, ... }: {
