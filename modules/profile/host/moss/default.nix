@@ -33,8 +33,13 @@ in
 
       services.coredns.enable = true;
       services.coredns.config = ''
-        (defaults) {
+        (defaults-before) {
           bind ${builtins.concatStringsSep " " coredns.interfaces}
+          log
+          errors
+        }
+
+        (defaults-after) {
           # https://coredns.io/plugins/cache/
           #     [TTL] [ZONES...]
           cache 60 {
@@ -45,30 +50,31 @@ in
             #         DURATION
             servfail  1s
           }
-          log
-          errors
         }
 
         nb.kdn.im:${builtins.toString coredns.port} {
-          import defaults
+          import defaults-before
           rewrite name suffix .nb.kdn.im. .netbird.cloud. answer auto
           forward netbird.cloud. /etc/resolv.conf
+          import defaults-after
         }
 
         nb.nazarewk.pw:${builtins.toString coredns.port} {
           # TODO: DNSSEQ setup
-          import defaults
+          import defaults-before
           rewrite name suffix .nb.nazarewk.pw. .netbird.cloud. answer auto
           forward netbird.cloud. /etc/resolv.conf
+          import defaults-after
         }
 
         .:${builtins.toString coredns.port} {
-          import defaults
+          import defaults-before
           forward . ${builtins.concatStringsSep " " coredns.upstreams} {
             tls
             policy random
             health_check 30s
           }
+          import defaults-after
         }
       '';
     }
