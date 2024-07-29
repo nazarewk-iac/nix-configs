@@ -17,8 +17,6 @@ in
     kdn.profile.machine.desktop.enable = true;
     kdn.profile.machine.dev.enable = true;
 
-    hardware.cpu.amd.updateMicrocode = true;
-
     kdn.monitoring.prometheus-stack.enable = false;
     kdn.monitoring.prometheus-stack.caddy.grafana = "grafana.${config.networking.hostName}.kdn.im";
     kdn.services.caddy.enable = true;

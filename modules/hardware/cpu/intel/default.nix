@@ -7,5 +7,8 @@ in
     enable = lib.mkEnableOption "intel CPU setup";
   };
 
-  config = lib.mkIf cfg.enable { };
+  config = lib.mkIf cfg.enable {
+    hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+    boot.kernelModules = [ "kvm-intel" ];
+  };
 }

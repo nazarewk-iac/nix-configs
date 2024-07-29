@@ -19,7 +19,6 @@ in
     ];
     boot.kernelModules = [ "kvm-intel" ];
 
-    hardware.cpu.intel.updateMicrocode = true;
     boot.initrd.kernelModules = [ "dm-snapshot" ];
     kdn.hardware.gpu.intel.enable = true;
 

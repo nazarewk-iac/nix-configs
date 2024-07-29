@@ -7,5 +7,7 @@ in
     enable = lib.mkEnableOption "AMD CPU setup";
   };
 
-  config = lib.mkIf cfg.enable { };
+  config = lib.mkIf cfg.enable {
+    hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+  };
 }
