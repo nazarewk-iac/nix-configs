@@ -4,6 +4,12 @@
     serial = "16174038";
     notes = [ "data in KeePass" ];
   };
+  /*
+    age-plugin-yubikey identies are not sensitive in the meaning
+      they cannot be used to decrypt without actual yubikey
+        https://github.com/str4d/age-plugin-yubikey/issues/179#issuecomment-2156623271
+  */
+  #
   # age-plugin-yubikey Slot 1 is PIV Slot 82
   kdn.hardware.yubikey.devices.oams.piv."82" = {
     type = "age-plugin-yubikey";
