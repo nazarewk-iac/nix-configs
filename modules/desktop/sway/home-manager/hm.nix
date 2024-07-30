@@ -23,7 +23,7 @@ in
     };
     fileManager = lib.mkOption {
       type = with lib.types; str;
-      default = lib.getExe pkgs.cinnamon.nemo-with-extensions;
+      default = lib.getExe pkgs.nemo-with-extensions;
     };
   };
 

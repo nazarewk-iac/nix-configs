@@ -122,7 +122,7 @@ in
 
       services.gnome.glib-networking.enable = true;
       programs.file-roller.enable = true;
-      programs.file-roller.package = pkgs.cinnamon.nemo-fileroller;
+      programs.file-roller.package = pkgs.nemo-fileroller;
 
       environment.systemPackages = with pkgs.cinnamon // pkgs; [
         nemo-with-extensions

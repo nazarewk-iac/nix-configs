@@ -1,70 +1,81 @@
 {
-  inputs = {
-    #nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nixpkgs.url = "github:nazarewk/nixpkgs/nixos-unstable";
-    #nixpkgs.url = "github:nazarewk/nixpkgs/hardware-firmware-edid-fix";
-    nixpkgs-lib.url = "github:NixOS/nixpkgs/nixos-unstable?dir=lib";
+  #inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  inputs.nixpkgs.url = "github:nazarewk/nixpkgs/nixos-unstable";
+  #inputs.nixpkgs.url = "github:nazarewk/nixpkgs/hardware-firmware-edid-fix";
+  inputs.nixpkgs-lib.url = "github:NixOS/nixpkgs/nixos-unstable?dir=lib";
 
-    base16.url = "github:SenchoPens/base16.nix";
-    crane.inputs.nixpkgs.follows = "nixpkgs";
-    crane.url = "github:ipetkov/crane";
-    disko.inputs.nixpkgs.follows = "nixpkgs";
-    disko.url = "github:nix-community/disko";
-    flake-compat.url = "github:edolstra/flake-compat";
-    flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs-lib";
-    flake-parts.url = "github:hercules-ci/flake-parts";
-    flake-utils.url = "github:numtide/flake-utils";
-    helix-editor.inputs.crane.follows = "crane";
-    helix-editor.inputs.flake-utils.follows = "flake-utils";
-    helix-editor.inputs.nixpkgs.follows = "nixpkgs";
-    helix-editor.inputs.rust-overlay.follows = "rust-overlay";
-    helix-editor.url = "github:helix-editor/helix/24.03";
-    home-manager.inputs.nixpkgs.follows = "nixpkgs";
-    home-manager.url = "github:nix-community/home-manager";
-    impermanence.url = "github:nix-community/impermanence";
-    microvm.inputs.flake-utils.follows = "flake-utils";
-    microvm.inputs.nixpkgs.follows = "nixpkgs";
-    microvm.url = "github:astro/microvm.nix";
-    mk-shell-bin.url = "github:rrbutani/nix-mk-shell-bin";
-    nix-eval-jobs.inputs.flake-parts.follows = "flake-parts";
-    nix-eval-jobs.inputs.nixpkgs.follows = "nixpkgs";
-    nix-eval-jobs.url = "github:nix-community/nix-eval-jobs";
-    nix-github-actions.inputs.nixpkgs.follows = "nixpkgs";
-    nix-github-actions.url = "github:nix-community/nix-github-actions";
-    nixinate.inputs.nixpkgs.follows = "nixpkgs";
-    nixinate.url = "github:matthewcroughan/nixinate";
-    nixos-anywhere.inputs.disko.follows = "disko";
-    nixos-anywhere.inputs.flake-parts.follows = "flake-parts";
-    nixos-anywhere.inputs.nixpkgs.follows = "nixpkgs";
-    nixos-anywhere.inputs.treefmt-nix.follows = "treefmt-nix";
-    nixos-anywhere.url = "github:numtide/nixos-anywhere";
-    nixos-generators.inputs.nixlib.follows = "nixpkgs-lib";
-    nixos-generators.inputs.nixpkgs.follows = "nixpkgs";
-    nixos-generators.url = "github:nix-community/nixos-generators";
-    nur.url = "github:nix-community/NUR";
-    poetry2nix.inputs.flake-utils.follows = "flake-utils";
-    poetry2nix.inputs.nix-github-actions.follows = "nix-github-actions";
-    poetry2nix.inputs.nixpkgs.follows = "nixpkgs";
-    poetry2nix.inputs.treefmt-nix.follows = "treefmt-nix";
-    poetry2nix.url = "github:nix-community/poetry2nix";
-    rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
-    rust-overlay.url = "github:oxalica/rust-overlay";
-    stylix.inputs.base16-foot.follows = "base16-foot";
-    stylix.inputs.flake-compat.follows = "flake-compat";
-    stylix.inputs.home-manager.follows = "home-manager";
-    stylix.inputs.nixpkgs.follows = "nixpkgs";
-    stylix.url = "github:danth/stylix";
-    systems.url = "github:nix-systems/default";
-    treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
-    treefmt-nix.url = "github:numtide/treefmt-nix";
-    ulauncher.inputs.flake-parts.follows = "flake-parts";
-    ulauncher.inputs.nixpkgs.follows = "nixpkgs";
-    ulauncher.url = "github:Ulauncher/Ulauncher/v6";
+  /*
+   * pinned inputs to keep up to date manually
+   */
+  inputs.helix-editor.url = "github:helix-editor/helix/24.07";
 
-    # themes
-    base16-foot.flake = false;
-    base16-foot.url = "github:tinted-theming/base16-foot";
-  };
+  /*
+   * rest of inputs
+   */
+  inputs.base16-foot.flake = false;
+  inputs.base16-foot.url = "github:tinted-theming/base16-foot";
+  inputs.base16.url = "github:SenchoPens/base16.nix";
+  inputs.crane.url = "github:ipetkov/crane";
+  inputs.disko.url = "github:nix-community/disko";
+  inputs.empty.url = "github:nix-systems/empty";
+  inputs.flake-compat.url = "github:edolstra/flake-compat";
+  inputs.flake-parts.url = "github:hercules-ci/flake-parts";
+  inputs.flake-utils.url = "github:numtide/flake-utils";
+  inputs.home-manager.url = "github:nix-community/home-manager";
+  inputs.impermanence.url = "github:nix-community/impermanence";
+  inputs.microvm.url = "github:astro/microvm.nix";
+  inputs.mk-shell-bin.url = "github:rrbutani/nix-mk-shell-bin";
+  inputs.nix-eval-jobs.url = "github:nix-community/nix-eval-jobs";
+  inputs.nix-github-actions.url = "github:nix-community/nix-github-actions";
+  inputs.nixinate.url = "github:matthewcroughan/nixinate";
+  inputs.nixos-anywhere.url = "github:numtide/nixos-anywhere";
+  inputs.nixos-generators.url = "github:nix-community/nixos-generators";
+  inputs.nur.url = "github:nix-community/NUR";
+  inputs.poetry2nix.url = "github:nix-community/poetry2nix";
+  inputs.rust-overlay.url = "github:oxalica/rust-overlay";
+  inputs.sops-nix.url = "github:Mic92/sops-nix";
+  inputs.stylix.url = "github:danth/stylix";
+  inputs.systems.url = "github:nix-systems/default";
+  inputs.treefmt-nix.url = "github:numtide/treefmt-nix";
+  inputs.ulauncher.url = "github:Ulauncher/Ulauncher/v6";
+
+  /*
+   * dependencies
+   */
+  inputs.crane.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.disko.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs-lib";
+  inputs.helix-editor.inputs.crane.follows = "crane";
+  inputs.helix-editor.inputs.flake-utils.follows = "flake-utils";
+  inputs.helix-editor.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.helix-editor.inputs.rust-overlay.follows = "rust-overlay";
+  inputs.home-manager.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.microvm.inputs.flake-utils.follows = "flake-utils";
+  inputs.microvm.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.nix-eval-jobs.inputs.flake-parts.follows = "flake-parts";
+  inputs.nix-eval-jobs.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.nix-github-actions.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.nixinate.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.nixos-anywhere.inputs.disko.follows = "disko";
+  inputs.nixos-anywhere.inputs.flake-parts.follows = "flake-parts";
+  inputs.nixos-anywhere.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.nixos-anywhere.inputs.treefmt-nix.follows = "treefmt-nix";
+  inputs.nixos-generators.inputs.nixlib.follows = "nixpkgs-lib";
+  inputs.nixos-generators.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.poetry2nix.inputs.flake-utils.follows = "flake-utils";
+  inputs.poetry2nix.inputs.nix-github-actions.follows = "nix-github-actions";
+  inputs.poetry2nix.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.poetry2nix.inputs.treefmt-nix.follows = "treefmt-nix";
+  inputs.rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.sops-nix.inputs.nixpkgs-stable.follows = "empty";
+  inputs.sops-nix.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.stylix.inputs.base16-foot.follows = "base16-foot";
+  inputs.stylix.inputs.flake-compat.follows = "flake-compat";
+  inputs.stylix.inputs.home-manager.follows = "home-manager";
+  inputs.stylix.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.ulauncher.inputs.flake-parts.follows = "flake-parts";
+  inputs.ulauncher.inputs.nixpkgs.follows = "nixpkgs";
 
   outputs =
     inputs@{ flake-parts, self, ... }:
@@ -79,6 +90,7 @@
         inputs.poetry2nix.overlays.default
         inputs.ulauncher.overlays.default
         inputs.helix-editor.overlays.default
+        inputs.nur.overlay
         (final: prev: {
           kdn = final.callPackages ./packages { };
           inherit lib;
@@ -168,6 +180,26 @@
 
                 _module.args.nixinate = {
                   host = "krul.lan.";
+                  sshUser = "kdn";
+                  buildOn = "local"; # valid args are "local" or "remote"
+                  substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
+                  hermetic = true;
+                  nixOptions = [ "--show-trace" ];
+                };
+              }];
+          };
+
+          etra = flakeLib.nixos.system {
+            system = "x86_64-linux";
+            modules = [{ kdn.profile.host.etra.enable = true; }
+              {
+                system.stateVersion = "24.11";
+                home-manager.sharedModules = [{ home.stateVersion = "24.11"; }];
+                networking.hostId = "6dc8c4d7"; # cut -c-8 </proc/sys/kernel/random/uuid
+                networking.hostName = "etra";
+
+                _module.args.nixinate = {
+                  host = "etra.lan.";
                   sshUser = "kdn";
                   buildOn = "local"; # valid args are "local" or "remote"
                   substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"

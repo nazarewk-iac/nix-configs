@@ -52,7 +52,7 @@ in
         "1.1.1.1" # CloudFlare
         "8.8.8.8" # Google
       ];
-      networking.networkmanager.enable = true;
+      networking.networkmanager.enable = lib.mkDefault true;
 
       # REMOTE access
       services.openssh.enable = true;
