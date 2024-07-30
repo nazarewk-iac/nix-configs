@@ -3,6 +3,7 @@
     ./ascii-workaround.nix
     inputs.home-manager.nixosModules.home-manager
     inputs.disko.nixosModules.disko
+    inputs.impermanence.nixosModules.impermanence
     ./nix.nix
     ./home-manager.nix
     ./stylix.nix

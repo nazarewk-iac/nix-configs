@@ -21,6 +21,7 @@
     helix-editor.url = "github:helix-editor/helix/24.03";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
     home-manager.url = "github:nix-community/home-manager";
+    impermanence.url = "github:nix-community/impermanence";
     microvm.inputs.flake-utils.follows = "flake-utils";
     microvm.inputs.nixpkgs.follows = "nixpkgs";
     microvm.url = "github:astro/microvm.nix";
@@ -112,6 +113,7 @@
                 inherit system;
                 modules = [
                   {
+                    home-manager.sharedModules = [{ home.stateVersion = "24.11"; }];
                     kdn.profile.machine.baseline.enable = true;
                     kdn.filesystems.zfs.enable = true;
                     kdn.hardware.disk-encryption.tools.enable = true;
@@ -139,6 +141,7 @@
             modules = [{ kdn.profile.host.oams.enable = true; }
               {
                 system.stateVersion = "23.11";
+                home-manager.sharedModules = [{ home.stateVersion = "23.11"; }];
                 networking.hostId = "ce0f2f33"; # cut -c-8 </proc/sys/kernel/random/uuid
                 networking.hostName = "oams";
 
@@ -158,8 +161,9 @@
             system = "x86_64-linux";
             modules = [{ kdn.profile.host.krul.enable = true; }
               {
-                system.stateVersion = "23.11";
-                networking.hostId = "81d86976"; # cut -c-8 </proc/sys/kernel/random/uuid
+                system.stateVersion = "24.11";
+                home-manager.sharedModules = [{ home.stateVersion = "24.11"; }];
+                networking.hostId = "0a989258"; # cut -c-8 </proc/sys/kernel/random/uuid
                 networking.hostName = "krul";
 
                 _module.args.nixinate = {
@@ -178,6 +182,7 @@
             modules = [{ kdn.profile.host.obler.enable = true; }
               {
                 system.stateVersion = "23.11";
+                home-manager.sharedModules = [{ home.stateVersion = "23.11"; }];
                 networking.hostId = "f6345d38"; # cut -c-8 </proc/sys/kernel/random/uuid
                 networking.hostName = "obler";
 
@@ -198,6 +203,7 @@
             modules = [{ kdn.profile.host.moss.enable = true; }
               {
                 system.stateVersion = "23.11";
+                home-manager.sharedModules = [{ home.stateVersion = "23.11"; }];
                 networking.hostId = "550ded62"; # cut -c-8 </proc/sys/kernel/random/uuid
                 networking.hostName = "moss";
 
@@ -230,6 +236,7 @@
           name = "hello-microvm";
           modules = [{
             system.stateVersion = "23.11";
+            home-manager.sharedModules = [{ home.stateVersion = "23.11"; }];
             kdn.profile.machine.baseline.enable = true;
           }];
         })
