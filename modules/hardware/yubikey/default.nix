@@ -76,7 +76,7 @@ in
       # SOPS+age config
       services.pcscd.enable = true;
       environment.systemPackages = with pkgs; [
-        (pkgs.callPackage ./sops { })
+        (pkgs.callPackage ./sops/package.nix { })
         age
         rage
         age-plugin-yubikey
@@ -91,7 +91,7 @@ in
                   #         Type: age-plugin-yubikey
                   #      Yubikey: ${yk.serial}
                   #     PIV Slot: ${slotNum}
-                  #  Plugin Slot: ${builtins.toString (lib.strings.toInt slotNum - 82 + 1)}
+                  #  Plugin Slot: ${builtins.toString (lib.strings.toInt (slotNum - 82 + 1))}
                   #   PIN Policy: ${p."pin-policy"}
                   # Touch Policy: ${p."touch-policy"}
                   #    Recipient: ${p.recipient}
@@ -99,7 +99,7 @@ in
                   ${lib.pipe p.notes [
                     (builtins.map (lib.strings.splitString "\n"))
                     lib.flatten
-                    (builtins.map (n: "#   ${n}"))
+                    (builtins.map (note: "#   ${note}"))
                     (builtins.concatStringsSep "\n")
                   ]}
                   ${p.identity}
