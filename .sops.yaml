@@ -1,0 +1,47 @@
+keys:
+  yubikeys:
+    # see yubikey inventory at https://github.com/nazarewk-iac/nix-configs/blob/48f050928f2bbf29c6fbc63c53362f30300cdb1d/modules/hardware/yubikey/yubikeys.nix
+    oams:
+      serial: 16174038
+      age:
+        - &yk-oams-pin-touch age1yubikey1q05un9a8q2x783srmhv4hm3pjsrxvgrw92q70yyzjmlx3wnd8jwn2x8ghlp
+        - &yk-oams-touch age1yubikey1qfx38en49qfpyjf5hwn8dch6c0jvvtus29pvwgqlze35rraea00y6dw6rwv
+        - &yk-oams-unattended age1yubikey1q25g9xpunct74wnn29dgcgep78q666dkhpfg2flltg92fvyrew02j28464d
+
+    krul:
+      serial: 1617439
+      age:
+        - &yk-krul-pin-touch age1yubikey1qdppx4kd82ecfxr5lcmgef9w4zxmreyl2q3xv6dsq2jwgv274cm5zmjuy34
+        - &yk-krul-touch age1yubikey1qf4cjj3ksn60z9hnezkwysvgcll7y3mfxzwzdrzgkfkqe9thmczg6xmmfz9
+        - &yk-krul-unattended age1yubikey1q0ke6fjulkqg0x0elweecppfkqqr6cqsr42u8q5k5z6466mu60gjseq6p4t
+
+    etra:
+      serial: 22418334
+      age:
+        - &yk-etra-pin-touch age1yubikey1qtx9zwsndt5ayk8fzeptl4sxumw3aw7jgzx544xjwawdl3yn2ra7v60tn50
+        - &yk-etra-touch age1yubikey1qwlfxw5t9deg9a0lh6gqapfmwtncsgcvj4tzqslyxyf8gg2twnz7xjz0efa
+        - &yk-etra-unattended age1yubikey1qfkvupj8d583aw4pykay7hqg6ymret8quec45h2up0amushus33yvzkd2sw
+
+  hosts:
+    # converting SSH key to `age` identity:
+    #  ssh-to-age </etc/ssh/ssh_host_ed25519_key.pub
+    #  ssh-keyscan moss.kdn.im | grep ' ssh-ed25519 ' | ssh-to-age
+    oams:
+      age:
+        - &ssh-oams age1apym9pk5y5nvem3whc0zm5apnjw9ycxp490kspdj7m45qs7zqacsnne7yr
+    moss:
+      age:
+        - &ssh-moss age1n32gwqk35302kl4k2q2rwys2dzwasza596zknrfgp2nwvpt2rqms4xzc9n
+creation_rules:
+  - path_regex: '.unattended\.sops\.[^.]+$'
+    key_groups:
+      - age:
+          - *ssh-oams
+          - *ssh-moss
+          - *yk-oams-unattended
+          - *yk-krul-unattended
+          - *yk-etra-unattended
+  - key_groups:
+      - age:
+          - *yk-oams-touch
+          - *yk-krul-touch

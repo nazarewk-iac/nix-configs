@@ -5,6 +5,7 @@
   home-manager.sharedModules = [{
     imports = [
       inputs.impermanence.nixosModules.home-manager.impermanence
+      inputs.sops-nix.homeManagerModules.sops
     ];
     config = {
       home.enableNixpkgsReleaseCheck = true;

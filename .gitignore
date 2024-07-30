@@ -20,6 +20,8 @@
 !.idea/misc.xml
 !*.iml
 
+!*.sops.yaml
+!*.unattended.sops.*
 !*.nix
 .*.nix
 !*.patch

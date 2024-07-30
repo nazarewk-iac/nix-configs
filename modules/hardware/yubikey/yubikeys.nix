@@ -1,11 +1,11 @@
 { lib, config, ... }: {
-  kdn.hardware.yubikey.devices.laptop = {
+  kdn.hardware.yubikey.devices.oams = {
     enabled = true;
     serial = "16174038";
     notes = [ "data in KeePass" ];
   };
   # age-plugin-yubikey Slot 1 is PIV Slot 82
-  kdn.hardware.yubikey.devices.laptop.piv."82" = {
+  kdn.hardware.yubikey.devices.oams.piv."82" = {
     type = "age-plugin-yubikey";
     age-plugin-yubikey = {
       notes = [ "sops" ];
@@ -16,7 +16,7 @@
       identity = "AGE-PLUGIN-YUBIKEY-16M9LVQYZJ7UJVNC8Z7TW7";
     };
   };
-  kdn.hardware.yubikey.devices.laptop.piv."83" = {
+  kdn.hardware.yubikey.devices.oams.piv."83" = {
     type = "age-plugin-yubikey";
     age-plugin-yubikey = {
       notes = [ "sops" ];
@@ -27,7 +27,7 @@
       identity = "AGE-PLUGIN-YUBIKEY-16M9LVQYRDAME9FSZZVPJA";
     };
   };
-  kdn.hardware.yubikey.devices.laptop.piv."84" = {
+  kdn.hardware.yubikey.devices.oams.piv."84" = {
     type = "age-plugin-yubikey";
     age-plugin-yubikey = {
       notes = [ "sops" ];
@@ -38,12 +38,12 @@
       identity = "AGE-PLUGIN-YUBIKEY-16M9LVQYY4WN5GDCQNHWQ0";
     };
   };
-  kdn.hardware.yubikey.devices.desktop = {
+  kdn.hardware.yubikey.devices.krul = {
     enabled = true;
-    serial = "1617439";
+    serial = "16174039";
     notes = [ "data in KeePass" ];
   };
-  kdn.hardware.yubikey.devices.desktop.piv."82" = {
+  kdn.hardware.yubikey.devices.krul.piv."82" = {
     type = "age-plugin-yubikey";
     age-plugin-yubikey = {
       notes = [ "sops" ];
@@ -54,7 +54,7 @@
       identity = "AGE-PLUGIN-YUBIKEY-16L9LVQYZE4HZ8JGY5HK5P";
     };
   };
-  kdn.hardware.yubikey.devices.desktop.piv."83" = {
+  kdn.hardware.yubikey.devices.krul.piv."83" = {
     type = "age-plugin-yubikey";
     age-plugin-yubikey = {
       notes = [ "sops" ];
@@ -65,7 +65,7 @@
       identity = "AGE-PLUGIN-YUBIKEY-16L9LVQYR5AME92GT4N5C3";
     };
   };
-  kdn.hardware.yubikey.devices.desktop.piv."84" = {
+  kdn.hardware.yubikey.devices.krul.piv."84" = {
     type = "age-plugin-yubikey";
     age-plugin-yubikey = {
       notes = [ "sops" ];

@@ -1,13 +1,14 @@
 { config, lib, pkgs, inputs, self, ... }: {
   imports = [
     ./ascii-workaround.nix
-    inputs.home-manager.nixosModules.home-manager
+    ./home-manager.nix
+    ./nix.nix
+    ./stylix.nix
     inputs.disko.nixosModules.disko
+    inputs.home-manager.nixosModules.home-manager
     inputs.impermanence.nixosModules.impermanence
     inputs.nur.nixosModules.nur
-    ./nix.nix
-    ./home-manager.nix
-    ./stylix.nix
+    inputs.sops-nix.nixosModules.sops
   ] ++ lib.trivial.pipe ./. [
     lib.filesystem.listFilesRecursive
     # lib.substring expands paths to nix-store paths: "/nix/store/6gv1rzszm9ly6924ndgzmmcpv4jz30qp-default.nix"

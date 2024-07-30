@@ -74,41 +74,43 @@ in
     }
     {
       # SOPS+age config
+      kdn.nix-secrets.enable = true;
       services.pcscd.enable = true;
       environment.systemPackages = with pkgs; [
-        (pkgs.callPackage ./sops/package.nix { })
-        age
-        rage
         age-plugin-yubikey
-        age-plugin-fido2-hmac
       ];
       home-manager.sharedModules = [{
-        xdg.configFile."sops/age/keys.txt".text = lib.pipe cfg.devices [
-          (lib.attrsets.mapAttrsToList (_: yk: lib.attrsets.mapAttrsToList
-            (slotNum: slot:
-              lib.optional (slot.type == "age-plugin-yubikey") (
-                let p = slot."${slot.type}"; in ''
-                  #         Type: age-plugin-yubikey
-                  #      Yubikey: ${yk.serial}
-                  #     PIV Slot: ${slotNum}
-                  #  Plugin Slot: ${builtins.toString ((lib.strings.toInt slotNum) - 82 + 1)}
-                  #   PIN Policy: ${p."pin-policy"}
-                  # Touch Policy: ${p."touch-policy"}
-                  #    Recipient: ${p.recipient}
-                  # Notes:
-                  ${lib.pipe p.notes [
-                    (builtins.map (lib.strings.splitString "\n"))
-                    lib.flatten
-                    (builtins.map (note: "#   ${note}"))
-                    (builtins.concatStringsSep "\n")
-                  ]}
-                  ${p.identity}
-                ''
-              ))
-            yk.piv))
-          lib.flatten
-          (builtins.concatStringsSep "\n")
-        ];
+        /* TODO: remove the need to run below every time yubikey is changed
+              age-plugin-yubikey --identity | grep '^AGE-PLUGIN-YUBIKEY-' >~/.config/sops/age/keys.txt
+        */
+        ## this should not be present from store, because it will try all keys interactively
+        ##  possibly generated on the fly?
+        #xdg.configFile."sops/age/keys.txt".text = lib.pipe cfg.devices [
+        #  (lib.attrsets.mapAttrsToList (_: yk: lib.attrsets.mapAttrsToList
+        #    (slotNum: slot:
+        #      lib.optional (slot.type == "age-plugin-yubikey") (
+        #        let p = slot."${slot.type}"; in ''
+        #          #         Type: age-plugin-yubikey
+        #          #      Yubikey: ${yk.serial}
+        #          #     PIV Slot: ${slotNum}
+        #          #  Plugin Slot: ${builtins.toString ((lib.strings.toInt slotNum) - 82 + 1)}
+        #          #   PIN Policy: ${p."pin-policy"}
+        #          # Touch Policy: ${p."touch-policy"}
+        #          #    Recipient: ${p.recipient}
+        #          # Notes:
+        #          ${lib.pipe p.notes [
+        #            (builtins.map (lib.strings.splitString "\n"))
+        #            lib.flatten
+        #            (builtins.map (note: "#   ${note}"))
+        #            (builtins.concatStringsSep "\n")
+        #          ]}
+        #          ${p.identity}
+        #        ''
+        #      ))
+        #    yk.piv))
+        #  lib.flatten
+        #  (builtins.concatStringsSep "\n")
+        #];
       }];
     }
   ]);

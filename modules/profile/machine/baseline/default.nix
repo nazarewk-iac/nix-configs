@@ -99,10 +99,11 @@ in
       services.avahi.enable = false; # conficts with `services.resolved.llmnr`
       services.resolved.enable = true;
       services.resolved.llmnr = "true";
-      kdn.networking.wireguard.enable = true;
+      kdn.development.shell.enable = true;
       kdn.hardware.disk-encryption.tools.enable = true;
       kdn.hardware.usbip.enable = true;
-      kdn.development.shell.enable = true;
+      kdn.networking.wireguard.enable = true;
+      kdn.nix-secrets.enable = true;
 
       home-manager.users.root = { kdn.profile.user.kdn.osConfig = config.users.users.root; };
 

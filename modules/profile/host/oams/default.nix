@@ -104,5 +104,12 @@ in
       ];
     }
     (import ./disko.nix { inherit lib; hostname = config.networking.hostName; })
+    {
+      # sops-nix test
+      sops.secrets.test = {
+        key = "some-key";
+        sopsFile = ./test.unattended.sops.yaml;
+      };
+    }
   ]);
 }
