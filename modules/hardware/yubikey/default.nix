@@ -91,7 +91,7 @@ in
                   #         Type: age-plugin-yubikey
                   #      Yubikey: ${yk.serial}
                   #     PIV Slot: ${slotNum}
-                  #  Plugin Slot: ${builtins.toString (lib.strings.toInt (slotNum - 82 + 1))}
+                  #  Plugin Slot: ${builtins.toString ((lib.strings.toInt slotNum) - 82 + 1)}
                   #   PIN Policy: ${p."pin-policy"}
                   # Touch Policy: ${p."touch-policy"}
                   #    Recipient: ${p.recipient}
