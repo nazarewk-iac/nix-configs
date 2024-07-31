@@ -128,7 +128,7 @@
                     home-manager.sharedModules = [{ home.stateVersion = "24.11"; }];
                     kdn.profile.machine.baseline.enable = true;
                     kdn.filesystems.zfs.enable = true;
-                    kdn.hardware.disk-encryption.tools.enable = true;
+                    kdn.security.disk-encryption.tools.enable = true;
                     kdn.hardware.yubikey.enable = true;
                     kdn.programs.direnv.enable = true;
 

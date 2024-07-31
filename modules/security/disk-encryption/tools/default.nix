@@ -1,6 +1,6 @@
 { lib, pkgs, config, ... }:
 let
-  cfg = config.kdn.hardware.disk-encryption.tools;
+  cfg = config.kdn.security.disk-encryption.tools;
 
   systemd-cryptsetup = pkgs.runCommand "systemd-cryptsetup-bin" { } ''
     mkdir -p $out/bin
@@ -8,7 +8,7 @@ let
   '';
 in
 {
-  options.kdn.hardware.disk-encryption.tools = {
+  options.kdn.security.disk-encryption.tools = {
     enable = lib.mkEnableOption "disk encryption tooling setup";
   };
 

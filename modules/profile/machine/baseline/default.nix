@@ -100,10 +100,10 @@ in
       services.resolved.enable = true;
       services.resolved.llmnr = "true";
       kdn.development.shell.enable = true;
-      kdn.hardware.disk-encryption.tools.enable = true;
+      kdn.security.disk-encryption.tools.enable = true;
       kdn.hardware.usbip.enable = true;
       kdn.networking.wireguard.enable = true;
-      kdn.nix-secrets.enable = true;
+      kdn.security.secrets.enable = true;
 
       home-manager.users.root = { kdn.profile.user.kdn.osConfig = config.users.users.root; };
 

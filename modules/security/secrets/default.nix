@@ -3,8 +3,8 @@ let
   cfg = config.kdn.programs.direnv;
 in
 {
-  options.kdn.nix-secrets = {
-    enable = lib.mkEnableOption "sops-nix setup";
+  options.kdn.security.secrets = {
+    enable = lib.mkEnableOption "Nix secrets setup";
     sshKeyFiles = lib.mkOption {
       type = with lib.types; listOf path;
       default = [ ];

@@ -74,7 +74,7 @@ in
     }
     {
       # SOPS+age config
-      kdn.nix-secrets.enable = true;
+      kdn.security.secrets.enable = true;
       services.pcscd.enable = true;
       environment.systemPackages = with pkgs; [
         age-plugin-yubikey
