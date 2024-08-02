@@ -15,7 +15,6 @@ in
   config = lib.mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
       systemd-cryptsetup
-      sbctl
       cryptsetup
       clevis
       jose

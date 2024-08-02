@@ -23,6 +23,7 @@
   inputs.flake-utils.url = "github:numtide/flake-utils";
   inputs.home-manager.url = "github:nix-community/home-manager";
   inputs.impermanence.url = "github:nix-community/impermanence";
+  inputs.lanzaboote.url = "github:nix-community/lanzaboote";
   inputs.microvm.url = "github:astro/microvm.nix";
   inputs.mk-shell-bin.url = "github:rrbutani/nix-mk-shell-bin";
   inputs.nix-eval-jobs.url = "github:nix-community/nix-eval-jobs";
@@ -50,6 +51,12 @@
   inputs.helix-editor.inputs.nixpkgs.follows = "nixpkgs";
   inputs.helix-editor.inputs.rust-overlay.follows = "rust-overlay";
   inputs.home-manager.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.lanzaboote.inputs.crane.follows = "crane";
+  inputs.lanzaboote.inputs.flake-compat.follows = "flake-compat";
+  inputs.lanzaboote.inputs.flake-parts.follows = "flake-parts";
+  inputs.lanzaboote.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.lanzaboote.inputs.pre-commit-hooks-nix.follows = "empty";
+  inputs.lanzaboote.inputs.rust-overlay.follows = "rust-overlay";
   inputs.microvm.inputs.flake-utils.follows = "flake-utils";
   inputs.microvm.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nix-eval-jobs.inputs.flake-parts.follows = "flake-parts";
@@ -129,6 +136,7 @@
                     kdn.profile.machine.baseline.enable = true;
                     kdn.filesystems.zfs.enable = true;
                     kdn.security.disk-encryption.tools.enable = true;
+                    kdn.security.secure-boot.tools.enable = true;
                     kdn.hardware.yubikey.enable = true;
                     kdn.programs.direnv.enable = true;
 

@@ -376,6 +376,41 @@
         "type": "github"
       }
     },
+    "lanzaboote": {
+      "inputs": {
+        "crane": [
+          "crane"
+        ],
+        "flake-compat": [
+          "flake-compat"
+        ],
+        "flake-parts": [
+          "flake-parts"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "pre-commit-hooks-nix": [
+          "empty"
+        ],
+        "rust-overlay": [
+          "rust-overlay"
+        ]
+      },
+      "locked": {
+        "lastModified": 1722329086,
+        "narHash": "sha256-e/fSi0WER06N8WCvpht62fkGtWfe5ckDxr6zNYkwkFw=",
+        "owner": "nix-community",
+        "repo": "lanzaboote",
+        "rev": "f5a3a7dff44d131807fc1a89fbd8576cd870334a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "lanzaboote",
+        "type": "github"
+      }
+    },
     "microvm": {
       "inputs": {
         "fenix": "fenix",
@@ -689,6 +724,7 @@
         "helix-editor": "helix-editor",
         "home-manager": "home-manager",
         "impermanence": "impermanence",
+        "lanzaboote": "lanzaboote",
         "microvm": "microvm",
         "mk-shell-bin": "mk-shell-bin",
         "nix-eval-jobs": "nix-eval-jobs",
