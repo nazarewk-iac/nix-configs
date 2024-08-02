@@ -20,6 +20,9 @@ in
       clevis
       jose
 
+      tpm2-tools
+      tpm2-tss
+
       (pkgs.writeShellApplication {
         name = "kdn-systemd-zfs-decrypt";
         runtimeInputs = [ systemd-cryptsetup ];

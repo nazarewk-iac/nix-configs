@@ -38,6 +38,7 @@ in
         ];
       })
       (lib.kdn.shell.writeShellScript pkgs ./bin/list-device-drivers.sh {
+        # TODO: compgen: command not found
         runtimeInputs = with pkgs; [ coreutils ];
       })
       (lib.kdn.shell.writeShellScript pkgs ./bin/find-device-kernel-module.sh {

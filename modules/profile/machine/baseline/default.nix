@@ -5,6 +5,11 @@ in
 {
   options.kdn.profile.machine.baseline = {
     enable = lib.mkEnableOption "baseline machine profile for server/non-interactive use";
+
+    initrd.emergency.rebootTimeout = lib.mkOption {
+      type = lib.types.ints.unsigned;
+      default = 0;
+    };
   };
 
   imports = [
@@ -140,10 +145,16 @@ in
         ];
       });
       services.netbird.clients.priv.port = 51819;
+      # TODO: implement automated login using `sops-nix`. through YubiKey?
+      kdn.hardware.disks.impermanence."usr/state".imp.directories = [
+        { directory = "/var/lib/netbird-priv"; user = "netbird-priv"; group = "netbird-priv"; mode = "0700"; }
+      ];
 
       services.devmon.enable = false; # disable auto-mounting service devmon, it interferes with disko
-
-      system.activationScripts.users-mountpoints.text =
+    }
+    {
+      # fix all /home mountpoints permissions
+      systemd.tmpfiles.rules =
         let
           users = lib.pipe config.users.users [
             lib.attrsets.attrValues
@@ -153,15 +164,52 @@ in
         lib.trivial.pipe config.fileSystems [
           (lib.attrsets.mapAttrsToList (name: cfg: cfg.mountPoint or name))
           (builtins.map (mountpoint: lib.trivial.pipe users [
-            (builtins.map (user: lib.lists.optional
-              (lib.strings.hasPrefix user.home mountpoint)
-              ''chown ${builtins.toString (user.uid or user.name)}:users "${mountpoint}"''
+            (builtins.filter (user: lib.strings.hasPrefix user.home mountpoint))
+            (builtins.map (user:
+              let
+                h = user.home;
+                u = builtins.toString (user.uid or user.name);
+                g = builtins.toString (user.gid or user.group);
+              in
+              lib.pipe mountpoint [
+                (lib.strings.removePrefix "${h}/")
+                (lib.strings.splitString "/")
+                (pcs: builtins.map (i: lib.lists.sublist 0 i pcs) (lib.lists.range 1 (builtins.length pcs)))
+                (builtins.map (lib.strings.concatStringsSep "/"))
+                (builtins.map (path: "d ${h}/${path} 0750 ${u} ${g} - -"))
+                (x: [
+                  "d ${h} 0750 ${u} ${g} - -"
+                  # TODO: clean those up periodically?
+                  "d /nix/var/nix/profiles/per-user/${user.name} 0755 ${u} ${g} - -"
+                ] ++ x)
+              ]
             ))
           ]))
           lib.lists.flatten
-          (builtins.concatStringsSep "\n")
+          lib.lists.unique
         ];
     }
+    (
+      # TODO: test it
+      # reboot if dropped into emergency and left unattended
+      let timeout = cfg.initrd.emergency.rebootTimeout; in lib.mkIf (timeout > 0) {
+        boot.initrd.systemd.services."emergency" = {
+          overrideStrategy = "asDropin";
+          serviceConfig.ExecStartPre = lib.strings.escapeShellArgs [
+            "/bin/sh"
+            "-c"
+            ''
+              if ! /bin/systemd-ask-password --timeout=${builtins.toString timeout} \
+                --no-output --emoji=no \
+                "Are you there? Press enter to enter emergency shell."
+              then
+                /bin/systemctl reboot
+              fi
+            ''
+          ];
+        };
+      }
+    )
     {
       home-manager.sharedModules = [{
         kdn.development.git.enable = true;

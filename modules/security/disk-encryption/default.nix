@@ -9,5 +9,6 @@ in
 
   config = lib.mkIf cfg.enable {
     kdn.security.disk-encryption.tools.enable = true;
+    security.tpm2.enable = true;
   };
 }

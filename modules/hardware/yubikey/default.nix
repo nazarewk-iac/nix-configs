@@ -100,7 +100,7 @@ in
         #          # Notes:
         #          ${lib.pipe p.notes [
         #            (builtins.map (lib.strings.splitString "\n"))
-        #            lib.flatten
+        #            lib.lists.flatten
         #            (builtins.map (note: "#   ${note}"))
         #            (builtins.concatStringsSep "\n")
         #          ]}
@@ -108,7 +108,7 @@ in
         #        ''
         #      ))
         #    yk.piv))
-        #  lib.flatten
+        #  lib.lists.flatten
         #  (builtins.concatStringsSep "\n")
         #];
       }];

@@ -21,10 +21,10 @@ in
       users.users.kdn.initialHashedPassword = "$y$j9T$yl3J5zGJ5Yq8c6fXMGxNk.$XE3X8aWpD3FeakMBD/fUmCExXMuy7B6tm7ZECmuxpF4";
       users.users.kdn = {
         uid = 31893;
-        autoSubUidGidRange = true;
+        subUidRanges = [{ count = 65536; startUid = 100000; }];
+        subGidRanges = [{ count = 65536; startGid = 100000; }];
         description = "Krzysztof Nazarewski";
         isNormalUser = true;
-        createHome = true; # makes sure ZFS mountpoints are properly owned?
         openssh.authorizedKeys.keys = cfg.ssh.authorizedKeysList;
         extraGroups = lib.filter (group: lib.hasAttr group config.users.groups) [
           "adbusers"
