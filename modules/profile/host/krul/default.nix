@@ -37,7 +37,7 @@ in
       # 12G was not enough for large rebuild
       boot.tmp.tmpfsSize = "32G";
     }
-    (
+    /*(
       let
         asusConn = "DP-4";
         # name is derived from forced edid profile, could be DP-1
@@ -63,8 +63,7 @@ in
           };
         }];
       }
-    )
-    (import ./disko.nix { inherit lib; hostname = config.networking.hostName; })
+    )*/
     {
       # automated unlock using Clevis through Tang server
       boot.initrd.network.flushBeforeStage2 = true;
@@ -77,7 +76,7 @@ in
       boot.initrd.systemd.network.wait-online.timeout = 15;
 
       boot.initrd.clevis.useTang = true;
-      boot.initrd.clevis.devices."krul-main-crypted".secretFile = ./krul-main-crypted.jwe;
+      #boot.initrd.clevis.devices."krul-main-crypted".secretFile = ./krul-main-crypted.jwe;
     }
     (
       let
