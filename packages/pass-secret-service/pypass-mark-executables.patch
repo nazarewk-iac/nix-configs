@@ -104,23 +104,6 @@ diff --git a/pypass/tests/test_command.py b/pypass/tests/test_command.py
              stdout=subprocess.PIPE)
          xclip.wait()
          self.assertEqual(xclip.stdout.read().decode('utf8'), 'clipme999')
-@@ -341,14 +341,14 @@
-         store = PasswordStore(self.dir)
-         store.insert_password('grep_test.com', 'GREPME')
-
--        grep_result = self.run_cli(['grep', 'GREPME'])
-+        grep_result = self.run_cli(['@grep_exec@', 'GREPME'])
-         self.assertEqual(
-             grep_result.output,
-             'grep_test.com:\nGREPME\n'
-         )
-
-     def test_git_init(self):
--        self.run_cli(['git', 'init'])
-+        self.run_cli(["@git_exec@", 'init'])
-
-         # git init should add a .gitattributes file
-         self.assertEqual(
 @@ -359,7 +359,7 @@
          # git init should set diff.gpg.binary to True
          diff_gpg_binary = subprocess.Popen(
@@ -139,31 +122,6 @@ diff --git a/pypass/tests/test_command.py b/pypass/tests/test_command.py
                  '--git-dir=%s' % os.path.join(self.dir, '.git'),
                  '--work-tree=%s' % self.dir,
                  'config',
-@@ -389,7 +389,7 @@
-         self.assertEqual(gpg.stdout.read().decode(), 'gpg -d\n')
-
-     def test_git_init_insert_and_show(self):
--        self.run_cli(['git', 'init'])
-+        self.run_cli(["@git_exec@", 'init'])
-
-         self.run_cli(
-             ['insert', 'test.com'],
-@@ -408,13 +408,13 @@
-         self.assertEqual(show_result.output, 'super_secret\n')
-
-     def test_git_forward_options(self):
--        self.run_cli(['git', 'init'])
-+        self.run_cli(["@git_exec@", 'init'])
-         self.run_cli(
-             ['insert', 'test.com'],
-             input='super_secret\nsuper_secret'
-         )
-
--        self.run_cli(['git', 'commit', '--amend', '-m', 'Modified message.'])
-+        self.run_cli(["@git_exec@", 'commit', '--amend', '-m', 'Modified message.'])
-         self.assertLastCommitMessage('Modified message.')
-
-     def test_init_clone(self):
 @@ -424,7 +424,7 @@
 
          subprocess.Popen(
@@ -191,15 +149,6 @@ diff --git a/pypass/tests/test_command.py b/pypass/tests/test_command.py
                  '--git-dir=%s' % origin_git_dir,
                  '--work-tree=%s' % origin_dir,
                  'commit',
-@@ -488,7 +488,7 @@
-         self.assertEqual(decoded, password)
-
-     def test_generate_in_place(self):
--        self.run_cli(['git', 'init'])
-+        self.run_cli(["@git_exec@", 'init'])
-         store = PasswordStore(self.dir)
-
-         generate = self.run_cli(
 @@ -516,7 +516,7 @@
          self.assertEqual(generate.output, 'Copied clip.me to clipboard.\n')
 
