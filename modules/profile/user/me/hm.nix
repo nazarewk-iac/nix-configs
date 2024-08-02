@@ -127,6 +127,9 @@ in
       xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
 
       services.nextcloud-client.enable = true;
+      /* TODO: try an automated login on activation using `sops-nix` credentials?
+          - make sure at least password-store & Keepass are downloaded (and not much more)
+      */
       services.nextcloud-client.startInBackground = true;
       systemd.user.services.nextcloud-client.Service = {
         Restart = "on-failure";

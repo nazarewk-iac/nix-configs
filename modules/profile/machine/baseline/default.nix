@@ -153,6 +153,7 @@ in
       ];
 
       services.devmon.enable = false; # disable auto-mounting service devmon, it interferes with disko
+      # TODO: download and/or symlink sources that the system got built from?
     }
     {
       # fix all /home mountpoints permissions
