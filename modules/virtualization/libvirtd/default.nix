@@ -42,6 +42,9 @@ in
       networking.firewall.checkReversePath = false;
       networking.networkmanager.unmanaged = [ "interface-name:virbr*" ];
 
+      /* TODO: wait for VM packaging? https://github.com/NixOS/nixpkgs/issues/287644
+      services.cockpit.enable = true;
+       */
       environment.systemPackages = with pkgs; [
         libguestfs
         libvirt
