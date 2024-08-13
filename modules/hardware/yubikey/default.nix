@@ -38,7 +38,6 @@ in
       services.pcscd.enable = true;
 
       home-manager.sharedModules = [{
-        programs.gpg.enable = true;
         programs.gpg.scdaemonSettings = {
           # disable-ccid to make YubiKey work
           # - https://support.yubico.com/hc/en-us/articles/360013714479-Troubleshooting-Issues-with-GPG

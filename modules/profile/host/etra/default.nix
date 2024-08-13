@@ -46,5 +46,6 @@ in
         };
       }
     )
+    # TODO: setup the dedicated YubiKey with GPG
   ]);
 }

@@ -44,6 +44,9 @@ in
 
       # allow usb-ip access to Yubikeys
       security.polkit.extraConfig = builtins.readFile ./pcsc-lite-rules.js;
+      home-manager.sharedModules = [{
+        programs.gpg.enable = true;
+      }];
     }
     (lib.mkIf cfg.pass-secret-service.enable (lib.mkMerge [
       {

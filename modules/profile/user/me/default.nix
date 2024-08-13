@@ -75,5 +75,19 @@ in
         "Nextcloud"
       ];
     }
+    (
+      let
+        cfg = {
+          programs.gpg.publicKeys = [{
+            source = ./gpg-pubkeys.txt;
+            trust = "ultimate";
+          }];
+        };
+      in
+      {
+        home-manager.users.root = cfg;
+        home-manager.users.kdn = cfg;
+      }
+    )
   ]);
 }
