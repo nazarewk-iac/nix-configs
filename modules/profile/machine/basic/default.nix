@@ -31,11 +31,11 @@ in
       ];
     }
     (lib.mkIf config.boot.initrd.systemd.enable {
-      specialisation.boot-debug = {
+      specialisation.debug = {
         inheritParentConfig = true;
         configuration = lib.mkMerge [
           {
-            system.nixos.tags = [ "boot-debug" ];
+            system.nixos.tags = [ "debug" ];
             boot.kernelParams = [
               # see https://www.thegeekdiary.com/how-to-debug-systemd-boot-process-in-centos-rhel-7-and-8-2/
               #"systemd.confirm_spawn=true"  # this seems to ask and times out before executing anything during boot
