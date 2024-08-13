@@ -230,7 +230,7 @@ in
       };
       systemd.services.netbird-priv.serviceConfig.EnvironmentFile = config.sops.templates."netbird-priv.env".path;
       systemd.services.netbird-priv.serviceConfig.ExecStartPost = [
-        "${lib.getExe config.services.netbird.clients.priv.wrapper} up"
+        "-${lib.getExe config.services.netbird.clients.priv.wrapper} up"
       ];
       kdn.hardware.disks.impermanence."usr/state".imp.directories = [
         { directory = "/var/lib/netbird-priv"; user = "netbird-priv"; group = "netbird-priv"; mode = "0700"; }
