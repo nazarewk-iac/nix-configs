@@ -1,10 +1,19 @@
-{ lib, pkgs, config, ... }:
+{ lib, pkgs, config, self, ... }:
 let
   cfg = config.kdn.security.secrets;
 in
 {
   options.kdn.security.secrets = {
     enable = lib.mkEnableOption "Nix secrets setup";
+    allow = lib.mkOption {
+      type = with lib.types; bool;
+      default = true;
+    };
+    allowed = lib.mkOption {
+      readOnly = true;
+      type = with lib.types; bool;
+      default = cfg.allow && cfg.enable;
+    };
     sshKeyFiles = lib.mkOption {
       type = with lib.types; listOf path;
       default = [ ];
@@ -45,6 +54,13 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = cfg.allow || (config.sops.secrets == { } && config.sops.templates == { });
+        message = "`sops.secrets` and `sops.templates` must be empty when `kdn.security.secrets.allow` is `false`";
+      }
+    ];
+
     environment.systemPackages = (with pkgs; [
       cfg.age.genScripts
       (pkgs.callPackage ./sops/package.nix { })
@@ -52,6 +68,8 @@ in
       ssh-to-age
       ssh-to-pgp
     ]);
+
+    sops.defaultSopsFile = "${self}/default.unattended.sops.yaml";
     # see https://github.com/Mic92/sops-nix/issues/65
     # note: SSH key gets imported automatically
     sops.gnupg.sshKeyPaths = [ ];

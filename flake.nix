@@ -133,13 +133,9 @@
                 modules = [
                   {
                     home-manager.sharedModules = [{ home.stateVersion = "24.11"; }];
+                    kdn.security.secrets.allow = false;
                     kdn.profile.machine.baseline.enable = true;
-                    kdn.filesystems.zfs.enable = true;
-                    kdn.security.disk-encryption.tools.enable = true;
-                    kdn.security.secure-boot.tools.enable = true;
-                    kdn.hardware.yubikey.enable = true;
-                    kdn.security.secrets.enable = true;
-                    kdn.programs.direnv.enable = true;
+                    kdn.profile.machine.baseline.netbird-priv.type = "ephemeral";
 
                     environment.systemPackages = with pkgs; [
                     ];

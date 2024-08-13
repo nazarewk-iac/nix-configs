@@ -70,5 +70,10 @@ in
         allowedUDPPortRanges = kdeConnectRange;
       };
     })
+    {
+      environment.persistence."usr/reproducible".users.kdn.directories = [
+        "Nextcloud"
+      ];
+    }
   ]);
 }

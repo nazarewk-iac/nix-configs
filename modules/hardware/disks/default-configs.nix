@@ -56,144 +56,144 @@ in
       };
     }
     {
-      # impermanence config
-      kdn.hardware.disks.impermanence = {
-        "sys/config" = {
-          snapshots = true;
-          imp.directories = [
-            "/var/db/sudo/lectured"
-            "/var/lib/bluetooth"
-            "/var/lib/nixos"
-            "/var/lib/systemd/pstore"
-            "/var/spool"
-          ];
-          imp.files = [
-            "/etc/machine-id"
-            "/etc/printcap" # CUPS printer config
-            #"/etc/subgid" # this results in file already exists
-            #"/etc/subuid" # this results in file already exists
-          ];
-        };
-        "sys/cache" = {
-          snapshots = false;
-          imp.directories = [
-            "/var/cache"
-          ];
-          imp.users.root.directories = [
-            ".cache/nix"
-          ];
-        };
-        "sys/data" = {
-          snapshots = true;
-        };
-        "sys/state" = {
-          snapshots = true;
-          imp.directories = [
-            "/var/lib/swtpm-localca"
-          ];
-          imp.files = [
-            "/etc/ssh/ssh_host_ed25519_key"
-            "/etc/ssh/ssh_host_ed25519_key.pub"
-            "/etc/ssh/ssh_host_rsa_key"
-            "/etc/ssh/ssh_host_rsa_key.pub"
-          ];
-        };
-        "sys/log" = {
-          snapshots = false;
-          neededForBoot = [
-            "/var/log/journal"
-          ];
-          imp.directories = [
-            "/var/lib/systemd/coredump"
-            "/var/log"
-            "/var/log/journal"
-          ];
-        };
-        "usr/config" = {
-          snapshots = true;
-          imp.files = [
-            "/etc/nix/netrc" # TODO: move this out
-            "/etc/nix/nix.sensitive.conf" # TODO: move this out
-          ];
-          imp.users.kdn = {
-            # TODO: move this out
-            directories = [
-              ".config/syncthing"
-            ];
-            files = [
-              { file = ".ssh/config.local"; parentDirectory.mode = "0700"; }
-            ];
-          };
-        };
-        "usr/cache" = {
-          snapshots = false;
+      kdn.hardware.disks.impermanence."sys/cache".snapshots = false;
+      kdn.hardware.disks.impermanence."sys/config".snapshots = true;
+      kdn.hardware.disks.impermanence."sys/data".snapshots = true;
+      kdn.hardware.disks.impermanence."sys/log".neededForBoot = [ "/var/log/journal" ];
+      kdn.hardware.disks.impermanence."sys/log".snapshots = false;
+      kdn.hardware.disks.impermanence."sys/reproducible".snapshots = false;
+      kdn.hardware.disks.impermanence."sys/state".snapshots = true;
+      kdn.hardware.disks.impermanence."usr/cache".snapshots = false;
+      kdn.hardware.disks.impermanence."usr/config".snapshots = true;
+      kdn.hardware.disks.impermanence."usr/data".snapshots = true;
+      kdn.hardware.disks.impermanence."usr/log".snapshots = false;
+      kdn.hardware.disks.impermanence."usr/reproducible".snapshots = false;
+      kdn.hardware.disks.impermanence."usr/state".snapshots = true;
+    }
+    {
+      environment.persistence."sys/config" = {
+        directories = [
+          "/var/db/sudo/lectured"
+          "/var/lib/bluetooth"
+          "/var/lib/nixos"
+          "/var/lib/systemd/pstore"
+          "/var/spool"
+        ];
+        files = [
+          "/etc/machine-id"
+          "/etc/printcap" # CUPS printer config
+          #"/etc/subgid" # this results in file already exists
+          #"/etc/subuid" # this results in file already exists
+        ];
+      };
+
+      environment.persistence."sys/cache" = {
+        directories = [
+          "/var/cache"
+        ];
+        users.root.directories = [
+          ".cache/nix"
+        ];
+      };
+      environment.persistence."sys/state" = {
+        directories = [
+          "/var/lib/swtpm-localca"
+        ];
+        files = [
+          "/etc/ssh/ssh_host_ed25519_key"
+          "/etc/ssh/ssh_host_ed25519_key.pub"
+          "/etc/ssh/ssh_host_rsa_key"
+          "/etc/ssh/ssh_host_rsa_key.pub"
+        ];
+      };
+      environment.persistence."sys/log" = {
+        directories = [
+          "/var/lib/systemd/coredump"
+          "/var/log"
+          "/var/log/journal"
+        ];
+      };
+    }
+    {
+      environment.persistence."usr/config" = {
+        files = [
+          "/etc/nix/netrc" # TODO: move this out
+          "/etc/nix/nix.sensitive.conf" # TODO: move this out
+        ];
+        users.kdn = {
           # TODO: move this out
-          imp.users.kdn.directories = [
-            ".cache/appimage-run"
-            ".cache/fontconfig"
+          directories = [
+            ".config/syncthing"
+          ];
+          files = [
+            { file = ".ssh/config.local"; parentDirectory.mode = "0700"; }
           ];
         };
-        "usr/data" = {
-          snapshots = true;
-          # TODO: move this out
-          imp.directories = [
-            "/var/lib/libvirt/images"
-          ];
-          /* TODO: implement automated atuin login:
+      };
+
+      # TODO: move this out
+      environment.persistence."usr/cache" = {
+        users.kdn.directories = [
+          ".cache/appimage-run"
+          ".cache/fontconfig"
+        ];
+      };
+      environment.persistence."usr/data" = {
+        # TODO: move this out
+        directories = [
+          "/var/lib/libvirt/images"
+        ];
+        /* TODO: implement automated atuin login:
                - store the data on a tmpfs mount under user's home (will require ~64MB+ space)
                - retrieve credentials from `sops-nix`
                - log in
                - run the first sync
            */
-          imp.users.root.directories = [
-            ".local/share/atuin"
-          ];
-          # TODO: move this out
-          imp.users.kdn.directories = [
-            ".local/share/syncthing"
-            ".local/share/atuin"
-            ".local/share/direnv"
-            ".local/share/nix"
-            ".local/share/containers"
-            "dev"
-          ];
-        };
-        "usr/state" = {
-          snapshots = true;
-          # TODO: move this out
-          imp.directories = [
-            "/var/lib/libvirt"
-          ];
-          # TODO: move this out
-          imp.users.root.directories = [
-            { directory = "wireguard-keys"; mode = "0700"; }
-          ];
-          # TODO: move this out
-          imp.users.root.files = [
-            { file = ".ssh/known_hosts"; parentDirectory.mode = "0700"; }
-          ];
-          # TODO: move this out
-          imp.users.kdn.directories = [
-            ".gnupg"
-          ];
-          # TODO: move this out
-          imp.users.kdn.files = [
-            { file = ".ssh/known_hosts"; parentDirectory.mode = "0700"; }
-          ];
-        };
-        "usr/log" = {
-          snapshots = false;
-          # TODO: move this out
-          imp.users.kdn.files = [
-            ".local/share/fish/fish_history"
-            ".ipython/profile_default/history.sqlite"
-            ".bash_history"
-            ".duckdb_history"
-            ".python_history"
-            ".usql_history"
-            ".zsh_history"
-          ];
-        };
+        users.root.directories = [
+          ".local/share/atuin"
+        ];
+        # TODO: move this out
+        users.kdn.directories = [
+          ".local/share/syncthing"
+          ".local/share/atuin"
+          ".local/share/direnv"
+          ".local/share/nix"
+          ".local/share/containers"
+          "dev"
+        ];
+      };
+      environment.persistence."usr/state" = {
+        # TODO: move this out
+        directories = [
+          "/var/lib/libvirt"
+        ];
+        # TODO: move this out
+        users.root.directories = [
+          { directory = "wireguard-keys"; mode = "0700"; }
+        ];
+        # TODO: move this out
+        users.root.files = [
+          { file = ".ssh/known_hosts"; parentDirectory.mode = "0700"; }
+        ];
+        # TODO: move this out
+        users.kdn.directories = [
+          ".gnupg"
+        ];
+        # TODO: move this out
+        users.kdn.files = [
+          { file = ".ssh/known_hosts"; parentDirectory.mode = "0700"; }
+        ];
+      };
+      environment.persistence."usr/log" = {
+        users.kdn.files = [
+          #".local/share/fish/fish_history" # A file already exists at ...
+          ".ipython/profile_default/history.sqlite"
+          ".bash_history"
+          ".duckdb_history"
+          ".python_history"
+          ".usql_history"
+          ".zsh_history"
+        ];
       };
     }
     {

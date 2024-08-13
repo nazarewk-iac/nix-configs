@@ -1,4 +1,13 @@
-netbird-priv-setup-key: ENC[AES256_GCM,data:ibhREVqx1K8s/Cn3MhuRvx6D/oFjURN2BHGhaDGfrfEtFVLm,iv:yx0QknUVNl8pk55pAV1ZcrXr2sGVk3MQpisEs1o5c1E=,tag:NR7ol9heQaOmYMC72ryGSQ==,type:str]
+netbird-priv:
+    ephemeral:
+        setup-key: ENC[AES256_GCM,data:WBahn612FjCwAbWpoX1TKdTmMKBpLG2CqKLVH5uIG3MsVTul,iv:r4eEnK8sRckwiMkPBRl8FKBNuQ4iTecs3DBKkVJiiRI=,tag:hhHijmLBbh26vrMROd6Eeg==,type:str]
+    permanent:
+        setup-key: ENC[AES256_GCM,data:Hm5/jp54MeDL/q7kyZH0YlEMbIdAjsQSHjQ85vnGg9j2enXR,iv:yw0Wq/nNR70Psv9FNNz1zSXaa3YB7lsDpyloO52XcFs=,tag:SZ3Srv1CHbfdX+Y5Xj2ZXg==,type:str]
+nextcloud:
+    nixos:
+        url: ENC[AES256_GCM,data:TWe1vQUc/3e46jDHYqfNHzNeldZHBw==,iv:p0cl4OvFZcdMsexNF32SLBXPRqprioAuHTcLS6L3+bM=,tag:9sdHYEiqun37XTS8okVIcw==,type:str]
+        username: ENC[AES256_GCM,data:oSuHds7gBt7n,iv:BrQSuXxTI4RonA1WGGsQxKtytxNwA2arlDIIoDPPVQE=,tag:bGbPsD5RX9XO6DAVtn4OOg==,type:str]
+        password: ENC[AES256_GCM,data:QraB1plEcr/rc10X9dOylfLWn78PNe56vBKIzEI=,iv:3cSQHpwS3jLgjS/RcqoVNYyTM+qH8Obak4IAw9NEvbU=,tag:XqDev4ce7sVZVYWGo8EVMw==,type:str]
 sops:
     kms: []
     gcp_kms: []
@@ -62,8 +71,8 @@ sops:
             XAFRbp73b+dQRAtltyr5X3xIs9TA3E0DtL1ULHGhyDWBmnIJreUY7FsPC/X5u6TI
             XxQ=
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2024-08-12T17:57:49Z"
-    mac: ENC[AES256_GCM,data:7KC9AaKJR6U5DpRurwp7zXXr58mBxa5PKWH01ugVp7f/h/fxctbe64qowS+OFM89xIeySE840IOpPVu8MFYOwwy/AQMWPESITElMEEe7KBAuGY51MWgZOsuaAL7u9xvOoj1BLYaONePNWTm1iLuMN0xQk8i6wC+sulnaDI6F0wY=,iv:Wst4/7s4RENIwFA4PrvNmZsXei8HryceYG6ij/H3W14=,tag:wlbQjlzytyTzQm3VVSJKvw==,type:str]
+    lastmodified: "2024-08-13T12:29:01Z"
+    mac: ENC[AES256_GCM,data:yxtbhXBh5vJSyG48/ROk4WIv/dnVz0gmqcptUQ81YYerXK+KVXYMiRmMpTD6nMtOhYwP2NEdT53CKQYyQOFH/8jWmkYc73p3MsyN8cJv0AXaZgkw1+lsFGOy2Pwu++7S5WeKbtwnZ14VkIC+aB+8r7Y1dw9tWwCNZczK38CyaGA=,iv:zSpuEbRdKmBw0En431I3I6JmXvm7yMG4WBsaJ0fwSYY=,tag:xje+F34A/hwqDIZ/cmtmig==,type:str]
     pgp: []
     unencrypted_suffix: _unencrypted
     version: 3.9.0

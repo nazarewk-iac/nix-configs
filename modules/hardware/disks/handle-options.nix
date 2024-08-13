@@ -147,17 +147,14 @@ in
       ];
       disko.devices.zpool = lib.pipe cfg.impermanence [
         (builtins.mapAttrs (name: imp: {
-          "${imp.zpool.name}".datasets."${imp.zfsPath}" = dumbMerge [
-            {
-              type = "zfs_fs";
+          "${imp.zpool.name}".datasets."${imp.zfsPath}" = {
+            type = "zfs_fs";
+            inherit (imp) mountpoint;
+            options = {
               inherit (imp) mountpoint;
-              options = {
-                inherit (imp) mountpoint;
-                "com.sun:auto-snapshot" = builtins.toJSON imp.snapshots;
-              };
-            }
-            imp.zfs
-          ];
+              "com.sun:auto-snapshot" = builtins.toJSON imp.snapshots;
+            };
+          };
         }))
         builtins.attrValues
         dumbMerge
@@ -167,15 +164,13 @@ in
       */
       environment.persistence = lib.pipe cfg.impermanence [
         (lib.attrsets.mapAttrs' (name: imp: {
-          name = imp.mountpoint;
-          value = dumbMerge [
-            {
-              enable = true;
-              hideMounts = true;
-              users.root.home = "/root";
-            }
-            imp.imp
-          ];
+          inherit name;
+          value = {
+            persistentStoragePath = imp.mountpoint;
+            enable = true;
+            hideMounts = true;
+            users.root.home = "/root";
+          };
         }))
       ];
     }

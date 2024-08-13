@@ -1,4 +1,4 @@
-{ lib, pkgs, config, utils, ... }:
+{ lib, pkgs, config, options, utils, ... }:
 let
   cfg = config.kdn.hardware.disks;
   hostname = config.networking.hostName;
@@ -216,12 +216,6 @@ in
         };
         options.snapshots = lib.mkOption {
           type = with lib.types; bool;
-        };
-        options.imp = lib.mkOption {
-          default = { };
-        };
-        options.zfs = lib.mkOption {
-          default = { };
         };
       }));
     };

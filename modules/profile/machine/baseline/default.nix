@@ -10,6 +10,11 @@ in
       type = lib.types.ints.unsigned;
       default = 0;
     };
+
+    netbird-priv.type = lib.mkOption {
+      type = lib.types.enum [ "ephemeral" "permanent" ];
+      default = "permanent";
+    };
   };
 
   imports = [
@@ -108,11 +113,13 @@ in
       services.resolved.llmnr = "true";
 
       kdn.development.shell.enable = true;
+      kdn.filesystems.zfs.enable = true;
       kdn.hardware.usbip.enable = true;
       kdn.hardware.yubikey.enable = true;
       kdn.networking.wireguard.enable = true;
+      kdn.programs.direnv.enable = true;
       kdn.security.disk-encryption.tools.enable = true;
-      kdn.security.secrets.enable = true;
+      kdn.security.secrets.enable = lib.mkDefault true;
       kdn.security.secure-boot.tools.enable = true;
 
       home-manager.users.root = { kdn.profile.user.kdn.osConfig = config.users.users.root; };
@@ -217,24 +224,34 @@ in
           #})
         ];
       });
+      environment.persistence."usr/state".directories = [
+        { directory = "/var/lib/netbird-priv"; user = "netbird-priv"; group = "netbird-priv"; mode = "0700"; }
+      ];
+    }
+    (lib.mkIf config.kdn.security.secrets.allowed {
       # Netbird automated login
-      sops.secrets."netbird-priv-setup-key" = {
-        sopsFile = "${self}/default.unattended.sops.yaml";
+      sops.secrets."netbird-priv/setup-key" = {
+        key = "netbird-priv/${cfg.netbird-priv.type}/setup-key";
+        owner = "netbird-priv";
+        group = "netbird-priv";
       };
       sops.templates."netbird-priv.env" = {
         owner = "netbird-priv";
         group = "netbird-priv";
         content = ''
-          NB_SETUP_KEY="${config.sops.placeholder."netbird-priv-setup-key"}"
+          NB_SETUP_KEY="${config.sops.placeholder."netbird-priv/setup-key"}"
         '';
       };
       systemd.services.netbird-priv.serviceConfig.EnvironmentFile = config.sops.templates."netbird-priv.env".path;
-      systemd.services.netbird-priv.serviceConfig.ExecStartPost = [
-        "-${lib.getExe config.services.netbird.clients.priv.wrapper} up"
-      ];
-      kdn.hardware.disks.impermanence."usr/state".imp.directories = [
-        { directory = "/var/lib/netbird-priv"; user = "netbird-priv"; group = "netbird-priv"; mode = "0700"; }
-      ];
+      systemd.services.netbird-priv.postStart = ''
+        nb='${lib.getExe config.services.netbird.clients.priv.wrapper}'
+        if "$nb" status 2>&1 | grep --quiet 'NeedsLogin' ; then
+          "$nb" up
+        fi
+      '';
+    })
+    {
+      kdn.programs.nextcloud-client-nixos.enable = config.kdn.security.secrets.allowed;
     }
   ]);
 }
