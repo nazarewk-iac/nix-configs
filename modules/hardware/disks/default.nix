@@ -221,9 +221,12 @@ in
     };
   };
 
-  config = lib.mkIf cfg.enable (lib.mkMerge [
+  config = lib.mkMerge [
+    (lib.mkIf (!cfg.enable) {
+      environment.persistence = lib.mkForce { };
+    })
     # the rest of configs are in ./handle-options.nix
-    {
+    (lib.mkIf cfg.enable {
       # enables systemd-cryptsetup-generator
       # see https://github.com/nazarewk/nixpkgs/blob/04f574a1c0fde90b51bf68198e2297ca4e7cccf4/nixos/modules/system/boot/luksroot.nix#L997-L1012
       boot.initrd.luks.forceLuksSupportInInitrd = true;
@@ -233,6 +236,6 @@ in
       kdn.filesystems.zfs.enable = true;
       kdn.security.disk-encryption.enable = true;
       boot.zfs.requestEncryptionCredentials = false;
-    }
-  ]);
+    })
+  ];
 }
