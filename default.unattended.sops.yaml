@@ -1,0 +1,69 @@
+netbird-priv-setup-key: ENC[AES256_GCM,data:ibhREVqx1K8s/Cn3MhuRvx6D/oFjURN2BHGhaDGfrfEtFVLm,iv:yx0QknUVNl8pk55pAV1ZcrXr2sGVk3MQpisEs1o5c1E=,tag:NR7ol9heQaOmYMC72ryGSQ==,type:str]
+sops:
+    kms: []
+    gcp_kms: []
+    azure_kv: []
+    hc_vault: []
+    age:
+        - recipient: age1mjjz7t44e777szehss7ywv2lpwu53mjnvzvrqsyt27apwpew6fsqxqt3cj
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSB2RHFGSDJZUE03L1VuSEpD
+            VHFkRS9hbVpPcExtRDBRN2xtVGpCdXRBK3prCmdOenI3ai9MMk1FRUsvcmFHSVZz
+            eWNucnVnUUxXeHZYM0NwL2Ntc2JzdlUKLS0tIEVmYndWQ2pZMWx3cnRhOHBweWlK
+            ei9Ec080V1YzSE9SaE5RdUtLUGowbWcKan97VH0EE91cUPn81rZv5m+XUtPxlrXA
+            0oqZboIbP8bKPUKXwMhlygEjGnx7HIw2O2qy3WiAKzzvjow8AEw40Q==
+            -----END AGE ENCRYPTED FILE-----
+        - recipient: age1n32gwqk35302kl4k2q2rwys2dzwasza596zknrfgp2nwvpt2rqms4xzc9n
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBuME42VG1NMkNEOUFxMzNs
+            dktLMldZeWovU0lhcDI4c1QwSnNrY3JrdEV3CldUamxsQjFPaHFWL0Fya09HOGpS
+            R0VGMXdJRzVyWGF3MHpRSm9iVjUrQncKLS0tIHRlaEZEaVFrNFl6QUh2N2FFN1B6
+            enIvRGl4OUNZU0RyUUxCSVZmVDVtWjgKTsGIwvnNfFSB5SLhOkK7FweMhLnkGGeR
+            l55u5/D2uXEqPy/Gfee6NoOrrDSsXIKqolX7MMzFywUm5OXGa0yMtw==
+            -----END AGE ENCRYPTED FILE-----
+        - recipient: age1apym9pk5y5nvem3whc0zm5apnjw9ycxp490kspdj7m45qs7zqacsnne7yr
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBmbjMzZXZ0blRNd1I3UmIw
+            R0w4Vy9OSTljVzZBdTJlUzRJOUZ0cHlJeDJBCmF3a0Z2WThwNmo1dDVLUDM4MmVK
+            QVJOZnVpbVd5SkIzRWFBSDlLbXVVaVkKLS0tIHYvVjYzN3FiL2NadXQwVFFabnZD
+            SFQ5RXh1SGVlV1NPYTJVcWJoWFlTL0kKScPTYx0jGK7//jgAum7rGR3mYCeFXLCi
+            8lTSAuJDbQgDwtLGePKZt5OTf8sDWOy8q8HukMBfDbCktOz9FiPpiQ==
+            -----END AGE ENCRYPTED FILE-----
+        - recipient: age1yubikey1qwlfxw5t9deg9a0lh6gqapfmwtncsgcvj4tzqslyxyf8gg2twnz7xjz0efa
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IHBpdi1wMjU2IDVyVnMrQSBBKzZuZGU5
+            aTMrcWF1YWtVRGFicC85U1oxSDh0bUxRd2x3U0VsYWVXa2ErdwozbHl6SXRnY2pw
+            YjFLMHJwZjE0aU1pUG9SS2hyS09CK08rVzNvYkRvOU4wCi0tLSB6Y1gzaG4zRms1
+            cjFZV0I2ZXZYWWxzYkt0dGJqR2J3UzVNQ3o3VVJaRDZrCt5zIFeEoa4UlLdVOcnB
+            PoPBcW5juJy/ERIrpmZA7CVA37nESYyp6HBDHldmEFt8btnqC3r5GxbLG5eiBSR9
+            Lto=
+            -----END AGE ENCRYPTED FILE-----
+        - recipient: age1yubikey1qf4cjj3ksn60z9hnezkwysvgcll7y3mfxzwzdrzgkfkqe9thmczg6xmmfz9
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IHBpdi1wMjU2IHAzZVNxUSBBM0ovaDZY
+            SU9lVllIOVIrd3Y4ZDdyby9vc082OENpRVplMVV4dnFCQ0kraQpRY3V2MkZhY2xT
+            QmlhcW1mVjh1eDg2aUdFakZ0L2dvOVlFWUZWTXkybTlZCi0tLSBWayszd2ZqR1ZB
+            czlRdUlzTERjRUpOcFl3R21zSFJVZkN2VUl4Tlh6VkM0Ch0IU31swb5JyV2FQh0D
+            09jKbcD/q2xQFp05RpNK8028exZG/iW1K7TryssfP2I88QEiSYTYkLK1Lk5ZBwzQ
+            EEY=
+            -----END AGE ENCRYPTED FILE-----
+        - recipient: age1yubikey1qfx38en49qfpyjf5hwn8dch6c0jvvtus29pvwgqlze35rraea00y6dw6rwv
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IHBpdi1wMjU2IGIzZVNwZyBBbkVmcUNU
+            UGs4ZGZVS0JXaXAzSjBkdHFXQ05RVEJXQXlDNGpUMHdQY0RmcAowTjZ4RkNaQlZw
+            Uy9LNHpiazU1Y0pCcjN1Rm5vYmhpVDVCOThqMERiZ09rCi0tLSBwN20rVGtMMTF0
+            THFSbXNURDk5VlZPTHVCcE9pYnF0V0NIUFliN3FWaDFJCptDc3YvlUhyN2cdFlqM
+            XAFRbp73b+dQRAtltyr5X3xIs9TA3E0DtL1ULHGhyDWBmnIJreUY7FsPC/X5u6TI
+            XxQ=
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2024-08-12T17:57:49Z"
+    mac: ENC[AES256_GCM,data:7KC9AaKJR6U5DpRurwp7zXXr58mBxa5PKWH01ugVp7f/h/fxctbe64qowS+OFM89xIeySE840IOpPVu8MFYOwwy/AQMWPESITElMEEe7KBAuGY51MWgZOsuaAL7u9xvOoj1BLYaONePNWTm1iLuMN0xQk8i6wC+sulnaDI6F0wY=,iv:Wst4/7s4RENIwFA4PrvNmZsXei8HryceYG6ij/H3W14=,tag:wlbQjlzytyTzQm3VVSJKvw==,type:str]
+    pgp: []
+    unencrypted_suffix: _unencrypted
+    version: 3.9.0

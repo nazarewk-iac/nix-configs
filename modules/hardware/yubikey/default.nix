@@ -72,12 +72,26 @@ in
         origin = cfg.appId;
       };
     }
-    {
+    (lib.mkIf config.kdn.security.secrets.enable {
       # SOPS+age config
-      kdn.security.secrets.enable = true;
       services.pcscd.enable = true;
       environment.systemPackages = with pkgs; [
         age-plugin-yubikey
+      ];
+      kdn.security.secrets.age.genScripts = [
+        /* TODO: watch out for yubikey support in upstream sops:
+            - https://github.com/Mic92/sops-nix/issues/377
+            - https://github.com/getsops/sops/pull/1465
+        (pkgs.writeShellApplication {
+          name = "kdn-sops-age-gen-keys-yubikey";
+          runtimeInputs = with pkgs; [
+            age-plugin-yubikey
+          ];
+          text = ''
+            age-plugin-yubikey --identity | grep '^AGE-PLUGIN-YUBIKEY-' || :
+          '';
+        })
+        */
       ];
       home-manager.sharedModules = [{
         /* TODO: remove the need to run below every time yubikey is changed
@@ -112,6 +126,6 @@ in
         #  (builtins.concatStringsSep "\n")
         #];
       }];
-    }
+    })
   ]);
 }

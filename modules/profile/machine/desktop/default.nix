@@ -25,7 +25,6 @@ in
 
       kdn.hardware.pipewire.enable = true;
       kdn.hardware.pipewire.useWireplumber = true;
-      kdn.hardware.yubikey.enable = true;
 
       kdn.headless.enableGUI = true;
 

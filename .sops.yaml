@@ -1,5 +1,7 @@
 keys:
   yubikeys:
+    # TODO: YubiKeys do not work due to https://github.com/getsops/sops/pull/1465 & https://github.com/Mic92/sops-nix/issues/377
+    #       sops-nix uses sops through go.mod at https://github.com/Mic92/sops-nix/blob/ab2d1ffeb5b85da2f6537beb2fe05da54276c261/go.mod#L8
     # see yubikey inventory at https://github.com/nazarewk-iac/nix-configs/blob/48f050928f2bbf29c6fbc63c53362f30300cdb1d/modules/hardware/yubikey/yubikeys.nix
     oams:
       serial: 16174038
@@ -32,16 +34,21 @@ keys:
     moss:
       age:
         - &ssh-moss age1n32gwqk35302kl4k2q2rwys2dzwasza596zknrfgp2nwvpt2rqms4xzc9n
+    etra:
+      age:
+        - &ssh-etra age1mjjz7t44e777szehss7ywv2lpwu53mjnvzvrqsyt27apwpew6fsqxqt3cj
 creation_rules:
   - path_regex: '.unattended\.sops\.[^.]+$'
     key_groups:
       - age:
-          - *ssh-oams
+          - *ssh-etra
           - *ssh-moss
-          - *yk-oams-unattended
-          - *yk-krul-unattended
-          - *yk-etra-unattended
+          - *ssh-oams
+          - *yk-etra-touch
+          - *yk-krul-touch
+          - *yk-oams-touch
   - key_groups:
       - age:
-          - *yk-oams-touch
+          - *yk-etra-touch
           - *yk-krul-touch
+          - *yk-oams-touch

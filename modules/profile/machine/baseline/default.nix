@@ -1,4 +1,4 @@
-{ lib, pkgs, config, ... }:
+{ lib, pkgs, config, self, ... }:
 let
   cfg = config.kdn.profile.machine.baseline;
 in
@@ -24,6 +24,8 @@ in
     {
       kdn.enable = true;
       kdn.profile.user.kdn.enable = true;
+
+      # systemd.sysusers.enable = true; # systemd-sysusers doesn't create normal users. You can currently only use it to create system users.
 
       # (modulesPath + "/installer/scan/not-detected.nix")
       hardware.enableRedistributableFirmware = true;
@@ -107,6 +109,7 @@ in
 
       kdn.development.shell.enable = true;
       kdn.hardware.usbip.enable = true;
+      kdn.hardware.yubikey.enable = true;
       kdn.networking.wireguard.enable = true;
       kdn.security.disk-encryption.tools.enable = true;
       kdn.security.secrets.enable = true;
@@ -135,21 +138,6 @@ in
         "vfat" # mount vfat-formatted boot partition
         "xhci_hcd" # usb disks
         "xhci_pci"
-      ];
-
-      services.netbird.package = pkgs.netbird.overrideAttrs (old: {
-        patches = old.patches or [ ] ++ [
-          #(pkgs.fetchpatch {
-          #  url = "https://github.com/netbirdio/netbird/pull/2026/commits/3f2eff10772aeda98799110cfceaf6712fc9690a.patch";
-          #  name = "route-read-envs.patch";
-          #  hash = "sha256-0Up0ongOvgCxEX2fKznd1ZVcJ6ars3i0j8e3bx978xw=";
-          #})
-        ];
-      });
-      services.netbird.clients.priv.port = 51819;
-      # TODO: implement automated login using `sops-nix`. through YubiKey?
-      kdn.hardware.disks.impermanence."usr/state".imp.directories = [
-        { directory = "/var/lib/netbird-priv"; user = "netbird-priv"; group = "netbird-priv"; mode = "0700"; }
       ];
 
       services.devmon.enable = false; # disable auto-mounting service devmon, it interferes with disko
@@ -217,6 +205,36 @@ in
       home-manager.sharedModules = [{
         kdn.development.git.enable = true;
       }];
+    }
+    {
+      services.netbird.clients.priv.port = 51819;
+      services.netbird.package = pkgs.netbird.overrideAttrs (old: {
+        patches = old.patches or [ ] ++ [
+          #(pkgs.fetchpatch {
+          #  url = "https://github.com/netbirdio/netbird/pull/2026/commits/3f2eff10772aeda98799110cfceaf6712fc9690a.patch";
+          #  name = "route-read-envs.patch";
+          #  hash = "sha256-0Up0ongOvgCxEX2fKznd1ZVcJ6ars3i0j8e3bx978xw=";
+          #})
+        ];
+      });
+      # Netbird automated login
+      sops.secrets."netbird-priv-setup-key" = {
+        sopsFile = "${self}/default.unattended.sops.yaml";
+      };
+      sops.templates."netbird-priv.env" = {
+        owner = "netbird-priv";
+        group = "netbird-priv";
+        content = ''
+          NB_SETUP_KEY="${config.sops.placeholder."netbird-priv-setup-key"}"
+        '';
+      };
+      systemd.services.netbird-priv.serviceConfig.EnvironmentFile = config.sops.templates."netbird-priv.env".path;
+      systemd.services.netbird-priv.serviceConfig.ExecStartPost = [
+        "${lib.getExe config.services.netbird.clients.priv.wrapper} up"
+      ];
+      kdn.hardware.disks.impermanence."usr/state".imp.directories = [
+        { directory = "/var/lib/netbird-priv"; user = "netbird-priv"; group = "netbird-priv"; mode = "0700"; }
+      ];
     }
   ]);
 }

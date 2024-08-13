@@ -138,6 +138,7 @@
                     kdn.security.disk-encryption.tools.enable = true;
                     kdn.security.secure-boot.tools.enable = true;
                     kdn.hardware.yubikey.enable = true;
+                    kdn.security.secrets.enable = true;
                     kdn.programs.direnv.enable = true;
 
                     environment.systemPackages = with pkgs; [
