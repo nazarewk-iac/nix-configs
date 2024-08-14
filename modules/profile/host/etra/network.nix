@@ -27,6 +27,15 @@ in
       type = with lib.types; listOf (enum cfg.networks);
     };
 
+    lan.static.networks = lib.mkOption {
+      type = with lib.types; listOf (enum cfg.networks);
+    };
+
+    reloadOnDropIns = lib.mkOption {
+      type = with lib.types; listOf str;
+      default = [ ];
+    };
+
     networks = lib.mkOption {
       internal = true;
       type = with lib.types; listOf str;
@@ -71,6 +80,10 @@ in
       networking.networkmanager.enable = false;
       systemd.network.enable = true;
 
+      environment.persistence."sys/data".directories = [
+        { directory = "/var/lib/systemd/network"; user = "systemd-network"; group = "systemd-network"; mode = "0755"; }
+      ];
+
       # https://gist.github.com/mweinelt/b78f7046145dbaeab4e42bf55663ef44
       # Enable forwarding between all interfaces, restrictions between
       # individual links are enforced by firewalling.
@@ -85,8 +98,31 @@ in
     (lib.mkIf cfg.debug {
       systemd.services.systemd-networkd.environment.SYSTEMD_LOG_LEVEL = "debug";
     })
+    (
+      let intervalSec = "1"; in {
+        systemd.paths."kdn-systemd-networkd-reload" = {
+          description = "reloads systemd-networkd on external configuration changes";
+          wantedBy = [ "systemd-networkd.service" ];
+          after = [ "systemd-networkd.service" ];
+          pathConfig.PathChanged = builtins.map (unit: "/etc/systemd/network/${unit}.d") cfg.reloadOnDropIns;
+          pathConfig.TriggerLimitIntervalSec = "${intervalSec}s";
+          pathConfig.TriggerLimitBurst = 1;
+        };
+        systemd.services."kdn-systemd-networkd-reload" = {
+          description = "reloads systemd-networkd on external configuration changes";
+          serviceConfig.Type = "oneshot";
+          script = ''
+            set -xeEuo pipefail
+
+            sleep ${intervalSec}
+            ${lib.getExe' pkgs.systemd "systemctl"} reload systemd-networkd.service
+          '';
+        };
+      }
+    )
     {
       # WAN
+      kdn.profile.host.etra.networking.reloadOnDropIns = [ "00-wan-bond.netdev" "00-wan.network" ];
       systemd.network.netdevs."00-wan-bond" = {
         # see https://wiki.archlinux.org/title/Systemd-networkd#Bonding_a_wired_and_wireless_interface
         netdevConfig.Kind = "bond";
@@ -115,14 +151,14 @@ in
         networkConfig.LinkLocalAddressing = "no";
       };
       # TODO: somehow rollback config after failing to connect to internet?
-      # TODO: reload systemd-networkd after it changes
       sops.templates = lib.pipe cfg.wan.static.networks [
         (builtins.map (name:
           let
             path = "/etc/systemd/network/00-wan.network.d/static-${name}.conf";
             net = ph.networks."${name}";
+            isIPv6 = lib.strings.hasInfix ":" net.addresses."${host}";
           in
-          {
+          [{
             name = path;
             value = {
               inherit path;
@@ -136,7 +172,32 @@ in
                 ''}
               '';
             };
-          }))
+          }]
+          ++ lib.lists.optionals (isIPv6 && net ? prefixes) (lib.pipe net.prefixes [
+            (lib.attrsets.mapAttrs (prefixName: prefix:
+              let
+                path = "/etc/systemd/network/00-wan.network.d/static-${name}-prefix-${prefixName}.conf";
+              in
+              {
+                name = path;
+                value = {
+                  inherit path;
+                  mode = "0644";
+                  content = ''
+                    [Network]
+                    Address=${prefix.addresses."${host}"}/${prefix.netmask}
+
+                    [IPv6Prefix]
+                    Prefix=${prefix.network}/${prefix.netmask}
+                    AddressAutoconfiguration=true
+                    OnLink=true
+                  '';
+                };
+              }))
+            builtins.attrValues
+          ])
+        ))
+        lib.lists.flatten
         builtins.listToAttrs
       ];
     })
@@ -155,6 +216,7 @@ in
     }
     {
       # LAN
+      kdn.profile.host.etra.networking.reloadOnDropIns = [ "00-lan.netdev" "00-lan.network" ];
       systemd.network.netdevs."00-lan" = {
         netdevConfig = {
           Kind = "bridge";

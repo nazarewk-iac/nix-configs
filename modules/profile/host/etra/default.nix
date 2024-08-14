@@ -51,7 +51,8 @@ in
       kdn.profile.host.etra.networking = {
         debug = true;
         wan.type = "static";
-        wan.static.networks = [ "lan-old-ipv4" ];
+        wan.static.networks = [ "lan-drek-ipv4" "through-drek-ipv6" ];
+        lan.static.networks = [ "lan-ipv4" "lan-ipv6" ];
       };
     }
   ]);

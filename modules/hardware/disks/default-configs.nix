@@ -72,6 +72,11 @@ in
         };
       }
       {
+        environment.persistence."sys/data" = {
+          directories = [
+            "/var/lib/systemd"
+          ];
+        };
         environment.persistence."sys/config" = {
           directories = [
             "/var/db/sudo/lectured"
