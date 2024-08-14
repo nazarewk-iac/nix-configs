@@ -47,5 +47,12 @@ in
       }
     )
     # TODO: setup the dedicated YubiKey with GPG
+    {
+      kdn.profile.host.etra.networking = {
+        debug = true;
+        wan.type = "static";
+        wan.static.networks = [ "lan-old-ipv4" ];
+      };
+    }
   ]);
 }

@@ -116,6 +116,23 @@ in
         }));
       default = [ ];
     };
+
+    placeholders = lib.mkOption {
+      description = ''converts `sops.placeholders` into object structure to iterate'';
+      readOnly = true;
+      type = with lib.types; anything;
+
+      # avoids `error: infinite recursion encountered` by not referencing `config.sops.templates` and re-implementing placeholder
+      default = lib.pipe config.sops.secrets [
+        builtins.attrNames
+        (builtins.map (name: lib.attrsets.setAttrByPath
+          (lib.strings.splitString "/" name)
+          # reimplements https://github.com/Mic92/sops-nix/blob/be0eec2d27563590194a9206f551a6f73d52fa34/modules/sops/templates/default.nix#L84-L84
+          "<SOPS:${builtins.hashString "sha256" name}:PLACEHOLDER>"))
+        # dumb merge
+        (builtins.foldl' lib.attrsets.recursiveUpdate { })
+      ];
+    };
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
@@ -167,6 +184,7 @@ in
         '';
     }
     (lib.mkIf cfg.allow {
+      sops.templates."placeholder.txt".content = ""; # fills-in `sops.placeholder`
       sops.secrets = lib.pipe cfg.files [
         builtins.attrValues
         (builtins.map (file: file.discovered.entries))
