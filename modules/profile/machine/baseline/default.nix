@@ -119,7 +119,6 @@ in
       kdn.networking.wireguard.enable = true;
       kdn.programs.direnv.enable = true;
       kdn.security.disk-encryption.tools.enable = true;
-      kdn.security.secrets.enable = lib.mkDefault true;
       kdn.security.secure-boot.tools.enable = true;
 
       home-manager.users.root = { kdn.profile.user.kdn.osConfig = config.users.users.root; };
@@ -230,16 +229,11 @@ in
     }
     (lib.mkIf config.kdn.security.secrets.allowed {
       # Netbird automated login
-      sops.secrets."netbird-priv/setup-key" = {
-        key = "netbird-priv/${cfg.netbird-priv.type}/setup-key";
-        owner = "netbird-priv";
-        group = "netbird-priv";
-      };
       sops.templates."netbird-priv.env" = {
         owner = "netbird-priv";
         group = "netbird-priv";
         content = ''
-          NB_SETUP_KEY="${config.sops.placeholder."netbird-priv/setup-key"}"
+          NB_SETUP_KEY="${config.sops.placeholder."default/netbird-priv/${cfg.netbird-priv.type}/setup-key"}"
         '';
       };
       systemd.services.netbird-priv.serviceConfig.EnvironmentFile = config.sops.templates."netbird-priv.env".path;
@@ -252,6 +246,17 @@ in
     })
     {
       kdn.programs.nextcloud-client-nixos.enable = config.kdn.security.secrets.allowed;
+    }
+    {
+      kdn.security.secrets.enable = lib.mkDefault true;
+      kdn.security.secrets.files."default" = {
+        sopsFile = "${self}/default.unattended.sops.yaml";
+      };
+      kdn.security.secrets.files."networks" = {
+        keyPrefix = "networks";
+        sopsFile = "${self}/default.unattended.sops.yaml";
+        sops.mode = "0444";
+      };
     }
   ]);
 }

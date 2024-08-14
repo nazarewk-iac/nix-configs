@@ -8,9 +8,9 @@ let
       coreutils
       nextcloud-client
     ];
-    runtimeEnv.url_path = config.sops.secrets."nextcloud/nixos/url".path;
-    runtimeEnv.username_path = config.sops.secrets."nextcloud/nixos/username".path;
-    runtimeEnv.password_path = config.sops.secrets."nextcloud/nixos/password".path;
+    runtimeEnv.url_path = config.sops.secrets."default/nextcloud/nixos/url".path;
+    runtimeEnv.username_path = config.sops.secrets."default/nextcloud/nixos/username".path;
+    runtimeEnv.password_path = config.sops.secrets."default/nextcloud/nixos/password".path;
     text = ''
       url="$(cat "$url_path")"
       username="$(cat "$username_path")"
@@ -64,8 +64,5 @@ in
         ];
       };
     };
-    sops.secrets."nextcloud/nixos/url" = { };
-    sops.secrets."nextcloud/nixos/username" = { };
-    sops.secrets."nextcloud/nixos/password" = { };
   };
 }

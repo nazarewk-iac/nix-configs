@@ -51,55 +51,127 @@ in
         })
       ];
     };
+    files = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule ({ name, ... }@fargs:
+        let
+          file = fargs.config;
+        in
+        {
+          options.namePrefix = lib.mkOption {
+            type = with lib.types; str;
+            default = fargs.name;
+          };
+          options.keyPrefix = lib.mkOption {
+            type = with lib.types; str;
+            default = "";
+            apply = value: lib.pipe value [
+              (lib.strings.removeSuffix "/")
+              (v: if v != "" then "${v}/" else v)
+            ];
+          };
+          options.sopsFile = lib.mkOption {
+            type = with lib.types; path;
+          };
+          options.path = lib.mkOption {
+            type = with lib.types; nullOr path;
+            default = null;
+          };
+          options.sops = lib.mkOption {
+            type = with lib.types; attrsOf anything;
+            default = { };
+          };
+          options.discovered.keys = lib.mkOption {
+            readOnly = true;
+            type = with lib.types; listOf str;
+            default =
+              let
+                pathsJson = pkgs.runCommand "converted-kdn-sops-nix-${file.namePrefix}.paths.json"
+                  { inherit (file) sopsFile; } ''
+                  ${lib.getExe pkgs.gojq} -cM --yaml-input '
+                    del(.sops) | [ paths(([type] - ["string"]) == []) | join("/") ]
+                  ' <"$sopsFile" >"$out"
+                '';
+              in
+              lib.pipe pathsJson [
+                builtins.readFile
+                builtins.fromJSON
+                (builtins.filter (lib.strings.hasPrefix file.keyPrefix))
+              ];
+          };
+          options.discovered.entries = lib.mkOption {
+            readOnly = true;
+            default = lib.pipe file.discovered.keys [
+              (builtins.map (path: {
+                name = "${file.namePrefix}/${lib.strings.removePrefix file.keyPrefix path}";
+                value = file.sops // {
+                  sopsFile = file.sopsFile;
+                  key = path;
+                } // (if file.path != null then {
+                  path = "${file.path}/${path}";
+                } else { });
+              }))
+              builtins.listToAttrs
+            ];
+          };
+        }));
+      default = [ ];
+    };
   };
 
-  config = lib.mkIf cfg.enable {
-    assertions = [
-      {
-        assertion = cfg.allow || (config.sops.secrets == { } && config.sops.templates == { });
-        message = "`sops.secrets` and `sops.templates` must be empty when `kdn.security.secrets.allow` is `false`";
-      }
-    ];
+  config = lib.mkIf cfg.enable (lib.mkMerge [
+    {
+      assertions = [
+        {
+          assertion = cfg.allow || (config.sops.secrets == { } && config.sops.templates == { });
+          message = "`sops.secrets` and `sops.templates` must be empty when `kdn.security.secrets.allow` is `false`";
+        }
+      ];
 
-    environment.systemPackages = (with pkgs; [
-      cfg.age.genScripts
-      (pkgs.callPackage ./sops/package.nix { })
-      age
-      ssh-to-age
-      ssh-to-pgp
-    ]);
+      environment.systemPackages = (with pkgs; [
+        cfg.age.genScripts
+        (pkgs.callPackage ./sops/package.nix { })
+        age
+        ssh-to-age
+        ssh-to-pgp
+      ]);
 
-    sops.defaultSopsFile = "${self}/default.unattended.sops.yaml";
-    # see https://github.com/Mic92/sops-nix/issues/65
-    # note: SSH key gets imported automatically
-    sops.gnupg.sshKeyPaths = [ ];
-    sops.age.sshKeyPaths = [ ];
-    sops.age.keyFile = "/var/lib/sops-nix/key.txt";
-    sops.age.generateKey = false;
-
-    kdn.security.secrets.age.genScripts = [
-      (pkgs.writeShellApplication {
-        name = "kdn-sops-age-gen-keys-ssh";
-        runtimeInputs = with pkgs; [
-          coreutils
-          ssh-to-age
-        ];
-        text = ''
-          if test -e /etc/ssh/ssh_host_ed25519_key; then
-            ssh-to-age -i /etc/ssh/ssh_host_ed25519_key -private-key
-          fi
+      # see https://github.com/Mic92/sops-nix/issues/65
+      # note: SSH key gets imported automatically
+      sops.gnupg.sshKeyPaths = [ ];
+      sops.age.sshKeyPaths = [ ];
+      sops.age.keyFile = "/var/lib/sops-nix/key.txt";
+      sops.age.generateKey = false;
+      kdn.security.secrets.age.genScripts = [
+        (pkgs.writeShellApplication {
+          name = "kdn-sops-age-gen-keys-ssh";
+          runtimeInputs = with pkgs; [
+            coreutils
+            ssh-to-age
+          ];
+          text = ''
+            if test -e /etc/ssh/ssh_host_ed25519_key; then
+              ssh-to-age -i /etc/ssh/ssh_host_ed25519_key -private-key
+            fi
+          '';
+        })
+      ];
+      system.activationScripts.setupSecrets.deps = [ "generateAgeKeys" ];
+      system.activationScripts.generateAgeKeys =
+        let
+          escapedKeyFile = lib.escapeShellArg config.sops.age.keyFile;
+        in
+        ''
+          mkdir -p $(dirname ${escapedKeyFile})
+          printf "Rendering %s\n" ${escapedKeyFile}
+          ${lib.getExe cfg.age.genScripts} >${escapedKeyFile}
         '';
-      })
-    ];
-    system.activationScripts.setupSecrets.deps = [ "generateAgeKeys" ];
-    system.activationScripts.generateAgeKeys =
-      let
-        escapedKeyFile = lib.escapeShellArg config.sops.age.keyFile;
-      in
-      ''
-        mkdir -p $(dirname ${escapedKeyFile})
-        printf "Rendering %s\n" ${escapedKeyFile}
-        ${lib.getExe cfg.age.genScripts} >${escapedKeyFile}
-      '';
-  };
+    }
+    (lib.mkIf cfg.allow {
+      sops.secrets = lib.pipe cfg.files [
+        builtins.attrValues
+        (builtins.map (file: file.discovered.entries))
+        (builtins.foldl' lib.attrsets.recursiveUpdate { })
+      ];
+    })
+  ]);
 }

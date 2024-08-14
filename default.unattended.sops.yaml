@@ -8,6 +8,57 @@ nextcloud:
         url: ENC[AES256_GCM,data:TWe1vQUc/3e46jDHYqfNHzNeldZHBw==,iv:p0cl4OvFZcdMsexNF32SLBXPRqprioAuHTcLS6L3+bM=,tag:9sdHYEiqun37XTS8okVIcw==,type:str]
         username: ENC[AES256_GCM,data:oSuHds7gBt7n,iv:BrQSuXxTI4RonA1WGGsQxKtytxNwA2arlDIIoDPPVQE=,tag:bGbPsD5RX9XO6DAVtn4OOg==,type:str]
         password: ENC[AES256_GCM,data:QraB1plEcr/rc10X9dOylfLWn78PNe56vBKIzEI=,iv:3cSQHpwS3jLgjS/RcqoVNYyTM+qH8Obak4IAw9NEvbU=,tag:XqDev4ce7sVZVYWGo8EVMw==,type:str]
+networks:
+    wan:
+        ipv4:
+            network: ENC[AES256_GCM,data:K0wMsTfRsteWJvMx,iv:AcZpjW42W3+LooakgJ/1CW6ByrsHfXwRF5FBxc0sybg=,tag:EggwgJD9T7C4cexN7godxA==,type:str]
+            netmask: ENC[AES256_GCM,data:hDM=,iv:Ln42pynATQ0j6oPXMhAZzRmDs4zyatCcnpppfqd1+ik=,tag:7kL7HZ8QGw+8gWmXkP7XCQ==,type:str]
+            gateway: ENC[AES256_GCM,data:BGUBk9AqkuhEkiUS,iv:I6H0/kOoLCmbacrRc4DLPSsArFos9ZJF6Ww3YsDfwe0=,tag:dcbaYZ3HmB0K3w45SFn7uA==,type:str]
+            addresses:
+                drek: ENC[AES256_GCM,data:FlpVZlsJbU6drCJF,iv:TTrSxZNa7k8T5Roq4k+SL1NjV7Ayfx6vL9QiACh9JB0=,tag:JQuOvHajV/6dW84xNrUYXA==,type:str]
+                etra: ENC[AES256_GCM,data:qcAiJOr9Rkhr6TSQ,iv:XQOpRfAIILPgdmRdNhZ8docrQsW/CYMpA8d00mszoBA=,tag:ssETBDEAzL9Q4vUHez5F0Q==,type:str]
+        ipv6:
+            network: ENC[AES256_GCM,data:U2OxkEV/tE/MuDHw7ow=,iv:+1cQfMDjfTiiwHhFSfLuGo0XMhmq0S13nBcheAG2ffc=,tag:89CASFEi5BpLTGO12I7Y/A==,type:str]
+            netmask: ENC[AES256_GCM,data:wrzs,iv:+nPBkQOKjsbieBcWh30s2mmke+PaVqI65z0kfDZVBSE=,tag:AG5ujwmrxEw6SYygWN/YqQ==,type:str]
+            gateway: ENC[AES256_GCM,data:+JhcQjnr0diYDGJyZn8=,iv:Sef3Muw7q8O/8dC819xtFfhB0uJXoQR+txjq9Nw4qtU=,tag:czVItKaxhh2aZ1nAdWQP5g==,type:str]
+            addresses:
+                drek: ENC[AES256_GCM,data:jkpj4E5LzVmpWJL8zhI=,iv:xr4YsY1rDTCcnSxH14N0rwa2jMrOL9FUZphDfN3U49M=,tag:+ufPv4Qc47Qro8s+knuwkA==,type:str]
+                etra: ENC[AES256_GCM,data:0Ao40i+Ern6bGlDUYKs=,iv:Oh1UPVGFzHsmkHe2+e3gSqdnWScMWFMhVTh6ebDfP2M=,tag:lpQrgg8Sd3F//Y0t0ApCjg==,type:str]
+            prefixes:
+                primary:
+                    network: ENC[AES256_GCM,data:btCiBKxwQFF1CUj/Hn+oSTY=,iv:+7ew27Abyg0v6Ln54G2HBozRUj3s6vYVzaU8QucjhtM=,tag:lS3iiNZenEjQ1Epb/bD30A==,type:str]
+                    netmask: ENC[AES256_GCM,data:49o=,iv:w5A5IcKp5uFxw2Gauk2OuQWxsWYa3amaPsUnbtQcGr8=,tag:gAeJE4aC9Ruk0wF6Uz+nnQ==,type:str]
+                    addresses:
+                        drek: ENC[AES256_GCM,data:EmRmw0CiCZoHSMoxGtMeP30=,iv:56OsMwWqQbQg/t8E1+UnH6L+RzjEXfa6oFcU9IDIC3s=,tag:tnYz/kWlF5rwq2spSsCFNg==,type:str]
+                        etra: ENC[AES256_GCM,data:mpazNLHZfPrFxF0Ld/ba+Ys=,iv:Hl39ZBOLl3Cj/MgYaa2I7gu7ES+bnYx8LwEXzOaDS38=,tag:WDHLYyzNnSI0zlmNerB0zw==,type:str]
+    lan-old:
+        ipv4:
+            network: ENC[AES256_GCM,data:Reu7fq4tkkXb0ZvX,iv:fvimVbJN9ELUAXOXoCZUtGCo9IohT3kMucNMZOMrfe0=,tag:GQyaimRoLdWVg+2V4I5bXA==,type:str]
+            netmask: ENC[AES256_GCM,data:jLo=,iv:A23YiUa8N94j98xkQqyTRCWGsMRSCNM8ePPAGLTx70s=,tag:Acdwskg/qRB0GgCHXaWOiQ==,type:str]
+            gateway: ENC[AES256_GCM,data:BF0Wf62NEVZ8NPC2,iv:1dSP3NJTUaBd7hYqGJtbjc+LPYknhXnJqC3tLixOc2Q=,tag:5hrOJ9r2qjQgVrkwCrd9AQ==,type:str]
+            addresses:
+                drek: ENC[AES256_GCM,data:hsCk1mqtrANJyedu,iv:jLa1qhPKM2gAUSKDdeyhyRvoAvT1aUgvrKvGijRoT8M=,tag:grFDhN4/h+bHNpaV1G15tQ==,type:str]
+                etra: ENC[AES256_GCM,data:CWxM73xquC0ojEdH,iv:dpFp42xPRZOyQVl6arKa1Xs+PDFz7/9Qu4h3MME7k3o=,tag:clzxz0Nd2yeLa0m6d3Pp2Q==,type:str]
+        ipv6:
+            network: ENC[AES256_GCM,data:hfEkze5mIu1Yv8C2/dAH/YE=,iv:zoIuaCjkzA0Rn50dFC0FpmReNFmVd890RgiAhkoBNxM=,tag:Yit3YrzGCjfA8Vj/XiF5LQ==,type:str]
+            netmask: ENC[AES256_GCM,data:FXA=,iv:Nz6mvDx0wBB0gdS++DbWj3aIpZtoRHcQsBfz0Vqt0fA=,tag:Je6Kshm2H2kZsyyLU+S6eQ==,type:str]
+            gateway: ENC[AES256_GCM,data:jofXZ/5+2tY3IB70y4KEH/F81Q==,iv:tfGjyyxYwEH50KqEMBstKaLDq70NQ9Vh3Qb9rhL8I4o=,tag:lOfZ1SWW1Sfx4Ox7F9qhBg==,type:str]
+            addresses:
+                drek: ENC[AES256_GCM,data:MjoXNeyJO7vG3VlhhrUiaU0tHQ==,iv:38TgJnQ2aX8NvqWO7piWoFxUsOeLGew/1yUPm0qjtFM=,tag:k3f3Jznr7rfI1YuNsdQhnw==,type:str]
+                etra: ENC[AES256_GCM,data:brnhzDlUNhqaHvd43JcekvYBqw==,iv:VBjHQrPEzGddY1lGvzwRKJRx94XyFPIe9B9zSL5Tcns=,tag:6qZyvpuAtLy1Mt8D9qo4Ww==,type:str]
+    lan:
+        ipv4:
+            network: ENC[AES256_GCM,data:dYxBMLOcqFXsxKrZ,iv:w0vyFVo+HDJocErhqoUGY0GwLeL6iagZ/2ss6W4PJvw=,tag:RaxHiV4HKrsP3pQ1iHVj7A==,type:str]
+            netmask: ENC[AES256_GCM,data:nj4=,iv:p/FGtouxHKZYGVuY8iNR61ePTscHa/ZgeQ7iCZ3krF8=,tag:XhuUP+Xhje1XrQh6eLbHeA==,type:str]
+            gateway: ENC[AES256_GCM,data:As3IIsCQyOjVkTvb,iv:mBoB6olBEJlaisPKzm1kTI+OOHTr7xMdZ6B3PTLC5w4=,tag:011n0FDqMozRLmSCj+JukQ==,type:str]
+            addresses:
+                etra: ENC[AES256_GCM,data:fD9FybFSG+DenHsB,iv:SVBHWddZ19cm4t+kOfTLzS025U9pZCXkANXkLU7XBxY=,tag:XqRfNEAjYRLau6xeYkmYxA==,type:str]
+        ipv6:
+            network: ENC[AES256_GCM,data:LKokOgWQ5vw+Wq6cPOsUYWE=,iv:L4/Ata1A36EdiRf40v93NzcfnKfnXnukSToZIsMCrmI=,tag:mIChP77D9zIzlHRe0h6pNQ==,type:str]
+            netmask: ENC[AES256_GCM,data:5x0=,iv:pRTAp3QvLi76tIl3oI+4b7F6Gbv1XKxEeUH4lZnNmbg=,tag:WNZowE7QxPcgSJztHeRX3Q==,type:str]
+            gateway: ENC[AES256_GCM,data:HuuMuzUz5USMlznX6xcj23w=,iv:6T2bmzbQ1LJN63XUTmvttaZK0uI7A86Ix97W94bXhk4=,tag:puxv/z/alVaDwoXKKCVv4w==,type:str]
+            addresses:
+                etra: ENC[AES256_GCM,data:PEhbzvQLkzz2ARvUty33RuY=,iv:RgfSCg/397kbHnmnfj3L6j/pKKnIsfyOkx0tHkROmsY=,tag:CebjpvsDiZ4oJWnAmAoAIA==,type:str]
 sops:
     kms: []
     gcp_kms: []
@@ -71,8 +122,8 @@ sops:
             XAFRbp73b+dQRAtltyr5X3xIs9TA3E0DtL1ULHGhyDWBmnIJreUY7FsPC/X5u6TI
             XxQ=
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2024-08-13T12:29:01Z"
-    mac: ENC[AES256_GCM,data:yxtbhXBh5vJSyG48/ROk4WIv/dnVz0gmqcptUQ81YYerXK+KVXYMiRmMpTD6nMtOhYwP2NEdT53CKQYyQOFH/8jWmkYc73p3MsyN8cJv0AXaZgkw1+lsFGOy2Pwu++7S5WeKbtwnZ14VkIC+aB+8r7Y1dw9tWwCNZczK38CyaGA=,iv:zSpuEbRdKmBw0En431I3I6JmXvm7yMG4WBsaJ0fwSYY=,tag:xje+F34A/hwqDIZ/cmtmig==,type:str]
+    lastmodified: "2024-08-14T11:13:30Z"
+    mac: ENC[AES256_GCM,data:unfRHOc6/1J+PNvn1ZTGyPS+is9Utucum9JUSD7ZXxTJ0Ccod73oNxw2LNpwS409uUi0Bf5/3IddGVIn4FSD/COCJVX3rVUxNi9KE31dFNC3y7zO2kdVFl3djX7TLspnwOZvXSGTzVVr3V+cjv68jXodmXu8w+9TlPlBJPDZpkQ=,iv:vvqO4T2CvnSLWCIJFjxx2BMFNYE1bXHOsAsEswIolAo=,tag:8dvc2yXUgi63L5TbK+HWRQ==,type:str]
     pgp: []
     unencrypted_suffix: _unencrypted
     version: 3.9.0
