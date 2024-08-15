@@ -88,7 +88,7 @@ in
                 pathsJson = pkgs.runCommand "converted-kdn-sops-nix-${file.namePrefix}.paths.json"
                   { inherit (file) sopsFile; } ''
                   ${lib.getExe pkgs.gojq} -cM --yaml-input '
-                    del(.sops) | [ paths(([type] - ["string"]) == []) | join("/") ]
+                    del(.sops) | [ paths(type == "string" and contains("type:str")) | join("/") ]
                   ' <"$sopsFile" >"$out"
                 '';
               in
@@ -174,11 +174,10 @@ in
       ];
       system.activationScripts.setupSecrets.deps = [
         "kdnGenerateAgeKeys"
-        "etc" # in case secrets get written to
-      ]
-      ++ lib.optional (config.environment.persistence != { }) "persist-files" # run after impermanence kicks in
-      ;
-      system.activationScripts.kdnGenerateAgeKeys =
+        "etc" # in case secrets get written to /etc
+      ];
+      system.activationScripts.kdnGenerateAgeKeys.deps = lib.optional (config.environment.persistence != { }) "persist-files";
+      system.activationScripts.kdnGenerateAgeKeys.text =
         let
           escapedKeyFile = lib.escapeShellArg config.sops.age.keyFile;
         in
