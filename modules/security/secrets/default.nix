@@ -172,8 +172,13 @@ in
           '';
         })
       ];
-      system.activationScripts.setupSecrets.deps = [ "generateAgeKeys" ];
-      system.activationScripts.generateAgeKeys =
+      system.activationScripts.setupSecrets.deps = [
+        "kdnGenerateAgeKeys"
+        "etc" # in case secrets get written to
+      ]
+      ++ lib.optional (config.environment.persistence != { }) "persist-files" # run after impermanence kicks in
+      ;
+      system.activationScripts.kdnGenerateAgeKeys =
         let
           escapedKeyFile = lib.escapeShellArg config.sops.age.keyFile;
         in
