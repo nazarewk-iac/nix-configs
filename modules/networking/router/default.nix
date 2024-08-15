@@ -5,6 +5,12 @@ let
   # TODO: make the IPv6 WAN accessible from LAN
   # TODO: make the IPv6 LAN pingable from WAN
 
+  /* TODO: make IPv6 forwarding work?
+      - https://matrix.to/#/!tCyGickeVqkHsYjWnh:nixos.org/$WCyFnH_26PJX4lcbTDohzInJv0PLJRQzPKt4qFMeOJo?via=nixos.org&via=matrix.org&via=tchncs.de
+      - https://git.sr.ht/~r-vdp/nixos-config/tree/f595662416269797ee2c917822133b5ae5119672/item/hosts/beelink/network.nix#L245
+      - rules in the snippet above
+  */
+
   wanInterfaces = lib.pipe cfg.interfaces [
     builtins.attrValues
     (builtins.filter (iface: lib.lists.any (r: r == iface.role) [ "wan" "wan-primary" ]))
@@ -112,11 +118,16 @@ in
       };
 
       # When true, systemd-networkd will remove routes that are not configured in .network files
-      systemd.network.config.networkConfig.ManageForeignRoutes = false;
+      systemd.network.config.networkConfig.IPv4Forwarding = true;
+      systemd.network.config.networkConfig.IPv6Forwarding = true;
     }
     {
       networking.firewall.enable = true;
       networking.nftables.enable = true;
+      networking.firewall.allowPing = true;
+      networking.firewall.logRefusedPackets = cfg.debug;
+      networking.firewall.logRefusedConnections = true;
+      networking.firewall.pingLimit = "60/minute burst 5 packets";
       networking.firewall.trustedInterfaces = [ "lan" ];
     }
     (lib.mkIf cfg.debug {
@@ -162,7 +173,12 @@ in
       };
       systemd.network.networks."00-wan" = {
         matchConfig.Name = "wan";
-        networkConfig.BindCarrier = builtins.map (iface: iface.name) wanInterfaces;
+        networkConfig = {
+          BindCarrier = builtins.map (iface: iface.name) wanInterfaces;
+          IPMasquerade = "ipv4";
+          IPv4Forwarding = true;
+          IPv6Forwarding = true;
+        };
         linkConfig.RequiredForOnline = "routable";
       };
     }
@@ -239,23 +255,33 @@ in
         networkConfig = {
           ConfigureWithoutCarrier = true;
           # IPv4
-          DHCP = "no";
-          DHCPServer = "yes";
+          DHCP = false;
+          DHCPServer = true;
           IPMasquerade = "ipv4";
           # IPv6
           # for DHCPv6-PD to work I would need to have `IPv6AcceptRA=true` on `wan`
           DHCPPrefixDelegation = false;
           #IPv6AcceptRA = false;
           IPv6SendRA = true;
-          IPv6LinkLocalAddressGenerationMode = "stable-privacy";
           IPv6PrivacyExtensions = true;
+          IPv6LinkLocalAddressGenerationMode = "stable-privacy";
+          # misc
+          MulticastDNS = true;
+          IPv4Forwarding = true;
+          IPv6Forwarding = true;
         };
         linkConfig = {
           RequiredForOnline = "routable";
+          Multicast = true;
         };
         dhcpServerConfig = {
           EmitDNS = true;
           PoolOffset = 32;
+        };
+        ipv6SendRAConfig = {
+          Managed = true;
+          EmitDNS = true;
+          UplinkInterface = "wan";
         };
       };
       sops.templates = lib.pipe cfg.lan.static.networks [
