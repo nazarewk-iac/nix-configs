@@ -2,6 +2,9 @@
 let
   cfg = config.kdn.networking.router;
 
+  # TODO: make the IPv6 WAN accessible from LAN
+  # TODO: make the IPv6 LAN pingable from WAN
+
   wanInterfaces = lib.pipe cfg.interfaces [
     builtins.attrValues
     (builtins.filter (iface: lib.lists.any (r: r == iface.role) [ "wan" "wan-primary" ]))
