@@ -3,15 +3,13 @@ let
   cfg = config.kdn.profile.host.etra;
 in
 {
-  imports = [
-    ./network.nix
-  ];
-
   options.kdn.profile.host.etra = {
-    enable = lib.mkEnableOption "enable etra host profile";
+    enable = lib.mkEnableOption "etra host profile";
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
+    # TODO: setup the dedicated YubiKey with GPG
+    # TODO: setup the dedicated YubiKey with FIDO2 authentication
     {
       # 32GB RAM total
       kdn.profile.machine.baseline.enable = true;
@@ -46,13 +44,16 @@ in
         };
       }
     )
-    # TODO: setup the dedicated YubiKey with GPG
     {
-      kdn.profile.host.etra.networking = {
+      kdn.networking.router = {
+        enable = true;
         debug = true;
         wan.type = "static";
         wan.static.networks = [ "lan-drek-ipv4" "through-drek-ipv6" ];
         lan.static.networks = [ "lan-ipv4" "lan-ipv6" ];
+        interfaces."enp1s0".role = "wan-primary";
+        interfaces."enp2s0".role = "lan";
+        interfaces."enp3s0".role = "lan";
       };
     }
   ]);

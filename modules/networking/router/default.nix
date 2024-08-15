@@ -1,6 +1,6 @@
 { config, pkgs, lib, modulesPath, self, ... }:
 let
-  cfg = config.kdn.profile.host.etra.networking;
+  cfg = config.kdn.networking.router;
 
   wanInterfaces = lib.pipe cfg.interfaces [
     builtins.attrValues
@@ -15,9 +15,12 @@ let
   host = config.networking.hostName;
 in
 {
-  options.kdn.profile.host.etra.networking = {
+  options.kdn.networking.router = {
+    enable = lib.mkEnableOption "systemd-networkd based router";
+
     debug = lib.mkOption {
       type = with lib.types; bool;
+      default = false;
     };
 
     wan.type = lib.mkOption {
@@ -70,11 +73,6 @@ in
   };
   config = lib.mkIf config.kdn.profile.host.etra.enable (lib.mkMerge [
     {
-      kdn.profile.host.etra.networking.interfaces."enp1s0".role = "wan-primary";
-      kdn.profile.host.etra.networking.interfaces."enp2s0".role = "lan";
-      kdn.profile.host.etra.networking.interfaces."enp3s0".role = "lan";
-    }
-    {
       networking.useNetworkd = true;
       networking.useDHCP = false;
       networking.networkmanager.enable = false;
@@ -94,6 +92,11 @@ in
 
       # When true, systemd-networkd will remove routes that are not configured in .network files
       systemd.network.config.networkConfig.ManageForeignRoutes = false;
+    }
+    {
+      networking.firewall.enable = true;
+      networking.nftables.enable = true;
+      networking.firewall.trustedInterfaces = [ "lan" ];
     }
     (lib.mkIf cfg.debug {
       systemd.services.systemd-networkd.environment.SYSTEMD_LOG_LEVEL = "debug";
@@ -122,7 +125,7 @@ in
     )
     {
       # WAN
-      kdn.profile.host.etra.networking.reloadOnDropIns = [ "00-wan-bond.netdev" "00-wan.network" ];
+      kdn.networking.router.reloadOnDropIns = [ "00-wan-bond.netdev" "00-wan.network" ];
       systemd.network.netdevs."00-wan-bond" = {
         # see https://wiki.archlinux.org/title/Systemd-networkd#Bonding_a_wired_and_wireless_interface
         netdevConfig.Kind = "bond";
@@ -216,7 +219,7 @@ in
     }
     {
       # LAN
-      kdn.profile.host.etra.networking.reloadOnDropIns = [ "00-lan.netdev" "00-lan.network" ];
+      kdn.networking.router.reloadOnDropIns = [ "00-lan.netdev" "00-lan.network" ];
       systemd.network.netdevs."00-lan" = {
         netdevConfig = {
           Kind = "bridge";
@@ -226,16 +229,53 @@ in
       systemd.network.networks."00-lan" = {
         matchConfig.Name = "lan";
         bridgeConfig = { };
-        # Disable address autoconfig when no IP configuration is required
-        #networkConfig.LinkLocalAddressing = "no";
-        linkConfig = {
-          # or "routable" with IP addresses configured
-          RequiredForOnline = "carrier";
+
+        networkConfig = {
+          # Disable address autoconfig when no IP configuration is required
+          LinkLocalAddressing = false;
+          ConfigureWithoutCarrier = true;
+          #DHCPPrefixDelegation = true;
+          #IPv6AcceptRA = false;
+          #IPv6SendRA = true;
+          DHCP = "no";
+          DHCPServer = "yes";
+          IPMasquerade = "ipv4";
         };
-        #addresses = [
-        #  { Address = "192.168.40.1/23"; }
-        #];
+        linkConfig = {
+          RequiredForOnline = "routable";
+        };
+        dhcpServerConfig = {
+          EmitDNS = true;
+          PoolOffset = 32;
+        };
       };
+      sops.templates = lib.pipe cfg.lan.static.networks [
+        (builtins.map (name:
+          let
+            path = "/etc/systemd/network/00-lan.network.d/static-${name}.conf";
+            net = ph.networks."${name}";
+            isIPv6 = lib.strings.hasInfix ":" net.addresses."${host}";
+          in
+          [{
+            name = path;
+            value = {
+              inherit path;
+              mode = "0644";
+              content = ''
+                [Network]
+                Address=${net.addresses."${host}"}/${net.netmask}
+                ${lib.strings.optionalString (!isIPv6) ''
+
+                [DHCPServer]
+                ServerAddress=${net.gateway}
+                ''}
+              '';
+            };
+          }]
+        ))
+        lib.lists.flatten
+        builtins.listToAttrs
+      ];
     }
     {
       systemd.network.networks = lib.pipe lanInterfaces [
