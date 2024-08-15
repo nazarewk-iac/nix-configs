@@ -192,18 +192,14 @@ in
       let timeout = cfg.initrd.emergency.rebootTimeout; in lib.mkIf (timeout > 0) {
         boot.initrd.systemd.services."emergency" = {
           overrideStrategy = "asDropin";
-          serviceConfig.ExecStartPre = lib.strings.escapeShellArgs [
-            "/bin/sh"
-            "-c"
-            ''
-              if ! /bin/systemd-ask-password --timeout=${builtins.toString timeout} \
-                --no-output --emoji=no \
-                "Are you there? Press enter to enter emergency shell."
-              then
-                /bin/systemctl reboot
-              fi
-            ''
-          ];
+          postStart = ''
+            if ! /bin/systemd-ask-password --timeout=${builtins.toString timeout} \
+              --no-output --emoji=no \
+              "Are you there? Press enter to enter emergency shell."
+            then
+              /bin/systemctl reboot
+            fi
+          '';
         };
       }
     )

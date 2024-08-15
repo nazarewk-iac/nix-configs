@@ -49,8 +49,15 @@ in
         enable = true;
         debug = true;
         wan.type = "static";
-        wan.static.networks = [ "lan-drek-ipv4" "through-drek-ipv6" ];
-        lan.static.networks = [ "lan-ipv4" "lan-ipv6" ];
+        wan.static.networks = [
+          "etra-through-drek-ipv4"
+          "etra-through-drek-ipv6"
+        ];
+        lan.static.networks = [
+          "ipv4"
+          "ipv6"
+          "etra-ipv6"
+        ];
         interfaces."enp1s0".role = "wan-primary";
         interfaces."enp2s0".role = "lan";
         interfaces."enp3s0".role = "lan";
