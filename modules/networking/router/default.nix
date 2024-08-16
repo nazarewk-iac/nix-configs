@@ -20,7 +20,7 @@ let
     (builtins.filter (iface: lib.lists.any (r: r == iface.role) [ "lan" ]))
   ];
 
-  ph.networks = config.kdn.security.secrets.placeholders.default.networks;
+  ph = config.kdn.security.secrets.placeholders.networking;
   host = config.networking.hostName;
 
   mkDropInDir = unit: "/etc/systemd/network/${unit}.d";
@@ -72,8 +72,8 @@ in
       default =
         let
           pathsJson = pkgs.runCommand "kdn-networks.json"
-            { inherit (config.kdn.security.secrets.files.networks) sopsFile; } ''
-            ${lib.getExe pkgs.gojq} -cM --yaml-input '.networks | with_entries(.value |= keys)' <"$sopsFile" >"$out"
+            { inherit (config.kdn.security.secrets.files.networking) sopsFile; } ''
+            ${lib.getExe pkgs.gojq} -cM --yaml-input '.networking.networks | with_entries(.value |= keys)' <"$sopsFile" >"$out"
           '';
         in
         lib.pipe pathsJson [
@@ -109,26 +109,38 @@ in
         { directory = "/var/lib/systemd/network"; user = "systemd-network"; group = "systemd-network"; mode = "0755"; }
       ];
 
-      # https://gist.github.com/mweinelt/b78f7046145dbaeab4e42bf55663ef44
-      # Enable forwarding between all interfaces, restrictions between
-      # individual links are enforced by firewalling.
-      boot.kernel.sysctl = {
-        "net.ipv6.conf.all.forwarding" = 1;
-        "net.ipv4.ip_forward" = 1;
+      systemd.network.config.networkConfig = {
+        IPv4Forwarding = true;
+        IPv6Forwarding = true;
+        IPv6PrivacyExtensions = true;
+        SpeedMeter = true;
+        SpeedMeterIntervalSec = 1;
+        # When true, systemd-networkd will remove routes that are not configured in .network files
+        #ManageForeignRoutes = false;
       };
-
-      # When true, systemd-networkd will remove routes that are not configured in .network files
-      systemd.network.config.networkConfig.IPv4Forwarding = true;
-      systemd.network.config.networkConfig.IPv6Forwarding = true;
     }
     {
-      networking.firewall.enable = true;
       networking.nftables.enable = true;
+      networking.firewall.enable = true;
       networking.firewall.allowPing = true;
-      networking.firewall.logRefusedPackets = cfg.debug;
+      networking.firewall.filterForward = true;
+      networking.firewall.logRefusedPackets = false;
       networking.firewall.logRefusedConnections = true;
       networking.firewall.pingLimit = "60/minute burst 5 packets";
       networking.firewall.trustedInterfaces = [ "lan" ];
+
+      networking.firewall.extraForwardRules = ''
+        meta iifname . meta oifname {
+          lan . wan,
+        } accept comment "allow traffic from internal networks to the WAN"
+
+        ${lib.optionalString config.networking.firewall.logRefusedConnections ''
+          # Refused IPv4 connections get logged in the input filter due to NAT.
+          # For IPv6 connections destined for some address in our LAN we end up
+          # in the forward filter instead, so we log them here.
+          tcp flags syn / fin,syn,rst,ack log level info prefix "refused connection: "
+        ''}
+      '';
     }
     (lib.mkIf cfg.debug {
       systemd.services.systemd-networkd.environment.SYSTEMD_LOG_LEVEL = "debug";
@@ -307,7 +319,7 @@ in
             isIPv6 = lib.strings.hasInfix ":" net.network;
             isIPv4 = !isIPv6;
           in
-          (lib.lists.optional (net ? network) {
+          {
             name = path;
             value = {
               inherit path;
@@ -315,37 +327,29 @@ in
               content = ''
                 [Network]
                 ${mkAddressLines net host}
+                ${mkPrefixAddressLines net host}
 
-                ${lib.strings.optionalString isIPv4 ''
+                ${lib.strings.optionalString (isIPv4 && net ? gateway) ''
                 [DHCPServer]
                 ServerAddress=${net.gateway}
                 ''}
+
+                ${lib.pipe net [
+                  (lib.attrsets.attrByPath [ "prefixes" ] { })
+                  builtins.attrValues
+                  (builtins.filter (prefix: lib.strings.hasInfix ":" prefix.network))
+                  (builtins.map ( prefix: ''
+                [IPv6Prefix]
+                Prefix=${prefix.network}/${prefix.netmask}
+                AddressAutoconfiguration=true
+                OnLink=true
+                Assign=true
+                  ''))
+                  (builtins.concatStringsSep "\n")
+                ]}
               '';
             };
-          }) ++ lib.lists.optionals (isIPv6 && net ? prefixes) (lib.pipe net.prefixes [
-            (lib.attrsets.mapAttrs (prefixName: prefix:
-              let
-                path = mkDropInPath "00-lan.network" "static-${name}-prefix-${prefixName}";
-              in
-              {
-                name = path;
-                value = {
-                  inherit path;
-                  mode = "0644";
-                  content = ''
-                    [Network]
-                    ${mkAddressLines prefix host}
-
-                    [IPv6Prefix]
-                    Prefix=${prefix.network}/${prefix.netmask}
-                    AddressAutoconfiguration=true
-                    OnLink=true
-                    Assign=true
-                  '';
-                };
-              }))
-            builtins.attrValues
-          ])
+          }
         ))
         lib.lists.flatten
         builtins.listToAttrs
