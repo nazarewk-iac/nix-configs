@@ -134,13 +134,13 @@ in
       systemd.services.systemd-networkd.environment.SYSTEMD_LOG_LEVEL = "debug";
     })
     (
-      let intervalSec = "3"; in {
+      let debounceSec = "3"; in {
         systemd.paths."kdn-systemd-networkd-reload" = {
           description = "reloads systemd-networkd on external configuration changes";
           wantedBy = [ "systemd-networkd.service" ];
           after = [ "systemd-networkd.service" ];
           pathConfig.PathChanged = builtins.map mkDropInDir cfg.reloadOnDropIns;
-          pathConfig.TriggerLimitIntervalSec = "${intervalSec}s";
+          pathConfig.TriggerLimitIntervalSec = "${debounceSec}s";
           pathConfig.TriggerLimitBurst = 1;
         };
         systemd.services."kdn-systemd-networkd-reload" = {
@@ -148,9 +148,10 @@ in
           serviceConfig.Type = "oneshot";
           script = ''
             set -xeEuo pipefail
+            PATH="${lib.makeBinPath (with pkgs; [ coreutils systemd ])}:$PATH"
 
-            sleep ${intervalSec}
-            ${lib.getExe' pkgs.systemd "systemctl"} reload systemd-networkd.service
+            sleep ${debounceSec}
+            systemctl try-reload-or-restart systemd-networkd.service
           '';
         };
         system.activationScripts.renderSecrets.deps = [ "kdnRouterCleanDropIns" ];
