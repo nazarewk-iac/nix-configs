@@ -248,11 +248,14 @@ in
       kdn.security.secrets.files."default" = {
         sopsFile = "${self}/default.unattended.sops.yaml";
       };
-      kdn.security.secrets.files."networks" = {
-        keyPrefix = "networks";
+      kdn.security.secrets.files."networking" = {
+        keyPrefix = "networking";
         sopsFile = "${self}/default.unattended.sops.yaml";
         sops.mode = "0444";
       };
+      environment.systemPackages = with pkgs; [
+        (pkgs.writers.writePython3Bin "kdn-net-anonymize" { } (builtins.readFile ./kdn-net-anonymize.py))
+      ];
     }
   ]);
 }
