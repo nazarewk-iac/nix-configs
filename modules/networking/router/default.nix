@@ -155,10 +155,24 @@ in
           '';
         };
         system.activationScripts.renderSecrets.deps = [ "kdnRouterCleanDropIns" ];
-        system.activationScripts.kdnRouterCleanDropIns = ''
-          echo 'Cleaning up managed systemd-networkd drop-ins...'
-          ${lib.getExe pkgs.findutils} /etc/systemd/network -mindepth 2 -maxdepth 2 -type f -name '${mkDropInFileName "*"}' -printf '> removed: %p\n' -delete
-        '';
+        system.activationScripts.kdnRouterCleanDropIns =
+          let
+            existing = lib.pipe config.sops.templates [
+              builtins.attrValues
+              (builtins.map (tpl: tpl.path))
+              (builtins.filter (lib.strings.hasPrefix "/etc/systemd/network"))
+              (builtins.map (path: [ "!" "-path" path ]))
+              lib.lists.flatten
+            ];
+          in
+          ''
+            echo 'Cleaning up managed systemd-networkd drop-ins...'
+            ${lib.getExe pkgs.findutils} \
+              /etc/systemd/network -mindepth 2 -maxdepth 2 \
+              -type f -name '${mkDropInFileName "*"}' \
+              ${lib.escapeShellArgs existing} \
+              -printf '> removed: %p\n' -delete
+          '';
       }
     )
     {
