@@ -35,6 +35,20 @@ in
           };
         }))
       ];
+      home-manager.sharedModules = [
+        (hm: {
+          home.persistence = lib.pipe cfg.impermanence [
+            (lib.attrsets.mapAttrs' (name: imp: {
+              inherit name;
+              value = {
+                persistentStoragePath = "${imp.mountpoint}${hm.config.home.homeDirectory}";
+                allowOther = true;
+              };
+            }))
+            (lib.mkIf cfg.enable)
+          ];
+        })
+      ];
     }
     {
       # LUKS header partitions

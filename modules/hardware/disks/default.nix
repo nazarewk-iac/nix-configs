@@ -224,6 +224,7 @@ in
   config = lib.mkMerge [
     (lib.mkIf (!cfg.enable) {
       environment.persistence = lib.mkForce { };
+      home-manager.sharedModules = [{ home.persistence = lib.mkForce { }; }];
     })
     # the rest of configs are in ./handle-options.nix
     (lib.mkIf cfg.enable {
