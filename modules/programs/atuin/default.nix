@@ -56,7 +56,12 @@ in
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       kdn.programs.atuin.users = [ "root" ];
-      home-manager.users = builtins.mapAttrs (_:_: { kdn.programs.atuin.enable = true; }) users;
+      home-manager.users = builtins.mapAttrs
+        (_:_: {
+          kdn.programs.atuin.enable = true;
+          home.persistence."usr/data".directories = [ ".local/share/atuin" ];
+        })
+        users;
     }
     (lib.mkIf cfg.enableZFSWorkaround {
       environment.systemPackages = with pkgs;[ litestream ];

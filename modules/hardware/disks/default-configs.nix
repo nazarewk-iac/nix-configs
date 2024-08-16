@@ -155,13 +155,9 @@ in
                - log in
                - run the first sync
            */
-          users.root.directories = [
-            ".local/share/atuin"
-          ];
           # TODO: move this out
           users.kdn.directories = [
             ".local/share/syncthing"
-            ".local/share/atuin"
             ".local/share/direnv"
             ".local/share/nix"
             ".local/share/containers"
