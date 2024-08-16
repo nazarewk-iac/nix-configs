@@ -163,6 +163,7 @@ in
             #    eval (${lib.getExe hm.config.programs.zellij.package} setup --generate-auto-start fish | string collect)
             #  end
             #'';
+            home.persistence."usr/cache".directories = [ ".cache/zellij" ];
           })
         ];
         security.sudo.extraConfig = sudoCfg;
