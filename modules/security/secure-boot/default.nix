@@ -9,7 +9,7 @@ in
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
-      kdn.security.secure-boot.tools.enable = true;
+      kdn.toolset.fs.encryption.enable = true;
     }
     {
       # Lanzaboote currently replaces the systemd-boot module.

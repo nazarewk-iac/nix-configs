@@ -12,14 +12,16 @@ in
       users.defaultUserShell = pkgs.fish;
 
       kdn.development.data.enable = true;
-      kdn.development.linux-utils.enable = true;
-      kdn.filesystems.base.enable = true;
       kdn.hardware.basic.enable = true;
+      kdn.programs.atuin.enable = true;
       kdn.programs.fish.enable = true;
       kdn.programs.handlr.enable = true;
       kdn.programs.nix-utils.enable = true;
       kdn.programs.zsh.enable = true;
-      kdn.programs.atuin.enable = true;
+      kdn.toolset.fs.enable = true;
+      kdn.toolset.fs.encryption.enable = true;
+      kdn.toolset.network.enable = true;
+      kdn.toolset.unix.enable = true;
 
       programs.command-not-found.enable = false;
 
@@ -61,7 +63,6 @@ in
         openssh
         wget
         curl
-        pstree
         tmux
 
         # Working with XDG files
@@ -74,30 +75,13 @@ in
         handlr-regex
         mimeo
 
-        killall
-        ncdu
-        htop
-        btop
-        bintools
-
-        inotify-tools
         jq
         git
-        bind # provides: dnssec-*, named-*, ...
-        dnsutils # another output of `pkgs.bind`, provides: dig, delv, nslookup, nsupdate
-        nmap
-        bandwhich
-        cryptsetup
-        file
-        tree
         openssl
 
         coreutils
         moreutils
         gnugrep
-
-        strace
-        lurk
 
         zip
 

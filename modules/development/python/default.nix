@@ -36,7 +36,7 @@ let
     (pkgs.http-prompt.override { python3Packages = ps; httpie = ps.httpie; })
   ]));
 
-  renamedBinariesOnly = fmt: pkg: pkgs.runCommand "${pkg.name}-renamed-to-${builtins.replaceStrings [ "%s" ] [ "BIN" ] fmt}"
+  renamedBinariesOnly = fmt: pkg: (pkgs.runCommand "${pkg.name}-renamed-to-${builtins.replaceStrings [ "%s" ] [ "BIN" ] fmt}"
     { buildInputs = [ ]; } ''
     set -x
     ${lib.toShellVar "srcDir" "${pkg}/bin"}
@@ -57,7 +57,7 @@ let
       ln -sfT "$file" "$out/bin/$renamed"
     done
     set +x
-  '';
+  '');
 
 in
 {
@@ -79,20 +79,19 @@ in
       })
     ];
 
-    environment.systemPackages = with pkgs; [
+    environment.systemPackages = (with pkgs; [
       # python software not available in `python.withPackages`
       pipenv
       poetry
 
-      (http-prompt.override (let pp = defaultPython.pkgs; in { python3Packages = pp; httpie = pp.httpie; }))
-      (mkPython defaultPython)
-      # full packages contain tkinter https://github.com/NixOS/nixpkgs/blob/7f5639fa3b68054ca0b062866dc62b22c3f11505/pkgs/top-level/all-packages.nix#L16633-L16634
-      (renamedBinariesOnly "%s.3.9" python39)
-      (renamedBinariesOnly "%s.3.10" python310)
-      (renamedBinariesOnly "%s.3.11" python311)
-      (renamedBinariesOnly "%s.3.12" python312)
+      # Note: higher `prio` value means lower prioritity during install
+      (lib.meta.setPrio 1 (mkPython defaultPython))
+      (lib.meta.setPrio 20 (renamedBinariesOnly "%s.3.12" python312))
+      (lib.meta.setPrio 21 (renamedBinariesOnly "%s.3.11" python311))
+      (lib.meta.setPrio 22 (renamedBinariesOnly "%s.3.10" python310))
+      (lib.meta.setPrio 23 (renamedBinariesOnly "%s.3.9" python39))
 
       graphviz
-    ];
+    ]);
   };
 }

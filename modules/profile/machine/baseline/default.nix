@@ -118,8 +118,6 @@ in
       kdn.hardware.yubikey.enable = true;
       kdn.networking.wireguard.enable = true;
       kdn.programs.direnv.enable = true;
-      kdn.security.disk-encryption.tools.enable = true;
-      kdn.security.secure-boot.tools.enable = true;
 
       home-manager.users.root = { kdn.profile.user.kdn.osConfig = config.users.users.root; };
 
