@@ -5,10 +5,11 @@ in
 {
   options.kdn.headless.base = {
     enable = lib.mkEnableOption "basic headless system configuration";
+    debugPolkit = lib.mkEnableOption "polkit debugging";
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
-    ({
+    {
       users.defaultUserShell = pkgs.fish;
 
       kdn.development.data.enable = true;
@@ -107,19 +108,16 @@ in
         "fs.inotify.max_queued_events" = 32768; # default: 16384
       };
 
-      security.polkit.enable = true;
 
       # `dbus` seems to be bugged when combined with DynamicUser services
       services.dbus.implementation = "broker";
-    } // (
-      let
-        debugPolkit = false;
-      in
-      {
-        security.polkit.debug = debugPolkit;
-        security.pam.u2f.settings.debug = debugPolkit;
-      }
-    ))
+    }
+    {
+      security.polkit.enable = true;
+
+      security.polkit.debug = cfg.debugPolkit;
+      security.pam.u2f.settings.debug = cfg.debugPolkit;
+    }
     (
       let
         sudoCfg = ''
