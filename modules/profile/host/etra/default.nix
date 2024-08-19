@@ -55,7 +55,6 @@ in
         ];
         lan.static.networks = [
           "ipv4"
-          "ipv6"
           "etra-ipv6"
         ];
         interfaces."enp1s0".role = "wan-primary";

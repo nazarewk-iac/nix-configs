@@ -31,7 +31,7 @@ let
   mkAddressLines = net: host: lib.pipe net [
     (lib.attrsets.attrByPath [ "addresses" host ] { })
     builtins.attrValues
-    (builtins.map (address: "Address=${address}/${net.netmask}"))
+    (builtins.map (address: "Address=${address}"))
     (builtins.concatStringsSep "\n")
   ];
   mkPrefixAddressLines = net: host: lib.pipe net [
@@ -124,7 +124,7 @@ in
       networking.firewall.enable = true;
       networking.firewall.allowPing = true;
       networking.firewall.filterForward = true;
-      networking.firewall.logRefusedPackets = false;
+      networking.firewall.logRefusedPackets = lib.mkDefault false;
       networking.firewall.logRefusedConnections = true;
       networking.firewall.pingLimit = "60/minute burst 5 packets";
       networking.firewall.trustedInterfaces = [ "lan" ];
@@ -132,6 +132,7 @@ in
       networking.firewall.extraForwardRules = ''
         meta iifname . meta oifname {
           lan . wan,
+          wan . lan,
         } accept comment "allow traffic from internal networks to the WAN"
 
         ${lib.optionalString config.networking.firewall.logRefusedConnections ''
@@ -144,15 +145,33 @@ in
     }
     (lib.mkIf cfg.debug {
       systemd.services.systemd-networkd.environment.SYSTEMD_LOG_LEVEL = "debug";
+      networking.firewall.logRefusedPackets = true;
       networking.firewall.rejectPackets = true;
 
       systemd.services.nftables =
         let
-          script = pkgs.writeShellScript "nftables-insert-logging" ''
-            export PATH="${lib.makeBinPath (with pkgs; [ nftables ])}:$PATH"
-            nft 'insert rule inet nixos-fw input icmpv6 type { echo-request, echo-reply } log level info prefix "input ICMPv6: "'
-            nft 'insert rule inet nixos-fw forward icmpv6 type { echo-request, echo-reply } log level info prefix "forward ICMPv6: "'
-          '';
+          script =
+            let
+              defaults = {
+                family = "inet";
+                table = "nixos-fw";
+                spec = "icmpv6 type { echo-request, echo-reply }";
+              };
+              entries = [
+                { chain = "input"; }
+                { chain = "forward"; }
+                { chain = "rpfilter"; }
+              ];
+            in
+            lib.pipe entries [
+              (builtins.map (entry:
+                let cur = defaults // entry; in with cur;
+                ''insert rule ${family} ${table} ${chain} ${spec} log level info prefix "[nftables ${family} ${table} ${chain}] ${spec}: "''))
+              lib.lists.flatten
+              (builtins.map (cmd: lib.escapeShellArgs [ (lib.getExe pkgs.nftables) cmd ]))
+              (builtins.concatStringsSep "\n")
+              (pkgs.writeShellScript "nftables-insert-logging")
+            ];
         in
         {
           serviceConfig.ExecReload = lib.mkAfter [ script ];
@@ -254,7 +273,6 @@ in
               content = ''
                 [Network]
                 ${mkAddressLines net host}
-                ${mkPrefixAddressLines net host}
                 ${lib.strings.optionalString (net ? gateway) ''
                 DNS=${net.gateway}
                 Gateway=${net.gateway}
@@ -302,7 +320,7 @@ in
           # IPv6
           # for DHCPv6-PD to work I would need to have `IPv6AcceptRA=true` on `wan`
           DHCPPrefixDelegation = false;
-          #IPv6AcceptRA = false;
+          IPv6AcceptRA = false;
           IPv6SendRA = true;
           IPv6PrivacyExtensions = true;
           IPv6LinkLocalAddressGenerationMode = "stable-privacy";
@@ -341,7 +359,6 @@ in
               content = ''
                 [Network]
                 ${mkAddressLines net host}
-                ${mkPrefixAddressLines net host}
 
                 ${lib.strings.optionalString (isIPv4 && net ? gateway) ''
                 [DHCPServer]
