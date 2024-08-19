@@ -236,8 +236,6 @@ in
         networkConfig = {
           BindCarrier = builtins.map (iface: iface.name) wanInterfaces;
           IPMasquerade = "ipv4";
-          IPv4Forwarding = true;
-          IPv6Forwarding = true;
         };
         linkConfig.RequiredForOnline = "routable";
       };
@@ -326,8 +324,6 @@ in
           IPv6LinkLocalAddressGenerationMode = "stable-privacy";
           # misc
           MulticastDNS = true;
-          IPv4Forwarding = true;
-          IPv6Forwarding = true;
         };
         linkConfig = {
           RequiredForOnline = "routable";
@@ -366,7 +362,7 @@ in
                 ''}
 
                 ${lib.pipe net [
-                  (lib.attrsets.attrByPath [ "prefixes" ] { })
+                  (lib.attrsets.attrByPath [ "advertised-prefixes" ] { })
                   builtins.attrValues
                   (builtins.filter (prefix: lib.strings.hasInfix ":" prefix.network))
                   (builtins.map ( prefix: ''
