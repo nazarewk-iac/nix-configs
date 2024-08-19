@@ -51,6 +51,53 @@ in
       ];
     }
     {
+      /* `root` user fixes since:
+        - `systemd --user` services do not work for `root`? https://github.com/nix-community/home-manager/blob/4fcd54df7cbb1d79cbe81209909ee8514d6b17a4/modules/systemd.nix#L293-L296
+      */
+      environment.persistence = lib.pipe cfg.impermanence [
+        (lib.attrsets.mapAttrs' (name: _: {
+          inherit name;
+          value = {
+            users.root =
+              let
+                hm = config.home-manager.users.root.home.persistence."${name}";
+                defaultPerms = { user = "root"; group = "root"; mode = "0700"; };
+                dirConfig = defaultPerms // { inherit defaultPerms; };
+              in
+              {
+                directories = builtins.map
+                  (dir: dirConfig // { directory = if builtins.isString dir then dir else dir.directory; })
+                  (hm.directories or [ ]);
+                files = builtins.map
+                  # hm files are always strings
+                  (file: { inherit file; parentDirectory = dirConfig; })
+                  (hm.files or [ ]);
+              };
+          };
+        }))
+      ];
+      # clean out home manager activation since it's not needed for root
+      home-manager.users.root.home.activation = lib.pipe [
+        "cleanEmptyLinkTargets"
+        "createAndMountPersistentStoragePaths"
+        "unmountPersistentStoragePaths"
+        "runUnmountPersistentStoragePaths"
+        "createTargetFileDirectories"
+      ] [
+        (builtins.map (name: {
+          inherit name;
+          value = {
+            after = lib.mkDefault [ ];
+            before = lib.mkDefault [ ];
+            data = lib.mkForce ''
+              # `${name}` cleared by `kdn.hardware.disks` for `root`
+            '';
+          };
+        }))
+        builtins.listToAttrs
+      ];
+    }
+    {
       # LUKS header partitions
       kdn.hardware.disks.devices = lib.pipe cfg.luks.volumes [
         builtins.attrValues
