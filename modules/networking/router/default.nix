@@ -34,12 +34,6 @@ let
     (builtins.map (address: "Address=${address}"))
     (builtins.concatStringsSep "\n")
   ];
-  mkPrefixAddressLines = net: host: lib.pipe net [
-    (lib.attrsets.attrByPath [ "prefixes" ] { })
-    builtins.attrValues
-    (builtins.map (prefix: mkAddressLines prefix host))
-    (builtins.concatStringsSep "\n")
-  ];
 in
 {
   options.kdn.networking.router = {
@@ -148,34 +142,28 @@ in
       networking.firewall.logRefusedPackets = true;
       networking.firewall.rejectPackets = true;
 
-      systemd.services.nftables =
+      networking.nftables.tables =
         let
-          script =
-            let
-              defaults = {
-                family = "inet";
-                table = "nixos-fw";
-                spec = "icmpv6 type { echo-request, echo-reply }";
-              };
-              entries = [
-                { chain = "input"; }
-                { chain = "forward"; }
-                { chain = "rpfilter"; }
-              ];
-            in
-            lib.pipe entries [
-              (builtins.map (entry:
-                let cur = defaults // entry; in with cur;
-                ''insert rule ${family} ${table} ${chain} ${spec} log level info prefix "[nftables ${family} ${table} ${chain}] ${spec}: "''))
-              lib.lists.flatten
-              (builtins.map (cmd: lib.escapeShellArgs [ (lib.getExe pkgs.nftables) cmd ]))
-              (builtins.concatStringsSep "\n")
-              (pkgs.writeShellScript "nftables-insert-logging")
-            ];
+          mkTable = family: priority: chains: lib.pipe chains [
+            (builtins.map (hook: ''
+              chain ${hook} {
+                type filter hook ${hook} priority ${priority}; policy accept;
+                icmpv6 type { echo-request, echo-reply } log level info prefix "[ICMPv6:echo@${family}@${hook}]: "
+              }
+            ''))
+            (builtins.concatStringsSep "\n")
+            (content: { inherit family content; })
+          ];
         in
         {
-          serviceConfig.ExecReload = lib.mkAfter [ script ];
-          serviceConfig.ExecStart = lib.mkAfter [ script ];
+          icmp6-logging-ip6 = mkTable "ip6" "filter" [
+            # "ingress" # doesn't seem to work
+            "prerouting"
+            "input"
+            "forward"
+            "output"
+            "postrouting"
+          ];
         };
     })
     (
