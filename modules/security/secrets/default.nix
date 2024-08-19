@@ -72,7 +72,7 @@ in
           options.sopsFile = lib.mkOption {
             type = with lib.types; path;
           };
-          options.path = lib.mkOption {
+          options.basePath = lib.mkOption {
             type = with lib.types; nullOr path;
             default = null;
           };
@@ -106,8 +106,8 @@ in
                 value = file.sops // {
                   sopsFile = file.sopsFile;
                   key = path;
-                } // (if file.path != null then {
-                  path = "${file.path}/${path}";
+                } // (if file.basePath != null then {
+                  path = "${file.basePath}/${path}";
                 } else { });
               }))
               builtins.listToAttrs

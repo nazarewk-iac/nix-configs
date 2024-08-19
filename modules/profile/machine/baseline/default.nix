@@ -249,11 +249,49 @@ in
       kdn.security.secrets.files."networking" = {
         keyPrefix = "networking";
         sopsFile = "${self}/default.unattended.sops.yaml";
+        basePath = "/run/configs";
         sops.mode = "0444";
+      };
+      system.activationScripts.kdnSopsNixFixupSecretsPermissions = {
+        deps = [ "setupSecrets" ];
+        text = ''
+          chmod -R go+r /run/configs
+        '';
       };
       environment.systemPackages = with pkgs; [
         (pkgs.writers.writePython3Bin "kdn-net-anonymize" { } (builtins.readFile ./kdn-net-anonymize.py))
       ];
     }
+    (
+      let
+        anonymize = (pkgs.writers.writePython3Bin "kdn-net-anonymize" { } (builtins.readFile ./kdn-net-anonymize.py));
+        anonymizeClipboard = pkgs.writeShellApplication {
+          name = "kdn-net-anonymize-clipboard";
+          runtimeInputs = with pkgs; [
+            anonymize
+            wl-clipboard
+            libnotify
+          ];
+          text = ''
+            tempdir="$(mktemp /tmp/kdn-net-anonymize-clipboard.XXXXXX)"
+            trap 'rm -rf "$tempdir" || :' EXIT
+            wl-paste | kdn-net-anonymize 2>"$tempdir" | wl-copy
+            notify-send --expire-time=3000 "kdn-net-anonymize-clipboard" "$(cat "$tempdir")"
+          '';
+        };
+      in
+      {
+        environment.systemPackages = [ anonymize ]
+          ++ lib.lists.optional config.kdn.headless.enableGUI anonymizeClipboard
+        ;
+        home-manager.sharedModules = [{
+          wayland.windowManager.sway = {
+            config.keybindings = with config.kdn.desktop.sway.keys; {
+              "${ctrl}+${super}+A" = "exec '${lib.getExe anonymizeClipboard}'";
+            };
+          };
+        }];
+      }
+    )
   ]);
 }
