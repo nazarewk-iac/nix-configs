@@ -144,6 +144,20 @@ in
     }
     (lib.mkIf cfg.debug {
       systemd.services.systemd-networkd.environment.SYSTEMD_LOG_LEVEL = "debug";
+      networking.firewall.rejectPackets = true;
+
+      systemd.services.nftables =
+        let
+          script = pkgs.writeShellScript "nftables-insert-logging" ''
+            export PATH="${lib.makeBinPath (with pkgs; [ nftables ])}:$PATH"
+            nft 'insert rule inet nixos-fw input icmpv6 type { echo-request, echo-reply } log level info prefix "input ICMPv6: "'
+            nft 'insert rule inet nixos-fw forward icmpv6 type { echo-request, echo-reply } log level info prefix "forward ICMPv6: "'
+          '';
+        in
+        {
+          serviceConfig.ExecReload = lib.mkAfter [ script ];
+          serviceConfig.ExecStart = lib.mkAfter [ script ];
+        };
     })
     (
       let debounceSec = "3"; in {
