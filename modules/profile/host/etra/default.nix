@@ -59,7 +59,8 @@ in
         ];
         wan.address = with addressing; [
           ipv4.address.drek.etra.etra
-          ipv6.address.drek.etra.etra
+          ipv6.address.drek.etra.local.etra
+          ipv6.address.drek.etra.public.etra
         ];
 
         lan.dhcpServer = with addressing; ipv4.address.etra.lan.etra;

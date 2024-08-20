@@ -23,7 +23,10 @@ networking:
                 drek:
                     prefix: ENC[AES256_GCM,data:/cZH3rcwFd4rMCOuRhJE+ymhPRDH,iv:snnjQ9Dc1aCjpexr++mHnFxye/1XsGJWD5FGZCpFieg=,tag:zt1XGUXBIYLOH56wl9UvCQ==,type:str]
                     etra:
-                        etra: ENC[AES256_GCM,data:QxwwnTdxUZv1YeqK5sB5FNJRMtQX,iv:3dntWqYW+SIkUxdgk1Ou+D6roeTsNpeWWS6a9vqINTw=,tag:5kQ9pAIH1sZ5LV8vlAPQ5Q==,type:str]
+                        local:
+                            etra: ENC[AES256_GCM,data:AN4p5QZrY+q6XVzL/qV1CK1Yc7kM,iv:rv2MfFwuXp7Dt2wLtO3KQCUS9lfUiH8s9C8Eg408dMQ=,tag:jLOCam8T8O2jFbP2uyCWuQ==,type:str]
+                        public:
+                            etra: ENC[AES256_GCM,data:q0HECAZCVP6JZfYZVlJdXhiU9PQ3,iv:HLCOMSu8T9SXXeQCkoaDrQO87SiGGDr8KtkKroj2O6E=,tag:8LhdzGLYZ/apVhMUtNrOlw==,type:str]
                 etra:
                     prefix: ENC[AES256_GCM,data:B9lofv+prRAVGTqavTM20bAcqLbk,iv:0oydH+5TKOpNdfhSpTS6r2pwnGoCQpFwUft7KiJBb78=,tag:hfG+9Gw8tmo2rqU9YakC9w==,type:str]
                     lan: ENC[AES256_GCM,data:6Cc2z+ZvZA7Drs5NAS/Cz0y6tNcC,iv:r1I0hmG8tvnAGb8h77Rgu/e1ipdrmo4YgGZXZmd1sAs=,tag:XgXatTw57wNH2FbWrUlXLQ==,type:str]
@@ -37,8 +40,12 @@ networking:
                     uplink: ENC[AES256_GCM,data:wT8kCd2bj6uuPO+Hub7Z4HNC,iv:uDpV/IbGdA1clcSp/5s2PdXfVxJ3Jppy0LR408dxHMo=,tag:aiqclhCZyP4S8epQGqK9/g==,type:str]
                 drek:
                     etra:
-                        drek: ENC[AES256_GCM,data:kjLL5eNwsVCYCxSf2GMXCobg61hzrQ==,iv:3eOp/E5x9dCkGSpzpH4+axrcYmhtEmf2KxpjqH3LaAg=,tag:f3i7dXXmkNe57mCt2ADHNA==,type:str]
-                        etra: ENC[AES256_GCM,data:Vk7ZgbW+3Cm59SkTf4Pz3CSH2aSboA==,iv:thnT1ZbZYCCNJzHDvC84ejFvafLLjzp9Iz/KRRBX44I=,tag:Q5ifBi5Pvpc3QIAk4YCiqg==,type:str]
+                        local:
+                            drek: ENC[AES256_GCM,data:mXu1n0ocaCymd+8oU0I7SqpaoiBUNw==,iv:JOK7F2V+Htf8+Jbsra7nKdWa0vWucikuqVIN2Ft4qB4=,tag:3HHzN2m7ZdAB/4e8P3SWhw==,type:str]
+                            etra: ENC[AES256_GCM,data:hxuai2FK+PIEUQVfpkMGahdQixcMGA==,iv:U2k0HTpltrSrHSKfjNWx/oi/bkOgZVGy7zUbXm2ZmWU=,tag:5et3ojS4BSxW0SkDGAk9gQ==,type:str]
+                        public:
+                            drek: ENC[AES256_GCM,data:G24P5797/OdkM9wIAdfCtXqwiAwbqQ==,iv:3LFitudt034mJVGk+zzAU3191x3s864h9diMX6hLJG4=,tag:bEXOvjpC0gNHpU8IJ+9Edg==,type:str]
+                            etra: ENC[AES256_GCM,data:25fHlKY+troQ2+P2+4LWYb6osnLDrg==,iv:VEQoxZ06g99RKyQr0IvNBrLjo7cUmV1ZO2heuJSEC+Y=,tag:X8ZUUS43Vb/FN2vrICt38A==,type:str]
                 etra:
                     lan:
                         etra: ENC[AES256_GCM,data:g4q6q5cQbcNAJ/iiXqyfdnVSJK9mzw==,iv:e7Q1mv9keeOSGATwOqfDKPtdhlbbqvhK90dSjABq/HY=,tag:YPZs04VBsEPPhQwcWQr8fw==,type:str]
@@ -138,8 +145,8 @@ sops:
             KA1d/siPvuMbTYP/nSreB4Ru6oByuLA2MEfof221aqApf5sM44CL52TS9X4VtPRe
             +S4=
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2024-08-20T08:16:33Z"
-    mac: ENC[AES256_GCM,data:FsBQ2cKgmk/uiKbTFftQGFbciVFR58/eQdEKW1NLL8AnToSPTXBQV82k3Fc7wGnx9KpaWD57jpqwpboVzqmiLh+RWlVR1MW8hxet1xWMod0yOX2T9TS8yR3dwqENAQkB/AB9cgoOMlZTO9mVRM9vB3BTLi4bt/HyT5YWMEv25GY=,iv:ShKMExThduhAW/QM0UpGJ+YDAVBZ6wDyvXJcHlWGab8=,tag:JGU9xtkn6y23IqJKXKEodg==,type:str]
+    lastmodified: "2024-08-20T09:14:19Z"
+    mac: ENC[AES256_GCM,data:QsgTEMLr1MLXC95PriW19vKUAPBm8y7L4A8rWZCwybVSxjUFexJyknea9bS1sx0IsLHFUVZyKy3D3FJ7XFJ+UmzZaq3GXBogomLNefPVs0OOEPltGHlY+sDfNADNkm9w+Bk107qKY2yhNEVGC+/sBvakqJz9VG62PkxqISJA+ss=,iv:hPeBzZICVolH8qBIv4rJ4FOZ6Dh484oJ1e6w0RMVssw=,tag:tiuUVuDp3Jcug06cpAdTdA==,type:str]
     pgp: []
     unencrypted_suffix: _unencrypted
     version: 3.9.0
