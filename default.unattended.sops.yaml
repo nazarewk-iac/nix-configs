@@ -14,100 +14,62 @@ networking:
         ipv6-public-01-all:
             pattern: ENC[AES256_GCM,data:1cEakt4bMPrG05eue5I=,iv:QKNcJKyVXnVkDBYRmaTDG9sHk5nySXrYEPaCu09JOXU=,tag:VSlLEFfxL8ZilG80oV2WhQ==,type:str]
             replacement: ENC[AES256_GCM,data:2/h3no7V3AmQDQ==,iv:gAbr1dVkAeqPEt5iQBnu7RCd5iaujHPwI50VC10N/AI=,tag:HKczAr/FTK366jEH+v+3dg==,type:str]
-    networks:
-        lan:
-            etra-ipv6:
-                addresses:
+    addressing:
+        ipv6:
+            network:
+                isp:
+                    uplink: ENC[AES256_GCM,data:OKYbHPfyv6T4A/ly6lB2Ws8=,iv:86iV1EGIiTCO1E1yXtTjhSwXeufMWR/X3a7N36iCst8=,tag:7aAHpIjylrejc21HV8tUJQ==,type:str]
+                    prefix: ENC[AES256_GCM,data:sfJ89kuhruK4Rt+xIjCQXcmZUw==,iv:5UmO6tUpQ8fkECPbeHbRlpOBohuSob8PsEVA124ATcA=,tag:/Qp9kO1ovw7kfSP04MrqNg==,type:str]
+                drek:
+                    prefix: ENC[AES256_GCM,data:/cZH3rcwFd4rMCOuRhJE+ymhPRDH,iv:snnjQ9Dc1aCjpexr++mHnFxye/1XsGJWD5FGZCpFieg=,tag:zt1XGUXBIYLOH56wl9UvCQ==,type:str]
                     etra:
-                        "0": ENC[AES256_GCM,data:kpzSwatft7QflsGvDIPKkSyJQVjY0Q==,iv:n7MsXAPjwDLFt0fTGdLdf3iuiNLjsya6vDCDYboWXD8=,tag:F5gEN/K2yJzsqEijNe/aqA==,type:str]
-                gateway: ENC[AES256_GCM,data:ZpTpOqwt14aQ7VhueUJHgp899A==,iv:MAl6pHXLJagZ7mbcxygLyf9nr7ZyAdjfJY7x99mhN14=,tag:YjI8mKbvw1RL4I1l2G57bQ==,type:str]
-                netmask: ENC[AES256_GCM,data:iL4=,iv:LuD6BXBSLeHN8Obhy9th8lmZeBdck5MpTAF4fPdl+tc=,tag:hkGGhg65c1uTiXqbhyKlWA==,type:str]
-                network: ENC[AES256_GCM,data:Y0+1k5QJbDLBP4cGt8pts8wD9A==,iv:66e0haaW02hIai+RyUcxpGw+G4O6FnRA5NlMoweB6ig=,tag:hljUxpXawDM7Qwqx+tFBxQ==,type:str]
-                advertised-prefixes:
-                    default:
-                        netmask: ENC[AES256_GCM,data:Ywk=,iv:mW4QmHyatNyX8gRVUupu3JGN+hA87/ZK+/Kmuli/q1M=,tag:TPYP/cBnsR/920G1T7hXbA==,type:str]
-                        network: ENC[AES256_GCM,data:566vLK6lC2YyHtTS0u8klm7qAw==,iv:wlpfCtqFP5i8w8sfzGv1d98XF2MA3XzqapHsqzA0U/g=,tag:FY4u/+pvG3AiIpVQro0/nQ==,type:str]
-            ipv4:
-                addresses:
-                    cafal:
-                        "0": ENC[AES256_GCM,data:d4E+PBr2Izv2iSWrlBQq,iv:Xgh6cTvr4WleMRFqJbobhGmDO1Xa7A5ftc2Jd4v/u7I=,tag:IJj0zBKkcx7mkavzfOcrFA==,type:str]
+                        etra: ENC[AES256_GCM,data:QxwwnTdxUZv1YeqK5sB5FNJRMtQX,iv:3dntWqYW+SIkUxdgk1Ou+D6roeTsNpeWWS6a9vqINTw=,tag:5kQ9pAIH1sZ5LV8vlAPQ5Q==,type:str]
+                etra:
+                    prefix: ENC[AES256_GCM,data:B9lofv+prRAVGTqavTM20bAcqLbk,iv:0oydH+5TKOpNdfhSpTS6r2pwnGoCQpFwUft7KiJBb78=,tag:hfG+9Gw8tmo2rqU9YakC9w==,type:str]
+                    lan: ENC[AES256_GCM,data:6Cc2z+ZvZA7Drs5NAS/Cz0y6tNcC,iv:r1I0hmG8tvnAGb8h77Rgu/e1ipdrmo4YgGZXZmd1sAs=,tag:XgXatTw57wNH2FbWrUlXLQ==,type:str]
+            gateway:
+                isp:
+                    uplink: ENC[AES256_GCM,data:zox1+hwA+/9L1WBOV/A=,iv:lV6bNV7diH9FxkWYXRpGlfjHKHGF02Eg8vP3pCZeXm0=,tag:LH/9bhfkUy+f1S2qETraww==,type:str]
+                drek:
+                    etra: ENC[AES256_GCM,data:yAJvQ/KObGhGO6xIOefuWTw/uA==,iv:tyDfw8MmhDIGVXesYEwGfrkJZnbxsJE8L/bQd2gblNo=,tag:fsqeHGpqqWfesDu8zfz4Qw==,type:str]
+            address:
+                isp:
+                    uplink: ENC[AES256_GCM,data:wT8kCd2bj6uuPO+Hub7Z4HNC,iv:uDpV/IbGdA1clcSp/5s2PdXfVxJ3Jppy0LR408dxHMo=,tag:aiqclhCZyP4S8epQGqK9/g==,type:str]
+                drek:
                     etra:
-                        "0": ENC[AES256_GCM,data:BBHELxSkCX3Trg2Gjoi5,iv:qUpqJbR8wsvQUYKcjbuhrmnjz6Q7KeX5oLvQDOMCseo=,tag:NV2oiABG63psxYx1i3NSMg==,type:str]
-                    feren:
-                        "0": ENC[AES256_GCM,data:FS5ocL4yPLxHEWAVGgxL,iv:qDM6T5FdIwT6YMWkCDqtH4B0EJhp8F/FDCRjs5voy4k=,tag:/bO5YcQVTu9gO/BGbwaY/w==,type:str]
-                gateway: ENC[AES256_GCM,data:wEUEqcGDv7U14Ehb,iv:RK5oJX9YBHWYmURer890itbSZOkE3JP2E88TJB9KOSU=,tag:NRUcfiECiKebz09QcymQBQ==,type:str]
-                netmask: ENC[AES256_GCM,data:oW8=,iv:+9ii4a4SAa9f+4gapJD6qnUe3V0hR99g2Eg2bQ//uKY=,tag:grZdLmyvJkpQ1GTMoTiQUw==,type:str]
-                network: ENC[AES256_GCM,data:ea1bYYdPQ75axR4g,iv:FR8NE6z+CHv6CcEW/atvPgIb8PR1RaVJgpMp7VVGc9A=,tag:h9oijS1AcbQLVKXRiuusmA==,type:str]
-            old-ipv4:
-                addresses:
-                    drek:
-                        "0": ENC[AES256_GCM,data:i2d1jvnrTg/UeZU4g/wc,iv:LWWzNVG8c3HpcVVLS65IcZLHTXRGTMkxeymkzwvzYhE=,tag:yaX8ptahpvxAcnmOiJkM1Q==,type:str]
+                        drek: ENC[AES256_GCM,data:kjLL5eNwsVCYCxSf2GMXCobg61hzrQ==,iv:3eOp/E5x9dCkGSpzpH4+axrcYmhtEmf2KxpjqH3LaAg=,tag:f3i7dXXmkNe57mCt2ADHNA==,type:str]
+                        etra: ENC[AES256_GCM,data:Vk7ZgbW+3Cm59SkTf4Pz3CSH2aSboA==,iv:thnT1ZbZYCCNJzHDvC84ejFvafLLjzp9Iz/KRRBX44I=,tag:Q5ifBi5Pvpc3QIAk4YCiqg==,type:str]
+                etra:
+                    lan:
+                        etra: ENC[AES256_GCM,data:g4q6q5cQbcNAJ/iiXqyfdnVSJK9mzw==,iv:e7Q1mv9keeOSGATwOqfDKPtdhlbbqvhK90dSjABq/HY=,tag:YPZs04VBsEPPhQwcWQr8fw==,type:str]
+        ipv4:
+            network:
+                isp:
+                    uplink: ENC[AES256_GCM,data:cb3GaLr5QrZNfA38ZNSu,iv:dOB9Y/An+X8cWr0wJ+u7cMKxr2g6WjwuMatc2uGcJxM=,tag:phA5is1ssAbFYMt7+VJAkg==,type:str]
+                drek:
+                    lan: ENC[AES256_GCM,data:PbGdBz4rMVpDNL1PIYOw,iv:Dm/kqPTWIAnpr5Uc9G0e/hvjXMu71R6CQ7DZq7rxeCc=,tag:ubUzWGPuoYKAtbXqMW3cwA==,type:str]
+                    etra: ENC[AES256_GCM,data:aon1alAdQN30Q2bmJq6l,iv:vMNg92TD0ZxUGyk3QAz0QBd5YVNWIDXcTmsOjRETSHY=,tag:WvcRC0vO+xGnHYjYelUNfw==,type:str]
+                etra:
+                    lan: ENC[AES256_GCM,data:yH68hoOM5MOrci2DifEu,iv:Ag5x1X6+yITj9Bq5APJmhg+okVBYPiy1K9wyOr95dIE=,tag:VROIZzILwhwd/1da67LPCQ==,type:str]
+            gateway:
+                isp:
+                    uplink: ENC[AES256_GCM,data:vNuazIyfPHn1gsm4,iv:Yyg+UOC57pKZLdkRmE/ilt9dCeAYFIm1cVHRFV8fsQI=,tag:cYUMa5AK/LijOAFDIUZNTQ==,type:str]
+                drek:
+                    etra: ENC[AES256_GCM,data:23Mb50JRdwVin7XG,iv:IZMrEO79ZE5oT0hFlwoOp1dXY7mi5kdjNIBH+iMlO4Q=,tag:agV75N7BUstXHwTUdmQHyQ==,type:str]
+                etra:
+                    lan: ENC[AES256_GCM,data:Lmg42EjQRbEMbtsx,iv:1x5/iKp/yGuwt/rLpT5WBatgsHmB6k49MMRg7Cnrw5M=,tag:qoNL2Qr3VXUg6PT79pMPAQ==,type:str]
+            address:
+                isp:
+                    uplink: ENC[AES256_GCM,data:Oy3oDpslkHK53YgR02Pj,iv:6DPcrFhCG8a59O92VVpts1mDI0bkZKjtspopsBtfDMw=,tag:KhXvk28trrFrcQQst62wSg==,type:str]
+                drek:
                     etra:
-                        "0": ENC[AES256_GCM,data:WLvZqajlEztFd4CP2z7t,iv:2PaNghyEJQxtVGnGJzZk6/bfr3gmPl0R0St6MLk0WcA=,tag:xbYwq2PqNO5ZXvsWtGQ0OA==,type:str]
-                gateway: ENC[AES256_GCM,data:M/udJjW5Sqdib9kW,iv:pg70nlbsvAlIeaLdAPeAWeqyFWtpgOVVt07dIn90IwE=,tag:7fWmy9dROy0nISAYLZOzkQ==,type:str]
-                netmask: ENC[AES256_GCM,data:RZU=,iv:WNNSwsBPl7KKqg75CRr+GDwMo2RRVNF0w2djLY9oG00=,tag:dnUz1pDjGwzFjIsEpJh/Fg==,type:str]
-                network: ENC[AES256_GCM,data:lMXF778Zku0+nwgX,iv:xsbTakugs+t3xpMFadZ7Hx1EmvQcJiRP/2hdmtwv2Go=,tag:ugwzTI7MxkBuGiE5ncoKXA==,type:str]
-            old-ipv6:
-                addresses:
-                    drek:
-                        "0": ENC[AES256_GCM,data:CLvUNPclioFrRrnWEJgE+ObihYG9vw==,iv:tXKJvWWkEavdN+8Va+H+QZt1VEhHB1sddVzVI7NbgHE=,tag:eS7KJPBscJna37l9FwBtUw==,type:str]
-                    etra:
-                        "0": ENC[AES256_GCM,data:HwoQqLzzZebZ6uEQNvVS8umzRSY9wQ==,iv:exJu5O9PXKsLa+APKDhBjcDTROQ0r+Ty+WP3HacWzfM=,tag:UIjD0sDs04bGs4YfEfzwWQ==,type:str]
-                gateway: ENC[AES256_GCM,data:yRSbS/oeBHxZQWTbqUsFj5NTrg==,iv:7Ev2LXWbw/FAWdk+p9j7VNgbLQZXYkGZP/FXv6Y0NPs=,tag:e9Eth9MAIcrGUMljAIc0xA==,type:str]
-                netmask: ENC[AES256_GCM,data:izk=,iv:R0fuA2B6yvPjtMnrK0R4OTH0Dolk2vC5zjYq4dHUSk8=,tag:Nhei07ULGS8B2T7hcRgyhg==,type:str]
-                network: ENC[AES256_GCM,data:PI23qXSMg6kLH17b9tlc3kvm0Q==,iv:6dPrITpEXItuziahucL9JK9KGKPatOyJylJEWrPHn5I=,tag:R/TKw6o0alhCkbKfyelqiQ==,type:str]
-                advertised-prefixes:
-                    public:
-                        netmask: ENC[AES256_GCM,data:lTU=,iv:9w2RIVCnY6C/PUftmQd+h2DPgKE2kAdCxZ718N7ICto=,tag:ELPRIa6vvkFWKAop9ePtnA==,type:str]
-                        network: ENC[AES256_GCM,data:er6fI3sIEGa5jexUsCQjV9MGRg==,iv:Iq5/CgyaGqObNsHJ9jF0RjKHIfB6qUq7LG43g+43JDc=,tag:x2M4I/12QCfj+pfHYCZc2g==,type:str]
-        wan:
-            etra-through-drek-ipv4:
-                addresses:
-                    drek:
-                        "0": ENC[AES256_GCM,data:Yf4yjK/HxwQLVy292OpF,iv:rKNXVbrfFptL0u4tagP0EtLg5rF1UdwXofDNFkuOIrg=,tag:SjKDPTqEfcD4TITh0qxang==,type:str]
-                    etra:
-                        "0": ENC[AES256_GCM,data:znQx9hT/EDfmjYqxE4gD,iv:KTxzFUKPPowKwAGnyZscGASoMEpu5YTq/OfBqZo38wc=,tag:WZBtXC2+sMWnlb8a/ukXsw==,type:str]
-                gateway: ENC[AES256_GCM,data:hPYCe6Z54gkU+ZV1,iv:fO+UtqErZyvYyX6mKcyHSJYYzbPBnJiyWNQDw8udrzg=,tag:Kmm/kJkj7D8fYDpJp1a1FQ==,type:str]
-                netmask: ENC[AES256_GCM,data:BKI=,iv:UjQilnsTcvWIu9+xmtQ2P+8WGJXDmNEBhmSoKbphFv4=,tag:QIGY/VGBNG7q9K1cB411DQ==,type:str]
-                network: ENC[AES256_GCM,data:+f6LTMETfWbvUVno,iv:d9L7p+dwgOwPo5Hcbm5I6vRG+m1ed89RML3GRxgtb+0=,tag:glnk0KKZuxXb2pKfZwBpGQ==,type:str]
-            etra-through-drek-ipv6:
-                addresses:
-                    drek:
-                        "0": ENC[AES256_GCM,data:xB1KEeDYa2lSmMjyvtqqMIsVlDN38Q==,iv:U63yTViSYxDc9XWtNlxD5/UvzRqCNp/pOF7+wegQ7nQ=,tag:jDTK+3AgNh2sZIR3jSoGiw==,type:str]
-                    etra:
-                        "0": ENC[AES256_GCM,data:t7Qn87EVnUSstSZl8XVAfaqf3fym+w==,iv:4ASzNliDTgY9DAUFcusECCg1uokEPBK4ArBcG29eFLQ=,tag:N0tEq2qIwiStfjLNCU8nGQ==,type:str]
-                        "1": ENC[AES256_GCM,data:3p+5fxBuemFY68N+q3wYGTU5/1onQw==,iv:NT/OzgiI58d5LL2MvAOcMeO1DL0HEcbetgs/gmKgrKs=,tag:gbEt/7EVBa/6fHCvxboOcw==,type:str]
-                gateway: ENC[AES256_GCM,data:OQcs418eWiZOIUXPqU388RHOtQ==,iv:VzpNAR6RSYJHq4CDHtlBBsc2xGzYQOynMl1ppAT+l/k=,tag:RKcmbFn5TbHW5w8lPHAy2Q==,type:str]
-                netmask: ENC[AES256_GCM,data:TlI=,iv:7ztdAjjQmq8PSiA+kVeYr9EuIyjnpGpmw95isdHoqjQ=,tag:ITM9uxbWR0JrJNyVownOKQ==,type:str]
-                network: ENC[AES256_GCM,data:CElqlqpZCK0k6x8mNOmQI5xZng==,iv:F8A/DLdWB0HeO8H7IUGDrVbQksO5p7cpBzsWsJDyHvg=,tag:2d6V3o4iDmTBr4Jy+j7TSg==,type:str]
-                assigned-prefixes:
-                    public:
-                        netmask: ENC[AES256_GCM,data:sDo=,iv:g3xy11LRxldCTvdOjS9A1XSKejZagCTZIybGrJTLZo0=,tag:L3ZtGMm20KfTsC6uSR51Dg==,type:str]
-                        network: ENC[AES256_GCM,data:hqKsmhzmjWXTo8/XQ8fXpAw99g==,iv:kqy0E0VF4sbUXmFpAGTyMGHtkwD3zTMUxf09eOEA+Zw=,tag:pFAz3UFJOY0sO5zhj5M3ZA==,type:str]
-            ipv4:
-                addresses:
-                    drek:
-                        "0": ENC[AES256_GCM,data:7njpE2Y9y5j+tt2Cc4k8,iv:MPnBcNLevOuQsPB8MI26t7I3Fp8mCf3+qWe+2UW7Au8=,tag:LOChDhG50JNj3ypj+qBR3g==,type:str]
-                    etra:
-                        "0": ENC[AES256_GCM,data:aqxsHdH316gsHxbt9XpQ,iv:EPZabJsW+7zpq2SRZMyZS4Y6favAH/tVZw3CeN/Canc=,tag:/OauPu98yyQYS/jcmx1HaA==,type:str]
-                    isp:
-                        "0": ENC[AES256_GCM,data:hTxmHAzXfopLt5TToEE1,iv:5srJp9JR3/x+lwxVviI2D5AVAS4zZXCDcIjVudvlTM8=,tag:rHDk4z//e1RBTDd+AN1T/A==,type:str]
-                gateway: ENC[AES256_GCM,data:Y0Fr2rulpsFFZcy9,iv:YAHjJl7D7eAPr75q6Ddt6F+lyFf7S/8OOZXr9tyRtOI=,tag:23d3Ila6c4eUweg4GuZtPA==,type:str]
-                netmask: ENC[AES256_GCM,data:Wwc=,iv:GxjmzOixNgkGsKPWR7uNv4KiS69xjknjsiL8BsTtff8=,tag:JBwmFAtyQbMpGtWMapERGw==,type:str]
-                network: ENC[AES256_GCM,data:cu3ULh/SXhqxq6vF,iv:FA0t8bpGiZPt4dqXXqN4SZiNH6mSDYJyPq/sSHdg/to=,tag:Vm8Rl5V5QyAddHOzZv+uBQ==,type:str]
-            ipv6:
-                addresses:
-                    drek:
-                        "0": ENC[AES256_GCM,data:vFIObPkaM/Jtezijcp0/wcgM,iv:oMF9+Ceqs9tI22VmyejEWTps1HsdgFAhWwxkGpxxq8I=,tag:FHUtAuT8jvWaUrZ6jOpUAA==,type:str]
-                    isp:
-                        "0": ENC[AES256_GCM,data:Gmwg/tblQMTwAjs+AWk3fieV,iv:54Jp105yhnQEwjtxDeZlDtE3XEz1kXXRK4AhjP1wAGk=,tag:YEvNqACjrvUvJzlj5DjGxw==,type:str]
-                gateway: ENC[AES256_GCM,data:/fMb7EJKP+GTfhinhgU=,iv:RFpL6WzBOaW5C60EMpSPZUkxRl5tTwwEWRb6zvTVl6M=,tag:0r97o+APRnubdF7BUQdeFw==,type:str]
-                netmask: ENC[AES256_GCM,data:kg6i,iv:2pFuU1j5CxSEtpHSxO8Vz121mMIcRd7V9Q89a4MpTdg=,tag:rbGvxknjPJklGNdjSTewQQ==,type:str]
-                network: ENC[AES256_GCM,data:1q+boTYwFgWdXpZjMvY=,iv:cmoR3Zxh/Fi62kLnNNahh+EBS+TwpLC9gNO0m+cmPUI=,tag:ga+kBWra/dvRLmeuLd//eA==,type:str]
-                assigned-prefixes:
-                    public:
-                        netmask: ENC[AES256_GCM,data:l2k=,iv:MWcntFG/PjLsxQrIikrl/F8RfWBEq4BmYcrfdzBK0Y8=,tag:52Mdzj4BJVY/t+2efHrx7g==,type:str]
-                        network: ENC[AES256_GCM,data:nTHuiiY62nnWlCKG143Ee1A=,iv:MjrhK1RtxtMKzdNttXLtLsWVvSBkGVsdUMndlJkFXgo=,tag:fzwqUX0fW+Tx673n++jYZQ==,type:str]
+                        drek: ENC[AES256_GCM,data:cSNsi+xz3uaLK+B17kUE,iv:wQTr2hdOL5rhur8nF6EbXjgpqMqD5CzPR9Fw/V/p8YY=,tag:FBxNowOOi/c61MCsn0ZfHA==,type:str]
+                        etra: ENC[AES256_GCM,data:UVthRyx3m/m0479c0FA0,iv:J2TGLRL7UXqrF+nKUu3XKqPpTn2AOWk++MacLJgZ6Zo=,tag:dtmPv/Bb8/PM/bmUPQwVtA==,type:str]
+                etra:
+                    lan:
+                        etra: ENC[AES256_GCM,data:/2Z0fB4KSUFpwWjv/O0q,iv:0pP56Z2afEHosNulrq8HMsDMgaB505won15sEVVvnAQ=,tag:Ub2Ru1d1Rfv2fhExlitAtw==,type:str]
+                        cafal: ENC[AES256_GCM,data:fswf7AK1UweL5A4KUFzf,iv:pwOR0kwqm6gZWghqL8oNDc8n3SIlj9Ko+kbNQqGJxzs=,tag:PFhDCuwMla4TFyi73uFexw==,type:str]
+                        feren: ENC[AES256_GCM,data:y6IEskTKWKnoPae6xtSB,iv:C1YIFy0IURMNQU+tMsLx/MM0VhIkvLVs9L9stBsXAFk=,tag:KkYRwvETkECuwlPxbctnGg==,type:str]
 nextcloud:
     nixos:
         password: ENC[AES256_GCM,data:zYL1fQfJhcSqUhk2MAvF/CbWKG4/4/Yli2PNIJ8=,iv:pkhdFUPyThCKpvTnxBImEoyZ8ss0Lz/G3ss/0cCWu9o=,tag:rr0oXLWyQLvvyUtGu3C8mw==,type:str]
@@ -176,8 +138,8 @@ sops:
             KA1d/siPvuMbTYP/nSreB4Ru6oByuLA2MEfof221aqApf5sM44CL52TS9X4VtPRe
             +S4=
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2024-08-19T20:13:21Z"
-    mac: ENC[AES256_GCM,data:IFQkRkicPBi2ykzaJNpwfDuhLZLfqKWxHDS40f6WQ0wJsWJ3uozpwAwmhxL9Awv39GCtVY5RV+TfS77jjlSh1XKsTOsBHknfvnblk8S+FkBsFawZqMiW0H+tp/YKmzWz9sGtf9TEm6WfdZMhLJg7cxrbebHK85CRO66vwOPStJM=,iv:fE3L/LclslGqR6yHyMUwcSKYJUs45ZBVs+WJVU2L9+4=,tag:slW4AeDGYTdMTZw5fqsvOA==,type:str]
+    lastmodified: "2024-08-20T08:16:33Z"
+    mac: ENC[AES256_GCM,data:FsBQ2cKgmk/uiKbTFftQGFbciVFR58/eQdEKW1NLL8AnToSPTXBQV82k3Fc7wGnx9KpaWD57jpqwpboVzqmiLh+RWlVR1MW8hxet1xWMod0yOX2T9TS8yR3dwqENAQkB/AB9cgoOMlZTO9mVRM9vB3BTLi4bt/HyT5YWMEv25GY=,iv:ShKMExThduhAW/QM0UpGJ+YDAVBZ6wDyvXJcHlWGab8=,tag:JGU9xtkn6y23IqJKXKEodg==,type:str]
     pgp: []
     unencrypted_suffix: _unencrypted
     version: 3.9.0

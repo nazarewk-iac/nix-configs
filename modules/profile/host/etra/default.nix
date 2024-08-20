@@ -45,18 +45,34 @@ in
       }
     )
     {
-      kdn.networking.router = {
+      kdn.networking.router = let addressing = config.kdn.security.secrets.placeholders.networking.addressing; in {
         enable = true;
         debug = true;
         wan.type = "static";
-        wan.static.networks = [
-          "etra-through-drek-ipv4"
-          "etra-through-drek-ipv6"
+        wan.dns = with addressing; [
+          ipv4.gateway.drek.etra
+          ipv6.gateway.drek.etra
         ];
-        lan.static.networks = [
-          "ipv4"
-          "etra-ipv6"
+        wan.gateway = with addressing; [
+          ipv4.gateway.drek.etra
+          ipv6.gateway.drek.etra
         ];
+        wan.address = with addressing; [
+          ipv4.address.drek.etra.etra
+          ipv6.address.drek.etra.etra
+        ];
+
+        lan.dhcpServer = with addressing; ipv4.address.etra.lan.etra;
+        lan.address = with addressing; [
+          ipv4.address.etra.lan.etra
+          ipv6.address.etra.lan.etra
+        ];
+        lan.prefix = with addressing; [
+          ipv6.network.etra.lan
+        ];
+        # TODO: backup connection through NanoKVM
+        #interfaces."enp0s20f0u3".role = "wan";
+        #interfaces."enp0s20f0u3".matchConfig.Model = "licheervnano";
         interfaces."enp1s0".role = "wan-primary";
         interfaces."enp2s0".role = "lan";
         interfaces."enp3s0".role = "lan";

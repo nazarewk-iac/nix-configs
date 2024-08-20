@@ -47,12 +47,29 @@ in
     wan.type = lib.mkOption {
       type = with lib.types; enum [ "static" "dhcp" ];
     };
-    wan.static.networks = lib.mkOption {
-      type = with lib.types; listOf (enum cfg.networks.wan);
+    wan.dns = lib.mkOption {
+      type = with lib.types; listOf str;
+      default = [ ];
+    };
+    wan.gateway = lib.mkOption {
+      type = with lib.types; listOf str;
+      default = [ ];
+    };
+    wan.address = lib.mkOption {
+      type = with lib.types; listOf str;
+      default = [ ];
     };
 
-    lan.static.networks = lib.mkOption {
-      type = with lib.types; listOf (enum cfg.networks.lan);
+    lan.dhcpServer = lib.mkOption {
+      type = with lib.types; str;
+    };
+    lan.address = lib.mkOption {
+      type = with lib.types; listOf str;
+      default = [ ];
+    };
+    lan.prefix = lib.mkOption {
+      type = with lib.types; listOf str;
+      default = [ ];
     };
 
     reloadOnDropIns = lib.mkOption {
@@ -81,12 +98,12 @@ in
           type = with lib.types; str;
           default = ifaceArgs.name;
         };
+        options.matchConfig = lib.mkOption {
+          type = with lib.types; attrsOf anything;
+          default = { };
+        };
         options.role = lib.mkOption {
           type = with lib.types; enum [ "wan" "wan-primary" "lan" ];
-        };
-        options.primary = lib.mkOption {
-          type = with lib.types; bool;
-          default = false;
         };
       }));
       default = { };
@@ -164,6 +181,13 @@ in
             "output"
             "postrouting"
           ];
+          #icmp6-logging-bridge = mkTable "bridge" "filter" [
+          #  "prerouting"
+          #  "input"
+          #  "forward"
+          #  "output"
+          #  "postrouting"
+          #];
         };
     })
     (
@@ -244,32 +268,18 @@ in
         networkConfig.LinkLocalAddressing = "no";
       };
       # TODO: somehow rollback config after failing to connect to internet?
-      sops.templates = lib.pipe cfg.wan.static.networks [
-        (builtins.map (name:
-          let
-            path = mkDropInPath "00-wan.network" "static-${name}";
-            net = ph.networks.wan."${name}";
-            isIPv6 = lib.strings.hasInfix ":" net.network;
-          in
-          lib.lists.optional (net ? network) {
-            name = path;
-            value = {
-              inherit path;
-              mode = "0644";
-              content = ''
-                [Network]
-                ${mkAddressLines net host}
-                ${lib.strings.optionalString (net ? gateway) ''
-                DNS=${net.gateway}
-                Gateway=${net.gateway}
-                ''}
-              '';
-            };
-          }
-        ))
-        lib.lists.flatten
-        builtins.listToAttrs
-      ];
+      sops.templates = let path = mkDropInPath "00-wan.network" "static"; in {
+        "${path}" = {
+          inherit path;
+          mode = "0644";
+          content = ''
+            [Network]
+            ${lib.strings.concatMapStringsSep "\n" (addr: "Address=${addr}") cfg.wan.address}
+            ${lib.strings.concatMapStringsSep "\n" (addr: "DNS=${addr}") cfg.wan.dns}
+            ${lib.strings.concatMapStringsSep "\n" (addr: "Gateway=${addr}") cfg.wan.gateway}
+          '';
+        };
+      };
     })
     {
       systemd.network.networks = lib.pipe wanInterfaces [
@@ -312,6 +322,7 @@ in
           IPv6LinkLocalAddressGenerationMode = "stable-privacy";
           # misc
           MulticastDNS = true;
+          #Gateway = "_ipv6ra"; # doesn't seem to change anything
         };
         linkConfig = {
           RequiredForOnline = "routable";
@@ -327,55 +338,34 @@ in
           UplinkInterface = "wan";
         };
       };
-      sops.templates = lib.pipe cfg.lan.static.networks [
-        (builtins.map (name:
-          let
-            path = mkDropInPath "00-lan.network" "static-${name}";
-            net = ph.networks.lan."${name}";
-            isIPv6 = lib.strings.hasInfix ":" net.network;
-            isIPv4 = !isIPv6;
-          in
-          {
-            name = path;
-            value = {
-              inherit path;
-              mode = "0644";
-              content = ''
-                [Network]
-                ${mkAddressLines net host}
+      sops.templates = let path = mkDropInPath "00-lan.network" "static"; in {
+        "${path}" = {
+          inherit path;
+          mode = "0644";
+          content = ''
+            [Network]
+            ${lib.strings.concatMapStringsSep "\n" (addr: "Address=${addr}") cfg.lan.address}
 
-                ${lib.strings.optionalString (isIPv4 && net ? gateway) ''
-                [DHCPServer]
-                ServerAddress=${net.gateway}
-                ''}
+            [DHCPServer]
+            ServerAddress=${cfg.lan.dhcpServer}
 
-                ${lib.pipe net [
-                  (lib.attrsets.attrByPath [ "advertised-prefixes" ] { })
-                  builtins.attrValues
-                  (builtins.filter (prefix: lib.strings.hasInfix ":" prefix.network))
-                  (builtins.map ( prefix: ''
-                [IPv6Prefix]
-                Prefix=${prefix.network}/${prefix.netmask}
-                AddressAutoconfiguration=true
-                OnLink=true
-                Assign=true
-                  ''))
-                  (builtins.concatStringsSep "\n")
-                ]}
-              '';
-            };
-          }
-        ))
-        lib.lists.flatten
-        builtins.listToAttrs
-      ];
+            ${lib.strings.concatMapStringsSep "\n" (prefix: ''
+            [IPv6Prefix]
+            Prefix=${prefix}
+            AddressAutoconfiguration=true
+            OnLink=true
+            Assign=true
+            '') cfg.lan.prefix}
+          '';
+        };
+      };
     }
     {
       systemd.network.networks = lib.pipe lanInterfaces [
         (builtins.map (iface: {
           name = "10-${iface.name}-${iface.role}";
           value = {
-            matchConfig.Name = iface.name;
+            matchConfig = if iface.matchConfig == { } then { Name = iface.name; } else iface.matchConfig;
             networkConfig.Bridge = [ "lan" ];
             linkConfig.RequiredForOnline = "enslaved";
           };
