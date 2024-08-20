@@ -47,7 +47,7 @@ in
     {
       kdn.networking.router = let addressing = config.kdn.security.secrets.placeholders.networking.addressing; in {
         enable = true;
-        debug = true;
+        #debug = true;
         wan.type = "static";
         wan.dns = with addressing; [
           ipv4.gateway.drek.etra

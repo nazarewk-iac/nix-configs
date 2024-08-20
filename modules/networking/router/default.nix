@@ -140,6 +140,9 @@ in
       networking.firewall.pingLimit = "60/minute burst 5 packets";
       networking.firewall.trustedInterfaces = [ "lan" ];
 
+      # more verbose logging in `systemd-networkd`, doesn't seem to generate much logs at all
+      systemd.services.systemd-networkd.environment.SYSTEMD_LOG_LEVEL = "debug";
+
       networking.firewall.extraForwardRules = ''
         meta iifname . meta oifname {
           lan . wan,
@@ -155,7 +158,6 @@ in
       '';
     }
     (lib.mkIf cfg.debug {
-      systemd.services.systemd-networkd.environment.SYSTEMD_LOG_LEVEL = "debug";
       networking.firewall.logRefusedPackets = true;
       networking.firewall.rejectPackets = true;
 
@@ -181,13 +183,6 @@ in
             "output"
             "postrouting"
           ];
-          #icmp6-logging-bridge = mkTable "bridge" "filter" [
-          #  "prerouting"
-          #  "input"
-          #  "forward"
-          #  "output"
-          #  "postrouting"
-          #];
         };
     })
     (
