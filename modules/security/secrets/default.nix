@@ -1,6 +1,12 @@
 { lib, pkgs, config, self, ... }:
 let
   cfg = config.kdn.security.secrets;
+
+  # adds additional information (name) to sops-nix placeholders
+  # replaces https://github.com/Mic92/sops-nix/blob/be0eec2d27563590194a9206f551a6f73d52fa34/modules/sops/templates/default.nix#L84-L84
+  sopsPlaceHolders = builtins.mapAttrs
+    (name: _: "<SOPS:${name}:${builtins.substring 0 8 (builtins.hashString "sha256" name)}:PLACEHOLDER>")
+    config.sops.secrets;
 in
 {
   options.kdn.security.secrets = {
@@ -118,7 +124,7 @@ in
     };
 
     placeholders = lib.mkOption {
-      description = ''converts `sops.placeholders` into object structure to iterate'';
+      description = ''converts `sops.placeholders` into object structure to iterate more easily over it'';
       readOnly = true;
       type = with lib.types; anything;
 
@@ -127,8 +133,7 @@ in
         builtins.attrNames
         (builtins.map (name: lib.attrsets.setAttrByPath
           (lib.strings.splitString "/" name)
-          # reimplements https://github.com/Mic92/sops-nix/blob/be0eec2d27563590194a9206f551a6f73d52fa34/modules/sops/templates/default.nix#L84-L84
-          "<SOPS:${builtins.hashString "sha256" name}:PLACEHOLDER>"))
+          sopsPlaceHolders."${name}"))
         # dumb merge
         (builtins.foldl' lib.attrsets.recursiveUpdate { })
       ];
@@ -152,6 +157,7 @@ in
         ssh-to-pgp
       ]);
 
+      sops.placeholder = sopsPlaceHolders;
       # see https://github.com/Mic92/sops-nix/issues/65
       # note: SSH key gets imported automatically
       sops.gnupg.sshKeyPaths = [ ];
