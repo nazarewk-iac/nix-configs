@@ -83,11 +83,15 @@ in
         lan.prefix = [
           (with netconf.ipv6.network.etra.lan; "${network}/${netmask}")
         ];
-        # TODO: backup connection through NanoKVM
+        /* TODO: backup connection through NanoKVM? it could theoretically route the traffic?
+            it is meant for maintenance access to NanoKVM itself, but maybe iptables could configure forwarding to WAN?
+            see https://wiki.sipeed.com/hardware/en/kvm/NanoKVM/system/updating.html#Check-via-USB-RNDIS-Network-Interface
+            see https://wiki.sipeed.com/hardware/en/kvm/NanoKVM/user_guide.html#RNDIS
+        */
         #interfaces."enp0s20f0u3".role = "wan";
         #interfaces."enp0s20f0u3".matchConfig.Model = "licheervnano";
         interfaces."enp1s0".role = "wan-primary";
-        interfaces."enp2s0".role = "lan";
+        #interfaces."enp2s0".role = "lan";
         interfaces."enp3s0".role = "lan";
       };
     }
