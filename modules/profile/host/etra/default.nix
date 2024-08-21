@@ -45,31 +45,43 @@ in
       }
     )
     {
-      kdn.networking.router = let addressing = config.kdn.security.secrets.placeholders.networking.addressing; in {
+      systemd.network.networks."00-wan" = {
+        /* cannot use IPv4 link-local addressing because it causes degraded state, see:
+            - https://github.com/systemd/systemd/issues/575
+            - https://github.com/systemd/systemd/issues/9077
+         */
+        addresses = [
+          {
+            addressConfig = {
+              Address = "192.168.40.1/31";
+              Peer = "192.168.40.0/31";
+            };
+          }
+        ];
+        networkConfig = {
+          DNS = [
+            "192.168.40.0"
+            "fe80::c641:1eff:fef8:9ce7" # drek's link-local address
+          ];
+          Gateway = [
+            "192.168.40.0"
+            "fe80::c641:1eff:fef8:9ce7" # drek's link-local address
+          ];
+        };
+      };
+      networking.nameservers = lib.mkForce [ ];
+      kdn.networking.router = let netconf = config.kdn.security.secrets.placeholders.networking; in {
         enable = true;
-        #debug = true;
+        debug = false;
         wan.type = "static";
-        wan.dns = with addressing; [
-          ipv4.gateway.drek.etra
-          ipv6.gateway.drek.etra
-        ];
-        wan.gateway = with addressing; [
-          ipv4.gateway.drek.etra
-          ipv6.gateway.drek.etra
-        ];
-        wan.address = with addressing; [
-          ipv4.address.drek.etra.etra
-          ipv6.address.drek.etra.local.etra
-          ipv6.address.drek.etra.public.etra
-        ];
 
-        lan.dhcpServer = with addressing; ipv4.address.etra.lan.etra;
-        lan.address = with addressing; [
-          ipv4.address.etra.lan.etra
-          ipv6.address.etra.lan.etra
+        lan.dhcpServer = with netconf.ipv4.network.etra.lan; "${address.gateway}/${netmask}";
+        lan.address = [
+          (with netconf.ipv4.network.etra.lan; "${address.gateway}/${netmask}")
+          #(with netconf.ipv6.network.etra.lan; "${address.gateway}/${netmask}")
         ];
-        lan.prefix = with addressing; [
-          ipv6.network.etra.lan
+        lan.prefix = [
+          (with netconf.ipv6.network.etra.lan; "${network}/${netmask}")
         ];
         # TODO: backup connection through NanoKVM
         #interfaces."enp0s20f0u3".role = "wan";

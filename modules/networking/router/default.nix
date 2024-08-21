@@ -2,15 +2,6 @@
 let
   cfg = config.kdn.networking.router;
 
-  # TODO: make the IPv6 WAN accessible from LAN
-  # TODO: make the IPv6 LAN pingable from WAN
-
-  /* TODO: make IPv6 forwarding work?
-      - https://matrix.to/#/!tCyGickeVqkHsYjWnh:nixos.org/$WCyFnH_26PJX4lcbTDohzInJv0PLJRQzPKt4qFMeOJo?via=nixos.org&via=matrix.org&via=tchncs.de
-      - https://git.sr.ht/~r-vdp/nixos-config/tree/f595662416269797ee2c917822133b5ae5119672/item/hosts/beelink/network.nix#L245
-      - rules in the snippet above
-  */
-
   wanInterfaces = lib.pipe cfg.interfaces [
     builtins.attrValues
     (builtins.filter (iface: lib.lists.any (r: r == iface.role) [ "wan" "wan-primary" ]))
@@ -56,6 +47,10 @@ in
       default = [ ];
     };
     wan.address = lib.mkOption {
+      type = with lib.types; listOf str;
+      default = [ ];
+    };
+    wan.prefix = lib.mkOption {
       type = with lib.types; listOf str;
       default = [ ];
     };
@@ -163,26 +158,39 @@ in
 
       networking.nftables.tables =
         let
-          mkTable = family: priority: chains: lib.pipe chains [
-            (builtins.map (hook: ''
-              chain ${hook} {
-                type filter hook ${hook} priority ${priority}; policy accept;
-                icmpv6 type { echo-request, echo-reply } log level info prefix "[ICMPv6:echo@${family}@${hook}]: "
-              }
-            ''))
-            (builtins.concatStringsSep "\n")
-            (content: { inherit family content; })
-          ];
+          mkTable =
+            { rule
+            , name
+            , family ? "ip6"
+            , priority ? "filter"
+            , chains ? [
+                # "ingress" # doesn't seem to work
+                "prerouting"
+                "input"
+                "forward"
+                "output"
+                "postrouting"
+              ]
+            }: lib.pipe chains [
+              (builtins.map (hook: ''
+                chain ${hook} {
+                  type filter hook ${hook} priority ${priority}; policy accept;
+                  ${rule} log level info prefix "[name=${name}][family=${family}][hook=${hook}]: "
+                }
+              ''))
+              (builtins.concatStringsSep "\n")
+              (content: { inherit family content; })
+            ];
         in
         {
-          icmp6-logging-ip6 = mkTable "ip6" "filter" [
-            # "ingress" # doesn't seem to work
-            "prerouting"
-            "input"
-            "forward"
-            "output"
-            "postrouting"
-          ];
+          logging-icpmv6-echo = mkTable {
+            name = "ICMPv6:echo";
+            rule = "icmpv6 type { echo-request, echo-reply }";
+          };
+          logging-icpmv6-ndp = mkTable {
+            name = "ICMPv6:NDP";
+            rule = "icmpv6 type { nd-router-solicit, nd-router-advert, nd-neighbor-solicit, nd-neighbor-advert }";
+          };
         };
     })
     (
@@ -243,24 +251,23 @@ in
         networkConfig = {
           BindCarrier = builtins.map (iface: iface.name) wanInterfaces;
           IPMasquerade = "ipv4";
+          IPv6AcceptRA = false;
+          IPv6SendRA = false;
+          LinkLocalAddressing = "ipv6";
         };
-        linkConfig.RequiredForOnline = "routable";
+        linkConfig = {
+          RequiredForOnline = "routable";
+        };
       };
     }
     (lib.mkIf (cfg.wan.type == "dhcp") {
       systemd.network.networks."00-wan" = {
         networkConfig.DHCP = "ipv4";
-        networkConfig.IPv6AcceptRA = "yes";
-        networkConfig.IPv6SendRA = "no";
-        networkConfig.LinkLocalAddressing = "ipv4";
       };
     })
     (lib.mkIf (cfg.wan.type == "static") {
       systemd.network.networks."00-wan" = {
         networkConfig.DHCP = "no";
-        networkConfig.IPv6AcceptRA = "no";
-        networkConfig.IPv6SendRA = "no";
-        networkConfig.LinkLocalAddressing = "no";
       };
       # TODO: somehow rollback config after failing to connect to internet?
       sops.templates = let path = mkDropInPath "00-wan.network" "static"; in {
@@ -272,6 +279,14 @@ in
             ${lib.strings.concatMapStringsSep "\n" (addr: "Address=${addr}") cfg.wan.address}
             ${lib.strings.concatMapStringsSep "\n" (addr: "DNS=${addr}") cfg.wan.dns}
             ${lib.strings.concatMapStringsSep "\n" (addr: "Gateway=${addr}") cfg.wan.gateway}
+
+            ${lib.strings.concatMapStringsSep "\n" (prefix: ''
+            [IPv6Prefix]
+            Prefix=${prefix}
+            AddressAutoconfiguration=false
+            OnLink=true
+            Assign=false
+            '') cfg.wan.prefix}
           '';
         };
       };

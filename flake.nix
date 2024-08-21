@@ -204,8 +204,8 @@
                 networking.hostName = "etra";
 
                 _module.args.nixinate = {
-                  #host = "etra.lan.";
-                  host = "etra.netbird.cloud.";
+                  host = "etra.lan.";
+                  #host = "etra.netbird.cloud.";
                   sshUser = "kdn";
                   buildOn = "local"; # valid args are "local" or "remote"
                   substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"

@@ -44,9 +44,9 @@ creation_rules:
           - *ssh-etra
           - *ssh-moss
           - *ssh-oams
-          - *yk-etra-touch
-          - *yk-krul-touch
-          - *yk-oams-touch
+          - *yk-etra-unattended
+          - *yk-krul-unattended
+          - *yk-oams-unattended
   - key_groups:
       - age:
           - *yk-etra-touch

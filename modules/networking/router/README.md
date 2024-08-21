@@ -14,11 +14,14 @@ A router setup used by `etra`.
     - LAN IPv4
         - [x] internet connectivity
     - LAN IPv6
-        - [ ] internet connectivity
-        - [ ] ping devices from LAN
-        - [ ] ping devices from WAN
+        - [x] internet connectivity
+        - [x] ping devices from LAN
+        - [x] ping devices from WAN
+        - [x] route over link-local addresses (not using up public or generating private IPs)
 
 # materials
+
+debugging info gist https://gist.github.com/nazarewk/49a76c2a63d4895cdcc6a14b82b02185
 
 ## examples / blog posts
 
