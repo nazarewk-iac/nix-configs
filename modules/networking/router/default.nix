@@ -376,6 +376,9 @@ in
             [Network]
             ${lib.strings.concatMapStringsSep "\n" (addr: "Address=${addr}") cfg.lan.address}
 
+            [DHCPServer]
+            PersistLeases=true
+
             ${lib.strings.concatMapStringsSep "\n" (prefix: ''
             [IPv6Prefix]
             Prefix=${prefix}

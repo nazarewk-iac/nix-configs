@@ -179,6 +179,15 @@ in
               Assign = false;
             })
           ];
+          dhcpServerConfig = {
+            EmitDNS = true;
+            PoolOffset = 32;
+          };
+          ipv6SendRAConfig = {
+            Managed = true;
+            EmitDNS = true;
+            UplinkInterface = "wan";
+          };
         };
         sops.templates =
           let path = "/etc/systemd/network/00-pic.network.d/${rCfg.dropin.prefix}-static.conf"; in
@@ -189,6 +198,9 @@ in
               content = ''
                 [Network]
                 Address=${tpl.net.address.gateway}/${tpl.net.netmask}
+
+                [DHCPServer]
+                PersistLeases=true
 
                 [IPv6Prefix]
                 Prefix=${tpl.net.network}/${tpl.net.netmask}

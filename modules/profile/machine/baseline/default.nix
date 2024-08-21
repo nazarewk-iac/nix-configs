@@ -65,6 +65,7 @@ in
         "8.8.8.8" # Google
       ];
       networking.networkmanager.enable = lib.mkDefault true;
+      networking.networkmanager.logLevel = lib.mkDefault "INFO";
 
       # REMOTE access
       services.openssh.enable = true;

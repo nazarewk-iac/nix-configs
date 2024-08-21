@@ -18,8 +18,11 @@ A router setup used by `etra`.
         - [x] ping devices from LAN
         - [x] ping devices from WAN
         - [x] route over link-local addresses (not using up public or generating private IPs)
+        - [ ] figure out why Network Manager doesn't complete IPv6 connectivity (doesn't pass when checked)
 - VLANs
     - [ ] VLAN (pic) dedicated to kubernetes cluster
+        - [ ] confirm it works with direct connection (without switch)
+        - [ ] figure out how to do it through `Mokerlink 2G08110GT`
 
 # materials
 

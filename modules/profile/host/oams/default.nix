@@ -99,5 +99,8 @@ in
       ];
     }
     (import ./disko.nix { inherit lib; hostname = config.networking.hostName; })
+    {
+      networking.networkmanager.logLevel = "DEBUG";
+    }
   ]);
 }
