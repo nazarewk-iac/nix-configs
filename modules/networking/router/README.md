@@ -18,6 +18,8 @@ A router setup used by `etra`.
         - [x] ping devices from LAN
         - [x] ping devices from WAN
         - [x] route over link-local addresses (not using up public or generating private IPs)
+- VLANs
+    - [ ] VLAN (pic) dedicated to kubernetes cluster
 
 # materials
 

@@ -16,7 +16,7 @@ let
 
   mkDropInDir = unit: "/etc/systemd/network/${unit}.d";
   # insert `cut -c-8 </proc/sys/kernel/random/uuid` for easier identification of managed files
-  mkDropInFileName = name: "kdn-router-35f45554-${name}.conf";
+  mkDropInFileName = name: "${cfg.dropin.prefix}-${name}.conf";
   mkDropInPath = unit: name: "${mkDropInDir unit}/${mkDropInFileName name}";
 
   mkAddressLines = net: host: lib.pipe net [
@@ -33,6 +33,23 @@ in
     debug = lib.mkOption {
       type = with lib.types; bool;
       default = false;
+    };
+
+    dropin.prefix = lib.mkOption {
+      type = with lib.types; str;
+      default = "kdn-router-35f45554";
+    };
+
+    forwardings = lib.mkOption {
+      type = lib.types.listOf (lib.types.submodule (fwArgs: {
+        options.from = lib.mkOption {
+          type = with lib.types; str;
+        };
+        options.to = lib.mkOption {
+          type = with lib.types; str;
+        };
+      }));
+      default = [ ];
     };
 
     wan.type = lib.mkOption {
@@ -55,9 +72,6 @@ in
       default = [ ];
     };
 
-    lan.dhcpServer = lib.mkOption {
-      type = with lib.types; str;
-    };
     lan.address = lib.mkOption {
       type = with lib.types; listOf str;
       default = [ ];
@@ -135,13 +149,18 @@ in
       networking.firewall.pingLimit = "60/minute burst 5 packets";
       networking.firewall.trustedInterfaces = [ "lan" ];
 
+      kdn.networking.router.forwardings = [
+        { from = "nb-priv"; to = "lan"; }
+        { from = "lan"; to = "wan"; }
+      ];
+
       # more verbose logging in `systemd-networkd`, doesn't seem to generate much logs at all
       systemd.services.systemd-networkd.environment.SYSTEMD_LOG_LEVEL = "debug";
 
       networking.firewall.extraForwardRules = ''
         meta iifname . meta oifname {
-          lan . wan,
-          wan . lan,
+        ${lib.strings.concatMapStringsSep "\n"
+        (fw: ''  ${fw.from} . ${fw.to},'') cfg.forwardings}
         } accept comment "allow traffic from internal networks to the WAN"
 
         ${lib.optionalString config.networking.firewall.logRefusedConnections ''
@@ -256,6 +275,7 @@ in
           LinkLocalAddressing = "ipv6";
         };
         linkConfig = {
+          Multicast = true;
           RequiredForOnline = "routable";
         };
       };
@@ -355,9 +375,6 @@ in
           content = ''
             [Network]
             ${lib.strings.concatMapStringsSep "\n" (addr: "Address=${addr}") cfg.lan.address}
-
-            [DHCPServer]
-            ServerAddress=${cfg.lan.dhcpServer}
 
             ${lib.strings.concatMapStringsSep "\n" (prefix: ''
             [IPv6Prefix]
