@@ -42,11 +42,19 @@ let
         default = { };
       };
       options.text = lib.mkOption {
+        type = with lib.types; str;
+        default = "";
+      };
+
+      options._text = lib.mkOption {
         readOnly = true;
         type = with lib.types; str;
         default =
           let
-            sections = [{ name = "values"; value = tpl.config.values; }] ++ (lib.attrsets.mapAttrsToList lib.attrsets.nameValuePair tpl.config.sections);
+            sections =
+              [{ name = "values"; value = tpl.config.values; }]
+              ++ (lib.attrsets.mapAttrsToList lib.attrsets.nameValuePair tpl.config.sections)
+            ;
 
             renderSection = sectionName: entries: lib.pipe entries [
               (lib.attrsets.mapAttrsToList (key: builtins.map (value: "${key}=${value}")))
@@ -58,22 +66,209 @@ let
             (builtins.map (sec: lib.pipe sec.value [
               (lib.attrsets.mapAttrsToList renderSection)
               lib.lists.flatten
-              (sections: [
-                "###"
-                "## [BEGIN] SECTION: ${sec.name}"
-                "#"
-                ""
-              ] ++ sections ++ [
-                ""
-                "#"
-                "## [END  ] SECTION: ${sec.name}"
-                "###"
-              ])
               (builtins.concatStringsSep "\n")
+              (txt: ''
+                ###
+                ## [BEGIN] SECTION: ${sec.name}
+                #
+
+                ${txt}
+
+                #
+                ## [END]   SECTION: ${sec.name}
+                ###
+              '')
             ]))
             (builtins.concatStringsSep "\n\n\n")
+            (txt: ''
+              ${txt}
+
+              ${tpl.config.text}
+            '')
           ];
       };
+
+    });
+
+
+  netType = lib.types.submodule ({ name, ... }@netArgs:
+    let netCfg = netArgs.config; in {
+      options = {
+        name = lib.mkOption {
+          type = with lib.types; str;
+          default = netArgs.name;
+        };
+        unit.name = lib.mkOption {
+          type = with lib.types; str;
+          default = "${cfg.unit.prefix}${netCfg.name}";
+        };
+        type = lib.mkOption {
+          type = with lib.types; enum [ "wan" "lan" ];
+        };
+        netdev.kind = lib.mkOption {
+          type = with lib.types; enum [ "bond" "bridge" "vlan" ];
+          default = { wan = "bond"; vlan = "vlan"; }.${netCfg.type} or "bridge";
+        };
+        vlan.id = lib.mkOption {
+          type = with lib.types; ints.between 1 4095;
+        };
+        interfaces = lib.mkOption {
+          type = with lib.types; listOf str;
+        };
+        forward.to = lib.mkOption {
+          type = with lib.types; listOf str;
+          default = [ ];
+        };
+        forward.from = lib.mkOption {
+          type = with lib.types; listOf str;
+          default = [ ];
+        };
+        lan.uplink = lib.mkOption {
+          type = with lib.types; str;
+        };
+        wan.dns = lib.mkOption {
+          type = with lib.types; listOf str;
+        };
+        wan.gateway = lib.mkOption {
+          type = with lib.types; listOf str;
+        };
+        address = lib.mkOption {
+          type = with lib.types; listOf str;
+        };
+        prefix = lib.mkOption {
+          type = with lib.types; attrsOf str;
+          default = { };
+        };
+        template.network = lib.mkOption {
+          type = templateType;
+          default = { };
+        };
+        dhcpv4.leases = lib.mkOption {
+          type = lib.types.listOf (lib.types.submodule (leaseArgs: {
+            options.mac = lib.mkOption {
+              type = with lib.types; str;
+            };
+            options.ip = lib.mkOption {
+              type = with lib.types; str;
+            };
+            options.text = lib.mkOption {
+              readOnly = true;
+              type = with lib.types; str;
+              default = with leaseArgs.config; ''
+                [DHCPServerStaticLease]
+                MACAddress=${mac}
+                Address=${ip}
+              '';
+            };
+          }));
+          default = [ ];
+        };
+        firewall = {
+          trusted = lib.mkOption {
+            type = with lib.types; bool;
+            default = false;
+          };
+          allowedTCPPorts = lib.mkOption {
+            type = with lib.types; listOf port;
+            default = [ ];
+            apply = ports: lib.unique (builtins.sort builtins.lessThan ports);
+          };
+
+          allowedTCPPortRanges = lib.mkOption {
+            type = with lib.types; listOf (attrsOf port);
+            default = [ ];
+          };
+
+          allowedUDPPorts = lib.mkOption {
+            type = with lib.types; listOf port;
+            default = [ ];
+            apply = ports: lib.unique (builtins.sort builtins.lessThan ports);
+          };
+
+          allowedUDPPortRanges = lib.mkOption {
+            type = with lib.types; listOf (attrsOf port);
+            default = [ ];
+          };
+        };
+      };
+      config = lib.mkMerge [
+        {
+          template.network.values.Network = {
+            Address = netCfg.address;
+          };
+        }
+        (lib.mkIf (netCfg.type == "wan") {
+          template.network.values.Network = {
+            DNS = netCfg.wan.dns;
+            Gateway = netCfg.wan.gateway;
+          };
+          template.network.sections = lib.attrsets.mapAttrs'
+            (name: prefix: {
+              name = "prefix-${name}";
+              value.IPv6Prefix = {
+                Prefix = prefix;
+                OnLink = true;
+                AddressAutoconfiguration = false;
+                Assign = false;
+              };
+            })
+            netCfg.prefix;
+        })
+        (lib.mkIf (netCfg.type == "lan") {
+          forward.to = [ netCfg.lan.uplink ];
+          template.network.values = {
+            DHCPServer = {
+              # this value is not supported yet by NixOS
+              PersistLeases = true;
+            };
+          };
+          template.network.sections = lib.mkMerge [
+            (lib.attrsets.mapAttrs'
+              (name: prefix: {
+                name = "prefix-${name}";
+                value.IPv6Prefix = {
+                  Prefix = prefix;
+                  OnLink = true;
+                  AddressAutoconfiguration = true;
+                  Assign = false;
+                };
+              })
+              netCfg.prefix)
+          ];
+          template.network.text = lib.pipe netCfg.dhcpv4.leases [
+            (builtins.map (lease: lease.text))
+            (builtins.concatStringsSep "\n")
+            (txt: ''
+              ###
+              ## [BEGIN] DHCPv4 Static Leases
+              #
+
+              ${txt}
+
+              #
+              ## [END]   DHCPv4 Static Leases
+              ###
+            '')
+          ];
+
+          firewall =
+            let
+            in
+            {
+              allowedTCPPorts = [
+                ports.mdns
+              ]
+              ++ builtins.attrValues ports.dns
+              ;
+              allowedUDPPorts = [
+                ports.mdns
+              ]
+              ++ builtins.attrValues ports.dns
+              ++ builtins.attrValues ports.dhcp
+              ;
+            };
+        })
+      ];
     });
 in
 {
@@ -114,148 +309,7 @@ in
     };
 
     nets = lib.mkOption {
-      type = lib.types.attrsOf (lib.types.submodule ({ name, ... }@netArgs:
-        let netCfg = netArgs.config; in {
-          options = {
-            name = lib.mkOption {
-              type = with lib.types; str;
-              default = netArgs.name;
-            };
-            unit.name = lib.mkOption {
-              type = with lib.types; str;
-              default = "${cfg.unit.prefix}${netCfg.name}";
-            };
-            type = lib.mkOption {
-              type = with lib.types; enum [ "wan" "lan" ];
-            };
-            netdev.kind = lib.mkOption {
-              type = with lib.types; enum [ "bond" "bridge" "vlan" ];
-              default = { wan = "bond"; vlan = "vlan"; }.${netCfg.type} or "bridge";
-            };
-            vlan.id = lib.mkOption {
-              type = with lib.types; ints.between 1 4095;
-            };
-            interfaces = lib.mkOption {
-              type = with lib.types; listOf str;
-            };
-            forward.to = lib.mkOption {
-              type = with lib.types; listOf str;
-              default = [ ];
-            };
-            forward.from = lib.mkOption {
-              type = with lib.types; listOf str;
-              default = [ ];
-            };
-            lan.uplink = lib.mkOption {
-              type = with lib.types; str;
-            };
-            wan.dns = lib.mkOption {
-              type = with lib.types; listOf str;
-            };
-            wan.gateway = lib.mkOption {
-              type = with lib.types; listOf str;
-            };
-            address = lib.mkOption {
-              type = with lib.types; listOf str;
-            };
-            prefix = lib.mkOption {
-              type = with lib.types; attrsOf str;
-              default = { };
-            };
-            template.network = lib.mkOption {
-              type = templateType;
-              default = { };
-            };
-            firewall = {
-              trusted = lib.mkOption {
-                type = with lib.types; bool;
-                default = false;
-              };
-              allowedTCPPorts = lib.mkOption {
-                type = with lib.types; listOf port;
-                default = [ ];
-                apply = ports: lib.unique (builtins.sort builtins.lessThan ports);
-              };
-
-              allowedTCPPortRanges = lib.mkOption {
-                type = with lib.types; listOf (attrsOf port);
-                default = [ ];
-              };
-
-              allowedUDPPorts = lib.mkOption {
-                type = with lib.types; listOf port;
-                default = [ ];
-                apply = ports: lib.unique (builtins.sort builtins.lessThan ports);
-              };
-
-              allowedUDPPortRanges = lib.mkOption {
-                type = with lib.types; listOf (attrsOf port);
-                default = [ ];
-              };
-            };
-          };
-          config = lib.mkMerge [
-            {
-              template.network.values.Network = {
-                Address = netCfg.address;
-              };
-            }
-            (lib.mkIf (netCfg.type == "wan") {
-              template.network.values.Network = {
-                DNS = netCfg.wan.dns;
-                Gateway = netCfg.wan.gateway;
-              };
-              template.network.sections = lib.attrsets.mapAttrs'
-                (name: prefix: {
-                  name = "prefix-${name}";
-                  value.IPv6Prefix = {
-                    Prefix = prefix;
-                    OnLink = true;
-                    AddressAutoconfiguration = false;
-                    Assign = false;
-                  };
-                })
-                netCfg.prefix;
-            })
-            (lib.mkIf (netCfg.type == "lan") {
-              forward.to = [ netCfg.lan.uplink ];
-              template.network.values = {
-                DHCPServer = {
-                  # this value is not supported yet by NixOS
-                  PersistLeases = true;
-                };
-              };
-              template.network.sections = lib.attrsets.mapAttrs'
-                (name: prefix: {
-                  name = "prefix-${name}";
-                  value.IPv6Prefix = {
-                    Prefix = prefix;
-                    OnLink = true;
-                    AddressAutoconfiguration = true;
-                    Assign = false;
-                  };
-                })
-                netCfg.prefix;
-
-              firewall =
-                let
-                in
-                {
-                  allowedTCPPorts = [
-                    ports.mdns
-                  ]
-                  ++ builtins.attrValues ports.dns
-                  ;
-                  allowedUDPPorts = [
-                    ports.mdns
-                  ]
-                  ++ builtins.attrValues ports.dns
-                  ++ builtins.attrValues ports.dhcp
-                  ;
-                };
-            })
-          ];
-        }));
+      type = lib.types.attrsOf netType;
       default = { };
     };
   };
@@ -547,7 +601,7 @@ in
             "${path}" = {
               inherit path;
               mode = "0644";
-              content = netCfg.template.network.text;
+              content = netCfg.template.network._text;
             };
           }))
         lib.mkMerge

@@ -19,10 +19,17 @@ let
       address.gateway = "fd12:ed4e:366d:9::1";
     };
   };
+  net.ipv4.lan = {
+    network = "192.168.73.0";
+    netmask = "24";
+    address.gateway = "192.168.73.1";
+    address.cafal = "192.168.73.2";
+  };
   net.ipv4.pic = {
     network = "10.92.0.0";
     netmask = "16";
     address.gateway = "10.92.0.1";
+    address.cafal = "10.92.0.2";
   };
   net.ipv4.p2p.drek-etra = {
     network = "192.168.40.0";
@@ -33,6 +40,8 @@ let
   ll.drek.br-etra = "fe80::c641:1eff:fef8:9ce7"; # drek's link-local address
   vlan.pic.name = "pic";
   vlan.pic.id = 1859;
+
+  mac.cafal.default = "00:23:79:00:31:03";
 in
 {
   options.kdn.profile.host.etra = {
@@ -111,7 +120,7 @@ in
         interfaces = [ "enp3s0" ];
         firewall.trusted = false;
         address = [
-          (with netconf.ipv4.network.etra.lan; "${address.gateway}/${netmask}")
+          (with net.ipv4.lan; "${address.gateway}/${netmask}")
           (with ula.lan; "${address.gateway}/${netmask}")
           (with netconf.ipv6.network.etra.lan; "${address.gateway}/${netmask}")
         ];
@@ -135,5 +144,19 @@ in
         prefix.public = with netconf.ipv6.network.etra.pic; "${network}/${netmask}";
       };
     }
+    (
+      let host = "cafal"; nets = [ "lan" "pic" ]; in {
+        kdn.networking.router.nets = lib.pipe nets [
+          (builtins.map (netName: {
+            name = netName;
+            value.dhcpv4.leases = [{
+              mac = mac."${host}".default;
+              ip = net.ipv4."${netName}".address."${host}";
+            }];
+          }))
+          builtins.listToAttrs
+        ];
+      }
+    )
   ]);
 }
