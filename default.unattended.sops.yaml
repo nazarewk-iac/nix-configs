@@ -50,8 +50,9 @@ networking:
             drek:
                 br-etra: ENC[AES256_GCM,data:18CB+7OwpoXdWAZp1w/QW98BNOuKPQZcaw==,iv:wiKMs8KWAZPxhEapstV6YSAsE7bgklfvZT4Ot9QTrfk=,tag:7rogKv1HNzB0HOehihOlkQ==,type:str]
             etra:
-                wan: ENC[AES256_GCM,data:DLiuvuLk2u466LIaVRQSA8ei3MWFluHemA==,iv:90WBvmOzxNjhEIr8gAehaZj9d7f37nFNzzs1iQe1vzA=,tag:H6xoe5iiEnmNa/P6wlrw/w==,type:str]
+                wan: ENC[AES256_GCM,data:j+l4mJCLoSXWx+3bpR9nav2NekxfvpMA2A==,iv:PQcM33YFBdl8RSlplC12aNBB8KzLYQsak/F2+vjKQkI=,tag:6rZrG4Pgor1WHveNZHa/sQ==,type:str]
                 lan: ENC[AES256_GCM,data:zGUIxozIaRQm3Lqa2Dqpzw64Zlq+xSd3Gw==,iv:nemsS00uPsgkgS2INGd0oM20xbSwpcR1MBNZR+g0LOY=,tag:NOFXQYyYLSiige0BUt5M0Q==,type:str]
+                pic: ENC[AES256_GCM,data:1RZYk2oIERx8mwENcSUxxA2I1wAejaB8DA==,iv:bjI4y//KTSGcKxHEy3C54BZ5Aqy6BCkFc6nGkdA/PL0=,tag:HCoprWRiotaGtfTy9tt44Q==,type:str]
     ipv4:
         network:
             isp:
@@ -148,8 +149,8 @@ sops:
             4C/ZajvmXoe8KyhXYtapE0o0oRhxh3kexHg+9fRue0/1mpJBbmwuJtY4fHF6otQu
             Udw=
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2024-08-21T17:45:01Z"
-    mac: ENC[AES256_GCM,data:8zkN7N69jSYg/SkTT3bLnaDdSRe2WvUX6GbcNa4IlZBEg5xploAnaQxTkOpTXKMk4IYIKNCF0yGnz/+5qyg46MzlDh2o47PCRPgnrVaQruKbOWh0vLsH8IF4FOfOQ3wloEpKQ+D6sMyWxhzc/JQy/lGoo6PLG1hk58q1sHMpkfo=,iv:qCOoX4VQ3pP3YV9MOAkvPoHUeZQKvfWH2pCHZ2KfZWU=,tag:TvtLUOhrrxSXskwem2nNQg==,type:str]
+    lastmodified: "2024-08-22T15:09:31Z"
+    mac: ENC[AES256_GCM,data:Hmb7OVYKighoM+tSbEEb79djdrKBEzlr8fTlsshBhCGZJM6Opf5RKrTwDnMt66WPO1NIQki2/qA8Ys6WNX6y89pyMkgi7G9miv9oqWmKnsjvmIm+j104zAe/lcGnrDFt3A5x9biIX4Mj1gQ845yf75YrWY095HtPjND3WiCxtTI=,iv:0QZUKXoRYIropBAM5TsWBZBNZV1+ZiA/WL6D/jJw1bc=,tag:/t/vaeMPX819hee0YP8jnw==,type:str]
     pgp: []
     unencrypted_suffix: _unencrypted
     version: 3.9.0

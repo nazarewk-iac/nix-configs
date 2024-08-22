@@ -2,29 +2,71 @@
 let
   cfg = config.kdn.networking.router;
 
-  wanInterfaces = lib.pipe cfg.interfaces [
-    builtins.attrValues
-    (builtins.filter (iface: lib.lists.any (r: r == iface.role) [ "wan" "wan-primary" ]))
-  ];
-  lanInterfaces = lib.pipe cfg.interfaces [
-    builtins.attrValues
-    (builtins.filter (iface: lib.lists.any (r: r == iface.role) [ "lan" ]))
-  ];
-
-  ph = config.kdn.security.secrets.placeholders.networking;
-  host = config.networking.hostName;
-
   mkDropInDir = unit: "/etc/systemd/network/${unit}.d";
-  # insert `cut -c-8 </proc/sys/kernel/random/uuid` for easier identification of managed files
-  mkDropInFileName = name: "${cfg.dropin.prefix}-${name}.conf";
-  mkDropInPath = unit: name: "${mkDropInDir unit}/${mkDropInFileName name}";
+  mkDropInPath = unit: name: "${mkDropInDir unit}/${cfg.dropin.infix}-${name}.conf";
 
-  mkAddressLines = net: host: lib.pipe net [
-    (lib.attrsets.attrByPath [ "addresses" host ] { })
-    builtins.attrValues
-    (builtins.map (address: "Address=${address}"))
-    (builtins.concatStringsSep "\n")
-  ];
+  getInterfaceUnit = iface: lib.attrsets.attrByPath [ iface "unit" "name" ] "${cfg.unit.prefix}${iface}" cfg.nets;
+
+  templateType = lib.types.submodule (tpl:
+    let
+      leafType = with lib.types; oneOf [ str bool int path ];
+      toString = value: (
+        {
+          bool = builtins.toJSON;
+        }."${builtins.typeOf value}" or builtins.toString
+      ) value;
+      sectionType = with lib.types; attrsOf (attrsOf (coercedTo
+        (either (listOf leafType) leafType)
+        (value: lib.pipe value [
+          lib.lists.toList
+          (builtins.map toString)
+        ])
+        (listOf str)
+      ));
+    in
+    {
+      options.values = lib.mkOption {
+        type = sectionType;
+        default = { };
+      };
+      options.sections = lib.mkOption {
+        type = with lib.types; attrsOf sectionType;
+        default = { };
+      };
+      options.text = lib.mkOption {
+        readOnly = true;
+        type = with lib.types; str;
+        default =
+          let
+            sections = [{ name = "values"; value = tpl.config.values; }] ++ (lib.attrsets.mapAttrsToList lib.attrsets.nameValuePair tpl.config.sections);
+
+            renderSection = sectionName: entries: lib.pipe entries [
+              (lib.attrsets.mapAttrsToList (key: builtins.map (value: "${key}=${value}")))
+              builtins.concatLists
+              (lines: [ "[${sectionName}]" lines ])
+            ];
+          in
+          lib.pipe sections [
+            (builtins.map (sec: lib.pipe sec.value [
+              (lib.attrsets.mapAttrsToList renderSection)
+              lib.lists.flatten
+              (sections: [
+                "###"
+                "## [BEGIN] SECTION: ${sec.name}"
+                "#"
+                ""
+              ] ++ sections ++ [
+                ""
+                "#"
+                "## [END  ] SECTION: ${sec.name}"
+                "###"
+              ])
+              (builtins.concatStringsSep "\n")
+            ]))
+            (builtins.concatStringsSep "\n\n\n")
+          ];
+      };
+    });
 in
 {
   options.kdn.networking.router = {
@@ -35,9 +77,20 @@ in
       default = false;
     };
 
-    dropin.prefix = lib.mkOption {
+    dropin.infix = lib.mkOption {
       type = with lib.types; str;
+      # insert `cut -c-8 </proc/sys/kernel/random/uuid` for easier identification of managed files
       default = "kdn-router-35f45554";
+    };
+
+    unit.prefix = lib.mkOption {
+      type = with lib.types; str;
+      default = "50-";
+    };
+
+    reloadOnDropIns = lib.mkOption {
+      type = with lib.types; listOf str;
+      default = [ ];
     };
 
     forwardings = lib.mkOption {
@@ -52,73 +105,117 @@ in
       default = [ ];
     };
 
-    wan.type = lib.mkOption {
-      type = with lib.types; enum [ "static" "dhcp" ];
-    };
-    wan.dns = lib.mkOption {
-      type = with lib.types; listOf str;
-      default = [ ];
-    };
-    wan.gateway = lib.mkOption {
-      type = with lib.types; listOf str;
-      default = [ ];
-    };
-    wan.address = lib.mkOption {
-      type = with lib.types; listOf str;
-      default = [ ];
-    };
-    wan.prefix = lib.mkOption {
-      type = with lib.types; listOf str;
-      default = [ ];
-    };
-
-    lan.address = lib.mkOption {
-      type = with lib.types; listOf str;
-      default = [ ];
-    };
-    lan.prefix = lib.mkOption {
-      type = with lib.types; listOf str;
-      default = [ ];
-    };
-
-    reloadOnDropIns = lib.mkOption {
-      type = with lib.types; listOf str;
-      default = [ ];
-    };
-
-    networks = lib.mkOption {
-      internal = true;
-      type = with lib.types; attrsOf (listOf str);
-      default =
-        let
-          pathsJson = pkgs.runCommand "kdn-networks.json"
-            { inherit (config.kdn.security.secrets.files.networking) sopsFile; } ''
-            ${lib.getExe pkgs.gojq} -cM --yaml-input '.networking.networks | with_entries(.value |= keys)' <"$sopsFile" >"$out"
-          '';
-        in
-        lib.pipe pathsJson [
-          builtins.readFile
-          builtins.fromJSON
-        ];
-    };
-    interfaces = lib.mkOption {
-      type = lib.types.attrsOf (lib.types.submodule ({ name, ... }@ifaceArgs: {
-        options.name = lib.mkOption {
-          type = with lib.types; str;
-          default = ifaceArgs.name;
-        };
-        options.matchConfig = lib.mkOption {
-          type = with lib.types; attrsOf anything;
-          default = { };
-        };
-        options.role = lib.mkOption {
-          type = with lib.types; enum [ "wan" "wan-primary" "lan" ];
-        };
-      }));
+    nets = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule ({ name, ... }@netArgs:
+        let netCfg = netArgs.config; in {
+          options = {
+            name = lib.mkOption {
+              type = with lib.types; str;
+              default = netArgs.name;
+            };
+            unit.name = lib.mkOption {
+              type = with lib.types; str;
+              default = "${cfg.unit.prefix}${netCfg.name}";
+            };
+            type = lib.mkOption {
+              type = with lib.types; enum [ "wan" "lan" ];
+            };
+            netdev.kind = lib.mkOption {
+              type = with lib.types; enum [ "bond" "bridge" "vlan" ];
+              default = { wan = "bond"; vlan = "vlan"; }.${netCfg.type} or "bridge";
+            };
+            vlan.id = lib.mkOption {
+              type = with lib.types; ints.between 1 4095;
+            };
+            interfaces = lib.mkOption {
+              type = with lib.types; listOf str;
+            };
+            forward.to = lib.mkOption {
+              type = with lib.types; listOf str;
+              default = [ ];
+            };
+            forward.from = lib.mkOption {
+              type = with lib.types; listOf str;
+              default = [ ];
+            };
+            lan.uplink = lib.mkOption {
+              type = with lib.types; str;
+            };
+            wan.dns = lib.mkOption {
+              type = with lib.types; listOf str;
+            };
+            wan.gateway = lib.mkOption {
+              type = with lib.types; listOf str;
+            };
+            address = lib.mkOption {
+              type = with lib.types; listOf str;
+            };
+            prefix = lib.mkOption {
+              type = with lib.types; attrsOf str;
+              default = { };
+            };
+            template.network = lib.mkOption {
+              type = templateType;
+              default = { };
+            };
+            firewall.trusted = lib.mkOption {
+              type = with lib.types; bool;
+              default = false;
+            };
+          };
+          config = lib.mkMerge [
+            {
+              template.network.values.Network = {
+                Address = netCfg.address;
+              };
+            }
+            (lib.mkIf (netCfg.type == "wan") {
+              template.network.values.Network = {
+                DNS = netCfg.wan.dns;
+                Gateway = netCfg.wan.gateway;
+              };
+            })
+            (lib.mkIf (netCfg.type == "lan") {
+              forward.to = [ netCfg.lan.uplink ];
+              template.network.values = {
+                DHCPServer = {
+                  # this value is not supported yet by NixOS
+                  PersistLeases = true;
+                };
+              };
+            })
+            (lib.mkIf (netCfg.type == "lan") {
+              template.network.sections = lib.attrsets.mapAttrs'
+                (name: prefix: {
+                  name = "prefix-${name}";
+                  value.IPv6Prefix = {
+                    Prefix = prefix;
+                    OnLink = true;
+                    AddressAutoconfiguration = true;
+                    Assign = false;
+                  };
+                })
+                netCfg.prefix;
+            })
+            (lib.mkIf (netCfg.type == "wan") {
+              template.network.sections = lib.attrsets.mapAttrs'
+                (name: prefix: {
+                  name = "prefix-${name}";
+                  value.IPv6Prefix = {
+                    Prefix = prefix;
+                    OnLink = true;
+                    AddressAutoconfiguration = false;
+                    Assign = false;
+                  };
+                })
+                netCfg.prefix;
+            })
+          ];
+        }));
       default = { };
     };
   };
-  config = lib.mkIf config.kdn.profile.host.etra.enable (lib.mkMerge [
+  config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       networking.useNetworkd = true;
       networking.useDHCP = false;
@@ -147,21 +244,18 @@ in
       networking.firewall.logRefusedPackets = lib.mkDefault false;
       networking.firewall.logRefusedConnections = true;
       networking.firewall.pingLimit = "60/minute burst 5 packets";
-      networking.firewall.trustedInterfaces = [ "lan" ];
 
       kdn.networking.router.forwardings = [
         { from = "nb-priv"; to = "lan"; }
-        { from = "lan"; to = "wan"; }
       ];
 
       # more verbose logging in `systemd-networkd`, doesn't seem to generate much logs at all
       systemd.services.systemd-networkd.environment.SYSTEMD_LOG_LEVEL = "debug";
 
       networking.firewall.extraForwardRules = ''
-        meta iifname . meta oifname {
-        ${lib.strings.concatMapStringsSep "\n"
-        (fw: ''  ${fw.from} . ${fw.to},'') cfg.forwardings}
-        } accept comment "allow traffic from internal networks to the WAN"
+        ${lib.strings.concatMapStringsSep "\n" (fwd:
+        ''meta iifname ${fwd.from} meta oifname ${fwd.to} accept comment "allow traffic from ${fwd.from} to ${fwd.to}"''
+          ) cfg.forwardings}
 
         ${lib.optionalString config.networking.firewall.logRefusedConnections ''
           # Refused IPv4 connections get logged in the input filter due to NAT.
@@ -248,159 +342,158 @@ in
             echo 'Cleaning up managed systemd-networkd drop-ins...'
             ${lib.getExe pkgs.findutils} \
               /etc/systemd/network -mindepth 2 -maxdepth 2 \
-              -type f -name '${mkDropInFileName "*"}' \
+              -type f -name '*${cfg.dropin.infix}*.conf' \
               ${lib.escapeShellArgs existing} \
               -printf '> removed: %p\n' -delete
           '';
       }
     )
     {
-      # WAN
-      kdn.networking.router.reloadOnDropIns = [ "00-wan-bond.netdev" "00-wan.network" ];
-      systemd.network.netdevs."00-wan-bond" = {
-        # see https://wiki.archlinux.org/title/Systemd-networkd#Bonding_a_wired_and_wireless_interface
-        netdevConfig.Kind = "bond";
-        netdevConfig.Name = "wan";
-        bondConfig.Mode = "active-backup";
-        bondConfig.PrimaryReselectPolicy = "always";
-        bondConfig.MIIMonitorSec = "1s";
-      };
-      systemd.network.networks."00-wan" = {
-        matchConfig.Name = "wan";
-        networkConfig = {
-          BindCarrier = builtins.map (iface: iface.name) wanInterfaces;
-          IPMasquerade = "ipv4";
-          IPv6AcceptRA = false;
-          IPv6SendRA = false;
-          LinkLocalAddressing = "ipv6";
-        };
-        linkConfig = {
-          Multicast = true;
-          RequiredForOnline = "routable";
-        };
-      };
-    }
-    (lib.mkIf (cfg.wan.type == "dhcp") {
-      systemd.network.networks."00-wan" = {
-        networkConfig.DHCP = "ipv4";
-      };
-    })
-    (lib.mkIf (cfg.wan.type == "static") {
-      systemd.network.networks."00-wan" = {
-        networkConfig.DHCP = "no";
-      };
-      # TODO: somehow rollback config after failing to connect to internet?
-      sops.templates = let path = mkDropInPath "00-wan.network" "static"; in {
-        "${path}" = {
-          inherit path;
-          mode = "0644";
-          content = ''
-            [Network]
-            ${lib.strings.concatMapStringsSep "\n" (addr: "Address=${addr}") cfg.wan.address}
-            ${lib.strings.concatMapStringsSep "\n" (addr: "DNS=${addr}") cfg.wan.dns}
-            ${lib.strings.concatMapStringsSep "\n" (addr: "Gateway=${addr}") cfg.wan.gateway}
-
-            ${lib.strings.concatMapStringsSep "\n" (prefix: ''
-            [IPv6Prefix]
-            Prefix=${prefix}
-            AddressAutoconfiguration=false
-            OnLink=true
-            Assign=false
-            '') cfg.wan.prefix}
-          '';
-        };
-      };
-    })
-    {
-      systemd.network.networks = lib.pipe wanInterfaces [
-        (builtins.map (iface: {
-          name = "10-${iface.name}-${iface.role}";
-          value = {
-            matchConfig.Name = iface.name;
-            networkConfig.Bond = "wan";
-            networkConfig.PrimarySlave = iface.role == "wan-primary";
-          };
-        }))
-        builtins.listToAttrs
+      networking.firewall.trustedInterfaces = lib.pipe cfg.nets [
+        builtins.attrValues
+        (builtins.filter (netCfg: netCfg.firewall.trusted))
+        (builtins.map (netCfg: netCfg.name))
       ];
-    }
-    {
-      # LAN
-      kdn.networking.router.reloadOnDropIns = [ "00-lan.netdev" "00-lan.network" ];
-      systemd.network.netdevs."00-lan" = {
-        netdevConfig = {
-          Kind = "bridge";
-          Name = "lan";
-        };
-      };
-      systemd.network.networks."00-lan" = {
-        matchConfig.Name = "lan";
-        bridgeConfig = { };
-
-        networkConfig = {
-          ConfigureWithoutCarrier = true;
-          # IPv4
-          DHCP = false;
-          DHCPServer = true;
-          IPMasquerade = "ipv4";
-          # IPv6
-          # for DHCPv6-PD to work I would need to have `IPv6AcceptRA=true` on `wan`
-          DHCPPrefixDelegation = false;
-          IPv6AcceptRA = false;
-          IPv6SendRA = true;
-          IPv6PrivacyExtensions = true;
-          IPv6LinkLocalAddressGenerationMode = "stable-privacy";
-          # misc
-          MulticastDNS = true;
-          #Gateway = "_ipv6ra"; # doesn't seem to change anything
-        };
-        linkConfig = {
-          RequiredForOnline = "routable";
-          Multicast = true;
-        };
-        dhcpServerConfig = {
-          EmitDNS = true;
-          PoolOffset = 32;
-        };
-        ipv6SendRAConfig = {
-          Managed = true;
-          EmitDNS = true;
-          UplinkInterface = "wan";
-        };
-      };
-      sops.templates = let path = mkDropInPath "00-lan.network" "static"; in {
-        "${path}" = {
-          inherit path;
-          mode = "0644";
-          content = ''
-            [Network]
-            ${lib.strings.concatMapStringsSep "\n" (addr: "Address=${addr}") cfg.lan.address}
-
-            [DHCPServer]
-            PersistLeases=true
-
-            ${lib.strings.concatMapStringsSep "\n" (prefix: ''
-            [IPv6Prefix]
-            Prefix=${prefix}
-            AddressAutoconfiguration=true
-            OnLink=true
-            Assign=true
-            '') cfg.lan.prefix}
-          '';
-        };
-      };
-    }
-    {
-      systemd.network.networks = lib.pipe lanInterfaces [
-        (builtins.map (iface: {
-          name = "10-${iface.name}-${iface.role}";
-          value = {
-            matchConfig = if iface.matchConfig == { } then { Name = iface.name; } else iface.matchConfig;
-            networkConfig.Bridge = [ "lan" ];
-            linkConfig.RequiredForOnline = "enslaved";
+      kdn.networking.router.forwardings = lib.pipe cfg.nets [
+        (lib.attrsets.mapAttrsToList (_: netCfg:
+          builtins.map (to: { from = netCfg.name; inherit to; }) netCfg.forward.to
+          ++ builtins.map (from: { inherit from; to = netCfg.name; }) netCfg.forward.from
+        ))
+        builtins.concatLists
+        lib.lists.unique
+      ];
+      kdn.networking.router.reloadOnDropIns = lib.pipe cfg.nets [
+        (lib.attrsets.mapAttrsToList (_: netCfg: [ "${netCfg.name}.netdev" "${netCfg.name}.network" ]))
+        builtins.concatLists
+        lib.lists.unique
+      ];
+      systemd.network.netdevs = lib.pipe cfg.nets [
+        (lib.attrsets.mapAttrsToList (_: netCfg: {
+          "${netCfg.unit.name}" = {
+            # see https://wiki.archlinux.org/title/Systemd-networkd#Bonding_a_wired_and_wireless_interface
+            netdevConfig = {
+              Kind = netCfg.netdev.kind;
+              Name = netCfg.name;
+            };
+            bondConfig = lib.mkIf (netCfg.netdev.kind == "bond") {
+              Mode = "active-backup";
+              PrimaryReselectPolicy = "always";
+              MIIMonitorSec = "1s";
+            };
+            vlanConfig = lib.mkIf (netCfg.netdev.kind == "vlan") {
+              Id = netCfg.vlan.id;
+            };
           };
         }))
-        builtins.listToAttrs
+        lib.mkMerge
+      ];
+      systemd.network.networks = lib.pipe cfg.nets [
+        (lib.attrsets.mapAttrsToList (_: netCfg: lib.mkMerge [
+          {
+            "${netCfg.unit.name}" = lib.mkMerge [
+              {
+                matchConfig.Name = netCfg.name;
+                linkConfig = {
+                  Multicast = true;
+                  RequiredForOnline = "routable";
+                };
+                networkConfig = {
+                  DHCP = lib.mkDefault false;
+                  IPv6AcceptRA = lib.mkDefault false;
+                  LinkLocalAddressing = "ipv6";
+
+                  IPv6PrivacyExtensions = true;
+                  IPv6LinkLocalAddressGenerationMode = "stable-privacy";
+                };
+              }
+              (lib.mkIf (netCfg.type == "wan") {
+                networkConfig = {
+                  IPMasquerade = "ipv4";
+                  IPv6SendRA = false;
+                  MulticastDNS = false;
+                };
+              })
+              (lib.mkIf (netCfg.type == "lan") {
+                networkConfig = {
+                  # IPv4
+                  DHCPServer = true;
+                  IPMasquerade = "ipv4";
+                  # IPv6
+                  # for DHCPv6-PD to work I would need to have `IPv6AcceptRA=true` on `wan`
+                  DHCPPrefixDelegation = false;
+                  IPv6AcceptRA = false;
+                  IPv6SendRA = true;
+                  # misc
+                  MulticastDNS = true;
+                  #Gateway = "_ipv6ra"; # doesn't seem to change anything
+                };
+                dhcpServerConfig = {
+                  EmitDNS = true;
+                  PoolOffset = 32;
+                };
+                ipv6SendRAConfig = {
+                  Managed = true;
+                  EmitDNS = true;
+                  UplinkInterface = netCfg.lan.uplink;
+                };
+              })
+              (lib.mkIf (netCfg.netdev.kind == "bond") {
+                networkConfig = {
+                  BindCarrier = builtins.concatStringsSep " " netCfg.interfaces;
+                };
+              })
+              (lib.mkIf (netCfg.netdev.kind == "bridge") {
+                networkConfig = {
+                  ConfigureWithoutCarrier = true;
+                };
+              })
+            ];
+          }
+          (lib.mkIf (builtins.elem netCfg.netdev.kind [ "bond" "bridge" ]) (lib.pipe netCfg.interfaces [
+            (lib.lists.imap0 (idx: iface: {
+              name = getInterfaceUnit iface;
+              value = lib.mkMerge [
+                { matchConfig.Name = iface; }
+                (lib.mkIf (netCfg.netdev.kind == "bond") {
+                  networkConfig = {
+                    Bond = netCfg.name;
+                    PrimarySlave = idx == 0;
+                  };
+                })
+                (lib.mkIf (netCfg.netdev.kind == "bridge") {
+                  networkConfig = {
+                    Bridge = netCfg.name;
+                  };
+                  linkConfig = {
+                    RequiredForOnline = "enslaved";
+                  };
+                })
+              ];
+            }))
+            builtins.listToAttrs
+          ]))
+          (lib.mkIf (netCfg.netdev.kind == "vlan") (lib.pipe netCfg.interfaces [
+            (builtins.map (parent: {
+              name = getInterfaceUnit parent;
+              value = {
+                networkConfig.VLAN = [ netCfg.name ];
+              };
+            }))
+            builtins.listToAttrs
+          ]))
+        ]))
+        lib.mkMerge
+      ];
+      sops.templates = lib.pipe cfg.nets [
+        (lib.attrsets.mapAttrsToList (_: netCfg:
+          let path = mkDropInPath "${netCfg.unit.name}.network" "50-template"; in {
+            "${path}" = {
+              inherit path;
+              mode = "0644";
+              content = netCfg.template.network.text;
+            };
+          }))
+        lib.mkMerge
       ];
     }
   ]);

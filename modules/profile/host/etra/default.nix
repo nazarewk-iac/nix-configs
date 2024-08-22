@@ -8,15 +8,15 @@ let
   ula = {
     network = "fd12:ed4e:366d::";
     netmask = "48";
-    pic = {
-      network = "fd12:ed4e:366d:2::";
-      netmask = "64";
-      address.gateway = "fd12:ed4e:366d:2::1";
-    };
     lan = {
-      network = "fd12:ed4e:366d:1::";
+      network = "fd12:ed4e:366d:8::";
       netmask = "64";
-      address.gateway = "fd12:ed4e:366d:1::1";
+      address.gateway = "fd12:ed4e:366d:8::1";
+    };
+    pic = {
+      network = "fd12:ed4e:366d:9::";
+      netmask = "64";
+      address.gateway = "fd12:ed4e:366d:9::1";
     };
   };
   net.ipv4.pic = {
@@ -77,140 +77,64 @@ in
       }
     )
     {
-      systemd.network.networks."00-wan" = {
-        /* cannot use IPv4 link-local addressing because it causes degraded state, see:
+      networking.nameservers = lib.mkForce [ ];
+      kdn.networking.router.enable = true;
+      kdn.networking.router.debug = true;
+
+      networking.firewall.trustedInterfaces = [ "lan" ];
+      kdn.networking.router.nets.wan = {
+        type = "wan";
+        netdev.kind = "bond";
+        interfaces = [ "enp1s0" ];
+        address = [ ];
+        wan.dns = [
+          net.ipv4.p2p.drek-etra.address.gateway
+          ll.drek.br-etra
+        ];
+        wan.gateway = [
+          net.ipv4.p2p.drek-etra.address.gateway
+          ll.drek.br-etra
+        ];
+        template.network.sections.p2p-drek-etra.Address = with net.ipv4.p2p.drek-etra; {
+          /* cannot use IPv4 link-local addressing because it causes degraded state, see:
             - https://github.com/systemd/systemd/issues/575
             - https://github.com/systemd/systemd/issues/9077
-         */
-        addresses = [
-          {
-            Address = "192.168.40.1/31";
-            Peer = "192.168.40.0/31";
-          }
-        ];
-        networkConfig = {
-          DNS = [
-            net.ipv4.p2p.drek-etra.address.gateway
-            ll.drek.br-etra
-          ];
-          Gateway = [
-            net.ipv4.p2p.drek-etra.address.gateway
-            ll.drek.br-etra
-          ];
+           */
+          Address = "${address.client}/${netmask}";
+          Peer = "${address.gateway}/${netmask}";
         };
       };
-      networking.nameservers = lib.mkForce [ ];
-      kdn.networking.router = {
-        enable = true;
-        debug = false;
-        wan.type = "static";
 
-        lan.address = [
+      kdn.networking.router.nets.lan = {
+        type = "lan";
+        lan.uplink = "wan";
+        netdev.kind = "bridge";
+        interfaces = [ "enp3s0" ];
+        firewall.trusted = true;
+        address = [
           (with netconf.ipv4.network.etra.lan; "${address.gateway}/${netmask}")
           (with ula.lan; "${address.gateway}/${netmask}")
+          (with netconf.ipv6.network.etra.lan; "${address.gateway}/${netmask}")
         ];
-        lan.prefix = [
-          (with netconf.ipv6.network.etra.lan; "${network}/${netmask}")
-          (with ula.lan; "${network}/${netmask}")
+        prefix.ula = with ula.lan; "${network}/${netmask}";
+        prefix.public = with netconf.ipv6.network.etra.lan; "${network}/${netmask}";
+      };
+
+      kdn.networking.router.nets.pic = {
+        type = "lan";
+        lan.uplink = "wan";
+        netdev.kind = "vlan";
+        vlan.id = vlan.pic.id;
+        interfaces = [ "lan" ];
+        firewall.trusted = true;
+        address = [
+          (with net.ipv4.pic; "${address.gateway}/${netmask}")
+          (with ula.pic; "${address.gateway}/${netmask}")
+          (with netconf.ipv6.network.etra.pic; "${address.gateway}/${netmask}")
         ];
-        /* TODO: backup connection through NanoKVM? it could theoretically route the traffic?
-            it is meant for maintenance access to NanoKVM itself, but maybe iptables could configure forwarding to WAN?
-            see https://wiki.sipeed.com/hardware/en/kvm/NanoKVM/system/updating.html#Check-via-USB-RNDIS-Network-Interface
-            see https://wiki.sipeed.com/hardware/en/kvm/NanoKVM/user_guide.html#RNDIS
-        */
-        #interfaces."enp0s20f0u3".role = "wan";
-        #interfaces."enp0s20f0u3".matchConfig.Model = "licheervnano";
-        interfaces."enp1s0".role = "wan-primary";
-        #interfaces."enp2s0".role = "lan";
-        interfaces."enp3s0".role = "lan";
+        prefix.ula = with ula.lan; "${network}/${netmask}";
+        prefix.public = with netconf.ipv6.network.etra.pic; "${network}/${netmask}";
       };
     }
-    (
-      let
-        tpl.net = netconf.ipv6.network.etra.pic;
-      in
-      {
-        kdn.networking.router.forwardings = [
-          { from = vlan.pic.name; to = "wan"; }
-        ];
-        systemd.network.networks."00-lan" = {
-          networkConfig.VLAN = [ vlan.pic.name ];
-        };
-        systemd.network.netdevs."00-${vlan.pic.name}" = {
-          netdevConfig = {
-            Name = vlan.pic.name;
-            Kind = "vlan";
-          };
-          vlanConfig = {
-            Id = vlan.pic.id;
-          };
-        };
-        systemd.network.networks."00-${vlan.pic.name}" = {
-          matchConfig = {
-            Name = vlan.pic.name;
-          };
-          address = [
-            (with net.ipv4.pic; "${address.gateway}/${netmask}")
-            (with ula.pic; "${address.gateway}/${netmask}")
-          ];
-          addresses = [
-            (with ula.pic; {
-              Address = "${address.gateway}/${netmask}";
-            })
-          ];
-          networkConfig = {
-            Description = "'pic' Talos/Kubernetes cluster VLAN";
-            DHCP = false;
-            DHCPServer = true;
-            IPMasquerade = "ipv4";
-            # for DHCPv6-PD to work I would need to have `IPv6AcceptRA=true` on `wan`
-            DHCPPrefixDelegation = false;
-            IPv6AcceptRA = false;
-            IPv6SendRA = true;
-            IPv6PrivacyExtensions = true;
-            IPv6LinkLocalAddressGenerationMode = "stable-privacy";
-            MulticastDNS = true;
-          };
-          ipv6Prefixes = [
-            (with ula.pic; {
-              Prefix = "${network}/${netmask}";
-              AddressAutoconfiguration = true;
-              OnLink = true;
-              Assign = false;
-            })
-          ];
-          dhcpServerConfig = {
-            EmitDNS = true;
-            PoolOffset = 32;
-          };
-          ipv6SendRAConfig = {
-            Managed = true;
-            EmitDNS = true;
-            UplinkInterface = "wan";
-          };
-        };
-        sops.templates =
-          let path = "/etc/systemd/network/00-pic.network.d/${rCfg.dropin.prefix}-static.conf"; in
-          {
-            "${path}" = {
-              inherit path;
-              mode = "0644";
-              content = ''
-                [Network]
-                Address=${tpl.net.address.gateway}/${tpl.net.netmask}
-
-                [DHCPServer]
-                PersistLeases=true
-
-                [IPv6Prefix]
-                Prefix=${tpl.net.network}/${tpl.net.netmask}
-                AddressAutoconfiguration=true
-                OnLink=true
-                Assign=false
-              '';
-            };
-          };
-      }
-    )
   ]);
 }
