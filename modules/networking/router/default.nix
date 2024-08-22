@@ -7,6 +7,14 @@ let
 
   getInterfaceUnit = iface: lib.attrsets.attrByPath [ iface "unit" "name" ] "${cfg.unit.prefix}${iface}" cfg.nets;
 
+  ports.dns.default = 53;
+  ports.dns.tls = 853;
+  ports.mdns = 5353;
+  ports.dhcp.v4-request = 67;
+  ports.dhcp.v4-reply = 68;
+  ports.dhcp.v6-request = 546;
+  ports.dhcp.v6-reply = 547;
+
   templateType = lib.types.submodule (tpl:
     let
       leafType = with lib.types; oneOf [ str bool int path ];
@@ -158,9 +166,32 @@ in
               type = templateType;
               default = { };
             };
-            firewall.trusted = lib.mkOption {
-              type = with lib.types; bool;
-              default = false;
+            firewall = {
+              trusted = lib.mkOption {
+                type = with lib.types; bool;
+                default = false;
+              };
+              allowedTCPPorts = lib.mkOption {
+                type = with lib.types; listOf port;
+                default = [ ];
+                apply = ports: lib.unique (builtins.sort builtins.lessThan ports);
+              };
+
+              allowedTCPPortRanges = lib.mkOption {
+                type = with lib.types; listOf (attrsOf port);
+                default = [ ];
+              };
+
+              allowedUDPPorts = lib.mkOption {
+                type = with lib.types; listOf port;
+                default = [ ];
+                apply = ports: lib.unique (builtins.sort builtins.lessThan ports);
+              };
+
+              allowedUDPPortRanges = lib.mkOption {
+                type = with lib.types; listOf (attrsOf port);
+                default = [ ];
+              };
             };
           };
           config = lib.mkMerge [
@@ -174,30 +205,6 @@ in
                 DNS = netCfg.wan.dns;
                 Gateway = netCfg.wan.gateway;
               };
-            })
-            (lib.mkIf (netCfg.type == "lan") {
-              forward.to = [ netCfg.lan.uplink ];
-              template.network.values = {
-                DHCPServer = {
-                  # this value is not supported yet by NixOS
-                  PersistLeases = true;
-                };
-              };
-            })
-            (lib.mkIf (netCfg.type == "lan") {
-              template.network.sections = lib.attrsets.mapAttrs'
-                (name: prefix: {
-                  name = "prefix-${name}";
-                  value.IPv6Prefix = {
-                    Prefix = prefix;
-                    OnLink = true;
-                    AddressAutoconfiguration = true;
-                    Assign = false;
-                  };
-                })
-                netCfg.prefix;
-            })
-            (lib.mkIf (netCfg.type == "wan") {
               template.network.sections = lib.attrsets.mapAttrs'
                 (name: prefix: {
                   name = "prefix-${name}";
@@ -209,6 +216,43 @@ in
                   };
                 })
                 netCfg.prefix;
+            })
+            (lib.mkIf (netCfg.type == "lan") {
+              forward.to = [ netCfg.lan.uplink ];
+              template.network.values = {
+                DHCPServer = {
+                  # this value is not supported yet by NixOS
+                  PersistLeases = true;
+                };
+              };
+              template.network.sections = lib.attrsets.mapAttrs'
+                (name: prefix: {
+                  name = "prefix-${name}";
+                  value.IPv6Prefix = {
+                    Prefix = prefix;
+                    OnLink = true;
+                    AddressAutoconfiguration = true;
+                    Assign = false;
+                  };
+                })
+                netCfg.prefix;
+
+              firewall =
+                let
+                in
+                {
+                  allowedTCPPorts = [
+                    ports.mdns
+                  ]
+                  ++ builtins.attrValues ports.dns
+                  ;
+                  allowedUDPPorts = [
+                    ports.mdns
+                  ]
+                  ++ builtins.attrValues ports.dns
+                  ++ builtins.attrValues ports.dhcp
+                  ;
+                };
             })
           ];
         }));
@@ -353,6 +397,19 @@ in
         builtins.attrValues
         (builtins.filter (netCfg: netCfg.firewall.trusted))
         (builtins.map (netCfg: netCfg.name))
+      ];
+      networking.firewall.interfaces = lib.pipe cfg.nets [
+        (lib.attrsets.mapAttrsToList (_: netCfg: {
+          "${netCfg.name}" = {
+            inherit (netCfg.firewall)
+              allowedTCPPorts
+              allowedTCPPortRanges
+              allowedUDPPorts
+              allowedUDPPortRanges
+              ;
+          };
+        }))
+        lib.mkMerge
       ];
       kdn.networking.router.forwardings = lib.pipe cfg.nets [
         (lib.attrsets.mapAttrsToList (_: netCfg:

@@ -79,9 +79,8 @@ in
     {
       networking.nameservers = lib.mkForce [ ];
       kdn.networking.router.enable = true;
-      kdn.networking.router.debug = true;
+      #kdn.networking.router.debug = true;
 
-      networking.firewall.trustedInterfaces = [ "lan" ];
       kdn.networking.router.nets.wan = {
         type = "wan";
         netdev.kind = "bond";
@@ -110,7 +109,7 @@ in
         lan.uplink = "wan";
         netdev.kind = "bridge";
         interfaces = [ "enp3s0" ];
-        firewall.trusted = true;
+        firewall.trusted = false;
         address = [
           (with netconf.ipv4.network.etra.lan; "${address.gateway}/${netmask}")
           (with ula.lan; "${address.gateway}/${netmask}")
@@ -126,13 +125,13 @@ in
         netdev.kind = "vlan";
         vlan.id = vlan.pic.id;
         interfaces = [ "lan" ];
-        firewall.trusted = true;
+        firewall.trusted = false;
         address = [
           (with net.ipv4.pic; "${address.gateway}/${netmask}")
           (with ula.pic; "${address.gateway}/${netmask}")
           (with netconf.ipv6.network.etra.pic; "${address.gateway}/${netmask}")
         ];
-        prefix.ula = with ula.lan; "${network}/${netmask}";
+        prefix.ula = with ula.pic; "${network}/${netmask}";
         prefix.public = with netconf.ipv6.network.etra.pic; "${network}/${netmask}";
       };
     }
