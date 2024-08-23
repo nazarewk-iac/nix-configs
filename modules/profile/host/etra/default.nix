@@ -19,18 +19,6 @@ let
       address.gateway = "fd12:ed4e:366d:9::1";
     };
   };
-  net.ipv4.lan = {
-    network = "192.168.73.0";
-    netmask = "24";
-    address.gateway = "192.168.73.1";
-    address.cafal = "192.168.73.2";
-  };
-  net.ipv4.pic = {
-    network = "10.92.0.0";
-    netmask = "16";
-    address.gateway = "10.92.0.1";
-    address.cafal = "10.92.0.2";
-  };
   net.ipv4.p2p.drek-etra = {
     network = "192.168.40.0";
     netmask = "31";
@@ -118,12 +106,20 @@ in
         lan.uplink = "wan";
         netdev.kind = "bridge";
         interfaces = [ "enp3s0" ];
-        firewall.trusted = false;
         address = [
-          (with net.ipv4.lan; "${address.gateway}/${netmask}")
           (with ula.lan; "${address.gateway}/${netmask}")
           (with netconf.ipv6.network.etra.lan; "${address.gateway}/${netmask}")
         ];
+        addressing.ipv4 = {
+          id = 3236353446;
+          network = "192.168.73.0";
+          netmask = "24";
+          dns = [ net.ipv4.p2p.drek-etra.address.gateway ];
+          pools.default.start = "192.168.73.32";
+          pools.default.end = "192.168.73.255";
+          hosts.etra.ip = "192.168.73.1";
+          hosts.cafal.ip = "192.168.73.2";
+        };
         prefix.ula = with ula.lan; "${network}/${netmask}";
         prefix.public = with netconf.ipv6.network.etra.lan; "${network}/${netmask}";
       };
@@ -134,29 +130,24 @@ in
         netdev.kind = "vlan";
         vlan.id = vlan.pic.id;
         interfaces = [ "lan" ];
-        firewall.trusted = false;
         address = [
-          (with net.ipv4.pic; "${address.gateway}/${netmask}")
           (with ula.pic; "${address.gateway}/${netmask}")
           (with netconf.ipv6.network.etra.pic; "${address.gateway}/${netmask}")
         ];
         prefix.ula = with ula.pic; "${network}/${netmask}";
         prefix.public = with netconf.ipv6.network.etra.pic; "${network}/${netmask}";
+
+        addressing.ipv4 = {
+          id = 2332818586;
+          network = "10.92.0.0";
+          netmask = "16";
+          dns = [ net.ipv4.p2p.drek-etra.address.gateway ];
+          pools.default.start = "10.92.0.32";
+          pools.default.end = "10.92.0.255";
+          hosts.etra.ip = "10.92.0.1";
+          hosts.cafal.ip = "10.92.0.2";
+        };
       };
     }
-    (
-      let host = "cafal"; nets = [ "lan" "pic" ]; in {
-        kdn.networking.router.nets = lib.pipe nets [
-          (builtins.map (netName: {
-            name = netName;
-            value.dhcpv4.leases = [{
-              mac = mac."${host}".default;
-              ip = net.ipv4."${netName}".address."${host}";
-            }];
-          }))
-          builtins.listToAttrs
-        ];
-      }
-    )
   ]);
 }

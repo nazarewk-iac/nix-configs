@@ -4,9 +4,10 @@ let
 
   # adds additional information (name) to sops-nix placeholders
   # replaces https://github.com/Mic92/sops-nix/blob/be0eec2d27563590194a9206f551a6f73d52fa34/modules/sops/templates/default.nix#L84-L84
-  sopsPlaceHolders = builtins.mapAttrs
+  sopsPlaceholders = builtins.mapAttrs
     (name: _: "<SOPS:${name}:${builtins.substring 0 8 (builtins.hashString "sha256" name)}:PLACEHOLDER>")
     config.sops.secrets;
+  quotedSopsPlaceholders = lib.attrsets.mapAttrs';
 in
 {
   options.kdn.security.secrets = {
@@ -133,7 +134,7 @@ in
         builtins.attrNames
         (builtins.map (name: lib.attrsets.setAttrByPath
           (lib.strings.splitString "/" name)
-          sopsPlaceHolders."${name}"))
+          sopsPlaceholders."${name}"))
         # dumb merge
         (builtins.foldl' lib.attrsets.recursiveUpdate { })
       ];
@@ -149,6 +150,30 @@ in
         }
       ];
 
+      nixpkgs.overlays = [
+        (final: prev: {
+          jsonTemplate =
+            let
+              json = final.formats.json { };
+              prefix = "<UNWRAP:";
+              suffix = ":UNWRAP>";
+            in
+            {
+              inherit (json) type;
+              unwrap = txt: "${prefix}${txt}${suffix}";
+              /* original https://github.com/NixOS/nixpkgs/blob/25494c1d30252a0a58913be296da382fdcc631eb/pkgs/pkgs-lib/formats.nix#L64-L71
+        allows unwrapping of string values into raw types
+                */
+              generate = name: value: lib.pipe value [
+                (json.generate "${name}.wrapped.json")
+                builtins.readFile
+                (builtins.replaceStrings [ "\"${prefix}" "${suffix}\"" ] [ "" "" ])
+                (pkgs.writeText name)
+              ];
+            };
+        })
+      ];
+
       environment.systemPackages = (with pkgs; [
         cfg.age.genScripts
         (pkgs.callPackage ./sops/package.nix { })
@@ -157,7 +182,7 @@ in
         ssh-to-pgp
       ]);
 
-      sops.placeholder = sopsPlaceHolders;
+      sops.placeholder = sopsPlaceholders;
       # see https://github.com/Mic92/sops-nix/issues/65
       # note: SSH key gets imported automatically
       sops.gnupg.sshKeyPaths = [ ];

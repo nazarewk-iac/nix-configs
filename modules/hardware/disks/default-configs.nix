@@ -75,6 +75,7 @@ in
         environment.persistence."sys/data" = {
           directories = [
             "/var/lib/systemd"
+            { directory = "/var/lib/private"; mode = "0700"; }
           ];
         };
         environment.persistence."sys/config" = {

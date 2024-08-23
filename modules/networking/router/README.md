@@ -26,6 +26,8 @@ A router setup used by `etra`.
 - DNS
     - [ ] set up local DNS server
         - [ ] answer with local (DHCP?) hostnames
+            - [x] DHCP: replace `networkd` with `kea`
+            - [ ] spin up separate DNS server like: `bind9`, `knot-dns` or `dnsmasq`
 
 # materials
 

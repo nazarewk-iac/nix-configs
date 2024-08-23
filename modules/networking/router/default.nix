@@ -1,6 +1,7 @@
 { config, pkgs, lib, modulesPath, self, ... }:
 let
   cfg = config.kdn.networking.router;
+  hostname = config.networking.hostName;
 
   mkDropInDir = unit: "/etc/systemd/network/${unit}.d";
   mkDropInPath = unit: name: "${mkDropInDir unit}/${cfg.dropin.infix}-${name}.conf";
@@ -87,9 +88,7 @@ let
             '')
           ];
       };
-
     });
-
 
   netType = lib.types.submodule ({ name, ... }@netArgs:
     let netCfg = netArgs.config; in {
@@ -143,25 +142,81 @@ let
           type = templateType;
           default = { };
         };
-        dhcpv4.leases = lib.mkOption {
-          type = lib.types.listOf (lib.types.submodule (leaseArgs: {
-            options.mac = lib.mkOption {
-              type = with lib.types; str;
-            };
-            options.ip = lib.mkOption {
-              type = with lib.types; str;
-            };
-            options.text = lib.mkOption {
-              readOnly = true;
-              type = with lib.types; str;
-              default = with leaseArgs.config; ''
-                [DHCPServerStaticLease]
-                MACAddress=${mac}
-                Address=${ip}
-              '';
-            };
-          }));
-          default = [ ];
+        addressing = lib.mkOption {
+          type = lib.types.attrsOf (lib.types.submodule (addrArgs:
+            let addrCfg = addrArgs.config; in {
+              options = {
+                enable = lib.mkOption {
+                  type = with lib.types; bool;
+                  default = true;
+                };
+                type = lib.mkOption {
+                  type = with lib.types; enum [ "ipv4" "ipv6" ];
+                  default = if lib.strings.hasInfix ":" addrCfg.network then "ipv6" else "ipv4";
+                };
+                id = lib.mkOption {
+                  # see https://kea.readthedocs.io/en/kea-2.7.1/arm/dhcp4-srv.html#ipv4-subnet-identifier
+                  # > python -c 'import random; print(random.randint(1, 4294967295))'
+                  type = with lib.types; ints.between 1 4294967295;
+                };
+                network = lib.mkOption {
+                  type = with lib.types; str;
+                };
+                netmask = lib.mkOption {
+                  type = with lib.types; str;
+                };
+                dns = lib.mkOption {
+                  type = with lib.types; listOf str;
+                };
+                pools = lib.mkOption {
+                  type = lib.types.attrsOf (lib.types.submodule (poolArgs: {
+                    options = {
+                      start = lib.mkOption {
+                        type = with lib.types; str;
+                      };
+                      end = lib.mkOption {
+                        type = with lib.types; str;
+                      };
+                    };
+                  }));
+                };
+                hosts = lib.mkOption {
+                  type = lib.types.attrsOf (lib.types.submodule ({ name, ... }@hostArgs: {
+                    options = {
+                      hostname = lib.mkOption {
+                        type = with lib.types; str;
+                        default = hostArgs.name;
+                      };
+                      ip = lib.mkOption {
+                        type = with lib.types; str;
+                      };
+                      ident = lib.mkOption {
+                        type = with lib.types; attrsOf str;
+                        default = { };
+                      };
+                    };
+                  }));
+                  default = { };
+                };
+              };
+            }));
+          default = { };
+        };
+        ra.implementation = lib.mkOption {
+          type = with lib.types; enum [
+            "networkd"
+            #"corerad"
+          ];
+          default = "networkd";
+        };
+        dns.implementation = lib.mkOption {
+          type = with lib.types; enum [
+            null
+            #"knot-dns"
+            #"knot-resolver"
+            #"corerad"
+          ];
+          default = null;
         };
         firewall = {
           trusted = lib.mkOption {
@@ -194,7 +249,11 @@ let
       config = lib.mkMerge [
         {
           template.network.values.Network = {
-            Address = netCfg.address;
+            Address = netCfg.address ++ lib.pipe netCfg.addressing [
+              builtins.attrValues
+              (builtins.filter (addrCfg: addrCfg.enable))
+              (builtins.map (addrCfg: addrCfg.hosts."${hostname}".ip))
+            ];
           };
         }
         (lib.mkIf (netCfg.type == "wan") {
@@ -214,60 +273,42 @@ let
             })
             netCfg.prefix;
         })
-        (lib.mkIf (netCfg.type == "lan") {
-          forward.to = [ netCfg.lan.uplink ];
-          template.network.values = {
-            DHCPServer = {
-              # this value is not supported yet by NixOS
-              PersistLeases = true;
-            };
-          };
-          template.network.sections = lib.mkMerge [
-            (lib.attrsets.mapAttrs'
-              (name: prefix: {
-                name = "prefix-${name}";
-                value.IPv6Prefix = {
-                  Prefix = prefix;
-                  OnLink = true;
-                  AddressAutoconfiguration = true;
-                  Assign = false;
-                };
-              })
-              netCfg.prefix)
-          ];
-          template.network.text = lib.pipe netCfg.dhcpv4.leases [
-            (builtins.map (lease: lease.text))
-            (builtins.concatStringsSep "\n")
-            (txt: ''
-              ###
-              ## [BEGIN] DHCPv4 Static Leases
-              #
-
-              ${txt}
-
-              #
-              ## [END]   DHCPv4 Static Leases
-              ###
-            '')
-          ];
-
-          firewall =
-            let
-            in
-            {
-              allowedTCPPorts = [
-                ports.mdns
-              ]
-              ++ builtins.attrValues ports.dns
-              ;
-              allowedUDPPorts = [
-                ports.mdns
-              ]
-              ++ builtins.attrValues ports.dns
-              ++ builtins.attrValues ports.dhcp
-              ;
-            };
-        })
+        (lib.mkIf (netCfg.type == "lan") (lib.mkMerge [
+          {
+            forward.to = [ netCfg.lan.uplink ];
+            firewall =
+              let
+              in
+              {
+                allowedTCPPorts =
+                  [
+                    ports.mdns
+                  ]
+                  ++ builtins.attrValues ports.dns
+                ;
+                allowedUDPPorts =
+                  [
+                    ports.mdns
+                  ]
+                  ++ builtins.attrValues ports.dns
+                  ++ builtins.attrValues ports.dhcp
+                ;
+              };
+            template.network.sections = lib.mkMerge [
+              (lib.attrsets.mapAttrs'
+                (name: prefix: {
+                  name = "prefix-${name}";
+                  value.IPv6Prefix = {
+                    Prefix = prefix;
+                    OnLink = true;
+                    AddressAutoconfiguration = true;
+                    Assign = false;
+                  };
+                })
+                netCfg.prefix)
+            ];
+          }
+        ]))
       ];
     });
 in
@@ -294,6 +335,38 @@ in
     reloadOnDropIns = lib.mkOption {
       type = with lib.types; listOf str;
       default = [ ];
+    };
+    dhcpv4.implementation = lib.mkOption {
+      type = with lib.types; enum [
+        "networkd"
+        "kea"
+      ];
+      default = "kea";
+    };
+    dhcpv6.implementation = lib.mkOption {
+      type = with lib.types; enum [
+        null
+        "networkd"
+        "kea"
+      ];
+      default = null;
+    };
+
+    kea.dhcp4.settings = lib.mkOption {
+      type = pkgs.jsonTemplate.type;
+      default = { };
+    };
+    kea.dhcp6.settings = lib.mkOption {
+      type = pkgs.jsonTemplate.type;
+      default = { };
+    };
+    kea.dhcp-ddns.settings = lib.mkOption {
+      type = pkgs.jsonTemplate.type;
+      default = { };
+    };
+    kea.ctrl-agent.settings = lib.mkOption {
+      type = pkgs.jsonTemplate.type;
+      default = { };
     };
 
     forwardings = lib.mkOption {
@@ -404,49 +477,120 @@ in
           };
         };
     })
-    (
-      let debounceSec = "3"; in {
-        systemd.paths."kdn-systemd-networkd-reload" = {
-          description = "reloads systemd-networkd on external configuration changes";
-          wantedBy = [ "systemd-networkd.service" ];
-          after = [ "systemd-networkd.service" ];
-          pathConfig.PathChanged = builtins.map mkDropInDir cfg.reloadOnDropIns;
-          pathConfig.TriggerLimitIntervalSec = "${debounceSec}s";
-          pathConfig.TriggerLimitBurst = 1;
-        };
-        systemd.services."kdn-systemd-networkd-reload" = {
-          description = "reloads systemd-networkd on external configuration changes";
-          serviceConfig.Type = "oneshot";
-          script = ''
-            set -xeEuo pipefail
-            PATH="${lib.makeBinPath (with pkgs; [ coreutils systemd ])}:$PATH"
-
-            sleep ${debounceSec}
-            systemctl try-reload-or-restart systemd-networkd.service
-          '';
-        };
-        system.activationScripts.renderSecrets.deps = [ "kdnRouterCleanDropIns" ];
-        system.activationScripts.kdnRouterCleanDropIns =
-          let
-            existing = lib.pipe config.sops.templates [
-              builtins.attrValues
-              (builtins.map (tpl: tpl.path))
-              (builtins.filter (lib.strings.hasPrefix "/etc/systemd/network"))
-              (builtins.map (path: [ "!" "-path" path ]))
-              lib.lists.flatten
-            ];
-          in
-          ''
-            echo 'Cleaning up managed systemd-networkd drop-ins...'
-            ${lib.getExe pkgs.findutils} \
-              /etc/systemd/network -mindepth 2 -maxdepth 2 \
-              -type f -name '*${cfg.dropin.infix}*.conf' \
-              ${lib.escapeShellArgs existing} \
-              -printf '> removed: %p\n' -delete
-          '';
-      }
-    )
     {
+      # reloading on drop-ins
+      systemd.services."systemd-networkd" = {
+        reloadTriggers = lib.pipe config.sops.templates [
+          builtins.attrValues
+          (builtins.map (tpl: tpl.path))
+          (builtins.filter (lib.strings.hasPrefix "/etc/systemd/network"))
+        ];
+      };
+    }
+    {
+      # cleaning up managed files
+      system.activationScripts.renderSecrets.deps = [ "kdnRouterCleanDropIns" ];
+      system.activationScripts.kdnRouterCleanDropIns =
+        let
+          existing = lib.pipe config.sops.templates [
+            builtins.attrValues
+            (builtins.map (tpl: tpl.path))
+            (builtins.filter (lib.strings.hasPrefix "/etc/systemd/network"))
+            (builtins.map (path: [ "!" "-path" path ]))
+            lib.lists.flatten
+          ];
+        in
+        ''
+          echo 'Cleaning up managed systemd-networkd drop-ins...'
+          ${lib.getExe pkgs.findutils} \
+            /etc/systemd/network -mindepth 2 -maxdepth 2 \
+            -type f -name '*${cfg.dropin.infix}*.conf' \
+            ${lib.escapeShellArgs existing} \
+            -printf '> removed: %p\n' -delete
+        '';
+    }
+    {
+      # Kea DHCPv4
+      # TODO:
+      services.kea = {
+        dhcp4.enable = true;
+      };
+      kdn.networking.router = {
+        kea.dhcp4.settings = lib.pipe cfg.nets [
+          builtins.attrValues
+          (builtins.filter (netCfg: netCfg.type == "lan"))
+          (builtins.map (netCfg: {
+            interfaces-config.interfaces = [ netCfg.name ];
+            subnet4 = lib.pipe netCfg.addressing [
+              builtins.attrValues
+              (builtins.filter (addrCfg: addrCfg.enable && addrCfg.type == "ipv4"))
+              (builtins.map (addrCfg: {
+                id = addrCfg.id;
+                interface = netCfg.name;
+                subnet = with addrCfg; "${network}/${netmask}";
+                pools = lib.pipe addrCfg.pools [
+                  builtins.attrValues
+                  (builtins.map (pool: { pool = with pool; "${start} - ${end}"; }))
+                ];
+                option-data = [
+                  { name = "routers"; data = addrCfg.hosts."${hostname}".ip; }
+                  { name = "domain-name-servers"; data = builtins.concatStringsSep "," addrCfg.dns; }
+                ];
+              }))
+            ];
+          }))
+          (p: p ++ [{
+            allocator = lib.mkDefault "random";
+            # leases will be valid for 1h
+            valid-lifetime = 1 * 60 * 60;
+            # clients should renew every 30m
+            renew-timer = 30 * 60;
+            # clients should start looking for other servers after 45h
+            rebind-timer = 45 * 60;
+            lease-database = {
+              type = "memfile";
+              persist = true;
+              name = "/var/lib/private/kea/dhcp4.leases";
+            };
+          }])
+          lib.mkMerge
+        ];
+      };
+    }
+    {
+      services.kea = {
+        dhcp4.configFile = config.sops.templates."kea/dhcp4.conf".path;
+        dhcp6.configFile = config.sops.templates."kea/dhcp6.conf".path;
+        ctrl-agent.configFile = config.sops.templates."kea/ctrl-agent.conf".path;
+        dhcp-ddns.configFile = config.sops.templates."kea/dhcp-ddns.conf".path;
+      };
+      sops.templates."kea/dhcp6.conf" = {
+        mode = "0444";
+        content = builtins.readFile (pkgs.jsonTemplate.generate "kea-dhcp6.conf" {
+          Dhcp6 = cfg.kea.dhcp6.settings;
+        });
+      };
+      sops.templates."kea/ctrl-agent.conf" = {
+        mode = "0444";
+        content = builtins.readFile (pkgs.jsonTemplate.generate "kea-ctrl-agent.conf" {
+          Control-agent = cfg.kea.ctrl-agent.settings;
+        });
+      };
+      sops.templates."kea/dhcp-ddns.conf" = {
+        mode = "0444";
+        content = builtins.readFile (pkgs.jsonTemplate.generate "kea-dhcp-ddns.conf" {
+          DhcpDdns = cfg.kea.dhcp-ddns.settings;
+        });
+      };
+      sops.templates."kea/dhcp4.conf" = {
+        mode = "0444";
+        content = builtins.readFile (pkgs.jsonTemplate.generate "kea-dhcp4.conf" {
+          Dhcp4 = cfg.kea.dhcp4.settings;
+        });
+      };
+    }
+    {
+      # Firewall/forwarding
       networking.firewall.trustedInterfaces = lib.pipe cfg.nets [
         builtins.attrValues
         (builtins.filter (netCfg: netCfg.firewall.trusted))
@@ -473,28 +617,32 @@ in
         builtins.concatLists
         lib.lists.unique
       ];
-      kdn.networking.router.reloadOnDropIns = lib.pipe cfg.nets [
-        (lib.attrsets.mapAttrsToList (_: netCfg: [ "${netCfg.name}.netdev" "${netCfg.name}.network" ]))
-        builtins.concatLists
-        lib.lists.unique
-      ];
+    }
+    {
+      # systemd-networkd + drop-ins
       systemd.network.netdevs = lib.pipe cfg.nets [
         (lib.attrsets.mapAttrsToList (_: netCfg: {
-          "${netCfg.unit.name}" = {
-            # see https://wiki.archlinux.org/title/Systemd-networkd#Bonding_a_wired_and_wireless_interface
-            netdevConfig = {
-              Kind = netCfg.netdev.kind;
-              Name = netCfg.name;
-            };
-            bondConfig = lib.mkIf (netCfg.netdev.kind == "bond") {
-              Mode = "active-backup";
-              PrimaryReselectPolicy = "always";
-              MIIMonitorSec = "1s";
-            };
-            vlanConfig = lib.mkIf (netCfg.netdev.kind == "vlan") {
-              Id = netCfg.vlan.id;
-            };
-          };
+          "${netCfg.unit.name}" = lib.mkMerge [
+            {
+              # see https://wiki.archlinux.org/title/Systemd-networkd#Bonding_a_wired_and_wireless_interface
+              netdevConfig = {
+                Kind = netCfg.netdev.kind;
+                Name = netCfg.name;
+              };
+            }
+            (lib.mkIf (netCfg.netdev.kind == "bond") {
+              bondConfig = {
+                Mode = "active-backup";
+                PrimaryReselectPolicy = "always";
+                MIIMonitorSec = "1s";
+              };
+            })
+            (lib.mkIf (netCfg.netdev.kind == "vlan") {
+              vlanConfig = {
+                Id = netCfg.vlan.id;
+              };
+            })
+          ];
         }))
         lib.mkMerge
       ];
@@ -509,45 +657,42 @@ in
                   RequiredForOnline = "routable";
                 };
                 networkConfig = {
+                  DHCPServer = lib.mkDefault false;
                   DHCP = lib.mkDefault false;
                   IPv6AcceptRA = lib.mkDefault false;
+                  IPv6SendRA = lib.mkDefault false;
+                  MulticastDNS = lib.mkDefault false;
                   LinkLocalAddressing = "ipv6";
 
-                  IPv6PrivacyExtensions = true;
-                  IPv6LinkLocalAddressGenerationMode = "stable-privacy";
+                  IPv6PrivacyExtensions = lib.mkDefault true;
+                  IPv6LinkLocalAddressGenerationMode = lib.mkDefault "stable-privacy";
                 };
               }
               (lib.mkIf (netCfg.type == "wan") {
                 networkConfig = {
                   IPMasquerade = "ipv4";
-                  IPv6SendRA = false;
-                  MulticastDNS = false;
                 };
               })
-              (lib.mkIf (netCfg.type == "lan") {
-                networkConfig = {
-                  # IPv4
-                  DHCPServer = true;
-                  IPMasquerade = "ipv4";
-                  # IPv6
-                  # for DHCPv6-PD to work I would need to have `IPv6AcceptRA=true` on `wan`
-                  DHCPPrefixDelegation = false;
-                  IPv6AcceptRA = false;
-                  IPv6SendRA = true;
-                  # misc
-                  MulticastDNS = true;
-                  #Gateway = "_ipv6ra"; # doesn't seem to change anything
-                };
-                dhcpServerConfig = {
-                  EmitDNS = true;
-                  PoolOffset = 32;
-                };
-                ipv6SendRAConfig = {
-                  Managed = true;
-                  EmitDNS = true;
-                  UplinkInterface = netCfg.lan.uplink;
-                };
-              })
+              (lib.mkIf (netCfg.type == "lan") (lib.mkMerge [
+                {
+                  networkConfig = {
+                    IPMasquerade = "ipv4";
+                    MulticastDNS = true;
+                  };
+                }
+                (lib.mkIf (netCfg.ra.implementation == "networkd") {
+                  networkConfig = {
+                    # for DHCPv6-PD to work I would need to have `IPv6AcceptRA=true` on `wan`
+                    DHCPPrefixDelegation = false;
+                    IPv6SendRA = true;
+                  };
+                  ipv6SendRAConfig = {
+                    Managed = true;
+                    EmitDNS = true;
+                    UplinkInterface = netCfg.lan.uplink;
+                  };
+                })
+              ]))
               (lib.mkIf (netCfg.netdev.kind == "bond") {
                 networkConfig = {
                   BindCarrier = builtins.concatStringsSep " " netCfg.interfaces;
@@ -560,38 +705,33 @@ in
               })
             ];
           }
-          (lib.mkIf (builtins.elem netCfg.netdev.kind [ "bond" "bridge" ]) (lib.pipe netCfg.interfaces [
-            (lib.lists.imap0 (idx: iface: {
-              name = getInterfaceUnit iface;
-              value = lib.mkMerge [
-                { matchConfig.Name = iface; }
-                (lib.mkIf (netCfg.netdev.kind == "bond") {
-                  networkConfig = {
-                    Bond = netCfg.name;
-                    PrimarySlave = idx == 0;
-                  };
-                })
-                (lib.mkIf (netCfg.netdev.kind == "bridge") {
-                  networkConfig = {
-                    Bridge = netCfg.name;
-                  };
-                  linkConfig = {
-                    RequiredForOnline = "enslaved";
-                  };
-                })
-              ];
-            }))
-            builtins.listToAttrs
-          ]))
-          (lib.mkIf (netCfg.netdev.kind == "vlan") (lib.pipe netCfg.interfaces [
-            (builtins.map (parent: {
-              name = getInterfaceUnit parent;
-              value = {
+          (
+            let
+              mkInterfaces = kind: ifaceCfg: lib.mkIf (netCfg.netdev.kind == kind) (lib.pipe netCfg.interfaces [
+                (lib.lists.imap0 (idx: iface: {
+                  name = getInterfaceUnit iface;
+                  value = lib.mkMerge [
+                    { matchConfig.Name = lib.mkDefault iface; }
+                    (ifaceCfg idx iface)
+                  ];
+                }))
+                builtins.listToAttrs
+              ]);
+            in
+            lib.mkMerge [
+              (mkInterfaces "bridge" (idx: iface: {
+                networkConfig.Bridge = netCfg.name;
+                linkConfig.RequiredForOnline = "enslaved";
+              }))
+              (mkInterfaces "bond" (idx: iface: {
+                networkConfig.Bond = netCfg.name;
+                networkConfig.PrimarySlave = idx == 0;
+              }))
+              (mkInterfaces "vlan" (idx: iface: {
                 networkConfig.VLAN = [ netCfg.name ];
-              };
-            }))
-            builtins.listToAttrs
-          ]))
+              }))
+            ]
+          )
         ]))
         lib.mkMerge
       ];
