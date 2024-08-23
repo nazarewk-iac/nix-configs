@@ -119,6 +119,7 @@ in
           pools.default.end = "192.168.73.255";
           hosts.etra.ip = "192.168.73.1";
           hosts.cafal.ip = "192.168.73.2";
+          hosts.cafal.ident.hw-address = mac.cafal.default;
         };
         prefix.ula = with ula.lan; "${network}/${netmask}";
         prefix.public = with netconf.ipv6.network.etra.lan; "${network}/${netmask}";

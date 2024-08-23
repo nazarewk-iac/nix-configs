@@ -26,8 +26,15 @@ A router setup used by `etra`.
 - DNS
     - [ ] set up local DNS server
         - [ ] answer with local (DHCP?) hostnames
-            - [x] DHCP: replace `networkd` with `kea`
-            - [ ] spin up separate DNS server like: `bind9`, `knot-dns` or `dnsmasq`
+            - [x] DHCPv4: replace `networkd` with `kea-dhcp4-server`
+            - [ ] DHCPv6 with `kea-dhcp6-server` 
+            - [x] set up `kresd` pointing at `resolved` (or home server)
+                - [ ] remove `resolved`?
+            - [ ] set up `knot` and point `kresd` at it
+            - [ ] set up `kea-dhcp-ddns` to update `knot` entries
+- Router Advertisement
+    - [x] use `networkd` advertisements
+    - [ ] switch to `corerad` (or something else?)
 
 # materials
 

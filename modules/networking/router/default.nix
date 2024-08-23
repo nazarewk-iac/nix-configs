@@ -492,19 +492,24 @@ in
       system.activationScripts.renderSecrets.deps = [ "kdnRouterCleanDropIns" ];
       system.activationScripts.kdnRouterCleanDropIns =
         let
+          directories = [
+            "/etc/systemd/network"
+            "/etc/knot-resolver"
+          ];
           existing = lib.pipe config.sops.templates [
             builtins.attrValues
             (builtins.map (tpl: tpl.path))
-            (builtins.filter (lib.strings.hasPrefix "/etc/systemd/network"))
+            (builtins.filter (path: builtins.any (dir: lib.strings.hasPrefix dir path) directories))
             (builtins.map (path: [ "!" "-path" path ]))
             lib.lists.flatten
           ];
         in
         ''
-          echo 'Cleaning up managed systemd-networkd drop-ins...'
+          echo 'Cleaning up managed drop-ins...'
           ${lib.getExe pkgs.findutils} \
-            /etc/systemd/network -mindepth 2 -maxdepth 2 \
-            -type f -name '*${cfg.dropin.infix}*.conf' \
+            ${builtins.concatStringsSep " " directories} \
+            -mindepth 2 -maxdepth 2 \
+            -type f -name '*${cfg.dropin.infix}*' \
             ${lib.escapeShellArgs existing} \
             -printf '> removed: %p\n' -delete
         '';
@@ -534,7 +539,15 @@ in
                 ];
                 option-data = [
                   { name = "routers"; data = addrCfg.hosts."${hostname}".ip; }
-                  { name = "domain-name-servers"; data = builtins.concatStringsSep "," addrCfg.dns; }
+                  { name = "domain-name-servers"; data = addrCfg.hosts."${hostname}".ip; }
+                ];
+                reservations = lib.pipe addrCfg.hosts [
+                  builtins.attrValues
+                  (builtins.filter (host: host.ident != { }))
+                  (builtins.map (host: host.ident // {
+                    hostname = host.hostname;
+                    ip-address = host.ip;
+                  }))
                 ];
               }))
             ];
@@ -558,6 +571,7 @@ in
       };
     }
     {
+      # kea configuration plumbing
       services.kea = {
         dhcp4.configFile = config.sops.templates."kea/dhcp4.conf".path;
         dhcp6.configFile = config.sops.templates."kea/dhcp6.conf".path;
@@ -588,6 +602,114 @@ in
           Dhcp4 = cfg.kea.dhcp4.settings;
         });
       };
+    }
+    {
+      # knot authoritative DNS server 
+      environment.systemPackages = [
+        config.services.knot.package # contains `kdig`
+      ];
+    }
+    {
+      # kresd DNS resolver
+      services.kresd.enable = true;
+      services.kresd.package = (pkgs.knot-resolver.override {
+        extraFeatures = true;
+      }).overrideAttrs (old: {
+        buildInputs = old.buildInputs ++ (with pkgs.luajitPackages; [
+          luafilesystem
+        ]);
+      });
+
+      services.kresd.extraConfig = ''
+        -- credits to https://github.com/hectorm/hblock-resolver/blob/188d074b41e98d88136d620b4014f743ce55ab2a/config/knot-resolver/kresd.conf
+
+        -- Main configuration of Knot Resolver.
+        -- Refer to manual: https://knot-resolver.readthedocs.io/en/latest/daemon.html#configuration
+
+        -- Load configuration from kresd.conf.d/ directory
+
+        local lfs = require('lfs')
+        local conf_dir = env.KRESD_CONF_DIR .. '/kresd.conf.d'
+
+        if lfs.attributes(conf_dir) ~= nil then
+          local conf_files = {}
+          for entry in lfs.dir(conf_dir) do
+            if entry:sub(-5) == '.conf' then
+              table.insert(conf_files, entry)
+            end
+          end
+          table.sort(conf_files)
+          for i = 1, #conf_files do
+            dofile(conf_dir .. '/' .. conf_files[i])
+          end
+        end
+      '';
+      systemd.services."kresd@".environment.KRESD_CONF_DIR = "/etc/knot-resolver";
+      systemd.services."kresd@".restartTriggers = lib.pipe config.sops.templates [
+        builtins.attrValues
+        (builtins.map (tpl: tpl.path))
+        (builtins.filter (lib.strings.hasPrefix "/etc/knot-resolver"))
+      ];
+
+      sops.templates = lib.pipe cfg.nets [
+        (lib.attrsets.mapAttrsToList (_: netCfg:
+          let path = "/etc/knot-resolver/kresd.conf.d/50-${cfg.dropin.infix}-template-network-${netCfg.name}.conf"; in {
+            "${path}" = {
+              inherit path;
+              mode = "0640";
+              owner = "knot-resolver";
+              group = "knot-resolver";
+              content =
+                let
+                  ips = [ ]
+                    ++ (builtins.map
+                    (addr: lib.pipe addr [
+                      # remove everything after the last `/`
+                      (lib.strings.splitString "/")
+                      lib.lists.init
+                      (builtins.concatStringsSep "/")
+                    ])
+                    netCfg.address)
+                    ++ (lib.pipe netCfg.addressing [
+                    builtins.attrValues
+                    (builtins.map (addrCfg: addrCfg.hosts."${hostname}".ip))
+                  ])
+                  ;
+
+                  lines =
+                    [
+                      # forward to resolved for now
+                      # TODO: replace
+                      "policy.add(policy.all(policy.STUB({'127.0.0.53'})))"
+                    ]
+                    ++ builtins.map (ip: ''net.listen('${ip}', 53, { kind = 'dns', freebind = true })'') ips;
+                in
+                builtins.concatStringsSep "\n" lines;
+            };
+          }))
+        (l: l ++ [
+          (
+            let path = "/etc/knot-resolver/kresd.conf.d/50-${cfg.dropin.infix}-template.conf"; in {
+              "${path}" = {
+                inherit path;
+                mode = "0640";
+                owner = "knot-resolver";
+                group = "knot-resolver";
+                content = ''
+                  policy.add(policy.all(policy.STUB({'127.0.0.53'})))
+                '';
+              };
+            }
+          )
+        ])
+        lib.mkMerge
+      ];
+      environment.persistence."sys/data".directories = [
+        { directory = "/var/lib/knot-resolver"; user = "knot-resolver"; group = "knot-resolver"; mode = "0770"; }
+      ];
+      environment.persistence."sys/cache".directories = [
+        { directory = "/var/cache/knot-resolver"; user = "knot-resolver"; group = "knot-resolver"; mode = "0770"; }
+      ];
     }
     {
       # Firewall/forwarding

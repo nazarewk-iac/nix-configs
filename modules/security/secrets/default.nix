@@ -4,10 +4,16 @@ let
 
   # adds additional information (name) to sops-nix placeholders
   # replaces https://github.com/Mic92/sops-nix/blob/be0eec2d27563590194a9206f551a6f73d52fa34/modules/sops/templates/default.nix#L84-L84
-  sopsPlaceholders = builtins.mapAttrs
-    (name: _: "<SOPS:${name}:${builtins.substring 0 8 (builtins.hashString "sha256" name)}:PLACEHOLDER>")
-    config.sops.secrets;
-  quotedSopsPlaceholders = lib.attrsets.mapAttrs';
+  sopsPlaceholders =
+    let
+      replacements = {
+        "/" = ".";
+      };
+      escape = builtins.replaceStrings (builtins.attrNames replacements) (builtins.attrValues replacements);
+    in
+    builtins.mapAttrs
+      (name: _: "<SOPS:${escape name}:${builtins.substring 0 8 (builtins.hashString "sha256" name)}:PLACEHOLDER>")
+      config.sops.secrets;
 in
 {
   options.kdn.security.secrets = {
