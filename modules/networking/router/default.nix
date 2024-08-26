@@ -251,8 +251,7 @@ let
           template.network.values.Network = {
             Address = netCfg.address ++ lib.pipe netCfg.addressing [
               builtins.attrValues
-              (builtins.filter (addrCfg: addrCfg.enable))
-              (builtins.map (addrCfg: addrCfg.hosts."${hostname}".ip))
+              (builtins.map (addrCfg: ''${addrCfg.hosts."${hostname}".ip}/${addrCfg.netmask}''))
             ];
           };
         }
@@ -485,6 +484,10 @@ in
           (builtins.map (tpl: tpl.path))
           (builtins.filter (lib.strings.hasPrefix "/etc/systemd/network"))
         ];
+        reload = ''
+          set -x
+          ${lib.getExe' pkgs.systemd "networkctl"} reload
+        '';
       };
     }
     {
