@@ -253,6 +253,7 @@ in
         basePath = "/run/configs";
         sops.mode = "0444";
       };
+      system.activationScripts.setupSecrets.text = lib.mkDefault "true";
       system.activationScripts.kdnSopsNixFixupSecretsPermissions = {
         deps = [ "setupSecrets" ];
         text = ''
