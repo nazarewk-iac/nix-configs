@@ -70,15 +70,6 @@ in
         allowedUDPPortRanges = kdeConnectRange;
       };
     })
-    {
-      /* TODO: fix non-absolute path
-           error: A definition for option `environment.persistence."usr/reproducible".persistentStoragePath' is not of type `path'. Definition values:
-           - In `/nix/store/kmcs4rvmm5i2ap2dzcrqxfz3jcsd4qyj-source/modules': "usr/reproducible"
-      */
-      environment.persistence."usr/reproducible".users.kdn.directories = [
-        "Nextcloud"
-      ];
-    }
     (
       let
         cfg = {

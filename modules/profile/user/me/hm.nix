@@ -125,6 +125,10 @@ in
       services.flameshot.settings.General.savePath = "${nc.abs}/images/screenshots";
       xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
 
+      home.persistence."usr/reproducible".directories = [
+        "Nextcloud"
+      ];
+
       services.nextcloud-client.enable = true;
       /* TODO: try an automated login on activation using `sops-nix` credentials?
           - make sure at least password-store & Keepass are downloaded (and not much more)
