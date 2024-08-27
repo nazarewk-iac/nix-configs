@@ -51,6 +51,39 @@ in
       ];
     }
     {
+      # fix all /home mountpoints permissions
+      systemd.tmpfiles.rules =
+        let
+          users = lib.pipe config.users.users [
+            (builtins.mapAttrs (n: u: u // { key = n; }))
+            lib.attrsets.attrValues
+            (builtins.filter (u: u.isNormalUser))
+          ];
+        in
+        lib.trivial.pipe users [
+          (builtins.map (user:
+            let
+              h = user.home;
+              u = builtins.toString (user.uid or user.name);
+              g = builtins.toString (user.gid or user.group);
+              hmConfig = config.home-manager.users."${user.name}";
+            in
+            lib.pipe config.environment.persistence [
+              (lib.filterAttrs (pName: persistence:
+                let
+                  hasDirectUser = persistence.users ? user.key;
+                  hmPersistence = hmConfig.home.persistence."${pName}";
+                  hasHMUser = hmPersistence.files != [ ] || hmPersistence.directories != [ ];
+                in
+                hasDirectUser || hasHMUser
+              ))
+              builtins.attrValues
+              (builtins.map (persistence: "d ${persistence.persistentStoragePath}${h} 0750 ${u} ${g} - -"))
+            ]
+          ))
+          lib.concatLists
+        ];
+
       /* `root` user fixes since:
         - `systemd --user` services do not work for `root`? https://github.com/nix-community/home-manager/blob/4fcd54df7cbb1d79cbe81209909ee8514d6b17a4/modules/systemd.nix#L293-L296
       */

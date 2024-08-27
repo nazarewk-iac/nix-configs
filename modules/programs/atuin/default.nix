@@ -55,6 +55,12 @@ in
   };
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
+      /* TODO: implement automated atuin login:
+           - store the data on a tmpfs mount under user's home (will require ~64MB+ space)
+           - retrieve credentials from `sops-nix`
+           - log in
+           - run the first sync
+       */
       kdn.programs.atuin.users = [ "root" ];
       home-manager.users = builtins.mapAttrs
         (_:_: {

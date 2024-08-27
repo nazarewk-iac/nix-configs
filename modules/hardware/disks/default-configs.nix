@@ -9,16 +9,14 @@ in
       kdn.hardware.disks.impermanence."sys/cache".snapshots = false;
       kdn.hardware.disks.impermanence."sys/config".snapshots = true;
       kdn.hardware.disks.impermanence."sys/data".snapshots = true;
-      kdn.hardware.disks.impermanence."sys/log".neededForBoot = [ "/var/log/journal" ];
-      kdn.hardware.disks.impermanence."sys/log".snapshots = false;
       kdn.hardware.disks.impermanence."sys/reproducible".snapshots = false;
-      kdn.hardware.disks.impermanence."sys/state".snapshots = true;
+      kdn.hardware.disks.impermanence."sys/state".neededForBoot = [ "/var/log/journal" ];
+      kdn.hardware.disks.impermanence."sys/state".snapshots = false;
       kdn.hardware.disks.impermanence."usr/cache".snapshots = false;
       kdn.hardware.disks.impermanence."usr/config".snapshots = true;
       kdn.hardware.disks.impermanence."usr/data".snapshots = true;
-      kdn.hardware.disks.impermanence."usr/log".snapshots = false;
       kdn.hardware.disks.impermanence."usr/reproducible".snapshots = false;
-      kdn.hardware.disks.impermanence."usr/state".snapshots = true;
+      kdn.hardware.disks.impermanence."usr/state".snapshots = false;
     }
     (lib.mkIf cfg.enable (lib.mkMerge [
       {
@@ -77,6 +75,12 @@ in
             "/var/lib/systemd"
             { directory = "/var/lib/private"; mode = "0700"; }
           ];
+          files = [
+            "/etc/ssh/ssh_host_ed25519_key"
+            "/etc/ssh/ssh_host_ed25519_key.pub"
+            "/etc/ssh/ssh_host_rsa_key"
+            "/etc/ssh/ssh_host_rsa_key.pub"
+          ];
         };
         environment.persistence."sys/config" = {
           directories = [
@@ -93,27 +97,19 @@ in
             #"/etc/subuid" # this results in file already exists
           ];
         };
-
+      }
+      {
         environment.persistence."sys/cache" = {
           directories = [
             "/var/cache"
           ];
-          users.root.directories = [
-            ".cache/nix"
-          ];
         };
+        home-manager.sharedModules = [{
+          home.persistence."sys/cache".directories = [ ".cache/nix" ];
+        }];
+      }
+      {
         environment.persistence."sys/state" = {
-          directories = [
-            "/var/lib/swtpm-localca"
-          ];
-          files = [
-            "/etc/ssh/ssh_host_ed25519_key"
-            "/etc/ssh/ssh_host_ed25519_key.pub"
-            "/etc/ssh/ssh_host_rsa_key"
-            "/etc/ssh/ssh_host_rsa_key.pub"
-          ];
-        };
-        environment.persistence."sys/log" = {
           directories = [
             "/var/lib/systemd/coredump"
             "/var/log"
@@ -127,68 +123,28 @@ in
             "/etc/nix/netrc" # TODO: move this out
             "/etc/nix/nix.sensitive.conf" # TODO: move this out
           ];
-          users.kdn = {
-            # TODO: move this out
-            directories = [
-              ".config/syncthing"
-            ];
-            files = [
-              { file = ".ssh/config.local"; parentDirectory.mode = "0700"; }
-            ];
-          };
         };
-
-        # TODO: move this out
-        environment.persistence."usr/cache" = {
-          users.kdn.directories = [
-            ".cache/appimage-run"
-            ".cache/fontconfig"
-          ];
-        };
-        environment.persistence."usr/data" = {
-          # TODO: move this out
-          directories = [
-            "/var/lib/libvirt/images"
-          ];
-          /* TODO: implement automated atuin login:
-               - store the data on a tmpfs mount under user's home (will require ~64MB+ space)
-               - retrieve credentials from `sops-nix`
-               - log in
-               - run the first sync
-           */
-          # TODO: move this out
-          users.kdn.directories = [
-            ".local/share/syncthing"
-            ".local/share/direnv"
-            ".local/share/nix"
-            ".local/share/containers"
-            "dev"
-          ];
-        };
-        environment.persistence."usr/state" = {
-          # TODO: move this out
-          directories = [
-            "/var/lib/libvirt"
-          ];
-          # TODO: move this out
-          users.root.directories = [
-            { directory = "wireguard-keys"; mode = "0700"; }
-          ];
-          # TODO: move this out
-          users.root.files = [
-            { file = ".ssh/known_hosts"; parentDirectory.mode = "0700"; }
-          ];
-          # TODO: move this out
-          users.kdn.directories = [
-            ".gnupg"
-          ];
-          # TODO: move this out
-          users.kdn.files = [
-            { file = ".ssh/known_hosts"; parentDirectory.mode = "0700"; }
-          ];
-        };
-        environment.persistence."usr/log" = {
-          users.kdn.files = [
+      }
+      {
+        home-manager.sharedModules = [
+          (hm: {
+            home.persistence."usr/cache".directories =
+              [
+                ".cache/appimage-run" # not sure where exactly it comes from
+              ]
+              ++ lib.lists.optional hm.config.fonts.fontconfig.enable ".cache/fontconfig"
+            ;
+          })
+        ];
+      }
+      {
+        home-manager.sharedModules = [{
+          home.persistence."usr/data".directories = [ ".local/share/nix" ];
+        }];
+      }
+      {
+        home-manager.sharedModules = [{
+          home.persistence."usr/state".directories = [
             #".local/share/fish/fish_history" # A file already exists at ...
             ".ipython/profile_default/history.sqlite"
             ".bash_history"
@@ -197,7 +153,7 @@ in
             ".usql_history"
             ".zsh_history"
           ];
-        };
+        }];
       }
       {
         disko.devices.nodev = {

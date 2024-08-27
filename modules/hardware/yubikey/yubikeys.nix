@@ -44,12 +44,12 @@
       identity = "AGE-PLUGIN-YUBIKEY-16M9LVQYY4WN5GDCQNHWQ0";
     };
   };
-  kdn.hardware.yubikey.devices.krul = {
+  kdn.hardware.yubikey.devices.brys = {
     enabled = true;
     serial = "16174039";
     notes = [ "data in KeePass" ];
   };
-  kdn.hardware.yubikey.devices.krul.piv."82" = {
+  kdn.hardware.yubikey.devices.brys.piv."82" = {
     type = "age-plugin-yubikey";
     age-plugin-yubikey = {
       notes = [ "sops" ];
@@ -60,7 +60,7 @@
       identity = "AGE-PLUGIN-YUBIKEY-16L9LVQYZE4HZ8JGY5HK5P";
     };
   };
-  kdn.hardware.yubikey.devices.krul.piv."83" = {
+  kdn.hardware.yubikey.devices.brys.piv."83" = {
     type = "age-plugin-yubikey";
     age-plugin-yubikey = {
       notes = [ "sops" ];
@@ -71,7 +71,7 @@
       identity = "AGE-PLUGIN-YUBIKEY-16L9LVQYR5AME92GT4N5C3";
     };
   };
-  kdn.hardware.yubikey.devices.krul.piv."84" = {
+  kdn.hardware.yubikey.devices.brys.piv."84" = {
     type = "age-plugin-yubikey";
     age-plugin-yubikey = {
       notes = [ "sops" ];

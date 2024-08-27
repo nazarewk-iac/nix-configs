@@ -21,5 +21,12 @@ in
       dive
       skopeo
     ];
+
+    environment.persistence."usr/cache".directories = [
+      "/var/lib/containers/cache"
+    ];
+    environment.persistence."usr/data".directories = [
+      "/var/lib/containers/storage"
+    ];
   };
 }

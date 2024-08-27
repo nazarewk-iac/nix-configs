@@ -218,7 +218,8 @@ in
           #})
         ];
       });
-      environment.persistence."usr/state".directories = [
+      # TODO: it should be at `usr/data`, `*/state` is expected for logging data
+      environment.persistence."usr/data".directories = [
         { directory = "/var/lib/netbird-priv"; user = "netbird-priv"; group = "netbird-priv"; mode = "0700"; }
       ];
     }

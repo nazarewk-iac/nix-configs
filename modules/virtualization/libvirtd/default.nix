@@ -53,6 +53,13 @@ in
         cloud-utils # cloud-localds for https://blog.programster.org/create-ubuntu-22-kvm-guest-from-cloud-image
       ];
     }
+    {
+      environment.persistence."usr/data".directories = [
+        "/var/lib/libvirt/images"
+        "/var/lib/libvirt"
+        "/var/lib/swtpm-localca"
+      ];
+    }
     (lib.mkIf cfg.lookingGlass.enable {
       environment.systemPackages = with pkgs; [
         looking-glass-client

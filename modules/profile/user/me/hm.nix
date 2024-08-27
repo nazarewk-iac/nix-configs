@@ -18,12 +18,7 @@ in
   };
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
-      services.ssh-agent.enable = true;
-      programs.ssh.enable = true;
-      programs.ssh.extraConfig = ''
-        Host *
-          Include ~/.ssh/config.local
-      '';
+      kdn.programs.ssh-client.enable = true;
 
       # pam-u2f expects a single line of configuration per user in format `username:entry1:entry2:entry3:...`
       # `pamu2fcfg` generates lines of format `username:entry`
@@ -62,6 +57,10 @@ in
       };
     }
     (lib.mkIf hasWorkstation {
+      home.persistence."usr/data".directories = [
+        "dev"
+      ];
+
       kdn.services.syncthing.enable = true;
       kdn.programs.weechat.enable = true;
       programs.gh.enable = false;
