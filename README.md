@@ -155,13 +155,10 @@ ssh -o StrictHostKeyChecking=no kdn@nixos
         ```shell
         ssh nixos.lan. sudo systemd-cryptenroll --unlock-key-file=/tmp/${DISK_NAME}-${HOST_NAME}.key --fido2-device=auto --fido2-with-client-pin=false --fido2-with-user-verification=false /dev/disk/by-partlabel/${DISK_NAME}-${HOST_NAME}-header 
         ```
-9. reboot into system, it might fail:
-    - `sshd` missing `/var/empty`
-    - `nscd` failed
-    - `home`
 
-10. add SSH key to `/.sops.yaml`
+9. add SSH key to `/.sops.yaml`
     - `ssh-to-age </etc/ssh/ssh_host_ed25519_key.pub`
+    - reboot
  
 
 ## Building on Hetzner Cloud from NixOS installer image
