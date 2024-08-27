@@ -67,5 +67,8 @@ in
         };
       })
     ];
+    home.persistence."usr/config".directories = [
+      ".config/weechat"
+    ];
   };
 }

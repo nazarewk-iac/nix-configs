@@ -38,5 +38,20 @@ in
       bottles
       wine-wayland
     ];
+
+    home-manager.sharedModules = [{
+      home.persistence."usr/data".directories = [
+        ".local/share/bottles"
+        ".local/share/Steam"
+        ".local/share/lutris"
+      ];
+      home.persistence."usr/cache".directories = [
+        ".local/share/lutris/runtime"
+        ".local/share/bottles/runners"
+        ".local/share/bottles/temp"
+        ".local/share/bottles/dxvk"
+        ".local/share/Steam/steamapps"
+      ];
+    }];
   };
 }

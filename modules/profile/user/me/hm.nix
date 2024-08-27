@@ -94,15 +94,33 @@ in
         url."https://github.com/".insteadOf = "git@github.com:";
         credential."https://gist.github.com".username = "nazarewk";
         url."https://gist.github.com/".insteadOf = "git@gist.github.com:";
-
+      };
+    })
+    (lib.mkIf hasWorkstation {
+      programs.git.extraConfig = {
         credential."https://gitlab.com/signicat/".username = "signicat-krznaz";
         url."https://gitlab.com/signicat/".insteadOf = "git@gitlab.com:signicat/";
       };
+      home.persistence."usr/cache".directories = [
+        ".cache/signicat"
+      ];
+      home.persistence."usr/config".directories = [
+        ".config/signicat"
+      ];
+      home.persistence."usr/state".directories = [
+        ".local/state/signicat"
+      ];
+      home.persistence."usr/data".directories = [
+        ".local/share/signicat"
+      ];
     })
     (lib.mkIf hasGUI {
       # KDE Connect
       services.kdeconnect.enable = true;
       services.kdeconnect.indicator = true;
+      home.persistence."usr/config".directories = [
+        ".config/kdeconnect"
+      ];
     })
     (lib.mkIf hasGUI {
       # Firefox
@@ -120,11 +138,6 @@ in
       };
     })
     (lib.mkIf hasGUI {
-      # see https://github.com/nix-community/home-manager/issues/2104#issuecomment-861676751
-      home.file."${nc.rel}/images/screenshots/.keep".source = builtins.toFile "keep" "";
-      services.flameshot.settings.General.savePath = "${nc.abs}/images/screenshots";
-      xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
-
       home.persistence."usr/reproducible".directories = [
         "Nextcloud"
       ];
@@ -138,6 +151,12 @@ in
         Restart = "on-failure";
         RestartSec = 3;
       };
+    })
+    (lib.mkIf hasGUI {
+      # see https://github.com/nix-community/home-manager/issues/2104#issuecomment-861676751
+      home.file."${nc.rel}/images/screenshots/.keep".source = builtins.toFile "keep" "";
+      services.flameshot.settings.General.savePath = "${nc.abs}/images/screenshots";
+      xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
 
       xdg.mime.enable = true;
       xdg.desktopEntries.uri-to-clipboard =
@@ -224,9 +243,6 @@ in
     })
     (lib.mkIf (hasWorkstation && hasGUI) {
       home.packages = with pkgs; [
-        kdn.ente-photos-desktop
-
-        spotifywm
 
         keepassxc
         kdn.kdn-keepass
@@ -254,20 +270,77 @@ in
         kdn.klog-time-tracker
         kdn.klg
         kdn.ss-util
-        ungoogled-chromium
-        rambox # browser/multi workspace
         drawio
         plantuml
 
-        element-desktop
-        signal-desktop
-        slack
         zoom-us
         nextcloud-client
 
         deluge
 
         httpie-desktop
+      ];
+    })
+    (lib.mkIf (hasWorkstation && hasGUI) {
+      home.packages = with pkgs; [
+        ungoogled-chromium
+      ];
+      home.persistence."usr/config".directories = [
+        ".config/chromium"
+      ];
+    })
+    (lib.mkIf (hasWorkstation && hasGUI) {
+      home.packages = with pkgs; [
+        spotifywm
+      ];
+      home.persistence."usr/cache".directories = [
+        ".cache/spotify"
+      ];
+      home.persistence."usr/config".directories = [
+        ".config/spotify"
+      ];
+    })
+    (lib.mkIf (hasWorkstation && hasGUI) {
+      home.packages = with pkgs; [
+        signal-desktop
+      ];
+      home.persistence."usr/config".directories = [
+        ".config/Signal"
+      ];
+    })
+    (lib.mkIf (hasWorkstation && hasGUI) {
+      home.packages = with pkgs; [
+        element-desktop
+      ];
+      home.persistence."usr/config".directories = [
+        ".config/Element"
+      ];
+    })
+    (lib.mkIf (hasWorkstation && hasGUI) {
+      home.packages = with pkgs; [
+        slack
+      ];
+      home.persistence."usr/config".directories = [
+        ".config/Slack"
+      ];
+    })
+    (lib.mkIf (hasWorkstation && hasGUI) {
+      home.packages = with pkgs; [
+        rambox # browser/multi workspace
+      ];
+      home.persistence."usr/config".directories = [
+        ".config/rambox"
+      ];
+    })
+    (lib.mkIf (hasWorkstation && hasGUI) {
+      home.packages = with pkgs; [
+        kdn.ente-photos-desktop
+      ];
+      home.persistence."usr/cache".directories = [
+        ".cache/ente"
+      ];
+      home.persistence."usr/config".directories = [
+        ".config/ente"
       ];
     })
     ({

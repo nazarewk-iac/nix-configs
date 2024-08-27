@@ -32,5 +32,10 @@ in
     boot.kernelModules = [
       "v4l2loopback" # for getting OBS virtual camera to work
     ];
+    home-manager.sharedModules = [{
+      home.persistence."usr/config".directories = [
+        ".config/obs-studio"
+      ];
+    }];
   };
 }

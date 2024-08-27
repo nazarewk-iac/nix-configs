@@ -84,7 +84,7 @@ in
             };
             script = let in ''
               export PATH="${lib.makeBinPath (with pkgs; [coreutils tree jq])}:$PATH"
-              tree -fxJ -ugsD --timefmt "%Y-%m-%dT%H:%M:%S%z" ${dCfg.persistentStoragePath} | tee /dev/stderr | jq -cM > /tmp/kdn-disks-disposable-content.json
+              tree -fxJ -ugsD --timefmt "%Y-%m-%dT%H:%M:%S%z" ${dCfg.persistentStoragePath} | tee >(jq -cM >/tmp/kdn-disks-disposable-content.json)
             '';
           };
           systemd.tmpfiles.rules = [
@@ -95,6 +95,16 @@ in
       (lib.mkIf cfg.disposable.homes {
         environment.persistence."disposable".users = builtins.mapAttrs (_: _: { directories = [ "" ]; }) config.home-manager.users;
       })
+      {
+        home-manager.sharedModules = [{
+          home.persistence."sys/cache".directories = [
+            "Downloads"
+          ];
+          home.persistence."sys/data".directories = [
+            "Videos"
+          ];
+        }];
+      }
       {
         environment.persistence."sys/data" = {
           directories = [

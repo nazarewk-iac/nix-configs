@@ -108,5 +108,16 @@ in
         programs.fish.shellInit = bin;
       }
     ))
+    {
+      home.persistence."usr/data".directories = [
+        ".local/share/JetBrains"
+      ];
+      home.persistence."usr/cache".directories = [
+        ".cache/JetBrains"
+      ];
+      home.persistence."usr/config".directories = [
+        ".config/JetBrains"
+      ];
+    }
   ]);
 }
