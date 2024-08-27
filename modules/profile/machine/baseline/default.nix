@@ -160,7 +160,10 @@ in
         lib.trivial.pipe config.fileSystems [
           (lib.attrsets.mapAttrsToList (name: cfg: cfg.mountPoint or name))
           (builtins.map (mountpoint: lib.trivial.pipe users [
-            (builtins.filter (user: lib.strings.hasPrefix user.home mountpoint))
+            (builtins.filter (user:
+              (lib.strings.hasPrefix user.home mountpoint)
+              && (user.home != mountpoint)
+            ))
             (builtins.map (user:
               let
                 h = user.home;
