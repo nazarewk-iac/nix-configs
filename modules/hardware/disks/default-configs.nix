@@ -17,6 +17,7 @@ in
       kdn.hardware.disks.impermanence."usr/data".snapshots = true;
       kdn.hardware.disks.impermanence."usr/reproducible".snapshots = false;
       kdn.hardware.disks.impermanence."usr/state".snapshots = false;
+      kdn.hardware.disks.impermanence."disposable".snapshots = false;
     }
     (lib.mkIf cfg.enable (lib.mkMerge [
       {
@@ -69,6 +70,15 @@ in
           };
         };
       }
+      {
+        # clean up "disposable" mountpoint every boot
+        systemd.tmpfiles.rules = [
+          "D! ${config.environment.persistence."disposable".persistentStoragePath} 0755 root - -"
+        ];
+      }
+      (lib.mkIf cfg.disposable.homes {
+        environment.persistence."disposable".users = builtins.mapAttrs (_: _: { directories = [ "" ]; }) config.home-manager.users;
+      })
       {
         environment.persistence."sys/data" = {
           directories = [

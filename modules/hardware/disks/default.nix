@@ -82,6 +82,14 @@ in
       ''; value;
     };
 
+    disposable.homes = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        allow data in `$HOME` directories, but clean it up during every boot
+      '';
+    };
+
     luks.header.size = lib.mkOption {
       type = lib.types.ints.u8;
       # https://wiki.archlinux.org/title/Dm-crypt/Device_encryption#Encrypt_an_existing_unencrypted_file_system

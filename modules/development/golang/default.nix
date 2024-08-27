@@ -8,10 +8,8 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    home-manager.sharedModules = [
-      { kdn.development.golang.enable = true; }
-      { kdn.development.jetbrains.go.enable = true; }
-    ];
+    home-manager.sharedModules = [{ kdn.development.golang.enable = true; }];
+
     environment.extraInit = ''
       export PATH="$PATH:$HOME/.cache/go/bin"
     '';

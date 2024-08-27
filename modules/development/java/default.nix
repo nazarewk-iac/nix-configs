@@ -8,6 +8,7 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    home-manager.sharedModules = [{ kdn.development.java.enable = true; }];
     programs.java.enable = true;
     programs.java.package = pkgs.jdk;
 

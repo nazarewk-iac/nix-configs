@@ -1,25 +1,22 @@
 { lib, pkgs, config, ... }:
 let
-  cfg = config.kdn.development.golang;
+  cfg = config.kdn.development.java;
   home = config.home.homeDirectory;
 in
 {
-  options.kdn.development.golang = {
-    enable = lib.mkEnableOption "golang development";
+  options.kdn.development.java = {
+    enable = lib.mkEnableOption "java development";
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
-      kdn.development.jetbrains.go.enable = true;
-    }
-    {
       systemd.user.tmpfiles.rules = [
-        "d ${config.xdg.cacheHome}/go - - - -"
-        "L ${home}/go - - - - ${config.xdg.cacheHome}/go"
+        "d ${config.xdg.cacheHome}/gradle - - - -"
+        "L ${home}/.gradle - - - - ${config.xdg.cacheHome}/gradle"
       ];
 
       home.persistence."usr/cache".directories = [
-        ".cache/go"
+        ".cache/gradle"
       ];
     }
     {
