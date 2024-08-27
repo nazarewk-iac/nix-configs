@@ -14,7 +14,7 @@
         dynamicEndpointRefreshSeconds = 60;
       };
     };
-    brys = {
+    krul = {
       hostnum = 2;
       cfg = {
         allowedIPs = [

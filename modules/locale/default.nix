@@ -25,6 +25,7 @@ in
     # LOCALE
     i18n.supportedLocales = [
       # see https://sourceware.org/git/?p=glibc.git;a=blob;f=localedata/SUPPORTED
+      "C.UTF-8/UTF-8"
       "en_US.UTF-8/UTF-8"
       "en_GB.UTF-8/UTF-8"
       "pl_PL.UTF-8/UTF-8"
@@ -32,7 +33,10 @@ in
     ];
     i18n.defaultLocale = cfg.primary;
     i18n.extraLocaleSettings = {
+      #LANG = cfg.primary; # handled by `i18n.defaultLocale`
       LC_TIME = cfg.time;
+      LANGUAGE = cfg.primary;
+      LC_ALL = cfg.primary;
     };
     time.timeZone = cfg.timezone;
   };

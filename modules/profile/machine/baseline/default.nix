@@ -149,6 +149,26 @@ in
       # TODO: download and/or symlink sources that the system got built from?
     }
     {
+      systemd.tmpfiles.rules = lib.trivial.pipe config.users.users [
+        lib.attrsets.attrValues
+        (builtins.filter (u: u.isNormalUser))
+        (builtins.map (user:
+          let
+            h = user.home;
+            u = builtins.toString (user.uid or user.name);
+            g = builtins.toString (user.gid or user.group);
+          in
+          [
+            # fix home directory permissions
+            "d ${h} 0750 ${u} ${g} - -"
+            # fix user profile directory permissions
+            "d /nix/var/nix/profiles/per-user/${user.name} 0755 ${u} ${g} - -"
+          ]
+        ))
+        builtins.concatLists
+      ];
+    }
+    {
       # fix all /home mountpoints permissions
       systemd.tmpfiles.rules =
         let
@@ -176,11 +196,6 @@ in
                 (pcs: builtins.map (i: lib.lists.sublist 0 i pcs) (lib.lists.range 1 (builtins.length pcs)))
                 (builtins.map (lib.strings.concatStringsSep "/"))
                 (builtins.map (path: "d ${h}/${path} 0750 ${u} ${g} - -"))
-                (x: [
-                  "d ${h} 0750 ${u} ${g} - -"
-                  # TODO: clean those up periodically?
-                  "d /nix/var/nix/profiles/per-user/${user.name} 0755 ${u} ${g} - -"
-                ] ++ x)
               ]
             ))
           ]))

@@ -174,17 +174,19 @@
               }];
           };
 
-          krul = flakeLib.nixos.system {
+          brys = flakeLib.nixos.system {
             system = "x86_64-linux";
-            modules = [{ kdn.profile.host.krul.enable = true; }
+            modules = [{ kdn.profile.host.brys.enable = true; }
               {
                 system.stateVersion = "24.11";
                 home-manager.sharedModules = [{ home.stateVersion = "24.11"; }];
                 networking.hostId = "0a989258"; # cut -c-8 </proc/sys/kernel/random/uuid
-                networking.hostName = "krul";
+                networking.hostName = "brys";
 
                 _module.args.nixinate = {
-                  host = "krul.lan.";
+                  #host = "brys.lan.";
+                  #host = "192.168.73.77";
+                  host = "192.168.73.46";
                   sshUser = "kdn";
                   buildOn = "local"; # valid args are "local" or "remote"
                   substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"

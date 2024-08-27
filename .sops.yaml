@@ -10,12 +10,12 @@ keys:
         - &yk-oams-touch age1yubikey1qfx38en49qfpyjf5hwn8dch6c0jvvtus29pvwgqlze35rraea00y6dw6rwv
         - &yk-oams-unattended age1yubikey1q25g9xpunct74wnn29dgcgep78q666dkhpfg2flltg92fvyrew02j28464d
 
-    krul:
+    brys:
       serial: 1617439
       age:
-        - &yk-krul-pin-touch age1yubikey1qdppx4kd82ecfxr5lcmgef9w4zxmreyl2q3xv6dsq2jwgv274cm5zmjuy34
-        - &yk-krul-touch age1yubikey1qf4cjj3ksn60z9hnezkwysvgcll7y3mfxzwzdrzgkfkqe9thmczg6xmmfz9
-        - &yk-krul-unattended age1yubikey1q0ke6fjulkqg0x0elweecppfkqqr6cqsr42u8q5k5z6466mu60gjseq6p4t
+        - &yk-brys-pin-touch age1yubikey1qdppx4kd82ecfxr5lcmgef9w4zxmreyl2q3xv6dsq2jwgv274cm5zmjuy34
+        - &yk-brys-touch age1yubikey1qf4cjj3ksn60z9hnezkwysvgcll7y3mfxzwzdrzgkfkqe9thmczg6xmmfz9
+        - &yk-brys-unattended age1yubikey1q0ke6fjulkqg0x0elweecppfkqqr6cqsr42u8q5k5z6466mu60gjseq6p4t
 
     etra:
       serial: 22418334
@@ -37,18 +37,22 @@ keys:
     etra:
       age:
         - &ssh-etra age1mjjz7t44e777szehss7ywv2lpwu53mjnvzvrqsyt27apwpew6fsqxqt3cj
+    brys:
+      age:
+        - &ssh-brys age1ysq2nvh5vkxra8gj74meqvfpc6axh5nv9sxn62s3mj3lz9987exqweqp0p
 creation_rules:
   - path_regex: '.unattended\.sops\.[^.]+$'
     key_groups:
       - age:
+          - *ssh-brys
           - *ssh-etra
           - *ssh-moss
           - *ssh-oams
+          - *yk-brys-unattended
           - *yk-etra-unattended
-          - *yk-krul-unattended
           - *yk-oams-unattended
   - key_groups:
       - age:
           - *yk-etra-touch
-          - *yk-krul-touch
+          - *yk-brys-touch
           - *yk-oams-touch

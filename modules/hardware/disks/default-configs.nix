@@ -82,6 +82,8 @@ in
               Type = "oneshot";
               RemainAfterExit = true;
             };
+            # systemd-tmpfiles runs without some default dependencies like `basic.target`
+            unitConfig.DefaultDependencies = false;
             script = let in ''
               export PATH="${lib.makeBinPath (with pkgs; [coreutils tree jq])}:$PATH"
               tree -fxJ -ugsD --timefmt "%Y-%m-%dT%H:%M:%S%z" ${dCfg.persistentStoragePath} | tee >(jq -cM >/tmp/kdn-disks-disposable-content.json)

@@ -44,7 +44,7 @@ in
       '';
       boot.kernelParams = lib.concatLists [
         # see https://docs.kernel.org/admin-guide/kernel-parameters.html?highlight=amd_iommu
-        (lib.lists.optionals config.kdn.hardware.cpu.amd.enable [ "amd_iommu=on" ])
+        #(lib.lists.optionals config.kdn.hardware.cpu.amd.enable [ "amd_iommu=on" ]) # supposedly on by default
         (lib.lists.optional config.kdn.hardware.cpu.intel.enable "intel_iommu=on")
         [ "iommu=pt" ]
         (lib.lists.optional (cfg.vfio.gpuIDs != [ ]) ("vfio-pci.ids=" + lib.concatStringsSep "," cfg.vfio.gpuIDs))

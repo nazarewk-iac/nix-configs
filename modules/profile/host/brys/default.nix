@@ -1,18 +1,15 @@
 { config, pkgs, lib, modulesPath, self, ... }:
 let
-  cfg = config.kdn.profile.host.krul;
+  cfg = config.kdn.profile.host.brys;
   hostname = config.networking.hostName;
 in
 {
-  options.kdn.profile.host.krul = {
-    enable = lib.mkEnableOption "enable krul host profile";
+  options.kdn.profile.host.brys = {
+    enable = lib.mkEnableOption "enable brys host profile";
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
-      home-manager.users.kdn.programs.firefox.profiles.kdn.path = "owvm95ih.kdn";
-      home-manager.users.kdn.home.file.".mozilla/firefox/profiles.ini".force = true;
-
       kdn.profile.machine.workstation.enable = true;
       kdn.hardware.gpu.amd.enable = true;
       kdn.hardware.cpu.amd.enable = true;
@@ -27,8 +24,10 @@ in
         "igb" # Intel Corporation I211 Gigabit Network Connection [8086:1539] (rev 03)
       ];
 
-      networking.interfaces.enp5s0.wakeOnLan.enable = true;
-      networking.interfaces.enp6s0.wakeOnLan.enable = true;
+      # enp5s0 is 1GbE
+      #networking.interfaces.enp5s0.wakeOnLan.enable = true;
+      # enp6s0 is 2.5GbE
+      #networking.interfaces.enp6s0.wakeOnLan.enable = true;
 
       zramSwap.enable = lib.mkDefault true;
       zramSwap.memoryPercent = 50;
@@ -64,7 +63,7 @@ in
         }];
       }
     )*/
-    {
+    /* {
       # automated unlock using Clevis through Tang server
       boot.initrd.network.flushBeforeStage2 = true;
       networking.interfaces.enp5s0.useDHCP = true;
@@ -75,19 +74,20 @@ in
       boot.initrd.systemd.network.wait-online.anyInterface = true;
       boot.initrd.systemd.network.wait-online.timeout = 15;
 
-      boot.initrd.clevis.useTang = true;
-      #boot.initrd.clevis.devices."krul-main-crypted".secretFile = ./krul-main-crypted.jwe;
-    }
+      #boot.initrd.clevis.useTang = true;
+      #boot.initrd.clevis.devices."brys-main-crypted".secretFile = ./brys-main-crypted.jwe;
+    } */
     (
       let
         cfg = config.kdn.hardware.disks;
-        d1 = "vp4300-krul";
-        d2 = "px700-krul";
+        d1 = "vp4300-brys";
+        d2 = "px700-brys";
       in
       {
+        # TODO: those are unlocked automatically using TPM2, switch to etra (or k8s cluster) backed Clevis+Tang unlock
         kdn.hardware.disks.initrd.failureTarget = "emergency.target";
         kdn.hardware.disks.enable = true;
-        kdn.hardware.disks.devices."boot".path = "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_04MBA03UR5RXVOGO-0:0";
+        kdn.hardware.disks.devices."boot".path = "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_04LZCR91M8UZPJW8-0:0";
         kdn.hardware.disks.luks.volumes."${d1}" = {
           targetSpec.path = "/dev/disk/by-id/nvme-nvme.1e4b-5650343330304c45444242323333343032303433-5669706572205650343330304c20325442-00000001";
           uuid = "cbfe2928-2249-47fa-a48f-7c53c53a05d4";

@@ -99,13 +99,11 @@ ssh -o StrictHostKeyChecking=no kdn@nixos
         #kdn.hardware.disks.impermanence."sys/config".snapshots = true;
         #kdn.hardware.disks.impermanence."sys/cache".snapshots = false;
         #kdn.hardware.disks.impermanence."sys/data".snapshots = true;
-        #kdn.hardware.disks.impermanence."sys/state".snapshots = true;
-        #kdn.hardware.disks.impermanence."sys/log".snapshots = false;
+        #kdn.hardware.disks.impermanence."sys/state".snapshots = false;
         #kdn.hardware.disks.impermanence."usr/config".snapshots = true;
         #kdn.hardware.disks.impermanence."usr/cache".snapshots = false;
         #kdn.hardware.disks.impermanence."usr/data".snapshots = true;
-        #kdn.hardware.disks.impermanence."usr/state".snapshots = true;
-        #kdn.hardware.disks.impermanence."usr/log".snapshots = false;
+        #kdn.hardware.disks.impermanence."usr/state".snapshots = false;
         
         /* just a single impermanence example goes below */
         #kdn.hardware.disks.impermanence."usr/data" = {
@@ -116,11 +114,10 @@ ssh -o StrictHostKeyChecking=no kdn@nixos
         #    "/var/lib/libvirt/images"
         #  ];
         #  imp.users.root.directories = [
-        #    ".local/share/atuin"
+        #    # ...
         #  ];
         #  imp.users.kdn.directories = [
         #    ".local/share/atuin"
-        #    ".local/share/direnv"
         #    ".local/share/nix"
         #    ".local/share/containers"
         #    "dev"
@@ -140,7 +137,7 @@ ssh -o StrictHostKeyChecking=no kdn@nixos
     )
     ```
 4. add all your required `environment.persistence` entries
-5. set up keyfile
+5. set up keyfiles for each disk:
     ```shell
     dd if=/dev/random bs=1 count=2048 of=/dev/stdout | pass insert --force --multiline luks/${DISK_NAME}-${HOST_NAME}/keyfile
     ```
@@ -149,7 +146,7 @@ ssh -o StrictHostKeyChecking=no kdn@nixos
     ```fish
     nixos-anywhere --no-reboot --disk-encryption-keys /tmp/${DISK_NAME}-${HOST_NAME}.key "$(pass show luks/${DISK_NAME}-${HOST_NAME}/keyfile | psub)" --flake '.#${HOST_NAME}' nixos.lan.
     ```
-8. set up either of:
+8. set up either of for each disk:
     - (unattended) TPM2 unlock:
         ```shell
         ssh nixos.lan. sudo systemd-cryptenroll --unlock-key-file=/tmp/${DISK_NAME}-${HOST_NAME}.key --tpm2-device=auto /dev/disk/by-partlabel/${DISK_NAME}-${HOST_NAME}-header 
@@ -158,32 +155,14 @@ ssh -o StrictHostKeyChecking=no kdn@nixos
         ```shell
         ssh nixos.lan. sudo systemd-cryptenroll --unlock-key-file=/tmp/${DISK_NAME}-${HOST_NAME}.key --fido2-device=auto --fido2-with-client-pin=false --fido2-with-user-verification=false /dev/disk/by-partlabel/${DISK_NAME}-${HOST_NAME}-header 
         ```
+9. reboot into system, it might fail:
+    - `sshd` missing `/var/empty`
+    - `nscd` failed
+    - `home`
 
-## Building fresh system from `nixos-installer` stable image
-
-1. Add SSH keys from `curl https://api.github.com/users/nazarewk/keys` to `~/.ssh/authorized_keys`
-2. Disable suspend on idle in power settings of Gnome
-3. `ssh -o StrictHostKeyChecking=no nixos@<whatever-machine-ip-is>`
-4. `APPLY=1 bash <(curl -L 'https://raw.githubusercontent.com/nazarewk-iac/nix-configs/main/installer-update.sh')`:
-5. Set up your filesystem at `/mnt`, eg to mount:
-   ```
-   APPLY=1 bash <(curl -L 'https://github.com/nazarewk-iac/nix-configs/raw/main/machines/krul/mount.sh')
-   ```
-6. checkout the repo:
-   ```
-   mkdir -p /mnt/home/kdn/dev/github.com/nazarewk-iac
-   git clone https://github.com/nazarewk-iac/nix-configs.git /mnt/home/kdn/dev/github.com/nazarewk-iac/nix-configs
-   chown -R 1000:100 /mnt/home/kdn
-   ```
-7. set up the system-level `flake.nix`:
-   ```
-   mkdir -p /mnt/etc/nixos
-   ln -s ../../home/kdn/dev/github.com/nazarewk-iac/nix-configs/flake.nix /mnt/etc/nixos/flake.nix
-   ```
-8. run the build, eg:
-   ```
-   nixos-install --show-trace --root /mnt --flake '/mnt/home/kdn/dev/github.com/nazarewk-iac/nix-configs#krul'
-   ```
+10. add SSH key to `/.sops.yaml`
+    - `ssh-to-age </etc/ssh/ssh_host_ed25519_key.pub`
+ 
 
 ## Building on Hetzner Cloud from NixOS installer image
 

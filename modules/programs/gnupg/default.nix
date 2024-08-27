@@ -44,12 +44,17 @@ in
 
       # allow usb-ip access to Yubikeys
       security.polkit.extraConfig = builtins.readFile ./pcsc-lite-rules.js;
-      home-manager.sharedModules = [{
-        programs.gpg.enable = true;
-        home.persistence."usr/data".directories = [
-          ".gnupg"
-        ];
-      }];
+      home-manager.sharedModules = [
+        (hm: {
+          programs.gpg.enable = true;
+          home.persistence."usr/data".directories = [
+            ".gnupg"
+          ];
+          systemd.user.tmpfiles.rules = [
+            "d ${hm.config.home.homeDirectory}/.gnupg 0700 - - -"
+          ];
+        })
+      ];
     }
     (lib.mkIf cfg.pass-secret-service.enable (lib.mkMerge [
       {
