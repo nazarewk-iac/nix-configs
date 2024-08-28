@@ -17,6 +17,7 @@ in
       # TODO: switch to signed store building?
       nix.settings.trusted-users = [ "kdn" ];
       kdn.programs.atuin.users = [ "kdn" ];
+      kdn.programs.atuin.autologinUsers = [ "kdn" ];
       kdn.hardware.yubikey.appId = "pam://kdn";
       users.users.kdn.initialHashedPassword = "$y$j9T$yl3J5zGJ5Yq8c6fXMGxNk.$XE3X8aWpD3FeakMBD/fUmCExXMuy7B6tm7ZECmuxpF4";
       users.users.kdn = {

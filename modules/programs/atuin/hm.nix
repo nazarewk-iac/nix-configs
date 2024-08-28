@@ -14,7 +14,24 @@ in
         auto_sync = true;
         update_check = false;
         sync_frequency = "0";
+        daemon = {
+          enabled = true;
+          sync_frequency = 300;
+        };
       };
     }
+    (lib.mkIf (config.home.username != "root") {
+      systemd.user.services.atuind = {
+        Unit = {
+          Description = "Atuin shell history synchronization daemon";
+          After = [ "network.target" ];
+        };
+        Service.ExecStart = "${lib.getExe config.programs.atuin.package} daemon";
+        Service.Environment = [
+          "ATUIN_LOG=info"
+        ];
+        Install.WantedBy = [ "default.target" ];
+      };
+    })
   ]);
 }

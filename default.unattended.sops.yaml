@@ -1,6 +1,10 @@
+atuin:
+    username: ENC[AES256_GCM,data:fAaf,iv:YLKUBNGQB0n52wvzWalOhBE+7bNvjcLI/nV6wR2XRVY=,tag:VQCp48Wbw32cGGiNvTTOiQ==,type:str]
+    password: ENC[AES256_GCM,data:vckSyZm9WshJIMZsTx+2fhz8Tb4=,iv:xsWqT2NzsIXPR+EtfkBCnzYw74uL+ochpiVL8yXFjnE=,tag:1p0hf3UanFQbZsq2Uy+9Vw==,type:str]
+    key: ENC[AES256_GCM,data:J0erMWt5gAPBUP9m9sLx6ESXdHwQsMe3eOJz6Gtzw3WLrlZtVo5ZOQH67sHEztjgX5BMEWLEazb9E3fVf0wrGPelJSkHJSQpcTTwdh9r4c7VHBLkzP9JnjTY8IumEWKnVi59/xijaaS9xI/wDjO7y2eCtoyGXT0RCEe1jsc9qEbKIP7IcU87sd3PqFNMejHAijrI1+22,iv:TuLeL95/sReScLO+UT9SovSikWuz28kZHQq6/REYAr4=,tag:UhmSpkbqpht9Szd6XOWMRQ==,type:str]
 netbird-priv:
-    EPhemeral:
-        setup-key: ENC[AES256_GCM,data:qkN/kOE5jMDNYh1exrTupA5xJK2suEyBP/cDQPl3FujVrxc9,iv:dkOJtamsMDayovPzRKmGHZDXztfcFnTQbyd9388Rpl8=,tag:ZD+irkPWdI/fk9Ma7kfKwQ==,type:str]
+    ephemeral:
+        setup-key: ENC[AES256_GCM,data:zsk5tRZ2Jw182kRem7W51dgjMt73jZJ4MORpaxk72K0EggCc,iv:KVr630NqnHnHPRi/OYX5LZ5sLBaBOBaCeVSTvi4sF+M=,tag:VlDECMnY37HElwTW5iwRSw==,type:str]
     permanent:
         setup-key: ENC[AES256_GCM,data:CiS+33+oxMxFYzPMIZUpqWQUx8Cefehy1DI100JAXBvOn0rB,iv:91tze9y+7ilNBW17lfGuWHRIl/2Gjzxo/JOmyMAQrhc=,tag:/jYmXx8ov6fQORof1rIP/g==,type:str]
 networking:
@@ -131,8 +135,8 @@ sops:
             7YnIqtOAtD9PlD7I3L26EmdV79W5bGYIRUujG2lHh0FEIN2UNAxLzTM5TDd5Mtmg
             peo=
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2024-08-22T17:09:34Z"
-    mac: ENC[AES256_GCM,data:hDY9iszMTwDawDJliAJTvayM96B+TmLQDxgjMdoJmexlf+xzms8R4mb0n0Xg3c0Tyur+fzGfWiswnb/QOYWZpVW8J96FzDLOJvTUR0MIXEMt51be+KQtBUeGxoLaHSUEHBhIGEHb0rU/GTxjNBz1EUWfbMRwEGZKuxevlTrEFJI=,iv:9JTUP5GpiopFIZRMg/jlLikQOJVHp9/uBW5I0OiLCqI=,tag:3lS5WcoHnXMjho5mVsYyqA==,type:str]
+    lastmodified: "2024-08-28T12:43:44Z"
+    mac: ENC[AES256_GCM,data:0147wxo5XbD/gM7sP5Kl6oleUbINWqvzZA3tm+CwtomunKb7T8dFs7NrVrmZv+ARZMH7FVsLm+j6q0SoqiNW8+PU73s5MfiTgeVfB7pGl1pPTPQ3yIuz3lSNjqIIf2PCh+t8EmQaTVT4llu2uvop2N/ygDHItnyRak7UJiq/NmQ=,iv:z6/KLVio+yIZfaDaYmK2L45qt7OVgumB5a3FrEnsPqI=,tag:PBJX6V8ZKvcOS82RfY66hw==,type:str]
     pgp: []
     unencrypted_suffix: _unencrypted
     version: 3.9.0
