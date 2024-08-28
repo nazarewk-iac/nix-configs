@@ -22,7 +22,8 @@
   inputs.flake-parts.url = "github:hercules-ci/flake-parts";
   inputs.flake-utils.url = "github:numtide/flake-utils";
   inputs.home-manager.url = "github:nix-community/home-manager";
-  inputs.impermanence.url = "github:nix-community/impermanence";
+  #inputs.impermanence.url = "github:nix-community/impermanence";
+  inputs.impermanence.url = "github:nazarewk/impermanence/fix-home-manager-ordering";
   inputs.lanzaboote.url = "github:nix-community/lanzaboote";
   inputs.microvm.url = "github:astro/microvm.nix";
   inputs.mk-shell-bin.url = "github:rrbutani/nix-mk-shell-bin";
