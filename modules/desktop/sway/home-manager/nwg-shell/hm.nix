@@ -57,5 +57,11 @@ in
       ];
       services.nwg-shell.drawer.opts.wm = ''"$XDG_CURRENT_DESKTOP"'';
     }
+    {
+      home.persistence."usr/config".files = [ ]
+        # nwg-drawer pins
+        ++ (lib.lists.optional (cfg.drawer.enable) ".cache/nwg-pin-cache")
+      ;
+    }
   ]);
 }
