@@ -145,6 +145,21 @@ in
         (builtins.foldl' lib.attrsets.recursiveUpdate { })
       ];
     };
+
+    secrets = lib.mkOption {
+      description = ''converts `sops.secrets` into object structure to iterate more easily over it'';
+      readOnly = true;
+      type = with lib.types; anything;
+
+      default = lib.pipe config.sops.secrets [
+        (lib.attrsets.mapAttrsToList (name: value: lib.attrsets.setAttrByPath
+          (lib.strings.splitString "/" name)
+          value
+        ))
+        # dumb merge
+        (builtins.foldl' lib.attrsets.recursiveUpdate { })
+      ];
+    };
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
