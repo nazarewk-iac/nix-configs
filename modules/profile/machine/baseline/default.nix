@@ -262,6 +262,7 @@ in
       systemd.services.netbird-priv.postStart = ''
         nb='${lib.getExe config.services.netbird.clients.priv.wrapper}'
         if "$nb" status 2>&1 | grep --quiet 'NeedsLogin' ; then
+          cut -b1-8 <<<"$NB_SETUP_KEY"
           "$nb" up
         fi
       '';
