@@ -87,7 +87,7 @@ in
             users.root =
               let
                 hm = config.home-manager.users.root.home.persistence."${name}";
-                defaultPerms = { user = "root"; group = "root"; mode = "0700"; };
+                defaultPerms = { user = "root"; group = "root"; mode = lib.mkForce "0700"; };
                 dirConfig = defaultPerms // { inherit defaultPerms; };
               in
               {

@@ -98,16 +98,6 @@ in
         environment.persistence."disposable".users = builtins.mapAttrs (_: _: { directories = [ "" ]; }) config.home-manager.users;
       })
       {
-        home-manager.sharedModules = [{
-          home.persistence."sys/cache".directories = [
-            "Downloads"
-          ];
-          home.persistence."sys/data".directories = [
-            "Videos"
-          ];
-        }];
-      }
-      {
         environment.persistence."sys/data" = {
           directories = [
             "/var/lib/systemd"
@@ -164,33 +154,8 @@ in
         };
       }
       {
-        home-manager.sharedModules = [
-          (hm: {
-            home.persistence."usr/cache".directories =
-              [
-                ".cache/appimage-run" # not sure where exactly it comes from
-              ]
-              ++ lib.lists.optional hm.config.fonts.fontconfig.enable ".cache/fontconfig"
-            ;
-          })
-        ];
-      }
-      {
         home-manager.sharedModules = [{
           home.persistence."usr/data".directories = [ ".local/share/nix" ];
-        }];
-      }
-      {
-        home-manager.sharedModules = [{
-          home.persistence."usr/state".directories = [
-            #".local/share/fish/fish_history" # A file already exists at ...
-            ".ipython/profile_default/history.sqlite"
-            ".bash_history"
-            ".duckdb_history"
-            ".python_history"
-            ".usql_history"
-            ".zsh_history"
-          ];
         }];
       }
       {
