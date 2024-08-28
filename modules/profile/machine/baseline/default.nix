@@ -226,6 +226,14 @@ in
       }];
     }
     {
+      # TODO: checkout the repository while installing?
+      systemd.tmpfiles.rules = [
+        "L /etc/nixos/flake.nix       - - - - flake.nix.rel"
+        "L /etc/nixos/flake.nix.rel   - - - - /home/kdn/dev/github.com/nazarewk-iac/nix-configs/flake.nix"
+        "L /etc/nixos/flake.nix.abs   - - - - ../../home/kdn/dev/github.com/nazarewk-iac/nix-configs/flake.nix"
+      ];
+    }
+    {
       services.netbird.clients.priv.port = 51819;
       services.netbird.package = pkgs.netbird.overrideAttrs (old: {
         patches = old.patches or [ ] ++ [
