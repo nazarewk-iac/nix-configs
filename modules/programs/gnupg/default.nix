@@ -44,14 +44,20 @@ in
 
       # allow usb-ip access to Yubikeys
       security.polkit.extraConfig = builtins.readFile ./pcsc-lite-rules.js;
+    }
+    {
       home-manager.sharedModules = [
         (hm: {
           programs.gpg.enable = true;
           home.persistence."usr/data".directories = [
             ".gnupg"
           ];
+          home.persistence."usr/config".directories = [
+            ".config/pinentry-kdn"
+          ];
           systemd.user.tmpfiles.rules = [
             "d ${hm.config.home.homeDirectory}/.gnupg 0700 - - -"
+            "d ${hm.config.home.homeDirectory}/.config/pinentry-kdn 0700 - - -"
           ];
         })
       ];
