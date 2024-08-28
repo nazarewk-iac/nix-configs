@@ -32,7 +32,6 @@ in
     # CUSTOM
 
     kdn.desktop.remote-server.enable = true;
-    kdn.programs.keepass.enable = true;
     kdn.programs.nix-index.enable = true;
 
     kdn.development.android.enable = true;
