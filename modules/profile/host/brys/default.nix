@@ -36,33 +36,13 @@ in
       # 12G was not enough for large rebuild
       boot.tmp.tmpfsSize = "32G";
     }
-    /*(
-      let
-        asusConn = "DP-4";
-        # name is derived from forced edid profile, could be DP-1
-        #asus = "The Linux Foundation ${lib.removeSuffix ".bin" config.hardware.display.outputs."DP-1".edid} Linux #0";
-        asus = asusConn;
-        dell = "Dell Inc. DELL U2711 G606T29F0EWL";
-        m32uc = "GIGA-BYTE TECHNOLOGY CO., LTD. M32UC 22090B013112";
-      in
-      {
-        kdn.hardware.edid.enable = true;
-        hardware.display.outputs."${asusConn}" = {
-          edid = "PG278Q_120.bin";
-          mode = "e";
-        };
-        home-manager.sharedModules = [{
-          wayland.windowManager.sway.config = {
-            workspaceOutputAssign = [
-              { workspace = "1"; output = m32uc; }
-              { workspace = "2"; output = asus; }
-              { workspace = "3"; output = asus; }
-              { workspace = "4"; output = m32uc; }
-            ];
-          };
-        }];
-      }
-    )*/
+    {
+      kdn.hardware.edid.enable = true;
+      hardware.display.outputs."DP-4" = {
+        edid = "PG278Q_120.bin";
+        mode = "e";
+      };
+    }
     /* {
       # automated unlock using Clevis through Tang server
       boot.initrd.network.flushBeforeStage2 = true;
