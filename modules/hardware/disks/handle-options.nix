@@ -69,19 +69,12 @@ in
               hmConfig = config.home-manager.users."${user.name}";
             in
             lib.pipe config.environment.persistence [
-              (lib.filterAttrs (pName: persistence:
-                let
-                  hasDirectUser = persistence.users ? user.key;
-                  hmPersistence = hmConfig.home.persistence."${pName}";
-                  hasHMUser = hmPersistence.files != [ ] || hmPersistence.directories != [ ];
-                in
-                hasDirectUser || hasHMUser
-              ))
               builtins.attrValues
               (builtins.map (persistence: "d ${persistence.persistentStoragePath}${h} 0750 ${u} ${g} - -"))
             ]
           ))
-          lib.concatLists
+          builtins.concatLists
+          (lib.mkOrder 499)
         ];
 
       /* `root` user fixes since:
