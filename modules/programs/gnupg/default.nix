@@ -48,6 +48,9 @@ in
     {
       home-manager.sharedModules = [
         (hm: {
+          # TODO: figure out how to run it during boot
+          programs.gpg.publicKeys = lib.mkForce [ ];
+
           programs.gpg.enable = true;
           home.persistence."usr/data".directories = [
             ".gnupg"

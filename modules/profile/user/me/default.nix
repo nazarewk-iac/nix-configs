@@ -21,6 +21,7 @@ in
       kdn.hardware.yubikey.appId = "pam://kdn";
       users.users.kdn.initialHashedPassword = "$y$j9T$yl3J5zGJ5Yq8c6fXMGxNk.$XE3X8aWpD3FeakMBD/fUmCExXMuy7B6tm7ZECmuxpF4";
       users.users.kdn = {
+        linger = true;
         uid = 31893;
         subUidRanges = [{ count = 65536; startUid = 100000; }];
         subGidRanges = [{ count = 65536; startGid = 100000; }];

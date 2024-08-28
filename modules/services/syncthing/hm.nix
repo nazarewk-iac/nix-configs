@@ -23,5 +23,9 @@ in
     home.persistence."usr/config".directories = [
       ".config/syncthing"
     ];
+
+    systemd.user.services.syncthing = {
+      Unit.After = [ "paths.target" ];
+    };
   };
 }

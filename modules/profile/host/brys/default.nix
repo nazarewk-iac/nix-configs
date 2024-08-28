@@ -9,6 +9,8 @@ in
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
+    # TODO: remove it after setup
+    { security.sudo.wheelNeedsPassword = false; }
     {
       kdn.profile.machine.workstation.enable = true;
       kdn.hardware.gpu.amd.enable = true;

@@ -8,7 +8,7 @@ in
 
     enableZFSWorkaround = lib.mkOption {
       type = with lib.types; bool;
-      default = false;
+      default = true;
     };
 
     users = lib.mkOption {
@@ -95,7 +95,7 @@ in
     ))
     (lib.mkIf (builtins.elem "root" cfg.users) {
       systemd.services.atuind = {
-        description = "Atuin shell history synchronization daemon for root uesr";
+        description = "Atuin shell history synchronization daemon for root user";
         after = [ "network-online.target" ];
         requires = [ "network-online.target" ];
         wantedBy = [ "default.target" ];

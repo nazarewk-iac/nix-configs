@@ -13,7 +13,7 @@ in
       programs.atuin.settings = {
         auto_sync = true;
         update_check = false;
-        sync_frequency = "0";
+        sync_frequency = "60";
         daemon = {
           enabled = true;
           sync_frequency = 300;
@@ -24,7 +24,10 @@ in
       systemd.user.services.atuind = {
         Unit = {
           Description = "Atuin shell history synchronization daemon";
-          After = [ "network.target" ];
+          After = [
+            "network.target"
+            "paths.target" # this one handles impermanence bind mounts
+          ];
         };
         Service.ExecStart = "${lib.getExe config.programs.atuin.package} daemon";
         Service.Environment = [
