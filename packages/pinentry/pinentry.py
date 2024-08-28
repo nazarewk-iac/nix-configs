@@ -160,18 +160,22 @@ class PinentryConfigExec:
         assert self.option_patterns or self.set_patterns
         self.option_patterns = {
             key: [
-                PinentryConfigPattern(**pattern)
-                if isinstance(pattern, dict)
-                else pattern
+                (
+                    PinentryConfigPattern(**pattern)
+                    if isinstance(pattern, dict)
+                    else pattern
+                )
                 for pattern in patterns
             ]
             for key, patterns in self.option_patterns.items()
         }
         self.set_patterns = {
             key: [
-                PinentryConfigPattern(**pattern)
-                if isinstance(pattern, dict)
-                else pattern
+                (
+                    PinentryConfigPattern(**pattern)
+                    if isinstance(pattern, dict)
+                    else pattern
+                )
                 for pattern in patterns
             ]
             for key, patterns in self.set_patterns.items()
@@ -197,7 +201,7 @@ class PinentryConfigExec:
 
 @dataclasses.dataclass
 class PinentryConfig:
-    gui_flavors: tuple[str, ...] = ("qt", "gtk-2", "gnome3")
+    gui_flavors: tuple[str, ...] = ("gtk-2", "qt", "gnome3")
     tty_flavors: tuple[str, ...] = ("curses", "tty")
     program: str = ""
     exec: dict[str, PinentryConfigExec] = dataclasses.field(default_factory=dict)

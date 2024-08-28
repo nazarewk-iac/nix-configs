@@ -412,8 +412,6 @@ in
     }
     (lib.mkIf config.programs.gnupg.agent.enable {
       systemd.user.services."gpg-agent" = {
-        unitConfig.Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
-        after = [ config.kdn.desktop.sway.systemd.envs.target ];
         serviceConfig.Slice = "background.slice";
       };
     })

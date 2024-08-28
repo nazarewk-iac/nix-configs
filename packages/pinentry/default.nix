@@ -1,7 +1,8 @@
-{ lib, python3, pinentry-qt, pinentry-curses, writeScriptBin }:
+{ lib, python3, pinentry-qt, pinentry-gtk2, pinentry-curses, writeScriptBin }:
 let
   runtimeInputs = [
     pinentry-qt
+    pinentry-gtk2
     pinentry-curses
   ];
 in
