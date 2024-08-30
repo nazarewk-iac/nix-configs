@@ -384,11 +384,11 @@
     },
     "impermanence": {
       "locked": {
-        "lastModified": 1725028023,
+        "lastModified": 1725028690,
         "narHash": "sha256-0ZfJOZsUKUbLEPyfec6/mkNNRoxdYlAxqzSgXPtQgro=",
         "owner": "nazarewk",
         "repo": "impermanence",
-        "rev": "ba237ffa42cb0a4037aa433f5b2b3475193aa8fa",
+        "rev": "a39787ec94028235cd8207e61e93acc373c1972a",
         "type": "github"
       },
       "original": {
