@@ -9,6 +9,11 @@ let
 
   nc.rel = "Nextcloud/drag0nius@nc.nazarewk.pw";
   nc.abs = "${config.home.homeDirectory}/${nc.rel}";
+
+  pow = n: i:
+    if i == 1 then n
+    else if i == 0 then 1
+    else n * pow n (i - 1);
 in
 {
   options.kdn.profile.user.kdn = {
@@ -134,6 +139,51 @@ in
         profiles.kdn = {
           id = 0;
           isDefault = true;
+        };
+      };
+    })
+    (lib.mkIf (hasGUI && config.kdn.hardware.disks.enable) {
+      programs.firefox.profiles.kdn.containersForce = true;
+      programs.firefox.profiles.kdn.containers = {
+        personal = {
+          id = 1;
+          icon = "fingerprint";
+          color = "blue";
+        };
+        personal-2 = {
+          id = 2;
+          icon = "fingerprint";
+          color = "green";
+        };
+        work = {
+          id = 3;
+          icon = "briefcase";
+          color = "turquoise";
+        };
+        work-2 = {
+          id = 4;
+          icon = "briefcase";
+          color = "turquoise";
+        };
+        en = {
+          id = 5;
+          icon = "pet";
+          color = "red";
+        };
+        bn = {
+          id = 6;
+          icon = "pet";
+          color = "pink";
+        };
+        sn = {
+          id = 7;
+          icon = "pet";
+          color = "purple";
+        };
+        Facebook = {
+          id = (pow 2 32) - 128;
+          icon = "fence";
+          color = "toolbar";
         };
       };
     })
