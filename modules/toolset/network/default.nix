@@ -18,6 +18,7 @@ in
       nmap
       bandwhich
       tcpdump
+      wol
     ];
   };
 }
