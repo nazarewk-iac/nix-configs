@@ -228,7 +228,12 @@ in
         "kdnGenerateAgeKeys"
         "etc" # in case secrets get written to /etc
       ];
-      system.activationScripts.kdnGenerateAgeKeys.deps = lib.optional (config.environment.persistence != { }) "persist-files";
+      system.activationScripts.kdnGenerateAgeKeys.deps = lib.pipe [
+        "persist-files"
+        "impermanencePersistFiles"
+      ] [
+        (builtins.filter (key: config.system.activationScripts ? key))
+      ];
       system.activationScripts.kdnGenerateAgeKeys.text =
         let
           escapedKeyFile = lib.escapeShellArg config.sops.age.keyFile;

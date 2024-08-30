@@ -3,6 +3,9 @@ let
   cfg = config.kdn.desktop.sway;
 in
 {
+  # TODO: figure out why exiting Sway doesn't stop/restart `sddm-helper` aka `sddm` aka `display-manager.service`
+  # TODO: figure out why exiting Sway a second time cannot `systemctl restart display-manager.service`
+  # TODO: figure out why exiting Sway logs out all SSH sessions
   options.kdn.desktop.sway = {
     enable = lib.mkEnableOption "Sway base setup";
 
@@ -411,8 +414,18 @@ in
       };
     }
     (lib.mkIf config.programs.gnupg.agent.enable {
+      systemd.user.services."${config.kdn.desktop.sway.systemd.envs.name}" = {
+        serviceConfig.ExecStart = lib.mkAfter [
+          # stops `gpg-agent.service` after this one activates, it will be activated again by socket
+          "${pkgs.systemd}/bin/systemctl stop --user gpg-agent.service"
+        ];
+      };
       systemd.user.services."gpg-agent" = {
-        serviceConfig.Slice = "background.slice";
+        # I want to stop gpg-agent whenever `envs` target activates or deactivetes
+        # starting it again should be handled by `*.socket`
+        unitConfig.PartOf = [ config.kdn.desktop.sway.systemd.envs.target ];
+        unitConfig.StopPropagatedFrom = [ config.kdn.desktop.sway.systemd.envs.target ];
+        unitConfig.After = [ config.kdn.desktop.sway.systemd.envs.target ];
       };
     })
   ]);

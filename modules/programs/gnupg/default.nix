@@ -83,5 +83,11 @@ in
         };
       })
     ]))
+    {
+      systemd.user.services."gpg-agent" = {
+        after = [ "paths.target" ];
+        serviceConfig.Slice = "background.slice";
+      };
+    }
   ]);
 }

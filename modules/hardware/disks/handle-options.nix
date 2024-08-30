@@ -76,51 +76,49 @@ in
           builtins.concatLists
           (lib.mkOrder 499)
         ];
-
-      /* `root` user fixes since:
-        - `systemd --user` services do not work for `root`? https://github.com/nix-community/home-manager/blob/4fcd54df7cbb1d79cbe81209909ee8514d6b17a4/modules/systemd.nix#L293-L296
-      */
+    }
+    {
+      /* `root` user hardcodes */
       environment.persistence = lib.pipe cfg.impermanence [
-        (lib.attrsets.mapAttrs' (name: _: {
-          inherit name;
-          value = {
-            users.root =
+        (builtins.mapAttrs (name: imp: {
+          users.root.home = "/root";
+        }))
+      ];
+      home-manager.users.root.impermanence = {
+        /* `systemd --user` services do not work for `root`? https://github.com/nix-community/home-manager/blob/4fcd54df7cbb1d79cbe81209909ee8514d6b17a4/modules/systemd.nix#L293-L296
+            so we want to handle those mounts ourselves on NixOS side
+        */
+        defaultDirectoryMethod = "external";
+        defaultFileMethod = "external";
+      };
+    }
+    {
+      environment.persistence = lib.pipe cfg.impermanence [
+        (builtins.mapAttrs (name: imp: lib.pipe config.home-manager.users [
+          (lib.attrsets.mapAttrsToList (username: hmConfig: {
+            users.${username} =
               let
-                hm = config.home-manager.users.root.home.persistence."${name}";
-                defaultPerms = { user = "root"; group = "root"; mode = lib.mkForce "0700"; };
+                hm = hmConfig.home.persistence."${name}";
+                defaultPerms = {
+                  user = username;
+                  group = if username == "root" then "root" else "users";
+                  mode = lib.mkForce "0700";
+                };
                 dirConfig = defaultPerms // { inherit defaultPerms; };
               in
               {
-                directories = builtins.map
-                  (dir: dirConfig // { directory = if builtins.isString dir then dir else dir.directory; })
-                  (hm.directories or [ ]);
-                files = builtins.map
-                  # hm files are always strings
-                  (file: { inherit file; parentDirectory = dirConfig; })
-                  (hm.files or [ ]);
+                directories = lib.pipe (hm.directories or [ ]) [
+                  (builtins.filter (e: e.method == "external"))
+                  (builtins.map (dir: dirConfig // { directory = if builtins.isString dir then dir else dir.directory; }))
+                ];
+                files = lib.pipe (hm.files or [ ]) [
+                  (builtins.filter (e: e.method == "external"))
+                  (builtins.map (file: { file = file.file; parentDirectory = dirConfig; }))
+                ];
               };
-          };
-        }))
-      ];
-      # clean out home manager activation since it's not needed for root
-      home-manager.users.root.home.activation = lib.pipe [
-        "cleanEmptyLinkTargets"
-        "createAndMountPersistentStoragePaths"
-        "unmountPersistentStoragePaths"
-        "runUnmountPersistentStoragePaths"
-        "createTargetFileDirectories"
-      ] [
-        (builtins.map (name: {
-          inherit name;
-          value = {
-            after = lib.mkDefault [ ];
-            before = lib.mkDefault [ ];
-            data = lib.mkForce ''
-              # `${name}` cleared by `kdn.hardware.disks` for `root`
-            '';
-          };
-        }))
-        builtins.listToAttrs
+          }))
+          lib.mkMerge
+        ]))
       ];
     }
     {

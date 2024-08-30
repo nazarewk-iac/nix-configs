@@ -384,16 +384,15 @@
     },
     "impermanence": {
       "locked": {
-        "lastModified": 1724871854,
-        "narHash": "sha256-q0DOdRIJn1r6s4+eDH3rpT2q1cmQGWHmuL+UuQoP7F0=",
+        "lastModified": 1725028023,
+        "narHash": "sha256-0ZfJOZsUKUbLEPyfec6/mkNNRoxdYlAxqzSgXPtQgro=",
         "owner": "nazarewk",
         "repo": "impermanence",
-        "rev": "3126dabee404b6593ac822059125bcb93f793183",
+        "rev": "ba237ffa42cb0a4037aa433f5b2b3475193aa8fa",
         "type": "github"
       },
       "original": {
         "owner": "nazarewk",
-        "ref": "fix-home-manager-ordering",
         "repo": "impermanence",
         "type": "github"
       }

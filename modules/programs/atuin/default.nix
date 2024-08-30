@@ -1,6 +1,10 @@
 { lib, pkgs, config, ... }:
 let
   cfg = config.kdn.programs.atuin;
+
+  getRuntimeDir = username:
+    let user = config.users.users."${username}";
+    in "/run/user/${toString user.uid}/atuin";
 in
 {
   options.kdn.programs.atuin = {
@@ -28,6 +32,9 @@ in
           value = {
             kdn.programs.atuin.enable = true;
             home.persistence."usr/data".directories = [ ".local/share/atuin" ];
+            programs.atuin.settings = {
+              daemon.socket_path = "${getRuntimeDir username}/atuin.sock";
+            };
           };
         }))
         builtins.listToAttrs
@@ -39,8 +46,8 @@ in
           (builtins.map (username:
             let
               user = config.users.users."${username}";
-              tmp.history = "/run/user/${toString user.uid}/atuin/history.db";
-              tmp.records = "/run/user/${toString user.uid}/atuin/records.db";
+              tmp.history = "${getRuntimeDir username}/history.db";
+              tmp.records = "${getRuntimeDir username}/records.db";
 
               litestream.config =
                 let

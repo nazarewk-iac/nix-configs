@@ -290,10 +290,12 @@ in
           services.nwg-shell.enable = true;
           services.nwg-shell.drawer.opts.fm = cfg.fileManager;
           kdn.desktop.sway.launcher = [ nwg.drawer.exec ];
+        }
+        (lib.mkIf config.services.nwg-shell.panel.enable {
           systemd.user.services.nwg-panel.Unit.BindsTo = [ "tray.target" ];
           systemd.user.services.nwg-panel.Unit.Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
           systemd.user.services.nwg-panel.Unit.After = [ config.kdn.desktop.sway.systemd.envs.target ];
-        }
+        })
         {
           services.nwg-shell.panel.enable = false; # disable because it seems to often hang up
           services.nwg-shell.panel.config.panel-bottom.enable = false;
