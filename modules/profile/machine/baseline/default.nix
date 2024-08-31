@@ -59,11 +59,17 @@ in
         which
       ];
 
-      networking.nameservers = [
+      # prefer appending NetworkManager nameservers when it is available
+      networking.networkmanager.appendNameservers = [
         "2606:4700:4700::1111" # CloudFlare
         "1.1.1.1" # CloudFlare
         "8.8.8.8" # Google
       ];
+      # otherwise fallback to inserting non-networkmanager servers
+      networking.nameservers = lib.mkIf
+        (!config.networking.networkmanager.enable)
+        (with config.networking.networkmanager; insertNameservers ++ appendNameservers);
+
       networking.networkmanager.enable = lib.mkDefault true;
       networking.networkmanager.logLevel = lib.mkDefault "INFO";
 
