@@ -682,8 +682,10 @@ in
                   lines =
                     [
                       # forward to resolved for now
-                      # TODO: replace
+                      # TODO: replace it with knot-dns
                       "policy.add(policy.all(policy.STUB({'127.0.0.53'})))"
+                      # TODO: already listening on it?
+                      #''net.listen(net['nb-priv'], 53, { kind = 'dns', freebind = true })''
                     ]
                     ++ builtins.map (ip: ''net.listen('${ip}', 53, { kind = 'dns', freebind = true })'') ips;
                 in

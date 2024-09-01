@@ -150,5 +150,12 @@ in
         };
       };
     }
+    {
+      # accept DNS queries over Netbird
+      networking.firewall.interfaces."nb-priv" = {
+        allowedTCPPorts = [ 53 ];
+        allowedUDPPorts = [ 53 ];
+      };
+    }
   ]);
 }
