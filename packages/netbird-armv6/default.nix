@@ -1,3 +1,5 @@
+# this doesn't build portable Go binaries or fails completely after applying `musl` patches
+# use ./build.sh to build & run manuallys
 { stdenv
 , lib
 , nixosTests
