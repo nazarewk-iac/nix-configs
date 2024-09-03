@@ -1,0 +1,32 @@
+diff --git a/util/net/net_linux.go b/util/net/net_linux.go
+index 907ce6e2..e2b1cae0 100644
+--- a/util/net/net_linux.go
++++ b/util/net/net_linux.go
+@@ -4,11 +4,14 @@ package net
+ 
+ import (
+ 	"fmt"
++	"os"
+ 	"syscall"
+ 
+ 	log "github.com/sirupsen/logrus"
+ )
+ 
++const envSkipSocketMark = "NB_SKIP_SOCKET_MARK"
++
+ // SetSocketMark sets the SO_MARK option on the given socket connection
+ func SetSocketMark(conn syscall.Conn) error {
+ 	sysconn, err := conn.SyscallConn()
+@@ -47,6 +50,12 @@ func SetSocketOpt(fd int) error {
+ 		return nil
+ 	}
+ 
++	// Check for the new environment variable
++	if skipSocketMark := os.Getenv(envSkipSocketMark); skipSocketMark == "true" {
++		log.Info("NB_SKIP_SOCKET_MARK is set to true, skipping SO_MARK")
++		return nil
++	}
++
+ 	err := syscall.SetsockoptInt(fd, syscall.SOL_SOCKET, syscall.SO_MARK, NetbirdFwmark)
+ 	if err != nil {
+ 		log.Errorf("Failed to set SO_MARK: %v", err)

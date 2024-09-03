@@ -33,6 +33,15 @@ buildGoModule rec {
   pname = "netbird";
   version = "0.28.9";
 
+  GOOS = "linux";
+  GOARCH = "arm";
+  GOARM = "6";
+
+  patches = [
+    ./debug.patch
+    ./debug2.patch
+  ];
+
   src = fetchFromGitHub {
     owner = "netbirdio";
     repo = "netbird";
