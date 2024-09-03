@@ -18,15 +18,12 @@
 , WebKit
 , ui ? false
 , netbird-ui
+, musl
 }:
 let
   modules =
-    if ui then {
-      "client/ui" = "netbird-ui";
-    } else {
+    {
       client = "netbird";
-      management = "netbird-mgmt";
-      signal = "netbird-signal";
     };
 in
 buildGoModule rec {
@@ -36,6 +33,7 @@ buildGoModule rec {
   GOOS = "linux";
   GOARCH = "arm";
   GOARM = "6";
+  CGO_ENABLE = 0;
 
   patches = [
     ./debug.patch
@@ -51,21 +49,7 @@ buildGoModule rec {
 
   vendorHash = "sha256-UlxylKiszgB2XQ4bZI23/YY/RsFCE7OlHT3DBsRhvCk=";
 
-  nativeBuildInputs = [ installShellFiles ] ++ lib.optional ui pkg-config;
-
-  buildInputs = lib.optionals (stdenv.isLinux && ui) [
-    gtk3
-    libayatana-appindicator
-    libX11
-    libXcursor
-    libXxf86vm
-  ] ++ lib.optionals (stdenv.isDarwin && ui) [
-    Cocoa
-    IOKit
-    Kernel
-    UserNotifications
-    WebKit
-  ];
+  nativeBuildInputs = [ musl ];
 
   subPackages = lib.attrNames modules;
 
@@ -74,45 +58,20 @@ buildGoModule rec {
     "-w"
     "-X github.com/netbirdio/netbird/version.version=${version}"
     "-X main.builtBy=nix"
+    # static linkings
+    "-linkmode external"
+    "-extldflags '-static -L${musl}/lib'"
   ];
 
   # needs network access
   doCheck = false;
 
-  postPatch = ''
-    # make it compatible with systemd's RuntimeDirectory
-    substituteInPlace client/cmd/root.go \
-      --replace-fail 'unix:///var/run/netbird.sock' 'unix:///var/run/netbird/sock'
-    substituteInPlace client/ui/client_ui.go \
-      --replace-fail 'unix:///var/run/netbird.sock' 'unix:///var/run/netbird/sock'
-  '';
-
   postInstall = lib.concatStringsSep "\n"
     (lib.mapAttrsToList
       (module: binary: ''
         mv $out/bin/${lib.last (lib.splitString "/" module)} $out/bin/${binary}
-      '' + lib.optionalString (!ui) ''
-        installShellCompletion --cmd ${binary} \
-          --bash <($out/bin/${binary} completion bash) \
-          --fish <($out/bin/${binary} completion fish) \
-          --zsh <($out/bin/${binary} completion zsh)
       '')
-      modules) + lib.optionalString (stdenv.isLinux && ui) ''
-    mkdir -p $out/share/pixmaps
-    cp $src/client/ui/netbird-systemtray-connected.png $out/share/pixmaps/netbird.png
-
-    mkdir -p $out/share/applications
-    cp $src/client/ui/netbird.desktop $out/share/applications/netbird.desktop
-
-    substituteInPlace $out/share/applications/netbird.desktop \
-      --replace-fail "Exec=/usr/bin/netbird-ui" "Exec=$out/bin/netbird-ui"
-  '';
-
-  passthru = {
-    tests.netbird = nixosTests.netbird;
-    tests.netbird-ui = netbird-ui;
-    updateScript = nix-update-script { };
-  };
+      modules);
 
   meta = with lib; {
     homepage = "https://netbird.io";
