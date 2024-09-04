@@ -12,9 +12,6 @@ rec {
   klg = pkgs.callPackage ./klg { };
   klog-time-tracker = pkgs.callPackage ./klog-time-tracker { };
   pass-secret-service = pkgs.callPackage ./pass-secret-service { };
-  netbird-armv6 = pkgs.callPackage ./netbird-armv6 {
-    inherit (pkgs.darwin.apple_sdk_11_0.frameworks) Cocoa IOKit Kernel UserNotifications WebKit;
-  };
   pinentry = pkgs.callPackage ./pinentry { };
   ss-util = pkgs.callPackage ./ss-util { };
   tc-redirect-tap = pkgs.callPackage ./tc-redirect-tap { };
