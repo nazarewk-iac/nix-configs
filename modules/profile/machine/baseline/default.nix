@@ -115,9 +115,12 @@ in
       services.locate.package = pkgs.mlocate;
       services.locate.pruneBindMounts = true;
 
-      services.avahi.enable = false; # conficts with `services.resolved.llmnr`
       services.resolved.enable = true;
+      services.avahi.enable = false; # conficts with `resolved` `MulticastDNS`/`LLMNR`
       services.resolved.llmnr = "true";
+      services.resolved.extraConfig = ''
+        MulticastDNS=true
+      '';
 
       kdn.development.shell.enable = true;
       kdn.filesystems.zfs.enable = true;
