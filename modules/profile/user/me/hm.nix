@@ -24,6 +24,8 @@ in
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       kdn.programs.ssh-client.enable = true;
+      home.file.".ssh/config.d/signicat.config".source = config.lib.file.mkOutOfStoreSymlink "/run/configs/networking/ssh_config/signicat";
+      home.file.".ssh/config.d/kdn.config".source = config.lib.file.mkOutOfStoreSymlink "/run/configs/networking/ssh_config/kdn";
 
       # pam-u2f expects a single line of configuration per user in format `username:entry1:entry2:entry3:...`
       # `pamu2fcfg` generates lines of format `username:entry`

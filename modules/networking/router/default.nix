@@ -863,9 +863,6 @@ in
       ];
     }
     (lib.mkIf (cfg.kresd.rewrites != { }) {
-      /* TODO: etra.netbird.cloud doesn't seem to properly
-          respond to `ping` or `dig` from oams
-       */
       # TODO: watch out for kresd 6.0+ version for native support of rewrites
       kdn.service.coredns.enable = true;
       kdn.service.coredns.rewrites = builtins.mapAttrs

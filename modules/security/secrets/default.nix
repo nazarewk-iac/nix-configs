@@ -243,6 +243,12 @@ in
           printf "Rendering %s\n" ${escapedKeyFile}
           ${lib.getExe cfg.age.genScripts} >${escapedKeyFile}
         '';
+      system.activationScripts.kdnSecretsPostSecretsHook.deps = [ "setupSecrets" ];
+      system.activationScripts.kdnSecretsPostSecretsHook.text = "";
+      system.activationScripts.kdnSecretsPostRenderHook.deps = [ "renderSecrets" "kdnSecretsPostSecretsHook" ];
+      system.activationScripts.kdnSecretsPostRenderHook.text = "";
+      system.activationScripts.kdnSecretsPostHook.deps = [ "kdnSecretsPostSecretsHook" "kdnSecretsPostRenderHook" ];
+      system.activationScripts.kdnSecretsPostHook.text = "";
     }
     (lib.mkIf cfg.allow {
       sops.templates."placeholder.txt".content = ""; # fills-in `sops.placeholder`

@@ -13,6 +13,7 @@ in
       programs.ssh.enable = true;
       programs.ssh.extraConfig = ''
         Host *
+          Include ~/.ssh/config.d/*.config
           Include ~/.ssh/config.local
       '';
 
