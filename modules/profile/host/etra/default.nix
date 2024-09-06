@@ -151,10 +151,27 @@ in
       };
     }
     {
-      # accept DNS queries over Netbird
-      networking.firewall.interfaces."nb-priv" = {
-        allowedTCPPorts = [ 53 ];
-        allowedUDPPorts = [ 53 ];
+      # accept all traffice coming from Netbird to any other routed network
+      networking.firewall.trustedInterfaces = [ "nb-priv" ];
+      kdn.networking.router.kresd.interfaces = [ "nb-priv" ];
+    }
+    {
+      sops.templates = lib.pipe netconf.hosts [
+        (lib.attrsets.mapAttrsToList (name: text:
+          let path = "/etc/hosts.d/50-${rCfg.dropin.infix}-${name}.hosts"; in {
+            "${path}" = {
+              inherit path;
+              mode = "0644";
+              content = text;
+            };
+          }))
+        lib.mkMerge
+      ];
+    }
+    {
+      # Serve .nb.kdn.im. from .netbird.cloud.
+      kdn.networking.router.kresd.rewrites."nb.kdn.im" = {
+        from = "netbird.cloud";
       };
     }
   ]);

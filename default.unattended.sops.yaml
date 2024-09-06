@@ -8,6 +8,8 @@ netbird-priv:
     permanent:
         setup-key: ENC[AES256_GCM,data:CiS+33+oxMxFYzPMIZUpqWQUx8Cefehy1DI100JAXBvOn0rB,iv:91tze9y+7ilNBW17lfGuWHRIl/2Gjzxo/JOmyMAQrhc=,tag:/jYmXx8ov6fQORof1rIP/g==,type:str]
 networking:
+    hosts:
+        signicat: ENC[AES256_GCM,data:coL4FgwIK1A4quPoxyzGysmH7KfxZauuks53VdtLBUt5c7Qcrh/0QymHYUmHgbCPOzaycAPtgo8Q4wxFOOFnpiIG2rU5/5k2U78eBFUSPPRicIp4BZQjxzvRY4IFk282yWyuHBF6eEEtXCNhLfmtgoV6lr0WX8kdz3HlVBkp+YOyg4k6DDo3OoB5Q0PFbYqosB8aDE55XmpQ1VckHI8qJ4BdNP4bdlpG+0CU+iz8EmBw8ggsJxK98pKjCyiaCcETQLnOBY/qxK9ZyCOjOEGJDmfz3y4wN9yRcdoESq/FkV8LArzpAkqqBnObKgil4K0Syph0OLy4ejELzl6TiKGiC/AdTLtbqhpIeLKVgMOS7hVKJ0GZaZkiRz8BZHdrdQf9e2BlBQZH+vkOqoWfwvhDYyYzdKKxjoNH6JfLCMtL+TfOVB5qOa7Ot99buk2vN4JgvWkH+scaTIcy8ScOGW+5D88kJIqXZ6L3wIyRrYeqaBYzBNAJBPowctV0XbLoIg01yDvQ5bjjCC/KWRpzCvfX,iv:i9Q83Go/kT6Aqv8BDb03yiVZtoUy+W8zGyDAw+P6oUA=,tag:PM9Vrxd7MeSfKdA8MhVhJA==,type:str]
     anonymization:
         ipv6-public-00-prefix:
             pattern: ENC[AES256_GCM,data:sCACVCHIl56EE41zni0+X8IIAg==,iv:KTTCqmI60ZNVobxyGtRj6KuMV1ctePfuyJjlTzRgVDQ=,tag:3qyBCgNf0nH6KVTn0LALjQ==,type:str]
@@ -135,8 +137,8 @@ sops:
             7YnIqtOAtD9PlD7I3L26EmdV79W5bGYIRUujG2lHh0FEIN2UNAxLzTM5TDd5Mtmg
             peo=
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2024-08-28T12:43:44Z"
-    mac: ENC[AES256_GCM,data:0147wxo5XbD/gM7sP5Kl6oleUbINWqvzZA3tm+CwtomunKb7T8dFs7NrVrmZv+ARZMH7FVsLm+j6q0SoqiNW8+PU73s5MfiTgeVfB7pGl1pPTPQ3yIuz3lSNjqIIf2PCh+t8EmQaTVT4llu2uvop2N/ygDHItnyRak7UJiq/NmQ=,iv:z6/KLVio+yIZfaDaYmK2L45qt7OVgumB5a3FrEnsPqI=,tag:PBJX6V8ZKvcOS82RfY66hw==,type:str]
+    lastmodified: "2024-09-05T14:33:51Z"
+    mac: ENC[AES256_GCM,data:8K1Ioelc/P0YiATqJ7cobdnFcHpiYqdMOwii7TvNKicxo4ePPupaVdSNtwbZHQiBISWc48slopcIOJsVorFru0rCTXlOD8AHPUwKqz2Sn/pi8dQXpceWVjYOyzVkkKHWEdoN5fw0F2wytixUYzK3p/4Qp0SGQJ44mVj7YhOe480=,iv:SYE1niLFeAaLWJ2b6w7zHOwY2aA2KGeXzBTTFien6BY=,tag:2WFKC0YREwB5oHnhgbz/ow==,type:str]
     pgp: []
     unencrypted_suffix: _unencrypted
     version: 3.9.0

@@ -111,6 +111,10 @@ let
         vlan.id = lib.mkOption {
           type = with lib.types; ints.between 1 4095;
         };
+        interface = lib.mkOption {
+          type = with lib.types; str;
+          default = netCfg.name;
+        };
         interfaces = lib.mkOption {
           type = with lib.types; listOf str;
         };
@@ -384,6 +388,37 @@ in
       type = lib.types.attrsOf netType;
       default = { };
     };
+
+    kresd.interfaces = lib.mkOption {
+      type = with lib.types; listOf str;
+      default = [ ];
+    };
+
+    kresd.rewrites = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule ({ name, ... }@rewriteArgs: {
+        options = {
+          to = lib.mkOption {
+            type = with lib.types; str;
+            default = name;
+          };
+
+          from = lib.mkOption {
+            type = with lib.types; str;
+          };
+
+          upstreams = lib.mkOption {
+            type = with lib.types; listOf str;
+            default = cfg.kresd.upstreams;
+          };
+        };
+      }));
+    };
+    kresd.upstreams = lib.mkOption {
+      type = with lib.types; listOf str;
+      # forward to resolved for now
+      # TODO: add knot-dns before systemd-resolved?
+      default = [ "127.0.0.53" ];
+    };
   };
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
@@ -498,6 +533,7 @@ in
           directories = [
             "/etc/systemd/network"
             "/etc/knot-resolver"
+            "/etc/hosts.d"
           ];
           existing = lib.pipe config.sops.templates [
             builtins.attrValues
@@ -519,7 +555,6 @@ in
     }
     {
       # Kea DHCPv4
-      # TODO:
       services.kea = {
         dhcp4.enable = true;
       };
@@ -528,13 +563,13 @@ in
           builtins.attrValues
           (builtins.filter (netCfg: netCfg.type == "lan"))
           (builtins.map (netCfg: {
-            interfaces-config.interfaces = [ netCfg.name ];
+            interfaces-config.interfaces = [ netCfg.interface ];
             subnet4 = lib.pipe netCfg.addressing [
               builtins.attrValues
               (builtins.filter (addrCfg: addrCfg.enable && addrCfg.type == "ipv4"))
               (builtins.map (addrCfg: {
                 id = addrCfg.id;
-                interface = netCfg.name;
+                interface = netCfg.interface;
                 subnet = with addrCfg; "${network}/${netmask}";
                 pools = lib.pipe addrCfg.pools [
                   builtins.attrValues
@@ -615,6 +650,7 @@ in
     {
       # kresd DNS resolver
       services.kresd.enable = true;
+      services.kresd.listenPlain = [ ];
       services.kresd.package = (pkgs.knot-resolver.override {
         extraFeatures = true;
       }).overrideAttrs (old: {
@@ -622,92 +658,15 @@ in
           luafilesystem
         ]);
       });
+      kdn.networking.router.kresd.interfaces = lib.attrsets.mapAttrsToList (_: netCfg: netCfg.interface) cfg.nets;
 
-      services.kresd.extraConfig = ''
-        -- credits to https://github.com/hectorm/hblock-resolver/blob/188d074b41e98d88136d620b4014f743ce55ab2a/config/knot-resolver/kresd.conf
-
-        -- Main configuration of Knot Resolver.
-        -- Refer to manual: https://knot-resolver.readthedocs.io/en/latest/daemon.html#configuration
-
-        -- Load configuration from kresd.conf.d/ directory
-
-        local lfs = require('lfs')
-        local conf_dir = env.KRESD_CONF_DIR .. '/kresd.conf.d'
-
-        if lfs.attributes(conf_dir) ~= nil then
-          local conf_files = {}
-          for entry in lfs.dir(conf_dir) do
-            if entry:sub(-5) == '.conf' then
-              table.insert(conf_files, entry)
-            end
-          end
-          table.sort(conf_files)
-          for i = 1, #conf_files do
-            dofile(conf_dir .. '/' .. conf_files[i])
-          end
-        end
-      '';
+      # logging functions are available at https://gitlab.nic.cz/knot/knot-resolver/-/blob/v5.7.4/daemon/lua/sandbox.lua.in#L63
+      services.kresd.extraConfig = builtins.readFile ./kresd.conf.lua;
       systemd.services."kresd@".environment.KRESD_CONF_DIR = "/etc/knot-resolver";
       systemd.services."kresd@".restartTriggers = lib.pipe config.sops.templates [
         builtins.attrValues
         (builtins.map (tpl: tpl.path))
         (builtins.filter (lib.strings.hasPrefix "/etc/knot-resolver"))
-      ];
-
-      sops.templates = lib.pipe cfg.nets [
-        (lib.attrsets.mapAttrsToList (_: netCfg:
-          let path = "/etc/knot-resolver/kresd.conf.d/50-${cfg.dropin.infix}-template-network-${netCfg.name}.conf"; in {
-            "${path}" = {
-              inherit path;
-              mode = "0640";
-              owner = "knot-resolver";
-              group = "knot-resolver";
-              content =
-                let
-                  ips = [ ]
-                    ++ (builtins.map
-                    (addr: lib.pipe addr [
-                      # remove everything after the last `/`
-                      (lib.strings.splitString "/")
-                      lib.lists.init
-                      (builtins.concatStringsSep "/")
-                    ])
-                    netCfg.address)
-                    ++ (lib.pipe netCfg.addressing [
-                    builtins.attrValues
-                    (builtins.map (addrCfg: addrCfg.hosts."${hostname}".ip))
-                  ])
-                  ;
-
-                  lines =
-                    [
-                      # forward to resolved for now
-                      # TODO: replace it with knot-dns
-                      "policy.add(policy.all(policy.STUB({'127.0.0.53'})))"
-                      # TODO: already listening on it?
-                      #''net.listen(net['nb-priv'], 53, { kind = 'dns', freebind = true })''
-                    ]
-                    ++ builtins.map (ip: ''net.listen('${ip}', 53, { kind = 'dns', freebind = true })'') ips;
-                in
-                builtins.concatStringsSep "\n" lines;
-            };
-          }))
-        (l: l ++ [
-          (
-            let path = "/etc/knot-resolver/kresd.conf.d/50-${cfg.dropin.infix}-template.conf"; in {
-              "${path}" = {
-                inherit path;
-                mode = "0640";
-                owner = "knot-resolver";
-                group = "knot-resolver";
-                content = ''
-                  policy.add(policy.all(policy.STUB({'127.0.0.53'})))
-                '';
-              };
-            }
-          )
-        ])
-        lib.mkMerge
       ];
       environment.persistence."sys/data".directories = [
         { directory = "/var/lib/knot-resolver"; user = "knot-resolver"; group = "knot-resolver"; mode = "0770"; }
@@ -717,15 +676,44 @@ in
       ];
     }
     {
+      services.kresd.extraConfig = lib.pipe [
+        (lib.pipe cfg.kresd.upstreams [
+          (builtins.map builtins.toJSON)
+          (builtins.concatStringsSep ", ")
+          (upstreams: ''
+            policy.add(policy.all(policy.STUB({${upstreams}})))
+          '')
+          lib.mkAfter
+        ])
+        (builtins.map (iface: ''net.listen(net[${builtins.toJSON iface}], 53, { kind = 'dns', freebind = true })'') cfg.kresd.interfaces)
+      ] [
+        lib.lists.flatten
+        lib.mkMerge
+      ];
+      sops.templates = let path = "/etc/knot-resolver/kresd.conf.d/50-${cfg.dropin.infix}-template.conf"; in {
+        "${path}" = {
+          inherit path;
+          mode = "0640";
+          owner = "knot-resolver";
+          group = "knot-resolver";
+          content = lib.pipe [
+          ] [
+            lib.lists.flatten
+            (builtins.concatStringsSep "\n")
+          ];
+        };
+      };
+    }
+    {
       # Firewall/forwarding
       networking.firewall.trustedInterfaces = lib.pipe cfg.nets [
         builtins.attrValues
         (builtins.filter (netCfg: netCfg.firewall.trusted))
-        (builtins.map (netCfg: netCfg.name))
+        (builtins.map (netCfg: netCfg.interface))
       ];
       networking.firewall.interfaces = lib.pipe cfg.nets [
         (lib.attrsets.mapAttrsToList (_: netCfg: {
-          "${netCfg.name}" = {
+          "${netCfg.interface}" = {
             inherit (netCfg.firewall)
               allowedTCPPorts
               allowedTCPPortRanges
@@ -738,8 +726,8 @@ in
       ];
       kdn.networking.router.forwardings = lib.pipe cfg.nets [
         (lib.attrsets.mapAttrsToList (_: netCfg:
-          builtins.map (to: { from = netCfg.name; inherit to; }) netCfg.forward.to
-          ++ builtins.map (from: { inherit from; to = netCfg.name; }) netCfg.forward.from
+          builtins.map (to: { from = netCfg.interface; inherit to; }) netCfg.forward.to
+          ++ builtins.map (from: { inherit from; to = netCfg.interface; }) netCfg.forward.from
         ))
         builtins.concatLists
         lib.lists.unique
@@ -754,7 +742,7 @@ in
               # see https://wiki.archlinux.org/title/Systemd-networkd#Bonding_a_wired_and_wireless_interface
               netdevConfig = {
                 Kind = netCfg.netdev.kind;
-                Name = netCfg.name;
+                Name = netCfg.interface;
               };
             }
             (lib.mkIf (netCfg.netdev.kind == "bond") {
@@ -778,7 +766,7 @@ in
           {
             "${netCfg.unit.name}" = lib.mkMerge [
               {
-                matchConfig.Name = netCfg.name;
+                matchConfig.Name = netCfg.interface;
                 linkConfig = {
                   Multicast = true;
                   RequiredForOnline = "routable";
@@ -847,15 +835,15 @@ in
             in
             lib.mkMerge [
               (mkInterfaces "bridge" (idx: iface: {
-                networkConfig.Bridge = netCfg.name;
+                networkConfig.Bridge = netCfg.interface;
                 linkConfig.RequiredForOnline = "enslaved";
               }))
               (mkInterfaces "bond" (idx: iface: {
-                networkConfig.Bond = netCfg.name;
+                networkConfig.Bond = netCfg.interface;
                 networkConfig.PrimarySlave = idx == 0;
               }))
               (mkInterfaces "vlan" (idx: iface: {
-                networkConfig.VLAN = [ netCfg.name ];
+                networkConfig.VLAN = [ netCfg.interface ];
               }))
             ]
           )
@@ -874,5 +862,28 @@ in
         lib.mkMerge
       ];
     }
+    (lib.mkIf (cfg.kresd.rewrites != { }) {
+      /* TODO: etra.netbird.cloud doesn't seem to properly
+          respond to `ping` or `dig` from oams
+       */
+      # TODO: watch out for kresd 6.0+ version for native support of rewrites
+      kdn.service.coredns.enable = true;
+      kdn.service.coredns.rewrites = builtins.mapAttrs
+        (_: rewriteCfg: {
+          inherit (rewriteCfg) from to upstreams;
+          binds = [ "127.0.0.2" ];
+          port = 53;
+        })
+        cfg.kresd.rewrites;
+      services.kresd.extraConfig = lib.pipe cfg.kresd.rewrites [
+        (lib.attrsets.mapAttrsToList (_: rewriteCfg: ''
+          policy.add(policy.suffix(
+            policy.STUB({'127.0.0.2@53'}),
+            policy.todnames({'${rewriteCfg.to}'})
+          ))
+        ''))
+        lib.mkMerge
+      ];
+    })
   ]);
 }
