@@ -24,11 +24,5 @@ for i = 1, #files do
     dofile(file_path)
 end
 
--- add hosts from /etc/hosts.d/*.conf
 modules.load('hints')
-files = find_files('/etc/hosts.d', '.hosts$')
-for i = 1, #files do
-    local file_path = files[i]
-    log('Loading hosts file %s\n', file_path)
-    hints.add_hosts(file_path)
-end
+hints.add_hosts('/etc/hosts')

@@ -156,19 +156,6 @@ in
       kdn.networking.router.kresd.interfaces = [ "nb-priv" ];
     }
     {
-      sops.templates = lib.pipe netconf.hosts [
-        (lib.attrsets.mapAttrsToList (name: text:
-          let path = "/etc/hosts.d/50-${rCfg.dropin.infix}-${name}.hosts"; in {
-            "${path}" = {
-              inherit path;
-              mode = "0644";
-              content = text;
-            };
-          }))
-        lib.mkMerge
-      ];
-    }
-    {
       # Serve .nb.kdn.im. from .netbird.cloud.
       kdn.networking.router.kresd.rewrites."nb.kdn.im" = {
         from = "netbird.cloud";

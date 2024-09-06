@@ -159,6 +159,17 @@ in
     }
     {
       kdn.networking.dynamic-hosts.enable = true;
+      sops.templates = lib.pipe config.kdn.security.secrets.placeholders.networking.hosts [
+        (lib.attrsets.mapAttrsToList (name: text:
+          let path = "/etc/hosts.d/60-${config.kdn.managed.infix.default}-${name}.hosts"; in {
+            "${path}" = {
+              inherit path;
+              mode = "0644";
+              content = text;
+            };
+          }))
+        lib.mkMerge
+      ];
     }
     {
       systemd.tmpfiles.rules = lib.trivial.pipe config.users.users [
