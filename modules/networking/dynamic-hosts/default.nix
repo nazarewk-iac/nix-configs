@@ -34,12 +34,16 @@ in
 
     systemd.paths."kdn-dynamic-hosts" = {
       description = "Generates /etc/hosts from /etc/hosts.d directory";
+      wantedBy = [ "network.target" "default.target" ];
+      before = [ "network.target" ];
       pathConfig.PathChanged = "/etc/hosts.d";
       pathConfig.TriggerLimitIntervalSec = "1s";
       pathConfig.TriggerLimitBurst = 1;
     };
     systemd.services."kdn-dynamic-hosts" = {
       description = "Generates /etc/hosts from /etc/hosts.d directory";
+      wantedBy = [ "network.target" "default.target" ];
+      before = [ "network.target" ];
       serviceConfig = {
         Type = "oneshot";
         ExecStart = lib.getExe kdn-gen-hosts;
