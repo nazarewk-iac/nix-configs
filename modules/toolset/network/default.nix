@@ -19,6 +19,7 @@ in
       bandwhich
       tcpdump
       wol
+      iperf
     ];
   };
 }
