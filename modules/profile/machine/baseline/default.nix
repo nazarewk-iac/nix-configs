@@ -158,6 +158,9 @@ in
       # TODO: download and/or symlink sources that the system got built from?
     }
     {
+      kdn.networking.dynamic-hosts.enable = true;
+    }
+    {
       systemd.tmpfiles.rules = lib.trivial.pipe config.users.users [
         lib.attrsets.attrValues
         (builtins.filter (u: u.isNormalUser))

@@ -470,6 +470,9 @@ in
         ''}
       '';
     }
+    {
+      kdn.networking.dynamic-hosts.enable = true;
+    }
     (lib.mkIf cfg.debug {
       networking.firewall.logRefusedPackets = true;
       networking.firewall.rejectPackets = true;
@@ -527,31 +530,11 @@ in
     }
     {
       # cleaning up managed files
-      system.activationScripts.renderSecrets.deps = [ "kdnRouterCleanDropIns" ];
-      system.activationScripts.kdnRouterCleanDropIns =
-        let
-          directories = [
-            "/etc/systemd/network"
-            "/etc/knot-resolver"
-            "/etc/hosts.d"
-          ];
-          existing = lib.pipe config.sops.templates [
-            builtins.attrValues
-            (builtins.map (tpl: tpl.path))
-            (builtins.filter (path: builtins.any (dir: lib.strings.hasPrefix dir path) directories))
-            (builtins.map (path: [ "!" "-path" path ]))
-            lib.lists.flatten
-          ];
-        in
-        ''
-          echo 'Cleaning up managed drop-ins...'
-          ${lib.getExe pkgs.findutils} \
-            ${builtins.concatStringsSep " " directories} \
-            -mindepth 2 -maxdepth 2 \
-            -type f -name '*${cfg.dropin.infix}*' \
-            ${lib.escapeShellArgs existing} \
-            -printf '> removed: %p\n' -delete
-        '';
+      kdn.managed.infix.kdn-router = cfg.dropin.infix;
+      kdn.managed.directories = [
+        { path = "/etc/systemd/network"; mindepth = 2; maxdepth = 2; }
+        "/etc/knot-resolver"
+      ];
     }
     {
       # Kea DHCPv4
