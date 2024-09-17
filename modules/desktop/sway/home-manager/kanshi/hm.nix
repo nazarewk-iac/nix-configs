@@ -76,7 +76,11 @@ let
       asus-pg78q-dp = {
         #criteria = "DP-1";
         # this is the name set through EDID file
-        criteria = "The Linux Foundation PG278Q_120 Linux #0";
+        criteria = lib.pipe osConfig.hardware.display.outputs [
+          (lib.attrsets.mapAttrsToList lib.attrsets.nameValuePair)
+          (builtins.filter (e: lib.strings.hasInfix "pg278q_120" (lib.strings.toLower e.value.edid)))
+          (matches: if matches == [ ] then "The Linux Foundation PG278Q_120 Linux #0" else (builtins.head matches).name)
+        ];
         mode = "2560x1440@120Hz";
       };
       living-room-tv = {
@@ -86,12 +90,34 @@ let
         # scale = 2.0;
         scale = 1.0;
       };
+      kvm-brys = {
+        criteria = "HDMI-A-1";
+        #criteria = "VCS Connector 0x004515311"; # this doesn't work
+        mode = "1920x1080@60Hz";
+      };
     };
   profiles = with devices; {
-    desktop-full = {
+    brys-kvm = {
       outputs = [
-        (mkOutput asus-pg78q-hub 0 0 { mode = "3840x2160@165Hz"; })
-        (mkOutput gb-m32uc asus-pg78q-hub.w 0 { })
+        (mkOutput kvm-brys 0 0 { })
+      ];
+    };
+    brys-kvm-asus = {
+      outputs = [
+        (mkOutput kvm-brys 0 0 { })
+        (mkOutput asus-pg78q-dp 0 0 { })
+      ];
+    };
+    brys-kvm-only = {
+      outputs = [
+        (mkOutput kvm-brys 0 0 { })
+        (mkOutput asus-pg78q-dp 0 0 { status = "disable"; })
+      ];
+    };
+    brys-desktop-full = {
+      outputs = [
+        (mkOutput asus-pg78q-dp 0 0 { })
+        (mkOutput gb-m32uc asus-pg78q-dp.w 0 { mode = "3840x2160@165Hz"; })
       ];
       exec = mkWorkspaces {
         "1" = gb-m32uc;
