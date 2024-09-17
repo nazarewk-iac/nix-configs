@@ -1,8 +1,11 @@
 {
-  #inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-  inputs.nixpkgs.url = "github:nazarewk/nixpkgs/nixos-unstable";
-  #inputs.nixpkgs.url = "github:nazarewk/nixpkgs/hardware-firmware-edid-fix";
-  inputs.nixpkgs-lib.url = "github:NixOS/nixpkgs/nixos-unstable?dir=lib";
+  inputs.nixpkgs.follows = "nixpkgs-kdn";
+  inputs.nixpkgs-lib.follows = "nixpkgs-lib-kdn";
+
+  inputs.nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
+  inputs.nixpkgs-lib-unstable.url = "github:NixOS/nixpkgs/nixos-unstable?dir=lib";
+  inputs.nixpkgs-kdn.url = "github:nazarewk/nixpkgs/nixos-unstable";
+  inputs.nixpkgs-lib-kdn.url = "github:nazarewk/nixpkgs/nixos-unstable?dir=lib";
 
   /*
    * pinned inputs to keep up to date manually
@@ -44,7 +47,6 @@
   /*
    * dependencies
    */
-  inputs.crane.inputs.nixpkgs.follows = "nixpkgs";
   inputs.disko.inputs.nixpkgs.follows = "nixpkgs";
   inputs.flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs-lib";
   inputs.helix-editor.inputs.crane.follows = "crane";

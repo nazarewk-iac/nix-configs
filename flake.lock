@@ -625,7 +625,7 @@
         "type": "github"
       }
     },
-    "nixpkgs": {
+    "nixpkgs-kdn": {
       "locked": {
         "lastModified": 1726570208,
         "narHash": "sha256-mBNa15HxzsCHjFKizvk7Bgol/Z1hMPWGi29I4W2wUjE=",
@@ -641,7 +641,25 @@
         "type": "github"
       }
     },
-    "nixpkgs-lib": {
+    "nixpkgs-lib-kdn": {
+      "locked": {
+        "dir": "lib",
+        "lastModified": 1726570208,
+        "narHash": "sha256-mBNa15HxzsCHjFKizvk7Bgol/Z1hMPWGi29I4W2wUjE=",
+        "owner": "nazarewk",
+        "repo": "nixpkgs",
+        "rev": "5375341b26e2ff8c69e200b8bf68e8fc4740f883",
+        "type": "github"
+      },
+      "original": {
+        "dir": "lib",
+        "owner": "nazarewk",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs-lib-unstable": {
       "locked": {
         "dir": "lib",
         "lastModified": 1726463316,
@@ -659,13 +677,29 @@
         "type": "github"
       }
     },
+    "nixpkgs-unstable": {
+      "locked": {
+        "lastModified": 1726463316,
+        "narHash": "sha256-gI9kkaH0ZjakJOKrdjaI/VbaMEo9qBbSUl93DnU7f4c=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "99dc8785f6a0adac95f5e2ab05cc2e1bf666d172",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nur": {
       "locked": {
-        "lastModified": 1726569072,
-        "narHash": "sha256-x33fIaVSJGc/kLiXh+a8x97GrMN1DtnRd8Ar50sDaNs=",
+        "lastModified": 1726580839,
+        "narHash": "sha256-D+dPC5MJleQFscRI3Bao9KL3gHE8RHOlT2p0GPvGCko=",
         "owner": "nix-community",
         "repo": "NUR",
-        "rev": "48b58426a0fb447bad367813e742247dc860bed6",
+        "rev": "db2d638cc3fefa6579e4cf90f7c3ef304ffd564d",
         "type": "github"
       },
       "original": {
@@ -725,8 +759,16 @@
         "nixinate": "nixinate",
         "nixos-anywhere": "nixos-anywhere",
         "nixos-generators": "nixos-generators",
-        "nixpkgs": "nixpkgs",
-        "nixpkgs-lib": "nixpkgs-lib",
+        "nixpkgs": [
+          "nixpkgs-kdn"
+        ],
+        "nixpkgs-kdn": "nixpkgs-kdn",
+        "nixpkgs-lib": [
+          "nixpkgs-lib-kdn"
+        ],
+        "nixpkgs-lib-kdn": "nixpkgs-lib-kdn",
+        "nixpkgs-lib-unstable": "nixpkgs-lib-unstable",
+        "nixpkgs-unstable": "nixpkgs-unstable",
         "nur": "nur",
         "poetry2nix": "poetry2nix",
         "rust-overlay": "rust-overlay",
