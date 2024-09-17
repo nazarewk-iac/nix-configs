@@ -105,13 +105,13 @@ let
     brys-kvm-asus = {
       outputs = [
         (mkOutput kvm-brys 0 0 { })
-        (mkOutput asus-pg78q-dp 0 0 { })
+        (mkOutput asus-pg78q-dp kvm-brys.w 0 { })
       ];
     };
     brys-kvm-only = {
       outputs = [
         (mkOutput kvm-brys 0 0 { })
-        (mkOutput asus-pg78q-dp 0 0 { status = "disable"; })
+        (mkOutput asus-pg78q-dp kvm-brys.w 0 { status = "disable"; })
       ];
     };
     brys-desktop-full = {
