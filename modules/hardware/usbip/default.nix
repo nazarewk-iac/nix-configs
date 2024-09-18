@@ -38,9 +38,9 @@ in
 
       systemd.services.usbipd = {
         description = "USB/IP daemon";
-        wants = [ "network-online.target" ];
-        after = [ "network-online.target" ];
-        wantedBy = [ "default.target" ];
+        wants = [ "network.target" ];
+        after = [ "network.target" ];
+        wantedBy = [ "network.target" ];
 
         serviceConfig = {
           ExecStart = "${cfg.package}/bin/usbipd --tcp-port=${toString cfg.bindPort}";
@@ -49,9 +49,9 @@ in
 
       systemd.services."usbip-bind@" = {
         description = "USB/IP daemon";
-        wants = [ "network-online.target" "usbipd.service" ];
-        after = [ "network-online.target" "usbipd.service" ];
-        wantedBy = [ "default.target" ];
+        wants = [ "network.target" "usbipd.service" ];
+        after = [ "network.target" "usbipd.service" ];
+        wantedBy = [ "network.target" ];
 
         serviceConfig = {
           Type = "oneshot";
