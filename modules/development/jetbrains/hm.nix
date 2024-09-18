@@ -11,7 +11,7 @@ in
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       programs.fish.shellInit = ''
-        export PATH="$PATH:$HOME/.local/share/JetBrains/Toolbox/scripts"
+        fish_add_path --append --move "$HOME/.local/share/JetBrains/Toolbox/scripts"
       '';
 
       # To see `Main Toolbar` under Wayland you need to uncheck following:

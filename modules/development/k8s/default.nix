@@ -14,7 +14,7 @@ in
 
       environment.interactiveShellInit = ''
         export KREW_ROOT="$HOME/.cache/krew"
-        export PATH="$PATH:$KREW_ROOT/bin"
+        fish_add_path --append --move "$KREW_ROOT/bin"
       '';
       environment.shellAliases = {
         "kc" = "${pkgs.kubecolor}/bin/kubecolor";
