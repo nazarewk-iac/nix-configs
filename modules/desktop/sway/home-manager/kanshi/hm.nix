@@ -12,9 +12,15 @@ let
 
   swaymsg = lib.getExe' config.wayland.windowManager.sway.package "swaymsg";
 
-  mkWorkspaces = lib.attrsets.mapAttrsToList (ws: dev:
-    "${swaymsg} workspace ${ws}, move workspace to output '${builtins.toJSON dev.criteria}'"
-  );
+  mkWorkspaces = ws: lib.pipe ws [
+    (lib.attrsets.mapAttrsToList (ws: dev: ''
+      ${swaymsg} 'workspace ${ws}, move workspace to output ${builtins.toJSON dev.criteria}'
+    ''))
+    (builtins.concatStringsSep "\n")
+    (pkgs.writeScript "kdn-setup-workspaces")
+    builtins.toString
+    lib.lists.toList
+  ];
 
   recalc = d:
     let
@@ -34,7 +40,7 @@ let
     (_: entry:
       let
         cfg = {
-          status = null;
+          status = "enable";
           transform = null;
           adaptiveSync = null;
           scale = 1.0;
@@ -74,7 +80,7 @@ let
         mode = "2560x1440@120Hz";
       };
       asus-pg78q-dp = {
-        #criteria = "DP-1";
+        #criteria = "DP-4";
         # this is the name set through EDID file
         criteria = lib.pipe osConfig.hardware.display.outputs [
           (lib.attrsets.mapAttrsToList lib.attrsets.nameValuePair)
@@ -117,13 +123,15 @@ let
     brys-desktop-full = {
       outputs = [
         (mkOutput asus-pg78q-dp 0 0 { })
-        (mkOutput gb-m32uc asus-pg78q-dp.w 0 { mode = "3840x2160@165Hz"; })
+        (mkOutput gb-m32uc asus-pg78q-dp.w 0 { mode = "3840x2160@144Hz"; })
+        (mkOutput kvm-brys (asus-pg78q-dp.w + gb-m32uc.w + 500) 0 { })
       ];
       exec = mkWorkspaces {
         "1" = gb-m32uc;
-        "2" = asus-pg78q-hub;
-        "3" = asus-pg78q-hub;
+        "2" = asus-pg78q-dp;
+        "3" = asus-pg78q-dp;
         "4" = gb-m32uc;
+        "9" = kvm-brys;
       };
     };
     oams = {
