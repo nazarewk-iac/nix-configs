@@ -88,7 +88,7 @@ in
         systemd.services = lib.attrsets.mapAttrs'
           (username: user:
             lib.nameValuePair "atuin-zfs-workaround-${username}" {
-              wantedBy = [ "multi-user.target" ];
+              wantedBy = [ "default.target" ];
               requires = [ "user-runtime-dir@${toString user.uid}.service" ];
               after = [ "user-runtime-dir@${toString user.uid}.service" ];
               description = "Synchronize Atuin database on tmpfs for ${username}";
@@ -116,7 +116,7 @@ in
         (builtins.map (username: {
           name = "kdn-atuin-login-${username}";
           value = {
-            wantedBy = [ "multi-user.target" ];
+            wantedBy = [ "default.target" ];
             after = [ "network-online.target" ];
             requires = [ "network-online.target" ];
 

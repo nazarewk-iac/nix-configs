@@ -84,7 +84,7 @@ in
       #        ExecStart = "${pkgs.scream}/bin/scream -m /dev/shm/${name}-scream -o pulse -n ${name}-scream";
       #        Restart = "always";
       #      };
-      #      wantedBy = [ "multi-user.target" ];
+      #      wantedBy = [ "default.target" ];
       #      requires = [ "pipewire.service" ];
       #    })
       #  cfg.lookingGlass.instances;

@@ -40,7 +40,7 @@ in
         description = "USB/IP daemon";
         wants = [ "network-online.target" ];
         after = [ "network-online.target" ];
-        wantedBy = [ "multi-user.target" ];
+        wantedBy = [ "default.target" ];
 
         serviceConfig = {
           ExecStart = "${cfg.package}/bin/usbipd --tcp-port=${toString cfg.bindPort}";
@@ -51,7 +51,7 @@ in
         description = "USB/IP daemon";
         wants = [ "network-online.target" "usbipd.service" ];
         after = [ "network-online.target" "usbipd.service" ];
-        wantedBy = [ "multi-user.target" ];
+        wantedBy = [ "default.target" ];
 
         serviceConfig = {
           Type = "oneshot";
