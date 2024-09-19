@@ -14,13 +14,13 @@
         dynamicEndpointRefreshSeconds = 60;
       };
     };
-    krul = {
+    brys = {
       hostnum = 2;
       cfg = {
         allowedIPs = [
           # "10.0.0.199/32"
         ];
-        publicKey = "FJV0gfKnCpiBEjaLTBp3fHrMSpMUsFSW010KIPedA24=";
+        publicKey = "/lpTqcyUq5Gt9QkMINl+d3yA3i5PzRQM5YJnz/CLpgs=";
       };
     };
     obler = {
@@ -50,7 +50,7 @@
     oams = {
       hostnum = 6;
       cfg = {
-        publicKey = "fLuhNEP1GJJgy69FFTmjKbqVJXXT/Q0Pwa58HhPgqg8=";
+        publicKey = "sRVjRqcOUYknOBIJXQiA30DYN7zUsWdIvau2xi1uRXw=";
       };
     };
   };
