@@ -60,7 +60,7 @@ in
           RemainAfterExit = true;
         };
       };
-      systemd.services."usbip-bind@multi-user".enable = false;
+      systemd.services."usbip-bind@network".enable = false;
     }
     (lib.mkIf (cfg.bindInterface == "*") {
       networking.firewall.allowedTCPPorts = [
