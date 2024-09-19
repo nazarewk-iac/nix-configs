@@ -104,8 +104,9 @@ in
       kdn.networking.router.nets.lan = {
         type = "lan";
         lan.uplink = "wan";
-        netdev.kind = "bridge";
-        interfaces = [ "enp3s0" ];
+        netdev.kind = "bond";
+        netdev.bond.mode = "aggregate";
+        interfaces = [ "enp2s0" "enp3s0" ];
         address = [
           (with ula.lan; "${address.gateway}/${netmask}")
           (with netconf.ipv6.network.etra.lan; "${address.gateway}/${netmask}")

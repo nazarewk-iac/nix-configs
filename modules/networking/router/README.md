@@ -23,6 +23,7 @@ A router setup used by `etra`.
         - [x] confirm it works with direct connection (without switch)
         - [x] confirm it works through `Mokerlink 2G08110GT`:
             - works with `pic` VLAN as `tagged` and `1` (default/built-in) as `untagged` on all ports
+- [x] bridge LAN interfaces 2x `2.5GbE` -> `5GbE`
 - DNS
     - [ ] set up local DNS server
         - [ ] answer with local (DHCP?) hostnames

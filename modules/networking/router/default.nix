@@ -108,6 +108,10 @@ let
           type = with lib.types; enum [ "bond" "bridge" "vlan" ];
           default = { wan = "bond"; vlan = "vlan"; }.${netCfg.type} or "bridge";
         };
+        netdev.bond.mode = lib.mkOption {
+          type = with lib.types; enum [ "backup" "aggregate" ];
+          default = "backup";
+        };
         vlan.id = lib.mkOption {
           type = with lib.types; ints.between 1 4095;
         };
@@ -728,11 +732,19 @@ in
                 Name = netCfg.interface;
               };
             }
-            (lib.mkIf (netCfg.netdev.kind == "bond") {
+            (lib.mkIf (netCfg.netdev.kind == "bond" && netCfg.netdev.bond.mode == "backup") {
               bondConfig = {
                 Mode = "active-backup";
                 PrimaryReselectPolicy = "always";
                 MIIMonitorSec = "1s";
+              };
+            })
+            (lib.mkIf (netCfg.netdev.kind == "bond" && netCfg.netdev.bond.mode == "aggregate") {
+              bondConfig = {
+                Mode = "802.3ad";
+                TransmitHashPolicy = "layer3+4";
+                LACPTransmitRate = "fast";
+                MIIMonitorSec = "100ms";
               };
             })
             (lib.mkIf (netCfg.netdev.kind == "vlan") {
@@ -822,8 +834,14 @@ in
                 linkConfig.RequiredForOnline = "enslaved";
               }))
               (mkInterfaces "bond" (idx: iface: {
-                networkConfig.Bond = netCfg.interface;
-                networkConfig.PrimarySlave = idx == 0;
+                networkConfig = lib.mkMerge [
+                  {
+                    Bond = netCfg.interface;
+                  }
+                  (lib.mkIf (netCfg.netdev.bond.mode == "backup") {
+                    PrimarySlave = idx == 0;
+                  })
+                ];
               }))
               (mkInterfaces "vlan" (idx: iface: {
                 networkConfig.VLAN = [ netCfg.interface ];
