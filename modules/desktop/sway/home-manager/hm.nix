@@ -56,7 +56,7 @@ in
       services.flameshot.enable = true;
       services.flameshot.settings = {
         General = {
-          checkForUpdates = false;
+          # checkForUpdates = false; # TODO: check unknown config 2024-09-19
           contrastOpacity = 188;
           copyPathAfterSave = false;
           drawColor = "#ffff00";
