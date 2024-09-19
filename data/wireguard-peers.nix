@@ -42,15 +42,27 @@
       hostnum = 5;
       cfg = {
         allowedIPs = [
-          "10.0.0.0/24"
+          # "10.0.0.0/24"
         ];
-        publicKey = "fBy7t2IeoOF+NKuKpPuqp8PtQiMcRldtUnvzzfzarxQ=";
+        publicKey = "+ELclM/EOtnAdfU5qfnoW5jb8UWMvVOP4dJt8ziYRWE=";
       };
     };
     oams = {
       hostnum = 6;
       cfg = {
         publicKey = "sRVjRqcOUYknOBIJXQiA30DYN7zUsWdIvau2xi1uRXw=";
+      };
+    };
+    yelk = {
+      hostnum = 6;
+      cfg = {
+        publicKey = "RTRS8m+gx3g17xWBLXWsxjPsBb+C2aVAk6WI+Hqvil4=";
+      };
+    };
+    etra = {
+      hostnum = 7;
+      cfg = {
+        publicKey = "U3PH63weTZoSDKkQh84QO8g3ruZTKTJdVNpIlrWm6xw=";
       };
     };
   };
