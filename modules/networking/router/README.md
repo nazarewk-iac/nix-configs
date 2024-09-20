@@ -31,7 +31,8 @@ A router setup used by `etra`.
             - [ ] DHCPv6 with `kea-dhcp6-server` 
             - [x] set up `kresd` pointing at `resolved` (or home server)
                 - [ ] remove `resolved`?
-            - [ ] set up `knot` and point `kresd` at it
+            - [ ] set up `knot` 
+                - [ ] point `kresd` at it
             - [ ] set up `kea-dhcp-ddns` to update `knot` entries
 - Router Advertisement
     - [x] use `networkd` advertisements

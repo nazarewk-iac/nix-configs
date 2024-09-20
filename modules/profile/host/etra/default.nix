@@ -25,7 +25,8 @@ let
     address.gateway = "192.168.40.0";
     address.client = "192.168.40.1";
   };
-  ll.drek.br-etra = "fe80::c641:1eff:fef8:9ce7"; # drek's link-local address
+  ll.drek.br-etra = "fe80::c641:1eff:fef8:9ce7";
+  ll.etra.br-etra = "fe80::b47b:911a:2d95:d12f";
   vlan.pic.name = "pic";
   vlan.pic.id = 1859;
 
@@ -158,9 +159,18 @@ in
     }
     {
       # Serve .nb.kdn.im. from .netbird.cloud.
-      kdn.networking.router.kresd.rewrites."nb.kdn.im" = {
-        from = "netbird.cloud";
+      kdn.networking.router.kresd.rewrites."nb.kdn.im".from = "netbird.cloud";
+    }
+    {
+      kdn.networking.router.nets.wan = {
+        firewall.allowedUDPPorts = [ 53 853 ];
       };
+      kdn.networking.router.knot.listens = [
+        net.ipv4.p2p.drek-etra.address.client
+        "${ll.etra.br-etra}%wan"
+      ];
+      kdn.networking.router.domains."int.kdn.im" = { };
+      kdn.networking.router.dhcp-ddns.suffix = "net.int.kdn.im";
     }
   ]);
 }
