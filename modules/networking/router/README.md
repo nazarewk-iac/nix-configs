@@ -34,6 +34,7 @@ A router setup used by `etra`.
             - [x] set up `knot` 
                 - [x] point `kresd` at it
             - [x] set up `kea-dhcp-ddns` to update `knot` entries
+                - [ ] make sure DHCP is advertised properly to discover it
 - Router Advertisement
     - [x] use `networkd` advertisements
     - [ ] switch to `corerad` (or something else?)
