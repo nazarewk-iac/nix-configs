@@ -2,6 +2,8 @@
 let
   # https://wiki.archlinux.org/title/USB/IP
   cfg = config.kdn.hardware.usbip;
+
+  target = "multi-user";
 in
 {
   options = {
@@ -38,9 +40,9 @@ in
 
       systemd.services.usbipd = {
         description = "USB/IP daemon";
-        wants = [ "network.target" ];
-        after = [ "network.target" ];
-        wantedBy = [ "network.target" ];
+        wants = [ "network-online.target" ];
+        after = [ "network-online.target" ];
+        wantedBy = [ "${target}.target" ];
 
         serviceConfig = {
           ExecStart = "${cfg.package}/bin/usbipd --tcp-port=${toString cfg.bindPort}";
@@ -49,9 +51,9 @@ in
 
       systemd.services."usbip-bind@" = {
         description = "USB/IP daemon";
-        wants = [ "network.target" "usbipd.service" ];
-        after = [ "network.target" "usbipd.service" ];
-        wantedBy = [ "network.target" ];
+        wants = [ "usbipd.service" "network-online.target" ];
+        after = [ "usbipd.service" "network-online.target" ];
+        wantedBy = [ "${target}.target" ];
 
         serviceConfig = {
           Type = "oneshot";
@@ -60,7 +62,7 @@ in
           RemainAfterExit = true;
         };
       };
-      systemd.services."usbip-bind@network".enable = false;
+      systemd.services."usbip-bind@${target}".enable = false;
     }
     (lib.mkIf (cfg.bindInterface == "*") {
       networking.firewall.allowedTCPPorts = [
