@@ -14,6 +14,8 @@ in
     (lib.mkIf (!cfg.enable) { home.persistence = lib.mkForce { }; })
     # the rest of configs are in ./handle-options.nix
     (lib.mkIf cfg.enable {
+      impermanence.defaultDirectoryMethod = lib.mkDefault "external";
+      impermanence.defaultFileMethod = lib.mkDefault "external";
       home.persistence."usr/data".directories = [
         "Videos"
         "Documents"
