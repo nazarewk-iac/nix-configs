@@ -22,8 +22,8 @@ in
       hardware.bluetooth.enable = true;
       services.blueman.enable = true;
 
-      documentation.man.man-db.enable = true;
-      documentation.man.generateCaches = true;
+      documentation.man.man-db.enable = lib.mkDefault true;
+      documentation.man.generateCaches = lib.mkDefault true;
     }
     {
       environment.systemPackages = with pkgs; [

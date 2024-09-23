@@ -16,6 +16,9 @@ let
   ports.dhcp.v6-request = 546;
   ports.dhcp.v6-reply = 547;
 
+  knotKeys = config.kdn.security.secrets.placeholders.default.knot-dns.keys;
+  keaTSIGName = "kea.${hostname}";
+
   templateType = lib.types.submodule (tpl:
     let
       leafType = with lib.types; oneOf [ str bool int path ];
@@ -412,6 +415,10 @@ in
           name = lib.mkOption {
             type = with lib.types; str;
             default = domainArgs.name;
+            apply = domain: lib.pipe domain [
+              (lib.strings.removeSuffix ".")
+              (domain: "${domain}.")
+            ];
           };
         };
       }));
@@ -424,14 +431,26 @@ in
     };
 
     knot.localAddress = lib.mkOption {
-      type = with lib.types;  str;
-      default = "127.53.0.1";
+      type = with lib.types; str;
+      default = "127.0.0.1";
+    };
+    knot.localPort = lib.mkOption {
+      type = with lib.types; port;
+      default = 13353;
+    };
+    knot.localPortTLS = lib.mkOption {
+      type = with lib.types; port;
+      default = 23326;
     };
 
     knot.listens = lib.mkOption {
       type = with lib.types; listOf str;
       default = [ ];
-      apply = value: [ cfg.knot.localAddress ] ++ value;
+      apply = value: lib.pipe value [
+        (v: [ (if cfg.knot.localPort == 53 then cfg.knot.localAddress else "${cfg.knot.localAddress}@${builtins.toString cfg.knot.localPort}") ] ++ v)
+        lib.lists.unique
+      ]
+      ;
     };
 
     knot.configDir = lib.mkOption {
@@ -588,6 +607,7 @@ in
       kdn.managed.directories = [
         { path = "/etc/systemd/network"; mindepth = 2; maxdepth = 2; }
         "/etc/knot-resolver"
+        cfg.knot.configDir
       ];
     }
     {
@@ -760,6 +780,7 @@ in
           owner = "knot-resolver";
           group = "knot-resolver";
           content = lib.pipe [
+            "log_level('info')"
           ] [
             lib.lists.flatten
             (builtins.concatStringsSep "\n")
@@ -778,36 +799,82 @@ in
       {
         # knot-dns
         services.knot.enable = true;
+        services.knot.checkConfig = false; # doesn't allow some stuff like referencing keys
+        systemd.services.knot.restartTriggers = lib.pipe config.sops.templates [
+          builtins.attrValues
+          (builtins.map (tpl: tpl.path))
+          (builtins.filter (lib.strings.hasPrefix cfg.knot.configDir))
+        ];
+        services.knot.extraArgs = [
+          "-v"
+        ];
+        services.knot.keyFiles = [
+          # this will land at the beginning of file instead of `settings.include` somewhere in the middle
+          "${cfg.knot.configDir}/*.conf"
+        ];
         services.knot.settings = {
           server.listen = cfg.knot.listens;
-          server.listen-tls = cfg.knot.listens;
-          server.listen-quic = cfg.knot.listens;
-          include = "${cfg.knot.configDir}/*.conf";
+          server.listen-tls =
+            builtins.map
+              (listener: {
+                "${cfg.knot.localAddress}@${builtins.toString cfg.knot.localPort}" = "${cfg.knot.localAddress}@${builtins.toString cfg.knot.localPortTLS}";
+              }."${listener}" or listener)
+              cfg.knot.listens;
+          server.listen-quic =
+            builtins.map
+              (listener: {
+                "${cfg.knot.localAddress}@${builtins.toString cfg.knot.localPort}" = "${cfg.knot.localAddress}@${builtins.toString cfg.knot.localPortTLS}";
+              }."${listener}" or listener)
+              cfg.knot.listens;
           log = [{
-            target = "stderr";
+            target = "syslog";
             any = "debug";
           }];
+          mod-dnstap = [
+            {
+              id = "debug";
+              sink = "/run/knot/dnstap.debug.tap";
+              log-queries = "on";
+              log-responses = "on";
+              responses-with-queries = "on";
+            }
+          ];
           template = [{
             id = "default";
+            global-module = [
+              "mod-stats"
+              #"mod-dnstap/debug"
+            ];
           }];
           zone = lib.attrsets.mapAttrsToList
             (_: domainCfg: {
               domain = domainCfg.name;
               template = "default";
-              acl = builtins.map (domain: "dhcp-ddns:${domain}") d2Domains;
+              acl = [ "admin" ] ++ lib.pipe d2Domains [
+                (builtins.filter (domain: domain == domainCfg.name))
+                (builtins.map (domain: "dhcp-ddns:${domain}"))
+              ];
             })
             cfg.domains;
-          acl = builtins.map
+          acl = [
+            {
+              id = "admin";
+              key = "admin";
+              action = [
+                "query"
+                #"notify"
+                #"transfer"
+                "update"
+              ];
+            }
+          ] ++ (builtins.map
             (domain: {
               id = "dhcp-ddns:${domain}";
-              /*
-                TODO: fix it to work:
-                    > Sep 20 15:24:39 etra kea-dhcp-ddns[71640]: 2024-09-20 15:24:39.963 ERROR [kea-dhcp-ddns.d2-to-dns/71640.140465637342272] DHCP_DDNS_FORWARD_ADD_REJECTED DNS Request ID 00...4D: Server, 127.53.0.1 port:53, rejected a DNS update request to add the address mapping for FQDN, oams.lan.etra.net.int.kdn.im., with an RCODE: 9
-                  could be because there is no TSIG?
-                  try generating and using TSIG
-              */
-              address = "127.0.0.0/8";
-              action = "update";
+              key = keaTSIGName;
+              action = [
+                "query"
+                "update"
+              ];
 
               update-owner = "name";
               update-owner-match = "sub";
@@ -815,20 +882,40 @@ in
                 "${domain}."
               ];
             })
-            d2Domains;
+            d2Domains);
         };
         environment.etc."${lib.strings.removePrefix "/etc" cfg.knot.configDir}/.keep".text = "";
         environment.persistence."sys/data".directories = [
           { directory = cfg.knot.dataDir; user = "knot"; group = "knot"; mode = "0700"; }
         ];
         services.kresd.extraConfig = lib.pipe cfg.domains [
-          (lib.attrsets.mapAttrsToList (_: domainCfg: ''
+          (lib.attrsets.mapAttrsToList (_: domainCfg: builtins.toJSON domainCfg.name))
+          (builtins.concatStringsSep ", ")
+          (domains: ''
             policy.add(policy.suffix(
-              policy.STUB({${builtins.toJSON cfg.knot.localAddress}}),
-              policy.todnames({${builtins.toJSON domainCfg.name}})
+              policy.STUB({${builtins.toJSON "${cfg.knot.localAddress}@${builtins.toString cfg.knot.localPort}"}}),
+              policy.todnames({${domains}})
             ))
-          ''))
-          (builtins.concatStringsSep "\n")
+          '')
+        ];
+        sops.templates = lib.pipe knotKeys [
+          (lib.attrsets.mapAttrsToList (id: keyCfg: {
+            name = "knot/sops-key.${id}.conf";
+            value = {
+              path = "${cfg.knot.configDir}/sops-keys.${cfg.dropin.infix}.${id}.conf";
+              owner = "knot";
+              group = "knot";
+              mode = "0400";
+              content = ''
+                # ${keyCfg.algorithm}:${id}:${keyCfg.secret}
+                key:
+                - id: ${id}
+                  algorithm: ${keyCfg.algorithm}
+                  secret: ${keyCfg.secret}
+              '';
+            };
+          }))
+          builtins.listToAttrs
         ];
 
         services.kea.dhcp-ddns.enable = true;
@@ -841,29 +928,25 @@ in
             ddns-update-on-renew = true;
           };
           kea.dhcp-ddns.settings = {
-            ip-address = "127.0.0.1";
-            port = 53001;
-            dns-server-timeout = 100;
-            ncr-protocol = "UDP";
-            ncr-format = "JSON";
-            tsig-keys = [ ];
-            control-socket = {
-              socket-type = "unix";
-              socket-name = "/run/kea/dhcp-ddns-ctrl-socket";
-            };
+            dns-server-timeout = 500;
+            tsig-keys = [{
+              name = keaTSIGName;
+              algorithm = knotKeys.${keaTSIGName}.algorithm;
+              secret = knotKeys.${keaTSIGName}.secret;
+            }];
             loggers = [{
               name = "kea-dhcp-ddns";
-              severity = "INFO";
-              debuglevel = 0;
+              severity = "DEBUG";
+              debuglevel = 99;
               output_options = [{ output = "stderr"; }];
             }];
             forward-ddns.ddns-domains = lib.pipe d2Domains [
               (builtins.map (domain: {
                 name = "${lib.strings.removeSuffix "." domain}.";
-                key-name = "";
+                key-name = keaTSIGName;
                 dns-servers = [{
                   ip-address = cfg.knot.localAddress;
-                  port = 53;
+                  port = cfg.knot.localPort;
                 }];
               }))
             ];
@@ -875,12 +958,12 @@ in
       }
     )
     {
-      /*
+      services.knot.package = pkgs.knot-dns.overrideAttrs (old: {
+        /*
         TODO: remove after knot-dns 3.4.1 release
         listening on link-local address will be supported in not-yet-released 3.4.1 version
         so we're using 3.4 branch before release
-      */
-      services.knot.package = pkgs.knot-dns.overrideAttrs (old: {
+        */
         src = pkgs.fetchFromGitLab {
           domain = "gitlab.nic.cz";
           owner = "knot";
@@ -888,6 +971,13 @@ in
           rev = "add8125a347215b8dc3a76d6fb2160620428eada";
           hash = "sha256-2vsKqRX8WH54W0TImCaMnpwSztkLkzCTBHKBPDdk5CM=";
         };
+        # dnstap support
+        configureFlags = old.configureFlags
+          ++ [ "--with-module-dnstap" "--enable-dnstap" ]
+        ;
+        buildInputs = old.buildInputs
+          ++ (with pkgs; [ fstrm protobufc ])
+        ;
       });
     }
     {

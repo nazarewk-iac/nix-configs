@@ -169,8 +169,28 @@ in
         net.ipv4.p2p.drek-etra.address.client
         "${ll.etra.br-etra}%wan"
       ];
+
+      networking.firewall = {
+        # syncthing ranges
+        allowedTCPPorts = [ 53 853 ];
+        allowedUDPPorts = [ 53 853 ];
+      };
+      #kdn.networking.router.knot.localAddress = "192.168.40.1";
+      kdn.networking.router.knot.localPort = 53;
+      kdn.networking.router.knot.localPortTLS = 853;
+      # TODO: add basic zone initialization in PreStart?
       kdn.networking.router.domains."int.kdn.im" = { };
-      kdn.networking.router.dhcp-ddns.suffix = "net.int.kdn.im";
+      /* TODO: make sure it is automatically added per-interface?
+          - it wasn't working at all until I created the most specific zone possible
+          - make sure it is explicitly noted at the specific place it is implemented
+      */
+      kdn.networking.router.domains."lan.etra.net.int.kdn.im" = { };
+      kdn.networking.router.dhcp-ddns.suffix = "net.int.kdn.im.";
+    }
+    {
+      # faster rebuilds
+      documentation.man.man-db.enable = false;
+      documentation.man.generateCaches = false;
     }
   ]);
 }

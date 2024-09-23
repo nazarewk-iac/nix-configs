@@ -23,6 +23,9 @@ networking:
         ipv6-public-01-all:
             pattern: ENC[AES256_GCM,data:1cEakt4bMPrG05eue5I=,iv:QKNcJKyVXnVkDBYRmaTDG9sHk5nySXrYEPaCu09JOXU=,tag:VSlLEFfxL8ZilG80oV2WhQ==,type:str]
             replacement: ENC[AES256_GCM,data:h+WNOKgd44vS4g==,iv:bx9LQUYwip30y1Ufvcd6RU/M8tnnNd+yIncy57J5sf8=,tag:BoKGhajqSv+U1P/GK/DzGw==,type:str]
+        ipv4-public-01:
+            pattern: ENC[AES256_GCM,data:XejYBtZooK2fP5vzhXu8,iv:8nbCGoDaMRwmmnykZ1m9OLPAteb1CAsRmzhalyxbgPk=,tag:KCmU461zJDMLUkeld1O4uQ==,type:str]
+            replacement: ENC[AES256_GCM,data:lrMKX/pnO3elxbThxJY=,iv:KB+SrZs4dK6d76aLEP+34inQo8nFkuiTLYhQdMyh8/M=,tag:9TR2Olwi3LsT7oknLZ1guA==,type:str]
     ipv6:
         network:
             isp:
@@ -68,6 +71,14 @@ nextcloud:
         password: ENC[AES256_GCM,data:zYL1fQfJhcSqUhk2MAvF/CbWKG4/4/Yli2PNIJ8=,iv:pkhdFUPyThCKpvTnxBImEoyZ8ss0Lz/G3ss/0cCWu9o=,tag:rr0oXLWyQLvvyUtGu3C8mw==,type:str]
         url: ENC[AES256_GCM,data:t2XlhiJ7CGI3RkgzmGb3MjNP/JSfnw==,iv:XXrXVviglarsBkMtjxDv4icevXOkCr0NpM+SxISexXM=,tag:7cp07rO1Ufa+Axu1TjcQ0Q==,type:str]
         username: ENC[AES256_GCM,data:gIA6bhC8/AU6,iv:l8CYbCTXyUZgzxP1O8iFQc6gu9/oCHUN8di1Le/39gI=,tag:G+WNoV1XW/e7DdcKN1mx2Q==,type:str]
+knot-dns:
+    keys:
+        kea.etra:
+            algorithm: ENC[AES256_GCM,data:+G4VsFW0wGQinz8=,iv:V4j76V+PtL6vIJw71dS2q8Bc6ZEHxyNktHk81680Ji0=,tag:7eMuoT4hpPpIo4Ck6W5edw==,type:str]
+            secret: ENC[AES256_GCM,data:1+lR38AuWXAIGpsZ72nyWz/3R/lE1kYpb7pCZW6yFJ5Wg9PDclE6LYe9hqU=,iv:MvxciArDXeYOlOMFPEQ+uqB6kKRJs7XEqFwpm3hoHPM=,tag:jYZXFgLMr9ZKErMxII6gFw==,type:str]
+        admin:
+            algorithm: ENC[AES256_GCM,data:StkGOR9kvlgMhbk=,iv:zS0QjWXK1HCVuQ1oS524UQGlpq57MVmtERRzzKjJh58=,tag:p6esq0WIKlQXkZzHOVpHtQ==,type:str]
+            secret: ENC[AES256_GCM,data:MgPV4mmCTHg2ibgR/rL+8EieYH/VaWaAkPTnVOPT/22T9aZaHOz8i2zA9eY=,iv:GW8Sw5Qjkj+7ksRUFLWmEWaZNJ6LGRdxpMswD2IUnTg=,tag:cVFy+E+jHfBo00gfTsSwGA==,type:str]
 sops:
     kms: []
     gcp_kms: []
@@ -140,8 +151,8 @@ sops:
             7YnIqtOAtD9PlD7I3L26EmdV79W5bGYIRUujG2lHh0FEIN2UNAxLzTM5TDd5Mtmg
             peo=
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2024-09-06T14:49:41Z"
-    mac: ENC[AES256_GCM,data:qKmpTzthPYJWkESRN5+fnDsoAA1o9VW15DzOGfFYQZBOTDcz0q9fiwMisq/eg9oSyAXO6yup/55aA6w3qrWZrd0ojf52udjNLSq+1r7uOwjxVXxtekKvGGYbLpAkavb2r3POICtMOEVf4ngRy1po8qmqc4PFr+bVFvCbaJrYBqk=,iv:7GNpvL1i6+8SL7rvCJVfsWjqwEjM6WNqtZIa7+pryNw=,tag:gbKWLNmmi2/XMUIMIZZ2ng==,type:str]
+    lastmodified: "2024-09-23T20:02:09Z"
+    mac: ENC[AES256_GCM,data:8EW4u+IMgym0ve+ur4DUcXIScsiDw9N2h5Nk6WRPe7UVBLbOxi5cPVMIhH19YWhpUNQa1IOaFOnUz7pxmdIU3OsG5ZwiLTfjiXdwKA98Mpi+2XYfcy9Y77uzPJH9hpc5cOh4ArsDPbvfbGCNHM2bgFDesnUFktDXSZd/NFWS5xw=,iv:+v49jTkVxJ8LaJVxp75hKUdIKDvu4cw3/FxGL/ARRdM=,tag:brwzTEQqquR8lsGFO+AFFA==,type:str]
     pgp: []
     unencrypted_suffix: _unencrypted
     version: 3.9.0
