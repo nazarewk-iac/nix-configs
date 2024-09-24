@@ -19,6 +19,22 @@ let
   knotKeys = config.kdn.security.secrets.placeholders.default.knot-dns.keys;
   keaTSIGName = "kea.${hostname}";
 
+  kdn-router-knot-setup-zone = pkgs.writeShellApplication {
+    name = "kdn-router-knot-setup-zone";
+    runtimeInputs = [
+      config.services.knot.package
+    ] ++ (with pkgs; [
+      coreutils
+      gnused
+    ]);
+    runtimeEnv.TSIG_KEY_PATH = config.sops.templates."knot/sops-key.admin.conf".path;
+    runtimeEnv.KNOT_ADDR = cfg.knot.localAddress;
+    runtimeEnv.KNOT_PORT = builtins.toString cfg.knot.localPort;
+    runtimeEnv.PUBLIC_IPV4_PATH = cfg.addr.public.ipv4.path;
+    runtimeEnv.PUBLIC_IPV6_PATH = cfg.addr.public.ipv6.path;
+    text = builtins.readFile ./kdn-router-knot-setup-zone.sh;
+  };
+
   templateType = lib.types.submodule (tpl:
     let
       leafType = with lib.types; oneOf [ str bool int path ];
@@ -154,13 +170,10 @@ let
           default =
             if cfg.dhcp-ddns.suffix == null then null
             else "${netCfg.name}.${config.networking.hostName}.${cfg.dhcp-ddns.suffix}";
-          apply = ddns:
-            let
-              domains = lib.pipe cfg.domains [ (lib.attrsets.mapAttrsToList (_: domainCfg: domainCfg.name)) ];
-            in
-            assert lib.assertMsg (ddns == null || builtins.any (domain: lib.hasSuffix domain ddns) domains) ''
-              DHCP-DDNS: ${ddns} must be a subdomain of: ${builtins.concatStringsSep ", " domains}
-            ''; ddns;
+          apply = domain:
+            assert lib.assertMsg (lib.strings.hasSuffix "." domain) ''
+              `kdn.networking.router.nets.*.domain` must end with a '.': ${domain}
+            ''; domain;
         };
         template.network = lib.mkOption {
           type = templateType;
@@ -359,6 +372,14 @@ in
       type = with lib.types; listOf str;
       default = [ ];
     };
+
+    addr.public.ipv4.path = lib.mkOption {
+      type = with lib.types; path;
+    };
+    addr.public.ipv6.path = lib.mkOption {
+      type = with lib.types; path;
+    };
+
     dhcpv4.implementation = lib.mkOption {
       type = with lib.types; enum [
         "networkd"
@@ -413,12 +434,13 @@ in
       type = lib.types.attrsOf (lib.types.submodule ({ name, ... }@domainArgs: {
         options = {
           name = lib.mkOption {
+            readOnly = true;
             type = with lib.types; str;
             default = domainArgs.name;
-            apply = domain: lib.pipe domain [
-              (lib.strings.removeSuffix ".")
-              (domain: "${domain}.")
-            ];
+            apply = domain:
+              assert lib.assertMsg (lib.strings.hasSuffix "." domain) ''
+                `kdn.networking.router.domains` must end with a '.', invalid enty: ${domain}
+              ''; domain;
           };
         };
       }));
@@ -459,7 +481,7 @@ in
     };
     knot.dataDir = lib.mkOption {
       type = with lib.types; path;
-      default = "/var/lib/private/knot";
+      default = "/var/lib/knot";
     };
 
     kresd.interfaces = lib.mkOption {
@@ -954,6 +976,24 @@ in
               # TODO: add this https://kea.readthedocs.io/en/kea-2.2.0/arm/ddns.html#adding-reverse-ddns
             ];
           };
+        };
+        kdn.networking.router.domains = lib.pipe d2Domains [
+          (builtins.map (domain: { name = domain; value = { }; }))
+          builtins.listToAttrs
+        ];
+        systemd.services."kdn-knot-init" = {
+          description = "Initialize knot's zonefiles";
+          wantedBy = [ "knot.service" ];
+          after = [ "knot.service" ];
+          serviceConfig.Type = "oneshot";
+          serviceConfig.RemainAfterExit = true;
+          serviceConfig.ExecStart = lib.pipe d2Domains [
+            (builtins.map (domain: lib.strings.escapeShellArgs [
+              (lib.getExe kdn-router-knot-setup-zone)
+              "${cfg.knot.dataDir}/${domain}zone"
+              domain
+            ]))
+          ];
         };
       }
     )

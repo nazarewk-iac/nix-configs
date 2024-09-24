@@ -16,3 +16,4 @@
 !*.nix
 !*.md
 !/kresd.conf.lua
+!/kdn-router-knot-setup-zone.sh
