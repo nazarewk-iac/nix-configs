@@ -27,5 +27,8 @@ in
     systemd.user.services.syncthing = {
       Unit.After = [ "paths.target" ];
     };
+    home.packages = with pkgs; [
+      stc-cli
+    ];
   };
 }
