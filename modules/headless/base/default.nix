@@ -10,6 +10,7 @@ in
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
+      # note: about `fish` printing `linux` twice https://github.com/danth/stylix/issues/526
       users.defaultUserShell = pkgs.fish;
 
       kdn.development.data.enable = true;
