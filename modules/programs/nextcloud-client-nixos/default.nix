@@ -38,15 +38,16 @@ in
     ];
     systemd.timers."kdn-nextcloud-nixos-sync" = {
       description = "Synchronizes /root/Nextcloud directory";
-      wantedBy = [ "timers.target" ];
+      wantedBy = [ "timers.target" "default.target" ];
       requires = [ "network-online.target" ];
       after = [ "network-online.target" ];
-      timerConfig.OnUnitActiveSec = "5m";
+      timerConfig.OnUnitActiveSec = "15m";
     };
     systemd.paths."kdn-nextcloud-nixos-sync" = {
       description = "Synchronizes /root/Nextcloud directory";
       requires = [ "network-online.target" ];
       after = [ "network-online.target" ];
+      wantedBy = [ "default.target" ];
       pathConfig.PathChanged = "/root/Nextcloud";
       pathConfig.TriggerLimitIntervalSec = "10s";
       pathConfig.TriggerLimitBurst = 1;
@@ -55,9 +56,11 @@ in
       description = "Synchronizes /root/Nextcloud directory";
       requires = [ "network-online.target" ];
       after = [ "network-online.target" ];
+      wantedBy = [ "default.target" ];
       environment.HOME = "/root";
       serviceConfig = {
         Type = "oneshot";
+        RemainAfterExit = true;
         ExecStart = lib.escapeShellArgs [
           (lib.getExe sync)
           "--non-interactive"

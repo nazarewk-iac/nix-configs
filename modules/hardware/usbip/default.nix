@@ -57,9 +57,9 @@ in
 
         serviceConfig = {
           Type = "oneshot";
+          RemainAfterExit = true;
           ExecStart = "${cfg.package}/bin/usbip bind --busid %i";
           ExecStop = "${cfg.package}/bin/usbip unbind --busid %i";
-          RemainAfterExit = true;
         };
       };
       systemd.services."usbip-bind@${target}".enable = false;
