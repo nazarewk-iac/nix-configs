@@ -11,12 +11,14 @@
    * pinned inputs to keep up to date manually
    */
   inputs.helix-editor.url = "github:helix-editor/helix/24.07";
+  # skip https://github.com/tinted-theming/tinted-foot/commit/7ca954e993ee73a7cc9b86c59df4920cc8ff9d34
+  # see https://github.com/tinted-theming/tinted-foot/issues/8
+  inputs.base16-foot.flake = false;
+  inputs.base16-foot.url = "github:tinted-theming/tinted-foot/fd1b924b6c45c3e4465e8a849e67ea82933fcbe4";
 
   /*
    * rest of inputs
    */
-  inputs.base16-foot.flake = false;
-  inputs.base16-foot.url = "github:tinted-theming/base16-foot";
   inputs.base16.url = "github:SenchoPens/base16.nix";
   inputs.crane.url = "github:ipetkov/crane";
   inputs.disko.url = "github:nix-community/disko";
@@ -25,8 +27,7 @@
   inputs.flake-parts.url = "github:hercules-ci/flake-parts";
   inputs.flake-utils.url = "github:numtide/flake-utils";
   inputs.home-manager.url = "github:nix-community/home-manager";
-  #inputs.impermanence.url = "github:nix-community/impermanence";
-  inputs.impermanence.url = "github:nazarewk/impermanence";
+  inputs.impermanence.url = "github:nazarewk/impermanence"; #"github:nix-community/impermanence";
   inputs.lanzaboote.url = "github:nix-community/lanzaboote";
   inputs.microvm.url = "github:astro/microvm.nix";
   inputs.mk-shell-bin.url = "github:rrbutani/nix-mk-shell-bin";
