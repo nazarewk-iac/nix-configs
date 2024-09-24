@@ -168,7 +168,8 @@
 
                 _module.args.nixinate = {
                   #host = "oams.lan.";
-                  host = "oams.netbird.cloud.";
+                  #host = "oams.netbird.cloud.";
+                  host = "oams";
                   sshUser = "kdn";
                   buildOn = "local"; # valid args are "local" or "remote"
                   substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
@@ -190,7 +191,8 @@
                 _module.args.nixinate = {
                   #host = "brys.lan.";
                   #host = "192.168.73.46";
-                  host = "brys.netbird.cloud.";
+                  #host = "brys.netbird.cloud.";
+                  host = "brys";
                   sshUser = "kdn";
                   buildOn = "local"; # valid args are "local" or "remote"
                   substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
