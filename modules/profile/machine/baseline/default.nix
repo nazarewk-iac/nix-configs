@@ -61,9 +61,9 @@ in
 
       # prefer appending NetworkManager nameservers when it is available
       networking.networkmanager.appendNameservers = [
-        "2606:4700:4700::1111" # CloudFlare
-        "1.1.1.1" # CloudFlare
-        "8.8.8.8" # Google
+        #"2606:4700:4700::1111" # CloudFlare
+        #"1.1.1.1" # CloudFlare
+        #"8.8.8.8" # Google
       ];
       # otherwise fallback to inserting non-networkmanager servers
       networking.nameservers = lib.mkIf
