@@ -17,22 +17,6 @@ run_knsupdate() {
     --tsigfile <(get_tsig "${TSIG_KEY_PATH}")
 }
 
-zone_file="$1"
-domain="$2"
-
-if test -f "$zone_file"; then
-  echo "Zone file $zone_file already exists, skipping..."
-  exit 0
-fi
-
-knsupdate_args=(--tcp --port "${KNOT_PORT}")
-if test -n "${DEBUG:-}"; then
-  knsupdate_args+=(--debug)
-fi
-
-public_ipv4="$(cat "${PUBLIC_IPV4_PATH}")"
-public_ipv6="$(cat "${PUBLIC_IPV6_PATH}")"
-
 update() {
   cat <<EOF | tee >(sed 's/^/knsupdate: /g' >/dev/stderr) | run_knsupdate
 server ${KNOT_ADDR}
@@ -58,4 +42,23 @@ EOF
   knotc reload
 }
 
-writefile
+main() {
+  zone_file="$1"
+  domain="$2"
+
+  if test -f "$zone_file"; then
+    echo "Zone file $zone_file already exists, skipping..."
+    exit 0
+  fi
+
+  knsupdate_args=(--tcp --port "${KNOT_PORT}")
+  if test -n "${DEBUG:-}"; then
+    knsupdate_args+=(--debug)
+  fi
+
+  public_ipv4="$(cat "${PUBLIC_IPV4_PATH}")"
+  public_ipv6="$(cat "${PUBLIC_IPV6_PATH}")"
+  writefile
+}
+
+main "$@"

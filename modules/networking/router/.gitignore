@@ -17,3 +17,4 @@
 !*.md
 !/kresd.conf.lua
 !/kdn-router-knot-setup-zone.sh
+!/kdn-router-knot-ddns-update.sh

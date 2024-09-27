@@ -112,11 +112,14 @@ in
       services.locate.pruneBindMounts = true;
 
       services.resolved.enable = true;
-      services.avahi.enable = false; # conficts with `resolved` `MulticastDNS`/`LLMNR`
+      # services.resolved.dnssec = "allow-downgrade"; # this complains results are not signed
+      services.resolved.dnssec = lib.mkDefault "false";
+      services.resolved.dnsovertls = lib.mkDefault "opportunistic";
       services.resolved.llmnr = "true";
       services.resolved.extraConfig = ''
         MulticastDNS=true
       '';
+      services.avahi.enable = false; # conficts with `resolved` `MulticastDNS`/`LLMNR`
 
       kdn.development.shell.enable = true;
       kdn.filesystems.zfs.enable = true;

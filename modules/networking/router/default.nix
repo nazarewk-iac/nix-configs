@@ -19,6 +19,13 @@ let
   knotKeys = config.kdn.security.secrets.placeholders.default.knot-dns.keys;
   keaTSIGName = "kea.${hostname}";
 
+  defaultDNSServers = lib.pipe cfg.nets [
+    builtins.attrValues
+    (builtins.filter (netCfg: netCfg.type == "wan" && netCfg.wan.asDefaultDNS))
+    (builtins.map (netCfg: netCfg.wan.dns))
+    builtins.concatLists
+  ];
+
   kdn-router-knot-setup-zone = pkgs.writeShellApplication {
     name = "kdn-router-knot-setup-zone";
     runtimeInputs = [
@@ -33,6 +40,20 @@ let
     runtimeEnv.PUBLIC_IPV4_PATH = cfg.addr.public.ipv4.path;
     runtimeEnv.PUBLIC_IPV6_PATH = cfg.addr.public.ipv6.path;
     text = builtins.readFile ./kdn-router-knot-setup-zone.sh;
+  };
+
+  kdn-router-knot-ddns-update = pkgs.writeShellApplication {
+    name = "kdn-router-knot-ddns-update";
+    runtimeInputs = [
+      config.services.knot.package
+    ] ++ (with pkgs; [
+      coreutils
+      gnused
+    ]);
+    runtimeEnv.TSIG_KEY_PATH = config.sops.templates."knot/sops-key.admin.conf".path;
+    runtimeEnv.KNOT_ADDR = cfg.knot.localAddress;
+    runtimeEnv.KNOT_PORT = builtins.toString cfg.knot.localPort;
+    text = builtins.readFile ./kdn-router-knot-ddns-update.sh;
   };
 
   templateType = lib.types.submodule (tpl:
@@ -152,8 +173,13 @@ let
         lan.uplink = lib.mkOption {
           type = with lib.types; str;
         };
+        wan.asDefaultDNS = lib.mkOption {
+          type = with lib.types; bool;
+          default = false;
+        };
         wan.dns = lib.mkOption {
           type = with lib.types; listOf str;
+          default = netCfg.wan.gateway;
         };
         wan.gateway = lib.mkOption {
           type = with lib.types; listOf str;
@@ -201,9 +227,6 @@ let
                 };
                 netmask = lib.mkOption {
                   type = with lib.types; str;
-                };
-                dns = lib.mkOption {
-                  type = with lib.types; listOf str;
                 };
                 pools = lib.mkOption {
                   type = lib.types.attrsOf (lib.types.submodule (poolArgs: {
@@ -585,6 +608,8 @@ in
         # When true, systemd-networkd will remove routes that are not configured in .network files
         #ManageForeignRoutes = false;
       };
+      services.resolved.dnssec = "allow-downgrade";
+      networking.nameservers = defaultDNSServers;
     }
     {
       networking.nftables.enable = true;
@@ -614,9 +639,6 @@ in
           tcp flags syn / fin,syn,rst,ack log level info prefix "refused connection: "
         ''}
       '';
-    }
-    {
-      kdn.networking.dynamic-hosts.enable = true;
     }
     (lib.mkIf cfg.debug {
       kdn.networking.router.kresd.logLevel = "debug";
@@ -1089,7 +1111,27 @@ in
               "${cfg.knot.dataDir}/${domain}zone"
               domain
             ]))
-          ];
+          ]
+          ++ lib.pipe cfg.nets [
+            (lib.attrsets.mapAttrsToList (_: netCfg:
+              (lib.attrsets.mapAttrsToList
+                (_: addrCfg:
+                  (lib.attrsets.mapAttrsToList
+                    (host: hostCfg: lib.strings.escapeShellArgs [
+                      (lib.getExe kdn-router-knot-ddns-update)
+                      hostCfg.hostname
+                      netCfg.domain
+                      (if addrCfg.type == "ipv4" then "A" else "AAAA")
+                      hostCfg.ip
+                      "30"
+                    ])
+                    addrCfg.hosts)
+                )
+                netCfg.addressing)
+            ))
+            lib.flatten
+          ]
+          ;
         };
       }
     )

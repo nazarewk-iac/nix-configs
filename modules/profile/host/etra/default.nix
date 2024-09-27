@@ -75,7 +75,6 @@ in
       }
     )
     {
-      networking.nameservers = lib.mkForce [ ];
       kdn.networking.router.enable = true;
 
       kdn.networking.router.nets.wan = {
@@ -83,6 +82,7 @@ in
         netdev.kind = "bond";
         interfaces = [ "enp1s0" ];
         address = [ ];
+        wan.asDefaultDNS = true;
         wan.dns = [
           net.ipv4.p2p.drek-etra.address.gateway
           ll.drek.br-etra
@@ -115,7 +115,6 @@ in
           id = 3236353446;
           network = "192.168.73.0";
           netmask = "24";
-          dns = [ net.ipv4.p2p.drek-etra.address.gateway ];
           pools.default.start = "192.168.73.32";
           pools.default.end = "192.168.73.255";
           hosts.etra.ip = "192.168.73.1";
@@ -143,7 +142,6 @@ in
           id = 2332818586;
           network = "10.92.0.0";
           netmask = "16";
-          dns = [ net.ipv4.p2p.drek-etra.address.gateway ];
           pools.default.start = "10.92.0.32";
           pools.default.end = "10.92.0.255";
           hosts.etra.ip = "10.92.0.1";
@@ -154,9 +152,7 @@ in
     {
       # accept all traffice coming from Netbird to any other routed network
       networking.firewall.trustedInterfaces = [ "nb-priv" ];
-      kdn.networking.router.kresd.interfaces = [ "nb-priv" ];
     }
-    { }
     {
       kdn.networking.router.nets.wan = {
         firewall.allowedUDPPorts = [ 53 853 ];
@@ -186,7 +182,7 @@ in
       documentation.man.generateCaches = false;
     }
     {
-      kdn.networking.router.debug = true;
+      kdn.networking.router.debug = false;
     }
   ]);
 }

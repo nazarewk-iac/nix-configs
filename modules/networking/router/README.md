@@ -30,11 +30,11 @@ A router setup used by `etra`.
             - [x] DHCPv4: replace `networkd` with `kea-dhcp4-server`
             - [ ] DHCPv6 with `kea-dhcp6-server` 
             - [x] set up `kresd` pointing at `resolved` (or home server)
-                - [ ] remove `resolved`?
+                - [ ] remove `systemd-resolved`?
             - [x] set up `knot` 
                 - [x] point `kresd` at it
             - [x] set up `kea-dhcp-ddns` to update `knot` entries
-            - [ ] add entry for `etra` (self) on each interface 
+        - [x] add entries for static hosts (including router itself) on each interface 
         - [ ] update to `kresd` 6.x early access, see https://github.com/NixOS/nixpkgs/pull/154610
 - Router Advertisement
     - [x] use `networkd` advertisements
