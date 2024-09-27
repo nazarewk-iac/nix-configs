@@ -25,8 +25,8 @@ A router setup used by `etra`.
             - works with `pic` VLAN as `tagged` and `1` (default/built-in) as `untagged` on all ports
 - [x] bridge LAN interfaces 2x `2.5GbE` -> `5GbE`
 - DNS
-    - [ ] set up local DNS server
-        - [ ] answer with local (DHCP?) hostnames
+    - [x] set up local DNS server
+        - [x] answer with local (DHCP?) hostnames
             - [x] DHCPv4: replace `networkd` with `kea-dhcp4-server`
             - [ ] DHCPv6 with `kea-dhcp6-server` 
             - [x] set up `kresd` pointing at `resolved` (or home server)
@@ -34,7 +34,8 @@ A router setup used by `etra`.
             - [x] set up `knot` 
                 - [x] point `kresd` at it
             - [x] set up `kea-dhcp-ddns` to update `knot` entries
-            - [ ] add entry for `etra` on each interface 
+            - [ ] add entry for `etra` (self) on each interface 
+        - [ ] update to `kresd` 6.x early access, see https://github.com/NixOS/nixpkgs/pull/154610
 - Router Advertisement
     - [x] use `networkd` advertisements
     - [ ] switch to `corerad` (or something else?)

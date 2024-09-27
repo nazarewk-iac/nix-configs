@@ -247,13 +247,6 @@ let
           ];
           default = "networkd";
         };
-        dns.implementation = lib.mkOption {
-          type = with lib.types; enum [
-            null
-            "knot-dns"
-          ];
-          default = null;
-        };
         firewall = {
           trusted = lib.mkOption {
             type = with lib.types; bool;
@@ -458,11 +451,11 @@ in
     };
     knot.localPort = lib.mkOption {
       type = with lib.types; port;
-      default = 13353;
+      default = 53;
     };
     knot.localPortTLS = lib.mkOption {
       type = with lib.types; port;
-      default = 23326;
+      default = 853;
     };
 
     knot.listens = lib.mkOption {
@@ -484,9 +477,27 @@ in
       default = "/var/lib/knot";
     };
 
+    coredns.localAddress = lib.mkOption {
+      type = with lib.types; str;
+      default = "127.0.0.2";
+    };
+
+    kresd.logLevel = lib.mkOption {
+      type = with lib.types; enum [
+        "info"
+        "debug"
+      ];
+      default = "info";
+    };
+
     kresd.interfaces = lib.mkOption {
       type = with lib.types; listOf str;
       default = [ ];
+    };
+
+    kresd.localAddress = lib.mkOption {
+      type = with lib.types; str;
+      default = "127.0.0.3";
     };
 
     kresd.rewrites = lib.mkOption {
@@ -503,16 +514,55 @@ in
 
           upstreams = lib.mkOption {
             type = with lib.types; listOf str;
-            default = cfg.kresd.upstreams;
           };
         };
       }));
     };
+    kresd.defaultUpstream = lib.mkOption {
+      type = with lib.types; nullOr (enum [ "systemd-resolved" "google" "cloudflare" "quad9" ]);
+      default = "systemd-resolved";
+    };
+
     kresd.upstreams = lib.mkOption {
-      type = with lib.types; listOf str;
-      # forward to resolved for now
-      # TODO: add knot-dns before systemd-resolved?
-      default = [ "127.0.0.53" ];
+      type = lib.types.listOf (lib.types.submodule (upstreamArgs: {
+        options = {
+          enable = lib.mkOption {
+            type = with lib.types; bool;
+            default = true;
+          };
+          description = lib.mkOption {
+            type = with lib.types; str;
+          };
+          nameservers = lib.mkOption {
+            type = with lib.types; listOf str;
+          };
+          nameserversRaw = lib.mkOption {
+            type = with lib.types; listOf str;
+            default = [ ];
+          };
+          domains = lib.mkOption {
+            type = with lib.types; nullOr (listOf str);
+            default = null;
+          };
+          type = lib.mkOption {
+            type = with lib.types; enum [ "STUB" "FORWARD" "TLS_FORWARD" ];
+          };
+          flags = lib.mkOption {
+            type = with lib.types; listOf (enum [
+              # see https://knot-resolver.readthedocs.io/en/stable/lib.html#c.kr_qflags
+              "NO_IPV6"
+              "NO_EDNS"
+              "NO_0X20" # DNS lettercase randomization
+              "NO_CACHE"
+            ]);
+            default = [ ];
+          };
+          auth = lib.mkOption {
+            type = with lib.types; attrsOf str;
+            default = { };
+          };
+        };
+      }));
     };
   };
   config = lib.mkIf cfg.enable (lib.mkMerge [
@@ -542,7 +592,7 @@ in
       networking.firewall.allowPing = true;
       networking.firewall.filterForward = true;
       networking.firewall.logRefusedPackets = lib.mkDefault false;
-      networking.firewall.logRefusedConnections = true;
+      networking.firewall.logRefusedConnections = lib.mkDefault true;
       networking.firewall.pingLimit = "60/minute burst 5 packets";
 
       kdn.networking.router.forwardings = [
@@ -569,8 +619,10 @@ in
       kdn.networking.dynamic-hosts.enable = true;
     }
     (lib.mkIf cfg.debug {
+      kdn.networking.router.kresd.logLevel = "debug";
       networking.firewall.logRefusedPackets = true;
       networking.firewall.rejectPackets = true;
+      systemd.services.systemd-resolved.environment.SYSTEMD_LOG_LEVEL = "debug";
 
       networking.nftables.tables =
         let
@@ -688,8 +740,8 @@ in
             };
             loggers = [{
               name = "kea-dhcp4";
-              severity = "INFO";
-              debuglevel = 0;
+              severity = if cfg.debug then "DEBUG" else "INFO";
+              debuglevel = 99;
               output_options = [{ output = "stderr"; }];
             }];
           }])
@@ -782,14 +834,63 @@ in
     }
     {
       services.kresd.extraConfig = lib.pipe [
+        "log_level(${builtins.toJSON cfg.kresd.logLevel})"
         (lib.pipe cfg.kresd.upstreams [
-          (builtins.map builtins.toJSON)
-          (builtins.concatStringsSep ", ")
-          (upstreams: ''
-            policy.add(policy.all(policy.STUB({${upstreams}})))
-          '')
-          lib.mkAfter
+          (builtins.map (upstreamCfg:
+            let
+              toLuaTable = value: lib.pipe value [
+                (builtins.concatStringsSep ", ")
+                (e: "{${e}}")
+              ];
+              toLuaStringList = list: toLuaTable (builtins.map builtins.toJSON list);
+              authArgsList = lib.attrsets.mapAttrsToList (key: value: "${key}=${builtins.toJSON value}") upstreamCfg.auth;
+
+              nameserverEntries = upstreamCfg.nameserversRaw ++ builtins.map builtins.toJSON upstreamCfg.nameservers;
+              tlsNameserversArg = lib.pipe nameserverEntries [
+                (builtins.map (ns: lib.pipe ns [
+                  (ns: [ ns ] ++ authArgsList)
+                  (prev: if builtins.length prev > 1 then toLuaTable prev else builtins.head prev)
+                ]))
+                toLuaTable
+              ];
+              domainsArg = lib.pipe upstreamCfg.domains [
+                (builtins.map builtins.toJSON)
+                toLuaTable
+              ];
+              descriptionSnippet = lib.pipe upstreamCfg.description [
+                (lib.strings.splitString "\n")
+                (builtins.map (line: "-- ${line}"))
+                (builtins.concatStringsSep "\n")
+              ];
+              policyFilter = if upstreamCfg.domains == null then "all" else "suffix";
+              actionArgs =
+                if upstreamCfg.type == "TLS_FORWARD"
+                then tlsNameserversArg
+                else toLuaTable nameserverEntries;
+
+              domainPolicyArgs = lib.lists.optional (upstreamCfg.domains != null) "policy.todnames(${domainsArg})";
+            in
+            builtins.concatStringsSep "\n" (
+              [
+                descriptionSnippet
+              ]
+              ++ lib.optionals (upstreamCfg.flags != [ ]) [
+                "policy.add(policy.${policyFilter}("
+                (builtins.concatStringsSep ", " (
+                  [ "  policy.FLAGS(${toLuaStringList upstreamCfg.flags})" ] ++ domainPolicyArgs
+                ))
+                "))"
+              ]
+              ++ lib.optionals (nameserverEntries != [ ]) [
+                "policy.add(policy.${policyFilter}("
+                (builtins.concatStringsSep ", " (
+                  [ "  policy.${upstreamCfg.type}(${actionArgs})" ] ++ domainPolicyArgs
+                ))
+                "))"
+              ]
+            )))
         ])
+        ''net.listen(${builtins.toJSON cfg.kresd.localAddress}, 53, { kind = 'dns', freebind = true })''
         (builtins.map (iface: ''net.listen(net[${builtins.toJSON iface}], 53, { kind = 'dns', freebind = true })'') cfg.kresd.interfaces)
       ] [
         lib.lists.flatten
@@ -802,7 +903,6 @@ in
           owner = "knot-resolver";
           group = "knot-resolver";
           content = lib.pipe [
-            "log_level('info')"
           ] [
             lib.lists.flatten
             (builtins.concatStringsSep "\n")
@@ -910,16 +1010,12 @@ in
         environment.persistence."sys/data".directories = [
           { directory = cfg.knot.dataDir; user = "knot"; group = "knot"; mode = "0700"; }
         ];
-        services.kresd.extraConfig = lib.pipe cfg.domains [
-          (lib.attrsets.mapAttrsToList (_: domainCfg: builtins.toJSON domainCfg.name))
-          (builtins.concatStringsSep ", ")
-          (domains: ''
-            policy.add(policy.suffix(
-              policy.STUB({${builtins.toJSON "${cfg.knot.localAddress}@${builtins.toString cfg.knot.localPort}"}}),
-              policy.todnames({${domains}})
-            ))
-          '')
-        ];
+        kdn.networking.router.kresd.upstreams = [{
+          description = "local knot-dns";
+          type = "STUB";
+          nameservers = [ "${cfg.knot.localAddress}@${builtins.toString cfg.knot.localPort}" ];
+          domains = lib.pipe cfg.domains [ builtins.attrValues (builtins.map (domainCfg: domainCfg.name)) ];
+        }];
         sops.templates = lib.pipe knotKeys [
           (lib.attrsets.mapAttrsToList (id: keyCfg: {
             name = "knot/sops-key.${id}.conf";
@@ -958,7 +1054,7 @@ in
             }];
             loggers = [{
               name = "kea-dhcp-ddns";
-              severity = "DEBUG";
+              severity = if cfg.debug then "DEBUG" else "INFO";
               debuglevel = 99;
               output_options = [{ output = "stderr"; }];
             }];
@@ -1198,19 +1294,67 @@ in
       kdn.service.coredns.rewrites = builtins.mapAttrs
         (_: rewriteCfg: {
           inherit (rewriteCfg) from to upstreams;
-          binds = [ "127.0.0.2" ];
+          binds = [ cfg.coredns.localAddress ];
           port = 53;
         })
         cfg.kresd.rewrites;
-      services.kresd.extraConfig = lib.pipe cfg.kresd.rewrites [
-        (lib.attrsets.mapAttrsToList (_: rewriteCfg: ''
-          policy.add(policy.suffix(
-            policy.STUB({'127.0.0.2@53'}),
-            policy.todnames({'${rewriteCfg.to}'})
-          ))
-        ''))
-        lib.mkMerge
+      kdn.networking.router.kresd.upstreams = lib.pipe cfg.kresd.rewrites [
+        (lib.attrsets.mapAttrsToList (_: rewriteCfg: {
+          description = "redirect to ${rewriteCfg.to} from ${rewriteCfg.from}";
+          type = "STUB";
+          nameservers = [ cfg.coredns.localAddress ];
+          domains = [ rewriteCfg.to ];
+        }))
+        lib.mkBefore
       ];
+    })
+    (lib.mkIf (cfg.kresd.defaultUpstream != null) {
+      kdn.networking.router.kresd.upstreams =
+        let
+          upstreams = {
+            systemd-resolved = {
+              description = "systemd-resolved";
+              type = "STUB";
+              nameservers = [ "127.0.0.53" ];
+            };
+            quad9 = {
+              description = "Quad9";
+              type = "TLS_FORWARD";
+              nameservers = [
+                "2620:fe::fe"
+                "2620:fe::10"
+                "9.9.9.9"
+                "9.9.9.10"
+              ];
+              auth.hostname = "dns.quad9.net";
+            };
+            cloudflare = {
+              description = "Cloudflare";
+              type = "TLS_FORWARD";
+              nameservers = [
+                "2606:4700:4700::1111"
+                "2606:4700:4700::1001"
+                "1.1.1.1"
+                "1.0.0.1"
+              ];
+              auth.hostname = "cloudflare-dns.com";
+            };
+            google = {
+              description = "Google";
+              type = "TLS_FORWARD";
+              auth.hostname = "dns.google";
+              nameservers = [
+                "2001:4860:4860::8888"
+                "2001:4860:4860::8844"
+                "8.8.8.8"
+                "8.8.4.4"
+              ];
+            };
+          };
+        in
+        lib.mkAfter [
+          upstreams."${cfg.kresd.defaultUpstream}"
+        ];
     })
   ]);
 }

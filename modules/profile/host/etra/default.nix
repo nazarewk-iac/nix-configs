@@ -77,7 +77,6 @@ in
     {
       networking.nameservers = lib.mkForce [ ];
       kdn.networking.router.enable = true;
-      #kdn.networking.router.debug = true;
 
       kdn.networking.router.nets.wan = {
         type = "wan";
@@ -157,10 +156,7 @@ in
       networking.firewall.trustedInterfaces = [ "nb-priv" ];
       kdn.networking.router.kresd.interfaces = [ "nb-priv" ];
     }
-    {
-      # Serve .nb.kdn.im. from .netbird.cloud.
-      kdn.networking.router.kresd.rewrites."nb.kdn.im".from = "netbird.cloud";
-    }
+    { }
     {
       kdn.networking.router.nets.wan = {
         firewall.allowedUDPPorts = [ 53 853 ];
@@ -176,10 +172,9 @@ in
         allowedUDPPorts = [ 53 853 ];
       };
       #kdn.networking.router.knot.localAddress = "192.168.40.1";
-      kdn.networking.router.knot.localPort = 53;
-      kdn.networking.router.knot.localPortTLS = 853;
       kdn.networking.router.domains."int.kdn.im." = { };
       kdn.networking.router.dhcp-ddns.suffix = "net.int.kdn.im.";
+      services.kresd.instances = 2;
     }
     {
       kdn.networking.router.addr.public.ipv4.path = config.sops.secrets."networking/ipv4/network/isp/uplink/address/client".path;
@@ -189,6 +184,9 @@ in
       # faster rebuilds
       documentation.man.man-db.enable = false;
       documentation.man.generateCaches = false;
+    }
+    {
+      kdn.networking.router.debug = true;
     }
   ]);
 }
