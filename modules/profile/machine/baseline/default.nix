@@ -11,10 +11,6 @@ in
       default = 0;
     };
 
-    netbird-priv.type = lib.mkOption {
-      type = lib.types.enum [ "ephemeral" "permanent" ];
-      default = "permanent";
-    };
   };
 
   imports = [
@@ -257,7 +253,7 @@ in
       ];
     }
     {
-      services.netbird.clients.priv.port = 51819;
+      kdn.networking.netbird.priv.enable = true;
       services.netbird.package = pkgs.netbird.overrideAttrs (old: {
         patches = old.patches or [ ] ++ [
           #(pkgs.fetchpatch {
@@ -267,29 +263,7 @@ in
           #})
         ];
       });
-      # TODO: it should be at `usr/data`, `*/state` is expected for logging data
-      environment.persistence."usr/data".directories = [
-        { directory = "/var/lib/netbird-priv"; user = "netbird-priv"; group = "netbird-priv"; mode = "0700"; }
-      ];
     }
-    (lib.mkIf config.kdn.security.secrets.allowed {
-      # Netbird automated login
-      sops.templates."netbird-priv.env" = {
-        owner = "netbird-priv";
-        group = "netbird-priv";
-        content = ''
-          NB_SETUP_KEY="${config.sops.placeholder."default/netbird-priv/${cfg.netbird-priv.type}/setup-key"}"
-        '';
-      };
-      systemd.services.netbird-priv.serviceConfig.EnvironmentFile = config.sops.templates."netbird-priv.env".path;
-      systemd.services.netbird-priv.postStart = ''
-        nb='${lib.getExe config.services.netbird.clients.priv.wrapper}'
-        if "$nb" status 2>&1 | grep --quiet 'NeedsLogin' ; then
-          cut -b1-8 <<<"$NB_SETUP_KEY"
-          "$nb" up
-        fi
-      '';
-    })
     {
       kdn.programs.nextcloud-client-nixos.enable = config.kdn.security.secrets.allowed;
     }

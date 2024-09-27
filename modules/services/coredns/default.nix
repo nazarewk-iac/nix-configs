@@ -12,10 +12,18 @@ in
           to = lib.mkOption {
             type = with lib.types; str;
             default = name;
+            apply = domain:
+              assert lib.assertMsg (lib.strings.hasSuffix "." domain) ''
+                `kdn.service.coredns.*.to` must end with a '.': ${domain}
+              ''; domain;
           };
 
           from = lib.mkOption {
             type = with lib.types; str;
+            apply = domain:
+              assert lib.assertMsg (lib.strings.hasSuffix "." domain) ''
+                `kdn.service.coredns.*.from` must end with a '.': ${domain}
+              ''; domain;
           };
 
           upstreams = lib.mkOption {
@@ -64,8 +72,8 @@ in
             ${rewriteCfg.to}:${builtins.toString rewriteCfg.port} {
               bind ${builtins.concatStringsSep " " rewriteCfg.binds}
               import defaults-before
-              rewrite name suffix .${rewriteCfg.to}. .${rewriteCfg.from}. answer auto
-              forward ${rewriteCfg.from}. ${builtins.concatStringsSep " " rewriteCfg.upstreams}
+              rewrite name suffix .${rewriteCfg.to} .${rewriteCfg.from} answer auto
+              forward ${rewriteCfg.from} ${builtins.concatStringsSep " " rewriteCfg.upstreams}
               import defaults-after
             }
           '')

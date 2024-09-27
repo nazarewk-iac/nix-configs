@@ -31,7 +31,6 @@ in
       let default = lib.mkOverride (lib.modules.defaultOverridePriority + 1); in {
         # counteract https://github.com/nazarewk/nixpkgs/blob/d40fea9aeb8840fea0d377baa4b38e39b9582458/nixos/modules/profiles/minimal.nix#L8-L21
         # imported by https://github.com/astro/microvm.nix/blob/940cafd63413dc022ca3013709efcf96afe95b77/nixos-modules/microvm/system.nix#L8-L10
-        environment.noXlibs = default false;
         documentation.enable = default true;
         documentation.nixos.enable = default true;
         programs.command-not-found.enable = default true;
