@@ -10,7 +10,9 @@
     systems = import inputs.systems;
     flake.overlays.default = inputs.nixpkgs.lib.composeManyExtensions [
       inputs.poetry2nix.overlays.default
-      (final: prev: { kdn = final.callPackages ./. { }; })
+      (final: prev: {
+        kdn = (prev.kdn or { }) // (final.callPackages ./. { });
+      })
     ];
     perSystem = { config, self', inputs', system, pkgs, ... }: {
       _module.args.pkgs = inputs'.nixpkgs.legacyPackages.extend self.overlays.default;

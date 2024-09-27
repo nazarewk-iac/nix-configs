@@ -49,6 +49,7 @@ let
     ] ++ (with pkgs; [
       coreutils
       gnused
+      kdn.kdn-secrets
     ]);
     runtimeEnv.TSIG_KEY_PATH = config.sops.templates."knot/sops-key.admin.conf".path;
     runtimeEnv.KNOT_ADDR = cfg.knot.localAddress;
@@ -217,7 +218,7 @@ let
                   type = with lib.types; enum [ "ipv4" "ipv6" ];
                   default = if lib.strings.hasInfix ":" addrCfg.network then "ipv6" else "ipv4";
                 };
-                id = lib.mkOption {
+                subnet-id = lib.mkOption {
                   # see https://kea.readthedocs.io/en/kea-2.7.1/arm/dhcp4-srv.html#ipv4-subnet-identifier
                   # > python -c 'import random; print(random.randint(1, 4294967295))'
                   type = with lib.types; ints.between 1 4294967295;
@@ -529,10 +530,18 @@ in
           to = lib.mkOption {
             type = with lib.types; str;
             default = name;
+            apply = domain:
+              assert lib.assertMsg (lib.strings.hasSuffix "." domain) ''
+                `kdn.networking.router.kresd.rewrites.*.to` must end with a '.', invalid entry: ${domain}
+              ''; domain;
           };
 
           from = lib.mkOption {
             type = with lib.types; str;
+            apply = domain:
+              assert lib.assertMsg (lib.strings.hasSuffix "." domain) ''
+                `kdn.networking.router.kresd.rewrites.*.from` must end with a '.', invalid entry: ${domain}
+              ''; domain;
           };
 
           upstreams = lib.mkOption {
@@ -566,6 +575,11 @@ in
           domains = lib.mkOption {
             type = with lib.types; nullOr (listOf str);
             default = null;
+            apply = domains:
+              let invalids = builtins.filter (domain: !(lib.strings.hasSuffix "." domain)) domains; in
+              assert lib.assertMsg (domains == null || invalids == [ ]) ''
+                `kdn.networking.router.kresd.upstreams.*.domains` must end with a '.', invalid entries: ${builtins.concatStringsSep ", " invalids}
+              ''; domains;
           };
           type = lib.mkOption {
             type = with lib.types; enum [ "STUB" "FORWARD" "TLS_FORWARD" ];
@@ -721,7 +735,7 @@ in
               builtins.attrValues
               (builtins.filter (addrCfg: addrCfg.enable && addrCfg.type == "ipv4"))
               (builtins.map (addrCfg: {
-                id = addrCfg.id;
+                id = addrCfg.subnet-id;
                 interface = netCfg.interface;
                 subnet = with addrCfg; "${network}/${netmask}";
                 pools = lib.pipe addrCfg.pools [

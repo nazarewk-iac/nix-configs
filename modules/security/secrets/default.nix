@@ -2,18 +2,18 @@
 let
   cfg = config.kdn.security.secrets;
 
+  sopsPlaceholderPattern =
+    { name ? ""
+    , path ? ""
+    , hash ? if name != "" then builtins.substring 0 8 (builtins.hashString "sha256" name) else ""
+    , infix ? "${path}:${hash}"
+    }: "<SOPS:${infix}:PLACEHOLDER>";
+
   # adds additional information (name) to sops-nix placeholders
   # replaces https://github.com/Mic92/sops-nix/blob/be0eec2d27563590194a9206f551a6f73d52fa34/modules/sops/templates/default.nix#L84-L84
-  sopsPlaceholders =
-    let
-      replacements = {
-        "/" = ".";
-      };
-      escape = builtins.replaceStrings (builtins.attrNames replacements) (builtins.attrValues replacements);
-    in
-    builtins.mapAttrs
-      (name: _: "<SOPS:${escape name}:${builtins.substring 0 8 (builtins.hashString "sha256" name)}:PLACEHOLDER>")
-      config.sops.secrets;
+  sopsPlaceholders = builtins.mapAttrs
+    (name: secretCfg: sopsPlaceholderPattern { inherit name; inherit (secretCfg) path; })
+    config.sops.secrets;
 in
 {
   options.kdn.security.secrets = {
@@ -192,6 +192,32 @@ in
                 (pkgs.writeText name)
               ];
             };
+          kdn = (prev.kdn or { }) // {
+            kdn-secrets =
+              let
+                pattern = sopsPlaceholderPattern {
+                  path = "(?P<path>[^:]+)";
+                  hash = "(?P<hash>[^:]+)";
+                };
+                r.pattern = ''pattern: str = ""'';
+                replacements = {
+                  "${r.pattern}" = ''pattern = r"${pattern}"'';
+                };
+              in
+              final.writers.writePython3Bin "kdn-secrets"
+                {
+                  libraries = with pkgs.python3Packages; [
+                    fire
+                  ];
+                }
+                (lib.pipe ./kdn-secrets.py [
+                  builtins.readFile
+                  (builtins.replaceStrings
+                    (builtins.attrNames replacements)
+                    (builtins.attrValues replacements)
+                  )
+                ]);
+          };
         })
       ];
 
@@ -201,7 +227,9 @@ in
         age
         ssh-to-age
         ssh-to-pgp
-      ]);
+      ]) ++ [
+        pkgs.kdn.kdn-secrets
+      ];
 
       sops.placeholder = sopsPlaceholders;
       # see https://github.com/Mic92/sops-nix/issues/65

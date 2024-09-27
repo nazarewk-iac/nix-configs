@@ -76,7 +76,8 @@ in
     )
     {
       kdn.networking.router.enable = true;
-
+    }
+    {
       kdn.networking.router.nets.wan = {
         type = "wan";
         netdev.kind = "bond";
@@ -100,7 +101,14 @@ in
           Peer = "${address.gateway}/${netmask}";
         };
       };
-
+      kdn.networking.router.kresd.upstreams = [{
+        description = "lan.drek.net.int.kdn.im";
+        type = "STUB";
+        nameservers = [ net.ipv4.p2p.drek-etra.address.gateway ];
+        domains = [ "lan.drek.net.int.kdn.im." ];
+      }];
+    }
+    {
       kdn.networking.router.nets.lan = {
         type = "lan";
         lan.uplink = "wan";
@@ -112,7 +120,7 @@ in
           (with netconf.ipv6.network.etra.lan; "${address.gateway}/${netmask}")
         ];
         addressing.ipv4 = {
-          id = 3236353446;
+          subnet-id = 3236353446;
           network = "192.168.73.0";
           netmask = "24";
           pools.default.start = "192.168.73.32";
@@ -120,6 +128,18 @@ in
           hosts.etra.ip = "192.168.73.1";
           hosts.cafal.ip = "192.168.73.2";
           hosts.cafal.ident.hw-address = mac.cafal.default;
+          hosts.feren.ip = "192.168.73.3";
+          hosts.moak.ip = "192.168.73.4";
+        };
+        addressing.ipv6-ula = with ula.lan; {
+          subnet-id = 300310722;
+          inherit network netmask;
+          hosts.etra.ip = address.gateway;
+        };
+        addressing.ipv6-public = with netconf.ipv6.network.etra.lan; {
+          subnet-id = 108555261;
+          inherit network netmask;
+          hosts.etra.ip = address.gateway;
         };
         prefix.ula = with ula.lan; "${network}/${netmask}";
         prefix.public = with netconf.ipv6.network.etra.lan; "${network}/${netmask}";
@@ -132,20 +152,30 @@ in
         vlan.id = vlan.pic.id;
         interfaces = [ "lan" ];
         address = [
-          (with ula.pic; "${address.gateway}/${netmask}")
-          (with netconf.ipv6.network.etra.pic; "${address.gateway}/${netmask}")
+          #(with ula.pic; "${address.gateway}/${netmask}")
+          #(with netconf.ipv6.network.etra.pic; "${address.gateway}/${netmask}")
         ];
         prefix.ula = with ula.pic; "${network}/${netmask}";
         prefix.public = with netconf.ipv6.network.etra.pic; "${network}/${netmask}";
 
         addressing.ipv4 = {
-          id = 2332818586;
+          subnet-id = 2332818586;
           network = "10.92.0.0";
           netmask = "16";
           pools.default.start = "10.92.0.32";
           pools.default.end = "10.92.0.255";
           hosts.etra.ip = "10.92.0.1";
           hosts.cafal.ip = "10.92.0.2";
+        };
+        addressing.ipv6-local = with ula.pic; {
+          subnet-id = 22449285;
+          inherit network netmask;
+          hosts.etra.ip = address.gateway;
+        };
+        addressing.ipv6-public = with netconf.ipv6.network.etra.pic; {
+          subnet-id = 197717597;
+          inherit network netmask;
+          hosts.etra.ip = address.gateway;
         };
       };
     }

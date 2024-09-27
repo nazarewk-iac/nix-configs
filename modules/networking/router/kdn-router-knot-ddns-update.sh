@@ -22,8 +22,13 @@ main() {
   if test -n "${DEBUG:-}"; then
     knsupdate_args+=(--debug)
   fi
+  local host domain type ip ttl
+  host="$(kdn-secrets render-string "$1")"
+  domain="$(kdn-secrets render-string "$2")"
+  type="$3"
+  ip="$(kdn-secrets render-string "$4")"
+  ttl="${5:-60}"
 
-  local host="$1" domain="$2" type="$3" ip="$4" ttl="${5:-60}"
   cat <<EOF | tee >(sed 's/^/knsupdate: /g' >/dev/stderr) | run_knsupdate
 server ${KNOT_ADDR}
 zone ${domain}

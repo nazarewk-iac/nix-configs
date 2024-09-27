@@ -5,22 +5,28 @@ let
   defaultPython = pkgs.python312;
 
   mkPython = pkg: (pkg.withPackages (ps: with ps; [
-    pip-tools
+    beautifulsoup4
     black
     boto3
     build # build a package, see https://realpython.com/pypi-publish-python-package/#build-your-package
     cookiecutter
+    deepmerge
     diagrams
+    duckdb
+    fire
     flake8
+    fsspec
     graphviz
-    httpx
     httpie
+    httpx
     ipython
     isort
+    keyring
     matplotlib
     mt-940
     pendulum
     pip
+    pip-tools
     pipx
     pyaml
     pyheos
@@ -30,6 +36,8 @@ let
     ruamel-yaml
     tqdm
     twine # upload to pypi, see https://realpython.com/pypi-publish-python-package/#upload-your-package
+    types-beautifulsoup4
+    universal-pathlib
 
     pycrypto
 

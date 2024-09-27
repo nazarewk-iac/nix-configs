@@ -103,7 +103,7 @@
         inputs.helix-editor.overlays.default
         inputs.nur.overlay
         (final: prev: {
-          kdn = final.callPackages ./packages { };
+          kdn = (prev.kdn or { }) // (final.callPackages ./packages { });
           inherit lib;
         })
         (final: prev: {
