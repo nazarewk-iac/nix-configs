@@ -144,8 +144,68 @@ in
         };
       };
     })
+    (
+      # TODO: extract it to separate module
+      let
+        ffCfg = config.programs.firefox;
+        inherit (pkgs.stdenv.hostPlatform) isDarwin;
+        profilesPath =
+          if isDarwin then "${ffCfg.configPath}/Profiles" else ffCfg.configPath;
+
+        containerProfilesList = lib.pipe config.programs.firefox.profiles [
+          builtins.attrValues
+          (builtins.filter (p: p.containers != { }))
+        ];
+
+        firefoxProfilePathsRel = lib.pipe containerProfilesList [
+          (builtins.map (profile: "${profilesPath}/${profile.path}"))
+        ];
+      in
+      lib.mkIf (firefoxProfilePathsRel != { }) {
+        home.file = lib.pipe firefoxProfilePathsRel [
+          (builtins.map (path: {
+            name = "${path}/containers.json";
+            value.target = "${path}/containers.json.d/50-hm-containers.json";
+          }))
+          builtins.listToAttrs
+        ];
+
+        systemd.user.paths.firefox-containers-d-sync = {
+          Install.WantedBy = [ "default.target" ];
+          Unit = {
+            Description = "merges pieces into Firefox's containers.json file";
+          };
+          Path = {
+            PathChanged = lib.pipe firefoxProfilePathsRel [
+              (builtins.map (path: "${config.home.homeDirectory}/${path}/containers.json.d"))
+            ];
+            TriggerLimitBurst = "1";
+            TriggerLimitIntervalSec = "1s";
+          };
+        };
+        systemd.user.services.firefox-containers-d-sync = {
+          Install.WantedBy = [ "default.target" ];
+          Unit = {
+            Description = "merges pieces into Firefox's containers.json file";
+          };
+          Service = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            ExecStart =
+              let
+                script = pkgs.writers.writePython3Bin "firefox-containers-d-sync" { } (builtins.readFile ./firefox-containers-d-sync.py);
+              in
+              lib.pipe firefoxProfilePathsRel [
+                (builtins.map (profilePath: lib.strings.escapeShellArgs [
+                  (lib.getExe script)
+                  "${config.home.homeDirectory}/${profilePath}"
+                ]))
+              ];
+          };
+        };
+      }
+    )
     (lib.mkIf (hasGUI && config.kdn.hardware.disks.enable) {
-      programs.firefox.profiles.kdn.containersForce = true;
       programs.firefox.profiles.kdn.containers = {
         personal = {
           id = 1;
@@ -183,7 +243,7 @@ in
           color = "purple";
         };
         Facebook = {
-          id = (pow 2 32) - 128;
+          id = 8;
           icon = "fence";
           color = "toolbar";
         };
