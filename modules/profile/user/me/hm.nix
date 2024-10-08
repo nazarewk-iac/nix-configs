@@ -191,16 +191,10 @@ in
           Service = {
             Type = "oneshot";
             RemainAfterExit = true;
-            ExecStart =
-              let
-                script = pkgs.writers.writePython3Bin "firefox-containers-d-sync" { } (builtins.readFile ./firefox-containers-d-sync.py);
-              in
-              lib.pipe firefoxProfilePathsRel [
-                (builtins.map (profilePath: lib.strings.escapeShellArgs [
-                  (lib.getExe script)
-                  "${config.home.homeDirectory}/${profilePath}"
-                ]))
-              ];
+            ExecStart = lib.strings.escapeShellArgs [
+              (lib.getExe pkgs.kdn.ff-ctl)
+              "containers-config-render"
+            ];
           };
         };
       }

@@ -1,4 +1,3 @@
 !/.gitignore.tpl
 !/gpg-pubkeys.txt
 !/yubico/u2f_keys.parts
-!/firefox-containers-d-sync.py

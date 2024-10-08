@@ -9,6 +9,7 @@ rec {
   gtimelog = pkgs.callPackage ./gtimelog { };
   kdn-keepass = pkgs.callPackage ./kdn-keepass { };
   kdn-nix = pkgs.callPackage ./kdn-nix { };
+  ff-ctl = pkgs.callPackage ./ff-ctl { };
   klg = pkgs.callPackage ./klg { };
   klog-time-tracker = pkgs.callPackage ./klog-time-tracker { };
   pass-secret-service = pkgs.callPackage ./pass-secret-service { };
