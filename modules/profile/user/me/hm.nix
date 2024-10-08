@@ -329,7 +329,13 @@ in
     })
     (lib.mkIf (hasWorkstation && hasGUI) {
       home.packages = with pkgs; [
-
+        kdn.klog-time-tracker
+        kdn.klg
+      ];
+      xdg.configFile."klg/config.toml".source = config.lib.file.mkOutOfStoreSymlink "${nc.abs}/time-logs/klg/config.toml";
+    })
+    (lib.mkIf (hasWorkstation && hasGUI) {
+      home.packages = with pkgs; [
         keepassxc
         kdn.kdn-keepass
         (pkgs.writeShellApplication {
@@ -353,8 +359,6 @@ in
         imagemagick
 
         logseq
-        kdn.klog-time-tracker
-        kdn.klg
         kdn.ss-util
         drawio
         plantuml
