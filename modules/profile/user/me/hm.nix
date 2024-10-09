@@ -197,6 +197,9 @@ in
             ];
           };
         };
+        home.packages = with pkgs; [
+          kdn.ff-ctl
+        ];
       }
     )
     (lib.mkIf (hasGUI && config.kdn.hardware.disks.enable) {
