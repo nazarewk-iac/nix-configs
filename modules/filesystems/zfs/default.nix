@@ -36,7 +36,7 @@ in
     };
     containers.fsname = lib.mkOption {
       type = lib.types.str;
-      default = "${config.networking.hostName}-main/containers/storage";
+      default = "${config.networking.hostName}-main/${config.networking.hostName}/containers/storage";
     };
   };
 

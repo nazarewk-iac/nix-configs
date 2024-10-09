@@ -28,5 +28,10 @@ in
     environment.persistence."usr/data".directories = [
       "/var/lib/containers/storage"
     ];
+    home-manager.sharedModules = [{
+      kdn = {
+        virtualisation.containers.enable = true;
+      };
+    }];
   };
 }
