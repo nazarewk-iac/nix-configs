@@ -72,31 +72,48 @@ in
       }
       (
         # clean up "disposable" mountpoint every boot
-        let dCfg = config.environment.persistence."disposable"; in {
-          systemd.services."kdn-disks-disposable-content" = {
-            description = ''Logs content of `environment.persistence."disposable"` before cleaning it'';
-            before = [ "systemd-tmpfiles-setup.service" ];
-            wantedBy = [ "systemd-tmpfiles-setup.service" ];
+        let
+          dCfg = config.environment.persistence."disposable";
+          scriptDeps = with pkgs; [ coreutils tree ];
+        in
+        {
+          boot.initrd.systemd.initrdBin = scriptDeps;
+          boot.initrd.systemd.services."kdn-disks-disposable-content" = {
+            description = ''Logs and cleans up content of `environment.persistence."disposable"`'';
+            after = [ "sysroot-nix-persist-disposable.mount" ];
+            wantedBy = [ "sysroot-nix-persist-disposable.mount" ];
+            onFailure = [ "rescue.target" ];
 
             serviceConfig = {
               Type = "oneshot";
               RemainAfterExit = true;
             };
-            # systemd-tmpfiles runs without some default dependencies like `basic.target`
             unitConfig.DefaultDependencies = false;
             script = let in ''
-              export PATH="${lib.makeBinPath (with pkgs; [coreutils tree jq])}:$PATH"
-              tree -fxJ -ugsD --timefmt "%Y-%m-%dT%H:%M:%S%z" ${dCfg.persistentStoragePath} | tee >(jq -cM >/tmp/kdn-disks-disposable-content.json)
+              export PATH="${lib.makeBinPath scriptDeps}:$PATH"
+              prefix=/sysroot
+
+              mnt="$prefix${dCfg.persistentStoragePath}"
+
+              if ! test -e "$mnt" ; then
+                echo "$mnt doesn't exist, skipping..."
+                exit
+              fi
+
+              tree -fxJ -ugsD --timefmt "%Y-%m-%dT%H:%M:%S%z" "$mnt"
+              rm --recursive --force --verbose "$mnt"/{.*,*} || :
             '';
           };
-          systemd.tmpfiles.rules = [
-            "D! ${config.environment.persistence."disposable".persistentStoragePath} 0755 root - -"
-          ];
         }
       )
       (lib.mkIf cfg.disposable.homes {
         environment.persistence."disposable".users = builtins.mapAttrs (_: _: { directories = [ "" ]; }) config.home-manager.users;
       })
+      {
+        environment.persistence."disposable".directories = [
+          { directory = "/var/tmp"; mode = "0777"; }
+        ];
+      }
       {
         environment.persistence."sys/data" = {
           directories = [
@@ -175,7 +192,8 @@ in
             ];
           };
         };
-
+      }
+      {
         # required for home.persistence.*.allowOther
         programs.fuse.userAllowOther = true;
       }

@@ -116,7 +116,7 @@ in
         (builtins.map (username: {
           name = "kdn-atuin-login-${username}";
           value = {
-            wantedBy = [ "default.target" ];
+            wantedBy = [ "network-online.target" ];
             after = [ "network-online.target" ];
             requires = [ "network-online.target" ];
 
