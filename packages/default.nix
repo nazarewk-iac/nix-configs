@@ -2,14 +2,15 @@
 rec {
   # changed to manual list due to infinite recursion errors
   data-converters = pkgs.callPackage ./data-converters { };
+  dot-find-cycles = pkgs.callPackage ./dot-find-cycles { };
   ente-photos-desktop = pkgs.callPackage ./ente-photos-desktop { };
+  ff-ctl = pkgs.callPackage ./ff-ctl { };
   fortitoken-decrypt = pkgs.callPackage ./fortitoken-decrypt { };
   git-credential-keyring = pkgs.callPackage ./git-credential-keyring { };
   git-utils = pkgs.callPackage ./git-utils { };
   gtimelog = pkgs.callPackage ./gtimelog { };
   kdn-keepass = pkgs.callPackage ./kdn-keepass { };
   kdn-nix = pkgs.callPackage ./kdn-nix { };
-  ff-ctl = pkgs.callPackage ./ff-ctl { };
   klg = pkgs.callPackage ./klg { };
   klog-time-tracker = pkgs.callPackage ./klog-time-tracker { };
   pass-secret-service = pkgs.callPackage ./pass-secret-service { };

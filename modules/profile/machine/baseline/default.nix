@@ -85,6 +85,27 @@ in
         dracut # for lsinitrd
         jq
         sshfs
+        kdn.dot-find-cycles
+        (pkgs.writeShellApplication {
+          name = "kdn-systemd-find-cycles";
+          runtimeInputs = with pkgs; [ kdn.dot-find-cycles systemd ];
+          text = ''
+            # see https://github.com/systemd/systemd/issues/3829#issuecomment-327773498
+            systemd_args=()
+            dot_args=()
+            reading_dot=1
+            for arg in "$@"; do
+              if test "$arg" == "--" ; then
+                test "$reading_dot" == 0 && reading_dot=1 || reading_dot=0
+              elif test "$reading_dot" == 1 ; then
+                dot_args+=("$arg")
+              else
+                systemd_args+=("$arg")
+              fi
+            done
+            systemd-analyze dot --no-pager --order "''${systemd_args[@]}" | dot-find-cycles "''${dot_args[@]}"
+          '';
+        })
       ];
 
       environment.shellAliases =
@@ -268,7 +289,7 @@ in
       });
     }
     {
-      kdn.programs.nextcloud-client-nixos.enable = config.kdn.security.secrets.allowed;
+      kdn.services.nextcloud-client-nixos.enable = config.kdn.security.secrets.allowed;
     }
     {
       kdn.security.secrets.enable = lib.mkDefault true;
