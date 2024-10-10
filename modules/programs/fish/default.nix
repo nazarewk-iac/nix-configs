@@ -13,6 +13,7 @@ in
       useBabelfish = false;
     };
     home-manager.sharedModules = [{
+      xdg.configFile."fish/config.fish".force = true;
       home.packages = with pkgs; [
         grc
         fzf
