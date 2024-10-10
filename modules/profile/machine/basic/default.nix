@@ -41,7 +41,16 @@ in
               #"systemd.confirm_spawn=true"  # this seems to ask and times out before executing anything during boot
               "systemd.debug-shell=1"
               "systemd.log_level=debug"
-              "systemd.unit=multi-user.target"
+            ];
+          }
+          {
+            system.nixos.tags = [ "rescue" ];
+            systemd.defaultUnit = lib.mkForce "rescue.target";
+            boot.kernelParams = [
+              # see https://www.thegeekdiary.com/how-to-debug-systemd-boot-process-in-centos-rhel-7-and-8-2/
+              #"systemd.confirm_spawn=true"  # this seems to ask and times out before executing anything during boot
+              "systemd.debug-shell=1"
+              "systemd.log_level=debug"
             ];
           }
         ];

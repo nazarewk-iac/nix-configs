@@ -64,7 +64,7 @@ in
         luksVol = cfg.luks.volumes."${name}";
       in
       {
-        kdn.hardware.disks.initrd.failureTarget = "emergency.target";
+        kdn.hardware.disks.initrd.failureTarget = "rescue.target";
         kdn.hardware.disks.enable = true;
         kdn.hardware.disks.devices."boot".path = "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_04R5Q5DX7R12U7QB-0:0";
         kdn.hardware.disks.luks.volumes."${name}" = {
