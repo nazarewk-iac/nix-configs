@@ -85,10 +85,10 @@ in
         dracut # for lsinitrd
         jq
         sshfs
-        kdn.dot-find-cycles
+        kdn.systemd-find-cycles
         (pkgs.writeShellApplication {
           name = "kdn-systemd-find-cycles";
-          runtimeInputs = with pkgs; [ kdn.dot-find-cycles systemd ];
+          runtimeInputs = with pkgs; [ kdn.systemd-find-cycles systemd ];
           text = ''
             # see https://github.com/systemd/systemd/issues/3829#issuecomment-327773498
             systemd_args=()
@@ -103,7 +103,7 @@ in
                 systemd_args+=("$arg")
               fi
             done
-            systemd-analyze dot --no-pager --order "''${systemd_args[@]}" | dot-find-cycles "''${dot_args[@]}"
+            systemd-analyze dot --no-pager --order "''${systemd_args[@]}" | systemd-find-cycles "''${dot_args[@]}"
           '';
         })
       ];

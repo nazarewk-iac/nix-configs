@@ -2,7 +2,7 @@
 rec {
   # changed to manual list due to infinite recursion errors
   data-converters = pkgs.callPackage ./data-converters { };
-  dot-find-cycles = pkgs.callPackage ./dot-find-cycles { };
+  systemd-find-cycles = pkgs.callPackage ./systemd-find-cycles { };
   ente-photos-desktop = pkgs.callPackage ./ente-photos-desktop { };
   ff-ctl = pkgs.callPackage ./ff-ctl { };
   fortitoken-decrypt = pkgs.callPackage ./fortitoken-decrypt { };
