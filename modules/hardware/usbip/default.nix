@@ -3,7 +3,7 @@ let
   # https://wiki.archlinux.org/title/USB/IP
   cfg = config.kdn.hardware.usbip;
 
-  target = "multi-user";
+  target = "network-online";
 in
 {
   options = {
@@ -40,9 +40,8 @@ in
 
       systemd.services.usbipd = {
         description = "USB/IP daemon";
-        wants = [ "network-online.target" ];
-        after = [ "network-online.target" ];
-        wantedBy = [ "${target}.target" ];
+        after = [ "network.target" ];
+        wantedBy = [ "network.target" ];
 
         serviceConfig = {
           ExecStart = "${cfg.package}/bin/usbipd --tcp-port=${toString cfg.bindPort}";
@@ -51,9 +50,8 @@ in
 
       systemd.services."usbip-bind@" = {
         description = "USB/IP daemon";
-        wants = [ "usbipd.service" "network-online.target" ];
-        after = [ "usbipd.service" "network-online.target" ];
-        wantedBy = [ "${target}.target" ];
+        after = [ "usbipd.service" "network.target" ];
+        wantedBy = [ "network.target" ];
 
         serviceConfig = {
           Type = "oneshot";
