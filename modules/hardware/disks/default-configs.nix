@@ -98,11 +98,6 @@ in
         environment.persistence."disposable".users = builtins.mapAttrs (_: _: { directories = [ "" ]; }) config.home-manager.users;
       })
       {
-        environment.persistence."disposable".directories = [
-          { directory = "/var/tmp"; mode = "0777"; }
-        ];
-      }
-      {
         environment.persistence."sys/data" = {
           directories = [
             "/var/lib/systemd"
@@ -180,8 +175,7 @@ in
             ];
           };
         };
-      }
-      {
+
         # required for home.persistence.*.allowOther
         programs.fuse.userAllowOther = true;
       }
