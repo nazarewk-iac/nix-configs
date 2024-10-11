@@ -31,6 +31,7 @@ in
       boot.extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
 
       kdn.services.printing.enable = true;
+      kdn.programs.firefox.enable = true;
       environment.systemPackages = with pkgs; [
         libreoffice-qt # non-qt failed to build on 2023-04-07
         # chromium

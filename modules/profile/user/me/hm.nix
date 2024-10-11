@@ -129,7 +129,7 @@ in
         ".config/kdeconnect"
       ];
     })
-    (lib.mkIf hasGUI {
+    (lib.mkIf config.kdn.programs.firefox.enable {
       # Firefox
       # TODO: manage settings?
       /* TODO: integrate with link opener?
@@ -144,65 +144,7 @@ in
         };
       };
     })
-    (
-      # TODO: extract it to separate module
-      let
-        ffCfg = config.programs.firefox;
-        inherit (pkgs.stdenv.hostPlatform) isDarwin;
-        profilesPath =
-          if isDarwin then "${ffCfg.configPath}/Profiles" else ffCfg.configPath;
-
-        containerProfilesList = lib.pipe config.programs.firefox.profiles [
-          builtins.attrValues
-          (builtins.filter (p: p.containers != { }))
-        ];
-
-        firefoxProfilePathsRel = lib.pipe containerProfilesList [
-          (builtins.map (profile: "${profilesPath}/${profile.path}"))
-        ];
-      in
-      lib.mkIf (firefoxProfilePathsRel != { }) {
-        home.file = lib.pipe firefoxProfilePathsRel [
-          (builtins.map (path: {
-            name = "${path}/containers.json";
-            value.target = "${path}/containers.json.d/50-hm-containers.json";
-          }))
-          builtins.listToAttrs
-        ];
-
-        systemd.user.paths.firefox-containers-d-sync = {
-          Install.WantedBy = [ "default.target" ];
-          Unit = {
-            Description = "merges pieces into Firefox's containers.json file";
-          };
-          Path = {
-            PathChanged = lib.pipe firefoxProfilePathsRel [
-              (builtins.map (path: "${config.home.homeDirectory}/${path}/containers.json.d"))
-            ];
-            TriggerLimitBurst = "1";
-            TriggerLimitIntervalSec = "1s";
-          };
-        };
-        systemd.user.services.firefox-containers-d-sync = {
-          Install.WantedBy = [ "default.target" ];
-          Unit = {
-            Description = "merges pieces into Firefox's containers.json file";
-          };
-          Service = {
-            Type = "oneshot";
-            RemainAfterExit = true;
-            ExecStart = lib.strings.escapeShellArgs [
-              (lib.getExe pkgs.kdn.ff-ctl)
-              "containers-config-render"
-            ];
-          };
-        };
-        home.packages = with pkgs; [
-          kdn.ff-ctl
-        ];
-      }
-    )
-    (lib.mkIf (hasGUI && config.kdn.hardware.disks.enable) {
+    (lib.mkIf (config.kdn.programs.firefox.enable && config.kdn.hardware.disks.enable) {
       programs.firefox.profiles.kdn.containers = {
         personal = {
           id = 1;
@@ -429,66 +371,13 @@ in
       ];
     })
     (lib.mkIf (hasWorkstation && hasGUI) {
-      home.packages = with pkgs; [
-        ungoogled-chromium
-      ];
-      home.persistence."usr/config".directories = [
-        ".config/chromium"
-      ];
-    })
-    (lib.mkIf (hasWorkstation && hasGUI) {
-      home.packages = with pkgs; [
-        spotifywm
-      ];
-      home.persistence."usr/cache".directories = [
-        ".cache/spotify"
-      ];
-      home.persistence."usr/config".directories = [
-        ".config/spotify"
-      ];
-    })
-    (lib.mkIf (hasWorkstation && hasGUI) {
-      home.packages = with pkgs; [
-        signal-desktop
-      ];
-      home.persistence."usr/config".directories = [
-        ".config/Signal"
-      ];
-    })
-    (lib.mkIf (hasWorkstation && hasGUI) {
-      home.packages = with pkgs; [
-        element-desktop
-      ];
-      home.persistence."usr/config".directories = [
-        ".config/Element"
-      ];
-    })
-    (lib.mkIf (hasWorkstation && hasGUI) {
-      home.packages = with pkgs; [
-        slack
-      ];
-      home.persistence."usr/config".directories = [
-        ".config/Slack"
-      ];
-    })
-    (lib.mkIf (hasWorkstation && hasGUI) {
-      home.packages = with pkgs; [
-        rambox # browser/multi workspace
-      ];
-      home.persistence."usr/config".directories = [
-        ".config/rambox"
-      ];
-    })
-    (lib.mkIf (hasWorkstation && hasGUI) {
-      home.packages = with pkgs; [
-        kdn.ente-photos-desktop
-      ];
-      home.persistence."usr/cache".directories = [
-        ".cache/ente"
-      ];
-      home.persistence."usr/config".directories = [
-        ".config/ente"
-      ];
+      kdn.programs.chromium.enable = true;
+      kdn.programs.element.enable = true;
+      kdn.programs.ente-photos.enable = true;
+      kdn.programs.rambox.enable = true;
+      kdn.programs.signal.enable = true;
+      kdn.programs.slack.enable = true;
+      kdn.programs.spotify.enable = true;
     })
     ({
       programs.helix.enable = true;
