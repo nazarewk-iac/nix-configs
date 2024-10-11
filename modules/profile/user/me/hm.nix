@@ -273,6 +273,9 @@ in
       home.persistence."usr/config".directories = [
         ".config/keepassxc"
       ];
+      home.persistence."usr/cache".directories = [
+        ".cache/keepassxc" # holds the browser integration config
+      ];
     })
     (lib.mkIf hasSway (import ./mimeapps.nix arguments).config)
     (lib.mkIf hasSway {
