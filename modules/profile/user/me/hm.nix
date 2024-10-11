@@ -189,21 +189,6 @@ in
       };
     })
     (lib.mkIf hasGUI {
-      home.persistence."usr/reproducible".directories = [
-        "Nextcloud"
-      ];
-
-      services.nextcloud-client.enable = true;
-      /* TODO: try an automated login on activation using `sops-nix` credentials?
-          - make sure at least password-store & Keepass are downloaded (and not much more)
-      */
-      services.nextcloud-client.startInBackground = true;
-      systemd.user.services.nextcloud-client.Service = {
-        Restart = "on-failure";
-        RestartSec = 3;
-      };
-    })
-    (lib.mkIf hasGUI {
       # see https://github.com/nix-community/home-manager/issues/2104#issuecomment-861676751
       home.file."${nc.rel}/images/screenshots/.keep".source = builtins.toFile "keep" "";
       services.flameshot.settings.General.savePath = "${nc.abs}/images/screenshots";
@@ -371,6 +356,7 @@ in
       ];
     })
     (lib.mkIf (hasWorkstation && hasGUI) {
+      kdn.programs.nextcloud-client.enable = true;
       kdn.programs.chromium.enable = true;
       kdn.programs.element.enable = true;
       kdn.programs.ente-photos.enable = true;
