@@ -8,26 +8,8 @@ in
       type = lib.types.bool;
       default = builtins.any (fs: fs.fsType == "zfs") (builtins.attrValues config.fileSystems);
     };
-    rt.enable = lib.mkOption {
-      type = lib.types.bool;
-      default = false;
-    };
-
-    rt.defaultPackages = lib.mkOption {
-      default = pkgs.linuxPackages_rt_6_1;
-    };
     kernelPackages = lib.mkOption {
-      default =
-        if !cfg.rt.enable
-        then
-          pkgs.zfs.latestCompatibleLinuxPackages
-        else
-          lib.trivial.pipe pkgs.zfs.latestCompatibleLinuxPackages.kernel.version [
-            builtins.splitVersion
-            (lib.lists.sublist 0 2)
-            (lib.strings.concatStringsSep "_")
-            (version: pkgs."linuxPackages_rt_${version}" or cfg.rt.defaultPackages)
-          ];
+      default = pkgs.linuxKernel.packages.linux_6_10;
     };
 
     containers.enable = lib.mkOption {

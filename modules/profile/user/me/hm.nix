@@ -184,7 +184,7 @@ in
         Facebook = {
           id = 8;
           icon = "fence";
-          color = "toolbar";
+          color = "yellow";
         };
       };
     })

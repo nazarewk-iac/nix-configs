@@ -77,6 +77,11 @@ in
           scriptDeps = with pkgs; [ coreutils tree ];
         in
         {
+          /* TODO: subdirs of disposable fail, for example:
+              - impermanence-mkdir-home-kdn.service
+              - impermanence-mkdir-var-tmp.service
+             it is due to them coming from a different persistentStorage
+           */
           boot.initrd.systemd.initrdBin = scriptDeps;
           boot.initrd.systemd.services."kdn-disks-disposable-content" = {
             description = ''Logs and cleans up content of `environment.persistence."disposable"`'';
