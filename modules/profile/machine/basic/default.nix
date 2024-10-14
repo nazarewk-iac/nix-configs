@@ -19,8 +19,7 @@ in
       # HARDWARE
       hardware.usb-modeswitch.enable = true;
       environment.systemPackages = with pkgs; [ usb-modeswitch ];
-      hardware.bluetooth.enable = true;
-      services.blueman.enable = true;
+      kdn.hardware.bluetooth.enable = true;
 
       documentation.man.man-db.enable = lib.mkDefault true;
       documentation.man.generateCaches = lib.mkDefault true;

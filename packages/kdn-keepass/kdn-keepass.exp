@@ -8,11 +8,11 @@ lassign $argv dbpath passpath
 spawn keepassxc --pw-stdin "$dbpath"
 set keepassxc_spawn_id $spawn_id
 set keepassxc_pid [exp_pid]
-log keepassxc "started as PID=$keepassxc_pid SPAWN_ID=$spawn_id"
+log kdn-keepassxc "started as PID=$keepassxc_pid SPAWN_ID=$spawn_id"
 
 if {[info exists ::env(NOTIFY_SOCKET)]} {
   system systemd-notify --pid="$keepassxc_pid"
-  log systemd "MAINPID set to $keepassxc_pid"
+  log kdn-keepassxc:systemd "MAINPID set to $keepassxc_pid"
 }
 
 set password [exec pass "$passpath"]
@@ -21,11 +21,11 @@ expect {
   "Database password: " {
     send "$password\n"
     send_user "\n"
-    log keepassxc "password submitted"
+    log kdn-keepassxc "password submitted"
   }
   timeout { exit 1 }
 }
-log keepassxc "wait to be ready"
+log kdn-keepassxc "wait to be ready"
 if {[info exists ::env(SWAYSOCK)]} {
   spawn bash -c { swaymsg -t subscribe -m '["window"]' | gron --stream --monochrome }
   expect -i $spawn_id {*app_id = "org.keepassxc.KeePassXC";} { close -i $spawn_id }
@@ -33,8 +33,7 @@ if {[info exists ::env(SWAYSOCK)]} {
 }
 if {[info exists ::env(NOTIFY_SOCKET)]} {
   system systemd-notify --ready
-  log systemd "ready signal sent"
-} else {
-  interact -i $keepassxc_spawn_id
+  log kdn-keepassxc:systemd "ready signal sent"
 }
 
+interact -i $keepassxc_spawn_id

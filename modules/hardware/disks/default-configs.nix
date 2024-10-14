@@ -6,6 +6,9 @@ in
 {
   config = lib.mkMerge [
     {
+      impermanence.userDefaultPerms.mode = "0700";
+      impermanence.defaultPerms.mode = "0750";
+
       kdn.hardware.disks.impermanence."sys/cache".snapshots = false;
       kdn.hardware.disks.impermanence."sys/config".snapshots = true;
       kdn.hardware.disks.impermanence."sys/data".snapshots = true;
@@ -135,7 +138,6 @@ in
         environment.persistence."sys/config" = {
           directories = [
             "/var/db/sudo/lectured"
-            "/var/lib/bluetooth"
             "/var/lib/nixos"
             "/var/lib/systemd/pstore"
             "/var/spool"

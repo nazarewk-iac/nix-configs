@@ -23,8 +23,7 @@ in
       services.libinput.touchpad.tapping = true;
       services.xserver.synaptics.twoFingerScroll = true;
 
-      kdn.hardware.pipewire.enable = true;
-      kdn.hardware.pipewire.useWireplumber = true;
+      kdn.hardware.audio.enable = true;
 
       kdn.headless.enableGUI = true;
 

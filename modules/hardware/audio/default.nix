@@ -1,16 +1,11 @@
 { lib, pkgs, config, ... }:
 let
-  cfg = config.kdn.hardware.pipewire;
+  cfg = config.kdn.hardware.audio;
 in
 {
   options = {
-    kdn.hardware.pipewire = {
-      enable = lib.mkEnableOption "Pipewire setup";
-
-      useWireplumber = lib.mkOption {
-        type = lib.types.bool;
-        default = true;
-      };
+    kdn.hardware.audio = {
+      enable = lib.mkEnableOption "audio setup with Pipewire";
     };
   };
 
@@ -26,18 +21,33 @@ in
       services.pipewire.alsa.support32Bit = true;
       services.pipewire.jack.enable = true;
       services.pipewire.pulse.enable = true;
-      services.pipewire.wireplumber.enable = cfg.useWireplumber;
+      services.pipewire.wireplumber.enable = true;
 
       hardware.pulseaudio.extraModules = [
         pkgs.pulseaudio-modules-bt
       ];
 
       hardware.bluetooth.package = pkgs.bluez5-experimental;
+      environment.systemPackages = with pkgs; [
+        pulseaudio # pactl
+        libopenaptx
+        libfreeaptx
+        pulseaudio
+      ];
+      home-manager.sharedModules = [{
+        home.persistence."usr/config".directories = [
+          ".config/pulse"
+          ".config/pipewire"
+          ".local/state/wireplumber"
+        ];
+        home.persistence."usr/config".files = [
+          ".config/pavucontrol.ini"
+        ];
+      }];
     }
     (lib.mkIf config.kdn.headless.enableGUI {
       environment.systemPackages = with pkgs; [
         pavucontrol
-        pulseaudio # pactl
         helvum # A GTK patchbay for pipewire
       ];
       home-manager.sharedModules = [{

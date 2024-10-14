@@ -24,17 +24,6 @@ in
       /* TODO: create a systemd `.path` to integrate into impermanence when the file first appears?
           see https://github.com/nix-community/impermanence/issues/197#issuecomment-2266171206
       */
-      environment.persistence = lib.pipe cfg.impermanence [
-        (lib.attrsets.mapAttrs' (name: imp: {
-          inherit name;
-          value = {
-            persistentStoragePath = imp.mountpoint;
-            enable = cfg.enable;
-            hideMounts = true;
-            users.root.home = "/root";
-          };
-        }))
-      ];
       home-manager.sharedModules = [
         (hm: {
           home.persistence = lib.pipe cfg.impermanence [
@@ -67,10 +56,11 @@ in
               u = builtins.toString (user.uid or user.name);
               g = builtins.toString (user.gid or user.group);
               hmConfig = config.home-manager.users."${user.name}";
+              mode = config.impermanence.userDefaultPerms.mode;
             in
             lib.pipe config.environment.persistence [
               builtins.attrValues
-              (builtins.map (persistence: "d ${persistence.persistentStoragePath}${h} 0750 ${u} ${g} - -"))
+              (builtins.map (persistence: "d ${persistence.persistentStoragePath}${h} ${mode} ${u} ${g} - -"))
             ]
           ))
           builtins.concatLists
@@ -81,6 +71,9 @@ in
       /* `root` user hardcodes */
       environment.persistence = lib.pipe cfg.impermanence [
         (builtins.mapAttrs (name: imp: {
+          persistentStoragePath = imp.mountpoint;
+          enable = cfg.enable;
+          hideMounts = true;
           users.root.home = "/root";
         }))
       ];
@@ -102,7 +95,7 @@ in
                 defaultPerms = {
                   user = username;
                   group = if username == "root" then "root" else "users";
-                  mode = lib.mkForce "0700";
+                  mode = lib.mkForce config.impermanence.userDefaultPerms.mode;
                 };
                 dirConfig = defaultPerms // { inherit defaultPerms; };
               in

@@ -1,11 +1,8 @@
 {
   inputs.nixpkgs.follows = "nixpkgs-kdn";
-  inputs.nixpkgs-lib.follows = "nixpkgs-lib-kdn";
+  inputs.nixpkgs-lib.follows = "nixpkgs-kdn";
 
-  inputs.nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
-  inputs.nixpkgs-lib-unstable.url = "github:NixOS/nixpkgs/nixos-unstable?dir=lib";
   inputs.nixpkgs-kdn.url = "github:nazarewk/nixpkgs/nixos-unstable";
-  inputs.nixpkgs-lib-kdn.url = "github:nazarewk/nixpkgs/nixos-unstable?dir=lib";
 
   /*
    * pinned inputs to keep up to date manually

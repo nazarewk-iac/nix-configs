@@ -128,8 +128,8 @@ in
           ];
         };
       };
-      environment.persistence."usr/config".directories = [
-        { directory = "/root/wireguard-keys"; mode = "0700"; }
+      environment.persistence."usr/config".users.root.directories = [
+        { directory = "wireguard-keys"; mode = "0700"; }
       ];
     })
     (lib.mkIf isServer {

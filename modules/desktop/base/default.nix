@@ -64,11 +64,6 @@ in
         xorg.xhost
         xorg.xlsclients
 
-        # audio
-        libopenaptx
-        libfreeaptx
-        pulseaudio
-
         # graphics
         libva-utils
 
