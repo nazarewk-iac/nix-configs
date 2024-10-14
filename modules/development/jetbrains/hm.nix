@@ -118,6 +118,10 @@ in
       home.persistence."usr/config".directories = [
         ".config/JetBrains"
       ];
+      home.persistence."usr/state".files = [
+        # writes `JetBrains.UserIdOnMachine` property to the file
+        ".java/.userPrefs/prefs.xml"
+      ];
     }
   ]);
 }
