@@ -20,10 +20,6 @@ in
 {
   options.kdn.programs.firefox = {
     enable = lib.mkEnableOption "firefox setup";
-    overlays = lib.mkOption {
-      type = with lib.types; listOf (functionTo (attrsOf anything));
-      default = [ ];
-    };
     nativeMessagingHosts = lib.mkOption {
       type = with lib.types; listOf package;
       default = [ ];
@@ -39,6 +35,7 @@ in
         kdn.ff-ctl
       ];
       programs.firefox.enable = true;
+      programs.firefox.package = appCfg.package.final;
       kdn.programs.apps.firefox = {
         package.install = false;
         dirs.cache = [ ];
@@ -47,14 +44,14 @@ in
         dirs.disposable = [ ];
         dirs.reproducible = [ ];
         dirs.state = [ ];
+        package.overlays = [
+          (old: { nativeMessagingHosts = old.nativeMessagingHosts or [ ] ++ cfg.nativeMessagingHosts; })
+        ];
       };
+      home.file.".mozilla/native-messaging-hosts".force = true;
     }
     {
       kdn.programs.firefox.nativeMessagingHosts = with pkgs; [ libsForQt5.plasma-browser-integration ];
-      kdn.programs.firefox.overlays = [
-        (old: { nativeMessagingHosts = old.nativeMessagingHosts or [ ] ++ cfg.nativeMessagingHosts; })
-      ];
-      programs.firefox.package = appCfg.package.final;
     }
     (lib.mkIf (firefoxProfilePathsRel != { }) {
       home.file = lib.pipe firefoxProfilePathsRel [
