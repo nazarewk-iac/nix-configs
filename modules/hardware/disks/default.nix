@@ -196,36 +196,38 @@ in
       }));
     };
     impermanence = lib.mkOption {
-      type = lib.types.attrsOf (lib.types.submodule ({ name, ... }@imp: {
-        options.neededForBoot = lib.mkOption {
-          type = with lib.types; listOf path;
-          default = [ ];
-          apply = ls: [ "${imp.config.mountpoint}" ] ++ ls;
-        };
-        options.mountpoint = lib.mkOption {
-          type = with lib.types; path;
-          default = "${imp.config.mountPrefix}/${imp.name}";
-        };
-        options.mountPrefix = lib.mkOption {
-          type = with lib.types; path;
-          default = "/nix/persist";
-        };
-        options.zfsPrefix = lib.mkOption {
-          type = with lib.types; str;
-          default = "${hostname}/impermanence";
-        };
-        options.zfsPath = lib.mkOption {
-          type = with lib.types; str;
-          default = "${imp.config.zfsPrefix}/${imp.name}";
-        };
-        options.zpool.name = lib.mkOption {
-          type = with lib.types; nullOr str;
-          default = cfg.zpool-main.name;
-        };
-        options.snapshots = lib.mkOption {
-          type = with lib.types; bool;
-        };
-      }));
+      type = lib.types.attrsOf (lib.types.submodule ({ name, ... }@impArgs:
+        let kdnImpCfg = impArgs.config; in
+        {
+          options.neededForBoot = lib.mkOption {
+            type = with lib.types; listOf path;
+            default = [ ];
+            apply = ls: [ "${kdnImpCfg.mountpoint}" ] ++ ls;
+          };
+          options.mountpoint = lib.mkOption {
+            type = with lib.types; path;
+            default = "${kdnImpCfg.mountPrefix}/${impArgs.name}";
+          };
+          options.mountPrefix = lib.mkOption {
+            type = with lib.types; path;
+            default = "/nix/persist";
+          };
+          options.zfsPrefix = lib.mkOption {
+            type = with lib.types; str;
+            default = "${hostname}/impermanence";
+          };
+          options.zfsPath = lib.mkOption {
+            type = with lib.types; str;
+            default = "${kdnImpCfg.zfsPrefix}/${impArgs.name}";
+          };
+          options.zpool.name = lib.mkOption {
+            type = with lib.types; nullOr str;
+            default = cfg.zpool-main.name;
+          };
+          options.snapshots = lib.mkOption {
+            type = with lib.types; bool;
+          };
+        }));
     };
   };
 
@@ -243,7 +245,7 @@ in
       kdn.filesystems.zfs.enable = true;
       kdn.security.disk-encryption.enable = true;
       boot.zfs.requestEncryptionCredentials = false;
-      impermanence.activationScriptsEnable = false;
+      impermanence.defaultEnableActivationScript = false;
     })
   ];
 }

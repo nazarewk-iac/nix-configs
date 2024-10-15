@@ -2,12 +2,20 @@
 let
   cfg = config.kdn.hardware.disks;
   hostname = config.networking.hostName;
+
+  sysCfg = lib.attrsets.recursiveUpdate { imp.enableActivationScript = true; };
 in
 {
   config = lib.mkMerge [
     {
       impermanence.userDefaultPerms.mode = "0700";
       impermanence.defaultPerms.mode = "0750";
+
+      environment.persistence = lib.pipe cfg.impermanence [
+        (builtins.mapAttrs (name: _: {
+          enableActivationScript = lib.mkDefault (lib.strings.hasPrefix "sys/" name);
+        }))
+      ];
 
       kdn.hardware.disks.impermanence."sys/cache".snapshots = false;
       kdn.hardware.disks.impermanence."sys/config".snapshots = true;
@@ -161,6 +169,9 @@ in
         }];
       }
       {
+        kdn.hardware.disks.impermanence."sys/state".neededForBoot = [
+          "/var/log/journal"
+        ];
         environment.persistence."sys/state" = {
           directories = [
             "/var/lib/systemd/coredump"
