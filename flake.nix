@@ -154,19 +154,20 @@
       flake.nixosModules.default = ./modules;
       flake.nixosConfigurations = lib.mkMerge [
         {
-          oams = flakeLib.nixos.system {
+          oams = let hostName = "oams"; in flakeLib.nixos.system {
             system = "x86_64-linux";
-            modules = [{ kdn.profile.host.oams.enable = true; }
+            modules = [{ kdn.profile.host."${hostName}".enable = true; }
               {
                 system.stateVersion = "23.11";
                 home-manager.sharedModules = [{ home.stateVersion = "23.11"; }];
                 networking.hostId = "ce0f2f33"; # cut -c-8 </proc/sys/kernel/random/uuid
-                networking.hostName = "oams";
+                networking.hostName = hostName;
 
                 _module.args.nixinate = {
-                  #host = "oams.lan.";
-                  #host = "oams.netbird.cloud.";
-                  host = "oams";
+                  #host = "${hostName}.lan.";
+                  #host = "${hostName}.netbird.cloud.";
+                  #host = hostName;
+                  host = "${hostName}.lan.etra.net.int.kdn.im";
                   sshUser = "kdn";
                   buildOn = "local"; # valid args are "local" or "remote"
                   substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"

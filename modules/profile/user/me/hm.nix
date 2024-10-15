@@ -226,56 +226,10 @@ in
         };
     })
     (lib.mkIf hasGUI {
-      /* TODO: configure programatically (View > Settings):
-            - SSH Agent
-              - Enable ... integration
-            - Secret Service Integration
-              - Enable ... integration
-              - untick all except `Prompt to unlock database before searching`
-            - General
-              - Startup
-                - disable remembering previous databases
-                - disable showing expired entries
-              - Entry Management
-                - `hide window when copying to clipboard` set to `Drop to background`
-              - User Interface
-                - Show a system tray icon
-                  - colorful
-                  - hide to tray when minimized
-            - Security
-              - Convenience
-                - `Lock databases when session is locked or lid is closed`: false
-              - Privacy
-                - use DDG for favicons
-            - Browser Integration
-              - Enable ... integration
-              - enable for Firefox only
-              - search in all opened databases
-        */
-      # TODO: entries list an entry preview were invisible, had to drag-resize from the edge
-      home.sessionVariables = {
-        KEEPASS_PATH = "${nc.abs}/important/keepass";
-      };
-      systemd.user.services.keepassxc = {
-        Unit.Description = "KeePassXC password manager";
-        Service = {
-          Type = "notify";
-          NotifyAccess = "all";
-          Environment = [ "KEEPASS_PATH=${nc.abs}/important/keepass" ];
-          Slice = "background.slice";
-          ExecStart = "${lib.getExe pkgs.kdn.kdn-keepass} drag0nius.kdbx";
-        };
-        Unit = {
-          ConditionPathExists = "${nc.abs}/important/keepass";
-        };
-        Install.WantedBy = [ "graphical-session.target" ];
-      };
-      home.persistence."usr/config".directories = [
-        ".config/keepassxc"
-      ];
-      home.persistence."usr/cache".directories = [
-        ".cache/keepassxc" # holds the browser integration config
-      ];
+      kdn.programs.keepassxc.enable = true;
+      kdn.programs.keepassxc.service.enable = true;
+      kdn.programs.keepassxc.service.searchDirs = [ "${nc.abs}/important/keepass" ];
+      kdn.programs.keepassxc.service.fileName = "drag0nius.kdbx";
     })
     (lib.mkIf hasSway (import ./mimeapps.nix arguments).config)
     (lib.mkIf hasSway {
@@ -323,8 +277,6 @@ in
     })
     (lib.mkIf (hasWorkstation && hasGUI) {
       home.packages = with pkgs; [
-        keepassxc
-        kdn.kdn-keepass
         (pkgs.writeShellApplication {
           name = "kdn-drag0nius.kdbx";
           text = "${lib.getExe pkgs.kdn.kdn-keepass} drag0nius.kdbx";
