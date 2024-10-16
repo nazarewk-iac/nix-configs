@@ -25,6 +25,7 @@ in
       programs.direnv.nix-direnv.enable = true;
       programs.git.ignores = [ (builtins.readFile ./.gitignore) ];
       home.persistence."usr/data".directories = [ ".local/share/direnv" ];
+      home.persistence."usr/config".directories = [ ".config/direnv" ];
     }];
   };
 }
