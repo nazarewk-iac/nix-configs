@@ -78,18 +78,17 @@ in
       systemd.user.services.keepassxc = {
         Unit.Description = "KeePassXC password manager";
         Service = {
+          Slice = "background.slice";
           Type = "notify";
           NotifyAccess = "all";
           Environment = lib.attrsets.mapAttrsToList (key: value: "${key}=${value}") envs;
-          Slice = "background.slice";
           ExecStart = lib.strings.escapeShellArgs [
             (lib.getExe pkgs.kdn.kdn-keepass)
             cfg.service.fileName
           ];
         };
-        Unit = {
-          ConditionPathExists = cfg.service.searchDirs;
-        };
+        Unit.ConditionPathExists = cfg.service.searchDirs;
+        Unit.Wants = [ "ssh-agent.service" ];
         Install.WantedBy = [ "graphical-session.target" ];
       };
     })
