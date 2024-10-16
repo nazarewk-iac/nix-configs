@@ -94,17 +94,22 @@
     in
     (flake-parts.lib.mkFlake { inherit inputs; } {
       systems = import inputs.systems;
-      flake.overlays.default = (inputs.nixpkgs.lib.composeManyExtensions [
+
+      flake.overlays.packages = inputs.nixpkgs.lib.composeManyExtensions [
         inputs.poetry2nix.overlays.default
+        (final: prev: {
+          kdn = (prev.kdn or { }) // (final.callPackages ./packages { });
+        })
+      ];
+
+      flake.overlays.default = (inputs.nixpkgs.lib.composeManyExtensions [
         inputs.ulauncher.overlays.default
         inputs.helix-editor.overlays.default
         inputs.nur.overlay
-        (final: prev: {
-          kdn = (prev.kdn or { }) // (final.callPackages ./packages { });
-          inherit lib;
-        })
+        self.overlays.packages
         (final: prev: {
           nixos-anywhere = inputs.nixos-anywhere.packages."${final.stdenv.system}".default;
+          inherit lib;
         })
       ]);
       perSystem = { config, self', inputs', system, pkgs, ... }:
