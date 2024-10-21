@@ -18,12 +18,9 @@ in
     ];
 
     home.packages = with pkgs; [
+      git
+      jujutsu
       git-utils
-
-      hub
-      gh
-
-      git-remote-codecommit
     ];
   };
 }
