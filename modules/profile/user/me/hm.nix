@@ -130,21 +130,14 @@ in
       ];
     })
     (lib.mkIf config.kdn.programs.firefox.enable {
+      home.packages = with pkgs; [ browsers ];
       # Firefox
       # TODO: manage settings?
-      /* TODO: integrate with link opener?
-          - addon https://github.com/nix-community/nur-combined/blob/959f71d785bcf7f241ebaa0c8c054eac4d6c19dd/repos/rycee/pkgs/firefox-addons/generated-firefox-addons.nix#L5876
-          - launcher https://github.com/honsiorovskyi/open-url-in-container/blob/master/bin/launcher.sh
-      */
-      programs.firefox = {
-        enable = true;
-        profiles.kdn = {
-          id = 0;
-          isDefault = true;
-        };
+      programs.firefox.profiles.kdn = {
+        id = 0;
+        isDefault = true;
       };
-    })
-    (lib.mkIf (config.kdn.programs.firefox.enable && config.kdn.hardware.disks.enable) {
+
       programs.firefox.profiles.kdn.containers = {
         personal = {
           id = 1;
