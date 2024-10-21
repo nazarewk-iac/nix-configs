@@ -23,7 +23,6 @@ in
       # steam-run
       steamcmd
       steam-tui
-      steamPackages.steam-runtime
 
       # non-steam
       lutris
