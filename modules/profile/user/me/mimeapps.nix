@@ -5,7 +5,11 @@ let
   browsers.chooser = [ "software.Browsers.desktop" ]; # https://github.com/Browsers-software/browsers
   browsers.chromium = [ "chromium-browser.desktop" ];
   browsers.firefox = [ "firefox.desktop" ];
-  browsers.preferred = with browsers; chooser ++ uri-to-clipboard ++ firefox ++ chromium;
+  browsers.preferred = with browsers; chooser
+    #++ uri-to-clipboard
+    #++ firefox
+    #++ chromium
+  ;
 
   fileManager = [ "nemo.desktop" ];
   ide = [ "idea-ultimate.desktop" ];
