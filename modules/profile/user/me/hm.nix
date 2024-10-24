@@ -137,6 +137,10 @@ in
         id = 0;
         isDefault = true;
       };
+      programs.firefox.profiles.sc = {
+        id = 1;
+        isDefault = false;
+      };
 
       programs.firefox.profiles.kdn.containers = {
         personal = {
