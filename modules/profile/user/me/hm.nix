@@ -316,7 +316,7 @@ in
       kdn.programs.signal.enable = true;
       kdn.programs.slack.enable = true;
       kdn.programs.spotify.enable = true;
-      kdn.programs.orca-slicer.enable = true;
+      kdn.toolset.print-3d.enable = true;
     })
     ({
       programs.helix.enable = true;
