@@ -54,13 +54,22 @@ in
         (builtins.map lib.getExe)
         (builtins.concatStringsSep "\n")
         (text: pkgs.writeShellApplication {
-          inherit text;
           name = "kdn-sops-age-gen-keys";
           derivationArgs.passthru.scripts = packages;
           runtimeInputs = with pkgs; [
             coreutils
-            ssh-to-age
           ];
+
+          text = ''
+            output="''${1:-"-"}"
+            if test "$output" == "-" ; then
+              output="/dev/stdin"
+            else
+              outdir="''${output%/*}"
+              test "$outdir" == "$output" || mkdir -p "$outdir"
+            fi
+            ( ${text} ) >"$output"
+          '';
         })
       ];
     };
@@ -222,7 +231,6 @@ in
       ];
 
       environment.systemPackages = (with pkgs; [
-        cfg.age.genScripts
         (pkgs.callPackage ./sops/package.nix { })
         age
         ssh-to-age
@@ -246,15 +254,29 @@ in
             ssh-to-age
           ];
           text = ''
-            if test -e /etc/ssh/ssh_host_ed25519_key; then
+            # -r FILE   Returns true if FILE is marked as readable.
+            if test -r /etc/ssh/ssh_host_ed25519_key; then
               ssh-to-age -i /etc/ssh/ssh_host_ed25519_key -private-key
             fi
           '';
         })
       ];
       system.activationScripts.setupSecrets.deps = [
-        "kdnGenerateAgeKeys"
         "etc" # in case secrets get written to /etc
+      ];
+      system.activationScripts.kdnSecretsPostSecretsHook.deps = [ "setupSecrets" ];
+      system.activationScripts.kdnSecretsPostSecretsHook.text = "";
+      system.activationScripts.kdnSecretsPostRenderHook.deps = [ "renderSecrets" "kdnSecretsPostSecretsHook" ];
+      system.activationScripts.kdnSecretsPostRenderHook.text = "";
+      system.activationScripts.kdnSecretsPostHook.deps = [ "kdnSecretsPostSecretsHook" "kdnSecretsPostRenderHook" ];
+      system.activationScripts.kdnSecretsPostHook.text = "";
+    }
+    ({
+      environment.systemPackages = [
+        cfg.age.genScripts
+      ];
+      system.activationScripts.setupSecrets.deps = [
+        "kdnGenerateAgeKeys"
       ];
       system.activationScripts.kdnGenerateAgeKeys.deps = lib.pipe [
         "persist-files"
@@ -267,17 +289,20 @@ in
           escapedKeyFile = lib.escapeShellArg config.sops.age.keyFile;
         in
         ''
-          mkdir -p $(dirname ${escapedKeyFile})
           printf "Rendering %s\n" ${escapedKeyFile}
-          ${lib.getExe cfg.age.genScripts} >${escapedKeyFile}
+          ${lib.getExe cfg.age.genScripts} ${escapedKeyFile}
         '';
-      system.activationScripts.kdnSecretsPostSecretsHook.deps = [ "setupSecrets" ];
-      system.activationScripts.kdnSecretsPostSecretsHook.text = "";
-      system.activationScripts.kdnSecretsPostRenderHook.deps = [ "renderSecrets" "kdnSecretsPostSecretsHook" ];
-      system.activationScripts.kdnSecretsPostRenderHook.text = "";
-      system.activationScripts.kdnSecretsPostHook.deps = [ "kdnSecretsPostSecretsHook" "kdnSecretsPostRenderHook" ];
-      system.activationScripts.kdnSecretsPostHook.text = "";
-    }
+      systemd.user.services.kdn-sops-age-gen-keys = {
+        wantedBy = [ "default.target" ];
+        description = "generates ~/.config/sops/age/keys.txt";
+        serviceConfig.Type = "oneshot";
+        serviceConfig.RemainAfterExit = true;
+        serviceConfig.ExecStart = lib.strings.escapeShellArgs [
+          (lib.getExe cfg.age.genScripts)
+          "%h/.config/sops/age/keys.txt"
+        ];
+      };
+    })
     (lib.mkIf cfg.allow {
       sops.templates."placeholder.txt".content = ""; # fills-in `sops.placeholder`
       sops.secrets = lib.pipe cfg.files [
