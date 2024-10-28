@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -xeEuo pipefail
+trap 'echo "Error when executing $BASH_COMMAND at line $LINENO!" >&2' ERR
 # Mount & boot from NixOS ISO before running this
 # WARNING: this will erase your /dev/sda drive!
 # can be started with: APPLY=1 HOST="<HOST>" bash <(curl -L 'https://raw.githubusercontent.com/nazarewk-iac/nix-configs/main/hetzner.sh')

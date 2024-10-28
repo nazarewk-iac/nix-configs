@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -xeEuo pipefail
+trap 'echo "Error when executing $BASH_COMMAND at line $LINENO!" >&2' ERR
 
 cfg="/etc/nixos/configuration.nix"
 
