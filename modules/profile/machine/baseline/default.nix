@@ -279,6 +279,9 @@ in
       ];
     }
     {
+      kdn.networking.tailscale.enable = true;
+    }
+    {
       kdn.networking.netbird.priv.enable = true;
       services.netbird.package = pkgs.netbird.overrideAttrs (old: {
         patches = old.patches or [ ] ++ [

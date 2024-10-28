@@ -7,6 +7,12 @@ netbird-priv:
         setup-key: ENC[AES256_GCM,data:zsk5tRZ2Jw182kRem7W51dgjMt73jZJ4MORpaxk72K0EggCc,iv:KVr630NqnHnHPRi/OYX5LZ5sLBaBOBaCeVSTvi4sF+M=,tag:VlDECMnY37HElwTW5iwRSw==,type:str]
     permanent:
         setup-key: ENC[AES256_GCM,data:CiS+33+oxMxFYzPMIZUpqWQUx8Cefehy1DI100JAXBvOn0rB,iv:91tze9y+7ilNBW17lfGuWHRIl/2Gjzxo/JOmyMAQrhc=,tag:/jYmXx8ov6fQORof1rIP/g==,type:str]
+tailscale:
+    default:
+        auth_keys:
+            nixos: ENC[AES256_GCM,data:/sjt1mX93jU8z1GS3XtMQjAdfUDLU43crx4QwUQlNYdFWL9LR8oGVIG+J6tD+7vUtp18bG9raQk1kV/+xA==,iv:kdhmtWDD86IOprt/ozjJ3ZuI1GKB28fa8aEgayg093M=,tag:dspVwA+DaYgB5cYppuodkA==,type:str]
+            nixos-ephemeral: ENC[AES256_GCM,data:SCR4xqht0JAHt2HYa+vWWcAsLVKJXyt9g0hSXeGqcWh0GdTydrZn09162M5lLHrfH9ccqRAXh6R/i2GezQw=,iv:SCmpvVptXIkhQ3GZ/ncgrTYbhEMdlI5gUEJiPdAIJVw=,tag:3bpqIR0yiJm4w06U+GjL7A==,type:str]
+            nixos-kdn: ENC[AES256_GCM,data:PmgDKEEbqi241ElIUGCyucPwXJahV3pA3Y4pRuSPLEtSm3G6y7df+p62igw8KITGHka8hEZrnmAyAntudKI=,iv:tiIdeB266Fua+0EA6eBoCMVz3qpagrGbZjVaB+VfmtM=,tag:uNKK29HPkzuOscvz1V+PCA==,type:str]
 networking:
     hosts:
         signicat: ENC[AES256_GCM,data:Yyj7FWO/pQFWyuQvRbUaQMdLJQTxeQxxa9u3mc7INtEMI1qNrwWpurDsCDalCJUszdQiVC/DCjTsFF/JZe1Jo71msf7OuErlcUNORGHmTGhJH1ApuhEcXC74PHSC/Sx1vhg8awKzXGbY4O398KacpX/gruxskECYn+DHrnDZEnD/RsprwYvorqrSyjuFCg85+sEK8Uf67TWyjXSiJCHwH8qNURdXBq8vQo7QpWW3lVD5MeDdpfLNN06R/oG5hKUCmECekgEe0ChIjPln9lkBk8a3HIP2G8Teu5RrcUEtKqhxwGHZhqQhZDHqjnrNADMZIkwVbbdJTJFFEp23WxCXSKvlSBBssRtzt2HxuHQqVUC06ox5S9IYM/Jjd+LTTefyuc9tOpDFIkcTcrUx7FptZ2jDrCIkWiLqyHGUSPp6rYO6qV2uiGD9MSKDGwqPn0mvr3H0yGzunK71SbLU4SIhjc3vqWeYbD9//PL1lJaflZO6FjiC9TWo2xQgxTTRgdM7A1cmF3+zTcDSujRcQm9NEDXsP1l4+DRKK53L8036XyV86Ay5wKCYLJWJRCIaIcTKvdRRJ9e+8LNsDRjfp78fMtbliXEr99L7jq9/IdIDG4dwlXgR9LQZFzLUI8P4OJHq4IYmACrk,iv:5apnfA6uW2PdlwjoAzc1PTlPv6CJFLxBY0W8oDD86pg=,tag:iFfQ28i6lIOLw5kQHZ1KXg==,type:str]
@@ -151,8 +157,8 @@ sops:
             7YnIqtOAtD9PlD7I3L26EmdV79W5bGYIRUujG2lHh0FEIN2UNAxLzTM5TDd5Mtmg
             peo=
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2024-10-17T12:05:22Z"
-    mac: ENC[AES256_GCM,data:fHRBnfTofYg7IHfZuA6f7u/aREZhG+NdMZCGY1fBOQWcz9h2SqZlccGgD5dqGdEDiElzFZ0hap2/WMlVYH/T9Hk07/Fjxa+PcRvSYeoJH4fTODnwwvhn7zz9B/3GymwwcjWXny2SyzU/vNJGx4leOfqhzVgMXmFSX1wc7GhhxAo=,iv:xAwquLe6xLASs/oa3Dp+mNdPGOoiD8jLPdCbpvvyzq4=,tag:U0sMOHTTlGx0iignc6ieNA==,type:str]
+    lastmodified: "2024-10-28T16:42:03Z"
+    mac: ENC[AES256_GCM,data:95E/nT8DJsevi1QwVci1Rk/S7r5X8kPbJ2gca8E3oVn9hDc9Y4Go57JmHeDGOk1nMYrgFIuHdHLCYXIremwZ0FVYKU6O0jPz9Yp2lsN7+wrNE578Zy1SefU6pP0FITM4kr3b9Rcr+KWDwOZc06M5Q2iXq+psHG6DQ48c1Uh1bvE=,iv:uxhZmatzK9NHfiCn6t26SgpsColz8Edxcvy9moJgZ2c=,tag:eJwjruiPYYfKuqpLK4EPNQ==,type:str]
     pgp: []
     unencrypted_suffix: _unencrypted
     version: 3.9.0

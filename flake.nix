@@ -142,6 +142,7 @@
                     kdn.security.secrets.allow = false;
                     kdn.profile.machine.baseline.enable = true;
                     kdn.profile.machine.baseline.netbird-priv.type = "ephemeral";
+                    kdn.networking.tailscale.auth_key = "nixos-ephemeral";
 
                     environment.systemPackages = with pkgs; [
                     ];

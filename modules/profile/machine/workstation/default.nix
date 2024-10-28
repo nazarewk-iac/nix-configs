@@ -75,6 +75,7 @@ in
     services.offlineimap.install = true;
 
     kdn.networking.netbird.sc.enable = true;
+    kdn.networking.tailscale.auth_key = "nixos-kdn";
 
     kdn.networking.openvpn.enable = true;
     kdn.networking.openfortivpn.enable = true;
