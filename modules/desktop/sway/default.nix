@@ -330,8 +330,6 @@ in
           fi
         '')
 
-        wofi
-
         grim
         libnotify
         swayidle

@@ -88,6 +88,7 @@ in
 
         include /etc/sway/config.d/*
       '';
+      kdn.programs.wofi.enable = true;
       wayland.windowManager.sway.config = {
         defaultWorkspace = "workspace number 1";
         keybindings =

@@ -130,7 +130,6 @@ in
       ];
     })
     (lib.mkIf config.kdn.programs.firefox.enable {
-      home.packages = with pkgs; [ browsers ];
       # Firefox
       # TODO: manage settings?
       programs.firefox.profiles.kdn = {
@@ -308,10 +307,11 @@ in
       ];
     })
     (lib.mkIf (hasWorkstation && hasGUI) {
-      kdn.programs.nextcloud-client.enable = true;
+      kdn.programs.browsers.enable = true;
       kdn.programs.chromium.enable = true;
       kdn.programs.element.enable = true;
       kdn.programs.ente-photos.enable = true;
+      kdn.programs.nextcloud-client.enable = true;
       kdn.programs.rambox.enable = true;
       kdn.programs.signal.enable = true;
       kdn.programs.slack.enable = true;

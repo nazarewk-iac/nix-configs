@@ -12,7 +12,7 @@ let
       dirs.state = [ ];
     };
   */
-  mkDirsOption = prefix: extra: lib.mkOption
+  mkPathsOption = prefix: extra: lib.mkOption
     {
       type = with lib.types; listOf str;
       apply = builtins.map (dir:
@@ -41,12 +41,18 @@ in
             type = with lib.types; str;
             default = name;
           };
-          dirs.cache = mkDirsOption ".cache" { };
-          dirs.config = mkDirsOption ".config" { };
-          dirs.data = mkDirsOption ".local/share" { };
-          dirs.disposable = mkDirsOption "" { };
-          dirs.reproducible = mkDirsOption "" { };
-          dirs.state = mkDirsOption ".local/state" { };
+          dirs.cache = mkPathsOption ".cache" { };
+          dirs.config = mkPathsOption ".config" { };
+          dirs.data = mkPathsOption ".local/share" { };
+          dirs.disposable = mkPathsOption "" { };
+          dirs.reproducible = mkPathsOption "" { };
+          dirs.state = mkPathsOption ".local/state" { default = [ ]; };
+          files.cache = mkPathsOption ".cache" { default = [ ]; };
+          files.config = mkPathsOption ".config" { default = [ ]; };
+          files.data = mkPathsOption ".local/share" { default = [ ]; };
+          files.disposable = mkPathsOption "" { default = [ ]; };
+          files.reproducible = mkPathsOption "" { default = [ ]; };
+          files.state = mkPathsOption ".local/state" { default = [ ]; };
 
           package.original = lib.mkOption {
             type = with lib.types; nullOr package;
@@ -95,6 +101,31 @@ in
     ];
     home.persistence."disposable".directories = lib.pipe enabledAppsList [
       (builtins.map (cfg: cfg.dirs.disposable))
+      builtins.concatLists
+    ];
+
+    home.persistence."usr/cache".files = lib.pipe enabledAppsList [
+      (builtins.map (cfg: cfg.files.cache))
+      builtins.concatLists
+    ];
+    home.persistence."usr/config".files = lib.pipe enabledAppsList [
+      (builtins.map (cfg: cfg.files.config))
+      builtins.concatLists
+    ];
+    home.persistence."usr/data".files = lib.pipe enabledAppsList [
+      (builtins.map (cfg: cfg.files.data))
+      builtins.concatLists
+    ];
+    home.persistence."usr/state".files = lib.pipe enabledAppsList [
+      (builtins.map (cfg: cfg.files.state))
+      builtins.concatLists
+    ];
+    home.persistence."usr/reproducible".files = lib.pipe enabledAppsList [
+      (builtins.map (cfg: cfg.files.reproducible))
+      builtins.concatLists
+    ];
+    home.persistence."disposable".files = lib.pipe enabledAppsList [
+      (builtins.map (cfg: cfg.files.disposable))
       builtins.concatLists
     ];
   };

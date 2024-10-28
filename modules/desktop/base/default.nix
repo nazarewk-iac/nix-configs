@@ -92,7 +92,6 @@ in
         wayland-utils
         wl-clipboard
         wl-clipboard-x11
-        wofi
 
         # themes
         hicolor-icon-theme # nm-applet, see https://github.com/NixOS/nixpkgs/issues/32730
