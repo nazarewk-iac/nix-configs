@@ -11,11 +11,10 @@ in
     {
       services.ssh-agent.enable = true;
       programs.ssh.enable = true;
-      programs.ssh.extraConfig = ''
-        Host *
-          Include ~/.ssh/config.d/*.config
-          Include ~/.ssh/config.local
-      '';
+      programs.ssh.includes = [
+        "~/.ssh/config.d/*.config"
+        "~/.ssh/config.local"
+      ];
 
       home.persistence."usr/data".directories = [
         ".ssh"
