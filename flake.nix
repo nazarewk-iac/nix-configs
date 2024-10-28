@@ -160,120 +160,134 @@
       flake.nixosModules.default = ./modules;
       flake.nixosConfigurations = lib.mkMerge [
         {
-          oams = let hostName = "oams"; in flakeLib.nixos.system {
+          oams = flakeLib.nixos.system {
             system = "x86_64-linux";
-            modules = [{ kdn.profile.host."${hostName}".enable = true; }
-              {
+            modules = [
+              ({ config, ... }: {
+                networking.hostName = "oams";
+                kdn.profile.host."${config.networking.hostName}".enable = true;
+
                 system.stateVersion = "23.11";
                 home-manager.sharedModules = [{ home.stateVersion = "23.11"; }];
                 networking.hostId = "ce0f2f33"; # cut -c-8 </proc/sys/kernel/random/uuid
-                networking.hostName = hostName;
 
                 _module.args.nixinate = {
-                  #host = "${hostName}.lan.";
-                  #host = "${hostName}.netbird.cloud.";
+                  #host = "${config.networking.hostName}.netbird.cloud.";
                   #host = hostName;
-                  host = "${hostName}.lan.etra.net.int.kdn.im";
+                  host = "${config.networking.hostName}.lan.etra.net.int.kdn.im";
                   sshUser = "kdn";
                   buildOn = "local"; # valid args are "local" or "remote"
                   substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
                   hermetic = true;
                   nixOptions = [ "--show-trace" ];
                 };
-              }];
+              })
+            ];
           };
 
           brys = flakeLib.nixos.system {
             system = "x86_64-linux";
-            modules = [{ kdn.profile.host.brys.enable = true; }
-              {
+            modules = [
+              ({ config, ... }: {
+                networking.hostName = "brys";
+                kdn.profile.host."${config.networking.hostName}".enable = true;
+
                 system.stateVersion = "24.11";
                 home-manager.sharedModules = [{ home.stateVersion = "24.11"; }];
                 networking.hostId = "0a989258"; # cut -c-8 </proc/sys/kernel/random/uuid
-                networking.hostName = "brys";
 
                 _module.args.nixinate = {
-                  #host = "brys.lan.";
-                  #host = "192.168.73.46";
-                  #host = "brys.netbird.cloud.";
-                  host = "brys";
+                  #host = "${config.networking.hostName}.netbird.cloud.";
+                  #host = config.networking.hostName;
+                  host = "${config.networking.hostName}.lan.etra.net.int.kdn.im";
                   sshUser = "kdn";
                   buildOn = "local"; # valid args are "local" or "remote"
                   substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
                   hermetic = true;
                   nixOptions = [ "--show-trace" ];
                 };
-              }];
+              })
+            ];
           };
 
           etra = flakeLib.nixos.system {
             system = "x86_64-linux";
-            modules = [{ kdn.profile.host.etra.enable = true; }
-              {
+            modules = [
+              ({ config, ... }: {
+                networking.hostName = "etra";
+                kdn.profile.host."${config.networking.hostName}".enable = true;
+
                 system.stateVersion = "24.11";
                 home-manager.sharedModules = [{ home.stateVersion = "24.11"; }];
                 networking.hostId = "6dc8c4d7"; # cut -c-8 </proc/sys/kernel/random/uuid
-                networking.hostName = "etra";
 
                 _module.args.nixinate = {
-                  #host = "etra.lan.";
-                  #host = "etra.netbird.cloud.";
-                  host = "192.168.73.1";
+                  #host = "${config.networking.hostName}.netbird.cloud.";
+                  host = "${config.networking.hostName}.lan.etra.net.int.kdn.im";
+                  #host = "192.168.73.1";
                   sshUser = "kdn";
                   buildOn = "local"; # valid args are "local" or "remote"
                   substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
                   hermetic = true;
                   nixOptions = [ "--show-trace" ];
                 };
-              }];
+              })
+            ];
           };
 
           obler = flakeLib.nixos.system {
             system = "x86_64-linux";
-            modules = [{ kdn.profile.host.obler.enable = true; }
-              {
+            modules = [
+              ({ config, ... }: {
+                networking.hostName = "obler";
+                kdn.profile.host."${config.networking.hostName}".enable = true;
+
                 system.stateVersion = "23.11";
                 home-manager.sharedModules = [{ home.stateVersion = "23.11"; }];
                 networking.hostId = "f6345d38"; # cut -c-8 </proc/sys/kernel/random/uuid
-                networking.hostName = "obler";
 
                 _module.args.nixinate = {
-                  #host = "obler";
-                  host = "obler.netbird.cloud.";
+                  host = "${config.networking.hostName}.netbird.cloud.";
+                  #host = "${config.networking.hostName}.lan.etra.net.int.kdn.im";
                   sshUser = "kdn";
                   buildOn = "local"; # valid args are "local" or "remote"
                   substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
                   hermetic = true;
                   nixOptions = [ "--show-trace" ];
                 };
-              }];
+              })
+            ];
           };
 
           moss = flakeLib.nixos.system {
             system = "x86_64-linux";
-            modules = [{ kdn.profile.host.moss.enable = true; }
-              {
+            modules = [
+              ({ config, ... }: {
+                networking.hostName = "moss";
+                kdn.profile.host."${config.networking.hostName}".enable = true;
+
                 system.stateVersion = "23.11";
                 home-manager.sharedModules = [{ home.stateVersion = "23.11"; }];
                 networking.hostId = "550ded62"; # cut -c-8 </proc/sys/kernel/random/uuid
-                networking.hostName = "moss";
 
                 _module.args.nixinate = {
-                  host = "moss.kdn.im";
-                  # host = "10.100.0.1"; # wireguard
+                  host = "${config.networking.hostName}.kdn.im";
+                  #host = "${config.networking.hostName}.netbird.cloud";
+                  #host = "10.100.0.1"; # wireguard
                   sshUser = "kdn";
                   buildOn = "local"; # valid args are "local" or "remote"
                   substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
                   hermetic = true;
                   nixOptions = [ "--show-trace" ];
                 };
-              }
+              })
               ({ modulesPath, ... }: {
                 imports = [
                   (modulesPath + "/profiles/qemu-guest.nix")
                   (modulesPath + "/profiles/headless.nix")
                 ];
-              })];
+              })
+            ];
           };
 
           #rpi4 = lib.nixosSystem {

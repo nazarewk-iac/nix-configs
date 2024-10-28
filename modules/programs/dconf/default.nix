@@ -5,7 +5,7 @@ in
 {
   options.kdn.programs.dconf = {
     enable = lib.mkOption {
-      default = config.programs.dconf.enable;
+      default = false;
     };
   };
 
