@@ -14,11 +14,9 @@ in
       hardware.bluetooth.enable = true;
       services.blueman.enable = true;
 
-      home-manager.sharedModules = [{
-        home.persistence."sys/config".directories = [
-          "/var/lib/bluetooth"
-        ];
-      }];
+      environment.persistence."sys/config".directories = [
+        "/var/lib/bluetooth"
+      ];
     }
   ]);
 }
