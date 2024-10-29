@@ -20,10 +20,54 @@ in
       hardware.usb-modeswitch.enable = true;
       environment.systemPackages = with pkgs; [ usb-modeswitch ];
       kdn.hardware.bluetooth.enable = true;
-
-      documentation.man.man-db.enable = lib.mkDefault true;
-      documentation.man.generateCaches = lib.mkDefault true;
     }
+    (
+      let
+        kdn-man-gen-caches = pkgs.writeShellApplication {
+          name = "kdn-man-gen-caches";
+          runtimeInputs = with pkgs; [
+            coreutils
+          ];
+          text = ''
+            if [[ $EUID -ne 0 ]]; then
+              echo "restarting as root..." >&2
+              exec sudo "$BASH" "$0" "$@"
+            fi
+
+            mkdir -p /var/cache/man/nixos
+            ${lib.getExe' config.documentation.man.man-db.package "mandb"} "$@"
+          '';
+        };
+      in
+      {
+        documentation.man.man-db.enable = true;
+        documentation.man.generateCaches = false;
+        environment.systemPackages = [ kdn-man-gen-caches ];
+        environment.persistence."sys/cache".directories = [
+          "/var/cache/man/nixos"
+        ];
+        systemd.services.kdn-man-gen-caches = {
+          wantedBy = [ "multi-user.target" ];
+          description = "generates manpage caches during runtime instead of during build";
+          serviceConfig.Type = "oneshot";
+          serviceConfig.RemainAfterExit = true;
+          serviceConfig.ExecStart = lib.strings.escapeShellArgs [
+            (lib.getExe kdn-man-gen-caches)
+          ];
+        };
+        system.activationScripts.kdn-man-gen-caches.deps =
+          let
+            ifExists = name: lib.optional (config.system.activationScripts ? name) name;
+          in
+          [ "etc" ]
+          ++ ifExists "impermanenceCreatePersistentStorageDirs"
+          ++ ifExists "impermanencePersistFiles"
+        ;
+        system.activationScripts.kdn-man-gen-caches.text = ''
+          ${lib.getExe' pkgs.systemd "systemctl"} start --no-block kdn-man-gen-caches.service
+        '';
+      }
+    )
     {
       environment.systemPackages = with pkgs; [
         lsix # image thumbnails in terminal

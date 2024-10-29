@@ -207,11 +207,6 @@ in
       kdn.networking.router.addr.public.ipv6.path = config.sops.secrets."networking/ipv6/network/isp/prefix/etra/address/gateway".path;
     }
     {
-      # faster rebuilds
-      documentation.man.man-db.enable = false;
-      documentation.man.generateCaches = false;
-    }
-    {
       kdn.networking.router.debug = false;
     }
   ]);
