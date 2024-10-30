@@ -29,8 +29,6 @@ let
   ll.etra.br-etra = "fe80::b47b:911a:2d95:d12f";
   vlan.pic.name = "pic";
   vlan.pic.id = 1859;
-
-  mac.cafal.default = "00:23:79:00:31:03";
 in
 {
   options.kdn.profile.host.etra = {
@@ -127,9 +125,12 @@ in
           pools.default.end = "192.168.73.255";
           hosts.etra.ip = "192.168.73.1";
           hosts.cafal.ip = "192.168.73.2";
-          hosts.cafal.ident.hw-address = mac.cafal.default;
+          hosts.cafal.ident.hw-address = "00:23:79:00:31:03";
           hosts.feren.ip = "192.168.73.3";
           hosts.moak.ip = "192.168.73.4";
+          hosts.kvm-fa56.ident.hw-address = "48:da:35:6f:fa:56";
+          hosts.kvm-4e6e.ident.hw-address = "48:da:35:6f:4e:6e";
+          hosts.kvm-4385.ident.hw-address = "48:da:35:6f:43:85";
         };
         addressing.ipv6-ula = with ula.lan; {
           subnet-id = 300310722;

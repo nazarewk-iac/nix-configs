@@ -249,7 +249,8 @@ let
                         default = hostArgs.name;
                       };
                       ip = lib.mkOption {
-                        type = with lib.types; str;
+                        type = with lib.types; nullOr str;
+                        default = null;
                       };
                       ident = lib.mkOption {
                         type = with lib.types; attrsOf str;
@@ -753,6 +754,7 @@ in
                   (builtins.filter (host: host.ident != { }))
                   (builtins.map (host: host.ident // {
                     hostname = host.hostname;
+                  } // lib.attrsets.optionalAttrs (host.ip != null) {
                     ip-address = host.ip;
                   }))
                 ];
@@ -1139,7 +1141,12 @@ in
                       hostCfg.ip
                       "30"
                     ])
-                    addrCfg.hosts)
+                    (
+                      lib.attrsets.filterAttrs
+                        (host: hostCfg: hostCfg.ip != null)
+                        addrCfg.hosts
+                    )
+                  )
                 )
                 netCfg.addressing)
             ))
@@ -1149,29 +1156,6 @@ in
         };
       }
     )
-    {
-      services.knot.package = pkgs.knot-dns.overrideAttrs (old: {
-        /*
-        TODO: remove after knot-dns 3.4.1 release
-        listening on link-local address will be supported in not-yet-released 3.4.1 version
-        so we're using 3.4 branch before release
-        */
-        src = pkgs.fetchFromGitLab {
-          domain = "gitlab.nic.cz";
-          owner = "knot";
-          repo = "knot-dns";
-          rev = "add8125a347215b8dc3a76d6fb2160620428eada";
-          hash = "sha256-2vsKqRX8WH54W0TImCaMnpwSztkLkzCTBHKBPDdk5CM=";
-        };
-        # dnstap support
-        configureFlags = old.configureFlags
-          ++ [ "--with-module-dnstap" "--enable-dnstap" ]
-        ;
-        buildInputs = old.buildInputs
-          ++ (with pkgs; [ fstrm protobufc ])
-        ;
-      });
-    }
     {
       # Firewall/forwarding
       networking.firewall.trustedInterfaces = lib.pipe cfg.nets [
