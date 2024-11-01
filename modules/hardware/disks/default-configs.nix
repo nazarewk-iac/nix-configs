@@ -106,6 +106,8 @@ in
             };
             unitConfig.DefaultDependencies = false;
             script = let in ''
+              set -x
+
               export PATH="${lib.makeBinPath scriptDeps}:$PATH"
               prefix=/sysroot
 
@@ -116,7 +118,7 @@ in
                 exit
               fi
 
-              tree -fxJ -ugsD --timefmt "%Y-%m-%dT%H:%M:%S%z" "$mnt"
+              tree -aqfxJ -ugsD --timefmt "%Y-%m-%dT%H:%M:%S%z" "$mnt"
               rm --recursive --force --verbose "$mnt"/{.*,*} || :
             '';
           };
