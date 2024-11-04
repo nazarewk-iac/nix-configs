@@ -22,6 +22,9 @@ in
       exfatprogs # this is userspace util for linux 5.7+ kernel module for exfat https://github.com/exfatprogs/exfatprogs
       gptfdisk
       ntfs3g
+    ] ++ [
+      # flashing etc.
+      # TODO: didn't find any GUI flashing tool yet
     ]);
   };
 }
