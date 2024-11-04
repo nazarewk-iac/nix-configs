@@ -25,8 +25,8 @@ in
 
       environment.systemPackages = with pkgs; [
         (lib.hiPrio cfg.pinentry)
-        pinentry-curses
-        pinentry-qt
+        (lib.lowPrio pinentry-all)
+
 
         opensc
         pcsctools
