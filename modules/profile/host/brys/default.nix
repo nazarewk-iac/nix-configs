@@ -81,5 +81,8 @@ in
         };
       }
     )
+    {
+      kdn.hardware.nanokvm.enable = true;
+    }
   ]);
 }
