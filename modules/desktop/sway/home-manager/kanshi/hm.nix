@@ -120,6 +120,18 @@ let
         (mkOutput asus-pg78q-dp kvm-brys.w 0 { status = "disable"; })
       ];
     };
+    brys-desktop = {
+      outputs = [
+        (mkOutput asus-pg78q-dp 0 0 { })
+        (mkOutput gb-m32uc asus-pg78q-dp.w 0 { mode = "3840x2160@144Hz"; })
+      ];
+      exec = mkWorkspaces {
+        "1" = gb-m32uc;
+        "2" = asus-pg78q-dp;
+        "3" = asus-pg78q-dp;
+        "4" = gb-m32uc;
+      };
+    };
     brys-desktop-full = {
       outputs = [
         (mkOutput asus-pg78q-dp 0 0 { })
