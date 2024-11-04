@@ -88,12 +88,6 @@ in
         zip
 
         kdn.whicher
-        /* Closure is freaking 9 GB!
-              /nix/store/16bffw12fg6jixyal4mn2cknv88rafwg-diffoscope-269
-              NAR Size: 2.27 MiB | Closure Size: 8.73 GiB | Added Size: 8.73 GiB
-              Immediate Parents: -
-        diffoscope
-        */
         difftastic
       ];
 

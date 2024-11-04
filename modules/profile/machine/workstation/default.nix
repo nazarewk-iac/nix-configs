@@ -35,7 +35,7 @@ in
     kdn.programs.nix-index.enable = true;
 
     kdn.development.android.enable = true;
-    kdn.development.kernel.enable = true;
+    kdn.development.kernel.enable = false;
     #kdn.virtualisation.containers.dagger.enable = true;
     #kdn.virtualisation.containers.distrobox.enable = true;
     kdn.virtualisation.containers.enable = true;
@@ -114,5 +114,15 @@ in
   }
     {
       boot.initrd.clevis.enable = true;
+    }
+    {
+      environment.systemPackages = with pkgs; [
+        /* Closure is freaking 9 GB!
+              /nix/store/16bffw12fg6jixyal4mn2cknv88rafwg-diffoscope-269
+              NAR Size: 2.27 MiB | Closure Size: 8.73 GiB | Added Size: 8.73 GiB
+              Immediate Parents: -
+        */
+        diffoscope
+      ];
     }]);
 }
