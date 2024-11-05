@@ -4,8 +4,6 @@ let
 
   sway-headless-vnc = pkgs.writeShellApplication {
     name = "sway-headless-vnc";
-    # TODO: make wayvnc build
-
     runtimeInputs = with pkgs; [
       wayvnc
       jq
