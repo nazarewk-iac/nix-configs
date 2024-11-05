@@ -122,7 +122,7 @@ in
           network = "192.168.73.0";
           netmask = "24";
           pools.default.start = "192.168.73.32";
-          pools.default.end = "192.168.73.255";
+          pools.default.end = "192.168.73.254";
           hosts.etra.ip = "192.168.73.1";
           hosts.cafal.ip = "192.168.73.2";
           hosts.cafal.ident.hw-address = "00:23:79:00:31:03";
@@ -164,7 +164,7 @@ in
           network = "10.92.0.0";
           netmask = "16";
           pools.default.start = "10.92.0.32";
-          pools.default.end = "10.92.0.255";
+          pools.default.end = "10.92.0.254";
           hosts.etra.ip = "10.92.0.1";
           hosts.cafal.ip = "10.92.0.2";
         };
