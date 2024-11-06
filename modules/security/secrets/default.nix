@@ -266,7 +266,12 @@ in
       ];
       system.activationScripts.kdnSecretsPostSecretsHook.deps = [ "setupSecrets" ];
       system.activationScripts.kdnSecretsPostSecretsHook.text = "";
-      system.activationScripts.kdnSecretsPostRenderHook.deps = [ "renderSecrets" "kdnSecretsPostSecretsHook" ];
+      system.activationScripts.kdnSecretsPostRenderHook.deps =
+        let ifExists = name: lib.optional (config.system.activationScripts ? name) name; in
+        [ "kdnSecretsPostSecretsHook" ]
+        ++ ifExists "setupSecrets"
+        ++ ifExists "setupSecretsForUsers"
+      ;
       system.activationScripts.kdnSecretsPostRenderHook.text = "";
       system.activationScripts.kdnSecretsPostHook.deps = [ "kdnSecretsPostSecretsHook" "kdnSecretsPostRenderHook" ];
       system.activationScripts.kdnSecretsPostHook.text = "";
