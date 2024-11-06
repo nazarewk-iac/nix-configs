@@ -10,6 +10,7 @@ in
   config = lib.mkIf cfg.enable {
     programs.helix.extraPackages = with pkgs;[
       nil
+      nix-patcher
     ];
   };
 }

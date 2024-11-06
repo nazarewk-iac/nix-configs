@@ -169,6 +169,27 @@
         "type": "github"
       }
     },
+    "flake-parts_2": {
+      "inputs": {
+        "nixpkgs-lib": [
+          "nix-eval-jobs",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1722555600,
+        "narHash": "sha256-XOQkdLafnb/p9ij77byFQjDf5m5QYl9b2REiVClC+x4=",
+        "owner": "hercules-ci",
+        "repo": "flake-parts",
+        "rev": "8471fe90ad337a8074e957b69ca4d0089218391d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "hercules-ci",
+        "repo": "flake-parts",
+        "type": "github"
+      }
+    },
     "flake-utils": {
       "inputs": {
         "systems": "systems"
@@ -398,9 +419,7 @@
     },
     "nix-eval-jobs": {
       "inputs": {
-        "flake-parts": [
-          "flake-parts"
-        ],
+        "flake-parts": "flake-parts_2",
         "nix-github-actions": "nix-github-actions",
         "nixpkgs": [
           "nixpkgs"
@@ -459,6 +478,26 @@
       "original": {
         "owner": "nix-community",
         "repo": "nix-github-actions",
+        "type": "github"
+      }
+    },
+    "nix-patcher": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1721282203,
+        "narHash": "sha256-o5tnF7uPp5nYbF27t6oXO1gsXOvqgLmGxT/oZajBZD4=",
+        "owner": "katrinafyi",
+        "repo": "nix-patcher",
+        "rev": "4f17dec1512e2517ff4118ea3b17842b0b1aec94",
+        "type": "github"
+      },
+      "original": {
+        "owner": "katrinafyi",
+        "repo": "nix-patcher",
         "type": "github"
       }
     },
@@ -577,13 +616,13 @@
         "type": "github"
       }
     },
-    "nixpkgs-kdn": {
+    "nixpkgs": {
       "locked": {
         "lastModified": 1730892011,
-        "narHash": "sha256-xnagY1lIdugGvWp0kVPcjlPbwS14L0KA+5g3Ox4swaU=",
+        "narHash": "sha256-CIzb0wZO0FjAu+6r647xAUlpaD2ZTQTlOerGf9wSaSU=",
         "owner": "nazarewk",
         "repo": "nixpkgs",
-        "rev": "bcafc9abd25738968b322ecc43b883b4546a5d1d",
+        "rev": "700ef4080c67007295db890e3da354f6304dee94",
         "type": "github"
       },
       "original": {
@@ -595,11 +634,11 @@
     },
     "nur": {
       "locked": {
-        "lastModified": 1730885145,
-        "narHash": "sha256-UPrBEY0No1O3ULb67xYjRh2r3u7MnZovfo1oYSPCIxI=",
+        "lastModified": 1730893588,
+        "narHash": "sha256-Q7d6Nt95aSV7443czdKG7I8pQ45pao59HDeCZhMNCx8=",
         "owner": "nix-community",
         "repo": "NUR",
-        "rev": "c0d8828600ef47d475e6ec33513bf9af6eb6b991",
+        "rev": "52212ee79e1edfccb3096dcfe87a1bb4314abfa1",
         "type": "github"
       },
       "original": {
@@ -655,15 +694,13 @@
         "mk-shell-bin": "mk-shell-bin",
         "nix-eval-jobs": "nix-eval-jobs",
         "nix-github-actions": "nix-github-actions_2",
+        "nix-patcher": "nix-patcher",
         "nixinate": "nixinate",
         "nixos-anywhere": "nixos-anywhere",
         "nixos-generators": "nixos-generators",
-        "nixpkgs": [
-          "nixpkgs-kdn"
-        ],
-        "nixpkgs-kdn": "nixpkgs-kdn",
+        "nixpkgs": "nixpkgs",
         "nixpkgs-lib": [
-          "nixpkgs-kdn"
+          "nixpkgs"
         ],
         "nur": "nur",
         "poetry2nix": "poetry2nix",

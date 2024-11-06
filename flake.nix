@@ -1,8 +1,8 @@
 {
-  inputs.nixpkgs.follows = "nixpkgs-kdn";
-  inputs.nixpkgs-lib.follows = "nixpkgs-kdn";
+  inputs.nixpkgs.url = "github:nazarewk/nixpkgs/nixos-unstable";
+  inputs.nixpkgs-lib.follows = "nixpkgs";
 
-  inputs.nixpkgs-kdn.url = "github:nazarewk/nixpkgs/nixos-unstable";
+  inputs.nix-patcher.url = "github:katrinafyi/nix-patcher";
 
   /*
    * pinned inputs to keep up to date manually
@@ -60,9 +60,9 @@
   inputs.lanzaboote.inputs.rust-overlay.follows = "rust-overlay";
   inputs.microvm.inputs.flake-utils.follows = "flake-utils";
   inputs.microvm.inputs.nixpkgs.follows = "nixpkgs";
-  inputs.nix-eval-jobs.inputs.flake-parts.follows = "flake-parts";
   inputs.nix-eval-jobs.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nix-github-actions.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.nix-patcher.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nixinate.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nixos-anywhere.inputs.disko.follows = "disko";
   inputs.nixos-anywhere.inputs.flake-parts.follows = "flake-parts";
@@ -77,10 +77,10 @@
   inputs.rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
   inputs.sops-nix.inputs.nixpkgs-stable.follows = "empty";
   inputs.sops-nix.inputs.nixpkgs.follows = "nixpkgs";
-  inputs.stylix.inputs.tinted-foot.follows = "tinted-foot";
   inputs.stylix.inputs.flake-compat.follows = "flake-compat";
   inputs.stylix.inputs.home-manager.follows = "home-manager";
   inputs.stylix.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.stylix.inputs.tinted-foot.follows = "tinted-foot";
   inputs.treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
   inputs.ulauncher.inputs.flake-parts.follows = "flake-parts";
   inputs.ulauncher.inputs.nixpkgs.follows = "nixpkgs";
@@ -108,8 +108,10 @@
         inputs.nur.overlay
         self.overlays.packages
         (final: prev: {
-          nixos-anywhere = inputs.nixos-anywhere.packages."${final.stdenv.system}".default;
           inherit lib;
+
+          nixos-anywhere = inputs.nixos-anywhere.packages."${final.stdenv.system}".default;
+          nix-patcher = inputs.nix-patcher.packages."${final.stdenv.system}".nix-patcher;
         })
       ]);
       perSystem = { config, self', inputs', system, pkgs, ... }:
@@ -126,6 +128,19 @@
             nix repl "$confnix" "$@"
           ''}/bin/repl";
           };
+          apps.nix-patcher = inputs'.nix-patcher.apps.default;
+          apps.nixpkgs-update = {
+            type = "app";
+            program = lib.getExe (pkgs.writeShellApplication {
+              name = "nixpkgs-update";
+              runtimeInputs = with pkgs; [
+                nix-patcher
+                pass
+                git
+              ];
+              text = builtins.readFile ./nixpkgs-update.sh;
+            });
+          };
           checks = { };
           devShells = { };
           packages = lib.mkMerge [
@@ -141,7 +156,7 @@
                     home-manager.sharedModules = [{ home.stateVersion = "24.11"; }];
                     kdn.security.secrets.allow = false;
                     kdn.profile.machine.baseline.enable = true;
-                    kdn.profile.machine.baseline.netbird-priv.type = "ephemeral";
+                    kdn.networking.netbird.priv.type = "ephemeral";
                     kdn.networking.tailscale.auth_key = "nixos-ephemeral";
 
                     environment.systemPackages = with pkgs; [

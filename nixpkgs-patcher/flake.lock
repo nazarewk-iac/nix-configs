@@ -1,0 +1,70 @@
+{
+  "nodes": {
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1730892011,
+        "narHash": "sha256-CIzb0wZO0FjAu+6r647xAUlpaD2ZTQTlOerGf9wSaSU=",
+        "owner": "nazarewk",
+        "repo": "nixpkgs",
+        "rev": "700ef4080c67007295db890e3da354f6304dee94",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nazarewk",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs-patch-2": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-pjw4Hzx9z/GBeZhcXvKA7UDR8qY7lhNGhY+K7GGDyv4=",
+        "type": "file",
+        "url": "https://github.com/nazarewk/nixpkgs/compare/nixos-unstable..netbird-improvements.patch"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://github.com/nazarewk/nixpkgs/compare/nixos-unstable..netbird-improvements.patch"
+      }
+    },
+    "nixpkgs-patch-3": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-geVOCK2DM/rljzeLqY++qramwO32cvEadRh8K4UQ33A=",
+        "type": "file",
+        "url": "https://github.com/nazarewk/nixpkgs/compare/nixos-unstable..add/idea-ultimate-eap.patch"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://github.com/nazarewk/nixpkgs/compare/nixos-unstable..add/idea-ultimate-eap.patch"
+      }
+    },
+    "nixpkgs-upstream": {
+      "locked": {
+        "lastModified": 1730785428,
+        "narHash": "sha256-Zwl8YgTVJTEum+L+0zVAWvXAGbWAuXHax3KzuejaDyo=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "4aa36568d413aca0ea84a1684d2d46f55dbabad7",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "nixpkgs": "nixpkgs",
+        "nixpkgs-patch-2": "nixpkgs-patch-2",
+        "nixpkgs-patch-3": "nixpkgs-patch-3",
+        "nixpkgs-upstream": "nixpkgs-upstream"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
