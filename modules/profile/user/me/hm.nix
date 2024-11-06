@@ -284,7 +284,7 @@ in
         vlc
         subtitleedit
         subtitleeditor
-        (ffsubsync.override { python3 = pkgs.python39; })
+        ffsubsync
         haruna
         shotwell
 
