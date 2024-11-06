@@ -9,6 +9,7 @@ in
 
   config = lib.mkIf cfg.enable {
     kdn.programs.blender.enable = true;
-    kdn.programs.orca-slicer.enable = true;
+    # TODO: enable it back after https://github.com/NixOS/nixpkgs/issues/353863
+    kdn.programs.orca-slicer.enable = false;
   };
 }
