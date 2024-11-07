@@ -107,6 +107,34 @@ in
       }];
     }
     {
+      kdn.networking.router.nets."lan".addressing."ipv4".hosts = lib.pipe [
+        # first batch
+        "a5:8b"
+        "e4:52"
+        "fa:56"
+        "4e:6e"
+        "43:85"
+        # second batch
+        "42:94"
+        "05:0c"
+        "27:95"
+        "92:97"
+        "26:e2"
+      ] [
+        (builtins.map lib.strings.toLower)
+        (builtins.map (macSuffix:
+          let
+            mac = "48:da:35:6f:${macSuffix}";
+            suffix = builtins.replaceStrings [ ":" ] [ "" ] macSuffix;
+          in
+          {
+            name = "kvm-${suffix}";
+            value.ident.hw-address = mac;
+          }))
+        builtins.listToAttrs
+      ];
+    }
+    {
       kdn.networking.router.nets.lan = {
         type = "lan";
         lan.uplink = "wan";
@@ -128,9 +156,6 @@ in
           hosts.cafal.ident.hw-address = "00:23:79:00:31:03";
           hosts.feren.ip = "192.168.73.3";
           hosts.moak.ip = "192.168.73.4";
-          hosts.kvm-fa56.ident.hw-address = "48:da:35:6f:fa:56";
-          hosts.kvm-4e6e.ident.hw-address = "48:da:35:6f:4e:6e";
-          hosts.kvm-4385.ident.hw-address = "48:da:35:6f:43:85";
         };
         addressing.ipv6-ula = with ula.lan; {
           subnet-id = 300310722;
