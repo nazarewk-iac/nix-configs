@@ -22,7 +22,9 @@ in
       sysfsutils # systool
       usbutils # lsusb
       util-linux # dmesg lsblk lscpu
+
       vulkan-caps-viewer
+      vulkan-tools
 
       (lib.kdn.shell.writeShellScript pkgs ./bin/lsiommu.sh {
         runtimeInputs = with pkgs; [ findutils ];
