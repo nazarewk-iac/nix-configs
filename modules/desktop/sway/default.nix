@@ -113,7 +113,8 @@ in
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
-      environment.systemPackages = [ (lib.meta.hiPrio pkgs.xwayland) ];
+      # see https://github.com/NixOS/nixpkgs/issues/354210
+      #environment.systemPackages = [ (lib.meta.hiPrio pkgs.xwayland) ];
       programs.sway.extraPackages = [ cfg.bundle ];
     }
     {
