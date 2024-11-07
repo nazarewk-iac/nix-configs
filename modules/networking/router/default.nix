@@ -386,11 +386,6 @@ in
       default = "50-";
     };
 
-    reloadOnDropIns = lib.mkOption {
-      type = with lib.types; listOf str;
-      default = [ ];
-    };
-
     addr.public.ipv4.path = lib.mkOption {
       type = with lib.types; path;
     };
@@ -1082,6 +1077,7 @@ in
             ddns-replace-client-name = "when-not-present";
             ddns-send-updates = false;
             ddns-update-on-renew = true;
+            ddns-generated-prefix = "ip";
           };
           kea.dhcp-ddns.settings = {
             dns-server-timeout = 500;
