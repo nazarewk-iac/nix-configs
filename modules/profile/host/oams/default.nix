@@ -94,6 +94,7 @@ in
               "${key.top.rog}" = exec "rog-control-center" "";
               "${key.fn.f2}" = exec "asusctl" "--prev-kbd-bright";
               "${key.fn.f3}" = exec "asusctl" "--next-kbd-bright";
+              "${key.super}+P" = "output eDP-1 toggle";
             };
           })
       ];
