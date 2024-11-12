@@ -619,10 +619,10 @@
     "nixpkgs": {
       "locked": {
         "lastModified": 1730892011,
-        "narHash": "sha256-CIzb0wZO0FjAu+6r647xAUlpaD2ZTQTlOerGf9wSaSU=",
+        "narHash": "sha256-llhzQOV+SrDb/MjV0JKF3oZvNNqHLsjeggWFV9Txdf0=",
         "owner": "nazarewk",
         "repo": "nixpkgs",
-        "rev": "700ef4080c67007295db890e3da354f6304dee94",
+        "rev": "fae9f193c3b52ce7fcdba4d97713e6b5af7b86c0",
         "type": "github"
       },
       "original": {
