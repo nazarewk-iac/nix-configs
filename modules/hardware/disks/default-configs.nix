@@ -154,6 +154,13 @@ in
             #"/etc/subuid" # this results in file already exists
           ];
         };
+        /*
+        $ journalctl -b0 -u systemd-machine-id-commit
+        Nov 05 09:40:41 etra systemd[1]: Starting Save Transient machine-id to Disk...
+        Nov 05 09:40:48 etra systemd-machine-id-setup[439037]: /etc/machine-id is not on a temporary file system.
+        Nov 05 09:40:48 etra systemd[1]: systemd-machine-id-commit.service: Main process exited, code=exited, status=1/FAILURE
+         */
+        systemd.services.systemd-machine-id-commit.enable = false;
       }
       {
         environment.persistence."sys/cache" = {
