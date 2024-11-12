@@ -52,7 +52,7 @@ in
           let
             bin = lib.getExe' config.services.asusd.package;
             exec = cmd: args: "exec '${bin cmd} ${args}'";
-            key = {
+            key = config.kdn.desktop.sway.keys // {
               # Top row of keys (between function keys and screen)
               top.vol-down = "XF86AudioLowerVolume"; # Top row volume down
               top.vol-up = "XF86AudioRaiseVolume"; # Top row volume down
@@ -94,7 +94,7 @@ in
               "${key.top.rog}" = exec "rog-control-center" "";
               "${key.fn.f2}" = exec "asusctl" "--prev-kbd-bright";
               "${key.fn.f3}" = exec "asusctl" "--next-kbd-bright";
-              "${key.super}+P" = "output eDP-1 toggle";
+              "${key.super}+P" = lib.mkForce "output eDP-1 toggle";
             };
           })
       ];
