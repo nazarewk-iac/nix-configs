@@ -159,7 +159,6 @@ ssh -o StrictHostKeyChecking=no kdn@nixos
 9. add SSH key to `/.sops.yaml`
     - `ssh-to-age </etc/ssh/ssh_host_ed25519_key.pub`
     - reboot
- 
 
 ## Building on Hetzner Cloud from NixOS installer image
 
@@ -209,3 +208,17 @@ Generating secret key on FIDO2 security token.
 👆 Locking without user presence test requested, but FIDO2 device /dev/hidraw1 requires it, enabling.
 New FIDO2 token enrolled as key slot 1.
 ```
+
+# Keeping nixpkgs fork with arbitrary patches up to date
+
+How to use https://github.com/katrinafyi/nix-patcher to maintain nixpkgs fork:
+
+1. Create a sub-flake (eg: [`nixpkgs-patcher/flake.nix`](nixpkgs-patcher/flake.nix)) holding **only** nixpkgs
+   definitions and it's patches.This is because `nix-patcher` considers a target every single input it finds in a flake,
+   not just nixpkgs, see https://github.com/katrinafyi/nix-patcher/issues/1 .
+2. Inside that sub-flake run
+   `nix flake update && GITHUB_TOKEN="$(pass show python-keyring/git/github.com/nazarewk)" nix-patcher --update "$@"`
+3. In your root `flake.nix` create the `nixpkgs` input pointing to the same input as the sub-flake.
+4. Run `nix flake update nixpkgs` in your root flake.
+
+Most of it is wrapped in [`./nixpkgs-update.sh`](nixpkgs-update.sh)
