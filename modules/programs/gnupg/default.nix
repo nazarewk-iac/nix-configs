@@ -87,6 +87,14 @@ in
       systemd.user.services."gpg-agent" = {
         after = [ "paths.target" ];
         serviceConfig.Slice = "background.slice";
+        # reset YubiKey before start
+        # WARNING: this will delete all other private keys too!
+        preStart = ''
+          dir="$GNUPGHOME/private-keys-v1.d"
+          if test -d "$dir" ; then
+            rm -r "$dir"
+          fi
+        '';
       };
     }
   ]);
