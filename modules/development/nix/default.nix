@@ -14,6 +14,7 @@ in
       nix-update
       nixfmt-classic
       nixpkgs-fmt
+      nixfmt-rfc-style
       #inputs.nixpkgs-update.defaultPackage.${system}
       nixos-anywhere
     ];
