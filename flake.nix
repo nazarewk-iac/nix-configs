@@ -1,8 +1,12 @@
 {
+  inputs.nixpkgs-upstream.url = "github:nixos/nixpkgs/nixos-unstable";
   inputs.nixpkgs.url = "github:nazarewk/nixpkgs/nixos-unstable";
-  inputs.nixpkgs-lib.follows = "nixpkgs";
+  inputs.nixpkgs-patch-2.url = "https://github.com/nixos/nixpkgs/compare/nixos-unstable..nazarewk:netbird-improvements.patch";
+  inputs.nixpkgs-patch-2.flake = false;
+  inputs.nixpkgs-patch-3.url = "https://github.com/nixos/nixpkgs/compare/nixos-unstable..nazarewk:add/idea-ultimate-eap.patch";
+  inputs.nixpkgs-patch-3.flake = false;
 
-  inputs.nix-patcher.url = "github:katrinafyi/nix-patcher";
+  inputs.nixpkgs-lib.follows = "nixpkgs";
 
   /*
    * pinned inputs to keep up to date manually
@@ -30,6 +34,7 @@
   inputs.mk-shell-bin.url = "github:rrbutani/nix-mk-shell-bin";
   inputs.nix-eval-jobs.url = "github:nix-community/nix-eval-jobs";
   inputs.nix-github-actions.url = "github:nix-community/nix-github-actions";
+  inputs.nix-patcher.url = "github:katrinafyi/nix-patcher";
   inputs.nixinate.url = "github:matthewcroughan/nixinate";
   inputs.nixos-anywhere.url = "github:numtide/nixos-anywhere";
   inputs.nixos-generators.url = "github:nix-community/nixos-generators";
