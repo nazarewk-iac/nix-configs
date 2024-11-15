@@ -17,6 +17,7 @@ in
       nixfmt-rfc-style
       #inputs.nixpkgs-update.defaultPackage.${system}
       nixos-anywhere
+      nix-patcher
     ];
   };
 }

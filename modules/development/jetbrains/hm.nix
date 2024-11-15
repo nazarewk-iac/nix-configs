@@ -20,7 +20,7 @@ in
       home.packages = with pkgs; [
         #jetbrains.pycharm-professional
         jetbrains.idea-ultimate
-        jetbrains.idea-ultimate-eap
+        #jetbrains.idea-ultimate-eap
         #jetbrains-toolbox
         #jetbrains.jdk
         #jetbrains.gateway
