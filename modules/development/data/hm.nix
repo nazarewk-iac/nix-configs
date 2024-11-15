@@ -1,6 +1,6 @@
 { lib, pkgs, config, ... }:
 let
-  cfg = config.kdn.development.terraform;
+  cfg = config.kdn.development.data;
 in
 {
   options.kdn.development.data = {
