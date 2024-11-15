@@ -46,6 +46,7 @@
   inputs.systems.url = "github:nix-systems/default";
   inputs.treefmt-nix.url = "github:numtide/treefmt-nix";
   inputs.ulauncher.url = "github:Ulauncher/Ulauncher/v6";
+  inputs.wezterm.url = "github:wez/wezterm/main?dir=nix";
 
   /*
    * dependencies
@@ -89,6 +90,9 @@
   inputs.treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
   inputs.ulauncher.inputs.flake-parts.follows = "flake-parts";
   inputs.ulauncher.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.wezterm.inputs.flake-utils.follows = "flake-utils";
+  inputs.wezterm.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.wezterm.inputs.rust-overlay.follows = "rust-overlay";
 
   outputs =
     inputs@{ flake-parts, self, ... }:
@@ -117,6 +121,7 @@
 
           nixos-anywhere = inputs.nixos-anywhere.packages."${final.stdenv.system}".default;
           nix-patcher = inputs.nix-patcher.packages."${final.stdenv.system}".nix-patcher;
+          wezterm = inputs.wezterm.packages."${final.stdenv.system}".default;
         })
       ]);
       perSystem = { config, self', inputs', system, pkgs, ... }:

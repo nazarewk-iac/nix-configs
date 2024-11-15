@@ -29,12 +29,17 @@ in
 
     home.sessionPath = [ "$HOME/.local/bin" ];
 
-    programs.foot = {
-      enable = true;
+    programs.foot.enable = true;
+    programs.foot.server.enable = false;
+    programs.foot.settings.main.dpi-aware = "no";
+    programs.foot.settings.scrollback.lines = 100000;
 
-      server.enable = false;
-      settings.main.dpi-aware = "no";
-      settings.scrollback.lines = 100000;
-    };
+    programs.wezterm.enable = true;
+    programs.wezterm.extraConfig = lib.mkMerge [
+      (lib.mkOrder 1 ''config = {}'')
+      ''config.front_end = "WebGpu"''
+      (lib.mkOrder 9999 ''return config'')
+    ];
+    #stylix.targets.wezterm.enable = true;
   };
 }
