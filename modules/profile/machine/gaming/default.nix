@@ -26,6 +26,7 @@ in
 
       # non-steam
       lutris
+      heroic # A Native GOG, Epic, and Amazon Games Launcher for Linux, Windows and Mac
 
       # proton utils
       protonup-qt
