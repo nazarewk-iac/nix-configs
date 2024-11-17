@@ -1,15 +1,22 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.hardware.gpu;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.hardware.gpu;
+in {
   options.kdn.hardware.gpu = {
     enable = lib.mkEnableOption "GPU setup";
     multiGPU.enable = lib.mkEnableOption "multiple GPUs setup";
     vfio.enable = lib.mkEnableOption "VFIO setup";
     vfio.gpuIDs = lib.mkOption {
       type = with lib.types; listOf str;
-      default = [ ];
+      default = [];
+    };
+    supergfxd.mode = lib.mkOption {
+      type = with lib.types; enum ["Integrated" "Hybrid" "VFIO"];
+      default = "Integrated";
     };
   };
 
@@ -20,15 +27,16 @@ in
     (lib.mkIf cfg.multiGPU.enable {
       services.supergfxd.enable = true;
       services.switcherooControl.enable = true;
-      systemd.services.supergfxd.path = [ pkgs.kmod ];
+      systemd.services.supergfxd.path = [pkgs.kmod];
       environment.systemPackages = with pkgs; [
         supergfxctl
       ];
       boot.kernelParams = lib.concatLists [
-        (lib.lists.optional config.kdn.hardware.gpu.amd.enable "supergfxd.mode=integrated")
+        (lib.lists.optional config.kdn.hardware.gpu.amd.enable "supergfxd.mode=${cfg.supergfxd.mode}")
       ];
     })
     (lib.mkIf cfg.vfio.enable {
+      kdn.hardware.gpu.supergfxd.mode = "Integrated";
       # see https://astrid.tech/2022/09/22/0/nixos-gpu-vfio/
       boot.initrd.kernelModules = [
         "vfio_pci"
@@ -46,8 +54,8 @@ in
         # see https://docs.kernel.org/admin-guide/kernel-parameters.html?highlight=amd_iommu
         #(lib.lists.optionals config.kdn.hardware.cpu.amd.enable [ "amd_iommu=on" ]) # supposedly on by default
         (lib.lists.optional config.kdn.hardware.cpu.intel.enable "intel_iommu=on")
-        [ "iommu=pt" ]
-        (lib.lists.optional (cfg.vfio.gpuIDs != [ ]) ("vfio-pci.ids=" + lib.concatStringsSep "," cfg.vfio.gpuIDs))
+        ["iommu=pt"]
+        (lib.lists.optional (cfg.vfio.gpuIDs != []) ("vfio-pci.ids=" + lib.concatStringsSep "," cfg.vfio.gpuIDs))
       ];
     })
   ]);

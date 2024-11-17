@@ -116,6 +116,7 @@ in {
         configuration = {
           system.nixos.tags = ["gaming"];
           kdn.hardware.gpu.vfio.enable = lib.mkForce false;
+          kdn.hardware.gpu.supergfxd.mode = "Hybrid";
         };
       };
     }
