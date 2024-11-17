@@ -1,8 +1,11 @@
-{ config, pkgs, lib, ... }:
-let
-  cfg = config.kdn.profile.host.oams;
-in
 {
+  config,
+  pkgs,
+  lib,
+  ...
+}: let
+  cfg = config.kdn.profile.host.oams;
+in {
   options.kdn.profile.host.oams = {
     enable = lib.mkEnableOption "enable oams host profile";
   };
@@ -17,7 +20,6 @@ in
       kdn.hardware.cpu.amd.enable = true;
 
       kdn.profile.machine.gaming.enable = true;
-      #kdn.hardware.gpu.vfio.enable = lib.mkForce false;
       kdn.hardware.gpu.vfio.gpuIDs = [
         "1002:73df"
         "1002:ab28"
@@ -29,18 +31,20 @@ in
 
       kdn.filesystems.disko.luks-zfs.enable = true;
 
-      boot.kernelModules = [ "kvm-amd" ];
+      boot.kernelModules = ["kvm-amd"];
 
       # 12G was not enough for large rebuild
       boot.tmp.tmpfsSize = "32G";
     }
-    /*{
+    /*
+      {
       kdn.hardware.edid.enable = true;
       hardware.display.outputs."DP-1" = {
         edid = "PG278Q_120.bin";
         mode = "e";
       };
-    }*/
+    }
+    */
     {
       services.asusd.enable = true;
       kdn.hardware.gpu.multiGPU.enable = true;
@@ -48,11 +52,12 @@ in
       programs.rog-control-center.autoStart = true;
       services.asusd.enableUserService = true;
       home-manager.sharedModules = [
-        (args:
-          let
-            bin = lib.getExe' config.services.asusd.package;
-            exec = cmd: args: "exec '${bin cmd} ${args}'";
-            key = config.kdn.desktop.sway.keys // {
+        (args: let
+          bin = lib.getExe' config.services.asusd.package;
+          exec = cmd: args: "exec '${bin cmd} ${args}'";
+          key =
+            config.kdn.desktop.sway.keys
+            // {
               # Top row of keys (between function keys and screen)
               top.vol-down = "XF86AudioLowerVolume"; # Top row volume down
               top.vol-up = "XF86AudioRaiseVolume"; # Top row volume down
@@ -87,21 +92,32 @@ in
               right.next = "XF86AudioNext";
               right.PrtSc = "Sys_Req"; # PrtSc aka Print Screen button
             };
-          in
-          {
-            wayland.windowManager.sway.config.keybindings = {
-              "${key.top.fan}" = exec "asusctl" "profile -n";
-              "${key.top.rog}" = exec "rog-control-center" "";
-              "${key.fn.f2}" = exec "asusctl" "--prev-kbd-bright";
-              "${key.fn.f3}" = exec "asusctl" "--next-kbd-bright";
-              "${key.super}+P" = lib.mkForce "output eDP-1 toggle";
-            };
-          })
+        in {
+          wayland.windowManager.sway.config.keybindings = {
+            "${key.top.fan}" = exec "asusctl" "profile -n";
+            "${key.top.rog}" = exec "rog-control-center" "";
+            "${key.fn.f2}" = exec "asusctl" "--prev-kbd-bright";
+            "${key.fn.f3}" = exec "asusctl" "--next-kbd-bright";
+            "${key.super}+P" = lib.mkForce "output eDP-1 toggle";
+          };
+        })
       ];
     }
-    (import ./disko.nix { inherit lib; hostname = config.networking.hostName; })
+    (import ./disko.nix {
+      inherit lib;
+      hostname = config.networking.hostName;
+    })
     {
       networking.networkmanager.logLevel = "DEBUG";
+    }
+    {
+      specialisation.gaming = {
+        inheritParentConfig = true;
+        configuration = {
+          system.nixos.tags = ["gaming"];
+          kdn.hardware.gpu.vfio.enable = lib.mkForce false;
+        };
+      };
     }
   ]);
 }

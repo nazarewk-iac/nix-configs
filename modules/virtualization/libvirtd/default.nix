@@ -20,7 +20,7 @@ in
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
-      kdn.hardware.gpu.vfio.enable = true;
+      kdn.hardware.gpu.vfio.enable = lib.mkDefault true;
       virtualisation.spiceUSBRedirection.enable = true;
       # see https://nixos.wiki/wiki/Virt-manager
       # see https://nixos.wiki/wiki/Libvirt
