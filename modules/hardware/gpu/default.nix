@@ -34,9 +34,24 @@ in {
       boot.kernelParams = lib.concatLists [
         (lib.lists.optional config.kdn.hardware.gpu.amd.enable "supergfxd.mode=${cfg.supergfxd.mode}")
       ];
+      services.supergfxd.settings = {
+        mode = cfg.supergfxd.mode;
+        always_reboot = false;
+        no_logind = true;
+        logout_timeout_s = 180;
+
+        vfio_enable = lib.mkDefault false;
+        vfio_save = lib.mkDefault false;
+        hotplug_type = lib.mkDefault "None";
+      };
     })
     (lib.mkIf cfg.vfio.enable {
       kdn.hardware.gpu.supergfxd.mode = "Integrated";
+      services.supergfxd.settings = {
+        vfio_enable = true;
+        vfio_save = true;
+        hotplug_type = "Asus";
+      };
       # see https://astrid.tech/2022/09/22/0/nixos-gpu-vfio/
       boot.initrd.kernelModules = [
         "vfio_pci"
