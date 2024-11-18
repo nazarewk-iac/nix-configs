@@ -1,8 +1,12 @@
-{ lib, pkgs, config, inputs, ... }:
-let
-  cfg = config.kdn.programs.nix-utils;
-in
 {
+  lib,
+  pkgs,
+  config,
+  inputs,
+  ...
+}: let
+  cfg = config.kdn.programs.nix-utils;
+in {
   options.kdn.programs.nix-utils = {
     enable = lib.mkEnableOption "nix management utilities setup";
   };

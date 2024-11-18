@@ -1,13 +1,17 @@
-{ lib, pkgs, config, self, ... }:
-let
-  cfg = config.kdn.networking.netbird.priv;
-in
 {
+  lib,
+  pkgs,
+  config,
+  self,
+  ...
+}: let
+  cfg = config.kdn.networking.netbird.priv;
+in {
   options.kdn.networking.netbird.priv = {
     enable = lib.mkEnableOption "enable Netbird priv profile";
 
     type = lib.mkOption {
-      type = with lib.types; enum [ "ephemeral" "permanent" ];
+      type = with lib.types; enum ["ephemeral" "permanent"];
       default = "permanent";
     };
   };
@@ -18,10 +22,15 @@ in
 
       services.netbird.clients.priv.dns-resolver.address = "127.0.0.19";
       kdn.networking.router.kresd.rewrites."priv.nb.net.int.kdn.im.".from = "netbird.cloud.";
-      kdn.networking.router.kresd.rewrites."priv.nb.net.int.kdn.im.".upstreams = [ "127.0.0.19" ];
+      kdn.networking.router.kresd.rewrites."priv.nb.net.int.kdn.im.".upstreams = ["127.0.0.19"];
 
       environment.persistence."usr/data".directories = [
-        { directory = "/var/lib/netbird-priv"; user = "netbird-priv"; group = "netbird-priv"; mode = "0700"; }
+        {
+          directory = "/var/lib/netbird-priv";
+          user = "netbird-priv";
+          group = "netbird-priv";
+          mode = "0700";
+        }
       ];
     }
     (lib.mkIf config.kdn.security.secrets.allowed {

@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.programs.photoprism;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.programs.photoprism;
+in {
   options.kdn.programs.photoprism = {
     enable = lib.mkEnableOption "photoprism photo management service";
   };
@@ -16,10 +19,9 @@ in
     services.photoprism.settings.PHOTOPRISM_READONLY = "true";
     services.photoprism.settings.PHOTOPRISM_ORIGINALS_LIMIT = "2000";
 
-    fileSystems."/var/lib/private/photoprism/originals" =
-      {
-        device = "/home/kdn/Nextcloud/drag0nius@nc.nazarewk.pw";
-        options = [ "bind" ];
-      };
+    fileSystems."/var/lib/private/photoprism/originals" = {
+      device = "/home/kdn/Nextcloud/drag0nius@nc.nazarewk.pw";
+      options = ["bind"];
+    };
   };
 }

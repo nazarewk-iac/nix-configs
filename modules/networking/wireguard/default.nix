@@ -1,41 +1,48 @@
-{ lib, pkgs, config, ... }:
-let
+{
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
   cfg = config.kdn.networking.wireguard;
-  getIP = num: lib.pipe cfg.subnet [
-    (lib.splitString ".")
-    lib.reverseList
-    (l: [ (builtins.toString ((lib.toInt (lib.head l)) + num)) ] ++ (lib.tail l))
-    lib.reverseList
-    (lib.concatStringsSep ".")
-  ];
+  getIP = num:
+    lib.pipe cfg.subnet [
+      (lib.splitString ".")
+      lib.reverseList
+      (l: [(builtins.toString ((lib.toInt (lib.head l)) + num))] ++ (lib.tail l))
+      lib.reverseList
+      (lib.concatStringsSep ".")
+    ];
 
   cidr = "${cfg.subnet}/${toString cfg.netmask}";
 
   activePeers = lib.filterAttrs (n: v: v.active) cfg.peers;
-  self = activePeers."${config.networking.hostName}" or { };
+  self = activePeers."${config.networking.hostName}" or {};
 
   isActive = self.active or false;
   isClient = isActive && !(self.server.enable or false);
   isServer = isActive && (self.server.enable or false);
 
-  preparePeers = filters: lib.trivial.pipe activePeers (filters ++ [
-    (lib.filterAttrs (n: v: n != config.networking.hostName))
-    (builtins.mapAttrs (name: entry: lib.mkMerge [
-      (lib.mkIf (!entry.server.enable) {
-        allowedIPs = [ "${getIP entry.hostnum}/32" ];
-      })
-      (lib.mkIf entry.server.enable {
-        allowedIPs = [
-          cidr
-        ];
-      })
-      entry.cfg
-      (self.peersCfg."${name}" or { })
-    ]))
-    lib.attrValues
-  ]);
-in
-{
+  preparePeers = filters:
+    lib.trivial.pipe activePeers (filters
+      ++ [
+        (lib.filterAttrs (n: v: n != config.networking.hostName))
+        (builtins.mapAttrs (name: entry:
+          lib.mkMerge [
+            (lib.mkIf (!entry.server.enable) {
+              allowedIPs = ["${getIP entry.hostnum}/32"];
+            })
+            (lib.mkIf entry.server.enable {
+              allowedIPs = [
+                cidr
+              ];
+            })
+            entry.cfg
+            (self.peersCfg."${name}" or {})
+          ]))
+        lib.attrValues
+      ]);
+in {
   options.kdn.networking.wireguard = {
     enable = lib.mkOption {
       type = lib.types.bool;
@@ -88,11 +95,11 @@ in
 
           peersCfg = lib.mkOption {
             type = lib.types.attrsOf lib.types.attrs;
-            default = { };
+            default = {};
           };
         };
       });
-      default = { };
+      default = {};
     };
   };
 
@@ -102,20 +109,20 @@ in
         wireguard-tools
       ];
     }
-    (lib.mkIf (isActive) {
+    (lib.mkIf isActive {
       # see https://github.com/NixOS/nixpkgs/issues/180175#issuecomment-1186152020
-      networking.networkmanager.unmanaged = [ "interface-name:${cfg.interfaceName}" ];
+      networking.networkmanager.unmanaged = ["interface-name:${cfg.interfaceName}"];
 
       networking.firewall = {
-        allowedUDPPorts = [ cfg.port ];
-        trustedInterfaces = [ cfg.interfaceName ];
+        allowedUDPPorts = [cfg.port];
+        trustedInterfaces = [cfg.interfaceName];
       };
 
       networking.wireguard.interfaces = {
         # "wg0" is the network interface name. You can name the interface arbitrarily.
         ${cfg.interfaceName} = {
           # Determines the IP address and subnet of the server's end of the tunnel interface.
-          ips = [ "${getIP self.hostnum}/${toString cfg.netmask}" ];
+          ips = ["${getIP self.hostnum}/${toString cfg.netmask}"];
 
           # The port that WireGuard listens to. Must be accessible by the client.
           listenPort = cfg.port;
@@ -129,13 +136,16 @@ in
         };
       };
       environment.persistence."usr/config".users.root.directories = [
-        { directory = "wireguard-keys"; mode = "0700"; }
+        {
+          directory = "wireguard-keys";
+          mode = "0700";
+        }
       ];
     })
     (lib.mkIf isServer {
       networking.nat.enable = true;
       networking.nat.externalInterface = self.server.externalInterface;
-      networking.nat.internalInterfaces = [ cfg.interfaceName ];
+      networking.nat.internalInterfaces = [cfg.interfaceName];
 
       boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
       boot.kernel.sysctl."net.ipv6.conf.all.forwarding" = 1;
@@ -155,7 +165,7 @@ in
             ${pkgs.iptables}/bin/iptables -t nat -D POSTROUTING -s ${cidr} -o ${self.server.externalInterface} -j MASQUERADE
           '';
 
-          peers = preparePeers [ ];
+          peers = preparePeers [];
         };
       };
     })

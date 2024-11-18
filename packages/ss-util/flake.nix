@@ -18,28 +18,39 @@
     extra-substituters = "https://devenv.cachix.org";
   };
 
-  outputs = inputs@{ self, nixpkgs, flake-parts, ... }: flake-parts.lib.mkFlake { inherit inputs; } {
-    imports = [
-      inputs.devenv.flakeModule
-    ];
+  outputs = inputs @ {
+    self,
+    nixpkgs,
+    flake-parts,
+    ...
+  }:
+    flake-parts.lib.mkFlake {inherit inputs;} {
+      imports = [
+        inputs.devenv.flakeModule
+      ];
 
-    systems = [
-      "x86_64-linux"
-      "x86_64-darwin"
-      "aarch64-linux"
-      "aarch64-darwin"
-    ];
+      systems = [
+        "x86_64-linux"
+        "x86_64-darwin"
+        "aarch64-linux"
+        "aarch64-darwin"
+      ];
 
-    flake = {
-      # Nixpkgs overlay providing the application
-      overlays.default = nixpkgs.lib.composeManyExtensions [ ];
-    };
+      flake = {
+        # Nixpkgs overlay providing the application
+        overlays.default = nixpkgs.lib.composeManyExtensions [];
+      };
 
-    perSystem = { config, self', inputs', pkgs, system, ... }:
-      let
-        conf = pkgs.callPackage ./config.nix { };
-      in
-      {
+      perSystem = {
+        config,
+        self',
+        inputs',
+        pkgs,
+        system,
+        ...
+      }: let
+        conf = pkgs.callPackage ./config.nix {};
+      in {
         _module.args.pkgs = import inputs.nixpkgs {
           inherit system;
           overlays = [
@@ -70,12 +81,12 @@
         apps.repl = {
           type = "app";
           program = "${pkgs.writeShellScriptBin "repl" ''
-              confnix=$(mktemp)
-              trap "rm '$confnix' || true" EXIT
-              echo "builtins.getFlake (toString "$PWD")" >$confnix
-              nix repl "$confnix"
-            ''}/bin/repl";
+            confnix=$(mktemp)
+            trap "rm '$confnix' || true" EXIT
+            echo "builtins.getFlake (toString "$PWD")" >$confnix
+            nix repl "$confnix"
+          ''}/bin/repl";
         };
       };
-  };
+    };
 }

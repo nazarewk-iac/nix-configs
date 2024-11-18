@@ -1,8 +1,12 @@
-{ lib, pkgs, config, inputs, ... }:
-let
-  cfg = config.kdn.desktop.base;
-in
 {
+  lib,
+  pkgs,
+  config,
+  inputs,
+  ...
+}: let
+  cfg = config.kdn.desktop.base;
+in {
   options.kdn.desktop.base = {
     enable = lib.mkEnableOption "Desktop base setup";
   };
@@ -32,7 +36,7 @@ in
 
       gtk.iconCache.enable = true;
       home-manager.sharedModules = [
-        ({ config, ... }: {
+        ({config, ...}: {
           home.file."${config.gtk.gtk2.configLocation}".force = true;
           xdg.configFile."fontconfig/conf.d/10-hm-fonts.conf".force = true;
           xdg.configFile."gtk-3.0/gtk.css".force = true;
@@ -43,7 +47,6 @@ in
       ];
     }
     {
-
       hardware.uinput.enable = true;
       kdn.programs.ydotool.enable = true;
       kdn.programs.dconf.enable = true;
@@ -59,53 +62,55 @@ in
       xdg.icons.enable = true;
       xdg.mime.enable = true;
 
-      environment.systemPackages = with pkgs; [
-        xorg.xeyes
-        xorg.xhost
-        xorg.xlsclients
+      environment.systemPackages = with pkgs;
+        [
+          xorg.xeyes
+          xorg.xhost
+          xorg.xlsclients
 
-        # graphics
-        libva-utils
+          # graphics
+          libva-utils
 
-        # tools
-        brightnessctl
-        gsettings-desktop-schemas
-        gtk-engine-murrine
-        gtk_engines
-        lxappearance
-        xsettingsd
-        dex # A program to generate and execute DesktopEntry files of the Application type
+          # tools
+          brightnessctl
+          gsettings-desktop-schemas
+          gtk-engine-murrine
+          gtk_engines
+          lxappearance
+          xsettingsd
+          dex # A program to generate and execute DesktopEntry files of the Application type
 
-        # debugging
-        evtest # listens for /dev/event* device events (eg: keyboard keys, function keys etc)
-        libinput
-        v4l-utils
-        wev # wayland event viewer
-        wshowkeys # display pressed keys
-        ashpd-demo # Tool for playing with XDG desktop portals
+          # debugging
+          evtest # listens for /dev/event* device events (eg: keyboard keys, function keys etc)
+          libinput
+          v4l-utils
+          wev # wayland event viewer
+          wshowkeys # display pressed keys
+          ashpd-demo # Tool for playing with XDG desktop portals
 
+          # carry-overs from modules/desktop/sway/base/default.nix
+          grim
+          libnotify
+          libsecret
+          wayland-utils
+          wl-clipboard
+          wl-clipboard-x11
 
-        # carry-overs from modules/desktop/sway/base/default.nix
-        grim
-        libnotify
-        libsecret
-        wayland-utils
-        wl-clipboard
-        wl-clipboard-x11
-
-        # themes
-        hicolor-icon-theme # nm-applet, see https://github.com/NixOS/nixpkgs/issues/32730
-        gnome-icon-theme # nm-applet, see https://github.com/NixOS/nixpkgs/issues/43836#issuecomment-419217138
-        glib # gsettings
-        sound-theme-freedesktop
-      ] ++ (with pkgs.libsForQt5; [
-        okular # pdf viewer
-        ark # archive manager
-        gwenview # image viewer & editor
-        /* TODO: didn't build on 2024-04-16
-        pix # image gallery viewer
-        */
-      ]);
+          # themes
+          hicolor-icon-theme # nm-applet, see https://github.com/NixOS/nixpkgs/issues/32730
+          gnome-icon-theme # nm-applet, see https://github.com/NixOS/nixpkgs/issues/43836#issuecomment-419217138
+          glib # gsettings
+          sound-theme-freedesktop
+        ]
+        ++ (with pkgs.libsForQt5; [
+          okular # pdf viewer
+          ark # archive manager
+          gwenview # image viewer & editor
+          /*
+             TODO: didn't build on 2024-04-16
+          pix # image gallery viewer
+          */
+        ]);
 
       xdg.portal.enable = true;
       xdg.portal.xdgOpenUsePortal = true;

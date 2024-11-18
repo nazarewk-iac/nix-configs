@@ -1,8 +1,12 @@
-{ lib, pkgs, config, self, ... }:
-let
-  cfg = config.kdn.profile.machine.gaming;
-in
 {
+  lib,
+  pkgs,
+  config,
+  self,
+  ...
+}: let
+  cfg = config.kdn.profile.machine.gaming;
+in {
   options.kdn.profile.machine.gaming = {
     enable = lib.mkEnableOption "enable gaming machine profile";
   };
@@ -13,11 +17,12 @@ in
     programs.steam.remotePlay.openFirewall = true;
     programs.steam.localNetworkGameTransfers.openFirewall = true;
 
-    nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
-      "steam"
-      "steam-original"
-      "steam-run"
-    ];
+    nixpkgs.config.allowUnfreePredicate = pkg:
+      builtins.elem (lib.getName pkg) [
+        "steam"
+        "steam-original"
+        "steam-run"
+      ];
     environment.systemPackages = with pkgs; [
       # steam  # covered by programs.steam.enable
       # steam-run  # covered by programs.steam.enable
@@ -39,19 +44,21 @@ in
       wine-wayland
     ];
 
-    home-manager.sharedModules = [{
-      home.persistence."usr/data".directories = [
-        ".local/share/bottles"
-        ".local/share/Steam"
-        ".local/share/lutris"
-      ];
-      home.persistence."usr/cache".directories = [
-        ".local/share/lutris/runtime"
-        ".local/share/bottles/runners"
-        ".local/share/bottles/temp"
-        ".local/share/bottles/dxvk"
-        ".local/share/Steam/steamapps"
-      ];
-    }];
+    home-manager.sharedModules = [
+      {
+        home.persistence."usr/data".directories = [
+          ".local/share/bottles"
+          ".local/share/Steam"
+          ".local/share/lutris"
+        ];
+        home.persistence."usr/cache".directories = [
+          ".local/share/lutris/runtime"
+          ".local/share/bottles/runners"
+          ".local/share/bottles/temp"
+          ".local/share/bottles/dxvk"
+          ".local/share/Steam/steamapps"
+        ];
+      }
+    ];
   };
 }

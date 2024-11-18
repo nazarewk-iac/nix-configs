@@ -1,5 +1,4 @@
-{ config, ... }:
-{
+{config, ...}: {
   kdn.networking.wireguard.peers = {
     moss = {
       hostnum = 1;

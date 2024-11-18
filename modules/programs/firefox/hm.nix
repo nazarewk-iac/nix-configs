@@ -1,28 +1,33 @@
-{ lib, pkgs, config, ... }:
-let
+{
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
   cfg = config.kdn.programs.firefox;
   ffCfg = config.programs.firefox;
   appCfg = config.kdn.programs.apps.firefox;
 
   inherit (pkgs.stdenv.hostPlatform) isDarwin;
   profilesPath =
-    if isDarwin then "${ffCfg.configPath}/Profiles" else ffCfg.configPath;
+    if isDarwin
+    then "${ffCfg.configPath}/Profiles"
+    else ffCfg.configPath;
 
   containerProfilesList = lib.pipe ffCfg.profiles [
     builtins.attrValues
-    (builtins.filter (p: p.containers != { }))
+    (builtins.filter (p: p.containers != {}))
   ];
 
   firefoxProfilePathsRel = lib.pipe containerProfilesList [
     (builtins.map (profile: "${profilesPath}/${profile.path}"))
   ];
-in
-{
+in {
   options.kdn.programs.firefox = {
     enable = lib.mkEnableOption "firefox setup";
     nativeMessagingHosts = lib.mkOption {
       type = with lib.types; listOf package;
-      default = [ ];
+      default = [];
       description = lib.mdDoc ''
         Additional packages containing native messaging hosts that should be made available to Firefox extensions.
       '';
@@ -38,22 +43,22 @@ in
       programs.firefox.package = appCfg.package.final;
       kdn.programs.apps.firefox = {
         package.install = false;
-        dirs.cache = [ ];
-        dirs.config = [ ];
-        dirs.data = [ "/.mozilla/firefox" ];
-        dirs.disposable = [ ];
-        dirs.reproducible = [ ];
-        dirs.state = [ ];
+        dirs.cache = [];
+        dirs.config = [];
+        dirs.data = ["/.mozilla/firefox"];
+        dirs.disposable = [];
+        dirs.reproducible = [];
+        dirs.state = [];
         package.overlays = [
-          (old: { nativeMessagingHosts = old.nativeMessagingHosts or [ ] ++ cfg.nativeMessagingHosts; })
+          (old: {nativeMessagingHosts = old.nativeMessagingHosts or [] ++ cfg.nativeMessagingHosts;})
         ];
       };
       home.file.".mozilla/native-messaging-hosts".force = true;
     }
     {
-      kdn.programs.firefox.nativeMessagingHosts = with pkgs; [ libsForQt5.plasma-browser-integration ];
+      kdn.programs.firefox.nativeMessagingHosts = with pkgs; [libsForQt5.plasma-browser-integration];
     }
-    (lib.mkIf (firefoxProfilePathsRel != { }) {
+    (lib.mkIf (firefoxProfilePathsRel != {}) {
       home.file = lib.pipe firefoxProfilePathsRel [
         (builtins.map (path: {
           name = "${path}/containers.json";
@@ -63,7 +68,7 @@ in
       ];
 
       systemd.user.paths.firefox-containers-d-sync = {
-        Install.WantedBy = [ "default.target" ];
+        Install.WantedBy = ["default.target"];
         Unit = {
           Description = "merges pieces into Firefox's containers.json file";
         };
@@ -76,7 +81,7 @@ in
         };
       };
       systemd.user.services.firefox-containers-d-sync = {
-        Install.WantedBy = [ "default.target" ];
+        Install.WantedBy = ["default.target"];
         Unit = {
           Description = "merges pieces into Firefox's containers.json file";
         };

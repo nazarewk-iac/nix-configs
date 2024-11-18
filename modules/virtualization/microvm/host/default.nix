@@ -1,8 +1,13 @@
-{ lib, pkgs, config, self, system, ... }:
-let
-  cfg = config.kdn.virtualization.microvm.host;
-in
 {
+  lib,
+  pkgs,
+  config,
+  self,
+  system,
+  ...
+}: let
+  cfg = config.kdn.virtualization.microvm.host;
+in {
   imports = [
     self.inputs.microvm.nixosModules.host
   ];
@@ -19,7 +24,10 @@ in
   };
 
   config = lib.mkMerge [
-    { microvm.host.enable = cfg.enable; kdn.virtualization.microvm.guest.nonMinimal = true; }
+    {
+      microvm.host.enable = cfg.enable;
+      kdn.virtualization.microvm.guest.nonMinimal = true;
+    }
     (lib.mkIf cfg.enable {
       # see https://github.com/astro/microvm.nix/blob/24136ffe7bb1e504bce29b25dcd46b272cbafd9b/examples/microvms-host.nix
       nix.registry = {

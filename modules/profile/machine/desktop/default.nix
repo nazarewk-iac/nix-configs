@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.profile.machine.desktop;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.profile.machine.desktop;
+in {
   options.kdn.profile.machine.desktop = {
     enable = lib.mkEnableOption "enable desktop machine profile";
   };
@@ -27,7 +30,7 @@ in
 
       kdn.headless.enableGUI = true;
 
-      boot.extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
+      boot.extraModulePackages = with config.boot.kernelPackages; [v4l2loopback];
 
       kdn.services.printing.enable = true;
       kdn.programs.firefox.enable = true;

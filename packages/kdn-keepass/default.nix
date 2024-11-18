@@ -1,4 +1,7 @@
-{ lib, pkgs }:
+{
+  lib,
+  pkgs,
+}:
 pkgs.writeShellApplication {
   name = "kdn-keepass";
   runtimeInputs = with pkgs; [

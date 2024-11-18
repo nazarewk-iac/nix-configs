@@ -1,8 +1,12 @@
-{ osConfig, config, pkgs, lib, ... }:
-let
-  cfg = config.kdn.desktop.kde;
-in
 {
+  osConfig,
+  config,
+  pkgs,
+  lib,
+  ...
+}: let
+  cfg = config.kdn.desktop.kde;
+in {
   options.kdn.desktop.kde = {
     enable = lib.mkEnableOption "KDE Plasma desktop setup";
   };

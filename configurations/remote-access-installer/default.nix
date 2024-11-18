@@ -1,7 +1,10 @@
 # used in tandem with <repo>/installer-update.sh
-{ config, pkgs, ... }:
 {
-  imports = [ /etc/nixos/configuration.bkp.nix ];
+  config,
+  pkgs,
+  ...
+}: {
+  imports = [/etc/nixos/configuration.bkp.nix];
 
   nix.package = pkgs.nixVersions.stable;
   nix.extraOptions = ''

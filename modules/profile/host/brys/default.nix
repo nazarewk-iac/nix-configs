@@ -1,9 +1,14 @@
-{ config, pkgs, lib, modulesPath, self, ... }:
-let
+{
+  config,
+  pkgs,
+  lib,
+  modulesPath,
+  self,
+  ...
+}: let
   cfg = config.kdn.profile.host.brys;
   hostname = config.networking.hostName;
-in
-{
+in {
   options.kdn.profile.host.brys = {
     enable = lib.mkEnableOption "enable brys host profile";
   };
@@ -43,7 +48,8 @@ in
         mode = "e";
       };
     }
-    /* {
+    /*
+       {
       # automated unlock using Clevis through Tang server
       boot.initrd.network.flushBeforeStage2 = true;
       networking.interfaces.enp5s0.useDHCP = true;
@@ -56,14 +62,14 @@ in
 
       #boot.initrd.clevis.useTang = true;
       #boot.initrd.clevis.devices."brys-main-crypted".secretFile = ./brys-main-crypted.jwe;
-    } */
+    }
+    */
     (
       let
         cfg = config.kdn.hardware.disks;
         d1 = "vp4300-brys";
         d2 = "px700-brys";
-      in
-      {
+      in {
         # TODO: those are unlocked automatically using TPM2, switch to etra (or k8s cluster) backed Clevis+Tang unlock
         kdn.hardware.disks.initrd.failureTarget = "rescue.target";
         kdn.hardware.disks.enable = true;

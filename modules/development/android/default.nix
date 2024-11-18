@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.development.android;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.development.android;
+in {
   options.kdn.development.android = {
     enable = lib.mkEnableOption "working with Android devices";
   };

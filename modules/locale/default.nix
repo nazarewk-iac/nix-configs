@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.locale;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.locale;
+in {
   options.kdn.locale = {
     timezone = lib.mkOption {
       type = lib.types.str;

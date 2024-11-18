@@ -8,33 +8,43 @@
     };
   };
 
-  outputs = inputs@{ self, flake-parts, nixpkgs, ... }: flake-parts.lib.mkFlake { inherit inputs; } {
-    imports = [
-    ];
+  outputs = inputs @ {
+    self,
+    flake-parts,
+    nixpkgs,
+    ...
+  }:
+    flake-parts.lib.mkFlake {inherit inputs;} {
+      imports = [
+      ];
 
-    systems = [
-      "x86_64-linux"
-      "x86_64-darwin"
-      "aarch64-linux"
-      "aarch64-darwin"
-    ];
-    flake = { };
+      systems = [
+        "x86_64-linux"
+        "x86_64-darwin"
+        "aarch64-linux"
+        "aarch64-darwin"
+      ];
+      flake = {};
 
-    perSystem = { config, self', inputs', system, ... }:
-      let
+      perSystem = {
+        config,
+        self',
+        inputs',
+        system,
+        ...
+      }: let
         pkgs = import nixpkgs {
           inherit system;
-          overlays = [ self.overlays.default ];
+          overlays = [self.overlays.default];
         };
-        conf = import ./config.nix { inherit pkgs; };
-      in
-      {
+        conf = import ./config.nix {inherit pkgs;};
+      in {
         packages.default = conf.pkg;
         packages.container = pkgs.dockerTools.buildLayeredImage {
           name = "hello-docker";
           tag = "latest";
           config = {
-            Cmd = [ conf.bin ];
+            Cmd = [conf.bin];
           };
         };
         devShells = {
@@ -58,5 +68,5 @@
           ''}/bin/repl";
         };
       };
-  };
+    };
 }

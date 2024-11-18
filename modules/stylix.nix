@@ -1,10 +1,17 @@
-{ config, lib, pkgs, inputs, ... }: {
+{
+  config,
+  lib,
+  pkgs,
+  inputs,
+  ...
+}: {
   imports = [
     inputs.stylix.nixosModules.stylix
   ];
   config = {
-    /* TODO: review new option added for simplifications?
-        see https://github.com/danth/stylix/commit/7682713f6af1d32a33f8c4e3d3d141af5ad1761a
+    /*
+    TODO: review new option added for simplifications?
+     see https://github.com/danth/stylix/commit/7682713f6af1d32a33f8c4e3d3d141af5ad1761a
     */
 
     stylix.enable = true;

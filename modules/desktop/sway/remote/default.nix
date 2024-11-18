@@ -1,5 +1,9 @@
-{ lib, pkgs, config, ... }:
-let
+{
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
   cfg = config.kdn.desktop.sway.remote;
 
   sway-headless-vnc = pkgs.writeShellApplication {
@@ -13,8 +17,7 @@ let
     ];
     text = builtins.readFile ./sway-headless-vnc.sh;
   };
-in
-{
+in {
   options.kdn.desktop.sway.remote = {
     enable = lib.mkEnableOption "remote access setup for Sway";
   };

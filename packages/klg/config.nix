@@ -1,6 +1,9 @@
-{ pkgs, lib, ... }:
-let
-  klog = pkgs.callPackage ../klog-time-tracker { };
+{
+  pkgs,
+  lib,
+  ...
+}: let
+  klog = pkgs.callPackage ../klog-time-tracker {};
 
   pyproject = builtins.fromTOML (builtins.readFile attrs.common.pyproject);
   poetryName = pyproject.tool.poetry.name;
@@ -16,15 +19,19 @@ let
     });
   };
 
-  attrs.app = attrs.common // {
-    buildInputs = with pkgs; [
-      klog
-    ];
-  };
-  attrs.env = attrs.common // {
-    groups = [ "test" ];
-    editablePackageSources = { "${poetryName}" = "./"; };
-  };
+  attrs.app =
+    attrs.common
+    // {
+      buildInputs = with pkgs; [
+        klog
+      ];
+    };
+  attrs.env =
+    attrs.common
+    // {
+      groups = ["test"];
+      editablePackageSources = {"${poetryName}" = "./";};
+    };
 
   envvars = {
     # additional environment variables to set for the tools
@@ -35,56 +42,55 @@ let
 
   app = wrap {
     name = poetryName;
-    paths = [ poetryApp ];
+    paths = [poetryApp];
   };
   dev = wrap {
     name = "dev-${poetryName}";
-    paths = [ poetryEnv ] ++ attrs.app.buildInputs;
+    paths = [poetryEnv] ++ attrs.app.buildInputs;
   };
 
-  wrap = { name, paths, env ? envvars, initScript ? "" }:
-    let
-      wrapper =
-        let
-          drv = pkgs.writeShellApplication {
-            name = "${name}-wrapper";
-            text =
-              let
-                bashEnv =
-                  let
-                    envToBash = name: value: "export ${name}=${lib.escapeShellArg (toString value)}";
-                  in
-                  lib.pipe env [
-                    (lib.mapAttrsToList envToBash)
-                    (lib.concatStringsSep "\n")
-                  ];
-              in
-              ''
-                src="''${BASH_SOURCE[0]}"
-                dir="''${BASH_SOURCE[0]%/*}"
+  wrap = {
+    name,
+    paths,
+    env ? envvars,
+    initScript ? "",
+  }: let
+    wrapper = let
+      drv = pkgs.writeShellApplication {
+        name = "${name}-wrapper";
+        text = let
+          bashEnv = let
+            envToBash = name: value: "export ${name}=${lib.escapeShellArg (toString value)}";
+          in
+            lib.pipe env [
+              (lib.mapAttrsToList envToBash)
+              (lib.concatStringsSep "\n")
+            ];
+        in ''
+          src="''${BASH_SOURCE[0]}"
+          dir="''${BASH_SOURCE[0]%/*}"
 
-                var="${placeholder "out"}"
-                # strip /nix/store/
-                var="''${var#/nix/store/}"
-                # uppercase
-                var="''${var^^}"
-                # dash to underscore
-                var="''${var//"-"/"_"}"
-                # prefix
-                var="_WRAPPER_ACTIVATED_$var"
+          var="${placeholder "out"}"
+          # strip /nix/store/
+          var="''${var#/nix/store/}"
+          # uppercase
+          var="''${var^^}"
+          # dash to underscore
+          var="''${var//"-"/"_"}"
+          # prefix
+          var="_WRAPPER_ACTIVATED_$var"
 
-                if [ "''${!var:-"no"}" != "yes" ] ; then
-                  export "$var"="yes"
-                  export PATH="$dir/.wrapped:$PATH"
-                  ${bashEnv}
-                  ${initScript}
-                fi
-                exec "$dir/.wrapped/''${src##*/}" "$@"
-              '';
-          };
-        in
-        "${drv}/bin/${name}-wrapper";
-    in
+          if [ "''${!var:-"no"}" != "yes" ] ; then
+            export "$var"="yes"
+            export PATH="$dir/.wrapped:$PATH"
+            ${bashEnv}
+            ${initScript}
+          fi
+          exec "$dir/.wrapped/''${src##*/}" "$@"
+        '';
+      };
+    in "${drv}/bin/${name}-wrapper";
+  in
     pkgs.symlinkJoin {
       name = "${name}-newsymlinks";
       paths = paths;
@@ -100,14 +106,15 @@ let
   container = pkgs.nix2container.buildImage {
     name = "localhost/eid";
     tag = "latest";
-    config.entrypoint = [ "${app}/bin/eid" ];
+    config.entrypoint = ["${app}/bin/eid"];
     copyToRoot = pkgs.buildEnv {
       name = "${poetryName}-container-root";
-      paths = [ app ];
-      pathsToLink = [ "/bin" ];
+      paths = [app];
+      pathsToLink = ["/bin"];
     };
-    layers = builtins.map
-      (deps: pkgs.nix2container.buildLayer { deps = lib.lists.flatten deps; })
+    layers =
+      builtins.map
+      (deps: pkgs.nix2container.buildLayer {deps = lib.lists.flatten deps;})
       [
         [
           attrs.app.python
@@ -115,12 +122,10 @@ let
         ]
       ];
   };
-in
-{
+in {
   inherit attrs pyproject;
   inherit poetryApp poetryEnv;
   inherit app dev container;
   inherit klog;
   inherit (attrs.common) python;
 }
-

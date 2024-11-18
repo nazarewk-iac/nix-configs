@@ -1,5 +1,9 @@
-{ config, pkgs, lib, ... }:
-let
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}: let
   cfg = config.kdn.desktop.sway;
   waybar = config.programs.waybar.package;
 
@@ -84,12 +88,12 @@ let
       "critical-threshold" = 80;
       # "format-critical" = "{temperatureC}°C {icon}";
       "format" = "{temperatureC}°C {icon}";
-      "format-icons" = [ "" "" "" ];
+      "format-icons" = ["" "" ""];
     };
     "backlight" = {
       # "device" = "acpi_video1";
       "format" = "{percent}% {icon}";
-      "format-icons" = [ "" "" ];
+      "format-icons" = ["" ""];
     };
     "battery" = {
       "states" = {
@@ -103,7 +107,7 @@ let
       "format-alt" = "{time} {icon}";
       # "format-good" = "", # An empty format will hide the module
       # "format-full" = "";
-      "format-icons" = [ "" "" "" "" "" ];
+      "format-icons" = ["" "" "" "" ""];
     };
     "battery#bat2" = {
       "bat" = "BAT2";
@@ -126,7 +130,7 @@ let
       "format-source" = "{volume}% ";
       "format-source-muted" = "";
       "format-icons" = {
-        "default" = [ "" "" "" ];
+        "default" = ["" "" ""];
 
         # see https://github.com/Alexays/Waybar/blob/f5370fcff585419dcce67712b561217d33e8b65e/src/modules/pulseaudio.cpp#L40-L42
         "car" = "";
@@ -142,7 +146,7 @@ let
       "on-click" = "${lib.getExe' pkgs.avizo "volumectl"} toggle-mute";
       "on-click-middle" = "pavucontrol";
       "on-click-right" = "${lib.getExe' pkgs.avizo "volumectl"} -m toggle-mute";
-      "ignored-sinks" = [ "Easy Effects Sink" ];
+      "ignored-sinks" = ["Easy Effects Sink"];
     };
   };
 
@@ -177,11 +181,10 @@ let
       "clock"
     ];
   };
-in
-{
+in {
   config = lib.mkIf (config.kdn.headless.enableGUI && cfg.enable) {
     xdg.configFile."waybar/config" = {
-      source = (pkgs.formats.json { }).generate "waybar-config.json" (settings // settingsModules);
+      source = (pkgs.formats.json {}).generate "waybar-config.json" (settings // settingsModules);
       onChange = ''
         ${lib.getExe' pkgs.procps "pkill"} -u '${config.home.username}' -USR2 waybar || :
       '';
@@ -192,10 +195,10 @@ in
       libappindicator-gtk3
     ];
 
-    systemd.user.services.waybar.Unit.BindsTo = [ "tray.target" ];
-    systemd.user.services.waybar.Unit.Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
-    systemd.user.services.waybar.Unit.After = [ config.kdn.desktop.sway.systemd.envs.target ];
-    systemd.user.services.waybar.Service.ExecStartPost = [ "${pkgs.coreutils}/bin/sleep 3" ];
+    systemd.user.services.waybar.Unit.BindsTo = ["tray.target"];
+    systemd.user.services.waybar.Unit.Requires = [config.kdn.desktop.sway.systemd.envs.target];
+    systemd.user.services.waybar.Unit.After = [config.kdn.desktop.sway.systemd.envs.target];
+    systemd.user.services.waybar.Service.ExecStartPost = ["${pkgs.coreutils}/bin/sleep 3"];
 
     programs.waybar = {
       enable = true;

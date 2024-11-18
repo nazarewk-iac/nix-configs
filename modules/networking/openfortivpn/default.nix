@@ -1,12 +1,11 @@
-{ lib
-, pkgs
-, config
-, ...
-}:
-let
-  cfg = config.kdn.networking.openfortivpn;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.networking.openfortivpn;
+in {
   options.kdn.networking.openfortivpn = {
     enable = lib.mkEnableOption "openfortivpn setup";
   };

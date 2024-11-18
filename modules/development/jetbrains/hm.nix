@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.development.jetbrains;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.development.jetbrains;
+in {
   options.kdn.development.jetbrains = {
     enable = lib.mkEnableOption "Jetbrains tooling";
     go.enable = lib.mkEnableOption "Go specific fixes";
@@ -34,7 +37,7 @@ in
         Service.RestartSec = 0;
         Service.ExecStart = pkgs.writeShellScript "jetbrains-remote.sh" ''
           set -eEuo pipefail
-          PATH=${lib.makeBinPath (with pkgs; [ coreutils findutils inotify-tools patchelf gnused ])}
+          PATH=${lib.makeBinPath (with pkgs; [coreutils findutils inotify-tools patchelf gnused])}
           bin_dir="$HOME/.cache/JetBrains/RemoteDev/dist"
 
           mkdir -p "$bin_dir"
@@ -81,7 +84,7 @@ in
             esac
           done < <(inotifywait -r -m -q -e CREATE --include '^.*ideaIU[-[:digit:]\.]+(/plugins)?(/remote-dev-server)?(/bin)?$' --format '%w%f:%e' "$bin_dir/")
         '';
-        Install.WantedBy = [ "default.target" ];
+        Install.WantedBy = ["default.target"];
       };
     }
     (lib.mkIf cfg.go.enable (
@@ -89,7 +92,7 @@ in
         name = "symlink-jetbrains-delve";
         pkg = pkgs.writeShellApplication {
           name = name;
-          runtimeInputs = with pkgs; [ ];
+          runtimeInputs = with pkgs; [];
           text = ''
             shopt -s nocaseglob # not sure whether JetBrains folder name is consistent
             shopt -s globstar
@@ -102,8 +105,7 @@ in
           '';
         };
         bin = "${pkg}/bin/${name}";
-      in
-      {
+      in {
         programs.bash.profileExtra = bin;
         programs.zsh.profileExtra = bin;
         programs.fish.shellInit = bin;

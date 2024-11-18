@@ -1,82 +1,88 @@
-{ lib, pkgs, config, ... }:
-let
+{
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
   cfg = config.kdn.development.python;
 
   defaultPython = pkgs.python312;
 
-  mkPython = pkg: (pkg.withPackages (ps: with ps; [
-    beautifulsoup4
-    black
-    boto3
-    build # build a package, see https://realpython.com/pypi-publish-python-package/#build-your-package
-    cookiecutter
-    deepmerge
-    diagrams
-    duckdb
-    fire
-    flake8
-    fsspec
-    graphviz
-    httpie
-    httpx
-    ipython
-    isort
-    keyring
-    matplotlib
-    mt-940
-    pendulum
-    pip
-    pip-tools
-    pipx
-    pyaml
-    pyheos
-    pytest
-    pyyaml
-    requests
-    ruamel-yaml
-    tqdm
-    twine # upload to pypi, see https://realpython.com/pypi-publish-python-package/#upload-your-package
-    types-beautifulsoup4
-    universal-pathlib
+  mkPython = pkg: (pkg.withPackages (ps:
+    with ps; [
+      beautifulsoup4
+      black
+      boto3
+      build # build a package, see https://realpython.com/pypi-publish-python-package/#build-your-package
+      cookiecutter
+      deepmerge
+      diagrams
+      duckdb
+      fire
+      flake8
+      fsspec
+      graphviz
+      httpie
+      httpx
+      ipython
+      isort
+      keyring
+      matplotlib
+      mt-940
+      pendulum
+      pip
+      pip-tools
+      pipx
+      pyaml
+      pyheos
+      pytest
+      pyyaml
+      requests
+      ruamel-yaml
+      tqdm
+      twine # upload to pypi, see https://realpython.com/pypi-publish-python-package/#upload-your-package
+      types-beautifulsoup4
+      universal-pathlib
 
-    pycrypto
+      pycrypto
 
-    (pkgs.http-prompt.override { python3Packages = ps; httpie = ps.httpie; })
-  ]));
+      (pkgs.http-prompt.override {
+        python3Packages = ps;
+        httpie = ps.httpie;
+      })
+    ]));
 
-  renamedBinariesOnly = fmt: pkg: (pkgs.runCommand "${pkg.name}-renamed-to-${builtins.replaceStrings [ "%s" ] [ "BIN" ] fmt}"
-    { buildInputs = [ ]; } ''
-    set -x
-    ${lib.toShellVar "srcDir" "${pkg}/bin"}
-    ${lib.toShellVar "fmt" fmt}
+  renamedBinariesOnly = fmt: pkg: (pkgs.runCommand "${pkg.name}-renamed-to-${builtins.replaceStrings ["%s"] ["BIN"] fmt}"
+    {buildInputs = [];} ''
+      set -x
+      ${lib.toShellVar "srcDir" "${pkg}/bin"}
+      ${lib.toShellVar "fmt" fmt}
 
-    mkdir -p "$out/bin"
-    if test "$fmt" = "%s" ; then
-      echo "fmt $fmt must modify filename!"
-      exit 1
-    fi
-
-    for file in "$srcDir"/* ; do
-      if test -e "$(printf "$fmt" "$file")" || ! test -x "$file" ; then
-        continue
+      mkdir -p "$out/bin"
+      if test "$fmt" = "%s" ; then
+        echo "fmt $fmt must modify filename!"
+        exit 1
       fi
-      filename="''${file##*/}"
-      renamed="$(printf "$fmt" "$filename")"
-      ln -sfT "$file" "$out/bin/$renamed"
-    done
-    set +x
-  '');
 
-in
-{
+      for file in "$srcDir"/* ; do
+        if test -e "$(printf "$fmt" "$file")" || ! test -x "$file" ; then
+          continue
+        fi
+        filename="''${file##*/}"
+        renamed="$(printf "$fmt" "$filename")"
+        ln -sfT "$file" "$out/bin/$renamed"
+      done
+      set +x
+    '');
+in {
   options.kdn.development.python = {
     enable = lib.mkEnableOption "Python development";
   };
 
   config = lib.mkIf cfg.enable {
     home-manager.sharedModules = [
-      { kdn.development.python.enable = true; }
-      { programs.git.ignores = [ (builtins.readFile ./.gitignore) ]; }
+      {kdn.development.python.enable = true;}
+      {programs.git.ignores = [(builtins.readFile ./.gitignore)];}
     ];
     nixpkgs.overlays = [
       (final: prev: {
@@ -87,7 +93,7 @@ in
       })
     ];
 
-    environment.systemPackages = (with pkgs; [
+    environment.systemPackages = with pkgs; [
       # python software not available in `python.withPackages`
       pipenv
       poetry
@@ -100,6 +106,6 @@ in
       (lib.meta.setPrio 21 (renamedBinariesOnly "%s.3.11" python311))
 
       graphviz
-    ]);
+    ];
   };
 }

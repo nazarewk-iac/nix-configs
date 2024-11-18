@@ -6,7 +6,7 @@
   '';
   nix.settings = {
     show-trace = true;
-    experimental-features = [ "nix-command" "flakes" ];
+    experimental-features = ["nix-command" "flakes"];
     trusted-public-keys = [
       "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
       "nixpkgs-update.cachix.org-1:6y6Z2JdoL3APdu6/+Iy8eZX2ajf09e4EE9SnxSML1W8="
@@ -17,8 +17,8 @@
       "https://nixpkgs-update.cachix.org"
       "https://devenv.cachix.org"
     ];
-    allowed-users = [ "@wheel" ];
-    trusted-users = [ "@wheel" ];
+    allowed-users = ["@wheel"];
+    trusted-users = ["@wheel"];
   };
 
   nixpkgs.config = {
@@ -31,5 +31,4 @@
       "electron-27.3.11" # loqseq dependency? 2024-07-12
     ];
   };
-
 }

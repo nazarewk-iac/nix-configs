@@ -1,11 +1,14 @@
-{ lib, pkgs, config, ... }:
-let
+{
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
   cfg = config.kdn.hardware.disks;
   hostname = config.networking.hostName;
 
-  sysCfg = lib.attrsets.recursiveUpdate { imp.enableActivationScript = true; };
-in
-{
+  sysCfg = lib.attrsets.recursiveUpdate {imp.enableActivationScript = true;};
+in {
   config = lib.mkMerge [
     {
       impermanence.userDefaultPerms.mode = "0700";
@@ -21,7 +24,7 @@ in
       kdn.hardware.disks.impermanence."sys/config".snapshots = true;
       kdn.hardware.disks.impermanence."sys/data".snapshots = true;
       kdn.hardware.disks.impermanence."sys/reproducible".snapshots = false;
-      kdn.hardware.disks.impermanence."sys/state".neededForBoot = [ "/var/log/journal" ];
+      kdn.hardware.disks.impermanence."sys/state".neededForBoot = ["/var/log/journal"];
       kdn.hardware.disks.impermanence."sys/state".snapshots = false;
       kdn.hardware.disks.impermanence."usr/cache".snapshots = false;
       kdn.hardware.disks.impermanence."usr/config".snapshots = true;
@@ -39,17 +42,18 @@ in
           num = 1;
           size = 4096;
           disko = {
-            /* https://uapi-group.org/specifications/specs/discoverable_partitions_specification/
-             Name: EFI System Partition
-             UUID: c12a7328-f81f-11d2-ba4b-00a0c93ec93b SD_GPT_ESP
-             Filesystems: VFAT
-             Explanation:
-               The ESP used for the current boot is automatically mounted to /boot/ or /efi/,
-               unless a different partition is mounted there (possibly via /etc/fstab) or
-               the mount point directory is non-empty on the root disk.
-               If both ESP and XBOOTLDR exist, the /efi/ mount point shall be used for ESP.
-               This partition type is defined by the UEFI Specification.
-             */
+            /*
+              https://uapi-group.org/specifications/specs/discoverable_partitions_specification/
+            Name: EFI System Partition
+            UUID: c12a7328-f81f-11d2-ba4b-00a0c93ec93b SD_GPT_ESP
+            Filesystems: VFAT
+            Explanation:
+              The ESP used for the current boot is automatically mounted to /boot/ or /efi/,
+              unless a different partition is mounted there (possibly via /etc/fstab) or
+              the mount point directory is non-empty on the root disk.
+              If both ESP and XBOOTLDR exist, the /efi/ mount point shall be used for ESP.
+              This partition type is defined by the UEFI Specification.
+            */
             type = "C12A7328-F81F-11D2-BA4B-00A0C93EC93B";
             label = "ESP";
             content.type = "filesystem";
@@ -64,7 +68,7 @@ in
       }
       {
         # zpool config
-        kdn.hardware.disks.zpools."${cfg.zpool-main.name}" = { };
+        kdn.hardware.disks.zpools."${cfg.zpool-main.name}" = {};
       }
       {
         # system-wide disks
@@ -85,22 +89,22 @@ in
         # clean up "disposable" mountpoint every boot
         let
           dCfg = config.environment.persistence."disposable";
-          scriptDeps = with pkgs; [ coreutils tree ];
-        in
-        {
+          scriptDeps = with pkgs; [coreutils tree];
+        in {
           boot.initrd.systemd.initrdBin = scriptDeps;
           boot.initrd.systemd.services."kdn-disks-disposable-content" = {
             description = ''Logs and cleans up content of `environment.persistence."disposable"`'';
-            after = [ "sysroot-nix-persist-disposable.mount" ];
-            wantedBy = [ "sysroot-nix-persist-disposable.mount" ];
-            onFailure = [ "rescue.target" ];
+            after = ["sysroot-nix-persist-disposable.mount"];
+            wantedBy = ["sysroot-nix-persist-disposable.mount"];
+            onFailure = ["rescue.target"];
 
             serviceConfig = {
               Type = "oneshot";
               RemainAfterExit = true;
             };
             unitConfig.DefaultDependencies = false;
-            script = let in ''
+            script = let
+            in ''
               set -x
 
               export PATH="${lib.makeBinPath scriptDeps}:$PATH"
@@ -120,18 +124,24 @@ in
         }
       )
       (lib.mkIf cfg.disposable.homes {
-        environment.persistence."disposable".users = builtins.mapAttrs (_: _: { directories = [ "" ]; }) config.home-manager.users;
+        environment.persistence."disposable".users = builtins.mapAttrs (_: _: {directories = [""];}) config.home-manager.users;
       })
       {
         environment.persistence."disposable".directories = [
-          { directory = "/var/tmp"; mode = "0777"; }
+          {
+            directory = "/var/tmp";
+            mode = "0777";
+          }
         ];
       }
       {
         environment.persistence."sys/data" = {
           directories = [
             "/var/lib/systemd"
-            { directory = "/var/lib/private"; mode = "0700"; }
+            {
+              directory = "/var/lib/private";
+              mode = "0700";
+            }
           ];
           files = [
             "/etc/ssh/ssh_host_ed25519_key"
@@ -159,7 +169,7 @@ in
         Nov 05 09:40:41 etra systemd[1]: Starting Save Transient machine-id to Disk...
         Nov 05 09:40:48 etra systemd-machine-id-setup[439037]: /etc/machine-id is not on a temporary file system.
         Nov 05 09:40:48 etra systemd[1]: systemd-machine-id-commit.service: Main process exited, code=exited, status=1/FAILURE
-         */
+        */
         systemd.services.systemd-machine-id-commit.enable = false;
       }
       {
@@ -168,9 +178,11 @@ in
             "/var/cache"
           ];
         };
-        home-manager.sharedModules = [{
-          home.persistence."sys/cache".directories = [ ".cache/nix" ];
-        }];
+        home-manager.sharedModules = [
+          {
+            home.persistence."sys/cache".directories = [".cache/nix"];
+          }
+        ];
       }
       {
         kdn.hardware.disks.impermanence."sys/state".neededForBoot = [
@@ -193,9 +205,11 @@ in
         };
       }
       {
-        home-manager.sharedModules = [{
-          home.persistence."usr/data".directories = [ ".local/share/nix" ];
-        }];
+        home-manager.sharedModules = [
+          {
+            home.persistence."usr/data".directories = [".local/share/nix"];
+          }
+        ];
       }
       {
         disko.devices.nodev = {

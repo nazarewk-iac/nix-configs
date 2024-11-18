@@ -1,8 +1,12 @@
-{ lib, pkgs, config, inputs, ... }:
-let
-  cfg = config.kdn.programs.nix-index;
-in
 {
+  lib,
+  pkgs,
+  config,
+  inputs,
+  ...
+}: let
+  cfg = config.kdn.programs.nix-index;
+in {
   options.kdn.programs.nix-index = {
     enable = lib.mkEnableOption "nix-index setup";
   };
@@ -14,7 +18,7 @@ in
 
     # use nix-index without `nix-channel`
     # see https://github.com/bennofs/nix-index/issues/167
-    nix.nixPath = [ "nixpkgs=${inputs.nixpkgs}" ];
-    environment.systemPackages = with pkgs; [ nix-index ];
+    nix.nixPath = ["nixpkgs=${inputs.nixpkgs}"];
+    environment.systemPackages = with pkgs; [nix-index];
   };
 }

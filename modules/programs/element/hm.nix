@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.programs.element;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.programs.element;
+in {
   options.kdn.programs.element = {
     enable = lib.mkEnableOption "element setup";
   };
@@ -11,12 +14,12 @@ in
     {
       kdn.programs.apps.element-desktop = {
         enable = true;
-        dirs.cache = [ ];
-        dirs.config = [ "Element" ];
-        dirs.data = [ ];
-        dirs.disposable = [ ];
-        dirs.reproducible = [ ];
-        dirs.state = [ ];
+        dirs.cache = [];
+        dirs.config = ["Element"];
+        dirs.data = [];
+        dirs.disposable = [];
+        dirs.reproducible = [];
+        dirs.state = [];
       };
     }
   ]);

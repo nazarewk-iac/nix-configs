@@ -1,8 +1,12 @@
-{ config, pkgs, lib, modulesPath, ... }:
-let
-  cfg = config.kdn.profile.machine.hetzner;
-in
 {
+  config,
+  pkgs,
+  lib,
+  modulesPath,
+  ...
+}: let
+  cfg = config.kdn.profile.machine.hetzner;
+in {
   options.kdn.profile.machine.hetzner = {
     enable = lib.mkEnableOption "enable hetzner machine profile";
 
@@ -24,7 +28,7 @@ in
         "sd_mod"
         "sr_mod"
       ];
-      boot.kernelModules = [ ];
+      boot.kernelModules = [];
 
       # TODO: not sure whether it's mandatory to use grub on Hetzner?
       boot.loader.systemd-boot.enable = lib.mkForce false;
@@ -54,7 +58,7 @@ in
         networkConfig.LinkLocalAddressing = "ipv4";
         linkConfig.RequiredForOnline = "routable";
         # see https://docs.hetzner.com/cloud/servers/static-configuration/
-        gateway = [ "fe80::1" ];
+        gateway = ["fe80::1"];
         address = lib.optional (cfg.ipv6Address != null) cfg.ipv6Address;
       };
     }

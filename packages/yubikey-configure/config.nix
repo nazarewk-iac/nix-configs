@@ -1,5 +1,4 @@
-{ pkgs, ... }:
-let
+{pkgs, ...}: let
   lib = pkgs.lib;
 
   attrs = {
@@ -14,12 +13,12 @@ let
 
   cfg = builtins.fromTOML (builtins.readFile attrs.pyproject);
   name = cfg.tool.poetry.name;
-  pkg = pkgs.poetry2nix.mkPoetryApplication (attrs // { });
-  env = pkgs.poetry2nix.mkPoetryEnv (attrs // {
-    editablePackageSources = { "${name}" = attrs.projectDir; };
-  });
-in
-{
+  pkg = pkgs.poetry2nix.mkPoetryApplication (attrs // {});
+  env = pkgs.poetry2nix.mkPoetryEnv (attrs
+    // {
+      editablePackageSources = {"${name}" = attrs.projectDir;};
+    });
+in {
   inherit pkg env cfg;
   bin = "${pkg}/bin/${name}";
 }

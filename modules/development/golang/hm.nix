@@ -1,9 +1,12 @@
-{ lib, pkgs, config, ... }:
-let
+{
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
   cfg = config.kdn.development.golang;
   home = config.home.homeDirectory;
-in
-{
+in {
   options.kdn.development.golang = {
     enable = lib.mkEnableOption "golang development";
   };
@@ -23,7 +26,7 @@ in
       ];
     }
     {
-      programs.helix.extraPackages = with pkgs;[
+      programs.helix.extraPackages = with pkgs; [
         gopls
         delve
       ];

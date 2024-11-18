@@ -1,1 +1,1 @@
-{ pkgs, ... }: (pkgs.callPackage ./config.nix { }).app
+{pkgs, ...}: (pkgs.callPackage ./config.nix {}).app

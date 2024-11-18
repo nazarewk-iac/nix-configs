@@ -9,8 +9,8 @@
   inputs.nixpkgs-lib.follows = "nixpkgs";
 
   /*
-   * pinned inputs to keep up to date manually
-   */
+  * pinned inputs to keep up to date manually
+  */
   inputs.helix-editor.url = "github:helix-editor/helix/24.07";
   # skip https://github.com/tinted-theming/tinted-foot/commit/7ca954e993ee73a7cc9b86c59df4920cc8ff9d34
   # see https://github.com/tinted-theming/tinted-foot/issues/8
@@ -18,8 +18,8 @@
   inputs.tinted-foot.url = "github:tinted-theming/tinted-foot/fd1b924b6c45c3e4465e8a849e67ea82933fcbe4";
 
   /*
-   * rest of inputs
-   */
+  * rest of inputs
+  */
   inputs.base16.url = "github:SenchoPens/base16.nix";
   inputs.crane.url = "github:ipetkov/crane";
   inputs.disko.url = "github:nix-community/disko";
@@ -49,8 +49,8 @@
   inputs.wezterm.url = "github:wez/wezterm/main?dir=nix";
 
   /*
-   * dependencies
-   */
+  * dependencies
+  */
   inputs.disko.inputs.nixpkgs.follows = "nixpkgs";
   inputs.flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs-lib";
   inputs.helix-editor.inputs.crane.follows = "crane";
@@ -94,242 +94,253 @@
   inputs.wezterm.inputs.nixpkgs.follows = "nixpkgs";
   inputs.wezterm.inputs.rust-overlay.follows = "rust-overlay";
 
-  outputs =
-    inputs@{ flake-parts, self, ... }:
-    let
-      inherit (inputs) home-manager nixpkgs disko;
-      lib = import ./lib { inherit (inputs.nixpkgs) lib; };
-      flakeLib = lib.kdn.flakes.forFlake self;
-    in
-    (flake-parts.lib.mkFlake { inherit inputs; } {
-      systems = import inputs.systems;
+  outputs = inputs @ {
+    flake-parts,
+    self,
+    ...
+  }: let
+    inherit (inputs) home-manager nixpkgs disko;
+    lib = import ./lib {inherit (inputs.nixpkgs) lib;};
+    flakeLib = lib.kdn.flakes.forFlake self;
+  in (flake-parts.lib.mkFlake {inherit inputs;} {
+    systems = import inputs.systems;
 
-      flake.overlays.packages = inputs.nixpkgs.lib.composeManyExtensions [
-        inputs.poetry2nix.overlays.default
-        (final: prev: {
-          kdn = (prev.kdn or { }) // (final.callPackages ./packages { });
-        })
-      ];
+    flake.overlays.packages = inputs.nixpkgs.lib.composeManyExtensions [
+      inputs.poetry2nix.overlays.default
+      (final: prev: {
+        kdn = (prev.kdn or {}) // (final.callPackages ./packages {});
+      })
+    ];
 
-      flake.overlays.default = (inputs.nixpkgs.lib.composeManyExtensions [
-        inputs.ulauncher.overlays.default
-        inputs.helix-editor.overlays.default
-        inputs.nur.overlay
-        self.overlays.packages
-        (final: prev: {
-          inherit lib;
+    flake.overlays.default = inputs.nixpkgs.lib.composeManyExtensions [
+      inputs.ulauncher.overlays.default
+      inputs.helix-editor.overlays.default
+      inputs.nur.overlay
+      self.overlays.packages
+      (final: prev: {
+        inherit lib;
 
-          nixos-anywhere = inputs.nixos-anywhere.packages."${final.stdenv.system}".default;
-          nix-patcher = inputs.nix-patcher.packages."${final.stdenv.system}".nix-patcher;
-          wezterm = inputs.wezterm.packages."${final.stdenv.system}".default;
-        })
-      ]);
-      perSystem = { config, self', inputs', system, pkgs, ... }:
-        let kdnNixpkgs = inputs'.nixpkgs.legacyPackages.extend self.overlays.default; in {
-          _module.args.pkgs = kdnNixpkgs;
-          # inspired by https://github.com/NixOS/nix/issues/3803#issuecomment-748612294
-          # usage: nix run '.#repl'
-          apps.repl = {
-            type = "app";
-            program = "${pkgs.writeShellScriptBin "repl" ''
-            confnix=$(mktemp)
-            trap "rm '$confnix' || true" EXIT
-            echo "builtins.getFlake (toString "$PWD")" >$confnix
-            nix repl "$confnix" "$@"
-          ''}/bin/repl";
-          };
-          apps.nix-patcher = inputs'.nix-patcher.apps.default;
-          apps.nixpkgs-update = {
-            type = "app";
-            program = lib.getExe (pkgs.writeShellApplication {
-              name = "nixpkgs-update";
-              runtimeInputs = with pkgs; [
-                nix-patcher
-                pass
-                git
-              ];
-              text = builtins.readFile ./nixpkgs-update.sh;
-            });
-          };
-          checks = { };
-          devShells = { };
-          packages = lib.mkMerge [
-            (lib.filterAttrs (n: pkg: lib.isDerivation pkg) (flakeLib.overlayedInputs { inherit system; }).nixpkgs.kdn)
-            # adds nixosConfigurations as microvms as packages with microvm-* prefix
-            # TODO: fix /nix/store filesystem type conflict before re-enabling
-            #(lib.attrsets.mapAttrs' (name: value: lib.attrsets.nameValuePair "microvm-${name}" value) (flakeLib.microvm.packages system))
-            {
-              install-iso = flakeLib.nixos.install-iso {
-                inherit system;
-                modules = [
-                  {
-                    home-manager.sharedModules = [{ home.stateVersion = "24.11"; }];
-                    kdn.security.secrets.allow = false;
-                    kdn.profile.machine.baseline.enable = true;
-                    kdn.networking.netbird.priv.type = "ephemeral";
-                    kdn.networking.tailscale.auth_key = "nixos-ephemeral";
+        nixos-anywhere = inputs.nixos-anywhere.packages."${final.stdenv.system}".default;
+        nix-patcher = inputs.nix-patcher.packages."${final.stdenv.system}".nix-patcher;
+        wezterm = inputs.wezterm.packages."${final.stdenv.system}".default;
+      })
+    ];
+    perSystem = {
+      config,
+      self',
+      inputs',
+      system,
+      pkgs,
+      ...
+    }: let
+      kdnNixpkgs = inputs'.nixpkgs.legacyPackages.extend self.overlays.default;
+    in {
+      _module.args.pkgs = kdnNixpkgs;
+      # inspired by https://github.com/NixOS/nix/issues/3803#issuecomment-748612294
+      # usage: nix run '.#repl'
+      apps.repl = {
+        type = "app";
+        program = "${pkgs.writeShellScriptBin "repl" ''
+          confnix=$(mktemp)
+          trap "rm '$confnix' || true" EXIT
+          echo "builtins.getFlake (toString "$PWD")" >$confnix
+          nix repl "$confnix" "$@"
+        ''}/bin/repl";
+      };
+      apps.nix-patcher = inputs'.nix-patcher.apps.default;
+      apps.nixpkgs-update = {
+        type = "app";
+        program = lib.getExe (pkgs.writeShellApplication {
+          name = "nixpkgs-update";
+          runtimeInputs = with pkgs; [
+            nix-patcher
+            pass
+            git
+          ];
+          text = builtins.readFile ./nixpkgs-update.sh;
+        });
+      };
+      checks = {};
+      devShells = {};
+      packages = lib.mkMerge [
+        (lib.filterAttrs (n: pkg: lib.isDerivation pkg) (flakeLib.overlayedInputs {inherit system;}).nixpkgs.kdn)
+        # adds nixosConfigurations as microvms as packages with microvm-* prefix
+        # TODO: fix /nix/store filesystem type conflict before re-enabling
+        #(lib.attrsets.mapAttrs' (name: value: lib.attrsets.nameValuePair "microvm-${name}" value) (flakeLib.microvm.packages system))
+        {
+          install-iso = flakeLib.nixos.install-iso {
+            inherit system;
+            modules = [
+              {
+                home-manager.sharedModules = [{home.stateVersion = "24.11";}];
+                kdn.security.secrets.allow = false;
+                kdn.profile.machine.baseline.enable = true;
+                kdn.networking.netbird.priv.type = "ephemeral";
+                kdn.networking.tailscale.auth_key = "nixos-ephemeral";
 
-                    environment.systemPackages = with pkgs; [
-                    ];
-                  }
-                  ({ config, ... }: {
-                    users.users.root.openssh.authorizedKeys.keys = config.users.users.kdn.openssh.authorizedKeys.keys;
-                  })
+                environment.systemPackages = with pkgs; [
                 ];
+              }
+              ({config, ...}: {
+                users.users.root.openssh.authorizedKeys.keys = config.users.users.kdn.openssh.authorizedKeys.keys;
+              })
+            ];
+          };
+        }
+      ];
+    };
+    flake.lib = lib;
+    flake.apps = inputs.nixinate.nixinate."x86_64-linux" self;
+    flake.nixosModules.default = ./modules;
+    flake.nixosConfigurations = lib.mkMerge [
+      {
+        oams = flakeLib.nixos.system {
+          system = "x86_64-linux";
+          modules = [
+            ({config, ...}: {
+              networking.hostName = "oams";
+              kdn.profile.host."${config.networking.hostName}".enable = true;
+
+              system.stateVersion = "23.11";
+              home-manager.sharedModules = [{home.stateVersion = "23.11";}];
+              networking.hostId = "ce0f2f33"; # cut -c-8 </proc/sys/kernel/random/uuid
+
+              _module.args.nixinate = {
+                #host = "${config.networking.hostName}.netbird.cloud.";
+                #host = hostName;
+                host = "${config.networking.hostName}.lan.etra.net.int.kdn.im";
+                sshUser = "kdn";
+                buildOn = "local"; # valid args are "local" or "remote"
+                substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
+                hermetic = true;
+                nixOptions = ["--show-trace"];
               };
-            }
+            })
           ];
         };
-      flake.lib = lib;
-      flake.apps = inputs.nixinate.nixinate."x86_64-linux" self;
-      flake.nixosModules.default = ./modules;
-      flake.nixosConfigurations = lib.mkMerge [
-        {
-          oams = flakeLib.nixos.system {
-            system = "x86_64-linux";
-            modules = [
-              ({ config, ... }: {
-                networking.hostName = "oams";
-                kdn.profile.host."${config.networking.hostName}".enable = true;
 
-                system.stateVersion = "23.11";
-                home-manager.sharedModules = [{ home.stateVersion = "23.11"; }];
-                networking.hostId = "ce0f2f33"; # cut -c-8 </proc/sys/kernel/random/uuid
+        brys = flakeLib.nixos.system {
+          system = "x86_64-linux";
+          modules = [
+            ({config, ...}: {
+              networking.hostName = "brys";
+              kdn.profile.host."${config.networking.hostName}".enable = true;
 
-                _module.args.nixinate = {
-                  #host = "${config.networking.hostName}.netbird.cloud.";
-                  #host = hostName;
-                  host = "${config.networking.hostName}.lan.etra.net.int.kdn.im";
-                  sshUser = "kdn";
-                  buildOn = "local"; # valid args are "local" or "remote"
-                  substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
-                  hermetic = true;
-                  nixOptions = [ "--show-trace" ];
-                };
-              })
-            ];
-          };
+              system.stateVersion = "24.11";
+              home-manager.sharedModules = [{home.stateVersion = "24.11";}];
+              networking.hostId = "0a989258"; # cut -c-8 </proc/sys/kernel/random/uuid
 
-          brys = flakeLib.nixos.system {
-            system = "x86_64-linux";
-            modules = [
-              ({ config, ... }: {
-                networking.hostName = "brys";
-                kdn.profile.host."${config.networking.hostName}".enable = true;
+              _module.args.nixinate = {
+                #host = "${config.networking.hostName}.netbird.cloud.";
+                #host = config.networking.hostName;
+                host = "${config.networking.hostName}.lan.etra.net.int.kdn.im";
+                sshUser = "kdn";
+                buildOn = "local"; # valid args are "local" or "remote"
+                substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
+                hermetic = true;
+                nixOptions = ["--show-trace"];
+              };
+            })
+          ];
+        };
 
-                system.stateVersion = "24.11";
-                home-manager.sharedModules = [{ home.stateVersion = "24.11"; }];
-                networking.hostId = "0a989258"; # cut -c-8 </proc/sys/kernel/random/uuid
+        etra = flakeLib.nixos.system {
+          system = "x86_64-linux";
+          modules = [
+            ({config, ...}: {
+              networking.hostName = "etra";
+              kdn.profile.host."${config.networking.hostName}".enable = true;
 
-                _module.args.nixinate = {
-                  #host = "${config.networking.hostName}.netbird.cloud.";
-                  #host = config.networking.hostName;
-                  host = "${config.networking.hostName}.lan.etra.net.int.kdn.im";
-                  sshUser = "kdn";
-                  buildOn = "local"; # valid args are "local" or "remote"
-                  substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
-                  hermetic = true;
-                  nixOptions = [ "--show-trace" ];
-                };
-              })
-            ];
-          };
+              system.stateVersion = "24.11";
+              home-manager.sharedModules = [{home.stateVersion = "24.11";}];
+              networking.hostId = "6dc8c4d7"; # cut -c-8 </proc/sys/kernel/random/uuid
 
-          etra = flakeLib.nixos.system {
-            system = "x86_64-linux";
-            modules = [
-              ({ config, ... }: {
-                networking.hostName = "etra";
-                kdn.profile.host."${config.networking.hostName}".enable = true;
+              _module.args.nixinate = {
+                #host = "${config.networking.hostName}.netbird.cloud.";
+                host = "${config.networking.hostName}.lan.etra.net.int.kdn.im";
+                #host = "192.168.73.1";
+                sshUser = "kdn";
+                buildOn = "local"; # valid args are "local" or "remote"
+                substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
+                hermetic = true;
+                nixOptions = ["--show-trace"];
+              };
+            })
+          ];
+        };
 
-                system.stateVersion = "24.11";
-                home-manager.sharedModules = [{ home.stateVersion = "24.11"; }];
-                networking.hostId = "6dc8c4d7"; # cut -c-8 </proc/sys/kernel/random/uuid
+        obler = flakeLib.nixos.system {
+          system = "x86_64-linux";
+          modules = [
+            ({config, ...}: {
+              networking.hostName = "obler";
+              kdn.profile.host."${config.networking.hostName}".enable = true;
 
-                _module.args.nixinate = {
-                  #host = "${config.networking.hostName}.netbird.cloud.";
-                  host = "${config.networking.hostName}.lan.etra.net.int.kdn.im";
-                  #host = "192.168.73.1";
-                  sshUser = "kdn";
-                  buildOn = "local"; # valid args are "local" or "remote"
-                  substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
-                  hermetic = true;
-                  nixOptions = [ "--show-trace" ];
-                };
-              })
-            ];
-          };
+              system.stateVersion = "23.11";
+              home-manager.sharedModules = [{home.stateVersion = "23.11";}];
+              networking.hostId = "f6345d38"; # cut -c-8 </proc/sys/kernel/random/uuid
 
-          obler = flakeLib.nixos.system {
-            system = "x86_64-linux";
-            modules = [
-              ({ config, ... }: {
-                networking.hostName = "obler";
-                kdn.profile.host."${config.networking.hostName}".enable = true;
+              _module.args.nixinate = {
+                host = "${config.networking.hostName}.netbird.cloud.";
+                #host = "${config.networking.hostName}.lan.etra.net.int.kdn.im";
+                sshUser = "kdn";
+                buildOn = "local"; # valid args are "local" or "remote"
+                substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
+                hermetic = true;
+                nixOptions = ["--show-trace"];
+              };
+            })
+          ];
+        };
 
-                system.stateVersion = "23.11";
-                home-manager.sharedModules = [{ home.stateVersion = "23.11"; }];
-                networking.hostId = "f6345d38"; # cut -c-8 </proc/sys/kernel/random/uuid
+        moss = flakeLib.nixos.system {
+          system = "x86_64-linux";
+          modules = [
+            ({config, ...}: {
+              networking.hostName = "moss";
+              kdn.profile.host."${config.networking.hostName}".enable = true;
 
-                _module.args.nixinate = {
-                  host = "${config.networking.hostName}.netbird.cloud.";
-                  #host = "${config.networking.hostName}.lan.etra.net.int.kdn.im";
-                  sshUser = "kdn";
-                  buildOn = "local"; # valid args are "local" or "remote"
-                  substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
-                  hermetic = true;
-                  nixOptions = [ "--show-trace" ];
-                };
-              })
-            ];
-          };
+              system.stateVersion = "23.11";
+              home-manager.sharedModules = [{home.stateVersion = "23.11";}];
+              networking.hostId = "550ded62"; # cut -c-8 </proc/sys/kernel/random/uuid
 
-          moss = flakeLib.nixos.system {
-            system = "x86_64-linux";
-            modules = [
-              ({ config, ... }: {
-                networking.hostName = "moss";
-                kdn.profile.host."${config.networking.hostName}".enable = true;
+              _module.args.nixinate = {
+                host = "${config.networking.hostName}.kdn.im";
+                #host = "${config.networking.hostName}.netbird.cloud";
+                #host = "10.100.0.1"; # wireguard
+                sshUser = "kdn";
+                buildOn = "local"; # valid args are "local" or "remote"
+                substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
+                hermetic = true;
+                nixOptions = ["--show-trace"];
+              };
+            })
+            ({modulesPath, ...}: {
+              imports = [
+                (modulesPath + "/profiles/qemu-guest.nix")
+                (modulesPath + "/profiles/headless.nix")
+              ];
+            })
+          ];
+        };
 
-                system.stateVersion = "23.11";
-                home-manager.sharedModules = [{ home.stateVersion = "23.11"; }];
-                networking.hostId = "550ded62"; # cut -c-8 </proc/sys/kernel/random/uuid
-
-                _module.args.nixinate = {
-                  host = "${config.networking.hostName}.kdn.im";
-                  #host = "${config.networking.hostName}.netbird.cloud";
-                  #host = "10.100.0.1"; # wireguard
-                  sshUser = "kdn";
-                  buildOn = "local"; # valid args are "local" or "remote"
-                  substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
-                  hermetic = true;
-                  nixOptions = [ "--show-trace" ];
-                };
-              })
-              ({ modulesPath, ... }: {
-                imports = [
-                  (modulesPath + "/profiles/qemu-guest.nix")
-                  (modulesPath + "/profiles/headless.nix")
-                ];
-              })
-            ];
-          };
-
-          #rpi4 = lib.nixosSystem {
-          #  # nix build '.#rpi4.config.system.build.sdImage' --system aarch64-linux -L
-          #  # see for a next step: https://matrix.to/#/!KqkRjyTEzAGRiZFBYT:nixos.org/$w4Zx8Y0vG0DhlD3zzWReWDaOdRSZvwyrn1tQsLhYDEU?via=nixos.org&via=matrix.org&via=tchncs.de
-          #  system = "aarch64-linux";
-          #  modules = [ ./rpi4/sd-image.nix ];
-          #};
-        }
-        (flakeLib.microvm.configuration {
-          name = "hello-microvm";
-          modules = [{
+        #rpi4 = lib.nixosSystem {
+        #  # nix build '.#rpi4.config.system.build.sdImage' --system aarch64-linux -L
+        #  # see for a next step: https://matrix.to/#/!KqkRjyTEzAGRiZFBYT:nixos.org/$w4Zx8Y0vG0DhlD3zzWReWDaOdRSZvwyrn1tQsLhYDEU?via=nixos.org&via=matrix.org&via=tchncs.de
+        #  system = "aarch64-linux";
+        #  modules = [ ./rpi4/sd-image.nix ];
+        #};
+      }
+      (flakeLib.microvm.configuration {
+        name = "hello-microvm";
+        modules = [
+          {
             system.stateVersion = "23.11";
-            home-manager.sharedModules = [{ home.stateVersion = "23.11"; }];
+            home-manager.sharedModules = [{home.stateVersion = "23.11";}];
             kdn.profile.machine.baseline.enable = true;
-          }];
-        })
-      ];
-    });
+          }
+        ];
+      })
+    ];
+  });
 }

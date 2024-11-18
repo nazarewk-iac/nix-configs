@@ -12,24 +12,36 @@
     systems.url = "github:nix-systems/default";
   };
 
-  outputs = inputs@{ flake-parts, self, ... }: flake-parts.lib.mkFlake { inherit inputs; } {
-    systems = import inputs.systems;
-    imports = [
-      inputs.devenv.flakeModule
-    ];
-    flake.overlays.default = inputs.nixpkgs.lib.composeManyExtensions [
-      inputs.poetry2nix.overlays.default
-      (final: prev: { git-credential-keyring = final.callPackage ./. { }; })
-    ];
-    perSystem = { config, self', inputs', system, pkgs, ... }: {
-      _module.args.pkgs = inputs'.nixpkgs.legacyPackages.extend self.overlays.default;
-      packages.git-credential-keyring = pkgs.git-credential-keyring;
+  outputs = inputs @ {
+    flake-parts,
+    self,
+    ...
+  }:
+    flake-parts.lib.mkFlake {inherit inputs;} {
+      systems = import inputs.systems;
+      imports = [
+        inputs.devenv.flakeModule
+      ];
+      flake.overlays.default = inputs.nixpkgs.lib.composeManyExtensions [
+        inputs.poetry2nix.overlays.default
+        (final: prev: {git-credential-keyring = final.callPackage ./. {};})
+      ];
+      perSystem = {
+        config,
+        self',
+        inputs',
+        system,
+        pkgs,
+        ...
+      }: {
+        _module.args.pkgs = inputs'.nixpkgs.legacyPackages.extend self.overlays.default;
+        packages.git-credential-keyring = pkgs.git-credential-keyring;
 
-      devenv.shells.default = {
-        packages = with pkgs; [
-          git-credential-keyring
-        ];
+        devenv.shells.default = {
+          packages = with pkgs; [
+            git-credential-keyring
+          ];
+        };
       };
     };
-  };
 }

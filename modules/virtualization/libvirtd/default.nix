@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.virtualization.libvirtd;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.virtualization.libvirtd;
+in {
   options.kdn.virtualization.libvirtd = {
     enable = lib.mkEnableOption "libvirtd setup";
 
@@ -13,7 +16,7 @@ in
       };
       instances = lib.mkOption {
         type = lib.types.attrsOf lib.types.str;
-        default = { };
+        default = {};
       };
     };
   };
@@ -40,11 +43,12 @@ in
       };
       kdn.programs.dconf.enable = true;
       networking.firewall.checkReversePath = false;
-      networking.networkmanager.unmanaged = [ "interface-name:virbr*" ];
+      networking.networkmanager.unmanaged = ["interface-name:virbr*"];
 
-      /* TODO: wait for VM packaging? https://github.com/NixOS/nixpkgs/issues/287644
+      /*
+         TODO: wait for VM packaging? https://github.com/NixOS/nixpkgs/issues/287644
       services.cockpit.enable = true;
-       */
+      */
       environment.systemPackages = with pkgs; [
         libguestfs
         libvirt

@@ -3,35 +3,38 @@
 # contents of a directory that can be populated with commands. The
 # generated image is sized to only fit its contents, with the expectation
 # that a script resizes the filesystem at boot time.
-{ pkgs
-, lib
+{
+  pkgs,
+  lib,
   # List of derivations to be included
-, storePaths
+  storePaths,
   # Whether or not to compress the resulting image with zstd
-, compressImage ? false
-, zstd
+  compressImage ? false,
+  zstd,
   # Shell commands to populate the ./files directory.
   # All files in that directory are copied to the root of the FS.
-, populateImageCommands ? ""
-, zpoolName
-, defaultZpoolName ? "nixos-tank"
+  populateImageCommands ? "",
+  zpoolName,
+  defaultZpoolName ? "nixos-tank",
   # , uuid ? "44444444-4444-4444-8888-888888888888"
-, perl
-, zfsUnstable
-}:
-
-let
-  sdClosureInfo = pkgs.buildPackages.closureInfo { rootPaths = storePaths; };
+  perl,
+  zfsUnstable,
+}: let
+  sdClosureInfo = pkgs.buildPackages.closureInfo {rootPaths = storePaths;};
 in
-pkgs.stdenv.mkDerivation {
-  name = "zfs-fs.img${lib.optionalString compressImage ".zst"}";
+  pkgs.stdenv.mkDerivation {
+    name = "zfs-fs.img${lib.optionalString compressImage ".zst"}";
 
-  nativeBuildInputs = [ perl zfsUnstable ]
-    ++ lib.optional compressImage zstd;
+    nativeBuildInputs =
+      [perl zfsUnstable]
+      ++ lib.optional compressImage zstd;
 
-  buildCommand =
-    ''
-      ${if compressImage then "img=temp.img" else "img=$out"}
+    buildCommand = ''
+      ${
+        if compressImage
+        then "img=temp.img"
+        else "img=$out"
+      }
       (
       mkdir -p ./files
       ${populateImageCommands}
@@ -96,4 +99,4 @@ pkgs.stdenv.mkDerivation {
         zstd -v --no-progress ./$img -o $out
       fi
     '';
-}
+  }

@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.hardware.edid;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.hardware.edid;
+in {
   options.kdn.hardware.edid = {
     enable = lib.mkEnableOption "EDID scripts & utils";
   };

@@ -1,9 +1,12 @@
 # litestream inspired by https://github.com/NixOS/nixpkgs/blob/2726f127c15a4cc9810843b96cad73c7eb39e443/nixos/modules/services/network-filesystems/litestream/default.nix
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.programs.atuin;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.programs.atuin;
+in {
   options.kdn.programs.atuin = {
     enable = lib.mkEnableOption "Atuin shell history management and sync";
   };
@@ -40,7 +43,7 @@ in
         Service.Environment = [
           "ATUIN_LOG=info"
         ];
-        Install.WantedBy = [ "default.target" ];
+        Install.WantedBy = ["default.target"];
       };
     })
   ]);

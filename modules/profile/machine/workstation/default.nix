@@ -1,54 +1,59 @@
-{ lib, pkgs, config, self, ... }:
-let
-  cfg = config.kdn.profile.machine.workstation;
-in
 {
+  lib,
+  pkgs,
+  config,
+  self,
+  ...
+}: let
+  cfg = config.kdn.profile.machine.workstation;
+in {
   options.kdn.profile.machine.workstation = {
     enable = lib.mkEnableOption "enable workstation machine profile";
   };
 
-  config = lib.mkIf cfg.enable (lib.mkMerge [{
-    kdn.desktop.kde.enable = false;
-    kdn.desktop.sway.enable = true;
-    kdn.desktop.sway.remote.enable = true;
+  config = lib.mkIf cfg.enable (lib.mkMerge [
+    {
+      kdn.desktop.kde.enable = false;
+      kdn.desktop.sway.enable = true;
+      kdn.desktop.sway.remote.enable = true;
 
-    kdn.programs.gnupg.pinentry = pkgs.kdn.pinentry;
+      kdn.programs.gnupg.pinentry = pkgs.kdn.pinentry;
 
-    kdn.profile.machine.desktop.enable = true;
-    kdn.profile.machine.dev.enable = true;
+      kdn.profile.machine.desktop.enable = true;
+      kdn.profile.machine.dev.enable = true;
 
-    kdn.monitoring.prometheus-stack.enable = false;
-    kdn.monitoring.prometheus-stack.caddy.grafana = "grafana.${config.networking.hostName}.kdn.im";
-    kdn.services.caddy.enable = true;
-    kdn.programs.obs-studio.enable = true;
+      kdn.monitoring.prometheus-stack.enable = false;
+      kdn.monitoring.prometheus-stack.caddy.grafana = "grafana.${config.networking.hostName}.kdn.im";
+      kdn.services.caddy.enable = true;
+      kdn.programs.obs-studio.enable = true;
 
-    kdn.virtualization.libvirtd.enable = true;
+      kdn.virtualization.libvirtd.enable = true;
 
-    boot.initrd.availableKernelModules = [ ];
+      boot.initrd.availableKernelModules = [];
 
-    kdn.virtualization.microvm.host.enable = false;
-    microvm.vms.hello-microvm = { flake = self; };
+      kdn.virtualization.microvm.host.enable = false;
+      microvm.vms.hello-microvm = {flake = self;};
 
-    # CUSTOM
+      # CUSTOM
 
-    kdn.desktop.remote-server.enable = true;
-    kdn.programs.nix-index.enable = true;
+      kdn.desktop.remote-server.enable = true;
+      kdn.programs.nix-index.enable = true;
 
-    kdn.development.android.enable = true;
-    kdn.development.kernel.enable = false;
-    #kdn.virtualisation.containers.dagger.enable = true;
-    #kdn.virtualisation.containers.distrobox.enable = true;
-    kdn.virtualisation.containers.enable = true;
-    kdn.virtualisation.containers.podman.enable = true;
-    # TODO: enable after fixed https://github.com/NixOS/nixpkgs/issues/264127
-    kdn.virtualisation.containers.talos.enable = false;
-    #kdn.virtualisation.containers.x11docker.enable = true;
-    programs.seahorse.enable = true;
-    boot.binfmt.emulatedSystems = [
-      "aarch64-linux"
-      "wasm32-wasi"
-      "wasm64-wasi"
-      /*
+      kdn.development.android.enable = true;
+      kdn.development.kernel.enable = false;
+      #kdn.virtualisation.containers.dagger.enable = true;
+      #kdn.virtualisation.containers.distrobox.enable = true;
+      kdn.virtualisation.containers.enable = true;
+      kdn.virtualisation.containers.podman.enable = true;
+      # TODO: enable after fixed https://github.com/NixOS/nixpkgs/issues/264127
+      kdn.virtualisation.containers.talos.enable = false;
+      #kdn.virtualisation.containers.x11docker.enable = true;
+      programs.seahorse.enable = true;
+      boot.binfmt.emulatedSystems = [
+        "aarch64-linux"
+        "wasm32-wasi"
+        "wasm64-wasi"
+        /*
         2024-03-11:
         error: builder for '/nix/store/sd233q3n28m8qkzq210yn5xpmy1pplqr-wine64-9.0.drv' failed with exit code 1;
                last 10 log lines:
@@ -63,66 +68,92 @@ in
                > to install 64-bit development packages of Xlib at the very least.
                > Use the --without-x option if you really want this.
                For full logs, run 'nix log /nix/store/sd233q3n28m8qkzq210yn5xpmy1pplqr-wine64-9.0.drv'.
-      */
-      # "x86_64-windows"
-      # "i686-windows"
-    ];
+        */
+        # "x86_64-windows"
+        # "i686-windows"
+      ];
 
-    kdn.programs.editors.photo.enable = true;
-    kdn.programs.editors.video.enable = true;
+      kdn.programs.editors.photo.enable = true;
+      kdn.programs.editors.video.enable = true;
 
-    # services.offlineimap.enable or manually with `systemctl --user start`
-    services.offlineimap.install = true;
+      # services.offlineimap.enable or manually with `systemctl --user start`
+      services.offlineimap.install = true;
 
-    kdn.networking.netbird.sc.enable = true;
-    kdn.networking.tailscale.auth_key = "nixos-kdn";
+      kdn.networking.netbird.sc.enable = true;
+      kdn.networking.tailscale.auth_key = "nixos-kdn";
 
-    kdn.networking.openvpn.enable = true;
-    kdn.networking.openfortivpn.enable = true;
-    kdn.networking.openvpn.debug = true;
-    kdn.networking.openvpn.instances = {
-      goggles-humongous = {
-        routes.add = [
-          { network = "10.40.0.0"; netmask = "255.255.0.0"; }
-        ];
+      kdn.networking.openvpn.enable = true;
+      kdn.networking.openfortivpn.enable = true;
+      kdn.networking.openvpn.debug = true;
+      kdn.networking.openvpn.instances = {
+        goggles-humongous = {
+          routes.add = [
+            {
+              network = "10.40.0.0";
+              netmask = "255.255.0.0";
+            }
+          ];
+        };
+        chance-acuteness = {};
+        senorita-recant = {
+          routes.ignore = true;
+          routes.add = [
+            {
+              network = "10.33.0.0";
+              netmask = "255.255.0.0";
+            }
+            {
+              network = "10.34.0.0";
+              netmask = "255.255.0.0";
+            }
+            {
+              network = "10.44.0.0";
+              netmask = "255.255.0.0";
+            }
+            {
+              network = "192.168.107.0";
+              netmask = "255.255.255.0";
+            }
+          ];
+        };
+        fracture-outage = {
+          routes.ignore = true;
+          routes.add = [
+            {
+              network = "172.16.0.0";
+              netmask = "255.255.0.0";
+            }
+            {
+              network = "172.18.0.0";
+              netmask = "255.255.0.0";
+            }
+          ];
+        };
+        scientist-properly = {
+          routes.ignore = true;
+          routes.add = [
+            {
+              network = "10.241.0.0";
+              netmask = "255.255.0.0";
+            }
+          ];
+        };
+        baguette-geology = {};
       };
-      chance-acuteness = { };
-      senorita-recant = {
-        routes.ignore = true;
-        routes.add = [
-          { network = "10.33.0.0"; netmask = "255.255.0.0"; }
-          { network = "10.34.0.0"; netmask = "255.255.0.0"; }
-          { network = "10.44.0.0"; netmask = "255.255.0.0"; }
-          { network = "192.168.107.0"; netmask = "255.255.255.0"; }
-        ];
-      };
-      fracture-outage = {
-        routes.ignore = true;
-        routes.add = [
-          { network = "172.16.0.0"; netmask = "255.255.0.0"; }
-          { network = "172.18.0.0"; netmask = "255.255.0.0"; }
-        ];
-      };
-      scientist-properly = {
-        routes.ignore = true;
-        routes.add = [
-          { network = "10.241.0.0"; netmask = "255.255.0.0"; }
-        ];
-      };
-      baguette-geology = { };
-    };
-  }
+    }
     {
       boot.initrd.clevis.enable = true;
     }
     {
       environment.systemPackages = with pkgs; [
-        /* Closure is freaking 9 GB!
-              /nix/store/16bffw12fg6jixyal4mn2cknv88rafwg-diffoscope-269
-              NAR Size: 2.27 MiB | Closure Size: 8.73 GiB | Added Size: 8.73 GiB
-              Immediate Parents: -
+        /*
+        Closure is freaking 9 GB!
+           /nix/store/16bffw12fg6jixyal4mn2cknv88rafwg-diffoscope-269
+           NAR Size: 2.27 MiB | Closure Size: 8.73 GiB | Added Size: 8.73 GiB
+           Immediate Parents: -
         */
         diffoscope
       ];
-    }]);
+    }
+  ]);
 }

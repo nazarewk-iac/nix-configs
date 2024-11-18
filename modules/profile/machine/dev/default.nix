@@ -1,8 +1,12 @@
-{ lib, pkgs, config, self, ... }:
-let
-  cfg = config.kdn.profile.machine.dev;
-in
 {
+  lib,
+  pkgs,
+  config,
+  self,
+  ...
+}: let
+  cfg = config.kdn.profile.machine.dev;
+in {
   options.kdn.profile.machine.dev = {
     enable = lib.mkEnableOption "enable dev machine profile";
   };
@@ -14,7 +18,7 @@ in
       jose # JSON Web Token tool, https://github.com/latchset/jose
     ];
 
-    home-manager.sharedModules = [{ kdn.development.jetbrains.enable = true; }];
+    home-manager.sharedModules = [{kdn.development.jetbrains.enable = true;}];
     kdn.development.ansible.enable = true;
     kdn.development.cloud.aws.enable = true;
     kdn.development.cloud.azure.enable = false;

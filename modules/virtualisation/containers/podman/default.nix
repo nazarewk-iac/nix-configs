@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.virtualisation.containers.podman;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.virtualisation.containers.podman;
+in {
   options.kdn.virtualisation.containers.podman = {
     enable = lib.mkEnableOption "Podman setup";
   };
@@ -17,7 +20,7 @@ in
       virtualisation.podman.dockerSocket.enable = !config.virtualisation.docker.enable;
 
       # see https://github.com/NixOS/nixpkgs/issues/226365#issuecomment-1814296639
-      networking.firewall.interfaces."podman+".allowedUDPPorts = [ 53 ];
+      networking.firewall.interfaces."podman+".allowedUDPPorts = [53];
 
       boot.kernel.sysctl."user.max_user_namespaces" = 15000;
     }

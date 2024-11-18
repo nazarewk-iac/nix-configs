@@ -1,8 +1,12 @@
-{ lib, pkgs, config, system, ... }:
-let
-  cfg = config.kdn.development.cloud.aws;
-in
 {
+  lib,
+  pkgs,
+  config,
+  system,
+  ...
+}: let
+  cfg = config.kdn.development.cloud.aws;
+in {
   options.kdn.development.cloud.aws = {
     enable = lib.mkEnableOption "AWS cloud development";
   };
@@ -19,12 +23,12 @@ in
 
       (pkgs.writeShellApplication {
         name = "aws-list-all-parameters";
-        runtimeInputs = with pkgs; [ awscli2 coreutils jq ];
+        runtimeInputs = with pkgs; [awscli2 coreutils jq];
         text = builtins.readFile ./bin/aws-list-all-parameters.sh;
       })
       (pkgs.writeShellApplication {
         name = "argo-eks-token";
-        runtimeInputs = with pkgs; [ awscli2 jq ];
+        runtimeInputs = with pkgs; [awscli2 jq];
         text = builtins.readFile ./bin/argo-eks-token.sh;
       })
     ];

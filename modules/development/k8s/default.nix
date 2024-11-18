@@ -1,12 +1,14 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.development.k8s;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.development.k8s;
+in {
   options.kdn.development.k8s = {
     enable = lib.mkEnableOption "k8s development";
   };
-
 
   config = lib.mkMerge [
     (lib.mkIf cfg.enable {
@@ -57,7 +59,7 @@ in
 
         (pkgs.writeShellApplication {
           name = "kubectl-krew";
-          runtimeInputs = with pkgs; [ krew ];
+          runtimeInputs = with pkgs; [krew];
           text = ''
             krew "$@"
           '';
@@ -77,7 +79,7 @@ in
 
         (pkgs.writeShellApplication {
           name = "kubectl-eks_config";
-          runtimeInputs = with pkgs; [ awscli2 kubectl coreutils gawk yq gnused ];
+          runtimeInputs = with pkgs; [awscli2 kubectl coreutils gawk yq gnused];
           text = builtins.readFile ./kubectl-eks_config.sh;
         })
 

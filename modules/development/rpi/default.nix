@@ -1,8 +1,13 @@
-{ lib, pkgs, config, inputs, system, ... }:
-let
-  cfg = config.kdn.development.rpi;
-in
 {
+  lib,
+  pkgs,
+  config,
+  inputs,
+  system,
+  ...
+}: let
+  cfg = config.kdn.development.rpi;
+in {
   options.kdn.development.rpi = {
     enable = lib.mkEnableOption "rpi development/debugging";
   };

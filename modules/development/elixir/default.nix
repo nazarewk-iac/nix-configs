@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.development.elixir;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.development.elixir;
+in {
   options.kdn.development.elixir = {
     enable = lib.mkEnableOption "elixir development";
   };

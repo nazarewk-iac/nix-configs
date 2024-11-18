@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.virtualisation.containers.distrobox;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.virtualisation.containers.distrobox;
+in {
   options.kdn.virtualisation.containers.distrobox = {
     enable = lib.mkEnableOption "distrobox setup";
   };

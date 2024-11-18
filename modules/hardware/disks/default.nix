@@ -1,22 +1,28 @@
-{ lib, pkgs, config, options, utils, ... }:
-let
+{
+  lib,
+  pkgs,
+  config,
+  options,
+  utils,
+  ...
+}: let
   cfg = config.kdn.hardware.disks;
   hostname = config.networking.hostName;
 
-  deviceType = lib.types.submodule ({ name, ... }@disk: {
+  deviceType = lib.types.submodule ({name, ...} @ disk: {
     options.type = lib.mkOption {
-      type = lib.types.enum [ "gpt" "luks" ];
+      type = lib.types.enum ["gpt" "luks"];
       default = "gpt";
     };
     options.path = lib.mkOption {
       type = lib.types.path;
     };
     options.disko = lib.mkOption {
-      default = { };
+      default = {};
     };
     options.partitions = lib.mkOption {
-      default = { };
-      type = lib.types.attrsOf (lib.types.submodule ({ name, ... }@part: {
+      default = {};
+      type = lib.types.attrsOf (lib.types.submodule ({name, ...} @ part: {
         options.num = lib.mkOption {
           type = lib.types.ints.between 1 128;
         };
@@ -29,45 +35,49 @@ let
           type = lib.types.ints.positive;
         };
         options.disko = lib.mkOption {
-          default = { };
+          default = {};
         };
       }));
     };
   });
 
-  deviceSelectorType = lib.types.submodule ({ name, config, ... }@partSel: {
-    options.deviceKey = lib.mkOption {
-      type = lib.types.str;
-    };
-    options.partitionKey = lib.mkOption {
-      type = with lib.types; nullOr str;
-      default = null;
-    };
-    options.device = lib.mkOption {
-      type = deviceType;
-      internal = true;
-      default =
-        let key = partSel.config.deviceKey; in
-        cfg.devices."${key}";
-    };
-    options.partition = lib.mkOption {
-      type = with lib.types; anything;
-      default =
-        with partSel.config;
-        if partitionKey == null then { }
-        else device.partitions."${partitionKey}";
-    };
-    options.path = lib.mkOption {
-      internal = true;
-      type = lib.types.path;
-      default =
-        if partSel.config.partition == { }
-        then partSel.config.device.path
-        else partSel.config.partition.path;
-    };
-  });
-in
-{
+  deviceSelectorType = lib.types.submodule ({
+      name,
+      config,
+      ...
+    } @ partSel: {
+      options.deviceKey = lib.mkOption {
+        type = lib.types.str;
+      };
+      options.partitionKey = lib.mkOption {
+        type = with lib.types; nullOr str;
+        default = null;
+      };
+      options.device = lib.mkOption {
+        type = deviceType;
+        internal = true;
+        default = let
+          key = partSel.config.deviceKey;
+        in
+          cfg.devices."${key}";
+      };
+      options.partition = lib.mkOption {
+        type = with lib.types; anything;
+        default = with partSel.config;
+          if partitionKey == null
+          then {}
+          else device.partitions."${partitionKey}";
+      };
+      options.path = lib.mkOption {
+        internal = true;
+        type = lib.types.path;
+        default =
+          if partSel.config.partition == {}
+          then partSel.config.device.path
+          else partSel.config.partition.path;
+      };
+    });
+in {
   imports = [
     ./default-configs.nix
     ./handle-options.nix
@@ -77,9 +87,10 @@ in
       description = "enable impermanence@ZFS@LUKS-volumes with detached headers and separate /boot";
       type = lib.types.bool;
       default = false;
-      apply = value: assert lib.assertMsg (!(value && config.kdn.filesystems.disko.luks-zfs.enable)) ''
-        You must choose only one of: `kdn.hardware.disks.enable` or `kdn.filesystems.disko.luks-zfs.enable`, not both!
-      ''; value;
+      apply = value:
+        assert lib.assertMsg (!(value && config.kdn.filesystems.disko.luks-zfs.enable)) ''
+          You must choose only one of: `kdn.hardware.disks.enable` or `kdn.filesystems.disko.luks-zfs.enable`, not both!
+        ''; value;
     };
 
     disposable.homes = lib.mkOption {
@@ -117,11 +128,11 @@ in
 
     devices = lib.mkOption {
       type = lib.types.attrsOf deviceType;
-      default = { };
+      default = {};
     };
     luks.volumes = lib.mkOption {
-      default = { };
-      type = lib.types.attrsOf (lib.types.submodule ({ name, ... }@luksVol: {
+      default = {};
+      type = lib.types.attrsOf (lib.types.submodule ({name, ...} @ luksVol: {
         options.target = lib.mkOption {
           type = deviceSelectorType;
         };
@@ -133,8 +144,9 @@ in
         };
         options.keyFile = lib.mkOption {
           type = with lib.types; nullOr str;
-          /* configuring disko's `settings.keyFile` puts the keyFile in the systemd service
-              preventing it from working with TPM2/YubiKey etc.
+          /*
+          configuring disko's `settings.keyFile` puts the keyFile in the systemd service
+           preventing it from working with TPM2/YubiKey etc.
           */
           default = "/tmp/${luksVol.name}.key";
         };
@@ -149,7 +161,7 @@ in
           default = "${luksVol.name}-crypted";
         };
         options.disko = lib.mkOption {
-          default = { };
+          default = {};
         };
         options.zpool.name = lib.mkOption {
           type = with lib.types; nullOr str;
@@ -164,9 +176,9 @@ in
       }));
     };
     zpools = lib.mkOption {
-      type = lib.types.attrsOf (lib.types.submodule ({ name, ... }@zpool: {
+      type = lib.types.attrsOf (lib.types.submodule ({name, ...} @ zpool: {
         options.disko = lib.mkOption {
-          default = { };
+          default = {};
         };
         options.import.timeout = lib.mkOption {
           type = with lib.types; int;
@@ -174,7 +186,7 @@ in
         };
         options.cryptsetup.requires = lib.mkOption {
           type = with lib.types; listOf str;
-          default = [ ];
+          default = [];
         };
         options.cryptsetup.names = lib.mkOption {
           type = with lib.types; listOf str;
@@ -196,44 +208,44 @@ in
       }));
     };
     impermanence = lib.mkOption {
-      type = lib.types.attrsOf (lib.types.submodule ({ name, ... }@impArgs:
-        let kdnImpCfg = impArgs.config; in
-        {
-          options.neededForBoot = lib.mkOption {
-            type = with lib.types; listOf path;
-            default = [ ];
-            apply = ls: [ "${kdnImpCfg.mountpoint}" ] ++ ls;
-          };
-          options.mountpoint = lib.mkOption {
-            type = with lib.types; path;
-            default = "${kdnImpCfg.mountPrefix}/${impArgs.name}";
-          };
-          options.mountPrefix = lib.mkOption {
-            type = with lib.types; path;
-            default = "/nix/persist";
-          };
-          options.zfsPrefix = lib.mkOption {
-            type = with lib.types; str;
-            default = "${hostname}/impermanence";
-          };
-          options.zfsPath = lib.mkOption {
-            type = with lib.types; str;
-            default = "${kdnImpCfg.zfsPrefix}/${impArgs.name}";
-          };
-          options.zpool.name = lib.mkOption {
-            type = with lib.types; nullOr str;
-            default = cfg.zpool-main.name;
-          };
-          options.snapshots = lib.mkOption {
-            type = with lib.types; bool;
-          };
-        }));
+      type = lib.types.attrsOf (lib.types.submodule ({name, ...} @ impArgs: let
+        kdnImpCfg = impArgs.config;
+      in {
+        options.neededForBoot = lib.mkOption {
+          type = with lib.types; listOf path;
+          default = [];
+          apply = ls: ["${kdnImpCfg.mountpoint}"] ++ ls;
+        };
+        options.mountpoint = lib.mkOption {
+          type = with lib.types; path;
+          default = "${kdnImpCfg.mountPrefix}/${impArgs.name}";
+        };
+        options.mountPrefix = lib.mkOption {
+          type = with lib.types; path;
+          default = "/nix/persist";
+        };
+        options.zfsPrefix = lib.mkOption {
+          type = with lib.types; str;
+          default = "${hostname}/impermanence";
+        };
+        options.zfsPath = lib.mkOption {
+          type = with lib.types; str;
+          default = "${kdnImpCfg.zfsPrefix}/${impArgs.name}";
+        };
+        options.zpool.name = lib.mkOption {
+          type = with lib.types; nullOr str;
+          default = cfg.zpool-main.name;
+        };
+        options.snapshots = lib.mkOption {
+          type = with lib.types; bool;
+        };
+      }));
     };
   };
 
   config = lib.mkMerge [
-    { home-manager.sharedModules = [{ kdn.hardware.disks.enable = cfg.enable; }]; }
-    (lib.mkIf (!cfg.enable) { environment.persistence = lib.mkForce { }; })
+    {home-manager.sharedModules = [{kdn.hardware.disks.enable = cfg.enable;}];}
+    (lib.mkIf (!cfg.enable) {environment.persistence = lib.mkForce {};})
     # the rest of configs are in ./handle-options.nix
     (lib.mkIf cfg.enable {
       # enables systemd-cryptsetup-generator

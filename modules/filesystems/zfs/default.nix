@@ -1,25 +1,39 @@
-{ lib, pkgs, config, ... }:
-let
+{
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
   cfg = config.kdn.filesystems.zfs;
 
   atLeastZFSVersion = lib.strings.versionAtLeast config.boot.zfs.package.version;
 
-  kernelPackage = lib.pipe [
-    # TODO: change to 6_11 after ZFS is updated to 2.3.0+
-    { name = "2.3.0+"; check = atLeastZFSVersion "2.3.0"; pkg = pkgs.linuxKernel.packages.linux_6_11 or null; }
-    { name = "default"; check = true; pkg = pkgs.linuxKernel.packages.linux_6_6; }
-  ] [
-    (builtins.map (e: lib.optional e.check
-      (lib.trivial.warnIf (e.pkg == null)
-        "kdn.filesystems.zfs: kernel package not found/removed for: ${e.name}"
-        e.pkg)
-    ))
-    builtins.concatLists
-    (builtins.filter (pkg: pkg != null))
-    builtins.head
-  ];
-in
-{
+  kernelPackage =
+    lib.pipe [
+      # TODO: change to 6_11 after ZFS is updated to 2.3.0+
+      {
+        name = "2.3.0+";
+        check = atLeastZFSVersion "2.3.0";
+        pkg = pkgs.linuxKernel.packages.linux_6_11 or null;
+      }
+      {
+        name = "default";
+        check = true;
+        pkg = pkgs.linuxKernel.packages.linux_6_6;
+      }
+    ] [
+      (builtins.map (
+        e:
+          lib.optional e.check
+          (lib.trivial.warnIf (e.pkg == null)
+            "kdn.filesystems.zfs: kernel package not found/removed for: ${e.name}"
+            e.pkg)
+      ))
+      builtins.concatLists
+      (builtins.filter (pkg: pkg != null))
+      builtins.head
+    ];
+in {
   options.kdn.filesystems.zfs = {
     enable = lib.mkOption {
       type = lib.types.bool;
@@ -44,9 +58,9 @@ in
     {
       boot.kernelPackages = kernelPackage;
       boot.loader.grub.copyKernels = true;
-      boot.kernelParams = [ "nohibernate" ];
-      boot.initrd.supportedFilesystems = [ "zfs" ];
-      boot.supportedFilesystems = [ "zfs" ];
+      boot.kernelParams = ["nohibernate"];
+      boot.initrd.supportedFilesystems = ["zfs"];
+      boot.supportedFilesystems = ["zfs"];
       boot.zfs.package = pkgs.zfs_unstable;
 
       # for now trying rt kernel
@@ -78,7 +92,7 @@ in
       ];
 
       virtualisation.docker.storageDriver = "zfs";
-      virtualisation.podman.extraPackages = [ pkgs.zfs ];
+      virtualisation.podman.extraPackages = [pkgs.zfs];
     }
     (lib.mkIf (config.kdn.virtualisation.containers.enable && cfg.containers.enable) {
       virtualisation.containers.storage.settings.storage.driver = lib.mkForce "zfs";

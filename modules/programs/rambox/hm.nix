@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.programs.rambox;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.programs.rambox;
+in {
   options.kdn.programs.rambox = {
     enable = lib.mkEnableOption "rambox setup";
   };
@@ -11,12 +14,12 @@ in
     {
       kdn.programs.apps."rambox" = {
         enable = true;
-        dirs.cache = [ ];
-        dirs.config = [ "rambox" ];
-        dirs.data = [ ];
-        dirs.disposable = [ ];
-        dirs.reproducible = [ ];
-        dirs.state = [ ];
+        dirs.cache = [];
+        dirs.config = ["rambox"];
+        dirs.data = [];
+        dirs.disposable = [];
+        dirs.reproducible = [];
+        dirs.state = [];
       };
     }
   ]);

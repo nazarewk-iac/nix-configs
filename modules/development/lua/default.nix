@@ -1,26 +1,28 @@
-{ lib, pkgs, config, ... }:
-let
+{
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
   cfg = config.kdn.development.lua;
 
-  mkLuaVersion = version:
-    let
-      pkg = pkgs."lua${lib.replaceStrings ["."] ["_"] version}";
-      selectedPackages = lib.subtractLists (cfg.brokenPackages.${version} or [ ]) cfg.extraPackages;
-    in
-    pkg.withPackages (ps: map (n: ps.${n}) selectedPackages)
-  ;
+  mkLuaVersion = version: let
+    pkg = pkgs."lua${lib.replaceStrings ["."] ["_"] version}";
+    selectedPackages = lib.subtractLists (cfg.brokenPackages.${version} or []) cfg.extraPackages;
+  in
+    pkg.withPackages (ps: map (n: ps.${n}) selectedPackages);
 
   mkSuffixedLuaVersion = v: suffixedBinaries (mkLuaVersion v) v;
 
-  suffixedBinaries = pkg: suffix: pkgs.runCommand "${pkg.name}-suffixed-bin-${suffix}" { } ''
-    mkdir -p $out/bin
-    for src in ${pkg}/bin/* ; do
-      dst="''${src##*/}${suffix}"
-      ln -s "$src" "$out/bin/$dst"
-    done
-  '';
-in
-{
+  suffixedBinaries = pkg: suffix:
+    pkgs.runCommand "${pkg.name}-suffixed-bin-${suffix}" {} ''
+      mkdir -p $out/bin
+      for src in ${pkg}/bin/* ; do
+        dst="''${src##*/}${suffix}"
+        ln -s "$src" "$out/bin/$dst"
+      done
+    '';
+in {
   options.kdn.development.lua = {
     enable = lib.mkEnableOption "lua development";
 
@@ -37,7 +39,7 @@ in
     brokenPackages = lib.mkOption {
       type = lib.types.attrsOf (lib.types.listOf lib.types.str);
       default = {
-        "5.4" = [ "luacheck" ];
+        "5.4" = ["luacheck"];
       };
     };
 
@@ -58,9 +60,11 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    home-manager.sharedModules = [{ kdn.development.lua.enable = true; }];
-    environment.systemPackages = with pkgs; [
-      (mkLuaVersion cfg.defaultVersion) # latest
-    ] ++ (map mkSuffixedLuaVersion cfg.versions);
+    home-manager.sharedModules = [{kdn.development.lua.enable = true;}];
+    environment.systemPackages = with pkgs;
+      [
+        (mkLuaVersion cfg.defaultVersion) # latest
+      ]
+      ++ (map mkSuffixedLuaVersion cfg.versions);
   };
 }

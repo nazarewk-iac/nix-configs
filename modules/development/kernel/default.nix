@@ -1,8 +1,12 @@
-{ lib, pkgs, config, system, ... }:
-let
-  cfg = config.kdn.development.kernel;
-in
 {
+  lib,
+  pkgs,
+  config,
+  system,
+  ...
+}: let
+  cfg = config.kdn.development.kernel;
+in {
   options.kdn.development.kernel = {
     enable = lib.mkEnableOption "kernel development dependencies";
   };
@@ -57,7 +61,6 @@ in
         elfutils
       ])
       ++ config.boot.kernelPackages.kernel.nativeBuildInputs
-      ++ config.boot.kernelPackages.kernel.depsBuildBuild
-    ;
+      ++ config.boot.kernelPackages.kernel.depsBuildBuild;
   };
 }

@@ -1,8 +1,13 @@
-{ config, pkgs, lib, modulesPath, self, ... }:
-let
-  cfg = config.kdn.profile.host.moss;
-in
 {
+  config,
+  pkgs,
+  lib,
+  modulesPath,
+  self,
+  ...
+}: let
+  cfg = config.kdn.profile.host.moss;
+in {
   options.kdn.profile.host.moss = {
     enable = lib.mkEnableOption "enable moss host profile";
   };

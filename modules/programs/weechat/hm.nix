@@ -1,8 +1,12 @@
-{ lib, pkgs, config, inputs, ... }:
-let
-  cfg = config.kdn.programs.weechat;
-in
 {
+  lib,
+  pkgs,
+  config,
+  inputs,
+  ...
+}: let
+  cfg = config.kdn.programs.weechat;
+in {
   options.kdn.programs.weechat = {
     enable = lib.mkEnableOption "weechat setup";
 
@@ -13,11 +17,12 @@ in
 
     init = lib.mkOption {
       type = lib.types.str;
-      apply = input: lib.trivial.pipe input [
-        (lib.strings.splitString "\n")
-        (builtins.filter (l: l != "" && !(lib.strings.hasPrefix "#" l)))
-        (lib.strings.concatStringsSep "\n")
-      ];
+      apply = input:
+        lib.trivial.pipe input [
+          (lib.strings.splitString "\n")
+          (builtins.filter (l: l != "" && !(lib.strings.hasPrefix "#" l)))
+          (lib.strings.concatStringsSep "\n")
+        ];
 
       default = ''
         # see https://xeiaso.net/blog/irc-stuff-nixos-2021-05-29
@@ -61,7 +66,7 @@ in
   config = lib.mkIf cfg.enable {
     home.packages = [
       (cfg.package.override {
-        configure = { availablePlugins, ... }: {
+        configure = {availablePlugins, ...}: {
           scripts = cfg.scripts;
           init = cfg.init;
         };

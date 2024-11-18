@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.monitoring.prometheus-stack;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.monitoring.prometheus-stack;
+in {
   options.kdn.monitoring.prometheus-stack = {
     enable = lib.mkEnableOption "prometheus + grafana";
 
@@ -86,4 +89,3 @@ in
     })
   ];
 }
-

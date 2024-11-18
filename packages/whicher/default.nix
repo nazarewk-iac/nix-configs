@@ -1,6 +1,7 @@
-{ lib
-, writeScriptBin
-, python3
+{
+  lib,
+  writeScriptBin,
+  python3,
 }:
 writeScriptBin "whicher" ''
   #!${python3}/bin/python

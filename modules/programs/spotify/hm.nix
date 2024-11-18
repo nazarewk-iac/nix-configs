@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.programs.spotify;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.programs.spotify;
+in {
   options.kdn.programs.spotify = {
     enable = lib.mkEnableOption "spotify setup";
   };
@@ -12,12 +15,12 @@ in
       kdn.programs.apps.spotify = {
         enable = true;
         package.original = pkgs.spotifywm;
-        dirs.cache = [ "spotify" ];
-        dirs.config = [ "spotify" ];
-        dirs.data = [ ];
-        dirs.disposable = [ ];
-        dirs.reproducible = [ ];
-        dirs.state = [ ];
+        dirs.cache = ["spotify"];
+        dirs.config = ["spotify"];
+        dirs.data = [];
+        dirs.disposable = [];
+        dirs.reproducible = [];
+        dirs.state = [];
       };
     }
   ]);

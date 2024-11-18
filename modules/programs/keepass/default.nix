@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.programs.keepass;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.programs.keepass;
+in {
   options.kdn.programs.keepass = {
     enable = lib.mkEnableOption "keepass with plugins";
   };

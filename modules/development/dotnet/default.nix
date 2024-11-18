@@ -1,8 +1,12 @@
-{ lib, pkgs, config, system, ... }:
-let
-  cfg = config.kdn.development.dotnet;
-in
 {
+  lib,
+  pkgs,
+  config,
+  system,
+  ...
+}: let
+  cfg = config.kdn.development.dotnet;
+in {
   options.kdn.development.dotnet = {
     enable = lib.mkEnableOption ".NET development";
   };
@@ -19,4 +23,3 @@ in
     ];
   };
 }
-

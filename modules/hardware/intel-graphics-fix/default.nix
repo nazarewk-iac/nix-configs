@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.hardware.intel-graphics-fix;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.hardware.intel-graphics-fix;
+in {
   options.kdn.hardware.intel-graphics-fix = {
     enable = lib.mkEnableOption "Intel HD Graphics fix";
   };

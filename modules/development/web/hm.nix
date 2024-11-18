@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.development.web;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.development.web;
+in {
   options.kdn.development.web = {
     enable = lib.mkEnableOption "web development";
   };

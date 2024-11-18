@@ -1,8 +1,12 @@
-{ lib, pkgs, config, self, ... }:
-let
-  cfg = config.kdn.profile.machine.baseline;
-in
 {
+  lib,
+  pkgs,
+  config,
+  self,
+  ...
+}: let
+  cfg = config.kdn.profile.machine.baseline;
+in {
   options.kdn.profile.machine.baseline = {
     enable = lib.mkEnableOption "baseline machine profile for server/non-interactive use";
 
@@ -10,7 +14,6 @@ in
       type = lib.types.ints.unsigned;
       default = 0;
     };
-
   };
 
   imports = [
@@ -20,7 +23,7 @@ in
   config = lib.mkIf cfg.enable (lib.mkMerge [
     (lib.mkIf config.disko.enableConfig {
       # WARNING: without depending on `config.disko.enableConfig` it fails on machines without dedicated `/boot` partition
-      fileSystems."/boot".options = [ "fmask=0077" "dmask=0077" ];
+      fileSystems."/boot".options = ["fmask=0077" "dmask=0077"];
     })
     {
       kdn.enable = true;
@@ -62,7 +65,8 @@ in
         #"8.8.8.8" # Google
       ];
       # otherwise fallback to inserting non-networkmanager servers
-      networking.nameservers = lib.mkIf
+      networking.nameservers =
+        lib.mkIf
         (!config.networking.networkmanager.enable)
         (with config.networking.networkmanager; insertNameservers ++ appendNameservers);
 
@@ -88,7 +92,7 @@ in
         kdn.systemd-find-cycles
         (pkgs.writeShellApplication {
           name = "kdn-systemd-find-cycles";
-          runtimeInputs = with pkgs; [ kdn.systemd-find-cycles systemd ];
+          runtimeInputs = with pkgs; [kdn.systemd-find-cycles systemd];
           text = ''
             # see https://github.com/systemd/systemd/issues/3829#issuecomment-327773498
             systemd_args=()
@@ -108,22 +112,23 @@ in
         })
       ];
 
-      environment.shellAliases =
-        let
-          commands = n: prefix: {
-            "${n}" = prefix;
-            "${n}c" = "${prefix} cat";
-            "${n}r" = "${prefix} restart";
-            "${n}s" = "${prefix} status";
-            "${n}uS" = "${prefix} stop";
-            "${n}us" = "${prefix} start";
-            "${n}ur" = "${prefix} restart";
-          };
-        in
+      environment.shellAliases = let
+        commands = n: prefix: {
+          "${n}" = prefix;
+          "${n}c" = "${prefix} cat";
+          "${n}r" = "${prefix} restart";
+          "${n}s" = "${prefix} status";
+          "${n}uS" = "${prefix} stop";
+          "${n}us" = "${prefix} start";
+          "${n}ur" = "${prefix} restart";
+        };
+      in
         {
           sj = "journalctl";
           uj = "journalctl --user";
-        } // (commands "sc" "systemctl") // (commands "uc" "systemctl --user");
+        }
+        // (commands "sc" "systemctl")
+        // (commands "uc" "systemctl --user");
 
       kdn.headless.base.enable = true;
 
@@ -149,7 +154,7 @@ in
       kdn.networking.wireguard.enable = true;
       kdn.programs.direnv.enable = true;
 
-      home-manager.users.root = { kdn.profile.user.kdn.osConfig = config.users.users.root; };
+      home-manager.users.root = {kdn.profile.user.kdn.osConfig = config.users.users.root;};
 
       boot.kernelParams = [
         # blank screen after 90 sec
@@ -180,14 +185,15 @@ in
     {
       kdn.networking.dynamic-hosts.enable = true;
       sops.templates = lib.pipe config.kdn.security.secrets.placeholders.networking.hosts [
-        (lib.attrsets.mapAttrsToList (name: text:
-          let path = "/etc/hosts.d/60-${config.kdn.managed.infix.default}-${name}.hosts"; in {
-            "${path}" = {
-              inherit path;
-              mode = "0644";
-              content = text;
-            };
-          }))
+        (lib.attrsets.mapAttrsToList (name: text: let
+          path = "/etc/hosts.d/60-${config.kdn.managed.infix.default}-${name}.hosts";
+        in {
+          "${path}" = {
+            inherit path;
+            mode = "0644";
+            content = text;
+          };
+        }))
         lib.mkMerge
       ];
     }
@@ -195,15 +201,14 @@ in
       systemd.tmpfiles.rules = lib.trivial.pipe config.users.users [
         lib.attrsets.attrValues
         (builtins.filter (u: u.isNormalUser))
-        (builtins.map (user:
-          let
+        (builtins.map (
+          user: let
             h = user.home;
             u = builtins.toString (user.uid or user.name);
             g = builtins.toString (user.gid or user.group);
 
             homeDirMode = config.impermanence.userDefaultPerms.mode;
-          in
-          [
+          in [
             # fix home directory permissions
             "d ${h} ${homeDirMode} ${u} ${g} - -"
             # fix user profile directory permissions
@@ -215,35 +220,36 @@ in
     }
     {
       # fix all /home mountpoints permissions
-      systemd.tmpfiles.rules =
-        let
-          users = lib.pipe config.users.users [
-            lib.attrsets.attrValues
-            (builtins.filter (u: u.isNormalUser))
-          ];
-        in
+      systemd.tmpfiles.rules = let
+        users = lib.pipe config.users.users [
+          lib.attrsets.attrValues
+          (builtins.filter (u: u.isNormalUser))
+        ];
+      in
         lib.trivial.pipe config.fileSystems [
           (lib.attrsets.mapAttrsToList (name: cfg: cfg.mountPoint or name))
-          (builtins.map (mountpoint: lib.trivial.pipe users [
-            (builtins.filter (user:
-              (lib.strings.hasPrefix user.home mountpoint)
-              && (user.home != mountpoint)
-            ))
-            (builtins.map (user:
-              let
-                h = user.home;
-                u = builtins.toString (user.uid or user.name);
-                g = builtins.toString (user.gid or user.group);
-              in
-              lib.pipe mountpoint [
-                (lib.strings.removePrefix "${h}/")
-                (lib.strings.splitString "/")
-                (pcs: builtins.map (i: lib.lists.sublist 0 i pcs) (lib.lists.range 1 (builtins.length pcs)))
-                (builtins.map (lib.strings.concatStringsSep "/"))
-                (builtins.map (path: "d ${h}/${path} ${config.impermanence.userDefaultPerms.mode} ${u} ${g} - -"))
-              ]
-            ))
-          ]))
+          (builtins.map (mountpoint:
+            lib.trivial.pipe users [
+              (builtins.filter (
+                user:
+                  (lib.strings.hasPrefix user.home mountpoint)
+                  && (user.home != mountpoint)
+              ))
+              (builtins.map (
+                user: let
+                  h = user.home;
+                  u = builtins.toString (user.uid or user.name);
+                  g = builtins.toString (user.gid or user.group);
+                in
+                  lib.pipe mountpoint [
+                    (lib.strings.removePrefix "${h}/")
+                    (lib.strings.splitString "/")
+                    (pcs: builtins.map (i: lib.lists.sublist 0 i pcs) (lib.lists.range 1 (builtins.length pcs)))
+                    (builtins.map (lib.strings.concatStringsSep "/"))
+                    (builtins.map (path: "d ${h}/${path} ${config.impermanence.userDefaultPerms.mode} ${u} ${g} - -"))
+                  ]
+              ))
+            ]))
           lib.lists.flatten
           lib.lists.unique
         ];
@@ -251,24 +257,29 @@ in
     (
       # TODO: test it
       # reboot if dropped into emergency and left unattended
-      let timeout = cfg.initrd.emergency.rebootTimeout; in lib.mkIf (timeout > 0) {
-        boot.initrd.systemd.services."emergency" = {
-          overrideStrategy = "asDropin";
-          postStart = ''
-            if ! /bin/systemd-ask-password --timeout=${builtins.toString timeout} \
-              --no-output --emoji=no \
-              "Are you there? Press enter to enter emergency shell."
-            then
-              /bin/systemctl reboot
-            fi
-          '';
-        };
-      }
+      let
+        timeout = cfg.initrd.emergency.rebootTimeout;
+      in
+        lib.mkIf (timeout > 0) {
+          boot.initrd.systemd.services."emergency" = {
+            overrideStrategy = "asDropin";
+            postStart = ''
+              if ! /bin/systemd-ask-password --timeout=${builtins.toString timeout} \
+                --no-output --emoji=no \
+                "Are you there? Press enter to enter emergency shell."
+              then
+                /bin/systemctl reboot
+              fi
+            '';
+          };
+        }
     )
     {
-      home-manager.sharedModules = [{
-        kdn.development.git.enable = true;
-      }];
+      home-manager.sharedModules = [
+        {
+          kdn.development.git.enable = true;
+        }
+      ];
     }
     {
       # TODO: checkout the repository while installing?
@@ -284,13 +295,16 @@ in
     {
       kdn.networking.netbird.priv.enable = true;
       services.netbird.package = pkgs.netbird.overrideAttrs (old: {
-        patches = old.patches or [ ] ++ [
-          #(pkgs.fetchpatch {
-          #  url = "https://github.com/netbirdio/netbird/pull/2026/commits/3f2eff10772aeda98799110cfceaf6712fc9690a.patch";
-          #  name = "route-read-envs.patch";
-          #  hash = "sha256-0Up0ongOvgCxEX2fKznd1ZVcJ6ars3i0j8e3bx978xw=";
-          #})
-        ];
+        patches =
+          old.patches
+          or []
+          ++ [
+            #(pkgs.fetchpatch {
+            #  url = "https://github.com/netbirdio/netbird/pull/2026/commits/3f2eff10772aeda98799110cfceaf6712fc9690a.patch";
+            #  name = "route-read-envs.patch";
+            #  hash = "sha256-0Up0ongOvgCxEX2fKznd1ZVcJ6ars3i0j8e3bx978xw=";
+            #})
+          ];
       });
     }
     {
@@ -309,18 +323,18 @@ in
       };
       system.activationScripts.setupSecrets.text = lib.mkDefault "true";
       system.activationScripts.kdnSopsNixFixupSecretsPermissions = {
-        deps = [ "setupSecrets" ];
+        deps = ["setupSecrets"];
         text = ''
           chmod -R go+r /run/configs
         '';
       };
       environment.systemPackages = with pkgs; [
-        (pkgs.writers.writePython3Bin "kdn-net-anonymize" { } (builtins.readFile ./kdn-net-anonymize.py))
+        (pkgs.writers.writePython3Bin "kdn-net-anonymize" {} (builtins.readFile ./kdn-net-anonymize.py))
       ];
     }
     (
       let
-        anonymize = (pkgs.writers.writePython3Bin "kdn-net-anonymize" { } (builtins.readFile ./kdn-net-anonymize.py));
+        anonymize = pkgs.writers.writePython3Bin "kdn-net-anonymize" {} (builtins.readFile ./kdn-net-anonymize.py);
         anonymizeClipboard = pkgs.writeShellApplication {
           name = "kdn-net-anonymize-clipboard";
           runtimeInputs = with pkgs; [
@@ -335,18 +349,19 @@ in
             notify-send --expire-time=3000 "kdn-net-anonymize-clipboard" "$(cat "$tempdir")"
           '';
         };
-      in
-      {
-        environment.systemPackages = [ anonymize ]
-          ++ lib.lists.optional config.kdn.headless.enableGUI anonymizeClipboard
-        ;
-        home-manager.sharedModules = [{
-          wayland.windowManager.sway = {
-            config.keybindings = with config.kdn.desktop.sway.keys; {
-              "${ctrl}+${super}+A" = "exec '${lib.getExe anonymizeClipboard}'";
+      in {
+        environment.systemPackages =
+          [anonymize]
+          ++ lib.lists.optional config.kdn.headless.enableGUI anonymizeClipboard;
+        home-manager.sharedModules = [
+          {
+            wayland.windowManager.sway = {
+              config.keybindings = with config.kdn.desktop.sway.keys; {
+                "${ctrl}+${super}+A" = "exec '${lib.getExe anonymizeClipboard}'";
+              };
             };
-          };
-        }];
+          }
+        ];
       }
     )
   ]);

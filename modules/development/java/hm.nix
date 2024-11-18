@@ -1,9 +1,12 @@
-{ lib, pkgs, config, ... }:
-let
+{
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
   cfg = config.kdn.development.java;
   home = config.home.homeDirectory;
-in
-{
+in {
   options.kdn.development.java = {
     enable = lib.mkEnableOption "java development";
   };
@@ -20,7 +23,7 @@ in
       ];
     }
     {
-      programs.helix.extraPackages = with pkgs;[
+      programs.helix.extraPackages = with pkgs; [
         gopls
         delve
       ];

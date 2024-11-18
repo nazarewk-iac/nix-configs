@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.programs.fish;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.programs.fish;
+in {
   options.kdn.programs.fish = {
     enable = lib.mkEnableOption "fish interactive shell";
   };
@@ -12,38 +15,52 @@ in
       enable = true;
       useBabelfish = false;
     };
-    home-manager.sharedModules = [{
-      xdg.configFile."fish/config.fish".force = true;
-      home.packages = with pkgs; [
-        grc
-        fzf
-        babelfish
-      ];
-      programs.fish = {
-        enable = true;
-        interactiveShellInit = ''
-          set fish_greeting # Disable greeting
-          # see https://github.com/franciscolourenco/done
-          set -U __done_sway_ignore_visible 1
-          fish_vi_key_bindings --no-erase
-        '';
-        plugins = with pkgs.fishPlugins; [
-          { name = "grc"; src = grc.src; }
-          { name = "done"; src = done.src; }
-          { name = "forgit"; src = forgit.src; }
-          #{ name = "hydro"; src = hydro.src; }
-          { name = "fzf"; src = fzf-fish.src; }
-          {
-            name = "fish-history-merge";
-            src = pkgs.fetchFromGitHub {
-              owner = "2m";
-              repo = "fish-history-merge";
-              rev = "7e415b8ab843a64313708273cf659efbf471ad39";
-              sha256 = "sha256-oy32I92sYgEbeVX41Oic8653eJY5bCE/b7EjZuETjMI=";
-            };
-          }
+    home-manager.sharedModules = [
+      {
+        xdg.configFile."fish/config.fish".force = true;
+        home.packages = with pkgs; [
+          grc
+          fzf
+          babelfish
         ];
-      };
-    }];
+        programs.fish = {
+          enable = true;
+          interactiveShellInit = ''
+            set fish_greeting # Disable greeting
+            # see https://github.com/franciscolourenco/done
+            set -U __done_sway_ignore_visible 1
+            fish_vi_key_bindings --no-erase
+          '';
+          plugins = with pkgs.fishPlugins; [
+            {
+              name = "grc";
+              src = grc.src;
+            }
+            {
+              name = "done";
+              src = done.src;
+            }
+            {
+              name = "forgit";
+              src = forgit.src;
+            }
+            #{ name = "hydro"; src = hydro.src; }
+            {
+              name = "fzf";
+              src = fzf-fish.src;
+            }
+            {
+              name = "fish-history-merge";
+              src = pkgs.fetchFromGitHub {
+                owner = "2m";
+                repo = "fish-history-merge";
+                rev = "7e415b8ab843a64313708273cf659efbf471ad39";
+                sha256 = "sha256-oy32I92sYgEbeVX41Oic8653eJY5bCE/b7EjZuETjMI=";
+              };
+            }
+          ];
+        };
+      }
+    ];
   };
 }

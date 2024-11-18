@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.services.syncthing;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.services.syncthing;
+in {
   options.kdn.services.syncthing = {
     enable = lib.mkEnableOption "Syncthing file synchronization";
   };
@@ -25,7 +28,7 @@ in
     ];
 
     systemd.user.services.syncthing = {
-      Unit.After = [ "paths.target" ];
+      Unit.After = ["paths.target"];
     };
     home.packages = with pkgs; [
       stc-cli

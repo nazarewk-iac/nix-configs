@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.programs.wofi;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.programs.wofi;
+in {
   options.kdn.programs.wofi = {
     enable = lib.mkEnableOption "`wofi` selector setup";
   };
@@ -11,13 +14,13 @@ in
     {
       kdn.programs.apps.wofi = {
         enable = true;
-        dirs.cache = [ ];
-        dirs.config = [ ];
-        dirs.data = [ ];
-        dirs.disposable = [ ];
-        dirs.reproducible = [ ];
-        dirs.state = [ ];
-        files.cache = [ "wofi-run" ];
+        dirs.cache = [];
+        dirs.config = [];
+        dirs.data = [];
+        dirs.disposable = [];
+        dirs.reproducible = [];
+        dirs.state = [];
+        files.cache = ["wofi-run"];
       };
     }
   ]);

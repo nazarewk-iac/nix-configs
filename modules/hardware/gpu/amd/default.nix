@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.hardware.gpu.amd;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.hardware.gpu.amd;
+in {
   options.kdn.hardware.gpu.amd = {
     enable = lib.mkEnableOption "AMD GPU setup";
   };

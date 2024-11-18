@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.hardware.audio;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.hardware.audio;
+in {
   options = {
     kdn.hardware.audio = {
       enable = lib.mkEnableOption "audio setup with Pipewire";
@@ -34,25 +37,29 @@ in
         libfreeaptx
         pulseaudio
       ];
-      home-manager.sharedModules = [{
-        home.persistence."usr/config".directories = [
-          ".config/pulse"
-          ".config/pipewire"
-          ".local/state/wireplumber"
-        ];
-        home.persistence."usr/config".files = [
-          ".config/pavucontrol.ini"
-        ];
-      }];
+      home-manager.sharedModules = [
+        {
+          home.persistence."usr/config".directories = [
+            ".config/pulse"
+            ".config/pipewire"
+            ".local/state/wireplumber"
+          ];
+          home.persistence."usr/config".files = [
+            ".config/pavucontrol.ini"
+          ];
+        }
+      ];
     }
     (lib.mkIf config.kdn.headless.enableGUI {
       environment.systemPackages = with pkgs; [
         pavucontrol
         helvum # A GTK patchbay for pipewire
       ];
-      home-manager.sharedModules = [{
-        #services.easyeffects.enable = true;
-      }];
+      home-manager.sharedModules = [
+        {
+          #services.easyeffects.enable = true;
+        }
+      ];
       # required by easyeffects
       kdn.programs.dconf.enable = true;
     })

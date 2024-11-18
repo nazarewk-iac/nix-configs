@@ -1,14 +1,17 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.development.golang;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.development.golang;
+in {
   options.kdn.development.golang = {
     enable = lib.mkEnableOption "golang development";
   };
 
   config = lib.mkIf cfg.enable {
-    home-manager.sharedModules = [{ kdn.development.golang.enable = true; }];
+    home-manager.sharedModules = [{kdn.development.golang.enable = true;}];
 
     environment.extraInit = ''
       export PATH="$PATH:$HOME/.cache/go/bin"
@@ -22,7 +25,7 @@ in
 
       (pkgs.writeShellApplication {
         name = "go-toolchain-install";
-        runtimeInputs = with pkgs; [ go jq ];
+        runtimeInputs = with pkgs; [go jq];
         text = ''
           set -xeEuo pipefail
           version="$1"

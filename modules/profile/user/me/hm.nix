@@ -1,5 +1,10 @@
-{ config, pkgs, lib, osConfig, ... }@arguments:
-let
+{
+  config,
+  pkgs,
+  lib,
+  osConfig,
+  ...
+} @ arguments: let
   cfg = config.kdn.profile.user.kdn;
   systemUser = cfg.osConfig;
   hasGUI = config.kdn.headless.enableGUI;
@@ -11,15 +16,16 @@ let
   nc.abs = "${config.home.homeDirectory}/${nc.rel}";
 
   pow = n: i:
-    if i == 1 then n
-    else if i == 0 then 1
+    if i == 1
+    then n
+    else if i == 0
+    then 1
     else n * pow n (i - 1);
-in
-{
+in {
   options.kdn.profile.user.kdn = {
     enable = lib.mkEnableOption "me (kdn) account setup";
 
-    osConfig = lib.mkOption { default = { }; };
+    osConfig = lib.mkOption {default = {};};
   };
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
@@ -31,13 +37,13 @@ in
       # `pamu2fcfg` generates lines of format `username:entry`
       # For ease of use you can append those pamu2fcfg to ./yubico/u2f_keys.parts directly,
       #  then below code will take care of stripping comments and folding it into a single line per user
-      xdg.configFile."Yubico/u2f_keys".text =
-        let
-          stripComments = lib.filter (line: (builtins.match "\w*" line) != [ ] && (builtins.match "\w*#.*" line) != [ ]);
-          groupByUsername = input: builtins.mapAttrs (name: map (lib.removePrefix "${name}:")) (lib.groupBy (e: lib.head (lib.splitString ":" e)) input);
-          toOutputLines = lib.mapAttrsToList (name: values: (builtins.concatStringsSep ":" (lib.concatLists [ [ name ] values ])));
+      xdg.configFile."Yubico/u2f_keys".text = let
+        stripComments = lib.filter (line: (builtins.match "\w*" line) != [] && (builtins.match "\w*#.*" line) != []);
+        groupByUsername = input: builtins.mapAttrs (name: map (lib.removePrefix "${name}:")) (lib.groupBy (e: lib.head (lib.splitString ":" e)) input);
+        toOutputLines = lib.mapAttrsToList (name: values: (builtins.concatStringsSep ":" (lib.concatLists [[name] values])));
 
-          foldParts = path: lib.trivial.pipe path [
+        foldParts = path:
+          lib.trivial.pipe path [
             builtins.readFile
             (lib.splitString "\n")
             stripComments
@@ -46,16 +52,15 @@ in
             toOutputLines
             (builtins.concatStringsSep "\n")
           ];
-        in
+      in
         foldParts ./yubico/u2f_keys.parts;
     }
     {
       # GPG
       home.activation = {
-        linkPasswordStore =
-          lib.hm.dag.entryBetween [ "linkGeneration" ] [ "writeBoundary" ] ''
-            $DRY_RUN_CMD ln -sfT "${nc.rel}/important/password-store" "$HOME/.password-store"
-          '';
+        linkPasswordStore = lib.hm.dag.entryBetween ["linkGeneration"] ["writeBoundary"] ''
+          $DRY_RUN_CMD ln -sfT "${nc.rel}/important/password-store" "$HOME/.password-store"
+        '';
       };
       programs.password-store.enable = true;
       programs.password-store.settings = {
@@ -77,24 +82,22 @@ in
       programs.git.signing.signByDefault = true;
       programs.git.userName = systemUser.description;
       programs.git.userEmail = "gpg@kdn.im";
-      programs.git.ignores = [ (builtins.readFile ./.gitignore.tpl) ];
-      programs.git.attributes = [ (builtins.readFile ./.gitattributes) ];
+      programs.git.ignores = [(builtins.readFile ./.gitignore.tpl)];
+      programs.git.attributes = [(builtins.readFile ./.gitattributes)];
       # to authenticate hub: ln -s ~/.config/gh/hosts.yml ~/.config/hub
       programs.git.extraConfig = {
-        credential.helper =
-          let
-            wrapped = pkgs.writeShellApplication {
-              name = "git-credential-keyring-wrapped";
-              runtimeInputs = [ pkgs.kdn.git-credential-keyring ];
-              text = ''
-                export PYTHON_KEYRING_BACKEND="keyring_pass.PasswordStoreBackend"
-                export KEYRING_PROPERTY_PASS_BINARY="${pkgs.pass}/bin/pass"
-                export GIT_CREDENTIAL_KEYRING_IGNORE_DELETIONS=1
-                git-credential-keyring "$@"
-              '';
-            };
-          in
-          "${wrapped}/bin/git-credential-keyring-wrapped";
+        credential.helper = let
+          wrapped = pkgs.writeShellApplication {
+            name = "git-credential-keyring-wrapped";
+            runtimeInputs = [pkgs.kdn.git-credential-keyring];
+            text = ''
+              export PYTHON_KEYRING_BACKEND="keyring_pass.PasswordStoreBackend"
+              export KEYRING_PROPERTY_PASS_BINARY="${pkgs.pass}/bin/pass"
+              export GIT_CREDENTIAL_KEYRING_IGNORE_DELETIONS=1
+              git-credential-keyring "$@"
+            '';
+          };
+        in "${wrapped}/bin/git-credential-keyring-wrapped";
 
         credential."https://github.com".username = "nazarewk";
         url."https://github.com/".insteadOf = "git@github.com:";
@@ -190,52 +193,50 @@ in
       xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
 
       xdg.mime.enable = true;
-      xdg.desktopEntries.uri-to-clipboard =
-        let
-          bin = pkgs.writeShellScript "uri-to-clipboard" ''
-            set -eEuo pipefail
+      xdg.desktopEntries.uri-to-clipboard = let
+        bin = pkgs.writeShellScript "uri-to-clipboard" ''
+          set -eEuo pipefail
 
-            url="$1"
-            ${pkgs.libnotify}/bin/notify-send --expire-time=3000 "copied to clipboard" "$url"
-            ${pkgs.wl-clipboard}/bin/wl-copy "$url"
-          '';
-        in
-        {
-          name = "Copy URI to clipboard";
-          noDisplay = false;
-          genericName = "uri-to-clipboard";
-          exec = "${bin} %U";
-          categories = [ "Network" "WebBrowser" ];
-          mimeType = [
-            "application/x-extension-htm"
-            "application/x-extension-html"
-            "application/x-extension-shtml"
-            "application/x-extension-xht"
-            "application/x-extension-xhtml"
-            "application/xhtml+xml"
-            "application/xhtml_xml"
-            "x-scheme-handler/chrome"
-            "x-scheme-handler/http"
-            "x-scheme-handler/https"
-          ];
-        };
+          url="$1"
+          ${pkgs.libnotify}/bin/notify-send --expire-time=3000 "copied to clipboard" "$url"
+          ${pkgs.wl-clipboard}/bin/wl-copy "$url"
+        '';
+      in {
+        name = "Copy URI to clipboard";
+        noDisplay = false;
+        genericName = "uri-to-clipboard";
+        exec = "${bin} %U";
+        categories = ["Network" "WebBrowser"];
+        mimeType = [
+          "application/x-extension-htm"
+          "application/x-extension-html"
+          "application/x-extension-shtml"
+          "application/x-extension-xht"
+          "application/x-extension-xhtml"
+          "application/xhtml+xml"
+          "application/xhtml_xml"
+          "x-scheme-handler/chrome"
+          "x-scheme-handler/http"
+          "x-scheme-handler/https"
+        ];
+      };
     })
     (lib.mkIf hasGUI {
       kdn.programs.keepassxc.enable = true;
       kdn.programs.keepassxc.service.enable = true;
-      kdn.programs.keepassxc.service.searchDirs = [ "${nc.abs}/important/keepass" ];
+      kdn.programs.keepassxc.service.searchDirs = ["${nc.abs}/important/keepass"];
       kdn.programs.keepassxc.service.fileName = "drag0nius.kdbx";
     })
     (lib.mkIf hasSway (import ./mimeapps.nix arguments).config)
     (lib.mkIf hasSway {
       systemd.user.services.keepassxc.Unit = {
         BindsTo = config.kdn.desktop.sway.systemd.secrets-service.service;
-        Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
+        Requires = [config.kdn.desktop.sway.systemd.envs.target];
 
-        After = [ config.kdn.desktop.sway.systemd.envs.target ];
-        PartOf = [ config.kdn.desktop.sway.systemd.session.target ];
+        After = [config.kdn.desktop.sway.systemd.envs.target];
+        PartOf = [config.kdn.desktop.sway.systemd.session.target];
       };
-      systemd.user.services.keepassxc.Install.WantedBy = [ config.kdn.desktop.sway.systemd.secrets-service.service ];
+      systemd.user.services.keepassxc.Install.WantedBy = [config.kdn.desktop.sway.systemd.secrets-service.service];
 
       systemd.user.services.nextcloud-client.Unit = {
         Requires = lib.mkForce [
@@ -247,20 +248,20 @@ in
           config.kdn.desktop.sway.systemd.envs.target
           "tray.target"
         ];
-        PartOf = [ config.kdn.desktop.sway.systemd.session.target ];
+        PartOf = [config.kdn.desktop.sway.systemd.session.target];
       };
       systemd.user.services.nextcloud-client.Install = {
-        WantedBy = [ config.kdn.desktop.sway.systemd.session.target ];
+        WantedBy = [config.kdn.desktop.sway.systemd.session.target];
       };
       systemd.user.services.kdeconnect.Unit = {
-        Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
-        After = [ config.kdn.desktop.sway.systemd.envs.target ];
-        PartOf = [ config.kdn.desktop.sway.systemd.session.target ];
+        Requires = [config.kdn.desktop.sway.systemd.envs.target];
+        After = [config.kdn.desktop.sway.systemd.envs.target];
+        PartOf = [config.kdn.desktop.sway.systemd.session.target];
       };
       systemd.user.services.kdeconnect-indicator.Unit = {
-        Requires = [ config.kdn.desktop.sway.systemd.envs.target "kdeconnect.service" ];
-        After = [ "tray.target" config.kdn.desktop.sway.systemd.envs.target "kdeconnect.service" ];
-        PartOf = [ config.kdn.desktop.sway.systemd.session.target ];
+        Requires = [config.kdn.desktop.sway.systemd.envs.target "kdeconnect.service"];
+        After = ["tray.target" config.kdn.desktop.sway.systemd.envs.target "kdeconnect.service"];
+        PartOf = [config.kdn.desktop.sway.systemd.session.target];
       };
     })
     (lib.mkIf (hasWorkstation && hasGUI) {
@@ -317,10 +318,10 @@ in
       kdn.programs.spotify.enable = true;
       kdn.toolset.print-3d.enable = true;
     })
-    ({
+    {
       programs.helix.enable = true;
       programs.helix.settings.theme = "darcula-solid";
       stylix.targets.helix.enable = false;
-    })
+    }
   ]);
 }

@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.hardware.gpu.intel;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.hardware.gpu.intel;
+in {
   options.kdn.hardware.gpu.intel = {
     enable = lib.mkEnableOption "intel GPU setup";
   };
@@ -10,7 +13,7 @@ in
   config = lib.mkIf cfg.enable {
     # https://github.com/NixOS/nixos-hardware/blob/4045d5f43aff4440661d8912fc6e373188d15b5b/common/cpu/intel/default.nix
     # see https://github.com/NixOS/nixos-hardware/blob/0099253ad0b5283f06ffe31cf010af3f9ad7837d/common/gpu/intel.nix
-    boot.initrd.kernelModules = [ "i915" ];
+    boot.initrd.kernelModules = ["i915"];
 
     environment.variables = {
       VDPAU_DRIVER = lib.mkIf config.hardware.graphics.enable (lib.mkDefault "va_gl");

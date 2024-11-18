@@ -1,14 +1,17 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.development.nix;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.development.nix;
+in {
   options.kdn.development.nix = {
     enable = lib.mkEnableOption "nix development/debugging";
   };
 
   config = lib.mkIf cfg.enable {
-    programs.helix.extraPackages = with pkgs;[
+    programs.helix.extraPackages = with pkgs; [
       nil
     ];
   };

@@ -1,10 +1,14 @@
-{ lib, pkgs, config, ... }:
-let
+{
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
   cfg = config.kdn.programs.aws-vault;
 
   aws-vault-wrapper = pkgs.writeShellApplication {
     name = "aws-vault";
-    runtimeInputs = [ cfg.package ];
+    runtimeInputs = [cfg.package];
     text = ''
       export ${lib.concatStringsSep " \\\n  " cfg.defaultEnv}
       if [[ -n "''${AWS_VAULT_CONFIG_FILE:-}" ]] ; then
@@ -21,16 +25,16 @@ let
   # symlinks the rest to provide completion scripts
   aws-vault = pkgs.symlinkJoin {
     name = "aws-vault";
-    paths = [ aws-vault-wrapper cfg.package ];
+    paths = [aws-vault-wrapper cfg.package];
     postBuild = "echo links added";
   };
 
-  mkScript = name: text: pkgs.writeShellApplication {
-    inherit name text;
-    runtimeInputs = [ aws-vault ];
-  };
-in
-{
+  mkScript = name: text:
+    pkgs.writeShellApplication {
+      inherit name text;
+      runtimeInputs = [aws-vault];
+    };
+in {
   options.kdn.programs.aws-vault = {
     enable = lib.mkEnableOption "aws-vault + aliases";
 

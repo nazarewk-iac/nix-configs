@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.security.secure-boot;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.security.secure-boot;
+in {
   options.kdn.security.secure-boot = {
     enable = lib.mkEnableOption "Secure Boot setup";
   };

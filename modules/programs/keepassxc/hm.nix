@@ -1,12 +1,15 @@
-{ lib, pkgs, config, ... }:
-let
+{
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
   cfg = config.kdn.programs.keepassxc;
 
   envs.KEEPASS_PATH = builtins.concatStringsSep ":" cfg.service.searchDirs;
 
   finalPackage = config.kdn.programs.apps.keepassxc.package.final;
-in
-{
+in {
   options.kdn.programs.keepassxc = {
     enable = lib.mkEnableOption "keepassxc";
 
@@ -25,11 +28,12 @@ in
         finalPackage
         kdn.kdn-keepass
       ];
-      /* TODO: browser are enabled based on file presence
-          in ~/.mozilla/native-messaging-hosts
-          see https://github.com/keepassxreboot/keepassxc/blob/02881889d5b3dc533b8afafa47c0b0ac8054f2c1/src/browser/NativeMessageInstaller.cpp#L68-L93
+      /*
+      TODO: browser are enabled based on file presence
+       in ~/.mozilla/native-messaging-hosts
+       see https://github.com/keepassxreboot/keepassxc/blob/02881889d5b3dc533b8afafa47c0b0ac8054f2c1/src/browser/NativeMessageInstaller.cpp#L68-L93
       */
-      kdn.programs.firefox.nativeMessagingHosts = [ finalPackage ];
+      kdn.programs.firefox.nativeMessagingHosts = [finalPackage];
       kdn.programs.apps.keepassxc = {
         enable = true;
         dirs.cache = [
@@ -38,41 +42,42 @@ in
         dirs.config = [
           "keepassxc"
         ];
-        dirs.data = [ ];
-        dirs.disposable = [ ];
-        dirs.reproducible = [ ];
+        dirs.data = [];
+        dirs.disposable = [];
+        dirs.reproducible = [];
         dirs.state = [
           "keepassxc"
         ];
       };
     }
     (lib.mkIf cfg.service.enable {
-      /* TODO: configure programatically (View > Settings):
-            - SSH Agent
-              - Enable ... integration
-            - Secret Service Integration
-              - Enable ... integration
-              - untick all except `Prompt to unlock database before searching`
-            - General
-              - Startup
-                - disable remembering previous databases
-                - disable showing expired entries
-              - Entry Management
-                - `hide window when copying to clipboard` set to `Drop to background`
-              - User Interface
-                - Show a system tray icon
-                  - colorful
-                  - hide to tray when minimized
-            - Security
-              - Convenience
-                - `Lock databases when session is locked or lid is closed`: false
-              - Privacy
-                - use DDG for favicons
-            - Browser Integration
-              - Enable ... integration
-              - enable for Firefox only
-              - search in all opened databases
-        */
+      /*
+      TODO: configure programatically (View > Settings):
+         - SSH Agent
+           - Enable ... integration
+         - Secret Service Integration
+           - Enable ... integration
+           - untick all except `Prompt to unlock database before searching`
+         - General
+           - Startup
+             - disable remembering previous databases
+             - disable showing expired entries
+           - Entry Management
+             - `hide window when copying to clipboard` set to `Drop to background`
+           - User Interface
+             - Show a system tray icon
+               - colorful
+               - hide to tray when minimized
+         - Security
+           - Convenience
+             - `Lock databases when session is locked or lid is closed`: false
+           - Privacy
+             - use DDG for favicons
+         - Browser Integration
+           - Enable ... integration
+           - enable for Firefox only
+           - search in all opened databases
+      */
       # TODO: entries list an entry preview were invisible, had to drag-resize from the edge
       home.sessionVariables = envs;
       systemd.user.services.keepassxc = {
@@ -88,8 +93,8 @@ in
           ];
         };
         Unit.ConditionPathExists = cfg.service.searchDirs;
-        Unit.Wants = [ "ssh-agent.service" ];
-        Install.WantedBy = [ "graphical-session.target" ];
+        Unit.Wants = ["ssh-agent.service"];
+        Install.WantedBy = ["graphical-session.target"];
       };
     })
   ]);

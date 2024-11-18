@@ -1,8 +1,13 @@
-{ lib, pkgs, config, options, utils, ... }:
-let
-  cfg = config.kdn.hardware.disks;
-in
 {
+  lib,
+  pkgs,
+  config,
+  options,
+  utils,
+  ...
+}: let
+  cfg = config.kdn.hardware.disks;
+in {
   options.kdn.hardware.disks = {
     enable = lib.mkOption {
       type = lib.types.bool;
@@ -11,7 +16,7 @@ in
   };
 
   config = lib.mkMerge [
-    (lib.mkIf (!cfg.enable) { home.persistence = lib.mkForce { }; })
+    (lib.mkIf (!cfg.enable) {home.persistence = lib.mkForce {};})
     # the rest of configs are in ./handle-options.nix
     (lib.mkIf cfg.enable {
       impermanence.defaultDirectoryMethod = lib.mkDefault "external";
@@ -25,8 +30,7 @@ in
           "Downloads"
           ".cache/appimage-run" # not sure where exactly it comes from
         ]
-        ++ lib.lists.optional config.fonts.fontconfig.enable ".cache/fontconfig"
-      ;
+        ++ lib.lists.optional config.fonts.fontconfig.enable ".cache/fontconfig";
       home.persistence."usr/state".files = [
         #".local/share/fish/fish_history" # A file already exists at ...
         ".ipython/profile_default/history.sqlite"

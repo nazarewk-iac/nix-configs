@@ -1,8 +1,12 @@
-{ lib, pkgs, config, system, ... }:
-let
-  cfg = config.kdn.development.cloud;
-in
 {
+  lib,
+  pkgs,
+  config,
+  system,
+  ...
+}: let
+  cfg = config.kdn.development.cloud;
+in {
   options.kdn.development.cloud = {
     enable = lib.mkEnableOption "cloud development";
   };

@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.programs.signal;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.programs.signal;
+in {
   options.kdn.programs.signal = {
     enable = lib.mkEnableOption "signal setup";
   };
@@ -12,12 +15,12 @@ in
       kdn.programs.apps."signal-desktop" = {
         enable = true;
         #package.original = pkgs."app";
-        dirs.cache = [ ];
-        dirs.config = [ "Signal" ];
-        dirs.data = [ ];
-        dirs.disposable = [ ];
-        dirs.reproducible = [ ];
-        dirs.state = [ ];
+        dirs.cache = [];
+        dirs.config = ["Signal"];
+        dirs.data = [];
+        dirs.disposable = [];
+        dirs.reproducible = [];
+        dirs.state = [];
       };
     }
   ]);

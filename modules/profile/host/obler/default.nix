@@ -1,9 +1,14 @@
-{ config, pkgs, lib, modulesPath, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  modulesPath,
+  ...
+}:
 # Dell Latitude E5470
 let
   cfg = config.kdn.profile.host.obler;
-in
-{
+in {
   options.kdn.profile.host.obler = {
     enable = lib.mkEnableOption "enable obler host profile";
   };
@@ -65,6 +70,9 @@ in
       stylix.polarity = "light";
       stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/standardized-light.yaml";
     }
-    (import ./disko.nix { inherit lib; hostname = config.networking.hostName; })
+    (import ./disko.nix {
+      inherit lib;
+      hostname = config.networking.hostName;
+    })
   ]);
 }

@@ -1,5 +1,11 @@
-{ config, pkgs, lib, modulesPath, self, ... }:
-let
+{
+  config,
+  pkgs,
+  lib,
+  modulesPath,
+  self,
+  ...
+}: let
   cfg = config.kdn.profile.host.etra;
 
   rCfg = config.kdn.networking.router;
@@ -29,8 +35,7 @@ let
   ll.etra.br-etra = "fe80::b47b:911a:2d95:d12f";
   vlan.pic.name = "pic";
   vlan.pic.id = 1859;
-in
-{
+in {
   options.kdn.profile.host.etra = {
     enable = lib.mkEnableOption "etra host profile";
   };
@@ -60,8 +65,7 @@ in
         cfg = config.kdn.hardware.disks;
         name = "emmc-etra";
         luksVol = cfg.luks.volumes."${name}";
-      in
-      {
+      in {
         kdn.hardware.disks.initrd.failureTarget = "rescue.target";
         kdn.hardware.disks.enable = true;
         kdn.hardware.disks.devices."boot".path = "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_04R5Q5DX7R12U7QB-0:0";
@@ -79,8 +83,8 @@ in
       kdn.networking.router.nets.wan = {
         type = "wan";
         netdev.kind = "bond";
-        interfaces = [ "enp1s0" ];
-        address = [ ];
+        interfaces = ["enp1s0"];
+        address = [];
         wan.asDefaultDNS = true;
         wan.dns = [
           net.ipv4.p2p.drek-etra.address.gateway
@@ -91,48 +95,50 @@ in
           ll.drek.br-etra
         ];
         template.network.sections.p2p-drek-etra.Address = with net.ipv4.p2p.drek-etra; {
-          /* cannot use IPv4 link-local addressing because it causes degraded state, see:
-            - https://github.com/systemd/systemd/issues/575
-            - https://github.com/systemd/systemd/issues/9077
-           */
+          /*
+           cannot use IPv4 link-local addressing because it causes degraded state, see:
+          - https://github.com/systemd/systemd/issues/575
+          - https://github.com/systemd/systemd/issues/9077
+          */
           Address = "${address.client}/${netmask}";
           Peer = "${address.gateway}/${netmask}";
         };
       };
-      kdn.networking.router.kresd.upstreams = [{
-        description = "lan.drek.net.int.kdn.im";
-        type = "STUB";
-        nameservers = [ net.ipv4.p2p.drek-etra.address.gateway ];
-        domains = [ "lan.drek.net.int.kdn.im." ];
-      }];
+      kdn.networking.router.kresd.upstreams = [
+        {
+          description = "lan.drek.net.int.kdn.im";
+          type = "STUB";
+          nameservers = [net.ipv4.p2p.drek-etra.address.gateway];
+          domains = ["lan.drek.net.int.kdn.im."];
+        }
+      ];
     }
     {
-      kdn.networking.router.nets."lan".addressing."ipv4".hosts = lib.pipe [
-        # first batch
-        "a5:8b"
-        "e4:52"
-        "fa:56"
-        "4e:6e"
-        "43:85"
-        # second batch
-        "42:94"
-        "05:0c"
-        "27:95"
-        "92:97"
-        "26:e2"
-      ] [
-        (builtins.map lib.strings.toLower)
-        (builtins.map (macSuffix:
-          let
+      kdn.networking.router.nets."lan".addressing."ipv4".hosts =
+        lib.pipe [
+          # first batch
+          "a5:8b"
+          "e4:52"
+          "fa:56"
+          "4e:6e"
+          "43:85"
+          # second batch
+          "42:94"
+          "05:0c"
+          "27:95"
+          "92:97"
+          "26:e2"
+        ] [
+          (builtins.map lib.strings.toLower)
+          (builtins.map (macSuffix: let
             mac = "48:da:35:6f:${macSuffix}";
-            suffix = builtins.replaceStrings [ ":" ] [ "" ] macSuffix;
-          in
-          {
+            suffix = builtins.replaceStrings [":"] [""] macSuffix;
+          in {
             name = "kvm-${suffix}";
             value.ident.hw-address = mac;
           }))
-        builtins.listToAttrs
-      ];
+          builtins.listToAttrs
+        ];
     }
     {
       kdn.networking.router.nets.lan = {
@@ -140,7 +146,7 @@ in
         lan.uplink = "wan";
         netdev.kind = "bond";
         netdev.bond.mode = "aggregate";
-        interfaces = [ "enp2s0" "enp3s0" ];
+        interfaces = ["enp2s0" "enp3s0"];
         address = [
           (with ula.lan; "${address.gateway}/${netmask}")
           (with netconf.ipv6.network.etra.lan; "${address.gateway}/${netmask}")
@@ -176,7 +182,7 @@ in
         lan.uplink = "wan";
         netdev.kind = "vlan";
         vlan.id = vlan.pic.id;
-        interfaces = [ "lan" ];
+        interfaces = ["lan"];
         address = [
           #(with ula.pic; "${address.gateway}/${netmask}")
           #(with netconf.ipv6.network.etra.pic; "${address.gateway}/${netmask}")
@@ -207,11 +213,11 @@ in
     }
     {
       # accept all traffice coming from Netbird to any other routed network
-      networking.firewall.trustedInterfaces = [ "nb-priv" ];
+      networking.firewall.trustedInterfaces = ["nb-priv"];
     }
     {
       kdn.networking.router.nets.wan = {
-        firewall.allowedUDPPorts = [ 53 853 ];
+        firewall.allowedUDPPorts = [53 853];
       };
       kdn.networking.router.knot.listens = [
         net.ipv4.p2p.drek-etra.address.client
@@ -220,11 +226,11 @@ in
 
       networking.firewall = {
         # syncthing ranges
-        allowedTCPPorts = [ 53 853 ];
-        allowedUDPPorts = [ 53 853 ];
+        allowedTCPPorts = [53 853];
+        allowedUDPPorts = [53 853];
       };
       #kdn.networking.router.knot.localAddress = "192.168.40.1";
-      kdn.networking.router.domains."int.kdn.im." = { };
+      kdn.networking.router.domains."int.kdn.im." = {};
       kdn.networking.router.dhcp-ddns.suffix = "net.int.kdn.im.";
       services.kresd.instances = 2;
     }

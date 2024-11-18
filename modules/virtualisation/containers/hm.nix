@@ -1,22 +1,24 @@
 # translated from NixOS https://github.com/NixOS/nixpkgs/blob/ac1acba43b2f9db073943ff5ed883ce7e8a40a2c/nixos/modules/virtualisation/containers.nix
-{ lib, pkgs, config, ... }:
-let
+{
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
   cfg = config.kdn.virtualisation.containers;
 
   inherit (lib) literalExpression mkOption types;
 
-  toml = pkgs.formats.toml { };
-in
-{
+  toml = pkgs.formats.toml {};
+in {
   options.kdn.virtualisation.containers = {
-    enable =
-      mkOption {
-        type = types.bool;
-        default = false;
-        description = lib.mdDoc ''
-          This option enables the common ~/.config/containers configuration module.
-        '';
-      };
+    enable = mkOption {
+      type = types.bool;
+      default = false;
+      description = lib.mdDoc ''
+        This option enables the common ~/.config/containers configuration module.
+      '';
+    };
 
     ociSeccompBpfHook.enable = mkOption {
       type = types.bool;
@@ -26,7 +28,7 @@ in
 
     containersConf.settings = mkOption {
       type = toml.type;
-      default = { };
+      default = {};
       description = lib.mdDoc "containers.conf configuration";
     };
 
@@ -62,14 +64,14 @@ in
     registries = {
       search = mkOption {
         type = types.listOf types.str;
-        default = [ "docker.io" "quay.io" ];
+        default = ["docker.io" "quay.io"];
         description = lib.mdDoc ''
           List of repositories to search.
         '';
       };
 
       insecure = mkOption {
-        default = [ ];
+        default = [];
         type = types.listOf types.str;
         description = lib.mdDoc ''
           List of insecure repositories.
@@ -77,7 +79,7 @@ in
       };
 
       block = mkOption {
-        default = [ ];
+        default = [];
         type = types.listOf types.str;
         description = lib.mdDoc ''
           List of blocked repositories.
@@ -86,7 +88,7 @@ in
     };
 
     policy = mkOption {
-      default = { };
+      default = {};
       type = types.attrs;
       example = literalExpression ''
         {
@@ -109,15 +111,17 @@ in
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       kdn = {
-        virtualisation.containers.containersConf.cniPlugins = [ pkgs.cni-plugins ];
+        virtualisation.containers.containersConf.cniPlugins = [pkgs.cni-plugins];
 
         virtualisation.containers.containersConf.settings = {
           network.cni_plugin_dirs = map (p: "${lib.getBin p}/bin") cfg.containersConf.cniPlugins;
-          engine = {
-            init_path = "${pkgs.catatonit}/bin/catatonit";
-          } // lib.optionalAttrs cfg.ociSeccompBpfHook.enable {
-            hooks_dir = [ config.boot.kernelPackages.oci-seccomp-bpf-hook ];
-          };
+          engine =
+            {
+              init_path = "${pkgs.catatonit}/bin/catatonit";
+            }
+            // lib.optionalAttrs cfg.ociSeccompBpfHook.enable {
+              hooks_dir = [config.boot.kernelPackages.oci-seccomp-bpf-hook];
+            };
         };
       };
 
@@ -129,11 +133,12 @@ in
         toml.generate "storage.conf" cfg.storage.settings;
 
       xdg.configFile."containers/registries.conf".source = toml.generate "registries.conf" {
-        registries = lib.mapAttrs (n: v: { registries = v; }) cfg.registries;
+        registries = lib.mapAttrs (n: v: {registries = v;}) cfg.registries;
       };
 
       xdg.configFile."containers/policy.json".source =
-        if cfg.policy != { } then pkgs.writeText "policy.json" (builtins.toJSON cfg.policy)
+        if cfg.policy != {}
+        then pkgs.writeText "policy.json" (builtins.toJSON cfg.policy)
         else "${pkgs.skopeo.policy}/default-policy.json";
     }
     {

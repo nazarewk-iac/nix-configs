@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.profile.machine.basic;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.profile.machine.basic;
+in {
   options.kdn.profile.machine.basic = {
     enable = lib.mkEnableOption "basic machine profile for interactive use";
   };
@@ -18,7 +21,7 @@ in
 
       # HARDWARE
       hardware.usb-modeswitch.enable = true;
-      environment.systemPackages = with pkgs; [ usb-modeswitch ];
+      environment.systemPackages = with pkgs; [usb-modeswitch];
       kdn.hardware.bluetooth.enable = true;
     }
     (
@@ -38,16 +41,15 @@ in
             ${lib.getExe' config.documentation.man.man-db.package "mandb"} "$@"
           '';
         };
-      in
-      {
+      in {
         documentation.man.man-db.enable = true;
         documentation.man.generateCaches = false;
-        environment.systemPackages = [ kdn-man-gen-caches ];
+        environment.systemPackages = [kdn-man-gen-caches];
         environment.persistence."sys/cache".directories = [
           "/var/cache/man/nixos"
         ];
         systemd.services.kdn-man-gen-caches = {
-          wantedBy = [ "multi-user.target" ];
+          wantedBy = ["multi-user.target"];
           description = "generates manpage caches during runtime instead of during build";
           serviceConfig.Type = "oneshot";
           serviceConfig.RemainAfterExit = true;
@@ -55,14 +57,12 @@ in
             (lib.getExe kdn-man-gen-caches)
           ];
         };
-        system.activationScripts.kdn-man-gen-caches.deps =
-          let
-            ifExists = name: lib.optional (config.system.activationScripts ? name) name;
-          in
-          [ "etc" ]
+        system.activationScripts.kdn-man-gen-caches.deps = let
+          ifExists = name: lib.optional (config.system.activationScripts ? name) name;
+        in
+          ["etc"]
           ++ ifExists "impermanenceCreatePersistentStorageDirs"
-          ++ ifExists "impermanencePersistFiles"
-        ;
+          ++ ifExists "impermanencePersistFiles";
         system.activationScripts.kdn-man-gen-caches.text = ''
           ${lib.getExe' pkgs.systemd "systemctl"} start --no-block kdn-man-gen-caches.service
         '';
@@ -77,7 +77,7 @@ in
       specialisation.debug = {
         inheritParentConfig = true;
         configuration = {
-          system.nixos.tags = [ "debug" ];
+          system.nixos.tags = ["debug"];
           boot.kernelParams = [
             # see https://www.thegeekdiary.com/how-to-debug-systemd-boot-process-in-centos-rhel-7-and-8-2/
             #"systemd.confirm_spawn=true"  # this seems to ask and times out before executing anything during boot
@@ -89,7 +89,7 @@ in
       specialisation.rescue = {
         inheritParentConfig = true;
         configuration = {
-          system.nixos.tags = [ "rescue" ];
+          system.nixos.tags = ["rescue"];
           systemd.defaultUnit = lib.mkForce "rescue.target";
           boot.kernelParams = [
             # see https://www.thegeekdiary.com/how-to-debug-systemd-boot-process-in-centos-rhel-7-and-8-2/

@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.virtualisation.containers;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.virtualisation.containers;
+in {
   options.kdn.virtualisation.containers = {
     enable = lib.mkEnableOption "container development setup";
   };
@@ -28,10 +31,12 @@ in
     environment.persistence."usr/data".directories = [
       "/var/lib/containers/storage"
     ];
-    home-manager.sharedModules = [{
-      kdn = {
-        virtualisation.containers.enable = true;
-      };
-    }];
+    home-manager.sharedModules = [
+      {
+        kdn = {
+          virtualisation.containers.enable = true;
+        };
+      }
+    ];
   };
 }

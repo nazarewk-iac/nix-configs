@@ -1,16 +1,20 @@
-{ osConfig, config, pkgs, lib, ... }:
-let
+{
+  osConfig,
+  config,
+  pkgs,
+  lib,
+  ...
+}: let
   cfg = config.kdn.desktop.base;
   ydotool-paste = pkgs.writeShellApplication {
     name = "ydotool-paste";
-    runtimeInputs = with pkgs; [ ydotool wl-clipboard ];
+    runtimeInputs = with pkgs; [ydotool wl-clipboard];
     text = ''
       sleep "''${1:-0.5}"
       wl-paste --no-newline | ydotool type --file=-
     '';
   };
-in
-{
+in {
   options.kdn.desktop.base = {
     enable = lib.mkOption {
       type = lib.types.bool;
@@ -27,7 +31,7 @@ in
       libqalculate
     ];
 
-    home.sessionPath = [ "$HOME/.local/bin" ];
+    home.sessionPath = ["$HOME/.local/bin"];
 
     programs.foot.enable = true;
     programs.foot.server.enable = false;

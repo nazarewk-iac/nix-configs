@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.programs.slack;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.programs.slack;
+in {
   options.kdn.programs.slack = {
     enable = lib.mkEnableOption "slack setup";
   };
@@ -11,12 +14,12 @@ in
     {
       kdn.programs.apps.slack = {
         enable = true;
-        dirs.cache = [ ];
-        dirs.config = [ "Slack" ];
-        dirs.data = [ ];
-        dirs.disposable = [ ];
-        dirs.reproducible = [ ];
-        dirs.state = [ ];
+        dirs.cache = [];
+        dirs.config = ["Slack"];
+        dirs.data = [];
+        dirs.disposable = [];
+        dirs.reproducible = [];
+        dirs.state = [];
       };
     }
   ]);

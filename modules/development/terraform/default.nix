@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.development.terraform;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.development.terraform;
+in {
   options.kdn.development.terraform = {
     enable = lib.mkEnableOption "Terraform development";
   };
@@ -10,6 +13,6 @@ in
   config = lib.mkIf cfg.enable {
     kdn.packaging.asdf.enable = true;
 
-    home-manager.sharedModules = [{ kdn.development.terraform.enable = true; }];
+    home-manager.sharedModules = [{kdn.development.terraform.enable = true;}];
   };
 }

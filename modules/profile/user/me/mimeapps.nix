@@ -1,29 +1,28 @@
-{ lib, ... }:
-let
-  browsers.uri-to-clipboard = [ "uri-to-clipboard.desktop" ];
+{lib, ...}: let
+  browsers.uri-to-clipboard = ["uri-to-clipboard.desktop"];
 
-  browsers.chooser = [ "software.Browsers.desktop" ]; # https://github.com/Browsers-software/browsers
-  browsers.chromium = [ "chromium-browser.desktop" ];
-  browsers.firefox = [ "firefox.desktop" ];
-  browsers.preferred = with browsers; chooser
+  browsers.chooser = ["software.Browsers.desktop"]; # https://github.com/Browsers-software/browsers
+  browsers.chromium = ["chromium-browser.desktop"];
+  browsers.firefox = ["firefox.desktop"];
+  browsers.preferred =
+    with browsers; chooser
     #++ uri-to-clipboard
     #++ firefox
     #++ chromium
-  ;
+    ;
 
-  fileManager = [ "nemo.desktop" ];
-  ide = [ "idea-ultimate.desktop" ];
-  pdf = [ "org.kde.okular.desktop" ];
-  remmina = [ "org.remmina.Remmina.desktop" ];
+  fileManager = ["nemo.desktop"];
+  ide = ["idea-ultimate.desktop"];
+  pdf = ["org.kde.okular.desktop"];
+  remmina = ["org.remmina.Remmina.desktop"];
   rss = browsers.chromium;
   teams = browsers.chromium;
-  terminal = [ "foot.desktop" ];
-  vectorImages = [ "org.gnome.eog.desktop" ];
-in
-{
+  terminal = ["foot.desktop"];
+  vectorImages = ["org.gnome.eog.desktop"];
+in {
   config = {
     xdg.mimeApps.enable = true;
-    xdg.mimeApps.associations.added = { };
+    xdg.mimeApps.associations.added = {};
     xdg.mimeApps.defaultApplications = lib.mkForce {
       "application/pdf" = pdf;
       "application/rdf+xml" = rss;

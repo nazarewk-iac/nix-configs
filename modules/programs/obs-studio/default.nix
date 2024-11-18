@@ -1,12 +1,15 @@
-{ lib, pkgs, config, ... }:
-let
+{
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
   cfg = config.kdn.programs.obs-studio;
 
-  obs-studio-with-plugins = pkgs.wrapOBS.override { obs-studio = cfg.package; } {
+  obs-studio-with-plugins = pkgs.wrapOBS.override {obs-studio = cfg.package;} {
     plugins = cfg.plugins;
   };
-in
-{
+in {
   options.kdn.programs.obs-studio = {
     enable = lib.mkEnableOption "OBS Studio setup";
     package = lib.mkOption {
@@ -32,10 +35,12 @@ in
     boot.kernelModules = [
       "v4l2loopback" # for getting OBS virtual camera to work
     ];
-    home-manager.sharedModules = [{
-      home.persistence."usr/config".directories = [
-        ".config/obs-studio"
-      ];
-    }];
+    home-manager.sharedModules = [
+      {
+        home.persistence."usr/config".directories = [
+          ".config/obs-studio"
+        ];
+      }
+    ];
   };
 }

@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.headless.base;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.headless.base;
+in {
   options.kdn.headless.base = {
     enable = lib.mkEnableOption "basic headless system configuration";
     debugPolkit = lib.mkEnableOption "polkit debugging";
@@ -91,7 +94,9 @@ in
         difftastic
       ];
 
-      boot.kernel.sysctl = let mb = 1024 * 1024; in {
+      boot.kernel.sysctl = let
+        mb = 1024 * 1024;
+      in {
         # https://wiki.archlinux.org/title/Sysctl#Virtual_memory
         "vm.dirty_background_bytes" = 4 * mb;
         "vm.dirty_bytes" = 4 * mb;
@@ -102,7 +107,6 @@ in
         "fs.inotify.max_user_instances" = 1024; # default:   128
         "fs.inotify.max_queued_events" = 32768; # default: 16384
       };
-
 
       # `dbus` seems to be bugged when combined with DynamicUser services
       services.dbus.implementation = "broker";
@@ -120,8 +124,7 @@ in
           Defaults  env_keep += KDN_ZELLIJ_SKIP
           Defaults  env_keep += TERMINAL_EMULATOR
         '';
-      in
-      {
+      in {
         home-manager.sharedModules = [
           (hm: {
             programs.zellij.enable = true;
@@ -140,7 +143,7 @@ in
             #    eval (${lib.getExe hm.config.programs.zellij.package} setup --generate-auto-start fish | string collect)
             #  end
             #'';
-            home.persistence."usr/cache".directories = [ ".cache/zellij" ];
+            home.persistence."usr/cache".directories = [".cache/zellij"];
           })
         ];
         security.sudo.extraConfig = sudoCfg;

@@ -1,9 +1,9 @@
-{ lib
-, pkgs
-, config
-, ...
-}:
-let
+{
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
   cfg = config.kdn.networking.dynamic-hosts;
 
   kdn-gen-hosts = pkgs.writeShellApplication {
@@ -20,30 +20,29 @@ let
         >/etc/hosts
     '';
   };
-in
-{
+in {
   options.kdn.networking.dynamic-hosts = {
     enable = lib.mkEnableOption "dynamic /etc/hosts rendering";
   };
 
   config = lib.mkIf cfg.enable {
-    kdn.managed.directories = [ "/etc/hosts.d" ];
+    kdn.managed.directories = ["/etc/hosts.d"];
     environment.etc."hosts".enable = false;
     environment.etc."hosts.d/50-kdn-nixos.hosts".source = pkgs.concatText "hosts" config.networking.hostFiles;
-    environment.systemPackages = [ kdn-gen-hosts ];
+    environment.systemPackages = [kdn-gen-hosts];
 
     systemd.paths."kdn-dynamic-hosts" = {
       description = "Generates /etc/hosts from /etc/hosts.d directory";
-      wantedBy = [ "network.target" "default.target" ];
-      before = [ "network.target" ];
+      wantedBy = ["network.target" "default.target"];
+      before = ["network.target"];
       pathConfig.PathChanged = "/etc/hosts.d";
       pathConfig.TriggerLimitIntervalSec = "1s";
       pathConfig.TriggerLimitBurst = 1;
     };
     systemd.services."kdn-dynamic-hosts" = {
       description = "Generates /etc/hosts from /etc/hosts.d directory";
-      wantedBy = [ "network.target" "default.target" ];
-      before = [ "network.target" ];
+      wantedBy = ["network.target" "default.target"];
+      before = ["network.target"];
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;

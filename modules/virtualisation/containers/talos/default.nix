@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.virtualisation.containers.talos;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.virtualisation.containers.talos;
+in {
   options.kdn.virtualisation.containers.talos = {
     enable = lib.mkEnableOption "Talos.dev CLI";
 
@@ -25,17 +28,17 @@ in
     }
     (lib.mkIf cfg.qemu.enable {
       /*
-        Requirements from: https://www.talos.dev/v1.5/talos-guides/install/local-platforms/qemu/
-        Linux
-        a kernel with
-            KVM enabled (/dev/kvm must exist) # OK?
-            CONFIG_NET_SCH_NETEM enabled  # zcat /proc/config.gz | grep -E 'CONFIG_NET_SCH_(NETEM|INGRESS)'
-            CONFIG_NET_SCH_INGRESS enabled
-        at least CAP_SYS_ADMIN and CAP_NET_ADMIN capabilities # run as root
-        QEMU
-        bridge, static and firewall CNI plugins from the standard CNI plugins, and tc-redirect-tap CNI plugin from the awslabs tc-redirect-tap installed to /opt/cni/bin (installed automatically by talosctl)
-        iptables
-        /var/run/netns directory should exist
+      Requirements from: https://www.talos.dev/v1.5/talos-guides/install/local-platforms/qemu/
+      Linux
+      a kernel with
+          KVM enabled (/dev/kvm must exist) # OK?
+          CONFIG_NET_SCH_NETEM enabled  # zcat /proc/config.gz | grep -E 'CONFIG_NET_SCH_(NETEM|INGRESS)'
+          CONFIG_NET_SCH_INGRESS enabled
+      at least CAP_SYS_ADMIN and CAP_NET_ADMIN capabilities # run as root
+      QEMU
+      bridge, static and firewall CNI plugins from the standard CNI plugins, and tc-redirect-tap CNI plugin from the awslabs tc-redirect-tap installed to /opt/cni/bin (installed automatically by talosctl)
+      iptables
+      /var/run/netns directory should exist
       */
       kdn.virtualization.libvirtd.enable = true;
       # verify flags: zcat /proc/config.gz | grep -E 'CONFIG_NET_SCH_(NETEM|INGRESS)'

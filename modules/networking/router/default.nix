@@ -1,12 +1,18 @@
-{ config, pkgs, lib, modulesPath, self, ... }:
-let
+{
+  config,
+  pkgs,
+  lib,
+  modulesPath,
+  self,
+  ...
+}: let
   cfg = config.kdn.networking.router;
   hostname = config.networking.hostName;
 
   mkDropInDir = unit: "/etc/systemd/network/${unit}.d";
   mkDropInPath = unit: name: "${mkDropInDir unit}/${cfg.dropin.infix}-${name}.conf";
 
-  getInterfaceUnit = iface: lib.attrsets.attrByPath [ iface "unit" "name" ] "${cfg.unit.prefix}${iface}" cfg.nets;
+  getInterfaceUnit = iface: lib.attrsets.attrByPath [iface "unit" "name"] "${cfg.unit.prefix}${iface}" cfg.nets;
 
   ports.dns.default = 53;
   ports.dns.tls = 853;
@@ -28,12 +34,14 @@ let
 
   kdn-router-knot-setup-zone = pkgs.writeShellApplication {
     name = "kdn-router-knot-setup-zone";
-    runtimeInputs = [
-      config.services.knot.package
-    ] ++ (with pkgs; [
-      coreutils
-      gnused
-    ]);
+    runtimeInputs =
+      [
+        config.services.knot.package
+      ]
+      ++ (with pkgs; [
+        coreutils
+        gnused
+      ]);
     runtimeEnv.TSIG_KEY_PATH = config.sops.templates."knot/sops-key.admin.conf".path;
     runtimeEnv.KNOT_ADDR = cfg.knot.localAddress;
     runtimeEnv.KNOT_PORT = builtins.toString cfg.knot.localPort;
@@ -44,68 +52,80 @@ let
 
   kdn-router-knot-ddns-update = pkgs.writeShellApplication {
     name = "kdn-router-knot-ddns-update";
-    runtimeInputs = [
-      config.services.knot.package
-    ] ++ (with pkgs; [
-      coreutils
-      gnused
-      kdn.kdn-secrets
-    ]);
+    runtimeInputs =
+      [
+        config.services.knot.package
+      ]
+      ++ (with pkgs; [
+        coreutils
+        gnused
+        kdn.kdn-secrets
+      ]);
     runtimeEnv.TSIG_KEY_PATH = config.sops.templates."knot/sops-key.admin.conf".path;
     runtimeEnv.KNOT_ADDR = cfg.knot.localAddress;
     runtimeEnv.KNOT_PORT = builtins.toString cfg.knot.localPort;
     text = builtins.readFile ./kdn-router-knot-ddns-update.sh;
   };
 
-  templateType = lib.types.submodule (tpl:
-    let
-      leafType = with lib.types; oneOf [ str bool int path ];
-      toString = value: (
+  templateType = lib.types.submodule (tpl: let
+    leafType = with lib.types; oneOf [str bool int path];
+    toString = value:
+      (
         {
           bool = builtins.toJSON;
-        }."${builtins.typeOf value}" or builtins.toString
-      ) value;
-      sectionType = with lib.types; attrsOf (attrsOf (coercedTo
+        }
+        ."${builtins.typeOf value}"
+        or builtins.toString
+      )
+      value;
+    sectionType = with lib.types;
+      attrsOf (attrsOf (
+        coercedTo
         (either (listOf leafType) leafType)
-        (value: lib.pipe value [
-          lib.lists.toList
-          (builtins.map toString)
-        ])
+        (value:
+          lib.pipe value [
+            lib.lists.toList
+            (builtins.map toString)
+          ])
         (listOf str)
       ));
-    in
-    {
-      options.values = lib.mkOption {
-        type = sectionType;
-        default = { };
-      };
-      options.sections = lib.mkOption {
-        type = with lib.types; attrsOf sectionType;
-        default = { };
-      };
-      options.text = lib.mkOption {
-        type = with lib.types; str;
-        default = "";
-      };
+  in {
+    options.values = lib.mkOption {
+      type = sectionType;
+      default = {};
+    };
+    options.sections = lib.mkOption {
+      type = with lib.types; attrsOf sectionType;
+      default = {};
+    };
+    options.text = lib.mkOption {
+      type = with lib.types; str;
+      default = "";
+    };
 
-      options._text = lib.mkOption {
-        readOnly = true;
-        type = with lib.types; str;
-        default =
-          let
-            sections =
-              [{ name = "values"; value = tpl.config.values; }]
-              ++ (lib.attrsets.mapAttrsToList lib.attrsets.nameValuePair tpl.config.sections)
-            ;
+    options._text = lib.mkOption {
+      readOnly = true;
+      type = with lib.types; str;
+      default = let
+        sections =
+          [
+            {
+              name = "values";
+              value = tpl.config.values;
+            }
+          ]
+          ++ (lib.attrsets.mapAttrsToList lib.attrsets.nameValuePair tpl.config.sections);
 
-            renderSection = sectionName: entries: lib.pipe entries [
-              (lib.attrsets.mapAttrsToList (key: builtins.map (value: "${key}=${value}")))
-              builtins.concatLists
-              (lines: [ "[${sectionName}]" lines ])
-            ];
-          in
-          lib.pipe sections [
-            (builtins.map (sec: lib.pipe sec.value [
+        renderSection = sectionName: entries:
+          lib.pipe entries [
+            (lib.attrsets.mapAttrsToList (key: builtins.map (value: "${key}=${value}")))
+            builtins.concatLists
+            (lines: ["[${sectionName}]" lines])
+          ];
+      in
+        lib.pipe sections [
+          (builtins.map (sec:
+            lib.pipe sec.value [
               (lib.attrsets.mapAttrsToList renderSection)
               lib.lists.flatten
               (builtins.concatStringsSep "\n")
@@ -121,252 +141,262 @@ let
                 ###
               '')
             ]))
-            (builtins.concatStringsSep "\n\n\n")
-            (txt: ''
-              ${txt}
+          (builtins.concatStringsSep "\n\n\n")
+          (txt: ''
+            ${txt}
 
-              ${tpl.config.text}
-            '')
-          ];
+            ${tpl.config.text}
+          '')
+        ];
+    };
+  });
+
+  netType = lib.types.submodule ({name, ...} @ netArgs: let
+    netCfg = netArgs.config;
+  in {
+    options = {
+      name = lib.mkOption {
+        type = with lib.types; str;
+        default = netArgs.name;
       };
-    });
-
-  netType = lib.types.submodule ({ name, ... }@netArgs:
-    let netCfg = netArgs.config; in {
-      options = {
-        name = lib.mkOption {
-          type = with lib.types; str;
-          default = netArgs.name;
-        };
-        unit.name = lib.mkOption {
-          type = with lib.types; str;
-          default = "${cfg.unit.prefix}${netCfg.name}";
-        };
-        type = lib.mkOption {
-          type = with lib.types; enum [ "wan" "lan" ];
-        };
-        netdev.kind = lib.mkOption {
-          type = with lib.types; enum [ "bond" "bridge" "vlan" ];
-          default = { wan = "bond"; vlan = "vlan"; }.${netCfg.type} or "bridge";
-        };
-        netdev.bond.mode = lib.mkOption {
-          type = with lib.types; enum [ "backup" "aggregate" ];
-          default = "backup";
-        };
-        vlan.id = lib.mkOption {
-          type = with lib.types; ints.between 1 4095;
-        };
-        interface = lib.mkOption {
-          type = with lib.types; str;
-          default = netCfg.name;
-        };
-        interfaces = lib.mkOption {
-          type = with lib.types; listOf str;
-        };
-        forward.to = lib.mkOption {
-          type = with lib.types; listOf str;
-          default = [ ];
-        };
-        forward.from = lib.mkOption {
-          type = with lib.types; listOf str;
-          default = [ ];
-        };
-        lan.uplink = lib.mkOption {
-          type = with lib.types; str;
-        };
-        wan.asDefaultDNS = lib.mkOption {
-          type = with lib.types; bool;
-          default = false;
-        };
-        wan.dns = lib.mkOption {
-          type = with lib.types; listOf str;
-          default = netCfg.wan.gateway;
-        };
-        wan.gateway = lib.mkOption {
-          type = with lib.types; listOf str;
-        };
-        address = lib.mkOption {
-          type = with lib.types; listOf str;
-        };
-        prefix = lib.mkOption {
-          type = with lib.types; attrsOf str;
-          default = { };
-        };
-        domain = lib.mkOption {
-          type = with lib.types; nullOr str;
-          default =
-            if cfg.dhcp-ddns.suffix == null then null
-            else "${netCfg.name}.${config.networking.hostName}.${cfg.dhcp-ddns.suffix}";
-          apply = domain:
-            assert lib.assertMsg (lib.strings.hasSuffix "." domain) ''
-              `kdn.networking.router.nets.*.domain` must end with a '.': ${domain}
-            ''; domain;
-        };
-        template.network = lib.mkOption {
-          type = templateType;
-          default = { };
-        };
-        addressing = lib.mkOption {
-          type = lib.types.attrsOf (lib.types.submodule (addrArgs:
-            let addrCfg = addrArgs.config; in {
-              options = {
-                enable = lib.mkOption {
-                  type = with lib.types; bool;
-                  default = true;
+      unit.name = lib.mkOption {
+        type = with lib.types; str;
+        default = "${cfg.unit.prefix}${netCfg.name}";
+      };
+      type = lib.mkOption {
+        type = with lib.types; enum ["wan" "lan"];
+      };
+      netdev.kind = lib.mkOption {
+        type = with lib.types; enum ["bond" "bridge" "vlan"];
+        default =
+          {
+            wan = "bond";
+            vlan = "vlan";
+          }
+          .${netCfg.type}
+          or "bridge";
+      };
+      netdev.bond.mode = lib.mkOption {
+        type = with lib.types; enum ["backup" "aggregate"];
+        default = "backup";
+      };
+      vlan.id = lib.mkOption {
+        type = with lib.types; ints.between 1 4095;
+      };
+      interface = lib.mkOption {
+        type = with lib.types; str;
+        default = netCfg.name;
+      };
+      interfaces = lib.mkOption {
+        type = with lib.types; listOf str;
+      };
+      forward.to = lib.mkOption {
+        type = with lib.types; listOf str;
+        default = [];
+      };
+      forward.from = lib.mkOption {
+        type = with lib.types; listOf str;
+        default = [];
+      };
+      lan.uplink = lib.mkOption {
+        type = with lib.types; str;
+      };
+      wan.asDefaultDNS = lib.mkOption {
+        type = with lib.types; bool;
+        default = false;
+      };
+      wan.dns = lib.mkOption {
+        type = with lib.types; listOf str;
+        default = netCfg.wan.gateway;
+      };
+      wan.gateway = lib.mkOption {
+        type = with lib.types; listOf str;
+      };
+      address = lib.mkOption {
+        type = with lib.types; listOf str;
+      };
+      prefix = lib.mkOption {
+        type = with lib.types; attrsOf str;
+        default = {};
+      };
+      domain = lib.mkOption {
+        type = with lib.types; nullOr str;
+        default =
+          if cfg.dhcp-ddns.suffix == null
+          then null
+          else "${netCfg.name}.${config.networking.hostName}.${cfg.dhcp-ddns.suffix}";
+        apply = domain:
+          assert lib.assertMsg (lib.strings.hasSuffix "." domain) ''
+            `kdn.networking.router.nets.*.domain` must end with a '.': ${domain}
+          ''; domain;
+      };
+      template.network = lib.mkOption {
+        type = templateType;
+        default = {};
+      };
+      addressing = lib.mkOption {
+        type = lib.types.attrsOf (lib.types.submodule (addrArgs: let
+          addrCfg = addrArgs.config;
+        in {
+          options = {
+            enable = lib.mkOption {
+              type = with lib.types; bool;
+              default = true;
+            };
+            type = lib.mkOption {
+              type = with lib.types; enum ["ipv4" "ipv6"];
+              default =
+                if lib.strings.hasInfix ":" addrCfg.network
+                then "ipv6"
+                else "ipv4";
+            };
+            subnet-id = lib.mkOption {
+              # see https://kea.readthedocs.io/en/kea-2.7.1/arm/dhcp4-srv.html#ipv4-subnet-identifier
+              # > python -c 'import random; print(random.randint(1, 4294967295))'
+              type = with lib.types; ints.between 1 4294967295;
+            };
+            network = lib.mkOption {
+              type = with lib.types; str;
+            };
+            netmask = lib.mkOption {
+              type = with lib.types; str;
+            };
+            pools = lib.mkOption {
+              type = lib.types.attrsOf (lib.types.submodule (poolArgs: {
+                options = {
+                  start = lib.mkOption {
+                    type = with lib.types; str;
+                  };
+                  end = lib.mkOption {
+                    type = with lib.types; str;
+                  };
                 };
-                type = lib.mkOption {
-                  type = with lib.types; enum [ "ipv4" "ipv6" ];
-                  default = if lib.strings.hasInfix ":" addrCfg.network then "ipv6" else "ipv4";
+              }));
+            };
+            hosts = lib.mkOption {
+              type = lib.types.attrsOf (lib.types.submodule ({name, ...} @ hostArgs: {
+                options = {
+                  hostname = lib.mkOption {
+                    type = with lib.types; str;
+                    default = hostArgs.name;
+                  };
+                  ip = lib.mkOption {
+                    type = with lib.types; nullOr str;
+                    default = null;
+                  };
+                  ident = lib.mkOption {
+                    type = with lib.types; attrsOf str;
+                    default = {};
+                  };
                 };
-                subnet-id = lib.mkOption {
-                  # see https://kea.readthedocs.io/en/kea-2.7.1/arm/dhcp4-srv.html#ipv4-subnet-identifier
-                  # > python -c 'import random; print(random.randint(1, 4294967295))'
-                  type = with lib.types; ints.between 1 4294967295;
-                };
-                network = lib.mkOption {
-                  type = with lib.types; str;
-                };
-                netmask = lib.mkOption {
-                  type = with lib.types; str;
-                };
-                pools = lib.mkOption {
-                  type = lib.types.attrsOf (lib.types.submodule (poolArgs: {
-                    options = {
-                      start = lib.mkOption {
-                        type = with lib.types; str;
-                      };
-                      end = lib.mkOption {
-                        type = with lib.types; str;
-                      };
-                    };
-                  }));
-                };
-                hosts = lib.mkOption {
-                  type = lib.types.attrsOf (lib.types.submodule ({ name, ... }@hostArgs: {
-                    options = {
-                      hostname = lib.mkOption {
-                        type = with lib.types; str;
-                        default = hostArgs.name;
-                      };
-                      ip = lib.mkOption {
-                        type = with lib.types; nullOr str;
-                        default = null;
-                      };
-                      ident = lib.mkOption {
-                        type = with lib.types; attrsOf str;
-                        default = { };
-                      };
-                    };
-                  }));
-                  default = { };
-                };
-              };
-            }));
-          default = { };
-        };
-        ra.implementation = lib.mkOption {
-          type = with lib.types; enum [
+              }));
+              default = {};
+            };
+          };
+        }));
+        default = {};
+      };
+      ra.implementation = lib.mkOption {
+        type = with lib.types;
+          enum [
             "networkd"
             #"corerad"
             #"kea"
           ];
-          default = "networkd";
+        default = "networkd";
+      };
+      firewall = {
+        trusted = lib.mkOption {
+          type = with lib.types; bool;
+          default = false;
         };
-        firewall = {
-          trusted = lib.mkOption {
-            type = with lib.types; bool;
-            default = false;
-          };
-          allowedTCPPorts = lib.mkOption {
-            type = with lib.types; listOf port;
-            default = [ ];
-            apply = ports: lib.unique (builtins.sort builtins.lessThan ports);
-          };
+        allowedTCPPorts = lib.mkOption {
+          type = with lib.types; listOf port;
+          default = [];
+          apply = ports: lib.unique (builtins.sort builtins.lessThan ports);
+        };
 
-          allowedTCPPortRanges = lib.mkOption {
-            type = with lib.types; listOf (attrsOf port);
-            default = [ ];
-          };
+        allowedTCPPortRanges = lib.mkOption {
+          type = with lib.types; listOf (attrsOf port);
+          default = [];
+        };
 
-          allowedUDPPorts = lib.mkOption {
-            type = with lib.types; listOf port;
-            default = [ ];
-            apply = ports: lib.unique (builtins.sort builtins.lessThan ports);
-          };
+        allowedUDPPorts = lib.mkOption {
+          type = with lib.types; listOf port;
+          default = [];
+          apply = ports: lib.unique (builtins.sort builtins.lessThan ports);
+        };
 
-          allowedUDPPortRanges = lib.mkOption {
-            type = with lib.types; listOf (attrsOf port);
-            default = [ ];
-          };
+        allowedUDPPortRanges = lib.mkOption {
+          type = with lib.types; listOf (attrsOf port);
+          default = [];
         };
       };
-      config = lib.mkMerge [
-        {
-          template.network.values.Network = {
-            Address = netCfg.address ++ lib.pipe netCfg.addressing [
+    };
+    config = lib.mkMerge [
+      {
+        template.network.values.Network = {
+          Address =
+            netCfg.address
+            ++ lib.pipe netCfg.addressing [
               builtins.attrValues
               (builtins.map (addrCfg: ''${addrCfg.hosts."${hostname}".ip}/${addrCfg.netmask}''))
             ];
+        };
+      }
+      (lib.mkIf (netCfg.type == "wan") {
+        template.network.values.Network = {
+          DNS = netCfg.wan.dns;
+          Gateway = netCfg.wan.gateway;
+        };
+        template.network.sections =
+          lib.attrsets.mapAttrs'
+          (name: prefix: {
+            name = "prefix-${name}";
+            value.IPv6Prefix = {
+              Prefix = prefix;
+              OnLink = true;
+              AddressAutoconfiguration = false;
+              Assign = false;
+            };
+          })
+          netCfg.prefix;
+      })
+      (lib.mkIf (netCfg.type == "lan") (lib.mkMerge [
+        {
+          forward.to = [netCfg.lan.uplink];
+          firewall = let
+          in {
+            allowedTCPPorts =
+              [
+                ports.mdns
+              ]
+              ++ builtins.attrValues ports.dns;
+            allowedUDPPorts =
+              [
+                ports.mdns
+              ]
+              ++ builtins.attrValues ports.dns
+              ++ builtins.attrValues ports.dhcp;
           };
+          template.network.sections = lib.mkMerge [
+            (lib.attrsets.mapAttrs'
+              (name: prefix: {
+                name = "prefix-${name}";
+                value.IPv6Prefix = {
+                  Prefix = prefix;
+                  OnLink = true;
+                  AddressAutoconfiguration = true;
+                  Assign = false;
+                };
+              })
+              netCfg.prefix)
+          ];
         }
-        (lib.mkIf (netCfg.type == "wan") {
-          template.network.values.Network = {
-            DNS = netCfg.wan.dns;
-            Gateway = netCfg.wan.gateway;
-          };
-          template.network.sections = lib.attrsets.mapAttrs'
-            (name: prefix: {
-              name = "prefix-${name}";
-              value.IPv6Prefix = {
-                Prefix = prefix;
-                OnLink = true;
-                AddressAutoconfiguration = false;
-                Assign = false;
-              };
-            })
-            netCfg.prefix;
-        })
-        (lib.mkIf (netCfg.type == "lan") (lib.mkMerge [
-          {
-            forward.to = [ netCfg.lan.uplink ];
-            firewall =
-              let
-              in
-              {
-                allowedTCPPorts =
-                  [
-                    ports.mdns
-                  ]
-                  ++ builtins.attrValues ports.dns
-                ;
-                allowedUDPPorts =
-                  [
-                    ports.mdns
-                  ]
-                  ++ builtins.attrValues ports.dns
-                  ++ builtins.attrValues ports.dhcp
-                ;
-              };
-            template.network.sections = lib.mkMerge [
-              (lib.attrsets.mapAttrs'
-                (name: prefix: {
-                  name = "prefix-${name}";
-                  value.IPv6Prefix = {
-                    Prefix = prefix;
-                    OnLink = true;
-                    AddressAutoconfiguration = true;
-                    Assign = false;
-                  };
-                })
-                netCfg.prefix)
-            ];
-          }
-        ]))
-      ];
-    });
-
-in
-{
+      ]))
+    ];
+  });
+in {
   options.kdn.networking.router = {
     enable = lib.mkEnableOption "systemd-networkd based router";
 
@@ -394,36 +424,38 @@ in
     };
 
     dhcpv4.implementation = lib.mkOption {
-      type = with lib.types; enum [
-        "networkd"
-        "kea"
-      ];
+      type = with lib.types;
+        enum [
+          "networkd"
+          "kea"
+        ];
       default = "kea";
     };
     dhcpv6.implementation = lib.mkOption {
-      type = with lib.types; enum [
-        null
-        "networkd"
-        "kea"
-      ];
+      type = with lib.types;
+        enum [
+          null
+          "networkd"
+          "kea"
+        ];
       default = null;
     };
 
     kea.dhcp4.settings = lib.mkOption {
       type = pkgs.jsonTemplate.type;
-      default = { };
+      default = {};
     };
     kea.dhcp6.settings = lib.mkOption {
       type = pkgs.jsonTemplate.type;
-      default = { };
+      default = {};
     };
     kea.dhcp-ddns.settings = lib.mkOption {
       type = pkgs.jsonTemplate.type;
-      default = { };
+      default = {};
     };
     kea.ctrl-agent.settings = lib.mkOption {
       type = pkgs.jsonTemplate.type;
-      default = { };
+      default = {};
     };
 
     forwardings = lib.mkOption {
@@ -435,16 +467,16 @@ in
           type = with lib.types; str;
         };
       }));
-      default = [ ];
+      default = [];
     };
 
     nets = lib.mkOption {
       type = lib.types.attrsOf netType;
-      default = { };
+      default = {};
     };
 
     domains = lib.mkOption {
-      type = lib.types.attrsOf (lib.types.submodule ({ name, ... }@domainArgs: {
+      type = lib.types.attrsOf (lib.types.submodule ({name, ...} @ domainArgs: {
         options = {
           name = lib.mkOption {
             readOnly = true;
@@ -457,7 +489,7 @@ in
           };
         };
       }));
-      default = { };
+      default = {};
     };
 
     dhcp-ddns.suffix = lib.mkOption {
@@ -480,12 +512,20 @@ in
 
     knot.listens = lib.mkOption {
       type = with lib.types; listOf str;
-      default = [ ];
-      apply = value: lib.pipe value [
-        (v: [ (if cfg.knot.localPort == 53 then cfg.knot.localAddress else "${cfg.knot.localAddress}@${builtins.toString cfg.knot.localPort}") ] ++ v)
-        lib.lists.unique
-      ]
-      ;
+      default = [];
+      apply = value:
+        lib.pipe value [
+          (v:
+            [
+              (
+                if cfg.knot.localPort == 53
+                then cfg.knot.localAddress
+                else "${cfg.knot.localAddress}@${builtins.toString cfg.knot.localPort}"
+              )
+            ]
+            ++ v)
+          lib.lists.unique
+        ];
     };
 
     knot.configDir = lib.mkOption {
@@ -503,16 +543,17 @@ in
     };
 
     kresd.logLevel = lib.mkOption {
-      type = with lib.types; enum [
-        "info"
-        "debug"
-      ];
+      type = with lib.types;
+        enum [
+          "info"
+          "debug"
+        ];
       default = "info";
     };
 
     kresd.interfaces = lib.mkOption {
       type = with lib.types; listOf str;
-      default = [ ];
+      default = [];
     };
 
     kresd.localAddress = lib.mkOption {
@@ -521,7 +562,7 @@ in
     };
 
     kresd.rewrites = lib.mkOption {
-      type = lib.types.attrsOf (lib.types.submodule ({ name, ... }@rewriteArgs: {
+      type = lib.types.attrsOf (lib.types.submodule ({name, ...} @ rewriteArgs: {
         options = {
           to = lib.mkOption {
             type = with lib.types; str;
@@ -547,7 +588,7 @@ in
       }));
     };
     kresd.defaultUpstream = lib.mkOption {
-      type = with lib.types; nullOr (enum [ "systemd-resolved" "google" "cloudflare" "quad9" ]);
+      type = with lib.types; nullOr (enum ["systemd-resolved" "google" "cloudflare" "quad9"]);
       default = "systemd-resolved";
     };
 
@@ -566,33 +607,35 @@ in
           };
           nameserversRaw = lib.mkOption {
             type = with lib.types; listOf str;
-            default = [ ];
+            default = [];
           };
           domains = lib.mkOption {
             type = with lib.types; nullOr (listOf str);
             default = null;
-            apply = domains:
-              let invalids = builtins.filter (domain: !(lib.strings.hasSuffix "." domain)) domains; in
-              assert lib.assertMsg (domains == null || invalids == [ ]) ''
+            apply = domains: let
+              invalids = builtins.filter (domain: !(lib.strings.hasSuffix "." domain)) domains;
+            in
+              assert lib.assertMsg (domains == null || invalids == []) ''
                 `kdn.networking.router.kresd.upstreams.*.domains` must end with a '.', invalid entries: ${builtins.concatStringsSep ", " invalids}
               ''; domains;
           };
           type = lib.mkOption {
-            type = with lib.types; enum [ "STUB" "FORWARD" "TLS_FORWARD" ];
+            type = with lib.types; enum ["STUB" "FORWARD" "TLS_FORWARD"];
           };
           flags = lib.mkOption {
-            type = with lib.types; listOf (enum [
-              # see https://knot-resolver.readthedocs.io/en/stable/lib.html#c.kr_qflags
-              "NO_IPV6"
-              "NO_EDNS"
-              "NO_0X20" # DNS lettercase randomization
-              "NO_CACHE"
-            ]);
-            default = [ ];
+            type = with lib.types;
+              listOf (enum [
+                # see https://knot-resolver.readthedocs.io/en/stable/lib.html#c.kr_qflags
+                "NO_IPV6"
+                "NO_EDNS"
+                "NO_0X20" # DNS lettercase randomization
+                "NO_CACHE"
+              ]);
+            default = [];
           };
           auth = lib.mkOption {
             type = with lib.types; attrsOf str;
-            default = { };
+            default = {};
           };
         };
       }));
@@ -606,7 +649,12 @@ in
       systemd.network.enable = true;
 
       environment.persistence."sys/data".directories = [
-        { directory = "/var/lib/systemd/network"; user = "systemd-network"; group = "systemd-network"; mode = "0755"; }
+        {
+          directory = "/var/lib/systemd/network";
+          user = "systemd-network";
+          group = "systemd-network";
+          mode = "0755";
+        }
       ];
 
       systemd.network.config.networkConfig = {
@@ -631,16 +679,20 @@ in
       networking.firewall.pingLimit = "60/minute burst 5 packets";
 
       kdn.networking.router.forwardings = [
-        { from = "nb-priv"; to = "lan"; }
+        {
+          from = "nb-priv";
+          to = "lan";
+        }
       ];
 
       # more verbose logging in `systemd-networkd`, doesn't seem to generate much logs at all
       systemd.services.systemd-networkd.environment.SYSTEMD_LOG_LEVEL = "debug";
 
       networking.firewall.extraForwardRules = ''
-        ${lib.strings.concatMapStringsSep "\n" (fwd:
-        ''meta iifname ${fwd.from} meta oifname ${fwd.to} accept comment "allow traffic from ${fwd.from} to ${fwd.to}"''
-          ) cfg.forwardings}
+        ${lib.strings.concatMapStringsSep "\n" (
+            fwd: ''meta iifname ${fwd.from} meta oifname ${fwd.to} accept comment "allow traffic from ${fwd.from} to ${fwd.to}"''
+          )
+          cfg.forwardings}
 
         ${lib.optionalString config.networking.firewall.logRefusedConnections ''
           # Refused IPv4 connections get logged in the input filter due to NAT.
@@ -656,42 +708,41 @@ in
       networking.firewall.rejectPackets = true;
       systemd.services.systemd-resolved.environment.SYSTEMD_LOG_LEVEL = "debug";
 
-      networking.nftables.tables =
-        let
-          mkTable =
-            { rule
-            , name
-            , family ? "ip6"
-            , priority ? "filter"
-            , chains ? [
-                # "ingress" # doesn't seem to work
-                "prerouting"
-                "input"
-                "forward"
-                "output"
-                "postrouting"
-              ]
-            }: lib.pipe chains [
-              (builtins.map (hook: ''
-                chain ${hook} {
-                  type filter hook ${hook} priority ${priority}; policy accept;
-                  ${rule} log level info prefix "[name=${name}][family=${family}][hook=${hook}]: "
-                }
-              ''))
-              (builtins.concatStringsSep "\n")
-              (content: { inherit family content; })
-            ];
-        in
-        {
-          logging-icpmv6-echo = mkTable {
-            name = "ICMPv6:echo";
-            rule = "icmpv6 type { echo-request, echo-reply }";
-          };
-          logging-icpmv6-ndp = mkTable {
-            name = "ICMPv6:NDP";
-            rule = "icmpv6 type { nd-router-solicit, nd-router-advert, nd-neighbor-solicit, nd-neighbor-advert }";
-          };
+      networking.nftables.tables = let
+        mkTable = {
+          rule,
+          name,
+          family ? "ip6",
+          priority ? "filter",
+          chains ? [
+            # "ingress" # doesn't seem to work
+            "prerouting"
+            "input"
+            "forward"
+            "output"
+            "postrouting"
+          ],
+        }:
+          lib.pipe chains [
+            (builtins.map (hook: ''
+              chain ${hook} {
+                type filter hook ${hook} priority ${priority}; policy accept;
+                ${rule} log level info prefix "[name=${name}][family=${family}][hook=${hook}]: "
+              }
+            ''))
+            (builtins.concatStringsSep "\n")
+            (content: {inherit family content;})
+          ];
+      in {
+        logging-icpmv6-echo = mkTable {
+          name = "ICMPv6:echo";
+          rule = "icmpv6 type { echo-request, echo-reply }";
         };
+        logging-icpmv6-ndp = mkTable {
+          name = "ICMPv6:NDP";
+          rule = "icmpv6 type { nd-router-solicit, nd-router-advert, nd-neighbor-solicit, nd-neighbor-advert }";
+        };
+      };
     })
     {
       # reloading on drop-ins
@@ -711,7 +762,11 @@ in
       # cleaning up managed files
       kdn.managed.infix.kdn-router = cfg.dropin.infix;
       kdn.managed.directories = [
-        { path = "/etc/systemd/network"; mindepth = 2; maxdepth = 2; }
+        {
+          path = "/etc/systemd/network";
+          mindepth = 2;
+          maxdepth = 2;
+        }
         "/etc/knot-resolver"
         cfg.knot.configDir
       ];
@@ -726,7 +781,7 @@ in
           builtins.attrValues
           (builtins.filter (netCfg: netCfg.type == "lan"))
           (builtins.map (netCfg: {
-            interfaces-config.interfaces = [ netCfg.interface ];
+            interfaces-config.interfaces = [netCfg.interface];
             subnet4 = lib.pipe netCfg.addressing [
               builtins.attrValues
               (builtins.filter (addrCfg: addrCfg.enable && addrCfg.type == "ipv4"))
@@ -736,48 +791,72 @@ in
                 subnet = with addrCfg; "${network}/${netmask}";
                 pools = lib.pipe addrCfg.pools [
                   builtins.attrValues
-                  (builtins.map (pool: { pool = with pool; "${start} - ${end}"; }))
+                  (builtins.map (pool: {pool = with pool; "${start} - ${end}";}))
                 ];
                 option-data = [
-                  { name = "domain-name"; data = netCfg.domain; }
-                  { name = "domain-name-servers"; data = addrCfg.hosts."${hostname}".ip; }
-                  { name = "domain-search"; data = netCfg.domain; }
-                  { name = "routers"; data = addrCfg.hosts."${hostname}".ip; }
+                  {
+                    name = "domain-name";
+                    data = netCfg.domain;
+                  }
+                  {
+                    name = "domain-name-servers";
+                    data = addrCfg.hosts."${hostname}".ip;
+                  }
+                  {
+                    name = "domain-search";
+                    data = netCfg.domain;
+                  }
+                  {
+                    name = "routers";
+                    data = addrCfg.hosts."${hostname}".ip;
+                  }
                 ];
                 reservations = lib.pipe addrCfg.hosts [
                   builtins.attrValues
-                  (builtins.filter (host: host.ident != { }))
-                  (builtins.map (host: host.ident // {
-                    hostname = host.hostname;
-                  } // lib.attrsets.optionalAttrs (host.ip != null) {
-                    ip-address = host.ip;
-                  }))
+                  (builtins.filter (host: host.ident != {}))
+                  (builtins.map (host:
+                    host.ident
+                    // {
+                      hostname = host.hostname;
+                    }
+                    // lib.attrsets.optionalAttrs (host.ip != null) {
+                      ip-address = host.ip;
+                    }))
                 ];
                 ddns-send-updates = true;
                 ddns-qualifying-suffix = netCfg.domain;
               }))
             ];
           }))
-          (p: p ++ [{
-            allocator = lib.mkDefault "random";
-            # leases will be valid for 1h
-            valid-lifetime = 1 * 60 * 60;
-            # clients should renew every 30m
-            renew-timer = 30 * 60;
-            # clients should start looking for other servers after 45h
-            rebind-timer = 45 * 60;
-            lease-database = {
-              type = "memfile";
-              persist = true;
-              name = "/var/lib/private/kea/dhcp4.leases";
-            };
-            loggers = [{
-              name = "kea-dhcp4";
-              severity = if cfg.debug then "DEBUG" else "INFO";
-              debuglevel = 99;
-              output_options = [{ output = "stderr"; }];
-            }];
-          }])
+          (p:
+            p
+            ++ [
+              {
+                allocator = lib.mkDefault "random";
+                # leases will be valid for 1h
+                valid-lifetime = 1 * 60 * 60;
+                # clients should renew every 30m
+                renew-timer = 30 * 60;
+                # clients should start looking for other servers after 45h
+                rebind-timer = 45 * 60;
+                lease-database = {
+                  type = "memfile";
+                  persist = true;
+                  name = "/var/lib/private/kea/dhcp4.leases";
+                };
+                loggers = [
+                  {
+                    name = "kea-dhcp4";
+                    severity =
+                      if cfg.debug
+                      then "DEBUG"
+                      else "INFO";
+                    debuglevel = 99;
+                    output_options = [{output = "stderr";}];
+                  }
+                ];
+              }
+            ])
           lib.mkMerge
         ];
       };
@@ -792,17 +871,17 @@ in
       };
       systemd.services = lib.mkMerge [
         (lib.mkIf config.services.kea.ctrl-agent.enable {
-          kea-ctrl-agent.restartTriggers = [ config.sops.templates."kea/ctrl-agent.conf".path ];
+          kea-ctrl-agent.restartTriggers = [config.sops.templates."kea/ctrl-agent.conf".path];
         })
         (lib.mkIf config.services.kea.dhcp-ddns.enable {
           # TODO: this doesn't seem to work?
-          kea-dhcp-ddns-server.restartTriggers = [ config.sops.templates."kea/dhcp-ddns.conf".path ];
+          kea-dhcp-ddns-server.restartTriggers = [config.sops.templates."kea/dhcp-ddns.conf".path];
         })
         (lib.mkIf config.services.kea.dhcp4.enable {
-          kea-dhcp4-server.restartTriggers = [ config.sops.templates."kea/dhcp4.conf".path ];
+          kea-dhcp4-server.restartTriggers = [config.sops.templates."kea/dhcp4.conf".path];
         })
         (lib.mkIf config.services.kea.dhcp6.enable {
-          kea-dhcp6-server.restartTriggers = [ config.sops.templates."kea/dhcp6.conf".path ];
+          kea-dhcp6-server.restartTriggers = [config.sops.templates."kea/dhcp6.conf".path];
         })
       ];
       sops.templates."kea/dhcp6.conf" = {
@@ -836,14 +915,18 @@ in
         config.services.knot.package # contains `kdig`
       ];
       services.kresd.enable = true;
-      services.kresd.listenPlain = [ ];
-      services.kresd.package = (pkgs.knot-resolver.override {
-        extraFeatures = true;
-      }).overrideAttrs (old: {
-        buildInputs = old.buildInputs ++ (with pkgs.luajitPackages; [
-          luafilesystem
-        ]);
-      });
+      services.kresd.listenPlain = [];
+      services.kresd.package =
+        (pkgs.knot-resolver.override {
+          extraFeatures = true;
+        })
+        .overrideAttrs (old: {
+          buildInputs =
+            old.buildInputs
+            ++ (with pkgs.luajitPackages; [
+              luafilesystem
+            ]);
+        });
       kdn.networking.router.kresd.interfaces = lib.pipe cfg.nets [
         builtins.attrValues
         (builtins.filter (netCfg: netCfg.type == "lan"))
@@ -859,31 +942,46 @@ in
         (builtins.filter (lib.strings.hasPrefix "/etc/knot-resolver"))
       ];
       environment.persistence."sys/data".directories = [
-        { directory = "/var/lib/knot-resolver"; user = "knot-resolver"; group = "knot-resolver"; mode = "0770"; }
+        {
+          directory = "/var/lib/knot-resolver";
+          user = "knot-resolver";
+          group = "knot-resolver";
+          mode = "0770";
+        }
       ];
       environment.persistence."sys/cache".directories = [
-        { directory = "/var/cache/knot-resolver"; user = "knot-resolver"; group = "knot-resolver"; mode = "0770"; }
+        {
+          directory = "/var/cache/knot-resolver";
+          user = "knot-resolver";
+          group = "knot-resolver";
+          mode = "0770";
+        }
       ];
     }
     {
-      services.kresd.extraConfig = lib.pipe [
-        "log_level(${builtins.toJSON cfg.kresd.logLevel})"
-        (lib.pipe cfg.kresd.upstreams [
-          (builtins.map (upstreamCfg:
-            let
-              toLuaTable = value: lib.pipe value [
-                (builtins.concatStringsSep ", ")
-                (e: "{${e}}")
-              ];
+      services.kresd.extraConfig =
+        lib.pipe [
+          "log_level(${builtins.toJSON cfg.kresd.logLevel})"
+          (lib.pipe cfg.kresd.upstreams [
+            (builtins.map (upstreamCfg: let
+              toLuaTable = value:
+                lib.pipe value [
+                  (builtins.concatStringsSep ", ")
+                  (e: "{${e}}")
+                ];
               toLuaStringList = list: toLuaTable (builtins.map builtins.toJSON list);
               authArgsList = lib.attrsets.mapAttrsToList (key: value: "${key}=${builtins.toJSON value}") upstreamCfg.auth;
 
               nameserverEntries = upstreamCfg.nameserversRaw ++ builtins.map builtins.toJSON upstreamCfg.nameservers;
               tlsNameserversArg = lib.pipe nameserverEntries [
-                (builtins.map (ns: lib.pipe ns [
-                  (ns: [ ns ] ++ authArgsList)
-                  (prev: if builtins.length prev > 1 then toLuaTable prev else builtins.head prev)
-                ]))
+                (builtins.map (ns:
+                  lib.pipe ns [
+                    (ns: [ns] ++ authArgsList)
+                    (prev:
+                      if builtins.length prev > 1
+                      then toLuaTable prev
+                      else builtins.head prev)
+                  ]))
                 toLuaTable
               ];
               domainsArg = lib.pipe upstreamCfg.domains [
@@ -895,7 +993,10 @@ in
                 (builtins.map (line: "-- ${line}"))
                 (builtins.concatStringsSep "\n")
               ];
-              policyFilter = if upstreamCfg.domains == null then "all" else "suffix";
+              policyFilter =
+                if upstreamCfg.domains == null
+                then "all"
+                else "suffix";
               actionArgs =
                 if upstreamCfg.type == "TLS_FORWARD"
                 then tlsNameserversArg
@@ -903,43 +1004,46 @@ in
 
               domainPolicyArgs = lib.lists.optional (upstreamCfg.domains != null) "policy.todnames(${domainsArg})";
             in
-            builtins.concatStringsSep "\n" (
-              [
-                descriptionSnippet
-              ]
-              ++ lib.optionals (upstreamCfg.flags != [ ]) [
-                "policy.add(policy.${policyFilter}("
-                (builtins.concatStringsSep ", " (
-                  [ "  policy.FLAGS(${toLuaStringList upstreamCfg.flags})" ] ++ domainPolicyArgs
-                ))
-                "))"
-              ]
-              ++ lib.optionals (nameserverEntries != [ ]) [
-                "policy.add(policy.${policyFilter}("
-                (builtins.concatStringsSep ", " (
-                  [ "  policy.${upstreamCfg.type}(${actionArgs})" ] ++ domainPolicyArgs
-                ))
-                "))"
-              ]
-            )))
-        ])
-        ''net.listen(${builtins.toJSON cfg.kresd.localAddress}, 53, { kind = 'dns', freebind = true })''
-        (builtins.map (iface: ''net.listen(net[${builtins.toJSON iface}], 53, { kind = 'dns', freebind = true })'') cfg.kresd.interfaces)
-      ] [
-        lib.lists.flatten
-        lib.mkMerge
-      ];
-      sops.templates = let path = "/etc/knot-resolver/kresd.conf.d/50-${cfg.dropin.infix}-template.conf"; in {
+              builtins.concatStringsSep "\n" (
+                [
+                  descriptionSnippet
+                ]
+                ++ lib.optionals (upstreamCfg.flags != []) [
+                  "policy.add(policy.${policyFilter}("
+                  (builtins.concatStringsSep ", " (
+                    ["  policy.FLAGS(${toLuaStringList upstreamCfg.flags})"] ++ domainPolicyArgs
+                  ))
+                  "))"
+                ]
+                ++ lib.optionals (nameserverEntries != []) [
+                  "policy.add(policy.${policyFilter}("
+                  (builtins.concatStringsSep ", " (
+                    ["  policy.${upstreamCfg.type}(${actionArgs})"] ++ domainPolicyArgs
+                  ))
+                  "))"
+                ]
+              )))
+          ])
+          ''net.listen(${builtins.toJSON cfg.kresd.localAddress}, 53, { kind = 'dns', freebind = true })''
+          (builtins.map (iface: ''net.listen(net[${builtins.toJSON iface}], 53, { kind = 'dns', freebind = true })'') cfg.kresd.interfaces)
+        ] [
+          lib.lists.flatten
+          lib.mkMerge
+        ];
+      sops.templates = let
+        path = "/etc/knot-resolver/kresd.conf.d/50-${cfg.dropin.infix}-template.conf";
+      in {
         "${path}" = {
           inherit path;
           mode = "0640";
           owner = "knot-resolver";
           group = "knot-resolver";
-          content = lib.pipe [
-          ] [
-            lib.lists.flatten
-            (builtins.concatStringsSep "\n")
-          ];
+          content =
+            lib.pipe [
+            ] [
+              lib.lists.flatten
+              (builtins.concatStringsSep "\n")
+            ];
         };
       };
     }
@@ -950,8 +1054,7 @@ in
           lib.lists.unique
           (builtins.sort builtins.lessThan)
         ];
-      in
-      {
+      in {
         # knot-dns
         services.knot.enable = true;
         services.knot.checkConfig = false; # doesn't allow some stuff like referencing keys
@@ -971,20 +1074,28 @@ in
           server.listen = cfg.knot.listens;
           server.listen-tls =
             builtins.map
-              (listener: {
+            (listener:
+              {
                 "${cfg.knot.localAddress}@${builtins.toString cfg.knot.localPort}" = "${cfg.knot.localAddress}@${builtins.toString cfg.knot.localPortTLS}";
-              }."${listener}" or listener)
-              cfg.knot.listens;
+              }
+              ."${listener}"
+              or listener)
+            cfg.knot.listens;
           server.listen-quic =
             builtins.map
-              (listener: {
+            (listener:
+              {
                 "${cfg.knot.localAddress}@${builtins.toString cfg.knot.localPort}" = "${cfg.knot.localAddress}@${builtins.toString cfg.knot.localPortTLS}";
-              }."${listener}" or listener)
-              cfg.knot.listens;
-          log = [{
-            target = "syslog";
-            any = "debug";
-          }];
+              }
+              ."${listener}"
+              or listener)
+            cfg.knot.listens;
+          log = [
+            {
+              target = "syslog";
+              any = "debug";
+            }
+          ];
           mod-dnstap = [
             {
               id = "debug";
@@ -994,61 +1105,75 @@ in
               responses-with-queries = "on";
             }
           ];
-          template = [{
-            id = "default";
-            global-module = [
-              "mod-stats"
-              #"mod-dnstap/debug"
-            ];
-          }];
-          zone = lib.attrsets.mapAttrsToList
+          template = [
+            {
+              id = "default";
+              global-module = [
+                "mod-stats"
+                #"mod-dnstap/debug"
+              ];
+            }
+          ];
+          zone =
+            lib.attrsets.mapAttrsToList
             (_: domainCfg: {
               domain = domainCfg.name;
               template = "default";
-              acl = [ "admin" ] ++ lib.pipe d2Domains [
-                (builtins.filter (domain: domain == domainCfg.name))
-                (builtins.map (domain: "dhcp-ddns:${domain}"))
-              ];
+              acl =
+                ["admin"]
+                ++ lib.pipe d2Domains [
+                  (builtins.filter (domain: domain == domainCfg.name))
+                  (builtins.map (domain: "dhcp-ddns:${domain}"))
+                ];
             })
             cfg.domains;
-          acl = [
-            {
-              id = "admin";
-              key = "admin";
-              action = [
-                "query"
-                #"notify"
-                #"transfer"
-                "update"
-              ];
-            }
-          ] ++ (builtins.map
-            (domain: {
-              id = "dhcp-ddns:${domain}";
-              key = keaTSIGName;
-              action = [
-                "query"
-                "update"
-              ];
+          acl =
+            [
+              {
+                id = "admin";
+                key = "admin";
+                action = [
+                  "query"
+                  #"notify"
+                  #"transfer"
+                  "update"
+                ];
+              }
+            ]
+            ++ (builtins.map
+              (domain: {
+                id = "dhcp-ddns:${domain}";
+                key = keaTSIGName;
+                action = [
+                  "query"
+                  "update"
+                ];
 
-              update-owner = "name";
-              update-owner-match = "sub";
-              update-owner-name = [
-                "${domain}."
-              ];
-            })
-            d2Domains);
+                update-owner = "name";
+                update-owner-match = "sub";
+                update-owner-name = [
+                  "${domain}."
+                ];
+              })
+              d2Domains);
         };
         environment.etc."${lib.strings.removePrefix "/etc" cfg.knot.configDir}/.keep".text = "";
         environment.persistence."sys/data".directories = [
-          { directory = cfg.knot.dataDir; user = "knot"; group = "knot"; mode = "0700"; }
+          {
+            directory = cfg.knot.dataDir;
+            user = "knot";
+            group = "knot";
+            mode = "0700";
+          }
         ];
-        kdn.networking.router.kresd.upstreams = [{
-          description = "local knot-dns";
-          type = "STUB";
-          nameservers = [ "${cfg.knot.localAddress}@${builtins.toString cfg.knot.localPort}" ];
-          domains = lib.pipe cfg.domains [ builtins.attrValues (builtins.map (domainCfg: domainCfg.name)) ];
-        }];
+        kdn.networking.router.kresd.upstreams = [
+          {
+            description = "local knot-dns";
+            type = "STUB";
+            nameservers = ["${cfg.knot.localAddress}@${builtins.toString cfg.knot.localPort}"];
+            domains = lib.pipe cfg.domains [builtins.attrValues (builtins.map (domainCfg: domainCfg.name))];
+          }
+        ];
         sops.templates = lib.pipe knotKeys [
           (lib.attrsets.mapAttrsToList (id: keyCfg: {
             name = "knot/sops-key.${id}.conf";
@@ -1081,25 +1206,34 @@ in
           };
           kea.dhcp-ddns.settings = {
             dns-server-timeout = 500;
-            tsig-keys = [{
-              name = keaTSIGName;
-              algorithm = knotKeys.${keaTSIGName}.algorithm;
-              secret = knotKeys.${keaTSIGName}.secret;
-            }];
-            loggers = [{
-              name = "kea-dhcp-ddns";
-              severity = if cfg.debug then "DEBUG" else "INFO";
-              debuglevel = 99;
-              output_options = [{ output = "stderr"; }];
-            }];
+            tsig-keys = [
+              {
+                name = keaTSIGName;
+                algorithm = knotKeys.${keaTSIGName}.algorithm;
+                secret = knotKeys.${keaTSIGName}.secret;
+              }
+            ];
+            loggers = [
+              {
+                name = "kea-dhcp-ddns";
+                severity =
+                  if cfg.debug
+                  then "DEBUG"
+                  else "INFO";
+                debuglevel = 99;
+                output_options = [{output = "stderr";}];
+              }
+            ];
             forward-ddns.ddns-domains = lib.pipe d2Domains [
               (builtins.map (domain: {
                 name = "${lib.strings.removeSuffix "." domain}.";
                 key-name = keaTSIGName;
-                dns-servers = [{
-                  ip-address = cfg.knot.localAddress;
-                  port = cfg.knot.localPort;
-                }];
+                dns-servers = [
+                  {
+                    ip-address = cfg.knot.localAddress;
+                    port = cfg.knot.localPort;
+                  }
+                ];
               }))
             ];
             reverse-ddns.ddns-domains = [
@@ -1108,47 +1242,57 @@ in
           };
         };
         kdn.networking.router.domains = lib.pipe d2Domains [
-          (builtins.map (domain: { name = domain; value = { }; }))
+          (builtins.map (domain: {
+            name = domain;
+            value = {};
+          }))
           builtins.listToAttrs
         ];
         systemd.services."kdn-knot-init" = {
           description = "Initialize knot's zonefiles";
-          wantedBy = [ "knot.service" ];
-          after = [ "knot.service" ];
+          wantedBy = ["knot.service"];
+          after = ["knot.service"];
           serviceConfig.Type = "oneshot";
           serviceConfig.RemainAfterExit = true;
-          serviceConfig.ExecStart = lib.pipe d2Domains [
-            (builtins.map (domain: lib.strings.escapeShellArgs [
-              (lib.getExe kdn-router-knot-setup-zone)
-              "${cfg.knot.dataDir}/${domain}zone"
-              domain
-            ]))
-          ]
-          ++ lib.pipe cfg.nets [
-            (lib.attrsets.mapAttrsToList (_: netCfg:
-              (lib.attrsets.mapAttrsToList
-                (_: addrCfg:
-                  (lib.attrsets.mapAttrsToList
-                    (host: hostCfg: lib.strings.escapeShellArgs [
-                      (lib.getExe kdn-router-knot-ddns-update)
-                      hostCfg.hostname
-                      netCfg.domain
-                      (if addrCfg.type == "ipv4" then "A" else "AAAA")
-                      hostCfg.ip
-                      "30"
-                    ])
-                    (
-                      lib.attrsets.filterAttrs
+          serviceConfig.ExecStart =
+            lib.pipe d2Domains [
+              (builtins.map (domain:
+                lib.strings.escapeShellArgs [
+                  (lib.getExe kdn-router-knot-setup-zone)
+                  "${cfg.knot.dataDir}/${domain}zone"
+                  domain
+                ]))
+            ]
+            ++ lib.pipe cfg.nets [
+              (lib.attrsets.mapAttrsToList (
+                _: netCfg: (lib.attrsets.mapAttrsToList
+                  (
+                    _: addrCfg: (
+                      lib.attrsets.mapAttrsToList
+                      (host: hostCfg:
+                        lib.strings.escapeShellArgs [
+                          (lib.getExe kdn-router-knot-ddns-update)
+                          hostCfg.hostname
+                          netCfg.domain
+                          (
+                            if addrCfg.type == "ipv4"
+                            then "A"
+                            else "AAAA"
+                          )
+                          hostCfg.ip
+                          "30"
+                        ])
+                      (
+                        lib.attrsets.filterAttrs
                         (host: hostCfg: hostCfg.ip != null)
                         addrCfg.hosts
+                      )
                     )
                   )
-                )
-                netCfg.addressing)
-            ))
-            lib.flatten
-          ]
-          ;
+                  netCfg.addressing)
+              ))
+              lib.flatten
+            ];
         };
       }
     )
@@ -1162,7 +1306,8 @@ in
       networking.firewall.interfaces = lib.pipe cfg.nets [
         (lib.attrsets.mapAttrsToList (_: netCfg: {
           "${netCfg.interface}" = {
-            inherit (netCfg.firewall)
+            inherit
+              (netCfg.firewall)
               allowedTCPPorts
               allowedTCPPortRanges
               allowedUDPPorts
@@ -1173,9 +1318,18 @@ in
         lib.mkMerge
       ];
       kdn.networking.router.forwardings = lib.pipe cfg.nets [
-        (lib.attrsets.mapAttrsToList (_: netCfg:
-          builtins.map (to: { from = netCfg.interface; inherit to; }) netCfg.forward.to
-          ++ builtins.map (from: { inherit from; to = netCfg.interface; }) netCfg.forward.from
+        (lib.attrsets.mapAttrsToList (
+          _: netCfg:
+            builtins.map (to: {
+              from = netCfg.interface;
+              inherit to;
+            })
+            netCfg.forward.to
+            ++ builtins.map (from: {
+              inherit from;
+              to = netCfg.interface;
+            })
+            netCfg.forward.from
         ))
         builtins.concatLists
         lib.lists.unique
@@ -1218,119 +1372,123 @@ in
         lib.mkMerge
       ];
       systemd.network.networks = lib.pipe cfg.nets [
-        (lib.attrsets.mapAttrsToList (_: netCfg: lib.mkMerge [
-          {
-            "${netCfg.unit.name}" = lib.mkMerge [
-              {
-                matchConfig.Name = netCfg.interface;
-                linkConfig = {
-                  Multicast = true;
-                  RequiredForOnline = "routable";
-                };
-                networkConfig = {
-                  DHCPServer = lib.mkDefault false;
-                  DHCP = lib.mkDefault false;
-                  IPv6AcceptRA = lib.mkDefault false;
-                  IPv6SendRA = lib.mkDefault false;
-                  MulticastDNS = lib.mkDefault false;
-                  LinkLocalAddressing = "ipv6";
-
-                  IPv6PrivacyExtensions = lib.mkDefault true;
-                  IPv6LinkLocalAddressGenerationMode = lib.mkDefault "stable-privacy";
-                };
-              }
-              (lib.mkIf (netCfg.type == "wan") {
-                networkConfig = {
-                  IPMasquerade = "ipv4";
-                };
-              })
-              (lib.mkIf (netCfg.type == "lan") (lib.mkMerge [
+        (lib.attrsets.mapAttrsToList (_: netCfg:
+          lib.mkMerge [
+            {
+              "${netCfg.unit.name}" = lib.mkMerge [
                 {
+                  matchConfig.Name = netCfg.interface;
+                  linkConfig = {
+                    Multicast = true;
+                    RequiredForOnline = "routable";
+                  };
                   networkConfig = {
-                    IPMasquerade = "ipv4";
-                    MulticastDNS = true;
+                    DHCPServer = lib.mkDefault false;
+                    DHCP = lib.mkDefault false;
+                    IPv6AcceptRA = lib.mkDefault false;
+                    IPv6SendRA = lib.mkDefault false;
+                    MulticastDNS = lib.mkDefault false;
+                    LinkLocalAddressing = "ipv6";
+
+                    IPv6PrivacyExtensions = lib.mkDefault true;
+                    IPv6LinkLocalAddressGenerationMode = lib.mkDefault "stable-privacy";
                   };
                 }
-                (lib.mkIf (netCfg.ra.implementation == "networkd") {
+                (lib.mkIf (netCfg.type == "wan") {
                   networkConfig = {
-                    # for DHCPv6-PD to work I would need to have `IPv6AcceptRA=true` on `wan`
-                    DHCPPrefixDelegation = false;
-                    IPv6SendRA = true;
-                  };
-                  ipv6SendRAConfig = {
-                    Managed = true;
-                    EmitDNS = true;
-                    UplinkInterface = netCfg.lan.uplink;
+                    IPMasquerade = "ipv4";
                   };
                 })
-              ]))
-              (lib.mkIf (netCfg.netdev.kind == "bond") {
-                networkConfig = {
-                  BindCarrier = builtins.concatStringsSep " " netCfg.interfaces;
-                };
-              })
-              (lib.mkIf (netCfg.netdev.kind == "bridge") {
-                networkConfig = {
-                  ConfigureWithoutCarrier = true;
-                };
-              })
-            ];
-          }
-          (
-            let
-              mkInterfaces = kind: ifaceCfg: lib.mkIf (netCfg.netdev.kind == kind) (lib.pipe netCfg.interfaces [
-                (lib.lists.imap0 (idx: iface: {
-                  name = getInterfaceUnit iface;
-                  value = lib.mkMerge [
-                    { matchConfig.Name = lib.mkDefault iface; }
-                    (ifaceCfg idx iface)
-                  ];
-                }))
-                builtins.listToAttrs
-              ]);
-            in
-            lib.mkMerge [
-              (mkInterfaces "bridge" (idx: iface: {
-                networkConfig.Bridge = netCfg.interface;
-                linkConfig.RequiredForOnline = "enslaved";
-              }))
-              (mkInterfaces "bond" (idx: iface: {
-                networkConfig = lib.mkMerge [
+                (lib.mkIf (netCfg.type == "lan") (lib.mkMerge [
                   {
-                    Bond = netCfg.interface;
+                    networkConfig = {
+                      IPMasquerade = "ipv4";
+                      MulticastDNS = true;
+                    };
                   }
-                  (lib.mkIf (netCfg.netdev.bond.mode == "backup") {
-                    PrimarySlave = idx == 0;
+                  (lib.mkIf (netCfg.ra.implementation == "networkd") {
+                    networkConfig = {
+                      # for DHCPv6-PD to work I would need to have `IPv6AcceptRA=true` on `wan`
+                      DHCPPrefixDelegation = false;
+                      IPv6SendRA = true;
+                    };
+                    ipv6SendRAConfig = {
+                      Managed = true;
+                      EmitDNS = true;
+                      UplinkInterface = netCfg.lan.uplink;
+                    };
                   })
-                ];
-              }))
-              (mkInterfaces "vlan" (idx: iface: {
-                networkConfig.VLAN = [ netCfg.interface ];
-              }))
-            ]
-          )
-        ]))
+                ]))
+                (lib.mkIf (netCfg.netdev.kind == "bond") {
+                  networkConfig = {
+                    BindCarrier = builtins.concatStringsSep " " netCfg.interfaces;
+                  };
+                })
+                (lib.mkIf (netCfg.netdev.kind == "bridge") {
+                  networkConfig = {
+                    ConfigureWithoutCarrier = true;
+                  };
+                })
+              ];
+            }
+            (
+              let
+                mkInterfaces = kind: ifaceCfg:
+                  lib.mkIf (netCfg.netdev.kind == kind) (lib.pipe netCfg.interfaces [
+                    (lib.lists.imap0 (idx: iface: {
+                      name = getInterfaceUnit iface;
+                      value = lib.mkMerge [
+                        {matchConfig.Name = lib.mkDefault iface;}
+                        (ifaceCfg idx iface)
+                      ];
+                    }))
+                    builtins.listToAttrs
+                  ]);
+              in
+                lib.mkMerge [
+                  (mkInterfaces "bridge" (idx: iface: {
+                    networkConfig.Bridge = netCfg.interface;
+                    linkConfig.RequiredForOnline = "enslaved";
+                  }))
+                  (mkInterfaces "bond" (idx: iface: {
+                    networkConfig = lib.mkMerge [
+                      {
+                        Bond = netCfg.interface;
+                      }
+                      (lib.mkIf (netCfg.netdev.bond.mode == "backup") {
+                        PrimarySlave = idx == 0;
+                      })
+                    ];
+                  }))
+                  (mkInterfaces "vlan" (idx: iface: {
+                    networkConfig.VLAN = [netCfg.interface];
+                  }))
+                ]
+            )
+          ]))
         lib.mkMerge
       ];
       sops.templates = lib.pipe cfg.nets [
-        (lib.attrsets.mapAttrsToList (_: netCfg:
-          let path = mkDropInPath "${netCfg.unit.name}.network" "50-template"; in {
-            "${path}" = {
-              inherit path;
-              mode = "0644";
-              content = netCfg.template.network._text;
-            };
-          }))
+        (lib.attrsets.mapAttrsToList (_: netCfg: let
+          path = mkDropInPath "${netCfg.unit.name}.network" "50-template";
+        in {
+          "${path}" = {
+            inherit path;
+            mode = "0644";
+            content = netCfg.template.network._text;
+          };
+        }))
         lib.mkMerge
       ];
     }
-    (lib.mkIf (cfg.kresd.rewrites != { }) {
+    (lib.mkIf (cfg.kresd.rewrites != {}) {
       # TODO: watch out for kresd 6.0+ version for native support of rewrites
       kdn.service.coredns.enable = true;
-      kdn.service.coredns.rewrites = builtins.mapAttrs
+      kdn.service.coredns.rewrites =
+        builtins.mapAttrs
         (_: rewriteCfg: {
           inherit (rewriteCfg) from to upstreams;
-          binds = [ cfg.coredns.localAddress ];
+          binds = [cfg.coredns.localAddress];
           port = 53;
         })
         cfg.kresd.rewrites;
@@ -1338,56 +1496,55 @@ in
         (lib.attrsets.mapAttrsToList (_: rewriteCfg: {
           description = "redirect to ${rewriteCfg.to} from ${rewriteCfg.from}";
           type = "STUB";
-          nameservers = [ cfg.coredns.localAddress ];
-          domains = [ rewriteCfg.to ];
+          nameservers = [cfg.coredns.localAddress];
+          domains = [rewriteCfg.to];
         }))
         lib.mkBefore
       ];
     })
     (lib.mkIf (cfg.kresd.defaultUpstream != null) {
-      kdn.networking.router.kresd.upstreams =
-        let
-          upstreams = {
-            systemd-resolved = {
-              description = "systemd-resolved";
-              type = "STUB";
-              nameservers = [ "127.0.0.53" ];
-            };
-            quad9 = {
-              description = "Quad9";
-              type = "TLS_FORWARD";
-              nameservers = [
-                "2620:fe::fe"
-                "2620:fe::10"
-                "9.9.9.9"
-                "9.9.9.10"
-              ];
-              auth.hostname = "dns.quad9.net";
-            };
-            cloudflare = {
-              description = "Cloudflare";
-              type = "TLS_FORWARD";
-              nameservers = [
-                "2606:4700:4700::1111"
-                "2606:4700:4700::1001"
-                "1.1.1.1"
-                "1.0.0.1"
-              ];
-              auth.hostname = "cloudflare-dns.com";
-            };
-            google = {
-              description = "Google";
-              type = "TLS_FORWARD";
-              auth.hostname = "dns.google";
-              nameservers = [
-                "2001:4860:4860::8888"
-                "2001:4860:4860::8844"
-                "8.8.8.8"
-                "8.8.4.4"
-              ];
-            };
+      kdn.networking.router.kresd.upstreams = let
+        upstreams = {
+          systemd-resolved = {
+            description = "systemd-resolved";
+            type = "STUB";
+            nameservers = ["127.0.0.53"];
           };
-        in
+          quad9 = {
+            description = "Quad9";
+            type = "TLS_FORWARD";
+            nameservers = [
+              "2620:fe::fe"
+              "2620:fe::10"
+              "9.9.9.9"
+              "9.9.9.10"
+            ];
+            auth.hostname = "dns.quad9.net";
+          };
+          cloudflare = {
+            description = "Cloudflare";
+            type = "TLS_FORWARD";
+            nameservers = [
+              "2606:4700:4700::1111"
+              "2606:4700:4700::1001"
+              "1.1.1.1"
+              "1.0.0.1"
+            ];
+            auth.hostname = "cloudflare-dns.com";
+          };
+          google = {
+            description = "Google";
+            type = "TLS_FORWARD";
+            auth.hostname = "dns.google";
+            nameservers = [
+              "2001:4860:4860::8888"
+              "2001:4860:4860::8844"
+              "8.8.8.8"
+              "8.8.4.4"
+            ];
+          };
+        };
+      in
         lib.mkAfter [
           upstreams."${cfg.kresd.defaultUpstream}"
         ];

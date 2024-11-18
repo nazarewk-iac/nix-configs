@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.virtualisation.containers.dagger;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.virtualisation.containers.dagger;
+in {
   options.kdn.virtualisation.containers.dagger = {
     enable = lib.mkEnableOption "Dagger.io development setup";
   };

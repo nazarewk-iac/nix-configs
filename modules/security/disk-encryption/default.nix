@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.security.disk-encryption;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.security.disk-encryption;
+in {
   options.kdn.security.disk-encryption = {
     enable = lib.mkEnableOption "disk encryption wrapper setup";
   };

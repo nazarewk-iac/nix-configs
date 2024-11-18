@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.toolset.print-3d;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.toolset.print-3d;
+in {
   options.kdn.toolset.print-3d = {
     enable = lib.mkEnableOption "print-3d tooling";
   };

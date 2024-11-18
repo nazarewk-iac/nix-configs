@@ -1,8 +1,11 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.hardware.basic;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.hardware.basic;
+in {
   options.kdn.hardware.basic = {
     enable = lib.mkEnableOption "hardware discovery scripts";
   };
@@ -27,7 +30,7 @@ in
       vulkan-tools
 
       (lib.kdn.shell.writeShellScript pkgs ./bin/lsiommu.sh {
-        runtimeInputs = with pkgs; [ findutils ];
+        runtimeInputs = with pkgs; [findutils];
       })
       (lib.kdn.shell.writeShellScript pkgs ./bin/gpu-passthrough-check.sh {
         runtimeInputs = with pkgs; [
@@ -41,10 +44,10 @@ in
       })
       (lib.kdn.shell.writeShellScript pkgs ./bin/list-device-drivers.sh {
         # TODO: compgen: command not found
-        runtimeInputs = with pkgs; [ coreutils ];
+        runtimeInputs = with pkgs; [coreutils];
       })
       (lib.kdn.shell.writeShellScript pkgs ./bin/find-device-kernel-module.sh {
-        runtimeInputs = with pkgs; [ pciutils gnugrep ];
+        runtimeInputs = with pkgs; [pciutils gnugrep];
       })
 
       stress-ng

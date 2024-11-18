@@ -1,14 +1,17 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.development.rust;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.development.rust;
+in {
   options.kdn.development.rust = {
     enable = lib.mkEnableOption "Rust development";
   };
 
   config = lib.mkIf cfg.enable {
-    programs.helix.extraPackages = with pkgs;[
+    programs.helix.extraPackages = with pkgs; [
       rust-analyzer
       lldb_15
     ];
