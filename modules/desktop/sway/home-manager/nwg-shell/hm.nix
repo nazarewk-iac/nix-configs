@@ -79,6 +79,11 @@ in {
         include ~/.config/sway/outputs
         include ~/.config/sway/workspaces
       '';
+      home.persistence."usr/config".files = [
+        ".config/nwg-displays/config"
+        ".config/sway/outputs"
+        ".config/sway/workspaces"
+      ];
       wayland.windowManager.sway.config.keybindings = with config.kdn.desktop.sway.keys; {
         "${super}+P" = "exec ${lib.getExe cfg.displays.package}";
       };
