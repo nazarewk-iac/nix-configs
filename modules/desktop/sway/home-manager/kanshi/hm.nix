@@ -10,12 +10,11 @@
   # TODO: generate a list of per-profile outputs?
   isRotated = d: lib.lists.intersectLists ["90" "270" "flipped-90" "flipped-270"] [d.transform] != [];
 
-  mkOutput = dev: x: y: extra:
-    cleanOutput ({
-        inherit (dev) criteria;
-        position = "${builtins.toString (builtins.floor x)},${builtins.toJSON (builtins.floor y)}";
-      }
-      // extra);
+  mkOutput = dev: x: y: extra: ({
+      inherit (dev) criteria;
+      position = "${builtins.toString (builtins.floor x)},${builtins.toJSON (builtins.floor y)}";
+    }
+    // extra);
 
   swaymsg = lib.getExe' config.wayland.windowManager.sway.package "swaymsg";
 
