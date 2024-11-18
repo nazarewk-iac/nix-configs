@@ -1,18 +1,21 @@
-{ config, pkgs, lib, ... }:
-let
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}: let
   cfg = config.kdn.desktop.sway;
 
   exec = cmd: "exec '${cmd}'";
   playerctl = lib.getExe pkgs.playerctl;
   volumectl = "${lib.getExe' pkgs.avizo "volumectl"} -d";
   lightctl = "${lib.getExe' pkgs.avizo "lightctl"} -d";
-in
-{
+in {
   config = lib.mkIf (config.kdn.headless.enableGUI && cfg.enable) {
     services.avizo.enable = true;
-    services.avizo.settings = { };
+    services.avizo.settings = {};
     wayland.windowManager.sway = {
-      config.keybindings = {
+      config.keybindings = with config.kdn.desktop.sway.keys; {
         # Brightness
         "XF86MonBrightnessDown" = exec "${lightctl} down 2";
         "XF86MonBrightnessUp" = exec "${lightctl} up 2";
@@ -21,7 +24,7 @@ in
         "XF86AudioLowerVolume" = exec "${volumectl} down 1";
 
         "XF86AudioMute" = exec "${volumectl} toggle-mute";
-        "${cfg.keys.lalt}+XF86AudioMute" = exec "${volumectl} -m toggle-mute";
+        "${lalt}+XF86AudioMute" = exec "${volumectl} -m toggle-mute";
         "XF86AudioMicMute" = exec "${volumectl} -m toggle-mute";
         # Media controls
         # https://www.reddit.com/r/swaywm/comments/ju1609/control_spotify_with_bluetooth_headset_with_dbus/

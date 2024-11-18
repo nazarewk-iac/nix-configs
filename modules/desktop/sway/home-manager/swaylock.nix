@@ -1,5 +1,10 @@
-{ osConfig, config, pkgs, lib, ... }:
-let
+{
+  osConfig,
+  config,
+  pkgs,
+  lib,
+  ...
+}: let
   cfg = config.kdn.desktop.sway;
   sysCfg = osConfig.kdn.desktop.sway;
 
@@ -7,15 +12,19 @@ let
   lockCmd = "${swaylock} -f";
   swayPkg = config.wayland.windowManager.sway.package;
   swaymsg = "${swayPkg}/bin/swaymsg";
-in
-{
+in {
   config = lib.mkIf (config.kdn.headless.enableGUI && cfg.enable) {
-    wayland.windowManager.sway.config.keybindings."${cfg.keys.super}+L" = "exec ${lockCmd}";
+    wayland.windowManager.sway.config.keybindings = with config.kdn.desktop.sway.keys; {
+      "${cfg.keys.super}+L" = "exec ${lockCmd}";
+    };
     services.swayidle = {
       enable = true;
       systemdTarget = config.kdn.desktop.sway.systemd.session.target;
       events = [
-        { event = "before-sleep"; command = lockCmd; }
+        {
+          event = "before-sleep";
+          command = lockCmd;
+        }
       ];
       timeouts = [
         {
@@ -30,10 +39,10 @@ in
       ];
     };
     systemd.user.services.swayidle.Unit = {
-      Before = [ config.kdn.desktop.sway.systemd.session.target ];
-      PartOf = [ config.kdn.desktop.sway.systemd.session.target ];
-      After = [ config.kdn.desktop.sway.systemd.envs.target ];
-      Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
+      Before = [config.kdn.desktop.sway.systemd.session.target];
+      PartOf = [config.kdn.desktop.sway.systemd.session.target];
+      After = [config.kdn.desktop.sway.systemd.envs.target];
+      Requires = [config.kdn.desktop.sway.systemd.envs.target];
     };
 
     programs.swaylock.enable = true;

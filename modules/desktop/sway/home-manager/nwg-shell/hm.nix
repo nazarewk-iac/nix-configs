@@ -1,10 +1,12 @@
-{ config, pkgs, lib, ... }:
-let
-  cfg = config.services.nwg-shell;
-  shellCfg = config.services.nwg-shell;
-  inherit (shellCfg._lib) mkComponent;
-in
 {
+  config,
+  pkgs,
+  lib,
+  ...
+}: let
+  cfg = config.services.nwg-shell;
+  inherit (cfg._lib) mkComponent;
+in {
   options.services.nwg-shell = {
     enable = lib.mkEnableOption "nwg-shell package suite setup";
 
@@ -12,27 +14,36 @@ in
       readOnly = true;
       internal = true;
       default = {
-        mkComponent = name: extra: {
-          enable = lib.mkOption { type = with lib.types; bool; default = true; };
-          package = lib.mkOption { type = with lib.types; package; default = pkgs."nwg-${name}"; };
-        } // extra;
+        mkComponent = name: extra:
+          {
+            enable = lib.mkOption {
+              type = with lib.types; bool;
+              default = true;
+            };
+            package = lib.mkOption {
+              type = with lib.types; package;
+              default = pkgs."nwg-${name}";
+            };
+          }
+          // extra;
       };
     };
 
-    bar = mkComponent "bar" { };
-    displays = mkComponent "displays" { };
-    dock = mkComponent "dock" { };
+    bar = mkComponent "bar" {};
+    displays = mkComponent "displays" {};
+    dock = mkComponent "dock" {};
     drawer = mkComponent "drawer" {
       opts = lib.mkOption {
-        type = with lib.types; attrsOf (oneOf [ str true ]);
+        type = with lib.types; attrsOf (oneOf [str true]);
         description = ''
           see https://github.com/nwg-piotr/nwg-drawer
         '';
-        default = { };
-        apply = opts: lib.pipe opts [
-          (lib.attrsets.mapAttrsToList (name: value: [ "-${name}" ] ++ lib.optional (builtins.typeOf value == "string") value))
-          lib.lists.flatten
-        ];
+        default = {};
+        apply = opts:
+          lib.pipe opts [
+            (lib.attrsets.mapAttrsToList (name: value: ["-${name}"] ++ lib.optional (builtins.typeOf value == "string") value))
+            lib.lists.flatten
+          ];
       };
       exec = lib.mkOption {
         readOnly = true;
@@ -41,11 +52,11 @@ in
         '');
       };
     };
-    hello = mkComponent "hello" { };
-    look = mkComponent "look" { };
-    menu = mkComponent "menu" { };
+    hello = mkComponent "hello" {};
+    look = mkComponent "look" {};
+    menu = mkComponent "menu" {};
     # panel: ./nwg-panel/hm.nix
-    wrapper = mkComponent "wrapper" { };
+    wrapper = mkComponent "wrapper" {};
   };
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
@@ -58,10 +69,19 @@ in
       services.nwg-shell.drawer.opts.wm = ''"$XDG_CURRENT_DESKTOP"'';
     }
     {
-      home.persistence."usr/config".files = [ ]
+      home.persistence."usr/config".files =
+        []
         # nwg-drawer pins
-        ++ (lib.lists.optional (cfg.drawer.enable) ".cache/nwg-pin-cache")
-      ;
+        ++ (lib.lists.optional (cfg.drawer.enable) ".cache/nwg-pin-cache");
     }
+    (lib.mkIf cfg.displays.enable {
+      wayland.windowManager.sway.extraConfig = ''
+        include ~/.config/sway/outputs
+        include ~/.config/sway/workspaces
+      '';
+      wayland.windowManager.sway.config.keybindings = with config.kdn.desktop.sway.keys; {
+        "${super}+P" = "exec ${lib.getExe cfg.displays.package}";
+      };
+    })
   ]);
 }

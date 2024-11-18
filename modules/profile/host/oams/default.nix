@@ -55,53 +55,52 @@ in {
         (args: let
           bin = lib.getExe' config.services.asusd.package;
           exec = cmd: args: "exec '${bin cmd} ${args}'";
-          key =
-            config.kdn.desktop.sway.keys
-            // {
-              # Top row of keys (between function keys and screen)
-              top.vol-down = "XF86AudioLowerVolume"; # Top row volume down
-              top.vol-up = "XF86AudioRaiseVolume"; # Top row volume down
-              top.mic = "XF86AudioMicMute"; # Top row Microphone button
-              top.fan = "XF86Launch4"; # Top row Fan button
-              top.rog = "XF86Launch1"; # Top row RoG Eye logo button
-
-              # "FN" key activated functions
-              fn.f1 = "XF86AudioMute";
-              fn.f2 = "XF86KbdBrightnessDown";
-              fn.f3 = "XF86KbdBrightnessUp";
-              fn.f4 = "XF86Launch3"; # "AURA" button
-              fn.f5 = "XF86Launch4"; # Fan button
-              fn.f6 = "Shift+Mod4"; # Snip button
-              fn.f7 = "XF86MonBrightnessDown";
-              fn.f8 = "XF86MonBrightnessUp";
-              fn.f9 = "Mod4+P"; # Display switch button
-              fn.f10 = "XF86TouchpadToggle"; # crossed touchpad button
-              fn.f11 = "XF86Sleep"; # zZ button, works OOTB on Sway on NixOS
-              fn.f12 = "XF86RFKill"; # airplane button, works OOTP on Sway on Nixos
-              fn.delete = "Insert"; # Delete / Insert button
-              fn.rctrl = "Menu"; # Right CTRL with menu icon
-              fn.arrow-left = "Home";
-              fn.arrow-up = "Prior";
-              fn.arrow-down = "Next";
-              fn.arrow-right = "End";
-
-              # right-hand side button row
-              right.play = "XF86AudioPlay";
-              right.stop = "XF86AudioStop";
-              right.prev = "XF86AudioPrev";
-              right.next = "XF86AudioNext";
-              right.PrtSc = "Sys_Req"; # PrtSc aka Print Screen button
-            };
+          keys = config.kdn.desktop.sway.keys;
         in {
-          wayland.windowManager.sway.config.keybindings = {
-            "${key.top.fan}" = exec "asusctl" "profile -n";
-            "${key.top.rog}" = exec "rog-control-center" "";
-            "${key.fn.f2}" = exec "asusctl" "--prev-kbd-bright";
-            "${key.fn.f3}" = exec "asusctl" "--next-kbd-bright";
-            "${key.super}+P" = lib.mkForce "output eDP-1 toggle";
+          wayland.windowManager.sway.config.keybindings = with config.kdn.desktop.sway.keys; {
+            "${oams.top.fan}" = exec "asusctl" "profile -n";
+            "${oams.top.rog}" = exec "rog-control-center" "";
+            "${oams.fn.f2}" = exec "asusctl" "--prev-kbd-bright";
+            "${oams.fn.f3}" = exec "asusctl" "--next-kbd-bright";
           };
         })
       ];
+
+      kdn.desktop.sway.keys.oams = {
+        # Top row of keys (between function keys and screen)
+        top.vol-down = "XF86AudioLowerVolume"; # Top row volume down
+        top.vol-up = "XF86AudioRaiseVolume"; # Top row volume down
+        top.mic = "XF86AudioMicMute"; # Top row Microphone button
+        top.fan = "XF86Launch4"; # Top row Fan button
+        top.rog = "XF86Launch1"; # Top row RoG Eye logo button
+
+        # "FN" key activated functions
+        fn.f1 = "XF86AudioMute";
+        fn.f2 = "XF86KbdBrightnessDown";
+        fn.f3 = "XF86KbdBrightnessUp";
+        fn.f4 = "XF86Launch3"; # "AURA" button
+        fn.f5 = "XF86Launch4"; # Fan button
+        fn.f6 = "Shift+Mod4"; # Snip button
+        fn.f7 = "XF86MonBrightnessDown";
+        fn.f8 = "XF86MonBrightnessUp";
+        fn.f9 = "Mod4+P"; # Display switch button
+        fn.f10 = "XF86TouchpadToggle"; # crossed touchpad button
+        fn.f11 = "XF86Sleep"; # zZ button, works OOTB on Sway on NixOS
+        fn.f12 = "XF86RFKill"; # airplane button, works OOTP on Sway on Nixos
+        fn.delete = "Insert"; # Delete / Insert button
+        fn.rctrl = "Menu"; # Right CTRL with menu icon
+        fn.arrow-left = "Home";
+        fn.arrow-up = "Prior";
+        fn.arrow-down = "Next";
+        fn.arrow-right = "End";
+
+        # right-hand side button row
+        right.play = "XF86AudioPlay";
+        right.stop = "XF86AudioStop";
+        right.prev = "XF86AudioPrev";
+        right.next = "XF86AudioNext";
+        right.PrtSc = "Sys_Req"; # PrtSc aka Print Screen button
+      };
     }
     (import ./disko.nix {
       inherit lib;

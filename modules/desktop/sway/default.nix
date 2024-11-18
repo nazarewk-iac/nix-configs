@@ -1,18 +1,24 @@
-{ lib, pkgs, config, ... }:
-let
-  cfg = config.kdn.desktop.sway;
-in
 {
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  cfg = config.kdn.desktop.sway;
+  jsonFormat = pkgs.formats.json {};
+in {
   # TODO: figure out why exiting Sway doesn't stop/restart `sddm-helper` aka `sddm` aka `display-manager.service`
   # TODO: figure out why exiting Sway a second time cannot `systemctl restart display-manager.service`
   # TODO: figure out why exiting Sway logs out all SSH sessions
   options.kdn.desktop.sway = {
     enable = lib.mkEnableOption "Sway base setup";
 
-    keys = lib.mkOption { readOnly = true; default = import ./keys.nix; };
+    keys = lib.mkOption {
+      type = lib.types.submodule {freeformType = jsonFormat.type;};
+    };
 
-    prefix = lib.mkOption { default = "kdn-sway"; };
-    desktopSessionName = lib.mkOption { default = cfg.prefix; };
+    prefix = lib.mkOption {default = "kdn-sway";};
+    desktopSessionName = lib.mkOption {default = cfg.prefix;};
 
     bundle = lib.mkOption {
       type = with lib.types; package;
@@ -23,56 +29,59 @@ in
     };
 
     systemd = lib.mkOption {
-      type = with lib.types; attrsOf (submodule ({ name, ... }@args: {
-        options = {
-          prefix = lib.mkOption {
-            type = with lib.types; str;
-            default = config.kdn.desktop.sway.prefix;
+      type = with lib.types;
+        attrsOf (submodule ({name, ...} @ args: {
+          options = {
+            prefix = lib.mkOption {
+              type = with lib.types; str;
+              default = config.kdn.desktop.sway.prefix;
+            };
+            prefixes = lib.mkOption {
+              type = with lib.types; listOf str;
+              default = [
+                args.config.prefix
+                config.kdn.desktop.sway.prefix
+              ];
+              apply = builtins.filter (s: s != "");
+            };
+            shortName = lib.mkOption {
+              readOnly = true;
+              type = with lib.types; str;
+              default = name;
+            };
+            suffix = lib.mkOption {
+              type = with lib.types; str;
+              default = "";
+            };
+            suffixes = lib.mkOption {
+              type = with lib.types; listOf str;
+              default = [args.config.suffix];
+              apply = builtins.filter (s: s != "");
+            };
+            name = lib.mkOption {
+              type = with lib.types; str;
+              default = builtins.concatStringsSep "-" (builtins.filter (s: s != "") (
+                args.config.prefixes
+                ++ [
+                  args.config.shortName
+                ]
+                ++ args.config.suffixes
+              ));
+            };
+            units = lib.mkOption {
+              type = with lib.types; listOf str;
+            };
           };
-          prefixes = lib.mkOption {
-            type = with lib.types; listOf str;
-            default = [
-              args.config.prefix
-              config.kdn.desktop.sway.prefix
-            ];
-            apply = builtins.filter (s: s != "");
-          };
-          shortName = lib.mkOption {
-            readOnly = true;
-            type = with lib.types; str;
-            default = name;
-          };
-          suffix = lib.mkOption {
-            type = with lib.types; str;
-            default = "";
-          };
-          suffixes = lib.mkOption {
-            type = with lib.types; listOf str;
-            default = [ args.config.suffix ];
-            apply = builtins.filter (s: s != "");
-          };
-          name = lib.mkOption {
-            type = with lib.types; str;
-            default = builtins.concatStringsSep "-" (builtins.filter (s: s != "") (
-              args.config.prefixes ++ [
-                args.config.shortName
-              ] ++ args.config.suffixes
-            ));
-          };
-          units = lib.mkOption {
-            type = with lib.types; listOf str;
-          };
-        };
-      }));
+        }));
       default = {
         sway.suffix = "";
-        sway.units = [ "service" ];
-        session.units = [ "target" ];
-        envs.units = [ "service" "target" ];
-        tray.units = [ "target" ];
-        polkit-agent.units = [ "service" ];
+        sway.units = ["service"];
+        session.units = ["target"];
+        envs.units = ["service" "target"];
+        tray.units = ["target"];
+        polkit-agent.units = ["service"];
         secrets-service.prefix = "dbus";
-        secrets-service.units = [ "service" "target" ];
+        secrets-service.units = ["service" "target"];
       };
       apply = builtins.mapAttrs (key: value: (lib.trivial.pipe value.units [
         (builtins.map (unit: {
@@ -95,27 +104,28 @@ in
 
     initScripts = lib.mkOption {
       type = with lib.types; attrsOf (attrsOf str);
-      default = { };
+      default = {};
     };
 
     environmentDefaults = lib.mkOption {
       type = with lib.types; attrsOf str;
-      default = { };
+      default = {};
       apply = lib.kdn.shell.makeShellDefaultAssignments;
     };
 
     environment = lib.mkOption {
       type = with lib.types; attrsOf str;
-      default = { };
+      default = {};
       apply = input: lib.mapAttrsToList lib.toShellVar input;
     };
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
+    {kdn.desktop.sway.keys = import ./keys.nix;}
     {
       # see https://github.com/NixOS/nixpkgs/issues/354210
       #environment.systemPackages = [ (lib.meta.hiPrio pkgs.xwayland) ];
-      programs.sway.extraPackages = [ cfg.bundle ];
+      programs.sway.extraPackages = [cfg.bundle];
     }
     {
       # Configure various Sway configs
@@ -123,7 +133,7 @@ in
       # see https://nixos.wiki/wiki/Sway#Systemd_integration
       programs.sway.enable = true;
       programs.sway.wrapperFeatures.gtk = true;
-      programs.sway.extraOptions = [ "--verbose" "--debug" ];
+      programs.sway.extraOptions = ["--verbose" "--debug"];
       programs.sway.extraSessionCommands = ''
         # rename NOTIFY_SOCKET to workaround podman systemd detection
         # can be removed when NotifyAccess=all pattern is changed
@@ -143,18 +153,20 @@ in
       '';
 
       services.displayManager.defaultSession = cfg.desktopSessionName;
-      services.displayManager.sessionPackages = [ cfg.bundle ];
+      services.displayManager.sessionPackages = [cfg.bundle];
     }
     {
-      home-manager.sharedModules = [{
-        kdn.desktop.sway = {
-          inherit (cfg) enable prefix systemd keys;
-        };
-        wayland.windowManager.sway = {
-          inherit (config.programs.sway) package;
-          systemd.enable = false;
-        };
-      }];
+      home-manager.sharedModules = [
+        {
+          kdn.desktop.sway = {
+            inherit (cfg) enable prefix systemd keys;
+          };
+          wayland.windowManager.sway = {
+            inherit (config.programs.sway) package;
+            systemd.enable = false;
+          };
+        }
+      ];
     }
     {
       kdn.desktop.base.enable = true;
@@ -183,14 +195,13 @@ in
         NIXOS_OZONE_WL = "1";
       };
 
-
       systemd.user.services."${config.kdn.desktop.sway.systemd.sway.name}" = {
         description = config.kdn.desktop.sway.systemd.sway.service;
-        documentation = [ "man:sway(5)" ];
-        bindsTo = [ "graphical-session.target" config.kdn.desktop.sway.systemd.session.target ];
-        requires = [ "graphical-session-pre.target" ];
-        after = [ "graphical-session-pre.target" ];
-        before = [ "graphical-session.target" ];
+        documentation = ["man:sway(5)"];
+        bindsTo = ["graphical-session.target" config.kdn.desktop.sway.systemd.session.target];
+        requires = ["graphical-session-pre.target"];
+        after = ["graphical-session-pre.target"];
+        before = ["graphical-session.target"];
         # We explicitly unset PATH here, as we want it to be set by
         # systemctl --user import-environment in start logic
         environment.PATH = lib.mkForce null;
@@ -199,10 +210,10 @@ in
         serviceConfig = {
           Type = "notify";
           /*
-            TODO: change NotifyAccess to something else to prevent Podman from killing Sway
-              KDN_SWAY_NOTIFY_SOCKET rename can be removed after this one is working
-              see https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html#NotifyAccess=
-              see https://gist.github.com/nazarewk/9e071fd43e1803ffaa1726a273f30419#resolution
+          TODO: change NotifyAccess to something else to prevent Podman from killing Sway
+            KDN_SWAY_NOTIFY_SOCKET rename can be removed after this one is working
+            see https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html#NotifyAccess=
+            see https://gist.github.com/nazarewk/9e071fd43e1803ffaa1726a273f30419#resolution
           */
           NotifyAccess = "all";
           ExecStart = lib.meta.getExe config.programs.sway.package;
@@ -216,7 +227,7 @@ in
 
       systemd.user.targets."${config.kdn.desktop.sway.systemd.session.name}" = {
         description = config.kdn.desktop.sway.systemd.session.target;
-        documentation = [ "man:systemd.special(7)" ];
+        documentation = ["man:systemd.special(7)"];
         bindsTo = [
           "graphical-session.target"
           config.kdn.desktop.sway.systemd.sway.service
@@ -226,7 +237,7 @@ in
           config.kdn.desktop.sway.systemd.envs.target
           config.kdn.desktop.sway.systemd.tray.target
         ];
-        before = [ "graphical-session.target" ];
+        before = ["graphical-session.target"];
         after = [
           "graphical-session-pre.target"
           config.kdn.desktop.sway.systemd.envs.target
@@ -236,9 +247,9 @@ in
 
       systemd.user.targets."${config.kdn.desktop.sway.systemd.envs.name}" = {
         description = config.kdn.desktop.sway.systemd.envs.target;
-        partOf = [ config.kdn.desktop.sway.systemd.session.target ];
-        bindsTo = [ config.kdn.desktop.sway.systemd.envs.service ];
-        after = [ config.kdn.desktop.sway.systemd.envs.service ];
+        partOf = [config.kdn.desktop.sway.systemd.session.target];
+        bindsTo = [config.kdn.desktop.sway.systemd.envs.service];
+        after = [config.kdn.desktop.sway.systemd.envs.service];
       };
       systemd.user.services."${config.kdn.desktop.sway.systemd.envs.name}" = {
         description = config.kdn.desktop.sway.systemd.envs.service;
@@ -253,31 +264,31 @@ in
 
       systemd.user.targets."${config.kdn.desktop.sway.systemd.tray.name}" = {
         description = config.kdn.desktop.sway.systemd.tray.target;
-        bindsTo = [ "tray.target" ];
-        before = [ config.kdn.desktop.sway.systemd.session.target "tray.target" ];
-        after = [ config.kdn.desktop.sway.systemd.envs.target ];
-        requires = [ config.kdn.desktop.sway.systemd.envs.target ];
+        bindsTo = ["tray.target"];
+        before = [config.kdn.desktop.sway.systemd.session.target "tray.target"];
+        after = [config.kdn.desktop.sway.systemd.envs.target];
+        requires = [config.kdn.desktop.sway.systemd.envs.target];
       };
 
       systemd.user.services."xdg-desktop-portal" = {
-        requires = [ config.kdn.desktop.sway.systemd.envs.target ];
-        after = [ config.kdn.desktop.sway.systemd.envs.target ];
-        partOf = [ config.kdn.desktop.sway.systemd.session.target ];
+        requires = [config.kdn.desktop.sway.systemd.envs.target];
+        after = [config.kdn.desktop.sway.systemd.envs.target];
+        partOf = [config.kdn.desktop.sway.systemd.session.target];
         serviceConfig.Slice = "background.slice";
       };
 
       systemd.user.services."xdg-desktop-portal-gtk" = {
-        requires = [ config.kdn.desktop.sway.systemd.envs.target ];
-        after = [ config.kdn.desktop.sway.systemd.envs.target ];
-        partOf = [ config.kdn.desktop.sway.systemd.session.target ];
+        requires = [config.kdn.desktop.sway.systemd.envs.target];
+        after = [config.kdn.desktop.sway.systemd.envs.target];
+        partOf = [config.kdn.desktop.sway.systemd.session.target];
         serviceConfig.Slice = "background.slice";
       };
 
       systemd.user.services."${config.kdn.desktop.sway.systemd.polkit-agent.name}" = {
         description = config.kdn.desktop.sway.systemd.polkit-agent.service;
-        partOf = [ config.kdn.desktop.sway.systemd.session.target ];
-        requires = [ config.kdn.desktop.sway.systemd.envs.target ];
-        after = [ config.kdn.desktop.sway.systemd.envs.target ];
+        partOf = [config.kdn.desktop.sway.systemd.session.target];
+        requires = [config.kdn.desktop.sway.systemd.envs.target];
+        after = [config.kdn.desktop.sway.systemd.envs.target];
         script = cfg.polkitAgent.command;
         serviceConfig.Slice = "background.slice";
       };
@@ -293,27 +304,23 @@ in
 
       environment.etc."sway/config.d/00-${config.kdn.desktop.sway.prefix}-init.conf".text = lib.trivial.pipe cfg.initScripts [
         (lib.mapAttrsToList (
-          execName: pieces:
-            let
-              scriptName = "${config.kdn.desktop.sway.prefix}-init-${execName}";
-              scriptContent = lib.trivial.pipe pieces [
-                (lib.mapAttrsToList (
-                  pieceName: piece:
-                    let
-                      pieceScriptName = "${scriptName}-${pieceName}";
-                      pieceScript = pkgs.writeScriptBin pieceScriptName piece;
-                    in
-                    "${pieceScript}/bin/${pieceScriptName}"
-                ))
-                (lib.concatStringsSep "\n")
-              ];
-              script = pkgs.writeScriptBin scriptName ''
-                #!${pkgs.bash}/bin/bash
-                set -xEeuo pipefail
-                ${scriptContent}
-              '';
-            in
-            "exec ${script}/bin/${scriptName}"
+          execName: pieces: let
+            scriptName = "${config.kdn.desktop.sway.prefix}-init-${execName}";
+            scriptContent = lib.trivial.pipe pieces [
+              (lib.mapAttrsToList (
+                pieceName: piece: let
+                  pieceScriptName = "${scriptName}-${pieceName}";
+                  pieceScript = pkgs.writeScriptBin pieceScriptName piece;
+                in "${pieceScript}/bin/${pieceScriptName}"
+              ))
+              (lib.concatStringsSep "\n")
+            ];
+            script = pkgs.writeScriptBin scriptName ''
+              #!${pkgs.bash}/bin/bash
+              set -xEeuo pipefail
+              ${scriptContent}
+            '';
+          in "exec ${script}/bin/${scriptName}"
         ))
         (lib.concatStringsSep "\n")
       ];
@@ -382,30 +389,30 @@ in
               (lib.strings.removeSuffix ".service")
             ];
           in
-          pkgs.writeTextFile {
-            name = "${name}.service";
-            destination = "/share/dbus-1/services/${name}.service";
-            text = ''
-              [D-BUS Service]
-              Name=org.freedesktop.secrets
-              Exec=${pkgs.coreutils}/bin/false
-              SystemdService=${config.kdn.desktop.sway.systemd.secrets-service.service}
-            '';
-          }
+            pkgs.writeTextFile {
+              name = "${name}.service";
+              destination = "/share/dbus-1/services/${name}.service";
+              text = ''
+                [D-BUS Service]
+                Name=org.freedesktop.secrets
+                Exec=${pkgs.coreutils}/bin/false
+                SystemdService=${config.kdn.desktop.sway.systemd.secrets-service.service}
+              '';
+            }
         )
       ];
       systemd.user.targets."${config.kdn.desktop.sway.systemd.secrets-service.name}" = {
         description = config.kdn.desktop.sway.systemd.secrets-service.target;
-        bindsTo = [ config.kdn.desktop.sway.systemd.secrets-service.service ];
-        after = [ config.kdn.desktop.sway.systemd.envs.target ];
-        requires = [ config.kdn.desktop.sway.systemd.envs.target ];
+        bindsTo = [config.kdn.desktop.sway.systemd.secrets-service.service];
+        after = [config.kdn.desktop.sway.systemd.envs.target];
+        requires = [config.kdn.desktop.sway.systemd.envs.target];
       };
 
       systemd.user.services."${config.kdn.desktop.sway.systemd.secrets-service.name}" = {
         description = config.kdn.desktop.sway.systemd.secrets-service.service;
-        requires = [ config.kdn.desktop.sway.systemd.envs.target ];
-        after = [ config.kdn.desktop.sway.systemd.envs.target ];
-        partOf = [ config.kdn.desktop.sway.systemd.session.target ];
+        requires = [config.kdn.desktop.sway.systemd.envs.target];
+        after = [config.kdn.desktop.sway.systemd.envs.target];
+        partOf = [config.kdn.desktop.sway.systemd.session.target];
         script = lib.mkDefault "${pkgs.coreutils}/bin/sleep infinity";
         serviceConfig.Slice = "background.slice";
         serviceConfig.Type = "dbus";
@@ -422,9 +429,9 @@ in
       systemd.user.services."gpg-agent" = {
         # I want to stop gpg-agent whenever `envs` target activates or deactivetes
         # starting it again should be handled by `*.socket`
-        unitConfig.PartOf = [ config.kdn.desktop.sway.systemd.envs.target ];
-        unitConfig.StopPropagatedFrom = [ config.kdn.desktop.sway.systemd.envs.target ];
-        unitConfig.After = [ config.kdn.desktop.sway.systemd.envs.target ];
+        unitConfig.PartOf = [config.kdn.desktop.sway.systemd.envs.target];
+        unitConfig.StopPropagatedFrom = [config.kdn.desktop.sway.systemd.envs.target];
+        unitConfig.After = [config.kdn.desktop.sway.systemd.envs.target];
       };
     })
   ]);
