@@ -23,6 +23,9 @@ in {
       nixfmt-rfc-style
       nixos-anywhere
       nixpkgs-fmt
+      # language servers
+      nil
+      nixd
     ];
   };
 }
