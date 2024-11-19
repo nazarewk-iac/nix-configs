@@ -264,7 +264,7 @@ in {
         PartOf = [config.kdn.desktop.sway.systemd.session.target];
       };
     })
-    (lib.mkIf (hasWorkstation && hasGUI) {
+    (lib.mkIf hasWorkstation {
       home.packages = with pkgs; [
         kdn.klog-time-tracker
         kdn.klg
@@ -318,10 +318,5 @@ in {
       kdn.programs.spotify.enable = true;
       kdn.toolset.print-3d.enable = true;
     })
-    {
-      programs.helix.enable = true;
-      programs.helix.settings.theme = "darcula-solid";
-      stylix.targets.helix.enable = false;
-    }
   ]);
 }
