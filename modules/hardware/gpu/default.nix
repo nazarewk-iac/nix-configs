@@ -27,13 +27,24 @@ in {
     (lib.mkIf cfg.multiGPU.enable {
       services.supergfxd.enable = true;
       services.switcherooControl.enable = true;
-      systemd.services.supergfxd.path = [pkgs.kmod];
+
+      nixpkgs.overlays = [
+        (final: prev: {
+          /*
+          supergfxctl doesn't detect dGPU in 5.2.4, so we need to downgrade:
+           - https://github.com/NixOS/nixpkgs/issues/355798
+           - https://gitlab.com/asus-linux/supergfxctl/-/issues/140#note_2149374813
+          */
+          supergfxctl = prev.callPackage ./supergfxctl.nix {};
+        })
+      ];
       environment.systemPackages = with pkgs; [
         supergfxctl
       ];
       boot.kernelParams = lib.concatLists [
         (lib.lists.optional config.kdn.hardware.gpu.amd.enable "supergfxd.mode=${cfg.supergfxd.mode}")
       ];
+
       services.supergfxd.settings = {
         mode = cfg.supergfxd.mode;
         always_reboot = false;
