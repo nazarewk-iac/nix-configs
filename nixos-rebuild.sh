@@ -6,4 +6,4 @@ info() { echo "[$(date -Iseconds)]" "$@" >&2; }
 info STARTING
 trap 'info FINISHED' EXIT
 
-./nixos-rebuild.sh build "$@"
+nixos-rebuild "$1" --print-build-logs --show-trace "${@:2}" --log-format internal-json -v |& nom --json

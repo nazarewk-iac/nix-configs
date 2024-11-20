@@ -19,12 +19,6 @@ in {
       kdn.hardware.gpu.amd.enable = true;
       kdn.hardware.cpu.amd.enable = true;
 
-      kdn.profile.machine.gaming.enable = true;
-      kdn.hardware.gpu.vfio.gpuIDs = [
-        "1002:73df"
-        "1002:ab28"
-      ];
-
       systemd.tmpfiles.rules = [
         "f /dev/shm/looking-glass 0660 kdn qemu-libvirtd -"
       ];
@@ -55,7 +49,6 @@ in {
         (args: let
           bin = lib.getExe' config.services.asusd.package;
           exec = cmd: args: "exec '${bin cmd} ${args}'";
-          keys = config.kdn.desktop.sway.keys;
         in {
           wayland.windowManager.sway.config.keybindings = with config.kdn.desktop.sway.keys; {
             "${oams.top.fan}" = exec "asusctl" "profile -n";
@@ -114,8 +107,23 @@ in {
         inheritParentConfig = true;
         configuration = {
           system.nixos.tags = ["gaming"];
-          kdn.hardware.gpu.vfio.enable = lib.mkForce false;
-          kdn.hardware.gpu.supergfxd.mode = "Hybrid";
+          kdn.hardware.gpu.supergfxd.mode = lib.mkForce "Hybrid";
+          kdn.profile.machine.gaming.enable = true;
+          kdn.profile.machine.gaming.vulkan.deviceId = "1002:73df";
+          kdn.profile.machine.gaming.vulkan.deviceName = "AMD Radeon RX 6800M";
+        };
+      };
+    }
+    {
+      specialisation.vfio = {
+        inheritParentConfig = true;
+        configuration = {
+          system.nixos.tags = ["vfio"];
+          kdn.hardware.gpu.vfio.enable = true;
+          kdn.hardware.gpu.vfio.gpuIDs = [
+            "1002:73df"
+            "1002:ab28"
+          ];
         };
       };
     }

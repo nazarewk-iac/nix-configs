@@ -9,6 +9,14 @@
 in {
   options.kdn.profile.machine.gaming = {
     enable = lib.mkEnableOption "enable gaming machine profile";
+    vulkan.deviceId = lib.mkOption {
+      type = with lib.types; nullOr str;
+      default = null;
+    };
+    vulkan.deviceName = lib.mkOption {
+      type = with lib.types; nullOr str;
+      default = null;
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -23,6 +31,11 @@ in {
         "steam-original"
         "steam-run"
       ];
+
+    environment.sessionVariables =
+      lib.optionalAttrs (cfg.vulkan.deviceName != null) {DXVK_FILTER_DEVICE_NAME = cfg.vulkan.deviceName;}
+      // lib.optionalAttrs (cfg.vulkan.deviceId != null) {MESA_VK_DEVICE_SELECT = cfg.vulkan.deviceId;};
+
     environment.systemPackages = with pkgs; [
       # steam  # covered by programs.steam.enable
       # steam-run  # covered by programs.steam.enable
