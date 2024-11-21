@@ -123,7 +123,6 @@ in {
               # If there are multiple scratchpad windows, this command cycles through them.
               #"$Super+minus" = "scratchpad show";
               "${super}+K" = exec (lib.getExe pkgs.qalculate-qt);
-              "${super}+P" = exec "${lib.getExe pkgs.foot} --title=ipython ipython";
               "${super}+Return" = exec "${lib.getExe pkgs.foot}";
               # Launchers
               "${super}+D" = exec cfg.launcher;

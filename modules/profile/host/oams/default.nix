@@ -55,6 +55,7 @@ in {
             "${oams.top.rog}" = exec "rog-control-center" "";
             "${oams.fn.f2}" = exec "asusctl" "--prev-kbd-bright";
             "${oams.fn.f3}" = exec "asusctl" "--next-kbd-bright";
+            "${shift}+${super}+P" = "output eDP-1 toggle";
           };
         })
       ];
@@ -111,6 +112,11 @@ in {
           kdn.profile.machine.gaming.enable = true;
           kdn.profile.machine.gaming.vulkan.deviceId = "1002:73df";
           kdn.profile.machine.gaming.vulkan.deviceName = "AMD Radeon RX 6800M";
+          home-manager.sharedModules = [
+            {
+              kdn.desktop.sway.kanshi.devices.oams.scale = lib.mkForce 1.0;
+            }
+          ];
         };
       };
     }
