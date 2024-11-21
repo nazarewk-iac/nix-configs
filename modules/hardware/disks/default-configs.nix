@@ -169,8 +169,15 @@ in {
         Nov 05 09:40:41 etra systemd[1]: Starting Save Transient machine-id to Disk...
         Nov 05 09:40:48 etra systemd-machine-id-setup[439037]: /etc/machine-id is not on a temporary file system.
         Nov 05 09:40:48 etra systemd[1]: systemd-machine-id-commit.service: Main process exited, code=exited, status=1/FAILURE
+
+        see discussion at https://github.com/nix-community/impermanence/issues/229
         */
-        systemd.services.systemd-machine-id-commit.enable = false;
+        boot.initrd.systemd.suppressedUnits = ["systemd-machine-id-commit.service"];
+        systemd.suppressedSystemUnits = ["systemd-machine-id-commit.service"];
+      }
+      {
+        # systemd-journald related slow-starts fixups
+        boot.initrd.systemd.services.systemd-journal-flush.serviceConfig.TimeoutSec = "10s";
       }
       {
         environment.persistence."sys/cache" = {
