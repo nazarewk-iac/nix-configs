@@ -143,6 +143,11 @@ in {
         isDefault = false;
       };
 
+      programs.firefox.profiles.bn = {
+        id = 2;
+        isDefault = false;
+      };
+
       programs.firefox.profiles.kdn.containers = {
         personal = {
           id = 1;
