@@ -19,6 +19,7 @@ fixes issues with lack of HTTP header sanitization in .NET Core, see:
     codeName = options.system.nixos.codeName.default;
     renames."Vicuña" = "Vicuna";
     renames."Vicuna" = "Vicuna";
+    renames."Warbler" = "Warbler";
   in
     renames."${codeName}" or (throw "Unknown `codeName`: ${codeName}, please add it to `renames` in `ascii-workaround.nix`");
 }

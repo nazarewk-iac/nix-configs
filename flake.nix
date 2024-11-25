@@ -3,8 +3,6 @@
   inputs.nixpkgs.url = "github:nazarewk/nixpkgs/nixos-unstable";
   inputs.nixpkgs-patch-2.url = "https://github.com/NixOS/nixpkgs/compare/nixos-unstable..nazarewk:netbird-improvements.patch";
   inputs.nixpkgs-patch-2.flake = false;
-  inputs.nixpkgs-patch-4.url = "https://github.com/NixOS/nixpkgs/pull/355697.patch";
-  inputs.nixpkgs-patch-4.flake = false;
 
   inputs.nixpkgs-lib.follows = "nixpkgs";
 
@@ -81,7 +79,6 @@
   inputs.poetry2nix.inputs.nixpkgs.follows = "nixpkgs";
   inputs.poetry2nix.inputs.treefmt-nix.follows = "treefmt-nix";
   inputs.rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
-  inputs.sops-nix.inputs.nixpkgs-stable.follows = "empty";
   inputs.sops-nix.inputs.nixpkgs.follows = "nixpkgs";
   inputs.stylix.inputs.flake-compat.follows = "flake-compat";
   inputs.stylix.inputs.home-manager.follows = "home-manager";
