@@ -113,6 +113,7 @@ in {
               "--inhibited --release ${super}+${ctrl}+V" = exec (lib.getExe ydotool-paste); # fix using it by nix path
               # X parity
               "${lalt}+F4" = "kill";
+              "${ctrl}+${alt}+${delete}" = exec (lib.getExe pkgs.wlogout);
               "${super}+E" = exec cfg.fileManager;
               # Scratchpad:
               #   Sway has a "scratchpad", which is a bag of holding for windows.

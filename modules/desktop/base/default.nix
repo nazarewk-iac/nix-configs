@@ -61,6 +61,7 @@ in {
       services.xserver.updateDbusEnvironment = true;
       xdg.icons.enable = true;
       xdg.mime.enable = true;
+      programs.wshowkeys.enable = true;
 
       environment.systemPackages = with pkgs;
         [
@@ -85,7 +86,6 @@ in {
           libinput
           v4l-utils
           wev # wayland event viewer
-          wshowkeys # display pressed keys
           ashpd-demo # Tool for playing with XDG desktop portals
 
           # carry-overs from modules/desktop/sway/base/default.nix
