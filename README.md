@@ -213,12 +213,17 @@ New FIDO2 token enrolled as key slot 1.
 
 How to use https://github.com/katrinafyi/nix-patcher to maintain nixpkgs fork:
 
-1. Create a sub-flake (eg: [`nixpkgs-patcher/flake.nix`](nixpkgs-patcher/flake.nix)) holding **only** nixpkgs
-   definitions and it's patches.This is because `nix-patcher` considers a target every single input it finds in a flake,
-   not just nixpkgs, see https://github.com/katrinafyi/nix-patcher/issues/1 .
-2. Inside that sub-flake run
+1. Create required `nixpkgs` inputs, see `nix-patcher` repo for more details:
+    - `nixpkgs-upstream` - desired upstream nixpkgs branch
+    - `nixpkgs` - the fork you have access to that will be managed by nix-patcher
+    - `nixpkgs-patch-<num>` - numbered patches to be applied in specific order on top of `nixpkgs-upstream`
+      and pushed to `nixpkgs` fork
+2. run
    `nix flake update && GITHUB_TOKEN="$(pass show python-keyring/git/github.com/nazarewk)" nix-patcher --update "$@"`
 3. In your root `flake.nix` create the `nixpkgs` input pointing to the same input as the sub-flake.
 4. Run `nix flake update nixpkgs` in your root flake.
 
-Most of it is wrapped in [`./nixpkgs-update.sh`](nixpkgs-update.sh)
+Most of it is wrapped in [`/nixpkgs-update.sh`](nixpkgs-update.sh) and top entries of [`/flake.nix`](flake.nix).
+
+Note this can be used to patch arbitrary flake, not just `nixpkgs`!
+Just create `<input>-upstream`, `<input>` & `<input>-patch-<num>` inputs.
