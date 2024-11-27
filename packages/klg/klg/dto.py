@@ -301,8 +301,12 @@ class Record(EntryBase):
         self.calculate_diff()
 
     @functools.cached_property
+    def date_datetime(self) -> pendulum.Date:
+        return pendulum.parse(self.date)
+
+    @functools.cached_property
     def date_obj(self) -> pendulum.Date:
-        return pendulum.parse(self.date).date()
+        return self.date_datetime.date()
 
     def make_totals(self):
         self.total = self.format_duration(self.total_mins)

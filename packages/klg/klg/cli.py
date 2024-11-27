@@ -4,6 +4,7 @@ import tempfile
 
 import asyncclick as click
 import csv
+import datetime
 import functools
 import pendulum
 import shutil
@@ -11,7 +12,7 @@ import structlog
 import subprocess
 import textwrap
 import tomllib
-import xdg
+import xdg_base_dirs
 from pathlib import Path
 
 from . import configure, dto
@@ -44,7 +45,9 @@ async def get_profile_path(
     context_settings={"show_default": True},
 )
 @click.option("--profile", "-p", default="")
-@click.option("--config", default=xdg.xdg_config_home() / "klg" / "config.toml")
+@click.option(
+    "--config", default=xdg_base_dirs.xdg_config_home() / "klg" / "config.toml"
+)
 async def main(config, profile):
     config = Path(config).resolve()
     global CONFIG
@@ -82,17 +85,24 @@ def format_result(result: dto.Result):
 @main.command()
 @click.option("-p", "--path", default="")
 @click.option("--check/--no-check", is_flag=True)
-@click.option("--sort/--no-sort", is_flag=True)
+@click.option("--sort/--no-sort", is_flag=True, default=True)
+@click.option("-d", "--sort-cutoff-days", default=3)
 @click.option("--diff/--no-diff", is_flag=True, default=True)
 @click.option("--write/--no-write", is_flag=True, default=True)
-async def fmt(path, check, diff, write, sort):
+async def fmt(path, check, diff, write, sort, sort_cutoff_days):
     klog = Klog()
     path = await get_profile_path(klog, CONFIG, path)
 
     result = await klog.to_json(path)
 
     if sort:
-        result.records.sort(key=lambda r: r.date)
+        cutoff = pendulum.now() + datetime.timedelta(days=sort_cutoff_days)
+        result.records.sort(
+            key=lambda r: (
+                not (bool(r.entries) or r.date_datetime < cutoff),
+                -r.date_datetime.int_timestamp,
+            )
+        )
 
     formatted, diff_content = format_result(result)
     if diff_content:

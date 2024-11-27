@@ -56,6 +56,7 @@
         packages.default = conf.app;
         packages.dev = conf.dev;
         packages.poetryApp = conf.poetryApp;
+        packages.poetryEnv = conf.poetryEnv;
         # nix run '.#container.copyToPodman'
         packages.container = conf.container;
 

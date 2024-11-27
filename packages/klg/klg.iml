@@ -2,6 +2,7 @@
 <module type="PYTHON_MODULE" version="4">
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
+    <content url="file://$USER_HOME$/Nextcloud/drag0nius@nc.nazarewk.pw/time-logs" />
     <content url="file://$MODULE_DIR$">
       <excludePattern pattern=".direnv" />
       <excludePattern pattern=".devenv" />
@@ -9,7 +10,7 @@
       <excludePattern pattern=".pytest-cache" />
       <excludePattern pattern=".venv" />
     </content>
-    <orderEntry type="jdk" jdkName="nix-configs:klg" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.11 (klg)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>
