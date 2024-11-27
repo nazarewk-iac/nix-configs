@@ -290,7 +290,8 @@ in {
       ];
     }
     {
-      kdn.networking.tailscale.enable = true;
+      # interferes with Netbird networking
+      kdn.networking.tailscale.enable = false;
     }
     {
       kdn.networking.netbird.priv.enable = true;
