@@ -329,30 +329,44 @@ in {
           chmod -R go+r /run/configs
         '';
       };
+
       environment.systemPackages = with pkgs; [
-        (pkgs.writers.writePython3Bin "kdn-net-anonymize" {} (builtins.readFile ./kdn-net-anonymize.py))
+        (pkgs.writeShellApplication {
+          name = "kdn-net-anonymize";
+          text = ''
+            ${lib.getExe kdn.kdn-anonymize} /run/configs/networking/anonymization
+          '';
+        })
       ];
     }
     (
       let
-        anonymize = pkgs.writers.writePython3Bin "kdn-net-anonymize" {} (builtins.readFile ./kdn-net-anonymize.py);
         anonymizeClipboard = pkgs.writeShellApplication {
-          name = "kdn-net-anonymize-clipboard";
+          name = "kdn-anonymize-clipboard";
           runtimeInputs = with pkgs; [
-            anonymize
+            kdn.kdn-anonymize
             wl-clipboard
             libnotify
           ];
+          # no clue how to redirect properly without file in the middle
           text = ''
-            tempdir="$(mktemp /tmp/kdn-net-anonymize-clipboard.XXXXXX)"
-            trap 'rm -rf "$tempdir" || :' EXIT
-            wl-paste | kdn-net-anonymize 2>"$tempdir" | wl-copy
-            notify-send --expire-time=3000 "kdn-net-anonymize-clipboard" "$(cat "$tempdir")"
+            tempfile="$(mktemp /tmp/kdn-net-anonymize-clipboard.XXXXXX)"
+            trap 'rm -rf "$tempfile" || :' EXIT
+            wl-paste | kdn-anonymize 2>"$tempfile" | wl-copy
+            notify-send --expire-time=3000 "kdn-net-anonymize-clipboard" "$(cat "$tempfile")"
           '';
         };
       in {
+        kdn.security.secrets.files."anonymization" = {
+          keyPrefix = "anonymization";
+          sopsFile = "${self}/default.unattended.sops.yaml";
+          basePath = "/run/configs";
+          sops.mode = "0444";
+        };
+
+        environment.sessionVariables.KDN_ANONYMIZE_DEFAULTS = "/run/configs";
         environment.systemPackages =
-          [anonymize]
+          [pkgs.kdn.kdn-anonymize]
           ++ lib.lists.optional config.kdn.headless.enableGUI anonymizeClipboard;
         home-manager.sharedModules = [
           {

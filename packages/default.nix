@@ -12,6 +12,7 @@
   git-utils = pkgs.callPackage ./git-utils {};
   gpg-smartcard-reset-keys = pkgs.callPackage ./gpg-smartcard-reset-keys {};
   gtimelog = pkgs.callPackage ./gtimelog {};
+  kdn-anonymize = pkgs.callPackage ./kdn-anonymize {};
   kdn-keepass = pkgs.callPackage ./kdn-keepass {};
   kdn-nix = pkgs.callPackage ./kdn-nix {};
   klg = pkgs.callPackage ./klg {};
