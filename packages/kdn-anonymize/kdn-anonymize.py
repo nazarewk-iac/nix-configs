@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 kdn-anonymize SEARCH_DIR [SEARCH_DIR...]
 
@@ -70,19 +71,26 @@ def get_defaults():
     ]
 
 
+def log(*args, **kwargs):
+    kwargs.setdefault("file", sys.stderr)
+    print(*args, **kwargs)
+
+
 def main(_, *args):
     args = args or get_defaults()
     directories = list(map(Path, args))
     replacements = list(Replacement.iter(directories))
 
     replacement_count = 0
+    line_count = 0
     for line in sys.stdin:
         for r in replacements:
             line, count = r.replace_count(line)
             replacement_count += count
         sys.stdout.write(line)
+        line_count += 1
 
-    sys.stderr.write(f"replaced {replacement_count} matches")
+    log(f"replaced {replacement_count} matches over {line_count} lines")
 
 
 if __name__ == "__main__":

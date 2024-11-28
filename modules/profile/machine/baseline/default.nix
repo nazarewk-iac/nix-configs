@@ -348,12 +348,9 @@ in {
             wl-clipboard
             libnotify
           ];
-          # no clue how to redirect properly without file in the middle
           text = ''
-            tempfile="$(mktemp /tmp/kdn-net-anonymize-clipboard.XXXXXX)"
-            trap 'rm -rf "$tempfile" || :' EXIT
-            wl-paste | kdn-anonymize 2>"$tempfile" | wl-copy
-            notify-send --expire-time=3000 "kdn-net-anonymize-clipboard" "$(cat "$tempfile")"
+            # see https://github.com/bugaevc/wl-clipboard/issues/245
+            notify-send --expire-time=3000 "kdn-anonymize-clipboard" "$( { wl-paste | kdn-anonymize | wl-copy 2>/dev/null ; } 2>&1 )"
           '';
         };
       in {
