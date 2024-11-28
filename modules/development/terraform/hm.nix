@@ -70,6 +70,7 @@ in {
 
     home.packages = with pkgs; [
       opentofu
+      terraform
       terragrunt
       terranix
       (pkgs.writeShellApplication {
