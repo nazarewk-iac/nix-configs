@@ -15,9 +15,14 @@ in {
     environment.systemPackages = with pkgs; ([
         bintools
         file
-        inotify-tools
         ncdu
         tree
+      ]
+      ++ [
+        inotify-info
+        inotify-tools
+        fswatch # cross-platform equivalent of inotify-tools ?
+        entr # run commands on changes https://eradman.com/entrproject/
       ]
       ++ [
         # formatting etc.
