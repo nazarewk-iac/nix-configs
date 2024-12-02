@@ -123,13 +123,13 @@ in {
       programs.file-roller.enable = true;
       programs.file-roller.package = pkgs.nemo-fileroller;
 
-      environment.systemPackages = with pkgs.cinnamon // pkgs; [
+      environment.systemPackages = with pkgs; [
         nemo-with-extensions
         gtk3.out
         xdg-user-dirs
         desktop-file-utils
       ];
-      services.dbus.packages = with pkgs.cinnamon // pkgs; [
+      services.dbus.packages = with pkgs; [
         nemo-with-extensions
       ];
       fonts.packages = with pkgs; [
