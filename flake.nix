@@ -118,7 +118,10 @@
         inherit lib;
 
         nixos-anywhere = inputs.nixos-anywhere.packages."${final.stdenv.system}".default;
-        nix-patcher = inputs.nix-patcher.packages."${final.stdenv.system}".nix-patcher;
+        nix-patcher = final.callPackage "${inputs.nix-patcher}/patcher.nix" {
+          # see https://github.com/katrinafyi/nix-patcher/issues/4
+          nix = final.nixVersions.nix_2_18;
+        };
         wezterm = inputs.wezterm.packages."${final.stdenv.system}".default;
       })
     ];
