@@ -24,15 +24,21 @@ in {
     }
     {
       fonts.fontDir.enable = true;
-      fonts.packages = with pkgs; [
-        cantarell-fonts
-        font-awesome
-        nerdfonts
-        noto-fonts
-        noto-fonts-emoji
-        noto-fonts-emoji-blob-bin
-        noto-fonts-extra
-      ];
+      fonts.packages = with pkgs;
+        [
+          cantarell-fonts
+          font-awesome
+
+          noto-fonts
+          noto-fonts-emoji
+          noto-fonts-emoji-blob-bin
+          noto-fonts-extra
+        ]
+        ++ lib.pipe pkgs.nerd-fonts [
+          builtins.attrValues
+          # see https://github.com/NixOS/nixpkgs/blob/bee4c52a36af4d88c883bb68e494aa26cbe52d58/pkgs/data/fonts/nerd-fonts/default.nix#L89-L89
+          (builtins.filter (e: e ? caskName))
+        ];
 
       gtk.iconCache.enable = true;
       home-manager.sharedModules = [
