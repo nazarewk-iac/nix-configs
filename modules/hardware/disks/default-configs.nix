@@ -93,9 +93,14 @@ in {
         in {
           boot.initrd.systemd.initrdBin = scriptDeps;
           boot.initrd.systemd.services."kdn-disks-disposable-content" = {
+            # TODO: switch it to some kind of snapshot -> delete dance
             description = ''Logs and cleans up content of `environment.persistence."disposable"`'';
             after = ["sysroot-nix-persist-disposable.mount"];
-            wantedBy = ["sysroot-nix-persist-disposable.mount"];
+            wantedBy = [
+              "sysroot-nix-persist-disposable.mount"
+              "systemd-journal-flush.service"
+            ];
+            before = ["systemd-journal-flush.service"];
             onFailure = ["rescue.target"];
 
             serviceConfig = {
@@ -103,8 +108,7 @@ in {
               RemainAfterExit = true;
             };
             unitConfig.DefaultDependencies = false;
-            script = let
-            in ''
+            script = ''
               set -x
 
               export PATH="${lib.makeBinPath scriptDeps}:$PATH"
@@ -117,8 +121,7 @@ in {
                 exit
               fi
 
-              tree -aqfxJ -ugsD --timefmt "%Y-%m-%dT%H:%M:%S%z" "$mnt"
-              rm --recursive --force --verbose "$mnt"/{.*,*} || :
+              rm --recursive --force -- "$mnt"/{.*,*} || :
             '';
           };
         }
