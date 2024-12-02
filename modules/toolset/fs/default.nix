@@ -19,10 +19,12 @@ in {
         tree
       ]
       ++ [
+        entr # run commands on changes https://eradman.com/entrproject/
+        fswatch # cross-platform equivalent of inotify-tools ?
         inotify-info
         inotify-tools
-        fswatch # cross-platform equivalent of inotify-tools ?
-        entr # run commands on changes https://eradman.com/entrproject/
+        watchexec
+        watchman
       ]
       ++ [
         # formatting etc.
