@@ -60,6 +60,16 @@ in {
           };
         })
       ];
+      home-manager.sharedModules = [
+        {
+          wayland.windowManager.sway.config.keybindings = with config.kdn.desktop.sway.keys;
+            builtins.mapAttrs (n: lib.mkDefault) {
+              "${super}+O" = "exec ${pkgs.writeScript "xdg-open-clipboard" ''
+                ${lib.getExe cfg.xdg-utils.package} "$(${lib.getExe' pkgs.wl-clipboard "wl-paste"} --no-newline)"
+              ''}";
+            };
+        }
+      ];
     })
   ]);
 }
