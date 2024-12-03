@@ -1,4 +1,4 @@
-A router setup used by `etra`.
+A router setup used by [`etra`](../../profile/host/etra/default.nix).
 
 # Scope
 
