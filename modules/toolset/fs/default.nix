@@ -11,6 +11,7 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
+    kdn.toolset.tracing.enable = lib.mkDefault true;
     kdn.toolset.fs.encryption.enable = lib.mkDefault true;
     environment.systemPackages = with pkgs; ([
         bintools
