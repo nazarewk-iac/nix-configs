@@ -112,7 +112,7 @@
     flake.overlays.default = inputs.nixpkgs.lib.composeManyExtensions [
       inputs.ulauncher.overlays.default
       inputs.helix-editor.overlays.default
-      inputs.nur.overlay
+      inputs.nur.overlays.default
       self.overlays.packages
       (final: prev: {
         inherit lib;
@@ -120,7 +120,7 @@
         nixos-anywhere = inputs.nixos-anywhere.packages."${final.stdenv.system}".default;
         nix-patcher = final.callPackage "${inputs.nix-patcher}/patcher.nix" {
           # see https://github.com/katrinafyi/nix-patcher/issues/4
-          nix = final.nixVersions.nix_2_18;
+          nix = final.nixVersions.latest;
         };
         wezterm = inputs.wezterm.packages."${final.stdenv.system}".default;
       })

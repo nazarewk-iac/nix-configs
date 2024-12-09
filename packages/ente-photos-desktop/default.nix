@@ -6,7 +6,7 @@
   pkgs,
 }: let
   pname = "ente-photos-desktop";
-  version = "1.7.6";
+  version = "1.7.7";
   shortName = "ente";
   applicationName = "Ente";
   name = "${shortName}-${version}";
@@ -16,17 +16,15 @@
   mirror = "https://github.com/ente-io/photos-desktop/releases/download";
   src = fetchurl {
     url = "${mirror}/v${version}/${name}-x86_64.AppImage";
-    hash = "sha256-Em2LNVGFNfC/9fklMf2AXhFxXnq06JK7T6J53dTSDfI=";
+    hash = "sha256-PGESx31SA7rDC0WmDAyg+2FAlqAZc0/8zXzTwzXKq7Y=";
   };
 
-  appimageContents = appimageTools.extractType2 {inherit name src;};
+  appimageContents = appimageTools.extractType2 {inherit pname version src;};
 in
   appimageTools.wrapType2 {
-    inherit name src;
+    inherit pname version src;
 
     extraInstallCommands = ''
-      mv $out/bin/${name} $out/bin/${pname}
-
       install -m 444 -D ${appimageContents}/${shortName}.desktop $out/share/applications/${pname}.desktop
       substituteInPlace $out/share/applications/${pname}.desktop \
         --replace 'Exec=AppRun' "Exec=$out/bin/${pname}"

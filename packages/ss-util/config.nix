@@ -7,7 +7,7 @@
   poetryName = pyproject.tool.poetry.name;
 
   attrs.common = {
-    python = pkgs."python311";
+    python = pkgs."python312";
     projectDir = ./.;
     pyproject = ./pyproject.toml;
     poetrylock = ./poetry.lock;
@@ -46,7 +46,11 @@
   };
   dev = wrap {
     name = "dev-${poetryName}";
-    paths = [poetryEnv] ++ attrs.app.buildInputs;
+    paths =
+      [
+        (lib.hiPrio poetryEnv)
+      ]
+      ++ attrs.app.buildInputs;
   };
 
   wrap = {
@@ -91,7 +95,8 @@
       };
     in "${drv}/bin/${name}-wrapper";
   in
-    pkgs.symlinkJoin {
+    pkgs.buildEnv {
+      meta.mainProgram = poetryName;
       name = "${name}-newsymlinks";
       paths = paths;
       postBuild = ''

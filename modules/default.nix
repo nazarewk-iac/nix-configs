@@ -17,7 +17,7 @@
       inputs.impermanence.nixosModules.impermanence
       inputs.lanzaboote.nixosModules.lanzaboote
       inputs.lanzaboote.nixosModules.uki
-      inputs.nur.nixosModules.nur
+      inputs.nur.modules.nixos.default
       inputs.sops-nix.nixosModules.sops
     ]
     ++ lib.trivial.pipe ./. [

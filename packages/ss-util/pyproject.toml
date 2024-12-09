@@ -8,20 +8,20 @@ readme = "README.md"
 packages = [{include = "ss_util"}]
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.12"
 
 
 click = "^8.1.7"
 
 
 # Logging
-structlog = "^23.1.0" # logging library at https://www.structlog.org/en/stable/getting-started.html
-rich = "^13.5.3"  # UX improvement for structlog
+structlog = "^24.4.0" # logging library at https://www.structlog.org/en/stable/getting-started.html
+rich = "^13.9.4"  # UX improvement for structlog
 
 # CLI
 secretstorage = "^3.3.3"
-# should be 41.0.4, but it's not in poetry2nix yet
-cryptography = "41.0.1"
+cryptography = "^43.0.3"
+
 [tool.poetry.scripts]
 "ss-util" = 'ss_util.cli:main'
 
