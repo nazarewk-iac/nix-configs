@@ -78,6 +78,8 @@ in {
     )
     {
       kdn.networking.router.enable = true;
+      # seems to spam logs too much
+      networking.firewall.logRefusedConnections = false;
     }
     {
       kdn.networking.router.nets.wan = {
