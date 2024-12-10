@@ -298,7 +298,6 @@ in {
         zbar # QR/BAR CODE READER: `zbarimg /path/to.img
         imagemagick
 
-        logseq
         kdn.ss-util
         drawio
         plantuml
@@ -316,6 +315,7 @@ in {
       kdn.programs.chromium.enable = true;
       kdn.programs.element.enable = true;
       kdn.programs.ente-photos.enable = true;
+      kdn.programs.logseq.enable = true;
       kdn.programs.nextcloud-client.enable = true;
       kdn.programs.rambox.enable = true;
       kdn.programs.signal.enable = true;
