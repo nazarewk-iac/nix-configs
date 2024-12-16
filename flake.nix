@@ -175,8 +175,6 @@
                 home-manager.sharedModules = [{home.stateVersion = "24.11";}];
                 kdn.security.secrets.allow = false;
                 kdn.profile.machine.baseline.enable = true;
-                kdn.networking.netbird.priv.type = "ephemeral";
-                kdn.networking.tailscale.auth_key = "nixos-ephemeral";
 
                 environment.systemPackages = with pkgs; [
                 ];
