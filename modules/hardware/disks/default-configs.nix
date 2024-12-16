@@ -85,58 +85,6 @@ in {
           };
         };
       }
-      (
-        # clean up "disposable" mountpoint every boot
-        let
-          dCfg = config.environment.persistence."disposable";
-          scriptDeps = with pkgs; [coreutils tree];
-        in {
-          boot.initrd.systemd.initrdBin = scriptDeps;
-          boot.initrd.systemd.services."kdn-disks-disposable-content" = {
-            # TODO: switch it to some kind of snapshot -> delete dance
-            description = ''Logs and cleans up content of `environment.persistence."disposable"`'';
-            after = ["sysroot-nix-persist-disposable.mount"];
-            wantedBy = [
-              "sysroot-nix-persist-disposable.mount"
-              "systemd-journal-flush.service"
-            ];
-            before = ["systemd-journal-flush.service"];
-            onFailure = ["rescue.target"];
-
-            serviceConfig = {
-              Type = "oneshot";
-              RemainAfterExit = true;
-            };
-            unitConfig.DefaultDependencies = false;
-            script = ''
-              set -x
-
-              export PATH="${lib.makeBinPath scriptDeps}:$PATH"
-              prefix=/sysroot
-
-              mnt="$prefix${dCfg.persistentStoragePath}"
-
-              if ! test -e "$mnt" ; then
-                echo "$mnt doesn't exist, skipping..."
-                exit
-              fi
-
-              rm --recursive --force -- "$mnt"/{.*,*} || :
-            '';
-          };
-        }
-      )
-      (lib.mkIf cfg.disposable.homes {
-        environment.persistence."disposable".users = builtins.mapAttrs (_: _: {directories = [""];}) config.home-manager.users;
-      })
-      {
-        environment.persistence."disposable".directories = [
-          {
-            directory = "/var/tmp";
-            mode = "0777";
-          }
-        ];
-      }
       {
         environment.persistence."sys/data" = {
           directories = [

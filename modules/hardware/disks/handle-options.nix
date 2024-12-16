@@ -286,14 +286,17 @@ in {
         ];
         disko.devices.zpool = lib.pipe cfg.impermanence [
           (builtins.mapAttrs (name: imp: {
-            "${imp.zpool.name}".datasets."${imp.zfsPath}" = {
-              type = "zfs_fs";
-              inherit (imp) mountpoint;
-              options = {
+            "${imp.zpool.name}".datasets."${imp.zfsPath}" = dumbMerge [
+              {
+                type = "zfs_fs";
                 inherit (imp) mountpoint;
-                "com.sun:auto-snapshot" = builtins.toJSON imp.snapshots;
-              };
-            };
+                options = {
+                  inherit (imp) mountpoint;
+                  "com.sun:auto-snapshot" = builtins.toJSON imp.snapshots;
+                };
+              }
+              imp.disko
+            ];
           }))
           builtins.attrValues
           dumbMerge
@@ -337,5 +340,53 @@ in {
         ];
       }
     ]))
+    (let
+      dImp = cfg.impermanence."disposable";
+      snapshotName = "${dImp.zpool.name}/${dImp.zfsPath}@empty";
+      scriptDeps = [config.boot.zfs.package];
+    in {
+      /*
+      Migrating on a live system:
+        zfs rename -u brys-main/brys/impermanence/disposable{,.old}
+        zfs set -u mountpoint=/nix/persist/disposable.old brys-main/brys/impermanence/disposable.old
+        zfs create -u brys-main/brys/impermanence/disposable -o mountpoint=/nix/persist/disposable
+        # nixos-rebuild boot
+        # reboot
+        zfs destroy brys-main/brys/impermanence/disposable.old
+      */
+      kdn.hardware.disks.impermanence."disposable".zfsName = cfg.disposable.zfsName;
+      kdn.hardware.disks.impermanence."disposable".disko.postCreateHook = ''
+        zfs snapshot "${snapshotName}"
+      '';
+      environment.persistence."disposable".users = lib.mkIf cfg.disposable.homes (
+        builtins.mapAttrs
+        (_: _: {directories = [""];})
+        config.home-manager.users
+      );
+      environment.persistence."disposable".directories = [
+        {
+          directory = "/var/tmp";
+          mode = "0777";
+        }
+      ];
+      boot.initrd.systemd.initrdBin = scriptDeps;
+      boot.initrd.systemd.services."kdn-disks-disposable-rollback" = {
+        description = ''rollbacks `disposable` filesystem to empty state'';
+        after = ["zfs-import-${dImp.zpool.name}.service"];
+        wantedBy = [
+          "sysroot-nix-persist-disposable.mount"
+          "zfs-import-${dImp.zpool.name}.service"
+        ];
+        before = ["sysroot-nix-persist-disposable.mount"];
+        onFailure = ["rescue.target"];
+
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+        };
+        unitConfig.DefaultDependencies = false;
+        script = ''zfs rollback -r "${snapshotName}"'';
+      };
+    })
   ];
 }

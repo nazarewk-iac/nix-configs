@@ -101,6 +101,11 @@ in {
       '';
     };
 
+    disposable.zfsName = lib.mkOption {
+      type = with lib.types; str;
+      default = "disposable";
+    };
+
     luks.header.size = lib.mkOption {
       type = lib.types.ints.u8;
       # https://wiki.archlinux.org/title/Dm-crypt/Device_encryption#Encrypt_an_existing_unencrypted_file_system
@@ -224,13 +229,17 @@ in {
           type = with lib.types; path;
           default = "/nix/persist";
         };
+        options.zfsName = lib.mkOption {
+          type = with lib.types; str;
+          default = impArgs.name;
+        };
         options.zfsPrefix = lib.mkOption {
           type = with lib.types; str;
           default = "${hostname}/impermanence";
         };
         options.zfsPath = lib.mkOption {
           type = with lib.types; str;
-          default = "${kdnImpCfg.zfsPrefix}/${impArgs.name}";
+          default = "${kdnImpCfg.zfsPrefix}/${kdnImpCfg.zfsName}";
         };
         options.zpool.name = lib.mkOption {
           type = with lib.types; nullOr str;
@@ -238,6 +247,9 @@ in {
         };
         options.snapshots = lib.mkOption {
           type = with lib.types; bool;
+        };
+        options.disko = lib.mkOption {
+          default = {};
         };
       }));
     };
