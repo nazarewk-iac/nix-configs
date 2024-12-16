@@ -19,7 +19,7 @@ in {
     {
       # Ethernet
       services.udev.extraRules = ''
-        ACTION=="add", SUBSYSTEM=="net", ENV{ID_MODEL}=="licheervnano", ENV{ID_MODEL_ID}=="1009", ENV{ID_NET_DRIVER}=="rndis_host", NAME="usb-nanokvm"
+        ACTION=="add", SUBSYSTEM=="net", ENV{ID_MODEL}=="licheervnano", ENV{ID_MODEL_ID}=="1009", ENV{ID_NET_DRIVER}=="rndis_host", ENV{NM_UNMANAGED}="1", NAME="usb-nanokvm"
       '';
       /*
       UDEV  [9346.588485] add      /devices/pci0000:00/0000:00:08.1/0000:10:00.3/usb5/5-3/5-3:1.0/net/enp16s0f3u3 (net)
