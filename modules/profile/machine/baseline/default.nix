@@ -182,7 +182,7 @@ in {
       services.devmon.enable = false; # disable auto-mounting service devmon, it interferes with disko
       # TODO: download and/or symlink sources that the system got built from?
     }
-    {
+    (lib.mkIf config.kdn.security.secrets.allowed {
       kdn.networking.dynamic-hosts.enable = true;
       sops.templates = lib.pipe config.kdn.security.secrets.placeholders.networking.hosts [
         (lib.attrsets.mapAttrsToList (name: text: let
@@ -196,7 +196,7 @@ in {
         }))
         lib.mkMerge
       ];
-    }
+    })
     {
       systemd.tmpfiles.rules = lib.trivial.pipe config.users.users [
         lib.attrsets.attrValues

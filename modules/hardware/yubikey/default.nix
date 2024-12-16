@@ -71,7 +71,7 @@ in {
         origin = cfg.appId;
       };
     }
-    (lib.mkIf config.kdn.security.secrets.enable {
+    (lib.mkIf config.kdn.security.secrets.allowed {
       # SOPS+age config
       services.pcscd.enable = true;
       environment.systemPackages = with pkgs; [age-plugin-yubikey];

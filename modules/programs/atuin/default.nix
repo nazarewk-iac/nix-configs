@@ -118,7 +118,7 @@ in {
         serviceConfig.ExecStart = "${lib.getExe pkgs.atuin} daemon";
       };
     })
-    (lib.mkIf config.kdn.security.secrets.enable {
+    (lib.mkIf config.kdn.security.secrets.allowed {
       systemd.services = lib.pipe cfg.autologinUsers [
         (builtins.map (username: {
           name = "kdn-atuin-login-${username}";

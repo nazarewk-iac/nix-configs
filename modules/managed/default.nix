@@ -116,7 +116,7 @@ in {
         ${delCmds}
       '';
     }
-    (lib.mkIf config.kdn.security.secrets.enable {
+    (lib.mkIf config.kdn.security.secrets.allowed {
       kdn.managed.currentFiles = lib.pipe config.sops.templates [
         builtins.attrValues
         (builtins.map (tpl: tpl.path))
