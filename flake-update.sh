@@ -5,5 +5,6 @@ cd "${BASH_SOURCE[0]%/*}"
 info() { echo "[$(date -Iseconds)]" "$@" >&2; }
 info STARTING
 trap 'info FINISHED' EXIT
+test -z "${DEBUG:-}" || set -x
 
 nix flake update "$@"
