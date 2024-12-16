@@ -40,6 +40,7 @@ in {
           ];
         };
         Service.ExecStart = "${lib.getExe config.programs.atuin.package} daemon";
+        Service.Slice = "background.slice";
         Service.Environment = [
           "ATUIN_LOG=info"
         ];
