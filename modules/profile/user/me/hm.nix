@@ -40,7 +40,7 @@ in {
       xdg.configFile."Yubico/u2f_keys".text = let
         stripComments = lib.filter (line: (builtins.match "\w*" line) != [] && (builtins.match "\w*#.*" line) != []);
         groupByUsername = input: builtins.mapAttrs (name: map (lib.removePrefix "${name}:")) (lib.groupBy (e: lib.head (lib.splitString ":" e)) input);
-        toOutputLines = lib.mapAttrsToList (name: values: (builtins.concatStringsSep ":" (lib.concatLists [[name] values])));
+        toOutputLines = lib.attrsets.mapAttrsToList (name: values: (builtins.concatStringsSep ":" (lib.concatLists [[name] values])));
 
         foldParts = path:
           lib.trivial.pipe path [

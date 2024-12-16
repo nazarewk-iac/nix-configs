@@ -28,7 +28,7 @@ in {
       interactiveShellInit = lib.trivial.pipe ./. [
         builtins.readDir
         (lib.filterAttrs (path: type: type != "directory" && (lib.hasPrefix ".zshrc" path)))
-        (lib.mapAttrsToList (path: t: ''
+        (lib.attrsets.mapAttrsToList (path: t: ''
           # START ${path}
           ${builtins.readFile (./. + "/${path}")}
           # END ${path}

@@ -67,7 +67,7 @@
             envToBash = name: value: "export ${name}=${lib.escapeShellArg (toString value)}";
           in
             lib.pipe env [
-              (lib.mapAttrsToList envToBash)
+              (lib.attrsets.mapAttrsToList envToBash)
               (lib.concatStringsSep "\n")
             ];
         in ''

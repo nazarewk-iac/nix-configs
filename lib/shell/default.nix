@@ -5,7 +5,7 @@
   escapeShellDefault = n: v: "\"\${${n}:-${escapeShellDefaultValue v}}\"";
 
   escapeShellDefaultAssignment = n: v: "${n}=${escapeShellDefault n v}";
-  makeShellDefaultAssignments = lib.mapAttrsToList escapeShellDefaultAssignment;
+  makeShellDefaultAssignments = lib.attrsets.mapAttrsToList escapeShellDefaultAssignment;
 
   writeShellScript = pkgs: path: {
     runtimeInputs ? [],

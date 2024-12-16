@@ -116,7 +116,7 @@ in {
     environment = lib.mkOption {
       type = with lib.types; attrsOf str;
       default = {};
-      apply = input: lib.mapAttrsToList lib.toShellVar input;
+      apply = input: lib.attrsets.mapAttrsToList lib.toShellVar input;
     };
   };
 
@@ -303,11 +303,11 @@ in {
       };
 
       environment.etc."sway/config.d/00-${config.kdn.desktop.sway.prefix}-init.conf".text = lib.trivial.pipe cfg.initScripts [
-        (lib.mapAttrsToList (
+        (lib.attrsets.mapAttrsToList (
           execName: pieces: let
             scriptName = "${config.kdn.desktop.sway.prefix}-init-${execName}";
             scriptContent = lib.trivial.pipe pieces [
-              (lib.mapAttrsToList (
+              (lib.attrsets.mapAttrsToList (
                 pieceName: piece: let
                   pieceScriptName = "${scriptName}-${pieceName}";
                   pieceScript = pkgs.writeScriptBin pieceScriptName piece;
@@ -432,6 +432,7 @@ in {
         unitConfig.PartOf = [config.kdn.desktop.sway.systemd.envs.target];
         unitConfig.StopPropagatedFrom = [config.kdn.desktop.sway.systemd.envs.target];
         unitConfig.After = [config.kdn.desktop.sway.systemd.envs.target];
+        serviceConfig.Slice = "background.slice";
       };
     })
   ]);
