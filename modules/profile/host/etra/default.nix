@@ -15,14 +15,14 @@
     network = "fd12:ed4e:366d::";
     netmask = "48";
     lan = {
-      network = "fd12:ed4e:366d:8::";
+      network = "fd12:ed4e:366d:1c07::";
       netmask = "64";
-      address.gateway = "fd12:ed4e:366d:8::1";
+      address.gateway = "fd12:ed4e:366d:1c07:cdda:c7b8:2a69:4d47";
     };
     pic = {
-      network = "fd12:ed4e:366d:9::";
+      network = "fd12:ed4e:366d:eb17::";
       netmask = "64";
-      address.gateway = "fd12:ed4e:366d:9::1";
+      address.gateway = "fd12:ed4e:366d:eb17:b2c4:dde2:269a:6dd9";
     };
   };
   net.ipv4.p2p.drek-etra = {
@@ -35,6 +35,21 @@
   ll.etra.br-etra = "fe80::b47b:911a:2d95:d12f";
   vlan.pic.name = "pic";
   vlan.pic.id = 1859;
+
+  hosts.pic.pwet.macs.enp2s0 = "A8:B8:E0:04:10:B5";
+  hosts.pic.pwet.macs.enp3s0 = "A8:B8:E0:04:10:B6";
+  hosts.pic.pwet.macs.enp4s0 = "A8:B8:E0:04:10:B7";
+  hosts.pic.pwet.macs.enp5s0 = "A8:B8:E0:04:10:B8";
+
+  hosts.pic.turo.macs.enp2s0 = "A8:B8:E0:04:13:0D";
+  hosts.pic.turo.macs.enp3s0 = "A8:B8:E0:04:13:0E";
+  hosts.pic.turo.macs.enp4s0 = "A8:B8:E0:04:13:0F";
+  hosts.pic.turo.macs.enp5s0 = "A8:B8:E0:04:13:10";
+
+  hosts.pic.yost.macs.enp2s0 = "A8:B8:E0:04:12:F1";
+  hosts.pic.yost.macs.enp3s0 = "A8:B8:E0:04:12:F2";
+  hosts.pic.yost.macs.enp4s0 = "A8:B8:E0:04:12:F3";
+  hosts.pic.yost.macs.enp5s0 = "A8:B8:E0:04:12:F4";
 in {
   options.kdn.profile.host.etra = {
     enable = lib.mkEnableOption "etra host profile";
@@ -163,7 +178,9 @@ in {
           hosts.cafal.ip = "192.168.73.2";
           hosts.cafal.ident.hw-address = "00:23:79:00:31:03";
           hosts.feren.ip = "192.168.73.3";
+          hosts.feren.ident.hw-address = "00:23:79:00:23:11";
           hosts.moak.ip = "192.168.73.4";
+          hosts.moak.ident.hw-address = "00:23:79:00:31:2F";
         };
         addressing.ipv6-ula = with ula.lan; {
           subnet-id = 300310722;
@@ -199,18 +216,35 @@ in {
           pools.default.start = "10.92.0.32";
           pools.default.end = "10.92.0.254";
           hosts.etra.ip = "10.92.0.1";
-          hosts.cafal.ip = "10.92.0.2";
         };
         addressing.ipv6-local = with ula.pic; {
           subnet-id = 22449285;
           inherit network netmask;
           hosts.etra.ip = address.gateway;
+          hosts.k8s.ip = "fd12:ed4e:366d:eb17:ad77:71d3:4170:ed6d";
         };
         addressing.ipv6-public = with netconf.ipv6.network.etra.pic; {
           subnet-id = 197717597;
           inherit network netmask;
           hosts.etra.ip = address.gateway;
         };
+      };
+    }
+    {
+      kdn.networking.router.nets.pic = let
+        entries = lib.pipe hosts.pic [
+          (builtins.mapAttrs (name: host: {
+            idents =
+              lib.attrsets.mapAttrsToList (iface: mac: {
+                hw-address = mac;
+              })
+              host.macs;
+          }))
+        ];
+      in {
+        addressing.ipv4.hosts = entries;
+        addressing.ipv6-local.hosts = entries;
+        addressing.ipv6-public.hosts = entries;
       };
     }
     {
@@ -227,11 +261,9 @@ in {
       ];
 
       networking.firewall = {
-        # syncthing ranges
         allowedTCPPorts = [53 853];
         allowedUDPPorts = [53 853];
       };
-      #kdn.networking.router.knot.localAddress = "192.168.40.1";
       kdn.networking.router.domains."int.kdn.im." = {};
       kdn.networking.router.dhcp-ddns.suffix = "net.int.kdn.im.";
       services.kresd.instances = 2;
@@ -242,6 +274,16 @@ in {
     }
     {
       kdn.networking.router.debug = false;
+    }
+    {
+      /*
+         TODO: fix wireguard setup:
+      ┃        error:
+      ┃        Failed assertions:
+      ┃        - networking.wireguard.interfaces.wg0.generatePrivateKeyFile cannot be used with networkd.
+      ┃        - networking.wireguard.interfaces.wg0.peers[].dynamicEndpointRefreshSeconds cannot be used with networkd. Use networking.wireguard.interfaces.wg0.dynamicEndpointRefreshSeconds instead.
+      */
+      kdn.networking.wireguard.enable = false;
     }
   ]);
 }

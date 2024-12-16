@@ -274,7 +274,9 @@
               }));
             };
             hosts = lib.mkOption {
-              type = lib.types.attrsOf (lib.types.submodule ({name, ...} @ hostArgs: {
+              type = lib.types.attrsOf (lib.types.submodule ({name, ...} @ hostArgs: let
+                hostCfg = hostArgs.config;
+              in {
                 options = {
                   hostname = lib.mkOption {
                     type = with lib.types; str;
@@ -287,6 +289,16 @@
                   ident = lib.mkOption {
                     type = with lib.types; attrsOf str;
                     default = {};
+                    apply = val:
+                      lib.attrsets.optionalAttrs (val != {}) (val
+                        // {
+                          ip-address = hostCfg.ip;
+                        });
+                  };
+                  idents = lib.mkOption {
+                    type = with lib.types; listOf (attrsOf str);
+                    default = [];
+                    apply = value: value ++ lib.lists.optional (hostCfg.ident != {}) hostCfg.ident;
                   };
                 };
               }));
@@ -812,16 +824,16 @@ in {
                   }
                 ];
                 reservations = lib.pipe addrCfg.hosts [
-                  builtins.attrValues
-                  (builtins.filter (host: host.ident != {}))
-                  (builtins.map (host:
-                    host.ident
-                    // {
-                      hostname = host.hostname;
-                    }
-                    // lib.attrsets.optionalAttrs (host.ip != null) {
-                      ip-address = host.ip;
-                    }))
+                  (lib.attrsets.mapAttrsToList (
+                    _: host:
+                      builtins.map (ident:
+                        ident
+                        // {
+                          hostname = host.hostname;
+                        })
+                      host.idents
+                  ))
+                  lib.lists.flatten
                 ];
                 ddns-send-updates = true;
                 ddns-qualifying-suffix = netCfg.domain;

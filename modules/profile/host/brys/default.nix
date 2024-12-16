@@ -90,5 +90,19 @@ in {
     {
       kdn.hardware.nanokvm.enable = true;
     }
+    {
+      networking.networkmanager.ensureProfiles.profiles.pic = {
+        connection.id = "pic";
+        connection.type = "vlan";
+        connection.interface-name = "pic";
+        connection.autoconnect = true;
+        vlan.id = 1859;
+        vlan.flags = 1;
+        vlan.parent = "enp6s0";
+        ipv4.method = "auto";
+        ipv6.method = "auto";
+        ipv6.addr-gen-mode = "stable-privacy";
+      };
+    }
   ]);
 }
