@@ -147,12 +147,12 @@ in {
       '';
       services.avahi.enable = false; # conficts with `resolved` `MulticastDNS`/`LLMNR`
 
-      kdn.development.shell.enable = true;
-      kdn.filesystems.zfs.enable = true;
-      kdn.hardware.usbip.enable = true;
-      kdn.hardware.yubikey.enable = true;
-      kdn.networking.wireguard.enable = true;
-      kdn.programs.direnv.enable = true;
+      kdn.development.shell.enable = lib.mkDefault true;
+      kdn.filesystems.zfs.enable = lib.mkDefault true;
+      kdn.hardware.usbip.enable = lib.mkDefault true;
+      kdn.hardware.yubikey.enable = lib.mkDefault true;
+      kdn.networking.wireguard.enable = lib.mkDefault true;
+      kdn.programs.direnv.enable = lib.mkDefault true;
 
       home-manager.users.root = {kdn.profile.user.kdn.osConfig = config.users.users.root;};
 
