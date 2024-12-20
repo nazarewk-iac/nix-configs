@@ -1,7 +1,7 @@
 {
   inputs.nixpkgs-upstream.url = "github:NixOS/nixpkgs/nixos-unstable";
   inputs.nixpkgs.url = "github:nazarewk/nixpkgs/nixos-unstable";
-  inputs.nixpkgs-patch-2.url = "https://github.com/NixOS/nixpkgs/compare/nixos-unstable..nazarewk:netbird-improvements.patch";
+  inputs.nixpkgs-patch-2.url = "https://github.com/NixOS/nixpkgs/compare/nixos-unstable..nazarewk:netbird-improvements.patch?full_index=1";
   inputs.nixpkgs-patch-2.flake = false;
 
   inputs.nixpkgs-lib.follows = "nixpkgs";
@@ -153,9 +153,10 @@
         program = lib.getExe (pkgs.writeShellApplication {
           name = "nixpkgs-update";
           runtimeInputs = with pkgs; [
+            git
+            gnugrep
             nix-patcher
             pass
-            git
           ];
           text = builtins.readFile ./nixpkgs-update.sh;
         });

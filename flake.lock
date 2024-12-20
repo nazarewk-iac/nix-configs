@@ -690,11 +690,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1731683511,
-        "narHash": "sha256-oEhsqkljg4PNI1FKlf0g7nsHDfxUSYFXkABc+94oOzQ=",
+        "lastModified": 1734609456,
+        "narHash": "sha256-ayU5hkxMGWsYQ7lQ5NJF5s+LvKfOcd6/39cH/5vUnfI=",
         "owner": "nazarewk",
         "repo": "nixpkgs",
-        "rev": "c654e0e1dbce0150365f8445fb79f1b76aa5c93e",
+        "rev": "4f2615f11773ba285ae97b1963234899c3ef4de0",
         "type": "github"
       },
       "original": {
@@ -707,13 +707,13 @@
     "nixpkgs-patch-2": {
       "flake": false,
       "locked": {
-        "narHash": "sha256-wfxDXfC4BmWJbO3NXxRRUqdhUIdVe8ey/uajpiPwU5w=",
+        "narHash": "sha256-BoKjDu8Qq6dLgmsJaI0AQwgl+CW+AB/HuU+sZntATmk=",
         "type": "file",
-        "url": "https://github.com/NixOS/nixpkgs/compare/nixos-unstable..nazarewk:netbird-improvements.patch"
+        "url": "https://github.com/NixOS/nixpkgs/compare/nixos-unstable..nazarewk:netbird-improvements.patch?full_index=1"
       },
       "original": {
         "type": "file",
-        "url": "https://github.com/NixOS/nixpkgs/compare/nixos-unstable..nazarewk:netbird-improvements.patch"
+        "url": "https://github.com/NixOS/nixpkgs/compare/nixos-unstable..nazarewk:netbird-improvements.patch?full_index=1"
       }
     },
     "nixpkgs-upstream": {
