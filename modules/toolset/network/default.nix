@@ -11,6 +11,8 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
+    programs.wireshark.enable = true;
+
     environment.systemPackages = with pkgs; [
       (lib.meta.setPrio 10 nettools)
       (lib.meta.setPrio 20 inetutils) # telnet etc.

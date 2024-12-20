@@ -290,7 +290,7 @@
                     type = with lib.types; attrsOf str;
                     default = {};
                     apply = val:
-                      lib.attrsets.optionalAttrs (val != {}) (val
+                      lib.attrsets.optionalAttrs (val != {} && hostCfg.ip != null) (val
                         // {
                           ip-address = hostCfg.ip;
                         });
@@ -377,8 +377,7 @@
       (lib.mkIf (netCfg.type == "lan") (lib.mkMerge [
         {
           forward.to = [netCfg.lan.uplink];
-          firewall = let
-          in {
+          firewall = {
             allowedTCPPorts =
               [
                 ports.mdns
@@ -408,14 +407,28 @@
       ]))
     ];
   });
+
+  mkDebugOption = args:
+    lib.mkOption {
+      type = with lib.types; bool;
+      default = args.default or cfg.debug.all;
+    };
 in {
   options.kdn.networking.router = {
     enable = lib.mkEnableOption "systemd-networkd based router";
 
-    debug = lib.mkOption {
-      type = with lib.types; bool;
-      default = false;
-    };
+    debug.all = lib.mkEnableOption "debug everything by default";
+    debug.kresd = mkDebugOption {};
+    debug.networkd = mkDebugOption {};
+    debug.firewall = mkDebugOption {};
+    debug.firewall-refused = mkDebugOption {default = with cfg.debug; firewall;};
+    debug.firewall-icmpv6 = mkDebugOption {default = with cfg.debug; firewall;};
+    debug.dhcp = mkDebugOption {};
+    debug.dns = mkDebugOption {};
+    debug.ddns = mkDebugOption {default = with cfg.debug; dns;};
+    debug.kea-dhcp4 = mkDebugOption {default = with cfg.debug; dhcp;};
+    debug.knot = mkDebugOption {default = with cfg.debug; ddns || dns;};
+    debug.kea-dhcp-ddns = mkDebugOption {default = with cfg.debug; ddns || dhcp;};
 
     dropin.infix = lib.mkOption {
       type = with lib.types; str;
@@ -714,12 +727,17 @@ in {
         ''}
       '';
     }
-    (lib.mkIf cfg.debug {
+    (lib.mkIf cfg.debug.kresd {
       kdn.networking.router.kresd.logLevel = "debug";
+    })
+    (lib.mkIf cfg.debug.networkd {
+      systemd.services.systemd-resolved.environment.SYSTEMD_LOG_LEVEL = "debug";
+    })
+    (lib.mkIf cfg.debug.firewall-refused {
       networking.firewall.logRefusedPackets = true;
       networking.firewall.rejectPackets = true;
-      systemd.services.systemd-resolved.environment.SYSTEMD_LOG_LEVEL = "debug";
-
+    })
+    (lib.mkIf cfg.debug.firewall-icmpv6 {
       networking.nftables.tables = let
         mkTable = {
           rule,
@@ -860,7 +878,7 @@ in {
                   {
                     name = "kea-dhcp4";
                     severity =
-                      if cfg.debug
+                      if cfg.debug.kea-dhcp4
                       then "DEBUG"
                       else "INFO";
                     debuglevel = 99;
@@ -1111,6 +1129,7 @@ in {
           mod-dnstap = [
             {
               id = "debug";
+              # read with `kdig -G /run/knot/dnstap.debug.tap +qr`
               sink = "/run/knot/dnstap.debug.tap";
               log-queries = "on";
               log-responses = "on";
@@ -1120,54 +1139,72 @@ in {
           template = [
             {
               id = "default";
-              global-module = [
-                "mod-stats"
-                #"mod-dnstap/debug"
+              global-module =
+                [
+                  "mod-stats"
+                ]
+                ++ lib.optional cfg.debug.knot "mod-dnstap/debug";
+              acl = ["admin"];
+            }
+            {
+              id = "kea-updateable";
+              acl = [
+                "admin"
+                "dhcp-ddns:kea.etra"
               ];
             }
           ];
           zone =
             lib.attrsets.mapAttrsToList
             (_: domainCfg: {
-              domain = domainCfg.name;
-              template = "default";
+              domain = lib.strings.removeSuffix "." domainCfg.name;
+              template =
+                if builtins.elem domainCfg.name d2Domains
+                then "kea-updateable"
+                else "default";
               acl =
                 ["admin"]
-                ++ lib.pipe d2Domains [
-                  (builtins.filter (domain: domain == domainCfg.name))
-                  (builtins.map (domain: "dhcp-ddns:${domain}"))
-                ];
+                ++ lib.lists.optional (builtins.elem domainCfg.name d2Domains) "dhcp-ddns:kea.etra";
             })
             cfg.domains;
-          acl =
-            [
-              {
-                id = "admin";
-                key = "admin";
-                action = [
-                  "query"
-                  #"notify"
-                  #"transfer"
-                  "update"
-                ];
-              }
-            ]
-            ++ (builtins.map
-              (domain: {
-                id = "dhcp-ddns:${domain}";
-                key = keaTSIGName;
-                action = [
-                  "query"
-                  "update"
-                ];
+          acl = [
+            {
+              id = "admin";
+              key = "admin";
+              action = [
+                "query"
+                "notify"
+                "transfer"
+                "update"
+              ];
+            }
+            {
+              id = "dhcp-ddns:kea.etra";
+              key = keaTSIGName;
+              action = [
+                "query"
+                "update"
+              ];
 
-                update-owner = "name";
-                update-owner-match = "sub";
-                update-owner-name = [
-                  "${domain}."
-                ];
-              })
-              d2Domains);
+              # queries done by `kea` https://github.com/search?q=repo%3Aisc-projects%2Fkea%20%22RRType%3A%3A%22&type=code
+              # analyd
+              update-type = [
+                # A && AAAA https://github.com/isc-projects/kea/blob/3bc9a732f8288ba752e784ad10519d7e1635582f/src/bin/d2/simple_add.cc#L490
+                "A"
+                "AAAA"
+                # DHCID https://github.com/isc-projects/kea/blob/3bc9a732f8288ba752e784ad10519d7e1635582f/src/bin/d2/simple_add.cc#L498-L499
+                "DHCID"
+                # PTR for reverse DNS https://github.com/isc-projects/kea/blob/3bc9a732f8288ba752e784ad10519d7e1635582f/src/bin/d2/simple_add.cc#L537-L540
+                "PTR"
+                #"SOA" # this is just a `SOA?` query https://github.com/isc-projects/kea/blob/3bc9a732f8288ba752e784ad10519d7e1635582f/src/lib/d2srv/d2_update_message.cc#L83
+              ];
+
+              # allow access to whatever zone the ACL is attached to
+              update-owner = "zone";
+              # allow access to sub-domain updates without the zone itself
+              update-owner-match = "sub";
+            }
+          ];
         };
         environment.etc."${lib.strings.removePrefix "/etc" cfg.knot.configDir}/.keep".text = "";
         environment.persistence."sys/data".directories = [
@@ -1229,7 +1266,7 @@ in {
               {
                 name = "kea-dhcp-ddns";
                 severity =
-                  if cfg.debug
+                  if cfg.debug.kea-dhcp-ddns
                   then "DEBUG"
                   else "INFO";
                 debuglevel = 99;
@@ -1238,7 +1275,7 @@ in {
             ];
             forward-ddns.ddns-domains = lib.pipe d2Domains [
               (builtins.map (domain: {
-                name = "${lib.strings.removeSuffix "." domain}.";
+                name = domain;
                 key-name = keaTSIGName;
                 dns-servers = [
                   {
@@ -1248,9 +1285,26 @@ in {
                 ];
               }))
             ];
-            reverse-ddns.ddns-domains = [
-              # TODO: add this https://kea.readthedocs.io/en/kea-2.2.0/arm/ddns.html#adding-reverse-ddns
+            /*
+            # TODO: reverse-ddns with generating arpa names (must be done after the values are rendered)
+            #     eg: 2001:db8:1:: ->
+            reverse-ddns.ddns-domains = lib.pipe cfg.nets [
+              (lib.attrsets.mapAttrsToList (_: netCfg: netCfg.domain))
+              lib.lists.unique
+              (builtins.sort builtins.lessThan)
+
+              (builtins.map (domain: {
+                name = domain;
+                key-name = keaTSIGName;
+                dns-servers = [
+                  {
+                    ip-address = cfg.knot.localAddress;
+                    port = cfg.knot.localPort;
+                  }
+                ];
+              }))
             ];
+            */
           };
         };
         kdn.networking.router.domains = lib.pipe d2Domains [

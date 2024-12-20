@@ -99,9 +99,13 @@ in {
         vlan.id = 1859;
         vlan.flags = 1;
         vlan.parent = "enp6s0";
+        ipv4.ignore-auto-dns = true;
         ipv4.method = "auto";
-        ipv6.method = "auto";
+        ipv4.never-default = true;
         ipv6.addr-gen-mode = "stable-privacy";
+        ipv6.ignore-auto-dns = true;
+        ipv6.method = "auto";
+        ipv6.never-default = true;
       };
     }
   ]);

@@ -36,20 +36,20 @@
   vlan.pic.name = "pic";
   vlan.pic.id = 1859;
 
-  hosts.pic.pwet.macs.enp2s0 = "A8:B8:E0:04:10:B5";
-  hosts.pic.pwet.macs.enp3s0 = "A8:B8:E0:04:10:B6";
-  hosts.pic.pwet.macs.enp4s0 = "A8:B8:E0:04:10:B7";
-  hosts.pic.pwet.macs.enp5s0 = "A8:B8:E0:04:10:B8";
+  hosts.pic.pwet.macs.enp2s0 = "a8:b8:e0:04:10:b5";
+  hosts.pic.pwet.macs.enp3s0 = "a8:b8:e0:04:10:b6";
+  hosts.pic.pwet.macs.enp4s0 = "a8:b8:e0:04:10:b7";
+  hosts.pic.pwet.macs.enp5s0 = "a8:b8:e0:04:10:b8";
 
-  hosts.pic.turo.macs.enp2s0 = "A8:B8:E0:04:13:0D";
-  hosts.pic.turo.macs.enp3s0 = "A8:B8:E0:04:13:0E";
-  hosts.pic.turo.macs.enp4s0 = "A8:B8:E0:04:13:0F";
-  hosts.pic.turo.macs.enp5s0 = "A8:B8:E0:04:13:10";
+  hosts.pic.turo.macs.enp2s0 = "a8:b8:e0:04:13:0d";
+  hosts.pic.turo.macs.enp3s0 = "a8:b8:e0:04:13:0e";
+  hosts.pic.turo.macs.enp4s0 = "a8:b8:e0:04:13:0f";
+  hosts.pic.turo.macs.enp5s0 = "a8:b8:e0:04:13:10";
 
-  hosts.pic.yost.macs.enp2s0 = "A8:B8:E0:04:12:F1";
-  hosts.pic.yost.macs.enp3s0 = "A8:B8:E0:04:12:F2";
-  hosts.pic.yost.macs.enp4s0 = "A8:B8:E0:04:12:F3";
-  hosts.pic.yost.macs.enp5s0 = "A8:B8:E0:04:12:F4";
+  hosts.pic.yost.macs.enp2s0 = "a8:b8:e0:04:12:f1";
+  hosts.pic.yost.macs.enp3s0 = "a8:b8:e0:04:12:f2";
+  hosts.pic.yost.macs.enp4s0 = "a8:b8:e0:04:12:f3";
+  hosts.pic.yost.macs.enp5s0 = "a8:b8:e0:04:12:f4";
 in {
   options.kdn.profile.host.etra = {
     enable = lib.mkEnableOption "etra host profile";
@@ -273,7 +273,7 @@ in {
       kdn.networking.router.addr.public.ipv6.path = config.sops.secrets."networking/ipv6/network/isp/prefix/etra/address/gateway".path;
     }
     {
-      kdn.networking.router.debug = false;
+      kdn.networking.router.debug.ddns = true;
     }
     {
       /*

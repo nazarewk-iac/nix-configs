@@ -53,14 +53,15 @@ in {
           "networkmanager"
           "pipewire"
           "plugdev"
-          "power"
           "podman"
+          "power"
           "scanner"
           "tty"
-          "ydotool"
           "video"
           "weechat"
           "wheel"
+          "wireshark"
+          "ydotool"
         ];
       };
 

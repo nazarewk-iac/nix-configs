@@ -28,13 +28,13 @@ A router setup used by [`etra`](../../profile/host/etra/default.nix).
     - [x] set up local DNS server
         - [x] answer with local (DHCP?) hostnames
             - [x] DHCPv4: replace `networkd` with `kea-dhcp4-server`
-            - [ ] DHCPv6 with `kea-dhcp6-server` 
+            - [ ] DHCPv6 with `kea-dhcp6-server`
             - [x] set up `kresd` pointing at `resolved` (or home server)
                 - [ ] remove `systemd-resolved`?
-            - [x] set up `knot` 
+            - [x] set up `knot`
                 - [x] point `kresd` at it
             - [x] set up `kea-dhcp-ddns` to update `knot` entries
-        - [x] add entries for static hosts (including router itself) on each interface 
+        - [x] add entries for static hosts (including router itself) on each interface
         - [ ] update to `kresd` 6.x early access, see https://github.com/NixOS/nixpkgs/pull/154610
 - Router Advertisement
     - [x] use `networkd` advertisements
@@ -58,3 +58,16 @@ debugging info gist https://gist.github.com/nazarewk/49a76c2a63d4895cdcc6a14b82b
 - https://www.freedesktop.org/software/systemd/man/latest/systemd.network.html
 - https://nixos.wiki/wiki/Systemd-networkd
 - https://wiki.archlinux.org/title/Systemd-networkd
+
+# debugging
+
+## DNS / DDNS
+
+viewing knot's dnstap queries and responses:
+
+    kdig -G /run/knot/dnstap.debug.tap +qr
+
+reading raw DNS traffic with `tcpdump` and parsing with `tshark` (Wireshark CLI):
+
+    tcpdump -lnn -vvvv -i lo '(dst 127.0.0.1 and dst port 53) or (src 127.0.0.1 and src port 53)' -s 65535 -w /tmp/dns.tcpdump.pcap
+    tshark -T json -r /tmp/dns.tcpdump.pcap | gron

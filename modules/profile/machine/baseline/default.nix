@@ -323,12 +323,6 @@ in {
         sops.mode = "0444";
       };
       system.activationScripts.setupSecrets.text = lib.mkDefault "true";
-      system.activationScripts.kdnSopsNixFixupSecretsPermissions = {
-        deps = ["setupSecrets"];
-        text = ''
-          chmod -R go+r /run/configs
-        '';
-      };
 
       environment.systemPackages = with pkgs; [
         (pkgs.writeShellApplication {
@@ -339,6 +333,14 @@ in {
         })
       ];
     }
+    (lib.mkIf config.kdn.security.secrets.allowed {
+      system.activationScripts.kdnSopsNixFixupSecretsPermissions = {
+        deps = ["setupSecrets"];
+        text = ''
+          chmod -R go+r /run/configs
+        '';
+      };
+    })
     (
       let
         anonymizeClipboard = pkgs.writeShellApplication {
