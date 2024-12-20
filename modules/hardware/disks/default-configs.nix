@@ -10,30 +10,30 @@
   sysCfg = lib.attrsets.recursiveUpdate {imp.enableActivationScript = true;};
 in {
   config = lib.mkMerge [
-    {
-      impermanence.userDefaultPerms.mode = "0700";
-      impermanence.defaultPerms.mode = "0750";
-
-      environment.persistence = lib.pipe cfg.impermanence [
-        (builtins.mapAttrs (name: _: {
-          enableActivationScript = lib.mkDefault (lib.strings.hasPrefix "sys/" name);
-        }))
-      ];
-
-      kdn.hardware.disks.impermanence."sys/cache".snapshots = false;
-      kdn.hardware.disks.impermanence."sys/config".snapshots = true;
-      kdn.hardware.disks.impermanence."sys/data".snapshots = true;
-      kdn.hardware.disks.impermanence."sys/reproducible".snapshots = false;
-      kdn.hardware.disks.impermanence."sys/state".neededForBoot = ["/var/log/journal"];
-      kdn.hardware.disks.impermanence."sys/state".snapshots = false;
-      kdn.hardware.disks.impermanence."usr/cache".snapshots = false;
-      kdn.hardware.disks.impermanence."usr/config".snapshots = true;
-      kdn.hardware.disks.impermanence."usr/data".snapshots = true;
-      kdn.hardware.disks.impermanence."usr/reproducible".snapshots = false;
-      kdn.hardware.disks.impermanence."usr/state".snapshots = false;
-      kdn.hardware.disks.impermanence."disposable".snapshots = false;
-    }
     (lib.mkIf cfg.enable (lib.mkMerge [
+      {
+        impermanence.userDefaultPerms.mode = "0700";
+        impermanence.defaultPerms.mode = "0750";
+
+        environment.persistence = lib.pipe cfg.impermanence [
+          (builtins.mapAttrs (name: _: {
+            enableActivationScript = lib.mkDefault (lib.strings.hasPrefix "sys/" name);
+          }))
+        ];
+
+        kdn.hardware.disks.impermanence."sys/cache".snapshots = false;
+        kdn.hardware.disks.impermanence."sys/config".snapshots = true;
+        kdn.hardware.disks.impermanence."sys/data".snapshots = true;
+        kdn.hardware.disks.impermanence."sys/reproducible".snapshots = false;
+        kdn.hardware.disks.impermanence."sys/state".neededForBoot = ["/var/log/journal"];
+        kdn.hardware.disks.impermanence."sys/state".snapshots = false;
+        kdn.hardware.disks.impermanence."usr/cache".snapshots = false;
+        kdn.hardware.disks.impermanence."usr/config".snapshots = true;
+        kdn.hardware.disks.impermanence."usr/data".snapshots = true;
+        kdn.hardware.disks.impermanence."usr/reproducible".snapshots = false;
+        kdn.hardware.disks.impermanence."usr/state".snapshots = false;
+        kdn.hardware.disks.impermanence."disposable".snapshots = false;
+      }
       {
         # Basic /boot config
         fileSystems."/boot".neededForBoot = true;

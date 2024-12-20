@@ -11,154 +11,154 @@
 
   dumbMerge = builtins.foldl' lib.attrsets.recursiveUpdate {};
 in {
+  # look for conditionally enabled modules below
   config = lib.mkMerge [
-    {
-      kdn.hardware.disks.devices = lib.pipe cfg.luks.volumes [
-        (lib.attrsets.mapAttrs' (_: luksVol: {
-          name = luksVol.target.deviceKey;
-          value = {
-            type = "luks";
-            path = lib.mkDefault luksVol.targetSpec.path;
-          };
-        }))
-      ];
-    }
-    {
-      /*
-      TODO: create a systemd `.path` to integrate into impermanence when the file first appears?
-       see https://github.com/nix-community/impermanence/issues/197#issuecomment-2266171206
-      */
-      home-manager.sharedModules = [
-        (hm: {
-          home.persistence = lib.pipe cfg.impermanence [
-            (lib.attrsets.mapAttrs' (name: imp: {
-              inherit name;
-              value = {
-                persistentStoragePath = "${imp.mountpoint}${hm.config.home.homeDirectory}";
-                allowOther = true;
-              };
-            }))
-            (lib.mkIf cfg.enable)
-          ];
-        })
-      ];
-    }
-    {
-      # fix all /home mountpoints permissions
-      systemd.tmpfiles.rules = let
-        users = lib.pipe config.users.users [
-          (builtins.mapAttrs (n: u: u // {key = n;}))
-          lib.attrsets.attrValues
-          (builtins.filter (u: u.isNormalUser))
-        ];
-      in
-        lib.trivial.pipe users [
-          (builtins.map (
-            user: let
-              h = user.home;
-              u = builtins.toString (user.uid or user.name);
-              g = builtins.toString (user.gid or user.group);
-              hmConfig = config.home-manager.users."${user.name}";
-              mode = config.impermanence.userDefaultPerms.mode;
-            in
-              lib.pipe config.environment.persistence [
-                builtins.attrValues
-                (builtins.map (persistence: "d ${persistence.persistentStoragePath}${h} ${mode} ${u} ${g} - -"))
-              ]
-          ))
-          builtins.concatLists
-          (lib.mkOrder 499)
-        ];
-    }
-    {
-      /*
-      `root` user hardcodes
-      */
-      environment.persistence = lib.pipe cfg.impermanence [
-        (builtins.mapAttrs (name: imp: {
-          persistentStoragePath = imp.mountpoint;
-          enable = cfg.enable;
-          hideMounts = true;
-          users.root.home = "/root";
-        }))
-      ];
-      home-manager.users.root.impermanence = {
-        /*
-        `systemd --user` services do not work for `root`? https://github.com/nix-community/home-manager/blob/4fcd54df7cbb1d79cbe81209909ee8514d6b17a4/modules/systemd.nix#L293-L296
-         so we want to handle those mounts ourselves on NixOS side
-        */
-        defaultDirectoryMethod = "external";
-        defaultFileMethod = "external";
-      };
-    }
-    {
-      environment.persistence = lib.pipe cfg.impermanence [
-        (builtins.mapAttrs (name: imp:
-          lib.pipe config.home-manager.users [
-            (lib.attrsets.mapAttrsToList (username: hmConfig: {
-              users.${username} = let
-                hm = hmConfig.home.persistence."${name}";
-                defaultPerms = {
-                  user = username;
-                  group =
-                    if username == "root"
-                    then "root"
-                    else "users";
-                  mode = lib.mkForce config.impermanence.userDefaultPerms.mode;
-                };
-                dirConfig = defaultPerms // {inherit defaultPerms;};
-              in {
-                directories = lib.pipe (hm.directories or []) [
-                  (builtins.filter (e: e.method == "external"))
-                  (builtins.map (dir:
-                    dirConfig
-                    // {
-                      directory =
-                        if builtins.isString dir
-                        then dir
-                        else dir.directory;
-                    }))
-                ];
-                files = lib.pipe (hm.files or []) [
-                  (builtins.filter (e: e.method == "external"))
-                  (builtins.map (file: {
-                    file = file.file;
-                    parentDirectory = dirConfig;
-                  }))
-                ];
-              };
-            }))
-            lib.mkMerge
-          ]))
-      ];
-    }
-    {
-      # LUKS header partitions
-      kdn.hardware.disks.devices = lib.pipe cfg.luks.volumes [
-        builtins.attrValues
-        (builtins.map (luksVol: {
-          "${luksVol.header.deviceKey}".partitions."${luksVol.header.partitionKey}" = {
-            inherit (luksVol.headerSpec) num;
-            inherit (cfg.luks.header) size;
-            /*
-            https://uapi-group.org/specifications/specs/discoverable_partitions_specification/
-                 Generic Linux Data Partition
-                 0fc63daf-8483-4772-8e79-3d69d8477de4 SD_GPT_LINUX_GENERIC
-                 Any native, optionally in LUKS
-                 No automatic mounting takes place for other Linux data partitions.
-                   This partition type should be used for all partitions that carry Linux file systems.
-                   The installer needs to mount them explicitly via entries in /etc/fstab.
-                   Optionally, these partitions may be encrypted with LUKS.
-                   This partition type predates the Discoverable Partitions Specification.
-            */
-            disko.type = "0FC63DAF-8483-4772-8E79-3D69D8477DE4";
-            disko.label = luksVol.header.partitionKey;
-          };
-        }))
-        dumbMerge
-      ];
-    }
     (lib.mkIf cfg.enable (lib.mkMerge [
+      {
+        kdn.hardware.disks.devices = lib.pipe cfg.luks.volumes [
+          (lib.attrsets.mapAttrs' (_: luksVol: {
+            name = luksVol.target.deviceKey;
+            value = {
+              type = "luks";
+              path = lib.mkDefault luksVol.targetSpec.path;
+            };
+          }))
+        ];
+      }
+      {
+        /*
+        TODO: create a systemd `.path` to integrate into impermanence when the file first appears?
+         see https://github.com/nix-community/impermanence/issues/197#issuecomment-2266171206
+        */
+        home-manager.sharedModules = [
+          (hm: {
+            home.persistence = lib.pipe cfg.impermanence [
+              (lib.attrsets.mapAttrs' (name: imp: {
+                inherit name;
+                value = {
+                  persistentStoragePath = "${imp.mountpoint}${hm.config.home.homeDirectory}";
+                  allowOther = true;
+                };
+              }))
+            ];
+          })
+        ];
+      }
+      {
+        # fix all /home mountpoints permissions
+        systemd.tmpfiles.rules = let
+          users = lib.pipe config.users.users [
+            (builtins.mapAttrs (n: u: u // {key = n;}))
+            lib.attrsets.attrValues
+            (builtins.filter (u: u.isNormalUser))
+          ];
+        in
+          lib.trivial.pipe users [
+            (builtins.map (
+              user: let
+                h = user.home;
+                u = builtins.toString (user.uid or user.name);
+                g = builtins.toString (user.gid or user.group);
+                hmConfig = config.home-manager.users."${user.name}";
+                mode = config.impermanence.userDefaultPerms.mode;
+              in
+                lib.pipe config.environment.persistence [
+                  builtins.attrValues
+                  (builtins.map (persistence: "d ${persistence.persistentStoragePath}${h} ${mode} ${u} ${g} - -"))
+                ]
+            ))
+            builtins.concatLists
+            (lib.mkOrder 499)
+          ];
+      }
+      {
+        /*
+        `root` user hardcodes
+        */
+        environment.persistence = lib.pipe cfg.impermanence [
+          (builtins.mapAttrs (name: imp: {
+            persistentStoragePath = imp.mountpoint;
+            enable = cfg.enable;
+            hideMounts = true;
+            users.root.home = "/root";
+          }))
+        ];
+        home-manager.users.root.impermanence = {
+          /*
+          `systemd --user` services do not work for `root`? https://github.com/nix-community/home-manager/blob/4fcd54df7cbb1d79cbe81209909ee8514d6b17a4/modules/systemd.nix#L293-L296
+           so we want to handle those mounts ourselves on NixOS side
+          */
+          defaultDirectoryMethod = "external";
+          defaultFileMethod = "external";
+        };
+      }
+      {
+        environment.persistence = lib.pipe cfg.impermanence [
+          (builtins.mapAttrs (name: imp:
+            lib.pipe config.home-manager.users [
+              (lib.attrsets.mapAttrsToList (username: hmConfig: {
+                users.${username} = let
+                  hm = hmConfig.home.persistence."${name}";
+                  defaultPerms = {
+                    user = username;
+                    group =
+                      if username == "root"
+                      then "root"
+                      else "users";
+                    mode = lib.mkForce config.impermanence.userDefaultPerms.mode;
+                  };
+                  dirConfig = defaultPerms // {inherit defaultPerms;};
+                in {
+                  directories = lib.pipe (hm.directories or []) [
+                    (builtins.filter (e: e.method == "external"))
+                    (builtins.map (dir:
+                      dirConfig
+                      // {
+                        directory =
+                          if builtins.isString dir
+                          then dir
+                          else dir.directory;
+                      }))
+                  ];
+                  files = lib.pipe (hm.files or []) [
+                    (builtins.filter (e: e.method == "external"))
+                    (builtins.map (file: {
+                      file = file.file;
+                      parentDirectory = dirConfig;
+                    }))
+                  ];
+                };
+              }))
+              lib.mkMerge
+            ]))
+        ];
+      }
+      {
+        # LUKS header partitions
+        kdn.hardware.disks.devices = lib.pipe cfg.luks.volumes [
+          builtins.attrValues
+          (builtins.map (luksVol: {
+            "${luksVol.header.deviceKey}".partitions."${luksVol.header.partitionKey}" = {
+              inherit (luksVol.headerSpec) num;
+              inherit (cfg.luks.header) size;
+              /*
+              https://uapi-group.org/specifications/specs/discoverable_partitions_specification/
+                   Generic Linux Data Partition
+                   0fc63daf-8483-4772-8e79-3d69d8477de4 SD_GPT_LINUX_GENERIC
+                   Any native, optionally in LUKS
+                   No automatic mounting takes place for other Linux data partitions.
+                     This partition type should be used for all partitions that carry Linux file systems.
+                     The installer needs to mount them explicitly via entries in /etc/fstab.
+                     Optionally, these partitions may be encrypted with LUKS.
+                     This partition type predates the Discoverable Partitions Specification.
+              */
+              disko.type = "0FC63DAF-8483-4772-8E79-3D69D8477DE4";
+              disko.label = luksVol.header.partitionKey;
+            };
+          }))
+          dumbMerge
+        ];
+      }
       {
         # prepare LUKS volumes
         disko.devices.disk = lib.pipe cfg.luks.volumes [
@@ -339,54 +339,54 @@ in {
           builtins.listToAttrs
         ];
       }
-    ]))
-    (let
-      dImp = cfg.impermanence."disposable";
-      snapshotName = "${dImp.zpool.name}/${dImp.zfsPath}@empty";
-      scriptDeps = [config.boot.zfs.package];
-    in {
-      /*
-      Migrating on a live system:
-        zfs rename -u brys-main/brys/impermanence/disposable{,.old}
-        zfs set -u mountpoint=/nix/persist/disposable.old brys-main/brys/impermanence/disposable.old
-        zfs create -u brys-main/brys/impermanence/disposable -o mountpoint=/nix/persist/disposable
-        # nixos-rebuild boot
-        # reboot
-        zfs destroy brys-main/brys/impermanence/disposable.old
-      */
-      kdn.hardware.disks.impermanence."disposable".zfsName = cfg.disposable.zfsName;
-      kdn.hardware.disks.impermanence."disposable".disko.postCreateHook = ''
-        zfs snapshot "${snapshotName}"
-      '';
-      environment.persistence."disposable".users = lib.mkIf cfg.disposable.homes (
-        builtins.mapAttrs
-        (_: _: {directories = [""];})
-        config.home-manager.users
-      );
-      environment.persistence."disposable".directories = [
-        {
-          directory = "/var/tmp";
-          mode = "0777";
-        }
-      ];
-      boot.initrd.systemd.initrdBin = scriptDeps;
-      boot.initrd.systemd.services."kdn-disks-disposable-rollback" = {
-        description = ''rollbacks `disposable` filesystem to empty state'';
-        after = ["zfs-import-${dImp.zpool.name}.service"];
-        wantedBy = [
-          "sysroot-nix-persist-disposable.mount"
-          "zfs-import-${dImp.zpool.name}.service"
+      (let
+        dImp = cfg.impermanence."disposable";
+        snapshotName = "${dImp.zpool.name}/${dImp.zfsPath}@empty";
+        scriptDeps = [config.boot.zfs.package];
+      in {
+        /*
+        Migrating on a live system:
+          zfs rename -u brys-main/brys/impermanence/disposable{,.old}
+          zfs set -u mountpoint=/nix/persist/disposable.old brys-main/brys/impermanence/disposable.old
+          zfs create -u brys-main/brys/impermanence/disposable -o mountpoint=/nix/persist/disposable
+          # nixos-rebuild boot
+          # reboot
+          zfs destroy brys-main/brys/impermanence/disposable.old
+        */
+        kdn.hardware.disks.impermanence."disposable".zfsName = cfg.disposable.zfsName;
+        kdn.hardware.disks.impermanence."disposable".disko.postCreateHook = ''
+          zfs snapshot "${snapshotName}"
+        '';
+        environment.persistence."disposable".users = lib.mkIf cfg.disposable.homes (
+          builtins.mapAttrs
+          (_: _: {directories = [""];})
+          config.home-manager.users
+        );
+        environment.persistence."disposable".directories = [
+          {
+            directory = "/var/tmp";
+            mode = "0777";
+          }
         ];
-        before = ["sysroot-nix-persist-disposable.mount"];
-        onFailure = ["rescue.target"];
+        boot.initrd.systemd.initrdBin = scriptDeps;
+        boot.initrd.systemd.services."kdn-disks-disposable-rollback" = {
+          description = ''rollbacks `disposable` filesystem to empty state'';
+          after = ["zfs-import-${dImp.zpool.name}.service"];
+          wantedBy = [
+            "sysroot-nix-persist-disposable.mount"
+            "zfs-import-${dImp.zpool.name}.service"
+          ];
+          before = ["sysroot-nix-persist-disposable.mount"];
+          onFailure = ["rescue.target"];
 
-        serviceConfig = {
-          Type = "oneshot";
-          RemainAfterExit = true;
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+          };
+          unitConfig.DefaultDependencies = false;
+          script = ''zfs rollback -r "${snapshotName}"'';
         };
-        unitConfig.DefaultDependencies = false;
-        script = ''zfs rollback -r "${snapshotName}"'';
-      };
-    })
+      })
+    ]))
   ];
 }
