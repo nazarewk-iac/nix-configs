@@ -84,6 +84,12 @@ networking:
             password: ENC[AES256_GCM,data:sUM6Nco50xJOb4XK1OR9KCiVUJKuaQSRHBCXoKQ3/qGBcxjtAiF0bLuX8JJxGdQE6JL6/bEmYSpJwktzP+rj,iv:tVscyjbpzWeDVKoOX5a0HATew1+eFBOSDSmaCOCz0Xo=,tag:f2jVRA8qLrgshlEtmcYcmA==,type:str]
         LV5OnOU0wzcK:
             password: ENC[AES256_GCM,data:EFzB6oQ4CVuno5fD9fudNQ==,iv:cueuMSTJQgHk/9B8BsQEtHaRV07yYQjm0KrkXNpszXc=,tag:zMG+cf4auvPfTlL7tVmBpQ==,type:str]
+        Jolanta2:
+            password: ENC[AES256_GCM,data:zPknwPhoSDkNuI28tgHLy4Uvhkg=,iv:AKJimYRR9Tdv/PGtp+ethS9U7K2rIS/d+nAOc1oeMos=,tag:PvGARucO/ED62K3NZNq2PQ==,type:str]
+        Lukman_51328:
+            password: ENC[AES256_GCM,data:JKPgZoXQ3AtBIQ==,iv:TJ31/D832XBjWFQ94jPOhIccOXI3zVWfOLs9ahBQuDs=,tag:77C28rnEb8bUHQ8bzjqwcA==,type:str]
+        orr:
+            password: ENC[AES256_GCM,data:nCT+zZrTJcbTEhrBq8E7,iv:kCkMHCU81+OKEPUV7/dwdvZ0E6PTFHEfl4sf7BIblgo=,tag:YcHkWYsSsLgsmf6gI5pgdQ==,type:str]
 nextcloud:
     nixos:
         password: ENC[AES256_GCM,data:zYL1fQfJhcSqUhk2MAvF/CbWKG4/4/Yli2PNIJ8=,iv:pkhdFUPyThCKpvTnxBImEoyZ8ss0Lz/G3ss/0cCWu9o=,tag:rr0oXLWyQLvvyUtGu3C8mw==,type:str]
@@ -169,8 +175,8 @@ sops:
             7YnIqtOAtD9PlD7I3L26EmdV79W5bGYIRUujG2lHh0FEIN2UNAxLzTM5TDd5Mtmg
             peo=
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2024-12-16T09:35:36Z"
-    mac: ENC[AES256_GCM,data:EwQOxU4/yhhS4aA20/mu8snJRQV2ZRmTijyuWYVbormTOsPKn/+3aG2yzWfuukv8EKKqOOq3HcGKXHtzAIivRg6CqLnTJfu80smgomyhbH7vvupw0RhvMVQKQbMPsdl1lFZ1FyffBtn+NLJA9PEvc3Aqh4K8u0D2M4mQgYr41XM=,iv:QVn4ioGF0nttJia3ICaWMPfVEbZbvV9W3i6BRNAf3mk=,tag:psJ2SNC9XdHU16sh2J+q/w==,type:str]
+    lastmodified: "2024-12-19T10:11:44Z"
+    mac: ENC[AES256_GCM,data:lHOq5Yj86KmPVIqjxEVMxZ5wkB/XofZ/0TlhdMkVANClxrETt/YTpDhXcpJ22xQ1DX6pJN6KeCP07bKp/72nphyXQ6jxoqnvmJYCq0YSrYkHO+NE6cUSE/MIOxGxruTUg6QUfDMRp5C5px5faetmLOCzZjE7NBJV0K7Gvjsoos0=,iv:sWU0mkfo1XTVIiFtyRDxS3LFkl5KGkvy4MdynnLT2oI=,tag:rUY3Thrqh/TPAjWbi2dbJw==,type:str]
     pgp: []
     unencrypted_suffix: _unencrypted
     version: 3.9.0
