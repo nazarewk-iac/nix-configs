@@ -30,7 +30,6 @@ in {
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       kdn.programs.ssh-client.enable = true;
-      home.file.".ssh/config.d/signicat.config".source = config.lib.file.mkOutOfStoreSymlink "/run/configs/networking/ssh_config/signicat";
       home.file.".ssh/config.d/kdn.config".source = config.lib.file.mkOutOfStoreSymlink "/run/configs/networking/ssh_config/kdn";
 
       # pam-u2f expects a single line of configuration per user in format `username:entry1:entry2:entry3:...`
@@ -105,24 +104,6 @@ in {
         url."https://gist.github.com/".insteadOf = "git@gist.github.com:";
       };
     })
-    (lib.mkIf hasWorkstation {
-      programs.git.extraConfig = {
-        credential."https://gitlab.com/signicat/".username = "signicat-krznaz";
-        url."https://gitlab.com/signicat/".insteadOf = "git@gitlab.com:signicat/";
-      };
-      home.persistence."usr/cache".directories = [
-        ".cache/signicat"
-      ];
-      home.persistence."usr/config".directories = [
-        ".config/signicat"
-      ];
-      home.persistence."usr/state".directories = [
-        ".local/state/signicat"
-      ];
-      home.persistence."usr/data".directories = [
-        ".local/share/signicat"
-      ];
-    })
     (lib.mkIf hasGUI {
       # KDE Connect
       services.kdeconnect.enable = true;
@@ -137,10 +118,6 @@ in {
       programs.firefox.profiles.kdn = {
         id = 0;
         isDefault = true;
-      };
-      programs.firefox.profiles.sc = {
-        id = 1;
-        isDefault = false;
       };
 
       programs.firefox.profiles.bn = {

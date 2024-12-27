@@ -79,7 +79,6 @@ in {
       # services.offlineimap.enable or manually with `systemctl --user start`
       services.offlineimap.install = true;
 
-      kdn.networking.netbird.sc.enable = true;
       kdn.networking.tailscale.auth_key = "nixos-kdn";
 
       kdn.networking.openvpn.enable = true;
