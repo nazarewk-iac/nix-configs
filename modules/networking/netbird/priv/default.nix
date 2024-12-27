@@ -20,6 +20,10 @@ in {
     {
       services.netbird.clients.priv.port = 51819;
 
+      environment.systemPackages = with pkgs; [
+        wireguard-tools
+      ];
+
       services.netbird.clients.priv.dns-resolver.address = "127.0.0.19";
       kdn.networking.router.kresd.rewrites."priv.nb.net.int.kdn.im.".from = "netbird.cloud.";
       kdn.networking.router.kresd.rewrites."priv.nb.net.int.kdn.im.".upstreams = ["127.0.0.19"];
