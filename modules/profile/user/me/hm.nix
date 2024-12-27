@@ -311,6 +311,7 @@ in {
       ];
     })
     (lib.mkIf (hasWorkstation && hasGUI) {
+      kdn.programs.beeper.enable = true;
       kdn.programs.browsers.enable = true;
       kdn.programs.chromium.enable = true;
       kdn.programs.element.enable = true;
