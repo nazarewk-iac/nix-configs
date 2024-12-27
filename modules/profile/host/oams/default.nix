@@ -133,5 +133,9 @@ in {
         };
       };
     }
+    {
+      # need to allow for a Netbird assignment
+      networking.firewall.trustedInterfaces = ["tun0"];
+    }
   ]);
 }

@@ -32,6 +32,9 @@ in {
     ];
 
     home.sessionPath = ["$HOME/.local/bin"];
+    systemd.user.tmpfiles.rules = [
+      "d ${config.home.homeDirectory}/.local/bin - - - -"
+    ];
 
     programs.foot.enable = true;
     programs.foot.server.enable = false;

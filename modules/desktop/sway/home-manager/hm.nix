@@ -301,8 +301,6 @@ in {
         libqalculate
       ];
 
-      home.sessionPath = ["$HOME/.local/bin"];
-
       kdn.desktop.sway.kanshi.enable = true;
       services.kanshi.systemdTarget = "kdn-sway-kdn-sway-session.target";
     }

@@ -87,6 +87,16 @@ in {
         Install.WantedBy = ["default.target"];
       };
     }
+    {
+      systemd.user.tmpfiles.rules = [
+        /*
+        required for "run with sudo" configurations, see:
+        - https://youtrack.jetbrains.com/issue/GO-14383/Failed-to-launch-elevation-service-using-pkexec
+        - https://youtrack.jetbrains.com/issue/IJPL-170313/Elevation-for-remote-process-doesnt-work-Failed-to-launch-elevation-service-using-pkexec
+        */
+        "L ${config.home.homeDirectory}/.local/bin/pkexec - - - - /run/wrappers/bin/sudo"
+      ];
+    }
     (lib.mkIf cfg.go.enable (
       let
         name = "symlink-jetbrains-delve";
