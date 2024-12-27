@@ -13,7 +13,7 @@ list_inputs() {
 args=("$@")
 updater_args=()
 inputs=()
-test "${#args[@]}" -gt 0 || inputs+=("g:all")
+test "${#args[@]}" -gt 0 || args+=("g:all")
 for arg in "${args[@]}" ; do
   case "$arg" in
     g:patches)
