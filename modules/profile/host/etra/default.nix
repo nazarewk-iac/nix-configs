@@ -275,15 +275,5 @@ in {
     {
       kdn.networking.router.debug.ddns = true;
     }
-    {
-      /*
-         TODO: fix wireguard setup:
-      ┃        error:
-      ┃        Failed assertions:
-      ┃        - networking.wireguard.interfaces.wg0.generatePrivateKeyFile cannot be used with networkd.
-      ┃        - networking.wireguard.interfaces.wg0.peers[].dynamicEndpointRefreshSeconds cannot be used with networkd. Use networking.wireguard.interfaces.wg0.dynamicEndpointRefreshSeconds instead.
-      */
-      kdn.networking.wireguard.enable = false;
-    }
   ]);
 }

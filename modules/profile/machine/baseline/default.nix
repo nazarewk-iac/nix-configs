@@ -17,7 +17,6 @@ in {
   };
 
   imports = [
-    ../../../../data/wireguard-peers.nix
   ];
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
@@ -151,7 +150,6 @@ in {
       kdn.filesystems.zfs.enable = lib.mkDefault true;
       kdn.hardware.usbip.enable = lib.mkDefault true;
       kdn.hardware.yubikey.enable = lib.mkDefault true;
-      kdn.networking.wireguard.enable = lib.mkDefault true;
       kdn.programs.direnv.enable = lib.mkDefault true;
 
       home-manager.users.root = {kdn.profile.user.kdn.osConfig = config.users.users.root;};
