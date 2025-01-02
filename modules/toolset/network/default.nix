@@ -12,6 +12,7 @@ in {
 
   config = lib.mkIf cfg.enable {
     programs.wireshark.enable = true;
+    kdn.services.iperf3.enable = true;
 
     environment.systemPackages = with pkgs; [
       (lib.meta.setPrio 10 nettools)
@@ -25,6 +26,8 @@ in {
       tcpdump
       wol
       iperf
+      speedtest-go
+      speedtest-cli
     ];
   };
 }
