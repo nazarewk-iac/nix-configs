@@ -290,10 +290,10 @@
                     type = with lib.types; attrsOf str;
                     default = {};
                     apply = val:
-                      lib.attrsets.optionalAttrs (val != {} && hostCfg.ip != null) (val
-                        // {
-                          ip-address = hostCfg.ip;
-                        });
+                      val
+                      // lib.attrsets.optionalAttrs (val != {} && hostCfg.ip != null) {
+                        ip-address = hostCfg.ip;
+                      };
                   };
                   idents = lib.mkOption {
                     type = with lib.types; listOf (attrsOf str);
@@ -668,6 +668,7 @@ in {
   };
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
+      kdn.fs.watch.enable = true;
       networking.useNetworkd = true;
       networking.useDHCP = false;
       networking.networkmanager.enable = false;
@@ -775,17 +776,10 @@ in {
       };
     })
     {
-      # reloading on drop-ins
-      systemd.services."systemd-networkd" = {
-        reloadTriggers = lib.pipe config.sops.templates [
-          builtins.attrValues
-          (builtins.map (tpl: tpl.path))
-          (builtins.filter (lib.strings.hasPrefix "/etc/systemd/network"))
-        ];
-        reload = ''
-          set -x
-          ${lib.getExe' pkgs.systemd "networkctl"} reload
-        '';
+      # reloading networkd on drop-ins
+      kdn.fs.watch.instances.systemd-networkd-reload = {
+        files = ["/etc/systemd/network"];
+        exec = [(lib.getExe' pkgs.systemd "networkctl") "reload"];
       };
     }
     {
@@ -892,52 +886,74 @@ in {
       };
     }
     {
-      # kea configuration plumbing
-      services.kea = {
-        ctrl-agent.configFile = config.sops.templates."kea/ctrl-agent.conf".path;
-        dhcp-ddns.configFile = config.sops.templates."kea/dhcp-ddns.conf".path;
-        dhcp4.configFile = config.sops.templates."kea/dhcp4.conf".path;
-        dhcp6.configFile = config.sops.templates."kea/dhcp6.conf".path;
-      };
-      systemd.services = lib.mkMerge [
-        (lib.mkIf config.services.kea.ctrl-agent.enable {
-          kea-ctrl-agent.restartTriggers = [config.sops.templates."kea/ctrl-agent.conf".path];
-        })
-        (lib.mkIf config.services.kea.dhcp-ddns.enable {
-          # TODO: this doesn't seem to work?
-          kea-dhcp-ddns-server.restartTriggers = [config.sops.templates."kea/dhcp-ddns.conf".path];
-        })
-        (lib.mkIf config.services.kea.dhcp4.enable {
-          kea-dhcp4-server.restartTriggers = [config.sops.templates."kea/dhcp4.conf".path];
-        })
-        (lib.mkIf config.services.kea.dhcp6.enable {
-          kea-dhcp6-server.restartTriggers = [config.sops.templates."kea/dhcp6.conf".path];
-        })
-      ];
-      sops.templates."kea/dhcp6.conf" = {
-        mode = "0444";
-        content = builtins.readFile (pkgs.jsonTemplate.generate "kea-dhcp6.conf" {
-          Dhcp6 = cfg.kea.dhcp6.settings;
-        });
-      };
       sops.templates."kea/ctrl-agent.conf" = {
         mode = "0444";
         content = builtins.readFile (pkgs.jsonTemplate.generate "kea-ctrl-agent.conf" {
           Control-agent = cfg.kea.ctrl-agent.settings;
         });
       };
+      services.kea.ctrl-agent.configFile = config.sops.templates."kea/ctrl-agent.conf".path;
+      kdn.fs.watch.instances.kea-ctrl-agent-reload.enable = config.services.kea.ctrl-agent.enable;
+      kdn.fs.watch.instances.kea-ctrl-agent-reload.files = [
+        config.sops.templates."kea/ctrl-agent.conf".path
+      ];
+      kdn.fs.watch.instances.kea-ctrl-agent-reload.exec = [
+        (lib.getExe' pkgs.systemd "systemctl")
+        "reload-or-restart"
+        "kea-ctrl-agent.service"
+      ];
+    }
+    {
       sops.templates."kea/dhcp-ddns.conf" = {
         mode = "0444";
         content = builtins.readFile (pkgs.jsonTemplate.generate "kea-dhcp-ddns.conf" {
           DhcpDdns = cfg.kea.dhcp-ddns.settings;
         });
       };
+      services.kea.dhcp-ddns.configFile = config.sops.templates."kea/dhcp-ddns.conf".path;
+      kdn.fs.watch.instances.kea-dhcp-ddns-reload.enable = config.services.kea.dhcp-ddns.enable;
+      kdn.fs.watch.instances.kea-dhcp-ddns-reload.files = [
+        config.sops.templates."kea/dhcp-ddns.conf".path
+      ];
+      kdn.fs.watch.instances.kea-dhcp-ddns-reload.exec = [
+        (lib.getExe' pkgs.systemd "systemctl")
+        "reload-or-restart"
+        "kea-dhcp-ddns.service"
+      ];
+    }
+    {
       sops.templates."kea/dhcp4.conf" = {
         mode = "0444";
         content = builtins.readFile (pkgs.jsonTemplate.generate "kea-dhcp4.conf" {
           Dhcp4 = cfg.kea.dhcp4.settings;
         });
       };
+      services.kea.dhcp4.configFile = config.sops.templates."kea/dhcp4.conf".path;
+      kdn.fs.watch.instances.kea-dhcp4-server-reload.enable = config.services.kea.dhcp4.enable;
+      kdn.fs.watch.instances.kea-dhcp4-server-reload.files = [config.sops.templates."kea/dhcp4.conf".path];
+      kdn.fs.watch.instances.kea-dhcp4-server-reload.exec = [
+        (lib.getExe' pkgs.systemd "systemctl")
+        "reload-or-restart"
+        "kea-dhcp4-server.service"
+      ];
+    }
+    {
+      sops.templates."kea/dhcp6.conf" = {
+        mode = "0444";
+        content = builtins.readFile (pkgs.jsonTemplate.generate "kea-dhcp6.conf" {
+          Dhcp6 = cfg.kea.dhcp6.settings;
+        });
+      };
+      services.kea.dhcp6.configFile = config.sops.templates."kea/dhcp6.conf".path;
+      kdn.fs.watch.instances.kea-dhcp6-server-reload.enable = config.services.kea.dhcp6.enable;
+      kdn.fs.watch.instances.kea-dhcp6-server-reload.files = [
+        config.sops.templates."kea/dhcp6.conf".path
+      ];
+      kdn.fs.watch.instances.kea-dhcp6-server-reload.exec = [
+        (lib.getExe' pkgs.systemd "systemctl")
+        "reload-or-restart"
+        "kea-dhcp6-server.service"
+      ];
     }
     {
       # kresd DNS resolver
@@ -966,11 +982,17 @@ in {
       # logging functions are available at https://gitlab.nic.cz/knot/knot-resolver/-/blob/v5.7.4/daemon/lua/sandbox.lua.in#L63
       services.kresd.extraConfig = builtins.readFile ./kresd.conf.lua;
       systemd.services."kresd@".environment.KRESD_CONF_DIR = "/etc/knot-resolver";
-      systemd.services."kresd@".restartTriggers = lib.pipe config.sops.templates [
-        builtins.attrValues
-        (builtins.map (tpl: tpl.path))
-        (builtins.filter (lib.strings.hasPrefix "/etc/knot-resolver"))
+
+      kdn.fs.watch.instances.kresd-reload.files = [
+        "/etc/knot-resolver"
       ];
+      kdn.fs.watch.instances.kresd-reload.exec =
+        [
+          (lib.getExe' pkgs.systemd "systemctl")
+          "reload-or-restart"
+        ]
+        ++ builtins.map (i: "kresd@${builtins.toString i}.service") (lib.lists.range 1 config.services.kresd.instances);
+
       environment.persistence."sys/data".directories = [
         {
           directory = "/var/lib/knot-resolver";
@@ -1088,10 +1110,11 @@ in {
         # knot-dns
         services.knot.enable = true;
         services.knot.checkConfig = false; # doesn't allow some stuff like referencing keys
-        systemd.services.knot.restartTriggers = lib.pipe config.sops.templates [
-          builtins.attrValues
-          (builtins.map (tpl: tpl.path))
-          (builtins.filter (lib.strings.hasPrefix cfg.knot.configDir))
+        kdn.fs.watch.instances.knotd-reload.dirs = [cfg.knot.configDir];
+        kdn.fs.watch.instances.knotd-reload.exec = [
+          (lib.getExe' pkgs.systemd "systemctl")
+          "reload-or-restart"
+          "knot.service"
         ];
         services.knot.extraArgs = [
           "-v"
@@ -1549,8 +1572,8 @@ in {
     }
     (lib.mkIf (cfg.kresd.rewrites != {}) {
       # TODO: watch out for kresd 6.0+ version for native support of rewrites
-      kdn.service.coredns.enable = true;
-      kdn.service.coredns.rewrites =
+      kdn.services.coredns.enable = true;
+      kdn.services.coredns.rewrites =
         builtins.mapAttrs
         (_: rewriteCfg: {
           inherit (rewriteCfg) from to upstreams;

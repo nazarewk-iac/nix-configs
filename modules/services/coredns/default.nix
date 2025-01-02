@@ -6,9 +6,9 @@
   self,
   ...
 }: let
-  cfg = config.kdn.service.coredns;
+  cfg = config.kdn.services.coredns;
 in {
-  options.kdn.service.coredns = {
+  options.kdn.services.coredns = {
     enable = lib.mkEnableOption "CoreDNS";
 
     rewrites = lib.mkOption {
@@ -19,7 +19,7 @@ in {
             default = name;
             apply = domain:
               assert lib.assertMsg (lib.strings.hasSuffix "." domain) ''
-                `kdn.service.coredns.*.to` must end with a '.': ${domain}
+                `kdn.services.coredns.*.to` must end with a '.': ${domain}
               ''; domain;
           };
 
@@ -27,7 +27,7 @@ in {
             type = with lib.types; str;
             apply = domain:
               assert lib.assertMsg (lib.strings.hasSuffix "." domain) ''
-                `kdn.service.coredns.*.from` must end with a '.': ${domain}
+                `kdn.services.coredns.*.from` must end with a '.': ${domain}
               ''; domain;
           };
 
