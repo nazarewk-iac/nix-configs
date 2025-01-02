@@ -88,7 +88,9 @@ in {
         after = ["paths.target"];
         serviceConfig.Slice = "background.slice";
         postStart = ''
-          ${lib.getExe pkgs.kdn.gpg-smartcard-reset-keys}
+          if ! ${lib.getExe pkgs.kdn.gpg-smartcard-reset-keys} ; then
+            echo 'WARNING: gpg-smartcard-reset-keys failed!'
+          fi
         '';
       };
     }
