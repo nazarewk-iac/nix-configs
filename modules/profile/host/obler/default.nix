@@ -55,7 +55,6 @@ in {
         Restart = "on-failure";
         RestartSec = 5;
         StartLimitBurst = 3;
-        StartLimitIntervalSec = 24 * 60 * 60;
       };
 
       kdn.filesystems.disko.luks-zfs.enable = true;

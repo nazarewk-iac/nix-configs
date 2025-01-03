@@ -11,10 +11,10 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    hardware.amdgpu.amdvlk.enable = true;
-    hardware.amdgpu.amdvlk.support32Bit.enable = true;
-    hardware.amdgpu.initrd.enable = true;
-    hardware.amdgpu.opencl.enable = true;
+    hardware.amdgpu.amdvlk.enable = lib.mkDefault true;
+    hardware.amdgpu.amdvlk.support32Bit.enable = lib.mkDefault true;
+    hardware.amdgpu.initrd.enable = lib.mkDefault true;
+    hardware.amdgpu.opencl.enable = lib.mkDefault true;
 
     environment.systemPackages = with pkgs; [
       radeontop

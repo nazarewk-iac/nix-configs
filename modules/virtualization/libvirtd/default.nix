@@ -66,13 +66,13 @@ in {
     }
     (lib.mkIf cfg.lookingGlass.enable {
       environment.systemPackages = with pkgs; [
-        looking-glass-client
+        # looking-glass-client  # TODO: doesn't work https://github.com/NixOS/nixpkgs/issues/368827
         scream
       ];
 
       systemd.tmpfiles.rules = lib.trivial.pipe cfg.lookingGlass.instances [
         (lib.attrsets.mapAttrsToList (name: username: [
-          "f /dev/shm/${name}-looking-glass 0660 ${username} qemu-libvirtd -"
+          # "f /dev/shm/${name}-looking-glass 0660 ${username} qemu-libvirtd -"
           "f /dev/shm/${name}-scream 0660 ${username} qemu-libvirtd -"
         ]))
         lib.lists.flatten

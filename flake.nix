@@ -3,6 +3,8 @@
   inputs.nixpkgs.url = "github:nazarewk/nixpkgs/nixos-unstable";
   inputs.nixpkgs-patch-2.url = "https://github.com/NixOS/nixpkgs/compare/nixos-unstable..nazarewk:netbird-improvements.patch?full_index=1";
   inputs.nixpkgs-patch-2.flake = false;
+  inputs.nixpkgs-patch-3.url = "https://github.com/NixOS/nixpkgs/pull/368966.patch";
+  inputs.nixpkgs-patch-3.flake = false;
 
   inputs.nixpkgs-lib.follows = "nixpkgs";
 
@@ -184,6 +186,7 @@
                 home-manager.sharedModules = [{home.stateVersion = "24.11";}];
                 kdn.security.secrets.allow = false;
                 kdn.profile.machine.baseline.enable = true;
+                kdn.security.disk-encryption.enable = true;
 
                 environment.systemPackages = with pkgs; [
                 ];

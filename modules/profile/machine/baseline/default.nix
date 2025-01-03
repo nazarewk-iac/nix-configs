@@ -152,6 +152,7 @@ in {
       kdn.hardware.usbip.enable = lib.mkDefault true;
       kdn.hardware.yubikey.enable = lib.mkDefault true;
       kdn.programs.direnv.enable = lib.mkDefault true;
+      kdn.security.disk-encryption.enable = lib.mkDefault true;
 
       home-manager.users.root = {kdn.profile.user.kdn.osConfig = config.users.users.root;};
 
@@ -377,5 +378,9 @@ in {
         ];
       }
     )
+    {
+      # TODO: remove when rocm-llvm is fixed https://github.com/NixOS/nixpkgs/issues/369433
+      hardware.amdgpu.opencl.enable = false;
+    }
   ]);
 }

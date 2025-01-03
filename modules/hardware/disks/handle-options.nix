@@ -361,6 +361,7 @@ in {
           # reboot
           zfs destroy brys-main/brys/impermanence/disposable.old
         */
+        kdn.hardware.disks.impermanence."disposable".snapshots = false;
         kdn.hardware.disks.impermanence."disposable".zfsName = cfg.disposable.zfsName;
         kdn.hardware.disks.impermanence."disposable".disko.postCreateHook = ''
           zfs snapshot "${snapshotName}"
@@ -385,8 +386,12 @@ in {
           serviceConfig = {
             Type = "oneshot";
             RemainAfterExit = true;
+            RestartSec = "3";
+            Restart = "on-failure";
           };
           unitConfig.DefaultDependencies = false;
+          unitConfig.StartLimitInterval = 60;
+          unitConfig.StartLimitBurst = 3;
           script = ''zfs rollback -r "${snapshotName}"'';
         };
       })
