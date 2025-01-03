@@ -24,6 +24,13 @@ keys:
         - &yk-etra-touch age1yubikey1qwlfxw5t9deg9a0lh6gqapfmwtncsgcvj4tzqslyxyf8gg2twnz7xjz0efa
         - &yk-etra-unattended age1yubikey1qfkvupj8d583aw4pykay7hqg6ymret8quec45h2up0amushus33yvzkd2sw
 
+    pryll:
+      serial: 20723691
+      age:
+        - &yk-pryll-pin-touch age1yubikey1qthpsku0j83z82sp0756rh65dskrz74405wx7l4altxnase6tup3xdrlzgs
+        - &yk-pryll-touch age1yubikey1q2257nhsjajgswzukm3prps0037zvm7g9gtawp2q39gr2ty4y8zdz4tk8xq
+        - &yk-pryll-unattended age1yubikey1qd8tv5mue4mgjemgn6u7ax8j0xhfwgt8v33wna83u55usv2av5yd5gxkdm8
+
   hosts:
     # converting SSH key to `age` identity:
     #  ssh-to-age </etc/ssh/ssh_host_ed25519_key.pub
@@ -51,8 +58,10 @@ creation_rules:
           - *yk-brys-unattended
           - *yk-etra-unattended
           - *yk-oams-unattended
+          - *yk-pryll-unattended
   - key_groups:
       - age:
           - *yk-etra-touch
           - *yk-brys-touch
           - *yk-oams-touch
+          - *yk-pryll-touch
