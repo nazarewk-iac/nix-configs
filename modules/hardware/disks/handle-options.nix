@@ -339,6 +339,14 @@ in {
           builtins.listToAttrs
         ];
       }
+      {
+        environment.persistence = lib.pipe cfg.users [
+          (lib.attrsets.mapAttrsToList (username: userCfg: {
+            "${userCfg.homeLocation}".users."${username}".directories = [""];
+          }))
+          lib.mkMerge
+        ];
+      }
       (let
         dImp = cfg.impermanence."disposable";
         snapshotName = "${dImp.zpool.name}/${dImp.zfsPath}@empty";
@@ -357,11 +365,6 @@ in {
         kdn.hardware.disks.impermanence."disposable".disko.postCreateHook = ''
           zfs snapshot "${snapshotName}"
         '';
-        environment.persistence."disposable".users = lib.mkIf cfg.disposable.homes (
-          builtins.mapAttrs
-          (_: _: {directories = [""];})
-          config.home-manager.users
-        );
         environment.persistence."disposable".directories = [
           {
             directory = "/var/tmp";

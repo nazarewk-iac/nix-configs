@@ -13,6 +13,7 @@ in {
     kdn.hardware.yubikey.appId = "pam://kdn";
     nix.settings.allowed-users = ["sn"];
     kdn.programs.atuin.users = ["sn"];
+    kdn.hardware.disks.users.sn.homeLocation = "usr/data";
     users.users.sn.initialHashedPassword = "$y$j9T$WGU0Qrlm0.jq7Y4QfyVYC0$HiYyLZMDX8M/A7WNshB5PjtZEGufQ.Qa93FY4WIlcw8";
     users.users.sn = {
       uid = 48378;

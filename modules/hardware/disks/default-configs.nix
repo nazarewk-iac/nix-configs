@@ -33,6 +33,7 @@ in {
         kdn.hardware.disks.impermanence."usr/reproducible".snapshots = false;
         kdn.hardware.disks.impermanence."usr/state".snapshots = false;
         kdn.hardware.disks.impermanence."disposable".snapshots = false;
+        kdn.hardware.disks.userDefaults.homeLocation = lib.mkDefault "disposable";
       }
       {
         # Basic /boot config

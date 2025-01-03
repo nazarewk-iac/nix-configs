@@ -93,12 +93,19 @@ in {
         ''; value;
     };
 
-    disposable.homes = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      description = ''
-        allow data in `$HOME` directories, but clean it up during every boot
-      '';
+    users = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule ({name, ...} @ userArgs: {
+        options.homeLocation = lib.mkOption {
+          type = lib.types.enum (builtins.attrNames cfg.impermanence);
+          default = cfg.userDefaults.homeLocation;
+        };
+      }));
+      default = {};
+    };
+
+    userDefaults.homeLocation = lib.mkOption {
+      type = lib.types.enum (builtins.attrNames cfg.impermanence);
+      description = ''which impermanence config should $HOME come from?'';
     };
 
     disposable.zfsName = lib.mkOption {
@@ -270,6 +277,8 @@ in {
       kdn.security.disk-encryption.enable = true;
       boot.zfs.requestEncryptionCredentials = false;
       impermanence.defaultEnableActivationScript = false;
+
+      kdn.hardware.disks.users = builtins.mapAttrs (_: _: {}) config.home-manager.users;
     })
   ];
 }
