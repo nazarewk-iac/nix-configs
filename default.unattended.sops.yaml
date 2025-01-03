@@ -20,7 +20,7 @@ networking:
     hosts:
         private: ENC[AES256_GCM,data:i6gX9FhEIvshh0DRa3bjBsiKVXIyVXa0trSjB0o=,iv:hF3d6JP9F6pRae9RjzE3STUjxFPmzkA/ILjZBVmblrg=,tag:lQlSpQBJrcs2ZsOKH3yOaA==,type:str]
     ssh_config:
-        kdn: ENC[AES256_GCM,data:MWbC7aQKPAZ/tvfn/VxC6o8DEawi/FkvEkmSGIo=,iv:rJAWJu/jTdMtmBXq7fS+rXPOay7LhDl66QcsQnTWMog=,tag:QqkpW21baE/9C8IcfwHcMw==,type:str]
+        kdn: ENC[AES256_GCM,data:/02ZgKPT76nrSh4qAFELGUKpDlLq/jjJEeZMp8NIo6WMsFKeedNnHF6OOv9PyncDHcwUj1x3saR8qHnB9LN9x7pwMdV7/BL74mdW/hifZVm+aPdZ4soDyQ==,iv:+0jkppnBDb4WyJyos62v2KiGsJm6fP6Q/eqBiyFYPVY=,tag:vvULdWW9JkoKB9oHKiJThQ==,type:str]
     anonymization:
         ipv6-public-00-prefix:
             pattern: ENC[AES256_GCM,data:sCACVCHIl56EE41zni0+X8IIAg==,iv:KTTCqmI60ZNVobxyGtRj6KuMV1ctePfuyJjlTzRgVDQ=,tag:3qyBCgNf0nH6KVTn0LALjQ==,type:str]
@@ -177,8 +177,8 @@ sops:
             7YnIqtOAtD9PlD7I3L26EmdV79W5bGYIRUujG2lHh0FEIN2UNAxLzTM5TDd5Mtmg
             peo=
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2025-01-02T16:07:53Z"
-    mac: ENC[AES256_GCM,data:S157s024IUfqvW7WM2w6muCYU/Vb/nriVSMkQf/oeqEyYujFsnOWkamlMipdGgCgKH4G6dWAf0ZXOj6dOyM9XHbWceGWt4EEep8wkykxJptHoy6MxVw1FkZMhrUK36mLcBkmE6MbKlrMAgAFoL5hY2a2lVoQbWq0h7k5E4BG1/s=,iv:ztVzON2/hVZcR6tfcF5TEPkijWJ+tGO8mGfGR+yoBxg=,tag:HC/ETkP32mzrDEoly9qvHA==,type:str]
+    lastmodified: "2025-01-03T10:26:57Z"
+    mac: ENC[AES256_GCM,data:IRwQvO7gU8PwLZMhA0J0ze5OzufANIaC4t0YbGOruoZsGtH8AbQgcW7ytJg8kTRAgpGJMoA2eSu3thZNUL9tslz+J+z4+4t5rRGRRKqJEFb4jeKi7a/sb7GPpOnNk68PC81A98Z9vUKnehUI0kDBwMGl29xi0CSyJ/QGJq9AVJs=,iv:awJaRtosWReeUwlpxa7fBaUIL1wrmMs7Z46u8ld8YIA=,tag:2yT9EBD5Tzmx5mqH6Cs5ew==,type:str]
     pgp: []
     unencrypted_suffix: _unencrypted
     version: 3.9.0
