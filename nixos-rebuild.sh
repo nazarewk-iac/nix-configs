@@ -14,6 +14,7 @@ post_args=(
   --log-format internal-json -v
 )
 
+name="$(hostname -s)"
 cmd="${1}"
 shift 1
 if [[ "${1:-}" == remote=* ]]; then
@@ -50,14 +51,12 @@ if [[ "${1:-}" == remote=* ]]; then
   pre_args+=(
     --use-remote-sudo
   )
-  post_args+=(
-    --flake ".#${name}"
-  )
-elif [[ "${1}" != -* ]] ; then
-  post_args+=(
-    --flake ".#${1}"
-  )
+elif [[ -n "${1:-}" && "${1}" != -* ]] ; then
+  name="${1}"
   shift 1
 fi
+post_args+=(
+  --flake ".#${name}"
+)
 
 nixos-rebuild "${pre_args[@]}" "${cmd}" "${post_args[@]}" "${@}" |& nom --json
