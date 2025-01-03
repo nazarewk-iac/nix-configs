@@ -76,6 +76,7 @@ in {
       services.openssh.enable = true;
       services.openssh.openFirewall = true;
       services.openssh.settings.PasswordAuthentication = false;
+      services.openssh.settings.GatewayPorts = "clientspecified";
 
       location.provider = "geoclue2";
 
