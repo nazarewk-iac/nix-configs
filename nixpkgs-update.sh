@@ -26,7 +26,7 @@ for arg in "${args[@]}" ; do
       mapfile -t -O "${#inputs[@]}" inputs < <(list_inputs)
       ;;
     i:*)
-      inputs+=("${arg#u:}")
+      inputs+=("${arg#i:}")
       ;;
     *)
       updater_args+=("$arg")

@@ -12,7 +12,7 @@ in {
 
   config = lib.mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
-      bpftrace
+      # bpftrace # TODO: 2025-01-03 fails to build https://github.com/NixOS/nixpkgs/issues/368727
       bcc # opensnoop
     ];
   };

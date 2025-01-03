@@ -53,6 +53,11 @@ if [[ "${1:-}" == remote=* ]]; then
   post_args+=(
     --flake ".#${name}"
   )
+elif [[ "${1}" != -* ]] ; then
+  post_args+=(
+    --flake ".#${1}"
+  )
+  shift 1
 fi
 
 nixos-rebuild "${pre_args[@]}" "${cmd}" "${post_args[@]}" "${@}" |& nom --json

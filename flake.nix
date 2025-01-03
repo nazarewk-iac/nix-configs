@@ -6,6 +6,8 @@
 
   inputs.nixpkgs-lib.follows = "nixpkgs";
 
+  inputs.nixpkgs-fish.url = "github:NixOS/nixpkgs/fish";
+
   /*
   * pinned inputs to keep up to date manually
   */
@@ -123,6 +125,12 @@
           nix = final.nixVersions.latest;
         };
         wezterm = inputs.wezterm.packages."${final.stdenv.system}".default;
+
+        fish =
+          # supposedly fixes https://github.com/NixOS/nix/issues/11010
+          if lib.strings.versionAtLeast prev.fish.version "4.0"
+          then builtins.throw "nixpkgs fish is now v4+, remove `flake.overlays.default` entry"
+          else inputs.nixpkgs-fish.legacyPackages."${final.stdenv.system}".fish;
       })
     ];
     perSystem = {
