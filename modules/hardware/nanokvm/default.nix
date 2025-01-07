@@ -17,6 +17,7 @@ in {
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
+      # TODO: systemd-networkd version
       # Ethernet
       services.udev.extraRules = ''
         ACTION=="add", SUBSYSTEM=="net", ENV{ID_MODEL}=="licheervnano", ENV{ID_MODEL_ID}=="1009", ENV{ID_NET_DRIVER}=="rndis_host", ENV{NM_UNMANAGED}="1", NAME="usb-nanokvm"

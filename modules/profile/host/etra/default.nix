@@ -276,5 +276,8 @@ in {
     {
       kdn.networking.router.debug.ddns = true;
     }
+    {
+      kdn.hardware.nanokvm.enable = true;
+    }
   ]);
 }
