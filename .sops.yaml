@@ -47,6 +47,9 @@ keys:
     brys:
       age:
         - &ssh-brys age1ysq2nvh5vkxra8gj74meqvfpc6axh5nv9sxn62s3mj3lz9987exqweqp0p
+    pryll:
+      age:
+        - &ssh-pryll age1gwy8gukhluzucejxm8kc27cd875wq7d98xh3427phl0lskqqqe8sx9k8pp
 creation_rules:
   - path_regex: '.unattended\.sops\.[^.]+$'
     key_groups:
@@ -55,6 +58,7 @@ creation_rules:
           - *ssh-etra
           - *ssh-moss
           - *ssh-oams
+          - *ssh-pryll
           - *yk-brys-unattended
           - *yk-etra-unattended
           - *yk-oams-unattended

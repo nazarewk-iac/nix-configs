@@ -181,6 +181,7 @@ in {
           hosts.feren.ident.hw-address = "00:23:79:00:23:11";
           hosts.moak.ip = "192.168.73.4";
           hosts.moak.ident.hw-address = "00:23:79:00:31:2F";
+          hosts.pryll.ident.hw-address = "01:90:1b:0e:84:8c:f7";
         };
         addressing.ipv6-ula = with ula.lan; {
           subnet-id = 300310722;

@@ -279,6 +279,31 @@
           ];
         };
 
+        pryll = flakeLib.nixos.system {
+          system = "x86_64-linux";
+          modules = [
+            ({config, ...}: {
+              networking.hostName = "pryll";
+              kdn.profile.host."${config.networking.hostName}".enable = true;
+
+              system.stateVersion = "25.05";
+              home-manager.sharedModules = [{home.stateVersion = "25.05";}];
+              networking.hostId = "25880d1d"; # cut -c-8 </proc/sys/kernel/random/uuid
+
+              _module.args.nixinate = {
+                #host = "${config.networking.hostName}.netbird.cloud.";
+                #host = config.networking.hostName;
+                host = "${config.networking.hostName}.lan.etra.net.int.kdn.im";
+                sshUser = "kdn";
+                buildOn = "local"; # valid args are "local" or "remote"
+                substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
+                hermetic = true;
+                nixOptions = ["--show-trace"];
+              };
+            })
+          ];
+        };
+
         obler = flakeLib.nixos.system {
           system = "x86_64-linux";
           modules = [
