@@ -19,7 +19,7 @@ in {
         "~/.ssh/config.local"
       ];
 
-      home.persistence."usr/data".directories = [
+      kdn.hardware.disks.persist."usr/data".directories = [
         ".ssh"
       ];
     }

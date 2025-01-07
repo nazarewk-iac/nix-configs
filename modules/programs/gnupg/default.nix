@@ -49,10 +49,16 @@ in {
       home-manager.sharedModules = [
         (hm: {
           programs.gpg.enable = true;
-          home.persistence."usr/data".directories = [".gnupg"];
-          home.persistence."usr/config".directories = [".config/pinentry-kdn"];
+          kdn.hardware.disks.persist."usr/data".directories = [
+            {
+              directory = ".gnupg";
+              mode = "0700";
+            }
+          ];
+          kdn.hardware.disks.persist."usr/config".directories = [
+            ".config/pinentry-kdn"
+          ];
           systemd.user.tmpfiles.rules = [
-            "d ${hm.config.home.homeDirectory}/.gnupg 0700 - - -"
             "d ${hm.config.home.homeDirectory}/.config/pinentry-kdn 0700 - - -"
           ];
         })
@@ -85,7 +91,9 @@ in {
     ]))
     {
       systemd.user.services."gpg-agent" = {
-        after = ["paths.target"];
+        after = [
+          #"preservation.target" # TODO: no such unit
+        ];
         serviceConfig.Slice = "background.slice";
         postStart = ''
           if ! ${lib.getExe pkgs.kdn.gpg-smartcard-reset-keys} ; then

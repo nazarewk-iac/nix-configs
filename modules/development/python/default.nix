@@ -83,6 +83,8 @@ in {
     home-manager.sharedModules = [
       {kdn.development.python.enable = true;}
       {programs.git.ignores = [(builtins.readFile ./.gitignore)];}
+      {
+      }
     ];
     nixpkgs.overlays = [
       (final: prev: {

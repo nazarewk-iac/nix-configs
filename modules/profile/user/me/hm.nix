@@ -68,7 +68,7 @@ in {
       };
     }
     (lib.mkIf hasWorkstation {
-      home.persistence."usr/data".directories = [
+      kdn.hardware.disks.persist."usr/data".directories = [
         "dev"
       ];
 
@@ -108,7 +108,7 @@ in {
       # KDE Connect
       services.kdeconnect.enable = true;
       services.kdeconnect.indicator = true;
-      home.persistence."usr/config".directories = [
+      kdn.hardware.disks.persist."usr/config".directories = [
         ".config/kdeconnect"
       ];
     })

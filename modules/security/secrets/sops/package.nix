@@ -16,6 +16,8 @@ buildGoModule rec {
   };
 
   patches = [
+    # see https://github.com/getsops/sops/pull/1641
+    # see https://github.com/FiloSottile/age/pull/591
     ./sops.pull-1465.patch
   ];
 

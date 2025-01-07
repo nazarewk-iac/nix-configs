@@ -452,21 +452,6 @@
         "type": "github"
       }
     },
-    "impermanence": {
-      "locked": {
-        "lastModified": 1735912556,
-        "narHash": "sha256-nNe5ngO6jh2sIRTvpmQYuxexY2HzgRBEcquwhEdPAL0=",
-        "owner": "nazarewk",
-        "repo": "impermanence",
-        "rev": "98f0232077502b49c179f0a1939c141409adc207",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nazarewk",
-        "repo": "impermanence",
-        "type": "github"
-      }
-    },
     "lanzaboote": {
       "inputs": {
         "crane": [
@@ -883,6 +868,21 @@
         "type": "github"
       }
     },
+    "preservation": {
+      "locked": {
+        "lastModified": 1735322114,
+        "narHash": "sha256-b0ftF6cGH0JoZin93bmycx5qvM4fx6jCR8eM0q6k64s=",
+        "owner": "nix-community",
+        "repo": "preservation",
+        "rev": "089ffe54b44db2b6418dd024a7266c8c9343f805",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "preservation",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "base16": "base16",
@@ -894,7 +894,6 @@
         "flake-utils": "flake-utils",
         "helix-editor": "helix-editor",
         "home-manager": "home-manager",
-        "impermanence": "impermanence",
         "lanzaboote": "lanzaboote",
         "microvm": "microvm",
         "mk-shell-bin": "mk-shell-bin",
@@ -913,6 +912,7 @@
         "nixpkgs-upstream": "nixpkgs-upstream",
         "nur": "nur",
         "poetry2nix": "poetry2nix",
+        "preservation": "preservation",
         "rust-overlay": "rust-overlay",
         "sops-nix": "sops-nix",
         "stylix": "stylix",

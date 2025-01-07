@@ -45,7 +45,7 @@ in {
         documentation.man.man-db.enable = true;
         documentation.man.generateCaches = false;
         environment.systemPackages = [kdn-man-gen-caches];
-        environment.persistence."sys/cache".directories = [
+        kdn.hardware.disks.persist."sys/cache".directories = [
           "/var/cache/man/nixos"
         ];
         systemd.services.kdn-man-gen-caches = {
@@ -57,12 +57,7 @@ in {
             (lib.getExe kdn-man-gen-caches)
           ];
         };
-        system.activationScripts.kdn-man-gen-caches.deps = let
-          ifExists = name: lib.optional (config.system.activationScripts ? name) name;
-        in
-          ["etc"]
-          ++ ifExists "impermanenceCreatePersistentStorageDirs"
-          ++ ifExists "impermanencePersistFiles";
+        system.activationScripts.kdn-man-gen-caches.deps = ["etc"];
         system.activationScripts.kdn-man-gen-caches.text = ''
           ${lib.getExe' pkgs.systemd "systemctl"} start --no-block kdn-man-gen-caches.service
         '';

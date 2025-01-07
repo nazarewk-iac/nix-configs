@@ -292,36 +292,16 @@ in {
           '';
         })
       ];
-      system.activationScripts.setupSecrets.deps = [
-        "etc" # in case secrets get written to /etc
-      ];
-      system.activationScripts.kdnSecretsPostSecretsHook.deps = ["setupSecrets"];
-      system.activationScripts.kdnSecretsPostSecretsHook.text = "";
-      system.activationScripts.kdnSecretsPostRenderHook.deps = let
-        ifExists = name: lib.optional (config.system.activationScripts ? name) name;
-      in
-        ["kdnSecretsPostSecretsHook"]
-        ++ ifExists "setupSecrets"
-        ++ ifExists "setupSecretsForUsers";
-      system.activationScripts.kdnSecretsPostRenderHook.text = "";
-      system.activationScripts.kdnSecretsPostHook.deps = ["kdnSecretsPostSecretsHook" "kdnSecretsPostRenderHook"];
-      system.activationScripts.kdnSecretsPostHook.text = "";
     }
     {
       environment.systemPackages = [
         cfg.age.genScripts
       ];
-      system.activationScripts.setupSecrets.deps = [
-        "kdnGenerateAgeKeys"
-      ];
-      system.activationScripts.kdnGenerateAgeKeys.deps =
-        lib.pipe [
-          "persist-files"
-          "impermanencePersistFiles"
-        ] [
-          (builtins.filter (key: config.system.activationScripts ? key))
-        ];
-      system.activationScripts.kdnGenerateAgeKeys.text = let
+      # this forces to render secrets with systemd instead of activationScript
+      services.userborn.enable = true;
+      systemd.services.sops-install-secrets.after = lib.optional (config.systemd.targets ? "preservation") "preservation.target";
+      systemd.services.sops-install-secrets.requires = lib.optional (config.systemd.targets ? "preservation") "preservation.target";
+      systemd.services.sops-install-secrets.preStart = let
         escapedKeyFile = lib.escapeShellArg config.sops.age.keyFile;
       in ''
         printf "Rendering %s\n" ${escapedKeyFile}

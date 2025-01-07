@@ -7,7 +7,7 @@ from pathlib import Path
 
 import fire
 
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.DEBUG)
 
 
 def iter_files(profile: Path):
@@ -42,12 +42,14 @@ class Program:
 
     @functools.cached_property
     def _profiles(self):
+        profiles: dict[str, Profile] = {}
         profiles_path = Path(self.config_path) / "profiles.ini"
+        if not profiles_path.exists():
+            return profiles
         config = configparser.ConfigParser()
         config.read(profiles_path)
         assert config["General"]["Version"] == "2"
 
-        profiles: dict[str, Profile] = {}
         for section_name in config.sections():
             if not section_name.startswith("Profile"):
                 continue
@@ -80,7 +82,9 @@ class Program:
                 context_id = entry.get("lastUserContextId", -1)
                 if context_id > last_context_id:
                     if last_context_id >= 0:
-                        logging.info(f'{profile_path}["lastUserContextId"] = {last_context_id=} -> {context_id=}')
+                        logging.info(
+                            f'{profile_path}["lastUserContextId"] = {last_context_id=} -> {context_id=}'
+                        )
                     last_context_id = context_id
 
                 for identity in entry.get("identities", []):
@@ -95,19 +99,25 @@ class Program:
                         if old_value == new_value:
                             continue
                         if existed:
-                            logging.info(f"{profile_path}[{iid=}][{key=}]: "
-                                         f"{old_value=} -> {new_value=}")
+                            logging.info(
+                                f"{profile_path}[{iid=}][{key=}]: "
+                                f"{old_value=} -> {new_value=}"
+                            )
                         old[key] = new_value
 
             if identities:
-                output.write_text(json.dumps({
-                    "version": 5,
-                    "lastUserContextId": last_context_id,
-                    "identities": sorted(
-                        identities.values(),
-                        key=lambda ident: ident["userContextId"]
-                    ),
-                }))
+                output.write_text(
+                    json.dumps(
+                        {
+                            "version": 5,
+                            "lastUserContextId": last_context_id,
+                            "identities": sorted(
+                                identities.values(),
+                                key=lambda ident: ident["userContextId"],
+                            ),
+                        }
+                    )
+                )
 
 
 def main():

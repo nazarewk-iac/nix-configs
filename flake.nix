@@ -28,7 +28,6 @@
   inputs.flake-parts.url = "github:hercules-ci/flake-parts";
   inputs.flake-utils.url = "github:numtide/flake-utils";
   inputs.home-manager.url = "github:nix-community/home-manager";
-  inputs.impermanence.url = "github:nazarewk/impermanence"; #"github:nix-community/impermanence";
   inputs.lanzaboote.url = "github:nix-community/lanzaboote";
   inputs.microvm.url = "github:astro/microvm.nix";
   inputs.mk-shell-bin.url = "github:rrbutani/nix-mk-shell-bin";
@@ -40,6 +39,7 @@
   inputs.nixos-generators.url = "github:nix-community/nixos-generators";
   inputs.nur.url = "github:nix-community/NUR";
   inputs.poetry2nix.url = "github:nix-community/poetry2nix";
+  inputs.preservation.url = "github:nix-community/preservation";
   inputs.rust-overlay.url = "github:oxalica/rust-overlay";
   inputs.sops-nix.url = "github:Mic92/sops-nix";
   inputs.stylix.url = "github:danth/stylix";

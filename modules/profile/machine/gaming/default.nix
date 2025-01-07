@@ -59,12 +59,12 @@ in {
 
     home-manager.sharedModules = [
       {
-        home.persistence."usr/data".directories = [
+        kdn.hardware.disks.persist."usr/data".directories = [
           ".local/share/bottles"
           ".local/share/Steam"
           ".local/share/lutris"
         ];
-        home.persistence."usr/cache".directories = [
+        kdn.hardware.disks.persist."usr/cache".directories = [
           ".local/share/lutris/runtime"
           ".local/share/bottles/runners"
           ".local/share/bottles/temp"

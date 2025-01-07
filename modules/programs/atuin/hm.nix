@@ -30,13 +30,11 @@ in {
           Description = "Atuin shell history synchronization daemon";
           After = [
             "network.target"
-            "paths.target" # this one handles impermanence bind mounts
           ];
           Wants = [
             "network.target"
           ];
           Requires = [
-            "paths.target" # this one handles impermanence bind mounts
           ];
         };
         Service.ExecStart = "${lib.getExe config.programs.atuin.package} daemon";

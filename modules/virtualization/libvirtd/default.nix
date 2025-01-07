@@ -58,7 +58,7 @@ in {
       ];
     }
     {
-      environment.persistence."usr/data".directories = [
+      kdn.hardware.disks.persist."usr/data".directories = [
         "/var/lib/libvirt/images"
         "/var/lib/libvirt"
         "/var/lib/swtpm-localca"

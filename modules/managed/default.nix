@@ -75,7 +75,7 @@ in {
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       kdn.managed.infix.default = "kdn-managed-3b48ebd3";
-      system.activationScripts.setupSecrets.deps = ["kdnManagedFilesCleanup"];
+      system.activationScripts.kdnManagedFilesCleanup.deps = ["etc" "users"];
       system.activationScripts.kdnManagedFilesCleanup.text = let
         mkExistingArgs = dir:
           lib.pipe cfg.currentFiles [

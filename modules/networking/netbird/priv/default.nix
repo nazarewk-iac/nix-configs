@@ -28,7 +28,7 @@ in {
       kdn.networking.router.kresd.rewrites."priv.nb.net.int.kdn.im.".from = "netbird.cloud.";
       kdn.networking.router.kresd.rewrites."priv.nb.net.int.kdn.im.".upstreams = ["127.0.0.19"];
 
-      environment.persistence."usr/data".directories = [
+      kdn.hardware.disks.persist."usr/data".directories = [
         {
           directory = "/var/lib/netbird-priv";
           user = "netbird-priv";
@@ -46,6 +46,8 @@ in {
           NB_SETUP_KEY="${config.sops.placeholder."default/netbird-priv/${cfg.type}/setup-key"}"
         '';
       };
+      systemd.services.netbird-priv.after = lib.lists.optional (config.systemd.services ? sops-install-secrets) "sops-install-secrets.service";
+      systemd.services.netbird-priv.requires = lib.lists.optional (config.systemd.services ? sops-install-secrets) "sops-install-secrets.service";
       systemd.services.netbird-priv.serviceConfig.EnvironmentFile = config.sops.templates."netbird-priv.env".path;
       systemd.services.netbird-priv.postStart = ''
         nb='${lib.getExe config.services.netbird.clients.priv.wrapper}'

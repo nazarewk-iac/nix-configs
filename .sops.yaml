@@ -49,7 +49,7 @@ keys:
         - &ssh-brys age1ysq2nvh5vkxra8gj74meqvfpc6axh5nv9sxn62s3mj3lz9987exqweqp0p
     pryll:
       age:
-        - &ssh-pryll age1gwy8gukhluzucejxm8kc27cd875wq7d98xh3427phl0lskqqqe8sx9k8pp
+        - &ssh-pryll age1lw083cnx8c5u29kvr3q8v90pkuapmfxxqvr8khzjmzxpfrjs8c8qvs3y7q
 creation_rules:
   - path_regex: '.unattended\.sops\.[^.]+$'
     key_groups:

@@ -13,26 +13,21 @@ in {
       type = lib.types.bool;
       default = false;
     };
+    persist = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule {freeformType = (pkgs.formats.json {}).type;});
+      default = {};
+    };
   };
 
   config = lib.mkMerge [
-    (lib.mkIf (!cfg.enable) {home.persistence = lib.mkForce {};})
-    # the rest of configs are in ./handle-options.nix
     (lib.mkIf cfg.enable {
-      impermanence.defaultDirectoryMethod = lib.mkDefault "external";
-      impermanence.defaultFileMethod = lib.mkDefault "external";
-      home.persistence."usr/data".directories = [
-        "Videos"
-        "Documents"
-      ];
-      home.persistence."usr/cache".directories =
+      kdn.hardware.disks.persist."usr/cache".directories =
         [
-          "Downloads"
           ".cache/appimage-run" # not sure where exactly it comes from
         ]
         ++ lib.lists.optional config.fonts.fontconfig.enable ".cache/fontconfig";
-      home.persistence."usr/state".files = [
-        #".local/share/fish/fish_history" # A file already exists at ...
+      kdn.hardware.disks.persist."usr/state".files = [
+        ".local/share/fish/fish_history" # A file already exists at ...
         ".ipython/profile_default/history.sqlite"
         ".bash_history"
         ".duckdb_history"

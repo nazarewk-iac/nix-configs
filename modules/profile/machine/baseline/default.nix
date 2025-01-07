@@ -206,53 +206,13 @@ in {
             h = user.home;
             u = builtins.toString (user.uid or user.name);
             g = builtins.toString (user.gid or user.group);
-
-            homeDirMode = config.impermanence.userDefaultPerms.mode;
           in [
-            # fix home directory permissions
-            "d ${h} ${homeDirMode} ${u} ${g} - -"
             # fix user profile directory permissions
-            "d /nix/var/nix/profiles/per-user/${user.name} ${homeDirMode} ${u} ${g} - -"
+            "d /nix/var/nix/profiles/per-user/${user.name} 0750 ${u} ${g} - -"
           ]
         ))
         builtins.concatLists
       ];
-    }
-    {
-      # fix all /home mountpoints permissions
-      systemd.tmpfiles.rules = let
-        users = lib.pipe config.users.users [
-          lib.attrsets.attrValues
-          (builtins.filter (u: u.isNormalUser))
-        ];
-      in
-        lib.trivial.pipe config.fileSystems [
-          (lib.attrsets.mapAttrsToList (name: cfg: cfg.mountPoint or name))
-          (builtins.map (mountpoint:
-            lib.trivial.pipe users [
-              (builtins.filter (
-                user:
-                  (lib.strings.hasPrefix user.home mountpoint)
-                  && (user.home != mountpoint)
-              ))
-              (builtins.map (
-                user: let
-                  h = user.home;
-                  u = builtins.toString (user.uid or user.name);
-                  g = builtins.toString (user.gid or user.group);
-                in
-                  lib.pipe mountpoint [
-                    (lib.strings.removePrefix "${h}/")
-                    (lib.strings.splitString "/")
-                    (pcs: builtins.map (i: lib.lists.sublist 0 i pcs) (lib.lists.range 1 (builtins.length pcs)))
-                    (builtins.map (lib.strings.concatStringsSep "/"))
-                    (builtins.map (path: "d ${h}/${path} ${config.impermanence.userDefaultPerms.mode} ${u} ${g} - -"))
-                  ]
-              ))
-            ]))
-          lib.lists.flatten
-          lib.lists.unique
-        ];
     }
     (
       # TODO: test it
@@ -322,7 +282,6 @@ in {
         basePath = "/run/configs";
         sops.mode = "0444";
       };
-      system.activationScripts.setupSecrets.text = lib.mkDefault "true";
 
       environment.systemPackages = with pkgs; [
         (pkgs.writeShellApplication {
@@ -334,12 +293,9 @@ in {
       ];
     }
     (lib.mkIf config.kdn.security.secrets.allowed {
-      system.activationScripts.kdnSopsNixFixupSecretsPermissions = {
-        deps = ["setupSecrets"];
-        text = ''
-          chmod -R go+r /run/configs
-        '';
-      };
+      systemd.services.sops-install-secrets.postStart = ''
+        chmod -R go+r /run/configs
+      '';
     })
     (
       let

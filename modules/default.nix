@@ -14,10 +14,10 @@
       ./stylix.nix
       inputs.disko.nixosModules.disko
       inputs.home-manager.nixosModules.home-manager
-      inputs.impermanence.nixosModules.impermanence
       inputs.lanzaboote.nixosModules.lanzaboote
       inputs.lanzaboote.nixosModules.uki
       inputs.nur.modules.nixos.default
+      inputs.preservation.nixosModules.preservation
       inputs.sops-nix.nixosModules.sops
     ]
     ++ lib.trivial.pipe ./. [

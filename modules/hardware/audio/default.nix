@@ -39,12 +39,12 @@ in {
       ];
       home-manager.sharedModules = [
         {
-          home.persistence."usr/config".directories = [
+          kdn.hardware.disks.persist."usr/config".directories = [
             ".config/pulse"
             ".config/pipewire"
             ".local/state/wireplumber"
           ];
-          home.persistence."usr/config".files = [
+          kdn.hardware.disks.persist."usr/config".files = [
             ".config/pavucontrol.ini"
           ];
         }

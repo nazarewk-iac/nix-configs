@@ -72,7 +72,7 @@ in {
         };
       })
     ];
-    home.persistence."usr/config".directories = [
+    kdn.hardware.disks.persist."usr/config".directories = [
       ".config/weechat"
     ];
   };

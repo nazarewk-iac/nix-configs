@@ -674,7 +674,7 @@ in {
       networking.networkmanager.enable = false;
       systemd.network.enable = true;
 
-      environment.persistence."sys/data".directories = [
+      kdn.hardware.disks.persist."sys/data".directories = [
         {
           directory = "/var/lib/systemd/network";
           user = "systemd-network";
@@ -993,7 +993,7 @@ in {
         ]
         ++ builtins.map (i: "kresd@${builtins.toString i}.service") (lib.lists.range 1 config.services.kresd.instances);
 
-      environment.persistence."sys/data".directories = [
+      kdn.hardware.disks.persist."sys/data".directories = [
         {
           directory = "/var/lib/knot-resolver";
           user = "knot-resolver";
@@ -1001,7 +1001,7 @@ in {
           mode = "0770";
         }
       ];
-      environment.persistence."sys/cache".directories = [
+      kdn.hardware.disks.persist."sys/cache".directories = [
         {
           directory = "/var/cache/knot-resolver";
           user = "knot-resolver";
@@ -1230,7 +1230,7 @@ in {
           ];
         };
         environment.etc."${lib.strings.removePrefix "/etc" cfg.knot.configDir}/.keep".text = "";
-        environment.persistence."sys/data".directories = [
+        kdn.hardware.disks.persist."sys/data".directories = [
           {
             directory = cfg.knot.dataDir;
             user = "knot";

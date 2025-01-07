@@ -12,6 +12,7 @@ in {
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
+    {home-manager.sharedModules = [{kdn.headless.base.enable = true;}];}
     {
       # note: about `fish` printing `linux` twice https://github.com/danth/stylix/issues/526
       users.defaultUserShell = pkgs.fish;
@@ -125,27 +126,6 @@ in {
           Defaults  env_keep += TERMINAL_EMULATOR
         '';
       in {
-        home-manager.sharedModules = [
-          (hm: {
-            programs.zellij.enable = true;
-            xdg.userDirs.enable = true;
-
-            programs.zellij.enableFishIntegration = false;
-            ## auto-starting zellij gets a little too annyoing in nested sessions
-            ## TODO: try also passing `SendEnv` (client) / `AcceptEnv` (server), https://superuser.com/a/702751
-            #programs.fish.interactiveShellInit = lib.mkOrder 200 ''
-            #  if string match --quiet --ignore-case "jetbrains-*" "$TERMINAL_EMULATOR"
-            #    set KDN_ZELLIJ_SKIP "inside jetbrains terminal"
-            #  end
-            #  if test -n "$KDN_ZELLIJ_SKIP"
-            #    echo "zellij skip because: $KDN_ZELLIJ_SKIP" >&2
-            #  else
-            #    eval (${lib.getExe hm.config.programs.zellij.package} setup --generate-auto-start fish | string collect)
-            #  end
-            #'';
-            home.persistence."usr/cache".directories = [".cache/zellij"];
-          })
-        ];
         security.sudo.extraConfig = sudoCfg;
         security.sudo-rs.extraConfig = sudoCfg;
       }
