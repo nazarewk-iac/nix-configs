@@ -97,6 +97,9 @@ in {
       networking.firewall.logRefusedConnections = false;
     }
     {
+      systemd.network.wait-online.extraArgs = [
+        "--interface=wan"
+      ];
       kdn.networking.router.nets.wan = {
         type = "wan";
         netdev.kind = "bond";
