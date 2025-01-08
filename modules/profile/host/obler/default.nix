@@ -34,11 +34,6 @@ in {
         };
       };
 
-      kdn.locale = {
-        primary = "pl_PL.UTF-8";
-        time = "pl_PL.UTF-8";
-      };
-
       systemd.tmpfiles.rules = [
         /*
         error:
@@ -61,13 +56,6 @@ in {
       kdn.filesystems.disko.luks-zfs.decryptRequiresUnits = [
         "dev-bus-usb-001-002.device"
       ];
-      stylix.image = pkgs.fetchurl {
-        # non-expiring share link
-        url = "https://nc.nazarewk.pw/s/q63pjY9H93faf5t/download/lake-view-with-light-blue-water-a6cnqa1pki4g69jt.jpg";
-        sha256 = "sha256-0Dyc9Kj9IkStIJDXw9zlEFHqc2Q5WruPSk/KapM7KgM=";
-      };
-      stylix.polarity = "light";
-      stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/standardized-light.yaml";
     }
     (import ./disko.nix {
       inherit lib;

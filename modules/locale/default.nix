@@ -22,6 +22,11 @@ in {
       type = lib.types.str;
       default = "en_GB.UTF-8";
     };
+
+    userDirs = lib.mkOption {
+      type = lib.types.str;
+      default = cfg.primary;
+    };
   };
 
   config = {
