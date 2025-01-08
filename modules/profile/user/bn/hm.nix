@@ -29,10 +29,9 @@ in {
       stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/standardized-light.yaml";
     }
     {
-      kdn.programs.firefox.enable = true;
       programs.firefox.profiles.bn = {
-        id = 1;
-        isDefault = true;
+        id = 0;
+        settings."intl.locale.requested" = "pl";
       };
     }
     {

@@ -114,15 +114,19 @@ in {
     })
     (lib.mkIf config.kdn.programs.firefox.enable {
       # Firefox
-      # TODO: manage settings?
+
+      # don't search/expand single-word searchbars
+      programs.firefox.policies.GoToIntranetSiteForSingleWordEntryInAddressBar = true;
+
       programs.firefox.profiles.kdn = {
         id = 0;
-        isDefault = true;
+        settings."widget.use-xdg-desktop-portal.mime-picker" = "1";
+        settings."intl.accept_languages" = "en-gb,en-us,en,pl";
+        settings."intl.locale.requested" = "en";
       };
 
       programs.firefox.profiles.bn = {
         id = 2;
-        isDefault = false;
       };
 
       programs.firefox.profiles.kdn.containers = {

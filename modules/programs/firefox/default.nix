@@ -10,7 +10,9 @@ in {
     enable = lib.mkEnableOption "firefox setup";
   };
 
-  config = lib.mkIf cfg.enable {
-    home-manager.sharedModules = [{kdn.programs.firefox.enable = true;}];
-  };
+  config = lib.mkIf cfg.enable (lib.mkMerge [
+    {
+      home-manager.sharedModules = [{kdn.programs.firefox.enable = true;}];
+    }
+  ]);
 }

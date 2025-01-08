@@ -2,6 +2,7 @@
   lib,
   pkgs,
   config,
+  osConfig,
   ...
 }: let
   cfg = config.kdn.programs.firefox;
@@ -22,6 +23,17 @@
   firefoxProfilePathsRel = lib.pipe containerProfilesList [
     (builtins.map (profile: "${profilesPath}/${profile.path}"))
   ];
+
+  /*
+  Status can be “default”, “locked”, “user” or “clear”
+      "default": Read/Write: Settings appear as default even if factory default differs.
+      "locked": Read-Only: Settings appear as default even if factory default differs.
+      "user": Read/Write: Settings appear as changed if it differs from factory default.
+      "clear": Read/Write: Value has no effect. Resets to factory defaults on each startup.
+  */
+  mkPref = Status: Value: {inherit Status Value;};
+  mkPrefLocked = mkPref "locked";
+  mkPrefDefault = mkPref "default";
 in {
   options.kdn.programs.firefox = {
     enable = lib.mkEnableOption "firefox setup";
@@ -95,5 +107,38 @@ in {
         };
       };
     })
+    {
+      programs.firefox.policies = osConfig.programs.firefox.policies;
+      programs.firefox.languagePacks = lib.mkDefault osConfig.programs.firefox.languagePacks;
+    }
+    {
+      programs.firefox.languagePacks = lib.mkDefault ["en-GB" "pl"];
+
+      # see https://discourse.nixos.org/t/combining-best-of-system-firefox-and-home-manager-firefox-settings/37721
+      programs.firefox.policies = {
+        # see https://mozilla.github.io/policy-templates/
+        DisableFirefoxStudies = true;
+        DisablePocket = true;
+        DisableProfileImport = true;
+        DisableTelemetry = true;
+        DontCheckDefaultBrowser = true;
+        NoDefaultBookmarks = true;
+        Preferences."browser.startup.page" = mkPrefDefault "3"; # Open previous windows and tabs
+        Preferences."browser.tabs.warnOnClose" = mkPrefLocked "1";
+        Preferences."widget.use-xdg-desktop-portal.file-picker" = mkPrefLocked "1";
+        PromptForDownloadLocation = true;
+        SearchBar = "unified";
+        TranslateEnabled = true;
+      };
+    }
+    {
+      # disable first run and update wizards
+      programs.firefox.policies = {
+        OverrideFirstRunPage = "";
+        OverridePostUpdatePage = "";
+
+        Preferences."browser.startup.homepage_override.mstone" = mkPrefLocked "ignore";
+      };
+    }
   ]);
 }
