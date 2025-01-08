@@ -20,7 +20,7 @@ in {
       dbus
       diffutils
       jq
-      # libsForQt5.kwin
+      # kdePackages.kwin
       cups # lpstat
       perl
       # podman

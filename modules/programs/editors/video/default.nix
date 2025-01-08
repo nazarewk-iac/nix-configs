@@ -11,7 +11,7 @@ in {
 
   config = lib.mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
-      # shotcut # TODO: fails to build jack1 https://github.com/NixOS/nixpkgs/issues/367870
+      shotcut
       kdePackages.kdenlive
       handbrake
     ];

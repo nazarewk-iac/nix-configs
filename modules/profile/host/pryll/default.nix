@@ -13,6 +13,7 @@ in {
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       kdn.hardware.cpu.intel.enable = true;
+      kdn.hardware.gpu.intel.enable = true;
       kdn.profile.machine.desktop.enable = true;
       security.sudo.wheelNeedsPassword = false;
     }

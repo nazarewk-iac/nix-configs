@@ -1,10 +1,8 @@
 {
   inputs.nixpkgs-upstream.url = "github:NixOS/nixpkgs/nixos-unstable";
   inputs.nixpkgs.url = "github:nazarewk/nixpkgs/nixos-unstable";
-  inputs.nixpkgs-patch-2.url = "https://github.com/NixOS/nixpkgs/compare/nixos-unstable..nazarewk:netbird-improvements.patch?full_index=1";
+  inputs.nixpkgs-patch-2.url = "https://github.com/NixOS/nixpkgs/compare/nixos-unstable...nazarewk:netbird-improvements.patch?full_index=1";
   inputs.nixpkgs-patch-2.flake = false;
-  inputs.nixpkgs-patch-3.url = "https://github.com/NixOS/nixpkgs/pull/368966.patch";
-  inputs.nixpkgs-patch-3.flake = false;
 
   inputs.nixpkgs-lib.follows = "nixpkgs";
 

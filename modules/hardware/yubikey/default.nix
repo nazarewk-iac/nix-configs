@@ -26,7 +26,7 @@ in {
       environment.systemPackages = with pkgs;
         [xkcdpass yubikey-manager yubikey-personalization yubico-pam]
         ++ lib.optionals config.kdn.headless.enableGUI (with pkgs; [
-          #yubikey-manager-qt # TODO: 2023-03-03 failed to build with ERROR: Could not find a version that satisfies the requirement cryptography<39,>=2.1
+          yubikey-manager-qt
           yubikey-personalization-gui
         ]);
     }

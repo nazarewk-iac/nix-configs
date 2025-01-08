@@ -53,7 +53,7 @@ in {
 
       # wine utils
       winetricks
-      # bottles # TODO: fails to build, see https://github.com/NixOS/nixpkgs/pull/368882
+      bottles
       wine-wayland
     ];
 

@@ -95,7 +95,7 @@ in {
 
     polkitAgent.package = lib.mkOption {
       type = with lib.types; package;
-      default = pkgs.libsForQt5.polkit-kde-agent;
+      default = pkgs.kdePackages.polkit-kde-agent-1;
     };
     polkitAgent.command = lib.mkOption {
       type = with lib.types; str;

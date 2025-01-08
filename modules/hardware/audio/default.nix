@@ -17,7 +17,7 @@ in {
       # SOUND - PipeWire
       # see additional pavucontrol package
       security.rtkit.enable = true;
-      hardware.pulseaudio.enable = false;
+      services.pulseaudio.enable = false;
       services.pipewire.enable = true;
 
       services.pipewire.alsa.enable = true;
@@ -26,7 +26,7 @@ in {
       services.pipewire.pulse.enable = true;
       services.pipewire.wireplumber.enable = true;
 
-      hardware.pulseaudio.extraModules = [
+      services.pulseaudio.extraModules = [
         pkgs.pulseaudio-modules-bt
       ];
 

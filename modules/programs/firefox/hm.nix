@@ -56,7 +56,7 @@ in {
       home.file.".mozilla/native-messaging-hosts".force = true;
     }
     {
-      kdn.programs.firefox.nativeMessagingHosts = with pkgs; [libsForQt5.plasma-browser-integration];
+      kdn.programs.firefox.nativeMessagingHosts = with pkgs; [kdePackages.plasma-browser-integration];
     }
     (lib.mkIf (firefoxProfilePathsRel != {}) {
       home.file = lib.pipe firefoxProfilePathsRel [

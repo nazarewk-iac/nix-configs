@@ -11,9 +11,7 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    # TODO: enable it back after https://github.com/NixOS/nixpkgs/issues/353961
-    kdn.programs.blender.enable = false;
-    # TODO: enable it back after https://github.com/NixOS/nixpkgs/issues/353863
-    kdn.programs.orca-slicer.enable = false;
+    kdn.programs.blender.enable = true;
+    kdn.programs.orca-slicer.enable = true;
   };
 }
