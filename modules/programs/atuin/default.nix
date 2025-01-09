@@ -137,6 +137,7 @@ in {
               secrets = config.sops.secrets;
             in ''
               export PATH="${lib.makeBinPath (with pkgs; [coreutils gnugrep])}:$PATH"
+              set -eEuo pipefail
 
               atuin() {
                 /run/wrappers/bin/sudo -u '${username}' '${lib.getExe pkgs.atuin}' "$@"
