@@ -11,8 +11,6 @@ in {
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
-    {
-      home-manager.sharedModules = [{kdn.programs.firefox.enable = true;}];
-    }
+    {home-manager.sharedModules = [{kdn.programs.firefox.enable = true;}];}
   ]);
 }
