@@ -221,6 +221,3 @@ Using my own [`.flake.patches/update.py`](.flake.patches/update.py) script:
 2. run `nix run '.#nixpkgs-update' g:patches`
 
 Most of it is wrapped in [`/nixpkgs-update.sh`](nixpkgs-update.sh) and top entries of [`/flake.nix`](flake.nix).
-
-Note this can be used to patch arbitrary flake, not just `nixpkgs`!
-Just create `<input>-upstream`, `<input>` & `<input>-patch-<num>` inputs.
