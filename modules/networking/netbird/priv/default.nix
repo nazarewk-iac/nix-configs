@@ -38,22 +38,16 @@ in {
       ];
     }
     (lib.mkIf config.kdn.security.secrets.allowed {
-      # Netbird automated login
-      sops.templates."netbird-priv.env" = {
-        owner = "netbird-priv";
-        group = "netbird-priv";
-        content = ''
-          NB_SETUP_KEY="${config.sops.placeholder."default/netbird-priv/${cfg.type}/setup-key"}"
-        '';
-      };
-      systemd.services.netbird-priv.after = lib.lists.optional (config.systemd.services ? sops-install-secrets) "sops-install-secrets.service";
-      systemd.services.netbird-priv.requires = lib.lists.optional (config.systemd.services ? sops-install-secrets) "sops-install-secrets.service";
-      systemd.services.netbird-priv.serviceConfig.EnvironmentFile = config.sops.templates."netbird-priv.env".path;
+      systemd.services.netbird-priv.after = ["sops-install-secrets.service"];
+      systemd.services.netbird-priv.requires = ["sops-install-secrets.service"];
+      systemd.services.netbird-priv.environment.NB_SETUP_KEY_FILE = config.kdn.security.secrets.secrets.default.netbird-priv."${cfg.type}".setup-key.path;
       systemd.services.netbird-priv.postStart = ''
+        set -x
         nb='${lib.getExe config.services.netbird.clients.priv.wrapper}'
+        keyFile="''${NB_SETUP_KEY_FILE:-"${config.kdn.security.secrets.secrets.default.netbird-priv."${cfg.type}".setup-key.path}"}"
         if "$nb" status 2>&1 | grep --quiet 'NeedsLogin' ; then
-          cut -b1-8 <<<"$NB_SETUP_KEY"
-          "$nb" up
+          echo "Using keyfile $(cut -b1-8 <"$keyFile")" >&2
+          "$nb" up --setup-key-file="$keyFile"
         fi
       '';
     })
