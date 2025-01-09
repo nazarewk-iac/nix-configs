@@ -1,0 +1,21 @@
+[default.patch.gh-compare]
+base = "main"
+skip = 0
+
+[default.repo]
+input = "{name}"
+upstream_input = "{name}-upstream"
+
+
+[patch.nixpkgs.netbird.gh-compare]
+# https://github.com/NixOS/nixpkgs/compare/nixos-unstable...nazarewk:netbird-improvements~1.patch?full_index=1
+repo = "NixOS/nixpkgs"
+base = "nixos-unstable"
+ref = "nazarewk:netbird-improvements"
+skip = 0
+
+#[patch.sops.age-yubikey.gh-compare]
+## https://github.com/getsops/sops/compare/main...brianmcgee:feat/age-plugins.patch?full_index=1
+#repo = "getsops/sops"
+#base = "main"
+#ref = "brianmcgee:feat/age-plugins"

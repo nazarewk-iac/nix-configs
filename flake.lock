@@ -744,11 +744,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1734609456,
+        "lastModified": 1736433753,
         "narHash": "sha256-JgycLVXeHNBHBIRqP2zhmU7N1NQvBaoae2PigAPE/4c=",
         "owner": "nazarewk",
         "repo": "nixpkgs",
-        "rev": "0ee2f789cf5688b8abac8e0209abe4e8f4d468a3",
+        "rev": "d3f2222ec6cecb1f997d624b14b8a9ee6b3f0bf8",
         "type": "github"
       },
       "original": {
@@ -772,18 +772,6 @@
         "ref": "fish",
         "repo": "nixpkgs",
         "type": "github"
-      }
-    },
-    "nixpkgs-patch-2": {
-      "flake": false,
-      "locked": {
-        "narHash": "sha256-fZ1CBdkA1s0xYcA2wd91QlpgJh4ZR5DKOkJsMi+1MMM=",
-        "type": "file",
-        "url": "https://github.com/NixOS/nixpkgs/compare/nixos-unstable...nazarewk:netbird-improvements.patch?full_index=1"
-      },
-      "original": {
-        "type": "file",
-        "url": "https://github.com/NixOS/nixpkgs/compare/nixos-unstable...nazarewk:netbird-improvements.patch?full_index=1"
       }
     },
     "nixpkgs-upstream": {
@@ -908,12 +896,12 @@
         "nixpkgs-lib": [
           "nixpkgs"
         ],
-        "nixpkgs-patch-2": "nixpkgs-patch-2",
         "nixpkgs-upstream": "nixpkgs-upstream",
         "nur": "nur",
         "poetry2nix": "poetry2nix",
         "preservation": "preservation",
         "rust-overlay": "rust-overlay",
+        "sops": "sops",
         "sops-nix": "sops-nix",
         "stylix": "stylix",
         "systems": "systems_4",
@@ -940,6 +928,23 @@
       "original": {
         "owner": "oxalica",
         "repo": "rust-overlay",
+        "type": "github"
+      }
+    },
+    "sops": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1735059628,
+        "narHash": "sha256-mr/ZbdxDdzACbBBmrrM1tSV3cWi+0KtY6nigcFp6/i8=",
+        "owner": "brianmcgee",
+        "repo": "sops",
+        "rev": "eca80c22cb2e5b84800d7b5025cbb01a07edee2f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "brianmcgee",
+        "ref": "feat/age-plugins",
+        "repo": "sops",
         "type": "github"
       }
     },

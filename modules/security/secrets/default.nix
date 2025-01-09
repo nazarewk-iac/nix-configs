@@ -3,6 +3,7 @@
   pkgs,
   config,
   self,
+  inputs,
   ...
 }: let
   cfg = config.kdn.security.secrets;
@@ -78,7 +79,7 @@ in {
               text = ''
                 output="''${1:-"-"}"
                 if test "$output" == "-" ; then
-                  output="/dev/stdin"
+                  output="/dev/stdout"
                 else
                   outdir="''${output%/*}"
                   test "$outdir" == "$output" || mkdir -p "$outdir"
@@ -256,12 +257,46 @@ in {
                   )
                 ]);
             };
+          /*
+          TODO: drop after https://github.com/getsops/sops/pull/1641 is merged
+          */
+          sops = pkgs.callPackage ./sops/package.nix {
+            src = inputs.sops;
+            vendorHash = "sha256-v1bwI4sat9zYJxo0WLv4l6QXwbrgpeAFO3Y0E0vwfJ4=";
+          };
+        })
+        (final: prev: {
+          sops = prev.buildEnv {
+            # add SOPS_AGE_KEY generation, replaces the need to maintain separate identities file
+            name = "kdn-sops";
+            inherit (prev.sops) meta passthru;
+
+            paths = [
+              prev.sops
+              (lib.hiPrio (prev.writeShellApplication {
+                name = prev.sops.meta.mainProgram;
+                runtimeInputs = with prev; [gnused];
+                text = ''
+                  if test "''${KDN_SOPS_AGE_GEN_KEYS:-"1"}" == 1 ; then
+                    SOPS_AGE_KEY="$(
+                      {
+                        echo "''${SOPS_AGE_KEY:-""}"
+                        ${lib.getExe cfg.age.genScripts} 2>/dev/null
+                      } | sed '/^$/d'
+                    )"
+                  fi
+                  export SOPS_AGE_KEY
+                  ${lib.getExe prev.sops} "$@"
+                '';
+              }))
+            ];
+          };
         })
       ];
 
       environment.systemPackages =
         (with pkgs; [
-          (pkgs.callPackage ./sops/package.nix {})
+          sops
           age
           ssh-to-age
           ssh-to-pgp
@@ -301,22 +336,6 @@ in {
       services.userborn.enable = true;
       systemd.services.sops-install-secrets.after = lib.optional (config.systemd.targets ? "preservation") "preservation.target";
       systemd.services.sops-install-secrets.requires = lib.optional (config.systemd.targets ? "preservation") "preservation.target";
-      systemd.services.sops-install-secrets.preStart = let
-        escapedKeyFile = lib.escapeShellArg config.sops.age.keyFile;
-      in ''
-        printf "Rendering %s\n" ${escapedKeyFile}
-        ${lib.getExe cfg.age.genScripts} ${escapedKeyFile}
-      '';
-      systemd.user.services.kdn-sops-age-gen-keys = {
-        wantedBy = ["default.target"];
-        description = "generates ~/.config/sops/age/keys.txt";
-        serviceConfig.Type = "oneshot";
-        serviceConfig.RemainAfterExit = true;
-        serviceConfig.ExecStart = lib.strings.escapeShellArgs [
-          (lib.getExe cfg.age.genScripts)
-          "%h/.config/sops/age/keys.txt"
-        ];
-      };
     }
     (lib.mkIf cfg.allow {
       sops.templates."placeholder.txt".content = ""; # fills-in `sops.placeholder`

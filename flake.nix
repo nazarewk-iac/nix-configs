@@ -1,8 +1,6 @@
 {
   inputs.nixpkgs-upstream.url = "github:NixOS/nixpkgs/nixos-unstable";
   inputs.nixpkgs.url = "github:nazarewk/nixpkgs/nixos-unstable";
-  inputs.nixpkgs-patch-2.url = "https://github.com/NixOS/nixpkgs/compare/nixos-unstable...nazarewk:netbird-improvements.patch?full_index=1";
-  inputs.nixpkgs-patch-2.flake = false;
 
   inputs.nixpkgs-lib.follows = "nixpkgs";
 
@@ -47,6 +45,11 @@
   inputs.treefmt-nix.url = "github:numtide/treefmt-nix";
   inputs.ulauncher.url = "github:Ulauncher/Ulauncher/v6";
   inputs.wezterm.url = "github:wez/wezterm/main?dir=nix";
+  #inputs.sops-upstream.flake = false;
+  #inputs.sops-upstream.url = "github:getsops/sops";
+  inputs.sops.flake = false;
+  #inputs.sops.url = "github:nazarewk/sops";
+  inputs.sops.url = "github:brianmcgee/sops/feat/age-plugins";
 
   /*
   * dependencies
@@ -165,6 +168,7 @@
             gnugrep
             nix-patcher
             pass
+            python3
           ];
           text = builtins.readFile ./nixpkgs-update.sh;
         });

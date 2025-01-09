@@ -11,18 +11,20 @@ list_inputs() {
 }
 
 args=("$@")
-updater_args=()
+update_patches_args=(--update)
+updater_args=(--apply)
 inputs=()
 test "${#args[@]}" -gt 0 || args+=("g:all")
 for arg in "${args[@]}" ; do
   case "$arg" in
     g:patches)
-      mapfile -t -O "${#inputs[@]}" inputs < <(list_inputs | grep -e '-patch-[[:digit:]]\+$')
+      updater_args+=("${update_patches_args[@]}")
       ;;
     g:upstreams)
       mapfile -t -O "${#inputs[@]}" inputs < <(list_inputs | grep -e '-upstream$')
       ;;
     g:all)
+      updater_args+=("${update_patches_args[@]}")
       mapfile -t -O "${#inputs[@]}" inputs < <(list_inputs)
       ;;
     i:*)
@@ -34,10 +36,8 @@ for arg in "${args[@]}" ; do
   esac
 done
 
-mapfile -t inputs < <(printf "%s\n" "${inputs[@]}" | uniq)
+mapfile -t inputs < <(printf "%s\n" "${inputs[@]}" | uniq | grep -v '^$' 2>/dev/null || :)
 
 test "${#inputs[@]}" == 0 || nix flake update "${inputs[@]}"
 
-GITHUB_TOKEN="$(pass show python-keyring/git/github.com/nazarewk)" \
-  nix-patcher --update "${updater_args[@]}"
-nix flake update nixpkgs
+python .flake.patches/update.py "${updater_args[@]}"

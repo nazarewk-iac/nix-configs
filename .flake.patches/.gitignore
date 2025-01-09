@@ -13,21 +13,7 @@
 ### END ignore everything
 ###
 
-# shareable Jetbrains files
-!.idea/modules.xml
-!.idea/watcherTasks.xml
-!.idea/vcs.xml
-!.idea/misc.xml
-!*.iml
-
-!*.sops.yaml
-!*.unattended.sops.*
-!*.nix
-.*.nix
-!*.patch
-!*.sh
-!*.md
-!/.envrc
-!/flake.lock
-
-!/.flake.patches
+!/update.py
+!/config.toml
+!/*/*.patch
+/*/repo

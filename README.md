@@ -212,17 +212,13 @@ New FIDO2 token enrolled as key slot 1.
 
 # Keeping nixpkgs fork with arbitrary patches up to date
 
-How to use https://github.com/katrinafyi/nix-patcher to maintain nixpkgs fork:
+Using my own [`.flake.patches/update.py`](.flake.patches/update.py) script:
 
-1. Create required `nixpkgs` inputs, see `nix-patcher` repo for more details:
+1. Create required `nixpkgs` inputs:
     - `nixpkgs-upstream` - desired upstream nixpkgs branch
     - `nixpkgs` - the fork you have access to that will be managed by nix-patcher
-    - `nixpkgs-patch-<num>` - numbered patches to be applied in specific order on top of `nixpkgs-upstream`
-      and pushed to `nixpkgs` fork
-2. run
-   `nix flake update && GITHUB_TOKEN="$(pass show python-keyring/git/github.com/nazarewk)" nix-patcher --update "$@"`
-3. In your root `flake.nix` create the `nixpkgs` input pointing to the same input as the sub-flake.
-4. Run `nix flake update nixpkgs` in your root flake.
+    - add entries to [`.flake.patches/config.toml`](.flake.patches/config.toml)
+2. run `nix run '.#nixpkgs-update' g:patches`
 
 Most of it is wrapped in [`/nixpkgs-update.sh`](nixpkgs-update.sh) and top entries of [`/flake.nix`](flake.nix).
 

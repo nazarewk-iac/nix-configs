@@ -79,18 +79,13 @@ in {
         (pkgs.writeShellApplication {
           name = "kdn-sops-age-gen-keys-yubikey";
           runtimeInputs = with pkgs; [gnugrep age-plugin-yubikey];
-          /*
-          TODO: watch out for yubikey support in upstream sops:
-           - https://github.com/Mic92/sops-nix/issues/377
-           - https://github.com/getsops/sops/pull/1465
-          */
           runtimeEnv.ALLOW_ROOT_DEFAULT = "false";
           text = ''
-            : "''${ALLOW_ROOT:="$ALLOW_ROOT_DEFAULT"}"
-            if test "$ALLOW_ROOT" == false && test "$EUID" == 0 ; then
-              echo "should not discover YubiKeys as root" >&2
-              exit 0
-            fi
+            #: "''${ALLOW_ROOT:="$ALLOW_ROOT_DEFAULT"}"
+            #if test "$ALLOW_ROOT" == false && test "$EUID" == 0 ; then
+            #  echo "should not discover YubiKeys as root" >&2
+            #  exit 0
+            #fi
             age-plugin-yubikey --identity | grep '^AGE-PLUGIN-YUBIKEY-' || :
           '';
         })
