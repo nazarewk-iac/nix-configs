@@ -104,14 +104,6 @@ in {
         url."https://gist.github.com/".insteadOf = "git@gist.github.com:";
       };
     })
-    (lib.mkIf hasGUI {
-      # KDE Connect
-      services.kdeconnect.enable = true;
-      services.kdeconnect.indicator = true;
-      kdn.hardware.disks.persist."usr/config".directories = [
-        ".config/kdeconnect"
-      ];
-    })
     (lib.mkIf config.kdn.programs.firefox.enable {
       # Firefox
 

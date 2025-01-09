@@ -11,6 +11,7 @@ in {
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
+    {home-manager.sharedModules = [{kdn.profile.machine.desktop.enable = cfg.enable;}];}
     {
       kdn.desktop.base.enable = true;
       kdn.hardware.gpu.enable = true;
@@ -34,6 +35,7 @@ in {
 
       kdn.services.printing.enable = true;
       kdn.programs.firefox.enable = true;
+      kdn.programs.kdeconnect.enable = true;
       environment.systemPackages = with pkgs; [
         libreoffice-qt # non-qt failed to build on 2023-04-07
         # chromium

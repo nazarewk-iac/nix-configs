@@ -79,19 +79,6 @@ in {
         allowedUDPPorts = [21027 22000];
       };
     }
-    (lib.mkIf config.kdn.headless.enableGUI {
-      networking.firewall = let
-        kdeConnectRange = [
-          {
-            from = 1714;
-            to = 1764;
-          }
-        ];
-      in {
-        allowedTCPPortRanges = kdeConnectRange;
-        allowedUDPPortRanges = kdeConnectRange;
-      };
-    })
     (
       let
         cfg = {
