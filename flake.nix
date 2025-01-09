@@ -39,12 +39,14 @@
   inputs.poetry2nix.url = "github:nix-community/poetry2nix";
   inputs.preservation.url = "github:nix-community/preservation";
   inputs.rust-overlay.url = "github:oxalica/rust-overlay";
-  inputs.sops-nix.url = "github:Mic92/sops-nix";
   inputs.stylix.url = "github:danth/stylix";
   inputs.systems.url = "github:nix-systems/default";
   inputs.treefmt-nix.url = "github:numtide/treefmt-nix";
   inputs.ulauncher.url = "github:Ulauncher/Ulauncher/v6";
   inputs.wezterm.url = "github:wez/wezterm/main?dir=nix";
+
+  #inputs.sops-nix.url = "github:Mic92/sops-nix";
+  inputs.sops-nix.url = "github:brianmcgee/sops-nix/feat/age-plugins";
   #inputs.sops-upstream.flake = false;
   #inputs.sops-upstream.url = "github:getsops/sops";
   inputs.sops.flake = false;
@@ -186,9 +188,10 @@
             modules = [
               {
                 home-manager.sharedModules = [{home.stateVersion = "24.11";}];
-                kdn.security.secrets.allow = false;
+                kdn.security.secrets.allow = true;
                 kdn.profile.machine.baseline.enable = true;
                 kdn.security.disk-encryption.enable = true;
+                kdn.networking.netbird.priv.type = "ephemeral";
 
                 environment.systemPackages = with pkgs; [
                 ];

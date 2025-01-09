@@ -28,6 +28,25 @@
         inherit (secretCfg) path;
       })
     config.sops.secrets;
+
+  mkSopsWrapper = pkgs: pkg:
+    pkgs.writeShellApplication {
+      name = pkg.meta.mainProgram or pkg.pname or pkg.name;
+      runtimeInputs = with pkgs; [gnused];
+      inherit (pkg) meta passthru;
+      text = ''
+        if test "''${KDN_SOPS_AGE_GEN_KEYS:-"1"}" == 1 ; then
+          SOPS_AGE_KEY="$(
+            {
+              echo "''${SOPS_AGE_KEY:-""}"
+              ${lib.getExe cfg.age.genScripts} 2>/dev/null
+            } | sed '/^$/d'
+          )"
+        fi
+        export SOPS_AGE_KEY
+        ${lib.getExe pkg} "$@"
+      '';
+    };
 in {
   options.kdn.security.secrets = {
     enable = lib.mkEnableOption "Nix secrets setup";
@@ -266,31 +285,7 @@ in {
           };
         })
         (final: prev: {
-          sops = prev.buildEnv {
-            # add SOPS_AGE_KEY generation, replaces the need to maintain separate identities file
-            name = "kdn-sops";
-            inherit (prev.sops) meta passthru;
-
-            paths = [
-              prev.sops
-              (lib.hiPrio (prev.writeShellApplication {
-                name = prev.sops.meta.mainProgram;
-                runtimeInputs = with prev; [gnused];
-                text = ''
-                  if test "''${KDN_SOPS_AGE_GEN_KEYS:-"1"}" == 1 ; then
-                    SOPS_AGE_KEY="$(
-                      {
-                        echo "''${SOPS_AGE_KEY:-""}"
-                        ${lib.getExe cfg.age.genScripts} 2>/dev/null
-                      } | sed '/^$/d'
-                    )"
-                  fi
-                  export SOPS_AGE_KEY
-                  ${lib.getExe prev.sops} "$@"
-                '';
-              }))
-            ];
-          };
+          sops = mkSopsWrapper prev prev.sops;
         })
       ];
 
@@ -306,12 +301,6 @@ in {
         ];
 
       sops.placeholder = sopsPlaceholders;
-      # see https://github.com/Mic92/sops-nix/issues/65
-      # note: SSH key gets imported automatically
-      sops.gnupg.sshKeyPaths = [];
-      sops.age.sshKeyPaths = [];
-      sops.age.keyFile = "/var/lib/sops-nix/key.txt";
-      sops.age.generateKey = false;
       kdn.security.secrets.age.genScripts = [
         (pkgs.writeShellApplication {
           name = "kdn-sops-age-gen-keys-ssh";
@@ -336,6 +325,35 @@ in {
       services.userborn.enable = true;
       systemd.services.sops-install-secrets.after = lib.optional (config.systemd.targets ? "preservation") "preservation.target";
       systemd.services.sops-install-secrets.requires = lib.optional (config.systemd.targets ? "preservation") "preservation.target";
+    }
+    {
+      # fix for https://github.com/Mic92/sops-nix/pull/680#issuecomment-2580744439
+      # see https://github.com/NixOS/nixpkgs/blob/b33acd9911f90eca3f2b11a0904a4205558aad5b/nixos/lib/systemd-lib.nix#L473-L473
+      systemd.services.sops-install-secrets.environment.PATH = let
+        path = config.systemd.services.sops-install-secrets.path;
+      in
+        lib.mkForce "${lib.makeBinPath path}:${lib.makeSearchPathOutput "bin" "sbin" path}";
+      systemd.services.sops-install-secrets.path = config.sops.age.plugins;
+    }
+    {
+      # fake the file presence, otherwise the install fails
+      # see https://github.com/Mic92/sops-nix/issues/65
+      # note: SSH key gets imported automatically
+      sops.gnupg.sshKeyPaths = [];
+      sops.age.sshKeyPaths = [];
+      sops.age.generateKey = false;
+      sops.age.keyFile = "/var/lib/sops-nix/key.txt";
+      systemd.services.sops-install-secrets.path = with pkgs; [coreutils];
+      systemd.services.sops-install-secrets.preStart = ''
+        keyFile=${lib.strings.escapeShellArg config.sops.age.keyFile}
+        mkdir -p "''${keyFile%/*}"
+        test -e "$keyFile" || touch "$keyFile"
+        {
+          cat ${config.sops.age.keyFile}
+          ${lib.getExe cfg.age.genScripts}
+        } | sort -u >${config.sops.age.keyFile}.tmp
+        mv ${config.sops.age.keyFile}.tmp ${config.sops.age.keyFile}
+      '';
     }
     (lib.mkIf cfg.allow {
       sops.templates."placeholder.txt".content = ""; # fills-in `sops.placeholder`

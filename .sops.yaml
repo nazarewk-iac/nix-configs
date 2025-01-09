@@ -29,7 +29,7 @@ keys:
       age:
         - &yk-pryll-pin-touch age1yubikey1qthpsku0j83z82sp0756rh65dskrz74405wx7l4altxnase6tup3xdrlzgs
         - &yk-pryll-touch age1yubikey1q2257nhsjajgswzukm3prps0037zvm7g9gtawp2q39gr2ty4y8zdz4tk8xq
-        - &yk-pryll-unattended age1yubikey1qd8tv5mue4mgjemgn6u7ax8j0xhfwgt8v33wna83u55usv2av5yd5gxkdm8
+        - &yk-pryll-unattended age1yubikey1q2hphqxt65f2x5ul6kjt8pu0njyjen4593k6240nz5flmn5fx9vxv4nyv5t
 
   hosts:
     # converting SSH key to `age` identity:

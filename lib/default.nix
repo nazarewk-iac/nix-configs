@@ -1,4 +1,5 @@
-{lib, ...}: lib.extend (final: prev: let
+{lib, ...}:
+lib.extend (final: prev: let
   lib = final;
   callLibs = path: import path {inherit lib;};
   attrsets = callLibs ./attrsets/default.nix;
@@ -10,7 +11,7 @@ in {
     (map (path: let
       cur = callLibs path;
       name = let
-        pieces = lib.splitString "/" (toString path);
+        pieces = lib.strings.splitString "/" (toString path);
         len = builtins.length pieces;
       in
         builtins.elemAt pieces (len - 2);

@@ -74,7 +74,10 @@ in {
     (lib.mkIf config.kdn.security.secrets.allowed {
       # SOPS+age config
       services.pcscd.enable = true;
+      sops.age.plugins = with pkgs; [age-plugin-yubikey];
       environment.systemPackages = with pkgs; [age-plugin-yubikey];
+      systemd.services.sops-install-secrets.after = ["pcscd.socket"];
+      systemd.services.sops-install-secrets.requires = ["pcscd.socket"];
       kdn.security.secrets.age.genScripts = [
         (pkgs.writeShellApplication {
           name = "kdn-sops-age-gen-keys-yubikey";
@@ -90,42 +93,18 @@ in {
           '';
         })
       ];
-      home-manager.sharedModules = [
-        {
-          /*
-          TODO: remove the need to run below every time yubikey is changed
-             age-plugin-yubikey --identity | grep '^AGE-PLUGIN-YUBIKEY-' >~/.config/sops/age/keys.txt
-          */
-          ## this should not be present from store, because it will try all keys interactively
-          ##  possibly generated on the fly?
-          #xdg.configFile."sops/age/keys.txt".text = lib.pipe cfg.devices [
-          #  (lib.attrsets.mapAttrsToList (_: yk: lib.attrsets.mapAttrsToList
-          #    (slotNum: slot:
-          #      lib.optional (slot.type == "age-plugin-yubikey") (
-          #        let p = slot."${slot.type}"; in ''
-          #          #         Type: age-plugin-yubikey
-          #          #      Yubikey: ${yk.serial}
-          #          #     PIV Slot: ${slotNum}
-          #          #  Plugin Slot: ${builtins.toString ((lib.strings.toInt slotNum) - 82 + 1)}
-          #          #   PIN Policy: ${p."pin-policy"}
-          #          # Touch Policy: ${p."touch-policy"}
-          #          #    Recipient: ${p.recipient}
-          #          # Notes:
-          #          ${lib.pipe p.notes [
-          #            (builtins.map (lib.strings.splitString "\n"))
-          #            lib.lists.flatten
-          #            (builtins.map (note: "#   ${note}"))
-          #            (builtins.concatStringsSep "\n")
-          #          ]}
-          #          ${p.identity}
-          #        ''
-          #      ))
-          #    yk.piv))
-          #  lib.lists.flatten
-          #  (builtins.concatStringsSep "\n")
-          #];
-        }
-      ];
     })
+    #(lib.mkIf config.kdn.security.secrets.allowed {
+    #  /*
+    #  for some reason it fails once with `Error: pcscd is not running.` then runs just fine
+    #    after `systemctl start sops-install-secrets.service`
+    #  */
+    #  systemd.services.sops-install-secrets.preStart = ''
+    #    sleep 3
+    #  '';
+    #  systemd.services.sops-install-secrets.serviceConfig.Restart = "on-failure";
+    #  systemd.services.sops-install-secrets.startLimitIntervalSec = 15;
+    #  systemd.services.sops-install-secrets.startLimitBurst = 3;
+    #})
   ]);
 }
