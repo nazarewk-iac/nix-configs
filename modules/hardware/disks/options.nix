@@ -92,6 +92,7 @@ in {
     };
 
     users = lib.mkOption {
+      default = {};
       type = lib.types.attrsOf (lib.types.submodule ({name, ...} @ userArgs: {
         options.homeLocation = lib.mkOption {
           type = lib.types.enum (builtins.attrNames cfg.base);
@@ -106,7 +107,6 @@ in {
           default = cfg.userDefaults.homeFileMode;
         };
       }));
-      default = {};
     };
 
     userDefaults.homeLocation = lib.mkOption {
@@ -207,6 +207,7 @@ in {
       }));
     };
     zpools = lib.mkOption {
+      default = {};
       type = lib.types.attrsOf (lib.types.submodule ({name, ...} @ zpool: {
         options.disko = lib.mkOption {
           default = {};
@@ -239,6 +240,7 @@ in {
       }));
     };
     persist = lib.mkOption {
+      default = {};
       type = lib.types.attrsOf (lib.types.submodule {
         options.directories = lib.mkOption {
           type = lib.types.listOf (lib.types.either lib.types.str (lib.types.submodule {freeformType = (pkgs.formats.json {}).type;}));
@@ -265,6 +267,7 @@ in {
       });
     };
     base = lib.mkOption {
+      default = {};
       type = lib.types.attrsOf (lib.types.submodule ({name, ...} @ baseArgs: let
         baseCfg = baseArgs.config;
       in {
