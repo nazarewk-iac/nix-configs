@@ -29,8 +29,8 @@ in {
       services.iperf3.openFirewall = true;
       systemd.services.iperf3.serviceConfig = {
         LoadCredential = [
-          "private.pem:${config.kdn.security.secrets.secrets.default.networking.iperf-server.rsa.priv.path}"
-          "users.csv:${config.kdn.security.secrets.secrets.default.networking.iperf-server."users.csv".path}"
+          "private.pem:${config.kdn.security.secrets.sops.secrets.default.networking.iperf-server.rsa.priv.path}"
+          "users.csv:${config.kdn.security.secrets.sops.secrets.default.networking.iperf-server."users.csv".path}"
         ];
       };
       #systemd.services.iperf3.serviceConfig.WorkingDirectory = "$CREDENTIALS_DIRECTORY";
@@ -47,7 +47,7 @@ in {
           name = "kdn-iperf3-client";
           runtimeInputs = [config.services.iperf3.package];
           text = let
-            defaultUsername = lib.pipe config.kdn.security.secrets.secrets.default.networking.iperf-server.users [
+            defaultUsername = lib.pipe config.kdn.security.secrets.sops.secrets.default.networking.iperf-server.users [
               builtins.attrNames
               builtins.head
             ];

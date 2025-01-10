@@ -52,8 +52,8 @@ in {
         StartLimitBurst = 3;
       };
 
-      kdn.filesystems.disko.luks-zfs.enable = true;
-      kdn.filesystems.disko.luks-zfs.decryptRequiresUnits = [
+      kdn.fs.disko.luks-zfs.enable = true;
+      kdn.fs.disko.luks-zfs.decryptRequiresUnits = [
         "dev-bus-usb-001-002.device"
       ];
     }

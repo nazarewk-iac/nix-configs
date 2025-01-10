@@ -6,7 +6,7 @@
   ...
 }: let
   cfg = config.kdn.networking.tailscale;
-  authKeys = config.kdn.security.secrets.secrets.default.tailscale.default.auth_keys;
+  authKeys = config.kdn.security.secrets.sops.secrets.default.tailscale.default.auth_keys;
 in {
   options.kdn.networking.tailscale = {
     enable = lib.mkEnableOption "Tailscale client";

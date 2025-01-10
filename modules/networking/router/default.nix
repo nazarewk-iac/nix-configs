@@ -22,7 +22,7 @@
   ports.dhcp.v6-request = 546;
   ports.dhcp.v6-reply = 547;
 
-  knotKeys = config.kdn.security.secrets.placeholders.default.knot-dns.keys;
+  knotKeys = config.kdn.security.secrets.sops.placeholders.default.knot-dns.keys;
   keaTSIGName = "kea.${hostname}";
 
   defaultDNSServers = lib.pipe cfg.nets [
@@ -59,7 +59,7 @@
       ++ (with pkgs; [
         coreutils
         gnused
-        kdn.kdn-secrets
+        kdn.kdn-sops-secrets
       ]);
     runtimeEnv.TSIG_KEY_PATH = config.sops.templates."knot/sops-key.admin.conf".path;
     runtimeEnv.KNOT_ADDR = cfg.knot.localAddress;

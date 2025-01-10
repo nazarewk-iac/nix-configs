@@ -18,6 +18,7 @@ in {
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
+      # TODO: add/switch to `network-online.target` instead of `network.target` to properly initialize
       services.netbird.clients.priv.port = 51819;
 
       environment.systemPackages = with pkgs; [
@@ -38,13 +39,13 @@ in {
       ];
     }
     (lib.mkIf config.kdn.security.secrets.allowed {
-      systemd.services.netbird-priv.after = ["sops-install-secrets.service"];
-      systemd.services.netbird-priv.requires = ["sops-install-secrets.service"];
-      systemd.services.netbird-priv.environment.NB_SETUP_KEY_FILE = config.kdn.security.secrets.secrets.default.netbird-priv."${cfg.type}".setup-key.path;
+      systemd.services.netbird-priv.after = ["kdn-secrets.target"];
+      systemd.services.netbird-priv.requires = ["kdn-secrets.target"];
+      systemd.services.netbird-priv.environment.NB_SETUP_KEY_FILE = config.kdn.security.secrets.sops.secrets.default.netbird-priv."${cfg.type}".setup-key.path;
       systemd.services.netbird-priv.postStart = ''
         set -x
         nb='${lib.getExe config.services.netbird.clients.priv.wrapper}'
-        keyFile="''${NB_SETUP_KEY_FILE:-"${config.kdn.security.secrets.secrets.default.netbird-priv."${cfg.type}".setup-key.path}"}"
+        keyFile="''${NB_SETUP_KEY_FILE:-"${config.kdn.security.secrets.sops.secrets.default.netbird-priv."${cfg.type}".setup-key.path}"}"
         if "$nb" status 2>&1 | grep --quiet 'NeedsLogin' ; then
           echo "Using keyfile $(cut -b1-8 <"$keyFile")" >&2
           "$nb" up --setup-key-file="$keyFile"

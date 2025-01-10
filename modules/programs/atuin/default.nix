@@ -124,8 +124,8 @@ in {
           name = "kdn-atuin-login-${username}";
           value = {
             wantedBy = ["network-online.target"];
-            after = ["network-online.target" "sops-install-secrets.service"];
-            requires = ["network-online.target" "sops-install-secrets.service"];
+            after = ["network-online.target" "kdn-secrets.target"];
+            requires = ["network-online.target" "kdn-secrets.target"];
 
             serviceConfig = {
               Type = "oneshot";

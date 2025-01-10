@@ -30,6 +30,8 @@ in {
         jetbrains.clion
         #jetbrains.goland
         #jetbrains.ruby-mine
+
+        gcc # required to compile cpython
       ];
       systemd.user.services.jetbrains-remote = {
         Unit.Description = ''Automatically fix the IDEA Ultimate used by the remote SSH extension, based on https://github.com/NixOS/nixpkgs/issues/153335#issuecomment-1139366573'';

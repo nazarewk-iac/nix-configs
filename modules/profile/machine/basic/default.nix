@@ -114,11 +114,14 @@ in {
           envKey = "wifi_password_${safeSSID}";
           secretPath = secretCfg.password.path;
         })
-        config.kdn.security.secrets.secrets.networking.wlan;
+        config.kdn.security.secrets.sops.secrets.networking.wlan;
     in
       lib.mkIf config.kdn.security.secrets.allowed {
         systemd.services.kdn-networkmanager-gen-secrets-environments = {
           description = "Renders NetworkManager environment fro secrets";
+          after = ["kdn-secrets.target"];
+          requires = ["kdn-secrets.target"];
+          partOf = ["kdn-secrets-reload.target"];
           serviceConfig = {
             Type = "oneshot";
             ExecStart = lib.getExe (pkgs.writeShellApplication {

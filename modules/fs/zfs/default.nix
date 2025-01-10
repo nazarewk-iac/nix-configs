@@ -4,7 +4,7 @@
   config,
   ...
 }: let
-  cfg = config.kdn.filesystems.zfs;
+  cfg = config.kdn.fs.zfs;
 
   atLeastZFSVersion = lib.strings.versionAtLeast config.boot.zfs.package.version;
 
@@ -26,7 +26,7 @@
         e:
           lib.optional e.check
           (lib.trivial.warnIf (e.pkg == null)
-            "kdn.filesystems.zfs: kernel package not found/removed for: ${e.name}"
+            "kdn.fs.zfs: kernel package not found/removed for: ${e.name}"
             e.pkg)
       ))
       builtins.concatLists
@@ -34,7 +34,7 @@
       builtins.head
     ];
 in {
-  options.kdn.filesystems.zfs = {
+  options.kdn.fs.zfs = {
     enable = lib.mkOption {
       type = lib.types.bool;
       default = builtins.any (fs: fs.fsType == "zfs") (builtins.attrValues config.fileSystems);

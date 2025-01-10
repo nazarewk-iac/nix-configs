@@ -148,7 +148,7 @@ in {
       services.avahi.enable = false; # conficts with `resolved` `MulticastDNS`/`LLMNR`
 
       kdn.development.shell.enable = lib.mkDefault true;
-      kdn.filesystems.zfs.enable = lib.mkDefault true;
+      kdn.fs.zfs.enable = lib.mkDefault true;
       kdn.hardware.usbip.enable = lib.mkDefault true;
       kdn.hardware.yubikey.enable = lib.mkDefault true;
       kdn.programs.direnv.enable = lib.mkDefault true;
@@ -184,7 +184,7 @@ in {
     }
     (lib.mkIf config.kdn.security.secrets.allowed {
       kdn.networking.dynamic-hosts.enable = true;
-      sops.templates = lib.pipe config.kdn.security.secrets.placeholders.networking.hosts [
+      sops.templates = lib.pipe config.kdn.security.secrets.sops.placeholders.networking.hosts [
         (lib.attrsets.mapAttrsToList (name: text: let
           path = "/etc/hosts.d/60-${config.kdn.managed.infix.default}-${name}.hosts";
         in {
@@ -273,10 +273,10 @@ in {
     }
     {
       kdn.security.secrets.enable = lib.mkDefault true;
-      kdn.security.secrets.files."default" = {
+      kdn.security.secrets.sops.files."default" = {
         sopsFile = "${self}/default.unattended.sops.yaml";
       };
-      kdn.security.secrets.files."networking" = {
+      kdn.security.secrets.sops.files."networking" = {
         keyPrefix = "networking";
         sopsFile = "${self}/default.unattended.sops.yaml";
         basePath = "/run/configs";
@@ -312,7 +312,7 @@ in {
           '';
         };
       in {
-        kdn.security.secrets.files."anonymization" = {
+        kdn.security.secrets.sops.files."anonymization" = {
           keyPrefix = "anonymization";
           sopsFile = "${self}/default.unattended.sops.yaml";
           basePath = "/run/configs";

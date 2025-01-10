@@ -94,17 +94,5 @@ in {
         })
       ];
     })
-    #(lib.mkIf config.kdn.security.secrets.allowed {
-    #  /*
-    #  for some reason it fails once with `Error: pcscd is not running.` then runs just fine
-    #    after `systemctl start sops-install-secrets.service`
-    #  */
-    #  systemd.services.sops-install-secrets.preStart = ''
-    #    sleep 3
-    #  '';
-    #  systemd.services.sops-install-secrets.serviceConfig.Restart = "on-failure";
-    #  systemd.services.sops-install-secrets.startLimitIntervalSec = 15;
-    #  systemd.services.sops-install-secrets.startLimitBurst = 3;
-    #})
   ]);
 }

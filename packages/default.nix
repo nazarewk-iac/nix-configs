@@ -15,6 +15,7 @@
   kdn-anonymize = pkgs.callPackage ./kdn-anonymize {};
   kdn-keepass = pkgs.callPackage ./kdn-keepass {};
   kdn-nix = pkgs.callPackage ./kdn-nix {};
+  kdn-secrets = pkgs.callPackage ./kdn-secrets {};
   klg = pkgs.callPackage ./klg {};
   klog-time-tracker = pkgs.callPackage ./klog-time-tracker {};
   pass-secret-service = pkgs.callPackage ./pass-secret-service {};

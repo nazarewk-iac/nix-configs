@@ -9,7 +9,7 @@
   cfg = config.kdn.profile.host.etra;
 
   rCfg = config.kdn.networking.router;
-  netconf = config.kdn.security.secrets.placeholders.networking;
+  netconf = config.kdn.security.secrets.sops.placeholders.networking;
 
   ula = {
     network = "fd12:ed4e:366d::";

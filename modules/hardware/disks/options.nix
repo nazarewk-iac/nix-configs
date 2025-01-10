@@ -86,8 +86,8 @@ in {
       type = lib.types.bool;
       default = false;
       apply = value:
-        assert lib.assertMsg (!(value && config.kdn.filesystems.disko.luks-zfs.enable)) ''
-          You must choose only one of: `kdn.hardware.disks.enable` or `kdn.filesystems.disko.luks-zfs.enable`, not both!
+        assert lib.assertMsg (!(value && config.kdn.fs.disko.luks-zfs.enable)) ''
+          You must choose only one of: `kdn.hardware.disks.enable` or `kdn.fs.disko.luks-zfs.enable`, not both!
         ''; value;
     };
 

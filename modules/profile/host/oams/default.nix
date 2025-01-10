@@ -23,7 +23,7 @@ in {
         "f /dev/shm/looking-glass 0660 kdn qemu-libvirtd -"
       ];
 
-      kdn.filesystems.disko.luks-zfs.enable = true;
+      kdn.fs.disko.luks-zfs.enable = true;
 
       boot.kernelModules = ["kvm-amd"];
 

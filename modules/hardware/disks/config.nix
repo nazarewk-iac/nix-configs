@@ -418,7 +418,7 @@ in {
       boot.initrd.systemd.enable = true;
 
       disko.enableConfig = true;
-      kdn.filesystems.zfs.enable = true;
+      kdn.fs.zfs.enable = true;
       kdn.security.disk-encryption.enable = true;
       boot.zfs.requestEncryptionCredentials = false;
     })

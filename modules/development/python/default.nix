@@ -9,48 +9,57 @@
   defaultPython = pkgs.python312;
 
   mkPython = pkg: (pkg.withPackages (ps:
-    with ps; [
-      beautifulsoup4
-      black
-      boto3
-      build # build a package, see https://realpython.com/pypi-publish-python-package/#build-your-package
-      cookiecutter
-      deepmerge
-      diagrams
-      duckdb
-      fire
-      flake8
-      fsspec
-      graphviz
-      httpie
-      httpx
-      ipython
-      isort
-      keyring
-      matplotlib
-      mt-940
-      pendulum
-      pip
-      pip-tools
-      pipx
-      pyaml
-      pyheos
-      pytest
-      pyyaml
-      requests
-      ruamel-yaml
-      tqdm
-      twine # upload to pypi, see https://realpython.com/pypi-publish-python-package/#upload-your-package
-      types-beautifulsoup4
-      universal-pathlib
+    with ps;
+      [
+        beautifulsoup4
+        black
+        boto3
+        build # build a package, see https://realpython.com/pypi-publish-python-package/#build-your-package
+        cookiecutter
+        deepmerge
+        diagrams
+        duckdb
+        fire
+        flake8
+        fsspec
+        graphviz
+        httpie
+        httpx
+        ipython
+        isort
+        keyring
+        matplotlib
+        mt-940
+        pendulum
+        pip
+        pip-tools
+        pipx
+        pyaml
+        pyheos
+        pytest
+        pyyaml
+        requests
+        ruamel-yaml
+        tqdm
+        twine # upload to pypi, see https://realpython.com/pypi-publish-python-package/#upload-your-package
+        types-beautifulsoup4
+        universal-pathlib
 
-      pycrypto
+        pycrypto
 
-      (pkgs.http-prompt.override {
-        python3Packages = ps;
-        httpie = ps.httpie;
-      })
-    ]));
+        (pkgs.http-prompt.override {
+          python3Packages = ps;
+          httpie = ps.httpie;
+        })
+      ]
+      ++ [
+        xdg-base-dirs
+      ]
+      ++ [
+        # logging
+        rich
+        structlog
+      ]));
 
   renamedBinariesOnly = fmt: pkg: (pkgs.runCommand "${pkg.name}-renamed-to-${builtins.replaceStrings ["%s"] ["BIN"] fmt}"
     {buildInputs = [];} ''
@@ -83,8 +92,6 @@ in {
     home-manager.sharedModules = [
       {kdn.development.python.enable = true;}
       {programs.git.ignores = [(builtins.readFile ./.gitignore)];}
-      {
-      }
     ];
     nixpkgs.overlays = [
       (final: prev: {

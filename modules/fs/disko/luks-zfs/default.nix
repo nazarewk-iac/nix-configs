@@ -6,11 +6,11 @@
   modulesPath,
   ...
 }: let
-  cfg = config.kdn.filesystems.disko.luks-zfs;
+  cfg = config.kdn.fs.disko.luks-zfs;
 
   cleanDisko = lib.attrsets.filterAttrsRecursive (n: v: !(lib.strings.hasPrefix "_" n)) config.disko.devices;
 in {
-  options.kdn.filesystems.disko.luks-zfs = {
+  options.kdn.fs.disko.luks-zfs = {
     enable = lib.mkEnableOption "enable setup using ZFS on LUKS2 set up using disko";
 
     timeout = lib.mkOption {
@@ -57,7 +57,7 @@ in {
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
-      kdn.filesystems.zfs.enable = true;
+      kdn.fs.zfs.enable = true;
 
       boot.zfs.forceImportRoot = false;
       boot.zfs.extraPools = [cfg.poolName];
