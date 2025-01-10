@@ -9,7 +9,7 @@
   /*
   * pinned inputs to keep up to date manually
   */
-  inputs.helix-editor.url = "github:helix-editor/helix/24.07";
+  inputs.helix-editor.url = "github:helix-editor/helix/25.01";
   # skip https://github.com/tinted-theming/tinted-foot/commit/7ca954e993ee73a7cc9b86c59df4920cc8ff9d34
   # see https://github.com/tinted-theming/tinted-foot/issues/8
   inputs.tinted-foot.flake = false;
