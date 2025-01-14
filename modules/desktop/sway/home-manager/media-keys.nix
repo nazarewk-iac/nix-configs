@@ -11,7 +11,7 @@
   volumectl = "${lib.getExe' pkgs.avizo "volumectl"} -d";
   lightctl = "${lib.getExe' pkgs.avizo "lightctl"} -d";
 in {
-  config = lib.mkIf (config.kdn.headless.enableGUI && cfg.enable) {
+  config = lib.mkIf cfg.enable {
     services.avizo.enable = true;
     services.avizo.settings = {};
     wayland.windowManager.sway = {

@@ -18,7 +18,6 @@ in {
     environment.systemPackages = with pkgs; [
       #inputs.nixpkgs-update.defaultPackage.${system}
       alejandra
-      nix-patcher
       nix-update
       nixfmt-rfc-style
       nixos-anywhere

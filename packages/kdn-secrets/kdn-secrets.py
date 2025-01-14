@@ -104,14 +104,33 @@ class Secrets:
             return ""
 
     def process_all(self):
-        for confdir in self.config_dirs:
-            for file in confdir.glob("*/*.sops.*"):
+        processed = set()
+        for config_dir in self.config_dirs:
+            for file in config_dir.glob("*/*.sops.*"):
+                base = config_dir.name
+                filename = file.stem.removesuffix(".sops")
+                relpath = Path(base) / filename
+                if relpath in processed:
+                    continue
+                processed.add(relpath)
                 self.process_path(file.absolute())
 
-    def process_path(self, absolute: Path, *, log=logger):
+    def find_highest_priority(self, relpath: Path):
+        for config_dir in self.config_dirs:
+            for new_file in sorted(config_dir.glob(f"{relpath}.sops.*")):
+                return new_file
+
+    def process_path(self, file: Path, *, log=logger):
         try:
-            config_dir = absolute.parent.parent
-            log = log.bind(path=str(absolute))
+            config_dir = file.parent.parent
+            filename = file.stem.removesuffix(".sops")
+            base = config_dir.name
+            relpath = Path(base) / filename
+            log = log.bind(
+                cofig_dir=str(config_dir),
+                base=config_dir.name,
+                filename=filename,
+            )
 
             err = False
 
@@ -119,18 +138,23 @@ class Secrets:
                 log.error("file is not from config directory")
                 err = True
 
-            if absolute.suffixes[-2] != ".sops":
+            if file.suffixes[-2] != ".sops":
                 log.error("file must match `<name>.sops.<suffix>` pattern")
                 err = True
 
             if err:
                 return err
 
-            filename = absolute.stem.removesuffix(".sops")
-            relpath = absolute.parent.relative_to(config_dir) / filename
-            log = log.bind(filename=filename)
+            # find highest-priority file
+            new_file = self.find_highest_priority(relpath)
+            if new_file != file:
+                log.info(
+                    "not a highest priority file, ignoring it",
+                    higher_priority=new_file,
+                )
+                return err
 
-            new_checksum = self.calculate_checksum(absolute)
+            new_checksum = self.calculate_checksum(file)
             if not new_checksum:
                 log.info("file removed")
                 return err
@@ -149,7 +173,7 @@ class Secrets:
                     "decrypt",
                     "--output-type=json",
                     f"--output={new}",
-                    absolute,
+                    file,
                 ]
                 try:
                     subprocess.check_call(cmd)

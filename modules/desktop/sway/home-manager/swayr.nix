@@ -12,7 +12,7 @@
   swayr = cmd: "${systemd-cat "swayr"} env RUST_BACKTRACE=1 ${pkgs.swayr}/bin/swayr ${cmd}";
   swayrd = "${systemd-cat "swayrd"} env RUST_BACKTRACE=1 ${pkgs.swayr}/bin/swayrd";
 in {
-  config = lib.mkIf (config.kdn.headless.enableGUI && cfg.enable) {
+  config = lib.mkIf cfg.enable {
     wayland.windowManager.sway = {
       extraConfig = exec swayrd;
       config.keybindings = with config.kdn.desktop.sway.keys; {

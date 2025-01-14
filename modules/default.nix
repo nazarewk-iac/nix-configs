@@ -16,6 +16,7 @@
       inputs.home-manager.nixosModules.home-manager
       inputs.lanzaboote.nixosModules.lanzaboote
       inputs.lanzaboote.nixosModules.uki
+      inputs.lix-module.nixosModules.default
       inputs.nur.modules.nixos.default
       inputs.preservation.nixosModules.preservation
       inputs.sops-nix.nixosModules.sops
@@ -36,8 +37,7 @@
 
     nix.registry.nixpkgs.flake = inputs.nixpkgs;
     nix.settings.auto-optimise-store = true;
-    # 2024-04-04: .stable is quite old at 2.18
-    nix.package = pkgs.nixVersions.latest;
+    nix.package = pkgs.lix;
     nixpkgs.overlays = [self.overlays.default];
   };
 }

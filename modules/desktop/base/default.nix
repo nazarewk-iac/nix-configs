@@ -2,16 +2,20 @@
   lib,
   pkgs,
   config,
-  inputs,
   ...
 }: let
   cfg = config.kdn.desktop.base;
 in {
   options.kdn.desktop.base = {
-    enable = lib.mkEnableOption "Desktop base setup";
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      apply = value: value && config.kdn.desktop.enable;
+    };
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
+    {home-manager.sharedModules = [{kdn.desktop.base.enable = cfg.enable;}];}
     {
       services.displayManager.sddm.enable = true;
       # default maximum user is 30000, but I'm assigning higher than that

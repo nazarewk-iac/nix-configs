@@ -8,12 +8,16 @@
   cfg = config.kdn.desktop.kde;
 in {
   options.kdn.desktop.kde = {
-    enable = lib.mkEnableOption "KDE Plasma desktop setup";
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      apply = value: value && config.kdn.desktop.enable;
+    };
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
+    {home-manager.sharedModules = [{kdn.desktop.kde.enable = cfg.enable;}];}
     {
-      home-manager.sharedModules = [{kdn.desktop.kde.enable = cfg.enable;}];
       services.desktopManager.plasma6.enable = true;
       services.displayManager.defaultSession = "plasma";
     }

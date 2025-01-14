@@ -15,7 +15,6 @@ in {
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
-      # required for remote-building using nixinate, see https://discourse.nixos.org/t/way-to-build-nixos-on-x86-64-machine-and-serve-to-aarch64-over-local-network/18660
       # TODO: switch to signed store building?
       nix.settings.trusted-users = ["kdn"];
       kdn.programs.atuin.users = ["kdn"];

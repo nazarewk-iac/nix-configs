@@ -48,7 +48,7 @@
         pycrypto
 
         (pkgs.http-prompt.override {
-          python3Packages = ps;
+          #python3Packages = ps;
           httpie = ps.httpie;
         })
       ]

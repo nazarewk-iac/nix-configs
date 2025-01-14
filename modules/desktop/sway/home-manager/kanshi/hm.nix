@@ -6,7 +6,6 @@
   ...
 }: let
   cfg = config.kdn.desktop.sway.kanshi;
-  # TODO: assign workspaces with `profile.exec` https://git.sr.ht/~emersion/kanshi/tree/master/item/doc/kanshi.5.scd
   # TODO: generate a list of per-profile outputs?
   isRotated = d: lib.lists.intersectLists ["90" "270" "flipped-90" "flipped-270"] [d.transform] != [];
 
@@ -18,18 +17,29 @@
 
   swaymsg = lib.getExe' config.wayland.windowManager.sway.package "swaymsg";
 
-  mkWorkspaces = ws:
+  execLib.getActiveWorkspace = ''${swaymsg} -t get_workspaces --raw | ${lib.getExe pkgs.jq} -r '.[] | select(.focused).name' '';
+  execLib.switchToWorkspace = ws: ''
+    ${swaymsg} "workspace ${ws}"
+    while test "$(${execLib.getActiveWorkspace}) != "${ws}" ; do
+      sleep 0.1
+    done
+  '';
+
+  execLib.mkWorkspaces = ws:
     lib.pipe ws [
-      (lib.attrsets.mapAttrsToList (ws: dev: ''
-        ${swaymsg} 'workspace ${ws}, move workspace to output ${builtins.toJSON dev.criteria}'
-      ''))
-      (mkExec "setup-workspaces")
+      (lib.attrsets.mapAttrsToList execLib.mkAssign)
+      (a:
+        [''old_workspace="$(${execLib.getActiveWorkspace})"'']
+        ++ a
+        ++ [''${swaymsg} "workspace $old_workspace"''])
+      (execLib.mkExec "setup-workspaces")
     ];
 
-  mkAssign = ws: dev: ''
-    ${swaymsg} 'workspace ${ws}, move workspace to output ${builtins.toJSON dev.criteria}'
+  execLib.mkAssign = ws: dev: ''
+    ${execLib.switchToWorkspace ws}
+    ${swaymsg} 'move workspace to output ${builtins.toJSON dev.criteria}'
   '';
-  mkExec = name: lines:
+  execLib.mkExec = name: lines:
     lib.pipe lines [
       lib.lists.toList
       (builtins.concatStringsSep "\n")
@@ -70,7 +80,11 @@
   };
 in {
   options.kdn.desktop.sway.kanshi = {
-    enable = lib.mkEnableOption "Kanshi (automatic display configuration)";
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      apply = value: value && config.kdn.desktop.enable;
+    };
 
     devices = lib.mkOption {
       type = with lib.types; attrsOf anything;
@@ -103,7 +117,7 @@ in {
     };
   };
 
-  config = lib.mkIf (config.kdn.headless.enableGUI && cfg.enable) (lib.mkMerge [
+  config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       services.kanshi.enable = true;
       services.kanshi.settings =
@@ -119,13 +133,15 @@ in {
               }
               // (
                 if cfg ? exec
-                then {exec = lib.pipe cfg.exec [
-                  lib.lists.toList
-                  (builtins.concatStringsSep "\n")
-                  (pkgs.writeScript "kanshi-profile-${name}-exec")
-                  builtins.toString
-                  lib.lists.toList
-                ];}
+                then {
+                  exec = lib.pipe cfg.exec [
+                    lib.lists.toList
+                    (builtins.concatStringsSep "\n")
+                    (pkgs.writeScript "kanshi-profile-${name}-exec")
+                    builtins.toString
+                    lib.lists.toList
+                  ];
+                }
                 else {}
               );
           })
@@ -209,7 +225,7 @@ in {
             (mkOutput asus-pg78q-dp 0 0 {})
             (mkOutput gb-m32uc asus-pg78q-dp.w 0 {mode = "3840x2160@144Hz";})
           ];
-          exec = mkWorkspaces {
+          exec = execLib.mkWorkspaces {
             "1" = gb-m32uc;
             "2" = asus-pg78q-dp;
             "3" = asus-pg78q-dp;
@@ -222,14 +238,13 @@ in {
             (mkOutput gb-m32uc asus-pg78q-dp.w 0 {mode = "3840x2160@144Hz";})
             (mkOutput kvm-brys (asus-pg78q-dp.w + gb-m32uc.w + 500) 0 {})
           ];
-          exec = [
-            (mkAssign "1" gb-m32uc)
-            (mkAssign "2" asus-pg78q-dp)
-            (mkAssign "3" asus-pg78q-dp)
-            (mkAssign "4" gb-m32uc)
-            (mkAssign "9" kvm-brys)
-            "${swaymsg} 'workspace 1'"
-          ];
+          exec = execLib.mkWorkspaces {
+            "1" = gb-m32uc;
+            "2" = asus-pg78q-dp;
+            "3" = asus-pg78q-dp;
+            "4" = gb-m32uc;
+            "9" = kvm-brys;
+          };
         };
         oams = {
           outputs = [
@@ -242,7 +257,7 @@ in {
             (mkOutput gb-m32uc asus-pg78q-hub.w 0 {})
             (mkOutput oams (asus-pg78q-hub.w + gb-m32uc.w) (gb-m32uc.h - oams.h) {})
           ];
-          exec = mkWorkspaces {
+          exec = execLib.mkWorkspaces {
             "1" = gb-m32uc;
             "2" = asus-pg78q-hub;
             "3" = gb-m32uc;
@@ -254,7 +269,7 @@ in {
             (mkOutput gb-m32uc 0 0 {})
             (mkOutput oams (gb-m32uc.w) (gb-m32uc.h - oams.h) {})
           ];
-          exec = mkWorkspaces {
+          exec = execLib.mkWorkspaces {
             "1" = gb-m32uc;
             "2" = oams;
             "3" = oams;

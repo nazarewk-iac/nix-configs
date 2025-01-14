@@ -25,7 +25,7 @@ in {
       services.udev.packages = with pkgs; [yubikey-personalization];
       environment.systemPackages = with pkgs;
         [xkcdpass yubikey-manager yubikey-personalization yubico-pam]
-        ++ lib.optionals config.kdn.headless.enableGUI (with pkgs; [
+        ++ lib.optionals config.kdn.desktop.enable (with pkgs; [
           yubikey-manager-qt
           yubikey-personalization-gui
         ]);

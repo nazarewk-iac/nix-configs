@@ -10,6 +10,10 @@ in {
   # TODO: figure out why exiting Sway doesn't stop/restart `sddm-helper` aka `sddm` aka `display-manager.service`
   # TODO: figure out why exiting Sway a second time cannot `systemctl restart display-manager.service`
   # TODO: figure out why exiting Sway logs out all SSH sessions
+  options.wayland.systemd.target = lib.mkOption {
+    type = with lib.types; str;
+    default = config.kdn.desktop.sway.systemd.session.target;
+  };
   options.kdn.desktop.sway = {
     enable = lib.mkEnableOption "Sway base setup";
 
@@ -158,6 +162,7 @@ in {
     {
       home-manager.sharedModules = [
         {
+          wayland.systemd.target = lib.mkDefault config.wayland.systemd.target;
           kdn.desktop.sway = {
             inherit (cfg) enable prefix systemd keys;
           };
@@ -273,20 +278,20 @@ in {
       systemd.user.services."xdg-desktop-portal" = {
         requires = [config.kdn.desktop.sway.systemd.envs.target];
         after = [config.kdn.desktop.sway.systemd.envs.target];
-        partOf = [config.kdn.desktop.sway.systemd.session.target];
+        partOf = [config.wayland.systemd.target];
         serviceConfig.Slice = "background.slice";
       };
 
       systemd.user.services."xdg-desktop-portal-gtk" = {
         requires = [config.kdn.desktop.sway.systemd.envs.target];
         after = [config.kdn.desktop.sway.systemd.envs.target];
-        partOf = [config.kdn.desktop.sway.systemd.session.target];
+        partOf = [config.wayland.systemd.target];
         serviceConfig.Slice = "background.slice";
       };
 
       systemd.user.services."${config.kdn.desktop.sway.systemd.polkit-agent.name}" = {
         description = config.kdn.desktop.sway.systemd.polkit-agent.service;
-        partOf = [config.kdn.desktop.sway.systemd.session.target];
+        partOf = [config.wayland.systemd.target];
         requires = [config.kdn.desktop.sway.systemd.envs.target];
         after = [config.kdn.desktop.sway.systemd.envs.target];
         script = cfg.polkitAgent.command;
@@ -412,7 +417,7 @@ in {
         description = config.kdn.desktop.sway.systemd.secrets-service.service;
         requires = [config.kdn.desktop.sway.systemd.envs.target];
         after = [config.kdn.desktop.sway.systemd.envs.target];
-        partOf = [config.kdn.desktop.sway.systemd.session.target];
+        partOf = [config.wayland.systemd.target];
         script = lib.mkDefault "${pkgs.coreutils}/bin/sleep infinity";
         serviceConfig.Slice = "background.slice";
         serviceConfig.Type = "dbus";

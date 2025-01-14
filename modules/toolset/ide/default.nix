@@ -10,16 +10,7 @@ in {
     enable = lib.mkEnableOption "IDEs utils";
   };
 
-  config = lib.mkIf cfg.enable {
-    home-manager.sharedModules = [
-      {
-        programs.helix.enable = true;
-        programs.helix.settings.theme = "darcula-solid";
-        stylix.targets.helix.enable = false;
-      }
-      (lib.mkIf config.kdn.headless.enableGUI {
-        kdn.development.jetbrains.enable = true;
-      })
-    ];
-  };
+  config = lib.mkIf cfg.enable (lib.mkMerge [
+    {home-manager.sharedModules = [{kdn.toolset.ide.enable = cfg.enable;}];}
+  ]);
 }

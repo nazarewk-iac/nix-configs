@@ -182,7 +182,7 @@
     ];
   };
 in {
-  config = lib.mkIf (config.kdn.headless.enableGUI && cfg.enable) {
+  config = lib.mkIf cfg.enable {
     xdg.configFile."waybar/config" = {
       source = (pkgs.formats.json {}).generate "waybar-config.json" (settings // settingsModules);
       onChange = ''

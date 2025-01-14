@@ -50,7 +50,7 @@ in {
         }
       ];
     }
-    (lib.mkIf config.kdn.headless.enableGUI {
+    (lib.mkIf config.kdn.desktop.enable {
       environment.systemPackages = with pkgs; [
         pavucontrol
         helvum # A GTK patchbay for pipewire

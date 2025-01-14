@@ -14,6 +14,9 @@ in {
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {home-manager.sharedModules = [{kdn.headless.base.enable = true;}];}
     {
+      boot.kernelParams = [
+        "plymouth.enable=0" # disable boot splash screen
+      ];
       # note: about `fish` printing `linux` twice https://github.com/danth/stylix/issues/526
       users.defaultUserShell = pkgs.fish;
 

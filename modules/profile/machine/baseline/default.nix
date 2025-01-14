@@ -28,7 +28,7 @@ in {
       kdn.enable = true;
       kdn.profile.user.kdn.enable = true;
 
-      # systemd.sysusers.enable = true; # systemd-sysusers doesn't create normal users. You can currently only use it to create system users.
+      services.userborn.enable = true;
 
       # (modulesPath + "/installer/scan/not-detected.nix")
       hardware.enableRedistributableFirmware = true;
@@ -322,7 +322,7 @@ in {
         environment.sessionVariables.KDN_ANONYMIZE_DEFAULTS = "/run/configs";
         environment.systemPackages =
           [pkgs.kdn.kdn-anonymize]
-          ++ lib.lists.optional config.kdn.headless.enableGUI anonymizeClipboard;
+          ++ lib.lists.optional config.kdn.desktop.enable anonymizeClipboard;
         home-manager.sharedModules = [
           {
             wayland.windowManager.sway = {

@@ -29,7 +29,7 @@ in {
 
       kdn.hardware.audio.enable = true;
 
-      kdn.headless.enableGUI = true;
+      kdn.desktop.enable = true;
 
       boot.extraModulePackages = with config.boot.kernelPackages; [v4l2loopback];
 

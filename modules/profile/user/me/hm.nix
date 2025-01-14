@@ -7,20 +7,11 @@
 } @ arguments: let
   cfg = config.kdn.profile.user.kdn;
   systemUser = cfg.osConfig;
-  hasGUI = config.kdn.headless.enableGUI;
   hasSway = config.kdn.desktop.sway.enable;
   hasWorkstation = osConfig.kdn.profile.machine.workstation.enable;
-  hasKDE = osConfig.services.xserver.desktopManager.plasma5.enable;
 
   nc.rel = "Nextcloud/drag0nius@nc.nazarewk.pw";
   nc.abs = "${config.home.homeDirectory}/${nc.rel}";
-
-  pow = n: i:
-    if i == 1
-    then n
-    else if i == 0
-    then 1
-    else n * pow n (i - 1);
 in {
   options.kdn.profile.user.kdn = {
     enable = lib.mkEnableOption "me (kdn) account setup";
@@ -164,7 +155,7 @@ in {
         };
       };
     })
-    (lib.mkIf hasGUI {
+    (lib.mkIf config.kdn.desktop.enable {
       # see https://github.com/nix-community/home-manager/issues/2104#issuecomment-861676751
       home.file."${nc.rel}/images/screenshots/.keep".source = builtins.toFile "keep" "";
       services.flameshot.settings.General.savePath = "${nc.abs}/images/screenshots";
@@ -199,7 +190,7 @@ in {
         ];
       };
     })
-    (lib.mkIf hasGUI {
+    (lib.mkIf config.kdn.desktop.enable {
       kdn.programs.keepassxc.enable = true;
       kdn.programs.keepassxc.service.enable = true;
       kdn.programs.keepassxc.service.searchDirs = ["${nc.abs}/important/keepass"];
@@ -212,7 +203,7 @@ in {
         Requires = [config.kdn.desktop.sway.systemd.envs.target];
 
         After = [config.kdn.desktop.sway.systemd.envs.target];
-        PartOf = [config.kdn.desktop.sway.systemd.session.target];
+        PartOf = [config.wayland.systemd.target];
       };
       systemd.user.services.keepassxc.Install.WantedBy = [config.kdn.desktop.sway.systemd.secrets-service.service];
 
@@ -222,24 +213,25 @@ in {
           config.kdn.desktop.sway.systemd.secrets-service.service
         ];
         After = [
+          config.wayland.systemd.target
           config.kdn.desktop.sway.systemd.secrets-service.service
           config.kdn.desktop.sway.systemd.envs.target
           "tray.target"
         ];
-        PartOf = [config.kdn.desktop.sway.systemd.session.target];
+        PartOf = [config.wayland.systemd.target];
       };
       systemd.user.services.nextcloud-client.Install = {
-        WantedBy = [config.kdn.desktop.sway.systemd.session.target];
+        WantedBy = [config.wayland.systemd.target];
       };
       systemd.user.services.kdeconnect.Unit = {
         Requires = [config.kdn.desktop.sway.systemd.envs.target];
         After = [config.kdn.desktop.sway.systemd.envs.target];
-        PartOf = [config.kdn.desktop.sway.systemd.session.target];
+        PartOf = [config.wayland.systemd.target];
       };
       systemd.user.services.kdeconnect-indicator.Unit = {
         Requires = [config.kdn.desktop.sway.systemd.envs.target "kdeconnect.service"];
         After = ["tray.target" config.kdn.desktop.sway.systemd.envs.target "kdeconnect.service"];
-        PartOf = [config.kdn.desktop.sway.systemd.session.target];
+        PartOf = [config.wayland.systemd.target];
       };
     })
     (lib.mkIf hasWorkstation {
@@ -249,7 +241,7 @@ in {
       ];
       xdg.configFile."klg/config.toml".source = config.lib.file.mkOutOfStoreSymlink "${nc.abs}/time-logs/klg/config.toml";
     })
-    (lib.mkIf (hasWorkstation && hasGUI) {
+    (lib.mkIf (hasWorkstation && config.kdn.desktop.enable) {
       home.packages = with pkgs; [
         (pkgs.writeShellApplication {
           name = "kdn-drag0nius.kdbx";
@@ -283,7 +275,7 @@ in {
         httpie-desktop
       ];
     })
-    (lib.mkIf (hasWorkstation && hasGUI) {
+    (lib.mkIf (hasWorkstation && config.kdn.desktop.enable) {
       kdn.programs.beeper.enable = true;
       kdn.programs.browsers.enable = true;
       kdn.programs.chromium.enable = true;

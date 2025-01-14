@@ -218,8 +218,15 @@ Using my own [`.flake.patches/update.py`](.flake.patches/update.py) script:
 
 1. Create required `nixpkgs` inputs:
     - `nixpkgs-upstream` - desired upstream nixpkgs branch
-    - `nixpkgs` - the fork you have access to that will be managed by nix-patcher
+    - `nixpkgs` - the fork you have access to that will be managed by the updater
     - add entries to [`.flake.patches/config.toml`](.flake.patches/config.toml)
 2. run `nix run '.#nixpkgs-update' g:patches`
 
 Most of it is wrapped in [`/nixpkgs-update.sh`](nixpkgs-update.sh) and top entries of [`/flake.nix`](flake.nix).
+
+# TODOs
+
+- [ ] TODO: evaluate https://github.com/Mic92/nix-fast-build 
+- [ ] TODO: evaluate https://github.com/nix-community/nix-eval-jobs
+- [ ] TODO: remove `ulauncher`
+- [ ] TODO: try to integrate lanzaboote?

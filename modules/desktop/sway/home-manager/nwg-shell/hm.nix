@@ -8,7 +8,11 @@
   inherit (cfg._lib) mkComponent;
 in {
   options.services.nwg-shell = {
-    enable = lib.mkEnableOption "nwg-shell package suite setup";
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      apply = value: value && config.kdn.desktop.enable;
+    };
 
     _lib = lib.mkOption {
       readOnly = true;

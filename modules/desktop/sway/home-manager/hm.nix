@@ -20,7 +20,11 @@
   };
 in {
   options.kdn.desktop.sway = {
-    enable = lib.mkEnableOption "Sway base setup";
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      apply = value: value && config.kdn.desktop.enable;
+    };
     prefix = lib.mkOption {type = with lib.types; str;};
     systemd = lib.mkOption {readOnly = true;};
     keys = lib.mkOption {
@@ -42,20 +46,20 @@ in {
     ./waybar.nix
   ];
 
-  config = lib.mkIf (config.kdn.headless.enableGUI && cfg.enable) (lib.mkMerge [
+  config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       xsession.preferStatusNotifierItems = true;
       services.network-manager-applet.enable = true;
       systemd.user.services.network-manager-applet.Unit = {
         After = [config.kdn.desktop.sway.systemd.envs.target];
-        PartOf = [config.kdn.desktop.sway.systemd.session.target];
+        PartOf = [config.wayland.systemd.target];
         Requires = lib.mkForce [config.kdn.desktop.sway.systemd.envs.target];
       };
 
       services.blueman-applet.enable = true;
       systemd.user.services.blueman-applet.Unit = {
         After = ["tray.target" "bluetooth.target" config.kdn.desktop.sway.systemd.envs.target];
-        PartOf = [config.kdn.desktop.sway.systemd.session.target];
+        PartOf = [config.wayland.systemd.target];
         Requires = lib.mkForce ["tray.target" config.kdn.desktop.sway.systemd.envs.target];
       };
 

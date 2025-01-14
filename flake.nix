@@ -27,12 +27,8 @@
   inputs.flake-utils.url = "github:numtide/flake-utils";
   inputs.home-manager.url = "github:nix-community/home-manager";
   inputs.lanzaboote.url = "github:nix-community/lanzaboote";
+  inputs.lix-module.url = "git+https://git.lix.systems/lix-project/nixos-module.git?ref=stable";
   inputs.microvm.url = "github:astro/microvm.nix";
-  inputs.mk-shell-bin.url = "github:rrbutani/nix-mk-shell-bin";
-  inputs.nix-eval-jobs.url = "github:nix-community/nix-eval-jobs";
-  inputs.nix-github-actions.url = "github:nix-community/nix-github-actions";
-  inputs.nix-patcher.url = "github:katrinafyi/nix-patcher";
-  inputs.nixinate.url = "github:matthewcroughan/nixinate";
   inputs.nixos-anywhere.url = "github:numtide/nixos-anywhere";
   inputs.nixos-generators.url = "github:nix-community/nixos-generators";
   inputs.nur.url = "github:nix-community/NUR";
@@ -69,12 +65,10 @@
   inputs.lanzaboote.inputs.nixpkgs.follows = "nixpkgs";
   inputs.lanzaboote.inputs.pre-commit-hooks-nix.follows = "empty";
   inputs.lanzaboote.inputs.rust-overlay.follows = "rust-overlay";
+  inputs.lix-module.inputs.flake-utils.follows = "flake-utils";
+  inputs.lix-module.inputs.nixpkgs.follows = "nixpkgs";
   inputs.microvm.inputs.flake-utils.follows = "flake-utils";
   inputs.microvm.inputs.nixpkgs.follows = "nixpkgs";
-  inputs.nix-eval-jobs.inputs.nixpkgs.follows = "nixpkgs";
-  inputs.nix-github-actions.inputs.nixpkgs.follows = "nixpkgs";
-  inputs.nix-patcher.inputs.nixpkgs.follows = "nixpkgs";
-  inputs.nixinate.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nixos-anywhere.inputs.disko.follows = "disko";
   inputs.nixos-anywhere.inputs.flake-parts.follows = "flake-parts";
   inputs.nixos-anywhere.inputs.nixpkgs.follows = "nixpkgs";
@@ -82,7 +76,7 @@
   inputs.nixos-generators.inputs.nixlib.follows = "nixpkgs-lib";
   inputs.nixos-generators.inputs.nixpkgs.follows = "nixpkgs";
   inputs.poetry2nix.inputs.flake-utils.follows = "flake-utils";
-  inputs.poetry2nix.inputs.nix-github-actions.follows = "nix-github-actions";
+  inputs.poetry2nix.inputs.nix-github-actions.follows = "empty";
   inputs.poetry2nix.inputs.nixpkgs.follows = "nixpkgs";
   inputs.poetry2nix.inputs.treefmt-nix.follows = "treefmt-nix";
   inputs.rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
@@ -125,10 +119,6 @@
         inherit lib;
 
         nixos-anywhere = inputs.nixos-anywhere.packages."${final.stdenv.system}".default;
-        nix-patcher = final.callPackage "${inputs.nix-patcher}/patcher.nix" {
-          # see https://github.com/katrinafyi/nix-patcher/issues/4
-          nix = final.nixVersions.latest;
-        };
         wezterm = inputs.wezterm.packages."${final.stdenv.system}".default;
 
         fish =
@@ -160,15 +150,14 @@
           nix repl "$confnix" "$@"
         ''}/bin/repl";
       };
-      apps.nix-patcher = inputs'.nix-patcher.apps.default;
       apps.nixpkgs-update = {
         type = "app";
         program = lib.getExe (pkgs.writeShellApplication {
           name = "nixpkgs-update";
           runtimeInputs = with pkgs; [
+            # TODO: add `update.py` dependency here
             git
             gnugrep
-            nix-patcher
             pass
             python3
           ];
@@ -205,7 +194,6 @@
       ];
     };
     flake.lib = lib;
-    flake.apps = inputs.nixinate.nixinate."x86_64-linux" self;
     flake.nixosModules.default = ./modules;
     flake.nixosConfigurations = lib.mkMerge [
       {
@@ -219,17 +207,6 @@
               system.stateVersion = "23.11";
               home-manager.sharedModules = [{home.stateVersion = "23.11";}];
               networking.hostId = "ce0f2f33"; # cut -c-8 </proc/sys/kernel/random/uuid
-
-              _module.args.nixinate = {
-                #host = "${config.networking.hostName}.netbird.cloud.";
-                #host = hostName;
-                host = "${config.networking.hostName}.lan.etra.net.int.kdn.im";
-                sshUser = "kdn";
-                buildOn = "local"; # valid args are "local" or "remote"
-                substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
-                hermetic = true;
-                nixOptions = ["--show-trace"];
-              };
             })
           ];
         };
@@ -244,17 +221,6 @@
               system.stateVersion = "24.11";
               home-manager.sharedModules = [{home.stateVersion = "24.11";}];
               networking.hostId = "0a989258"; # cut -c-8 </proc/sys/kernel/random/uuid
-
-              _module.args.nixinate = {
-                #host = "${config.networking.hostName}.netbird.cloud.";
-                #host = config.networking.hostName;
-                host = "${config.networking.hostName}.lan.etra.net.int.kdn.im";
-                sshUser = "kdn";
-                buildOn = "local"; # valid args are "local" or "remote"
-                substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
-                hermetic = true;
-                nixOptions = ["--show-trace"];
-              };
             })
           ];
         };
@@ -269,17 +235,6 @@
               system.stateVersion = "24.11";
               home-manager.sharedModules = [{home.stateVersion = "24.11";}];
               networking.hostId = "6dc8c4d7"; # cut -c-8 </proc/sys/kernel/random/uuid
-
-              _module.args.nixinate = {
-                #host = "${config.networking.hostName}.netbird.cloud.";
-                host = "${config.networking.hostName}.lan.etra.net.int.kdn.im";
-                #host = "192.168.73.1";
-                sshUser = "kdn";
-                buildOn = "local"; # valid args are "local" or "remote"
-                substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
-                hermetic = true;
-                nixOptions = ["--show-trace"];
-              };
             })
           ];
         };
@@ -294,17 +249,6 @@
               system.stateVersion = "25.05";
               home-manager.sharedModules = [{home.stateVersion = "25.05";}];
               networking.hostId = "25880d1d"; # cut -c-8 </proc/sys/kernel/random/uuid
-
-              _module.args.nixinate = {
-                #host = "${config.networking.hostName}.netbird.cloud.";
-                #host = config.networking.hostName;
-                host = "${config.networking.hostName}.lan.etra.net.int.kdn.im";
-                sshUser = "kdn";
-                buildOn = "local"; # valid args are "local" or "remote"
-                substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
-                hermetic = true;
-                nixOptions = ["--show-trace"];
-              };
             })
           ];
         };
@@ -319,16 +263,6 @@
               system.stateVersion = "23.11";
               home-manager.sharedModules = [{home.stateVersion = "23.11";}];
               networking.hostId = "f6345d38"; # cut -c-8 </proc/sys/kernel/random/uuid
-
-              _module.args.nixinate = {
-                host = "${config.networking.hostName}.netbird.cloud.";
-                #host = "${config.networking.hostName}.lan.etra.net.int.kdn.im";
-                sshUser = "kdn";
-                buildOn = "local"; # valid args are "local" or "remote"
-                substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
-                hermetic = true;
-                nixOptions = ["--show-trace"];
-              };
             })
           ];
         };
@@ -343,16 +277,6 @@
               system.stateVersion = "23.11";
               home-manager.sharedModules = [{home.stateVersion = "23.11";}];
               networking.hostId = "550ded62"; # cut -c-8 </proc/sys/kernel/random/uuid
-
-              _module.args.nixinate = {
-                host = "${config.networking.hostName}.kdn.im";
-                #host = "${config.networking.hostName}.netbird.cloud";
-                sshUser = "kdn";
-                buildOn = "local"; # valid args are "local" or "remote"
-                substituteOnTarget = false; # if buildOn is "local" then it will substitute on the target, "-s"
-                hermetic = true;
-                nixOptions = ["--show-trace"];
-              };
             })
             ({modulesPath, ...}: {
               imports = [

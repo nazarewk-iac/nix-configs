@@ -212,6 +212,14 @@ in {
       sops.placeholder = sopsPlaceholders;
     }
     {
+      assertions = [
+        {
+          assertion = config.services.userborn.enable || config.services.sysusers.enable;
+          message = "either `services.{userborn,sysusers}.enable` must be enabled for `sops-nix` to integrate into the system properly";
+        }
+      ];
+    }
+    {
       systemd.targets.kdn-secrets.after = ["sops-install-secrets.service"];
       systemd.targets.kdn-secrets.bindsTo = ["sops-install-secrets.service"];
       systemd.services.sops-install-secrets.after = lib.optional (config.systemd.targets ? "preservation") "preservation.target";

@@ -18,10 +18,11 @@ in {
   options.kdn.desktop.base = {
     enable = lib.mkOption {
       type = lib.types.bool;
-      default = osConfig.kdn.desktop.base.enable;
+      default = false;
+      apply = value: value && config.kdn.desktop.enable;
     };
   };
-  config = lib.mkIf (config.kdn.headless.enableGUI && cfg.enable) {
+  config = lib.mkIf cfg.enable {
     xdg.configFile."wofi/config".source = ./wofi/config;
 
     home.packages = with pkgs; [
