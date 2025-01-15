@@ -5,12 +5,11 @@
   buildGo122Module,
   installShellFiles,
   nix-update-script,
+  version ? "dev",
 }:
 buildGo122Module rec {
   pname = "sops";
-  version = "dev";
-
-  inherit src vendorHash;
+  inherit src version vendorHash;
 
   postPatch = ''
     substituteInPlace go.mod \

@@ -194,13 +194,6 @@ in {
                   )
                 ]);
             };
-          /*
-          TODO: drop after https://github.com/getsops/sops/pull/1641 is merged
-          */
-          sops = pkgs.callPackage ./package/package.nix {
-            src = inputs.sops;
-            vendorHash = "sha256-v1bwI4sat9zYJxo0WLv4l6QXwbrgpeAFO3Y0E0vwfJ4=";
-          };
         })
       ];
 

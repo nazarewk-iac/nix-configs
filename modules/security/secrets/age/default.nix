@@ -2,13 +2,15 @@
   lib,
   pkgs,
   config,
+  inputs,
   ...
 }: let
   cfg = config.kdn.security.secrets.age;
 
-  mkSopsWrapper = pkgs: pkg:
-    pkgs.writeShellApplication {
-      name = pkg.meta.mainProgram or pkg.pname or pkg.name;
+  mkSopsWrapper = pkgs: pkg: let
+    baseName = pkg.meta.mainProgram or pkg.pname or pkg.name;
+    script = pkgs.writeShellApplication {
+      name = baseName;
       runtimeInputs = with pkgs;
         [
           gnused
@@ -28,6 +30,14 @@
         export SOPS_AGE_KEY
         ${lib.getExe pkg} "$@"
       '';
+    };
+  in
+    pkgs.buildEnv {
+      name = "${baseName}-${pkg.version}-sops-age-wrapped";
+      paths = [
+        (lib.hiPrio script)
+        pkg
+      ];
     };
 in {
   options.kdn.security.secrets.age = {
@@ -68,6 +78,16 @@ in {
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       nixpkgs.overlays = [
+        (lib.mkBefore (final: prev: {
+          /*
+          TODO: drop after https://github.com/getsops/sops/pull/1641 is merged
+          */
+          sops = prev.callPackage ./sops/package.nix {
+            src = inputs.sops;
+            vendorHash = "sha256-v1bwI4sat9zYJxo0WLv4l6QXwbrgpeAFO3Y0E0vwfJ4=";
+            version = "3.9.0-dev";
+          };
+        }))
         (lib.mkAfter (final: prev: {
           sops = mkSopsWrapper prev prev.sops;
         }))

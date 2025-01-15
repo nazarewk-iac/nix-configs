@@ -13,5 +13,8 @@
 ### END ignore everything
 ###
 
+!*.md
 !/*.nix
-!/*.py
+!*.go
+!/go.mod
+!/go.sum

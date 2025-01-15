@@ -1,3 +1,4 @@
+#!/usr/bin/env -S sops decrypt --input-type yaml --output-type=yaml
 atuin:
     username: ENC[AES256_GCM,data:fAaf,iv:YLKUBNGQB0n52wvzWalOhBE+7bNvjcLI/nV6wR2XRVY=,tag:VQCp48Wbw32cGGiNvTTOiQ==,type:str]
     password: ENC[AES256_GCM,data:vckSyZm9WshJIMZsTx+2fhz8Tb4=,iv:xsWqT2NzsIXPR+EtfkBCnzYw74uL+ochpiVL8yXFjnE=,tag:1p0hf3UanFQbZsq2Uy+9Vw==,type:str]
