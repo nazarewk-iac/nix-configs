@@ -24,4 +24,6 @@
   tc-redirect-tap = pkgs.callPackage ./tc-redirect-tap {};
   whicher = pkgs.callPackage ./whicher {};
   yubikey-configure = pkgs.callPackage ./yubikey-configure {};
+
+  hubstaff = pkgs.callPackage ./hubstaff/package.nix {};
 }

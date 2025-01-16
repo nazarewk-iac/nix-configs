@@ -113,6 +113,7 @@ in {
       (lib.meta.setPrio 19 (renamedBinariesOnly "%s.3.13" python313))
       (lib.meta.setPrio 20 (renamedBinariesOnly "%s.3.12" python312))
       (lib.meta.setPrio 21 (renamedBinariesOnly "%s.3.11" python311))
+      (lib.meta.setPrio 22 (renamedBinariesOnly "%s.3.9" python39))
 
       graphviz
     ];
