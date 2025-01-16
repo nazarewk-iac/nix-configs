@@ -13,6 +13,7 @@
   libICE,
   libSM,
   libX11,
+  libXcursor,
   libXScrnSaver,
   libXext,
   libXfixes,
@@ -40,6 +41,7 @@
       libICE
       libSM
       libX11
+      libXcursor
       libXScrnSaver
       libXext
       libXfixes
@@ -120,6 +122,7 @@ in
       sourceProvenance = with sourceTypes; [binaryNativeCode];
       license = licenses.unfree;
       platforms = ["x86_64-linux"];
+      mainProgram = "HubstaffClient";
       maintainers = with maintainers; [michalrus srghma];
     };
   }
