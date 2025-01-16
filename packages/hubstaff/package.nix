@@ -4,6 +4,8 @@
   fetchurl,
   unzip,
   makeWrapper,
+  makeDesktopItem,
+  copyDesktopItems,
   common-updater-scripts,
   curl,
   fontconfig,
@@ -13,8 +15,8 @@
   libICE,
   libSM,
   libX11,
-  libXcursor,
   libXScrnSaver,
+  libXcursor,
   libXext,
   libXfixes,
   libXft,
@@ -30,29 +32,27 @@
   version = "1.6.29-7f771670";
   sha256 = "sha256:09vdpsmaj26bmnbsyxp76g3677lzi8p86gz66qbdvxly6a4x1hq9";
 
-  rpath =
-    lib.makeLibraryPath
-    [
-      curl
-      fontconfig
-      freetype
-      glib
-      gtk3
-      libICE
-      libSM
-      libX11
-      libXcursor
-      libXScrnSaver
-      libXext
-      libXfixes
-      libXft
-      libXinerama
-      libXrender
-      libappindicator-gtk3
-      libnotify
-      stdenv.cc.cc
-      zlib
-    ];
+  rpath = lib.makeLibraryPath [
+    curl
+    fontconfig
+    freetype
+    glib
+    gtk3
+    libICE
+    libSM
+    libX11
+    libXScrnSaver
+    libXcursor
+    libXext
+    libXfixes
+    libXft
+    libXinerama
+    libXrender
+    libappindicator-gtk3
+    libnotify
+    stdenv.cc.cc
+    zlib
+  ];
 in
   stdenv.mkDerivation {
     pname = "hubstaff";
@@ -60,7 +60,11 @@ in
 
     src = fetchurl {inherit sha256 url;};
 
-    nativeBuildInputs = [unzip makeWrapper];
+    nativeBuildInputs = [
+      unzip
+      makeWrapper
+      copyDesktopItems
+    ];
 
     unpackCmd = ''
       # MojoSetups have a ZIP file at the end. ZIP’s magic string is
@@ -75,6 +79,8 @@ in
     dontBuild = true;
 
     installPhase = ''
+      runHook preInstall
+
       # remove files for 32-bit arch to skip building for this arch
       # but add -f flag to not fail if files were not found (new versions dont provide 32-bit arch)
       rm -rf x86 x86_64/lib64
@@ -90,9 +96,12 @@ in
 
       ln -s $opt/x86_64/HubstaffClient.bin.x86_64 $out/bin/HubstaffClient
       ln -s $opt/x86_64/HubstaffCLI.bin.x86_64 $out/bin/HubstaffCLI
+      ln -s $opt/x86_64/HubstaffHelper.bin.x86_64 $out/bin/HubstaffHelper
 
       # Why is this needed? SEGV otherwise.
       ln -s $opt/data/resources $opt/x86_64/resources
+
+      runHook postInstall
     '';
 
     # to test run:
@@ -116,13 +125,34 @@ in
       ${common-updater-scripts}/bin/update-source-version hubstaff "$version" "sha256:$sha256" "$installation_script_url"
     '';
 
+    desktopItems = lib.singleton ((makeDesktopItem {
+        name = "hubstaff";
+        desktopName = "Hubstaff";
+        comment = "Time tracking software";
+        icon = "@out@/opt/hubstaff/data/resources/hicolor/512x512/apps/hubstaff-color.png";
+        exec = "@out@/bin/HubstaffClient";
+        categories = ["Utility"];
+      })
+      .overrideAttrs {
+        # validator thinks `icon = "@out@/..."` is relative
+        checkPhase = "";
+      });
+
+    preFixup = ''
+      substituteInPlace $out/share/applications/hubstaff.desktop \
+          --subst-var out
+    '';
+
     meta = with lib; {
       description = "Time tracking software";
       homepage = "https://hubstaff.com/";
       sourceProvenance = with sourceTypes; [binaryNativeCode];
       license = licenses.unfree;
       platforms = ["x86_64-linux"];
-      mainProgram = "HubstaffClient";
-      maintainers = with maintainers; [michalrus srghma];
+      mainProgram = "HubstaffCLI";
+      maintainers = with maintainers; [
+        michalrus
+        srghma
+      ];
     };
   }
