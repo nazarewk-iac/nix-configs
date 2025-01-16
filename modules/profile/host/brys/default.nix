@@ -108,5 +108,8 @@ in {
         ipv6.never-default = true;
       };
     }
+    {
+      environment.systemPackages = [pkgs.kdn.hubstaff];
+    }
   ]);
 }
