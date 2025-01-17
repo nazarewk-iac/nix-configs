@@ -5,10 +5,11 @@ Repository containing my personal Nix (NixOS, Home Manager etc.) configurations.
 Basic structure:
 
 - `modules/` - all modules live here, they MUST be turned off by default (side-effect free imports),
-    - `modules/shared` - modules & configs shared by more than 1 "target"
     - `modules/nixos` - NixOS specific modules
-    - `modules/home-manager` - raw Home Manager modules
-    - `modules/darwin` - Darwin (Mac) specific modules
+    - `modules/home-manager` - Home Manager modules
+    - `modules/nix-darwin` - nix-darwin modules
+    - `modules/shared` - modules & configs shared by more than 1 "target"
+        - `modules/shared/universal` - universal modules, often defining options to be handled elsewhere
 - `packages/`, some personal/in-house/out-of-band tools
 
 Generally I aim to hide as much as possible behind `*.enable` options.
@@ -229,5 +230,4 @@ Most of it is wrapped in [`/nixpkgs-update.sh`](nixpkgs-update.sh) and top entri
 
 - [ ] TODO: evaluate https://github.com/Mic92/nix-fast-build
 - [ ] TODO: evaluate https://github.com/nix-community/nix-eval-jobs
-- [ ] TODO: remove `ulauncher`
 - [ ] TODO: try to integrate lanzaboote?

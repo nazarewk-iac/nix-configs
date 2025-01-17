@@ -76,7 +76,8 @@ def manage_block(*, path: Path, start: re.Pattern, end: re.Pattern, block: str):
 def patches_fetch(config: dict, patches_dir: Path, update=True):
     patches_by_repo: dict[str, dict[str, Path]] = defaultdict(dict)
     defaults = config["default"]
-    for base, patches in sorted(config["patch"].items()):
+    bases = sorted(config["patch"].items())
+    for base, patches in bases:
         for idx, (patch_name, entry) in enumerate(sorted(patches.items())):
             out = patches_dir / f"{base}/{patch_name}.patch"
             out.parent.mkdir(exist_ok=True)
@@ -89,7 +90,7 @@ def patches_fetch(config: dict, patches_dir: Path, update=True):
                     f"Failed to process {base}.{patch_name} = {json.dumps(entry)}"
                 )
                 continue
-        patches_by_repo[base][patch_name] = out
+            patches_by_repo[base][patch_name] = out
 
     present_patches = set(
         itertools.chain(
@@ -107,7 +108,8 @@ def patches_fetch(config: dict, patches_dir: Path, update=True):
             *(repo.values() for repo in patches_by_repo.values()),
         )
     )
-    for file in present_patches - configured_patches:
+    to_remove = present_patches - configured_patches
+    for file in to_remove:
         logging.warning(f"removing patch: {file}")
         file.unlink(missing_ok=True)
     return patches_by_repo

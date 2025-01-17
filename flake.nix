@@ -18,7 +18,19 @@
   /*
   * rest of inputs
   */
+
   inputs.base16.url = "github:SenchoPens/base16.nix";
+  inputs.brew-api.flake = false;
+  inputs.brew-api.url = "github:BatteredBunny/brew-api";
+  inputs.brew-nix.url = "github:BatteredBunny/brew-nix";
+  inputs.brew-tap--homebrew--bundle.flake = false;
+  inputs.brew-tap--homebrew--bundle.url = "github:homebrew/homebrew-bundle";
+  inputs.brew-tap--homebrew--cask.flake = false;
+  inputs.brew-tap--homebrew--cask.url = "github:homebrew/homebrew-cask";
+  inputs.brew-tap--homebrew--core.flake = false;
+  inputs.brew-tap--homebrew--core.url = "github:homebrew/homebrew-core";
+  inputs.brew.flake = false;
+  inputs.brew.url = "github:Homebrew/brew/4.4.16";
   inputs.crane.url = "github:ipetkov/crane";
   inputs.disko.url = "github:nix-community/disko";
   inputs.empty.url = "github:nix-systems/empty";
@@ -30,6 +42,8 @@
   inputs.lix-module.url = "git+https://git.lix.systems/lix-project/nixos-module.git?ref=stable";
   inputs.microvm.url = "github:astro/microvm.nix";
   inputs.nix-darwin.url = "github:LnL7/nix-darwin";
+  inputs.nix-homebrew.url = "github:zhaofengli/nix-homebrew";
+  inputs.nixcasks.url = "github:jacekszymanski/nixcasks";
   inputs.nixos-anywhere.url = "github:numtide/nixos-anywhere";
   inputs.nixos-generators.url = "github:nix-community/nixos-generators";
   inputs.nur.url = "github:nix-community/NUR";
@@ -39,7 +53,6 @@
   inputs.stylix.url = "github:danth/stylix";
   inputs.systems.url = "github:nix-systems/default";
   inputs.treefmt-nix.url = "github:numtide/treefmt-nix";
-  inputs.ulauncher.url = "github:Ulauncher/Ulauncher/v6";
   inputs.wezterm.url = "github:wez/wezterm/main?dir=nix";
 
   #inputs.sops-nix.url = "github:Mic92/sops-nix";
@@ -53,6 +66,10 @@
   /*
   * dependencies
   */
+  inputs.brew-nix.inputs.brew-api.follows = "brew-api";
+  inputs.brew-nix.inputs.flake-utils.follows = "flake-utils";
+  inputs.brew-nix.inputs.nix-darwin.follows = "nix-darwin";
+  inputs.brew-nix.inputs.nixpkgs.follows = "nixpkgs";
   inputs.disko.inputs.nixpkgs.follows = "nixpkgs";
   inputs.flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs-lib";
   inputs.helix-editor.inputs.crane.follows = "crane";
@@ -71,6 +88,9 @@
   inputs.microvm.inputs.flake-utils.follows = "flake-utils";
   inputs.microvm.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.nix-homebrew.inputs.nix-darwin.follows = "nix-darwin";
+  inputs.nix-homebrew.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.nixcasks.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nixos-anywhere.inputs.disko.follows = "disko";
   inputs.nixos-anywhere.inputs.flake-parts.follows = "flake-parts";
   inputs.nixos-anywhere.inputs.nixpkgs.follows = "nixpkgs";
@@ -88,8 +108,6 @@
   inputs.stylix.inputs.nixpkgs.follows = "nixpkgs";
   inputs.stylix.inputs.tinted-foot.follows = "tinted-foot";
   inputs.treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
-  inputs.ulauncher.inputs.flake-parts.follows = "flake-parts";
-  inputs.ulauncher.inputs.nixpkgs.follows = "nixpkgs";
   inputs.wezterm.inputs.flake-utils.follows = "flake-utils";
   inputs.wezterm.inputs.nixpkgs.follows = "nixpkgs";
   inputs.wezterm.inputs.rust-overlay.follows = "rust-overlay";
@@ -113,7 +131,6 @@
     ];
 
     flake.overlays.default = inputs.nixpkgs.lib.composeManyExtensions [
-      inputs.ulauncher.overlays.default
       inputs.helix-editor.overlays.default
       inputs.nur.overlays.default
       self.overlays.packages
@@ -129,6 +146,39 @@
           then builtins.throw "nixpkgs fish is now v4+, remove `flake.overlays.default` entry"
           else inputs.nixpkgs-fish.legacyPackages."${final.stdenv.system}".fish;
       })
+      (final: prev:
+        if prev.stdenv.isDarwin
+        # WARNING: this does not work on Lix due to missing `builtins.convertHash`
+        then inputs.brew-nix.overlays.default final prev
+        else {})
+      (final: prev:
+        if prev.stdenv.isDarwin
+        then let
+          src = "${inputs.nixcasks}";
+          pkgs = prev;
+          sevenzip = prev.darwin.apple_sdk_11_0.callPackage "${src}/7zip" {inherit pkgs;};
+          nclib = import "${src}/nclib.nix" {inherit pkgs sevenzip;};
+
+          originalCasks =
+            (inputs.nixcasks.output {osVersion = "sequoia";})
+            .packages
+            .${prev.stdenv.system};
+
+          overrides =
+            lib.pipe [
+              "hubstaff"
+            ] [
+              (builtins.map (name: {
+                inherit name;
+                value = originalCasks."${name}".overrideAttrs nclib.force-dmg;
+              }))
+              builtins.listToAttrs
+            ];
+        in {
+          nclib = nclib // {inherit sevenzip;};
+          nixcasks = originalCasks // overrides;
+        }
+        else {})
     ];
     perSystem = {
       config,
@@ -137,10 +187,8 @@
       system,
       pkgs,
       ...
-    }: let
-      kdnNixpkgs = inputs'.nixpkgs.legacyPackages.extend self.overlays.default;
-    in {
-      _module.args.pkgs = kdnNixpkgs;
+    }: {
+      _module.args.pkgs = inputs'.nixpkgs.legacyPackages.extend self.overlays.default;
       # inspired by https://github.com/NixOS/nix/issues/3803#issuecomment-748612294
       # usage: nix run '.#repl'
       apps.repl = {
@@ -307,10 +355,10 @@
         ];
       })
     ];
-    flake.darwinModules.default = ./modules/darwin;
+    flake.darwinModules.default = ./modules/nix-darwin;
     flake.darwinConfigurations.anji = inputs.nix-darwin.lib.darwinSystem {
       system = "aarch64-darwin";
-      specialArgs = {inherit self inputs;};
+      specialArgs = {inherit self inputs lib;};
       modules = [
         self.darwinModules.default
         ({config, ...}: {

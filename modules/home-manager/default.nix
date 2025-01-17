@@ -1,15 +1,19 @@
 {
   lib,
   config,
+  pkgs,
   inputs,
   osConfig ? {},
+  darwinConfig ? {},
   ...
 }: let
   cfg = config.kdn;
+
+  parentConfig = osConfig // darwinConfig;
 in {
   imports =
     [
-      ../shared/all
+      ../shared/universal
       inputs.sops-nix.homeManagerModules.sops
     ]
     ++ lib.trivial.pipe ./. [
@@ -26,9 +30,10 @@ in {
       xdg.enable = true;
 
       xdg.configFile."nix/nix.nix".text = ""; # don't allow overriding
-      nixpkgs.config = lib.mkIf (!(osConfig.home-manager.useGlobalPkgs or false)) cfg.nixConfig.nixpkgs.config;
+      nixpkgs.config = lib.mkIf (!(parentConfig.home-manager.useGlobalPkgs or false)) cfg.nixConfig.nixpkgs.config;
       xdg.configFile."nixpkgs/config.nix".text = lib.generators.toPretty {} cfg.nixConfig.nixpkgs.config;
       home.file.".nixpkgs/config.nix".text = lib.generators.toPretty {} cfg.nixConfig.nixpkgs.config;
     }
+    (lib.mkIf pkgs.stdenv.isDarwin {kdn.darwin.type = "home-manager";})
   ]);
 }

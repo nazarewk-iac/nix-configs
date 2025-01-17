@@ -1,23 +1,18 @@
 {
   config,
   lib,
+  pkgs,
   inputs,
   self,
   ...
-}: {
+}: let
+  cfg = config.kdn;
+in {
   imports =
     [
-      ../shared/universal
-      ../shared/darwin-nixos-os
-      ./ascii-workaround.nix
-      ./stylix.nix
-      inputs.disko.nixosModules.disko
-      inputs.home-manager.nixosModules.home-manager
-      inputs.lanzaboote.nixosModules.lanzaboote
-      inputs.lanzaboote.nixosModules.uki
-      inputs.nur.modules.nixos.default
-      inputs.preservation.nixosModules.preservation
-      inputs.sops-nix.nixosModules.sops
+      ../universal
+      # this is very simple, works for both NixOS and darwin
+      inputs.lix-module.nixosModules.default
     ]
     ++ lib.trivial.pipe ./. [
       lib.filesystem.listFilesRecursive
@@ -27,8 +22,15 @@
 
   config = lib.mkIf config.kdn.enable (lib.mkMerge [
     {
-      # lib.mkDefault is 1000, lib.mkOptionDefault is 1500
-      disko.enableConfig = lib.mkDefault false;
+      nix.registry.nixpkgs.flake = inputs.nixpkgs;
+      nix.optimise.automatic = true;
+      nix.package = pkgs.lix;
+      nixpkgs.overlays = [self.overlays.default];
+    }
+    {
+      nix.extraOptions = cfg.nixConfig.nix.extraOptions;
+      nix.settings = cfg.nixConfig.nix.settings;
+      nixpkgs.config = cfg.nixConfig.nixpkgs.config;
     }
     {
       home-manager.backupFileExtension = "hmbackup";

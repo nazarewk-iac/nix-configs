@@ -11,11 +11,11 @@ in {
       home.sessionVariables.TZ = cfg.timezone;
       xdg.configFile."user-dirs.locale".source = pkgs.writeText "locale.conf" cfg.userDirs;
     }
-    {
+    (lib.mkIf config.xdg.userDirs.enable {
       xdg.configFile."user-dirs.dirs".force = true;
       xdg.configFile."locale.conf".force = true;
       xdg.configFile."user-dirs.locale".force = true;
-    }
+    })
     (let
       # reuse NixOS module at at https://github.com/NixOS/nixpkgs/blob/f2dd2b8e197cc54d0eb1c741f549d94600df91c0/nixos/modules/config/i18n.nix
       config = {

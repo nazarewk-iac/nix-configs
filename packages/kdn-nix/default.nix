@@ -17,7 +17,7 @@ in
           nix
           coreutils
           gnugrep
-          glibc # getent
+          unixtools.getent
           kdn-nix-list-roots
         ];
       };

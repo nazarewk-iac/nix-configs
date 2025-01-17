@@ -52,8 +52,6 @@ in {
           (builtins.map (name: lib.strings.removePrefix "${config.home.homeDirectory}/" config.home.sessionVariables."${name}"))
         ];
     in {
-      xdg.userDirs.enable = true;
-      xdg.userDirs.createDirectories = false;
       kdn.hardware.disks.persist."usr/data".directories = process (lib.lists.subtractLists xdgAttrs.cache xdgAttrs.all);
       kdn.hardware.disks.persist."usr/cache".directories = process xdgAttrs.cache;
     })

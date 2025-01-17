@@ -8,16 +8,11 @@
   cfg = config.kdn.profile.machine.baseline;
 in {
   options.kdn.profile.machine.baseline = {
-    enable = lib.mkEnableOption "baseline machine profile for server/non-interactive use";
-
     initrd.emergency.rebootTimeout = lib.mkOption {
       type = lib.types.ints.unsigned;
       default = 0;
     };
   };
-
-  imports = [
-  ];
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     (lib.mkIf config.disko.enableConfig {
@@ -25,9 +20,6 @@ in {
       fileSystems."/boot".options = ["fmask=0077" "dmask=0077"];
     })
     {
-      kdn.enable = true;
-      kdn.profile.user.kdn.enable = true;
-
       services.userborn.enable = true;
 
       # (modulesPath + "/installer/scan/not-detected.nix")

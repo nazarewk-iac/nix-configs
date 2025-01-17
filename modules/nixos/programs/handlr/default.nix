@@ -52,14 +52,6 @@ in {
       environment.systemPackages = with pkgs; [
         (lib.meta.hiPrio cfg.xdg-utils.package)
       ];
-      nixpkgs.overlays = [
-        (self: super: {
-          ulauncher6 = super.ulauncher6.override {
-            withXorg = false;
-            xdg-open = cfg.xdg-utils.package;
-          };
-        })
-      ];
       home-manager.sharedModules = [
         {
           wayland.windowManager.sway.config.keybindings = with config.kdn.desktop.sway.keys;

@@ -31,4 +31,4 @@
 !/.envrc
 !/flake.lock
 
-!/.flake.patches
+!/.flake.patchess
