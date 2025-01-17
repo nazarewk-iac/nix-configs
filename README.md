@@ -5,9 +5,10 @@ Repository containing my personal Nix (NixOS, Home Manager etc.) configurations.
 Basic structure:
 
 - `modules/` - all modules live here, they MUST be turned off by default (side-effect free imports),
-    - `modules/default.nix` - holds imports to all the modules and basic Nix package manager configuration,
-    - `modules/profile/machine` - large NixOS configuration bundles
-    - `modules/profile/user` - user specific profiles
+    - `modules/shared` - modules & configs shared by more than 1 "target"
+    - `modules/nixos` - NixOS specific modules
+    - `modules/home-manager` - raw Home Manager modules
+    - `modules/darwin` - Darwin (Mac) specific modules
 - `packages/`, some personal/in-house/out-of-band tools
 
 Generally I aim to hide as much as possible behind `*.enable` options.
@@ -42,7 +43,7 @@ ssh -o StrictHostKeyChecking=no kdn@nixos
 ## Golden path for bootstrapping new physical machine
 
 1. build the `install-iso` and boot it
-2. prepare a new config at `modules/profile/host/${HOSTNAME}/default.nix`
+2. prepare a new config at `modules/nixos/profile/host/${HOSTNAME}/default.nix`
     - put `kdn.profile.machine.baseline.enable = true`
     - look through `kdn.hardware.{gpu,cpu}.{intel,amd}`
     - set up `zramSwap` & `boot.tmp.tmpfsSize`
@@ -226,7 +227,7 @@ Most of it is wrapped in [`/nixpkgs-update.sh`](nixpkgs-update.sh) and top entri
 
 # TODOs
 
-- [ ] TODO: evaluate https://github.com/Mic92/nix-fast-build 
+- [ ] TODO: evaluate https://github.com/Mic92/nix-fast-build
 - [ ] TODO: evaluate https://github.com/nix-community/nix-eval-jobs
 - [ ] TODO: remove `ulauncher`
 - [ ] TODO: try to integrate lanzaboote?

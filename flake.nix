@@ -29,6 +29,7 @@
   inputs.lanzaboote.url = "github:nix-community/lanzaboote";
   inputs.lix-module.url = "git+https://git.lix.systems/lix-project/nixos-module.git?ref=stable";
   inputs.microvm.url = "github:astro/microvm.nix";
+  inputs.nix-darwin.url = "github:LnL7/nix-darwin";
   inputs.nixos-anywhere.url = "github:numtide/nixos-anywhere";
   inputs.nixos-generators.url = "github:nix-community/nixos-generators";
   inputs.nur.url = "github:nix-community/NUR";
@@ -69,6 +70,7 @@
   inputs.lix-module.inputs.nixpkgs.follows = "nixpkgs";
   inputs.microvm.inputs.flake-utils.follows = "flake-utils";
   inputs.microvm.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nixos-anywhere.inputs.disko.follows = "disko";
   inputs.nixos-anywhere.inputs.flake-parts.follows = "flake-parts";
   inputs.nixos-anywhere.inputs.nixpkgs.follows = "nixpkgs";
@@ -305,5 +307,16 @@
         ];
       })
     ];
+    flake.darwinModules.default = ./modules/darwin;
+    flake.darwinConfigurations.anji = inputs.nix-darwin.lib.darwinSystem {
+      system = "aarch64-darwin";
+      specialArgs = {inherit self inputs;};
+      modules = [
+        self.darwinModules.default
+        ({config, ...}: {
+          networking.hostName = "anji";
+        })
+      ];
+    };
   });
 }

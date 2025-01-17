@@ -2,35 +2,10 @@
   lib,
   pkgs,
   config,
-  osConfig,
   ...
 }: let
   cfg = config.kdn.locale;
-  osCfg = osConfig.kdn.locale;
 in {
-  options.kdn.locale = {
-    timezone = lib.mkOption {
-      type = lib.types.str;
-      default = osCfg.timezone;
-    };
-
-    primary = lib.mkOption {
-      type = lib.types.str;
-      default = osCfg.primary;
-    };
-
-    # en_GB - Monday as first day of week
-    time = lib.mkOption {
-      type = lib.types.str;
-      default = osCfg.time;
-    };
-
-    userDirs = lib.mkOption {
-      type = lib.types.str;
-      default = osCfg.userDirs;
-    };
-  };
-
   config = lib.mkMerge [
     {
       home.sessionVariables.TZ = cfg.timezone;
