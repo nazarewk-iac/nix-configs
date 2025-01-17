@@ -16,6 +16,7 @@ in {
   };
   options.kdn.desktop.sway = {
     enable = lib.mkEnableOption "Sway base setup";
+    portals.debug = lib.mkEnableOption "XDG desktop portal debugging";
 
     keys = lib.mkOption {
       type = lib.types.submodule {freeformType = jsonFormat.type;};
@@ -384,7 +385,39 @@ in {
           chooser_cmd = "${pkgs.wofi}/bin/wofi -d -n --prompt='Select the monitor to share:'";
         };
       };
+
+      # see https://github.com/NixOS/nixpkgs/blob/eb62e6aa39ea67e0b8018ba8ea077efe65807dc8/nixos/modules/programs/wayland/sway.nix#L160-L170
+      xdg.portal.config.sway = {
+        # Use xdg-desktop-portal-gtk for every portal interface...
+        default = "gtk";
+        "org.freedesktop.impl.portal.ScreenCast" = "wlr";
+        "org.freedesktop.impl.portal.Screenshot" = "wlr";
+        # ignore inhibit bc gtk portal always returns as success,
+        # despite sway/the wlr portal not having an implementation,
+        # stopping firefox from using wayland idle-inhibit
+        "org.freedesktop.impl.portal.Inhibit" = "none";
+      };
     }
+    (lib.mkIf cfg.portals.debug {
+      systemd.user.services.xdg-desktop-portal.serviceConfig.ExecStart = lib.mkForce [
+        ""
+        "${pkgs.xdg-desktop-portal}/libexec/xdg-desktop-portal --verbose"
+      ];
+      systemd.user.services.xdg-desktop-portal-wlr.serviceConfig.ExecStart = let
+        cfg = config.xdg.portal.wlr;
+        package = pkgs.xdg-desktop-portal-wlr;
+        settingsFormat = pkgs.formats.ini {};
+        configFile = settingsFormat.generate "xdg-desktop-portal-wlr.ini" cfg.settings;
+      in
+        lib.mkForce [
+          ""
+          "${package}/libexec/xdg-desktop-portal-wlr --loglevel=TRACE sconfig=${configFile}"
+        ];
+      systemd.user.services.xdg-desktop-portal-gtk.serviceConfig.ExecStart = lib.mkForce [
+        ""
+        "${pkgs.xdg-desktop-portal-gtk}/libexec/xdg-desktop-portal-gtk --verbose"
+      ];
+    })
     {
       services.dbus.packages = [
         (

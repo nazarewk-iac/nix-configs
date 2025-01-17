@@ -194,7 +194,7 @@
       ];
     };
     flake.lib = lib;
-    flake.nixosModules.default = ./modules;
+    flake.nixosModules.default = ./modules/nixos;
     flake.nixosConfigurations = lib.mkMerge [
       {
         oams = flakeLib.nixos.system {

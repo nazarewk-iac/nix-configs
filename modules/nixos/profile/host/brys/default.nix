@@ -109,6 +109,7 @@ in {
       };
     }
     {
+      kdn.desktop.sway.portals.debug = true;
       environment.systemPackages = [pkgs.kdn.hubstaff];
     }
   ]);
