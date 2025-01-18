@@ -2,8 +2,5 @@
 !/gpg-pubkeys.txt
 !/yubico/u2f_keys.parts
 !/.gitattributes
-!/.ssh
-!/.ssh/authorized_keys
-!/.ssh/sshd_config
 !/gsimplecal
 !/gsimplecal/config

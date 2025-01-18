@@ -8,7 +8,8 @@ Usage: $0 [options] [-- [WAYVNC_ARGS...]]
   -h                  usage
 
 Output configuration:
-  -n NUMBER           output number, turns into HEADLESS-n, defaults to '1'
+  -o OUTPUT           name of the non-headless output
+  -n NUMBER           headless output number, turns into HEADLESS-n, defaults to '1'
   -r WIDTHxHEIGHT     resolution, defaults to '1280x720'
   -p X,Y              position of the output,
                       defaults to 500px off edge of existing outputs
@@ -16,7 +17,10 @@ Output configuration:
 
 wayvnc configuration:
   -s                  starts wayvnc server
-  -D                  do not disable output after server is stopped
+  -e/-E               enable output at the end of reconfiguration,
+                      defaults to true when running on headless output
+  -d/-D               disable output after server is stopped,
+                      defaults to true when running on headless output
   -H ADDRESS          address to listen on, defaults to '127.0.0.2'
   -P PORT             port to listen on, defaults to '5900'
   -- WAYVNC_ARGS...   arguments to pass down to wayvnc
@@ -49,15 +53,15 @@ discover_sway() {
 }
 
 create_output() {
-  for ((n=1; n <= output_num; n++)) ; do
+  for ((n = 1; n <= output_num; n++)); do
     local cur="HEADLESS-${n}"
     if is_output_missing "${cur}"; then
-      if [ "${cur}" == "${output}" ]; then
-        swaymsg "output ${cur} resolution 1280x720 position $(get_detached_x) 0"
-        swaymsg "workspace 9 output ${output}"
+      if [ "${cur}" != "${output}" ]; then
+        # swaymsg "output ${cur} disable" # might want to disable with an option?
+        swaymsg create_output
       fi
-      swaymsg "output ${cur} disable"
-      swaymsg create_output
+      swaymsg "output ${cur} resolution 1280x720 position $(get_detached_x) 0"
+      swaymsg "workspace ${workspace} output ${output}"
     fi
   done
 }
@@ -74,6 +78,10 @@ configure_output() {
   if [ -n "${workspace}" ]; then
     swaymsg "workspace ${workspace} output ${output}"
   fi
+
+  if [ "${enable}" = 1 ]; then
+    swaymsg "output ${output} enable"
+  fi
 }
 
 cleanup() {
@@ -83,45 +91,59 @@ cleanup() {
 }
 
 main() {
+  output=''
   output_num=1
   host=127.0.0.2
   port=5900
   server=0
-  disable=1
+  enable=''
+  disable=''
   resolution=''
   pos=''
   workspace=''
 
-  while getopts ":n:r:p:w:H:P:shD" arg; do
+  while getopts ":o:n:r:p:w:H:P:shDdeE" arg; do
     case "${arg}" in
-      n) output_num="${OPTARG}" ;;
-      r) resolution="${OPTARG}" ;;
-      p) pos="${OPTARG}" ;;
-      w) workspace="${OPTARG}" ;;
-      H) host="${OPTARG}" ;;
-      P) port="${OPTARG}" ;;
-      s) server=1 ;;
-      D) disable=0 ;;
-      h)
-        usage
-        exit 0
-        ;;
-      ?)
-        echo "Invalid option: -${OPTARG}."
-        echo
-        usage
-        exit 1
-        ;;
+    o) output="${OPTARG}" ;;
+    n) output_num="${OPTARG}" ;;
+    r) resolution="${OPTARG}" ;;
+    p) pos="${OPTARG}" ;;
+    w) workspace="${OPTARG}" ;;
+    H) host="${OPTARG}" ;;
+    P) port="${OPTARG}" ;;
+    s) server=1 ;;
+    d) disable=1 ;;
+    D) disable=0 ;;
+    e) enable=1 ;;
+    E) enable=0 ;;
+    h)
+      usage
+      exit 0
+      ;;
+    ?)
+      echo "Invalid option: -${OPTARG}."
+      echo
+      usage
+      exit 1
+      ;;
     esac
   done
 
   args=("${@:${OPTIND}}")
-  output="HEADLESS-${output_num}"
 
   discover_sway
-  create_output
+
+  if test -z "${output}"; then
+    output="HEADLESS-${output_num}"
+    test -n "${disable}" || disable=1
+    test -n "${enable}" || enable=1
+  fi
+
+  if [[ "${output}" == HEADLESS-* ]]; then
+    create_output
+  fi
+
   configure_output
-  swaymsg "output ${output} enable"
 
   if [ "${server}" = 1 ]; then
     trap cleanup EXIT

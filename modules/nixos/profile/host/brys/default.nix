@@ -112,5 +112,14 @@ in {
       kdn.desktop.sway.portals.debug = true;
       environment.systemPackages = [pkgs.kdn.hubstaff];
     }
+    {
+      # VNC access over Netbird
+      networking.firewall.interfaces."nb-priv".allowedTCPPorts = [
+        5900
+      ];
+      networking.firewall.interfaces."nb-priv".allowedUDPPorts = [
+        5900
+      ];
+    }
   ]);
 }

@@ -32,3 +32,4 @@
 !/flake.lock
 
 !/.flake.patchess
+!/modules/shared/universal/profile/user/kdn/

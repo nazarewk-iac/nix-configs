@@ -5,18 +5,6 @@
   ...
 }: let
   cfg = config.kdn.desktop.sway.remote;
-
-  sway-headless-vnc = pkgs.writeShellApplication {
-    name = "sway-headless-vnc";
-    runtimeInputs = with pkgs; [
-      wayvnc
-      jq
-      sway
-      coreutils
-      findutils
-    ];
-    text = builtins.readFile ./sway-headless-vnc.sh;
-  };
 in {
   options.kdn.desktop.sway.remote = {
     enable = lib.mkEnableOption "remote access setup for Sway";
@@ -33,7 +21,7 @@ in {
       wayvnc
       waypipe
 
-      sway-headless-vnc
+      kdn.sway-vnc
 
       remmina # cannot type $ (dollar sign)
       tigervnc # vncviewer 10.100.0.2::5900

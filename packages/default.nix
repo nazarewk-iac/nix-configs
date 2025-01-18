@@ -20,6 +20,7 @@
   pass-secret-service = pkgs.callPackage ./pass-secret-service {};
   pinentry = pkgs.callPackage ./pinentry {};
   ss-util = pkgs.callPackage ./ss-util {};
+  sway-vnc = pkgs.callPackage ./sway-vnc {};
   systemd-find-cycles = pkgs.callPackage ./systemd-find-cycles {};
   tc-redirect-tap = pkgs.callPackage ./tc-redirect-tap {};
   whicher = pkgs.callPackage ./whicher {};

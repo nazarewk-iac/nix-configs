@@ -16,7 +16,7 @@ in {
     {
       kdn.programs.firefox.enable = true;
       home.packages = with pkgs; [
-        tigervnc
+        realvnc-vnc-viewer
       ];
     }
   ]);
