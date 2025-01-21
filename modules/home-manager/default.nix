@@ -9,7 +9,13 @@
 }: let
   cfg = config.kdn;
 
-  parentConfig = osConfig // darwinConfig;
+  parentConfig = let
+    ensure = val:
+      if builtins.isAttrs val
+      then val
+      else {};
+  in
+    ensure osConfig // ensure darwinConfig;
 in {
   imports =
     [

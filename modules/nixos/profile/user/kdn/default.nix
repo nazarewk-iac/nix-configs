@@ -57,12 +57,6 @@ in {
       };
 
       kdn.virtualization.libvirtd.lookingGlass.instances = {kdn-default = "kdn";};
-      home-manager.users.kdn = {
-        kdn.profile.user.kdn = {
-          enable = true;
-          osConfig = config.users.users.kdn;
-        };
-      };
 
       networking.firewall = {
         # syncthing ranges
@@ -85,5 +79,9 @@ in {
         home-manager.users.kdn = cfg;
       }
     )
+    {
+      home-manager.users.kdn.kdn.profile.user.kdn.enable = true;
+      home-manager.users.kdn.kdn.profile.user.kdn.osConfig = config.users.users.kdn;
+    }
   ]);
 }

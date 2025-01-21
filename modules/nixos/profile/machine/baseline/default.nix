@@ -15,6 +15,7 @@ in {
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
+    {home-manager.sharedModules = [{kdn.profile.machine.baseline.enable = true;}];}
     (lib.mkIf config.disko.enableConfig {
       # WARNING: without depending on `config.disko.enableConfig` it fails on machines without dedicated `/boot` partition
       fileSystems."/boot".options = ["fmask=0077" "dmask=0077"];
