@@ -126,7 +126,6 @@ in {
       kdn.headless.base.enable = true;
 
       services.locate.enable = true;
-      services.locate.localuser = null;
       services.locate.package = pkgs.mlocate;
       services.locate.pruneBindMounts = true;
 

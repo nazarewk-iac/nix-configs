@@ -242,23 +242,31 @@ def patches_apply(
         )
 
         for patchfile in sorted(base_path.glob("*.patch")):
-            run(
-                f"{repo_rel}: applying patch {patchfile}",
-                [
-                    "git",
-                    "am",
-                    "--no-gpg-sign",
-                    "--no-signoff",
-                    "--committer-date-is-author-date",
-                    patchfile,
-                ],
-                env={
-                    **os.environ,
-                    # "GIT_AUTHOR_DATE": GIT_DATE,
-                    # "GIT_COMMITTER_DATE": GIT_DATE,
-                },
-                cwd=subrepo_path,
-            )
+            try:
+                run(
+                    f"{repo_rel}: applying patch {patchfile}",
+                    [
+                        "git",
+                        "am",
+                        "--no-gpg-sign",
+                        "--no-signoff",
+                        "--committer-date-is-author-date",
+                        patchfile,
+                    ],
+                    env={
+                        **os.environ,
+                        # "GIT_AUTHOR_DATE": GIT_DATE,
+                        # "GIT_COMMITTER_DATE": GIT_DATE,
+                    },
+                    cwd=subrepo_path,
+                )
+            except subprocess.CalledProcessError:
+                run(
+                    "stop the rebase/am",
+                    ["git", "am", "--abort"],
+                    cwd=subrepo_path,
+                )
+                raise
 
         base_branch = get_input_ref(base_input, lock=lock)
         base_branch = base_branch or subprocess.check_output(
