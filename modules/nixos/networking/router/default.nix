@@ -22,7 +22,6 @@
   ports.dhcp.v6-request = 546;
   ports.dhcp.v6-reply = 547;
 
-  knotKeys = config.kdn.security.secrets.sops.placeholders.default.knot-dns.keys;
   keaTSIGName = "kea.${hostname}";
 
   defaultDNSServers = lib.pipe cfg.nets [
@@ -665,6 +664,24 @@ in {
         };
       }));
     };
+    tsig.keyTpls = lib.mkOption {
+      default = {};
+      type = lib.types.attrsOf (lib.types.submodule ({name, ...}: {
+        options = {
+          name = lib.mkOption {
+            type = with lib.types; str;
+            default = name;
+          };
+
+          algorithm = lib.mkOption {
+            type = with lib.types; str;
+          };
+          secret = lib.mkOption {
+            type = with lib.types; str;
+          };
+        };
+      }));
+    };
   };
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
@@ -1246,7 +1263,7 @@ in {
             domains = lib.pipe cfg.domains [builtins.attrValues (builtins.map (domainCfg: domainCfg.name))];
           }
         ];
-        sops.templates = lib.pipe knotKeys [
+        sops.templates = lib.pipe cfg.tsig.keyTpls [
           (lib.attrsets.mapAttrsToList (id: keyCfg: {
             name = "knot/sops-key.${id}.conf";
             value = {
@@ -1257,7 +1274,7 @@ in {
               content = ''
                 # ${keyCfg.algorithm}:${id}:${keyCfg.secret}
                 key:
-                - id: ${id}
+                - id: ${keyCfg.name}
                   algorithm: ${keyCfg.algorithm}
                   secret: ${keyCfg.secret}
               '';
@@ -1281,8 +1298,8 @@ in {
             tsig-keys = [
               {
                 name = keaTSIGName;
-                algorithm = knotKeys.${keaTSIGName}.algorithm;
-                secret = knotKeys.${keaTSIGName}.secret;
+                algorithm = cfg.tsig.keyTpls.${keaTSIGName}.algorithm;
+                secret = cfg.tsig.keyTpls.${keaTSIGName}.secret;
               }
             ];
             loggers = [

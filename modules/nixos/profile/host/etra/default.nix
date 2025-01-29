@@ -282,5 +282,11 @@ in {
     {
       kdn.hardware.nanokvm.enable = true;
     }
+    {
+      kdn.security.secrets.sops.files."dns" = {
+        sopsFile = "${self}/dns.unattended.sops.yaml";
+      };
+      kdn.networking.router.tsig.keyTpls = config.kdn.security.secrets.sops.placeholders.dns.knot-dns.keys;
+    }
   ]);
 }

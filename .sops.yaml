@@ -51,7 +51,15 @@ keys:
       age:
         - &ssh-pryll age1lw083cnx8c5u29kvr3q8v90pkuapmfxxqvr8khzjmzxpfrjs8c8qvs3y7q
 creation_rules:
-  - path_regex: '.unattended\.sops\.[^.]+$'
+  - path_regex: 'dns\.sops\.[^.]+$'
+    key_groups:
+      - age:
+          - *ssh-etra
+          - *yk-etra-unattended
+          # defaults
+          - *yk-brys-unattended
+          - *yk-oams-unattended
+  - path_regex: '\.unattended\.sops\.[^.]+$'
     key_groups:
       - age:
           - *ssh-brys
@@ -59,10 +67,11 @@ creation_rules:
           - *ssh-moss
           - *ssh-oams
           - *ssh-pryll
-          - *yk-brys-unattended
           - *yk-etra-unattended
-          - *yk-oams-unattended
           - *yk-pryll-unattended
+          # defaults
+          - *yk-brys-unattended
+          - *yk-oams-unattended
   - key_groups:
       - age:
           - *yk-etra-touch
