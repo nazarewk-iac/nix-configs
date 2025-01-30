@@ -15,6 +15,7 @@
   kdn-keepass = pkgs.callPackage ./kdn-keepass {};
   kdn-nix = pkgs.callPackage ./kdn-nix {};
   kdn-secrets = pkgs.callPackage ./kdn-secrets {};
+  kdn-yk = pkgs.callPackage ./kdn-yk {};
   klg = pkgs.callPackage ./klg {};
   klog-time-tracker = pkgs.callPackage ./klog-time-tracker {};
   pass-secret-service = pkgs.callPackage ./pass-secret-service {};
@@ -24,7 +25,6 @@
   systemd-find-cycles = pkgs.callPackage ./systemd-find-cycles {};
   tc-redirect-tap = pkgs.callPackage ./tc-redirect-tap {};
   whicher = pkgs.callPackage ./whicher {};
-  yubikey-configure = pkgs.callPackage ./yubikey-configure {};
 
   hubstaff = pkgs.callPackage ./hubstaff/package.nix {};
 }

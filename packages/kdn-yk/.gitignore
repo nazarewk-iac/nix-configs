@@ -1,3 +1,6 @@
+###
+### START ignore everything
+###
 # ignore everything by default
 *
 # do not ignore directories (still ignores their content)
@@ -6,19 +9,11 @@
 .*/
 # do not ignore .gitignore files
 !.gitignore
+!.gitattributes
+###
+### END ignore everything
+###
 
-# shareable Jetbrains files
-!.idea/modules.xml
-!.idea/watcherTasks.xml
-!.idea/vcs.xml
-!.idea/misc.xml
-!*.iml
-
-!*.nix
-!/.envrc
-!/flake.lock
-
-!*.md
-!*.py
-!poetry.lock
-!pyproject.toml
+!/*.py
+!/requirements*.txt
+!/*.nix
