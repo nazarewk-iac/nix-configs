@@ -7,12 +7,12 @@ input = "{name}"
 upstream_input = "{name}-upstream"
 
 
-[patch.nixpkgs.netbird.gh-compare]
-# https://github.com/NixOS/nixpkgs/compare/nixos-unstable...nazarewk:netbird-improvements~1.patch?full_index=1
-repo = "NixOS/nixpkgs"
-base = "nixos-unstable"
-ref = "nazarewk:netbird-improvements"
-skip = 0
+#[patch.nixpkgs.netbird.gh-compare]
+## https://github.com/NixOS/nixpkgs/compare/nixos-unstable...nazarewk:netbird-improvements~1.patch?full_index=1
+#repo = "NixOS/nixpkgs"
+#base = "nixos-unstable"
+#ref = "nazarewk:netbird-improvements"
+#skip = 0
 
 #[patch.nixpkgs.levenshtein-fix]
 #url = "https://github.com/NixOS/nixpkgs/commit/c0954a8d2f38776b5766ffba1eadd40e876d86a4.patch?full_index=1"

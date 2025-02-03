@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from collections import defaultdict
+
 import argparse
 import functools
 import itertools
@@ -10,7 +12,6 @@ import shlex
 import subprocess
 import sys
 import tomllib
-from collections import defaultdict
 from pathlib import Path
 
 GIT_DATE = "1970-01-01 00:00:01.000000000 +0000"
@@ -30,9 +31,10 @@ def process_patch(path: Path, patch: dict):
     new = path.with_name(f"{path.name}.new")
     url = patch.get("url", None)
     if url is None:
-        if "gh-compare" in patch:
+        gh_compare = patch.get("gh-compare") or {}
+        if gh_compare:
             url = "https://github.com/{repo}/compare/{base}...{ref}~{skip}.patch?full_index=1".format(
-                **patch["gh-compare"]
+                **gh_compare
             )
     if url is not None:
         with new.open("wb") as fp:
@@ -75,13 +77,15 @@ def manage_block(*, path: Path, start: re.Pattern, end: re.Pattern, block: str):
 
 def patches_fetch(config: dict, patches_dir: Path, update=True):
     patches_by_repo: dict[str, dict[str, Path]] = defaultdict(dict)
-    defaults = config["default"]
-    bases = sorted(config["patch"].items())
+    defaults = config.get("default") or {}
+    defaults_patch = defaults.get("patch") or {}
+    patches = config.get("patch") or {}
+    bases = sorted(patches.items())
     for base, patches in bases:
         for idx, (patch_name, entry) in enumerate(sorted(patches.items())):
             out = patches_dir / f"{base}/{patch_name}.patch"
             out.parent.mkdir(exist_ok=True)
-            defaulted = deepmerge(defaults["patch"], entry)
+            defaulted = deepmerge(defaults_patch, entry)
             try:
                 if update or not out.exists():
                     process_patch(out, defaulted)
@@ -186,13 +190,16 @@ def patches_apply(
     patches_dir: Path,
     lock: Path,
 ):
-    defaults = config["default"]["repo"]
+    defaults = (config.get("default") or {}).get("repo") or {}
+    input_fmt = defaults.get("input") or "{name}"
+    upstream_input_fmt = defaults.get("upstream_input") or "{name}-upstream"
+
     repo_root = lock.parent
     for base in config.get("patch", {}).keys():
         base_path = patches_dir / base
         cfg = config.get("repo", {}).get("base", {})
-        base_input = cfg.get("input") or defaults["input"].format(name=base)
-        upstream_input = cfg.get("upstream_input") or defaults["upstream_input"].format(
+        base_input = cfg.get("input") or input_fmt.format(name=base)
+        upstream_input = cfg.get("upstream_input") or upstream_input_fmt.format(
             name=base
         )
 
