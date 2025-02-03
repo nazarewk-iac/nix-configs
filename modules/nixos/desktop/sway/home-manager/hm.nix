@@ -323,5 +323,14 @@ in {
           }
         ]
     )
+    {
+      /*
+      wlroots crash fix
+        see https://github.com/wez/wezterm/issues/6270#issuecomment-2408627063
+      */
+      programs.wezterm.extraConfig = ''
+        config.hide_tab_bar_if_only_one_tab = true
+      '';
+    }
   ]);
 }
