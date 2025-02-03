@@ -198,6 +198,21 @@ in {
           };
         };
       }
+      (lib.mkIf cfg.tmpfs.audit.enable {
+        kdn.security.audit.enable = true;
+        kdn.security.audit.laurel.enable = true;
+        security.audit.rules =
+          lib.trivial.pipe [
+            "/"
+            "/home"
+          ] [
+            (builtins.map (mountpoint: [
+              "-a always,exit -F arch=b32 -F dir=${mountpoint} -F perm=wa -k kdn.disks:tmpfs:change"
+              "-a always,exit -F arch=b64 -F dir=${mountpoint} -F perm=wa -k kdn.disks:tmpfs:change"
+            ]))
+            builtins.concatLists
+          ];
+      })
       {
         # required for kdn.hardware.disks.base.*.allowOther
         programs.fuse.userAllowOther = true;

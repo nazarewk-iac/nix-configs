@@ -127,6 +127,11 @@ in {
       default = "/nix/persist";
     };
 
+    tmpfs.audit.enable = lib.mkOption {
+      type = with lib.types; bool;
+      default = false;
+    };
+
     disposable.zfsName = lib.mkOption {
       type = with lib.types; str;
       default = "disposable";
@@ -307,6 +312,10 @@ in {
           # this type doesn't work
           #type = lib.types.attrsOf (lib.types.submodule {freeformType = (pkgs.formats.json {}).type;});
           default = {};
+        };
+        options.audit.enable = lib.mkOption {
+          type = with lib.types; bool;
+          default = false;
         };
       }));
     };

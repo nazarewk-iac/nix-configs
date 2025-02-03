@@ -422,5 +422,19 @@ in {
       kdn.security.disk-encryption.enable = true;
       boot.zfs.requestEncryptionCredentials = false;
     })
+    (let
+      auditedBases = lib.attrsets.filterAttrs (_: baseCfg: baseCfg.audit.enable) config.kdn.hardware.disks.base;
+    in
+      lib.mkIf (auditedBases != {}) {
+        kdn.security.audit.enable = true;
+        kdn.security.audit.laurel.enable = true;
+        security.audit.rules = lib.trivial.pipe auditedBases [
+          (lib.attrsets.mapAttrsToList (name: baseCfg: [
+            "-a always,exit -F arch=b32 -F dir=${baseCfg.mountpoint} -F perm=wa -k kdn.disks:tmpfs:change"
+            "-a always,exit -F arch=b64 -F dir=${baseCfg.mountpoint} -F perm=wa -k kdn.disks:tmpfs:change"
+          ]))
+          builtins.concatLists
+        ];
+      })
   ];
 }

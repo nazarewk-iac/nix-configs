@@ -121,5 +121,9 @@ in {
         5900
       ];
     }
+    {
+      kdn.hardware.disks.base."disposable".audit.enable = true;
+      kdn.hardware.disks.tmpfs.audit.enable = true;
+    }
   ]);
 }
