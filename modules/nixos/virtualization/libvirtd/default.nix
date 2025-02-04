@@ -23,7 +23,7 @@ in {
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
-      kdn.hardware.gpu.vfio.enable = lib.mkDefault true;
+      kdn.hw.gpu.vfio.enable = lib.mkDefault true;
       virtualisation.spiceUSBRedirection.enable = true;
       # see https://nixos.wiki/wiki/Virt-manager
       # see https://nixos.wiki/wiki/Libvirt
@@ -58,7 +58,7 @@ in {
       ];
     }
     {
-      kdn.hardware.disks.persist."usr/data".directories = [
+      kdn.hw.disks.persist."usr/data".directories = [
         "/var/lib/libvirt/images"
         "/var/lib/libvirt"
         "/var/lib/swtpm-localca"

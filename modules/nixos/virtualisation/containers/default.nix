@@ -25,10 +25,10 @@ in {
       skopeo
     ];
 
-    kdn.hardware.disks.persist."usr/cache".directories = [
+    kdn.hw.disks.persist."usr/cache".directories = [
       "/var/lib/containers/cache"
     ];
-    kdn.hardware.disks.persist."usr/data".directories = [
+    kdn.hw.disks.persist."usr/data".directories = [
       "/var/lib/containers/storage"
     ];
     home-manager.sharedModules = [

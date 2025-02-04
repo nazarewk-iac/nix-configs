@@ -2,7 +2,6 @@
   lib,
   pkgs,
   config,
-  system,
   ...
 }: let
   cfg = config.kdn.development.nodejs;

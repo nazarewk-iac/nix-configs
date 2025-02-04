@@ -7,7 +7,7 @@
   ...
 }: let
   cfg = config.kdn.profile.host.brys;
-  hostname = config.networking.hostName;
+  hostname = config.kdn.hostName;
 in {
   options.kdn.profile.host.brys = {
     enable = lib.mkEnableOption "enable brys host profile";
@@ -16,8 +16,8 @@ in {
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       kdn.profile.machine.workstation.enable = true;
-      kdn.hardware.gpu.amd.enable = true;
-      kdn.hardware.cpu.amd.enable = true;
+      kdn.hw.gpu.amd.enable = true;
+      kdn.hw.cpu.amd.enable = true;
 
       kdn.programs.photoprism.enable = false;
 
@@ -42,7 +42,7 @@ in {
       boot.tmp.tmpfsSize = "32G";
     }
     {
-      kdn.hardware.edid.enable = true;
+      kdn.hw.edid.enable = true;
       hardware.display.outputs."DP-4" = {
         edid = "PG278Q_120.bin";
         mode = "e";
@@ -66,21 +66,21 @@ in {
     */
     (
       let
-        cfg = config.kdn.hardware.disks;
+        cfg = config.kdn.hw.disks;
         d1 = "vp4300-brys";
         d2 = "px700-brys";
       in {
         # TODO: those are unlocked automatically using TPM2, switch to etra (or k8s cluster) backed Clevis+Tang unlock
-        kdn.hardware.disks.initrd.failureTarget = "rescue.target";
-        kdn.hardware.disks.enable = true;
-        kdn.hardware.disks.devices."boot".path = "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_04LZCR91M8UZPJW8-0:0";
-        kdn.hardware.disks.luks.volumes."${d1}" = {
+        kdn.hw.disks.initrd.failureTarget = "rescue.target";
+        kdn.hw.disks.enable = true;
+        kdn.hw.disks.devices."boot".path = "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_04LZCR91M8UZPJW8-0:0";
+        kdn.hw.disks.luks.volumes."${d1}" = {
           targetSpec.path = "/dev/disk/by-id/nvme-nvme.1e4b-5650343330304c45444242323333343032303433-5669706572205650343330304c20325442-00000001";
           uuid = "cbfe2928-2249-47fa-a48f-7c53c53a05d4";
           headerSpec.num = 2;
         };
 
-        kdn.hardware.disks.luks.volumes."${d2}" = {
+        kdn.hw.disks.luks.volumes."${d2}" = {
           targetSpec.path = "/dev/disk/by-id/nvme-nvme.1e4b-473342303335383134-53534450522d50583730302d3032542d3830-00000001";
           uuid = "53513d1d-233f-4c6b-b1ea-eeb40062e580";
           headerSpec.num = 3;
@@ -88,7 +88,7 @@ in {
       }
     )
     {
-      kdn.hardware.nanokvm.enable = true;
+      kdn.hw.nanokvm.enable = true;
     }
     {
       networking.networkmanager.ensureProfiles.profiles.pic = {

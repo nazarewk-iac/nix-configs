@@ -141,12 +141,10 @@ in {
 
       kdn.development.shell.enable = lib.mkDefault true;
       kdn.fs.zfs.enable = lib.mkDefault true;
-      kdn.hardware.usbip.enable = lib.mkDefault true;
-      kdn.hardware.yubikey.enable = lib.mkDefault true;
+      kdn.hw.usbip.enable = lib.mkDefault true;
+      kdn.hw.yubikey.enable = lib.mkDefault true;
       kdn.programs.direnv.enable = lib.mkDefault true;
       kdn.security.disk-encryption.enable = lib.mkDefault true;
-
-      home-manager.users.root = {kdn.profile.user.kdn.osConfig = config.users.users.root;};
 
       boot.kernelParams = [
         # blank screen after 90 sec

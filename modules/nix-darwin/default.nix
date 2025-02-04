@@ -3,13 +3,12 @@
   lib,
   pkgs,
   inputs,
-  self,
   ...
 }: {
   imports =
     [
-      ../shared/universal
       ../shared/darwin-nixos-os
+      ../shared/universal
       inputs.home-manager.darwinModules.default
       inputs.nix-homebrew.darwinModules.nix-homebrew
     ]
@@ -21,7 +20,7 @@
 
   config = lib.mkIf config.kdn.enable (lib.mkMerge [
     {kdn.darwin.type = "nix-darwin";}
-    {networking.localHostName = config.networking.hostName;}
+    {networking.localHostName = config.kdn.hostName;}
     {
       homebrew.enable = true;
       homebrew.onActivation.upgrade = false;
@@ -46,11 +45,10 @@
         ];
     }
     {
-      home-manager.backupFileExtension = "hmbackup";
-      home-manager.useGlobalPkgs = true;
-      home-manager.useUserPackages = true;
-      home-manager.extraSpecialArgs = {inherit self inputs;};
       home-manager.sharedModules = [{imports = [./hm.nix];}];
+    }
+    {
+      networking.computerName = lib.mkDefault config.kdn.hostName;
     }
   ]);
 }

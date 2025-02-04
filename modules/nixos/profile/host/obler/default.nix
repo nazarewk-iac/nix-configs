@@ -15,7 +15,7 @@ in {
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
-      kdn.hardware.cpu.intel.enable = true;
+      kdn.hw.cpu.intel.enable = true;
       kdn.profile.machine.desktop.enable = true;
       kdn.profile.hardware.dell-e5470.enable = true;
       security.sudo.wheelNeedsPassword = false;
@@ -59,7 +59,7 @@ in {
     }
     (import ./disko.nix {
       inherit lib;
-      hostname = config.networking.hostName;
+      hostname = config.kdn.hostName;
     })
   ]);
 }

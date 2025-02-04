@@ -2,8 +2,6 @@
   lib,
   pkgs,
   config,
-  inputs,
-  system,
   ...
 }: let
   cfg = config.kdn.development.nix;
@@ -16,7 +14,7 @@ in {
     kdn.programs.nix-utils.enable = true;
     home-manager.sharedModules = [{kdn.development.nix.enable = true;}];
     environment.systemPackages = with pkgs; [
-      #inputs.nixpkgs-update.defaultPackage.${system}
+      #self.inputs.nixpkgs-update.defaultPackage.${system}
       alejandra
       nix-update
       nixfmt-rfc-style

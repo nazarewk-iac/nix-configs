@@ -25,7 +25,7 @@ in {
       #    eval (${lib.getExe config.programs.zellij.package} setup --generate-auto-start fish | string collect)
       #  end
       #'';
-      kdn.hardware.disks.persist."usr/cache".directories = [".cache/zellij"];
+      kdn.hw.disks.persist."usr/cache".directories = [".cache/zellij"];
     }
     (let
       xdgAttrs.all =
@@ -52,8 +52,8 @@ in {
           (builtins.map (name: lib.strings.removePrefix "${config.home.homeDirectory}/" config.home.sessionVariables."${name}"))
         ];
     in {
-      kdn.hardware.disks.persist."usr/data".directories = process (lib.lists.subtractLists xdgAttrs.cache xdgAttrs.all);
-      kdn.hardware.disks.persist."usr/cache".directories = process xdgAttrs.cache;
+      kdn.hw.disks.persist."usr/data".directories = process (lib.lists.subtractLists xdgAttrs.cache xdgAttrs.all);
+      kdn.hw.disks.persist."usr/cache".directories = process xdgAttrs.cache;
     })
   ]);
 }

@@ -2,24 +2,23 @@
   lib,
   pkgs,
   config,
-  self,
-  system,
+  inputs,
   ...
 }: let
   cfg = config.kdn.virtualization.microvm.host;
 in {
   imports = [
-    self.inputs.microvm.nixosModules.host
+    inputs.microvm.nixosModules.host
   ];
 
   options.kdn.virtualization.microvm.host = {
     enable = lib.mkEnableOption "microvm host config";
 
     flake.nixpkgs = lib.mkOption {
-      default = self.inputs.nixpkgs;
+      default = inputs.nixpkgs;
     };
     flake.microvm = lib.mkOption {
-      default = self.inputs.microvm;
+      default = inputs.microvm;
     };
   };
 
@@ -43,7 +42,7 @@ in {
         "https://microvm.cachix.org"
       ];
 
-      environment.systemPackages = with cfg.flake.microvm.packages.${system}; [
+      environment.systemPackages = with cfg.flake.microvm.packages."${pkgs.stdenv.system}"; [
         microvm
         mktuntap
         prebuilt # see https://github.com/astro/microvm.nix/blob/24136ffe7bb1e504bce29b25dcd46b272cbafd9b/flake.nix#L45-L55

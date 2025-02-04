@@ -34,7 +34,7 @@ in {
           name = username;
           value = {
             kdn.programs.atuin.enable = true;
-            kdn.hardware.disks.persist."usr/data".directories = [".local/share/atuin"];
+            kdn.hw.disks.persist."usr/data".directories = [".local/share/atuin"];
             programs.atuin.settings = {
               daemon.socket_path = "${getRuntimeDir username}/atuin.sock";
             };

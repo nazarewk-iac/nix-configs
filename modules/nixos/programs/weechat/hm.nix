@@ -2,7 +2,6 @@
   lib,
   pkgs,
   config,
-  inputs,
   ...
 }: let
   cfg = config.kdn.programs.weechat;
@@ -72,7 +71,7 @@ in {
         };
       })
     ];
-    kdn.hardware.disks.persist."usr/config".directories = [
+    kdn.hw.disks.persist."usr/config".directories = [
       ".config/weechat"
     ];
   };

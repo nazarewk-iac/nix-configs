@@ -29,7 +29,7 @@ in {
       kdn.networking.router.kresd.rewrites."priv.nb.net.int.kdn.im.".from = "netbird.cloud.";
       kdn.networking.router.kresd.rewrites."priv.nb.net.int.kdn.im.".upstreams = ["127.0.0.19"];
 
-      kdn.hardware.disks.persist."usr/data".directories = [
+      kdn.hw.disks.persist."usr/data".directories = [
         {
           directory = "/var/lib/netbird-priv";
           user = "netbird-priv";

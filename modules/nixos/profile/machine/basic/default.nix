@@ -22,7 +22,7 @@ in {
       # HARDWARE
       hardware.usb-modeswitch.enable = true;
       environment.systemPackages = with pkgs; [usb-modeswitch];
-      kdn.hardware.bluetooth.enable = true;
+      kdn.hw.bluetooth.enable = true;
     }
     (
       let
@@ -45,7 +45,7 @@ in {
         documentation.man.man-db.enable = true;
         documentation.man.generateCaches = false;
         environment.systemPackages = [kdn-man-gen-caches];
-        kdn.hardware.disks.persist."sys/cache".directories = [
+        kdn.hw.disks.persist."sys/cache".directories = [
           "/var/cache/man/nixos"
         ];
         systemd.services.kdn-man-gen-caches = {

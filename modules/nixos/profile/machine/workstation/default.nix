@@ -7,10 +7,6 @@
 }: let
   cfg = config.kdn.profile.machine.workstation;
 in {
-  options.kdn.profile.machine.workstation = {
-    enable = lib.mkEnableOption "enable workstation machine profile";
-  };
-
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       kdn.desktop.kde.enable = false;
@@ -23,7 +19,7 @@ in {
       kdn.profile.machine.dev.enable = true;
 
       kdn.monitoring.prometheus-stack.enable = false;
-      kdn.monitoring.prometheus-stack.caddy.grafana = "grafana.${config.networking.hostName}.kdn.im";
+      kdn.monitoring.prometheus-stack.caddy.grafana = "grafana.${config.kdn.hostName}.kdn.im";
       kdn.services.caddy.enable = false;
       kdn.programs.obs-studio.enable = true;
 
@@ -79,65 +75,6 @@ in {
       services.offlineimap.install = true;
 
       kdn.networking.tailscale.auth_key = "nixos-kdn";
-
-      kdn.networking.openvpn.enable = true;
-      kdn.networking.openfortivpn.enable = true;
-      kdn.networking.openvpn.debug = true;
-      kdn.networking.openvpn.instances = {
-        goggles-humongous = {
-          routes.add = [
-            {
-              network = "10.40.0.0";
-              netmask = "255.255.0.0";
-            }
-          ];
-        };
-        chance-acuteness = {};
-        senorita-recant = {
-          routes.ignore = true;
-          routes.add = [
-            {
-              network = "10.33.0.0";
-              netmask = "255.255.0.0";
-            }
-            {
-              network = "10.34.0.0";
-              netmask = "255.255.0.0";
-            }
-            {
-              network = "10.44.0.0";
-              netmask = "255.255.0.0";
-            }
-            {
-              network = "192.168.107.0";
-              netmask = "255.255.255.0";
-            }
-          ];
-        };
-        fracture-outage = {
-          routes.ignore = true;
-          routes.add = [
-            {
-              network = "172.16.0.0";
-              netmask = "255.255.0.0";
-            }
-            {
-              network = "172.18.0.0";
-              netmask = "255.255.0.0";
-            }
-          ];
-        };
-        scientist-properly = {
-          routes.ignore = true;
-          routes.add = [
-            {
-              network = "10.241.0.0";
-              netmask = "255.255.0.0";
-            }
-          ];
-        };
-        baguette-geology = {};
-      };
     }
     {
       boot.initrd.clevis.enable = true;

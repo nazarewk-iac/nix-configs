@@ -117,7 +117,6 @@
     self,
     ...
   }: let
-    inherit (inputs) home-manager nixpkgs disko;
     lib = import ./lib {inherit (inputs.nixpkgs) lib;};
     flakeLib = lib.kdn.flakes.forFlake self;
   in (flake-parts.lib.mkFlake {inherit inputs;} {
@@ -218,13 +217,39 @@
       devShells = {};
       packages = lib.mkMerge [
         (lib.filterAttrs (n: pkg: lib.isDerivation pkg) (flakeLib.overlayedInputs {inherit system;}).nixpkgs.kdn)
-        # adds nixosConfigurations as microvms as packages with microvm-* prefix
-        # TODO: fix /nix/store filesystem type conflict before re-enabling
-        #(lib.attrsets.mapAttrs' (name: value: lib.attrsets.nameValuePair "microvm-${name}" value) (flakeLib.microvm.packages system))
         {
-          install-iso = flakeLib.nixos.install-iso {
+          install-iso = inputs.nixos-generators.nixosGenerate {
+            format = "install-iso";
             inherit system;
+            inherit (self) lib;
+            inherit (lib) nixosSystem;
+            specialArgs = {
+              inherit self inputs;
+              inherit (self) lib;
+            };
+
             modules = [
+              self.nixosModules.default
+              {
+                /*
+                `isoImage.isoName` gives a stable image filename
+                */
+                /*
+                `lib.mkForce` is a fix for:
+                 error: The option `isoImage.isoName' has conflicting definition values:
+                   - In `/nix/store/v7l65f0mfszidw5z6napdsiyq0nnnvxn-source/nixos/modules/installer/cd-dvd/installation-cd-base.nix': "nixos-23.11.20230527.e108023-aarch64-linux.iso"
+                   - In `/nix/store/ld9rn0fc23j6cp92v9r31fq2nwc4s96b-source/formats/install-iso.nix': "nixos.iso"
+                   Use `lib.mkForce value` or `lib.mkDefault value` to change the priority on any of these definitions.
+                */
+                isoImage.isoName = lib.mkForce "nixos.iso";
+
+                /*
+                 `install-iso` uses some weird GRUB booting chimera
+                see https://github.com/NixOS/nixpkgs/blob/9fbeebcc35c2fbc9a3fb96797cced9ea93436097/nixos/modules/installer/cd-dvd/iso-image.nix#L780-L787
+                */
+                boot.initrd.systemd.enable = lib.mkForce false;
+                boot.loader.systemd-boot.enable = lib.mkForce false;
+              }
               {
                 home-manager.sharedModules = [{home.stateVersion = "24.11";}];
                 kdn.security.secrets.allow = true;
@@ -247,12 +272,17 @@
     flake.nixosModules.default = ./modules/nixos;
     flake.nixosConfigurations = lib.mkMerge [
       {
-        oams = flakeLib.nixos.system {
+        oams = lib.nixosSystem {
           system = "x86_64-linux";
+          specialArgs = {
+            inherit self inputs;
+            inherit (self) lib;
+          };
           modules = [
+            self.nixosModules.default
             ({config, ...}: {
-              networking.hostName = "oams";
-              kdn.profile.host."${config.networking.hostName}".enable = true;
+              kdn.hostName = "oams";
+              kdn.profile.host."${config.kdn.hostName}".enable = true;
 
               system.stateVersion = "23.11";
               home-manager.sharedModules = [{home.stateVersion = "23.11";}];
@@ -261,12 +291,17 @@
           ];
         };
 
-        brys = flakeLib.nixos.system {
+        brys = lib.nixosSystem {
           system = "x86_64-linux";
+          specialArgs = {
+            inherit self inputs;
+            inherit (self) lib;
+          };
           modules = [
+            self.nixosModules.default
             ({config, ...}: {
-              networking.hostName = "brys";
-              kdn.profile.host."${config.networking.hostName}".enable = true;
+              kdn.hostName = "brys";
+              kdn.profile.host."${config.kdn.hostName}".enable = true;
 
               system.stateVersion = "24.11";
               home-manager.sharedModules = [{home.stateVersion = "24.11";}];
@@ -275,12 +310,17 @@
           ];
         };
 
-        etra = flakeLib.nixos.system {
+        etra = lib.nixosSystem {
           system = "x86_64-linux";
+          specialArgs = {
+            inherit self inputs;
+            inherit (self) lib;
+          };
           modules = [
+            self.nixosModules.default
             ({config, ...}: {
-              networking.hostName = "etra";
-              kdn.profile.host."${config.networking.hostName}".enable = true;
+              kdn.hostName = "etra";
+              kdn.profile.host."${config.kdn.hostName}".enable = true;
 
               system.stateVersion = "24.11";
               home-manager.sharedModules = [{home.stateVersion = "24.11";}];
@@ -289,12 +329,17 @@
           ];
         };
 
-        pryll = flakeLib.nixos.system {
+        pryll = lib.nixosSystem {
           system = "x86_64-linux";
+          specialArgs = {
+            inherit self inputs;
+            inherit (self) lib;
+          };
           modules = [
+            self.nixosModules.default
             ({config, ...}: {
-              networking.hostName = "pryll";
-              kdn.profile.host."${config.networking.hostName}".enable = true;
+              kdn.hostName = "pryll";
+              kdn.profile.host."${config.kdn.hostName}".enable = true;
 
               system.stateVersion = "25.05";
               home-manager.sharedModules = [{home.stateVersion = "25.05";}];
@@ -303,12 +348,17 @@
           ];
         };
 
-        obler = flakeLib.nixos.system {
+        obler = lib.nixosSystem {
           system = "x86_64-linux";
+          specialArgs = {
+            inherit self inputs;
+            inherit (self) lib;
+          };
           modules = [
+            self.nixosModules.default
             ({config, ...}: {
-              networking.hostName = "obler";
-              kdn.profile.host."${config.networking.hostName}".enable = true;
+              kdn.hostName = "obler";
+              kdn.profile.host."${config.kdn.hostName}".enable = true;
 
               system.stateVersion = "23.11";
               home-manager.sharedModules = [{home.stateVersion = "23.11";}];
@@ -317,12 +367,17 @@
           ];
         };
 
-        moss = flakeLib.nixos.system {
+        moss = lib.nixosSystem {
           system = "x86_64-linux";
+          specialArgs = {
+            inherit self inputs;
+            inherit (self) lib;
+          };
           modules = [
+            self.nixosModules.default
             ({config, ...}: {
-              networking.hostName = "moss";
-              kdn.profile.host."${config.networking.hostName}".enable = true;
+              kdn.hostName = "moss";
+              kdn.profile.host."${config.kdn.hostName}".enable = true;
 
               system.stateVersion = "23.11";
               home-manager.sharedModules = [{home.stateVersion = "23.11";}];
@@ -336,33 +391,19 @@
             })
           ];
         };
-
-        #rpi4 = lib.nixosSystem {
-        #  # nix build '.#rpi4.config.system.build.sdImage' --system aarch64-linux -L
-        #  # see for a next step: https://matrix.to/#/!KqkRjyTEzAGRiZFBYT:nixos.org/$w4Zx8Y0vG0DhlD3zzWReWDaOdRSZvwyrn1tQsLhYDEU?via=nixos.org&via=matrix.org&via=tchncs.de
-        #  system = "aarch64-linux";
-        #  modules = [ ./rpi4/sd-image.nix ];
-        #};
       }
-      (flakeLib.microvm.configuration {
-        name = "hello-microvm";
-        modules = [
-          {
-            system.stateVersion = "23.11";
-            home-manager.sharedModules = [{home.stateVersion = "23.11";}];
-            kdn.profile.machine.baseline.enable = true;
-          }
-        ];
-      })
     ];
     flake.darwinModules.default = ./modules/nix-darwin;
     flake.darwinConfigurations.anji = inputs.nix-darwin.lib.darwinSystem {
       system = "aarch64-darwin";
-      specialArgs = {inherit self inputs lib;};
+      specialArgs = {
+        inherit self inputs;
+        inherit (self) lib;
+      };
       modules = [
         self.darwinModules.default
         ({config, ...}: {
-          networking.hostName = "anji";
+          kdn.hostName = "anji";
         })
       ];
     };

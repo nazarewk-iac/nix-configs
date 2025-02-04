@@ -89,5 +89,56 @@ in {
         builtins.concatLists
       ];
     }
+    {
+      kdn.hw.disks.persist."usr/cache".directories = lib.pipe enabledAppsList [
+        (builtins.map (cfg: cfg.dirs.cache))
+        builtins.concatLists
+      ];
+      kdn.hw.disks.persist."usr/config".directories = lib.pipe enabledAppsList [
+        (builtins.map (cfg: cfg.dirs.config))
+        builtins.concatLists
+      ];
+      kdn.hw.disks.persist."usr/data".directories = lib.pipe enabledAppsList [
+        (builtins.map (cfg: cfg.dirs.data))
+        builtins.concatLists
+      ];
+      kdn.hw.disks.persist."usr/state".directories = lib.pipe enabledAppsList [
+        (builtins.map (cfg: cfg.dirs.state))
+        builtins.concatLists
+      ];
+      kdn.hw.disks.persist."usr/reproducible".directories = lib.pipe enabledAppsList [
+        (builtins.map (cfg: cfg.dirs.reproducible))
+        builtins.concatLists
+      ];
+      kdn.hw.disks.persist."disposable".directories = lib.pipe enabledAppsList [
+        (builtins.map (cfg: cfg.dirs.disposable))
+        builtins.concatLists
+      ];
+
+      kdn.hw.disks.persist."usr/cache".files = lib.pipe enabledAppsList [
+        (builtins.map (cfg: cfg.files.cache))
+        builtins.concatLists
+      ];
+      kdn.hw.disks.persist."usr/config".files = lib.pipe enabledAppsList [
+        (builtins.map (cfg: cfg.files.config))
+        builtins.concatLists
+      ];
+      kdn.hw.disks.persist."usr/data".files = lib.pipe enabledAppsList [
+        (builtins.map (cfg: cfg.files.data))
+        builtins.concatLists
+      ];
+      kdn.hw.disks.persist."usr/state".files = lib.pipe enabledAppsList [
+        (builtins.map (cfg: cfg.files.state))
+        builtins.concatLists
+      ];
+      kdn.hw.disks.persist."usr/reproducible".files = lib.pipe enabledAppsList [
+        (builtins.map (cfg: cfg.files.reproducible))
+        builtins.concatLists
+      ];
+      kdn.hw.disks.persist."disposable".files = lib.pipe enabledAppsList [
+        (builtins.map (cfg: cfg.files.disposable))
+        builtins.concatLists
+      ];
+    }
   ];
 }

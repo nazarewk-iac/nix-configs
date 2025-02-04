@@ -12,8 +12,8 @@ in {
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
-      kdn.hardware.cpu.intel.enable = true;
-      kdn.hardware.gpu.intel.enable = true;
+      kdn.hw.cpu.intel.enable = true;
+      kdn.hw.gpu.intel.enable = true;
       kdn.profile.machine.desktop.enable = true;
       security.sudo.wheelNeedsPassword = false;
     }
@@ -41,18 +41,18 @@ in {
       };
     }
     {
-      kdn.hardware.disks.initrd.failureTarget = "rescue.target";
-      kdn.hardware.disks.enable = true;
-      kdn.hardware.disks.devices."boot".path = "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_04KE345HX9EUZLSW-0:0";
+      kdn.hw.disks.initrd.failureTarget = "rescue.target";
+      kdn.hw.disks.enable = true;
+      kdn.hw.disks.devices."boot".path = "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_04KE345HX9EUZLSW-0:0";
 
-      kdn.hardware.disks.luks.volumes."hs-e100-pryll" = {
+      kdn.hw.disks.luks.volumes."hs-e100-pryll" = {
         targetSpec.path = "/dev/disk/by-id/ata-HS-SSD-E100_256G_30023586951";
         uuid = "4f314bc3-6c3c-4a37-9756-5a03d286cf7b";
         headerSpec.num = 2;
       };
     }
     {
-      kdn.hardware.nanokvm.enable = true;
+      kdn.hw.nanokvm.enable = true;
     }
   ]);
 }

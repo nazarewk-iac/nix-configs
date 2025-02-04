@@ -11,7 +11,7 @@ in {
       nix.settings.trusted-users = ["kdn"];
       kdn.programs.atuin.users = ["kdn"];
       kdn.programs.atuin.autologinUsers = ["kdn"];
-      kdn.hardware.yubikey.appId = "pam://kdn";
+      kdn.hw.yubikey.appId = "pam://kdn";
       users.users.kdn.initialHashedPassword = "$y$j9T$yl3J5zGJ5Yq8c6fXMGxNk.$XE3X8aWpD3FeakMBD/fUmCExXMuy7B6tm7ZECmuxpF4";
       users.users.kdn = {
         linger = true;
@@ -28,9 +28,7 @@ in {
             startGid = 100000;
           }
         ];
-        description = "Krzysztof Nazarewski";
         isNormalUser = true;
-        openssh.authorizedKeys.keys = cfg.ssh.authorizedKeysList;
         extraGroups = lib.filter (group: lib.hasAttr group config.users.groups) [
           "adbusers"
           "audio"
@@ -64,24 +62,14 @@ in {
         allowedUDPPorts = [21027 22000];
       };
     }
-    (
-      let
-        cfg = {
-          programs.gpg.publicKeys = [
-            {
-              source = ./gpg-pubkeys.txt;
-              trust = "ultimate";
-            }
-          ];
-        };
-      in {
-        home-manager.users.root = cfg;
-        home-manager.users.kdn = cfg;
-      }
-    )
     {
       home-manager.users.kdn.kdn.profile.user.kdn.enable = true;
-      home-manager.users.kdn.kdn.profile.user.kdn.osConfig = config.users.users.kdn;
+      home-manager.users.root.programs.gpg.publicKeys = [
+        {
+          source = cfg.gpg.publicKeys;
+          trust = "ultimate";
+        }
+      ];
     }
   ]);
 }

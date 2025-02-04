@@ -2,8 +2,6 @@
   lib,
   pkgs,
   config,
-  inputs,
-  system,
   ...
 }: let
   cfg = config.kdn.development.rpi;

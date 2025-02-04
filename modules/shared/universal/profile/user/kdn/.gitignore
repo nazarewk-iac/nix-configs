@@ -1,2 +1,3 @@
 !/.ssh
 !/.ssh/authorized_keys
+!/gpg-pubkeys.txt

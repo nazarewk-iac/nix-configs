@@ -124,19 +124,19 @@ in {
       }
     ))
     {
-      kdn.hardware.disks.persist."usr/data".directories = [
+      kdn.hw.disks.persist."usr/data".directories = [
         ".local/share/JetBrains"
       ];
-      kdn.hardware.disks.persist."usr/cache".directories = [
+      kdn.hw.disks.persist."usr/cache".directories = [
         ".cache/JetBrains"
       ];
-      kdn.hardware.disks.persist."usr/config".directories = [
+      kdn.hw.disks.persist."usr/config".directories = [
         ".config/JetBrains"
       ];
-      kdn.hardware.disks.persist."usr/state".directories = [
+      kdn.hw.disks.persist."usr/state".directories = [
         ".java/.userPrefs/jetbrains"
       ];
-      kdn.hardware.disks.persist."usr/state".files = [
+      kdn.hw.disks.persist."usr/state".files = [
         # writes `JetBrains.UserIdOnMachine` property to the file
         ".java/.userPrefs/prefs.xml"
       ];

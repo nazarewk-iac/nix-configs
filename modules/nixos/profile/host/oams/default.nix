@@ -16,8 +16,8 @@ in {
       home-manager.users.kdn.home.file.".mozilla/firefox/profiles.ini".force = true;
 
       kdn.profile.machine.workstation.enable = true;
-      kdn.hardware.gpu.amd.enable = true;
-      kdn.hardware.cpu.amd.enable = true;
+      kdn.hw.gpu.amd.enable = true;
+      kdn.hw.cpu.amd.enable = true;
 
       systemd.tmpfiles.rules = [
         "f /dev/shm/looking-glass 0660 kdn qemu-libvirtd -"
@@ -32,7 +32,7 @@ in {
     }
     /*
       {
-      kdn.hardware.edid.enable = true;
+      kdn.hw.edid.enable = true;
       hardware.display.outputs."DP-1" = {
         edid = "PG278Q_120.bin";
         mode = "e";
@@ -41,7 +41,7 @@ in {
     */
     {
       services.asusd.enable = true;
-      kdn.hardware.gpu.multiGPU.enable = true;
+      kdn.hw.gpu.multiGPU.enable = true;
       programs.rog-control-center.enable = true;
       programs.rog-control-center.autoStart = true;
       services.asusd.enableUserService = true;
@@ -98,7 +98,7 @@ in {
     }
     (import ./disko.nix {
       inherit lib;
-      hostname = config.networking.hostName;
+      hostname = config.kdn.hostName;
     })
     {
       networking.networkmanager.logLevel = "DEBUG";
@@ -108,7 +108,7 @@ in {
         inheritParentConfig = true;
         configuration = {
           system.nixos.tags = ["gaming"];
-          kdn.hardware.gpu.supergfxd.mode = lib.mkForce "Hybrid";
+          kdn.hw.gpu.supergfxd.mode = lib.mkForce "Hybrid";
           kdn.profile.machine.gaming.enable = true;
           kdn.profile.machine.gaming.vulkan.deviceId = "1002:73df";
           kdn.profile.machine.gaming.vulkan.deviceName = "AMD Radeon RX 6800M";
@@ -125,8 +125,8 @@ in {
         inheritParentConfig = true;
         configuration = {
           system.nixos.tags = ["vfio"];
-          kdn.hardware.gpu.vfio.enable = true;
-          kdn.hardware.gpu.vfio.gpuIDs = [
+          kdn.hw.gpu.vfio.enable = true;
+          kdn.hw.gpu.vfio.gpuIDs = [
             "1002:73df"
             "1002:ab28"
           ];

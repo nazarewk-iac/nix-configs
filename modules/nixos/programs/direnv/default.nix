@@ -28,8 +28,8 @@ in {
         programs.direnv.enable = true;
         programs.direnv.nix-direnv.enable = true;
         programs.git.ignores = [(builtins.readFile ./.gitignore)];
-        kdn.hardware.disks.persist."usr/data".directories = [".local/share/direnv"];
-        kdn.hardware.disks.persist."usr/config".directories = [".config/direnv"];
+        kdn.hw.disks.persist."usr/data".directories = [".local/share/direnv"];
+        kdn.hw.disks.persist."usr/config".directories = [".config/direnv"];
       }
     ];
   };

@@ -37,7 +37,7 @@ in {
     ];
     home-manager.sharedModules = [
       {
-        kdn.hardware.disks.persist."usr/config".directories = [
+        kdn.hw.disks.persist."usr/config".directories = [
           ".config/obs-studio"
         ];
       }

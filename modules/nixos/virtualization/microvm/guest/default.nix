@@ -2,14 +2,13 @@
   lib,
   pkgs,
   config,
-  self,
-  system,
+  inputs,
   ...
 }: let
   cfg = config.kdn.virtualization.microvm.guest;
 in {
   imports = [
-    self.inputs.microvm.nixosModules.microvm
+    inputs.microvm.nixosModules.microvm
   ];
   options.kdn.virtualization.microvm.guest = {
     enable = lib.mkEnableOption "microvm guest config";

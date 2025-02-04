@@ -14,8 +14,8 @@ in {
     {home-manager.sharedModules = [{kdn.profile.machine.desktop.enable = cfg.enable;}];}
     {
       kdn.desktop.base.enable = true;
-      kdn.hardware.gpu.enable = true;
-      kdn.hardware.qmk.enable = true;
+      kdn.hw.gpu.enable = true;
+      kdn.hw.qmk.enable = true;
       kdn.profile.machine.basic.enable = true;
 
       # INPUT
@@ -27,7 +27,7 @@ in {
       services.libinput.touchpad.tapping = true;
       services.xserver.synaptics.twoFingerScroll = true;
 
-      kdn.hardware.audio.enable = true;
+      kdn.hw.audio.enable = true;
 
       kdn.desktop.enable = true;
 

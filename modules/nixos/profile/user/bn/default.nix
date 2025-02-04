@@ -10,10 +10,10 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    kdn.hardware.yubikey.appId = "pam://kdn";
+    kdn.hw.yubikey.appId = "pam://kdn";
     nix.settings.allowed-users = ["bn"];
     kdn.programs.atuin.users = ["bn"];
-    kdn.hardware.disks.users.bn.homeLocation = "usr/data";
+    kdn.hw.disks.users.bn.homeLocation = "usr/data";
     users.users.bn.initialHashedPassword = "$6$rounds=4096$KyC.856JV99or3zx$X2wYf1M6rO3xqDkOlMwFaAJvgiIUewc/LtWEPNCgZUBQceFlNsgEw1IgZmjduFE41IFdJWKqKuroUAznvE0Sx0";
     users.users.bn = {
       uid = 27748;

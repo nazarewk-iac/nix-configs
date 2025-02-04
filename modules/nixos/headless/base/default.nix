@@ -21,7 +21,7 @@ in {
       users.defaultUserShell = pkgs.fish;
 
       kdn.development.data.enable = true;
-      kdn.hardware.basic.enable = true;
+      kdn.hw.basic.enable = true;
       kdn.programs.atuin.enable = true;
       kdn.programs.fish.enable = true;
       kdn.programs.handlr.enable = true;

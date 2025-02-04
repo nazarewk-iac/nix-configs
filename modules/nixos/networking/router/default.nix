@@ -7,7 +7,7 @@
   ...
 }: let
   cfg = config.kdn.networking.router;
-  hostname = config.networking.hostName;
+  hostname = config.kdn.hostName;
 
   mkDropInDir = unit: "/etc/systemd/network/${unit}.d";
   mkDropInPath = unit: name: "${mkDropInDir unit}/${cfg.dropin.infix}-${name}.conf";
@@ -223,7 +223,7 @@
         default =
           if cfg.dhcp-ddns.suffix == null
           then null
-          else "${netCfg.name}.${config.networking.hostName}.${cfg.dhcp-ddns.suffix}";
+          else "${netCfg.name}.${config.kdn.hostName}.${cfg.dhcp-ddns.suffix}";
         apply = domain:
           assert lib.assertMsg (lib.strings.hasSuffix "." domain) ''
             `kdn.networking.router.nets.*.domain` must end with a '.': ${domain}
@@ -691,7 +691,7 @@ in {
       networking.networkmanager.enable = false;
       systemd.network.enable = true;
 
-      kdn.hardware.disks.persist."sys/data".directories = [
+      kdn.hw.disks.persist."sys/data".directories = [
         {
           directory = "/var/lib/systemd/network";
           user = "systemd-network";
@@ -1024,7 +1024,7 @@ in {
         ]
         ++ builtins.map (i: "kresd@${builtins.toString i}.service") (lib.lists.range 1 config.services.kresd.instances);
 
-      kdn.hardware.disks.persist."sys/data".directories = [
+      kdn.hw.disks.persist."sys/data".directories = [
         {
           directory = "/var/lib/knot-resolver";
           user = "knot-resolver";
@@ -1032,7 +1032,7 @@ in {
           mode = "0770";
         }
       ];
-      kdn.hardware.disks.persist."sys/cache".directories = [
+      kdn.hw.disks.persist."sys/cache".directories = [
         {
           directory = "/var/cache/knot-resolver";
           user = "knot-resolver";
@@ -1261,7 +1261,7 @@ in {
           ];
         };
         environment.etc."${lib.strings.removePrefix "/etc" cfg.knot.configDir}/.keep".text = "";
-        kdn.hardware.disks.persist."sys/data".directories = [
+        kdn.hw.disks.persist."sys/data".directories = [
           {
             directory = cfg.knot.dataDir;
             user = "knot";

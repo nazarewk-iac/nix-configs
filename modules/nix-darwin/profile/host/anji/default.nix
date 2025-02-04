@@ -2,7 +2,7 @@
   lib,
   config,
   pkgs,
-  inputs,
+  self,
   ...
 }: let
   cfg = config.kdn.profile.host.anji;
@@ -10,7 +10,7 @@ in {
   options.kdn.profile.host.anji = {
     enable = lib.mkOption {
       type = with lib.types; bool;
-      default = config.networking.hostName == "anji";
+      default = config.kdn.hostName == "anji";
     };
   };
 
@@ -27,5 +27,24 @@ in {
       system.stateVersion = 5;
       home-manager.sharedModules = [{home.stateVersion = "25.05";}];
     }
+    {
+      kdn.nix.remote-builder.enable = true;
+    }
+    (lib.mkIf config.kdn.nix.remote-builder.enable {
+      nix.linux-builder.enable = true;
+      nix.linux-builder.speedFactor = 4;
+      nix.linux-builder.maxJobs = 2;
+      nix.linux-builder.systems = [
+        "aarch64-linux"
+      ];
+      nix.linux-builder.package = pkgs.darwin.linux-builder.override (old: {
+        modules =
+          old.modules
+          ++ [
+            self.nixosModules.default
+            (import ./faro.nix)
+          ];
+      });
+    })
   ]);
 }

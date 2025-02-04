@@ -2,7 +2,6 @@
   config,
   lib,
   inputs,
-  self,
   ...
 }: {
   imports =
@@ -31,10 +30,6 @@
       disko.enableConfig = lib.mkDefault false;
     }
     {
-      home-manager.backupFileExtension = "hmbackup";
-      home-manager.useGlobalPkgs = true;
-      home-manager.useUserPackages = true;
-      home-manager.extraSpecialArgs = {inherit self inputs;};
       home-manager.sharedModules = [{imports = [./hm.nix];}];
     }
   ]);

@@ -14,8 +14,8 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    #kdn.hardware.intel-graphics-fix.enable = true;
-    kdn.hardware.modem.enable = true;
+    #kdn.hw.intel-graphics-fix.enable = true;
+    kdn.hw.modem.enable = true;
 
     # BOOT
     boot.initrd.availableKernelModules = [
@@ -25,7 +25,7 @@ in {
     boot.kernelModules = ["kvm-intel"];
 
     boot.initrd.kernelModules = ["dm-snapshot"];
-    kdn.hardware.gpu.intel.enable = true;
+    kdn.hw.gpu.intel.enable = true;
 
     zramSwap.enable = true;
     zramSwap.memoryPercent = 50;
