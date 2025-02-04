@@ -10,6 +10,11 @@ in {
   options.kdn.security.audit = {
     enable = lib.mkEnableOption "Linux audit setup";
 
+    auditd.startOnDemand = lib.mkOption {
+      type = with lib.types; bool;
+      default = false;
+    };
+
     auditd.config = lib.mkOption {
       type = with lib.types; attrsOf str;
       default = {};
@@ -44,6 +49,9 @@ in {
         admin_space_left = "5%";
         admin_space_left_action = "rotate";
       };
+    }
+    {
+      systemd.services.auditd.wantedBy = lib.mkIf cfg.auditd.startOnDemand (lib.mkForce []);
     }
     {
       systemd.services.auditd.serviceConfig.ExecStart = let

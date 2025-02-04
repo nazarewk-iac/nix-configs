@@ -122,6 +122,7 @@ in {
       ];
     }
     {
+      kdn.security.audit.auditd.startOnDemand = true;
       kdn.hardware.disks.base."disposable".audit.enable = true;
       kdn.hardware.disks.tmpfs.audit.enable = true;
     }
