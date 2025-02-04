@@ -6,6 +6,8 @@ skip = 0
 input = "{name}"
 upstream_input = "{name}-upstream"
 
+[patch.nixpkgs]
+# TODO: discover the repos without explicit empty entry?
 
 #[patch.nixpkgs.netbird.gh-compare]
 ## https://github.com/NixOS/nixpkgs/compare/nixos-unstable...nazarewk:netbird-improvements~1.patch?full_index=1
