@@ -284,7 +284,7 @@ in {
     }
     {
       kdn.security.secrets.sops.files."dns" = {
-        sopsFile = "${self}/dns.unattended.sops.yaml";
+        sopsFile = "${self}/dns.sops.yaml";
       };
       kdn.networking.router.tsig.keyTpls = config.kdn.security.secrets.sops.placeholders.dns.knot-dns.keys;
     }

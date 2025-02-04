@@ -47,6 +47,10 @@
       type = with lib.types; listOf str;
       apply = lib.strings.escapeShellArgs;
     };
+    options.systemdName = lib.mkOption {
+      type = with lib.types; str;
+      default = "kdn-fs-watch-${args.config.name}";
+    };
   });
 in {
   options.kdn.fs.watch = {
@@ -65,7 +69,7 @@ in {
       systemd.services = lib.pipe cfg.instances [
         (lib.attrsets.filterAttrs (_: fsWatchCfg: fsWatchCfg.enable))
         (lib.attrsets.mapAttrs' (name: fsWatchCfg:
-          lib.attrsets.nameValuePair "kdn-fs-watch-${name}" {
+          lib.attrsets.nameValuePair fsWatchCfg.systemdName {
             description = "${name} filesystem watcher";
             serviceConfig = {
               RuntimeDirectory = "kdn-fs-watch-${name}";

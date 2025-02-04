@@ -712,6 +712,20 @@ in {
       services.resolved.dnssec = "allow-downgrade";
       networking.nameservers = defaultDNSServers;
     }
+    (let
+      services = builtins.map (name: "${name}.service") [
+        "kdn-knot-init"
+        "knot"
+        "kresd@"
+        "systemd-networkd"
+        "systemd-resolved"
+        config.kdn.fs.watch.instances.kea-dhcp-ddns-reload.systemdName
+        config.kdn.fs.watch.instances.kea-dhcp4-server-reload.systemdName
+      ];
+    in {
+      systemd.targets.kdn-secrets.before = services;
+      systemd.targets.kdn-secrets.requiredBy = services;
+    })
     {
       networking.nftables.enable = true;
       networking.firewall.enable = true;
