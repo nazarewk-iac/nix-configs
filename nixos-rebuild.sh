@@ -59,6 +59,8 @@ if [[ "${1:-}" == remote=* ]]; then
   if [[ "${remote}" == *=* ]]; then
     name="${remote%=*}"
     remote="${remote#*=}"
+  else
+    name="${remote}"
   fi
   addr="${remote}"
 
@@ -103,5 +105,9 @@ switch | boot | test)
   fi
   ;;
 esac
+
+if test "${DRY_RUN:-0}" == 1 ; then
+  pre_cmd=(echo "${pre_cmd[@]}")
+fi
 
 "${pre_cmd[@]}" nixos-rebuild "${pre_args[@]}" "${cmd}" "${post_args[@]}" "${@}" |& nom --json
