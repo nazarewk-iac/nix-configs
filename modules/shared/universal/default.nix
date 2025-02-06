@@ -22,10 +22,18 @@
       readOnly = true;
       default = import ./nix.nix;
     };
+    types = lib.mkOption {
+      type = with lib.types; listOf str;
+      default = [];
+      apply = value: lib.lists.sort (a: b: a < b) (lib.lists.unique value);
+    };
   };
 
   config = lib.mkIf config.kdn.enable (lib.mkMerge [
     {
+      kdn.types =
+        [pkgs.stdenv.system]
+        ++ lib.strings.splitString "-" pkgs.stdenv.system;
     }
   ]);
 }

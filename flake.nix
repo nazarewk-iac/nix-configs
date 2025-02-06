@@ -50,6 +50,7 @@
   inputs.poetry2nix.url = "github:nix-community/poetry2nix";
   inputs.preservation.url = "github:nix-community/preservation";
   inputs.rust-overlay.url = "github:oxalica/rust-overlay";
+  inputs.nixos-hardware.url = "github:nixos/nixos-hardware";
   inputs.stylix.url = "github:danth/stylix";
   inputs.systems.url = "github:nix-systems/default";
   inputs.treefmt-nix.url = "github:numtide/treefmt-nix";
@@ -223,10 +224,7 @@
             inherit system;
             inherit (self) lib;
             inherit (lib) nixosSystem;
-            specialArgs = {
-              inherit self inputs;
-              inherit (self) lib;
-            };
+            specialArgs = self.defaultSpecialArgs;
 
             modules = [
               self.nixosModules.default
@@ -268,16 +266,17 @@
         }
       ];
     };
+    flake.defaultSpecialArgs = {
+      inherit self inputs;
+      inherit (self) lib;
+    };
     flake.lib = lib;
     flake.nixosModules.default = ./modules/nixos;
     flake.nixosConfigurations = lib.mkMerge [
       {
         oams = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = {
-            inherit self inputs;
-            inherit (self) lib;
-          };
+          specialArgs = self.defaultSpecialArgs;
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -293,10 +292,7 @@
 
         brys = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = {
-            inherit self inputs;
-            inherit (self) lib;
-          };
+          specialArgs = self.defaultSpecialArgs;
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -312,10 +308,7 @@
 
         etra = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = {
-            inherit self inputs;
-            inherit (self) lib;
-          };
+          specialArgs = self.defaultSpecialArgs;
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -331,10 +324,7 @@
 
         pryll = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = {
-            inherit self inputs;
-            inherit (self) lib;
-          };
+          specialArgs = self.defaultSpecialArgs;
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -350,10 +340,7 @@
 
         obler = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = {
-            inherit self inputs;
-            inherit (self) lib;
-          };
+          specialArgs = self.defaultSpecialArgs;
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -369,10 +356,7 @@
 
         moss = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = {
-            inherit self inputs;
-            inherit (self) lib;
-          };
+          specialArgs = self.defaultSpecialArgs;
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -391,15 +375,58 @@
             })
           ];
         };
+
+        briv = lib.nixosSystem {
+          system = "aarch64-linux";
+          specialArgs =
+            self.defaultSpecialArgs
+            // {
+              isRPi4 = true;
+            };
+          modules = [
+            self.nixosModules.default
+            ({config, ...}: {
+              kdn.hostName = "briv";
+              kdn.profile.host."${config.kdn.hostName}".enable = true;
+
+              system.stateVersion = "25.05";
+              home-manager.sharedModules = [{home.stateVersion = "25.05";}];
+              networking.hostId = "b86e74e8"; # cut -c-8 </proc/sys/kernel/random/uuid
+            })
+          ];
+        };
+
+        rpi4-installer = lib.nixosSystem {
+          system = "aarch64-linux";
+          specialArgs =
+            self.defaultSpecialArgs
+            // {
+              isRPi4 = true;
+              isRPi4Installer = true;
+            };
+          modules = [
+            self.nixosModules.default
+            ({config, ...}: {
+              kdn.hostName = "kdn-rpi4-installer";
+              kdn.profile.host."${config.kdn.hostName}".enable = true;
+
+              system.stateVersion = "25.05";
+              home-manager.sharedModules = [{home.stateVersion = "25.05";}];
+              networking.hostId = "9751227f"; # cut -c-8 </proc/sys/kernel/random/uuid
+            })
+            {
+              nixpkgs.config.allowUnsupportedSystem = true;
+              nixpkgs.hostPlatform.system = "aarch64-linux";
+              nixpkgs.buildPlatform.system = "x86_64-linux";
+            }
+          ];
+        };
       }
     ];
     flake.darwinModules.default = ./modules/nix-darwin;
     flake.darwinConfigurations.anji = inputs.nix-darwin.lib.darwinSystem {
       system = "aarch64-darwin";
-      specialArgs = {
-        inherit self inputs;
-        inherit (self) lib;
-      };
+      specialArgs = self.defaultSpecialArgs;
       modules = [
         self.darwinModules.default
         ({config, ...}: {

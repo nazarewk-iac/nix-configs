@@ -2,7 +2,6 @@
   lib,
   pkgs,
   config,
-  self,
   ...
 }: let
   cfg = config.kdn.nix.remote-builder;
@@ -36,9 +35,4 @@ in {
       default = cfg.user.id;
     };
   };
-
-  config = lib.mkIf cfg.enable (lib.mkMerge [
-    {
-    }
-  ]);
 }

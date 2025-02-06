@@ -2,7 +2,6 @@
   lib,
   pkgs,
   config,
-  self,
   ...
 }: let
   cfg = config.kdn.darwin;
@@ -14,16 +13,14 @@ in {
       default = cfg.type != null;
       apply = enable:
         lib.trivial.throwIf (enable && cfg.type == null)
-        "`kdn.darwin` enabled, but we're on ${pkgs.stdenv.hostPlatform.system}!"
+        "`kdn.darwin` enabled, but we're on ${pkgs.stdenv.system}!"
         enable;
     };
 
     type = lib.mkOption {
-      type = with lib.types; enum [null "home-manager" "nix-darwin"];
+      type = with lib.types; enum [null "nix-darwin"];
       default =
-        if pkgs.stdenv.isDarwin && config ? home
-        then "home-manager"
-        else if pkgs.stdenv.isDarwin && config ? system
+        if pkgs.stdenv.isDarwin && config ? system && config.system ? darwinRelease
         then "nix-darwin"
         else null;
     };
@@ -35,4 +32,6 @@ in {
       type = with lib.types; str;
     };
   };
+
+  config.kdn.types = lib.lists.optional (cfg.type != null) cfg.type;
 }

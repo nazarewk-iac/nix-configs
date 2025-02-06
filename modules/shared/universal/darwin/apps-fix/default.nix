@@ -10,7 +10,6 @@ for background see:
   lib,
   pkgs,
   config,
-  self,
   ...
 }: {
   options.kdn.darwin.apps-fix = {

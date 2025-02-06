@@ -40,6 +40,6 @@ in {
       xdg.configFile."nixpkgs/config.nix".text = lib.generators.toPretty {} cfg.nixConfig.nixpkgs.config;
       home.file.".nixpkgs/config.nix".text = lib.generators.toPretty {} cfg.nixConfig.nixpkgs.config;
     }
-    (lib.mkIf pkgs.stdenv.isDarwin {kdn.darwin.type = "home-manager";})
+    (lib.mkIf pkgs.stdenv.isDarwin {kdn.hm.type = "home-manager";})
   ]);
 }

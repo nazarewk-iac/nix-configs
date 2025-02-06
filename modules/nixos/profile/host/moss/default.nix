@@ -2,8 +2,6 @@
   config,
   pkgs,
   lib,
-  modulesPath,
-  self,
   ...
 }: let
   cfg = config.kdn.profile.host.moss;

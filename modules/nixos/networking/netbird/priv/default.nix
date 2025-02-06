@@ -2,7 +2,6 @@
   lib,
   pkgs,
   config,
-  self,
   ...
 }: let
   cfg = config.kdn.networking.netbird.priv;

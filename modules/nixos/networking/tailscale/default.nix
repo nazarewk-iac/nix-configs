@@ -2,7 +2,6 @@
   lib,
   pkgs,
   config,
-  self,
   ...
 }: let
   cfg = config.kdn.networking.tailscale;
@@ -15,7 +14,7 @@ in {
         [null]
         ++ builtins.attrNames authKeys
       );
-      default = "nixos";
+      default = "linux-nixos";
     };
   };
 
