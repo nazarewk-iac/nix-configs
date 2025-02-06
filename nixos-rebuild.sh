@@ -36,11 +36,14 @@ check_domains=(
   netbird.cloud.
 )
 
-pre_cmd=()
-pre_args=()
+pre_cmd=(
+)
+pre_args=(
+)
 post_args=(
-  --print-build-logs --show-trace
-  # required for `nom` handling
+  # below 2 do not work with `--fast` flag due to carrying over to raw `nix` commands
+  #--print-build-logs --show-trace
+  # required for `nom` handling, replaces above 2
   --log-format internal-json -v
 )
 
@@ -94,6 +97,19 @@ elif [[ -n "${1:-}" && "${1}" != -* ]]; then
   name="${1}"
   shift 1
 fi
+
+if [[ "${1:-}" == --build-on-remote ]]; then
+  if test -n "${user:-}"; then
+    pre_args+=(
+      --build-host "${user}@${addr}"
+    )
+  else
+    pre_args+=(
+      --build-host "${addr}" --fast
+    )
+  fi
+  shift 1
+fi
 post_args+=(
   --flake ".#${name}"
 )
@@ -106,7 +122,7 @@ switch | boot | test)
   ;;
 esac
 
-if test "${DRY_RUN:-0}" == 1 ; then
+if test "${DRY_RUN:-0}" == 1; then
   pre_cmd=(echo "${pre_cmd[@]}")
 fi
 

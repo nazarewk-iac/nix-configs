@@ -38,7 +38,7 @@ sudo dd if="$INSTALL_ISO_PATH" of=/dev/disk/by-id/usb-_Patriot_Memory_070133F17A
 sudo dd if="$INSTALL_ISO_PATH" of=/dev/disk/by-id/usb-Samsung_Portable_SSD_T5_1234567D585A-0:0 status=progress
 scp "$INSTALL_ISO_PATH" root@kvm-fa56.lan.etra.net.int.kdn.im:/data/nixos-amd64.iso
 # boot the machine and ssh into it
-ssh -o StrictHostKeyChecking=no kdn@nixos
+ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null kdn@nixos
 ```
 
 ## Golden path for bootstrapping new physical machine
@@ -144,26 +144,70 @@ ssh -o StrictHostKeyChecking=no kdn@nixos
 4. add all your required `environment.persistence` entries
 5. set up keyfiles for each disk:
     ```shell
-    dd if=/dev/random bs=1 count=2048 of=/dev/stdout | pass insert --force --multiline luks/${DISK_NAME}-${HOST_NAME}/keyfile
+    # this is fish shell
+    set HOST_NAME faro
+    set DISK_NAME virtual
+    dd if=/dev/random bs=1 count=2048 of=/dev/stdout | pass insert --force --multiline "luks/$DISK_NAME-$HOST_NAME/keyfile"
     ```
+
 6. boot the `install-iso`
 7. run `nixos-anywhere` to deploy
-    ```fish
-    nixos-anywhere --no-reboot --disk-encryption-keys /tmp/${DISK_NAME}-${HOST_NAME}.key "$(pass show luks/${DISK_NAME}-${HOST_NAME}/keyfile | psub)" --flake '.#${HOST_NAME}' nixos.lan.
+    ```shell
+    # this is fish shell
+    set HOST_NAME faro
+    set DISK_NAME virtual
+    set HOST_CONNECTION root@192.168.73.79
+    # build locally
+    nixos-anywhere --phases disko,install --disk-encryption-keys "/tmp/$DISK_NAME-$HOST_NAME.key" "$(pass show "luks/$DISK_NAME-$HOST_NAME/keyfile" | psub)" --flake ".#$HOST_NAME" "$HOST_CONNECTION"
+    
+    # build on the target machine
+    nixos-anywhere --phases disko,install --build-on-remote --disk-encryption-keys "/tmp/$DISK_NAME-$HOST_NAME.key" "$(pass show "luks/$DISK_NAME-$HOST_NAME/keyfile" | psub)" --flake ".#$HOST_NAME" "$HOST_CONNECTION"
     ```
 8. set up either of for each disk:
     - (unattended) TPM2 unlock:
         ```shell
-        ssh nixos.lan. sudo systemd-cryptenroll --unlock-key-file=/tmp/${DISK_NAME}-${HOST_NAME}.key --tpm2-device=auto /dev/disk/by-partlabel/${DISK_NAME}-${HOST_NAME}-header 
+        ssh o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$HOST_CONNECTION" sudo systemd-cryptenroll --unlock-key-file="/tmp/$DISK_NAME-$HOST_NAME.key" --tpm2-device=auto "/dev/disk/by-partlabel/$DISK_NAME-$HOST_NAME-header"
         ```
     - (attended) YubiKey FIDO2 (touch required, without PIN) unlock:
         ```shell
-        ssh nixos.lan. sudo systemd-cryptenroll --unlock-key-file=/tmp/${DISK_NAME}-${HOST_NAME}.key --fido2-device=auto --fido2-with-client-pin=false --fido2-with-user-verification=false /dev/disk/by-partlabel/${DISK_NAME}-${HOST_NAME}-header 
+        ssh o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$HOST_CONNECTION" sudo systemd-cryptenroll --unlock-key-file="/tmp/$DISK_NAME-$HOST_NAME.key" --fido2-device=auto --fido2-with-client-pin=false --fido2-with-user-verification=false "/dev/disk/by-partlabel/$DISK_NAME-$HOST_NAME-header"
         ```
 
 9. add SSH key to `/.sops.yaml`
     - `ssh-to-age </etc/ssh/ssh_host_ed25519_key.pub`
     - reboot
+
+### partial recovery
+
+decrypt volume using FIDO2:
+
+```shell
+set HOST_NAME faro
+set DISK_NAME virtual
+set HOST_CONNECTION root@192.168.73.79
+set ENCRYPTED_DEVICE /dev/vdb
+set ENCRYPTED_HEADER /dev/vda2
+set ENCRYPTED_NEW_SLOT 3
+
+ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$HOST_CONNECTION" systemd-cryptsetup attach "$HOST_NAME-main-crypted" "$ENCRYPTED_DEVICE" - header="$ENCRYPTED_HEADER"
+```
+
+copying the keyfile to the machine:
+
+```shell
+scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$(pass show "luks/$DISK_NAME-$HOST_NAME/keyfile" | psub)" "$HOST_CONNECTION:/tmp/$DISK_NAME-$HOST_NAME.key"
+```
+
+generate & register a passphrase:
+```shell
+pass generate "luks/$DISK_NAME-$HOST_NAME/passphrase" 32
+# copy it to device
+scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$(pass show "luks/$DISK_NAME-$HOST_NAME/passphrase" | tr -d '\n' | psub)" "$HOST_CONNECTION:/tmp/$DISK_NAME-$HOST_NAME.passphrase"
+# add it to the header
+ssh -t -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$HOST_CONNECTION" cryptsetup luksAddKey --header="$ENCRYPTED_HEADER" --new-key-slot="$ENCRYPTED_NEW_SLOT" --key-file="/tmp/$DISK_NAME-$HOST_NAME.key" "$ENCRYPTED_DEVICE" "/tmp/$DISK_NAME-$HOST_NAME.passphrase"
+# decrypt, paste the key into it
+ssh -t -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$HOST_CONNECTION" cryptsetup open --header="$ENCRYPTED_HEADER" "$ENCRYPTED_DEVICE" "$HOST_NAME-main-crypted"
+```
 
 ## Building on Hetzner Cloud from NixOS installer image
 

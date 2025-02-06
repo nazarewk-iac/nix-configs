@@ -50,6 +50,9 @@ keys:
     pryll:
       age:
         - &ssh-pryll age1lw083cnx8c5u29kvr3q8v90pkuapmfxxqvr8khzjmzxpfrjs8c8qvs3y7q
+    faro:
+      age:
+        - &ssh-faro age1sxyd3g9gg79vgdw2gpt9v4tjqaz9pfmyer39n2wwmelsutp7d4vqf4rrxm
 creation_rules:
   - path_regex: 'dns\.sops\.[^.]+$'
     key_groups:
@@ -67,6 +70,7 @@ creation_rules:
           - *ssh-moss
           - *ssh-oams
           - *ssh-pryll
+          - *ssh-faro
           - *yk-etra-unattended
           - *yk-pryll-unattended
           # defaults

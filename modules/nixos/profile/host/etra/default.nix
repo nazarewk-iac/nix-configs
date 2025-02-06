@@ -49,6 +49,17 @@
   hosts.pic.yost.macs.enp3s0 = "a8:b8:e0:04:12:f2";
   hosts.pic.yost.macs.enp4s0 = "a8:b8:e0:04:12:f3";
   hosts.pic.yost.macs.enp5s0 = "a8:b8:e0:04:12:f4";
+
+  hosts.lan.anji.ifaces.default.mac = "2c:82:17:da:21:24";
+  hosts.lan.cafal.ifaces.default.ipv4 = "192.168.73.2";
+  hosts.lan.cafal.ifaces.default.mac = "00:23:79:00:31:03";
+  hosts.lan.etra.ifaces.default.ipv4 = "192.168.73.1";
+  hosts.lan.faro.ifaces.default.mac = "3e:e7:84:fb:f0:94";
+  hosts.lan.feren.ifaces.default.ipv4 = "192.168.73.3";
+  hosts.lan.feren.ifaces.default.mac = "00:23:79:00:23:11";
+  hosts.lan.moak.ifaces.default.ipv4 = "192.168.73.4";
+  hosts.lan.moak.ifaces.default.mac = "00:23:79:00:31:2F";
+  hosts.lan.pryll.ifaces.default.mac = "01:90:1b:0e:84:8c:f7";
 in {
   options.kdn.profile.host.etra = {
     enable = lib.mkEnableOption "etra host profile";
@@ -176,14 +187,19 @@ in {
           netmask = "24";
           pools.default.start = "192.168.73.32";
           pools.default.end = "192.168.73.254";
-          hosts.etra.ip = "192.168.73.1";
-          hosts.cafal.ip = "192.168.73.2";
-          hosts.cafal.ident.hw-address = "00:23:79:00:31:03";
-          hosts.feren.ip = "192.168.73.3";
-          hosts.feren.ident.hw-address = "00:23:79:00:23:11";
-          hosts.moak.ip = "192.168.73.4";
-          hosts.moak.ident.hw-address = "00:23:79:00:31:2F";
-          hosts.pryll.ident.hw-address = "01:90:1b:0e:84:8c:f7";
+          hosts = lib.pipe hosts.lan [
+            # TODO: implement non-default interfaces
+            (lib.attrsets.filterAttrs (name: h: h ? ifaces && h.ifaces ? default))
+            (builtins.mapAttrs (
+              name: h: let
+                iface = h.ifaces.default;
+              in
+                lib.mkMerge [
+                  (lib.mkIf (iface ? ipv4) {ip = iface.ipv4;})
+                  (lib.mkIf (iface ? mac) {ident.hw-address = iface.mac;})
+                ]
+            ))
+          ];
         };
         addressing.ipv6-ula = with ula.lan; {
           subnet-id = 300310722;

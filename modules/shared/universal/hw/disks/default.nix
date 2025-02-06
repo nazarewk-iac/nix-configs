@@ -29,7 +29,15 @@
         options.path = lib.mkOption {
           internal = true;
           type = lib.types.path;
-          default = "${disk.config.path}-part${builtins.toString part.config.num}";
+          default = let
+            path = disk.config.path;
+            partNum = builtins.toString part.config.num;
+          in
+            if lib.strings.hasPrefix "/dev/disk/" path
+            then "${path}-part${partNum}"
+            else if (builtins.match "/dev/[^/]+" path) != null
+            then "${path}${partNum}"
+            else builtins.throw "Don't know how to generate partition number for disk ${path}";
         };
         options.size = lib.mkOption {
           type = lib.types.ints.positive;

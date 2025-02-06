@@ -2,8 +2,7 @@
   config,
   pkgs,
   lib,
-  isRPi4 ? false,
-  isRPi4Installer ? false,
+  kdn-features,
   ...
 }: let
   cfg = config.kdn.profile.host.kdn-rpi4-installer;
@@ -16,11 +15,11 @@ in {
     {
       assertions = [
         {
-          assertion = isRPi4 -> cfg.enable;
+          assertion = kdn-features.rpi4 -> cfg.enable;
           message = ''`kdn.profile.host.kdn-rpi4-installer.enable` requires Raspberry Pi 4 profile.'';
         }
         {
-          assertion = isRPi4Installer -> cfg.enable;
+          assertion = kdn-features.rpi4 && kdn-features.installer -> cfg.enable;
           message = ''`kdn.profile.host.kdn-rpi4-installer.enable` requires Raspberry Pi 4 installer profile.'';
         }
       ];

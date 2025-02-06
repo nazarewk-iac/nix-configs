@@ -5,7 +5,7 @@
   inputs,
   self,
   ...
-}: let
+} @ args: let
   cfg = config.kdn;
 in {
   imports =
@@ -37,7 +37,9 @@ in {
       home-manager.backupFileExtension = "hmbackup";
       home-manager.useGlobalPkgs = true;
       home-manager.useUserPackages = true;
-      home-manager.extraSpecialArgs = {inherit self inputs;};
+      home-manager.extraSpecialArgs = builtins.removeAttrs (self.defaultSpecialArgs.mkPassthrough args) [
+        "lib" # doesn't add `lib.hm` otherwise
+      ];
 
       home-manager.sharedModules = [
         {

@@ -269,6 +269,15 @@
     flake.defaultSpecialArgs = {
       inherit self inputs;
       inherit (self) lib;
+
+      kdn-features.rpi4 = false;
+      kdn-features.installer = false;
+      kdn-features.darwin-utm-guest = false;
+
+      mkPassthrough = args:
+        lib.pipe self.defaultSpecialArgs [
+          (defaults: builtins.mapAttrs (name: _: args."${name}" or defaults."${name}") defaults)
+        ];
     };
     flake.lib = lib;
     flake.nixosModules.default = ./modules/nixos;
@@ -375,13 +384,40 @@
             })
           ];
         };
+        faro = lib.nixosSystem {
+          system = "aarch64-linux";
+          specialArgs =
+            self.defaultSpecialArgs
+            // {
+              kdn-features =
+                self.defaultSpecialArgs.kdn-features
+                // {
+                  darwin-utm-guest = true;
+                };
+            };
+          modules = [
+            self.nixosModules.default
+            ({config, ...}: {
+              kdn.hostName = "faro";
+              kdn.profile.host."${config.kdn.hostName}".enable = true;
+
+              system.stateVersion = "25.05";
+              home-manager.sharedModules = [{home.stateVersion = "25.05";}];
+              networking.hostId = "4b2dd30f"; # cut -c-8 </proc/sys/kernel/random/uuid
+            })
+          ];
+        };
 
         briv = lib.nixosSystem {
           system = "aarch64-linux";
           specialArgs =
             self.defaultSpecialArgs
             // {
-              isRPi4 = true;
+              kdn-features =
+                self.defaultSpecialArgs.kdn-features
+                // {
+                  rpi4 = true;
+                };
             };
           modules = [
             self.nixosModules.default
@@ -401,8 +437,12 @@
           specialArgs =
             self.defaultSpecialArgs
             // {
-              isRPi4 = true;
-              isRPi4Installer = true;
+              kdn-features =
+                self.defaultSpecialArgs.kdn-features
+                // {
+                  rpi4 = true;
+                  installer = true;
+                };
             };
           modules = [
             self.nixosModules.default

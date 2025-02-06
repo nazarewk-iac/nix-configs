@@ -96,8 +96,12 @@ in {
           (username: user:
             lib.nameValuePair "atuin-zfs-workaround-${username}" {
               wantedBy = ["default.target"];
-              requires = ["user-runtime-dir@${toString user.uid}.service"];
-              after = ["user-runtime-dir@${toString user.uid}.service"];
+              requires = [
+                "user-runtime-dir@${toString user.uid}.service"
+              ];
+              after = [
+                "user-runtime-dir@${toString user.uid}.service"
+              ];
               description = "Synchronize Atuin database on tmpfs for ${username}";
 
               serviceConfig.User = username;
@@ -110,8 +114,16 @@ in {
     (lib.mkIf (builtins.elem "root" cfg.users) {
       systemd.services.atuind = {
         description = "Atuin shell history synchronization daemon for root user";
-        after = ["network-online.target"];
-        requires = ["network-online.target"];
+        # require home-manager-root to give it a chance to set up atuind configuration
+        # otherwise the socket is at a wrong place
+        after = [
+          "network-online.target"
+          "home-manager-root.service"
+        ];
+        requires = [
+          "network-online.target"
+          "home-manager-root.service"
+        ];
         wantedBy = ["default.target"];
         environment.HOME = config.users.users.root.home;
         environment.ATUIN_LOG = "info";

@@ -38,7 +38,7 @@ in {
       # For ease of use you can append those pamu2fcfg to ./yubico/u2f_keys.parts directly,
       #  then below code will take care of stripping comments and folding it into a single line per user
       xdg.configFile."Yubico/u2f_keys".text = let
-        stripComments = lib.filter (line: (builtins.match "\w*" line) != [] && (builtins.match "\w*#.*" line) != []);
+        stripComments = lib.filter (line: (builtins.match "\w*" line) != null && (builtins.match "\w*#.*" line) != null);
         groupByUsername = input: builtins.mapAttrs (name: map (lib.removePrefix "${name}:")) (lib.groupBy (e: lib.head (lib.strings.splitString ":" e)) input);
         toOutputLines = lib.attrsets.mapAttrsToList (name: values: (builtins.concatStringsSep ":" (lib.concatLists [[name] values])));
 

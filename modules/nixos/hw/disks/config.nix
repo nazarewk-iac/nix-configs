@@ -152,6 +152,7 @@ in {
         };
       };
     })
+    {systemd.tmpfiles.settings.preservation = {};}
     {
       # $HOME directories creation
       preservation.preserveAt = lib.pipe cfg.users [
@@ -173,57 +174,115 @@ in {
 
       # fixup all in-between home subdirectory permissions
       # feature request: https://github.com/nix-community/preservation/issues/9
-      systemd.tmpfiles.settings = lib.mkIf cfg.enable {
-        kdn-preservation = lib.pipe config.preservation.preserveAt [
-          (lib.attrsets.mapAttrsToList (_: preserveAtCfg:
-            lib.pipe preserveAtCfg.users [
-              (lib.attrsets.mapAttrsToList (
-                _: preserveAtUserCfg: let
-                  inherit (preserveAtUserCfg) username;
-                  persistUserCfg = cfg.users."${username}";
-                  splitHome = lib.strings.splitString "/" preserveAtUserCfg.home;
-                  splitHomeLen = builtins.length splitHome;
+      systemd.tmpfiles.settings.kdn-preservation-users = lib.mkIf cfg.enable (lib.pipe config.preservation.preserveAt [
+        (lib.attrsets.mapAttrsToList (_: preserveAtCfg:
+          lib.pipe preserveAtCfg.users [
+            (lib.attrsets.mapAttrsToList (
+              _: preserveAtUserCfg: let
+                inherit (preserveAtUserCfg) username;
+                persistUserCfg = cfg.users."${username}";
+                splitHome = lib.strings.splitString "/" preserveAtUserCfg.home;
+                splitHomeLen = builtins.length splitHome;
 
-                  parentDirs =
-                    lib.pipe preserveAtUserCfg.files [
-                      (builtins.map (f: builtins.dirOf f.file))
-                    ]
-                    ++ lib.pipe preserveAtUserCfg.directories [
-                      (builtins.map (f: builtins.dirOf f.directory))
-                    ];
-
-                  missingDirs = lib.pipe parentDirs [
-                    (builtins.map (dir:
-                      lib.pipe dir [
-                        (lib.strings.splitString "/")
-                        (pieces:
-                          builtins.genList (i:
-                            lib.pipe pieces [
-                              (lib.lists.sublist 0 (splitHomeLen + i + 1))
-                              (builtins.concatStringsSep "/")
-                            ]) (builtins.length pieces - splitHomeLen))
-                      ]))
-                    lib.lists.flatten
-                    (builtins.map (dir: let
-                      conf = {
-                        mode = persistUserCfg.homeDirMode;
-                        user = username;
-                        group = config.users.users."${username}".group;
-                      };
-                    in {
-                      "${preserveAtCfg.persistentStoragePath}/${dir}".d = conf;
-                      "${dir}".d = conf;
-                    }))
+                parentDirs =
+                  lib.pipe preserveAtUserCfg.files [
+                    (builtins.map (f: builtins.dirOf f.file))
+                  ]
+                  ++ lib.pipe preserveAtUserCfg.directories [
+                    (builtins.map (f: builtins.dirOf f.directory))
                   ];
-                in
-                  missingDirs
-              ))
-            ]))
-          lib.lists.flatten
-          lib.lists.unique
-          lib.mkMerge
-        ];
-      };
+
+                missingDirs = lib.pipe parentDirs [
+                  (builtins.map (dir:
+                    lib.pipe dir [
+                      (lib.strings.splitString "/")
+                      (pieces:
+                        builtins.genList (i:
+                          lib.pipe pieces [
+                            (lib.lists.sublist 0 (splitHomeLen + i + 1))
+                            (builtins.concatStringsSep "/")
+                          ]) (builtins.length pieces - splitHomeLen))
+                    ]))
+                  lib.lists.flatten
+                  (builtins.map (dir: let
+                    conf = {
+                      mode = persistUserCfg.homeDirMode;
+                      user = username;
+                      group = config.users.users."${username}".group;
+                    };
+                  in {
+                    "${preserveAtCfg.persistentStoragePath}${dir}".d = conf;
+                    "${dir}".d = conf;
+                  }))
+                ];
+              in
+                missingDirs
+            ))
+          ]))
+        lib.lists.flatten
+        lib.lists.unique
+        lib.mkMerge
+      ]);
+    }
+    {
+      # fix up missing mkdirs on non-user parents
+      systemd.tmpfiles.settings.kdn-preservation-system = lib.mkIf cfg.enable (lib.pipe config.preservation.preserveAt [
+        (lib.attrsets.mapAttrsToList (
+          _: preserveAtCfg: let
+            presentPaths = lib.pipe config.systemd.tmpfiles.settings.preservation [
+              builtins.attrNames
+              (builtins.map (path:
+                lib.pipe path [
+                  (lib.strings.splitString "/")
+                  (pieces:
+                    builtins.genList (i:
+                      lib.pipe pieces [
+                        (lib.lists.sublist 0 (i + 1))
+                        (builtins.concatStringsSep "/")
+                      ]) (builtins.length pieces))
+                ]))
+              lib.lists.flatten
+              lib.lists.unique
+              (builtins.map (path: {
+                name = path;
+                value = true;
+              }))
+              builtins.listToAttrs
+            ];
+            shouldInclude = key: true;
+            # below results in infiniterecursion
+            #shouldInclude = key: presentPaths."${key}" or false;
+            parentDirs =
+              lib.pipe preserveAtCfg.files [
+                (builtins.map (f: {
+                  path = builtins.dirOf f.file;
+                  conf = f.parent;
+                }))
+              ]
+              ++ lib.pipe preserveAtCfg.directories [
+                (builtins.map (f: {
+                  path = builtins.dirOf f.directory;
+                  conf = f.parent;
+                }))
+              ];
+
+            missingDirs = lib.pipe parentDirs [
+              (builtins.filter (entry: entry.path != "" && entry.path != "/"))
+              (builtins.map (entry: (builtins.map (key:
+                lib.attrsets.optionalAttrs (shouldInclude key) {
+                  "${key}".d = entry.conf;
+                }) [
+                "${preserveAtCfg.persistentStoragePath}${entry.path}"
+                "${entry.path}"
+              ])))
+            ];
+          in
+            missingDirs
+        ))
+        lib.lists.flatten
+        lib.lists.unique
+        lib.mkMerge
+      ]);
     }
     {
       # prepare LUKS volumes
