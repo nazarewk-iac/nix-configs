@@ -2,11 +2,15 @@
   lib,
   pkgs,
   config,
+  self,
   ...
 }: let
   cfg = config.kdn.profile.machine.baseline;
 in {
   config = lib.mkIf cfg.enable (lib.mkMerge [
+    {
+      xdg.configFile."kdn/source-flake".source = self;
+    }
     {
       home.packages = with pkgs; [
         git
