@@ -6,6 +6,7 @@
   name, # some-thing
   python, # pkgs.python313
   # defaults
+  imageName ? name,
   scriptFile ? (src + /${name}.py),
   requirementsFile ? (src + /requirements.txt),
   devRequirementsFile ? (src + /requirements.dev.txt),
@@ -13,14 +14,13 @@
   devPackages ? (pp: with pp; [pip-chill]),
   packageOverrides ? (final: prev: {
     #  htpy = lib.customisation.callPackageWith (pkgs // prev) ./htpy {};
-    #  nuitka = (lib.customisation.callPackageWith (pkgs // prev) ./nuitka {}).overrideAttrs (old: {
-    #    # do not run checks during development, they seem to take forever
-    #    doCheck = false;
-    #    doInstallCheck = false;
-    #  });
   }),
   runtimeDeps ? [],
   makeWrapperArgs ? [],
+  imageEntrypoint ? ["/bin/${name}"],
+  imageEnv ? {},
+  imageOverlay ? old: old,
+  imageBuildEnvOverlay ? old: old,
   ...
 }: let
   readRequirementNames = path:
@@ -78,14 +78,25 @@
 
   extraOutputs = {
     python = pythonInstance;
+    inherit
+      devRequirementsFile
+      mkPythonDeps
+      requirementsFile
+      ;
     releaseEnv = releaseEnv;
     devEnv = devEnv;
 
-    container = pkgs.dockerTools.buildImage {
-      name = name;
+    container = pkgs.dockerTools.buildImage (imageOverlay {
+      name = imageName;
       tag = "latest";
-      config.Entrypoint = [(lib.getExe script)];
-    };
+      copyToRoot = pkgs.buildEnv (imageBuildEnvOverlay {
+        name = "image-root";
+        paths = [script releaseEnv] ++ runtimeDeps;
+        pathsToLink = ["/bin"];
+      });
+      config.Entrypoint = imageEntrypoint;
+      config.Env = lib.attrsets.mapAttrsToList (name: value: "${name}=${value}") imageEnv;
+    });
   };
   pythonWriter = pkgs.writers.makeScriptWriter {
     interpreter = lib.getExe releaseEnv;
