@@ -165,8 +165,8 @@ in {
     })
     (lib.mkIf hasWorkstation {
       home.packages = with pkgs; [
-        kdn.klog-time-tracker
-        kdn.klg
+        pkgs.kdn.klog-time-tracker
+        pkgs.kdn.klg
       ];
       xdg.configFile."klg/config.toml".source = config.lib.file.mkOutOfStoreSymlink "${nc.abs}/time-logs/klg/config.toml";
     })
@@ -192,7 +192,7 @@ in {
         zbar # QR/BAR CODE READER: `zbarimg /path/to.img
         imagemagick
 
-        kdn.ss-util
+        pkgs.kdn.ss-util
         drawio
         plantuml
 

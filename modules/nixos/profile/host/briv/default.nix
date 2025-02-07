@@ -2,7 +2,7 @@
   config,
   pkgs,
   lib,
-  kdn-features,
+  kdn,
   ...
 }: let
   cfg = config.kdn.profile.host.briv;
@@ -15,11 +15,11 @@ in {
     {
       assertions = [
         {
-          assertion = kdn-features.rpi4 -> cfg.enable;
+          assertion = kdn.features.rpi4 -> cfg.enable;
           message = ''`kdn.profile.host.briv.enable` requires Raspberry Pi 4 profile.'';
         }
         {
-          assertion = !(kdn-features.rpi4 && kdn-features.installer) -> cfg.enable;
+          assertion = !(kdn.features.rpi4 && kdn.features.installer) -> cfg.enable;
           message = ''`kdn.profile.host.briv.enable` cannot use Raspberry Pi 4 installer profile.'';
         }
       ];

@@ -1,9 +1,11 @@
 {
   config,
   lib,
-  inputs,
+  kdn,
   ...
-}: {
+}: let
+  inherit (kdn) inputs;
+in {
   imports =
     [
       ../shared/universal

@@ -2,14 +2,9 @@
   lib,
   config,
   pkgs,
-  modulesPath,
-  self,
-  inputs,
   ...
 }: let
   cfg = config.kdn.profile.host.anji;
-
-  enableLinuxBuilder = config.kdn.nix.remote-builder.enable && false;
 in {
   options.kdn.profile.host.anji = {
     enable = lib.mkOption {

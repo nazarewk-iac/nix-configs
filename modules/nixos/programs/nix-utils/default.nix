@@ -19,7 +19,7 @@ in {
       nix-output-monitor
       nix-du
       nix-tree
-      kdn.kdn-nix
+      pkgs.kdn.kdn-nix
     ];
   };
 }

@@ -18,7 +18,7 @@ in {
       jq
       yj
 
-      kdn.data-converters
+      pkgs.kdn.data-converters
 
       gojq
       jiq # interactive JQ

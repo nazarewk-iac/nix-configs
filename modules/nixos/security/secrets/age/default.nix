@@ -2,9 +2,11 @@
   lib,
   pkgs,
   config,
-  inputs,
+  kdn,
   ...
 }: let
+  inherit (kdn) inputs;
+
   cfg = config.kdn.security.secrets.age;
 
   mkSopsWrapper = pkgs: pkg: let

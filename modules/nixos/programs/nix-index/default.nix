@@ -2,9 +2,10 @@
   lib,
   pkgs,
   config,
-  inputs,
+  kdn,
   ...
 }: let
+  inherit (kdn) inputs;
   cfg = config.kdn.programs.nix-index;
 in {
   options.kdn.programs.nix-index = {

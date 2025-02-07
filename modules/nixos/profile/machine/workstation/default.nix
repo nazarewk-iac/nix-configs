@@ -2,9 +2,10 @@
   lib,
   pkgs,
   config,
-  self,
+  kdn,
   ...
 }: let
+  inherit (kdn) self;
   cfg = config.kdn.profile.machine.workstation;
 in {
   config = lib.mkIf cfg.enable (lib.mkMerge [

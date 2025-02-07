@@ -2,11 +2,13 @@
   lib,
   config,
   pkgs,
-  inputs,
+  kdn,
   osConfig ? {},
   darwinConfig ? {},
   ...
 }: let
+  inherit (kdn) inputs;
+
   cfg = config.kdn;
 
   parentConfig = let

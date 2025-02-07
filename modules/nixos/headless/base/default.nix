@@ -94,7 +94,7 @@ in {
 
         zip
 
-        kdn.whicher
+        pkgs.kdn.whicher
         difftastic
       ];
 

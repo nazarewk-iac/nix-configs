@@ -2,9 +2,11 @@
   lib,
   pkgs,
   config,
-  inputs,
+  kdn,
   ...
 }: let
+  inherit (kdn) inputs;
+
   cfg = config.kdn.virtualization.microvm.guest;
 in {
   imports = [

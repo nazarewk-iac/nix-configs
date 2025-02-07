@@ -224,7 +224,7 @@
             inherit system;
             inherit (self) lib;
             inherit (lib) nixosSystem;
-            specialArgs = self.defaultSpecialArgs;
+            specialArgs = self.specialArgs;
 
             modules = [
               self.nixosModules.default
@@ -249,6 +249,7 @@
                 boot.loader.systemd-boot.enable = lib.mkForce false;
               }
               {
+                kdn.hostname = "kdn-nixos-install-iso";
                 home-manager.sharedModules = [{home.stateVersion = "24.11";}];
                 kdn.security.secrets.allow = true;
                 kdn.profile.machine.baseline.enable = true;
@@ -266,26 +267,48 @@
         }
       ];
     };
-    flake.defaultSpecialArgs = {
-      inherit self inputs;
+    flake.specialArgs = {
       inherit (self) lib;
 
-      kdn-features.rpi4 = false;
-      kdn-features.installer = false;
-      kdn-features.darwin-utm-guest = false;
+      kdn = {
+        inherit self inputs;
+        inherit (self) lib;
+
+        features = {
+          rpi4 = false;
+          installer = false;
+          darwin-utm-guest = false;
+        };
+      };
 
       kdn.override = {
-        args,
-        defaults ? self.defaultSpecialArgs,
-        names ? builtins.attrNames defaults,
-        skip ? [],
-      }: let
-        getAttrs = lib.pipe names [
-          (lib.lists.subtractLists skip)
-          lib.attrsets.getAttrs
-        ];
+        defaults ? self.specialArgs,
+        keys ? builtins.attrNames defaults,
+        skipKeys ? [],
+        recursiveKeys ? ["kdn"],
+      }: args: let
+        effectiveKeys = lib.lists.subtractLists skipKeys keys;
+        flatKeys = lib.lists.subtractLists recursiveKeys effectiveKeys;
+        getAttrs = lib.attrsets.catAttrs effectiveKeys;
+        cleanDefaults = getAttrs defaults;
+        cleanArgs = getAttrs args;
+
+        get = fn: keys:
+          lib.pipe keys [
+            (builtins.map (key: {
+              name = key;
+              value = fn key;
+            }))
+            builtins.listToAttrs
+          ];
+
+        getRecursive = get (key: lib.kdn.attrsets.recursiveMerge (lib.attrsets.catAttrs key [defaults args]));
+        getFlat = get (key: cleanArgs."${key}" or cleanDefaults."${key}");
+
+        recursiveOutput = getRecursive recursiveKeys;
+        flatOutput = getFlat flatKeys;
       in
-        lib.kdn.attrsets.recursiveMerge (builtins.map getAttrs [defaults args]);
+        getRecursive effectiveKeys;
     };
     flake.lib = lib;
     flake.nixosModules.default = ./modules/nixos;
@@ -293,7 +316,7 @@
       {
         oams = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = self.defaultSpecialArgs;
+          specialArgs = self.specialArgs;
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -309,7 +332,7 @@
 
         brys = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = self.defaultSpecialArgs;
+          specialArgs = self.specialArgs;
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -325,7 +348,7 @@
 
         etra = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = self.defaultSpecialArgs;
+          specialArgs = self.specialArgs;
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -341,7 +364,7 @@
 
         pryll = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = self.defaultSpecialArgs;
+          specialArgs = self.specialArgs;
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -357,7 +380,7 @@
 
         obler = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = self.defaultSpecialArgs;
+          specialArgs = self.specialArgs;
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -373,7 +396,7 @@
 
         moss = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = self.defaultSpecialArgs;
+          specialArgs = self.specialArgs;
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -395,15 +418,9 @@
 
         faro = lib.nixosSystem {
           system = "aarch64-linux";
-          specialArgs =
-            self.defaultSpecialArgs
-            // {
-              kdn-features =
-                self.defaultSpecialArgs.kdn-features
-                // {
-                  darwin-utm-guest = true;
-                };
-            };
+          specialArgs = self.specialArgs.kdn.override {} {
+            kdn.features.darwin-utm-guest = true;
+          };
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -419,15 +436,9 @@
 
         briv = lib.nixosSystem {
           system = "aarch64-linux";
-          specialArgs =
-            self.defaultSpecialArgs
-            // {
-              kdn-features =
-                self.defaultSpecialArgs.kdn-features
-                // {
-                  rpi4 = true;
-                };
-            };
+          specialArgs = self.specialArgs.kdn.override {} {
+            kdn.features.rpi4 = true;
+          };
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -443,16 +454,10 @@
 
         rpi4-installer = lib.nixosSystem {
           system = "aarch64-linux";
-          specialArgs =
-            self.defaultSpecialArgs
-            // {
-              kdn-features =
-                self.defaultSpecialArgs.kdn-features
-                // {
-                  rpi4 = true;
-                  installer = true;
-                };
-            };
+          specialArgs = self.specialArgs.kdn.override {} {
+            kdn.features.rpi4 = true;
+            kdn.features.installer = true;
+          };
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -463,11 +468,6 @@
               home-manager.sharedModules = [{home.stateVersion = "25.05";}];
               networking.hostId = "9751227f"; # cut -c-8 </proc/sys/kernel/random/uuid
             })
-            {
-              nixpkgs.config.allowUnsupportedSystem = true;
-              nixpkgs.hostPlatform.system = "aarch64-linux";
-              nixpkgs.buildPlatform.system = "x86_64-linux";
-            }
           ];
         };
       }
@@ -475,7 +475,7 @@
     flake.darwinModules.default = ./modules/nix-darwin;
     flake.darwinConfigurations.anji = inputs.nix-darwin.lib.darwinSystem {
       system = "aarch64-darwin";
-      specialArgs = self.defaultSpecialArgs;
+      specialArgs = self.specialArgs;
       modules = [
         self.darwinModules.default
         ({config, ...}: {

@@ -26,7 +26,7 @@ in {
     {
       home.packages = with pkgs; [
         finalPackage
-        kdn.kdn-keepass
+        pkgs.kdn.kdn-keepass
       ];
       /*
       TODO: browser are enabled based on file presence

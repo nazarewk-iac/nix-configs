@@ -2,9 +2,10 @@
   lib,
   pkgs,
   config,
-  self,
+  kdn,
   ...
 }: let
+  inherit (kdn) self;
   cfg = config.kdn.profile.machine.baseline;
 in {
   options.kdn.profile.machine.baseline = {
@@ -70,6 +71,9 @@ in {
       services.openssh.openFirewall = true;
       services.openssh.settings.PasswordAuthentication = false;
       services.openssh.settings.GatewayPorts = "clientspecified";
+      programs.ssh.extraConfig = lib.mkBefore ''
+        Include /etc/ssh/ssh_config.d/*.config
+      '';
 
       location.provider = "geoclue2";
 
@@ -82,10 +86,10 @@ in {
         dracut # for lsinitrd
         jq
         sshfs
-        kdn.systemd-find-cycles
+        pkgs.kdn.systemd-find-cycles
         (pkgs.writeShellApplication {
           name = "kdn-systemd-find-cycles";
-          runtimeInputs = with pkgs; [kdn.systemd-find-cycles systemd];
+          runtimeInputs = with pkgs; [pkgs.kdn.systemd-find-cycles systemd];
           text = ''
             # see https://github.com/systemd/systemd/issues/3829#issuecomment-327773498
             systemd_args=()
@@ -205,19 +209,37 @@ in {
     (lib.mkIf config.kdn.security.secrets.allowed
       # configuration related to SSH identities/authorized keys and nix remote builder
       (let
-        secretCfgs = config.kdn.security.secrets.sops.secrets.default.nix.ssh;
+        secretCfgs = config.kdn.security.secrets.sops.secrets.ssh;
+        isCandidate = filename: fileCfg:
+          (fileCfg ? path || (fileCfg ? key && fileCfg ? sopsFile))
+          && (lib.strings.hasPrefix "id_" filename);
         isPubKey = filename: fileCfg:
-          (fileCfg ? path)
-          && (lib.strings.hasPrefix "id_" filename)
+          (isCandidate filename fileCfg)
           && (lib.strings.hasSuffix ".pub" filename);
         isPrivKey = filename: fileCfg:
-          (fileCfg ? path)
-          && (lib.strings.hasPrefix "id_" filename)
+          (isCandidate filename fileCfg)
           && !(lib.strings.hasSuffix ".pub" filename);
 
         pubKeys = builtins.mapAttrs (_: lib.attrsets.filterAttrs isPubKey) secretCfgs;
         privKeys = builtins.mapAttrs (_: lib.attrsets.filterAttrs isPrivKey) secretCfgs;
       in {
+        kdn.security.secrets.sops.files."ssh" = {
+          keyPrefix = "nix/ssh";
+          sopsFile = "${kdn.self}/default.unattended.sops.yaml";
+          basePath = "/run/configs";
+          sops.mode = "0440";
+          overrides = [
+            (key: old: let
+              filename = builtins.baseNameOf key;
+              result =
+                old
+                // (lib.attrsets.optionalAttrs (isPubKey filename old) {
+                  mode = "0444";
+                });
+            in
+              result)
+          ];
+        };
         kdn.nix.remote-builder.user.ssh.IdentityFile = let
           username = config.kdn.nix.remote-builder.user.name;
           keys = privKeys."${username}";
@@ -238,15 +260,12 @@ in {
           lib.lists.unique
           (builtins.sort builtins.lessThan)
         ];
-        programs.ssh.extraConfig = let
-          file = pkgs.writeText "ssh-config-kdn-profile-baseline" ''
-            Match User nixos
-              StrictHostKeyChecking no
-              UpdateHostKeys no
-              UserKnownHostsFile /dev/null
-          '';
-        in
-          lib.mkBefore "Include ${file}";
+        environment.etc."ssh/ssh_config.d/00-kdn-profile-baseline.config".text = ''
+          Match User nixos
+            StrictHostKeyChecking no
+            UpdateHostKeys no
+            UserKnownHostsFile /dev/null
+        '';
       }))
     {
       systemd.tmpfiles.rules = lib.trivial.pipe config.users.users [
@@ -334,7 +353,7 @@ in {
         (pkgs.writeShellApplication {
           name = "kdn-net-anonymize";
           text = ''
-            ${lib.getExe kdn.kdn-anonymize} /run/configs/networking/anonymization
+            ${lib.getExe pkgs.kdn.kdn-anonymize} /run/configs/networking/anonymization
           '';
         })
       ];
@@ -349,7 +368,7 @@ in {
         anonymizeClipboard = pkgs.writeShellApplication {
           name = "kdn-anonymize-clipboard";
           runtimeInputs = with pkgs; [
-            kdn.kdn-anonymize
+            pkgs.kdn.kdn-anonymize
             wl-clipboard
             libnotify
           ];

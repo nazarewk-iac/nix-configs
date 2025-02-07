@@ -2,9 +2,10 @@
   config,
   pkgs,
   lib,
-  self,
+  kdn,
   ...
 }: let
+  inherit (kdn) self;
   cfg = config.kdn.profile.host.etra;
 
   rCfg = config.kdn.networking.router;

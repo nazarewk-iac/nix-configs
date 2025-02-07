@@ -56,7 +56,7 @@
       ++ (with pkgs; [
         coreutils
         gnused
-        kdn.kdn-sops-secrets
+        pkgs.kdn.kdn-sops-secrets
       ]);
     runtimeEnv.TSIG_KEY_PATH = config.sops.templates."knot/sops-key.admin.conf".path;
     runtimeEnv.KNOT_ADDR = cfg.knot.localAddress;

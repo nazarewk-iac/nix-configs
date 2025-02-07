@@ -45,7 +45,7 @@ in {
 
       virtualisation.containers.containersConf.cniPlugins = with pkgs; [
         # TODO: not needed, could instead wrap symlinked CNIs into `--cni-bin-path` ?
-        kdn.tc-redirect-tap
+        pkgs.kdn.tc-redirect-tap
       ];
 
       # TODO: figure out why firewall is preventing Talos from working

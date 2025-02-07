@@ -21,7 +21,7 @@ in {
       wayvnc
       waypipe
 
-      kdn.sway-vnc
+      pkgs.kdn.sway-vnc
 
       remmina # cannot type $ (dollar sign)
       tigervnc # vncviewer 10.100.0.2::5900

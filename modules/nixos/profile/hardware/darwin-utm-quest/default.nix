@@ -2,14 +2,14 @@
   config,
   pkgs,
   lib,
-  inputs,
-  self,
-  kdn-features ? {},
+  kdn,
   ...
 }: let
+  inherit (kdn) self inputs;
+
   cfg = config.kdn.profile.hardware.darwin-utm-guest;
 
-  isActive = kdn-features.darwin-utm-guest or false;
+  isActive = kdn.features.darwin-utm-guest or false;
   onActive = self.lib.lists.optional isActive;
 in {
   imports = (

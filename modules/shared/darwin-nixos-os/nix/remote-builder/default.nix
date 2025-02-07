@@ -23,6 +23,7 @@ in {
         users.users."${cfg.user.name}" = lib.mkMerge [
           {
             uid = cfg.user.id;
+            shell = pkgs.bashInteractive;
             description = cfg.description;
             createHome = false;
             openssh.authorizedKeys.keyFiles = [
@@ -43,15 +44,58 @@ in {
     ]))
     (lib.mkIf cfg.use (lib.mkMerge [
       {
-        programs.ssh.extraConfig = let
-          file = pkgs.writeText "ssh-config-kdn-nix-remote-build" ''
-            Match User ${cfg.user.name}
-              BatchMode yes
-              IdentitiesOnly yes
-              IdentityFile ${cfg.user.ssh.IdentityFile}
-          '';
-        in
-          lib.mkBefore "Include ${file}";
+        home-manager.users.root.programs.ssh.extraConfig = ''
+          Match User ${cfg.user.name}
+            BatchMode yes
+            IdentitiesOnly yes
+            IdentityFile ${cfg.user.ssh.IdentityFile}
+        '';
+
+        nix.distributedBuilds = true;
+        nix.buildMachines =
+          lib.pipe [
+            {
+              hostName = "faro";
+              systems = ["aarch64-linux"];
+              maxJobs = 7;
+              speedFactor = 10;
+              supportedFeatures = [
+                "gccarch-armv8-a"
+              ];
+              mandatoryFeatures = [];
+            }
+            {
+              hostName = "brys";
+              systems = ["x86_64-linux"];
+              maxJobs = 16;
+              speedFactor = 32;
+            }
+          ] [
+            (builtins.filter (builder: config.kdn.hostName != builder.hostName && !(lib.strings.hasPrefix config.kdn.hostName builder.hostName)))
+            (builtins.map (old: let
+              defaults = {
+                protocol = "ssh-ng";
+                sshUser = cfg.user.name;
+                supportedFeatures = [
+                  "nixos-test"
+                  "benchmark"
+                  "big-parallel"
+                  "kvm"
+                ];
+                mandatoryFeatures = [];
+              };
+            in
+              defaults
+              // old
+              // {
+                hostName = "${old.hostName}.lan.etra.net.int.kdn.im.";
+                supportedFeatures = builtins.concatLists [
+                  (defaults.supportedFeatures or [])
+                  (old.supportedFeatures or [])
+                ];
+              }))
+            # TODO: expand to all supported domains and modify the speedFactor?
+          ];
       }
     ]))
   ];

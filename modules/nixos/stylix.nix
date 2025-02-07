@@ -2,9 +2,11 @@
   config,
   lib,
   pkgs,
-  inputs,
+  kdn,
   ...
-}: {
+}: let
+  inherit (kdn) inputs;
+in {
   imports = [
     inputs.stylix.nixosModules.stylix
   ];

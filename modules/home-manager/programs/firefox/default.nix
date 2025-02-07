@@ -50,8 +50,8 @@ in {
   };
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
-      home.packages = with pkgs; [
-        kdn.ff-ctl
+      home.packages = [
+        pkgs.kdn.ff-ctl
       ];
       programs.firefox.enable = true;
       programs.firefox.package = appCfg.package.final;

@@ -64,6 +64,10 @@ in {
           type = with lib.types; attrsOf anything;
           default = {};
         };
+        options.overrides = lib.mkOption {
+          type = with lib.types; listOf anything;
+          default = [];
+        };
         options.discovered.keys = lib.mkOption {
           readOnly = true;
           type = with lib.types; listOf str;
@@ -102,6 +106,11 @@ in {
                 );
             }))
             builtins.listToAttrs
+            (builtins.mapAttrs (name: secretCfg:
+              lib.lists.foldl'
+              (old: override: old // override name old)
+              secretCfg
+              file.overrides))
           ];
         };
       }));

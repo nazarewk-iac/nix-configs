@@ -1,10 +1,11 @@
 {
   config,
   lib,
-  pkgs,
-  inputs,
+  kdn,
   ...
-}: {
+}: let
+  inherit (kdn) inputs;
+in {
   imports =
     [
       ../shared/darwin-nixos-os
