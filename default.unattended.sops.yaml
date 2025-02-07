@@ -8,6 +8,13 @@ netbird-priv:
         setup-key: ENC[AES256_GCM,data:zsk5tRZ2Jw182kRem7W51dgjMt73jZJ4MORpaxk72K0EggCc,iv:KVr630NqnHnHPRi/OYX5LZ5sLBaBOBaCeVSTvi4sF+M=,tag:VlDECMnY37HElwTW5iwRSw==,type:str]
     permanent:
         setup-key: ENC[AES256_GCM,data:CiS+33+oxMxFYzPMIZUpqWQUx8Cefehy1DI100JAXBvOn0rB,iv:91tze9y+7ilNBW17lfGuWHRIl/2Gjzxo/JOmyMAQrhc=,tag:/jYmXx8ov6fQORof1rIP/g==,type:str]
+nix:
+    access-tokens:
+        github.com: ENC[AES256_GCM,data:G7djZYX3+Cqz6N18quhGPkZmklaSkkP0GjKdtBD6dLDhz/Hpd9yEb8bJughJ76FadEQnKUrVzvqETFvdkAS97GLljniezNH0txCVosxh9rlijgQtQ/R0H8u1g5bc,iv:cPSv2imGMYJr66MbINM1xJrt602L+9obh8CNltWQuuM=,tag:GZ8JBXRhuuDbPXklQzEc4g==,type:str]
+    ssh:
+        kdn-nix-remote-build:
+            id_ed25519: ENC[AES256_GCM,data:/hpgZBUc/wYY3lXCvjmiHXtc+ac3l7p29pVlRQ7JJvtl+17Sh2e7Y5fP6HrMKD2ABkOQOWcerGvKyQxBuOaNfuw1SsXkWZAeTwmQi1uALNpG72hItXC3wO6bTfNMqrzY8kLk/kuvpMAFWL4gPgpR5JZt36Aikq8mpnBF8n+xA9iTQFOIS7F+vdyWQf+mtev47Q0X1btObmANzfjNFYx/16FUjHksYRbbSRQp8HhVW9feQCvJVUx5hQK8GYDi5TeBNopVFhORtJmWVBCrIT5mcSpl+ycD1rdAweiuXwq1bsPZj73rWrxWZfWqUrKzcwvBsSr2yXDTvhiulNd2KJw/1mDhTxR0VB2te8itqlUDUHUoCTd1jbt8hF261Dh1Ph1UgtfSSq3tp1QdUF/rIiSG0oy3MC2Zyq7eG04I9HWL+QiuYZCY5tkk28CoVF5S54Z6jNwe5nmDRhpGU8my2IwVGP/BjKwIDoxBfUpyKUt9Pz3GdtfxXxqbRRvfxGYAFzBd1kb7o/6RKu8c1f+2I3/om9CdYw0lg4lDxBb9,iv:aV0kgAP4XFXvbL2l7Lh3DWF1OZ0x9Rt5Wj2FGZgEBnc=,tag:WUHjb+ZZ/hYKImiF3KjO8w==,type:str]
+            id_ed25519.pub: ENC[AES256_GCM,data:PENnFAQFd30PKkOBLOfwoecKn0mxaLQG06hsUTrk4EvG6UJuCI9SyK/K279TWy/EvTG9EzCHDxSXH2tzOAzeS5XX89Z56omAcAWtcCZMFU1bbJ3L+CVCOpeRXidlmqkqQtJ+06E+,iv:xiq7rXABNR0pk/nHOsQO7d5aCgKbq6jS18Z9YOqhqaA=,tag:7xCtIMfE9cFMac8CfFkClw==,type:str]
 tailscale:
     default:
         auth_keys:
@@ -21,7 +28,7 @@ networking:
     hosts:
         private: ENC[AES256_GCM,data:i6gX9FhEIvshh0DRa3bjBsiKVXIyVXa0trSjB0o=,iv:hF3d6JP9F6pRae9RjzE3STUjxFPmzkA/ILjZBVmblrg=,tag:lQlSpQBJrcs2ZsOKH3yOaA==,type:str]
     ssh_config:
-        kdn: ENC[AES256_GCM,data:Vrl6QP/IkKoWA0p6COkpIfqEOzCz7RiQrMcNCTPyZC6yH7068M9D3EEqYHkteDFDtitF90jzgA4Bk9aBiE8rk7h86waQjzozL/fZivsaRoPQUkCzcaaK6IHXm5yfGM8tuz2C6oWPNE2QP9izGK0uLmHt3+hRmHpN9aDDKobBEt7wladBdrrD2LMM58vszdbGySfRQUy9D1xQTpuo6VIS6AsoFkq5UZaMg+c=,iv:YK2pwhf2Alx63BDqiyqigRuG2vfnM649MsoAnHAH2wA=,tag:E1VKU0L3UO9be3hDwN1w4g==,type:str]
+        kdn: ENC[AES256_GCM,data:rgAXMgABoCjoJJeCD5gIREmD2ZCBDyQUj6Z8qJtK0q45Lmx/U6oyf6KzMcHLsGWkQtPm3CnFVq9rMZUvNPB+WuG/j6NjM9WgRn5EO5ypkvNYkafAVk4f0A==,iv:fkmUtYE+JaAnK4OavAYGW2ZXZ0iJiORTU/g2pSFw/Dw=,tag:UrrzTTVVu1OdT/vrMC8H2Q==,type:str]
     anonymization:
         ipv6-public-00-prefix:
             pattern: ENC[AES256_GCM,data:sCACVCHIl56EE41zni0+X8IIAg==,iv:KTTCqmI60ZNVobxyGtRj6KuMV1ctePfuyJjlTzRgVDQ=,tag:3qyBCgNf0nH6KVTn0LALjQ==,type:str]
@@ -198,8 +205,8 @@ sops:
             LXCungozNSW/Q5oP83OOkIrW7qNgNani+R5P2M+L8Uvot2fHtanz4mxEYngmBnVN
             yIs=
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2025-01-29T13:03:23Z"
-    mac: ENC[AES256_GCM,data:Z0mFU8RB2tFz8WJOqrdBbIlwRcadRwjR/rgFvoLz4ghNSupsrjjKxfGJmJPbWTA3GBiGPQQx/ZUm7s+4Uo9E8VYGhEi/oBRK6ABKx/ZeQH3e4UhktW1B2u+7vUInIzMB7zwvRIyCpfGdvT0D54iBDEkwtYaAhI7oEjiZEBZN7m4=,iv:Xv+CHP5ANtr7BMboU24QiUnxyV97wDFAZJuVsj86uFo=,tag:RNJ9Q74eE997PLIiYYcWEQ==,type:str]
+    lastmodified: "2025-02-07T10:42:35Z"
+    mac: ENC[AES256_GCM,data:rHgw1twIS2nRn/7DUADY3Ib1sb9TKrf6FhnjPjkhUaFdEDeECXGOXnNNGEmkPJZedZdnPdp7+yDfUGXN9gTiRKHID65+W75GPvSGHIKSfvb5fUHlVmzwBAcIHJqKYw2xws+VTmRHelEQu+r2QWKLv51pbl9p0lkHS4LhdRdnmDM=,iv:vNmKglkRLxrcY6aw3+Psr2cfxVI2oWdwvKYrOxkeRGo=,tag:9KeEdplmr3eGtzV0oXXfBQ==,type:str]
     pgp: []
     unencrypted_suffix: _unencrypted
     version: 3.9.0

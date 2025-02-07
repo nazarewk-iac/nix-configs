@@ -37,9 +37,10 @@ in {
       home-manager.backupFileExtension = "hmbackup";
       home-manager.useGlobalPkgs = true;
       home-manager.useUserPackages = true;
-      home-manager.extraSpecialArgs = builtins.removeAttrs (self.defaultSpecialArgs.mkPassthrough args) [
-        "lib" # doesn't add `lib.hm` otherwise
-      ];
+      home-manager.extraSpecialArgs = self.defaultSpecialArgs.kdn.override {
+        inherit args;
+        skip = ["lib"];
+      };
 
       home-manager.sharedModules = [
         {

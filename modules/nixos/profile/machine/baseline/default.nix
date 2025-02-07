@@ -184,9 +184,70 @@ in {
             content = text;
           };
         }))
+        (l:
+          l
+          ++ [
+            {
+              "nix.access-tokens.auto.conf" = {
+                path = "/etc/nix/nix.access-tokens.auto.conf";
+                mode = "0440";
+                content = lib.pipe config.kdn.security.secrets.sops.placeholders.default.nix.access-tokens [
+                  (lib.attrsets.mapAttrsToList (name: value: "${name}=${value}"))
+                  (builtins.concatStringsSep " ")
+                  (value: "access-tokens = ${value}")
+                ];
+              };
+            }
+          ])
         lib.mkMerge
       ];
     })
+    (lib.mkIf config.kdn.security.secrets.allowed
+      # configuration related to SSH identities/authorized keys and nix remote builder
+      (let
+        secretCfgs = config.kdn.security.secrets.sops.secrets.default.nix.ssh;
+        isPubKey = filename: fileCfg:
+          (fileCfg ? path)
+          && (lib.strings.hasPrefix "id_" filename)
+          && (lib.strings.hasSuffix ".pub" filename);
+        isPrivKey = filename: fileCfg:
+          (fileCfg ? path)
+          && (lib.strings.hasPrefix "id_" filename)
+          && !(lib.strings.hasSuffix ".pub" filename);
+
+        pubKeys = builtins.mapAttrs (_: lib.attrsets.filterAttrs isPubKey) secretCfgs;
+        privKeys = builtins.mapAttrs (_: lib.attrsets.filterAttrs isPrivKey) secretCfgs;
+      in {
+        kdn.nix.remote-builder.user.ssh.IdentityFile = let
+          username = config.kdn.nix.remote-builder.user.name;
+          keys = privKeys."${username}";
+          anyKey = lib.pipe keys [
+            builtins.attrValues
+            builtins.head
+          ];
+        in
+          (keys.id_ed25519 or anyKey).path;
+
+        services.openssh.authorizedKeysFiles = lib.pipe pubKeys [
+          (lib.attrsets.mapAttrsToList (username: keys:
+            lib.pipe keys [
+              builtins.attrValues
+              (builtins.map (fileCfg: builtins.replaceStrings [username] ["%u"] fileCfg.path))
+            ]))
+          lib.lists.flatten
+          lib.lists.unique
+          (builtins.sort builtins.lessThan)
+        ];
+        programs.ssh.extraConfig = let
+          file = pkgs.writeText "ssh-config-kdn-profile-baseline" ''
+            Match User nixos
+              StrictHostKeyChecking no
+              UpdateHostKeys no
+              UserKnownHostsFile /dev/null
+          '';
+        in
+          lib.mkBefore "Include ${file}";
+      }))
     {
       systemd.tmpfiles.rules = lib.trivial.pipe config.users.users [
         lib.attrsets.attrValues
@@ -225,11 +286,7 @@ in {
         }
     )
     {
-      home-manager.sharedModules = [
-        {
-          kdn.development.git.enable = true;
-        }
-      ];
+      home-manager.sharedModules = [{kdn.development.git.enable = true;}];
     }
     {
       # TODO: checkout the repository while installing?

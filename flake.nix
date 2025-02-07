@@ -274,10 +274,18 @@
       kdn-features.installer = false;
       kdn-features.darwin-utm-guest = false;
 
-      mkPassthrough = args:
-        lib.pipe self.defaultSpecialArgs [
-          (defaults: builtins.mapAttrs (name: _: args."${name}" or defaults."${name}") defaults)
+      kdn.override = {
+        args,
+        defaults ? self.defaultSpecialArgs,
+        names ? builtins.attrNames defaults,
+        skip ? [],
+      }: let
+        getAttrs = lib.pipe names [
+          (lib.lists.subtractLists skip)
+          lib.attrsets.getAttrs
         ];
+      in
+        lib.kdn.attrsets.recursiveMerge (builtins.map getAttrs [defaults args]);
     };
     flake.lib = lib;
     flake.nixosModules.default = ./modules/nixos;
@@ -384,6 +392,7 @@
             })
           ];
         };
+
         faro = lib.nixosSystem {
           system = "aarch64-linux";
           specialArgs =

@@ -12,7 +12,9 @@ in {
     # run as kdn:
     #   begin; set file nix/nix.sensitive.conf ; pass show "$file" | sudo tee "/etc/$file" >/dev/null && sudo chmod 0640 "/etc/$file" && sudo chown root:wheel "/etc/$file"; end
     !include /etc/nix/nix.sensitive.conf
+    !include /etc/nix/nix.access-tokens.auto.conf
   '';
+
   nix.settings = {
     show-trace = true;
     experimental-features = ["nix-command" "flakes"];
