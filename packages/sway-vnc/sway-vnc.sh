@@ -27,8 +27,8 @@ wayvnc configuration:
 EOF
 }
 
-is_output_missing() {
-  swaymsg -rt get_outputs | jq --arg name "$1" -e 'all(.name != $name)'
+is_output_present() {
+  swaymsg -rt get_outputs | jq --arg name "$1" -e 'any(.name == $name)' >/dev/null
 }
 
 get_detached_x() {
