@@ -31,8 +31,14 @@ is_output_present() {
   swaymsg -rt get_outputs | jq --arg name "$1" -e 'any(.name == $name)' >/dev/null
 }
 
+get_detached_y() {
+  printf "%d" 0
+  #swaymsg -rt get_outputs | jq 'map(.rect | .y + .height + (env.detachment_distance | to_number)) | max'
+}
+
 get_detached_x() {
-  swaymsg -rt get_outputs | jq 'map(.rect | .x + .width + 500) | max'
+  jq -nS env >&2
+  swaymsg -rt get_outputs | jq 'map(.rect | .x + .width + (env.detachment_distance | to_number)) | max'
 }
 
 find_wayland_display() {
@@ -52,16 +58,16 @@ discover_sway() {
   export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-"$(find_wayland_display)"}"
 }
 
-create_output() {
+initialize_output() {
   for ((n = 1; n <= output_num; n++)); do
     local cur="HEADLESS-${n}"
-    if is_output_missing "${cur}"; then
-      if [ "${cur}" != "${output}" ]; then
-        # swaymsg "output ${cur} disable" # might want to disable with an option?
-        swaymsg create_output
-      fi
-      swaymsg "output ${cur} resolution 1280x720 position $(get_detached_x) 0"
-      swaymsg "workspace ${workspace} output ${output}"
+    if is_output_present "${cur}"; then
+      continue
+    fi
+    swaymsg create_output
+    swaymsg "output ${cur} resolution ${initial_resolution} position $(get_detached_x) $(get_detached_y)"
+    if [[ "$cur" != "${output}" ]]; then
+      swaymsg "output ${output} disable"
     fi
   done
 }
@@ -102,6 +108,9 @@ main() {
   pos=''
   workspace=''
 
+  export initial_resolution="1280x720"
+  export detachment_distance=500
+
   while getopts ":o:n:r:p:w:H:P:shDdeE" arg; do
     case "${arg}" in
     o) output="${OPTARG}" ;;
@@ -140,7 +149,7 @@ main() {
   fi
 
   if [[ "${output}" == HEADLESS-* ]]; then
-    create_output
+    initialize_output
   fi
 
   configure_output
