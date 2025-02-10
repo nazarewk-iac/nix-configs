@@ -403,15 +403,23 @@ in {
         ""
         "${pkgs.xdg-desktop-portal}/libexec/xdg-desktop-portal --verbose"
       ];
+
+      home-manager.sharedModules = [
+        {
+          xdg.configFile."xdg-desktop-portal-wlr/sway".source = let
+            cfg = config.xdg.portal.wlr;
+            settingsFormat = pkgs.formats.ini {};
+            configFile = settingsFormat.generate "xdg-desktop-portal-wlr.ini" cfg.settings;
+          in
+            configFile;
+        }
+      ];
       systemd.user.services.xdg-desktop-portal-wlr.serviceConfig.ExecStart = let
-        cfg = config.xdg.portal.wlr;
         package = pkgs.xdg-desktop-portal-wlr;
-        settingsFormat = pkgs.formats.ini {};
-        configFile = settingsFormat.generate "xdg-desktop-portal-wlr.ini" cfg.settings;
       in
         lib.mkForce [
           ""
-          "${package}/libexec/xdg-desktop-portal-wlr --loglevel=TRACE sconfig=${configFile}"
+          "${package}/libexec/xdg-desktop-portal-wlr --loglevel=TRACE"
         ];
       systemd.user.services.xdg-desktop-portal-gtk.serviceConfig.ExecStart = lib.mkForce [
         ""
