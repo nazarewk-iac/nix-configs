@@ -722,8 +722,19 @@ in {
       ];
     in {
       systemd.targets.kdn-secrets.before = services;
-      systemd.targets.kdn-secrets.requiredBy = services;
+      systemd.targets.kdn-secrets.wantedBy = services;
     })
+    {
+      # fixes circular dependency on systemd-resolved
+      systemd.services.pcscd.unitConfig.DefaultDependencies = false;
+      systemd.services.pcscd.after = [
+        "local-fs.target"
+      ];
+      systemd.sockets.pcscd.unitConfig.DefaultDependencies = false;
+      systemd.sockets.pcscd.after = [
+        "local-fs.target"
+      ];
+    }
     {
       networking.nftables.enable = true;
       networking.firewall.enable = true;
