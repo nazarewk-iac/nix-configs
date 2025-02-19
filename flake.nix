@@ -19,6 +19,7 @@
   * rest of inputs
   */
 
+  inputs.argon40-nix.url = "github:guusvanmeerveld/argon40-nix";
   inputs.base16.url = "github:SenchoPens/base16.nix";
   inputs.brew-api.flake = false;
   inputs.brew-api.url = "github:BatteredBunny/brew-api";
@@ -31,6 +32,8 @@
   inputs.brew-tap--homebrew--core.url = "github:homebrew/homebrew-core";
   inputs.brew.flake = false;
   inputs.brew.url = "github:Homebrew/brew/4.4.16";
+  inputs.rpi-sbcshop-hat-ups.flake = false;
+  inputs.rpi-sbcshop-hat-ups.url = "github:sbcshop/UPS-Hat-RPi";
   inputs.crane.url = "github:ipetkov/crane";
   inputs.disko.url = "github:nix-community/disko";
   inputs.empty.url = "github:nix-systems/empty";
@@ -67,6 +70,8 @@
   /*
   * dependencies
   */
+  inputs.argon40-nix.inputs.flake-utils.follows = "flake-utils";
+  inputs.argon40-nix.inputs.nixpkgs.follows = "nixpkgs";
   inputs.brew-nix.inputs.brew-api.follows = "brew-api";
   inputs.brew-nix.inputs.flake-utils.follows = "flake-utils";
   inputs.brew-nix.inputs.nix-darwin.follows = "nix-darwin";
@@ -273,6 +278,7 @@
       kdn = {
         inherit self inputs;
         inherit (self) lib;
+        nix-configs = self;
 
         features = {
           rpi4 = false;
@@ -452,16 +458,15 @@
           ];
         };
 
-        rpi4-installer = lib.nixosSystem {
+        rpi4-bootstrap = lib.nixosSystem {
           system = "aarch64-linux";
           specialArgs = self.specialArgs.kdn.override {} {
             kdn.features.rpi4 = true;
-            kdn.features.installer = true;
           };
           modules = [
             self.nixosModules.default
             ({config, ...}: {
-              kdn.hostName = "kdn-rpi4-installer";
+              kdn.hostName = "kdn-rpi4-bootstrap";
               kdn.profile.host."${config.kdn.hostName}".enable = true;
 
               system.stateVersion = "25.05";
