@@ -46,27 +46,9 @@ in {
       #kdn.virtualisation.containers.x11docker.enable = true;
       programs.seahorse.enable = true;
       boot.binfmt.emulatedSystems = [
-        "aarch64-linux"
+        "aarch64-linux" # got dedicated builders now, but: a 'aarch64-linux' with features {} is required to build '/nix/store/r2rc0jhz761xmyc7w4zyl5v1ayx41hg0-converted-kdn-sops-nix-anonymization.paths.json.drv', but I am a 'x86_64-linux' with features {benchmark, big-parallel, kvm, nixos-test}
         "wasm32-wasi"
         "wasm64-wasi"
-        /*
-        2024-03-11:
-        error: builder for '/nix/store/sd233q3n28m8qkzq210yn5xpmy1pplqr-wine64-9.0.drv' failed with exit code 1;
-               last 10 log lines:
-               > checking for x86_64-w64-mingw32-clang... no
-               > checking for amd64-w64-mingw32-clang... no
-               > checking for clang... no
-               > checking for pthread_create... yes
-               > checking how to run the C preprocessor... gcc -m64 -E
-               > checking for X... no
-               > configure: error: X 64-bit development files not found. Wine will be built
-               > without X support, which probably isn't what you want. You will need
-               > to install 64-bit development packages of Xlib at the very least.
-               > Use the --without-x option if you really want this.
-               For full logs, run 'nix log /nix/store/sd233q3n28m8qkzq210yn5xpmy1pplqr-wine64-9.0.drv'.
-        */
-        # "x86_64-windows"
-        # "i686-windows"
       ];
 
       kdn.programs.editors.photo.enable = true;

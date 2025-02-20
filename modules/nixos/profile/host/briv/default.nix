@@ -27,8 +27,20 @@ in {
     {
       kdn.profile.machine.baseline.enable = true;
       security.sudo.wheelNeedsPassword = false;
+      kdn.nix.remote-builder.enable = true;
     }
     {
+      kdn.services.home-assistant.enable = true;
+      kdn.services.home-assistant.zha.enable = true;
+      kdn.services.home-assistant.tuya-cloud.enable = true;
+      kdn.services.home-assistant.tuya-local.enable = true;
+    }
+    {
+      kdn.profile.hardware.rpi4.hat.ups.enable = true;
+      kdn.profile.hardware.rpi4.hat.fan.enable = true;
+    }
+    (lib.mkIf false {
+      # TODO: enable disk management
       # TODO: those are unlocked automatically using TPM2, switch to etra (or k8s cluster) backed Clevis+Tang unlock
       kdn.hw.disks.initrd.failureTarget = "rescue.target";
       kdn.hw.disks.enable = true;
@@ -44,6 +56,6 @@ in {
         uuid = "c9a44d27-fd7e-40ea-8029-5e66cafc2960";
         headerSpec.num = 3;
       };
-    }
+    })
   ]);
 }

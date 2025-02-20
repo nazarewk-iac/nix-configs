@@ -65,6 +65,22 @@ in {
               mandatoryFeatures = [];
             }
             {
+              hostName = "briv";
+              systems = ["aarch64-linux"];
+              maxJobs = 2;
+              speedFactor = 4;
+              supportedFeatures = [
+                "gccarch-armv8-a"
+              ];
+              mandatoryFeatures = [];
+            }
+            #{
+            #  hostName = "etra";
+            #  systems = ["x86_64-linux"];
+            #  maxJobs = 2;
+            #  speedFactor = 4;
+            #}
+            {
               hostName = "brys";
               systems = ["x86_64-linux"];
               maxJobs = 16;
@@ -88,13 +104,26 @@ in {
               defaults
               // old
               // {
-                hostName = "${old.hostName}.lan.etra.net.int.kdn.im.";
                 supportedFeatures = builtins.concatLists [
                   (defaults.supportedFeatures or [])
                   (old.supportedFeatures or [])
                 ];
               }))
+            (builtins.map (old: (
+              builtins.map
+              (
+                domain:
+                  old
+                  // lib.attrsets.optionalAttrs (domain != "") {
+                    hostName = "${old.hostName}.${domain}";
+                  }
+              )
+              [
+                "lan.etra.net.int.kdn.im."
+              ]
+            )))
             # TODO: expand to all supported domains and modify the speedFactor?
+            lib.lists.flatten
           ];
       }
     ]))

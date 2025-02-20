@@ -22,6 +22,9 @@ in {
       fileSystems."/boot".options = ["fmask=0077" "dmask=0077"];
     })
     {
+      systemd.services.nix-daemon.environment.TMPDIR = "/var/tmp/nix-daemon";
+    }
+    {
       services.userborn.enable = true;
 
       # (modulesPath + "/installer/scan/not-detected.nix")
@@ -192,13 +195,16 @@ in {
           l
           ++ [
             {
+              # TODO: render those from "$XDG_CONFIG_DIRS/nix/access-tokens.d/*.tokens" for both users and system-wide?
               "nix.access-tokens.auto.conf" = {
                 path = "/etc/nix/nix.access-tokens.auto.conf";
-                mode = "0440";
+                mode = "0444";
                 content = lib.pipe config.kdn.security.secrets.sops.placeholders.default.nix.access-tokens [
                   (lib.attrsets.mapAttrsToList (name: value: "${name}=${value}"))
                   (builtins.concatStringsSep " ")
-                  (value: "access-tokens = ${value}")
+                  (value: ''
+                    access-tokens = ${value}
+                  '')
                 ];
               };
             }
@@ -233,9 +239,14 @@ in {
               filename = builtins.baseNameOf key;
               result =
                 old
-                // (lib.attrsets.optionalAttrs (isPubKey filename old) {
-                  mode = "0444";
-                });
+                // {
+                  mode =
+                    if isPubKey filename old
+                    then "0444"
+                    else if isPrivKey filename old
+                    then "0400"
+                    else "0440";
+                };
             in
               result)
           ];

@@ -74,7 +74,8 @@ in {
           default = let
             pathsJson =
               pkgs.runCommand "converted-kdn-sops-nix-${file.namePrefix}.paths.json"
-              {inherit (file) sopsFile;} ''
+              {inherit (file) sopsFile;}
+              ''
                 ${lib.getExe pkgs.gojq} -cM --yaml-input '
                   del(.sops) | [ paths(type == "string" and contains("type:str")) | join("/") ]
                 ' <"$sopsFile" >"$out"

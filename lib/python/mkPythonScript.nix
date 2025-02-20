@@ -17,6 +17,7 @@
   }),
   runtimeDeps ? [],
   makeWrapperArgs ? [],
+  buildEnvOverride ? old: old,
   imageEntrypoint ? ["/bin/${name}"],
   imageEnv ? {},
   imageOverlay ? old: old,
@@ -42,9 +43,11 @@
   mkEnv = depsFn:
     lib.pipe pythonInstance [
       (p:
-        p.buildEnv.override {
-          extraLibs = depsFn p.pkgs;
-        })
+        p.buildEnv.override (old:
+          buildEnvOverride (old
+            // {
+              extraLibs = (old.extraLibs or []) ++ depsFn p.pkgs;
+            })))
       (env:
         if runtimeDeps == []
         then env
@@ -102,6 +105,7 @@
     interpreter = lib.getExe releaseEnv;
   };
   script = lib.trivial.pipe scriptFile [
+    builtins.readFile
     (pythonWriter "/bin/${name}")
     (pkg: pkg // extraOutputs)
   ];

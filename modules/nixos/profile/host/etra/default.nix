@@ -304,5 +304,8 @@ in {
       };
       kdn.networking.router.tsig.keyTpls = config.kdn.security.secrets.sops.placeholders.dns.knot-dns.keys;
     }
+    {
+      kdn.services.omada.enable = true;
+    }
   ]);
 }

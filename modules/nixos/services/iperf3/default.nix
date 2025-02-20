@@ -21,10 +21,12 @@ in {
     };
   };
 
-  config = lib.mkMerge [
-    (lib.mkIf (cfg.server.enable && config.kdn.security.secrets.allowed) {
+  config = lib.mkIf (config.kdn.security.secrets.allowed) (lib.mkMerge [
+    (lib.mkIf (cfg.server.enable) {
       services.iperf3.enable = true;
       services.iperf3.openFirewall = true;
+      systemd.services.iperf3.after = ["kdn-secrets.target"];
+      systemd.services.iperf3.requires = ["kdn-secrets.target"];
       systemd.services.iperf3.serviceConfig = {
         LoadCredential = [
           "private.pem:${config.kdn.security.secrets.sops.secrets.default.networking.iperf-server.rsa.priv.path}"
@@ -39,7 +41,7 @@ in {
         ["--authorized-users-path" "%d/users.csv"]
       ];
     })
-    (lib.mkIf (cfg.client.enable && config.kdn.security.secrets.allowed) {
+    (lib.mkIf (cfg.client.enable) {
       environment.systemPackages = [
         (pkgs.writeShellApplication {
           name = "kdn-iperf3-client";
@@ -62,5 +64,5 @@ in {
         })
       ];
     })
-  ];
+  ]);
 }
