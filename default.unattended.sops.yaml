@@ -3,11 +3,17 @@ atuin:
     username: ENC[AES256_GCM,data:fAaf,iv:YLKUBNGQB0n52wvzWalOhBE+7bNvjcLI/nV6wR2XRVY=,tag:VQCp48Wbw32cGGiNvTTOiQ==,type:str]
     password: ENC[AES256_GCM,data:vckSyZm9WshJIMZsTx+2fhz8Tb4=,iv:xsWqT2NzsIXPR+EtfkBCnzYw74uL+ochpiVL8yXFjnE=,tag:1p0hf3UanFQbZsq2Uy+9Vw==,type:str]
     key: ENC[AES256_GCM,data:J0erMWt5gAPBUP9m9sLx6ESXdHwQsMe3eOJz6Gtzw3WLrlZtVo5ZOQH67sHEztjgX5BMEWLEazb9E3fVf0wrGPelJSkHJSQpcTTwdh9r4c7VHBLkzP9JnjTY8IumEWKnVi59/xijaaS9xI/wDjO7y2eCtoyGXT0RCEe1jsc9qEbKIP7IcU87sd3PqFNMejHAijrI1+22,iv:TuLeL95/sReScLO+UT9SovSikWuz28kZHQq6/REYAr4=,tag:UhmSpkbqpht9Szd6XOWMRQ==,type:str]
-netbird-priv:
-    ephemeral:
-        setup-key: ENC[AES256_GCM,data:zsk5tRZ2Jw182kRem7W51dgjMt73jZJ4MORpaxk72K0EggCc,iv:KVr630NqnHnHPRi/OYX5LZ5sLBaBOBaCeVSTvi4sF+M=,tag:VlDECMnY37HElwTW5iwRSw==,type:str]
-    permanent:
-        setup-key: ENC[AES256_GCM,data:CiS+33+oxMxFYzPMIZUpqWQUx8Cefehy1DI100JAXBvOn0rB,iv:91tze9y+7ilNBW17lfGuWHRIl/2Gjzxo/JOmyMAQrhc=,tag:/jYmXx8ov6fQORof1rIP/g==,type:str]
+netbird:
+    priv:
+        ephemeral:
+            setup-key: ENC[AES256_GCM,data:g5tcamJQjHZOsq3iONWQOXnoLqbO0ZHjLYqHDmxS2OzKGyvb,iv:onHEApDPevAHyPSO68TztXAGX0lREmn4aEDpkbQODc8=,tag:1c5KMhIdWFiEPZMrKkTzUg==,type:str]
+        permanent:
+            setup-key: ENC[AES256_GCM,data:4msuibFsoQzmhqB5qOXGXrHiNrPTHfZ7j7725MsSGvLcgGpd,iv:QF3tZXDFR4R8mbGVVC81vz+9+HCqrHWrChC0RSK2lf8=,tag:1SbdDl2ScUk++lojzD3UTQ==,type:str]
+    playground:
+        ephemeral:
+            setup-key: ENC[AES256_GCM,data:lw5u6idSRIm7tZklY6vp8q57Orl6Wnv7dexdXJgHvUqUBuim,iv:/WYzvJEuzXQ+fO75YUBpAyWclaBc1hsNf3iJe82foUE=,tag:60v0l8M9/Ryw015031uSeQ==,type:str]
+        permanent:
+            setup-key: ENC[AES256_GCM,data:QiUNjtBALd9WiLvvhfqGd9Z1H16u9+LqgaqvR10OXl3rLhc9,iv:oXOzr4NDryw3cI4Sh2uDMpVfiGQqwsGWMsjQMpkeTvU=,tag:EIViBJYH9W8adXeexIO3+g==,type:str]
 nix:
     access-tokens:
         github.com: ENC[AES256_GCM,data:8RjPEyoChMKOURPlEW4pYvx44eyOtXUIopQBPEPuX8+/8/KhB6Jzt0TpMKfOOP5EnLURqtArGxn6h5Dhkj5CcqFYC2QsYH1e4WB8f7ydW08EBFsamClYJ2r9yM7A,iv:P7ugQsVs+S+rKQ2JzSyTDXlvoEUoNJgqPO7rmdnfG8E=,tag:wyUtbAAzLkUMlGeU4amHbg==,type:str]
@@ -220,8 +226,8 @@ sops:
             Wj78GXRzpMgU9JZf7BHEFCauUMtbcQJk/VbVj2i+ySRyBSzavNlwwB+DggUb8KtK
             8N0=
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2025-02-12T20:07:29Z"
-    mac: ENC[AES256_GCM,data:JsLhj+nC1oNPjMK9220CH15vqzFWAzY5phcbvyvSZ1+8Ndagftk0UMizkXn0qQXjjgARAGA3vOgzyqKIIIfYlKtXNBNc9OowUPVQk6BuqGYJYqBetc/fdcYxdmrHtuSw9vTxEQP8xjNvOAiZiNTzgmtaJO4YYPS5Nyvfild9/ik=,iv:XQwQTT3Y5lOgNwEgtj91nA+9Uvzqu9cAeSNUe9KWQ+s=,tag:bsQUQtGAO52fzGCkpmRe2g==,type:str]
+    lastmodified: "2025-02-20T10:33:28Z"
+    mac: ENC[AES256_GCM,data:bWW+GFsiA47HPA5rQ+Djl/BYM0rbFZfTwBLZZ9FAKpMqntNVoyiDio5BWvZ3fJGSh5/L6yJU2X9oz5j1QmrcxHVlwyoet5HS53cTjO3nTov0EBgLLMf9YO5lv3y+eGUXhRhEOEqgR4rDvenyEVu8j96Cyf2HdKwZOkbCmP0oxm8=,iv:jWm1EbpbxblltVt1dMpXj37cKQbLTM8rO4jnRJF6S6M=,tag:v4K68gqr7hyhC3pI/UY1mA==,type:str]
     pgp: []
     unencrypted_suffix: _unencrypted
     version: 3.9.0

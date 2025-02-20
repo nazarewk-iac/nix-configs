@@ -27,12 +27,10 @@ in {
       services.iperf3.openFirewall = true;
       systemd.services.iperf3.after = ["kdn-secrets.target"];
       systemd.services.iperf3.requires = ["kdn-secrets.target"];
-      systemd.services.iperf3.serviceConfig = {
-        LoadCredential = [
-          "private.pem:${config.kdn.security.secrets.sops.secrets.default.networking.iperf-server.rsa.priv.path}"
-          "users.csv:${config.kdn.security.secrets.sops.secrets.default.networking.iperf-server."users.csv".path}"
-        ];
-      };
+      systemd.services.iperf3.serviceConfig.LoadCredential = [
+        "private.pem:${config.kdn.security.secrets.sops.secrets.default.networking.iperf-server.rsa.priv.path}"
+        "users.csv:${config.kdn.security.secrets.sops.secrets.default.networking.iperf-server."users.csv".path}"
+      ];
       #systemd.services.iperf3.serviceConfig.WorkingDirectory = "$CREDENTIALS_DIRECTORY";
       services.iperf3.rsaPrivateKey = null;
       services.iperf3.authorizedUsersFile = null;

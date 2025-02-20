@@ -284,6 +284,10 @@
           rpi4 = false;
           installer = false;
           darwin-utm-guest = false;
+
+          darwin = false;
+          nixos = false;
+          hm = false;
         };
       };
 

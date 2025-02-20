@@ -73,5 +73,8 @@ in {
         diffoscope
       ];
     }
+    {
+      kdn.networking.netbird.playground.enable = true;
+    }
   ]);
 }

@@ -4,8 +4,8 @@
   config,
   ...
 }: let
-  name = "priv";
-  num = 19;
+  name = "playground";
+  num = 18;
 
   cfg = config.kdn.networking.netbird."${name}";
   numStr = builtins.toString num;
@@ -60,6 +60,12 @@ in {
           set -x
           nb='${lib.getExe config.services.netbird.clients."${name}".wrapper}'
           keyFile="''${NB_SETUP_KEY_FILE:-"/run/credentials/${serviceName}.service/setup-key"}"
+          "$nb" status 2>&1 | ${lib.getExe pkgs.gnused} 's/^/STATUS:INIT: /g'
+          while "$nb" status 2>&1 | grep --quiet 'Disconnected' ; do
+            sleep 1
+          done
+          "$nb" status 2>&1 | ${lib.getExe pkgs.gnused} 's/^/STATUS:WAIT: /g'
+
           if "$nb" status 2>&1 | grep --quiet 'NeedsLogin' ; then
             echo "Using keyfile $(cut -b1-8 <"$keyFile")" >&2
             "$nb" up --setup-key-file="$keyFile"
