@@ -7,10 +7,10 @@
   buildPackages,
   ...
 }: let
-  version = "6.2";
-  shortCommit = "a0e34b0";
-  sha256 = "sha256-PFYPthrschw6XEf128L7yBygrVR3E3rtATCpxXGFRd4=";
-  vendorHash = "sha256-X5xL/4blWjddJsHwwfLpGjHrfia1sttmmqHjaAIVXVo=";
+  version = "6.5";
+  shortCommit = "6f2c7a1";
+  sha256 = "sha256-xwVbI4rXtcZrnTvp0vdHMbYRoWCsxIuGZF922eC/sfw=";
+  vendorHash = "sha256-QOS+D/zD5IlJBlb7vrOoHpP/7xS9En1/MFNwLSBrXOg=";
   tag = "v${version}";
 in
   buildGoModule {
@@ -40,6 +40,7 @@ in
       description = "A plain-text file format and a command line tool for time tracking";
       homepage = "https://klog.jotaen.net/";
       license = licenses.mit;
+      mainProgram = "klog";
       maintainers = with maintainers; [nazarewk];
     };
   }
