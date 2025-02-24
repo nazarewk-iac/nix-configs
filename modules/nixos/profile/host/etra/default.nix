@@ -268,7 +268,7 @@ in {
       };
     }
     {
-      # accept all traffice coming from Netbird to any other routed network
+      # accept all traffic coming from Netbird to any other routed network
       networking.firewall.trustedInterfaces = ["nb-priv"];
     }
     {

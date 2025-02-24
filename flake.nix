@@ -40,6 +40,7 @@
   inputs.flake-compat.url = "github:edolstra/flake-compat";
   inputs.flake-parts.url = "github:hercules-ci/flake-parts";
   inputs.flake-utils.url = "github:numtide/flake-utils";
+  inputs.haumea.url = "github:nix-community/haumea";
   inputs.home-manager.url = "github:nix-community/home-manager";
   inputs.lanzaboote.url = "github:nix-community/lanzaboote";
   inputs.lix-module.url = "git+https://git.lix.systems/lix-project/nixos-module.git?ref=stable";
@@ -82,6 +83,7 @@
   inputs.helix-editor.inputs.flake-utils.follows = "flake-utils";
   inputs.helix-editor.inputs.nixpkgs.follows = "nixpkgs";
   inputs.helix-editor.inputs.rust-overlay.follows = "rust-overlay";
+  inputs.haumea.inputs.nixpkgs.follows = "nixpkgs";
   inputs.home-manager.inputs.nixpkgs.follows = "nixpkgs";
   inputs.lanzaboote.inputs.crane.follows = "crane";
   inputs.lanzaboote.inputs.flake-compat.follows = "flake-compat";
@@ -298,10 +300,6 @@
         recursiveKeys ? ["kdn"],
       }: args: let
         effectiveKeys = lib.lists.subtractLists skipKeys keys;
-        flatKeys = lib.lists.subtractLists recursiveKeys effectiveKeys;
-        getAttrs = lib.attrsets.catAttrs effectiveKeys;
-        cleanDefaults = getAttrs defaults;
-        cleanArgs = getAttrs args;
 
         get = fn: keys:
           lib.pipe keys [
@@ -313,10 +311,6 @@
           ];
 
         getRecursive = get (key: lib.kdn.attrsets.recursiveMerge (lib.attrsets.catAttrs key [defaults args]));
-        getFlat = get (key: cleanArgs."${key}" or cleanDefaults."${key}");
-
-        recursiveOutput = getRecursive recursiveKeys;
-        flatOutput = getFlat flatKeys;
       in
         getRecursive effectiveKeys;
     };

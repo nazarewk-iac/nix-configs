@@ -54,6 +54,7 @@ in {
         which
       ];
 
+      networking.nftables.enable = true; # iptables is just a compatibility layer
       # prefer appending NetworkManager nameservers when it is available
       networking.networkmanager.appendNameservers = [
         #"2606:4700:4700::1111" # CloudFlare
@@ -331,7 +332,7 @@ in {
       kdn.networking.tailscale.enable = false;
     }
     {
-      kdn.networking.netbird.priv.enable = true;
+      kdn.networking.netbird.priv.idx = 1;
       services.netbird.package = pkgs.netbird.overrideAttrs (old: {
         patches =
           old.patches

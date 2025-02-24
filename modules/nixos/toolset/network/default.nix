@@ -29,6 +29,8 @@ in {
         iperf
         speedtest-go
         speedtest-cli
+        iptables
+        nftables
       ];
     }
     (lib.mkIf config.kdn.desktop.enable {
