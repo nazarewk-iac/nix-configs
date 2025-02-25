@@ -288,6 +288,10 @@ in {
             entry.commands;
         in
           lib.lists.flatten (builtins.map expandEntry entries);
+
+        startup = [
+          {command = lib.getExe pkgs.sway-assign-cgroups;}
+        ];
       };
 
       xdg.configFile."swayr/config.toml".source = ./swayr/config.toml;
