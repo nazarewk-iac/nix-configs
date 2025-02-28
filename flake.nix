@@ -62,8 +62,9 @@
 
   #inputs.sops-nix.url = "github:Mic92/sops-nix";
   inputs.sops-nix.url = "github:brianmcgee/sops-nix/feat/age-plugins";
-  #inputs.sops-upstream.flake = false;
-  #inputs.sops-upstream.url = "github:getsops/sops";
+  inputs.sops-upstream.flake = false;
+  inputs.sops-upstream.url = "github:getsops/sops";
+  #inputs.sops.follows = "sops-upstream";
   inputs.sops.flake = false;
   #inputs.sops.url = "github:nazarewk/sops";
   inputs.sops.url = "github:brianmcgee/sops/feat/age-plugins";
@@ -221,7 +222,7 @@
           text = builtins.readFile ./nixpkgs-update.sh;
         });
       };
-      checks = {};
+      checks = pkgs.callPackages ./checks {kdnArg = self.specialArgs;};
       devShells = {};
       packages = lib.mkMerge [
         (lib.filterAttrs (n: pkg: lib.isDerivation pkg) (flakeLib.overlayedInputs {inherit system;}).nixpkgs.kdn)
@@ -256,7 +257,7 @@
                 boot.loader.systemd-boot.enable = lib.mkForce false;
               }
               {
-                kdn.hostname = "kdn-nixos-install-iso";
+                kdn.hostName = "kdn-nixos-install-iso";
                 home-manager.sharedModules = [{home.stateVersion = "24.11";}];
                 kdn.security.secrets.allow = true;
                 kdn.profile.machine.baseline.enable = true;
@@ -275,6 +276,7 @@
       ];
     };
     flake.specialArgs = {
+      inherit self;
       inherit (self) lib;
 
       kdn = {

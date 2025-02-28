@@ -70,10 +70,12 @@ in {
         wireguard-tools
       ];
 
-      systemd.targets.netbird = {
-        wants = builtins.map (nbCfg: nbCfg.serviceName) activeCfgs;
-        after = builtins.map (nbCfg: nbCfg.serviceName) activeCfgs;
-        unitConfig.PropagatesStopTo = builtins.map (nbCfg: nbCfg.serviceName) activeCfgs;
+      systemd.targets.netbird = let
+        services = builtins.map (nbCfg: "${nbCfg.serviceName}.service") activeCfgs;
+      in {
+        wants = services;
+        after = services;
+        unitConfig.PropagatesStopTo = services;
       };
     }
     {

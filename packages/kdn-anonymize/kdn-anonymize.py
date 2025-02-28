@@ -26,7 +26,7 @@ class Replacement:
         self.re = re.compile(self.pattern)
 
     def replace_count(self, txt):
-        return self.re.subn(self.replacement or self.dirname, txt)
+        return self.re.sub(self.replacement or self.dirname, txt)
 
     @functools.cached_property
     def final_replacement(self):

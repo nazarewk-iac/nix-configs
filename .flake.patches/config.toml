@@ -14,6 +14,10 @@ url = "https://github.com/NixOS/nixpkgs/pull/345652.patch?full_index=1"
 [patch.nixpkgs.allow-missing-kernel-modules]
 url = "https://github.com/NixOS/nixpkgs/pull/375975.patch?full_index=1"
 
+[patch.nixpkgs.libvirtd-update]
+# most likely fixes https://bugs.launchpad.net/ubuntu/+source/libvirt/+bug/2093355
+url = "https://github.com/NixOS/nixpkgs/pull/375888.patch?full_index=1"
+
 #[patch.nixpkgs.netbird.gh-compare]
 ## https://github.com/NixOS/nixpkgs/compare/nixos-unstable...nazarewk:netbird-improvements~1.patch?full_index=1
 #repo = "NixOS/nixpkgs"

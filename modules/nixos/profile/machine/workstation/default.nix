@@ -72,18 +72,5 @@ in {
         diffoscope
       ];
     }
-    (let
-      nbCfg = config.kdn.networking.netbird.pg-relayed;
-    in {
-      services.netbird.clients.pg-relayed.openFirewall = false;
-      services.netbird.clients.pg-relayed.logLevel = "trace";
-      kdn.networking.netbird.pg-relayed.idx = 4;
-      kdn.networking.netbird.pg-relayed.secretKey = "playground";
-    })
-    {
-      services.netbird.clients.pg-p2p.logLevel = "trace";
-      kdn.networking.netbird.pg-p2p.idx = 5;
-      kdn.networking.netbird.pg-p2p.secretKey = "playground";
-    }
   ]);
 }

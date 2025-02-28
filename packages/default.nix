@@ -2,7 +2,7 @@
   pkgs,
   lib,
   ...
-}: rec {
+}: {
   # changed to manual list due to infinite recursion errors
   data-converters = pkgs.callPackage ./data-converters {};
   ente-photos-desktop = pkgs.callPackage ./ente-photos-desktop {};

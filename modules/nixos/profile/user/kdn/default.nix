@@ -54,8 +54,6 @@ in {
         ];
       };
 
-      kdn.virtualization.libvirtd.lookingGlass.instances = {kdn-default = "kdn";};
-
       networking.firewall = {
         # syncthing ranges
         allowedTCPPorts = [22000];

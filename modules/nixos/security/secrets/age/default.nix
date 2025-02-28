@@ -88,6 +88,7 @@ in {
             src = inputs.sops;
             vendorHash = "sha256-v1bwI4sat9zYJxo0WLv4l6QXwbrgpeAFO3Y0E0vwfJ4=";
             version = "3.9.0-dev";
+            buildGoModule = pkgs.buildGo122Module;
           };
         }))
         (lib.mkAfter (final: prev: {

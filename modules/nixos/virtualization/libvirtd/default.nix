@@ -8,17 +8,6 @@
 in {
   options.kdn.virtualization.libvirtd = {
     enable = lib.mkEnableOption "libvirtd setup";
-
-    lookingGlass = {
-      enable = lib.mkOption {
-        type = lib.types.bool;
-        default = true;
-      };
-      instances = lib.mkOption {
-        type = lib.types.attrsOf lib.types.str;
-        default = {};
-      };
-    };
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
@@ -29,15 +18,13 @@ in {
       # see https://nixos.wiki/wiki/Libvirt
       virtualisation.libvirtd = {
         enable = true;
-        #qemu.package = pkgs.qemu_full; # 2024-01-23 fails while building ceph, see https://github.com/NixOS/nixpkgs/issues/281027
-        qemu.package = pkgs.qemu;
+        qemu.package = pkgs.qemu_full;
         qemu.swtpm.enable = true;
         qemu.ovmf = {
           enable = true;
           packages = [
             pkgs.OVMFFull.fd
-            # TODO: wait to resolve https://github.com/NixOS/nixpkgs/issues/245188
-            #pkgs.pkgsCross.aarch64-multiplatform.OVMF.fd
+            pkgs.pkgsCross.aarch64-multiplatform.OVMF.fd
           ];
         };
       };
@@ -63,35 +50,14 @@ in {
         "/var/lib/libvirt"
         "/var/lib/swtpm-localca"
       ];
+      home-manager.sharedModules = [
+        {
+          kdn.hw.disks.persist."usr/data".directories = [
+            ".local/share/images"
+          ];
+          home.file.".local/share/images/virtio-win".source = pkgs.virtio-win;
+        }
+      ];
     }
-    (lib.mkIf cfg.lookingGlass.enable {
-      environment.systemPackages = with pkgs; [
-        # looking-glass-client  # TODO: doesn't work https://github.com/NixOS/nixpkgs/issues/368827
-        scream
-      ];
-
-      systemd.tmpfiles.rules = lib.trivial.pipe cfg.lookingGlass.instances [
-        (lib.attrsets.mapAttrsToList (name: username: [
-          # "f /dev/shm/${name}-looking-glass 0660 ${username} qemu-libvirtd -"
-          "f /dev/shm/${name}-scream 0660 ${username} qemu-libvirtd -"
-        ]))
-        lib.lists.flatten
-      ];
-
-      # TODO: instantiate scream for user
-      #systemd.services = lib.attrsets.mapAttrs'
-      #  (name: username: lib.attrsets.nameValuePair
-      #    "scream-ivshmem-${name}"
-      #    {
-      #      description = "Scream IVSHMEM for ${name}";
-      #      serviceConfig = {
-      #        ExecStart = "${pkgs.scream}/bin/scream -m /dev/shm/${name}-scream -o pulse -n ${name}-scream";
-      #        Restart = "always";
-      #      };
-      #      wantedBy = [ "default.target" ];
-      #      requires = [ "pipewire.service" ];
-      #    })
-      #  cfg.lookingGlass.instances;
-    })
   ]);
 }

@@ -2,12 +2,12 @@
   lib,
   src,
   vendorHash,
-  buildGo122Module,
+  buildGoModule,
   installShellFiles,
   nix-update-script,
   version ? "dev",
 }:
-buildGo122Module rec {
+buildGoModule rec {
   pname = "sops";
   inherit src version vendorHash;
 
