@@ -67,7 +67,10 @@
   #inputs.sops.follows = "sops-upstream";
   inputs.sops.flake = false;
   #inputs.sops.url = "github:nazarewk/sops";
-  inputs.sops.url = "github:brianmcgee/sops/feat/age-plugins";
+
+  # pinned due to `go mod tidy` requirement
+  #inputs.sops.url = "github:brianmcgee/sops/feat/age-plugins";
+  inputs.sops.url = "github:getsops/sops/eca80c22cb2e5b84800d7b5025cbb01a07edee2f";
 
   /*
   * dependencies

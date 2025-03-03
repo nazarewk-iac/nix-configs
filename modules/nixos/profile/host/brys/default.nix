@@ -83,24 +83,6 @@ in {
       kdn.hw.nanokvm.enable = true;
     }
     {
-      networking.networkmanager.ensureProfiles.profiles.pic = {
-        connection.id = "pic";
-        connection.type = "vlan";
-        connection.interface-name = "pic";
-        connection.autoconnect = true;
-        vlan.id = 1859;
-        vlan.flags = 1;
-        vlan.parent = "enp6s0";
-        ipv4.ignore-auto-dns = true;
-        ipv4.method = "auto";
-        ipv4.never-default = true;
-        ipv6.addr-gen-mode = "stable-privacy";
-        ipv6.ignore-auto-dns = true;
-        ipv6.method = "auto";
-        ipv6.never-default = true;
-      };
-    }
-    {
       kdn.desktop.sway.portals.debug = true;
       environment.systemPackages = [pkgs.kdn.hubstaff];
     }
@@ -113,5 +95,64 @@ in {
         5900
       ];
     }
+    (let
+      uplinkName = "uplink-2g";
+      uplink.iface = "br-${uplinkName}";
+      vlan.pic.name = "pic";
+      vlan.pic.iface = vlan.pic.name;
+      vlan.pic.id = 1859;
+    in {
+      /*
+      Sets up:
+      - bridge for VMs and local 2.5GbE network cards
+      - `pic` VLAN through the bridge
+      */
+      systemd.network.enable = true;
+      networking.useNetworkd = true;
+      networking.networkmanager.unmanaged = [
+        "interface-name:enp6s0"
+        "interface-name:${vlan.pic.iface}"
+        "interface-name:${uplink.iface}"
+      ];
+      systemd.network.netdevs."50-${uplink.iface}".netdevConfig = {
+        Kind = "bridge";
+        Name = uplink.iface;
+      };
+      systemd.network.networks."40-ethernet-2.5g" = {
+        matchConfig.Name = "enp6s0";
+        networkConfig.Bridge = uplink.iface;
+        linkConfig.RequiredForOnline = "enslaved";
+      };
+      systemd.network.networks."50-${uplinkName}" = {
+        matchConfig.Name = uplink.iface;
+        bridgeConfig = {};
+        linkConfig.RequiredForOnline = "carrier";
+        networkConfig = {
+          VLAN = [vlan.pic.iface];
+          DHCP = true;
+          IPv6AcceptRA = true;
+          LinkLocalAddressing = "ipv6";
+
+          IPv6PrivacyExtensions = true;
+          IPv6LinkLocalAddressGenerationMode = "stable-privacy";
+        };
+      };
+      systemd.network.netdevs."50-${vlan.pic.name}" = {
+        netdevConfig.Kind = "vlan";
+        netdevConfig.Name = vlan.pic.iface;
+        vlanConfig.Id = vlan.pic.id;
+      };
+      systemd.network.networks."50-${vlan.pic.name}" = {
+        matchConfig.Name = vlan.pic.iface;
+        networkConfig = {
+          DHCP = true;
+          IPv6AcceptRA = true;
+          LinkLocalAddressing = "ipv6";
+
+          IPv6PrivacyExtensions = true;
+          IPv6LinkLocalAddressGenerationMode = "stable-privacy";
+        };
+      };
+    })
   ]);
 }

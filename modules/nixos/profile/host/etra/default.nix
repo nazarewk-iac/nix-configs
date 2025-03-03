@@ -61,6 +61,7 @@
   hosts.lan.moak.ifaces.default.ipv4 = "192.168.73.4";
   hosts.lan.moak.ifaces.default.mac = "00:23:79:00:31:2F";
   hosts.lan.pryll.ifaces.default.mac = "01:90:1b:0e:84:8c:f7";
+  hosts.lan.anji-mac-vm-01.default.mac = "f6:f2:45:7a:32:79";
 in {
   options.kdn.profile.host.etra = {
     enable = lib.mkEnableOption "etra host profile";

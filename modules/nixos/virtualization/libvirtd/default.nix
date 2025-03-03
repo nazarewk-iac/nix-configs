@@ -27,11 +27,15 @@ in {
             pkgs.pkgsCross.aarch64-multiplatform.OVMF.fd
           ];
         };
+        qemu.vhostUserPackages = with pkgs; [
+          virtiofsd
+        ];
       };
       kdn.programs.dconf.enable = true;
       networking.firewall.checkReversePath = false;
       networking.networkmanager.unmanaged = ["interface-name:virbr*"];
-
+      # TODO: is it needed?
+      networking.firewall.trustedInterfaces = ["virbr*"];
       /*
          TODO: wait for VM packaging? https://github.com/NixOS/nixpkgs/issues/287644
       services.cockpit.enable = true;
@@ -40,7 +44,6 @@ in {
         libguestfs
         libvirt
         virt-manager
-        virtiofsd
         cloud-utils # cloud-localds for https://blog.programster.org/create-ubuntu-22-kvm-guest-from-cloud-image
       ];
     }
