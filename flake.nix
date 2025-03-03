@@ -238,16 +238,10 @@
               self.nixosModules.default
               {
                 /*
-                `isoImage.isoName` gives a stable image filename
+                `isoImage.baseName` gives a stable image filename
+                - see https://github.com/NixOS/nixpkgs/blob/5135c59491985879812717f4c9fea69604e7f26f/nixos/modules/installer/cd-dvd/iso-image.nix#L866-L885
                 */
-                /*
-                `lib.mkForce` is a fix for:
-                 error: The option `isoImage.isoName' has conflicting definition values:
-                   - In `/nix/store/v7l65f0mfszidw5z6napdsiyq0nnnvxn-source/nixos/modules/installer/cd-dvd/installation-cd-base.nix': "nixos-23.11.20230527.e108023-aarch64-linux.iso"
-                   - In `/nix/store/ld9rn0fc23j6cp92v9r31fq2nwc4s96b-source/formats/install-iso.nix': "nixos.iso"
-                   Use `lib.mkForce value` or `lib.mkDefault value` to change the priority on any of these definitions.
-                */
-                isoImage.isoName = lib.mkForce "nixos.iso";
+                isoImage.baseName = lib.mkForce "kdn-nixos-installer";
 
                 /*
                  `install-iso` uses some weird GRUB booting chimera
