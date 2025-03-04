@@ -9,6 +9,11 @@ netbird:
             setup-key: ENC[AES256_GCM,data:g5tcamJQjHZOsq3iONWQOXnoLqbO0ZHjLYqHDmxS2OzKGyvb,iv:onHEApDPevAHyPSO68TztXAGX0lREmn4aEDpkbQODc8=,tag:1c5KMhIdWFiEPZMrKkTzUg==,type:str]
         permanent:
             setup-key: ENC[AES256_GCM,data:4msuibFsoQzmhqB5qOXGXrHiNrPTHfZ7j7725MsSGvLcgGpd,iv:QF3tZXDFR4R8mbGVVC81vz+9+HCqrHWrChC0RSK2lf8=,tag:1SbdDl2ScUk++lojzD3UTQ==,type:str]
+    netbird-tests:
+        ephemeral:
+            setup-key: ENC[AES256_GCM,data:h1jPiCKnEr/IjLGoJ/igVxP3NV3HL6T0+CzdiQ28LkXu7DY1,iv:daZVocQdKhiZJvrU6gy7tMnxMnyIV1aM7/mkGGlIs8E=,tag:BovbU3TDt34GXx1lcvtUCg==,type:str]
+        permanent:
+            setup-key: ENC[AES256_GCM,data:Jg8vnU6aTQ9p8TQGvV5uN1/J4iWhWOymuSagT/WHDh0fUiu5,iv:5l7b8DRAewo8+EWdOV74+RqSOQKx9Rm8muPzkUBuyuc=,tag:+ch/Xm7pVqU88nRn/mJzOw==,type:str]
 nix:
     access-tokens:
         github.com: ENC[AES256_GCM,data:8RjPEyoChMKOURPlEW4pYvx44eyOtXUIopQBPEPuX8+/8/KhB6Jzt0TpMKfOOP5EnLURqtArGxn6h5Dhkj5CcqFYC2QsYH1e4WB8f7ydW08EBFsamClYJ2r9yM7A,iv:P7ugQsVs+S+rKQ2JzSyTDXlvoEUoNJgqPO7rmdnfG8E=,tag:wyUtbAAzLkUMlGeU4amHbg==,type:str]
@@ -221,8 +226,8 @@ sops:
             Wj78GXRzpMgU9JZf7BHEFCauUMtbcQJk/VbVj2i+ySRyBSzavNlwwB+DggUb8KtK
             8N0=
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2025-02-26T09:38:12Z"
-    mac: ENC[AES256_GCM,data:DLWfwJTNIJ0AYir8OwiyhP5GzUmnEScHDpJozanzNWiccH/BCP6Vn+zRmpTgYW0ZgtGvd2q36V4RpIGuDW9wjjvjAfb866nRhtDFNRxqCAEqn3WSYvISMnD/lQj3BuO0BgHrV2dc4sbQo220C3e3mix0nj3OJN7sl72xn4rxGcc=,iv:k+IQtcwwqLcnjdmfyBUXy/jD5uaWLJru1I/gNVlvaME=,tag:wCZB2QSalnLIWKDLfswIQA==,type:str]
+    lastmodified: "2025-03-04T14:45:02Z"
+    mac: ENC[AES256_GCM,data:YnR/+n7ddEZessJif3eUJ4xK1WXAasUQ85tJsCbftS25bbXdaRdkJqOS10MmRtsPbYv0pIaHnG7hNFMKxWzsIONsHCxFpefuht2xMIrwCEXhe3Kbd6UKCdRjAIa99HaHgBI6PFjhti0rgSPnvmDfL0YKdImfVEVUsUVciVBpv/E=,iv:6ca0kw1OhIZ8zH5G/+o2pJ+8UCMRHj0/YSJL0WyMaTQ=,tag:Tjgz23LHxszR+l5gCddFQg==,type:str]
     pgp: []
     unencrypted_suffix: _unencrypted
     version: 3.9.0
