@@ -35,10 +35,10 @@ in {
     }
     {
       home-manager.backupFileExtension = "hmbackup";
-      home-manager.useGlobalPkgs = true;
+      home-manager.useGlobalPkgs = false;
       home-manager.useUserPackages = true;
       home-manager.extraSpecialArgs =
-        self.specialArgs.kdn.override {
+        self.specialArgs.kdn.configure {
           skipKeys = ["lib"];
         }
         args;

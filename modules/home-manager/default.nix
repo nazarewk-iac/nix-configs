@@ -37,8 +37,19 @@ in {
 
       xdg.enable = true;
 
+      nixpkgs.config =
+        if parentConfig.nixpkgs.config or {} == {}
+        then cfg.nixConfig.nixpkgs.config
+        else parentConfig.nixpkgs.config;
+      nixpkgs.overlays =
+        lib.flip lib.pipe [
+          lib.lists.unique
+        ] (
+          if parentConfig.nixpkgs.overlays or [] == []
+          then cfg.nixConfig.nixpkgs.overlays
+          else parentConfig.nixpkgs.overlays
+        );
       xdg.configFile."nix/nix.nix".text = ""; # don't allow overriding
-      nixpkgs.config = lib.mkIf (!(parentConfig.home-manager.useGlobalPkgs or false)) cfg.nixConfig.nixpkgs.config;
       xdg.configFile."nixpkgs/config.nix".text = lib.generators.toPretty {} cfg.nixConfig.nixpkgs.config;
       home.file.".nixpkgs/config.nix".text = lib.generators.toPretty {} cfg.nixConfig.nixpkgs.config;
     }
