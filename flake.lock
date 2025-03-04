@@ -940,22 +940,6 @@
         "type": "github"
       }
     },
-    "nixpkgs-fish": {
-      "locked": {
-        "lastModified": 1740670831,
-        "narHash": "sha256-fab0fh9H0IHv7FrM8jKlFTleeWMmRubnXYA6DjVY3ls=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "98ca712b8aca3d7673bf18b0e5b643f8ae80a1ec",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "fish",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
     "nixpkgs-upstream": {
       "locked": {
         "lastModified": 1740828860,
@@ -1105,7 +1089,6 @@
         "nixos-generators": "nixos-generators",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs",
-        "nixpkgs-fish": "nixpkgs-fish",
         "nixpkgs-lib": [
           "nixpkgs"
         ],

@@ -4,8 +4,6 @@
 
   inputs.nixpkgs-lib.follows = "nixpkgs";
 
-  inputs.nixpkgs-fish.url = "github:NixOS/nixpkgs/fish";
-
   /*
   * pinned inputs to keep up to date manually
   */
@@ -144,18 +142,13 @@
     flake.overlays.default = inputs.nixpkgs.lib.composeManyExtensions [
       inputs.helix-editor.overlays.default
       inputs.nur.overlays.default
+      inputs.microvm.overlays.default
       self.overlays.packages
       (final: prev: {
         inherit lib;
 
         nixos-anywhere = inputs.nixos-anywhere.packages."${final.stdenv.system}".default;
         wezterm = inputs.wezterm.packages."${final.stdenv.system}".default;
-
-        fish =
-          # supposedly fixes https://github.com/NixOS/nix/issues/11010
-          if lib.strings.versionAtLeast prev.fish.version "4.0"
-          then builtins.throw "nixpkgs fish is now v4+, remove `flake.overlays.default` entry"
-          else inputs.nixpkgs-fish.legacyPackages."${final.stdenv.system}".fish;
       })
       (final: prev:
         if prev.stdenv.isDarwin
@@ -285,6 +278,8 @@
           rpi4 = false;
           installer = false;
           darwin-utm-guest = false;
+          microvm-host = false;
+          microvm-guest = false;
 
           darwin = false;
           nixos = false;
@@ -292,7 +287,8 @@
         };
       };
 
-      kdn.override = {
+      kdn.configure = {
+        # TODO: rewrite this
         defaults ? self.specialArgs,
         keys ? builtins.attrNames defaults,
         skipKeys ? [],
@@ -319,7 +315,9 @@
       {
         oams = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = self.specialArgs;
+          specialArgs = self.specialArgs.kdn.configure {} {
+            kdn.features.nixos = true;
+          };
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -335,7 +333,10 @@
 
         brys = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = self.specialArgs;
+          specialArgs = self.specialArgs.kdn.configure {} {
+            kdn.features.nixos = true;
+            kdn.features.microvm-host = true;
+          };
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -351,7 +352,9 @@
 
         etra = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = self.specialArgs;
+          specialArgs = self.specialArgs.kdn.configure {} {
+            kdn.features.nixos = true;
+          };
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -367,7 +370,9 @@
 
         pryll = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = self.specialArgs;
+          specialArgs = self.specialArgs.kdn.configure {} {
+            kdn.features.nixos = true;
+          };
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -383,7 +388,9 @@
 
         obler = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = self.specialArgs;
+          specialArgs = self.specialArgs.kdn.configure {} {
+            kdn.features.nixos = true;
+          };
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -399,7 +406,9 @@
 
         moss = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = self.specialArgs;
+          specialArgs = self.specialArgs.kdn.configure {} {
+            kdn.features.nixos = true;
+          };
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -421,7 +430,7 @@
 
         faro = lib.nixosSystem {
           system = "aarch64-linux";
-          specialArgs = self.specialArgs.kdn.override {} {
+          specialArgs = self.specialArgs.kdn.configure {} {
             kdn.features.darwin-utm-guest = true;
           };
           modules = [
@@ -439,7 +448,7 @@
 
         briv = lib.nixosSystem {
           system = "aarch64-linux";
-          specialArgs = self.specialArgs.kdn.override {} {
+          specialArgs = self.specialArgs.kdn.configure {} {
             kdn.features.rpi4 = true;
           };
           modules = [
@@ -457,7 +466,7 @@
 
         rpi4-bootstrap = lib.nixosSystem {
           system = "aarch64-linux";
-          specialArgs = self.specialArgs.kdn.override {} {
+          specialArgs = self.specialArgs.kdn.configure {} {
             kdn.features.rpi4 = true;
           };
           modules = [
