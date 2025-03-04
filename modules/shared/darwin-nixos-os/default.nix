@@ -28,11 +28,11 @@ in {
       nix.package = pkgs.lix;
       nixpkgs.overlays = [self.overlays.default];
     }
-    {
+    (lib.mkIf (!kdn.features.microvm-guest) {
       nix.extraOptions = cfg.nixConfig.nix.extraOptions;
       nix.settings = cfg.nixConfig.nix.settings;
       nixpkgs.config = cfg.nixConfig.nixpkgs.config;
-    }
+    })
     {
       home-manager.backupFileExtension = "hmbackup";
       home-manager.useGlobalPkgs = false;

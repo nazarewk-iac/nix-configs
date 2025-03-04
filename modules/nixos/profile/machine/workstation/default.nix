@@ -28,9 +28,6 @@ in {
 
       boot.initrd.availableKernelModules = [];
 
-      kdn.virtualization.microvm.host.enable = false;
-      microvm.vms.hello-microvm = {flake = self;};
-
       # CUSTOM
 
       kdn.desktop.remote-server.enable = true;

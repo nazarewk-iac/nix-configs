@@ -2,6 +2,7 @@
   config,
   pkgs,
   lib,
+  kdn,
   ...
 }: let
   cfg = config.kdn.profile.host.brys;
@@ -119,7 +120,7 @@ in {
         Name = uplink.iface;
       };
       systemd.network.networks."40-ethernet-2.5g" = {
-        matchConfig.Name = "enp6s0";
+        matchConfig.Name = ["enp6s0"];
         networkConfig.Bridge = uplink.iface;
         linkConfig.RequiredForOnline = "enslaved";
       };
@@ -151,6 +152,59 @@ in {
 
           IPv6PrivacyExtensions = true;
           IPv6LinkLocalAddressGenerationMode = "stable-privacy";
+        };
+      };
+    })
+
+    (let
+      iface = "vm-nbt-1";
+    in {
+      systemd.network.networks."40-ethernet-2.5g" = {
+        matchConfig.Name = [iface];
+      };
+      microvm.vms.nbt-1 = {
+        autostart = true;
+        restartIfChanged = false;
+        specialArgs = kdn.configure {} {
+          kdn.features.nixos = true;
+          kdn.features.microvm-guest = true;
+        };
+        config = {
+          imports = [
+            kdn.self.nixosModules.default
+          ];
+          config = lib.mkMerge [
+            {
+              kdn.hostName = "brys-uvm-nbt-1";
+              system.stateVersion = "25.05";
+              home-manager.sharedModules = [{home.stateVersion = "25.05";}];
+              networking.hostId = "fb6ff1fa"; # cut -c-8 </proc/sys/kernel/random/uuid
+
+              kdn.networking.netbird.priv.enable = false;
+            }
+            {
+              microvm.interfaces = [
+                {
+                  type = "tap";
+                  id = iface;
+                  mac = "42:e2:ce:6a:ce:c1";
+                }
+              ];
+              systemd.network.enable = true;
+
+              systemd.network.networks."20-lan" = {
+                matchConfig.Type = "ether";
+                networkConfig = {
+                  DHCP = true;
+                  IPv6AcceptRA = true;
+                  LinkLocalAddressing = "ipv6";
+
+                  IPv6PrivacyExtensions = true;
+                  IPv6LinkLocalAddressGenerationMode = "stable-privacy";
+                };
+              };
+            }
+          ];
         };
       };
     })
