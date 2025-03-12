@@ -130,7 +130,11 @@ in {
         linkConfig.RequiredForOnline = "carrier";
         networkConfig = {
           VLAN = [vlan.pic.iface];
+
           DHCP = true;
+          # `UseDomains = true` for adding search domain `route` for just DNS queries
+          UseDomains = true;
+
           IPv6AcceptRA = true;
           LinkLocalAddressing = "ipv6";
 
@@ -158,13 +162,15 @@ in {
 
     (let
       iface = "vm-nbt-1";
+      microvmPersistNames = ["microvm"] ++ builtins.attrNames config.kdn.hw.disks.base;
     in {
       systemd.network.networks."40-ethernet-2.5g" = {
         matchConfig.Name = [iface];
       };
+
       microvm.vms.nbt-1 = {
         autostart = true;
-        restartIfChanged = false;
+        restartIfChanged = true;
         specialArgs = kdn.configure {} {
           kdn.features.nixos = true;
           kdn.features.microvm-guest = true;
@@ -179,6 +185,7 @@ in {
               system.stateVersion = "25.05";
               home-manager.sharedModules = [{home.stateVersion = "25.05";}];
               networking.hostId = "fb6ff1fa"; # cut -c-8 </proc/sys/kernel/random/uuid
+              kdn.security.secrets.enable = false;
 
               kdn.networking.netbird.priv.enable = false;
             }

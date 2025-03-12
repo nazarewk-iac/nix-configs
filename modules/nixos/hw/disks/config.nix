@@ -6,12 +6,14 @@
 }: let
   cfg = config.kdn.hw.disks;
 
+  # TODO: make the ZFS pools/datasets optional and fall back to /nix/persist/fallback?
+
   dumbMerge = builtins.foldl' lib.attrsets.recursiveUpdate {};
 in {
   config = lib.mkMerge [
     {home-manager.sharedModules = [{kdn.hw.disks.enable = cfg.enable;}];}
     {
-      preservation.enable = cfg.enable;
+      preservation.enable = lib.mkDefault cfg.enable;
       kdn.hw.disks.persist = lib.pipe cfg.base [
         (builtins.mapAttrs (_:_: {}))
       ];
@@ -118,6 +120,7 @@ in {
       */
       kdn.hw.disks.base."disposable".snapshots = false;
       kdn.hw.disks.base."disposable".zfsName = cfg.disposable.zfsName;
+      # this does not always work
       kdn.hw.disks.base."disposable".disko.postCreateHook = ''
         zfs snapshot "${snapshotName}"
       '';
@@ -136,10 +139,8 @@ in {
         "kdn-disks-disposable-rollback" = {
           description = ''rollbacks `disposable` filesystem to empty state'';
           after = ["zfs-import-${baseCfg.zpool.name}.service"];
-          wantedBy = [
-            "sysroot-nix-persist-disposable.mount"
-            "zfs-import-${baseCfg.zpool.name}.service"
-          ];
+          requiredBy = ["zfs-import-${baseCfg.zpool.name}.service"];
+          wantedBy = ["sysroot-nix-persist-disposable.mount"];
           before = ["sysroot-nix-persist-disposable.mount"];
           onFailure = ["rescue.target"];
 
@@ -152,7 +153,13 @@ in {
           unitConfig.DefaultDependencies = false;
           unitConfig.StartLimitInterval = 60;
           unitConfig.StartLimitBurst = 3;
-          script = ''zfs rollback -r "${snapshotName}"'';
+          script = ''
+            if ! zfs rollback -r "${snapshotName}"; then
+              test -d /sysroot/nix/persist/disposable
+              rm -rf /sysroot/nix/persist/disposable/*
+              zfs snapshot "${snapshotName}"
+            fi
+          '';
         };
       };
     })

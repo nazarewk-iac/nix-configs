@@ -6,6 +6,8 @@
   ...
 }: let
   cfg = config.kdn.virtualization.microvm.guest;
+
+  microvmPersistNames = ["microvm"] ++ builtins.attrNames config.kdn.hw.disks.base;
 in {
   imports =
     kdn.self.lib.lists.optionals (!kdn.features.microvm-guest)
@@ -24,7 +26,6 @@ in {
     (lib.mkIf cfg.enable (lib.mkMerge [
       {
         kdn.profile.machine.baseline.enable = lib.mkDefault true;
-        kdn.security.secrets.enable = false;
         security.sudo.wheelNeedsPassword = lib.mkDefault false;
       }
       {
@@ -36,18 +37,44 @@ in {
             source = "/nix/store";
             mountPoint = "/nix/.ro-store";
           }
-          /*
-          journal needs to be disabled on the first start of VM o.O
-          see https://github.com/astro/microvm.nix/issues/200
-          */
-          #{
-          #  # centralized journal, see https://astro.github.io/microvm.nix/faq.html#how-to-centralize-logging-with-journald
-          #  source = "/var/lib/microvms/${config.kdn.hostName}/journal";
-          #  mountPoint = "/var/log/journal";
-          #  tag = "journal";
-          #  proto = "virtiofs";
-          #  socket = "journal.sock";
-          #}
+        ];
+      }
+      {
+        preservation.enable = true;
+        preservation.preserveAt."microvm".persistentStoragePath = "/nix/persist/microvm";
+        preservation.preserveAt."microvm".directories = [
+          {
+            directory = "/var/log/journal";
+            inInitrd = true;
+          }
+        ];
+        preservation.preserveAt."microvm".files = [
+          {
+            file = "/etc/machine-id";
+            inInitrd = true;
+            how = "symlink";
+            configureParent = true;
+          }
+          {
+            file = "/etc/ssh/ssh_host_ed25519_key";
+            how = "symlink";
+            mode = "0600";
+            inInitrd = true;
+          }
+          {
+            file = "/etc/ssh/ssh_host_rsa_key";
+            how = "symlink";
+            mode = "0600";
+            inInitrd = true;
+          }
+        ];
+        microvm.shares = lib.pipe config.preservation.preserveAt [
+          (lib.attrsets.mapAttrsToList (persistName: preserveAtCfg: {
+            source = "/var/lib/microvms-persist/${config.kdn.hostName}/${persistName}";
+            mountPoint = preserveAtCfg.persistentStoragePath;
+            tag = "microvm-persist-${persistName}";
+            proto = "virtiofs";
+          }))
         ];
       }
     ]))

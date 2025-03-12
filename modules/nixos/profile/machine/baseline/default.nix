@@ -53,7 +53,8 @@ in {
         moreutils
         which
       ];
-
+    }
+    {
       networking.nftables.enable = true; # iptables is just a compatibility layer
       # prefer appending NetworkManager nameservers when it is available
       networking.networkmanager.appendNameservers = [
@@ -70,6 +71,10 @@ in {
       networking.networkmanager.enable = lib.mkDefault true;
       networking.networkmanager.logLevel = lib.mkDefault "INFO";
 
+      # `UseDomains = true` for adding search domain `route` for just DNS queries
+      systemd.network.config.networkConfig.UseDomains = lib.mkDefault true;
+    }
+    {
       # REMOTE access
       services.openssh.enable = true;
       services.openssh.openFirewall = true;

@@ -91,11 +91,13 @@ in {
               file = "/etc/ssh/ssh_host_ed25519_key";
               how = "symlink";
               mode = "0600";
+              inInitrd = true;
             }
             {
               file = "/etc/ssh/ssh_host_rsa_key";
               how = "symlink";
               mode = "0600";
+              inInitrd = true;
             }
           ];
         };

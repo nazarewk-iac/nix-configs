@@ -15,7 +15,6 @@ in {
       inputs.disko.nixosModules.disko
       inputs.home-manager.nixosModules.home-manager
       inputs.lanzaboote.nixosModules.lanzaboote
-      inputs.lanzaboote.nixosModules.uki
       inputs.nur.modules.nixos.default
       inputs.preservation.nixosModules.preservation
       inputs.sops-nix.nixosModules.sops

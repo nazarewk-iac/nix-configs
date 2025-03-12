@@ -45,6 +45,22 @@ in {
       kdn.hw.disks.persist."usr/data".directories = [
         config.microvm.stateDir
       ];
+
+      systemd.tmpfiles.rules = lib.pipe config.microvm.vms [
+        builtins.attrValues
+        (builtins.map (
+          microVMCfg: let
+            # vm.config is a NixOS module, which in turn has `.{options,config}` attributes...
+            vmConfig = microVMCfg.config.config;
+          in
+            lib.flip lib.attrsets.mapAttrsToList vmConfig.preservation.preserveAt (
+              persistName: _: "d /var/lib/microvms-persist/${vmConfig.kdn.hostName}/${persistName} 0755 root root"
+            )
+        ))
+        lib.lists.flatten
+        (builtins.sort builtins.lessThan)
+        lib.lists.unique
+      ];
     })
   ];
 }
