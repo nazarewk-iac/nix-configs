@@ -112,17 +112,27 @@ in {
             (builtins.map (old: (
               builtins.map
               (
-                domain:
+                {
+                  domain,
+                  factor ? 100,
+                }:
                   old
                   // lib.attrsets.optionalAttrs (domain != "") {
                     hostName = "${old.hostName}.${domain}";
+                    speedFactor = builtins.floor (old.speedFactor * factor);
                   }
               )
               [
-                "lan.etra.net.int.kdn.im."
+                {
+                  domain = "lan.etra.net.int.kdn.im.";
+                  factor = 100;
+                }
+                {
+                  domain = "netbird.cloud.";
+                  factor = 20;
+                }
               ]
             )))
-            # TODO: expand to all supported domains and modify the speedFactor?
             lib.lists.flatten
           ];
       }
