@@ -208,5 +208,8 @@ in {
         };
       };
     })
+    {
+      kdn.services.zammad.enable = true;
+    }
   ]);
 }
