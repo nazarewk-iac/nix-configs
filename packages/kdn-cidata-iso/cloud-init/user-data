@@ -1,0 +1,9 @@
+#cloud-config
+users:
+  - name: kdn
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIFngB2F2qfcXVbXkssSWozufmyc0n6akKYA8zgjNFdZ ssh@kdn.im
+    # see KeePass
+    hashed_passwd: $6$rounds=4096$WL3T23BqgWAjfX6Q$19rvuN7RcPzu8jFyFs0abIsogupsYiQ7E1jvXYPgyjubxygkYo/JnMh/o60.xBMP/Gx2/wqaBX/je6K20A.0.1
+    sudo: "ALL=(ALL) NOPASSWD:ALL"
+    shell: /bin/bash

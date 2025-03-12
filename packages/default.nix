@@ -12,6 +12,7 @@
   git-utils = pkgs.callPackage ./git-utils {};
   gpg-smartcard-reset-keys = pkgs.callPackage ./gpg-smartcard-reset-keys {};
   kdn-anonymize = pkgs.callPackage ./kdn-anonymize {};
+  kdn-cidata-iso = pkgs.callPackage ./kdn-cidata-iso {};
   kdn-keepass = pkgs.callPackage ./kdn-keepass {};
   kdn-nix = pkgs.callPackage ./kdn-nix {};
   kdn-secrets = pkgs.callPackage ./kdn-secrets {};
