@@ -24,66 +24,71 @@ in {
       kdn.services.syncthing.enable = true;
       kdn.programs.weechat.enable = true;
     })
-    (lib.mkIf config.kdn.programs.firefox.enable {
-      # Firefox
+    (lib.mkIf config.kdn.programs.firefox.enable (lib.mkMerge [
+      {
+        # Firefox
 
-      # don't search/expand single-word searchbars
-      programs.firefox.policies.GoToIntranetSiteForSingleWordEntryInAddressBar = true;
+        # don't search/expand single-word searchbars
+        programs.firefox.policies.GoToIntranetSiteForSingleWordEntryInAddressBar = true;
 
-      programs.firefox.profiles.kdn = {
-        id = 0;
-        settings."widget.use-xdg-desktop-portal.mime-picker" = "1";
-        settings."intl.accept_languages" = "en-gb,en-us,en,pl";
-        settings."intl.locale.requested" = "en";
-      };
-
-      programs.firefox.profiles.bn = {
-        id = 2;
-      };
-
-      programs.firefox.profiles.kdn.containers = {
-        personal = {
-          id = 1;
-          icon = "fingerprint";
-          color = "blue";
+        kdn.programs.firefox.profileNames = ["kdn"];
+        programs.firefox.profiles.kdn = {
+          id = 0;
+          settings."widget.use-xdg-desktop-portal.mime-picker" = "1";
+          settings."intl.accept_languages" = "en-gb,en-us,en,pl";
+          settings."intl.locale.requested" = "en";
         };
-        personal-2 = {
+
+        programs.firefox.profiles.kdn.containers = {
+          personal = {
+            id = 1;
+            icon = "fingerprint";
+            color = "blue";
+          };
+          personal-2 = {
+            id = 2;
+            icon = "fingerprint";
+            color = "green";
+          };
+          work = {
+            id = 3;
+            icon = "briefcase";
+            color = "turquoise";
+          };
+          work-2 = {
+            id = 4;
+            icon = "briefcase";
+            color = "turquoise";
+          };
+          en = {
+            id = 5;
+            icon = "pet";
+            color = "red";
+          };
+          bn = {
+            id = 6;
+            icon = "pet";
+            color = "pink";
+          };
+          sn = {
+            id = 7;
+            icon = "pet";
+            color = "purple";
+          };
+          Facebook = {
+            id = 8;
+            icon = "fence";
+            color = "yellow";
+          };
+        };
+      }
+      {
+        kdn.programs.firefox.profileNames = ["bn"];
+        programs.firefox.profiles.bn = {
           id = 2;
-          icon = "fingerprint";
-          color = "green";
         };
-        work = {
-          id = 3;
-          icon = "briefcase";
-          color = "turquoise";
-        };
-        work-2 = {
-          id = 4;
-          icon = "briefcase";
-          color = "turquoise";
-        };
-        en = {
-          id = 5;
-          icon = "pet";
-          color = "red";
-        };
-        bn = {
-          id = 6;
-          icon = "pet";
-          color = "pink";
-        };
-        sn = {
-          id = 7;
-          icon = "pet";
-          color = "purple";
-        };
-        Facebook = {
-          id = 8;
-          icon = "fence";
-          color = "yellow";
-        };
-      };
-    })
+      }
+    ]))
     (lib.mkIf config.kdn.desktop.enable {
       # see https://github.com/nix-community/home-manager/issues/2104#issuecomment-861676751
       home.file."${nc.rel}/images/screenshots/.keep".source = builtins.toFile "keep" "";

@@ -40,6 +40,9 @@
 in {
   options.kdn.programs.firefox = {
     enable = lib.mkEnableOption "firefox setup";
+    profileNames = lib.mkOption {
+      type = with lib.types; listOf str;
+    };
     nativeMessagingHosts = lib.mkOption {
       type = with lib.types; listOf package;
       default = [];
@@ -50,6 +53,8 @@ in {
   };
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
+      # work around warning at https://github.com/danth/stylix/blob/6a2e5258876c46b62edacb3e51a759ed1c06332b/modules/firefox/hm.nix#L171
+      stylix.targets.firefox.profileNames = cfg.profileNames;
       home.packages = [
         pkgs.kdn.ff-ctl
       ];

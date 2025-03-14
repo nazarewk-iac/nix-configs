@@ -24,9 +24,27 @@ in {
     {
       systemd.services.nix-daemon.environment.TMPDIR = "/var/tmp/nix-daemon";
     }
-    {
+    (let
+      content = let
+        gen = pkgs.writers.writePython3Bin "generate-subuid" {} ''
+          import os
+
+          with open(os.environ["out"], "w") as f:
+              for uid in range(1000, 65536):
+                  f.write(f"{uid}:{uid * 65536}:{65536}\n")
+        '';
+      in
+        pkgs.runCommand "etc-subuid-subgid" {} (lib.getExe gen);
+    in {
+      # with userborn, `/etc/sub{u,g}id` is not managed anymore
       services.userborn.enable = true;
 
+      environment.etc."subuid".source = content;
+      environment.etc."subuid".mode = "0444";
+      environment.etc."subgid".source = content;
+      environment.etc."subgid".mode = "0444";
+    })
+    {
       # (modulesPath + "/installer/scan/not-detected.nix")
       hardware.enableRedistributableFirmware = true;
 

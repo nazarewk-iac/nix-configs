@@ -185,7 +185,7 @@ in {
 
       # fixup all in-between home subdirectory permissions
       # feature request: https://github.com/nix-community/preservation/issues/9
-      systemd.tmpfiles.settings.kdn-preservation-users = lib.mkIf cfg.enable (lib.pipe config.preservation.preserveAt [
+      systemd.tmpfiles.settings.zzz-kdn-preservation-users = lib.mkIf cfg.enable (lib.pipe config.preservation.preserveAt [
         (lib.attrsets.mapAttrsToList (_: preserveAtCfg:
           lib.pipe preserveAtCfg.users [
             (lib.attrsets.mapAttrsToList (
@@ -237,32 +237,9 @@ in {
     }
     {
       # fix up missing mkdirs on non-user parents
-      systemd.tmpfiles.settings.kdn-preservation-system = lib.mkIf cfg.enable (lib.pipe config.preservation.preserveAt [
+      systemd.tmpfiles.settings.zzz-kdn-preservation-system = lib.mkIf cfg.enable (lib.pipe config.preservation.preserveAt [
         (lib.attrsets.mapAttrsToList (
           _: preserveAtCfg: let
-            presentPaths = lib.pipe config.systemd.tmpfiles.settings.preservation [
-              builtins.attrNames
-              (builtins.map (path:
-                lib.pipe path [
-                  (lib.strings.splitString "/")
-                  (pieces:
-                    builtins.genList (i:
-                      lib.pipe pieces [
-                        (lib.lists.sublist 0 (i + 1))
-                        (builtins.concatStringsSep "/")
-                      ]) (builtins.length pieces))
-                ]))
-              lib.lists.flatten
-              lib.lists.unique
-              (builtins.map (path: {
-                name = path;
-                value = true;
-              }))
-              builtins.listToAttrs
-            ];
-            shouldInclude = key: true;
-            # below results in infiniterecursion
-            #shouldInclude = key: presentPaths."${key}" or false;
             parentDirs =
               lib.pipe preserveAtCfg.files [
                 (builtins.map (f: {
@@ -277,15 +254,14 @@ in {
                 }))
               ];
 
+            # TODO: get rid of duplicates compared to `config.systemd.tmpfiles.settings.preservation`?
             missingDirs = lib.pipe parentDirs [
               (builtins.filter (entry: entry.path != "" && entry.path != "/"))
-              (builtins.map (entry: (builtins.map (key:
-                lib.attrsets.optionalAttrs (shouldInclude key) {
-                  "${key}".d = entry.conf;
-                }) [
-                "${preserveAtCfg.persistentStoragePath}${entry.path}"
-                "${entry.path}"
-              ])))
+              (builtins.map (entry:
+                lib.flip builtins.map [
+                  "${preserveAtCfg.persistentStoragePath}${entry.path}"
+                  "${entry.path}"
+                ] (key: {"${key}".d = entry.conf;})))
             ];
           in
             missingDirs

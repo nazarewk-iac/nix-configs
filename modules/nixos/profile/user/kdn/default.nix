@@ -16,18 +16,7 @@ in {
       users.users.kdn = {
         linger = true;
         uid = 31893;
-        subUidRanges = [
-          {
-            count = 65536;
-            startUid = 100000;
-          }
-        ];
-        subGidRanges = [
-          {
-            count = 65536;
-            startGid = 100000;
-          }
-        ];
+        # this is handled by a script near `services.userborn.enable = true;`
         isNormalUser = true;
         extraGroups = lib.filter (group: lib.hasAttr group config.users.groups) [
           "adbusers"

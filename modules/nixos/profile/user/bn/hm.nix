@@ -29,6 +29,7 @@ in {
       stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/standardized-light.yaml";
     }
     {
+      kdn.programs.firefox.profileNames = ["bn"];
       programs.firefox.profiles.bn = {
         id = 0;
         settings."intl.locale.requested" = "pl";
