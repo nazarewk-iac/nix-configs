@@ -8,8 +8,9 @@ upstream_input = "{name}-upstream"
 
 [patch.nixpkgs]
 # TODO: discover the repos without explicit empty entry?
-[patch.nixpkgs.omada-controller]
-url = "https://github.com/NixOS/nixpkgs/pull/345652.patch?full_index=1"
+
+[patch.nixpkgs.bring-back-logseq]
+url = "https://github.com/NixOS/nixpkgs/pull/389363.patch?full_index=1"
 
 [patch.nixpkgs.allow-missing-kernel-modules]
 url = "https://github.com/NixOS/nixpkgs/pull/375975.patch?full_index=1"

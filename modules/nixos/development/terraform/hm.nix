@@ -71,7 +71,7 @@ in {
     home.packages = with pkgs; [
       opentofu
       terraform
-      terragrunt
+      # terragrunt # TODO: enable when https://nixpk.gs/pr-tracker.html?pr=389836
       terranix
       (pkgs.writeShellApplication {
         name = "tf-fmt";

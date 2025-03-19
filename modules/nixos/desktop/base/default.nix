@@ -58,8 +58,9 @@ in {
     }
     {
       hardware.uinput.enable = true;
-      kdn.programs.ydotool.enable = true;
       kdn.programs.dconf.enable = true;
+      kdn.programs.ydotool.enable = true;
+      programs.wshowkeys.enable = true;
       services.accounts-daemon.enable = true;
       services.dleyna-renderer.enable = true;
       services.dleyna-server.enable = true;
@@ -71,7 +72,6 @@ in {
       services.xserver.updateDbusEnvironment = true;
       xdg.icons.enable = true;
       xdg.mime.enable = true;
-      programs.wshowkeys.enable = true;
 
       environment.systemPackages = with pkgs;
         [

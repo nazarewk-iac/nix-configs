@@ -28,6 +28,7 @@ in {
 
     stylix.cursor.name = lib.mkDefault "phinger-cursors-${config.stylix.polarity}";
     stylix.cursor.package = lib.mkDefault pkgs.phinger-cursors;
+    stylix.cursor.size = lib.mkDefault 32;
     stylix.fonts.monospace.name = lib.mkDefault "Fira Code";
     stylix.fonts.monospace.package = lib.mkDefault pkgs.fira-code;
 
