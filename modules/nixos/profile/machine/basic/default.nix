@@ -24,6 +24,20 @@ in {
       environment.systemPackages = with pkgs; [usb-modeswitch];
       kdn.hw.bluetooth.enable = true;
     }
+    {
+      services.flatpak.enable = true;
+      systemd.services.flatpak-repo = {
+        wantedBy = ["multi-user.target"];
+        path = [config.services.flatpak.package];
+        script = ''
+          flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+        '';
+      };
+    }
+    {
+      programs.appimage.enable = true;
+      programs.appimage.binfmt = true;
+    }
     (
       let
         kdn-man-gen-caches = pkgs.writeShellApplication {
