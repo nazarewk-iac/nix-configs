@@ -140,6 +140,8 @@ in {
           IPv6PrivacyExtensions = true;
           IPv6LinkLocalAddressGenerationMode = "stable-privacy";
         };
+        dhcpV4Config.RouteMetric = 100;
+        dhcpV6Config.RouteMetric = 100;
       };
       systemd.network.netdevs."50-${vlan.pic.name}" = {
         netdevConfig.Kind = "vlan";
@@ -156,6 +158,8 @@ in {
           IPv6PrivacyExtensions = true;
           IPv6LinkLocalAddressGenerationMode = "stable-privacy";
         };
+        dhcpV4Config.RouteMetric = 1000;
+        dhcpV6Config.RouteMetric = 1000;
       };
     })
 
@@ -215,7 +219,7 @@ in {
       };
     })
     {
-      kdn.services.zammad.enable = true;
+      kdn.services.zammad.enable = false;
     }
   ]);
 }
