@@ -3,20 +3,13 @@
   appimageTools,
   lib,
   fetchurl,
-  pkgs,
 }: let
   pname = "ente-photos-desktop";
-  version = "1.7.7";
+  version = "1.7.10";
   shortName = "ente";
-  applicationName = "Ente";
-  name = "${shortName}-${version}";
-
-  # https://github.com/ente-io/photos-desktop/releases/download/v1.6.63/ente-1.6.63-arm64.AppImage
-  # https://github.com/ente-io/photos-desktop/releases/download/v1.6.63/ente-1.6.63-x86_64.AppImage
-  mirror = "https://github.com/ente-io/photos-desktop/releases/download";
   src = fetchurl {
-    url = "${mirror}/v${version}/${name}-x86_64.AppImage";
-    hash = "sha256-PGESx31SA7rDC0WmDAyg+2FAlqAZc0/8zXzTwzXKq7Y=";
+    url = "https://github.com/ente-io/photos-desktop/releases/download/v${version}/${shortName}-${version}-x86_64.AppImage";
+    hash = "sha256-L2N3saNeJDdji/IzC2Zi0Iixc/pPNSUpz07egywx+4U=";
   };
 
   appimageContents = appimageTools.extractType2 {inherit pname version src;};
