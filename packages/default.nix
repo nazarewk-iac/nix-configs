@@ -26,6 +26,4 @@
   systemd-find-cycles = pkgs.callPackage ./systemd-find-cycles {};
   tc-redirect-tap = pkgs.callPackage ./tc-redirect-tap {};
   whicher = pkgs.callPackage ./whicher {};
-
-  hubstaff = pkgs.callPackage ./hubstaff/package.nix {};
 }

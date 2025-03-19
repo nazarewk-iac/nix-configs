@@ -170,7 +170,6 @@
 
           overrides =
             lib.pipe [
-              "hubstaff"
             ] [
               (builtins.map (name: {
                 inherit name;

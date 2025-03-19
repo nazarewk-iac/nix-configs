@@ -10,7 +10,6 @@ in {
     {
       # TODO: package, mirror & install KDE Connect through Nix https://kdeconnect.kde.org/download.html
       home.packages = with pkgs.nixcasks; [
-        #hubstaff
       ];
     }
     {
