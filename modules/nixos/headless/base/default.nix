@@ -68,35 +68,7 @@ in {
 
       environment.localBinInPath = true;
 
-      environment.systemPackages = with pkgs; [
-        openssh
-        wget
-        curl
-        tmux
-
-        # Working with XDG files
-        file
-        desktop-file-utils
-        xdg-utils
-        # xdg-launch # this coredumps under KDE, probably poorly written
-
-        # https://wiki.archlinux.org/title/Default%20applications#Resource_openers
-        handlr-regex
-        mimeo
-
-        jq
-        git
-        openssl
-
-        coreutils
-        moreutils
-        gnugrep
-
-        zip
-
-        pkgs.kdn.whicher
-        difftastic
-      ];
+      kdn.toolset.essentials.enable = true;
 
       boot.kernel.sysctl = let
         mb = 1024 * 1024;

@@ -59,6 +59,7 @@ in {
       boot.initrd.clevis.enable = true;
     }
     {
+      kdn.toolset.logs-processing.enable = true;
       environment.systemPackages = with pkgs; [
         /*
         Closure is freaking 9 GB!
