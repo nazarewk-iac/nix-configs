@@ -212,6 +212,7 @@ in {
     (lib.mkIf (hasWorkstation && config.kdn.desktop.enable) {
       kdn.programs.beeper.enable = true;
       kdn.programs.browsers.enable = true;
+      kdn.programs.chrome.enable = true;
       kdn.programs.chromium.enable = true;
       kdn.programs.element.enable = true;
       kdn.programs.ente-photos.enable = true;
