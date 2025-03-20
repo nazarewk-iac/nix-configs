@@ -11,8 +11,10 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    hardware.amdgpu.amdvlk.enable = lib.mkDefault true;
-    hardware.amdgpu.amdvlk.support32Bit.enable = lib.mkDefault true;
+    # AMDVLK seems to break stuff? see https://matrix.to/#/!RRerllqmbATpmbJgCn:nixos.org/$E589UbXeIXAX76-k5EExVpxMkh_NsyDi5glqwqX5O18?via=lossy.network&via=matrix.org&via=tchncs.de
+    #hardware.amdgpu.amdvlk.enable = lib.mkDefault true;
+    #hardware.amdgpu.amdvlk.supportExperimental.enable = lib.mkDefault true;
+    #hardware.amdgpu.amdvlk.support32Bit.enable = lib.mkDefault true;
     hardware.amdgpu.initrd.enable = lib.mkDefault true;
     hardware.amdgpu.opencl.enable = lib.mkDefault true;
 
@@ -20,6 +22,6 @@ in {
       radeontop
     ];
 
-    environment.variables.AMD_VULKAN_ICD = lib.mkDefault "RADV";
+    #environment.variables.AMD_VULKAN_ICD = lib.mkDefault "RADV";
   };
 }

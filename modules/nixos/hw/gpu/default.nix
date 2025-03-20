@@ -23,6 +23,10 @@ in {
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       hardware.graphics.enable = true;
+      hardware.graphics.enable32Bit = true;
+      environment.systemPackages = with pkgs; [
+        nvtopPackages.full
+      ];
     }
     (lib.mkIf cfg.multiGPU.enable {
       services.supergfxd.enable = true;

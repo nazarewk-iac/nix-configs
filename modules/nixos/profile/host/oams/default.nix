@@ -104,12 +104,14 @@ in {
       networking.networkmanager.logLevel = "DEBUG";
     }
     {
+      # keep all the mountpoints and software available
+      kdn.profile.machine.gaming.enable = true;
       specialisation.gaming = {
+        # reboot into dGPU accelerated specialisation
         inheritParentConfig = true;
         configuration = {
           system.nixos.tags = ["gaming"];
           kdn.hw.gpu.supergfxd.mode = lib.mkForce "Hybrid";
-          kdn.profile.machine.gaming.enable = true;
           kdn.profile.machine.gaming.vulkan.deviceId = "1002:73df";
           kdn.profile.machine.gaming.vulkan.deviceName = "AMD Radeon RX 6800M";
           home-manager.sharedModules = [

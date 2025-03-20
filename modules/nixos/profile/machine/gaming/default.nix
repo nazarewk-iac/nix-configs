@@ -23,6 +23,7 @@ in {
     programs.steam.enable = true;
     programs.steam.remotePlay.openFirewall = true;
     programs.steam.localNetworkGameTransfers.openFirewall = true;
+    programs.steam.protontricks.enable = true;
 
     nixpkgs.config.allowUnfreePredicate = pkg:
       builtins.elem (lib.getName pkg) [
@@ -61,7 +62,9 @@ in {
         kdn.hw.disks.persist."usr/data".directories = [
           ".local/share/bottles"
           ".local/share/Steam"
+          # TODO: split those up into programs
           ".local/share/lutris"
+          "/Games"
         ];
         kdn.hw.disks.persist."usr/cache".directories = [
           ".local/share/lutris/runtime"
