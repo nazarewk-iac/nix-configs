@@ -37,7 +37,8 @@ in {
       ];
 
       nix.settings.substituters = [
-        "https://microvm.cachix.org"
+        # TODO: cachix.org was down on  2025-03-20 17:20
+        #"https://microvm.cachix.org"
       ];
       environment.systemPackages = with cfg.flake.microvm.packages."${pkgs.stdenv.system}"; [
         microvm

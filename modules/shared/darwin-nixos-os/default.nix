@@ -40,6 +40,7 @@ in {
       home-manager.extraSpecialArgs =
         self.specialArgs.kdn.configure {
           skipKeys = ["lib"];
+          moduleType = "home-manager";
         }
         args;
 

@@ -31,5 +31,5 @@
 !/.envrc
 !/flake.lock
 
-!/.flake.patchess
+!/.flake.patches/
 !/modules/shared/universal/profile/user/kdn/

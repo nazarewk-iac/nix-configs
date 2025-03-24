@@ -42,6 +42,7 @@ in {
     enable = lib.mkEnableOption "firefox setup";
     profileNames = lib.mkOption {
       type = with lib.types; listOf str;
+      default = [];
     };
     nativeMessagingHosts = lib.mkOption {
       type = with lib.types; listOf package;

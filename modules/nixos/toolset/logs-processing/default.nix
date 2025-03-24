@@ -11,13 +11,14 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
+    home-manager.sharedModules = [{kdn.toolset.logs-processing.enable = true;}];
     environment.systemPackages =
       (with pkgs; [
         # https://github.com/trungdq88/logmine
         # https://github.com/ynqa/logu
         # https://github.com/logpai/logparser
         angle-grinder # https://github.com/rcoh/angle-grinder
-        lnav # https://lnav.org/
+        # https://github.com/dloss/klp
       ])
       ++ [];
   };

@@ -11,7 +11,6 @@ in {
       ../shared/universal
       ../shared/darwin-nixos-os
       ./ascii-workaround.nix
-      ./stylix.nix
       inputs.disko.nixosModules.disko
       inputs.home-manager.nixosModules.home-manager
       inputs.lanzaboote.nixosModules.lanzaboote

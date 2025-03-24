@@ -273,40 +273,66 @@
         inherit (self) lib;
         nix-configs = self;
 
+        parent = null;
+        moduleType = null;
+        isOfAnyType = x: false;
+        hasParentOfAnyType = x: false;
+
         features = {
           rpi4 = false;
           installer = false;
           darwin-utm-guest = false;
           microvm-host = false;
           microvm-guest = false;
-
-          darwin = false;
-          nixos = false;
-          hm = false;
         };
       };
 
       kdn.configure = {
-        # TODO: rewrite this
+        moduleType,
         defaults ? self.specialArgs,
-        keys ? builtins.attrNames defaults,
+        keys ? builtins.attrNames self.specialArgs,
         skipKeys ? [],
-        recursiveKeys ? ["kdn"],
       }: args: let
+        effectiveArgs = lib.lists.toList args;
         effectiveKeys = lib.lists.subtractLists skipKeys keys;
-
-        get = fn: keys:
-          lib.pipe keys [
-            (builtins.map (key: {
-              name = key;
-              value = fn key;
-            }))
-            builtins.listToAttrs
+        effectiveDefaults = let
+          getParent = obj:
+            if
+              (obj != null)
+              && (lib.lists.subtractLists keys (builtins.attrNames obj)) == []
+            then (obj.kdn or {}).parent or null
+            else null;
+        in
+          lib.pipe effectiveArgs [
+            (builtins.map getParent)
+            (builtins.filter (e: e != null))
+            (l:
+              if l == []
+              then defaults
+              else builtins.head l)
           ];
 
-        getRecursive = get (key: lib.kdn.attrsets.recursiveMerge (lib.attrsets.catAttrs key [defaults args]));
+        candidates =
+          [effectiveDefaults]
+          ++ lib.lists.toList args
+          ++ [
+            {
+              kdn.parent = builtins.head effectiveArgs;
+              kdn.moduleType = moduleType;
+              kdn.isOfAnyType = builtins.elem moduleType;
+              kdn.hasParentOfAnyType = types: final.kdn.parent != null && final.kdn.parent.kdn.isOfAnyType types;
+            }
+          ];
+
+        final = lib.pipe effectiveKeys [
+          (builtins.map (key: {
+            name = key;
+            value = lib.kdn.attrsets.recursiveMerge (lib.attrsets.catAttrs key candidates);
+          }))
+          builtins.listToAttrs
+        ];
       in
-        getRecursive effectiveKeys;
+        final;
     };
     flake.lib = lib;
     flake.nixosModules.default = ./modules/nixos;
@@ -314,9 +340,11 @@
       {
         oams = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = self.specialArgs.kdn.configure {} {
-            kdn.features.nixos = true;
-          };
+          specialArgs =
+            self.specialArgs.kdn.configure {
+              moduleType = "nixos";
+            } {
+            };
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -332,10 +360,12 @@
 
         brys = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = self.specialArgs.kdn.configure {} {
-            kdn.features.nixos = true;
-            kdn.features.microvm-host = true;
-          };
+          specialArgs =
+            self.specialArgs.kdn.configure {
+              moduleType = "nixos";
+            } {
+              kdn.features.microvm-host = true;
+            };
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -351,9 +381,11 @@
 
         etra = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = self.specialArgs.kdn.configure {} {
-            kdn.features.nixos = true;
-          };
+          specialArgs =
+            self.specialArgs.kdn.configure {
+              moduleType = "nixos";
+            } {
+            };
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -369,9 +401,11 @@
 
         pryll = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = self.specialArgs.kdn.configure {} {
-            kdn.features.nixos = true;
-          };
+          specialArgs =
+            self.specialArgs.kdn.configure {
+              moduleType = "nixos";
+            } {
+            };
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -387,9 +421,11 @@
 
         obler = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = self.specialArgs.kdn.configure {} {
-            kdn.features.nixos = true;
-          };
+          specialArgs =
+            self.specialArgs.kdn.configure {
+              moduleType = "nixos";
+            } {
+            };
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -405,9 +441,11 @@
 
         moss = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = self.specialArgs.kdn.configure {} {
-            kdn.features.nixos = true;
-          };
+          specialArgs =
+            self.specialArgs.kdn.configure {
+              moduleType = "nixos";
+            } {
+            };
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -429,9 +467,12 @@
 
         faro = lib.nixosSystem {
           system = "aarch64-linux";
-          specialArgs = self.specialArgs.kdn.configure {} {
-            kdn.features.darwin-utm-guest = true;
-          };
+          specialArgs =
+            self.specialArgs.kdn.configure {
+              moduleType = "nixos";
+            } {
+              kdn.features.darwin-utm-guest = true;
+            };
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -447,9 +488,12 @@
 
         briv = lib.nixosSystem {
           system = "aarch64-linux";
-          specialArgs = self.specialArgs.kdn.configure {} {
-            kdn.features.rpi4 = true;
-          };
+          specialArgs =
+            self.specialArgs.kdn.configure {
+              moduleType = "nixos";
+            } {
+              kdn.features.rpi4 = true;
+            };
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -465,9 +509,12 @@
 
         rpi4-bootstrap = lib.nixosSystem {
           system = "aarch64-linux";
-          specialArgs = self.specialArgs.kdn.configure {} {
-            kdn.features.rpi4 = true;
-          };
+          specialArgs =
+            self.specialArgs.kdn.configure {
+              moduleType = "nixos";
+            } {
+              kdn.features.rpi4 = true;
+            };
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -485,7 +532,11 @@
     flake.darwinModules.default = ./modules/nix-darwin;
     flake.darwinConfigurations.anji = inputs.nix-darwin.lib.darwinSystem {
       system = "aarch64-darwin";
-      specialArgs = self.specialArgs;
+      specialArgs =
+        self.specialArgs.kdn.configure {
+          moduleType = "nix-darwin";
+        } {
+        };
       modules = [
         self.darwinModules.default
         ({config, ...}: {

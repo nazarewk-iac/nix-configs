@@ -174,10 +174,12 @@ in {
       microvm.vms.nbt-1 = {
         autostart = true;
         restartIfChanged = true;
-        specialArgs = kdn.configure {} {
-          kdn.features.nixos = true;
-          kdn.features.microvm-guest = true;
-        };
+        specialArgs =
+          kdn.configure {
+            moduleType = "nixos";
+          } {
+            kdn.features.microvm-guest = true;
+          };
         config = {
           imports = [
             kdn.self.nixosModules.default
