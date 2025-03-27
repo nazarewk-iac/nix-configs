@@ -133,6 +133,13 @@ in {
       programs.sway.extraPackages = [cfg.bundle];
     }
     {
+      nixpkgs.overlays = [
+        (final: prev: {
+          flameshot = prev.flameshot.override {enableWlrSupport = true;};
+        })
+      ];
+    }
+    {
       # Configure various Sway configs
       # see https://gist.github.com/mschwaig/195fe93ed85dea7aaceaf8e1fc6c0e99
       # see https://nixos.wiki/wiki/Sway#Systemd_integration

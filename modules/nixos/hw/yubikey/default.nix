@@ -24,7 +24,7 @@ in {
       environment.systemPackages = with pkgs;
         [xkcdpass yubikey-manager yubikey-personalization yubico-pam]
         ++ lib.optionals config.kdn.desktop.enable (with pkgs; [
-          yubikey-manager-qt
+          yubioath-flutter
           yubikey-personalization-gui
         ]);
     }

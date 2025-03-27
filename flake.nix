@@ -41,7 +41,8 @@
   inputs.haumea.url = "github:nix-community/haumea";
   inputs.home-manager.url = "github:nix-community/home-manager";
   inputs.lanzaboote.url = "github:nix-community/lanzaboote";
-  inputs.lix-module.url = "git+https://git.lix.systems/lix-project/nixos-module.git?ref=stable";
+  # requires main instead of `stable` due to `editline-lix` error
+  inputs.lix-module.url = "git+https://git.lix.systems/lix-project/nixos-module.git?ref=main";
   inputs.microvm.url = "github:astro/microvm.nix";
   inputs.nix-darwin.url = "github:LnL7/nix-darwin";
   inputs.nix-homebrew.url = "github:zhaofengli/nix-homebrew";

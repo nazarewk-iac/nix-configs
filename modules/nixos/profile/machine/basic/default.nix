@@ -56,6 +56,35 @@ in {
           '';
         };
       in {
+        /*
+        Error at 2025-03-27:
+          nixos-manual-html> error:
+          nixos-manual-html>      failed to render manual manual.md
+          nixos-manual-html>
+          nixos-manual-html> caused by:
+          nixos-manual-html>
+          nixos-manual-html> Identifiers present in the source must have a mapping in the redirects file.
+          nixos-manual-html>     - ex-types-attrNamesToTrue
+          nixos-manual-html>
+          nixos-manual-html>     This can happen when an identifier was added or renamed.
+          nixos-manual-html>
+          nixos-manual-html>     Added new content?
+          nixos-manual-html>         redirects add-content ❬identifier❭ ❬path❭
+          nixos-manual-html>
+          nixos-manual-html>     Moved existing content to a different output path?
+          nixos-manual-html>         redirects move-content ❬identifier❭ ❬path❭
+          nixos-manual-html>
+          nixos-manual-html>     Renamed existing identifiers?
+          nixos-manual-html>         redirects rename-identifier ❬old-identifier❭ ❬new-identifier❭
+          nixos-manual-html>
+          nixos-manual-html>     Removed content? Redirect to alternatives or relevant release notes.
+          nixos-manual-html>         redirects remove-and-redirect ❬identifier❭ ❬target-identifier❭
+          nixos-manual-html>
+          nixos-manual-html>     Note that you need to run `nix-shell doc` or `nix-shell nixos/doc/manual` to be able to run this command.
+          nixos-manual-html>
+          nixos-manual-html> NOTE: If your Manual build passes locally and you see this message in CI, you probably need a rebase.
+        */
+        documentation.nixos.enable = false;
         documentation.man.man-db.enable = true;
         documentation.man.generateCaches = false;
         environment.systemPackages = [kdn-man-gen-caches];

@@ -10,11 +10,10 @@
 
   kernelPackage =
     lib.pipe [
-      # TODO: change to 6_11 after ZFS is updated to 2.3.0+
       {
-        name = "2.3.0+";
-        check = atLeastZFSVersion "2.3.0";
-        pkg = pkgs.linuxKernel.packages.linux_6_11 or null;
+        name = "2.3.1+";
+        check = atLeastZFSVersion "2.3.1";
+        pkg = pkgs.linuxKernel.packages.linux_6_13 or null;
       }
       {
         name = "default";
