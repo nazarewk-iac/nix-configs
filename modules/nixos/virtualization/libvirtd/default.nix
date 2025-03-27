@@ -41,6 +41,7 @@ in {
       services.cockpit.enable = true;
       */
       environment.systemPackages = with pkgs; [
+        guestfs-tools
         libguestfs
         libvirt
         virt-manager
