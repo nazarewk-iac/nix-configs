@@ -129,10 +129,6 @@ in {
           directory = "/var/tmp";
           mode = "0777";
         }
-        {
-          directory = "/var/tmp/nix-daemon";
-          mode = "0777";
-        }
       ];
       boot.initrd.systemd.initrdBin = lib.mkIf cfg.enable scriptDeps;
       boot.initrd.systemd.services = lib.mkIf cfg.enable {

@@ -23,6 +23,15 @@ in {
     })
     {
       systemd.services.nix-daemon.environment.TMPDIR = "/var/tmp/nix-daemon";
+      systemd.tmpfiles.rules = lib.lists.optionals (!config.kdn.hw.disks.enable) [
+        "d /var/tmp/nix-daemon 0777 root root"
+      ];
+      kdn.hw.disks.persist."disposable".directories = [
+        {
+          directory = "/var/tmp/nix-daemon";
+          mode = "0777";
+        }
+      ];
     }
     (let
       content = let
