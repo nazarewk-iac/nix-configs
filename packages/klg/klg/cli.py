@@ -404,7 +404,7 @@ async def plan_month(period, path, write):
     result = await klog.to_json(path)
     result.plan_month(
         monthly_hours=plan.monthly_hours,
-        daily_hours=plan.daily_hours,
+        daily_minutes=plan.daily_minutes,
         period=pendulum.parse(period),
         day_off_tags=plan.day_off_tags,
         not_day_off_tags=plan.not_day_off_tags,

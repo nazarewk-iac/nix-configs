@@ -151,7 +151,7 @@ class ReportConfig:
 @dataclasses.dataclass
 class PlanConfig:
     monthly_hours: int | None = None
-    daily_hours: int | None = 8
+    daily_minutes: int | None = 8 * 60
     day_off_tags: set = frozenset(["#off"])
     not_day_off_tags: set = frozenset(["#nooff"])
     day_skip_tags: set = frozenset(["#noplan"])

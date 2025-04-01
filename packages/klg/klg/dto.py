@@ -429,7 +429,7 @@ class Result(Base):
     def plan_month(
         self,
         monthly_hours: int = None,
-        daily_hours: int = 8,
+        daily_minutes: int = None,
         now: pendulum.DateTime = None,
         period: pendulum.DateTime = None,
         day_off_tags: set = frozenset(["#off"]),
@@ -444,6 +444,9 @@ class Result(Base):
         now_date = now.date()
         period = (period or now).replace(day=1)
         period_date = period.date()
+
+        if daily_minutes is None:
+            daily_minutes = 8 * 60
 
         date: pendulum.Date
         by_date: dict[pendulum.Date, list[Record]] = defaultdict(list)
@@ -507,7 +510,7 @@ class Result(Base):
         if monthly_hours is not None:
             to_plan_mins += monthly_hours * 60
         else:
-            to_plan_mins += len(workdays) * daily_hours * 60
+            to_plan_mins += len(workdays) * daily_minutes
 
         if not modifiable_records:
             return
