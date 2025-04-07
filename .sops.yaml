@@ -35,27 +35,14 @@ keys:
     # converting SSH key to `age` identity:
     #  ssh-to-age </etc/ssh/ssh_host_ed25519_key.pub
     #  ssh-keyscan moss.kdn.im | grep ' ssh-ed25519 ' | ssh-to-age
-    oams:
-      age:
-        - &ssh-oams age1apym9pk5y5nvem3whc0zm5apnjw9ycxp490kspdj7m45qs7zqacsnne7yr
-    moss:
-      age:
-        - &ssh-moss age1n32gwqk35302kl4k2q2rwys2dzwasza596zknrfgp2nwvpt2rqms4xzc9n
-    etra:
-      age:
-        - &ssh-etra age1mjjz7t44e777szehss7ywv2lpwu53mjnvzvrqsyt27apwpew6fsqxqt3cj
-    brys:
-      age:
-        - &ssh-brys age1ysq2nvh5vkxra8gj74meqvfpc6axh5nv9sxn62s3mj3lz9987exqweqp0p
-    pryll:
-      age:
-        - &ssh-pryll age1lw083cnx8c5u29kvr3q8v90pkuapmfxxqvr8khzjmzxpfrjs8c8qvs3y7q
-    faro:
-      age:
-        - &ssh-faro age1sxyd3g9gg79vgdw2gpt9v4tjqaz9pfmyer39n2wwmelsutp7d4vqf4rrxm
-    briv:
-      age:
-        - &ssh-briv age1fvzlv8tvmlsmes0apyrf4fwrcsyj5c959tnq36njfm2ng464a5sq7akkat
+    briv: {age: [&ssh-briv age1fvzlv8tvmlsmes0apyrf4fwrcsyj5c959tnq36njfm2ng464a5sq7akkat]}
+    brys: {age: [&ssh-brys age1ysq2nvh5vkxra8gj74meqvfpc6axh5nv9sxn62s3mj3lz9987exqweqp0p]}
+    etra: {age: [&ssh-etra age1mjjz7t44e777szehss7ywv2lpwu53mjnvzvrqsyt27apwpew6fsqxqt3cj]}
+    faro: {age: [&ssh-faro age1sxyd3g9gg79vgdw2gpt9v4tjqaz9pfmyer39n2wwmelsutp7d4vqf4rrxm]}
+    moss: {age: [&ssh-moss age1n32gwqk35302kl4k2q2rwys2dzwasza596zknrfgp2nwvpt2rqms4xzc9n]}
+    oams: {age: [&ssh-oams age1apym9pk5y5nvem3whc0zm5apnjw9ycxp490kspdj7m45qs7zqacsnne7yr]}
+    obler: {age: [&ssh-obler age15ecsjjt9j7fz5lqpe3e0d3u7uwzghwrfugv6725rn253e92hjagqzqk7t9]}
+    pryll: {age: [&ssh-pryll age1lw083cnx8c5u29kvr3q8v90pkuapmfxxqvr8khzjmzxpfrjs8c8qvs3y7q]}
 
 creation_rules:
   - path_regex: 'dns\.sops\.[^.]+$'
@@ -69,13 +56,14 @@ creation_rules:
   - path_regex: '\.unattended\.sops\.[^.]+$'
     key_groups:
       - age:
+          - *ssh-briv
           - *ssh-brys
           - *ssh-etra
+          - *ssh-faro
           - *ssh-moss
           - *ssh-oams
+          - *ssh-obler
           - *ssh-pryll
-          - *ssh-faro
-          - *ssh-briv
           - *yk-etra-unattended
           - *yk-pryll-unattended
           # defaults

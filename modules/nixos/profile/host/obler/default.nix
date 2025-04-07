@@ -53,9 +53,10 @@ in {
       };
 
       kdn.fs.disko.luks-zfs.enable = true;
-      kdn.fs.disko.luks-zfs.decryptRequiresUnits = [
-        "dev-bus-usb-001-002.device"
-      ];
+      # TODO: 2025-04-07: this doesn't work
+      #kdn.fs.disko.luks-zfs.decryptRequiresUnits = [
+      #  "dev-bus-usb-001-002.device"
+      #];
     }
     (import ./disko.nix {
       inherit lib;

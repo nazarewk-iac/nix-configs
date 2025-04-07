@@ -47,14 +47,34 @@ in {
       services.asusd.enableUserService = true;
       home-manager.sharedModules = [
         (args: let
-          bin = lib.getExe' config.services.asusd.package;
-          exec = cmd: args: "exec '${bin cmd} ${args}'";
+          run = lib.getExe (pkgs.writeShellApplication {
+            name = "kdn-asusctl";
+            runtimeInputs = with pkgs; [
+              config.services.asusd.package
+              libnotify
+              coreutils
+            ];
+            text = ''
+              rotate-cpu-profile() {
+                asusctl profile --next
+                notify-send "CPU profile" "Current CPU profile: $(asusctl profile --profile-get)"
+              }
+
+              rotate-keyboard-brightness() {
+                to="''${1:-"next"}"
+                asusctl "--$to-kbd-bright"
+                notify-send "Keyboard LED brightness" "$(asusctl --kbd-bright | tail -n1)"
+              }
+
+              exec "$@"
+            '';
+          });
         in {
           wayland.windowManager.sway.config.keybindings = with config.kdn.desktop.sway.keys; {
-            "${oams.top.fan}" = exec "asusctl" "profile -n";
-            "${oams.top.rog}" = exec "rog-control-center" "";
-            "${oams.fn.f2}" = exec "asusctl" "--prev-kbd-bright";
-            "${oams.fn.f3}" = exec "asusctl" "--next-kbd-bright";
+            "${oams.top.fan}" = "exec '${run} rotate-cpu-profile'";
+            "${oams.top.rog}" = "exec '${run} rog-control-center'";
+            "${oams.fn.f2}" = "exec '${run} rotate-keyboard-brightness prev'";
+            "${oams.fn.f3}" = "exec '${run} rotate-keyboard-brightness next'";
             "${shift}+${super}+P" = "output eDP-1 toggle";
           };
         })

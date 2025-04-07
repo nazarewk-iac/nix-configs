@@ -8,6 +8,7 @@
 in {
   options.kdn.profile.machine.basic = {
     enable = lib.mkEnableOption "basic machine profile for interactive use";
+    boot-debug.enable = lib.mkEnableOption "additional boot debugging config";
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
@@ -111,7 +112,7 @@ in {
         lsix # image thumbnails in terminal
       ];
     }
-    (lib.mkIf config.boot.initrd.systemd.enable {
+    (lib.mkIf (config.boot.initrd.systemd.enable && cfg.boot-debug.enable) {
       specialisation.debug = {
         inheritParentConfig = true;
         configuration = {
