@@ -20,5 +20,4 @@
 
 !*.md
 !*.py
-!poetry.lock
-!pyproject.toml
+!/requirements.txt

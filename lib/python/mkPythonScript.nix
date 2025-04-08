@@ -7,8 +7,41 @@
   python, # pkgs.python313
   # defaults
   imageName ? name,
-  scriptFile ? (src + /${name}.py),
-  requirementsFile ? (src + /requirements.txt),
+  pythonModule ? "",
+  scriptFile ? (
+    # TODO: switch this to running python module directly instead?
+    if builtins.pathExists (src + /${name}.py)
+    then (src + /${name}.py)
+    else pkgs.writeText "${name}-script.py" scriptFileText
+  ),
+  scriptFileText ? "",
+  pyproject ? (
+    if builtins.pathExists (src + /pyproject.toml)
+    then src + /pyproject.toml
+    else
+      pkgs.writers.writeTOML "${name}-pyproject.toml" (pyprojectData
+        // {
+          build-system =
+            {
+              requires = ["hatchling >= 1.26"];
+              build-backend = "hatchling.build";
+            }
+            // (pyprojectData.build-system or {});
+          project =
+            {
+              name = name;
+              version = "0.0.1";
+            }
+            // (pyprojectData.build-system or {});
+        })
+  ),
+  pyprojectData ? {},
+  requirementsFile ? (
+    if builtins.pathExists (src + /requirements.txt)
+    then src + /requirements.txt
+    else pkgs.writeText "${name}-requirements.txt" requirementsFileText
+  ),
+  requirementsFileText ? "",
   devRequirementsFile ? (src + /requirements.dev.txt),
   containerTag ? "latest",
   devPackages ? (pp: with pp; [pip-chill]),
@@ -40,13 +73,40 @@
 
   pythonInstance = python.override {inherit packageOverrides;};
 
+  theSrc = pkgs.symlinkJoin {
+    name = "${name}-src";
+    paths = [
+      src
+      (pkgs.runCommand "${name}-src-generated" {} ''
+        mkdir -p "$out"
+        cd "$out"
+        ln -s ${pyproject} pyproject.toml
+        ln -s ${requirementsFile} requirements.txt
+      '')
+    ];
+  };
+
   mkEnv = depsFn:
     lib.pipe pythonInstance [
       (p:
         p.buildEnv.override (old:
           buildEnvOverride (old
             // {
-              extraLibs = (old.extraLibs or []) ++ depsFn p.pkgs;
+              extraLibs =
+                (old.extraLibs or [])
+                ++ [
+                  (python.pkgs.buildPythonPackage {
+                    pname = name;
+                    version = "0.0.1";
+                    pyproject = true;
+                    src = theSrc;
+                    buildInputs = with p.pkgs; [
+                      hatchling
+                    ];
+
+                    dependencies = depsFn p.pkgs;
+                  })
+                ];
             })))
       (env:
         if runtimeDeps == []
@@ -101,13 +161,22 @@
       config.Env = lib.attrsets.mapAttrsToList (name: value: "${name}=${value}") imageEnv;
     });
   };
-  pythonWriter = pkgs.writers.makeScriptWriter {
-    interpreter = lib.getExe releaseEnv;
-  };
-  script = lib.trivial.pipe scriptFile [
-    builtins.readFile
-    (pythonWriter "/bin/${name}")
-    (pkg: pkg // extraOutputs)
-  ];
+  script =
+    (
+      if pythonModule != ""
+      then
+        (pkgs.writeShellApplication {
+          name = name;
+          text = '''${lib.getExe releaseEnv}' -m '${pythonModule}' "$@"'';
+        })
+      else
+        (
+          pkgs.writers.makeScriptWriter
+          {interpreter = lib.getExe releaseEnv;}
+          "/bin/${name}"
+          (builtins.readFile scriptFile)
+        )
+    )
+    // extraOutputs;
 in
   script

@@ -101,6 +101,9 @@ in {
       vlan.pic.name = "pic";
       vlan.pic.iface = vlan.pic.name;
       vlan.pic.id = 1859;
+      vlan.drek.name = "drek";
+      vlan.drek.iface = vlan.drek.name;
+      vlan.drek.id = 3547;
     in {
       /*
       Sets up:
@@ -128,7 +131,10 @@ in {
         bridgeConfig = {};
         linkConfig.RequiredForOnline = "carrier";
         networkConfig = {
-          VLAN = [vlan.pic.iface];
+          VLAN = [
+            vlan.pic.iface
+            vlan.drek.iface
+          ];
 
           DHCP = true;
           # `UseDomains = true` for adding search domain `route` for just DNS queries
@@ -143,6 +149,7 @@ in {
         dhcpV4Config.RouteMetric = 100;
         dhcpV6Config.RouteMetric = 100;
       };
+
       systemd.network.netdevs."50-${vlan.pic.name}" = {
         netdevConfig.Kind = "vlan";
         netdevConfig.Name = vlan.pic.iface;
@@ -160,6 +167,25 @@ in {
         };
         dhcpV4Config.RouteMetric = 1000;
         dhcpV6Config.RouteMetric = 1000;
+      };
+
+      systemd.network.netdevs."50-${vlan.drek.name}" = {
+        netdevConfig.Kind = "vlan";
+        netdevConfig.Name = vlan.drek.iface;
+        vlanConfig.Id = vlan.drek.id;
+      };
+      systemd.network.networks."50-${vlan.drek.name}" = {
+        matchConfig.Name = vlan.drek.iface;
+        networkConfig = {
+          DHCP = true;
+          IPv6AcceptRA = true;
+          LinkLocalAddressing = "ipv6";
+
+          IPv6PrivacyExtensions = true;
+          IPv6LinkLocalAddressGenerationMode = "stable-privacy";
+        };
+        dhcpV4Config.RouteMetric = 1100;
+        dhcpV6Config.RouteMetric = 1100;
       };
     })
 

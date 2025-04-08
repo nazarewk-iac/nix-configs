@@ -31,7 +31,7 @@
 
       while [[ $# -gt 0 ]]; do
         case "$1" in
-          --ignore-error) IGNORE_ERROR=1 shift ;;
+          --ignore-error) IGNORE_ERROR=1 ; shift ;;
           *) args+=("$1") ; shift ;;
         esac
       done

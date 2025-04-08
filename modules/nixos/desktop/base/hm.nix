@@ -24,7 +24,7 @@ in {
   };
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
-      services.caffeine.enable = true;
+      #services.caffeine.enable = lib.mkDefault true;
 
       xdg.configFile."wofi/config".source = ./wofi/config;
 

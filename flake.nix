@@ -50,7 +50,6 @@
   inputs.nixos-anywhere.url = "github:numtide/nixos-anywhere";
   inputs.nixos-generators.url = "github:nix-community/nixos-generators";
   inputs.nur.url = "github:nix-community/NUR";
-  inputs.poetry2nix.url = "github:nix-community/poetry2nix";
   inputs.preservation.url = "github:nix-community/preservation";
   inputs.rust-overlay.url = "github:oxalica/rust-overlay";
   inputs.nixos-hardware.url = "github:nixos/nixos-hardware";
@@ -63,13 +62,6 @@
   inputs.sops-nix.url = "github:brianmcgee/sops-nix/feat/age-plugins";
   inputs.sops-upstream.flake = false;
   inputs.sops-upstream.url = "github:getsops/sops";
-  #inputs.sops.follows = "sops-upstream";
-  inputs.sops.flake = false;
-  #inputs.sops.url = "github:nazarewk/sops";
-
-  # pinned due to `go mod tidy` requirement
-  #inputs.sops.url = "github:brianmcgee/sops/feat/age-plugins";
-  inputs.sops.url = "github:getsops/sops/eca80c22cb2e5b84800d7b5025cbb01a07edee2f";
 
   /*
   * dependencies
@@ -108,10 +100,6 @@
   inputs.nixos-anywhere.inputs.treefmt-nix.follows = "treefmt-nix";
   inputs.nixos-generators.inputs.nixlib.follows = "nixpkgs-lib";
   inputs.nixos-generators.inputs.nixpkgs.follows = "nixpkgs";
-  inputs.poetry2nix.inputs.flake-utils.follows = "flake-utils";
-  inputs.poetry2nix.inputs.nix-github-actions.follows = "empty";
-  inputs.poetry2nix.inputs.nixpkgs.follows = "nixpkgs";
-  inputs.poetry2nix.inputs.treefmt-nix.follows = "treefmt-nix";
   inputs.rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
   inputs.sops-nix.inputs.nixpkgs.follows = "nixpkgs";
   inputs.stylix.inputs.flake-compat.follows = "flake-compat";
@@ -134,7 +122,6 @@
     systems = import inputs.systems;
 
     flake.overlays.packages = inputs.nixpkgs.lib.composeManyExtensions [
-      inputs.poetry2nix.overlays.default
       (final: prev: {
         kdn = (prev.kdn or {}) // (final.callPackages ./packages {});
       })

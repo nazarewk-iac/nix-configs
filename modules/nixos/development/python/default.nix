@@ -105,7 +105,7 @@ in {
     environment.systemPackages = with pkgs; [
       # python software not available in `python.withPackages`
       pipenv
-      poetry
+      #poetry # TODO: 2024-04-07 didn't build
 
       # Note: higher `prio` value means lower prioritity during install
       (lib.meta.setPrio 1 (mkPython defaultPython))

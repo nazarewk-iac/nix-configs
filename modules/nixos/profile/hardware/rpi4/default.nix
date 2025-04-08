@@ -131,9 +131,6 @@ in {
               pyserial
               smbus
             '';
-            buildEnvOverride = old: {
-              extraLibs = old.extraLibs or [] ++ lib.optional (python.pkgs.hasPythonModule src) src;
-            };
           };
       in {
         kdn.profile.hardware.rpi4.i2c.enable = true;

@@ -12,6 +12,14 @@ in {
       default = false;
       apply = value: value && config.kdn.desktop.enable;
     };
+    theme = lib.mkOption {
+      type = with lib.types; str;
+      default = "kde6";
+    };
+    style = lib.mkOption {
+      type = with lib.types; str;
+      default = "breeze";
+    };
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
@@ -27,8 +35,23 @@ in {
     }
     {
       qt.enable = true;
-      qt.style = "breeze";
-      qt.platformTheme = "kde";
+      qt.platformTheme = lib.mkForce cfg.theme;
+      qt.style = lib.mkForce cfg.style;
+
+      home-manager.sharedModules = [
+        {
+          # see https://github.com/nix-community/home-manager/issues/5098#issuecomment-2352172073
+          qt.enable = true;
+          qt.platformTheme.package = with pkgs.kdePackages; [
+            plasma-integration
+            # I don't remember why I put this is here, maybe it fixes the theme of the system setttings
+            systemsettings
+          ];
+          qt.style.package = pkgs.kdePackages.breeze;
+          qt.style.name = lib.mkForce cfg.style;
+          systemd.user.sessionVariables.QT_QPA_PLATFORMTHEME = lib.mkForce cfg.theme;
+        }
+      ];
 
       # see https://discourse.nixos.org/t/kde-widgets-look-off-on-a-freshly-installed-nixos/13098
       environment.systemPackages = with pkgs.kdePackages; [
