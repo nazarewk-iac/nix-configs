@@ -37,6 +37,7 @@ in {
       # Convert HCL <-> JSON
       python3Packages.bc-python-hcl2
       hcl2json
+      sqlite
     ];
   };
 }
