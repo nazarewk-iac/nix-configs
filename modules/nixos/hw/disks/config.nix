@@ -21,6 +21,10 @@ in {
         (builtins.mapAttrs (persistName: baseCfg: let
           persists = cfg.persist."${persistName}";
         in {
+          commonMountOptions = [
+            "x-gvfs-hide" # hide the mounts by default
+            "x-gdu.hide" # hide the mounts by default
+          ];
           persistentStoragePath = baseCfg.mountpoint;
           inherit (persists) directories files;
           users =

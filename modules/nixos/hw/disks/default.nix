@@ -173,11 +173,24 @@ in {
           "/etc/nix/netrc" # TODO: move this out
           "/etc/nix/nix.sensitive.conf" # TODO: move this out
         ];
+        home-manager.sharedModules = [
+          {
+            kdn.hw.disks.persist."usr/data".directories = [".local/share/nix"];
+          }
+        ];
       }
       {
         home-manager.sharedModules = [
           {
-            kdn.hw.disks.persist."usr/data".directories = [".local/share/nix"];
+            kdn.hw.disks.persist."usr/cache".directories = [
+              "Downloads"
+            ];
+            kdn.hw.disks.persist."usr/data".directories = [
+              "Documents"
+              "Desktop"
+              "Pictures"
+              "Videos"
+            ];
           }
         ];
       }
