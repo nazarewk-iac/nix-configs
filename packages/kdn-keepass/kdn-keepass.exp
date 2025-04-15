@@ -15,7 +15,7 @@ if {[info exists ::env(NOTIFY_SOCKET)]} {
   log kdn-keepassxc:systemd "MAINPID set to $keepassxc_pid"
 }
 
-set password [exec pass "$passpath"]
+set password [exec pass "$passpath" 2>/dev/null]
 expect {
   "Another instance of KeePassXC is already running." { exit 1 }
   "Database password: " {
