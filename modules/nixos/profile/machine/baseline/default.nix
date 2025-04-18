@@ -444,9 +444,5 @@ in {
         ];
       }
     )
-    {
-      # TODO: remove when rocm-llvm is fixed https://github.com/NixOS/nixpkgs/issues/369433
-      hardware.amdgpu.opencl.enable = false;
-    }
   ]);
 }
