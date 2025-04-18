@@ -79,6 +79,19 @@ in {
       };
     }
     {
+      /*
+         TODO: does it need opening up the ports at all?
+      /*
+      networking.firewall.interfaces = lib.pipe activeCfgs [
+        (builtins.map (nbCfg: {
+          name = nbCfg.interface;
+          value = {
+            allowedUDPPorts = [53 5353];
+          };
+        }))
+        builtins.listToAttrs
+      ];
+      */
       services.netbird.clients = lib.pipe activeCfgs [
         (builtins.map (nbCfg: {
           name = nbCfg.name;
