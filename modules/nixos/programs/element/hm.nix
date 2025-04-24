@@ -12,8 +12,12 @@ in {
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
+      /*
+      TODO: try out gomuks https://github.com/tulir/gomuks for better client responsiveness?
+      */
       kdn.programs.apps.element-desktop = {
         enable = true;
+        package.original = pkgs.element-desktop;
         dirs.cache = [];
         dirs.config = ["Element"];
         dirs.data = [];
