@@ -130,6 +130,11 @@ in {
       kdn.programs.keepassxc.service.searchDirs = ["${nc.abs}/important/keepass"];
       kdn.programs.keepassxc.service.fileName = "drag0nius.kdbx";
     })
+    (lib.mkIf (hasWorkstation && config.kdn.desktop.enable) {
+      home.packages = with pkgs; [
+        webex # meetings/screen sharing # TODO: didn't start the meeting on 2025-04-24
+      ];
+    })
     (lib.mkIf hasSway (import ./mimeapps.nix arguments).config)
     (lib.mkIf hasSway {
       systemd.user.services.keepassxc.Unit = {
