@@ -28,6 +28,7 @@ in {
       git
       jujutsu
       git-utils
+      gh
     ];
   };
 }
