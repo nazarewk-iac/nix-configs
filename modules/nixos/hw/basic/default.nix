@@ -17,7 +17,7 @@ in {
         glxinfo
       ]
       ++ lib.lists.optionals (with pkgs.stdenv; isLinux && isx86_64) [
-        hardinfo
+        hardinfo2 # 2025-04-28: error: 'hardinfo' has been removed as it was abandoned upstream. Consider using 'hardinfo2' instead.
       ]
       ++ [
         hddtemp

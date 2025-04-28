@@ -109,11 +109,12 @@ in {
 
       # Note: higher `prio` value means lower prioritity during install
       (lib.meta.setPrio 1 (mkPython defaultPython))
+      (lib.meta.setPrio 17 (renamedBinariesOnly "%s.3.14-ft" python314FreeThreading))
+      (lib.meta.setPrio 17 (renamedBinariesOnly "%s.3.14" python314))
       (lib.meta.setPrio 18 (renamedBinariesOnly "%s.3.13-ft" python313FreeThreading))
       (lib.meta.setPrio 19 (renamedBinariesOnly "%s.3.13" python313))
       (lib.meta.setPrio 20 (renamedBinariesOnly "%s.3.12" python312))
       (lib.meta.setPrio 21 (renamedBinariesOnly "%s.3.11" python311))
-      (lib.meta.setPrio 22 (renamedBinariesOnly "%s.3.9" python39))
 
       graphviz
     ];

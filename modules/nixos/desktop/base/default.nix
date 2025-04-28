@@ -62,8 +62,7 @@ in {
       kdn.programs.ydotool.enable = true;
       programs.wshowkeys.enable = true;
       services.accounts-daemon.enable = true;
-      services.dleyna-renderer.enable = true;
-      services.dleyna-server.enable = true;
+      services.dleyna.enable = true;
       services.gvfs.enable = true;
       services.power-profiles-daemon.enable = true;
       services.udisks2.enable = true;

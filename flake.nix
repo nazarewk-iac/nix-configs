@@ -42,7 +42,7 @@
   inputs.home-manager.url = "github:nix-community/home-manager";
   inputs.lanzaboote.url = "github:nix-community/lanzaboote";
   # requires main instead of `stable` due to `editline-lix` error
-  inputs.lix-module.url = "git+https://git.lix.systems/lix-project/nixos-module.git?ref=main";
+  inputs.lix-module.url = "git+https://git.lix.systems/lix-project/nixos-module.git?ref=release-2.92";
   inputs.microvm.url = "github:astro/microvm.nix";
   inputs.nix-darwin.url = "github:LnL7/nix-darwin";
   inputs.nix-homebrew.url = "github:zhaofengli/nix-homebrew";
@@ -69,7 +69,6 @@
   inputs.argon40-nix.inputs.flake-utils.follows = "flake-utils";
   inputs.argon40-nix.inputs.nixpkgs.follows = "nixpkgs";
   inputs.brew-nix.inputs.brew-api.follows = "brew-api";
-  inputs.brew-nix.inputs.flake-utils.follows = "flake-utils";
   inputs.brew-nix.inputs.nix-darwin.follows = "nix-darwin";
   inputs.brew-nix.inputs.nixpkgs.follows = "nixpkgs";
   inputs.disko.inputs.nixpkgs.follows = "nixpkgs";
@@ -191,10 +190,10 @@
           nix repl "$confnix" "$@"
         ''}/bin/repl";
       };
-      apps.nixpkgs-update = {
+      apps.update = {
         type = "app";
         program = lib.getExe (pkgs.writeShellApplication {
-          name = "nixpkgs-update";
+          name = "flake-update";
           runtimeInputs = with pkgs; [
             # TODO: add `update.py` dependency here
             git
@@ -202,7 +201,7 @@
             pass
             python3
           ];
-          text = builtins.readFile ./nixpkgs-update.sh;
+          text = builtins.readFile ./flake-update.sh;
         });
       };
       checks = pkgs.callPackages ./checks {kdnArg = self.specialArgs;};

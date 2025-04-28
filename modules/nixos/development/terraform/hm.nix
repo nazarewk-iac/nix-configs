@@ -24,8 +24,8 @@ in {
 
     home.file.".tool-versions".source = ./.tool-versions;
 
-    programs.bash.initExtra = config.programs.zsh.initExtra;
-    programs.zsh.initExtra = ''
+    programs.bash.initExtra = config.programs.zsh.initContent;
+    programs.zsh.initContent = ''
       mkdir -p "${config.xdg.cacheHome}/tofu/plugin-cache"
     '';
 
