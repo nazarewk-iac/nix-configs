@@ -2,7 +2,7 @@
 set -xeEuo pipefail
 trap 'echo "Error when executing $BASH_COMMAND at line $LINENO!" >&2' ERR
 
-# nix run '.#nixpkgs-update"
+# nix run '.#update'
 
 pushd "$(git rev-parse --show-toplevel)"
 

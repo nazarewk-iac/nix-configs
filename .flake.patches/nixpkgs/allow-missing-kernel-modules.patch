@@ -1,0 +1,52 @@
+From 987e8139617e37c86c33891697c6f3a9bf21021e Mon Sep 17 00:00:00 2001
+From: Will Fancher <elvishjerricco@gmail.com>
+Date: Wed, 22 Jan 2025 21:25:39 -0500
+Subject: [PATCH] nixos/stage-1: Add option for allowing missing modules
+
+---
+ nixos/modules/system/boot/kernel.nix  | 18 ++++++++++++++++++
+ nixos/modules/system/boot/stage-1.nix |  2 +-
+ 2 files changed, 19 insertions(+), 1 deletion(-)
+
+diff --git a/nixos/modules/system/boot/kernel.nix b/nixos/modules/system/boot/kernel.nix
+index d2a7b74b8c5bebd5bc0fc089ffc1df8199ee53f4..2a7e5a7d7647121f9841fca77bbbd84ea5f7dd50 100644
+--- a/nixos/modules/system/boot/kernel.nix
++++ b/nixos/modules/system/boot/kernel.nix
+@@ -242,6 +242,24 @@ in
+       '';
+     };
+ 
++    boot.initrd.allowMissingModules = mkOption {
++      type = types.bool;
++      default = false;
++      description = ''
++        Whether the initrd can be built even though modules listed in
++        {option}`boot.initrd.kernelModules` or
++        {option}`boot.initrd.availableKernelModules` are missing from
++        the kernel. This is useful when combining configurations that
++        include a lot of modules, such as
++        {option}`hardware.enableAllHardware`, with kernels that don't
++        provide as many modules as typical NixOS kernels.
++
++        Note that enabling this is discouraged. Instead, try disabling
++        individual modules by setting e.g.
++        `boot.initrd.availableKernelModules.foo = lib.mkForce false;`
++      '';
++    };
++
+     system.modulesTree = mkOption {
+       type = types.listOf types.path;
+       internal = true;
+diff --git a/nixos/modules/system/boot/stage-1.nix b/nixos/modules/system/boot/stage-1.nix
+index 6e3be0d1a335c3d68cd29cc638184e7bda6cc384..e505be94ae52047602b1e4e8cced6135f59d7a9c 100644
+--- a/nixos/modules/system/boot/stage-1.nix
++++ b/nixos/modules/system/boot/stage-1.nix
+@@ -18,7 +18,7 @@ let
+     rootModules = config.boot.initrd.availableKernelModules ++ config.boot.initrd.kernelModules;
+     kernel = config.system.modulesTree;
+     firmware = config.hardware.firmware;
+-    allowMissing = false;
++    allowMissing = config.boot.initrd.allowMissingModules;
+     inherit (config.boot.initrd) extraFirmwarePaths;
+   };
+ 
