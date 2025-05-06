@@ -188,7 +188,7 @@ in {
         dhcpV6Config.RouteMetric = 1100;
       };
     })
-
+    /*
     (let
       iface = "vm-nbt-1";
       microvmPersistNames = ["microvm"] ++ builtins.attrNames config.kdn.hw.disks.base;
@@ -246,6 +246,7 @@ in {
         };
       };
     })
+    */
     {
       kdn.services.zammad.enable = false;
     }
