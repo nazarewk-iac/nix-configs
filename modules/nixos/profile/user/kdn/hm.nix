@@ -31,7 +31,8 @@ in {
         # don't search/expand single-word searchbars
         programs.firefox.policies.GoToIntranetSiteForSingleWordEntryInAddressBar = true;
 
-        kdn.programs.firefox.profileNames = ["kdn"];
+        kdn.programs.firefox.profileNames = ["kdn" "jp"];
+        programs.firefox.profiles.jp.id = 1;
         programs.firefox.profiles.kdn = {
           id = 0;
           settings."widget.use-xdg-desktop-portal.mime-picker" = "1";
