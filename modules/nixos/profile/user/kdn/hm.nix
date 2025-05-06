@@ -58,7 +58,7 @@ in {
           work-2 = {
             id = 4;
             icon = "briefcase";
-            color = "turquoise";
+            color = "purple";
           };
           en = {
             id = 5;
