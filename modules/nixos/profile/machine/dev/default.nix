@@ -17,8 +17,8 @@ in {
       jose # JSON Web Token tool, https://github.com/latchset/jose
     ];
 
+    home-manager.users.kdn.kdn.development.cloud.aws.enable = true;
     kdn.development.ansible.enable = true;
-    kdn.development.cloud.aws.enable = true;
     kdn.development.cloud.azure.enable = false;
     kdn.development.cloud.enable = true;
     kdn.development.data.enable = true;
@@ -54,7 +54,6 @@ in {
     kdn.development.rust.enable = true;
     kdn.development.terraform.enable = true;
     kdn.development.web.enable = true;
-    kdn.programs.aws-vault.enable = true;
     kdn.toolset.ide.enable = true;
     services.plantuml-server.enable = false; # TODO: fix this?
   };

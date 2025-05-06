@@ -11,9 +11,8 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    kdn.programs.aws-vault.enable = true;
-
-    environment.systemPackages = with pkgs; [
+    kdn.hw.disks.persist."usr/data".directories = [".aws"];
+    home.packages = with pkgs; [
       # AWS
       awscli2
       amazon-ecs-cli
