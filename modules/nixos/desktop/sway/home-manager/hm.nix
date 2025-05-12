@@ -12,7 +12,11 @@
 
   ydotool-paste = pkgs.writeShellApplication {
     name = "ydotool-paste";
-    runtimeInputs = with pkgs; [ydotool wl-clipboard];
+    runtimeInputs = with pkgs; [
+      ydotool
+      wl-clipboard
+      # TODO: move it to it's own package and refactor to wait for input before starting to type
+    ];
     text = ''
       sleep "''${1:-0.5}"
       wl-paste --no-newline | ydotool type --file=-
