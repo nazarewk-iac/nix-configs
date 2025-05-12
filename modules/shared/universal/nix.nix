@@ -41,6 +41,7 @@ in {
       "litestream-0.3.13"
       "electron-28.3.3" # loqseq dependency
       "electron-27.3.11" # loqseq dependency? 2024-07-12
+      "olm-3.2.16" # required for Matrix clients
     ];
   };
 }
