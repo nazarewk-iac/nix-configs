@@ -135,7 +135,6 @@
         inherit lib;
 
         nixos-anywhere = inputs.nixos-anywhere.packages."${final.stdenv.system}".default;
-        wezterm = inputs.wezterm.packages."${final.stdenv.system}".default;
       })
       (final: prev:
         if prev.stdenv.isDarwin

@@ -3,6 +3,7 @@
   config,
   pkgs,
   lib,
+  kdn,
   ...
 }: let
   cfg = config.kdn.desktop.base;
@@ -44,30 +45,27 @@ in {
       programs.foot.server.enable = false;
       programs.foot.settings.main.dpi-aware = "no";
       programs.foot.settings.scrollback.lines = 100000;
-
+    }
+    {
       programs.wezterm.enable = true;
       programs.wezterm.extraConfig = lib.mkMerge [
         (lib.mkOrder 1 ''config = {}'')
         ''config.front_end = "WebGpu"''
         (lib.mkOrder 9999 ''return config'')
       ];
-      #stylix.targets.wezterm.enable = true;
-    }
-    {
       nixpkgs.overlays = [
         (final: prev: {
-          wezterm = prev.wezterm.overrideAttrs {
-            patches =
-              prev.patches
-              or []
-              ++ [
-                (final.fetchpatch {
-                  url = "https://patch-diff.githubusercontent.com/raw/wez/wezterm/pull/6508.patch";
-                  sha256 = "sha256-eMpg206tUw8m0Sz+3Ox7HQnejPsWp0VHVw169/Rt4do=";
-                })
-                .outPath
-              ];
-          };
+          wezterm = let
+            upstream = kdn.inputs.wezterm.packages."${final.stdenv.system}".default;
+            base = prev.wezterm;
+            #base = upstream;
+          in
+            base.overrideAttrs {
+              patches =
+                (prev.patches or [])
+                ++ [
+                ];
+            };
         })
       ];
     }

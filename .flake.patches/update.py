@@ -55,6 +55,11 @@ def process_patch(path: Path, patch: dict):
         else:
             logging.warning(f"adding patch: {path}")
         new.rename(path)
+        run(
+            f"add patch to git: {path}",
+            ["git", "add", path],
+            cwd=path.parent,
+        )
         return
 
     raise NotImplementedError()
