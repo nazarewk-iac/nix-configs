@@ -20,6 +20,7 @@ fixes issues with lack of HTTP header sanitization in .NET Core, see:
     renames."Vicuña" = "Vicuna";
     renames."Vicuna" = "Vicuna";
     renames."Warbler" = "Warbler";
+    renames."Xantusia" = "Xantusia";
   in
     renames."${codeName}" or (throw "Unknown `codeName`: ${codeName}, please add it to `renames` in `ascii-workaround.nix`");
 }

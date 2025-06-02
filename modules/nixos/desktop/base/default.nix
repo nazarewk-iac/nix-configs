@@ -47,7 +47,7 @@ in {
       gtk.iconCache.enable = true;
       home-manager.sharedModules = [
         ({config, ...}: {
-          home.file."${config.gtk.gtk2.configLocation}".force = true;
+          gtk.gtk2.force = true;
           xdg.configFile."fontconfig/conf.d/10-hm-fonts.conf".force = true;
           xdg.configFile."gtk-3.0/gtk.css".force = true;
           xdg.configFile."gtk-3.0/settings.ini".force = true;

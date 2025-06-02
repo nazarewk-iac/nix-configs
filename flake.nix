@@ -90,8 +90,6 @@
   inputs.microvm.inputs.flake-utils.follows = "flake-utils";
   inputs.microvm.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
-  inputs.nix-homebrew.inputs.nix-darwin.follows = "nix-darwin";
-  inputs.nix-homebrew.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nixcasks.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nixos-anywhere.inputs.disko.follows = "disko";
   inputs.nixos-anywhere.inputs.flake-parts.follows = "flake-parts";

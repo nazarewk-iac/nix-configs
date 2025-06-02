@@ -18,10 +18,6 @@ upstream_input = "{name}-upstream"
 #url = "https://github.com/NixOS/nixpkgs/pull/375975.patch?full_index=1"
 url = "https://github.com/NixOS/nixpkgs/commit/987e8139617e37c86c33891697c6f3a9bf21021e.patch?full_index=1"
 
-[patch.nixpkgs.fix-ceph]
-# https://nixpk.gs/pr-tracker.html?pr=406483
-url = "https://github.com/NixOS/nixpkgs/pull/406483.patch?full_index=1"
-
 #[patch.nixpkgs.netbird.gh-compare]
 ## https://github.com/NixOS/nixpkgs/compare/nixos-unstable...nazarewk:netbird-improvements~1.patch?full_index=1
 #repo = "NixOS/nixpkgs"
