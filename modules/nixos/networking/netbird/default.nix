@@ -184,5 +184,12 @@ in {
         builtins.listToAttrs
       ];
     })
+    /*
+    TODO: instance-switcher script:
+      1. confirm whether it's currently active
+      2. turn off all instances (`netbird.target`?)
+      3. start the selected instance
+      4. add a second "proxy" CLI `netbird` to determine which instance is active and run against it?
+    */
   ]);
 }
