@@ -70,5 +70,9 @@ in {
         diffoscope
       ];
     }
+    {
+      kdn.networking.netbird.nbs.idx = 2;
+      services.netbird.clients.nbs.autoStart = false;
+    }
   ]);
 }

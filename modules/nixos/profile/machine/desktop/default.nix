@@ -57,6 +57,49 @@ in {
           #! ${pkgs.bash}/bin/bash
           ${pkgs.wl-clipboard}/bin/wl-paste | ${pkgs.qrencode}/bin/qrencode -o - | ${pkgs.imagemagick}/bin/display
         '')
+        (pkgs.writeScriptBin "qrdecode" ''
+          #! ${pkgs.bash}/bin/bash
+          set -xeEuo pipefail
+          export PATH="${lib.makeBinPath (with pkgs; [wl-clipboard coreutils zbar gnugrep libnotify])}:$PATH"
+
+          src="''${1:-"''${src:-"clipboard"}"}"
+          dst="''${2:-"''${dst:-"clipboard"}"}"
+
+          case "$src" in
+            clipboard)
+              type="$(wl-paste -l | grep 'image/' | head -n1)"
+              if test -z "$type" ; then
+                notify-send "qrdecode: error" "no image type amongst: $(printf "%s," $(wl-paste -l))"
+                exit 1
+              fi
+              output="$(wl-paste -t "$type" | zbarimg -1 -)"
+              echo "qrdecode: read from clipboard" >&2
+            ;;
+            -)
+              output="$(zbarimg -1 -)"
+              echo "qrdecode: read from stdin" >&2
+            ;;
+            *)
+              output="$(zbarimg -1 "$src")"
+              echo "qrdecode: read from $src" >&2
+            ;;
+          esac
+
+          case "$dst" in
+            clipboard)
+              echo -n "$output" | wl-copy
+              notify-send "qrdecode: success" "decoded to clipboard"
+            ;;
+            -)
+              printf "%s" "$output"
+              echo "qrdecode: decoded to stdout" >&2
+            ;;
+            *)
+              print "%s" >"$dst"
+              echo "qrdecode: decoded to $dst" >&2
+            ;;
+          esac
+        '')
       ];
     }
   ]);
