@@ -45,8 +45,10 @@ in {
       in
         pkgs.runCommand "etc-subuid-subgid" {} (lib.getExe gen);
     in {
-      # with userborn, `/etc/sub{u,g}id` is not managed anymore
+      # WARNING: with userborn, `/etc/sub{u,g}id` is not managed anymore
       services.userborn.enable = true;
+      # with userborn, /etc/passwd & group is dynamically generated and will differ between reboots unless persisted
+      services.userborn.passwordFilesLocation = "/var/lib/nixos/userborn/etc";
 
       environment.etc."subuid".source = content;
       environment.etc."subuid".mode = "0444";
