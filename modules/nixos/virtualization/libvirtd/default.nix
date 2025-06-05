@@ -48,6 +48,15 @@ in {
         cloud-utils # cloud-localds for https://blog.programster.org/create-ubuntu-22-kvm-guest-from-cloud-image
       ];
     }
+    /*
+    This didn't work out in the end
+    {
+    # stable paths for Windows 11 VMs (UEFI), see for context https://kagi.com/assistant/9ca4ce35-25c7-425d-8f8a-65feeb67e106
+      systemd.tmpfiles.rules = [
+        "L+ /var/lib/qemu/share           - - - - ${config.virtualisation.libvirtd.qemu.package}/share/qemu"
+      ];
+    }
+    */
     {
       kdn.hw.disks.persist."usr/data".directories = [
         "/var/lib/libvirt/images"
