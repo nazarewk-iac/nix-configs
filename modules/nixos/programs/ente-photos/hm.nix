@@ -7,8 +7,9 @@
   cfg = config.kdn.programs.ente-photos;
 in {
   options.kdn.programs.ente-photos = {
-    enable = lib.mkEnableOption "ente-photos-desktop setup";
-    package = lib.mkPackageOption pkgs ["kdn" "ente-photos-desktop"] {};
+    enable = lib.mkEnableOption "Ente Photos Desktop setup";
+    #package = lib.mkPackageOption pkgs ["kdn" "ente-photos-desktop"] {};
+    package = lib.mkPackageOption pkgs ["ente-desktop"] {};
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
