@@ -73,6 +73,8 @@ in {
     {
       kdn.networking.netbird.nbs.idx = 2;
       services.netbird.clients.nbs.autoStart = false;
+      kdn.networking.netbird.nbt.idx = 3; # testing client
+      services.netbird.clients.nbt.autoStart = false;
     }
   ]);
 }
