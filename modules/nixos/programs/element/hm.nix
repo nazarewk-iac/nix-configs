@@ -31,6 +31,13 @@ in {
       /*
       TODO: try out gomuks https://github.com/tulir/gomuks for better client responsiveness?
       */
+      home.packages = [
+        (let
+          prev = config.kdn.programs.apps.element-desktop.package.final;
+        in
+          # just run with `element-desktop --disable-gpu` so the window shows properly
+          lib.hiPrio (prev.desktopItem.override {exec = "${prev.meta.mainProgram} --disable-gpu %u";}))
+      ];
       kdn.programs.apps.element-desktop = {
         enable = true;
         package.original = pkgs.element-desktop;
