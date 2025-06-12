@@ -57,7 +57,21 @@ in {
       ];
       home-manager.sharedModules = [
         {
-          #services.easyeffects.enable = true;
+          # https://forum.endeavouros.com/t/tutorial-volume-normalization-on-pipewire/22315
+          services.easyeffects.enable = true;
+          services.easyeffects.extraPresets = let
+            LoudnessEqualizer =
+              lib.pipe {
+                url = "https://raw.githubusercontent.com/Digitalone1/EasyEffects-Presets/32d0f416e7867ccffdab16c7fe396f2522d04b2e/LoudnessEqualizer.json";
+                sha256 = "sha256-lphnEyuRestYTEtspHhkpdG0n2oKzKfrX5L1X7wZB4k=";
+              } [
+                pkgs.fetchurl
+                builtins.readFile
+                builtins.fromJSON
+              ];
+          in {
+            inherit LoudnessEqualizer;
+          };
         }
       ];
       # required by easyeffects
