@@ -33,12 +33,11 @@ is_output_present() {
 
 get_detached_y() {
   printf "%d" 0
-  #swaymsg -rt get_outputs | jq 'map(.rect | .y + .height + (env.detachment_distance | to_number)) | max'
+  #swaymsg -rt get_outputs | jq 'map(.rect | .y + .height + (env.detachment_distance | tonumber)) | max'
 }
 
 get_detached_x() {
-  jq -nS env >&2
-  swaymsg -rt get_outputs | jq 'map(.rect | .x + .width + (env.detachment_distance | to_number)) | max'
+  swaymsg -rt get_outputs | jq 'map(.rect | .x + .width + (env.detachment_distance | tonumber)) | max'
 }
 
 find_wayland_display() {
