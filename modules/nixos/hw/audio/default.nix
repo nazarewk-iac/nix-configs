@@ -26,6 +26,13 @@ in {
       services.pipewire.pulse.enable = true;
       services.pipewire.wireplumber.enable = true;
 
+      services.pipewire.wireplumber.extraConfig.debug = lib.mkIf false {
+        "context.properties" = {
+          "log.level" = 3;
+          "log.rules.enabled" = true;
+        };
+      };
+
       services.pulseaudio.extraModules = [
         pkgs.pulseaudio-modules-bt
       ];
