@@ -13,7 +13,6 @@ in {
       ];
     }
     {
-      kdn.programs.firefox.enable = true;
       home.packages = with pkgs; [
         realvnc-vnc-viewer
       ];

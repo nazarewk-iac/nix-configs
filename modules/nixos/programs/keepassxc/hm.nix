@@ -34,6 +34,7 @@ in {
        see https://github.com/keepassxreboot/keepassxc/blob/02881889d5b3dc533b8afafa47c0b0ac8054f2c1/src/browser/NativeMessageInstaller.cpp#L68-L93
       */
       kdn.programs.firefox.nativeMessagingHosts = [finalPackage];
+      kdn.programs.thunderbird.nativeMessagingHosts = [finalPackage];
       kdn.programs.apps.keepassxc = {
         enable = true;
         dirs.cache = [

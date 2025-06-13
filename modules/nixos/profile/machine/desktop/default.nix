@@ -35,11 +35,11 @@ in {
 
       kdn.services.printing.enable = true;
       kdn.programs.firefox.enable = true;
+      kdn.programs.thunderbird.enable = true;
       kdn.programs.kdeconnect.enable = true;
       environment.systemPackages = with pkgs; [
         libreoffice-qt # non-qt failed to build on 2023-04-07
         # chromium
-        thunderbird
         p7zip
         rar
         system-config-printer
