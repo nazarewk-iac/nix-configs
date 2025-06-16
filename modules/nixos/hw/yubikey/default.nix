@@ -25,7 +25,6 @@ in {
         [xkcdpass yubikey-manager yubikey-personalization yubico-pam]
         ++ lib.optionals config.kdn.desktop.enable (with pkgs; [
           yubioath-flutter
-          yubikey-personalization-gui
         ]);
     }
     {
