@@ -91,7 +91,7 @@ if [[ "${1:-}" == remote=* ]]; then
   fi
 
   pre_args+=(
-    --use-remote-sudo
+    --sudo
   )
 elif [[ -n "${1:-}" && "${1}" != -* ]]; then
   name="${1}"
