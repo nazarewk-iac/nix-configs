@@ -28,6 +28,7 @@ in {
     kdn.development.golang.enable = true;
     kdn.development.java.enable = true;
     kdn.development.k8s.enable = true;
+    kdn.development.llm.online.enable = true;
     /*
     TODO: nickel fails to build:
       nickel>   thread 'main' panicked at core/build.rs:44:18:
