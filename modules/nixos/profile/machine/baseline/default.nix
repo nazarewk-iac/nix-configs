@@ -9,6 +9,10 @@
   cfg = config.kdn.profile.machine.baseline;
 in {
   options.kdn.profile.machine.baseline = {
+    multicastDNS = lib.mkOption {
+      type = with lib.types; enum ["true" "false" "resolve"];
+      default = "true";
+    };
     initrd.emergency.rebootTimeout = lib.mkOption {
       type = lib.types.ints.unsigned;
       default = 0;
@@ -177,7 +181,7 @@ in {
       services.resolved.dnsovertls = lib.mkDefault "opportunistic";
       services.resolved.llmnr = "true";
       services.resolved.extraConfig = ''
-        MulticastDNS=true
+        MulticastDNS=${cfg.multicastDNS}
       '';
       services.avahi.enable = false; # conficts with `resolved` `MulticastDNS`/`LLMNR`
 
