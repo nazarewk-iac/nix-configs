@@ -5,10 +5,6 @@
   ...
 }: let
   cfg = config.kdn.programs.obs-studio;
-
-  obs-studio-with-plugins = pkgs.wrapOBS.override {obs-studio = cfg.package;} {
-    plugins = cfg.plugins;
-  };
 in {
   options.kdn.programs.obs-studio = {
     enable = lib.mkEnableOption "OBS Studio setup";
@@ -19,22 +15,21 @@ in {
     plugins = lib.mkOption {
       type = lib.types.listOf lib.types.package;
       default = with pkgs.obs-studio-plugins; [
-        obs-gstreamer
-        obs-pipewire-audio-capture
-        obs-vkcapture
-        wlrobs
+        input-overlay # display keystrokes
+        obs-backgroundremoval
+        # obs-gstreamer # never used it?
+        obs-pipewire-audio-capture #
+        wlrobs # "Wayland output(dmabuf) / (scpy)
       ];
     };
   };
 
   config = lib.mkIf cfg.enable {
-    environment.systemPackages = with pkgs; [
-      obs-studio-with-plugins
-    ];
+    programs.obs-studio.enable = true;
+    programs.obs-studio.package = cfg.package;
+    programs.obs-studio.plugins = cfg.plugins;
+    programs.obs-studio.enableVirtualCamera = true;
 
-    boot.kernelModules = [
-      "v4l2loopback" # for getting OBS virtual camera to work
-    ];
     home-manager.sharedModules = [
       {
         kdn.hw.disks.persist."usr/config".directories = [
