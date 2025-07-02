@@ -24,23 +24,16 @@
 }:
 stdenv.mkDerivation (finalAttrs: {
   pname = "lnav";
-  version = "0.12.4";
+  version = "0.13.0-rc6";
 
   src = fetchFromGitHub {
     owner = "tstack";
     repo = "lnav";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-XS3/km2sJwRnWloLKu9X9z07+qBFRfUsaRpZVYjoclI=";
+    hash = "sha256-3J7cYXDPek+ltthuedlkz9+33XJ/RLkmyvKzcPG3Usw=";
   };
 
   patches = [
-    # fixes lnav in tmux by patching vendored dependency notcurses
-    # https://github.com/tstack/lnav/issues/1390
-    # remove on next release
-    (fetchpatch {
-      url = "https://github.com/tstack/lnav/commit/5e0bfa483714f05397265a690960d23ae22e1838.patch";
-      hash = "sha256-dArPJik9KVI0KQjGw8W11oqGrbsBCNOr93gaH3yDPpo=";
-    })
   ];
 
   enableParallelBuilding = true;
