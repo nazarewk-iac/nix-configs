@@ -18,6 +18,7 @@
   kdn-yk = pkgs.callPackage ./kdn-yk {};
   klg = pkgs.callPackage ./klg {};
   klog-time-tracker = pkgs.callPackage ./klog-time-tracker {};
+  lnav = pkgs.callPackage ./lnav/package.nix {};
   pass-secret-service = pkgs.callPackage ./pass-secret-service {};
   pinentry = pkgs.callPackage ./pinentry {};
   ss-util = pkgs.callPackage ./ss-util {};
