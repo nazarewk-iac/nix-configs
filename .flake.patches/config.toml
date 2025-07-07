@@ -10,13 +10,10 @@ upstream_input = "{name}-upstream"
 [patch.nixpkgs]
 # TODO: discover the repos without explicit empty entry?
 
-#[patch.nixpkgs.bring-back-logseq]
-#url = "https://github.com/NixOS/nixpkgs/pull/389363.patch?full_index=1"
-
-[patch.nixpkgs.allow-missing-kernel-modules]
-# the PR got expanded a lot and has conflicts
-#url = "https://github.com/NixOS/nixpkgs/pull/375975.patch?full_index=1"
-url = "https://github.com/NixOS/nixpkgs/commit/987e8139617e37c86c33891697c6f3a9bf21021e.patch?full_index=1"
+#[patch.nixpkgs.allow-missing-kernel-modules]
+## the PR got expanded a lot and has conflicts
+##url = "https://github.com/NixOS/nixpkgs/pull/375975.patch?full_index=1"
+#url = "https://github.com/NixOS/nixpkgs/commit/987e8139617e37c86c33891697c6f3a9bf21021e.patch?full_index=1"
 
 #[patch.nixpkgs.netbird.gh-compare]
 ## https://github.com/NixOS/nixpkgs/compare/nixos-unstable...nazarewk:netbird-improvements~1.patch?full_index=1

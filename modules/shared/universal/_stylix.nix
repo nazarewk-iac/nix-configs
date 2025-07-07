@@ -13,7 +13,7 @@ in {
     else if kdn.moduleType == "nix-darwin"
     then [inputs.stylix.darwinModules.stylix]
     else if kdn.moduleType == "home-manager" && !(kdn.hasParentOfAnyType ["nixos" "nix-darwin"])
-    then [inputs.stylix.homeManagerModules.stylix]
+    then [inputs.stylix.homeModules.stylix]
     else [];
   config = lib.mkMerge [
     (lib.attrsets.optionalAttrs (kdn.isOfAnyType ["nixos"]) {

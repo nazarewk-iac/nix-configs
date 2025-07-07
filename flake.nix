@@ -7,7 +7,7 @@
   /*
   * pinned inputs to keep up to date manually
   */
-  inputs.helix-editor.url = "github:helix-editor/helix/25.01";
+  inputs.helix-editor.url = "github:helix-editor/helix/25.01.1";
   # skip https://github.com/tinted-theming/tinted-foot/commit/7ca954e993ee73a7cc9b86c59df4920cc8ff9d34
   # see https://github.com/tinted-theming/tinted-foot/issues/8
   inputs.tinted-foot.flake = false;
@@ -217,10 +217,10 @@
               self.nixosModules.default
               {
                 /*
-                `isoImage.baseName` gives a stable image filename
-                - see https://github.com/NixOS/nixpkgs/blob/5135c59491985879812717f4c9fea69604e7f26f/nixos/modules/installer/cd-dvd/iso-image.nix#L866-L885
+                `image.baseName` gives a stable image filename
+                - see https://github.com/NixOS/nixpkgs/blob/30a61f056ac492e3b7cdcb69c1e6abdcf00e39cf/nixos/modules/image/file-options.nix#L9-L16
                 */
-                isoImage.baseName = lib.mkForce "kdn-nixos-installer";
+                image.baseName = lib.mkForce "kdn-nixos-installer";
 
                 /*
                  `install-iso` uses some weird GRUB booting chimera
