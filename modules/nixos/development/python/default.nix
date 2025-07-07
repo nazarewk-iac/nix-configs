@@ -6,7 +6,7 @@
 }: let
   cfg = config.kdn.development.python;
 
-  defaultPython = pkgs.python312;
+  defaultPython = pkgs.python313;
 
   mkPython = pkg: (pkg.withPackages (ps:
     with ps;
@@ -38,6 +38,7 @@
         pyheos
         pytest
         pyyaml
+        regex
         requests
         ruamel-yaml
         tqdm

@@ -13,7 +13,13 @@ in {
   config = lib.mkIf cfg.enable {
     kdn.toolset.tracing.enable = lib.mkDefault true;
     environment.systemPackages =
-      (with pkgs; [
+      (with config.boot.kernelPackages; [
+        perf
+      ])
+      ++ (with pkgs; [
+        sysstat
+        iotop
+
         btop
         htop
         lurk # strace alternative

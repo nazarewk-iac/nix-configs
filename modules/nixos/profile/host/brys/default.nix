@@ -250,5 +250,8 @@ in {
     {
       kdn.services.zammad.enable = false;
     }
+    {
+      services.bpftune.enable = true;
+    }
   ]);
 }

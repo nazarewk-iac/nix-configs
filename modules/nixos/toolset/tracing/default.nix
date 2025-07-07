@@ -11,9 +11,9 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
+    programs.bcc.enable = true; # opensnoop
     environment.systemPackages = with pkgs; [
-      # bpftrace # TODO: 2025-01-03 fails to build https://github.com/NixOS/nixpkgs/issues/368727
-      bcc # opensnoop
+      bpftrace
     ];
   };
 }

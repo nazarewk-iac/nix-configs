@@ -2,7 +2,21 @@
   pkgs,
   lib,
   ...
-}: {
+}: let
+  withGoBuildDebug = pkg: attrs:
+    pkg.overrideAttrs (old:
+      attrs
+      // {
+        preBuild = builtins.concatStringsSep "\n### SEP withGoBuildDebug ###\n" [
+          (old.preBuild or "")
+          (attrs.preBuild or "")
+          ''
+            mkdir -p $out/debug
+            GOFLAGS="$GOFLAGS -debug-trace=$out/debug/netbird-debug-trace.json -x"
+          ''
+        ];
+      });
+in {
   # changed to manual list due to infinite recursion errors
   data-converters = pkgs.callPackage ./data-converters {};
   ff-ctl = pkgs.callPackage ./ff-ctl {};
@@ -26,4 +40,27 @@
   systemd-find-cycles = pkgs.callPackage ./systemd-find-cycles {};
   tc-redirect-tap = pkgs.callPackage ./tc-redirect-tap {};
   whicher = pkgs.callPackage ./whicher {};
+
+  terraform-debug = withGoBuildDebug pkgs.terraform {};
+
+  netbird-go123-debug = withGoBuildDebug (pkgs.netbird.override {buildGoModule = pkgs.buildGo123Module;}) {
+    subPackages = ["client"];
+    preBuild = ''
+      set -x
+    '';
+
+    postInstall = ''
+      mv $GOPATH/bin/client $out/bin/netbird
+    '';
+  };
+  netbird-debug = withGoBuildDebug pkgs.netbird {
+    subPackages = ["client"];
+    preBuild = ''
+      set -x
+    '';
+
+    postInstall = ''
+      mv $GOPATH/bin/client $out/bin/netbird
+    '';
+  };
 }
