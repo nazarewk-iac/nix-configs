@@ -31,16 +31,11 @@ in {
       /*
       TODO: try out gomuks https://github.com/tulir/gomuks for better client responsiveness?
       */
-      home.packages = [
-        (let
-          prev = config.kdn.programs.apps.element-desktop.package.final;
-        in
-          # just run with `element-desktop --disable-gpu` so the window shows properly
-          lib.hiPrio (prev.desktopItem.override {exec = "${prev.meta.mainProgram} --password-store=gnome-libsecret --disable-gpu %u";}))
-      ];
       kdn.programs.apps.element-desktop = {
         enable = true;
-        package.original = pkgs.element-desktop;
+        package.original = pkgs.element-desktop.override {
+          commandLineArgs = "--password-store=gnome-libsecret --disable-gpu";
+        };
         dirs.cache = [];
         dirs.config = ["Element"];
         dirs.data = [];
