@@ -15,6 +15,10 @@ in {
       virtualisation.docker.enable = lib.mkDefault false;
       virtualisation.podman.enable = true;
 
+      virtualisation.podman.defaultNetwork.settings = {
+        dns_enabled = true;
+      };
+
       virtualisation.oci-containers.backend = "podman";
       virtualisation.podman.dockerCompat = !config.virtualisation.docker.enable;
       virtualisation.podman.dockerSocket.enable = !config.virtualisation.docker.enable;
