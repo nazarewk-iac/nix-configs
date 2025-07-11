@@ -4,8 +4,6 @@
   config,
   ...
 }: let
-  defaultPort = 51820;
-
   sopsSecrets = config.kdn.security.secrets.sops.secrets.default.netbird;
 
   activeCfgs = lib.pipe config.kdn.networking.netbird [
@@ -51,7 +49,13 @@ in {
 
         port = lib.mkOption {
           type = with lib.types; port;
-          default = defaultPort - nbCfg.idx;
+          # 0 for picking a random available port on v0.50.2+
+          default = let
+            version = config.services.netbird.package.version;
+          in
+            if lib.strings.hasPrefix "0." version && lib.strings.versionOlder version "0.50.2"
+            then 51820 - nbCfg.idx
+            else 0;
         };
 
         localAddress = lib.mkOption {
