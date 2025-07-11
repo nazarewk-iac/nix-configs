@@ -8,10 +8,6 @@
   * pinned inputs to keep up to date manually
   */
   inputs.helix-editor.url = "github:helix-editor/helix/25.01.1";
-  # skip https://github.com/tinted-theming/tinted-foot/commit/7ca954e993ee73a7cc9b86c59df4920cc8ff9d34
-  # see https://github.com/tinted-theming/tinted-foot/issues/8
-  inputs.tinted-foot.flake = false;
-  inputs.tinted-foot.url = "github:tinted-theming/tinted-foot/fd1b924b6c45c3e4465e8a849e67ea82933fcbe4";
 
   /*
   * rest of inputs
@@ -99,10 +95,10 @@
   inputs.nixos-generators.inputs.nixpkgs.follows = "nixpkgs";
   inputs.rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
   inputs.sops-nix.inputs.nixpkgs.follows = "nixpkgs";
-  inputs.stylix.inputs.flake-compat.follows = "flake-compat";
-  inputs.stylix.inputs.home-manager.follows = "home-manager";
+  inputs.stylix.inputs.flake-parts.follows = "flake-parts";
   inputs.stylix.inputs.nixpkgs.follows = "nixpkgs";
-  inputs.stylix.inputs.tinted-foot.follows = "tinted-foot";
+  inputs.stylix.inputs.nur.follows = "nur";
+  inputs.stylix.inputs.systems.follows = "systems";
   inputs.treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
   inputs.wezterm.inputs.flake-utils.follows = "flake-utils";
   inputs.wezterm.inputs.nixpkgs.follows = "nixpkgs";
