@@ -24,5 +24,14 @@ in {
 
       boot.kernel.sysctl."user.max_user_namespaces" = 15000;
     }
+    {
+      /*
+      fixes `Error: netavark: code: 1, msg: iptables: Chain already exists.` when running more than 1 container
+      - https://github.com/containers/netavark/issues/274
+      - (fix) https://github.com/containers/netavark/issues/339#issuecomment-2080432677
+      */
+      virtualisation.containers.containersConf.settings.network.network_backend = lib.mkDefault "netavark";
+      virtualisation.containers.containersConf.settings.network.firewall_driver = lib.mkDefault "nftables";
+    }
   ]);
 }
