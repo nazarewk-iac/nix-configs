@@ -13,10 +13,11 @@ in {
   config = lib.mkIf cfg.enable {
     environment.systemPackages =
       (with pkgs; [
-        openssh
-        wget
         curl
+        openssh
+        screen
         tmux
+        wget
 
         # Working with XDG files
         file
