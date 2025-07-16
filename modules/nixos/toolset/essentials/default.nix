@@ -43,6 +43,9 @@ in {
 
         pkgs.kdn.whicher
         difftastic
+
+        # serial consoles usage
+        minicom
       ])
       ++ [];
   };
