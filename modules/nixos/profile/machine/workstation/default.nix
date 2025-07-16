@@ -72,17 +72,11 @@ in {
     }
     {
       kdn.networking.netbird.nbs.idx = 2; # staging client
-      services.netbird.clients.nbs.autoStart = false;
       kdn.networking.netbird.nbt.idx = 3; # testing client
-      services.netbird.clients.nbt.autoStart = false;
       kdn.networking.netbird.nbc.idx = 4; # cloud client
-      services.netbird.clients.nbc.autoStart = false;
       kdn.networking.netbird.t1.idx = 5; # testing client
-      services.netbird.clients.t1.autoStart = false;
       kdn.networking.netbird.t2.idx = 6; # testing client
-      services.netbird.clients.t2.autoStart = false;
       kdn.networking.netbird.t3.idx = 7; # testing client
-      services.netbird.clients.t3.autoStart = false;
     }
   ]);
 }
