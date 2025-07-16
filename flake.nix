@@ -37,8 +37,6 @@
   inputs.haumea.url = "github:nix-community/haumea";
   inputs.home-manager.url = "github:nix-community/home-manager";
   inputs.lanzaboote.url = "github:nix-community/lanzaboote";
-  # requires main instead of `stable` due to `editline-lix` error
-  inputs.lix-module.url = "git+https://git.lix.systems/lix-project/nixos-module.git?ref=release-2.92";
   inputs.microvm.url = "github:astro/microvm.nix";
   inputs.nix-darwin.url = "github:LnL7/nix-darwin";
   inputs.nix-homebrew.url = "github:zhaofengli/nix-homebrew";
@@ -81,8 +79,6 @@
   inputs.lanzaboote.inputs.nixpkgs.follows = "nixpkgs";
   inputs.lanzaboote.inputs.pre-commit-hooks-nix.follows = "empty";
   inputs.lanzaboote.inputs.rust-overlay.follows = "rust-overlay";
-  inputs.lix-module.inputs.flake-utils.follows = "flake-utils";
-  inputs.lix-module.inputs.nixpkgs.follows = "nixpkgs";
   inputs.microvm.inputs.flake-utils.follows = "flake-utils";
   inputs.microvm.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nix-darwin.inputs.nixpkgs.follows = "nixpkgs";

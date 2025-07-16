@@ -11,8 +11,6 @@ in {
   imports =
     [
       ../universal
-      # this is very simple, works for both NixOS and darwin
-      inputs.lix-module.nixosModules.default
     ]
     ++ lib.trivial.pipe ./. [
       lib.filesystem.listFilesRecursive
@@ -25,7 +23,7 @@ in {
       networking.hostName = cfg.hostName;
       nix.registry.nixpkgs.flake = inputs.nixpkgs;
       nix.optimise.automatic = true;
-      nix.package = pkgs.lix;
+      nix.package = pkgs.lixPackageSets.latest.lix;
       nixpkgs.overlays = [self.overlays.default];
     }
     (lib.mkIf (!kdn.features.microvm-guest) {

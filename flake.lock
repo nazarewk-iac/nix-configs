@@ -372,21 +372,6 @@
         "type": "github"
       }
     },
-    "flakey-profile": {
-      "locked": {
-        "lastModified": 1712898590,
-        "narHash": "sha256-FhGIEU93VHAChKEXx905TSiPZKga69bWl1VB37FK//I=",
-        "owner": "lf-",
-        "repo": "flakey-profile",
-        "rev": "243c903fd8eadc0f63d205665a92d4df91d42d9d",
-        "type": "github"
-      },
-      "original": {
-        "owner": "lf-",
-        "repo": "flakey-profile",
-        "type": "github"
-      }
-    },
     "freetype2": {
       "flake": false,
       "locked": {
@@ -590,46 +575,6 @@
         "ref": "v1.6.44",
         "repo": "libpng",
         "type": "github"
-      }
-    },
-    "lix": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1751237967,
-        "narHash": "sha256-fP6SXT5WUEAEoMvr2j3kdorGvLphWRjlLJIrgeoWMyI=",
-        "rev": "f10ca0d677f02b96d24917cd00ee4b5da1e18b1a",
-        "type": "tarball",
-        "url": "https://git.lix.systems/api/v1/repos/lix-project/lix/archive/f10ca0d677f02b96d24917cd00ee4b5da1e18b1a.tar.gz?rev=f10ca0d677f02b96d24917cd00ee4b5da1e18b1a"
-      },
-      "original": {
-        "type": "tarball",
-        "url": "https://git.lix.systems/lix-project/lix/archive/release-2.92.tar.gz"
-      }
-    },
-    "lix-module": {
-      "inputs": {
-        "flake-utils": [
-          "flake-utils"
-        ],
-        "flakey-profile": "flakey-profile",
-        "lix": "lix",
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1751239988,
-        "narHash": "sha256-/yAP5zHAs5hT3NUYWaKnVuaLuxVLDMmn3jPdWAMOVNo=",
-        "ref": "release-2.92",
-        "rev": "91b03e3ace9005f50b2fbe81d2533d988e19df6e",
-        "revCount": 136,
-        "type": "git",
-        "url": "https://git.lix.systems/lix-project/nixos-module.git"
-      },
-      "original": {
-        "ref": "release-2.92",
-        "type": "git",
-        "url": "https://git.lix.systems/lix-project/nixos-module.git"
       }
     },
     "microvm": {
@@ -948,7 +893,6 @@
         "helix-editor": "helix-editor",
         "home-manager": "home-manager",
         "lanzaboote": "lanzaboote",
-        "lix-module": "lix-module",
         "microvm": "microvm",
         "nix-darwin": "nix-darwin",
         "nix-homebrew": "nix-homebrew",
