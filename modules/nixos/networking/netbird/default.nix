@@ -4,8 +4,6 @@
   config,
   ...
 }: let
-  sopsSecrets = config.kdn.security.secrets.sops.secrets.default.netbird;
-
   activeCfgs = lib.pipe config.kdn.networking.netbird [
     builtins.attrValues
     (builtins.filter (nbCfg: nbCfg.enable))
@@ -94,16 +92,6 @@ in {
           value = {
             port = nbCfg.port;
             dns-resolver.address = nbCfg.localAddress;
-          };
-        }))
-        builtins.listToAttrs
-      ];
-      kdn.networking.router.kresd.rewrites = lib.pipe activeCfgs [
-        (builtins.map (nbCfg: {
-          name = "${nbCfg.name}.nb.net.int.kdn.im.";
-          value = {
-            from = "netbird.cloud.";
-            upstreams = [nbCfg.localAddress];
           };
         }))
         builtins.listToAttrs
