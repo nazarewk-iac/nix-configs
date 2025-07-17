@@ -19,11 +19,12 @@ in {
       enable = true;
       package.original = pkgs.claude-code;
       dirs.cache = [];
-      dirs.config = ["claude"];
-      dirs.data = [];
+      dirs.config = [];
+      dirs.data = ["/.claude"];
       dirs.disposable = [];
       dirs.reproducible = [];
       dirs.state = [];
+      files.config = ["/.claude.json"];
     };
   };
 }
