@@ -169,8 +169,9 @@
           {
             wan = "bond";
             vlan = "vlan";
+          }.${
+            netCfg.type
           }
-          .${netCfg.type}
           or "bridge";
       };
       netdev.bond.mode = lib.mkOption {
@@ -584,6 +585,7 @@ in {
     };
 
     kresd.rewrites = lib.mkOption {
+      default = {};
       type = lib.types.attrsOf (lib.types.submodule ({name, ...} @ rewriteArgs: {
         options = {
           to = lib.mkOption {
@@ -1250,7 +1252,6 @@ in {
               ];
 
               # queries done by `kea` https://github.com/search?q=repo%3Aisc-projects%2Fkea%20%22RRType%3A%3A%22&type=code
-              # analyd
               update-type = [
                 # A && AAAA https://github.com/isc-projects/kea/blob/3bc9a732f8288ba752e784ad10519d7e1635582f/src/bin/d2/simple_add.cc#L490
                 "A"
@@ -1310,11 +1311,13 @@ in {
         kdn.networking.router = {
           kea.dhcp4.settings = {
             dhcp-ddns.enable-updates = true;
+            # TODO: figure out why the DHCID changes, some day...
+            ddns-conflict-resolution-mode = "check-exists-with-dhcid";
+            ddns-generated-prefix = "ip";
             ddns-override-client-update = true;
             ddns-replace-client-name = "when-not-present";
             ddns-send-updates = false;
             ddns-update-on-renew = true;
-            ddns-generated-prefix = "ip";
           };
           kea.dhcp-ddns.settings = {
             dns-server-timeout = 500;
