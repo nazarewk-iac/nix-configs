@@ -47,7 +47,7 @@ in {
       services.asusd.enableUserService = true;
       home-manager.sharedModules = [
         (args: let
-          run = lib.getExe (pkgs.writeShellApplication {
+          kdn-asusctl = pkgs.writeShellApplication {
             name = "kdn-asusctl";
             runtimeInputs = with pkgs; [
               config.services.asusd.package
@@ -55,21 +55,34 @@ in {
               coreutils
             ];
             text = ''
-              rotate-cpu-profile() {
+              cmd_rotate-cpu-profile() {
                 asusctl profile --next
                 notify-send "CPU profile" "Current CPU profile: $(asusctl profile --profile-get)"
               }
 
-              rotate-keyboard-brightness() {
-                to="''${1:-"next"}"
+              cmd_rotate-keyboard-brightness() {
+                local to
+                case "''${1:-"next"}" in
+                  prev)
+                    to="prev"
+                  ;;
+                  next)
+                    to="next"
+                  ;;
+                  *)
+                    return 1
+                  ;;
+                esac
                 asusctl "--$to-kbd-bright"
                 notify-send "Keyboard LED brightness" "$(asusctl --kbd-bright | tail -n1)"
               }
 
-              exec "$@"
+              "cmd_''${1}" "''${@:2}"
             '';
-          });
+          };
+          run = lib.getExe kdn-asusctl;
         in {
+          home.packages = [kdn-asusctl];
           wayland.windowManager.sway.config.keybindings = with config.kdn.desktop.sway.keys; {
             "${oams.top.fan}" = "exec '${run} rotate-cpu-profile'";
             "${oams.top.rog}" = "exec '${run} rog-control-center'";
