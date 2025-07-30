@@ -7,7 +7,7 @@
   /*
   * pinned inputs to keep up to date manually
   */
-  inputs.helix-editor.url = "github:helix-editor/helix/25.01.1";
+  inputs.helix-editor.url = "github:helix-editor/helix/25.07.1";
 
   /*
   * rest of inputs
@@ -67,8 +67,6 @@
   inputs.brew-nix.inputs.nixpkgs.follows = "nixpkgs";
   inputs.disko.inputs.nixpkgs.follows = "nixpkgs";
   inputs.flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs-lib";
-  inputs.helix-editor.inputs.crane.follows = "crane";
-  inputs.helix-editor.inputs.flake-utils.follows = "flake-utils";
   inputs.helix-editor.inputs.nixpkgs.follows = "nixpkgs";
   inputs.helix-editor.inputs.rust-overlay.follows = "rust-overlay";
   inputs.haumea.inputs.nixpkgs.follows = "nixpkgs";

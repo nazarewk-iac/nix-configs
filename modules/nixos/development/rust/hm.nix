@@ -13,7 +13,7 @@ in {
   config = lib.mkIf cfg.enable {
     programs.helix.extraPackages = with pkgs; [
       rust-analyzer
-      lldb_15
+      lldb
     ];
   };
 }

@@ -7,13 +7,56 @@
     pkg.overrideAttrs (old:
       attrs
       // {
-        preBuild = builtins.concatStringsSep "\n### SEP withGoBuildDebug ###\n" [
-          (old.preBuild or "")
-          (attrs.preBuild or "")
-          ''
-            mkdir -p $out/debug
-            GOFLAGS="$GOFLAGS -debug-trace=$out/debug/netbird-debug-trace.json -x"
-          ''
+        buildPhase = lib.pipe old.buildPhase [
+          (prev: ''
+            kdn_tracing_id=0
+            kdn_go_cmd="$(command -v go)"
+            mkdir -p "$out/debug"
+            kdn_tracer="strace"
+
+            run_with_tracing() {
+              local trace_output="$out/debug/$kdn_tracer.$((++kdn_tracing_id)).$cmd.out"
+              local common_args=(
+                --follow-forks
+                --syscall-number
+                --summary
+              )
+              local lurk_args=(
+                "''${common_args[@]}"
+                --syscall-times
+                --file="$trace_output"
+              )
+              local strace_args=(
+                "''${common_args[@]}"
+                --output-separately
+                --output="$trace_output"
+                --syscall-times=ns
+                --summary-wall-clock
+              )
+              case "$kdn_tracer" in
+                lurk)
+                  ${lib.getExe pkgs.lurk} "''${lurk_args[@]}" "$@"
+                ;;
+                strace)
+                  ${lib.getExe pkgs.strace} "''${strace_args[@]}" "$@"
+                ;;
+                *)
+                  "$@"
+                ;;
+              fi
+            }
+
+            go() {
+              GOFLAGS="$GOFLAGS -debug-trace="$out/debug/go-debug-trace.$kdn_tracing_id.json" -x" run_with_tracing "$kdn_go_cmd" "$@"
+            }
+
+            ${prev}
+          '')
+          /*
+          https://github.com/NixOS/nixpkgs/blob/17f6bd177404d6d43017595c5264756764444ab8/pkgs/build-support/go/module.nix#L315-L315
+              if ! OUT="$(go $cmd "''${flags[@]}" $dir 2>&1)"; then
+          */
+          # (lib.strings.replaceString ''OUT="$(go $cmd'' ''OUT="$(run_with_tracing go $cmd'')
         ];
       });
 in {
@@ -56,7 +99,7 @@ in {
   netbird-debug = withGoBuildDebug pkgs.netbird {
     subPackages = ["client"];
     preBuild = ''
-      set -x
+      # set -x
     '';
 
     postInstall = ''
