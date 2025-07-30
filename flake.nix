@@ -115,7 +115,6 @@
     ];
 
     flake.overlays.default = inputs.nixpkgs.lib.composeManyExtensions [
-      inputs.helix-editor.overlays.default
       inputs.nur.overlays.default
       inputs.microvm.overlays.default
       self.overlays.packages
