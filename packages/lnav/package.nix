@@ -24,13 +24,13 @@
 }:
 stdenv.mkDerivation (finalAttrs: {
   pname = "lnav";
-  version = "0.13.0-rc6";
+  version = "0.13.0-beta2";
 
   src = fetchFromGitHub {
     owner = "tstack";
     repo = "lnav";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-3J7cYXDPek+ltthuedlkz9+33XJ/RLkmyvKzcPG3Usw=";
+    hash = "sha256-GAkMQfbyqKUOJU+apFg3Wn7nEVVbP76E+scIHyEr/q8=";
   };
 
   patches = [
