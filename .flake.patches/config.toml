@@ -14,6 +14,12 @@ upstream_input = "{name}-upstream"
 [patch.nixpkgs.fix-ceph-build]
 url = "https://github.com/NixOS/nixpkgs/pull/427905.patch?full_index=1"
 
+[patch.nixpkgs.netbird-upgrade]
+url = "https://github.com/NixOS/nixpkgs/pull/431976.patch?full_index=1"
+
+[patch.nixpkgs.netbird-branding-fix]
+url = "https://github.com/NixOS/nixpkgs/pull/432535.patch?full_index=1"
+
 #[patch.nixpkgs.allow-missing-kernel-modules]
 ##url = "https://github.com/NixOS/nixpkgs/pull/375975.patch?full_index=1"
 #url = "https://github.com/NixOS/nixpkgs/commit/987e8139617e37c86c33891697c6f3a9bf21021e.patch?full_index=1"
