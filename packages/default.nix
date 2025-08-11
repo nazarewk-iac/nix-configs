@@ -7,50 +7,75 @@
     pkg.overrideAttrs (old:
       attrs
       // {
+        # don't delete the build dir, a tip from https://discourse.nixos.org/t/how-to-look-at-the-build-directory-after-successful-build/14007/3?u=kdn
+        nativeBuildInputs = old.nativeBuildInputs ++ [pkgs.keepBuildTree];
+      }
+      // {
+        /*
+        fixes errors due to `disallowedReferences` in https://github.com/NixOS/nixpkgs/blob/94def634a20494ee057c76998843c015909d6311/pkgs/build-support/go/module.nix#L389-L389:
+          error: output '/nix/store/3vmljz5lsyrchdcy0k26vjig0g2vjrq0-netbird-0.49.0' is not allowed to refer to the following paths:
+                   /nix/store/y4awwzp30ka130wmjrpaqjmjdf9p010w-go-1.24.5
+        */
+        allowGoReference = true;
+        disallowedReferences = [];
+      }
+      // {
         buildPhase = lib.pipe old.buildPhase [
           (prev: ''
-            kdn_tracing_id=0
+            kdn_debug_dir="$out/.debug" # $NIX_BUILD_TOP doesn't include `pkgs.keepBuildTree`
             kdn_go_cmd="$(command -v go)"
-            mkdir -p "$out/debug"
             kdn_tracer="strace"
+            kdn_tracing_idx=0
+            mkdir -p "$kdn_debug_dir"
 
             run_with_tracing() {
-              local trace_output="$out/debug/$kdn_tracer.$((++kdn_tracing_id)).$cmd.out"
-              local common_args=(
+              local trace_output="$kdn_debug_dir/$kdn_tracer.$((++kdn_tracing_idx)).$cmd.out"
+              kdn_common_args=(
                 --follow-forks
                 --syscall-number
-                --summary
               )
-              local lurk_args=(
-                "''${common_args[@]}"
+              kdn_lurk_args=(
+                "''${kdn_common_args[@]}"
+                --summary
                 --syscall-times
                 --file="$trace_output"
               )
-              local strace_args=(
-                "''${common_args[@]}"
-                --output-separately
+              kdn_strace_args=(
+                "''${kdn_common_args[@]}"
                 --output="$trace_output"
                 --syscall-times=ns
-                --summary-wall-clock
               )
+              # those are exclusive
+              if true ; then
+                kdn_strace_args+=( --output-separately )
+              else
+                kdn_strace_args+=( --summary-wall-clock --summary )
+              fi
+
               case "$kdn_tracer" in
                 lurk)
-                  ${lib.getExe pkgs.lurk} "''${lurk_args[@]}" "$@"
+                  ${lib.getExe pkgs.lurk} "''${kdn_lurk_args[@]}" "$@"
                 ;;
                 strace)
-                  ${lib.getExe pkgs.strace} "''${strace_args[@]}" "$@"
+                  ${lib.getExe pkgs.strace} "''${kdn_strace_args[@]}" "$@"
                 ;;
                 *)
                   "$@"
                 ;;
-              fi
+              esac
             }
 
             go() {
-              GOFLAGS="$GOFLAGS -debug-trace="$out/debug/go-debug-trace.$kdn_tracing_id.json" -x" run_with_tracing "$kdn_go_cmd" "$@"
+              GOFLAGS="$GOFLAGS -debug-trace="$kdn_debug_dir/go-debug-trace.$kdn_tracing_id.json" -x" run_with_tracing "$kdn_go_cmd" "$@" |& tee "$kdn_debug_dir/outputs.$kdn_tracing_id.log"
             }
 
             ${prev}
+          '')
+          (prev: ''
+            (
+              set -x
+              ${prev}
+            )
           '')
           /*
           https://github.com/NixOS/nixpkgs/blob/17f6bd177404d6d43017595c5264756764444ab8/pkgs/build-support/go/module.nix#L315-L315
@@ -84,8 +109,6 @@ in {
   tc-redirect-tap = pkgs.callPackage ./tc-redirect-tap {};
   whicher = pkgs.callPackage ./whicher {};
 
-  terraform-debug = withGoBuildDebug pkgs.terraform {};
-
   netbird-go123-debug = withGoBuildDebug (pkgs.netbird.override {buildGoModule = pkgs.buildGo123Module;}) {
     subPackages = ["client"];
     preBuild = ''
@@ -98,12 +121,9 @@ in {
   };
   netbird-debug = withGoBuildDebug pkgs.netbird {
     subPackages = ["client"];
-    preBuild = ''
-      # set -x
-    '';
-
     postInstall = ''
       mv $GOPATH/bin/client $out/bin/netbird
     '';
   };
+  terraform-debug = withGoBuildDebug pkgs.terraform {};
 }
