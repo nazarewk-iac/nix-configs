@@ -26,14 +26,12 @@ in {
       fileSystems."/boot".options = ["fmask=0077" "dmask=0077"];
     })
     {
-      systemd.services.nix-daemon.environment.TMPDIR = "/var/tmp/nix-daemon";
-      systemd.tmpfiles.rules = lib.lists.optionals (!config.kdn.hw.disks.enable) [
-        "d /var/tmp/nix-daemon 0777 root root"
-      ];
       kdn.hw.disks.persist."disposable".directories = [
         {
-          directory = "/var/tmp/nix-daemon";
-          mode = "0777";
+          # see https://github.com/NixOS/nix/blob/bbd14173b5c4677d098686be9605c88b40149684/doc/manual/source/release-notes/rl-2.30.md?plain=1#L5-L11
+          # it could also be in `config.nix.extraOptions`, but let's not bother with that
+          directory = config.nix.settings.build-dir or "/nix/var/nix/builds";
+          mode = "0755";
         }
       ];
     }
