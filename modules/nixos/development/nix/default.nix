@@ -20,6 +20,8 @@ in {
       nixfmt-rfc-style
       nixos-anywhere
       nixpkgs-fmt
+      # check for packages in cache
+      nix-weather
       # language servers
       nil
       nixd
