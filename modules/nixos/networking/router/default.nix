@@ -1396,6 +1396,7 @@ in {
                 ]))
             ]
             ++ lib.pipe cfg.nets [
+              # TODO: flip those to be piped for easier reading
               (lib.attrsets.mapAttrsToList (
                 _: netCfg: (lib.attrsets.mapAttrsToList
                   (
@@ -1416,7 +1417,11 @@ in {
                         ])
                       (
                         lib.attrsets.filterAttrs
-                        (host: hostCfg: hostCfg.ip != null)
+                        (
+                          host: hostCfg:
+                            (hostCfg.ip != null)
+                            && (config.services.kea.dhcp6.enable || addrCfg.type != "ipv6")
+                        )
                         addrCfg.hosts
                       )
                     )
