@@ -97,6 +97,15 @@ in {
         ''; value;
     };
 
+    nixBuildDir.type = lib.mkOption {
+      type = lib.types.enum ["disposable" "tmpfs"];
+      default = "disposable";
+    };
+    nixBuildDir.tmpfs.size = lib.mkOption {
+      type = lib.types.str;
+      default = "2G";
+    };
+
     users = lib.mkOption {
       default = {};
       type = lib.types.attrsOf (lib.types.submodule ({name, ...} @ userArgs: {

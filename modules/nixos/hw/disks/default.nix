@@ -212,6 +212,29 @@ in {
           };
         };
       }
+      # WARNING: keep build dir in sync with /modules/shared/universal/nix.nix
+      # throws recursion error if tries to be derived from `config.nix.settings.build-dir`
+      # TODO: mount those at different places to make them easily swappable?
+      {
+        systemd.tmpfiles.rules = [
+          "L+ /nix/var/nix/builds           - - - - /nix/var/nix/builds-${cfg.nixBuildDir.type}"
+        ];
+        kdn.hw.disks.persist."disposable".directories = [
+          {
+            # see https://github.com/NixOS/nix/blob/bbd14173b5c4677d098686be9605c88b40149684/doc/manual/source/release-notes/rl-2.30.md?plain=1#L5-L11
+            # it could also be in `config.nix.extraOptions`, but let's not bother with that
+            directory = "/nix/var/nix/builds-disposable";
+            mode = "0755";
+          }
+        ];
+        disko.devices.nodev."/nix/var/nix/builds-tmpfs" = {
+          fsType = "tmpfs";
+          mountOptions = [
+            "size=${cfg.nixBuildDir.tmpfs.size}"
+            "mode=755"
+          ];
+        };
+      }
       {
         # required for kdn.hw.disks.base.*.allowOther
         programs.fuse.userAllowOther = true;

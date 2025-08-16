@@ -24,13 +24,13 @@ in {
       "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw="
     ];
     substituters = [
-      # TODO: cachix.org was down on  2025-03-20 17:20
-      #"https://nix-community.cachix.org"
-      #"https://nixpkgs-update.cachix.org"
-      #"https://devenv.cachix.org"
+      "https://nix-community.cachix.org"
+      "https://nixpkgs-update.cachix.org"
+      "https://devenv.cachix.org"
     ];
     allowed-users = adminUsers ++ allowedUsers;
     trusted-users = adminUsers;
+    build-dir = "/nix/var/nix/builds";
   };
 
   nixpkgs.config = {

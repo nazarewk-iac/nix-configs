@@ -25,16 +25,6 @@ in {
       # WARNING: without depending on `config.disko.enableConfig` it fails on machines without dedicated `/boot` partition
       fileSystems."/boot".options = ["fmask=0077" "dmask=0077"];
     })
-    {
-      kdn.hw.disks.persist."disposable".directories = [
-        {
-          # see https://github.com/NixOS/nix/blob/bbd14173b5c4677d098686be9605c88b40149684/doc/manual/source/release-notes/rl-2.30.md?plain=1#L5-L11
-          # it could also be in `config.nix.extraOptions`, but let's not bother with that
-          directory = config.nix.settings.build-dir or "/nix/var/nix/builds";
-          mode = "0755";
-        }
-      ];
-    }
     (let
       content = let
         gen = pkgs.writers.writePython3Bin "generate-subuid" {} ''

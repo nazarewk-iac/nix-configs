@@ -15,7 +15,7 @@ in {
     {
       preservation.enable = lib.mkDefault cfg.enable;
       kdn.hw.disks.persist = lib.pipe cfg.base [
-        (builtins.mapAttrs (_:_: {}))
+        (builtins.mapAttrs (_: _: {}))
       ];
       preservation.preserveAt = lib.pipe cfg.base [
         (builtins.mapAttrs (persistName: baseCfg: let

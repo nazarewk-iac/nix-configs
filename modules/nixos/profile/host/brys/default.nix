@@ -253,5 +253,9 @@ in {
     {
       services.bpftune.enable = true;
     }
+    {
+      kdn.hw.disks.nixBuildDir.type = "tmpfs";
+      kdn.hw.disks.nixBuildDir.tmpfs.size = "64G";
+    }
   ]);
 }
