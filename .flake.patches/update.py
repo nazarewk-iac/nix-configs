@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-from collections import defaultdict
-
 import argparse
 import functools
 import itertools
@@ -12,6 +10,7 @@ import shlex
 import subprocess
 import sys
 import tomllib
+from collections import defaultdict
 from pathlib import Path
 
 GIT_DATE = "1970-01-01 00:00:01.000000000 +0000"
@@ -171,6 +170,22 @@ def get_input_remote(*names: str, lock: Path):
             raise NotImplementedError(f"unsupported type {repo_type}")
 
 
+def get_inputs(lock: Path):
+    return get_flake_lock(lock)["nodes"]["root"]["inputs"]
+
+
+def get_upstreams(lock: Path, pattern: str):
+    assert "{name}" in pattern
+    pattern = re.sub(r"\{(?P<key>[^}]+)}", r"(?P<\g<key>>.*)", pattern)
+    inputs = get_inputs(lock)
+    ret = {
+        name: match.group("name")
+        for name in inputs.keys()
+        if (match := re.fullmatch(pattern, name)) and match.group("name") in inputs
+    }
+    return ret
+
+
 @functools.cache
 def submodules_initialized(repo_root: Path):
     subprocess.run(
@@ -199,8 +214,13 @@ def patches_apply(
     input_fmt = defaults.get("input") or "{name}"
     upstream_input_fmt = defaults.get("upstream_input") or "{name}-upstream"
 
+    discovered = get_upstreams(lock=lock, pattern=upstream_input_fmt)
+    patches = config.setdefault("patch", {})
+    for upstream, downstream in discovered.items():
+        patches.setdefault(downstream, {})
+
     repo_root = lock.parent
-    for base in config.get("patch", {}).keys():
+    for base in patches.keys():
         base_path = patches_dir / base
         cfg = config.get("repo", {}).get("base", {})
         base_input = cfg.get("input") or input_fmt.format(name=base)
@@ -222,6 +242,17 @@ def patches_apply(
                 cwd=repo_root,
             )
 
+        current_branch = subprocess.check_output(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            cwd=subrepo_path,
+            encoding="utf8",
+        ).strip()
+        base_branch = get_input_ref(base_input, lock=lock)
+        base_branch = base_branch or subprocess.check_output(
+            ["git", "branch", "--show-current"],
+            cwd=subrepo_path,
+            encoding="utf8",
+        )
         remotes = set(
             subprocess.check_output(
                 ["git", "remote"],
@@ -246,6 +277,13 @@ def patches_apply(
             ["git", "fetch", "upstream", upstream_rev],
             cwd=subrepo_path,
         )
+
+        if current_branch != base_branch:
+            run(
+                f"{repo_rel}: checking out correct branch: {current_branch=} -> {base_branch=}",
+                ["git", "checkout", "-B", base_branch, f"upstream/{base_branch}"],
+                cwd=subrepo_path,
+            )
         run(
             f"{repo_rel}: resetting to {upstream_rev}",
             ["git", "reset", "--hard", upstream_rev],
@@ -280,15 +318,9 @@ def patches_apply(
                 )
                 raise
 
-        base_branch = get_input_ref(base_input, lock=lock)
-        base_branch = base_branch or subprocess.check_output(
-            ["git", "branch", "--show-current"],
-            cwd=subrepo_path,
-            encoding="utf8",
-        )
         run(
             f"{repo_rel}: pushing changes to origin/{base_branch}",
-            ["git", "push", "--force", "origin", base_branch],
+            ["git", "push", "--force", "origin", f"{base_branch}:{base_branch}"],
             cwd=subrepo_path,
         )
         run(
