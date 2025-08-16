@@ -44,9 +44,10 @@
                 "''${kdn_common_args[@]}"
                 --output="$trace_output"
                 --syscall-times=ns
+                --absolute-timestamps=precision:ns
               )
               # those are exclusive
-              if true ; then
+              if false ; then
                 kdn_strace_args+=( --output-separately )
               else
                 kdn_strace_args+=( --summary-wall-clock --summary )
@@ -54,10 +55,10 @@
 
               case "$kdn_tracer" in
                 lurk)
-                  ${lib.getExe pkgs.lurk} "''${kdn_lurk_args[@]}" "$@"
+                  ${lib.getExe pkgs.lurk} "''${kdn_lurk_args[@]}" "$@" |& tee "$kdn_debug_dir/outputs.$kdn_tracing_id.log"
                 ;;
                 strace)
-                  ${lib.getExe pkgs.strace} "''${kdn_strace_args[@]}" "$@"
+                  ${lib.getExe pkgs.strace} "''${kdn_strace_args[@]}" "$@" |& tee "$kdn_debug_dir/outputs.$kdn_tracing_id.log"
                 ;;
                 *)
                   "$@"
@@ -66,7 +67,7 @@
             }
 
             go() {
-              GOFLAGS="$GOFLAGS -debug-trace="$kdn_debug_dir/go-debug-trace.$kdn_tracing_id.json" -x" run_with_tracing "$kdn_go_cmd" "$@" |& tee "$kdn_debug_dir/outputs.$kdn_tracing_id.log"
+              GOFLAGS="$GOFLAGS -debug-trace="$kdn_debug_dir/go-debug-trace.$kdn_tracing_id.json" -x" run_with_tracing "$kdn_go_cmd" "$@"
             }
 
             ${prev}
@@ -109,21 +110,17 @@ in {
   tc-redirect-tap = pkgs.callPackage ./tc-redirect-tap {};
   whicher = pkgs.callPackage ./whicher {};
 
-  netbird-go123-debug = withGoBuildDebug (pkgs.netbird.override {buildGoModule = pkgs.buildGo123Module;}) {
-    subPackages = ["client"];
-    preBuild = ''
-      set -x
-    '';
-
-    postInstall = ''
-      mv $GOPATH/bin/client $out/bin/netbird
-    '';
-  };
-  netbird-debug = withGoBuildDebug pkgs.netbird {
-    subPackages = ["client"];
-    postInstall = ''
-      mv $GOPATH/bin/client $out/bin/netbird
-    '';
-  };
-  terraform-debug = withGoBuildDebug pkgs.terraform {};
+  debug-netbird = withGoBuildDebug pkgs.netbird {};
+  debug-terraform = withGoBuildDebug pkgs.terraform {};
+  debug-usql = withGoBuildDebug pkgs.usql {};
+  /*
+  TODO: long build packages on `disposable` ZFS:
+    - argocd
+    - cmctl
+    - sops-install-secrets
+    - usql (2h+)
+    - terraform (4h+)
+    - conftest
+    - cmctl (10h+!)
+  */
 }
