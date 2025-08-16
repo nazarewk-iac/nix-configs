@@ -126,4 +126,32 @@ if test "${DRY_RUN:-0}" == 1; then
   pre_cmd=(echo "${pre_cmd[@]}")
 fi
 
-"${pre_cmd[@]}" nixos-rebuild "${pre_args[@]}" "${cmd}" "${post_args[@]}" "${@}" |& nom --json
+defaults=1
+keep_going=1
+while test "$#" -gt 0; do
+  case "$1" in
+  -D | --no-defaults) defaults=0 ;;
+  --no-keep-going) keep_going=0 ;;
+  *) post_args+=("$1") ;;
+  esac
+  shift
+done
+
+if test "${keep_going}" = 1; then
+  post_args+=(--keep-going)
+fi
+
+if test "${defaults}" = 1 ; then
+  procs="$(nproc)"
+  jobs="$((procs / 10 - 1))"
+  jobs="$((jobs > 0 ? jobs : 1))"
+  procs="$((procs / jobs - 1))"
+  cores="$((procs > 0 ? procs : 1))"
+  post_args=(
+    --max-jobs="${jobs}"
+    --cores="${cores}"
+    "${post_args[@]}"
+  )
+fi
+
+"${pre_cmd[@]}" nixos-rebuild "${pre_args[@]}" "${cmd}" "${post_args[@]}" |& nom --json
