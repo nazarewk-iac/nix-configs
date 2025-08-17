@@ -107,12 +107,12 @@ networking:
             password: ENC[AES256_GCM,data:SEe4yNMB7dEN/lqR5EDz7KgmqO3NWDP9Zw3iXTGl3dk83bsO3urE2OR6kJBPYtBM972a6gwuudHyRkKiLXkd,iv:DPpHRaxSMId8zaYBkvgHljBfLkne126LjwsD5tVyifM=,tag:Sz5ZPli4dTBnjQaSY4cyUw==,type:str]
         dropout-wafer:
             password: ENC[AES256_GCM,data:vZo+f6GYEtwvMBkGmhTDsF803yNgEIzVaAoQY+BxonI=,iv:iAEbjjd1R5Vo1NZekJ7Rjkez2pfhSv/6BV+qRw4K8K0=,tag:zOE3P34SK1hNnOj9qPrrZg==,type:str]
-        dropout-wafer-mlo:
-            password: ENC[AES256_GCM,data:pQOjAWL4YfHupe3p/V+jrbMHPPIlow5mXyDM00LgyTw=,iv:LmIkNFozcQjZlbsIRrhjunzd0x1tX0w6kEXvnpHWKjE=,tag:14A+p8wzUkglROTk1zqVlw==,type:str]
-        pager-tantrum:
-            password: ENC[AES256_GCM,data:oeFXJgidpU5bjwcfc8OQ8qLtf+CG5tZ9+kv3w764J1M=,iv:KeXHk+7aW7EiwxISZAgIlnAjSXt2EgOZwiNNx3DZ7Ec=,tag:30uv1ihg+9NMgKYvt5mIIw==,type:str]
-        pager-tantrum-mlo:
-            password: ENC[AES256_GCM,data:v43y2pV4NxDyX9cMBKlMAZ8hN0Zj78+HVxp4Gd91kNw=,iv:CIMF74b0t0lU6C4121YEcLhrT+04VUKalNvCQgyjh04=,tag:wmwL9/xiZ24jhfVMvrcfvA==,type:str]
+        dropout-wafer-compat:
+            password: ENC[AES256_GCM,data:rN9qqP5buCn3RhWBUYxCKEAf1+pa2t9DGzN+WJrMJcM=,iv:3GfOPBXil6Da4opVE74r9Gi2HoSYWOEBUwSOx+pm01k=,tag:cc/VHo1N/uv8Gi1+8v0xRQ==,type:str]
+        underwire-chalice:
+            password: ENC[AES256_GCM,data:hXoequ2ZkTfIXkotYHNYlg==,iv:KcuU/o3WJLXe6VjorH+btJn4/HkHfE1PBQKZiSuve8Y=,tag:S6u30ziWMolPJlzksdSKyQ==,type:str]
+        unopposed-twisting:
+            password: ENC[AES256_GCM,data:MQ3i7Um09t9Hy6OIqmL1og==,iv:4N3DLK2MvNoin0QjSuEpkehv7mVf/2+BqHnsZnqeXXY=,tag:vtGVMtuj6q6c3zB9iGzENg==,type:str]
     iperf-server:
         rsa:
             priv: ENC[AES256_GCM,data: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,iv:opVzbQv4LvveKWxJ9RPbgCvnKrhR2TkVyLCxOBLKLuc=,tag:iAGs0KUo+oX0jiUesqjBlA==,type:str]
@@ -239,7 +239,7 @@ sops:
             MPh261OHNH6fS7Gl9uQwDvHKJO0pXwMrgrUJsL1e+Q8NP6g8B+L3JYJS0dKTJZYR
             QlI=
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2025-06-02T12:59:08Z"
-    mac: ENC[AES256_GCM,data:uZezE9EKG6xcnqX9DL1yZUg3XMqBEv/a+ldEbtzUY318MjShmGZskyqyUOql9jEVuSV4OLQOSq15Vnl8EV59vUF6PJG4IqkWYMoWS9On5g/LfEUY296OhtlX3ga+IGuR8mI4LcWTLFSotfD9OxTzZUPjfTEykXs4MnbQhnXoSHA=,iv:XUrAIm39h1QlQcd8PhjGqn+OqM8zbvqdxcGAW8I5sIY=,tag:C7WccEUO2VUFn+OXOsnQJQ==,type:str]
+    lastmodified: "2025-08-17T07:19:02Z"
+    mac: ENC[AES256_GCM,data:55D1Yl6cD71DaV15q54Ci5Gg3bHvLyVaVFxdX41ajXa8sqIlVfGKvX2QGCH+FYSfVwPlRZxQCOFSbqroiNeWcqaQ2BnHFxZzHeSITaY6GCmNJQGDN7JEOesJ/hhK+zgqzmDNcopJ0ESV0KfvElGQUoQxysaezTEAyZ5/JjNje0M=,iv:lvA+vt5BaXixO7RseFm6iuXhhX4wfIgN0f7m0zMssi0=,tag:8JraLIHAZxxiRkoF3r6qxg==,type:str]
     unencrypted_suffix: _unencrypted
     version: 3.10.2

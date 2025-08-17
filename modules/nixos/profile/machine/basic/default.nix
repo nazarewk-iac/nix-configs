@@ -142,7 +142,7 @@ in {
     (let
       wlanPriorities = {
         "Covfefe" = 50;
-        "Covfefe-5GHz" = 100;
+        "dropout-wafer" = 100;
         "yelk" = 1;
       };
       envPath = "/etc/NetworkManager/system-connections/default.unattended.sops.env";
