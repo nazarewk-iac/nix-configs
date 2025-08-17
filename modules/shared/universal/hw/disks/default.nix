@@ -98,7 +98,7 @@ in {
     };
 
     nixBuildDir.type = lib.mkOption {
-      type = lib.types.enum ["disposable" "tmpfs"];
+      type = lib.types.enum ["disposable" "tmpfs" "zfs-dataset"];
       default = "disposable";
     };
     nixBuildDir.tmpfs.size = lib.mkOption {

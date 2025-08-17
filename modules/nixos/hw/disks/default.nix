@@ -69,6 +69,7 @@ in {
             type = "zfs_fs";
             mountpoint = "/nix/store";
             options.mountpoint = "/nix/store";
+            options.atime = "off";
           };
           "${hostname}/nix-system/nix-var" = {
             type = "zfs_fs";
@@ -233,6 +234,33 @@ in {
             "size=${cfg.nixBuildDir.tmpfs.size}"
             "mode=755"
           ];
+        };
+        # system-wide disks
+        disko.devices.zpool."${cfg.zpool-main.name}".datasets = {
+          /*
+          TODO: adjust according to recommendations from Matrix https://matrix.to/#/!6oudZq5zJjAyrxL2uY:0upti.me/$4QbeVc0OKEQtQYrnBDn7VzolWR6AoSPQ0LqPVDtEgD0?via=laas.fr&via=matrix.org&via=node.marinchik.ink
+            for build dirs:
+            - debatable about compression. it's normally fine and cheap, but does use cpu and in this case right when you want the cpu for something else. depends heavily on other aspects of the system
+            - consider sync=disabled
+            - consider redundant_metadata=some or none, for disposable datasets, to cut down on sync iops
+            - you already have relatime, good.. but consider if you need atime at all
+
+          the creation command:
+          > zfs create -u briv-main/briv/nix-system/nix-builds -o mountpoint=/nix/var/nix/builds-zfs-dataset -o atime=off -o redundant_metadata=none -o sync=disabled -o com.sun:auto-snapshot=false -o compression=off
+
+          WARNING: might need to run it on each affected host:
+          - briv
+          */
+          "${hostname}/nix-system/nix-builds" = {
+            type = "zfs_fs";
+            mountpoint = "/nix/var/nix/builds-zfs-dataset";
+            options.mountpoint = "/nix/var/nix/builds-zfs-dataset";
+            options."com.sun:auto-snapshot" = "false";
+            options.compression = "off";
+            options.atime = "off";
+            options.redundant_metadata = "none";
+            options.sync = "disabled";
+          };
         };
       }
       {

@@ -119,8 +119,17 @@ in {
         "fs/home/kdn/Nextcloud" = ds "/home/kdn/Nextcloud" [snapOff];
         "fs/home/kdn/dev" = ds "/home/kdn/dev" [];
         "fs/nix" = ds "/nix" [];
-        "fs/nix/store" = ds "/nix/store" [snapOff];
-        "fs/nix/var" = ds "/nix/var" [snapOff];
+        "fs/nix/store" = ds "/nix/store" [snapOff {options.atime = "off";}];
+        "fs/nix/var" = ds "/nix/var" [
+          snapOff
+          {
+            options."com.sun:auto-snapshot" = "false";
+            options.compression = "off";
+            options.atime = "off";
+            options.redundant_metadata = "none";
+            options.sync = "disabled";
+          }
+        ];
         "fs/var" = ds "/var" [snapOn];
         "fs/var/lib" = ds "/var/lib" [];
         "fs/var/lib/libvirt" = ds "/var/lib/libvirt" [];
