@@ -908,7 +908,7 @@ in {
                 lease-database = {
                   type = "memfile";
                   persist = true;
-                  name = "/var/lib/private/kea/dhcp4.leases";
+                  name = "/var/lib/kea/dhcp4.leases";
                 };
                 loggers = [
                   {
