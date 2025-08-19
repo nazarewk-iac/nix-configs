@@ -220,10 +220,6 @@ in {
               ipv6.method = "auto";
               ipv6.addr-gen-mode = "stable-privacy";
             };
-            /*
-            psk=,;Abw"~z>}f<<afi`O{MLY_KT!!{V3*k*,!u'G"+B[D$U82Rc+|#,TYliF6~GJp
-            psk=,;Abw"~z>}f<<afi`O{MLY_KT!!{V3*k*,!u''G"+B[D$U82Rc+|#,TYliF6~GJp'
-            */
           }))
         ];
       })
