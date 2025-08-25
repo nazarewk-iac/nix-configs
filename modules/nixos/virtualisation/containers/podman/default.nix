@@ -12,6 +12,11 @@ in {
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
+      environment.systemPackages = with pkgs; [
+        podman-compose
+      ];
+    }
+    {
       virtualisation.docker.enable = lib.mkDefault false;
       virtualisation.podman.enable = true;
 
