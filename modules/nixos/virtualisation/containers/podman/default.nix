@@ -36,6 +36,8 @@ in {
       */
       virtualisation.containers.containersConf.settings.network.network_backend = lib.mkDefault "netavark";
       virtualisation.containers.containersConf.settings.network.firewall_driver = lib.mkDefault "nftables";
+      # see https://github.com/containers/netavark/issues/274#issuecomment-3219896130
+      virtualisation.podman.extraPackages = [pkgs.nftables];
     }
   ]);
 }
