@@ -1,16 +1,14 @@
 {
-  stdenv,
   lib,
   buildGoModule,
   fetchFromGitHub,
   installShellFiles,
-  buildPackages,
   ...
 }: let
-  version = "6.5";
-  shortCommit = "6f2c7a1";
-  sha256 = "sha256-xwVbI4rXtcZrnTvp0vdHMbYRoWCsxIuGZF922eC/sfw=";
-  vendorHash = "sha256-QOS+D/zD5IlJBlb7vrOoHpP/7xS9En1/MFNwLSBrXOg=";
+  version = "6.6";
+  shortCommit = "7b3cc55";
+  sha256 = "sha256-Tq780+Gsu2Ym9+DeMpaOhsP2XluyKBh01USnmwlYsTs=";
+  vendorHash = "sha256-ilV/+Xogy4+5c/Rs0cCSvVTgDhL4mm9V/pxJB3XGDkw=";
   tag = "v${version}";
 in
   buildGoModule {
