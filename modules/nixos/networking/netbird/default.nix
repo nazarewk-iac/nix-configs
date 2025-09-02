@@ -71,6 +71,14 @@ in {
 
   config = lib.mkIf (config.kdn.networking.netbird != {}) (lib.mkMerge [
     {
+      # inlined packages
+      services.netbird.package = pkgs.kdn.netbird;
+      services.netbird.ui.package = pkgs.kdn.netbird-ui;
+      services.netbird.server.signal.package = pkgs.kdn.netbird-signal;
+      services.netbird.server.management.package = pkgs.kdn.netbird-management;
+      services.netbird.server.dashboard.package = pkgs.kdn.netbird-dashboard;
+    }
+    {
       # TODO: add/switch to `network-online.target` instead of `network.target` to properly initialize
 
       environment.systemPackages = with pkgs; [
