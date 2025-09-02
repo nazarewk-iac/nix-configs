@@ -6,9 +6,9 @@ atuin:
 netbird:
     priv:
         ephemeral:
-            setup-key: ENC[AES256_GCM,data:g5tcamJQjHZOsq3iONWQOXnoLqbO0ZHjLYqHDmxS2OzKGyvb,iv:onHEApDPevAHyPSO68TztXAGX0lREmn4aEDpkbQODc8=,tag:1c5KMhIdWFiEPZMrKkTzUg==,type:str]
+            setup-key: ENC[AES256_GCM,data:QgxNUQeZ+EGOgsnzqkuwMeqWMQAJNg5fTSw4MK0XIdJmgaC/,iv:TsZGm1DNgf0Aif3tKDB+WFMtEsns3J29ih4l/rD9/ec=,tag:gkH6q2BWbde1sfB37gVVGA==,type:str]
         permanent:
-            setup-key: ENC[AES256_GCM,data:4msuibFsoQzmhqB5qOXGXrHiNrPTHfZ7j7725MsSGvLcgGpd,iv:QF3tZXDFR4R8mbGVVC81vz+9+HCqrHWrChC0RSK2lf8=,tag:1SbdDl2ScUk++lojzD3UTQ==,type:str]
+            setup-key: ENC[AES256_GCM,data:DH1x/J5cfcJM/Msl/OrCGMi5zY4sz0p5WuCHxwNblKdmXrB2,iv:tMkoKoyqg3MJh6vdkufpJD2bj62GmaGYG1hvGQANonc=,tag:Gs8LjMk8jB4tvW5pwBbxnQ==,type:str]
     netbird-tests:
         ephemeral:
             setup-key: ENC[AES256_GCM,data:h1jPiCKnEr/IjLGoJ/igVxP3NV3HL6T0+CzdiQ28LkXu7DY1,iv:daZVocQdKhiZJvrU6gy7tMnxMnyIV1aM7/mkGGlIs8E=,tag:BovbU3TDt34GXx1lcvtUCg==,type:str]
@@ -239,7 +239,7 @@ sops:
             MPh261OHNH6fS7Gl9uQwDvHKJO0pXwMrgrUJsL1e+Q8NP6g8B+L3JYJS0dKTJZYR
             QlI=
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2025-08-17T07:19:02Z"
-    mac: ENC[AES256_GCM,data:55D1Yl6cD71DaV15q54Ci5Gg3bHvLyVaVFxdX41ajXa8sqIlVfGKvX2QGCH+FYSfVwPlRZxQCOFSbqroiNeWcqaQ2BnHFxZzHeSITaY6GCmNJQGDN7JEOesJ/hhK+zgqzmDNcopJ0ESV0KfvElGQUoQxysaezTEAyZ5/JjNje0M=,iv:lvA+vt5BaXixO7RseFm6iuXhhX4wfIgN0f7m0zMssi0=,tag:8JraLIHAZxxiRkoF3r6qxg==,type:str]
+    lastmodified: "2025-09-02T09:56:04Z"
+    mac: ENC[AES256_GCM,data:VvBJxGEvEm6zb0Xx+2ot/8/nZ+kADT4OFheAI57XcYSk0tpzT/Dq7apZIP0UweRWVGXZq5GeawV1mimxDOILjEd5FEZNqMVuYSklfPyp9olnGbFXnVFhEolM6KpHmjTx0WlbATF48lUZGvMLANpiaWzz05ijx3sHFRUhPpG6jlo=,iv:bH/u5hktZHJJL+l2PXcRRZsoVWPoNcz7GlQ3bq+PtSI=,tag:8F+jXjSv3px9ggaD81FuJQ==,type:str]
     unencrypted_suffix: _unencrypted
     version: 3.10.2
