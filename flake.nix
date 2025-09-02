@@ -110,7 +110,12 @@
 
     flake.overlays.packages = inputs.nixpkgs.lib.composeManyExtensions [
       (final: prev: {
-        kdn = (prev.kdn or {}) // (final.callPackages ./packages {});
+        kdn =
+          (prev.kdn or {})
+          // (import ./packages {
+            pkgs = final;
+            lib = final.lib;
+          });
       })
     ];
 

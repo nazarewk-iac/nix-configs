@@ -86,7 +86,7 @@
         ];
       });
 in
-  (pkgs.callPackages ./netbird {})
+  (import ./netbird {inherit pkgs lib;})
   // {
     # changed to manual list due to infinite recursion errors
     data-converters = pkgs.callPackage ./data-converters {};
