@@ -4,12 +4,19 @@
   config,
   ...
 }: let
-  activeCfgs = lib.pipe config.kdn.networking.netbird [
+  cfg = config.kdn.networking.netbird;
+  activeCfgs = lib.pipe config.kdn.networking.netbird.clients [
     builtins.attrValues
     (builtins.filter (nbCfg: nbCfg.enable))
   ];
 in {
-  options.kdn.networking.netbird = lib.mkOption {
+  options.kdn.networking.netbird = {
+    customPackages = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+    };
+  };
+  options.kdn.networking.netbird.clients = lib.mkOption {
     type = lib.types.attrsOf (lib.types.submodule ({name, ...} @ nbArgs: let
       nbCfg = nbArgs.config;
     in {
@@ -69,15 +76,15 @@ in {
     }));
   };
 
-  config = lib.mkIf (config.kdn.networking.netbird != {}) (lib.mkMerge [
-    {
+  config = lib.mkIf (config.kdn.networking.netbird.clients != {}) (lib.mkMerge [
+    (lib.mkIf cfg.customPackages {
       # inlined packages
       services.netbird.package = pkgs.kdn.netbird;
       services.netbird.ui.package = pkgs.kdn.netbird-ui;
       services.netbird.server.signal.package = pkgs.kdn.netbird-signal;
       services.netbird.server.management.package = pkgs.kdn.netbird-management;
       services.netbird.server.dashboard.package = pkgs.kdn.netbird-dashboard;
-    }
+    })
     {
       # TODO: add/switch to `network-online.target` instead of `network.target` to properly initialize
 

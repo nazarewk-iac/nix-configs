@@ -358,7 +358,7 @@ in {
       kdn.networking.tailscale.enable = false;
     }
     {
-      kdn.networking.netbird.priv.idx = 1;
+      kdn.networking.netbird.clients.priv.idx = 1;
     }
     {
       kdn.services.nextcloud-client-nixos.enable = config.kdn.security.secrets.allowed;

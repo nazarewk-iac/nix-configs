@@ -71,12 +71,12 @@ in {
       ];
     }
     {
-      kdn.networking.netbird.nbs.idx = 2; # staging client
-      kdn.networking.netbird.nbt.idx = 3; # testing client
-      kdn.networking.netbird.nbc.idx = 4; # cloud client
-      kdn.networking.netbird.t1.idx = 5; # testing client
-      kdn.networking.netbird.t2.idx = 6; # testing client
-      kdn.networking.netbird.t3.idx = 7; # testing client
+      kdn.networking.netbird.clients.nbs.idx = 2; # staging client
+      kdn.networking.netbird.clients.nbt.idx = 3; # testing client
+      kdn.networking.netbird.clients.nbc.idx = 4; # cloud client
+      kdn.networking.netbird.clients.t1.idx = 5; # testing client
+      kdn.networking.netbird.clients.t2.idx = 6; # testing client
+      kdn.networking.netbird.clients.t3.idx = 7; # testing client
     }
   ]);
 }

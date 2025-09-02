@@ -224,7 +224,7 @@
                 kdn.security.secrets.allow = true;
                 kdn.profile.machine.baseline.enable = true;
                 kdn.security.disk-encryption.enable = true;
-                kdn.networking.netbird.priv.type = "ephemeral";
+                kdn.networking.netbird.clients.priv.type = "ephemeral";
 
                 environment.systemPackages = with pkgs; [
                 ];

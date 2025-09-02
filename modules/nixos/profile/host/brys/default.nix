@@ -218,7 +218,7 @@ in {
               networking.hostId = "fb6ff1fa"; # cut -c-8 </proc/sys/kernel/random/uuid
               kdn.security.secrets.enable = false;
 
-              kdn.networking.netbird.priv.enable = false;
+              kdn.networking.netbird.clients.priv.enable = false;
             }
             {
               microvm.interfaces = [
