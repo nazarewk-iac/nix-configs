@@ -139,7 +139,6 @@ in
 
     passthru =
       {
-        inherit componentName;
         tests = lib.attrsets.optionalAttrs (componentName == "client") {
           nixos = nixosTests.netbird;
           inherit

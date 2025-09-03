@@ -11,7 +11,7 @@
   ];
 in {
   options.kdn.networking.netbird = {
-    customPackages = lib.mkOption {
+    useOwnPackages = lib.mkOption {
       type = lib.types.bool;
       default = true;
     };
@@ -77,13 +77,13 @@ in {
   };
 
   config = lib.mkIf (config.kdn.networking.netbird.clients != {}) (lib.mkMerge [
-    (lib.mkIf cfg.customPackages {
+    (lib.mkIf cfg.useOwnPackages {
       # inlined packages
-      services.netbird.package = pkgs.kdn.netbird;
-      services.netbird.ui.package = pkgs.kdn.netbird-ui;
-      services.netbird.server.signal.package = pkgs.kdn.netbird-signal;
-      services.netbird.server.management.package = pkgs.kdn.netbird-management;
-      services.netbird.server.dashboard.package = pkgs.kdn.netbird-dashboard;
+      services.netbird.package = lib.mkDefault pkgs.kdn.netbird;
+      services.netbird.ui.package = lib.mkDefault pkgs.kdn.netbird-ui;
+      services.netbird.server.signal.package = lib.mkDefault pkgs.kdn.netbird-signal;
+      services.netbird.server.management.package = lib.mkDefault pkgs.kdn.netbird-management;
+      services.netbird.server.dashboard.package = lib.mkDefault pkgs.kdn.netbird-dashboard;
     })
     {
       # TODO: add/switch to `network-online.target` instead of `network.target` to properly initialize

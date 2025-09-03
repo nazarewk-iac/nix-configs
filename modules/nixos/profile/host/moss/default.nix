@@ -28,5 +28,9 @@ in {
       # TODO: anji times out on using moss as DNS resolver (port 5353)
       kdn.profile.machine.baseline.multicastDNS = "false";
     }
+    {
+      kdn.networking.netbird.clients.nbs.idx = 2; # staging client
+      kdn.networking.netbird.clients.nbt.idx = 3; # testing client
+    }
   ]);
 }
