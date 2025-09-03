@@ -133,7 +133,7 @@ in {
     })
     (lib.mkIf (hasWorkstation && config.kdn.desktop.enable) {
       home.packages = with pkgs; [
-        webex # meetings/screen sharing # TODO: didn't start the meeting on 2025-04-24
+        #webex # meetings/screen sharing, this barely works and might give build errors
       ];
     })
     (lib.mkIf hasSway (import ./mimeapps.nix arguments).config)
