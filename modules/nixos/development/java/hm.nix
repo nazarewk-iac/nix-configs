@@ -22,11 +22,5 @@ in {
         ".cache/gradle"
       ];
     }
-    {
-      programs.helix.extraPackages = with pkgs; [
-        gopls
-        delve
-      ];
-    }
   ]);
 }
