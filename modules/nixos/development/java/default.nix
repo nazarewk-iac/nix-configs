@@ -19,7 +19,7 @@ in {
       maven
       gradle-completion
 
-      (pkgs.callPackage gradle-packages.gradle_7 {
+      (gradle-packages.gradle_7.override {
         javaToolchains = [
           jdk8
           jdk11
