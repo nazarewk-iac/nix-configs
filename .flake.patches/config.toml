@@ -11,8 +11,15 @@ upstream_input = "{name}-upstream"
 # Source Commit: https://github.com/NixOS/nixpkgs/commit/987e8139617e37c86c33891697c6f3a9bf21021e.patch?full_index=1
 # Source diff from another repo: https://github.com/NixOS/nixpkgs/compare/nixos-unstable...nazarewk:netbird-improvements~1.patch?full_index=1
 
-[patch.nixpkgs.python-i3ipc]
-url = "https://github.com/NixOS/nixpkgs/pull/438729.patch?full_index=1"
+[patch.nixpkgs.tkinter-build] # fixes ceph
+# see https://github.com/NixOS/nixpkgs/issues/442652
+url = "https://github.com/NixOS/nixpkgs/pull/442184.patch?full_index=1"
+
+[patch.nixpkgs.lix-build]
+url = "https://github.com/NixOS/nixpkgs/pull/442624.patch?full_index=1"
+
+[patch.preservation.fix-conflict]
+url = "https://github.com/nix-community/preservation/pull/21.patch?full_index=1"
 
 #[patch.nixpkgs.allow-missing-kernel-modules]
 ##url = "https://github.com/NixOS/nixpkgs/pull/375975.patch?full_index=1"

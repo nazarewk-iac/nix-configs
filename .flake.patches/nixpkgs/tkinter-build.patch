@@ -1,0 +1,278 @@
+From 891de8f8bf103582edb0f6663adf9405681bce2e Mon Sep 17 00:00:00 2001
+From: Tom Hunze <dev@thunze.de>
+Date: Thu, 11 Sep 2025 21:00:31 +0200
+Subject: [PATCH 1/5] python313Packages.tkinter: revert to building with tcl
+ 8.6
+
+Tcl 9.0 support in Tkinter is not quite there yet [1]. There is ongoing
+work on improving support, though.
+
+This fixes the build of `python310Packages.tkinter` and
+`python311Packages.tkinter`.
+
+[1] https://github.com/python/cpython/issues/124111
+---
+ pkgs/development/python-modules/tkinter/pyproject.toml | 3 +--
+ pkgs/top-level/python-packages.nix                     | 9 +--------
+ 2 files changed, 2 insertions(+), 10 deletions(-)
+
+diff --git a/pkgs/development/python-modules/tkinter/pyproject.toml b/pkgs/development/python-modules/tkinter/pyproject.toml
+index 770331a7ef4f5c23dc7a408ac9853444a736d1b1..f274d9788a661c718fb90ff45066e8cc3a2399ed 100644
+--- a/pkgs/development/python-modules/tkinter/pyproject.toml
++++ b/pkgs/development/python-modules/tkinter/pyproject.toml
+@@ -11,6 +11,5 @@ requires-python = ">=@python_version@"
+ [tool.setuptools]
+ packages = ["tkinter"]
+ ext-modules = [
+-  { name = "_tkinter", sources = ["_tkinter.c"], libraries = ["tcl9.0", "tcl9tk9.0"], include-dirs = ["@python_internal_dir@/"] }
++  { name = "_tkinter", sources = ["_tkinter.c"], libraries = ["tcl8.6", "tk8.6"], include-dirs = ["@python_internal_dir@/"] }
+ ]
+-
+diff --git a/pkgs/top-level/python-packages.nix b/pkgs/top-level/python-packages.nix
+index 9e7bfc8df7f13cb0c5c265e8fef5c12ce06ee326..069ee00aba67e8a7a24ca5a6d38c85f35e2dd261 100644
+--- a/pkgs/top-level/python-packages.nix
++++ b/pkgs/top-level/python-packages.nix
+@@ -18383,14 +18383,7 @@ self: super: with self; {
+ 
+   tivars = callPackage ../development/python-modules/tivars { };
+ 
+-  tkinter =
+-    if isPyPy then
+-      null
+-    else
+-      callPackage ../development/python-modules/tkinter {
+-        tcl = pkgs.tcl-9_0;
+-        tk = pkgs.tk-9_0;
+-      };
++  tkinter = if isPyPy then null else callPackage ../development/python-modules/tkinter { };
+ 
+   tkinter-gl = callPackage ../development/python-modules/tkinter-gl { };
+ 
+
+From a19656ee62c9eb1e269c29ae8f96751597149c0e Mon Sep 17 00:00:00 2001
+From: Tom Hunze <dev@thunze.de>
+Date: Thu, 11 Sep 2025 21:04:05 +0200
+Subject: [PATCH 2/5] python313Packages.tkinter: enable tests by default
+
+---
+ pkgs/development/python-modules/tkinter/default.nix | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/pkgs/development/python-modules/tkinter/default.nix b/pkgs/development/python-modules/tkinter/default.nix
+index afc6d765a4986bc4515e8643d661937df03f5147..548c36625c4dc8e205631cebd653728ee3b55647 100644
+--- a/pkgs/development/python-modules/tkinter/default.nix
++++ b/pkgs/development/python-modules/tkinter/default.nix
+@@ -8,7 +8,6 @@
+   tcl,
+   tclPackages,
+   tk,
+-  tkinter,
+   xvfb-run,
+ }:
+ 
+@@ -64,8 +63,6 @@ buildPythonPackage {
+     ];
+   };
+ 
+-  doCheck = false;
+-
+   nativeCheckInputs = [ xvfb-run ];
+ 
+   preCheck = ''
+@@ -81,8 +78,6 @@ buildPythonPackage {
+     runHook postCheck
+   '';
+ 
+-  passthru.tests.unittests = tkinter.overridePythonAttrs { doCheck = true; };
+-
+   pythonImportsCheck = [ "tkinter" ];
+ 
+   meta = {
+
+From 9a4d63adb6db924a353ab04d53976408ce68bece Mon Sep 17 00:00:00 2001
+From: Tom Hunze <dev@thunze.de>
+Date: Thu, 11 Sep 2025 21:10:04 +0200
+Subject: [PATCH 3/5] python313Packages.tkinter: enable tests for tcl and ttk
+
+---
+ pkgs/development/python-modules/tkinter/default.nix | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/pkgs/development/python-modules/tkinter/default.nix b/pkgs/development/python-modules/tkinter/default.nix
+index 548c36625c4dc8e205631cebd653728ee3b55647..560ebf766649e655eb2b6de3bab2d9a9883b0100 100644
+--- a/pkgs/development/python-modules/tkinter/default.nix
++++ b/pkgs/development/python-modules/tkinter/default.nix
+@@ -73,7 +73,7 @@ buildPythonPackage {
+   checkPhase = ''
+     runHook preCheck
+     xvfb-run -w 10 -s "-screen 0 1920x1080x24" \
+-      python -m unittest test.test_tkinter
++      python -m unittest test.test_tcl test.test_tkinter test.test_ttk test.test_ttk_textonly
+ 
+     runHook postCheck
+   '';
+
+From d38339f66974c9c8aa0d8efb943acb3f504dc69f Mon Sep 17 00:00:00 2001
+From: Tom Hunze <dev@thunze.de>
+Date: Thu, 11 Sep 2025 22:12:15 +0200
+Subject: [PATCH 4/5] python313Packages.tkinter: fix test selection for darwin,
+ older python
+
+https://github.com/python/cpython/pull/94070
+---
+ .../python-modules/tkinter/default.nix        | 39 +++++++++++++++----
+ 1 file changed, 31 insertions(+), 8 deletions(-)
+
+diff --git a/pkgs/development/python-modules/tkinter/default.nix b/pkgs/development/python-modules/tkinter/default.nix
+index 560ebf766649e655eb2b6de3bab2d9a9883b0100..f85503f9c748d2c83138860389e1d50a3d6d9d07 100644
+--- a/pkgs/development/python-modules/tkinter/default.nix
++++ b/pkgs/development/python-modules/tkinter/default.nix
+@@ -1,5 +1,6 @@
+ {
+   lib,
++  stdenv,
+   buildPythonPackage,
+   replaceVars,
+   setuptools,
+@@ -63,20 +64,42 @@ buildPythonPackage {
+     ];
+   };
+ 
+-  nativeCheckInputs = [ xvfb-run ];
++  nativeCheckInputs = lib.optional stdenv.hostPlatform.isLinux xvfb-run;
+ 
+   preCheck = ''
+     cd $NIX_BUILD_TOP/Python-*/Lib
+     export HOME=$TMPDIR
+   '';
+ 
+-  checkPhase = ''
+-    runHook preCheck
+-    xvfb-run -w 10 -s "-screen 0 1920x1080x24" \
+-      python -m unittest test.test_tcl test.test_tkinter test.test_ttk test.test_ttk_textonly
+-
+-    runHook postCheck
+-  '';
++  checkPhase =
++    let
++      testsNoGui = [
++        "test.test_tcl"
++        "test.test_ttk_textonly"
++      ];
++      testsGui =
++        if pythonOlder "3.12" then
++          [
++            "test.test_tk"
++            # "test.test_ttk_guionly"  # https://github.com/python/cpython/issues/124378
++          ]
++        else
++          [
++            "test.test_tkinter"
++            "test.test_ttk"
++          ];
++    in
++    ''
++      runHook preCheck
++      python -m unittest ${lib.concatStringsSep " " testsNoGui}
++    ''
++    + lib.optionalString stdenv.hostPlatform.isLinux ''
++      xvfb-run -w 10 -s "-screen 0 1920x1080x24" \
++        python -m unittest ${lib.concatStringsSep " " testsGui}
++    ''
++    + ''
++      runHook postCheck
++    '';
+ 
+   pythonImportsCheck = [ "tkinter" ];
+ 
+
+From 6f8a4f3eba7d607865d2aa75c58a091b7ff90c3c Mon Sep 17 00:00:00 2001
+From: Tom Hunze <dev@thunze.de>
+Date: Fri, 12 Sep 2025 14:15:21 +0200
+Subject: [PATCH 5/5] python313Packages.tkinter: patch failing ttk test for
+ python <3.12
+
+https://github.com/python/cpython/issues/124378
+https://github.com/python/cpython/pull/124542
+---
+ .../python-modules/tkinter/default.nix        | 15 ++++++++----
+ .../tkinter/fix-ttk-notebook-test.patch       | 24 +++++++++++++++++++
+ 2 files changed, 34 insertions(+), 5 deletions(-)
+ create mode 100644 pkgs/development/python-modules/tkinter/fix-ttk-notebook-test.patch
+
+diff --git a/pkgs/development/python-modules/tkinter/default.nix b/pkgs/development/python-modules/tkinter/default.nix
+index f85503f9c748d2c83138860389e1d50a3d6d9d07..dbbf063c9fa4416412ff726e23a3e3ffb01d547e 100644
+--- a/pkgs/development/python-modules/tkinter/default.nix
++++ b/pkgs/development/python-modules/tkinter/default.nix
+@@ -27,23 +27,28 @@ buildPythonPackage {
+     cp -rv Modules/clinic ../tkinter/
+     cp -rv Lib/tkinter ../tkinter/
+ 
+-    pushd $NIX_BUILD_TOP/tkinter
+-
+     # install our custom pyproject.toml
+     cp ${
+       replaceVars ./pyproject.toml {
+         python_version = python.version;
+         python_internal_dir = "${python}/include/${python.libPrefix}/internal";
+       }
+-    } ./pyproject.toml
++    } $NIX_BUILD_TOP/tkinter/pyproject.toml
+ 
+   ''
+   + lib.optionalString (pythonOlder "3.13") ''
+-    substituteInPlace "tkinter/tix.py" --replace-fail \
++    substituteInPlace "$NIX_BUILD_TOP/tkinter/tkinter/tix.py" --replace-fail \
+       "os.environ.get('TIX_LIBRARY')" \
+       "os.environ.get('TIX_LIBRARY') or '${tclPackages.tix}/lib'"
+   '';
+ 
++  # Adapted from https://github.com/python/cpython/pull/124542
++  patches = lib.optional (pythonOlder "3.12") ./fix-ttk-notebook-test.patch;
++
++  postPatch = ''
++    pushd $NIX_BUILD_TOP/tkinter
++  '';
++
+   build-system = [ setuptools ];
+ 
+   buildInputs = [
+@@ -81,7 +86,7 @@ buildPythonPackage {
+         if pythonOlder "3.12" then
+           [
+             "test.test_tk"
+-            # "test.test_ttk_guionly"  # https://github.com/python/cpython/issues/124378
++            "test.test_ttk_guionly"
+           ]
+         else
+           [
+diff --git a/pkgs/development/python-modules/tkinter/fix-ttk-notebook-test.patch b/pkgs/development/python-modules/tkinter/fix-ttk-notebook-test.patch
+new file mode 100644
+index 0000000000000000000000000000000000000000..cf2ca0f7acdfa601dec368955d3e7390bdab8936
+--- /dev/null
++++ b/pkgs/development/python-modules/tkinter/fix-ttk-notebook-test.patch
+@@ -0,0 +1,24 @@
++--- a/Lib/tkinter/test/test_ttk/test_widgets.py
+++++ b/Lib/tkinter/test/test_ttk/test_widgets.py
++@@ -911,12 +911,20 @@ class ScrollbarTest(AbstractWidgetTest, unittest.TestCase):
++         return ttk.Scrollbar(self.root, **kwargs)
++ 
++ 
++-@add_standard_options(IntegerSizeTests, StandardTtkOptionsTests)
+++@add_standard_options(StandardTtkOptionsTests)
++ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
++     OPTIONS = (
++         'class', 'cursor', 'height', 'padding', 'style', 'takefocus', 'width',
++     )
++ 
+++    def test_configure_height(self):
+++        widget = self.create()
+++        self.checkPixelsParam(widget, 'height', '10c', 402, -402, 0, conv=False)
+++
+++    def test_configure_width(self):
+++        widget = self.create()
+++        self.checkPixelsParam(widget, 'width', '10c', 402, -402, 0, conv=False)
+++
++     def setUp(self):
++         super().setUp()
++         self.nb = self.create(padding=0)

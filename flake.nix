@@ -44,7 +44,8 @@
   inputs.nixos-anywhere.url = "github:numtide/nixos-anywhere";
   inputs.nixos-generators.url = "github:nix-community/nixos-generators";
   inputs.nur.url = "github:nix-community/NUR";
-  inputs.preservation.url = "github:nix-community/preservation";
+  inputs.preservation.url = "github:nazarewk/preservation/nix-configs";
+  inputs.preservation-upstream.url = "github:nix-community/preservation";
   inputs.rust-overlay.url = "github:oxalica/rust-overlay";
   inputs.nixos-hardware.url = "github:nixos/nixos-hardware";
   inputs.stylix.url = "github:danth/stylix";
@@ -214,7 +215,7 @@
                 `image.baseName` gives a stable image filename
                 - see https://github.com/NixOS/nixpkgs/blob/30a61f056ac492e3b7cdcb69c1e6abdcf00e39cf/nixos/modules/image/file-options.nix#L9-L16
                 */
-                image.baseName = lib.mkForce "kdn-nixos-installer";
+                image.baseName = lib.mkForce "kdn-nixos-install-iso";
 
                 /*
                  `install-iso` uses some weird GRUB booting chimera

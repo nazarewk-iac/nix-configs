@@ -1,0 +1,32 @@
+From 558602493dc54c2661f6fd26307116ac3d9521c9 Mon Sep 17 00:00:00 2001
+From: Krzysztof Nazarewski <gpg@kdn.im>
+Date: Mon, 15 Sep 2025 11:13:41 +0200
+Subject: [PATCH] fix tmpfiles `0755` permissions conflict on split roots for
+ subdirectories
+
+fixes https://github.com/nix-community/preservation/issues/20
+---
+ options.nix | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/options.nix b/options.nix
+index fcfb3c7b7dfed71d5ce8d026d43a1b9f25b76fe0..cbd6a57f137b217a763a57512e80393218ff01e1 100644
+--- a/options.nix
++++ b/options.nix
+@@ -354,11 +354,11 @@ let
+             definedDirectories:
+             let
+               intermediateDirectorySettings = {
+-                how = "_intermediate";
+-                configureParent = false;
+-                user = attrs.config.username;
+-                group = config.users.users.${attrs.config.username}.group;
+-                mode = "0755";
++                how = lib.mkDefault "_intermediate";
++                configureParent = lib.mkDefault  false;
++                user = lib.mkDefault attrs.config.username;
++                group = lib.mkDefault config.users.users.${attrs.config.username}.group;
++                mode = lib.mkDefault "0755";
+               };
+               allDirectories =
+                 mkIntermediateUserDirectories intermediateDirectorySettings attrs.config.files attrs.config.home
