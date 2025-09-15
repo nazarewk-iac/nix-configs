@@ -280,16 +280,17 @@ def patches_apply(
 
         if current_branch != base_branch:
             run(
-                f"{repo_rel}: checking out correct branch: {current_branch=} -> {base_branch=}",
-                ["git", "checkout", "-B", base_branch, f"upstream/{base_branch}"],
+                f"{repo_rel}: checking out correct branch: {current_branch=} -> {base_branch=} @ {upstream_rev=}",
+                ["git", "checkout", "-B", base_branch, upstream_rev],
                 cwd=subrepo_path,
             )
-        run(
-            f"{repo_rel}: resetting to {upstream_rev}",
-            ["git", "reset", "--hard", upstream_rev],
-            cwd=subrepo_path,
-            check=True,
-        )
+        else:
+            run(
+                f"{repo_rel}: resetting to {upstream_rev}",
+                ["git", "reset", "--hard", upstream_rev],
+                cwd=subrepo_path,
+                check=True,
+            )
 
         for patchfile in sorted(base_path.glob("*.patch")):
             try:
