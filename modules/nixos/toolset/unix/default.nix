@@ -13,10 +13,7 @@ in {
   config = lib.mkIf cfg.enable {
     kdn.toolset.tracing.enable = lib.mkDefault true;
     environment.systemPackages =
-      (with config.boot.kernelPackages; [
-        perf
-      ])
-      ++ (with pkgs; [
+      (with pkgs; [
         sysstat
         iotop
 
@@ -25,6 +22,7 @@ in {
         lurk # strace alternative
         pstree
         strace
+        perf # moved from kernelPackages
         (lib.meta.setPrio 10 util-linux)
 
         (pkgs.writeShellApplication {
