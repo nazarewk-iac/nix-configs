@@ -15,6 +15,14 @@ in {
       type = lib.types.bool;
       default = true;
     };
+    defaultUsers = lib.mkOption {
+      type = with lib.types; listOf str;
+      default = [];
+    };
+    adminUsers = lib.mkOption {
+      type = with lib.types; listOf str;
+      default = [];
+    };
   };
   options.kdn.networking.netbird.clients = lib.mkOption {
     type = lib.types.attrsOf (lib.types.submodule ({name, ...} @ nbArgs: let
@@ -32,6 +40,14 @@ in {
         serviceName = lib.mkOption {
           type = with lib.types; str;
           default = "netbird-${name}";
+        };
+        userName = lib.mkOption {
+          type = with lib.types; str;
+          default = nbCfg.serviceName;
+        };
+        groupName = lib.mkOption {
+          type = with lib.types; str;
+          default = nbCfg.serviceName;
         };
 
         secretKey = lib.mkOption {
@@ -71,6 +87,17 @@ in {
         type = lib.mkOption {
           type = with lib.types; enum ["ephemeral" "permanent"];
           default = "permanent";
+        };
+
+        users = lib.mkOption {
+          type = with lib.types; listOf str;
+          default = cfg.defaultUsers;
+          apply = users:
+            lib.pipe users [
+              (u: u ++ cfg.adminUsers)
+              (builtins.sort builtins.lessThan)
+              lib.lists.uniqueStrings
+            ];
         };
       };
     }));
@@ -114,10 +141,15 @@ in {
       kdn.hw.disks.persist."usr/data".directories = lib.pipe activeCfgs [
         (builtins.map (nbCfg: {
           directory = "/var/lib/${nbCfg.serviceName}";
-          user = nbCfg.serviceName;
-          group = nbCfg.serviceName;
+          user = nbCfg.userName;
+          group = nbCfg.groupName;
           mode = "0700";
         }))
+      ];
+
+      users.groups = lib.pipe activeCfgs [
+        (builtins.map (nbCfg: lib.attrsets.nameValuePair nbCfg.groupName {members = nbCfg.users;}))
+        builtins.listToAttrs
       ];
     }
     (lib.mkIf config.kdn.security.secrets.allowed {

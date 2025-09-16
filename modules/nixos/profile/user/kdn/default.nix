@@ -58,5 +58,8 @@ in {
         }
       ];
     }
+    {
+      kdn.networking.netbird.adminUsers = ["kdn"];
+    }
   ]);
 }
