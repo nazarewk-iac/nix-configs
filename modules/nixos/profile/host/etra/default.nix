@@ -5,6 +5,10 @@
   kdn,
   ...
 }: let
+  /*
+  TODO: neither `kresd@{1,2}` nor `kea-dhcp4-server` were listening on the LAN interface's (bridge) IP address after power failures
+    probably need to add some missing dependencies for network initialization
+  */
   inherit (kdn) self;
   cfg = config.kdn.profile.host.etra;
 
