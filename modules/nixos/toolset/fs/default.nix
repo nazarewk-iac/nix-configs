@@ -18,6 +18,7 @@ in {
         file
         ncdu
         tree
+        mc # midnight commander
       ]
       ++ [
         entr # run commands on changes https://eradman.com/entrproject/
