@@ -150,6 +150,7 @@ in {
         dhcpV6Config.RouteMetric = 100;
       };
 
+      /*
       systemd.network.netdevs."50-${vlan.pic.name}" = {
         netdevConfig.Kind = "vlan";
         netdevConfig.Name = vlan.pic.iface;
@@ -187,6 +188,7 @@ in {
         dhcpV4Config.RouteMetric = 1100;
         dhcpV6Config.RouteMetric = 1100;
       };
+      */
     })
     /*
     (let
