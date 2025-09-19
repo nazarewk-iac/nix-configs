@@ -8,6 +8,7 @@
   /*
   TODO: neither `kresd@{1,2}` nor `kea-dhcp4-server` were listening on the LAN interface's (bridge) IP address after power failures
     probably need to add some missing dependencies for network initialization
+    this was probably caused by the upstream router booting slower than `etra` and above 2 not picking up new listen ports
   */
   inherit (kdn) self;
   cfg = config.kdn.profile.host.etra;
