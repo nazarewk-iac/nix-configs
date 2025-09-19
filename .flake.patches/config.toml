@@ -15,8 +15,8 @@ upstream_input = "{name}-upstream"
 # see https://github.com/NixOS/nixpkgs/issues/442652
 url = "https://github.com/NixOS/nixpkgs/pull/442184.patch?full_index=1"
 
-[patch.nixpkgs.lix-build]
-url = "https://github.com/NixOS/nixpkgs/pull/442624.patch?full_index=1"
+[patch.nixpkgs.netbird-bundle-logs]
+url = "https://github.com/NixOS/nixpkgs/pull/444043.patch?full_index=1"
 
 [patch.preservation.fix-conflict]
 url = "https://github.com/nix-community/preservation/pull/21.patch?full_index=1"

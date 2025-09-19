@@ -1,0 +1,24 @@
+From 850200ab29798e98b96540c369f609ab76b72eb6 Mon Sep 17 00:00:00 2001
+From: Krzysztof Nazarewski <gpg@kdn.im>
+Date: Thu, 18 Sep 2025 17:35:45 +0200
+Subject: [PATCH] nixos/netbird: add SYSTEMD_UNIT to pick up logs in debug
+ bundles
+
+---
+ nixos/modules/services/networking/netbird.nix | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/nixos/modules/services/networking/netbird.nix b/nixos/modules/services/networking/netbird.nix
+index 7c3fe93a5678613af0be12e8e13ed4ccc78b3d86..7640632b5966bdfb01325d416db34ddc8de1eacd 100644
+--- a/nixos/modules/services/networking/netbird.nix
++++ b/nixos/modules/services/networking/netbird.nix
+@@ -414,6 +414,9 @@ in
+               NB_LOG_LEVEL = client.logLevel;
+               NB_SERVICE = client.service.name;
+               NB_WIREGUARD_PORT = toString client.port;
++              # for gathering journald logs into debug bundles
++              # see https://github.com/netbirdio/netbird/blob/2c87fa623654c5eef76bc0226062290201eef13a/client/internal/debug/debug_linux.go#L50-L51
++              SYSTEMD_UNIT = client.service.name;
+             }
+             // optionalAttrs (client.dns-resolver.address != null) {
+               NB_DNS_RESOLVER_ADDRESS = "${client.dns-resolver.address}:${builtins.toString client.dns-resolver.port}";

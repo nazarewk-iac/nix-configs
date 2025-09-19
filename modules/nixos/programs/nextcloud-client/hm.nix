@@ -21,7 +21,6 @@ in {
       services.nextcloud-client.startInBackground = true;
       systemd.user.services.nextcloud-client.Service = {
         Restart = "on-failure";
-        RestartSec = 3;
       };
       kdn.programs.apps.nextcloud-client = {
         enable = true;
