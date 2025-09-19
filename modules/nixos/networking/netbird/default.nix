@@ -153,54 +153,22 @@ in {
       ];
     }
     (lib.mkIf config.kdn.security.secrets.allowed {
+      services.netbird.clients = lib.pipe config.kdn.networking.netbird.clients [
+        builtins.attrValues
+        (builtins.map (nbCfg: {
+          name = nbCfg.name;
+          value = lib.mkIf (nbCfg.secrets != null && nbCfg.secrets ? "${nbCfg.type}".setup-key) {
+            login.enable = true;
+            login.systemdDependencies = ["kdn-secrets.target"];
+            login.setupKeyFile = nbCfg.secrets."${nbCfg.type}".setup-key.path;
+          };
+        }))
+        builtins.listToAttrs
+      ];
       systemd.services = lib.pipe activeCfgs [
         (builtins.map (nbCfg: {
           name = nbCfg.serviceName;
           value = lib.mkIf (nbCfg.secrets != null) (lib.mkMerge [
-            {
-              after = ["kdn-secrets.target"];
-              requires = ["kdn-secrets.target"];
-            }
-            (lib.mkIf (nbCfg.secrets ? "${nbCfg.type}".setup-key) {
-              serviceConfig.LoadCredential = ["setup-key:${nbCfg.secrets."${nbCfg.type}".setup-key.path}"];
-              environment.NB_SETUP_KEY_FILE = "%d/setup-key";
-              postStart = ''
-                set -x
-                nb='${lib.getExe config.services.netbird.clients."${nbCfg.name}".wrapper}'
-                keyFile="''${NB_SETUP_KEY_FILE:-"/run/credentials/${nbCfg.serviceName}.service/setup-key"}"
-
-                fetch_status() {
-                  status="$("$nb" status 2>&1)"
-                }
-
-                print_status() {
-                  test -n "$status" || refresh_status
-                  cat <<EOF
-                $status
-                EOF
-                }
-
-                refresh_status() {
-                  fetch_status
-                  print_status
-                }
-
-                main() {
-                  print_status | ${lib.getExe pkgs.gnused} 's/^/STATUS:INIT: /g'
-                  while refresh_status | grep --quiet 'Disconnected' ; do
-                    sleep 1
-                  done
-                  print_status | ${lib.getExe pkgs.gnused} 's/^/STATUS:WAIT: /g'
-
-                  if print_status | grep --quiet 'NeedsLogin' ; then
-                    echo "Using keyfile $(cut -b1-8 <"$keyFile")" >&2
-                    "$nb" up --setup-key-file="$keyFile"
-                  fi
-                }
-
-                main "$@"
-              '';
-            })
             (lib.mkIf (nbCfg.secrets ? env) {
               serviceConfig.LoadCredential = ["env:${nbCfg.secrets.env.path}"];
               serviceConfig.EnvironmentFile = "-%d/env";
