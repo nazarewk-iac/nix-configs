@@ -72,5 +72,14 @@ in {
         }
       ];
     }
+    {
+      /*
+      TODO: run qemu path fixups on all the configurations before `libvirtd` starts up:
+        sed -i -E "s#/nix/store/[^-]+-qemu-[^/]+#$(kdn-nix-which qemu-kvm)#g" /var/lib/libvirt/qemu/brys-vm-nbt-win11-01.xml
+
+      can be reconfigured while running
+        EDITOR="sed -i -E 's#/nix/store/[^-]+-qemu-[^/]+#$(kdn-nix-which qemu-kvm)#g'" virsh edit brys-vm-nbt-win11-01
+      */
+    }
   ]);
 }
