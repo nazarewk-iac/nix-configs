@@ -24,7 +24,7 @@ in {
       kdn.services.caddy.enable = false;
       kdn.programs.obs-studio.enable = true;
 
-      kdn.virtualization.libvirtd.enable = true;
+      kdn.virtualisation.libvirtd.enable = true;
 
       boot.initrd.availableKernelModules = [];
 

@@ -5,7 +5,7 @@
   kdn,
   ...
 }: let
-  cfg = config.kdn.virtualization.microvm.guest;
+  cfg = config.kdn.virtualisation.microvm.guest;
 
   microvmPersistNames = ["microvm"] ++ builtins.attrNames config.kdn.hw.disks.base;
 in {
@@ -13,7 +13,7 @@ in {
     kdn.self.lib.lists.optionals (!kdn.features.microvm-guest)
     [kdn.inputs.microvm.nixosModules.microvm-options];
 
-  options.kdn.virtualization.microvm.guest = {
+  options.kdn.virtualisation.microvm.guest = {
     enable = lib.mkOption {
       type = lib.types.bool;
       default = kdn.features.microvm-guest;

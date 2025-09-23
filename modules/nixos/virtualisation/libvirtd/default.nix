@@ -4,9 +4,9 @@
   config,
   ...
 }: let
-  cfg = config.kdn.virtualization.libvirtd;
+  cfg = config.kdn.virtualisation.libvirtd;
 in {
-  options.kdn.virtualization.libvirtd = {
+  options.kdn.virtualisation.libvirtd = {
     enable = lib.mkEnableOption "libvirtd setup";
   };
 

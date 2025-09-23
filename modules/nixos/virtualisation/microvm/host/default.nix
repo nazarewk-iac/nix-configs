@@ -5,11 +5,11 @@
   kdn,
   ...
 }: let
-  cfg = config.kdn.virtualization.microvm.host;
+  cfg = config.kdn.virtualisation.microvm.host;
 in {
   imports = [kdn.inputs.microvm.nixosModules.host];
 
-  options.kdn.virtualization.microvm.host = {
+  options.kdn.virtualisation.microvm.host = {
     enable = lib.mkOption {
       type = lib.types.bool;
       default = kdn.features.microvm-host;

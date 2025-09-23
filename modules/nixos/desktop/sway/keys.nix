@@ -11,7 +11,7 @@ from `man 5 sway`:
         Unless  the  flag  --locked is set, the command will not be run when a screen locking program is active. If there is a matching binding with and without --locked, the one with will be preferred when locked and the one without will be preferred when unlocked. If there are matching bindings and one has both --input-device and --locked and the other has neither,
         the former will be preferred even when unlocked.
 
-        Unless the flag --inhibited is set, the command will not be run when a keyboard shortcuts inhibitor is active for the currently focused window. Such inhibitors are usually requested by remote desktop and virtualization software to enable the user to send keyboard shortcuts to the remote or virtual session. The --inhibited flag allows one  to  define  bindings
+        Unless the flag --inhibited is set, the command will not be run when a keyboard shortcuts inhibitor is active for the currently focused window. Such inhibitors are usually requested by remote desktop and virtualisation software to enable the user to send keyboard shortcuts to the remote or virtual session. The --inhibited flag allows one  to  define  bindings
         which will be exempt from pass-through to such software. The same preference logic as for --locked applies.
 
         Unless the flag --no-repeat is set, the command will be run repeatedly when the key is held, according to the repeat settings specified in the input configuration.
