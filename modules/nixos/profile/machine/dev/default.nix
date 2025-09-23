@@ -56,6 +56,7 @@ in {
     kdn.development.terraform.enable = true;
     kdn.development.web.enable = true;
     kdn.toolset.ide.enable = true;
+    kdn.toolset.mikrotik.enable = true;
     services.plantuml-server.enable = false; # TODO: fix this?
   };
 }
