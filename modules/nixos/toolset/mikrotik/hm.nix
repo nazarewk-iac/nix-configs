@@ -14,7 +14,7 @@ in {
     {
       kdn.emulation.wine.enable = true;
       home.packages = with pkgs; [
-        winbox
+        (lib.lowPrio winbox)
       ];
       kdn.programs.apps.winbox4 = {
         enable = true;
