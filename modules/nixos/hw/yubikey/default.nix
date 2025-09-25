@@ -6,6 +6,7 @@
 }: let
   cfg = config.kdn.hw.yubikey;
 in {
+  # TODO: run gpg-smartcard-reset-keys for users when plugging in/changing yubikeys?
   options.kdn.hw.yubikey = {
     enable = lib.mkEnableOption "YubiKey + GnuPG Smart Card config";
     appId = lib.mkOption {

@@ -95,6 +95,7 @@ in {
           #"preservation.target" # TODO: no such unit
         ];
         serviceConfig.Slice = "background.slice";
+        # TODO: run it when re-plugging smartcards/yubikeys
         postStart = ''
           if ! ${lib.getExe pkgs.kdn.gpg-smartcard-reset-keys} ; then
             echo 'WARNING: gpg-smartcard-reset-keys failed!'
