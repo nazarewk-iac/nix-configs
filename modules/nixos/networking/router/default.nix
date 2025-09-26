@@ -346,12 +346,12 @@
     config = lib.mkMerge [
       {
         template.network.values.Network = {
-          Address =
-            netCfg.address
-            ++ lib.pipe netCfg.addressing [
-              builtins.attrValues
-              (builtins.map (addrCfg: ''${addrCfg.hosts."${hostname}".ip}/${addrCfg.netmask}''))
-            ];
+          Address = lib.pipe netCfg.addressing [
+            builtins.attrValues
+            (builtins.map (addrCfg: ''${addrCfg.hosts."${hostname}".ip}/${addrCfg.netmask}''))
+            (l: netCfg.address ++ l)
+            lib.lists.unique
+          ];
         };
       }
       (lib.mkIf (netCfg.type == "wan") {
