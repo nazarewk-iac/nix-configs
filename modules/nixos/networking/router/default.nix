@@ -1025,6 +1025,15 @@ in {
       services.kresd.extraConfig = builtins.readFile ./kresd.conf.lua;
       systemd.services."kresd@".environment.KRESD_CONF_DIR = "/etc/knot-resolver";
 
+      # copy dependencies over from `kea-dhcp4-server.service`
+      systemd.services."kresd@".after = [
+        "network-online.target"
+        "time-sync.target"
+      ];
+      systemd.services."kresd@".wants = [
+        "network-online.target"
+      ];
+
       kdn.fs.watch.instances.kresd-reload.files = [
         "/etc/knot-resolver"
       ];
@@ -1119,6 +1128,16 @@ in {
               )))
           ])
           ''net.listen(${builtins.toJSON cfg.kresd.localAddress}, 53, { kind = 'dns', freebind = true })''
+          /*
+          TODO: On 2025-09-14 10:09:51 neither `kresd@{1,2}` nor `kea-dhcp4-server` were listening on the LAN interface's (bridge) IP address after power failure
+            it was caused by networkd activating the target even after this error occurred:
+                Sep 14 10:09:41 etra systemd-networkd[1199]: lan: Failed to get link from ifindex 6, ignoring: No such device
+            the interface was configured a few seconds later.
+            Neither kresd (confirmed) nor kea (probably?) listens for IP addressing changes on the interfaces
+            It could be addressed by either:
+              - restarting both kresd and kea (to pick up new IPs) upon changes to addressing
+              - listening directly on the IP addresses, they don't need to be available due to `freebind = true`.
+          */
           (builtins.map (iface: ''net.listen(net[${builtins.toJSON iface}], 53, { kind = 'dns', freebind = true })'') cfg.kresd.interfaces)
         ] [
           lib.lists.flatten
