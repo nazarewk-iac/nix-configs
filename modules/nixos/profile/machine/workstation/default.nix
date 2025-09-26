@@ -72,6 +72,8 @@ in {
     }
     {
       kdn.networking.netbird.clients.nbs.idx = 2; # staging client
+      services.netbird.clients.nbs.environment.NB_DISABLE_DNS = "true";
+
       kdn.networking.netbird.clients.nbt.idx = 3; # testing client
       kdn.networking.netbird.clients.nbc.idx = 4; # cloud client
       kdn.networking.netbird.clients.t1.idx = 5; # testing client
