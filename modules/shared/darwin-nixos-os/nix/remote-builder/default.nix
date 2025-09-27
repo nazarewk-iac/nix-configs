@@ -128,7 +128,7 @@ in {
                   factor = 100;
                 }
                 {
-                  domain = "netbird.cloud.";
+                  domain = "nb.net.int.kdn.im.";
                   factor = 20;
                 }
               ]
