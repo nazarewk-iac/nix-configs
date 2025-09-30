@@ -12,7 +12,7 @@ in {
 
   config = lib.mkIf cfg.enable {
     programs.helix.extraPackages = with pkgs; [
-      ansible-language-server
+      #ansible-language-server # "ansible-language-server was removed, because it was unmaintained in nixpkgs."; # Added 20
     ];
   };
 }
