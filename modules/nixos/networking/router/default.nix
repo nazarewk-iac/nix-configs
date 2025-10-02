@@ -706,8 +706,9 @@ in {
         IPv6PrivacyExtensions = true;
         SpeedMeter = true;
         SpeedMeterIntervalSec = 1;
-        # When true, systemd-networkd will remove routes that are not configured in .network files
-        #ManageForeignRoutes = false;
+        ManageForeignRoutes = false; # drops `ip route` on start since version 246
+        ManageForeignRoutingPolicyRules = false; # drops `ip rule` on start  since version 249
+        ManageForeignNextHops = false; # drops `ip nexthop` on start  since version 256
       };
       services.resolved.dnssec = "allow-downgrade";
       networking.nameservers = defaultDNSServers;
