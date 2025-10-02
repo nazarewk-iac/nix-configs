@@ -8,7 +8,7 @@
   cfg = config.kdn.profile.host.briv;
 in {
   options.kdn.profile.host.briv = {
-    enable = lib.mkEnableOption "enable moss host profile";
+    enable = lib.mkEnableOption "enable briv host profile";
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
