@@ -59,7 +59,7 @@ in {
       ];
     }
     {
-      kdn.networking.netbird.adminUsers = ["kdn"];
+      kdn.networking.netbird.admins = ["kdn"];
     }
   ]);
 }

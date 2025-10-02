@@ -15,13 +15,22 @@ in {
       type = lib.types.bool;
       default = true;
     };
-    defaultUsers = lib.mkOption {
+    admins = lib.mkOption {
       type = with lib.types; listOf str;
       default = [];
     };
-    adminUsers = lib.mkOption {
+
+    default.users = lib.mkOption {
       type = with lib.types; listOf str;
       default = [];
+    };
+    default.environment = lib.mkOption {
+      type = with lib.types; attrsOf str;
+      default = {};
+    };
+    default.enable = lib.mkOption {
+      type = with lib.types; bool;
+      default = true;
     };
   };
   options.kdn.networking.netbird.clients = lib.mkOption {
@@ -31,7 +40,7 @@ in {
       options = {
         enable = lib.mkOption {
           type = with lib.types; bool;
-          default = true;
+          default = cfg.default.enable;
         };
         name = lib.mkOption {
           type = with lib.types; str;
@@ -91,13 +100,17 @@ in {
 
         users = lib.mkOption {
           type = with lib.types; listOf str;
-          default = cfg.defaultUsers;
+          default = cfg.default.users;
           apply = users:
             lib.pipe users [
-              (u: u ++ cfg.adminUsers)
+              (u: u ++ cfg.admins)
               (builtins.sort builtins.lessThan)
               lib.lists.uniqueStrings
             ];
+        };
+        environment = lib.mkOption {
+          type = with lib.types; attrsOf str;
+          default = {};
         };
       };
     }));
@@ -134,6 +147,7 @@ in {
           value = {
             port = nbCfg.port;
             dns-resolver.address = nbCfg.localAddress;
+            environment = builtins.mapAttrs (_: lib.mkOverride 1100) cfg.default.environment // builtins.mapAttrs (_: lib.mkDefault) nbCfg.environment;
           };
         }))
         builtins.listToAttrs

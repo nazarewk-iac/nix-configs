@@ -358,7 +358,22 @@ in {
       kdn.networking.tailscale.enable = false;
     }
     {
-      kdn.networking.netbird.clients.priv.idx = 1;
+      kdn.networking.netbird.default.enable = false;
+      # don't let unvetted clients arbitrary config to the system
+      kdn.networking.netbird.default.environment.NB_DISABLE_DNS = "true";
+      kdn.networking.netbird.default.environment.NB_BLOCK_INBOUND = "true";
+
+      kdn.networking.netbird.clients.priv.idx = 1; # private account
+      kdn.networking.netbird.clients.priv.enable = true;
+      kdn.networking.netbird.clients.priv.environment.NB_DISABLE_DNS = "false";
+      kdn.networking.netbird.clients.priv.environment.NB_BLOCK_INBOUND = "false";
+
+      kdn.networking.netbird.clients.nbs.idx = 2; # internal NetBird instance
+      kdn.networking.netbird.clients.nbt.idx = 3; # testing client
+      kdn.networking.netbird.clients.nbc.idx = 4; # cloud client
+      kdn.networking.netbird.clients.t1.idx = 5; # testing client
+      kdn.networking.netbird.clients.t2.idx = 6; # testing client
+      kdn.networking.netbird.clients.t3.idx = 7; # testing client
     }
     {
       kdn.services.nextcloud-client-nixos.enable = config.kdn.security.secrets.allowed;

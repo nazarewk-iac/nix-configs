@@ -72,15 +72,13 @@ in {
       ];
     }
     {
-      kdn.networking.netbird.clients.nbs.idx = 2; # staging client
-      # don't let the default Nameserver overtake my local DNS setup
-      services.netbird.clients.nbs.environment.NB_DISABLE_DNS = "true";
+      kdn.networking.netbird.clients.nbs.enable = true;
 
-      kdn.networking.netbird.clients.nbt.idx = 3; # testing client
-      kdn.networking.netbird.clients.nbc.idx = 4; # cloud client
-      kdn.networking.netbird.clients.t1.idx = 5; # testing client
-      kdn.networking.netbird.clients.t2.idx = 6; # testing client
-      kdn.networking.netbird.clients.t3.idx = 7; # testing client
+      kdn.networking.netbird.clients.nbt.enable = true;
+      kdn.networking.netbird.clients.nbc.enable = true;
+      kdn.networking.netbird.clients.t1.enable = true;
+      kdn.networking.netbird.clients.t2.enable = true;
+      kdn.networking.netbird.clients.t3.enable = true;
     }
   ]);
 }

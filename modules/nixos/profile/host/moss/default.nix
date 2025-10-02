@@ -29,8 +29,7 @@ in {
       kdn.profile.machine.baseline.multicastDNS = "false";
     }
     {
-      kdn.networking.netbird.clients.nbs.idx = 2; # staging client
-      kdn.networking.netbird.clients.nbt.idx = 3; # testing client
+      kdn.networking.netbird.clients.nbt.enable = true;
     }
   ]);
 }
