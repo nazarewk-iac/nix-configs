@@ -73,6 +73,7 @@ in {
     }
     {
       kdn.networking.netbird.clients.nbs.idx = 2; # staging client
+      # don't let the default Nameserver overtake my local DNS setup
       services.netbird.clients.nbs.environment.NB_DISABLE_DNS = "true";
 
       kdn.networking.netbird.clients.nbt.idx = 3; # testing client
