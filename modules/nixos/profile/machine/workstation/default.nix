@@ -25,6 +25,7 @@ in {
       kdn.programs.obs-studio.enable = true;
 
       kdn.virtualisation.libvirtd.enable = true;
+      kdn.virtualisation.vagrant.enable = true;
 
       boot.initrd.availableKernelModules = [];
 
