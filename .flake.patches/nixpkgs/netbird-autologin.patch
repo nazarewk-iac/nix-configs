@@ -1,15 +1,15 @@
-From a8e8813ebf9eebfedc5da6f1cd7f3dcfdb113fde Mon Sep 17 00:00:00 2001
+From 8dbd7f2d385752606387e39406ae2d884848b7f1 Mon Sep 17 00:00:00 2001
 From: Krzysztof Nazarewski <gpg@kdn.im>
 Date: Fri, 19 Sep 2025 11:55:37 +0200
 Subject: [PATCH] nixos/netbird: automated login using Setup Keys file
 
 ported over from https://github.com/nazarewk-iac/nix-configs/blob/72f80633233514ee4994b682c71d34c460b7dce9/modules/nixos/networking/netbird/default.nix#L165-L202
 ---
- nixos/modules/services/networking/netbird.nix | 94 +++++++++++++++++++
- 1 file changed, 94 insertions(+)
+ nixos/modules/services/networking/netbird.nix | 88 +++++++++++++++++++
+ 1 file changed, 88 insertions(+)
 
 diff --git a/nixos/modules/services/networking/netbird.nix b/nixos/modules/services/networking/netbird.nix
-index 7c3fe93a5678613af0be12e8e13ed4ccc78b3d86..dd2e185f7aef7808d1ae8f7cbf491cfd20e6c223 100644
+index 7c3fe93a5678613af0be12e8e13ed4ccc78b3d86..c28beaae4d6797740c291a8583beda8b824380db 100644
 --- a/nixos/modules/services/networking/netbird.nix
 +++ b/nixos/modules/services/networking/netbird.nix
 @@ -20,6 +20,7 @@ let
@@ -63,7 +63,7 @@ index 7c3fe93a5678613af0be12e8e13ed4ccc78b3d86..dd2e185f7aef7808d1ae8f7cbf491cfd
                openFirewall = mkOption {
                  type = bool;
                  default = true;
-@@ -645,6 +668,77 @@ in
+@@ -645,6 +668,71 @@ in
          });
        '';
      })
@@ -86,7 +86,7 @@ index 7c3fe93a5678613af0be12e8e13ed4ccc78b3d86..dd2e185f7aef7808d1ae8f7cbf491cfd
 +              Group = client.user.group;
 +
 +              RemoveIPC = true;
-+              PrivateTmp = true;
++              PrivateTmp = "disconnected"; # "disconnected" puts /tmp on `tmpfs`
 +              ProtectSystem = "strict";
 +              ProtectHome = "yes";
 +
@@ -96,39 +96,33 @@ index 7c3fe93a5678613af0be12e8e13ed4ccc78b3d86..dd2e185f7aef7808d1ae8f7cbf491cfd
 +            environment.NB_SETUP_KEY_FILE = "%d/setup-key";
 +            /*
 +              might want to do something similar to the docker entrypoint (watching log messages) instead
-+              see might want to do something similar to https://github.com/netbirdio/netbird/blob/dc30dcacce4c322502975f1f491e6774efd7e1e9/client/netbird-entrypoint.sh
++              see https://github.com/netbirdio/netbird/blob/dc30dcacce4c322502975f1f491e6774efd7e1e9/client/netbird-entrypoint.sh
 +            */
 +            script = ''
 +              set -x
-+              nb='${lib.getExe client.wrapper}'
-+              keyFile="''${NB_SETUP_KEY_FILE:-"/run/credentials/${client.service.name}.service/setup-key"}"
-+
-+              fetch_status() {
-+                status="$("$nb" status 2>&1)"
-+              }
-+
-+              print_status() {
-+                test -n "$status" || refresh_status
-+                cat <<EOF
-+              $status
-+              EOF
-+              }
++              # uses a file on a `tmpfs`, because variable updates get lost in the loop
++              status_file="/tmp/status.txt"
 +
 +              refresh_status() {
-+                fetch_status
-+                print_status
++                '${lib.getExe client.wrapper}' status &>"$status_file" || :
++              }
++
++              print_short_setup_key() {
++                cut -b1-8 <"$NB_SETUP_KEY_FILE"
 +              }
 +
 +              main() {
-+                print_status | ${lib.getExe pkgs.gnused} 's/^/STATUS:INIT: /g'
-+                while refresh_status | grep --quiet 'Disconnected' ; do
++                refresh_status
++                <"$status_file" sed 's/^/STATUS:PRE-CONNECT : /g'
++
++                until refresh_status && <"$status_file" grep --quiet 'Connected\|NeedsLogin' ; do
 +                  sleep 1
 +                done
-+                print_status | ${lib.getExe pkgs.gnused} 's/^/STATUS:WAIT: /g'
++                <"$status_file" sed 's/^/STATUS:POST-CONNECT: /g'
 +
-+                if print_status | grep --quiet 'NeedsLogin' ; then
-+                  echo "Using Setup Key File with key: $(cut -b1-8 <"$keyFile")" >&2
-+                  "$nb" up --setup-key-file="$keyFile"
++                if <"$status_file" grep --quiet 'NeedsLogin' ; then
++                  echo "Using Setup Key File with key: $(print_short_setup_key)" >&2
++                  '${lib.getExe client.wrapper}' up --setup-key-file="$NB_SETUP_KEY_FILE"
 +                fi
 +              }
 +
