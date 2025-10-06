@@ -45,7 +45,7 @@ in {
       before = ["network.target"];
       serviceConfig = {
         Type = "oneshot";
-        RemainAfterExit = true;
+        RemainAfterExit = false;
         ExecStart = lib.getExe kdn-gen-hosts;
       };
     };
