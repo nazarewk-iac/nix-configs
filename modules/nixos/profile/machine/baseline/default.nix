@@ -9,10 +9,6 @@
   cfg = config.kdn.profile.machine.baseline;
 in {
   options.kdn.profile.machine.baseline = {
-    multicastDNS = lib.mkOption {
-      type = with lib.types; enum ["true" "false" "resolve"];
-      default = "true";
-    };
     initrd.emergency.rebootTimeout = lib.mkOption {
       type = lib.types.ints.unsigned;
       default = 0;
@@ -163,14 +159,7 @@ in {
       services.locate.package = pkgs.mlocate;
       services.locate.pruneBindMounts = true;
 
-      services.resolved.enable = true;
-      # services.resolved.dnssec = "allow-downgrade"; # this complains results are not signed
-      services.resolved.dnssec = lib.mkDefault "false";
-      services.resolved.dnsovertls = lib.mkDefault "opportunistic";
-      services.resolved.llmnr = "true";
-      services.resolved.extraConfig = ''
-        MulticastDNS=${cfg.multicastDNS}
-      '';
+      kdn.networking.resolved.enable = true;
       services.avahi.enable = false; # conficts with `resolved` `MulticastDNS`/`LLMNR`
 
       kdn.development.shell.enable = lib.mkDefault true;

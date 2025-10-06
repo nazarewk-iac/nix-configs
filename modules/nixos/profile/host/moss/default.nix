@@ -26,7 +26,7 @@ in {
       security.sudo.wheelNeedsPassword = false;
 
       # TODO: anji times out on using moss as DNS resolver (port 5353)
-      kdn.profile.machine.baseline.multicastDNS = "false";
+      kdn.networking.resolved.multicastDNS = "false";
     }
     {
       kdn.networking.netbird.clients.nbt.enable = true;
