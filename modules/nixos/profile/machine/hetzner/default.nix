@@ -44,10 +44,10 @@ in {
       };
     }
     {
+      systemd.network.enable = true;
       networking.useNetworkd = true;
       networking.useDHCP = true;
       networking.networkmanager.enable = false;
-      systemd.network.enable = true;
 
       systemd.network.networks."00-wan" = {
         matchConfig.Type = "ether";

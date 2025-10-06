@@ -58,6 +58,10 @@ in {
           type = with lib.types; str;
           default = nbCfg.serviceName;
         };
+        interface = lib.mkOption {
+          readOnly = true;
+          default = "nb-${name}";
+        };
 
         secretKey = lib.mkOption {
           type = with lib.types; str;
@@ -112,6 +116,16 @@ in {
           type = with lib.types; attrsOf str;
           default = {};
         };
+
+        systemd.enable = lib.mkOption {
+          type = with lib.types; bool;
+          default = false;
+        };
+
+        resolvesDomains = lib.mkOption {
+          type = with lib.types; nullOr (listOf str);
+          default = null;
+        };
       };
     }));
   };
@@ -148,6 +162,37 @@ in {
             port = nbCfg.port;
             dns-resolver.address = nbCfg.localAddress;
             environment = builtins.mapAttrs (_: lib.mkOverride 1100) cfg.default.environment // builtins.mapAttrs (_: lib.mkDefault) nbCfg.environment;
+          };
+        }))
+        builtins.listToAttrs
+      ];
+
+      systemd.network.networks = lib.pipe activeCfgs [
+        (builtins.filter (nbCfg: nbCfg.systemd.enable))
+        (builtins.map (nbCfg: {
+          name = "40-kdn-netbird-${nbCfg.interface}";
+          value = {
+            matchConfig.Name = nbCfg.interface;
+            linkConfig = {
+              ActivationPolicy = "manual";
+            };
+            dns = [nbCfg.localAddress];
+            domains = lib.mkIf (nbCfg.resolvesDomains != null) nbCfg.resolvesDomains;
+            routingPolicyRules = [
+              {
+                # 105:    from all lookup main suppress_prefixlength 0
+                Priority = 105; # 105:
+                Table = "main";
+                SuppressPrefixLength = 0;
+              }
+              {
+                # 110:    not from all fwmark 0x1bd00 lookup 7120
+                Priority = 110; # 110:
+                InvertRule = true; # not from all
+                FirewallMark = 113920; # fwmark 0x1bd00
+                Table = 7120; # lookup 7120
+              }
+            ];
           };
         }))
         builtins.listToAttrs

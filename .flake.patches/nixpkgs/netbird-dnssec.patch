@@ -1,0 +1,24 @@
+From 524f06ec610b486983a187f363d54b8433c2b85d Mon Sep 17 00:00:00 2001
+From: Lach <iam@lach.pw>
+Date: Fri, 23 May 2025 19:27:26 +0200
+Subject: [PATCH] nixos/netbird: allow setting dnssec
+
+Netbird is now able to automatically disable DNSSEC for its own interface:
+
+https://github.com/netbirdio/netbird/commit/b2a10780af2269c38c60b51db9dc77704e7a7922
+---
+ nixos/modules/services/networking/netbird.nix | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/nixos/modules/services/networking/netbird.nix b/nixos/modules/services/networking/netbird.nix
+index 1dc5267563dd40f1de581e8486c4e66a7b6193c3..06888c5be59ea1f7c0bb646ec4e43bf4a5d937c1 100644
+--- a/nixos/modules/services/networking/netbird.nix
++++ b/nixos/modules/services/networking/netbird.nix
+@@ -592,6 +592,7 @@ in
+             "org.freedesktop.resolve1.set-default-route",
+             "org.freedesktop.resolve1.set-dns-servers",
+             "org.freedesktop.resolve1.set-domains",
++            "org.freedesktop.resolve1.set-dnssec",
+           ];
+           var users = ${builtins.toJSON (toHardenedClientList (client: client.user.name))};
+ 
