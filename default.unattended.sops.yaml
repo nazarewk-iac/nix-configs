@@ -35,6 +35,7 @@ anonymization:
 networking:
     hosts:
         private: ENC[AES256_GCM,data:i6gX9FhEIvshh0DRa3bjBsiKVXIyVXa0trSjB0o=,iv:hF3d6JP9F6pRae9RjzE3STUjxFPmzkA/ILjZBVmblrg=,tag:lQlSpQBJrcs2ZsOKH3yOaA==,type:str]
+        netbird: ENC[AES256_GCM,data:oRcv2bn6+kNaKaRJ35Rc1Sa+xIOo37xSvhDb922yrBdCXRtsWh07AcvKc8BUOJqdqw==,iv:NMGEEsF2HQCj8MnBd8Nf4qkYB+d0HqqheAFei+AzfwU=,tag:DVECWt3GSfvGayH6MHKw+w==,type:str]
     ssh_config:
         kdn: ENC[AES256_GCM,data:xPLrp2goVyRWv7IWhAs4sIHt6rmaLPJqPwF+fNWth8dUCI/zWd42VUVX3ORRBevFyBsGWgEUxI5yV6KWEKGFjKacQ/wPQVPlUXm8GQoZA4ev6urLQTxuecnaDj8sX+xtNW2zz7gpCdBaAKlBV1iCzKKasfCI94JW8pE=,iv:TYzHPRX/fPujU2JaRfZureMyA5h3okTtW0J3vlwC/ZA=,tag:hWd5mlCNxXqPxI3iT3UtAw==,type:str]
     anonymization:
@@ -239,7 +240,7 @@ sops:
             MPh261OHNH6fS7Gl9uQwDvHKJO0pXwMrgrUJsL1e+Q8NP6g8B+L3JYJS0dKTJZYR
             QlI=
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2025-09-02T09:56:04Z"
-    mac: ENC[AES256_GCM,data:VvBJxGEvEm6zb0Xx+2ot/8/nZ+kADT4OFheAI57XcYSk0tpzT/Dq7apZIP0UweRWVGXZq5GeawV1mimxDOILjEd5FEZNqMVuYSklfPyp9olnGbFXnVFhEolM6KpHmjTx0WlbATF48lUZGvMLANpiaWzz05ijx3sHFRUhPpG6jlo=,iv:bH/u5hktZHJJL+l2PXcRRZsoVWPoNcz7GlQ3bq+PtSI=,tag:8F+jXjSv3px9ggaD81FuJQ==,type:str]
+    lastmodified: "2025-10-06T18:04:37Z"
+    mac: ENC[AES256_GCM,data:jwalfQyccPieaG6EKR5cSlGWErircJzTGiOc57Kg15oWYGbwZhFGArbg21ikrm1tBPmPbsM/7qriMsJPIEqywkvflNaa50fcFM2VTmJzR2lHmK9OpvlzjdJu3M7jDo9Boh/byTokPbKQ7O2mUCPOz7xj0P+5EZeZwwloqmcZF0k=,iv:PxqP/anl5hxq2s01/tEicvoxj6BmH5riz8Dg6Vu4NFQ=,tag:advZxtSiq/pqqE7vjSRejA==,type:str]
     unencrypted_suffix: _unencrypted
-    version: 3.10.2
+    version: 3.11.0
