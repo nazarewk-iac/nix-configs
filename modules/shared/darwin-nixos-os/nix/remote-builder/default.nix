@@ -54,6 +54,7 @@ in {
         nix.distributedBuilds = true;
         nix.buildMachines =
           lib.pipe [
+            /*
             {
               hostName = "faro";
               systems = ["aarch64-linux"];
@@ -64,6 +65,7 @@ in {
               ];
               mandatoryFeatures = [];
             }
+            */
             {
               hostName = "briv";
               systems = ["aarch64-linux"];
