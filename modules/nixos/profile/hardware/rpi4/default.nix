@@ -124,6 +124,12 @@ in {
                   };
 
                   doCheck = false;
+
+                  /*
+                  error: python3.13-smbus-1.1.post2 does not configure a `format`. To build with setuptools as before, set `pyproject = true` and `build-system = [ setuptools ]`.`
+                  */
+                  pyproject = true;
+                  build-system = with final; [setuptools];
                 };
             };
             requirementsFile = pkgs.writeText "rpi-usb-hat-requirements.txt" ''
