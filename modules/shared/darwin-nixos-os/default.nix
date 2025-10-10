@@ -35,12 +35,7 @@ in {
       home-manager.backupFileExtension = "hmbackup";
       home-manager.useGlobalPkgs = false;
       home-manager.useUserPackages = true;
-      home-manager.extraSpecialArgs =
-        self.specialArgs.kdn.configure {
-          skipKeys = ["lib"];
-          moduleType = "home-manager";
-        }
-        args;
+      home-manager.extraSpecialArgs = kdn.configure {moduleType = "home-manager";};
 
       home-manager.sharedModules = [
         {

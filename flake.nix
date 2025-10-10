@@ -106,6 +106,12 @@
   }: let
     lib = import ./lib {inherit (inputs.nixpkgs) lib;};
     flakeLib = lib.kdn.flakes.forFlake self;
+    mkSpecialArgs = module: let
+      mod = lib.evalModules {
+        modules = [./modules/meta {kdn = {inherit inputs lib self;};} {kdn = module;}];
+      };
+    in
+      mod.config;
   in (flake-parts.lib.mkFlake {inherit inputs;} {
     systems = import inputs.systems;
 
@@ -196,7 +202,7 @@
           text = builtins.readFile ./flake-update.sh;
         });
       };
-      checks = pkgs.callPackages ./checks {kdnArg = self.specialArgs;};
+      checks = pkgs.callPackages ./checks (mkSpecialArgs {moduleType = "checks";});
       devShells = {};
       packages = lib.mkMerge [
         (lib.filterAttrs (n: pkg: lib.isDerivation pkg) (flakeLib.overlayedInputs {inherit system;}).nixpkgs.kdn)
@@ -206,7 +212,7 @@
             inherit system;
             inherit (self) lib;
             inherit (lib) nixosSystem;
-            specialArgs = self.specialArgs;
+            specialArgs = mkSpecialArgs {moduleType = "nixos";};
 
             modules = [
               self.nixosModules.default
@@ -243,87 +249,15 @@
         }
       ];
     };
-    flake.specialArgs = {
-      inherit self;
-      inherit (self) lib;
-
-      kdn = {
-        inherit self inputs;
-        inherit (self) lib;
-        nix-configs = self;
-
-        parent = null;
-        moduleType = null;
-        isOfAnyType = x: false;
-        hasParentOfAnyType = x: false;
-
-        features = {
-          rpi4 = false;
-          installer = false;
-          darwin-utm-guest = false;
-          microvm-host = false;
-          microvm-guest = false;
-        };
-      };
-
-      kdn.configure = {
-        moduleType,
-        defaults ? self.specialArgs,
-        keys ? builtins.attrNames self.specialArgs,
-        skipKeys ? [],
-      }: args: let
-        effectiveArgs = lib.lists.toList args;
-        effectiveKeys = lib.lists.subtractLists skipKeys keys;
-        effectiveDefaults = let
-          getParent = obj:
-            if
-              (obj != null)
-              && (lib.lists.subtractLists keys (builtins.attrNames obj)) == []
-            then (obj.kdn or {}).parent or null
-            else null;
-        in
-          lib.pipe effectiveArgs [
-            (builtins.map getParent)
-            (builtins.filter (e: e != null))
-            (l:
-              if l == []
-              then defaults
-              else builtins.head l)
-          ];
-
-        candidates =
-          [effectiveDefaults]
-          ++ lib.lists.toList args
-          ++ [
-            {
-              kdn.parent = builtins.head effectiveArgs;
-              kdn.moduleType = moduleType;
-              kdn.isOfAnyType = builtins.elem moduleType;
-              kdn.hasParentOfAnyType = types: final.kdn.parent != null && final.kdn.parent.kdn.isOfAnyType types;
-            }
-          ];
-
-        final = lib.pipe effectiveKeys [
-          (builtins.map (key: {
-            name = key;
-            value = lib.kdn.attrsets.recursiveMerge (lib.attrsets.catAttrs key candidates);
-          }))
-          builtins.listToAttrs
-        ];
-      in
-        final;
-    };
     flake.lib = lib;
     flake.nixosModules.default = ./modules/nixos;
     flake.nixosConfigurations = lib.mkMerge [
       {
         oams = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs =
-            self.specialArgs.kdn.configure {
-              moduleType = "nixos";
-            } {
-            };
+          specialArgs = mkSpecialArgs {
+            moduleType = "nixos";
+          };
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -339,12 +273,10 @@
 
         brys = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs =
-            self.specialArgs.kdn.configure {
-              moduleType = "nixos";
-            } {
-              kdn.features.microvm-host = true;
-            };
+          specialArgs = mkSpecialArgs {
+            moduleType = "nixos";
+            features.microvm-host = true;
+          };
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -360,11 +292,9 @@
 
         etra = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs =
-            self.specialArgs.kdn.configure {
-              moduleType = "nixos";
-            } {
-            };
+          specialArgs = mkSpecialArgs {
+            moduleType = "nixos";
+          };
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -380,11 +310,9 @@
 
         pryll = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs =
-            self.specialArgs.kdn.configure {
-              moduleType = "nixos";
-            } {
-            };
+          specialArgs = mkSpecialArgs {
+            moduleType = "nixos";
+          };
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -400,11 +328,9 @@
 
         obler = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs =
-            self.specialArgs.kdn.configure {
-              moduleType = "nixos";
-            } {
-            };
+          specialArgs = mkSpecialArgs {
+            moduleType = "nixos";
+          };
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -420,11 +346,9 @@
 
         moss = lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs =
-            self.specialArgs.kdn.configure {
-              moduleType = "nixos";
-            } {
-            };
+          specialArgs = mkSpecialArgs {
+            moduleType = "nixos";
+          };
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -446,12 +370,10 @@
 
         faro = lib.nixosSystem {
           system = "aarch64-linux";
-          specialArgs =
-            self.specialArgs.kdn.configure {
-              moduleType = "nixos";
-            } {
-              kdn.features.darwin-utm-guest = true;
-            };
+          specialArgs = mkSpecialArgs {
+            moduleType = "nixos";
+            features.darwin-utm-guest = true;
+          };
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -467,12 +389,10 @@
 
         briv = lib.nixosSystem {
           system = "aarch64-linux";
-          specialArgs =
-            self.specialArgs.kdn.configure {
-              moduleType = "nixos";
-            } {
-              kdn.features.rpi4 = true;
-            };
+          specialArgs = mkSpecialArgs {
+            moduleType = "nixos";
+            features.rpi4 = true;
+          };
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -488,12 +408,10 @@
 
         rpi4-bootstrap = lib.nixosSystem {
           system = "aarch64-linux";
-          specialArgs =
-            self.specialArgs.kdn.configure {
-              moduleType = "nixos";
-            } {
-              kdn.features.rpi4 = true;
-            };
+          specialArgs = mkSpecialArgs {
+            moduleType = "nixos";
+            features.rpi4 = true;
+          };
           modules = [
             self.nixosModules.default
             ({config, ...}: {
@@ -511,11 +429,7 @@
     flake.darwinModules.default = ./modules/nix-darwin;
     flake.darwinConfigurations.anji = inputs.nix-darwin.lib.darwinSystem {
       system = "aarch64-darwin";
-      specialArgs =
-        self.specialArgs.kdn.configure {
-          moduleType = "nix-darwin";
-        } {
-        };
+      specialArgs = mkSpecialArgs {moduleType = "nix-darwin";};
       modules = [
         self.darwinModules.default
         ({config, ...}: {
