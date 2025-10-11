@@ -22,7 +22,7 @@ in {
       ''
     ];
     programs.git.difftastic.enable = true; # diff highlighter
-    programs.git.difftastic.background = "dark"; # diff highlighter
+    programs.git.difftastic.options.background = "dark"; # diff highlighter
 
     home.packages = with pkgs; [
       git
