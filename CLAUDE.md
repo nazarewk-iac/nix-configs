@@ -73,11 +73,27 @@ All architecture documentation, analysis, and practical guidance is in the **`.c
 AI agents can commit to any allowed branch without checking it out using git plumbing:
 
 **Updating CLAUDE.md on `main` (when on other branches):**
+
+Helper script available in `.claude/` on the `ai-agents` branch:
+
+```bash
+# Use the helper script stored in ai-agents branch
+# 1. Prepare your updated file
+mkdir -p /tmp/kdn/nix-configs
+git show main:CLAUDE.md > /tmp/kdn/nix-configs/CLAUDE.md.new
+# ... edit the file ...
+
+# 2. Execute the helper script directly from ai-agents branch
+bash <(git show ai-agents:.claude/update-claude-main.sh) \
+    "docs: update CLAUDE.md guidance"
+```
+
+Manual approach:
 ```bash
 # Read, edit, create blob
-git show main:CLAUDE.md > /tmp/CLAUDE.md.new
+git show main:CLAUDE.md > /tmp/kdn/nix-configs/CLAUDE.md.new
 # ... edit the file ...
-BLOB=$(git hash-object -w /tmp/CLAUDE.md.new)
+BLOB=$(git hash-object -w /tmp/kdn/nix-configs/CLAUDE.md.new)
 
 # Create new tree with updated file
 PARENT_COMMIT=$(git rev-parse main)
@@ -100,7 +116,8 @@ Helper scripts are available in `.claude/` on the `ai-agents` branch:
 ```bash
 # Use the helper script stored in ai-agents branch
 # 1. Prepare your updated file
-git show ai-agents:.claude/analysis-summary.md > /tmp/analysis-summary.md.new
+mkdir -p /tmp/kdn/nix-configs
+git show ai-agents:.claude/analysis-summary.md > /tmp/kdn/nix-configs/analysis-summary.md.new
 # ... edit the file ...
 
 # 2. Execute the helper script directly from ai-agents branch
@@ -112,9 +129,10 @@ bash <(git show ai-agents:.claude/update-claude-metadata.sh) \
 Manual approach (if you prefer full control):
 ```bash
 # Read, edit, create blob for a file in .claude/
-git show ai-agents:.claude/analysis-summary.md > /tmp/analysis-summary.md.new
+mkdir -p /tmp/kdn/nix-configs
+git show ai-agents:.claude/analysis-summary.md > /tmp/kdn/nix-configs/analysis-summary.md.new
 # ... edit the file ...
-BLOB=$(git hash-object -w /tmp/analysis-summary.md.new)
+BLOB=$(git hash-object -w /tmp/kdn/nix-configs/analysis-summary.md.new)
 
 # Get current state
 PARENT_COMMIT=$(git rev-parse ai-agents)
