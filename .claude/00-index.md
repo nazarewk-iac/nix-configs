@@ -52,26 +52,33 @@ This directory contains AI agent-optimized documentation for the nix-configs rep
 
 **CRITICAL**: AI agents must follow these rules (detailed in root CLAUDE.md):
 
-1. **Git Branch Policy**:
-   - ONLY commit to the `ai-agents` branch
-   - NEVER commit to `main` or any other branch
-   - NEVER switch branches (user will handle branch switching)
-   - NEVER push changes (user will review and push)
+### Branch Strategy
 
-2. **Staying Current**:
-   - Always merge `main` into `ai-agents` when catching up or resuming work
-   - Command: `git merge main` (while on ai-agents branch)
+**Two types of branches:**
 
-3. **File Modifications**:
-   - Documentation work: Modify files within `.claude/` directory
-   - Code work: Only when explicitly requested
-   - NEVER modify files outside designated scope without permission
+1. **`ai-agents` branch** - For `.claude/` metadata/documentation
+   - Update architecture docs, analysis, findings
+   - Merge `main` when catching up
+   - Do NOT modify code outside `.claude/`
 
-4. **Commit Hygiene**:
-   - Commit frequently with clear, descriptive messages
-   - Use conventional commit format (feat:, docs:, chore:, fix:)
-   - Include "🤖 Generated with [Claude Code]" footer
-   - Add "Co-Authored-By: Claude <noreply@anthropic.com>"
+2. **`ai/*` branches** - For actual code work
+   - Make code changes as requested
+   - Do NOT modify `.claude/` directory
+   - Merge `main` when catching up
+
+### Core Rules
+
+- NEVER commit to `main`
+- NEVER switch branches (user handles this)
+- NEVER push changes (user will push after review)
+- Work on current branch only
+- Merge `main` when catching up: `git merge main`
+
+### Commit Hygiene
+
+- Use conventional commits (feat:, docs:, chore:, fix:)
+- Include "🤖 Generated with [Claude Code]" footer
+- Add "Co-Authored-By: Claude <noreply@anthropic.com>"
 
 ## Future Direction
 

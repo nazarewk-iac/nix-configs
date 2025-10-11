@@ -19,40 +19,90 @@ All architecture documentation, analysis, and practical guidance is in the **`.c
 
 **CRITICAL RULES - AI agents must follow these strictly:**
 
-1. **Branch Policy**:
-   - ONLY commit to the `ai-agents` branch
-   - NEVER commit to `main` or any other branch
-   - NEVER switch branches (user handles branch switching)
-   - NEVER push changes (user will review and push)
+#### Branch Strategy
 
-2. **Staying Current**:
-   - Always merge `main` into `ai-agents` when catching up or resuming work
-   - This ensures AI work builds on latest main branch changes
+**Two types of branches:**
 
-3. **File Modifications**:
-   - Documentation work: Modify files in `.claude/` directory
-   - Code work: Only when explicitly requested by user
-   - NEVER modify files outside designated scope without permission
+1. **`ai-agents` branch** - AI agent metadata and documentation
+   - Contains `.claude/` directory with architecture docs, analysis, etc.
+   - AI agents commit metadata updates here
+   - User will merge to `main` after review
+   - Merge `main` into `ai-agents` when catching up
 
-4. **Commit Hygiene**:
-   - Commit frequently with clear, descriptive messages
-   - Use conventional commit format (feat:, docs:, chore:, fix:)
-   - Include "🤖 Generated with [Claude Code]" footer
-   - Add "Co-Authored-By: Claude <noreply@anthropic.com>"
+2. **`ai/*` branches** - Actual work (code changes, features, fixes)
+   - AI agents create these for specific tasks (e.g., `ai/module-consolidation`, `ai/fix-netbird`)
+   - Contains code changes ONLY, NO metadata updates
+   - Do NOT modify `.claude/` directory in these branches
+   - User will push, review, and merge to `main`
+   - Merge `main` into work branch when catching up
 
-### Example Workflow
+#### Branch Policy Rules
+
+- **NEVER commit to `main`** or any other branch
+- **NEVER switch branches** (user handles branch switching)
+- **NEVER push changes** (user will review and push)
+- Work on branch user has checked out for you
+
+#### File Modification Rules
+
+**When on `ai-agents` branch:**
+- ✅ Modify files in `.claude/` directory
+- ✅ Update documentation and metadata
+- ❌ Do NOT modify code outside `.claude/`
+
+**When on `ai/*` branches:**
+- ✅ Modify code as requested
+- ✅ Create/update modules, configs, etc.
+- ❌ Do NOT modify `.claude/` directory
+- ❌ Do NOT update metadata
+
+#### Commit Hygiene
+
+- Commit frequently with clear, descriptive messages
+- Use conventional commit format (feat:, docs:, chore:, fix:)
+- Include "🤖 Generated with [Claude Code]" footer
+- Add "Co-Authored-By: Claude <noreply@anthropic.com>"
+
+### Example Workflows
+
+#### Working on Metadata (`ai-agents` branch)
 ```bash
-# When resuming work or catching up (AI agent should do this):
-git merge main  # Merge latest changes from main into ai-agents
+# User checks out ai-agents branch
+# AI agent work starts here
 
-# Work, make changes...
+# Catch up with main
+git merge main
+
+# Update documentation
+# Edit .claude/analysis-summary.md, etc.
 git add .claude/
-git commit -m "docs: update analysis..."
+git commit -m "docs(claude): update analysis with new findings
 
-# User will handle:
-# - Reviewing commits on ai-agents branch
-# - Merging to main when ready
-# - Pushing to remote
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+
+# User will review and merge to main
+```
+
+#### Working on Code (`ai/*` branches)
+```bash
+# User creates and checks out ai/feature-x branch
+# AI agent work starts here
+
+# Catch up with main
+git merge main
+
+# Make code changes (NO .claude/ changes!)
+# Edit modules/, lib/, packages/, etc.
+git add modules/
+git commit -m "feat: add new module for feature-x
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+
+# User will push, review, and merge to main
 ```
 
 ## 🏗️ Repository Structure

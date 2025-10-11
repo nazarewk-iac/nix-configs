@@ -179,7 +179,7 @@ If resuming this work later:
 
 ## Git Commits Made
 
-**Branch**: `ai-agents` (AI agents MUST ONLY commit to this branch, NEVER to main)
+**Branch**: `ai-agents` (AI agents commit metadata/docs here, code work goes to `ai/*` branches)
 
 Commits on `ai-agents` branch:
 - f754f447 docs(claude): document meta-module escape hatch for 3rd party modules
