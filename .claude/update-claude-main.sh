@@ -4,6 +4,8 @@
 
 set -euo pipefail
 
+TMP_DIR="/tmp/kdn/nix-configs"
+
 usage() {
     cat <<EOF
 Usage: $0 <commit-message>
@@ -13,7 +15,7 @@ Updates CLAUDE.md on the main branch without checking out the branch.
 Example:
     $0 "docs: update CLAUDE.md guidance"
 
-The updated CLAUDE.md must already exist at /tmp/CLAUDE.md.new before running.
+The updated CLAUDE.md must already exist at $TMP_DIR/CLAUDE.md.new before running.
 EOF
     exit 1
 }
@@ -23,7 +25,7 @@ if [ $# -ne 1 ]; then
 fi
 
 COMMIT_MSG="$1"
-TMP_FILE="/tmp/CLAUDE.md.new"
+TMP_FILE="$TMP_DIR/CLAUDE.md.new"
 
 if [ ! -f "$TMP_FILE" ]; then
     echo "Error: $TMP_FILE does not exist"

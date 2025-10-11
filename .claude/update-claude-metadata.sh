@@ -4,6 +4,8 @@
 
 set -euo pipefail
 
+TMP_DIR="/tmp/kdn/nix-configs"
+
 usage() {
     cat <<EOF
 Usage: $0 <file-in-claude-dir> <commit-message>
@@ -15,7 +17,7 @@ Example:
     $0 analysis-summary.md "docs(claude): update analysis summary"
 
 The file path should be relative to .claude/ directory.
-The file must already exist in /tmp/<filename>.new before running.
+The file must already exist in $TMP_DIR/<filename>.new before running.
 EOF
     exit 1
 }
@@ -26,7 +28,7 @@ fi
 
 FILE_IN_CLAUDE="$1"
 COMMIT_MSG="$2"
-TMP_FILE="/tmp/${FILE_IN_CLAUDE##*/}.new"
+TMP_FILE="$TMP_DIR/${FILE_IN_CLAUDE##*/}.new"
 
 if [ ! -f "$TMP_FILE" ]; then
     echo "Error: $TMP_FILE does not exist"
