@@ -1,217 +1,227 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+**Claude Code Guidance for nix-configs Repository**
 
-## Repository Overview
+## 📚 Documentation
 
-This is a personal Nix configuration repository managing NixOS, Home Manager, and nix-darwin configurations across multiple machines using a flake-based approach.
+All architecture documentation, analysis, and practical guidance is in the **`.claude/`** directory.
 
-**Key Principle**: All modules MUST be side-effect free by default (enabled via `*.enable` options).
+**Start here**: [.claude/00-index.md](.claude/00-index.md)
 
-## Architecture
+**Note**: The `.claude/` directory is maintained on the `ai-agents` branch and merged to `main` after review. AI agents can read from it using `git show ai-agents:.claude/file.md` without switching branches.
 
-### Module Structure
+## 🎯 Key Principles
 
-The repository uses a three-tier module system:
+### Module Design
+**All modules MUST be side-effect free by default** (enabled via `*.enable` options).
 
-- `modules/nixos/` - NixOS-specific modules
-- `modules/home-manager/` - Home Manager modules
-- `modules/nix-darwin/` - nix-darwin (macOS) modules
-- `modules/shared/` - Cross-platform modules:
-  - `modules/shared/universal/` - Universal modules defining options
-  - `modules/shared/darwin-nixos-os/` - Shared between Darwin and NixOS
+**Note**: The meta-module (`modules/meta/`) provides an escape hatch for integrating third-party modules with unconditional imports that don't adhere to this pattern.
 
-All modules automatically import their subdirectories' `default.nix` files through `lib.filesystem.listFilesRecursive`.
+### AI Agent Git Workflow
 
-### Special Arguments System
+**CRITICAL RULES - AI agents must follow these strictly:**
 
-The flake uses a custom `kdn.configure` function (in `flake.nix:270-316`) to propagate special arguments (`specialArgs`) through module boundaries. This enables:
+#### Branch Strategy
 
-- Passing `kdn` argument containing `self`, `inputs`, `lib`, and feature flags
-- Tracking parent contexts through `kdn.parent`
-- Type checking with `kdn.moduleType` and `kdn.isOfAnyType`
-- Feature flags in `kdn.features` (e.g., `rpi4`, `microvm-host`, `chromeos-crostini-vm`)
+**Two types of branches:**
 
-### Host Configurations
+1. **`ai-agents` branch** - AI agent metadata and documentation
+   - Contains `.claude/` directory with architecture docs, analysis, etc.
+   - AI agents commit metadata updates here
+   - User will merge to `main` after review
+   - Merge `main` into `ai-agents` when catching up
+   - **Reading metadata**: AI agents can read `.claude/` files from this branch without switching:
+     ```bash
+     git show ai-agents:.claude/analysis-summary.md
+     ```
 
-Each host has a configuration at `modules/nixos/profile/host/${HOSTNAME}/default.nix` or defined directly in `flake.nix`. Hosts include:
-- x86_64-linux: oams, brys, etra, pryll, obler, moss, gaz
-- aarch64-linux: faro, briv, rpi4-bootstrap
-- aarch64-darwin: anji
+2. **`ai/*` branches** - Actual work (code changes, features, fixes)
+   - AI agents can create these starting from `main` (e.g., `ai/module-consolidation`, `ai/fix-netbird`)
+   - Contains code changes ONLY, NO metadata updates
+   - Do NOT modify `.claude/` directory in these branches
+   - Read metadata from `ai-agents` branch using `git show` if needed
+   - User will push, review, and merge to `main`
+   - Merge `main` into work branch when catching up
 
-### Library Extensions
+#### Branch Policy Rules
 
-Custom library utilities in `lib/` extend `nixpkgs.lib` with:
-- `lib.kdn.*` - Custom utilities organized by subdirectory names
-- Recursive module loading pattern used throughout
+- **NEVER commit to `main`** - with ONE EXCEPTION:
+  - ✅ AI agents CAN modify and commit `CLAUDE.md` (this file) to `main` branch
+  - ❌ Do NOT commit any other files to `main`
+  - User will still push changes
+  - Can update without checking out main using git plumbing commands
+- AI agents CAN create `ai/*` branches from `main`: `git checkout -b ai/task-name main`
+- AI agents CAN switch between `ai/*` branches, `ai-agents` branch, and `main` (for CLAUDE.md updates only)
+- **NEVER push changes** (user will review and push)
+- Read `.claude/` metadata from `ai-agents` branch without switching: `git show ai-agents:.claude/file.md`
 
-### Overlays
+#### File Modification Rules
 
-The flake provides overlays (`self.overlays.packages` and `self.overlays.default`) that:
-- Add custom packages under `pkgs.kdn.*`
-- Include NUR, microvm, and platform-specific overlays (brew-nix for Darwin)
-- Are automatically applied to all configurations via `modules/shared/darwin-nixos-os/`
+**When on `ai-agents` branch:**
+- ✅ Modify files in `.claude/` directory
+- ✅ Update documentation and metadata
+- ❌ Do NOT modify code outside `.claude/`
 
-## Development Commands
+**When on `ai/*` branches:**
+- ✅ Modify code as requested
+- ✅ Create/update modules, configs, etc.
+- ❌ Do NOT modify `.claude/` directory
+- ❌ Do NOT update metadata
 
-### Building Configurations
+**Special case - CLAUDE.md updates:**
+- ✅ Can update CLAUDE.md in `main` branch without checking it out
+- ✅ Use git plumbing commands to commit directly to `main`
+- ❌ Cannot commit any other file to `main`
+- Example using plumbing commands:
+  ```bash
+  # Read current file, edit it, create blob
+  git show main:CLAUDE.md > /tmp/CLAUDE.md.new
+  # ... edit the file ...
+  BLOB=$(git hash-object -w /tmp/CLAUDE.md.new)
 
+  # Create new tree with updated file
+  PARENT_COMMIT=$(git rev-parse main)
+  CURRENT_TREE=$(git cat-file -p $PARENT_COMMIT | grep '^tree' | cut -d' ' -f2)
+  NEW_TREE=$(git mktree <<EOF
+100644 blob $BLOB	CLAUDE.md
+$(git ls-tree $CURRENT_TREE | grep -v "CLAUDE.md")
+EOF
+)
+
+  # Create commit and update main
+  NEW_COMMIT=$(git commit-tree $NEW_TREE -p $PARENT_COMMIT -m "docs: update CLAUDE.md")
+  git update-ref refs/heads/main $NEW_COMMIT
+  ```
+
+#### Commit Hygiene
+
+- Commit frequently with clear, descriptive messages
+- Use conventional commit format (feat:, docs:, chore:, fix:)
+- Include "🤖 Generated with [Claude Code]" footer
+- Add "Co-Authored-By: Claude <noreply@anthropic.com>"
+
+### Example Workflows
+
+#### Working on Metadata (`ai-agents` branch)
 ```bash
-# Build a NixOS configuration
-nix build '.#nixosConfigurations.<hostname>.config.system.build.toplevel'
+# User checks out ai-agents branch
+# AI agent work starts here
 
-# Build the install ISO
-nix build '.#install-iso'
-nom build '.#install-iso' --no-link --print-out-paths --print-build-logs  # with nix-output-monitor
+# Catch up with main
+git merge main
 
-# Build nix-darwin configuration
-nix build '.#darwinConfigurations.anji.system'
+# Update documentation
+# Edit .claude/analysis-summary.md, etc.
+git add .claude/
+git commit -m "docs(claude): update analysis with new findings
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+
+# User will review and merge to main
 ```
 
-### Flake Updates
-
+#### Working on Code (`ai/*` branches)
 ```bash
-# Update all inputs and apply patches
-nix run '.#update' g:all
+# AI agent can create branch from main
+git checkout -b ai/feature-x main
 
-# Update only upstream inputs (those ending in -upstream)
-nix run '.#update' g:upstreams
+# Or user creates and checks out ai/feature-x branch
+# AI agent work starts here
 
-# Update and apply patches from .flake.patches/config.toml
-nix run '.#update' g:patches
+# Catch up with main if needed
+git merge main
 
-# Update specific input
-nix run '.#update' i:nixpkgs
+# Read metadata from ai-agents branch if needed
+git show ai-agents:.claude/consolidation-strategy.md
+
+# Make code changes (NO .claude/ changes!)
+# Edit modules/, lib/, packages/, etc.
+git add modules/
+git commit -m "feat: add new module for feature-x
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+
+# User will push, review, and merge to main
 ```
 
-The update script (`flake-update.sh`) orchestrates:
-1. `nix flake update` for specified inputs
-2. `.flake.patches/update.py` to apply patches from `.flake.patches/config.toml`
+## 🏗️ Repository Structure
 
-### Checking
-
-```bash
-# Run checks
-nix flake check
+```
+nix-configs/
+├── flake.nix              # Main entry point
+├── modules/               # Module system (250 files, 197 with kdn.* options)
+│   ├── meta/             # Core infrastructure & specialArgs (escape hatch location)
+│   ├── shared/           # Cross-platform modules
+│   │   ├── universal/       # All platforms
+│   │   └── darwin-nixos-os/ # Darwin + NixOS
+│   ├── nixos/            # NixOS-specific (~160 modules)
+│   ├── nix-darwin/       # Darwin-specific (~7 modules)
+│   └── home-manager/     # Home Manager-only (~6 modules)
+├── lib/                   # Custom lib.kdn.* utilities
+├── packages/              # Custom pkgs.kdn.* packages
+└── .claude/              # 📚 AI agent documentation (work here!)
 ```
 
-### REPL
+## 📊 Repository Stats
 
-```bash
-# Interactive REPL with flake loaded
-nix run '.#repl'
+- **250** Nix files across modules/
+- **197** files defining kdn.* options
+- **13** major option categories
+- **63** Home Manager integration files (hm.nix)
+- **10** host configurations (8 NixOS, 1 Darwin, 1 bootstrap)
+
+## 🎓 Essential Concepts
+
+### Three-Tier Module System
+```
+universal (all platforms)
+    ↓
+darwin-nixos-os (macOS + NixOS)
+    ↓
+platform-specific (nixos, nix-darwin, home-manager)
 ```
 
-## Disk Configuration & Deployment
+### Special Arguments (kdn)
+The `kdn` argument is propagated through modules via `kdn.configure` function (in `modules/meta/`):
+- `kdn.inputs` - Flake inputs
+- `kdn.lib` - Extended library
+- `kdn.self` - Self-reference to flake
+- `kdn.moduleType` - Current module type (nixos, nix-darwin, home-manager, checks)
+- `kdn.features.*` - Feature flags (rpi4, microvm-host, darwin-utm-guest, etc.)
+- `kdn.parent` - Parent context tracking
+- `kdn.configure` - Create child contexts
+- `kdn.isOfAnyType` - Type checking helper
+- `kdn.hasParentOfAnyType` - Parent type checking
 
-This repository uses `disko` for declarative disk partitioning with ZFS-on-LUKS and impermanence.
+### Common Module Pattern
+```nix
+{config, lib, kdn, ...}: let
+  cfg = config.kdn.some.module;
+in {
+  options.kdn.some.module = {
+    enable = lib.mkEnableOption "description";
+  };
 
-### Disk Setup Pattern
-
-Typical disk configuration involves:
-- Detached `/boot` on USB drive with LUKS headers
-- ZFS pool on LUKS-encrypted devices
-- Impermanence with ZFS snapshots for selective persistence
-- Unlocking via TPM2 (unattended) or YubiKey FIDO2 (attended)
-
-See README.md "Golden path for bootstrapping new physical machine" for detailed steps.
-
-### Deploying with nixos-anywhere
-
-```fish
-# Deploy to a machine (Fish shell syntax)
-set HOST_NAME <hostname>
-set DISK_NAME <disk-name>
-set HOST_CONNECTION root@<ip-address>
-
-nixos-anywhere --phases disko,install \
-  --disk-encryption-keys "/tmp/$DISK_NAME-$HOST_NAME.key" "$(pass show "luks/$DISK_NAME-$HOST_NAME/keyfile" | psub)" \
-  --flake ".#$HOST_NAME" "$HOST_CONNECTION"
-
-# Build on target for slower machines
-nixos-anywhere --phases disko,install --build-on-remote \
-  --disk-encryption-keys "/tmp/$DISK_NAME-$HOST_NAME.key" "$(pass show "luks/$DISK_NAME-$HOST_NAME/keyfile" | psub)" \
-  --flake ".#$HOST_NAME" "$HOST_CONNECTION"
+  config = lib.mkIf cfg.enable {
+    # Module implementation
+  };
+}
 ```
 
-### LUKS Key Management
+## 📖 Quick Links
 
-```fish
-# Generate keyfile
-dd if=/dev/random bs=1 count=2048 of=/dev/stdout | pass insert --force --multiline "luks/$DISK_NAME-$HOST_NAME/keyfile"
+- **[Analysis Summary](.claude/analysis-summary.md)** - Work completed, key findings, resume points
+- **[Agent Findings](.claude/agent-findings.md)** - Detailed kdn.* options catalog (197 modules)
+- **[Consolidation Strategy](.claude/consolidation-strategy.md)** - Module consolidation plan
+- **[Original Guidance](.claude/original-guidance.md)** - Practical commands and deployment guide
 
-# Enroll TPM2 (unattended unlock)
-ssh "$HOST_CONNECTION" sudo systemd-cryptenroll \
-  --unlock-key-file="/tmp/$DISK_NAME-$HOST_NAME.key" \
-  --tpm2-device=auto \
-  "/dev/disk/by-partlabel/$DISK_NAME-$HOST_NAME-header"
+## 🔗 External Resources
 
-# Enroll YubiKey FIDO2 (attended unlock)
-ssh "$HOST_CONNECTION" sudo systemd-cryptenroll \
-  --unlock-key-file="/tmp/$DISK_NAME-$HOST_NAME.key" \
-  --fido2-device=auto \
-  --fido2-with-client-pin=false \
-  --fido2-with-user-verification=false \
-  "/dev/disk/by-partlabel/$DISK_NAME-$HOST_NAME-header"
-```
-
-## Maintaining nixpkgs Fork with Patches
-
-This repository maintains a patched nixpkgs fork using `.flake.patches/update.py`:
-
-1. Define inputs in `flake.nix`:
-   - `nixpkgs-upstream` - upstream NixOS branch
-   - `nixpkgs` - your fork
-2. Configure patches in `.flake.patches/config.toml`
-3. Run `nix run '.#update' g:patches` to update and apply patches
-
-Patches can be GitHub PR URLs, commit URLs, or compare URLs.
-
-## Packages
-
-Custom packages in `packages/` are exposed via overlay as `pkgs.kdn.*`. Notable packages:
-- `netbird-*` - Custom Netbird components
-- `kdn-*` - Personal utilities (secrets, nix helpers, YubiKey tools, etc.)
-- `debug-*` - Debug builds of packages with build tracing
-
-## Common Patterns
-
-### Adding a New Host
-
-1. Create `modules/nixos/profile/host/${HOSTNAME}/default.nix`
-2. Enable baseline: `kdn.profile.machine.baseline.enable = true;`
-3. Configure hardware detection options
-4. Add host configuration to `flake.nix` nixosConfigurations
-5. Set `system.stateVersion` and `networking.hostId`
-
-### Module Development
-
-- All modules under `modules/` auto-import their subdirectory `default.nix` files
-- Use `config.kdn.enable` to guard module activation
-- Access flake inputs via `kdn.inputs`
-- Check parent module type with `kdn.hasParentOfAnyType ["nixos" "nix-darwin"]`
-- Check features with `kdn.features.<feature-name>`
-
-### Working with Secrets
-
-- SOPS with age encryption (ssh-to-age for host keys)
-- Add new host keys to `.sops.yaml` after deployment
-- Keyfiles managed through `pass` (password-store)
-
-## File Locations
-
-- Flake entrypoint: `flake.nix`
-- Library extensions: `lib/`
-- Modules: `modules/{nixos,home-manager,nix-darwin,shared}/`
-- Packages: `packages/`
-- Host configs: `modules/nixos/profile/host/*/`
-- Patch management: `.flake.patches/config.toml` and `.flake.patches/update.py`
-- Update script: `flake-update.sh`
-
-## Notes
-
-- Uses Lix instead of standard Nix (`nix.package = pkgs.lixPackageSets.latest.lix`)
-- Home Manager integrated through both NixOS and nix-darwin modules
-- Stylix provides theming across the system
-- Impermanence used extensively with ZFS snapshots
-- All user data should be declared in `environment.persistence` entries
+- **Claude Code**: https://claude.com/claude-code
+- **NixOS**: https://nixos.org
+- **Home Manager**: https://github.com/nix-community/home-manager
+- **nix-darwin**: https://github.com/LnL7/nix-darwin
