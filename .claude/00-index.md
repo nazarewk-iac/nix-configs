@@ -4,34 +4,31 @@ This directory contains AI agent-optimized documentation for the nix-configs rep
 
 ## Documentation Structure
 
-1. **[01-overview.md](01-overview.md)** - High-level repository overview and key principles
-2. **[02-flake-structure.md](02-flake-structure.md)** - Flake architecture, inputs, outputs, and entry points
-3. **[03-meta-system.md](03-meta-system.md)** - Meta module system and specialArgs propagation
-4. **[04-module-architecture.md](04-module-architecture.md)** - Module organization, patterns, and loading mechanisms
-5. **[05-kdn-options.md](05-kdn-options.md)** - Complete reference of kdn.* options by category
-6. **[06-library-extensions.md](06-library-extensions.md)** - Custom lib.kdn.* utilities and helpers
-7. **[07-module-patterns.md](07-module-patterns.md)** - Common patterns and best practices for module development
-8. **[08-consolidation-plan.md](08-consolidation-plan.md)** - Architectural plan for consolidating modules
+1. **[analysis-summary.md](analysis-summary.md)** - Analysis work completed, key findings, and resume points for future work
+2. **[agent-findings.md](agent-findings.md)** - Detailed agent output analyzing kdn.* options across 197 modules, categorized by function
+3. **[consolidation-strategy.md](consolidation-strategy.md)** - Detailed strategy for consolidating modules/ into unified structure
+4. **[original-guidance.md](original-guidance.md)** - Original practical guidance from CLAUDE.md (commands, deployment, common patterns)
 
 ## Quick Navigation by Task
 
 ### Understanding the System
-- New to the repo? Start with **01-overview.md**
-- Understanding module loading? See **04-module-architecture.md**
-- Need to understand how arguments flow? Read **03-meta-system.md**
+- New to the repo? Start with **[analysis-summary.md](analysis-summary.md)** for overview
+- Need practical commands? See **[original-guidance.md](original-guidance.md)**
+- Understanding module structure? Read **[agent-findings.md](agent-findings.md)** (Module Structure section)
 
 ### Working with Modules
-- Adding a new module? See **07-module-patterns.md**
-- Looking for existing options? Check **05-kdn-options.md**
-- Understanding shared vs platform-specific? See **04-module-architecture.md**
+- Looking for existing options? Check **[agent-findings.md](agent-findings.md)** for complete catalog
+- Understanding patterns? See **[agent-findings.md](agent-findings.md)** (Common Structural Patterns)
+- Understanding dependencies? See **[agent-findings.md](agent-findings.md)** (Cross-Module Dependencies)
 
 ### Refactoring and Consolidation
-- Planning module consolidation? See **08-consolidation-plan.md**
-- Understanding dependencies? See **05-kdn-options.md** (dependencies section)
+- Planning module consolidation? See **[consolidation-strategy.md](consolidation-strategy.md)**
+- Understanding current architecture? Read **[analysis-summary.md](analysis-summary.md)**
 
-### Custom Utilities
-- Need custom lib functions? See **06-library-extensions.md**
-- Understanding flake helpers? See **02-flake-structure.md**
+### Practical Usage
+- Need deployment commands? See **[original-guidance.md](original-guidance.md)** (Disk Configuration & Deployment)
+- Adding a new host? See **[original-guidance.md](original-guidance.md)** (Common Patterns)
+- Working with secrets? See **[original-guidance.md](original-guidance.md)** (Working with Secrets)
 
 ## Key Metrics
 
@@ -58,4 +55,4 @@ The repository is evolving towards:
 - **Enhanced kdn.* options**: Pull kdn-specific options into meta module
 - **Reduced implementation details**: Keep implementation details in specific modules, expose only necessary options
 
-See **08-consolidation-plan.md** for detailed consolidation strategy.
+See **[consolidation-strategy.md](consolidation-strategy.md)** for detailed consolidation strategy.
