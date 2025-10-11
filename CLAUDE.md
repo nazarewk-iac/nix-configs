@@ -43,10 +43,12 @@ All architecture documentation, analysis, and practical guidance is in the **`.c
 
 #### Branch Policy Rules
 
-- **NEVER commit to `main`**
+- **NEVER commit to `main`** - with ONE EXCEPTION:
+  - ✅ AI agents CAN modify and commit `CLAUDE.md` (this file) to `main` branch
+  - ❌ Do NOT commit any other files to `main`
+  - User will still push changes
 - AI agents CAN create `ai/*` branches from `main`: `git checkout -b ai/task-name main`
-- AI agents CAN switch between `ai/*` branches and `ai-agents` branch
-- AI agents CANNOT switch to `main` or other branches
+- AI agents CAN switch between `ai/*` branches, `ai-agents` branch, and `main` (for CLAUDE.md updates only)
 - **NEVER push changes** (user will review and push)
 - Read `.claude/` metadata from `ai-agents` branch without switching: `git show ai-agents:.claude/file.md`
 
@@ -62,6 +64,19 @@ All architecture documentation, analysis, and practical guidance is in the **`.c
 - ✅ Create/update modules, configs, etc.
 - ❌ Do NOT modify `.claude/` directory
 - ❌ Do NOT update metadata
+
+**Special case - CLAUDE.md updates:**
+- ✅ Can switch to `main` branch to update CLAUDE.md
+- ✅ Can commit CLAUDE.md directly to `main`
+- ❌ Cannot commit any other file to `main`
+- Example:
+  ```bash
+  git checkout main
+  # Edit CLAUDE.md
+  git add CLAUDE.md
+  git commit -m "docs: update CLAUDE.md with new guidance"
+  git checkout ai-agents  # or return to work branch
+  ```
 
 #### Commit Hygiene
 

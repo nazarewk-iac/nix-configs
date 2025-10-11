@@ -71,10 +71,11 @@ This directory contains AI agent-optimized documentation for the nix-configs rep
 
 ### Core Rules
 
-- NEVER commit to `main`
+- NEVER commit to `main` - EXCEPT:
+  - ✅ CAN commit `CLAUDE.md` to `main` (user will push)
+  - ❌ Cannot commit any other file to `main`
 - CAN create `ai/*` branches from `main`
-- CAN switch between `ai/*` branches and `ai-agents` branch
-- CANNOT switch to `main` or other branches
+- CAN switch between `ai/*` branches, `ai-agents` branch, and `main` (for CLAUDE.md updates)
 - NEVER push changes (user will push after review)
 - Read metadata without switching: `git show ai-agents:.claude/file.md`
 - Merge `main` when catching up: `git merge main`

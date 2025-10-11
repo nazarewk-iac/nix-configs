@@ -193,10 +193,9 @@ in {
 - Merge `main` when catching up
 
 Common rules:
-- NEVER commit to `main`
+- NEVER commit to `main` - EXCEPT `CLAUDE.md` (user will push)
 - CAN create `ai/*` branches from `main`
-- CAN switch between `ai/*` and `ai-agents` branches
-- CANNOT switch to `main` or other branches
+- CAN switch between `ai/*`, `ai-agents`, and `main` (for CLAUDE.md only)
 - NEVER push (user reviews and pushes)
 
 ## Migration Strategy
