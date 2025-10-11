@@ -94,6 +94,22 @@ git update-ref refs/heads/main $NEW_COMMIT
 ```
 
 **Updating `.claude/` on `ai-agents` (when on other branches):**
+
+Helper scripts are available in `.claude/` on the `ai-agents` branch:
+
+```bash
+# Use the helper script stored in ai-agents branch
+# 1. Prepare your updated file
+git show ai-agents:.claude/analysis-summary.md > /tmp/analysis-summary.md.new
+# ... edit the file ...
+
+# 2. Execute the helper script directly from ai-agents branch
+bash <(git show ai-agents:.claude/update-claude-metadata.sh) \
+    analysis-summary.md \
+    "docs(claude): update analysis summary"
+```
+
+Manual approach (if you prefer full control):
 ```bash
 # Read, edit, create blob for a file in .claude/
 git show ai-agents:.claude/analysis-summary.md > /tmp/analysis-summary.md.new
@@ -105,7 +121,7 @@ PARENT_COMMIT=$(git rev-parse ai-agents)
 CURRENT_TREE=$(git cat-file -p $PARENT_COMMIT | grep '^tree' | cut -d' ' -f2)
 
 # Get .claude directory tree object
-CLAUDE_DIR_SHA=$(git ls-tree $CURRENT_TREE | grep ".claude" | cut -f1 | cut -d' ' -f3)
+CLAUDE_DIR_SHA=$(git ls-tree $CURRENT_TREE | grep ".claude" | awk '{print $3}')
 
 # Create new .claude tree with updated file
 NEW_CLAUDE_TREE=$(git mktree <<EOF
