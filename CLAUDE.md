@@ -68,30 +68,63 @@ All architecture documentation, analysis, and practical guidance is in the **`.c
 - ❌ Do NOT modify `.claude/` directory
 - ❌ Do NOT update metadata
 
-**Special case - CLAUDE.md updates:**
-- ✅ Can update CLAUDE.md in `main` branch without checking it out
-- ✅ Use git plumbing commands to commit directly to `main`
-- ❌ Cannot commit any other file to `main`
-- Example using plumbing commands:
-  ```bash
-  # Read current file, edit it, create blob
-  git show main:CLAUDE.md > /tmp/CLAUDE.md.new
-  # ... edit the file ...
-  BLOB=$(git hash-object -w /tmp/CLAUDE.md.new)
+**Special case - Cross-branch updates without checkout:**
 
-  # Create new tree with updated file
-  PARENT_COMMIT=$(git rev-parse main)
-  CURRENT_TREE=$(git cat-file -p $PARENT_COMMIT | grep '^tree' | cut -d' ' -f2)
-  NEW_TREE=$(git mktree <<EOF
+AI agents can commit to any allowed branch without checking it out using git plumbing:
+
+**Updating CLAUDE.md on `main` (when on other branches):**
+```bash
+# Read, edit, create blob
+git show main:CLAUDE.md > /tmp/CLAUDE.md.new
+# ... edit the file ...
+BLOB=$(git hash-object -w /tmp/CLAUDE.md.new)
+
+# Create new tree with updated file
+PARENT_COMMIT=$(git rev-parse main)
+CURRENT_TREE=$(git cat-file -p $PARENT_COMMIT | grep '^tree' | cut -d' ' -f2)
+NEW_TREE=$(git mktree <<EOF
 100644 blob $BLOB	CLAUDE.md
 $(git ls-tree $CURRENT_TREE | grep -v "CLAUDE.md")
 EOF
 )
 
-  # Create commit and update main
-  NEW_COMMIT=$(git commit-tree $NEW_TREE -p $PARENT_COMMIT -m "docs: update CLAUDE.md")
-  git update-ref refs/heads/main $NEW_COMMIT
-  ```
+# Create commit and update main
+NEW_COMMIT=$(git commit-tree $NEW_TREE -p $PARENT_COMMIT -m "docs: update CLAUDE.md")
+git update-ref refs/heads/main $NEW_COMMIT
+```
+
+**Updating `.claude/` on `ai-agents` (when on other branches):**
+```bash
+# Read, edit, create blob for a file in .claude/
+git show ai-agents:.claude/analysis-summary.md > /tmp/analysis-summary.md.new
+# ... edit the file ...
+BLOB=$(git hash-object -w /tmp/analysis-summary.md.new)
+
+# Get current state
+PARENT_COMMIT=$(git rev-parse ai-agents)
+CURRENT_TREE=$(git cat-file -p $PARENT_COMMIT | grep '^tree' | cut -d' ' -f2)
+
+# Get .claude directory tree object
+CLAUDE_DIR_SHA=$(git ls-tree $CURRENT_TREE | grep ".claude" | cut -f1 | cut -d' ' -f3)
+
+# Create new .claude tree with updated file
+NEW_CLAUDE_TREE=$(git mktree <<EOF
+$(git ls-tree $CLAUDE_DIR_SHA | grep -v "analysis-summary.md")
+100644 blob $BLOB	analysis-summary.md
+EOF
+)
+
+# Create new root tree with updated .claude
+NEW_TREE=$(git mktree <<EOF
+$(git ls-tree $CURRENT_TREE | grep -v ".claude")
+040000 tree $NEW_CLAUDE_TREE	.claude
+EOF
+)
+
+# Create commit and update ai-agents
+NEW_COMMIT=$(git commit-tree $NEW_TREE -p $PARENT_COMMIT -m "docs(claude): update analysis")
+git update-ref refs/heads/ai-agents $NEW_COMMIT
+```
 
 #### Commit Hygiene
 
