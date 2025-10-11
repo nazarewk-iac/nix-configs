@@ -34,3 +34,5 @@
 !/.flake.patches/
 !/modules/shared/universal/profile/user/kdn/
 !/LICENSE
+!/.claude/
+!/.claude/**/*.md
