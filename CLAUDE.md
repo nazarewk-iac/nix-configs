@@ -8,11 +8,15 @@ All architecture documentation, analysis, and practical guidance is in the **`.c
 
 **Start here**: [.claude/00-index.md](.claude/00-index.md)
 
-## 🎯 Key Principle
+## 🎯 Key Principles
 
+### Module Design
 **All modules MUST be side-effect free by default** (enabled via `*.enable` options).
 
 **Note**: The meta-module provides an escape hatch for integrating third-party modules with unconditional imports that don't adhere to this pattern.
+
+### AI Agent Git Operations
+**AI agents MUST ONLY commit to the `ai-agents` branch. NEVER commit to `main` or any other branch. NEVER switch branches.**
 
 ## Quick Links
 

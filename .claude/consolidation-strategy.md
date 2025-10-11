@@ -176,6 +176,14 @@ in {
 }
 ```
 
+## AI Agent Workflow
+
+**IMPORTANT**: AI agents working on this repository must:
+- ONLY commit to the `ai-agents` branch
+- NEVER switch branches (user handles branch management)
+- NEVER push changes (user will review and push)
+- Focus modifications in `.claude/` directory for documentation
+
 ## Migration Strategy
 
 ### Phase 1: Analysis & Documentation ✅ (Current)

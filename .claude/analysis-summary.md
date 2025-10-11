@@ -179,7 +179,13 @@ If resuming this work later:
 
 ## Git Commits Made
 
-(Will be populated as documentation is committed)
+**Branch**: `ai-agents` (AI agents MUST ONLY commit to this branch, NEVER to main)
+
+Commits on `ai-agents` branch:
+- f754f447 docs(claude): document meta-module escape hatch for 3rd party modules
+- b290f702 docs(claude): make CLAUDE.md minimal entrypoint to .claude/
+- 9385811c chore: add .claude/ to gitignore exceptions
+- a36ce3d1 docs(claude): add comprehensive architecture analysis
 
 ## Agent Interactions Log
 

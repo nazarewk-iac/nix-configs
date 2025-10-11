@@ -48,6 +48,24 @@ This directory contains AI agent-optimized documentation for the nix-configs rep
 5. **Secret-aware**: Conditional activation based on secrets availability
 6. **Type-safe boundaries**: Clear module type tracking via `kdn.moduleType`
 
+## AI Agent Guidelines
+
+**CRITICAL**: AI agents must follow these rules:
+
+1. **Git Branch Policy**:
+   - ONLY commit to the `ai-agents` branch
+   - NEVER commit to `main` or any other branch
+   - NEVER switch branches (user will handle branch switching)
+   - NEVER push changes (user will review and push)
+
+2. **File Modifications**:
+   - Only modify files within `.claude/` directory for documentation
+   - Use git for commits but let user handle merges/pushes
+
+3. **Documentation Updates**:
+   - Keep analysis and findings up-to-date as work progresses
+   - Commit frequently with clear, descriptive messages
+
 ## Future Direction
 
 The repository is evolving towards:
