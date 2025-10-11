@@ -57,5 +57,6 @@ in {
         headerSpec.num = 3;
       };
     })
+    # TODO: I had to `mkdir /var/tmp/nix-daemon` to finish the build
   ]);
 }

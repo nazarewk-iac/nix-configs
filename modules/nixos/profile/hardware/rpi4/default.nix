@@ -9,7 +9,7 @@
 
   cfg = config.kdn.profile.hardware.rpi4;
 
-  mkIfRPi4 = x: lib.attrsets.optionalAttrs (rpi4.any && x);
+  mkIfRPi4 = cond: conf: lib.attrsets.optionalAttrs (rpi4.any) (lib.mkIf cond conf);
 
   rpi4.any = kdn.features.rpi4;
   rpi4.normal = rpi4.any && !kdn.features.installer;
@@ -130,6 +130,37 @@ in {
                   */
                   pyproject = true;
                   build-system = with final; [setuptools];
+
+                  /*
+                  ┃ error: builder for '/nix/store/rv2jmzl410ifn8a67v6g6hcmw02j1kp0-python3.13-INA219_UPS.py-0.0.1.drv' failed with exit code 1;
+                  ┃        last 25 log lines:
+                  ┃        >        ^^^^^^^^^^^^^^^^^^^^^^^^
+                  ┃        >   File "/nix/store/a65r9k46dxhyx2gn60bpx7j62anjdjr7-python3-3.13.7/lib/python3.13/functools.py", line 1026, in __get__
+                  ┃        >     val = self.func(instance)
+                  ┃        >   File "/nix/store/c5631sg80pwcki8fj4wn8zzvd9vwyfyl-python3.13-hatchling-1.27.0/lib/python3.13/site-packages/hatchling/builders/config.py", line 713, in only_include
+                  ┃        >     only_include = only_include_config.get('only-include', self.default_only_include()) or self.packages
+                  ┃        >                                                            ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+                  ┃        >   File "/nix/store/c5631sg80pwcki8fj4wn8zzvd9vwyfyl-python3.13-hatchling-1.27.0/lib/python3.13/site-packages/hatchling/builders/wheel.py", line 262, in default_only_include
+                  ┃        >     return self.default_file_selection_options.only_include
+                  ┃        >            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                  ┃        >   File "/nix/store/a65r9k46dxhyx2gn60bpx7j62anjdjr7-python3-3.13.7/lib/python3.13/functools.py", line 1026, in __get__
+                  ┃        >     val = self.func(instance)
+                  ┃        >   File "/nix/store/c5631sg80pwcki8fj4wn8zzvd9vwyfyl-python3.13-hatchling-1.27.0/lib/python3.13/site-packages/hatchling/builders/wheel.py", line 250, in default_file_selection_options
+                  ┃        >     raise ValueError(message)
+                  ┃        > ValueError: Unable to determine which files to ship inside the wheel using the following heuristics: https://hatch.pypa.io/latest/plugins/builder/wheel/#default-file-selection
+                  ┃        >
+                  ┃        > The most likely cause of this is that there is no directory that matches the name of your project (INA219_UPS.py or ina219_ups_py).
+                  ┃        >
+                  ┃        > At least one file selection option must be defined in the `tool.hatch.build.targets.wheel` table, see: https://hatch.pypa.io/latest/config/build/
+                  ┃        >
+                  ┃        > As an example, if you intend to ship a directory named `foo` that resides within a `src` directory located at the root of your project, you can define the following:
+                  ┃        >
+                  ┃        > [tool.hatch.build.targets.wheel]
+                  ┃        > packages = ["src/foo"]
+                  ┃        >
+                  ┃        > ERROR Backend subprocess exited when trying to invoke build_wheel
+                  ┃        For full logs, run 'nix log /nix/store/rv2jmzl410ifn8a67v6g6hcmw02j1kp0-python3.13-INA219_UPS.py-0.0.1.drv'.
+                  */
                 };
             };
             requirementsFile = pkgs.writeText "rpi-usb-hat-requirements.txt" ''
