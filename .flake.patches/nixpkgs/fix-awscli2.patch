@@ -1,0 +1,58 @@
+From 7c72ea5aa33ccdd9502b418de8afc9d9574e7b49 Mon Sep 17 00:00:00 2001
+From: Morgan Helton <morgan@flox.dev>
+Date: Thu, 9 Oct 2025 10:29:39 -0400
+Subject: [PATCH 1/2] awscli2: pin prompt-toolkit to 3.0.51
+
+---
+ pkgs/by-name/aw/awscli2/package.nix | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/pkgs/by-name/aw/awscli2/package.nix b/pkgs/by-name/aw/awscli2/package.nix
+index 10f37af9e2bfb1e6890a3678523d662c94378408..de63b7314b16076bb2da137defbf8b6ea61aa71e 100644
+--- a/pkgs/by-name/aw/awscli2/package.nix
++++ b/pkgs/by-name/aw/awscli2/package.nix
+@@ -23,6 +23,13 @@ let
+             "test_check_link_response_only" # fails on hydra https://hydra.nixos.org/build/242624087/nixlog/1
+           ];
+         });
++        prompt-toolkit = prev.prompt-toolkit.overridePythonAttrs (prev: rec {
++          version = "3.0.51";
++          src = prev.src.override {
++            inherit version;
++            hash = "sha256-kxoWLjsn/JDIbxtIux+yxSjCdhR15XycBt4TMRx7VO0=";
++          };
++        });
+         python-dateutil = prev.python-dateutil.overridePythonAttrs (prev: rec {
+           version = "2.8.2";
+           format = "setuptools";
+
+From 7d7e01bc8e3d5c313d661f2202d4ea0b0a097b54 Mon Sep 17 00:00:00 2001
+From: Morgan Helton <morgan@flox.dev>
+Date: Thu, 9 Oct 2025 11:00:00 -0400
+Subject: [PATCH 2/2] awscli2: 2.30.6 -> 2.31.11
+
+---
+ pkgs/by-name/aw/awscli2/package.nix | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/pkgs/by-name/aw/awscli2/package.nix b/pkgs/by-name/aw/awscli2/package.nix
+index de63b7314b16076bb2da137defbf8b6ea61aa71e..99bac8ec2404a2c054d56c0cc0bc0fb493a649f3 100644
+--- a/pkgs/by-name/aw/awscli2/package.nix
++++ b/pkgs/by-name/aw/awscli2/package.nix
+@@ -73,14 +73,14 @@ let
+ in
+ py.pkgs.buildPythonApplication rec {
+   pname = "awscli2";
+-  version = "2.30.6"; # N.B: if you change this, check if overrides are still up-to-date
++  version = "2.31.11"; # N.B: if you change this, check if overrides are still up-to-date
+   pyproject = true;
+ 
+   src = fetchFromGitHub {
+     owner = "aws";
+     repo = "aws-cli";
+     tag = version;
+-    hash = "sha256-enCI/yGnxf4/VYID/Di0ZhSiGp0ldgIKYmTnklGpjbc=";
++    hash = "sha256-JyTL3q8MMKSKbNiJvBL3u7vpUNFt9rp2Ueh8mL9FRkM=";
+   };
+ 
+   postPatch = ''

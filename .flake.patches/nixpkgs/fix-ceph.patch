@@ -1,0 +1,54 @@
+From b572449d4052a549430c0d7b72af74613c8cf61c Mon Sep 17 00:00:00 2001
+From: Krzysztof Nazarewski <gpg@kdn.im>
+Date: Sat, 11 Oct 2025 22:49:00 +0200
+Subject: [PATCH 1/2] ceph: update `arrow-cpp` with CMake 4 support
+
+related to https://github.com/NixOS/nixpkgs/issues/445447
+---
+ pkgs/tools/filesystems/ceph/arrow-cpp-19.nix | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/pkgs/tools/filesystems/ceph/arrow-cpp-19.nix b/pkgs/tools/filesystems/ceph/arrow-cpp-19.nix
+index d4226feffb529d519b8210310846a0b13e37772a..eb2d7ecc628cd3792746fe862c2fa161e1445db0 100644
+--- a/pkgs/tools/filesystems/ceph/arrow-cpp-19.nix
++++ b/pkgs/tools/filesystems/ceph/arrow-cpp-19.nix
+@@ -106,6 +106,12 @@ stdenv.mkDerivation (finalAttrs: {
+       hash = "sha256-WTpe/eT3himlCHN/R78w1sF0HG859mE2ZN70U+9N8Ag=";
+       stripLen = 1;
+     })
++    (fetchpatch2 {
++      name = "cmake-fix.patch";
++      url = "https://github.com/apache/arrow/commit/48c0bbbd4a2eedcca518caeb7f7547c7988dc740.patch?full_index=1";
++      hash = "sha256-i/vZy/61VYP+mo1AxfoiBSjTip04vhFOh3hGjHCJy6g=";
++      stripLen = 1; # applying patch from within `cpp/` subdirectory
++    })
+   ];
+ 
+   # versions are all taken from
+
+From ebb38a0cd3f8c344f750351154f66c00d33cb804 Mon Sep 17 00:00:00 2001
+From: Krzysztof Nazarewski <gpg@kdn.im>
+Date: Sat, 11 Oct 2025 23:16:29 +0200
+Subject: [PATCH 2/2] ceph: update `cpp_redis` with CMake 4 support
+
+---
+ pkgs/tools/filesystems/ceph/default.nix | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/pkgs/tools/filesystems/ceph/default.nix b/pkgs/tools/filesystems/ceph/default.nix
+index 11e7fff175a6fae34a9350bc4bbf89ae754e8388..5e8bc57366edd73da4e0e28fac7943f69386ec08 100644
+--- a/pkgs/tools/filesystems/ceph/default.nix
++++ b/pkgs/tools/filesystems/ceph/default.nix
+@@ -386,6 +386,12 @@ rec {
+       # * <https://aur.archlinux.org/cgit/aur.git/commit/?h=ceph&id=8c5cc7d8deec002f7596b6d0860859a0a718f12b>
+       # * <https://github.com/ceph/ceph/pull/60999>
+       ./boost-1.86-PyModule.patch
++
++      (fetchpatch2 {
++        name = "ceph-cmake-4.patch";
++        url = "https://gitlab.alpinelinux.org/ashpool/aports/-/raw/d22b70eafe33c3daabe4eea6913c5be87d9463ad/community/ceph19/cpp_redis.patch";
++        hash = "sha256-wxPIsYt25CjXhJ6kmr/MXwFD58Sl4y4W+r9jAMND+uw=";
++      })
+     ];
+ 
+     nativeBuildInputs = [
