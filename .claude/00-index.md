@@ -50,7 +50,7 @@ This directory contains AI agent-optimized documentation for the nix-configs rep
 
 ## AI Agent Guidelines
 
-**CRITICAL**: AI agents must follow these rules:
+**CRITICAL**: AI agents must follow these rules (detailed in root CLAUDE.md):
 
 1. **Git Branch Policy**:
    - ONLY commit to the `ai-agents` branch
@@ -58,13 +58,20 @@ This directory contains AI agent-optimized documentation for the nix-configs rep
    - NEVER switch branches (user will handle branch switching)
    - NEVER push changes (user will review and push)
 
-2. **File Modifications**:
-   - Only modify files within `.claude/` directory for documentation
-   - Use git for commits but let user handle merges/pushes
+2. **Staying Current**:
+   - Always merge `main` into `ai-agents` when catching up or resuming work
+   - Command: `git merge main` (while on ai-agents branch)
 
-3. **Documentation Updates**:
-   - Keep analysis and findings up-to-date as work progresses
+3. **File Modifications**:
+   - Documentation work: Modify files within `.claude/` directory
+   - Code work: Only when explicitly requested
+   - NEVER modify files outside designated scope without permission
+
+4. **Commit Hygiene**:
    - Commit frequently with clear, descriptive messages
+   - Use conventional commit format (feat:, docs:, chore:, fix:)
+   - Include "🤖 Generated with [Claude Code]" footer
+   - Add "Co-Authored-By: Claude <noreply@anthropic.com>"
 
 ## Future Direction
 

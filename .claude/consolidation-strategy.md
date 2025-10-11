@@ -178,8 +178,9 @@ in {
 
 ## AI Agent Workflow
 
-**IMPORTANT**: AI agents working on this repository must:
+**IMPORTANT**: AI agents working on this repository must (see root CLAUDE.md for complete rules):
 - ONLY commit to the `ai-agents` branch
+- Merge `main` into `ai-agents` when catching up: `git merge main`
 - NEVER switch branches (user handles branch management)
 - NEVER push changes (user will review and push)
 - Focus modifications in `.claude/` directory for documentation
