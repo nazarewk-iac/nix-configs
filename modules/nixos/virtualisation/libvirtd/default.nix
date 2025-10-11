@@ -20,13 +20,6 @@ in {
         enable = true;
         qemu.package = pkgs.qemu_full;
         qemu.swtpm.enable = true;
-        qemu.ovmf = {
-          enable = true;
-          packages = [
-            pkgs.OVMFFull.fd
-            pkgs.pkgsCross.aarch64-multiplatform.OVMF.fd
-          ];
-        };
         qemu.vhostUserPackages = with pkgs; [
           virtiofsd
         ];
