@@ -41,6 +41,7 @@ This directory contains AI agent-optimized documentation for the nix-configs rep
 ## Design Principles
 
 1. **Side-effect free by default**: All modules MUST use `*.enable` options
+   - Note: Meta-module provides escape hatch for third-party modules with unconditional imports
 2. **Composable architecture**: High-level profiles compose lower-level modules
 3. **Platform abstraction**: Universal → Darwin-NixOS-OS → Platform-specific layers
 4. **Smart defaults**: Auto-detection where possible (e.g., ZFS, Home Manager)

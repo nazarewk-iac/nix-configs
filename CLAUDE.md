@@ -12,6 +12,8 @@ All architecture documentation, analysis, and practical guidance is in the **`.c
 
 **All modules MUST be side-effect free by default** (enabled via `*.enable` options).
 
+**Note**: The meta-module provides an escape hatch for integrating third-party modules with unconditional imports that don't adhere to this pattern.
+
 ## Quick Links
 
 - **[Analysis Summary](.claude/analysis-summary.md)** - Work completed, key findings, resume points

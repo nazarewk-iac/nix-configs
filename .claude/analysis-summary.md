@@ -111,6 +111,7 @@ apply = value: value && config.kdn.desktop.enable;
 ### Architecture Insights
 
 1. **Side-effect free principle**: Every module guarded by enable option
+   - Meta-module provides escape hatch for third-party modules with unconditional imports
 2. **Smart defaults**: Auto-detection (ZFS, Home Manager, secrets)
 3. **Secret-aware**: 20+ modules check config.kdn.security.secrets.allowed
 4. **Type safety**: kdn.moduleType tracking, kdn.isOfAnyType helpers
