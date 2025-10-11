@@ -29,7 +29,11 @@ All architecture documentation, analysis, and practical guidance is in the **`.c
    - Contains `.claude/` directory with architecture docs, analysis, etc.
    - AI agents commit metadata updates here
    - User will merge to `main` after review
-   - Merge `main` into `ai-agents` when catching up
+   - **Merge `main` into `ai-agents` when catching up** to get latest CLAUDE.md and other updates:
+     ```bash
+     # Execute merge script from ai-agents branch
+     bash <(git show ai-agents:.claude/merge-main-to-ai-agents.sh)
+     ```
    - **Reading metadata**: AI agents can read `.claude/` files from this branch without switching:
      ```bash
      git show ai-agents:.claude/analysis-summary.md
@@ -41,7 +45,7 @@ All architecture documentation, analysis, and practical guidance is in the **`.c
    - Do NOT modify `.claude/` directory in these branches
    - Read metadata from `ai-agents` branch using `git show` if needed
    - User will push, review, and merge to `main`
-   - Merge `main` into work branch when catching up
+   - Merge `main` into work branch when catching up: `git merge main`
 
 #### Branch Policy Rules
 
@@ -174,7 +178,10 @@ git update-ref refs/heads/ai-agents $NEW_COMMIT
 # User checks out ai-agents branch
 # AI agent work starts here
 
-# Catch up with main
+# Catch up with main using helper script (from any branch)
+bash <(git show ai-agents:.claude/merge-main-to-ai-agents.sh)
+
+# Or if on ai-agents branch, can use regular merge
 git merge main
 
 # Update documentation
