@@ -60,18 +60,23 @@ This directory contains AI agent-optimized documentation for the nix-configs rep
    - Update architecture docs, analysis, findings
    - Merge `main` when catching up
    - Do NOT modify code outside `.claude/`
+   - AI agents can read from this branch without switching: `git show ai-agents:.claude/file.md`
 
 2. **`ai/*` branches** - For actual code work
+   - AI agents can create from `main`: `git checkout -b ai/task-name main`
    - Make code changes as requested
    - Do NOT modify `.claude/` directory
+   - Read metadata using `git show ai-agents:.claude/file.md`
    - Merge `main` when catching up
 
 ### Core Rules
 
 - NEVER commit to `main`
-- NEVER switch branches (user handles this)
+- CAN create `ai/*` branches from `main`
+- CAN switch between `ai/*` branches and `ai-agents` branch
+- CANNOT switch to `main` or other branches
 - NEVER push changes (user will push after review)
-- Work on current branch only
+- Read metadata without switching: `git show ai-agents:.claude/file.md`
 - Merge `main` when catching up: `git merge main`
 
 ### Commit Hygiene

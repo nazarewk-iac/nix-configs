@@ -186,13 +186,17 @@ in {
 - Merge `main` when catching up
 
 **`ai/*` branches** - Code work:
+- AI agents can create from `main`: `git checkout -b ai/task-name main`
 - Make code changes as requested
 - Do NOT modify `.claude/` directory
+- Read metadata: `git show ai-agents:.claude/file.md`
 - Merge `main` when catching up
 
 Common rules:
 - NEVER commit to `main`
-- NEVER switch branches (user handles this)
+- CAN create `ai/*` branches from `main`
+- CAN switch between `ai/*` and `ai-agents` branches
+- CANNOT switch to `main` or other branches
 - NEVER push (user reviews and pushes)
 
 ## Migration Strategy

@@ -28,20 +28,27 @@ All architecture documentation, analysis, and practical guidance is in the **`.c
    - AI agents commit metadata updates here
    - User will merge to `main` after review
    - Merge `main` into `ai-agents` when catching up
+   - **Reading metadata**: AI agents can read `.claude/` files from this branch without switching:
+     ```bash
+     git show ai-agents:.claude/analysis-summary.md
+     ```
 
 2. **`ai/*` branches** - Actual work (code changes, features, fixes)
-   - AI agents create these for specific tasks (e.g., `ai/module-consolidation`, `ai/fix-netbird`)
+   - AI agents can create these starting from `main` (e.g., `ai/module-consolidation`, `ai/fix-netbird`)
    - Contains code changes ONLY, NO metadata updates
    - Do NOT modify `.claude/` directory in these branches
+   - Read metadata from `ai-agents` branch using `git show` if needed
    - User will push, review, and merge to `main`
    - Merge `main` into work branch when catching up
 
 #### Branch Policy Rules
 
-- **NEVER commit to `main`** or any other branch
-- **NEVER switch branches** (user handles branch switching)
+- **NEVER commit to `main`**
+- AI agents CAN create `ai/*` branches from `main`: `git checkout -b ai/task-name main`
+- AI agents CAN switch between `ai/*` branches and `ai-agents` branch
+- AI agents CANNOT switch to `main` or other branches
 - **NEVER push changes** (user will review and push)
-- Work on branch user has checked out for you
+- Read `.claude/` metadata from `ai-agents` branch without switching: `git show ai-agents:.claude/file.md`
 
 #### File Modification Rules
 
@@ -87,11 +94,17 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 
 #### Working on Code (`ai/*` branches)
 ```bash
-# User creates and checks out ai/feature-x branch
+# AI agent can create branch from main
+git checkout -b ai/feature-x main
+
+# Or user creates and checks out ai/feature-x branch
 # AI agent work starts here
 
-# Catch up with main
+# Catch up with main if needed
 git merge main
+
+# Read metadata from ai-agents branch if needed
+git show ai-agents:.claude/consolidation-strategy.md
 
 # Make code changes (NO .claude/ changes!)
 # Edit modules/, lib/, packages/, etc.
