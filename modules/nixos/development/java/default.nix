@@ -12,20 +12,5 @@ in {
 
   config = lib.mkIf cfg.enable {
     home-manager.sharedModules = [{kdn.development.java.enable = true;}];
-    programs.java.enable = true;
-    programs.java.package = pkgs.jdk;
-
-    environment.systemPackages = with pkgs; [
-      maven
-      gradle-completion
-
-      (gradle-packages.gradle_7.override {
-        javaToolchains = [
-          jdk8
-          jdk11
-          jdk17
-        ];
-      })
-    ];
   };
 }
