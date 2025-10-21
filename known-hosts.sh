@@ -2,7 +2,10 @@
 set -eEuo pipefail
 trap 'echo "Error when executing $BASH_COMMAND at line $LINENO!" >&2' ERR
 cd "${BASH_SOURCE[0]%/*}"
-info() { echo "[$(date -Iseconds)]" "$@" >&2; }
+# shellcheck disable=SC2059
+_log() { printf "$(date -Isec) ${1} ${BASH_SOURCE[1]}:${BASH_LINENO[1]}: ${2}\n" "${@:3}" >&2; }
+info() { _log INFO "$@"; }
+warn() { _log WARN "$@"; }
 info STARTING
 trap 'info FINISHED' EXIT
 test -z "${DEBUG:-}" || set -x
