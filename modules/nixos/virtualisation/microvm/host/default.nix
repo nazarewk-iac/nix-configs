@@ -4,10 +4,12 @@
   config,
   kdn,
   ...
-}: let
+}:
+let
   cfg = config.kdn.virtualisation.microvm.host;
-in {
-  imports = [kdn.inputs.microvm.nixosModules.host];
+in
+{
+  imports = [ kdn.inputs.microvm.nixosModules.host ];
 
   options.kdn.virtualisation.microvm.host = {
     enable = lib.mkOption {
@@ -50,13 +52,14 @@ in {
       systemd.tmpfiles.rules = lib.pipe config.microvm.vms [
         builtins.attrValues
         (builtins.map (
-          microVMCfg: let
+          microVMCfg:
+          let
             # vm.config is a NixOS module, which in turn has `.{options,config}` attributes...
             vmConfig = microVMCfg.config.config;
           in
-            lib.flip lib.attrsets.mapAttrsToList vmConfig.preservation.preserveAt (
-              persistName: _: "d /var/lib/microvms-persist/${vmConfig.kdn.hostName}/${persistName} 0755 root root"
-            )
+          lib.flip lib.attrsets.mapAttrsToList vmConfig.preservation.preserveAt (
+            persistName: _: "d /var/lib/microvms-persist/${vmConfig.kdn.hostName}/${persistName} 0755 root root"
+          )
         ))
         lib.lists.flatten
         (builtins.sort builtins.lessThan)

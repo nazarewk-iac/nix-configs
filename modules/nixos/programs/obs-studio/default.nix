@@ -3,9 +3,11 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.programs.obs-studio;
-in {
+in
+{
   options.kdn.programs.obs-studio = {
     enable = lib.mkEnableOption "OBS Studio setup";
     package = lib.mkOption {
@@ -18,7 +20,7 @@ in {
         input-overlay # display keystrokes
         obs-backgroundremoval
         # obs-gstreamer # never used it?
-        obs-pipewire-audio-capture #
+        obs-pipewire-audio-capture
         wlrobs # "Wayland output(dmabuf) / (scpy)
       ];
     };

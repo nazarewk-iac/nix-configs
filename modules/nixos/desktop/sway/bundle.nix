@@ -6,7 +6,8 @@
   serviceName ? "${prefix}.service",
   desktopSessionName ? prefix,
   ...
-}: let
+}:
+let
   scripts.start-headless = pkgs.writeShellApplication {
     name = "${prefix}-start-headless";
     text = ''
@@ -20,7 +21,7 @@
 
   scripts.start = pkgs.writeShellApplication {
     name = "${prefix}-start";
-    runtimeInputs = with pkgs; [systemd];
+    runtimeInputs = with pkgs; [ systemd ];
     text = ''
       ${lib.meta.getExe scripts.env-clear}
       ${lib.meta.getExe scripts.env-load}
@@ -45,7 +46,10 @@
 
   scripts.env-load = pkgs.writeShellApplication {
     name = "${prefix}-session-env-load";
-    runtimeInputs = with pkgs; [dbus jq];
+    runtimeInputs = with pkgs; [
+      dbus
+      jq
+    ];
     text = ''
       envs=()
       keys=()
@@ -68,7 +72,11 @@
 
   scripts.env-clear = pkgs.writeShellApplication {
     name = "${prefix}-session-env-clear";
-    runtimeInputs = with pkgs; [dbus systemd jq];
+    runtimeInputs = with pkgs; [
+      dbus
+      systemd
+      jq
+    ];
     text = ''
       keys=("$@")
       if [[ "$#" == 0 ]]; then
@@ -84,7 +92,10 @@
   };
   scripts.env-wait = pkgs.writeShellApplication {
     name = "${prefix}-session-env-wait";
-    runtimeInputs = with pkgs; [systemd jq];
+    runtimeInputs = with pkgs; [
+      systemd
+      jq
+    ];
     text = ''
       log() {
         test "$LOG" == 1 || return 0
@@ -135,7 +146,10 @@
 
   scripts.env-show = pkgs.writeShellApplication {
     name = "${prefix}-session-env-show";
-    runtimeInputs = with pkgs; [systemd jq];
+    runtimeInputs = with pkgs; [
+      systemd
+      jq
+    ];
     text = "systemctl --user show-environment --output=json | jq -S";
   };
 
@@ -152,9 +166,11 @@
     '';
   };
 in
-  (pkgs.symlinkJoin {
-    name = "${prefix}-bundle";
-    passthru.providedSessions = [desktopSessionName];
-    paths = builtins.attrValues (scripts // extra);
-  })
-  // {exes = builtins.mapAttrs (n: pkg: lib.meta.getExe pkg) scripts;}
+(pkgs.symlinkJoin {
+  name = "${prefix}-bundle";
+  passthru.providedSessions = [ desktopSessionName ];
+  paths = builtins.attrValues (scripts // extra);
+})
+// {
+  exes = builtins.mapAttrs (n: pkg: lib.meta.getExe pkg) scripts;
+}

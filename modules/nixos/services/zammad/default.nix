@@ -3,10 +3,12 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.services.zammad;
   uCfg = config.services.zammad;
-in {
+in
+{
   options.kdn.services.zammad = {
     enable = lib.mkEnableOption "zammad helpdesk management software";
 

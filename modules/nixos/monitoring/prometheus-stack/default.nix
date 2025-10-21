@@ -3,9 +3,11 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.monitoring.prometheus-stack;
-in {
+in
+{
   options.kdn.monitoring.prometheus-stack = {
     enable = lib.mkEnableOption "prometheus + grafana";
 

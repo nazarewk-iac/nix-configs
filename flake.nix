@@ -4,14 +4,10 @@
 
   inputs.nixpkgs-lib.follows = "nixpkgs";
 
-  /*
-  * pinned inputs to keep up to date manually
-  */
+  # * pinned inputs to keep up to date manually
   inputs.helix-editor.url = "github:helix-editor/helix/25.07.1";
 
-  /*
-  * rest of inputs
-  */
+  # * rest of inputs
 
   inputs.argon40-nix.url = "github:guusvanmeerveld/argon40-nix";
   inputs.base16.url = "github:SenchoPens/base16.nix";
@@ -58,9 +54,7 @@
   inputs.sops-upstream.flake = false;
   inputs.sops-upstream.url = "github:getsops/sops";
 
-  /*
-  * dependencies
-  */
+  # * dependencies
   inputs.argon40-nix.inputs.flake-utils.follows = "flake-utils";
   inputs.argon40-nix.inputs.nixpkgs.follows = "nixpkgs";
   inputs.brew-nix.inputs.brew-api.follows = "brew-api";
@@ -99,343 +93,406 @@
   inputs.wezterm.inputs.nixpkgs.follows = "nixpkgs";
   inputs.wezterm.inputs.rust-overlay.follows = "rust-overlay";
 
-  outputs = inputs @ {
-    flake-parts,
-    self,
-    ...
-  }: let
-    lib = import ./lib {inherit (inputs.nixpkgs) lib;};
-    flakeLib = lib.kdn.flakes.forFlake self;
-    mkSpecialArgs = module: let
-      mod = lib.evalModules {
-        modules = [./modules/meta {kdn = {inherit inputs lib self;};} {kdn = module;}];
-      };
-    in
-      mod.config;
-  in (flake-parts.lib.mkFlake {inherit inputs;} {
-    systems = import inputs.systems;
-
-    flake.overlays.packages = inputs.nixpkgs.lib.composeManyExtensions [
-      (final: prev: {
-        kdn =
-          (prev.kdn or {})
-          // (import ./packages {
-            pkgs = final;
-            lib = final.lib;
-          });
-      })
-    ];
-
-    flake.overlays.default = inputs.nixpkgs.lib.composeManyExtensions [
-      inputs.nur.overlays.default
-      inputs.microvm.overlays.default
-      self.overlays.packages
-      (final: prev: {
-        inherit lib;
-
-        nixos-anywhere = inputs.nixos-anywhere.packages."${final.stdenv.system}".default;
-      })
-      (final: prev:
-        if prev.stdenv.isDarwin
-        # WARNING: this does not work on Lix due to missing `builtins.convertHash`
-        then inputs.brew-nix.overlays.default final prev
-        else {})
-      (final: prev:
-        if prev.stdenv.isDarwin
-        then let
-          src = "${inputs.nixcasks}";
-          pkgs = prev;
-          sevenzip = prev.darwin.apple_sdk_11_0.callPackage "${src}/7zip" {inherit pkgs;};
-          nclib = import "${src}/nclib.nix" {inherit pkgs sevenzip;};
-
-          originalCasks =
-            (inputs.nixcasks.output {osVersion = "sequoia";})
-            .packages
-            .${prev.stdenv.system};
-
-          overrides =
-            lib.pipe [
-            ] [
-              (builtins.map (name: {
-                inherit name;
-                value = originalCasks."${name}".overrideAttrs nclib.force-dmg;
-              }))
-              builtins.listToAttrs
-            ];
-        in {
-          nclib = nclib // {inherit sevenzip;};
-          nixcasks = originalCasks // overrides;
-        }
-        else {})
-    ];
-    perSystem = {
-      config,
-      self',
-      inputs',
-      system,
-      pkgs,
+  outputs =
+    inputs@{
+      flake-parts,
+      self,
       ...
-    }: {
-      _module.args.pkgs = inputs'.nixpkgs.legacyPackages.extend self.overlays.default;
-      # inspired by https://github.com/NixOS/nix/issues/3803#issuecomment-748612294
-      # usage: nix run '.#repl'
-      apps.repl = {
-        type = "app";
-        program = "${pkgs.writeShellScriptBin "repl" ''
-          confnix=$(mktemp)
-          trap "rm '$confnix' || true" EXIT
-          echo "builtins.getFlake (toString "$PWD")" >$confnix
-          nix repl "$confnix" "$@"
-        ''}/bin/repl";
-      };
-      apps.update = {
-        type = "app";
-        program = lib.getExe (pkgs.writeShellApplication {
-          name = "flake-update";
-          runtimeInputs = with pkgs; [
-            # TODO: add `update.py` dependency here
-            git
-            gnugrep
-            pass
-            python3
-          ];
-          text = builtins.readFile ./flake-update.sh;
-        });
-      };
-      checks = pkgs.callPackages ./checks (mkSpecialArgs {moduleType = "checks";});
-      devShells = {};
-      packages = lib.mkMerge [
-        (lib.filterAttrs (n: pkg: lib.isDerivation pkg) (flakeLib.overlayedInputs {inherit system;}).nixpkgs.kdn)
-        {
-          install-iso = inputs.nixos-generators.nixosGenerate {
-            format = "install-iso";
-            inherit system;
-            inherit (self) lib;
-            inherit (lib) nixosSystem;
-            specialArgs = mkSpecialArgs {moduleType = "nixos";};
-
+    }:
+    let
+      lib = import ./lib { inherit (inputs.nixpkgs) lib; };
+      flakeLib = lib.kdn.flakes.forFlake self;
+      mkSpecialArgs =
+        module:
+        let
+          mod = lib.evalModules {
             modules = [
-              self.nixosModules.default
-              {
-                /*
-                `image.baseName` gives a stable image filename
-                - see https://github.com/NixOS/nixpkgs/blob/30a61f056ac492e3b7cdcb69c1e6abdcf00e39cf/nixos/modules/image/file-options.nix#L9-L16
-                */
-                image.baseName = lib.mkForce "kdn-nixos-install-iso";
-
-                /*
-                 `install-iso` uses some weird GRUB booting chimera
-                see https://github.com/NixOS/nixpkgs/blob/9fbeebcc35c2fbc9a3fb96797cced9ea93436097/nixos/modules/installer/cd-dvd/iso-image.nix#L780-L787
-                */
-                boot.initrd.systemd.enable = lib.mkForce false;
-                boot.loader.systemd-boot.enable = lib.mkForce false;
-              }
-              {
-                kdn.hostName = "kdn-nixos-install-iso";
-                home-manager.sharedModules = [{home.stateVersion = "24.11";}];
-                kdn.security.secrets.allow = true;
-                kdn.profile.machine.baseline.enable = true;
-                kdn.security.disk-encryption.enable = true;
-                kdn.networking.netbird.clients.priv.type = "ephemeral";
-
-                environment.systemPackages = with pkgs; [
-                ];
-              }
-              ({config, ...}: {
-                users.users.root.openssh.authorizedKeys.keys = config.users.users.kdn.openssh.authorizedKeys.keys;
-              })
+              ./modules/meta
+              { kdn = { inherit inputs lib self; }; }
+              { kdn = module; }
             ];
           };
-        }
-      ];
-    };
-    flake.lib = lib;
-    flake.nixosModules.default = ./modules/nixos;
-    flake.nixosConfigurations = lib.mkMerge [
-      {
-        oams = lib.nixosSystem {
-          system = "x86_64-linux";
-          specialArgs = mkSpecialArgs {
-            moduleType = "nixos";
-          };
-          modules = [
-            self.nixosModules.default
-            ({config, ...}: {
-              kdn.hostName = "oams";
-              kdn.profile.host."${config.kdn.hostName}".enable = true;
+        in
+        mod.config;
+    in
+    (flake-parts.lib.mkFlake { inherit inputs; } {
+      systems = import inputs.systems;
 
-              system.stateVersion = "23.11";
-              home-manager.sharedModules = [{home.stateVersion = "23.11";}];
-              networking.hostId = "ce0f2f33"; # cut -c-8 </proc/sys/kernel/random/uuid
-            })
-          ];
-        };
-
-        brys = lib.nixosSystem {
-          system = "x86_64-linux";
-          specialArgs = mkSpecialArgs {
-            moduleType = "nixos";
-            features.microvm-host = true;
-          };
-          modules = [
-            self.nixosModules.default
-            ({config, ...}: {
-              kdn.hostName = "brys";
-              kdn.profile.host."${config.kdn.hostName}".enable = true;
-
-              system.stateVersion = "24.11";
-              home-manager.sharedModules = [{home.stateVersion = "24.11";}];
-              networking.hostId = "0a989258"; # cut -c-8 </proc/sys/kernel/random/uuid
-            })
-          ];
-        };
-
-        etra = lib.nixosSystem {
-          system = "x86_64-linux";
-          specialArgs = mkSpecialArgs {
-            moduleType = "nixos";
-          };
-          modules = [
-            self.nixosModules.default
-            ({config, ...}: {
-              kdn.hostName = "etra";
-              kdn.profile.host."${config.kdn.hostName}".enable = true;
-
-              system.stateVersion = "24.11";
-              home-manager.sharedModules = [{home.stateVersion = "24.11";}];
-              networking.hostId = "6dc8c4d7"; # cut -c-8 </proc/sys/kernel/random/uuid
-            })
-          ];
-        };
-
-        pryll = lib.nixosSystem {
-          system = "x86_64-linux";
-          specialArgs = mkSpecialArgs {
-            moduleType = "nixos";
-          };
-          modules = [
-            self.nixosModules.default
-            ({config, ...}: {
-              kdn.hostName = "pryll";
-              kdn.profile.host."${config.kdn.hostName}".enable = true;
-
-              system.stateVersion = "25.05";
-              home-manager.sharedModules = [{home.stateVersion = "25.05";}];
-              networking.hostId = "25880d1d"; # cut -c-8 </proc/sys/kernel/random/uuid
-            })
-          ];
-        };
-
-        obler = lib.nixosSystem {
-          system = "x86_64-linux";
-          specialArgs = mkSpecialArgs {
-            moduleType = "nixos";
-          };
-          modules = [
-            self.nixosModules.default
-            ({config, ...}: {
-              kdn.hostName = "obler";
-              kdn.profile.host."${config.kdn.hostName}".enable = true;
-
-              system.stateVersion = "23.11";
-              home-manager.sharedModules = [{home.stateVersion = "23.11";}];
-              networking.hostId = "f6345d38"; # cut -c-8 </proc/sys/kernel/random/uuid
-            })
-          ];
-        };
-
-        moss = lib.nixosSystem {
-          system = "x86_64-linux";
-          specialArgs = mkSpecialArgs {
-            moduleType = "nixos";
-          };
-          modules = [
-            self.nixosModules.default
-            ({config, ...}: {
-              kdn.hostName = "moss";
-              kdn.profile.host."${config.kdn.hostName}".enable = true;
-
-              system.stateVersion = "23.11";
-              home-manager.sharedModules = [{home.stateVersion = "23.11";}];
-              networking.hostId = "550ded62"; # cut -c-8 </proc/sys/kernel/random/uuid
-            })
-            ({modulesPath, ...}: {
-              imports = [
-                (modulesPath + "/profiles/qemu-guest.nix")
-                (modulesPath + "/profiles/headless.nix")
-              ];
-            })
-          ];
-        };
-
-        faro = lib.nixosSystem {
-          system = "aarch64-linux";
-          specialArgs = mkSpecialArgs {
-            moduleType = "nixos";
-            features.darwin-utm-guest = true;
-          };
-          modules = [
-            self.nixosModules.default
-            ({config, ...}: {
-              kdn.hostName = "faro";
-              kdn.profile.host."${config.kdn.hostName}".enable = true;
-
-              system.stateVersion = "25.05";
-              home-manager.sharedModules = [{home.stateVersion = "25.05";}];
-              networking.hostId = "4b2dd30f"; # cut -c-8 </proc/sys/kernel/random/uuid
-            })
-          ];
-        };
-
-        briv = lib.nixosSystem {
-          system = "aarch64-linux";
-          specialArgs = mkSpecialArgs {
-            moduleType = "nixos";
-            features.rpi4 = true;
-          };
-          modules = [
-            self.nixosModules.default
-            ({config, ...}: {
-              kdn.hostName = "briv";
-              kdn.profile.host."${config.kdn.hostName}".enable = true;
-
-              system.stateVersion = "25.05";
-              home-manager.sharedModules = [{home.stateVersion = "25.05";}];
-              networking.hostId = "b86e74e8"; # cut -c-8 </proc/sys/kernel/random/uuid
-            })
-          ];
-        };
-
-        rpi4-bootstrap = lib.nixosSystem {
-          system = "aarch64-linux";
-          specialArgs = mkSpecialArgs {
-            moduleType = "nixos";
-            features.rpi4 = true;
-          };
-          modules = [
-            self.nixosModules.default
-            ({config, ...}: {
-              kdn.hostName = "kdn-rpi4-bootstrap";
-              kdn.profile.host."${config.kdn.hostName}".enable = true;
-
-              system.stateVersion = "25.05";
-              home-manager.sharedModules = [{home.stateVersion = "25.05";}];
-              networking.hostId = "9751227f"; # cut -c-8 </proc/sys/kernel/random/uuid
-            })
-          ];
-        };
-      }
-    ];
-    flake.darwinModules.default = ./modules/nix-darwin;
-    flake.darwinConfigurations.anji = inputs.nix-darwin.lib.darwinSystem {
-      system = "aarch64-darwin";
-      specialArgs = mkSpecialArgs {moduleType = "nix-darwin";};
-      modules = [
-        self.darwinModules.default
-        ({config, ...}: {
-          kdn.hostName = "anji";
+      flake.overlays.packages = inputs.nixpkgs.lib.composeManyExtensions [
+        (final: prev: {
+          kdn =
+            (prev.kdn or { })
+            // (import ./packages {
+              pkgs = final;
+              lib = final.lib;
+            });
         })
       ];
-    };
-  });
+
+      flake.overlays.default = inputs.nixpkgs.lib.composeManyExtensions [
+        inputs.nur.overlays.default
+        inputs.microvm.overlays.default
+        self.overlays.packages
+        (final: prev: {
+          inherit lib;
+
+          nixos-anywhere = inputs.nixos-anywhere.packages."${final.stdenv.system}".default;
+        })
+        (
+          final: prev:
+          if
+            prev.stdenv.isDarwin
+          # WARNING: this does not work on Lix due to missing `builtins.convertHash`
+          then
+            inputs.brew-nix.overlays.default final prev
+          else
+            { }
+        )
+        (
+          final: prev:
+          if prev.stdenv.isDarwin then
+            let
+              src = "${inputs.nixcasks}";
+              pkgs = prev;
+              sevenzip = prev.darwin.apple_sdk_11_0.callPackage "${src}/7zip" { inherit pkgs; };
+              nclib = import "${src}/nclib.nix" { inherit pkgs sevenzip; };
+
+              originalCasks = (inputs.nixcasks.output { osVersion = "sequoia"; }).packages.${prev.stdenv.system};
+
+              overrides =
+                lib.pipe
+                  [
+                  ]
+                  [
+                    (builtins.map (name: {
+                      inherit name;
+                      value = originalCasks."${name}".overrideAttrs nclib.force-dmg;
+                    }))
+                    builtins.listToAttrs
+                  ];
+            in
+            {
+              nclib = nclib // {
+                inherit sevenzip;
+              };
+              nixcasks = originalCasks // overrides;
+            }
+          else
+            { }
+        )
+      ];
+      perSystem =
+        {
+          config,
+          self',
+          inputs',
+          system,
+          pkgs,
+          ...
+        }:
+        {
+          _module.args.pkgs = inputs'.nixpkgs.legacyPackages.extend self.overlays.default;
+          # inspired by https://github.com/NixOS/nix/issues/3803#issuecomment-748612294
+          # usage: nix run '.#repl'
+          apps.repl = {
+            type = "app";
+            program = "${pkgs.writeShellScriptBin "repl" ''
+              confnix=$(mktemp)
+              trap "rm '$confnix' || true" EXIT
+              echo "builtins.getFlake (toString "$PWD")" >$confnix
+              nix repl "$confnix" "$@"
+            ''}/bin/repl";
+          };
+          apps.update = {
+            type = "app";
+            program = lib.getExe (
+              pkgs.writeShellApplication {
+                name = "flake-update";
+                runtimeInputs = with pkgs; [
+                  # TODO: add `update.py` dependency here
+                  git
+                  gnugrep
+                  pass
+                  python3
+                ];
+                text = builtins.readFile ./flake-update.sh;
+              }
+            );
+          };
+          checks = pkgs.callPackages ./checks (mkSpecialArgs {
+            moduleType = "checks";
+          });
+          devShells = { };
+          packages = lib.mkMerge [
+            (lib.filterAttrs (n: pkg: lib.isDerivation pkg)
+              (flakeLib.overlayedInputs { inherit system; }).nixpkgs.kdn
+            )
+            {
+              install-iso = inputs.nixos-generators.nixosGenerate {
+                format = "install-iso";
+                inherit system;
+                inherit (self) lib;
+                inherit (lib) nixosSystem;
+                specialArgs = mkSpecialArgs { moduleType = "nixos"; };
+
+                modules = [
+                  self.nixosModules.default
+                  {
+                    /*
+                      `image.baseName` gives a stable image filename
+                      - see https://github.com/NixOS/nixpkgs/blob/30a61f056ac492e3b7cdcb69c1e6abdcf00e39cf/nixos/modules/image/file-options.nix#L9-L16
+                    */
+                    image.baseName = lib.mkForce "kdn-nixos-install-iso";
+
+                    /*
+                       `install-iso` uses some weird GRUB booting chimera
+                      see https://github.com/NixOS/nixpkgs/blob/9fbeebcc35c2fbc9a3fb96797cced9ea93436097/nixos/modules/installer/cd-dvd/iso-image.nix#L780-L787
+                    */
+                    boot.initrd.systemd.enable = lib.mkForce false;
+                    boot.loader.systemd-boot.enable = lib.mkForce false;
+                  }
+                  {
+                    kdn.hostName = "kdn-nixos-install-iso";
+                    home-manager.sharedModules = [ { home.stateVersion = "24.11"; } ];
+                    kdn.security.secrets.allow = true;
+                    kdn.profile.machine.baseline.enable = true;
+                    kdn.security.disk-encryption.enable = true;
+                    kdn.networking.netbird.clients.priv.type = "ephemeral";
+
+                    environment.systemPackages = with pkgs; [
+                    ];
+                  }
+                  (
+                    { config, ... }:
+                    {
+                      users.users.root.openssh.authorizedKeys.keys = config.users.users.kdn.openssh.authorizedKeys.keys;
+                    }
+                  )
+                ];
+              };
+            }
+          ];
+        };
+      flake.lib = lib;
+      flake.nixosModules.default = ./modules/nixos;
+      flake.nixosConfigurations = lib.mkMerge [
+        {
+          oams = lib.nixosSystem {
+            system = "x86_64-linux";
+            specialArgs = mkSpecialArgs {
+              moduleType = "nixos";
+            };
+            modules = [
+              self.nixosModules.default
+              (
+                { config, ... }:
+                {
+                  kdn.hostName = "oams";
+                  kdn.profile.host."${config.kdn.hostName}".enable = true;
+
+                  system.stateVersion = "23.11";
+                  home-manager.sharedModules = [ { home.stateVersion = "23.11"; } ];
+                  networking.hostId = "ce0f2f33"; # cut -c-8 </proc/sys/kernel/random/uuid
+                }
+              )
+            ];
+          };
+
+          brys = lib.nixosSystem {
+            system = "x86_64-linux";
+            specialArgs = mkSpecialArgs {
+              moduleType = "nixos";
+              features.microvm-host = true;
+            };
+            modules = [
+              self.nixosModules.default
+              (
+                { config, ... }:
+                {
+                  kdn.hostName = "brys";
+                  kdn.profile.host."${config.kdn.hostName}".enable = true;
+
+                  system.stateVersion = "24.11";
+                  home-manager.sharedModules = [ { home.stateVersion = "24.11"; } ];
+                  networking.hostId = "0a989258"; # cut -c-8 </proc/sys/kernel/random/uuid
+                }
+              )
+            ];
+          };
+
+          etra = lib.nixosSystem {
+            system = "x86_64-linux";
+            specialArgs = mkSpecialArgs {
+              moduleType = "nixos";
+            };
+            modules = [
+              self.nixosModules.default
+              (
+                { config, ... }:
+                {
+                  kdn.hostName = "etra";
+                  kdn.profile.host."${config.kdn.hostName}".enable = true;
+
+                  system.stateVersion = "24.11";
+                  home-manager.sharedModules = [ { home.stateVersion = "24.11"; } ];
+                  networking.hostId = "6dc8c4d7"; # cut -c-8 </proc/sys/kernel/random/uuid
+                }
+              )
+            ];
+          };
+
+          pryll = lib.nixosSystem {
+            system = "x86_64-linux";
+            specialArgs = mkSpecialArgs {
+              moduleType = "nixos";
+            };
+            modules = [
+              self.nixosModules.default
+              (
+                { config, ... }:
+                {
+                  kdn.hostName = "pryll";
+                  kdn.profile.host."${config.kdn.hostName}".enable = true;
+
+                  system.stateVersion = "25.05";
+                  home-manager.sharedModules = [ { home.stateVersion = "25.05"; } ];
+                  networking.hostId = "25880d1d"; # cut -c-8 </proc/sys/kernel/random/uuid
+                }
+              )
+            ];
+          };
+
+          obler = lib.nixosSystem {
+            system = "x86_64-linux";
+            specialArgs = mkSpecialArgs {
+              moduleType = "nixos";
+            };
+            modules = [
+              self.nixosModules.default
+              (
+                { config, ... }:
+                {
+                  kdn.hostName = "obler";
+                  kdn.profile.host."${config.kdn.hostName}".enable = true;
+
+                  system.stateVersion = "23.11";
+                  home-manager.sharedModules = [ { home.stateVersion = "23.11"; } ];
+                  networking.hostId = "f6345d38"; # cut -c-8 </proc/sys/kernel/random/uuid
+                }
+              )
+            ];
+          };
+
+          moss = lib.nixosSystem {
+            system = "x86_64-linux";
+            specialArgs = mkSpecialArgs {
+              moduleType = "nixos";
+            };
+            modules = [
+              self.nixosModules.default
+              (
+                { config, ... }:
+                {
+                  kdn.hostName = "moss";
+                  kdn.profile.host."${config.kdn.hostName}".enable = true;
+
+                  system.stateVersion = "23.11";
+                  home-manager.sharedModules = [ { home.stateVersion = "23.11"; } ];
+                  networking.hostId = "550ded62"; # cut -c-8 </proc/sys/kernel/random/uuid
+                }
+              )
+              (
+                { modulesPath, ... }:
+                {
+                  imports = [
+                    (modulesPath + "/profiles/qemu-guest.nix")
+                    (modulesPath + "/profiles/headless.nix")
+                  ];
+                }
+              )
+            ];
+          };
+
+          faro = lib.nixosSystem {
+            system = "aarch64-linux";
+            specialArgs = mkSpecialArgs {
+              moduleType = "nixos";
+              features.darwin-utm-guest = true;
+            };
+            modules = [
+              self.nixosModules.default
+              (
+                { config, ... }:
+                {
+                  kdn.hostName = "faro";
+                  kdn.profile.host."${config.kdn.hostName}".enable = true;
+
+                  system.stateVersion = "25.05";
+                  home-manager.sharedModules = [ { home.stateVersion = "25.05"; } ];
+                  networking.hostId = "4b2dd30f"; # cut -c-8 </proc/sys/kernel/random/uuid
+                }
+              )
+            ];
+          };
+
+          briv = lib.nixosSystem {
+            system = "aarch64-linux";
+            specialArgs = mkSpecialArgs {
+              moduleType = "nixos";
+              features.rpi4 = true;
+            };
+            modules = [
+              self.nixosModules.default
+              (
+                { config, ... }:
+                {
+                  kdn.hostName = "briv";
+                  kdn.profile.host."${config.kdn.hostName}".enable = true;
+
+                  system.stateVersion = "25.05";
+                  home-manager.sharedModules = [ { home.stateVersion = "25.05"; } ];
+                  networking.hostId = "b86e74e8"; # cut -c-8 </proc/sys/kernel/random/uuid
+                }
+              )
+            ];
+          };
+
+          rpi4-bootstrap = lib.nixosSystem {
+            system = "aarch64-linux";
+            specialArgs = mkSpecialArgs {
+              moduleType = "nixos";
+              features.rpi4 = true;
+            };
+            modules = [
+              self.nixosModules.default
+              (
+                { config, ... }:
+                {
+                  kdn.hostName = "kdn-rpi4-bootstrap";
+                  kdn.profile.host."${config.kdn.hostName}".enable = true;
+
+                  system.stateVersion = "25.05";
+                  home-manager.sharedModules = [ { home.stateVersion = "25.05"; } ];
+                  networking.hostId = "9751227f"; # cut -c-8 </proc/sys/kernel/random/uuid
+                }
+              )
+            ];
+          };
+        }
+      ];
+      flake.darwinModules.default = ./modules/nix-darwin;
+      flake.darwinConfigurations.anji = inputs.nix-darwin.lib.darwinSystem {
+        system = "aarch64-darwin";
+        specialArgs = mkSpecialArgs { moduleType = "nix-darwin"; };
+        modules = [
+          self.darwinModules.default
+          (
+            { config, ... }:
+            {
+              kdn.hostName = "anji";
+            }
+          )
+        ];
+      };
+    });
 }

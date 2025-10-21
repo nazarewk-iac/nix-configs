@@ -3,9 +3,11 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.programs.direnv;
-in {
+in
+{
   options.kdn.programs.direnv = {
     enable = lib.mkEnableOption "nix-direnv setup";
   };
@@ -24,12 +26,15 @@ in {
 
     home-manager.sharedModules = [
       {
-        home.packages = with pkgs; [direnv nix-direnv];
+        home.packages = with pkgs; [
+          direnv
+          nix-direnv
+        ];
         programs.direnv.enable = true;
         programs.direnv.nix-direnv.enable = true;
-        programs.git.ignores = [(builtins.readFile ./.gitignore)];
-        kdn.hw.disks.persist."usr/data".directories = [".local/share/direnv"];
-        kdn.hw.disks.persist."usr/config".directories = [".config/direnv"];
+        programs.git.ignores = [ (builtins.readFile ./.gitignore) ];
+        kdn.hw.disks.persist."usr/data".directories = [ ".local/share/direnv" ];
+        kdn.hw.disks.persist."usr/config".directories = [ ".config/direnv" ];
       }
     ];
   };

@@ -3,9 +3,11 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.virtualisation.containers.docker;
-in {
+in
+{
   options.kdn.virtualisation.containers.docker = {
     enable = lib.mkEnableOption "docker daemon setup";
   };

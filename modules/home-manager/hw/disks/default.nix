@@ -3,16 +3,17 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.hw.disks;
-in {
+in
+{
   config = lib.mkMerge [
     (lib.mkIf cfg.enable {
-      kdn.hw.disks.persist."usr/cache".directories =
-        [
-          ".cache/appimage-run" # not sure where exactly it comes from
-        ]
-        ++ lib.lists.optional config.fonts.fontconfig.enable ".cache/fontconfig";
+      kdn.hw.disks.persist."usr/cache".directories = [
+        ".cache/appimage-run" # not sure where exactly it comes from
+      ]
+      ++ lib.lists.optional config.fonts.fontconfig.enable ".cache/fontconfig";
       kdn.hw.disks.persist."usr/state".files = [
         ".local/share/fish/fish_history" # A file already exists at ...
         ".ipython/profile_default/history.sqlite"

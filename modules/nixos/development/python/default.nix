@@ -3,13 +3,17 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.development.python;
 
   defaultPython = pkgs.python313;
 
-  mkPython = pkg: (pkg.withPackages (ps:
-    with ps;
+  mkPython =
+    pkg:
+    (pkg.withPackages (
+      ps:
+      with ps;
       [
         beautifulsoup4
         black
@@ -60,39 +64,45 @@
         # logging
         rich
         structlog
-      ]));
+      ]
+    ));
 
-  renamedBinariesOnly = fmt: pkg: (pkgs.runCommand "${pkg.name}-renamed-to-${builtins.replaceStrings ["%s"] ["BIN"] fmt}"
-    {buildInputs = [];} ''
-      set -x
-      ${lib.toShellVar "srcDir" "${pkg}/bin"}
-      ${lib.toShellVar "fmt" fmt}
+  renamedBinariesOnly =
+    fmt: pkg:
+    (pkgs.runCommand "${pkg.name}-renamed-to-${builtins.replaceStrings [ "%s" ] [ "BIN" ] fmt}"
+      { buildInputs = [ ]; }
+      ''
+        set -x
+        ${lib.toShellVar "srcDir" "${pkg}/bin"}
+        ${lib.toShellVar "fmt" fmt}
 
-      mkdir -p "$out/bin"
-      if test "$fmt" = "%s" ; then
-        echo "fmt $fmt must modify filename!"
-        exit 1
-      fi
-
-      for file in "$srcDir"/* ; do
-        if test -e "$(printf "$fmt" "$file")" || ! test -x "$file" ; then
-          continue
+        mkdir -p "$out/bin"
+        if test "$fmt" = "%s" ; then
+          echo "fmt $fmt must modify filename!"
+          exit 1
         fi
-        filename="''${file##*/}"
-        renamed="$(printf "$fmt" "$filename")"
-        ln -sfT "$file" "$out/bin/$renamed"
-      done
-      set +x
-    '');
-in {
+
+        for file in "$srcDir"/* ; do
+          if test -e "$(printf "$fmt" "$file")" || ! test -x "$file" ; then
+            continue
+          fi
+          filename="''${file##*/}"
+          renamed="$(printf "$fmt" "$filename")"
+          ln -sfT "$file" "$out/bin/$renamed"
+        done
+        set +x
+      ''
+    );
+in
+{
   options.kdn.development.python = {
     enable = lib.mkEnableOption "Python development";
   };
 
   config = lib.mkIf cfg.enable {
     home-manager.sharedModules = [
-      {kdn.development.python.enable = true;}
-      {programs.git.ignores = [(builtins.readFile ./.gitignore)];}
+      { kdn.development.python.enable = true; }
+      { programs.git.ignores = [ (builtins.readFile ./.gitignore) ]; }
     ];
     nixpkgs.overlays = [
       (final: prev: {

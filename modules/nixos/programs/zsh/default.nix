@@ -7,7 +7,8 @@
 # many configs pulled from https://git.grml.org/?p=grml-etc-core.git;a=blob_plain;f=etc/zsh/zshrc;hb=HEAD
 let
   cfg = config.kdn.programs.zsh;
-in {
+in
+{
   options.kdn.programs.zsh = {
     enable = lib.mkEnableOption "ZSH shell config";
   };
@@ -28,11 +29,13 @@ in {
       interactiveShellInit = lib.trivial.pipe ./. [
         builtins.readDir
         (lib.filterAttrs (path: type: type != "directory" && (lib.hasPrefix ".zshrc" path)))
-        (lib.attrsets.mapAttrsToList (path: t: ''
-          # START ${path}
-          ${builtins.readFile (./. + "/${path}")}
-          # END ${path}
-        ''))
+        (lib.attrsets.mapAttrsToList (
+          path: t: ''
+            # START ${path}
+            ${builtins.readFile (./. + "/${path}")}
+            # END ${path}
+          ''
+        ))
         (builtins.concatStringsSep "\n\n")
       ];
       # see `man zshoptions`

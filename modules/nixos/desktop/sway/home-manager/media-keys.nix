@@ -3,17 +3,19 @@
   pkgs,
   lib,
   ...
-}: let
+}:
+let
   cfg = config.kdn.desktop.sway;
 
   exec = cmd: "exec '${cmd}'";
   playerctl = lib.getExe pkgs.playerctl;
   volumectl = "${lib.getExe' pkgs.avizo "volumectl"} -d";
   lightctl = "${lib.getExe' pkgs.avizo "lightctl"} -d";
-in {
+in
+{
   config = lib.mkIf cfg.enable {
     services.avizo.enable = true;
-    services.avizo.settings = {};
+    services.avizo.settings = { };
     wayland.windowManager.sway = {
       config.keybindings = with config.kdn.desktop.sway.keys; {
         # Brightness

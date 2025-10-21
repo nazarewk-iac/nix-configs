@@ -3,7 +3,8 @@
   pkgs,
   lib,
   ...
-}: let
+}:
+let
   cfg = config.kdn.desktop.sway;
 
   systemd-cat = name: "${pkgs.systemd}/bin/systemd-cat --identifier=${config.home.username}-${name}";
@@ -11,7 +12,8 @@
 
   swayr = cmd: "${systemd-cat "swayr"} env RUST_BACKTRACE=1 ${pkgs.swayr}/bin/swayr ${cmd}";
   swayrd = "${systemd-cat "swayrd"} env RUST_BACKTRACE=1 ${pkgs.swayr}/bin/swayrd";
-in {
+in
+{
   config = lib.mkIf cfg.enable {
     wayland.windowManager.sway = {
       extraConfig = exec swayrd;

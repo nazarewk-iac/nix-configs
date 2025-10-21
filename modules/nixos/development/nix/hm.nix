@@ -3,9 +3,11 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.development.nix;
-in {
+in
+{
   options.kdn.development.nix = {
     enable = lib.mkEnableOption "nix development/debugging";
   };

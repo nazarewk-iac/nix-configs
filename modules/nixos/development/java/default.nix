@@ -3,14 +3,16 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.development.java;
-in {
+in
+{
   options.kdn.development.java = {
     enable = lib.mkEnableOption "java development";
   };
 
   config = lib.mkIf cfg.enable {
-    home-manager.sharedModules = [{kdn.development.java.enable = true;}];
+    home-manager.sharedModules = [ { kdn.development.java.enable = true; } ];
   };
 }

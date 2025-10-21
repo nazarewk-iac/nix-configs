@@ -4,7 +4,8 @@
   pkgs,
   lib,
   ...
-}: let
+}:
+let
   cfg = config.kdn.desktop.sway;
   sysCfg = osConfig.kdn.desktop.sway;
 
@@ -12,7 +13,8 @@
   lockCmd = "${swaylock} -f";
   swayPkg = config.wayland.windowManager.sway.package;
   swaymsg = "${swayPkg}/bin/swaymsg";
-in {
+in
+{
   config = lib.mkIf cfg.enable {
     wayland.windowManager.sway.config.keybindings = with config.kdn.desktop.sway.keys; {
       "${cfg.keys.super}+L" = "exec ${lockCmd}";
@@ -38,8 +40,8 @@ in {
       ];
     };
     systemd.user.services.swayidle.Unit = {
-      After = [config.kdn.desktop.sway.systemd.envs.target];
-      Requires = [config.kdn.desktop.sway.systemd.envs.target];
+      After = [ config.kdn.desktop.sway.systemd.envs.target ];
+      Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
     };
 
     programs.swaylock.enable = true;

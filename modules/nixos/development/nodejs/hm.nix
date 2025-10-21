@@ -3,9 +3,11 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.development.nodejs;
-in {
+in
+{
   options.kdn.development.nodejs = {
     enable = lib.mkEnableOption "Node JS development";
   };

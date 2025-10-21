@@ -3,15 +3,17 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.development.terraform;
-in {
+in
+{
   options.kdn.development.terraform = {
     enable = lib.mkEnableOption "Terraform development";
   };
 
   config = lib.mkIf cfg.enable {
-    programs.git.ignores = [(builtins.readFile ./.gitignore)];
+    programs.git.ignores = [ (builtins.readFile ./.gitignore) ];
 
     home.sessionVariables = {
       TF_CLI_CONFIG_FILE = "${config.xdg.configHome}/tofu/.tofurc";
@@ -29,34 +31,38 @@ in {
       mkdir -p "${config.xdg.cacheHome}/tofu/plugin-cache"
     '';
 
-    home.shellAliases = let
-      platformsArgs = builtins.concatStringsSep " " (map (p: "--platform=${p}") [
-        # see https://developer.hashicorp.com/terraform/language/files/dependency-lock
-        # see https://gist.github.com/lizkes/975ab2d1b5f9d5fdee5d3fa665bcfde6#file-go-os-arch-md
-        "darwin_arm64"
-        "darwin_arm64"
-        "linux_amd64"
-        "linux_arm64"
-      ]);
-      mkAliases = cmd: short: extra:
-        {
-          "${short}" = cmd;
-          "${short}a" = "${cmd} apply";
-          "${short}aa" = "${cmd} apply --auto-approve";
-          "${short}g" = "${cmd} get";
-          "${short}i" = "${cmd} init";
-          "${short}im" = "${cmd} import";
-          "${short}ir" = "${cmd} init --reconfigure";
-          "${short}iu" = "${cmd} init --upgrade";
-          "${short}l" = "${cmd} providers lock ${platformsArgs}";
-          "${short}o" = "${cmd} output";
-          "${short}oj" = "${cmd} output --json";
-          "${short}p" = "${cmd} plan";
-          "${short}u" = "${cmd} force-unlock --force";
-          "${short}v" = "${cmd} validate";
-        }
-        // (builtins.mapAttrs (short: entry: "${cmd} ${entry}") extra);
-    in
+    home.shellAliases =
+      let
+        platformsArgs = builtins.concatStringsSep " " (
+          map (p: "--platform=${p}") [
+            # see https://developer.hashicorp.com/terraform/language/files/dependency-lock
+            # see https://gist.github.com/lizkes/975ab2d1b5f9d5fdee5d3fa665bcfde6#file-go-os-arch-md
+            "darwin_arm64"
+            "darwin_arm64"
+            "linux_amd64"
+            "linux_arm64"
+          ]
+        );
+        mkAliases =
+          cmd: short: extra:
+          {
+            "${short}" = cmd;
+            "${short}a" = "${cmd} apply";
+            "${short}aa" = "${cmd} apply --auto-approve";
+            "${short}g" = "${cmd} get";
+            "${short}i" = "${cmd} init";
+            "${short}im" = "${cmd} import";
+            "${short}ir" = "${cmd} init --reconfigure";
+            "${short}iu" = "${cmd} init --upgrade";
+            "${short}l" = "${cmd} providers lock ${platformsArgs}";
+            "${short}o" = "${cmd} output";
+            "${short}oj" = "${cmd} output --json";
+            "${short}p" = "${cmd} plan";
+            "${short}u" = "${cmd} force-unlock --force";
+            "${short}v" = "${cmd} validate";
+          }
+          // (builtins.mapAttrs (short: entry: "${cmd} ${entry}") extra);
+      in
       (mkAliases "tofu" "tf" {
         "tff" = "tofu fmt --recursive";
       })
@@ -75,7 +81,14 @@ in {
       terranix
       (pkgs.writeShellApplication {
         name = "tf-fmt";
-        runtimeInputs = with pkgs; [gnugrep gnused coreutils findutils moreutils gojq];
+        runtimeInputs = with pkgs; [
+          gnugrep
+          gnused
+          coreutils
+          findutils
+          moreutils
+          gojq
+        ];
         text = builtins.readFile ./tf-fmt.sh;
       })
     ];

@@ -3,28 +3,38 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.linux;
-in {
+in
+{
   options.kdn.linux = {
     enable = lib.mkOption {
       type = with lib.types; bool;
 
       default = cfg.type != null;
-      apply = enable:
-        lib.trivial.throwIf (enable && cfg.type == null)
-        "`kdn.linux` enabled, but `kdn.linux.type == null`!"
-        enable;
+      apply =
+        enable:
+        lib.trivial.throwIf (
+          enable && cfg.type == null
+        ) "`kdn.linux` enabled, but `kdn.linux.type == null`!" enable;
     };
 
     type = lib.mkOption {
-      type = with lib.types; enum [null "nixos" "linux-generic"];
+      type =
+        with lib.types;
+        enum [
+          null
+          "nixos"
+          "linux-generic"
+        ];
       default =
-        if pkgs.stdenv.isLinux && config ? system && config.system ? nixos
-        then "nixos"
-        else if !config.kdn.hm.enable && pkgs.stdenv.isLinux
-        then "linux-generic"
-        else null;
+        if pkgs.stdenv.isLinux && config ? system && config.system ? nixos then
+          "nixos"
+        else if !config.kdn.hm.enable && pkgs.stdenv.isLinux then
+          "linux-generic"
+        else
+          null;
     };
   };
 

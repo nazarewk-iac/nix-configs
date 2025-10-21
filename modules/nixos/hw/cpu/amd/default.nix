@@ -3,9 +3,11 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.hw.cpu.amd;
-in {
+in
+{
   options.kdn.hw.cpu.amd = {
     enable = lib.mkEnableOption "AMD CPU setup";
   };
@@ -15,9 +17,7 @@ in {
     hardware.cpu.amd.sev.enable = true;
     hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
     programs.ryzen-monitor-ng.enable = true;
-    /*
-    Error accessing SMU: SMU Driver Version Incompatible With Library Version
-    */
+    # Error accessing SMU: SMU Driver Version Incompatible With Library Version
     environment.systemPackages = with pkgs; [
       ryzenadj
       amdctl

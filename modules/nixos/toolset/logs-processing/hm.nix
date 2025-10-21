@@ -3,9 +3,11 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.toolset.logs-processing;
-in {
+in
+{
   options.kdn.toolset.logs-processing = {
     enable = lib.mkEnableOption "logs processing tooling";
   };
@@ -15,12 +17,12 @@ in {
       # https://lnav.org/
       enable = true;
       package.original = pkgs.kdn.lnav;
-      dirs.cache = [];
-      dirs.config = ["lnav"];
-      dirs.data = [];
-      dirs.disposable = [];
-      dirs.reproducible = [];
-      dirs.state = [];
+      dirs.cache = [ ];
+      dirs.config = [ "lnav" ];
+      dirs.data = [ ];
+      dirs.disposable = [ ];
+      dirs.reproducible = [ ];
+      dirs.state = [ ];
     };
   };
 }

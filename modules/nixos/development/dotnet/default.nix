@@ -3,9 +3,11 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.development.dotnet;
-in {
+in
+{
   options.kdn.development.dotnet = {
     enable = lib.mkEnableOption ".NET development";
   };

@@ -3,33 +3,37 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.development.golang;
   home = config.home.homeDirectory;
-in {
+in
+{
   options.kdn.development.golang = {
     enable = lib.mkEnableOption "golang development";
   };
 
-  config = lib.mkIf cfg.enable (lib.mkMerge [
-    {
-      kdn.development.jetbrains.go.enable = true;
-    }
-    {
-      systemd.user.tmpfiles.rules = [
-        "d ${config.xdg.cacheHome}/go - - - -"
-        "L ${home}/go - - - - ${config.xdg.cacheHome}/go"
-      ];
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      {
+        kdn.development.jetbrains.go.enable = true;
+      }
+      {
+        systemd.user.tmpfiles.rules = [
+          "d ${config.xdg.cacheHome}/go - - - -"
+          "L ${home}/go - - - - ${config.xdg.cacheHome}/go"
+        ];
 
-      kdn.hw.disks.persist."usr/cache".directories = [
-        ".cache/go"
-      ];
-    }
-    {
-      programs.helix.extraPackages = with pkgs; [
-        gopls
-        delve
-      ];
-    }
-  ]);
+        kdn.hw.disks.persist."usr/cache".directories = [
+          ".cache/go"
+        ];
+      }
+      {
+        programs.helix.extraPackages = with pkgs; [
+          gopls
+          delve
+        ];
+      }
+    ]
+  );
 }

@@ -3,9 +3,11 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.desktop.remote-server;
-in {
+in
+{
   options.kdn.desktop.remote-server = {
     enable = lib.mkEnableOption "remote desktop server setup";
   };

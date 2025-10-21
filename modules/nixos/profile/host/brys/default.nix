@@ -266,7 +266,7 @@ in
         kdn.hw.disks.nixBuildDir.tmpfs.size = "64G";
       }
       {
-        networking.hosts."10.116.89.68" = ["gipe"];
+        networking.hosts."10.116.89.68" = [ "gipe" ];
         networking.networkmanager.ensureProfiles.profiles.gipe = {
           connection = {
             id = "gipe";

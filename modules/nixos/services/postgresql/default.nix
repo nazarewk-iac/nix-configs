@@ -3,10 +3,12 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.services.postgresql;
   uCfg = config.services.postgresql;
-in {
+in
+{
   options.kdn.services.postgresql = {
     enable = lib.mkEnableOption "postgresql database";
 

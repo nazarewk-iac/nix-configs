@@ -3,9 +3,11 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.nix.remote-builder;
-in {
+in
+{
   options.kdn.nix.remote-builder = {
     enable = lib.mkEnableOption "remote builder config";
 

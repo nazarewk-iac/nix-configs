@@ -3,12 +3,14 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   # https://wiki.archlinux.org/title/USB/IP
   cfg = config.kdn.hw.usbip;
 
   target = "network";
-in {
+in
+{
   options = {
     kdn.hw.usbip = {
       enable = lib.mkEnableOption "USB/IP setup";
@@ -30,51 +32,56 @@ in {
     };
   };
 
-  config = lib.mkIf cfg.enable (lib.mkMerge [
-    {
-      boot.kernelModules = [
-        "vhci-hcd"
-        "usbip_host"
-      ];
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      {
+        boot.kernelModules = [
+          "vhci-hcd"
+          "usbip_host"
+        ];
 
-      environment.systemPackages = [
-        cfg.package
-      ];
+        environment.systemPackages = [
+          cfg.package
+        ];
 
-      systemd.services.usbipd = {
-        description = "USB/IP daemon";
-        after = ["${target}.target"];
-        wantedBy = ["${target}.target"];
+        systemd.services.usbipd = {
+          description = "USB/IP daemon";
+          after = [ "${target}.target" ];
+          wantedBy = [ "${target}.target" ];
 
-        serviceConfig = {
-          ExecStart = "${cfg.package}/bin/usbipd --tcp-port=${toString cfg.bindPort}";
+          serviceConfig = {
+            ExecStart = "${cfg.package}/bin/usbipd --tcp-port=${toString cfg.bindPort}";
+          };
         };
-      };
 
-      systemd.services."usbip-bind@" = {
-        description = "USB/IP daemon";
-        requires = ["usbipd.target"];
-        after = ["usbipd.service" "${target}.target"];
-        wantedBy = ["${target}.target"];
+        systemd.services."usbip-bind@" = {
+          description = "USB/IP daemon";
+          requires = [ "usbipd.target" ];
+          after = [
+            "usbipd.service"
+            "${target}.target"
+          ];
+          wantedBy = [ "${target}.target" ];
 
-        serviceConfig = {
-          Type = "oneshot";
-          RemainAfterExit = true;
-          ExecStart = "${cfg.package}/bin/usbip bind --busid %i";
-          ExecStop = "${cfg.package}/bin/usbip unbind --busid %i";
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            ExecStart = "${cfg.package}/bin/usbip bind --busid %i";
+            ExecStop = "${cfg.package}/bin/usbip unbind --busid %i";
+          };
         };
-      };
-      systemd.services."usbip-bind@${target}".enable = false;
-    }
-    (lib.mkIf (cfg.bindInterface == "*") {
-      networking.firewall.allowedTCPPorts = [
-        cfg.bindPort
-      ];
-    })
-    (lib.mkIf (cfg.bindInterface != "*") {
-      networking.firewall.interfaces.${cfg.bindInterface}.allowedTCPPorts = [
-        cfg.bindPort
-      ];
-    })
-  ]);
+        systemd.services."usbip-bind@${target}".enable = false;
+      }
+      (lib.mkIf (cfg.bindInterface == "*") {
+        networking.firewall.allowedTCPPorts = [
+          cfg.bindPort
+        ];
+      })
+      (lib.mkIf (cfg.bindInterface != "*") {
+        networking.firewall.interfaces.${cfg.bindInterface}.allowedTCPPorts = [
+          cfg.bindPort
+        ];
+      })
+    ]
+  );
 }

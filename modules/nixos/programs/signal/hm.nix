@@ -3,25 +3,29 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.programs.signal;
-in {
+in
+{
   options.kdn.programs.signal = {
     enable = lib.mkEnableOption "signal setup";
   };
 
-  config = lib.mkIf cfg.enable (lib.mkMerge [
-    {
-      kdn.programs.apps."signal-desktop" = {
-        enable = true;
-        package.original = pkgs."signal-desktop-bin";
-        dirs.cache = [];
-        dirs.config = ["Signal"];
-        dirs.data = [];
-        dirs.disposable = [];
-        dirs.reproducible = [];
-        dirs.state = [];
-      };
-    }
-  ]);
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      {
+        kdn.programs.apps."signal-desktop" = {
+          enable = true;
+          package.original = pkgs."signal-desktop-bin";
+          dirs.cache = [ ];
+          dirs.config = [ "Signal" ];
+          dirs.data = [ ];
+          dirs.disposable = [ ];
+          dirs.reproducible = [ ];
+          dirs.state = [ ];
+        };
+      }
+    ]
+  );
 }

@@ -4,46 +4,50 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.programs.atuin;
-in {
+in
+{
   options.kdn.programs.atuin = {
     enable = lib.mkEnableOption "Atuin shell history management and sync";
   };
-  config = lib.mkIf cfg.enable (lib.mkMerge [
-    {
-      programs.atuin.enable = true;
-      programs.atuin.settings = {
-        auto_sync = true;
-        update_check = false;
-        sync_frequency = "60";
-        daemon = {
-          enabled = true;
-          sync_frequency = 300;
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      {
+        programs.atuin.enable = true;
+        programs.atuin.settings = {
+          auto_sync = true;
+          update_check = false;
+          sync_frequency = "60";
+          daemon = {
+            enabled = true;
+            sync_frequency = 300;
+          };
         };
-      };
-      xdg.configFile."atuin/config.toml".force = true;
-    }
-    (lib.mkIf (config.home.username != "root") {
-      systemd.user.services.atuind = {
-        Unit = {
-          Description = "Atuin shell history synchronization daemon";
-          After = [
-            "network.target"
+        xdg.configFile."atuin/config.toml".force = true;
+      }
+      (lib.mkIf (config.home.username != "root") {
+        systemd.user.services.atuind = {
+          Unit = {
+            Description = "Atuin shell history synchronization daemon";
+            After = [
+              "network.target"
+            ];
+            Wants = [
+              "network.target"
+            ];
+            Requires = [
+            ];
+          };
+          Service.ExecStart = "${lib.getExe config.programs.atuin.package} daemon";
+          Service.Slice = "background.slice";
+          Service.Environment = [
+            "ATUIN_LOG=info"
           ];
-          Wants = [
-            "network.target"
-          ];
-          Requires = [
-          ];
+          Install.WantedBy = [ "default.target" ];
         };
-        Service.ExecStart = "${lib.getExe config.programs.atuin.package} daemon";
-        Service.Slice = "background.slice";
-        Service.Environment = [
-          "ATUIN_LOG=info"
-        ];
-        Install.WantedBy = ["default.target"];
-      };
-    })
-  ]);
+      })
+    ]
+  );
 }

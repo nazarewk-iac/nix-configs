@@ -3,9 +3,11 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.programs.photoprism;
-in {
+in
+{
   options.kdn.programs.photoprism = {
     enable = lib.mkEnableOption "photoprism photo management service";
   };
@@ -21,7 +23,7 @@ in {
 
     fileSystems."/var/lib/private/photoprism/originals" = {
       device = "/home/kdn/Nextcloud/drag0nius@nc.nazarewk.pw";
-      options = ["bind"];
+      options = [ "bind" ];
     };
   };
 }

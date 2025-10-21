@@ -3,9 +3,11 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.programs.editors.photo;
-in {
+in
+{
   options.kdn.programs.editors.photo.enable = lib.mkEnableOption "Photo editing software";
 
   config = lib.mkIf cfg.enable {

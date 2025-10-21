@@ -3,17 +3,19 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.development.python;
-in {
+in
+{
   options.kdn.development.python = {
     enable = lib.mkEnableOption "Python development";
   };
 
   config = lib.mkIf cfg.enable {
     programs.helix.extraPackages = with pkgs; [
-      (python3.withPackages (pp:
-        with pp; [
+      (python3.withPackages (
+        pp: with pp; [
           # https://github.com/python-lsp/python-lsp-server
           python-lsp-server
           # dependencies/optional plugins
@@ -36,7 +38,8 @@ in {
           python-lsp-ruff
           pyls-isort
           pyls-memestra
-        ]))
+        ]
+      ))
     ];
   };
 }

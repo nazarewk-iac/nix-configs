@@ -3,9 +3,11 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.development.rust;
-in {
+in
+{
   options.kdn.development.rust = {
     enable = lib.mkEnableOption "Rust development";
   };

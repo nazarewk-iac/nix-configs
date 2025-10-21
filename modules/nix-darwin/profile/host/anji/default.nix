@@ -3,9 +3,11 @@
   config,
   pkgs,
   ...
-}: let
+}:
+let
   cfg = config.kdn.profile.host.anji;
-in {
+in
+{
   options.kdn.profile.host.anji = {
     enable = lib.mkOption {
       type = with lib.types; bool;
@@ -13,24 +15,26 @@ in {
     };
   };
 
-  config = lib.mkIf cfg.enable (lib.mkMerge [
-    {
-      kdn.profile.machine.baseline.enable = true;
-    }
-    {
-      nixpkgs.hostPlatform = {
-        config = "aarch64-apple-darwin";
-        system = "aarch64-darwin";
-      };
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      {
+        kdn.profile.machine.baseline.enable = true;
+      }
+      {
+        nixpkgs.hostPlatform = {
+          config = "aarch64-apple-darwin";
+          system = "aarch64-darwin";
+        };
 
-      system.stateVersion = 5;
-      home-manager.sharedModules = [{home.stateVersion = "25.05";}];
-    }
-    {
-      kdn.nix.remote-builder.enable = true;
-      environment.systemPackages = with pkgs; [
-        utm
-      ];
-    }
-  ]);
+        system.stateVersion = 5;
+        home-manager.sharedModules = [ { home.stateVersion = "25.05"; } ];
+      }
+      {
+        kdn.nix.remote-builder.enable = true;
+        environment.systemPackages = with pkgs; [
+          utm
+        ];
+      }
+    ]
+  );
 }

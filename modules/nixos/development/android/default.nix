@@ -3,9 +3,11 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.development.android;
-in {
+in
+{
   options.kdn.development.android = {
     enable = lib.mkEnableOption "working with Android devices";
   };

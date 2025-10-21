@@ -3,9 +3,11 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.development.documents;
-in {
+in
+{
   options.kdn.development.documents = {
     enable = lib.mkEnableOption "documents development";
   };

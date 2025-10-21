@@ -3,9 +3,11 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.toolset.tracing;
-in {
+in
+{
   options.kdn.toolset.tracing = {
     enable = lib.mkEnableOption "linux utils";
   };

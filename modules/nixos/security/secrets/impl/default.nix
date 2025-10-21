@@ -3,9 +3,11 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.security.secrets;
-in {
+in
+{
   options.kdn.security.secrets = {
     package.original = lib.mkOption {
       type = with lib.types; package;
@@ -20,20 +22,22 @@ in {
     };
   };
 
-  config = lib.mkIf cfg.enable (lib.mkMerge [
-    {
-      environment.systemPackages = [
-        cfg.package.final
-      ];
-      #kdn.fs.watch.instances.kdn-secrets-render = {
-      #  initialRun = true;
-      #  extraArgs = [
-      #    "--filter=*.sops.*"
-      #  ];
-      #  recursive = [cfg.config.path];
-      #  exec = [(lib.getExe pkgs.kdn.kdn-secrets) "debug"];
-      #};
-      #systemd.services."kdn-secrets" = {};
-    }
-  ]);
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      {
+        environment.systemPackages = [
+          cfg.package.final
+        ];
+        #kdn.fs.watch.instances.kdn-secrets-render = {
+        #  initialRun = true;
+        #  extraArgs = [
+        #    "--filter=*.sops.*"
+        #  ];
+        #  recursive = [cfg.config.path];
+        #  exec = [(lib.getExe pkgs.kdn.kdn-secrets) "debug"];
+        #};
+        #systemd.services."kdn-secrets" = {};
+      }
+    ]
+  );
 }

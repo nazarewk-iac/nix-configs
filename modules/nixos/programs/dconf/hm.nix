@@ -3,27 +3,31 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.programs.dconf;
-in {
+in
+{
   options.kdn.programs.dconf = {
     enable = lib.mkOption {
       default = false;
     };
   };
 
-  config = lib.mkIf cfg.enable (lib.mkMerge [
-    {
-      kdn.programs.apps.dconf = {
-        enable = true;
-        package.install = false;
-        dirs.cache = [];
-        dirs.config = ["dconf"];
-        dirs.data = [];
-        dirs.disposable = [];
-        dirs.reproducible = [];
-        dirs.state = [];
-      };
-    }
-  ]);
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      {
+        kdn.programs.apps.dconf = {
+          enable = true;
+          package.install = false;
+          dirs.cache = [ ];
+          dirs.config = [ "dconf" ];
+          dirs.data = [ ];
+          dirs.disposable = [ ];
+          dirs.reproducible = [ ];
+          dirs.state = [ ];
+        };
+      }
+    ]
+  );
 }

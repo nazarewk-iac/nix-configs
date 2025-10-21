@@ -3,9 +3,11 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.development.kernel;
-in {
+in
+{
   options.kdn.development.kernel = {
     enable = lib.mkEnableOption "kernel development dependencies";
   };

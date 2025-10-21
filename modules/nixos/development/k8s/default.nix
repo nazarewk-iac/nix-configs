@@ -3,9 +3,11 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.development.k8s;
-in {
+in
+{
   options.kdn.development.k8s = {
     enable = lib.mkEnableOption "k8s development";
   };
@@ -59,7 +61,7 @@ in {
 
         (pkgs.writeShellApplication {
           name = "kubectl-krew";
-          runtimeInputs = with pkgs; [krew];
+          runtimeInputs = with pkgs; [ krew ];
           text = ''
             krew "$@"
           '';
@@ -79,7 +81,14 @@ in {
 
         (pkgs.writeShellApplication {
           name = "kubectl-eks_config";
-          runtimeInputs = with pkgs; [awscli2 kubectl coreutils gawk yq gnused];
+          runtimeInputs = with pkgs; [
+            awscli2
+            kubectl
+            coreutils
+            gawk
+            yq
+            gnused
+          ];
           text = builtins.readFile ./kubectl-eks_config.sh;
         })
 

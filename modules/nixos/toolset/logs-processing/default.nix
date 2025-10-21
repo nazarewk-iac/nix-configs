@@ -3,15 +3,17 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.toolset.logs-processing;
-in {
+in
+{
   options.kdn.toolset.logs-processing = {
     enable = lib.mkEnableOption "logs processing tooling";
   };
 
   config = lib.mkIf cfg.enable {
-    home-manager.sharedModules = [{kdn.toolset.logs-processing.enable = true;}];
+    home-manager.sharedModules = [ { kdn.toolset.logs-processing.enable = true; } ];
     environment.systemPackages =
       (with pkgs; [
         # https://github.com/trungdq88/logmine
@@ -20,6 +22,6 @@ in {
         angle-grinder # https://github.com/rcoh/angle-grinder
         # https://github.com/dloss/klp
       ])
-      ++ [];
+      ++ [ ];
   };
 }

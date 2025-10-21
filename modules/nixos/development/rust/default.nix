@@ -3,15 +3,17 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.development.rust;
-in {
+in
+{
   options.kdn.development.rust = {
     enable = lib.mkEnableOption "Rust development";
   };
 
   config = lib.mkIf cfg.enable {
-    home-manager.sharedModules = [{kdn.development.rust.enable = true;}];
+    home-manager.sharedModules = [ { kdn.development.rust.enable = true; } ];
     environment.systemPackages = with pkgs; [
       #cargo
       #rustc

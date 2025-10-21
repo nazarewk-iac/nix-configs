@@ -1,7 +1,8 @@
 {
   pkgs,
   lib,
-}: let
+}:
+let
   source = lib.pipe ./kdn-anonymize.py [
     builtins.readFile
     (lib.strings.splitString "\n")
@@ -10,4 +11,4 @@
     (builtins.concatStringsSep "\n")
   ];
 in
-  pkgs.writers.writePython3Bin "kdn-anonymize" {} source
+pkgs.writers.writePython3Bin "kdn-anonymize" { } source
