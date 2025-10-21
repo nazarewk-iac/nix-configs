@@ -21,8 +21,7 @@ in {
         # END kdn.git-utils
       ''
     ];
-    programs.git.difftastic.enable = true; # diff highlighter
-    programs.git.difftastic.options.background = "dark"; # diff highlighter
+    programs.difftastic.git.enable = true;
 
     home.packages = with pkgs; [
       git
