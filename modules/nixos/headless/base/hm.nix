@@ -26,6 +26,10 @@ in {
       #  end
       #'';
       kdn.hw.disks.persist."usr/cache".directories = [".cache/zellij"];
+
+      programs.zellij.settings = {
+        scroll_buffer_size = 1 * 1000 * 1000;
+      };
     }
     (let
       xdgAttrs.all =
