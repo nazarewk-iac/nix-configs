@@ -3,44 +3,43 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.security.secrets.sops;
 
-  sopsPlaceholderPattern =
-    {
-      name ? "",
-      path ? "",
-      hash ? if name != "" then builtins.substring 0 8 (builtins.hashString "sha256" name) else "",
-      infix ? "${path}:${hash}",
-    }:
-    "<SOPS:${infix}:PLACEHOLDER>";
+  sopsPlaceholderPattern = {
+    name ? "",
+    path ? "",
+    hash ?
+      if name != ""
+      then builtins.substring 0 8 (builtins.hashString "sha256" name)
+      else "",
+    infix ? "${path}:${hash}",
+  }: "<SOPS:${infix}:PLACEHOLDER>";
 
   # adds additional information (name) to sops-nix placeholders
   # replaces https://github.com/Mic92/sops-nix/blob/be0eec2d27563590194a9206f551a6f73d52fa34/modules/sops/templates/default.nix#L84-L84
-  sopsPlaceholders = builtins.mapAttrs (
-    name: secretCfg:
-    sopsPlaceholderPattern {
-      inherit name;
-      inherit (secretCfg) path;
-    }
-  ) config.sops.secrets;
-in
-{
+  sopsPlaceholders =
+    builtins.mapAttrs (
+      name: secretCfg:
+        sopsPlaceholderPattern {
+          inherit name;
+          inherit (secretCfg) path;
+        }
+    )
+    config.sops.secrets;
+in {
   options.kdn.security.secrets.sops = {
     enable = lib.mkOption {
       type = with lib.types; bool;
       default = config.kdn.security.secrets.enable;
     };
     files = lib.mkOption {
-      default = { };
+      default = {};
       type = lib.types.attrsOf (
         lib.types.submodule (
-          { name, ... }@fargs:
-          let
+          {name, ...} @ fargs: let
             fileCfg = fargs.config;
-          in
-          {
+          in {
             options.namePrefix = lib.mkOption {
               type = with lib.types; str;
               default = fargs.name;
@@ -48,11 +47,13 @@ in
             options.keyPrefix = lib.mkOption {
               type = with lib.types; str;
               default = "";
-              apply =
-                value:
+              apply = value:
                 lib.pipe value [
                   (lib.strings.removeSuffix "/")
-                  (v: if v != "" then "${v}/" else v)
+                  (v:
+                    if v != ""
+                    then "${v}/"
+                    else v)
                 ];
             };
             options.sopsFile = lib.mkOption {
@@ -64,26 +65,25 @@ in
             };
             options.sops = lib.mkOption {
               type = with lib.types; attrsOf anything;
-              default = { };
+              default = {};
             };
             options.overrides = lib.mkOption {
               type = with lib.types; listOf anything;
-              default = [ ];
+              default = [];
             };
             options.discovered.keys = lib.mkOption {
               readOnly = true;
               type = with lib.types; listOf str;
-              default =
-                let
-                  pathsJson =
-                    pkgs.runCommand "converted-kdn-sops-nix-${fileCfg.namePrefix}.paths.json"
-                      { inherit (fileCfg) sopsFile; }
-                      ''
-                        ${lib.getExe pkgs.gojq} -cM --yaml-input '
-                          del(.sops) | [ paths(type == "string" and contains("type:str")) | join("/") ]
-                        ' <"$sopsFile" >"$out"
-                      '';
-                in
+              default = let
+                pathsJson =
+                  pkgs.runCommand "converted-kdn-sops-nix-${fileCfg.namePrefix}.paths.json"
+                  {inherit (fileCfg) sopsFile;}
+                  ''
+                    ${lib.getExe pkgs.gojq} -cM --yaml-input '
+                      del(.sops) | [ paths(type == "string" and contains("type:str")) | join("/") ]
+                    ' <"$sopsFile" >"$out"
+                  '';
+              in
                 lib.pipe pathsJson [
                   # TODO: this `builtins.readFile` probably causes IFDs
                   builtins.readFile
@@ -103,17 +103,16 @@ in
                       key = path;
                     }
                     // (
-                      if fileCfg.basePath != null then
-                        {
-                          path = "${fileCfg.basePath}/${path}";
-                        }
-                      else
-                        { }
+                      if fileCfg.basePath != null
+                      then {
+                        path = "${fileCfg.basePath}/${path}";
+                      }
+                      else {}
                     );
                 }))
                 builtins.listToAttrs
                 (builtins.mapAttrs (
-                  name: secretCfg: lib.lists.foldl' (old: override: old // override name old) secretCfg file.overrides
+                  name: secretCfg: lib.lists.foldl' (old: override: old // override name old) secretCfg fileCfg.overrides
                 ))
               ];
             };
@@ -134,7 +133,7 @@ in
           name: lib.attrsets.setAttrByPath (lib.strings.splitString "/" name) sopsPlaceholders."${name}"
         ))
         # dumb merge
-        (builtins.foldl' lib.attrsets.recursiveUpdate { })
+        (builtins.foldl' lib.attrsets.recursiveUpdate {})
       ];
     };
 
@@ -148,7 +147,7 @@ in
           name: value: lib.attrsets.setAttrByPath (lib.strings.splitString "/" name) value
         ))
         # dumb merge
-        (builtins.foldl' lib.attrsets.recursiveUpdate { })
+        (builtins.foldl' lib.attrsets.recursiveUpdate {})
       ];
     };
   };
@@ -158,31 +157,29 @@ in
       {
         nixpkgs.overlays = [
           (final: prev: {
-            jsonTemplate =
-              let
-                json = final.formats.json { };
-                prefix = "<UNWRAP:";
-                suffix = ":UNWRAP>";
-              in
-              {
-                inherit (json) type;
-                unwrap = txt: "${prefix}${txt}${suffix}";
-                /*
-                  original https://github.com/NixOS/nixpkgs/blob/25494c1d30252a0a58913be296da382fdcc631eb/pkgs/pkgs-lib/formats.nix#L64-L71
-                  allows unwrapping of string values into raw types
-                */
-                generate =
-                  name: value:
-                  lib.pipe value [
-                    (json.generate "${name}.wrapped.json")
-                    builtins.readFile
-                    (builtins.replaceStrings [ "\"${prefix}" "${suffix}\"" ] [ "" "" ])
-                    (pkgs.writeText name)
-                  ];
-              };
-            kdn = (prev.kdn or { }) // {
-              kdn-sops-secrets =
-                let
+            jsonTemplate = let
+              json = final.formats.json {};
+              prefix = "<UNWRAP:";
+              suffix = ":UNWRAP>";
+            in {
+              inherit (json) type;
+              unwrap = txt: "${prefix}${txt}${suffix}";
+              /*
+              original https://github.com/NixOS/nixpkgs/blob/25494c1d30252a0a58913be296da382fdcc631eb/pkgs/pkgs-lib/formats.nix#L64-L71
+              allows unwrapping of string values into raw types
+              */
+              generate = name: value:
+                lib.pipe value [
+                  (json.generate "${name}.wrapped.json")
+                  builtins.readFile
+                  (builtins.replaceStrings ["\"${prefix}" "${suffix}\""] ["" ""])
+                  (pkgs.writeText name)
+                ];
+            };
+            kdn =
+              (prev.kdn or {})
+              // {
+                kdn-sops-secrets = let
                   pattern = sopsPlaceholderPattern {
                     path = "(?P<path>[^:]+)";
                     hash = "(?P<hash>[^:]+)";
@@ -192,7 +189,7 @@ in
                     "${r.pattern}" = ''pattern = r"${pattern}"'';
                   };
                 in
-                final.writers.writePython3Bin "kdn-sops-secrets"
+                  final.writers.writePython3Bin "kdn-sops-secrets"
                   {
                     libraries = with pkgs.python3Packages; [
                       fire
@@ -204,7 +201,7 @@ in
                       (builtins.replaceStrings (builtins.attrNames replacements) (builtins.attrValues replacements))
                     ]
                   );
-            };
+              };
           })
         ];
 
@@ -224,8 +221,8 @@ in
         ];
       }
       {
-        systemd.targets.kdn-secrets.after = [ "sops-install-secrets.service" ];
-        systemd.targets.kdn-secrets.bindsTo = [ "sops-install-secrets.service" ];
+        systemd.targets.kdn-secrets.after = ["sops-install-secrets.service"];
+        systemd.targets.kdn-secrets.bindsTo = ["sops-install-secrets.service"];
         systemd.services.sops-install-secrets.after = lib.optional (
           config.systemd.targets ? "preservation"
         ) "preservation.target";
@@ -236,10 +233,9 @@ in
       {
         # fix for https://github.com/Mic92/sops-nix/pull/680#issuecomment-2580744439
         # see https://github.com/NixOS/nixpkgs/blob/b33acd9911f90eca3f2b11a0904a4205558aad5b/nixos/lib/systemd-lib.nix#L473-L473
-        systemd.services.sops-install-secrets.environment.PATH =
-          let
-            path = config.systemd.services.sops-install-secrets.path;
-          in
+        systemd.services.sops-install-secrets.environment.PATH = let
+          path = config.systemd.services.sops-install-secrets.path;
+        in
           lib.mkForce "${lib.makeBinPath path}:${lib.makeSearchPathOutput "bin" "sbin" path}";
         systemd.services.sops-install-secrets.path = config.sops.age.plugins;
       }
@@ -247,8 +243,8 @@ in
         sops.templates."placeholder.txt".content = ""; # fills-in `sops.placeholder`
         sops.secrets = lib.pipe cfg.files [
           builtins.attrValues
-          (builtins.map (file: file.discovered.entries))
-          (builtins.foldl' lib.attrsets.recursiveUpdate { })
+          (builtins.map (fileCfg: fileCfg.discovered.entries))
+          (builtins.foldl' lib.attrsets.recursiveUpdate {})
         ];
       })
     ]
