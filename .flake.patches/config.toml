@@ -6,7 +6,10 @@ skip = 0
 input = "{name}"
 upstream_input = "{name}-upstream"
 
-# PR Tracker: https://nixpk.gs/pr-tracker.html?pr=XXXXXXX
+# PR Trackers:
+# - (not working 2025-10) https://nixpk.gs/pr-tracker.html?pr=XXXXXXX
+# - https://nix.ny4.dev/?pr=XXXXXX
+# - https://nixpkgs-tracker.ocfox.me/?pr=XXXXXX
 # PR source: https://github.com/NixOS/nixpkgs/pull/XXXXXXX.patch?full_index=1
 # Source Commit: https://github.com/NixOS/nixpkgs/commit/987e8139617e37c86c33891697c6f3a9bf21021e.patch?full_index=1
 # Source diff from another repo: https://github.com/NixOS/nixpkgs/compare/nixos-unstable...nazarewk:netbird-improvements~1.patch?full_index=1
@@ -21,23 +24,10 @@ url = "https://github.com/NixOS/nixpkgs/pull/444291.patch?full_index=1"
 [patch.nixpkgs.netbird-dnssec]
 url = "https://github.com/NixOS/nixpkgs/pull/410239.patch?full_index=1"
 
-[patch.nixpkgs.fix-bpftrace]
-url = "https://github.com/NixOS/nixpkgs/pull/450486.patch?full_index=1"
-
-[patch.nixpkgs.fix-awscli2]
-url = "https://github.com/NixOS/nixpkgs/pull/450333.patch?full_index=1"
-
 #[patch.nixpkgs.ceph-rework]
 ## "Build ceph with Python 3.12; move to pkgs/by-name"
 ## takes care of arrow-cpp failure
 #url = "https://github.com/NixOS/nixpkgs/pull/443671.patch?full_index=1"
-
-# CMake 4 fixes tracked in https://github.com/NixOS/nixpkgs/issues/445447
-[patch.nixpkgs.fix-libraspberrypi]
-url = "https://github.com/NixOS/nixpkgs/pull/450828.patch?full_index=1"
-
-[patch.nixpkgs.fix-ceph]
-url = "https://github.com/NixOS/nixpkgs/pull/451118.patch?full_index=1"
 
 [patch.preservation.fix-conflict]
 url = "https://github.com/nix-community/preservation/pull/21.patch?full_index=1"
