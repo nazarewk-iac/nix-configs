@@ -34,8 +34,9 @@ in {
 
       programs.command-not-found.enable = false;
 
+      kdn.toolset.ide.enable = true; # TODO: pulling it in for Helix, move it out into dedicated module
       programs.vim.enable = true;
-      programs.vim.defaultEditor = true;
+      programs.vim.defaultEditor = lib.mkDefault true;
       programs.vim.package = pkgs.vim-full.customize {
         name = "vim";
         vimrcConfig.customRC = ''
