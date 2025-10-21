@@ -35,7 +35,7 @@ in {
     files = lib.mkOption {
       default = {};
       type = lib.types.attrsOf (lib.types.submodule ({name, ...} @ fargs: let
-        file = fargs.config;
+        fileCfg = fargs.config;
       in {
         options.namePrefix = lib.mkOption {
           type = with lib.types; str;
@@ -73,8 +73,8 @@ in {
           type = with lib.types; listOf str;
           default = let
             pathsJson =
-              pkgs.runCommand "converted-kdn-sops-nix-${file.namePrefix}.paths.json"
-              {inherit (file) sopsFile;}
+              pkgs.runCommand "converted-kdn-sops-nix-${fileCfg.namePrefix}.paths.json"
+              {inherit (fileCfg) sopsFile;}
               ''
                 ${lib.getExe pkgs.gojq} -cM --yaml-input '
                   del(.sops) | [ paths(type == "string" and contains("type:str")) | join("/") ]
@@ -82,26 +82,27 @@ in {
               '';
           in
             lib.pipe pathsJson [
+              # TODO: this `builtins.readFile` probably causes IFDs
               builtins.readFile
               builtins.fromJSON
-              (builtins.filter (lib.strings.hasPrefix file.keyPrefix))
+              (builtins.filter (lib.strings.hasPrefix fileCfg.keyPrefix))
             ];
         };
         options.discovered.entries = lib.mkOption {
           readOnly = true;
-          default = lib.pipe file.discovered.keys [
+          default = lib.pipe fileCfg.discovered.keys [
             (builtins.map (path: {
-              name = "${file.namePrefix}/${lib.strings.removePrefix file.keyPrefix path}";
+              name = "${fileCfg.namePrefix}/${lib.strings.removePrefix fileCfg.keyPrefix path}";
               value =
-                file.sops
+                fileCfg.sops
                 // {
-                  sopsFile = file.sopsFile;
+                  sopsFile = fileCfg.sopsFile;
                   key = path;
                 }
                 // (
-                  if file.basePath != null
+                  if fileCfg.basePath != null
                   then {
-                    path = "${file.basePath}/${path}";
+                    path = "${fileCfg.basePath}/${path}";
                   }
                   else {}
                 );
@@ -164,7 +165,7 @@ in {
             inherit (json) type;
             unwrap = txt: "${prefix}${txt}${suffix}";
             /*
-                     original https://github.com/NixOS/nixpkgs/blob/25494c1d30252a0a58913be296da382fdcc631eb/pkgs/pkgs-lib/formats.nix#L64-L71
+            original https://github.com/NixOS/nixpkgs/blob/25494c1d30252a0a58913be296da382fdcc631eb/pkgs/pkgs-lib/formats.nix#L64-L71
             allows unwrapping of string values into raw types
             */
             generate = name: value:
