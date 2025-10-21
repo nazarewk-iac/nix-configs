@@ -43,7 +43,7 @@ in {
       #kdn.virtualisation.containers.x11docker.enable = true;
       programs.seahorse.enable = true;
       boot.binfmt.emulatedSystems = [
-        "aarch64-linux" # got dedicated builders now, but: a 'aarch64-linux' with features {} is required to build '/nix/store/r2rc0jhz761xmyc7w4zyl5v1ayx41hg0-converted-kdn-sops-nix-anonymization.paths.json.drv', but I am a 'x86_64-linux' with features {benchmark, big-parallel, kvm, nixos-test}
+        # "aarch64-linux" # got dedicated builders now, but: a 'aarch64-linux' with features {} is required to build '/nix/store/r2rc0jhz761xmyc7w4zyl5v1ayx41hg0-converted-kdn-sops-nix-anonymization.paths.json.drv', but I am a 'x86_64-linux' with features {benchmark, big-parallel, kvm, nixos-test}
         "wasm32-wasi"
         "wasm64-wasi"
       ];

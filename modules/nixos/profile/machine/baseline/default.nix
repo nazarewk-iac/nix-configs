@@ -15,6 +15,10 @@ in {
     };
   };
 
+  imports = [
+    ./remote-builders.nix
+  ];
+
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {home-manager.sharedModules = [{kdn.profile.machine.baseline.enable = true;}];}
     (lib.mkIf config.disko.enableConfig {
@@ -228,72 +232,18 @@ in {
         lib.mkMerge
       ];
     })
-    (lib.mkIf config.kdn.security.secrets.allowed
-      # configuration related to SSH identities/authorized keys and nix remote builder
-      (let
-        secretCfgs = config.kdn.security.secrets.sops.secrets.ssh;
-        isCandidate = filename: fileCfg:
-          (fileCfg ? path || (fileCfg ? key && fileCfg ? sopsFile))
-          && (lib.strings.hasPrefix "id_" filename);
-        isPubKey = filename: fileCfg:
-          (isCandidate filename fileCfg)
-          && (lib.strings.hasSuffix ".pub" filename);
-        isPrivKey = filename: fileCfg:
-          (isCandidate filename fileCfg)
-          && !(lib.strings.hasSuffix ".pub" filename);
-
-        pubKeys = builtins.mapAttrs (_: lib.attrsets.filterAttrs isPubKey) secretCfgs;
-        privKeys = builtins.mapAttrs (_: lib.attrsets.filterAttrs isPrivKey) secretCfgs;
-      in {
-        kdn.security.secrets.sops.files."ssh" = {
-          keyPrefix = "nix/ssh";
-          sopsFile = "${kdn.self}/default.unattended.sops.yaml";
-          basePath = "/run/configs";
-          sops.mode = "0440";
-          overrides = [
-            (key: old: let
-              filename = builtins.baseNameOf key;
-              result =
-                old
-                // {
-                  mode =
-                    if isPubKey filename old
-                    then "0444"
-                    else if isPrivKey filename old
-                    then "0400"
-                    else "0440";
-                };
-            in
-              result)
-          ];
-        };
-        kdn.nix.remote-builder.user.ssh.IdentityFile = let
-          username = config.kdn.nix.remote-builder.user.name;
-          keys = privKeys."${username}";
-          anyKey = lib.pipe keys [
-            builtins.attrValues
-            builtins.head
-          ];
-        in
-          (keys.id_ed25519 or anyKey).path;
-
-        services.openssh.authorizedKeysFiles = lib.pipe pubKeys [
-          (lib.attrsets.mapAttrsToList (username: keys:
-            lib.pipe keys [
-              builtins.attrValues
-              (builtins.map (fileCfg: builtins.replaceStrings [username] ["%u"] fileCfg.path))
-            ]))
-          lib.lists.flatten
-          lib.lists.unique
-          (builtins.sort builtins.lessThan)
-        ];
-        environment.etc."ssh/ssh_config.d/00-kdn-profile-baseline.config".text = ''
-          Match User nixos
-            StrictHostKeyChecking no
-            UpdateHostKeys no
-            UserKnownHostsFile /dev/null
-        '';
-      }))
+    {
+      environment.etc."ssh/ssh_config.d/00-kdn-profile-baseline.config".text = ''
+        Match User nixos
+          StrictHostKeyChecking no
+          UpdateHostKeys no
+          UserKnownHostsFile /dev/null
+      '';
+    }
+    {
+      # ~/dev/github.com/nazarewk-iac/nix-configs/known_hosts.sh
+      programs.ssh.knownHostsFiles = [./ssh_known_hosts];
+    }
     {
       systemd.tmpfiles.rules = lib.trivial.pipe config.users.users [
         lib.attrsets.attrValues
