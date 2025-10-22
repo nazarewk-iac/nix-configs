@@ -320,7 +320,8 @@ in {
         kdn.networking.netbird.clients.priv.environment.NB_BLOCK_INBOUND = "false";
 
         kdn.networking.netbird.clients.nbs.idx = 2; # internal NetBird instance
-        kdn.networking.netbird.clients.nbs.systemd.enable = true;
+        # TODO: this doesn't work (doesn't set up routes)
+        kdn.networking.netbird.clients.nbs.systemd.enable = false;
         # TODO: this doesn't work
         kdn.networking.netbird.clients.nbs.resolvesDomains = ["~netbird.selfhosted"];
         kdn.networking.netbird.clients.nbt.idx = 3; # testing client
