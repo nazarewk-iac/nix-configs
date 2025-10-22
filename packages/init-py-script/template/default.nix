@@ -17,7 +17,7 @@
 in
   mkPythonScript {
     inherit src python;
-    name = "package-placeholder";
+    name = "nix-name-placeholder";
     pythonModule = "package_placeholder.cli";
     requirementsFileText = ''
       fire

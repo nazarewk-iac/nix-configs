@@ -23,9 +23,8 @@ create_package() {
   cp -r "${template_dir}" "${out}"
   chmod -R ug+w "${out}"
   mv "${out}/${python_package_placeholder}" "${out}/${python_package}"
-  find "${out}" -type f -print | tee /dev/stderr | xargs sed -i \
-    -e "s/${name_placeholder}/${name}/g" \
-    -e "s/${python_package_placeholder}/${python_package}/g"
+  find "${out}" -type f -print | tee /dev/stderr | xargs sed -i "${sed_replacements[@]}"
+
   git -C "${repo}" add "${out}/*"
 }
 
@@ -67,13 +66,19 @@ main() {
   : "${force:=0}"
   : "${out="${packages}/${name}"}"
 
+  sed_replacements=()
 
   name="${name,,}"
   name="${name//"_"/"-"}"
-  name_placeholder="package-placeholder"
+  sed_replacements+=(-e "s/package-placeholder/${name}/g")
 
-  python_package="${name//"-"/"_"}"
+  : "${python_package:="${2:-"${name}"}"}"
+  python_package="${python_package//"-"/"_"}"
   python_package_placeholder="package_placeholder"
+  sed_replacements+=(-e "s/${python_package_placeholder}/${python_package}/g")
+
+  : "${nix_name:="${name}"}"
+  sed_replacements+=(-e "s/package_nix_placeholder/${nix_name}/g")
 
   if test -d "${out}"; then
     warn "already exists '${out}', exitting unless 'force=1'"
