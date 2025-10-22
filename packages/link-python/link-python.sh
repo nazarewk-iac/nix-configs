@@ -29,7 +29,7 @@ EOF
   : "${packages:="$(find_packages "${repo}")"}"
 
   if test "${1:-}" = ALL; then
-    mapfile -t links <(grep -l mkPythonScript "${packages}"/*/default.nix | sed 's#.*/\([^/]*\)/.*.nix$#\1#g')
+    mapfile -t links < <(grep -l mkPythonScript "${packages}"/*/default.nix | sed 's#.*/\([^/]*\)/.*.nix$#\1#g')
   else
     links=("$@")
   fi
