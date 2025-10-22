@@ -11,6 +11,23 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
+    home.packages = with pkgs; ([
+        #self.inputs.nixpkgs-update.defaultPackage.${system}
+        nix-update
+        nixos-anywhere
+        # check for packages in cache
+        nix-weather
+        # language servers
+        nil
+        nixd
+      ]
+      ++ [
+        # formatters
+        alejandra
+        nixfmt-rfc-style
+        kdn.kdn-nix-fmt
+      ]);
+
     programs.helix.extraPackages = with pkgs; [
       nil
       nixd
@@ -21,7 +38,7 @@ in {
         name = "nix";
         auto-format = true;
         formatter = {
-          command = lib.getExe pkgs.nixfmt;
+          command = lib.getExe pkgs.kdn.kdn-nix-fmt;
         };
       }
     ];

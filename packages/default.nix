@@ -33,4 +33,5 @@
   whicher = pkgs.callPackage ./whicher {};
 
   # AUTO_PACKAGE_PLACEHOLDER #
+  kdn-nix-fmt = pkgs.callPackage ./kdn-nix-fmt {};
 }

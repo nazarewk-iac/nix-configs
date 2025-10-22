@@ -1,4 +1,9 @@
-DOCUMENTATION PLACEHOLDER
+# package-placeholder
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut vulputate ornare mollis. Pellentesque feugiat dictum ligula
+et iaculis. Proin congue dapibus libero a suscipit. Aenean tempus urna vitae sagittis tempus.
+
+# How to work with it?
 
 To build Python interpreter/virtualenv for your IDE you can run:
 
