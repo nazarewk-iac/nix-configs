@@ -6,6 +6,7 @@
 (import ./netbird {inherit pkgs lib;})
 // {
   link-python = pkgs.callPackage ./link-python {};
+  init-py-script = pkgs.callPackage ./init-py-script {};
 
   # changed to manual list due to infinite recursion errors
   data-converters = pkgs.callPackage ./data-converters {};
@@ -30,4 +31,6 @@
   systemd-find-cycles = pkgs.callPackage ./systemd-find-cycles {};
   tc-redirect-tap = pkgs.callPackage ./tc-redirect-tap {};
   whicher = pkgs.callPackage ./whicher {};
+
+  # AUTO_PACKAGE_PLACEHOLDER #
 }

@@ -1,0 +1,1 @@
+quickly sets up new Python script with Fire and structlog
