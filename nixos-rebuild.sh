@@ -2,7 +2,10 @@
 set -eEuo pipefail
 trap 'echo "Error when executing $BASH_COMMAND at line $LINENO!" >&2' ERR
 cd "${BASH_SOURCE[0]%/*}"
-info() { echo "[$(date -Iseconds)]" "$@" >&2; }
+# shellcheck disable=SC2059
+_log() { printf "$(date -Isec) ${1} ${BASH_SOURCE[1]}:${BASH_LINENO[1]}: ${2}\n" "${@:3}" >&2; }
+info() { _log INFO "$@"; }
+warn() { _log WARN "$@"; }
 info STARTING
 trap 'info FINISHED' EXIT
 test -z "${DEBUG:-}" || set -x
@@ -50,15 +53,26 @@ post_args=(
 name="$(hostname -s)"
 cmd="${1}"
 remote=""
+flags=""
+remote_host=""
 shift 1
+
 if [[ "${1:-}" == remote=* ]]; then
+  remote="${1#remote=*}"
+  shift 1
+  if [[ "${remote}" == *+* ]]; then
+    flags="${remote##*+}"
+    remote="${remote%+*}"
+  fi
+fi
+
+if test -n "${remote:-}"; then
   # remote="etra=kdn@kdn.im@etra.netbird.cloud"
   # remote="kdn.im@etra.netbird.cloud"
   # remote="etra.netbird.cloud"
   # remote="kdn@etra"
   # remote="etra"
-  remote="${1#remote=}"
-  shift 1
+
   if [[ "${remote}" == *=* ]]; then
     name="${remote%=*}"
     remote="${remote#*=}"
@@ -81,13 +95,9 @@ if [[ "${1:-}" == remote=* ]]; then
   fi
 
   if test -n "${user:-}"; then
-    pre_args+=(
-      --target-host "${user}@${addr}"
-    )
+    remote_host="${user}@${addr}"
   else
-    pre_args+=(
-      --target-host "${addr}"
-    )
+    remote_host="${addr}"
   fi
 
   pre_args+=(
@@ -98,18 +108,14 @@ elif [[ -n "${1:-}" && "${1}" != -* ]]; then
   shift 1
 fi
 
-if [[ "${1:-}" == --build-on-remote ]]; then
-  if test -n "${user:-}"; then
-    pre_args+=(
-      --build-host "${user}@${addr}"
-    )
-  else
-    pre_args+=(
-      --build-host "${addr}" --fast
-    )
+if test -n "${remote_host}"; then
+  pre_args+=(--target-host "${remote_host}")
+
+  if [[ "${flags}" = *b* ]] || test "$(uname -m)" != "$(ssh "${remote_host}" uname -m)"; then
+    pre_args+=(--build-host "${remote_host}")
   fi
-  shift 1
 fi
+
 post_args+=(
   --flake ".#${name}"
 )
@@ -141,7 +147,7 @@ if test "${keep_going}" = 1; then
   post_args+=(--keep-going)
 fi
 
-if test "${defaults}" = 1 ; then
+if test "${defaults}" = 1; then
   procs="$(nproc)"
   jobs="$((procs / 10 - 1))"
   jobs="$((jobs > 0 ? jobs : 1))"
