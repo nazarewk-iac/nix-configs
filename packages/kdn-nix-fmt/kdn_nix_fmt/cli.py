@@ -34,11 +34,11 @@ class CLI:
             "github.com/nix-community/": self.nixfmt,
         }
 
-    def alejandra(self, *args):
-        run(f"format with alejandra", ["alejandra", *args])
+    def alejandra(self, *args, **kwargs):
+        run(f"format with alejandra", ["alejandra", *args], **kwargs)
 
-    def nixfmt(self, *args):
-        run(f"format with nixfmt", ["nixfmt", *args])
+    def nixfmt(self, *args, **kwargs):
+        run(f"format with nixfmt", ["nixfmt", *args], **kwargs)
 
     def _get_formatter(self, file: Path):
         for root, formatter in self._formatters_cache.items():
@@ -86,10 +86,18 @@ class CLI:
         return self.default_formatter
 
     def __call__(self, *files):
+        if not files:
+            self.default_formatter()
+            return
+
         by_formatter = defaultdict(list)
 
-        for file in map(Path, files):
-            formatter = self._get_formatter(file)
+        for filename in files:
+            file = Path(filename)
+            if filename == "-":
+                formatter = self._get_formatter(Path.cwd())
+            else:
+                formatter = self._get_formatter(file)
             by_formatter[formatter].append(file)
 
         for formatter, files in by_formatter.items():
