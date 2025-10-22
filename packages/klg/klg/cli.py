@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import tempfile
-
 import asyncclick as click
 import csv
 import datetime
@@ -10,6 +8,7 @@ import pendulum
 import shutil
 import structlog
 import subprocess
+import tempfile
 import textwrap
 import tomllib
 import xdg_base_dirs
@@ -440,6 +439,13 @@ async def raw(path, include_path, args):
     if include_path:
         args.append(path)
     await klog.cmd(*args, stdout=None)
+
+
+@main.command(name="edit")
+async def edit():
+    klog = Klog()
+    path = await get_profile_path(klog, CONFIG)
+    await klog.cmd(path, stdout=None)
 
 
 if __name__ in ("__main__", "__mp_main__"):
