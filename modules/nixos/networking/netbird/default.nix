@@ -241,6 +241,8 @@ in {
             value = lib.mkIf (nbCfg.secrets != null) (
               lib.mkMerge [
                 (lib.mkIf (nbCfg.secrets ? env) {
+                  after = ["kdn-secrets.target"];
+                  requires = ["kdn-secrets.target"];
                   serviceConfig.LoadCredential = ["env:${nbCfg.secrets.env.path}"];
                   serviceConfig.EnvironmentFile = "-%d/env";
                 })
