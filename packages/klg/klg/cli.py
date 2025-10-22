@@ -445,7 +445,7 @@ async def raw(path, include_path, args):
 async def edit():
     klog = Klog()
     path = await get_profile_path(klog, CONFIG)
-    await klog.cmd(path, stdout=None)
+    await klog.cmd("edit", path, stdout=None)
 
 
 if __name__ in ("__main__", "__mp_main__"):
