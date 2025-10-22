@@ -5,6 +5,8 @@
 }:
 (import ./netbird {inherit pkgs lib;})
 // {
+  link-python = pkgs.callPackage ./link-python {};
+
   # changed to manual list due to infinite recursion errors
   data-converters = pkgs.callPackage ./data-converters {};
   ff-ctl = pkgs.callPackage ./ff-ctl {};
