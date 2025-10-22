@@ -43,7 +43,9 @@ class CLI:
 
 
 def main():
-    logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO"))
+    log_level = getattr(logging, (os.environ.get("LOG_LEVEL") or "INFO").upper())
+    logging.basicConfig(format="%(message)s", level=log_level)
+    structlog.stdlib.recreate_defaults(log_level=None)
     fire.Fire(CLI(), name=PROGRAM)
 
 
