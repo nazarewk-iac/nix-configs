@@ -35,7 +35,8 @@ EOF
   fi
 
   for name in "${links[@]}"; do
-    ln -sfT "$(nom build --no-link --print-out-paths ".#${name}.devEnv")/bin/python" "${packages}/${name}/python"
+    out="$(nom build --no-link --print-out-paths ".#${name}.devEnv")"
+    ln -sfT "${out}/bin/python" "${packages}/${name}/python"
   done
 }
 
