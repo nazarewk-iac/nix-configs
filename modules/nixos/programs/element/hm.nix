@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.programs.matrix;
-in
-{
+in {
   options.kdn.programs.matrix = {
     enable = lib.mkEnableOption "element setup";
     element.enable = lib.mkOption {
@@ -37,46 +35,46 @@ in
           package.original = pkgs.element-desktop.override {
             commandLineArgs = "--password-store=gnome-libsecret --disable-gpu";
           };
-          dirs.cache = [ ];
-          dirs.config = [ "Element" ];
-          dirs.data = [ ];
-          dirs.disposable = [ ];
-          dirs.reproducible = [ ];
-          dirs.state = [ ];
+          dirs.cache = [];
+          dirs.config = ["Element"];
+          dirs.data = [];
+          dirs.disposable = [];
+          dirs.reproducible = [];
+          dirs.state = [];
         };
       })
       (lib.mkIf cfg.gomuks.enable {
         kdn.programs.apps.gomuks = {
           enable = lib.mkDefault false; # this one is old CLI version
           package.original = pkgs.gomuks;
-          dirs.cache = [ "gomuks" ];
-          dirs.config = [ "gomuks" ];
-          dirs.data = [ "gomuks" ];
-          dirs.disposable = [ ];
-          dirs.reproducible = [ ];
-          dirs.state = [ "gomuks" ];
+          dirs.cache = ["gomuks"];
+          dirs.config = ["gomuks"];
+          dirs.data = ["gomuks"];
+          dirs.disposable = [];
+          dirs.reproducible = [];
+          dirs.state = ["gomuks"];
         };
         kdn.programs.apps.gomuks-web = {
           enable = lib.mkDefault true;
           package.original = pkgs.gomuks-web;
-          dirs.cache = [ "gomuks" ];
-          dirs.config = [ "gomuks" ];
-          dirs.data = [ "gomuks" ];
-          dirs.disposable = [ ];
-          dirs.reproducible = [ ];
-          dirs.state = [ "gomuks" ];
+          dirs.cache = ["gomuks"];
+          dirs.config = ["gomuks"];
+          dirs.data = ["gomuks"];
+          dirs.disposable = [];
+          dirs.reproducible = [];
+          dirs.state = ["gomuks"];
         };
       })
       (lib.mkIf cfg.fluffychat.enable {
         kdn.programs.apps.fluffychat = {
           enable = true;
           package.original = pkgs.fluffychat;
-          dirs.cache = [ ];
-          dirs.config = [ ];
-          dirs.data = [ ];
-          dirs.disposable = [ ];
-          dirs.reproducible = [ ];
-          dirs.state = [ ];
+          dirs.cache = [];
+          dirs.config = [];
+          dirs.data = [];
+          dirs.disposable = [];
+          dirs.reproducible = [];
+          dirs.state = [];
         };
       })
       (lib.mkIf cfg.nheko.enable {
@@ -84,12 +82,12 @@ in
         kdn.programs.apps.nheko = {
           enable = true;
           package.original = pkgs.nheko;
-          dirs.cache = [ "nheko" ];
-          dirs.config = [ "nheko" ];
-          dirs.data = [ "nheko" ];
-          dirs.disposable = [ ];
-          dirs.reproducible = [ ];
-          dirs.state = [ ];
+          dirs.cache = ["nheko"];
+          dirs.config = ["nheko"];
+          dirs.data = ["nheko"];
+          dirs.disposable = [];
+          dirs.reproducible = [];
+          dirs.state = [];
         };
       })
     ]

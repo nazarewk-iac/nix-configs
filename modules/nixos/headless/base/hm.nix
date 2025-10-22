@@ -2,11 +2,9 @@
   config,
   lib,
   ...
-}:
-let
+}: let
   cfg = config.kdn.headless.base;
-in
-{
+in {
   options.kdn.headless.base = {
     enable = lib.mkEnableOption "basic headless system configuration";
   };
@@ -28,7 +26,7 @@ in
         #    eval (${lib.getExe config.programs.zellij.package} setup --generate-auto-start fish | string collect)
         #  end
         #'';
-        kdn.hw.disks.persist."usr/cache".directories = [ ".cache/zellij" ];
+        kdn.hw.disks.persist."usr/cache".directories = [".cache/zellij"];
 
         programs.zellij.settings = {
           scroll_buffer_size = 1 * 1000 * 1000;
@@ -36,35 +34,35 @@ in
       }
       (
         let
-          xdgAttrs.all = (builtins.attrNames config.xdg.userDirs.extraConfig) ++ [
-            "XDG_DESKTOP_DIR"
-            "XDG_DOCUMENTS_DIR"
-            "XDG_DOWNLOAD_DIR"
-            "XDG_MUSIC_DIR"
-            "XDG_PICTURES_DIR"
-            "XDG_PUBLICSHARE_DIR"
-            "XDG_TEMPLATES_DIR"
-            "XDG_VIDEOS_DIR"
-          ];
+          xdgAttrs.all =
+            (builtins.attrNames config.xdg.userDirs.extraConfig)
+            ++ [
+              "XDG_DESKTOP_DIR"
+              "XDG_DOCUMENTS_DIR"
+              "XDG_DOWNLOAD_DIR"
+              "XDG_MUSIC_DIR"
+              "XDG_PICTURES_DIR"
+              "XDG_PUBLICSHARE_DIR"
+              "XDG_TEMPLATES_DIR"
+              "XDG_VIDEOS_DIR"
+            ];
           xdgAttrs.cache = [
             "XDG_DOWNLOAD_DIR"
           ];
-          process =
-            dirs:
+          process = dirs:
             lib.pipe dirs [
               (builtins.filter (
                 name:
-                (config.home.sessionVariables ? name)
-                && lib.strings.hasPrefix "XDG_" name
-                && lib.strings.hasSuffix "_DIR" name
+                  (config.home.sessionVariables ? name)
+                  && lib.strings.hasPrefix "XDG_" name
+                  && lib.strings.hasSuffix "_DIR" name
               ))
               (builtins.map (
                 name:
-                lib.strings.removePrefix "${config.home.homeDirectory}/" config.home.sessionVariables."${name}"
+                  lib.strings.removePrefix "${config.home.homeDirectory}/" config.home.sessionVariables."${name}"
               ))
             ];
-        in
-        {
+        in {
           kdn.hw.disks.persist."usr/data".directories = process (
             lib.lists.subtractLists xdgAttrs.cache xdgAttrs.all
           );

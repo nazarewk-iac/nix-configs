@@ -6,8 +6,7 @@
   serviceName ? "${prefix}.service",
   desktopSessionName ? prefix,
   ...
-}:
-let
+}: let
   scripts.start-headless = pkgs.writeShellApplication {
     name = "${prefix}-start-headless";
     text = ''
@@ -21,7 +20,7 @@ let
 
   scripts.start = pkgs.writeShellApplication {
     name = "${prefix}-start";
-    runtimeInputs = with pkgs; [ systemd ];
+    runtimeInputs = with pkgs; [systemd];
     text = ''
       ${lib.meta.getExe scripts.env-clear}
       ${lib.meta.getExe scripts.env-load}
@@ -166,11 +165,11 @@ let
     '';
   };
 in
-(pkgs.symlinkJoin {
-  name = "${prefix}-bundle";
-  passthru.providedSessions = [ desktopSessionName ];
-  paths = builtins.attrValues (scripts // extra);
-})
-// {
-  exes = builtins.mapAttrs (n: pkg: lib.meta.getExe pkg) scripts;
-}
+  (pkgs.symlinkJoin {
+    name = "${prefix}-bundle";
+    passthru.providedSessions = [desktopSessionName];
+    paths = builtins.attrValues (scripts // extra);
+  })
+  // {
+    exes = builtins.mapAttrs (n: pkg: lib.meta.getExe pkg) scripts;
+  }

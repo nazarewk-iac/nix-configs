@@ -3,13 +3,11 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.fs.watch;
 
   watcherModule = lib.types.submodule (
-    { name, ... }@args:
-    {
+    {name, ...} @ args: {
       options.enable = lib.mkOption {
         type = with lib.types; bool;
         default = true;
@@ -32,19 +30,19 @@ let
       };
       options.extraArgs = lib.mkOption {
         type = with lib.types; listOf str;
-        default = [ ];
+        default = [];
       };
       options.dirs = lib.mkOption {
         type = with lib.types; listOf path;
-        default = [ ];
+        default = [];
       };
       options.recursive = lib.mkOption {
         type = with lib.types; listOf path;
-        default = [ ];
+        default = [];
       };
       options.files = lib.mkOption {
         type = with lib.types; listOf path;
-        default = [ ];
+        default = [];
       };
       options.exec = lib.mkOption {
         type = with lib.types; listOf str;
@@ -56,15 +54,14 @@ let
       };
     }
   );
-in
-{
+in {
   options.kdn.fs.watch = {
     enable = lib.mkOption {
       type = with lib.types; bool;
-      default = cfg.instances != { };
+      default = cfg.instances != {};
     };
     instances = lib.mkOption {
-      default = { };
+      default = {};
       type = with lib.types; attrsOf watcherModule;
     };
   };
@@ -76,13 +73,13 @@ in
           (lib.attrsets.filterAttrs (_: fsWatchCfg: fsWatchCfg.enable))
           (lib.attrsets.mapAttrs' (
             name: fsWatchCfg:
-            lib.attrsets.nameValuePair fsWatchCfg.systemdName {
-              description = "${name} filesystem watcher";
-              serviceConfig = {
-                RuntimeDirectory = "kdn-fs-watch-${name}";
-                WorkingDirectory = "/run/kdn-fs-watch-${name}";
-                ExecStart =
-                  lib.pipe
+              lib.attrsets.nameValuePair fsWatchCfg.systemdName {
+                description = "${name} filesystem watcher";
+                serviceConfig = {
+                  RuntimeDirectory = "kdn-fs-watch-${name}";
+                  WorkingDirectory = "/run/kdn-fs-watch-${name}";
+                  ExecStart =
+                    lib.pipe
                     [
                       (lib.getExe pkgs.watchexec)
                       "--on-busy-update=queue"
@@ -94,10 +91,10 @@ in
                         (builtins.concatStringsSep "\n")
                         (
                           text:
-                          pkgs.writeTextFile {
-                            name = "kdn-fs-watch-${name}-watch-file";
-                            inherit text;
-                          }
+                            pkgs.writeTextFile {
+                              name = "kdn-fs-watch-${name}-watch-file";
+                              inherit text;
+                            }
                         )
                         (path: "--watch-file=${path}")
                       ])
@@ -109,9 +106,9 @@ in
                       lib.escapeShellArgs
                       lib.lists.toList
                     ];
-              };
-              wantedBy = [ "default.target" ];
-            }
+                };
+                wantedBy = ["default.target"];
+              }
           ))
         ];
       }

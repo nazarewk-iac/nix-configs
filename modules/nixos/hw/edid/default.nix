@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.hw.edid;
-in
-{
+in {
   options.kdn.hw.edid = {
     enable = lib.mkEnableOption "EDID scripts & utils";
   };

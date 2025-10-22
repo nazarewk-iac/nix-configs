@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.profile.machine.gaming;
-in
-{
+in {
   options.kdn.profile.machine.gaming = {
     enable = lib.mkEnableOption "enable gaming machine profile";
     vulkan.deviceId = lib.mkOption {
@@ -27,8 +25,7 @@ in
     programs.steam.localNetworkGameTransfers.openFirewall = true;
     programs.steam.protontricks.enable = true;
 
-    nixpkgs.config.allowUnfreePredicate =
-      pkg:
+    nixpkgs.config.allowUnfreePredicate = pkg:
       builtins.elem (lib.getName pkg) [
         "steam"
         "steam-original"
@@ -39,7 +36,7 @@ in
       lib.optionalAttrs (cfg.vulkan.deviceName != null) {
         DXVK_FILTER_DEVICE_NAME = cfg.vulkan.deviceName;
       }
-      // lib.optionalAttrs (cfg.vulkan.deviceId != null) { MESA_VK_DEVICE_SELECT = cfg.vulkan.deviceId; };
+      // lib.optionalAttrs (cfg.vulkan.deviceId != null) {MESA_VK_DEVICE_SELECT = cfg.vulkan.deviceId;};
 
     environment.systemPackages = with pkgs; [
       # steam  # covered by programs.steam.enable

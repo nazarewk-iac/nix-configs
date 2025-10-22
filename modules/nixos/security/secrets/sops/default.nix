@@ -112,7 +112,8 @@ in {
                 }))
                 builtins.listToAttrs
                 (builtins.mapAttrs (
-                  name: secretCfg: lib.lists.foldl' (old: override: old // override name old) secretCfg fileCfg.overrides
+                  name: secretCfg:
+                    lib.lists.foldl' (old: override: old // override name old) secretCfg fileCfg.overrides
                 ))
               ];
             };

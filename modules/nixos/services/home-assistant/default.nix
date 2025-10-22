@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.services.home-assistant;
-in
-{
+in {
   options.kdn.services.home-assistant = {
     enable = lib.mkEnableOption "Home Assistant server";
     zha.enable = lib.mkEnableOption "Zigbee Home Automation module";
@@ -52,10 +50,10 @@ in
         services.home-assistant.config = {
           # Includes dependencies for a basic setup
           # https://www.home-assistant.io/integrations/default_config/
-          default_config = { };
+          default_config = {};
         };
-        services.home-assistant.extraPackages =
-          python3Packages: with python3Packages; [
+        services.home-assistant.extraPackages = python3Packages:
+          with python3Packages; [
           ];
       }
       {

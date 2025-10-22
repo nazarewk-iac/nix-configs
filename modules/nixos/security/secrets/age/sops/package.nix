@@ -16,7 +16,7 @@ buildGoModule rec {
       --replace-fail "go 1.22" "go 1.22.7"
   '';
 
-  subPackages = [ "cmd/sops" ];
+  subPackages = ["cmd/sops"];
 
   ldflags = [
     "-s"
@@ -24,9 +24,9 @@ buildGoModule rec {
     "-X github.com/getsops/sops/v3/version.Version=${version}"
   ];
 
-  passthru.updateScript = nix-update-script { };
+  passthru.updateScript = nix-update-script {};
 
-  nativeBuildInputs = [ installShellFiles ];
+  nativeBuildInputs = [installShellFiles];
 
   postInstall = ''
     installShellCompletion --cmd sops --bash ${./bash_autocomplete}

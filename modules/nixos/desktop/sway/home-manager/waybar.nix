@@ -3,8 +3,7 @@
   pkgs,
   lib,
   ...
-}:
-let
+}: let
   cfg = config.kdn.desktop.sway;
   waybar = config.programs.waybar.package;
 
@@ -32,8 +31,7 @@ let
       };
     };
     "mpd" = {
-      "format" =
-        "{stateIcon} {consumeIcon}{randomIcon}{repeatIcon}{singleIcon}{artist} - {album} - {title} ({elapsedTime:%M:%S}/{totalTime:%M:%S}) ⸨{songPosition}|{queueLength}⸩ {volume}% ";
+      "format" = "{stateIcon} {consumeIcon}{randomIcon}{repeatIcon}{singleIcon}{artist} - {album} - {title} ({elapsedTime:%M:%S}/{totalTime:%M:%S}) ⸨{songPosition}|{queueLength}⸩ {volume}% ";
       "format-disconnected" = "Disconnected ";
       "format-stopped" = "{consumeIcon}{randomIcon}{repeatIcon}{singleIcon}Stopped ";
       "unknown-tag" = "N/A";
@@ -165,7 +163,7 @@ let
       "on-click" = "${lib.getExe' pkgs.avizo "volumectl"} toggle-mute";
       "on-click-middle" = "pavucontrol";
       "on-click-right" = "${lib.getExe' pkgs.avizo "volumectl"} -m toggle-mute";
-      "ignored-sinks" = [ "Easy Effects Sink" ];
+      "ignored-sinks" = ["Easy Effects Sink"];
     };
   };
 
@@ -200,11 +198,10 @@ let
       "clock"
     ];
   };
-in
-{
+in {
   config = lib.mkIf cfg.enable {
     xdg.configFile."waybar/config" = {
-      source = (pkgs.formats.json { }).generate "waybar-config.json" (settings // settingsModules);
+      source = (pkgs.formats.json {}).generate "waybar-config.json" (settings // settingsModules);
       onChange = ''
         ${lib.getExe' pkgs.procps "pkill"} -u '${config.home.username}' -USR2 waybar || :
       '';
@@ -215,10 +212,10 @@ in
       libappindicator-gtk3
     ];
 
-    systemd.user.services.waybar.Unit.BindsTo = [ "tray.target" ];
-    systemd.user.services.waybar.Unit.Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
-    systemd.user.services.waybar.Unit.After = [ config.kdn.desktop.sway.systemd.envs.target ];
-    systemd.user.services.waybar.Service.ExecStartPost = [ "${pkgs.coreutils}/bin/sleep 3" ];
+    systemd.user.services.waybar.Unit.BindsTo = ["tray.target"];
+    systemd.user.services.waybar.Unit.Requires = [config.kdn.desktop.sway.systemd.envs.target];
+    systemd.user.services.waybar.Unit.After = [config.kdn.desktop.sway.systemd.envs.target];
+    systemd.user.services.waybar.Service.ExecStartPost = ["${pkgs.coreutils}/bin/sleep 3"];
 
     programs.waybar = {
       enable = true;

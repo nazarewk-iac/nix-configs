@@ -7,8 +7,7 @@
 # many configs pulled from https://git.grml.org/?p=grml-etc-core.git;a=blob_plain;f=etc/zsh/zshrc;hb=HEAD
 let
   cfg = config.kdn.programs.zsh;
-in
-{
+in {
   options.kdn.programs.zsh = {
     enable = lib.mkEnableOption "ZSH shell config";
   };

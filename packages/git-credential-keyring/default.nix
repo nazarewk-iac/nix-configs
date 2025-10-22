@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{pkgs, ...}:
 pkgs.writers.writePython3Bin "git-credential-keyring" {
   libraries = with pkgs.python3Packages; [
     keyring

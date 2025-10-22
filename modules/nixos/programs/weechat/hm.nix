@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.programs.weechat;
-in
-{
+in {
   options.kdn.programs.weechat = {
     enable = lib.mkEnableOption "weechat setup";
 
@@ -18,8 +16,7 @@ in
 
     init = lib.mkOption {
       type = lib.types.str;
-      apply =
-        input:
+      apply = input:
         lib.trivial.pipe input [
           (lib.strings.splitString "\n")
           (builtins.filter (l: l != "" && !(lib.strings.hasPrefix "#" l)))
@@ -68,12 +65,10 @@ in
   config = lib.mkIf cfg.enable {
     home.packages = [
       (cfg.package.override {
-        configure =
-          { availablePlugins, ... }:
-          {
-            scripts = cfg.scripts;
-            init = cfg.init;
-          };
+        configure = {availablePlugins, ...}: {
+          scripts = cfg.scripts;
+          init = cfg.init;
+        };
       })
     ];
     kdn.hw.disks.persist."usr/config".directories = [

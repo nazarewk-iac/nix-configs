@@ -3,17 +3,15 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.development.golang;
-in
-{
+in {
   options.kdn.development.golang = {
     enable = lib.mkEnableOption "golang development";
   };
 
   config = lib.mkIf cfg.enable {
-    home-manager.sharedModules = [ { kdn.development.golang.enable = true; } ];
+    home-manager.sharedModules = [{kdn.development.golang.enable = true;}];
 
     environment.extraInit = ''
       export PATH="$PATH:$HOME/.cache/go/bin"

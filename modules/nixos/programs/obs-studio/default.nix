@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.programs.obs-studio;
-in
-{
+in {
   options.kdn.programs.obs-studio = {
     enable = lib.mkEnableOption "OBS Studio setup";
     package = lib.mkOption {

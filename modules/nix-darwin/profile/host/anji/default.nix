@@ -3,11 +3,9 @@
   config,
   pkgs,
   ...
-}:
-let
+}: let
   cfg = config.kdn.profile.host.anji;
-in
-{
+in {
   options.kdn.profile.host.anji = {
     enable = lib.mkOption {
       type = with lib.types; bool;
@@ -27,7 +25,7 @@ in
         };
 
         system.stateVersion = 5;
-        home-manager.sharedModules = [ { home.stateVersion = "25.05"; } ];
+        home-manager.sharedModules = [{home.stateVersion = "25.05";}];
       }
       {
         kdn.nix.remote-builder.enable = true;

@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.virtualisation.containers.distrobox;
-in
-{
+in {
   options.kdn.virtualisation.containers.distrobox = {
     enable = lib.mkEnableOption "distrobox setup";
   };

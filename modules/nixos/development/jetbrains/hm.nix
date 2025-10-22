@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.development.jetbrains;
-in
-{
+in {
   options.kdn.development.jetbrains = {
     enable = lib.mkEnableOption "Jetbrains tooling";
     go.enable = lib.mkEnableOption "Go specific fixes";
@@ -44,8 +42,7 @@ in
             set -eEuo pipefail
             PATH=${
               lib.makeBinPath (
-                with pkgs;
-                [
+                with pkgs; [
                   coreutils
                   findutils
                   inotify-tools
@@ -100,15 +97,15 @@ in
               esac
             done < <(inotifywait -r -m -q -e CREATE --include '^.*ideaIU[-[:digit:]\.]+(/plugins)?(/remote-dev-server)?(/bin)?$' --format '%w%f:%e' "$bin_dir/")
           '';
-          Install.WantedBy = [ "default.target" ];
+          Install.WantedBy = ["default.target"];
         };
       }
       {
         systemd.user.tmpfiles.rules = [
           /*
-            required for "run with sudo" configurations, see:
-            - https://youtrack.jetbrains.com/issue/GO-14383/Failed-to-launch-elevation-service-using-pkexec
-            - https://youtrack.jetbrains.com/issue/IJPL-170313/Elevation-for-remote-process-doesnt-work-Failed-to-launch-elevation-service-using-pkexec
+          required for "run with sudo" configurations, see:
+          - https://youtrack.jetbrains.com/issue/GO-14383/Failed-to-launch-elevation-service-using-pkexec
+          - https://youtrack.jetbrains.com/issue/IJPL-170313/Elevation-for-remote-process-doesnt-work-Failed-to-launch-elevation-service-using-pkexec
           */
           "L ${config.home.homeDirectory}/.local/bin/pkexec - - - - /run/wrappers/bin/sudo"
         ];
@@ -118,7 +115,7 @@ in
           name = "symlink-jetbrains-delve";
           pkg = pkgs.writeShellApplication {
             name = name;
-            runtimeInputs = with pkgs; [ ];
+            runtimeInputs = with pkgs; [];
             text = ''
               shopt -s nocaseglob # not sure whether JetBrains folder name is consistent
               shopt -s globstar
@@ -131,8 +128,7 @@ in
             '';
           };
           bin = "${pkg}/bin/${name}";
-        in
-        {
+        in {
           programs.bash.profileExtra = bin;
           programs.zsh.profileExtra = bin;
           programs.fish.shellInit = bin;

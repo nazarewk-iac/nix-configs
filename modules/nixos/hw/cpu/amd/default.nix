@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.hw.cpu.amd;
-in
-{
+in {
   options.kdn.hw.cpu.amd = {
     enable = lib.mkEnableOption "AMD CPU setup";
   };

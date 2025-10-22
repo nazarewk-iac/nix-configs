@@ -3,18 +3,15 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.hw.basic;
-in
-{
+in {
   options.kdn.hw.basic = {
     enable = lib.mkEnableOption "hardware discovery scripts";
   };
 
   config = lib.mkIf cfg.enable {
-    environment.systemPackages =
-      with pkgs;
+    environment.systemPackages = with pkgs;
       [
         dmidecode
         glxinfo
@@ -38,7 +35,7 @@ in
         vulkan-tools
 
         (lib.kdn.shell.writeShellScript pkgs ./bin/lsiommu.sh {
-          runtimeInputs = with pkgs; [ findutils ];
+          runtimeInputs = with pkgs; [findutils];
         })
         (lib.kdn.shell.writeShellScript pkgs ./bin/gpu-passthrough-check.sh {
           runtimeInputs = with pkgs; [
@@ -52,7 +49,7 @@ in
         })
         (lib.kdn.shell.writeShellScript pkgs ./bin/list-device-drivers.sh {
           # TODO: compgen: command not found
-          runtimeInputs = with pkgs; [ coreutils ];
+          runtimeInputs = with pkgs; [coreutils];
         })
         (lib.kdn.shell.writeShellScript pkgs ./bin/find-device-kernel-module.sh {
           runtimeInputs = with pkgs; [

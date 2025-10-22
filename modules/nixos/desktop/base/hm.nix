@@ -5,8 +5,7 @@
   lib,
   kdn,
   ...
-}:
-let
+}: let
   cfg = config.kdn.desktop.base;
   ydotool-paste = pkgs.writeShellApplication {
     name = "ydotool-paste";
@@ -19,8 +18,7 @@ let
       wl-paste --no-newline | ydotool type --file=-
     '';
   };
-in
-{
+in {
   options.kdn.desktop.base = {
     enable = lib.mkOption {
       type = lib.types.bool;
@@ -42,7 +40,7 @@ in
           libqalculate
         ];
 
-        home.sessionPath = [ "$HOME/.local/bin" ];
+        home.sessionPath = ["$HOME/.local/bin"];
         systemd.user.tmpfiles.rules = [
           "d ${config.home.homeDirectory}/.local/bin - - - -"
         ];
@@ -61,15 +59,16 @@ in
         ];
         nixpkgs.overlays = [
           (final: prev: {
-            wezterm =
-              let
-                upstream = kdn.inputs.wezterm.packages."${final.stdenv.system}".default;
-                base = prev.wezterm;
-                #base = upstream;
-              in
+            wezterm = let
+              upstream = kdn.inputs.wezterm.packages."${final.stdenv.system}".default;
+              base = prev.wezterm;
+              #base = upstream;
+            in
               base.overrideAttrs {
-                patches = (prev.patches or [ ]) ++ [
-                ];
+                patches =
+                  (prev.patches or [])
+                  ++ [
+                  ];
               };
           })
         ];

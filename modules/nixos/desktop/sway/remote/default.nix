@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.desktop.sway.remote;
-in
-{
+in {
   options.kdn.desktop.sway.remote = {
     enable = lib.mkEnableOption "remote access setup for Sway";
   };

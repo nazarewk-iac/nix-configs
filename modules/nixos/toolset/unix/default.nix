@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.toolset.unix;
-in
-{
+in {
   options.kdn.toolset.unix = {
     enable = lib.mkEnableOption "linux utils";
   };
@@ -29,7 +27,7 @@ in
 
         (pkgs.writeShellApplication {
           name = "get-proc-env";
-          runtimeInputs = with pkgs; [ jq ];
+          runtimeInputs = with pkgs; [jq];
           text = ''
             jq -R 'split("\u0000") | map(split("=") | {key: .[0], value: (.[1:] | join("="))}) | from_entries' "/proc/$1/environ"
           '';
@@ -38,12 +36,12 @@ in
       ++ (lib.pipe pkgs.unixtools [
         (
           s:
-          builtins.removeAttrs s [
-            "procps"
-            "util-linux"
-            "nettools"
-            "recurseForDerivations"
-          ]
+            builtins.removeAttrs s [
+              "procps"
+              "util-linux"
+              "nettools"
+              "recurseForDerivations"
+            ]
         )
         builtins.attrValues
       ]);

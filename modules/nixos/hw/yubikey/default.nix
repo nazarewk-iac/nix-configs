@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.hw.yubikey;
-in
-{
+in {
   # TODO: run gpg-smartcard-reset-keys for users when plugging in/changing yubikeys?
   options.kdn.hw.yubikey = {
     enable = lib.mkEnableOption "YubiKey + GnuPG Smart Card config";
@@ -15,18 +13,17 @@ in
       type = lib.types.str;
       default = "pam://${config.kdn.hostName}";
     };
-    devices = lib.mkOption { };
+    devices = lib.mkOption {};
   };
 
-  imports = [ ./yubikeys.nix ];
+  imports = [./yubikeys.nix];
 
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
         # General YubiKey configs
-        services.udev.packages = with pkgs; [ yubikey-personalization ];
-        environment.systemPackages =
-          with pkgs;
+        services.udev.packages = with pkgs; [yubikey-personalization];
+        environment.systemPackages = with pkgs;
           [
             xkcdpass
             yubikey-manager
@@ -34,8 +31,7 @@ in
             yubico-pam
           ]
           ++ lib.optionals config.kdn.desktop.enable (
-            with pkgs;
-            [
+            with pkgs; [
               yubioath-flutter
             ]
           );
@@ -72,7 +68,7 @@ in
         services.udev.packages = with pkgs; [
           libfido2 # pulls in https://github.com/Yubico/libfido2/blob/main/udev/70-u2f.rules
         ];
-        users.groups.plugdev = { };
+        users.groups.plugdev = {};
         security.pam.u2f.enable = true;
         security.pam.u2f.settings = {
           enable = true;
@@ -84,10 +80,10 @@ in
       (lib.mkIf config.kdn.security.secrets.allowed {
         # SOPS+age config
         services.pcscd.enable = true;
-        sops.age.plugins = with pkgs; [ age-plugin-yubikey ];
-        environment.systemPackages = with pkgs; [ age-plugin-yubikey ];
-        systemd.services.sops-install-secrets.after = [ "pcscd.socket" ];
-        systemd.services.sops-install-secrets.requires = [ "pcscd.socket" ];
+        sops.age.plugins = with pkgs; [age-plugin-yubikey];
+        environment.systemPackages = with pkgs; [age-plugin-yubikey];
+        systemd.services.sops-install-secrets.after = ["pcscd.socket"];
+        systemd.services.sops-install-secrets.requires = ["pcscd.socket"];
         kdn.security.secrets.age.genScripts = [
           (pkgs.writeShellApplication {
             name = "kdn-sops-age-gen-keys-yubikey";

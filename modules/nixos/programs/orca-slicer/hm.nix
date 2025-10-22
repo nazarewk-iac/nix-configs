@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.programs.orca-slicer;
-in
-{
+in {
   options.kdn.programs.orca-slicer = {
     enable = lib.mkEnableOption "orca-slicer setup";
   };
@@ -28,30 +26,30 @@ in
                 rev = "425d9c97e404bd56d64d2b98e98013855935ed8f";
                 hash = "sha256-WrjZLRlwlNB7w/QjPCO9/QTcaCTpRmOxp7vJnnzr2yQ=";
               };
-              patches =
-                let
-                  ignoredPatchSuffixes = [
-                    "meshboolean-const.patch"
-                    "0002-fix-build-for-gcc-13.diff"
-                  ];
-                in
+              patches = let
+                ignoredPatchSuffixes = [
+                  "meshboolean-const.patch"
+                  "0002-fix-build-for-gcc-13.diff"
+                ];
+              in
                 builtins.filter (
-                  p:
-                  let
+                  p: let
                     patchFileName = builtins.toString p;
                   in
-                  !(builtins.any (
-                    filenameSuffix: lib.strings.hasSuffix filenameSuffix patchFileName
-                  ) ignoredPatchSuffixes)
-                ) previousAttrs.patches;
+                    !(builtins.any (
+                        filenameSuffix: lib.strings.hasSuffix filenameSuffix patchFileName
+                      )
+                      ignoredPatchSuffixes)
+                )
+                previousAttrs.patches;
             }
           );
-          dirs.cache = [ "orca-slicer" ];
-          dirs.config = [ "OrcaSlicer" ];
-          dirs.data = [ "orca-slicer" ];
-          dirs.disposable = [ ];
-          dirs.reproducible = [ ];
-          dirs.state = [ ];
+          dirs.cache = ["orca-slicer"];
+          dirs.config = ["OrcaSlicer"];
+          dirs.data = ["orca-slicer"];
+          dirs.disposable = [];
+          dirs.reproducible = [];
+          dirs.state = [];
         };
       }
     ]

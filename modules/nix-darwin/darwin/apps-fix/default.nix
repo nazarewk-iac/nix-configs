@@ -2,11 +2,9 @@
   lib,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.darwin.apps-fix;
-in
-{
+in {
   config = lib.mkIf cfg.enable {
     system.activationScripts.applications.text = lib.mkForce cfg.copyScript;
   };

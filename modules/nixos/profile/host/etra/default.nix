@@ -4,8 +4,7 @@
   lib,
   kdn,
   ...
-}:
-let
+}: let
   inherit (kdn) self;
   cfg = config.kdn.profile.host.etra;
 
@@ -63,8 +62,7 @@ let
   hosts.lan.moak.ifaces.default.mac = "00:23:79:00:31:2F";
   hosts.lan.pryll.ifaces.default.mac = "01:90:1b:0e:84:8c:f7";
   hosts.lan.anji-vm-macos-01.default.mac = "f6:f2:45:7a:32:79";
-in
-{
+in {
   options.kdn.profile.host.etra = {
     enable = lib.mkEnableOption "etra host profile";
   };
@@ -118,8 +116,8 @@ in
         kdn.networking.router.nets.wan = {
           type = "wan";
           netdev.kind = "bond";
-          interfaces = [ "enp1s0" ];
-          address = [ ];
+          interfaces = ["enp1s0"];
+          address = [];
           wan.asDefaultDNS = true;
           wan.dns = [
             net.ipv4.p2p.drek-etra.address.gateway
@@ -131,9 +129,9 @@ in
           ];
           template.network.sections.p2p-drek-etra.Address = with net.ipv4.p2p.drek-etra; {
             /*
-               cannot use IPv4 link-local addressing because it causes degraded state, see:
-              - https://github.com/systemd/systemd/issues/575
-              - https://github.com/systemd/systemd/issues/9077
+             cannot use IPv4 link-local addressing because it causes degraded state, see:
+            - https://github.com/systemd/systemd/issues/575
+            - https://github.com/systemd/systemd/issues/9077
             */
             Address = "${address.client}/${netmask}";
             Peer = "${address.gateway}/${netmask}";
@@ -143,43 +141,41 @@ in
           {
             description = "lan.drek.net.int.kdn.im";
             type = "STUB";
-            nameservers = [ net.ipv4.p2p.drek-etra.address.gateway ];
-            domains = [ "lan.drek.net.int.kdn.im." ];
+            nameservers = [net.ipv4.p2p.drek-etra.address.gateway];
+            domains = ["lan.drek.net.int.kdn.im."];
           }
         ];
       }
       {
         kdn.networking.router.nets."lan".addressing."ipv4".hosts =
           lib.pipe
-            [
-              # first batch
-              "a5:8b"
-              "e4:52"
-              "fa:56"
-              "4e:6e"
-              "43:85"
-              # second batch
-              "42:94"
-              "05:0c"
-              "27:95"
-              "92:97"
-              "26:e2"
-            ]
-            [
-              (builtins.map lib.strings.toLower)
-              (builtins.map (
-                macSuffix:
-                let
-                  mac = "48:da:35:6f:${macSuffix}";
-                  suffix = builtins.replaceStrings [ ":" ] [ "" ] macSuffix;
-                in
-                {
-                  name = "kvm-${suffix}";
-                  value.ident.hw-address = mac;
-                }
-              ))
-              builtins.listToAttrs
-            ];
+          [
+            # first batch
+            "a5:8b"
+            "e4:52"
+            "fa:56"
+            "4e:6e"
+            "43:85"
+            # second batch
+            "42:94"
+            "05:0c"
+            "27:95"
+            "92:97"
+            "26:e2"
+          ]
+          [
+            (builtins.map lib.strings.toLower)
+            (builtins.map (
+              macSuffix: let
+                mac = "48:da:35:6f:${macSuffix}";
+                suffix = builtins.replaceStrings [":"] [""] macSuffix;
+              in {
+                name = "kvm-${suffix}";
+                value.ident.hw-address = mac;
+              }
+            ))
+            builtins.listToAttrs
+          ];
       }
       {
         kdn.networking.router.nets.lan = {
@@ -205,14 +201,13 @@ in
               # TODO: implement non-default interfaces
               (lib.attrsets.filterAttrs (name: h: h ? ifaces && h.ifaces ? default))
               (builtins.mapAttrs (
-                name: h:
-                let
+                name: h: let
                   iface = h.ifaces.default;
                 in
-                lib.mkMerge [
-                  (lib.mkIf (iface ? ipv4) { ip = iface.ipv4; })
-                  (lib.mkIf (iface ? mac) { ident.hw-address = iface.mac; })
-                ]
+                  lib.mkMerge [
+                    (lib.mkIf (iface ? ipv4) {ip = iface.ipv4;})
+                    (lib.mkIf (iface ? mac) {ident.hw-address = iface.mac;})
+                  ]
               ))
             ];
           };
@@ -235,7 +230,7 @@ in
           lan.uplink = "wan";
           netdev.kind = "vlan";
           vlan.id = vlan.pic.id;
-          interfaces = [ "lan" ];
+          interfaces = ["lan"];
           address = [
             #(with ula.pic; "${address.gateway}/${netmask}")
             #(with netconf.ipv6.network.etra.pic; "${address.gateway}/${netmask}")
@@ -265,27 +260,27 @@ in
         };
       }
       {
-        kdn.networking.router.nets.pic =
-          let
-            entries = lib.pipe hosts.pic [
-              (builtins.mapAttrs (
-                name: host: {
-                  idents = lib.attrsets.mapAttrsToList (iface: mac: {
+        kdn.networking.router.nets.pic = let
+          entries = lib.pipe hosts.pic [
+            (builtins.mapAttrs (
+              name: host: {
+                idents =
+                  lib.attrsets.mapAttrsToList (iface: mac: {
                     hw-address = mac;
-                  }) host.macs;
-                }
-              ))
-            ];
-          in
-          {
-            addressing.ipv4.hosts = entries;
-            addressing.ipv6-local.hosts = entries;
-            addressing.ipv6-public.hosts = entries;
-          };
+                  })
+                  host.macs;
+              }
+            ))
+          ];
+        in {
+          addressing.ipv4.hosts = entries;
+          addressing.ipv6-local.hosts = entries;
+          addressing.ipv6-public.hosts = entries;
+        };
       }
       {
         # accept all traffic coming from Netbird to any other routed network
-        networking.firewall.trustedInterfaces = [ "nb-priv" ];
+        networking.firewall.trustedInterfaces = ["nb-priv"];
       }
       {
         kdn.networking.router.nets.wan = {
@@ -309,7 +304,7 @@ in
             853
           ];
         };
-        kdn.networking.router.domains."int.kdn.im." = { };
+        kdn.networking.router.domains."int.kdn.im." = {};
         kdn.networking.router.dhcp-ddns.suffix = "net.int.kdn.im.";
         services.kresd.instances = 2;
       }

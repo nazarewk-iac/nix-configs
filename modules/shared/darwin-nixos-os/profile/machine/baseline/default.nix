@@ -3,13 +3,11 @@
   config,
   kdn,
   ...
-}:
-let
+}: let
   inherit (kdn) self;
 
   cfg = config.kdn.profile.machine.baseline;
-in
-{
+in {
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {

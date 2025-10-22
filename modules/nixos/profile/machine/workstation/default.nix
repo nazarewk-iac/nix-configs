@@ -4,12 +4,10 @@
   config,
   kdn,
   ...
-}:
-let
+}: let
   inherit (kdn) self;
   cfg = config.kdn.profile.machine.workstation;
-in
-{
+in {
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
@@ -30,7 +28,7 @@ in
         kdn.virtualisation.libvirtd.enable = true;
         kdn.virtualisation.vagrant.enable = true;
 
-        boot.initrd.availableKernelModules = [ ];
+        boot.initrd.availableKernelModules = [];
 
         # CUSTOM
 
@@ -66,10 +64,10 @@ in
         kdn.toolset.logs-processing.enable = true;
         environment.systemPackages = with pkgs; [
           /*
-            Closure is freaking 9 GB!
-               /nix/store/16bffw12fg6jixyal4mn2cknv88rafwg-diffoscope-269
-               NAR Size: 2.27 MiB | Closure Size: 8.73 GiB | Added Size: 8.73 GiB
-               Immediate Parents: -
+          Closure is freaking 9 GB!
+             /nix/store/16bffw12fg6jixyal4mn2cknv88rafwg-diffoscope-269
+             NAR Size: 2.27 MiB | Closure Size: 8.73 GiB | Added Size: 8.73 GiB
+             Immediate Parents: -
           */
           diffoscope
         ];

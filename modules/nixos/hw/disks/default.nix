@@ -3,12 +3,10 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.hw.disks;
   hostname = config.kdn.hostName;
-in
-{
+in {
   imports = [
     ./config.nix
   ];
@@ -38,16 +36,16 @@ in
             size = 4096;
             disko = {
               /*
-                  https://uapi-group.org/specifications/specs/discoverable_partitions_specification/
-                Name: EFI System Partition
-                UUID: c12a7328-f81f-11d2-ba4b-00a0c93ec93b SD_GPT_ESP
-                Filesystems: VFAT
-                Explanation:
-                  The ESP used for the current boot is automatically mounted to /boot/ or /efi/,
-                  unless a different partition is mounted there (possibly via /etc/fstab) or
-                  the mount point directory is non-empty on the root disk.
-                  If both ESP and XBOOTLDR exist, the /efi/ mount point shall be used for ESP.
-                  This partition type is defined by the UEFI Specification.
+                https://uapi-group.org/specifications/specs/discoverable_partitions_specification/
+              Name: EFI System Partition
+              UUID: c12a7328-f81f-11d2-ba4b-00a0c93ec93b SD_GPT_ESP
+              Filesystems: VFAT
+              Explanation:
+                The ESP used for the current boot is automatically mounted to /boot/ or /efi/,
+                unless a different partition is mounted there (possibly via /etc/fstab) or
+                the mount point directory is non-empty on the root disk.
+                If both ESP and XBOOTLDR exist, the /efi/ mount point shall be used for ESP.
+                This partition type is defined by the UEFI Specification.
               */
               type = "C12A7328-F81F-11D2-BA4B-00A0C93EC93B";
               label = "ESP";
@@ -63,7 +61,7 @@ in
         }
         {
           # zpool config
-          kdn.hw.disks.zpools."${cfg.zpool-main.name}" = { };
+          kdn.hw.disks.zpools."${cfg.zpool-main.name}" = {};
         }
         {
           # system-wide disks
@@ -122,8 +120,7 @@ in
         (
           let
             baseCfg = config.kdn.hw.disks.base."sys/config";
-          in
-          {
+          in {
             # see https://nix-community.github.io/preservation/examples.html#compatibility-with-systemds-conditionfirstboot
             kdn.hw.disks.persist."sys/config".files = [
               {
@@ -159,7 +156,7 @@ in
           };
           home-manager.sharedModules = [
             {
-              kdn.hw.disks.persist."sys/cache".directories = [ ".cache/nix" ];
+              kdn.hw.disks.persist."sys/cache".directories = [".cache/nix"];
             }
           ];
         }
@@ -182,7 +179,7 @@ in
           ];
           home-manager.sharedModules = [
             {
-              kdn.hw.disks.persist."usr/data".directories = [ ".local/share/nix" ];
+              kdn.hw.disks.persist."usr/data".directories = [".local/share/nix"];
             }
           ];
         }
@@ -244,18 +241,18 @@ in
           # system-wide disks
           disko.devices.zpool."${cfg.zpool-main.name}".datasets = {
             /*
-              TODO: adjust according to recommendations from Matrix https://matrix.to/#/!6oudZq5zJjAyrxL2uY:0upti.me/$4QbeVc0OKEQtQYrnBDn7VzolWR6AoSPQ0LqPVDtEgD0?via=laas.fr&via=matrix.org&via=node.marinchik.ink
-                for build dirs:
-                - debatable about compression. it's normally fine and cheap, but does use cpu and in this case right when you want the cpu for something else. depends heavily on other aspects of the system
-                - consider sync=disabled
-                - consider redundant_metadata=some or none, for disposable datasets, to cut down on sync iops
-                - you already have relatime, good.. but consider if you need atime at all
+            TODO: adjust according to recommendations from Matrix https://matrix.to/#/!6oudZq5zJjAyrxL2uY:0upti.me/$4QbeVc0OKEQtQYrnBDn7VzolWR6AoSPQ0LqPVDtEgD0?via=laas.fr&via=matrix.org&via=node.marinchik.ink
+              for build dirs:
+              - debatable about compression. it's normally fine and cheap, but does use cpu and in this case right when you want the cpu for something else. depends heavily on other aspects of the system
+              - consider sync=disabled
+              - consider redundant_metadata=some or none, for disposable datasets, to cut down on sync iops
+              - you already have relatime, good.. but consider if you need atime at all
 
-              the creation command:
-              > zfs create -u briv-main/briv/nix-system/nix-builds -o mountpoint=/nix/var/nix/builds-zfs-dataset -o atime=off -o redundant_metadata=none -o sync=disabled -o com.sun:auto-snapshot=false -o compression=off
+            the creation command:
+            > zfs create -u briv-main/briv/nix-system/nix-builds -o mountpoint=/nix/var/nix/builds-zfs-dataset -o atime=off -o redundant_metadata=none -o sync=disabled -o com.sun:auto-snapshot=false -o compression=off
 
-              WARNING: might need to run it on each affected host:
-              - briv
+            WARNING: might need to run it on each affected host:
+            - briv
             */
             "${hostname}/nix-system/nix-builds" = {
               type = "zfs_fs";

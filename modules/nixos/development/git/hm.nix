@@ -3,13 +3,11 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.development.git;
 
   inherit (pkgs.kdn) git-utils;
-in
-{
+in {
   options.kdn.development.git = {
     enable = lib.mkEnableOption "Git development utilities";
   };

@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.development.nickel;
-in
-{
+in {
   options.kdn.development.nickel = {
     enable = lib.mkEnableOption "nickel development/debugging";
   };

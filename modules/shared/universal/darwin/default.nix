@@ -3,35 +3,31 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.darwin;
-in
-{
+in {
   options.kdn.darwin = {
     enable = lib.mkOption {
       type = with lib.types; bool;
 
       default = cfg.type != null;
-      apply =
-        enable:
+      apply = enable:
         lib.trivial.throwIf (
           enable && cfg.type == null
-        ) "`kdn.darwin` enabled, but we're on ${pkgs.stdenv.system}!" enable;
+        ) "`kdn.darwin` enabled, but we're on ${pkgs.stdenv.system}!"
+        enable;
     };
 
     type = lib.mkOption {
-      type =
-        with lib.types;
+      type = with lib.types;
         enum [
           null
           "nix-darwin"
         ];
       default =
-        if pkgs.stdenv.isDarwin && config ? system && config.system ? darwinRelease then
-          "nix-darwin"
-        else
-          null;
+        if pkgs.stdenv.isDarwin && config ? system && config.system ? darwinRelease
+        then "nix-darwin"
+        else null;
     };
 
     dirs.apps.src = lib.mkOption {

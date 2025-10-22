@@ -3,12 +3,10 @@
   pkgs,
   lib,
   ...
-}:
-let
+}: let
   cfg = config.services.nwg-shell;
   inherit (cfg._lib) mkComponent;
-in
-{
+in {
   options.services.nwg-shell = {
     enable = lib.mkOption {
       type = lib.types.bool;
@@ -20,8 +18,7 @@ in
       readOnly = true;
       internal = true;
       default = {
-        mkComponent =
-          name: extra:
+        mkComponent = name: extra:
           {
             enable = lib.mkOption {
               type = with lib.types; bool;
@@ -36,13 +33,12 @@ in
       };
     };
 
-    bar = mkComponent "bar" { };
-    displays = mkComponent "displays" { };
-    dock = mkComponent "dock" { };
+    bar = mkComponent "bar" {};
+    displays = mkComponent "displays" {};
+    dock = mkComponent "dock" {};
     drawer = mkComponent "drawer" {
       opts = lib.mkOption {
-        type =
-          with lib.types;
+        type = with lib.types;
           attrsOf (oneOf [
             str
             true
@@ -50,12 +46,11 @@ in
         description = ''
           see https://github.com/nwg-piotr/nwg-drawer
         '';
-        default = { };
-        apply =
-          opts:
+        default = {};
+        apply = opts:
           lib.pipe opts [
             (lib.attrsets.mapAttrsToList (
-              name: value: [ "-${name}" ] ++ lib.optional (builtins.typeOf value == "string") value
+              name: value: ["-${name}"] ++ lib.optional (builtins.typeOf value == "string") value
             ))
             lib.lists.flatten
           ];
@@ -69,11 +64,11 @@ in
         );
       };
     };
-    hello = mkComponent "hello" { };
-    look = mkComponent "look" { };
-    menu = mkComponent "menu" { };
+    hello = mkComponent "hello" {};
+    look = mkComponent "look" {};
+    menu = mkComponent "menu" {};
     # panel: ./nwg-panel/hm.nix
-    wrapper = mkComponent "wrapper" { };
+    wrapper = mkComponent "wrapper" {};
   };
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
@@ -88,7 +83,7 @@ in
       }
       {
         kdn.hw.disks.persist."usr/config".files =
-          [ ]
+          []
           # nwg-drawer pins
           ++ (lib.lists.optional (cfg.drawer.enable) ".cache/nwg-pin-cache");
       }

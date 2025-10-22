@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.programs.ssh-client;
-in
-{
+in {
   options.kdn.programs.ssh-client = {
     enable = lib.mkEnableOption "SSH client configuration";
   };

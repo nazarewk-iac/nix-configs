@@ -3,15 +3,13 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.networking.netbird;
   activeCfgs = lib.pipe config.kdn.networking.netbird.clients [
     builtins.attrValues
     (builtins.filter (nbCfg: nbCfg.enable))
   ];
-in
-{
+in {
   options.kdn.networking.netbird = {
     useOwnPackages = lib.mkOption {
       type = lib.types.bool;
@@ -19,16 +17,16 @@ in
     };
     admins = lib.mkOption {
       type = with lib.types; listOf str;
-      default = [ ];
+      default = [];
     };
 
     default.users = lib.mkOption {
       type = with lib.types; listOf str;
-      default = [ ];
+      default = [];
     };
     default.environment = lib.mkOption {
       type = with lib.types; attrsOf str;
-      default = { };
+      default = {};
     };
     default.enable = lib.mkOption {
       type = with lib.types; bool;
@@ -38,11 +36,9 @@ in
   options.kdn.networking.netbird.clients = lib.mkOption {
     type = lib.types.attrsOf (
       lib.types.submodule (
-        { name, ... }@nbArgs:
-        let
+        {name, ...} @ nbArgs: let
           nbCfg = nbArgs.config;
-        in
-        {
+        in {
           options = {
             enable = lib.mkOption {
               type = with lib.types; bool;
@@ -75,11 +71,12 @@ in
             };
             secrets = lib.mkOption {
               readOnly = true;
-              default =
-                let
-                  secrets = config.kdn.security.secrets.sops.secrets.default.netbird;
-                in
-                if secrets ? "${nbCfg.secretKey}" then secrets."${nbCfg.secretKey}" else null;
+              default = let
+                secrets = config.kdn.security.secrets.sops.secrets.default.netbird;
+              in
+                if secrets ? "${nbCfg.secretKey}"
+                then secrets."${nbCfg.secretKey}"
+                else null;
             };
 
             idx = lib.mkOption {
@@ -89,14 +86,12 @@ in
             port = lib.mkOption {
               type = with lib.types; port;
               # 0 for picking a random available port on v0.50.2+
-              default =
-                let
-                  version = config.services.netbird.package.version;
-                in
-                if lib.strings.hasPrefix "0." version && lib.strings.versionOlder version "0.50.2" then
-                  51820 - nbCfg.idx
-                else
-                  0;
+              default = let
+                version = config.services.netbird.package.version;
+              in
+                if lib.strings.hasPrefix "0." version && lib.strings.versionOlder version "0.50.2"
+                then 51820 - nbCfg.idx
+                else 0;
             };
 
             localAddress = lib.mkOption {
@@ -105,8 +100,7 @@ in
             };
 
             type = lib.mkOption {
-              type =
-                with lib.types;
+              type = with lib.types;
                 enum [
                   "ephemeral"
                   "permanent"
@@ -117,8 +111,7 @@ in
             users = lib.mkOption {
               type = with lib.types; listOf str;
               default = cfg.default.users;
-              apply =
-                users:
+              apply = users:
                 lib.pipe users [
                   (u: u ++ cfg.admins)
                   (builtins.sort builtins.lessThan)
@@ -127,7 +120,7 @@ in
             };
             environment = lib.mkOption {
               type = with lib.types; attrsOf str;
-              default = { };
+              default = {};
             };
 
             systemd.enable = lib.mkOption {
@@ -145,7 +138,7 @@ in
     );
   };
 
-  config = lib.mkIf (config.kdn.networking.netbird.clients != { }) (
+  config = lib.mkIf (config.kdn.networking.netbird.clients != {}) (
     lib.mkMerge [
       (lib.mkIf cfg.useOwnPackages {
         # inlined packages
@@ -162,15 +155,13 @@ in
           wireguard-tools
         ];
 
-        systemd.targets.netbird =
-          let
-            services = builtins.map (nbCfg: "${nbCfg.serviceName}.service") activeCfgs;
-          in
-          {
-            wants = services;
-            after = services;
-            unitConfig.PropagatesStopTo = services;
-          };
+        systemd.targets.netbird = let
+          services = builtins.map (nbCfg: "${nbCfg.serviceName}.service") activeCfgs;
+        in {
+          wants = services;
+          after = services;
+          unitConfig.PropagatesStopTo = services;
+        };
       }
       {
         services.netbird.clients = lib.pipe activeCfgs [
@@ -196,7 +187,7 @@ in
               linkConfig = {
                 ActivationPolicy = "manual";
               };
-              dns = [ nbCfg.localAddress ];
+              dns = [nbCfg.localAddress];
               domains = lib.mkIf (nbCfg.resolvesDomains != null) nbCfg.resolvesDomains;
               routingPolicyRules = [
                 {
@@ -227,7 +218,7 @@ in
         ];
 
         users.groups = lib.pipe activeCfgs [
-          (builtins.map (nbCfg: lib.attrsets.nameValuePair nbCfg.groupName { members = nbCfg.users; }))
+          (builtins.map (nbCfg: lib.attrsets.nameValuePair nbCfg.groupName {members = nbCfg.users;}))
           builtins.listToAttrs
         ];
       }
@@ -238,7 +229,7 @@ in
             name = nbCfg.name;
             value = lib.mkIf (nbCfg.secrets != null && nbCfg.secrets ? "${nbCfg.type}".setup-key) {
               login.enable = true;
-              login.systemdDependencies = [ "kdn-secrets.target" ];
+              login.systemdDependencies = ["kdn-secrets.target"];
               login.setupKeyFile = nbCfg.secrets."${nbCfg.type}".setup-key.path;
             };
           }))
@@ -250,7 +241,7 @@ in
             value = lib.mkIf (nbCfg.secrets != null) (
               lib.mkMerge [
                 (lib.mkIf (nbCfg.secrets ? env) {
-                  serviceConfig.LoadCredential = [ "env:${nbCfg.secrets.env.path}" ];
+                  serviceConfig.LoadCredential = ["env:${nbCfg.secrets.env.path}"];
                   serviceConfig.EnvironmentFile = "-%d/env";
                 })
               ]
@@ -260,11 +251,11 @@ in
         ];
       })
       /*
-        TODO: instance-switcher script:
-          1. confirm whether it's currently active
-          2. turn off all instances (`netbird.target`?)
-          3. start the selected instance
-          4. add a second "proxy" CLI `netbird` to determine which instance is active and run against it?
+      TODO: instance-switcher script:
+        1. confirm whether it's currently active
+        2. turn off all instances (`netbird.target`?)
+        3. start the selected instance
+        4. add a second "proxy" CLI `netbird` to determine which instance is active and run against it?
       */
     ]
   );

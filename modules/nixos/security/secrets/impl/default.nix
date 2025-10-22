@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.security.secrets;
-in
-{
+in {
   options.kdn.security.secrets = {
     package.original = lib.mkOption {
       type = with lib.types; package;

@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.development.db;
-in
-{
+in {
   options.kdn.development.db = {
     enable = lib.mkEnableOption "SQL development and access";
   };

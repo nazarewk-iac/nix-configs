@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.development.ansible;
-in
-{
+in {
   options.kdn.development.ansible = {
     enable = lib.mkEnableOption "Ansible development suite";
   };

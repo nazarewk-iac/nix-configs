@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.development.web;
-in
-{
+in {
   options.kdn.development.web = {
     enable = lib.mkEnableOption "web development";
   };

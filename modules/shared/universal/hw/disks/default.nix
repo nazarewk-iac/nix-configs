@@ -6,13 +6,11 @@
   options,
   utils,
   ...
-}:
-let
+}: let
   cfg = config.kdn.hw.disks;
 
   deviceType = lib.types.submodule (
-    { name, ... }@disk:
-    {
+    {name, ...} @ disk: {
       options.type = lib.mkOption {
         type = lib.types.enum [
           "gpt"
@@ -24,37 +22,34 @@ let
         type = lib.types.path;
       };
       options.disko = lib.mkOption {
-        default = { };
+        default = {};
       };
       options.partitions = lib.mkOption {
-        default = { };
+        default = {};
         type = lib.types.attrsOf (
           lib.types.submodule (
-            { name, ... }@part:
-            {
+            {name, ...} @ part: {
               options.num = lib.mkOption {
                 type = lib.types.ints.between 1 128;
               };
               options.path = lib.mkOption {
                 internal = true;
                 type = lib.types.path;
-                default =
-                  let
-                    path = disk.config.path;
-                    partNum = builtins.toString part.config.num;
-                  in
-                  if lib.strings.hasPrefix "/dev/disk/" path then
-                    "${path}-part${partNum}"
-                  else if (builtins.match "/dev/[^/]+" path) != null then
-                    "${path}${partNum}"
-                  else
-                    builtins.throw "Don't know how to generate partition number for disk ${path}";
+                default = let
+                  path = disk.config.path;
+                  partNum = builtins.toString part.config.num;
+                in
+                  if lib.strings.hasPrefix "/dev/disk/" path
+                  then "${path}-part${partNum}"
+                  else if (builtins.match "/dev/[^/]+" path) != null
+                  then "${path}${partNum}"
+                  else builtins.throw "Don't know how to generate partition number for disk ${path}";
               };
               options.size = lib.mkOption {
                 type = lib.types.ints.positive;
               };
               options.disko = lib.mkOption {
-                default = { };
+                default = {};
               };
             }
           )
@@ -68,8 +63,7 @@ let
       name,
       config,
       ...
-    }@partSel:
-    {
+    } @ partSel: {
       options.deviceKey = lib.mkOption {
         type = lib.types.str;
       };
@@ -80,42 +74,38 @@ let
       options.device = lib.mkOption {
         type = deviceType;
         internal = true;
-        default =
-          let
-            key = partSel.config.deviceKey;
-          in
+        default = let
+          key = partSel.config.deviceKey;
+        in
           cfg.devices."${key}";
       };
       options.partition = lib.mkOption {
         type = with lib.types; anything;
-        default =
-          with partSel.config;
-          if partitionKey == null then { } else device.partitions."${partitionKey}";
+        default = with partSel.config;
+          if partitionKey == null
+          then {}
+          else device.partitions."${partitionKey}";
       };
       options.path = lib.mkOption {
         internal = true;
         type = lib.types.path;
         default =
-          if partSel.config.partition == { } then
-            partSel.config.device.path
-          else
-            partSel.config.partition.path;
+          if partSel.config.partition == {}
+          then partSel.config.device.path
+          else partSel.config.partition.path;
       };
     }
   );
-in
-{
+in {
   options.kdn.hw.disks = {
     enable = lib.mkOption {
       description = "enable persistence@ZFS@LUKS-volumes with detached headers and separate /boot";
       type = lib.types.bool;
       default = false;
-      apply =
-        value:
+      apply = value:
         assert lib.assertMsg (!(value && config.kdn.fs.disko.luks-zfs.enable)) ''
           You must choose only one of: `kdn.hw.disks.enable` or `kdn.fs.disko.luks-zfs.enable`, not both!
-        '';
-        value;
+        ''; value;
     };
 
     nixBuildDir.type = lib.mkOption {
@@ -132,11 +122,10 @@ in
     };
 
     users = lib.mkOption {
-      default = { };
+      default = {};
       type = lib.types.attrsOf (
         lib.types.submodule (
-          { name, ... }@userArgs:
-          {
+          {name, ...} @ userArgs: {
             options.homeLocation = lib.mkOption {
               type = lib.types.enum (builtins.attrNames cfg.base);
               default = cfg.userDefaults.homeLocation;
@@ -204,14 +193,13 @@ in
 
     devices = lib.mkOption {
       type = lib.types.attrsOf deviceType;
-      default = { };
+      default = {};
     };
     luks.volumes = lib.mkOption {
-      default = { };
+      default = {};
       type = lib.types.attrsOf (
         lib.types.submodule (
-          { name, ... }@luksVol:
-          {
+          {name, ...} @ luksVol: {
             options.target = lib.mkOption {
               type = deviceSelectorType;
             };
@@ -224,8 +212,8 @@ in
             options.keyFile = lib.mkOption {
               type = with lib.types; nullOr str;
               /*
-                configuring disko's `settings.keyFile` puts the keyFile in the systemd service
-                 preventing it from working with TPM2/YubiKey etc.
+              configuring disko's `settings.keyFile` puts the keyFile in the systemd service
+               preventing it from working with TPM2/YubiKey etc.
               */
               default = "/tmp/${luksVol.name}.key";
             };
@@ -240,7 +228,7 @@ in
               default = "${luksVol.name}-crypted";
             };
             options.disko = lib.mkOption {
-              default = { };
+              default = {};
             };
             options.zpool.name = lib.mkOption {
               type = with lib.types; nullOr str;
@@ -257,13 +245,12 @@ in
       );
     };
     zpools = lib.mkOption {
-      default = { };
+      default = {};
       type = lib.types.attrsOf (
         lib.types.submodule (
-          { name, ... }@zpool:
-          {
+          {name, ...} @ zpool: {
             options.disko = lib.mkOption {
-              default = { };
+              default = {};
             };
             options.import.timeout = lib.mkOption {
               type = with lib.types; int;
@@ -271,7 +258,7 @@ in
             };
             options.cryptsetup.requires = lib.mkOption {
               type = with lib.types; listOf str;
-              default = [ ];
+              default = [];
             };
             options.cryptsetup.names = lib.mkOption {
               type = with lib.types; listOf str;
@@ -295,65 +282,63 @@ in
       );
     };
     persist = lib.mkOption {
-      default = { };
+      default = {};
       type = lib.types.attrsOf (
         lib.types.submodule {
           options.directories = lib.mkOption {
             type = lib.types.listOf (
               lib.types.either lib.types.str (
-                lib.types.submodule { freeformType = (pkgs.formats.json { }).type; }
+                lib.types.submodule {freeformType = (pkgs.formats.json {}).type;}
               )
             );
-            default = [ ];
+            default = [];
           };
           options.files = lib.mkOption {
             type = lib.types.listOf (
               lib.types.either lib.types.str (
-                lib.types.submodule { freeformType = (pkgs.formats.json { }).type; }
+                lib.types.submodule {freeformType = (pkgs.formats.json {}).type;}
               )
             );
-            default = [ ];
+            default = [];
           };
           options.users = lib.mkOption {
             type = lib.types.attrsOf (
               lib.types.submodule {
-                freeformType = (pkgs.formats.json { }).type;
+                freeformType = (pkgs.formats.json {}).type;
                 options.directories = lib.mkOption {
                   type = lib.types.listOf (
                     lib.types.either lib.types.str (
-                      lib.types.submodule { freeformType = (pkgs.formats.json { }).type; }
+                      lib.types.submodule {freeformType = (pkgs.formats.json {}).type;}
                     )
                   );
-                  default = [ ];
+                  default = [];
                 };
                 options.files = lib.mkOption {
                   type = lib.types.listOf (
                     lib.types.either lib.types.str (
-                      lib.types.submodule { freeformType = (pkgs.formats.json { }).type; }
+                      lib.types.submodule {freeformType = (pkgs.formats.json {}).type;}
                     )
                   );
-                  default = [ ];
+                  default = [];
                 };
               }
             );
-            default = { };
+            default = {};
           };
         }
       );
     };
     base = lib.mkOption {
-      default = { };
+      default = {};
       type = lib.types.attrsOf (
         lib.types.submodule (
-          { name, ... }@baseArgs:
-          let
+          {name, ...} @ baseArgs: let
             baseCfg = baseArgs.config;
-          in
-          {
+          in {
             options.neededForBoot = lib.mkOption {
               type = with lib.types; listOf path;
-              default = [ ];
-              apply = ls: [ "${baseCfg.mountpoint}" ] ++ ls;
+              default = [];
+              apply = ls: ["${baseCfg.mountpoint}"] ++ ls;
             };
             options.mountpoint = lib.mkOption {
               type = with lib.types; str;
@@ -385,7 +370,7 @@ in
             options.disko = lib.mkOption {
               # this type doesn't work
               #type = lib.types.attrsOf (lib.types.submodule {freeformType = (pkgs.formats.json {}).type;});
-              default = { };
+              default = {};
             };
           }
         )

@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.programs.browsers;
-in
-{
+in {
   options.kdn.programs.browsers = {
     enable = lib.mkEnableOption "`browsers` selector setup";
   };
@@ -17,12 +15,12 @@ in
       {
         kdn.programs.apps.browsers = {
           enable = true;
-          dirs.cache = [ ];
-          dirs.config = [ "software.Browsers" ];
-          dirs.data = [ ];
-          dirs.disposable = [ ];
-          dirs.reproducible = [ ];
-          dirs.state = [ ];
+          dirs.cache = [];
+          dirs.config = ["software.Browsers"];
+          dirs.data = [];
+          dirs.disposable = [];
+          dirs.reproducible = [];
+          dirs.state = [];
         };
       }
     ]

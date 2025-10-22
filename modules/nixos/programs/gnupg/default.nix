@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.programs.gnupg;
-in
-{
+in {
   options.kdn.programs.gnupg = {
     enable = lib.mkEnableOption "GnuPG forwarding to remote systems";
     pinentry = lib.mkOption {
@@ -77,9 +75,9 @@ in
             services.passSecretService.enable = true;
             services.passSecretService.package = pkgs.kdn.pass-secret-service;
             systemd.user.services."dbus-org.freedesktop.secrets" = {
-              aliases = [ "pass-secret-service.service" ];
-              after = [ "graphical-session-pre.target" ];
-              partOf = [ "graphical-session.target" ];
+              aliases = ["pass-secret-service.service"];
+              after = ["graphical-session-pre.target"];
+              partOf = ["graphical-session.target"];
               serviceConfig = {
                 Restart = "on-failure";
                 RestartSec = 1;
@@ -88,12 +86,12 @@ in
             };
 
             services.gnome.gnome-keyring.enable = lib.mkForce false;
-            home-manager.sharedModules = [ { services.gnome-keyring.enable = lib.mkForce false; } ];
+            home-manager.sharedModules = [{services.gnome-keyring.enable = lib.mkForce false;}];
           }
           (lib.mkIf config.kdn.desktop.sway.enable {
             systemd.user.services."dbus-org.freedesktop.secrets" = {
-              requires = [ config.kdn.desktop.sway.systemd.envs.target ];
-              after = [ config.kdn.desktop.sway.systemd.envs.target ];
+              requires = [config.kdn.desktop.sway.systemd.envs.target];
+              after = [config.kdn.desktop.sway.systemd.envs.target];
             };
           })
         ]

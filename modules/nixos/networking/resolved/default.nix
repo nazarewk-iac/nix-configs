@@ -3,16 +3,13 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.networking.resolved;
-in
-{
+in {
   options.kdn.networking.resolved = {
     enable = lib.mkEnableOption "resolved client";
     multicastDNS = lib.mkOption {
-      type =
-        with lib.types;
+      type = with lib.types;
         nullOr (enum [
           "true"
           "false"
@@ -23,8 +20,7 @@ in
     nameservers = lib.mkOption {
       type = lib.types.attrsOf (
         lib.types.submodule (
-          { name, ... }:
-          {
+          {name, ...}: {
             options = {
               enable = lib.mkOption {
                 type = with lib.types; bool;
@@ -50,7 +46,7 @@ in
           }
         )
       );
-      default = { };
+      default = {};
     };
   };
 
@@ -62,31 +58,29 @@ in
         services.resolved.dnssec = lib.mkDefault "false";
         services.resolved.dnsovertls = lib.mkDefault "opportunistic";
         services.resolved.llmnr = lib.mkDefault "true";
-        services.resolved.extraConfig =
-          let
-            systemdDNS = lib.pipe cfg.nameservers [
-              builtins.attrValues
-              (builtins.filter (nsCfg: nsCfg.enable))
-              (builtins.map (
-                nsCfg:
+        services.resolved.extraConfig = let
+          systemdDNS = lib.pipe cfg.nameservers [
+            builtins.attrValues
+            (builtins.filter (nsCfg: nsCfg.enable))
+            (builtins.map (
+              nsCfg:
                 builtins.concatStringsSep "" [
                   nsCfg.addr
                   ":${nsCfg.port}"
                   (lib.strings.optionalString (nsCfg.interface != null) "%${nsCfg.interface}")
                   (lib.strings.optionalString (nsCfg.sni != null) "#${nsCfg.sni}")
                 ]
-              ))
-              builtins.concatLists
-            ];
-          in
-          ''
-            ${lib.strings.optionalString (cfg.multicastDNS != null) ''
-              MulticastDNS=${cfg.multicastDNS}
-            ''}
-            ${lib.strings.optionalString (systemdDNS != [ ]) ''
-              DNS=${systemdDNS}
-            ''}
-          '';
+            ))
+            builtins.concatLists
+          ];
+        in ''
+          ${lib.strings.optionalString (cfg.multicastDNS != null) ''
+            MulticastDNS=${cfg.multicastDNS}
+          ''}
+          ${lib.strings.optionalString (systemdDNS != []) ''
+            DNS=${systemdDNS}
+          ''}
+        '';
       }
     ]
   );

@@ -3,12 +3,10 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.locale;
-in
-{
+in {
   config = lib.mkMerge [
-    { home-manager.sharedModules = [ { kdn.locale = builtins.mapAttrs (name: lib.mkDefault) cfg; } ]; }
+    {home-manager.sharedModules = [{kdn.locale = builtins.mapAttrs (name: lib.mkDefault) cfg;}];}
   ];
 }

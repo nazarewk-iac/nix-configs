@@ -4,12 +4,10 @@
   luksUUID ? "c7f78f0a-9da2-408a-bd89-9688b8440add",
   rootDevice ? "/dev/disk/by-id/ata-SK_hynix_SC311_SATA_256GB_MS83N489310403C1D",
   ...
-}:
-let
+}: let
   poolName = "${hostname}-main";
   luksKeyFile = "/run/media/kdn/df4ba496-1af2-45d7-ae05-0186c608aeb6/obler/luks-keyfile.bin";
-in
-{
+in {
   disko.devices = {
     disk.root = {
       type = "disk";
@@ -34,8 +32,8 @@ in
         content = {
           type = "luks";
           name = "${poolName}-crypted";
-          settings.crypttabExtraOpts = [ "fido2-device=auto" ];
-          additionalKeyFiles = [ luksKeyFile ];
+          settings.crypttabExtraOpts = ["fido2-device=auto"];
+          additionalKeyFiles = [luksKeyFile];
           extraFormatArgs = [
             "--uuid=${luksUUID}"
           ];
@@ -68,63 +66,68 @@ in
         "feature@large_dnode" = "enabled"; # required by dnodesize!=legacy
       };
 
-      datasets =
-        let
-          filesystemPrefix = "fs";
-          snapshotsOn = {
-            options."com.sun:auto-snapshot" = "true";
-          };
-          snapshotsOff = {
-            options."com.sun:auto-snapshot" = "false";
-          };
-          mounts = {
-            "/" = { };
-            "/etc" = { } // snapshotsOn;
-            "/home" = { } // snapshotsOn;
-            "/home/kdn" = { };
-            "/home/kdn/.cache" = { } // snapshotsOff;
-            "/home/sn" = { };
-            "/home/sn/.cache" = { } // snapshotsOff;
-            "/home/sn/.config" = { };
-            "/home/sn/.local" = { };
-            "/home/sn/Downloads" = { } // snapshotsOff;
-            "/nix" = { };
-            "/nix/store" = { };
-            "/nix/var" = { };
-            "/usr" = { };
-            "/var" = { } // snapshotsOn;
-            "/var/lib" = { };
-            "/var/lib/nixos" = { };
-            "/var/log" = { } // snapshotsOff;
-            "/var/log/journal" = { };
-            "/var/spool" = { };
-          };
-        in
+      datasets = let
+        filesystemPrefix = "fs";
+        snapshotsOn = {
+          options."com.sun:auto-snapshot" = "true";
+        };
+        snapshotsOff = {
+          options."com.sun:auto-snapshot" = "false";
+        };
+        mounts = {
+          "/" = {};
+          "/etc" = {} // snapshotsOn;
+          "/home" = {} // snapshotsOn;
+          "/home/kdn" = {};
+          "/home/kdn/.cache" = {} // snapshotsOff;
+          "/home/sn" = {};
+          "/home/sn/.cache" = {} // snapshotsOff;
+          "/home/sn/.config" = {};
+          "/home/sn/.local" = {};
+          "/home/sn/Downloads" = {} // snapshotsOff;
+          "/nix" = {};
+          "/nix/store" = {};
+          "/nix/var" = {};
+          "/usr" = {};
+          "/var" = {} // snapshotsOn;
+          "/var/lib" = {};
+          "/var/lib/nixos" = {};
+          "/var/log" = {} // snapshotsOff;
+          "/var/log/journal" = {};
+          "/var/spool" = {};
+        };
+      in
         lib.trivial.pipe mounts [
           (lib.attrsets.mapAttrs' (
-            mp: cfg:
-            let
+            mp: cfg: let
               mountpoint = cfg.options.mountpoint or cfg.mountpoint or mp;
-            in
-            {
+            in {
               name = lib.trivial.pipe mp [
                 (p: "${cfg.prefix or filesystemPrefix}${p}")
                 (lib.strings.removeSuffix "/")
               ];
-              value = {
-                type = "zfs_fs";
-                mountpoint = if mountpoint != "none" then mountpoint else null;
+              value =
+                {
+                  type = "zfs_fs";
+                  mountpoint =
+                    if mountpoint != "none"
+                    then mountpoint
+                    else null;
 
-                # note: disko handles non-legacy mountpoints with `-o zfsutil` mount option
-                options = {
-                  mountpoint = if mountpoint != null then mountpoint else "none";
+                  # note: disko handles non-legacy mountpoints with `-o zfsutil` mount option
+                  options =
+                    {
+                      mountpoint =
+                        if mountpoint != null
+                        then mountpoint
+                        else "none";
+                    }
+                    // cfg.options or {};
                 }
-                // cfg.options or { };
-              }
-              // (builtins.removeAttrs cfg [
-                "prefix"
-                "options"
-              ]);
+                // (builtins.removeAttrs cfg [
+                  "prefix"
+                  "options"
+                ]);
             }
           ))
         ];

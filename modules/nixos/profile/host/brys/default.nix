@@ -4,12 +4,10 @@
   lib,
   kdn,
   ...
-}:
-let
+}: let
   cfg = config.kdn.profile.host.brys;
   hostname = config.kdn.hostName;
-in
-{
+in {
   options.kdn.profile.host.brys = {
     enable = lib.mkEnableOption "enable brys host profile";
   };
@@ -51,20 +49,20 @@ in
         };
       }
       /*
-           {
-          # automated unlock using Clevis through Tang server
-          boot.initrd.network.flushBeforeStage2 = true;
-          networking.interfaces.enp5s0.useDHCP = true;
-          networking.interfaces.enp6s0.useDHCP = true;
+         {
+        # automated unlock using Clevis through Tang server
+        boot.initrd.network.flushBeforeStage2 = true;
+        networking.interfaces.enp5s0.useDHCP = true;
+        networking.interfaces.enp6s0.useDHCP = true;
 
-          boot.initrd.network.enable = true; # this is systemd-networkd all he way through anyway
-          boot.initrd.systemd.network.wait-online.enable = true;
-          boot.initrd.systemd.network.wait-online.anyInterface = true;
-          boot.initrd.systemd.network.wait-online.timeout = 15;
+        boot.initrd.network.enable = true; # this is systemd-networkd all he way through anyway
+        boot.initrd.systemd.network.wait-online.enable = true;
+        boot.initrd.systemd.network.wait-online.anyInterface = true;
+        boot.initrd.systemd.network.wait-online.timeout = 15;
 
-          #boot.initrd.clevis.useTang = true;
-          #boot.initrd.clevis.devices."brys-main-crypted".secretFile = ./brys-main-crypted.jwe;
-        }
+        #boot.initrd.clevis.useTang = true;
+        #boot.initrd.clevis.devices."brys-main-crypted".secretFile = ./brys-main-crypted.jwe;
+      }
       */
       {
         # TODO: those are unlocked automatically using TPM2, switch to etra (or k8s cluster) backed Clevis+Tang unlock
@@ -108,12 +106,11 @@ in
           vlan.drek.name = "drek";
           vlan.drek.iface = vlan.drek.name;
           vlan.drek.id = 3547;
-        in
-        {
+        in {
           /*
-            Sets up:
-            - bridge for VMs and local 2.5GbE network cards
-            - `pic` VLAN through the bridge
+          Sets up:
+          - bridge for VMs and local 2.5GbE network cards
+          - `pic` VLAN through the bridge
           */
           systemd.network.enable = true;
           networking.useNetworkd = true;
@@ -127,13 +124,13 @@ in
             Name = uplink.iface;
           };
           systemd.network.networks."40-ethernet-2.5g" = {
-            matchConfig.Name = [ "enp6s0" ];
+            matchConfig.Name = ["enp6s0"];
             networkConfig.Bridge = uplink.iface;
             linkConfig.RequiredForOnline = "enslaved";
           };
           systemd.network.networks."50-${uplinkName}" = {
             matchConfig.Name = uplink.iface;
-            bridgeConfig = { };
+            bridgeConfig = {};
             linkConfig.RequiredForOnline = "carrier";
             networkConfig = {
               VLAN = [
@@ -156,104 +153,104 @@ in
           };
 
           /*
-            systemd.network.netdevs."50-${vlan.pic.name}" = {
-              netdevConfig.Kind = "vlan";
-              netdevConfig.Name = vlan.pic.iface;
-              vlanConfig.Id = vlan.pic.id;
-            };
-            systemd.network.networks."50-${vlan.pic.name}" = {
-              matchConfig.Name = vlan.pic.iface;
-              networkConfig = {
-                DHCP = true;
-                IPv6AcceptRA = true;
-                LinkLocalAddressing = "ipv6";
+          systemd.network.netdevs."50-${vlan.pic.name}" = {
+            netdevConfig.Kind = "vlan";
+            netdevConfig.Name = vlan.pic.iface;
+            vlanConfig.Id = vlan.pic.id;
+          };
+          systemd.network.networks."50-${vlan.pic.name}" = {
+            matchConfig.Name = vlan.pic.iface;
+            networkConfig = {
+              DHCP = true;
+              IPv6AcceptRA = true;
+              LinkLocalAddressing = "ipv6";
 
-                IPv6PrivacyExtensions = true;
-                IPv6LinkLocalAddressGenerationMode = "stable-privacy";
-              };
-              dhcpV4Config.RouteMetric = 1000;
-              dhcpV6Config.RouteMetric = 1000;
+              IPv6PrivacyExtensions = true;
+              IPv6LinkLocalAddressGenerationMode = "stable-privacy";
             };
+            dhcpV4Config.RouteMetric = 1000;
+            dhcpV6Config.RouteMetric = 1000;
+          };
 
-            systemd.network.netdevs."50-${vlan.drek.name}" = {
-              netdevConfig.Kind = "vlan";
-              netdevConfig.Name = vlan.drek.iface;
-              vlanConfig.Id = vlan.drek.id;
-            };
-            systemd.network.networks."50-${vlan.drek.name}" = {
-              matchConfig.Name = vlan.drek.iface;
-              networkConfig = {
-                DHCP = true;
-                IPv6AcceptRA = true;
-                LinkLocalAddressing = "ipv6";
+          systemd.network.netdevs."50-${vlan.drek.name}" = {
+            netdevConfig.Kind = "vlan";
+            netdevConfig.Name = vlan.drek.iface;
+            vlanConfig.Id = vlan.drek.id;
+          };
+          systemd.network.networks."50-${vlan.drek.name}" = {
+            matchConfig.Name = vlan.drek.iface;
+            networkConfig = {
+              DHCP = true;
+              IPv6AcceptRA = true;
+              LinkLocalAddressing = "ipv6";
 
-                IPv6PrivacyExtensions = true;
-                IPv6LinkLocalAddressGenerationMode = "stable-privacy";
-              };
-              dhcpV4Config.RouteMetric = 1100;
-              dhcpV6Config.RouteMetric = 1100;
+              IPv6PrivacyExtensions = true;
+              IPv6LinkLocalAddressGenerationMode = "stable-privacy";
             };
+            dhcpV4Config.RouteMetric = 1100;
+            dhcpV6Config.RouteMetric = 1100;
+          };
           */
         }
       )
       /*
-        (let
-          iface = "vm-nbt-1";
-          microvmPersistNames = ["microvm"] ++ builtins.attrNames config.kdn.hw.disks.base;
-        in {
-          systemd.network.networks."40-ethernet-2.5g" = {
-            matchConfig.Name = [iface];
-          };
+      (let
+        iface = "vm-nbt-1";
+        microvmPersistNames = ["microvm"] ++ builtins.attrNames config.kdn.hw.disks.base;
+      in {
+        systemd.network.networks."40-ethernet-2.5g" = {
+          matchConfig.Name = [iface];
+        };
 
-          microvm.vms.nbt-1 = {
-            autostart = true;
-            restartIfChanged = true;
-            specialArgs =
-              kdn.configure {
-                moduleType = "nixos";
-              } {
-                kdn.features.microvm-guest = true;
-              };
-            config = {
-              imports = [
-                kdn.self.nixosModules.default
-              ];
-              config = lib.mkMerge [
-                {
-                  kdn.hostName = "brys-uvm-nbt-1";
-                  system.stateVersion = "25.05";
-                  home-manager.sharedModules = [{home.stateVersion = "25.05";}];
-                  networking.hostId = "fb6ff1fa"; # cut -c-8 </proc/sys/kernel/random/uuid
-                  kdn.security.secrets.enable = false;
-
-                  kdn.networking.netbird.clients.priv.enable = false;
-                }
-                {
-                  microvm.interfaces = [
-                    {
-                      type = "tap";
-                      id = iface;
-                      mac = "42:e2:ce:6a:ce:c1";
-                    }
-                  ];
-                  systemd.network.enable = true;
-
-                  systemd.network.networks."20-lan" = {
-                    matchConfig.Type = "ether";
-                    networkConfig = {
-                      DHCP = true;
-                      IPv6AcceptRA = true;
-                      LinkLocalAddressing = "ipv6";
-
-                      IPv6PrivacyExtensions = true;
-                      IPv6LinkLocalAddressGenerationMode = "stable-privacy";
-                    };
-                  };
-                }
-              ];
+        microvm.vms.nbt-1 = {
+          autostart = true;
+          restartIfChanged = true;
+          specialArgs =
+            kdn.configure {
+              moduleType = "nixos";
+            } {
+              kdn.features.microvm-guest = true;
             };
+          config = {
+            imports = [
+              kdn.self.nixosModules.default
+            ];
+            config = lib.mkMerge [
+              {
+                kdn.hostName = "brys-uvm-nbt-1";
+                system.stateVersion = "25.05";
+                home-manager.sharedModules = [{home.stateVersion = "25.05";}];
+                networking.hostId = "fb6ff1fa"; # cut -c-8 </proc/sys/kernel/random/uuid
+                kdn.security.secrets.enable = false;
+
+                kdn.networking.netbird.clients.priv.enable = false;
+              }
+              {
+                microvm.interfaces = [
+                  {
+                    type = "tap";
+                    id = iface;
+                    mac = "42:e2:ce:6a:ce:c1";
+                  }
+                ];
+                systemd.network.enable = true;
+
+                systemd.network.networks."20-lan" = {
+                  matchConfig.Type = "ether";
+                  networkConfig = {
+                    DHCP = true;
+                    IPv6AcceptRA = true;
+                    LinkLocalAddressing = "ipv6";
+
+                    IPv6PrivacyExtensions = true;
+                    IPv6LinkLocalAddressGenerationMode = "stable-privacy";
+                  };
+                };
+              }
+            ];
           };
-        })
+        };
+      })
       */
       {
         kdn.services.zammad.enable = false;
@@ -266,7 +263,7 @@ in
         kdn.hw.disks.nixBuildDir.tmpfs.size = "64G";
       }
       {
-        networking.hosts."10.116.89.68" = [ "gipe" ];
+        networking.hosts."10.116.89.68" = ["gipe"];
         networking.networkmanager.ensureProfiles.profiles.gipe = {
           connection = {
             id = "gipe";

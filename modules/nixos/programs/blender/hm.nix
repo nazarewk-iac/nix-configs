@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.programs.blender;
-in
-{
+in {
   options.kdn.programs.blender = {
     enable = lib.mkEnableOption "blender setup";
   };
@@ -17,12 +15,12 @@ in
       {
         kdn.programs.apps.blender = {
           enable = true;
-          dirs.cache = [ "blender" ];
-          dirs.config = [ "blender" ];
-          dirs.data = [ ];
-          dirs.disposable = [ ];
-          dirs.reproducible = [ ];
-          dirs.state = [ ];
+          dirs.cache = ["blender"];
+          dirs.config = ["blender"];
+          dirs.data = [];
+          dirs.disposable = [];
+          dirs.reproducible = [];
+          dirs.state = [];
         };
       }
     ]

@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.desktop.base;
-in
-{
+in {
   options.kdn.desktop.base = {
     enable = lib.mkOption {
       type = lib.types.bool;
@@ -18,7 +16,7 @@ in
 
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
-      { home-manager.sharedModules = [ { kdn.desktop.base.enable = cfg.enable; } ]; }
+      {home-manager.sharedModules = [{kdn.desktop.base.enable = cfg.enable;}];}
       {
         services.displayManager.sddm.enable = true;
         # default maximum user is 30000, but I'm assigning higher than that
@@ -31,8 +29,7 @@ in
       }
       {
         fonts.fontDir.enable = true;
-        fonts.packages =
-          with pkgs;
+        fonts.packages = with pkgs;
           [
             cantarell-fonts
             font-awesome
@@ -51,8 +48,7 @@ in
         gtk.iconCache.enable = true;
         home-manager.sharedModules = [
           (
-            { config, ... }:
-            {
+            {config, ...}: {
               gtk.gtk2.force = true;
               xdg.configFile."fontconfig/conf.d/10-hm-fonts.conf".force = true;
               xdg.configFile."gtk-3.0/gtk.css".force = true;
@@ -79,8 +75,7 @@ in
         xdg.icons.enable = true;
         xdg.mime.enable = true;
 
-        environment.systemPackages =
-          with pkgs;
+        environment.systemPackages = with pkgs;
           [
             xorg.xeyes
             xorg.xhost

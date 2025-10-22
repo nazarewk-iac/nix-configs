@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.headless.base;
-in
-{
+in {
   options.kdn.headless.base = {
     enable = lib.mkEnableOption "basic headless system configuration";
     debugPolkit = lib.mkEnableOption "polkit debugging";
@@ -15,7 +13,7 @@ in
 
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
-      { home-manager.sharedModules = [ { kdn.headless.base.enable = true; } ]; }
+      {home-manager.sharedModules = [{kdn.headless.base.enable = true;}];}
       {
         boot.kernelParams = [
           "plymouth.enable=0" # disable boot splash screen
@@ -74,21 +72,19 @@ in
 
         kdn.toolset.essentials.enable = true;
 
-        boot.kernel.sysctl =
-          let
-            mb = 1024 * 1024;
-          in
-          {
-            # https://wiki.archlinux.org/title/Sysctl#Virtual_memory
-            "vm.dirty_background_bytes" = 4 * mb;
-            "vm.dirty_bytes" = 4 * mb;
+        boot.kernel.sysctl = let
+          mb = 1024 * 1024;
+        in {
+          # https://wiki.archlinux.org/title/Sysctl#Virtual_memory
+          "vm.dirty_background_bytes" = 4 * mb;
+          "vm.dirty_bytes" = 4 * mb;
 
-            "vm.vfs_cache_pressure" = 50;
+          "vm.vfs_cache_pressure" = 50;
 
-            "fs.inotify.max_user_watches" = 1048576; # default:  8192
-            "fs.inotify.max_user_instances" = 1024; # default:   128
-            "fs.inotify.max_queued_events" = 32768; # default: 16384
-          };
+          "fs.inotify.max_user_watches" = 1048576; # default:  8192
+          "fs.inotify.max_user_instances" = 1024; # default:   128
+          "fs.inotify.max_queued_events" = 32768; # default: 16384
+        };
 
         # `dbus` seems to be bugged when combined with DynamicUser services
         services.dbus.implementation = "broker";
@@ -106,8 +102,7 @@ in
             Defaults  env_keep += KDN_ZELLIJ_SKIP
             Defaults  env_keep += TERMINAL_EMULATOR
           '';
-        in
-        {
+        in {
           security.sudo.extraConfig = sudoCfg;
           security.sudo-rs.extraConfig = sudoCfg;
         }

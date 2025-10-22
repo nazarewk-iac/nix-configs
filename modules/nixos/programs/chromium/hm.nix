@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.programs.chromium;
-in
-{
+in {
   options.kdn.programs.chromium = {
     enable = lib.mkEnableOption "chromium setup";
   };
@@ -18,12 +16,12 @@ in
         kdn.programs.apps.chromium = {
           enable = true;
           package.original = pkgs.ungoogled-chromium;
-          dirs.cache = [ ];
-          dirs.config = [ "chromium" ];
-          dirs.data = [ ];
-          dirs.disposable = [ ];
-          dirs.reproducible = [ ];
-          dirs.state = [ ];
+          dirs.cache = [];
+          dirs.config = ["chromium"];
+          dirs.data = [];
+          dirs.disposable = [];
+          dirs.reproducible = [];
+          dirs.state = [];
         };
       }
     ]

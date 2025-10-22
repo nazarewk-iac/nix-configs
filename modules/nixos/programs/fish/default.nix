@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.programs.fish;
-in
-{
+in {
   options.kdn.programs.fish = {
     enable = lib.mkEnableOption "fish interactive shell";
   };

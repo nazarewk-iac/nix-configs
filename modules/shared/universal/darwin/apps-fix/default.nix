@@ -1,18 +1,17 @@
 /*
-  based on https://github.com/reckenrode/nixos-configs/blob/ed1afab17fab89c552d943ccdd8cd21f5d5e7873/modules/by-name/co/copy-apps/module.nix
+based on https://github.com/reckenrode/nixos-configs/blob/ed1afab17fab89c552d943ccdd8cd21f5d5e7873/modules/by-name/co/copy-apps/module.nix
 
-  for background see:
-    - https://github.com/nix-community/home-manager/issues/1341#issuecomment-1653434732
-    - https://github.com/YorikSar/dotfiles/commit/d7eccf447a399c15fe987ab02db13f4ef1e1b557
-    - https://github.com/jcszymansk/nixcasks/blob/e1980177fe25e2a2b8108e88cecbfefd92b4a3d2/README.md#limitations
+for background see:
+  - https://github.com/nix-community/home-manager/issues/1341#issuecomment-1653434732
+  - https://github.com/YorikSar/dotfiles/commit/d7eccf447a399c15fe987ab02db13f4ef1e1b557
+  - https://github.com/jcszymansk/nixcasks/blob/e1980177fe25e2a2b8108e88cecbfefd92b4a3d2/README.md#limitations
 */
 {
   lib,
   pkgs,
   config,
   ...
-}:
-{
+}: {
   options.kdn.darwin.apps-fix = {
     enable = lib.mkOption {
       type = with lib.types; bool;

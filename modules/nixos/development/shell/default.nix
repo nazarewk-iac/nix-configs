@@ -3,17 +3,15 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.development.shell;
-in
-{
+in {
   options.kdn.development.shell = {
     enable = lib.mkEnableOption "shell development";
   };
 
   config = lib.mkIf cfg.enable {
-    home-manager.sharedModules = [ { kdn.development.shell.enable = true; } ];
+    home-manager.sharedModules = [{kdn.development.shell.enable = true;}];
     environment.systemPackages = with pkgs; [
       bash
       shellcheck

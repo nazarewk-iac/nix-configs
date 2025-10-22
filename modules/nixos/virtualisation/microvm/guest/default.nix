@@ -4,13 +4,11 @@
   config,
   kdn,
   ...
-}:
-let
+}: let
   cfg = config.kdn.virtualisation.microvm.guest;
 
-  microvmPersistNames = [ "microvm" ] ++ builtins.attrNames config.kdn.hw.disks.base;
-in
-{
+  microvmPersistNames = ["microvm"] ++ builtins.attrNames config.kdn.hw.disks.base;
+in {
   imports = kdn.self.lib.lists.optionals (!kdn.features.microvm-guest) [
     kdn.inputs.microvm.nixosModules.microvm-options
   ];
@@ -24,7 +22,7 @@ in
 
   config = lib.mkMerge [
     # `microvm.guest.enable` defaults to `true`
-    { microvm.guest.enable = cfg.enable; }
+    {microvm.guest.enable = cfg.enable;}
     (lib.mkIf cfg.enable (
       lib.mkMerge [
         {

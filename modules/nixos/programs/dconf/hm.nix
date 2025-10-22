@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.programs.dconf;
-in
-{
+in {
   options.kdn.programs.dconf = {
     enable = lib.mkOption {
       default = false;
@@ -20,12 +18,12 @@ in
         kdn.programs.apps.dconf = {
           enable = true;
           package.install = false;
-          dirs.cache = [ ];
-          dirs.config = [ "dconf" ];
-          dirs.data = [ ];
-          dirs.disposable = [ ];
-          dirs.reproducible = [ ];
-          dirs.state = [ ];
+          dirs.cache = [];
+          dirs.config = ["dconf"];
+          dirs.data = [];
+          dirs.disposable = [];
+          dirs.reproducible = [];
+          dirs.state = [];
         };
       }
     ]

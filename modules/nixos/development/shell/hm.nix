@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.development.shell;
-in
-{
+in {
   options.kdn.development.shell = {
     enable = lib.mkEnableOption "shell development";
   };

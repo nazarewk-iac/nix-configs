@@ -4,15 +4,13 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.virtualisation.containers;
 
   inherit (lib) literalExpression mkOption types;
 
-  toml = pkgs.formats.toml { };
-in
-{
+  toml = pkgs.formats.toml {};
+in {
   options.kdn.virtualisation.containers = {
     enable = mkOption {
       type = types.bool;
@@ -30,7 +28,7 @@ in
 
     containersConf.settings = mkOption {
       type = toml.type;
-      default = { };
+      default = {};
       description = lib.mdDoc "containers.conf configuration";
     };
 
@@ -76,7 +74,7 @@ in
       };
 
       insecure = mkOption {
-        default = [ ];
+        default = [];
         type = types.listOf types.str;
         description = lib.mdDoc ''
           List of insecure repositories.
@@ -84,7 +82,7 @@ in
       };
 
       block = mkOption {
-        default = [ ];
+        default = [];
         type = types.listOf types.str;
         description = lib.mdDoc ''
           List of blocked repositories.
@@ -93,7 +91,7 @@ in
     };
 
     policy = mkOption {
-      default = { };
+      default = {};
       type = types.attrs;
       example = literalExpression ''
         {
@@ -117,16 +115,17 @@ in
     lib.mkMerge [
       {
         kdn = {
-          virtualisation.containers.containersConf.cniPlugins = [ pkgs.cni-plugins ];
+          virtualisation.containers.containersConf.cniPlugins = [pkgs.cni-plugins];
 
           virtualisation.containers.containersConf.settings = {
             network.cni_plugin_dirs = map (p: "${lib.getBin p}/bin") cfg.containersConf.cniPlugins;
-            engine = {
-              init_path = "${pkgs.catatonit}/bin/catatonit";
-            }
-            // lib.optionalAttrs cfg.ociSeccompBpfHook.enable {
-              hooks_dir = [ config.boot.kernelPackages.oci-seccomp-bpf-hook ];
-            };
+            engine =
+              {
+                init_path = "${pkgs.catatonit}/bin/catatonit";
+              }
+              // lib.optionalAttrs cfg.ociSeccompBpfHook.enable {
+                hooks_dir = [config.boot.kernelPackages.oci-seccomp-bpf-hook];
+              };
           };
         };
 
@@ -137,14 +136,13 @@ in
         xdg.configFile."containers/storage.conf".source = toml.generate "storage.conf" cfg.storage.settings;
 
         xdg.configFile."containers/registries.conf".source = toml.generate "registries.conf" {
-          registries = lib.mapAttrs (n: v: { registries = v; }) cfg.registries;
+          registries = lib.mapAttrs (n: v: {registries = v;}) cfg.registries;
         };
 
         xdg.configFile."containers/policy.json".source =
-          if cfg.policy != { } then
-            pkgs.writeText "policy.json" (builtins.toJSON cfg.policy)
-          else
-            "${pkgs.skopeo.policy}/default-policy.json";
+          if cfg.policy != {}
+          then pkgs.writeText "policy.json" (builtins.toJSON cfg.policy)
+          else "${pkgs.skopeo.policy}/default-policy.json";
       }
       {
         kdn.hw.disks.persist."usr/data".directories = [

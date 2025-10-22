@@ -4,12 +4,10 @@
   config,
   kdn,
   ...
-}:
-let
+}: let
   inherit (kdn) self;
   cfg = config.kdn.profile.machine.baseline;
-in
-{
+in {
   options.kdn.profile.machine.baseline = {
     initrd.emergency.rebootTimeout = lib.mkOption {
       type = lib.types.ints.unsigned;
@@ -23,7 +21,7 @@ in
 
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
-      { home-manager.sharedModules = [ { kdn.profile.machine.baseline.enable = true; } ]; }
+      {home-manager.sharedModules = [{kdn.profile.machine.baseline.enable = true;}];}
       (lib.mkIf config.disko.enableConfig {
         # WARNING: without depending on `config.disko.enableConfig` it fails on machines without dedicated `/boot` partition
         fileSystems."/boot".options = [
@@ -33,19 +31,17 @@ in
       })
       (
         let
-          content =
-            let
-              gen = pkgs.writers.writePython3Bin "generate-subuid" { } ''
-                import os
+          content = let
+            gen = pkgs.writers.writePython3Bin "generate-subuid" {} ''
+              import os
 
-                with open(os.environ["out"], "w") as f:
-                    for uid in range(1000, 65536):
-                        f.write(f"{uid}:{uid * 65536}:{65536}\n")
-              '';
-            in
-            pkgs.runCommand "etc-subuid-subgid" { } (lib.getExe gen);
-        in
-        {
+              with open(os.environ["out"], "w") as f:
+                  for uid in range(1000, 65536):
+                      f.write(f"{uid}:{uid * 65536}:{65536}\n")
+            '';
+          in
+            pkgs.runCommand "etc-subuid-subgid" {} (lib.getExe gen);
+        in {
           # WARNING: with userborn, `/etc/sub{u,g}id` is not managed anymore
           services.userborn.enable = true;
           # with userborn, /etc/passwd & group is dynamically generated and will differ between reboots unless persisted
@@ -151,18 +147,17 @@ in
           })
         ];
 
-        environment.shellAliases =
-          let
-            commands = n: prefix: {
-              "${n}" = prefix;
-              "${n}c" = "${prefix} cat";
-              "${n}r" = "${prefix} restart";
-              "${n}s" = "${prefix} status";
-              "${n}uS" = "${prefix} stop";
-              "${n}us" = "${prefix} start";
-              "${n}ur" = "${prefix} restart";
-            };
-          in
+        environment.shellAliases = let
+          commands = n: prefix: {
+            "${n}" = prefix;
+            "${n}c" = "${prefix} cat";
+            "${n}r" = "${prefix} restart";
+            "${n}s" = "${prefix} status";
+            "${n}uS" = "${prefix} stop";
+            "${n}us" = "${prefix} start";
+            "${n}ur" = "${prefix} restart";
+          };
+        in
           {
             sj = "journalctl";
             uj = "journalctl --user";
@@ -216,11 +211,9 @@ in
         kdn.networking.dynamic-hosts.enable = true;
         sops.templates = lib.pipe config.kdn.security.secrets.sops.placeholders.networking.hosts [
           (lib.attrsets.mapAttrsToList (
-            name: text:
-            let
+            name: text: let
               path = "/etc/hosts.d/60-${config.kdn.managed.infix.default}-${name}.hosts";
-            in
-            {
+            in {
               "${path}" = {
                 inherit path;
                 mode = "0644";
@@ -230,23 +223,23 @@ in
           ))
           (
             l:
-            l
-            ++ [
-              {
-                # TODO: render those from "$XDG_CONFIG_DIRS/nix/access-tokens.d/*.tokens" for both users and system-wide?
-                "nix.access-tokens.auto.conf" = {
-                  path = "/etc/nix/nix.access-tokens.auto.conf";
-                  mode = "0444";
-                  content = lib.pipe config.kdn.security.secrets.sops.placeholders.default.nix.access-tokens [
-                    (lib.attrsets.mapAttrsToList (name: value: "${name}=${value}"))
-                    (builtins.concatStringsSep " ")
-                    (value: ''
-                      access-tokens = ${value}
-                    '')
-                  ];
-                };
-              }
-            ]
+              l
+              ++ [
+                {
+                  # TODO: render those from "$XDG_CONFIG_DIRS/nix/access-tokens.d/*.tokens" for both users and system-wide?
+                  "nix.access-tokens.auto.conf" = {
+                    path = "/etc/nix/nix.access-tokens.auto.conf";
+                    mode = "0444";
+                    content = lib.pipe config.kdn.security.secrets.sops.placeholders.default.nix.access-tokens [
+                      (lib.attrsets.mapAttrsToList (name: value: "${name}=${value}"))
+                      (builtins.concatStringsSep " ")
+                      (value: ''
+                        access-tokens = ${value}
+                      '')
+                    ];
+                  };
+                }
+              ]
           )
           lib.mkMerge
         ];
@@ -261,20 +254,18 @@ in
       }
       {
         # ~/dev/github.com/nazarewk-iac/nix-configs/known_hosts.sh
-        programs.ssh.knownHostsFiles = [ ./ssh_known_hosts ];
+        programs.ssh.knownHostsFiles = [./ssh_known_hosts];
       }
       {
         systemd.tmpfiles.rules = lib.trivial.pipe config.users.users [
           lib.attrsets.attrValues
           (builtins.filter (u: u.isNormalUser))
           (builtins.map (
-            user:
-            let
+            user: let
               h = user.home;
               u = builtins.toString (user.uid or user.name);
               g = builtins.toString (user.gid or user.group);
-            in
-            [
+            in [
               # fix user profile directory permissions
               "d /nix/var/nix/profiles/per-user/${user.name} 0750 ${u} ${g} - -"
             ]
@@ -288,22 +279,22 @@ in
         let
           timeout = cfg.initrd.emergency.rebootTimeout;
         in
-        lib.mkIf (timeout > 0) {
-          boot.initrd.systemd.services."emergency" = {
-            overrideStrategy = "asDropin";
-            postStart = ''
-              if ! /bin/systemd-ask-password --timeout=${builtins.toString timeout} \
-                --no-output --emoji=no \
-                "Are you there? Press enter to enter emergency shell."
-              then
-                /bin/systemctl reboot
-              fi
-            '';
-          };
-        }
+          lib.mkIf (timeout > 0) {
+            boot.initrd.systemd.services."emergency" = {
+              overrideStrategy = "asDropin";
+              postStart = ''
+                if ! /bin/systemd-ask-password --timeout=${builtins.toString timeout} \
+                  --no-output --emoji=no \
+                  "Are you there? Press enter to enter emergency shell."
+                then
+                  /bin/systemctl reboot
+                fi
+              '';
+            };
+          }
       )
       {
-        home-manager.sharedModules = [ { kdn.development.git.enable = true; } ];
+        home-manager.sharedModules = [{kdn.development.git.enable = true;}];
       }
       {
         # TODO: checkout the repository while installing?
@@ -331,7 +322,7 @@ in
         kdn.networking.netbird.clients.nbs.idx = 2; # internal NetBird instance
         kdn.networking.netbird.clients.nbs.systemd.enable = true;
         # TODO: this doesn't work
-        kdn.networking.netbird.clients.nbs.resolvesDomains = [ "~netbird.selfhosted" ];
+        kdn.networking.netbird.clients.nbs.resolvesDomains = ["~netbird.selfhosted"];
         kdn.networking.netbird.clients.nbt.idx = 3; # testing client
         kdn.networking.netbird.clients.nbc.idx = 4; # cloud client
         kdn.networking.netbird.clients.t1.idx = 5; # testing client
@@ -381,8 +372,7 @@ in
               notify-send --expire-time=3000 "kdn-anonymize-clipboard" "$( { wl-paste | kdn-anonymize | wl-copy 2>/dev/null ; } 2>&1 )"
             '';
           };
-        in
-        {
+        in {
           kdn.security.secrets.sops.files."anonymization" = {
             keyPrefix = "anonymization";
             sopsFile = "${self}/default.unattended.sops.yaml";
@@ -391,10 +381,11 @@ in
           };
 
           environment.sessionVariables.KDN_ANONYMIZE_DEFAULTS = "/run/configs";
-          environment.systemPackages = [
-            pkgs.kdn.kdn-anonymize
-          ]
-          ++ lib.lists.optional config.kdn.desktop.enable anonymizeClipboard;
+          environment.systemPackages =
+            [
+              pkgs.kdn.kdn-anonymize
+            ]
+            ++ lib.lists.optional config.kdn.desktop.enable anonymizeClipboard;
           home-manager.sharedModules = [
             {
               wayland.windowManager.sway = {

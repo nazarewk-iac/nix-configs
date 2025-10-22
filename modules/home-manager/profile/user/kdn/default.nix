@@ -3,14 +3,12 @@
   pkgs,
   lib,
   ...
-}:
-let
+}: let
   cfg = config.kdn.profile.user.kdn;
 
   nc.rel = "Nextcloud/drag0nius@nc.nazarewk.pw";
   nc.abs = "${config.home.homeDirectory}/${nc.rel}";
-in
-{
+in {
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
@@ -22,38 +20,34 @@ in
         # `pamu2fcfg` generates lines of format `username:entry`
         # For ease of use you can append those pamu2fcfg to ./yubico/u2f_keys.parts directly,
         #  then below code will take care of stripping comments and folding it into a single line per user
-        xdg.configFile."Yubico/u2f_keys".text =
-          let
-            stripComments = lib.filter (
-              line: (builtins.match "\w*" line) == null && (builtins.match "\w*#.*" line) == null
+        xdg.configFile."Yubico/u2f_keys".text = let
+          stripComments = lib.filter (
+            line: (builtins.match "\w*" line) == null && (builtins.match "\w*#.*" line) == null
+          );
+          groupByUsername = input:
+            builtins.mapAttrs (name: map (lib.removePrefix "${name}:")) (
+              lib.groupBy (e: lib.head (lib.strings.splitString ":" e)) input
             );
-            groupByUsername =
-              input:
-              builtins.mapAttrs (name: map (lib.removePrefix "${name}:")) (
-                lib.groupBy (e: lib.head (lib.strings.splitString ":" e)) input
-              );
-            toOutputLines = lib.attrsets.mapAttrsToList (
-              name: values:
-              (builtins.concatStringsSep ":" (
-                lib.concatLists [
-                  [ name ]
-                  values
-                ]
-              ))
-            );
+          toOutputLines = lib.attrsets.mapAttrsToList (
+            name: values: (builtins.concatStringsSep ":" (
+              lib.concatLists [
+                [name]
+                values
+              ]
+            ))
+          );
 
-            foldParts =
-              path:
-              lib.trivial.pipe path [
-                builtins.readFile
-                (lib.strings.splitString "\n")
-                stripComments
-                groupByUsername
-                (lib.attrsets.filterAttrs (n: v: n == config.home.username))
-                toOutputLines
-                (builtins.concatStringsSep "\n")
-              ];
-          in
+          foldParts = path:
+            lib.trivial.pipe path [
+              builtins.readFile
+              (lib.strings.splitString "\n")
+              stripComments
+              groupByUsername
+              (lib.attrsets.filterAttrs (n: v: n == config.home.username))
+              toOutputLines
+              (builtins.concatStringsSep "\n")
+            ];
+        in
           foldParts ./yubico/u2f_keys.parts;
       }
       {
@@ -65,7 +59,7 @@ in
           }
         ];
         home.activation = {
-          linkPasswordStore = lib.hm.dag.entryBetween [ "linkGeneration" ] [ "writeBoundary" ] ''
+          linkPasswordStore = lib.hm.dag.entryBetween ["linkGeneration"] ["writeBoundary"] ''
             $DRY_RUN_CMD ln -sfT "${nc.rel}/important/password-store" "$HOME/.password-store"
           '';
         };
@@ -81,26 +75,24 @@ in
         # programs.git.signing.key = "CDDFE1610327F6F7A693125698C23F71A188991B";
         programs.git.signing.key = null;
         programs.git.signing.signByDefault = true;
-        programs.git.ignores = [ (builtins.readFile ./.gitignore.tpl) ];
-        programs.git.attributes = [ (builtins.readFile ./.gitattributes) ];
+        programs.git.ignores = [(builtins.readFile ./.gitignore.tpl)];
+        programs.git.attributes = [(builtins.readFile ./.gitattributes)];
         # to authenticate hub: ln -s ~/.config/gh/hosts.yml ~/.config/hub
         programs.git.settings = {
           user.name = "Krzysztof Nazarewski";
           user.email = "gpg@kdn.im";
-          credential.helper =
-            let
-              wrapped = pkgs.writeShellApplication {
-                name = "git-credential-keyring-wrapped";
-                runtimeInputs = [ pkgs.kdn.git-credential-keyring ];
-                text = ''
-                  export PYTHON_KEYRING_BACKEND="keyring_pass.PasswordStoreBackend"
-                  export KEYRING_PROPERTY_PASS_BINARY="${pkgs.pass}/bin/pass"
-                  export GIT_CREDENTIAL_KEYRING_IGNORE_DELETIONS=1
-                  git-credential-keyring "$@"
-                '';
-              };
-            in
-            "${wrapped}/bin/git-credential-keyring-wrapped";
+          credential.helper = let
+            wrapped = pkgs.writeShellApplication {
+              name = "git-credential-keyring-wrapped";
+              runtimeInputs = [pkgs.kdn.git-credential-keyring];
+              text = ''
+                export PYTHON_KEYRING_BACKEND="keyring_pass.PasswordStoreBackend"
+                export KEYRING_PROPERTY_PASS_BINARY="${pkgs.pass}/bin/pass"
+                export GIT_CREDENTIAL_KEYRING_IGNORE_DELETIONS=1
+                git-credential-keyring "$@"
+              '';
+            };
+          in "${wrapped}/bin/git-credential-keyring-wrapped";
 
           credential."https://github.com".username = "nazarewk";
           url."https://github.com/".insteadOf = "git@github.com:";

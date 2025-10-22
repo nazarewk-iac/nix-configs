@@ -7,8 +7,7 @@ let
     "@users" # nixos
     "@staff" # macos
   ];
-in
-{
+in {
   nix.extraOptions = ''
     # run as kdn:
     #   begin; set file nix/nix.sensitive.conf ; pass show "$file" | sudo tee "/etc/$file" >/dev/null && sudo chmod 0640 "/etc/$file" && sudo chown root:wheel "/etc/$file"; end

@@ -3,14 +3,12 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   # https://wiki.archlinux.org/title/USB/IP
   cfg = config.kdn.hw.usbip;
 
   target = "network";
-in
-{
+in {
   options = {
     kdn.hw.usbip = {
       enable = lib.mkEnableOption "USB/IP setup";
@@ -46,8 +44,8 @@ in
 
         systemd.services.usbipd = {
           description = "USB/IP daemon";
-          after = [ "${target}.target" ];
-          wantedBy = [ "${target}.target" ];
+          after = ["${target}.target"];
+          wantedBy = ["${target}.target"];
 
           serviceConfig = {
             ExecStart = "${cfg.package}/bin/usbipd --tcp-port=${toString cfg.bindPort}";
@@ -56,12 +54,12 @@ in
 
         systemd.services."usbip-bind@" = {
           description = "USB/IP daemon";
-          requires = [ "usbipd.target" ];
+          requires = ["usbipd.target"];
           after = [
             "usbipd.service"
             "${target}.target"
           ];
-          wantedBy = [ "${target}.target" ];
+          wantedBy = ["${target}.target"];
 
           serviceConfig = {
             Type = "oneshot";

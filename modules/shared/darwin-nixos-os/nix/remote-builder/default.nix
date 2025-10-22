@@ -3,19 +3,17 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.nix.remote-builder;
-in
-{
+in {
   config = lib.mkMerge [
     (lib.mkIf cfg.enable (
       lib.mkMerge [
         {
           /*
-            WARNING: options need to be supported both by nix-darwin and NixOS:
-            - https://daiderd.com/nix-darwin/manual/index.html#opt-users.users._name_.name
-            - https://search.nixos.org/options?channel=24.11&from=0&size=50&sort=alpha_asc&type=packages&query=users.users
+          WARNING: options need to be supported both by nix-darwin and NixOS:
+          - https://daiderd.com/nix-darwin/manual/index.html#opt-users.users._name_.name
+          - https://search.nixos.org/options?channel=24.11&from=0&size=50&sort=alpha_asc&type=packages&query=users.users
           */
           nix.settings.trusted-users = [
             "@${cfg.group.name}"
@@ -59,100 +57,106 @@ in
           nix.distributedBuilds = true;
           nix.buildMachines =
             lib.pipe
-              [
-                /*
-                  {
-                    hostName = "faro";
-                    systems = ["aarch64-linux"];
-                    maxJobs = 7;
-                    speedFactor = 10;
+            [
+              /*
+              {
+                hostName = "faro";
+                systems = ["aarch64-linux"];
+                maxJobs = 7;
+                speedFactor = 10;
+                supportedFeatures = [
+                  "gccarch-armv8-a"
+                ];
+                mandatoryFeatures = [];
+              }
+              */
+              {
+                hostName = "briv";
+                systems = ["aarch64-linux"];
+                maxJobs = 2;
+                speedFactor = 4;
+                supportedFeatures = [
+                  "gccarch-armv8-a"
+                ];
+                mandatoryFeatures = [];
+              }
+              #{
+              #  hostName = "etra";
+              #  systems = ["x86_64-linux"];
+              #  maxJobs = 2;
+              #  speedFactor = 4;
+              #}
+              {
+                hostName = "brys";
+                systems = ["x86_64-linux"];
+                maxJobs = 16;
+                speedFactor = 32;
+              }
+              {
+                hostName = "brys";
+                systems = ["x86_64-linux"];
+                maxJobs = 16;
+                speedFactor = 32;
+              }
+            ]
+            [
+              (builtins.filter (
+                builder:
+                  config.kdn.hostName
+                  != builder.hostName
+                  && !(lib.strings.hasPrefix config.kdn.hostName builder.hostName)
+              ))
+              (builtins.map (
+                old: let
+                  defaults = {
+                    protocol = "ssh-ng";
+                    sshUser = cfg.user.name;
                     supportedFeatures = [
-                      "gccarch-armv8-a"
+                      "nixos-test"
+                      "benchmark"
+                      "big-parallel"
+                      "kvm"
                     ];
                     mandatoryFeatures = [];
-                  }
-                */
-                {
-                  hostName = "briv";
-                  systems = [ "aarch64-linux" ];
-                  maxJobs = 2;
-                  speedFactor = 4;
-                  supportedFeatures = [
-                    "gccarch-armv8-a"
-                  ];
-                  mandatoryFeatures = [ ];
-                }
-                #{
-                #  hostName = "etra";
-                #  systems = ["x86_64-linux"];
-                #  maxJobs = 2;
-                #  speedFactor = 4;
-                #}
-                {
-                  hostName = "brys";
-                  systems = [ "x86_64-linux" ];
-                  maxJobs = 16;
-                  speedFactor = 32;
-                }
-              ]
-              [
-                (builtins.filter (
-                  builder:
-                  config.kdn.hostName != builder.hostName
-                  && !(lib.strings.hasPrefix config.kdn.hostName builder.hostName)
-                ))
-                (builtins.map (
-                  old:
-                  let
-                    defaults = {
-                      protocol = "ssh-ng";
-                      sshUser = cfg.user.name;
-                      supportedFeatures = [
-                        "nixos-test"
-                        "benchmark"
-                        "big-parallel"
-                        "kvm"
-                      ];
-                      mandatoryFeatures = [ ];
-                    };
-                  in
+                  };
+                in
                   defaults
                   // old
                   // {
                     supportedFeatures = builtins.concatLists [
-                      (defaults.supportedFeatures or [ ])
-                      (old.supportedFeatures or [ ])
+                      (defaults.supportedFeatures or [])
+                      (old.supportedFeatures or [])
                     ];
                   }
-                ))
-                (builtins.map (
-                  old:
-                  (builtins.map
-                    (
-                      {
-                        domain,
-                        factor ? 100,
-                      }:
+              ))
+              (builtins.map (
+                old: (
+                  builtins.map
+                  (
+                    {
+                      domain,
+                      factor ? 100,
+                    }:
                       old
                       // lib.attrsets.optionalAttrs (domain != "") {
                         hostName = "${old.hostName}.${domain}";
                         speedFactor = builtins.floor (old.speedFactor * factor);
                       }
-                    )
-                    [
-                      {
-                        domain = "lan.etra.net.int.kdn.im.";
-                        factor = 100;
-                      }
-                      {
-                        domain = "nb.net.int.kdn.im.";
-                        factor = 20;
-                      }
-                    ]
                   )
-                ))
-                lib.lists.flatten
-              ];
+                  [
+                    {
+                      domain = "lan.etra.net.int.kdn.im.";
+                      factor = 100;
+                    }
+                    {
+                      domain = "nb.net.int.kdn.im.";
+                      factor = 20;
+                    }
+                  ]
+                )
+              ))
+              lib.lists.flatten
+            ];
         }
       ]
     ))

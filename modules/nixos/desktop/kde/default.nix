@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.desktop.kde;
-in
-{
+in {
   options.kdn.desktop.kde = {
     enable = lib.mkOption {
       type = lib.types.bool;
@@ -26,7 +24,7 @@ in
 
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
-      { home-manager.sharedModules = [ { kdn.desktop.kde.enable = cfg.enable; } ]; }
+      {home-manager.sharedModules = [{kdn.desktop.kde.enable = cfg.enable;}];}
       {
         services.desktopManager.plasma6.enable = true;
         services.displayManager.defaultSession = "plasma";

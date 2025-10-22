@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.locale;
-in
-{
+in {
   config = lib.mkMerge [
     {
       home.sessionVariables.TZ = cfg.timezone;
@@ -30,18 +28,18 @@ in
             LC_ALL = cfg.primary;
           };
         };
-      in
-      {
+      in {
         xdg.configFile."locale.conf".source = pkgs.writeText "locale.conf" ''
           LANG=${config.i18n.defaultLocale}
           ${lib.concatStringsSep "\n" (
             lib.mapAttrsToList (n: v: "${n}=${v}") config.i18n.extraLocaleSettings
           )}
         '';
-        home.sessionVariables = {
-          LANG = config.i18n.defaultLocale;
-        }
-        // config.i18n.extraLocaleSettings;
+        home.sessionVariables =
+          {
+            LANG = config.i18n.defaultLocale;
+          }
+          // config.i18n.extraLocaleSettings;
       }
     )
   ];

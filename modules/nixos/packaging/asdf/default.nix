@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.packaging.asdf;
-in
-{
+in {
   options.kdn.packaging.asdf = {
     enable = lib.mkEnableOption "ASDF version manager";
 
@@ -30,13 +28,12 @@ in
 
     home-manager.sharedModules = [
       (
-        { lib, ... }:
-        {
+        {lib, ...}: {
           programs.fish.interactiveShellInit = ''
             fish_add_path --prepend --move "$HOME/.asdf/shims"
           '';
           home.activation = {
-            asdfReshim = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+            asdfReshim = lib.hm.dag.entryAfter ["writeBoundary"] ''
               if [ -d "$HOME/.asdf/shims" ] ; then
                 $DRY_RUN_CMD rm -rf "$HOME/.asdf/shims"
               fi

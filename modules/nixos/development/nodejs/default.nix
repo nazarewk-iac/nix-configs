@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.development.nodejs;
-in
-{
+in {
   options.kdn.development.nodejs = {
     enable = lib.mkEnableOption "Node JS development";
   };
@@ -20,7 +18,7 @@ in
     ];
 
     home-manager.sharedModules = [
-      { kdn.development.nodejs.enable = true; }
+      {kdn.development.nodejs.enable = true;}
       {
         home.file.".npmrc".text = ''
           cache=~/.cache/npm

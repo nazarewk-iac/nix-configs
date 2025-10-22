@@ -2,18 +2,16 @@
   lib,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.profile.user.kdn;
-in
-{
+in {
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
         # TODO: switch to signed store building?
-        nix.settings.trusted-users = [ "kdn" ];
-        kdn.programs.atuin.users = [ "kdn" ];
-        kdn.programs.atuin.autologinUsers = [ "kdn" ];
+        nix.settings.trusted-users = ["kdn"];
+        kdn.programs.atuin.users = ["kdn"];
+        kdn.programs.atuin.autologinUsers = ["kdn"];
         kdn.hw.yubikey.appId = "pam://kdn";
         users.users.kdn.initialHashedPassword = "$y$j9T$yl3J5zGJ5Yq8c6fXMGxNk.$XE3X8aWpD3FeakMBD/fUmCExXMuy7B6tm7ZECmuxpF4";
         users.users.kdn = {
@@ -48,7 +46,7 @@ in
 
         networking.firewall = {
           # syncthing ranges
-          allowedTCPPorts = [ 22000 ];
+          allowedTCPPorts = [22000];
           allowedUDPPorts = [
             21027
             22000
@@ -65,7 +63,7 @@ in
         ];
       }
       {
-        kdn.networking.netbird.admins = [ "kdn" ];
+        kdn.networking.netbird.admins = ["kdn"];
       }
     ]
   );

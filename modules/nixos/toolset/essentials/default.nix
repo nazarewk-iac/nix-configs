@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.toolset.essentials;
-in
-{
+in {
   options.kdn.toolset.essentials = {
     enable = lib.mkEnableOption "essential CLI tooling";
   };
@@ -48,7 +46,7 @@ in
         # serial consoles usage
         minicom
       ])
-      ++ [ ];
+      ++ [];
     home-manager.sharedModules = [
       {
         programs.difftastic.enable = true; # diff highlighter

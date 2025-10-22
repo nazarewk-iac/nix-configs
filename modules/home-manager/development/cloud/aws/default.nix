@@ -3,17 +3,15 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.development.cloud.aws;
-in
-{
+in {
   options.kdn.development.cloud.aws = {
     enable = lib.mkEnableOption "AWS cloud development";
   };
 
   config = lib.mkIf cfg.enable {
-    kdn.hw.disks.persist."usr/data".directories = [ ".aws" ];
+    kdn.hw.disks.persist."usr/data".directories = [".aws"];
     home.packages = with pkgs; [
       # AWS
       awscli2

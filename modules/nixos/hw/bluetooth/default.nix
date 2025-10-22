@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.hw.bluetooth;
-in
-{
+in {
   options = {
     kdn.hw.bluetooth = {
       enable = lib.mkEnableOption "bluetooth setup";

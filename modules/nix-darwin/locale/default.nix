@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.locale;
-in
-{
+in {
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {

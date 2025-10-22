@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.virtualisation.vagrant;
-in
-{
+in {
   options.kdn.virtualisation.vagrant = {
     enable = lib.mkEnableOption "Vagrant setup";
   };

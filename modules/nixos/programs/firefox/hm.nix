@@ -2,20 +2,22 @@
   lib,
   pkgs,
   config,
-  osConfig ? { },
+  osConfig ? {},
   ...
-}:
-let
+}: let
   cfg = config.kdn.programs.firefox;
   ffCfg = config.programs.firefox;
   appCfg = config.kdn.programs.apps.firefox;
 
   inherit (pkgs.stdenv.hostPlatform) isDarwin;
-  profilesPath = if isDarwin then "${ffCfg.configPath}/Profiles" else ffCfg.configPath;
+  profilesPath =
+    if isDarwin
+    then "${ffCfg.configPath}/Profiles"
+    else ffCfg.configPath;
 
   containerProfilesList = lib.pipe ffCfg.profiles [
     builtins.attrValues
-    (builtins.filter (p: p.containers != { }))
+    (builtins.filter (p: p.containers != {}))
   ];
 
   firefoxProfilePathsRel = lib.pipe containerProfilesList [
@@ -23,29 +25,28 @@ let
   ];
 
   /*
-    Status can be “default”, “locked”, “user” or “clear”
-        "default": Read/Write: Settings appear as default even if factory default differs.
-        "locked": Read-Only: Settings appear as default even if factory default differs.
-        "user": Read/Write: Settings appear as changed if it differs from factory default.
-        "clear": Read/Write: Value has no effect. Resets to factory defaults on each startup.
+  Status can be “default”, “locked”, “user” or “clear”
+      "default": Read/Write: Settings appear as default even if factory default differs.
+      "locked": Read-Only: Settings appear as default even if factory default differs.
+      "user": Read/Write: Settings appear as changed if it differs from factory default.
+      "clear": Read/Write: Value has no effect. Resets to factory defaults on each startup.
   */
-  mkPref = Status: Value: { inherit Status Value; };
+  mkPref = Status: Value: {inherit Status Value;};
   mkPrefLocked = mkPref "locked";
   mkPrefDefault = mkPref "default";
 
   # see https://github.com/NixOS/nixpkgs/issues/366581#issuecomment-2564737818
   nativeMessagingHostsAreSupported = !pkgs.stdenv.isDarwin;
-in
-{
+in {
   options.kdn.programs.firefox = {
     enable = lib.mkEnableOption "firefox setup";
     profileNames = lib.mkOption {
       type = with lib.types; listOf str;
-      default = [ ];
+      default = [];
     };
     nativeMessagingHosts = lib.mkOption {
       type = with lib.types; listOf package;
-      default = [ ];
+      default = [];
       description = lib.mdDoc ''
         Additional packages containing native messaging hosts that should be made available to Firefox extensions.
       '';
@@ -64,17 +65,19 @@ in
         kdn.programs.apps.firefox = {
           package.install = false;
           package.original =
-            if !nativeMessagingHostsAreSupported then pkgs.firefox-unwrapped else pkgs.firefox;
-          dirs.cache = [ ];
-          dirs.config = [ ];
-          dirs.data = [ "/.mozilla/firefox" ];
-          dirs.disposable = [ ];
-          dirs.reproducible = [ ];
-          dirs.state = [ ];
+            if !nativeMessagingHostsAreSupported
+            then pkgs.firefox-unwrapped
+            else pkgs.firefox;
+          dirs.cache = [];
+          dirs.config = [];
+          dirs.data = ["/.mozilla/firefox"];
+          dirs.disposable = [];
+          dirs.reproducible = [];
+          dirs.state = [];
           package.overlays =
-            [ ]
+            []
             ++ lib.lists.optional nativeMessagingHostsAreSupported (old: {
-              nativeMessagingHosts = old.nativeMessagingHosts or [ ] ++ cfg.nativeMessagingHosts;
+              nativeMessagingHosts = old.nativeMessagingHosts or [] ++ cfg.nativeMessagingHosts;
             });
         };
 
@@ -85,7 +88,7 @@ in
       {
         kdn.programs.firefox.nativeMessagingHosts = lib.kdn.pkg.onlySupported pkgs pkgs.kdePackages.plasma-browser-integration;
       }
-      (lib.mkIf (firefoxProfilePathsRel != { }) {
+      (lib.mkIf (firefoxProfilePathsRel != {}) {
         home.file = lib.pipe firefoxProfilePathsRel [
           (builtins.map (path: {
             name = "${path}/containers.json";
@@ -95,7 +98,7 @@ in
         ];
 
         systemd.user.paths.firefox-containers-d-sync = {
-          Install.WantedBy = [ "default.target" ];
+          Install.WantedBy = ["default.target"];
           Unit = {
             Description = "merges pieces into Firefox's containers.json file";
           };
@@ -108,7 +111,7 @@ in
           };
         };
         systemd.user.services.firefox-containers-d-sync = {
-          Install.WantedBy = [ "default.target" ];
+          Install.WantedBy = ["default.target"];
           Unit = {
             Description = "merges pieces into Firefox's containers.json file";
           };
@@ -123,8 +126,8 @@ in
         };
       })
       {
-        programs.firefox.policies = osConfig.programs.firefox.policies or { };
-        programs.firefox.languagePacks = lib.mkDefault osConfig.programs.firefox.languagePacks or [ ];
+        programs.firefox.policies = osConfig.programs.firefox.policies or {};
+        programs.firefox.languagePacks = lib.mkDefault osConfig.programs.firefox.languagePacks or [];
       }
       {
         programs.firefox.languagePacks = lib.mkDefault [

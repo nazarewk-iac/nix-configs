@@ -3,12 +3,10 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.development.golang;
   home = config.home.homeDirectory;
-in
-{
+in {
   options.kdn.development.golang = {
     enable = lib.mkEnableOption "golang development";
   };

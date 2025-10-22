@@ -3,31 +3,31 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.hm;
-in
-{
+in {
   options.kdn.hm = {
     enable = lib.mkOption {
       type = with lib.types; bool;
 
       default = cfg.type != null;
-      apply =
-        enable:
+      apply = enable:
         lib.trivial.throwIf (
           enable && cfg.type == null
-        ) "`kdn.hm` enabled, but `kdn.hm.type == null`!" enable;
+        ) "`kdn.hm` enabled, but `kdn.hm.type == null`!"
+        enable;
     };
 
     type = lib.mkOption {
-      type =
-        with lib.types;
+      type = with lib.types;
         enum [
           null
           "home-manager"
         ];
-      default = if config ? home then "home-manager" else null;
+      default =
+        if config ? home
+        then "home-manager"
+        else null;
     };
   };
 

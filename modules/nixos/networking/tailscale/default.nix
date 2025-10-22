@@ -3,16 +3,14 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.networking.tailscale;
   authKeys = config.kdn.security.secrets.sops.secrets.default.tailscale.default.auth_keys;
-in
-{
+in {
   options.kdn.networking.tailscale = {
     enable = lib.mkEnableOption "Tailscale client";
     auth_key = lib.mkOption {
-      type = lib.types.enum ([ null ] ++ builtins.attrNames authKeys);
+      type = lib.types.enum ([null] ++ builtins.attrNames authKeys);
       default = "linux-nixos";
     };
   };

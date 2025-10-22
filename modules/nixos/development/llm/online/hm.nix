@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.development.llm.online;
-in
-{
+in {
   options.kdn.development.llm.online = {
     enable = lib.mkEnableOption "tools for working with online LLMs";
   };
@@ -20,13 +18,13 @@ in
     kdn.programs.apps.claude-code = {
       enable = true;
       package.original = pkgs.claude-code;
-      dirs.cache = [ ];
-      dirs.config = [ ];
-      dirs.data = [ "/.claude" ];
-      dirs.disposable = [ ];
-      dirs.reproducible = [ ];
-      dirs.state = [ ];
-      files.config = [ "/.claude.json" ];
+      dirs.cache = [];
+      dirs.config = [];
+      dirs.data = ["/.claude"];
+      dirs.disposable = [];
+      dirs.reproducible = [];
+      dirs.state = [];
+      files.config = ["/.claude.json"];
     };
   };
 }

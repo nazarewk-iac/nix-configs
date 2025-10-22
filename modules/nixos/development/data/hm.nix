@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.development.data;
-in
-{
+in {
   options.kdn.development.data = {
     enable = lib.mkEnableOption "tools for working with data";
   };
@@ -27,8 +25,8 @@ in
       language = [
         {
           name = "jq";
-          language-servers = [ "jq-lsp" ];
-          roots = [ ];
+          language-servers = ["jq-lsp"];
+          roots = [];
           file-types = [
             "jq"
             "jql"

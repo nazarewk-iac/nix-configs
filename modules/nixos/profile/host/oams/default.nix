@@ -3,11 +3,9 @@
   pkgs,
   lib,
   ...
-}:
-let
+}: let
   cfg = config.kdn.profile.host.oams;
-in
-{
+in {
   options.kdn.profile.host.oams = {
     enable = lib.mkEnableOption "enable oams host profile";
   };
@@ -28,19 +26,19 @@ in
 
         kdn.fs.disko.luks-zfs.enable = true;
 
-        boot.kernelModules = [ "kvm-amd" ];
+        boot.kernelModules = ["kvm-amd"];
 
         # 12G was not enough for large rebuild
         boot.tmp.tmpfsSize = "32G";
       }
       /*
-          {
-          kdn.hw.edid.enable = true;
-          hardware.display.outputs."DP-1" = {
-            edid = "PG278Q_120.bin";
-            mode = "e";
-          };
-        }
+        {
+        kdn.hw.edid.enable = true;
+        hardware.display.outputs."DP-1" = {
+          edid = "PG278Q_120.bin";
+          mode = "e";
+        };
+      }
       */
       {
         services.asusd.enable = true;
@@ -50,8 +48,7 @@ in
         services.asusd.enableUserService = true;
         home-manager.sharedModules = [
           (
-            args:
-            let
+            args: let
               kdn-asusctl = pkgs.writeShellApplication {
                 name = "kdn-asusctl";
                 runtimeInputs = with pkgs; [
@@ -86,9 +83,8 @@ in
                 '';
               };
               run = lib.getExe kdn-asusctl;
-            in
-            {
-              home.packages = [ kdn-asusctl ];
+            in {
+              home.packages = [kdn-asusctl];
               wayland.windowManager.sway.config.keybindings = with config.kdn.desktop.sway.keys; {
                 "${oams.top.fan}" = "exec '${run} rotate-cpu-profile'";
                 "${oams.top.rog}" = "exec '${run} rog-control-center'";
@@ -150,7 +146,7 @@ in
           # reboot into dGPU accelerated specialisation
           inheritParentConfig = true;
           configuration = {
-            system.nixos.tags = [ "gaming" ];
+            system.nixos.tags = ["gaming"];
             kdn.hw.gpu.supergfxd.mode = lib.mkForce "Hybrid";
             kdn.profile.machine.gaming.vulkan.deviceId = "1002:73df";
             kdn.profile.machine.gaming.vulkan.deviceName = "AMD Radeon RX 6800M";
@@ -166,7 +162,7 @@ in
         specialisation.vfio = {
           inheritParentConfig = true;
           configuration = {
-            system.nixos.tags = [ "vfio" ];
+            system.nixos.tags = ["vfio"];
             kdn.hw.gpu.vfio.enable = true;
             kdn.hw.gpu.vfio.gpuIDs = [
               "1002:73df"
@@ -177,7 +173,7 @@ in
       }
       {
         # need to allow for a Netbird assignment
-        networking.firewall.trustedInterfaces = [ "tun0" ];
+        networking.firewall.trustedInterfaces = ["tun0"];
         systemd.network.enable = true;
         networking.useNetworkd = true;
       }

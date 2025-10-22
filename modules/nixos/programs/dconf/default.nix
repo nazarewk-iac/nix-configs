@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.programs.dconf;
-in
-{
+in {
   options.kdn.programs.dconf = {
     enable = lib.mkOption {
       default = false;
@@ -18,7 +16,7 @@ in
     lib.mkMerge [
       {
         programs.dconf.enable = true;
-        home-manager.sharedModules = [ { kdn.programs.dconf.enable = true; } ];
+        home-manager.sharedModules = [{kdn.programs.dconf.enable = true;}];
       }
     ]
   );

@@ -3,106 +3,101 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.development.python;
 
   defaultPython = pkgs.python313;
 
-  mkPython =
-    pkg:
-    (pkg.withPackages (
-      ps:
+  mkPython = pkg: (pkg.withPackages (
+    ps:
       with ps;
-      [
-        beautifulsoup4
-        black
-        boto3
-        build # build a package, see https://realpython.com/pypi-publish-python-package/#build-your-package
-        cookiecutter
-        deepmerge
-        diagrams
-        duckdb
-        fire
-        flake8
-        fsspec
-        graphviz
-        httpie
-        httpx
-        ipython
-        isort
-        keyring
-        matplotlib
-        mt-940
-        pendulum
-        pip
-        pip-tools
-        pipx
-        pyaml
-        pyheos
-        pytest
-        pyyaml
-        regex
-        requests
-        ruamel-yaml
-        tqdm
-        twine # upload to pypi, see https://realpython.com/pypi-publish-python-package/#upload-your-package
-        types-beautifulsoup4
-        universal-pathlib
+        [
+          beautifulsoup4
+          black
+          boto3
+          build # build a package, see https://realpython.com/pypi-publish-python-package/#build-your-package
+          cookiecutter
+          deepmerge
+          diagrams
+          duckdb
+          fire
+          flake8
+          fsspec
+          graphviz
+          httpie
+          httpx
+          ipython
+          isort
+          keyring
+          matplotlib
+          mt-940
+          pendulum
+          pip
+          pip-tools
+          pipx
+          pyaml
+          pyheos
+          pytest
+          pyyaml
+          regex
+          requests
+          ruamel-yaml
+          tqdm
+          twine # upload to pypi, see https://realpython.com/pypi-publish-python-package/#upload-your-package
+          types-beautifulsoup4
+          universal-pathlib
 
-        pycrypto
+          pycrypto
 
-        (pkgs.http-prompt.override {
-          #python3Packages = ps;
-          httpie = ps.httpie;
-        })
-      ]
-      ++ [
-        xdg-base-dirs
-      ]
-      ++ [
-        # logging
-        rich
-        structlog
-      ]
-    ));
+          (pkgs.http-prompt.override {
+            #python3Packages = ps;
+            httpie = ps.httpie;
+          })
+        ]
+        ++ [
+          xdg-base-dirs
+        ]
+        ++ [
+          # logging
+          rich
+          structlog
+        ]
+  ));
 
-  renamedBinariesOnly =
-    fmt: pkg:
-    (pkgs.runCommand "${pkg.name}-renamed-to-${builtins.replaceStrings [ "%s" ] [ "BIN" ] fmt}"
-      { buildInputs = [ ]; }
-      ''
-        set -x
-        ${lib.toShellVar "srcDir" "${pkg}/bin"}
-        ${lib.toShellVar "fmt" fmt}
+  renamedBinariesOnly = fmt: pkg: (
+    pkgs.runCommand "${pkg.name}-renamed-to-${builtins.replaceStrings ["%s"] ["BIN"] fmt}"
+    {buildInputs = [];}
+    ''
+      set -x
+      ${lib.toShellVar "srcDir" "${pkg}/bin"}
+      ${lib.toShellVar "fmt" fmt}
 
-        mkdir -p "$out/bin"
-        if test "$fmt" = "%s" ; then
-          echo "fmt $fmt must modify filename!"
-          exit 1
+      mkdir -p "$out/bin"
+      if test "$fmt" = "%s" ; then
+        echo "fmt $fmt must modify filename!"
+        exit 1
+      fi
+
+      for file in "$srcDir"/* ; do
+        if test -e "$(printf "$fmt" "$file")" || ! test -x "$file" ; then
+          continue
         fi
-
-        for file in "$srcDir"/* ; do
-          if test -e "$(printf "$fmt" "$file")" || ! test -x "$file" ; then
-            continue
-          fi
-          filename="''${file##*/}"
-          renamed="$(printf "$fmt" "$filename")"
-          ln -sfT "$file" "$out/bin/$renamed"
-        done
-        set +x
-      ''
-    );
-in
-{
+        filename="''${file##*/}"
+        renamed="$(printf "$fmt" "$filename")"
+        ln -sfT "$file" "$out/bin/$renamed"
+      done
+      set +x
+    ''
+  );
+in {
   options.kdn.development.python = {
     enable = lib.mkEnableOption "Python development";
   };
 
   config = lib.mkIf cfg.enable {
     home-manager.sharedModules = [
-      { kdn.development.python.enable = true; }
-      { programs.git.ignores = [ (builtins.readFile ./.gitignore) ]; }
+      {kdn.development.python.enable = true;}
+      {programs.git.ignores = [(builtins.readFile ./.gitignore)];}
     ];
     nixpkgs.overlays = [
       (final: prev: {

@@ -3,11 +3,9 @@
   config,
   pkgs,
   ...
-}:
-let
+}: let
   cfg = config.kdn.profile.user.kdn;
-in
-{
+in {
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {

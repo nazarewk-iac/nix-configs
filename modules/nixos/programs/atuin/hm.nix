@@ -4,11 +4,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.programs.atuin;
-in
-{
+in {
   options.kdn.programs.atuin = {
     enable = lib.mkEnableOption "Atuin shell history management and sync";
   };
@@ -45,7 +43,7 @@ in
           Service.Environment = [
             "ATUIN_LOG=info"
           ];
-          Install.WantedBy = [ "default.target" ];
+          Install.WantedBy = ["default.target"];
         };
       })
     ]

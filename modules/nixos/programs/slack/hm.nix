@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.programs.slack;
-in
-{
+in {
   options.kdn.programs.slack = {
     enable = lib.mkEnableOption "slack setup";
   };
@@ -17,10 +15,10 @@ in
       {
         xdg.configFile."pipewire/pipewire.conf.d/51-slack.conf".text = builtins.toJSON {
           /*
-            there is no rule matching on client objects
-            in pulseaudio, you can use pulse.rules with update-props, that should update the client properties
+          there is no rule matching on client objects
+          in pulseaudio, you can use pulse.rules with update-props, that should update the client properties
 
-            see https://matrix.to/#/!kySKEYzDwVhedDCSoX:matrix.org/$68PPYfLJ9ZYxcCUR43Kn6I8uD0XFHvyV6r6eJYdN7-k?via=matrix.org&via=kde.org&via=fedora.im
+          see https://matrix.to/#/!kySKEYzDwVhedDCSoX:matrix.org/$68PPYfLJ9ZYxcCUR43Kn6I8uD0XFHvyV6r6eJYdN7-k?via=matrix.org&via=kde.org&via=fedora.im
           */
           # PulseAudio Volume Control still sees it as Chromium due to PipeWire Client configuration
           # but PipeWire Client configuration cannot be edited at all
@@ -45,12 +43,12 @@ in
         };
         kdn.programs.apps.slack = {
           enable = true;
-          dirs.cache = [ ];
-          dirs.config = [ "Slack" ];
-          dirs.data = [ ];
-          dirs.disposable = [ ];
-          dirs.reproducible = [ ];
-          dirs.state = [ ];
+          dirs.cache = [];
+          dirs.config = ["Slack"];
+          dirs.data = [];
+          dirs.disposable = [];
+          dirs.reproducible = [];
+          dirs.state = [];
         };
       }
     ]

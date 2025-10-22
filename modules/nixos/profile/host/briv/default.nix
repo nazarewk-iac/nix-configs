@@ -4,11 +4,9 @@
   lib,
   kdn,
   ...
-}:
-let
+}: let
   cfg = config.kdn.profile.host.briv;
-in
-{
+in {
   options.kdn.profile.host.briv = {
     enable = lib.mkEnableOption "enable briv host profile";
   };

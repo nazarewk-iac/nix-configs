@@ -4,11 +4,9 @@
   lib,
   kdn,
   ...
-}:
-let
+}: let
   cfg = config.kdn.profile.host.kdn-rpi4-bootstrap;
-in
-{
+in {
   options.kdn.profile.host.kdn-rpi4-bootstrap = {
     enable = lib.mkEnableOption "enable kdn-rpi4-bootstrap host profile";
   };

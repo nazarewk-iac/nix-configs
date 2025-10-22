@@ -8,8 +8,7 @@
 # Dell Latitude E5470
 let
   cfg = config.kdn.profile.host.obler;
-in
-{
+in {
   options.kdn.profile.host.obler = {
     enable = lib.mkEnableOption "enable obler host profile";
   };
@@ -38,11 +37,11 @@ in
 
         systemd.tmpfiles.rules = [
           /*
-            error:
-              failed to lock /etc/exports.d/zfs.exports.lock: No such file or directory
-            see:
-            - https://github.com/openzfs/zfs/issues/15369
-            - https://www.reddit.com/r/zfs/comments/17uf8wg/can_i_remove_an_old_entry_in/
+          error:
+            failed to lock /etc/exports.d/zfs.exports.lock: No such file or directory
+          see:
+          - https://github.com/openzfs/zfs/issues/15369
+          - https://www.reddit.com/r/zfs/comments/17uf8wg/can_i_remove_an_old_entry_in/
           */
           "d /etc/exports.d 1755 root root"
         ];

@@ -4,11 +4,9 @@
   config,
   kdn,
   ...
-}:
-let
+}: let
   cfg = config.kdn.toolset.ide;
-in
-{
+in {
   options.kdn.toolset.ide = {
     enable = lib.mkEnableOption "IDEs utils";
   };

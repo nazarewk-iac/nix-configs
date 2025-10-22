@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.locale;
-in
-{
+in {
   options.kdn.locale = {
     enable = lib.mkEnableOption "locale setup";
 

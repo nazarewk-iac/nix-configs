@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.hw.qmk;
-in
-{
+in {
   options = {
     kdn.hw.qmk = {
       enable = lib.mkEnableOption "QMK + ZSA keyboard related software (eg: Moonlander)";

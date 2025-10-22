@@ -3,18 +3,16 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.development.nix;
-in
-{
+in {
   options.kdn.development.nix = {
     enable = lib.mkEnableOption "nix development/debugging";
   };
 
   config = lib.mkIf cfg.enable {
     kdn.programs.nix-utils.enable = true;
-    home-manager.sharedModules = [ { kdn.development.nix.enable = true; } ];
+    home-manager.sharedModules = [{kdn.development.nix.enable = true;}];
     environment.systemPackages = with pkgs; [
       #self.inputs.nixpkgs-update.defaultPackage.${system}
       alejandra

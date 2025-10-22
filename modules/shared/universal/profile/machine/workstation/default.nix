@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.profile.machine.workstation;
-in
-{
+in {
   options.kdn.profile.machine.workstation = {
     enable = lib.mkEnableOption "enable workstation machine profile";
   };

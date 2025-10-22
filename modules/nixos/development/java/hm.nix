@@ -3,12 +3,10 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.development.java;
   home = config.home.homeDirectory;
-in
-{
+in {
   options.kdn.development.java = {
     enable = lib.mkEnableOption "java development";
   };

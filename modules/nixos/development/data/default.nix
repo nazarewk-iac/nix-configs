@@ -3,17 +3,15 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.development.data;
-in
-{
+in {
   options.kdn.development.data = {
     enable = lib.mkEnableOption "tools for working with data";
   };
 
   config = lib.mkIf cfg.enable {
-    home-manager.sharedModules = [ { kdn.development.data.enable = true; } ];
+    home-manager.sharedModules = [{kdn.development.data.enable = true;}];
     environment.systemPackages = with pkgs; [
       miller
       yq-go

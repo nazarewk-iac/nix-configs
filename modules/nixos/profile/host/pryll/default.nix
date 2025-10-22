@@ -3,11 +3,9 @@
   pkgs,
   lib,
   ...
-}:
-let
+}: let
   cfg = config.kdn.profile.host.pryll;
-in
-{
+in {
   options.kdn.profile.host.pryll = {
     enable = lib.mkEnableOption "enable pryll host profile";
   };

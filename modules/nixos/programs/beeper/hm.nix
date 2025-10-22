@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.programs.beeper;
-in
-{
+in {
   options.kdn.programs.beeper = {
     enable = lib.mkEnableOption "beeper messenger setup";
   };
@@ -17,12 +15,12 @@ in
       {
         kdn.programs.apps."beeper" = {
           enable = true;
-          dirs.cache = [ ];
-          dirs.config = [ "Beeper" ];
-          dirs.data = [ ];
-          dirs.disposable = [ ];
-          dirs.reproducible = [ ];
-          dirs.state = [ ];
+          dirs.cache = [];
+          dirs.config = ["Beeper"];
+          dirs.data = [];
+          dirs.disposable = [];
+          dirs.reproducible = [];
+          dirs.state = [];
         };
       }
     ]

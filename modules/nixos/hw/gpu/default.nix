@@ -3,22 +3,19 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.hw.gpu;
-in
-{
+in {
   options.kdn.hw.gpu = {
     enable = lib.mkEnableOption "GPU setup";
     multiGPU.enable = lib.mkEnableOption "multiple GPUs setup";
     vfio.enable = lib.mkEnableOption "VFIO setup";
     vfio.gpuIDs = lib.mkOption {
       type = with lib.types; listOf str;
-      default = [ ];
+      default = [];
     };
     supergfxd.mode = lib.mkOption {
-      type =
-        with lib.types;
+      type = with lib.types;
         enum [
           "Integrated"
           "Hybrid"
@@ -44,11 +41,11 @@ in
         nixpkgs.overlays = [
           (final: prev: {
             /*
-              supergfxctl doesn't detect dGPU in 5.2.4, so we need to downgrade:
-               - https://github.com/NixOS/nixpkgs/issues/355798
-               - https://gitlab.com/asus-linux/supergfxctl/-/issues/140#note_2149374813
+            supergfxctl doesn't detect dGPU in 5.2.4, so we need to downgrade:
+             - https://github.com/NixOS/nixpkgs/issues/355798
+             - https://gitlab.com/asus-linux/supergfxctl/-/issues/140#note_2149374813
             */
-            supergfxctl = prev.callPackage ./supergfxctl.nix { };
+            supergfxctl = prev.callPackage ./supergfxctl.nix {};
           })
         ];
         environment.systemPackages = with pkgs; [
@@ -93,8 +90,8 @@ in
           # see https://docs.kernel.org/admin-guide/kernel-parameters.html?highlight=amd_iommu
           #(lib.lists.optionals config.kdn.hw.cpu.amd.enable [ "amd_iommu=on" ]) # supposedly on by default
           (lib.lists.optional config.kdn.hw.cpu.intel.enable "intel_iommu=on")
-          [ "iommu=pt" ]
-          (lib.lists.optional (cfg.vfio.gpuIDs != [ ]) (
+          ["iommu=pt"]
+          (lib.lists.optional (cfg.vfio.gpuIDs != []) (
             "vfio-pci.ids=" + lib.concatStringsSep "," cfg.vfio.gpuIDs
           ))
         ];

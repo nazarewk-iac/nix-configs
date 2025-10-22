@@ -4,11 +4,9 @@
   pkgs,
   lib,
   ...
-}:
-let
+}: let
   cfg = config.kdn.desktop.kde;
-in
-{
+in {
   options.kdn.desktop.kde = {
     enable = lib.mkOption {
       type = lib.types.bool;

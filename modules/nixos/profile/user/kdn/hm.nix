@@ -4,16 +4,14 @@
   lib,
   osConfig,
   ...
-}@arguments:
-let
+} @ arguments: let
   cfg = config.kdn.profile.user.kdn;
   hasSway = config.kdn.desktop.sway.enable;
   hasWorkstation = osConfig.kdn.profile.machine.workstation.enable;
 
   nc.rel = "Nextcloud/drag0nius@nc.nazarewk.pw";
   nc.abs = "${config.home.homeDirectory}/${nc.rel}";
-in
-{
+in {
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
@@ -92,7 +90,7 @@ in
             };
           }
           {
-            kdn.programs.firefox.profileNames = [ "bn" ];
+            kdn.programs.firefox.profileNames = ["bn"];
             programs.firefox.profiles.bn = {
               id = 2;
             };
@@ -106,43 +104,41 @@ in
         xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
 
         xdg.mime.enable = true;
-        xdg.desktopEntries.uri-to-clipboard =
-          let
-            bin = pkgs.writeShellScript "uri-to-clipboard" ''
-              set -eEuo pipefail
+        xdg.desktopEntries.uri-to-clipboard = let
+          bin = pkgs.writeShellScript "uri-to-clipboard" ''
+            set -eEuo pipefail
 
-              url="$1"
-              ${pkgs.libnotify}/bin/notify-send --expire-time=3000 "copied to clipboard" "$url"
-              ${pkgs.wl-clipboard}/bin/wl-copy "$url"
-            '';
-          in
-          {
-            name = "Copy URI to clipboard";
-            noDisplay = false;
-            genericName = "uri-to-clipboard";
-            exec = "${bin} %U";
-            categories = [
-              "Network"
-              "WebBrowser"
-            ];
-            mimeType = [
-              "application/x-extension-htm"
-              "application/x-extension-html"
-              "application/x-extension-shtml"
-              "application/x-extension-xht"
-              "application/x-extension-xhtml"
-              "application/xhtml+xml"
-              "application/xhtml_xml"
-              "x-scheme-handler/chrome"
-              "x-scheme-handler/http"
-              "x-scheme-handler/https"
-            ];
-          };
+            url="$1"
+            ${pkgs.libnotify}/bin/notify-send --expire-time=3000 "copied to clipboard" "$url"
+            ${pkgs.wl-clipboard}/bin/wl-copy "$url"
+          '';
+        in {
+          name = "Copy URI to clipboard";
+          noDisplay = false;
+          genericName = "uri-to-clipboard";
+          exec = "${bin} %U";
+          categories = [
+            "Network"
+            "WebBrowser"
+          ];
+          mimeType = [
+            "application/x-extension-htm"
+            "application/x-extension-html"
+            "application/x-extension-shtml"
+            "application/x-extension-xht"
+            "application/x-extension-xhtml"
+            "application/xhtml+xml"
+            "application/xhtml_xml"
+            "x-scheme-handler/chrome"
+            "x-scheme-handler/http"
+            "x-scheme-handler/https"
+          ];
+        };
       })
       (lib.mkIf config.kdn.desktop.enable {
         kdn.programs.keepassxc.enable = true;
         kdn.programs.keepassxc.service.enable = true;
-        kdn.programs.keepassxc.service.searchDirs = [ "${nc.abs}/important/keepass" ];
+        kdn.programs.keepassxc.service.searchDirs = ["${nc.abs}/important/keepass"];
         kdn.programs.keepassxc.service.fileName = "drag0nius.kdbx";
       })
       (lib.mkIf (hasWorkstation && config.kdn.desktop.enable) {
@@ -154,10 +150,10 @@ in
       (lib.mkIf hasSway {
         systemd.user.services.keepassxc.Unit = {
           BindsTo = config.kdn.desktop.sway.systemd.secrets-service.service;
-          Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
+          Requires = [config.kdn.desktop.sway.systemd.envs.target];
 
-          After = [ config.kdn.desktop.sway.systemd.envs.target ];
-          PartOf = [ config.wayland.systemd.target ];
+          After = [config.kdn.desktop.sway.systemd.envs.target];
+          PartOf = [config.wayland.systemd.target];
         };
         systemd.user.services.keepassxc.Install.WantedBy = [
           config.kdn.desktop.sway.systemd.secrets-service.service
@@ -174,15 +170,15 @@ in
             config.kdn.desktop.sway.systemd.envs.target
             "tray.target"
           ];
-          PartOf = [ config.wayland.systemd.target ];
+          PartOf = [config.wayland.systemd.target];
         };
         systemd.user.services.nextcloud-client.Install = {
-          WantedBy = [ config.wayland.systemd.target ];
+          WantedBy = [config.wayland.systemd.target];
         };
         systemd.user.services.kdeconnect.Unit = {
-          Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
-          After = [ config.kdn.desktop.sway.systemd.envs.target ];
-          PartOf = [ config.wayland.systemd.target ];
+          Requires = [config.kdn.desktop.sway.systemd.envs.target];
+          After = [config.kdn.desktop.sway.systemd.envs.target];
+          PartOf = [config.wayland.systemd.target];
         };
         systemd.user.services.kdeconnect-indicator.Unit = {
           Requires = [
@@ -194,7 +190,7 @@ in
             config.kdn.desktop.sway.systemd.envs.target
             "kdeconnect.service"
           ];
-          PartOf = [ config.wayland.systemd.target ];
+          PartOf = [config.wayland.systemd.target];
         };
       })
       (lib.mkIf hasWorkstation {

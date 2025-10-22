@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.darwin;
-in
-{
+in {
   config = lib.mkIf cfg.enable {
     kdn.darwin = {
       dirs.apps.src = config.system.build.applications + /Applications;

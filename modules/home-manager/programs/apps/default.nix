@@ -3,31 +3,28 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   /*
-     copy-pasteable:
-    kdn.programs.apps."app" = {
-      enable = true;
-      #package.original = pkgs."app";
-      dirs.cache = [ ];
-      dirs.config = [ ];
-      dirs.data = [ ];
-      dirs.disposable = [ ];
-      dirs.reproducible = [ ];
-      dirs.state = [ ];
-    };
+   copy-pasteable:
+  kdn.programs.apps."app" = {
+    enable = true;
+    #package.original = pkgs."app";
+    dirs.cache = [ ];
+    dirs.config = [ ];
+    dirs.data = [ ];
+    dirs.disposable = [ ];
+    dirs.reproducible = [ ];
+    dirs.state = [ ];
+  };
   */
-  mkPathsOption =
-    prefix: extra:
+  mkPathsOption = prefix: extra:
     lib.mkOption {
       type = with lib.types; listOf str;
       apply = builtins.map (
         dir:
-        if prefix == "" || lib.strings.hasPrefix "/" dir then
-          lib.strings.removePrefix "/" dir
-        else
-          "${prefix}/${dir}"
+          if prefix == "" || lib.strings.hasPrefix "/" dir
+          then lib.strings.removePrefix "/" dir
+          else "${prefix}/${dir}"
       );
     }
     // extra;
@@ -36,17 +33,14 @@ let
     builtins.attrValues
     (builtins.filter (cfg: cfg.enable))
   ];
-in
-{
+in {
   options.kdn.programs.apps = lib.mkOption {
-    default = { };
+    default = {};
     type = lib.types.attrsOf (
       lib.types.submodule (
-        { name, ... }@appAttrs:
-        let
+        {name, ...} @ appAttrs: let
           cfg = appAttrs.config;
-        in
-        {
+        in {
           options = {
             enable = lib.mkOption {
               type = with lib.types; bool;
@@ -56,18 +50,18 @@ in
               type = with lib.types; str;
               default = name;
             };
-            dirs.cache = mkPathsOption ".cache" { };
-            dirs.config = mkPathsOption ".config" { };
-            dirs.data = mkPathsOption ".local/share" { };
-            dirs.disposable = mkPathsOption "" { };
-            dirs.reproducible = mkPathsOption "" { };
-            dirs.state = mkPathsOption ".local/state" { default = [ ]; };
-            files.cache = mkPathsOption ".cache" { default = [ ]; };
-            files.config = mkPathsOption ".config" { default = [ ]; };
-            files.data = mkPathsOption ".local/share" { default = [ ]; };
-            files.disposable = mkPathsOption "" { default = [ ]; };
-            files.reproducible = mkPathsOption "" { default = [ ]; };
-            files.state = mkPathsOption ".local/state" { default = [ ]; };
+            dirs.cache = mkPathsOption ".cache" {};
+            dirs.config = mkPathsOption ".config" {};
+            dirs.data = mkPathsOption ".local/share" {};
+            dirs.disposable = mkPathsOption "" {};
+            dirs.reproducible = mkPathsOption "" {};
+            dirs.state = mkPathsOption ".local/state" {default = [];};
+            files.cache = mkPathsOption ".cache" {default = [];};
+            files.config = mkPathsOption ".config" {default = [];};
+            files.data = mkPathsOption ".local/share" {default = [];};
+            files.disposable = mkPathsOption "" {default = [];};
+            files.reproducible = mkPathsOption "" {default = [];};
+            files.state = mkPathsOption ".local/state" {default = [];};
 
             package.original = lib.mkOption {
               type = with lib.types; nullOr package;
@@ -75,7 +69,7 @@ in
             };
             package.overlays = lib.mkOption {
               type = with lib.types; listOf (functionTo (attrsOf anything));
-              default = [ ];
+              default = [];
             };
             package.final = lib.mkOption {
               type = with lib.types; package;

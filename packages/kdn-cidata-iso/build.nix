@@ -2,8 +2,7 @@
   lib,
   pkgs,
   ...
-}:
-{
+}: {
   src ? ./cloud-init,
   hostname,
   basename ? "${hostname}.cidata",

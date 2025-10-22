@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.toolset.network;
-in
-{
+in {
   options.kdn.toolset.network = {
     enable = lib.mkEnableOption "networking tooling";
   };

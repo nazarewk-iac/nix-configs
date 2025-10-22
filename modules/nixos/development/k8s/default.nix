@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.development.k8s;
-in
-{
+in {
   options.kdn.development.k8s = {
     enable = lib.mkEnableOption "k8s development";
   };
@@ -61,7 +59,7 @@ in
 
         (pkgs.writeShellApplication {
           name = "kubectl-krew";
-          runtimeInputs = with pkgs; [ krew ];
+          runtimeInputs = with pkgs; [krew];
           text = ''
             krew "$@"
           '';

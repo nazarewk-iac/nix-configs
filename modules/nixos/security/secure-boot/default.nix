@@ -3,11 +3,9 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.security.secure-boot;
-in
-{
+in {
   options.kdn.security.secure-boot = {
     enable = lib.mkEnableOption "Secure Boot setup";
   };

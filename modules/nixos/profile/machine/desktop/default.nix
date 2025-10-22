@@ -3,18 +3,16 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.profile.machine.desktop;
-in
-{
+in {
   options.kdn.profile.machine.desktop = {
     enable = lib.mkEnableOption "enable desktop machine profile";
   };
 
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
-      { home-manager.sharedModules = [ { kdn.profile.machine.desktop.enable = cfg.enable; } ]; }
+      {home-manager.sharedModules = [{kdn.profile.machine.desktop.enable = cfg.enable;}];}
       {
         kdn.desktop.base.enable = true;
         kdn.hw.gpu.enable = true;
@@ -34,7 +32,7 @@ in
 
         kdn.desktop.enable = true;
 
-        boot.extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
+        boot.extraModulePackages = with config.boot.kernelPackages; [v4l2loopback];
 
         kdn.services.printing.enable = true;
         kdn.programs.firefox.enable = true;
@@ -65,8 +63,7 @@ in
             set -xeEuo pipefail
             export PATH="${
               lib.makeBinPath (
-                with pkgs;
-                [
+                with pkgs; [
                   wl-clipboard
                   coreutils
                   zbar

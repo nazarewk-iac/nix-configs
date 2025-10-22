@@ -3,18 +3,16 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.programs.thunderbird;
-in
-{
+in {
   options.kdn.programs.thunderbird = {
     enable = lib.mkEnableOption "thunderbird setup";
   };
 
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
-      { home-manager.sharedModules = [ { kdn.programs.thunderbird.enable = true; } ]; }
+      {home-manager.sharedModules = [{kdn.programs.thunderbird.enable = true;}];}
     ]
   );
 }
