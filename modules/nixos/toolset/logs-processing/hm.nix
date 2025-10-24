@@ -14,7 +14,7 @@ in {
     kdn.programs.apps.lnav = {
       # https://lnav.org/
       enable = true;
-      package.original = pkgs.kdn.lnav;
+      package.original = pkgs.lnav;
       dirs.cache = [];
       dirs.config = ["lnav"];
       dirs.data = [];
