@@ -324,11 +324,13 @@ async def stop(path, args):
 @main.command(context_settings={"ignore_unknown_options": True})
 @click.option("-p", "--path", default="")
 @click.argument("args", nargs=-1)
-async def resume(path, args):
+async def resume(path, args, edit: bool = False):
     klog = Klog()
     path = await get_profile_path(klog, CONFIG, path)
     await klog.resume(path, *args)
     print(await klog.day_summary(path))
+    if edit:
+        await klog.edit(path)
 
 
 @main.command(context_settings={"ignore_unknown_options": True})
@@ -445,7 +447,7 @@ async def raw(path, include_path, args):
 async def edit():
     klog = Klog()
     path = await get_profile_path(klog, CONFIG)
-    await klog.cmd("edit", path, stdout=None)
+    await klog.edit(path)
 
 
 if __name__ in ("__main__", "__mp_main__"):

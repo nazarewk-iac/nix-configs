@@ -1,16 +1,15 @@
+import anyio
+import cache
 import dataclasses
 import itertools
 import json
 import os
 import shlex
 import shutil
+import structlog
 import subprocess
 from pathlib import Path
 from typing import Iterable
-
-import anyio
-import cache
-import structlog
 
 from . import dto
 
@@ -142,4 +141,7 @@ class Klog:
         return await self.cmd("start", f"--summary={latest.summary}", *args, path)
 
     async def switch(self, path, *args):
-        return await self.cmd("switch", f"--resume", *args, path)
+        return await self.cmd("switch", "--resume", *args, path)
+
+    async def edit(self, path, *args):
+        return await self.cmd("edit", path, *args, path, stdout=None)
