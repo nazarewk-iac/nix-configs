@@ -323,8 +323,9 @@ async def stop(path, args):
 
 @main.command(context_settings={"ignore_unknown_options": True})
 @click.option("-p", "--path", default="")
+@click.option("-e/-E", "--edit/--no-edit", default=False)
 @click.argument("args", nargs=-1)
-async def resume(path, args, edit: bool = False):
+async def resume(path, args, edit):
     klog = Klog()
     path = await get_profile_path(klog, CONFIG, path)
     await klog.resume(path, *args)

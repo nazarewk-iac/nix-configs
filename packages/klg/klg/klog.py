@@ -144,4 +144,4 @@ class Klog:
         return await self.cmd("switch", "--resume", *args, path)
 
     async def edit(self, path, *args):
-        return await self.cmd("edit", path, *args, path, stdout=None)
+        return await self.cmd("edit", *args, path, stdout=None)
