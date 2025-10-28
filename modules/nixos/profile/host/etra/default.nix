@@ -2,10 +2,10 @@
   config,
   pkgs,
   lib,
-  kdn,
+  kdnConfig,
   ...
 }: let
-  inherit (kdn) self;
+  inherit (kdnConfig) self;
   cfg = config.kdn.profile.host.etra;
 
   rCfg = config.kdn.networking.router;
@@ -326,6 +326,11 @@ in {
         };
         kdn.networking.router.tsig.keyTpls =
           config.kdn.security.secrets.sops.placeholders.dns.knot-dns.keys;
+      }
+      {
+        # kdn.nix.remote-builder.localhost.publicHostKey = "??";
+        kdn.nix.remote-builder.localhost.maxJobs = 2;
+        kdn.nix.remote-builder.localhost.speedFactor = 4;
       }
     ]
   );

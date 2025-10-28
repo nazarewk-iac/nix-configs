@@ -2,7 +2,7 @@
   lib,
   pkgs,
   config,
-  kdn,
+  kdnConfig,
   ...
 }: let
   isCandidate = filename: fileCfg:
@@ -20,11 +20,13 @@ in {
     (
       lib.mkMerge [
         {
+          kdn.nix.remote-builder.enable = true;
+
           # lays out SSH keys into files (for the remote builder amongths others
           # TODO: cut it out into baseline?
           kdn.security.secrets.sops.files."ssh" = {
             keyPrefix = "nix/ssh";
-            sopsFile = "${kdn.self}/default.unattended.sops.yaml";
+            sopsFile = "${kdnConfig.self}/default.unattended.sops.yaml";
             basePath = "/run/configs";
             sops.mode = "0440";
             overrides = [

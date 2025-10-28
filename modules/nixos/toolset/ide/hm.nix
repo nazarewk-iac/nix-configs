@@ -2,7 +2,6 @@
   lib,
   pkgs,
   config,
-  kdn,
   ...
 }: let
   cfg = config.kdn.toolset.ide;

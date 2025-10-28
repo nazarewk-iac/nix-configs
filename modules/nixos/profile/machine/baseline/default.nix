@@ -2,10 +2,10 @@
   lib,
   pkgs,
   config,
-  kdn,
+  kdnConfig,
   ...
 }: let
-  inherit (kdn) self;
+  inherit (kdnConfig) self;
   cfg = config.kdn.profile.machine.baseline;
 in {
   options.kdn.profile.machine.baseline = {

@@ -177,6 +177,11 @@ in {
         systemd.network.enable = true;
         networking.useNetworkd = true;
       }
+      {
+        # kdn.nix.remote-builder.localhost.publicHostKey = "??";
+        kdn.nix.remote-builder.localhost.maxJobs = 6;
+        kdn.nix.remote-builder.localhost.speedFactor = 16;
+      }
     ]
   );
 }

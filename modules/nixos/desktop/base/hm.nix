@@ -1,9 +1,8 @@
 {
-  osConfig,
   config,
   pkgs,
   lib,
-  kdn,
+  kdnConfig,
   ...
 }: let
   cfg = config.kdn.desktop.base;
@@ -60,7 +59,7 @@ in {
         nixpkgs.overlays = [
           (final: prev: {
             wezterm = let
-              upstream = kdn.inputs.wezterm.packages."${final.stdenv.system}".default;
+              upstream = kdnConfig.inputs.wezterm.packages."${final.stdenv.system}".default;
               base = prev.wezterm;
               #base = upstream;
             in

@@ -58,6 +58,16 @@ in {
           nix.buildMachines =
             lib.pipe
             [
+              # TODO: maybe generate the list dynamically with a script instead?
+
+              # TODO: generate it from a flake/nixosConfigurations
+
+              /*
+              builders are chosen based on:
+                1. required & supported features
+                2. speedFactor
+                3. free build slots (maxJobs)
+              */
               /*
               {
                 hostName = "faro";
@@ -80,24 +90,31 @@ in {
                 ];
                 mandatoryFeatures = [];
               }
+              {
+                hostName = "etra";
+                systems = ["x86_64-linux"];
+                maxJobs = 2;
+                speedFactor = 4;
+              }
+              {
+                hostName = "brys";
+                systems = ["x86_64-linux"];
+                maxJobs = 12;
+                speedFactor = 32;
+              }
+              {
+                hostName = "oams";
+                systems = ["x86_64-linux"];
+                maxJobs = 6;
+                speedFactor = 10;
+              }
+              # TODO: update and enable `anji` as a builder
               #{
-              #  hostName = "etra";
-              #  systems = ["x86_64-linux"];
-              #  maxJobs = 2;
-              #  speedFactor = 4;
+              #  hostName = "anji";
+              #  systems = ["aarch64-darwin" "x86_64-darwin"] ;
+              #  maxJobs = 4;
+              #  speedFactor = 8; # 4 perf and 4 efficiency cores
               #}
-              {
-                hostName = "brys";
-                systems = ["x86_64-linux"];
-                maxJobs = 16;
-                speedFactor = 32;
-              }
-              {
-                hostName = "brys";
-                systems = ["x86_64-linux"];
-                maxJobs = 16;
-                speedFactor = 32;
-              }
             ]
             [
               (builtins.filter (
@@ -106,6 +123,8 @@ in {
                   != builder.hostName
                   && !(lib.strings.hasPrefix config.kdn.hostName builder.hostName)
               ))
+              # TODO: implement the most common "x86_64-linux" builder properly
+              (builtins.filter (builder: !(builtins.elem "x86_64-linux" builder.systems)))
               (builtins.map (
                 old: let
                   defaults = {
@@ -156,6 +175,12 @@ in {
                 )
               ))
               lib.lists.flatten
+              (l:
+                l
+                ++ lib.lists.optional (cfg.localhost.publicHostKey != "") (builtins.removeAttrs cfg.localhost ["enable"]
+                  // {
+                    speedFactor = cfg.localhost.speedFactor * 1000;
+                  }))
             ];
         }
       ]

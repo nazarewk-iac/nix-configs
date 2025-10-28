@@ -2,7 +2,7 @@
   config,
   pkgs,
   lib,
-  kdn,
+  kdnConfig,
   ...
 }: let
   cfg = config.kdn.profile.host.briv;
@@ -16,11 +16,11 @@ in {
       {
         assertions = [
           {
-            assertion = kdn.features.rpi4 -> cfg.enable;
+            assertion = kdnConfig.features.rpi4 -> cfg.enable;
             message = ''`kdn.profile.host.briv.enable` requires Raspberry Pi 4 profile.'';
           }
           {
-            assertion = !(kdn.features.rpi4 && kdn.features.installer) -> cfg.enable;
+            assertion = !(kdnConfig.features.rpi4 && kdnConfig.features.installer) -> cfg.enable;
             message = ''`kdn.profile.host.briv.enable` cannot use Raspberry Pi 4 installer profile.'';
           }
         ];
@@ -28,7 +28,6 @@ in {
       {
         kdn.profile.machine.baseline.enable = true;
         security.sudo.wheelNeedsPassword = false;
-        kdn.nix.remote-builder.enable = true;
       }
       {
         kdn.services.home-assistant.enable = true;
@@ -59,6 +58,11 @@ in {
         };
       })
       # TODO: I had to `mkdir /var/tmp/nix-daemon` to finish the build
+      {
+        # kdn.nix.remote-builder.localhost.publicHostKey = "??";
+        kdn.nix.remote-builder.localhost.maxJobs = 2;
+        kdn.nix.remote-builder.localhost.speedFactor = 4;
+      }
     ]
   );
 }

@@ -2,21 +2,21 @@
   lib,
   pkgs,
   config,
-  kdn,
+  kdnConfig,
   ...
 }: let
   cfg = config.kdn.virtualisation.microvm.guest;
 
   microvmPersistNames = ["microvm"] ++ builtins.attrNames config.kdn.hw.disks.base;
 in {
-  imports = kdn.self.lib.lists.optionals (!kdn.features.microvm-guest) [
-    kdn.inputs.microvm.nixosModules.microvm-options
+  imports = kdnConfig.self.lib.lists.optionals (!kdnConfig.features.microvm-guest) [
+    kdnConfig.inputs.microvm.nixosModules.microvm-options
   ];
 
   options.kdn.virtualisation.microvm.guest = {
     enable = lib.mkOption {
       type = lib.types.bool;
-      default = kdn.features.microvm-guest;
+      default = kdnConfig.features.microvm-guest;
     };
   };
 

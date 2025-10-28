@@ -259,21 +259,21 @@ darwin-nixos-os (macOS + NixOS)
 platform-specific (nixos, nix-darwin, home-manager)
 ```
 
-### Special Arguments (kdn)
-The `kdn` argument is propagated through modules via `kdn.configure` function (in `modules/meta/`):
-- `kdn.inputs` - Flake inputs
-- `kdn.lib` - Extended library
-- `kdn.self` - Self-reference to flake
-- `kdn.moduleType` - Current module type (nixos, nix-darwin, home-manager, checks)
-- `kdn.features.*` - Feature flags (rpi4, microvm-host, darwin-utm-guest, etc.)
-- `kdn.parent` - Parent context tracking
-- `kdn.configure` - Create child contexts
-- `kdn.isOfAnyType` - Type checking helper
-- `kdn.hasParentOfAnyType` - Parent type checking
+### Special Arguments (kdn*)
+The `kdnConfig` & `kdnMeta` arguments are propagated through modules via `kdnConfig.output.mkSubmodule` function (in `modules/meta/`):
+- `kdnConfig.inputs` - Flake inputs
+- `kdnConfig.lib` - Extended library
+- `kdnConfig.self` - Self-reference to flake
+- `kdnConfig.moduleType` - Current module type (nixos, nix-darwin, home-manager, checks)
+- `kdnConfig.features.*` - Feature flags (rpi4, microvm-host, darwin-utm-guest, etc.)
+- `kdnConfig.parent` - Parent context tracking
+- `kdnConfig.output.mkSubmodule` - Create child contexts
+- `kdnConfig.util.isOfAnyType` - Type checking helper
+- `kdnConfig.hasParentOfAnyType` - Parent type checking
 
 ### Common Module Pattern
 ```nix
-{config, lib, kdn, ...}: let
+{config, lib, ...}: let
   cfg = config.kdn.some.module;
 in {
   options.kdn.some.module = {

@@ -2,10 +2,10 @@
   config,
   lib,
   pkgs,
-  kdn,
+  kdnConfig,
   ...
 } @ args: let
-  inherit (kdn) self inputs;
+  inherit (kdnConfig) self inputs;
   cfg = config.kdn;
 in {
   imports =
@@ -27,7 +27,7 @@ in {
         nix.package = pkgs.lixPackageSets.latest.lix;
         nixpkgs.overlays = [self.overlays.default];
       }
-      (lib.mkIf (!kdn.features.microvm-guest) {
+      (lib.mkIf (!kdnConfig.features.microvm-guest) {
         nix.extraOptions = cfg.nixConfig.nix.extraOptions;
         nix.settings = cfg.nixConfig.nix.settings;
         nixpkgs.config = cfg.nixConfig.nixpkgs.config;
@@ -36,7 +36,7 @@ in {
         home-manager.backupFileExtension = "hmbackup";
         home-manager.useGlobalPkgs = false;
         home-manager.useUserPackages = true;
-        home-manager.extraSpecialArgs = kdn.configure {moduleType = "home-manager";};
+        home-manager.extraSpecialArgs = kdnConfig.output.mkSubmodule {moduleType = "home-manager";};
 
         home-manager.sharedModules = [
           {

@@ -2,10 +2,8 @@
   lib,
   pkgs,
   config,
-  kdn,
   ...
 }: let
-  inherit (kdn) self;
   cfg = config.kdn.profile.machine.workstation;
 in {
   config = lib.mkIf cfg.enable (

@@ -2,14 +2,14 @@
   config,
   pkgs,
   lib,
-  kdn,
+  kdnConfig,
   ...
 }: let
-  inherit (kdn) self inputs;
+  inherit (kdnConfig) self inputs;
 
   cfg = config.kdn.profile.hardware.darwin-utm-guest;
 
-  isActive = kdn.features.darwin-utm-guest or false;
+  isActive = kdnConfig.features.darwin-utm-guest or false;
   onActive = self.lib.lists.optional isActive;
 in {
   imports = [] ++ onActive "${inputs.nixpkgs}/nixos/modules/profiles/qemu-guest.nix";

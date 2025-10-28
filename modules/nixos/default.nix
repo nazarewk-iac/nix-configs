@@ -1,10 +1,10 @@
 {
   config,
   lib,
-  kdn,
+  kdnConfig,
   ...
 }: let
-  inherit (kdn) inputs;
+  inherit (kdnConfig) inputs;
 in {
   imports =
     [

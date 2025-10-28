@@ -2,27 +2,27 @@
   config,
   lib,
   pkgs,
-  kdn,
+  kdnConfig,
   ...
 }: let
-  inherit (kdn) inputs;
+  inherit (kdnConfig) inputs;
 in {
   imports =
-    if kdn.moduleType == "nixos"
+    if kdnConfig.moduleType == "nixos"
     then [inputs.stylix.nixosModules.stylix]
-    else if kdn.moduleType == "nix-darwin"
+    else if kdnConfig.moduleType == "nix-darwin"
     then [inputs.stylix.darwinModules.stylix]
     else if
-      kdn.moduleType
+      kdnConfig.moduleType
       == "home-manager"
-      && !(kdn.hasParentOfAnyType [
+      && !(kdnConfig.util.hasParentOfAnyType [
         "nixos"
         "nix-darwin"
       ])
     then [inputs.stylix.homeModules.stylix]
     else [];
   config = lib.mkMerge [
-    (lib.attrsets.optionalAttrs (kdn.isOfAnyType ["nixos"]) {
+    (lib.attrsets.optionalAttrs (kdnConfig.util.isOfAnyType ["nixos"]) {
       /*
       TODO: review new option added for simplifications?
        see https://github.com/danth/stylix/commit/7682713f6af1d32a33f8c4e3d3d141af5ad1761a
@@ -46,7 +46,7 @@ in {
       stylix.fonts.monospace.name = lib.mkDefault "Fira Code";
       stylix.fonts.monospace.package = lib.mkDefault pkgs.fira-code;
     })
-    (lib.attrsets.optionalAttrs (kdn.isOfAnyType ["nixos"]) {
+    (lib.attrsets.optionalAttrs (kdnConfig.util.isOfAnyType ["nixos"]) {
       fonts.fontDir.enable = true;
       fonts.packages = with pkgs; [
         fira-code

@@ -100,16 +100,17 @@
   }: let
     lib = import ./lib {inherit (inputs.nixpkgs) lib;};
     flakeLib = lib.kdn.flakes.forFlake self;
-    mkSpecialArgs = module: let
-      mod = lib.evalModules {
-        modules = [
-          ./modules/meta
-          {kdn = {inherit inputs lib self;};}
-          {kdn = module;}
-        ];
-      };
-    in
-      mod.config;
+    kdnModule = lib.evalModules {
+      class = "kdn";
+      modules = [
+        ./modules/meta
+        {
+          inherit inputs lib self;
+          inherit (inputs) nix-configs;
+        }
+      ];
+    };
+    mkSpecialArgs = kdnModule.config.output.mkSubmodule;
   in (flake-parts.lib.mkFlake {inherit inputs;} {
     systems = import inputs.systems;
 

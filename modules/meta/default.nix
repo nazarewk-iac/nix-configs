@@ -4,62 +4,55 @@
   options,
   ...
 }: let
-  cfg = config.kdn;
   emptyParent = {};
 in {
-  options.kdn.inputs = lib.mkOption {default = cfg.parent.inputs;};
-  options.kdn.lib = lib.mkOption {default = cfg.parent.lib;};
-
-  options.kdn.self = lib.mkOption {default = cfg.parent.self or cfg.self.inputs;};
-  options.kdn.nix-configs = lib.mkOption {default = cfg.parent.nix-configs or cfg.self;};
-  options.kdn.parent = lib.mkOption {default = emptyParent;};
-  options.kdn.configure = lib.mkOption {
+  options.output.mkSubmodule = lib.mkOption {
     readOnly = true;
     default = module: let
       mod = lib.evalModules {
         modules = [
           ./.
-          {
-            kdn = lib.mkMerge [
-              {
-                inherit (cfg) inputs lib self;
-                parent = builtins.removeAttrs config ["_module"];
-              }
-              module
-            ];
-          }
-          (lib.pipe config [
-            (
-              c:
-                c
-                // {
-                  kdn = builtins.removeAttrs c.kdn [
-                    "configure"
-                    "hasParentOfAnyType"
-                    "isOfAnyType"
-                  ];
-                }
-            )
-            (lib.mkOverride 1100)
-          ])
+          module
+          {parent = lib.mkOverride 1099 (builtins.removeAttrs config ["_module"]);}
+          (lib.mkOverride 1100 (builtins.removeAttrs config [
+            "parents"
+            "output"
+            "util"
+          ]))
         ];
       };
-    in
-      mod.config;
-  };
-  options.kdn.isOfAnyType = lib.mkOption {
-    readOnly = true;
-    default = builtins.elem cfg.moduleType;
-  };
-  options.kdn.hasParentOfAnyType = lib.mkOption {
-    readOnly = true;
-    default = types: cfg.parent != emptyParent && cfg.parent.kdn.isOfAnyType types;
+    in {
+      kdnMeta = mod;
+      kdnConfig = mod.config;
+    };
   };
 
-  options.kdn.moduleType = lib.mkOption {
+  options.inputs = lib.mkOption {default = config.parent.inputs;};
+  options.lib = lib.mkOption {default = config.parent.lib;};
+  options.self = lib.mkOption {default = config.parent.self or config.self.inputs;};
+  options.nix-configs = lib.mkOption {default = config.parent.nix-configs or config.self;};
+  options.parent = lib.mkOption {default = emptyParent;};
+
+  options.parents = lib.mkOption {
+    readOnly = true;
+    default =
+      if config.parent == emptyParent
+      then []
+      else [config.parent] ++ config.parent.parents;
+  };
+  options.util.isOfAnyType = lib.mkOption {
+    readOnly = true;
+    default = builtins.elem config.moduleType;
+  };
+  options.util.hasParentOfAnyType = lib.mkOption {
+    readOnly = true;
+    default = types: builtins.any (parent: parent.util.isOfAnyType types) config.parents;
+  };
+
+  options.moduleType = lib.mkOption {
     type = with lib.types; str;
   };
-  options.kdn.features = {
+  options.features = {
     rpi4 = lib.mkOption {
       type = with lib.types; bool;
       default = false;

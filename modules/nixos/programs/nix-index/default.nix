@@ -2,10 +2,9 @@
   lib,
   pkgs,
   config,
-  kdn,
+  kdnConfig,
   ...
 }: let
-  inherit (kdn) inputs;
   cfg = config.kdn.programs.nix-index;
 in {
   options.kdn.programs.nix-index = {
@@ -19,7 +18,7 @@ in {
 
     # use nix-index without `nix-channel`
     # see https://github.com/bennofs/nix-index/issues/167
-    nix.nixPath = ["nixpkgs=${inputs.nixpkgs}"];
+    nix.nixPath = ["nixpkgs=${kdnConfig.inputs.nixpkgs}"];
     environment.systemPackages = with pkgs; [nix-index];
   };
 }

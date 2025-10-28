@@ -2,24 +2,24 @@
   lib,
   pkgs,
   config,
-  kdn,
+  kdnConfig,
   ...
 }: let
   cfg = config.kdn.virtualisation.microvm.host;
 in {
-  imports = [kdn.inputs.microvm.nixosModules.host];
+  imports = [kdnConfig.inputs.microvm.nixosModules.host];
 
   options.kdn.virtualisation.microvm.host = {
     enable = lib.mkOption {
       type = lib.types.bool;
-      default = kdn.features.microvm-host;
+      default = kdnConfig.features.microvm-host;
     };
 
     flake.nixpkgs = lib.mkOption {
-      default = kdn.inputs.nixpkgs;
+      default = kdnConfig.inputs.nixpkgs;
     };
     flake.microvm = lib.mkOption {
-      default = kdn.inputs.microvm;
+      default = kdnConfig.inputs.microvm;
     };
   };
 

@@ -2,7 +2,7 @@
   config,
   pkgs,
   lib,
-  kdn,
+  kdnConfig,
   ...
 }: let
   cfg = config.kdn.profile.host.brys;
@@ -279,6 +279,11 @@ in {
           };
           ipv6.method = "disabled";
         };
+      }
+      {
+        # kdn.nix.remote-builder.localhost.publicHostKey = "??";
+        kdn.nix.remote-builder.localhost.maxJobs = 12;
+        kdn.nix.remote-builder.localhost.speedFactor = 32;
       }
     ]
   );

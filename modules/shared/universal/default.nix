@@ -2,7 +2,6 @@
   config,
   lib,
   pkgs,
-  kdn,
   ...
 }: {
   imports =
@@ -17,12 +16,6 @@
 
   options.kdn = {
     enable = lib.mkEnableOption "basic Nix configs for kdn";
-
-    arg = lib.mkOption {
-      internal = true;
-      readOnly = true;
-      default = kdn;
-    };
 
     hostName = lib.mkOption {
       type = with lib.types; str;

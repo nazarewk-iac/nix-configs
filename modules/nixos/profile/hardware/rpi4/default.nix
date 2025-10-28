@@ -2,18 +2,18 @@
   config,
   pkgs,
   lib,
-  kdn,
+  kdnConfig,
   ...
 }: let
-  inherit (kdn) self inputs;
+  inherit (kdnConfig) self inputs;
 
   cfg = config.kdn.profile.hardware.rpi4;
 
   mkIfRPi4 = cond: conf: lib.attrsets.optionalAttrs (rpi4.any) (lib.mkIf cond conf);
 
-  rpi4.any = kdn.features.rpi4;
-  rpi4.normal = rpi4.any && !kdn.features.installer;
-  rpi4.installer = rpi4.any && kdn.features.installer;
+  rpi4.any = kdnConfig.features.rpi4;
+  rpi4.normal = rpi4.any && !kdnConfig.features.installer;
+  rpi4.installer = rpi4.any && kdnConfig.features.installer;
 in {
   imports = self.lib.lists.optionals rpi4.any (
     [
@@ -29,7 +29,7 @@ in {
     enable = lib.mkOption {
       type = with lib.types; bool;
       readOnly = true;
-      default = kdn.features.rpi4;
+      default = rpi4.any;
     };
     i2c.enable = lib.mkOption {
       type = with lib.types; bool;
@@ -107,7 +107,7 @@ in {
             watcherScript = let
               python = pkgs.python3;
               src =
-                kdn.nix-configs.inputs.rpi-sbcshop-hat-ups
+                kdnConfig.nix-configs.inputs.rpi-sbcshop-hat-ups
                 // {
                   pythonModule = python;
                 };

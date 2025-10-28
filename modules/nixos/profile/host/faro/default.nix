@@ -18,9 +18,6 @@ in {
         security.sudo.wheelNeedsPassword = false;
       }
       {
-        kdn.nix.remote-builder.enable = true;
-      }
-      {
         kdn.hw.disks.initrd.failureTarget = "rescue.target";
         kdn.hw.disks.enable = true;
         kdn.hw.disks.devices."boot".path = "/dev/vda";
