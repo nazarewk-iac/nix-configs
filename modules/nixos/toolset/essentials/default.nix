@@ -11,6 +11,8 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
+    kdn.programs.handlr.enable = true;
+
     environment.systemPackages =
       (with pkgs; [
         curl
@@ -26,7 +28,6 @@ in {
         # xdg-launch # this coredumps under KDE, probably poorly written
 
         # https://wiki.archlinux.org/title/Default%20applications#Resource_openers
-        handlr-regex
         mimeo
 
         jq

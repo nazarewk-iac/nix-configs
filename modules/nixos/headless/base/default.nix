@@ -25,7 +25,7 @@ in {
         kdn.hw.basic.enable = true;
         kdn.programs.atuin.enable = true;
         kdn.programs.fish.enable = true;
-        kdn.programs.handlr.enable = true;
+        kdn.toolset.essentials.enable = true;
         kdn.programs.nix-utils.enable = true;
         kdn.programs.zsh.enable = true;
         kdn.toolset.fs.enable = true;
@@ -70,7 +70,6 @@ in {
 
         environment.localBinInPath = true;
 
-        kdn.toolset.essentials.enable = true;
 
         boot.kernel.sysctl = let
           mb = 1024 * 1024;

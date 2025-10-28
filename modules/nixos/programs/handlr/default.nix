@@ -36,12 +36,9 @@ in {
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
-        environment.systemPackages = with pkgs; [
-          cfg.package
-        ];
-
         home-manager.sharedModules = [
           {
+            home.packages = [cfg.package];
             xdg.configFile."handlr/handlr.toml".source = (pkgs.formats.toml {}).generate "handlr.toml" {
               enable_selector = true;
               selector = "${pkgs.wofi}/bin/wofi --dmenu --insensitive --normal-window --prompt='Open With: '";
