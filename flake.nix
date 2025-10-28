@@ -474,5 +474,6 @@
         )
       ];
     };
+    flake.self = self;
   });
 }
