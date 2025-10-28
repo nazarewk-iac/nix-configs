@@ -19,11 +19,13 @@
   teams = browsers.chromium;
   terminal = ["foot.desktop"];
   vectorImages = ["org.gnome.eog.desktop"];
+  videoPlayer = ["vlc.desktop" "org.kde.haruna.desktop"];
 in {
   config = {
+    # TODO: use `xdg.mimeApps.defaultApplicationPackages` where appropriate
     xdg.mimeApps.enable = true;
     xdg.mimeApps.associations.added = {};
-    xdg.mimeApps.defaultApplications = lib.mkForce {
+    xdg.mimeApps.defaultApplications = {
       "application/pdf" = pdf;
       "application/rdf+xml" = rss;
       "application/rss+xml" = rss;
@@ -41,6 +43,18 @@ in {
       "text/html" = browsers.preferred;
       "text/plain" = ide;
       "text/xml" = browsers.preferred;
+
+      "video/mp4" = videoPlayer; # MP4 files
+      "video/x-matroska" = videoPlayer; # MKV files
+      "video/x-msvideo" = videoPlayer; # AVI files
+      "video/quicktime" = videoPlayer; # MOV files
+      "video/x-flv" = videoPlayer; # FLV files
+      "video/webm" = videoPlayer; # WebM files
+      "video/mpeg" = videoPlayer; # MPEG files
+      "video/ogg" = videoPlayer; # OGG video files
+      "video/3gpp" = videoPlayer; # 3GP files
+      "video/x-ms-wmv" = videoPlayer; # WMV files
+
       "x-scheme-handler/chrome" = browsers.preferred;
       "x-scheme-handler/http" = browsers.preferred;
       "x-scheme-handler/https" = browsers.preferred;
