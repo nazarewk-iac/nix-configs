@@ -101,7 +101,7 @@
     lib = import ./lib {inherit (inputs.nixpkgs) lib;};
     flakeLib = lib.kdn.flakes.forFlake self;
     kdnModule = lib.evalModules {
-      class = "kdn";
+      class = "kdn-meta";
       modules = [
         ./modules/meta
         {
@@ -464,7 +464,7 @@
     flake.darwinModules.default = ./modules/nix-darwin;
     flake.darwinConfigurations.anji = inputs.nix-darwin.lib.darwinSystem {
       system = "aarch64-darwin";
-      specialArgs = mkSpecialArgs {moduleType = "nix-darwin";};
+      specialArgs = mkSpecialArgs {moduleType = "darwin";};
       modules = [
         self.darwinModules.default
         (

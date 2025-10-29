@@ -22,11 +22,11 @@ in {
       type = with lib.types;
         enum [
           null
-          "nix-darwin"
+          "darwin"
         ];
       default =
         if pkgs.stdenv.isDarwin && config ? system && config.system ? darwinRelease
-        then "nix-darwin"
+        then "darwin"
         else null;
     };
 

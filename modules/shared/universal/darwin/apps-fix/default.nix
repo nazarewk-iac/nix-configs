@@ -21,7 +21,7 @@ for background see:
     copyScript = lib.mkOption {
       type = with lib.types; str;
       default =
-        lib.optionalString (config.kdn.darwin.type == "nix-darwin") ''
+        lib.optionalString (config.kdn.darwin.type == "darwin") ''
           echo 'Setting up /Applications/Nix Apps...' >&2
         ''
         + ''

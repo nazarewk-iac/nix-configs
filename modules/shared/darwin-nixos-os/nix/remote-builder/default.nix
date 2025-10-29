@@ -2,6 +2,7 @@
   lib,
   pkgs,
   config,
+  kdnConfig,
   ...
 }: let
   cfg = config.kdn.nix.remote-builder;
@@ -31,7 +32,7 @@ in {
                 config.kdn.profile.user.kdn.ssh.authorizedKeysPath
               ];
             }
-            (lib.mkIf (builtins.elem "nix-darwin" config.kdn.types) {
+            (lib.mkIf (builtins.elem "darwin" config.kdn.types) {
               description = cfg.description;
               gid = cfg.group.id;
               isHidden = true;
@@ -42,6 +43,9 @@ in {
             })
           ];
         }
+        (lib.attrsets.optionalAttrs (kdnConfig.moduleType == "nixos") {
+          services.displayManager.hiddenUsers = [cfg.user.name];
+        })
       ]
     ))
     (lib.mkIf cfg.use (

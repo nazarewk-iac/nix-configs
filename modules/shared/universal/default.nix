@@ -2,8 +2,9 @@
   config,
   lib,
   pkgs,
+  kdnConfig,
   ...
-}: {
+} @ args: {
   imports =
     [
       ./_stylix.nix
@@ -16,6 +17,12 @@
 
   options.kdn = {
     enable = lib.mkEnableOption "basic Nix configs for kdn";
+
+    args = lib.mkOption {
+      internal = true;
+      readOnly = true;
+      default = args;
+    };
 
     hostName = lib.mkOption {
       type = with lib.types; str;
@@ -34,7 +41,7 @@
   config = lib.mkIf config.kdn.enable (
     lib.mkMerge [
       {
-        kdn.types = [pkgs.stdenv.system] ++ lib.strings.splitString "-" pkgs.stdenv.system;
+        kdn.types = [kdnConfig.moduleType pkgs.stdenv.system] ++ lib.strings.splitString "-" pkgs.stdenv.system;
       }
     ]
   );

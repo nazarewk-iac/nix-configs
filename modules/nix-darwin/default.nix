@@ -21,7 +21,7 @@ in {
 
   config = lib.mkIf config.kdn.enable (
     lib.mkMerge [
-      {kdn.darwin.type = "nix-darwin";}
+      {kdn.darwin.type = "darwin";}
       {networking.localHostName = config.kdn.hostName;}
       {
         homebrew.enable = true;
