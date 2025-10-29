@@ -138,6 +138,6 @@ flake_path="$(nix eval --raw '.#self.sourceInfo.outPath')"
 post_args+=(
   --flake "${flake_path}#${name}"
 )
-nix copy --to "ssh-ng://${remote_host}" '.#self.sourceInfo.outPath'
+nix copy --to "ssh-ng://${remote_host}" "${flake_path}"
 
 ssh "$remote_host" "${pre_cmd[@]}" darwin-rebuild "${pre_args[@]}" "${cmd}" "${post_args[@]}"
