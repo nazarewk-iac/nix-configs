@@ -14,7 +14,7 @@
       {
         name = "2.3.1+";
         check = atLeastZFSVersion "2.3.1";
-        pkg = pkgs.linuxKernel.packages.linux_6_16 or null;
+        pkg = pkgs.linuxKernel.packages.linux_6_17 or null;
       }
       {
         name = "default";

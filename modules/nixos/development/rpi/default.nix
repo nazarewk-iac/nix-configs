@@ -12,7 +12,7 @@ in {
 
   config = lib.mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
-      rpi-imager
+      #rpi-imager # TODO: 2025-10-28: broken https://github.com/NixOS/nixpkgs/issues/454826
     ];
   };
 }

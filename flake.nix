@@ -106,7 +106,7 @@
         ./modules/meta
         {
           inherit inputs lib self;
-          inherit (inputs) nix-configs;
+          nix-configs = self;
         }
       ];
     };

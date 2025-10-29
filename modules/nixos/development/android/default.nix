@@ -16,7 +16,7 @@ in {
       android-tools
     ];
     services.udev.packages = [
-      pkgs.android-udev-rules
+      # pkgs.android-udev-rules # superseded by built-in rules
     ];
   };
 }
