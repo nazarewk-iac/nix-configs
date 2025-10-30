@@ -161,6 +161,12 @@ in {
           Preferences."browser.startup.homepage_override.mstone" = mkPrefLocked "ignore";
         };
       }
+      {
+        # disable first run and update wizards
+        programs.firefox.policies = {
+          GenerativeAI.Enabled = false;
+        };
+      }
     ]
   );
 }
