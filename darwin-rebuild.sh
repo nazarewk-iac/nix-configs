@@ -140,4 +140,4 @@ post_args+=(
 )
 nix copy --to "ssh-ng://${remote_host}" "${flake_path}"
 
-ssh "$remote_host" "${pre_cmd[@]}" darwin-rebuild "${pre_args[@]}" "${cmd}" "${post_args[@]}"
+ssh -t "$remote_host" "${pre_cmd[@]}" darwin-rebuild "${pre_args[@]}" "${cmd}" "${post_args[@]}"

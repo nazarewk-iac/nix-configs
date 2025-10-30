@@ -126,18 +126,14 @@
     ];
 
     flake.overlays.default = inputs.nixpkgs.lib.composeManyExtensions [
+      self.overlays.packages
       inputs.nur.overlays.default
       inputs.microvm.overlays.default
-      self.overlays.packages
-      (final: prev: {
-        inherit lib;
-
-        nixos-anywhere = inputs.nixos-anywhere.packages."${final.stdenv.system}".default;
-      })
+      (final: prev: {inherit lib;})
+      (final: prev: {nixos-anywhere = inputs.nixos-anywhere.packages."${final.stdenv.system}".default;})
       (
         final: prev:
           if prev.stdenv.isDarwin
-          # WARNING: this does not work on Lix due to missing `builtins.convertHash`
           then inputs.brew-nix.overlays.default final prev
           else {}
       )
@@ -150,7 +146,7 @@
             sevenzip = prev.darwin.apple_sdk_11_0.callPackage "${src}/7zip" {inherit pkgs;};
             nclib = import "${src}/nclib.nix" {inherit pkgs sevenzip;};
 
-            originalCasks = (inputs.nixcasks.output {osVersion = "sequoia";}).packages.${prev.stdenv.system};
+            originalCasks = (inputs.nixcasks.output {osVersion = "tahoe";}).packages.${prev.stdenv.system};
 
             overrides =
               lib.pipe
@@ -463,15 +459,10 @@
     ];
     flake.darwinModules.default = ./modules/nix-darwin;
     flake.darwinConfigurations.anji = inputs.nix-darwin.lib.darwinSystem {
-      system = "aarch64-darwin";
       specialArgs = mkSpecialArgs {moduleType = "darwin";};
       modules = [
         self.darwinModules.default
-        (
-          {config, ...}: {
-            kdn.hostName = "anji";
-          }
-        )
+        {kdn.hostName = "anji";}
       ];
     };
     flake.self = self;

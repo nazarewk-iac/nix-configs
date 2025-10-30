@@ -19,13 +19,9 @@ in {
         kdn.profile.machine.baseline.enable = true;
       }
       {
-        nixpkgs.hostPlatform = {
-          config = "aarch64-apple-darwin";
-          system = "aarch64-darwin";
-        };
-
-        system.stateVersion = 5;
-        home-manager.sharedModules = [{home.stateVersion = "25.05";}];
+        nixpkgs.system = "aarch64-darwin";
+        system.stateVersion = 6;
+        home-manager.sharedModules = [{home.stateVersion = "25.11";}];
       }
       {
         kdn.nix.remote-builder.enable = true;
