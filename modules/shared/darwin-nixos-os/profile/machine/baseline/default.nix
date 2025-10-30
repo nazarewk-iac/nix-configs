@@ -9,6 +9,7 @@ in {
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
+        services.openssh.enable = true;
         environment.etc."kdn/source-flake".source = kdnConfig.self;
       }
     ]

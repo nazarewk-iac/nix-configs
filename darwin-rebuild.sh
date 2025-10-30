@@ -107,37 +107,20 @@ elif [[ -n "${1:-}" && "${1}" != -* ]]; then
   shift 1
 fi
 
-case "$cmd" in
-switch | boot | test)
-  if test "${remote}" == ""; then
-    pre_cmd=(sudo DEBUG="${DEBUG:-}")
-  fi
-  ;;
-esac
-
-if test "${DRY_RUN:-0}" == 1; then
-  pre_cmd=(echo "${pre_cmd[@]}")
-fi
-
-defaults=1
-keep_going=1
 while test "$#" -gt 0; do
   case "$1" in
-  -D | --no-defaults) defaults=0 ;;
-  --no-keep-going) keep_going=0 ;;
   *) post_args+=("$1") ;;
   esac
   shift
 done
 
-if test "${keep_going}" = 1; then
-  post_args+=(--keep-going)
-fi
-
 flake_path="$(nix eval --raw '.#self.sourceInfo.outPath')"
-post_args+=(
-  --flake "${flake_path}#${name}"
-)
+post_args+=(--flake "${flake_path}#${name}")
 nix copy --to "ssh-ng://${remote_host}" "${flake_path}"
 
-ssh -t "$remote_host" "${pre_cmd[@]}" darwin-rebuild "${pre_args[@]}" "${cmd}" "${post_args[@]}"
+pre_cmd=(ssh -t "$remote_host" "${pre_cmd[@]}")
+if test "${DRY_RUN:-0}" == 1; then
+  pre_cmd=(echo "${pre_cmd[@]}")
+fi
+
+"${pre_cmd[@]}" "sudo nom build '${flake_path}#darwinConfigurations.${name}.system' && sudo darwin-rebuild ${pre_args[*]@Q} ${cmd@Q} ${post_args[*]@Q}"

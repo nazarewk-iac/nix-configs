@@ -43,6 +43,10 @@ in {
             })
           ];
         }
+        (lib.attrsets.optionalAttrs (kdnConfig.moduleType == "darwin") {
+          users.knownUsers = [cfg.user.name];
+          users.knownGroups = [cfg.group.name];
+        })
         (lib.attrsets.optionalAttrs (kdnConfig.moduleType == "nixos") {
           services.displayManager.hiddenUsers = [cfg.user.name];
         })
@@ -113,6 +117,7 @@ in {
                 speedFactor = 10;
               }
               # TODO: update and enable `anji` as a builder
+              # TODO: this module doesn't start without sops-nix
               #{
               #  hostName = "anji";
               #  systems = ["aarch64-darwin" "x86_64-darwin"] ;
