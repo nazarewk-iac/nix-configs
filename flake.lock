@@ -520,6 +520,22 @@
         "type": "github"
       }
     },
+    "infuse": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1738726976,
+        "narHash": "sha256-N+u3vnK3zyXLUuDj/vr62r9tM7uarhKVCaLHWxjo/YY=",
+        "ref": "refs/heads/trunk",
+        "rev": "c8fb7397039215e1444c835e36a0da7dc3c743f8",
+        "revCount": 48,
+        "type": "git",
+        "url": "https://codeberg.org/amjoseph/infuse.nix.git"
+      },
+      "original": {
+        "type": "git",
+        "url": "https://codeberg.org/amjoseph/infuse.nix.git"
+      }
+    },
     "lanzaboote": {
       "inputs": {
         "crane": [
@@ -789,10 +805,10 @@
     "nixpkgs": {
       "locked": {
         "lastModified": 1761586161,
-        "narHash": "sha256-7MYWsHknZnrZdjdq1xu1Cgg83OQG+6eLDVtfZAYZZo0=",
+        "narHash": "sha256-pCCLvT3z2BF6NFdUn37QEQ2ZfZGQxMmRkgQsmctOZw4=",
         "owner": "nazarewk",
         "repo": "nixpkgs",
-        "rev": "e66131732147c87eae5f4bc3134aab72de4cae20",
+        "rev": "bda4c689f1bd1eae9f5850afc3d4f3e11a5a0323",
         "type": "github"
       },
       "original": {
@@ -903,6 +919,7 @@
         "haumea": "haumea",
         "helix-editor": "helix-editor",
         "home-manager": "home-manager",
+        "infuse": "infuse",
         "lanzaboote": "lanzaboote",
         "microvm": "microvm",
         "nix-darwin": "nix-darwin",

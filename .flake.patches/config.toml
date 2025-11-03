@@ -23,6 +23,9 @@ url = "https://github.com/NixOS/nixpkgs/pull/410239.patch?full_index=1"
 [patch.nixpkgs.openssh-controlpersist-fix]
 url = "https://github.com/NixOS/nixpkgs/pull/456258.patch?full_index=1"
 
+[patch.nixpkgs.netbird-dns-formarder-firewall]
+url = "https://github.com/NixOS/nixpkgs/pull/458138.patch?full_index=1"
+
 #[patch.nixpkgs.ceph-rework]
 ## "Build ceph with Python 3.12; move to pkgs/by-name"
 ## takes care of arrow-cpp failure

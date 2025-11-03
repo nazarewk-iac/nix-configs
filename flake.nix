@@ -22,8 +22,6 @@
   inputs.brew-tap--homebrew--core.url = "github:homebrew/homebrew-core";
   inputs.brew.flake = false;
   inputs.brew.url = "github:Homebrew/brew/4.4.16";
-  inputs.rpi-sbcshop-hat-ups.flake = false;
-  inputs.rpi-sbcshop-hat-ups.url = "github:sbcshop/UPS-Hat-RPi";
   inputs.crane.url = "github:ipetkov/crane";
   inputs.disko.url = "github:nix-community/disko";
   inputs.empty.url = "github:nix-systems/empty";
@@ -32,6 +30,8 @@
   inputs.flake-utils.url = "github:numtide/flake-utils";
   inputs.haumea.url = "github:nix-community/haumea";
   inputs.home-manager.url = "github:nix-community/home-manager";
+  inputs.infuse.flake = false;
+  inputs.infuse.url = "git+https://codeberg.org/amjoseph/infuse.nix.git";
   inputs.lanzaboote.url = "github:nix-community/lanzaboote";
   inputs.microvm.url = "github:astro/microvm.nix";
   inputs.nix-darwin.url = "github:LnL7/nix-darwin";
@@ -39,11 +39,13 @@
   inputs.nixcasks.url = "github:jacekszymanski/nixcasks";
   inputs.nixos-anywhere.url = "github:numtide/nixos-anywhere";
   inputs.nixos-generators.url = "github:nix-community/nixos-generators";
-  inputs.nur.url = "github:nix-community/NUR";
-  inputs.preservation.url = "github:nazarewk/preservation/nix-configs";
-  inputs.preservation-upstream.url = "github:nix-community/preservation";
-  inputs.rust-overlay.url = "github:oxalica/rust-overlay";
   inputs.nixos-hardware.url = "github:nixos/nixos-hardware";
+  inputs.nur.url = "github:nix-community/NUR";
+  inputs.preservation-upstream.url = "github:nix-community/preservation";
+  inputs.preservation.url = "github:nazarewk/preservation/nix-configs";
+  inputs.rpi-sbcshop-hat-ups.flake = false;
+  inputs.rpi-sbcshop-hat-ups.url = "github:sbcshop/UPS-Hat-RPi";
+  inputs.rust-overlay.url = "github:oxalica/rust-overlay";
   inputs.stylix.url = "github:danth/stylix";
   inputs.systems.url = "github:nix-systems/default";
   inputs.treefmt-nix.url = "github:numtide/treefmt-nix";
@@ -98,7 +100,11 @@
     self,
     ...
   }: let
-    lib = import ./lib {inherit (inputs.nixpkgs) lib;};
+    lib =
+      (import ./lib {inherit (inputs.nixpkgs) lib;})
+      // {
+        infuse = (import "${inputs.infuse.outPath}/default.nix" {inherit (inputs.nixpkgs) lib;}).v1.infuse;
+      };
     flakeLib = lib.kdn.flakes.forFlake self;
     kdnModule = lib.evalModules {
       class = "kdn-meta";
