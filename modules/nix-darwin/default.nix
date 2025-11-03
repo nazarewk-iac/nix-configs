@@ -12,6 +12,7 @@ in {
       ../shared/universal
       inputs.home-manager.darwinModules.default
       inputs.nix-homebrew.darwinModules.nix-homebrew
+      inputs.sops-nix.darwinModules.default
     ]
     ++ lib.trivial.pipe ./. [
       lib.filesystem.listFilesRecursive
