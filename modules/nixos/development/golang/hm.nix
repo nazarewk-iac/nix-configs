@@ -5,7 +5,6 @@
   ...
 }: let
   cfg = config.kdn.development.golang;
-  home = config.home.homeDirectory;
 in {
   options.kdn.development.golang = {
     enable = lib.mkEnableOption "golang development";
@@ -17,10 +16,8 @@ in {
         kdn.development.jetbrains.go.enable = true;
       }
       {
-        systemd.user.tmpfiles.rules = [
-          "d ${config.xdg.cacheHome}/go - - - -"
-          "L ${home}/go - - - - ${config.xdg.cacheHome}/go"
-        ];
+        systemd.user.tmpfiles.settings.kdn-golang.rules."${config.xdg.cacheHome}/go".d = {};
+        systemd.user.tmpfiles.settings.kdn-golang.rules."%h/go".L.argument = "${config.xdg.cacheHome}/go";
 
         kdn.hw.disks.persist."usr/cache".directories = [
           ".cache/go"

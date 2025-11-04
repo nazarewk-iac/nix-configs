@@ -40,7 +40,7 @@ in {
         # TODO: cachix.org was down on  2025-03-20 17:20
         #"https://microvm.cachix.org"
       ];
-      environment.systemPackages = with cfg.flake.microvm.packages."${pkgs.stdenv.system}"; [
+      environment.systemPackages = with cfg.flake.microvm.packages."${pkgs.stdenv.hostPlatform.system}"; [
         microvm
       ];
       kdn.hw.disks.persist."usr/data".directories = [

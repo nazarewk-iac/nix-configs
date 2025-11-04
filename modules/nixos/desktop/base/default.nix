@@ -35,9 +35,9 @@ in {
             font-awesome
 
             noto-fonts
-            noto-fonts-emoji
+            noto-fonts-color-emoji
+            noto-fonts-monochrome-emoji
             noto-fonts-emoji-blob-bin
-            noto-fonts-extra
           ]
           ++ lib.pipe pkgs.nerd-fonts [
             builtins.attrValues
@@ -144,7 +144,7 @@ in {
         ];
         fonts.packages = with pkgs; [
           dejavu_fonts # Default monospace font in LMDE 6+
-          ubuntu_font_family # required for default theme
+          ubuntu-classic # renamed from `ubuntu_font_family`, which was required for the default theme
         ];
       }
     ]

@@ -5,7 +5,6 @@
   ...
 }: let
   cfg = config.kdn.development.java;
-  home = config.home.homeDirectory;
 in {
   options.kdn.development.java = {
     enable = lib.mkEnableOption "java development";
@@ -21,7 +20,8 @@ in {
           maven
           # gradle-completion # TODO: 2025-10-21 source failed
 
-          (gradle-packages.gradle_7.override {
+          # used to be gradle_7, but got insecure
+          (gradle-packages.gradle.override {
             javaToolchains = [
               jdk8
               jdk11
@@ -31,10 +31,8 @@ in {
         ];
       }
       {
-        systemd.user.tmpfiles.rules = [
-          "d ${config.xdg.cacheHome}/gradle - - - -"
-          "L ${home}/.gradle - - - - ${config.xdg.cacheHome}/gradle"
-        ];
+        systemd.user.tmpfiles.settings.kdn-java.rules."${config.xdg.cacheHome}/gradle".d = {};
+        systemd.user.tmpfiles.settings.kdn-java.rules."%h/.gradle".L.argument = "${config.xdg.cacheHome}/gradle";
 
         kdn.hw.disks.persist."usr/cache".directories = [
           ".cache/gradle"

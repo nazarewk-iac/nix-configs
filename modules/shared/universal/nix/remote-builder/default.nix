@@ -58,7 +58,7 @@ in {
     };
     localhost.systems = lib.mkOption {
       type = with lib.types; listOf str;
-      default = [pkgs.stdenv.system];
+      default = [pkgs.stdenv.hostPlatform.system];
     };
     localhost.supportedFeatures = lib.mkOption {
       type = with lib.types; listOf str;

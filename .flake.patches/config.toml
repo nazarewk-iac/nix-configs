@@ -20,8 +20,6 @@ url = "https://github.com/NixOS/nixpkgs/pull/444291.patch?full_index=1"
 [patch.nixpkgs.netbird-dnssec]
 url = "https://github.com/NixOS/nixpkgs/pull/410239.patch?full_index=1"
 
-[patch.nixpkgs.openssh-controlpersist-fix]
-url = "https://github.com/NixOS/nixpkgs/pull/456258.patch?full_index=1"
 
 [patch.nixpkgs.netbird-dns-formarder-firewall]
 url = "https://github.com/NixOS/nixpkgs/pull/458138.patch?full_index=1"

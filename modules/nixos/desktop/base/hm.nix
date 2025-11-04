@@ -39,11 +39,6 @@ in {
           libqalculate
         ];
 
-        home.sessionPath = ["$HOME/.local/bin"];
-        systemd.user.tmpfiles.rules = [
-          "d ${config.home.homeDirectory}/.local/bin - - - -"
-        ];
-
         programs.foot.enable = true;
         programs.foot.server.enable = false;
         programs.foot.settings.main.dpi-aware = "no";
@@ -59,7 +54,7 @@ in {
         nixpkgs.overlays = [
           (final: prev: {
             wezterm = let
-              upstream = kdnConfig.inputs.wezterm.packages."${final.stdenv.system}".default;
+              upstream = kdnConfig.inputs.wezterm.packages."${final.stdenv.hostPlatform.system}".default;
               base = prev.wezterm;
               #base = upstream;
             in

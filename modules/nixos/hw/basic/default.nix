@@ -14,7 +14,7 @@ in {
     environment.systemPackages = with pkgs;
       [
         dmidecode
-        glxinfo
+        mesa-demos # used to be glxinfo
       ]
       ++ lib.lists.optionals (with pkgs.stdenv; isLinux && isx86_64) [
         hardinfo2 # 2025-04-28: error: 'hardinfo' has been removed as it was abandoned upstream. Consider using 'hardinfo2' instead.

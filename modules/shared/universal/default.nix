@@ -41,7 +41,7 @@
   config = lib.mkIf config.kdn.enable (
     lib.mkMerge [
       {
-        kdn.types = [kdnConfig.moduleType pkgs.stdenv.system] ++ lib.strings.splitString "-" pkgs.stdenv.system;
+        kdn.types = [kdnConfig.moduleType pkgs.stdenv.hostPlatform.system] ++ lib.strings.splitString "-" pkgs.stdenv.hostPlatform.system;
       }
     ]
   );

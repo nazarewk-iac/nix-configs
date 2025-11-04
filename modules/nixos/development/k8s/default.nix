@@ -91,7 +91,7 @@ in {
         })
 
         # Argo
-        argo # workflows
+        argo-workflows
         argocd # CD
         # vault # TODO: 2024-02-13: builds for a VERY long time on the laptop
       ];

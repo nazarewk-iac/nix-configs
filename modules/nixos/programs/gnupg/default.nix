@@ -32,7 +32,7 @@ in {
           (lib.lowPrio pinentry-all)
 
           opensc
-          pcsctools
+          pcsc-tools
 
           (pkgs.writeShellApplication {
             name = "pass-pubkeys";
@@ -63,9 +63,7 @@ in {
             kdn.hw.disks.persist."usr/config".directories = [
               ".config/pinentry-kdn"
             ];
-            systemd.user.tmpfiles.rules = [
-              "d ${hm.config.home.homeDirectory}/.config/pinentry-kdn 0700 - - -"
-            ];
+            systemd.user.tmpfiles.settings.kdn-gnupg.rules."%h/.config/pinentry-kdn".d.mode="0700";
           })
         ];
       }

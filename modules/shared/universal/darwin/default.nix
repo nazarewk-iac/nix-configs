@@ -14,7 +14,7 @@ in {
       apply = enable:
         lib.trivial.throwIf (
           enable && cfg.type == null
-        ) "`kdn.darwin` enabled, but we're on ${pkgs.stdenv.system}!"
+        ) "`kdn.darwin` enabled, but we're on ${pkgs.stdenv.hostPlatform.system}!"
         enable;
     };
 

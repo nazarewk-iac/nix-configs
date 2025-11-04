@@ -101,14 +101,13 @@ in {
         };
       }
       {
-        systemd.user.tmpfiles.rules = [
-          /*
-          required for "run with sudo" configurations, see:
-          - https://youtrack.jetbrains.com/issue/GO-14383/Failed-to-launch-elevation-service-using-pkexec
-          - https://youtrack.jetbrains.com/issue/IJPL-170313/Elevation-for-remote-process-doesnt-work-Failed-to-launch-elevation-service-using-pkexec
-          */
-          "L ${config.home.homeDirectory}/.local/bin/pkexec - - - - /run/wrappers/bin/sudo"
-        ];
+        # TODO: replace with dictionary-based config along with others!
+        /*
+        required for "run with sudo" configurations, see:
+        - https://youtrack.jetbrains.com/issue/GO-14383/Failed-to-launch-elevation-service-using-pkexec
+        - https://youtrack.jetbrains.com/issue/IJPL-170313/Elevation-for-remote-process-doesnt-work-Failed-to-launch-elevation-service-using-pkexec
+        */
+        systemd.user.tmpfiles.settings.kdn-jetbrains.rules."%h/.local/bin/pkexec".L.argument = "/run/wrappers/bin/sudo";
       }
       (lib.mkIf cfg.go.enable (
         let

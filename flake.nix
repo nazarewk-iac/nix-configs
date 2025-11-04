@@ -136,7 +136,7 @@
       inputs.nur.overlays.default
       inputs.microvm.overlays.default
       (final: prev: {inherit lib;})
-      (final: prev: {nixos-anywhere = inputs.nixos-anywhere.packages."${final.stdenv.system}".default;})
+      (final: prev: {nixos-anywhere = inputs.nixos-anywhere.packages."${final.stdenv.hostPlatform.system}".default;})
       (
         final: prev:
           if prev.stdenv.isDarwin
@@ -152,7 +152,7 @@
             sevenzip = prev.darwin.apple_sdk_11_0.callPackage "${src}/7zip" {inherit pkgs;};
             nclib = import "${src}/nclib.nix" {inherit pkgs sevenzip;};
 
-            originalCasks = (inputs.nixcasks.output {osVersion = "tahoe";}).packages.${prev.stdenv.system};
+            originalCasks = (inputs.nixcasks.output {osVersion = "tahoe";}).packages.${prev.stdenv.hostPlatform.system};
 
             overrides =
               lib.pipe
