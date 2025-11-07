@@ -107,7 +107,10 @@ in {
         - https://youtrack.jetbrains.com/issue/GO-14383/Failed-to-launch-elevation-service-using-pkexec
         - https://youtrack.jetbrains.com/issue/IJPL-170313/Elevation-for-remote-process-doesnt-work-Failed-to-launch-elevation-service-using-pkexec
         */
-        systemd.user.tmpfiles.settings.kdn-jetbrains.rules."%h/.local/bin/pkexec".L.argument = "/run/wrappers/bin/sudo";
+        #systemd.user.tmpfiles.settings.kdn-jetbrains.rules."%h/.local/bin/pkexec".L.argument = "/run/wrappers/bin/sudo";
+        systemd.user.tmpfiles.rules = [
+          "L %h/.local/bin/pkexec - - - - /run/wrappers/bin/sudo"
+        ];
       }
       (lib.mkIf cfg.go.enable (
         let

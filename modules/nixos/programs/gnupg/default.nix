@@ -63,7 +63,10 @@ in {
             kdn.hw.disks.persist."usr/config".directories = [
               ".config/pinentry-kdn"
             ];
-            systemd.user.tmpfiles.settings.kdn-gnupg.rules."%h/.config/pinentry-kdn".d.mode="0700";
+            #systemd.user.tmpfiles.settings.kdn-gnupg.rules."%h/.config/pinentry-kdn".d.mode="0700";
+            systemd.user.tmpfiles.rules = [
+              "d %h/.config/pinentry-kdn 0700 - - -"
+            ];
           })
         ];
       }

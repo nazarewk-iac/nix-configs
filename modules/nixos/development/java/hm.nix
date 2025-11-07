@@ -31,8 +31,12 @@ in {
         ];
       }
       {
-        systemd.user.tmpfiles.settings.kdn-java.rules."${config.xdg.cacheHome}/gradle".d = {};
-        systemd.user.tmpfiles.settings.kdn-java.rules."%h/.gradle".L.argument = "${config.xdg.cacheHome}/gradle";
+        #systemd.user.tmpfiles.settings.kdn-java.rules."${config.xdg.cacheHome}/gradle".d = {};
+        #systemd.user.tmpfiles.settings.kdn-java.rules."%h/.gradle".L.argument = "${config.xdg.cacheHome}/gradle";
+        systemd.user.tmpfiles.rules = [
+          "d ${config.xdg.cacheHome}/gradle - - - -"
+          "L %h/.gradle - - - - ${config.xdg.cacheHome}/gradle"
+        ];
 
         kdn.hw.disks.persist."usr/cache".directories = [
           ".cache/gradle"
