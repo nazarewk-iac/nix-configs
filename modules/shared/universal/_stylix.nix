@@ -49,7 +49,7 @@ in
         stylix.cursor.package = lib.mkDefault pkgs.phinger-cursors;
         stylix.cursor.size = lib.mkDefault 32;
       })
-      (lib.attrsets.optionalAttrs (kdnConfig.moduleType == "nixos") {
+      (kdnConfig.util.ifTypes ["nixos"] {
         fonts.fontDir.enable = true;
         fonts.packages = with pkgs; [
           fira-code

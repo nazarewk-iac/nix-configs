@@ -60,6 +60,10 @@
     readOnly = true;
     default = builtins.elem config.moduleType;
   };
+  options.util.ifTypes = lib.mkOption {
+    readOnly = true;
+    default = types: lib.attrsets.optionalAttrs (builtins.elem config.moduleType types);
+  };
   options.util.hasParentOfAnyType = lib.mkOption {
     readOnly = true;
     default = types: builtins.any (parent: parent.util.isOfAnyType types) config.parents;

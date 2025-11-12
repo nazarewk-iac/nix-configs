@@ -9,6 +9,7 @@
 
   # * rest of inputs
 
+  inputs.angrr.url = "github:linyinfeng/angrr";
   inputs.argon40-nix.url = "github:guusvanmeerveld/argon40-nix";
   inputs.base16.url = "github:SenchoPens/base16.nix";
   inputs.brew-api.flake = false;
@@ -135,6 +136,7 @@
       self.overlays.packages
       inputs.nur.overlays.default
       inputs.microvm.overlays.default
+      inputs.angrr.overlays.default
       (final: prev: {inherit lib;})
       (final: prev: {nixos-anywhere = inputs.nixos-anywhere.packages."${final.stdenv.hostPlatform.system}".default;})
       (

@@ -13,6 +13,7 @@ in {
       inputs.home-manager.darwinModules.default
       inputs.nix-homebrew.darwinModules.nix-homebrew
       inputs.sops-nix.darwinModules.default
+      inputs.angrr.nixosModules.angrr
     ]
     ++ lib.trivial.pipe ./. [
       lib.filesystem.listFilesRecursive

@@ -43,11 +43,11 @@ in {
             })
           ];
         }
-        (lib.attrsets.optionalAttrs (kdnConfig.moduleType == "darwin") {
+        (kdnConfig.util.ifTypes ["darwin"] {
           users.knownUsers = [cfg.user.name];
           users.knownGroups = [cfg.group.name];
         })
-        (lib.attrsets.optionalAttrs (kdnConfig.moduleType == "nixos") {
+        (kdnConfig.util.ifTypes ["nixos"] {
           services.displayManager.hiddenUsers = [cfg.user.name];
         })
       ]

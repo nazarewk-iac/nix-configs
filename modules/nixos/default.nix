@@ -17,6 +17,7 @@ in {
       inputs.nur.modules.nixos.default
       inputs.preservation.nixosModules.preservation
       inputs.sops-nix.nixosModules.sops
+      inputs.angrr.nixosModules.angrr
     ]
     ++ lib.trivial.pipe ./. [
       lib.filesystem.listFilesRecursive
