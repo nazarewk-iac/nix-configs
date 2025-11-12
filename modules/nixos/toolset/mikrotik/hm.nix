@@ -17,7 +17,7 @@ in {
         home.packages = with pkgs; [
           (lib.lowPrio winbox)
         ];
-        kdn.programs.apps.winbox4 = {
+        kdn.apps.winbox4 = {
           enable = true;
           dirs.cache = [];
           dirs.config = [];

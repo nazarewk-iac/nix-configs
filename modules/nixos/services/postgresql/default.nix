@@ -25,7 +25,7 @@ in {
   config = lib.mkIf cfg.enable {
     services.postgresql.enable = true;
 
-    kdn.hw.disks.persist."sys/data".directories = [
+    kdn.disks.persist."sys/data".directories = [
       {
         directory = uCfg.dataDir;
         user = cfg.user;

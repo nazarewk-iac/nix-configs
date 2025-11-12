@@ -13,7 +13,7 @@ in {
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
-        kdn.programs.apps.chromium = {
+        kdn.apps.chromium = {
           enable = true;
           package.original = pkgs.ungoogled-chromium;
           dirs.cache = [];

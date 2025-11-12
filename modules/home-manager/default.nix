@@ -21,14 +21,14 @@
 in {
   imports =
     [
-      ../shared/universal
+      ../universal
       inputs.sops-nix.homeManagerModules.sops
     ]
-    ++ lib.trivial.pipe ./. [
-      # find all hm.nix files
-      lib.filesystem.listFilesRecursive
-      (lib.filter (path: (lib.hasSuffix "/default.nix" (toString path)) && path != ./default.nix))
-    ];
+    ++ kdnConfig.util.loadModules {
+      curFile = ./default.nix;
+      src = ./.;
+      withDefault = true;
+    };
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
@@ -56,7 +56,6 @@ in {
         xdg.configFile."nixpkgs/config.nix".text = lib.generators.toPretty {} cfg.nixConfig.nixpkgs.config;
         home.file.".nixpkgs/config.nix".text = lib.generators.toPretty {} cfg.nixConfig.nixpkgs.config;
       }
-      (lib.mkIf pkgs.stdenv.isDarwin {kdn.hm.type = "home-manager";})
     ]
   );
 }

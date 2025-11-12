@@ -13,7 +13,7 @@ in {
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
-        kdn.programs.apps."rambox" = {
+        kdn.apps."rambox" = {
           enable = true;
           dirs.cache = [];
           dirs.config = ["rambox"];

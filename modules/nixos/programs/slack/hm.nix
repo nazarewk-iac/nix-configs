@@ -26,7 +26,7 @@ in {
             {
               matches = [
                 {
-                  "application.process.binary" = config.kdn.programs.apps.slack.package.final.meta.mainProgram;
+                  "application.process.binary" = config.kdn.apps.slack.package.final.meta.mainProgram;
                 }
               ];
               actions = {
@@ -41,7 +41,7 @@ in {
             }
           ];
         };
-        kdn.programs.apps.slack = {
+        kdn.apps.slack = {
           enable = true;
           dirs.cache = [];
           dirs.config = ["Slack"];

@@ -18,17 +18,17 @@ in {
         security.sudo.wheelNeedsPassword = false;
       }
       {
-        kdn.hw.disks.initrd.failureTarget = "rescue.target";
-        kdn.hw.disks.enable = true;
-        kdn.hw.disks.devices."boot".path = "/dev/vda";
-        kdn.hw.disks.zpools."${config.kdn.hw.disks.zpool-main.name}".import.timeout = 300;
+        kdn.disks.initrd.failureTarget = "rescue.target";
+        kdn.disks.enable = true;
+        kdn.disks.devices."boot".path = "/dev/vda";
+        kdn.disks.zpools."${config.kdn.disks.zpool-main.name}".import.timeout = 300;
         ## replaced by `ext-*-faro` *.img backed disks
-        #kdn.hw.disks.luks.volumes."virtual-faro" = {
+        #kdn.disks.luks.volumes."virtual-faro" = {
         #  targetSpec.path = "/dev/vdb";
         #  uuid = "4b50067d-05c4-46eb-a1e1-e0a9c6106559";
         #  headerSpec.num = 2;
         #};
-        kdn.hw.disks.luks.volumes."ext-01-faro" = {
+        kdn.disks.luks.volumes."ext-01-faro" = {
           /*
           pass generate "luks/ext-01-faro/passphrase" 32
           scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$(pass show "luks/ext-01-faro/passphrase" | tr -d '\n' | psub)" "faro.lan.etra.net.int.kdn.im.:/tmp/ext-01-faro.passphrase"
@@ -46,7 +46,7 @@ in {
           uuid = "30f4989d-dcc0-483b-b1c1-ae95b60f797d";
           headerSpec.num = 3;
         };
-        kdn.hw.disks.luks.volumes."ext-02-faro" = {
+        kdn.disks.luks.volumes."ext-02-faro" = {
           /*
           pass generate "luks/ext-02-faro/passphrase" 32
           scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$(pass show "luks/ext-02-faro/passphrase" | tr -d '\n' | psub)" "faro.lan.etra.net.int.kdn.im.:/tmp/ext-02-faro.passphrase"

@@ -13,7 +13,7 @@ in {
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
-        kdn.programs.apps.wofi = {
+        kdn.apps.wofi = {
           enable = true;
           dirs.cache = [];
           dirs.config = [];

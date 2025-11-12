@@ -42,11 +42,11 @@ in {
         };
       }
       {
-        kdn.hw.disks.initrd.failureTarget = "rescue.target";
-        kdn.hw.disks.enable = true;
-        kdn.hw.disks.devices."boot".path = "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_04KE345HX9EUZLSW-0:0";
+        kdn.disks.initrd.failureTarget = "rescue.target";
+        kdn.disks.enable = true;
+        kdn.disks.devices."boot".path = "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_04KE345HX9EUZLSW-0:0";
 
-        kdn.hw.disks.luks.volumes."hs-e100-pryll" = {
+        kdn.disks.luks.volumes."hs-e100-pryll" = {
           targetSpec.path = "/dev/disk/by-id/ata-HS-SSD-E100_256G_30023586951";
           uuid = "4f314bc3-6c3c-4a37-9756-5a03d286cf7b";
           headerSpec.num = 2;

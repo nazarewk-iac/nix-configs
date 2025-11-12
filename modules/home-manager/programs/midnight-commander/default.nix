@@ -5,7 +5,7 @@
   ...
 }: let
   cfg = config.kdn.programs.midnight-commander;
-  appCfg = config.kdn.programs.apps."mc";
+  appCfg = config.kdn.apps."mc";
 in {
   options.kdn.programs.midnight-commander = {
     enable = lib.mkEnableOption "Midnight Commander configuration";
@@ -13,7 +13,7 @@ in {
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
-        kdn.programs.apps."mc" = {
+        kdn.apps."mc" = {
           enable = true;
           package.install = false;
           dirs.cache = ["mc"];

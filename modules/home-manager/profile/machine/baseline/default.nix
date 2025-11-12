@@ -20,23 +20,23 @@ in {
         ];
       }
       {
-        home.packages = with pkgs; [
-          git
-          bash
-          curl
-        ];
-      }
-      {
         xdg.userDirs.enable = pkgs.stdenv.isLinux;
         xdg.userDirs.createDirectories = false;
       }
       {
-        home.packages = with pkgs; [
-          nix-derivation # pretty-derivation
-          nix-output-monitor
-          nix-du
-          nix-tree
-          pkgs.kdn.kdn-nix
+        kdn.disks.persist."usr/cache".directories =
+          [
+            ".cache/appimage-run" # not sure where exactly it comes from
+          ]
+          ++ lib.lists.optional config.fonts.fontconfig.enable ".cache/fontconfig";
+        kdn.disks.persist."usr/state".files = [
+          ".local/share/fish/fish_history" # A file already exists at ...
+          ".ipython/profile_default/history.sqlite"
+          ".bash_history"
+          ".duckdb_history"
+          ".python_history"
+          ".usql_history"
+          ".zsh_history"
         ];
       }
     ]

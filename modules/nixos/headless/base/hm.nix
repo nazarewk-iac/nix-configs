@@ -26,7 +26,7 @@ in {
         #    eval (${lib.getExe config.programs.zellij.package} setup --generate-auto-start fish | string collect)
         #  end
         #'';
-        kdn.hw.disks.persist."usr/cache".directories = [".cache/zellij"];
+        kdn.disks.persist."usr/cache".directories = [".cache/zellij"];
 
         programs.zellij.settings = {
           scroll_buffer_size = 1 * 1000 * 1000;
@@ -63,10 +63,10 @@ in {
               ))
             ];
         in {
-          kdn.hw.disks.persist."usr/data".directories = process (
+          kdn.disks.persist."usr/data".directories = process (
             lib.lists.subtractLists xdgAttrs.cache xdgAttrs.all
           );
-          kdn.hw.disks.persist."usr/cache".directories = process xdgAttrs.cache;
+          kdn.disks.persist."usr/cache".directories = process xdgAttrs.cache;
         }
       )
     ]

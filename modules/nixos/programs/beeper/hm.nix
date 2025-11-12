@@ -13,7 +13,7 @@ in {
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
-        kdn.programs.apps."beeper" = {
+        kdn.apps."beeper" = {
           enable = true;
           dirs.cache = [];
           dirs.config = ["Beeper"];

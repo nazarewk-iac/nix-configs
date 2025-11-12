@@ -23,7 +23,7 @@ in {
           "L %h/go - - - - ${config.xdg.cacheHome}/go"
         ];
 
-        kdn.hw.disks.persist."usr/cache".directories = [
+        kdn.disks.persist."usr/cache".directories = [
           ".cache/go"
         ];
       }

@@ -758,12 +758,11 @@ in {
     lib.mkMerge [
       {
         kdn.fs.watch.enable = true;
-        networking.useNetworkd = true;
         networking.useDHCP = false;
         networking.networkmanager.enable = false;
         systemd.network.enable = true;
 
-        kdn.hw.disks.persist."sys/data".directories = [
+        kdn.disks.persist."sys/data".directories = [
           {
             directory = "/var/lib/systemd/network";
             user = "systemd-network";
@@ -1140,7 +1139,7 @@ in {
             lib.lists.range 1 config.services.kresd.instances
           );
 
-        kdn.hw.disks.persist."sys/data".directories = [
+        kdn.disks.persist."sys/data".directories = [
           {
             directory = "/var/lib/knot-resolver";
             user = "knot-resolver";
@@ -1148,7 +1147,7 @@ in {
             mode = "0770";
           }
         ];
-        kdn.hw.disks.persist."sys/cache".directories = [
+        kdn.disks.persist."sys/cache".directories = [
           {
             directory = "/var/cache/knot-resolver";
             user = "knot-resolver";
@@ -1405,7 +1404,7 @@ in {
             ];
           };
           environment.etc."${lib.strings.removePrefix "/etc" cfg.knot.configDir}/.keep".text = "";
-          kdn.hw.disks.persist."sys/data".directories = [
+          kdn.disks.persist."sys/data".directories = [
             {
               directory = cfg.knot.dataDir;
               user = "knot";

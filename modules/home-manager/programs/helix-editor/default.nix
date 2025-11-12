@@ -5,7 +5,7 @@
   ...
 }: let
   cfg = config.kdn.programs.helix-editor;
-  appCfg = config.kdn.programs.apps."helix";
+  appCfg = config.kdn.apps."helix";
 in {
   options.kdn.programs.helix-editor = {
     enable = lib.mkEnableOption "Helix Editor configuration";
@@ -13,7 +13,7 @@ in {
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
-        kdn.programs.apps."helix" = {
+        kdn.apps."helix" = {
           enable = true;
           package.install = false;
           dirs.cache = ["helix"];

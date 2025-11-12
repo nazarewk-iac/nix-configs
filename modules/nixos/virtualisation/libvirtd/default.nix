@@ -52,14 +52,14 @@ in {
       }
       */
       {
-        kdn.hw.disks.persist."usr/data".directories = [
+        kdn.disks.persist."usr/data".directories = [
           "/var/lib/libvirt/images"
           "/var/lib/libvirt"
           "/var/lib/swtpm-localca"
         ];
         home-manager.sharedModules = [
           {
-            kdn.hw.disks.persist."usr/data".directories = [
+            kdn.disks.persist."usr/data".directories = [
               ".local/share/images"
             ];
             home.file.".local/share/images/virtio-win".source = pkgs.virtio-win;

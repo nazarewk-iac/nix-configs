@@ -4,17 +4,17 @@
   config,
   ...
 }: let
-  cfg = config.kdn.hw.disks;
+  cfg = config.kdn.disks;
 
   # TODO: make the ZFS pools/datasets optional and fall back to /nix/persist/fallback?
 
   dumbMerge = builtins.foldl' lib.attrsets.recursiveUpdate {};
 in {
   config = lib.mkMerge [
-    {home-manager.sharedModules = [{kdn.hw.disks.enable = cfg.enable;}];}
+    {home-manager.sharedModules = [{kdn.disks.enable = cfg.enable;}];}
     {
       preservation.enable = lib.mkDefault cfg.enable;
-      kdn.hw.disks.persist = lib.pipe cfg.base [
+      kdn.disks.persist = lib.pipe cfg.base [
         (builtins.mapAttrs (_: _: {}))
       ];
       preservation.preserveAt = lib.pipe cfg.base [
@@ -36,7 +36,7 @@ in {
                   process = topName: childName: mode:
                     lib.pipe
                     [
-                      (hmConfig.kdn.hw.disks.persist."${persistName}" or {})
+                      (hmConfig.kdn.disks.persist."${persistName}" or {})
                       (persists.users."${username}" or {})
                     ]
                     [
@@ -74,7 +74,7 @@ in {
       ];
     }
     {
-      kdn.hw.disks.devices = lib.pipe cfg.luks.volumes [
+      kdn.disks.devices = lib.pipe cfg.luks.volumes [
         (lib.attrsets.mapAttrs' (
           _: luksVol: {
             name = luksVol.target.deviceKey;
@@ -88,7 +88,7 @@ in {
     }
     {
       # LUKS header partitions
-      kdn.hw.disks.devices = lib.pipe cfg.luks.volumes [
+      kdn.disks.devices = lib.pipe cfg.luks.volumes [
         builtins.attrValues
         (builtins.map (luksVol: {
           "${luksVol.header.deviceKey}".partitions."${luksVol.header.partitionKey}" = {
@@ -113,7 +113,7 @@ in {
       ];
     }
     {
-      kdn.hw.disks.users = builtins.mapAttrs (_: _: {}) config.home-manager.users;
+      kdn.disks.users = builtins.mapAttrs (_: _: {}) config.home-manager.users;
       systemd.services = lib.pipe config.home-manager.users [
         # see https://github.com/nix-community/home-manager/blob/1c8d4c8d592e8fab4cff4397db5529ec6f078cf9/nixos/default.nix#L39-L39
         (lib.attrsets.mapAttrs' (
@@ -141,13 +141,13 @@ in {
           # reboot
           zfs destroy brys-main/brys/impermanence/disposable.old
         */
-        kdn.hw.disks.base."disposable".snapshots = false;
-        kdn.hw.disks.base."disposable".zfsName = cfg.disposable.zfsName;
+        kdn.disks.base."disposable".snapshots = false;
+        kdn.disks.base."disposable".zfsName = cfg.disposable.zfsName;
         # this does not always work
-        kdn.hw.disks.base."disposable".disko.postCreateHook = ''
+        kdn.disks.base."disposable".disko.postCreateHook = ''
           zfs snapshot "${snapshotName}"
         '';
-        kdn.hw.disks.persist."disposable".directories = [
+        kdn.disks.persist."disposable".directories = [
           {
             directory = "/var/tmp";
             mode = "0777";

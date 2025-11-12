@@ -13,7 +13,7 @@ in {
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
-        kdn.programs.apps."signal-desktop" = {
+        kdn.apps."signal-desktop" = {
           enable = true;
           package.original = pkgs."signal-desktop-bin";
           dirs.cache = [];

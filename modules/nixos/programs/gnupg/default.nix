@@ -54,13 +54,13 @@ in {
         home-manager.sharedModules = [
           (hm: {
             programs.gpg.enable = true;
-            kdn.hw.disks.persist."usr/data".directories = [
+            kdn.disks.persist."usr/data".directories = [
               {
                 directory = ".gnupg";
                 mode = "0700";
               }
             ];
-            kdn.hw.disks.persist."usr/config".directories = [
+            kdn.disks.persist."usr/config".directories = [
               ".config/pinentry-kdn"
             ];
             #systemd.user.tmpfiles.settings.kdn-gnupg.rules."%h/.config/pinentry-kdn".d.mode="0700";

@@ -45,9 +45,6 @@ in {
         };
       }
       {
-        systemd.network.enable = true;
-        networking.useNetworkd = true;
-        networking.useDHCP = true;
         networking.networkmanager.enable = false;
 
         systemd.network.networks."00-wan" = {

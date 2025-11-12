@@ -13,7 +13,7 @@ in {
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
-        kdn.programs.apps.orca-slicer = {
+        kdn.apps.orca-slicer = {
           enable = true;
           package.original = pkgs.orca-slicer.overrideAttrs (
             finalAttrs: previousAttrs: {

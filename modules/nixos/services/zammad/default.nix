@@ -64,7 +64,7 @@ in {
       "CAP_NET_BIND_SERVICE"
     ];
 
-    kdn.hw.disks.persist."sys/data".directories = [
+    kdn.disks.persist."sys/data".directories = [
       {
         directory = "/var/lib/${cfg.redis.fullName}";
         user = cfg.user;

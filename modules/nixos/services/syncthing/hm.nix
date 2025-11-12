@@ -20,10 +20,10 @@ in {
       "--gui-address=127.0.0.1:8384"
     ];
     services.syncthing.tray.enable = false;
-    kdn.hw.disks.persist."usr/data".directories = [
+    kdn.disks.persist."usr/data".directories = [
       ".local/share/syncthing"
     ];
-    kdn.hw.disks.persist."usr/config".directories = [
+    kdn.disks.persist."usr/config".directories = [
       ".config/syncthing"
     ];
 

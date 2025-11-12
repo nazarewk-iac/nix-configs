@@ -13,7 +13,7 @@ in {
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
-        kdn.programs.apps.wine = {
+        kdn.apps.wine = {
           enable = true;
           package.original = pkgs.wine-wayland;
           dirs.cache = [];

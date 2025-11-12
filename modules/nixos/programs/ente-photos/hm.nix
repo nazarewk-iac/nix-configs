@@ -15,7 +15,7 @@ in {
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
-        kdn.programs.apps.ente-photos-desktop = {
+        kdn.apps.ente-photos-desktop = {
           enable = true;
           package.original = cfg.package;
           dirs.cache = ["ente"];

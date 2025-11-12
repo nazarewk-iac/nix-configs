@@ -145,7 +145,7 @@ in {
           else "${pkgs.skopeo.policy}/default-policy.json";
       }
       {
-        kdn.hw.disks.persist."usr/data".directories = [
+        kdn.disks.persist."usr/data".directories = [
           ".local/share/containers"
         ];
       }

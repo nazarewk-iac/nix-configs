@@ -13,7 +13,7 @@ in {
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
-        kdn.programs.apps.browsers = {
+        kdn.apps.browsers = {
           enable = true;
           dirs.cache = [];
           dirs.config = ["software.Browsers"];

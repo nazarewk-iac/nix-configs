@@ -8,8 +8,8 @@
 in {
   imports =
     [
-      ../shared/universal
-      ../shared/darwin-nixos-os
+      ../universal
+      ../shared/darwin-nixos
       ./ascii-workaround.nix
       inputs.disko.nixosModules.disko
       inputs.home-manager.nixosModules.home-manager
@@ -19,11 +19,11 @@ in {
       inputs.sops-nix.nixosModules.sops
       inputs.angrr.nixosModules.angrr
     ]
-    ++ lib.trivial.pipe ./. [
-      lib.filesystem.listFilesRecursive
-      # lib.substring expands paths to nix-store paths: "/nix/store/6gv1rzszm9ly6924ndgzmmcpv4jz30qp-default.nix"
-      (lib.filter (path: (lib.hasSuffix "/default.nix" (toString path)) && path != ./default.nix))
-    ];
+    ++ kdnConfig.util.loadModules {
+      curFile = ./default.nix;
+      src = ./.;
+      withDefault = true;
+    };
 
   config = lib.mkIf config.kdn.enable (
     lib.mkMerge [
@@ -32,7 +32,15 @@ in {
         disko.enableConfig = lib.mkDefault false;
       }
       {
-        home-manager.sharedModules = [{imports = [./hm.nix];}];
+        home-manager.sharedModules = [
+          {imports = [../home-manager];}
+          ({kdnConfig, ...}: {
+            imports = kdnConfig.util.loadModules {
+              curFile = ./default.nix;
+              src = ./.;
+            };
+          })
+        ];
       }
     ]
   );

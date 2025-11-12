@@ -82,7 +82,7 @@ in {
         services.nwg-shell.drawer.opts.wm = ''"$XDG_CURRENT_DESKTOP"'';
       }
       {
-        kdn.hw.disks.persist."usr/config".files =
+        kdn.disks.persist."usr/config".files =
           []
           # nwg-drawer pins
           ++ (lib.lists.optional (cfg.drawer.enable) ".cache/nwg-pin-cache");
@@ -92,7 +92,7 @@ in {
           include ~/.config/sway/outputs
           include ~/.config/sway/workspaces
         '';
-        kdn.hw.disks.persist."usr/config".files = [
+        kdn.disks.persist."usr/config".files = [
           ".config/nwg-displays/config"
           ".config/sway/outputs"
           ".config/sway/workspaces"

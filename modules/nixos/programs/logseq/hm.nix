@@ -13,7 +13,7 @@ in {
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
-        kdn.programs.apps.logseq = {
+        kdn.apps.logseq = {
           enable = true;
           dirs.cache = [];
           dirs.config = ["Logseq"];

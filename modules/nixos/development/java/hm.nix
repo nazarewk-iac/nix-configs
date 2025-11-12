@@ -38,7 +38,7 @@ in {
           "L %h/.gradle - - - - ${config.xdg.cacheHome}/gradle"
         ];
 
-        kdn.hw.disks.persist."usr/cache".directories = [
+        kdn.disks.persist."usr/cache".directories = [
           ".cache/gradle"
         ];
       }

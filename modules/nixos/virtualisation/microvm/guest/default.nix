@@ -7,7 +7,7 @@
 }: let
   cfg = config.kdn.virtualisation.microvm.guest;
 
-  microvmPersistNames = ["microvm"] ++ builtins.attrNames config.kdn.hw.disks.base;
+  microvmPersistNames = ["microvm"] ++ builtins.attrNames config.kdn.disks.base;
 in {
   imports = kdnConfig.self.lib.lists.optionals (!kdnConfig.features.microvm-guest) [
     kdnConfig.inputs.microvm.nixosModules.microvm-options

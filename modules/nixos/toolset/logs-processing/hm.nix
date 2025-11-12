@@ -11,7 +11,7 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    kdn.programs.apps.lnav = {
+    kdn.apps.lnav = {
       # https://lnav.org/
       enable = true;
       package.original = pkgs.lnav;

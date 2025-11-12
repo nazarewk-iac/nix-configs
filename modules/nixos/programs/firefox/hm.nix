@@ -7,7 +7,7 @@
 }: let
   cfg = config.kdn.programs.firefox;
   ffCfg = config.programs.firefox;
-  appCfg = config.kdn.programs.apps.firefox;
+  appCfg = config.kdn.apps.firefox;
 
   inherit (pkgs.stdenv.hostPlatform) isDarwin;
   profilesPath =
@@ -62,7 +62,7 @@ in {
         ];
         programs.firefox.enable = true;
         programs.firefox.package = appCfg.package.final;
-        kdn.programs.apps.firefox = {
+        kdn.apps.firefox = {
           package.install = false;
           package.original =
             if !nativeMessagingHostsAreSupported

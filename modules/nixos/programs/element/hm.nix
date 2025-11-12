@@ -30,7 +30,7 @@ in {
     lib.mkMerge [
       (lib.mkIf cfg.element.enable {
         # TODO: try out gomuks https://github.com/tulir/gomuks for better client responsiveness?
-        kdn.programs.apps.element-desktop = {
+        kdn.apps.element-desktop = {
           enable = true;
           package.original = pkgs.element-desktop.override {
             commandLineArgs = "--password-store=gnome-libsecret --disable-gpu";
@@ -44,7 +44,7 @@ in {
         };
       })
       (lib.mkIf cfg.gomuks.enable {
-        kdn.programs.apps.gomuks = {
+        kdn.apps.gomuks = {
           enable = lib.mkDefault false; # this one is old CLI version
           package.original = pkgs.gomuks;
           dirs.cache = ["gomuks"];
@@ -54,7 +54,7 @@ in {
           dirs.reproducible = [];
           dirs.state = ["gomuks"];
         };
-        kdn.programs.apps.gomuks-web = {
+        kdn.apps.gomuks-web = {
           enable = lib.mkDefault true;
           package.original = pkgs.gomuks-web;
           dirs.cache = ["gomuks"];
@@ -66,7 +66,7 @@ in {
         };
       })
       (lib.mkIf cfg.fluffychat.enable {
-        kdn.programs.apps.fluffychat = {
+        kdn.apps.fluffychat = {
           enable = true;
           package.original = pkgs.fluffychat;
           dirs.cache = [];
@@ -79,7 +79,7 @@ in {
       })
       (lib.mkIf cfg.nheko.enable {
         programs.nheko.enable = true;
-        kdn.programs.apps.nheko = {
+        kdn.apps.nheko = {
           enable = true;
           package.original = pkgs.nheko;
           dirs.cache = ["nheko"];

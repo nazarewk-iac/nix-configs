@@ -231,7 +231,7 @@ nix-configs/
 │   ├── meta/             # Core infrastructure & specialArgs (escape hatch location)
 │   ├── shared/           # Cross-platform modules
 │   │   ├── universal/       # All platforms
-│   │   └── darwin-nixos-os/ # Darwin + NixOS
+│   │   └── darwin-nixos/ # Darwin + NixOS
 │   ├── nixos/            # NixOS-specific (~160 modules)
 │   ├── nix-darwin/       # Darwin-specific (~7 modules)
 │   └── home-manager/     # Home Manager-only (~6 modules)
@@ -254,7 +254,7 @@ nix-configs/
 ```
 universal (all platforms)
     ↓
-darwin-nixos-os (macOS + NixOS)
+darwin-nixos (macOS + NixOS)
     ↓
 platform-specific (nixos, nix-darwin, home-manager)
 ```

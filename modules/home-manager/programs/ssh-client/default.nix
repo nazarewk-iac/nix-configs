@@ -20,7 +20,7 @@ in {
           "~/.ssh/config.local"
         ];
 
-        kdn.hw.disks.persist."usr/data".directories = [
+        kdn.disks.persist."usr/data".directories = [
           ".ssh"
         ];
       }

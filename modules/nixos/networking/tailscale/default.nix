@@ -20,7 +20,7 @@ in {
       {
         services.tailscale.enable = true;
         services.tailscale.openFirewall = true;
-        kdn.hw.disks.persist."usr/data".directories = [
+        kdn.disks.persist."usr/data".directories = [
           "/var/lib/tailscale"
         ];
       }

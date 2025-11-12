@@ -1,1 +1,0 @@
-This module implements the `modules/shared/universal` options, but doesn't define new ones.

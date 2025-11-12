@@ -4,7 +4,7 @@
   config,
   ...
 }: let
-  cfg = config.kdn.hw.disks;
+  cfg = config.kdn.disks;
   hostname = config.kdn.hostName;
 in {
   imports = [
@@ -15,23 +15,23 @@ in {
     (lib.mkIf cfg.enable (
       lib.mkMerge [
         {
-          kdn.hw.disks.base."sys/cache".snapshots = false;
-          kdn.hw.disks.base."sys/config".snapshots = true;
-          kdn.hw.disks.base."sys/data".snapshots = true;
-          kdn.hw.disks.base."sys/reproducible".snapshots = false;
-          kdn.hw.disks.base."sys/state".snapshots = false;
-          kdn.hw.disks.base."usr/cache".snapshots = false;
-          kdn.hw.disks.base."usr/config".snapshots = true;
-          kdn.hw.disks.base."usr/data".snapshots = true;
-          kdn.hw.disks.base."usr/reproducible".snapshots = false;
-          kdn.hw.disks.base."usr/state".snapshots = false;
-          kdn.hw.disks.userDefaults.homeLocation = lib.mkDefault "disposable";
+          kdn.disks.base."sys/cache".snapshots = false;
+          kdn.disks.base."sys/config".snapshots = true;
+          kdn.disks.base."sys/data".snapshots = true;
+          kdn.disks.base."sys/reproducible".snapshots = false;
+          kdn.disks.base."sys/state".snapshots = false;
+          kdn.disks.base."usr/cache".snapshots = false;
+          kdn.disks.base."usr/config".snapshots = true;
+          kdn.disks.base."usr/data".snapshots = true;
+          kdn.disks.base."usr/reproducible".snapshots = false;
+          kdn.disks.base."usr/state".snapshots = false;
+          kdn.disks.userDefaults.homeLocation = lib.mkDefault "disposable";
         }
         {
           # Basic /boot config
           fileSystems."/boot".neededForBoot = true;
-          kdn.hw.disks.devices."boot".type = "gpt";
-          kdn.hw.disks.devices."boot".partitions."ESP" = {
+          kdn.disks.devices."boot".type = "gpt";
+          kdn.disks.devices."boot".partitions."ESP" = {
             num = 1;
             size = 4096;
             disko = {
@@ -61,7 +61,7 @@ in {
         }
         {
           # zpool config
-          kdn.hw.disks.zpools."${cfg.zpool-main.name}" = {};
+          kdn.disks.zpools."${cfg.zpool-main.name}" = {};
         }
         {
           # system-wide disks
@@ -80,7 +80,7 @@ in {
           };
         }
         {
-          kdn.hw.disks.persist."sys/data" = {
+          kdn.disks.persist."sys/data" = {
             directories = [
               "/var/lib/systemd"
               {
@@ -103,7 +103,7 @@ in {
               }
             ];
           };
-          kdn.hw.disks.persist."sys/config" = {
+          kdn.disks.persist."sys/config" = {
             directories = [
               "/var/db/sudo/lectured"
               "/var/lib/nixos"
@@ -119,10 +119,10 @@ in {
         }
         (
           let
-            baseCfg = config.kdn.hw.disks.base."sys/config";
+            baseCfg = config.kdn.disks.base."sys/config";
           in {
             # see https://nix-community.github.io/preservation/examples.html#compatibility-with-systemds-conditionfirstboot
-            kdn.hw.disks.persist."sys/config".files = [
+            kdn.disks.persist."sys/config".files = [
               {
                 file = "/etc/machine-id";
                 inInitrd = true;
@@ -149,19 +149,19 @@ in {
           boot.initrd.systemd.services.systemd-journal-flush.serviceConfig.TimeoutSec = "10s";
         }
         {
-          kdn.hw.disks.persist."sys/cache" = {
+          kdn.disks.persist."sys/cache" = {
             directories = [
               "/var/cache"
             ];
           };
           home-manager.sharedModules = [
             {
-              kdn.hw.disks.persist."sys/cache".directories = [".cache/nix"];
+              kdn.disks.persist."sys/cache".directories = [".cache/nix"];
             }
           ];
         }
         {
-          kdn.hw.disks.persist."sys/state" = {
+          kdn.disks.persist."sys/state" = {
             directories = [
               "/var/lib/systemd/coredump"
               "/var/log"
@@ -173,23 +173,23 @@ in {
           };
         }
         {
-          kdn.hw.disks.persist."usr/config".files = [
+          kdn.disks.persist."usr/config".files = [
             "/etc/nix/netrc" # TODO: move this out
             "/etc/nix/nix.sensitive.conf" # TODO: move this out
           ];
           home-manager.sharedModules = [
             {
-              kdn.hw.disks.persist."usr/data".directories = [".local/share/nix"];
+              kdn.disks.persist."usr/data".directories = [".local/share/nix"];
             }
           ];
         }
         {
           home-manager.sharedModules = [
             {
-              kdn.hw.disks.persist."usr/cache".directories = [
+              kdn.disks.persist."usr/cache".directories = [
                 "Downloads"
               ];
-              kdn.hw.disks.persist."usr/data".directories = [
+              kdn.disks.persist."usr/data".directories = [
                 "Documents"
                 "Desktop"
                 "Pictures"
@@ -216,14 +216,14 @@ in {
             };
           };
         }
-        # WARNING: keep build dir in sync with /modules/shared/universal/nix.nix
+        # WARNING: keep build dir in sync with /modules/universal/nix.nix
         # throws recursion error if tries to be derived from `config.nix.settings.build-dir`
         # TODO: mount those at different places to make them easily swappable?
         {
           systemd.tmpfiles.rules = [
             "L+ /nix/var/nix/builds           - - - - /nix/var/nix/builds-${cfg.nixBuildDir.type}"
           ];
-          kdn.hw.disks.persist."disposable".directories = [
+          kdn.disks.persist."disposable".directories = [
             {
               # see https://github.com/NixOS/nix/blob/bbd14173b5c4677d098686be9605c88b40149684/doc/manual/source/release-notes/rl-2.30.md?plain=1#L5-L11
               # it could also be in `config.nix.extraOptions`, but let's not bother with that
@@ -267,7 +267,7 @@ in {
           };
         }
         {
-          # required for kdn.hw.disks.base.*.allowOther
+          # required for kdn.disks.base.*.allowOther
           programs.fuse.userAllowOther = true;
         }
       ]

@@ -61,14 +61,14 @@ in {
 
     home-manager.sharedModules = [
       {
-        kdn.hw.disks.persist."usr/data".directories = [
+        kdn.disks.persist."usr/data".directories = [
           ".local/share/bottles"
           ".local/share/Steam"
           # TODO: split those up into programs
           ".local/share/lutris"
           "/Games"
         ];
-        kdn.hw.disks.persist."usr/cache".directories = [
+        kdn.disks.persist."usr/cache".directories = [
           ".local/share/lutris/runtime"
           ".local/share/bottles/runners"
           ".local/share/bottles/temp"

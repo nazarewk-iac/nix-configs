@@ -43,7 +43,7 @@ in {
       environment.systemPackages = with cfg.flake.microvm.packages."${pkgs.stdenv.hostPlatform.system}"; [
         microvm
       ];
-      kdn.hw.disks.persist."usr/data".directories = [
+      kdn.disks.persist."usr/data".directories = [
         config.microvm.stateDir
       ];
 

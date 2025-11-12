@@ -11,7 +11,7 @@ in {
   config = lib.mkIf cfg.enable {
     home-manager.sharedModules = [
       {
-        kdn.programs.apps.kdenlive = {
+        kdn.apps.kdenlive = {
           enable = true;
           package.original = pkgs.kdePackages.kdenlive;
           dirs.cache = [];
@@ -31,7 +31,7 @@ in {
             "knewstuff3"
           ];
         };
-        kdn.programs.apps.shotcut = {
+        kdn.apps.shotcut = {
           enable = true;
           dirs.cache = [];
           dirs.config = ["Meltytech/Shotcut"];
@@ -41,7 +41,7 @@ in {
           dirs.state = [];
           files.config = ["Meltytech/Shotcut.conf"];
         };
-        kdn.programs.apps.handbrake = {
+        kdn.apps.handbrake = {
           enable = true;
           dirs.cache = [];
           dirs.config = [

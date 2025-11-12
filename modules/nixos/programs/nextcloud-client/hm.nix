@@ -18,12 +18,12 @@ in {
          - make sure at least password-store & Keepass are downloaded (and not much more)
         */
         services.nextcloud-client.enable = true;
-        services.nextcloud-client.package = config.kdn.programs.apps.nextcloud-client.package.final;
+        services.nextcloud-client.package = config.kdn.apps.nextcloud-client.package.final;
         services.nextcloud-client.startInBackground = true;
         systemd.user.services.nextcloud-client.Service = {
           Restart = "on-failure";
         };
-        kdn.programs.apps.nextcloud-client = {
+        kdn.apps.nextcloud-client = {
           enable = true;
           package.install = false;
           dirs.cache = ["Nextcloud"];

@@ -102,15 +102,6 @@ in {
       }
       {
         home.packages = with pkgs; [
-          (yt-dlp.overrideAttrs (final: {
-            version = "2025.09.26";
-            src = pkgs.fetchFromGitHub {
-              owner = "yt-dlp";
-              repo = "yt-dlp";
-              tag = final.version;
-              hash = "sha256-/uzs87Vw+aDNfIJVLOx3C8RyZvWLqjggmnjrOvUX1Eg=";
-            };
-          }))
         ];
       }
     ]

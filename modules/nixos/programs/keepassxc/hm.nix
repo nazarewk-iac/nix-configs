@@ -8,7 +8,7 @@
 
   envs.KEEPASS_PATH = builtins.concatStringsSep ":" cfg.service.searchDirs;
 
-  finalPackage = config.kdn.programs.apps.keepassxc.package.final;
+  finalPackage = config.kdn.apps.keepassxc.package.final;
 in {
   options.kdn.programs.keepassxc = {
     enable = lib.mkEnableOption "keepassxc";
@@ -36,7 +36,7 @@ in {
         */
         kdn.programs.firefox.nativeMessagingHosts = [finalPackage];
         kdn.programs.thunderbird.nativeMessagingHosts = [finalPackage];
-        kdn.programs.apps.keepassxc = {
+        kdn.apps.keepassxc = {
           enable = true;
           dirs.cache = [
             "keepassxc" # holds the browser integration config?

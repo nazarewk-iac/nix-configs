@@ -6,7 +6,7 @@
   ...
 }: let
   cfg = config.kdn.programs.thunderbird;
-  appCfg = config.kdn.programs.apps.thunderbird;
+  appCfg = config.kdn.apps.thunderbird;
 
   /*
   Status can be “default”, “locked”, “user” or “clear”
@@ -48,7 +48,7 @@ in {
         programs.thunderbird.enable = true;
         programs.thunderbird.package = appCfg.package.final;
         programs.thunderbird.profiles.main.isDefault = true;
-        kdn.programs.apps.thunderbird = {
+        kdn.apps.thunderbird = {
           package.install = false;
           package.original = pkgs.thunderbird;
           dirs.cache = [];

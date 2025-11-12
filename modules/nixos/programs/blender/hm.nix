@@ -13,7 +13,7 @@ in {
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
-        kdn.programs.apps.blender = {
+        kdn.apps.blender = {
           enable = true;
           dirs.cache = ["blender"];
           dirs.config = ["blender"];

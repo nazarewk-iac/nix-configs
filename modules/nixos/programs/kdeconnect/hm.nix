@@ -15,8 +15,8 @@ in {
       {
         services.kdeconnect.enable = true;
         services.kdeconnect.indicator = true;
-        services.kdeconnect.package = config.kdn.programs.apps.kdeconnect.package.final;
-        kdn.programs.apps.kdeconnect = {
+        services.kdeconnect.package = config.kdn.apps.kdeconnect.package.final;
+        kdn.apps.kdeconnect = {
           enable = true;
           package.original = pkgs.kdePackages.kdeconnect-kde;
           dirs.cache = [];

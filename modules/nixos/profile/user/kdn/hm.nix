@@ -19,7 +19,7 @@ in {
           config.lib.file.mkOutOfStoreSymlink "/run/configs/networking/ssh_config/kdn";
       }
       (lib.mkIf hasWorkstation {
-        kdn.hw.disks.persist."usr/data".directories = [
+        kdn.disks.persist."usr/data".directories = [
           "dev"
         ];
 
@@ -34,11 +34,7 @@ in {
             # don't search/expand single-word searchbars
             programs.firefox.policies.GoToIntranetSiteForSingleWordEntryInAddressBar = true;
 
-            kdn.programs.firefox.profileNames = [
-              "kdn"
-              "jp"
-            ];
-            programs.firefox.profiles.jp.id = 1;
+            kdn.programs.firefox.profileNames = ["kdn"];
             programs.firefox.profiles.kdn = {
               id = 0;
               settings."widget.use-xdg-desktop-portal.mime-picker" = "1";
@@ -90,9 +86,33 @@ in {
             };
           }
           {
+            kdn.programs.firefox.profileNames = ["jp"];
+            programs.firefox.profiles.jp = {
+              id = 1;
+            };
+          }
+          {
             kdn.programs.firefox.profileNames = ["bn"];
             programs.firefox.profiles.bn = {
               id = 2;
+            };
+          }
+          {
+            kdn.programs.firefox.profileNames = ["sn"];
+            programs.firefox.profiles.sn = {
+              id = 3;
+            };
+          }
+          {
+            kdn.programs.firefox.profileNames = ["en"];
+            programs.firefox.profiles.en = {
+              id = 4;
+            };
+          }
+          {
+            kdn.programs.firefox.profileNames = ["dn"];
+            programs.firefox.profiles.dn = {
+              id = 5;
             };
           }
         ]

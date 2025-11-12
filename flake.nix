@@ -465,7 +465,7 @@
         };
       }
     ];
-    flake.darwinModules.default = ./modules/nix-darwin;
+    flake.darwinModules.default = ./modules/darwin;
     flake.darwinConfigurations.anji = inputs.nix-darwin.lib.darwinSystem {
       specialArgs = mkSpecialArgs {moduleType = "darwin";};
       modules = [

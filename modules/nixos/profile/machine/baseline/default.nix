@@ -98,6 +98,11 @@ in {
         networking.networkmanager.logLevel = lib.mkDefault "INFO";
 
         # `UseDomains = true` for adding search domain `route` for just DNS queries
+        systemd.network.enable = lib.mkDefault true;
+        networking.useNetworkd = lib.mkDefault true;
+        # wait-online if there is any managed (not Unmanaged) network configured
+        systemd.network.wait-online.enable = lib.mkDefault (lib.attrsets.filterAttrs (_: net: !(net.linkConfig.Unmanaged or false) config.systemd.network.networks) != {});
+        systemd.network.wait-online.anyInterface = lib.mkDefault true;
         systemd.network.config.networkConfig.UseDomains = lib.mkDefault true;
       }
       {

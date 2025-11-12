@@ -36,7 +36,7 @@ in {
       nextcloud-client
       sync
     ];
-    kdn.hw.disks.persist."usr/reproducible".users.root.directories = [
+    kdn.disks.persist."usr/reproducible".users.root.directories = [
       "Nextcloud"
     ];
     systemd.timers."kdn-nextcloud-nixos-sync" = {

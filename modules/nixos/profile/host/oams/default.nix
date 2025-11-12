@@ -174,8 +174,7 @@ in {
       {
         # need to allow for a Netbird assignment
         networking.firewall.trustedInterfaces = ["tun0"];
-        systemd.network.enable = true;
-        networking.useNetworkd = true;
+        systemd.network.wait-online.enable = false;
       }
       {
         # kdn.nix.remote-builder.localhost.publicHostKey = "??";

@@ -208,7 +208,7 @@ in {
           }))
           builtins.listToAttrs
         ];
-        kdn.hw.disks.persist."usr/data".directories = lib.pipe activeCfgs [
+        kdn.disks.persist."usr/data".directories = lib.pipe activeCfgs [
           (builtins.map (nbCfg: {
             directory = "/var/lib/${nbCfg.serviceName}";
             user = nbCfg.userName;

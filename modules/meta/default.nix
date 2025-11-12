@@ -36,6 +36,7 @@
   options.parent = lib.mkOption {default = config.util.emptyParent;};
 
   options.parents = lib.mkOption {
+    internal = true;
     readOnly = true;
     default =
       if config.parent == config.util.emptyParent
@@ -44,29 +45,75 @@
   };
 
   options.util.emptyParent = lib.mkOption {
+    internal = true;
     readOnly = true;
     default = null;
   };
   options.util.knownModuleTypes = lib.mkOption {
-    type = with lib.types; listOf str;
+    internal = true;
     readOnly = true;
+    type = with lib.types; listOf str;
     default = ["nixos" "home-manager" "darwin" "nix-on-droid"];
   };
   options.util.isKnownType = lib.mkOption {
+    internal = true;
     readOnly = true;
-    default = config.util.isOfAnyType config.util.knownModuleTypes;
+    default = config.util.isOfType config.util.knownModuleTypes;
   };
-  options.util.isOfAnyType = lib.mkOption {
+  options.util.isOfType = lib.mkOption {
+    internal = true;
     readOnly = true;
     default = builtins.elem config.moduleType;
   };
   options.util.ifTypes = lib.mkOption {
+    internal = true;
     readOnly = true;
     default = types: lib.attrsets.optionalAttrs (builtins.elem config.moduleType types);
   };
-  options.util.hasParentOfAnyType = lib.mkOption {
+  options.util.isHMParent = lib.mkOption {
+    internal = true;
     readOnly = true;
-    default = types: builtins.any (parent: parent.util.isOfAnyType types) config.parents;
+    default = config.util.ifTypes ["nixos" "darwin" "nix-on-droid"];
+  };
+  options.util.hasParentOfAnyType = lib.mkOption {
+    internal = true;
+    readOnly = true;
+    default = types: builtins.any (parent: parent.util.isOfType types) config.parents;
+  };
+  options.util.loadModules = lib.mkOption {
+    internal = true;
+    readOnly = true;
+    default = {
+      curFile,
+      src,
+      extraSuffixes ? [],
+      withDefault ? false,
+    }: let
+      moduleSuffix =
+        {
+          nixos = "nixos.nix";
+          darwin = "darwin.nix";
+          home-manager = "hm.nix";
+          nix-on-droid = "droid.nix";
+        }."${config.moduleType}";
+
+      allFiles = lib.filesystem.listFilesRecursive src;
+      suffixes =
+        lib.lists.optionals withDefault ["/default.nix"]
+        ++ extraSuffixes
+        ++ [
+          "/${moduleSuffix}"
+          ".${moduleSuffix}"
+        ];
+      suffixMatchers = builtins.map lib.strings.hasSuffix suffixes;
+      filteredFiles = builtins.filter (pathValue: let
+        pathStr = builtins.toString pathValue;
+        matchesSuffixes = builtins.any (fn: fn pathStr) suffixMatchers;
+      in
+        pathValue != curFile && matchesSuffixes)
+      allFiles;
+    in
+      filteredFiles;
   };
   options.util.args = lib.mkOption {
     internal = true;

@@ -26,7 +26,7 @@ in {
             {
               matches = [
                 {
-                  "application.process.binary" = config.kdn.programs.apps.tidal.package.final.meta.mainProgram;
+                  "application.process.binary" = config.kdn.apps.tidal.package.final.meta.mainProgram;
                 }
               ];
               actions = {
@@ -41,7 +41,7 @@ in {
             }
           ];
         };
-        kdn.programs.apps.tidal = {
+        kdn.apps.tidal = {
           enable = true;
           package.original = pkgs.tidal-hifi;
           dirs.cache = [];

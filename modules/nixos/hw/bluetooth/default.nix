@@ -18,7 +18,7 @@ in {
         hardware.bluetooth.enable = true;
         services.blueman.enable = true;
 
-        kdn.hw.disks.persist."sys/config".directories = [
+        kdn.disks.persist."sys/config".directories = [
           "/var/lib/bluetooth"
         ];
       }

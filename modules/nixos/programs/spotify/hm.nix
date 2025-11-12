@@ -13,7 +13,7 @@ in {
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
-        kdn.programs.apps.spotify = {
+        kdn.apps.spotify = {
           enable = true;
           /*
           spotifywm> Running phase: unpackPhase
