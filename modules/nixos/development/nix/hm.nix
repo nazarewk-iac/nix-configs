@@ -22,6 +22,9 @@ in {
         nixd
       ]
       ++ [
+        devenv
+      ]
+      ++ [
         # formatters
         alejandra
         nixfmt-rfc-style
