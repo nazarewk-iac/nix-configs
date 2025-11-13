@@ -65,15 +65,38 @@
     readOnly = true;
     default = builtins.elem config.moduleType;
   };
+  options.util.ifTypes' = lib.mkOption {
+    internal = true;
+    readOnly = true;
+    default = types: forTrue: forFalse:
+      if builtins.elem config.moduleType types
+      then forTrue
+      else forFalse;
+  };
   options.util.ifTypes = lib.mkOption {
     internal = true;
     readOnly = true;
-    default = types: lib.attrsets.optionalAttrs (builtins.elem config.moduleType types);
+    default = types: data: config.util.ifTypes' types data {};
   };
-  options.util.isHMParent = lib.mkOption {
+  options.util.ifNotTypes = lib.mkOption {
+    internal = true;
+    readOnly = true;
+    default = types: data: config.util.ifTypes' types {} data;
+  };
+  options.util.ifHMParent = lib.mkOption {
     internal = true;
     readOnly = true;
     default = config.util.ifTypes ["nixos" "darwin" "nix-on-droid"];
+  };
+  options.util.ifNotHMParent = lib.mkOption {
+    internal = true;
+    readOnly = true;
+    default = config.util.ifNotTypes ["nixos" "darwin" "nix-on-droid"];
+  };
+  options.util.ifHM = lib.mkOption {
+    internal = true;
+    readOnly = true;
+    default = config.util.ifTypes ["home-manager"];
   };
   options.util.hasParentOfAnyType = lib.mkOption {
     internal = true;

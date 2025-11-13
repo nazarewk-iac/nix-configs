@@ -10,7 +10,7 @@
   };
 
   config = lib.mkMerge [
-    (kdnConfig.util.isHMParent {
+    (kdnConfig.util.ifHMParent {
       home-manager.sharedModules = [{kdn.desktop.enable = config.kdn.desktop.enable;}];
     })
   ];

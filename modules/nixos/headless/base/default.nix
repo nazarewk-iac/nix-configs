@@ -25,13 +25,13 @@ in {
         kdn.hw.basic.enable = true;
         kdn.programs.atuin.enable = true;
         kdn.programs.fish.enable = true;
-        kdn.toolset.essentials.enable = true;
-        kdn.programs.nix-utils.enable = true;
         kdn.programs.zsh.enable = true;
+        kdn.toolset.essentials.enable = true;
         kdn.toolset.fs.enable = true;
         kdn.toolset.fs.encryption.enable = true;
         kdn.toolset.network.enable = true;
         kdn.toolset.unix.enable = true;
+        kdn.toolset.nix.enable = true;
 
         programs.command-not-found.enable = false;
 
@@ -69,7 +69,6 @@ in {
         };
 
         environment.localBinInPath = true;
-
 
         boot.kernel.sysctl = let
           mb = 1024 * 1024;
