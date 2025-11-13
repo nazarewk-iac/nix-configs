@@ -181,6 +181,9 @@ in {
         kdn.nix.remote-builder.localhost.maxJobs = 6;
         kdn.nix.remote-builder.localhost.speedFactor = 16;
       }
+      {
+        kdn.fs.zfs.containers.fsname = "oams-main/containers/storage";
+      }
     ]
   );
 }
