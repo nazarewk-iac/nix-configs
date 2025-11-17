@@ -820,13 +820,6 @@ in {
         networking.firewall.logRefusedConnections = lib.mkDefault true;
         networking.firewall.pingLimit = "60/minute burst 5 packets";
 
-        kdn.networking.router.forwardings = [
-          {
-            from = "nb-priv";
-            to = "lan";
-          }
-        ];
-
         # more verbose logging in `systemd-networkd`, doesn't seem to generate much logs at all
         systemd.services.systemd-networkd.environment.SYSTEMD_LOG_LEVEL = "debug";
 

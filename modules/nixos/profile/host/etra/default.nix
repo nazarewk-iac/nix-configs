@@ -281,6 +281,17 @@ in {
       {
         # accept all traffic coming from Netbird to any other routed network
         networking.firewall.trustedInterfaces = ["nb-priv"];
+
+        kdn.networking.router.forwardings = [
+          {
+            from = "nb-priv";
+            to = "lan";
+          }
+          {
+            from = "nb-priv";
+            to = "wan";
+          }
+        ];
       }
       {
         kdn.networking.router.nets.wan = {
