@@ -83,6 +83,9 @@ in {
               inherit LoudnessEqualizer;
             };
           }
+          {
+            services.easyeffects.enable = lib.mkForce false; # TODO: drop when resolved https://github.com/wwmm/easyeffects/issues/4472
+          }
         ];
         # required by easyeffects
         kdn.programs.dconf.enable = true;
