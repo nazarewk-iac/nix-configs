@@ -77,7 +77,7 @@
 
   pythonInstance = python.override {inherit packageOverrides;};
 
-  theSrc = pkgs.symlinkJoin {
+  generatedSrc = pkgs.symlinkJoin {
     name = "${name}-src";
     paths = [
       src
@@ -90,6 +90,18 @@
     ];
   };
 
+  mkPackageFor = depsFn: python: (python.pkgs.buildPythonPackage {
+    pname = name;
+    version = "0.0.1";
+    pyproject = true;
+    src = generatedSrc;
+    buildInputs = with python.pkgs; [
+      hatchling
+    ];
+
+    dependencies = depsFn python.pkgs;
+  });
+
   mkEnv = depsFn:
     lib.pipe pythonInstance [
       (
@@ -101,25 +113,19 @@
                 // {
                   extraLibs =
                     (old.extraLibs or [])
-                    ++ [
-                      (python.pkgs.buildPythonPackage {
-                        pname = name;
-                        version = "0.0.1";
-                        pyproject = true;
-                        src = theSrc;
-                        buildInputs = with p.pkgs; [
-                          hatchling
-                        ];
-
-                        dependencies = depsFn p.pkgs;
-                      })
-                    ];
+                    ++ [(mkPackageFor depsFn p)];
                 }
               )
           )
       )
       (
-        env:
+        env: let
+          wrapperArgs = lib.lists.flatten [
+            # ["--inherit-argv0" ] # TODO: re-enable after fix https://github.com/NixOS/nixpkgs/issues/461884
+            makeWrapperArgs
+            ["--prefix" "PATH" ":" (lib.makeBinPath runtimeDeps)]
+          ];
+        in
           if runtimeDeps == []
           then env
           else
@@ -138,18 +144,17 @@
                   continue
                 fi
                 binName="''${binary##*/}"
-                makeBinaryWrapper "$binary" "$out/bin/$binName" \
-                   --inherit-argv0 \
-                   ${lib.strings.escapeShellArgs makeWrapperArgs} \
-                   --prefix PATH : '${lib.makeBinPath runtimeDeps}'
+                makeBinaryWrapper "$binary" "$out/bin/$binName" ${lib.strings.escapeShellArgs wrapperArgs}
               done
             ''
       )
     ];
 
-  releaseEnv = mkEnv (mkPythonDeps requirementsFile);
+  releaseRequirementsFn = mkPythonDeps requirementsFile;
+  devRequirementsFn = mkPythonDeps devRequirementsFile;
+  releaseEnv = mkEnv releaseRequirementsFn;
   devEnv = mkEnv (
-    pp: (mkPythonDeps requirementsFile pp) ++ (mkPythonDeps devRequirementsFile pp) ++ (devPackages pp)
+    pp: (releaseRequirementsFn pp) ++ (devRequirementsFn pp) ++ (devPackages pp)
   );
 
   extraOutputs = {
@@ -159,8 +164,19 @@
       mkPythonDeps
       requirementsFile
       ;
-    releaseEnv = releaseEnv;
-    devEnv = devEnv;
+    inherit
+      releaseRequirementsFn
+      devRequirementsFn
+      ;
+    mkPackageForPythonPackages = mkPackageFor releaseRequirementsFn;
+
+    inherit
+      generatedSrc
+      releaseEnv
+      devEnv
+      ;
+
+    releaseEnvUnwrapped = releaseEnv.unwrapped;
 
     container = pkgs.dockerTools.buildImage (imageOverlay {
       name = imageName;
