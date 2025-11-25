@@ -20,11 +20,11 @@ url = "https://github.com/NixOS/nixpkgs/pull/444291.patch?full_index=1"
 [patch.nixpkgs.netbird-dnssec]
 url = "https://github.com/NixOS/nixpkgs/pull/410239.patch?full_index=1"
 
+[patch.nixpkgs.ceph-pproxy-drop]
+url = "https://github.com/NixOS/nixpkgs/pull/462435.patch?full_index=1"
 
-#[patch.nixpkgs.ceph-rework]
-## "Build ceph with Python 3.12; move to pkgs/by-name"
-## takes care of arrow-cpp failure
-#url = "https://github.com/NixOS/nixpkgs/pull/443671.patch?full_index=1"
+[patch.nixpkgs.fix-awscli2-prompt-toolkit]
+url = "https://github.com/NixOS/nixpkgs/pull/464084.patch?full_index=1"
 
 [patch.preservation.fix-conflict]
 url = "https://github.com/nix-community/preservation/pull/21.patch?full_index=1"

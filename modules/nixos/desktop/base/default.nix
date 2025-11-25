@@ -130,11 +130,10 @@ in {
         # based on https://github.com/NixOS/nixpkgs/blob/2dbd317f56128ddc550ca337c7c6977d4bbec887/nixos/modules/services/x11/desktop-managers/cinnamon.nix
 
         services.gnome.glib-networking.enable = true;
-        programs.file-roller.enable = true;
-        programs.file-roller.package = pkgs.nemo-fileroller;
 
         environment.systemPackages = with pkgs; [
           nemo-with-extensions
+          nemo-fileroller
           gtk3.out
           xdg-user-dirs
           desktop-file-utils

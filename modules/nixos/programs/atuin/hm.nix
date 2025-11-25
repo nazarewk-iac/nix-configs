@@ -23,7 +23,7 @@ in {
             sync_frequency = 300;
           };
         };
-        xdg.configFile."atuin/config.toml".force = true;
+        programs.atuin.forceOverwriteSettings = true;
       }
       (lib.mkIf (config.home.username != "root") {
         systemd.user.services.atuind = {

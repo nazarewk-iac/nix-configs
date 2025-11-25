@@ -1,0 +1,31 @@
+From 2e7e7c71d33e506e64a98f1a4732945b5fecf926 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Andr=C3=A9=20Lima?= <me@limwa.pt>
+Date: Mon, 17 Nov 2025 00:29:33 +0000
+Subject: [PATCH] python3Packages.httpcore: remove unused dependencies
+
+---
+ pkgs/development/python-modules/httpcore/default.nix | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/pkgs/development/python-modules/httpcore/default.nix b/pkgs/development/python-modules/httpcore/default.nix
+index 100a3d25e772e4a9d2bd1c4e704f1e8fc1e00bfd..c3c364876a65a9cd834549a966a570ff1191f0f7 100644
+--- a/pkgs/development/python-modules/httpcore/default.nix
++++ b/pkgs/development/python-modules/httpcore/default.nix
+@@ -8,8 +8,6 @@
+   hatch-fancy-pypi-readme,
+   h11,
+   h2,
+-  pproxy,
+-  pytest-asyncio,
+   pytest-httpbin,
+   pytest-trio,
+   pytestCheckHook,
+@@ -54,8 +52,6 @@ buildPythonPackage rec {
+   };
+ 
+   nativeCheckInputs = [
+-    pproxy
+-    pytest-asyncio
+     pytest-httpbin
+     pytest-trio
+     pytestCheckHook

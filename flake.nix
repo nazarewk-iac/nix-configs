@@ -70,10 +70,8 @@
   inputs.haumea.inputs.nixpkgs.follows = "nixpkgs";
   inputs.home-manager.inputs.nixpkgs.follows = "nixpkgs";
   inputs.lanzaboote.inputs.crane.follows = "crane";
-  inputs.lanzaboote.inputs.flake-compat.follows = "flake-compat";
-  inputs.lanzaboote.inputs.flake-parts.follows = "flake-parts";
   inputs.lanzaboote.inputs.nixpkgs.follows = "nixpkgs";
-  inputs.lanzaboote.inputs.pre-commit-hooks-nix.follows = "empty";
+  inputs.lanzaboote.inputs.pre-commit.follows = "empty";
   inputs.lanzaboote.inputs.rust-overlay.follows = "rust-overlay";
   inputs.microvm.inputs.flake-utils.follows = "flake-utils";
   inputs.microvm.inputs.nixpkgs.follows = "nixpkgs";

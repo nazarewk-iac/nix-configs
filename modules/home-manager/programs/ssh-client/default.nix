@@ -41,13 +41,6 @@ in {
           controlPersist = lib.mkDefault "1m";
         };
       }
-      {
-        # https://github.com/nixos/nixpkgs/issues/456221
-        programs.ssh.package =
-          if lib.strings.versionAtLeast pkgs.openssh.version "10.2"
-          then lib.warn "OpenSSH is already at v10.2+ fixing the ControlPersis bug, please drop this override. " pkgs.openssh
-          else pkgs.openssh_10_2;
-      }
     ]
   );
 }
