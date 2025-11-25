@@ -242,8 +242,6 @@ in {
           imagemagick
 
           pkgs.kdn.ss-util
-          drawio
-          plantuml
 
           zoom-us
           nextcloud-client

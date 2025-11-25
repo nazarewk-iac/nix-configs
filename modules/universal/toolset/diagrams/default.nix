@@ -15,6 +15,8 @@ in {
     (kdnConfig.util.ifNotHMParent {
       kdn.env.packages = with pkgs; [
         mermaid-cli
+        drawio
+        plantuml
       ];
     })
   ]);
