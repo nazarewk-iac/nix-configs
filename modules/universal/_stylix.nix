@@ -39,6 +39,8 @@ in
         );
         stylix.polarity = lib.mkDefault "dark";
         stylix.base16Scheme = lib.mkDefault ./stylix.pallette.yaml;
+
+        stylix.enableReleaseChecks = lib.mkDefault false;
       }
       (lib.attrsets.optionalAttrs (kdnConfig.parent == null) {
         stylix.fonts.monospace.name = lib.mkDefault "Fira Code";
@@ -55,6 +57,10 @@ in
           fira-code
           fira-code-symbols
         ];
+        stylix.enableReleaseChecks = lib.strings.versionAtLeast config.system.nixos.version "26.11";
+      })
+      (kdnConfig.util.ifTypes ["home-manager"] {
+        stylix.enableReleaseChecks = lib.strings.versionAtLeast config.home.version.release "26.11";
       })
     ];
   }
