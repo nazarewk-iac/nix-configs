@@ -48,11 +48,6 @@
           universal-pathlib
 
           pycrypto
-
-          (pkgs.http-prompt.override {
-            #python3Packages = ps;
-            httpie = ps.httpie;
-          })
         ]
         ++ [
           xdg-base-dirs
