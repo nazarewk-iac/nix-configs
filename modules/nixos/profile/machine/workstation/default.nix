@@ -71,11 +71,6 @@ in {
         ];
       }
       {
-        kdn.networking.netbird.clients.nbs.enable = true;
-      }
-      {
-        kdn.networking.netbird.clients.nbt.enable = true;
-        kdn.networking.netbird.clients.nbc.enable = true;
         kdn.networking.netbird.clients.t1.enable = true;
         kdn.networking.netbird.clients.t2.enable = true;
         kdn.networking.netbird.clients.t3.enable = true;

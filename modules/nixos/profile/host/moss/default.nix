@@ -29,12 +29,6 @@ in {
         # TODO: anji times out on using moss as DNS resolver (port 5353)
         kdn.networking.resolved.multicastDNS = "false";
       }
-      {
-        kdn.networking.netbird.clients.nbt.enable = true;
-        kdn.networking.netbird.clients.nbt.environment.NB_DISABLE_DNS = "false";
-        kdn.networking.netbird.clients.nbt.environment.NB_BLOCK_INBOUND = "false";
-        # kdn.networking.netbird.clients.nbt.environment.NB_SKIP_NFTABLES_CHECK = "true"; # use iptables
-      }
     ]
   );
 }

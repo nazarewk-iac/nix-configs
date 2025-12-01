@@ -324,13 +324,6 @@ in {
         kdn.networking.netbird.clients.priv.environment.NB_DISABLE_DNS = "false";
         kdn.networking.netbird.clients.priv.environment.NB_BLOCK_INBOUND = "false";
 
-        kdn.networking.netbird.clients.nbs.idx = 2; # internal NetBird instance
-        # TODO: this doesn't work (doesn't set up routes)
-        kdn.networking.netbird.clients.nbs.systemd.enable = false;
-        # TODO: this doesn't work
-        kdn.networking.netbird.clients.nbs.resolvesDomains = ["~netbird.selfhosted"];
-        kdn.networking.netbird.clients.nbt.idx = 3; # testing client
-        kdn.networking.netbird.clients.nbc.idx = 4; # cloud client
         kdn.networking.netbird.clients.t1.idx = 5; # testing client
         kdn.networking.netbird.clients.t2.idx = 6; # testing client
         kdn.networking.netbird.clients.t3.idx = 7; # testing client
