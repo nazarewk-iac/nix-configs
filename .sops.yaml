@@ -11,7 +11,7 @@ keys:
         - &yk-oams-unattended age1yubikey1q25g9xpunct74wnn29dgcgep78q666dkhpfg2flltg92fvyrew02j28464d
 
     brys:
-      serial: 1617439
+      serial: 16174039
       age:
         - &yk-brys-pin-touch age1yubikey1qdppx4kd82ecfxr5lcmgef9w4zxmreyl2q3xv6dsq2jwgv274cm5zmjuy34
         - &yk-brys-touch age1yubikey1qf4cjj3ksn60z9hnezkwysvgcll7y3mfxzwzdrzgkfkqe9thmczg6xmmfz9
