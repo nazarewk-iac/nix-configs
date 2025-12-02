@@ -30,6 +30,7 @@
   inputs.flake-parts.url = "github:hercules-ci/flake-parts";
   inputs.flake-utils.url = "github:numtide/flake-utils";
   inputs.haumea.url = "github:nix-community/haumea";
+  inputs.hardware-report.url = "github:sfcompute/hardware_report";
   inputs.home-manager.url = "github:nix-community/home-manager";
   inputs.infuse.flake = false;
   inputs.infuse.url = "git+https://codeberg.org/amjoseph/infuse.nix.git";
@@ -67,7 +68,9 @@
   inputs.flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs-lib";
   inputs.helix-editor.inputs.nixpkgs.follows = "nixpkgs";
   inputs.helix-editor.inputs.rust-overlay.follows = "rust-overlay";
-  inputs.haumea.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.hardware-report.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.hardware-report.inputs.flake-utils.follows = "flake-utils";
+  inputs.hardware-report.inputs.rust-overlay.follows = "rust-overlay";
   inputs.home-manager.inputs.nixpkgs.follows = "nixpkgs";
   inputs.lanzaboote.inputs.crane.follows = "crane";
   inputs.lanzaboote.inputs.nixpkgs.follows = "nixpkgs";

@@ -2,6 +2,7 @@
   lib,
   pkgs,
   config,
+  kdnConfig,
   ...
 }: let
   cfg = config.kdn.profile.machine.baseline;
@@ -28,6 +29,8 @@ in {
           nix-du
           nix-tree
           pkgs.kdn.kdn-nix
+
+          kdnConfig.self.inputs.hardware-report.packages."${pkgs.stdenv.hostPlatform.system}".default
         ];
       }
     ]

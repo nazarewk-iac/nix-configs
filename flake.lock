@@ -499,6 +499,32 @@
         "type": "gitlab"
       }
     },
+    "hardware-report": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "rust-overlay": [
+          "rust-overlay"
+        ]
+      },
+      "locked": {
+        "lastModified": 1764689279,
+        "narHash": "sha256-SyNVkhnCx+qOIpCWM7sa7DObnf+ErLqgTBXZpFF0VCg=",
+        "owner": "sfcompute",
+        "repo": "hardware_report",
+        "rev": "bd6e741c7e78505e27cfccbcbce6cc025a206e01",
+        "type": "github"
+      },
+      "original": {
+        "owner": "sfcompute",
+        "repo": "hardware_report",
+        "type": "github"
+      }
+    },
     "harfbuzz": {
       "flake": false,
       "locked": {
@@ -518,9 +544,7 @@
     },
     "haumea": {
       "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
+        "nixpkgs": "nixpkgs_2"
       },
       "locked": {
         "lastModified": 1708375098,
@@ -890,6 +914,21 @@
     },
     "nixpkgs_2": {
       "locked": {
+        "lastModified": 1764465291,
+        "narHash": "sha256-jJ/E4B9Hp7U2ZmT3E0tD1LtAfATw/xjVf8sueNyeYmc=",
+        "owner": "nix-community",
+        "repo": "nixpkgs.lib",
+        "rev": "e9537535ae8f4a2f78dbef0aaa0cbb6af4abd047",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "nixpkgs.lib",
+        "type": "github"
+      }
+    },
+    "nixpkgs_3": {
+      "locked": {
         "lastModified": 1748021246,
         "narHash": "sha256-aJ9l64Q/FHYf2JDlOlgCx7GMzequJwcxtL8EM/JxDN0=",
         "owner": "nazarewk",
@@ -904,7 +943,7 @@
         "type": "github"
       }
     },
-    "nixpkgs_3": {
+    "nixpkgs_4": {
       "locked": {
         "lastModified": 1764517877,
         "narHash": "sha256-pp3uT4hHijIC8JUK5MEqeAWmParJrgBVzHLNfJDZxg4=",
@@ -923,7 +962,7 @@
     "nur": {
       "inputs": {
         "flake-parts": "flake-parts_3",
-        "nixpkgs": "nixpkgs_3"
+        "nixpkgs": "nixpkgs_4"
       },
       "locked": {
         "lastModified": 1764591500,
@@ -987,6 +1026,7 @@
         "flake-compat": "flake-compat_2",
         "flake-parts": "flake-parts_2",
         "flake-utils": "flake-utils",
+        "hardware-report": "hardware-report",
         "haumea": "haumea",
         "helix-editor": "helix-editor",
         "home-manager": "home-manager",
@@ -999,7 +1039,7 @@
         "nixos-anywhere": "nixos-anywhere",
         "nixos-generators": "nixos-generators",
         "nixos-hardware": "nixos-hardware",
-        "nixpkgs": "nixpkgs_2",
+        "nixpkgs": "nixpkgs_3",
         "nixpkgs-lib": [
           "nixpkgs"
         ],
