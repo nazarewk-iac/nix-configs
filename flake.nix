@@ -275,19 +275,7 @@
           specialArgs = mkSpecialArgs {
             moduleType = "nixos";
           };
-          modules = [
-            self.nixosModules.default
-            (
-              {config, ...}: {
-                kdn.hostName = "oams";
-                kdn.profile.host."${config.kdn.hostName}".enable = true;
-
-                system.stateVersion = "23.11";
-                home-manager.sharedModules = [{home.stateVersion = "23.11";}];
-                networking.hostId = "ce0f2f33"; # cut -c-8 </proc/sys/kernel/random/uuid
-              }
-            )
-          ];
+          modules = [./hosts/oams];
         };
 
         brys = lib.nixosSystem {
@@ -296,19 +284,7 @@
             moduleType = "nixos";
             features.microvm-host = true;
           };
-          modules = [
-            self.nixosModules.default
-            (
-              {config, ...}: {
-                kdn.hostName = "brys";
-                kdn.profile.host."${config.kdn.hostName}".enable = true;
-
-                system.stateVersion = "24.11";
-                home-manager.sharedModules = [{home.stateVersion = "24.11";}];
-                networking.hostId = "0a989258"; # cut -c-8 </proc/sys/kernel/random/uuid
-              }
-            )
-          ];
+          modules = [./hosts/brys];
         };
 
         etra = lib.nixosSystem {
@@ -316,19 +292,7 @@
           specialArgs = mkSpecialArgs {
             moduleType = "nixos";
           };
-          modules = [
-            self.nixosModules.default
-            (
-              {config, ...}: {
-                kdn.hostName = "etra";
-                kdn.profile.host."${config.kdn.hostName}".enable = true;
-
-                system.stateVersion = "24.11";
-                home-manager.sharedModules = [{home.stateVersion = "24.11";}];
-                networking.hostId = "6dc8c4d7"; # cut -c-8 </proc/sys/kernel/random/uuid
-              }
-            )
-          ];
+          modules = [./hosts/etra];
         };
 
         pryll = lib.nixosSystem {
@@ -336,19 +300,7 @@
           specialArgs = mkSpecialArgs {
             moduleType = "nixos";
           };
-          modules = [
-            self.nixosModules.default
-            (
-              {config, ...}: {
-                kdn.hostName = "pryll";
-                kdn.profile.host."${config.kdn.hostName}".enable = true;
-
-                system.stateVersion = "25.05";
-                home-manager.sharedModules = [{home.stateVersion = "25.05";}];
-                networking.hostId = "25880d1d"; # cut -c-8 </proc/sys/kernel/random/uuid
-              }
-            )
-          ];
+          modules = [./hosts/pryll];
         };
 
         obler = lib.nixosSystem {
@@ -356,19 +308,7 @@
           specialArgs = mkSpecialArgs {
             moduleType = "nixos";
           };
-          modules = [
-            self.nixosModules.default
-            (
-              {config, ...}: {
-                kdn.hostName = "obler";
-                kdn.profile.host."${config.kdn.hostName}".enable = true;
-
-                system.stateVersion = "23.11";
-                home-manager.sharedModules = [{home.stateVersion = "23.11";}];
-                networking.hostId = "f6345d38"; # cut -c-8 </proc/sys/kernel/random/uuid
-              }
-            )
-          ];
+          modules = [./hosts/obler];
         };
 
         moss = lib.nixosSystem {
@@ -376,27 +316,7 @@
           specialArgs = mkSpecialArgs {
             moduleType = "nixos";
           };
-          modules = [
-            self.nixosModules.default
-            (
-              {config, ...}: {
-                kdn.hostName = "moss";
-                kdn.profile.host."${config.kdn.hostName}".enable = true;
-
-                system.stateVersion = "23.11";
-                home-manager.sharedModules = [{home.stateVersion = "23.11";}];
-                networking.hostId = "550ded62"; # cut -c-8 </proc/sys/kernel/random/uuid
-              }
-            )
-            (
-              {modulesPath, ...}: {
-                imports = [
-                  (modulesPath + "/profiles/qemu-guest.nix")
-                  (modulesPath + "/profiles/headless.nix")
-                ];
-              }
-            )
-          ];
+          modules = [./hosts/moss];
         };
 
         faro = lib.nixosSystem {
@@ -405,19 +325,7 @@
             moduleType = "nixos";
             features.darwin-utm-guest = true;
           };
-          modules = [
-            self.nixosModules.default
-            (
-              {config, ...}: {
-                kdn.hostName = "faro";
-                kdn.profile.host."${config.kdn.hostName}".enable = true;
-
-                system.stateVersion = "25.05";
-                home-manager.sharedModules = [{home.stateVersion = "25.05";}];
-                networking.hostId = "4b2dd30f"; # cut -c-8 </proc/sys/kernel/random/uuid
-              }
-            )
-          ];
+          modules = [./hosts/faro];
         };
 
         briv = lib.nixosSystem {
@@ -426,19 +334,7 @@
             moduleType = "nixos";
             features.rpi4 = true;
           };
-          modules = [
-            self.nixosModules.default
-            (
-              {config, ...}: {
-                kdn.hostName = "briv";
-                kdn.profile.host."${config.kdn.hostName}".enable = true;
-
-                system.stateVersion = "25.05";
-                home-manager.sharedModules = [{home.stateVersion = "25.05";}];
-                networking.hostId = "b86e74e8"; # cut -c-8 </proc/sys/kernel/random/uuid
-              }
-            )
-          ];
+          modules = [./hosts/briv];
         };
 
         rpi4-bootstrap = lib.nixosSystem {
@@ -447,29 +343,16 @@
             moduleType = "nixos";
             features.rpi4 = true;
           };
-          modules = [
-            self.nixosModules.default
-            (
-              {config, ...}: {
-                kdn.hostName = "kdn-rpi4-bootstrap";
-                kdn.profile.host."${config.kdn.hostName}".enable = true;
-
-                system.stateVersion = "25.05";
-                home-manager.sharedModules = [{home.stateVersion = "25.05";}];
-                networking.hostId = "9751227f"; # cut -c-8 </proc/sys/kernel/random/uuid
-              }
-            )
-          ];
+          modules = [./hosts/kdn-rpi4-bootstrap];
         };
       }
     ];
     flake.darwinModules.default = ./modules/darwin;
     flake.darwinConfigurations.anji = inputs.nix-darwin.lib.darwinSystem {
-      specialArgs = mkSpecialArgs {moduleType = "darwin";};
-      modules = [
-        self.darwinModules.default
-        {kdn.hostName = "anji";}
-      ];
+      specialArgs = mkSpecialArgs {
+        moduleType = "darwin";
+      };
+      modules = [./hosts/anji];
     };
     flake.self = self;
   });
