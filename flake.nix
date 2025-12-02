@@ -228,40 +228,7 @@
             inherit (self) lib;
             inherit (lib) nixosSystem;
             specialArgs = mkSpecialArgs {moduleType = "nixos";};
-
-            modules = [
-              self.nixosModules.default
-              {
-                /*
-                `image.baseName` gives a stable image filename
-                - see https://github.com/NixOS/nixpkgs/blob/30a61f056ac492e3b7cdcb69c1e6abdcf00e39cf/nixos/modules/image/file-options.nix#L9-L16
-                */
-                image.baseName = lib.mkForce "kdn-nixos-install-iso";
-
-                /*
-                 `install-iso` uses some weird GRUB booting chimera
-                see https://github.com/NixOS/nixpkgs/blob/9fbeebcc35c2fbc9a3fb96797cced9ea93436097/nixos/modules/installer/cd-dvd/iso-image.nix#L780-L787
-                */
-                boot.initrd.systemd.enable = lib.mkForce false;
-                boot.loader.systemd-boot.enable = lib.mkForce false;
-              }
-              {
-                kdn.hostName = "kdn-nixos-install-iso";
-                home-manager.sharedModules = [{home.stateVersion = "26.05";}];
-                kdn.security.secrets.allow = true;
-                kdn.profile.machine.baseline.enable = true;
-                kdn.security.disk-encryption.enable = true;
-                kdn.networking.netbird.clients.priv.type = "ephemeral";
-
-                environment.systemPackages = with pkgs; [
-                ];
-              }
-              (
-                {config, ...}: {
-                  users.users.root.openssh.authorizedKeys.keys = config.users.users.kdn.openssh.authorizedKeys.keys;
-                }
-              )
-            ];
+            modules = [./hosts/install-iso];
           };
         }
       ];

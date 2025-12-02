@@ -33,18 +33,18 @@ see https://bmcgee.ie/posts/2022/12/setting-up-my-new-laptop-nix-style/
 ```shell
 # building the installer from packages/install-iso
 set INSTALL_ISO_PATH "$(nom build '.#install-iso' --no-link --print-out-paths --print-build-logs)/iso/kdn-nixos-install-iso.iso"
-sudo dd if="$INSTALL_ISO_PATH" of=/dev/disk/by-id/usb-SanDisk_Cruzer_Blade_02000515031521144721-0:0 status=progress
-sudo dd if="$INSTALL_ISO_PATH" of=/dev/disk/by-id/usb-_Patriot_Memory_070133F17AC22052-0:0 status=progress
-sudo dd if="$INSTALL_ISO_PATH" of=/dev/disk/by-id/usb-Samsung_Portable_SSD_T5_1234567D585A-0:0 status=progress
+sudo dd bs=1M if="$INSTALL_ISO_PATH" of=/dev/disk/by-id/usb-SanDisk_Cruzer_Blade_02000515031521144721-0:0 status=progress
+sudo dd bs=1M if="$INSTALL_ISO_PATH" of=/dev/disk/by-id/usb-_Patriot_Memory_070133F17AC22052-0:0 status=progress
+sudo dd bs=1M if="$INSTALL_ISO_PATH" of=/dev/disk/by-id/usb-Samsung_Portable_SSD_T5_1234567D585A-0:0 status=progress
 scp "$INSTALL_ISO_PATH" root@kvm-fa56.lan.etra.net.int.kdn.im:/data/nixos-amd64.iso
 # boot the machine and ssh into it
-ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null kdn@nixos
+ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null kdn@kdn-nixos-install-iso
 ```
 
 ## Golden path for bootstrapping new physical machine
 
 1. build the `install-iso` and boot it
-2. prepare a new config at `modules/nixos/profile/host/${HOSTNAME}/default.nix`
+2. prepare a new config at `host/${HOSTNAME}/default.nix`
     - put `kdn.profile.machine.baseline.enable = true`
     - look through `kdn.hardware.{gpu,cpu}.{intel,amd}`
     - set up `zramSwap` & `boot.tmp.tmpfsSize`
