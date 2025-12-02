@@ -32,7 +32,7 @@ see https://bmcgee.ie/posts/2022/12/setting-up-my-new-laptop-nix-style/
 
 ```shell
 # building the installer from packages/install-iso
-set INSTALL_ISO_PATH "$(nom build '.#install-iso' --no-link --print-out-paths --print-build-logs)/iso/nixos.iso"
+set INSTALL_ISO_PATH "$(nom build '.#install-iso' --no-link --print-out-paths --print-build-logs)/iso/kdn-nixos-install-iso.iso"
 sudo dd if="$INSTALL_ISO_PATH" of=/dev/disk/by-id/usb-SanDisk_Cruzer_Blade_02000515031521144721-0:0 status=progress
 sudo dd if="$INSTALL_ISO_PATH" of=/dev/disk/by-id/usb-_Patriot_Memory_070133F17AC22052-0:0 status=progress
 sudo dd if="$INSTALL_ISO_PATH" of=/dev/disk/by-id/usb-Samsung_Portable_SSD_T5_1234567D585A-0:0 status=progress

@@ -247,7 +247,7 @@
               }
               {
                 kdn.hostName = "kdn-nixos-install-iso";
-                home-manager.sharedModules = [{home.stateVersion = "24.11";}];
+                home-manager.sharedModules = [{home.stateVersion = "26.05";}];
                 kdn.security.secrets.allow = true;
                 kdn.profile.machine.baseline.enable = true;
                 kdn.security.disk-encryption.enable = true;
