@@ -282,6 +282,25 @@
       };
     }
     {
+
+      networking.hosts."192.168.2.1" = ["mokerlink"];
+      networking.networkmanager.ensureProfiles.profiles.mokerlink-switch = {
+        connection = {
+          id = "mokerlink-switch";
+          type = "ethernet";
+          interface-name = "enp7s0";
+          autoconnect = false;
+        };
+        ethernet.mac-address = "04:42:1A:ED:8B:04";
+        ipv4 = {
+          method = "manual";
+          address1 = "192.168.2.2/24";
+          may-fail = false;
+        };
+        ipv6.method = "disabled";
+      };
+    }
+    {
       # kdn.nix.remote-builder.localhost.publicHostKey = "??";
       kdn.nix.remote-builder.localhost.maxJobs = 12;
       kdn.nix.remote-builder.localhost.speedFactor = 32;
