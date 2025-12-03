@@ -74,22 +74,11 @@ in {
             options.discovered.keys = lib.mkOption {
               readOnly = true;
               type = with lib.types; listOf str;
-              default = let
-                pathsJson =
-                  pkgs.runCommand "converted-kdn-sops-nix-${fileCfg.namePrefix}.paths.json"
-                  {inherit (fileCfg) sopsFile;}
-                  ''
-                    ${lib.getExe pkgs.gojq} -cM --yaml-input '
-                      del(.sops) | [ paths(type == "string" and contains("type:str")) | join("/") ]
-                    ' <"$sopsFile" >"$out"
-                  '';
-              in
-                lib.pipe pathsJson [
-                  # TODO: this `builtins.readFile` probably causes IFDs
-                  builtins.readFile
-                  builtins.fromJSON
-                  (builtins.filter (lib.strings.hasPrefix fileCfg.keyPrefix))
-                ];
+              default = lib.pipe fileCfg.sopsFile [
+                lib.kdn.sops.parseSopsYAMLMetadata
+                (builtins.map (e: builtins.concatStringsSep "/" e.path))
+                (builtins.filter (lib.strings.hasPrefix fileCfg.keyPrefix))
+              ];
             };
             options.discovered.entries = lib.mkOption {
               readOnly = true;
