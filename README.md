@@ -159,6 +159,7 @@ ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null kdn@kdn-nixos-in
      - integrate them with SOPS before building the system
    - TODO: backup the SSH host keys to local device
    - TODO: backup LUKS headers to the local device
+   - TODO: try and document `chroot` using `nixos-enter` from the install-iso
 
 7. (deprecated) set up keyfiles for each disk:
     ```shell
