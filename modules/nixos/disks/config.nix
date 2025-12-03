@@ -7,8 +7,6 @@
   cfg = config.kdn.disks;
 
   # TODO: make the ZFS pools/datasets optional and fall back to /nix/persist/fallback?
-
-  dumbMerge = builtins.foldl' lib.attrsets.recursiveUpdate {};
 in {
   config = lib.mkMerge [
     {home-manager.sharedModules = [{kdn.disks.enable = cfg.enable;}];}
@@ -74,25 +72,43 @@ in {
       ];
     }
     {
+      # whole-disk LUKS handling
       kdn.disks.devices = lib.pipe cfg.luks.volumes [
-        (lib.attrsets.mapAttrs' (
-          _: luksVol: {
-            name = luksVol.target.deviceKey;
-            value = {
-              type = "luks";
-              path = lib.mkDefault luksVol.targetSpec.path;
-            };
-          }
-        ))
+        builtins.attrValues
+        (builtins.filter (luksVol: luksVol.target.partitionKey == null))
+        (builtins.map (luksVol: {
+          "${luksVol.target.deviceKey}" = {
+            type = "luks";
+            path = lib.mkDefault luksVol.targetSpec.path;
+          };
+        }))
+        lib.mkMerge
+      ];
+    }
+    {
+      # partition-based LUKS handling
+      kdn.disks.devices = lib.pipe cfg.luks.volumes [
+        builtins.attrValues
+        (builtins.filter (luksVol: luksVol.target.partitionKey != null))
+        (builtins.map (luksVol: {
+          "${luksVol.target.deviceKey}".partitions."${luksVol.target.partitionKey}" = {
+            num = luksVol.targetSpec.partNum;
+            size = luksVol.targetSpec.size;
+            disko.type = "0FC63DAF-8483-4772-8E79-3D69D8477DE4";
+            disko.label = luksVol.target.partitionKey;
+          };
+        }))
+        lib.mkMerge
       ];
     }
     {
       # LUKS header partitions
       kdn.disks.devices = lib.pipe cfg.luks.volumes [
         builtins.attrValues
+        (builtins.filter (luksVol: luksVol.header.deviceKey != null && luksVol.header.partitionKey != null))
         (builtins.map (luksVol: {
           "${luksVol.header.deviceKey}".partitions."${luksVol.header.partitionKey}" = {
-            inherit (luksVol.headerSpec) num;
+            num = luksVol.headerSpec.partNum;
             inherit (cfg.luks.header) size;
             /*
             https://uapi-group.org/specifications/specs/discoverable_partitions_specification/
@@ -109,7 +125,7 @@ in {
             disko.label = luksVol.header.partitionKey;
           };
         }))
-        dumbMerge
+        lib.mkMerge
       ];
     }
     {
@@ -145,7 +161,9 @@ in {
         kdn.disks.base."disposable".zfsName = cfg.disposable.zfsName;
         # this does not always work
         kdn.disks.base."disposable".disko.postCreateHook = ''
-          zfs snapshot "${snapshotName}"
+          if ! zfs get type "${snapshotName}" >/dev/null 2>&1; then
+            zfs snapshot "${snapshotName}"
+          fi
         '';
         kdn.disks.persist."disposable".directories = [
           {
@@ -320,7 +338,7 @@ in {
           name: luksVol: {
             type = "disk";
             device = luksVol.target.path;
-            content = dumbMerge [
+            content = lib.mkMerge [
               {
                 type = "luks";
                 name = luksVol.name;
@@ -355,7 +373,7 @@ in {
         (lib.attrsets.filterAttrs (name: disk: disk.type == "gpt"))
         (builtins.mapAttrs (
           name: disk:
-            dumbMerge [
+            lib.mkMerge [
               {
                 type = "disk";
                 device = disk.path;
@@ -363,20 +381,21 @@ in {
                 content.partitions = lib.pipe disk.partitions [
                   (builtins.mapAttrs (
                     name: part:
-                      dumbMerge [
+                      lib.mkMerge [
                         {
                           priority = part.num;
                           device = part.path;
                           alignment =
                             1
-                            * 1024
-                            # MiB
-                            * 1024
-                            # KiB
+                            * 1024 # MiB
+                            * 1024 # KiB
                             / 2048
                             # sgdisk sector size
                             ;
-                          size = "${builtins.toString part.size}M"; # `M` equals `MiB` in sgdisk/disko, but disko validates `M`
+                          size =
+                            if builtins.isString part.size
+                            then part.size
+                            else "${builtins.toString part.size}M"; # `M` equals `MiB` in sgdisk/disko, but disko validates `M`
                         }
                         part.disko
                       ]
@@ -393,7 +412,7 @@ in {
       disko.devices.zpool = lib.pipe cfg.zpools [
         (builtins.mapAttrs (
           name: zpool:
-            dumbMerge [
+            lib.mkMerge [
               {
                 type = "zpool";
                 name = name;
@@ -407,7 +426,7 @@ in {
                   if volCount > 1
                   then "mirror"
                   else "";
-                rootFsOptions = {
+                rootFsOptions = lib.attrsets.mapAttrs (_: lib.mkDefault) {
                   acltype = "posixacl";
                   relatime = "on";
                   xattr = "sa";
@@ -419,7 +438,7 @@ in {
                   compression = "lz4";
                   "com.sun:auto-snapshot" = "false";
                 };
-                options = {
+                options = lib.attrsets.mapAttrs (_: lib.mkDefault) {
                   ashift = "12";
                   autotrim = "on";
                   "feature@large_dnode" = "enabled"; # required by dnodesize!=legacy
@@ -449,7 +468,7 @@ in {
       disko.devices.zpool = lib.pipe cfg.base [
         (builtins.mapAttrs (
           name: imp: {
-            "${imp.zpool.name}".datasets."${imp.zfsPath}" = dumbMerge [
+            "${imp.zpool.name}".datasets."${imp.zfsPath}" = lib.mkMerge [
               {
                 type = "zfs_fs";
                 inherit (imp) mountpoint;
@@ -463,7 +482,7 @@ in {
           }
         ))
         builtins.attrValues
-        dumbMerge
+        lib.mkMerge
         (lib.mkIf cfg.enable)
       ];
     }

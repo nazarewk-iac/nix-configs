@@ -9,6 +9,8 @@
 }: let
   cfg = config.kdn.disks;
 
+  partSizeType = with lib.types; oneOf [str ints.positive];
+
   deviceType = lib.types.submodule (
     {name, ...} @ disk: {
       options.type = lib.mkOption {
@@ -46,7 +48,7 @@
                   else builtins.throw "Don't know how to generate partition number for disk ${path}";
               };
               options.size = lib.mkOption {
-                type = lib.types.ints.positive;
+                type = partSizeType;
               };
               options.disko = lib.mkOption {
                 default = {};
@@ -65,7 +67,7 @@
       ...
     } @ partSel: {
       options.deviceKey = lib.mkOption {
-        type = lib.types.str;
+        type = with lib.types; nullOr str;
       };
       options.partitionKey = lib.mkOption {
         type = with lib.types; nullOr str;
@@ -98,9 +100,10 @@
   );
 in {
   imports = [
-    (lib.mkRenamedOptionModule
-      [ "kdn" "hw" "disks" ]
-      [ "kdn" "disks" ]
+    (
+      lib.mkRenamedOptionModule
+      ["kdn" "hw" "disks"]
+      ["kdn" "disks"]
     )
   ];
   options.kdn.disks = {
@@ -166,6 +169,10 @@ in {
       type = with lib.types; path;
       default = "/nix/persist";
     };
+    defaults.bootDeviceName = lib.mkOption {
+      type = with lib.types; str;
+      default = "boot";
+    };
 
     disposable.zfsName = lib.mkOption {
       type = with lib.types; str;
@@ -173,7 +180,7 @@ in {
     };
 
     luks.header.size = lib.mkOption {
-      type = lib.types.ints.u8;
+      type = partSizeType;
       # https://wiki.archlinux.org/title/Dm-crypt/Device_encryption#Encrypt_an_existing_unencrypted_file_system
       # suggests using 32MB == 2x header size (16MB)
       default = 32;
@@ -211,6 +218,13 @@ in {
             };
             options.targetSpec.path = lib.mkOption {
               type = with lib.types; nullOr path;
+              default = luksVol.config.target.partition.path;
+            };
+            options.targetSpec.partNum = lib.mkOption {
+              type = lib.types.ints.between 1 128;
+            };
+            options.targetSpec.size = lib.mkOption {
+              type = partSizeType;
             };
             options.uuid = lib.mkOption {
               type = lib.types.str;
@@ -226,7 +240,7 @@ in {
             options.header = lib.mkOption {
               type = deviceSelectorType;
             };
-            options.headerSpec.num = lib.mkOption {
+            options.headerSpec.partNum = lib.mkOption {
               type = lib.types.ints.between 1 128;
             };
             options.name = lib.mkOption {
@@ -242,8 +256,8 @@ in {
             };
             config = {
               target.deviceKey = lib.mkDefault luksVol.name;
-              target.partitionKey = null;
-              header.deviceKey = lib.mkDefault "boot";
+              target.partitionKey = lib.mkDefault null;
+              header.deviceKey = lib.mkDefault cfg.defaults.bootDeviceName;
               header.partitionKey = lib.mkDefault "${luksVol.name}-header";
             };
           }
@@ -381,6 +395,49 @@ in {
           }
         )
       );
+    };
+    disko.devices._meta = lib.mkOption {
+      type = (pkgs.formats.json {}).type;
+      default = {};
+    };
+    disko.debug = lib.mkOption {
+      readOnly = true;
+      default = let
+        diskoLib = pkgs.lib.disko;
+        cfg.config = config.disko.devices;
+        # https://github.com/nix-community/disko/blob/5a88a6eceb8fd732b983e72b732f6f4b8269bef3/lib/default.nix#L644-L653
+        devices = {
+          inherit
+            (cfg.config)
+            bcachefs_filesystems
+            disk
+            mdadm
+            zpool
+            lvm_vg
+            nodev
+            ;
+        };
+        # https://github.com/nix-community/disko/blob/5a88a6eceb8fd732b983e72b732f6f4b8269bef3/lib/default.nix#L992-L993
+        sortedDeviceList =
+          diskoLib.sortDevicesByDependencies (
+            cfg.config._meta.deviceDependencies or {}
+          )
+          devices;
+      in
+        if config ? disko
+        then {
+          inherit
+            (cfg.config._meta)
+            deviceDependencies
+            ;
+          inherit
+            cfg
+            diskoLib
+            devices
+            sortedDeviceList
+            ;
+        }
+        else {};
     };
   };
 }

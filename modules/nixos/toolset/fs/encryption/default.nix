@@ -6,10 +6,7 @@
 }: let
   cfg = config.kdn.toolset.fs.encryption;
 
-  systemd-cryptsetup = pkgs.runCommand "systemd-cryptsetup-bin" {} ''
-    mkdir -p $out/bin
-    ln -sf ${pkgs.systemd}/lib/systemd/systemd-cryptsetup $out/bin/
-  '';
+  systemd-cryptsetup = pkgs.kdn.systemd-cryptsetup;
 in {
   options.kdn.toolset.fs.encryption = {
     enable = lib.mkEnableOption "disk encryption tooling setup";

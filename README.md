@@ -5,11 +5,11 @@ Repository containing my personal Nix (NixOS, Home Manager etc.) configurations.
 Basic structure:
 
 - `modules/` - all modules live here, they MUST be turned off by default (side-effect free imports),
-    - `modules/nixos` - NixOS specific modules
-    - `modules/home-manager` - Home Manager modules
-    - `modules/nix-darwin` - nix-darwin modules
-    - `modules/shared` - modules & configs shared by more than 1 "target"
-        - `modules/shared/universal` - universal modules, often defining options to be handled elsewhere
+  - `modules/nixos` - NixOS specific modules
+  - `modules/home-manager` - Home Manager modules
+  - `modules/nix-darwin` - nix-darwin modules
+  - `modules/shared` - modules & configs shared by more than 1 "target"
+    - `modules/shared/universal` - universal modules, often defining options to be handled elsewhere
 - `packages/`, some personal/in-house/out-of-band tools
 
 Generally I aim to hide as much as possible behind `*.enable` options.
@@ -49,69 +49,70 @@ ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null kdn@kdn-nixos-in
     - look through `kdn.hardware.{gpu,cpu}.{intel,amd}`
     - set up `zramSwap` & `boot.tmp.tmpfsSize`
     - figure out missing `boot.initrd.{availableK,k}ernelModules`
-3. set up a disk configuration:
+3. boot the `install-iso`
+4. set up a disk configuration gathering data from the running system,
     ```nix
     (
       # hashtag comment denotes defaults
       # /* */ are just comments
       let
-        cfg = config.kdn.hardware.disks;
+        cfg = config.kdn.disks;
         d1 = "<DISK_1_NAME>-${config.networking.hostName}";
         d1Cfg = cfg.luks.volumes."${d1}";
         d2 = "<DISK_2_NAME>-${config.networking.hostName}";
         d2Cfg = cfg.luks.volumes."${d2}";
       in
       {
-        kdn.hardware.disks.enable = true;
-        #kdn.hardware.disks.zpool-main.name = "<HOSTNAME>-main";
-        #kdn.hardware.disks.devices."boot" = { type = "gpt"; content.partitions.ESP = { size = "4096M"; ... }; };
-        #kdn.hardware.disks.zpools."${cfg.zpool-main.name}" = { };
+        kdn.disks.enable = true;
+        #kdn.disks.zpool-main.name = "<HOSTNAME>-main";
+        #kdn.disks.devices."${config.kdn.disks.defaults.bootDeviceName}" = { type = "gpt"; content.partitions.ESP = { size = "4096M"; ... }; };
+        #kdn.disks.zpools."${cfg.zpool-main.name}" = { };
         #disko.devices.zpool."${cfg.zpool-main.name}".datasets = {
         # "${hostname}/nix-system/nix-store" = { mountpoint = "/nix/store"; ... };
         # "${hostname}/nix-system/nix-var" = { mountpoint = "/nix/var"; ... };
         #}
    
         /* point it at the right detached `/boot` disk (USB flash drive) */
-        kdn.hardware.disks.devices."boot".path = "/dev/disk/by-id/usb-<CORRECT_IDENTIFIER>";
-        #disko.devices.disk.boot = { content.type = "gpt"; content.partitions = { ... }; ... };
-        #kdn.hardware.disks.devices."${d1}" = { type = "luks"; path = d1Cfg.targetSpec.path; };
+        kdn.disks.devices."${config.kdn.disks.defaults.bootDeviceName}".path = "/dev/disk/by-id/usb-<CORRECT_IDENTIFIER>";
+        #disko.devices.disk."${config.kdn.disks.defaults.bootDeviceName}" = { content.type = "gpt"; content.partitions = { ... }; ... };
+        #kdn.disks.devices."${d1}" = { type = "luks"; path = d1Cfg.targetSpec.path; };
         #disko.devices.disk."${d1}" = { type = "luks"; name = "${d1}-crypted"; ... };
-        #kdn.hardware.disks.devices."${d2}" = { type = "luks"; path = d2Cfg.targetSpec.path; };
+        #kdn.disks.devices."${d2}" = { type = "luks"; path = d2Cfg.targetSpec.path; };
         #disko.devices.disk."${d1}" = { type = "luks"; name = "${d1}-crypted"; ... };
    
-        kdn.hardware.disks.luks.volumes."${d1}" = {
+        kdn.disks.luks.volumes."${d1}" = {
           #target.deviceKey = d1;
           targetSpec.path = "/dev/disk/by-id/<DISK_PATH>";
           uuid = "<uuidgen result>";
           #keyFile = "/tmp/${d1}.key";
-          #header.deviceKey = "boot";
+          #header.deviceKey = config.kdn.disks.defaults.bootDeviceName;
           #header.partitionKey = d1;
           headerSpec.num = 2;
           #zpool.name = cfg.zpool-main.name;
         };
 
-        kdn.hardware.disks.luks.volumes."${d2}" = {
+        kdn.disks.luks.volumes."${d2}" = {
           #target.deviceKey = d2;
           targetSpec.path = "/dev/disk/by-id/<DISK_PATH>";
           uuid = "<uuidgen result>";
           #keyFile = "/tmp/${d1}.key";
-          #header.deviceKey = "boot";
+          #header.deviceKey = config.kdn.disks.defaults.bootDeviceName;
           #header.partitionKey = d2;
           headerSpec.num = 3;
           #zpool.name = cfg.zpool-main.name;
         };
    
-        #kdn.hardware.disks.impermanence."sys/config".snapshots = true;
-        #kdn.hardware.disks.impermanence."sys/cache".snapshots = false;
-        #kdn.hardware.disks.impermanence."sys/data".snapshots = true;
-        #kdn.hardware.disks.impermanence."sys/state".snapshots = false;
-        #kdn.hardware.disks.impermanence."usr/config".snapshots = true;
-        #kdn.hardware.disks.impermanence."usr/cache".snapshots = false;
-        #kdn.hardware.disks.impermanence."usr/data".snapshots = true;
-        #kdn.hardware.disks.impermanence."usr/state".snapshots = false;
+        #kdn.disks.impermanence."sys/config".snapshots = true;
+        #kdn.disks.impermanence."sys/cache".snapshots = false;
+        #kdn.disks.impermanence."sys/data".snapshots = true;
+        #kdn.disks.impermanence."sys/state".snapshots = false;
+        #kdn.disks.impermanence."usr/config".snapshots = true;
+        #kdn.disks.impermanence."usr/cache".snapshots = false;
+        #kdn.disks.impermanence."usr/data".snapshots = true;
+        #kdn.disks.impermanence."usr/state".snapshots = false;
         
         /* just a single impermanence example goes below */
-        #kdn.hardware.disks.impermanence."usr/data" = {
+        #kdn.disks.impermanence."usr/data" = {
         #  #zpool.name = cfg.zpool-main.name;
         #  #zfsPrefix = "${config.networking.hostName}/impermanence";
         #  #zfsPath = "${zfsPrefix}/${"usr/data"}";
@@ -135,14 +136,31 @@ ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null kdn@kdn-nixos-in
         #} // cfg.impermanence."usr/data".imp;
         #disko.devices.zpool."${cfg.zpool-main.name}".datasets."${cfg.impermanence."usr/data".zfsPath}" = { ... };
    
-        #kdn.hardware.disks.tmpfs.size = "16M";
+        #kdn.disks.tmpfs.size = "16M";
         #disko.devices.nodev."/" = { fsType = "tmpfs"; mountPoints = ["size=${cfg.tmpfs.size}" ... ]; };
         #disko.devices.nodev."/" = { fsType = "tmpfs"; mountPoints = ["size=${cfg.tmpfs.size}" ... ]; };
       }
     )
     ```
-4. add all your required `environment.persistence` entries
-5. set up keyfiles for each disk:
+   - see [`hosts/pwet`](hosts/pwet/default.nix) for a different storage topology:
+     - `boot` disk also holds the LUKS header and volume,
+     - `zvol` is used as a LUKS header for the second `zpool`,
+
+5. add all your required `environment.persistence` entries
+6. run unified "deploy to install-iso" script utilizing nixos-anywhere and generating secrets automatically:
+   ```shell
+   set HOST_NAME "pwet"
+   set HOST_CONNECTION "192.168.73.211"
+   nix run ".#nixosConfigurations.$HOST_NAME.config.kdn.system.scripts.install" -- "$HOST_CONNECTION"
+   ```
+   - the script automates and therefore deprecates most of the follow-up steps
+   - TODO: generate SSH host keys on the local system, then:
+     - upload them before rebooting
+     - integrate them with SOPS before building the system
+   - TODO: backup the SSH host keys to local device
+   - TODO: backup LUKS headers to the local device
+
+7. (deprecated) set up keyfiles for each disk:
     ```shell
     # this is fish shell
     set HOST_NAME faro
@@ -150,8 +168,7 @@ ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null kdn@kdn-nixos-in
     dd if=/dev/random bs=1 count=2048 of=/dev/stdout | pass insert --force --multiline "luks/$DISK_NAME-$HOST_NAME/keyfile"
     ```
 
-6. boot the `install-iso`
-7. run `nixos-anywhere` to deploy
+8. (deprecated) run `nixos-anywhere` to deploy
     ```shell
     # this is fish shell
     set HOST_NAME faro
@@ -163,17 +180,17 @@ ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null kdn@kdn-nixos-in
     # build on the target machine
     nixos-anywhere --phases disko,install --build-on-remote --disk-encryption-keys "/tmp/$DISK_NAME-$HOST_NAME.key" "$(pass show "luks/$DISK_NAME-$HOST_NAME/keyfile" | psub)" --flake ".#$HOST_NAME" "$HOST_CONNECTION"
     ```
-8. set up either of for each disk:
+9. (deprecated) set up either of for each disk:
     - (unattended) TPM2 unlock:
         ```shell
-        ssh o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$HOST_CONNECTION" sudo systemd-cryptenroll --unlock-key-file="/tmp/$DISK_NAME-$HOST_NAME.key" --tpm2-device=auto "/dev/disk/by-partlabel/$DISK_NAME-$HOST_NAME-header"
+        ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$HOST_CONNECTION" sudo systemd-cryptenroll --unlock-key-file="/tmp/$DISK_NAME-$HOST_NAME.key" --tpm2-device=auto "/dev/disk/by-partlabel/$DISK_NAME-$HOST_NAME-header"
         ```
     - (attended) YubiKey FIDO2 (touch required, without PIN) unlock:
         ```shell
-        ssh o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$HOST_CONNECTION" sudo systemd-cryptenroll --unlock-key-file="/tmp/$DISK_NAME-$HOST_NAME.key" --fido2-device=auto --fido2-with-client-pin=false --fido2-with-user-verification=false "/dev/disk/by-partlabel/$DISK_NAME-$HOST_NAME-header"
+        ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$HOST_CONNECTION" sudo systemd-cryptenroll --unlock-key-file="/tmp/$DISK_NAME-$HOST_NAME.key" --fido2-device=auto --fido2-with-client-pin=false --fido2-with-user-verification=false "/dev/disk/by-partlabel/$DISK_NAME-$HOST_NAME-header"
         ```
 
-9. add SSH key to `/.sops.yaml`
+10. add SSH key to `/.sops.yaml`
     - `ssh-to-age </etc/ssh/ssh_host_ed25519_key.pub`
     - reboot
 
@@ -199,6 +216,7 @@ scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$(pass show "lu
 ```
 
 generate & register a passphrase:
+
 ```shell
 pass generate "luks/$DISK_NAME-$HOST_NAME/passphrase" 32
 # copy it to device
@@ -263,9 +281,9 @@ New FIDO2 token enrolled as key slot 1.
 Using my own [`.flake.patches/update.py`](.flake.patches/update.py) script:
 
 1. Create required `nixpkgs` inputs:
-    - `nixpkgs-upstream` - desired upstream nixpkgs branch
-    - `nixpkgs` - the fork you have access to that will be managed by the updater
-    - add entries to [`.flake.patches/config.toml`](.flake.patches/config.toml)
+  - `nixpkgs-upstream` - desired upstream nixpkgs branch
+  - `nixpkgs` - the fork you have access to that will be managed by the updater
+  - add entries to [`.flake.patches/config.toml`](.flake.patches/config.toml)
 2. run `nix run '.#nixpkgs-update' g:patches`
 
 Most of it is wrapped in [`/nixpkgs-update.sh`](nixpkgs-update.sh) and top entries of [`/flake.nix`](flake.nix).

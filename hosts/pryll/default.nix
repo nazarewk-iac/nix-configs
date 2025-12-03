@@ -54,7 +54,7 @@
       kdn.disks.luks.volumes."hs-e100-pryll" = {
         targetSpec.path = "/dev/disk/by-id/ata-HS-SSD-E100_256G_30023586951";
         uuid = "4f314bc3-6c3c-4a37-9756-5a03d286cf7b";
-        headerSpec.num = 2;
+        headerSpec.partNum = 2;
       };
     }
     {

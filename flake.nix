@@ -106,6 +106,7 @@
       (import ./lib {inherit (inputs.nixpkgs) lib;})
       // {
         infuse = (import "${inputs.infuse.outPath}/default.nix" {inherit (inputs.nixpkgs) lib;}).v1.infuse;
+        disko = inputs.disko.lib;
       };
     flakeLib = lib.kdn.flakes.forFlake self;
     kdnModule = lib.evalModules {
@@ -287,6 +288,14 @@
             moduleType = "nixos";
           };
           modules = [./hosts/moss];
+        };
+
+        pwet = lib.nixosSystem {
+          system = "x86_64-linux";
+          specialArgs = mkSpecialArgs {
+            moduleType = "nixos";
+          };
+          modules = [./hosts/pwet];
         };
 
         faro = lib.nixosSystem {

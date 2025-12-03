@@ -31,7 +31,7 @@
       #kdn.disks.luks.volumes."virtual-faro" = {
       #  targetSpec.path = "/dev/vdb";
       #  uuid = "4b50067d-05c4-46eb-a1e1-e0a9c6106559";
-      #  headerSpec.num = 2;
+      #  headerSpec.partNum = 2;
       #};
       kdn.disks.luks.volumes."ext-01-faro" = {
         /*
@@ -49,7 +49,7 @@
         */
         targetSpec.path = "/dev/disk/by-id/virtio-30F4989DAE95B60F797D";
         uuid = "30f4989d-dcc0-483b-b1c1-ae95b60f797d";
-        headerSpec.num = 3;
+        headerSpec.partNum = 3;
       };
       kdn.disks.luks.volumes."ext-02-faro" = {
         /*
@@ -67,7 +67,7 @@
         */
         targetSpec.path = "/dev/disk/by-id/virtio-4F4152F6B04223FF41F8";
         uuid = "4f4152f6-5098-4a1a-9c2d-b04223ff41f8";
-        headerSpec.num = 4;
+        headerSpec.partNum = 4;
       };
       /*
       Migrating to new set of `ext-*` disks:

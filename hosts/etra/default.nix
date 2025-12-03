@@ -100,12 +100,12 @@ in {
       #kdn.disks.luks.volumes."emmc-etra" = {
       #  targetSpec.path = "/dev/disk/by-id/mmc-SCA128_0x061748d6";
       #  uuid = "696c5033-c9e8-4ce5-be8c-c9fe17566d2e";
-      #  headerSpec.num = 2;
+      #  headerSpec.partNum = 2;
       #};
       kdn.disks.luks.volumes."980pro-etra" = {
         targetSpec.path = "/dev/disk/by-id/nvme-eui.002538b841a03e40";
         uuid = "9fbfa860-9833-4bde-8cb1-1e80e1e59a65";
-        headerSpec.num = 3;
+        headerSpec.partNum = 3;
       };
     }
     {

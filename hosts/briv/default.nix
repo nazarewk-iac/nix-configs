@@ -52,13 +52,13 @@
       kdn.disks.luks.volumes."vp4300-briv" = {
         targetSpec.path = "/dev/disk/by-id/nvme-nvme.1e4b-5650343330304c45444242323333343032303433-5669706572205650343330304c20325442-00000001";
         uuid = "4d9ecf11-98c4-4cfa-b223-d4dceef00dc4";
-        headerSpec.num = 2;
+        headerSpec.partNum = 2;
       };
 
       kdn.disks.luks.volumes."px500-briv" = {
         targetSpec.path = "/dev/disk/by-id/ata-SSDPR-PX500-512-80-G2_2Z0112153";
         uuid = "c9a44d27-fd7e-40ea-8029-5e66cafc2960";
-        headerSpec.num = 3;
+        headerSpec.partNum = 3;
       };
     })
     # TODO: I had to `mkdir /var/tmp/nix-daemon` to finish the build

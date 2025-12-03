@@ -2,6 +2,7 @@
   lib,
   pkgs,
   config,
+  options,
   ...
 }: let
   cfg = config.kdn.disks;
@@ -30,32 +31,34 @@ in {
         {
           # Basic /boot config
           fileSystems."/boot".neededForBoot = true;
-          kdn.disks.devices."boot".type = "gpt";
-          kdn.disks.devices."boot".partitions."ESP" = {
-            num = 1;
-            size = 4096;
-            disko = {
-              /*
-                https://uapi-group.org/specifications/specs/discoverable_partitions_specification/
-              Name: EFI System Partition
-              UUID: c12a7328-f81f-11d2-ba4b-00a0c93ec93b SD_GPT_ESP
-              Filesystems: VFAT
-              Explanation:
-                The ESP used for the current boot is automatically mounted to /boot/ or /efi/,
-                unless a different partition is mounted there (possibly via /etc/fstab) or
-                the mount point directory is non-empty on the root disk.
-                If both ESP and XBOOTLDR exist, the /efi/ mount point shall be used for ESP.
-                This partition type is defined by the UEFI Specification.
-              */
-              type = "C12A7328-F81F-11D2-BA4B-00A0C93EC93B";
-              label = "ESP";
-              content.type = "filesystem";
-              content.format = "vfat";
-              content.mountpoint = "/boot";
-              content.mountOptions = [
-                "fmask=0077"
-                "dmask=0077"
-              ];
+          kdn.disks.devices."${cfg.defaults.bootDeviceName}" = {
+            type = "gpt";
+            partitions."ESP" = {
+              num = 1;
+              size = 4096;
+              disko = {
+                /*
+                  https://uapi-group.org/specifications/specs/discoverable_partitions_specification/
+                Name: EFI System Partition
+                UUID: c12a7328-f81f-11d2-ba4b-00a0c93ec93b SD_GPT_ESP
+                Filesystems: VFAT
+                Explanation:
+                  The ESP used for the current boot is automatically mounted to /boot/ or /efi/,
+                  unless a different partition is mounted there (possibly via /etc/fstab) or
+                  the mount point directory is non-empty on the root disk.
+                  If both ESP and XBOOTLDR exist, the /efi/ mount point shall be used for ESP.
+                  This partition type is defined by the UEFI Specification.
+                */
+                type = "C12A7328-F81F-11D2-BA4B-00A0C93EC93B";
+                label = "ESP";
+                content.type = "filesystem";
+                content.format = "vfat";
+                content.mountpoint = "/boot";
+                content.mountOptions = [
+                  "fmask=0077"
+                  "dmask=0077"
+                ];
+              };
             };
           };
         }
@@ -272,5 +275,9 @@ in {
         }
       ]
     ))
+    {
+      kdn.disks.disko.devices._meta = options.disko.devices.valueMeta.configuration.options._meta.default;
+      disko.devices._meta = config.kdn.disks.disko.devices._meta;
+    }
   ];
 }

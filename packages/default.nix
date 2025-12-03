@@ -31,6 +31,7 @@
   systemd-find-cycles = pkgs.callPackage ./systemd-find-cycles {};
   tc-redirect-tap = pkgs.callPackage ./tc-redirect-tap {};
   whicher = pkgs.callPackage ./whicher {};
+  systemd-cryptsetup = pkgs.callPackage ./systemd-cryptsetup {};
 
   # AUTO_PACKAGE_PLACEHOLDER #
   kdn-nix-fmt = pkgs.callPackage ./kdn-nix-fmt {};

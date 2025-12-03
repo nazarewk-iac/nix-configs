@@ -75,13 +75,13 @@
       kdn.disks.luks.volumes."vp4300-brys" = {
         targetSpec.path = "/dev/disk/by-id/nvme-nvme.1e4b-5650343330304c45444242323333343032303433-5669706572205650343330304c20325442-00000001";
         uuid = "cbfe2928-2249-47fa-a48f-7c53c53a05d4";
-        headerSpec.num = 2;
+        headerSpec.partNum = 2;
       };
 
       kdn.disks.luks.volumes."px700-brys" = {
         targetSpec.path = "/dev/disk/by-id/nvme-nvme.1e4b-473342303335383134-53534450522d50583730302d3032542d3830-00000001";
         uuid = "53513d1d-233f-4c6b-b1ea-eeb40062e580";
-        headerSpec.num = 3;
+        headerSpec.partNum = 3;
       };
     }
     {
