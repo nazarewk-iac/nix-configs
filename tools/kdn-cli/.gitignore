@@ -9,12 +9,15 @@
 .*/
 # do not ignore .gitignore files
 !.gitignore
+!.gitattributes
 ###
 ### END ignore everything
 ###
 
+!*.nix
 !*.md
-!/*.nix
+
 !*.go
 !/go.mod
 !/go.sum
+!/LICENSE

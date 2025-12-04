@@ -139,7 +139,10 @@
       inputs.nur.overlays.default
       inputs.microvm.overlays.default
       inputs.angrr.overlays.default
-      (final: prev: {inherit lib;})
+      (final: prev: {
+        inherit lib;
+        kdnConfig = kdnModule.config;
+      })
       (final: prev: {nixos-anywhere = inputs.nixos-anywhere.packages."${final.stdenv.hostPlatform.system}".default;})
       (
         final: prev:
