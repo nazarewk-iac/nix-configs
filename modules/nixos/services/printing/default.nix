@@ -15,34 +15,52 @@ in {
     };
   };
 
-  config = lib.mkIf cfg.enable {
-    # Enable CUPS to print documents.
-    services.printing.enable = true;
-    services.printing.drivers = with pkgs; [
-      hplip
-      #gutenprint
-      #gutenprintBin
-      brlaser
-      brgenml1lpr
-      brgenml1cupswrapper
-    ];
-    security.polkit.extraConfig = let
-      isAllowedGroup = lib.pipe cfg.extraAdminGroups [
-        (builtins.map (group: ''subject.isInGroup("${group}")''))
-        (builtins.concatStringsSep " || ")
-        (v: "( ${v} )")
+  config = lib.mkIf cfg.enable (lib.mkMerge [
+    {
+      # Enable CUPS to print documents.
+      services.printing.enable = true;
+      services.printing.drivers = with pkgs; [
+        hplip
+        #gutenprint
+        #gutenprintBin
+        brlaser
+        brgenml1lpr
+        brgenml1cupswrapper
       ];
-    in ''
-      // passwordless printer admins
-      polkit.addRule(function(action, subject) {
-        if (action.id == "org.opensuse.cupspkhelper.mechanism.all-edit" && ${isAllowedGroup}){
-          return polkit.Result.YES;
+      security.polkit.extraConfig = let
+        isAllowedGroup = lib.pipe cfg.extraAdminGroups [
+          (builtins.map (group: ''subject.isInGroup("${group}")''))
+          (builtins.concatStringsSep " || ")
+          (v: "( ${v} )")
+        ];
+      in ''
+        // passwordless printer admins
+        polkit.addRule(function(action, subject) {
+          if (/^org\.opensuse\.cupspkhelper\.mechanism\./.test(action.id) && ${isAllowedGroup}){
+            return polkit.Result.YES;
+          }
+        });
+      '';
+      services.printing.extraFilesConf = ''
+        SystemGroup root wheel ${builtins.concatStringsSep " " cfg.extraAdminGroups}
+      '';
+      users.groups.lpadmin = {};
+
+      kdn.disks.persist."sys/data".directories = [
+        "/var/lib/cups"
+      ];
+    }
+    {
+      hardware.printers.ensureDefaultPrinter = lib.mkDefault "HP-M110w-home";
+      hardware.printers.ensurePrinters = [
+        {
+          name = "HP-M110w-home";
+          location = "Home";
+          deviceUri = "https://192.168.41.25";
+          model = "drv:///hp/hpcups.drv/hp-laserjet_m109-m112.ppd";
+          ppdOptions.PageSize = "A4";
         }
-      });
-    '';
-    services.printing.extraFilesConf = ''
-      SystemGroup root wheel ${builtins.concatStringsSep " " cfg.extraAdminGroups}
-    '';
-    users.groups.lpadmin = {};
-  };
+      ];
+    }
+  ]);
 }
