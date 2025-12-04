@@ -28,6 +28,7 @@ in {
             "kvm"
             "libvirtd"
             "lp"
+            "lpadmin"
             "mlocate"
             "networkmanager"
             "pipewire"
