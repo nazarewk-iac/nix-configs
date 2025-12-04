@@ -56,7 +56,7 @@ in {
         {
           name = "HP-M110w-home";
           location = "Home";
-          deviceUri = "https://192.168.41.25";
+          deviceUri = "ipp://192.168.41.25";
           model = "drv:///hp/hpcups.drv/hp-laserjet_m109-m112.ppd";
           ppdOptions.PageSize = "A4";
         }
