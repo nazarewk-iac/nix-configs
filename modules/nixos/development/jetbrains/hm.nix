@@ -14,6 +14,14 @@ in {
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
+        assertions = [
+          {
+            assertion = config.kdn.desktop.enable;
+            message = ''JetBrains tooling requires desktop mode.'';
+          }
+        ];
+      }
+      {
         programs.fish.shellInit = ''
           fish_add_path --append --move "$HOME/.local/share/JetBrains/Toolbox/scripts"
         '';

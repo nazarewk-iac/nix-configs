@@ -20,7 +20,6 @@
   kdn-cidata-iso = pkgs.callPackage ./kdn-cidata-iso {};
   kdn-keepass = pkgs.callPackage ./kdn-keepass {};
   kdn-nix = pkgs.callPackage ./kdn-nix {};
-  kdn-secrets = pkgs.callPackage ./kdn-secrets {};
   kdn-yk = pkgs.callPackage ./kdn-yk {};
   klg = pkgs.callPackage ./klg {};
   klog-time-tracker = pkgs.callPackage ./klog-time-tracker {};
@@ -29,10 +28,10 @@
   pinentry = pkgs.callPackage ./pinentry {};
   ss-util = pkgs.callPackage ./ss-util {};
   sway-vnc = pkgs.callPackage ./sway-vnc {};
+  systemd-cryptsetup = pkgs.callPackage ./systemd-cryptsetup {};
   systemd-find-cycles = pkgs.callPackage ./systemd-find-cycles {};
   tc-redirect-tap = pkgs.callPackage ./tc-redirect-tap {};
   whicher = pkgs.callPackage ./whicher {};
-  systemd-cryptsetup = pkgs.callPackage ./systemd-cryptsetup {};
 
   # AUTO_PACKAGE_PLACEHOLDER #
   kdn-nix-fmt = pkgs.callPackage ./kdn-nix-fmt {};
