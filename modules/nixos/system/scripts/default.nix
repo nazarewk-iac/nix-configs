@@ -49,10 +49,11 @@ in {
       default = pkgs.writeShellApplication {
         name = "kdn-install-${config.kdn.hostName}";
         runtimeInputs = with pkgs; [
-          pass
+          moreutils # sponge
           nixos-anywhere
           openssh
-          systemd
+          pass
+          ssh-to-age
         ];
         text = let
           volumes = lib.pipe config.kdn.disks.luks.volumes [
@@ -89,13 +90,22 @@ in {
             args+=( --disk-encryption-keys "$keyFile" "$tempdir/$name.key" )
           }
 
+          ensureLineInFile() {
+            local file="$1" pattern="$2" line="$3"
+            if ! grep -qF "$line" "$file" &>/dev/null ; then
+              awk -v line="$line" "/$pattern/ {print line} {print}" "$file" | sponge "$file"
+            fi
+          }
+
           set -x
           connection="$1"
           shift 1
+          repo="$(git rev-parse --show-toplevel)"
+          host="${config.kdn.hostName}"
 
           args=(
             --phases "disko,install"
-            --flake "${kdnConfig.self}#${config.kdn.hostName}"
+            --flake "${kdnConfig.self}#$host"
           )
 
           ${perVolume (name: value: ''
@@ -104,7 +114,25 @@ in {
 
           ${lib.getExe cfg.setup-key-files}
 
+          hostKey="$(runSSH cat /etc/ssh/ssh_host_ed25519_key.pub)
+          ageKey="$(ssh-to-age <<<"$hostKey")"
+
+          ensureLineInFile "$repo/.sops.yaml" \
+            SSH-KEYS-DEFINITION-INSERT-ABOVE \
+            "    $host: {age: [&ssh-$host $ageKey]}"
+
+          ensureLineInFile "$repo/.sops.yaml" \
+            SSH-KEYS-USAGE-INSERT-ABOVE \
+            "          - *ssh-$host"
+
+          # TODO: add host key with `./known-hosts.sh`
+          # TODO: rekey sops files
+
           nixos-anywhere "''${args[@]}" "$@" "$connection"
+
+          # copy-over SSH keys from the installer itself
+          runSSH sudo mkdir -p /mnt/nix/persist/sys/data/etc/ssh
+          runSSH sudo cp /etc/ssh/ssh_host_{rsa,ed25519}_key{,.pub} /mnt/nix/persist/sys/data/etc/ssh/
 
           ${perVolume (name: value: ''
             runSSH sudo systemd-cryptenroll \

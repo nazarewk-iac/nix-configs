@@ -1,24 +1,31 @@
 {
   lib,
+  kdnConfig,
   extraRuntimeDeps ? [],
-  srcDir ? kdnConfig.self + /tools/kdn-cli,
-  vendorHash ? "sha256-+odivU7SrUJbHGzWIOBGq7rhw/KrnzHJWTUepWnj++s=",
+  srcDir ? kdnConfig.self + /tools/kdnctl,
+  vendorHash ? "sha256-cz5tU1L217sgHpYHxtpgY2r+XAp9D0J8p3C5EdtMO/w=",
   buildGoModule,
   installShellFiles,
   makeBinaryWrapper,
-  kdnConfig,
+  pass,
+  nixos-anywhere,
+  openssh,
+  ssh-to-age,
   ...
 }: let
   runtimeDeps =
     [
-      # age
+      pass
+      nixos-anywhere
+      openssh
+      ssh-to-age
     ]
     ++ extraRuntimeDeps;
 in
   buildGoModule (finalAttrs: {
-    pname = "kdn-cli";
+    pname = "kdnctl";
     version = "0.0.1";
-    meta.mainProgram = "kdn";
+    meta.mainProgram = "kdnctl";
 
     src = lib.sourceByRegex srcDir [
       "^go\.(mod|sum)$"

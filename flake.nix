@@ -336,6 +336,7 @@
       };
       modules = [./hosts/anji];
     };
+    flake.hosts = lib.attrsets.mapAttrs (_: value: value.config) (self.darwinConfigurations // self.nixosConfigurations);
     flake.self = self;
   });
 }

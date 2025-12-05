@@ -43,8 +43,14 @@ keys:
     oams: {age: [&ssh-oams age1apym9pk5y5nvem3whc0zm5apnjw9ycxp490kspdj7m45qs7zqacsnne7yr]}
     obler: {age: [&ssh-obler age15ecsjjt9j7fz5lqpe3e0d3u7uwzghwrfugv6725rn253e92hjagqzqk7t9]}
     pryll: {age: [&ssh-pryll age1lw083cnx8c5u29kvr3q8v90pkuapmfxxqvr8khzjmzxpfrjs8c8qvs3y7q]}
+    # SSH-KEYS-DEFINITION-INSERT-ABOVE
 
 creation_rules:
+  - path_regex: 'hosts/.*/.*\.sops(\.[^.]+)?$'
+    key_groups:
+      - age:
+          - *yk-oams-touch
+          - *yk-brys-touch
   - path_regex: 'dns\.sops\.[^.]+$'
     key_groups:
       - age:
@@ -64,6 +70,7 @@ creation_rules:
           - *ssh-oams
           - *ssh-obler
           - *ssh-pryll
+          # SSH-KEYS-USAGE-INSERT-ABOVE
           - *yk-etra-unattended
           - *yk-pryll-unattended
           # defaults

@@ -154,7 +154,8 @@ ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null kdn@kdn-nixos-in
    nix run ".#nixosConfigurations.$HOST_NAME.config.kdn.system.scripts.install" -- "$HOST_CONNECTION"
    ```
    - the script automates and therefore deprecates most of the follow-up steps
-   - TODO: generate SSH host keys on the local system, then:
+   - TODO: use `install-iso`'s public ED25519 key in SOPS before building
+   - TODO: copy-over the `install-iso` SSH host keys into `/mnt`
      - upload them before rebooting
      - integrate them with SOPS before building the system
    - TODO: backup the SSH host keys to local device

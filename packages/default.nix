@@ -15,7 +15,7 @@
   git-credential-keyring = pkgs.callPackage ./git-credential-keyring {};
   git-utils = pkgs.callPackage ./git-utils {};
   gpg-smartcard-reset-keys = pkgs.callPackage ./gpg-smartcard-reset-keys {};
-  kdn-cli = pkgs.callPackage ./kdn-cli {};
+  kdnctl = pkgs.callPackage ./kdnctl {};
   kdn-anonymize = pkgs.callPackage ./kdn-anonymize {};
   kdn-cidata-iso = pkgs.callPackage ./kdn-cidata-iso {};
   kdn-keepass = pkgs.callPackage ./kdn-keepass {};

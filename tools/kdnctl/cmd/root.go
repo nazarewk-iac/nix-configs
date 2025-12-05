@@ -13,9 +13,10 @@ import (
 
 	"github.com/adrg/xdg"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"github.com/nazarewk-iac/nix-configs/tools/kdn/pkg/log"
+	"github.com/nazarewk-iac/nix-configs/tools/kdnctl/pkg/log"
 )
 
 var (
@@ -60,6 +61,16 @@ to quickly create a Cobra application.`,
 		log.SetLevel(level)
 		return
 	},
+	PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+		// TODO: move it to `kdn config write` command? this was just an experiment
+		//
+		// if err := viper.WriteConfig(); err != nil {
+		// 	return err
+		// } else {
+		// 	slog.Debug("wrote config", "config", viper.ConfigFileUsed())
+		// }
+		return nil
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -89,7 +100,7 @@ func initializeConfig(cmd *cobra.Command) (err error) {
 	// 1. Set up Viper to use environment variables.
 	viper.SetEnvPrefix(EnvVarName)
 	// Allow for nested keys in environment variables (e.g. `MYAPP_DATABASE_HOST`)
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "*", "-", "*"))
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
 	viper.AutomaticEnv()
 	configName := "config"
 	configFormat := "toml"
@@ -103,7 +114,7 @@ func initializeConfig(cmd *cobra.Command) (err error) {
 		primaryConfigFile = configFile
 	}
 
-	// Search for a config file with the name "config" (without extension).
+	// Search for a config file with the Name "config" (without extension).
 	viper.AddConfigPath(".")
 	viper.AddConfigPath(filepath.Dir(primaryConfigFile))
 	viper.AddConfigPath(filepath.Join(xdg.Home, fmt.Sprintf(".%s", AppName)))
@@ -111,22 +122,25 @@ func initializeConfig(cmd *cobra.Command) (err error) {
 		viper.AddConfigPath(filepath.Join(path, AppName))
 	}
 
-	// 3. Read the configuration file.
-	// If a config file is found, read it in. We use a robust error check
-	// to ignore "file not found" errors, but panic on any other error.
-	if err = viper.ReadInConfig(); err != nil {
-		// It's okay if the config file doesn't exist.
+	if err := viper.ReadInConfig(); err != nil {
 		var configFileNotFoundError viper.ConfigFileNotFoundError
 		if !errors.As(err, &configFileNotFoundError) {
-			return err
+			return fmt.Errorf("viper.ReadInConfig() error: %w", err)
 		}
 		viper.SetConfigFile(primaryConfigFile)
+	} else {
+		viper.SetConfigFile(viper.ConfigFileUsed())
 	}
 
-	// 4. Bind Cobra flags to Viper.
-	// This is the magic that makes the flag values available through Viper.
-	// It binds the full flag set of the command passed in.
-	err = viper.BindPFlags(cmd.Flags())
+	// manually bind PFlags to ignore some of them
+	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
+		switch flag.Name {
+		case "config-file", "help":
+			return
+		default:
+			err = errors.Join(err, viper.BindPFlag(flag.Name, flag))
+		}
+	})
 	if err != nil {
 		return err
 	}
