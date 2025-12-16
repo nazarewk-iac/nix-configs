@@ -4,35 +4,31 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"path/filepath"
-
+	hostmod "github.com/nazarewk-iac/nix-configs/tools/kdnctl/internal/host"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 )
 
-var (
-	hostName   string
-	hostDir    string
-	hostSubDir string
-)
+var host *hostmod.Host
 
 // hostCmd represents the host command
 var hostCmd = &cobra.Command{
 	Use:     "host",
 	Aliases: []string{"h"},
-	Short:   "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short:   "TODO",
+	Long:    `TODO`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
 		if err = rootCmd.PersistentPreRunE(cmd, args); err != nil {
 			return err
 		}
-		hostSubDir = filepath.Join("hosts", hostName)
-		hostDir = filepath.Join(repoPath, hostSubDir)
+		hostName := viper.GetString("hostname")
+
+		address := viper.GetString("address")
+		if address == "" {
+			address = hostName
+		}
+		host = hostmod.New(hostName, address)
 		return
 	},
 }
@@ -41,8 +37,9 @@ func init() {
 	aliases := make(map[string]string)
 	rootCmd.AddCommand(hostCmd)
 
-	hostCmd.PersistentFlags().StringVarP(&hostName, "hostname", "n", "", "hostname to handle")
-	aliases["Name"] = "hostname"
+	hostCmd.PersistentFlags().StringP("hostname", "n", "", "host's name")
+	hostCmd.PersistentFlags().StringP("address", "a", "", "host's address to handle")
+	aliases["name"] = "hostname"
 	if err := hostCmd.MarkPersistentFlagRequired("hostname"); err != nil {
 		panic(err)
 	}

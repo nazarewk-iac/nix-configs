@@ -4,19 +4,23 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"github.com/nazarewk-iac/nix-configs/tools/kdnctl/internal/host/bootstrap"
 	"github.com/spf13/cobra"
 )
 
 // hostEnsureCmd represents the ensure command
-var hostEnsureCmd = &cobra.Command{
-	Use:     "ensure",
-	Aliases: []string{"e"},
+var hostBootstrapCmd = &cobra.Command{
+	Use:     "bootstrap",
+	Aliases: []string{"b"},
 	Short:   "TODO",
 	Long:    `TODO`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return bootstrap.Bootstrap(repository, host, secretStorage, args)
+	},
 }
 
 func init() {
-	hostCmd.AddCommand(hostEnsureCmd)
+	hostCmd.AddCommand(hostBootstrapCmd)
 
 	// Here you will define your flags and configuration settings.
 

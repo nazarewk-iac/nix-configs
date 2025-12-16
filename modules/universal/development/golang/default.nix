@@ -40,6 +40,7 @@ in {
         ];
         programs.helix.languages.language-server.gopls.config = {
           gofumpt = true;
+          "ui.documentation.hoverKind" = "SynopsisDocumentation";
         };
       }
     ]))

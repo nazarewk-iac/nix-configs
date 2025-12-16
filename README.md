@@ -151,50 +151,46 @@ ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null kdn@kdn-nixos-in
    ```shell
    set HOST_NAME "pwet"
    set HOST_CONNECTION "192.168.73.211"
-   nix run ".#nixosConfigurations.$HOST_NAME.config.kdn.system.scripts.install" -- "$HOST_CONNECTION"
+   nix run ".#kdnctl" -- host -n "$HOST_NAME" -a "$HOST_CONNECTION" bootstrap
    ```
    - the script automates and therefore deprecates most of the follow-up steps
-   - TODO: use `install-iso`'s public ED25519 key in SOPS before building
-   - TODO: copy-over the `install-iso` SSH host keys into `/mnt`
-     - upload them before rebooting
-     - integrate them with SOPS before building the system
-   - TODO: backup the SSH host keys to local device
-   - TODO: backup LUKS headers to the local device
    - TODO: try and document `chroot` using `nixos-enter` from the install-iso
+   - TODO: provide a "cleanup & reboot" script counterpart after `bootstrap`
 
-7. (deprecated) set up keyfiles for each disk:
-    ```shell
-    # this is fish shell
-    set HOST_NAME faro
-    set DISK_NAME virtual
-    dd if=/dev/random bs=1 count=2048 of=/dev/stdout | pass insert --force --multiline "luks/$DISK_NAME-$HOST_NAME/keyfile"
-    ```
-
-8. (deprecated) run `nixos-anywhere` to deploy
-    ```shell
-    # this is fish shell
-    set HOST_NAME faro
-    set DISK_NAME virtual
-    set HOST_CONNECTION root@192.168.73.79
-    # build locally
-    nixos-anywhere --phases disko,install --disk-encryption-keys "/tmp/$DISK_NAME-$HOST_NAME.key" "$(pass show "luks/$DISK_NAME-$HOST_NAME/keyfile" | psub)" --flake ".#$HOST_NAME" "$HOST_CONNECTION"
-
-    # build on the target machine
-    nixos-anywhere --phases disko,install --build-on-remote --disk-encryption-keys "/tmp/$DISK_NAME-$HOST_NAME.key" "$(pass show "luks/$DISK_NAME-$HOST_NAME/keyfile" | psub)" --flake ".#$HOST_NAME" "$HOST_CONNECTION"
-    ```
-9. (deprecated) set up either of for each disk:
-    - (unattended) TPM2 unlock:
+7. former, deprecated steps (should be documented in `kdnctl host bootstrap` before removing):
+    1. set up keyfiles for each disk:
         ```shell
-        ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$HOST_CONNECTION" sudo systemd-cryptenroll --unlock-key-file="/tmp/$DISK_NAME-$HOST_NAME.key" --tpm2-device=auto "/dev/disk/by-partlabel/$DISK_NAME-$HOST_NAME-header"
-        ```
-    - (attended) YubiKey FIDO2 (touch required, without PIN) unlock:
-        ```shell
-        ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$HOST_CONNECTION" sudo systemd-cryptenroll --unlock-key-file="/tmp/$DISK_NAME-$HOST_NAME.key" --fido2-device=auto --fido2-with-client-pin=false --fido2-with-user-verification=false "/dev/disk/by-partlabel/$DISK_NAME-$HOST_NAME-header"
+        # this is fish shell
+        set HOST_NAME faro
+        set DISK_NAME virtual
+        dd if=/dev/random bs=1 count=2048 of=/dev/stdout | pass insert --force --multiline "luks/$DISK_NAME-$HOST_NAME/keyfile"
         ```
 
-10. add SSH key to `/.sops.yaml`
-    - `ssh-to-age </etc/ssh/ssh_host_ed25519_key.pub`
-    - reboot
+    2. run `nixos-anywhere` to deploy
+        ```shell
+        # this is fish shell
+        set HOST_NAME faro
+        set DISK_NAME virtual
+        set HOST_CONNECTION root@192.168.73.79
+        # build locally
+        nixos-anywhere --phases disko,install --disk-encryption-keys "/tmp/$DISK_NAME-$HOST_NAME.key" "$(pass show "luks/$DISK_NAME-$HOST_NAME/keyfile" | psub)" --flake ".#$HOST_NAME" "$HOST_CONNECTION"
+
+        # build on the target machine
+        nixos-anywhere --phases disko,install --build-on-remote --disk-encryption-keys "/tmp/$DISK_NAME-$HOST_NAME.key" "$(pass show "luks/$DISK_NAME-$HOST_NAME/keyfile" | psub)" --flake ".#$HOST_NAME" "$HOST_CONNECTION"
+        ```
+    3. set up either of for each disk:
+        - (unattended) TPM2 unlock:
+            ```shell
+            ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$HOST_CONNECTION" sudo systemd-cryptenroll --unlock-key-file="/tmp/$DISK_NAME-$HOST_NAME.key" --tpm2-device=auto "/dev/disk/by-partlabel/$DISK_NAME-$HOST_NAME-header"
+            ```
+        - (attended) YubiKey FIDO2 (touch required, without PIN) unlock:
+            ```shell
+            ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$HOST_CONNECTION" sudo systemd-cryptenroll --unlock-key-file="/tmp/$DISK_NAME-$HOST_NAME.key" --fido2-device=auto --fido2-with-client-pin=false --fido2-with-user-verification=false "/dev/disk/by-partlabel/$DISK_NAME-$HOST_NAME-header"
+            ```
+
+    4. add SSH key to `/.sops.yaml`
+
+11. run on over ssh: `umount -R /mnt && zpool export -a && reboot now`
 
 ### partial recovery
 

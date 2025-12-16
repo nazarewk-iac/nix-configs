@@ -7,10 +7,20 @@ require (
 	github.com/DeRuina/timberjack v1.3.9
 	github.com/adrg/xdg v0.5.3
 	github.com/charmbracelet/log v0.4.2
+	github.com/lukasholzer/go-glob v0.0.0-20220307160753-0de2b7ff00d2
 	github.com/samber/slog-multi v1.6.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
+)
+
+require (
+	github.com/pkg/errors v0.9.1 // indirect
+	github.com/rogpeppe/go-internal v1.11.0 // indirect
+	go.uber.org/atomic v1.9.0 // indirect
+	go.uber.org/multierr v1.8.0 // indirect
+	go.uber.org/zap v1.21.0 // indirect
+	golang.org/x/sync v0.18.0 // indirect
 )
 
 require (

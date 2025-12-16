@@ -1,7 +1,6 @@
 package log
 
 import (
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -11,7 +10,7 @@ import (
 	"github.com/DeRuina/timberjack"
 
 	charmLog "github.com/charmbracelet/log"
-	"github.com/samber/slog-multi"
+	slogmulti "github.com/samber/slog-multi"
 )
 
 const (
@@ -34,12 +33,15 @@ var toCharmLogLevel = map[slog.Level]charmLog.Level{
 	LevelWarn:  charmLog.WarnLevel,
 	LevelError: charmLog.ErrorLevel,
 }
-var handlers []slog.Handler
-var charmLoggers []*charmLog.Logger
+
+var (
+	handlers     []slog.Handler
+	charmLoggers []*charmLog.Logger
+)
 
 func ParseLogLevel(value string) (slog.Level, error) {
 	if level, ok := toLogLevel[strings.ToUpper(value)]; !ok {
-		return level, errors.New(fmt.Sprintf("unknown log level: %s", value))
+		return level, fmt.Errorf("ParseLogLevel: unknown log level: %s", value)
 	} else {
 		return level, nil
 	}
@@ -70,7 +72,7 @@ func Reconfigure(logFiles []string, logLevel string) (err error) {
 	charmOptions := charmLog.Options{
 		ReportTimestamp: true,
 		TimeFunction:    charmLog.NowUTC,
-		TimeFormat:      "2006-01-02T15:04:05.999Z07:00",
+		TimeFormat:      "2006-01-02T15:04:05.000Z07:00",
 		Formatter:       charmLog.TextFormatter,
 		Level:           toCharmLogLevel[level],
 		ReportCaller:    opts.AddSource,

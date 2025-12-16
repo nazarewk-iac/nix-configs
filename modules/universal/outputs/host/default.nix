@@ -5,10 +5,10 @@
   kdnConfig,
   ...
 }: let
-  cfg = config.kdn.system.scripts;
+  cfg = config.kdn.outputs.host;
 in {
   options.kdn.outputs.host = {
-    luks-keyfiles = lib.mkOption {
+    luksVolumes = lib.mkOption {
       readOnly = true;
       default = lib.pipe config.kdn.disks.luks.volumes [
         lib.attrsets.attrsToList
@@ -16,6 +16,8 @@ in {
         (builtins.map (e: {
           inherit (e) name;
           inherit (e.value) keyFile;
+          cryptsetupName = e.value.name;
+          headerPath = e.value.header.path;
         }))
       ];
     };

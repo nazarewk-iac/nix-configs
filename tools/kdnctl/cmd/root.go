@@ -16,20 +16,23 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
+	"github.com/nazarewk-iac/nix-configs/tools/kdnctl/internal/repo"
+	"github.com/nazarewk-iac/nix-configs/tools/kdnctl/internal/secrets"
 	"github.com/nazarewk-iac/nix-configs/tools/kdnctl/pkg/log"
 )
 
 var (
-	AppName    = "kdn"
-	CLIName    = fmt.Sprintf("%s-cli", AppName)
+	AppName    = "kdnctl"
+	CLIName    = AppName
 	EnvVarName = strings.ReplaceAll(strings.ToUpper(CLIName), "-", "_")
 )
+
 var (
-	configFile string
-	logLevel   string
-	logFiles   []string
-	repoPath   string
-	repoRemote string
+	configFile    string
+	logLevel      string
+	logFiles      []string
+	repository    *repo.Repo
+	secretStorage secrets.SecretStorage
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -59,17 +62,13 @@ to quickly create a Cobra application.`,
 			return
 		}
 		log.SetLevel(level)
+
+		repository = repo.New(
+			viper.GetString("repo-path"),
+			viper.GetString("repo-remote"),
+		)
+		secretStorage = secrets.NewSopsSecretStorage(repository.Root).WithSecretsDir("secrets").WithBaseDirSymlinks(true)
 		return
-	},
-	PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
-		// TODO: move it to `kdn config write` command? this was just an experiment
-		//
-		// if err := viper.WriteConfig(); err != nil {
-		// 	return err
-		// } else {
-		// 	slog.Debug("wrote config", "config", viper.ConfigFileUsed())
-		// }
-		return nil
 	},
 }
 
@@ -90,8 +89,8 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	rootCmd.PersistentFlags().StringVarP(&configFile, "config-file", "c", "", fmt.Sprintf("config file (default locations: ., $HOME/.config/%s/)", CLIName))
-	rootCmd.PersistentFlags().StringVarP(&repoRemote, "repo-remote", "r", "https://github.com/nazarewk-iac/nix-configs.git", "")
-	rootCmd.PersistentFlags().StringVarP(&repoPath, "repo-path", "p", filepath.Join(xdg.Home, "dev/github.com/nazarewk-iac/nix-configs"), "")
+	rootCmd.PersistentFlags().StringP("repo-remote", "r", "https://github.com/nazarewk-iac/nix-configs.git", "")
+	rootCmd.PersistentFlags().StringP("repo-path", "p", filepath.Join(xdg.Home, "dev/github.com/nazarewk-iac/nix-configs"), "")
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "info", "log level")
 	rootCmd.PersistentFlags().StringSliceVarP(&logFiles, "log-file", "o", []string{"-"}, "log file, `-` for stderr")
 }
@@ -125,7 +124,7 @@ func initializeConfig(cmd *cobra.Command) (err error) {
 	if err := viper.ReadInConfig(); err != nil {
 		var configFileNotFoundError viper.ConfigFileNotFoundError
 		if !errors.As(err, &configFileNotFoundError) {
-			return fmt.Errorf("viper.ReadInConfig() error: %w", err)
+			return fmt.Errorf("initializeConfig: viper.ReadInConfig(): %w", err)
 		}
 		viper.SetConfigFile(primaryConfigFile)
 	} else {
@@ -138,7 +137,9 @@ func initializeConfig(cmd *cobra.Command) (err error) {
 		case "config-file", "help":
 			return
 		default:
-			err = errors.Join(err, viper.BindPFlag(flag.Name, flag))
+			if e := viper.BindPFlag(flag.Name, flag); e != nil {
+				err = errors.Join(err, fmt.Errorf("initializeConfig: viper.BindPFlag(%s): %w", flag.Name, e))
+			}
 		}
 	})
 	if err != nil {
@@ -148,5 +149,4 @@ func initializeConfig(cmd *cobra.Command) (err error) {
 	// This is an optional but useful step to debug your config.
 	slog.Debug("configuration initialized", "config", viper.ConfigFileUsed())
 	return err
-
 }

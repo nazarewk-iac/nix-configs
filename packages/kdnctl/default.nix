@@ -3,7 +3,7 @@
   kdnConfig,
   extraRuntimeDeps ? [],
   srcDir ? kdnConfig.self + /tools/kdnctl,
-  vendorHash ? "sha256-cz5tU1L217sgHpYHxtpgY2r+XAp9D0J8p3C5EdtMO/w=",
+  vendorHash ? "sha256-UG2vhlQLVVNR7qhwjETLwmxL/tXjCAu4abWEaHX12ZQ=",
   buildGoModule,
   installShellFiles,
   makeBinaryWrapper,
@@ -15,9 +15,9 @@
 }: let
   runtimeDeps =
     [
-      pass
       nixos-anywhere
       openssh
+      pass
       ssh-to-age
     ]
     ++ extraRuntimeDeps;
