@@ -30,10 +30,17 @@ in {
         ];
       }
       {
+        # see https://github.com/helix-editor/helix/wiki/Language-Server-Configurations#go
         programs.helix.extraPackages = with pkgs; [
           gopls
           delve
+          gofumpt # stricter gofmt
+          gotools # goimports
+          golangci-lint-langserver # linting
         ];
+        programs.helix.languages.language-server.gopls.config = {
+          gofumpt = true;
+        };
       }
     ]))
     (kdnConfig.util.ifNotHMParent {
@@ -41,10 +48,12 @@ in {
         (lib.meta.hiPrio go)
         #gccgo
         delve
-        goreleaser
-        golangci-lint # for netbird
+        golangci-lint
+        gofumpt
 
+        gotools
         cobra-cli
+        goreleaser
 
         (pkgs.writeShellApplication {
           name = "go-toolchain-install";
