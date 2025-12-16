@@ -62,6 +62,9 @@
                 coreutils
               ];
               text = ''
+                asusctl() {
+                  RUST_LOG="''${RUST_LOG:-"warn,tracing=warn,zbus=warn"}" command asusctl "$@"
+                }
                 cmd_rotate-cpu-profile() {
                   asusctl profile --next
                   notify-send "CPU profile" "Current CPU profile: $(asusctl profile --profile-get)"
