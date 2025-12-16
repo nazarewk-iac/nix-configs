@@ -99,10 +99,12 @@ in {
           credential."https://gist.github.com".username = "nazarewk";
           url."https://gist.github.com/".insteadOf = "git@gist.github.com:";
         };
-      }
-      {
-        home.packages = with pkgs; [
-        ];
+        programs.jujutsu.settings = {
+          user.name = "Krzysztof Nazarewski";
+          user.email = "gpg@kdn.im";
+          signing.behavior = "own";
+          signing.backend = "gpg";
+        };
       }
     ]
   );

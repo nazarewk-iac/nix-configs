@@ -25,9 +25,13 @@ in {
 
     home.packages = with pkgs; [
       git
-      jujutsu
       git-utils
       gh
     ];
+    programs.jujutsu.enable = true;
+    programs.jujutsu.settings = {
+      ui.diff-formatter = [(lib.getExe config.programs.difftastic.package) "--color=always" "$left" "$right"];
+      ui.paginate = "never"; # turn off pager by default
+    };
   };
 }
