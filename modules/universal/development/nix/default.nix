@@ -49,12 +49,13 @@ in {
       (lib.mkIf cfg.nh.enable {
         kdn.env.packages = [cfg.nh.package.final];
         kdn.development.nix.nh.package.overrideAttrs = lib.lists.optional (cfg.nh.flake != null) (prev: {
-          buildCommand =
-            lib.strings.trimWith {end = true;} prev.buildCommand
-            + ''
-               \
-              --set-default NH_FLAKE ${lib.strings.escapeShellArg cfg.nh.flake}
-            '';
+          buildCommand = lib.strings.replaceString "$out/bin/nh" ("$out/bin/nh "
+            + lib.strings.escapeShellArgs [
+              "--set-default"
+              "NH_FLAKE"
+              cfg.nh.flake
+            ])
+          prev.buildCommand;
         });
       })
     ]))
