@@ -758,7 +758,7 @@ in {
     lib.mkMerge [
       {
         kdn.fs.watch.enable = true;
-        networking.useDHCP = false;
+        networking.useDHCP = lib.mkDefault false;
         networking.networkmanager.enable = false;
         systemd.network.enable = true;
 

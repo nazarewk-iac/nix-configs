@@ -26,7 +26,7 @@ in {
         complete -c kubecolor --wraps kubectl
       '';
       environment.systemPackages = with pkgs; [
-        lens # kubernetes IDE
+        (lib.mkIf config.kdn.desktop.enable lens) # kubernetes IDE
         # kubernetes
         kubectl # dep for: chart-testing
         kustomize

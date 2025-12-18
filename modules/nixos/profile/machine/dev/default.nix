@@ -11,24 +11,24 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    kdn.profile.machine.desktop.enable = true;
+    kdn.profile.machine.desktop.enable = lib.mkDefault true;
 
     environment.systemPackages = with pkgs; [
       jose # JSON Web Token tool, https://github.com/latchset/jose
     ];
 
-    home-manager.users.kdn.kdn.development.cloud.aws.enable = true;
-    kdn.development.ansible.enable = true;
-    kdn.development.cloud.azure.enable = false;
-    kdn.development.cloud.enable = true;
-    kdn.development.data.enable = true;
-    kdn.development.db.enable = true;
-    kdn.development.documents.enable = true;
-    kdn.development.elixir.enable = true;
-    kdn.development.golang.enable = true;
-    kdn.development.java.enable = true;
-    kdn.development.k8s.enable = true;
-    kdn.development.llm.online.enable = true;
+    home-manager.users.kdn.kdn.development.cloud.aws.enable = lib.mkDefault true;
+    kdn.development.ansible.enable = lib.mkDefault true;
+    kdn.development.cloud.azure.enable = lib.mkDefault false;
+    kdn.development.cloud.enable = lib.mkDefault true;
+    kdn.development.data.enable = lib.mkDefault true;
+    kdn.development.db.enable = lib.mkDefault true;
+    kdn.development.documents.enable = lib.mkDefault true;
+    kdn.development.elixir.enable = lib.mkDefault true;
+    kdn.development.golang.enable = lib.mkDefault true;
+    kdn.development.java.enable = lib.mkDefault true;
+    kdn.development.k8s.enable = lib.mkDefault true;
+    kdn.development.llm.online.enable = lib.mkDefault true;
     /*
     TODO: nickel fails to build:
       nickel>   thread 'main' panicked at core/build.rs:44:18:
@@ -48,15 +48,15 @@ in {
       nickel>
       nickel>   note: run with `RUST_BACKTRACE=1` environment variable to display a backtrac
     */
-    #kdn.development.nickel.enable = true;
-    kdn.development.nix.enable = true;
-    kdn.development.python.enable = true;
-    kdn.development.rpi.enable = true;
-    kdn.development.rust.enable = true;
-    kdn.development.terraform.enable = true;
-    kdn.development.web.enable = true;
-    kdn.toolset.ide.enable = true;
-    kdn.toolset.mikrotik.enable = true;
-    services.plantuml-server.enable = false; # TODO: fix this?
+    #kdn.development.nickel.enable = lib.mkDefault true;
+    kdn.development.nix.enable = lib.mkDefault true;
+    kdn.development.python.enable = lib.mkDefault true;
+    kdn.development.rpi.enable = lib.mkDefault true;
+    kdn.development.rust.enable = lib.mkDefault true;
+    kdn.development.terraform.enable = lib.mkDefault true;
+    kdn.development.web.enable = lib.mkDefault true;
+    kdn.toolset.ide.enable = lib.mkDefault true;
+    kdn.toolset.mikrotik.enable = lib.mkDefault (pkgs.stdenv.hostPlatform.isx86 && config.kdn.desktop.enable);
+    services.plantuml-server.enable = lib.mkDefault false; # TODO: fix this?
   };
 }

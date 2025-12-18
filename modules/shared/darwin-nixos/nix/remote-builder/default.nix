@@ -32,12 +32,12 @@ in {
                 config.kdn.profile.user.kdn.ssh.authorizedKeysPath
               ];
             }
-            (kdnConfig.util.ifTypes ["darwin"]  {
+            (kdnConfig.util.ifTypes ["darwin"] {
               description = cfg.description;
               gid = cfg.group.id;
               isHidden = true;
             })
-            (kdnConfig.util.ifTypes ["nixos"]  {
+            (kdnConfig.util.ifTypes ["nixos"] {
               isSystemUser = true;
               group = cfg.group.name;
             })
@@ -177,7 +177,7 @@ in {
                       factor = 100;
                     }
                     {
-                      domain = "nb.net.int.kdn.im.";
+                      domain = "priv.nb.net.int.kdn.im.";
                       factor = 20;
                     }
                   ]

@@ -40,6 +40,8 @@
   inputs.nix-homebrew.url = "github:zhaofengli/nix-homebrew";
   inputs.nixcasks.url = "github:jacekszymanski/nixcasks";
   inputs.nixos-anywhere.url = "github:numtide/nixos-anywhere";
+  inputs.nixos-avf-upstream.url = "github:nix-community/nixos-avf";
+  inputs.nixos-avf.url = "github:nazarewk/nixos-avf";
   inputs.nixos-generators.url = "github:nix-community/nixos-generators";
   inputs.nixos-hardware.url = "github:nixos/nixos-hardware";
   inputs.nur.url = "github:nix-community/NUR";
@@ -157,7 +159,6 @@
           then let
             src = "${inputs.nixcasks}";
             pkgs = prev;
-            sevenzip = prev.darwin.apple_sdk_11_0.callPackage "${src}/7zip" {inherit pkgs;};
             sevenzip = prev.callPackage "${src}/7zip" {inherit pkgs;};
             nclib = import "${src}/nclib.nix" {inherit pkgs sevenzip;};
 
@@ -184,6 +185,10 @@
           }
           else {}
       )
+      # TODO: 2025-12-19: didn't build due to outdated patches after update https://github.com/NixOS/nixpkgs/pull/457860
+      # TODO: it's actually built at https://github.com/nix-community/nixos-avf/blob/trunk/avf/pkgs.nix
+      #        might require extra handling
+      (final: prev: {libwebsockets = prev.libwebsockets.overrideAttrs {patches = [];};})
     ];
     perSystem = {
       config,
@@ -310,6 +315,14 @@
             features.darwin-utm-guest = true;
           };
           modules = [./hosts/faro];
+        };
+
+        orr = lib.nixosSystem {
+          system = "aarch64-linux";
+          specialArgs = mkSpecialArgs {
+            moduleType = "nixos";
+          };
+          modules = [./hosts/orr];
         };
 
         briv = lib.nixosSystem {

@@ -71,7 +71,7 @@ ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null kdn@kdn-nixos-in
         # "${hostname}/nix-system/nix-store" = { mountpoint = "/nix/store"; ... };
         # "${hostname}/nix-system/nix-var" = { mountpoint = "/nix/var"; ... };
         #}
-   
+
         /* point it at the right detached `/boot` disk (USB flash drive) */
         kdn.disks.devices."${config.kdn.disks.defaults.bootDeviceName}".path = "/dev/disk/by-id/usb-<CORRECT_IDENTIFIER>";
         #disko.devices.disk."${config.kdn.disks.defaults.bootDeviceName}" = { content.type = "gpt"; content.partitions = { ... }; ... };
@@ -79,7 +79,7 @@ ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null kdn@kdn-nixos-in
         #disko.devices.disk."${d1}" = { type = "luks"; name = "${d1}-crypted"; ... };
         #kdn.disks.devices."${d2}" = { type = "luks"; path = d2Cfg.targetSpec.path; };
         #disko.devices.disk."${d1}" = { type = "luks"; name = "${d1}-crypted"; ... };
-   
+
         kdn.disks.luks.volumes."${d1}" = {
           #target.deviceKey = d1;
           targetSpec.path = "/dev/disk/by-id/<DISK_PATH>";
@@ -101,7 +101,7 @@ ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null kdn@kdn-nixos-in
           headerSpec.num = 3;
           #zpool.name = cfg.zpool-main.name;
         };
-   
+
         #kdn.disks.impermanence."sys/config".snapshots = true;
         #kdn.disks.impermanence."sys/cache".snapshots = false;
         #kdn.disks.impermanence."sys/data".snapshots = true;
@@ -110,7 +110,7 @@ ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null kdn@kdn-nixos-in
         #kdn.disks.impermanence."usr/cache".snapshots = false;
         #kdn.disks.impermanence."usr/data".snapshots = true;
         #kdn.disks.impermanence."usr/state".snapshots = false;
-        
+
         /* just a single impermanence example goes below */
         #kdn.disks.impermanence."usr/data" = {
         #  #zpool.name = cfg.zpool-main.name;
@@ -130,12 +130,12 @@ ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null kdn@kdn-nixos-in
         #  ];
         #};
         #environment.persistence."/nix/persist/usr/data" = {
-        #  enable = true; 
-        #  hideMounts = true; 
+        #  enable = true;
+        #  hideMounts = true;
         #  users.root.home = "/root";
         #} // cfg.impermanence."usr/data".imp;
         #disko.devices.zpool."${cfg.zpool-main.name}".datasets."${cfg.impermanence."usr/data".zfsPath}" = { ... };
-   
+
         #kdn.disks.tmpfs.size = "16M";
         #disko.devices.nodev."/" = { fsType = "tmpfs"; mountPoints = ["size=${cfg.tmpfs.size}" ... ]; };
         #disko.devices.nodev."/" = { fsType = "tmpfs"; mountPoints = ["size=${cfg.tmpfs.size}" ... ]; };
@@ -178,7 +178,7 @@ ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null kdn@kdn-nixos-in
     set HOST_CONNECTION root@192.168.73.79
     # build locally
     nixos-anywhere --phases disko,install --disk-encryption-keys "/tmp/$DISK_NAME-$HOST_NAME.key" "$(pass show "luks/$DISK_NAME-$HOST_NAME/keyfile" | psub)" --flake ".#$HOST_NAME" "$HOST_CONNECTION"
-    
+
     # build on the target machine
     nixos-anywhere --phases disko,install --build-on-remote --disk-encryption-keys "/tmp/$DISK_NAME-$HOST_NAME.key" "$(pass show "luks/$DISK_NAME-$HOST_NAME/keyfile" | psub)" --flake ".#$HOST_NAME" "$HOST_CONNECTION"
     ```
@@ -236,6 +236,52 @@ ssh -t -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$HOST_CONNEC
    ```
    APPLY=1 HOST="<HOST>" bash <(curl -L 'https://raw.githubusercontent.com/nazarewk-iac/nix-configs/main/hetzner.sh')
    ```
+
+## Minimal NixOS bootstrap without custom installer
+
+Used this snippet to gain initial access to nixos-avf (a NixOS VM on Android phone):
+
+```nix
+{ config, lib, pkgs, ... }:
+
+{
+  imports = [
+    <nixos-avf/avf>
+  ];
+
+  avf.defaultUser = "kdn";
+
+  system.stateVersion = "26.05";
+  services.openssh.enable = true;
+  services.openssh.ports = [2022 22];
+  environment.systemPackages = with pkgs; [
+    git
+    vim
+  ];
+
+  services.netbird.clients.priv.port = 0;
+
+  nix.settings = {
+    show-trace = true;
+    experimental-features = [
+      "nix-command"
+      "flakes"
+    ];
+  };
+  nixpkgs.config = {
+    allowAliases = true;
+    allowUnfree = true;
+  };
+
+  users.users.kdn = {
+    uid = 31893;
+    linger = true;
+    openssh.authorizedKeys.keys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIFngB2F2qfcXVbXkssSWozufmyc0n6akKYA8zgjNFdZ ssh@kdn.im"
+    ];
+  };
+}
+```
 
 ## Interaction between NixOS and Home Manager
 

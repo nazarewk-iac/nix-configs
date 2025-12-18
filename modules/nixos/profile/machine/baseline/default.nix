@@ -176,8 +176,8 @@ in {
         services.locate.package = pkgs.mlocate;
         services.locate.pruneBindMounts = true;
 
-        kdn.networking.resolved.enable = true;
-        services.avahi.enable = false; # conficts with `resolved` `MulticastDNS`/`LLMNR`
+        kdn.networking.resolved.enable = lib.mkDefault true;
+        services.avahi.enable = lib.mkDefault false; # conficts with `resolved` `MulticastDNS`/`LLMNR`
 
         kdn.development.shell.enable = lib.mkDefault true;
         kdn.fs.zfs.enable = lib.mkDefault true;

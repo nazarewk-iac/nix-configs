@@ -60,7 +60,7 @@ in {
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
-        boot.kernelPackages = kernelPackage;
+        boot.kernelPackages = lib.mkDefault kernelPackage;
         boot.loader.grub.copyKernels = true;
         boot.kernelParams = ["nohibernate"];
         boot.initrd.supportedFilesystems = ["zfs"];

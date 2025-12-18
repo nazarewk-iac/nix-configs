@@ -820,6 +820,44 @@
         "type": "github"
       }
     },
+    "nixos-avf": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1766327456,
+        "narHash": "sha256-J7EczjXkq1OjSZMZS2k0/PU66f0Wh/uG5Ddpwt/PuFk=",
+        "owner": "nazarewk",
+        "repo": "nixos-avf",
+        "rev": "fb610b6bd5a01f036748734e756029f43d4ecc53",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nazarewk",
+        "repo": "nixos-avf",
+        "type": "github"
+      }
+    },
+    "nixos-avf-upstream": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_3"
+      },
+      "locked": {
+        "lastModified": 1763322257,
+        "narHash": "sha256-eiKNbZXvkB2p/YhM5ltK1CO1znm5Nn2aHLW3Awcqq9g=",
+        "owner": "nix-community",
+        "repo": "nixos-avf",
+        "rev": "3fae0a3692b993bc0c40c61138a76fc1455d0b6e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "nixos-avf",
+        "type": "github"
+      }
+    },
     "nixos-generators": {
       "inputs": {
         "nixlib": [
@@ -948,6 +986,22 @@
     },
     "nixpkgs_3": {
       "locked": {
+        "lastModified": 1757545623,
+        "narHash": "sha256-mCxPABZ6jRjUQx3bPP4vjA68ETbPLNz9V2pk9tO7pRQ=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "8cd5ce828d5d1d16feff37340171a98fc3bf6526",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-25.05",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_4": {
+      "locked": {
         "lastModified": 1763339373,
         "narHash": "sha256-ONUJcOkeWitLm4aVDHCfpNDfD7plSBMubI79gqmaF4I=",
         "owner": "nazarewk",
@@ -962,7 +1016,7 @@
         "type": "github"
       }
     },
-    "nixpkgs_4": {
+    "nixpkgs_5": {
       "locked": {
         "lastModified": 1765779637,
         "narHash": "sha256-KJ2wa/BLSrTqDjbfyNx70ov/HdgNBCBBSQP3BIzKnv4=",
@@ -981,7 +1035,7 @@
     "nur": {
       "inputs": {
         "flake-parts": "flake-parts_3",
-        "nixpkgs": "nixpkgs_4"
+        "nixpkgs": "nixpkgs_5"
       },
       "locked": {
         "lastModified": 1766107879,
@@ -1056,9 +1110,11 @@
         "nix-homebrew": "nix-homebrew",
         "nixcasks": "nixcasks",
         "nixos-anywhere": "nixos-anywhere",
+        "nixos-avf": "nixos-avf",
+        "nixos-avf-upstream": "nixos-avf-upstream",
         "nixos-generators": "nixos-generators",
         "nixos-hardware": "nixos-hardware",
-        "nixpkgs": "nixpkgs_3",
+        "nixpkgs": "nixpkgs_4",
         "nixpkgs-lib": [
           "nixpkgs"
         ],
