@@ -12,11 +12,13 @@ in {
 
   config = lib.mkIf cfg.enable {
     programs.helix.extraPackages = with pkgs; [
+      ty
+      ruff
       (python3.withPackages (
         pp:
           with pp; [
             # https://github.com/python-lsp/python-lsp-server
-            python-lsp-server
+            # python-lsp-server # TODO: failed to build on 2025-12-19
             # dependencies/optional plugins
             mccabe
             # formatters: yapf > autopep8

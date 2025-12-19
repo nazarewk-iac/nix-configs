@@ -9,11 +9,10 @@ in {
   imports =
     [
       ../shared/darwin-nixos
-      ../universal
       inputs.home-manager.darwinModules.default
       inputs.nix-homebrew.darwinModules.nix-homebrew
       inputs.sops-nix.darwinModules.default
-      inputs.angrr.nixosModules.angrr
+      inputs.angrr.darwinModules.angrr
     ]
     ++ kdnConfig.util.loadModules {
       curFile = ./default.nix;
@@ -58,6 +57,10 @@ in {
               src = ./.;
             };
           })
+          {
+            # TODO: figure tmpfiles alternative for MacOS/systemd-less?
+            systemd.user.tmpfiles.rules = lib.mkForce [];
+          }
         ];
       }
       {

@@ -8,7 +8,6 @@
 in {
   imports =
     [
-      ../universal
       ../shared/darwin-nixos
       ./ascii-workaround.nix
       inputs.disko.nixosModules.disko

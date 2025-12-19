@@ -76,7 +76,6 @@
   inputs.lanzaboote.inputs.nixpkgs.follows = "nixpkgs";
   inputs.lanzaboote.inputs.pre-commit.follows = "empty";
   inputs.lanzaboote.inputs.rust-overlay.follows = "rust-overlay";
-  inputs.microvm.inputs.flake-utils.follows = "flake-utils";
   inputs.microvm.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nixcasks.inputs.nixpkgs.follows = "nixpkgs";
@@ -84,6 +83,7 @@
   inputs.nixos-anywhere.inputs.flake-parts.follows = "flake-parts";
   inputs.nixos-anywhere.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nixos-anywhere.inputs.treefmt-nix.follows = "treefmt-nix";
+  inputs.nixos-avf.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nixos-generators.inputs.nixlib.follows = "nixpkgs-lib";
   inputs.nixos-generators.inputs.nixpkgs.follows = "nixpkgs";
   inputs.rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
@@ -107,6 +107,7 @@
       // {
         infuse = (import "${inputs.infuse.outPath}/default.nix" {inherit (inputs.nixpkgs) lib;}).v1.infuse;
         disko = inputs.disko.lib;
+        darwin = inputs.nix-darwin.lib;
       };
     flakeLib = lib.kdn.flakes.forFlake self;
     kdnModule = lib.evalModules {
@@ -157,6 +158,7 @@
             src = "${inputs.nixcasks}";
             pkgs = prev;
             sevenzip = prev.darwin.apple_sdk_11_0.callPackage "${src}/7zip" {inherit pkgs;};
+            sevenzip = prev.callPackage "${src}/7zip" {inherit pkgs;};
             nclib = import "${src}/nclib.nix" {inherit pkgs sevenzip;};
 
             originalCasks = (inputs.nixcasks.output {osVersion = "tahoe";}).packages.${prev.stdenv.hostPlatform.system};
@@ -331,10 +333,13 @@
     ];
     flake.darwinModules.default = ./modules/darwin;
     flake.darwinConfigurations.anji = inputs.nix-darwin.lib.darwinSystem {
+      inherit lib;
       specialArgs = mkSpecialArgs {
         moduleType = "darwin";
       };
-      modules = [./hosts/anji];
+      modules = [
+        ./hosts/anji
+      ];
     };
     flake.hosts = lib.attrsets.mapAttrs (_: value: value.config) (self.darwinConfigurations // self.nixosConfigurations);
     flake.self = self;

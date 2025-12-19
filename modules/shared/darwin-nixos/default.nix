@@ -24,7 +24,17 @@ in {
         networking.hostName = cfg.hostName;
         nix.registry.nixpkgs.flake = inputs.nixpkgs;
         nix.optimise.automatic = true;
-        nix.package = pkgs.lixPackageSets.latest.lix;
+        nix.package = let
+          latest = pkgs.lixPackageSets.latest.lix;
+        in
+          # TODO: 2025-12-19: lix 2.94.0 failed tests on darwin
+          if pkgs.stdenv.hostPlatform.isDarwin
+          then
+            latest.overrideAttrs (prev: {
+              doCheck = false;
+              doInstallCheck = false;
+            })
+          else latest;
         nixpkgs.overlays = [self.overlays.default];
       }
       (lib.mkIf (!kdnConfig.features.microvm-guest) {

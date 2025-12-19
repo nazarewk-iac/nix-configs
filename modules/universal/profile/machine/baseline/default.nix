@@ -30,7 +30,8 @@ in {
           nix-tree
           pkgs.kdn.kdn-nix
 
-          kdnConfig.self.inputs.hardware-report.packages."${pkgs.stdenv.hostPlatform.system}".default
+          # TODO: remove after resolving https://github.com/sfcompute/hardware_report/issues/22 ?
+          (lib.mkIf (!pkgs.stdenv.hostPlatform.isDarwin) kdnConfig.self.inputs.hardware-report.packages."${pkgs.stdenv.hostPlatform.system}".default)
         ];
       }
     ]
