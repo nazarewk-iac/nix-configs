@@ -158,7 +158,8 @@ in {
           oams = {
             criteria = "Chimei Innolux Corporation 0x1540 Unknown";
             mode = "2560x1440@165Hz";
-            scale = 1.25;
+            #scale = 1.25;
+            scale = 1.0;
           };
           gb-m32uc = {
             criteria = "GIGA-BYTE TECHNOLOGY CO., LTD. M32UC 22090B013112";
