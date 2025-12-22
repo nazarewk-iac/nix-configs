@@ -252,7 +252,7 @@ def patches_apply(
             ["git", "branch", "--show-current"],
             cwd=subrepo_path,
             encoding="utf8",
-        )
+        ).strip()
         remotes = set(
             subprocess.check_output(
                 ["git", "remote"],
