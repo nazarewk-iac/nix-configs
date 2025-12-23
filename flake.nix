@@ -185,10 +185,6 @@
           }
           else {}
       )
-      # TODO: 2025-12-19: didn't build due to outdated patches after update https://github.com/NixOS/nixpkgs/pull/457860
-      # TODO: it's actually built at https://github.com/nix-community/nixos-avf/blob/trunk/avf/pkgs.nix
-      #        might require extra handling
-      (final: prev: {libwebsockets = prev.libwebsockets.overrideAttrs {patches = [];};})
     ];
     perSystem = {
       config,
@@ -306,15 +302,6 @@
             moduleType = "nixos";
           };
           modules = [./hosts/pwet];
-        };
-
-        faro = lib.nixosSystem {
-          system = "aarch64-linux";
-          specialArgs = mkSpecialArgs {
-            moduleType = "nixos";
-            features.darwin-utm-guest = true;
-          };
-          modules = [./hosts/faro];
         };
 
         orr = lib.nixosSystem {

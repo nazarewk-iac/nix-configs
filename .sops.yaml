@@ -44,6 +44,7 @@ keys:
     obler: {age: [&ssh-obler age15ecsjjt9j7fz5lqpe3e0d3u7uwzghwrfugv6725rn253e92hjagqzqk7t9]}
     pryll: {age: [&ssh-pryll age1lw083cnx8c5u29kvr3q8v90pkuapmfxxqvr8khzjmzxpfrjs8c8qvs3y7q]}
     orr: {age: [&ssh-orr age1dy6sqmcm7gqqfxly26pm5cmkwddjpzdu8et74p27hklyxgxnp9nq3tvn9a]}
+    anji: {age: [&ssh-anji age1cs6nsft2xt6zzgxx4jf492p8pkdv3khsdnw6esq7wfzmh3a0hvjq2ek67x]}
     # SSH-KEYS-DEFINITION-INSERT-ABOVE
 
 creation_rules:
@@ -72,6 +73,7 @@ creation_rules:
           - *ssh-obler
           - *ssh-pryll
           - *ssh-orr
+          - *ssh-anji
           # SSH-KEYS-USAGE-INSERT-ABOVE
           - *yk-etra-unattended
           - *yk-pryll-unattended
