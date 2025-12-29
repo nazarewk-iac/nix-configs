@@ -104,13 +104,22 @@
     self,
     ...
   }: let
-    lib =
-      (import ./lib {inherit (inputs.nixpkgs) lib;})
-      // {
-        infuse = (import "${inputs.infuse.outPath}/default.nix" {inherit (inputs.nixpkgs) lib;}).v1.infuse;
-        disko = inputs.disko.lib;
-        darwin = inputs.nix-darwin.lib;
-      };
+    lib = inputs.nixpkgs.lib.extend libOverlay;
+    libOverlay = final: prev: {
+      kdn = import ./lib {lib = final;};
+      infuse = (import "${inputs.infuse.outPath}/default.nix" {lib = final;}).v1.infuse;
+      disko = inputs.disko.lib;
+      darwin = inputs.nix-darwin.lib;
+      inherit (inputs.nix-darwin.lib) darwinSystem;
+      inherit (inputs.home-manager.lib) hm homeManagerConfiguration;
+    };
+    # lib =
+    #   (import ./lib {inherit (inputs.nixpkgs) lib;})
+    #   // {
+    #     infuse = (import "${inputs.infuse.outPath}/default.nix" {inherit (inputs.nixpkgs) lib;}).v1.infuse;
+    #     disko = inputs.disko.lib;
+    #     darwin = inputs.nix-darwin.lib;
+    #   };
     flakeLib = lib.kdn.flakes.forFlake self;
     kdnModule = lib.evalModules {
       class = "kdn-meta";
@@ -244,6 +253,7 @@
       ];
     };
     flake.lib = lib;
+    flake.libOverlay = libOverlay;
     flake.nixosModules.default = ./modules/nixos;
     flake.nixosConfigurations = lib.mkMerge [
       {
@@ -332,7 +342,7 @@
       }
     ];
     flake.darwinModules.default = ./modules/darwin;
-    flake.darwinConfigurations.anji = inputs.nix-darwin.lib.darwinSystem {
+    flake.darwinConfigurations.anji = lib.darwinSystem {
       inherit lib;
       specialArgs = mkSpecialArgs {
         moduleType = "darwin";

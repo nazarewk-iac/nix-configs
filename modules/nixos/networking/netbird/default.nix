@@ -34,6 +34,7 @@ in {
     };
   };
   options.kdn.networking.netbird.clients = lib.mkOption {
+    default = {};
     type = lib.types.attrsOf (
       lib.types.submodule (
         {name, ...} @ nbArgs: let

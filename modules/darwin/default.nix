@@ -62,9 +62,14 @@ in {
             systemd.user.tmpfiles.rules = lib.mkForce [];
           }
         ];
+        # fixes home directory being `null` in home-manager
+        users.users.root.home = "/var/root";
       }
       {
         networking.computerName = lib.mkDefault config.kdn.hostName;
+      }
+      {
+        environment.enableAllTerminfo = true;
       }
     ]
   );

@@ -27,8 +27,7 @@ in {
         iperf
         speedtest-go
         speedtest-cli
-        iptables
-        nftables
+        ssh-tools
         (lib.hiPrio wireshark-cli)
       ];
     }
@@ -40,6 +39,10 @@ in {
     (kdnConfig.util.ifTypes ["nixos"] {
       programs.wireshark.enable = true;
       kdn.services.iperf3.enable = true;
+      kdn.env.packages = with pkgs; [
+        iptables
+        nftables
+      ];
     })
   ]);
 }

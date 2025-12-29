@@ -23,6 +23,7 @@
     in {
       kdnMeta = mod;
       kdnConfig = mod.config;
+      lib = mod.config.lib;
     };
   };
 

@@ -49,6 +49,10 @@ post_args=(
   # required for `nom` handling, replaces above 2
   #--log-format internal-json -v # TODO: unknown argument --log-format
 )
+reading_darwin=0
+nom_build_args=(
+  --no-link
+)
 
 cmd="${1}"
 : "${name:="${2:-"$(hostname -s)"}"}"
@@ -109,7 +113,8 @@ fi
 
 while test "$#" -gt 0; do
   case "$1" in
-  *) post_args+=("$1") ;;
+  --) test "$reading_darwin" = 1 && reading_darwin=0 || reading_darwin=1 ;;
+  *) test "$reading_darwin" = 1 && post_args+=("$1") || nom_build_args+=("$1") ;;
   esac
   shift
 done
@@ -123,4 +128,4 @@ if test "${DRY_RUN:-0}" == 1; then
   pre_cmd=(echo "${pre_cmd[@]}")
 fi
 
-"${pre_cmd[@]}" "sudo nom build '${flake_path}#darwinConfigurations.${name}.system' && sudo darwin-rebuild ${pre_args[*]@Q} ${cmd@Q} ${post_args[*]@Q}"
+"${pre_cmd[@]}" "sudo nom build '${flake_path}#darwinConfigurations.${name}.system' ${nom_build_args[*]@Q} && sudo darwin-rebuild ${pre_args[*]@Q} ${cmd@Q} ${post_args[*]@Q}"
