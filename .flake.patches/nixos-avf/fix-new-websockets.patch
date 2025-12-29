@@ -1,14 +1,14 @@
-From cbd46da7d0b0aa7dbad38178261310557283be77 Mon Sep 17 00:00:00 2001
+From b3aab6cd22db10526618d6916f8e2e8ff4a2af9d Mon Sep 17 00:00:00 2001
 From: Edwin Mackenzie-Owen <edwin.mowen@gmail.com>
 Date: Sun, 21 Dec 2025 15:30:56 +0100
-Subject: [PATCH] fix: disable obsolete patch for libwebsockets >= v4.4.0
+Subject: [PATCH] fix: disable obsolete patch for libwebsockets >= v4.3.6
 
 ---
  avf/pkgs.nix | 13 ++++++++-----
  1 file changed, 8 insertions(+), 5 deletions(-)
 
 diff --git a/avf/pkgs.nix b/avf/pkgs.nix
-index e44a7acacd4b0403f58b4d9b2271100f323bb52b..0fd024fdb287cf45bf8cd346f6614dc2a1e1b78b 100644
+index e44a7acacd4b0403f58b4d9b2271100f323bb52b..d0148616846e903a8912d770bc072ef7400b539a 100644
 --- a/avf/pkgs.nix
 +++ b/avf/pkgs.nix
 @@ -47,11 +47,14 @@ in
@@ -21,8 +21,8 @@ index e44a7acacd4b0403f58b4d9b2271100f323bb52b..0fd024fdb287cf45bf8cd346f6614dc2
 -        ];
 -      });
 +      libwebsockets = libwebsockets.overrideAttrs (
-+        super:
-+        lib.optionalAttrs ((lib.versions.majorMinor super.version) == "4.3") {
++        a:
++        lib.optionalAttrs (lib.strings.versionOlder a.version "4.3.6") {
 +          patches = [
 +            "${base}/build/debian/ttyd/client_cert.patch"
 +          ];

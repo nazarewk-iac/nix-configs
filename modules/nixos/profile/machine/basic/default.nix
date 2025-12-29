@@ -166,7 +166,7 @@ in {
         in
           lib.mkIf config.kdn.security.secrets.allowed {
             systemd.services.kdn-networkmanager-gen-secrets-environments = {
-              description = "Renders NetworkManager environment fro secrets";
+              description = "Renders NetworkManager environment for secrets";
               after = ["kdn-secrets.target"];
               requires = ["kdn-secrets.target"];
               partOf = ["kdn-secrets-reload.target"];

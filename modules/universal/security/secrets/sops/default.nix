@@ -2,6 +2,7 @@
   lib,
   pkgs,
   config,
+  kdnConfig,
   ...
 }: let
   cfg = config.kdn.security.secrets.sops;
@@ -142,8 +143,8 @@ in {
     };
   };
 
-  config = lib.mkIf cfg.enable (
-    lib.mkMerge [
+  config = lib.mkIf cfg.enable (lib.mkMerge [
+    (kdnConfig.util.ifTypes ["nixos" "darwin"] (lib.mkMerge [
       {
         nixpkgs.overlays = [
           (final: prev: {
@@ -194,14 +195,23 @@ in {
               };
           })
         ];
-
-        environment.systemPackages = [
+        kdn.env.packages = [
           pkgs.sops
           pkgs.kdn.kdn-sops-secrets
         ];
 
         sops.placeholder = sopsPlaceholders;
       }
+      (lib.mkIf config.kdn.security.secrets.allow {
+        sops.templates."placeholder.txt".content = ""; # fills-in `sops.placeholder`
+        sops.secrets = lib.pipe cfg.files [
+          builtins.attrValues
+          (builtins.map (fileCfg: fileCfg.discovered.entries))
+          lib.mkMerge
+        ];
+      })
+    ]))
+    (kdnConfig.util.ifTypes ["nixos"] (lib.mkMerge [
       {
         assertions = [
           {
@@ -227,16 +237,10 @@ in {
           path = config.systemd.services.sops-install-secrets.path;
         in
           lib.mkForce "${lib.makeBinPath path}:${lib.makeSearchPathOutput "bin" "sbin" path}";
-        systemd.services.sops-install-secrets.path = config.sops.age.plugins;
       }
-      (lib.mkIf config.kdn.security.secrets.allow {
-        sops.templates."placeholder.txt".content = ""; # fills-in `sops.placeholder`
-        sops.secrets = lib.pipe cfg.files [
-          builtins.attrValues
-          (builtins.map (fileCfg: fileCfg.discovered.entries))
-          (builtins.foldl' lib.attrsets.recursiveUpdate {})
-        ];
-      })
-    ]
-  );
+    ]))
+    (kdnConfig.util.ifTypes ["darwin"] (lib.mkMerge [
+      # nothing required for now
+    ]))
+  ]);
 }

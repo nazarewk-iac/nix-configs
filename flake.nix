@@ -55,8 +55,8 @@
   inputs.treefmt-nix.url = "github:numtide/treefmt-nix";
   inputs.wezterm.url = "github:wez/wezterm/main?dir=nix";
 
-  #inputs.sops-nix.url = "github:Mic92/sops-nix";
-  inputs.sops-nix.url = "github:brianmcgee/sops-nix/feat/age-plugins";
+  inputs.sops-nix-upstream.url = "github:Mic92/sops-nix";
+  inputs.sops-nix.url = "github:nazarewk/sops-nix";
   inputs.sops-upstream.flake = false;
   inputs.sops-upstream.url = "github:getsops/sops";
 

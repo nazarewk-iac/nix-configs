@@ -80,8 +80,8 @@ in {
       (lib.mkIf config.kdn.security.secrets.allowed {
         # SOPS+age config
         services.pcscd.enable = true;
-        sops.age.plugins = with pkgs; [age-plugin-yubikey];
-        environment.systemPackages = with pkgs; [age-plugin-yubikey];
+        kdn.security.secrets.age.plugins = with pkgs; [age-plugin-yubikey];
+        kdn.env.packages = with pkgs; [age-plugin-yubikey];
         systemd.services.sops-install-secrets.after = ["pcscd.socket"];
         systemd.services.sops-install-secrets.requires = ["pcscd.socket"];
         kdn.security.secrets.age.genScripts = [

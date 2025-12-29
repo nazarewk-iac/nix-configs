@@ -2,6 +2,7 @@
   lib,
   pkgs,
   config,
+  kdnConfig,
   ...
 }: let
   cfg = config.kdn.managed;
@@ -74,17 +75,12 @@ in {
       type = with lib.types; listOf path;
       default = [];
     };
-  };
 
-  config = lib.mkIf cfg.enable (
-    lib.mkMerge [
-      {
-        kdn.managed.infix.default = "kdn-managed-3b48ebd3";
-        system.activationScripts.kdnManagedFilesCleanup.deps = [
-          "etc"
-          "users"
-        ];
-        system.activationScripts.kdnManagedFilesCleanup.text = let
+    scripts.cleanup = lib.mkOption {
+      type = with lib.types; package;
+      default = pkgs.writeShellApplication {
+        name = "kdn-managed-cleanup";
+        text = let
           mkExistingArgs = dir:
             lib.pipe cfg.currentFiles [
               lib.lists.unique
@@ -130,13 +126,29 @@ in {
           echo 'Cleaning up managed files...'
           ${delCmds}
         '';
-      }
-      (lib.mkIf config.kdn.security.secrets.allowed {
-        kdn.managed.currentFiles = lib.pipe config.sops.templates [
-          builtins.attrValues
-          (builtins.map (tpl: tpl.path))
-        ];
-      })
-    ]
-  );
+      };
+    };
+  };
+
+  config = lib.mkIf cfg.enable (lib.mkMerge [
+    {
+      kdn.managed.infix.default = "kdn-managed-3b48ebd3";
+    }
+    (kdnConfig.util.ifTypes ["nixos"] {
+      system.activationScripts.kdnManagedFilesCleanup.text = lib.getExe cfg.scripts.cleanup;
+      system.activationScripts.kdnManagedFilesCleanup.deps = [
+        "etc"
+        "users"
+      ];
+    })
+    (kdnConfig.util.ifTypes ["darwin"] {
+      system.activationScripts.postActivation.text = lib.mkAfter (lib.getExe cfg.scripts.cleanup);
+    })
+    (lib.mkIf config.kdn.security.secrets.allowed {
+      kdn.managed.currentFiles = lib.pipe config.sops.templates [
+        builtins.attrValues
+        (builtins.map (tpl: tpl.path))
+      ];
+    })
+  ]);
 }

@@ -828,10 +828,10 @@
       },
       "locked": {
         "lastModified": 1766327456,
-        "narHash": "sha256-J7EczjXkq1OjSZMZS2k0/PU66f0Wh/uG5Ddpwt/PuFk=",
+        "narHash": "sha256-5LBOJ+1uudu/2YCI57rjBFMR5L1v44C5g4E9zjTI1+4=",
         "owner": "nazarewk",
         "repo": "nixos-avf",
-        "rev": "fb610b6bd5a01f036748734e756029f43d4ecc53",
+        "rev": "8aaf6026629400f160baae4b33f6976dcda5ae75",
         "type": "github"
       },
       "original": {
@@ -1032,6 +1032,22 @@
         "type": "github"
       }
     },
+    "nixpkgs_6": {
+      "locked": {
+        "lastModified": 1766840161,
+        "narHash": "sha256-Ss/LHpJJsng8vz1Pe33RSGIWUOcqM1fjrehjUkdrWio=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "3edc4a30ed3903fdf6f90c837f961fa6b49582d1",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixpkgs-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nur": {
       "inputs": {
         "flake-parts": "flake-parts_3",
@@ -1125,6 +1141,7 @@
         "rpi-sbcshop-hat-ups": "rpi-sbcshop-hat-ups",
         "rust-overlay": "rust-overlay",
         "sops-nix": "sops-nix",
+        "sops-nix-upstream": "sops-nix-upstream",
         "sops-upstream": "sops-upstream",
         "stylix": "stylix",
         "systems": "systems_2",
@@ -1175,16 +1192,33 @@
         ]
       },
       "locked": {
-        "lastModified": 1735643466,
-        "narHash": "sha256-dCae9SDn0O7UKy26jlPf6ZLwSrsLzleEA5qh5ROGY6o=",
-        "owner": "brianmcgee",
+        "lastModified": 1767031137,
+        "narHash": "sha256-U5n87mAPvMbtxJ/cGsYF9Lw2Nxv8Y7cUIfxo4tl9+L4=",
+        "owner": "nazarewk",
         "repo": "sops-nix",
-        "rev": "268afb11b5928986f13983f86befdde85e7a7f98",
+        "rev": "2a74a28bbd2afb1d7cd6d55234e2714e45126f32",
         "type": "github"
       },
       "original": {
-        "owner": "brianmcgee",
-        "ref": "feat/age-plugins",
+        "owner": "nazarewk",
+        "repo": "sops-nix",
+        "type": "github"
+      }
+    },
+    "sops-nix-upstream": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_6"
+      },
+      "locked": {
+        "lastModified": 1766894905,
+        "narHash": "sha256-pn8AxxfajqyR/Dmr1wnZYdUXHgM3u6z9x0Z1Ijmz2UQ=",
+        "owner": "Mic92",
+        "repo": "sops-nix",
+        "rev": "61b39c7b657081c2adc91b75dd3ad8a91d6f07a7",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Mic92",
         "repo": "sops-nix",
         "type": "github"
       }
