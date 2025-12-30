@@ -47,8 +47,11 @@ in {
       {
         programs.wezterm.enable = true;
         programs.wezterm.extraConfig = lib.mkMerge [
-          (lib.mkOrder 1 ''config = {}'')
-          ''config.front_end = "WebGpu"''
+          (lib.mkOrder 1 ''
+            local wezterm = require 'wezterm'
+            local config = wezterm.config_builder()
+          '')
+          ''config.front_end = "OpenGL"''
           (lib.mkOrder 9999 ''return config'')
         ];
         nixpkgs.overlays = [
