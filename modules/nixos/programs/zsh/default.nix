@@ -83,11 +83,12 @@ in {
     };
 
     home-manager.sharedModules = [
-      {
+      ({config, ...}: {
         programs.zsh.enable = true;
         # https://nix-community.github.io/home-manager/options.html#opt-programs.zsh.enable
         programs.zsh.enableCompletion = false; # interferes with NixOS config
-      }
+        programs.zsh.dotDir = "${config.xdg.configHome}/zsh";
+      })
     ];
   };
 }

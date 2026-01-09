@@ -16,12 +16,12 @@ in {
 
       environment.interactiveShellInit = ''
         export KREW_ROOT="$HOME/.cache/krew"
-        fish_add_path --append --move "$KREW_ROOT/bin"
       '';
       environment.shellAliases = {
         "kc" = "${pkgs.kubecolor}/bin/kubecolor";
       };
       programs.fish.interactiveShellInit = ''
+        fish_add_path --append --move "$KREW_ROOT/bin"
         complete -c kc --wraps kubectl
         complete -c kubecolor --wraps kubectl
       '';

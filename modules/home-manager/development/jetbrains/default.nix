@@ -31,7 +31,7 @@ in {
         # see https://youtrack.jetbrains.com/issue/IDEA-323700/Menu-bar-missing-on-all-windows-except-one-on-tiling-WM-under-WSLg
         home.packages = with pkgs; [
           #jetbrains.pycharm-professional
-          jetbrains.idea-ultimate
+          jetbrains.idea
           #jetbrains.idea-ultimate-eap
           #jetbrains-toolbox
           #jetbrains.jdk
