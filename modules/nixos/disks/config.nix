@@ -5,7 +5,6 @@
   ...
 }: let
   cfg = config.kdn.disks;
-
   # TODO: make the ZFS pools/datasets optional and fall back to /nix/persist/fallback?
 in {
   config = lib.mkMerge [
@@ -491,24 +490,23 @@ in {
       boot.zfs.forceImportRoot = false;
       boot.zfs.extraPools = builtins.attrNames cfg.zpools;
       boot.initrd.systemd.services = lib.pipe cfg.zpools [
-        (builtins.mapAttrs (
-          name: zpool:
-            [
-              {
-                name = "zfs-import-${name}";
-                value = {
-                  requires = zpool.cryptsetup.services;
-                  after = zpool.cryptsetup.services;
-                  requiredBy = ["initrd-fs.target"];
-                  onFailure = [zpool.initrd.failureTarget];
-                  serviceConfig.TimeoutSec = zpool.import.timeout;
-                };
-              }
-            ]
+        (lib.attrsets.mapAttrsToList (
+          name: zpool: let
+            isRootPool = fs: fs.neededForBoot && fs.fsType == "zfs" && lib.strings.hasPrefix name fs.device;
+            hasInitrdImport = builtins.any isRootPool config.system.build.fileSystems;
+          in
+            (lib.optional hasInitrdImport {
+              "zfs-import-${name}" = {
+                requires = zpool.cryptsetup.services;
+                after = zpool.cryptsetup.services;
+                requiredBy = ["initrd-fs.target"];
+                onFailure = [zpool.initrd.failureTarget];
+                serviceConfig.TimeoutSec = zpool.import.timeout;
+              };
+            })
             ++ lib.pipe zpool.cryptsetup.names [
               (builtins.map (cryptsetupName: {
-                name = cryptsetupName;
-                value = {
+                "${cryptsetupName}" = {
                   overrideStrategy = "asDropin";
                   requires = zpool.cryptsetup.requires;
                   after = zpool.cryptsetup.requires;
@@ -520,9 +518,8 @@ in {
               }))
             ]
         ))
-        builtins.attrValues
         lib.lists.flatten
-        builtins.listToAttrs
+        lib.mkMerge
         (lib.mkIf cfg.enable)
       ];
     }
