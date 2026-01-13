@@ -23,8 +23,8 @@ url = "https://github.com/nix-community/nixos-avf/pull/21.patch?full_index=1"
 [patch.preservation.fix-conflict]
 url = "https://github.com/nix-community/preservation/pull/21.patch?full_index=1"
 
-[patch.sops-nix.fix-missing-run-secrets]
-url = "https://github.com/Mic92/sops-nix/pull/882.patch?full_index=1"
+# [patch.sops-nix.fix-missing-run-secrets]
+# url = "https://github.com/Mic92/sops-nix/pull/882.patch?full_index=1"
 
 #[patch.nixpkgs.allow-missing-kernel-modules]
 ##url = "https://github.com/NixOS/nixpkgs/pull/375975.patch?full_index=1"
