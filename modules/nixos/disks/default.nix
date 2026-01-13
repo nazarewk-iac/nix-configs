@@ -120,33 +120,17 @@ in {
             ];
           };
         }
-        (
-          let
-            baseCfg = config.kdn.disks.base."sys/config";
-          in {
-            # see https://nix-community.github.io/preservation/examples.html#compatibility-with-systemds-conditionfirstboot
-            kdn.disks.persist."sys/config".files = [
-              {
-                file = "/etc/machine-id";
-                inInitrd = true;
-                how = "symlink";
-                configureParent = true;
-              }
-            ];
-
-            # let the service commit the transient ID to the persistent volume
-            systemd.services.systemd-machine-id-commit = {
-              unitConfig.ConditionPathIsMountPoint = [
-                ""
-                "${baseCfg.mountpoint}/etc/machine-id"
-              ];
-              serviceConfig.ExecStart = [
-                ""
-                "systemd-machine-id-setup --commit --root ${baseCfg.mountpoint}"
-              ];
-            };
-          }
-        )
+        {
+          # WARNING: this "just works" on the first boot, no need to adjust systemd-machine-id-commit!
+          # see https://nix-community.github.io/preservation/examples.html#compatibility-with-systemds-conditionfirstboot
+          kdn.disks.persist."sys/config".files = [
+            {
+              file = "/etc/machine-id";
+              inInitrd = true;
+              configureParent = true;
+            }
+          ];
+        }
         {
           # systemd-journald related slow-starts fixups
           boot.initrd.systemd.services.systemd-journal-flush.serviceConfig.TimeoutSec = "10s";
