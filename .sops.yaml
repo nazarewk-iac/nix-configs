@@ -46,6 +46,7 @@ keys:
     orr: {age: [&ssh-orr age1dy6sqmcm7gqqfxly26pm5cmkwddjpzdu8et74p27hklyxgxnp9nq3tvn9a]}
     anji: {age: [&ssh-anji age1cs6nsft2xt6zzgxx4jf492p8pkdv3khsdnw6esq7wfzmh3a0hvjq2ek67x]}
     anji-linux-builder: {age: [&ssh-anji-linux-builder age17gguyxg8f9m4mdm6ymcgkmszdesk3rdrddjp9cx5nf4z3cfhaffsec9v0g]}
+    pwet: {age: [&ssh-pwet age17kqq6wnlf94p5hcy2ycmz44tuafnglvk8rtv4g3udwc0d9y2z55s8jmjly]}
     # SSH-KEYS-DEFINITION-INSERT-ABOVE
 
 creation_rules:
@@ -76,6 +77,7 @@ creation_rules:
           - *ssh-orr
           - *ssh-anji
           - *ssh-anji-linux-builder
+          - *ssh-pwet
           # SSH-KEYS-USAGE-INSERT-ABOVE
           - *yk-etra-unattended
           - *yk-pryll-unattended

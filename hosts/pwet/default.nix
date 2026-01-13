@@ -1,11 +1,24 @@
 {
   config,
-  options,
-  pkgs,
   lib,
   kdnConfig,
   ...
-}: {
+}: let
+  ifaces.lan."kdn-eth0".mac = "a8:b8:e0:04:10:b5";
+  ifaces.lan."kdn-eth1".mac = "a8:b8:e0:04:10:b6";
+  ifaces.lan."kdn-eth2".mac = "a8:b8:e0:04:10:b7";
+  ifaces.lan."kdn-eth3".mac = "a8:b8:e0:04:10:b8";
+
+  bonds = {};
+  bonds.lan.children = builtins.attrNames ifaces.lan;
+  bonds.lan.iface = "lan";
+  bonds.lan.metric = 100;
+
+  vlans = {};
+  # vlans.pic.iface = "pic";
+  # vlans.pic.id = 1859;
+  # vlans.pic.parent = bonds.lan // {name = "lan";};
+in {
   imports = [
     kdnConfig.self.nixosModules.default
   ];
@@ -68,9 +81,131 @@
     {
       kdn.disks.disko.devices._meta.deviceDependencies = {
         disk.data-pwet = [
-          ["zpool" config.kdn.disks.zpool-main.name ]
+          ["zpool" config.kdn.disks.zpool-main.name]
         ];
       };
+    }
+    {
+      networking.networkmanager.unmanaged =
+        lib.attrsets.mapAttrsToList (_: entry: "mac:${entry.mac}") ifaces.lan;
+
+      systemd.network.networks = lib.pipe ifaces [
+        (lib.attrsets.mapAttrsToList (netName: netIfaces:
+          lib.attrsets.mapAttrsToList (name: iface: {
+            "50-${name}" = {
+              matchConfig.Name = name;
+            };
+          })
+          netIfaces))
+        builtins.concatLists
+        lib.mkMerge
+      ];
+      systemd.network.links = lib.pipe ifaces [
+        (lib.attrsets.mapAttrsToList (netName: netIfaces:
+          lib.attrsets.mapAttrsToList (name: iface: {
+            "00-${name}" = {
+              matchConfig.PermanentMACAddress = iface.mac;
+              linkConfig.AlternativeName = name;
+            };
+          })
+          netIfaces))
+        builtins.concatLists
+        lib.mkMerge
+      ];
+    }
+    {
+      # TODO: bond is stuck in `configuring` state, enable networkd debug logs and retry?
+      networking.networkmanager.unmanaged = lib.attrsets.mapAttrsToList (_: entry: "interface-name:${entry.iface}") bonds;
+      systemd.network.netdevs = lib.pipe bonds [
+        (lib.attrsets.mapAttrsToList (name: bond: {
+          "50-${name}" = {
+            netdevConfig.Kind = "bond";
+            netdevConfig.Name = bond.iface;
+            bondConfig = {
+              Mode = "802.3ad";
+              TransmitHashPolicy = "layer2+3";
+              LACPTransmitRate = "fast";
+              MIIMonitorSec = "100ms";
+            };
+          };
+        }))
+        lib.mkMerge
+      ];
+      systemd.network.networks = lib.pipe bonds [
+        (lib.attrsets.mapAttrsToList (name: bond:
+          (builtins.map (iface: {
+              "50-${iface}" = {
+                networkConfig.Bond = bond.iface;
+              };
+            })
+            bond.children)
+          ++ [
+            {
+              "50-${name}" = {
+                matchConfig.Name = bond.iface;
+                linkConfig = {
+                  RequiredForOnline = "yes";
+                  RequiredFamilyForOnline = "ipv4";
+                };
+                networkConfig = {
+                  DHCP = true;
+                  UseDomains = true;
+
+                  IPv6AcceptRA = true;
+                  LinkLocalAddressing = "ipv6";
+
+                  IPv6PrivacyExtensions = true;
+                  IPv6LinkLocalAddressGenerationMode = "stable-privacy";
+                };
+
+                linkConfig.Multicast = true; # required for IPv6AcceptRA to take effect on bond interface
+                dhcpV4Config.RouteMetric = bond.metric;
+                dhcpV6Config.RouteMetric = bond.metric;
+              };
+            }
+          ]))
+        builtins.concatLists
+        lib.mkMerge
+      ];
+    }
+    {
+      networking.networkmanager.unmanaged = lib.attrsets.mapAttrsToList (_: entry: "interface-name:${entry.iface}") vlans;
+      systemd.network.netdevs = lib.pipe vlans [
+        (lib.attrsets.mapAttrsToList (name: vlan: {
+          "50-${name}" = {
+            netdevConfig.Kind = "vlan";
+            netdevConfig.Name = vlan.iface;
+            vlanConfig.Id = vlan.id;
+          };
+        }))
+        lib.mkMerge
+      ];
+      systemd.network.networks = lib.pipe vlans [
+        (lib.attrsets.mapAttrsToList (name: vlan: {
+          "50-${vlan.parent.name}".networkConfig.VLAN = [vlan.iface];
+          "50-${name}" = {
+            matchConfig.Name = vlan.iface;
+            linkConfig = {
+              RequiredForOnline = "no";
+            };
+            networkConfig = {
+              VLAN = vlan.iface;
+
+              DHCP = true;
+              UseDomains = true;
+
+              IPv6AcceptRA = true;
+              LinkLocalAddressing = "ipv6";
+
+              IPv6PrivacyExtensions = true;
+              IPv6LinkLocalAddressGenerationMode = "stable-privacy";
+            };
+            dhcpV4Config.RouteMetric = 1000;
+            dhcpV6Config.RouteMetric = 1000;
+          };
+        }))
+        lib.mkMerge
+      ];
     }
   ];
 }
