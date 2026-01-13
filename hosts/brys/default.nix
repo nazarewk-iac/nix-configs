@@ -69,7 +69,6 @@
     */
     {
       # TODO: those are unlocked automatically using TPM2, switch to etra (or k8s cluster) backed Clevis+Tang unlock
-      kdn.disks.initrd.failureTarget = "rescue.target";
       kdn.disks.enable = true;
       kdn.disks.devices."boot".path = "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_04LZCR91M8UZPJW8-0:0";
       kdn.disks.luks.volumes."vp4300-brys" = {

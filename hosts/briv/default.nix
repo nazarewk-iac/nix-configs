@@ -46,7 +46,6 @@
     (lib.mkIf false {
       # TODO: enable disk management
       # TODO: those are unlocked automatically using TPM2, switch to etra (or k8s cluster) backed Clevis+Tang unlock
-      kdn.disks.initrd.failureTarget = "rescue.target";
       kdn.disks.enable = true;
       kdn.disks.devices."boot".path = "/dev/disk/by-id/mmc-JC1S5_0x2a7357a9-part1";
       kdn.disks.luks.volumes."vp4300-briv" = {

@@ -295,6 +295,52 @@ in {
           chmod -R go+r /run/configs
         '';
       })
+      (let
+        kernelParams = [
+          "systemd.log_level=debug"
+
+          "systemd.debug_shell=1"
+          "systemd.default_debug_tty=tty9"
+          "rd.systemd.debug_shell=1"
+          "rd.systemd.default_debug_tty=tty10"
+        ];
+      in
+        lib.mkIf (config.boot.initrd.systemd.enable) {
+          specialisation.emergency = {
+            inheritParentConfig = true;
+            configuration = {
+              systemd.defaultUnit = lib.mkForce "emergency.target";
+              system.nixos.tags = ["emergency"];
+              boot.kernelParams = kernelParams;
+            };
+          };
+
+          specialisation.rescue = {
+            inheritParentConfig = true;
+            configuration = {
+              systemd.defaultUnit = lib.mkForce "rescue.target";
+              system.nixos.tags = ["rescue"];
+              boot.kernelParams = kernelParams;
+            };
+          };
+
+          specialisation.boot-debug = {
+            inheritParentConfig = true;
+            configuration = {
+              system.nixos.tags = ["boot-debug"];
+              boot.kernelParams = kernelParams;
+            };
+          };
+
+          systemd.services."debug-shell" = {
+            overrideStrategy = "asDropinIfExists";
+            # serviceConfig.ExecStart = ["" pkgs.fish];
+          };
+          boot.initrd.systemd.services."debug-shell" = {
+            overrideStrategy = "asDropinIfExists";
+            # serviceConfig.ExecStart = ["" pkgs.fish];
+          };
+        })
     ]
   );
 }

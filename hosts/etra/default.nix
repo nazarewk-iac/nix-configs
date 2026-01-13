@@ -93,7 +93,6 @@ in {
       ];
     }
     {
-      kdn.disks.initrd.failureTarget = "rescue.target";
       kdn.disks.enable = true;
       kdn.disks.devices."boot".path = "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_04R5Q5DX7R12U7QB-0:0";
 

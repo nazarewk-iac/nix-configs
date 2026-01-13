@@ -197,11 +197,7 @@ in {
     };
     initrd.failureTarget = lib.mkOption {
       type = lib.types.str;
-      default = "rescue.target";
-    };
-    initrd.emergency.rebootTimeout = lib.mkOption {
-      type = lib.types.ints.unsigned;
-      default = 0;
+      default = "emergency.target";
     };
 
     devices = lib.mkOption {

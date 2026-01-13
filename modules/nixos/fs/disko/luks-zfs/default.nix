@@ -26,7 +26,7 @@ in {
           requires = builtins.map (name: "${name}.service") cfg.cryptsetupNames;
           after = builtins.map (name: "${name}.service") cfg.cryptsetupNames;
           requiredBy = ["initrd-fs.target"];
-          onFailure = ["rescue.target"];
+          onFailure = ["emergency.target"];
           serviceConfig.TimeoutSec = cfg.timeout;
         };
 
@@ -42,7 +42,7 @@ in {
               requires = cfg.decryptRequiresUnits;
               after = cfg.decryptRequiresUnits;
               wants = ["systemd-udev-settle.service"];
-              onFailure = ["rescue.target"];
+              onFailure = ["emergency.target"];
               serviceConfig.TimeoutSec = cfg.timeout;
             };
           }))
