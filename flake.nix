@@ -314,6 +314,14 @@
           modules = [./hosts/pwet];
         };
 
+        turo = lib.nixosSystem {
+          system = "x86_64-linux";
+          specialArgs = mkSpecialArgs {
+            moduleType = "nixos";
+          };
+          modules = [./hosts/turo];
+        };
+
         orr = lib.nixosSystem {
           system = "aarch64-linux";
           specialArgs = mkSpecialArgs {
