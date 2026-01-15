@@ -48,6 +48,7 @@ keys:
     anji-linux-builder: {age: [&ssh-anji-linux-builder age17gguyxg8f9m4mdm6ymcgkmszdesk3rdrddjp9cx5nf4z3cfhaffsec9v0g]}
     pwet: {age: [&ssh-pwet age17kqq6wnlf94p5hcy2ycmz44tuafnglvk8rtv4g3udwc0d9y2z55s8jmjly]}
     turo: {age: [&ssh-turo age13lmms4tjhygj4x7x0v6vuls3exx06mj9my5wuy720frxd79gcdkspu752v]}
+    yost: {age: [&ssh-yost age1yu53n5gcthffh7ee5mm90spqhky9rfknst0nlw0vwk2kx4z75qaq8hvfcw]}
     # SSH-KEYS-DEFINITION-INSERT-ABOVE
 
 creation_rules:
@@ -80,6 +81,7 @@ creation_rules:
           - *ssh-anji-linux-builder
           - *ssh-pwet
           - *ssh-turo
+          - *ssh-yost
           # SSH-KEYS-USAGE-INSERT-ABOVE
           - *yk-etra-unattended
           - *yk-pryll-unattended

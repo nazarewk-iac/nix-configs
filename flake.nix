@@ -322,6 +322,14 @@
           modules = [./hosts/turo];
         };
 
+        yost = lib.nixosSystem {
+          system = "x86_64-linux";
+          specialArgs = mkSpecialArgs {
+            moduleType = "nixos";
+          };
+          modules = [./hosts/yost];
+        };
+
         orr = lib.nixosSystem {
           system = "aarch64-linux";
           specialArgs = mkSpecialArgs {
