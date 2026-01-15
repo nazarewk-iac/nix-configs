@@ -15,9 +15,9 @@
   bonds.lan.metric = 100;
 
   vlans = {};
-  # vlans.pic.iface = "pic";
-  # vlans.pic.id = 1859;
-  # vlans.pic.parent = bonds.lan // {name = "lan";};
+  vlans.pic.iface = "pic";
+  vlans.pic.id = 1859;
+  vlans.pic.parent = bonds.lan // {name = "lan";};
 in {
   imports = [
     kdnConfig.self.nixosModules.default
@@ -196,10 +196,11 @@ in {
 
               IPv6AcceptRA = true;
               LinkLocalAddressing = "ipv6";
-
               IPv6PrivacyExtensions = true;
               IPv6LinkLocalAddressGenerationMode = "stable-privacy";
             };
+
+            linkConfig.Multicast = true; # required for IPv6AcceptRA to take effect on bond interface
             dhcpV4Config.RouteMetric = 1000;
             dhcpV6Config.RouteMetric = 1000;
           };
