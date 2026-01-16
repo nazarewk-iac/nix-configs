@@ -109,7 +109,7 @@
           stdenv = pkgs.stdenv;
           toGuest = builtins.replaceStrings ["darwin"] ["linux"];
 
-          defaultSpecialArgs = kdnConfig.output.mkSubmodule {moduleType = "nixos";};
+          defaultSpecialArgs = (kdnConfig.output.mkSubmodule {moduleType = "nixos";}).specialArgs;
         in
           lib.makeOverridable (
             {

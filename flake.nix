@@ -113,109 +113,6 @@
     inherit (self) lib;
 
     flakeLib = lib.kdn.flakes.forFlake self;
-
-    hostsArgs =
-      builtins.mapAttrs (name: prev:
-        lib.infuse prev {
-          specialArgs.__assign = self.kdnMetaModule.config.output.mkSubmodule prev.meta;
-          modules.__append = [(./. + "/hosts/${name}")];
-        })
-      # TODO: load those sequentially from `./hosts/*/{meta.nix,meta.json}`
-      {
-        oams = {
-          meta = {
-            system = "x86_64-linux";
-            moduleType = "nixos";
-          };
-        };
-
-        brys = {
-          meta = {
-            system = "x86_64-linux";
-            moduleType = "nixos";
-            features.microvm-host = true;
-          };
-        };
-
-        etra = {
-          meta = {
-            system = "x86_64-linux";
-            moduleType = "nixos";
-          };
-        };
-
-        pryll = {
-          meta = {
-            system = "x86_64-linux";
-            moduleType = "nixos";
-          };
-        };
-
-        obler = {
-          meta = {
-            system = "x86_64-linux";
-            moduleType = "nixos";
-          };
-        };
-
-        moss = {
-          meta = {
-            system = "x86_64-linux";
-            moduleType = "nixos";
-          };
-        };
-
-        pwet = {
-          meta = {
-            system = "x86_64-linux";
-            moduleType = "nixos";
-          };
-        };
-
-        turo = {
-          meta = {
-            system = "x86_64-linux";
-            moduleType = "nixos";
-          };
-        };
-
-        yost = {
-          meta = {
-            system = "x86_64-linux";
-            moduleType = "nixos";
-          };
-        };
-
-        orr = {
-          meta = {
-            system = "aarch64-linux";
-            moduleType = "nixos";
-          };
-        };
-
-        briv = {
-          meta = {
-            system = "aarch64-linux";
-            moduleType = "nixos";
-            features.rpi4 = true;
-          };
-        };
-
-        kdn-rpi4-bootstrap = {
-          meta = {
-            system = "aarch64-linux";
-            moduleType = "nixos";
-            features.rpi4 = true;
-          };
-        };
-
-        anji = {
-          meta = {
-            system = "aarch64-darwin";
-            moduleType = "darwin";
-          };
-        };
-      };
   in (flake-parts.lib.mkFlake {inherit inputs;} {
     systems = import inputs.systems;
 
@@ -297,26 +194,46 @@
         }
       ];
     };
+    flake.hostConfigurations = lib.pipe ./hosts [
+      builtins.readDir
+      (builtins.mapAttrs (entry: _: let
+        dir = lib.path.append ./hosts entry;
+        json = lib.path.append dir "meta.json";
+        nix = lib.path.append dir "meta.nix";
 
-    flake.hostsArgs = hostsArgs;
+        has.json = builtins.pathExists json;
+        has.nix = builtins.pathExists nix;
+        has.module = builtins.pathExists (lib.path.append dir "default.nix");
+      in
+        if has.module && (has.json || has.nix)
+        then
+          self.kdnMetaModule.config.output.mkSubmodule {
+            imports = lib.lists.optional has.nix nix;
+            config = lib.mkMerge [
+              {modules = [dir];}
+              (lib.mkIf has.json (builtins.fromJSON (builtins.readFile json)))
+            ];
+          }
+        else {}))
+      (lib.attrsets.filterAttrs (_: host: host != {}))
+    ];
     flake.hosts = lib.attrsets.mapAttrs (_: value: value.config) (self.darwinConfigurations // self.nixosConfigurations);
     flake.nixosModules.default = ./modules/nixos;
-    flake.nixosConfigurations = lib.pipe self.hostsArgs [
-      (lib.attrsets.filterAttrs (_: host: host.specialArgs.kdnConfig.moduleType == "nixos"))
+    flake.nixosConfigurations = lib.pipe self.hostConfigurations [
+      (lib.attrsets.filterAttrs (_: host: host.moduleType == "nixos"))
       (builtins.mapAttrs (_: host:
         lib.nixosSystem {
-          inherit (host.specialArgs.kdnConfig) system;
-          inherit (host) specialArgs modules;
+          inherit (host) system specialArgs modules;
         }))
     ];
     flake.darwinModules.default = ./modules/darwin;
-    flake.darwinConfigurations = lib.pipe self.hostsArgs [
-      (lib.attrsets.filterAttrs (_: host: host.specialArgs.kdnConfig.moduleType == "darwin"))
+    flake.darwinConfigurations = lib.pipe self.hostConfigurations [
+      (lib.attrsets.filterAttrs (_: host: host.moduleType == "darwin"))
       (builtins.mapAttrs (_: host:
         lib.darwinSystem {
-          inherit lib;
+          inherit (host) lib specialArgs;
           system = null;
-          modules = (host.modules  or []) ++ [{nixpkgs.system = host.specialArgs.kdnConfig.system;}];
+          modules = host.modules ++ [{nixpkgs.system = host.system;}];
         }))
     ];
 
@@ -336,12 +253,11 @@
           };
           "${name}".__init = {imports = host.modules;};
         })
-        (builtins.intersectAttrs {
-            pwet = null;
-            turo = null;
-            yost = null;
-          }
-          self.hostsArgs));
+        (lib.flip builtins.intersectAttrs self.hostConfigurations {
+          pwet = null;
+          turo = null;
+          yost = null;
+        }));
     flake.colmenaHive = lib.colmena.makeHive self.colmena;
 
     perSystem = {
@@ -396,7 +312,7 @@
             inherit system;
             inherit (self) lib;
             inherit (lib) nixosSystem;
-            specialArgs = self.kdnMetaModule.config.output.mkSubmodule {moduleType = "nixos";};
+            specialArgs = (self.kdnMetaModule.config.output.mkSubmodule {moduleType = "nixos";}).specialArgs;
             modules = [./hosts/install-iso];
           };
         }

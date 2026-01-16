@@ -36,7 +36,7 @@
 
   config = lib.mkMerge [
     (kdnConfig.util.ifHMParent {
-      home-manager.extraSpecialArgs = kdnConfig.output.mkSubmodule {moduleType = "home-manager";};
+      home-manager.extraSpecialArgs = (kdnConfig.output.mkSubmodule {moduleType = "home-manager";}).specialArgs;
       home-manager.sharedModules = [
         ({kdnConfig, ...}: {
           imports = kdnConfig.util.loadModules {

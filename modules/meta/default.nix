@@ -14,17 +14,15 @@
           module
           {parent = lib.mkOverride 1099 (builtins.removeAttrs config ["_module"]);}
           (lib.mkOverride 1100 (builtins.removeAttrs config [
-            "parents"
             "output"
+            "parents"
+            "specialArgs"
             "util"
           ]))
         ];
       };
-    in {
-      kdnMeta = mod;
-      kdnConfig = mod.config;
-      lib = mod.config.lib;
-    };
+    in
+      mod.config;
   };
 
   options.system = lib.mkOption {
@@ -32,6 +30,20 @@
   };
   options.moduleType = lib.mkOption {
     type = with lib.types; str;
+  };
+  options.modules = lib.mkOption {
+    type = with lib.types; listOf path;
+    default =
+      if config.parent != config.util.emptyParent && config.parent.moduleType == config.moduleType
+      then config.parent.modules
+      else [];
+  };
+  options.specialArgs = lib.mkOption {
+    readOnly = true;
+    default = {
+      kdnConfig = config;
+      lib = config.lib;
+    };
   };
   options.inputs = lib.mkOption {default = config.parent.inputs;};
   options.lib = lib.mkOption {default = config.parent.lib;};

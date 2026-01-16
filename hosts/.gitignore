@@ -1,0 +1,21 @@
+###
+### START ignore everything
+###
+# ignore everything by default
+*
+# do not ignore directories (still ignores their content)
+!*/
+# still ignore directiories with a leading dot
+.*/
+# do not ignore .gitignore files
+!.gitignore
+!.gitattributes
+###
+### END ignore everything
+###
+
+!*.nix
+!meta.json
+# SOPS-encrypted links
+!/*/ssh-keys/ssh_host_*_key.{sops,pub}
+!/*/luks/*.sops.header
