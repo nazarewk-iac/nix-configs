@@ -121,8 +121,7 @@ in {
           };
         }
         {
-          # WARNING: this "just works" on the first boot, no need to adjust systemd-machine-id-commit!
-          # see https://nix-community.github.io/preservation/examples.html#compatibility-with-systemds-conditionfirstboot
+          # see https://github.com/nix-community/preservation/pull/23
           kdn.disks.persist."sys/config".files = [
             {
               file = "/etc/machine-id";
@@ -130,6 +129,7 @@ in {
               configureParent = true;
             }
           ];
+          systemd.services.systemd-machine-id-commit.unitConfig.ConditionFirstBoot = true;
         }
         {
           # systemd-journald related slow-starts fixups
