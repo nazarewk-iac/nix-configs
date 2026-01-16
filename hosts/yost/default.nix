@@ -74,9 +74,9 @@ in {
         header.path = "/dev/zvol/${config.kdn.disks.zpool-main.name}/luks/data-yost/header";
         header.deviceKey = null;
         header.partitionKey = null;
-        zpool.name = "yost-data";
+        zpool.name = "pic-local";
       };
-      kdn.disks.zpools."yost-data" = {};
+      kdn.disks.zpools."pic-local" = {};
     }
     {
       kdn.disks.disko.devices._meta.deviceDependencies = {

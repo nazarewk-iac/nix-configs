@@ -74,9 +74,9 @@ in {
         header.path = "/dev/zvol/${config.kdn.disks.zpool-main.name}/luks/data-turo/header";
         header.deviceKey = null;
         header.partitionKey = null;
-        zpool.name = "turo-data";
+        zpool.name = "pic-local";
       };
-      kdn.disks.zpools."turo-data" = {};
+      kdn.disks.zpools."pic-local" = {};
     }
     {
       kdn.disks.disko.devices._meta.deviceDependencies = {

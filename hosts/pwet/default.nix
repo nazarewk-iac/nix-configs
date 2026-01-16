@@ -74,9 +74,9 @@ in {
         header.path = "/dev/zvol/${config.kdn.disks.zpool-main.name}/luks/data-pwet/header";
         header.deviceKey = null;
         header.partitionKey = null;
-        zpool.name = "pwet-data";
+        zpool.name = "pic-local";
       };
-      kdn.disks.zpools."pwet-data" = {};
+      kdn.disks.zpools."pic-local" = {};
     }
     {
       kdn.disks.disko.devices._meta.deviceDependencies = {
