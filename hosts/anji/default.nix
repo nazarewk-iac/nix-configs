@@ -23,7 +23,6 @@
       kdn.profile.machine.baseline.enable = true;
     }
     {
-      nixpkgs.system = "aarch64-darwin";
       system.stateVersion = 6;
       home-manager.sharedModules = [{home.stateVersion = "26.05";}];
     }

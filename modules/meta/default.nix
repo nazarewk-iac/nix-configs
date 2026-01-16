@@ -27,13 +27,16 @@
     };
   };
 
+  options.system = lib.mkOption {
+    type = with lib.types; str;
+  };
   options.moduleType = lib.mkOption {
     type = with lib.types; str;
   };
   options.inputs = lib.mkOption {default = config.parent.inputs;};
   options.lib = lib.mkOption {default = config.parent.lib;};
   options.self = lib.mkOption {default = config.parent.self or config.self.inputs;};
-  options.nix-configs = lib.mkOption {default = config.parent.nix-configs or config.self;};
+  options.nix-configs = lib.mkOption {default = config.parent.nix-configs;};
   options.parent = lib.mkOption {default = config.util.emptyParent;};
 
   options.parents = lib.mkOption {

@@ -7,7 +7,7 @@
   cfg = config.kdn.profile.machine.baseline;
 in {
   config = lib.mkIf cfg.enable (lib.mkMerge [
-    {
+    (kdnConfig.util.ifTypes ["nixos" "darwin"] {
       services.openssh.enable = true;
       environment.etc."kdn/source-flake".source = kdnConfig.self;
       nix.gc.automatic = true;
@@ -47,7 +47,7 @@ in {
           # ...
         };
       };
-    }
+    })
     (kdnConfig.util.ifTypes ["nixos"] {
       services.angrr.enableNixGcIntegration = true;
     })

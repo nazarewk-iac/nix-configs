@@ -1,6 +1,7 @@
 {
   inputs.nixpkgs-upstream.url = "github:NixOS/nixpkgs/nixos-unstable";
   inputs.nixpkgs.url = "github:nazarewk/nixpkgs/nixos-unstable";
+  inputs.nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-25.05";
 
   inputs.nixpkgs-lib.follows = "nixpkgs";
 
@@ -23,14 +24,15 @@
   inputs.brew-tap--homebrew--core.url = "github:homebrew/homebrew-core";
   inputs.brew.flake = false;
   inputs.brew.url = "github:Homebrew/brew/4.4.16";
+  inputs.colmena.url = "github:zhaofengli/colmena";
   inputs.crane.url = "github:ipetkov/crane";
   inputs.disko.url = "github:nix-community/disko";
   inputs.empty.url = "github:nix-systems/empty";
   inputs.flake-compat.url = "github:edolstra/flake-compat";
   inputs.flake-parts.url = "github:hercules-ci/flake-parts";
   inputs.flake-utils.url = "github:numtide/flake-utils";
-  inputs.haumea.url = "github:nix-community/haumea";
   inputs.hardware-report.url = "github:sfcompute/hardware_report";
+  inputs.haumea.url = "github:nix-community/haumea";
   inputs.home-manager.url = "github:nix-community/home-manager";
   inputs.infuse.flake = false;
   inputs.infuse.url = "git+https://codeberg.org/amjoseph/infuse.nix.git";
@@ -66,13 +68,17 @@
   inputs.brew-nix.inputs.brew-api.follows = "brew-api";
   inputs.brew-nix.inputs.nix-darwin.follows = "nix-darwin";
   inputs.brew-nix.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.colmena.inputs.flake-compat.follows = "flake-compat";
+  inputs.colmena.inputs.flake-utils.follows = "flake-utils";
+  inputs.colmena.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.colmena.inputs.stable.follows = "nixpkgs-stable";
   inputs.disko.inputs.nixpkgs.follows = "nixpkgs";
   inputs.flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs-lib";
+  inputs.hardware-report.inputs.flake-utils.follows = "flake-utils";
+  inputs.hardware-report.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.hardware-report.inputs.rust-overlay.follows = "rust-overlay";
   inputs.helix-editor.inputs.nixpkgs.follows = "nixpkgs";
   inputs.helix-editor.inputs.rust-overlay.follows = "rust-overlay";
-  inputs.hardware-report.inputs.nixpkgs.follows = "nixpkgs";
-  inputs.hardware-report.inputs.flake-utils.follows = "flake-utils";
-  inputs.hardware-report.inputs.rust-overlay.follows = "rust-overlay";
   inputs.home-manager.inputs.nixpkgs.follows = "nixpkgs";
   inputs.lanzaboote.inputs.crane.follows = "crane";
   inputs.lanzaboote.inputs.nixpkgs.follows = "nixpkgs";
@@ -104,34 +110,112 @@
     self,
     ...
   }: let
-    lib = inputs.nixpkgs.lib.extend libOverlay;
-    libOverlay = final: prev: {
-      kdn = import ./lib {lib = final;};
-      infuse = (import "${inputs.infuse.outPath}/default.nix" {lib = final;}).v1.infuse;
-      disko = inputs.disko.lib;
-      darwin = inputs.nix-darwin.lib;
-      inherit (inputs.nix-darwin.lib) darwinSystem;
-      inherit (inputs.home-manager.lib) hm homeManagerConfiguration;
-    };
-    # lib =
-    #   (import ./lib {inherit (inputs.nixpkgs) lib;})
-    #   // {
-    #     infuse = (import "${inputs.infuse.outPath}/default.nix" {inherit (inputs.nixpkgs) lib;}).v1.infuse;
-    #     disko = inputs.disko.lib;
-    #     darwin = inputs.nix-darwin.lib;
-    #   };
+    inherit (self) lib;
+
     flakeLib = lib.kdn.flakes.forFlake self;
-    kdnModule = lib.evalModules {
-      class = "kdn-meta";
-      modules = [
-        ./modules/meta
-        {
-          inherit inputs lib self;
-          nix-configs = self;
-        }
-      ];
-    };
-    mkSpecialArgs = kdnModule.config.output.mkSubmodule;
+
+    hostsArgs =
+      builtins.mapAttrs (name: prev:
+        lib.infuse prev {
+          specialArgs.__assign = self.kdnMetaModule.config.output.mkSubmodule prev.meta;
+          modules.__append = [(./. + "/hosts/${name}")];
+        })
+      # TODO: load those sequentially from `./hosts/*/{meta.nix,meta.json}`
+      {
+        oams = {
+          meta = {
+            system = "x86_64-linux";
+            moduleType = "nixos";
+          };
+        };
+
+        brys = {
+          meta = {
+            system = "x86_64-linux";
+            moduleType = "nixos";
+            features.microvm-host = true;
+          };
+        };
+
+        etra = {
+          meta = {
+            system = "x86_64-linux";
+            moduleType = "nixos";
+          };
+        };
+
+        pryll = {
+          meta = {
+            system = "x86_64-linux";
+            moduleType = "nixos";
+          };
+        };
+
+        obler = {
+          meta = {
+            system = "x86_64-linux";
+            moduleType = "nixos";
+          };
+        };
+
+        moss = {
+          meta = {
+            system = "x86_64-linux";
+            moduleType = "nixos";
+          };
+        };
+
+        pwet = {
+          meta = {
+            system = "x86_64-linux";
+            moduleType = "nixos";
+          };
+        };
+
+        turo = {
+          meta = {
+            system = "x86_64-linux";
+            moduleType = "nixos";
+          };
+        };
+
+        yost = {
+          meta = {
+            system = "x86_64-linux";
+            moduleType = "nixos";
+          };
+        };
+
+        orr = {
+          meta = {
+            system = "aarch64-linux";
+            moduleType = "nixos";
+          };
+        };
+
+        briv = {
+          meta = {
+            system = "aarch64-linux";
+            moduleType = "nixos";
+            features.rpi4 = true;
+          };
+        };
+
+        kdn-rpi4-bootstrap = {
+          meta = {
+            system = "aarch64-linux";
+            moduleType = "nixos";
+            features.rpi4 = true;
+          };
+        };
+
+        anji = {
+          meta = {
+            system = "aarch64-darwin";
+            moduleType = "darwin";
+          };
+        };
+      };
   in (flake-parts.lib.mkFlake {inherit inputs;} {
     systems = import inputs.systems;
 
@@ -153,48 +237,113 @@
       inputs.angrr.overlays.default
       (final: prev: {
         inherit lib;
-        kdnConfig = kdnModule.config;
+        kdnConfig = self.kdnMetaModule.config;
       })
       (final: prev: {nixos-anywhere = inputs.nixos-anywhere.packages."${final.stdenv.hostPlatform.system}".default;})
       (
-        final: prev:
-          if prev.stdenv.isDarwin
-          then inputs.brew-nix.overlays.default final prev
-          else {}
-      )
-      (
-        final: prev:
-          if prev.stdenv.isDarwin
-          then let
-            src = "${inputs.nixcasks}";
-            pkgs = prev;
-            sevenzip = prev.callPackage "${src}/7zip" {inherit pkgs;};
-            nclib = import "${src}/nclib.nix" {inherit pkgs sevenzip;};
+        final: prev: let
+          src = "${inputs.nixcasks}";
+          pkgs = prev;
+          sevenzip = prev.callPackage "${src}/7zip" {inherit pkgs;};
+          nclib = import "${src}/nclib.nix" {inherit pkgs sevenzip;};
 
-            originalCasks = (inputs.nixcasks.output {osVersion = "tahoe";}).packages.${prev.stdenv.hostPlatform.system};
+          originalCasks = (inputs.nixcasks.output {osVersion = "tahoe";}).packages.${prev.stdenv.hostPlatform.system};
 
-            overrides =
-              lib.pipe
-              [
-              ]
-              [
-                (builtins.map (name: {
-                  inherit name;
-                  value = originalCasks."${name}".overrideAttrs nclib.force-dmg;
-                }))
-                builtins.listToAttrs
-              ];
-          in {
-            nclib =
-              nclib
-              // {
-                inherit sevenzip;
-              };
-            nixcasks = originalCasks // overrides;
-          }
-          else {}
+          overrides =
+            lib.pipe
+            [
+            ]
+            [
+              (builtins.map (name: {
+                inherit name;
+                value = originalCasks."${name}".overrideAttrs nclib.force-dmg;
+              }))
+              builtins.listToAttrs
+            ];
+        in
+          if !prev.stdenv.isDarwin
+          then {}
+          else
+            (inputs.brew-nix.overlays.default final prev)
+            // {
+              nclib =
+                nclib
+                // {
+                  inherit sevenzip;
+                };
+              nixcasks = originalCasks // overrides;
+            }
       )
     ];
+    flake.self = self;
+    flake.lib = inputs.nixpkgs.lib.extend self.libOverlay;
+    flake.libOverlay = final: prev: {
+      kdn = import ./lib {lib = final;};
+      infuse = (import "${inputs.infuse.outPath}/default.nix" {lib = final;}).v1.infuse;
+      disko = inputs.disko.lib;
+      darwin = inputs.nix-darwin.lib;
+      colmena = inputs.colmena.lib;
+      inherit (inputs.nix-darwin.lib) darwinSystem;
+      inherit (inputs.home-manager.lib) hm homeManagerConfiguration;
+    };
+
+    flake.kdnMetaModule = lib.evalModules {
+      class = "kdn-meta";
+      modules = [
+        ./modules/meta
+        {
+          inherit inputs lib self;
+          nix-configs = self;
+        }
+      ];
+    };
+
+    flake.hostsArgs = hostsArgs;
+    flake.hosts = lib.attrsets.mapAttrs (_: value: value.config) (self.darwinConfigurations // self.nixosConfigurations);
+    flake.nixosModules.default = ./modules/nixos;
+    flake.nixosConfigurations = lib.pipe self.hostsArgs [
+      (lib.attrsets.filterAttrs (_: host: host.specialArgs.kdnConfig.moduleType == "nixos"))
+      (builtins.mapAttrs (_: host:
+        lib.nixosSystem {
+          inherit (host.specialArgs.kdnConfig) system;
+          inherit (host) specialArgs modules;
+        }))
+    ];
+    flake.darwinModules.default = ./modules/darwin;
+    flake.darwinConfigurations = lib.pipe self.hostsArgs [
+      (lib.attrsets.filterAttrs (_: host: host.specialArgs.kdnConfig.moduleType == "darwin"))
+      (builtins.mapAttrs (_: host:
+        lib.darwinSystem {
+          inherit lib;
+          system = null;
+          modules = (host.modules  or []) ++ [{nixpkgs.system = host.specialArgs.kdnConfig.system;}];
+        }))
+    ];
+
+    flake.colmena =
+      lib.infuse {
+        meta.nixpkgs = import inputs.nixpkgs {
+          system = "x86_64-linux";
+          overlays = [self.overlays.default];
+        };
+        defaults.deployment.targetUser = "kdn";
+      }
+      (lib.attrsets.mapAttrsToList (name: host: {
+          meta.nodeSpecialArgs."${name}".__init = host.specialArgs;
+          meta.nodeNixpkgs."${name}".__init = import inputs.nixpkgs {
+            inherit (host.specialArgs.kdnConfig) system;
+            overlays = [self.overlays.default];
+          };
+          "${name}".__init = {imports = host.modules;};
+        })
+        (builtins.intersectAttrs {
+            pwet = null;
+            turo = null;
+            yost = null;
+          }
+          self.hostsArgs));
+    flake.colmenaHive = lib.colmena.makeHive self.colmena;
+
     perSystem = {
       config,
       self',
@@ -231,7 +380,8 @@
           }
         );
       };
-      checks = pkgs.callPackages ./checks (mkSpecialArgs {
+      apps.colmena = inputs'.colmena.apps.default;
+      checks = pkgs.callPackages ./checks (self.kdnMetaModule {
         moduleType = "checks";
       });
       devShells = {};
@@ -246,128 +396,11 @@
             inherit system;
             inherit (self) lib;
             inherit (lib) nixosSystem;
-            specialArgs = mkSpecialArgs {moduleType = "nixos";};
+            specialArgs = self.kdnMetaModule.config.output.mkSubmodule {moduleType = "nixos";};
             modules = [./hosts/install-iso];
           };
         }
       ];
     };
-    flake.lib = lib;
-    flake.libOverlay = libOverlay;
-    flake.nixosModules.default = ./modules/nixos;
-    flake.nixosConfigurations = lib.mkMerge [
-      {
-        oams = lib.nixosSystem {
-          system = "x86_64-linux";
-          specialArgs = mkSpecialArgs {
-            moduleType = "nixos";
-          };
-          modules = [./hosts/oams];
-        };
-
-        brys = lib.nixosSystem {
-          system = "x86_64-linux";
-          specialArgs = mkSpecialArgs {
-            moduleType = "nixos";
-            features.microvm-host = true;
-          };
-          modules = [./hosts/brys];
-        };
-
-        etra = lib.nixosSystem {
-          system = "x86_64-linux";
-          specialArgs = mkSpecialArgs {
-            moduleType = "nixos";
-          };
-          modules = [./hosts/etra];
-        };
-
-        pryll = lib.nixosSystem {
-          system = "x86_64-linux";
-          specialArgs = mkSpecialArgs {
-            moduleType = "nixos";
-          };
-          modules = [./hosts/pryll];
-        };
-
-        obler = lib.nixosSystem {
-          system = "x86_64-linux";
-          specialArgs = mkSpecialArgs {
-            moduleType = "nixos";
-          };
-          modules = [./hosts/obler];
-        };
-
-        moss = lib.nixosSystem {
-          system = "x86_64-linux";
-          specialArgs = mkSpecialArgs {
-            moduleType = "nixos";
-          };
-          modules = [./hosts/moss];
-        };
-
-        pwet = lib.nixosSystem {
-          system = "x86_64-linux";
-          specialArgs = mkSpecialArgs {
-            moduleType = "nixos";
-          };
-          modules = [./hosts/pwet];
-        };
-
-        turo = lib.nixosSystem {
-          system = "x86_64-linux";
-          specialArgs = mkSpecialArgs {
-            moduleType = "nixos";
-          };
-          modules = [./hosts/turo];
-        };
-
-        yost = lib.nixosSystem {
-          system = "x86_64-linux";
-          specialArgs = mkSpecialArgs {
-            moduleType = "nixos";
-          };
-          modules = [./hosts/yost];
-        };
-
-        orr = lib.nixosSystem {
-          system = "aarch64-linux";
-          specialArgs = mkSpecialArgs {
-            moduleType = "nixos";
-          };
-          modules = [./hosts/orr];
-        };
-
-        briv = lib.nixosSystem {
-          system = "aarch64-linux";
-          specialArgs = mkSpecialArgs {
-            moduleType = "nixos";
-            features.rpi4 = true;
-          };
-          modules = [./hosts/briv];
-        };
-
-        rpi4-bootstrap = lib.nixosSystem {
-          system = "aarch64-linux";
-          specialArgs = mkSpecialArgs {
-            moduleType = "nixos";
-            features.rpi4 = true;
-          };
-          modules = [./hosts/kdn-rpi4-bootstrap];
-        };
-      }
-    ];
-    flake.darwinModules.default = ./modules/darwin;
-    flake.darwinConfigurations.anji = lib.darwinSystem {
-      inherit lib;
-      specialArgs = mkSpecialArgs {
-        moduleType = "darwin";
-      };
-      modules = [
-        ./hosts/anji
-      ];
-    };
-    flake.hosts = lib.attrsets.mapAttrs (_: value: value.config) (self.darwinConfigurations // self.nixosConfigurations);
-    flake.self = self;
   });
 }

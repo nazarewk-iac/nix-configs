@@ -42,7 +42,7 @@ in {
           ++ [
             # formatters
             alejandra
-            nixfmt-rfc-style
+            nixfmt # used to be nixfmt-rfc-style
             kdn.kdn-nix-fmt
           ]);
       }
