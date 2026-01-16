@@ -38,6 +38,7 @@ in {
               kdn.disks.persist."usr/data".directories = [".local/share/atuin"];
               programs.atuin.settings = {
                 daemon.socket_path = "${getRuntimeDir username}/atuin.sock";
+                sync.records = true;
               };
             };
           }))
@@ -173,27 +174,27 @@ in {
               serviceConfig = {
                 Type = "oneshot";
                 RemainAfterExit = true;
+                User = username;
               };
 
               script = let
-                user = config.users.users."${username}";
                 secrets = config.sops.secrets;
+                hmUser = config.home-manager.users."${username}";
               in ''
                 export PATH="${
                   lib.makeBinPath (
                     with pkgs; [
                       coreutils
                       gnugrep
+                      atuin
                     ]
                   )
                 }:$PATH"
                 set -eEuo pipefail
 
-                atuin() {
-                  /run/wrappers/bin/sudo -u '${username}' '${lib.getExe pkgs.atuin}' "$@"
-                }
-
-                if atuin status | grep -v 'You are not logged in' ; then
+                # `sync.records = true` should enable API v2 according to https://github.com/atuinsh/atuin/issues/3050
+                # but `atuin status` still uses v1 API and cannot be used
+                if atuin status | grep -v 'You are not logged in' || test -s "${hmUser.xdg.dataHome}/atuin/session" ; then
                   exit 0
                 fi
 
