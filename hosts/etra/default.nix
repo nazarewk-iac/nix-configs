@@ -111,6 +111,9 @@ in {
       kdn.networking.router.enable = true;
       # seems to spam logs too much
       networking.firewall.logRefusedConnections = false;
+      kdn.networking.router.debug.ddns = true;
+      # kdn.networking.router.debug.resolved = true;
+      # kdn.networking.router.debug.kresd = true;
     }
     {
       systemd.network.wait-online.extraArgs = [
@@ -146,6 +149,16 @@ in {
           type = "STUB";
           nameservers = [net.ipv4.p2p.drek-etra.address.gateway];
           domains = ["lan.drek.net.int.kdn.im."];
+        }
+      ];
+    }
+    {
+      kdn.networking.router.kresd.defaultUpstream = null;
+      kdn.networking.router.kresd.upstreams = [
+        {
+          description = "upstream through drek";
+          type = "STUB";
+          nameservers = [net.ipv4.p2p.drek-etra.address.gateway];
         }
       ];
     }
@@ -327,9 +340,6 @@ in {
         config.sops.secrets."networking/ipv4/network/isp/uplink/address/client".path;
       kdn.networking.router.addr.public.ipv6.path =
         config.sops.secrets."networking/ipv6/network/isp/prefix/etra/address/gateway".path;
-    }
-    {
-      kdn.networking.router.debug.ddns = true;
     }
     {
       kdn.hw.nanokvm.enable = true;

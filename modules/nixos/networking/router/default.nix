@@ -25,7 +25,7 @@
   defaultDNSServers = lib.pipe cfg.nets [
     builtins.attrValues
     (builtins.filter (netCfg: netCfg.type == "wan" && netCfg.wan.asDefaultDNS))
-    (builtins.map (netCfg: netCfg.wan.dns))
+    (map (netCfg: netCfg.wan.dns))
     builtins.concatLists
   ];
 
@@ -41,7 +41,7 @@
       ]);
     runtimeEnv.TSIG_KEY_PATH = config.sops.templates."knot/sops-key.admin.conf".path;
     runtimeEnv.KNOT_ADDR = cfg.knot.localAddress;
-    runtimeEnv.KNOT_PORT = builtins.toString cfg.knot.localPort;
+    runtimeEnv.KNOT_PORT = toString cfg.knot.localPort;
     runtimeEnv.PUBLIC_IPV4_PATH = cfg.addr.public.ipv4.path;
     runtimeEnv.PUBLIC_IPV6_PATH = cfg.addr.public.ipv6.path;
     text = builtins.readFile ./kdn-router-knot-setup-zone.sh;
@@ -459,7 +459,9 @@ in {
 
     debug.all = lib.mkEnableOption "debug everything by default";
     debug.kresd = mkDebugOption {};
-    debug.networkd = mkDebugOption {};
+    debug.resolved = mkDebugOption {};
+    # more verbose logging in `systemd-networkd`, doesn't seem to generate much logs at all
+    debug.networkd = mkDebugOption {default = true;};
     debug.firewall = mkDebugOption {};
     debug.firewall-refused = mkDebugOption {default = with cfg.debug; firewall;};
     debug.firewall-icmpv6 = mkDebugOption {default = with cfg.debug; firewall;};
@@ -820,9 +822,6 @@ in {
         networking.firewall.logRefusedConnections = lib.mkDefault true;
         networking.firewall.pingLimit = "60/minute burst 5 packets";
 
-        # more verbose logging in `systemd-networkd`, doesn't seem to generate much logs at all
-        systemd.services.systemd-networkd.environment.SYSTEMD_LOG_LEVEL = "debug";
-
         networking.firewall.extraForwardRules = ''
           ${lib.strings.concatMapStringsSep "\n" (
               fwd: ''meta iifname ${fwd.from} meta oifname ${fwd.to} accept comment "allow traffic from ${fwd.from} to ${fwd.to}"''
@@ -841,6 +840,9 @@ in {
         kdn.networking.router.kresd.logLevel = "debug";
       })
       (lib.mkIf cfg.debug.networkd {
+        systemd.services.systemd-networkd.environment.SYSTEMD_LOG_LEVEL = "debug";
+      })
+      (lib.mkIf cfg.debug.resolved {
         systemd.services.systemd-resolved.environment.SYSTEMD_LOG_LEVEL = "debug";
       })
       (lib.mkIf cfg.debug.firewall-refused {
@@ -1091,7 +1093,7 @@ in {
         services.kresd.enable = true;
         services.kresd.listenPlain = [];
         services.kresd.package =
-          (pkgs.knot-resolver.override {
+          (pkgs.knot-resolver_5.override {
             extraFeatures = true;
           }).overrideAttrs
           (old: {
@@ -1517,9 +1519,9 @@ in {
             after = ["knot.service"];
             serviceConfig.Type = "oneshot";
             serviceConfig.RemainAfterExit = true;
-            serviceConfig.ExecStart =
-              lib.pipe d2Domains [
-                (builtins.map (
+            script = let
+              zones = lib.pipe d2Domains [
+                (map (
                   domain:
                     lib.strings.escapeShellArgs [
                       (lib.getExe kdn-router-knot-setup-zone)
@@ -1527,8 +1529,8 @@ in {
                       domain
                     ]
                 ))
-              ]
-              ++ lib.pipe cfg.nets [
+              ];
+              hosts = lib.pipe cfg.nets [
                 # TODO: flip those to be piped for easier reading
                 (lib.attrsets.mapAttrsToList (
                   _: netCfg: (lib.attrsets.mapAttrsToList (
@@ -1551,7 +1553,7 @@ in {
                         )
                         (
                           lib.attrsets.filterAttrs (
-                            host: hostCfg: (hostCfg.ip != null) && (config.services.kea.dhcp6.enable || addrCfg.type != "ipv6")
+                            host: hostCfg: (hostCfg.ip != null) # && (config.services.kea.dhcp6.enable || addrCfg.type != "ipv6")
                           )
                           addrCfg.hosts
                         )
@@ -1559,7 +1561,17 @@ in {
                     )
                     netCfg.addressing)
                 ))
+              ];
+            in
+              lib.pipe (zones ++ hosts) [
                 lib.flatten
+                # TODO: fix templated strings in here, maybe store those in templated JSON or something?
+                (builtins.filter (entry: !(lib.strings.hasInfix "<SOPS:" entry)))
+                (builtins.concatStringsSep "\n")
+                (text: ''
+                  set -xeEuo pipefail
+                  ${text}
+                '')
               ];
           };
         }
@@ -1795,6 +1807,7 @@ in {
         kdn.networking.router.kresd.upstreams = let
           upstreams = {
             systemd-resolved = {
+              # TODO: those queries seem to time out a lot
               description = "systemd-resolved";
               type = "STUB";
               nameservers = ["127.0.0.53"];
