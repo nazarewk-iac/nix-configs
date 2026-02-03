@@ -161,7 +161,7 @@ in {
                         */
                         (lib.attrsets.mapAttrsToList (
                           ssid: wlan: ''
-                            printf '%s="%s"\n' ${wlan.envKey} "$(sed -e 's/\([$"`]\)/\\\1/g' <${lib.strings.escapeShellArg wlan.secretPath})"
+                            printf '%s="%s"\n' ${wlan.envKey} "$(sed -e 's/\(["\\`$]\)/\\\1/g' <${lib.strings.escapeShellArg wlan.secretPath})"
                           ''
                         ))
                         (builtins.concatStringsSep "\n")
