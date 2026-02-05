@@ -2,6 +2,7 @@
   lib,
   pkgs,
   config,
+  kdnConfig,
   ...
 }: let
   /*
@@ -20,7 +21,7 @@
   mkPathsOption = prefix: extra:
     lib.mkOption {
       type = with lib.types; listOf str;
-      apply = builtins.map (
+      apply = map (
         dir:
           if prefix == "" || lib.strings.hasPrefix "/" dir
           then lib.strings.removePrefix "/" dir
@@ -35,9 +36,10 @@
   ];
 in {
   imports = [
-    (lib.mkRenamedOptionModule
-      [ "kdn" "programs" "apps" ]
-      [ "kdn" "apps" ]
+    (
+      lib.mkRenamedOptionModule
+      ["kdn" "programs" "apps"]
+      ["kdn" "apps"]
     )
   ];
   options.kdn.apps = lib.mkOption {
@@ -94,62 +96,71 @@ in {
   };
 
   config = lib.mkMerge [
-    {
+    (kdnConfig.util.ifNotHMParent {
       kdn.env.packages = lib.pipe enabledAppsList [
-        (builtins.map (cfg: lib.optional (cfg.package.install) cfg.package.final))
+        (map (cfg: lib.optional (cfg.package.install) cfg.package.final))
         builtins.concatLists
       ];
-    }
-    {
+    })
+    (kdnConfig.util.ifHMParent {
+      home-manager.sharedModules = [
+        {
+          kdn.apps = lib.pipe config.kdn.apps [
+            (lib.attrsets.mapAttrs (_: lib.mkDefault))
+          ];
+        }
+      ];
+    })
+    (kdnConfig.util.ifTypes ["home-manager"] {
       kdn.disks.persist."usr/cache".directories = lib.pipe enabledAppsList [
-        (builtins.map (cfg: cfg.dirs.cache))
+        (map (cfg: cfg.dirs.cache))
         builtins.concatLists
       ];
       kdn.disks.persist."usr/config".directories = lib.pipe enabledAppsList [
-        (builtins.map (cfg: cfg.dirs.config))
+        (map (cfg: cfg.dirs.config))
         builtins.concatLists
       ];
       kdn.disks.persist."usr/data".directories = lib.pipe enabledAppsList [
-        (builtins.map (cfg: cfg.dirs.data))
+        (map (cfg: cfg.dirs.data))
         builtins.concatLists
       ];
       kdn.disks.persist."usr/state".directories = lib.pipe enabledAppsList [
-        (builtins.map (cfg: cfg.dirs.state))
+        (map (cfg: cfg.dirs.state))
         builtins.concatLists
       ];
       kdn.disks.persist."usr/reproducible".directories = lib.pipe enabledAppsList [
-        (builtins.map (cfg: cfg.dirs.reproducible))
+        (map (cfg: cfg.dirs.reproducible))
         builtins.concatLists
       ];
       kdn.disks.persist."disposable".directories = lib.pipe enabledAppsList [
-        (builtins.map (cfg: cfg.dirs.disposable))
+        (map (cfg: cfg.dirs.disposable))
         builtins.concatLists
       ];
 
       kdn.disks.persist."usr/cache".files = lib.pipe enabledAppsList [
-        (builtins.map (cfg: cfg.files.cache))
+        (map (cfg: cfg.files.cache))
         builtins.concatLists
       ];
       kdn.disks.persist."usr/config".files = lib.pipe enabledAppsList [
-        (builtins.map (cfg: cfg.files.config))
+        (map (cfg: cfg.files.config))
         builtins.concatLists
       ];
       kdn.disks.persist."usr/data".files = lib.pipe enabledAppsList [
-        (builtins.map (cfg: cfg.files.data))
+        (map (cfg: cfg.files.data))
         builtins.concatLists
       ];
       kdn.disks.persist."usr/state".files = lib.pipe enabledAppsList [
-        (builtins.map (cfg: cfg.files.state))
+        (map (cfg: cfg.files.state))
         builtins.concatLists
       ];
       kdn.disks.persist."usr/reproducible".files = lib.pipe enabledAppsList [
-        (builtins.map (cfg: cfg.files.reproducible))
+        (map (cfg: cfg.files.reproducible))
         builtins.concatLists
       ];
       kdn.disks.persist."disposable".files = lib.pipe enabledAppsList [
-        (builtins.map (cfg: cfg.files.disposable))
+        (map (cfg: cfg.files.disposable))
         builtins.concatLists
       ];
-    }
+    })
   ];
 }
