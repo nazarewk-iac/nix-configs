@@ -10,14 +10,12 @@ in {
     enable = lib.mkEnableOption "IDEs utils";
   };
 
-  config = lib.mkIf cfg.enable (
-    lib.mkMerge [
-      {
-        kdn.programs.helix-editor.enable = true;
-      }
-      (lib.mkIf config.kdn.desktop.enable {
-        kdn.development.jetbrains.enable = true;
-      })
-    ]
-  );
+  config = lib.mkIf cfg.enable (lib.mkMerge [
+    {
+      kdn.programs.terminal-ide.enable = true;
+    }
+    (lib.mkIf config.kdn.desktop.enable {
+      kdn.development.jetbrains.enable = true;
+    })
+  ]);
 }
