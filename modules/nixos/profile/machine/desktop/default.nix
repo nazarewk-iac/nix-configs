@@ -38,8 +38,9 @@ in {
         kdn.programs.firefox.enable = true;
         kdn.programs.thunderbird.enable = true;
         kdn.programs.kdeconnect.enable = true;
+        kdn.programs.office.enable = true;
+
         environment.systemPackages = with pkgs; [
-          libreoffice-qt # non-qt failed to build on 2023-04-07
           # chromium
           p7zip
           rar
