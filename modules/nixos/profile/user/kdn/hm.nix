@@ -246,8 +246,6 @@ in {
           zoom-us
           nextcloud-client
 
-          deluge
-
           httpie-desktop
         ];
       })
@@ -265,6 +263,7 @@ in {
         kdn.programs.slack.enable = true;
         kdn.programs.spotify.enable = true;
         kdn.programs.tidal.enable = true;
+        kdn.programs.torrent.enable = true;
         kdn.toolset.print-3d.enable = true;
       })
     ]
