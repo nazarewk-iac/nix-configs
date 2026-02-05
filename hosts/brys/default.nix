@@ -98,101 +98,25 @@
         5900
       ];
     }
-    (
-      let
-        uplinkName = "uplink-2g";
-        uplink.iface = "br-${uplinkName}";
-        vlan.pic.name = "pic";
-        vlan.pic.iface = vlan.pic.name;
-        vlan.pic.id = 1859;
-        vlan.drek.name = "drek";
-        vlan.drek.iface = vlan.drek.name;
-        vlan.drek.id = 3547;
-      in {
-        /*
-        Sets up:
-        - bridge for VMs and local 2.5GbE network cards
-        - `pic` VLAN through the bridge
-        */
-        networking.networkmanager.unmanaged = [
-          "interface-name:enp6s0"
-          "interface-name:${vlan.pic.iface}"
-          "interface-name:${uplink.iface}"
-        ];
-        systemd.network.netdevs."50-${uplink.iface}".netdevConfig = {
-          Kind = "bridge";
-          Name = uplink.iface;
-        };
-        systemd.network.networks."40-ethernet-2.5g" = {
-          matchConfig.Name = ["enp6s0"];
-          networkConfig.Bridge = uplink.iface;
-          linkConfig.RequiredForOnline = "enslaved";
-        };
-        systemd.network.networks."50-${uplinkName}" = {
-          matchConfig.Name = uplink.iface;
-          bridgeConfig = {};
-          linkConfig.RequiredForOnline = "carrier";
-          networkConfig = {
-            VLAN = [
-              vlan.pic.iface
-              vlan.drek.iface
-            ];
+    {
+      kdn.networking.enable = true;
+      kdn.networking.debug = true;
+      kdn.networking.iface.default = "kdn-eth-2g";
 
-            DHCP = true;
-            # `UseDomains = true` for adding search domain `route` for just DNS queries
-            UseDomains = true;
+      kdn.networking.ifaces."kdn-eth-2g".selector.mac = "04:42:1a:ed:8b:03";
+      kdn.networking.ifaces."kdn-eth-2g".dynamicIPClient = true;
+      kdn.networking.ifaces."kdn-eth-2g".metric = 100;
 
-            IPv6AcceptRA = true;
-            LinkLocalAddressing = "ipv6";
+      kdn.networking.ifaces."kdn-eth-1g".managed = false;
+      kdn.networking.ifaces."kdn-eth-1g".selector.mac = "04:42:1a:ed:8b:04";
 
-            IPv6PrivacyExtensions = true;
-            IPv6LinkLocalAddressGenerationMode = "stable-privacy";
-          };
-          dhcpV4Config.RouteMetric = 100;
-          dhcpV6Config.RouteMetric = 100;
-        };
-
-        /*
-        systemd.network.netdevs."50-${vlan.pic.name}" = {
-          netdevConfig.Kind = "vlan";
-          netdevConfig.Name = vlan.pic.iface;
-          vlanConfig.Id = vlan.pic.id;
-        };
-        systemd.network.networks."50-${vlan.pic.name}" = {
-          matchConfig.Name = vlan.pic.iface;
-          networkConfig = {
-            DHCP = true;
-            IPv6AcceptRA = true;
-            LinkLocalAddressing = "ipv6";
-
-            IPv6PrivacyExtensions = true;
-            IPv6LinkLocalAddressGenerationMode = "stable-privacy";
-          };
-          dhcpV4Config.RouteMetric = 1000;
-          dhcpV6Config.RouteMetric = 1000;
-        };
-
-        systemd.network.netdevs."50-${vlan.drek.name}" = {
-          netdevConfig.Kind = "vlan";
-          netdevConfig.Name = vlan.drek.iface;
-          vlanConfig.Id = vlan.drek.id;
-        };
-        systemd.network.networks."50-${vlan.drek.name}" = {
-          matchConfig.Name = vlan.drek.iface;
-          networkConfig = {
-            DHCP = true;
-            IPv6AcceptRA = true;
-            LinkLocalAddressing = "ipv6";
-
-            IPv6PrivacyExtensions = true;
-            IPv6LinkLocalAddressGenerationMode = "stable-privacy";
-          };
-          dhcpV4Config.RouteMetric = 1100;
-          dhcpV6Config.RouteMetric = 1100;
-        };
-        */
-      }
-    )
+      kdn.networking.vlans."pic".id = 1859;
+      kdn.networking.vlans."pic".parent = "kdn-eth-2g";
+      kdn.networking.ifaces."pic".dynamicIPClient = true;
+      kdn.networking.ifaces."pic".metric = 1000;
+      kdn.networking.ifaces."pic".address.internal4 = "10.92.0.5/24";
+      kdn.networking.ifaces."pic".address.internal6 = "fd12:ed4e:366d:eb17:3c91:247b:a473:442/64";
+    }
     /*
     (let
       iface = "vm-nbt-1";
@@ -253,9 +177,6 @@
     })
     */
     {
-      kdn.services.zammad.enable = false;
-    }
-    {
       services.bpftune.enable = true;
     }
     {
@@ -281,7 +202,6 @@
       };
     }
     {
-
       networking.hosts."192.168.2.1" = ["mokerlink"];
       networking.networkmanager.ensureProfiles.profiles.mokerlink-switch = {
         connection = {
