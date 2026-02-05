@@ -46,7 +46,7 @@ in {
             else value;
           list = value:
             lib.pipe value [
-              (builtins.map (
+              (map (
                 value:
                   lib.pipe value [
                     coerce
@@ -85,10 +85,10 @@ in {
             lib.pipe cfg.currentFiles [
               lib.lists.unique
               (builtins.filter (lib.strings.hasPrefix dir))
-              (builtins.map (path: [
+              (map (p: [
                 "!"
                 "-path"
-                path
+                p
               ]))
               lib.lists.flatten
             ];
@@ -96,7 +96,7 @@ in {
           infixArgs = lib.pipe cfg.infix [
             builtins.attrValues
             lib.lists.unique
-            (builtins.map (infix: [
+            (map (infix: [
               "-name"
               "*${infix}*"
             ]))
@@ -110,7 +110,7 @@ in {
           mkDelDirCmd = dirCfg: ''
             ${lib.getExe pkgs.findutils} \
               ${dirCfg.path} \
-              -mindepth ${builtins.toString dirCfg.mindepth} -maxdepth ${builtins.toString dirCfg.maxdepth} \
+              -mindepth ${toString dirCfg.mindepth} -maxdepth ${toString dirCfg.maxdepth} \
               -type f \
               ${lib.escapeShellArgs infixArgs} \
               ${lib.escapeShellArgs (mkExistingArgs dirCfg.path)} \
@@ -119,7 +119,7 @@ in {
 
           delCmds = lib.pipe cfg.directories [
             builtins.attrValues
-            (builtins.map mkDelDirCmd)
+            (map mkDelDirCmd)
             (builtins.concatStringsSep "\n")
           ];
         in ''
@@ -147,7 +147,7 @@ in {
     (lib.mkIf config.kdn.security.secrets.allowed {
       kdn.managed.currentFiles = lib.pipe config.sops.templates [
         builtins.attrValues
-        (builtins.map (tpl: tpl.path))
+        (map (tpl: tpl.path))
       ];
     })
   ]);

@@ -86,7 +86,7 @@ in {
                       "--debounce=${fsWatchCfg.debounce}"
                       (lib.lists.optional (!fsWatchCfg.initialRun) "--postpone")
                       (lib.lists.optional (fsWatchCfg.delay != null) "--delay-run=${fsWatchCfg.delay}")
-                      (builtins.map (dir: "--watch-non-recursive=${dir}") fsWatchCfg.dirs)
+                      (map (dir: "--watch-non-recursive=${dir}") fsWatchCfg.dirs)
                       (lib.pipe (fsWatchCfg.recursive ++ fsWatchCfg.files) [
                         (builtins.concatStringsSep "\n")
                         (

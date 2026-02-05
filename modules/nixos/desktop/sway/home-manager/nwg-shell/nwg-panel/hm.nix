@@ -27,7 +27,7 @@
       builtins.attrValues
       (builtins.filter (panel: panel.enable or true))
       (builtins.sort (a: b: builtins.lessThan a.order b.order))
-      (builtins.map (
+      (map (
         panel:
           builtins.removeAttrs panel [
             "enable"

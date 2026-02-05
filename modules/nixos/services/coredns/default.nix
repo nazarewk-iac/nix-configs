@@ -78,7 +78,7 @@ in {
               }
             '')
             (lib.attrsets.mapAttrsToList (_: rewriteCfg: ''
-                ${rewriteCfg.to}:${builtins.toString rewriteCfg.port} {
+                ${rewriteCfg.to}:${toString rewriteCfg.port} {
                   bind ${builtins.concatStringsSep " " rewriteCfg.binds}
                   import defaults-before
                   rewrite name suffix .${rewriteCfg.to} .${rewriteCfg.from} answer auto

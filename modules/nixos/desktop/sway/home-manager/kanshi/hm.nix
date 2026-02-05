@@ -12,7 +12,7 @@
   mkOutput = dev: x: y: extra: (
     {
       inherit (dev) criteria;
-      position = "${builtins.toString (builtins.floor x)},${builtins.toJSON (builtins.floor y)}";
+      position = "${toString (builtins.floor x)},${builtins.toJSON (builtins.floor y)}";
     }
     // extra
   );
@@ -48,7 +48,7 @@
       lib.lists.toList
       (builtins.concatStringsSep "\n")
       (pkgs.writeScript "kdn-${name}")
-      builtins.toString
+      toString
       lib.lists.toList
     ];
 
@@ -108,7 +108,7 @@ in {
             (builtins.split "x|@|Hz")
             (builtins.filter builtins.isString)
             (lib.lists.subtractLists [""])
-            (builtins.map builtins.fromJSON)
+            (map builtins.fromJSON)
             (lib.lists.zipListsWith lib.attrsets.nameValuePair [
               "declaredWidth"
               "declaredHeight"
@@ -144,7 +144,7 @@ in {
                       lib.lists.toList
                       (builtins.concatStringsSep "\n")
                       (pkgs.writeScript "kanshi-profile-${name}-exec")
-                      builtins.toString
+                      toString
                       lib.lists.toList
                     ];
                   }

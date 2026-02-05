@@ -20,7 +20,7 @@
       username: keys:
         lib.pipe keys [
           builtins.attrValues
-          (builtins.map (fileCfg: builtins.replaceStrings [username] ["%u"] fileCfg.path))
+          (map (fileCfg: builtins.replaceStrings [username] ["%u"] fileCfg.path))
         ]
     ))
     lib.lists.flatten
@@ -92,7 +92,7 @@
       ))
       # TODO: implement the most common "x86_64-linux" builder properly
       (builtins.filter (builder: !(builtins.elem "x86_64-linux" builder.systems)))
-      (builtins.map (
+      (map (
         old: let
           defaults = {
             protocol = "ssh-ng";
@@ -115,20 +115,18 @@
             ];
           }
       ))
-      (builtins.map (
+      (map (
         old: (
-          builtins.map
-          (
-            {
-              domain,
-              factor ? 100,
-            }:
-              old
-              // lib.attrsets.optionalAttrs (domain != "") {
-                hostName = "${old.hostName}.${domain}";
-                speedFactor = builtins.floor (old.speedFactor * factor);
-              }
-          )
+          map
+          ({
+            domain,
+            factor ? 100,
+          }:
+            old
+            // lib.attrsets.optionalAttrs (domain != "") {
+              hostName = "${old.hostName}.${domain}";
+              speedFactor = builtins.floor (old.speedFactor * factor);
+            })
           [
             {
               domain = "lan.etra.net.int.kdn.im.";
@@ -144,7 +142,7 @@
       lib.lists.flatten
       (l:
         l
-        ++ lib.lists.optional (bCfg.localhost.publicHostKey != "") (builtins.removeAttrs bCfg.localhost ["enable"]
+        ++ lib.lists.optional (bCfg.localhost.publicHostKey != "") (removeAttrs bCfg.localhost ["enable"]
           // {
             speedFactor = bCfg.localhost.speedFactor * 1000;
           }))
@@ -180,7 +178,7 @@ in {
           overrides = [
             (
               key: old: let
-                filename = builtins.baseNameOf key;
+                filename = baseNameOf key;
                 result =
                   old
                   // {

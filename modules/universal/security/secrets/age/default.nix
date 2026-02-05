@@ -54,7 +54,7 @@ in {
       default = [];
       apply = packages:
         lib.pipe packages [
-          (builtins.map lib.getExe)
+          (map lib.getExe)
           (builtins.concatStringsSep "\n")
           (
             text:

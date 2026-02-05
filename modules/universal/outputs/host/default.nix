@@ -13,7 +13,7 @@ in {
       default = lib.pipe config.kdn.disks.luks.volumes [
         lib.attrsets.attrsToList
         (builtins.filter (e: e.value.keyFile != null))
-        (builtins.map (e: {
+        (map (e: {
           inherit (e) name;
           inherit (e.value) keyFile;
           cryptsetupName = e.value.name;

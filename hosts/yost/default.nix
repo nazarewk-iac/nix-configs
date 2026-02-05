@@ -74,7 +74,7 @@
           type = "zfs_volume";
           options."com.sun:auto-snapshot" = "true";
           extraArgs = ["-p"]; # create parents, this is missing from the volume
-          size = lib.mkDefault "${builtins.toString config.kdn.disks.luks.header.size}M";
+          size = lib.mkDefault "${toString config.kdn.disks.luks.header.size}M";
         };
       };
 

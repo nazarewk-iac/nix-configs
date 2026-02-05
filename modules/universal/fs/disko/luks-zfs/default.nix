@@ -38,7 +38,7 @@ in {
             && (v.content.type or "") == "zfs"
             && (v.content.pool or "") == cfg.poolName
         ))
-        (builtins.map (v: v.name))
+        (map (v: v.name))
         (
           v:
             assert lib.assertMsg (v != []) ''
@@ -53,7 +53,7 @@ in {
 
     cryptsetupNames = lib.mkOption {
       default =
-        builtins.map (
+        map (
           luksName: "systemd-cryptsetup@${utils.escapeSystemdPath luksName}"
         )
         cfg.luksNames;

@@ -21,7 +21,7 @@
   ];
 
   firefoxProfilePathsRel = lib.pipe containerProfilesList [
-    (builtins.map (profile: "${profilesPath}/${profile.path}"))
+    (map (profile: "${profilesPath}/${profile.path}"))
   ];
 
   /*
@@ -90,7 +90,7 @@ in {
       }
       (lib.mkIf (firefoxProfilePathsRel != {}) {
         home.file = lib.pipe firefoxProfilePathsRel [
-          (builtins.map (path: {
+          (map (path: {
             name = "${path}/containers.json";
             value.target = "${path}/containers.json.d/50-hm-containers.json";
           }))
@@ -104,7 +104,7 @@ in {
           };
           Path = {
             PathChanged = lib.pipe firefoxProfilePathsRel [
-              (builtins.map (path: "${config.home.homeDirectory}/${path}/containers.json.d"))
+              (map (path: "${config.home.homeDirectory}/${path}/containers.json.d"))
             ];
             TriggerLimitBurst = "1";
             TriggerLimitIntervalSec = "1s";

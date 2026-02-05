@@ -27,7 +27,7 @@
       (file: lib.trivial.throwIfNot (lib.strings.hasSuffix ".sops.yaml" file) "Can only parse '*.sops.yaml' files!" file)
       builtins.readFile
       (lib.strings.splitString "\n")
-      (builtins.map (line: let
+      (map (line: let
         match = builtins.match "^([[:space:]]*)([^:]+):[[:space:]]?(ENC\\[.*type:([^,]+)?.*])?$" line;
       in
         lib.lists.optional (match != null) {

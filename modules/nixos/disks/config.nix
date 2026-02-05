@@ -39,7 +39,7 @@ in {
                     [
                       (builtins.catAttrs topName)
                       builtins.concatLists
-                      (builtins.map (
+                      (map (
                         c: let
                           d =
                             if builtins.typeOf c == "string"
@@ -75,7 +75,7 @@ in {
       kdn.disks.devices = lib.pipe cfg.luks.volumes [
         builtins.attrValues
         (builtins.filter (luksVol: luksVol.target.partitionKey == null))
-        (builtins.map (luksVol: {
+        (map (luksVol: {
           "${luksVol.target.deviceKey}" = {
             type = "luks";
             path = lib.mkDefault luksVol.targetSpec.path;
@@ -89,7 +89,7 @@ in {
       kdn.disks.devices = lib.pipe cfg.luks.volumes [
         builtins.attrValues
         (builtins.filter (luksVol: luksVol.target.partitionKey != null))
-        (builtins.map (luksVol: {
+        (map (luksVol: {
           "${luksVol.target.deviceKey}".partitions."${luksVol.target.partitionKey}" = {
             num = luksVol.targetSpec.partNum;
             size = luksVol.targetSpec.size;
@@ -105,7 +105,7 @@ in {
       kdn.disks.devices = lib.pipe cfg.luks.volumes [
         builtins.attrValues
         (builtins.filter (luksVol: luksVol.header.deviceKey != null && luksVol.header.partitionKey != null))
-        (builtins.map (luksVol: {
+        (map (luksVol: {
           "${luksVol.header.deviceKey}".partitions."${luksVol.header.partitionKey}" = {
             num = luksVol.headerSpec.partNum;
             inherit (cfg.luks.header) size;
@@ -238,14 +238,14 @@ in {
 
                     parentDirs =
                       lib.pipe preserveAtUserCfg.files [
-                        (builtins.map (f: builtins.dirOf f.file))
+                        (map (f: builtins.dirOf f.file))
                       ]
                       ++ lib.pipe preserveAtUserCfg.directories [
-                        (builtins.map (f: builtins.dirOf f.directory))
+                        (map (f: builtins.dirOf f.directory))
                       ];
 
                     missingDirs = lib.pipe parentDirs [
-                      (builtins.map (
+                      (map (
                         dir:
                           lib.pipe dir [
                             (lib.strings.splitString "/")
@@ -262,7 +262,7 @@ in {
                           ]
                       ))
                       lib.lists.flatten
-                      (builtins.map (
+                      (map (
                         dir: let
                           conf = {
                             mode = persistUserCfg.homeDirMode;
@@ -294,13 +294,13 @@ in {
             _: preserveAtCfg: let
               parentDirs =
                 lib.pipe preserveAtCfg.files [
-                  (builtins.map (f: {
+                  (map (f: {
                     path = builtins.dirOf f.file;
                     conf = f.parent;
                   }))
                 ]
                 ++ lib.pipe preserveAtCfg.directories [
-                  (builtins.map (f: {
+                  (map (f: {
                     path = builtins.dirOf f.directory;
                     conf = f.parent;
                   }))
@@ -309,7 +309,7 @@ in {
               # TODO: get rid of duplicates compared to `config.systemd.tmpfiles.settings.preservation`?
               missingDirs = lib.pipe parentDirs [
                 (builtins.filter (entry: entry.path != "" && entry.path != "/"))
-                (builtins.map (
+                (map (
                   entry:
                     lib.flip builtins.map
                     [
@@ -394,7 +394,7 @@ in {
                           size =
                             if builtins.isString part.size
                             then part.size
-                            else "${builtins.toString part.size}M"; # `M` equals `MiB` in sgdisk/disko, but disko validates `M`
+                            else "${toString part.size}M"; # `M` equals `MiB` in sgdisk/disko, but disko validates `M`
                         }
                         part.disko
                       ]
@@ -452,10 +452,10 @@ in {
     {
       fileSystems = lib.pipe cfg.base [
         builtins.attrValues
-        (builtins.map (imp: imp.neededForBoot))
+        (map (imp: imp.neededForBoot))
         lib.lists.flatten
         lib.unique
-        (builtins.map (path: {
+        (map (path: {
           name = path;
           value = {
             neededForBoot = true;
@@ -505,7 +505,7 @@ in {
               };
             })
             ++ lib.pipe zpool.cryptsetup.names [
-              (builtins.map (cryptsetupName: {
+              (map (cryptsetupName: {
                 "${cryptsetupName}" = {
                   overrideStrategy = "asDropin";
                   requires = zpool.cryptsetup.requires;

@@ -23,7 +23,7 @@
       }
     ]
     [
-      (builtins.map (
+      (map (
         e:
           lib.optional e.check (
             lib.trivial.warnIf (

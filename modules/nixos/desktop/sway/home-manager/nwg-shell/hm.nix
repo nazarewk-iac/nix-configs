@@ -57,7 +57,7 @@ in {
       };
       exec = lib.mkOption {
         readOnly = true;
-        default = builtins.toString (
+        default = toString (
           pkgs.writeScript "nwg-drawer-launch" ''
             ${lib.getExe cfg.drawer.package} ${builtins.concatStringsSep " " cfg.drawer.opts}
           ''
@@ -77,7 +77,7 @@ in {
         home.packages = lib.pipe cfg [
           (lib.filterAttrs (n: v: (v.enable or false) && v ? package))
           builtins.attrValues
-          (builtins.map (v: v.package))
+          (map (v: v.package))
         ];
         services.nwg-shell.drawer.opts.wm = ''"$XDG_CURRENT_DESKTOP"'';
       }

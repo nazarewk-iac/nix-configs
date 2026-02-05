@@ -68,7 +68,7 @@
       ${instanceConfig.config}
       ${lib.optionalString instanceConfig.routes.ignore "route-noexec"}
       ${joinNonEmpty (
-        builtins.map (route: "route ${route.network} ${route.netmask}") instanceConfig.routes.add
+        map (route: "route ${route.network} ${route.netmask}") instanceConfig.routes.add
       )}
       # up handled by NixOS module
       ${mkOptionalScript "tls-verify" [

@@ -97,7 +97,7 @@ in {
 
             localAddress = lib.mkOption {
               type = with lib.types; str;
-              default = "127.5.18.${builtins.toString (20 - nbCfg.idx)}";
+              default = "127.5.18.${toString (20 - nbCfg.idx)}";
             };
 
             type = lib.mkOption {
@@ -180,7 +180,7 @@ in {
 
         systemd.network.networks = lib.pipe activeCfgs [
           (builtins.filter (nbCfg: nbCfg.systemd.enable))
-          (builtins.map (nbCfg: {
+          (map (nbCfg: {
             name = "40-kdn-netbird-${nbCfg.interface}";
             value = {
               matchConfig.Name = nbCfg.interface;
@@ -235,7 +235,7 @@ in {
           builtins.listToAttrs
         ];
         systemd.services = lib.pipe activeCfgs [
-          (builtins.map (nbCfg: {
+          (map (nbCfg: {
             name = nbCfg.serviceName;
             value = lib.mkIf (nbCfg.secrets != null) (
               lib.mkMerge [

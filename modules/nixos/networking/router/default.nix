@@ -60,7 +60,7 @@
       ]);
     runtimeEnv.TSIG_KEY_PATH = config.sops.templates."knot/sops-key.admin.conf".path;
     runtimeEnv.KNOT_ADDR = cfg.knot.localAddress;
-    runtimeEnv.KNOT_PORT = builtins.toString cfg.knot.localPort;
+    runtimeEnv.KNOT_PORT = toString cfg.knot.localPort;
     text = builtins.readFile ./kdn-router-knot-ddns-update.sh;
   };
 
@@ -73,12 +73,12 @@
           int
           path
         ];
-      toString = value:
+      convertToString = value:
         (
           {
             bool = builtins.toJSON;
           }
-          ."${builtins.typeOf value}" or builtins.toString
+          ."${builtins.typeOf value}" or convertToString
         )
         value;
       sectionType = with lib.types;
@@ -88,7 +88,7 @@
               value:
                 lib.pipe value [
                   lib.lists.toList
-                  (builtins.map toString)
+                  (map convertToString)
                 ]
             ) (listOf str)
           )
@@ -122,7 +122,7 @@
 
           renderSection = sectionName: entries:
             lib.pipe entries [
-              (lib.attrsets.mapAttrsToList (key: builtins.map (value: "${key}=${value}")))
+              (lib.attrsets.mapAttrsToList (key: map (value: "${key}=${value}")))
               builtins.concatLists
               (lines: [
                 "[${sectionName}]"
@@ -131,7 +131,7 @@
             ];
         in
           lib.pipe sections [
-            (builtins.map (
+            (map (
               sec:
                 lib.pipe sec.value [
                   (lib.attrsets.mapAttrsToList renderSection)
@@ -389,7 +389,7 @@
           template.network.values.Network = {
             Address = lib.pipe netCfg.addressing [
               builtins.attrValues
-              (builtins.map (addrCfg: ''${addrCfg.hosts."${hostname}".ip}/${addrCfg.netmask}''))
+              (map (addrCfg: ''${addrCfg.hosts."${hostname}".ip}/${addrCfg.netmask}''))
               (l: netCfg.address ++ l)
               lib.lists.unique
             ];
@@ -594,7 +594,7 @@ in {
                 (
                   if cfg.knot.localPort == 53
                   then cfg.knot.localAddress
-                  else "${cfg.knot.localAddress}@${builtins.toString cfg.knot.localPort}"
+                  else "${cfg.knot.localAddress}@${toString cfg.knot.localPort}"
                 )
               ]
               ++ v
@@ -788,7 +788,7 @@ in {
       }
       (
         let
-          services = builtins.map (name: "${name}.service") [
+          services = map (name: "${name}.service") [
             "kdn-knot-init"
             "knot"
             "kresd@"
@@ -866,7 +866,7 @@ in {
             ],
           }:
             lib.pipe chains [
-              (builtins.map (hook: ''
+              (map (hook: ''
                 chain ${hook} {
                   type filter hook ${hook} priority ${priority}; policy accept;
                   ${rule} log level info prefix "[name=${name}][family=${family}][hook=${hook}]: "
@@ -918,18 +918,18 @@ in {
           kea.dhcp4.settings = lib.pipe cfg.nets [
             builtins.attrValues
             (builtins.filter (netCfg: netCfg.type == "lan"))
-            (builtins.map (netCfg: {
+            (map (netCfg: {
               interfaces-config.interfaces = [netCfg.interface];
               subnet4 = lib.pipe netCfg.addressing [
                 builtins.attrValues
                 (builtins.filter (addrCfg: addrCfg.enable && addrCfg.type == "ipv4"))
-                (builtins.map (addrCfg: {
+                (map (addrCfg: {
                   id = addrCfg.subnet-id;
                   interface = netCfg.interface;
                   subnet = with addrCfg; "${network}/${netmask}";
                   pools = lib.pipe addrCfg.pools [
                     builtins.attrValues
-                    (builtins.map (pool: {
+                    (map (pool: {
                       pool = with pool; "${start} - ${end}";
                     }))
                   ];
@@ -954,7 +954,7 @@ in {
                   reservations = lib.pipe addrCfg.hosts [
                     (lib.attrsets.mapAttrsToList (
                       _: host:
-                        builtins.map (
+                        map (
                           ident:
                             ident
                             // {
@@ -1106,7 +1106,7 @@ in {
         kdn.networking.router.kresd.interfaces = lib.pipe cfg.nets [
           builtins.attrValues
           (builtins.filter (netCfg: netCfg.type == "lan"))
-          (builtins.map (netCfg: netCfg.interface))
+          (map (netCfg: netCfg.interface))
         ];
 
         # logging functions are available at https://gitlab.nic.cz/knot/knot-resolver/-/blob/v5.7.4/daemon/lua/sandbox.lua.in#L63
@@ -1130,7 +1130,7 @@ in {
             (lib.getExe' pkgs.systemd "systemctl")
             "reload-or-restart"
           ]
-          ++ builtins.map (i: "kresd@${builtins.toString i}.service") (
+          ++ map (i: "kresd@${toString i}.service") (
             lib.lists.range 1 config.services.kresd.instances
           );
 
@@ -1157,14 +1157,14 @@ in {
           [
             "log_level(${builtins.toJSON cfg.kresd.logLevel})"
             (lib.pipe cfg.kresd.upstreams [
-              (builtins.map (
+              (map (
                 upstreamCfg: let
                   toLuaTable = value:
                     lib.pipe value [
                       (builtins.concatStringsSep ", ")
                       (e: "{${e}}")
                     ];
-                  toLuaStringList = list: toLuaTable (builtins.map builtins.toJSON list);
+                  toLuaStringList = list: toLuaTable (map builtins.toJSON list);
                   authArgsList =
                     lib.attrsets.mapAttrsToList (
                       key: value: "${key}=${builtins.toJSON value}"
@@ -1172,9 +1172,9 @@ in {
                     upstreamCfg.auth;
 
                   nameserverEntries =
-                    upstreamCfg.nameserversRaw ++ builtins.map builtins.toJSON upstreamCfg.nameservers;
+                    upstreamCfg.nameserversRaw ++ map builtins.toJSON upstreamCfg.nameservers;
                   tlsNameserversArg = lib.pipe nameserverEntries [
-                    (builtins.map (
+                    (map (
                       ns:
                         lib.pipe ns [
                           (ns: [ns] ++ authArgsList)
@@ -1187,12 +1187,12 @@ in {
                     toLuaTable
                   ];
                   domainsArg = lib.pipe upstreamCfg.domains [
-                    (builtins.map builtins.toJSON)
+                    (map builtins.toJSON)
                     toLuaTable
                   ];
                   descriptionSnippet = lib.pipe upstreamCfg.description [
                     (lib.strings.splitString "\n")
-                    (builtins.map (line: "-- ${line}"))
+                    (map (line: "-- ${line}"))
                     (builtins.concatStringsSep "\n")
                   ];
                   policyFilter =
@@ -1240,7 +1240,7 @@ in {
                 - restarting both kresd and kea (to pick up new IPs) upon changes to addressing
                 - listening directly on the IP addresses, they don't need to be available due to `freebind = true`.
             */
-            (builtins.map (
+            (map (
                 iface: ''net.listen(net[${builtins.toJSON iface}], 53, { kind = 'dns', freebind = true })''
               )
               cfg.kresd.interfaces)
@@ -1250,10 +1250,10 @@ in {
             lib.mkMerge
           ];
         sops.templates = let
-          path = "/etc/knot-resolver/kresd.conf.d/50-${cfg.dropin.infix}-template.conf";
+          _path = "/etc/knot-resolver/kresd.conf.d/50-${cfg.dropin.infix}-template.conf";
         in {
-          "${path}" = {
-            inherit path;
+          "${_path}" = {
+            path = _path;
             mode = "0640";
             owner = "knot-resolver";
             group = "knot-resolver";
@@ -1295,19 +1295,19 @@ in {
           services.knot.settings = {
             server.listen = cfg.knot.listens;
             server.listen-tls =
-              builtins.map (
+              map (
                 listener:
                   {
-                    "${cfg.knot.localAddress}@${builtins.toString cfg.knot.localPort}" = "${cfg.knot.localAddress}@${builtins.toString cfg.knot.localPortTLS}";
+                    "${cfg.knot.localAddress}@${toString cfg.knot.localPort}" = "${cfg.knot.localAddress}@${toString cfg.knot.localPortTLS}";
                   }
               ."${listener}" or listener
               )
               cfg.knot.listens;
             server.listen-quic =
-              builtins.map (
+              map (
                 listener:
                   {
-                    "${cfg.knot.localAddress}@${builtins.toString cfg.knot.localPort}" = "${cfg.knot.localAddress}@${builtins.toString cfg.knot.localPortTLS}";
+                    "${cfg.knot.localAddress}@${toString cfg.knot.localPort}" = "${cfg.knot.localAddress}@${toString cfg.knot.localPortTLS}";
                   }
               ."${listener}" or listener
               )
@@ -1411,10 +1411,10 @@ in {
             {
               description = "local knot-dns";
               type = "STUB";
-              nameservers = ["${cfg.knot.localAddress}@${builtins.toString cfg.knot.localPort}"];
+              nameservers = ["${cfg.knot.localAddress}@${toString cfg.knot.localPort}"];
               domains = lib.pipe cfg.domains [
                 builtins.attrValues
-                (builtins.map (domainCfg: domainCfg.name))
+                (map (domainCfg: domainCfg.name))
               ];
             }
           ];
@@ -1473,7 +1473,7 @@ in {
                 }
               ];
               forward-ddns.ddns-domains = lib.pipe d2Domains [
-                (builtins.map (domain: {
+                (map (domain: {
                   name = domain;
                   key-name = keaTSIGName;
                   dns-servers = [
@@ -1492,7 +1492,7 @@ in {
                 lib.lists.unique
                 (builtins.sort builtins.lessThan)
 
-                (builtins.map (domain: {
+                (map (domain: {
                   name = domain;
                   key-name = keaTSIGName;
                   dns-servers = [
@@ -1507,7 +1507,7 @@ in {
             };
           };
           kdn.networking.router.domains = lib.pipe d2Domains [
-            (builtins.map (domain: {
+            (map (domain: {
               name = domain;
               value = {};
             }))
@@ -1581,7 +1581,7 @@ in {
         networking.firewall.trustedInterfaces = lib.pipe cfg.nets [
           builtins.attrValues
           (builtins.filter (netCfg: netCfg.firewall.trusted))
-          (builtins.map (netCfg: netCfg.interface))
+          (map (netCfg: netCfg.interface))
         ];
         networking.firewall.interfaces = lib.pipe cfg.nets [
           (lib.attrsets.mapAttrsToList (
@@ -1602,12 +1602,12 @@ in {
         kdn.networking.router.forwardings = lib.pipe cfg.nets [
           (lib.attrsets.mapAttrsToList (
             _: netCfg:
-              builtins.map (to: {
+              map (to: {
                 from = netCfg.interface;
                 inherit to;
               })
               netCfg.forward.to
-              ++ builtins.map (from: {
+              ++ map (from: {
                 inherit from;
                 to = netCfg.interface;
               })
@@ -1769,10 +1769,10 @@ in {
         sops.templates = lib.pipe cfg.nets [
           (lib.attrsets.mapAttrsToList (
             _: netCfg: let
-              path = mkDropInPath "${netCfg.unit.name}.network" "50-template";
+              _path = mkDropInPath "${netCfg.unit.name}.network" "50-template";
             in {
-              "${path}" = {
-                inherit path;
+              "${_path}" = {
+                path = _path;
                 mode = "0644";
                 content = netCfg.template.network._text;
               };

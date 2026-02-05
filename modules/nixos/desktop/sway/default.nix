@@ -102,7 +102,7 @@ in {
       };
       apply = builtins.mapAttrs (
         key: value: (lib.trivial.pipe value.units [
-          (builtins.map (unit: {
+          (map (unit: {
             name = unit;
             value = "${value.name}.${unit}";
           }))

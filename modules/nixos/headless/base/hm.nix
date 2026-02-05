@@ -57,7 +57,7 @@ in {
                   && lib.strings.hasPrefix "XDG_" name
                   && lib.strings.hasSuffix "_DIR" name
               ))
-              (builtins.map (
+              (map (
                 name:
                   lib.strings.removePrefix "${config.home.homeDirectory}/" config.home.sessionVariables."${name}"
               ))

@@ -77,14 +77,14 @@ in {
               type = with lib.types; listOf str;
               default = lib.pipe fileCfg.sopsFile [
                 lib.kdn.sops.parseSopsYAMLMetadata
-                (builtins.map (e: builtins.concatStringsSep "/" e.path))
+                (map (e: builtins.concatStringsSep "/" e.path))
                 (builtins.filter (lib.strings.hasPrefix fileCfg.keyPrefix))
               ];
             };
             options.discovered.entries = lib.mkOption {
               readOnly = true;
               default = lib.pipe fileCfg.discovered.keys [
-                (builtins.map (path: {
+                (map (path: {
                   name = "${fileCfg.namePrefix}/${lib.strings.removePrefix fileCfg.keyPrefix path}";
                   value =
                     fileCfg.sops
@@ -120,7 +120,7 @@ in {
       # avoids `error: infinite recursion encountered` by not referencing `config.sops.templates` and re-implementing placeholder
       default = lib.pipe config.sops.secrets [
         builtins.attrNames
-        (builtins.map (
+        (map (
           name: lib.attrsets.setAttrByPath (lib.strings.splitString "/" name) sopsPlaceholders."${name}"
         ))
         # dumb merge
@@ -206,7 +206,7 @@ in {
         sops.templates."placeholder.txt".content = ""; # fills-in `sops.placeholder`
         sops.secrets = lib.pipe cfg.files [
           builtins.attrValues
-          (builtins.map (fileCfg: fileCfg.discovered.entries))
+          (map (fileCfg: fileCfg.discovered.entries))
           lib.mkMerge
         ];
       })

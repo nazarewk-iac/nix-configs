@@ -186,8 +186,8 @@ in {
           "26:e2"
         ]
         [
-          (builtins.map lib.strings.toLower)
-          (builtins.map (
+          (map lib.strings.toLower)
+          (map (
             macSuffix: let
               mac = "48:da:35:6f:${macSuffix}";
               suffix = builtins.replaceStrings [":"] [""] macSuffix;

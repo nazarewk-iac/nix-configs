@@ -68,12 +68,12 @@
         then builtins.readFile p
         else "")
       (lib.strings.splitString "\n")
-      (builtins.map (builtins.match "^([[:alnum:]_-]+).*$"))
+      (map (builtins.match "^([[:alnum:]_-]+).*$"))
       lib.lists.flatten
       (builtins.filter (line: line != "" && line != null))
     ];
 
-  mkPythonDeps = path: pp: builtins.map (pkgName: pp."${pkgName}") (readRequirementNames path);
+  mkPythonDeps = path: pp: map (pkgName: pp."${pkgName}") (readRequirementNames path);
 
   pythonInstance = python.override {inherit packageOverrides;};
 

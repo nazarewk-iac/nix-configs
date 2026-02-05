@@ -62,7 +62,7 @@ in {
           systemdDNS = lib.pipe cfg.nameservers [
             builtins.attrValues
             (builtins.filter (nsCfg: nsCfg.enable))
-            (builtins.map (
+            (map (
               nsCfg:
                 builtins.concatStringsSep "" [
                   nsCfg.addr

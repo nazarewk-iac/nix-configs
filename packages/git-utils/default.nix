@@ -18,7 +18,7 @@
   } @ args: let
     name =
       args.name or (lib.trivial.pipe path [
-        builtins.toString
+        toString
         builtins.baseNameOf
         (lib.removeSuffix ".sh")
       ]);

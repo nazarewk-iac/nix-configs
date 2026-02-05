@@ -224,11 +224,11 @@ in {
         systemd.tmpfiles.rules = lib.trivial.pipe config.users.users [
           lib.attrsets.attrValues
           (builtins.filter (u: u.isNormalUser))
-          (builtins.map (
+          (map (
             user: let
               h = user.home;
-              u = builtins.toString (user.uid or user.name);
-              g = builtins.toString (user.gid or user.group);
+              u = toString (user.uid or user.name);
+              g = toString (user.gid or user.group);
             in [
               # fix user profile directory permissions
               "d /nix/var/nix/profiles/per-user/${user.name} 0750 ${u} ${g} - -"
@@ -247,7 +247,7 @@ in {
             boot.initrd.systemd.services."emergency" = {
               overrideStrategy = "asDropin";
               postStart = ''
-                if ! /bin/systemd-ask-password --timeout=${builtins.toString timeout} \
+                if ! /bin/systemd-ask-password --timeout=${toString timeout} \
                   --no-output --emoji=no \
                   "Are you there? Press enter to enter emergency shell."
                 then

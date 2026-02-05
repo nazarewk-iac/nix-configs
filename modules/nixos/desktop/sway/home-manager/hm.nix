@@ -300,13 +300,13 @@ in {
               }
             ];
             expandEntry = entry:
-              builtins.map (command: {
+              map (command: {
                 inherit (entry) criteria;
                 inherit command;
               })
               entry.commands;
           in
-            lib.lists.flatten (builtins.map expandEntry entries);
+            lib.lists.flatten (map expandEntry entries);
 
           startup = [
             {command = lib.getExe pkgs.sway-assign-cgroups;}

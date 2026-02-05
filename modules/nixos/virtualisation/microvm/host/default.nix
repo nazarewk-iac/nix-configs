@@ -49,7 +49,7 @@ in {
 
       systemd.tmpfiles.rules = lib.pipe config.microvm.vms [
         builtins.attrValues
-        (builtins.map (
+        (map (
           microVMCfg: let
             # vm.config is a NixOS module, which in turn has `.{options,config}` attributes...
             vmConfig = microVMCfg.config.config;

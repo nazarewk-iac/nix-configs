@@ -10,9 +10,9 @@
     suffixes ? [],
   }: let
     allFiles = lib.filesystem.listFilesRecursive src;
-    suffixMatchers = builtins.map lib.strings.hasSuffix suffixes;
+    suffixMatchers = map lib.strings.hasSuffix suffixes;
     filteredFiles = builtins.filter (pathValue: let
-      pathStr = builtins.toString pathValue;
+      pathStr = toString pathValue;
       matchesSuffixes = builtins.any (fn: fn pathStr) suffixMatchers;
     in
       pathValue != curFile && matchesSuffixes)

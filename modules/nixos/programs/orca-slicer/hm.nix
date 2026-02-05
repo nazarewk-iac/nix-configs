@@ -34,7 +34,7 @@ in {
               in
                 builtins.filter (
                   p: let
-                    patchFileName = builtins.toString p;
+                    patchFileName = toString p;
                   in
                     !(builtins.any (
                         filenameSuffix: lib.strings.hasSuffix filenameSuffix patchFileName

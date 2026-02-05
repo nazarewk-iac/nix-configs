@@ -38,14 +38,14 @@
                 internal = true;
                 type = lib.types.path;
                 default = let
-                  path = disk.config.path;
-                  partNum = builtins.toString part.config.num;
+                  _path = disk.config.path;
+                  partNum = toString part.config.num;
                 in
-                  if lib.strings.hasPrefix "/dev/disk/" path
-                  then "${path}-part${partNum}"
-                  else if (builtins.match "/dev/[^/]+" path) != null
-                  then "${path}${partNum}"
-                  else builtins.throw "Don't know how to generate partition number for disk ${path}";
+                  if lib.strings.hasPrefix "/dev/disk/" _path
+                  then "${_path}-part${partNum}"
+                  else if (builtins.match "/dev/[^/]+" _path) != null
+                  then "${_path}${partNum}"
+                  else throw "Don't know how to generate partition number for disk ${_path}";
               };
               options.size = lib.mkOption {
                 type = partSizeType;
@@ -282,12 +282,12 @@ in {
                 (lib.filterAttrs (luksVolName: luksVol: luksVol.zpool.name == zpool.name))
                 (builtins.mapAttrs (luksVolName: luksVol: luksVol.name))
                 builtins.attrValues
-                (builtins.map (luksName: "systemd-cryptsetup@${utils.escapeSystemdPath luksName}"))
+                (map (luksName: "systemd-cryptsetup@${utils.escapeSystemdPath luksName}"))
               ];
             };
             options.cryptsetup.services = lib.mkOption {
               type = with lib.types; listOf str;
-              default = builtins.map (name: "${name}.service") zpool.config.cryptsetup.names;
+              default = map (name: "${name}.service") zpool.config.cryptsetup.names;
             };
             options.initrd.failureTarget = lib.mkOption {
               type = with lib.types; str;

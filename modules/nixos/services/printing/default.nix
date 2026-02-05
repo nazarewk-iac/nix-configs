@@ -29,7 +29,7 @@ in {
       ];
       security.polkit.extraConfig = let
         isAllowedGroup = lib.pipe cfg.extraAdminGroups [
-          (builtins.map (group: ''subject.isInGroup("${group}")''))
+          (map (group: ''subject.isInGroup("${group}")''))
           (builtins.concatStringsSep " || ")
           (v: "( ${v} )")
         ];

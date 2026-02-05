@@ -1,7 +1,7 @@
 {lib, ...}: let
   # escapeShellArg = arg: "'${replaceStrings ["'"] ["'\\''"] (toString arg)}'";
   # similar lib.escapeShellArg, but escapes double-quotes and dollar signs instead of single-quotes
-  escapeShellDefaultValue = arg: ''"${builtins.replaceStrings [''"'' "$"] [''\"'' "\$"] (builtins.toString arg)}"'';
+  escapeShellDefaultValue = arg: ''"${builtins.replaceStrings [''"'' "$"] [''\"'' "\$"] (toString arg)}"'';
   escapeShellDefault = n: v: "\"\${${n}:-${escapeShellDefaultValue v}}\"";
 
   escapeShellDefaultAssignment = n: v: "${n}=${escapeShellDefault n v}";
@@ -14,7 +14,7 @@
   } @ args: let
     name =
       args.name or (lib.trivial.pipe path [
-        builtins.toString
+        toString
         builtins.baseNameOf
         (lib.removeSuffix ".sh")
       ]);

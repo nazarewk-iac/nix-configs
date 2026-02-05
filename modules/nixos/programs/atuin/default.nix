@@ -31,7 +31,7 @@ in {
         kdn.programs.atuin.users = ["root"];
         kdn.programs.atuin.autologinUsers = ["root"];
         home-manager.users = lib.pipe cfg.users [
-          (builtins.map (username: {
+          (map (username: {
             name = username;
             value = {
               kdn.programs.atuin.enable = true;
@@ -48,7 +48,7 @@ in {
       (lib.mkIf cfg.enableZFSWorkaround (
         let
           users = lib.pipe cfg.users [
-            (builtins.map (
+            (map (
               username: let
                 user = config.users.users."${username}";
                 tmp.history = "${getRuntimeDir username}/history.db";
@@ -90,7 +90,7 @@ in {
                 lib.nameValuePair username {
                   uid = user.uid;
                   litestream.restores =
-                    builtins.map (
+                    map (
                       db:
                         litestream.cmd "restore" [
                           "-if-replica-exists"
@@ -158,7 +158,7 @@ in {
       })
       (lib.mkIf config.kdn.security.secrets.allowed {
         systemd.services = lib.pipe cfg.autologinUsers [
-          (builtins.map (username: {
+          (map (username: {
             name = "kdn-atuin-login-${username}";
             value = {
               wantedBy = ["network-online.target"];
