@@ -60,6 +60,12 @@
   hosts.lan.moak.ifaces.default.mac = "00:23:79:00:31:2F";
   hosts.lan.pryll.ifaces.default.mac = "01:90:1b:0e:84:8c:f7";
   hosts.lan.anji-vm-macos-01.default.mac = "f6:f2:45:7a:32:79";
+
+  stripAddr = value:
+    lib.pipe value [
+      (lib.strings.splitString "/")
+      lib.lists.head
+    ];
 in {
   imports = [
     kdnConfig.self.nixosModules.default
@@ -257,16 +263,17 @@ in {
         addressing.ipv4 = {
           subnet-id = 2332818586;
           network = "10.92.0.0";
-          netmask = "16";
+          netmask = "24";
           pools.default.start = "10.92.0.32";
           pools.default.end = "10.92.0.254";
           hosts.etra.ip = "10.92.0.1";
+          hosts.k8s.ip = stripAddr kdnConfig.k8s.clusters.pic.apiserver.vrrp.ipv4;
         };
         addressing.ipv6-local = with ula.pic; {
           subnet-id = 22449285;
           inherit network netmask;
           hosts.etra.ip = address.gateway;
-          hosts.k8s.ip = "fd12:ed4e:366d:eb17:ad77:71d3:4170:ed6d";
+          hosts.k8s.ip = stripAddr kdnConfig.k8s.clusters.pic.apiserver.vrrp.ipv6;
         };
         addressing.ipv6-public = with netconf.ipv6.network.etra.pic; {
           subnet-id = 197717597;

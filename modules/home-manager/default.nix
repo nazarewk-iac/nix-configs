@@ -27,7 +27,7 @@ in {
     ++ kdnConfig.util.loadModules {
       curFile = ./default.nix;
       src = ./.;
-      withDefault = true;
+      suffixes = ["/default.nix"];
     };
   config = lib.mkIf cfg.enable (
     lib.mkMerge [

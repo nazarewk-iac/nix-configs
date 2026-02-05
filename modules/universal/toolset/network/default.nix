@@ -40,6 +40,8 @@ in {
       programs.wireshark.enable = true;
       kdn.services.iperf3.enable = true;
       kdn.env.packages = with pkgs; [
+        conntrack-tools
+        ebtables
         iptables
         nftables
       ];

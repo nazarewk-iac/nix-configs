@@ -12,7 +12,7 @@
     ++ kdnConfig.util.loadModules {
       curFile = ./default.nix;
       src = ./.;
-      withDefault = true;
+      suffixes = ["/default.nix"];
     };
 
   options.kdn = {
@@ -42,7 +42,7 @@
           imports = kdnConfig.util.loadModules {
             curFile = ./default.nix;
             src = ./.;
-            withDefault = true;
+            suffixes = ["/default.nix" "/hm.nix"];
           };
         })
       ];

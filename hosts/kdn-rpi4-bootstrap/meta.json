@@ -3,5 +3,6 @@
   "moduleType": "nixos",
   "features": {
     "rpi4": true
-  }
+  },
+  "hostName": "kdn-rpi4-bootstrap"
 }

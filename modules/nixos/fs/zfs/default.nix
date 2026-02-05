@@ -44,16 +44,12 @@ in {
     };
     package = lib.mkOption {
       type = with lib.types; package;
-      default = builtins.any (fs: fs.fsType == "zfs") (builtins.attrValues config.fileSystems);
+      default = pkgs.zfs_unstable;
     };
 
-    containers.enable = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-    };
     containers.fsname = lib.mkOption {
       type = lib.types.str;
-      default = "${config.kdn.hostName}-main/${config.kdn.hostName}/containers/storage";
+      default = "${config.kdn.hostName}-main/containerd/storage";
     };
   };
 
@@ -65,7 +61,7 @@ in {
         boot.kernelParams = ["nohibernate"];
         boot.initrd.supportedFilesystems = ["zfs"];
         boot.supportedFilesystems = ["zfs"];
-        boot.zfs.package = pkgs.zfs_unstable;
+        boot.zfs.package = cfg.package;
 
         # for now trying rt kernel
         ## see https://github.com/NixOS/nixpkgs/issues/169457
@@ -98,7 +94,7 @@ in {
         virtualisation.docker.storageDriver = "zfs";
         virtualisation.podman.extraPackages = [pkgs.zfs];
       }
-      (lib.mkIf (config.kdn.virtualisation.containers.enable && cfg.containers.enable) {
+      (lib.mkIf (config.virtualisation.containerd.enable) {
         virtualisation.containers.storage.settings.storage.driver = lib.mkForce "zfs";
         virtualisation.containers.storage.settings.storage.options.zfs.fsname = cfg.containers.fsname;
       })

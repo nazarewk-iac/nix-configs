@@ -8,6 +8,13 @@ info STARTING
 trap 'info FINISHED' EXIT
 test -z "${DEBUG:-}" || set -x
 
-nom build -vL ".#nixosConfigurations.${1}.config.system.build.formatScript" -o "disko-${1}-format"
-nom build -vL ".#nixosConfigurations.${1}.config.system.build.mountScript" -o "disko-${1}-mount"
-nom build -vL ".#nixosConfigurations.${1}.config.system.build.diskoScript" -o "disko-${1}-recreate"
+host="${1}"
+declare -A scripts
+
+scripts["format"]="formatScript"
+scripts["mount"]="mountScript"
+scripts["recreate"]="diskoScript"
+
+for key in "${!scripts[@]}" ; do
+  nom build -vL ".#nixosConfigurations.${host}.config.system.build.${scripts[${key}]}" -o "disko-${host}-${key}"
+done

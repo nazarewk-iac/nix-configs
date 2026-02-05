@@ -1640,7 +1640,7 @@ in {
                 (lib.mkIf (netCfg.netdev.kind == "bond" && netCfg.netdev.bond.mode == "aggregate") {
                   bondConfig = {
                     Mode = "802.3ad";
-                    TransmitHashPolicy = "layer2+3";
+                    TransmitHashPolicy = "encap3+4";
                     LACPTransmitRate = "fast";
                     MIIMonitorSec = "100ms";
                   };

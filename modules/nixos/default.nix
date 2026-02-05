@@ -21,7 +21,7 @@ in {
     ++ kdnConfig.util.loadModules {
       curFile = ./default.nix;
       src = ./.;
-      withDefault = true;
+      suffixes = ["/default.nix"];
     };
 
   config = lib.mkIf config.kdn.enable (
@@ -37,6 +37,7 @@ in {
             imports = kdnConfig.util.loadModules {
               curFile = ./default.nix;
               src = ./.;
+              suffixes = ["/hm.nix"];
             };
           })
         ];

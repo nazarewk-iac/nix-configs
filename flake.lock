@@ -320,6 +320,48 @@
         "type": "github"
       }
     },
+    "disko-zfs": {
+      "inputs": {
+        "disko": [
+          "disko"
+        ],
+        "flake-parts": [
+          "flake-parts"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1764954244,
+        "narHash": "sha256-E+Dcz/wXTCRcVBoeQyv8vxB0BJjyndeYvRtKNQbsay8=",
+        "owner": "numtide",
+        "repo": "disko-zfs",
+        "rev": "5468a4e14bcc1fb6c289fc1b0f783f4290553377",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "disko-zfs",
+        "type": "github"
+      }
+    },
+    "easykubenix": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1768833943,
+        "narHash": "sha256-0JBmUnbMrDAo02kiW8F3zXz2yBquLdOK1RZE8sCYnQc=",
+        "owner": "Lillecarl",
+        "repo": "easykubenix",
+        "rev": "1cd24badac999c1487ed994464bdaeceed62bc52",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Lillecarl",
+        "repo": "easykubenix",
+        "type": "github"
+      }
+    },
     "empty": {
       "locked": {
         "lastModified": 1708697125,
@@ -759,6 +801,32 @@
         "type": "github"
       }
     },
+    "nix-fast-build": {
+      "inputs": {
+        "flake-parts": [
+          "flake-parts"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "treefmt-nix": [
+          "treefmt-nix"
+        ]
+      },
+      "locked": {
+        "lastModified": 1768708537,
+        "narHash": "sha256-U7wjqn3tNt+okbxPNOFy7Rr9NUvWYL7SXBhr1oaRI60=",
+        "owner": "Mic92",
+        "repo": "nix-fast-build",
+        "rev": "87930e949d526b5ebdea7109275b3d35b124386a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Mic92",
+        "repo": "nix-fast-build",
+        "type": "github"
+      }
+    },
     "nix-github-actions": {
       "inputs": {
         "nixpkgs": [
@@ -1179,6 +1247,8 @@
         "colmena": "colmena",
         "crane": "crane",
         "disko": "disko",
+        "disko-zfs": "disko-zfs",
+        "easykubenix": "easykubenix",
         "empty": "empty",
         "flake-compat": "flake-compat_2",
         "flake-parts": "flake-parts_2",
@@ -1191,6 +1261,7 @@
         "lanzaboote": "lanzaboote",
         "microvm": "microvm",
         "nix-darwin": "nix-darwin_2",
+        "nix-fast-build": "nix-fast-build",
         "nix-homebrew": "nix-homebrew",
         "nixcasks": "nixcasks",
         "nixos-anywhere": "nixos-anywhere",

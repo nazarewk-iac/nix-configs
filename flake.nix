@@ -27,7 +27,10 @@
   inputs.colmena.url = "github:zhaofengli/colmena";
   inputs.crane.url = "github:ipetkov/crane";
   inputs.disko.url = "github:nix-community/disko";
+  inputs.disko-zfs.url = "github:numtide/disko-zfs";
   inputs.empty.url = "github:nix-systems/empty";
+  inputs.easykubenix.url = "github:Lillecarl/easykubenix";
+  inputs.easykubenix.flake = false;
   inputs.flake-compat.url = "github:edolstra/flake-compat";
   inputs.flake-parts.url = "github:hercules-ci/flake-parts";
   inputs.flake-utils.url = "github:numtide/flake-utils";
@@ -39,6 +42,7 @@
   inputs.lanzaboote.url = "github:nix-community/lanzaboote";
   inputs.microvm.url = "github:astro/microvm.nix";
   inputs.nix-darwin.url = "github:LnL7/nix-darwin";
+  inputs.nix-fast-build.url = "github:Mic92/nix-fast-build";
   inputs.nix-homebrew.url = "github:zhaofengli/nix-homebrew";
   inputs.nixcasks.url = "github:jacekszymanski/nixcasks";
   inputs.nixos-anywhere.url = "github:numtide/nixos-anywhere";
@@ -73,7 +77,13 @@
   inputs.colmena.inputs.nixpkgs.follows = "nixpkgs";
   inputs.colmena.inputs.stable.follows = "nixpkgs-stable";
   inputs.disko.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.disko-zfs.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.disko-zfs.inputs.flake-parts.follows = "flake-parts";
+  inputs.disko-zfs.inputs.disko.follows = "disko";
   inputs.flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs-lib";
+  inputs.nix-fast-build.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.nix-fast-build.inputs.flake-parts.follows = "flake-parts";
+  inputs.nix-fast-build.inputs.treefmt-nix.follows = "treefmt-nix";
   inputs.hardware-report.inputs.flake-utils.follows = "flake-utils";
   inputs.hardware-report.inputs.nixpkgs.follows = "nixpkgs";
   inputs.hardware-report.inputs.rust-overlay.follows = "rust-overlay";
@@ -136,7 +146,12 @@
         inherit lib;
         kdnConfig = self.kdnMetaModule.config;
       })
-      (final: prev: {nixos-anywhere = inputs.nixos-anywhere.packages."${final.stdenv.hostPlatform.system}".default;})
+      (final: prev: let
+        getDefault = input: input.packages."${final.stdenv.hostPlatform.system}".default;
+      in {
+        nixos-anywhere = getDefault inputs.nixos-anywhere;
+        nix-fast-build = getDefault inputs.nix-fast-build;
+      })
       (
         final: prev: let
           src = "${inputs.nixcasks}";
@@ -151,7 +166,7 @@
             [
             ]
             [
-              (builtins.map (name: {
+              (map (name: {
                 inherit name;
                 value = originalCasks."${name}".overrideAttrs nclib.force-dmg;
               }))
@@ -223,7 +238,12 @@
       (lib.attrsets.filterAttrs (_: host: host.moduleType == "nixos"))
       (builtins.mapAttrs (_: host:
         lib.nixosSystem {
-          inherit (host) system specialArgs modules;
+          inherit (host) system specialArgs;
+          modules =
+            host.modules
+            ++ [
+              ({kdnConfig, ...}: {config.kdn.hostName = lib.mkDefault kdnConfig.hostName;})
+            ];
         }))
     ];
     flake.darwinModules.default = ./modules/darwin;
@@ -233,7 +253,12 @@
         lib.darwinSystem {
           inherit (host) lib specialArgs;
           system = null;
-          modules = host.modules ++ [{nixpkgs.system = host.system;}];
+          modules =
+            host.modules
+            ++ [
+              {nixpkgs.system = host.system;}
+              ({kdnConfig, ...}: {config.kdn.hostName = lib.mkDefault kdnConfig.hostName;})
+            ];
         }))
     ];
 
@@ -245,20 +270,38 @@
         };
         defaults.deployment.targetUser = "kdn";
       }
-      (lib.attrsets.mapAttrsToList (name: host: {
+      (lib.attrsets.mapAttrsToList (name: module: let
+          host = self.hostConfigurations."${name}";
+        in {
           meta.nodeSpecialArgs."${name}".__init = host.specialArgs;
           meta.nodeNixpkgs."${name}".__init = import inputs.nixpkgs {
             inherit (host.specialArgs.kdnConfig) system;
             overlays = [self.overlays.default];
           };
-          "${name}".__init = {imports = host.modules;};
+          "${name}".__init = {
+            imports =
+              host.modules
+              ++ [
+                module
+                ({kdnConfig, ...}: {
+                  config.kdn.hostName = lib.mkDefault kdnConfig.hostName;
+                })
+              ];
+          };
         })
-        (lib.flip builtins.intersectAttrs self.hostConfigurations {
-          pwet = null;
-          turo = null;
-          yost = null;
-        }));
+        {
+          etra.deployment.targetHost = "etra.lan.etra.net.int.kdn.im.";
+          pwet.deployment.targetHost = "pwet.pic.etra.net.int.kdn.im.";
+          turo.deployment.targetHost = "turo.pic.etra.net.int.kdn.im.";
+          yost.deployment.targetHost = "yost.pic.etra.net.int.kdn.im.";
+        });
     flake.colmenaHive = lib.colmena.makeHive self.colmena;
+    flake.mkEasykubenix = system: modules:
+      import inputs.easykubenix {
+        inherit modules;
+        pkgs = inputs.nixpkgs.legacyPackages.${system}.extend self.overlays.default;
+        specialArgs = (self.kdnMetaModule.config.output.mkSubmodule {moduleType = "easykubenix";}).specialArgs;
+      };
 
     perSystem = {
       config,
@@ -297,6 +340,14 @@
         );
       };
       apps.colmena = inputs'.colmena.apps.default;
+      apps.nix-fast-build = {
+        type = "app";
+        program = lib.getExe inputs'.nix-fast-build.packages.default;
+      };
+      apps.disko-zfs = {
+        type = "app";
+        program = lib.getExe inputs'.disko-zfs.packages.default;
+      };
       checks = pkgs.callPackages ./checks (self.kdnMetaModule {
         moduleType = "checks";
       });

@@ -14,6 +14,7 @@ in {
     (kdnConfig.util.ifHMParent {home-manager.sharedModules = [{kdn.profile.machine.workstation.enable = true;}];})
     {
       kdn.toolset.diagrams.enable = true;
+      kdn.services.k8s.management.enable = true;
     }
   ]);
 }

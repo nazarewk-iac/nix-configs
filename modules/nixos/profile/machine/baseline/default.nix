@@ -279,7 +279,7 @@ in {
         kdn.networking.netbird.default.environment.NB_BLOCK_INBOUND = "true";
 
         kdn.networking.netbird.clients.priv.idx = 1; # private account
-        kdn.networking.netbird.clients.priv.enable = true;
+        kdn.networking.netbird.clients.priv.enable = lib.mkDefault true;
         kdn.networking.netbird.clients.priv.environment.NB_DISABLE_DNS = "false";
         kdn.networking.netbird.clients.priv.environment.NB_BLOCK_INBOUND = "false";
 

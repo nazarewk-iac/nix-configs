@@ -3,26 +3,59 @@
   config,
   options,
   ...
-} @ args: {
+} @ args: let
+  loadModules = {
+    curFile,
+    src,
+    suffixes ? [],
+  }: let
+    allFiles = lib.filesystem.listFilesRecursive src;
+    suffixMatchers = builtins.map lib.strings.hasSuffix suffixes;
+    filteredFiles = builtins.filter (pathValue: let
+      pathStr = builtins.toString pathValue;
+      matchesSuffixes = builtins.any (fn: fn pathStr) suffixMatchers;
+    in
+      pathValue != curFile && matchesSuffixes)
+    allFiles;
+  in
+    filteredFiles;
+
+  mkSubmodule = module: let
+    mod = lib.evalModules {
+      class = "kdn-meta";
+      modules = [
+        ./.
+        module
+        {parent = lib.mkOverride 1099 (builtins.removeAttrs config ["_module"]);}
+        (lib.mkOverride 1100 (builtins.removeAttrs config [
+          "output"
+          "parents"
+          "specialArgs"
+          "util"
+        ]))
+      ];
+    };
+  in
+    mod.config;
+
+  imports = loadModules {
+    curFile = ./default.nix;
+    src = ./.;
+    suffixes = ["/default.nix"];
+  };
+in {
+  imports = imports;
+
+  options.output.imports = lib.mkOption {default = imports;};
+
   options.output.mkSubmodule = lib.mkOption {
     readOnly = true;
-    default = module: let
-      mod = lib.evalModules {
-        class = "kdn-meta";
-        modules = [
-          ./.
-          module
-          {parent = lib.mkOverride 1099 (builtins.removeAttrs config ["_module"]);}
-          (lib.mkOverride 1100 (builtins.removeAttrs config [
-            "output"
-            "parents"
-            "specialArgs"
-            "util"
-          ]))
-        ];
-      };
-    in
-      mod.config;
+    default = mkSubmodule;
+  };
+
+  options.hostName = lib.mkOption {
+    type = with lib.types; nullOr str;
+    default = null;
   };
 
   options.system = lib.mkOption {
@@ -32,7 +65,7 @@
     type = with lib.types; str;
   };
   options.modules = lib.mkOption {
-    type = with lib.types; listOf path;
+    type = with lib.types; listOf anything;
     default =
       if config.parent != config.util.emptyParent && config.parent.moduleType == config.moduleType
       then config.parent.modules
@@ -122,37 +155,7 @@
   options.util.loadModules = lib.mkOption {
     internal = true;
     readOnly = true;
-    default = {
-      curFile,
-      src,
-      extraSuffixes ? [],
-      withDefault ? false,
-    }: let
-      moduleSuffix =
-        {
-          nixos = "nixos.nix";
-          darwin = "darwin.nix";
-          home-manager = "hm.nix";
-          nix-on-droid = "droid.nix";
-        }."${config.moduleType}";
-
-      allFiles = lib.filesystem.listFilesRecursive src;
-      suffixes =
-        lib.lists.optionals withDefault ["/default.nix"]
-        ++ extraSuffixes
-        ++ [
-          "/${moduleSuffix}"
-          ".${moduleSuffix}"
-        ];
-      suffixMatchers = builtins.map lib.strings.hasSuffix suffixes;
-      filteredFiles = builtins.filter (pathValue: let
-        pathStr = builtins.toString pathValue;
-        matchesSuffixes = builtins.any (fn: fn pathStr) suffixMatchers;
-      in
-        pathValue != curFile && matchesSuffixes)
-      allFiles;
-    in
-      filteredFiles;
+    default = loadModules;
   };
   options.util.args = lib.mkOption {
     internal = true;

@@ -1,4 +1,5 @@
 {
   "system": "x86_64-linux",
-  "moduleType": "nixos"
+  "moduleType": "nixos",
+  "hostName": "turo"
 }

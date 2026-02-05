@@ -84,7 +84,7 @@
                     ;;
                   esac
                   asusctl "--$to-kbd-bright"
-                  notify-send "Keyboard LED brightness" "$(asusctl --kbd-bright | tail -n1)"
+                  notify-send "Keyboard LED brightness" "changed to $to"
                 }
 
                 "cmd_''${1}" "''${@:2}"

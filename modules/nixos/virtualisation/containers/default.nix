@@ -35,9 +35,7 @@ in {
     ];
     home-manager.sharedModules = [
       {
-        kdn = {
-          virtualisation.containers.enable = true;
-        };
+        kdn.virtualisation.containers.enable = true;
       }
     ];
   };

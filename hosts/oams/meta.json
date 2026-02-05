@@ -3,5 +3,6 @@
   "moduleType": "nixos",
   "features": {
     "microvm-host": true
-  }
+  },
+  "hostName": "oams"
 }

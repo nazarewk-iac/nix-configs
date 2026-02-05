@@ -37,14 +37,14 @@ func init() {
 	aliases := make(map[string]string)
 	rootCmd.AddCommand(hostCmd)
 
-	hostCmd.PersistentFlags().StringP("hostname", "n", "", "host's name")
-	hostCmd.PersistentFlags().StringP("address", "a", "", "host's address to handle")
+	hostCmd.Flags().StringP("hostname", "n", "", "host's name")
+	hostCmd.Flags().StringP("address", "a", "", "host's address to handle")
 	aliases["name"] = "hostname"
-	if err := hostCmd.MarkPersistentFlagRequired("hostname"); err != nil {
+	if err := hostCmd.MarkFlagRequired("hostname"); err != nil {
 		panic(err)
 	}
 
-	hostCmd.PersistentFlags().SetNormalizeFunc(func(f *pflag.FlagSet, name string) pflag.NormalizedName {
+	hostCmd.Flags().SetNormalizeFunc(func(f *pflag.FlagSet, name string) pflag.NormalizedName {
 		if alias, ok := aliases[name]; ok {
 			name = alias
 		}

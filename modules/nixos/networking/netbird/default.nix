@@ -157,7 +157,7 @@ in {
         ];
 
         systemd.targets.netbird = let
-          services = builtins.map (nbCfg: "${nbCfg.serviceName}.service") activeCfgs;
+          services = map (nbCfg: "${nbCfg.serviceName}.service") activeCfgs;
         in {
           wants = services;
           after = services;
@@ -166,9 +166,8 @@ in {
       }
       {
         services.netbird.clients = lib.pipe activeCfgs [
-          (builtins.map (nbCfg: {
-            name = nbCfg.name;
-            value = {
+          (map (nbCfg: {
+            "${nbCfg.name}" = {
               port = nbCfg.port;
               dns-resolver.address = nbCfg.localAddress;
               environment =
@@ -176,7 +175,7 @@ in {
                 // builtins.mapAttrs (_: lib.mkDefault) nbCfg.environment;
             };
           }))
-          builtins.listToAttrs
+          lib.mkMerge
         ];
 
         systemd.network.networks = lib.pipe activeCfgs [
@@ -210,7 +209,7 @@ in {
           builtins.listToAttrs
         ];
         kdn.disks.persist."usr/data".directories = lib.pipe activeCfgs [
-          (builtins.map (nbCfg: {
+          (map (nbCfg: {
             directory = "/var/lib/${nbCfg.serviceName}";
             user = nbCfg.userName;
             group = nbCfg.groupName;
@@ -219,14 +218,13 @@ in {
         ];
 
         users.groups = lib.pipe activeCfgs [
-          (builtins.map (nbCfg: lib.attrsets.nameValuePair nbCfg.groupName {members = nbCfg.users;}))
+          (map (nbCfg: lib.attrsets.nameValuePair nbCfg.groupName {members = nbCfg.users;}))
           builtins.listToAttrs
         ];
       }
       (lib.mkIf config.kdn.security.secrets.allowed {
-        services.netbird.clients = lib.pipe config.kdn.networking.netbird.clients [
-          builtins.attrValues
-          (builtins.map (nbCfg: {
+        services.netbird.clients = lib.pipe activeCfgs [
+          (map (nbCfg: {
             name = nbCfg.name;
             value = lib.mkIf (nbCfg.secrets != null && nbCfg.secrets ? "${nbCfg.type}".setup-key) {
               login.enable = true;

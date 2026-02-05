@@ -1,4 +1,5 @@
 {
   "system": "x86_64-darwin",
-  "moduleType": "darwin"
+  "moduleType": "darwin",
+  "hostName": "anji"
 }

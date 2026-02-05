@@ -32,6 +32,7 @@ in {
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       kdn.env.packages = with pkgs; [
+        kdn.kdnctl
         # (yt-dlp.overrideAttrs (final: {
         #   version = "2025.09.26";
         #   src = pkgs.fetchFromGitHub {

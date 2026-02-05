@@ -1,4 +1,5 @@
 {
   "system": "aarch64-linux",
-  "moduleType": "nixos"
+  "moduleType": "nixos",
+  "hostName": "orr"
 }
