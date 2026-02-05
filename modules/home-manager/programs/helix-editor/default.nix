@@ -25,14 +25,24 @@ in {
         };
         programs.helix.enable = true;
         programs.helix.package = appCfg.package.final;
-        programs.helix.settings.theme = "darcula-solid";
-        programs.helix.settings.editor.soft-wrap.enable = true;
-        programs.helix.settings.editor.insert-final-newline = true;
-        programs.helix.settings.editor.trim-final-newlines = true;
-        programs.helix.settings.editor.trim-trailing-whitespace = true;
-        programs.helix.settings.editor.auto-save.focus-lost = true;
-        programs.helix.settings.editor.auto-save.after-delay.enable = true;
-        programs.helix.settings.editor.auto-save.after-delay.timeout = 300;
+
+        programs.helix.settings = {
+          theme = "darcula-solid";
+          editor = {
+            soft-wrap.enable = true;
+            default-yank-register = "+";
+            insert-final-newline = true;
+            trim-final-newlines = true;
+            trim-trailing-whitespace = true;
+            auto-save.focus-lost = true;
+            auto-save.after-delay.enable = true;
+            auto-save.after-delay.timeout = 300;
+            indent-guides.render = true;
+            indent-guides.character = "╎";
+            end-of-line-diagnostics = "hint";
+            inline-diagnostics.cursor-line = "hint";
+          };
+        };
         programs.helix.defaultEditor = true;
         programs.vim.defaultEditor = false;
         stylix.targets.helix.enable = false;
