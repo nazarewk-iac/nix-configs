@@ -246,7 +246,8 @@ in {
         prefix.ula = with ula.lan; "${network}/${netmask}";
         prefix.public = with netconf.ipv6.network.etra.lan; "${network}/${netmask}";
       };
-
+    }
+    {
       kdn.networking.router.nets.pic = {
         type = "lan";
         lan.uplink = "wan";
@@ -279,6 +280,36 @@ in {
           subnet-id = 197717597;
           inherit network netmask;
           hosts.etra.ip = address.gateway;
+        };
+      };
+    }
+    {
+      kdn.networking.router.nets.mgmt = {
+        type = "lan";
+        lan.uplink = "wan";
+        netdev.kind = "vlan";
+        vlan.id = 946;
+        interfaces = ["lan"];
+
+        addressing.ipv4 = {
+          subnet-id = 1382200272;
+          network = "192.168.252.0";
+          netmask = "24";
+          pools.default.start = "192.168.252.128";
+          pools.default.end = "192.168.252.159";
+
+          # TODO: commented hosts aren't configured yet
+          hosts.etra.ip = "192.168.252.1";
+          hosts.gipe.ip = "192.168.252.2"; # TODO: configure
+          hosts.talt.ip = "192.168.252.3"; # TODO: configure
+          hosts.drek.ip = "192.168.252.4";
+          hosts.quip.ip = "192.168.252.5";
+          hosts.cafal.ip = "192.168.252.6"; # TODO: configure
+          hosts.feren.ip = "192.168.252.7"; # TODO: configure
+          hosts.moak.ip = "192.168.252.8"; # TODO: configure
+          hosts.turb.ip = "192.168.252.9"; # TODO: configure
+          hosts.eap773.ip = "192.168.252.10";
+          hosts.yelk.ip = "192.168.252.13";
         };
       };
     }

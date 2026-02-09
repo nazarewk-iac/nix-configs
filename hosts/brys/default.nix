@@ -202,6 +202,24 @@
       };
     }
     {
+      networking.hosts."192.168.88.1" = ["talt-mgmt"];
+      networking.networkmanager.ensureProfiles.profiles.talt-mgmt = {
+        connection = {
+          id = "talt-mgmt";
+          type = "ethernet";
+          interface-name = "enp7s0";
+          autoconnect = false;
+        };
+        ethernet.mac-address = "04:42:1A:ED:8B:04";
+        ipv4 = {
+          method = "manual";
+          address1 = "192.168.88.2/24";
+          may-fail = false;
+        };
+        ipv6.method = "disabled";
+      };
+    }
+    {
       networking.hosts."192.168.2.1" = ["mokerlink"];
       networking.networkmanager.ensureProfiles.profiles.mokerlink-switch = {
         connection = {

@@ -119,6 +119,7 @@ in {
             "Covfefe" = 50;
             "dropout-wafer" = 100;
             "yelk" = 1;
+            "drek" = 1;
           };
           envPath = "/etc/NetworkManager/system-connections/default.unattended.sops.env";
 
@@ -158,6 +159,8 @@ in {
                          To preserve Systemd's EnvironmentFile values:
                         1. double-quoted
                         2. escape $"` (dollar, double-quote & backtick) with `\`
+
+                        TODO: this still has trouble with yelk-mgmt password
                         */
                         (lib.attrsets.mapAttrsToList (
                           ssid: wlan: ''

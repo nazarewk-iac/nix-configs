@@ -78,7 +78,7 @@
           {
             bool = builtins.toJSON;
           }
-          ."${builtins.typeOf value}" or convertToString
+          ."${builtins.typeOf value}" or toString
         )
         value;
       sectionType = with lib.types;
@@ -239,6 +239,7 @@
         };
         address = lib.mkOption {
           type = with lib.types; listOf str;
+          default = [];
         };
         prefix = lib.mkOption {
           type = with lib.types; attrsOf str;
@@ -1266,6 +1267,11 @@ in {
                 (builtins.concatStringsSep "\n")
               ];
           };
+        };
+        systemd.services."kresd@".serviceConfig = {
+          # seems like kresd can come up before the interface is ready for listening during reconfigurations
+          Restart = "on-failure";
+          RestartSec = 1;
         };
       }
       (
