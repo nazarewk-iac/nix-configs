@@ -795,8 +795,8 @@ in {
             "kresd@"
             "systemd-networkd"
             "systemd-resolved"
-            config.kdn.fs.watch.instances.kea-dhcp-ddns-reload.systemdName
-            config.kdn.fs.watch.instances.kea-dhcp4-server-reload.systemdName
+            "kea-dhcp-ddns-server"
+            "kea-dhcp4-server"
           ];
         in {
           systemd.targets.kdn-secrets.before = services;
@@ -1009,6 +1009,7 @@ in {
       {
         sops.templates."kea/ctrl-agent.conf" = {
           mode = "0444";
+          reloadUnits = ["kea-ctrl-agent.service"];
           content = builtins.readFile (
             pkgs.jsonTemplate.generate "kea-ctrl-agent.conf" {
               Control-agent = cfg.kea.ctrl-agent.settings;
@@ -1016,19 +1017,11 @@ in {
           );
         };
         services.kea.ctrl-agent.configFile = config.sops.templates."kea/ctrl-agent.conf".path;
-        kdn.fs.watch.instances.kea-ctrl-agent-reload.enable = config.services.kea.ctrl-agent.enable;
-        kdn.fs.watch.instances.kea-ctrl-agent-reload.files = [
-          config.sops.templates."kea/ctrl-agent.conf".path
-        ];
-        kdn.fs.watch.instances.kea-ctrl-agent-reload.exec = [
-          (lib.getExe' pkgs.systemd "systemctl")
-          "reload-or-restart"
-          "kea-ctrl-agent.service"
-        ];
       }
       {
         sops.templates."kea/dhcp-ddns.conf" = {
           mode = "0444";
+          reloadUnits = ["kea-dhcp-ddns-server.service"];
           content = builtins.readFile (
             pkgs.jsonTemplate.generate "kea-dhcp-ddns.conf" {
               DhcpDdns = cfg.kea.dhcp-ddns.settings;
@@ -1036,19 +1029,11 @@ in {
           );
         };
         services.kea.dhcp-ddns.configFile = config.sops.templates."kea/dhcp-ddns.conf".path;
-        kdn.fs.watch.instances.kea-dhcp-ddns-reload.enable = config.services.kea.dhcp-ddns.enable;
-        kdn.fs.watch.instances.kea-dhcp-ddns-reload.files = [
-          config.sops.templates."kea/dhcp-ddns.conf".path
-        ];
-        kdn.fs.watch.instances.kea-dhcp-ddns-reload.exec = [
-          (lib.getExe' pkgs.systemd "systemctl")
-          "reload-or-restart"
-          "kea-dhcp-ddns.service"
-        ];
       }
       {
         sops.templates."kea/dhcp4.conf" = {
           mode = "0444";
+          reloadUnits = ["kea-dhcp4-server.service"];
           content = builtins.readFile (
             pkgs.jsonTemplate.generate "kea-dhcp4.conf" {
               Dhcp4 = cfg.kea.dhcp4.settings;
@@ -1056,19 +1041,11 @@ in {
           );
         };
         services.kea.dhcp4.configFile = config.sops.templates."kea/dhcp4.conf".path;
-        kdn.fs.watch.instances.kea-dhcp4-server-reload.enable = config.services.kea.dhcp4.enable;
-        kdn.fs.watch.instances.kea-dhcp4-server-reload.files = [
-          config.sops.templates."kea/dhcp4.conf".path
-        ];
-        kdn.fs.watch.instances.kea-dhcp4-server-reload.exec = [
-          (lib.getExe' pkgs.systemd "systemctl")
-          "reload-or-restart"
-          "kea-dhcp4-server.service"
-        ];
       }
       {
         sops.templates."kea/dhcp6.conf" = {
           mode = "0444";
+          reloadUnits = ["kea-dhcp6-server.service"];
           content = builtins.readFile (
             pkgs.jsonTemplate.generate "kea-dhcp6.conf" {
               Dhcp6 = cfg.kea.dhcp6.settings;
@@ -1076,15 +1053,6 @@ in {
           );
         };
         services.kea.dhcp6.configFile = config.sops.templates."kea/dhcp6.conf".path;
-        kdn.fs.watch.instances.kea-dhcp6-server-reload.enable = config.services.kea.dhcp6.enable;
-        kdn.fs.watch.instances.kea-dhcp6-server-reload.files = [
-          config.sops.templates."kea/dhcp6.conf".path
-        ];
-        kdn.fs.watch.instances.kea-dhcp6-server-reload.exec = [
-          (lib.getExe' pkgs.systemd "systemctl")
-          "reload-or-restart"
-          "kea-dhcp6-server.service"
-        ];
       }
       {
         # kresd DNS resolver
