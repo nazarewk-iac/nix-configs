@@ -116,6 +116,18 @@
       kdn.networking.ifaces."pic".metric = 1000;
       kdn.networking.ifaces."pic".address.internal4 = "10.92.0.5/24";
       kdn.networking.ifaces."pic".address.internal6 = "fd12:ed4e:366d:eb17:3c91:247b:a473:442/64";
+
+      kdn.networking.vlans."mgmt".id = 946;
+      kdn.networking.vlans."mgmt".parent = "kdn-eth-2g";
+      kdn.networking.ifaces."mgmt".dynamicIPClient = true;
+      kdn.networking.ifaces."mgmt".metric = 1100;
+      kdn.networking.ifaces."mgmt".address.internal4 = "192.168.252.32/24";
+
+      kdn.networking.vlans."drek".id = 3547;
+      kdn.networking.vlans."drek".parent = "kdn-eth-2g";
+      kdn.networking.ifaces."drek".dynamicIPClient = true;
+      kdn.networking.ifaces."drek".metric = 900;
+      kdn.networking.ifaces."drek".address.internal4 = "192.168.41.31/24";
     }
     /*
     (let

@@ -309,7 +309,10 @@ in {
           hosts.moak.ip = "192.168.252.8"; # TODO: configure
           hosts.turb.ip = "192.168.252.9"; # TODO: configure
           hosts.eap773.ip = "192.168.252.10";
+          hosts.eap773.ident.hw-address = "20:36:26:d2:5b:70";
           hosts.yelk.ip = "192.168.252.13";
+
+          hosts.brys.ip = "192.168.252.32";
         };
       };
     }
