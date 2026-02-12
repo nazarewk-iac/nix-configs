@@ -17,8 +17,8 @@ upstream_input = "{name}-upstream"
 # [patch.nixpkgs.netbird-dnssec]
 # url = "https://github.com/NixOS/nixpkgs/pull/410239.patch?full_index=1"
 
-[patch.nixos-avf.fix-new-websockets]
-url = "https://github.com/nix-community/nixos-avf/pull/21.patch?full_index=1"
+# [patch.nixos-avf.fix-new-websockets]
+# url = "https://github.com/nix-community/nixos-avf/pull/21.patch?full_index=1"
 
 [patch.preservation.fix-conflict]
 url = "https://github.com/nix-community/preservation/pull/21.patch?full_index=1"

@@ -377,9 +377,9 @@ in {
             #! ${pkgs.bash}/bin/bash
             set -xeEuo pipefail
             if [ "''${1:-}" == "--enable" ] ; then
-              ${pkgs.xorg.xhost}/bin/xhost si:localuser:root
+              ${pkgs.xhost}/bin/xhost si:localuser:root
             else
-              ${pkgs.xorg.xhost}/bin/xhost -si:localuser:root
+              ${pkgs.xhost}/bin/xhost -si:localuser:root
             fi
           '')
 

@@ -16,7 +16,7 @@ in {
       # x11docker deps, see https://github.com/mviereck/x11docker/wiki/dependencies#table-of-all-packages
       curl
       catatonit
-      xorg.xorgserver # cvt
+      xorgserver # cvt
       dbus
       diffutils
       jq
@@ -27,7 +27,7 @@ in {
       pulseaudio
       # python2
       python3
-      xorg.setxkbmap
+      setxkbmap
       socat
       gnutar
       unzip
@@ -35,21 +35,21 @@ in {
       weston
       wmctrl
       wget
-      xorg.xauth
+      xauth
       xbindkeys
       #xclip
       wl-clipboard-x11
       xdg-utils
       xdotool
-      xorg.xdpyinfo
+      xdpyinfo
       # Xephyr from xorg-server
       # xfishtank unavailablr
-      xorg.xinit
+      xinit
       # Xorg from xorg-server
       xpra
-      xorg.xrandr
+      xrandr
       # Xvfb from xorg-server
-      xorg.xwininfo
+      xwininfo
     ];
   };
 }

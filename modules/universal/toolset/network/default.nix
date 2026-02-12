@@ -33,7 +33,7 @@ in {
     }
     (lib.mkIf config.kdn.desktop.enable {
       kdn.env.packages = with pkgs; [
-        (lib.lowPrio wireshark-qt) # aka wireshark-qt
+        (lib.lowPrio wireshark) # aka wireshark-qt
       ];
     })
     (kdnConfig.util.ifTypes ["nixos"] {

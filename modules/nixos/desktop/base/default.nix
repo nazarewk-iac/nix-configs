@@ -77,9 +77,9 @@ in {
 
         environment.systemPackages = with pkgs;
           [
-            xorg.xeyes
-            xorg.xhost
-            xorg.xlsclients
+            xeyes
+            xhost
+            xlsclients
 
             # graphics
             libva-utils

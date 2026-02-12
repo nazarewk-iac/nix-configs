@@ -26,7 +26,7 @@ in {
         inotify-info
         inotify-tools
         watchexec
-        watchman
+        # watchman # TODO: didn't build on 2026-02-12
       ]
       ++ [
         # formatting etc.

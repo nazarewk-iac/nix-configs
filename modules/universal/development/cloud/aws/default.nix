@@ -15,7 +15,7 @@ in {
     kdn.env.packages = with pkgs; [
       # AWS
       awscli2
-      (lib.mkIf (let p = pkgs.stdenv.hostPlatform; in p.isx86_64 && (p.isLinux || p.isDarwin)) amazon-ecs-cli)
+      # (lib.mkIf (let p = pkgs.stdenv.hostPlatform; in p.isx86_64 && (p.isLinux || p.isDarwin)) amazon-ecs-cli) # removed due to being unmaintained
       ssm-session-manager-plugin
       eksctl
 

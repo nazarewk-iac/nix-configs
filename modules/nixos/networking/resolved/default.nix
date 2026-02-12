@@ -55,32 +55,24 @@ in {
       {
         services.resolved.enable = true;
         # services.resolved.dnssec = "allow-downgrade"; # this complains results are not signed
-        services.resolved.dnssec = lib.mkDefault "false";
-        services.resolved.dnsovertls = lib.mkDefault "opportunistic";
-        services.resolved.llmnr = lib.mkDefault "true";
-        services.resolved.extraConfig = let
-          systemdDNS = lib.pipe cfg.nameservers [
-            builtins.attrValues
-            (builtins.filter (nsCfg: nsCfg.enable))
-            (map (
-              nsCfg:
-                builtins.concatStringsSep "" [
-                  nsCfg.addr
-                  ":${nsCfg.port}"
-                  (lib.strings.optionalString (nsCfg.interface != null) "%${nsCfg.interface}")
-                  (lib.strings.optionalString (nsCfg.sni != null) "#${nsCfg.sni}")
-                ]
-            ))
-            builtins.concatLists
-          ];
-        in ''
-          ${lib.strings.optionalString (cfg.multicastDNS != null) ''
-            MulticastDNS=${cfg.multicastDNS}
-          ''}
-          ${lib.strings.optionalString (systemdDNS != []) ''
-            DNS=${systemdDNS}
-          ''}
-        '';
+        services.resolved.settings.Resolve.DNSSEC = lib.mkDefault "false";
+        services.resolved.settings.Resolve.DNSOverTLS = lib.mkDefault "opportunistic";
+        services.resolved.settings.Resolve.LLMNR = lib.mkDefault "true";
+        services.resolved.settings.Resolve.MulticastDNS = cfg.multicastDNS;
+        services.resolved.settings.Resolve.DNS = lib.pipe cfg.nameservers [
+          builtins.attrValues
+          (builtins.filter (nsCfg: nsCfg.enable))
+          (map (
+            nsCfg:
+              builtins.concatStringsSep "" [
+                nsCfg.addr
+                ":${nsCfg.port}"
+                (lib.strings.optionalString (nsCfg.interface != null) "%${nsCfg.interface}")
+                (lib.strings.optionalString (nsCfg.sni != null) "#${nsCfg.sni}")
+              ]
+          ))
+          builtins.concatLists
+        ];
       }
     ]
   );

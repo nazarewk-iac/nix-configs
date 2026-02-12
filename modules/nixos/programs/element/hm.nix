@@ -43,6 +43,9 @@ in {
           dirs.state = [];
         };
       })
+      {
+        kdn.programs.matrix.gomuks.enable = lib.mkForce false; # TODO: didn't build due to https://github.com/NixOS/nixpkgs/commit/c325fbaaa934186951443634b51fffc264118c62
+      }
       (lib.mkIf cfg.gomuks.enable {
         kdn.apps.gomuks = {
           enable = lib.mkDefault false; # this one is old CLI version
