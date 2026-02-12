@@ -236,7 +236,7 @@ in {
           (lib.attrsets.mapAttrsToList (name: vlanCfg: let
             ifaceCfg = cfg.ifaces."${name}";
           in {
-            "50-${name}".networkConfig.VLAN = [ifaceCfg.name];
+            "50-${vlanCfg.parent}".networkConfig.VLAN = [ifaceCfg.name];
           }))
           lib.mkMerge
         ];
