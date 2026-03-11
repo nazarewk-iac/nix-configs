@@ -44,6 +44,8 @@ in {
       steamcmd
       steam-tui
 
+      steamtinkerlaunch
+
       # non-steam
       #lutris # TODO: 2025-09-19: depends on pyrate-limiter, which hangs indefinitely on 93% of tests
       heroic # A Native GOG, Epic, and Amazon Games Launcher for Linux, Windows and Mac

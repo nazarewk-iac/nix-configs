@@ -1,4 +1,5 @@
 {
+  inputs.nixpkgs-upstream.flake = false; # no need for upstream to be a flake
   inputs.nixpkgs-upstream.url = "github:NixOS/nixpkgs/nixos-unstable";
   inputs.nixpkgs.url = "github:nazarewk/nixpkgs/nixos-unstable";
   inputs.nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-25.05";
@@ -46,6 +47,7 @@
   inputs.nix-homebrew.url = "github:zhaofengli/nix-homebrew";
   inputs.nixcasks.url = "github:jacekszymanski/nixcasks";
   inputs.nixos-anywhere.url = "github:numtide/nixos-anywhere";
+  inputs.nixos-avf-upstream.flake = false; # no need for upstream to be a flake
   inputs.nixos-avf-upstream.url = "github:nix-community/nixos-avf";
   inputs.nixos-avf.url = "github:nazarewk/nixos-avf";
   inputs.nixos-crostini-upstream.flake = false; # no need for upstream to be a flake
@@ -54,6 +56,7 @@
   inputs.nixos-generators.url = "github:nix-community/nixos-generators";
   inputs.nixos-hardware.url = "github:nixos/nixos-hardware";
   inputs.nur.url = "github:nix-community/NUR";
+  inputs.preservation-upstream.flake = false; # no need for upstream to be a flake
   inputs.preservation-upstream.url = "github:nix-community/preservation";
   inputs.preservation.url = "github:nazarewk/preservation/nix-configs";
   inputs.rpi-sbcshop-hat-ups.flake = false;
@@ -64,9 +67,10 @@
   inputs.treefmt-nix.url = "github:numtide/treefmt-nix";
   inputs.wezterm.url = "github:wez/wezterm/main?dir=nix";
 
+  inputs.sops-nix-upstream.flake = false; # no need for upstream to be a flake
   inputs.sops-nix-upstream.url = "github:Mic92/sops-nix";
   inputs.sops-nix.url = "github:nazarewk/sops-nix";
-  inputs.sops-upstream.flake = false;
+  inputs.sops-upstream.flake = false; # no need for upstream to be a flake
   inputs.sops-upstream.url = "github:getsops/sops";
 
   # * dependencies
@@ -299,6 +303,7 @@
           pwet.deployment.targetHost = "pwet.pic.etra.net.int.kdn.im.";
           turo.deployment.targetHost = "turo.pic.etra.net.int.kdn.im.";
           yost.deployment.targetHost = "yost.pic.etra.net.int.kdn.im.";
+          moss.deployment.targetHost = "moss.kdn.im.";
         });
     flake.colmenaHive = lib.colmena.makeHive self.colmena;
     flake.mkEasykubenix = system: modules:

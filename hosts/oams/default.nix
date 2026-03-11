@@ -70,7 +70,7 @@
                 }
 
                 cmd_rotate-keyboard-brightness() {
-                  local to
+                  local to new
                   case "''${1:-"next"}" in
                     prev)
                       to="prev"
@@ -82,8 +82,9 @@
                       return 1
                     ;;
                   esac
-                  asusctl "--$to-kbd-bright"
-                  notify-send "Keyboard LED brightness" "changed to $to"
+                  asusctl leds "$to"
+                  new="$(asusctl leds get)"
+                  notify-send "Keyboard LED brightness" "changed to $new"
                 }
 
                 "cmd_''${1}" "''${@:2}"
