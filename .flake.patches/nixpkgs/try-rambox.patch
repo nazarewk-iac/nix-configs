@@ -1,0 +1,27 @@
+From 1ab850ce83269f5109440c4c887eacbfdf874ce8 Mon Sep 17 00:00:00 2001
+From: "R. Ryantm" <ryantm-bot@ryantm.com>
+Date: Tue, 3 Mar 2026 20:12:08 +0000
+Subject: [PATCH] rambox: 2.5.2 -> 2.6.0
+
+---
+ pkgs/by-name/ra/rambox/package.nix | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/pkgs/by-name/ra/rambox/package.nix b/pkgs/by-name/ra/rambox/package.nix
+index 1e5631700bcd6000a44c3784c657b4eaf929faff..c2aeab6be42fb658cfbe218f5c03aa591d33c8de 100644
+--- a/pkgs/by-name/ra/rambox/package.nix
++++ b/pkgs/by-name/ra/rambox/package.nix
+@@ -7,11 +7,11 @@
+ 
+ appimageTools.wrapType2 rec {
+   pname = "rambox";
+-  version = "2.5.2";
++  version = "2.6.0";
+ 
+   src = fetchurl {
+     url = "https://github.com/ramboxapp/download/releases/download/v${version}/Rambox-${version}-linux-x64.AppImage";
+-    hash = "sha256-sx/XLrsDIt2cF4xv/J5i1ZTMf7eHsccBjPEMJ/WISmg=";
++    hash = "sha256-4yQi5t80UYhyJYhLs7vxmiMNIhcsxtxeSEcnr5KDYhU=";
+   };
+ 
+   desktopItem = makeDesktopItem {

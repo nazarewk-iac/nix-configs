@@ -88,7 +88,7 @@ in {
           */
           documentation.nixos.enable = false;
           documentation.man.man-db.enable = true;
-          documentation.man.generateCaches = false;
+          documentation.man.cache.enable = false;
           environment.systemPackages = [kdn-man-gen-caches];
           kdn.disks.persist."sys/cache".directories = [
             "/var/cache/man/nixos"

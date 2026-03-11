@@ -1,0 +1,53 @@
+From 500dbd84f2429aa6c370abd6ca63940616b84996 Mon Sep 17 00:00:00 2001
+From: Krzysztof Nazarewski <gpg@kdn.im>
+Date: Fri, 27 Feb 2026 09:17:54 +0100
+Subject: [PATCH] extendable activationScript + move to tmpfiles
+
+---
+ baguette.nix | 25 +++++++++++++++----------
+ 1 file changed, 15 insertions(+), 10 deletions(-)
+
+diff --git a/baguette.nix b/baguette.nix
+index c0b15c4..4363452 100644
+--- a/baguette.nix
++++ b/baguette.nix
+@@ -126,6 +126,19 @@
+       # This is a hack to reproduce /etc/profile.d in NixOS
+       environment.shellInit = lib.mkBefore baguette-env;
+ 
++      systemd.tmpfiles.settings.baguette."/usr/share".d.mode = "0755";
++      systemd.tmpfiles.settings.baguette."/usr/sbin".d.mode = "0755";
++      systemd.tmpfiles.settings.baguette."/sbin".d.mode = "0755";
++      systemd.tmpfiles.rules = [
++        "d /sbin 0755 root root - "
++        "d /usr/sbin 0755 root root - "
++        "d /usr/share 0755 root root - "
++        "L /usr/share/zoneinfo - - - - /etc/zoneinfo"
++        # HACK: `vmc start ...` requires /usr/sbin/usermod
++        "L /usr/sbin/usermod - root root - ${pkgs.shadow}/bin/usermod"
++      ];
++
++
+       system =
+         let
+           # https://github.com/jmbaur/nixpkgs/blob/115c1d69015de09f4211890477af05ba4fb873b9/nixos/modules/virtualisation/lxc-container.nix#L18-L19
+@@ -134,17 +147,9 @@
+         {
+           activationScripts = {
+ 
+-            baguette = ''
+-              ln -sf /etc/zoneinfo /usr/share/
+-            ''
+-            +
+-              # HACK: `vmc start ...` requires /usr/sbin/usermod
+-              ''
+-                mkdir -p /usr/sbin/
+-                ln -sf ${pkgs.shadow}/bin/usermod /usr/sbin/usermod
+-              ''
++            baguette.text =
+             # Resize the avaialble space to the one provided by Baguette
+-            + ''
++            ''
+               ${pkgs.btrfs-progs}/bin/btrfs filesystem resize max /
+             ''
+             # Re-link the initScript (in case of toggling `boot.initrd.systemd.enable`)

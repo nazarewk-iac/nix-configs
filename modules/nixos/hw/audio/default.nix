@@ -61,7 +61,7 @@ in {
       (lib.mkIf config.kdn.desktop.enable {
         environment.systemPackages = with pkgs; [
           pavucontrol
-          helvum # A GTK patchbay for pipewire
+          # helvum # 2026-03-11: removed as it was unmaintained
         ];
         home-manager.sharedModules = [
           {

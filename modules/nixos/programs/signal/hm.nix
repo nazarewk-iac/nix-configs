@@ -15,7 +15,7 @@ in {
       {
         kdn.apps."signal-desktop" = {
           enable = true;
-          package.original = pkgs."signal-desktop-bin";
+          package.original = pkgs."signal-desktop";
           dirs.cache = [];
           dirs.config = ["Signal"];
           dirs.data = [];

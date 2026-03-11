@@ -12,7 +12,7 @@ in {
       environment.etc."kdn/source-flake".source = kdnConfig.self;
       nix.gc.automatic = true;
       # angrr seems to drop all of the sources regularly, maybe I could integrate `angrr touch` to prevent this?
-      services.angrr.enable = true;
+      services.angrr.enable = lib.mkDefault true;
       # using example from https://github.com/linyinfeng/angrr/blob/35f13906a4a6410f92eefa9678526ac81321e816/README.md#nixos-module-usage
       services.angrr.settings = {
         temporary-root-policies = {
@@ -22,7 +22,7 @@ in {
           };
           result = {
             path-regex = "/result[^/]*$";
-            period = "3d";
+            period = "5d";
           };
         };
         profile-policies = {

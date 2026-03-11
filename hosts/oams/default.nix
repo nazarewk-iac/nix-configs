@@ -50,7 +50,6 @@
       kdn.hw.gpu.multiGPU.enable = true;
       programs.rog-control-center.enable = true;
       programs.rog-control-center.autoStart = true;
-      services.asusd.enableUserService = true;
       home-manager.sharedModules = [
         (
           args: let

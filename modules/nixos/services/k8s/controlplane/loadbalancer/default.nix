@@ -128,7 +128,7 @@ in {
     (l:
       l
       ++ [
-        {
+        (lib.mkIf (l != []) {
           services.keepalived.enable = true;
           services.keepalived.enableScriptSecurity = true;
           services.keepalived.extraGlobalDefs = ''
@@ -140,7 +140,7 @@ in {
             group = "keepalived_script";
           };
           users.groups.keepalived_script = {};
-        }
+        })
       ])
     lib.mkMerge
   ];
