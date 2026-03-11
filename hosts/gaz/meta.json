@@ -1,0 +1,5 @@
+{
+  "system": "x86_64-linux",
+  "moduleType": "nixos",
+  "hostName": "gaz"
+}

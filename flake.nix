@@ -48,6 +48,9 @@
   inputs.nixos-anywhere.url = "github:numtide/nixos-anywhere";
   inputs.nixos-avf-upstream.url = "github:nix-community/nixos-avf";
   inputs.nixos-avf.url = "github:nazarewk/nixos-avf";
+  inputs.nixos-crostini-upstream.flake = false; # no need for upstream to be a flake
+  inputs.nixos-crostini-upstream.url = "github:aldur/nixos-crostini";
+  inputs.nixos-crostini.url = "github:nazarewk/nixos-crostini";
   inputs.nixos-generators.url = "github:nix-community/nixos-generators";
   inputs.nixos-hardware.url = "github:nixos/nixos-hardware";
   inputs.nur.url = "github:nix-community/NUR";
@@ -102,6 +105,8 @@
   inputs.nixos-anywhere.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nixos-anywhere.inputs.treefmt-nix.follows = "treefmt-nix";
   inputs.nixos-avf.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.nixos-crostini.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.nixos-crostini.inputs.nixos-generators.follows = "nixos-generators";
   inputs.nixos-generators.inputs.nixlib.follows = "nixpkgs-lib";
   inputs.nixos-generators.inputs.nixpkgs.follows = "nixpkgs";
   inputs.rust-overlay.inputs.nixpkgs.follows = "nixpkgs";

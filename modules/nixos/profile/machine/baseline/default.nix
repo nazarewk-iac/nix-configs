@@ -53,10 +53,10 @@ in {
 
         # systemd-boot
         boot.initrd.systemd.emergencyAccess = "$y$j9T$fioAEKxXi2LmH.9HyzVJ4/$Ot4PUjYdz7ELvJBOnS1YgQFNW89SCxB/yyGVaq4Aux0";
-        boot.initrd.systemd.enable = true;
-        boot.loader.efi.canTouchEfiVariables = true;
+        boot.initrd.systemd.enable = lib.mkDefault true;
+        boot.loader.efi.canTouchEfiVariables = lib.mkDefault true;
         boot.loader.systemd-boot.configurationLimit = 10;
-        boot.loader.systemd-boot.enable = true;
+        boot.loader.systemd-boot.enable = lib.mkDefault true;
 
         boot.tmp.cleanOnBoot = lib.mkDefault (!config.boot.tmp.useTmpfs);
         boot.tmp.useTmpfs = lib.mkDefault true;
