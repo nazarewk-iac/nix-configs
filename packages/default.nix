@@ -18,6 +18,7 @@
   kdnctl = pkgs.callPackage ./kdnctl {};
   kdn-anonymize = pkgs.callPackage ./kdn-anonymize {};
   kdn-cidata-iso = pkgs.callPackage ./kdn-cidata-iso {};
+  kdn-gamingctl = pkgs.callPackage ./kdn-gamingctl {};
   kdn-keepass = pkgs.callPackage ./kdn-keepass {};
   kdn-nix = pkgs.callPackage ./kdn-nix {};
   kdn-yk = pkgs.callPackage ./kdn-yk {};

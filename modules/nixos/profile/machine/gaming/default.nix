@@ -35,8 +35,11 @@ in {
     environment.sessionVariables =
       lib.optionalAttrs (cfg.vulkan.deviceName != null) {
         DXVK_FILTER_DEVICE_NAME = cfg.vulkan.deviceName;
+        VKD3D_FILTER_DEVICE_NAME = cfg.vulkan.deviceName;
       }
-      // lib.optionalAttrs (cfg.vulkan.deviceId != null) {MESA_VK_DEVICE_SELECT = cfg.vulkan.deviceId;};
+      // lib.optionalAttrs (cfg.vulkan.deviceId != null) {
+        MESA_VK_DEVICE_SELECT = cfg.vulkan.deviceId;
+      };
 
     environment.systemPackages = with pkgs; [
       # steam  # covered by programs.steam.enable

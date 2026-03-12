@@ -71,7 +71,6 @@ in {
         services.supergfxd.settings = {
           vfio_enable = true;
           vfio_save = true;
-          hotplug_type = "Asus";
         };
         # see https://astrid.tech/2022/09/22/0/nixos-gpu-vfio/
         boot.initrd.kernelModules = [

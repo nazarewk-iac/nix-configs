@@ -150,21 +150,12 @@
     {
       # keep all the mountpoints and software available
       kdn.profile.machine.gaming.enable = true;
-      specialisation.gaming = {
-        # reboot into dGPU accelerated specialisation
-        inheritParentConfig = true;
-        configuration = {
-          system.nixos.tags = ["gaming"];
-          kdn.hw.gpu.supergfxd.mode = lib.mkForce "Hybrid";
-          kdn.profile.machine.gaming.vulkan.deviceId = "1002:73df";
-          kdn.profile.machine.gaming.vulkan.deviceName = "AMD Radeon RX 6800M";
-          home-manager.sharedModules = [
-            {
-              kdn.desktop.sway.kanshi.devices.oams.scale = lib.mkForce 1.0;
-            }
-          ];
-        };
-      };
+      kdn.profile.machine.gaming.vulkan.deviceId = "1002:73df";
+      kdn.profile.machine.gaming.vulkan.deviceName = "AMD Radeon RX 6800M";
+
+      kdn.env.packages = [
+        pkgs.kdn.kdn-gamingctl
+      ];
     }
     {
       specialisation.vfio = {
