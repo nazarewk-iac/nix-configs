@@ -51,13 +51,13 @@
 
   hosts.lan.anji.ifaces.default.mac = "2c:82:17:da:21:24";
   hosts.lan.cafal.ifaces.default.ipv4 = "192.168.73.2";
-  hosts.lan.cafal.ifaces.default.mac = "00:23:79:00:31:03";
+  hosts.lan.cafal.ifaces.default.mac = "00:23:79:00:18:A1";
   hosts.lan.etra.ifaces.default.ipv4 = "192.168.73.1";
   hosts.lan.faro.ifaces.default.mac = "3e:e7:84:fb:f0:94";
   hosts.lan.feren.ifaces.default.ipv4 = "192.168.73.3";
-  hosts.lan.feren.ifaces.default.mac = "00:23:79:00:23:11";
+  hosts.lan.feren.ifaces.default.mac = "00:23:79:00:18:9F";
   hosts.lan.moak.ifaces.default.ipv4 = "192.168.73.4";
-  hosts.lan.moak.ifaces.default.mac = "00:23:79:00:31:2F";
+  hosts.lan.moak.ifaces.default.mac = "00:23:79:00:18:A0";
   hosts.lan.pryll.ifaces.default.mac = "01:90:1b:0e:84:8c:f7";
   hosts.lan.anji-vm-macos-01.default.mac = "f6:f2:45:7a:32:79";
 
