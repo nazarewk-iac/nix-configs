@@ -141,6 +141,9 @@ in {
 
   config = lib.mkIf (config.kdn.networking.netbird.clients != {}) (
     lib.mkMerge [
+      {
+        services.netbird.ui.enable = false; # 2026-03-23: UI failed to build
+      }
       (lib.mkIf cfg.useOwnPackages {
         # inlined packages
         services.netbird.package = lib.mkDefault pkgs.kdn.netbird;

@@ -53,6 +53,14 @@ in {
       {
         home-manager.sharedModules = [
           (hm: {
+            programs.password-store.enable = true;
+            programs.password-store.settings = {
+              PASSWORD_STORE_DIR = "${hm.config.home.homeDirectory}/.password-store";
+              PASSWORD_STORE_CLIP_TIME = "10";
+              # for Android interoperability, see https://github.com/drduh/YubiKey-Guide/issues/152#issuecomment-852176877
+              PASSWORD_STORE_GPG_OPTS = "--no-throw-keyids";
+            };
+            programs.gpg.settings.no-throw-keyids = true;
             programs.gpg.enable = true;
             kdn.disks.persist."usr/data".directories = [
               {

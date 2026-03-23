@@ -1,7 +1,7 @@
-From b9b16877112cac4591d7f02bef094a4e6cc3cabe Mon Sep 17 00:00:00 2001
+From a5977f78455defff92526d3f12368979d38e580b Mon Sep 17 00:00:00 2001
 From: benaryorg <binary@benary.org>
 Date: Fri, 27 Feb 2026 04:10:30 +0000
-Subject: [PATCH 1/2] ceph: 19.2.3 -> 20.2.0
+Subject: [PATCH 1/4] ceph: 19.2.3 -> 20.2.0
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -14,22 +14,23 @@ Using just packages with *patches* set makes this harder to control.
 
 Signed-off-by: benaryorg <binary@benary.org>
 ---
- pkgs/by-name/ce/ceph/arrow-cpp-19.nix         | 345 ---------
+ pkgs/by-name/ce/ceph/arrow-cpp-19.nix         | 353 ----------
  pkgs/by-name/ce/ceph/boost-1.85.patch         |  69 --
  .../by-name/ce/ceph/boost-1.86-PyModule.patch |  20 -
- pkgs/by-name/ce/ceph/ceph.nix                 | 399 +++++++++++
+ pkgs/by-name/ce/ceph/ceph.nix                 | 402 +++++++++++
  pkgs/by-name/ce/ceph/meta.nix                 |  24 +
  .../cryptography-vectors.nix                  |  36 -
  .../ceph/old-python-packages/cryptography.nix | 136 ----
  ...or-CVE-2023-49083-on-cryptography-40.patch |  44 --
  .../ce/ceph/old-python-packages/trustme.nix   |  49 --
  pkgs/by-name/ce/ceph/package.nix              | 664 +-----------------
+ .../patches/0001-mgr-python-interpreter.patch |  89 +++
  pkgs/by-name/ce/ceph/python-common.nix        |  29 +
  pkgs/by-name/ce/ceph/python-env.nix           |  50 ++
  pkgs/by-name/ce/ceph/rocksdb.nix              |  14 +
  pkgs/by-name/ce/ceph/scope.nix                |  27 +
- pkgs/by-name/ce/ceph/src.nix                  |  40 ++
- 15 files changed, 586 insertions(+), 1360 deletions(-)
+ pkgs/by-name/ce/ceph/src.nix                  |  45 ++
+ 16 files changed, 683 insertions(+), 1368 deletions(-)
  delete mode 100644 pkgs/by-name/ce/ceph/arrow-cpp-19.nix
  delete mode 100644 pkgs/by-name/ce/ceph/boost-1.85.patch
  delete mode 100644 pkgs/by-name/ce/ceph/boost-1.86-PyModule.patch
@@ -39,6 +40,7 @@ Signed-off-by: benaryorg <binary@benary.org>
  delete mode 100644 pkgs/by-name/ce/ceph/old-python-packages/cryptography.nix
  delete mode 100644 pkgs/by-name/ce/ceph/old-python-packages/python-cryptography-Cherry-pick-fix-for-CVE-2023-49083-on-cryptography-40.patch
  delete mode 100644 pkgs/by-name/ce/ceph/old-python-packages/trustme.nix
+ create mode 100644 pkgs/by-name/ce/ceph/patches/0001-mgr-python-interpreter.patch
  create mode 100644 pkgs/by-name/ce/ceph/python-common.nix
  create mode 100644 pkgs/by-name/ce/ceph/python-env.nix
  create mode 100644 pkgs/by-name/ce/ceph/rocksdb.nix
@@ -47,10 +49,10 @@ Signed-off-by: benaryorg <binary@benary.org>
 
 diff --git a/pkgs/by-name/ce/ceph/arrow-cpp-19.nix b/pkgs/by-name/ce/ceph/arrow-cpp-19.nix
 deleted file mode 100644
-index 549ca5e77f17a0caf83ff7730eece1d974f76111..0000000000000000000000000000000000000000
+index c24457fd28e9fd6e43c9497ccc88246eb2559eb7..0000000000000000000000000000000000000000
 --- a/pkgs/by-name/ce/ceph/arrow-cpp-19.nix
 +++ /dev/null
-@@ -1,345 +0,0 @@
+@@ -1,353 +0,0 @@
 -# This is is arrow-cpp < 20 used as a workaround for
 -# Ceph not supporting >= yet, taken from nixpkgs commit
 -#     97ae53798f6a7c7c3c259ad8c2cbcede6ca34b2a~
@@ -170,34 +172,69 @@ index 549ca5e77f17a0caf83ff7730eece1d974f76111..00000000000000000000000000000000
 -  # versions are all taken from
 -  # https://github.com/apache/arrow/blob/apache-arrow-${version}/cpp/thirdparty/versions.txt
 -
--  # jemalloc: arrow uses a custom prefix to prevent default allocator symbol
--  # collisions as well as custom build flags
--  ${if enableJemalloc then "ARROW_JEMALLOC_URL" else null} = fetchurl {
--    url = "https://github.com/jemalloc/jemalloc/releases/download/5.3.0/jemalloc-5.3.0.tar.bz2";
--    hash = "sha256-LbgtHnEZ3z5xt2QCGbbf6EeJvAU3mDw7esT3GJrs/qo=";
--  };
+-  env =
+-    lib.optionalAttrs enableJemalloc {
+-      # jemalloc: arrow uses a custom prefix to prevent default allocator symbol
+-      # collisions as well as custom build flags
+-      ARROW_JEMALLOC_URL = fetchurl {
+-        url = "https://github.com/jemalloc/jemalloc/releases/download/5.3.0/jemalloc-5.3.0.tar.bz2";
+-        hash = "sha256-LbgtHnEZ3z5xt2QCGbbf6EeJvAU3mDw7esT3GJrs/qo=";
+-      };
+-    }
+-    // {
+-      # mimalloc: arrow uses custom build flags for mimalloc
+-      ARROW_MIMALLOC_URL = fetchFromGitHub {
+-        owner = "microsoft";
+-        repo = "mimalloc";
+-        rev = "v2.0.6";
+-        hash = "sha256-u2ITXABBN/dwU+mCIbL3tN1f4c17aBuSdNTV+Adtohc=";
+-      };
 -
--  # mimalloc: arrow uses custom build flags for mimalloc
--  ARROW_MIMALLOC_URL = fetchFromGitHub {
--    owner = "microsoft";
--    repo = "mimalloc";
--    rev = "v2.0.6";
--    hash = "sha256-u2ITXABBN/dwU+mCIbL3tN1f4c17aBuSdNTV+Adtohc=";
--  };
+-      ARROW_XSIMD_URL = fetchFromGitHub {
+-        owner = "xtensor-stack";
+-        repo = "xsimd";
+-        rev = "13.0.0";
+-        hash = "sha256-qElJYW5QDj3s59L3NgZj5zkhnUMzIP2mBa1sPks3/CE=";
+-      };
 -
--  ARROW_XSIMD_URL = fetchFromGitHub {
--    owner = "xtensor-stack";
--    repo = "xsimd";
--    rev = "13.0.0";
--    hash = "sha256-qElJYW5QDj3s59L3NgZj5zkhnUMzIP2mBa1sPks3/CE=";
--  };
--
--  ARROW_SUBSTRAIT_URL = fetchFromGitHub {
--    owner = "substrait-io";
--    repo = "substrait";
--    rev = "v0.44.0";
--    hash = "sha256-V739IFTGPtbGPlxcOi8sAaYSDhNUEpITvN9IqdPReug=";
--  };
+-      ARROW_SUBSTRAIT_URL = fetchFromGitHub {
+-        owner = "substrait-io";
+-        repo = "substrait";
+-        rev = "v0.44.0";
+-        hash = "sha256-V739IFTGPtbGPlxcOi8sAaYSDhNUEpITvN9IqdPReug=";
+-      };
+-    }
+-    // lib.optionalAttrs finalAttrs.doInstallCheck {
+-      ARROW_TEST_DATA = "${arrow-testing}/data";
+-      PARQUET_TEST_DATA = "${parquet-testing}/data";
+-      GTEST_FILTER =
+-        let
+-          # Upstream Issue: https://issues.apache.org/jira/browse/ARROW-11398
+-          filteredTests =
+-            lib.optionals stdenv.hostPlatform.isAarch64 [
+-              "TestFilterKernelWithNumeric/3.CompareArrayAndFilterRandomNumeric"
+-              "TestFilterKernelWithNumeric/7.CompareArrayAndFilterRandomNumeric"
+-              "TestCompareKernel.PrimitiveRandomTests"
+-            ]
+-            ++ lib.optionals enableS3 [
+-              "S3OptionsTest.FromUri"
+-              "S3RegionResolutionTest.NonExistentBucket"
+-              "S3RegionResolutionTest.PublicBucket"
+-              "S3RegionResolutionTest.RestrictedBucket"
+-              "TestMinioServer.Connect"
+-              "TestS3FS.*"
+-              "TestS3FSGeneric.*"
+-            ]
+-            ++ lib.optionals stdenv.hostPlatform.isDarwin [
+-              # TODO: revisit at 12.0.0 or when
+-              # https://github.com/apache/arrow/commit/295c6644ca6b67c95a662410b2c7faea0920c989
+-              # is available, see
+-              # https://github.com/apache/arrow/pull/15288#discussion_r1071244661
+-              "ExecPlanExecution.StressSourceSinkStopped"
+-            ];
+-        in
+-        "-${lib.concatStringsSep ":" filteredTests}";
+-    };
 -
 -  nativeBuildInputs = [
 -    cmake
@@ -302,35 +339,6 @@ index 549ca5e77f17a0caf83ff7730eece1d974f76111..00000000000000000000000000000000
 -  ];
 -
 -  doInstallCheck = true;
--  ARROW_TEST_DATA = lib.optionalString finalAttrs.doInstallCheck "${arrow-testing}/data";
--  PARQUET_TEST_DATA = lib.optionalString finalAttrs.doInstallCheck "${parquet-testing}/data";
--  GTEST_FILTER =
--    let
--      # Upstream Issue: https://issues.apache.org/jira/browse/ARROW-11398
--      filteredTests =
--        lib.optionals stdenv.hostPlatform.isAarch64 [
--          "TestFilterKernelWithNumeric/3.CompareArrayAndFilterRandomNumeric"
--          "TestFilterKernelWithNumeric/7.CompareArrayAndFilterRandomNumeric"
--          "TestCompareKernel.PrimitiveRandomTests"
--        ]
--        ++ lib.optionals enableS3 [
--          "S3OptionsTest.FromUri"
--          "S3RegionResolutionTest.NonExistentBucket"
--          "S3RegionResolutionTest.PublicBucket"
--          "S3RegionResolutionTest.RestrictedBucket"
--          "TestMinioServer.Connect"
--          "TestS3FS.*"
--          "TestS3FSGeneric.*"
--        ]
--        ++ lib.optionals stdenv.hostPlatform.isDarwin [
--          # TODO: revisit at 12.0.0 or when
--          # https://github.com/apache/arrow/commit/295c6644ca6b67c95a662410b2c7faea0920c989
--          # is available, see
--          # https://github.com/apache/arrow/pull/15288#discussion_r1071244661
--          "ExecPlanExecution.StressSourceSinkStopped"
--        ];
--    in
--    lib.optionalString finalAttrs.doInstallCheck "-${lib.concatStringsSep ":" filteredTests}";
 -
 -  __darwinAllowLocalNetworking = true;
 -
@@ -359,6 +367,8 @@ index 549ca5e77f17a0caf83ff7730eece1d974f76111..00000000000000000000000000000000
 -
 -      runHook postInstallCheck
 -    '';
+-
+-  __structuredAttrs = true;
 -
 -  meta = {
 -    description = "Cross-language development platform for in-memory data";
@@ -499,10 +509,10 @@ index 631844081d4af23b6707a74290fbbe8a49efce5d..00000000000000000000000000000000
 - #include <boost/python/extract.hpp>
 diff --git a/pkgs/by-name/ce/ceph/ceph.nix b/pkgs/by-name/ce/ceph/ceph.nix
 new file mode 100644
-index 0000000000000000000000000000000000000000..2a975777085f25beebb1270e355d1a9730238a67
+index 0000000000000000000000000000000000000000..782c8aebde9c0a9d4e312a2165b4f8502598b1b6
 --- /dev/null
 +++ b/pkgs/by-name/ce/ceph/ceph.nix
-@@ -0,0 +1,399 @@
+@@ -0,0 +1,402 @@
 +{
 +  lib,
 +  stdenv,
@@ -847,7 +857,10 @@ index 0000000000000000000000000000000000000000..2a975777085f25beebb1270e355d1a97
 +
 +  postFixup = ''
 +    wrapPythonPrograms
-+    wrapProgram $out/bin/ceph-mgr --prefix PYTHONPATH ":" "$(toPythonPath ${placeholder "out"}):$(toPythonPath ${ceph-python-env})"
++    # dashboard-related ceph-mgr functionality needs access to the *rados-admin* binary in addition to the python part
++    wrapProgram $out/bin/ceph-mgr \
++      --prefix PYTHONPATH : "$(toPythonPath ${placeholder "out"}):$(toPythonPath ${ceph-python-env})" \
++      --prefix PATH : $out/bin
 +
 +    # Test that ceph-volume exists since the build system has a tendency to
 +    # silently drop it with misconfigurations.
@@ -1893,6 +1906,101 @@ index 0309d5af5d9564d64a7a1f686ec9407c4146ad50..38887c8384f3158a465191c355af0684
 -  };
 -}
 +scope.ceph
+diff --git a/pkgs/by-name/ce/ceph/patches/0001-mgr-python-interpreter.patch b/pkgs/by-name/ce/ceph/patches/0001-mgr-python-interpreter.patch
+new file mode 100644
+index 0000000000000000000000000000000000000000..b2bdb572bba2fc8a481efb67003003b03e0fb8e8
+--- /dev/null
++++ b/pkgs/by-name/ce/ceph/patches/0001-mgr-python-interpreter.patch
+@@ -0,0 +1,89 @@
++From 20df261e92fd8502398b35456f53761a9bb5ef73 Mon Sep 17 00:00:00 2001
++From: benaryorg <binary@benary.org>
++Date: Fri, 20 Mar 2026 02:46:58 +0000
++Subject: [PATCH 1/2] mgr: python interpreter path fix
++
++The macro actually created a wide string with the *name* of the constant, not its content.
++Thus Python failed to find its interpreter instead using `stat(2)` on every element in *PATH* such as `/usr/bin/MGR_PYTHON_EXECUTABLE`.
++As Python also offers a direct way to hand over the C-string, we can let Python handle the conversion directly, getting rid of the macro entirely.
++
++Signed-off-by: benaryorg <binary@benary.org>
++---
++ src/mgr/PyModuleRegistry.cc | 5 ++---
++ 1 file changed, 2 insertions(+), 3 deletions(-)
++
++diff --git a/src/mgr/PyModuleRegistry.cc b/src/mgr/PyModuleRegistry.cc
++index b340fc64e374929f720eb9ac5d4e7f274707add8..51ab641bf7f7097d0c97ad554880a9cfb1ebd3f2 100644
++--- a/src/mgr/PyModuleRegistry.cc
+++++ b/src/mgr/PyModuleRegistry.cc
++@@ -47,7 +47,6 @@ void PyModuleRegistry::init()
++   std::lock_guard locker(lock);
++ 
++   // Set up global python interpreter
++-#define WCHAR(s) L ## #s
++   PyConfig py_config;
++   // do not enable isolated mode, otherwise we would not be able to have access
++   // to the site packages. since we cannot import any module before initializing
++@@ -68,7 +67,8 @@ void PyModuleRegistry::init()
++   py_config.pathconfig_warnings = 0;
++ 
++   PyStatus status;
++-  status = PyConfig_SetString(&py_config, &py_config.program_name, WCHAR(MGR_PYTHON_EXECUTABLE));
+++  status = PyConfig_SetBytesString(&py_config, &py_config.program_name, MGR_PYTHON_EXECUTABLE);
+++  dout(10) << "set PyConfig program_name to " << std::quoted(MGR_PYTHON_EXECUTABLE) << dendl;
++   ceph_assertf(!PyStatus_Exception(status), "PyConfig_SetString: %s:%s", status.func, status.err_msg);
++   // Some python modules do not cope with an unpopulated argv, so lets
++   // fake one.  This step also picks up site-packages into sys.path.
++@@ -91,7 +91,6 @@ void PyModuleRegistry::init()
++   dout(10) << "set PYTHONPATH to " << std::quoted(pythonpath_env) << dendl;
++   status = Py_InitializeFromConfig(&py_config);
++   ceph_assertf(!PyStatus_Exception(status), "Py_InitializeFromConfig: %s:%s", status.func, status.err_msg);
++-#undef WCHAR
++ 
++   // Drop the GIL and remember the main thread state (current
++   // thread state becomes NULL)
++-- 
++2.53.0
++
++
++From 344d422033cdae87b2bd7768f6bd725b94b2f3bd Mon Sep 17 00:00:00 2001
++From: benaryorg <binary@benary.org>
++Date: Fri, 20 Mar 2026 02:49:12 +0000
++Subject: [PATCH 2/2] cryptotools: use correct interpreter
++
++Python has support for multiple installed versions and has had so for a long time.
++The Python version that *ceph-mgr* (for instance) was compiled against may not be the default *python3* from *PATH*.
++This is the case when testing against a different version, but it is also the case on systems which do not have Python installed globally, or ship the Python version used by Ceph separately (to avoid compatibility issues for instance).
++
++Luckily *ceph-mgr* has access to the exact Python version and interpreter via CMake already, and it passes this through to Python via the *program_name* setting.
++This sets the interpreter appropriately and allows us to use that instead.
++
++Signed-off-by: benaryorg <binary@benary.org>
++---
++ src/python-common/ceph/cryptotools/remote.py | 3 ++-
++ 1 file changed, 2 insertions(+), 1 deletion(-)
++
++diff --git a/src/python-common/ceph/cryptotools/remote.py b/src/python-common/ceph/cryptotools/remote.py
++index 2574b4ecdac215624e43312a799564dfed81d4fe..e4efe56466fe1b7e1a786eda2041180aca6186ed 100644
++--- a/src/python-common/ceph/cryptotools/remote.py
+++++ b/src/python-common/ceph/cryptotools/remote.py
++@@ -23,6 +23,7 @@ from typing import List, Union, Dict, Any, Optional, Tuple
++ import json
++ import logging
++ import subprocess
+++import sys
++ 
++ from .caller import CryptoCaller, CryptoCallError
++ 
++@@ -62,7 +63,7 @@ class ProcessCryptoCaller(CryptoCaller):
++             _input = None
++         else:
++             _input = input_data.encode()
++-        cmd = ['python3', '-m', _ctmodule] + list(args)
+++        cmd = [sys.executable, '-m', _ctmodule] + list(args)
++         logger.warning('CryptoCaller will run: %r', cmd)
++         try:
++             return subprocess.run(
++-- 
++2.53.0
++
 diff --git a/pkgs/by-name/ce/ceph/python-common.nix b/pkgs/by-name/ce/ceph/python-common.nix
 new file mode 100644
 index 0000000000000000000000000000000000000000..1bbc3024487535eb2daddf35666897c296394725
@@ -2039,10 +2147,10 @@ index 0000000000000000000000000000000000000000..38ed4602f0f8a29a2976f56c52c59bae
 +})
 diff --git a/pkgs/by-name/ce/ceph/src.nix b/pkgs/by-name/ce/ceph/src.nix
 new file mode 100644
-index 0000000000000000000000000000000000000000..ca0ef850f14e68cab62408c7322362c9996d8721
+index 0000000000000000000000000000000000000000..93044f491305aef5373f1b3dc4ddc26fb4b188c7
 --- /dev/null
 +++ b/pkgs/by-name/ce/ceph/src.nix
-@@ -0,0 +1,40 @@
+@@ -0,0 +1,45 @@
 +{
 +  stdenvNoCC,
 +  fetchpatch2,
@@ -2060,6 +2168,7 @@ index 0000000000000000000000000000000000000000..ca0ef850f14e68cab62408c7322362c9
 +
 +  patches = [
 +    # required to be able to compile s3select against nixpkgs' arrow-cpp
++    # See: https://github.com/ceph/s3select/pull/169
 +    (fetchpatch2 {
 +      name = "ceph-s3select-arrow-cpp-20.patch";
 +      url = "https://github.com/ceph/s3select/pull/169.diff?full_index=1";
@@ -2068,11 +2177,15 @@ index 0000000000000000000000000000000000000000..ca0ef850f14e68cab62408c7322362c9
 +      hash = "sha256-0jn5X4jIdluCufFXWHeO6skMz6XQpliHkC1tPLK6dbk=";
 +    })
 +    # allows ceph-mgr to run on python 3.12
++    # See: https://github.com/ceph/ceph/pull/66794
 +    (fetchurl {
 +      name = "ceph-upstream-pyo3-workaround.patch";
 +      url = "https://github.com/ceph/ceph/pull/66794.diff?full_index=1";
 +      hash = "sha256-+OrG9JpMOfZwtzAPJkBrzt+8BGKKiNjQMMpkJSHpGFo=";
 +    })
++    # fixes issues when python3 is not on the PATH
++    # See: https://github.com/ceph/ceph/pull/67904
++    ./patches/0001-mgr-python-interpreter.patch
 +  ];
 +
 +  dontFixup = true;
@@ -2084,10 +2197,10 @@ index 0000000000000000000000000000000000000000..ca0ef850f14e68cab62408c7322362c9
 +  '';
 +})
 
-From c4800691c6b6daaae5b7a40635a96e6e79cbe938 Mon Sep 17 00:00:00 2001
+From 24b886cdeac67932b4b7d48ea340e395246a9afc Mon Sep 17 00:00:00 2001
 From: benaryorg <binary@benary.org>
 Date: Tue, 10 Mar 2026 07:26:03 +0000
-Subject: [PATCH 2/2] rl-2605: ceph 20.2.0 major update
+Subject: [PATCH 2/4] rl-2605: ceph 20.2.0 major update
 
 Signed-off-by: benaryorg <binary@benary.org>
 ---
@@ -2095,10 +2208,10 @@ Signed-off-by: benaryorg <binary@benary.org>
  1 file changed, 2 insertions(+)
 
 diff --git a/nixos/doc/manual/release-notes/rl-2605.section.md b/nixos/doc/manual/release-notes/rl-2605.section.md
-index 7e7274883e06d0b9fade657ce716068b13a741db..cd377d3dfad80b15bfbabf494ef3ac95c30bd530 100644
+index cd59164990eb8d9be291ac74137933df5316d497..68d371ab3fb0f4b6ce81c54f1dfed87fec4de819 100644
 --- a/nixos/doc/manual/release-notes/rl-2605.section.md
 +++ b/nixos/doc/manual/release-notes/rl-2605.section.md
-@@ -165,6 +165,8 @@ See <https://github.com/NixOS/nixpkgs/issues/481673>.
+@@ -173,6 +173,8 @@ See <https://github.com/NixOS/nixpkgs/issues/481673>.
  
  - `programs.light` was removed from nixpkgs due to the corresponding package being unmaintained upstream. `brightnessctl` and `programs.acpilight` offer replacements.
  
@@ -2107,3 +2220,133 @@ index 7e7274883e06d0b9fade657ce716068b13a741db..cd377d3dfad80b15bfbabf494ef3ac95
  - The `networking.wireless` module has been security hardened by default: the `wpa_supplicant` daemon now runs under an unprivileged user with restricted access to the system.
  
    As part of these changes, `/etc/wpa_supplicant.conf` has been deprecated: the NixOS-generated configuration file is now linked to `/etc/wpa_supplicant/nixos.conf` and `/etc/wpa_supplicant/imperative.conf` has been added for imperatively configuring `wpa_supplicant` or when using [allowAuxiliaryImperativeNetworks](#opt-networking.wireless.allowAuxiliaryImperativeNetworks).
+
+From 988a597ddaa1ad06775e63d3c04ba771fa50a159 Mon Sep 17 00:00:00 2001
+From: Joshua Peek <josh@users.noreply.github.com>
+Date: Sun, 15 Mar 2026 12:18:04 -0700
+Subject: [PATCH 3/4] nixos/tests/ceph-single-node: add ceph dashboard test
+ coverage
+
+---
+ nixos/tests/ceph-single-node.nix | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/nixos/tests/ceph-single-node.nix b/nixos/tests/ceph-single-node.nix
+index b83eeaaed66cc96271403721ad266698e8f5dfca..caec05c6ad71787132e24479b9cee8c333e074f1 100644
+--- a/nixos/tests/ceph-single-node.nix
++++ b/nixos/tests/ceph-single-node.nix
+@@ -100,6 +100,8 @@ let
+   # For other ways to deploy a ceph cluster, look at the documentation at
+   # https://docs.ceph.com/docs/master/
+   testScript = ''
++    import json
++
+     start_all()
+ 
+     monA.wait_for_unit("network.target")
+@@ -222,6 +224,25 @@ let
+     monA.wait_for_open_port(8080)
+     monA.wait_until_succeeds("curl -q --fail http://localhost:8080")
+     monA.wait_until_succeeds("ceph -s | grep 'HEALTH_OK'")
++
++    # Initialize dashboard creds
++    monA.succeed(
++        "echo 'foo bar baz qux' > /tmp/dashboard_pw",
++        "ceph dashboard ac-user-create admin -i /tmp/dashboard_pw administrator",
++    )
++
++    # Get dashboard auth token
++    auth_payload = json.dumps({"username": "admin", "password": "foo bar baz qux"})
++    auth_response = json.loads(monA.succeed(
++        f"curl --fail -s -X POST -H 'Accept: application/vnd.ceph.api.v1.0+json' -H 'Content-Type: application/json' -d '{auth_payload}' http://localhost:8080/api/auth",
++    ))
++    token = auth_response["token"]
++
++    # Check cluster health via dashboard API
++    health = json.loads(monA.succeed(
++        f"curl --fail -s -H 'Accept: application/vnd.ceph.api.v1.0+json' -H 'Authorization: Bearer {token}' http://localhost:8080/api/health/minimal",
++    ))
++    assert health["health"]["status"] == "HEALTH_OK"
+   '';
+ in
+ {
+
+From e58cf3856580a9f3409ef610ca24d8f8e9b1e707 Mon Sep 17 00:00:00 2001
+From: Joshua Peek <josh@users.noreply.github.com>
+Date: Sun, 15 Mar 2026 13:02:33 -0700
+Subject: [PATCH 4/4] nixos/tests/ceph-single-node: add ceph rgw dashboard test
+ coverage
+
+---
+ nixos/tests/ceph-single-node.nix | 23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+
+diff --git a/nixos/tests/ceph-single-node.nix b/nixos/tests/ceph-single-node.nix
+index caec05c6ad71787132e24479b9cee8c333e074f1..c7d822230fde6ddfad7b2a8995c08368fc5c537d 100644
+--- a/nixos/tests/ceph-single-node.nix
++++ b/nixos/tests/ceph-single-node.nix
+@@ -43,6 +43,7 @@ let
+     { pkgs, ... }:
+     {
+       virtualisation = {
++        memorySize = 2048;
+         emptyDiskImages = [
+           20480
+           20480
+@@ -92,6 +93,10 @@ let
+           cfg.osd2.name
+         ];
+       };
++      rgw = {
++        enable = true;
++        daemons = [ cfg.monA.name ];
++      };
+     };
+   };
+ 
+@@ -196,6 +201,16 @@ let
+         "ceph osd pool delete single-node-other-test single-node-other-test --yes-i-really-really-mean-it",
+     )
+ 
++    # Bootstrap RGW
++    monA.succeed(
++        "sudo -u ceph mkdir -p /var/lib/ceph/radosgw/ceph-${cfg.monA.name}",
++        "ceph auth get-or-create client.${cfg.monA.name} osd 'allow rwx' mon 'allow rw' > /var/lib/ceph/radosgw/ceph-${cfg.monA.name}/keyring",
++        "chown ceph:ceph /var/lib/ceph/radosgw/ceph-${cfg.monA.name}/keyring",
++        "systemctl start ceph-rgw-${cfg.monA.name}",
++    )
++    monA.wait_for_unit("ceph-rgw-${cfg.monA.name}")
++    monA.wait_for_open_port(7480)
++
+     # Shut down ceph by stopping ceph.target.
+     monA.succeed("systemctl stop ceph.target")
+ 
+@@ -206,6 +221,7 @@ let
+     monA.wait_for_unit("ceph-osd-${cfg.osd0.name}")
+     monA.wait_for_unit("ceph-osd-${cfg.osd1.name}")
+     monA.wait_for_unit("ceph-osd-${cfg.osd2.name}")
++    monA.wait_for_unit("ceph-rgw-${cfg.monA.name}")
+ 
+     # Ensure the cluster comes back up again
+     monA.succeed("ceph -s | grep 'mon: 1 daemons'")
+@@ -229,6 +245,7 @@ let
+     monA.succeed(
+         "echo 'foo bar baz qux' > /tmp/dashboard_pw",
+         "ceph dashboard ac-user-create admin -i /tmp/dashboard_pw administrator",
++        "ceph dashboard set-rgw-credentials",
+     )
+ 
+     # Get dashboard auth token
+@@ -243,6 +260,12 @@ let
+         f"curl --fail -s -H 'Accept: application/vnd.ceph.api.v1.0+json' -H 'Authorization: Bearer {token}' http://localhost:8080/api/health/minimal",
+     ))
+     assert health["health"]["status"] == "HEALTH_OK"
++
++    # List daemons via REST API
++    rgw_daemons = json.loads(monA.succeed(
++        f"curl --fail -s -H 'Accept: application/vnd.ceph.api.v1.0+json' -H 'Authorization: Bearer {token}' http://localhost:8080/api/rgw/daemon",
++    ))
++    assert rgw_daemons[0]["id"] == "a"
+   '';
+ in
+ {

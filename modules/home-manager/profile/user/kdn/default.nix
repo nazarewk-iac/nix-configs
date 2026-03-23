@@ -63,17 +63,14 @@ in {
             $DRY_RUN_CMD ln -sfT "${nc.rel}/important/password-store" "$HOME/.password-store"
           '';
         };
-        programs.password-store.enable = true;
-        programs.password-store.settings = {
-          PASSWORD_STORE_DIR = "${config.home.homeDirectory}/.password-store";
-          PASSWORD_STORE_CLIP_TIME = "10";
-        };
+        # kdn.programs.password-store.enable = true; # currently inside gnupg
       }
       {
         programs.gh.enable = false;
         programs.gh.gitCredentialHelper.enable = false;
         # programs.git.signing.key = "CDDFE1610327F6F7A693125698C23F71A188991B";
         programs.git.signing.key = null;
+        programs.git.signing.format = "openpgp"; # 2023-03-23: default changed to null
         programs.git.signing.signByDefault = true;
         programs.git.ignores = [(builtins.readFile ./.gitignore.tpl)];
         programs.git.attributes = [(builtins.readFile ./.gitattributes)];

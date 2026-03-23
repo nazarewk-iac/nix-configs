@@ -13,7 +13,8 @@ in {
   config = lib.mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
       duckdb # read many different files as databases
-      usql # universal DB client
+      # TODO: 2026-03-23: didn't build: enable after https://github.com/NixOS/nixpkgs/pull/499348
+      #usql # universal DB client
     ];
   };
 }

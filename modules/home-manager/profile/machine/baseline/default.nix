@@ -21,6 +21,7 @@ in {
       }
       {
         xdg.userDirs.enable = pkgs.stdenv.isLinux;
+        xdg.userDirs.setSessionVariables = lib.mkDefault true; # 2025-03-23: default changed to false
         xdg.userDirs.createDirectories = false;
       }
       {

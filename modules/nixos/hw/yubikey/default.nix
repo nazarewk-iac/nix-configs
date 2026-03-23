@@ -57,9 +57,6 @@ in {
               disable-application = "piv";
             };
 
-            # for Android interoperability, see https://github.com/drduh/YubiKey-Guide/issues/152#issuecomment-852176877
-            programs.password-store.settings.PASSWORD_STORE_GPG_OPTS = "--no-throw-keyids";
-            programs.gpg.settings.no-throw-keyids = true;
           }
         ];
       }
