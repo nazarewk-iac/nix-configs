@@ -42,6 +42,7 @@ in {
       kdn.env.packages = with pkgs; [
         conntrack-tools
         ebtables
+        ethtool
         iptables
         nftables
       ];
