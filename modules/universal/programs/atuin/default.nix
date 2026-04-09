@@ -1,0 +1,292 @@
+{
+  lib,
+  pkgs,
+  config,
+  kdnConfig,
+  ...
+}: {
+  options.kdn.programs.atuin = {
+            enable = lib.mkEnableOption "Atuin shell history management and sync";
+
+            enableZFSWorkaround = lib.mkOption {
+              type = with lib.types; bool;
+              default = true;
+            };
+
+            users = lib.mkOption {
+              type = with lib.types; listOf str;
+            };
+            autologinUsers = lib.mkOption {
+              type = with lib.types; listOf str;
+            };
+          };
+
+  imports = [
+    (
+    # litestream inspired by https://github.com/NixOS/nixpkgs/blob/2726f127c15a4cc9810843b96cad73c7eb39e443/nixos/modules/services/network-filesystems/litestream/default.nix
+    {
+      lib,
+      pkgs,
+      config,
+      kdnConfig,
+      ...
+    }:
+      lib.optionalAttrs (kdnConfig.util.hasParentOfAnyType ["nixos"]) (
+        let
+          cfg = config.kdn.programs.atuin;
+        in {
+
+config = kdnConfig.util.ifHM (lib.mkIf cfg.enable (
+            lib.mkMerge [
+              {
+                programs.atuin.enable = true;
+                programs.atuin.settings = {
+                  auto_sync = true;
+                  update_check = false;
+                  sync_frequency = "60";
+                  daemon = {
+                    enabled = true;
+                    sync_frequency = 300;
+                  };
+                };
+                programs.atuin.forceOverwriteSettings = true;
+              }
+              (lib.mkIf (config.home.username != "root") {
+                systemd.user.services.atuind = {
+                  Unit = {
+                    Description = "Atuin shell history synchronization daemon";
+                    After = [
+                      "network.target"
+                    ];
+                    Wants = [
+                      "network.target"
+                    ];
+                    Requires = [
+                    ];
+                  };
+                  Service.ExecStart = "${lib.getExe config.programs.atuin.package} daemon";
+                  Service.Slice = "background.slice";
+                  Service.Environment = [
+                    "ATUIN_LOG=info"
+                  ];
+                  Install.WantedBy = ["default.target"];
+                };
+              })
+            ]
+          ));
+        }
+      )
+    )
+    (
+      kdnConfig.util.ifTypes ["nixos"] (
+        let
+          cfg = config.kdn.programs.atuin;
+
+          getRuntimeDir = username: let
+            user = config.users.users."${username}";
+          in "/run/user/${toString user.uid}/atuin";
+        in {
+          config = lib.mkIf cfg.enable (
+              lib.mkMerge [
+              (kdnConfig.util.ifHMParent {home-manager.sharedModules = [{kdn.programs.atuin = lib.mkDefault cfg;}];})
+{
+                kdn.programs.atuin.users = ["root"];
+                kdn.programs.atuin.autologinUsers = ["root"];
+                home-manager.users = lib.pipe cfg.users [
+                  (map (username: {
+                    name = username;
+                    value = {
+                      kdn.programs.atuin.enable = true;
+                      kdn.disks.persist."usr/data".directories = [".local/share/atuin"];
+                      programs.atuin.settings = {
+                        daemon.socket_path = "${getRuntimeDir username}/atuin.sock";
+                        sync.records = true;
+                      };
+                    };
+                  }))
+                  builtins.listToAttrs
+                ];
+              }
+              (lib.mkIf cfg.enableZFSWorkaround (
+                let
+                  users = lib.pipe cfg.users [
+                    (map (
+                      username: let
+                        user = config.users.users."${username}";
+                        tmp.history = "${getRuntimeDir username}/history.db";
+                        tmp.records = "${getRuntimeDir username}/records.db";
+
+                        litestream.config = let
+                          mkReplica = type: {
+                            path = "${user.home}/.local/share/atuin/litestream/${type}";
+                            validation-interval = "1m";
+                            snapshot-interval = "1h";
+                            retention = "6h";
+                          };
+                        in {
+                          dbs = [
+                            {
+                              path = tmp.history;
+                              replicas = [(mkReplica "history")];
+                            }
+                            {
+                              path = tmp.records;
+                              replicas = [(mkReplica "records")];
+                            }
+                          ];
+                        };
+                        litestream.configPath =
+                          (pkgs.formats.yaml {}).generate "atuin-litestream-config-${username}.yaml"
+                          litestream.config;
+                        litestream.cmd = cmd: args:
+                          lib.escapeShellArgs (
+                            [
+                              (lib.getExe pkgs.litestream)
+                              cmd
+                              "-config"
+                              litestream.configPath
+                            ]
+                            ++ args
+                          );
+                      in
+                        lib.nameValuePair username {
+                          uid = user.uid;
+                          litestream.restores =
+                            map (
+                              db:
+                                litestream.cmd "restore" [
+                                  "-if-replica-exists"
+                                  "-if-db-not-exists"
+                                  db.path
+                                ]
+                            )
+                            litestream.config.dbs;
+                          litestream.replicate = litestream.cmd "replicate" [];
+                          atuin.settings = {
+                            db_path = tmp.history;
+                            # 2024-03-28: not documented, but present in https://github.com/atuinsh/atuin/blob/82a7c8d3219749dd298b23bae22456657ee92575/atuin-client/src/settings.rs#L590C1-L590C13
+                            record_store_path = tmp.records;
+                          };
+                        }
+                    ))
+                    builtins.listToAttrs
+                  ];
+                in {
+                  environment.systemPackages = with pkgs; [litestream];
+                  home-manager.users =
+                    builtins.mapAttrs (_: user: {
+                      programs.atuin.settings = user.atuin.settings;
+                    })
+                    users;
+                  systemd.services =
+                    lib.attrsets.mapAttrs' (
+                      username: user:
+                        lib.nameValuePair "atuin-zfs-workaround-${username}" {
+                          wantedBy = ["default.target"];
+                          requires = [
+                            "user-runtime-dir@${toString user.uid}.service"
+                          ];
+                          after = [
+                            "user-runtime-dir@${toString user.uid}.service"
+                          ];
+                          description = "Synchronize Atuin database on tmpfs for ${username}";
+
+                          serviceConfig.User = username;
+                          serviceConfig.ExecStartPre = user.litestream.restores;
+                          serviceConfig.ExecStart = user.litestream.replicate;
+                        }
+                    )
+                    users;
+                }
+              ))
+              (lib.mkIf (builtins.elem "root" cfg.users) {
+                systemd.services.atuind = {
+                  description = "Atuin shell history synchronization daemon for root user";
+                  # require home-manager-root to give it a chance to set up atuind configuration
+                  # otherwise the socket is at a wrong place
+                  after = [
+                    "network-online.target"
+                    "home-manager-root.service"
+                  ];
+                  requires = [
+                    "network-online.target"
+                    "home-manager-root.service"
+                  ];
+                  wantedBy = ["default.target"];
+                  environment.HOME = config.users.users.root.home;
+                  environment.ATUIN_LOG = "info";
+                  serviceConfig.ExecStart = "${lib.getExe pkgs.atuin} daemon";
+                };
+              })
+              (lib.mkIf config.kdn.security.secrets.allowed {
+                systemd.services = lib.pipe cfg.autologinUsers [
+                  (map (username: {
+                    name = "kdn-atuin-login-${username}";
+                    value = {
+                      wantedBy = ["network-online.target"];
+                      after = [
+                        "network-online.target"
+                        "kdn-secrets.target"
+                      ];
+                      requires = [
+                        "network-online.target"
+                        "kdn-secrets.target"
+                      ];
+
+                      serviceConfig = {
+                        Type = "oneshot";
+                        RemainAfterExit = true;
+                        User = username;
+
+                        LoadCredential = [
+                          "username:${config.sops.secrets."default/atuin/username".path}"
+                          "password:${config.sops.secrets."default/atuin/password".path}"
+                          "key:${config.sops.secrets."default/atuin/key".path}"
+                        ];
+                      };
+
+                      environment.CREDS_DIR = "%d";
+
+                      script = let
+                        hmUser = config.home-manager.users."${username}";
+                      in ''
+                        export PATH="${
+                          lib.makeBinPath (
+                            with pkgs; [
+                              coreutils
+                              gnugrep
+                              atuin
+                            ]
+                          )
+                        }:$PATH"
+                        set -eEuo pipefail
+
+                        # `sync.records = true` should enable API v2 according to https://github.com/atuinsh/atuin/issues/3050
+                        # but `atuin status` still uses v1 API and cannot be used
+                        if atuin status | grep -v 'You are not logged in' || test -s "${hmUser.xdg.dataHome}/atuin/session" ; then
+                          exit 0
+                        fi
+
+                        echo 'Logging in...'
+                        atuin account login \
+                            -u "$(cat "$CREDS_DIR/username")" \
+                            -p "$(cat "$CREDS_DIR/password")" \
+                            -k "$(cat "$CREDS_DIR/key")"
+
+                        echo 'Syncing...'
+                        atuin sync --force
+
+                        echo 'Finished.'
+                      '';
+                    };
+                  }))
+                  builtins.listToAttrs
+                ];
+              })
+            ]
+          );
+        }
+      )
+    )
+  ];
+}

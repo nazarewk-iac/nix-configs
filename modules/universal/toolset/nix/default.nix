@@ -26,5 +26,10 @@ in {
         pkgs.kdn.kdn-nix
       ];
     })
+    (kdnConfig.util.ifTypes ["nixos"] {
+      programs.fish.interactiveShellInit = ''
+        complete -c kdn-nix-which --wraps which
+      '';
+    })
   ]);
 }

@@ -63,6 +63,7 @@ in {
   };
   options.moduleType = lib.mkOption {
     type = with lib.types; str;
+    default = "root";
   };
   options.modules = lib.mkOption {
     type = with lib.types; listOf anything;

@@ -1,0 +1,25 @@
+{
+  lib,
+  pkgs,
+  config,
+  kdnConfig,
+  ...
+}:
+kdnConfig.util.ifTypes ["nixos"] (
+  let
+    cfg = config.kdn.development.android;
+  in {
+    options.kdn.development.android = {
+      enable = lib.mkEnableOption "working with Android devices";
+    };
+
+    config = lib.mkIf cfg.enable {
+      environment.systemPackages = with pkgs; [
+        android-tools
+      ];
+      services.udev.packages = [
+        # pkgs.android-udev-rules # superseded by built-in rules
+      ];
+    };
+  }
+)
