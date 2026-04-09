@@ -1,6 +1,7 @@
 {
   lib,
   config,
+  kdnConfig,
   pkgs,
   ...
 }: let
@@ -43,6 +44,8 @@ in {
         #   };
         # }))
       ];
-    }
+   }
+    (kdnConfig.util.ifTypes ["nixos"] {
+    })
   ]);
 }

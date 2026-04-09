@@ -103,7 +103,7 @@ in {
         # REMOTE access
         services.openssh.enable = true;
         services.openssh.openFirewall = true;
-        services.openssh.settings.PasswordAuthentication = false;
+        services.openssh.settings.PasswordAuthentication = lib.mkDefault false;
         services.openssh.settings.GatewayPorts = "clientspecified";
         programs.ssh.extraConfig = lib.mkBefore ''
           Include /etc/ssh/ssh_config.d/*.config

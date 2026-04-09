@@ -23,19 +23,6 @@
       boot.loader.systemd-boot.enable = false;
       virtualisation.buildMemorySize = 16 * 1024;
       virtualisation.diskImageSize = 20 * 1024;
-
-      system.activationScripts.baguette.deps = ["pre-baguette"];
-      system.activationScripts.pre-baguette.text = ''
-        (
-          dirs=(/usr/share /usr/sbin /sbin)
-          set -x
-          for dir in "''${dirs[@]}" ; do
-            ls -la "$dir"
-            mkdir -p "$dir"
-            chmod 0755 "$dir"
-          done
-        )
-      '';
     }
     {
       kdn.profile.machine.baseline.enable = true;
@@ -49,5 +36,15 @@
       kdn.development.llm.online.enable = false;
     }
     # TODO: add SSH host keys (using kdnctl?)
+    {
+      # relax some settings for easier debugging
+      services.openssh.settings.PasswordAuthentication = true;
+      services.openssh.ports = [22 2323];
+      security.sudo.wheelNeedsPassword = false;
+    }
+    {
+      networking.firewall.trustedInterfaces = ["nb-priv" "eth0"];
+      networking.firewall.enable = lib.mkForce true;
+    }
   ];
 }

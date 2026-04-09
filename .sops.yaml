@@ -49,6 +49,7 @@ keys:
     pwet: {age: [&ssh-pwet age17kqq6wnlf94p5hcy2ycmz44tuafnglvk8rtv4g3udwc0d9y2z55s8jmjly]}
     turo: {age: [&ssh-turo age13lmms4tjhygj4x7x0v6vuls3exx06mj9my5wuy720frxd79gcdkspu752v]}
     yost: {age: [&ssh-yost age1yu53n5gcthffh7ee5mm90spqhky9rfknst0nlw0vwk2kx4z75qaq8hvfcw]}
+    gaz: {age: [&ssh-gaz age1kemr9a7m4xr9qqk5nvrmf9dvvzu40ztfpd0r5t9sjppsn2rttewqk6k2vj]}
     # SSH-KEYS-DEFINITION-INSERT-ABOVE
 
 creation_rules:
@@ -82,6 +83,7 @@ creation_rules:
           - *ssh-pwet
           - *ssh-turo
           - *ssh-yost
+          - *ssh-gaz
           # SSH-KEYS-USAGE-INSERT-ABOVE
           - *yk-etra-unattended
           - *yk-pryll-unattended

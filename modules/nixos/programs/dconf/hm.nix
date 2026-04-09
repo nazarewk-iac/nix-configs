@@ -15,6 +15,7 @@ in {
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
+        dconf.enable = true;
         kdn.apps.dconf = {
           enable = true;
           package.install = false;
