@@ -175,10 +175,17 @@ in {
                 Type = "oneshot";
                 RemainAfterExit = true;
                 User = username;
+
+                LoadCredential = [
+                  "username:${config.sops.secrets."default/atuin/username".path}"
+                  "password:${config.sops.secrets."default/atuin/password".path}"
+                  "key:${config.sops.secrets."default/atuin/key".path}"
+                ];
               };
 
+              environment.CREDS_DIR = "%d";
+
               script = let
-                secrets = config.sops.secrets;
                 hmUser = config.home-manager.users."${username}";
               in ''
                 export PATH="${
@@ -200,9 +207,9 @@ in {
 
                 echo 'Logging in...'
                 atuin account login \
-                    -u "$(cat '${secrets."default/atuin/username".path}')" \
-                    -p "$(cat '${secrets."default/atuin/password".path}')" \
-                    -k "$(cat '${secrets."default/atuin/key".path}')"
+                    -u "$(cat "$CREDS_DIR/username")" \
+                    -p "$(cat "$CREDS_DIR/password")" \
+                    -k "$(cat "$CREDS_DIR/key")"
 
                 echo 'Syncing...'
                 atuin sync --force
