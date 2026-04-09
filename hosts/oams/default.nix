@@ -179,5 +179,8 @@
     {
       kdn.fs.zfs.containers.fsname = "oams-main/containers/storage";
     }
+    {
+      kdn.services.samba.enable = true;
+    }
   ];
 }

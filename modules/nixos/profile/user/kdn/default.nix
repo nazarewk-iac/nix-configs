@@ -35,6 +35,7 @@ in {
             "plugdev"
             "podman"
             "power"
+            "samba"
             "scanner"
             "tty"
             "video"
