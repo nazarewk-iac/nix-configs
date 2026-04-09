@@ -50,7 +50,7 @@ in {
       steamtinkerlaunch
 
       # non-steam
-      #lutris # TODO: 2025-09-19: depends on pyrate-limiter, which hangs indefinitely on 93% of tests
+      lutris
       heroic # A Native GOG, Epic, and Amazon Games Launcher for Linux, Windows and Mac
 
       # proton utils
@@ -62,18 +62,25 @@ in {
       winetricks
       bottles
       wine-wayland
+
+      dxvk
     ];
 
     home-manager.sharedModules = [
       {
         kdn.disks.persist."usr/data".directories = [
+          ".config/heroic"
           ".local/share/bottles"
           ".local/share/Steam"
           # TODO: split those up into programs
           ".local/share/lutris"
+          ".local/share/umu" # some Steam compatibility tool
           "/Games"
         ];
         kdn.disks.persist."usr/cache".directories = [
+          ".cache/umu"
+          ".cache/umu-protonfixes"
+          ".config/heroic/Cache"
           ".local/share/lutris/runtime"
           ".local/share/bottles/runners"
           ".local/share/bottles/temp"

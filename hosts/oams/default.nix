@@ -13,8 +13,8 @@
     {
       kdn.hostName = "oams";
 
-      system.stateVersion = "23.11";
-      home-manager.sharedModules = [{home.stateVersion = "23.11";}];
+      system.stateVersion = "26.05";
+      home-manager.sharedModules = [{home.stateVersion = "26.05";}];
       networking.hostId = "ce0f2f33"; # cut -c-8 </proc/sys/kernel/random/uuid
     }
     {
@@ -150,14 +150,15 @@
     {
       # keep all the mountpoints and software available
       kdn.profile.machine.gaming.enable = true;
-      kdn.profile.machine.gaming.vulkan.deviceId = "1002:73df";
-      kdn.profile.machine.gaming.vulkan.deviceName = "AMD Radeon RX 6800M";
+      # kdn.profile.machine.gaming.vulkan.deviceId = "1002:73df";
+      # kdn.profile.machine.gaming.vulkan.deviceName = "AMD Radeon RX 6800M";
 
       kdn.env.packages = [
         pkgs.kdn.kdn-gamingctl
       ];
+      kdn.hw.gpu.supergfxd.mode = null;
     }
-    {
+    (lib.mkIf false {
       specialisation.vfio = {
         inheritParentConfig = true;
         configuration = {
@@ -169,12 +170,7 @@
           ];
         };
       };
-    }
-    {
-      # need to allow for a Netbird assignment
-      networking.firewall.trustedInterfaces = ["tun0"];
-      systemd.network.wait-online.enable = false;
-    }
+    })
     {
       # kdn.nix.remote-builder.localhost.publicHostKey = "??";
       kdn.nix.remote-builder.localhost.maxJobs = 6;

@@ -17,11 +17,12 @@ in {
     supergfxd.mode = lib.mkOption {
       type = with lib.types;
         enum [
+          null
           "Integrated"
           "Hybrid"
           "VFIO"
         ];
-      default = "Integrated";
+      default = null;
     };
   };
 
@@ -52,11 +53,11 @@ in {
           supergfxctl
         ];
         boot.kernelParams = lib.concatLists [
-          (lib.lists.optional config.kdn.hw.gpu.amd.enable "supergfxd.mode=${cfg.supergfxd.mode}")
+          (lib.lists.optional (config.kdn.hw.gpu.amd.enable && cfg.supergfxd.mode != null) "supergfxd.mode=${cfg.supergfxd.mode}")
         ];
 
         services.supergfxd.settings = {
-          mode = cfg.supergfxd.mode;
+          mode = lib.mkIf (cfg.supergfxd.mode != null) cfg.supergfxd.mode;
           always_reboot = false;
           no_logind = true;
           logout_timeout_s = 180;
@@ -67,7 +68,7 @@ in {
         };
       })
       (lib.mkIf cfg.vfio.enable {
-        kdn.hw.gpu.supergfxd.mode = "Integrated";
+        kdn.hw.gpu.supergfxd.mode = lib.mkDefault "Integrated";
         services.supergfxd.settings = {
           vfio_enable = true;
           vfio_save = true;
