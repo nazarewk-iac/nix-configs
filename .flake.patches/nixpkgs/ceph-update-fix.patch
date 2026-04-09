@@ -1,7 +1,7 @@
-From a5977f78455defff92526d3f12368979d38e580b Mon Sep 17 00:00:00 2001
+From 1045d4d01a83890423128b90ab678998a0787bd1 Mon Sep 17 00:00:00 2001
 From: benaryorg <binary@benary.org>
 Date: Fri, 27 Feb 2026 04:10:30 +0000
-Subject: [PATCH 1/4] ceph: 19.2.3 -> 20.2.0
+Subject: [PATCH 1/8] ceph: 19.2.3 -> 20.2.0
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -11,6 +11,20 @@ Among other benefits this makes overriding a single package for the entire build
 The primary reason however is to allow calling code to access *overrideScope* to change internal packages such as *ceph-src*.
 Since the source code is used by multiple packages, notably the C++ and the Python code – independently – any patches that touch both (such as the PyO3 patch introduced herein) need to apply to both.
 Using just packages with *patches* set makes this harder to control.
+
+Material changes:
+
+- Python: 3.11 -> 3.12
+- Boost: 1.83 -> 1.87
+- Ceph: 19.2.3 -> 20.2.0
+- fmt: 9 -> 12
+- changes in patches (new and old) due to the above updates
+- Python dependencies on *jmespath* and *xmltodict*
+- `replace-fail` for *substituteInPlace*
+- UADK disabled by default (otherwise aarch64 fails to compile)
+- *ceph-mgr* wrapper now adds ceph binaries to *PATH*
+
+In-depth information for most of this can be found in [#494583](https://redirect.github.com/NixOS/nixpkgs/pull/494583).
 
 Signed-off-by: benaryorg <binary@benary.org>
 ---
@@ -28,9 +42,9 @@ Signed-off-by: benaryorg <binary@benary.org>
  pkgs/by-name/ce/ceph/python-common.nix        |  29 +
  pkgs/by-name/ce/ceph/python-env.nix           |  50 ++
  pkgs/by-name/ce/ceph/rocksdb.nix              |  14 +
- pkgs/by-name/ce/ceph/scope.nix                |  27 +
- pkgs/by-name/ce/ceph/src.nix                  |  45 ++
- 16 files changed, 683 insertions(+), 1368 deletions(-)
+ pkgs/by-name/ce/ceph/scope.nix                |  31 +
+ pkgs/by-name/ce/ceph/src.nix                  |  44 ++
+ 16 files changed, 686 insertions(+), 1368 deletions(-)
  delete mode 100644 pkgs/by-name/ce/ceph/arrow-cpp-19.nix
  delete mode 100644 pkgs/by-name/ce/ceph/boost-1.85.patch
  delete mode 100644 pkgs/by-name/ce/ceph/boost-1.86-PyModule.patch
@@ -2094,7 +2108,7 @@ index 0000000000000000000000000000000000000000..8d50840196aa2074e1f4c6c9f78cb76c
 +)
 diff --git a/pkgs/by-name/ce/ceph/rocksdb.nix b/pkgs/by-name/ce/ceph/rocksdb.nix
 new file mode 100644
-index 0000000000000000000000000000000000000000..7cae1d8377e2b890a9a674fc20933d8e55306d12
+index 0000000000000000000000000000000000000000..27a317029ef21ae74380f245f8fa40b245058bb6
 --- /dev/null
 +++ b/pkgs/by-name/ce/ceph/rocksdb.nix
 @@ -0,0 +1,14 @@
@@ -2103,21 +2117,21 @@ index 0000000000000000000000000000000000000000..7cae1d8377e2b890a9a674fc20933d8e
 +  fetchFromGitHub,
 +}:
 +
-+rocksdb.overrideAttrs {
++rocksdb.overrideAttrs rec {
 +  version = "7.9.2";
 +  src = fetchFromGitHub {
 +    owner = "facebook";
 +    repo = "rocksdb";
-+    tag = "v7.9.2";
++    tag = "v${version}";
 +    hash = "sha256-5P7IqJ14EZzDkbjaBvbix04ceGGdlWBuVFH/5dpD5VM=";
 +  };
 +}
 diff --git a/pkgs/by-name/ce/ceph/scope.nix b/pkgs/by-name/ce/ceph/scope.nix
 new file mode 100644
-index 0000000000000000000000000000000000000000..38ed4602f0f8a29a2976f56c52c59baea43af046
+index 0000000000000000000000000000000000000000..1ebf2f3300a4ce31d45346c0aa8b8c2b0f9f33b3
 --- /dev/null
 +++ b/pkgs/by-name/ce/ceph/scope.nix
-@@ -0,0 +1,27 @@
+@@ -0,0 +1,31 @@
 +{ lib, pkgs }:
 +
 +lib.makeScope pkgs.newScope (self: {
@@ -2141,23 +2155,27 @@ index 0000000000000000000000000000000000000000..38ed4602f0f8a29a2976f56c52c59bae
 +    }
 +  ) { };
 +
-+  ceph-src = self.callPackage ./src.nix { };
++  # not actually a derivation, just a DRY helper
 +  ceph-meta = self.callPackage ./meta.nix { };
++
++  # patched source to build all derivations from
++  ceph-src = self.callPackage ./src.nix { };
++
 +  ceph = self.callPackage ./ceph.nix { };
 +})
 diff --git a/pkgs/by-name/ce/ceph/src.nix b/pkgs/by-name/ce/ceph/src.nix
 new file mode 100644
-index 0000000000000000000000000000000000000000..93044f491305aef5373f1b3dc4ddc26fb4b188c7
+index 0000000000000000000000000000000000000000..5f79bc62a7d20ad78654fcc042b6b01a17de7d3b
 --- /dev/null
 +++ b/pkgs/by-name/ce/ceph/src.nix
-@@ -0,0 +1,45 @@
+@@ -0,0 +1,44 @@
 +{
-+  stdenvNoCC,
++  applyPatches,
 +  fetchpatch2,
 +  fetchurl,
 +}:
 +
-+stdenvNoCC.mkDerivation (final: {
++applyPatches (final: {
 +  pname = "ceph-src";
 +  version = "20.2.0";
 +
@@ -2183,48 +2201,277 @@ index 0000000000000000000000000000000000000000..93044f491305aef5373f1b3dc4ddc26f
 +      url = "https://github.com/ceph/ceph/pull/66794.diff?full_index=1";
 +      hash = "sha256-+OrG9JpMOfZwtzAPJkBrzt+8BGKKiNjQMMpkJSHpGFo=";
 +    })
++    # fix prometheus metrics without orchestrator
++    # See: https://github.com/ceph/ceph/pull/65906
++    (fetchurl {
++      name = "ceph-prometheus-fix.diff";
++      url = "https://github.com/ceph/ceph/pull/65906.diff?full_index=1";
++      hash = "sha256-3QEtrsVJYUFvq1eT16v8fsmjpZMqOZ8AAoH+Sv7YyYA=";
++    })
 +    # fixes issues when python3 is not on the PATH
 +    # See: https://github.com/ceph/ceph/pull/67904
 +    ./patches/0001-mgr-python-interpreter.patch
 +  ];
-+
-+  dontFixup = true;
-+  configurePhase = ":";
-+  buildPhase = ":";
-+  installPhase = ''
-+    cd ..
-+    mv ceph-${final.version} $out
-+  '';
 +})
 
-From 24b886cdeac67932b4b7d48ea340e395246a9afc Mon Sep 17 00:00:00 2001
+From c0885113550ef4df6d4f073654bc52aefd604546 Mon Sep 17 00:00:00 2001
 From: benaryorg <binary@benary.org>
-Date: Tue, 10 Mar 2026 07:26:03 +0000
-Subject: [PATCH 2/4] rl-2605: ceph 20.2.0 major update
+Date: Mon, 6 Apr 2026 17:36:08 +0000
+Subject: [PATCH 2/8] ceph: no null defaults
 
 Signed-off-by: benaryorg <binary@benary.org>
 ---
- nixos/doc/manual/release-notes/rl-2605.section.md | 2 ++
- 1 file changed, 2 insertions(+)
+ pkgs/by-name/ce/ceph/ceph.nix | 32 ++++++++++++++++----------------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
+
+diff --git a/pkgs/by-name/ce/ceph/ceph.nix b/pkgs/by-name/ce/ceph/ceph.nix
+index 782c8aebde9c0a9d4e312a2165b4f8502598b1b6..35f0b12a133682d54bf89a125567f133e777c470 100644
+--- a/pkgs/by-name/ce/ceph/ceph.nix
++++ b/pkgs/by-name/ce/ceph/ceph.nix
+@@ -64,22 +64,22 @@
+   zstd,
+ 
+   # Optional Dependencies
+-  curl ? null,
+-  expat ? null,
+-  fuse ? null,
+-  libatomic_ops ? null,
+-  libedit ? null,
+-  libs3 ? null,
+-  yasm ? null,
++  curl,
++  expat,
++  fuse,
++  libatomic_ops,
++  libedit,
++  libs3,
++  yasm,
+ 
+   # Mallocs
+-  gperftools ? null,
+-  jemalloc ? null,
++  gperftools,
++  jemalloc,
+ 
+   # Crypto Dependencies
+-  cryptopp ? null,
+-  nspr ? null,
+-  nss ? null,
++  cryptopp,
++  nspr,
++  nss,
+ 
+   # Linux Only Dependencies
+   linuxHeaders,
+@@ -90,10 +90,10 @@
+   keyutils,
+   rdma-core,
+   rabbitmq-c,
+-  libaio ? null,
+-  libxfs ? null,
+-  liburing ? null,
+-  zfs ? null,
++  libaio,
++  libxfs,
++  liburing,
++  zfs,
+   withSystemd ? lib.meta.availableOn stdenv.hostPlatform systemd,
+ }:
+ 
+
+From fc48340e5d8a9b652c1ab94f441cefccf2c5515e Mon Sep 17 00:00:00 2001
+From: benaryorg <binary@benary.org>
+Date: Mon, 6 Apr 2026 17:37:45 +0000
+Subject: [PATCH 3/8] ceph: lib.cmake{Bool,Feature,OptionType}
+
+Signed-off-by: benaryorg <binary@benary.org>
+---
+ pkgs/by-name/ce/ceph/ceph.nix | 36 +++++++++++++++++++----------------
+ 1 file changed, 20 insertions(+), 16 deletions(-)
+
+diff --git a/pkgs/by-name/ce/ceph/ceph.nix b/pkgs/by-name/ce/ceph/ceph.nix
+index 35f0b12a133682d54bf89a125567f133e777c470..61cff095ae23af28143ccc16bb5f5a90a9077ad0 100644
+--- a/pkgs/by-name/ce/ceph/ceph.nix
++++ b/pkgs/by-name/ce/ceph/ceph.nix
+@@ -282,10 +282,13 @@ stdenv.mkDerivation {
+   '';
+ 
+   cmakeFlags = [
+-    "-DCMAKE_INSTALL_DATADIR=${placeholder "lib"}/lib"
++    (lib.cmakeOptionType "path" "CMAKE_INSTALL_DATADIR" "${placeholder "lib"}/lib")
+ 
+-    "-DWITH_CEPHFS_SHELL:BOOL=ON"
+-    "-DWITH_SYSTEMD:BOOL=${if withSystemd then "ON" else "OFF"}"
++    (lib.cmakeBool "WITH_CEPHFS_SHELL" true)
++    (lib.cmakeBool "WITH_SYSTEMD" withSystemd)
++    # Providing a type with this (as is the case with `lib.cmakeOptionType`) triggers an edge case.
++    # This requires an upstream fix/patch as soon as upstream raises the minimum CMake version to 3.21 or higher.
++    # See also: https://github.com/NixOS/nixpkgs/pull/494583#issuecomment-4195176699
+     "-DSYSTEMD_SYSTEM_UNIT_DIR=${placeholder "out"}/lib/systemd/system"
+     # `WITH_JAEGER` requires `thrift` as a depenedncy (fine), but the build fails with:
+     #     CMake Error at src/opentelemetry-cpp-stamp/opentelemetry-cpp-build-Release.cmake:49 (message):
+@@ -305,32 +308,33 @@ stdenv.mkDerivation {
+     # But the relevant code is already removed in `open-telemetry` 1.10: https://github.com/open-telemetry/opentelemetry-cpp/pull/2031
+     # So it's probably not worth trying to fix that for this Ceph version,
+     # and instead just disable Ceph's Jaeger support.
+-    "-DWITH_JAEGER:BOOL=OFF"
+-    "-DWITH_TESTS:BOOL=OFF"
++    (lib.cmakeBool "WITH_JAEGER" false)
++    (lib.cmakeBool "WITH_TESTS" false)
+ 
+     # Use our own libraries, where possible
+-    "-DWITH_SYSTEM_ARROW:BOOL=ON" # Only used if other options enable Arrow support.
+-    "-DWITH_SYSTEM_BOOST:BOOL=ON"
+-    "-DWITH_SYSTEM_GTEST:BOOL=ON"
+-    "-DWITH_SYSTEM_ROCKSDB:BOOL=ON"
+-    "-DWITH_SYSTEM_UTF8PROC:BOOL=ON"
+-    "-DWITH_SYSTEM_ZSTD:BOOL=ON"
++    (lib.cmakeBool "WITH_SYSTEM_ARROW" true) # Only used if other options enable Arrow support.
++    (lib.cmakeBool "WITH_SYSTEM_BOOST" true)
++    (lib.cmakeBool "WITH_SYSTEM_GTEST" true)
++    (lib.cmakeBool "WITH_SYSTEM_ROCKSDB" true)
++    (lib.cmakeBool "WITH_SYSTEM_UTF8PROC" true)
++    (lib.cmakeBool "WITH_SYSTEM_ZSTD" true)
+ 
+     # Use our own python libraries too, see:
+     #     https://github.com/NixOS/nixpkgs/pull/344993#issuecomment-2391046329
+-    "-DCEPHADM_BUNDLED_DEPENDENCIES=none"
++    (lib.cmakeFeature "CEPHADM_BUNDLED_DEPENDENCIES" "none")
+ 
+     # Upstream enables UADK by default on aarch64, but not other platforms.
+     # This causes issues when it tries to fetch the repository on aarch64.
+     # We disable this by default on all platforms, with future PRs adding proper with<Pkg> flags.
+-    "-DWITH_UADK:BOOL=OFF"
++    (lib.cmakeBool "WITH_UADK" false)
+ 
+     # TODO breaks with sandbox, tries to download stuff with npm
+-    "-DWITH_MGR_DASHBOARD_FRONTEND:BOOL=OFF"
++    (lib.cmakeBool "WITH_MGR_DASHBOARD_FRONTEND" false)
+     # WITH_XFS has been set default ON from Ceph 16, keeping it optional in nixpkgs for now
+-    "-DWITH_XFS=${if optLibxfs != null then "ON" else "OFF"}"
++    (lib.cmakeBool "WITH_XFS" (optLibxfs != null))
+   ]
+-  ++ lib.optional stdenv.hostPlatform.isLinux "-DWITH_SYSTEM_LIBURING=ON";
++  # TODO: investigate setting this to false on other platforms
++  ++ lib.optional stdenv.hostPlatform.isLinux (lib.cmakeBool "WITH_SYSTEM_LIBURING" true);
+ 
+   preBuild =
+     # The legacy-option-headers target is not correctly empbedded in the build graph.
+
+From 8f5d26f6831ec5abc1d0dd8fb92ea1cc9a5c0f6b Mon Sep 17 00:00:00 2001
+From: benaryorg <binary@benary.org>
+Date: Mon, 6 Apr 2026 17:38:22 +0000
+Subject: [PATCH 4/8] ceph: modern python build system invocation
+
+Signed-off-by: benaryorg <binary@benary.org>
+---
+ pkgs/by-name/ce/ceph/python-common.nix | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/pkgs/by-name/ce/ceph/python-common.nix b/pkgs/by-name/ce/ceph/python-common.nix
+index 1bbc3024487535eb2daddf35666897c296394725..6d2dae9720de3eafbab4b30358115c06de74d60c 100644
+--- a/pkgs/by-name/ce/ceph/python-common.nix
++++ b/pkgs/by-name/ce/ceph/python-common.nix
+@@ -6,13 +6,18 @@
+ 
+ ceph-python.pkgs.buildPythonPackage {
+   pname = "ceph-common";
+-  format = "setuptools";
+   inherit (ceph-src) version;
+   src = ceph-src;
+ 
++  pyproject = true;
++
+   sourceRoot = "${ceph-src.name}/src/python-common";
+ 
+-  propagatedBuildInputs = with ceph-python.pkgs; [
++  build-system = with ceph-python.pkgs; [
++    setuptools
++  ];
++
++  dependencies = with ceph-python.pkgs; [
+     pyyaml
+   ];
+ 
+
+From 6a5f91e3b0b230b18b1531f208b4758446aa42fc Mon Sep 17 00:00:00 2001
+From: benaryorg <binary@benary.org>
+Date: Tue, 10 Mar 2026 07:26:03 +0000
+Subject: [PATCH 5/8] rl-2605: ceph 20.2.0 major update
+
+Signed-off-by: benaryorg <binary@benary.org>
+---
+ nixos/doc/manual/release-notes/rl-2605.section.md | 3 +++
+ 1 file changed, 3 insertions(+)
 
 diff --git a/nixos/doc/manual/release-notes/rl-2605.section.md b/nixos/doc/manual/release-notes/rl-2605.section.md
-index cd59164990eb8d9be291ac74137933df5316d497..68d371ab3fb0f4b6ce81c54f1dfed87fec4de819 100644
+index a81de0fdb95e1711b6a2b84373c3692205bf56f5..7957548c0e1e4cfe450718d72614529950897ab6 100644
 --- a/nixos/doc/manual/release-notes/rl-2605.section.md
 +++ b/nixos/doc/manual/release-notes/rl-2605.section.md
-@@ -173,6 +173,8 @@ See <https://github.com/NixOS/nixpkgs/issues/481673>.
+@@ -233,6 +233,9 @@ See <https://github.com/NixOS/nixpkgs/issues/481673>.
  
  - `programs.light` was removed from nixpkgs due to the corresponding package being unmaintained upstream. `brightnessctl` and `programs.acpilight` offer replacements.
  
 +- `ceph` has been upgraded to v20. See the [Ceph "tentacle" release notes](https://docs.ceph.com/en/latest/releases/tentacle/#v20-2-0-tentacle) for details and recommended upgrade procedure.
++  Note that **upgrades of server-side components are one-way**, and downgrading e.g. an OSD from *Tentacle* to *Squid* is not just not supported but is known to break.
 +
  - The `networking.wireless` module has been security hardened by default: the `wpa_supplicant` daemon now runs under an unprivileged user with restricted access to the system.
  
    As part of these changes, `/etc/wpa_supplicant.conf` has been deprecated: the NixOS-generated configuration file is now linked to `/etc/wpa_supplicant/nixos.conf` and `/etc/wpa_supplicant/imperative.conf` has been added for imperatively configuring `wpa_supplicant` or when using [allowAuxiliaryImperativeNetworks](#opt-networking.wireless.allowAuxiliaryImperativeNetworks).
 
-From 988a597ddaa1ad06775e63d3c04ba771fa50a159 Mon Sep 17 00:00:00 2001
+From cc3741fae006f638758b54ac937455c45c0ec9fc Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Niklas=20Hamb=C3=BCchen?= <mail@nh2.me>
+Date: Wed, 8 Apr 2026 12:54:43 +0000
+Subject: [PATCH 6/8] ceph: 20.2.0 -> 20.2.1
+
+---
+ pkgs/by-name/ce/ceph/src.nix | 18 ++----------------
+ 1 file changed, 2 insertions(+), 16 deletions(-)
+
+diff --git a/pkgs/by-name/ce/ceph/src.nix b/pkgs/by-name/ce/ceph/src.nix
+index 5f79bc62a7d20ad78654fcc042b6b01a17de7d3b..da49dc1f4ae78d1dd422d3a19266961814f77234 100644
+--- a/pkgs/by-name/ce/ceph/src.nix
++++ b/pkgs/by-name/ce/ceph/src.nix
+@@ -6,11 +6,11 @@
+ 
+ applyPatches (final: {
+   pname = "ceph-src";
+-  version = "20.2.0";
++  version = "20.2.1";
+ 
+   src = fetchurl {
+     url = "https://download.ceph.com/tarballs/ceph-${final.version}.tar.gz";
+-    hash = "sha256-jeBk1pgx7zJzOVOfIzx47IJ/o1HEDO2amRbwtBdMZoU=";
++    hash = "sha256-3neaoBQYOTiLsgHgqdYiuEM5guHE17/DrGEXt2OXJUI=";
+   };
+ 
+   patches = [
+@@ -23,20 +23,6 @@ applyPatches (final: {
+       stripLen = 1;
+       hash = "sha256-0jn5X4jIdluCufFXWHeO6skMz6XQpliHkC1tPLK6dbk=";
+     })
+-    # allows ceph-mgr to run on python 3.12
+-    # See: https://github.com/ceph/ceph/pull/66794
+-    (fetchurl {
+-      name = "ceph-upstream-pyo3-workaround.patch";
+-      url = "https://github.com/ceph/ceph/pull/66794.diff?full_index=1";
+-      hash = "sha256-+OrG9JpMOfZwtzAPJkBrzt+8BGKKiNjQMMpkJSHpGFo=";
+-    })
+-    # fix prometheus metrics without orchestrator
+-    # See: https://github.com/ceph/ceph/pull/65906
+-    (fetchurl {
+-      name = "ceph-prometheus-fix.diff";
+-      url = "https://github.com/ceph/ceph/pull/65906.diff?full_index=1";
+-      hash = "sha256-3QEtrsVJYUFvq1eT16v8fsmjpZMqOZ8AAoH+Sv7YyYA=";
+-    })
+     # fixes issues when python3 is not on the PATH
+     # See: https://github.com/ceph/ceph/pull/67904
+     ./patches/0001-mgr-python-interpreter.patch
+
+From 7d9e2822b0e855eadf825966a831eb4e5a413531 Mon Sep 17 00:00:00 2001
 From: Joshua Peek <josh@users.noreply.github.com>
 Date: Sun, 15 Mar 2026 12:18:04 -0700
-Subject: [PATCH 3/4] nixos/tests/ceph-single-node: add ceph dashboard test
+Subject: [PATCH 7/8] nixos/tests/ceph-single-node: add ceph dashboard test
  coverage
 
 ---
@@ -2271,10 +2518,10 @@ index b83eeaaed66cc96271403721ad266698e8f5dfca..caec05c6ad71787132e24479b9cee8c3
  in
  {
 
-From e58cf3856580a9f3409ef610ca24d8f8e9b1e707 Mon Sep 17 00:00:00 2001
+From 8758b34fcf48cdda3fbfb3f8cfd49cd360319907 Mon Sep 17 00:00:00 2001
 From: Joshua Peek <josh@users.noreply.github.com>
 Date: Sun, 15 Mar 2026 13:02:33 -0700
-Subject: [PATCH 4/4] nixos/tests/ceph-single-node: add ceph rgw dashboard test
+Subject: [PATCH 8/8] nixos/tests/ceph-single-node: add ceph rgw dashboard test
  coverage
 
 ---

@@ -1,7 +1,7 @@
 From 500dbd84f2429aa6c370abd6ca63940616b84996 Mon Sep 17 00:00:00 2001
 From: Krzysztof Nazarewski <gpg@kdn.im>
 Date: Fri, 27 Feb 2026 09:17:54 +0100
-Subject: [PATCH] extendable activationScript + move to tmpfiles
+Subject: [PATCH 1/4] extendable activationScript + move to tmpfiles
 
 ---
  baguette.nix | 25 +++++++++++++++----------
@@ -51,3 +51,643 @@ index c0b15c4..4363452 100644
                ${pkgs.btrfs-progs}/bin/btrfs filesystem resize max /
              ''
              # Re-link the initScript (in case of toggling `boot.initrd.systemd.enable`)
+
+From 1e921447ee440648c63f116238fc531d1a66eb45 Mon Sep 17 00:00:00 2001
+From: Krzysztof Nazarewski <gpg@kdn.im>
+Date: Mon, 30 Mar 2026 13:23:45 +0200
+Subject: [PATCH 2/4] fix: post-boot adjustments
+
+---
+ common.nix | 54 ++++++++++++++++++++----------------------------------
+ 1 file changed, 20 insertions(+), 34 deletions(-)
+
+diff --git a/common.nix b/common.nix
+index 7a35ab6..c299cc2 100644
+--- a/common.nix
++++ b/common.nix
+@@ -2,9 +2,7 @@
+   lib,
+   pkgs,
+   ...
+-}:
+-
+-let
++}: let
+   cros-container-guest-tools-src-version = "4ef17fb17e0617dff3f6e713c79ce89fee4e60f7";
+ 
+   cros-container-guest-tools-src = pkgs.fetchgit {
+@@ -34,9 +32,7 @@ let
+     SOMMELIER_SCALE = "0.5";
+     SOMMELIER_DPI = "72,96,160,240,320,480";
+   };
+-
+-in
+-{
++in {
+   networking = {
+     # The eth0 interface in this container/VM can only be accessed from the host.
+     firewall.enable = false;
+@@ -115,9 +111,9 @@ in
+         garcon = {
+           # TODO: In the original service definition this only starts _after_ sommelier.
+           description = "Chromium OS Garcon Bridge";
+-          wantedBy = [ "default.target" ];
++          wantedBy = ["default.target"];
+           serviceConfig = {
+-            ExecStart = "/opt/google/cros-containers/bin/garcon --server";
++            ExecStart = "/opt/google/cros-containers/bin/garcon --server --allow_any_user";
+             Type = "simple";
+             ExecStopPost = "/opt/google/cros-containers/bin/guest_service_failure_notifier cros-garcon";
+             Restart = "always";
+@@ -139,23 +135,19 @@ in
+ 
+         "sommelier@" = {
+           description = "Parent sommelier listening on socket wayland-%i";
+-          wantedBy = [ "default.target" ];
+-          path = with pkgs; [
+-            systemd # systemctl
+-            bash # sh
+-          ];
++          wantedBy = ["default.target"];
+           serviceConfig = {
+             Type = "notify";
+             ExecStart = ''
+               /opt/google/cros-containers/bin/sommelier \
+-                            --parent \
+-                            --sd-notify="READY=1" \
+-                            --socket=wayland-%i \
+-                            --stable-scaling \
+-                            --enable-linux-dmabuf \
+-                            sh -c \
+-                                "systemctl --user set-environment ''${WAYLAND_DISPLAY_VAR}=$''${WAYLAND_DISPLAY}; \
+-                                 systemctl --user import-environment SOMMELIER_VERSION"
++                --parent \
++                --sd-notify="READY=1" \
++                --socket=wayland-%i \
++                --stable-scaling \
++                --enable-linux-dmabuf \
++                ${pkgs.bash}/bin/sh -c \
++                    "${pkgs.systemd}/bin/systemctl --user set-environment ''${WAYLAND_DISPLAY_VAR}=$''${WAYLAND_DISPLAY}; \
++                     ${pkgs.systemd}/bin/systemctl --user import-environment SOMMELIER_VERSION"
+             '';
+             ExecStopPost = "/opt/google/cros-containers/bin/guest_service_failure_notifier sommelier";
+           };
+@@ -169,13 +161,7 @@ in
+ 
+         "sommelier-x@" = {
+           description = "Parent sommelier listening on socket wayland-%i";
+-          wantedBy = [ "default.target" ];
+-          path = with pkgs; [
+-            systemd # systemctl
+-            bash # sh
+-            xorg.xauth
+-            tinyxxd
+-          ];
++          wantedBy = ["default.target"];
+           serviceConfig = {
+             Type = "notify";
+             ExecStart = ''
+@@ -188,12 +174,12 @@ in
+                 --stable-scaling \
+                 --enable-xshape \
+                 --enable-linux-dmabuf \
+-                sh -c \
+-                    "systemctl --user set-environment ''${DISPLAY_VAR}=$''${DISPLAY}; \
+-                     systemctl --user set-environment ''${XCURSOR_SIZE_VAR}=$''${XCURSOR_SIZE}; \
+-                     systemctl --user import-environment SOMMELIER_VERSION; \
+-                     touch ''${HOME}/.Xauthority; \
+-                     xauth -f ''${HOME}/.Xauthority add :%i . $(xxd -l 16 -p /dev/urandom); \
++                ${pkgs.bash}/bin/sh -c \
++                    "${pkgs.systemd}/bin/systemctl --user set-environment ''${DISPLAY_VAR}=$''${DISPLAY}; \
++                     ${pkgs.systemd}/bin/systemctl --user set-environment ''${XCURSOR_SIZE_VAR}=$''${XCURSOR_SIZE}; \
++                     ${pkgs.systemd}/bin/systemctl --user import-environment SOMMELIER_VERSION; \
++                     ${pkgs.coreutils}/bin/touch ''${HOME}/.Xauthority; \
++                     ${pkgs.xauth}/bin/xauth -f ''${HOME}/.Xauthority add :%i . $(${pkgs.tinyxxd}/bin/xxd -l 16 -p /dev/urandom); \
+                      . /etc/sommelierrc"
+             '';
+             ExecStopPost = "/opt/google/cros-containers/bin/guest_service_failure_notifier sommelier-x";
+
+From d9941e762515cd3b6c450ae5f7319325062c5c39 Mon Sep 17 00:00:00 2001
+From: Krzysztof Nazarewski <gpg@kdn.im>
+Date: Mon, 30 Mar 2026 17:06:01 +0200
+Subject: [PATCH 3/4] feat: refactoring into tmpfiles.settings
+
+---
+ baguette.nix | 291 +++++++++++++++++++++++++--------------------------
+ common.nix   |  64 +++++------
+ 2 files changed, 167 insertions(+), 188 deletions(-)
+
+diff --git a/baguette.nix b/baguette.nix
+index 4363452..20b89c9 100644
+--- a/baguette.nix
++++ b/baguette.nix
+@@ -5,8 +5,13 @@
+     config,
+     lib,
+     ...
+-  }:
+-  let
++  }: let
++    # https://github.com/jmbaur/nixpkgs/blob/115c1d69015de09f4211890477af05ba4fb873b9/nixos/modules/virtualisation/lxc-container.nix#L18-L19
++    initScript =
++      if config.boot.initrd.systemd.enable
++      then "prepare-root"
++      else "init";
++
+     baguette-env = builtins.readFile (
+       pkgs.stdenv.mkDerivation {
+         name = "10-baguette-envs.sh";
+@@ -21,8 +26,7 @@
+         '';
+       }
+     );
+-  in
+-  {
++  in {
+     imports = [
+       ./common.nix
+ 
+@@ -51,7 +55,7 @@
+     config = {
+       boot = {
+         isContainer = false;
+-        supportedFilesystems = [ "btrfs" ];
++        supportedFilesystems = ["btrfs"];
+ 
+         # Taken from the lxc container definition.
+         postBootCommands = ''
+@@ -83,7 +87,7 @@
+       systemd.generators."systemd-gpt-auto-generator" = "/dev/null";
+ 
+       # Don't attempt to load kernel modules unavailable in Baguette.
+-      boot.kernelModules = lib.mkForce [ ];
++      boot.kernelModules = lib.mkForce [];
+ 
+       networking = {
+         hostName = lib.mkDefault "baguette-nixos";
+@@ -92,7 +96,7 @@
+         dhcpcd.enable = false;
+ 
+         hosts = {
+-          "100.115.92.2" = [ "arc" ];
++          "100.115.92.2" = ["arc"];
+         };
+       };
+ 
+@@ -126,150 +130,136 @@
+       # This is a hack to reproduce /etc/profile.d in NixOS
+       environment.shellInit = lib.mkBefore baguette-env;
+ 
+-      systemd.tmpfiles.settings.baguette."/usr/share".d.mode = "0755";
+-      systemd.tmpfiles.settings.baguette."/usr/sbin".d.mode = "0755";
+-      systemd.tmpfiles.settings.baguette."/sbin".d.mode = "0755";
+-      systemd.tmpfiles.rules = [
+-        "d /sbin 0755 root root - "
+-        "d /usr/sbin 0755 root root - "
+-        "d /usr/share 0755 root root - "
+-        "L /usr/share/zoneinfo - - - - /etc/zoneinfo"
+-        # HACK: `vmc start ...` requires /usr/sbin/usermod
+-        "L /usr/sbin/usermod - root root - ${pkgs.shadow}/bin/usermod"
+-      ];
+-
+-
+-      system =
+-        let
+-          # https://github.com/jmbaur/nixpkgs/blob/115c1d69015de09f4211890477af05ba4fb873b9/nixos/modules/virtualisation/lxc-container.nix#L18-L19
+-          initScript = if config.boot.initrd.systemd.enable then "prepare-root" else "init";
+-        in
+-        {
+-          activationScripts = {
+-
+-            baguette.text =
++      # HACK: `vmc start ...` requires /usr/sbin/usermod
++      systemd.tmpfiles.settings.nixos-crostini-baguette."/usr/sbin/usermod".L = {
++        argument = "${pkgs.shadow}/bin/usermod";
++      };
++      systemd.tmpfiles.settings.nixos-crostini-baguette."/usr/share/zoneinfo".L = {
++        argument = "/etc/zoneinfo";
++      };
++      # Re-link the initScript (in case of toggling `boot.initrd.systemd.enable`)
++      systemd.tmpfiles.settings.nixos-crostini-baguette."/sbin/init".L.argument = "${config.system.build.toplevel}/${initScript}";
++
++      system = {
++        activationScripts = {
++          nixos-crostini-baguette.text =
+             # Resize the avaialble space to the one provided by Baguette
+             ''
+               ${pkgs.btrfs-progs}/bin/btrfs filesystem resize max /
+-            ''
+-            # Re-link the initScript (in case of toggling `boot.initrd.systemd.enable`)
+-            + ''
+-              ln -sf "$systemConfig/${initScript}" /sbin/init
+             '';
+ 
+-            # https://github.com/aldur/nixos-crostini/issues/3#issuecomment-3481799191
+-            modprobe = lib.mkForce "";
+-          };
++          # https://github.com/aldur/nixos-crostini/issues/3#issuecomment-3481799191
++          modprobe = lib.mkForce "";
++        };
+ 
+-          build = {
+-            # https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/virtualisation/proxmox-lxc.nix
+-            tarball = pkgs.callPackage "${toString modulesPath}/../lib/make-system-tarball.nix" {
+-              fileName = config.image.baseName;
+-              storeContents = [
+-                {
+-                  object = config.system.build.toplevel;
+-                  symlink = "/run/current-system";
+-                }
+-              ];
+-              extraCommands = "mkdir -p proc sys dev";
+-
+-              # virt-make-fs, used by
+-              # https://chromium.googlesource.com/chromiumos/platform2/+/HEAD/vm_tools/baguette_image/src/generate_disk_image.py
+-              # cannot handle compressed tarballs
+-              compressCommand = "cat";
+-              compressionExtension = "";
+-
+-              contents = [
+-                # same as baguette Debian image
+-                {
+-                  source = config.system.build.toplevel + "/${initScript}";
+-                  target = "/sbin/init";
+-                }
+-              ];
+-            };
++        build = {
++          # https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/virtualisation/proxmox-lxc.nix
++          tarball = pkgs.callPackage "${toString modulesPath}/../lib/make-system-tarball.nix" {
++            fileName = config.image.baseName;
++            storeContents = [
++              {
++                object = config.system.build.toplevel;
++                symlink = "/run/current-system";
++              }
++            ];
++            extraCommands = "mkdir -p proc sys dev";
++
++            # virt-make-fs, used by
++            # https://chromium.googlesource.com/chromiumos/platform2/+/HEAD/vm_tools/baguette_image/src/generate_disk_image.py
++            # cannot handle compressed tarballs
++            compressCommand = "cat";
++            compressionExtension = "";
++
++            contents = [
++              # same as baguette Debian image
++              {
++                source = "${config.system.build.toplevel}/${initScript}";
++                target = "/sbin/init";
++              }
++            ];
++          };
+ 
+-            # Build btrfs image using vmTools with subvolume
+-            btrfsImage =
+-              let
+-                img = pkgs.vmTools.runInLinuxVM (
+-                  pkgs.runCommand "nixos-baguette-btrfs.img"
+-                    {
+-                      memSize = config.virtualisation.buildMemorySize;
+-                      preVM = ''
+-                        # Create disk image with configured size
+-                        ${pkgs.qemu}/bin/qemu-img create -f raw disk.img ${toString config.virtualisation.diskImageSize}M
+-                      '';
+-                      postVM = ''
+-                        mkdir -p $out
+-                        mv disk.img $out/baguette_rootfs.img
+-                        echo "Done! Image created at $out"
+-                      '';
+-                      QEMU_OPTS = "-drive file=disk.img,format=raw,if=virtio,cache=unsafe";
+-                      buildInputs = [
+-                        pkgs.btrfs-progs
+-                        pkgs.util-linux
+-                      ];
+-                    }
+-                    ''
+-                      set -x
+-
+-                      # The disk is available as /dev/vda in the VM
+-                      echo "Formatting /dev/vda as btrfs..."
+-                      mkfs.btrfs -f -L nixos-root /dev/vda
+-
+-                      # Mount it
+-                      echo "Mounting filesystem..."
+-                      mkdir -p /mnt
+-                      mount /dev/vda /mnt
+-
+-                      # Create a subvolume for the rootfs (matching ChromeOS convention)
+-                      echo "Creating rootfs subvolume..."
+-                      btrfs subvolume create /mnt/rootfs_subvol
+-
+-                      # Extract the tarball into the subvolume
+-                      echo "Extracting rootfs from tarball into subvolume..."
+-                      tar -C /mnt/rootfs_subvol -xf ${config.system.build.tarball}/tarball/*.tar
+-
+-                      # Get the subvolume ID
+-                      echo "Getting subvolume ID..."
+-                      subvol_id=$(btrfs subvolume list /mnt | grep rootfs_subvol | awk '{print $2}')
+-                      echo "Subvolume ID: $subvol_id"
+-
+-                      # Set the subvolume as default
+-                      echo "Setting default subvolume..."
+-                      btrfs subvolume set-default "$subvol_id" /mnt
+-
+-                      # Sync and unmount
+-                      echo "Syncing..."
+-                      sync
+-                      umount /mnt
+-                    ''
+-                );
+-              in
+-              lib.overrideDerivation img (old: {
+-                requiredSystemFeatures = [ ]; # Allow building even without kvm
+-              });
+-
+-            btrfsImageCompressed =
+-              pkgs.runCommand "nixos-baguette-btrfs-compressed"
+-                {
+-                  nativeBuildInputs = [ pkgs.zstd ];
+-                }
+-                ''
++          # Build btrfs image using vmTools with subvolume
++          btrfsImage = let
++            img = pkgs.vmTools.runInLinuxVM (
++              pkgs.runCommand "nixos-baguette-btrfs.img"
++              {
++                memSize = config.virtualisation.buildMemorySize;
++                preVM = ''
++                  # Create disk image with configured size
++                  ${pkgs.qemu}/bin/qemu-img create -f raw disk.img ${toString config.virtualisation.diskImageSize}M
++                '';
++                postVM = ''
+                   mkdir -p $out
+-                  echo "Compressing btrfs image with zstd..."
+-                  zstd -3 -T0 ${config.system.build.btrfsImage}/baguette_rootfs.img -o $out/baguette_rootfs.img.zst
+-                  echo "Compressed image created at $out/baguette_rootfs.img.zst"
++                  mv disk.img $out/baguette_rootfs.img
++                  echo "Done! Image created at $out"
+                 '';
+-          };
++                QEMU_OPTS = "-drive file=disk.img,format=raw,if=virtio,cache=unsafe";
++                buildInputs = [
++                  pkgs.btrfs-progs
++                  pkgs.util-linux
++                ];
++              }
++              ''
++                set -x
++
++                # The disk is available as /dev/vda in the VM
++                echo "Formatting /dev/vda as btrfs..."
++                mkfs.btrfs -f -L nixos-root /dev/vda
++
++                # Mount it
++                echo "Mounting filesystem..."
++                mkdir -p /mnt
++                mount /dev/vda /mnt
++
++                # Create a subvolume for the rootfs (matching ChromeOS convention)
++                echo "Creating rootfs subvolume..."
++                btrfs subvolume create /mnt/rootfs_subvol
++
++                # Extract the tarball into the subvolume
++                echo "Extracting rootfs from tarball into subvolume..."
++                tar -C /mnt/rootfs_subvol -xf ${config.system.build.tarball}/tarball/*.tar
++
++                # Get the subvolume ID
++                echo "Getting subvolume ID..."
++                subvol_id=$(btrfs subvolume list /mnt | grep rootfs_subvol | awk '{print $2}')
++                echo "Subvolume ID: $subvol_id"
++
++                # Set the subvolume as default
++                echo "Setting default subvolume..."
++                btrfs subvolume set-default "$subvol_id" /mnt
++
++                # Sync and unmount
++                echo "Syncing..."
++                sync
++                umount /mnt
++              ''
++            );
++          in
++            lib.overrideDerivation img (old: {
++              requiredSystemFeatures = []; # Allow building even without kvm
++            });
++
++          btrfsImageCompressed =
++            pkgs.runCommand "nixos-baguette-btrfs-compressed"
++            {
++              nativeBuildInputs = [pkgs.zstd];
++            }
++            ''
++              mkdir -p $out
++              echo "Compressing btrfs image with zstd..."
++              zstd -3 -T0 ${config.system.build.btrfsImage}/baguette_rootfs.img -o $out/baguette_rootfs.img.zst
++              echo "Compressed image created at $out/baguette_rootfs.img.zst"
++            '';
+         };
++      };
+ 
+       # These are the groups expected by default by `vmc start ...`
+       users.groups = {
+-        kvm = { };
+-        netdev = { };
+-        sudo = { };
+-        tss = { };
++        kvm = {};
++        netdev = {};
++        sudo = {};
++        tss = {};
+       };
+ 
+       # NOTE: There's no need to manually create a user here,
+@@ -283,12 +273,12 @@
+             where = "/opt/google/cros-containers";
+             type = "auto";
+             options = "ro";
+-            wantedBy = [ "local-fs.target" ];
++            wantedBy = ["local-fs.target"];
+             before = [
+               "local-fs.target"
+               "umount.target"
+             ];
+-            conflicts = [ "umount.target" ];
++            conflicts = ["umount.target"];
+             unitConfig = {
+               DefaultDependencies = false;
+             };
+@@ -301,9 +291,9 @@
+         services = {
+           vshd = {
+             description = "vshd";
+-            after = [ "opt-google-cros\\x2dcontainers.mount" ];
+-            requires = [ "opt-google-cros\\x2dcontainers.mount" ];
+-            wantedBy = [ "basic.target" ];
++            after = ["opt-google-cros\\x2dcontainers.mount"];
++            requires = ["opt-google-cros\\x2dcontainers.mount"];
++            wantedBy = ["basic.target"];
+ 
+             serviceConfig = {
+               ExecStart = "/opt/google/cros-containers/bin/vshd";
+@@ -312,9 +302,9 @@
+ 
+           maitred = {
+             description = "maitred";
+-            after = [ "opt-google-cros\\x2dcontainers.mount" ];
+-            requires = [ "opt-google-cros\\x2dcontainers.mount" ];
+-            wantedBy = [ "basic.target" ];
++            after = ["opt-google-cros\\x2dcontainers.mount"];
++            requires = ["opt-google-cros\\x2dcontainers.mount"];
++            wantedBy = ["basic.target"];
+ 
+             serviceConfig = {
+               ExecStart = "/opt/google/cros-containers/bin/maitred";
+@@ -324,9 +314,9 @@
+ 
+           cros-port-listener = {
+             description = "Chromium OS port listener service";
+-            after = [ "opt-google-cros\\x2dcontainers.mount" ];
+-            requires = [ "opt-google-cros\\x2dcontainers.mount" ];
+-            wantedBy = [ "basic.target" ];
++            after = ["opt-google-cros\\x2dcontainers.mount"];
++            requires = ["opt-google-cros\\x2dcontainers.mount"];
++            wantedBy = ["basic.target"];
+ 
+             serviceConfig = {
+               Type = "simple";
+@@ -334,12 +324,11 @@
+               Restart = "always";
+             };
+           };
+-
+         };
+ 
+         user.services.cros-notificationd = {
+           description = "Chromium OS Notification Server";
+-          after = [ "opt-google-cros\\x2dcontainers.mount" ];
++          after = ["opt-google-cros\\x2dcontainers.mount"];
+ 
+           serviceConfig = {
+             Type = "dbus";
+diff --git a/common.nix b/common.nix
+index c299cc2..1988c77 100644
+--- a/common.nix
++++ b/common.nix
+@@ -55,45 +55,10 @@ in {
+       pkgs.usbutils # lsusb
+     ];
+ 
+-    etc = {
+-      # Required because `tremplin` will look for it.
+-      # Without it, `vmc start termina <container>` will fail.
+-      "gshadow" = {
+-        mode = "0640";
+-        text = "";
+-        group = "shadow";
+-      };
+-
+-      # TODO: Even empty, this will stop `sommelier` from erroring out.
+-      "sommelierrc" = {
+-        mode = "0644";
+-        text = ''
+-          exit 0
+-        '';
+-      };
+-    };
+-
+     # Load the environment populated from `sommelier`, e.g. `DISPLAY`.
+     shellInit = builtins.readFile "${cros-container-guest-tools-src}/cros-sommelier/sommelier.sh";
+-  };
+-
+-  system.activationScripts = {
+-    # Activating sommelier-x will rely the bind-mount Xwailand executable. As
+-    # far as I could debug, this path can't be controlled through env and would
+-    # require re-compiling Xwayland (which is also dynamically loaded by the
+-    # sommelier executable).
+-    #
+-    # Same for the `sftp-server` launched by `garcon`.
+-    #
+-    # These are ugly HACKs, but they work
+-    xkb = ''
+-      mkdir -p /usr/share/
+-      ln -sf ${pkgs.xkeyboard_config}/share/X11/ /usr/share/
+-    '';
+-    sftp-server = ''
+-      mkdir -p /usr/lib/openssh/
+-      ln -sf ${pkgs.openssh}/libexec/sftp-server /usr/lib/openssh/sftp-server
+-    '';
++    etc."nixos-crostini/cros-container-guest-tools".source = cros-container-guest-tools;
++    etc."nixos-crostini/cros-container-guest-tools-src".source = cros-container-guest-tools-src;
+   };
+ 
+   # Taken from https://aur.archlinux.org/packages/cros-container-guest-tools-git
+@@ -106,6 +71,31 @@ in {
+   };
+ 
+   systemd = {
++    tmpfiles.settings.nixos-crotini = {
++      # Activating sommelier-x will rely the bind-mount Xwailand executable. As
++      # far as I could debug, this path can't be controlled through env and would
++      # require re-compiling Xwayland (which is also dynamically loaded by the
++      # sommelier executable).
++      #
++      # Same for the `sftp-server` launched by `garcon`.
++      #
++      # These are ugly HACKs, but they work
++      "/usr/share/X11".L.argument = "${pkgs.xkeyboard_config}/share/X11";
++      "/usr/lib/openssh/sftp-server".L.argument = "${pkgs.openssh}/libexec/sftp-server";
++
++      # Required because `tremplin` will look for it.
++      # Without it, `vmc start termina <container>` will fail.
++      "/etc/gshadow".f = {
++        mode = "0640";
++        group = "shadow";
++        argument = "";
++      };
++      # TODO: Even empty, this will stop `sommelier` from erroring out.
++      "/etc/sommelierrc".f = {
++        mode = "0644";
++        argument = "exit 0";
++      };
++    };
+     user = {
+       services = {
+         garcon = {
+
+From 474d88b050717e59fb003cdd9046af8f488cdacb Mon Sep 17 00:00:00 2001
+From: Krzysztof Nazarewski <gpg@kdn.im>
+Date: Mon, 30 Mar 2026 17:12:51 +0200
+Subject: [PATCH 4/4] fix: infinite recursion
+
+---
+ baguette.nix | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/baguette.nix b/baguette.nix
+index 20b89c9..f7a7ced 100644
+--- a/baguette.nix
++++ b/baguette.nix
+@@ -137,8 +137,7 @@
+       systemd.tmpfiles.settings.nixos-crostini-baguette."/usr/share/zoneinfo".L = {
+         argument = "/etc/zoneinfo";
+       };
+-      # Re-link the initScript (in case of toggling `boot.initrd.systemd.enable`)
+-      systemd.tmpfiles.settings.nixos-crostini-baguette."/sbin/init".L.argument = "${config.system.build.toplevel}/${initScript}";
++      systemd.tmpfiles.settings.nixos-crostini-baguette."/sbin".d.mode = "0755";
+ 
+       system = {
+         activationScripts = {
+@@ -146,8 +145,11 @@
+             # Resize the avaialble space to the one provided by Baguette
+             ''
+               ${pkgs.btrfs-progs}/bin/btrfs filesystem resize max /
++            ''
++            # Re-link the initScript (in case of toggling `boot.initrd.systemd.enable`)
++            + ''
++              ln -sf "$systemConfig/${initScript}" /sbin/init
+             '';
+-
+           # https://github.com/aldur/nixos-crostini/issues/3#issuecomment-3481799191
+           modprobe = lib.mkForce "";
+         };

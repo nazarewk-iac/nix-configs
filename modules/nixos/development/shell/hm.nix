@@ -12,7 +12,7 @@ in {
 
   config = lib.mkIf cfg.enable {
     programs.helix.extraPackages = with pkgs; [
-      nodePackages.bash-language-server
+      bash-language-server
       shellcheck
       shfmt
 

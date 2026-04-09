@@ -40,7 +40,7 @@ in {
         #  then below code will take care of stripping comments and folding it into a single line per user
         xdg.configFile."Yubico/u2f_keys".text = let
           stripComments = lib.filter (
-            line: (builtins.match "\w*" line) == null && (builtins.match "\w*#.*" line) == null
+            line: (builtins.match "[[:space:]]*(#.*)?" line) == null
           );
           groupByUsername = input:
             builtins.mapAttrs (name: map (lib.removePrefix "${name}:")) (

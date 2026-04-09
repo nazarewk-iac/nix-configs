@@ -14,7 +14,7 @@ in {
     programs.helix.extraPackages = with pkgs; [
       cuelsp
       jsonnet-language-server
-      nodePackages.vscode-json-languageserver
+      vscode-json-languageserver
       taplo # toml
       yaml-language-server
     ];

@@ -12,7 +12,7 @@ in {
 
   config = lib.mkIf cfg.enable {
     programs.helix.extraPackages = with pkgs; [
-      nodePackages.typescript-language-server
+      typescript-language-server
     ];
   };
 }

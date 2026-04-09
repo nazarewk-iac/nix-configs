@@ -28,9 +28,9 @@ in
     meta.mainProgram = "kdnctl";
 
     src = lib.sourceByRegex srcDir [
-      "^go\.(mod|sum)$"
+      ''^go\.(mod|sum)$''
       "^[^.]+$"
-      ".*\.go$"
+      ''.*\.go$''
     ];
 
     inherit vendorHash;

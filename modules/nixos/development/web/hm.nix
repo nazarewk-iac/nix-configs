@@ -13,7 +13,7 @@ in {
   config = lib.mkIf cfg.enable {
     kdn.development.nodejs.enable = true;
     programs.helix.extraPackages = with pkgs; [
-      nodePackages.vscode-langservers-extracted
+      vscode-langservers-extracted
     ];
   };
 }

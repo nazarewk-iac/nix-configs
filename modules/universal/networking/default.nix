@@ -164,7 +164,7 @@ in {
 
                 linkConfig.Multicast = true; # required for IPv6AcceptRA to take effect on bond interface
                 dhcpV4Config.RouteMetric = ifaceCfg.metric;
-                dhcpV6Config.RouteMetric = ifaceCfg.metric;
+                ipv6AcceptRAConfig.RouteMetric = ifaceCfg.metric;
               })
             ];
           }))
