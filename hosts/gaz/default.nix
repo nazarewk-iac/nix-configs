@@ -4,7 +4,8 @@
   lib,
   kdnConfig,
   ...
-}: {
+}:
+{
   imports = [
     kdnConfig.self.nixosModules.default
     kdnConfig.inputs.nixos-crostini.nixosModules.baguette
@@ -13,7 +14,7 @@
   config = lib.mkMerge [
     {
       system.stateVersion = "26.05";
-      home-manager.sharedModules = [{home.stateVersion = "26.05";}];
+      home-manager.sharedModules = [ { home.stateVersion = "26.05"; } ];
       networking.hostId = "91e34e17"; # cut -c-8 </proc/sys/kernel/random/uuid
     }
     {
@@ -39,11 +40,17 @@
     {
       # relax some settings for easier debugging
       services.openssh.settings.PasswordAuthentication = true;
-      services.openssh.ports = [22 2323];
+      services.openssh.ports = [
+        22
+        2323
+      ];
       security.sudo.wheelNeedsPassword = false;
     }
     {
-      networking.firewall.trustedInterfaces = ["nb-priv" "eth0"];
+      networking.firewall.trustedInterfaces = [
+        "nb-priv"
+        "eth0"
+      ];
       networking.firewall.enable = lib.mkForce true;
     }
   ];

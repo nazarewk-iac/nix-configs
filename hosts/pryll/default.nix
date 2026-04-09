@@ -4,7 +4,8 @@
   lib,
   kdnConfig,
   ...
-}: {
+}:
+{
   imports = [
     kdnConfig.self.nixosModules.default
   ];
@@ -14,7 +15,7 @@
       kdn.hostName = "pryll";
 
       system.stateVersion = "26.05";
-      home-manager.sharedModules = [{home.stateVersion = "26.05";}];
+      home-manager.sharedModules = [ { home.stateVersion = "26.05"; } ];
       networking.hostId = "25880d1d"; # cut -c-8 </proc/sys/kernel/random/uuid
     }
     {

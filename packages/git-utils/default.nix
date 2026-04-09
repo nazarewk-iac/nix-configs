@@ -10,39 +10,40 @@
   symlinkJoin,
   writeShellApplication,
   ...
-}: let
-  writeShellScript = path: {
-    runtimeInputs ? [],
-    checkPhase ? null,
-    ...
-  } @ args: let
-    name =
-      args.name or (lib.trivial.pipe path [
-        toString
-        builtins.baseNameOf
-        (lib.removeSuffix ".sh")
-      ]);
+}:
+let
+  writeShellScript =
+    path:
+    {
+      runtimeInputs ? [ ],
+      checkPhase ? null,
+      ...
+    }@args:
+    let
+      name =
+        args.name or (lib.trivial.pipe path [
+          toString
+          builtins.baseNameOf
+          (lib.removeSuffix ".sh")
+        ]);
 
-    dropFirst = line: lines:
-      if (builtins.head lines) == line
-      then (builtins.tail lines)
-      else lines;
+      dropFirst = line: lines: if (builtins.head lines) == line then (builtins.tail lines) else lines;
 
-    drv = writeShellApplication {
-      inherit name runtimeInputs checkPhase;
-      text = lib.trivial.pipe path [
-        builtins.readFile
-        (lib.strings.splitString "\n")
-        (dropFirst "#!/usr/bin/env bash")
-        (dropFirst "set -eEuo pipefail")
-        (dropFirst "set -xeEuo pipefail")
-        (dropFirst "")
-        (l: [args.prefix or ""] ++ l ++ [args.suffix or ""])
-        (builtins.concatStringsSep "\n")
-      ];
-    };
-  in
-    drv // {bin = "${drv}/bin/${name}";};
+      drv = writeShellApplication {
+        inherit name runtimeInputs checkPhase;
+        text = lib.trivial.pipe path [
+          builtins.readFile
+          (lib.strings.splitString "\n")
+          (dropFirst "#!/usr/bin/env bash")
+          (dropFirst "set -eEuo pipefail")
+          (dropFirst "set -xeEuo pipefail")
+          (dropFirst "")
+          (l: [ args.prefix or "" ] ++ l ++ [ args.suffix or "" ])
+          (builtins.concatStringsSep "\n")
+        ];
+      };
+    in
+    drv // { bin = "${drv}/bin/${name}"; };
 
   utils = with utils; {
     g-dir = writeShellScript ./bin/g-dir.sh {
@@ -64,7 +65,7 @@
       prefix = ''
         GIT_UTILS_KDN_WORKTREES_DIR="''${GIT_UTILS_KDN_WORKTREES_DIR:-"${worktreesDir}"}"
       '';
-      runtimeInputs = [g-dir];
+      runtimeInputs = [ g-dir ];
     };
     g-wt-get = writeShellScript ./bin/g-wt-get.sh {
       runtimeInputs = [
@@ -86,7 +87,7 @@
       ];
     };
     g-remote = writeShellScript ./bin/g-remote.sh {
-      runtimeInputs = [];
+      runtimeInputs = [ ];
     };
     g-open = writeShellScript ./bin/g-open.sh {
       prefix = ''
@@ -104,7 +105,7 @@
       ];
     };
     gh-get-all = writeShellScript ./bin/gh-get-all.sh {
-      runtimeInputs = [gh-repos];
+      runtimeInputs = [ gh-repos ];
     };
 
     gl-repos = writeShellScript ./bin/gl-repos.sh {
@@ -115,12 +116,15 @@
       ];
     };
     gl-get-all = writeShellScript ./bin/gl-get-all.sh {
-      runtimeInputs = [gl-repos];
+      runtimeInputs = [ gl-repos ];
     };
   };
 in
-  symlinkJoin {
-    name = "git-utils";
-    passthru = {inherit baseDir ide worktreesDir;} // utils;
-    paths = lib.attrsets.attrValues utils;
+symlinkJoin {
+  name = "git-utils";
+  passthru = {
+    inherit baseDir ide worktreesDir;
   }
+  // utils;
+  paths = lib.attrsets.attrValues utils;
+}

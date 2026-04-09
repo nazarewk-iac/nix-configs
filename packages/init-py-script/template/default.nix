@@ -1,9 +1,10 @@
 {
   pkgs,
   lib,
-  __inputs__ ? {},
+  __inputs__ ? { },
   ...
-}: let
+}:
+let
   python = pkgs.python314;
   src = lib.fileset.toSource {
     root = ./.;
@@ -11,19 +12,20 @@
   };
 
   mkPythonScript =
-    if __inputs__ ? inputs.kdn-configs-src
-    then import (__inputs__.inputs.kdn-configs-src + /lib/python/mkPythonScript.nix) {inherit lib pkgs;}
-    else lib.kdn.mkPythonScript pkgs;
+    if __inputs__ ? inputs.kdn-configs-src then
+      import (__inputs__.inputs.kdn-configs-src + /lib/python/mkPythonScript.nix) { inherit lib pkgs; }
+    else
+      lib.kdn.mkPythonScript pkgs;
 in
-  mkPythonScript {
-    inherit src python;
-    name = "nix-name-placeholder";
-    pythonModule = "package_placeholder.cli";
-    requirementsFileText = ''
-      fire
-      structlog
-    '';
-    runtimeDeps = with pkgs; [
-      #git
-    ];
-  }
+mkPythonScript {
+  inherit src python;
+  name = "nix-name-placeholder";
+  pythonModule = "package_placeholder.cli";
+  requirementsFileText = ''
+    fire
+    structlog
+  '';
+  runtimeDeps = with pkgs; [
+    #git
+  ];
+}

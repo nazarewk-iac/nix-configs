@@ -3,7 +3,8 @@
   lib,
   kdnConfig,
   ...
-}: {
+}:
+{
   imports = [
     kdnConfig.self.nixosModules.default
   ];
@@ -13,7 +14,7 @@
       kdn.hostName = "yost";
 
       system.stateVersion = "26.05";
-      home-manager.sharedModules = [{home.stateVersion = "26.05";}];
+      home-manager.sharedModules = [ { home.stateVersion = "26.05"; } ];
       networking.hostId = "81305e2c"; # cut -c-8 </proc/sys/kernel/random/uuid
     }
     {
@@ -43,7 +44,12 @@
       kdn.networking.ifaces."kdn-eth3".selector.mac = "a8:b8:e0:04:12:f4";
 
       kdn.networking.bonds."lan".type = "lacp";
-      kdn.networking.bonds."lan".children = ["kdn-eth0" "kdn-eth1" "kdn-eth2" "kdn-eth3"];
+      kdn.networking.bonds."lan".children = [
+        "kdn-eth0"
+        "kdn-eth1"
+        "kdn-eth2"
+        "kdn-eth3"
+      ];
       kdn.networking.ifaces."lan".mac = "6e:8f:d1:7e:15:4a";
       kdn.networking.ifaces."lan".dynamicIPClient = true;
       kdn.networking.ifaces."lan".metric = 100;
@@ -59,7 +65,8 @@
       kdn.disks.enable = true;
 
       # 250GB for system disk - /dev/disk/by-id/nvme-eui.002538d341a07650
-      kdn.disks.devices."${config.kdn.disks.defaults.bootDeviceName}".path = "/dev/disk/by-id/nvme-eui.002538d341a07650";
+      kdn.disks.devices."${config.kdn.disks.defaults.bootDeviceName}".path =
+        "/dev/disk/by-id/nvme-eui.002538d341a07650";
       kdn.disks.luks.volumes."system-yost" = {
         uuid = "f78b56c0-1736-4f63-8ccf-07277ecdd6b9";
         target.deviceKey = config.kdn.disks.defaults.bootDeviceName;
@@ -73,7 +80,7 @@
         datasets."luks/data-yost/header" = {
           type = "zfs_volume";
           options."com.sun:auto-snapshot" = "true";
-          extraArgs = ["-p"]; # create parents, this is missing from the volume
+          extraArgs = [ "-p" ]; # create parents, this is missing from the volume
           size = lib.mkDefault "${toString config.kdn.disks.luks.header.size}M";
         };
       };
@@ -87,12 +94,15 @@
         header.partitionKey = null;
         zpool.name = "pic-local";
       };
-      kdn.disks.zpools."pic-local" = {};
+      kdn.disks.zpools."pic-local" = { };
     }
     {
       kdn.disks.disko.devices._meta.deviceDependencies = {
         disk.data-yost = [
-          ["zpool" config.kdn.disks.zpool-main.name]
+          [
+            "zpool"
+            config.kdn.disks.zpool-main.name
+          ]
         ];
       };
     }

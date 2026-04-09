@@ -9,8 +9,9 @@
     mk-shell-bin.url = "github:rrbutani/nix-mk-shell-bin";
   };
 
-  outputs = inputs @ {flake-parts, ...}:
-    flake-parts.lib.mkFlake {inherit inputs;} {
+  outputs =
+    inputs@{ flake-parts, ... }:
+    flake-parts.lib.mkFlake { inherit inputs; } {
       imports = [
         inputs.devenv.flakeModule
       ];
@@ -21,40 +22,45 @@
         "aarch64-darwin"
       ];
 
-      perSystem = {
-        config,
-        self',
-        inputs',
-        pkgs,
-        system,
-        ...
-      }: {
-        devenv.shells.default = {
+      perSystem =
+        {
           config,
-          lib,
+          self',
+          inputs',
+          pkgs,
+          system,
           ...
-        }: {
-          languages.dotnet.enable = true;
-          languages.terraform.enable = true;
+        }:
+        {
+          devenv.shells.default =
+            {
+              config,
+              lib,
+              ...
+            }:
+            {
+              languages.dotnet.enable = true;
+              languages.terraform.enable = true;
 
-          env = {
-            NIX_LD_LIBRARY_PATH = lib.makeLibraryPath (
-              with pkgs; [
-                zlib
-                stdenv.cc.cc
-                #openssl
-              ]
-            );
+              env = {
+                NIX_LD_LIBRARY_PATH = lib.makeLibraryPath (
+                  with pkgs;
+                  [
+                    zlib
+                    stdenv.cc.cc
+                    #openssl
+                  ]
+                );
 
-            NIX_LD = builtins.readFile "${pkgs.stdenv.cc}/nix-support/dynamic-linker";
-          };
-          packages = with pkgs; [
-            powershell
-            azure-cli
-            terraform-docs
-          ];
+                NIX_LD = builtins.readFile "${pkgs.stdenv.cc}/nix-support/dynamic-linker";
+              };
+              packages = with pkgs; [
+                powershell
+                azure-cli
+                terraform-docs
+              ];
+            };
         };
-      };
       flake = {
         # The usual flake attributes can be defined here, including system-
         # agnostic ones like nixosModule and system-enumerating ones, although

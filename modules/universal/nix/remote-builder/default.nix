@@ -3,9 +3,11 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.nix.remote-builder;
-in {
+in
+{
   options.kdn.nix.remote-builder = {
     enable = lib.mkEnableOption "remote builder config";
 
@@ -58,7 +60,7 @@ in {
     };
     localhost.systems = lib.mkOption {
       type = with lib.types; listOf str;
-      default = [pkgs.stdenv.hostPlatform.system];
+      default = [ pkgs.stdenv.hostPlatform.system ];
     };
     localhost.supportedFeatures = lib.mkOption {
       type = with lib.types; listOf str;
@@ -71,7 +73,7 @@ in {
     };
     localhost.mandatoryFeatures = lib.mkOption {
       type = with lib.types; listOf str;
-      default = [];
+      default = [ ];
     };
 
     user.id = lib.mkOption {

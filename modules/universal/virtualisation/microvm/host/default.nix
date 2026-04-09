@@ -1,0 +1,71 @@
+{
+  lib,
+  pkgs,
+  config,
+  kdnConfig,
+  ...
+}:
+let
+  cfg = config.kdn.virtualisation.microvm.host;
+in
+{
+  imports = lib.optionals (kdnConfig.moduleType == "nixos") [
+    kdnConfig.inputs.microvm.nixosModules.host
+  ];
+
+  options.kdn.virtualisation.microvm.host = {
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = kdnConfig.features.microvm-host;
+    };
+
+    flake.nixpkgs = lib.mkOption {
+      default = kdnConfig.inputs.nixpkgs;
+    };
+    flake.microvm = lib.mkOption {
+      default = kdnConfig.inputs.microvm;
+    };
+  };
+
+  config = lib.mkMerge [
+    (kdnConfig.util.ifTypes [ "nixos" ] {
+      # this defaults to `true`, so need to also pin it to false
+      microvm.host.enable = cfg.enable;
+    })
+    (kdnConfig.util.ifTypes [ "nixos" ] (
+      lib.mkIf cfg.enable {
+        # see https://github.com/astro/microvm.nix/blob/24136ffe7bb1e504bce29b25dcd46b272cbafd9b/examples/microvms-host.nix
+        nix.registry.microvm.flake = cfg.flake.microvm;
+
+        nix.settings.trusted-public-keys = [
+          "microvm.cachix.org-1:oXnBc6hRE3eX5rSYdRyMYXnfzcCxC7yKPTbZXALsqys="
+        ];
+
+        nix.settings.substituters = [
+        ];
+        environment.systemPackages = with cfg.flake.microvm.packages."${pkgs.stdenv.hostPlatform.system}"; [
+          microvm
+        ];
+        kdn.disks.persist."usr/data".directories = [
+          config.microvm.stateDir
+        ];
+
+        systemd.tmpfiles.rules = lib.pipe config.microvm.vms [
+          builtins.attrValues
+          (map (
+            microVMCfg:
+            let
+              vmConfig = microVMCfg.config.config;
+            in
+            lib.flip lib.attrsets.mapAttrsToList vmConfig.preservation.preserveAt (
+              persistName: _: "d /var/lib/microvms-persist/${vmConfig.kdn.hostName}/${persistName} 0755 root root"
+            )
+          ))
+          lib.lists.flatten
+          (builtins.sort builtins.lessThan)
+          lib.lists.unique
+        ];
+      }
+    ))
+  ];
+}

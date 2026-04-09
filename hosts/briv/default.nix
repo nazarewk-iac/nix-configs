@@ -4,7 +4,8 @@
   lib,
   kdnConfig,
   ...
-}: {
+}:
+{
   imports = [
     kdnConfig.self.nixosModules.default
   ];
@@ -14,11 +15,11 @@
       assertions = [
         {
           assertion = kdnConfig.features.rpi4;
-          message = ''requires Raspberry Pi 4 profile.'';
+          message = "requires Raspberry Pi 4 profile.";
         }
         {
           assertion = !(kdnConfig.features.rpi4 && kdnConfig.features.installer);
-          message = ''cannot use Raspberry Pi 4 installer profile.'';
+          message = "cannot use Raspberry Pi 4 installer profile.";
         }
       ];
     }
@@ -26,7 +27,7 @@
       kdn.hostName = "briv";
 
       system.stateVersion = "25.05";
-      home-manager.sharedModules = [{home.stateVersion = "25.05";}];
+      home-manager.sharedModules = [ { home.stateVersion = "25.05"; } ];
       networking.hostId = "b86e74e8"; # cut -c-8 </proc/sys/kernel/random/uuid
     }
     {

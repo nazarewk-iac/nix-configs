@@ -1,0 +1,53 @@
+{
+  lib,
+  pkgs,
+  config,
+  kdnConfig,
+  ...
+}:
+let
+  cfg = config.kdn.development.git;
+
+  inherit (pkgs.kdn) git-utils;
+in
+{
+  options.kdn.development.git = {
+    enable = lib.mkEnableOption "Git development utilities";
+  };
+
+  config = lib.mkMerge [
+    (kdnConfig.util.ifHMParent {
+      home-manager.sharedModules = [ { kdn.development.git = lib.mkDefault cfg; } ];
+    })
+    (lib.optionalAttrs (kdnConfig.util.hasParentOfAnyType [ "nixos" ]) (
+      lib.mkIf cfg.enable {
+        programs.git.enable = true;
+
+        programs.git.ignores = [
+          ''
+            # START kdn.git-utils
+            /${git-utils.passthru.worktreesDir}/
+            # END kdn.git-utils
+          ''
+        ];
+        programs.difftastic.git.enable = true;
+
+        home.packages = with pkgs; [
+          git
+          git-utils
+          gh
+        ];
+        programs.jujutsu.enable = true;
+        programs.jujutsu.settings = {
+          ui.diff-formatter = [
+            (lib.getExe config.programs.difftastic.package)
+            "--color=always"
+            "$left"
+            "$right"
+          ];
+          ui.paginate = "never"; # turn off pager by default
+        };
+      }
+    ))
+  ];
+}

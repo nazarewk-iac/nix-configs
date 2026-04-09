@@ -16,7 +16,7 @@
       kdn.hostName = "obler";
 
       system.stateVersion = "23.11";
-      home-manager.sharedModules = [{home.stateVersion = "23.11";}];
+      home-manager.sharedModules = [ { home.stateVersion = "23.11"; } ];
       networking.hostId = "f6345d38"; # cut -c-8 </proc/sys/kernel/random/uuid
     }
     {
@@ -41,11 +41,11 @@
 
       systemd.tmpfiles.rules = [
         /*
-        error:
-          failed to lock /etc/exports.d/zfs.exports.lock: No such file or directory
-        see:
-        - https://github.com/openzfs/zfs/issues/15369
-        - https://www.reddit.com/r/zfs/comments/17uf8wg/can_i_remove_an_old_entry_in/
+          error:
+            failed to lock /etc/exports.d/zfs.exports.lock: No such file or directory
+          see:
+          - https://github.com/openzfs/zfs/issues/15369
+          - https://www.reddit.com/r/zfs/comments/17uf8wg/can_i_remove_an_old_entry_in/
         */
         "d /etc/exports.d 1755 root root"
       ];

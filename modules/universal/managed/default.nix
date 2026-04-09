@@ -4,50 +4,52 @@
   config,
   kdnConfig,
   ...
-}: let
+}:
+let
   cfg = config.kdn.managed;
-in {
+in
+{
   options.kdn.managed = {
     enable = lib.mkOption {
       type = with lib.types; bool;
-      default = cfg.directories != [];
+      default = cfg.directories != [ ];
     };
 
     infix = lib.mkOption {
       type = with lib.types; attrsOf str;
-      default = {};
+      default = { };
     };
 
     directories = lib.mkOption {
       # TODO: switch to submodule with min/max depth
-      type = let
-        directoryType = lib.types.submodule (
-          {name, ...} @ args: {
-            options.path = lib.mkOption {
-              type = with lib.types; path;
-              default = args.name;
-            };
-            options.mindepth = lib.mkOption {
-              type = with lib.types; ints.u8;
-              default = 1;
-            };
-            options.maxdepth = lib.mkOption {
-              type = with lib.types; ints.u8;
-              default = 1;
-            };
-          }
-        );
-        coerce = value: (coercers."${builtins.typeOf value}") value;
-        coercers = {
-          string = value: coercers.set {path = value;};
-          set = value:
-            if value ? path
-            then {"${value.path}" = value;}
-            else value;
-          list = value:
-            lib.pipe value [
-              (map (
-                value:
+      type =
+        let
+          directoryType = lib.types.submodule (
+            { name, ... }@args:
+            {
+              options.path = lib.mkOption {
+                type = with lib.types; path;
+                default = args.name;
+              };
+              options.mindepth = lib.mkOption {
+                type = with lib.types; ints.u8;
+                default = 1;
+              };
+              options.maxdepth = lib.mkOption {
+                type = with lib.types; ints.u8;
+                default = 1;
+              };
+            }
+          );
+          coerce = value: (coercers."${builtins.typeOf value}") value;
+          coercers = {
+            string = value: coercers.set { path = value; };
+            set = value: if value ? path then { "${value.path}" = value; } else value;
+            list =
+              value:
+              lib.pipe value [
+                (map (
+                  value:
                   lib.pipe value [
                     coerce
                     builtins.attrValues
@@ -57,98 +59,100 @@ in {
                       value = coerced;
                     })
                   ]
-              ))
-              builtins.listToAttrs
-            ];
-        };
-      in
-        with lib.types; (coercedTo (oneOf [
-            (listOf str)
-            (listOf directoryType)
-            (attrsOf directoryType)
-          ])
-          coerce (attrsOf directoryType));
-      default = [];
+                ))
+                builtins.listToAttrs
+              ];
+          };
+        in
+        with lib.types;
+        (coercedTo (oneOf [
+          (listOf str)
+          (listOf directoryType)
+          (attrsOf directoryType)
+        ]) coerce (attrsOf directoryType));
+      default = [ ];
     };
 
     currentFiles = lib.mkOption {
       type = with lib.types; listOf path;
-      default = [];
+      default = [ ];
     };
 
     scripts.cleanup = lib.mkOption {
       type = with lib.types; package;
       default = pkgs.writeShellApplication {
         name = "kdn-managed-cleanup";
-        text = let
-          mkExistingArgs = dir:
-            lib.pipe cfg.currentFiles [
+        text =
+          let
+            mkExistingArgs =
+              dir:
+              lib.pipe cfg.currentFiles [
+                lib.lists.unique
+                (builtins.filter (lib.strings.hasPrefix dir))
+                (map (p: [
+                  "!"
+                  "-path"
+                  p
+                ]))
+                lib.lists.flatten
+              ];
+
+            infixArgs = lib.pipe cfg.infix [
+              builtins.attrValues
               lib.lists.unique
-              (builtins.filter (lib.strings.hasPrefix dir))
-              (map (p: [
-                "!"
-                "-path"
-                p
+              (map (infix: [
+                "-name"
+                "*${infix}*"
               ]))
-              lib.lists.flatten
+              (lib.foldl (a: b: a ++ lib.optional (a != [ ] && b != [ ]) "-o" ++ b) [ ])
+              (x: if x == [ ] then [ ] else [ "(" ] ++ x ++ [ ")" ])
             ];
 
-          infixArgs = lib.pipe cfg.infix [
-            builtins.attrValues
-            lib.lists.unique
-            (map (infix: [
-              "-name"
-              "*${infix}*"
-            ]))
-            (lib.foldl (a: b: a ++ lib.optional (a != [] && b != []) "-o" ++ b) [])
-            (x:
-              if x == []
-              then []
-              else ["("] ++ x ++ [")"])
-          ];
+            mkDelDirCmd = dirCfg: ''
+              ${lib.getExe pkgs.findutils} \
+                ${dirCfg.path} \
+                -mindepth ${toString dirCfg.mindepth} -maxdepth ${toString dirCfg.maxdepth} \
+                -type f \
+                ${lib.escapeShellArgs infixArgs} \
+                ${lib.escapeShellArgs (mkExistingArgs dirCfg.path)} \
+                -printf '> removed: %p\n' -delete
+            '';
 
-          mkDelDirCmd = dirCfg: ''
-            ${lib.getExe pkgs.findutils} \
-              ${dirCfg.path} \
-              -mindepth ${toString dirCfg.mindepth} -maxdepth ${toString dirCfg.maxdepth} \
-              -type f \
-              ${lib.escapeShellArgs infixArgs} \
-              ${lib.escapeShellArgs (mkExistingArgs dirCfg.path)} \
-              -printf '> removed: %p\n' -delete
+            delCmds = lib.pipe cfg.directories [
+              builtins.attrValues
+              (map mkDelDirCmd)
+              (builtins.concatStringsSep "\n")
+            ];
+          in
+          ''
+            echo 'Cleaning up managed files...'
+            ${delCmds}
           '';
-
-          delCmds = lib.pipe cfg.directories [
-            builtins.attrValues
-            (map mkDelDirCmd)
-            (builtins.concatStringsSep "\n")
-          ];
-        in ''
-          echo 'Cleaning up managed files...'
-          ${delCmds}
-        '';
       };
     };
   };
 
-  config = lib.mkIf cfg.enable (lib.mkMerge [
-    {
-      kdn.managed.infix.default = "kdn-managed-3b48ebd3";
-    }
-    (kdnConfig.util.ifTypes ["nixos"] {
-      system.activationScripts.kdnManagedFilesCleanup.text = lib.getExe cfg.scripts.cleanup;
-      system.activationScripts.kdnManagedFilesCleanup.deps = [
-        "etc"
-        "users"
-      ];
-    })
-    (kdnConfig.util.ifTypes ["darwin"] {
-      system.activationScripts.postActivation.text = lib.mkAfter (lib.getExe cfg.scripts.cleanup);
-    })
-    (lib.mkIf config.kdn.security.secrets.allowed {
-      kdn.managed.currentFiles = lib.pipe config.sops.templates [
-        builtins.attrValues
-        (map (tpl: tpl.path))
-      ];
-    })
-  ]);
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      {
+        kdn.managed.infix.default = "kdn-managed-3b48ebd3";
+      }
+      (kdnConfig.util.ifTypes [ "nixos" ] {
+        system.activationScripts.kdnManagedFilesCleanup.text = lib.getExe cfg.scripts.cleanup;
+        system.activationScripts.kdnManagedFilesCleanup.deps = [
+          "etc"
+          "users"
+        ];
+      })
+      (kdnConfig.util.ifTypes [ "darwin" ] {
+        system.activationScripts.postActivation.text = lib.mkAfter (lib.getExe cfg.scripts.cleanup);
+      })
+      (lib.mkIf config.kdn.security.secrets.allowed {
+        kdn.managed.currentFiles = lib.pipe config.sops.templates [
+          builtins.attrValues
+          (map (tpl: tpl.path))
+        ];
+      })
+    ]
+  );
 }

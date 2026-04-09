@@ -4,15 +4,24 @@
   pkgs,
   config,
   options,
-  utils,
+  utils ? null,
+  kdnConfig,
   ...
-}: let
+}:
+let
   cfg = config.kdn.disks;
+  hostname = config.kdn.hostName;
 
-  partSizeType = with lib.types; oneOf [str ints.positive];
+  partSizeType =
+    with lib.types;
+    oneOf [
+      str
+      ints.positive
+    ];
 
   deviceType = lib.types.submodule (
-    {name, ...} @ disk: {
+    { name, ... }@disk:
+    {
       options.type = lib.mkOption {
         type = lib.types.enum [
           "gpt"
@@ -24,34 +33,37 @@
         type = lib.types.path;
       };
       options.disko = lib.mkOption {
-        default = {};
+        default = { };
       };
       options.partitions = lib.mkOption {
-        default = {};
+        default = { };
         type = lib.types.attrsOf (
           lib.types.submodule (
-            {name, ...} @ part: {
+            { name, ... }@part:
+            {
               options.num = lib.mkOption {
                 type = lib.types.ints.between 1 128;
               };
               options.path = lib.mkOption {
                 internal = true;
                 type = lib.types.path;
-                default = let
-                  _path = disk.config.path;
-                  partNum = toString part.config.num;
-                in
-                  if lib.strings.hasPrefix "/dev/disk/" _path
-                  then "${_path}-part${partNum}"
-                  else if (builtins.match "/dev/[^/]+" _path) != null
-                  then "${_path}${partNum}"
-                  else throw "Don't know how to generate partition number for disk ${_path}";
+                default =
+                  let
+                    _path = disk.config.path;
+                    partNum = toString part.config.num;
+                  in
+                  if lib.strings.hasPrefix "/dev/disk/" _path then
+                    "${_path}-part${partNum}"
+                  else if (builtins.match "/dev/[^/]+" _path) != null then
+                    "${_path}${partNum}"
+                  else
+                    throw "Don't know how to generate partition number for disk ${_path}";
               };
               options.size = lib.mkOption {
                 type = partSizeType;
               };
               options.disko = lib.mkOption {
-                default = {};
+                default = { };
               };
             }
           )
@@ -65,7 +77,8 @@
       name,
       config,
       ...
-    } @ partSel: {
+    }@partSel:
+    {
       options.deviceKey = lib.mkOption {
         type = with lib.types; nullOr str;
       };
@@ -76,45 +89,46 @@
       options.device = lib.mkOption {
         type = deviceType;
         internal = true;
-        default = let
-          key = partSel.config.deviceKey;
-        in
+        default =
+          let
+            key = partSel.config.deviceKey;
+          in
           cfg.devices."${key}";
       };
       options.partition = lib.mkOption {
         type = with lib.types; anything;
-        default = with partSel.config;
-          if partitionKey == null
-          then {}
-          else device.partitions."${partitionKey}";
+        default =
+          with partSel.config;
+          if partitionKey == null then { } else device.partitions."${partitionKey}";
       };
       options.path = lib.mkOption {
         internal = true;
         type = lib.types.path;
         default =
-          if partSel.config.partition == {}
-          then partSel.config.device.path
-          else partSel.config.partition.path;
+          if partSel.config.partition == { } then
+            partSel.config.device.path
+          else
+            partSel.config.partition.path;
       };
     }
   );
-in {
+in
+{
   imports = [
-    (
-      lib.mkRenamedOptionModule
-      ["kdn" "hw" "disks"]
-      ["kdn" "disks"]
-    )
-  ];
+    (lib.mkRenamedOptionModule [ "kdn" "hw" "disks" ] [ "kdn" "disks" ])
+  ]
+  ++ lib.optional (kdnConfig.moduleType == "nixos") ./config.nix;
   options.kdn.disks = {
     enable = lib.mkOption {
       description = "enable persistence@ZFS@LUKS-volumes with detached headers and separate /boot";
       type = lib.types.bool;
       default = false;
-      apply = value:
+      apply =
+        value:
         assert lib.assertMsg (!(value && config.kdn.fs.disko.luks-zfs.enable)) ''
           You must choose only one of: `kdn.disks.enable` or `kdn.fs.disko.luks-zfs.enable`, not both!
-        ''; value;
+        '';
+        value;
     };
 
     nixBuildDir.type = lib.mkOption {
@@ -131,10 +145,11 @@ in {
     };
 
     users = lib.mkOption {
-      default = {};
+      default = { };
       type = lib.types.attrsOf (
         lib.types.submodule (
-          {name, ...} @ userArgs: {
+          { name, ... }@userArgs:
+          {
             options.homeLocation = lib.mkOption {
               type = lib.types.enum (builtins.attrNames cfg.base);
               default = cfg.userDefaults.homeLocation;
@@ -154,7 +169,7 @@ in {
 
     userDefaults.homeLocation = lib.mkOption {
       type = lib.types.enum (builtins.attrNames cfg.base);
-      description = ''which disks config should $HOME come from?'';
+      description = "which disks config should $HOME come from?";
     };
     userDefaults.homeFileMode = lib.mkOption {
       type = with lib.types; str;
@@ -202,13 +217,14 @@ in {
 
     devices = lib.mkOption {
       type = lib.types.attrsOf deviceType;
-      default = {};
+      default = { };
     };
     luks.volumes = lib.mkOption {
-      default = {};
+      default = { };
       type = lib.types.attrsOf (
         lib.types.submodule (
-          {name, ...} @ luksVol: {
+          { name, ... }@luksVol:
+          {
             options.target = lib.mkOption {
               type = deviceSelectorType;
             };
@@ -228,8 +244,8 @@ in {
             options.keyFile = lib.mkOption {
               type = with lib.types; nullOr str;
               /*
-              configuring disko's `settings.keyFile` puts the keyFile in the systemd service
-               preventing it from working with TPM2/YubiKey etc.
+                configuring disko's `settings.keyFile` puts the keyFile in the systemd service
+                 preventing it from working with TPM2/YubiKey etc.
               */
               default = "/tmp/${luksVol.name}.key";
             };
@@ -244,7 +260,7 @@ in {
               default = "${luksVol.name}-crypted";
             };
             options.disko = lib.mkOption {
-              default = {};
+              default = { };
             };
             options.zpool.name = lib.mkOption {
               type = with lib.types; nullOr str;
@@ -261,12 +277,13 @@ in {
       );
     };
     zpools = lib.mkOption {
-      default = {};
+      default = { };
       type = lib.types.attrsOf (
         lib.types.submodule (
-          {name, ...} @ zpool: {
+          { name, ... }@zpool:
+          {
             options.disko = lib.mkOption {
-              default = {};
+              default = { };
             };
             options.import.timeout = lib.mkOption {
               type = with lib.types; int;
@@ -274,7 +291,7 @@ in {
             };
             options.cryptsetup.requires = lib.mkOption {
               type = with lib.types; listOf str;
-              default = [];
+              default = [ ];
             };
             options.cryptsetup.names = lib.mkOption {
               type = with lib.types; listOf str;
@@ -298,63 +315,65 @@ in {
       );
     };
     persist = lib.mkOption {
-      default = {};
+      default = { };
       type = lib.types.attrsOf (
         lib.types.submodule {
           options.directories = lib.mkOption {
             type = lib.types.listOf (
               lib.types.either lib.types.str (
-                lib.types.submodule {freeformType = (pkgs.formats.json {}).type;}
+                lib.types.submodule { freeformType = (pkgs.formats.json { }).type; }
               )
             );
-            default = [];
+            default = [ ];
           };
           options.files = lib.mkOption {
             type = lib.types.listOf (
               lib.types.either lib.types.str (
-                lib.types.submodule {freeformType = (pkgs.formats.json {}).type;}
+                lib.types.submodule { freeformType = (pkgs.formats.json { }).type; }
               )
             );
-            default = [];
+            default = [ ];
           };
           options.users = lib.mkOption {
             type = lib.types.attrsOf (
               lib.types.submodule {
-                freeformType = (pkgs.formats.json {}).type;
+                freeformType = (pkgs.formats.json { }).type;
                 options.directories = lib.mkOption {
                   type = lib.types.listOf (
                     lib.types.either lib.types.str (
-                      lib.types.submodule {freeformType = (pkgs.formats.json {}).type;}
+                      lib.types.submodule { freeformType = (pkgs.formats.json { }).type; }
                     )
                   );
-                  default = [];
+                  default = [ ];
                 };
                 options.files = lib.mkOption {
                   type = lib.types.listOf (
                     lib.types.either lib.types.str (
-                      lib.types.submodule {freeformType = (pkgs.formats.json {}).type;}
+                      lib.types.submodule { freeformType = (pkgs.formats.json { }).type; }
                     )
                   );
-                  default = [];
+                  default = [ ];
                 };
               }
             );
-            default = {};
+            default = { };
           };
         }
       );
     };
     base = lib.mkOption {
-      default = {};
+      default = { };
       type = lib.types.attrsOf (
         lib.types.submodule (
-          {name, ...} @ baseArgs: let
+          { name, ... }@baseArgs:
+          let
             baseCfg = baseArgs.config;
-          in {
+          in
+          {
             options.neededForBoot = lib.mkOption {
               type = with lib.types; listOf path;
-              default = [];
-              apply = ls: ["${baseCfg.mountpoint}"] ++ ls;
+              default = [ ];
+              apply = ls: [ "${baseCfg.mountpoint}" ] ++ ls;
             };
             options.mountpoint = lib.mkOption {
               type = with lib.types; str;
@@ -386,54 +405,271 @@ in {
             options.disko = lib.mkOption {
               # this type doesn't work
               #type = lib.types.attrsOf (lib.types.submodule {freeformType = (pkgs.formats.json {}).type;});
-              default = {};
+              default = { };
             };
           }
         )
       );
     };
     disko.devices._meta = lib.mkOption {
-      type = (pkgs.formats.json {}).type;
-      default = {};
+      type = (pkgs.formats.json { }).type;
+      default = { };
     };
     disko.debug = lib.mkOption {
       readOnly = true;
-      default = let
-        diskoLib = pkgs.lib.disko;
-        cfg.config = config.disko.devices;
-        # https://github.com/nix-community/disko/blob/5a88a6eceb8fd732b983e72b732f6f4b8269bef3/lib/default.nix#L644-L653
-        devices = {
-          inherit
-            (cfg.config)
-            bcachefs_filesystems
-            disk
-            mdadm
-            zpool
-            lvm_vg
-            nodev
-            ;
-        };
-        # https://github.com/nix-community/disko/blob/5a88a6eceb8fd732b983e72b732f6f4b8269bef3/lib/default.nix#L992-L993
-        sortedDeviceList =
-          diskoLib.sortDevicesByDependencies (
-            cfg.config._meta.deviceDependencies or {}
-          )
-          devices;
-      in
-        if config ? disko
-        then {
-          inherit
-            (cfg.config._meta)
-            deviceDependencies
-            ;
-          inherit
-            cfg
-            diskoLib
-            devices
-            sortedDeviceList
-            ;
-        }
-        else {};
+      default =
+        let
+          diskoLib = pkgs.lib.disko;
+          cfg.config = config.disko.devices;
+          # https://github.com/nix-community/disko/blob/5a88a6eceb8fd732b983e72b732f6f4b8269bef3/lib/default.nix#L644-L653
+          devices = {
+            inherit (cfg.config)
+              bcachefs_filesystems
+              disk
+              mdadm
+              zpool
+              lvm_vg
+              nodev
+              ;
+          };
+          # https://github.com/nix-community/disko/blob/5a88a6eceb8fd732b983e72b732f6f4b8269bef3/lib/default.nix#L992-L993
+          sortedDeviceList = diskoLib.sortDevicesByDependencies (cfg.config._meta.deviceDependencies or { }
+          ) devices;
+        in
+        if config ? disko then
+          {
+            inherit (cfg.config._meta)
+              deviceDependencies
+              ;
+            inherit
+              cfg
+              diskoLib
+              devices
+              sortedDeviceList
+              ;
+          }
+        else
+          { };
     };
   };
+
+  config = lib.mkMerge [
+    (kdnConfig.util.ifTypes [ "nixos" ] (
+      lib.mkMerge [
+        (lib.mkIf cfg.enable (
+          lib.mkMerge [
+            {
+              kdn.disks.base."sys/cache".snapshots = false;
+              kdn.disks.base."sys/config".snapshots = true;
+              kdn.disks.base."sys/data".snapshots = true;
+              kdn.disks.base."sys/reproducible".snapshots = false;
+              kdn.disks.base."sys/state".snapshots = false;
+              kdn.disks.base."usr/cache".snapshots = false;
+              kdn.disks.base."usr/config".snapshots = true;
+              kdn.disks.base."usr/data".snapshots = true;
+              kdn.disks.base."usr/reproducible".snapshots = false;
+              kdn.disks.base."usr/state".snapshots = false;
+              kdn.disks.userDefaults.homeLocation = lib.mkDefault "disposable";
+            }
+            {
+              # Basic /boot config
+              fileSystems."/boot".neededForBoot = true;
+              kdn.disks.devices."${cfg.defaults.bootDeviceName}" = {
+                type = "gpt";
+                partitions."ESP" = {
+                  num = 1;
+                  size = 4096;
+                  disko = {
+                    type = "C12A7328-F81F-11D2-BA4B-00A0C93EC93B";
+                    label = "ESP";
+                    content.type = "filesystem";
+                    content.format = "vfat";
+                    content.mountpoint = "/boot";
+                    content.mountOptions = [
+                      "fmask=0077"
+                      "dmask=0077"
+                    ];
+                  };
+                };
+              };
+            }
+            {
+              kdn.disks.zpools."${cfg.zpool-main.name}" = { };
+            }
+            {
+              disko.devices.zpool."${cfg.zpool-main.name}".datasets = {
+                "${hostname}/nix-system/nix-store" = {
+                  type = "zfs_fs";
+                  mountpoint = "/nix/store";
+                  options.mountpoint = "/nix/store";
+                  options.atime = "off";
+                };
+                "${hostname}/nix-system/nix-var" = {
+                  type = "zfs_fs";
+                  mountpoint = "/nix/var";
+                  options.mountpoint = "/nix/var";
+                };
+              };
+            }
+            {
+              kdn.disks.persist."sys/data" = {
+                directories = [
+                  "/var/lib/systemd"
+                  {
+                    directory = "/var/lib/private";
+                    mode = "0700";
+                  }
+                ];
+                files = [
+                  {
+                    file = "/etc/ssh/ssh_host_ed25519_key";
+                    how = "symlink";
+                    mode = "0600";
+                    inInitrd = true;
+                  }
+                  {
+                    file = "/etc/ssh/ssh_host_rsa_key";
+                    how = "symlink";
+                    mode = "0600";
+                    inInitrd = true;
+                  }
+                ];
+              };
+              kdn.disks.persist."sys/config" = {
+                directories = [
+                  "/var/db/sudo/lectured"
+                  "/var/lib/nixos"
+                  "/var/lib/systemd/pstore"
+                  "/var/spool"
+                ];
+                files = [
+                  "/etc/printcap"
+                ];
+              };
+            }
+            {
+              kdn.disks.persist."sys/config".files = [
+                {
+                  file = "/etc/machine-id";
+                  inInitrd = true;
+                  configureParent = true;
+                }
+              ];
+              systemd.services.systemd-machine-id-commit.unitConfig.ConditionFirstBoot = true;
+            }
+            {
+              boot.initrd.systemd.services.systemd-journal-flush.serviceConfig.TimeoutSec = "10s";
+            }
+            {
+              kdn.disks.persist."sys/cache" = {
+                directories = [
+                  "/var/cache"
+                ];
+              };
+              home-manager.sharedModules = [
+                {
+                  kdn.disks.persist."sys/cache".directories = [ ".cache/nix" ];
+                }
+              ];
+            }
+            {
+              kdn.disks.persist."sys/state" = {
+                directories = [
+                  "/var/lib/systemd/coredump"
+                  "/var/log"
+                  {
+                    directory = "/var/log/journal";
+                    inInitrd = true;
+                  }
+                ];
+              };
+            }
+            {
+              kdn.disks.persist."usr/config".files = [
+                "/etc/nix/netrc"
+                "/etc/nix/nix.sensitive.conf"
+              ];
+              home-manager.sharedModules = [
+                {
+                  kdn.disks.persist."usr/data".directories = [ ".local/share/nix" ];
+                }
+              ];
+            }
+            {
+              home-manager.sharedModules = [
+                {
+                  kdn.disks.persist."usr/cache".directories = [
+                    "Downloads"
+                  ];
+                  kdn.disks.persist."usr/data".directories = [
+                    "Documents"
+                    "Desktop"
+                    "Pictures"
+                    "Videos"
+                  ];
+                }
+              ];
+            }
+            {
+              disko.devices.nodev = {
+                "/" = {
+                  fsType = "tmpfs";
+                  mountOptions = [
+                    "size=${cfg.tmpfs.size}"
+                    "mode=755"
+                  ];
+                };
+                "/home" = {
+                  fsType = "tmpfs";
+                  mountOptions = [
+                    "size=${cfg.tmpfs.size}"
+                    "mode=755"
+                  ];
+                };
+              };
+            }
+            # WARNING: keep build dir in sync with /modules/universal/nix.nix
+            {
+              systemd.tmpfiles.rules = [
+                "L+ /nix/var/nix/builds           - - - - /nix/var/nix/builds-${cfg.nixBuildDir.type}"
+              ];
+              kdn.disks.persist."disposable".directories = [
+                {
+                  directory = "/nix/var/nix/builds-disposable";
+                  mode = "0755";
+                }
+              ];
+              disko.devices.nodev."/nix/var/nix/builds-tmpfs" = {
+                fsType = "tmpfs";
+                mountOptions = [
+                  "size=${cfg.nixBuildDir.tmpfs.size}"
+                  "mode=755"
+                ];
+              };
+              disko.devices.zpool."${cfg.zpool-main.name}".datasets = {
+                "${hostname}/nix-system/nix-builds" = {
+                  type = "zfs_fs";
+                  mountpoint = "/nix/var/nix/builds-zfs-dataset";
+                  options.mountpoint = "/nix/var/nix/builds-zfs-dataset";
+                  options."com.sun:auto-snapshot" = "false";
+                  options.compression = "off";
+                  options.atime = "off";
+                  options.redundant_metadata = "none";
+                  options.sync = "disabled";
+                };
+              };
+            }
+            {
+              # required for kdn.disks.base.*.allowOther
+              programs.fuse.userAllowOther = true;
+            }
+          ]
+        ))
+        {
+          kdn.disks.disko.devices._meta = options.disko.devices.valueMeta.configuration.options._meta.default;
+          disko.devices._meta = config.kdn.disks.disko.devices._meta;
+        }
+      ]
+    ))
+  ];
 }

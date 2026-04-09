@@ -4,9 +4,11 @@
   config,
   kdnConfig,
   ...
-}: let
+}:
+let
   cfg = config.kdn.outputs.host;
-in {
+in
+{
   options.kdn.outputs.host = {
     luksVolumes = lib.mkOption {
       readOnly = true;

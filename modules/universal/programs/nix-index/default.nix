@@ -1,0 +1,29 @@
+{
+
+  lib,
+  pkgs,
+  config,
+  kdnConfig,
+  ...
+}:
+let
+  cfg = config.kdn.programs.nix-index;
+in
+{
+  options.kdn.programs.nix-index = {
+    enable = lib.mkEnableOption "nix-index setup";
+  };
+
+  config = kdnConfig.util.ifTypes [ "nixos" ] (
+    lib.mkIf cfg.enable {
+      environment.interactiveShellInit = ''
+        source ${pkgs.nix-index}/etc/profile.d/command-not-found.sh
+      '';
+
+      # use nix-index without `nix-channel`
+      # see https://github.com/bennofs/nix-index/issues/167
+      nix.nixPath = [ "nixpkgs=${kdnConfig.inputs.nixpkgs}" ];
+      environment.systemPackages = with pkgs; [ nix-index ];
+    }
+  );
+}

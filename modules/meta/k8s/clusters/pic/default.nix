@@ -2,12 +2,14 @@
   lib,
   config,
   ...
-}: let
+}:
+let
   cfg = config.k8s.clusters.pic;
-in {
+in
+{
   config.k8s.clusters.pic = {
     enable = lib.mkDefault true;
-    allowedVersions = ["1.35"];
+    allowedVersions = [ "1.35" ];
     domain = "pic.int.kdn.im";
 
     apiserver.vrrp.masterNode = "pwet";
@@ -18,8 +20,16 @@ in {
     apiserver.port.shared = 29037;
     apiserver.interface = "pic";
     apiserver.domain = "k8s.pic.etra.net.int.kdn.im";
-    controlplane.nodes = ["pwet" "turo" "yost"];
-    worker.nodes = ["pwet" "turo" "yost"];
+    controlplane.nodes = [
+      "pwet"
+      "turo"
+      "yost"
+    ];
+    worker.nodes = [
+      "pwet"
+      "turo"
+      "yost"
+    ];
     subnet.pod = [
       "fd12:ed4e:366d:5224::/64"
       "10.209.0.0/16"

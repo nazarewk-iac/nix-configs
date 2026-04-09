@@ -4,7 +4,8 @@
   lib,
   kdnConfig,
   ...
-}: {
+}:
+{
   imports = [
     kdnConfig.self.nixosModules.default
   ];
@@ -14,7 +15,7 @@
       kdn.hostName = "brys";
 
       system.stateVersion = "24.11";
-      home-manager.sharedModules = [{home.stateVersion = "24.11";}];
+      home-manager.sharedModules = [ { home.stateVersion = "24.11"; } ];
       networking.hostId = "0a989258"; # cut -c-8 </proc/sys/kernel/random/uuid
     }
     {
@@ -52,20 +53,20 @@
       };
     }
     /*
-       {
-      # automated unlock using Clevis through Tang server
-      boot.initrd.network.flushBeforeStage2 = true;
-      networking.interfaces.enp5s0.useDHCP = true;
-      networking.interfaces.enp6s0.useDHCP = true;
+         {
+        # automated unlock using Clevis through Tang server
+        boot.initrd.network.flushBeforeStage2 = true;
+        networking.interfaces.enp5s0.useDHCP = true;
+        networking.interfaces.enp6s0.useDHCP = true;
 
-      boot.initrd.network.enable = true; # this is systemd-networkd all he way through anyway
-      boot.initrd.systemd.network.wait-online.enable = true;
-      boot.initrd.systemd.network.wait-online.anyInterface = true;
-      boot.initrd.systemd.network.wait-online.timeout = 15;
+        boot.initrd.network.enable = true; # this is systemd-networkd all he way through anyway
+        boot.initrd.systemd.network.wait-online.enable = true;
+        boot.initrd.systemd.network.wait-online.anyInterface = true;
+        boot.initrd.systemd.network.wait-online.timeout = 15;
 
-      #boot.initrd.clevis.useTang = true;
-      #boot.initrd.clevis.devices."brys-main-crypted".secretFile = ./brys-main-crypted.jwe;
-    }
+        #boot.initrd.clevis.useTang = true;
+        #boot.initrd.clevis.devices."brys-main-crypted".secretFile = ./brys-main-crypted.jwe;
+      }
     */
     {
       # TODO: those are unlocked automatically using TPM2, switch to etra (or k8s cluster) backed Clevis+Tang unlock
@@ -130,63 +131,63 @@
       kdn.networking.ifaces."drek".address.internal4 = "192.168.41.31/24";
     }
     /*
-    (let
-      iface = "vm-nbt-1";
-      microvmPersistNames = ["microvm"] ++ builtins.attrNames config.kdn.disks.base;
-    in {
-      systemd.network.networks."40-ethernet-2.5g" = {
-        matchConfig.Name = [iface];
-      };
-
-      microvm.vms.nbt-1 = {
-        autostart = true;
-        restartIfChanged = true;
-        specialArgs =
-          kdn.configure {
-            moduleType = "nixos";
-          } {
-            kdn.features.microvm-guest = true;
-          };
-        config = {
-          imports = [
-            kdn.self.nixosModules.default
-          ];
-          config = lib.mkMerge [
-            {
-              kdn.hostName = "brys-uvm-nbt-1";
-              system.stateVersion = "25.05";
-              home-manager.sharedModules = [{home.stateVersion = "25.05";}];
-              networking.hostId = "fb6ff1fa"; # cut -c-8 </proc/sys/kernel/random/uuid
-              kdn.security.secrets.enable = false;
-
-              kdn.networking.netbird.clients.priv.enable = false;
-            }
-            {
-              microvm.interfaces = [
-                {
-                  type = "tap";
-                  id = iface;
-                  mac = "42:e2:ce:6a:ce:c1";
-                }
-              ];
-              systemd.network.enable = true;
-
-              systemd.network.networks."20-lan" = {
-                matchConfig.Type = "ether";
-                networkConfig = {
-                  DHCP = true;
-                  IPv6AcceptRA = true;
-                  LinkLocalAddressing = "ipv6";
-
-                  IPv6PrivacyExtensions = true;
-                  IPv6LinkLocalAddressGenerationMode = "stable-privacy";
-                };
-              };
-            }
-          ];
+      (let
+        iface = "vm-nbt-1";
+        microvmPersistNames = ["microvm"] ++ builtins.attrNames config.kdn.disks.base;
+      in {
+        systemd.network.networks."40-ethernet-2.5g" = {
+          matchConfig.Name = [iface];
         };
-      };
-    })
+
+        microvm.vms.nbt-1 = {
+          autostart = true;
+          restartIfChanged = true;
+          specialArgs =
+            kdn.configure {
+              moduleType = "nixos";
+            } {
+              kdn.features.microvm-guest = true;
+            };
+          config = {
+            imports = [
+              kdn.self.nixosModules.default
+            ];
+            config = lib.mkMerge [
+              {
+                kdn.hostName = "brys-uvm-nbt-1";
+                system.stateVersion = "25.05";
+                home-manager.sharedModules = [{home.stateVersion = "25.05";}];
+                networking.hostId = "fb6ff1fa"; # cut -c-8 </proc/sys/kernel/random/uuid
+                kdn.security.secrets.enable = false;
+
+                kdn.networking.netbird.clients.priv.enable = false;
+              }
+              {
+                microvm.interfaces = [
+                  {
+                    type = "tap";
+                    id = iface;
+                    mac = "42:e2:ce:6a:ce:c1";
+                  }
+                ];
+                systemd.network.enable = true;
+
+                systemd.network.networks."20-lan" = {
+                  matchConfig.Type = "ether";
+                  networkConfig = {
+                    DHCP = true;
+                    IPv6AcceptRA = true;
+                    LinkLocalAddressing = "ipv6";
+
+                    IPv6PrivacyExtensions = true;
+                    IPv6LinkLocalAddressGenerationMode = "stable-privacy";
+                  };
+                };
+              }
+            ];
+          };
+        };
+      })
     */
     {
       services.bpftune.enable = true;
@@ -196,7 +197,7 @@
       kdn.disks.nixBuildDir.tmpfs.size = "64G";
     }
     {
-      networking.hosts."10.116.89.68" = ["gipe"];
+      networking.hosts."10.116.89.68" = [ "gipe" ];
       networking.networkmanager.ensureProfiles.profiles.gipe = {
         connection = {
           id = "gipe";
@@ -214,7 +215,7 @@
       };
     }
     {
-      networking.hosts."192.168.88.1" = ["talt-mgmt"];
+      networking.hosts."192.168.88.1" = [ "talt-mgmt" ];
       networking.networkmanager.ensureProfiles.profiles.talt-mgmt = {
         connection = {
           id = "talt-mgmt";
@@ -232,7 +233,7 @@
       };
     }
     {
-      networking.hosts."192.168.2.1" = ["mokerlink"];
+      networking.hosts."192.168.2.1" = [ "mokerlink" ];
       networking.networkmanager.ensureProfiles.profiles.mokerlink-switch = {
         connection = {
           id = "mokerlink-switch";

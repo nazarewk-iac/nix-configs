@@ -15,7 +15,7 @@ buildNpmPackage rec {
   };
 
   npmDepsHash = "sha256-W9tR151QLP+xprPn52pi2I8JD3BSTsxim96WS0sqTvU=";
-  npmFlags = ["--legacy-peer-deps"];
+  npmFlags = [ "--legacy-peer-deps" ];
 
   installPhase = ''
     cp -R out $out

@@ -4,28 +4,34 @@
   pkgs,
   kdnConfig,
   ...
-}: let
+}:
+let
   inherit (kdnConfig) inputs;
 in
-  lib.optionalAttrs (kdnConfig.util.isOfType ["nixos" "home-manager" "darwin" "nix-on-droid"]) {
+lib.optionalAttrs
+  (kdnConfig.util.isOfType [
+    "nixos"
+    "home-manager"
+    "darwin"
+    "nix-on-droid"
+  ])
+  {
     imports =
-      if kdnConfig.moduleType == "nixos"
-      then [inputs.stylix.nixosModules.stylix]
-      else if kdnConfig.moduleType == "darwin"
-      then [inputs.stylix.darwinModules.stylix]
-      else if kdnConfig.moduleType == "nix-on-droid"
-      then [inputs.stylix.nixOnDroidModules.stylix]
-      else if
-        kdnConfig.moduleType
-        == "home-manager"
-        && kdnConfig.parent == null
-      then [inputs.stylix.homeModules.stylix]
-      else [];
+      if kdnConfig.moduleType == "nixos" then
+        [ inputs.stylix.nixosModules.stylix ]
+      else if kdnConfig.moduleType == "darwin" then
+        [ inputs.stylix.darwinModules.stylix ]
+      else if kdnConfig.moduleType == "nix-on-droid" then
+        [ inputs.stylix.nixOnDroidModules.stylix ]
+      else if kdnConfig.moduleType == "home-manager" && kdnConfig.parent == null then
+        [ inputs.stylix.homeModules.stylix ]
+      else
+        [ ];
     config = lib.mkMerge [
       {
         /*
-        TODO: review new option added for simplifications?
-         see https://github.com/danth/stylix/commit/7682713f6af1d32a33f8c4e3d3d141af5ad1761a
+          TODO: review new option added for simplifications?
+           see https://github.com/danth/stylix/commit/7682713f6af1d32a33f8c4e3d3d141af5ad1761a
         */
 
         stylix.enable = true;
@@ -46,12 +52,18 @@ in
         stylix.fonts.monospace.name = lib.mkDefault "Fira Code";
         stylix.fonts.monospace.package = lib.mkDefault pkgs.fira-code;
       })
-      (lib.attrsets.optionalAttrs (kdnConfig.util.isOfType ["nixos" "home-manager"]) {
-        stylix.cursor.name = lib.mkDefault "phinger-cursors-${config.stylix.polarity}";
-        stylix.cursor.package = lib.mkDefault pkgs.phinger-cursors;
-        stylix.cursor.size = lib.mkDefault 32;
-      })
-      (kdnConfig.util.ifTypes ["nixos"] {
+      (lib.attrsets.optionalAttrs
+        (kdnConfig.util.isOfType [
+          "nixos"
+          "home-manager"
+        ])
+        {
+          stylix.cursor.name = lib.mkDefault "phinger-cursors-${config.stylix.polarity}";
+          stylix.cursor.package = lib.mkDefault pkgs.phinger-cursors;
+          stylix.cursor.size = lib.mkDefault 32;
+        }
+      )
+      (kdnConfig.util.ifTypes [ "nixos" ] {
         fonts.fontDir.enable = true;
         fonts.packages = with pkgs; [
           fira-code
@@ -59,7 +71,7 @@ in
         ];
         stylix.enableReleaseChecks = lib.strings.versionAtLeast config.system.nixos.version "26.11";
       })
-      (kdnConfig.util.ifTypes ["home-manager"] {
+      (kdnConfig.util.ifTypes [ "home-manager" ] {
         stylix.enableReleaseChecks = lib.strings.versionAtLeast config.home.version.release "26.11";
       })
     ];

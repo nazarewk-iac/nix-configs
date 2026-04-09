@@ -3,50 +3,60 @@
   config,
   options,
   ...
-} @ args: let
-  loadModules = {
-    curFile,
-    src,
-    suffixes ? [],
-  }: let
-    allFiles = lib.filesystem.listFilesRecursive src;
-    suffixMatchers = map lib.strings.hasSuffix suffixes;
-    filteredFiles = builtins.filter (pathValue: let
-      pathStr = toString pathValue;
-      matchesSuffixes = builtins.any (fn: fn pathStr) suffixMatchers;
+}@args:
+let
+  loadModules =
+    {
+      curFile,
+      src,
+      suffixes ? [ ],
+    }:
+    let
+      allFiles = lib.filesystem.listFilesRecursive src;
+      suffixMatchers = map lib.strings.hasSuffix suffixes;
+      filteredFiles = builtins.filter (
+        pathValue:
+        let
+          pathStr = toString pathValue;
+          matchesSuffixes = builtins.any (fn: fn pathStr) suffixMatchers;
+        in
+        pathValue != curFile && matchesSuffixes
+      ) allFiles;
     in
-      pathValue != curFile && matchesSuffixes)
-    allFiles;
-  in
     filteredFiles;
 
-  mkSubmodule = module: let
-    mod = lib.evalModules {
-      class = "kdn-meta";
-      modules = [
-        ./.
-        module
-        {parent = lib.mkOverride 1099 (builtins.removeAttrs config ["_module"]);}
-        (lib.mkOverride 1100 (builtins.removeAttrs config [
-          "output"
-          "parents"
-          "specialArgs"
-          "util"
-        ]))
-      ];
-    };
-  in
+  mkSubmodule =
+    module:
+    let
+      mod = lib.evalModules {
+        class = "kdn-meta";
+        modules = [
+          ./.
+          module
+          { parent = lib.mkOverride 1099 (builtins.removeAttrs config [ "_module" ]); }
+          (lib.mkOverride 1100 (
+            builtins.removeAttrs config [
+              "output"
+              "parents"
+              "specialArgs"
+              "util"
+            ]
+          ))
+        ];
+      };
+    in
     mod.config;
 
   imports = loadModules {
     curFile = ./default.nix;
     src = ./.;
-    suffixes = ["/default.nix"];
+    suffixes = [ "/default.nix" ];
   };
-in {
+in
+{
   imports = imports;
 
-  options.output.imports = lib.mkOption {default = imports;};
+  options.output.imports = lib.mkOption { default = imports; };
 
   options.output.mkSubmodule = lib.mkOption {
     readOnly = true;
@@ -63,13 +73,15 @@ in {
   };
   options.moduleType = lib.mkOption {
     type = with lib.types; str;
+    default = "root";
   };
   options.modules = lib.mkOption {
     type = with lib.types; listOf anything;
     default =
-      if config.parent != config.util.emptyParent && config.parent.moduleType == config.moduleType
-      then config.parent.modules
-      else [];
+      if config.parent != config.util.emptyParent && config.parent.moduleType == config.moduleType then
+        config.parent.modules
+      else
+        [ ];
   };
   options.specialArgs = lib.mkOption {
     readOnly = true;
@@ -78,19 +90,20 @@ in {
       lib = config.lib;
     };
   };
-  options.inputs = lib.mkOption {default = config.parent.inputs;};
-  options.lib = lib.mkOption {default = config.parent.lib;};
-  options.self = lib.mkOption {default = config.parent.self or config.self.inputs;};
-  options.nix-configs = lib.mkOption {default = config.parent.nix-configs;};
-  options.parent = lib.mkOption {default = config.util.emptyParent;};
+  options.inputs = lib.mkOption { default = config.parent.inputs; };
+  options.lib = lib.mkOption { default = config.parent.lib; };
+  options.self = lib.mkOption { default = config.parent.self or config.self.inputs; };
+  options.nix-configs = lib.mkOption { default = config.parent.nix-configs; };
+  options.parent = lib.mkOption { default = config.util.emptyParent; };
 
   options.parents = lib.mkOption {
     internal = true;
     readOnly = true;
     default =
-      if config.parent == config.util.emptyParent
-      then []
-      else [config.parent] ++ config.parent.parents;
+      if config.parent == config.util.emptyParent then
+        [ ]
+      else
+        [ config.parent ] ++ config.parent.parents;
   };
 
   options.util.emptyParent = lib.mkOption {
@@ -102,7 +115,12 @@ in {
     internal = true;
     readOnly = true;
     type = with lib.types; listOf str;
-    default = ["nixos" "home-manager" "darwin" "nix-on-droid"];
+    default = [
+      "nixos"
+      "home-manager"
+      "darwin"
+      "nix-on-droid"
+    ];
   };
   options.util.isKnownType = lib.mkOption {
     internal = true;
@@ -117,35 +135,42 @@ in {
   options.util.ifTypes' = lib.mkOption {
     internal = true;
     readOnly = true;
-    default = types: forTrue: forFalse:
-      if builtins.elem config.moduleType types
-      then forTrue
-      else forFalse;
+    default =
+      types: forTrue: forFalse:
+      if builtins.elem config.moduleType types then forTrue else forFalse;
   };
   options.util.ifTypes = lib.mkOption {
     internal = true;
     readOnly = true;
-    default = types: data: config.util.ifTypes' types data {};
+    default = types: data: config.util.ifTypes' types data { };
   };
   options.util.ifNotTypes = lib.mkOption {
     internal = true;
     readOnly = true;
-    default = types: data: config.util.ifTypes' types {} data;
+    default = types: data: config.util.ifTypes' types { } data;
   };
   options.util.ifHMParent = lib.mkOption {
     internal = true;
     readOnly = true;
-    default = config.util.ifTypes ["nixos" "darwin" "nix-on-droid"];
+    default = config.util.ifTypes [
+      "nixos"
+      "darwin"
+      "nix-on-droid"
+    ];
   };
   options.util.ifNotHMParent = lib.mkOption {
     internal = true;
     readOnly = true;
-    default = config.util.ifNotTypes ["nixos" "darwin" "nix-on-droid"];
+    default = config.util.ifNotTypes [
+      "nixos"
+      "darwin"
+      "nix-on-droid"
+    ];
   };
   options.util.ifHM = lib.mkOption {
     internal = true;
     readOnly = true;
-    default = config.util.ifTypes ["home-manager"];
+    default = config.util.ifTypes [ "home-manager" ];
   };
   options.util.hasParentOfAnyType = lib.mkOption {
     internal = true;
