@@ -4,10 +4,12 @@
   pkgs,
   config,
   options,
-  utils,
+  utils ? null,
+  kdnConfig,
   ...
 }: let
   cfg = config.kdn.disks;
+  hostname = config.kdn.hostName;
 
   partSizeType = with lib.types; oneOf [str ints.positive];
 
@@ -99,13 +101,15 @@
     }
   );
 in {
-  imports = [
-    (
-      lib.mkRenamedOptionModule
-      ["kdn" "hw" "disks"]
-      ["kdn" "disks"]
-    )
-  ];
+  imports =
+    [
+      (
+        lib.mkRenamedOptionModule
+        ["kdn" "hw" "disks"]
+        ["kdn" "disks"]
+      )
+    ]
+    ++ lib.optional (kdnConfig.moduleType == "nixos") ./config.nix;
   options.kdn.disks = {
     enable = lib.mkOption {
       description = "enable persistence@ZFS@LUKS-volumes with detached headers and separate /boot";
@@ -436,4 +440,220 @@ in {
         else {};
     };
   };
+
+  config = lib.mkMerge [
+    (kdnConfig.util.ifTypes ["nixos"] (lib.mkMerge [
+      (lib.mkIf cfg.enable (lib.mkMerge [
+        {
+          kdn.disks.base."sys/cache".snapshots = false;
+          kdn.disks.base."sys/config".snapshots = true;
+          kdn.disks.base."sys/data".snapshots = true;
+          kdn.disks.base."sys/reproducible".snapshots = false;
+          kdn.disks.base."sys/state".snapshots = false;
+          kdn.disks.base."usr/cache".snapshots = false;
+          kdn.disks.base."usr/config".snapshots = true;
+          kdn.disks.base."usr/data".snapshots = true;
+          kdn.disks.base."usr/reproducible".snapshots = false;
+          kdn.disks.base."usr/state".snapshots = false;
+          kdn.disks.userDefaults.homeLocation = lib.mkDefault "disposable";
+        }
+        {
+          # Basic /boot config
+          fileSystems."/boot".neededForBoot = true;
+          kdn.disks.devices."${cfg.defaults.bootDeviceName}" = {
+            type = "gpt";
+            partitions."ESP" = {
+              num = 1;
+              size = 4096;
+              disko = {
+                type = "C12A7328-F81F-11D2-BA4B-00A0C93EC93B";
+                label = "ESP";
+                content.type = "filesystem";
+                content.format = "vfat";
+                content.mountpoint = "/boot";
+                content.mountOptions = [
+                  "fmask=0077"
+                  "dmask=0077"
+                ];
+              };
+            };
+          };
+        }
+        {
+          kdn.disks.zpools."${cfg.zpool-main.name}" = {};
+        }
+        {
+          disko.devices.zpool."${cfg.zpool-main.name}".datasets = {
+            "${hostname}/nix-system/nix-store" = {
+              type = "zfs_fs";
+              mountpoint = "/nix/store";
+              options.mountpoint = "/nix/store";
+              options.atime = "off";
+            };
+            "${hostname}/nix-system/nix-var" = {
+              type = "zfs_fs";
+              mountpoint = "/nix/var";
+              options.mountpoint = "/nix/var";
+            };
+          };
+        }
+        {
+          kdn.disks.persist."sys/data" = {
+            directories = [
+              "/var/lib/systemd"
+              {
+                directory = "/var/lib/private";
+                mode = "0700";
+              }
+            ];
+            files = [
+              {
+                file = "/etc/ssh/ssh_host_ed25519_key";
+                how = "symlink";
+                mode = "0600";
+                inInitrd = true;
+              }
+              {
+                file = "/etc/ssh/ssh_host_rsa_key";
+                how = "symlink";
+                mode = "0600";
+                inInitrd = true;
+              }
+            ];
+          };
+          kdn.disks.persist."sys/config" = {
+            directories = [
+              "/var/db/sudo/lectured"
+              "/var/lib/nixos"
+              "/var/lib/systemd/pstore"
+              "/var/spool"
+            ];
+            files = [
+              "/etc/printcap"
+            ];
+          };
+        }
+        {
+          kdn.disks.persist."sys/config".files = [
+            {
+              file = "/etc/machine-id";
+              inInitrd = true;
+              configureParent = true;
+            }
+          ];
+          systemd.services.systemd-machine-id-commit.unitConfig.ConditionFirstBoot = true;
+        }
+        {
+          boot.initrd.systemd.services.systemd-journal-flush.serviceConfig.TimeoutSec = "10s";
+        }
+        {
+          kdn.disks.persist."sys/cache" = {
+            directories = [
+              "/var/cache"
+            ];
+          };
+          home-manager.sharedModules = [
+            {
+              kdn.disks.persist."sys/cache".directories = [".cache/nix"];
+            }
+          ];
+        }
+        {
+          kdn.disks.persist."sys/state" = {
+            directories = [
+              "/var/lib/systemd/coredump"
+              "/var/log"
+              {
+                directory = "/var/log/journal";
+                inInitrd = true;
+              }
+            ];
+          };
+        }
+        {
+          kdn.disks.persist."usr/config".files = [
+            "/etc/nix/netrc"
+            "/etc/nix/nix.sensitive.conf"
+          ];
+          home-manager.sharedModules = [
+            {
+              kdn.disks.persist."usr/data".directories = [".local/share/nix"];
+            }
+          ];
+        }
+        {
+          home-manager.sharedModules = [
+            {
+              kdn.disks.persist."usr/cache".directories = [
+                "Downloads"
+              ];
+              kdn.disks.persist."usr/data".directories = [
+                "Documents"
+                "Desktop"
+                "Pictures"
+                "Videos"
+              ];
+            }
+          ];
+        }
+        {
+          disko.devices.nodev = {
+            "/" = {
+              fsType = "tmpfs";
+              mountOptions = [
+                "size=${cfg.tmpfs.size}"
+                "mode=755"
+              ];
+            };
+            "/home" = {
+              fsType = "tmpfs";
+              mountOptions = [
+                "size=${cfg.tmpfs.size}"
+                "mode=755"
+              ];
+            };
+          };
+        }
+        # WARNING: keep build dir in sync with /modules/universal/nix.nix
+        {
+          systemd.tmpfiles.rules = [
+            "L+ /nix/var/nix/builds           - - - - /nix/var/nix/builds-${cfg.nixBuildDir.type}"
+          ];
+          kdn.disks.persist."disposable".directories = [
+            {
+              directory = "/nix/var/nix/builds-disposable";
+              mode = "0755";
+            }
+          ];
+          disko.devices.nodev."/nix/var/nix/builds-tmpfs" = {
+            fsType = "tmpfs";
+            mountOptions = [
+              "size=${cfg.nixBuildDir.tmpfs.size}"
+              "mode=755"
+            ];
+          };
+          disko.devices.zpool."${cfg.zpool-main.name}".datasets = {
+            "${hostname}/nix-system/nix-builds" = {
+              type = "zfs_fs";
+              mountpoint = "/nix/var/nix/builds-zfs-dataset";
+              options.mountpoint = "/nix/var/nix/builds-zfs-dataset";
+              options."com.sun:auto-snapshot" = "false";
+              options.compression = "off";
+              options.atime = "off";
+              options.redundant_metadata = "none";
+              options.sync = "disabled";
+            };
+          };
+        }
+        {
+          # required for kdn.disks.base.*.allowOther
+          programs.fuse.userAllowOther = true;
+        }
+      ]))
+      {
+        kdn.disks.disko.devices._meta = options.disko.devices.valueMeta.configuration.options._meta.default;
+        disko.devices._meta = config.kdn.disks.disko.devices._meta;
+      }
+    ]))
+  ];
 }

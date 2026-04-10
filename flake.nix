@@ -242,7 +242,7 @@
       (lib.attrsets.filterAttrs (_: host: host != {}))
     ];
     flake.hosts = lib.attrsets.mapAttrs (_: value: value.config) (self.darwinConfigurations // self.nixosConfigurations);
-    flake.nixosModules.default = ./modules/nixos;
+    flake.nixosModules.default = ./modules/universal;
     flake.nixosConfigurations = lib.pipe self.hostConfigurations [
       (lib.attrsets.filterAttrs (_: host: host.moduleType == "nixos"))
       (builtins.mapAttrs (_: host:
@@ -255,7 +255,7 @@
             ];
         }))
     ];
-    flake.darwinModules.default = ./modules/darwin;
+    flake.darwinModules.default = ./modules/universal;
     flake.darwinConfigurations = lib.pipe self.hostConfigurations [
       (lib.attrsets.filterAttrs (_: host: host.moduleType == "darwin"))
       (builtins.mapAttrs (_: host:
