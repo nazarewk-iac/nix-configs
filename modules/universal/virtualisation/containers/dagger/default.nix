@@ -14,13 +14,11 @@ in
     enable = lib.mkEnableOption "Dagger.io development setup";
   };
 
-  config = kdnConfig.util.ifTypes [ "nixos" ] (
-    lib.mkIf cfg.enable {
-      environment.systemPackages = with pkgs; [
-        cue
-        dagger
-        cuelsp
-      ];
-    }
-  );
+  config = lib.mkIf cfg.enable {
+    kdn.env.packages = with pkgs; [
+      cue
+      dagger
+      cuelsp
+    ];
+  };
 }

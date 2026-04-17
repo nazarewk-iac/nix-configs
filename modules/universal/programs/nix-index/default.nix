@@ -1,29 +1,31 @@
 {
-
   lib,
   pkgs,
   config,
   kdnConfig,
   ...
-}:
-let
+}: let
   cfg = config.kdn.programs.nix-index;
-in
-{
+in {
   options.kdn.programs.nix-index = {
     enable = lib.mkEnableOption "nix-index setup";
   };
 
-  config = kdnConfig.util.ifTypes [ "nixos" ] (
-    lib.mkIf cfg.enable {
-      environment.interactiveShellInit = ''
-        source ${pkgs.nix-index}/etc/profile.d/command-not-found.sh
-      '';
-
-      # use nix-index without `nix-channel`
-      # see https://github.com/bennofs/nix-index/issues/167
-      nix.nixPath = [ "nixpkgs=${kdnConfig.inputs.nixpkgs}" ];
-      environment.systemPackages = with pkgs; [ nix-index ];
-    }
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      {
+        kdn.env.packages = with pkgs; [nix-index];
+      }
+      (kdnConfig.util.ifTypes ["nixos" "darwin" "home-manager"] {
+        # use nix-index without `nix-channel`
+        # see https://github.com/bennofs/nix-index/issues/167
+        nix.nixPath = ["nixpkgs=${kdnConfig.inputs.nixpkgs}"];
+      })
+      (kdnConfig.util.ifTypes ["nixos"] {
+        environment.interactiveShellInit = ''
+          source ${pkgs.nix-index}/etc/profile.d/command-not-found.sh
+        '';
+      })
+    ]
   );
 }

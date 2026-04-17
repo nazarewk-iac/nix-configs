@@ -14,20 +14,19 @@ in
     enable = lib.mkEnableOption "Node JS development";
   };
 
-  config = lib.mkMerge [
-    (kdnConfig.util.ifHM (
-      lib.mkIf cfg.enable {
-        programs.helix.extraPackages = with pkgs; [ typescript-language-server ];
-      }
-    ))
-    (kdnConfig.util.ifTypes [ "nixos" ] (
-      lib.mkIf cfg.enable {
-        environment.systemPackages = with pkgs; [
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      {
+        kdn.env.packages = with pkgs; [
           # dev software
           nodejs
           yarn
         ];
-
+      }
+      (kdnConfig.util.ifHM {
+        programs.helix.extraPackages = with pkgs; [ typescript-language-server ];
+      })
+      (kdnConfig.util.ifTypes [ "nixos" ] {
         home-manager.sharedModules = [
           { kdn.development.nodejs.enable = true; }
           {
@@ -37,7 +36,7 @@ in
             '';
           }
         ];
-      }
-    ))
-  ];
+      })
+    ]
+  );
 }

@@ -3,7 +3,6 @@
   lib,
   pkgs,
   config,
-  kdnConfig,
   ...
 }:
 let
@@ -12,12 +11,10 @@ in
 {
   options.kdn.programs.editors.photo.enable = lib.mkEnableOption "Photo editing software";
 
-  config = kdnConfig.util.ifTypes [ "nixos" ] (
-    lib.mkIf cfg.enable {
-      environment.systemPackages = with pkgs; [
-        gimp
-        krita
-      ];
-    }
-  );
+  config = lib.mkIf cfg.enable {
+    kdn.env.packages = with pkgs; [
+      gimp
+      krita
+    ];
+  };
 }

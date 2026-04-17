@@ -92,7 +92,7 @@ in
     (kdnConfig.util.ifHM (
       lib.mkMerge [
         {
-          home.sessionVariables.TZ = cfg.timezone;
+          kdn.env.variables.TZ = cfg.timezone;
           xdg.configFile."user-dirs.locale".source = pkgs.writeText "locale.conf" cfg.userDirs;
         }
         (lib.mkIf config.xdg.userDirs.enable {
@@ -120,7 +120,7 @@ in
                 lib.mapAttrsToList (n: v: "${n}=${v}") config.i18n.extraLocaleSettings
               )}
             '';
-            home.sessionVariables = {
+            kdn.env.variables = {
               LANG = config.i18n.defaultLocale;
             }
             // config.i18n.extraLocaleSettings;

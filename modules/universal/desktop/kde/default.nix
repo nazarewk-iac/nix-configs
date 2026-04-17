@@ -68,11 +68,11 @@ in
             ];
 
             # see https://discourse.nixos.org/t/kde-widgets-look-off-on-a-freshly-installed-nixos/13098
-            environment.systemPackages = with pkgs.kdePackages; [
+            kdn.env.packages = with pkgs.kdePackages; [
               qqc2-breeze-style
               qqc2-desktop-style
             ];
-            environment.sessionVariables.QT_QUICK_CONTROLS_STYLE = "org.kde.desktop";
+            kdn.env.variables.QT_QUICK_CONTROLS_STYLE = "org.kde.desktop";
           }
         ]
       )

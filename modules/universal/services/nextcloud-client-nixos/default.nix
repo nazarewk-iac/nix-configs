@@ -35,43 +35,47 @@ in
     enable = lib.mkEnableOption "nextcloud-client-nixos";
   };
 
-  config = kdnConfig.util.ifTypes [ "nixos" ] (
-    lib.mkIf cfg.enable {
-      environment.systemPackages = with pkgs; [
-        nextcloud-client
-        sync
-      ];
-      kdn.disks.persist."usr/reproducible".users.root.directories = [
-        "Nextcloud"
-      ];
-      systemd.timers."kdn-nextcloud-nixos-sync" = {
-        description = "Synchronizes /root/Nextcloud directory";
-        wants = [ "network-online.target" ];
-        after = [ "network-online.target" ];
-        wantedBy = [ "multi-user.target" ];
-        timerConfig.OnUnitActiveSec = "15m";
-      };
-      systemd.paths."kdn-nextcloud-nixos-sync" = {
-        description = "Synchronizes /root/Nextcloud directory";
-        wantedBy = [ "multi-user.target" ];
-        pathConfig.PathChanged = "/root/Nextcloud";
-        pathConfig.TriggerLimitIntervalSec = "10s";
-        pathConfig.TriggerLimitBurst = 1;
-      };
-      systemd.services."kdn-nextcloud-nixos-sync" = {
-        description = "Synchronizes /root/Nextcloud directory";
-        wants = [ "network-online.target" ];
-        after = [ "network-online.target" ];
-        environment.HOME = "/root";
-        serviceConfig = {
-          Type = "oneshot";
-          RemainAfterExit = true;
-          ExecStart = lib.escapeShellArgs [
-            (lib.getExe sync)
-            "--non-interactive"
-          ];
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      {
+        kdn.env.packages = with pkgs; [
+          nextcloud-client
+          sync
+        ];
+      }
+      (kdnConfig.util.ifTypes [ "nixos" ] {
+        kdn.disks.persist."usr/reproducible".users.root.directories = [
+          "Nextcloud"
+        ];
+        systemd.timers."kdn-nextcloud-nixos-sync" = {
+          description = "Synchronizes /root/Nextcloud directory";
+          wants = [ "network-online.target" ];
+          after = [ "network-online.target" ];
+          wantedBy = [ "multi-user.target" ];
+          timerConfig.OnUnitActiveSec = "15m";
         };
-      };
-    }
+        systemd.paths."kdn-nextcloud-nixos-sync" = {
+          description = "Synchronizes /root/Nextcloud directory";
+          wantedBy = [ "multi-user.target" ];
+          pathConfig.PathChanged = "/root/Nextcloud";
+          pathConfig.TriggerLimitIntervalSec = "10s";
+          pathConfig.TriggerLimitBurst = 1;
+        };
+        systemd.services."kdn-nextcloud-nixos-sync" = {
+          description = "Synchronizes /root/Nextcloud directory";
+          wants = [ "network-online.target" ];
+          after = [ "network-online.target" ];
+          environment.HOME = "/root";
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            ExecStart = lib.escapeShellArgs [
+              (lib.getExe sync)
+              "--non-interactive"
+            ];
+          };
+        };
+      })
+    ]
   );
 }

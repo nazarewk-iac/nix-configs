@@ -18,7 +18,7 @@ in
     lib.mkIf cfg.enable {
       virtualisation.docker.enable = true;
 
-      environment.systemPackages = with pkgs; [
+      kdn.env.packages = with pkgs; [
         docker-client
         docker-compose
       ];

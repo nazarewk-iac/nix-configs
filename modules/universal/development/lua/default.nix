@@ -66,22 +66,22 @@ in
     };
   };
 
-  config = lib.mkMerge [
-    (kdnConfig.util.ifHM (
-      lib.mkIf cfg.enable {
-        programs.helix.extraPackages = with pkgs; [ lua-language-server ];
-      }
-    ))
-    (kdnConfig.util.ifTypes [ "nixos" ] (
-      lib.mkIf cfg.enable {
-        home-manager.sharedModules = [ { kdn.development.lua.enable = true; } ];
-        environment.systemPackages =
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      {
+        kdn.env.packages =
           with pkgs;
           [
             (mkLuaVersion cfg.defaultVersion) # latest
           ]
           ++ (map mkSuffixedLuaVersion cfg.versions);
       }
-    ))
-  ];
+      (kdnConfig.util.ifHM {
+        programs.helix.extraPackages = with pkgs; [ lua-language-server ];
+      })
+      (kdnConfig.util.ifTypes [ "nixos" ] {
+        home-manager.sharedModules = [ { kdn.development.lua.enable = true; } ];
+      })
+    ]
+  );
 }

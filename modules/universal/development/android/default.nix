@@ -14,14 +14,18 @@ in
     enable = lib.mkEnableOption "working with Android devices";
   };
 
-  config = kdnConfig.util.ifTypes [ "nixos" ] (
-    lib.mkIf cfg.enable {
-      environment.systemPackages = with pkgs; [
-        android-tools
-      ];
-      services.udev.packages = [
-        # pkgs.android-udev-rules # superseded by built-in rules
-      ];
-    }
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      {
+        kdn.env.packages = with pkgs; [
+          android-tools
+        ];
+      }
+      (kdnConfig.util.ifTypes [ "nixos" ] {
+        services.udev.packages = [
+          # pkgs.android-udev-rules # superseded by built-in rules
+        ];
+      })
+    ]
   );
 }

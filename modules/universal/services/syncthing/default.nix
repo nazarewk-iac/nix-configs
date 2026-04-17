@@ -14,6 +14,11 @@ in
   };
 
   config = lib.mkMerge [
+    (lib.mkIf cfg.enable {
+      kdn.env.packages = with pkgs; [
+        stc-cli
+      ];
+    })
     (kdnConfig.util.ifHMParent {
       home-manager.sharedModules = [ { kdn.services.syncthing = lib.mkDefault cfg; } ];
     })
@@ -38,9 +43,6 @@ in
         systemd.user.services.syncthing = {
           Unit.After = [ "paths.target" ];
         };
-        home.packages = with pkgs; [
-          stc-cli
-        ];
       }
     ))
   ];

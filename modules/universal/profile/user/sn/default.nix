@@ -34,7 +34,7 @@ in
             stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/standardized-light.yaml";
           }
           {
-            home.packages = with pkgs; [
+            kdn.env.packages = with pkgs; [
               vlc
             ];
 

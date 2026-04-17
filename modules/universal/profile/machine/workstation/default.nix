@@ -21,6 +21,11 @@ in
         kdn.toolset.diagrams.enable = true;
         kdn.services.k8s.management.enable = true;
       }
+      {
+        kdn.env.packages = with pkgs; [
+          diffoscope
+        ];
+      }
       (kdnConfig.util.ifTypes [ "nixos" ] (
         lib.mkMerge [
           {
@@ -68,9 +73,6 @@ in
           }
           {
             kdn.toolset.logs-processing.enable = true;
-            environment.systemPackages = with pkgs; [
-              diffoscope
-            ];
           }
           {
             kdn.networking.netbird.clients.t1.enable = true;

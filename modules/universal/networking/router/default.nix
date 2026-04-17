@@ -1092,7 +1092,7 @@ in
         }
         {
           # kresd DNS resolver
-          environment.systemPackages = [
+          kdn.env.packages = [
             config.services.knot.package # contains `kdig`
           ];
           services.kresd.enable = true;

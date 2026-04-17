@@ -34,58 +34,60 @@ in
     };
   };
 
-  config = kdnConfig.util.ifTypes [ "nixos" ] (
-    lib.mkIf cfg.enable (
-      lib.mkMerge [
-        {
-          boot.kernelModules = [
-            "vhci-hcd"
-            "usbip_host"
-          ];
-
-          environment.systemPackages = [
-            cfg.package
-          ];
-
-          systemd.services.usbipd = {
-            description = "USB/IP daemon";
-            after = [ "${target}.target" ];
-            wantedBy = [ "${target}.target" ];
-
-            serviceConfig = {
-              ExecStart = "${cfg.package}/bin/usbipd --tcp-port=${toString cfg.bindPort}";
-            };
-          };
-
-          systemd.services."usbip-bind@" = {
-            description = "USB/IP daemon";
-            requires = [ "usbipd.target" ];
-            after = [
-              "usbipd.service"
-              "${target}.target"
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      (kdnConfig.util.ifTypes [ "nixos" ] (
+        lib.mkMerge [
+          {
+            kdn.env.packages = [
+              cfg.package
             ];
-            wantedBy = [ "${target}.target" ];
 
-            serviceConfig = {
-              Type = "oneshot";
-              RemainAfterExit = true;
-              ExecStart = "${cfg.package}/bin/usbip bind --busid %i";
-              ExecStop = "${cfg.package}/bin/usbip unbind --busid %i";
+            boot.kernelModules = [
+              "vhci-hcd"
+              "usbip_host"
+            ];
+
+            systemd.services.usbipd = {
+              description = "USB/IP daemon";
+              after = [ "${target}.target" ];
+              wantedBy = [ "${target}.target" ];
+
+              serviceConfig = {
+                ExecStart = "${cfg.package}/bin/usbipd --tcp-port=${toString cfg.bindPort}";
+              };
             };
-          };
-          systemd.services."usbip-bind@${target}".enable = false;
-        }
-        (lib.mkIf (cfg.bindInterface == "*") {
-          networking.firewall.allowedTCPPorts = [
-            cfg.bindPort
-          ];
-        })
-        (lib.mkIf (cfg.bindInterface != "*") {
-          networking.firewall.interfaces.${cfg.bindInterface}.allowedTCPPorts = [
-            cfg.bindPort
-          ];
-        })
-      ]
-    )
+
+            systemd.services."usbip-bind@" = {
+              description = "USB/IP daemon";
+              requires = [ "usbipd.target" ];
+              after = [
+                "usbipd.service"
+                "${target}.target"
+              ];
+              wantedBy = [ "${target}.target" ];
+
+              serviceConfig = {
+                Type = "oneshot";
+                RemainAfterExit = true;
+                ExecStart = "${cfg.package}/bin/usbip bind --busid %i";
+                ExecStop = "${cfg.package}/bin/usbip unbind --busid %i";
+              };
+            };
+            systemd.services."usbip-bind@${target}".enable = false;
+          }
+          (lib.mkIf (cfg.bindInterface == "*") {
+            networking.firewall.allowedTCPPorts = [
+              cfg.bindPort
+            ];
+          })
+          (lib.mkIf (cfg.bindInterface != "*") {
+            networking.firewall.interfaces.${cfg.bindInterface}.allowedTCPPorts = [
+              cfg.bindPort
+            ];
+          })
+        ]
+      ))
+    ]
   );
 }

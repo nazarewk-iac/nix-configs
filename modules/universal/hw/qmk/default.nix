@@ -16,45 +16,48 @@ in
     };
   };
 
-  config = kdnConfig.util.ifTypes [ "nixos" ] (
-    lib.mkIf cfg.enable (
-      lib.mkMerge [
-        {
-          services.udev.packages = with pkgs; [
-            qmk-udev-rules
-            zsa-udev-rules
-          ];
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      {
+        kdn.env.packages = with pkgs; [
+          keymapviz
+          qmk
+          wally-cli
 
-          environment.systemPackages = with pkgs; [
-            keymapviz
-            qmk
-            wally-cli
+          (pkgs.writeShellApplication {
+            name = "oryx-flash";
+            runtimeInputs = with pkgs; [
+              wally-cli
+              curl
+            ];
+            text = builtins.readFile ./oryx-flash.sh;
+          })
 
-            (pkgs.writeShellApplication {
-              name = "oryx-flash";
-              runtimeInputs = with pkgs; [
-                wally-cli
-                curl
-              ];
-              text = builtins.readFile ./oryx-flash.sh;
-            })
-
-            (pkgs.writeShellApplication {
-              name = "oryx-src";
-              runtimeInputs = with pkgs; [
-                curl
-                unzip
-              ];
-              text = builtins.readFile ./oryx-src.sh;
-            })
-          ];
-        }
-        (lib.mkIf config.kdn.desktop.enable {
-          environment.systemPackages = with pkgs; [
-            vial
-          ];
-        })
-      ]
-    )
+          (pkgs.writeShellApplication {
+            name = "oryx-src";
+            runtimeInputs = with pkgs; [
+              curl
+              unzip
+            ];
+            text = builtins.readFile ./oryx-src.sh;
+          })
+        ];
+      }
+      (kdnConfig.util.ifTypes [ "nixos" ] (
+        lib.mkMerge [
+          {
+            services.udev.packages = with pkgs; [
+              qmk-udev-rules
+              zsa-udev-rules
+            ];
+          }
+          (lib.mkIf config.kdn.desktop.enable {
+            kdn.env.packages = with pkgs; [
+              vial
+            ];
+          })
+        ]
+      ))
+    ]
   );
 }

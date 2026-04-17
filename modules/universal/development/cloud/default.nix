@@ -14,14 +14,12 @@ in
     enable = lib.mkEnableOption "cloud development";
   };
 
-  config = kdnConfig.util.ifTypes [ "nixos" ] (
-    lib.mkIf cfg.enable {
-      kdn.development.nodejs.enable = true;
-      kdn.development.lua.enable = true;
+  config = lib.mkIf cfg.enable {
+    kdn.development.nodejs.enable = true;
+    kdn.development.lua.enable = true;
 
-      environment.systemPackages = with pkgs; [
-        redis
-      ];
-    }
-  );
+    kdn.env.packages = with pkgs; [
+      redis
+    ];
+  };
 }

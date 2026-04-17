@@ -42,7 +42,7 @@ in
           kdn.services.k8s.node.enable = true;
           virtualisation.containerd.enable = true;
           virtualisation.containerd.configFile = ./containerd-config.toml;
-          environment.systemPackages = [
+          kdn.env.packages = [
             nCfg.packages.default
             nCfg.packages.cri-tools
             nCfg.packages.containerd

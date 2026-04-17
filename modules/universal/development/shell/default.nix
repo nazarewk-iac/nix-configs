@@ -14,21 +14,10 @@ in
     enable = lib.mkEnableOption "shell development";
   };
 
-  config = lib.mkMerge [
-    (kdnConfig.util.ifHM (
-      lib.mkIf cfg.enable {
-        programs.helix.extraPackages = with pkgs; [
-          bash-language-server
-          shellcheck
-          shfmt
-          cmake-language-server
-        ];
-      }
-    ))
-    (kdnConfig.util.ifTypes [ "nixos" ] (
-      lib.mkIf cfg.enable {
-        home-manager.sharedModules = [ { kdn.development.shell.enable = true; } ];
-        environment.systemPackages = with pkgs; [
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      {
+        kdn.env.packages = with pkgs; [
           bash
           shellcheck
           shfmt
@@ -42,6 +31,17 @@ in
           expect
         ];
       }
-    ))
-  ];
+      (kdnConfig.util.ifHM {
+        programs.helix.extraPackages = with pkgs; [
+          bash-language-server
+          shellcheck
+          shfmt
+          cmake-language-server
+        ];
+      })
+      (kdnConfig.util.ifTypes [ "nixos" ] {
+        home-manager.sharedModules = [ { kdn.development.shell.enable = true; } ];
+      })
+    ]
+  );
 }

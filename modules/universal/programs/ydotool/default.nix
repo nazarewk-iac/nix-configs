@@ -21,27 +21,29 @@ in
     };
   };
 
-  config = kdnConfig.util.ifTypes [ "nixos" ] (
-    lib.mkIf cfg.enable {
-      hardware.uinput.enable = true;
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      (kdnConfig.util.ifTypes [ "nixos" ] {
+        kdn.env.packages = [
+          cfg.package
+        ];
+        kdn.env.variables.YDOTOOL_SOCKET = sock;
+        hardware.uinput.enable = true;
 
-      systemd.packages = [ cfg.package ];
-      environment.systemPackages = [
-        cfg.package
-      ];
+        systemd.packages = [ cfg.package ];
 
-      users.groups.ydotool.gid = 26598;
-      environment.variables.YDOTOOL_SOCKET = sock;
+        users.groups.ydotool.gid = 26598;
 
-      systemd.services."ydotoold" = {
-        description = "/dev/uinput automation tool";
-        wantedBy = [ "default.target" ];
-        serviceConfig = {
-          ExecStart = "${pkgs.ydotool}/bin/ydotoold --socket-perm=0660 --socket-own=0:${toString config.users.groups.ydotool.gid} --socket-path=${sock}";
-          ExecReload = "/usr/bin/kill -HUP $MAINPID";
-          KillMode = "process";
+        systemd.services."ydotoold" = {
+          description = "/dev/uinput automation tool";
+          wantedBy = [ "default.target" ];
+          serviceConfig = {
+            ExecStart = "${pkgs.ydotool}/bin/ydotoold --socket-perm=0660 --socket-own=0:${toString config.users.groups.ydotool.gid} --socket-path=${sock}";
+            ExecReload = "/usr/bin/kill -HUP $MAINPID";
+            KillMode = "process";
+          };
         };
-      };
-    }
+      })
+    ]
   );
 }

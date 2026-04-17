@@ -1,24 +1,22 @@
 {
-
   lib,
   pkgs,
   config,
   kdnConfig,
   ...
-}:
-let
+}: let
   cfg = config.kdn.virtualisation.containers.distrobox;
-in
-{
+in {
   options.kdn.virtualisation.containers.distrobox = {
     enable = lib.mkEnableOption "distrobox setup";
   };
 
-  config = kdnConfig.util.ifTypes [ "nixos" ] (
-    lib.mkIf cfg.enable {
-      environment.systemPackages = with pkgs; [
+  # distrobox is only supported on NixOS
+  config = lib.mkIf (cfg.enable && kdnConfig.moduleType == "nixos") (lib.mkMerge [
+    {
+      kdn.env.packages = with pkgs; [
         distrobox
       ];
     }
-  );
+  ]);
 }

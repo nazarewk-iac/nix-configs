@@ -329,7 +329,7 @@ in
             };
           })
           (lib.mkIf (hasWorkstation) {
-            home.packages = with pkgs; [
+            kdn.env.packages = with pkgs; [
               pkgs.kdn.klog-time-tracker
               pkgs.kdn.klg
             ];
@@ -337,7 +337,7 @@ in
               config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/${nc.rel}/time-logs/klg/config.toml";
           })
           (lib.mkIf ((hasWorkstation) && config.kdn.desktop.enable) {
-            home.packages = with pkgs; [
+            kdn.env.packages = with pkgs; [
               (pkgs.writeShellApplication {
                 name = "kdn-drag0nius.kdbx";
                 text = "${lib.getExe pkgs.kdn.kdn-keepass} drag0nius.kdbx";
@@ -377,7 +377,7 @@ in
             kdn.toolset.print-3d.enable = true;
           })
           (lib.mkIf pkgs.stdenv.isDarwin {
-            home.packages = with pkgs; [ realvnc-vnc-viewer ];
+            kdn.env.packages = with pkgs; [ realvnc-vnc-viewer ];
           })
         ]
       ))

@@ -37,37 +37,43 @@ in
     };
   };
 
-  config = kdnConfig.util.ifTypes [ "nixos" ] (
-    lib.mkIf cfg.enable (
-      lib.mkMerge [
-        {
-          home-manager.sharedModules = [
-            {
-              home.packages = [ cfg.package ];
-              xdg.configFile."handlr/handlr.toml".source = (pkgs.formats.toml { }).generate "handlr.toml" {
-                enable_selector = true;
-                selector = "${pkgs.wofi}/bin/wofi --dmenu --insensitive --normal-window --prompt='Open With: '";
-              };
-            }
-          ];
-        }
-        (lib.mkIf cfg.xdg-utils.enable {
-          environment.systemPackages = with pkgs; [
-            (lib.meta.hiPrio cfg.xdg-utils.package)
-          ];
-          home-manager.sharedModules = [
-            {
-              wayland.windowManager.sway.config.keybindings =
-                with config.kdn.desktop.sway.keys;
-                builtins.mapAttrs (n: lib.mkDefault) {
-                  "${super}+O" = "exec ${pkgs.writeScript "xdg-open-clipboard" ''
-                    ${lib.getExe cfg.xdg-utils.package} "$(${lib.getExe' pkgs.wl-clipboard "wl-paste"} --no-newline)"
-                  ''}";
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      {
+        kdn.env.packages = [ cfg.package ];
+      }
+      (lib.mkIf cfg.xdg-utils.enable {
+        kdn.env.packages = with pkgs; [
+          (lib.meta.hiPrio cfg.xdg-utils.package)
+        ];
+      })
+      (kdnConfig.util.ifTypes [ "nixos" ] (
+        lib.mkMerge [
+          {
+            home-manager.sharedModules = [
+              {
+                xdg.configFile."handlr/handlr.toml".source = (pkgs.formats.toml { }).generate "handlr.toml" {
+                  enable_selector = true;
+                  selector = "${pkgs.wofi}/bin/wofi --dmenu --insensitive --normal-window --prompt='Open With: '";
                 };
-            }
-          ];
-        })
-      ]
-    )
+              }
+            ];
+          }
+          (lib.mkIf cfg.xdg-utils.enable {
+            home-manager.sharedModules = [
+              {
+                wayland.windowManager.sway.config.keybindings =
+                  with config.kdn.desktop.sway.keys;
+                  builtins.mapAttrs (n: lib.mkDefault) {
+                    "${super}+O" = "exec ${pkgs.writeScript "xdg-open-clipboard" ''
+                      ${lib.getExe cfg.xdg-utils.package} "$(${lib.getExe' pkgs.wl-clipboard "wl-paste"} --no-newline)"
+                    ''}";
+                  };
+              }
+            ];
+          })
+        ]
+      ))
+    ]
   );
 }

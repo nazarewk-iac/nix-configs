@@ -45,20 +45,22 @@ in
           kdn.programs.kdeconnect.enable = true;
           kdn.programs.office.enable = true;
 
-          environment.systemPackages = with pkgs; [
+          kdn.env.packages = with pkgs; [
             # chromium
             p7zip
             rar
+
+            imagemagick
+
+            pdftk
+
             system-config-printer
 
             gparted
             gsmartcontrol
             smartmontools
 
-            imagemagick
-
             playerctl
-            pdftk
 
             (pkgs.writeScriptBin "qrpaste" ''
               #! ${pkgs.bash}/bin/bash

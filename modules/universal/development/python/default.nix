@@ -96,9 +96,27 @@ in
     enable = lib.mkEnableOption "Python development";
   };
 
-  config = lib.mkMerge [
-    (kdnConfig.util.ifHM (
-      lib.mkIf cfg.enable {
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      {
+        kdn.env.packages = with pkgs; [
+          # python software not available in `python.withPackages`
+          pipenv
+          #poetry # TODO: 2024-04-07 didn't build
+
+          # Note: higher `prio` value means lower prioritity during install
+          (lib.meta.setPrio 1 (mkPython defaultPython))
+          (lib.meta.setPrio 17 (renamedBinariesOnly "%s.3.14-ft" python314FreeThreading))
+          (lib.meta.setPrio 17 (renamedBinariesOnly "%s.3.14" python314))
+          (lib.meta.setPrio 18 (renamedBinariesOnly "%s.3.13-ft" python313FreeThreading))
+          (lib.meta.setPrio 19 (renamedBinariesOnly "%s.3.13" python313))
+          (lib.meta.setPrio 20 (renamedBinariesOnly "%s.3.12" python312))
+          (lib.meta.setPrio 21 (renamedBinariesOnly "%s.3.11" python311))
+
+          graphviz
+        ];
+      }
+      (kdnConfig.util.ifHM {
         programs.helix.extraPackages = with pkgs; [
           ty
           ruff
@@ -128,14 +146,16 @@ in
             ]
           ))
         ];
-      }
-    ))
-    (kdnConfig.util.ifTypes [ "nixos" ] (
-      lib.mkIf cfg.enable {
+      })
+      (kdnConfig.util.ifHMParent {
         home-manager.sharedModules = [
           { kdn.development.python.enable = true; }
-          { programs.git.ignores = [ (builtins.readFile ./.gitignore) ]; }
         ];
+      })
+      (kdnConfig.util.ifHM {
+        programs.git.ignores = [ (builtins.readFile ./.gitignore) ];
+      })
+      (kdnConfig.util.ifTypes [ "nixos" ] {
         nixpkgs.overlays = [
           (final: prev: {
             matplotlib = prev.matplotlib.override {
@@ -144,24 +164,7 @@ in
             };
           })
         ];
-
-        environment.systemPackages = with pkgs; [
-          # python software not available in `python.withPackages`
-          pipenv
-          #poetry # TODO: 2024-04-07 didn't build
-
-          # Note: higher `prio` value means lower prioritity during install
-          (lib.meta.setPrio 1 (mkPython defaultPython))
-          (lib.meta.setPrio 17 (renamedBinariesOnly "%s.3.14-ft" python314FreeThreading))
-          (lib.meta.setPrio 17 (renamedBinariesOnly "%s.3.14" python314))
-          (lib.meta.setPrio 18 (renamedBinariesOnly "%s.3.13-ft" python313FreeThreading))
-          (lib.meta.setPrio 19 (renamedBinariesOnly "%s.3.13" python313))
-          (lib.meta.setPrio 20 (renamedBinariesOnly "%s.3.12" python312))
-          (lib.meta.setPrio 21 (renamedBinariesOnly "%s.3.11" python311))
-
-          graphviz
-        ];
-      }
-    ))
-  ];
+      })
+    ]
+  );
 }

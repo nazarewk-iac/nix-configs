@@ -16,7 +16,7 @@ in
 
   config = kdnConfig.util.ifTypes [ "nixos" ] (
     lib.mkIf cfg.enable {
-      environment.systemPackages = with pkgs; [
+      kdn.env.packages = with pkgs; [
         x11docker
         # x11docker deps, see https://github.com/mviereck/x11docker/wiki/dependencies#table-of-all-packages
         curl

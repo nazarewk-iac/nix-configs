@@ -19,7 +19,7 @@ in
       lib.mkMerge [
         {
           kdn.virtualisation.libvirtd.enable = true;
-          environment.systemPackages = with pkgs; [
+          kdn.env.packages = with pkgs; [
             vagrant
           ];
         }

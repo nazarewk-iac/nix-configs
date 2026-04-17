@@ -14,17 +14,22 @@ in
     enable = lib.mkEnableOption ".NET development";
   };
 
-  config = kdnConfig.util.ifTypes [ "nixos" ] (
-    lib.mkIf cfg.enable {
-      # see https://nixos.wiki/wiki/DotNET
-      programs.nix-ld.enable = true;
-      environment.sessionVariables = {
-        DOTNET_ROOT = "${pkgs.dotnet-sdk}";
-      };
-      environment.systemPackages = with pkgs; [
-        dotnet-sdk
-        dotnet-runtime
-      ];
-    }
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      {
+        kdn.env.packages = with pkgs; [
+          dotnet-sdk
+          dotnet-runtime
+        ];
+        kdn.env.variables = {
+          # see https://nixos.wiki/wiki/DotNET
+          DOTNET_ROOT = "${pkgs.dotnet-sdk}";
+        };
+      }
+      (kdnConfig.util.ifTypes [ "nixos" ] {
+        # see https://nixos.wiki/wiki/DotNET
+        programs.nix-ld.enable = true;
+      })
+    ]
   );
 }

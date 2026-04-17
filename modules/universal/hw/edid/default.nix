@@ -14,20 +14,22 @@ in
     enable = lib.mkEnableOption "EDID scripts & utils";
   };
 
-  config = kdnConfig.util.ifTypes [ "nixos" ] (
-    lib.mkIf cfg.enable {
-      hardware.display.edid.modelines = {
-        "PG278Q_60" = "    241.50   2560 2608 2640 2720   1440 1443 1448 1481   -hsync +vsync";
-        "PG278Q_120" = "   497.75   2560 2608 2640 2720   1440 1443 1448 1525   +hsync -vsync";
-        "U2711_60" = "     241.50   2560 2600 2632 2720   1440 1443 1448 1481   -hsync +vsync";
-      };
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      (kdnConfig.util.ifTypes [ "nixos" ] {
+        kdn.env.packages = with pkgs; [
+          linuxhw-edid-fetcher
+          edid-decode
+          read-edid
+          edido
+        ];
 
-      environment.systemPackages = with pkgs; [
-        linuxhw-edid-fetcher
-        edid-decode
-        read-edid
-        edido
-      ];
-    }
+        hardware.display.edid.modelines = {
+          "PG278Q_60" = "    241.50   2560 2608 2640 2720   1440 1443 1448 1481   -hsync +vsync";
+          "PG278Q_120" = "   497.75   2560 2608 2640 2720   1440 1443 1448 1525   +hsync -vsync";
+          "U2711_60" = "     241.50   2560 2600 2632 2720   1440 1443 1448 1481   -hsync +vsync";
+        };
+      })
+    ]
   );
 }

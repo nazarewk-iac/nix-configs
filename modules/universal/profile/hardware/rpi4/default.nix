@@ -83,7 +83,7 @@ in
           boot.initrd.systemd.tpm2.enable = lib.mkForce false;
         }
         {
-          environment.systemPackages = with pkgs; [
+          kdn.env.packages = with pkgs; [
             libraspberrypi
             raspberrypi-eeprom
           ];
@@ -95,7 +95,7 @@ in
         (mkIfRPi4 cfg.i2c.enable {
           hardware.i2c.enable = true;
           hardware.raspberry-pi."4".i2c1.enable = true;
-          environment.systemPackages = with pkgs; [
+          kdn.env.packages = with pkgs; [
             i2c-tools
           ];
         })
@@ -149,7 +149,7 @@ in
             in
             {
               kdn.profile.hardware.rpi4.i2c.enable = true;
-              environment.systemPackages = [
+              kdn.env.packages = [
                 watcherScript
               ];
             }

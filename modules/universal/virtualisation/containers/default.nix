@@ -48,6 +48,14 @@ in
   };
 
   config = lib.mkMerge [
+    (lib.mkIf cfg.enable {
+      kdn.env.packages = with pkgs; [
+        buildah
+        buildkit
+        dive
+        skopeo
+      ];
+    })
     (kdnConfig.util.ifTypes [ "nixos" ] (
       lib.mkIf cfg.enable {
         kdn.virtualisation.containers.podman.enable = lib.mkDefault true;
@@ -60,13 +68,6 @@ in
           lib.mkDefault "/run/containers/storage";
         virtualisation.containers.storage.settings.storage.graphroot =
           lib.mkDefault "/var/lib/containers/storage";
-
-        environment.systemPackages = with pkgs; [
-          buildah
-          buildkit
-          dive
-          skopeo
-        ];
 
         kdn.disks.persist."usr/cache".directories = [
           "/var/lib/containers/cache"

@@ -54,7 +54,7 @@ in
           ];
         })
         (lib.mkIf (cfg.client.enable) {
-          environment.systemPackages = [
+          kdn.env.packages = [
             (pkgs.writeShellApplication {
               name = "kdn-iperf3-client";
               runtimeInputs = [ config.services.iperf3.package ];

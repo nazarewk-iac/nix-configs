@@ -62,7 +62,7 @@ in
         }
         {
           # TODO: missing tray icons for electron based apps https://github.com/nwg-piotr/nwg-panel/issues/224
-          home.packages = with pkgs; [
+          kdn.env.packages = with pkgs; [
             gopsuinfo # for various executors
           ];
           services.nwg-shell.panel.style = builtins.readFile "${cfg.package}/${pkgs.python3.sitePackages}/nwg_panel/config/style.css";

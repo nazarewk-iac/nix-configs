@@ -17,33 +17,35 @@ let
   swaymsg = "${swayPkg}/bin/swaymsg";
 in
 {
-  config = lib.mkIf cfg.enable {
-    wayland.windowManager.sway.config.keybindings = with config.kdn.desktop.sway.keys; {
-      "${cfg.keys.super}+L" = "exec ${lockCmd}";
-    };
-    services.swayidle = {
-      enable = true;
-      events."before-sleep" = lockCmd;
-      timeouts = [
-        {
-          timeout = 300;
-          command = lockCmd;
-        }
-        {
-          timeout = 240;
-          command = ''${swaymsg} "output * dpms off"'';
-          resumeCommand = ''${swaymsg} "output * dpms on"'';
-        }
-      ];
-    };
-    systemd.user.services.swayidle.Unit = {
-      After = [ config.kdn.desktop.sway.systemd.envs.target ];
-      Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
-    };
+  config = kdnConfig.util.ifHM (
+    lib.mkIf cfg.enable {
+      wayland.windowManager.sway.config.keybindings = with config.kdn.desktop.sway.keys; {
+        "${cfg.keys.super}+L" = "exec ${lockCmd}";
+      };
+      services.swayidle = {
+        enable = true;
+        events."before-sleep" = lockCmd;
+        timeouts = [
+          {
+            timeout = 300;
+            command = lockCmd;
+          }
+          {
+            timeout = 240;
+            command = ''${swaymsg} "output * dpms off"'';
+            resumeCommand = ''${swaymsg} "output * dpms on"'';
+          }
+        ];
+      };
+      systemd.user.services.swayidle.Unit = {
+        After = [ config.kdn.desktop.sway.systemd.envs.target ];
+        Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
+      };
 
-    programs.swaylock.enable = true;
-    programs.swaylock.settings = {
-      show-failed-attempts = true;
-    };
-  };
+      programs.swaylock.enable = true;
+      programs.swaylock.settings = {
+        show-failed-attempts = true;
+      };
+    }
+  );
 }

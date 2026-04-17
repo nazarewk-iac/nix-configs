@@ -316,7 +316,7 @@
 
           xdg.configFile."swayr/config.toml".source = ./swayr/config.toml;
 
-          home.packages = with pkgs; [
+          kdn.env.packages = with pkgs; [
             ydotool-paste
 
             qalculate-qt

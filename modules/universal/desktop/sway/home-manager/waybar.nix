@@ -204,30 +204,32 @@ let
   };
 in
 {
-  config = lib.mkIf cfg.enable {
-    xdg.configFile."waybar/config" = {
-      source = (pkgs.formats.json { }).generate "waybar-config.json" (settings // settingsModules);
-      onChange = ''
-        ${lib.getExe' pkgs.procps "pkill"} -u '${config.home.username}' -USR2 waybar || :
-      '';
-    };
+  config = kdnConfig.util.ifHM (
+    lib.mkIf cfg.enable {
+      xdg.configFile."waybar/config" = {
+        source = (pkgs.formats.json { }).generate "waybar-config.json" (settings // settingsModules);
+        onChange = ''
+          ${lib.getExe' pkgs.procps "pkill"} -u '${config.home.username}' -USR2 waybar || :
+        '';
+      };
 
-    home.packages = with pkgs; [
-      libappindicator
-      libappindicator-gtk3
-    ];
+      kdn.env.packages = with pkgs; [
+        libappindicator
+        libappindicator-gtk3
+      ];
 
-    systemd.user.services.waybar.Unit.BindsTo = [ "tray.target" ];
-    systemd.user.services.waybar.Unit.Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
-    systemd.user.services.waybar.Unit.After = [ config.kdn.desktop.sway.systemd.envs.target ];
-    systemd.user.services.waybar.Service.ExecStartPost = [ "${pkgs.coreutils}/bin/sleep 3" ];
+      systemd.user.services.waybar.Unit.BindsTo = [ "tray.target" ];
+      systemd.user.services.waybar.Unit.Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
+      systemd.user.services.waybar.Unit.After = [ config.kdn.desktop.sway.systemd.envs.target ];
+      systemd.user.services.waybar.Service.ExecStartPost = [ "${pkgs.coreutils}/bin/sleep 3" ];
 
-    programs.waybar = {
-      enable = true;
-      systemd.enable = true;
-      # TODO: resolve error and move from xdg.configFile."waybar/config":
-      #  A definition for option `home-manager.users.kdn.programs.waybar.settings.height' is not of type `JSON value'. Definition values: 30
-      # settings = settings // { modules = settingsModules; };
-    };
-  };
+      programs.waybar = {
+        enable = true;
+        systemd.enable = true;
+        # TODO: resolve error and move from xdg.configFile."waybar/config":
+        #  A definition for option `home-manager.users.kdn.programs.waybar.settings.height' is not of type `JSON value'. Definition values: 30
+        # settings = settings // { modules = settingsModules; };
+      };
+    }
+  );
 }

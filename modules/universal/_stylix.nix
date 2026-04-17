@@ -74,5 +74,9 @@ lib.optionalAttrs
       (kdnConfig.util.ifTypes [ "home-manager" ] {
         stylix.enableReleaseChecks = lib.strings.versionAtLeast config.home.version.release "26.11";
       })
+      {
+        # 2026-04-17 broken due to https://github.com/nix-community/stylix/issues/1686
+        stylix.targets.gtksourceview.enable = false;
+      }
     ];
   }

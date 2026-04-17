@@ -14,23 +14,12 @@ in
     enable = lib.mkEnableOption "k8s development";
   };
 
-  config = kdnConfig.util.ifTypes [ "nixos" ] (
+  config = lib.mkIf cfg.enable (
     lib.mkMerge [
-      (lib.mkIf cfg.enable {
+      {
         kdn.development.data.enable = true;
 
-        environment.interactiveShellInit = ''
-          export KREW_ROOT="$HOME/.cache/krew"
-        '';
-        environment.shellAliases = {
-          "kc" = "${pkgs.kubecolor}/bin/kubecolor";
-        };
-        programs.fish.interactiveShellInit = ''
-          fish_add_path --append --move "$KREW_ROOT/bin"
-          complete -c kc --wraps kubectl
-          complete -c kubecolor --wraps kubectl
-        '';
-        environment.systemPackages = with pkgs; [
+        kdn.env.packages = with pkgs; [
           (lib.mkIf config.kdn.desktop.enable lens) # kubernetes IDE
           # kubernetes
           kubectl # dep for: chart-testing
@@ -100,6 +89,19 @@ in
           argocd # CD
           # vault # TODO: 2024-02-13: builds for a VERY long time on the laptop
         ];
+      }
+      (kdnConfig.util.ifTypes [ "nixos" ] {
+        environment.interactiveShellInit = ''
+          export KREW_ROOT="$HOME/.cache/krew"
+        '';
+        environment.shellAliases = {
+          "kc" = "${pkgs.kubecolor}/bin/kubecolor";
+        };
+        programs.fish.interactiveShellInit = ''
+          fish_add_path --append --move "$KREW_ROOT/bin"
+          complete -c kc --wraps kubectl
+          complete -c kubecolor --wraps kubectl
+        '';
       })
     ]
   );

@@ -75,7 +75,7 @@ in
           ];
         };
 
-        environment.systemPackages = with pkgs; [
+        kdn.env.packages = with pkgs; [
           prometheus
           opentsdb
         ];

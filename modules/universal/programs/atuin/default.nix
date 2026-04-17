@@ -158,7 +158,7 @@ in
               ];
             in
             {
-              environment.systemPackages = with pkgs; [ litestream ];
+              kdn.env.packages = with pkgs; [ litestream ];
               home-manager.users = builtins.mapAttrs (_: user: {
                 programs.atuin.settings = user.atuin.settings;
               }) users;

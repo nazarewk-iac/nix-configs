@@ -34,7 +34,7 @@ in
             # To see `Main Toolbar` under Wayland you need to uncheck following:
             # Settings > Appearance & Behavior > Appearance > UI Options: Merge main menu with window title
             # see https://youtrack.jetbrains.com/issue/IDEA-323700/Menu-bar-missing-on-all-windows-except-one-on-tiling-WM-under-WSLg
-            home.packages = with pkgs; [
+            kdn.env.packages = with pkgs; [
               #jetbrains.pycharm-professional
               jetbrains.idea
               #jetbrains.idea-ultimate-eap

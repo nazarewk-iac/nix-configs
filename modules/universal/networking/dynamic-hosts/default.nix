@@ -29,38 +29,42 @@ in
     enable = lib.mkEnableOption "dynamic /etc/hosts rendering";
   };
 
-  config = kdnConfig.util.ifTypes [ "nixos" ] (
-    lib.mkIf cfg.enable {
-      kdn.managed.directories = [ "/etc/hosts.d" ];
-      environment.etc."hosts".enable = false;
-      environment.etc."hosts.d/50-kdn-nixos.hosts".source =
-        pkgs.concatText "hosts" config.networking.hostFiles;
-      environment.systemPackages = [ kdn-gen-hosts ];
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      {
+        kdn.env.packages = [ kdn-gen-hosts ];
+      }
+      (kdnConfig.util.ifTypes [ "nixos" ] {
+        kdn.managed.directories = [ "/etc/hosts.d" ];
+        environment.etc."hosts".enable = false;
+        environment.etc."hosts.d/50-kdn-nixos.hosts".source =
+          pkgs.concatText "hosts" config.networking.hostFiles;
 
-      systemd.paths."kdn-dynamic-hosts" = {
-        description = "Generates /etc/hosts from /etc/hosts.d directory";
-        wantedBy = [
-          "network.target"
-          "default.target"
-        ];
-        before = [ "network.target" ];
-        pathConfig.PathChanged = "/etc/hosts.d";
-        pathConfig.TriggerLimitIntervalSec = "1s";
-        pathConfig.TriggerLimitBurst = 1;
-      };
-      systemd.services."kdn-dynamic-hosts" = {
-        description = "Generates /etc/hosts from /etc/hosts.d directory";
-        wantedBy = [
-          "network.target"
-          "default.target"
-        ];
-        before = [ "network.target" ];
-        serviceConfig = {
-          Type = "oneshot";
-          RemainAfterExit = false;
-          ExecStart = lib.getExe kdn-gen-hosts;
+        systemd.paths."kdn-dynamic-hosts" = {
+          description = "Generates /etc/hosts from /etc/hosts.d directory";
+          wantedBy = [
+            "network.target"
+            "default.target"
+          ];
+          before = [ "network.target" ];
+          pathConfig.PathChanged = "/etc/hosts.d";
+          pathConfig.TriggerLimitIntervalSec = "1s";
+          pathConfig.TriggerLimitBurst = 1;
         };
-      };
-    }
+        systemd.services."kdn-dynamic-hosts" = {
+          description = "Generates /etc/hosts from /etc/hosts.d directory";
+          wantedBy = [
+            "network.target"
+            "default.target"
+          ];
+          before = [ "network.target" ];
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = false;
+            ExecStart = lib.getExe kdn-gen-hosts;
+          };
+        };
+      })
+    ]
   );
 }

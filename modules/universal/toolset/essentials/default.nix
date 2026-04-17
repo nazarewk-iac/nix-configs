@@ -1,24 +1,22 @@
 {
-
   lib,
   pkgs,
   config,
   kdnConfig,
   ...
-}:
-let
+}: let
   cfg = config.kdn.toolset.essentials;
-in
-{
+in {
   options.kdn.toolset.essentials = {
     enable = lib.mkEnableOption "essential CLI tooling";
   };
 
-  config = kdnConfig.util.ifTypes [ "nixos" ] (
-    lib.mkIf cfg.enable {
-      kdn.programs.handlr.enable = true;
-
-      environment.systemPackages =
+  config = lib.mkIf cfg.enable (lib.mkMerge [
+    (kdnConfig.util.ifHMParent {
+      home-manager.sharedModules = [{kdn.toolset.essentials.enable = true;}];
+    })
+    {
+      kdn.env.packages =
         (with pkgs; [
           curl
           openssh
@@ -52,13 +50,12 @@ in
           # serial consoles usage
           minicom
         ])
-        ++ [ ];
-      home-manager.sharedModules = [
-        {
-          programs.difftastic.enable = true; # diff highlighter
-          programs.difftastic.options.background = "dark"; # diff highlighter
-        }
-      ];
+        ++ [];
+      kdn.programs.handlr.enable = true;
     }
-  );
+    (kdnConfig.util.ifHM {
+      programs.difftastic.enable = true; # diff highlighter
+      programs.difftastic.options.background = "dark"; # diff highlighter
+    })
+  ]);
 }

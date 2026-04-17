@@ -14,9 +14,9 @@ in
     enable = lib.mkEnableOption "hardware discovery scripts";
   };
 
-  config = kdnConfig.util.ifTypes [ "nixos" ] (
-    lib.mkIf cfg.enable {
-      environment.systemPackages =
+  config = lib.mkIf cfg.enable (
+    kdnConfig.util.ifTypes [ "nixos" ] {
+      kdn.env.packages =
         with pkgs;
         [
           dmidecode

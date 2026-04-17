@@ -67,21 +67,23 @@ in
   };
 
   config = lib.mkMerge [
+    (lib.mkIf cfg.enable {
+      kdn.env.packages = [
+        (cfg.package.override {
+          configure =
+            { availablePlugins, ... }:
+            {
+              scripts = cfg.scripts;
+              init = cfg.init;
+            };
+        })
+      ];
+    })
     (kdnConfig.util.ifHMParent {
       home-manager.sharedModules = [ { kdn.programs.weechat = lib.mkDefault cfg; } ];
     })
     (lib.optionalAttrs (kdnConfig.util.hasParentOfAnyType [ "nixos" ]) (
       lib.mkIf cfg.enable {
-        home.packages = [
-          (cfg.package.override {
-            configure =
-              { availablePlugins, ... }:
-              {
-                scripts = cfg.scripts;
-                init = cfg.init;
-              };
-          })
-        ];
         kdn.disks.persist."usr/config".directories = [
           ".config/weechat"
         ];

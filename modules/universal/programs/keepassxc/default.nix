@@ -26,6 +26,15 @@ in
   };
 
   config = lib.mkMerge [
+    (lib.mkIf cfg.enable {
+      kdn.env.packages = with pkgs; [
+        finalPackage
+        pkgs.kdn.kdn-keepass
+      ];
+    })
+    (lib.mkIf cfg.service.enable {
+      kdn.env.variables = envs;
+    })
     (kdnConfig.util.ifHMParent {
       home-manager.sharedModules = [ { kdn.programs.keepassxc = lib.mkDefault cfg; } ];
     })
@@ -33,10 +42,6 @@ in
       lib.mkIf cfg.enable (
         lib.mkMerge [
           {
-            home.packages = with pkgs; [
-              finalPackage
-              pkgs.kdn.kdn-keepass
-            ];
             /*
               TODO: browser are enabled based on file presence
                in ~/.mozilla/native-messaging-hosts
@@ -89,7 +94,6 @@ in
                    - search in all opened databases
             */
             # TODO: entries list an entry preview were invisible, had to drag-resize from the edge
-            home.sessionVariables = envs;
             systemd.user.services.keepassxc = {
               Unit.Description = "KeePassXC password manager";
               Service = {

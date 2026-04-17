@@ -16,19 +16,21 @@ let
   swayrd = "${systemd-cat "swayrd"} env RUST_BACKTRACE=1 ${pkgs.swayr}/bin/swayrd";
 in
 {
-  config = lib.mkIf cfg.enable {
-    wayland.windowManager.sway = {
-      extraConfig = exec swayrd;
-      config.keybindings = with config.kdn.desktop.sway.keys; {
-        "${super}+Space" = exec (swayr "switch-window");
-        "${super}+Delete" = exec (swayr "quit-window");
-        "${super}+Tab" = exec (swayr "switch-to-urgent-or-lru-window");
-        "${lalt}+Tab" = exec (swayr "prev-window all-workspaces");
-        "${lalt}+${shift}+Tab" = exec (swayr "next-window all-workspaces");
-        "${super}+${shift}+Space" = exec (swayr "switch-workspace-or-window");
-        "${super}+C" = exec (swayr "execute-swaymsg-command");
-        "${super}+${shift}+C" = exec (swayr "execute-swayr-command");
+  config = kdnConfig.util.ifHM (
+    lib.mkIf cfg.enable {
+      wayland.windowManager.sway = {
+        extraConfig = exec swayrd;
+        config.keybindings = with config.kdn.desktop.sway.keys; {
+          "${super}+Space" = exec (swayr "switch-window");
+          "${super}+Delete" = exec (swayr "quit-window");
+          "${super}+Tab" = exec (swayr "switch-to-urgent-or-lru-window");
+          "${lalt}+Tab" = exec (swayr "prev-window all-workspaces");
+          "${lalt}+${shift}+Tab" = exec (swayr "next-window all-workspaces");
+          "${super}+${shift}+Space" = exec (swayr "switch-workspace-or-window");
+          "${super}+C" = exec (swayr "execute-swaymsg-command");
+          "${super}+${shift}+C" = exec (swayr "execute-swayr-command");
+        };
       };
-    };
-  };
+    }
+  );
 }

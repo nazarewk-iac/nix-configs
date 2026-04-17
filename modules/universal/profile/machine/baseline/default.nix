@@ -67,6 +67,8 @@ in
           git
           bash
           curl
+          jq
+          sshfs
 
           nix-derivation # pretty-derivation
           nix-output-monitor
@@ -214,10 +216,8 @@ in
             location.provider = "geoclue2";
             users.mutableUsers = false;
             users.users.root.initialHashedPassword = lib.mkForce "$y$j9T$AhbnpYZawNWNGfuq1h9/p0$jmitwtZwTr72nBgvg2TEmrGmhRR30sQ.hQ7NZk1NqJD";
-            environment.systemPackages = with pkgs; [
+            kdn.env.packages = with pkgs; [
               dracut
-              jq
-              sshfs
               pkgs.kdn.systemd-find-cycles
               (pkgs.writeShellApplication {
                 name = "kdn-systemd-find-cycles";

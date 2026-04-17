@@ -14,19 +14,10 @@ in
     enable = lib.mkEnableOption "Rust development";
   };
 
-  config = lib.mkMerge [
-    (kdnConfig.util.ifHM (
-      lib.mkIf cfg.enable {
-        programs.helix.extraPackages = with pkgs; [
-          rust-analyzer
-          lldb
-        ];
-      }
-    ))
-    (kdnConfig.util.ifTypes [ "nixos" ] (
-      lib.mkIf cfg.enable {
-        home-manager.sharedModules = [ { kdn.development.rust.enable = true; } ];
-        environment.systemPackages = with pkgs; [
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      {
+        kdn.env.packages = with pkgs; [
           #cargo
           #rustc
           rustup
@@ -34,6 +25,15 @@ in
           pkg-config
         ];
       }
-    ))
-  ];
+      (kdnConfig.util.ifHM {
+        programs.helix.extraPackages = with pkgs; [
+          rust-analyzer
+          lldb
+        ];
+      })
+      (kdnConfig.util.ifTypes [ "nixos" ] {
+        home-manager.sharedModules = [ { kdn.development.rust.enable = true; } ];
+      })
+    ]
+  );
 }

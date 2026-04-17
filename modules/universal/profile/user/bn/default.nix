@@ -41,7 +41,7 @@ in
             };
           }
           {
-            home.packages = with pkgs; [
+            kdn.env.packages = with pkgs; [
               vlc
             ];
 

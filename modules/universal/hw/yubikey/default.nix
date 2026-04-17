@@ -4,11 +4,9 @@
   config,
   kdnConfig,
   ...
-}:
-let
+}: let
   cfg = config.kdn.hw.yubikey;
-in
-{
+in {
   # TODO: run gpg-smartcard-reset-keys for users when plugging in/changing yubikeys?
   options.kdn.hw.yubikey = {
     enable = lib.mkEnableOption "YubiKey + GnuPG Smart Card config";
@@ -16,32 +14,33 @@ in
       type = lib.types.str;
       default = "pam://${config.kdn.hostName}";
     };
-    devices = lib.mkOption { };
+    devices = lib.mkOption {};
   };
 
   imports = lib.optional (kdnConfig.moduleType == "nixos") ./yubikeys.nix;
 
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
-      (kdnConfig.util.ifTypes [ "nixos" ] (
+      {
+        # General YubiKey configs
+        kdn.env.packages = with pkgs;
+          [
+            xkcdpass
+            yubikey-manager
+            yubikey-personalization
+            yubico-pam
+          ]
+          ++ lib.optionals config.kdn.desktop.enable (
+            with pkgs; [
+              yubioath-flutter
+            ]
+          );
+      }
+      (kdnConfig.util.ifTypes ["nixos"] (
         lib.mkMerge [
+          # TODO: port to darwin
           {
-            # General YubiKey configs
-            services.udev.packages = with pkgs; [ yubikey-personalization ];
-            environment.systemPackages =
-              with pkgs;
-              [
-                xkcdpass
-                yubikey-manager
-                yubikey-personalization
-                yubico-pam
-              ]
-              ++ lib.optionals config.kdn.desktop.enable (
-                with pkgs;
-                [
-                  yubioath-flutter
-                ]
-              );
+            services.udev.packages = with pkgs; [yubikey-personalization];
           }
           {
             # GNUPG configs
@@ -71,7 +70,7 @@ in
             services.udev.packages = with pkgs; [
               libfido2 # pulls in https://github.com/Yubico/libfido2/blob/main/udev/70-u2f.rules
             ];
-            users.groups.plugdev = { };
+            users.groups.plugdev = {};
             security.pam.u2f.enable = true;
             security.pam.u2f.settings = {
               enable = true;
@@ -83,10 +82,10 @@ in
           (lib.mkIf config.kdn.security.secrets.allowed {
             # SOPS+age config
             services.pcscd.enable = true;
-            kdn.security.secrets.age.plugins = with pkgs; [ age-plugin-yubikey ];
-            kdn.env.packages = with pkgs; [ age-plugin-yubikey ];
-            systemd.services.sops-install-secrets.after = [ "pcscd.socket" ];
-            systemd.services.sops-install-secrets.requires = [ "pcscd.socket" ];
+            kdn.security.secrets.age.plugins = with pkgs; [age-plugin-yubikey];
+            kdn.env.packages = with pkgs; [age-plugin-yubikey];
+            systemd.services.sops-install-secrets.after = ["pcscd.socket"];
+            systemd.services.sops-install-secrets.requires = ["pcscd.socket"];
             kdn.security.secrets.age.genScripts = [
               (pkgs.writeShellApplication {
                 name = "kdn-sops-age-gen-keys-yubikey";

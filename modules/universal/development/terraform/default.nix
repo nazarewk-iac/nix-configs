@@ -18,7 +18,7 @@ in
     (kdnConfig.util.ifHM (
       lib.mkIf cfg.enable {
         programs.git.ignores = [ (builtins.readFile ./.gitignore) ];
-        home.sessionVariables = {
+        kdn.env.variables = {
           TF_CLI_CONFIG_FILE = "${config.xdg.configHome}/tofu/.tofurc";
           TERRAGRUNT_TFPATH = "tofu";
         };
@@ -70,7 +70,7 @@ in
             "tgr" = "run-all";
             "tgrc" = "run-all --terragrunt-ignore-external-dependencies";
           });
-        home.packages = with pkgs; [
+        kdn.env.packages = with pkgs; [
           opentofu
           terraform
           # terragrunt # TODO: enable when https://nixpk.gs/pr-tracker.html?pr=389836

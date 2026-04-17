@@ -182,29 +182,32 @@ in
     };
   };
 
-  config = kdnConfig.util.ifTypes [ "nixos" ] (
-    lib.mkIf cfg.enable {
-      programs.openvpn3.enable = true;
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      {
+        kdn.env.packages = [
+          (lib.kdn.shell.writeShellScript pkgs ./bin/kdn-openvpn-setup.sh {
+            runtimeInputs = with pkgs; [ xkcdpass ];
+          })
+        ];
+      }
+      (kdnConfig.util.ifTypes [ "nixos" ] {
+        programs.openvpn3.enable = true;
 
-      services.openvpn.servers = lib.attrsets.mapAttrs mkOpenVPNConfig cfg.instances;
-      systemd.services = lib.attrsets.mapAttrs' mkServiceConfig cfg.instances;
+        services.openvpn.servers = lib.attrsets.mapAttrs mkOpenVPNConfig cfg.instances;
+        systemd.services = lib.attrsets.mapAttrs' mkServiceConfig cfg.instances;
 
-      nixpkgs.overlays = [
-        (final: prev: {
-          # see https://github.com/NixOS/nixpkgs/issues/349012#issuecomment-2424719649
-          openvpn3 = prev.openvpn3.overrideAttrs (old: {
-            patches = (old.patches or [ ]) ++ [
-              ./fix-tests.patch # point to wherever you have this file, or use something like `fetchpatch`
-            ];
-          });
-        })
-      ];
-
-      environment.systemPackages = [
-        (lib.kdn.shell.writeShellScript pkgs ./bin/kdn-openvpn-setup.sh {
-          runtimeInputs = with pkgs; [ xkcdpass ];
-        })
-      ];
-    }
+        nixpkgs.overlays = [
+          (final: prev: {
+            # see https://github.com/NixOS/nixpkgs/issues/349012#issuecomment-2424719649
+            openvpn3 = prev.openvpn3.overrideAttrs (old: {
+              patches = (old.patches or [ ]) ++ [
+                ./fix-tests.patch # point to wherever you have this file, or use something like `fetchpatch`
+              ];
+            });
+          })
+        ];
+      })
+    ]
   );
 }

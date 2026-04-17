@@ -17,7 +17,7 @@ in
   config = kdnConfig.util.ifTypes [ "nixos" ] (
     lib.mkIf cfg.enable {
       # see https://www.kernel.org/doc/html/v5.6/process/changes.html
-      environment.systemPackages =
+      kdn.env.packages =
         # Current Minimal Requirements
         (with pkgs; [
           gcc

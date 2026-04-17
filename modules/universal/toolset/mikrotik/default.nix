@@ -15,6 +15,9 @@ in
   };
 
   config = lib.mkMerge [
+    (lib.mkIf cfg.enable {
+      kdn.env.packages = with pkgs; [ (lib.lowPrio winbox) ];
+    })
     (kdnConfig.util.ifTypes [ "nixos" ] (
       lib.mkIf cfg.enable {
         home-manager.sharedModules = [ { kdn.toolset.mikrotik.enable = cfg.enable; } ];
@@ -23,7 +26,6 @@ in
     (kdnConfig.util.ifHM (
       lib.mkIf cfg.enable {
         kdn.emulation.wine.enable = true;
-        home.packages = with pkgs; [ (lib.lowPrio winbox) ];
         kdn.apps.winbox4 = {
           enable = true;
           dirs.cache = [ ];

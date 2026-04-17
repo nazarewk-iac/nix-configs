@@ -81,7 +81,7 @@ in
       lib.mkMerge [
         {
           services.swaync.enable = true;
-          home.packages = lib.pipe cfg [
+          kdn.env.packages = lib.pipe cfg [
             (lib.filterAttrs (n: v: (v.enable or false) && v ? package))
             builtins.attrValues
             (map (v: v.package))

@@ -47,6 +47,11 @@ in
 
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
+      {
+        kdn.env.packages = [
+          pkgs.kdn.ff-ctl
+        ];
+      }
       (kdnConfig.util.ifHMParent {
         home-manager.sharedModules = [ { kdn.programs.firefox.enable = true; } ];
       })
@@ -55,9 +60,6 @@ in
           {
             # work around warning at https://github.com/danth/stylix/blob/6a2e5258876c46b62edacb3e51a759ed1c06332b/modules/firefox/hm.nix#L171
             stylix.targets.firefox.profileNames = cfg.profileNames;
-            home.packages = [
-              pkgs.kdn.ff-ctl
-            ];
             programs.firefox.enable = true;
             programs.firefox.package = appCfg.package.final;
             kdn.apps.firefox = {

@@ -14,13 +14,11 @@ in
     enable = lib.mkEnableOption "Azure cloud development";
   };
 
-  config = kdnConfig.util.ifTypes [ "nixos" ] (
-    lib.mkIf cfg.enable {
-      kdn.development.dotnet.enable = true;
-      environment.systemPackages = with pkgs; [
-        powershell
-        azure-cli
-      ];
-    }
-  );
+  config = lib.mkIf cfg.enable {
+    kdn.development.dotnet.enable = true;
+    kdn.env.packages = with pkgs; [
+      powershell
+      azure-cli
+    ];
+  };
 }

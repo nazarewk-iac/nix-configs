@@ -38,7 +38,7 @@ in
           "steam-run"
         ];
 
-      environment.sessionVariables =
+      kdn.env.variables =
         lib.optionalAttrs (cfg.vulkan.deviceName != null) {
           DXVK_FILTER_DEVICE_NAME = cfg.vulkan.deviceName;
           VKD3D_FILTER_DEVICE_NAME = cfg.vulkan.deviceName;
@@ -47,7 +47,7 @@ in
           MESA_VK_DEVICE_SELECT = cfg.vulkan.deviceId;
         };
 
-      environment.systemPackages = with pkgs; [
+      kdn.env.packages = with pkgs; [
         # steam  # covered by programs.steam.enable
         # steam-run  # covered by programs.steam.enable
         steamcmd

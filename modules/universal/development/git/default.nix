@@ -32,7 +32,7 @@ in
         ];
         programs.difftastic.git.enable = true;
 
-        home.packages = with pkgs; [
+        kdn.env.packages = with pkgs; [
           git
           git-utils
           gh
@@ -45,7 +45,7 @@ in
             "$left"
             "$right"
           ];
-          ui.paginate = "never"; # turn off pager by default
+          ui.paginate = "auto"; # turn off pager by default
         };
       }
     ))

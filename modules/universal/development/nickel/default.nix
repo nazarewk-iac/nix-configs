@@ -14,11 +14,9 @@ in
     enable = lib.mkEnableOption "nickel development/debugging";
   };
 
-  config = kdnConfig.util.ifTypes [ "nixos" ] (
-    lib.mkIf cfg.enable {
-      environment.systemPackages = with pkgs; [
-        nickel
-      ];
-    }
-  );
+  config = lib.mkIf cfg.enable {
+    kdn.env.packages = with pkgs; [
+      nickel
+    ];
+  };
 }

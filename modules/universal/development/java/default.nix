@@ -21,7 +21,7 @@ in
           {
             programs.java.enable = true;
             programs.java.package = pkgs.jdk;
-            home.packages = with pkgs; [
+            kdn.env.packages = with pkgs; [
               maven
               # gradle-completion # TODO: 2025-10-21 source failed
               # used to be gradle_7, but got insecure

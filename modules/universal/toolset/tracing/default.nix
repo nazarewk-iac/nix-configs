@@ -14,12 +14,15 @@ in
     enable = lib.mkEnableOption "linux utils";
   };
 
-  config = kdnConfig.util.ifTypes [ "nixos" ] (
-    lib.mkIf cfg.enable {
-      programs.bcc.enable = true; # opensnoop
-      environment.systemPackages = with pkgs; [
-        bpftrace
-      ];
-    }
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      (kdnConfig.util.ifTypes [ "nixos" ] {
+        kdn.env.packages = with pkgs; [
+          bpftrace
+        ];
+
+        programs.bcc.enable = true; # opensnoop
+      })
+    ]
   );
 }

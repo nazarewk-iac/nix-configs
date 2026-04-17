@@ -43,7 +43,7 @@ in
 
         nix.settings.substituters = [
         ];
-        environment.systemPackages = with cfg.flake.microvm.packages."${pkgs.stdenv.hostPlatform.system}"; [
+        kdn.env.packages = with cfg.flake.microvm.packages."${pkgs.stdenv.hostPlatform.system}"; [
           microvm
         ];
         kdn.disks.persist."usr/data".directories = [

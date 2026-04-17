@@ -20,7 +20,7 @@ in
       # see https://github.com/NixOS/nixos-hardware/blob/0099253ad0b5283f06ffe31cf010af3f9ad7837d/common/gpu/intel.nix
       boot.initrd.kernelModules = [ "i915" ];
 
-      environment.variables = {
+      kdn.env.variables = {
         VDPAU_DRIVER = lib.mkIf config.hardware.graphics.enable (lib.mkDefault "va_gl");
       };
 

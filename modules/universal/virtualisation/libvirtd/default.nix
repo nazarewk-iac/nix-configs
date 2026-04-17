@@ -39,7 +39,7 @@ in
                TODO: wait for VM packaging? https://github.com/NixOS/nixpkgs/issues/287644
             services.cockpit.enable = true;
           */
-          environment.systemPackages = with pkgs; [
+          kdn.env.packages = with pkgs; [
             guestfs-tools
             libguestfs
             libvirt

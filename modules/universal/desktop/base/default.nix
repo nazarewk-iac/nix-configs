@@ -25,7 +25,7 @@ in
             #services.caffeine.enable = lib.mkDefault true;
             xdg.configFile."wofi/config".source = ./wofi/config;
 
-            home.packages = with pkgs; [
+            kdn.env.packages = with pkgs; [
               (pkgs.writeShellApplication {
                 name = "ydotool-paste";
                 runtimeInputs = with pkgs; [
@@ -84,7 +84,7 @@ in
             services.displayManager.sddm.settings.Users.MaximumUid = config.ids.uids.nobody - 1;
             services.displayManager.sddm.wayland.enable = true;
             services.displayManager.sddm.theme = "chili";
-            environment.systemPackages = with pkgs; [
+            kdn.env.packages = with pkgs; [
               sddm-chili-theme
             ];
           }
@@ -137,7 +137,7 @@ in
             xdg.icons.enable = true;
             xdg.mime.enable = true;
 
-            environment.systemPackages =
+            kdn.env.packages =
               with pkgs;
               [
                 xeyes
@@ -181,7 +181,7 @@ in
           {
             services.gnome.glib-networking.enable = true;
 
-            environment.systemPackages = with pkgs; [
+            kdn.env.packages = with pkgs; [
               nemo-with-extensions
               nemo-fileroller
               gtk3.out

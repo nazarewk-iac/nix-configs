@@ -14,11 +14,9 @@ in
     enable = lib.mkEnableOption "elixir development";
   };
 
-  config = kdnConfig.util.ifTypes [ "nixos" ] (
-    lib.mkIf cfg.enable {
-      environment.systemPackages = with pkgs; [
-        elixir
-      ];
-    }
-  );
+  config = lib.mkIf cfg.enable {
+    kdn.env.packages = with pkgs; [
+      elixir
+    ];
+  };
 }
