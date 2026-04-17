@@ -178,6 +178,11 @@
                 "${super}+${shift}+Up" = "move up";
                 "${super}+${shift}+Right" = "move right";
 
+                "${super}+${shift}+${ctrl}+Left" = "move workspace to output left";
+                "${super}+${shift}+${ctrl}+Down" = "move workspace to output down";
+                "${super}+${shift}+${ctrl}+Up" = "move workspace to output up";
+                "${super}+${shift}+${ctrl}+Right" = "move workspace to output right";
+
                 # workspaces
                 "${super}+1" = "workspace number 1";
                 "${super}+2" = "workspace number 2";
