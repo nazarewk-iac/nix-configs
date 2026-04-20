@@ -1,7 +1,7 @@
 {
   inputs.nixpkgs-upstream.flake = false; # no need for upstream to be a flake
   inputs.nixpkgs-upstream.url = "github:NixOS/nixpkgs/nixos-unstable";
-  inputs.nixpkgs.url = "github:nazarewk/nixpkgs/nixos-unstable";
+  inputs.nixpkgs.url = "github:nazarewk-iac/nixpkgs/nixos-unstable";
   inputs.nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-25.05";
 
   inputs.nixpkgs-lib.follows = "nixpkgs";
@@ -44,16 +44,16 @@
   inputs.nixos-anywhere.url = "github:numtide/nixos-anywhere";
   inputs.nixos-avf-upstream.flake = false; # no need for upstream to be a flake
   inputs.nixos-avf-upstream.url = "github:nix-community/nixos-avf";
-  inputs.nixos-avf.url = "github:nazarewk/nixos-avf";
+  inputs.nixos-avf.url = "github:nazarewk-iac/nixos-avf";
   inputs.nixos-crostini-upstream.flake = false; # no need for upstream to be a flake
   inputs.nixos-crostini-upstream.url = "github:aldur/nixos-crostini";
-  inputs.nixos-crostini.url = "github:nazarewk/nixos-crostini";
+  inputs.nixos-crostini.url = "github:nazarewk-iac/nixos-crostini";
   inputs.nixos-generators.url = "github:nix-community/nixos-generators";
   inputs.nixos-hardware.url = "github:nixos/nixos-hardware";
   inputs.nur.url = "github:nix-community/NUR";
   inputs.preservation-upstream.flake = false; # no need for upstream to be a flake
   inputs.preservation-upstream.url = "github:nix-community/preservation";
-  inputs.preservation.url = "github:nazarewk/preservation/nix-configs";
+  inputs.preservation.url = "github:nazarewk-iac/preservation/nix-configs";
   inputs.rpi-sbcshop-hat-ups.flake = false;
   inputs.rpi-sbcshop-hat-ups.url = "github:sbcshop/UPS-Hat-RPi";
   inputs.rust-overlay.url = "github:oxalica/rust-overlay";
@@ -64,9 +64,7 @@
 
   inputs.sops-nix-upstream.flake = false; # no need for upstream to be a flake
   inputs.sops-nix-upstream.url = "github:Mic92/sops-nix";
-  inputs.sops-nix.url = "github:nazarewk/sops-nix";
-  inputs.sops-upstream.flake = false; # no need for upstream to be a flake
-  inputs.sops-upstream.url = "github:getsops/sops";
+  inputs.sops-nix.url = "github:nazarewk-iac/sops-nix";
 
   # * dependencies
   inputs.angrr.inputs.nixpkgs.follows = "nixpkgs";

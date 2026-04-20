@@ -1,14 +1,14 @@
-From 5871f7d0098da657b735e0bfaf6aa0ea3f648f04 Mon Sep 17 00:00:00 2001
+From d31e7cc5c16b8025fe1cd9155e9b0ba51d7a1cf0 Mon Sep 17 00:00:00 2001
 From: "R. Ryantm" <ryantm-bot@ryantm.com>
-Date: Thu, 19 Mar 2026 19:53:16 +0000
-Subject: [PATCH] rambox: 2.5.2 -> 2.6.1
+Date: Fri, 1 May 2026 16:54:53 +0000
+Subject: [PATCH] rambox: 2.5.2 -> 2.6.3
 
 ---
  pkgs/by-name/ra/rambox/package.nix | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/pkgs/by-name/ra/rambox/package.nix b/pkgs/by-name/ra/rambox/package.nix
-index 1e5631700bcd6000a44c3784c657b4eaf929faff..cab91c3e969ca5905c41d54e3d6dd8f8599c3ee3 100644
+index 1e5631700bcd6000a44c3784c657b4eaf929faff..caebad10f9826afb89a96db38bff08e24f3f79d3 100644
 --- a/pkgs/by-name/ra/rambox/package.nix
 +++ b/pkgs/by-name/ra/rambox/package.nix
 @@ -7,11 +7,11 @@
@@ -16,12 +16,12 @@ index 1e5631700bcd6000a44c3784c657b4eaf929faff..cab91c3e969ca5905c41d54e3d6dd8f8
  appimageTools.wrapType2 rec {
    pname = "rambox";
 -  version = "2.5.2";
-+  version = "2.6.1";
++  version = "2.6.3";
  
    src = fetchurl {
      url = "https://github.com/ramboxapp/download/releases/download/v${version}/Rambox-${version}-linux-x64.AppImage";
 -    hash = "sha256-sx/XLrsDIt2cF4xv/J5i1ZTMf7eHsccBjPEMJ/WISmg=";
-+    hash = "sha256-vwn4UN7/j0MPMS+KlmvipwU6vcXYpgMqCeHvK0V0Sn8=";
++    hash = "sha256-YVLT+6o2Py796LBgN7ZgMiigbjBFGyTNaG/bSwJYAXk=";
    };
  
    desktopItem = makeDesktopItem {

@@ -26,7 +26,7 @@ in
           nmap
           bandwhich
           tcpdump
-          wol
+          # wol # TODO: 2026-05-05: broken build
           iperf
           speedtest-go
           speedtest-cli

@@ -255,5 +255,8 @@
       kdn.nix.remote-builder.localhost.maxJobs = 12;
       kdn.nix.remote-builder.localhost.speedFactor = 32;
     }
+    {
+      security.sudo.wheelNeedsPassword = false;
+    }
   ];
 }
