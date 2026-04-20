@@ -15,6 +15,10 @@ in
 {
   options.kdn.profile.user.kdn = {
     enable = lib.mkEnableOption "enable my user profiles";
+    username = lib.mkOption {
+      type = with lib.types; str;
+      default = "kdn";
+    };
     ssh = lib.mkOption {
       readOnly = true;
       default =
@@ -153,7 +157,7 @@ in
               signing.backend = "gpg";
             };
           }
-          (lib.mkIf (hasWorkstation) {
+          (lib.mkIf hasWorkstation {
             kdn.disks.persist."usr/data".directories = [ "dev" ];
             kdn.services.syncthing.enable = true;
             kdn.programs.weechat.enable = true;
@@ -332,7 +336,7 @@ in
               PartOf = [ config.wayland.systemd.target ];
             };
           })
-          (lib.mkIf (hasWorkstation) {
+          (lib.mkIf hasWorkstation {
             kdn.env.packages = with pkgs; [
               pkgs.kdn.klog-time-tracker
               pkgs.kdn.klg
@@ -340,7 +344,7 @@ in
             xdg.configFile."klg/config.toml".source =
               config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/${nc.rel}/time-logs/klg/config.toml";
           })
-          (lib.mkIf ((hasWorkstation) && config.kdn.desktop.enable) {
+          (lib.mkIf (hasWorkstation && config.kdn.desktop.enable) {
             kdn.env.packages = with pkgs; [
               (pkgs.writeShellApplication {
                 name = "kdn-drag0nius.kdbx";
@@ -363,7 +367,7 @@ in
               httpie-desktop
             ];
           })
-          (lib.mkIf ((hasWorkstation) && config.kdn.desktop.enable) {
+          (lib.mkIf (hasWorkstation && config.kdn.desktop.enable) {
             kdn.programs.beeper.enable = true;
             kdn.programs.browsers.enable = true;
             kdn.programs.chrome.enable = true;
@@ -389,7 +393,7 @@ in
       # shared darwin-nixos
       # shared darwin-nixos
       (kdnConfig.util.ifTypes [ "nixos" "darwin" ] {
-        users.users.kdn = {
+        users.users.${cfg.username} = {
           description = "Krzysztof Nazarewski";
           openssh.authorizedKeys.keys = cfg.ssh.authorizedKeysList;
         };
@@ -397,11 +401,16 @@ in
       # darwin
       (kdnConfig.util.ifTypes [ "darwin" ] (
         lib.mkMerge [
-          { home-manager.users.kdn.kdn.profile.user.kdn.enable = true; }
           {
-            system.primaryUser = lib.mkDefault "kdn";
-            nix-homebrew.user = "kdn";
-            users.users.kdn.home = "/Users/kdn";
+            home-manager.users.${cfg.username}.kdn.profile.user.kdn = {
+              enable = true;
+              username = cfg.username;
+            };
+          }
+          {
+            system.primaryUser = lib.mkDefault cfg.username;
+            nix-homebrew.user = cfg.username;
+            users.users.${cfg.username}.home = "/Users/${cfg.username}";
           }
         ]
       ))
@@ -409,12 +418,12 @@ in
       (kdnConfig.util.ifTypes [ "nixos" ] (
         lib.mkMerge [
           {
-            nix.settings.trusted-users = [ "kdn" ];
-            kdn.programs.atuin.users = [ "kdn" ];
-            kdn.programs.atuin.autologinUsers = [ "kdn" ];
-            kdn.hw.yubikey.appId = "pam://kdn";
-            users.users.kdn.initialHashedPassword = "$y$j9T$yl3J5zGJ5Yq8c6fXMGxNk.$XE3X8aWpD3FeakMBD/fUmCExXMuy7B6tm7ZECmuxpF4";
-            users.users.kdn = {
+            nix.settings.trusted-users = [ cfg.username ];
+            kdn.programs.atuin.users = [ cfg.username ];
+            kdn.programs.atuin.autologinUsers = [ cfg.username ];
+            kdn.hw.yubikey.appId = "pam://${cfg.username}";
+            users.users.${cfg.username} = {
+              initialHashedPassword = "$y$j9T$yl3J5zGJ5Yq8c6fXMGxNk.$XE3X8aWpD3FeakMBD/fUmCExXMuy7B6tm7ZECmuxpF4";
               linger = true;
               uid = 31893;
               isNormalUser = true;
@@ -453,7 +462,10 @@ in
             };
           }
           {
-            home-manager.users.kdn.kdn.profile.user.kdn.enable = true;
+            home-manager.users.${cfg.username}.kdn.profile.user.kdn = {
+              enable = true;
+              username = cfg.username;
+            };
             home-manager.users.root.programs.gpg.publicKeys = [
               {
                 source = cfg.gpg.publicKeys;
@@ -462,7 +474,7 @@ in
             ];
           }
           {
-            kdn.networking.netbird.admins = [ "kdn" ];
+            kdn.networking.netbird.admins = [ cfg.username ];
           }
         ]
       ))
