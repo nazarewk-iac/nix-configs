@@ -27,10 +27,10 @@ in
 
   config = lib.mkMerge [
     (lib.mkIf cfg.enable {
-      kdn.env.packages = with pkgs; [
+      kdn.env.packages = [
         finalPackage
-        pkgs.kdn.kdn-keepass
-      ];
+      ]
+      ++ lib.optional (kdnConfig.util.hasParentOfAnyType [ "nixos" ]) pkgs.kdn.kdn-keepass;
     })
     (lib.mkIf cfg.service.enable {
       kdn.env.variables = envs;

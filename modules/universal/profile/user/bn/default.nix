@@ -82,7 +82,8 @@ in
               foldParts ./yubico/u2f_keys.parts;
 
             services.flameshot.settings.General.savePath = "${config.home.homeDirectory}/Downloads/screenshots";
-
+          }
+          (lib.mkIf (kdnConfig.util.hasParentOfAnyType [ "nixos" ]) {
             xdg.mime.enable = true;
             xdg.mimeApps.enable = true;
             xdg.mimeApps.associations.added = { };
@@ -117,7 +118,7 @@ in
                 "x-scheme-handler/ipfs" = ipfs;
                 "x-scheme-handler/ipns" = ipfs;
               };
-          }
+          })
         ]
       )
     ))

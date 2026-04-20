@@ -13,9 +13,9 @@ in
     enable = lib.mkEnableOption "SSH client configuration";
   };
 
-  config = lib.mkMerge [
-    (kdnConfig.util.ifHM (
-      lib.mkIf cfg.enable (
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      (kdnConfig.util.ifHM (
         lib.mkMerge [
           {
             services.ssh-agent.enable = pkgs.stdenv.isLinux;
@@ -31,7 +31,7 @@ in
             ];
           }
           {
-            # provide my own 9slightly modified) default
+            # provide my own slightly modified default
             # handle deprecation of defaults at https://github.com/nix-community/home-manager/blob/f3d3b4592a73fb64b5423234c01985ea73976596/modules/programs/ssh.nix#L650-L655
             programs.ssh.enableDefaultConfig = false;
             programs.ssh.matchBlocks."*" = {
@@ -47,8 +47,12 @@ in
               controlPersist = lib.mkDefault "1m";
             };
           }
+          (lib.optionalAttrs (kdnConfig.util.hasParentOfAnyType [ "darwin" ]) {
+            # TODO: try to determine it more gracefully if possible?
+            programs.ssh.package = pkgs.openssh;
+          })
         ]
-      )
-    ))
-  ];
+      ))
+    ]
+  );
 }

@@ -237,11 +237,15 @@ in
             ]
           ))
           (lib.mkIf config.kdn.desktop.enable {
+            xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
+          })
+          (lib.mkIf config.kdn.desktop.enable {
             # see https://github.com/nix-community/home-manager/issues/2104#issuecomment-861676751
             home.file."${nc.rel}/images/screenshots/.keep".source = builtins.toFile "keep" "";
             services.flameshot.settings.General.savePath =
               "${config.home.homeDirectory}/${nc.rel}/images/screenshots";
-            xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
+          })
+          (lib.mkIf (config.kdn.desktop.enable && kdnConfig.util.hasParentOfAnyType [ "nixos" ]) {
             xdg.mime.enable = true;
             xdg.desktopEntries.uri-to-clipboard =
               let

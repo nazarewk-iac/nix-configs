@@ -11,6 +11,7 @@
   ];
   config = lib.mkMerge [
     {
+      kdn.enable = true;
       kdn.hostName = "anji-linux-builder";
       system.stateVersion = "24.05"; # set by the nix-builder-vm.nix
       home-manager.sharedModules = [ { home.stateVersion = "26.05"; } ];

@@ -4,10 +4,11 @@
   pkgs,
   kdnConfig,
   ...
-}: let
+}:
+let
   inherit (kdnConfig) inputs;
 in
-  lib.optionalAttrs
+lib.optionalAttrs
   (kdnConfig.util.isOfType [
     "nixos"
     "home-manager"
@@ -16,20 +17,21 @@ in
   ])
   {
     imports =
-      if kdnConfig.moduleType == "nixos"
-      then [inputs.stylix.nixosModules.stylix]
-      else if kdnConfig.moduleType == "darwin"
-      then [inputs.stylix.darwinModules.stylix]
-      else if kdnConfig.moduleType == "nix-on-droid"
-      then [inputs.stylix.nixOnDroidModules.stylix]
-      else if kdnConfig.moduleType == "home-manager" && kdnConfig.parent == null
-      then [inputs.stylix.homeModules.stylix]
-      else [];
+      if kdnConfig.moduleType == "nixos" then
+        [ inputs.stylix.nixosModules.stylix ]
+      else if kdnConfig.moduleType == "darwin" then
+        [ inputs.stylix.darwinModules.stylix ]
+      else if kdnConfig.moduleType == "nix-on-droid" then
+        [ inputs.stylix.nixOnDroidModules.stylix ]
+      else if kdnConfig.moduleType == "home-manager" && kdnConfig.parent == null then
+        [ inputs.stylix.homeModules.stylix ]
+      else
+        [ ];
     config = lib.mkMerge [
       {
         /*
-        TODO: review new option added for simplifications?
-         see https://github.com/danth/stylix/commit/7682713f6af1d32a33f8c4e3d3d141af5ad1761a
+          TODO: review new option added for simplifications?
+           see https://github.com/danth/stylix/commit/7682713f6af1d32a33f8c4e3d3d141af5ad1761a
         */
 
         stylix.enable = true;
@@ -50,8 +52,7 @@ in
         stylix.fonts.monospace.name = lib.mkDefault "Fira Code";
         stylix.fonts.monospace.package = lib.mkDefault pkgs.fira-code;
       })
-      (
-        lib.attrsets.optionalAttrs
+      (lib.attrsets.optionalAttrs
         (kdnConfig.util.isOfType [
           "nixos"
           "home-manager"
@@ -62,7 +63,7 @@ in
           stylix.cursor.size = lib.mkDefault 32;
         }
       )
-      (kdnConfig.util.ifTypes ["nixos"] {
+      (kdnConfig.util.ifTypes [ "nixos" ] {
         fonts.fontDir.enable = true;
         fonts.packages = with pkgs; [
           fira-code
@@ -70,11 +71,11 @@ in
         ];
         stylix.enableReleaseChecks = lib.strings.versionAtLeast config.system.nixos.version "26.11";
       })
-      (kdnConfig.util.ifTypes ["home-manager"] {
+      (kdnConfig.util.ifTypes [ "home-manager" ] {
         stylix.enableReleaseChecks = lib.strings.versionAtLeast config.home.version.release "26.11";
       })
       # 2026-04-17 broken due to https://github.com/nix-community/stylix/issues/1686
-      (kdnConfig.util.ifTypes ["nixos" "home-manager"] {
+      (kdnConfig.util.ifTypes [ "nixos" "home-manager" ] {
         stylix.targets.gtksourceview.enable = false;
       })
     ];

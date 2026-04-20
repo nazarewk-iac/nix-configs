@@ -101,6 +101,7 @@ in
             home-manager.sharedModules = [
               {
                 config = {
+                  kdn.enable = lib.mkDefault cfg.enable;
                   kdn.hostName = cfg.hostName;
                 };
               }
@@ -125,7 +126,7 @@ in
             homebrew.onActivation.upgrade = false;
 
             nix-homebrew.enable = true;
-            nix-homebrew.enableRosetta = true;
+            nix-homebrew.enableRosetta = pkgs.stdenv.hostPlatform.isAarch64;
             nix-homebrew.mutableTaps = false;
 
             nix-homebrew.taps =

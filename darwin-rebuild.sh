@@ -128,4 +128,7 @@ if test "${DRY_RUN:-0}" == 1; then
   pre_cmd=(echo "${pre_cmd[@]}")
 fi
 
+# required for the linux-builder, otherwise throws error about not being on linux and that substitutes are not allowed
+nom_build_args+=(--always-allow-substitutes)
+
 "${pre_cmd[@]}" "sudo nom build '${flake_path}#darwinConfigurations.${name}.system' ${nom_build_args[*]@Q} && sudo darwin-rebuild ${pre_args[*]@Q} ${cmd@Q} ${post_args[*]@Q}"
