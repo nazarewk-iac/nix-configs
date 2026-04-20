@@ -4,9 +4,11 @@
   config,
   kdnConfig,
   ...
-}: let
+}:
+let
   cfg = config.kdn.headless.base;
-in {
+in
+{
   options.kdn.headless.base = {
     enable = lib.mkEnableOption "basic headless system configuration";
     debugPolkit = lib.mkEnableOption "polkit debugging";
@@ -32,7 +34,7 @@ in {
             #    eval (${lib.getExe config.programs.zellij.package} setup --generate-auto-start fish | string collect)
             #  end
             #'';
-            kdn.disks.persist."usr/cache".directories = [".cache/zellij"];
+            kdn.disks.persist."usr/cache".directories = [ ".cache/zellij" ];
             programs.zellij.settings.scroll_buffer_size = 1 * 1000 * 1000;
 
             # TODO: this is "temporary" measure to use built-in theme instead of stylix
@@ -45,35 +47,35 @@ in {
           }
           (
             let
-              xdgAttrs.all =
-                (builtins.attrNames config.xdg.userDirs.extraConfig)
-                ++ [
-                  "XDG_DESKTOP_DIR"
-                  "XDG_DOCUMENTS_DIR"
-                  "XDG_DOWNLOAD_DIR"
-                  "XDG_MUSIC_DIR"
-                  "XDG_PICTURES_DIR"
-                  "XDG_PUBLICSHARE_DIR"
-                  "XDG_TEMPLATES_DIR"
-                  "XDG_VIDEOS_DIR"
-                ];
+              xdgAttrs.all = (builtins.attrNames config.xdg.userDirs.extraConfig) ++ [
+                "XDG_DESKTOP_DIR"
+                "XDG_DOCUMENTS_DIR"
+                "XDG_DOWNLOAD_DIR"
+                "XDG_MUSIC_DIR"
+                "XDG_PICTURES_DIR"
+                "XDG_PUBLICSHARE_DIR"
+                "XDG_TEMPLATES_DIR"
+                "XDG_VIDEOS_DIR"
+              ];
               xdgAttrs.cache = [
                 "XDG_DOWNLOAD_DIR"
               ];
-              process = dirs:
+              process =
+                dirs:
                 lib.pipe dirs [
                   (builtins.filter (
                     name:
-                      (config.home.sessionVariables ? name)
-                      && lib.strings.hasPrefix "XDG_" name
-                      && lib.strings.hasSuffix "_DIR" name
+                    (config.home.sessionVariables ? name)
+                    && lib.strings.hasPrefix "XDG_" name
+                    && lib.strings.hasSuffix "_DIR" name
                   ))
                   (map (
                     name:
-                      lib.strings.removePrefix "${config.home.homeDirectory}/" config.home.sessionVariables."${name}"
+                    lib.strings.removePrefix "${config.home.homeDirectory}/" config.home.sessionVariables."${name}"
                   ))
                 ];
-            in {
+            in
+            {
               kdn.disks.persist."usr/data".directories = process (
                 lib.lists.subtractLists xdgAttrs.cache xdgAttrs.all
               );
@@ -84,10 +86,10 @@ in {
       )
     ))
     # nixos
-    (kdnConfig.util.ifTypes ["nixos"] (
+    (kdnConfig.util.ifTypes [ "nixos" ] (
       lib.mkIf cfg.enable (
         lib.mkMerge [
-          {home-manager.sharedModules = [{kdn.headless.base.enable = true;}];}
+          { home-manager.sharedModules = [ { kdn.headless.base.enable = true; } ]; }
           {
             boot.kernelParams = [
               "plymouth.enable=0" # disable boot splash screen
@@ -144,19 +146,21 @@ in {
 
             environment.localBinInPath = true;
 
-            boot.kernel.sysctl = let
-              mb = 1024 * 1024;
-            in {
-              # https://wiki.archlinux.org/title/Sysctl#Virtual_memory
-              "vm.dirty_background_bytes" = 4 * mb;
-              "vm.dirty_bytes" = 4 * mb;
+            boot.kernel.sysctl =
+              let
+                mb = 1024 * 1024;
+              in
+              {
+                # https://wiki.archlinux.org/title/Sysctl#Virtual_memory
+                "vm.dirty_background_bytes" = 4 * mb;
+                "vm.dirty_bytes" = 4 * mb;
 
-              "vm.vfs_cache_pressure" = 50;
+                "vm.vfs_cache_pressure" = 50;
 
-              "fs.inotify.max_user_watches" = 1048576; # default:  8192
-              "fs.inotify.max_user_instances" = 1024; # default:   128
-              "fs.inotify.max_queued_events" = 32768; # default: 16384
-            };
+                "fs.inotify.max_user_watches" = 1048576; # default:  8192
+                "fs.inotify.max_user_instances" = 1024; # default:   128
+                "fs.inotify.max_queued_events" = 32768; # default: 16384
+              };
 
             # `dbus` seems to be bugged when combined with DynamicUser services
             services.dbus.implementation = "broker";
@@ -174,7 +178,8 @@ in {
                 Defaults  env_keep += KDN_ZELLIJ_SKIP
                 Defaults  env_keep += TERMINAL_EMULATOR
               '';
-            in {
+            in
+            {
               security.sudo.extraConfig = sudoCfg;
               security.sudo-rs.extraConfig = sudoCfg;
             }
