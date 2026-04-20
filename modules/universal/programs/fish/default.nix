@@ -4,9 +4,11 @@
   config,
   kdnConfig,
   ...
-}: let
+}:
+let
   cfg = config.kdn.programs.fish;
-in {
+in
+{
   options.kdn.programs.fish = {
     enable = lib.mkEnableOption "fish interactive shell";
   };
@@ -21,7 +23,7 @@ in {
         ];
       }
       (kdnConfig.util.ifHMParent {
-        home-manager.sharedModules = [{kdn.programs.fish.enable = true;}];
+        home-manager.sharedModules = [ { kdn.programs.fish.enable = true; } ];
       })
       (kdnConfig.util.ifHM {
         xdg.configFile."fish/config.fish".force = true;
@@ -63,7 +65,7 @@ in {
           ];
         };
       })
-      (kdnConfig.util.ifTypes ["nixos" "darwin"] {
+      (kdnConfig.util.ifTypes [ "nixos" "darwin" ] {
         programs.fish = {
           enable = true;
           useBabelfish = false;

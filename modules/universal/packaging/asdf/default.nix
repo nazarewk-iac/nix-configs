@@ -4,9 +4,11 @@
   config,
   kdnConfig,
   ...
-}: let
+}:
+let
   cfg = config.kdn.packaging.asdf;
-in {
+in
+{
   options.kdn.packaging.asdf = {
     enable = lib.mkEnableOption "ASDF version manager";
 
@@ -26,14 +28,14 @@ in {
         ];
       }
       (kdnConfig.util.ifHMParent {
-        home-manager.sharedModules = [{kdn.packaging.asdf.enable = true;}];
+        home-manager.sharedModules = [ { kdn.packaging.asdf.enable = true; } ];
       })
       (kdnConfig.util.ifHM {
         programs.fish.interactiveShellInit = ''
           fish_add_path --prepend --move "$HOME/.asdf/shims"
         '';
         home.activation = {
-          asdfReshim = lib.hm.dag.entryAfter ["writeBoundary"] ''
+          asdfReshim = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
             if [ -d "$HOME/.asdf/shims" ] ; then
               $DRY_RUN_CMD rm -rf "$HOME/.asdf/shims"
             fi
@@ -41,7 +43,7 @@ in {
           '';
         };
       })
-      (kdnConfig.util.ifTypes ["nixos"] {
+      (kdnConfig.util.ifTypes [ "nixos" ] {
         environment.interactiveShellInit = ''
           [[ -z "$HOME" ]] || export PATH="$HOME/.asdf/shims:$PATH"
         '';

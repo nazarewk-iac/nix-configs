@@ -4,9 +4,11 @@
   config,
   kdnConfig,
   ...
-}: let
+}:
+let
   cfg = config.kdn.programs.nix-index;
-in {
+in
+{
   options.kdn.programs.nix-index = {
     enable = lib.mkEnableOption "nix-index setup";
   };
@@ -14,14 +16,14 @@ in {
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
-        kdn.env.packages = with pkgs; [nix-index];
+        kdn.env.packages = with pkgs; [ nix-index ];
       }
-      (kdnConfig.util.ifTypes ["nixos" "darwin" "home-manager"] {
+      (kdnConfig.util.ifTypes [ "nixos" "darwin" "home-manager" ] {
         # use nix-index without `nix-channel`
         # see https://github.com/bennofs/nix-index/issues/167
-        nix.nixPath = ["nixpkgs=${kdnConfig.inputs.nixpkgs}"];
+        nix.nixPath = [ "nixpkgs=${kdnConfig.inputs.nixpkgs}" ];
       })
-      (kdnConfig.util.ifTypes ["nixos"] {
+      (kdnConfig.util.ifTypes [ "nixos" ] {
         environment.interactiveShellInit = ''
           source ${pkgs.nix-index}/etc/profile.d/command-not-found.sh
         '';
