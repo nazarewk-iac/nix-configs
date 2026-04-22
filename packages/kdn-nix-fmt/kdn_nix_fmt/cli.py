@@ -29,7 +29,7 @@ class CLI:
         self._formatters_cache: dict[Path, Callable[..., None]] = {}
         self.default_formatter = self.alejandra
         self.remotes_formatters = {
-            "github.com/nazarewk-iac/": self.alejandra,
+            "github.com/nazarewk-iac/": self.nixfmt, # self.alejandra,
             "github.com/nixos/": self.nixfmt,
             "github.com/nix-community/": self.nixfmt,
         }
