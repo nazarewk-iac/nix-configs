@@ -1,5 +1,4 @@
 {
-
   lib,
   pkgs,
   config,
@@ -61,7 +60,6 @@ in
       lib.mkMerge [
         {
           services.resolved.enable = true;
-          # services.resolved.dnssec = "allow-downgrade"; # this complains results are not signed
           services.resolved.settings.Resolve.DNSSEC = lib.mkDefault "false";
           services.resolved.settings.Resolve.DNSOverTLS = lib.mkDefault "opportunistic";
           services.resolved.settings.Resolve.LLMNR = lib.mkDefault "true";

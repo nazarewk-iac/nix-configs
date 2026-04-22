@@ -820,7 +820,7 @@ in
             ManageForeignRoutingPolicyRules = false; # drops `ip rule` on start  since version 249
             ManageForeignNextHops = false; # drops `ip nexthop` on start  since version 256
           };
-          services.resolved.dnssec = "allow-downgrade";
+          services.resolved.settings.Resolve.DNSSEC = "allow-downgrade";
           networking.nameservers = defaultDNSServers;
         }
         (
