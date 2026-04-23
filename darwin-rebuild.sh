@@ -56,16 +56,14 @@ nom_build_args=(
 
 cmd="${1}"
 shift 1
-: "${name:="${2:-"$(hostname -s)"}"}"
+: "${name:="${1:-"$(hostname -s)"}"}"
 remote=""
-flags=""
 remote_host=""
 test $# -lt 1 || shift 1
-
+remote_spec="${name}"
 if [[ "${remote_spec:-}" == remote=* ]]; then
   remote="${remote_spec#remote=*}"
   if [[ "${remote}" == *+* ]]; then
-    flags="${remote##*+}"
     remote="${remote%+*}"
   fi
 fi
@@ -120,19 +118,19 @@ while test "$#" -gt 0; do
   shift
 done
 
+# required for the linux-builder, otherwise throws error about not being on linux and that substitutes are not allowed
+nom_build_args+=(--always-allow-substitutes)
+
 flake_path="$(nix eval --raw '.#self.sourceInfo.outPath')"
 post_args+=(--flake "${flake_path}#${name}")
 if test -n "${remote_host}"; then
   nix copy --to "ssh-ng://${remote_host}" "${flake_path}"
-  pre_cmd=(ssh -t "$remote_host" "${pre_cmd[@]}")
+  ssh -t "$remote_host" "nix run '$flake_path#darwin-rebuild' -- ${cmd@Q} ${name@Q} ${nom_build_args[*]@Q} -- ${post_args[*]@Q}"
 else
   pre_cmd=(bash -c)
-fi
-if test "${DRY_RUN:-0}" == 1; then
-  pre_cmd=(echo "${pre_cmd[@]}")
-fi
+  if test "${DRY_RUN:-0}" == 1; then
+    pre_cmd=(echo "${pre_cmd[@]}")
+  fi
 
-# required for the linux-builder, otherwise throws error about not being on linux and that substitutes are not allowed
-nom_build_args+=(--always-allow-substitutes)
-
-"${pre_cmd[@]}" "sudo nom build '${flake_path}#darwinConfigurations.${name}.system' ${nom_build_args[*]@Q} && sudo darwin-rebuild ${pre_args[*]@Q} ${cmd@Q} ${post_args[*]@Q}"
+  "${pre_cmd[@]}" "nom build --no-link '${flake_path}#darwinConfigurations.${name}.system' ${nom_build_args[*]@Q} && sudo darwin-rebuild ${pre_args[*]@Q} ${cmd@Q} ${post_args[*]@Q}"
+fi

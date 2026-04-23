@@ -145,6 +145,7 @@
             // (import ./packages {
               pkgs = final;
               lib = final.lib;
+              kdnConfig = self.kdnMetaModule.config;
             });
         })
       ];
@@ -154,6 +155,7 @@
         inputs.nur.overlays.default
         inputs.microvm.overlays.default
         inputs.angrr.overlays.default
+        inputs.nix-darwin.overlays.default
         (final: prev: {
           inherit lib;
           kdnConfig = self.kdnMetaModule.config;

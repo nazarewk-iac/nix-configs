@@ -9,6 +9,7 @@
   init-py-script = pkgs.callPackage ./init-py-script { };
 
   # changed to manual list due to infinite recursion errors
+  darwin-rebuild = pkgs.callPackage ./darwin-rebuild { };
   data-converters = pkgs.callPackage ./data-converters { };
   ff-ctl = pkgs.callPackage ./ff-ctl { };
   fortitoken-decrypt = pkgs.callPackage ./fortitoken-decrypt { };
