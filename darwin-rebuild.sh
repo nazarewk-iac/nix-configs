@@ -60,7 +60,7 @@ remote=""
 flags=""
 remote_host=""
 shift 2
-remote_spec="remote=${name}"
+
 if [[ "${remote_spec:-}" == remote=* ]]; then
   remote="${remote_spec#remote=*}"
   if [[ "${remote}" == *+* ]]; then
@@ -121,9 +121,12 @@ done
 
 flake_path="$(nix eval --raw '.#self.sourceInfo.outPath')"
 post_args+=(--flake "${flake_path}#${name}")
-nix copy --to "ssh-ng://${remote_host}" "${flake_path}"
-
-pre_cmd=(ssh -t "$remote_host" "${pre_cmd[@]}")
+if test -n "${remote_host}"; then
+  nix copy --to "ssh-ng://${remote_host}" "${flake_path}"
+  pre_cmd=(ssh -t "$remote_host" "${pre_cmd[@]}")
+else
+  pre_cmd=(bash -c)
+fi
 if test "${DRY_RUN:-0}" == 1; then
   pre_cmd=(echo "${pre_cmd[@]}")
 fi
