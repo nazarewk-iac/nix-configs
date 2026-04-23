@@ -55,11 +55,12 @@ nom_build_args=(
 )
 
 cmd="${1}"
+shift 1
 : "${name:="${2:-"$(hostname -s)"}"}"
 remote=""
 flags=""
 remote_host=""
-shift 2
+test $# -lt 1 || shift 1
 
 if [[ "${remote_spec:-}" == remote=* ]]; then
   remote="${remote_spec#remote=*}"
