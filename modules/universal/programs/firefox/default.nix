@@ -65,8 +65,6 @@ in
             kdn.apps.firefox = {
               enable = true;
               package.install = false;
-              package.original =
-                if !nativeMessagingHostsAreSupported then pkgs.firefox-unwrapped else pkgs.firefox;
               dirs.cache = [ ];
               dirs.config = [ ];
               dirs.data = [ "/.mozilla/firefox" ];

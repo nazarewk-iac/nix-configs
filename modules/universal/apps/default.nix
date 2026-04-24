@@ -104,9 +104,9 @@ in
     (kdnConfig.util.ifHMParent {
       home-manager.sharedModules = [
         {
-          kdn.apps = lib.pipe config.kdn.apps [
-            (lib.attrsets.mapAttrs (_: lib.mkDefault))
-          ];
+          kdn.apps = lib.attrsets.mapAttrsRecursiveCond (p: !(lib.isDerivation p)) (
+            _: lib.mkDefault
+          ) config.kdn.apps;
         }
       ];
     })
