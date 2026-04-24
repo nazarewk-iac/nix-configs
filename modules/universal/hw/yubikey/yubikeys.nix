@@ -1,26 +1,20 @@
 {
-  lib,
-  config,
-  kdnConfig,
-  ...
-}:
-kdnConfig.util.ifTypes [ "nixos" ] {
-  kdn.hw.yubikey.devices.oams = {
+  oams = {
     enabled = true;
     serial = "16174038";
-    notes = [ "data in KeePass" ];
+    notes = ["data in KeePass"];
   };
   /*
-    age-plugin-yubikey identies are not sensitive in the meaning
-      they cannot be used to decrypt without actual yubikey
-        https://github.com/str4d/age-plugin-yubikey/issues/179#issuecomment-2156623271
+  age-plugin-yubikey identies are not sensitive in the meaning
+    they cannot be used to decrypt without actual yubikey
+      https://github.com/str4d/age-plugin-yubikey/issues/179#issuecomment-2156623271
   */
   #
   # age-plugin-yubikey Slot 1 is PIV Slot 82
-  kdn.hw.yubikey.devices.oams.piv."82" = {
+  oams.piv."82" = {
     type = "age-plugin-yubikey";
     age-plugin-yubikey = {
-      notes = [ "sops" ];
+      notes = ["sops"];
       name = "age identity 97b9264f";
       pin-policy = "always";
       touch-policy = "cached";
@@ -28,10 +22,10 @@ kdnConfig.util.ifTypes [ "nixos" ] {
       identity = "AGE-PLUGIN-YUBIKEY-16M9LVQYZJ7UJVNC8Z7TW7";
     };
   };
-  kdn.hw.yubikey.devices.oams.piv."83" = {
+  oams.piv."83" = {
     type = "age-plugin-yubikey";
     age-plugin-yubikey = {
-      notes = [ "sops" ];
+      notes = ["sops"];
       name = "age identity 6f7792a6";
       pin-policy = "never";
       touch-policy = "cached";
@@ -39,10 +33,10 @@ kdnConfig.util.ifTypes [ "nixos" ] {
       identity = "AGE-PLUGIN-YUBIKEY-16M9LVQYRDAME9FSZZVPJA";
     };
   };
-  kdn.hw.yubikey.devices.oams.piv."84" = {
+  oams.piv."84" = {
     type = "age-plugin-yubikey";
     age-plugin-yubikey = {
-      notes = [ "sops" ];
+      notes = ["sops"];
       name = "age identity aba74437";
       pin-policy = "never";
       touch-policy = "never";
@@ -50,15 +44,15 @@ kdnConfig.util.ifTypes [ "nixos" ] {
       identity = "AGE-PLUGIN-YUBIKEY-16M9LVQYY4WN5GDCQNHWQ0";
     };
   };
-  kdn.hw.yubikey.devices.brys = {
+  brys = {
     enabled = true;
     serial = "16174039";
-    notes = [ "data in KeePass" ];
+    notes = ["data in KeePass"];
   };
-  kdn.hw.yubikey.devices.brys.piv."82" = {
+  brys.piv."82" = {
     type = "age-plugin-yubikey";
     age-plugin-yubikey = {
-      notes = [ "sops" ];
+      notes = ["sops"];
       name = "age identity cd6e23c9";
       pin-policy = "always";
       touch-policy = "cached";
@@ -66,10 +60,10 @@ kdnConfig.util.ifTypes [ "nixos" ] {
       identity = "AGE-PLUGIN-YUBIKEY-16L9LVQYZE4HZ8JGY5HK5P";
     };
   };
-  kdn.hw.yubikey.devices.brys.piv."83" = {
+  brys.piv."83" = {
     type = "age-plugin-yubikey";
     age-plugin-yubikey = {
-      notes = [ "sops" ];
+      notes = ["sops"];
       name = "age identity a77792a9";
       pin-policy = "never";
       touch-policy = "cached";
@@ -77,10 +71,10 @@ kdnConfig.util.ifTypes [ "nixos" ] {
       identity = "AGE-PLUGIN-YUBIKEY-16L9LVQYR5AME92GT4N5C3";
     };
   };
-  kdn.hw.yubikey.devices.brys.piv."84" = {
+  brys.piv."84" = {
     type = "age-plugin-yubikey";
     age-plugin-yubikey = {
-      notes = [ "sops" ];
+      notes = ["sops"];
       name = "age identity 3388da78";
       pin-policy = "never";
       touch-policy = "never";
