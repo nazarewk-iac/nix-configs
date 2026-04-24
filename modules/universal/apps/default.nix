@@ -39,9 +39,6 @@ let
   ];
 in
 {
-  imports = [
-    (lib.mkRenamedOptionModule [ "kdn" "programs" "apps" ] [ "kdn" "apps" ])
-  ];
   options.kdn.apps = lib.mkOption {
     default = { };
     type = lib.types.attrsOf (
@@ -54,7 +51,7 @@ in
           options = {
             enable = lib.mkOption {
               type = with lib.types; bool;
-              default = true;
+              default = false;
             };
             name = lib.mkOption {
               type = with lib.types; str;
@@ -113,7 +110,7 @@ in
         }
       ];
     })
-    (kdnConfig.util.ifTypes [ "home-manager" ] {
+    (kdnConfig.util.ifHM {
       kdn.disks.persist."usr/cache".directories = lib.pipe enabledAppsList [
         (map (cfg: cfg.dirs.cache))
         builtins.concatLists

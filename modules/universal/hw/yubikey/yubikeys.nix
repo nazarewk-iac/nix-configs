@@ -2,19 +2,19 @@
   oams = {
     enabled = true;
     serial = "16174038";
-    notes = ["data in KeePass"];
+    notes = [ "data in KeePass" ];
   };
   /*
-  age-plugin-yubikey identies are not sensitive in the meaning
-    they cannot be used to decrypt without actual yubikey
-      https://github.com/str4d/age-plugin-yubikey/issues/179#issuecomment-2156623271
+    age-plugin-yubikey identies are not sensitive in the meaning
+      they cannot be used to decrypt without actual yubikey
+        https://github.com/str4d/age-plugin-yubikey/issues/179#issuecomment-2156623271
   */
   #
   # age-plugin-yubikey Slot 1 is PIV Slot 82
   oams.piv."82" = {
     type = "age-plugin-yubikey";
     age-plugin-yubikey = {
-      notes = ["sops"];
+      notes = [ "sops" ];
       name = "age identity 97b9264f";
       pin-policy = "always";
       touch-policy = "cached";
@@ -25,7 +25,7 @@
   oams.piv."83" = {
     type = "age-plugin-yubikey";
     age-plugin-yubikey = {
-      notes = ["sops"];
+      notes = [ "sops" ];
       name = "age identity 6f7792a6";
       pin-policy = "never";
       touch-policy = "cached";
@@ -36,7 +36,7 @@
   oams.piv."84" = {
     type = "age-plugin-yubikey";
     age-plugin-yubikey = {
-      notes = ["sops"];
+      notes = [ "sops" ];
       name = "age identity aba74437";
       pin-policy = "never";
       touch-policy = "never";
@@ -47,12 +47,12 @@
   brys = {
     enabled = true;
     serial = "16174039";
-    notes = ["data in KeePass"];
+    notes = [ "data in KeePass" ];
   };
   brys.piv."82" = {
     type = "age-plugin-yubikey";
     age-plugin-yubikey = {
-      notes = ["sops"];
+      notes = [ "sops" ];
       name = "age identity cd6e23c9";
       pin-policy = "always";
       touch-policy = "cached";
@@ -63,7 +63,7 @@
   brys.piv."83" = {
     type = "age-plugin-yubikey";
     age-plugin-yubikey = {
-      notes = ["sops"];
+      notes = [ "sops" ];
       name = "age identity a77792a9";
       pin-policy = "never";
       touch-policy = "cached";
@@ -74,7 +74,7 @@
   brys.piv."84" = {
     type = "age-plugin-yubikey";
     age-plugin-yubikey = {
-      notes = ["sops"];
+      notes = [ "sops" ];
       name = "age identity 3388da78";
       pin-policy = "never";
       touch-policy = "never";

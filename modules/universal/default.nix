@@ -22,7 +22,24 @@ in
     ./_stylix.nix
     ./_options.nix
   ]
-  ++ lib.optional (kdnConfig.moduleType == "home-manager") inputs.sops-nix.homeManagerModules.sops
+  ++ lib.optionals (kdnConfig.moduleType == "home-manager") [
+    # NOTE: `./default.nix` needs to be pulled into the home-manager.sharedModules to work!
+    ./_hm-bootstrap.nix
+    inputs.sops-nix.homeManagerModules.default
+    (
+      { kdnConfig, ... }:
+      {
+        imports = kdnConfig.util.loadModules {
+          curFile = ./default.nix;
+          src = ./.;
+          suffixes = [
+            "/default.nix"
+            "/hm.nix"
+          ];
+        };
+      }
+    )
+  ]
   ++ lib.optionals (kdnConfig.moduleType == "darwin") [
     inputs.home-manager.darwinModules.default
     inputs.nix-homebrew.darwinModules.nix-homebrew
@@ -49,22 +66,18 @@ in
     (kdnConfig.util.ifHMParent {
       home-manager.extraSpecialArgs =
         (kdnConfig.output.mkSubmodule { moduleType = "home-manager"; }).specialArgs;
+      home-manager.backupFileExtension = "hmbackup";
+      home-manager.useGlobalPkgs = false;
+      home-manager.useUserPackages = true;
+
       home-manager.sharedModules = [
-        ./_options.nix
-        ./_hm-bootstrap.nix
-        (
-          { kdnConfig, ... }:
-          {
-            imports = kdnConfig.util.loadModules {
-              curFile = ./default.nix;
-              src = ./.;
-              suffixes = [
-                "/default.nix"
-                "/hm.nix"
-              ];
-            };
-          }
-        )
+        ./default.nix
+        {
+          config = {
+            kdn.enable = lib.mkDefault cfg.enable;
+            kdn.hostName = cfg.hostName;
+          };
+        }
       ];
     })
     (kdnConfig.util.ifTypes [ "nixos" "darwin" ] (
@@ -93,20 +106,6 @@ in
             nix.settings = cfg.nixConfig.nix.settings;
             nixpkgs.config = cfg.nixConfig.nixpkgs.config;
           })
-          {
-            home-manager.backupFileExtension = "hmbackup";
-            home-manager.useGlobalPkgs = false;
-            home-manager.useUserPackages = true;
-
-            home-manager.sharedModules = [
-              {
-                config = {
-                  kdn.enable = lib.mkDefault cfg.enable;
-                  kdn.hostName = cfg.hostName;
-                };
-              }
-            ];
-          }
         ]
       )
     ))
@@ -119,8 +118,14 @@ in
     (kdnConfig.util.ifTypes [ "darwin" ] (
       lib.mkIf cfg.enable (
         lib.mkMerge [
-          { kdn.desktop.enable = lib.mkDefault true; }
-          { networking.localHostName = config.kdn.hostName; }
+          {
+            kdn.desktop.enable = lib.mkDefault true; # enable by default?
+          }
+          {
+            environment.enableAllTerminfo = true;
+            networking.localHostName = lib.mkDefault config.kdn.hostName;
+            networking.computerName = lib.mkDefault config.kdn.hostName;
+          }
           {
             homebrew.enable = true;
             homebrew.onActivation.upgrade = false;
@@ -146,6 +151,7 @@ in
                 ))
               ];
           }
+          # FIXES
           {
             home-manager.sharedModules = [
               {
@@ -155,12 +161,6 @@ in
             ];
             # fixes home directory being `null` in home-manager
             users.users.root.home = "/var/root";
-          }
-          {
-            networking.computerName = lib.mkDefault config.kdn.hostName;
-          }
-          {
-            environment.enableAllTerminfo = true;
           }
         ]
       )
