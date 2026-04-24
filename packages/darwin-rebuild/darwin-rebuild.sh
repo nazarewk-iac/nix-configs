@@ -7,7 +7,8 @@ info() { _log INFO "$@"; }
 warn() { _log WARN "$@"; }
 info STARTING
 trap 'info FINISHED' EXIT
-test -z "${DEBUG:-}" || set -x
+: "${DEBUG:=0}"
+test "${DEBUG}" = 1 || set -x
 
 is_available() {
   local hostname="$1"
@@ -119,19 +120,23 @@ while test "$#" -gt 0; do
   shift
 done
 
-# required for the linux-builder, otherwise throws error about not being on linux and that substitutes are not allowed
-nom_build_args+=(--always-allow-substitutes)
-
 flake_path="$(nix eval --raw "$src#self.sourceInfo.outPath")"
 post_args+=(--flake "${flake_path}#${name}")
 if test -n "${remote_host}"; then
   nix copy --to "ssh-ng://${remote_host}" "${flake_path}"
-  ssh -t "$remote_host" "nix run '$flake_path#darwin-rebuild' -- ${cmd@Q} ${name@Q} ${nom_build_args[*]@Q} -- ${post_args[*]@Q}"
+  ssh -t "$remote_host" "DEBUG='${DEBUG}' nix run '$flake_path#darwin-rebuild' -- ${cmd@Q} ${name@Q} ${nom_build_args[*]@Q} -- ${post_args[*]@Q}"
 else
-  pre_cmd=(bash -c)
+  pre_cmd=(bash)
   if test "${DRY_RUN:-0}" == 1; then
     pre_cmd=(echo "${pre_cmd[@]}")
   fi
+  if test "${DEBUG}" = 1; then
+    pre_cmd+=(-x)
+  fi
+  pre_cmd+=(-c)
+
+  # required for the linux-builder, otherwise throws error about not being on linux and that substitutes are not allowed
+  nom_build_args+=(--always-allow-substitutes)
 
   "${pre_cmd[@]}" "nom build --no-link '${flake_path}#darwinConfigurations.${name}.system' ${nom_build_args[*]@Q} && sudo darwin-rebuild ${pre_args[*]@Q} ${cmd@Q} ${post_args[*]@Q}"
 fi
