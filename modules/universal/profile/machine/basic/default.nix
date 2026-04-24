@@ -1,5 +1,4 @@
 {
-
   lib,
   pkgs,
   config,
@@ -21,13 +20,12 @@ in
         kdn.env.packages = with pkgs; [
           lsix # image thumbnails in terminal
         ];
+        kdn.profile.machine.baseline.enable = true;
+        kdn.programs.gnupg.enable = true;
       }
       (kdnConfig.util.ifTypes [ "nixos" ] (
         lib.mkMerge [
           {
-            kdn.profile.machine.baseline.enable = true;
-            kdn.programs.gnupg.enable = true;
-
             networking.networkmanager.wifi.powersave = true;
 
             boot.loader.systemd-boot.memtest86.enable = true;

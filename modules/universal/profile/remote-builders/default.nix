@@ -14,10 +14,14 @@ let
   isPrivKey =
     filename: fileCfg: (isCandidate filename fileCfg) && !(lib.strings.hasSuffix ".pub" filename);
 
-  secretCfgs = config.kdn.security.secrets.sops.secrets.ssh;
+  sshSecrets =
+    if kdnConfig.util.hasSops && config.kdn.security.secrets.allowed then
+      config.kdn.security.secrets.sops.secrets.ssh or { }
+    else
+      { };
 
-  pubKeys = builtins.mapAttrs (_: lib.attrsets.filterAttrs isPubKey) secretCfgs;
-  privKeys = builtins.mapAttrs (_: lib.attrsets.filterAttrs isPrivKey) secretCfgs;
+  pubKeys = builtins.mapAttrs (_: lib.attrsets.filterAttrs isPubKey) sshSecrets;
+  privKeys = builtins.mapAttrs (_: lib.attrsets.filterAttrs isPrivKey) sshSecrets;
 
   authorizedKeysFiles = lib.pipe pubKeys [
     (lib.attrsets.mapAttrsToList (
@@ -184,14 +188,14 @@ in
             kdn.profile.remote-builders.buildMachines = buildMachines;
           }
           {
-            # lays out SSH keys into files (for the remote builder amongths others
+            # lays out SSH keys into files (for the remote builder amongst others)
             # TODO: cut it out into baseline?
             kdn.security.secrets.sops.files."ssh" = {
               keyPrefix = "nix/ssh";
               sopsFile = "${kdnConfig.self}/default.unattended.sops.yaml";
               basePath = "/run/configs";
               sops.mode = "0440";
-              overrides = [
+              overrides = lib.mkBefore [
                 (
                   key: old:
                   let
@@ -208,15 +212,18 @@ in
                   in
                   result
                 )
+                # WARNING: this entry needs to be here to prevent infinite recursion
+                (key: old: {
+                  mode = if key == "ssh/${bCfg.user.name}/id_ed25519" then "0440" else old.mode or "0440";
+                })
               ];
             };
           }
-          # configuration related to SSH identities/authorized keys and nix remote builder
           {
+            # WARNING: throws infinite recursion when put inside `mkIf bCfg.use`
             kdn.nix.remote-builder.user.ssh.IdentityFile =
               let
-                username = config.kdn.nix.remote-builder.user.name;
-                keys = privKeys."${username}";
+                keys = privKeys."${bCfg.user.name}" or { empty.path = null; };
                 anyKey = lib.pipe keys [
                   builtins.attrValues
                   builtins.head
@@ -224,6 +231,31 @@ in
               in
               (keys.id_ed25519 or anyKey).path;
           }
+          # configuration related to SSH identities/authorized keys and nix remote builder
+          (lib.mkIf bCfg.use (
+            lib.mkMerge [
+              (kdnConfig.util.ifHM {
+                programs.ssh.matchBlocks."user:${bCfg.user.name}" = {
+                  match = "User ${bCfg.user.name}";
+                  extraOptions.BatchMode = "yes";
+                  identitiesOnly = lib.mkDefault (config.home.username == "root");
+                  identityFile = bCfg.user.ssh.IdentityFile;
+                };
+                programs.ssh.matchBlocks.anji-linux-builder = {
+                  host = "anji-linux-builder";
+                  proxyJump = lib.mkIf (config.kdn.hostName != "anji") "${bCfg.user.name}@anji";
+                  user = bCfg.user.name;
+                  hostname = "localhost";
+                  port = 31022;
+                  extraOptions.HostKeyAlias = "anji-linux-builder";
+                };
+              })
+              (kdnConfig.util.ifTypes [ "nixos" "darwin" ] {
+                nix.distributedBuilds = true;
+                nix.buildMachines = cfg.buildMachines;
+              })
+            ]
+          ))
           (kdnConfig.util.ifTypes [ "nixos" "darwin" ] (
             lib.mkMerge [
               {
@@ -278,33 +310,6 @@ in
                 services.openssh.authorizedKeysFiles = authorizedKeysFiles;
 
                 services.userborn.enable = lib.mkDefault true;
-              })
-              (lib.mkIf bCfg.use {
-                home-manager.users.root.programs.ssh.matchBlocks."user:${bCfg.user.name}" = {
-                  identitiesOnly = true;
-                  identityFile = bCfg.user.ssh.IdentityFile;
-                };
-                home-manager.sharedModules = [
-                  {
-                    config = {
-                      programs.ssh.matchBlocks."user:${bCfg.user.name}" = {
-                        match = "User ${bCfg.user.name}";
-                        extraOptions.BatchMode = "yes";
-                      };
-                      programs.ssh.matchBlocks.anji-linux-builder = {
-                        host = "anji-linux-builder";
-                        proxyJump = lib.mkIf (config.kdn.hostName != "anji") "${bCfg.user.name}@anji";
-                        user = bCfg.user.name;
-                        hostname = "localhost";
-                        port = 31022;
-                        extraOptions.HostKeyAlias = "anji-linux-builder";
-                      };
-                    };
-                  }
-                ];
-
-                nix.distributedBuilds = true;
-                nix.buildMachines = cfg.buildMachines;
               })
             ]
           ))

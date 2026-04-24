@@ -132,6 +132,15 @@ in
     readOnly = true;
     default = builtins.elem config.moduleType;
   };
+  options.util.hasSops = lib.mkOption {
+    internal = true;
+    readOnly = true;
+    default = config.util.isOfType [
+      "nixos"
+      "darwin"
+      "home-manager"
+    ];
+  };
   options.util.ifTypes' = lib.mkOption {
     internal = true;
     readOnly = true;

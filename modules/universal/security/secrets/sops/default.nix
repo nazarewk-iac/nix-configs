@@ -8,6 +8,8 @@
 let
   cfg = config.kdn.security.secrets.sops;
 
+  safeSopsSecrets = if kdnConfig.util.hasSops then config.sops.secrets else { };
+
   sopsPlaceholderPattern =
     {
       name ? "",
@@ -25,7 +27,7 @@ let
       inherit name;
       inherit (secretCfg) path;
     }
-  ) config.sops.secrets;
+  ) safeSopsSecrets;
 in
 {
   options.kdn.security.secrets.sops = {
@@ -118,7 +120,7 @@ in
       type = with lib.types; anything;
 
       # avoids `error: infinite recursion encountered` by not referencing `config.sops.templates` and re-implementing placeholder
-      default = lib.pipe config.sops.secrets [
+      default = lib.pipe safeSopsSecrets [
         builtins.attrNames
         (map (
           name: lib.attrsets.setAttrByPath (lib.strings.splitString "/" name) sopsPlaceholders."${name}"
@@ -133,7 +135,7 @@ in
       readOnly = true;
       type = with lib.types; anything;
 
-      default = lib.pipe config.sops.secrets [
+      default = lib.pipe safeSopsSecrets [
         (lib.attrsets.mapAttrsToList (
           name: value: lib.attrsets.setAttrByPath (lib.strings.splitString "/" name) value
         ))

@@ -19,7 +19,7 @@ in
     (kdnConfig.util.ifHMParent {
       home-manager.sharedModules = [ { kdn.development.git = lib.mkDefault cfg; } ];
     })
-    (lib.optionalAttrs (kdnConfig.util.hasParentOfAnyType [ "nixos" ]) (
+    (kdnConfig.util.ifHM (
       lib.mkIf cfg.enable {
         programs.git.enable = true;
 

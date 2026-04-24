@@ -63,6 +63,7 @@ in
             programs.firefox.enable = true;
             programs.firefox.package = appCfg.package.final;
             kdn.apps.firefox = {
+              enable = true;
               package.install = false;
               package.original =
                 if !nativeMessagingHostsAreSupported then pkgs.firefox-unwrapped else pkgs.firefox;

@@ -23,11 +23,9 @@ in
   };
 
   config = lib.mkMerge [
-    (kdnConfig.util.ifTypes [ "nixos" ] (
-      lib.mkIf cfg.enable {
-        home-manager.sharedModules = [ { kdn.programs.thunderbird.enable = true; } ];
-      }
-    ))
+    (kdnConfig.util.ifHMParent {
+      home-manager.sharedModules = [ { kdn.programs.thunderbird = lib.mkDefault cfg; } ];
+    })
     (kdnConfig.util.ifHM (
       lib.mkIf cfg.enable (
         lib.mkMerge [
@@ -37,6 +35,7 @@ in
             programs.thunderbird.package = config.kdn.apps.thunderbird.package.final;
             programs.thunderbird.profiles.main.isDefault = true;
             kdn.apps.thunderbird = {
+              enable = true;
               package.install = false;
               package.original = pkgs.thunderbird;
               dirs.cache = [ ];
@@ -55,11 +54,7 @@ in
                 nativeMessagingHosts = old.nativeMessagingHosts or [ ] ++ cfg.nativeMessagingHosts;
               });
             };
-          }
-          {
             kdn.programs.thunderbird.nativeMessagingHosts = lib.kdn.pkg.onlySupported pkgs pkgs.kdePackages.plasma-browser-integration;
-          }
-          {
             kdn.programs.thunderbird.policies = osConfig.programs.thunderbird.policies or { };
           }
           {
