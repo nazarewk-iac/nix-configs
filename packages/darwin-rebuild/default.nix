@@ -13,5 +13,6 @@ pkgs.writeShellApplication {
     nix-output-monitor
     openssh
   ];
-  text = builtins.readFile "${kdnConfig.self}/darwin-rebuild.sh";
+  runtimeEnv.DEFAULT_SRC = "${kdnConfig.self}";
+  text = builtins.readFile ./darwin-rebuild.sh;
 }

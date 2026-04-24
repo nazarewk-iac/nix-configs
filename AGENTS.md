@@ -184,7 +184,7 @@ Build commands:
 ```bash
 ~/dev/github.com/nazarewk-iac/nix-configs/nixos-rebuild.sh build              # local NixOS host
 ~/dev/github.com/nazarewk-iac/nix-configs/nixos-rebuild.sh build remote=oams  # remote NixOS host
-~/dev/github.com/nazarewk-iac/nix-configs/darwin-rebuild.sh switch anji       # Darwin (run on anji directly)
+nix run "$HOME/dev/github.com/nazarewk-iac/nix-configs#darwin-rebuild" -- switch anji       # Darwin (run on anji directly)
 ```
 
 Tested NixOS hosts: brys, etra, oams. Darwin host: anji.

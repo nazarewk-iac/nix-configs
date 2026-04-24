@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -eEuo pipefail
 trap 'echo "Error when executing $BASH_COMMAND at line $LINENO!" >&2' ERR
-cd "${BASH_SOURCE[0]%/*}"
 # shellcheck disable=SC2059
 _log() { printf "$(date -Isec) ${1} ${BASH_SOURCE[1]}:${BASH_LINENO[1]}: ${2}\n" "${@:3}" >&2; }
 info() { _log INFO "$@"; }
@@ -31,6 +30,8 @@ discover_hostname() {
   echo "Failed to discover ${host}." >&2
   return 1
 }
+
+: "${src:="${DEFAULT_SRC:-"${BASH_SOURCE[0]%/*}"}"}"
 
 check_domains=(
   lan.etra.net.int.kdn.im.
@@ -121,7 +122,7 @@ done
 # required for the linux-builder, otherwise throws error about not being on linux and that substitutes are not allowed
 nom_build_args+=(--always-allow-substitutes)
 
-flake_path="$(nix eval --raw '.#self.sourceInfo.outPath')"
+flake_path="$(nix eval --raw "$src#self.sourceInfo.outPath")"
 post_args+=(--flake "${flake_path}#${name}")
 if test -n "${remote_host}"; then
   nix copy --to "ssh-ng://${remote_host}" "${flake_path}"
