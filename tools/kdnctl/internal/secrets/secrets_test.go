@@ -1,13 +1,20 @@
 package secrets
 
 import (
+	"os/user"
 	"path/filepath"
 	"strings"
 	"testing"
 )
 
 func TestListSecrets(t *testing.T) {
-	cwd := "/home/kdn/dev/github.com/nazarewk-iac/nix-configs"
+	var cwd string
+	currentUser, err := user.Current()
+	if err != nil {
+		cwd = "/home/kdn/dev/github.com/nazarewk-iac/nix-configs"
+	} else {
+		cwd = filepath.Join(currentUser.HomeDir, "dev/github.com/nazarewk-iac/nix-configs")
+	}
 	paths, err := SopsList(cwd)
 
 	if len(paths) == 0 || err != nil {

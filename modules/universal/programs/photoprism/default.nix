@@ -1,5 +1,4 @@
 {
-
   lib,
   pkgs,
   config,
@@ -25,7 +24,7 @@ in
       services.photoprism.settings.PHOTOPRISM_ORIGINALS_LIMIT = "2000";
 
       fileSystems."/var/lib/private/photoprism/originals" = {
-        device = "/home/kdn/Nextcloud/drag0nius@nc.nazarewk.pw";
+        device = "${config.kdn.profile.user.kdn.homeDir}/Nextcloud/drag0nius@nc.nazarewk.pw";
         options = [ "bind" ];
       };
     }

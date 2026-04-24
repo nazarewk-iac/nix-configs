@@ -18,9 +18,14 @@ in
     };
     nh.flake = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
-      default = "/home/kdn/dev/github.com/nazarewk-iac/nix-configs";
+      default = cfg.flake.path;
     };
     nh.package = lib.kdn.options.mkOverridablePackageOption pkgs.nh { };
+
+    flake.path = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = "${config.kdn.profile.user.kdn.homeDir}/dev/github.com/nazarewk-iac/nix-configs";
+    };
   };
 
   config = lib.mkIf cfg.enable (

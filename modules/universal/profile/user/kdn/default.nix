@@ -19,6 +19,22 @@ in
       type = with lib.types; str;
       default = "kdn";
     };
+    homeDir = lib.mkOption {
+      readOnly = true;
+      type = with lib.types; str;
+      default =
+        if
+          kdnConfig.util.isOfType [
+            "nixos"
+            "darwin"
+          ]
+        then
+          config.users.users.${cfg.username}.home
+        else if kdnConfig.util.isOfType [ "home-manager" ] then
+          config.home.homeDirectory
+        else
+          "/home/${cfg.username}";
+    };
     ssh = lib.mkOption {
       readOnly = true;
       default =

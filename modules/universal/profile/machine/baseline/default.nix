@@ -337,8 +337,8 @@ in
           {
             systemd.tmpfiles.rules = [
               "L /etc/nixos/flake.nix       - - - - flake.nix.rel"
-              "L /etc/nixos/flake.nix.rel   - - - - /home/kdn/dev/github.com/nazarewk-iac/nix-configs/flake.nix"
-              "L /etc/nixos/flake.nix.abs   - - - - ../../home/kdn/dev/github.com/nazarewk-iac/nix-configs/flake.nix"
+              "L /etc/nixos/flake.nix.abs   - - - - ${config.kdn.profile.user.kdn.homeDir}/dev/github.com/nazarewk-iac/nix-configs/flake.nix"
+              "L /etc/nixos/flake.nix.rel   - - - - ../..${config.kdn.profile.user.kdn.homeDir}/dev/github.com/nazarewk-iac/nix-configs/flake.nix"
             ];
           }
           { kdn.networking.tailscale.enable = false; }
