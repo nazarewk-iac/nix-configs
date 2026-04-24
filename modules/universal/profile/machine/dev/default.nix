@@ -20,7 +20,6 @@ in
       })
       {
         kdn.env.packages = with pkgs; [
-          jose # JSON Web Token tool, https://github.com/latchset/jose
         ];
 
         kdn.profile.machine.desktop.enable = lib.mkDefault true;

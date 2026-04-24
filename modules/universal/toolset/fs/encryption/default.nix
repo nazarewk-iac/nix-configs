@@ -17,51 +17,64 @@ in
   };
 
   config = lib.mkMerge [
-    (kdnConfig.util.ifTypes [ "nixos" ] (
-      lib.mkIf cfg.enable {
-        kdn.env.packages =
-          with pkgs;
-          (
-            [
-              clevis
-              cryptsetup
-              jose
-              systemd-cryptsetup
-            ]
-            ++ [
-              sbctl
-              tpm2-tools
-              tpm2-tss
-            ]
-            ++ [
-              (pkgs.writeShellApplication {
-                name = "kdn-systemd-zfs-decrypt";
-                runtimeInputs = [ systemd-cryptsetup ];
-                text = ''
-                  set -eEuo pipefail
-                  set -x
+    (lib.mkIf cfg.enable (
+      lib.mkMerge [
+        {
+          kdn.env.packages =
+            with pkgs;
+            (
+              [
+                clevis
+              ]
+              ++ lib.optionals (!stdenv.hostPlatform.isDarwin) [
+                # this is broken on Darwin
+                jose # JSON Web Token tool, https://github.com/latchset/jose
+              ]
+            );
+        }
+        (kdnConfig.util.ifTypes [ "nixos" ] {
+          kdn.env.packages =
+            with pkgs;
+            (
+              [
+                cryptsetup
+                systemd-cryptsetup
+              ]
+              ++ [
+                sbctl
+                tpm2-tools
+                tpm2-tss
+              ]
+              ++ [
+                (pkgs.writeShellApplication {
+                  name = "kdn-systemd-zfs-decrypt";
+                  runtimeInputs = [ systemd-cryptsetup ];
+                  text = ''
+                    set -eEuo pipefail
+                    set -x
 
-                  usage() {
-                    cat <<'EOF' >&2
-                  kdn-systemd-zfs-decrypt XXX-main-crypted /dev/disk/by-id/encrypted-zpool /dev/disk/by-id/header-partition
-                  EOF
-                    exit 1
-                  }
+                    usage() {
+                      cat <<'EOF' >&2
+                    kdn-systemd-zfs-decrypt XXX-main-crypted /dev/disk/by-id/encrypted-zpool /dev/disk/by-id/header-partition
+                    EOF
+                      exit 1
+                    }
 
-                  main() {
-                    name="$1"
-                    disk="$2"
-                    header="$3"
+                    main() {
+                      name="$1"
+                      disk="$2"
+                      header="$3"
 
-                    systemd-cryptsetup attach "$name" "$disk" - header="$header"
-                  }
+                      systemd-cryptsetup attach "$name" "$disk" - header="$header"
+                    }
 
-                  main "$@" || usage
-                '';
-              })
-            ]
-          );
-      }
+                    main "$@" || usage
+                  '';
+                })
+              ]
+            );
+        })
+      ]
     ))
   ];
 }
