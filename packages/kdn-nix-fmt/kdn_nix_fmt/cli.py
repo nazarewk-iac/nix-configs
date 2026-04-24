@@ -27,18 +27,18 @@ class CLI:
     def __init__(self):
         self._log = logger
         self._formatters_cache: dict[Path, Callable[..., None]] = {}
-        self.default_formatter = self.alejandra
+        self.default_formatter = self.nixfmt
         self.remotes_formatters = {
-            "github.com/nazarewk-iac/": self.nixfmt, # self.alejandra,
+            "github.com/nazarewk-iac/": self.nixfmt,  # self.alejandra,
             "github.com/nixos/": self.nixfmt,
             "github.com/nix-community/": self.nixfmt,
         }
 
     def alejandra(self, *args, **kwargs):
-        run(f"format with alejandra", ["alejandra", *args], **kwargs)
+        run("format with alejandra", ["alejandra", *args], **kwargs)
 
     def nixfmt(self, *args, **kwargs):
-        run(f"format with nixfmt", ["nixfmt", *args], **kwargs)
+        run("format with nixfmt", ["nixfmt", *args], **kwargs)
 
     def _get_formatter(self, file: Path):
         for root, formatter in self._formatters_cache.items():
@@ -68,7 +68,7 @@ class CLI:
 
         proc = run(
             "determine git remotes",
-            ["git", "rev-parse", "--show-toplevel"],
+            ["git", "remote", "-v"],
             log=log,
             capture_output=True,
             check=False,
