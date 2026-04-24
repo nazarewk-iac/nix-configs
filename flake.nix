@@ -74,6 +74,8 @@
   inputs.sops-upstream.url = "github:getsops/sops";
 
   # * dependencies
+  inputs.angrr.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.angrr.inputs.treefmt-nix.follows = "treefmt-nix";
   inputs.argon40-nix.inputs.flake-utils.follows = "flake-utils";
   inputs.argon40-nix.inputs.nixpkgs.follows = "nixpkgs";
   inputs.brew-nix.inputs.brew-api.follows = "brew-api";
@@ -88,9 +90,12 @@
   inputs.disko-zfs.inputs.flake-parts.follows = "flake-parts";
   inputs.disko-zfs.inputs.disko.follows = "disko";
   inputs.flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs-lib";
+  inputs.haumea.inputs.nixpkgs.follows = "nixpkgs-lib";
   inputs.nix-fast-build.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nix-fast-build.inputs.flake-parts.follows = "flake-parts";
   inputs.nix-fast-build.inputs.treefmt-nix.follows = "treefmt-nix";
+  inputs.nur.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.nur.inputs.flake-parts.follows = "flake-parts";
   inputs.hardware-report.inputs.flake-utils.follows = "flake-utils";
   inputs.hardware-report.inputs.nixpkgs.follows = "nixpkgs";
   inputs.hardware-report.inputs.rust-overlay.follows = "rust-overlay";
@@ -414,6 +419,73 @@
                 specialArgs = (self.kdnMetaModule.config.output.mkSubmodule { moduleType = "nixos"; }).specialArgs;
                 modules = [ ./hosts/install-iso ];
               };
+
+              sources =
+                let
+                  flattenInputs =
+                    depth: prefix:
+                    lib.flip lib.pipe [
+                      (lib.mapAttrsToList (
+                        name: input:
+                        let
+                          fullName = if prefix == "" then name else "${prefix}__${name}";
+                          children = input.inputs or { };
+                        in
+                        [
+                          {
+                            name = fullName;
+                            path = input.outPath;
+                            inherit depth;
+                          }
+                        ]
+                        ++ flattenInputs (depth + 1) fullName children
+                      ))
+                      lib.concatLists
+                    ];
+
+                  deduplicateByPath =
+                    lib.foldl'
+                      (
+                        acc: entry:
+                        let
+                          key = builtins.unsafeDiscardStringContext entry.path;
+                        in
+                        if acc.seen ? ${key} then
+                          acc
+                        else
+                          {
+                            seen = acc.seen // {
+                              ${key} = true;
+                            };
+                            result = acc.result ++ [ entry ];
+                          }
+                      )
+                      {
+                        seen = { };
+                        result = [ ];
+                      };
+                in
+                lib.pipe inputs [
+                  (lib.flip removeAttrs [ "self" ])
+                  (lib.attrsets.filterAttrs (key: _: !(lib.strings.hasSuffix "-upstream" key)))
+                  (flattenInputs 0 "")
+                  (builtins.sort (a: b: a.depth < b.depth)) # shallowest first
+                  (e: (deduplicateByPath e).result)
+                  (map (e: {
+                    inherit (e) name path;
+                  })) # strip depth before linkFarm
+                  (
+                    l:
+                    l
+                    ++ [
+                      {
+                        name = ".self";
+                        path = inputs.self.outPath;
+                      }
+                    ]
+                  )
+                  (pkgs.linkFarm "flake-inputs")
+                ];
             }
           ];
         };
