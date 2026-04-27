@@ -63,6 +63,12 @@ in
         kdn.profile.remote-builders.enable = lib.mkDefault true;
         kdn.profile.default-secrets.enable = lib.mkDefault true;
         kdn.hw.usbip.enable = lib.mkDefault true;
+        kdn.development.git.enable = lib.mkDefault true;
+        kdn.networking.dynamic-hosts.enable = true;
+        kdn.programs.direnv.enable = lib.mkDefault true;
+        kdn.development.shell.enable = lib.mkDefault true;
+        kdn.hw.yubikey.enable = lib.mkDefault true;
+        kdn.security.disk-encryption.enable = lib.mkDefault true;
       }
       {
         kdn.env.packages = with pkgs; [
@@ -267,11 +273,7 @@ in
             services.locate.pruneBindMounts = true;
             kdn.networking.resolved.enable = lib.mkDefault true;
             services.avahi.enable = lib.mkDefault false;
-            kdn.development.shell.enable = lib.mkDefault true;
             kdn.fs.zfs.enable = lib.mkDefault true;
-            kdn.hw.yubikey.enable = lib.mkDefault true;
-            kdn.programs.direnv.enable = lib.mkDefault true;
-            kdn.security.disk-encryption.enable = lib.mkDefault true;
             boot.kernelParams = [ "consoleblank=90" ];
             boot.initrd.availableKernelModules = [
               "ahci"
@@ -289,7 +291,6 @@ in
               "xhci_pci"
             ];
             services.devmon.enable = false;
-            kdn.networking.dynamic-hosts.enable = true;
           }
           {
             environment.etc."ssh/ssh_config.d/00-kdn-profile-baseline.config".text = ''

@@ -180,6 +180,12 @@ in
     })
     (lib.mkIf workstationTest {
       kdn.profile.machine.dev.enable = true;
+      kdn.programs.handlr.enable = false;
+      home-manager.sharedModules = [
+        {
+          kdn.programs.handlr.enable = false;
+        }
+      ];
     })
   ];
 }
