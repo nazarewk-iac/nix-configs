@@ -7,6 +7,10 @@
 }:
 let
   cfg = config.kdn.programs.gnupg;
+
+  fallbackPinentry =
+    with pkgs.stdenv.hostPlatform;
+    if isDarwin then pkgs.pinentry_mac else pkgs.pinentry-all;
 in
 {
   options.kdn.programs.gnupg = {
@@ -27,7 +31,7 @@ in
         {
           kdn.env.packages = with pkgs; [
             (lib.hiPrio cfg.pinentry)
-            (lib.lowPrio pinentry-all)
+            (lib.lowPrio fallbackPinentry)
 
             opensc
             pcsc-tools
