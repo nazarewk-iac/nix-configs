@@ -23,11 +23,15 @@
 
 !*.sops.yaml
 !*.unattended.sops.*
+.*.sops.yaml
 !*.nix
 .*.nix
 !*.patch
+.*.patch
 !*.sh
+.*.sh
 !*.md
+.*.md
 !/.envrc
 !/flake.lock
 
