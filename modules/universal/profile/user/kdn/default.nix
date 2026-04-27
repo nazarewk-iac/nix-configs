@@ -425,7 +425,10 @@ in
           {
             system.primaryUser = lib.mkDefault cfg.username;
             nix-homebrew.user = cfg.username;
-            users.users.${cfg.username}.home = "/Users/${cfg.username}";
+            users.users.${cfg.username} = {
+              home = "/Users/${cfg.username}";
+              shell = config.programs.fish.package;
+            };
           }
         ]
       ))
