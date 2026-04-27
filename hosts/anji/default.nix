@@ -5,6 +5,11 @@
   kdnConfig,
   ...
 }:
+let
+  # workstation build testing for a work machine
+  workstationTest = true;
+  bootstrapBuilder = false;
+in
 {
   imports = [
     kdnConfig.self.darwinModules.default
@@ -14,7 +19,7 @@
     initialLinuxBuilder = lib.mkOption {
       # enable when building for the first time: needs to be pulled from cache without any customizations
       type = with lib.types; bool;
-      default = true;
+      default = bootstrapBuilder;
     };
   };
 
@@ -33,18 +38,18 @@
       ];
       kdn.toolset.network.enable = true;
     }
-    {
+    (lib.optionalAttrs (!workstationTest) {
       # inspired by https://nixcademy.com/posts/macos-linux-builder/
       nix.settings.trusted-users = [ "@admin" ];
-      kdn.hosts.anji.initialLinuxBuilder = false;
+      kdn.hosts.anji.initialLinuxBuilder = bootstrapBuilder;
 
       nix.linux-builder.enable = true;
       nix.linux-builder.ephemeral = true;
       nix.linux-builder.workingDirectory = "/anji-ext-01/linux-builder";
       launchd.daemons.linux-builder.serviceConfig.StandardOutPath = "/var/log/linux-builder/stdout.log";
       launchd.daemons.linux-builder.serviceConfig.StandardErrorPath = "/var/log/linux-builder/stderr.log";
-    }
-    (lib.mkIf (!config.kdn.hosts.anji.initialLinuxBuilder) {
+    })
+    (lib.mkIf (!config.kdn.hosts.anji.initialLinuxBuilder && !workstationTest) {
       # TODO: /nix/store/yzhl36k6yxfafrvddhqjbwzvmwlyx4iq-stdenv-linux/setup: line 1828: wrapProgram: command not found
       #   see (nix on MacOS) https://matrix.to/#/!lheuhImcToQZYTQTuI:nixos.org/$-Bi9gZCVQ8JyFmVtOQR-WoYvJsnUOUWZfqc_xJDNNQM?via=nixos.org&via=matrix.org&via=nixos.dev
       nix.buildMachines =
@@ -172,6 +177,9 @@
             specialArgs = { };
             system = toGuest stdenv.hostPlatform.system;
           };
+    })
+    (lib.mkIf workstationTest {
+      kdn.profile.machine.dev.enable = true;
     })
   ];
 }

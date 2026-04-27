@@ -15,6 +15,9 @@ in
 
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
+      (kdnConfig.util.ifHMParent {
+        home-manager.sharedModules = [ { kdn.programs.fish = lib.mkDefault cfg; } ];
+      })
       {
         kdn.env.packages = with pkgs; [
           grc
@@ -22,9 +25,6 @@ in
           babelfish
         ];
       }
-      (kdnConfig.util.ifHMParent {
-        home-manager.sharedModules = [ { kdn.programs.fish.enable = true; } ];
-      })
       (kdnConfig.util.ifHM {
         xdg.configFile."fish/config.fish".force = true;
         programs.fish = {

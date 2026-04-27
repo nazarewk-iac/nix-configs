@@ -7,6 +7,11 @@
 }:
 let
   cfg = config.kdn.headless.base;
+  sudoCfg = ''
+    Defaults  env_keep += ZELLIJ
+    Defaults  env_keep += KDN_ZELLIJ_SKIP
+    Defaults  env_keep += TERMINAL_EMULATOR
+  '';
 in
 {
   options.kdn.headless.base = {
@@ -15,6 +20,23 @@ in
   };
 
   config = lib.mkMerge [
+    # propagate to home-manager
+    (kdnConfig.util.ifHMParent { home-manager.sharedModules = [ { kdn.headless.base = lib.mkDefault cfg; } ]; })
+    # platform-agnostic kdn.* enables
+    (lib.mkIf cfg.enable {
+      kdn.development.data.enable = true;
+      kdn.hw.basic.enable = true;
+      kdn.programs.atuin.enable = true;
+      kdn.programs.fish.enable = true;
+      kdn.programs.zsh.enable = true;
+      kdn.toolset.essentials.enable = true;
+      kdn.toolset.fs.enable = true;
+      kdn.toolset.fs.encryption.enable = true;
+      kdn.toolset.network.enable = true;
+      kdn.toolset.unix.enable = true;
+      kdn.toolset.nix.enable = true;
+      kdn.toolset.ide.enable = true; # TODO: pulling it in for Helix, move it out into dedicated module
+    })
     # home-manager
     (kdnConfig.util.ifHM (
       lib.mkIf cfg.enable (
@@ -44,6 +66,36 @@ in
               ## TODO: this is not the right color to override in stylix theme (barely legible green text on grey background on the ribbon)
               # ribbon_unselected.background = "#${base01}";
             };
+          }
+          {
+            programs.vim.enable = true;
+            programs.vim.defaultEditor = lib.mkDefault true;
+            programs.vim.extraConfig = ''
+              syntax on
+              set number  " Show line numbers
+              set linebreak  " Break lines at word (requires Wrap lines)
+              set showbreak=+++   " Wrap-broken line prefix
+              set textwidth=100  " Line wrap (number of cols)
+              set showmatch  " Highlight matching brace
+              set visualbell  " Use visual bell (no beeping)
+
+              set hlsearch  " Highlight all search results
+              set smartcase  " Enable smart-case search
+              set ignorecase  " Always case-insensitive
+              set incsearch  " Searches for strings incrementally
+
+              set autoindent  " Auto-indent new lines
+              set expandtab  " Use spaces instead of tabs
+              set shiftwidth=4  " Number of auto-indent spaces
+              "set smartindent  " Enable smart-indent
+              "set smarttab  " Enable smart-tabs
+              set softtabstop=4  " Number of spaces per Tab
+
+              set ruler  " Show row and column ruler information
+
+              set undolevels=1000  " Number of undo levels
+              set backspace=indent,eol,start  " Backspace behaviour
+            '';
           }
           (
             let
@@ -85,11 +137,16 @@ in
         ]
       )
     ))
+    # nixos + darwin shared
+    (kdnConfig.util.ifTypes [ "nixos" "darwin" ] (
+      lib.mkIf cfg.enable {
+        security.sudo.extraConfig = sudoCfg;
+      }
+    ))
     # nixos
     (kdnConfig.util.ifTypes [ "nixos" ] (
       lib.mkIf cfg.enable (
         lib.mkMerge [
-          { home-manager.sharedModules = [ { kdn.headless.base.enable = true; } ]; }
           {
             boot.kernelParams = [
               "plymouth.enable=0" # disable boot splash screen
@@ -97,52 +154,7 @@ in
             # note: about `fish` printing `linux` twice https://github.com/danth/stylix/issues/526
             users.defaultUserShell = pkgs.fish;
 
-            kdn.development.data.enable = true;
-            kdn.hw.basic.enable = true;
-            kdn.programs.atuin.enable = true;
-            kdn.programs.fish.enable = true;
-            kdn.programs.zsh.enable = true;
-            kdn.toolset.essentials.enable = true;
-            kdn.toolset.fs.enable = true;
-            kdn.toolset.fs.encryption.enable = true;
-            kdn.toolset.network.enable = true;
-            kdn.toolset.unix.enable = true;
-            kdn.toolset.nix.enable = true;
-
             programs.command-not-found.enable = false;
-
-            kdn.toolset.ide.enable = true; # TODO: pulling it in for Helix, move it out into dedicated module
-            programs.vim.enable = true;
-            programs.vim.defaultEditor = lib.mkDefault true;
-            programs.vim.package = pkgs.vim-full.customize {
-              name = "vim";
-              vimrcConfig.customRC = ''
-                syntax on
-                set number  " Show line numbers
-                set linebreak  " Break lines at word (requires Wrap lines)
-                set showbreak=+++   " Wrap-broken line prefix
-                set textwidth=100  " Line wrap (number of cols)
-                set showmatch  " Highlight matching brace
-                set visualbell  " Use visual bell (no beeping)
-
-                set hlsearch  " Highlight all search results
-                set smartcase  " Enable smart-case search
-                set ignorecase  " Always case-insensitive
-                set incsearch  " Searches for strings incrementally
-
-                set autoindent  " Auto-indent new lines
-                set expandtab  " Use spaces instead of tabs
-                set shiftwidth=4  " Number of auto-indent spaces
-                "set smartindent  " Enable smart-indent
-                "set smarttab  " Enable smart-tabs
-                set softtabstop=4  " Number of spaces per Tab
-
-                set ruler  " Show row and column ruler information
-
-                set undolevels=1000  " Number of undo levels
-                set backspace=indent,eol,start  " Backspace behaviour
-              '';
-            };
 
             environment.localBinInPath = true;
 
@@ -171,21 +183,11 @@ in
             security.polkit.debug = cfg.debugPolkit;
             security.pam.u2f.settings.debug = cfg.debugPolkit;
           }
-          (
-            let
-              sudoCfg = ''
-                Defaults  env_keep += ZELLIJ
-                Defaults  env_keep += KDN_ZELLIJ_SKIP
-                Defaults  env_keep += TERMINAL_EMULATOR
-              '';
-            in
-            {
-              security.sudo.extraConfig = sudoCfg;
-              security.sudo-rs.extraConfig = sudoCfg;
-            }
-          )
+          {
+            security.sudo-rs.extraConfig = sudoCfg;
+          }
         ]
       )
     ))
-  ]; # end config mkMerge
+  ];
 }

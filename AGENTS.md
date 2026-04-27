@@ -184,7 +184,14 @@ Build commands:
 ```bash
 ~/dev/github.com/nazarewk-iac/nix-configs/nixos-rebuild.sh build              # local NixOS host
 ~/dev/github.com/nazarewk-iac/nix-configs/nixos-rebuild.sh build remote=oams  # remote NixOS host
-nix run "$HOME/dev/github.com/nazarewk-iac/nix-configs#darwin-rebuild" -- switch anji       # Darwin (run on anji directly)
+nix run '.#darwin-rebuild' -- switch remote=anji                              # Darwin (builds on remote anji host)
+```
+
+**Important**: Darwin hosts must be built on the target machine (or via `remote=<host>`). Do NOT use `nom build .#darwinConfigurations.<host>.system` — it will fail trying to build `aarch64-darwin` derivations locally on a linux host.
+
+Checking out flake input sources (nixpkgs, home-manager, nix-darwin, etc.) for inspection:
+```bash
+nom build .#sources  # builds symlink tree of all flake inputs
 ```
 
 Tested NixOS hosts: brys, etra, oams. Darwin host: anji.
