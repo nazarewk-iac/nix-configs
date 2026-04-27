@@ -56,6 +56,7 @@ keys:
     turo: {age: [&ssh-turo age13lmms4tjhygj4x7x0v6vuls3exx06mj9my5wuy720frxd79gcdkspu752v]}
     yost: {age: [&ssh-yost age1yu53n5gcthffh7ee5mm90spqhky9rfknst0nlw0vwk2kx4z75qaq8hvfcw]}
     gaz: {age: [&ssh-gaz age1kemr9a7m4xr9qqk5nvrmf9dvvzu40ztfpd0r5t9sjppsn2rttewqk6k2vj]}
+    pton: {age: [&ssh-pton age12r06j5krmgen9j56pjms65pn8jnxc8msztq58vugkwuyz6dv8fms54grqa]}
     # SSH-KEYS-DEFINITION-INSERT-ABOVE
 
 creation_rules:
@@ -92,6 +93,7 @@ creation_rules:
           - *ssh-turo
           - *ssh-yost
           - *ssh-gaz
+          - *ssh-pton
           # SSH-KEYS-USAGE-INSERT-ABOVE
           - *yk-etra-unattended
           - *yk-pryll-unattended
