@@ -24,9 +24,9 @@ in
             with pkgs;
             (
               [
-                clevis
               ]
               ++ lib.optionals (!stdenv.hostPlatform.isDarwin) [
+                clevis # doesn't build on MacOS
                 # this is broken on Darwin
                 jose # JSON Web Token tool, https://github.com/latchset/jose
               ]

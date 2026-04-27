@@ -39,6 +39,13 @@ in
 
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
+      (kdnConfig.util.ifHMParent {
+        home-manager.sharedModules = [
+          {
+            kdn.programs.handlr = kdnConfig.util.modules.forwardAttrsAsDefaults cfg;
+          }
+        ];
+      })
       {
         kdn.env.packages = [ cfg.package ];
       }

@@ -16,7 +16,9 @@ in
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       (kdnConfig.util.ifHMParent {
-        home-manager.sharedModules = [ { kdn.programs.fish = lib.mkDefault cfg; } ];
+        home-manager.sharedModules = [
+          { kdn.programs.fish = kdnConfig.util.modules.forwardAttrsAsDefaults cfg; }
+        ];
       })
       {
         kdn.env.packages = with pkgs; [

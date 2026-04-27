@@ -191,6 +191,13 @@ in
     readOnly = true;
     default = loadModules;
   };
+  options.util.modules.forwardAttrsAsDefaults = lib.mkOption {
+    internal = true;
+    readOnly = true;
+    default = lib.flip lib.pipe [
+      (lib.attrsets.mapAttrsRecursiveCond (p: !(lib.isDerivation p)) (_: lib.mkDefault))
+    ];
+  };
   options.util.args = lib.mkOption {
     internal = true;
     readOnly = true;
