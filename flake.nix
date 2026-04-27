@@ -14,17 +14,12 @@
   inputs.angrr.url = "github:linyinfeng/angrr";
   inputs.argon40-nix.url = "github:guusvanmeerveld/argon40-nix";
   inputs.base16.url = "github:SenchoPens/base16.nix";
-  inputs.brew-api.flake = false;
-  inputs.brew-api.url = "github:BatteredBunny/brew-api";
-  inputs.brew-nix.url = "github:BatteredBunny/brew-nix";
-  inputs.brew-tap--homebrew--bundle.flake = false;
-  inputs.brew-tap--homebrew--bundle.url = "github:homebrew/homebrew-bundle";
   inputs.brew-tap--homebrew--cask.flake = false;
   inputs.brew-tap--homebrew--cask.url = "github:homebrew/homebrew-cask";
   inputs.brew-tap--homebrew--core.flake = false;
   inputs.brew-tap--homebrew--core.url = "github:homebrew/homebrew-core";
   inputs.brew.flake = false;
-  inputs.brew.url = "github:Homebrew/brew/4.4.16";
+  inputs.brew.url = "github:Homebrew/brew/5.1.8";
   inputs.colmena.url = "github:zhaofengli/colmena";
   inputs.crane.url = "github:ipetkov/crane";
   inputs.disko.url = "github:nix-community/disko";
@@ -78,9 +73,6 @@
   inputs.angrr.inputs.treefmt-nix.follows = "treefmt-nix";
   inputs.argon40-nix.inputs.flake-utils.follows = "flake-utils";
   inputs.argon40-nix.inputs.nixpkgs.follows = "nixpkgs";
-  inputs.brew-nix.inputs.brew-api.follows = "brew-api";
-  inputs.brew-nix.inputs.nix-darwin.follows = "nix-darwin";
-  inputs.brew-nix.inputs.nixpkgs.follows = "nixpkgs";
   inputs.colmena.inputs.flake-compat.follows = "flake-compat";
   inputs.colmena.inputs.flake-utils.follows = "flake-utils";
   inputs.colmena.inputs.nixpkgs.follows = "nixpkgs";
@@ -201,8 +193,7 @@
           if !prev.stdenv.isDarwin then
             { }
           else
-            (inputs.brew-nix.overlays.default final prev)
-            // {
+            {
               nclib = nclib // {
                 inherit sevenzip;
               };

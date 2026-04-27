@@ -138,59 +138,17 @@
     "brew": {
       "flake": false,
       "locked": {
-        "lastModified": 1736767951,
-        "narHash": "sha256-UHqNIsEBCF4FkL6swpcYnNvV5p+yOn1Q6yePwN70s5c=",
+        "lastModified": 1777253336,
+        "narHash": "sha256-IYVi28jebMUfQ3MDPG9IkSrLsf09Y7ShsNo+n4cmURU=",
         "owner": "Homebrew",
         "repo": "brew",
-        "rev": "4c9de7d31c6d9e67c4496c3c156e84c3649fec4c",
+        "rev": "b9763ee5280dc1acb3036383b3608084eebac6b7",
         "type": "github"
       },
       "original": {
         "owner": "Homebrew",
-        "ref": "4.4.16",
+        "ref": "5.1.8",
         "repo": "brew",
-        "type": "github"
-      }
-    },
-    "brew-api": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1775712951,
-        "narHash": "sha256-6g5BJTVscxlz6JmfrAnMRBhxUqOQ5j2AQ3w19ZfUDvk=",
-        "owner": "BatteredBunny",
-        "repo": "brew-api",
-        "rev": "01874bf013479460b70fcdf9efa4983b841bdbe7",
-        "type": "github"
-      },
-      "original": {
-        "owner": "BatteredBunny",
-        "repo": "brew-api",
-        "type": "github"
-      }
-    },
-    "brew-nix": {
-      "inputs": {
-        "brew-api": [
-          "brew-api"
-        ],
-        "nix-darwin": [
-          "nix-darwin"
-        ],
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1773425328,
-        "narHash": "sha256-XDyU/r2HSsDvTqFULr88jjlLkpGOflj/i+aofAMNdL8=",
-        "owner": "BatteredBunny",
-        "repo": "brew-nix",
-        "rev": "6fcb48f460c97ba65a9ce94f8c841b36f53122fc",
-        "type": "github"
-      },
-      "original": {
-        "owner": "BatteredBunny",
-        "repo": "brew-nix",
         "type": "github"
       }
     },
@@ -208,22 +166,6 @@
         "owner": "Homebrew",
         "ref": "5.1.1",
         "repo": "brew",
-        "type": "github"
-      }
-    },
-    "brew-tap--homebrew--bundle": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1745335228,
-        "narHash": "sha256-TIKR2UgtyUmHLNZp255/vLs+1I10hXe+sciMEbAGFwE=",
-        "owner": "homebrew",
-        "repo": "homebrew-bundle",
-        "rev": "a3265c84b232e13048ecbf6fc18a2eedfadbeb08",
-        "type": "github"
-      },
-      "original": {
-        "owner": "homebrew",
-        "repo": "homebrew-bundle",
         "type": "github"
       }
     },
@@ -1187,9 +1129,6 @@
         "argon40-nix": "argon40-nix",
         "base16": "base16",
         "brew": "brew",
-        "brew-api": "brew-api",
-        "brew-nix": "brew-nix",
-        "brew-tap--homebrew--bundle": "brew-tap--homebrew--bundle",
         "brew-tap--homebrew--cask": "brew-tap--homebrew--cask",
         "brew-tap--homebrew--core": "brew-tap--homebrew--core",
         "colmena": "colmena",

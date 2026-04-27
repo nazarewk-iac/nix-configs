@@ -130,11 +130,10 @@ in
             homebrew.enable = true;
             homebrew.onActivation.upgrade = false;
 
-            homebrew.taps = builtins.attrNames config.nix-homebrew.taps;
-            # # see https://github.com/zhaofengli/nix-homebrew/issues/128
-            # homebrew.taps = builtins.attrNames (
-            #   lib.filterAttrs (n: _: !lib.hasPrefix "homebrew/" n) config.nix-homebrew.taps
-            # );
+            # see https://github.com/zhaofengli/nix-homebrew/issues/128
+            homebrew.taps = builtins.attrNames (
+              lib.filterAttrs (n: _: !lib.hasPrefix "homebrew/" n) config.nix-homebrew.taps
+            );
 
             nix-homebrew.enable = true;
             nix-homebrew.enableRosetta = pkgs.stdenv.hostPlatform.isAarch64;
