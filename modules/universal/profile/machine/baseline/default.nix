@@ -58,9 +58,11 @@ in
         kdn.enable = true;
         kdn.locale.enable = true;
         kdn.profile.user.kdn.enable = true;
+        kdn.headless.base.enable = true;
 
         kdn.profile.remote-builders.enable = lib.mkDefault true;
         kdn.profile.default-secrets.enable = lib.mkDefault true;
+        kdn.hw.usbip.enable = lib.mkDefault true;
       }
       {
         kdn.env.packages = with pkgs; [
@@ -260,7 +262,6 @@ in
               }
               // (commands "sc" "systemctl")
               // (commands "uc" "systemctl --user");
-            kdn.headless.base.enable = true;
             services.locate.enable = true;
             services.locate.package = pkgs.mlocate;
             services.locate.pruneBindMounts = true;
@@ -268,7 +269,6 @@ in
             services.avahi.enable = lib.mkDefault false;
             kdn.development.shell.enable = lib.mkDefault true;
             kdn.fs.zfs.enable = lib.mkDefault true;
-            kdn.hw.usbip.enable = lib.mkDefault true;
             kdn.hw.yubikey.enable = lib.mkDefault true;
             kdn.programs.direnv.enable = lib.mkDefault true;
             kdn.security.disk-encryption.enable = lib.mkDefault true;

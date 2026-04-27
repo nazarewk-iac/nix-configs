@@ -17,9 +17,11 @@ in
     kdn.hw.usbip = {
       enable = lib.mkEnableOption "USB/IP setup";
 
+      # TODO: research whether USB/IP is possible on Darwin
       package = lib.mkOption {
         type = lib.types.package;
-        default = config.boot.kernelPackages.usbip;
+        default =
+          if kdnConfig.moduleType == "nixos" then config.boot.kernelPackages.usbip else pkgs.emptyFile;
       };
 
       bindInterface = lib.mkOption {
