@@ -21,8 +21,7 @@ in
       (kdnConfig.util.ifNotHMParent {
         kdn.apps.libreoffice = {
           enable = true;
-          # non-qt failed to build on 2023-04-07
-          package.original = pkgs.libreoffice-qt;
+          package.original = if pkgs.stdenv.isDarwin then pkgs.libreoffice-bin else pkgs.libreoffice;
           dirs.cache = [ ];
           dirs.config = [ "libreoffice" ];
           dirs.data = [ ];
