@@ -19,6 +19,7 @@ in
     })
     {
       kdn.apps.chromium = {
+        enable = cfg.enable && !pkgs.stdenv.hostPlatform.isDarwin;
         package.original = pkgs.ungoogled-chromium;
         dirs.cache = [ ];
         dirs.config = [ "chromium" ];
@@ -28,8 +29,5 @@ in
         dirs.state = [ ];
       };
     }
-    (lib.mkIf cfg.enable {
-      kdn.apps.chromium.enable = true;
-    })
   ];
 }
