@@ -21,16 +21,20 @@ in
           zsh-completions
         ];
       }
-      (kdnConfig.util.ifTypes [ "nixos" ] {
+      (kdnConfig.util.ifHMParent {
+        home-manager.sharedModules = [ { kdn.programs.zsh = cfg; } ];
+      })
+      (kdnConfig.util.ifHM {
+        # https://nix-community.github.io/home-manager/options.html#opt-programs.zsh.enable
         programs.zsh.enable = true;
-        # https://search.nixos.org/options?channel=unstable&from=0&size=50&sort=alpha_asc&type=packages&query=programs.zsh
         programs.zsh = {
-          enableCompletion = true; # interferes with home-manager
+          enableCompletion = true;
+          dotDir = "${config.xdg.configHome}/zsh";
           syntaxHighlighting.enable = true;
-          autosuggestions.enable = true;
-          vteIntegration = true;
-          histSize = 100000;
-          interactiveShellInit = lib.trivial.pipe ./. [
+          autosuggestion.enable = true;
+          enableVteIntegration = true;
+          history.size = 100000;
+          initContent = lib.trivial.pipe ./. [
             builtins.readDir
             (lib.filterAttrs (path: type: type != "directory" && (lib.hasPrefix ".zshrc" path)))
             (lib.attrsets.mapAttrsToList (
@@ -86,18 +90,24 @@ in
             "NO_SH_WORD_SPLIT"
           ];
         };
-
-        home-manager.sharedModules = [
-          (
-            { config, ... }:
-            {
-              programs.zsh.enable = true;
-              # https://nix-community.github.io/home-manager/options.html#opt-programs.zsh.enable
-              programs.zsh.enableCompletion = false; # interferes with NixOS config
-              programs.zsh.dotDir = "${config.xdg.configHome}/zsh";
-            }
-          )
-        ];
+      })
+      (kdnConfig.util.ifTypes [ "nixos" "darwin" ] {
+        programs.zsh.enable = true;
+        programs.zsh = {
+          enableCompletion = false; # interferes with home-manager
+        };
+      })
+      (kdnConfig.util.ifTypes [ "darwin" ] {
+        programs.zsh = {
+          enableSyntaxHighlighting = false;
+          enableAutosuggestions = false;
+        };
+      })
+      (kdnConfig.util.ifTypes [ "nixos" ] {
+        # https://search.nixos.org/options?channel=unstable&from=0&size=50&sort=alpha_asc&type=packages&query=programs.zsh
+        programs.zsh.autosuggestions.enable = false;
+        programs.zsh.syntaxHighlighting.enable = false;
+        programs.zsh.vteIntegration = false;
       })
     ]
   );
