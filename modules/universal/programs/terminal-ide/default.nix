@@ -12,9 +12,6 @@ in
 {
   options.kdn.programs.terminal-ide = {
     enable = lib.mkEnableOption "Terminal IDE setup using Helix configuration";
-    helix.enable = lib.mkEnableoption "Helix Editor" // {
-      default = true;
-    };
   };
   config = lib.mkIf cfg.enable (
     lib.mkMerge [

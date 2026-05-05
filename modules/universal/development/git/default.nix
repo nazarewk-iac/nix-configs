@@ -39,6 +39,7 @@ in
         ];
         programs.jujutsu.enable = true;
         programs.jujutsu.settings = {
+          ui.default-command = "log";
           ui.diff-formatter = [
             (lib.getExe config.programs.difftastic.package)
             "--color=always"

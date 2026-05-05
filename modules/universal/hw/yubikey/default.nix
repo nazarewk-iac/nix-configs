@@ -41,7 +41,7 @@ in
             ++ lib.optionals config.kdn.desktop.enable (
               with pkgs;
               [
-                yubioath-flutter
+                (lib.mkIf (!stdenv.hostPlatform.isDarwin) yubioath-flutter)
               ]
             );
         }

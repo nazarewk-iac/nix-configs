@@ -34,6 +34,7 @@ in
       {
         kdn.env.packages = [ kdn-gen-hosts ];
       }
+      # TODO: implement for darwin?
       (kdnConfig.util.ifTypes [ "nixos" ] {
         kdn.managed.directories = [ "/etc/hosts.d" ];
         environment.etc."hosts".enable = false;
