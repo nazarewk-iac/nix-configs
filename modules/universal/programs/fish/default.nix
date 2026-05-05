@@ -11,6 +11,14 @@ in
 {
   options.kdn.programs.fish = {
     enable = lib.mkEnableOption "fish interactive shell";
+    defaultShell = lib.mkOption {
+      type = with lib.types; bool;
+      default = false;
+    };
+    defaultShellUsers = lib.mkOption {
+      type = with lib.types; listOf str;
+      default = [ ];
+    };
   };
 
   config = lib.mkIf cfg.enable (
@@ -68,10 +76,25 @@ in
         };
       })
       (kdnConfig.util.ifTypes [ "nixos" "darwin" ] {
+        environment.shells = [ config.programs.fish.package ];
         programs.fish = {
           enable = true;
           useBabelfish = false;
         };
+        users.users = lib.pipe cfg.defaultShellUsers [
+          (map (username: {
+            name = username;
+            value.shell = pkgs.fish;
+          }))
+          builtins.listToAttrs
+        ];
+      })
+      (kdnConfig.util.ifTypes [ "nixos" ] {
+        # note: about `fish` printing `linux` twice https://github.com/danth/stylix/issues/526
+        users.defaultUserShell = lib.mkIf cfg.defaultShell pkgs.fish;
+      })
+      (kdnConfig.util.ifTypes [ "darwin" ] {
+        kdn.programs.fish.defaultShellUsers = lib.optionals cfg.defaultShell [ "root" ];
       })
     ]
   );

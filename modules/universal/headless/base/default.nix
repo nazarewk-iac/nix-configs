@@ -21,7 +21,9 @@ in
 
   config = lib.mkMerge [
     # propagate to home-manager
-    (kdnConfig.util.ifHMParent { home-manager.sharedModules = [ { kdn.headless.base = lib.mkDefault cfg; } ]; })
+    (kdnConfig.util.ifHMParent {
+      home-manager.sharedModules = [ { kdn.headless.base = lib.mkDefault cfg; } ];
+    })
     # platform-agnostic kdn.* enables
     (lib.mkIf cfg.enable {
       kdn.development.data.enable = true;
@@ -36,6 +38,7 @@ in
       kdn.toolset.unix.enable = true;
       kdn.toolset.nix.enable = true;
       kdn.toolset.ide.enable = true; # TODO: pulling it in for Helix, move it out into dedicated module
+      kdn.programs.fish.defaultShell = true;
     })
     # home-manager
     (kdnConfig.util.ifHM (
@@ -143,6 +146,10 @@ in
         security.sudo.extraConfig = sudoCfg;
       }
     ))
+    (kdnConfig.util.ifTypes [ "darwin" ] (
+      lib.mkIf cfg.enable {
+      }
+    ))
     # nixos
     (kdnConfig.util.ifTypes [ "nixos" ] (
       lib.mkIf cfg.enable (
@@ -151,8 +158,6 @@ in
             boot.kernelParams = [
               "plymouth.enable=0" # disable boot splash screen
             ];
-            # note: about `fish` printing `linux` twice https://github.com/danth/stylix/issues/526
-            users.defaultUserShell = pkgs.fish;
 
             programs.command-not-found.enable = false;
 
