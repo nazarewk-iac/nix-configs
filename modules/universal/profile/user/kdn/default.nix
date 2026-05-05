@@ -3,14 +3,13 @@
   config,
   kdnConfig,
   pkgs,
-  osConfig ? { },
   ...
 }:
 let
   cfg = config.kdn.profile.user.kdn;
 
   nc.rel = "Nextcloud/drag0nius@nc.nazarewk.pw";
-  hasWorkstation = (osConfig.kdn or { }).profile.machine.workstation.enable or false;
+  hasWorkstation = config.kdn.profile.machine.workstation.enable;
 in
 {
   options.kdn.profile.user.kdn = {
@@ -29,7 +28,7 @@ in
             "darwin"
           ]
         then
-          config.users.users.${cfg.username}.home
+          config.users.users.kdn.home
         else if kdnConfig.util.isOfType [ "home-manager" ] then
           config.home.homeDirectory
         else
@@ -73,8 +72,30 @@ in
           #   };
           # }))
         ];
+        kdn.programs.atuin.users = [ "kdn" ];
+        kdn.programs.fish.defaultShellUsers = [ "kdn" ];
+        kdn.hw.yubikey.appId = "pam://${cfg.username}";
+        kdn.programs.atuin.autologinUsers = [ "kdn" ];
+        kdn.networking.netbird.admins = [ cfg.username ];
       }
-      # home-manager
+      (lib.mkIf hasWorkstation {
+        kdn.env.packages = with pkgs; [
+          pkgs.kdn.klog-time-tracker
+          pkgs.kdn.klg
+        ];
+      })
+      (kdnConfig.util.ifHMParent {
+        home-manager.users.kdn.kdn.profile.user.kdn = {
+          enable = true;
+          username = cfg.username;
+        };
+        home-manager.users.root.programs.gpg.publicKeys = [
+          {
+            source = cfg.gpg.publicKeys;
+            trust = "ultimate";
+          }
+        ];
+      })
       (kdnConfig.util.ifHM (
         lib.mkMerge [
           {
@@ -167,8 +188,8 @@ in
               url."https://gist.github.com/".insteadOf = "git@gist.github.com:";
             };
             programs.jujutsu.settings = {
-              user.name = "Krzysztof Nazarewski";
-              user.email = "gpg@kdn.im";
+              user.name = config.programs.git.settings.user.name;
+              user.email = config.programs.git.settings.user.email;
               signing.behavior = "own";
               signing.backend = "gpg";
             };
@@ -353,14 +374,12 @@ in
             };
           })
           (lib.mkIf hasWorkstation {
-            kdn.env.packages = with pkgs; [
-              pkgs.kdn.klog-time-tracker
-              pkgs.kdn.klg
-            ];
+            # TODO: migrate to universal, split out a private instead of workstation profile?
             xdg.configFile."klg/config.toml".source =
               config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/${nc.rel}/time-logs/klg/config.toml";
           })
           (lib.mkIf (hasWorkstation && config.kdn.desktop.enable) {
+            # TODO: migrate to universal, split out a private instead of workstation profile?
             kdn.env.packages = with pkgs; [
               (pkgs.writeShellApplication {
                 name = "kdn-drag0nius.kdbx";
@@ -384,6 +403,7 @@ in
             ];
           })
           (lib.mkIf (hasWorkstation && config.kdn.desktop.enable) {
+            # TODO: migrate to universal, split out a private instead of workstation profile?
             kdn.programs.beeper.enable = true;
             kdn.programs.matrix.enable = true;
             kdn.programs.ente-photos.enable = true;
@@ -404,98 +424,58 @@ in
           })
         ]
       ))
-      # nixos
-      # shared darwin-nixos
-      # shared darwin-nixos
       (kdnConfig.util.ifTypes [ "nixos" "darwin" ] {
-        users.users.${cfg.username} = {
-          description = "Krzysztof Nazarewski";
-          openssh.authorizedKeys.keys = cfg.ssh.authorizedKeysList;
+        users.users.kdn.description = "Krzysztof Nazarewski";
+        users.users.kdn.openssh.authorizedKeys.keys = cfg.ssh.authorizedKeysList;
+        nix.settings.trusted-users = [ cfg.username ];
+      })
+      (kdnConfig.util.ifTypes [ "darwin" ] {
+        system.primaryUser = lib.mkDefault cfg.username;
+        nix-homebrew.user = cfg.username;
+        users.users.kdn.name = cfg.username;
+        users.users.kdn.home = "/Users/${cfg.username}";
+      })
+      (kdnConfig.util.ifTypes [ "nixos" ] {
+        users.users.kdn.username = cfg.username;
+        users.users.kdn = {
+          initialHashedPassword = "$y$j9T$yl3J5zGJ5Yq8c6fXMGxNk.$XE3X8aWpD3FeakMBD/fUmCExXMuy7B6tm7ZECmuxpF4";
+          linger = true;
+          uid = 31893;
+          isNormalUser = true;
+          extraGroups = lib.filter (group: lib.hasAttr group config.users.groups) [
+            "adbusers"
+            "audio"
+            "deluge"
+            "dialout"
+            "docker"
+            "kvm"
+            "libvirtd"
+            "lp"
+            "lpadmin"
+            "mlocate"
+            "networkmanager"
+            "pipewire"
+            "plugdev"
+            "podman"
+            "power"
+            "samba"
+            "scanner"
+            "tty"
+            "video"
+            "weechat"
+            "wheel"
+            "wireshark"
+            "ydotool"
+          ];
+        };
+        networking.firewall = {
+          allowedTCPPorts = [ 22000 ];
+          allowedUDPPorts = [
+            21027
+            22000
+          ];
         };
       })
-      # darwin
-      (kdnConfig.util.ifTypes [ "darwin" ] (
-        lib.mkMerge [
-          {
-            home-manager.users.${cfg.username}.kdn.profile.user.kdn = {
-              enable = true;
-              username = cfg.username;
-            };
-          }
-          {
-            system.primaryUser = lib.mkDefault cfg.username;
-            nix-homebrew.user = cfg.username;
-            users.users.${cfg.username} = {
-              home = "/Users/${cfg.username}";
-              shell = config.programs.fish.package;
-            };
-          }
-        ]
-      ))
-      # nixos
-      (kdnConfig.util.ifTypes [ "nixos" ] (
-        lib.mkMerge [
-          {
-            nix.settings.trusted-users = [ cfg.username ];
-            kdn.programs.atuin.users = [ cfg.username ];
-            kdn.programs.atuin.autologinUsers = [ cfg.username ];
-            kdn.hw.yubikey.appId = "pam://${cfg.username}";
-            users.users.${cfg.username} = {
-              initialHashedPassword = "$y$j9T$yl3J5zGJ5Yq8c6fXMGxNk.$XE3X8aWpD3FeakMBD/fUmCExXMuy7B6tm7ZECmuxpF4";
-              linger = true;
-              uid = 31893;
-              isNormalUser = true;
-              extraGroups = lib.filter (group: lib.hasAttr group config.users.groups) [
-                "adbusers"
-                "audio"
-                "deluge"
-                "dialout"
-                "docker"
-                "kvm"
-                "libvirtd"
-                "lp"
-                "lpadmin"
-                "mlocate"
-                "networkmanager"
-                "pipewire"
-                "plugdev"
-                "podman"
-                "power"
-                "samba"
-                "scanner"
-                "tty"
-                "video"
-                "weechat"
-                "wheel"
-                "wireshark"
-                "ydotool"
-              ];
-            };
-            networking.firewall = {
-              allowedTCPPorts = [ 22000 ];
-              allowedUDPPorts = [
-                21027
-                22000
-              ];
-            };
-          }
-          {
-            home-manager.users.${cfg.username}.kdn.profile.user.kdn = {
-              enable = true;
-              username = cfg.username;
-            };
-            home-manager.users.root.programs.gpg.publicKeys = [
-              {
-                source = cfg.gpg.publicKeys;
-                trust = "ultimate";
-              }
-            ];
-          }
-          {
-            kdn.networking.netbird.admins = [ cfg.username ];
-          }
-        ]
-      ))
     ]
   );
 }
