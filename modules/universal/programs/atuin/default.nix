@@ -34,15 +34,25 @@ in
     };
   };
   config = lib.mkMerge [
-    # home-manager
+    (lib.mkIf cfg.enable (
+      lib.mkMerge [
+        {
+          kdn.programs.atuin.users = [ "root" ];
+          kdn.programs.atuin.autologinUsers = [ "root" ];
+        }
+      ]
+    ))
     (kdnConfig.util.ifHM (
       lib.mkIf cfg.enable (
         lib.mkMerge [
           {
             programs.atuin.enable = true;
+            programs.atuin.daemon.enable = config.home.username != "root";
+            programs.atuin.daemon.logLevel = "info";
             programs.atuin.settings = {
               auto_sync = true;
               update_check = false;
+              sync.records = true;
               sync_frequency = "60";
               daemon = {
                 enabled = true;
@@ -52,44 +62,33 @@ in
             programs.atuin.forceOverwriteSettings = true;
           }
           (lib.mkIf (config.home.username != "root") {
-            systemd.user.services.atuind = {
-              Unit = {
-                Description = "Atuin shell history synchronization daemon";
-                After = [ "network.target" ];
-                Wants = [ "network.target" ];
-                Requires = [ ];
-              };
-              Service.ExecStart = "${lib.getExe config.programs.atuin.package} daemon";
+            systemd.user.services.atuin-daemon = {
+              Unit.After = [ "network.target" ];
+              Unit.Wants = [ "network.target" ];
               Service.Slice = "background.slice";
-              Service.Environment = [ "ATUIN_LOG=info" ];
-              Install.WantedBy = [ "default.target" ];
             };
           })
         ]
       )
     ))
+    (kdnConfig.util.ifHMParent (
+      lib.mkIf cfg.enable {
+        home-manager.users = lib.pipe cfg.users [
+          (map (username: {
+            name = username;
+            value = {
+              kdn.programs.atuin = cfg;
+              kdn.disks.persist."usr/data".directories = [ ".local/share/atuin" ];
+            };
+          }))
+          builtins.listToAttrs
+        ];
+      }
+    ))
     # nixos
     (kdnConfig.util.ifTypes [ "nixos" ] (
       lib.mkIf cfg.enable (
         lib.mkMerge [
-          {
-            kdn.programs.atuin.users = [ "root" ];
-            kdn.programs.atuin.autologinUsers = [ "root" ];
-            home-manager.users = lib.pipe cfg.users [
-              (map (username: {
-                name = username;
-                value = {
-                  kdn.programs.atuin.enable = true;
-                  kdn.disks.persist."usr/data".directories = [ ".local/share/atuin" ];
-                  programs.atuin.settings = {
-                    daemon.socket_path = "${getRuntimeDir username}/atuin.sock";
-                    sync.records = true;
-                  };
-                };
-              }))
-              builtins.listToAttrs
-            ];
-          }
           (lib.mkIf cfg.enableZFSWorkaround (
             let
               users = lib.pipe cfg.users [
@@ -271,5 +270,5 @@ in
         ]
       )
     ))
-  ]; # end config mkMerge
+  ];
 }
