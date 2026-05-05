@@ -78,6 +78,11 @@ in
             kdn.hostName = cfg.hostName;
           };
         }
+        {
+          # note: this is MacOS specific, but is entirely optional everywhere since I'm not using apropos/whatis commands
+          programs.man.generateCaches = false;
+          home.extraOutputsToInstall = [ "man" ];
+        }
       ];
     })
     (kdnConfig.util.ifTypes [ "nixos" "darwin" ] (
@@ -106,6 +111,9 @@ in
             nix.settings = cfg.nixConfig.nix.settings;
             nixpkgs.config = cfg.nixConfig.nixpkgs.config;
           })
+          {
+            documentation.man.enable = true;
+          }
         ]
       )
     ))
@@ -113,6 +121,10 @@ in
       lib.mkIf cfg.enable {
         # lib.mkDefault is 1000, lib.mkOptionDefault is 1500
         disko.enableConfig = lib.mkDefault false;
+        documentation.nixos.enable = true;
+        documentation.man.man-db.enable = true;
+        documentation.man.cache.enable = true;
+        documentation.man.cache.generateAtRuntime = true;
       }
     ))
     (kdnConfig.util.ifTypes [ "darwin" ] (
