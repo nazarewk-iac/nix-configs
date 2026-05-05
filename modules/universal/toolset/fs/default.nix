@@ -15,6 +15,7 @@ in
   };
 
   config = lib.mkMerge [
+    (kdnConfig.util.ifHMParent { home-manager.sharedModules = [ { kdn.toolset.fs = cfg; } ]; })
     (lib.mkIf cfg.enable {
       kdn.programs.midnight-commander.enable = lib.mkDefault true;
       kdn.env.packages =
@@ -38,6 +39,13 @@ in
           ]
         );
     })
+    (kdnConfig.util.ifHM (
+      lib.mkIf cfg.enable {
+        programs.yazi.enable = true;
+        programs.yazi.enableFishIntegration = true;
+        programs.yazi.enableZshIntegration = true;
+      }
+    ))
     (kdnConfig.util.ifTypes [ "nixos" ] (
       lib.mkIf cfg.enable {
         kdn.env.packages =
