@@ -176,6 +176,7 @@ in
             ];
             # fixes home directory being `null` in home-manager
             users.users.root.home = "/var/root";
+            users.users.root.uid = 0;
           }
         ]
       )
