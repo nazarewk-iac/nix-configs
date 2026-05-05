@@ -127,8 +127,19 @@ in
             networking.computerName = lib.mkDefault config.kdn.hostName;
           }
           {
-            homebrew.enable = true;
+            nix-homebrew.mutableTaps = false;
             homebrew.onActivation.upgrade = false;
+            homebrew.onActivation.autoUpdate = false;
+            homebrew.onActivation.cleanup = "zap";
+            programs.zsh.interactiveShellInit = ''
+              export HOMEBREW_READ_ONLY=1
+            '';
+            programs.fish.interactiveShellInit = ''
+              set -gx HOMEBREW_READ_ONLY 1
+            '';
+          }
+          {
+            homebrew.enable = true;
 
             # see https://github.com/zhaofengli/nix-homebrew/issues/128
             homebrew.taps = builtins.attrNames (
@@ -137,7 +148,6 @@ in
 
             nix-homebrew.enable = true;
             nix-homebrew.enableRosetta = pkgs.stdenv.hostPlatform.isAarch64;
-            nix-homebrew.mutableTaps = false;
 
             nix-homebrew.taps =
               let
