@@ -1,0 +1,34 @@
+From 74ebb9c0696ce4ada663615ad2ebf87967d4be65 Mon Sep 17 00:00:00 2001
+From: nikstur <nikstur@outlook.com>
+Date: Wed, 6 May 2026 14:22:12 +0200
+Subject: [PATCH] systemdUkify: fix
+
+This fix was necessary because systemd now requires the pefile module to
+be present in the buildtime python installation.
+
+However, this python is never used in the runtime of ukify. Thus this
+change is only necessary to trick systemd's meson to do the right thing.
+
+It doesn't seem like there is a right thing to do in meson for this so
+it is unlikely that systemd would accept a patch for this.
+---
+ pkgs/os-specific/linux/systemd/default.nix | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/pkgs/os-specific/linux/systemd/default.nix b/pkgs/os-specific/linux/systemd/default.nix
+index fb6d62843ea7c1dee8118bf0f1780ac2bad95e4e..830d89de731a647e9d533e3a01e8fc522aa87546 100644
+--- a/pkgs/os-specific/linux/systemd/default.nix
++++ b/pkgs/os-specific/linux/systemd/default.nix
+@@ -316,7 +316,11 @@ stdenv.mkDerivation (finalAttrs: {
+         jinja2
+       ]
+       ++ lib.optional withEfi ps.pyelftools
+-      ++ lib.optional (withUkify && finalAttrs.finalPackage.doCheck) ps.pefile
++      # pefile is only required to trigger a check in meson to actually build
++      # ukify. This module should never appear in the runtime closure of ukify.
++      # Instead the pefile from buildInputs should be used.
++      # Remove this when it's fixed upstream: https://github.com/systemd/systemd/pull/41959
++      ++ lib.optional withUkify ps.pefile
+     ))
+   ]
+   ++ lib.optionals withLibBPF [

@@ -9,7 +9,7 @@ in
 {
   config.k8s.clusters.pic = {
     enable = lib.mkDefault true;
-    allowedVersions = [ "1.35" ];
+    allowedVersions = [ "1.36" ];
     domain = "pic.int.kdn.im";
 
     apiserver.vrrp.masterNode = "pwet";

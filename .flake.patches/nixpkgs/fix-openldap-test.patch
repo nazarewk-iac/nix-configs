@@ -1,0 +1,22 @@
+From 63147b12a5831e23ce5e88f5f9a35fe8997e9978 Mon Sep 17 00:00:00 2001
+From: ElXreno <elxreno@gmail.com>
+Date: Sat, 25 Apr 2026 16:00:45 +0300
+Subject: [PATCH] openldap: skip flaky syncreplication tests
+
+---
+ pkgs/by-name/op/openldap/package.nix | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/pkgs/by-name/op/openldap/package.nix b/pkgs/by-name/op/openldap/package.nix
+index e406487243405aa1a98c87c98e2ee7872ac19000..9e1457ef6572b544574bacbebee1218f2e39e886 100644
+--- a/pkgs/by-name/op/openldap/package.nix
++++ b/pkgs/by-name/op/openldap/package.nix
+@@ -122,6 +122,8 @@ stdenv.mkDerivation (finalAttrs: {
+     # https://bugs.openldap.org/show_bug.cgi?id=8623
+     rm -f tests/scripts/test022-ppolicy
+ 
++    rm -f tests/scripts/test*-sync*
++
+     rm -f tests/scripts/test063-delta-multiprovider
+ 
+     # https://bugs.openldap.org/show_bug.cgi?id=10009
