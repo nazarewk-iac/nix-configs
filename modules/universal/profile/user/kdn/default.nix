@@ -427,16 +427,15 @@ in
       (kdnConfig.util.ifTypes [ "nixos" "darwin" ] {
         users.users.kdn.description = "Krzysztof Nazarewski";
         users.users.kdn.openssh.authorizedKeys.keys = cfg.ssh.authorizedKeysList;
+        users.users.kdn.name = cfg.username;
         nix.settings.trusted-users = [ cfg.username ];
       })
       (kdnConfig.util.ifTypes [ "darwin" ] {
         system.primaryUser = lib.mkDefault cfg.username;
         nix-homebrew.user = cfg.username;
-        users.users.kdn.name = cfg.username;
         users.users.kdn.home = "/Users/${cfg.username}";
       })
       (kdnConfig.util.ifTypes [ "nixos" ] {
-        users.users.kdn.username = cfg.username;
         users.users.kdn = {
           initialHashedPassword = "$y$j9T$yl3J5zGJ5Yq8c6fXMGxNk.$XE3X8aWpD3FeakMBD/fUmCExXMuy7B6tm7ZECmuxpF4";
           linger = true;
