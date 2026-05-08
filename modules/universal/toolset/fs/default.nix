@@ -44,6 +44,7 @@ in
         programs.yazi.enable = true;
         programs.yazi.enableFishIntegration = true;
         programs.yazi.enableZshIntegration = true;
+        programs.yazi.shellWrapperName = "y";
       }
     ))
     (kdnConfig.util.ifTypes [ "nixos" ] (
