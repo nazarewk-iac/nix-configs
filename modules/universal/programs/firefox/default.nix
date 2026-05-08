@@ -58,15 +58,27 @@ in
       (kdnConfig.util.ifHM (
         lib.mkMerge [
           {
+            /*
+              TODO: new version switched to "${config.xdg.configHome}/mozilla/firefox", set up automatic migration script and/or silence the warning?
+
+                 warning: root profile: The default value of `programs.firefox.configPath` has changed from `".mozilla/firefox"` to `"${config.xdg.configHome}/mozilla/firefox"`.
+                 You are currently using the legacy default (`".mozilla/firefox"`) because `home.stateVersion` is less than "26.05".
+                 To silence this warning and keep legacy behavior, set:
+                   programs.firefox.configPath = ".mozilla/firefox";
+                 To adopt the new default behavior, set:
+                   programs.firefox.configPath = "${config.xdg.configHome}/mozilla/firefox";
+            */
             # work around warning at https://github.com/danth/stylix/blob/6a2e5258876c46b62edacb3e51a759ed1c06332b/modules/firefox/hm.nix#L171
             stylix.targets.firefox.profileNames = cfg.profileNames;
+
+            programs.firefox.configPath = lib.mkIf (lib.versionOlder config.home.stateVersion "26.05") (lib.mkDefault  ".mozilla/firefox");
             programs.firefox.enable = true;
             programs.firefox.package = appCfg.package.final;
             kdn.apps.firefox = {
               enable = true;
               package.install = false;
               dirs.cache = [ ];
-              dirs.config = [ ];
+              dirs.config = [ "mozilla/firefox" ];
               dirs.data = [ "/.mozilla/firefox" ];
               dirs.disposable = [ ];
               dirs.reproducible = [ ];
