@@ -67,11 +67,15 @@ in
                    programs.firefox.configPath = ".mozilla/firefox";
                  To adopt the new default behavior, set:
                    programs.firefox.configPath = "${config.xdg.configHome}/mozilla/firefox";
+
+              note: the script could simply move the ~/.mozilla/firefox -> ~/.config/mozilla/firefox & possibly set up symlink for backwards compat?
             */
             # work around warning at https://github.com/danth/stylix/blob/6a2e5258876c46b62edacb3e51a759ed1c06332b/modules/firefox/hm.nix#L171
             stylix.targets.firefox.profileNames = cfg.profileNames;
 
-            programs.firefox.configPath = lib.mkIf (lib.versionOlder config.home.stateVersion "26.05") (lib.mkDefault  ".mozilla/firefox");
+            programs.firefox.configPath = lib.mkIf (lib.versionOlder config.home.stateVersion "26.05") (
+              lib.mkDefault ".mozilla/firefox"
+            );
             programs.firefox.enable = true;
             programs.firefox.package = appCfg.package.final;
             kdn.apps.firefox = {

@@ -20,7 +20,7 @@
     }
     {
       home-manager.users.kdn.programs.firefox.profiles.kdn.path = "v6uzqa6m.default";
-      home-manager.users.kdn.home.file.".mozilla/firefox/profiles.ini".force = true;
+      home-manager.users.kdn.home.file.".config/mozilla/firefox/profiles.ini".force = true;
 
       kdn.profile.machine.workstation.enable = true;
       kdn.hw.gpu.amd.enable = true;

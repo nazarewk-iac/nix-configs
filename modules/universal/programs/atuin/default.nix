@@ -181,7 +181,7 @@ in
             }
           ))
           (lib.mkIf (builtins.elem "root" cfg.users) {
-            systemd.services.atuind = {
+            systemd.services.atuin-daemon = {
               description = "Atuin shell history synchronization daemon for root user";
               # require home-manager-root to give it a chance to set up atuind configuration
               # otherwise the socket is at a wrong place
@@ -196,7 +196,7 @@ in
               wantedBy = [ "default.target" ];
               environment.HOME = config.users.users.root.home;
               environment.ATUIN_LOG = "info";
-              serviceConfig.ExecStart = "${lib.getExe pkgs.atuin} daemon";
+              serviceConfig.ExecStart = "${lib.getExe pkgs.atuin} daemon start";
             };
           })
           (lib.mkIf config.kdn.security.secrets.allowed {
@@ -238,6 +238,7 @@ in
                           with pkgs;
                           [
                             coreutils
+                            diffutils
                             gnugrep
                             atuin
                           ]
@@ -245,9 +246,10 @@ in
                       }:$PATH"
                       set -eEuo pipefail
 
-                      # `sync.records = true` should enable API v2 according to https://github.com/atuinsh/atuin/issues/3050
-                      # but `atuin status` still uses v1 API and cannot be used
-                      if atuin status | grep -v 'You are not logged in' || test -s "${hmUser.xdg.dataHome}/atuin/session" ; then
+                      if ! cmp --silent -- <(atuin key) "$CREDS_DIR/key" ; then
+                        atuin logout || :
+                        atuin store purge
+                      elif atuin status | grep -v 'You are not logged in' || test -s "${hmUser.xdg.dataHome}/atuin/session" ; then
                         exit 0
                       fi
 
@@ -258,7 +260,7 @@ in
                           -k "$(cat "$CREDS_DIR/key")"
 
                       echo 'Syncing...'
-                      atuin sync --force
+                      atuin store pull --page=5000 || :
 
                       echo 'Finished.'
                     '';

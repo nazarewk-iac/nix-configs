@@ -23,6 +23,12 @@ url = "https://github.com/NixOS/nixpkgs/pull/496327.patch?full_index=1"
 # [patch.nixpkgs.ceph-update-fix]
 # url = "https://github.com/NixOS/nixpkgs/pull/494583.patch?full_index=1"
 
+[patch.nixpkgs.fix-systemd-build]
+url = "https://github.com/NixOS/nixpkgs/pull/517296.patch?full_index=1"
+
+[patch.nixpkgs.fix-openldap-test]
+url = "https://github.com/NixOS/nixpkgs/pull/515956.patch?full_index=1"
+
 # [patch.nixos-avf.fix-new-websockets]
 # url = "https://github.com/nix-community/nixos-avf/pull/21.patch?full_index=1"
 
