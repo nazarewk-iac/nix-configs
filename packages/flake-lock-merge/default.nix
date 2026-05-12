@@ -1,0 +1,29 @@
+{
+  pkgs,
+  lib,
+  __inputs__ ? { },
+  ...
+}:
+let
+  python = pkgs.python314;
+  src = lib.fileset.toSource {
+    root = ./.;
+    fileset = lib.fileset.fileFilter (file: file.hasExt "py") ./flake_lock_merge;
+  };
+
+  mkPythonScript =
+    if __inputs__ ? inputs.kdn-configs-src then
+      import (__inputs__.inputs.kdn-configs-src + /lib/python/mkPythonScript.nix) { inherit lib pkgs; }
+    else
+      lib.kdn.mkPythonScript pkgs;
+in
+mkPythonScript {
+  inherit src python;
+  name = "flake-lock-merge";
+  pythonModule = "flake_lock_merge.cli";
+  requirementsFileText = ''
+  '';
+  runtimeDeps = with pkgs; [
+    #git
+  ];
+}
