@@ -36,6 +36,7 @@
   whicher = pkgs.callPackage ./whicher { };
 
   # AUTO_PACKAGE_PLACEHOLDER #
+aws-sso = pkgs.callPackage ./aws-sso {};
   flake-lock-merge = pkgs.callPackage ./flake-lock-merge { };
   kdn-nix-fmt = pkgs.callPackage ./kdn-nix-fmt { };
 }
