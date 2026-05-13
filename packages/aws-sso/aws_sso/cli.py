@@ -213,7 +213,7 @@ def cmd_generate_kubeconfig(args):
                     "--name", cluster,
                     "--region", eks_region,
                     "--profile", aws_profile,
-                    "--alias", aws_profile,
+                    "--alias", to_name(cluster, aws_profile),
                 ],
                 check=True,
             )
