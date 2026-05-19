@@ -39,7 +39,11 @@ in
                   local wezterm = require 'wezterm'
                   local config = wezterm.config_builder()
                 '')
-                ''config.front_end = "OpenGL"''
+                ''
+                  config.front_end = "OpenGL"
+                  config.hide_tab_bar_if_only_one_tab = true
+                  config.enable_kitty_keyboard = true
+                ''
                 (lib.mkOrder 9999 "return config")
               ];
             }
