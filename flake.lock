@@ -1022,10 +1022,10 @@
     "nixpkgs": {
       "locked": {
         "lastModified": 1777654493,
-        "narHash": "sha256-6hHEg9tJQbfO7TZTYZ5yElVNLnD+/CBSuPUpoKey0TE=",
+        "narHash": "sha256-CabZA5AoLsJlPsY1sqnaJUb67Ka+x/xjhN6djB3HvvI=",
         "owner": "nazarewk-iac",
         "repo": "nixpkgs",
-        "rev": "9fa6017c4e1d6034326f31ac3df21578a54621c8",
+        "rev": "a0a42b56046591644936ed02cff90aae5df62d67",
         "type": "github"
       },
       "original": {

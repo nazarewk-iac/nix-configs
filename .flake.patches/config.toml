@@ -23,6 +23,9 @@ url = "https://github.com/NixOS/nixpkgs/pull/496327.patch?full_index=1"
 # [patch.nixpkgs.ceph-update-fix]
 # url = "https://github.com/NixOS/nixpkgs/pull/494583.patch?full_index=1"
 
+[patch.nixpkgs.revert-blueman-applet]
+url = "https://github.com/NixOS/nixpkgs/pull/521288.patch?full_index=1"
+
 [patch.nixpkgs.fix-openldap-test]
 url = "https://github.com/NixOS/nixpkgs/pull/515956.patch?full_index=1"
 

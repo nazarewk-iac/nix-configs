@@ -22,6 +22,7 @@ in
         {
           hardware.bluetooth.enable = true;
           services.blueman.enable = true;
+          # TODO: move blueman-applet config here
 
           kdn.disks.persist."sys/config".directories = [
             "/var/lib/bluetooth"
