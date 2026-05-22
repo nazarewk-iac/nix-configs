@@ -1,6 +1,7 @@
 """
-Merge two flake.lock files by taking the newer version of each common input
-(based on lastModified), and including all unique inputs from either side.
+Merge two flake.lock files by updating the current lock with newer versions
+of inputs that appear in both locks (based on lastModified). Inputs only in
+one lock are left untouched (secondary-only inputs are ignored).
 
 Usage:
   flake-lock-merge [-m file] <current> <secondary> [--output <out>]
@@ -56,36 +57,34 @@ def merge_locks(lock_current: dict, lock_secondary: dict) -> dict:
 
     merged_nodes: dict = {}
 
-    all_keys = set(nodes_current) | set(nodes_secondary)
-    non_root_keys = all_keys - {root_key}
+    common_keys = (set(nodes_current) & set(nodes_secondary)) - {root_key}
+    current_only = set(nodes_current) - set(nodes_secondary) - {root_key}
+    secondary_only = set(nodes_secondary) - set(nodes_current) - {root_key}
 
-    for key in non_root_keys:
-        if key in nodes_current and key in nodes_secondary:
-            lm_current = last_modified(nodes_current[key])
-            lm_secondary = last_modified(nodes_secondary[key])
-            if lm_current >= lm_secondary:
-                merged_nodes[key] = deepcopy(nodes_current[key])
-                winner = "current"
-            else:
-                merged_nodes[key] = deepcopy(nodes_secondary[key])
-                winner = "secondary"
-            if lm_current != lm_secondary:
-                print(
-                    f"  {key}: picked {winner} "
-                    f"(current={lm_current}, secondary={lm_secondary})",
-                    file=sys.stderr,
-                )
-        elif key in nodes_current:
+    for key in current_only:
+        merged_nodes[key] = deepcopy(nodes_current[key])
+
+    for key in secondary_only:
+        print(f"  {key}: only in secondary, skipping", file=sys.stderr)
+
+    for key in common_keys:
+        lm_current = last_modified(nodes_current[key])
+        lm_secondary = last_modified(nodes_secondary[key])
+        if lm_current >= lm_secondary:
             merged_nodes[key] = deepcopy(nodes_current[key])
-            print(f"  {key}: only in current", file=sys.stderr)
+            winner = "current"
         else:
             merged_nodes[key] = deepcopy(nodes_secondary[key])
-            print(f"  {key}: only in secondary", file=sys.stderr)
+            winner = "secondary"
+        if lm_current != lm_secondary:
+            print(
+                f"  {key}: picked {winner} "
+                f"(current={lm_current}, secondary={lm_secondary})",
+                file=sys.stderr,
+            )
 
     root_current = nodes_current.get(root_key, {})
-    root_secondary = nodes_secondary.get(root_key, {})
-    merged_root_inputs = {**root_secondary.get("inputs", {}), **root_current.get("inputs", {})}
-    merged_root = {**deepcopy(root_current), "inputs": merged_root_inputs}
+    merged_root = deepcopy(root_current)
     merged_nodes[root_key] = merged_root
 
     return {"nodes": merged_nodes, "root": root_key, "version": lock_current.get("version", 7)}
