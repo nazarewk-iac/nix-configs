@@ -235,19 +235,17 @@ in
           (lib.mkIf bCfg.use (
             lib.mkMerge [
               (kdnConfig.util.ifHM {
-                programs.ssh.matchBlocks."user:${bCfg.user.name}" = {
-                  match = "User ${bCfg.user.name}";
-                  extraOptions.BatchMode = "yes";
-                  identitiesOnly = lib.mkDefault (config.home.username == "root");
-                  identityFile = bCfg.user.ssh.IdentityFile;
+                programs.ssh.settings."Match User ${bCfg.user.name}" = {
+                  BatchMode = "yes";
+                  IdentitiesOnly = lib.mkDefault (config.home.username == "root");
+                  IdentityFile = bCfg.user.ssh.IdentityFile;
                 };
-                programs.ssh.matchBlocks.anji-linux-builder = {
-                  host = "anji-linux-builder";
-                  proxyJump = lib.mkIf (config.kdn.hostName != "anji") "${bCfg.user.name}@anji";
-                  user = bCfg.user.name;
-                  hostname = "localhost";
-                  port = 31022;
-                  extraOptions.HostKeyAlias = "anji-linux-builder";
+                programs.ssh.settings."Match host anji-linux-builder" = {
+                  ProxyJump = lib.mkIf (config.kdn.hostName != "anji") "${bCfg.user.name}@anji";
+                  User = bCfg.user.name;
+                  Hostname = "localhost";
+                  Port = 31022;
+                  HostKeyAlias = "anji-linux-builder";
                 };
               })
               (kdnConfig.util.ifTypes [ "nixos" "darwin" ] {
