@@ -42,9 +42,18 @@ in
     (kdnConfig.util.ifHM (
       lib.mkIf cfg.enable {
         programs.yazi.enable = true;
+        programs.yazi.enableBashIntegration = true;
         programs.yazi.enableFishIntegration = true;
         programs.yazi.enableZshIntegration = true;
         programs.yazi.shellWrapperName = "y";
+
+        programs.superfile.enable = true;
+        programs.superfile.settings.theme = "dracula";
+
+        programs.zoxide.enable = true;
+        programs.zoxide.enableBashIntegration = true;
+        programs.zoxide.enableFishIntegration = true;
+        programs.zoxide.enableZshIntegration = true;
       }
     ))
     (kdnConfig.util.ifTypes [ "nixos" ] (
@@ -67,8 +76,6 @@ in
     ))
     (kdnConfig.util.ifTypes [ "nixos" ] (
       lib.mkIf cfg.enable {
-        home-manager.sharedModules = [ { kdn.toolset.fs.enable = true; } ];
-
         kdn.toolset.tracing.enable = lib.mkDefault true;
         kdn.toolset.fs.encryption.enable = lib.mkDefault true;
       }
