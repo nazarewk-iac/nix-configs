@@ -197,6 +197,7 @@ in
               environment.HOME = config.users.users.root.home;
               environment.ATUIN_LOG = "info";
               serviceConfig.ExecStart = "${lib.getExe pkgs.atuin} daemon start";
+              serviceConfig.ExecStartPre = "-${lib.getExe' pkgs.coreutils "rm"} ${config.users.users.root.home}/.local/share/atuin/atuin.sock";
             };
           })
           (lib.mkIf config.kdn.security.secrets.allowed {
