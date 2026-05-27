@@ -185,5 +185,8 @@
     {
       kdn.services.samba.enable = true;
     }
+    {
+      security.sudo.wheelNeedsPassword = false;
+    }
   ];
 }
