@@ -100,7 +100,6 @@
   inputs.nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nixcasks.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nixos-anywhere.inputs.disko.follows = "disko";
-  inputs.nixos-anywhere.inputs.flake-parts.follows = "flake-parts";
   inputs.nixos-anywhere.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nixos-anywhere.inputs.treefmt-nix.follows = "treefmt-nix";
   inputs.nixos-avf.inputs.nixpkgs.follows = "nixpkgs";
