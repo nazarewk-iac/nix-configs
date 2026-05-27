@@ -88,10 +88,10 @@
 
       swaymsg = lib.getExe' config.wayland.windowManager.sway.package "swaymsg";
 
-      execLib.getActiveWorkspace = "${swaymsg} -t get_workspaces --raw | ${lib.getExe pkgs.jq} -r '.[] | select(.focused).name' ";
+      execLib.getActiveWorkspace = "${swaymsg} -t get_workspaces --raw | ${lib.getExe pkgs.jq} -r '.[] | select(.focused).name'";
       execLib.switchToWorkspace = ws: ''
         ${swaymsg} "workspace ${ws}"
-        while test "$(${execLib.getActiveWorkspace}) != "${ws}" ; do
+        while test "$(${execLib.getActiveWorkspace})" != "${ws}" ; do
           sleep 0.1
         done
       '';
