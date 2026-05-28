@@ -23,6 +23,7 @@
   inputs.colmena.url = "github:zhaofengli/colmena";
   inputs.crane.url = "github:ipetkov/crane";
   inputs.disko.url = "github:nix-community/disko";
+  inputs.devenv.url = "github:cachix/devenv";
   inputs.disko-zfs.url = "github:numtide/disko-zfs";
   inputs.empty.url = "github:nix-systems/empty";
   inputs.easykubenix.url = "github:Lillecarl/easykubenix";
@@ -150,6 +151,7 @@
         inputs.microvm.overlays.default
         inputs.angrr.overlays.default
         inputs.nix-darwin.overlays.default
+        inputs.devenv.overlays.default
         (final: prev: {
           inherit lib;
           kdnConfig = self.kdnMetaModule.config;
