@@ -38,6 +38,7 @@ in
         ];
         text = builtins.readFile ./bin/argo-eks-token.sh;
       })
+      kdn.aws-sso
     ];
   };
 }
