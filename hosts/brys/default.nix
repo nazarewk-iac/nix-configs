@@ -258,5 +258,8 @@
     {
       security.sudo.wheelNeedsPassword = false;
     }
+    {
+      services.angrr.enable = false;
+    }
   ];
 }
