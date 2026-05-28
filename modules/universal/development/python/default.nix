@@ -39,7 +39,7 @@ let
         pendulum
         pip
         pip-tools
-        pipx
+        # pipx # TODO: 2026-05-28: broken build https://github.com/NixOS/nixpkgs/issues/522307
         pyaml
         pyheos
         pytest
