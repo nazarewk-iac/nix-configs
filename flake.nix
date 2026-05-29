@@ -10,6 +10,8 @@
   inputs.helix-editor.url = "github:helix-editor/helix/25.07.1";
 
   # * rest of inputs
+  inputs.brew-tap--browsers-software--homebrew-tap.flake = false;
+  inputs.brew-tap--browsers-software--homebrew-tap.url = "git+ssh://git@github.com/browsers-software/homebrew-tap";
 
   inputs.angrr.url = "github:linyinfeng/angrr";
   inputs.argon40-nix.url = "github:guusvanmeerveld/argon40-nix";

@@ -169,6 +169,22 @@
         "type": "github"
       }
     },
+    "brew-tap--browsers-software--homebrew-tap": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1767109222,
+        "narHash": "sha256-78p7jfcmY9j5KFua8aPqVwEHOgP0xIoABfxxfmc7U0I=",
+        "ref": "refs/heads/main",
+        "rev": "a29598df8095e23ce8d661eed05772abc9867e11",
+        "revCount": 30,
+        "type": "git",
+        "url": "ssh://git@github.com/browsers-software/homebrew-tap"
+      },
+      "original": {
+        "type": "git",
+        "url": "ssh://git@github.com/browsers-software/homebrew-tap"
+      }
+    },
     "brew-tap--homebrew--cask": {
       "flake": false,
       "locked": {
@@ -1331,10 +1347,10 @@
     "nixpkgs_2": {
       "locked": {
         "lastModified": 1777654493,
-        "narHash": "sha256-JSUPUTJqXBg/wbVNkofL5ceNrYT1nbqfvGD90z5MBwA=",
+        "narHash": "sha256-CabZA5AoLsJlPsY1sqnaJUb67Ka+x/xjhN6djB3HvvI=",
         "owner": "nazarewk-iac",
         "repo": "nixpkgs",
-        "rev": "8c96a95f8f18d0607b131097a2d839ad1e38f7d6",
+        "rev": "a0a42b56046591644936ed02cff90aae5df62d67",
         "type": "github"
       },
       "original": {
@@ -1405,6 +1421,7 @@
         "argon40-nix": "argon40-nix",
         "base16": "base16",
         "brew": "brew",
+        "brew-tap--browsers-software--homebrew-tap": "brew-tap--browsers-software--homebrew-tap",
         "brew-tap--homebrew--cask": "brew-tap--homebrew--cask",
         "brew-tap--homebrew--core": "brew-tap--homebrew--core",
         "colmena": "colmena",

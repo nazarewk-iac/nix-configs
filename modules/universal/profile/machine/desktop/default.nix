@@ -25,7 +25,7 @@ in
         kdn.hw.gpu.enable = true;
         kdn.hw.qmk.enable = true;
         kdn.profile.machine.basic.enable = true;
-        kdn.programs.browsers.enable = true;
+        kdn.programs.browsers-launcher.enable = true;
         kdn.programs.chrome.enable = true;
         kdn.programs.chromium.enable = true;
         kdn.programs.firefox.enable = true;
