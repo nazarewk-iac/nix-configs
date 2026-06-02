@@ -55,6 +55,7 @@ in
             indent-guides.character = "╎";
             end-of-line-diagnostics = "hint";
             inline-diagnostics.cursor-line = "hint";
+            file-picker.hidden = false;
           };
           keys.normal = {
             x = "select_line_below";
