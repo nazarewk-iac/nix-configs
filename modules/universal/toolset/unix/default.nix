@@ -17,6 +17,12 @@ in
   config = lib.mkMerge [
     (lib.mkIf cfg.enable {
       kdn.toolset.tracing.enable = lib.mkDefault true;
+      kdn.env.packages = with pkgs; [
+        btop
+        htop
+        pstree
+        (lib.meta.setPrio 10 util-linux)
+      ];
     })
     (kdnConfig.util.ifTypes [ "nixos" ] (
       lib.mkIf cfg.enable {
@@ -25,13 +31,10 @@ in
             sysstat
             iotop
 
-            btop
-            htop
             lurk # strace alternative
             pstree
             strace
             perf # moved from kernelPackages
-            (lib.meta.setPrio 10 util-linux)
 
             (pkgs.writeShellApplication {
               name = "get-proc-env";
