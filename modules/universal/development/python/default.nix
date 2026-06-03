@@ -29,6 +29,7 @@ let
         flake8
         fsspec
         graphviz
+        h2
         httpie
         httpx
         ipython
