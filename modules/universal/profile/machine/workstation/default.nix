@@ -42,8 +42,6 @@ in
         kdn.services.k8s.management.enable = true;
         kdn.toolset.diagrams.enable = true;
         kdn.toolset.logs-processing.enable = true;
-        kdn.virtualisation.containers.enable = true;
-        kdn.virtualisation.containers.podman.enable = true;
         kdn.virtualisation.libvirtd.enable = true;
         kdn.virtualisation.vagrant.enable = true;
       }

@@ -83,7 +83,7 @@ in
       }
     ))
     (kdnConfig.util.ifHM (
-      lib.mkIf cfg.enable (
+      lib.mkIf (cfg.enable && kdnConfig.util.hasParentOfAnyType [ "nixos" ]) (
         lib.mkMerge [
           {
             kdn.virtualisation.containers.containersConf.cniPlugins = [ pkgs.cni-plugins ];
