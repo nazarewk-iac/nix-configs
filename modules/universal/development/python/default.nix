@@ -122,9 +122,12 @@ in
           ty
           ruff
           # https://github.com/python-lsp/python-lsp-server
-          # python-lsp-server # TODO: failed to build on 2025-12-19
           (python3.withPackages (
             pp: with pp; [
+              jedi # autocomplete
+              jedi-language-server
+              python-lsp-server
+
               # dependencies/optional plugins
               mccabe
               # formatters: yapf > autopep8
