@@ -46,6 +46,8 @@ in
         kdn.toolset.mikrotik.enable = lib.mkDefault (
           pkgs.stdenv.hostPlatform.isx86 && config.kdn.desktop.enable
         );
+        kdn.virtualisation.containers.enable = true;
+        kdn.virtualisation.containers.podman.enable = true;
       }
     ]
   );
