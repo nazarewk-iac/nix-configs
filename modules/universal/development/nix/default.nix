@@ -31,25 +31,32 @@ in
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       { kdn.toolset.nix.enable = true; }
-      (kdnConfig.util.ifHM (
-        lib.mkIf cfg.enable {
-          programs.helix.extraPackages = with pkgs; [
-            nil
-            nixd
-          ];
-          programs.helix.languages.language = [
-            {
-              name = "nix";
-              auto-format = true;
-              formatter = {
-                command = lib.getExe pkgs.kdn.kdn-nix-fmt;
-              };
-            }
-          ];
-        }
-      ))
       (kdnConfig.util.ifHMParent {
-        home-manager.sharedModules = [ { kdn.development.nix.enable = true; } ];
+        home-manager.sharedModules = [ { kdn.development.nix = cfg; } ];
+      })
+      (kdnConfig.util.ifHM {
+        programs.helix.extraPackages = with pkgs; [
+          nil
+          nixd
+        ];
+        programs.helix.languages.language = [
+          {
+            name = "nix";
+            auto-format = true;
+            formatter = {
+              command = lib.getExe pkgs.kdn.kdn-nix-fmt;
+            };
+          }
+        ];
+        programs.bash.initExtra = ''
+          eval "$(${lib.getExe pkgs.devenv} hook bash)"
+        '';
+        programs.zsh.initContent = ''
+          eval "$(${lib.getExe pkgs.devenv} hook zsh)"
+        '';
+        programs.fish.interactiveShellInit = ''
+          ${lib.getExe pkgs.devenv} hook fish | source
+        '';
       })
       (kdnConfig.util.ifNotHMParent (
         lib.mkMerge [
