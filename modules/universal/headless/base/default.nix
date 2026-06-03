@@ -49,7 +49,13 @@ in
             programs.zellij.enableBashIntegration = true;
             programs.zellij.enableFishIntegration = true;
             programs.zellij.enableZshIntegration = true;
-            programs.zellij.attachExistingSession = true;
+            programs.zellij.attachExistingSession = false; # don't attach to just any session
+            # auto-attach to `main` session
+            programs.fish.interactiveShellInit = ''
+              if status is-interactive; and not set -q ZELLIJ
+                zellij a -c main
+              end
+            '';
             ## auto-starting zellij gets a little too annyoing in nested sessions
             ## TODO: try also passing `SendEnv` (client) / `AcceptEnv` (server), https://superuser.com/a/702751
             #programs.fish.interactiveShellInit = lib.mkOrder 200 ''
