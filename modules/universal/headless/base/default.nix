@@ -46,7 +46,10 @@ in
         lib.mkMerge [
           {
             programs.zellij.enable = true;
-            programs.zellij.enableFishIntegration = false;
+            programs.zellij.enableBashIntegration = true;
+            programs.zellij.enableFishIntegration = true;
+            programs.zellij.enableZshIntegration = true;
+            programs.zellij.attachExistingSession = true;
             ## auto-starting zellij gets a little too annyoing in nested sessions
             ## TODO: try also passing `SendEnv` (client) / `AcceptEnv` (server), https://superuser.com/a/702751
             #programs.fish.interactiveShellInit = lib.mkOrder 200 ''
@@ -69,6 +72,24 @@ in
               ## TODO: this is not the right color to override in stylix theme (barely legible green text on grey background on the ribbon)
               # ribbon_unselected.background = "#${base01}";
             };
+
+            # fix Delete working as Ctrl + H on external keyboard
+            programs.zellij.settings.support_kitty_keyboard_protocol = true;
+
+            programs.wezterm.extraConfig = ''
+              config.keys = {
+                -- Make Backspace send ^? (0x7F) instead of ^H (0x08)
+                {
+                  key = 'Backspace',
+                  action = wezterm.action.SendKey { key = 'Backspace' },
+                },
+                -- Also fix the Delete key if needed
+                {
+                  key = 'Delete',
+                  action = wezterm.action.SendKey { key = 'Delete' },
+                },
+              }
+            '';
           }
           {
             programs.vim.enable = true;
