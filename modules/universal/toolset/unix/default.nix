@@ -11,7 +11,7 @@ let
 in
 {
   options.kdn.toolset.unix = {
-    enable = lib.mkEnableOption "linux utils";
+    enable = lib.mkEnableOption "unix utils";
   };
 
   config = lib.mkMerge [
@@ -22,6 +22,7 @@ in
         htop
         pstree
         (lib.meta.setPrio 10 util-linux)
+        pv
       ];
     })
     (kdnConfig.util.ifTypes [ "nixos" ] (
