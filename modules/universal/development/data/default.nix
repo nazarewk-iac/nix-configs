@@ -29,7 +29,7 @@ in
           pkgs.kdn.data-converters
 
           gojq
-          jiq # interactive JQ
+          ijq # interactive JQ
           jc # convert commands output to JSON
           gron # JSON to/from list of path-value assignments
           (pkgs.writeShellApplication {
