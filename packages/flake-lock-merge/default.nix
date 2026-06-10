@@ -24,6 +24,7 @@ mkPythonScript {
   requirementsFileText = ''
   '';
   runtimeDeps = with pkgs; [
-    #git
+    nix
+    jujutsu
   ];
 }
