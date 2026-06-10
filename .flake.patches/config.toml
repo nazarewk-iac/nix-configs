@@ -17,9 +17,6 @@ upstream_input = "{name}-upstream"
 # [patch.nixpkgs.netbird-dnssec]
 # url = "https://github.com/NixOS/nixpkgs/pull/410239.patch?full_index=1"
 
-[patch.nixpkgs.try-rambox]
-url = "https://github.com/NixOS/nixpkgs/pull/496327.patch?full_index=1"
-
 # [patch.nixpkgs.ceph-update-fix]
 # url = "https://github.com/NixOS/nixpkgs/pull/494583.patch?full_index=1"
 
@@ -55,5 +52,6 @@ url = "https://github.com/nix-community/preservation/pull/21.patch?full_index=1"
 #base = "main"
 #ref = "brianmcgee:feat/age-plugins"
 
-[patch.nixos-crostini.fixes]
-url = "https://github.com/aldur/nixos-crostini/compare/main...nazarewk-iac:kdn-fixes.patch?full_index=1"
+# TODO: update it!
+#[patch.nixos-crostini.fixes]
+#url = "https://github.com/aldur/nixos-crostini/compare/main...nazarewk-iac:kdn-fixes.patch?full_index=1"
