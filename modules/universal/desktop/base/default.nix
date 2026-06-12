@@ -92,6 +92,17 @@ in
             ];
           kdn.programs.dconf.enable = true;
         })
+        (kdnConfig.util.ifHM {
+          # gtk.gtk4.theme.name = config.gtk.theme.name;
+          # gtk.gtk4.theme.package = config.gtk.theme.package;
+          gtk.gtk2.force = true;
+          xdg.configFile."fontconfig/conf.d/10-hm-fonts.conf".force = true;
+          xdg.configFile."gtk-3.0/gtk.css".force = true;
+          xdg.configFile."gtk-3.0/settings.ini".force = true;
+          xdg.configFile."gtk-4.0/gtk.css".force = true;
+          xdg.configFile."gtk-4.0/settings.ini".force = true;
+
+        })
         (kdnConfig.util.ifTypes [ "nixos" ] (
           lib.mkMerge [
             {
@@ -105,22 +116,7 @@ in
             }
             {
               fonts.fontDir.enable = true;
-
               gtk.iconCache.enable = true;
-              home-manager.sharedModules = [
-                (
-                  { config, ... }:
-                  {
-                    gtk.gtk4.theme = config.gtk.theme;
-                    gtk.gtk2.force = true;
-                    xdg.configFile."fontconfig/conf.d/10-hm-fonts.conf".force = true;
-                    xdg.configFile."gtk-3.0/gtk.css".force = true;
-                    xdg.configFile."gtk-3.0/settings.ini".force = true;
-                    xdg.configFile."gtk-4.0/gtk.css".force = true;
-                    xdg.configFile."gtk-4.0/settings.ini".force = true;
-                  }
-                )
-              ];
             }
             {
               hardware.uinput.enable = true;

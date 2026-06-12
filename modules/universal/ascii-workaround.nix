@@ -25,6 +25,7 @@ kdnConfig.util.ifTypes [ "nixos" ] {
       renames."Warbler" = "Warbler";
       renames."Xantusia" = "Xantusia";
       renames."Yarara" = "Yarara";
+      renames."Zokor" = "Zokor";
     in
     renames."${codeName}"
       or (throw "Unknown `codeName`: ${codeName}, please add it to `renames` in `ascii-workaround.nix`");
