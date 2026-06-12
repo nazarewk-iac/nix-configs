@@ -21,10 +21,9 @@ in
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
-        kdn.env.packages = with pkgs; [
+        kdn.toolset.essentials.enable = true; # coreutils
+        kdn.env.packages = [
           cfg.package
-          unzip
-          coreutils
         ];
       }
       (kdnConfig.util.ifHMParent {

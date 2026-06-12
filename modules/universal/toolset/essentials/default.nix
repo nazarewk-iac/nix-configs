@@ -41,12 +41,13 @@ in
             openssl
 
             findutils
-            coreutils
+            (lib.hiPrio coreutils) # for higher priority than kill from util-linux
             moreutils
             gnugrep
             ripgrep
 
             zip
+            unzip
 
             pkgs.kdn.whicher
 
