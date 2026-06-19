@@ -205,25 +205,29 @@ def cmd_generate_kubeconfig(args):
         token, sso = sso_cache[sso_session]
 
         for cluster in iter_eks_clusters(account_id, role, token, sso, eks_region):
+            cluster_long_alias = to_name(cluster, aws_profile)
+            # `user` has arguments related to the specific cluster
+            user_alias = to_name(cluster, aws_profile)
             short_alias = to_name(args.prefix, cluster)
-            print(f"  {aws_profile}  ({role} / {cluster})", file=sys.stderr)
+            cluster_arn = f"arn:aws:eks:{eks_region}:{account_id}:cluster/{cluster}"
+            print(f"  {aws_profile=}  ({user_alias=} {role=} / {cluster=})", file=sys.stderr)
             subprocess.run(
                 [
                     "aws", "eks", "update-kubeconfig",
                     "--name", cluster,
                     "--region", eks_region,
                     "--profile", aws_profile,
-                    "--alias", to_name(cluster, aws_profile),
+                    "--user-alias", user_alias,
+                    "--alias", cluster_long_alias,
                 ],
                 check=True,
             )
             if short_alias != aws_profile:
-                arn = f"arn:aws:eks:{eks_region}:{account_id}:cluster/{cluster}"
                 subprocess.run(
                     [
                         "kubectl", "config", "set-context", short_alias,
-                        "--cluster", arn,
-                        "--user", arn,
+                        "--cluster", cluster_arn,
+                        "--user", user_alias,
                     ],
                     check=True,
                 )
