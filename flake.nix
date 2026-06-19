@@ -254,6 +254,7 @@
         self.darwinConfigurations // self.nixosConfigurations
       );
       flake.nixosModules.default = ./modules/universal;
+      flake.devenvModules.default = ./modules/slots;
       flake.nixosConfigurations = lib.pipe self.hostConfigurations [
         (lib.attrsets.filterAttrs (_: host: host.moduleType == "nixos"))
         (builtins.mapAttrs (

@@ -34,6 +34,8 @@
 .*.md
 !/.envrc
 !/flake.lock
+!/devenv.yaml
+!/devenv.lock
 
 !/.flake.patches/
 !/modules/shared/universal/profile/user/kdn/
