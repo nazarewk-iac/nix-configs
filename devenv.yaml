@@ -3,3 +3,5 @@ inputs:
     url: github:NixOS/nixpkgs/nixpkgs-unstable
   nix-configs:
     url: path:.
+  mcp-servers-nix:
+    url: github:natsukium/mcp-servers-nix
