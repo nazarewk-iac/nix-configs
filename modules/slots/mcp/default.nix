@@ -76,9 +76,13 @@ let
     backends = allBackends;
   };
 
-  # Stable path within the project so .mcp.json never changes between builds.
-  # enterShell symlinks this to the current store path.
-  stableConfigPath = "$DEVENV_ROOT/.devenv/mcp-gateway.yaml";
+  # Stable symlink within the project so .mcp.json never changes between builds.
+  # enterShell updates the symlink; the wrapper script expands DEVENV_ROOT at runtime.
+  stableConfigLink = ".devenv/mcp-gateway.yaml";
+
+  gatewayWrapper = pkgs.writeShellScript "mcp-gateway-wrapper" ''
+    exec ${lib.getExe pkgs.mcp-gateway} serve --stdio -c "''${DEVENV_ROOT}/${stableConfigLink}"
+  '';
 in
 {
   options.kdn.mcp = {
@@ -119,20 +123,14 @@ in
 
     # Update the stable symlink on every shell activation.
     enterShell = ''
-      ln -sfn ${gatewayConfig} ${stableConfigPath}
+      ln -sfn ${gatewayConfig} "$DEVENV_ROOT/${stableConfigLink}"
     '';
 
     # Register only the gateway with Claude Code via stdio — not individual servers.
-    # Points at the stable symlink so .mcp.json is static across builds.
+    # Uses a wrapper script so DEVENV_ROOT is expanded at runtime, keeping .mcp.json static.
     claude.code.mcpServers.mcp-gateway = {
       type = "stdio";
-      command = lib.getExe pkgs.mcp-gateway;
-      args = [
-        "serve"
-        "--stdio"
-        "-c"
-        stableConfigPath
-      ];
+      command = "${gatewayWrapper}";
     };
   };
 }

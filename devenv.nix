@@ -8,6 +8,7 @@
 
   kdn.mcp = {
     enable = true;
+    basic-memory.enable = true;
     programs = {
       git.enable = true;
       nixos.enable = true;

@@ -1,6 +1,7 @@
 {
   pkgs,
   lib,
+  __inputs__ ? { },
   ...
 }:
 (import ./netbird { inherit pkgs lib; })
@@ -35,6 +36,7 @@
   tc-redirect-tap = pkgs.callPackage ./tc-redirect-tap { };
   whicher = pkgs.callPackage ./whicher { };
 
+  basic-memory = pkgs.callPackage ./basic-memory { inherit __inputs__; };
   jj-mcp = pkgs.callPackage ./jj-mcp { };
   # AUTO_PACKAGE_PLACEHOLDER #
   aws-sso = pkgs.callPackage ./aws-sso { };

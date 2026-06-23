@@ -2,7 +2,7 @@
   lib,
   buildNpmPackage,
   fetchFromGitHub,
-  jj,
+  jujutsu,
   makeWrapper,
 }:
 buildNpmPackage {
@@ -27,7 +27,7 @@ buildNpmPackage {
 
   postInstall = ''
     wrapProgram $out/bin/jj-mcp \
-      --prefix PATH : ${lib.makeBinPath [ jj ]}
+      --prefix PATH : ${lib.makeBinPath [ jujutsu ]}
   '';
 
   meta = {

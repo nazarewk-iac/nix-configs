@@ -54,6 +54,9 @@
   inputs.nixos-generators.url = "github:nix-community/nixos-generators";
   inputs.nixos-hardware.url = "github:nixos/nixos-hardware";
   inputs.nur.url = "github:nix-community/NUR";
+  inputs.pyproject-nix.url = "github:pyproject-nix/pyproject.nix";
+  inputs.pyproject-build-systems.url = "github:pyproject-nix/build-system-pkgs";
+  inputs.uv2nix.url = "github:pyproject-nix/uv2nix";
   inputs.preservation-upstream.flake = false; # no need for upstream to be a flake
   inputs.preservation-upstream.url = "github:nix-community/preservation";
   inputs.preservation.url = "github:nazarewk-iac/preservation/nix-configs";
@@ -88,6 +91,12 @@
   inputs.nix-fast-build.inputs.flake-parts.follows = "flake-parts";
   inputs.nix-fast-build.inputs.treefmt-nix.follows = "treefmt-nix";
   inputs.nur.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.pyproject-nix.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.pyproject-build-systems.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.pyproject-build-systems.inputs.pyproject-nix.follows = "pyproject-nix";
+  inputs.pyproject-build-systems.inputs.uv2nix.follows = "uv2nix";
+  inputs.uv2nix.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.uv2nix.inputs.pyproject-nix.follows = "pyproject-nix";
   inputs.nur.inputs.flake-parts.follows = "flake-parts";
   inputs.hardware-report.inputs.flake-utils.follows = "flake-utils";
   inputs.hardware-report.inputs.nixpkgs.follows = "nixpkgs";
@@ -143,6 +152,7 @@
               pkgs = final;
               lib = final.lib;
               kdnConfig = self.kdnMetaModule.config;
+              __inputs__ = { inherit inputs; };
             });
         })
       ];
