@@ -36,6 +36,8 @@ in
           git
           git-utils
           gh
+
+          jjui
         ];
         programs.jujutsu.enable = true;
         programs.jujutsu.settings = {

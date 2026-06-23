@@ -5,6 +5,9 @@
 # This keeps the LLM's tool surface small (~14 meta-tools) regardless of how
 # many MCP servers are configured.
 #
+# The gateway config is symlinked to .devenv/mcp-gateway.yaml on enterShell
+# so that .mcp.json never needs updating between builds.
+#
 # Requires devenv.yaml input:
 #   mcp-servers-nix:
 #     url: github:natsukium/mcp-servers-nix
@@ -72,6 +75,10 @@ let
     };
     backends = allBackends;
   };
+
+  # Stable path within the project so .mcp.json never changes between builds.
+  # enterShell symlinks this to the current store path.
+  stableConfigPath = "$DEVENV_ROOT/.devenv/mcp-gateway.yaml";
 in
 {
   options.kdn.mcp = {
@@ -110,7 +117,13 @@ in
   config = lib.mkIf cfg.enable {
     packages = [ pkgs.mcp-gateway ];
 
+    # Update the stable symlink on every shell activation.
+    enterShell = ''
+      ln -sfn ${gatewayConfig} ${stableConfigPath}
+    '';
+
     # Register only the gateway with Claude Code via stdio — not individual servers.
+    # Points at the stable symlink so .mcp.json is static across builds.
     claude.code.mcpServers.mcp-gateway = {
       type = "stdio";
       command = lib.getExe pkgs.mcp-gateway;
@@ -118,7 +131,7 @@ in
         "serve"
         "--stdio"
         "-c"
-        "${gatewayConfig}"
+        stableConfigPath
       ];
     };
   };
