@@ -96,8 +96,7 @@ in
           # gtk.gtk4.theme.name = config.gtk.theme.name;
           # gtk.gtk4.theme.package = config.gtk.theme.package;
           gtk.gtk2.force = true;
-          xdg.configFile."fontconfig/conf.d/10-hm-fonts.conf".force = true;
-          xdg.configFile."gtk-3.0/gtk.css".force = true;
+xdg.configFile."gtk-3.0/gtk.css".force = true;
           xdg.configFile."gtk-3.0/settings.ini".force = true;
           xdg.configFile."gtk-4.0/gtk.css".force = true;
           xdg.configFile."gtk-4.0/settings.ini".force = true;
