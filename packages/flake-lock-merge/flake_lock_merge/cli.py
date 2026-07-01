@@ -35,7 +35,7 @@ def main() -> None:
     print(f"Loading reference lock from jj revision: {args.revision}", file=sys.stderr)
     lock_data = get_jj_lock(args.revision, args.path)
 
-    with tempfile.NamedTemporaryFile(suffix=".lock", delete=False) as tmp:
+    with tempfile.NamedTemporaryFile(suffix=".lock", delete=False, dir=os.path.realpath(tempfile.gettempdir())) as tmp:
         tmp.write(lock_data)
         tmp_path = tmp.name
 
