@@ -53,3 +53,13 @@ nom build .#sources  # builds symlink tree of all flake inputs for inspection
 ```
 
 Tested NixOS hosts: brys, etra, oams. Darwin host: anji.
+
+## Discovering devenv options
+
+When the MCP gateway is unavailable, use `WebFetch` on **https://devenv.sh/reference/options/** to look up devenv module options (git-hooks, files, packages, etc.).
+
+Alternatively, grep the devenv source directly from the Nix store:
+```bash
+DEVENV_SRC=$(nix flake prefetch "github:cachix/devenv/$(jq -r '.nodes.devenv.locked.rev' flake.lock)" --json | jq -r '.storePath')
+grep -rn "your-option" "$DEVENV_SRC/src/modules/"
+```
