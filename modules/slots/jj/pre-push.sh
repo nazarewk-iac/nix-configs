@@ -30,7 +30,7 @@ for p in "${block_patterns[@]}"; do
   block_grep_args+=('-e' "$p")
 done
 
-while read -r local_ref local_sha remote_ref remote_sha; do
+while read -r _local_ref local_sha remote_ref remote_sha; do
   if test "$local_sha" == "$ZERO_SHA"; then
     continue
   fi

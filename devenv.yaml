@@ -5,3 +5,8 @@ inputs:
     url: path:.
   mcp-servers-nix:
     url: github:natsukium/mcp-servers-nix
+  git-hooks:
+    url: github:cachix/git-hooks.nix
+    inputs:
+      nixpkgs:
+        follows: nixpkgs

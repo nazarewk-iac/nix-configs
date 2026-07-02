@@ -5,6 +5,7 @@
   overlays = [ inputs.nix-configs.overlays.packages ];
 
   kdn.nix.enable = true;
+  kdn.jj.enable = true;
 
   kdn.mcp = {
     enable = true;
