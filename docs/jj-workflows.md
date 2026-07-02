@@ -141,4 +141,4 @@ jj bookmark set main -r <merge-change-id>
 jj rebase -s @ -d main -d upstream
 ```
 
-See [flake-update-fork.md](flake-update-fork.md) for the concrete workflow.
+See [flake-update.fork.md](flake-update.fork.md) for the concrete workflow.

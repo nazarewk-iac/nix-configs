@@ -2,7 +2,7 @@
 
 Full doc: [docs/flake-update.md](docs/flake-update.md)
 
-For fork-specific workflow: [docs/flake-update-fork.md](docs/flake-update-fork.md) (installed via devenv slot).
+For fork-specific workflow: [docs/flake-update.fork.md](docs/flake-update.fork.md) (installed via devenv slot).
 
 For jj patterns: [docs/jj-workflows.md](docs/jj-workflows.md) — see also [jj-workflows.md](.agents/rules/jj-workflows.md).
 
