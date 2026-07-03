@@ -38,6 +38,7 @@
 
   basic-memory = pkgs.callPackage ./basic-memory { inherit __inputs__; };
   jj-mcp = pkgs.callPackage ./jj-mcp { };
+  mcpsnoop = pkgs.callPackage ./mcpsnoop { };
   # AUTO_PACKAGE_PLACEHOLDER #
   aws-sso = pkgs.callPackage ./aws-sso { };
   flake-lock-merge = pkgs.callPackage ./flake-lock-merge { };
