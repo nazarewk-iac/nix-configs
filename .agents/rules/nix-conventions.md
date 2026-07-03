@@ -5,6 +5,8 @@ paths:
 
 # Nix Conventions
 
+Full development notes (building, lockfile recovery, hash updates): [docs/nix-dev.md](../../docs/nix-dev.md)
+
 ## Formatting
 
 **Format all Nix files with `nixfmt`** before committing. Uses RFC-style `nixfmt` from nixpkgs, not `nixfmt-classic`. Use `nix run .#kdn-nix-fmt --` as a shortcut to format files in the repo.
