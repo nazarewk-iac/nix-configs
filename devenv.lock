@@ -189,6 +189,22 @@
         "url": "ssh://git@github.com/browsers-software/homebrew-tap"
       }
     },
+    "brew-tap--cloudflare--homebrew-cloudflare": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1777409393,
+        "narHash": "sha256-TpA4/lypAipA/vWYeRIRv4BkxsaBQZ7Docfi0GtAdjk=",
+        "ref": "refs/heads/master",
+        "rev": "4f4901e1732f76b5a31e7a52594894c6a3ea2ae4",
+        "revCount": 401,
+        "type": "git",
+        "url": "ssh://git@github.com/cloudflare/homebrew-cloudflare"
+      },
+      "original": {
+        "type": "git",
+        "url": "ssh://git@github.com/cloudflare/homebrew-cloudflare"
+      }
+    },
     "brew-tap--homebrew--cask": {
       "flake": false,
       "locked": {
@@ -219,6 +235,70 @@
         "owner": "homebrew",
         "repo": "homebrew-core",
         "type": "github"
+      }
+    },
+    "brew-tap--pelotoncycle--homebrew-app-devs": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1781018135,
+        "narHash": "sha256-n7zGPQ6tMrBo0JvakFmEW/30Ydbi1DSV75grxDIRSF0=",
+        "ref": "refs/heads/main",
+        "rev": "bb794cc449f7d6104ccccc866986819ad36f31e5",
+        "revCount": 248,
+        "type": "git",
+        "url": "ssh://git@github.com/pelotoncycle/homebrew-platform"
+      },
+      "original": {
+        "type": "git",
+        "url": "ssh://git@github.com/pelotoncycle/homebrew-platform"
+      }
+    },
+    "brew-tap--pelotoncycle--homebrew-chai": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1779374663,
+        "narHash": "sha256-aCJ3otsZu/0ApOSXkNrvZmGz/RMRUagJBakXVJmwDG4=",
+        "ref": "refs/heads/main",
+        "rev": "37e537b7337b21a36da60507f6a539cbf38731e9",
+        "revCount": 27,
+        "type": "git",
+        "url": "ssh://git@github.com/pelotoncycle/homebrew-chai"
+      },
+      "original": {
+        "type": "git",
+        "url": "ssh://git@github.com/pelotoncycle/homebrew-chai"
+      }
+    },
+    "brew-tap--pelotoncycle--homebrew-platform": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1781018135,
+        "narHash": "sha256-n7zGPQ6tMrBo0JvakFmEW/30Ydbi1DSV75grxDIRSF0=",
+        "ref": "refs/heads/main",
+        "rev": "bb794cc449f7d6104ccccc866986819ad36f31e5",
+        "revCount": 248,
+        "type": "git",
+        "url": "ssh://git@github.com/pelotoncycle/homebrew-platform"
+      },
+      "original": {
+        "type": "git",
+        "url": "ssh://git@github.com/pelotoncycle/homebrew-platform"
+      }
+    },
+    "brew-tap--pelotoncycle--homebrew-tap": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1779897193,
+        "narHash": "sha256-ObeD7RvEiJgu9+kzYxlj2daHQnja6+fSWL/WWiQBwno=",
+        "ref": "refs/heads/main",
+        "rev": "b1c3e5a1fd36702b8b7cd3e6791bdbeb5294431a",
+        "revCount": 105,
+        "type": "git",
+        "url": "ssh://git@github.com/pelotoncycle/homebrew-tap"
+      },
+      "original": {
+        "type": "git",
+        "url": "ssh://git@github.com/pelotoncycle/homebrew-tap"
       }
     },
     "cachix": {
@@ -1038,8 +1118,13 @@
         "base16": "base16",
         "brew": "brew",
         "brew-tap--browsers-software--homebrew-tap": "brew-tap--browsers-software--homebrew-tap",
+        "brew-tap--cloudflare--homebrew-cloudflare": "brew-tap--cloudflare--homebrew-cloudflare",
         "brew-tap--homebrew--cask": "brew-tap--homebrew--cask",
         "brew-tap--homebrew--core": "brew-tap--homebrew--core",
+        "brew-tap--pelotoncycle--homebrew-app-devs": "brew-tap--pelotoncycle--homebrew-app-devs",
+        "brew-tap--pelotoncycle--homebrew-chai": "brew-tap--pelotoncycle--homebrew-chai",
+        "brew-tap--pelotoncycle--homebrew-platform": "brew-tap--pelotoncycle--homebrew-platform",
+        "brew-tap--pelotoncycle--homebrew-tap": "brew-tap--pelotoncycle--homebrew-tap",
         "colmena": "colmena",
         "crane": "crane",
         "devenv": "devenv_2",
