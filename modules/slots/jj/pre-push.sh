@@ -4,7 +4,14 @@ set -eEuo pipefail
 # PRIVATE_REMOTE, SENSITIVE_FILE_PATTERNS, SENSITIVE_MESSAGE_PATTERNS,
 # BLOCK_PUSH_MESSAGE_PATTERNS are baked in via runtimeEnv as space-separated strings.
 
-push_remote="$1"
+# $1 is the remote name when called directly by git.
+# When invoked via the pre-commit framework, git's argv is not forwarded but
+# PRE_COMMIT_REMOTE_BRANCH is set instead — extract the remote name from it.
+push_remote="${1:-${PRE_COMMIT_REMOTE_BRANCH%%/*}}"
+if [ -z "$push_remote" ]; then
+  echo "WARNING: push_remote is unset, skipping remote-specific checks" >&2
+  # still run always-on checks below, but skip remote-specific ones
+fi
 
 ZERO_SHA="0000000000000000000000000000000000000000"
 
