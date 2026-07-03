@@ -116,6 +116,16 @@ in
       type = lib.types.port;
       default = 39400;
     };
+
+    commandOverlays = lib.mkOption {
+      type = lib.types.listOf (lib.types.functionTo lib.types.str);
+      default = [ ];
+      description = ''
+        List of command transformers applied left-to-right to the base gateway wrapper command.
+        Each function receives the current command string and returns a new command string.
+        Use this to wrap the gateway in a proxy (e.g. mcpsnoop) without duplicating the base command.
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -127,10 +137,10 @@ in
     '';
 
     # Register only the gateway with Claude Code via stdio — not individual servers.
-    # Uses a wrapper script so DEVENV_ROOT is expanded at runtime, keeping .mcp.json static.
+    # commandOverlays allows other slots to wrap the command (e.g. mcp/snoop).
     claude.code.mcpServers.mcp-gateway = {
       type = "stdio";
-      command = "${gatewayWrapper}";
+      command = lib.pipe "${gatewayWrapper}" cfg.commandOverlays;
     };
   };
 }
