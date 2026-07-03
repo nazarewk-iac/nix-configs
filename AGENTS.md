@@ -25,6 +25,7 @@ read the full doc when you need detail.
 | [docs/jj-workflows.md](docs/jj-workflows.md) | jj patterns: working copy, split, squash, rebase |
 | [docs/mcp-setup.md](docs/mcp-setup.md) | MCP gateway architecture, configuration, backends, lifecycle |
 | [docs/mcpsnoop.md](docs/mcpsnoop.md) | mcpsnoop traffic inspector: setup, TUI usage, filtering, workflows |
+| [docs/nix-dev.md](docs/nix-dev.md) | Nix development: building devenv shell, vendored lockfile recovery, hash updates |
 
 ## Nix Store Symlinks
 
