@@ -16,7 +16,7 @@ in
 
   config = lib.mkIf cfg.enable {
     kdn.env.packages = with pkgs; [
-      elixir
+      beamPackages.elixir
     ];
   };
 }
