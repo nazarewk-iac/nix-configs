@@ -103,5 +103,6 @@ in
     };
 
     files.".claude/rules/flake-update.fork.md".source = ../../../../docs/flake-update.fork.md;
+    files.".claude/skills/flake-update-fork/SKILL.md".source = ./SKILL.md;
   };
 }

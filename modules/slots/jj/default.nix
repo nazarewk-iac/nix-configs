@@ -74,7 +74,7 @@ in
       ''}
     '';
 
-    # Drop the jj-workflows agent rule into .claude/rules/
     files.".claude/rules/jj-workflows.md".source = ../../../docs/jj-workflows.md;
+    files.".claude/skills/jj-workflows/SKILL.md".source = ./SKILL.md;
   };
 }

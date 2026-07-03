@@ -49,3 +49,4 @@
 # devenv-managed symlinks into /nix/store — never commit these
 /.agents/rules/basic-memory*.md
 /.agents/rules/flake-update.fork.md
+/.agents/skills/
