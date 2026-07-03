@@ -4,6 +4,8 @@
 
   overlays = [ inputs.nix-configs.overlays.packages ];
 
+  kdn.isSourceRepo = true;
+
   kdn.nix.enable = true;
   kdn.jj.enable = true;
 

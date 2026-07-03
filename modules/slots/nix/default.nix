@@ -21,6 +21,11 @@ in
   config = lib.mkIf cfg.enable {
     claude.code.enable = true;
 
+    # The default hook uses just `prek` by name, which fails outside devenv shell.
+    # Use the absolute store path so Claude Code can find it regardless of PATH.
+    claude.code.hooks.git-hooks-run.command =
+      ''cd "$DEVENV_ROOT" && ${lib.getExe config.git-hooks.package} run'';
+
     packages = with pkgs; [
       nil
       nixd
@@ -40,8 +45,10 @@ in
       always_run = true;
     };
 
-    files.".claude/skills/flake-update/SKILL.md".source = ./SKILL.md;
-    files.".claude/skills/flake-patches/SKILL.md".source = ./flake-patches-SKILL.md;
+    files = lib.mkIf (!config.kdn.isSourceRepo) {
+      ".claude/skills/flake-update/SKILL.md".source = ./SKILL.md;
+      ".claude/skills/flake-patches/SKILL.md".source = ./flake-patches-SKILL.md;
+    };
 
     scripts.hello.exec = ''
       echo "hello from nix-configs devenv"

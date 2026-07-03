@@ -50,3 +50,4 @@
 /.agents/rules/basic-memory*.md
 /.agents/rules/flake-update.fork.md
 /.agents/skills/
+!/.agents/skills/*/SKILL.md

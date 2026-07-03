@@ -75,6 +75,8 @@ in
     '';
 
     files.".claude/rules/jj-workflows.md".source = ../../../docs/jj-workflows.md;
-    files.".claude/skills/jj-workflows/SKILL.md".source = ./SKILL.md;
+    files = lib.mkIf (!config.kdn.isSourceRepo) {
+      ".claude/skills/jj-workflows/SKILL.md".source = ./SKILL.md;
+    };
   };
 }
