@@ -46,6 +46,31 @@ let
       upstream-candidates = "~description(\"\") & ~fork";
       fork-candidates = "~description(\"\") & fork";
     };
+    aliases.sync-remotes = [
+      "util"
+      "exec"
+      "--"
+      "bash"
+      "-xeEuo"
+      "pipefail"
+      "-c"
+      ''
+        jj sync-upstream
+        fork_candidate=$(jj log --no-graph -r 'latest(fork-candidates)' -T 'change_id.short()')
+        echo "Fork candidate: $fork_candidate"
+        echo "Changes to push to ${cfg.fork.remote}:main (since main@${cfg.fork.remote}):"
+        jj log -r "main@${cfg.fork.remote}..''${fork_candidate}" --stat
+        read -rp "Push ${cfg.fork.remote}:main? (y/n)" -n 1
+        echo
+        if test "$REPLY" == y ; then
+          jj bookmark set main -r "$fork_candidate"
+          jj git push --remote=${cfg.fork.remote} --bookmark=main
+        else
+          echo 'push cancelled'
+          exit 1
+        fi
+      ''
+    ];
     aliases.sync-upstream = [
       "util"
       "exec"
