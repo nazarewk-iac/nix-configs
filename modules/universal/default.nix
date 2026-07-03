@@ -154,9 +154,17 @@ in
             homebrew.enable = true;
 
             # see https://github.com/zhaofengli/nix-homebrew/issues/128
-            homebrew.taps = builtins.attrNames (
-              lib.filterAttrs (n: _: !lib.hasPrefix "homebrew/" n) config.nix-homebrew.taps
-            );
+            homebrew.taps = lib.pipe config.nix-homebrew.taps [
+              (lib.filterAttrs (n: _: !lib.hasPrefix "homebrew/" n))
+              builtins.attrNames
+              (builtins.map (n: {
+                name = n;
+                # TODO: might be a better idea to trust specific installed casks and formulaes
+                #       can be achieved with either nix-darwin or nix-homebrew options,
+                # TODO: verify whether nix-darwin might be properly un-trusting removed entries compared to nix-homebrew?
+                trusted = true;
+              }))
+            ];
 
             nix-homebrew.enable = true;
             nix-homebrew.enableRosetta = pkgs.stdenv.hostPlatform.isAarch64;
