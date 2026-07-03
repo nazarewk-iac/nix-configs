@@ -7,16 +7,29 @@
 let
   cfg = config.kdn.jj;
 
+  sharedRuntimeEnv = {
+    SENSITIVE_FILE_PATTERNS = lib.concatStringsSep " " cfg.fork.deniedFilePatterns;
+    SENSITIVE_MESSAGE_PATTERNS = lib.concatStringsSep " " cfg.fork.deniedMessagePatterns;
+  };
+
   prePushHook = pkgs.writeShellApplication {
     name = "jj-pre-push";
     runtimeInputs = [ pkgs.git ];
-    runtimeEnv = {
+    runtimeEnv = sharedRuntimeEnv // {
       PRIVATE_REMOTE = cfg.fork.remote;
-      SENSITIVE_FILE_PATTERNS = lib.concatStringsSep " " cfg.fork.deniedFilePatterns;
-      SENSITIVE_MESSAGE_PATTERNS = lib.concatStringsSep " " cfg.fork.deniedMessagePatterns;
       BLOCK_PUSH_MESSAGE_PATTERNS = lib.concatStringsSep " " cfg.alwaysBlockedMessagePatterns;
     };
     text = builtins.readFile ../pre-push.sh;
+  };
+
+  checkForkContamination = pkgs.writeShellApplication {
+    name = "jj-check-fork-contamination";
+    runtimeInputs = [
+      pkgs.git
+      pkgs.jujutsu
+    ];
+    runtimeEnv = sharedRuntimeEnv;
+    text = builtins.readFile ./check-fork-contamination.sh;
   };
 
   forkRepoConfig = (pkgs.formats.toml { }).generate "jj-fork-config.toml" {
@@ -116,6 +129,16 @@ in
         fi
       ''}
     '';
+
+    git-hooks.hooks.jj-check-fork-contamination = {
+      enable = true;
+      name = "jj-check-fork-contamination";
+      description = "Reject fork-specific content staged on a kdn/upstream-side commit";
+      entry = lib.getExe checkForkContamination;
+      stages = [ "pre-commit" ];
+      pass_filenames = false;
+      always_run = true;
+    };
 
     # pre-push hook via devenv git-hooks
     git-hooks.hooks.jj-pre-push = {
