@@ -74,9 +74,11 @@ in
       ''}
     '';
 
-    files.".claude/rules/jj-workflows.md".source = ../../../docs/jj-workflows.md;
-    files = lib.mkIf (!config.kdn.isSourceRepo) {
-      ".claude/skills/jj-workflows/SKILL.md".source = ./SKILL.md;
-    };
+    files = lib.mkMerge [
+      { ".claude/rules/jj-workflows.md".source = ../../../docs/jj-workflows.md; }
+      (lib.mkIf (!config.kdn.isSourceRepo) {
+        ".claude/skills/jj-workflows/SKILL.md".source = ./SKILL.md;
+      })
+    ];
   };
 }

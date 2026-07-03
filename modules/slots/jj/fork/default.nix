@@ -102,9 +102,11 @@ in
       always_run = true;
     };
 
-    files.".claude/rules/flake-update.fork.md".source = ../../../../docs/flake-update.fork.md;
-    files = lib.mkIf (!config.kdn.isSourceRepo) {
-      ".claude/skills/flake-update-fork/SKILL.md".source = ./SKILL.md;
-    };
+    files = lib.mkMerge [
+      { ".claude/rules/flake-update.fork.md".source = ../../../../docs/flake-update.fork.md; }
+      (lib.mkIf (!config.kdn.isSourceRepo) {
+        ".claude/skills/flake-update-fork/SKILL.md".source = ./SKILL.md;
+      })
+    ];
   };
 }
