@@ -11,6 +11,20 @@ AI Agent Guidance for nix-configs Repository.
 - [Packaging Python Scripts](.agents/rules/packaging-python.md) — `init-py-script`, `mkPythonScript`, `default.nix` pattern
 - [Flake Update](.agents/rules/flake-update.md) — update procedure, patch handling, testing (full doc: [docs/flake-update.md](docs/flake-update.md))
 - [jj Workflows](.agents/rules/jj-workflows.md) — working copy, split, bookmark hygiene, fork rebase (full doc: [docs/jj-workflows.md](docs/jj-workflows.md))
+- [MCP Setup](.agents/rules/mcp-setup.md) — gateway architecture, adding backends, mcpsnoop (full doc: [docs/mcp-setup.md](docs/mcp-setup.md))
+
+## docs/ — full documentation
+
+Human-readable docs live in `docs/`. Agent summaries in `.agents/rules/` are short pointers;
+read the full doc when you need detail.
+
+| Doc | Contents |
+|---|---|
+| [docs/flake-update.md](docs/flake-update.md) | Flake update procedure, commit structure, testing |
+| [docs/flake-update.fork.md](docs/flake-update.fork.md) | Fork-specific update workflow (merge commit, flake-lock-merge) |
+| [docs/jj-workflows.md](docs/jj-workflows.md) | jj patterns: working copy, split, squash, rebase |
+| [docs/mcp-setup.md](docs/mcp-setup.md) | MCP gateway architecture, configuration, backends, lifecycle |
+| [docs/mcpsnoop.md](docs/mcpsnoop.md) | mcpsnoop traffic inspector: setup, TUI usage, filtering, workflows |
 
 ## Nix Store Symlinks
 

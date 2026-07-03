@@ -1,46 +1,48 @@
 # jj Workflows
 
-Full doc: [docs/jj-workflows.md](docs/jj-workflows.md)
+Full doc: [docs/jj-workflows.md](docs/jj-workflows.md) — for implementation details invoke the `jj-workflows` skill.
 
-> In non-interactive contexts (scripts, agents), always pass `-m 'message'` and `-- <files>`
-> to `jj split`, `jj describe`, `jj squash` — they open an editor by default.
+> **Non-interactive:** always pass `-m 'msg'` and `-- <files>` to `jj split`/`jj describe`/`jj squash` — they open an editor by default.
+> **Always pass `-- <files>` to `jj squash --into`** — squashing without a file list silently folds everything in `@`, including unexpected diffs from prior rebases.
+> **Never `jj edit` to read a file** — use `jj file show --revision <id> <path>`.
 
-## The working copy (@)
+## Required finish state
 
-`@` is always an empty scratch change. Accumulate edits, then name with `jj describe`.
-jj auto-creates a new empty `@` whenever `@` gains a description.
-
-**Preferred flow: split and squash — rebase is a last resort.**
-Never pre-create a commit before making changes. Let edits land in `@`, then carve them up:
-- `jj split -m 'msg' -- <files>` — extract into a named commit
-- `jj squash --from @ --into <id> -m 'msg'` — fold into an existing unpushed commit
-Only use `jj rebase` when graph topology genuinely needs fixing (e.g. after sync-upstream).
-
-## Key patterns
+After any work session, `@` must be empty with the correct parents:
+- **Fork repo:** `@` has both `main` and `upstream` as parents
+- **Plain repo:** `@` has one parent (the tip of main)
 
 ```bash
-# name current changes:
-jj describe -m 'feat(...): description'
-
-# split @ into two commits non-interactively:
-jj split -m 'fix(...): desc' -- path/to/file
-
-# point bookmark at the just-named commit (not the new empty @):
-jj bookmark set upstream -r @-
-# or by change ID / revset:
-jj bookmark set upstream -r <change-id>
+# fork repo finish:
 jj bookmark set upstream -r 'latest(upstream-candidates)'
-
-# keep @ current after fetching (no fork):
-jj git fetch --remote=kdn
-jj rebase -s @ -d upstream
-
-# keep @ current (with fork):
-jj git fetch --remote=kdn --remote=<fork-remote>
-jj rebase -s @ -d main -d upstream
-
-# rebase fork merge after new kdn commits, then restore @:
-jj rebase --revision <merge-change-id> --destination upstream --destination main@<fork-remote>
-jj bookmark set main -r <merge-change-id>
-jj rebase -s @ -d main -d upstream
+jj rebase --revision <main-merge-id> --destination upstream --destination main@<fork-remote>
+jj bookmark set main -r <main-merge-id>
+jj new -d main -d upstream
 ```
+
+In repos without a fork: just leave an empty `@` on top of the main branch (`jj new` after the last named commit).
+
+> **Warning:** `jj describe` on a multi-parent `@` (e.g. when `@` sits on top of `main` + `upstream`) creates a merge commit inheriting all parents — including fork ones. Always commit kdn work while `@` has a single kdn parent, then restore the multi-parent `@` with `jj new -d main -d upstream` afterwards.
+
+**Before declaring done:**
+```bash
+# 1. check for stray commits (orphans from rebases):
+jj log -r '::(@ | main | upstream)' --no-graph -T 'change_id.short() ++ " " ++ bookmarks ++ " " ++ description.first_line() ++ "\n"'
+
+# 2. fork repos only — verify no fork commits leaked into the kdn chain
+# (grep for fork-remote name; the only allowed match is main@kdn/upstream@<fork-remote> at the base):
+jj log -r 'main@kdn..upstream' --no-graph -T 'change_id.short() ++ " parents=" ++ parents.map(|p| p.change_id().short() ++ "(" ++ p.bookmarks() ++ ")").join(",") ++ " " ++ description.first_line() ++ "\n"' | grep "<fork-remote>" | grep -v "main@kdn"
+# and verify upstream has exactly one parent:
+jj log -r 'parents(upstream)' --no-graph -T 'change_id.short() ++ " " ++ bookmarks ++ " " ++ description.first_line() ++ "\n"'
+
+# 3. verify the build:
+devenv build
+```
+
+If `upstream` has more than one parent, rebase it onto just the kdn chain tip:
+```bash
+jj rebase --revision upstream --destination <kdn-chain-tip-id>
+jj bookmark set upstream -r upstream
+```
+
+Ask the user whether to squash, relocate, or abandon any strays found. Fix build errors before finishing.
