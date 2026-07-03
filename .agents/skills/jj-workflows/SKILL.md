@@ -19,6 +19,8 @@ Full reference: [docs/jj-workflows.md](../../docs/jj-workflows.md)
 jj st                                           # what's changed
 jj log --limit 8                                # recent graph
 jj file show --revision <id> path/to/file       # read file from any revision
+jj op log                                       # operation history
+jj undo                                         # undo last operation (safe escape hatch)
 ```
 
 ## Commit flow
