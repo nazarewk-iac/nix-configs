@@ -212,7 +212,6 @@ in
           {
             security.polkit.enable = true;
 
-            security.polkit.debug = cfg.debugPolkit;
             security.pam.u2f.settings.debug = cfg.debugPolkit;
           }
           {
