@@ -2,6 +2,7 @@
   lib,
   pkgs,
   config,
+  inputs,
   ...
 }:
 let
@@ -150,11 +151,11 @@ in
       always_run = true;
     };
 
-    files = lib.mkMerge [
-      { ".claude/rules/flake-update.fork.md".source = ../../../../docs/flake-update.fork.md; }
-      (lib.mkIf (!config.kdn.isSourceRepo) {
-        ".claude/skills/flake-update-fork/SKILL.md".source = ./SKILL.md;
-      })
-    ];
+    files = lib.mkIf (!config.kdn.isSourceRepo) {
+      ".claude/rules/flake-update.fork.md".source =
+        "${inputs.nix-configs}/.agents/rules/flake-update.fork.md";
+      ".claude/skills/flake-update-fork/SKILL.md".source =
+        "${inputs.nix-configs}/.agents/skills/flake-update-fork/SKILL.md";
+    };
   };
 }

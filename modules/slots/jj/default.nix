@@ -2,6 +2,7 @@
   lib,
   pkgs,
   config,
+  inputs,
   ...
 }:
 let
@@ -75,9 +76,10 @@ in
     '';
 
     files = lib.mkMerge [
-      { ".claude/rules/jj-workflows.md".source = ../../../docs/jj-workflows.md; }
       (lib.mkIf (!config.kdn.isSourceRepo) {
-        ".claude/skills/jj-workflows/SKILL.md".source = ./SKILL.md;
+        ".claude/rules/jj-workflows.md".source = "${inputs.nix-configs}/.agents/rules/jj-workflows.md";
+        ".claude/skills/jj-workflows/SKILL.md".source =
+          "${inputs.nix-configs}/.agents/skills/jj-workflows/SKILL.md";
       })
     ];
   };
