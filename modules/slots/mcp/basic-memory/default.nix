@@ -2,6 +2,7 @@
   config,
   pkgs,
   lib,
+  inputs,
   ...
 }:
 let
@@ -37,6 +38,8 @@ in
       };
     };
 
-    files.".claude/rules/basic-memory.md".source = ./routing.md;
+    files = lib.mkIf (!config.kdn.isSourceRepo) {
+      ".claude/rules/basic-memory.md".source = "${inputs.nix-configs}/.agents/rules/basic-memory.md";
+    };
   };
 }
