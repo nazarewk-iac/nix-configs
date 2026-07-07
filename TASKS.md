@@ -17,3 +17,8 @@ interpret results.
 
 **Starting point:** `.devenv/mcp-gateway.yaml` backend `description` fields and any
 gateway-level system prompt configuration in `modules/slots/mcp/default.nix`.
+
+### Improve the fork validation logic
+
+1. verify every commit in the list of changes independently in pre-push
+2. make the pre-commit (and therefore the `prek run`) verify that commits on top of upstream, but without a fork do not contain fork-specific changes
