@@ -1,6 +1,6 @@
 # Version Control
 
-This repo uses **Jujutsu (`jj`)** instead of raw git.
+This repo uses **Jujutsu (`jj`)** instead of raw git. **Always prefer `jj` commands over `git` equivalents** — use `jj diff` not `git diff`, `jj log` not `git log`, `jj status` not `git status`, etc. Fall back to `git` only for operations `jj` cannot perform (e.g. `git remote`, `gh` CLI).
 
 ## Key commands
 
