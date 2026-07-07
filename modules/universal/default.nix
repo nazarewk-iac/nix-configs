@@ -140,7 +140,7 @@ in
           }
           {
             nix-homebrew.mutableTaps = false;
-            homebrew.onActivation.upgrade = false;
+            homebrew.onActivation.upgrade = true;
             homebrew.onActivation.autoUpdate = false;
             homebrew.onActivation.cleanup = "zap";
             programs.zsh.interactiveShellInit = ''
