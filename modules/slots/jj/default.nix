@@ -82,5 +82,11 @@ in
           "${inputs.nix-configs}/.agents/skills/jj-workflows/SKILL.md";
       })
     ];
+
+    kdn.mcp.extraBackends.jj = {
+      command = "${pkgs.kdn.jj-mcp}/bin/jj-mcp";
+      description = "jj — Jujutsu version control tools";
+    };
+    kdn.mcp.programs.git.enable = false;
   };
 }

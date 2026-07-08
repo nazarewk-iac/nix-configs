@@ -56,5 +56,12 @@ in
     scripts.hello.exec = ''
       echo "hello from nix-configs devenv"
     '';
+
+    kdn.mcp.programs.nixos.enable = true;
+    kdn.mcp.extraBackends.devenv = {
+      command = "devenv mcp";
+      description = "devenv — search nixpkgs packages and devenv options";
+      env.DEVENV_ROOT = toString inputs.nix-configs;
+    };
   };
 }

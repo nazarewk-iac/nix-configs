@@ -142,5 +142,11 @@ in
       type = "stdio";
       command = lib.pipe "${gatewayWrapper}" cfg.commandOverlays;
     };
+    kdn.mcp.programs.filesystem.enable = true;
+    kdn.mcp.programs.filesystem.args = [ "/nix/store" ];
+    kdn.mcp.programs.sequential-thinking.enable = true;
+    kdn.mcp.programs.time.enable = true;
+    kdn.mcp.programs.fetch.enable = true;
+
   };
 }
