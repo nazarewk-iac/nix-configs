@@ -1,0 +1,22 @@
+###
+### START ignore everything
+###
+# ignore everything by default
+*
+# do not ignore directories (still ignores their content)
+!*/
+# still ignore directories with a leading dot
+.*/
+# do not ignore .gitignore files
+!.gitignore
+###
+### END ignore everything
+###
+
+!/skills
+!/rules
+!/agents
+
+!*.md
+.*.md
+*.local.md
