@@ -1,6 +1,6 @@
 inputs:
   nixpkgs:
-    url: github:NixOS/nixpkgs/nixpkgs-unstable
+    follows: nix-configs/nixpkgs
   nix-configs:
     url: path:.
   mcp-servers-nix:
