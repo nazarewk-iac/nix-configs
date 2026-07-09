@@ -16,6 +16,8 @@
 
 !*.nix
 !meta.json
+!*.md
+.*.md
 # SOPS-encrypted links
 !/*/ssh-keys/ssh_host_*_key.{sops,pub}
 !/*/luks/*.sops.header

@@ -7,7 +7,7 @@ Run periodically to pull in new upstream nixpkgs, home-manager, and other inputs
 For fork-specific workflow (merging a private fork's flake.lock), see
 [flake-update.fork.md](flake-update.fork.md).
 
-For jj patterns referenced here, see [jj-workflows.md](jj-workflows.md).
+For jj patterns referenced here, see [jujutsu-vcs.md](jujutsu-vcs.md).
 
 ---
 
