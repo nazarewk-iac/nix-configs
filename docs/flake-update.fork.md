@@ -2,15 +2,15 @@
 
 > **Agent note:** This file is installed as `.claude/rules/flake-update.fork.md` via the
 > `kdn.jj.fork` devenv slot. See also [flake-update.md](flake-update.md) for the base workflow
-> and [jj-workflows.md](jj-workflows.md) for jj patterns.
+> and [jujutsu-vcs.fork.md](jujutsu-vcs.fork.md) for fork-specific jj patterns.
 >
 > In non-interactive contexts: `jj describe`/`jj split`/`jj bookmark set` are safe.
 > `jj new`, `jj rebase` are non-interactive. `upstream@<fork-remote>` is the stable anchor —
 > never use bare `upstream` in revsets.
 
 Extends [flake-update.md](flake-update.md) for repos that maintain a private fork remote
-alongside the public kdn remote. See [jj-workflows.md](jj-workflows.md) for the underlying
-jj patterns.
+alongside the public kdn remote. See [jujutsu-vcs.fork.md](jujutsu-vcs.fork.md) for the
+underlying jj patterns.
 
 ---
 

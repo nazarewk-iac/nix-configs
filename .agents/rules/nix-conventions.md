@@ -36,6 +36,30 @@ the flake sets `nix-configs = self;` for the same purpose in `kdnMetaModule`. Ex
 outside this repo — falls back to `lib.kdn.mkPythonScript pkgs` when unset (i.e. when building
 from within this repo itself).
 
+**A just-created or just-edited file can be invisible to some Nix evaluations and not others** —
+`devenv.yaml`'s `inputs.nix-configs = path:.` sees new files immediately (filtered only by
+`.gitignore`), but `flake.nix`'s `nix-configs = self` — and anything reached via the CLI's `.#`
+shorthand against `self` (host configs, `darwinConfigurations`/`nixosConfigurations`) — resolves
+through a `git+file://` fetcher that reads git's tracked index, which jj does not always keep in
+sync with `@` on every snapshot. See [jujutsu-vcs.md](../../docs/jujutsu-vcs.md)'s "Colocation
+hazard" section for the full mechanism and empirical findings; when in doubt, check
+`git ls-files -- <path>` before trusting a `.#`-based build of a just-touched file.
+
+## Verifying changes
+
+Prefer `devenv eval '<option.path>'` over a full `devenv build shell` when you only need to
+confirm a specific option evaluates correctly (e.g. after wiring a new `claude.code.hooks.*` or
+`claude.code.agents.*` entry) — it's much faster since it skips building derivations:
+
+```bash
+devenv eval 'claude.code.hooks.jj-guard'        # confirm a hook's command/matcher/hookType
+devenv eval 'claude.code.agents.jj-expert.proactive'
+```
+
+Still run `devenv build shell` before declaring work done on anything that touches package
+builds or derivation-level changes — `devenv eval`/`devenv build` alone only check evaluation,
+not that packages actually compile. See [nix-dev.md](../../docs/nix-dev.md#building-and-testing).
+
 ## Option Declarations
 
 **Prefer flat `foo.bar =` over nested `foo = { bar =`** everywhere — `options` declarations,

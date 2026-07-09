@@ -27,6 +27,23 @@ in
     claude.code.hooks.git-hooks-run.command =
       ''cd "$DEVENV_ROOT" && ${lib.getExe config.git-hooks.package} run'';
 
+    # Read-only/evaluation-only commands — safe to always allow, no side effects. `nix run`
+    # itself is deliberately NOT allowed as a bare wildcard (it executes arbitrary flake apps);
+    # only this repo's own idempotent formatter is allow-listed by exact invocation.
+    claude.code.permissions.rules.Bash.allow = [
+      "nix build *"
+      "nix eval *"
+      "nix flake metadata*"
+      "nix flake show *"
+      "nix search *"
+      "nix path-info *"
+      "nix log *"
+      "nix why-depends *"
+      "devenv build *"
+      "devenv eval *"
+      "nix run .#kdn-nix-fmt -- *"
+    ];
+
     packages = with pkgs; [
       nil
       nixd

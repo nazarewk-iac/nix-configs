@@ -11,6 +11,12 @@ let
   jjRepoConfig = (pkgs.formats.toml { }).generate "jj-repo-config.toml" {
     "#schema" = "https://docs.jj-vcs.dev/latest/config-schema.json";
   };
+
+  jjGuardHook = pkgs.writeShellApplication {
+    name = "jj-guard";
+    runtimeInputs = [ pkgs.jq ];
+    text = builtins.readFile ./jj-guard.sh;
+  };
 in
 {
   options.kdn.jj = {
@@ -75,11 +81,51 @@ in
       ''}
     '';
 
+    claude.code.enable = true;
+    claude.code.hooks.jj-guard = {
+      hookType = "PreToolUse";
+      matcher = "Bash";
+      command = ''cd "$DEVENV_ROOT" && ${lib.getExe jjGuardHook}'';
+    };
+    # Read-only jj subcommands — safe to always allow, no side effects. Deliberately more
+    # specific than a bare "jj file *"/"jj config *" would be: both have mutating subcommands
+    # (chmod/track/untrack, set/unset/edit) that must stay gated behind normal permission prompts.
+    # Also includes the read-only git exceptions jj-guard.sh already documents as always-allowed
+    # at the hook level (kept in sync with ALLOWED_READONLY in ./jj-guard.sh).
+    #
+    # The `git *` entries below belong to git as a tool, not jj specifically; move them to a
+    # dedicated modules/slots/git/ module if/when one is split out.
+    claude.code.permissions.rules.Bash.allow = [
+      "jj log *"
+      "jj diff *"
+      "jj status*"
+      "jj show *"
+      "jj file show *"
+      "jj file list *"
+      "jj config get *"
+      "jj config list *"
+      "jj config path*"
+      "jj op log*"
+      "jj bookmark list *"
+      "git status*"
+      "git diff *"
+      "git log *"
+      "git show *"
+      "git check-ignore *"
+    ];
+    claude.code.agents = lib.mkIf (!config.kdn.isSourceRepo) {
+      jj-expert = {
+        description = "Deep jj (Jujutsu VCS) troubleshooting: divergent changes, conflicts, graph surgery, revset/fileset/template questions.";
+        proactive = true;
+        prompt = builtins.readFile "${inputs.nix-configs}/.agents/agents/jj-expert/AGENT.md";
+      };
+    };
+
     files = lib.mkMerge [
       (lib.mkIf (!config.kdn.isSourceRepo) {
-        ".claude/rules/jj-workflows.md".source = "${inputs.nix-configs}/.agents/rules/jj-workflows.md";
-        ".claude/skills/jj-workflows/SKILL.md".source =
-          "${inputs.nix-configs}/.agents/skills/jj-workflows/SKILL.md";
+        ".claude/rules/jujutsu-vcs.md".source = "${inputs.nix-configs}/.agents/rules/jujutsu-vcs.md";
+        ".claude/skills/jujutsu-vcs/SKILL.md".source =
+          "${inputs.nix-configs}/.agents/skills/jujutsu-vcs/SKILL.md";
       })
     ];
 

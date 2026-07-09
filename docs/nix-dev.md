@@ -10,13 +10,20 @@ see the agent rule; this doc covers the hands-on workflows.
 ## Building and testing
 
 ```bash
-devenv build          # evaluate + build devenv packages (fast check)
-devenv build shell    # build the full devenv shell (slower; catches package build failures)
+devenv eval '<option.path>'   # evaluate a single option's value (fastest — no derivation build)
+devenv build                  # evaluate + build devenv packages (fast check)
+devenv build shell             # build the full devenv shell (slower; catches package build failures)
 nix run .#kdn-nix-fmt -- <files>   # format Nix files
 ```
 
-Always run `devenv build shell` before declaring work done — `devenv build` only checks
-evaluation, not that packages actually compile.
+Use `devenv eval` for a quick, targeted check that a specific option wired up correctly (e.g.
+after adding a `claude.code.hooks.*`/`claude.code.agents.*` entry — `devenv eval
+'claude.code.hooks.jj-guard'`). It's much faster than a full build since it only evaluates the
+Nix expression tree, no derivations are built.
+
+Always run `devenv build shell` before declaring work done on anything touching package builds
+or derivations — `devenv eval`/`devenv build` alone only check evaluation, not that packages
+actually compile.
 
 ---
 

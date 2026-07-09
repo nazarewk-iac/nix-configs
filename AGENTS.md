@@ -4,13 +4,12 @@ AI Agent Guidance for nix-configs Repository.
 
 ## Topic Files
 
-- [Version Control](.agents/rules/version-control.md) — `jj` workflow, checkpoints, push rules
+- [Jujutsu VCS](.agents/rules/jujutsu-vcs.md) — jj mandate, working copy, split, bookmark hygiene, fork rebase (full doc: [docs/jujutsu-vcs.md](docs/jujutsu-vcs.md), fork topology: [docs/jujutsu-vcs.fork.md](docs/jujutsu-vcs.fork.md); short pointer also at [version-control.md](.agents/rules/version-control.md))
 - [Repository Structure](.agents/rules/repo-structure.md) — directory layout, host build commands
 - [Module Architecture](.agents/rules/module-architecture.md) — context guards, `kdnConfig`, standard patterns, `kdn.env.*`
 - [Nix Conventions](.agents/rules/nix-conventions.md) — formatting, module design principles (auto-loaded for `.nix` files)
 - [Packaging Python Scripts](.agents/rules/packaging-python.md) — `init-py-script`, `mkPythonScript`, `default.nix` pattern
 - [Flake Update](.agents/rules/flake-update.md) — update procedure, patch handling, testing (full doc: [docs/flake-update.md](docs/flake-update.md))
-- [jj Workflows](.agents/rules/jj-workflows.md) — working copy, split, bookmark hygiene, fork rebase (full doc: [docs/jj-workflows.md](docs/jj-workflows.md))
 - [MCP Setup](.agents/rules/mcp-setup.md) — gateway architecture, adding backends, mcpsnoop (full doc: [docs/mcp-setup.md](docs/mcp-setup.md))
 
 ## docs/ — full documentation
@@ -22,7 +21,8 @@ read the full doc when you need detail.
 |---|---|
 | [docs/flake-update.md](docs/flake-update.md) | Flake update procedure, commit structure, testing |
 | [docs/flake-update.fork.md](docs/flake-update.fork.md) | Fork-specific update workflow (merge commit, flake-lock-merge) |
-| [docs/jj-workflows.md](docs/jj-workflows.md) | jj patterns: working copy, split, squash, rebase |
+| [docs/jujutsu-vcs.md](docs/jujutsu-vcs.md) | jj patterns: working copy, split, squash, rebase |
+| [docs/jujutsu-vcs.fork.md](docs/jujutsu-vcs.fork.md) | jj fork topology: dual-parent `@`, bookmark hygiene, rebasing the fork merge |
 | [docs/mcp-setup.md](docs/mcp-setup.md) | MCP gateway architecture, configuration, backends, lifecycle |
 | [docs/mcpsnoop.md](docs/mcpsnoop.md) | mcpsnoop traffic inspector: setup, TUI usage, filtering, workflows |
 | [docs/nix-dev.md](docs/nix-dev.md) | Nix development: building devenv shell, vendored lockfile recovery, hash updates |
