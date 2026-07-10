@@ -1,3 +1,9 @@
+---
+type: Reference
+description: Describes router setup and network capability checklist for host etra.
+timestamp: 2026-04-09T22:11:29+02:00
+---
+
 A router setup used by [`etra`](../../profile/host/etra/default.nix).
 
 # Scope

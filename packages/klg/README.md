@@ -1,3 +1,9 @@
+---
+type: README
+description: Opinionated CLI utility wrapping klog for time-tracking commands.
+timestamp: 2022-11-29T16:57:57+01:00
+---
+
 # klg
 
 An opinionated utility for working with https://klog.jotaen.net/ time-tracking

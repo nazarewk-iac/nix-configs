@@ -1,4 +1,7 @@
 ---
+type: Rule
+description: Nix formatting and module design conventions, auto-loaded for .nix files.
+timestamp: 2026-07-09T15:32:54+02:00
 paths:
   - "**/*.nix"
 ---

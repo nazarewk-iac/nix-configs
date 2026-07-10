@@ -1,3 +1,9 @@
+---
+type: Playbook
+description: Command for updating GPG pubkeys used by the kdn user profile.
+timestamp: 2025-11-12T21:24:17+01:00
+---
+
 ### updating GPG pubkeys
 
 ```shell

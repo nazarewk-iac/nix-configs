@@ -1,3 +1,9 @@
+---
+type: Reference
+description: Index of AI agent guidance topic files and docs for the nix-configs repository.
+timestamp: 2026-07-09T15:32:54+02:00
+---
+
 # AGENTS.md
 
 AI Agent Guidance for nix-configs Repository.

@@ -1,3 +1,9 @@
+---
+type: Reference
+description: Practical jj (Jujutsu) version control patterns and conventions used in this repo.
+timestamp: 2026-07-10T12:19:48+02:00
+---
+
 # Jujutsu (jj) VCS
 
 > **Agent summary:** [.agents/rules/jujutsu-vcs.md](../.agents/rules/jujutsu-vcs.md)

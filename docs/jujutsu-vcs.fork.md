@@ -1,3 +1,9 @@
+---
+type: Reference
+description: Describes jj bookmark/topology patterns for repos with a private fork remote.
+timestamp: 2026-07-10T12:19:48+02:00
+---
+
 # Jujutsu (jj) VCS — Fork Workflow
 
 > **Agent note:** This file is installed as `.claude/rules/jujutsu-vcs.fork.md` in repos with

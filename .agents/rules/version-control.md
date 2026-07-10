@@ -1,3 +1,9 @@
+---
+type: Rule
+description: "Short pointer to jj mandate: never push, leave empty change on top."
+timestamp: 2026-07-09T15:32:54+02:00
+---
+
 # Version Control
 
 See [jujutsu-vcs.md](jujutsu-vcs.md) for the full jj mandate and patterns this repo uses.

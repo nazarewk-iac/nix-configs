@@ -1,3 +1,9 @@
+---
+type: Concept
+description: Design notes for a future purpose-built secrets decryption system without sops-nix.
+timestamp: 2025-12-29T19:25:08+01:00
+---
+
 Future purpose-built design idea (without `sops-nix`)
 
 1. react to sops file change in a folder (watchexec)

@@ -1,3 +1,9 @@
+---
+type: Playbook
+description: Procedure for periodically updating flake inputs and handling post-update fixes.
+timestamp: 2026-07-10T12:19:48+02:00
+---
+
 # Flake Update Procedure
 
 > **Agent summary:** [.agents/rules/flake-update.md](../.agents/rules/flake-update.md)

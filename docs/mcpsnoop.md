@@ -1,3 +1,9 @@
+---
+type: Reference
+description: Explains mcpsnoop, a transparent MCP JSON-RPC traffic inspector proxy.
+timestamp: 2026-07-03T22:19:14+02:00
+---
+
 # mcpsnoop — MCP Traffic Inspector
 
 [mcpsnoop](https://github.com/kerlenton/mcpsnoop) is a transparent debugging proxy for MCP.

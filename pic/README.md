@@ -1,3 +1,9 @@
+---
+type: Backlog
+description: TODO list for building a Kubernetes cluster named pic.
+timestamp: 2026-02-05T14:29:27+01:00
+---
+
 # pic - Kubernetes cluster
 
 

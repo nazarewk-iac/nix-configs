@@ -1,3 +1,9 @@
+---
+type: README
+description: Placeholder-style docs for building and running the flake-lock-merge tool.
+timestamp: 2026-05-12T12:06:02+02:00
+---
+
 # flake-lock-merge
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut vulputate ornare mollis. Pellentesque feugiat dictum ligula

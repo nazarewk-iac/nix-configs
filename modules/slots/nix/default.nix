@@ -68,6 +68,7 @@ in
         "${inputs.nix-configs}/.agents/skills/flake-update/SKILL.md";
       ".claude/skills/flake-patches/SKILL.md".source =
         "${inputs.nix-configs}/.agents/skills/flake-patches/SKILL.md";
+      ".claude/rules/okf-format.md".source = "${inputs.nix-configs}/.agents/rules/okf-format.md";
     };
 
     scripts.hello.exec = ''

@@ -1,6 +1,8 @@
 ---
 name: flake-update-fork
 description: Flake update with fork merge — create merge commit, run flake-lock-merge, advance main. Use when updating flake inputs in a repo with both a public (kdn) and private (fork) remote.
+type: Skill
+timestamp: 2026-07-10T12:19:48+02:00
 ---
 
 Full reference: [docs/flake-update.fork.md](../../../../docs/flake-update.fork.md)

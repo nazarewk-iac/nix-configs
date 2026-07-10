@@ -1,3 +1,9 @@
+---
+type: Rule
+description: Summarizes the mcp-gateway architecture and how to add/reload backends.
+timestamp: 2026-07-03T22:19:14+02:00
+---
+
 # MCP Setup
 
 Full doc: [docs/mcp-setup.md](../../docs/mcp-setup.md)

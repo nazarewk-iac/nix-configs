@@ -1,3 +1,9 @@
+---
+type: Template
+description: Placeholder template README for scaffolded Python script packages.
+timestamp: 2025-10-22T12:03:53+02:00
+---
+
 # package-placeholder
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut vulputate ornare mollis. Pellentesque feugiat dictum ligula

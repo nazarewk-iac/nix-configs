@@ -1,6 +1,8 @@
 ---
 name: flake-update
 description: Update flake.lock, handle patches, and test builds. Use when asked to update the flake, run nix run .#update, handle patch failures, or test darwin/nixos builds after an update.
+type: Skill
+timestamp: 2026-07-03T22:19:14+02:00
 ---
 
 Full reference: [docs/flake-update.md](../../docs/flake-update.md)
