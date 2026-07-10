@@ -79,3 +79,11 @@ one-line fix once recognized; don't let it block the jujutsu-vcs overhaul or oth
 see https://github.com/GoogleCloudPlatform/knowledge-catalog/tree/main/okf
 
 convert existing entries to this format and make using it an universal rule shared to downstream configs
+
+### Fix upstream-candidates to include already pushed changes
+
+currently the list is empty after issuing a `jj sync-remotes` / `jj sync-upstream`
+
+### analyze Jujutsu docs/ references
+
+Some or all docs/ references in Jujutsu documents might assume being directly in nix-configs. Link them to all repos and/or instruct how to fetch them using Nix.
