@@ -127,7 +127,7 @@ If the build fails, make fixes in `@`, then split them into a named kdn-side com
 
 ```bash
 jj split -m 'fix(...): description' -- <changed-files>
-jj bookmark set upstream -r 'latest(upstream-candidates)'
+jj bookmark set upstream -r 'upstream-tip'
 # rebase fork update and merge commit onto new upstream:
 jj rebase -r "$FORK_UPDATE" -d upstream
 jj rebase --revision <merge-change-id> \

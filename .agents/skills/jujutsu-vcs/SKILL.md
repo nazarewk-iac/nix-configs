@@ -27,7 +27,7 @@ Full reference: [docs/jujutsu-vcs.md](../../../docs/jujutsu-vcs.md), fork topolo
   interactive picker/merge tool and will hang in an agent context. Use fileset arguments instead.
 - **Never `jj edit` to read a file** — use `jj file show --revision <id> <path>` instead.
 - **Bookmarks go on the commit you just carved out** (the change ID `jj split` left behind, or
-  `latest(upstream-candidates)`) — not on the current `@`.
+  `upstream-tip`) — not on the current `@`.
 - **Rebase is a last resort** — only when graph topology genuinely needs fixing, or to construct
   a merge commit (`jj new <a> <b>`).
 - **`--no-pager`** on `jj log`/`jj diff`/`jj show` avoids pager hangs in non-interactive shells.
@@ -56,7 +56,7 @@ jj undo                                         # undo last operation (safe esca
 jj split -m 'fix(...): desc' -- path/to/file    # carves selected files into a new commit;
                                                  # remaining changes stay in @
 jj squash --from @ --into <id> -m 'msg'         # fold @ into an existing commit
-jj bookmark set upstream -r 'latest(upstream-candidates)'  # advance bookmark to the latest named commit
+jj bookmark set upstream -r 'upstream-tip'      # advance bookmark to the latest named commit
 ```
 
 ## Quick reference
@@ -71,7 +71,7 @@ jj bookmark set upstream -r 'latest(upstream-candidates)'  # advance bookmark to
 ## Fork topology
 
 See [jujutsu-vcs.fork.md](../../../docs/jujutsu-vcs.fork.md) for the `main`/`upstream` dual-parent
-`@` topology, bookmark hygiene with `latest(upstream-candidates)`/`latest(fork-candidates)`, and
+`@` topology, bookmark hygiene with `upstream-tip`/`fork-tip`, and
 rebasing the fork merge after new upstream commits.
 
 ## Deep troubleshooting

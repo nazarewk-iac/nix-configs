@@ -36,7 +36,7 @@ jj new -d main -d upstream
 
 ```bash
 jj split -m 'fix(...): description' -- <changed-files>
-jj bookmark set upstream -r 'latest(upstream-candidates)'
+jj bookmark set upstream -r 'upstream-tip'
 jj rebase -r "$FORK_UPDATE" -d upstream
 jj rebase --revision <merge-change-id> \
           --destination "$FORK_UPDATE" \

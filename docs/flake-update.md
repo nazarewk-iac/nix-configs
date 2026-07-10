@@ -36,7 +36,7 @@ jj bookmark set upstream -r @-
 # test (./nixos-rebuild.sh build / nix run '.#darwin-rebuild' -- build), then fix failures:
 # split fixes into named commits:
 #   jj split -m 'fix(...): description' -- <changed-files>
-#   jj bookmark set upstream -r 'latest(upstream-candidates)'
+#   jj bookmark set upstream -r 'upstream-tip'
 ```
 
 ---
@@ -68,7 +68,7 @@ jj bookmark set upstream -r @-
 ```
 
 `@-` is the parent of the current empty working copy — the commit that holds the update
-changes. You can also use the explicit change ID or `latest(upstream-candidates)` as the
+changes. You can also use the explicit change ID or `upstream-tip` as the
 revision. A fresh empty `@` sits on top automatically.
 
 ### 3. Test (see Testing section below)
@@ -86,7 +86,7 @@ jj split
 # or non-interactively by file:
 jj split -m 'fix(...): description' -- <changed-files>
 
-jj bookmark set upstream -r 'latest(upstream-candidates)'
+jj bookmark set upstream -r 'upstream-tip'
 ```
 
 Repeat until the build passes.
