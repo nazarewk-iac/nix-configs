@@ -47,7 +47,10 @@ let
       # so the revset only covers commits not yet on the public chain.
       fork = lib.concatStringsSep " | " [
         "fork-direct"
-        "::(remote_bookmarks(remote=\"${cfg.fork.remote}\") ~ upstream@${cfg.fork.remote})"
+        # ancestor-set difference: ancestors of the fork tip minus ancestors of the upstream
+        # anchor. NOT "::(A ~ B)" — A and B are single commits, so that subtraction is a no-op
+        # (they're already different commits) and the `::` then walks nearly the whole history.
+        "(::remote_bookmarks(remote=\"${cfg.fork.remote}\")) ~ (::upstream@${cfg.fork.remote})"
         "(remote_bookmarks(remote=\"${cfg.fork.remote}\") ~ upstream@${cfg.fork.remote})::"
       ];
       fork-direct = lib.concatStringsSep " | " (
@@ -57,8 +60,10 @@ let
         ]) cfg.fork.deniedFilePatterns
         ++ map (p: "description(glob-i:*${p}*)") cfg.fork.deniedMessagePatterns
       );
-      upstream-candidates = "~description(\"\") & ~fork";
-      fork-candidates = "~description(\"\") & fork";
+      upstream-chain = "~description(\"\") & ~fork";
+      fork-chain = "~description(\"\") & fork";
+      upstream-tip = "latest(upstream-chain)";
+      fork-tip = "latest(fork-chain)";
     };
     aliases.sync-remotes = [
       "util"
@@ -70,14 +75,14 @@ let
       "-c"
       ''
         jj sync-upstream
-        fork_candidate=$(jj log --no-graph -r 'latest(fork-candidates)' -T 'change_id.short()')
-        echo "Fork candidate: $fork_candidate"
+        fork_tip=$(jj log --no-graph -r 'fork-tip' -T 'change_id.short()')
+        echo "Fork tip: $fork_tip"
         echo "Changes to push to ${cfg.fork.remote}:main (since main@${cfg.fork.remote}):"
-        jj log -r "main@${cfg.fork.remote}..''${fork_candidate}" --stat
+        jj log -r "main@${cfg.fork.remote}..''${fork_tip}" --stat
         read -rp "Push ${cfg.fork.remote}:main? (y/n)" -n 1
         echo
         if test "$REPLY" == y ; then
-          jj bookmark set main -r "$fork_candidate"
+          jj bookmark set main -r "$fork_tip"
           jj git push --remote=${cfg.fork.remote} --bookmark=main
         else
           echo 'push cancelled'
@@ -95,14 +100,14 @@ let
       "-c"
       ''
         jj git fetch --remote={${cfg.upstream.remote},${cfg.fork.remote}}
-        candidate=$(jj log --no-graph -r 'latest(upstream-candidates)' -T 'change_id.short()')
-        echo "Candidate: $candidate"
+        tip=$(jj log --no-graph -r 'upstream-tip' -T 'change_id.short()')
+        echo "Tip: $tip"
         echo "Changes to push to ${cfg.upstream.remote}:main (since main@${cfg.upstream.remote}):"
-        jj log -r "main@${cfg.upstream.remote}..''${candidate}" --stat
+        jj log -r "main@${cfg.upstream.remote}..''${tip}" --stat
         read -rp "Push ${cfg.upstream.remote}:main? (y/n)" -n 1
         echo
         if test "$REPLY" == y ; then
-          jj bookmark set upstream -r "$candidate"
+          jj bookmark set upstream -r "$tip"
           git -C "$(jj root)" push ${cfg.upstream.remote} upstream:main
           jj git push --remote=${cfg.fork.remote} --bookmark=upstream
         else

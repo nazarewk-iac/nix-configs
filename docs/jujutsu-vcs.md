@@ -130,7 +130,7 @@ devenv build shell
 Ask the user whether to squash, relocate, or abandon any strays found. Fix build errors before
 finishing. If this repo has a fork remote configured, see
 [jujutsu-vcs.fork.md](jujutsu-vcs.fork.md) for the fork-specific finish state (dual-parent `@`,
-`latest(upstream-candidates)`/`latest(fork-candidates)` bookmark advancement).
+`upstream-tip`/`fork-tip` bookmark advancement).
 
 ---
 
@@ -182,8 +182,8 @@ jj split -m 'chore(flake): update' -- flake.lock
 # or by explicit change ID (unambiguous, good in scripts):
 jj bookmark set upstream -r <change-id>
 # or by revset — picks the latest named commit:
-jj bookmark set upstream -r 'latest(upstream-candidates)'
+jj bookmark set upstream -r 'upstream-tip'
 ```
 
 See [jujutsu-vcs.fork.md](jujutsu-vcs.fork.md) for bookmark hygiene in a fork context
-(`latest(upstream-candidates)`, `latest(fork-candidates)`).
+(`upstream-tip`, `fork-tip`).

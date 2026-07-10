@@ -17,7 +17,7 @@ jj describe -m 'chore(flake): update'
 jj bookmark set upstream -r @-
 # test builds (see Testing below)
 # fix failures: jj split -m 'fix(...): desc' -- <files>
-#               jj bookmark set upstream -r 'latest(upstream-candidates)'
+#               jj bookmark set upstream -r 'upstream-tip'
 ```
 
 ## Testing
@@ -44,4 +44,4 @@ nix run '.#darwin-rebuild' -- switch
 
 - `jj split` opens an editor by default — pass `-m 'msg'` and `-- <files>` in non-interactive contexts.
 - `jj bookmark set upstream -r @-` targets the just-described commit, not the new empty `@`.
-- Alternatively use the explicit change ID or `latest(upstream-candidates)` as the revision.
+- Alternatively use the explicit change ID or `upstream-tip` as the revision.

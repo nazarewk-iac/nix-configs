@@ -40,15 +40,17 @@ jj rebase -s @ -d main -d main@<upstream-remote>
 `@` must be empty with **both** `main` and `upstream` as parents:
 
 ```bash
-jj bookmark set upstream -r 'latest(upstream-candidates)'
-jj bookmark set main -r 'latest(fork-candidates)'
+jj bookmark set upstream -r 'upstream-tip'
+jj bookmark set main -r 'fork-tip'
 jj rebase --revision <main-merge-id> --destination upstream --destination main@<fork-remote>
 jj new -d main -d upstream
 ```
 
-`upstream-candidates` and `fork-candidates` are revset aliases defined by the `kdn.jj.fork`
-devenv slot (`~description("") & ~fork` / `~description("") & fork`) — they pick out the latest
-named, non-fork-tagged commit and the latest named, fork-tagged commit respectively.
+`upstream-chain`/`fork-chain` and `upstream-tip`/`fork-tip` are revset aliases defined by the
+`kdn.jj.fork` devenv slot. `upstream-chain`/`fork-chain` (`~description("") & ~fork` /
+`~description("") & fork`) pick out all named, non-fork-tagged / fork-tagged commits;
+`upstream-tip`/`fork-tip` (`latest(upstream-chain)` / `latest(fork-chain)`) pick out the latest
+commit in each chain.
 
 > **Warning:** `jj describe` on a multi-parent `@` (e.g. when `@` sits on top of both `main` and
 > `upstream`) creates a merge commit inheriting all parents — including fork ones. Always commit

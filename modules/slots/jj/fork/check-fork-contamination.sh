@@ -4,7 +4,7 @@
 # Skips if:
 #   - not in a jj repo
 #   - current jj change has no description (unnamed working copy scratch change)
-#   - current jj change is in fork-candidates (fork-side, content is expected there)
+#   - current jj change is in fork-chain (fork-side, content is expected there)
 #
 # SENSITIVE_FILE_PATTERNS and SENSITIVE_MESSAGE_PATTERNS are baked in via runtimeEnv.
 
@@ -19,12 +19,12 @@ description="$(jj log -r @ --no-graph -T 'description' 2>/dev/null)"
 # Skip if unnamed working copy
 [ -n "$description" ] || exit 0
 
-# Skip if this change is already in fork-candidates (fork-side commit)
-if jj log -r "fork-candidates & ${change_id}" --no-graph -T 'change_id' 2>/dev/null | grep -q .; then
+# Skip if this change is already in fork-chain (fork-side commit)
+if jj log -r "fork-chain & ${change_id}" --no-graph -T 'change_id' 2>/dev/null | grep -q .; then
   exit 0
 fi
 
-# On upstream-candidates side: check staged content for fork-sensitive patterns
+# On upstream-chain side: check staged content for fork-sensitive patterns
 # shellcheck disable=SC2206
 file_patterns=($SENSITIVE_FILE_PATTERNS)
 # shellcheck disable=SC2206
