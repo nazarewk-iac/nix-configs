@@ -8,9 +8,7 @@
 let
   cfg = config.kdn.jj;
 
-  jjRepoConfig = (pkgs.formats.toml { }).generate "jj-repo-config.toml" {
-    "#schema" = "https://docs.jj-vcs.dev/latest/config-schema.json";
-  };
+  jjRepoConfig = (pkgs.formats.toml { }).generate "jj-repo-config.toml" cfg.config;
 
   jjGuardHook = pkgs.writeShellApplication {
     name = "jj-guard";
@@ -60,24 +58,41 @@ in
       default = [ ];
       description = "Commit message patterns (case-insensitive) blocked from pushing to non-fork remotes.";
     };
+
+    config = lib.mkOption {
+      type = (pkgs.formats.toml { }).type;
+      default = { };
+      description = ''
+        Freeform jj repo config (TOML), fed to the generator that gets symlinked to
+        `jj config path --repo`. Sibling modules (e.g. fork/default.nix) contribute fragments
+        to this attrset instead of generating and symlinking their own config file.
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable {
     packages = [ pkgs.jujutsu ];
 
+    kdn.jj.config."#schema" = "https://docs.jj-vcs.dev/latest/config-schema.json";
+
     enterShell = ''
-      # symlink jj repo config to the generated store path
+      # symlink jj repo config (merged across all kdn.jj.* modules) to the generated store path
       _jj_config_path="$(jj config path --repo 2>/dev/null)" || true
       if test -n "$_jj_config_path"; then
         ln -sfn ${jjRepoConfig} "$_jj_config_path"
       fi
       unset _jj_config_path
 
-      ${lib.optionalString (cfg.upstream.url != null) ''
-        # add upstream remote if missing
-        if ! git remote get-url ${lib.escapeShellArg cfg.upstream.remote} &>/dev/null; then
-          git remote add ${lib.escapeShellArg cfg.upstream.remote} ${lib.escapeShellArg cfg.upstream.url}
+      # add a remote (by name/url) via jj itself, no git CLI required, if not already present
+      _kdn_jj_ensure_remote() {
+        local remote="$1" url="$2"
+        if ! jj git remote list | cut -d' ' -f1 | grep -qxF "$remote"; then
+          jj git remote add "$remote" "$url"
         fi
+      }
+
+      ${lib.optionalString (cfg.upstream.url != null) ''
+        _kdn_jj_ensure_remote ${lib.escapeShellArg cfg.upstream.remote} ${lib.escapeShellArg cfg.upstream.url}
       ''}
     '';
 
