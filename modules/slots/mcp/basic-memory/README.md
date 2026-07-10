@@ -1,3 +1,9 @@
+---
+type: Reference
+description: Devenv slot module adding two isolated basic-memory MCP backends behind mcp-gateway.
+timestamp: 2026-06-23T14:51:05+02:00
+---
+
 # kdn.mcp.basic-memory
 
 Devenv slot module that adds two isolated [basic-memory](https://github.com/basicmachines-co/basic-memory) MCP backends behind mcp-gateway.

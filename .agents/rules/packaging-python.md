@@ -1,3 +1,9 @@
+---
+type: Rule
+description: Conventions for packaging Python scripts with mkPythonScript and init-py-script.
+timestamp: 2026-05-12T14:37:48+02:00
+---
+
 # Packaging Python Scripts
 
 Python scripts in `packages/` use `lib.kdn.mkPythonScript` (defined in `lib/python/mkPythonScript.nix`).

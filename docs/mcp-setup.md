@@ -1,3 +1,9 @@
+---
+type: Reference
+description: Describes the mcp-gateway architecture aggregating multiple MCP servers for Claude Code.
+timestamp: 2026-07-03T22:19:14+02:00
+---
+
 # MCP Setup
 
 > **Agent summary:** [.agents/rules/mcp-setup.md](../.agents/rules/mcp-setup.md)

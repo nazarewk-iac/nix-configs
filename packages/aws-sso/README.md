@@ -1,3 +1,9 @@
+---
+type: README
+description: CLI tool docs for managing AWS SSO sessions, profiles, and kubeconfig generation.
+timestamp: 2026-05-12T16:44:34+02:00
+---
+
 # aws-sso
 
 CLI tool for managing AWS SSO sessions: listing accounts/roles, generating `~/.aws/config` profiles, and registering EKS clusters into kubeconfig.

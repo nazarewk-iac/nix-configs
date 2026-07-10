@@ -1,3 +1,9 @@
+---
+type: README
+description: Formatter wrapper choosing alejandra or nixfmt based on git remote.
+timestamp: 2025-10-22T12:03:53+02:00
+---
+
 # kdn-nix-fmt
 
 Chooses the right formatter based on the `git remote -v` result, default to `alejandra` or `nixfmt` for

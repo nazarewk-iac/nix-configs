@@ -1,3 +1,9 @@
+---
+type: Playbook
+description: Extends the flake update workflow for repos maintaining a private fork remote.
+timestamp: 2026-07-10T12:19:48+02:00
+---
+
 # Flake Update — Fork Workflow
 
 > **Agent note:** This file is installed as `.claude/rules/flake-update.fork.md` via the

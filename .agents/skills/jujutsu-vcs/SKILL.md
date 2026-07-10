@@ -1,6 +1,8 @@
 ---
 name: jujutsu-vcs
 description: jj version control patterns — working copy, split/squash, bookmarks, fork rebase. Single source of truth for jj usage in this repo; use whenever reaching for a raw git command, or when working with jj commits, splits, rebases, or bookmark management.
+type: Skill
+timestamp: 2026-07-10T12:19:48+02:00
 ---
 
 <!--

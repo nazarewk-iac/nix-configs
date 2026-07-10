@@ -1,3 +1,9 @@
+---
+type: Playbook
+description: Explains how flake input patches are configured and applied ahead of upstream landing.
+timestamp: 2026-07-03T16:33:57+02:00
+---
+
 # Flake Patches
 
 > **Agent summary:** [.agents/rules/flake-patches.md](../.agents/rules/flake-patches.md)

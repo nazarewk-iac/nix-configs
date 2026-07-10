@@ -1,3 +1,9 @@
+---
+type: Reference
+description: Hands-on notes for building, testing, and formatting this repo's Nix code.
+timestamp: 2026-07-09T15:32:54+02:00
+---
+
 # Nix Development Notes
 
 > **Agent summary:** [.agents/rules/nix-conventions.md](../.agents/rules/nix-conventions.md)

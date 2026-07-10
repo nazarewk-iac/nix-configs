@@ -1,3 +1,9 @@
+---
+type: Concept
+description: Explains the meta-module evaluated before other modules to pass merged config via specialArgs.
+timestamp: 2025-10-11T01:34:21+02:00
+---
+
 A meta-module that is evaluated before the nixos (or other) modules, then the resulting config is passed down as
 `specialArgs` to be used in conditional imports `import`.
 

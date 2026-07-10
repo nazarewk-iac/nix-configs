@@ -1,3 +1,9 @@
+---
+type: Rule
+description: "jj mandate: always use jj over git, working-copy conventions, non-interactive flags."
+timestamp: 2026-07-09T15:32:54+02:00
+---
+
 # Jujutsu (jj) VCS
 
 Full doc: [docs/jujutsu-vcs.md](../../docs/jujutsu-vcs.md) (fork topology:

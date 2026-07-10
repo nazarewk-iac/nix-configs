@@ -1,3 +1,9 @@
+---
+type: Playbook
+description: Commands for backing up, listing, and restoring /etc/secureboot contents.
+timestamp: 2026-04-09T22:11:29+02:00
+---
+
 ### handling /etc/secureboot
 
 see:

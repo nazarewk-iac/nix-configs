@@ -1,3 +1,9 @@
+---
+type: Rule
+description: Documents repo directory layout and host build commands.
+timestamp: 2026-07-02T14:00:04+02:00
+---
+
 # Repository Structure
 
 ```

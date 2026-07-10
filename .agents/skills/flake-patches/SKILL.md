@@ -1,6 +1,8 @@
 ---
 name: flake-patches
 description: Manage .flake.patches — find fixes for build failures, check if patches landed in nixos-unstable, register or remove patches. Use when a nix build fails after a flake update.
+type: Skill
+timestamp: 2026-07-03T22:19:14+02:00
 ---
 
 Full reference: [docs/flake-patches.md](../../docs/flake-patches.md)

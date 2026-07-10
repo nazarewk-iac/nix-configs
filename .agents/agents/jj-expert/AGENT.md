@@ -1,3 +1,9 @@
+---
+type: Agent
+description: "Deep jj (Jujutsu VCS) troubleshooting: divergent changes, conflicts, graph surgery, revset/fileset/template questions."
+timestamp: 2026-07-09T15:32:54+02:00
+---
+
 <!--
   SPDX-License-Identifier: MIT
   Substantially informed by kawaz/claude-plugin-jj (c) 2025 Yoshiaki Kawazu, via its English

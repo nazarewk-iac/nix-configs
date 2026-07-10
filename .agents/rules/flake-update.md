@@ -1,3 +1,9 @@
+---
+type: Rule
+description: Summarizes the flake update procedure and points to the full doc.
+timestamp: 2026-07-10T12:19:48+02:00
+---
+
 # Flake Update Procedure
 
 Full doc: [docs/flake-update.md](docs/flake-update.md)

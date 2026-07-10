@@ -1,3 +1,9 @@
+---
+type: Rule
+description: Documents the universal module tree, context guards, and kdnConfig patterns.
+timestamp: 2026-05-12T14:37:48+02:00
+---
+
 # Module Architecture
 
 ## Single Universal Tree

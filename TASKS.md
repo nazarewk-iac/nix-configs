@@ -1,3 +1,9 @@
+---
+type: Backlog
+description: Backlog list of planned improvements and tasks for the repository.
+timestamp: 2026-07-10T12:19:48+02:00
+---
+
 # Tasks
 
 ## Backlog
