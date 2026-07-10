@@ -1,3 +1,9 @@
+---
+type: Rule
+description: Routes knowledge notes between public and sensitive basic-memory MCP backends in OKF format.
+timestamp: 2026-06-23T14:51:05+02:00
+---
+
 # Basic Memory Knowledge Routing
 
 Two knowledge bases are available as MCP backends:
