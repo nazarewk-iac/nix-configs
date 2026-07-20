@@ -29,15 +29,6 @@ gateway-level system prompt configuration in `modules/slots/mcp/default.nix`.
 1. verify every commit in the list of changes independently in pre-push
 2. make the pre-commit (and therefore the `prek run`) verify that commits on top of upstream, but without a fork do not contain fork-specific changes
 
-### Fix modules/slots/ usage & implementation for devenv
-
-I can see that modules/slots don't actually set `config.devenv` options and instantiate that, but instead import directly which is plain wrong.
-
-1. move over all `config =` into `config.devenv =` within modules/slots
-2. register it properly as flake's devenvModules.default
-
-call out any issues you encounter.
-
 ### Update the modules architecture for slots/ considerations
 
 Some module architecture only makes sense for modules/universal, but not module/slots/, let's call those out

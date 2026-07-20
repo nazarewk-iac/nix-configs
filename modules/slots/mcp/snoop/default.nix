@@ -20,8 +20,6 @@ in
   };
 
   config = lib.mkIf (config.kdn.mcp.enable && cfg.enable) {
-    packages = [ pkgs.kdn.mcpsnoop ];
-
     kdn.mcp.commandOverlays = [
       (
         prevCmd:
@@ -32,5 +30,7 @@ in
         )
       )
     ];
+
+    devenv.packages = [ pkgs.kdn.mcpsnoop ];
   };
 }

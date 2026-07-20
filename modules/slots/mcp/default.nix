@@ -129,24 +129,26 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    packages = [ pkgs.mcp-gateway ];
-
-    # Update the stable symlink on every shell activation.
-    enterShell = ''
-      ln -sfn ${gatewayConfig} "$DEVENV_ROOT/${stableConfigLink}"
-    '';
-
-    # Register only the gateway with Claude Code via stdio — not individual servers.
-    # commandOverlays allows other slots to wrap the command (e.g. mcp/snoop).
-    claude.code.mcpServers.mcp-gateway = {
-      type = "stdio";
-      command = lib.pipe "${gatewayWrapper}" cfg.commandOverlays;
-    };
     kdn.mcp.programs.filesystem.enable = true;
     kdn.mcp.programs.filesystem.args = [ "/nix/store" ];
     kdn.mcp.programs.sequential-thinking.enable = true;
     kdn.mcp.programs.time.enable = true;
     kdn.mcp.programs.fetch.enable = true;
 
+    devenv = {
+      packages = [ pkgs.mcp-gateway ];
+
+      # Update the stable symlink on every shell activation.
+      enterShell = ''
+        ln -sfn ${gatewayConfig} "$DEVENV_ROOT/${stableConfigLink}"
+      '';
+
+      # Register only the gateway with Claude Code via stdio — not individual servers.
+      # commandOverlays allows other slots to wrap the command (e.g. mcp/snoop).
+      claude.code.mcpServers.mcp-gateway = {
+        type = "stdio";
+        command = lib.pipe "${gatewayWrapper}" cfg.commandOverlays;
+      };
+    };
   };
 }

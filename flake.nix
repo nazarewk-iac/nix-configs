@@ -264,7 +264,32 @@
         self.darwinConfigurations // self.nixosConfigurations
       );
       flake.nixosModules.default = ./modules/universal;
-      flake.devenvModules.default = ./modules/slots;
+      flake.mkSlots =
+        { pkgs, ... }@extraModuleArgs:
+        let
+          extraModule = builtins.removeAttrs extraModuleArgs [ "pkgs" ];
+          rendered = lib.kdn.mkSlots {
+            slotModules = [
+              ./modules/slots
+              extraModule
+            ];
+            specialArgs = {
+              inherit pkgs;
+              inputs = inputs // {
+                nix-configs = self;
+              };
+            };
+          };
+        in
+        {
+          config = {
+            devenv = rendered.renderTarget "devenv";
+            nixos = rendered.renderTarget "nixos";
+            darwin = rendered.renderTarget "darwin";
+            home = rendered.renderTarget "home";
+            users = rendered.renderUsers;
+          };
+        };
       flake.nixosConfigurations = lib.pipe self.hostConfigurations [
         (lib.attrsets.filterAttrs (_: host: host.moduleType == "nixos"))
         (builtins.mapAttrs (
