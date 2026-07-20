@@ -120,37 +120,39 @@ in
       ];
     };
 
-    enterShell = lib.mkAfter ''
-      ${lib.optionalString (cfg.fork.url != null) ''
-        _kdn_jj_ensure_remote ${lib.escapeShellArg cfg.fork.remote} ${lib.escapeShellArg cfg.fork.url}
-      ''}
-    '';
+    devenv = {
+      enterShell = lib.mkAfter ''
+        ${lib.optionalString (cfg.fork.url != null) ''
+          _kdn_jj_ensure_remote ${lib.escapeShellArg cfg.fork.remote} ${lib.escapeShellArg cfg.fork.url}
+        ''}
+      '';
 
-    git-hooks.hooks.jj-check-fork-contamination = {
-      enable = true;
-      name = "jj-check-fork-contamination";
-      description = "Reject fork-specific content staged on a kdn/upstream-side commit";
-      entry = lib.getExe checkForkContamination;
-      stages = [ "pre-commit" ];
-      pass_filenames = false;
-      always_run = true;
-    };
+      git-hooks.hooks.jj-check-fork-contamination = {
+        enable = true;
+        name = "jj-check-fork-contamination";
+        description = "Reject fork-specific content staged on a kdn/upstream-side commit";
+        entry = lib.getExe checkForkContamination;
+        stages = [ "pre-commit" ];
+        pass_filenames = false;
+        always_run = true;
+      };
 
-    # pre-push hook via devenv git-hooks
-    git-hooks.hooks.jj-pre-push = {
-      enable = true;
-      name = "jj-pre-push";
-      entry = lib.getExe prePushHook;
-      stages = [ "pre-push" ];
-      pass_filenames = false;
-      always_run = true;
-    };
+      # pre-push hook via devenv git-hooks
+      git-hooks.hooks.jj-pre-push = {
+        enable = true;
+        name = "jj-pre-push";
+        entry = lib.getExe prePushHook;
+        stages = [ "pre-push" ];
+        pass_filenames = false;
+        always_run = true;
+      };
 
-    files = lib.mkIf (!config.kdn.isSourceRepo) {
-      ".claude/rules/flake-update.fork.md".source =
-        "${inputs.nix-configs}/.agents/rules/flake-update.fork.md";
-      ".claude/skills/flake-update-fork/SKILL.md".source =
-        "${inputs.nix-configs}/.agents/skills/flake-update-fork/SKILL.md";
+      files = lib.mkIf (!config.kdn.isSourceRepo) {
+        ".claude/rules/flake-update.fork.md".source =
+          "${inputs.nix-configs}/.agents/rules/flake-update.fork.md";
+        ".claude/skills/flake-update-fork/SKILL.md".source =
+          "${inputs.nix-configs}/.agents/skills/flake-update-fork/SKILL.md";
+      };
     };
   };
 }

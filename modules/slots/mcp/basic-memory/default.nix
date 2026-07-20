@@ -22,11 +22,6 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    packages = [
-      bmp
-      bms
-    ];
-
     kdn.mcp.extraBackends = {
       memory-public = {
         command = "${bmp}/bin/basic-memory-public mcp";
@@ -38,8 +33,15 @@ in
       };
     };
 
-    files = lib.mkIf (!config.kdn.isSourceRepo) {
-      ".claude/rules/basic-memory.md".source = "${inputs.nix-configs}/.agents/rules/basic-memory.md";
+    devenv = {
+      packages = [
+        bmp
+        bms
+      ];
+
+      files = lib.mkIf (!config.kdn.isSourceRepo) {
+        ".claude/rules/basic-memory.md".source = "${inputs.nix-configs}/.agents/rules/basic-memory.md";
+      };
     };
   };
 }

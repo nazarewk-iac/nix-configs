@@ -55,9 +55,9 @@ read the full doc when you need detail.
 directly.** To change Claude Code settings (permissions, MCP servers, hooks):
 - **In this repo:** edit the source in `modules/slots/` — large enough changes may warrant a
   new topic-specific slot module (e.g. `modules/slots/claude/`)
-- **In other repos** that import `devenvModules.default`: use that repo's own `devenv.nix`
-  directly. Only promote something to `modules/slots/` when it genuinely needs to be reused
-  across multiple repos — don't do it preemptively.
+- **In other repos** that import via `inputs.nix-configs.mkSlots {...}`: use that repo's own
+  `devenv.nix` directly. Only promote something to `modules/slots/` when it genuinely needs to
+  be reused across multiple repos — don't do it preemptively.
 
 `.claude/settings.local.json` is a regular local file and can be edited directly.
 

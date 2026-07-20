@@ -9,15 +9,13 @@ let
     };
 in
 {
-  options.modules = {
-    nixos = slot "NixOS system modules";
-    darwin = slot "nix-darwin modules";
-    home = slot "home-manager modules (all users via sharedModules)";
-    devenv = slot "devenv.sh modules";
-    users = lib.mkOption {
-      type = lib.types.attrsOf lib.types.deferredModule;
-      default = { };
-      description = "Per-user home-manager modules keyed by username";
-    };
+  options.nixos = slot "NixOS system modules";
+  options.darwin = slot "nix-darwin modules";
+  options.home = slot "home-manager modules (all users via sharedModules)";
+  options.devenv = slot "devenv.sh modules";
+  options.users = lib.mkOption {
+    type = lib.types.attrsOf lib.types.deferredModule;
+    default = { };
+    description = "Per-user home-manager modules keyed by username";
   };
 }
