@@ -24,6 +24,40 @@ interpret results.
 **Starting point:** `.devenv/mcp-gateway.yaml` backend `description` fields and any
 gateway-level system prompt configuration in `modules/slots/mcp/default.nix`.
 
+**Status:** partially addressed — `kdn.mcp.pretty-print` (`modules/slots/mcp/pretty-print/`)
+replaces Claude Code's native "Tool use" approval dialog for `gateway_invoke` calls with a
+native Tk window. This was not the first design tried:
+
+- A PreToolUse hook attaching a `systemMessage` preview was built first, but empirically
+  `systemMessage` renders only *after* the dialog resolves (as a `⎿ PreToolUse:... says: ...`
+  annotation), never inside the dialog itself before the user answers.
+- `mcp-gateway`'s `surfaced_tools` (pinning specific backend tools directly in `tools/list`,
+  bypassing the `gateway_invoke` dispatcher) was tried next — confirmed correct in the gateway's
+  Rust source, but empirically unreliable: stdio warm-start is fired async and races the very
+  first `tools/list`, so a surfaced tool's schema is usually still absent when Claude Code's
+  client-side tool list gets fixed for the session. Abandoned; see
+  [docs/mcp-tools-report.md](docs/mcp-tools-report.md) for detail.
+- Final design: a **PermissionRequest** hook (not PreToolUse) that builds a readable preview via
+  a per-backend Nix-assembled Python plugin package
+  (`kdn.mcp.pretty-print.formatters.<name>`, contract: `select(ctx) -> bool` /
+  `get_permissions_info(ctx) -> str | (fields, body)`), shows it in a generic native Tk dialog
+  (title + key/value metadata rows + plain-text body + Allow/Deny), and returns that decision
+  directly — Claude Code never renders its own dialog for a call this hook handles. Confirmed
+  working live. basic-memory contributes a plugin splitting `write_note`/`delete_note` into
+  metadata fields (title, directory, project) with just the raw content in the body.
+
+This covers the *approval-time* half of the original goal (what a specific call is about to do);
+the LLM-facing tool-description/system-prompt half (what each backend is *for*, when to prefer
+one over another) is still open.
+
+Also produced: [docs/mcp-tools-report.md](docs/mcp-tools-report.md) — full tool inventory across
+all enabled backends, safety categorization, and an analysis of why Claude Code's
+`permissions.allow`/`ask`/`deny` can't do per-backend-tool allow-listing through the gateway's
+single-dispatcher-tool design (recommends mcp-gateway's own `security.firewall.rules` as the
+next lever, not yet wired up). [docs/mcpsnoop.md](docs/mcpsnoop.md) gained a "Testing a new
+backend/tool surface" workflow section documenting the sweep-and-capture procedure used to
+produce that report, for reuse next time backends/tools change.
+
 ### Improve the fork validation logic
 
 1. verify every commit in the list of changes independently in pre-push
