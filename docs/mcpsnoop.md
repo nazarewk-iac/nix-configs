@@ -1,7 +1,7 @@
 ---
 type: Reference
 description: Explains mcpsnoop, a transparent MCP JSON-RPC traffic inspector proxy.
-timestamp: 2026-07-20T00:00:00+02:00
+timestamp: 2026-07-21T14:39:37+02:00
 ---
 
 # mcpsnoop — MCP Traffic Inspector
@@ -156,6 +156,37 @@ below.
 
 `mcpsnoop diff before-session after-session` reports added/removed tools, schema changes,
 call status changes, and notable duration shifts between two captured sessions.
+
+### Testing a new backend/tool surface
+
+When adding an MCP backend, changing `kdn.mcp.programs`/`extraBackends`, or otherwise touching
+the gateway config, exercise it methodically instead of poking at tools ad hoc:
+
+1. **Enumerate before calling anything.** `gateway_list_servers` for backend health, then
+   `gateway_list_tools` (per-server, or omit `server` for everything) to get every tool name,
+   description, and input schema up front. Note each tool's `readOnlyHint`/`destructiveHint`
+   annotations — they tell you which calls are safe to fire freely versus which need scoping.
+2. **Call every read-only tool once.** These are safe by construction; just confirm each one
+   round-trips through `gateway_invoke(server, tool, arguments)` without error.
+3. **Call mutating tools against scratch data, then clean up.** Create a throwaway note/branch/
+   resource, exercise the mutating call, then delete/revert it in the same pass — don't leave
+   test artifacts behind in a real project or knowledge base. Destructive calls that require
+   backend-side confirmation (e.g. jj-mcp's `confirmed: true` gate) are a deliberate, separate
+   decision — don't blanket-confirm through them just to complete a sweep.
+4. **Watch the live TUI throughout** (`mcpsnoop` in a second terminal) or capture headlessly and
+   review after — either way you get the full request/response for every call, which is what
+   turns "I called the tool" into "I know exactly what it sent and got back."
+5. **Export the session** (`mcpsnoop export -T json|html`) as the artifact backing any report or
+   decision you make from the sweep — e.g. which tools are safe to allow-list, which backends
+   duplicate functionality better covered by a CLI/skill already in the repo. See
+   [mcp-tools-report.md](mcp-tools-report.md) for the report this procedure produced for the
+   backends currently enabled in this repo's `devenv.nix`; re-run this procedure and refresh
+   that doc whenever backends/tools change materially.
+
+This is also the right procedure for validating gateway-level UX changes (e.g. the
+`kdn.mcp.pretty-print` PreToolUse hook, `modules/slots/mcp/pretty-print/`) — capture a session
+before and after the change and `mcpsnoop diff` them, or just eyeball the `systemMessage`/
+`additionalContext` a hook attaches by inspecting the relevant frames directly.
 
 ---
 

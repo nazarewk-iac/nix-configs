@@ -51,3 +51,6 @@
 /.agents/rules/flake-update.fork.md
 /.agents/skills/
 !/.agents/skills/*/SKILL.md
+
+# ignore any tmp files
+*.tmp*
