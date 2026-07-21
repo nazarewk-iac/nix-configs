@@ -68,6 +68,12 @@ in
               Service.Slice = "background.slice";
             };
           })
+          # TODO: nix-darwin HM uses launchd, not systemd - launchd.agents.atuin-daemon (set by
+          # home-manager's own atuin module) lacks RunAtLoad, so the agent is only ever started
+          # by darwin-rebuild's activation bootstrap, never on its own after a reboot/relogin.
+          (lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
+            launchd.agents.atuin-daemon.config.RunAtLoad = true;
+          })
         ]
       )
     ))
