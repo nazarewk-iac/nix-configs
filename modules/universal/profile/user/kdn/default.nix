@@ -71,6 +71,7 @@ in
           #     hash = "sha256-/uzs87Vw+aDNfIJVLOx3C8RyZvWLqjggmnjrOvUX1Eg=";
           #   };
           # }))
+          kdn.kagi-cli
         ];
         kdn.programs.atuin.users = [ "kdn" ];
         kdn.programs.fish.defaultShellUsers = [ "kdn" ];
