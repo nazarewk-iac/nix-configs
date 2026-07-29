@@ -115,6 +115,62 @@ commit or at minimum to land in git's actual index/`HEAD`, not just in jj's work
 
 ---
 
+## Worktree hazard: git worktrees share the single `.jj` store — never use one here
+
+> ⚠️ **NEVER use a `git worktree` in this repo.** This includes tooling that creates one under the
+> hood without saying so — e.g. Claude Code's Agent/Workflow `isolation: "worktree"` option.
+> `git worktree` is blocked outright by the `jj-guard` hook for this reason; if you find yourself
+> needing to bypass that block, that's the signal to stop and use `jj workspace add` instead.
+
+**Mechanism, precisely:** a `git worktree` registers a new checkout under this repo's own
+`.git/worktrees/<name>/` and gives it a `.git` file pointing back there — but it does **not** get
+its own `.jj` directory. It is colocated with, and shares, the *single* `.jj` store that the main
+checkout uses. `jj workspace list` run from either directory shows only one workspace
+(`default`), and `jj log -r @ --no-graph -T change_id` run from both directories resolves to the
+identical change id — there is no actual working-copy isolation, despite the separate directory.
+
+**Why this is dangerous:** running work in that worktree concurrently with the main working copy
+means two processes are snapshotting the *same* jj change (`@`) at the same time — a straight
+race on jj's working-copy state. **Confirmed empirically in this repo on 2026-07-29:** a
+worktree-isolated subagent was created nested *inside* the repo tree at
+`.claude/worktrees/<agent-id>/` (itself a second mistake — worktrees should never live under the
+tree they check out) while unrelated edits continued in the main working copy. Three files that
+had just been written/formatted in the main checkout (`devenv.nix`,
+`modules/slots/zellij/default.nix`, `.agents/skills/zellij/SKILL.md`) were silently truncated to
+0 bytes mid-session — no error, no warning, just empty files. Root-caused to the race above by
+confirming both directories resolved to the same jj change id.
+
+**Recovery, if this has already happened:** don't panic-edit further. `jj op log --no-pager
+--limit N` to find an operation from just before the corruption (e.g. right after a known-good
+save/format step), then recover each affected file with:
+
+```bash
+jj file show --revision @ --at-op <op-id> <path> > /tmp/recovered-<name>
+# diff/verify, then copy back into place
+```
+
+**What actually works:** if parallel, filesystem-isolated work is genuinely needed, create a real
+second jj workspace instead — and put it *outside* this repo's directory tree, never nested
+under it:
+
+```bash
+jj workspace add ../nix-configs-ws-<name>   # sibling directory, NOT ./something-under-here
+cd ../nix-configs-ws-<name> && jj new       # start the isolated work on a fresh change, not @
+```
+
+Before trusting *any* claimed isolation (a tool's `isolation: "worktree"` flag, a manually created
+directory, anything), verify it's real:
+
+```bash
+jj workspace list                                        # must show more than one workspace
+jj log -r @ --no-graph -T change_id                       # run from BOTH directories — must differ
+```
+
+If you can't confirm a distinct change id in a genuinely distinct workspace, don't run concurrent
+work there — fall back to doing the work sequentially in the main working copy.
+
+---
+
 ## Required finish state
 
 After any work session, `@` must be empty (no description, no content) with the correct parent:

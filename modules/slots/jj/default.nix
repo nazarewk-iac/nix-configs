@@ -118,6 +118,9 @@ in
       # The `git *` entries below belong to git as a tool, not jj specifically; move them to a
       # dedicated modules/slots/git/ module if/when one is split out.
       claude.code.permissions.rules.Bash.allow = [
+        "jj --help"
+        "jj help*"
+        "jj * --help"
         "jj log *"
         "jj diff *"
         "jj status*"
