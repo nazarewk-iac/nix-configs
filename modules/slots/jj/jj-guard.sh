@@ -1,27 +1,40 @@
 #!/usr/bin/env bash
-# PreToolUse hook: block raw `git` Bash commands in this jj-managed repo, except `git push*`
-# and read-only git. Not a shell parser — best-effort word-boundary matching on each
+# PreToolUse hook: warn (but allow) raw `git` Bash commands in this jj-managed repo, except
+# `git push*` and read-only git. Not a shell parser — best-effort word-boundary matching on each
 # `&&`/`||`/`;`/`|`-separated segment. See the jujutsu-vcs skill/rule: this hook is not the sole
 # safeguard (it can't intercept Claude Code's built-in /commit slash command, for example).
 set -eEuo pipefail
 
-deny() {
+warn() {
   local reason="$1"
   jq -cn --arg reason "$reason" '{
     "hookSpecificOutput": {
       "hookEventName": "PreToolUse",
-      "permissionDecision": "deny",
-      "permissionDecisionReason": $reason
+      "permissionDecision": "allow",
+      "permissionDecisionReason": $reason,
+      "additionalContext": $reason
     }
   }'
-  exit 1
+  exit 0
 }
 
 input="$(cat)"
 command="$(jq -r '.tool_input.command // empty' <<<"$input")"
+hook_cwd="$(jq -r '.cwd // empty' <<<"$input")"
 
 [[ -z "$command" ]] && exit 0
-[[ -d .jj ]] || exit 0
+
+# Only apply within this repo/worktree (scoped via $DEVENV_ROOT, resolved by the caller in
+# modules/slots/jj/default.nix's `cd "$DEVENV_ROOT" && ...` wrapper). The Bash tool's own `cwd`
+# (from the hook's stdin JSON) is checked too, in case the wrapper's cwd and the tool call's
+# reported cwd diverge; if neither is inside this repo, skip entirely. Best-effort: a command
+# that itself `cd`s elsewhere mid-script won't be caught — this hook is not a shell parser.
+repo_root="${DEVENV_ROOT:-$PWD}"
+if [[ -n "$hook_cwd" && "$hook_cwd" != "$repo_root" && "$hook_cwd" != "$repo_root"/* ]]; then
+  exit 0
+fi
+
+[[ -d "$repo_root/.jj" ]] || exit 0
 
 ALLOWED_READONLY="log diff show status remote rev-parse ls-files"
 
@@ -44,7 +57,7 @@ while IFS= read -r segment; do
     [[ "$subcommand" == "$allowed" ]] && continue 2
   done
 
-  deny "BLOCKED: this is a jj-managed repo. Use jj instead of raw git '$subcommand'.
+  warn "WARNING: this is a jj-managed repo. Prefer jj instead of raw git '$subcommand'.
 
 Equivalents:
   git status          -> jj status

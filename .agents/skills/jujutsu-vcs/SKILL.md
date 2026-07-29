@@ -40,6 +40,15 @@ Full reference: [docs/jujutsu-vcs.md](../../../docs/jujutsu-vcs.md), fork topolo
   `ls -la .git/index.lock` — if no git process is actually running, it's a stale colocation
   artifact safe to remove. In agent contexts, chain related jj operations into a single Bash call
   to avoid races with background hooks.
+- ⚠️ **NEVER use a git worktree here** (this includes the Agent/Workflow tool's
+  `isolation: "worktree"` option — it creates a plain `git worktree`, colocated, with no `.jj` of
+  its own, sharing this repo's single `.jj` store). Running it concurrently with the main working
+  copy races two writers on the same jj change and **will corrupt files** — confirmed 2026-07-29,
+  files silently truncated to 0 bytes. If parallel isolated work is truly needed, use
+  `jj workspace add <path>` with `<path>` a sibling directory OUTSIDE this repo's tree (never
+  nested under it), then `jj new` inside it immediately. Verify with `jj workspace list` (>1
+  entry) and by confirming `jj log -r @ --no-graph -T change_id` differs between directories
+  before trusting any isolation claim.
 
 ## Working copy state
 
