@@ -1,0 +1,84 @@
+From f58ba035eb4be3badbd8047dffbf006214b1a97f Mon Sep 17 00:00:00 2001
+From: Andrew Marshall <andrew@johnandrewmarshall.com>
+Date: Sun, 12 Jul 2026 13:12:16 -0400
+Subject: [PATCH 1/2] python3Packages.pylsp-mypy: switch to PyPI for newest
+ versions
+
+See https://github.com/python-lsp/pylsp-mypy/issues/113 for context
+---
+ .../python-modules/pylsp-mypy/default.nix          | 14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
+
+diff --git a/pkgs/development/python-modules/pylsp-mypy/default.nix b/pkgs/development/python-modules/pylsp-mypy/default.nix
+index 2aa61e09cb20c73b74b66b388a327eb059d925fa..303995c0d7837ea18e4273ea8e995b2801ad7e1e 100644
+--- a/pkgs/development/python-modules/pylsp-mypy/default.nix
++++ b/pkgs/development/python-modules/pylsp-mypy/default.nix
+@@ -1,7 +1,7 @@
+ {
+   lib,
+   buildPythonPackage,
+-  fetchFromGitHub,
++  fetchPypi,
+ 
+   # build-system
+   setuptools,
+@@ -17,11 +17,10 @@ buildPythonPackage (finalAttrs: {
+   version = "0.7.0";
+   pyproject = true;
+ 
+-  src = fetchFromGitHub {
+-    owner = "python-lsp";
+-    repo = "pylsp-mypy";
+-    tag = finalAttrs.version;
+-    hash = "sha256-rS0toZaAygNJ3oe3vfP9rKJ1A0avIdp5yjNx7oGOB4o=";
++  src = fetchPypi {
++    pname = "pylsp_mypy";
++    inherit (finalAttrs) version;
++    hash = "sha256-6U9THUzlIyIsKvdHGr45bP60zDxLGB1URi+21VPh4LM=";
+   };
+ 
+   build-system = [ setuptools ];
+@@ -42,8 +41,7 @@ buildPythonPackage (finalAttrs: {
+ 
+   meta = {
+     description = "Mypy plugin for the Python LSP Server";
+-    homepage = "https://github.com/python-lsp/pylsp-mypy";
+-    changelog = "https://github.com/python-lsp/pylsp-mypy/releases/tag/${finalAttrs.version}";
++    homepage = "https://pypi.org/project/pylsp-mypy/";
+     license = lib.licenses.mit;
+     maintainers = with lib.maintainers; [ cpcloud ];
+   };
+
+From b3818b05666673789c4818c8c51ae43539083926 Mon Sep 17 00:00:00 2001
+From: Andrew Marshall <andrew@johnandrewmarshall.com>
+Date: Sun, 12 Jul 2026 13:15:31 -0400
+Subject: [PATCH 2/2] python3Packages.pylsp-mypy: 0.7.0 -> 0.7.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Fixes test failures on newer Mypy that only supports Python ≥ 3.10
+---
+ pkgs/development/python-modules/pylsp-mypy/default.nix | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/pkgs/development/python-modules/pylsp-mypy/default.nix b/pkgs/development/python-modules/pylsp-mypy/default.nix
+index 303995c0d7837ea18e4273ea8e995b2801ad7e1e..2878b88e0dc3ebedada19d860be7bc1d34665d1f 100644
+--- a/pkgs/development/python-modules/pylsp-mypy/default.nix
++++ b/pkgs/development/python-modules/pylsp-mypy/default.nix
+@@ -14,13 +14,13 @@
+ 
+ buildPythonPackage (finalAttrs: {
+   pname = "pylsp-mypy";
+-  version = "0.7.0";
++  version = "0.7.3";
+   pyproject = true;
+ 
+   src = fetchPypi {
+     pname = "pylsp_mypy";
+     inherit (finalAttrs) version;
+-    hash = "sha256-6U9THUzlIyIsKvdHGr45bP60zDxLGB1URi+21VPh4LM=";
++    hash = "sha256-en0xF+oDYcri7QBhQZXTb0wVegYRbIeSRJ4Z9XMZ3b8=";
+   };
+ 
+   build-system = [ setuptools ];

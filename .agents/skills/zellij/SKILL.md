@@ -81,41 +81,56 @@ the kind of interruption to avoid).
 
 ```bash
 # create (or reuse) a detached background session dedicated to agent work
-zellij attach --create-background agent-work
+zellij attach --create-background 'llm:<repo-slug>:<llm-session-id>[:<optional-slug1>:<optional-slug2>...]'
 ```
 
 `--create-background` creates the session detached if it doesn't exist yet, and is a no-op if it
-already does — safe to call every time before use. Pick a session name that says it's yours
-(e.g. `agent-work`, `agent-<task>`) so it's never mistaken for a user session.
+already does — safe to call every time before use.
+
+**Naming patterns — always use these, never a generic name like `agent-work`:**
+
+- **Session:** `llm:<repo-slug>:<llm-session-id>[:<optional-slug1>:<optional-slug2>...]`.
+  `<repo-slug>` identifies which repo the work belongs to; `<llm-session-id>` ties it to the
+  specific agent conversation that created it (use the actual session/transcript id you have,
+  not an invented name); trailing optional slugs disambiguate further if needed.
+- **Tab** (supports multiple sub-agents sharing one session): `<agent-slug>:<slug1>...` — a
+  sub-agent may open any number of tabs, but every one of them must carry that sub-agent's own
+  `<agent-slug>` prefix (plus whatever further slugs describe each tab's specific work), so tabs
+  stay attributable to the sub-agent that created them even when several sub-agents share one
+  session.
+- **Pane:** a short slug describing the pane's purpose is fine as-is (e.g. `build: darwin-rebuild`).
+
+This makes `zellij list-sessions`/`list-tabs` unambiguously show whose session/tab is whose and
+which repo/conversation it belongs to.
 
 Within that session, prefer **stacked, named panes** over a fresh tab per command, and leave
 them open after the command finishes rather than closing them — the user may want to review the
 output later:
 
 ```bash
-zellij --session agent-work action new-pane --stacked --name 'build: darwin-rebuild' \
+zellij --session 'llm:nix-configs:c8a27b8a' action new-pane --stacked --name 'build: darwin-rebuild' \
   -- darwin-rebuild build
 ```
 
 Check progress/output the same way as above (`dump-screen`, `list-panes --json`), targeting
-`--session agent-work`. Only close/rename panes in your own session, and only when you're sure
-they're no longer useful — when in doubt, leave them for the user to inspect.
+`--session 'llm:nix-configs:c8a27b8a'`. Only close/rename panes in your own session, and only when
+you're sure they're no longer useful — when in doubt, leave them for the user to inspect.
 
 ### Letting the user watch or attach
 
 Tell the user, at the start of any work that uses a dedicated session, that you're using one and
 how to open it themselves — don't assume they're watching:
 
-> I'm running this in a separate zellij session (`agent-work`), not your active one. To watch
-> live, open a new terminal window and run:
-> `zellij attach agent-work`
+> I'm running this in a separate zellij session (`llm:nix-configs:c8a27b8a`), not your active one.
+> To watch live, open a new terminal window and run:
+> `zellij attach llm:nix-configs:c8a27b8a`
 
 Keep this generic — don't assume a specific terminal emulator. If the user's terminal happens to
 be WezTerm, they can also spawn a fresh window running that attach command directly:
 
 ```bash
-wezterm start --new-tab -- zellij attach agent-work    # new tab in the current window
-wezterm start -- zellij attach agent-work               # new standalone window
+wezterm start --new-tab -- zellij attach 'llm:nix-configs:c8a27b8a'    # new tab in the current window
+wezterm start -- zellij attach 'llm:nix-configs:c8a27b8a'               # new standalone window
 ```
 
 ## Quick reference

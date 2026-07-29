@@ -27,6 +27,9 @@ upstream_input = "{name}-upstream"
 [patch.preservation.fix-conflict]
 url = "https://github.com/nix-community/preservation/pull/21.patch?full_index=1"
 
+[patch.nixpkgs.pylsp-mypy-update]
+url = "https://github.com/NixOS/nixpkgs/pull/541116.patch?full_index=1"
+
 # [patch.sops-nix.fix-missing-run-secrets]
 # url = "https://github.com/Mic92/sops-nix/pull/882.patch?full_index=1"
 
