@@ -28,6 +28,7 @@ in
       kdn.nix.enable = true;
       kdn.jj.enable = true;
       kdn.zellij.enable = true;
+      kdn.gh.enable = true;
 
       kdn.mcp = {
         enable = true;
