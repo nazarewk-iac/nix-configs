@@ -28,8 +28,16 @@ Full reference: [docs/jujutsu-vcs.md](../../../docs/jujutsu-vcs.md), fork topolo
 - **Never interactive** — `jj split -i`, `jj commit -i`, `jj squash -i`, `jj resolve` all open an
   interactive picker/merge tool and will hang in an agent context. Use fileset arguments instead.
 - **Never `jj edit` to read a file** — use `jj file show --revision <id> <path>` instead.
-- **Bookmarks go on the commit you just carved out** (the change ID `jj split` left behind, or
-  `upstream-tip`) — not on the current `@`.
+- **Start investigations with `jj config list` variants, not by reading `.jj/` files** — `jj
+  config list --repo` (most common) shows this repo's revset aliases, bookmark helpers, and other
+  repo-scoped settings; plain `jj config list` (or `--include-defaults`) covers user/default
+  scope. Never poke at files under `.jj/` directly — they're an internal store, not a config
+  surface. **If `--repo` output is empty or just a lone `"#schema"` line, something is probably
+  wrong** — this repo ships repo-scoped config via devenv. The agent **cannot re-enter the devenv
+  shell itself**, so **pause, ask the user to re-enter the devenv shell (and resume the session)**
+  before relying on any repo-specific revset alias or helper.
+- **Bookmarks go on the commit you just carved out** (the change ID `jj split` left behind) — not
+  on the current `@`. (In a fork repo, that anchor is usually `upstream-tip` — see Fork topology.)
 - **Rebase is a last resort** — only when graph topology genuinely needs fixing, or to construct
   a merge commit (`jj new <a> <b>`).
 - **`--no-pager`** on `jj log`/`jj diff`/`jj show` avoids pager hangs in non-interactive shells.
@@ -67,8 +75,10 @@ jj undo                                         # undo last operation (safe esca
 jj split -m 'fix(...): desc' -- path/to/file    # carves selected files into a new commit;
                                                  # remaining changes stay in @
 jj squash --from @ --into <id> -m 'msg'         # fold @ into an existing commit
-jj bookmark set upstream -r 'upstream-tip'      # advance bookmark to the latest named commit
 ```
+
+For placing a split at a precise point (`-A`/`-B`), see **Fork topology** below — in this repo
+that's the common case, but the `-A <after> -B <before>` mechanism itself is general.
 
 ## Quick reference
 
@@ -81,9 +91,55 @@ jj bookmark set upstream -r 'upstream-tip'      # advance bookmark to the latest
 
 ## Fork topology
 
+> **Fork-only — skip this entire section if the repo has no fork.** Everything below assumes the
+> `main`/`upstream` dual-parent fork setup and the repo-scoped `upstream-tip`/`fork-tip` revset
+> aliases that come with it. A plain (non-fork) repo has none of these — there `@` is linear,
+> you advance a single bookmark, and the ordinary `jj split -m … -- <files>` / `jj squash --into`
+> flow above is all you need. Don't reach for `upstream-tip`/`fork-tip` or `-A/-B` placement
+> unless this repo actually is a fork (quick check: `jj config list --repo` lists
+> `revset-aliases.fork-tip`).
+
 See [jujutsu-vcs.fork.md](../../../docs/jujutsu-vcs.fork.md) for the `main`/`upstream` dual-parent
 `@` topology, bookmark hygiene with `upstream-tip`/`fork-tip`, and
 rebasing the fork merge after new upstream commits.
+
+**Advancing the upstream bookmark** after carving a new upstream commit:
+
+```bash
+jj bookmark set upstream -r 'upstream-tip'      # advance bookmark to the latest named upstream commit
+```
+
+**Placing a split precisely with `-A`/`-B` (prefer this over manual rebase surgery).** When
+`@` is the dual-parent fork merge (or otherwise sits above where the commit belongs), carve the
+files out *and* position the new commit in one step by giving `jj split` an explicit insertion
+point — `-A <after>` / `-B <before>`. Use the `upstream-tip`/`fork-tip` aliases as the anchors so
+it keeps working as the chain grows:
+
+```bash
+# land a new upstream commit between the current upstream tip and the fork merge, in one command:
+jj split -A upstream-tip -B fork-tip -m 'docs: add X' -- docs/x.md
+```
+
+Because `upstream-tip` = `latest(upstream-chain)` (dynamic), splitting several commits this way
+one after another naturally **stacks them in order** between the previous tip and `fork-tip` —
+no follow-up rebase needed. This is far less error-prone than describing `@`, then rebasing the
+result into place by hand. **Always prefer the `upstream-tip`/`fork-tip` aliases** as anchors
+over raw change IDs.
+
+> **Prerequisite — `fork-tip` should be the dual-parent merge for this to work cleanly.** The
+> `-B fork-tip` trick assumes `fork-tip` is the fork merge commit sitting above `upstream-tip`,
+> so a new upstream commit slots in *below* the merge (and the merge rebases to include it). If
+> `fork-tip` **isn't a merge yet** (e.g. it's a plain fork commit, or the fork chain hasn't been
+> merged onto the new upstream tip), it very likely **should become one first** — construct it
+> with `jj new -m 'chore(upstream): merge' upstream-tip fork-tip` (the standard merge message;
+> creating the dual-parent `@` = fork merge), then the `jj split -A upstream-tip -B fork-tip …`
+> pattern applies.
+
+> **If `upstream-tip`/`fork-tip` don't resolve** in a repo you know is a fork, the repo-scoped
+> aliases aren't loaded — this is the "empty `jj config list --repo`" case from **Key rules
+> above**: pause and ask the user to re-enter the devenv shell (the agent can't do it itself),
+> don't fall back to raw change IDs. (In a non-fork repo these aliases are *expected* to be
+> absent — not an error, this section just doesn't apply.)
 
 ## Deep troubleshooting
 
