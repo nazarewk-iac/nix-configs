@@ -4,8 +4,14 @@
   __inputs__ ? { },
   ...
 }:
+let
+  llm = import ./llm { inherit pkgs lib; };
+in
 (import ./netbird { inherit pkgs lib; })
+// llm
 // {
+  inherit llm;
+
   link-python = pkgs.callPackage ./link-python { };
   init-py-script = pkgs.callPackage ./init-py-script { };
 
