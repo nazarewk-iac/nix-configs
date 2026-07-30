@@ -1,8 +1,10 @@
 # zellij devenv slot.
 #
-# Installs the zellij package and the .agents/skills/zellij/SKILL.md skill (which mandates:
-# never mutate or read pane content in the user's session without explicit per-action consent;
-# do own work in a dedicated background session instead).
+# Installs the zellij package, the kdn-slug/zellij-llm helper packages (packages/llm/), and
+# the .agents/skills/zellij/SKILL.md skill (which mandates: never mutate or read pane content
+# in the user's session without explicit per-action consent; do own work in a dedicated
+# background session instead, preferably via kdn-slug/zellij-llm rather than raw
+# `zellij action ...` calls).
 #
 # The Bash permission allowlist below intentionally covers ONLY:
 #   - pure discovery/metadata (list-sessions, list-panes, list-tabs, list-clients,
@@ -54,7 +56,11 @@ in
 
   config = lib.mkIf cfg.enable {
     devenv = {
-      packages = [ pkgs.zellij ];
+      packages = [
+        pkgs.zellij
+        pkgs.kdn.kdn-slug
+        pkgs.kdn.zellij-llm
+      ];
 
       claude.code.enable = lib.mkDefault true;
 

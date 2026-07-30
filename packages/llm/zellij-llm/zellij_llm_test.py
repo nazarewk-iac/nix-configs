@@ -127,5 +127,25 @@ def test_spawn_and_watch_stream_reports_exit_code(session):
     assert "EXIT:3" in out.stdout
 
 
+def test_spawn_and_watch_stream_does_not_duplicate_lines(session):
+    # Regression test: `subscribe --format raw --scrollback` redraws the ENTIRE viewport on
+    # every update event rather than emitting just the delta — confirmed live, a 3-line
+    # command produced "line-1", "line-1\nline-2", "line-1\nline-2\nline-3" as three separate
+    # emissions. Fixed by diffing `--format json`'s viewport array instead of forwarding raw
+    # output; this locks that fix in.
+    out = run(
+        "zellij-llm", "spawn-and-watch",
+        "--session", session, "--pane", "watch-stream-dup",
+        "--mode", "stream",
+        input_text="echo alpha\necho bravo\necho charlie\nexit 0\n",
+        check=False,
+    )
+    assert out.returncode == 0
+    lines = out.stdout.splitlines()
+    assert lines.count("alpha") == 1
+    assert lines.count("bravo") == 1
+    assert lines.count("charlie") == 1
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))

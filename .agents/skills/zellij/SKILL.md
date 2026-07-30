@@ -72,65 +72,105 @@ zellij --session main subscribe -p 11 --format json --scrollback 200
 Emits NDJSON events as the pane updates — useful for "tell me when this finishes" instead of
 polling `dump-screen` in a loop.
 
-## Running commands yourself: use a dedicated session, not the user's
+## Running commands yourself: use `kdn-slug` + `zellij-llm`, not raw `zellij action ...`
 
 If you need to run a command (especially anything long-running) rather than just read existing
 output, do it in your own zellij session — never inside the user's attached session, even in a
 "new" tab there (creating a tab switches the user's focus to it immediately, which is exactly
 the kind of interruption to avoid).
 
+**Two purpose-built packages exist for this — reach for them instead of hand-rolling
+`zellij attach --create-background`/`action new-pane`/`subscribe` calls:**
+
+- **`kdn-slug`** (`packages/llm/kdn-slug/`) generates the session/tab/pane names described
+  below — auto-discovers the repo (via `jj`/`git`) and the current harness's session id (e.g.
+  `$CLAUDE_CODE_SESSION_ID`), with override flags, a top-level `--sep` (default `:`), a repo-path
+  `--repo-sep` (default `_`), and an optional `--max-len` truncation fallback. Run
+  `kdn-slug --help` / `kdn-slug <subcommand> --help` for the full flag reference.
+- **`zellij-llm`** (`packages/llm/zellij-llm/`) wraps session creation, pane spawning, output
+  streaming/heartbeating, and pane-content reads into four subcommands: `spawn`,
+  `spawn-and-watch`, `peek`, `list`. It handles the idempotent session creation, stacked-pane
+  layout, and stdin-fed command execution (via `bash -xeEuo pipefail`) that used to require
+  several raw `zellij action ...` calls. Run `zellij-llm --help` / `zellij-llm <subcommand>
+  --help` for the full flag reference.
+
 ```bash
-# create (or reuse) a detached background session dedicated to agent work
-zellij attach --create-background 'llm:<repo-slug>:<llm-session-id>[:<optional-slug1>:<optional-slug2>...]'
+# generate this conversation's session name once, reuse it for every zellij-llm call below
+SESSION="$(kdn-slug names --type session)"          # e.g. llm:github.com_nazarewk-iac_nix-configs:c8a27b8a-...
+TAB="$(kdn-slug names --type tab --tag my-subagent)"  # e.g. my-subagent (tabs are opt-in; zellij-llm itself only manages panes, not tabs)
+
+# a. spawn — fire-and-forget: creates the session if missing, runs a command (fed via THIS
+#    invocation's stdin) in a new pane, folds it into the existing stack, and returns immediately
+echo 'darwin-rebuild build' | zellij-llm spawn --session "$SESSION" --pane 'build: darwin-rebuild'
+
+# b. spawn-and-watch — like spawn, but follows the pane until the command exits
+#    --mode stream:    forwards live pane output to this call's stdout as it arrives
+#    --mode heartbeat: prints periodic elapsed-time status lines instead of full output
+echo 'nix flake update' | zellij-llm spawn-and-watch --session "$SESSION" --pane 'flake-update' --mode stream
+echo 'nix flake update' | zellij-llm spawn-and-watch --session "$SESSION" --pane 'flake-update' --mode heartbeat --interval 5
+# both modes print a final "EXIT:<code>" line and exit with that same code
+
+# c. peek — dump a pane's own-session content (viewport, or --full for scrollback) — this is
+#    the ONE exception to "content reads always need confirmation": it's scoped to your OWN
+#    session by design (never pass a session name you don't own), so it's safe to use freely
+#    to check on your own spawned work, same as the discovery commands above
+zellij-llm peek --session "$SESSION" --pane 'build: darwin-rebuild' --full
+
+# d. list — inventory panes (id, title, exited, exit_status, command) in your own session
+zellij-llm list --session "$SESSION"
 ```
 
-`--create-background` creates the session detached if it doesn't exist yet, and is a no-op if it
-already does — safe to call every time before use.
-
-**Naming patterns — always use these, never a generic name like `agent-work`:**
+**Naming convention `kdn-slug`/`zellij-llm` implement — never use a generic name like
+`agent-work`:**
 
 - **Session:** `llm:<repo-slug>:<llm-session-id>[:<optional-slug1>:<optional-slug2>...]`.
   `<repo-slug>` identifies which repo the work belongs to; `<llm-session-id>` ties it to the
-  specific agent conversation that created it (use the actual session/transcript id you have,
-  not an invented name); trailing optional slugs disambiguate further if needed.
+  specific agent conversation that created it; trailing optional slugs disambiguate further.
+  `kdn-slug names --type session [--tag <slug> ...]` generates this. `<repo-slug>` is
+  fully-qualified `<host>_<org>_<repo>` (e.g. `github.com_nazarewk-iac_nix-configs`) — the top
+  level joins on `:` (`--sep`) while the repo path parts join on `_` (`--repo-sep`, a *separate*
+  delimiter). The repo separator defaults to `_` rather than `/` because **zellij rejects `/`
+  in session names outright** (`Session name cannot contain '/'.`); every other punctuation
+  char tested is accepted, so `--repo-sep` can be overridden if `_` collides with your names.
 - **Tab** (supports multiple sub-agents sharing one session): `<agent-slug>:<slug1>...` — a
   sub-agent may open any number of tabs, but every one of them must carry that sub-agent's own
   `<agent-slug>` prefix (plus whatever further slugs describe each tab's specific work), so tabs
   stay attributable to the sub-agent that created them even when several sub-agents share one
-  session.
-- **Pane:** a short slug describing the pane's purpose is fine as-is (e.g. `build: darwin-rebuild`).
+  session. `kdn-slug names --type tab --tag <agent-slug> --tag <slug> ...` generates this — note
+  `zellij-llm` itself only manages panes, not tabs, so tab creation (if you use one) is still a
+  raw `zellij action new-tab --name "$TAB"` call in your own session.
+- **Pane:** a short slug describing the pane's purpose is fine as-is (e.g. `build: darwin-rebuild`,
+  passed directly as `zellij-llm`'s `--pane` value — no `kdn-slug` involvement needed).
 
 This makes `zellij list-sessions`/`list-tabs` unambiguously show whose session/tab is whose and
 which repo/conversation it belongs to.
 
-Within that session, prefer **stacked, named panes** over a fresh tab per command, and leave
-them open after the command finishes rather than closing them — the user may want to review the
-output later:
-
-```bash
-zellij --session 'llm:nix-configs:c8a27b8a' action new-pane --stacked --name 'build: darwin-rebuild' \
-  -- darwin-rebuild build
-```
-
-Check progress/output the same way as above (`dump-screen`, `list-panes --json`), targeting
-`--session 'llm:nix-configs:c8a27b8a'`. Only close/rename panes in your own session, and only when
-you're sure they're no longer useful — when in doubt, leave them for the user to inspect.
+`zellij-llm spawn`/`spawn-and-watch` already fold each new pane into the session's existing
+stack for you (working around a zellij quirk where `new-pane --stacked` silently fails in a
+headless session with no attached client) and leave panes open after the command finishes
+rather than closing them — the user may want to review the output later. Only close/rename
+panes in your own session yourself via raw `zellij action ...`, and only when you're sure
+they're no longer useful — when in doubt, leave them for the user to inspect.
 
 ### Letting the user watch or attach
 
 Tell the user, at the start of any work that uses a dedicated session, that you're using one and
-how to open it themselves — don't assume they're watching:
+how to open it themselves — don't assume they're watching. Use the actual value from
+`kdn-slug names --type session` (e.g. `llm:github.com_nazarewk-iac_nix-configs:c8a27b8a-...`),
+not a placeholder:
 
-> I'm running this in a separate zellij session (`llm:nix-configs:c8a27b8a`), not your active one.
+> I'm running this in a separate zellij session
+> (`llm:github.com_nazarewk-iac_nix-configs:c8a27b8a-...`), not your active one.
 > To watch live, open a new terminal window and run:
-> `zellij attach llm:nix-configs:c8a27b8a`
+> `zellij attach llm:github.com_nazarewk-iac_nix-configs:c8a27b8a-...`
 
 Keep this generic — don't assume a specific terminal emulator. If the user's terminal happens to
 be WezTerm, they can also spawn a fresh window running that attach command directly:
 
 ```bash
-wezterm start --new-tab -- zellij attach 'llm:nix-configs:c8a27b8a'    # new tab in the current window
-wezterm start -- zellij attach 'llm:nix-configs:c8a27b8a'               # new standalone window
+# quote the session name — it contains ':' and '_', and shells treat some of the punctuation as special
+wezterm start --new-tab -- zellij attach "$SESSION"    # new tab in the current window
+wezterm start -- zellij attach "$SESSION"              # new standalone window
 ```
 
 ## Quick reference
@@ -154,6 +194,9 @@ consent, matching the rule above:
 | `edit-scrollback` | Open scrollback in `$EDITOR` | **Not allowlisted — always prompts. Confirm first** |
 | `action new-pane` / `new-tab` / `go-to-tab*` / `focus-pane-id` / `close-*` / `kill-session` | Create, focus, or destroy state | **Not allowlisted — always prompts. Never do this on the user's session regardless of the prompt; do it in your own session instead** |
 | `action new-pane --stacked --name <n> -- <cmd>` (in your own session) | Run a command in a new stacked pane | Still prompts (not allowlisted) — expected, since it mutates state, even though it's your own session |
+| `kdn-slug names --type <session\|tab\|pane> ...` | Generate the naming-convention strings above | Read-only, no allowlist needed |
+| `zellij-llm spawn` / `spawn-and-watch` / `list` (in your own session) | Preferred wrapper for the mutating calls above | Same prompting as the raw calls they wrap — not yet in the Bash permission allowlist |
+| `zellij-llm peek` (in your own session) | Preferred wrapper for `action dump-screen` | Same as `dump-screen` above, but scoped to your own session by construction |
 
 ## Gotchas
 
@@ -166,3 +209,16 @@ consent, matching the rule above:
   unpredictably; reads (`dump-screen`, `list-panes`) are safe to run concurrently with anything.
 - `paste` (bracketed paste) is more reliable than `write-chars` for multi-line input if you ever
   need to send input to a pane in your own session.
+- `zellij attach --create-background <name>` exits **1** with `Session already exists` on
+  stderr when the session was already there — it is a no-op, but not a zero-exit no-op;
+  `zellij-llm` already handles this internally, but don't assume `&& echo ok` after a raw
+  `attach --create-background` call.
+- `action new-pane --stacked` silently no-ops in a headless session with no attached client:
+  it returns a pane id, but the pane never shows up in `list-panes` and `dump-screen` on it
+  returns empty. `zellij-llm` works around this (plain `new-pane` + a follow-up
+  `action stack-panes`), so this only matters if you're writing a raw `zellij action ...` call
+  yourself instead of using `zellij-llm spawn`/`spawn-and-watch`.
+- `subscribe` never terminates on its own, even once the subscribed pane's command has already
+  exited — it just stops emitting new events and blocks forever. `zellij-llm spawn-and-watch
+  --mode stream` handles this by polling a separate exit marker and killing `subscribe` once it
+  lands; a bare `zellij subscribe ...` in a script needs the same treatment or a timeout.

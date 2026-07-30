@@ -81,6 +81,31 @@ def test_names_custom_separator():
     assert out.stdout.strip() == "agent1-build"
 
 
+def test_names_session_host_org_repo_join_uses_repo_sep_not_slash(jj_repo):
+    # Top level joins on --sep ("-" here); the repo path parts join on --repo-sep, independent
+    # of --sep, so the host/org/repo stays one visually distinct slug. Neither may be "/".
+    out = run(
+        "kdn-slug", "names", "--type", "session", "--session-id", "deadbeef",
+        "--sep", "-", "--repo-sep", "_",
+        cwd=jj_repo,
+    )
+    result = out.stdout.strip()
+    assert "/" not in result
+    assert result == "llm-github.com_some-org_acme-widgets-deadbeef"
+
+
+def test_names_session_repo_sep_defaults_to_underscore(jj_repo):
+    # No --repo-sep given: repo path parts must default-join on "_", while the top level uses
+    # the default ":" — this is the fully-qualified session name shape kdn-slug emits by default.
+    out = run(
+        "kdn-slug", "names", "--type", "session", "--session-id", "deadbeef",
+        cwd=jj_repo,
+    )
+    result = out.stdout.strip()
+    assert "/" not in result
+    assert result == "llm:github.com_some-org_acme-widgets:deadbeef"
+
+
 def test_names_list_shows_multiple_candidates_most_detailed_first():
     out = run(
         "kdn-slug", "names", "--type", "session", "--list",
@@ -116,7 +141,13 @@ def test_names_session_auto_discovers_repo_from_jj_repo(jj_repo):
         "kdn-slug", "names", "--type", "session", "--session-id", "deadbeef",
         cwd=jj_repo,
     )
-    assert out.stdout.strip() == "llm:github.com/some-org/acme-widgets:deadbeef"
+    # host/org/repo must join on --repo-sep (default "_"), NOT a hardcoded "/" — zellij rejects
+    # "/" in session names outright ("Session name cannot contain '/'.", verified live). This
+    # regression was missed by an earlier version of this same test asserting the buggy
+    # "llm:github.com/some-org/acme-widgets:deadbeef" as the expected value.
+    result = out.stdout.strip()
+    assert "/" not in result
+    assert result == "llm:github.com_some-org_acme-widgets:deadbeef"
 
 
 def test_list_types_includes_session_tab_pane():

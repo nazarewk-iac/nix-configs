@@ -64,18 +64,54 @@ spawn-and-watch() {
 
   case "$argc_mode" in
   stream)
-    # subscribe never terminates on its own, even once the target pane has exited (verified
-    # empirically) — poll the exit marker in the background and kill subscribe once it lands.
-    zellij --session "$argc_session" subscribe -p "$pane_id" --format raw --scrollback &
+    # `subscribe --format raw` redraws the ENTIRE viewport on every single update event (not
+    # a delta) — confirmed live: a 3-line command produced "line-1", then "line-1\nline-2",
+    # then "line-1\nline-2\nline-3" as three separate emissions, i.e. classic duplication.
+    # `--format json`'s "viewport" field has the same full-redraw shape, but as a real array
+    # we can diff against what's already been printed and emit only the new tail lines.
+    # subscribe also never terminates on its own, even once the pane has exited (verified
+    # empirically) — this loop stops it itself once done, rather than a separate watcher
+    # process racing to kill it: an earlier version killed subscribe the instant the exit
+    # marker appeared, which for fast-finishing commands could kill it before its final
+    # pane_update event was even delivered through the FIFO (confirmed empirically — a
+    # near-instant 3-line command sometimes produced zero output). Instead, `read -t` polls
+    # the FIFO with a timeout and only stops once the marker exists AND a read attempt has
+    # come up empty (i.e. no event was pending when we checked), giving any last in-flight
+    # event a chance to land first.
+    local fifo
+    fifo="$(mktemp -u /tmp/zellij-llm-stream.XXXXXX)"
+    mkfifo "$fifo"
+    zellij --session "$argc_session" subscribe -p "$pane_id" --format json --scrollback >"$fifo" &
     local sub_pid=$!
-    while [[ ! -f "$marker" ]]; do
-      if ! kill -0 "$sub_pid" 2>/dev/null; then
+    exec 3<"$fifo"
+
+    local -a printed=()
+    local json_line
+    while true; do
+      if IFS= read -r -t 0.3 json_line <&3; then
+        local -a vp
+        mapfile -t vp < <(printf '%s' "$json_line" | jq -r '.viewport[]?')
+        local n="${#printed[@]}" total="${#vp[@]}" i
+        if [[ "$total" -ge "$n" ]]; then
+          for ((i = n; i < total; i++)); do
+            printf '%s\n' "${vp[i]}"
+          done
+        else
+          # viewport shrank (pane scrolled/cleared) — reprint fully rather than silently
+          # drop lines; rare in practice for a short-lived command's output.
+          printf '%s\n' "${vp[@]}"
+        fi
+        printed=("${vp[@]}")
+      elif [[ -f "$marker" ]]; then
+        # command has finished AND this read attempt found nothing pending — safe to stop.
         break
       fi
-      sleep 0.2
     done
+
+    exec 3<&-
     kill "$sub_pid" 2>/dev/null || true
     wait "$sub_pid" 2>/dev/null || true
+    rm -f "$fifo"
     ;;
   heartbeat)
     local start elapsed

@@ -90,12 +90,14 @@ type_choices="session,tab,pane"
 # @option --type![session|tab|pane] What the name is for (see list-types)
 # @option --repo Override the detected repo name (skips discovery)
 # @option --session-id Override the detected harness session id (skips discovery)
-# @option --sep=: Separator character/string between components
+# @option --sep=: Top-level separator between components (llm / repo-slug / session-id / tags)
+# @option --repo-sep=_ Secondary separator joining the repo path parts (host/org/repo); default is "_" because zellij rejects "/" in session names
 # @option --max-len Pick the first candidate at-or-under this length (chars); falls back to a hard-truncated last candidate if none fit
 # @option --tag* Extra trailing components, appended in the order given
 # @flag --list Print every candidate considered (most detailed first), instead of picking one
 names() {
   local sep="${argc_sep}"
+  local repo_sep="${argc_repo_sep}"
   local tags=("${argc_tag[@]:-}")
   if [[ "${#tags[@]}" -eq 1 && -z "${tags[0]}" ]]; then
     tags=()
@@ -122,9 +124,13 @@ names() {
   local -a candidates=()
   case "$argc_type" in
   session)
+    # Repo path parts join on "$repo_sep" (default "_"), NOT a hardcoded "/" — zellij session
+    # names reject "/" outright (verified: "Session name cannot contain '/'."). Keeping this a
+    # separate delimiter from "$sep" lets the fully-qualified host/org/repo stay one visually
+    # distinct slug within the ":"-delimited top-level name.
     local -a repo_forms=()
-    [[ -n "$repo_host" && -n "$repo_org" ]] && repo_forms+=("${repo_host}/${repo_org}/${repo_name}")
-    [[ -n "$repo_org" ]] && repo_forms+=("${repo_org}/${repo_name}")
+    [[ -n "$repo_host" && -n "$repo_org" ]] && repo_forms+=("${repo_host}${repo_sep}${repo_org}${repo_sep}${repo_name}")
+    [[ -n "$repo_org" ]] && repo_forms+=("${repo_org}${repo_sep}${repo_name}")
     repo_forms+=("${repo_name}")
 
     local -a session_forms=()
