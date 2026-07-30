@@ -105,6 +105,21 @@ status` showing no conflict but `git status` showing unmerged paths) before invo
 agents don't have to diagnose it by hand each time. Low priority — rare, and has a known
 one-line fix once recognized; don't let it block the jujutsu-vcs overhaul or other work.
 
+### Implement the multi-arch Linux builder + container image stitching
+
+**Goal:** make this `aarch64-darwin` host build **both** `aarch64-linux` and `x86_64-linux`
+derivations locally (no cloud CI, single authoritative host `/nix/store`, disposable builders),
+then stitch per-arch OCI images into one multi-arch image index entirely inside Nix (no
+daemon/registry round-trip).
+
+**Handover docs** (present viable options with tradeoffs; pick one when implementing):
+- [docs/multi-arch-builder.md](docs/multi-arch-builder.md) — dual-arch builder setup (Rosetta
+  Linux for x86_64, single host store).
+- [docs/multi-arch-container-builder.md](docs/multi-arch-container-builder.md) — assembling the
+  OCI image index locally with `nix2container`, depends on the builder above.
+
+**Status:** design/handover docs written; implementation not started.
+
 ### Convert docs/ (and other markdowns) to OKF
 
 see https://github.com/GoogleCloudPlatform/knowledge-catalog/tree/main/okf
