@@ -47,12 +47,17 @@ in
           {
             programs.zellij.enable = true;
             programs.zellij.enableBashIntegration = true;
-            programs.zellij.enableFishIntegration = true;
+            # fish has its own auto-attach-to-`main` logic below instead of the generic
+            # home-manager auto-start snippet: enabling both stacks two zellij-launchers in
+            # sequence, so quitting/detaching from `main` falls through into the second one
+            # spawning a brand new unnamed session.
+            programs.zellij.enableFishIntegration = false;
             programs.zellij.enableZshIntegration = true;
             programs.zellij.attachExistingSession = false; # don't attach to just any session
-            # auto-attach to `main` session
+            # auto-attach to `main` session, but never over SSH: SSH sessions should land in a
+            # plain shell unless zellij is invoked explicitly.
             programs.fish.interactiveShellInit = ''
-              if status is-interactive; and not set -q ZELLIJ
+              if status is-interactive; and not set -q ZELLIJ; and not set -q SSH_CONNECTION; and not set -q SSH_TTY
                 zellij a -c main
               end
             '';
