@@ -1,0 +1,14 @@
+# ignore everything by default
+*
+# do not ignore directories (still ignores their content)
+!*/
+# still ignore directiories with a leading dot
+.*/
+# do not ignore .gitignore files
+!.gitignore
+
+!*.nix
+!*.sh
+!*.md
+
+!*_test.py
