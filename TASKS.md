@@ -120,6 +120,47 @@ daemon/registry round-trip).
 
 **Status:** design/handover docs written; implementation not started.
 
+### Fix `$DEVENV_ROOT` reaching into the main repo from a sibling `jj workspace add`
+
+**Context:** [docs/vcs-workspaces.md](docs/vcs-workspaces.md) documents the hazard in full. An
+agent working in a `jj workspace add` sibling dir inherits a `$DEVENV_ROOT` baked in at
+shell-entry time that still points at the **main** checkout — it does not follow `cd` into the
+sibling. The `git-hooks-run` PostToolUse hook (`modules/slots/nix/default.nix`,
+`cd "$DEVENV_ROOT" && prek run`) then runs `prek run` against the **main** repo's git state on
+every Bash call from the sibling, racing the main checkout on the shared colocated `.git`
+(observed as `.git/index.lock` contention on 2026-07-30).
+
+**Goal / preferred direction:** sub-agents in a sibling workspace should run their own `devenv
+shell` built from the correct (workspace) root, so all `DEVENV_*` vars re-point. Decide whether
+to additionally make the `git-hooks-run` hook robust to a stale `$DEVENV_ROOT` — e.g. derive the
+hook's target from the actual jj/git root of `$PWD` rather than the inherited `$DEVENV_ROOT`, or
+guard it to no-op when `$PWD` is not inside `$DEVENV_ROOT`.
+
+**Related:** the untracked-but-build-required-file half of the same doc (e.g.
+`packages/jj-mcp/package-lock.json`, since fixed by tracking it) — audit for any other gitignored
+build inputs that a sibling workspace wouldn't receive.
+
+**Unverified idea to explore — run full sub-agent sessions inside dedicated zellij panes.**
+Instead of spawning sub-agents via the harness Agent tool (whose `Bash` calls don't persist
+shell state and inherit a stale `$DEVENV_ROOT`, and whose every call fires the `git-hooks-run`
+PostToolUse hook against the main repo), launch each sub-agent as a full `claude` session inside
+its own zellij pane that has already `devenv shell`-entered from the correct workspace root. The
+coordinator drives them via the `zellij-llm` tooling (`packages/llm/zellij-llm/`, spawn /
+spawn-and-watch / peek / list). Hypothesised benefits: the sub-agent's *own* commands then run
+with correct `DEVENV_*` and the git-hooks hook is scoped to that pane's env, not the main repo —
+addressing both halves of this hazard at once. Open questions (all unverified): how the
+coordinator feeds tasks to and reads results back from an interactive `claude` in a pane; session
+lifecycle/teardown; permission-prompt handling inside a pane; whether this is worth the
+orchestration overhead vs. just fixing the hook. Prototype and measure before committing to it.
+
+A further lever this shape unlocks (that the harness Agent tool does not): because the
+sub-agent is a real process in a pane the coordinator controls, the coordinator could **pause,
+kill, and respawn it in a fresh pane with a freshly-entered `devenv shell`** — recovering from a
+hung build, a wedged tool, or a stale environment by fully reloading the devenv rather than
+being stuck with whatever env the sub-agent started with. Open questions here too: preserving /
+handing off the sub-agent's task context across a respawn, detecting "stuck" vs. "slow", and
+avoiding orphaned zellij sessions/panes on kill.
+
 ### Convert docs/ (and other markdowns) to OKF
 
 see https://github.com/GoogleCloudPlatform/knowledge-catalog/tree/main/okf
