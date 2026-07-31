@@ -24,7 +24,7 @@ in
           # see https://nixos.wiki/wiki/Libvirt
           virtualisation.libvirtd = {
             enable = true;
-            qemu.package = pkgs.qemu_full;
+            # qemu.package = pkgs.qemu_full; # TODO: 2026-07-31: didn't build due to ceph
             qemu.swtpm.enable = true;
             qemu.vhostUserPackages = with pkgs; [
               virtiofsd
