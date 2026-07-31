@@ -74,6 +74,7 @@
           # segfaults https://github.com/NixOS/nixpkgs/issues/183730
           # cliboard not working https://github.com/NixOS/nixpkgs/issues/181759
           services.flameshot.enable = true;
+          services.flameshot.package = pkgs.flameshot.override { enableWlrSupport = true; };
           services.flameshot.settings = {
             General = {
               # checkForUpdates = false; # TODO: check unknown config 2024-09-19
@@ -352,8 +353,7 @@
             wlroots crash fix
               see https://github.com/wez/wezterm/issues/6270#issuecomment-2408627063
           */
-          programs.wezterm.extraConfig = ''
-          '';
+          programs.wezterm.extraConfig = "";
         }
       ]
     )

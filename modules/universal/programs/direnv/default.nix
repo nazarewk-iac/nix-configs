@@ -25,11 +25,6 @@ in
           keep-outputs = true
           keep-derivations = true
         '';
-        ## if you also want support for flakes (this makes nix-direnv use the
-        ## unstable version of nix):
-        #nixpkgs.overlays = [
-        #  (final: prev: { nix-direnv = prev.nix-direnv.override { enableFlakes = true; }; })
-        #];
       }
     ))
     (kdnConfig.util.ifHM (

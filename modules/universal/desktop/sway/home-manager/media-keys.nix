@@ -38,8 +38,8 @@ in
           "--locked XF86AudioNext" = exec "${playerctl} next";
           "--locked XF86AudioPrev" = exec "${playerctl} previous";
           # Misc
-          "Print" = exec "${lib.getExe pkgs.flameshot} gui";
-          "--inhibited Super+Print" = exec "${lib.getExe pkgs.flameshot} gui";
+          "Print" = exec "${lib.getExe config.services.flameshot.package} gui";
+          "--inhibited Super+Print" = exec "${lib.getExe config.services.flameshot.package} gui";
         };
       };
     }
