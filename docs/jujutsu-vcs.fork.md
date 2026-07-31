@@ -1,18 +1,18 @@
 ---
 type: Reference
 description: Describes jj bookmark/topology patterns for repos with a private fork remote.
-timestamp: 2026-07-10T12:19:48+02:00
+timestamp: 2026-07-31T14:00:00+02:00
 ---
 
 # Jujutsu (jj) VCS — Fork Workflow
 
-> **Agent note:** This file is installed as `.claude/rules/jujutsu-vcs.fork.md` in repos with
+> **Agent note:** This file is installed as `.claude/rules/jujutsu-vcs.fork.md` in a repo with
 > `kdn.jj.fork.enable = true`. See [jujutsu-vcs.md](jujutsu-vcs.md) for the fork-agnostic base
 > patterns this extends, and [flake-update.fork.md](flake-update.fork.md) for the concrete
 > update workflow that uses this topology.
 
-When a private fork remote exists alongside the public upstream remote, `main` is a merge of
-both lines and `@` sits on top of both `main` and `upstream`:
+When a private fork remote exists next to the public upstream remote, `main` is a merge of both
+lines and `@` sits on top of both `main` and `upstream`:
 
 ```
 main@<upstream-remote> ──► ...upstream-chain... ──► upstream
@@ -22,15 +22,15 @@ main@<upstream-remote> ──► ...upstream-chain... ──► upstream
 main@<fork-remote> ──► ...fork-chain...
 ```
 
-`upstream` and `main` are **bookmark** names in this repo's convention — `upstream` tracks the
-public chain tip, `main` tracks the merge of both chains. Both are distinct from the **remote**
+`upstream` and `main` are **bookmark** names in this repo's convention. `upstream` tracks the
+public chain tip. `main` tracks the merge of both chains. Both are distinct from the **remote**
 names (`kdn.jj.upstream.remote` / `kdn.jj.fork.remote`), which may differ.
 
 ---
 
-## Keeping @ current
+## Keep @ current
 
-After fetching both remotes:
+After you fetch both remotes:
 
 ```bash
 jj git fetch --remote=<upstream-remote> --remote=<fork-remote>
@@ -54,16 +54,16 @@ jj new -d main -d upstream
 
 `upstream-chain`/`fork-chain` and `upstream-tip`/`fork-tip` are revset aliases defined by the
 `kdn.jj.fork` devenv slot. `upstream-chain`/`fork-chain` (`~description("") & ~fork` /
-`~description("") & fork`) pick out all named, non-fork-tagged / fork-tagged commits;
+`~description("") & fork`) pick out all named, non-fork-tagged / fork-tagged commits.
 `upstream-tip`/`fork-tip` (`latest(upstream-chain)` / `latest(fork-chain)`) pick out the latest
 commit in each chain.
 
 > **Warning:** `jj describe` on a multi-parent `@` (e.g. when `@` sits on top of both `main` and
-> `upstream`) creates a merge commit inheriting all parents — including fork ones. Always commit
-> upstream-side work while `@` has a single upstream-chain parent, then restore the multi-parent
-> `@` with `jj new -d main -d upstream` afterwards.
+> `upstream`) creates a merge commit that inherits all parents, including the fork ones. Always
+> commit upstream-side work while `@` has a single upstream-chain parent. Then restore the
+> multi-parent `@` with `jj new -d main -d upstream` afterward.
 
-**Before declaring done:**
+**Before you declare done:**
 ```bash
 # 1. check for stray commits (orphans from rebases):
 jj log -r '::(@ | main | upstream)' --no-graph -T 'change_id.short() ++ " " ++ bookmarks ++ " " ++ description.first_line() ++ "\n"'
@@ -79,22 +79,22 @@ jj log -r 'parents(upstream)' --no-graph -T 'change_id.short() ++ " " ++ bookmar
 devenv build shell
 ```
 
-If `upstream` has more than one parent, rebase it onto just the upstream-chain tip:
+When `upstream` has more than one parent, rebase it onto just the upstream-chain tip:
 
 ```bash
 jj rebase --revision upstream --destination <upstream-chain-tip-id>
 jj bookmark set upstream -r upstream
 ```
 
-Ask the user whether to squash, relocate, or abandon any strays found. Fix build errors before
-finishing.
+Ask the user whether to squash, relocate, or abandon any stray you find. Fix build errors before
+you finish.
 
 ---
 
-## Rebasing the fork merge after new upstream commits
+## Rebase the fork merge after new upstream commits
 
-When new commits land on the upstream side (e.g. post-update fixes), rebase the fork merge
-commit to include them, then restore `@` on top of both:
+When new commits land on the upstream side (e.g. post-update fixes), rebase the fork merge commit
+to include them, then restore `@` on top of both:
 
 ```bash
 jj rebase --revision <merge-change-id> \
@@ -108,9 +108,9 @@ See [flake-update.fork.md](flake-update.fork.md) for the concrete workflow this 
 
 ---
 
-## Constructing a new fork merge commit
+## Construct a new fork merge commit
 
-Creating (or recreating) the `main` merge topology is a legitimate, structural use of `jj new` —
+To create (or recreate) the `main` merge topology is a legitimate, structural use of `jj new` —
 not a work checkpoint:
 
 ```bash
