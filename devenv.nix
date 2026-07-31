@@ -18,6 +18,10 @@ let
   ];
 in
 {
+  # argc drives the subcommand dispatch in the zellij-llm/kdn-slug bash packages; keep it on
+  # PATH so the standalone scripts run and get tested in the shell.
+  packages = [ pkgs.argc ];
+
   imports = [
     (inputs.nix-configs.mkSlots {
       inherit pkgs;
