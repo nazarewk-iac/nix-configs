@@ -114,6 +114,41 @@ in
           {
             documentation.man.enable = true;
           }
+          (
+            /*
+              pythonMetadataCheck fixes, see:
+              - ceph-common https://github.com/NixOS/nixpkgs/issues/542206
+              - fix research https://assistant.kagi.com/share/348c2355-c4cc-4d10-88ca-32b89ca79fec
+              - the original cause (introducing the check) https://github.com/NixOS/nixpkgs/pull/532778
+            */
+            let
+              affected = [
+                "ceph-common"
+                "scipy"
+                "cython"
+              ];
+            in
+            {
+              nixpkgs.overlays = [
+                (final: prev: {
+                  pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
+                    (
+                      python-final: python-prev:
+                      lib.pipe affected [
+                        (map (name: {
+                          inherit name;
+                          value = python-prev.${name}.overridePythonAttrs (_: {
+                            dontCheckPythonMetadata = true;
+                          });
+                        }))
+                        builtins.listToAttrs
+                      ]
+                    )
+                  ];
+                })
+              ];
+            }
+          )
         ]
       )
     ))
