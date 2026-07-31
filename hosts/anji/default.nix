@@ -13,6 +13,10 @@ in
 {
   imports = [
     kdnConfig.self.darwinModules.default
+    (kdnConfig.self.mkSlots {
+      inherit pkgs;
+      kdn.darwin.rosetta-builder.enable = true;
+    }).config.darwin
   ];
 
   options.kdn.hosts.anji = {
