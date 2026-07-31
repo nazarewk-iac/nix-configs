@@ -2,7 +2,7 @@ inputs:
   nixpkgs:
     follows: nix-configs/nixpkgs
   nix-configs:
-    url: path:.
+    url: git+file:.
   mcp-servers-nix:
     url: github:natsukium/mcp-servers-nix
   git-hooks:
