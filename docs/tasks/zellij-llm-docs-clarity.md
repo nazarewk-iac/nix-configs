@@ -1,7 +1,7 @@
 ---
 type: Task
 description: Make zellij-llm clearer and easier to use — reduce the boilerplate and confusing steps an agent/user hits when driving long-running commands in a dedicated zellij session.
-status: open
+status: done
 authored_by: agent
 timestamp: 2026-07-31T12:30:00+02:00
 ---

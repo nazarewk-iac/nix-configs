@@ -1,7 +1,7 @@
 ---
 type: Task
 description: Make zellij-llm derive its session (and tab/pane) names from kdn-slug internally by default, with a CLI override, instead of requiring the caller to pass --session.
-status: open
+status: done
 authored_by: agent
 timestamp: 2026-07-31T12:30:00+02:00
 ---
