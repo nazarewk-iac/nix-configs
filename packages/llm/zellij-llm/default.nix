@@ -10,6 +10,7 @@ let
       zellij
       jq
       coreutils
+      kdn.kdn-slug
     ];
     # `eval "$(argc --argc-eval ...)"` injects the argc_* variables at runtime. shellcheck
     # cannot see that, so it flags every read of one as SC2154 ("referenced but not assigned").
