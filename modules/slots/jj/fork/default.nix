@@ -66,7 +66,55 @@ in
         fork-chain = "~description(\"\") & fork";
         upstream-tip = "latest(upstream-chain)";
         fork-tip = "latest(fork-chain)";
+
+        # tree-merge: the most recent merge commit in the ancestry of @. Every upstream sync is
+        # a merge, so this is the anchor that separates local work above from history below.
+        tree-merge = "heads(::@ & merges())";
+
+        # upstream-incoming: upstream commits fetched but not yet in the local tree.
+        # upstream-incoming-tip: the rebase destination (latest of the incoming set).
+        upstream-incoming = "@..main@${cfg.upstream.remote}";
+        upstream-incoming-tip = "main@${cfg.upstream.remote}";
+
+        # to-rebase: all local described work above the tree merge, i.e. the changes to relocate
+        # onto new upstream. Use roots(to-rebase) as the rebase source.
+        to-rebase = "tree-merge..@ & ~description(\"\")";
+
+        # upstream-safe: the content-clean subset of to-rebase. It uses ~fork-direct (the
+        # sensitive-content predicate), NOT ~fork — the fork alias tags every descendant of the
+        # fork main for topology reasons, so ~fork drops safe local changes too.
+        upstream-safe = "to-rebase & ~fork-direct";
+
+        # pushed*: reachability from a remote bookmark. A change reachable from a remote bookmark
+        # is already published there. Use `<change> & ~pushed` to find purely local changes that
+        # are still safe to rewrite. Compare with the immutable() alias, which also folds in
+        # trunk(), tags(), and untracked remote bookmarks.
+        pushed = "::remote_bookmarks()";
+        pushed-fork = "::remote_bookmarks(remote=\"${cfg.fork.remote}\")";
+        pushed-upstream = "::remote_bookmarks(remote=\"${cfg.upstream.remote}\")";
+
+        # fork-leaked: local work above the merge that carries fork-sensitive content. A non-empty
+        # result means a change would fail an upstream push. Named so the check needs no inline &.
+        fork-leaked = "to-rebase & fork-direct";
+
+        # merge-frozen: the tree merge is already published or immutable. A non-empty result means
+        # you must build a NEW merge instead of rewriting the current one. Empty means reuse it.
+        merge-frozen = "tree-merge & (immutable() | pushed)";
+
+        # upstream-local: local upstream-side commits below the merge, not yet on the public
+        # remote. These are the pre-merge upstream chain. To pull new upstream in, rebase
+        # roots(upstream-local) onto upstream-incoming-tip — the merge, to-rebase, and @ follow as
+        # descendants, and the merge keeps its fork parent. Do NOT rebase tree-merge directly:
+        # that replaces the merge parents and orphans this chain out of the merge ancestry.
+        upstream-local = "pushed-upstream..(::tree-merge & ~fork)";
       };
+      aliases.fork-help = [
+        "util"
+        "exec"
+        "--"
+        "cat"
+        "${inputs.nix-configs}/docs/jujutsu-vcs.fork.md"
+      ];
       aliases.sync-remotes = [
         "util"
         "exec"
