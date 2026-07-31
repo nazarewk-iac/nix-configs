@@ -14,6 +14,11 @@ It sets a private ZELLIJ_SOCKET_DIR (a short path, see zellij-llm.sh's comment o
 103-byte unix socket limit). ZELLIJ_SOCKET_DIR is a test-only device. zellij-llm never sets a
 default for it at runtime; the tool relies on a short derived session name to fit the socket
 path. A fixture teardown always kills and deletes each scratch session, even on failure.
+
+A non-ephemeral pane does NOT report `exited` after its command ends. The tool drops the pane to
+an interactive shell so the session stays alive and the output stays reviewable. So these tests
+check the pane output (peek) or the run marker, not the `exited` flag. Only an --ephemeral pane
+still exits (and closes).
 """
 
 import json
@@ -68,6 +73,13 @@ def list_panes(sess):
     return json.loads(out.stdout)
 
 
+def peek(sess, pane, full=False):
+    args = ["zellij-llm", "peek", "--session", sess, "--pane", str(pane)]
+    if full:
+        args.append("--full")
+    return run(*args, check=False).stdout
+
+
 def wait_for(predicate, timeout=10, interval=0.2):
     deadline = time.time() + timeout
     while time.time() < deadline:
@@ -79,9 +91,9 @@ def wait_for(predicate, timeout=10, interval=0.2):
 
 def test_spawn_creates_session_and_runs_stdin_script(session):
     run("zellij-llm", "spawn", "--session", session, "--pane", "p1", input_text="echo hi-from-p1\n")
-    assert wait_for(lambda: any(p["title"] == "p1" and p["exited"] for p in list_panes(session)))
-    panes = {p["title"]: p for p in list_panes(session)}
-    assert panes["p1"]["exit_status"] == 0
+    # The pane keeps running (drops to a shell), so check the output appears, not the exited flag.
+    assert wait_for(lambda: "hi-from-p1" in peek(session, "p1", full=True))
+    assert any(p["title"] == "p1" for p in list_panes(session))
 
 
 def test_spawn_is_idempotent_on_existing_session(session):
@@ -93,13 +105,13 @@ def test_spawn_is_idempotent_on_existing_session(session):
 
 def test_peek_returns_pane_output_by_title_and_by_id(session):
     run("zellij-llm", "spawn", "--session", session, "--pane", "p1", input_text="echo peekable\n")
-    wait_for(lambda: any(p["title"] == "p1" and p["exited"] for p in list_panes(session)))
+    assert wait_for(lambda: "peekable" in peek(session, "p1", full=True))
 
-    by_title = run("zellij-llm", "peek", "--session", session, "--pane", "p1")
+    by_title = run("zellij-llm", "peek", "--session", session, "--pane", "p1", "--full")
     assert "peekable" in by_title.stdout
 
     pane_id = next(p["id"] for p in list_panes(session) if p["title"] == "p1")
-    by_id = run("zellij-llm", "peek", "--session", session, "--pane", str(pane_id))
+    by_id = run("zellij-llm", "peek", "--session", session, "--pane", str(pane_id), "--full")
     assert "peekable" in by_id.stdout
 
 
@@ -148,11 +160,13 @@ def test_spawn_and_watch_stream_does_not_duplicate_lines(session):
 
 
 def test_spawn_persists_pane_by_default(session):
-    # Default behavior keeps the pane after the command exits, so the user can attach and review.
-    run("zellij-llm", "spawn", "--session", session, "--pane", "keep", input_text="true\n")
-    assert wait_for(lambda: any(p["title"] == "keep" and p["exited"] for p in list_panes(session)))
-    # The pane is still present after it exited.
-    assert any(p["title"] == "keep" for p in list_panes(session))
+    # Default behavior drops the pane to a shell after the command exits, so the user can attach
+    # and review. The pane stays present and does NOT report exited (a live shell holds it open).
+    run("zellij-llm", "spawn", "--session", session, "--pane", "keep", input_text="echo kept-line\n")
+    assert wait_for(lambda: "kept-line" in peek(session, "keep", full=True))
+    panes = {p["title"]: p for p in list_panes(session)}
+    assert "keep" in panes
+    assert panes["keep"]["exited"] is False
 
 
 def test_spawn_ephemeral_closes_pane_on_exit(session):
@@ -197,6 +211,37 @@ def test_wait_blocks_until_exit_and_returns_code(session):
     assert out.stdout.strip() == "EXIT:2"
 
 
+def test_session_survives_after_command_exits(session):
+    # Regression test for the main bug: a background session must NOT go EXITED once the fed
+    # command finishes. The pane drops to a shell, which keeps the session alive and attachable.
+    run("zellij-llm", "spawn", "--session", session, "--pane", "survive", input_text="echo done-now\n")
+    assert wait_for(lambda: "done-now" in peek(session, "survive", full=True))
+    # Give the command time to finish; the session must still be reachable (list-panes succeeds)
+    # and the output still present.
+    time.sleep(2)
+    sessions = run("zellij", "list-sessions", "--no-formatting", check=False).stdout
+    assert session in sessions
+    assert "EXITED" not in next(line for line in sessions.splitlines() if line.startswith(session))
+    assert "done-now" in peek(session, "survive", full=True)
+
+
+def test_run_marker_written_under_cache(session, tmp_path):
+    # The exit-code marker lives under the cache root. Run from a scratch dir with no .git, so the
+    # tool uses the XDG cache fallback, and point XDG_CACHE_HOME at a temp dir we can inspect.
+    env = dict(os.environ)
+    env["XDG_CACHE_HOME"] = str(tmp_path)
+    subprocess.run(
+        ["zellij-llm", "spawn", "--session", session, "--pane", "marked"],
+        input="exit 5\n", capture_output=True, text=True, env=env, cwd=str(tmp_path),
+    )
+    marker_dir = tmp_path / "zellij-llm" / "marked"
+    assert wait_for(lambda: marker_dir.exists() and any(marker_dir.iterdir()))
+    runs = sorted(marker_dir.iterdir())
+    marker = runs[-1] / "exit"
+    assert wait_for(lambda: marker.exists())
+    assert marker.read_text().strip() == "5"
+
+
 def test_spawn_rejects_oversized_session_name(session):
     # A session name that overflows the socket-path limit must fail early with a clear message,
     # not deep inside zellij. Use an explicit oversized --session to trigger the check.
@@ -221,9 +266,10 @@ def test_derived_session_fits_socket_and_runs(session):
         env=env,
     )
     assert proc.returncode == 0, proc.stderr
-    # The tool reports the short derived session name it chose.
+    # The tool reports the short derived session name it chose. The line ends with a `(run <id>)`
+    # suffix, so parse the name between the single quotes rather than to end of line.
     assert "spawned pane 'derived'" in proc.stdout
-    derived = proc.stdout.split("session '", 1)[1].rstrip("'\n")
+    derived = proc.stdout.split("session '", 1)[1].split("'", 1)[0]
     try:
         assert len(derived) <= 24
     finally:

@@ -54,3 +54,6 @@
 
 # ignore any tmp files
 *.tmp*
+
+# zellij-llm writes run markers under <repo>/.cache/zellij-llm/
+/.cache/
