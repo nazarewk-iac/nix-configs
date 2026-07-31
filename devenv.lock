@@ -316,11 +316,11 @@
     "devenv": {
       "locked": {
         "dir": "src/modules",
-        "lastModified": 1785318976,
-        "narHash": "sha256-2/0aIcE9GEVvdzizcVUImPWG6R3vVtJo/01DNXv2R/w=",
+        "lastModified": 1785511869,
+        "narHash": "sha256-UyJC0sGBpMZBPHErRX+BjVwHh59JJKau9OctFriJop8=",
         "owner": "cachix",
         "repo": "devenv",
-        "rev": "81ab9b8fffc8ec352f4a72eb49b41ef93766aceb",
+        "rev": "927ae0006ddb59908420feaacf6d828c065196aa",
         "type": "github"
       },
       "original": {
@@ -879,11 +879,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1785288808,
-        "narHash": "sha256-RfdZW67fz7ppdoPuHm+56xrkPbFs6PX0GhXb/Z4wu2o=",
+        "lastModified": 1785487250,
+        "narHash": "sha256-w6WSsNitkx1y6kKYWDHZcl4U2OsgVZ8Ve57GU2QhJ2I=",
         "owner": "natsukium",
         "repo": "mcp-servers-nix",
-        "rev": "4c273cc993c9791a33c4500d40062fb9d8ca461c",
+        "rev": "6740f47a2960a11b3bdc3d20acc4c3468dc0ecdc",
         "type": "github"
       },
       "original": {
@@ -1020,14 +1020,13 @@
         "wezterm": "wezterm"
       },
       "locked": {
-        "path": ".",
-        "type": "path"
+        "type": "git",
+        "url": "file:."
       },
       "original": {
-        "path": ".",
-        "type": "path"
-      },
-      "parent": []
+        "type": "git",
+        "url": "file:."
+      }
     },
     "nix-darwin": {
       "inputs": {
@@ -1502,11 +1501,11 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1783876531,
-        "narHash": "sha256-qVzXUEoQQJj1vUhdiAI88i9d3fWGof2IbucR590zJ+U=",
+        "lastModified": 1785333960,
+        "narHash": "sha256-aqXZubdQEfAvi5rssD8T6ottT6mtu2quSfBO1wqdbEE=",
         "owner": "nazarewk-iac",
         "repo": "nixpkgs",
-        "rev": "24c1cfbf5b1224336fa04589d1a6b33c666077c4",
+        "rev": "7749e2ae8cb0c0e08c6398cb1de0c2be73cfc025",
         "type": "github"
       },
       "original": {
@@ -1547,7 +1546,7 @@
         "narHash": "sha256-DsVo19A4lZns1SC8woFyAuPO+lFNdy8Ffl2au4K8sbA=",
         "owner": "nazarewk-iac",
         "repo": "preservation",
-        "rev": "754cfdbfdb2552ed3447a79d3ed7b970bae48249",
+        "rev": "72fa4572c0fd587b5b2c3c5b9b8286a22f64f20a",
         "type": "github"
       },
       "original": {
