@@ -35,7 +35,7 @@ let
         ipython
         isort
         keyring
-        matplotlib
+        (mkMatplotlib matplotlib)
         mt-940
         pendulum
         pip
@@ -91,6 +91,16 @@ let
         set +x
       ''
     );
+
+  mkMatplotlib =
+    prev:
+    if !(kdnConfig.util.isOfType [ "nixos" ]) then
+      prev
+    else
+      prev.override {
+        enableGtk3 = true;
+        enableQt = true;
+      };
 in
 {
   options.kdn.development.python = {
@@ -158,16 +168,6 @@ in
       })
       (kdnConfig.util.ifHM {
         programs.git.ignores = [ (builtins.readFile ./.gitignore) ];
-      })
-      (kdnConfig.util.ifTypes [ "nixos" ] {
-        nixpkgs.overlays = [
-          (final: prev: {
-            matplotlib = prev.matplotlib.override {
-              enableGtk3 = true;
-              enableQt = true;
-            };
-          })
-        ];
       })
     ]
   );

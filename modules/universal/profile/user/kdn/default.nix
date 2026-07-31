@@ -386,7 +386,6 @@ in
                 name = "kdn-drag0nius.kdbx";
                 text = "${lib.getExe pkgs.kdn.kdn-keepass} drag0nius.kdbx";
               })
-              flameshot
               vlc
               subtitleedit
               subtitleeditor

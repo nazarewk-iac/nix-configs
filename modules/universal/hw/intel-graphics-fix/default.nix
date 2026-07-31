@@ -21,13 +21,8 @@ in
       # - https://gitlab.freedesktop.org/mesa/mesa/-/issues/5600
       # - https://matrix.to/#/!KqkRjyTEzAGRiZFBYT:nixos.org/$U1Qhgf2AX_tVar9LuBrzOnNFYeoGkIntkv5OLs0D-dM?via=nixos.org&via=matrix.org&via=tchncs.de
       environment.variables = {
-        MESA_LOADER_DRIVER_OVERRIDE = "i965";
+        # MESA_LOADER_DRIVER_OVERRIDE = "i965"; # TODO: 2026-07-31: watch out for breakages?
       };
-      nixpkgs.overlays = [
-        (final: prev: {
-          # mesa = nixpkgs-mesa.legacyPackages.x86_64-linux.mesa;
-        })
-      ];
     }
   );
 }

@@ -65,7 +65,6 @@ in
         programs.helix.defaultEditor = true;
         programs.vim.defaultEditor = false;
         stylix.targets.helix.enable = false;
-        # nixpkgs.overlays = [kdn.inputs.helix-editor.overlays.default];
       })
     ]
   );
