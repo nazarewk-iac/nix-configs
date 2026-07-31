@@ -18,6 +18,7 @@ AI Agent Guidance for nix-configs Repository.
 - [Flake Update](.agents/rules/flake-update.md) — update procedure, patch handling, testing (full doc: [docs/flake-update.md](docs/flake-update.md))
 - [MCP Setup](.agents/rules/mcp-setup.md) — gateway architecture, adding backends, mcpsnoop (full doc: [docs/mcp-setup.md](docs/mcp-setup.md))
 - [Tasks](.agents/rules/tasks.md) — one file per task under `docs/tasks/`, done-tag + sibling solution file (full doc: [docs/tasks/README.md](docs/tasks/README.md))
+- [Simple Technical English](.agents/rules/simple-technical-english.md) — strict ASD-STE100 for all docs, code comments, and chat; domain-vocabulary exception; ask the user before you drop STE
 
 ## docs/ — full documentation
 
