@@ -17,6 +17,7 @@ AI Agent Guidance for nix-configs Repository.
 - [Packaging Python Scripts](.agents/rules/packaging-python.md) — `init-py-script`, `mkPythonScript`, `default.nix` pattern
 - [Flake Update](.agents/rules/flake-update.md) — update procedure, patch handling, testing (full doc: [docs/flake-update.md](docs/flake-update.md))
 - [MCP Setup](.agents/rules/mcp-setup.md) — gateway architecture, adding backends, mcpsnoop (full doc: [docs/mcp-setup.md](docs/mcp-setup.md))
+- [Tasks](.agents/rules/tasks.md) — one file per task under `docs/tasks/`, done-tag + sibling solution file (full doc: [docs/tasks/README.md](docs/tasks/README.md))
 
 ## docs/ — full documentation
 
@@ -32,6 +33,7 @@ read the full doc when you need detail.
 | [docs/mcp-setup.md](docs/mcp-setup.md) | MCP gateway architecture, configuration, backends, lifecycle |
 | [docs/mcpsnoop.md](docs/mcpsnoop.md) | mcpsnoop traffic inspector: setup, TUI usage, filtering, workflows |
 | [docs/nix-dev.md](docs/nix-dev.md) | Nix development: building devenv shell, vendored lockfile recovery, hash updates |
+| [docs/tasks/README.md](docs/tasks/README.md) | Tasks convention: one file per task, done-tag + sibling solution, frontmatter schema |
 
 ## Nix Store Symlinks
 

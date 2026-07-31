@@ -26,6 +26,13 @@ This is an incomplete list of incorporated software/systems:
 
 # Notes
 
+## Tasks
+
+Repository tasks are tracked as one file per task under [`docs/tasks/`](docs/tasks/README.md) —
+a finished task is tagged `status: done` in frontmatter and gains a sibling `<task>.done.md`
+solution file. See [docs/tasks/README.md](docs/tasks/README.md) for the full convention. (The
+legacy root `TASKS.md` is being phased out.)
+
 ## Custom ISO installer
 
 see https://bmcgee.ie/posts/2022/12/setting-up-my-new-laptop-nix-style/
