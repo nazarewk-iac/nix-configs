@@ -12,10 +12,9 @@ let
       gnused
       gawk
     ];
-    # argc_* variables are injected at runtime by `eval "$(argc --argc-eval ...)"` —
-    # shellcheck has no way to see that, so it flags every read of one as SC2154
-    # ("referenced but not assigned"). See packages/llm/zellij-llm/default.nix for the same
-    # exclusion.
+    # `eval "$(argc --argc-eval ...)"` injects the argc_* variables at runtime. shellcheck
+    # cannot see that, so it flags every read of one as SC2154 ("referenced but not assigned").
+    # See packages/llm/zellij-llm/default.nix for the same exclusion.
     excludeShellChecks = [ "SC2154" ];
     text = builtins.readFile ./kdn-slug.sh;
   };

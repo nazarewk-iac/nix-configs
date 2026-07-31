@@ -1,21 +1,19 @@
 #!/usr/bin/env nix-shell
 #!nix-shell -i bash -p argc jujutsu git
-# Lets this script run standalone (./kdn-slug.sh ...) without the nix package or a devenv
-# shell on PATH — see packages/zellij-llm/zellij-llm.sh for the same pattern. The packaged
-# version (packages/kdn-slug/default.nix) ignores these two lines: writeShellApplication
-# wraps this file's contents in its own generated script with its own shebang/runtimeInputs
-# ahead of them, so they end up as inert comments there, same as `set -eEuo pipefail` below
-# duplicating writeShellApplication's own `set -euo pipefail` header.
+# These two lines let the script run standalone (./kdn-slug.sh ...) without the nix package or a
+# devenv shell on PATH. zellij-llm.sh uses the same pattern. The packaged version (default.nix)
+# ignores them: writeShellApplication prepends its own shebang and runtimeInputs, so both lines
+# become inert comments there. The `set -eEuo pipefail` below is a duplicate of
+# writeShellApplication's own header for the same reason.
 set -eEuo pipefail
 
-# Uses argc (https://github.com/sigoden/argc) for subcommand dispatch and --help generation
-# instead of hand-rolled `case`-based parsing — this repo's other bash packages (git-utils,
-# kdn-gamingctl) hand-roll dispatch, but this script has several repeatable/optional flags
-# per subcommand where argc's declarative @option/@flag annotations stay far more readable,
-# without giving up bash's zero-build edit/test loop or near-instant startup.
+# argc (https://github.com/sigoden/argc) does subcommand dispatch and --help. Other bash
+# packages here (git-utils, kdn-gamingctl) hand-roll a `case` parse. This script has several
+# repeatable/optional flags per subcommand where argc's @option/@flag annotations stay more
+# readable, and bash keeps a zero-build edit/test loop and fast startup.
 
-# Built-in harness_name:env_var pairs, checked in order, first match wins. Extend without
-# editing this file by appending more pairs to KDN_SLUG_HARNESSES, e.g.
+# Built-in harness_name:env_var pairs, checked in order, first match wins. To extend without an
+# edit to this file, append more pairs to KDN_SLUG_HARNESSES, e.g.
 # KDN_SLUG_HARNESSES="my-harness:MY_HARNESS_SESSION_ID".
 default_harnesses="claude-code:CLAUDE_CODE_SESSION_ID"
 all_harnesses="${default_harnesses}${KDN_SLUG_HARNESSES:+,${KDN_SLUG_HARNESSES}}"
@@ -38,9 +36,9 @@ harness() {
 # @cmd Detect the current repository's host/org/name, most specific first
 repo() {
   local root=""
-  # DEVENV_ROOT is only trusted when $PWD is actually inside it — it's set once at devenv
-  # shell-entry time and does NOT track later `cd`s, so a stale value from a different
-  # checkout (e.g. a sibling `jj workspace add` dir) would silently point elsewhere.
+  # Trust DEVENV_ROOT only when $PWD is inside it. devenv sets it once at shell entry and does
+  # NOT track later `cd`s. A stale value from a different checkout (e.g. a sibling
+  # `jj workspace add` dir) would point elsewhere without warning.
   if [[ -n "${DEVENV_ROOT:-}" && "$PWD/" == "${DEVENV_ROOT}/"* ]]; then
     root="$DEVENV_ROOT"
   elif root="$(jj root 2>/dev/null)"; then
@@ -55,10 +53,10 @@ repo() {
   name="$(basename "$root")"
 
   local remote_url=""
-  # `jj git remote list` itself exits non-zero when $root has no .jj at all (plain git repo)
-  # — under `set -eEuo pipefail` that failure propagates through the pipe to awk and kills
-  # the whole script unless explicitly tolerated here, so this must not be `cmd | awk ...`
-  # alone; `|| true` on the jj call lets the git fallback below run instead.
+  # `jj git remote list` exits non-zero when $root has no .jj at all (a plain git repo). Under
+  # `set -eEuo pipefail` that failure passes through the pipe to awk and kills the whole script.
+  # So this must not be `cmd | awk ...` alone. The `|| true` on the jj call lets the git
+  # fallback below run instead.
   remote_url="$(cd "$root" && { jj git remote list 2>/dev/null || true; } | awk 'NR==1{print $2}')"
   if [[ -z "$remote_url" ]]; then
     remote_url="$(cd "$root" && git remote get-url origin 2>/dev/null || true)"
@@ -124,10 +122,9 @@ names() {
   local -a candidates=()
   case "$argc_type" in
   session)
-    # Repo path parts join on "$repo_sep" (default "_"), NOT a hardcoded "/" — zellij session
-    # names reject "/" outright (verified: "Session name cannot contain '/'."). Keeping this a
-    # separate delimiter from "$sep" lets the fully-qualified host/org/repo stay one visually
-    # distinct slug within the ":"-delimited top-level name.
+    # Repo path parts join on "$repo_sep" (default "_"), NOT a hardcoded "/". zellij session
+    # names reject "/" (verified: "Session name cannot contain '/'."). A separate delimiter from
+    # "$sep" keeps the full host/org/repo as one distinct slug inside the ":"-delimited name.
     local -a repo_forms=()
     [[ -n "$repo_host" && -n "$repo_org" ]] && repo_forms+=("${repo_host}${repo_sep}${repo_org}${repo_sep}${repo_name}")
     [[ -n "$repo_org" ]] && repo_forms+=("${repo_org}${repo_sep}${repo_name}")
@@ -157,8 +154,8 @@ names() {
     ;;
   esac
 
-  # de-duplicate consecutive repeats (component levels can collapse to the same string,
-  # e.g. when there's no org/host to drop)
+  # Drop consecutive repeats. Component levels can collapse to the same string, e.g. when there
+  # is no org/host to drop.
   local last="" c
   local -a printed=()
   for c in "${candidates[@]}"; do
@@ -172,8 +169,8 @@ names() {
     return 0
   fi
 
-  # default: pick exactly one winner — the most detailed candidate that satisfies
-  # --max-len (or the first/most-detailed one if no limit was given).
+  # Default: pick exactly one winner — the most detailed candidate that fits --max-len (or the
+  # first/most-detailed one when no limit is given).
   if [[ -z "${argc_max_len:-}" ]]; then
     echo "${printed[0]}"
     return 0
@@ -184,8 +181,8 @@ names() {
       return 0
     fi
   done
-  # nothing fit — hard-truncate the least detailed candidate so callers with a strict
-  # length limit (e.g. a Unix socket path budget) always get a usable single line
+  # Nothing fit. Hard-truncate the least detailed candidate so a caller with a strict length
+  # limit (e.g. a Unix socket path budget) always gets a usable single line.
   echo "${last:0:$argc_max_len}"
 }
 

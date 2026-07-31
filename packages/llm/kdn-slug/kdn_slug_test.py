@@ -3,16 +3,16 @@
 """
 test_kdn_slug.py
 
-Self-test for packages/llm/kdn-slug — exercises the actual built binary (from PATH, via the
-nix-shell shebang above, which builds kdn-slug fresh from this directory) rather than the
-packaged derivation's internals. Run directly (./test_kdn_slug.py) or via `pytest
-test_kdn_slug.py`; either way nix-shell builds kdn-slug first and puts it on PATH.
+Self-test for packages/llm/kdn-slug. It runs the built binary (from PATH, via the nix-shell
+shebang above, which builds kdn-slug fresh from this directory), not the packaged derivation's
+internals. Run it directly (./test_kdn_slug.py) or via `pytest test_kdn_slug.py`. Either way
+nix-shell builds kdn-slug first and puts it on PATH.
 
-`repo`/auto-discovery tests run against a disposable jj-colocated repo stub with a fake
-GitHub remote (see `jj_repo` fixture below), recreated fresh per test via pytest's
-function-scoped `tmp_path` — matching this actual repo's own topology (jj colocated with
-git), which is what kdn-slug's `repo` subcommand checks first (`jj root`/`jj git remote
-list`, falling back to plain git only when not in a jj repo at all).
+The `repo`/auto-discovery tests run against a disposable jj-colocated repo stub with a fake
+GitHub remote (see the `jj_repo` fixture below). pytest's function-scoped `tmp_path` recreates
+it fresh per test. This matches this repo's own topology (jj colocated with git), which is what
+kdn-slug's `repo` subcommand checks first (`jj root`/`jj git remote list`, with a fallback to
+plain git only outside a jj repo).
 """
 
 import subprocess
@@ -26,8 +26,8 @@ def run(*args, cwd=None, check=True):
 
 @pytest.fixture()
 def jj_repo(tmp_path):
-    # tmp_path resolves through /private on macOS — jj root/git rev-parse report the
-    # resolved path, so tests must compare against the resolved path too, not tmp_path as-is.
+    # tmp_path resolves through /private on macOS. jj root/git rev-parse report the resolved
+    # path, so the tests must compare against the resolved path too, not tmp_path as-is.
     repo_dir = (tmp_path / "acme-widgets").resolve()
     repo_dir.mkdir()
     run("jj", "git", "init", "--colocate", cwd=repo_dir)
@@ -37,8 +37,8 @@ def jj_repo(tmp_path):
 
 @pytest.fixture()
 def plain_git_repo(tmp_path):
-    # No jj at all (unlike jj_repo above) — exercises kdn-slug's non-jj fallback path
-    # specifically. No remote either, so `repo` must fall back to just the directory name.
+    # No jj at all (unlike jj_repo above). This tests kdn-slug's non-jj fallback path. No
+    # remote either, so `repo` must fall back to just the directory name.
     repo_dir = (tmp_path / "just-a-dir").resolve()
     repo_dir.mkdir()
     run("git", "init", "-q", cwd=repo_dir)
@@ -59,10 +59,10 @@ def test_names_session_appends_tags_in_order():
 
 
 def test_names_session_respects_max_len_with_hard_truncation_fallback():
-    # --repo/--session-id here only ever produce one candidate ("llm:myrepo:deadbeef" — no
-    # org/host to drop, and "deadbeef" is exactly 8 chars so no shorter session-id variant
-    # exists either), so a --max-len below its length must hit the hard-truncation fallback
-    # of that single candidate, not fall back to a shorter *different* candidate.
+    # --repo/--session-id here produce only one candidate ("llm:myrepo:deadbeef"). There is no
+    # org/host to drop, and "deadbeef" is exactly 8 chars, so no shorter session-id variant
+    # exists. A --max-len below its length must hit the hard-truncation fallback of that single
+    # candidate, not fall back to a shorter *different* candidate.
     out = run(
         "kdn-slug", "names", "--type", "session",
         "--repo", "myrepo", "--session-id", "deadbeef", "--max-len", "6",
@@ -82,8 +82,8 @@ def test_names_custom_separator():
 
 
 def test_names_session_host_org_repo_join_uses_repo_sep_not_slash(jj_repo):
-    # Top level joins on --sep ("-" here); the repo path parts join on --repo-sep, independent
-    # of --sep, so the host/org/repo stays one visually distinct slug. Neither may be "/".
+    # The top level joins on --sep ("-" here). The repo path parts join on --repo-sep,
+    # independent of --sep, so the host/org/repo stays one distinct slug. Neither may be "/".
     out = run(
         "kdn-slug", "names", "--type", "session", "--session-id", "deadbeef",
         "--sep", "-", "--repo-sep", "_",
@@ -95,8 +95,8 @@ def test_names_session_host_org_repo_join_uses_repo_sep_not_slash(jj_repo):
 
 
 def test_names_session_repo_sep_defaults_to_underscore(jj_repo):
-    # No --repo-sep given: repo path parts must default-join on "_", while the top level uses
-    # the default ":" — this is the fully-qualified session name shape kdn-slug emits by default.
+    # No --repo-sep given: the repo path parts default-join on "_", and the top level uses the
+    # default ":". This is the full session name shape kdn-slug emits by default.
     out = run(
         "kdn-slug", "names", "--type", "session", "--session-id", "deadbeef",
         cwd=jj_repo,
@@ -114,7 +114,7 @@ def test_names_list_shows_multiple_candidates_most_detailed_first():
     lines = out.stdout.strip().splitlines()
     assert len(lines) > 1
     assert lines[0] == "llm:myrepo:0123456789abcdef"
-    # every later line must be no longer than the previous (most detailed first)
+    # every later line must be no longer than the one before it (most detailed first)
     assert all(len(a) >= len(b) for a, b in zip(lines, lines[1:]))
 
 
@@ -141,9 +141,9 @@ def test_names_session_auto_discovers_repo_from_jj_repo(jj_repo):
         "kdn-slug", "names", "--type", "session", "--session-id", "deadbeef",
         cwd=jj_repo,
     )
-    # host/org/repo must join on --repo-sep (default "_"), NOT a hardcoded "/" — zellij rejects
-    # "/" in session names outright ("Session name cannot contain '/'.", verified live). This
-    # regression was missed by an earlier version of this same test asserting the buggy
+    # host/org/repo must join on --repo-sep (default "_"), NOT a hardcoded "/". zellij rejects
+    # "/" in a session name ("Session name cannot contain '/'.", verified live). An earlier
+    # version of this test missed the regression: it asserted the buggy
     # "llm:github.com/some-org/acme-widgets:deadbeef" as the expected value.
     result = out.stdout.strip()
     assert "/" not in result

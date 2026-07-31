@@ -3,16 +3,16 @@
 """
 test_zellij_llm.py
 
-Self-test for packages/llm/zellij-llm — exercises the actual built binary (from PATH, via the
-nix-shell shebang above, which builds zellij-llm fresh from this directory) against a
-disposable, clearly-named scratch zellij session, not the packaged derivation's internals.
-Run directly (./test_zellij_llm.py) or via `pytest test_zellij_llm.py`; either way nix-shell
-builds zellij-llm first and puts it on PATH (plus a bare `zellij` for this file's own
-session-cleanup calls — zellij-llm's own package only puts zellij on *its* PATH, not ours).
+Self-test for packages/llm/zellij-llm. It runs the built binary (from PATH, via the nix-shell
+shebang above, which builds zellij-llm fresh from this directory) against a disposable,
+clearly-named scratch zellij session. It does not test the packaged derivation's internals.
+Run it directly (./test_zellij_llm.py) or via `pytest test_zellij_llm.py`. Either way nix-shell
+builds zellij-llm first and puts it on PATH. It also adds a bare `zellij` for this file's own
+session cleanup — zellij-llm's package puts zellij only on *its* PATH, not ours.
 
-Uses a private ZELLIJ_SOCKET_DIR (short path, see zellij-llm.sh's own comment on the macOS
-103-byte unix socket limit) and always kills+deletes the scratch session in a fixture
-teardown, even on failure.
+It uses a private ZELLIJ_SOCKET_DIR (a short path, see zellij-llm.sh's comment on the macOS
+103-byte unix socket limit). A fixture teardown always kills and deletes the scratch session,
+even on failure.
 """
 
 import json
@@ -29,15 +29,15 @@ SESSION_PREFIX = "llm:nix-configs:selftest-"
 
 @pytest.fixture(scope="session", autouse=True)
 def zellij_socket_dir():
-    # Must be a short path — macOS caps unix socket paths at 103 bytes. In a real terminal
-    # session (not this sandboxed one, where $TMPDIR happens to be unset) $TMPDIR is set to
-    # macOS's long per-user /var/folders/.../T path, which tempfile.gettempdir() would use by
-    # default and which overflows the socket cap once zellij's own
-    # /zellij-<uid>/<version>/<session-name> suffix is appended (verified: reproduces the
-    # exact "IPC socket path is too long" failure zellij-llm.sh's own ZELLIJ_SOCKET_DIR
-    # default exists to avoid) — dir="/tmp" pins TemporaryDirectory to a short parent instead.
-    # Session-scoped (not per-test) since every test in this file shares one zellij server
-    # instance behind this socket dir; only torn down once, after the whole run.
+    # The path must be short — macOS caps a unix socket path at 103 bytes. In a real terminal
+    # session (not this sandboxed one, where $TMPDIR is unset) $TMPDIR points at macOS's long
+    # per-user /var/folders/.../T path. tempfile.gettempdir() would use it by default. That
+    # overflows the socket cap once zellij appends its own
+    # /zellij-<uid>/<version>/<session-name> suffix (verified: reproduces the exact "IPC socket
+    # path is too long" failure that zellij-llm.sh's ZELLIJ_SOCKET_DIR default avoids). So
+    # dir="/tmp" pins TemporaryDirectory to a short parent. This fixture is session-scoped, not
+    # per-test, because every test here shares one zellij server behind this socket dir. It
+    # tears down once, after the whole run.
     with tempfile.TemporaryDirectory(dir="/tmp", prefix="kdn-test-zellij-") as socket_dir:
         os.environ["ZELLIJ_SOCKET_DIR"] = socket_dir
         yield socket_dir
@@ -86,7 +86,7 @@ def test_spawn_creates_session_and_runs_stdin_script(session):
 
 def test_spawn_is_idempotent_on_existing_session(session):
     run("zellij-llm", "spawn", "--session", session, "--pane", "p1", input_text="true\n")
-    # second spawn must not fail even though the session already exists
+    # The second spawn must not fail even though the session already exists.
     run("zellij-llm", "spawn", "--session", session, "--pane", "p2", input_text="true\n")
     assert wait_for(lambda: len(list_panes(session)) >= 3)  # default pane + p1 + p2
 
@@ -128,11 +128,11 @@ def test_spawn_and_watch_stream_reports_exit_code(session):
 
 
 def test_spawn_and_watch_stream_does_not_duplicate_lines(session):
-    # Regression test: `subscribe --format raw --scrollback` redraws the ENTIRE viewport on
-    # every update event rather than emitting just the delta — confirmed live, a 3-line
-    # command produced "line-1", "line-1\nline-2", "line-1\nline-2\nline-3" as three separate
-    # emissions. Fixed by diffing `--format json`'s viewport array instead of forwarding raw
-    # output; this locks that fix in.
+    # Regression test: `subscribe --format raw --scrollback` redraws the WHOLE viewport on
+    # every update event instead of the delta. Confirmed live: a 3-line command emitted
+    # "line-1", "line-1\nline-2", "line-1\nline-2\nline-3" as three separate events. The fix
+    # diffs `--format json`'s viewport array instead of a forward of raw output. This test
+    # locks that fix in.
     out = run(
         "zellij-llm", "spawn-and-watch",
         "--session", session, "--pane", "watch-stream-dup",
