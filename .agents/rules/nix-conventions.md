@@ -28,7 +28,7 @@ into a tracked directory (e.g. `.agents/rules/`, `hack/git/hooks/`), add it to `
 
 Slot modules under `modules/slots/*/default.nix` source `.agents/rules/*.md` and
 `.agents/skills/*/SKILL.md` files via `"${inputs.nix-configs}/.agents/..."` — `inputs.nix-configs`
-is declared in `devenv.yaml` as `url: path:.` (this repo, self-referential), and in `flake.nix`
+is declared in `devenv.yaml` as `url: git+file:.` (this repo, self-referential), and in `flake.nix`
 the flake sets `nix-configs = self;` for the same purpose in `kdnMetaModule`. Existing usages:
 `modules/slots/nix/default.nix`, `modules/slots/jj/default.nix`, `modules/slots/jj/fork/default.nix`,
 `modules/slots/mcp/basic-memory/default.nix`.
@@ -39,14 +39,16 @@ the flake sets `nix-configs = self;` for the same purpose in `kdnMetaModule`. Ex
 outside this repo — falls back to `lib.kdn.mkPythonScript pkgs` when unset (i.e. when building
 from within this repo itself).
 
-**A just-created or just-edited file can be invisible to some Nix evaluations and not others** —
-`devenv.yaml`'s `inputs.nix-configs = path:.` sees new files immediately (filtered only by
-`.gitignore`), but `flake.nix`'s `nix-configs = self` — and anything reached via the CLI's `.#`
-shorthand against `self` (host configs, `darwinConfigurations`/`nixosConfigurations`) — resolves
-through a `git+file://` fetcher that reads git's tracked index, which jj does not always keep in
-sync with `@` on every snapshot. See [jujutsu-vcs.md](../../docs/jujutsu-vcs.md)'s "Colocation
-hazard" section for the full mechanism and empirical findings; when in doubt, check
-`git ls-files -- <path>` before trusting a `.#`-based build of a just-touched file.
+**A just-created file can be invisible to a Nix evaluation.** Both `devenv.yaml`'s
+`inputs.nix-configs = git+file:.` and `flake.nix`'s `nix-configs = self` — plus anything reached
+via the CLI's `.#` shorthand against `self` (host configs,
+`darwinConfigurations`/`nixosConfigurations`) — resolve through a `git+file://` fetcher. This
+fetcher reads git's tracked index. It shows an uncommitted edit to an already-tracked file (the
+tree is dirty), but it does NOT show a brand-new untracked file until you `git add` it. jj does
+not always keep git's index in sync with `@` on every snapshot. See
+[jujutsu-vcs.md](../../docs/jujutsu-vcs.md)'s "Colocation hazard" section for the full mechanism
+and empirical findings; when in doubt, check `git ls-files -- <path>` before you trust a
+`.#`-based or `git+file:`-based build of a just-touched file.
 
 ## Verifying changes
 

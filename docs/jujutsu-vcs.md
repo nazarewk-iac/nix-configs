@@ -91,18 +91,19 @@ footgun. Verify with `git ls-files -- <path>` before you trust a build that touc
 file, when that build goes through the flake's own `self` (host configs, `darwinConfigurations`,
 `nixosConfigurations` — anything reached via the CLI's `.#` shorthand).
 
-**Mechanism, precisely:** this repo has two different ways Nix pulls in its own source tree, and
-they behave differently:
+**Mechanism, precisely:** this repo pulls in its own source tree through the `git+file://`
+fetcher in both self-reference paths, so both behave the same way:
 
-- `devenv.yaml`'s `nix-configs: url: path:.` (used by `modules/slots/*/default.nix`'s
-  `inputs.nix-configs` self-references, and by devenv builds in general) uses Nix's plain `path:`
-  fetcher. It copies the raw working directory, filtered only by `.gitignore`. A new file is
-  visible at once, with no VCS action.
+- `devenv.yaml`'s `nix-configs: url: git+file:.` (used by `modules/slots/*/default.nix`'s
+  `inputs.nix-configs` self-references, and by devenv builds in general). It was `path:.` until
+  commit `d2f3e8f8` (2026-07-31) switched it to `git+file:.`.
 - `flake.nix`'s `nix-configs = self` (used by `kdnMetaModule`, and by `self` itself whenever the
-  CLI resolves a local flake via `.#...` without an explicit `path:`/`git+file:` override) is
-  auto-detected by Nix as a git repository and fetched via `git+file://`. This fetcher runs
-  `git ls-files -z` to enumerate the tree. It reads **git's index/`HEAD`**, not the working
-  directory, and not jj's own view of `@`.
+  CLI resolves a local flake via `.#...` without an explicit `path:`/`git+file:` override). Nix
+  auto-detects the git repository and fetches via `git+file://`.
+
+Both run `git ls-files -z` to enumerate the tree. They read **git's index/`HEAD`**, not the
+working directory, and not jj's own view of `@`. An uncommitted edit to an already-tracked file
+is visible (the tree is dirty). A brand-new untracked file is NOT, until you `git add` it.
 
 **Why this diverges from jj's own state:** `jj status`/`jj log` snapshot the working copy into
 jj's commit graph (and that commit's content really is written into the shared git object
@@ -115,17 +116,19 @@ to `@`'s actual content. Confirmed in this repo on 2026-07-09: a new file showed
 an older commit throughout. The exact trigger for when jj does or does not push that sync is not
 fully isolated — treat it as unreliable, not as a bug with a known fix.
 
-**What does not fix it:** a swap of `devenv.yaml`'s `inputs.nix-configs` from `url: path:.` to a
-`git+file://.`-style URL, to force a fresh read, does **not** fix this for devenv builds —
-confirmed not viable as of 2026-07-09.
+**History:** `devenv.yaml`'s `inputs.nix-configs` was `url: path:.` until commit `d2f3e8f8`
+(2026-07-31). A `path:.` input copies the raw working directory (filtered only by `.gitignore`),
+so it bypassed git's index and saw a new file at once. The switch to `git+file:.` aligned devenv
+with the `self` path, so both now read git's index. This means a new untracked file is now
+invisible to devenv builds too, not just to `.#`-based ones.
 
-**What works:** use a `path:`-based input (as `devenv.yaml` already does for
-`inputs.nix-configs`) wherever possible, since it bypasses git's index entirely. When a
-`git+file://`-backed build (a host switch, a `.#` CLI invocation against `self`) must see a
-just-created or just-edited file, do not assume `jj status`/`jj git export` synced it. Verify with
-`git ls-files -- <path>` first. When it is not tracked, it needs a real `jj describe`/`git`
-commit, or at least it must land in git's actual index/`HEAD`, not just in jj's working-copy
-snapshot.
+**What works:** when a `git+file://`-backed build (a devenv build, a host switch, a `.#` CLI
+invocation against `self`) must see a just-created file, do not assume `jj status`/`jj git export`
+synced it. Verify with `git ls-files -- <path>` first. When it is not tracked, it needs a real
+`jj describe`/`git` commit, or at least it must land in git's actual index/`HEAD`, not just in
+jj's working-copy snapshot. A `path:`-based input still bypasses git's index entirely and sees new
+files at once — reach for it (for example in an isolated flake test that would otherwise resolve
+this repo through `/nix/store`) when you specifically need working-directory semantics.
 
 ---
 
