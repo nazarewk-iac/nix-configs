@@ -68,12 +68,31 @@ in
               Service.Slice = "background.slice";
             };
           })
-          # TODO: nix-darwin HM uses launchd, not systemd - launchd.agents.atuin-daemon (set by
-          # home-manager's own atuin module) lacks RunAtLoad, so the agent is only ever started
-          # by darwin-rebuild's activation bootstrap, never on its own after a reboot/relogin.
-          (lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
-            launchd.agents.atuin-daemon.config.RunAtLoad = true;
-          })
+          # nix-darwin HM uses launchd, not systemd. RunAtLoad starts the agent on load.
+          # atuin does not unlink a stale Unix socket before bind. A daemon that exits without
+          # a clean shutdown (hard kill, crash, power loss) leaves the socket file behind. The
+          # next start then fails with "Address already in use (os error 48)", and launchd's
+          # KeepAlive restart loop never recovers. The wrapper removes the stale socket first,
+          # then execs the daemon. home-manager wraps this in its own wait4path guard.
+          (lib.mkIf pkgs.stdenv.hostPlatform.isDarwin (
+            let
+              socketPath =
+                config.programs.atuin.settings.daemon.socket_path or "${config.xdg.dataHome}/atuin/daemon.sock";
+              atuinDaemonWrapper = pkgs.writeShellScript "atuin-daemon-start" ''
+                set -eu
+                if test -S ${lib.escapeShellArg socketPath}; then
+                  rm -f ${lib.escapeShellArg socketPath}
+                fi
+                exec ${lib.getExe config.programs.atuin.package} daemon start
+              '';
+            in
+            {
+              launchd.agents.atuin-daemon.config.RunAtLoad = true;
+              launchd.agents.atuin-daemon.config.ProgramArguments = lib.mkForce [
+                "${atuinDaemonWrapper}"
+              ];
+            }
+          ))
         ]
       )
     ))
