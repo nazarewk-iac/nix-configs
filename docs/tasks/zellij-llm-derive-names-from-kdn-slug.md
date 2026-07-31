@@ -49,6 +49,15 @@ private dir. Using a custom socket dir would fragment sessions (the tool's sessi
 visible under the user's normal `zellij list-sessions` / default socket) and mask the real
 length problem. Shorten the name; keep the default socket location.
 
+**A private `ZELLIJ_SOCKET_DIR` is a test-only device.** It is legitimate only in the pytest
+fixtures (`zellij_llm_test.py`), where each run needs an isolated, short-path throwaway server.
+It must NOT appear in `zellij-llm.sh` runtime behavior, in any skill/doc happy-path, or in a
+caller's normal usage — those all use the default socket location so the tool's sessions stay
+visible under the user's plain `zellij list-sessions`. Concretely: **remove the
+`export ZELLIJ_SOCKET_DIR="${ZELLIJ_SOCKET_DIR:-/tmp/zellij}"` default at `zellij-llm.sh` line
+22** as part of this task; the short-name derivation replaces it. Keep the socket-dir override
+strictly inside the test harness.
+
 ## Acceptance
 
 - `zellij-llm spawn --pane 'build'` works with **no** `--session` and produces a session name
