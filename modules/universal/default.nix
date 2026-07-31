@@ -123,9 +123,8 @@ in
             */
             let
               affected = [
-                "ceph-common"
                 "scipy"
-                "cython"
+                "cython_0"
               ];
             in
             {
@@ -145,6 +144,17 @@ in
                       ]
                     )
                   ];
+                })
+                (globalFinal: globalPrev: {
+                  ceph = builtins.getAttr "ceph" (
+                    globalPrev.ceph.overrideScope (
+                      final: prev: {
+                        ceph-python-common = prev.ceph-python-common.overridePythonAttrs (_: {
+                          dontCheckPythonMetadata = true;
+                        });
+                      }
+                    )
+                  );
                 })
               ];
             }
