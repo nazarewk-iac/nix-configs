@@ -43,6 +43,8 @@
   inputs.nix-darwin.url = "github:LnL7/nix-darwin";
   inputs.nix-fast-build.url = "github:Mic92/nix-fast-build";
   inputs.nix-homebrew.url = "github:zhaofengli/nix-homebrew";
+  inputs.nix-rosetta-builder.url = "github:cpick/nix-rosetta-builder";
+  inputs.nix-rosetta-builder.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nixcasks.url = "github:jacekszymanski/nixcasks";
   inputs.nixos-anywhere.url = "github:numtide/nixos-anywhere";
   inputs.nixos-avf-upstream.flake = false; # no need for upstream to be a flake
