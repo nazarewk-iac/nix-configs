@@ -428,7 +428,7 @@
             program = lib.getExe inputs'.disko-zfs.packages.default;
           };
           checks = pkgs.callPackages ./checks (
-            self.kdnMetaModule {
+            self.kdnMetaModule.config.output.mkSubmodule {
               moduleType = "checks";
             }
           );
