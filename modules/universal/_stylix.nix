@@ -63,10 +63,13 @@ lib.optionalAttrs
           stylix.cursor.size = lib.mkDefault 32;
         }
       )
-      (kdnConfig.util.ifTypes [ "home-manager" ] {
-        # 2026-07-31: fixes a warning
-        home.pointerCursor.enable = lib.mkDefault true;
-      })
+      (lib.optionalAttrs (kdnConfig.util.hasParentOfAnyType [ "nixos" ]) (
+        kdnConfig.util.ifTypes [ "home-manager" ] {
+          # 2026-07-31: fixes a warning. home.pointerCursor is Linux-only, so enable it only for a
+          # home-manager child of a nixos host, not on Darwin.
+          home.pointerCursor.enable = lib.mkDefault true;
+        }
+      ))
       (kdnConfig.util.ifTypes [ "nixos" ] {
         fonts.fontDir.enable = true;
         fonts.packages = with pkgs; [
