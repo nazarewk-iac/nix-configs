@@ -42,7 +42,7 @@ hid the tool's sessions from the user's plain `zellij list-sessions`.
 ## Verification steps
 
 - `nix build .#packages.aarch64-darwin.zellij-llm` — shellcheck-clean build.
-- `nix build .#packages.aarch64-darwin.zellij-llm.tests.pytest` — 13 tests pass, including
+- `nix build .#packages.aarch64-darwin.zellij-llm.tests.pytest` — 15 tests pass, including
   `test_derived_session_fits_socket_and_runs` (derive path, `--max-len 24`) and
   `test_spawn_rejects_oversized_session_name` (early length error).
 - Manual: with the real default socket dir (budget 24 on this host's long `$TMPDIR`),

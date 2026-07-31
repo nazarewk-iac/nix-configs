@@ -15,7 +15,12 @@ let
     # `eval "$(argc --argc-eval ...)"` injects the argc_* variables at runtime. shellcheck
     # cannot see that, so it flags every read of one as SC2154 ("referenced but not assigned").
     # See packages/llm/kdn-slug/default.nix for the same exclusion.
-    excludeShellChecks = [ "SC2154" ];
+    # SC2016: the pane tail command (exit / exec $SHELL) is single-quoted on purpose, because it
+    # must expand inside the pane's bash, not when this script builds the string.
+    excludeShellChecks = [
+      "SC2154"
+      "SC2016"
+    ];
     text = builtins.readFile ./zellij-llm.sh;
   };
 in

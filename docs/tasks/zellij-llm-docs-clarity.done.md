@@ -23,7 +23,10 @@ to a `sleep`+`peek` poll loop). The help text and the skill doc still described 
 - **Early socket-length error.** `_validate_socket_len` checks the full IPC socket path before
   `spawn` and prints an actionable message, instead of failing deep inside zellij.
 - **Persist by default.** `spawn` and `spawn --wait` keep the pane open after the command exits,
-  so the user can attach and review. `--ephemeral` opts into `--close-on-exit`.
+  so the user can attach and review. The pane drops to an interactive shell
+  (`exec "${SHELL:-bash}" -i`), so a live process holds the session up. The session does not go
+  EXITED. `--ephemeral` opts into `--close-on-exit` and closes the pane the moment its command
+  exits (see [[zellij-llm-keep-alive-and-markers]]).
 - **`-x` trace and the secrets caveat.** Commands still run under `bash -xeEuo pipefail`. The
   `-x` trace shows which command to re-run from a persisted pane. The skill and the top-level
   `--help` warn that a secret in a literal argument leaks into the pane scrollback.
@@ -34,8 +37,9 @@ to a `sleep`+`peek` poll loop). The help text and the skill doc still described 
     code with no output stream.
   - `spawn --wait` is a modifier equal to `spawn-and-watch`. `spawn-and-watch` stays for
     compatibility.
-  - `watch`/`wait` read the exit status from `list-panes` (`_pane_exit_status`) when there is no
-    exit-marker file; `spawn --wait` still uses the private marker file.
+  - `watch`/`wait` detect completion from an exit-marker file, not from the `list-panes` exited
+    flag. A persisted pane never reports exited (the shell holds it open), so the file marker is
+    the reliable signal (see [[zellij-llm-keep-alive-and-markers]]).
 - **Short pane slugs.** `_check_slug` warns (does not fail) when a `--pane` name is long or has
   spaces, so it reads well in `list`/`peek` output and the title bar.
 - **Tighter help.** `@describe` shows the minimal invocation, the HEREDOC style, and the secrets
@@ -47,10 +51,11 @@ to a `sleep`+`peek` poll loop). The help text and the skill doc still described 
 ## Verification steps
 
 - `zellij-llm --help` shows the minimal `spawn --pane <slug>` invocation and the six subcommands.
-- `nix build .#packages.aarch64-darwin.zellij-llm.tests.pytest` — 13 tests pass, including
+- `nix build .#packages.aarch64-darwin.zellij-llm.tests.pytest` — 15 tests pass, including
   `test_spawn_persists_pane_by_default`, `test_spawn_ephemeral_closes_pane_on_exit`,
   `test_spawn_wait_stream_matches_spawn_and_watch`, `test_watch_follows_existing_pane_to_exit`,
-  and `test_wait_blocks_until_exit_and_returns_code`.
+  `test_wait_blocks_until_exit_and_returns_code`, `test_session_survives_after_command_exits`,
+  and `test_run_marker_written_under_cache`.
 - Manual: heartbeat, stream, `watch` on an existing pane, `wait`, and `--ephemeral` all behave as
   documented against a scratch session.
 

@@ -27,16 +27,17 @@ set -eEuo pipefail
 #   nix run ".#darwin-rebuild" -- build
 #   EOF
 #
-# Panes persist after the command exits so you can attach and review. Pass --ephemeral to close
-# the pane on exit. Commands run under `bash -xeEuo pipefail`; the `-x` trace echoes each command
-# into the pane, so a secret in a literal arg leaks into the scrollback (wrap such steps in
-# `{ set +x; ...; set -x; } 2>/dev/null`).
+# After the command exits the pane drops to an interactive shell (it does not close). This keeps
+# the session alive and the output reviewable, so you can attach, read the scrollback, and re-run.
+# Pass --ephemeral to close the pane on exit instead. Commands run under `bash -xeEuo pipefail`;
+# the `-x` trace echoes each command into the pane, so a secret in a literal arg leaks into the
+# scrollback (wrap such steps in `{ set +x; ...; set -x; } 2>/dev/null`).
 
 # @cmd Create the session if missing and run a command from stdin in a new pane
 # @option --session Session name; overrides the kdn-slug-derived default and is used verbatim
 # @option --pane! Short kebab-case pane name/title (e.g. darwin-build)
 # @option --cwd Working directory for the pane (defaults to zellij's own default)
-# @flag --ephemeral Close the pane when its command exits (default: keep it open for review)
+# @flag --ephemeral Close the pane when its command exits (default: drop to a shell for review)
 # @flag --wait Follow the pane until the command exits, then print EXIT:<code> (like spawn-and-watch)
 # @option --mode[=stream|heartbeat] With --wait: stream forwards live output; heartbeat prints elapsed-time lines
 # @option --interval=2 Heartbeat poll interval in seconds (--wait --mode heartbeat only)
@@ -52,7 +53,7 @@ spawn() {
 # @option --session Session name; overrides the kdn-slug-derived default and is used verbatim
 # @option --pane! Short kebab-case pane name/title (e.g. darwin-build)
 # @option --cwd Working directory for the pane
-# @flag --ephemeral Close the pane when its command exits (default: keep it open for review)
+# @flag --ephemeral Close the pane when its command exits (default: drop to a shell for review)
 # @option --mode![stream|heartbeat] stream: forward live pane output; heartbeat: print periodic elapsed-time lines only
 # @option --interval=2 Heartbeat poll interval in seconds (--mode heartbeat only)
 # @option --sep Top-level name separator; forwarded to kdn-slug (default `:`)
@@ -73,14 +74,19 @@ spawn-and-watch() {
 # @option --max-len Extra cap on the derived name length; never exceeds the socket budget
 # @option --tag* Extra name components; forwarded to kdn-slug as repeatable --tag
 watch() {
-  local session pane_id
+  local session pane_id marker
   session="$(_session_name)"
   pane_id="$(_resolve_pane_ref "$session" "$argc_pane")"
   if [[ -z "$pane_id" || "$pane_id" == null ]]; then
     echo "no pane '${argc_pane}' in session '${session}'" >&2
     return 1
   fi
-  _watch_pane "$session" "$pane_id" "$argc_mode" "${argc_interval:-2}" ""
+  marker="$(_marker_for_ref "$session" "$argc_pane")"
+  if [[ -z "$marker" ]]; then
+    echo "no run marker for pane '${argc_pane}'; was it spawned by zellij-llm?" >&2
+    return 1
+  fi
+  _watch_pane "$session" "$pane_id" "$argc_mode" "${argc_interval:-2}" "$marker"
 }
 
 # @cmd Block until a pane's command exits; print EXIT:<code> and return that code (no streaming)
@@ -92,18 +98,18 @@ watch() {
 # @option --max-len Extra cap on the derived name length; never exceeds the socket budget
 # @option --tag* Extra name components; forwarded to kdn-slug as repeatable --tag
 wait() {
-  local session pane_id
+  local session marker
   session="$(_session_name)"
-  pane_id="$(_resolve_pane_ref "$session" "$argc_pane")"
-  if [[ -z "$pane_id" || "$pane_id" == null ]]; then
-    echo "no pane '${argc_pane}' in session '${session}'" >&2
+  marker="$(_marker_for_ref "$session" "$argc_pane")"
+  if [[ -z "$marker" ]]; then
+    echo "no run marker for pane '${argc_pane}'; was it spawned by zellij-llm?" >&2
     return 1
   fi
-  local rc=""
-  while [[ -z "$rc" ]]; do
-    rc="$(_pane_exit_status "$session" "$pane_id")"
-    [[ -z "$rc" ]] && sleep "${argc_interval:-1}"
+  while [[ ! -f "$marker" ]]; do
+    sleep "${argc_interval:-1}"
   done
+  local rc
+  rc="$(cat "$marker")"
   echo "EXIT:${rc}"
   exit "$rc"
 }
@@ -151,35 +157,54 @@ _run_spawn() {
   encoded="$(_stdin_to_b64)"
   local -a cwd_args=()
   [[ -n "${argc_cwd:-}" ]] && cwd_args=(--cwd "$argc_cwd")
+
+  # A run gets its own directory under the cache root. The wrapper writes the command exit code to
+  # `<run-dir>/exit`. This is the completion signal for wait/watch. It works even after the
+  # spawning process is gone, and it does not depend on scanning the pane text.
+  local cmd_id run_dir marker
+  cmd_id="$(_new_cmd_id)"
+  run_dir="$(_cmd_dir "$argc_pane" "$cmd_id")"
+  mkdir -p "$run_dir"
+  marker="${run_dir}/exit"
+
+  # The wrapper: run the fed command, capture its exit code, write it to the marker. Then either
+  # close the pane (ephemeral) or drop to an interactive shell. The shell keeps the pane process
+  # alive, so the session stays up and the output stays reviewable (verified). --close-on-exit is
+  # NOT used with keep-alive, because the shell never exits on its own.
+  # The tail runs INSIDE the pane's bash, so `$rc` and `$SHELL` must expand there, not now. The
+  # single quotes that defer expansion are deliberate; SC2016 is excluded in default.nix.
+  local tail_cmd life_flag=""
+  if [[ "${argc_ephemeral:-0}" == 1 ]]; then
+    tail_cmd='exit "$rc"'
+    life_flag="--close-on-exit"
+  else
+    # ${SHELL:-bash} is the user's login shell; -i makes it interactive. The output above the
+    # prompt is retained (verified with bash and zsh).
+    tail_cmd='exec "${SHELL:-bash}" -i'
+  fi
   local -a life_args=()
-  [[ "${argc_ephemeral:-0}" == 1 ]] && life_args=(--close-on-exit)
+  [[ -n "$life_flag" ]] && life_args=("$life_flag")
+  local body
+  body="$(_decode_and_run_cmd "$encoded"); rc=\$?; printf '%s' \"\$rc\" > '$marker'; $tail_cmd"
+
+  zellij --session "$session" action new-pane --name "$argc_pane" "${cwd_args[@]}" "${life_args[@]}" \
+    -- bash -c "$body"
+  _stack_with_existing "$session"
 
   if [[ "$do_wait" == 1 ]]; then
-    # You cannot read the pane's exit status while zellij still holds the pane right after the
-    # command ends (list-panes lags by a beat). A wrapper writes the code to a private temp file,
-    # outside the pane's rendered text. This is a more robust exit signal than a scan of the
-    # scrollback for a sentinel string.
-    local marker
-    marker="$(mktemp -u /tmp/zellij-llm-exit.XXXXXX)"
-    zellij --session "$session" action new-pane --name "$argc_pane" "${cwd_args[@]}" "${life_args[@]}" \
-      -- bash -c "$(_decode_and_run_cmd "$encoded"); rc=\$?; echo \"\$rc\" > '$marker'; exit \"\$rc\""
-    _stack_with_existing "$session"
     local pane_id
     pane_id="$(_pane_id_by_title "$session" "$argc_pane")"
     _watch_pane "$session" "$pane_id" "$argc_mode" "${argc_interval:-2}" "$marker"
   else
-    zellij --session "$session" action new-pane --name "$argc_pane" "${cwd_args[@]}" "${life_args[@]}" \
-      -- bash -c "$(_decode_and_run_cmd "$encoded")"
-    _stack_with_existing "$session"
-    echo "spawned pane '${argc_pane}' in session '${session}'"
+    echo "spawned pane '${argc_pane}' in session '${session}' (run ${cmd_id})"
   fi
 }
 
 # Follow a pane until its command exits, then print EXIT:<code> and exit with that code.
-# $5 (marker) is the exit-marker file when set (spawn --wait wraps the command with it). When
-# empty, the loop polls list-panes for the pane's exited/exit_status fields instead.
+# $5 (marker) is the run's exit-marker file. The command wrapper writes the exit code there. The
+# marker is a persistent cache file, so this function reads it but does not delete it.
 _watch_pane() {
-  local session="$1" pane_id="$2" mode="$3" interval="$4" marker="${5:-}"
+  local session="$1" pane_id="$2" mode="$3" interval="$4" marker="$5"
 
   case "$mode" in
   stream)
@@ -197,7 +222,7 @@ _watch_pane() {
     # returned nothing. This gives any last in-flight event a chance to land first.
     if [[ -z "$pane_id" || "$pane_id" == null ]]; then
       # An --ephemeral pane can close before we resolve its id. Fall back to a marker wait.
-      while ! _pane_done "$marker" "$session" "$pane_id"; do sleep 0.3; done
+      while ! _pane_done "$marker"; do sleep 0.3; done
     else
       local fifo
       fifo="$(mktemp -u /tmp/zellij-llm-stream.XXXXXX)"
@@ -223,7 +248,7 @@ _watch_pane() {
             printf '%s\n' "${vp[@]}"
           fi
           printed=("${vp[@]}")
-        elif _pane_done "$marker" "$session" "$pane_id"; then
+        elif _pane_done "$marker"; then
           # command has finished AND this read attempt found nothing pending — safe to stop.
           break
         fi
@@ -238,7 +263,7 @@ _watch_pane() {
   heartbeat)
     local start elapsed
     start="$(date +%s)"
-    while ! _pane_done "$marker" "$session" "$pane_id"; do
+    while ! _pane_done "$marker"; do
       elapsed=$(($(date +%s) - start))
       echo "[$(date +%H:%M:%S)] still running (${elapsed}s elapsed): ${session} / ${pane_id}"
       sleep "$interval"
@@ -247,36 +272,16 @@ _watch_pane() {
   esac
 
   local rc
-  if [[ -n "$marker" ]]; then
-    rc="$(cat "$marker")"
-    rm -f "$marker"
-  else
-    rc="$(_pane_exit_status "$session" "$pane_id")"
-    rc="${rc:-0}"
-  fi
+  rc="$(cat "$marker")"
   echo "EXIT:${rc}"
   exit "$rc"
 }
 
-# True when the pane's command has finished. Uses the marker file when set, else list-panes.
+# True when the run's command has finished. The wrapper writes the exit code to the marker file
+# at that moment, so the file's existence is the signal.
 _pane_done() {
-  local marker="$1" session="$2" pane_id="$3"
-  if [[ -n "$marker" ]]; then
-    [[ -f "$marker" ]]
-  else
-    [[ -n "$(_pane_exit_status "$session" "$pane_id")" ]]
-  fi
-}
-
-# Echo the pane's exit status when it has exited, else nothing. Reads list-panes, which exposes
-# the exited/exit_status fields once the command ends.
-_pane_exit_status() {
-  local session="$1" pane_id="$2"
-  zellij --session "$session" action list-panes --json --all \
-    | jq -r --arg id "$pane_id" '
-        [.[] | select(.is_plugin==false)
-             | select((.id|tostring)==$id or ("terminal_"+(.id|tostring))==$id)]
-        | .[-1] // {} | if .exited then (.exit_status // 0) else empty end'
+  local marker="$1"
+  [[ -f "$marker" ]]
 }
 
 # Resolve the session name. An explicit --session wins verbatim. Otherwise derive it from
@@ -316,12 +321,21 @@ _socket_budget() {
   printf '%s' "$budget"
 }
 
+# The base temp directory. Matches Rust's std::env::temp_dir, which zellij uses: $TMPDIR when
+# set, else on macOS the confstr(_CS_DARWIN_USER_TEMP_DIR) value (the long /var/folders/.../T
+# path, NOT /tmp), else /tmp. Getting this right matters: an underestimate derives a too-long
+# session name that zellij then rejects.
+_temp_base() {
+  local tmp="${TMPDIR:-}"
+  if [[ -z "$tmp" && "${OSTYPE:-}" == darwin* ]]; then
+    tmp="$(getconf DARWIN_USER_TEMP_DIR 2>/dev/null || true)"
+  fi
+  printf '%s' "${tmp:-/tmp}"
+}
+
 # The socket directory that zellij uses. Matches zellij's own default (an explicit
 # ZELLIJ_SOCKET_DIR wins; else Linux prefers the XDG runtime dir; else <temp>/zellij-<uid>).
-# <temp> matches Rust's std::env::temp_dir, which zellij uses: $TMPDIR when set, else on macOS
-# the confstr(_CS_DARWIN_USER_TEMP_DIR) value (the long /var/folders/.../T path, NOT /tmp),
-# else /tmp. Getting <temp> right matters: an underestimate derives a too-long name that zellij
-# then rejects. _validate_socket_len is still the real gate against the actual path.
+# _validate_socket_len is still the real gate against the actual path.
 _socket_dir() {
   if [[ -n "${ZELLIJ_SOCKET_DIR:-}" ]]; then
     printf '%s' "${ZELLIJ_SOCKET_DIR%/}"
@@ -331,14 +345,89 @@ _socket_dir() {
     printf '%s/zellij' "${XDG_RUNTIME_DIR%/}"
     return 0
   fi
-  local tmp="${TMPDIR:-}"
-  if [[ -z "$tmp" ]]; then
-    if [[ "${OSTYPE:-}" == darwin* ]]; then
-      tmp="$(getconf DARWIN_USER_TEMP_DIR 2>/dev/null || true)"
-    fi
-    tmp="${tmp:-/tmp}"
-  fi
+  local tmp
+  tmp="$(_temp_base)"
   printf '%s/zellij-%s' "${tmp%/}" "$(id -u)"
+}
+
+# The cache root for run marker files. Inside a git repo the root is <repo>/.cache/zellij-llm, so
+# the markers stay with the project they belong to. Outside a repo it falls back to the user cache
+# dir. A run marker is the completion signal for wait/watch; it survives the spawning process.
+_repo_root() {
+  local d="$PWD"
+  while [[ -n "$d" && "$d" != / ]]; do
+    if [[ -e "$d/.git" ]]; then
+      printf '%s' "$d"
+      return 0
+    fi
+    d="$(dirname "$d")"
+  done
+  return 1
+}
+
+_cache_root() {
+  local root
+  if root="$(_repo_root)"; then
+    printf '%s/.cache/zellij-llm' "$root"
+  else
+    printf '%s/zellij-llm' "${XDG_CACHE_HOME:-$HOME/.cache}"
+  fi
+}
+
+# Replace every character that is not a safe filename character with an underscore.
+_sanitize() {
+  printf '%s' "$1" | tr -c 'A-Za-z0-9._-' '_'
+}
+
+# A fresh, time-sortable id for one spawn run. Lexical order equals chronological order, so the
+# newest run is the maximum. $RANDOM disambiguates two runs in the same second.
+_new_cmd_id() {
+  printf '%s-%s' "$(date +%Y%m%dT%H%M%S)" "$RANDOM"
+}
+
+# The directory for one run: <cache-root>/<cmd-name>/<cmd-id>/. The exit-code marker lives here as
+# `exit`. The layout groups runs of the same pane name, so a later wait/watch call finds the run.
+_cmd_dir() {
+  local cmd_name="$1" cmd_id="$2"
+  printf '%s/%s/%s' "$(_cache_root)" "$(_sanitize "$cmd_name")" "$cmd_id"
+}
+
+# The newest run directory for a pane name, or empty when none exists.
+_latest_cmd_dir() {
+  local cmd_name="$1" base
+  base="$(_cache_root)/$(_sanitize "$cmd_name")"
+  [[ -d "$base" ]] || return 0
+  local -a dirs=()
+  local d
+  for d in "$base"/*/; do
+    [[ -d "$d" ]] && dirs+=("${d%/}")
+  done
+  [[ "${#dirs[@]}" -gt 0 ]] || return 0
+  # Lexical sort equals chronological order because the id starts with a timestamp.
+  printf '%s\n' "${dirs[@]}" | sort | tail -1
+}
+
+# The exit-marker file for a pane reference. spawn --wait passes the exact marker instead. A
+# standalone wait/watch resolves the pane ref to a name, then reads the newest run's marker.
+_marker_for_ref() {
+  local session="$1" ref="$2" name dir
+  if [[ "$ref" =~ ^[0-9]+$ || "$ref" == terminal_* ]]; then
+    name="$(_pane_name_by_id "$session" "$ref")"
+  else
+    name="$ref"
+  fi
+  [[ -n "$name" ]] || { printf ''; return 0; }
+  dir="$(_latest_cmd_dir "$name")"
+  [[ -n "$dir" ]] && printf '%s/exit' "$dir" || printf ''
+}
+
+_pane_name_by_id() {
+  local session="$1" id="$2"
+  zellij --session "$session" action list-panes --json --all \
+    | jq -r --arg id "$id" '
+        [.[] | select(.is_plugin==false)
+             | select((.id|tostring)==$id or ("terminal_"+(.id|tostring))==$id)]
+        | .[-1].title // empty'
 }
 
 # Fail early with a clear message when the derived/passed session name overflows the socket path.
