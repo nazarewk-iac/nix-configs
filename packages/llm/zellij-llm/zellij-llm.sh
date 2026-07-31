@@ -1,24 +1,22 @@
 #!/usr/bin/env nix-shell
 #!nix-shell -i bash -p argc zellij jq
-# Lets this script run standalone (./zellij-llm.sh spawn ...) without the nix package or a
-# devenv shell on PATH — see packages/kdn-slug/kdn-slug.sh for the same pattern. The packaged
-# version (packages/zellij-llm/default.nix) ignores these two lines: writeShellApplication
-# wraps this file's contents in its own generated script with its own shebang/runtimeInputs
-# ahead of them, so they end up as inert comments there, same as `set -eEuo pipefail` below
-# duplicating writeShellApplication's own `set -euo pipefail` header.
+# These two lines let the script run standalone (./zellij-llm.sh spawn ...) without the nix
+# package or a devenv shell on PATH. kdn-slug.sh uses the same pattern. The packaged version
+# (default.nix) ignores them: writeShellApplication prepends its own shebang and runtimeInputs,
+# so both lines become inert comments there. The `set -eEuo pipefail` below is a duplicate of
+# writeShellApplication's own header for the same reason.
 set -eEuo pipefail
 
-# Uses argc (https://github.com/sigoden/argc) for subcommand dispatch and --help generation
-# instead of hand-rolled `case`-based parsing (the pattern this repo's other bash packages
-# use, e.g. git-utils, kdn-gamingctl) — this script has enough per-subcommand flags that
-# argc's declarative @option/@flag annotations pay for themselves in discoverability,
-# without giving up bash's zero-build edit/test loop or near-instant startup latency.
+# argc (https://github.com/sigoden/argc) does subcommand dispatch and --help. This is different
+# from the hand-rolled `case` parse in other bash packages here (git-utils, kdn-gamingctl). This
+# script has enough per-subcommand flags that argc's @option/@flag annotations aid discovery,
+# and bash keeps a zero-build edit/test loop and fast startup.
 
-# zellij's unix socket path is `$ZELLIJ_SOCKET_DIR/zellij-<uid>/<version>/<session-name>` —
-# macOS caps unix socket paths at 103 bytes, and the real per-user temp dir
-# (getconf DARWIN_USER_TEMP_DIR) is long enough that any non-trivial session name overflows
-# it. Default to a short, fixed socket dir unless the caller already set one, rather than
-# relying on session-name length limits as the primary defense (see .agents/skills/zellij/).
+# zellij's unix socket path is `$ZELLIJ_SOCKET_DIR/zellij-<uid>/<version>/<session-name>`.
+# macOS caps a unix socket path at 103 bytes. The real per-user temp dir
+# (getconf DARWIN_USER_TEMP_DIR) is long enough that any real session name overflows the cap.
+# Default to a short, fixed socket dir unless the caller sets one. Do not rely on session-name
+# length as the main defense (see .agents/skills/zellij/).
 export ZELLIJ_SOCKET_DIR="${ZELLIJ_SOCKET_DIR:-/tmp/zellij}"
 mkdir -p "$ZELLIJ_SOCKET_DIR"
 
@@ -51,10 +49,10 @@ spawn-and-watch() {
   marker="$(mktemp -u /tmp/zellij-llm-exit.XXXXXX)"
   local -a cwd_args=()
   [[ -n "${argc_cwd:-}" ]] && cwd_args=(--cwd "$argc_cwd")
-  # The pane's own exit status isn't reliably queryable while zellij still has it "held"
-  # right after the command finishes (list-panes lags by a beat in practice) — a wrapper
-  # that writes the code to a private temp file, outside the pane's rendered text, is a
-  # more robust exit signal than scanning scrollback for a sentinel string.
+  # You cannot read the pane's exit status while zellij still holds the pane right after the
+  # command ends (list-panes lags by a beat). A wrapper writes the code to a private temp file,
+  # outside the pane's rendered text. This is a more robust exit signal than a scan of the
+  # scrollback for a sentinel string.
   zellij --session "$argc_session" action new-pane --name "$argc_pane" "${cwd_args[@]}" \
     -- bash -c "$(_decode_and_run_cmd "$encoded"); rc=\$?; echo \"\$rc\" > '$marker'; exit \"\$rc\""
   _stack_with_existing "$argc_session"
@@ -64,20 +62,18 @@ spawn-and-watch() {
 
   case "$argc_mode" in
   stream)
-    # `subscribe --format raw` redraws the ENTIRE viewport on every single update event (not
-    # a delta) — confirmed live: a 3-line command produced "line-1", then "line-1\nline-2",
-    # then "line-1\nline-2\nline-3" as three separate emissions, i.e. classic duplication.
-    # `--format json`'s "viewport" field has the same full-redraw shape, but as a real array
-    # we can diff against what's already been printed and emit only the new tail lines.
-    # subscribe also never terminates on its own, even once the pane has exited (verified
-    # empirically) — this loop stops it itself once done, rather than a separate watcher
-    # process racing to kill it: an earlier version killed subscribe the instant the exit
-    # marker appeared, which for fast-finishing commands could kill it before its final
-    # pane_update event was even delivered through the FIFO (confirmed empirically — a
-    # near-instant 3-line command sometimes produced zero output). Instead, `read -t` polls
-    # the FIFO with a timeout and only stops once the marker exists AND a read attempt has
-    # come up empty (i.e. no event was pending when we checked), giving any last in-flight
-    # event a chance to land first.
+    # `subscribe --format raw` redraws the WHOLE viewport on every update event, not a delta.
+    # Confirmed live: a 3-line command emitted "line-1", then "line-1\nline-2", then
+    # "line-1\nline-2\nline-3" as three separate events (duplication). `--format json`'s
+    # "viewport" field has the same full-redraw shape, but as a real array. So this loop diffs
+    # it against what it already printed and emits only the new tail lines.
+    # subscribe also never stops on its own, even after the pane exits (verified). This loop
+    # stops subscribe itself once done. A separate watcher process would race to kill it. An
+    # earlier version killed subscribe the instant the exit marker appeared. For a fast command
+    # that could kill subscribe before its last pane_update event arrived through the FIFO
+    # (verified: a near-instant 3-line command sometimes produced no output). Instead `read -t`
+    # polls the FIFO with a timeout. It stops only once the marker exists AND a read attempt
+    # returned nothing. This gives any last in-flight event a chance to land first.
     local fifo
     fifo="$(mktemp -u /tmp/zellij-llm-stream.XXXXXX)"
     mkfifo "$fifo"
@@ -97,8 +93,8 @@ spawn-and-watch() {
             printf '%s\n' "${vp[i]}"
           done
         else
-          # viewport shrank (pane scrolled/cleared) — reprint fully rather than silently
-          # drop lines; rare in practice for a short-lived command's output.
+          # The viewport shrank (pane scrolled or cleared). Reprint it in full, do not drop
+          # lines. This is rare for a short-lived command's output.
           printf '%s\n' "${vp[@]}"
         fi
         printed=("${vp[@]}")
@@ -151,9 +147,9 @@ list() {
 }
 
 _ensure_session() {
-  # exits 1 with "Session already exists" on stderr when it's a no-op, rather than the
-  # documented "safe to call every time" being a true no-op success (verified empirically) —
-  # tolerate exactly that message and surface anything else.
+  # This exits 1 with "Session already exists" on stderr when the session is already present.
+  # The docs call it "safe to call every time", but it is not a true no-op success (verified).
+  # Tolerate exactly that message and surface anything else.
   local out
   if out="$(zellij attach --create-background "$1" 2>&1)"; then
     return 0
@@ -165,11 +161,11 @@ _ensure_session() {
   return 1
 }
 
-# zellij's `new-pane -- <cmd...>` only ever runs an argv command, with no way to attach
-# this script's stdin to the spawned process (confirmed: `zellij action pipe` only targets
-# WASM plugins, not terminal panes) — base64-encoding stdin and decoding it back inside the
-# pane avoids writing the command to a tempfile at all, at the cost of an argv-length limit
-# (macOS ARG_MAX is ~1MB, comfortably enough for shell scripts).
+# zellij's `new-pane -- <cmd...>` runs only an argv command. It cannot attach this script's
+# stdin to the spawned process (confirmed: `zellij action pipe` targets WASM plugins, not
+# terminal panes). base64-encode stdin and decode it back inside the pane. This avoids a
+# tempfile for the command, at the cost of an argv-length limit (macOS ARG_MAX is ~1MB, enough
+# for shell scripts).
 _stdin_to_b64() {
   base64 -w0
 }
@@ -178,10 +174,10 @@ _decode_and_run_cmd() {
   printf 'echo %s | base64 -d | bash -xeEuo pipefail' "$1"
 }
 
-# new-pane --stacked silently fails in a headless session with no attached client (creates
-# a pane that never shows up in list-panes and returns empty on dump-screen — confirmed
-# empirically). Plain new-pane works headless; folding it into the existing stack via
-# `action stack-panes` afterward reproduces the intended stacked layout without that bug.
+# new-pane --stacked fails without an error in a headless session with no attached client. It
+# creates a pane that never appears in list-panes and returns empty on dump-screen (verified).
+# Plain new-pane works headless. `action stack-panes` afterward folds it into the stack and
+# reproduces the intended layout without that bug.
 _stack_with_existing() {
   local session="$1"
   local -a ids
