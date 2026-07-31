@@ -120,6 +120,36 @@ daemon/registry round-trip).
 
 **Status:** design/handover docs written; implementation not started.
 
+### jj VCS convention to always end up on top of a merge commit
+
+Maybe should make a VCS convention and a script that would leave the history in a forked repository
+ as follows:
+
+```
+                       /- fork-tip / (pushed) merge - fork
+@ - (unpushed) merge <
+                       \- upstream-tip - upstream
+
+```
+
+in cases when the @ doesn't yet depend on a merge change OR the merge change was already pushed.
+
+This is in contrast to convention to have `@` depending only on `fork-tip` and `upstream-tip`,
+having `@` be descendant of a unpushed merge makes it trivial to issue `jj split -A upstream-tip -B fork-tip`.
+
+The script should detect the current situation and amend it with
+`jj new fork-tip upstream-tip -m 'chore(upstream): merge'`
+or throw an error if it's in an "unknown" situation.
+
+The script might be doable as a `jj` command and/or mix of aliases? Should do a research on whether it's possible.
+
+### jj workspaces script wrapper
+
+Should probably create a jj workspaces wrapper script that would create, list, get and remove
+workspaces as a minimal arguments, single-command operations.
+
+Might warrant adding a new workspace-name entry to `kdn-slug`.
+
 ### Fix `$DEVENV_ROOT` reaching into the main repo from a sibling `jj workspace add`
 
 **Context:** [docs/vcs-workspaces.md](docs/vcs-workspaces.md) documents the hazard in full. An
