@@ -74,7 +74,6 @@
 
   # * dependencies
   inputs.angrr.inputs.nixpkgs.follows = "nixpkgs";
-  inputs.angrr.inputs.treefmt-nix.follows = "treefmt-nix";
   inputs.argon40-nix.inputs.flake-utils.follows = "flake-utils";
   inputs.argon40-nix.inputs.nixpkgs.follows = "nixpkgs";
   inputs.colmena.inputs.flake-compat.follows = "flake-compat";
