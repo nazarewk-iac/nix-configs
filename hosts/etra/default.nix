@@ -399,6 +399,13 @@ in
       };
       kdn.networking.router.tsig.keyTpls =
         config.kdn.security.secrets.sops.placeholders.dns.knot-dns.keys;
+      kdn.security.secrets.sops.files."dns-kea" = {
+        keyPrefix = "knot-dns/keys";
+        filters = [ (lib.strings.hasPrefix "kea.etra") ];
+        sopsFile = "${self}/dns.sops.yaml";
+        sops.owner = "kea";
+      };
+      kdn.networking.router.tsig.keaSecrets = config.kdn.security.secrets.sops.secrets.dns-kea;
     }
     {
       # kdn.nix.remote-builder.localhost.publicHostKey = "??";
