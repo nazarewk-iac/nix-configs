@@ -538,10 +538,6 @@ in
       type = pkgs.jsonTemplate.type;
       default = { };
     };
-    kea.ctrl-agent.settings = lib.mkOption {
-      type = pkgs.jsonTemplate.type;
-      default = { };
-    };
 
     forwardings = lib.mkOption {
       type = lib.types.listOf (
@@ -1041,18 +1037,6 @@ in
               lib.mkMerge
             ];
           };
-        }
-        {
-          sops.templates."kea/ctrl-agent.conf" = {
-            mode = "0444";
-            reloadUnits = [ "kea-ctrl-agent.service" ];
-            content = builtins.readFile (
-              pkgs.jsonTemplate.generate "kea-ctrl-agent.conf" {
-                Control-agent = cfg.kea.ctrl-agent.settings;
-              }
-            );
-          };
-          services.kea.ctrl-agent.configFile = config.sops.templates."kea/ctrl-agent.conf".path;
         }
         {
           sops.templates."kea/dhcp-ddns.conf" = {
