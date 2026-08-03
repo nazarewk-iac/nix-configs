@@ -73,6 +73,10 @@ in
               type = with lib.types; listOf anything;
               default = [ ];
             };
+            options.filters = lib.mkOption {
+              type = with lib.types; listOf anything;
+              default = [ ];
+            };
             options.discovered.keys = lib.mkOption {
               readOnly = true;
               type = with lib.types; listOf str;
@@ -80,28 +84,36 @@ in
                 lib.kdn.sops.parseSopsYAMLMetadata
                 (map (e: builtins.concatStringsSep "/" e.path))
                 (builtins.filter (lib.strings.hasPrefix fileCfg.keyPrefix))
+                (map (lib.strings.removePrefix fileCfg.keyPrefix))
+                (builtins.filter (key: builtins.all (f: f key) fileCfg.filters))
               ];
             };
             options.discovered.entries = lib.mkOption {
               readOnly = true;
               default = lib.pipe fileCfg.discovered.keys [
-                (map (path: {
-                  name = "${fileCfg.namePrefix}/${lib.strings.removePrefix fileCfg.keyPrefix path}";
-                  value =
-                    fileCfg.sops
-                    // {
-                      sopsFile = fileCfg.sopsFile;
-                      key = path;
-                    }
-                    // (
-                      if fileCfg.basePath != null then
-                        {
-                          path = "${fileCfg.basePath}/${path}";
-                        }
-                      else
-                        { }
-                    );
-                }))
+                (map (
+                  key:
+                  let
+                    path = "${fileCfg.keyPrefix}${key}";
+                  in
+                  {
+                    name = "${fileCfg.namePrefix}/${key}";
+                    value =
+                      fileCfg.sops
+                      // {
+                        sopsFile = fileCfg.sopsFile;
+                        key = path;
+                      }
+                      // (
+                        if fileCfg.basePath != null then
+                          {
+                            path = "${fileCfg.basePath}/${path}";
+                          }
+                        else
+                          { }
+                      );
+                  }
+                ))
                 builtins.listToAttrs
                 (builtins.mapAttrs (
                   name: secretCfg:

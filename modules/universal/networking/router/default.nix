@@ -764,6 +764,9 @@ in
         })
       );
     };
+    tsig.keaSecrets = lib.mkOption {
+      default = { };
+    };
     tsig.keyTpls = lib.mkOption {
       default = { };
       type = lib.types.attrsOf (
@@ -1433,7 +1436,7 @@ in
                   {
                     name = keaTSIGName;
                     algorithm = cfg.tsig.keyTpls.${keaTSIGName}.algorithm;
-                    secret = cfg.tsig.keyTpls.${keaTSIGName}.secret;
+                    secret-file = cfg.tsig.keaSecrets.${keaTSIGName}.secret.path;
                   }
                 ];
                 loggers = [
