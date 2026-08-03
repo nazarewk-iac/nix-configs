@@ -316,6 +316,8 @@ in
           hosts.turb.ip = "192.168.252.9"; # TODO: configure
           hosts.eap773.ip = "192.168.252.10";
           hosts.eap773.ident.hw-address = "20:36:26:d2:5b:70";
+          hosts.coll.ip = "192.168.252.11";
+          hosts.coll.ident.hw-address = "a8:29:48:fc:11:4e";
           hosts.yelk.ip = "192.168.252.13";
 
           hosts.brys.ip = "192.168.252.32";
