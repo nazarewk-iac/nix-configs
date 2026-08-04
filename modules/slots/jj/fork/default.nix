@@ -112,8 +112,21 @@ in
         "util"
         "exec"
         "--"
-        "cat"
-        "${inputs.nix-configs}/docs/jujutsu-vcs.fork.md"
+        "bash"
+        "-c"
+        # Show the fork doc through a pager when interactive. Prefer $PAGER, fall back to less,
+        # fall back to cat. A non-interactive caller (no TTY) always gets plain cat.
+        ''
+          doc="${inputs.nix-configs}/docs/jujutsu-vcs.fork.md"
+          if [ -t 1 ]; then
+            pager="''${PAGER:-}"
+            if [ -z "$pager" ]; then
+              if command -v less >/dev/null 2>&1; then pager="less -R"; else pager="cat"; fi
+            fi
+            exec $pager "$doc"
+          fi
+          exec cat "$doc"
+        ''
       ];
       aliases.sync-remotes = [
         "util"
