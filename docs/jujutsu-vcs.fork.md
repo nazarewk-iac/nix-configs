@@ -1,17 +1,47 @@
 ---
 type: Reference
-description: Human-readable overview of the jj fork revset aliases and the common fork-management use cases they cover.
-timestamp: 2026-08-03T16:00:00+02:00
+description: The jj fork topology, its revset aliases, and the common fork-management use cases they cover.
+timestamp: 2026-08-04T00:00:00+02:00
 ---
 
 # Jujutsu (jj) VCS — Fork Workflow
 
+**TL;DR.** A private fork remote sits next to a public upstream remote. One merge commit (`main`)
+joins both lines. `@` sits on top of both `main` and `upstream`. You rebase that one merge forward
+onto new upstream. Split every local change by **content sensitivity**: generic work — including
+the task docs that record it — goes on the upstream chain; only sensitive content stays fork-side.
+
 > **Agent note:** This file is installed as `.claude/rules/jujutsu-vcs.fork.md` in a repo with
 > `kdn.jj.fork.enable = true`. See [jujutsu-vcs.md](jujutsu-vcs.md) for the fork-agnostic base
-> patterns this extends, and [flake-update.fork.md](flake-update.fork.md) for the concrete
-> update workflow that uses this topology.
+> patterns this extends, and [flake-update.fork.md](flake-update.fork.md) for the concrete update
+> workflow that uses this topology.
 >
-> **Run `jj fork-help` to print this file** from any shell in the repo.
+> **Run `jj fork-help` to read this file** from any shell in the repo. It opens a pager when
+> interactive (`$PAGER`, then `less`, then `cat`), and prints plain text when piped.
+
+## Overview
+
+The fork keeps **one** merge and rebases it proactively, so every local change stays on top of the
+newest upstream. Named revset aliases make the common checks short: which local work is unsafe to
+push, whether the merge can be reused or must be rebuilt, and what upstream is not integrated yet.
+The use cases below are ordered from "what is my state" to "change the graph".
+
+## Contents
+
+- [Topology](#topology) — the shape of the graph
+- [Single-purpose merge](#single-purpose-merge) — why there is only one merge
+- [Content sensitivity, not task boundaries](#content-sensitivity-not-task-boundaries) — how to
+  split a change
+- [Named revset aliases](#named-revset-aliases) — the alias table
+- [Common use cases](#common-use-cases) — step-by-step recipes
+  1. [What is on top of the merge that should not be there?](#1-what-is-on-top-of-the-merge-that-should-not-be-there)
+  2. [Do I need a new merge, or can I reuse the current one?](#2-do-i-need-a-new-merge-or-can-i-reuse-the-current-one)
+  3. [What new upstream commits are not integrated yet?](#3-what-new-upstream-commits-are-not-integrated-yet)
+  4. [Pull upstream in — rebase the local upstream chain](#4-pull-upstream-in--rebase-the-local-upstream-chain-onto-the-new-upstream)
+  5. [Build a new merge (the default when the merge is frozen)](#5-build-a-new-merge-the-default-when-the-merge-is-frozen)
+  6. [Make X an ancestor of Y without breaking the topology](#6-make-x-an-ancestor-of-y-without-breaking-the-topology)
+  7. [Verify before you declare done](#7-verify-before-you-declare-done)
+- [Warnings](#warnings)
 
 ## Topology
 
@@ -36,6 +66,21 @@ This repo keeps **one** merge and rebases it proactively. Every local change sta
 upstream tip. This avoids a second merge line: you do not maintain one merge to pull safe changes
 into the fork main and a separate merge to pull the upstream main into the working copies. One
 merge, always rebased forward onto the newest upstream.
+
+## Content sensitivity, not task boundaries
+
+Split a change by **what the content is**, not by which task produced it. The predicate is
+`fork-direct` — the sensitive-content check (see the alias table). Route each part by that:
+
+- **Generic content** (tools, conventions, shared modules, and the **task docs that record the
+  work as done**) goes on the **upstream chain**. Upstream then shows the task is complete.
+- **Sensitive content** (employer hosts, internal names, credentials) stays **fork-side**, above
+  the merge.
+
+A task that produces both is normal. Move the generic parts down onto the upstream chain and keep
+only the sensitive parts on the fork side. Write the task docs employer-neutral so they can live
+upstream. `jj split -m 'msg' -- <paths>` and `jj squash --from <src> --into <dst> -- <paths>` move
+content between commits without an editor.
 
 ## Named revset aliases
 
@@ -110,10 +155,11 @@ devenv build shell           # confirm the pulled-in upstream still builds
 > merge ancestry. Rebase `roots(upstream-local)` so the whole chain moves and the merge keeps its
 > original parents.
 
-### 5. Build a new merge (when `merge-frozen` is non-empty)
+### 5. Build a new merge (the default when the merge is frozen)
 
-Constructing the `main` merge topology is a legitimate, structural use of `jj new` — not a work
-checkpoint:
+When `merge-frozen` is non-empty, this is the **default** — not an edge case. A frozen merge is
+already published, so you build a new one rather than rewrite it. Constructing the `main` merge
+topology is a legitimate, structural use of `jj new` — not a work checkpoint:
 
 ```bash
 jj new 'fork-tip' 'upstream-incoming-tip' -m 'chore(merge): merge in upstream'
@@ -121,7 +167,33 @@ jj bookmark set main -r @
 jj new -d main -d upstream
 ```
 
-### 6. Verify before you declare done
+### 6. Make X an ancestor of Y without breaking the topology
+
+Use this when a fork-side change Y depends on a generic change X (for example, host wiring Y that
+uses a slot defined in X), but Y does not yet have X in its ancestry. Add X as a second parent of
+Y and keep Y's existing parent. `jj rebase -s` moves Y (and its descendants) onto the given
+destinations, and multiple `-d` flags make Y a merge of all of them:
+
+```bash
+jj rebase -s Y -d X -d <Y-existing-parent>
+```
+
+Concrete example — make the slot commit `X` an ancestor of the host-wiring commit `Y`, while `Y`
+keeps its old merge parent `P`:
+
+```bash
+jj rebase -s Y -d X -d P
+```
+
+`Y` becomes a merge of `X` and `P`, so the dependency of `Y` on `X` now shows in the graph. The
+descendants of `Y` (the merge, `@`) follow and keep their shape. Confirm afterward:
+
+```bash
+jj log -r 'parents(Y)'      # must list both X and P
+jj log -r 'fork-leaked'     # must stay empty
+```
+
+### 7. Verify before you declare done
 
 ```bash
 # no fork content leaked into the local work:
