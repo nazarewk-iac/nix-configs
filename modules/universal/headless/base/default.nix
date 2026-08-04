@@ -56,9 +56,26 @@ in
             programs.zellij.attachExistingSession = false; # don't attach to just any session
             # auto-attach to `main` session, but never over SSH: SSH sessions should land in a
             # plain shell unless zellij is invoked explicitly.
+            #
+            # Attach only when `main` has no client attached on THIS machine. This stops zellij
+            # from opening in every terminal window: the first window attaches, the next windows
+            # get a plain shell. `zellij action list-clients` sees only clients on the local
+            # zellij server (one server per machine), so a `main` open on a remote host over SSH
+            # is a separate server and does not count here.
+            #
+            # `list-clients` always exits 0, so the state comes from stdout:
+            #   - running + attached  -> `CLIENT_ID ...` header plus one row per client
+            #   - running + detached  -> header only
+            #   - missing or EXITED   -> zellij prints the session list (no `CLIENT_ID` header)
+            # So "attached here" = the header is present AND at least one client row follows.
             programs.fish.interactiveShellInit = ''
               if status is-interactive; and not set -q ZELLIJ; and not set -q SSH_CONNECTION; and not set -q SSH_TTY
-                zellij a -c main
+                set -l kdn_zellij_clients (zellij --session main action list-clients 2>/dev/null)
+                if string match --quiet 'CLIENT_ID*' -- $kdn_zellij_clients[1]; and test (count $kdn_zellij_clients) -gt 1
+                  # `main` is attached in another window on this machine; land in a plain shell.
+                else
+                  zellij attach --create main
+                end
               end
             '';
             ## auto-starting zellij gets a little too annyoing in nested sessions
