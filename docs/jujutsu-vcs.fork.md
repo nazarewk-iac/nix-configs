@@ -7,9 +7,10 @@ timestamp: 2026-08-04T00:00:00+02:00
 # Jujutsu (jj) VCS — Fork Workflow
 
 **TL;DR.** A private fork remote sits next to a public upstream remote. One merge commit (`main`)
-joins both lines. `@` sits on top of both `main` and `upstream`. You rebase that one merge forward
-onto new upstream. Split every local change by **content sensitivity**: generic work — including
-the task docs that record it — goes on the upstream chain; only sensitive content stays fork-side.
+joins both lines. `@` is a plain empty change with a single parent — the merge. You rebase that
+one merge forward onto new upstream. Split every local change by **content sensitivity**: generic
+work — including the task docs that record it — goes on the upstream chain; only sensitive content
+stays fork-side.
 
 > **Agent note:** This file is installed as `.claude/rules/jujutsu-vcs.fork.md` in a repo with
 > `kdn.jj.fork.enable = true`. See [jujutsu-vcs.md](jujutsu-vcs.md) for the fork-agnostic base
@@ -46,7 +47,7 @@ The use cases below are ordered from "what is my state" to "change the graph".
 ## Topology
 
 A private fork remote sits next to the public upstream remote. `main` is a single merge of both
-lines. `@` sits on top of both `main` and `upstream`:
+lines. `@` is a plain empty change with a single parent — the merge:
 
 ```
 main@<upstream-remote> ──► ...upstream-chain... ──► upstream
@@ -55,6 +56,15 @@ main@<upstream-remote> ──► ...upstream-chain... ──► upstream
                        /
 main@<fork-remote> ──► ...fork-chain...
 ```
+
+`@` has one parent, the merge. It reaches `upstream` through the merge, not by a direct edge.
+This single-parent `@` is the resting shape you review from.
+
+**Dual-parent `@`, one exception.** After you publish — `jj sync-remotes`, or any point where the
+merge becomes immutable — you stack new work with `jj new -d main -d upstream` (equivalently
+`jj new fork-tip upstream-tip`). That gives `@` both tips as parents. It restores the starting
+state that `nix run '.#update'` expects (`@` on top of both `main` and `upstream`). This is the
+only place a dual-parent `@` is correct. Use cases 4 and 5 below end with this step.
 
 `upstream` and `main` are **bookmark** names in this repo's convention. `upstream` tracks the
 public chain tip. `main` tracks the merge of both chains. Both are distinct from the **remote**
@@ -218,10 +228,10 @@ jj bookmark set upstream -r upstream
 
 ## Warnings
 
-> `jj describe` on a multi-parent `@` (when `@` sits on top of both `main` and `upstream`) creates
-> a merge commit that inherits all parents, including the fork ones. Always commit upstream-side
-> work while `@` has a single upstream-chain parent. Then restore the multi-parent `@` with
-> `jj new -d main -d upstream`.
+> A dual-parent `@` exists only right after you publish (see [Topology](#topology)). While it is
+> dual-parent, do NOT `jj describe` it: that turns `@` into a merge commit that inherits all
+> parents, including the fork ones. Always commit upstream-side work while `@` has a single
+> upstream-chain parent. Then restore the dual-parent `@` with `jj new -d main -d upstream`.
 
 See [flake-update.fork.md](flake-update.fork.md) for the concrete update workflow that feeds into
 this topology.
