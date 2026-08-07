@@ -32,10 +32,17 @@ underlying jj patterns.
    manually to place the bookmarks and push. See `modules/slots/jj/fork/default.nix` for the
    alias definitions.
 
-2. **`@` is never a content-holding merge.** The working copy `@` stays an empty change. When
-   `nix run '.#update'` writes `flake.lock` into a merge `@`, that state is transient. The first
-   step carves the content into a described commit and leaves `@` empty. A content merge in `@`
-   is a mistake — split it down at once.
+2. **`@` is a plain empty change on top of the fork merge.** `@` has a single parent — the fork
+   merge. `@` never holds content and never sits in the middle of the graph. When
+   `nix run '.#update'` writes `flake.lock` into a merge `@`, that state is transient; the first
+   step carves the content into a described commit and leaves `@` empty on top of it. Content in
+   `@`, or `@` described in the middle of the graph, is a mistake — fix it at once.
+
+   **One exception, after `jj sync-remotes`.** Once you push, the fork merge and the upstream
+   update become immutable. To stack new work you then run `jj new fork-tip upstream-tip`, so `@`
+   gets both tips as parents. This dual-parent `@` restores the update workflow's starting state
+   (`@` on top of `main` and `upstream`) for the next cycle. This is the ONLY place a dual-parent
+   `@` is correct. See [step 6](#6-after-jj-sync-remotes-stack-new-work).
 
 ---
 
@@ -44,13 +51,12 @@ underlying jj patterns.
 After a completed update, the graph looks like this (as `jj log` draws it):
 
 ```
-@    (empty working copy)                             parents = fork-tip + upstream-tip
+@    (empty working copy)                             single parent = fork merge
+○    fork merge — "chore(flake): update"              full flake.lock    ◄ fork-tip → main
 ├─╮
-│ ○  fork merge — "chore(flake): update"              full flake.lock    ◄ fork-tip → main
-╭─┤
-○ │  upstream update — "chore(flake): update (public inputs)"  public lock  ◄ upstream-tip → upstream
-│ ◆  main@<fork-remote>                               fork parent, full flake.lock
-╭─┤
+│ ○  upstream update — "chore(flake): update (public inputs)"  public lock  ◄ upstream-tip → upstream
+◆ │  main@<fork-remote>                               fork parent, full flake.lock
+├─╮
 ◆    upstream@<fork-remote>                            public parent
 ```
 
@@ -59,7 +65,8 @@ After a completed update, the graph looks like this (as `jj log` draws it):
 - **fork merge**: `flake.lock` with all inputs (public + fork-specific). Its two parents are the
   **upstream update** and the fork `main`. So the fork merge sits directly on top of the upstream
   update — that link is the point of the shape.
-- **`@`**: an empty working copy. Its two parents are the two tips (fork merge + upstream update).
+- **`@`**: a plain empty working copy with a single parent, the fork merge. There is no `@` →
+  upstream edge. `@` reaches the upstream update through the fork merge.
 
 The fork merge carries the full lock, so the fork (macOS) build uses it. The upstream update
 carries the public-only lock, so the personal NixOS machines build from it in parallel.
@@ -79,13 +86,13 @@ jj split -m 'chore(flake): update' -- flake.lock .flake.patches/
 FORK_UPDATE=$(jj log -r @- --no-graph -T 'change_id.short()')
 
 # 2. insert the public-only upstream update between the public tip and the fork merge,
-#    in ONE command — it re-parents the fork merge automatically:
-jj new --insert-after upstream-tip -m 'chore(flake): update (public inputs)'
+#    in ONE command — BOTH flags: --insert-after adds it, --insert-before re-parents the merge:
+jj new --insert-after upstream-tip --insert-before fork-tip -m 'chore(flake): update (public inputs)'
 PRE_UPDATE_REV=$(jj log -r 'upstream@<fork-remote>' --no-graph -T 'commit_id')
 nix run "git+file://$PWD?rev=${PRE_UPDATE_REV}#flake-lock-merge" -- "$FORK_UPDATE"
 
-# 3. park a fresh empty working copy on top of both tips:
-jj new fork-tip upstream-tip
+# 3. park a fresh empty working copy on top of the fork merge (single parent):
+jj new fork-tip
 
 # 4. test builds (see Testing). NEVER run `jj bookmark set` — `jj sync-remotes` does that.
 ```
@@ -124,17 +131,21 @@ FORK_UPDATE=$(jj log -r @- --no-graph -T 'change_id.short()')
 ```
 
 Use `jj split`, not `jj describe`. `jj describe` leaves the content in `@` and keeps `@` a
-content merge. `jj split` moves the content into `@-` (the fork merge) and leaves `@` empty.
+content merge. `jj split` moves the content into `@-` (the fork merge) and leaves `@` empty on
+top of it, with a single parent.
 
 ### 3. Insert the upstream update in one command
 
-Insert the public-only commit between the public tip and the fork merge. `--insert-after
-upstream-tip` puts a new commit after the public tip and re-parents the fork merge onto it
-automatically. So no separate rebase step is needed:
+Insert the public-only commit between the public tip and the fork merge. Use BOTH insert flags:
 
 ```bash
-jj new --insert-after upstream-tip -m 'chore(flake): update (public inputs)'
+jj new --insert-after upstream-tip --insert-before fork-tip -m 'chore(flake): update (public inputs)'
 ```
+
+`--insert-after upstream-tip` places the new commit on the public chain. `--insert-before
+fork-tip` re-parents the fork merge onto it. You need BOTH: `--insert-after` alone leaves the
+new commit as a dangling sibling and does NOT re-parent the fork merge. So no separate rebase
+step is needed.
 
 `@` is now the upstream update commit, in place between the public tip and the fork merge.
 Populate its `flake.lock` with public inputs. `flake-lock-merge` reads the fork merge's lock as
@@ -150,11 +161,12 @@ it. It removes the fork-specific inputs. This removal is correct.
 
 ### 4. Park the working copy
 
-Put a fresh empty working copy on top of both tips. This restores the full lock in the working
-copy and gives the user a clean review point:
+`@` is still the described upstream update in the middle of the graph. Move it off. Put a fresh
+empty working copy on top of the fork merge (single parent). This gives the user a clean review
+point on the full lock:
 
 ```bash
-jj new fork-tip upstream-tip
+jj new fork-tip
 ```
 
 ### 5. Verify the topology
@@ -166,6 +178,20 @@ jj log -r 'fork-tip'     --no-graph -T 'change_id.short() ++ "\n"'   # → fork 
 ```
 
 Confirm the upstream update holds a public-only lock. It must NOT contain fork-specific inputs.
+
+### 6. After `jj sync-remotes`, stack new work
+
+The user tests the builds, then runs `jj sync-remotes` to move the bookmarks and push. After the
+push, the fork merge and the upstream update are immutable. To start the next cycle — or to stack
+any new work — put a fresh empty `@` on top of both tips:
+
+```bash
+jj new fork-tip upstream-tip
+```
+
+This is the ONLY place a dual-parent `@` is correct. It restores the update workflow's starting
+state (`@` on top of `main` and `upstream`). Before the push, keep the single-parent review `@`
+from step 4.
 
 ---
 
@@ -200,7 +226,7 @@ jj split --insert-after upstream-tip --insert-before fork-tip \
 fork-tip` re-parents the fork merge onto it. You need BOTH: `--insert-after` alone leaves the
 new commit as a dangling sibling and does NOT re-parent the fork merge, so `fork-tip` would
 still point past it and the fix would miss the fork build. After the split, `@` stays the empty
-working copy on both tips.
+working copy on top of the fork merge.
 
 A **fork-specific** fix goes on the fork chain, above or in the fork merge (a plain
 `jj split -m '...' -- <files>` on the fork side, no insert flags needed).
