@@ -1,12 +1,20 @@
 ---
 name: flake-update-fork
-description: Flake update with fork merge — create merge commit, run flake-lock-merge, advance main. Use when updating flake inputs in a repo with both a public (kdn) and private (fork) remote.
+description: Flake update with fork merge — split the update onto fork/upstream sides, run flake-lock-merge, let jj sync-remotes place bookmarks. Use when updating flake inputs in a repo with both a public (kdn) and private (fork) remote.
 type: Skill
-timestamp: 2026-07-10T12:19:48+02:00
+timestamp: 2026-08-07T00:00:00+02:00
 ---
 
 Full reference: [docs/flake-update.fork.md](../../../../docs/flake-update.fork.md)
 Base workflow: see `flake-update` skill.
+
+## Two rules that override everything
+
+1. **NEVER run `jj bookmark set`** for `main` or `upstream`. `jj sync-remotes` moves both from
+   topology (`upstream-tip` → `upstream`, `fork-tip` → `main`). You only build the topology; the
+   user runs `jj sync-remotes` manually to place the bookmarks and push.
+2. **`@` is never a content-holding merge.** `nix run '.#update'` leaves the lock in a merge `@`
+   transiently. Carve it into a described commit at once and keep `@` empty.
 
 ## Quick summary
 
@@ -15,45 +23,59 @@ Base workflow: see `flake-update` skill.
 nix run '.#update'
 # patch failed? remove from .flake.patches/config.toml + delete .patch file, then:
 #   nix run '.#update' -- g:patches
-jj describe -m 'chore(flake): update'
-FORK_UPDATE=$(jj log -r @ --no-graph -T 'change_id.short()')
 
-# split non-flake.lock changes onto upstream; flake.lock stays in the fork update:
-jj split -r "$FORK_UPDATE" --insert-after upstream -m 'chore(flake): update' -- .flake.patches/
-# @ is now the upstream-side commit
+# 1. carve the update into the fork merge; @ becomes empty on top (never a content merge):
+jj split -m 'chore(flake): update' -- flake.lock .flake.patches/
+FORK_UPDATE=$(jj log -r @- --no-graph -T 'change_id.short()')
 
-# merge in public flake inputs from the fork update:
+# 2. insert the public-only upstream update between the public tip and the fork merge,
+#    in ONE command — it re-parents the fork merge automatically:
+jj new --insert-after upstream-tip -m 'chore(flake): update (public inputs)'
 PRE_UPDATE_REV=$(jj log -r 'upstream@<fork-remote>' --no-graph -T 'commit_id')
 nix run "git+file://$PWD?rev=${PRE_UPDATE_REV}#flake-lock-merge" -- "$FORK_UPDATE"
-jj bookmark set upstream -r @
 
-# go to the fork update (flake.lock only) and create the merge commit:
-jj edit "$FORK_UPDATE"
-jj new -m 'chore(flake): upgrade & upstream merge'
-jj bookmark set main -r @
-jj new -d main -d upstream
+# 3. park a fresh empty working copy on top of both tips:
+jj new fork-tip upstream-tip
+
+# 4. patch files present? move them down onto the public side (skip if lock-only update):
+jj squash --from "$FORK_UPDATE" --into upstream-tip -- .flake.patches/
+```
+
+Resulting shape (fork merge sits directly on the upstream update):
+
+```
+@    (empty)                                          parents = fork-tip + upstream-tip
+├─╮
+│ ○  fork merge — "chore(flake): update"              full lock    ◄ fork-tip → main
+╭─┤
+○ │  upstream update — "…(public inputs)"             public lock  ◄ upstream-tip → upstream
+│ ◆  main@<fork-remote>
+◆    upstream@<fork-remote>
 ```
 
 ## Post-update fixes
 
+Fix in the empty `@`, then split onto the correct chain — never move bookmarks:
+
 ```bash
-jj split -m 'fix(...): description' -- <changed-files>
-jj bookmark set upstream -r 'upstream-tip'
-jj rebase -r "$FORK_UPDATE" -d upstream
-jj rebase --revision <merge-change-id> \
-          --destination "$FORK_UPDATE" \
-          --destination main@<fork-remote>
-jj bookmark set main -r <merge-change-id>
-jj rebase -s @ -d main -d upstream
+# public fix → onto the upstream chain:
+jj new --insert-after upstream-tip -m 'fix(...): description'
+# ...make the fix in @, then park a fresh @ on both tips again:
+jj new fork-tip upstream-tip
 ```
 
 ## Agent notes
 
-- `upstream@<fork-remote>` is the stable anchor — never use bare `upstream` in revsets
-- `jj split --insert-after upstream` inserts the selected files as a new commit after `upstream` and rebases `$FORK_UPDATE` (and any other children) onto it automatically; `flake.lock` stays in `$FORK_UPDATE`
-- `flake-lock-merge "$FORK_UPDATE"` reads the fork update's lock as reference to populate only public inputs into the upstream-only commit
-- Non-`flake.lock` changes (`.flake.patches/`) go on the upstream chain; only `flake.lock` stays in the fork update
-- `jj new` and `jj rebase` are non-interactive; `jj edit` switches working copy non-interactively
-- After `jj split`, `@` lands on the new upstream-side commit — no need to `jj edit` it
-- Test with pre-update rev: `nix run "git+file://$PWD?rev=${PRE_UPDATE_REV}#darwin-rebuild" -- build`
-- Never run `switch` — hand off to user (requires sudo)
+- `upstream@<fork-remote>` is the stable anchor — never use bare `upstream` in revsets.
+- Use `jj split`, NOT `jj describe`, in step 1 — `describe` keeps the content in `@` and leaves
+  `@` a content merge; `split` moves it into `@-` and keeps `@` empty.
+- `jj new --insert-after upstream-tip` inserts the upstream update AND re-parents the fork merge
+  onto it in one command — no separate `jj rebase` step.
+- `flake-lock-merge "$FORK_UPDATE"` reads the fork merge's lock as reference and writes a
+  public-only lock into `@`; run it while `@` is the upstream update. It removes fork-specific
+  inputs — that removal is correct.
+- Never run `jj bookmark set` — `jj sync-remotes` places `upstream` and `main` from topology.
+- `jj new`, `jj rebase`, `jj squash` are non-interactive with `-m`/`--`.
+- Build the fork (macOS) from the fork merge on the macOS machine. Build the personal NixOS
+  machines from the upstream update on NixOS hosts — you cannot build a NixOS host from macOS.
+- Never run `switch` — hand off to the user (requires sudo).
