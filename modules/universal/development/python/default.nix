@@ -154,7 +154,10 @@ in
               pylsp-mypy
               pylsp-rope
               python-lsp-black
-              python-lsp-ruff
+              (python-lsp-ruff.overridePythonAttrs (old: {
+                # TODO; doesn't build https://github.com/NixOS/nixpkgs/issues/548631
+                doCheck = false;
+              }))
               pyls-isort
               pyls-memestra
             ]
