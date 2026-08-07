@@ -51,8 +51,8 @@ in
             boot.initrd.availableKernelModules = [ ];
             programs.seahorse.enable = true;
             boot.binfmt.emulatedSystems = [
-              "wasm32-wasi"
-              "wasm64-wasi"
+              # "wasm32-wasi"
+              # "wasm64-wasi"
             ];
 
             services.offlineimap.install = true;
