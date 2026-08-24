@@ -14,6 +14,7 @@ Patch handling: [docs/flake-patches.md](../../docs/flake-patches.md)
 ```bash
 # @ is the empty working copy on top of upstream
 nix run '.#update'
+devenv update    # updates devenv.lock (separate resolver; no fork = same commit, no strip)
 # patch failed? remove from .flake.patches/config.toml + delete .patch file, then:
 #   nix run '.#update' -- g:patches
 jj describe -m 'chore(flake): update'

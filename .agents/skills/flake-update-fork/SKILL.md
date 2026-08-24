@@ -22,18 +22,28 @@ Base workflow: see `flake-update` skill.
 ```bash
 # @ is the empty working copy on top of main and upstream
 nix run '.#update'
+devenv update                       # updates devenv.lock (separate resolver from flake.lock)
 # patch failed? remove from .flake.patches/config.toml + delete .patch file, then:
 #   nix run '.#update' -- g:patches
 
 # 1. carve the update into the fork merge; @ becomes empty on top (never a content merge):
-jj split -m 'chore(flake): update' -- flake.lock .flake.patches/
+jj split -m 'chore(flake): update' -- flake.lock devenv.lock .flake.patches/
 FORK_UPDATE=$(jj log -r @- --no-graph -T 'change_id.short()')
 
 # 2. insert the public-only upstream update between the public tip and the fork merge,
 #    in ONE command — BOTH flags: --insert-after adds it, --insert-before re-parents the merge:
 jj new --insert-after upstream-tip --insert-before fork-tip -m 'chore(flake): update (public inputs)'
 PRE_UPDATE_REV=$(jj log -r 'upstream@<fork-remote>' --no-graph -T 'commit_id')
-nix run "git+file://$PWD?rev=${PRE_UPDATE_REV}#flake-lock-merge" -- "$FORK_UPDATE"
+nix run "git+file://$PWD?rev=${PRE_UPDATE_REV}#flake-lock-merge" -- "$FORK_UPDATE"   # flake.lock only
+# devenv.lock: flake-lock-merge CANNOT write it (it always regenerates ./flake.lock). Strip with jq:
+STRIP=$(comm -23 \
+  <(jj file show -r "$FORK_UPDATE" flake.lock | jq -r '.nodes|keys[]|select(test("^brew-tap--"))' | sort) \
+  <(jj file show -r @               flake.lock | jq -r '.nodes|keys[]|select(test("^brew-tap--"))' | sort) \
+  | jq -R . | jq -sc .)
+jj file show -r "$FORK_UPDATE" devenv.lock | jq --argjson strip "$STRIP" '
+  .nodes |= with_entries(select(.key as $k | ($strip|index($k))|not))
+  | .nodes |= map_values(if .inputs then .inputs |= with_entries(select((.value|tostring) as $t|($strip|index($t))|not)) else . end)
+' | jq -j '.' > devenv.lock          # jq -j = no trailing newline (matches native devenv.lock)
 
 # 3. park a fresh empty working copy on top of the fork merge (single parent):
 jj new fork-tip
@@ -83,6 +93,12 @@ jj squash --from @ --into <public-commit> -- <files>
 - `flake-lock-merge "$FORK_UPDATE"` reads the fork merge's lock as reference and writes a
   public-only lock into `@`; run it while `@` is the upstream update. It removes fork-specific
   inputs — that removal is correct.
+- `flake-lock-merge` writes `flake.lock` ONLY. It cannot write `devenv.lock`: it calls `nix flake
+  lock --reference-lock-file`, which always writes `./flake.lock`, and that command fails on
+  `devenv.lock`'s `git+file:.` self-input. `devenv.lock` uses the same node schema but a separate
+  resolver. Strip its fork nodes with the `jq` transform (step 2) — drop the fork nodes AND their
+  input edges, write with `jq -j` (no trailing newline). Same removal `flake-lock-merge` does to
+  `flake.lock`.
 - Never run `jj bookmark set` — `jj sync-remotes` places `upstream` and `main` from topology.
 - `jj new`, `jj rebase`, `jj squash` are non-interactive with `-m`/`--`.
 - Build the fork (macOS) from the fork merge on the macOS machine. Build the personal NixOS

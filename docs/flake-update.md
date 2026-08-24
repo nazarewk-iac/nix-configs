@@ -35,6 +35,7 @@ upstream ──► chore(flake): update
 ```bash
 # @ is the empty working copy on top of upstream
 nix run '.#update'
+devenv update    # updates devenv.lock (separate resolver from flake.lock)
 # if a patch fails: remove it from .flake.patches/config.toml + delete .patch file, then:
 #   nix run '.#update' -- g:patches
 jj describe -m 'chore(flake): update'
@@ -55,9 +56,12 @@ With `@` as the empty working copy on top of `upstream`, run:
 
 ```bash
 nix run '.#update'
+devenv update
 ```
 
-This updates all flake inputs and fetches/applies patches from `.flake.patches/`.
+`nix run '.#update'` updates all flake inputs and fetches/applies patches from `.flake.patches/`.
+`devenv update` updates `devenv.lock`, which has a separate resolver. Without a fork, both lock
+files go into the same described commit — no strip step is needed.
 
 If a patch fails to apply, check whether it was already merged into the upstream repo:
 - If merged: remove the entry from `.flake.patches/config.toml` and delete the `.patch` file.
