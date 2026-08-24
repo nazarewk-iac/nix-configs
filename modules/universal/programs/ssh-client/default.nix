@@ -18,7 +18,7 @@ in
       (kdnConfig.util.ifHM (
         lib.mkMerge [
           {
-            services.ssh-agent.enable = pkgs.stdenv.isLinux;
+            services.ssh-agent.enable = pkgs.stdenv.hostPlatform.isLinux;
 
             programs.ssh.enable = true;
             programs.ssh.includes = [
