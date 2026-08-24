@@ -2,7 +2,7 @@
   lib,
   python3,
   pinentry-curses,
-  pinentry-gtk2,
+  pinentry-gnome3,
   pinentry_mac,
   pinentry-qt,
   stdenv,
@@ -19,7 +19,7 @@ let
       pinentry-qt
     ]
     ++ [
-      pinentry-gtk2
+      pinentry-gnome3
       pinentry-curses
     ];
 in

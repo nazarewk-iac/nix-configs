@@ -168,10 +168,12 @@ in
             {
               services.userborn.enable = true;
               services.userborn.passwordFilesLocation = "/var/lib/nixos/userborn/etc";
-              environment.etc."subuid".source = content;
-              environment.etc."subuid".mode = "0444";
-              environment.etc."subgid".source = content;
-              environment.etc."subgid".mode = "0444";
+              # nixpkgs now generates /etc/subuid and /etc/subgid itself.
+              # Force the wide range mapping that rootless containers need.
+              environment.etc."subuid".source = lib.mkForce content;
+              environment.etc."subuid".mode = lib.mkForce "0444";
+              environment.etc."subgid".source = lib.mkForce content;
+              environment.etc."subgid".mode = lib.mkForce "0444";
             }
           )
           {
