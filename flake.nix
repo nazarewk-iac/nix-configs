@@ -202,7 +202,7 @@
                   builtins.listToAttrs
                 ];
           in
-          if !prev.stdenv.isDarwin then
+          if !prev.stdenv.hostPlatform.isDarwin then
             { }
           else
             {

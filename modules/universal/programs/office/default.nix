@@ -21,7 +21,8 @@ in
       (kdnConfig.util.ifNotHMParent {
         kdn.apps.libreoffice = {
           enable = true;
-          package.original = if pkgs.stdenv.isDarwin then pkgs.libreoffice-bin else pkgs.libreoffice;
+          package.original =
+            if pkgs.stdenv.hostPlatform.isDarwin then pkgs.libreoffice-bin else pkgs.libreoffice;
           dirs.cache = [ ];
           dirs.config = [ "libreoffice" ];
           dirs.data = [ ];

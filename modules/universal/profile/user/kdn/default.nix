@@ -417,7 +417,7 @@ in
             kdn.programs.torrent.enable = true;
             kdn.toolset.print-3d.enable = true;
           })
-          (lib.mkIf pkgs.stdenv.isDarwin {
+          (lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
             kdn.env.packages = with pkgs; [
               # realvnc-vnc-viewer # TODO: 2026-04-24: broken SSL cert
             ];

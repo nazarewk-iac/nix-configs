@@ -50,7 +50,7 @@ in
                 })
               ]
               # see https://github.com/NixOS/nixpkgs/issues/366581#issuecomment-2564737818
-              ++ lib.lists.optional (!pkgs.stdenv.isDarwin) (old: {
+              ++ lib.lists.optional (!pkgs.stdenv.hostPlatform.isDarwin) (old: {
                 nativeMessagingHosts = old.nativeMessagingHosts or [ ] ++ cfg.nativeMessagingHosts;
               });
             };

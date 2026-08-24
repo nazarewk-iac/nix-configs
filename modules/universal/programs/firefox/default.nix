@@ -27,7 +27,7 @@ let
   mkPrefLocked = mkPref "locked";
   mkPrefDefault = mkPref "default";
 
-  nativeMessagingHostsAreSupported = !pkgs.stdenv.isDarwin;
+  nativeMessagingHostsAreSupported = !pkgs.stdenv.hostPlatform.isDarwin;
 in
 {
   options.kdn.programs.firefox = {
