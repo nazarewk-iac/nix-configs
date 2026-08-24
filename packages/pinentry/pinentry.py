@@ -201,7 +201,7 @@ class PinentryConfigExec:
 
 @dataclasses.dataclass
 class PinentryConfig:
-    gui_flavors: tuple[str, ...] = ("gtk-2", "qt", "gnome3")
+    gui_flavors: tuple[str, ...] = ("qt", "gnome3")
     tty_flavors: tuple[str, ...] = ("curses", "tty")
     program: str = ""
     exec: dict[str, PinentryConfigExec] = dataclasses.field(default_factory=dict)
