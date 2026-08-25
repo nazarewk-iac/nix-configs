@@ -295,8 +295,15 @@ jq -r '.nodes as $n | [ .nodes|to_entries[]|.key as $o|(.value.inputs//{})|to_en
 
 ## Post-update fixes
 
-If a build fails, fix the files in `@` (the empty top). Then split the fix onto the correct
-chain, so the topology stays correct and `jj sync-remotes` picks the right tips.
+If a build fails, fix the files in `@` (the empty top). Then place the fix on the correct chain,
+so the topology stays correct and `jj sync-remotes` picks the right tips. The method depends on
+whether the tips are pushed yet. Check first:
+
+```bash
+jj log -r 'fork-tip' --no-graph -T 'if(immutable, "PUSHED", "not pushed") ++ "\n"'
+```
+
+### Public fix, tips NOT pushed yet
 
 A **public** fix (docs, patch files, any non-sensitive change) goes on the upstream chain,
 between the upstream update and the fork merge. Use BOTH insert flags:
@@ -311,6 +318,51 @@ fork-tip` re-parents the fork merge onto it. You need BOTH: `--insert-after` alo
 new commit as a dangling sibling and does NOT re-parent the fork merge, so `fork-tip` would
 still point past it and the fix would miss the fork build. After the split, `@` stays the empty
 working copy on top of the fork merge.
+
+This step rewrites the fork merge. That is fine while the fork merge is still **mutable** (not
+pushed). Do NOT do this after a push — see the next section.
+
+### Public fix, tips ALREADY pushed
+
+After `jj sync-remotes`, both tips are immutable. **NEVER rewrite a pushed commit.** Do NOT use
+`--insert-before fork-tip` (it re-parents the immutable fork merge). Do NOT use
+`--ignore-immutable`. Both rewrite published history and force a force-push.
+
+Instead, extend both chains **forward** as fast-forwards, then add a **new merge commit** on top.
+The upstream fix becomes a child of the upstream tip. A new fork merge joins the old fork merge
+with the fix:
+
+```bash
+# @ holds the fix content:
+jj describe -m 'fix(...): description'          # @ = the fix
+jj rebase -r @ -d upstream-tip                  # fix now extends the upstream chain
+FIX=$(jj log -r @ --no-graph -T 'change_id.short()')
+# new merge on top: old fork merge + the fix — advances the fork chain forward:
+jj new fork-tip "$FIX" -m 'chore(fork): merge <fix> from upstream'
+jj new fork-tip                                 # park an empty single-parent @ for review
+```
+
+The result:
+
+```
+@    (empty)                                          single parent = new fork merge
+○    new fork merge — "chore(fork): merge <fix>…"     ◄ fork-tip → main
+├─╮
+│ ○  fix — "fix(…): description"                       ◄ upstream-tip → upstream
+◆ │  old fork merge (pushed, immutable)
+├─╮
+│ ◆  old upstream update (pushed, immutable)
+```
+
+Both old tips stay ancestors of the new tips, so `jj sync-remotes` pushes clean fast-forwards —
+no force-push, no rewritten history. Confirm before the user pushes:
+
+```bash
+jj log -r 'upstream@<fork-remote>::upstream-tip' --no-graph -T 'change_id.short() ++ "\n"'  # old tip is an ancestor
+jj log -r 'main@<fork-remote>::fork-tip'         --no-graph -T 'change_id.short() ++ "\n"'  # old tip is an ancestor
+```
+
+### Fork-specific fix
 
 A **fork-specific** fix goes on the fork chain, above or in the fork merge (a plain
 `jj split -m '...' -- <files>` on the fork side, no insert flags needed).
