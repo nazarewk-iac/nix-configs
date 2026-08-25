@@ -69,13 +69,46 @@ Resulting shape (fork merge sits directly on the upstream update; `@` is single-
 
 ## Post-update fixes
 
-Fix in the empty `@`, then split onto the correct chain — never move bookmarks:
+Fix in the empty `@`, then place it on the correct chain — never move bookmarks. The method
+depends on whether the tips are pushed yet. Check first:
 
 ```bash
-# public fix → onto the upstream chain (BOTH flags: --insert-before re-parents the fork merge):
+jj log -r 'fork-tip' --no-graph -T 'if(immutable, "PUSHED", "not pushed") ++ "\n"'
+```
+
+### Case A — tips NOT pushed yet (mutable)
+
+Insert the public fix on the upstream chain. BOTH flags: `--insert-before` re-parents the fork
+merge onto the fix. This rewrites the fork merge, which is fine while it is still mutable.
+
+```bash
 jj split --insert-after upstream-tip --insert-before fork-tip -m 'fix(...): description' -- <files>
 # amend an EXISTING public commit instead (e.g. the docs commit):
 jj squash --from @ --into <public-commit> -- <files>
+```
+
+### Case B — tips ALREADY pushed (immutable)
+
+NEVER rewrite a pushed commit. Do NOT use `--insert-before fork-tip` (it re-parents the immutable
+fork merge). Do NOT use `--ignore-immutable`. Instead extend both chains forward as
+fast-forwards, then add a NEW merge commit on top:
+
+```bash
+# @ holds the fix content. Describe it, then move it to a child of the upstream tip:
+jj describe -m 'fix(...): description'          # @ = the fix
+jj rebase -r @ -d upstream-tip                  # fix now extends the upstream chain (fast-forward)
+FIX=$(jj log -r @ --no-graph -T 'change_id.short()')
+# new merge on top: old fork merge + the fix. This advances the fork chain (fast-forward too):
+jj new fork-tip "$FIX" -m 'chore(fork): merge <fix> from upstream'
+jj new fork-tip                                 # park an empty single-parent @ for review
+```
+
+Both old tips stay ancestors of the new tips, so `jj sync-remotes` pushes clean fast-forwards —
+no force-push, no rewritten history. Confirm before you push:
+
+```bash
+jj log -r 'upstream@<fork-remote>::upstream-tip' --no-graph -T 'change_id.short() ++ "\n"'  # old tip is an ancestor
+jj log -r 'main@<fork-remote>::fork-tip'         --no-graph -T 'change_id.short() ++ "\n"'  # old tip is an ancestor
 ```
 
 ## Agent notes
@@ -90,6 +123,11 @@ jj squash --from @ --into <public-commit> -- <files>
   the upstream update through the merge. EXCEPTION: after `jj sync-remotes` the merge is
   immutable, so stack new work with `jj new fork-tip upstream-tip` (dual-parent @) — that is the
   only place a dual-parent @ is correct.
+- A post-push fix NEVER rewrites a pushed commit. Do not use `--ignore-immutable` and do not use
+  `--insert-before fork-tip` on a pushed fork merge — both rewrite immutable history and force a
+  force-push. Extend the upstream chain forward (`jj rebase -r <fix> -d upstream-tip`), then add a
+  NEW merge on top (`jj new fork-tip <fix>`). Both tips fast-forward. See Post-update fixes,
+  Case B.
 - `flake-lock-merge "$FORK_UPDATE"` reads the fork merge's lock as reference and writes a
   public-only lock into `@`; run it while `@` is the upstream update. It removes fork-specific
   inputs — that removal is correct.
