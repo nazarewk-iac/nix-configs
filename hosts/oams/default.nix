@@ -50,7 +50,20 @@
       services.asusd.enable = true;
       kdn.hw.gpu.multiGPU.enable = true;
       programs.rog-control-center.enable = true;
-      programs.rog-control-center.autoStart = true;
+      # nixpkgs `programs.rog-control-center.autoStart` calls
+      # `makeAutostartItem { name = "rog-control-center"; }` with no `srcPrefix`.
+      # asusctl 6.4.0 renamed the desktop file to
+      # `org.opengamingcollective.rog-control-center.desktop`, so the module's
+      # autostart derivation fails on the missing old-named file. Keep autoStart
+      # off and add our own autostart item with the correct `srcPrefix`.
+      programs.rog-control-center.autoStart = false;
+      kdn.env.packages = [
+        (pkgs.makeAutostartItem {
+          name = "rog-control-center";
+          package = config.services.asusd.package;
+          srcPrefix = "org.opengamingcollective.";
+        })
+      ];
       home-manager.sharedModules = [
         (
           args:
