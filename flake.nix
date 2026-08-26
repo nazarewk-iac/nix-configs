@@ -56,6 +56,7 @@
   inputs.nixos-generators.url = "github:nix-community/nixos-generators";
   inputs.nixos-hardware.url = "github:nixos/nixos-hardware";
   inputs.nur.url = "github:nix-community/NUR";
+  inputs.oh-my-pi.url = "github:can1357/oh-my-pi";
   inputs.pyproject-nix.url = "github:pyproject-nix/pyproject.nix";
   inputs.pyproject-build-systems.url = "github:pyproject-nix/build-system-pkgs";
   inputs.uv2nix.url = "github:pyproject-nix/uv2nix";
@@ -92,6 +93,8 @@
   inputs.nix-fast-build.inputs.flake-parts.follows = "flake-parts";
   inputs.nix-fast-build.inputs.treefmt-nix.follows = "treefmt-nix";
   inputs.nur.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.oh-my-pi.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.oh-my-pi.inputs.rust-overlay.follows = "rust-overlay";
   inputs.pyproject-nix.inputs.nixpkgs.follows = "nixpkgs";
   inputs.pyproject-build-systems.inputs.nixpkgs.follows = "nixpkgs";
   inputs.pyproject-build-systems.inputs.pyproject-nix.follows = "pyproject-nix";
@@ -165,6 +168,7 @@
         inputs.angrr.overlays.default
         inputs.nix-darwin.overlays.default
         inputs.devenv.overlays.default
+        inputs.oh-my-pi.overlays.default # provides pkgs.omp
         (final: prev: {
           inherit lib;
           kdnConfig = self.kdnMetaModule.config;
