@@ -60,6 +60,11 @@ in
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
+        # Enable the LLM harnesses only on a development machine, not on servers.
+        kdn.development.llm.claude-code.enable = lib.mkDefault config.kdn.profile.machine.dev.enable;
+        kdn.development.llm.opencode.enable = lib.mkDefault config.kdn.profile.machine.dev.enable;
+        kdn.development.llm.pi.enable = lib.mkDefault config.kdn.profile.machine.dev.enable;
+        kdn.development.llm.omp.enable = lib.mkDefault config.kdn.profile.machine.dev.enable;
         kdn.env.packages = with pkgs; [
           kdn.kdnctl
           # (yt-dlp.overrideAttrs (final: {

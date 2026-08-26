@@ -34,7 +34,6 @@ in
         kdn.development.golang.enable = lib.mkDefault true;
         kdn.development.java.enable = lib.mkDefault true;
         kdn.development.k8s.enable = lib.mkDefault true;
-        kdn.development.llm.online.enable = lib.mkDefault true;
         kdn.development.nickel.enable = lib.mkDefault true;
         kdn.development.nix.enable = lib.mkDefault true;
         kdn.development.python.enable = lib.mkDefault true;

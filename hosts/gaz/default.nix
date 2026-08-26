@@ -34,7 +34,10 @@
 
       kdn.desktop.enable = false;
       kdn.profile.machine.desktop.enable = false;
-      kdn.development.llm.online.enable = false;
+      kdn.development.llm.claude-code.enable = false;
+      kdn.development.llm.opencode.enable = false;
+      kdn.development.llm.pi.enable = false;
+      kdn.development.llm.omp.enable = false;
     }
     # TODO: add SSH host keys (using kdnctl?)
     {
