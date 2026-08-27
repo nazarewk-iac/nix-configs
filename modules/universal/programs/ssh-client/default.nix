@@ -18,7 +18,9 @@ in
       (kdnConfig.util.ifHM (
         lib.mkMerge [
           {
-            services.ssh-agent.enable = pkgs.stdenv.hostPlatform.isLinux;
+            # mkDefault so the ssh-agent slot can enable the OpenSSH agent on Darwin too.
+            # Upstream home-manager `services.ssh-agent` now supports macOS through launchd.
+            services.ssh-agent.enable = lib.mkDefault pkgs.stdenv.hostPlatform.isLinux;
 
             programs.ssh.enable = true;
             programs.ssh.includes = [
