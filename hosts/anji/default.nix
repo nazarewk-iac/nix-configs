@@ -9,14 +9,18 @@ let
   # workstation build testing for a work machine
   workstationTest = true;
   bootstrapBuilder = false;
+
+  slots = kdnConfig.self.mkSlots {
+    inherit pkgs;
+    kdn.darwin.rosetta-builder.enable = true;
+    # devenv CLI and shell hooks.
+    kdn.devenv.enable = true;
+  };
 in
 {
   imports = [
     kdnConfig.self.darwinModules.default
-    (kdnConfig.self.mkSlots {
-      inherit pkgs;
-      kdn.darwin.rosetta-builder.enable = true;
-    }).config.darwin
+    slots.config.darwin
   ];
 
   options.kdn.hosts.anji = {
@@ -35,6 +39,9 @@ in
     {
       system.stateVersion = 6;
       home-manager.sharedModules = [ { home.stateVersion = "26.05"; } ];
+    }
+    {
+      home-manager.sharedModules = [ slots.config.home ];
     }
     {
       environment.systemPackages = with pkgs; [
