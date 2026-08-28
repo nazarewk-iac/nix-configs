@@ -5,12 +5,23 @@
   kdnConfig,
   ...
 }:
+let
+  slots = kdnConfig.self.mkSlots {
+    inherit pkgs;
+    # devenv CLI and shell hooks.
+    kdn.devenv.enable = true;
+  };
+in
 {
   imports = [
     kdnConfig.self.nixosModules.default
+    slots.config.nixos
   ];
 
   config = lib.mkMerge [
+    {
+      home-manager.sharedModules = [ slots.config.home ];
+    }
     {
       kdn.hostName = "brys";
 

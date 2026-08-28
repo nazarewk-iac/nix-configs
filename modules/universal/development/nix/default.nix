@@ -48,15 +48,6 @@ in
             };
           }
         ];
-        programs.bash.initExtra = ''
-          eval "$(${lib.getExe pkgs.devenv} hook bash)"
-        '';
-        programs.zsh.initContent = ''
-          eval "$(${lib.getExe pkgs.devenv} hook zsh)"
-        '';
-        programs.fish.interactiveShellInit = ''
-          ${lib.getExe pkgs.devenv} hook fish | source
-        '';
       })
       (kdnConfig.util.ifNotHMParent (
         lib.mkMerge [
@@ -71,9 +62,6 @@ in
                   # language servers
                   nil
                   nixd
-                ]
-                ++ [
-                  devenv
                 ]
                 ++ [
                   # formatters
