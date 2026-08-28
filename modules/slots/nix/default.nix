@@ -41,6 +41,16 @@ in
         claude.code.hooks.git-hooks-run.command =
           ''cd "$DEVENV_ROOT" && ${lib.getExe config.git-hooks.package} run'';
 
+        # Restore the upstream matcher. devenv scopes git-hooks-run to file edits by default
+        # (^(Edit|MultiEdit|Write)$). But the command override above defines the submodule, so
+        # each unset field falls back to its per-field default, and `matcher` resets to "" (every
+        # tool). An empty matcher runs `prek run` after EVERY tool call, and `prek run` does
+        # `git write-tree`, which writes `.git`. A nix `git+file:` fetch archives the dirty tree
+        # at the same time. The two race, the store snapshot truncates, and the build fails with
+        # "unexpected end-of-file". Scope the hook back to file edits so read-only calls (a build
+        # peek, a status check) during a long build do not fire `prek`.
+        claude.code.hooks.git-hooks-run.matcher = "^(Edit|MultiEdit|Write)$";
+
         # Read-only/evaluation-only commands — safe to always allow, no side effects. `nix run`
         # itself is deliberately NOT allowed as a bare wildcard (it executes arbitrary flake apps);
         # only this repo's own idempotent formatter is allow-listed by exact invocation.
