@@ -30,8 +30,13 @@ in
             #gutenprint
             #gutenprintBin
             brlaser
-            brgenml1lpr
-            brgenml1cupswrapper
+            # brgenml1lpr and brgenml1cupswrapper ship only 32-bit i686 binaries, so nix
+            # builds them as i686-linux derivations. A build host without an i686-linux
+            # builder cannot build them. A darwin host with a rosetta x86_64-linux/aarch64-linux
+            # builder is one such host. brlaser drives most Brother laser printers and builds
+            # native, so it stays. Add these two back when an i686-linux builder is available.
+            #brgenml1lpr
+            #brgenml1cupswrapper
           ];
           security.polkit.extraConfig =
             let
