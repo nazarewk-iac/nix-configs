@@ -1,0 +1,38 @@
+huggingface:
+    token: ENC[AES256_GCM,data:p1e6A5E+H3Ae31G4LdAujE+yxBLhV0wYFsxWwvx57rq+R0PUXg==,iv:LpYEzUEFm7+H62a2M67YtKekJGn6tUGzF82QF07q8M4=,tag:LecTNCkfSSgHBrkeIxwh6A==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IHBpdi1wMjU2IGNlNnAvQSBBb1RYZVl6
+            MWpxSFQ3Ti9OdThOc1N4NlFXdDdHQzJiVWJhK0pqcWF6Y1dNOApBOE5saWxKRDlZ
+            ektKbVFac3lYL1QydXJJc0d4Tm1mTmJXc0l3WndxeGlNCi0tLSBObkFuN2Z1Wkd6
+            L0VVb3dwcGoyYTFhVTJYYjZ4ZFVDckRpVjl5cmZHOUU0Ctq7LIbgOjMUlsj+LQ6S
+            4ZjeRDVM1YVVfszZGH+VA9wahj04pYlEGmEiozAC2m6GZJTZgGQUPjMZHSOhmW47
+            DdA=
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age1yubikey1q2769xug0ykjgzvwhjnnppnam9srzeknm6gsu9l3j9njgzkg7qxhswqkjqn
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IHBpdi1wMjU2IE00amFlQSBBblJxTFpn
+            Z21XcWo3bXpxdUVGb3hLc2FXaThmZUJDdWFPQ3cwZEVWK0t4QQp3VjJhNVdpZGk3
+            ZmJBUzBxNzJkb3NMeEgrTUtSYzJOMzloYVBFYXRrbjBJCi0tLSBOY1IxUW5HTkZX
+            UERNM0taak5ncFpOMWlJM3lENjNPMitrMFhXWC9GdVVZCrMOAyb695JEqe7gd3Ce
+            /CTZi1O2OJSc4YiyqbjdB98HTDGd+Cv3XdL0ysRr/Av1/P9ezAVE1Ap/dskjdSef
+            2I8=
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age1yubikey1q0ke6fjulkqg0x0elweecppfkqqr6cqsr42u8q5k5z6466mu60gjseq6p4t
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IHBpdi1wMjU2IHE2ZEVOdyBBOFdjdGMw
+            TjczQzcwdEN6eUVxUjRSZGkrak9JWXdqb0FPY281alJkcC9CRwpqRTBuZnc3U2NJ
+            RXhjTzdSWkJkSGt1Y0JYT3ZBRnVXaUV6dGxEK0hEMUpZCi0tLSBSUUREc3BxK3Mw
+            WG9iUWF4ZHdNdkY3b3FzKzhac3JhTldkK0RaQmhtdTZNCiP5pvmEsHtRkAyiaw7u
+            bWT+Q61Ir2oxY5qiXrP/Ylw4QJZ9tjiyQbPOBLm212swZoqDUxqPyQiPZXfnR8gn
+            23Y=
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age1yubikey1q25g9xpunct74wnn29dgcgep78q666dkhpfg2flltg92fvyrew02j28464d
+    lastmodified: "2026-08-29T20:58:10Z"
+    mac: ENC[AES256_GCM,data:+A6uBfSq/QOLOgMink3QMqaXVecnCBuiaV8oOhXVSVnXHfJ7pW/THErnqoUMHbf4ayO5i9bFSNB30sE3AMwBrCz8o/JUT6lxoDZ+WmEV+y//h2h62OSiG5fORHHE99kwxheGdRQveSvUSJfFPqIK+hF+xGgEI8LvaGfRHYmtG/8=,iv:KlJMuHAAEtC2ZQyk34AeZ14ptcPMMox/a9CBd6ZwrLo=,tag:5WTjt7QwracUBPtjipzR0A==,type:str]
+    unencrypted_suffix: _unencrypted
+    version: 3.13.3
