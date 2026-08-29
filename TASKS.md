@@ -69,10 +69,6 @@ produce that report, for reuse next time backends/tools change.
 1. verify every commit in the list of changes independently in pre-push
 2. make the pre-commit (and therefore the `prek run`) verify that commits on top of upstream, but without a fork do not contain fork-specific changes
 
-### Update the modules architecture for slots/ considerations
-
-Some module architecture only makes sense for modules/universal, but not module/slots/, let's call those out
-
 ### `prek run` fails with "You have unmerged paths" during jj conflict resolution — ignore for now
 
 **Status:** deprioritized — do not let this block other work, but keep it in mind so it

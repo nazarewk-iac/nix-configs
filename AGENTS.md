@@ -14,6 +14,7 @@ AI Agent Guidance for nix-configs Repository.
 - [Repository Structure](.agents/rules/repo-structure.md) — directory layout, host build commands
 - [Module Architecture](.agents/rules/module-architecture.md) — context guards, `kdnConfig`, standard patterns, `kdn.env.*`
 - [Nix Conventions](.agents/rules/nix-conventions.md) — formatting, module design principles (auto-loaded for `.nix` files)
+- [Slots Standalone](.agents/rules/slots-standalone.md) — slots must not reference or assign any `modules/universal`- or `modules/meta`-declared option inside their own target configs (full architecture: [modules/slots/README.md](modules/slots/README.md))
 - [Packaging Python Scripts](.agents/rules/packaging-python.md) — `init-py-script`, `mkPythonScript`, `default.nix` pattern
 - [Flake Update](.agents/rules/flake-update.md) — update procedure, patch handling, testing (full doc: [docs/flake-update.md](docs/flake-update.md))
 - [MCP Setup](.agents/rules/mcp-setup.md) — gateway architecture, adding backends, mcpsnoop (full doc: [docs/mcp-setup.md](docs/mcp-setup.md))
