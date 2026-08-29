@@ -412,7 +412,7 @@ in
             kdn.programs.beeper.enable = true;
             kdn.programs.matrix.enable = true;
             kdn.programs.ente-photos.enable = true;
-            kdn.programs.logseq.enable = true;
+            # kdn.programs.logseq.enable = true; # TODO: 2026-08-29: broken build
             kdn.programs.nextcloud-client.enable = true;
             kdn.programs.rambox.enable = true;
             kdn.programs.signal.enable = true;
