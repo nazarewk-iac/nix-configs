@@ -10,6 +10,70 @@ let
     inherit pkgs;
     # devenv CLI and shell hooks.
     kdn.devenv.enable = true;
+
+    # Local LLM serving (llama-swap). Models are registered under
+    # kdn.disks.persist."usr/data" further below; the slot receives only the path.
+    kdn.llm.local.enable = true;
+    kdn.llm.local.modelsDir = "/var/lib/kdn/llms/models";
+    # HF token for faster/authenticated downloads, wired via sops below to
+    # /run/configs/llms/huggingface/token.
+    kdn.llm.local.download.tokenFile = "/run/configs/llms/huggingface/token";
+    # Global download: fast-polite keeps Xet enabled but with a configurable,
+    # capped concurrency. Tuned to target roughly 500-700 Mbit/s; raise/lower
+    # `xetConcurrency` to trade speed vs network aggression. Downloads run
+    # sequentially in the host network namespace.
+    kdn.llm.local.download.mode = "fast-polite";
+    kdn.llm.local.download.xetConcurrency = 8;
+    kdn.llm.local.models = {
+      qwen3-30b-a3b = {
+        enable = true;
+        hfRepo = "Qwen/Qwen3-30B-A3B-GGUF";
+        hfFile = "Qwen3-30B-A3B-Q4_K_M.gguf";
+        aliases = [ "fast" ];
+      };
+      qwen3-next-80b = {
+        enable = true;
+        hfRepo = "unsloth/Qwen3-Next-80B-A3B-Instruct-GGUF";
+        hfFile = "Qwen3-Next-80B-A3B-Instruct-Q4_K_M.gguf";
+        aliases = [ "balanced" ];
+      };
+      # deepseek-v4-flash: big, multi-shard, frontier quality. Slow to load.
+      # download.glob fetches all 4 shards (~104 GB); llama serves shard 00001.
+      # Keep it loaded for 24h (default is 1h) — it takes minutes to load, so
+      # hold it in RAM rather than churning the swap frequently.
+      deepseek-v4-flash = {
+        enable = true;
+        hfRepo = "unsloth/DeepSeek-V4-Flash-GGUF";
+        hfFile = "UD-IQ3_XXS/DeepSeek-V4-Flash-UD-IQ3_XXS-00001-of-00004.gguf";
+        download.glob = "UD-IQ3_XXS/DeepSeek-V4-Flash-UD-IQ3_XXS-*.gguf";
+        aliases = [ "frontier" ];
+        ttl = 86400; # 24h
+      };
+      # Qwen3-235B split into 2 parts; download.glob fetches both.
+      qwen3-235b = {
+        enable = true;
+        hfRepo = "mradermacher/Qwen3-235B-A22B-i1-GGUF";
+        hfFile = "Qwen3-235B-A22B.i1-IQ2_M.gguf.part1of2";
+        download.glob = "Qwen3-235B-A22B.i1-IQ2_M.gguf.part*";
+      };
+      # Qwen3-Coder-Next split into 4 shards; download.glob fetches all of them.
+      qwen3-coder-next = {
+        enable = true;
+        hfRepo = "Qwen/Qwen3-Coder-Next-GGUF";
+        hfFile = "Qwen3-Coder-Next-Q4_K_M/Qwen3-Coder-Next-Q4_K_M-00001-of-00004.gguf";
+        download.glob = "Qwen3-Coder-Next-Q4_K_M/Qwen3-Coder-Next-Q4_K_M-*.gguf";
+      };
+      gpt-oss-120b = {
+        enable = true;
+        hfRepo = "unsloth/gpt-oss-120b-GGUF";
+        hfFile = "gpt-oss-120b-F16.gguf";
+      };
+      phi-4 = {
+        enable = true;
+        hfRepo = "microsoft/phi-4-gguf";
+        hfFile = "phi-4-Q4_K.gguf";
+      };
+    };
   };
 in
 {
@@ -268,6 +332,26 @@ in
     }
     {
       security.sudo.wheelNeedsPassword = false;
+    }
+    {
+      # Keep local LLM models on the persistent usr/data dataset.
+      kdn.disks.persist."usr/data".directories = [
+        {
+          directory = "/var/lib/kdn/llms/models";
+          # World-readable so any user (and llama-swap's DynamicUser) can read
+          # the models; the download script keeps files 644 / dirs 755.
+          mode = "0755";
+        }
+      ];
+    }
+    {
+      # HF token for model downloads, decrypted to /run/configs/llms/.
+      kdn.security.secrets.sops.files."llms" = {
+        keyPrefix = "huggingface";
+        sopsFile = "${kdnConfig.self}/llms.nonsensitive.sops.yaml";
+        basePath = "/run/configs/llms";
+        sops.mode = "0444";
+      };
     }
     {
       services.angrr.enable = false;
