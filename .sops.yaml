@@ -75,6 +75,13 @@ creation_rules:
           # defaults
           - *yk-brys-unattended
           - *yk-oams-unattended
+  - path_regex: 'llms\..*sops\.[^.]+$'
+    key_groups:
+      - age:
+          - *yk-pton-touch
+          # defaults
+          - *yk-brys-unattended
+          - *yk-oams-unattended
   - path_regex: '\.unattended\.sops\.[^.]+$'
     key_groups:
       - age:
