@@ -1,0 +1,40 @@
+--- a/proxy.py	2026-08-30 09:10:21.586723908 +0200
++++ b/proxy.py	2026-08-30 09:27:48.190057656 +0200
+@@ -28,6 +28,11 @@
+ HOST = os.environ.get("PROXY_HOST", "0.0.0.0")
+ PORT = int(os.environ.get("PROXY_PORT", "9526"))
+ 
++# Forward the client's Authorization header to the upstream on the streaming
++# path (the original proxy drops it there). $FORWARD_AUTHORIZATION enables it;
++# when unset the streaming path keeps the original no-auth behaviour.
++FORWARD_AUTHORIZATION = os.environ.get("FORWARD_AUTHORIZATION", "").lower() in ("1", "true", "yes")
++
+ HOP_BY_HOP = frozenset({
+     "connection", "keep-alive", "proxy-authenticate", "proxy-authorization",
+     "te", "trailers", "transfer-encoding", "upgrade",
+@@ -531,11 +536,15 @@
+     return find_raw_tool_start(text)
+ 
+ 
+-async def stream_with_sections(upstream_req, forwarded_for=""):
++async def stream_with_sections(upstream_req, forwarded_for="", upstream_headers=None):
+     chunk_id = "chatcmpl-" + uuid.uuid4().hex[:12]
+     model = upstream_req.get("model", "deepseek")
+ 
+     req_headers = {"Accept": "text/event-stream"}
++    if upstream_headers and FORWARD_AUTHORIZATION:
++        for k, v in upstream_headers.items():
++            if k.lower() == "authorization":
++                req_headers["Authorization"] = v
+     if forwarded_for:
+         req_headers["x-forwarded-for"] = forwarded_for
+ 
+@@ -740,7 +749,7 @@
+                 )
+             return Response(content=r.content, status_code=r.status_code, headers=dict(r.headers))
+         log.info("RESPONSE: streaming via stream_with_sections")
+-        return await stream_with_sections(j, client_host)
++        return await stream_with_sections(j, client_host, upstream_headers)
+ 
+     async with httpx.AsyncClient() as client:
+         upstream_resp = await client.post(
