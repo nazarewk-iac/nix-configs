@@ -74,18 +74,6 @@ let
       } ${lib.getExe inst.package}
     '';
   };
-
-  # Wrapper that loads REQUESTY_API_KEY from opencode's auth.json (via jq) so
-  # the `requesty-proxy` provider — which uses {env:REQUESTY_API_KEY} — can
-  # authenticate. Devenv-only: run `opencode-kdn` inside the devenv shell.
-  opencodeKdn = pkgs.writeShellScriptBin "opencode-kdn" ''
-    set -euo pipefail
-    export REQUESTY_API_KEY="$(${lib.getExe pkgs.jq} -r '.requesty.key // empty' "$HOME/.local/share/opencode/auth.json" 2>/dev/null || true)"
-    if [ -z "''${REQUESTY_API_KEY:-}" ]; then
-      echo "opencode-kdn: no requesty key found in ~/.local/share/opencode/auth.json" >&2
-    fi
-    exec ${lib.getExe pkgs.opencode} "$@"
-  '';
 in
 {
   options.kdn.llm.proxy = {
@@ -178,10 +166,7 @@ in
 
     devenv = lib.mkIf (enabledInstances != { }) {
       processes = lib.mkMerge (lib.mapAttrsToList toDevenvProcess enabledInstances);
-      packages = [
-        cfg.package
-        opencodeKdn
-      ];
+      packages = [ cfg.package ];
     };
   };
 }

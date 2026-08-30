@@ -38,6 +38,21 @@ in
         enable = true;
         basic-memory.enable = true;
       };
+
+      # Requesty DSML proxy instance, reachable at 127.0.0.1:9532. The local
+      # model proxy (127.0.0.1:9533) is run by the opencode slot itself.
+      kdn.llm.proxy.enable = true;
+      kdn.llm.proxy.instances.requesty = {
+        enable = true;
+        upstreamUrl = "https://router.requesty.ai";
+        port = 9526;
+        forwardClientAuth = true;
+      };
+
+      # In-devenv opencode: generates opencode.jsonc with the requesty/local
+      # providers and runs opencode-kdn on PATH. Pointed at the local brys model
+      # via the local DSML proxy.
+      kdn.opencode.enable = true;
     }).config.devenv
   ];
 
