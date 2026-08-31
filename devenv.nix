@@ -3,24 +3,23 @@
   pkgs,
   lib,
   ...
-}:
-let
+}: let
   extraDevenvFiles = lib.pipe (builtins.readDir ./.) [
     builtins.attrNames
     (builtins.filter (
       name:
-      name != "devenv.nix"
-      && name != "devenv.local.nix"
-      && lib.hasPrefix "devenv." name
-      && lib.hasSuffix ".nix" name
+        name
+        != "devenv.nix"
+        && name != "devenv.local.nix"
+        && lib.hasPrefix "devenv." name
+        && lib.hasSuffix ".nix" name
     ))
     (map (name: ./. + "/${name}"))
   ];
-in
-{
+in {
   # argc drives the subcommand dispatch in the zellij-llm/kdn-slug bash packages; keep it on
   # PATH so the standalone scripts run and get tested in the shell.
-  packages = [ pkgs.argc ];
+  packages = [pkgs.argc];
 
   imports = [
     (inputs.nix-configs.mkSlots {
@@ -52,5 +51,10 @@ in
   # global kdn.opencode skeleton above.
   profiles.hostname."brys".module = import ./hosts/brys/devenv.nix;
 
-  overlays = [ inputs.nix-configs.overlays.packages ];
+  # oams-specific devenv slot instance: opencode pointed at the LAN llama-server
+  # on brys over HTTPS (shared /run/configs/llms cert + API key). Auto-activated
+  # only on a host whose hostname is "oams".
+  profiles.hostname."oams".module = import ./hosts/oams/devenv.nix;
+
+  overlays = [inputs.nix-configs.overlays.packages];
 }

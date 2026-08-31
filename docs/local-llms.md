@@ -34,7 +34,7 @@ kdn.llm.local.modelsDir = "/var/lib/kdn/llms/models";    # required, no default
 kdn.llm.local.domain = "brys.lan.etra.net.int.kdn.im";     # required, LAN hostname
 kdn.llm.local.certs.certFile = "/run/configs/.../public.key";   # required
 kdn.llm.local.certs.keyFile = "/run/configs/.../private.key";   # required
-kdn.llm.local.apiKeyFile = "/run/configs/.../api-keys";         # optional
+kdn.llm.local.apiKeyDir = "/run/configs/llms/llama-server/api-keys";   # optional
 kdn.llm.local.download.mode = "slow";                    # global: slow | fast-polite
 # ... per-model `kdn.llm.local.models.<name>` entries ...
 ```
@@ -68,7 +68,8 @@ slot.
 - LAN endpoint over HTTPS: `https://brys.lan.etra.net.int.kdn.im/v1`, pinned to
   a self-signed cert and API-key protected. `POST /v1/chat/completions` with the
   `model` field set to a model name or alias; the router loads/swaps the GGUF
-  automatically. Auth: `Authorization: Bearer <key>` (`brys/llama-server/api-keys`).
+  automatically. Auth: `Authorization: Bearer <key>`
+  (`llama-server/api-keys/default` in the sops tree).
 
 ### Models (all enabled on brys)
 
@@ -99,19 +100,16 @@ reboots.
 
 ### Secrets
 
-The HF token (`huggingface.token` in `llms.nonsensitive.sops.yaml`) is
-decrypted to `/run/configs/llms/huggingface/token` by the host's
-`sops-install-secrets` wiring (`kdn.security.secrets.sops.files."llms"` in
-`hosts/brys/default.nix`, basePath `/run/configs/llms`, keyPrefix
-`huggingface`).
+All LLM secrets live in one shared sops file (`llms.nonsensitive.sops.yaml`) and
+are mounted at `/run/configs/llms` on both **brys** and **oams** via the same
+`kdn.security.secrets.sops.files."llms"` entry (basePath `/run/configs/llms`,
+no keyPrefix). The sops tree maps to files directly:
 
-The LAN llama-server API key and the self-signed Caddy certificate are
-decrypted under `/run/configs/brys/` by a second
-`kdn.security.secrets.sops.files."llms-brys"` entry (basePath `/run/configs`,
-keyPrefix `brys`):
-- `brys/llama-server/api-keys` → `/run/configs/brys/llama-server/api-keys`
-- `brys/llms/certs/public.key` → `/run/configs/brys/llms/certs/public.key`
-- `brys/llms/certs/private.key` → `/run/configs/brys/llms/certs/private.key`
+- `huggingface.token` → `/run/configs/llms/huggingface/token` (HF download token)
+- `certs/public.key` → `/run/configs/llms/certs/public.key` (self-signed Caddy cert)
+- `certs/private.key` → `/run/configs/llms/certs/private.key`
+- `llama-server/api-keys/default` → `/run/configs/llms/llama-server/api-keys/default`
+  (one API key; further keys are added the same way, each its own file)
 
 The certificate is pre-generated once (openssl EC P-256, SAN
 `brys.lan.etra.net.int.kdn.im`, 10 years) and stored in the sops file — there
