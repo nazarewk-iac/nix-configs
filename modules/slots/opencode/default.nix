@@ -102,25 +102,41 @@ in
       description = "opencode package to put on PATH.";
     };
 
-    # The content written to `opencode.jsonc` (model, provider, permission, ...).
+    # Default selected model, optional. When null (default), no `model` is set
+    # in the emitted opencode.jsonc, so an existing model selection is never
+    # overridden. Set to a specific provider/model to make it the default.
+    defaultModel = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = "Default model written to opencode.jsonc when set; omitted when null.";
+    };
+
+    # The content written to `opencode.jsonc` (provider, permission, ...).
     # Defaults to a benign skeleton so a global enable is harmless; consumers
     # (e.g. a hostname-scoped devenv profile) override with their real providers
     # and models. mkDefault lets a consumer's normal-priority assignment win.
+    # The `model` key is injected from `defaultModel` only when that is set, so
+    # it is not emitted (and never overrides a prior selection) by default.
     settings = lib.mkOption {
       type = lib.types.attrsOf lib.types.anything;
       default = lib.mkDefault {
-        model = "requesty/deepseek-v4-flash-0731";
         provider.requesty = { };
         permission = defaultPermission;
       };
-      description = "opencode config written to opencode.jsonc (model, provider, permission).";
+      description = "opencode config written to opencode.jsonc (provider, permission, ...).";
     };
   };
 
   config = lib.mkIf cfg.enable {
     devenv = {
       opencode.enable = true;
-      opencode.settings = cfg.settings;
+      # Inject `model` only when a default model is set; otherwise leave the
+      # consumer's settings (and any previous model selection) untouched.
+      opencode.settings =
+        cfg.settings
+        // lib.optionalAttrs (cfg.defaultModel != null) {
+          model = cfg.defaultModel;
+        };
 
       packages = [
         cfg.package
