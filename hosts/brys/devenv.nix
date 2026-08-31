@@ -24,7 +24,6 @@
   # In-devenv opencode, pointed at brys's local model via the DSML proxies.
   kdn.opencode.enable = true;
   kdn.opencode.settings = {
-    model = "requesty-proxy/sference/deepseek-v4-flash-0731";
     provider = {
       # Native requesty — direct API, auth from auth.json.
       requesty = { };
