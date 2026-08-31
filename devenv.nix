@@ -39,22 +39,18 @@ in
         basic-memory.enable = true;
       };
 
-      # Requesty DSML proxy instance, reachable at 127.0.0.1:9532. The local
-      # model proxy (127.0.0.1:9533) is run by the opencode slot itself.
-      kdn.llm.proxy.enable = true;
-      kdn.llm.proxy.instances.requesty = {
-        enable = true;
-        upstreamUrl = "https://router.requesty.ai";
-        port = 9526;
-        forwardClientAuth = true;
-      };
-
-      # In-devenv opencode: generates opencode.jsonc with the requesty/local
-      # providers and runs opencode-kdn on PATH. Pointed at the local brys model
-      # via the local DSML proxy.
+      # In-devenv opencode capability: generates a benign opencode.jsonc and
+      # puts `opencode` + `opencode-kdn` on PATH on every host. The brys-specific
+      # model/proxy wiring lives in the hostname-gated profile below.
       kdn.opencode.enable = true;
     }).config.devenv
   ];
+
+  # brys-specific devenv slot instance: feeds the rich provider/model config and
+  # the model proxies (requesty :9526, local llama-swap :9533). Auto-activated
+  # only on a host whose hostname is "brys"; every other host keeps the benign
+  # global kdn.opencode skeleton above.
+  profiles.hostname."brys".module = import ./hosts/brys/devenv.nix;
 
   overlays = [ inputs.nix-configs.overlays.packages ];
 }
