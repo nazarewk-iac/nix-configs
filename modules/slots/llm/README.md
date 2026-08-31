@@ -1,6 +1,6 @@
 ---
 type: Reference
-description: Standalone NixOS slot serving local LLMs via llama-server router mode behind a self-signed-certificate Caddy reverse proxy, with a server-side OpenCode DSML compat-proxy and a generic client slot. Currently applied to the brys host.
+description: Standalone NixOS slot serving local LLMs via llama-server router mode behind a self-signed-certificate Caddy reverse proxy, with a server-side OpenCode DSML compat-proxy. Consumers (brys, oams) talk to the HTTPS endpoint over the LAN via a thin opencode devenv profile.
 timestamp: 2026-08-31T00:00:00+02:00
 ---
 
@@ -19,8 +19,10 @@ translates DeepSeek DSML / Qwen XML tool calls and passes every other path
 through — so a single instance correctly fronts a server that does its own
 model routing.
 
-A companion generic **client** slot (`kdn.llm.client`) consumes the endpoint:
-it trusts the self-signed cert, injects the API key, and configures opencode.
+Consumers talk to the HTTPS endpoint over the LAN. The self-signed cert and the
+shared API key are mounted at `/run/configs/llms` on the consuming hosts (brys,
+oams); each consumer wires opencode to it via a thin hostname-scoped `kdn.opencode`
+devenv profile (see `hosts/oams/devenv.nix`).
 
 Currently applied to the **brys** host (`hosts/brys/default.nix`). See
 [`docs/local-llms.md`](../../../docs/local-llms.md) for a deployment example
@@ -60,9 +62,9 @@ slots = kdnConfig.self.mkSlots {
 
   # LAN endpoint (required): the Caddy vhost hostname + its self-signed cert.
   kdn.llm.local.domain = "brys.lan.etra.net.int.kdn.im";
-  kdn.llm.local.certs.certFile = "/run/configs/brys/llms/certs/public.key";
-  kdn.llm.local.certs.keyFile = "/run/configs/brys/llms/certs/private.key";
-  kdn.llm.local.apiKeyFile = "/run/configs/brys/llama-server/api-keys"; # optional
+  kdn.llm.local.certs.certFile = "/run/configs/llms/certs/public.key";
+  kdn.llm.local.certs.keyFile = "/run/configs/llms/certs/private.key";
+  kdn.llm.local.apiKeyDir = "/run/configs/llms/llama-server/api-keys"; # optional
 
   kdn.llm.local.compatProxy.enable = true;    # default true
   kdn.llm.local.compatProxy.port = 9530;       # loopback, between Caddy and server
@@ -119,9 +121,12 @@ LAN client ──HTTPS──▶ Caddy (:80/:443) ──▶ compat-proxy (:9530) 
 - `kdn.llm.local.compatProxy.enable` (default `true`) puts the DSML compat-proxy
   in the path. Disable it to talk straight to llama-server over Caddy (you'd
   lose DSML translation). `compatProxy.port` is loopback.
-- `apiKeyFile` (optional) is given to llama-server via `--api-key-file`. When
-  set, clients must send `Authorization: Bearer <key>`; the compat-proxy
-  forwards it on both streaming and non-streaming paths (`forwardClientAuth`).
+- `apiKeyDir` (optional) is a **directory of single-key files** (one key per
+  file). A llama-cpp `preStart` assembles every file under it — stripping `#`
+  comment lines and empty lines — into `/var/lib/llama-cpp/api-keys`, and
+  llama-server reads that assembled file via `--api-key-file`. When set, clients
+  must send `Authorization: Bearer <key>`; the compat-proxy forwards it on both
+  streaming and non-streaming paths (`forwardClientAuth`).
 - Send requests to `/v1/chat/completions` on the domain. Set the `model` field
   to a model name or alias. The router loads or swaps the model automatically.
 
@@ -180,29 +185,35 @@ time" behaviour; it is not configurable.
 Only `enable = true` models are configured and downloaded. Keep the other
 models declared-but-disabled to add them later with a one-line change.
 
-## Client slot (`kdn.llm.client`)
+## Consuming from a LAN host (`kdn.llm.client`)
 
-A generic consumer of the endpoint, in `modules/slots/llm/client/`. Enable it
-on any host that should use the LAN llama-server:
+The endpoint is consumed over HTTPS with the shared `/run/configs/llms` mount
+(the self-signed cert and the API key). A **client slot**
+(`modules/slots/llm/client/`) adds an opencode provider and an
+`opencode-kdn-<name>` wrapper (key injection + cert trust) per configured
+upstream; it does **not** enable opencode itself. Each upstream is keyed by
+name (`upstreams.<name>` → `provider.<name>` + `opencode-kdn-<name>`). The
+consumer's devenv enables `kdn.opencode` (turns opencode on) plus
+`kdn.llm.client` as a thin passthrough (see `hosts/oams/devenv.nix`):
 
 ```nix
+kdn.opencode.enable = true;                 # turns opencode on + default permission
 kdn.llm.client.enable = true;
-kdn.llm.client.baseURL = "https://brys.lan.etra.net.int.kdn.im/v1";
-kdn.llm.client.caCertFile = "/path/to/public.key";   # trust the self-signed cert
-kdn.llm.client.apiKeyFile = "/path/to/api-key";      # optional
-kdn.llm.client.models = {
-  "deepseek-v4-flash" = { displayName = "deepseek-v4-flash (LAN)"; };
+kdn.llm.client.upstreams.brys = {
+  enable = true;
+  baseURL = "https://brys.lan.etra.net.int.kdn.im/v1";
+  caCertFile = "/run/configs/llms/certs/public.key";
+  apiKeyFile = "/run/configs/llms/llama-server/api-keys/default";
+  models = { "deepseek-v4-flash" = { ... }; };
 };
+# ... add more upstreams as upstreams.<other> = { ... };
 ```
 
-- **NixOS:** installs `caCertFile` into the system CA store
-  (`security.pki.certificateFiles`).
-- **devenv:** writes an opencode `@ai-sdk/openai-compatible` provider bound to
-  `baseURL` with `{env:KDN_LLM_API_KEY}`, and ships an `opencode-kdn-lan` wrapper
-  that loads the key from `apiKeyFile` and points `NODE_EXTRA_CA_CERTS` at
-  `caCertFile` before exec'ing opencode.
-
-The client slot is generic — it has no host identity hard-coded.
+For the `brys` upstream, the slot adds an `@ai-sdk/openai-compatible`
+`provider.brys` bound to `baseURL` and ships an `opencode-kdn-brys` wrapper
+that loads the key from `apiKeyFile` (as `KDN_LLM_API_KEY_brys`) and points
+`NODE_EXTRA_CA_CERTS` at `caCertFile`. Run opencode via
+`opencode-kdn-brys` inside the devenv shell so the key and cert are injected.
 
 ## Operations
 

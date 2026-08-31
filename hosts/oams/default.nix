@@ -4,15 +4,13 @@
   lib,
   kdnConfig,
   ...
-}:
-let
+}: let
   slots = kdnConfig.self.mkSlots {
     inherit pkgs;
     # devenv CLI and shell hooks.
     kdn.devenv.enable = true;
   };
-in
-{
+in {
   imports = [
     kdnConfig.self.nixosModules.default
     slots.config.nixos
@@ -20,13 +18,13 @@ in
 
   config = lib.mkMerge [
     {
-      home-manager.sharedModules = [ slots.config.home ];
+      home-manager.sharedModules = [slots.config.home];
     }
     {
       kdn.hostName = "oams";
 
       system.stateVersion = "26.05";
-      home-manager.sharedModules = [ { home.stateVersion = "26.05"; } ];
+      home-manager.sharedModules = [{home.stateVersion = "26.05";}];
       networking.hostId = "ce0f2f33"; # cut -c-8 </proc/sys/kernel/random/uuid
     }
     {
@@ -43,19 +41,19 @@ in
 
       kdn.fs.disko.luks-zfs.enable = true;
 
-      boot.kernelModules = [ "kvm-amd" ];
+      boot.kernelModules = ["kvm-amd"];
 
       # 12G was not enough for large rebuild
       boot.tmp.tmpfsSize = "32G";
     }
     /*
-        {
-        kdn.hw.edid.enable = true;
-        hardware.display.outputs."DP-1" = {
-          edid = "PG278Q_120.bin";
-          mode = "e";
-        };
-      }
+      {
+      kdn.hw.edid.enable = true;
+      hardware.display.outputs."DP-1" = {
+        edid = "PG278Q_120.bin";
+        mode = "e";
+      };
+    }
     */
     {
       services.asusd.enable = true;
@@ -77,8 +75,7 @@ in
       ];
       home-manager.sharedModules = [
         (
-          args:
-          let
+          args: let
             kdn-asusctl = pkgs.writeShellApplication {
               name = "kdn-asusctl";
               runtimeInputs = with pkgs; [
@@ -117,9 +114,8 @@ in
               '';
             };
             run = lib.getExe kdn-asusctl;
-          in
-          {
-            home.packages = [ kdn-asusctl ];
+          in {
+            home.packages = [kdn-asusctl];
             wayland.windowManager.sway.config.keybindings = with config.kdn.desktop.sway.keys; {
               "${oams.top.fan}" = "exec '${run} rotate-cpu-profile'";
               "${oams.top.rog}" = "exec '${run} rog-control-center'";
@@ -189,7 +185,7 @@ in
       specialisation.vfio = {
         inheritParentConfig = true;
         configuration = {
-          system.nixos.tags = [ "vfio" ];
+          system.nixos.tags = ["vfio"];
           kdn.hw.gpu.vfio.enable = true;
           kdn.hw.gpu.vfio.gpuIDs = [
             "1002:73df"
@@ -211,6 +207,15 @@ in
     }
     {
       security.sudo.wheelNeedsPassword = false;
+    }
+    {
+      # Shared /run/configs/llms secrets (same mount as brys): self-signed Caddy
+      # cert for the LAN llama-server endpoint and its API keys.
+      kdn.security.secrets.sops.files."llms" = {
+        sopsFile = "${kdnConfig.self}/llms.nonsensitive.sops.yaml";
+        basePath = "/run/configs/llms";
+        sops.mode = "0444";
+      };
     }
     {
       services.angrr.enable = false;

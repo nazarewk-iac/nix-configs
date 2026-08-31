@@ -18,11 +18,12 @@
     # HF token for faster/authenticated downloads, wired via sops below to
     # /run/configs/llms/huggingface/token.
     kdn.llm.local.download.tokenFile = "/run/configs/llms/huggingface/token";
-    # LAN endpoint hostname + self-signed cert paths, decrypted via sops below.
+    # LAN endpoint hostname + self-signed cert paths, decrypted via sops below
+    # to /run/configs/llms/.
     kdn.llm.local.domain = "brys.lan.etra.net.int.kdn.im";
-    kdn.llm.local.certs.certFile = "/run/configs/brys/llms/certs/public.key";
-    kdn.llm.local.certs.keyFile = "/run/configs/brys/llms/certs/private.key";
-    kdn.llm.local.apiKeyFile = "/run/configs/brys/llama-server/api-keys";
+    kdn.llm.local.certs.certFile = "/run/configs/llms/certs/public.key";
+    kdn.llm.local.certs.keyFile = "/run/configs/llms/certs/private.key";
+    kdn.llm.local.apiKeyDir = "/run/configs/llms/llama-server/api-keys";
     # Global download: fast-polite keeps Xet enabled but with a configurable,
     # capped concurrency. Tuned to target roughly 500-700 Mbit/s; raise/lower
     # `xetConcurrency` to trade speed vs network aggression. Downloads run
@@ -348,21 +349,12 @@ in {
       ];
     }
     {
-      # HF token for model downloads, decrypted to /run/configs/llms/.
+      # Shared /run/configs/llms secrets: HF token, self-signed Caddy cert, and
+      # llama-server API keys. Decrypted to their full sops key paths under
+      # /run/configs/llms/. Shared with the oams host (same mount point).
       kdn.security.secrets.sops.files."llms" = {
-        keyPrefix = "huggingface";
         sopsFile = "${kdnConfig.self}/llms.nonsensitive.sops.yaml";
         basePath = "/run/configs/llms";
-        sops.mode = "0444";
-      };
-    }
-    {
-      # LAN llama-server API keys + self-signed Caddy cert, decrypted to their
-      # full sops key paths under /run/configs/brys/.
-      kdn.security.secrets.sops.files."llms-brys" = {
-        keyPrefix = "brys";
-        sopsFile = "${kdnConfig.self}/llms.nonsensitive.sops.yaml";
-        basePath = "/run/configs";
         sops.mode = "0444";
       };
     }

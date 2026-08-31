@@ -174,15 +174,17 @@ in {
       type = lib.types.path;
       description = "Path to the corresponding PEM private key for Caddy.";
     };
-    apiKeyFile = lib.mkOption {
+    apiKeyDir = lib.mkOption {
       type = lib.types.nullOr lib.types.path;
       default = null;
       description = ''
-        Path to a file with API keys for the router llama-server
-        (--api-key-file). Each key on its own line; lines starting with # are
-        comments. When null, the server requires no key. The host wires this
-        (e.g. via sops-nix to /run/configs/brys/llms/api-keys). Treated as a
-        file the DynamicUser can read.
+        Directory of API-key files for the router llama-server
+        (--api-key-file). Each file under it holds exactly one key; comment
+        lines (starting with #) and empty lines are ignored. The host wires this
+        (e.g. via sops-nix to /run/configs/llms/llama-server/api-keys/, where
+        each sops key under it decrypts to one file). A prestart step assembles
+        all files into a single file the server actually reads. When null, the
+        server requires no key.
       '';
     };
     compatProxy.enable = lib.mkOption {
@@ -317,8 +319,8 @@ in {
             # cannot change this behaviour.
             sleep-idle-seconds = -1;
           }
-          // lib.optionalAttrs (cfg.apiKeyFile != null) {
-            api-key-file = cfg.apiKeyFile;
+          // lib.optionalAttrs (cfg.apiKeyDir != null) {
+            api-key-file = "/var/lib/llama-cpp/api-keys";
           };
         openFirewall = false;
       };
@@ -327,6 +329,20 @@ in {
       systemd.services.llama-cpp.serviceConfig.ReadWritePaths = [
         cfg.modelsDir
       ];
+
+      # Assemble the per-key files under apiKeyDir into a single file in
+      # llama-cpp's StateDirectory (writable by its DynamicUser), stripping
+      # comment (#) and empty lines. llama-server's --api-key-file reads the
+      # assembled file. A guaranteed newline is appended after each file so keys
+      # never run together if a source file lacks a trailing newline.
+      systemd.services.llama-cpp.preStart = lib.mkIf (cfg.apiKeyDir != null) ''
+        : > /var/lib/llama-cpp/api-keys
+        for f in ${cfg.apiKeyDir}/*; do
+          [ -f "$f" ] || continue
+          ${lib.getExe' pkgs.gnused "sed"} -e 's/[[:space:]]*#.*$//' -e '/^[[:space:]]*$/d' "$f" >> /var/lib/llama-cpp/api-keys
+          printf '\n' >> /var/lib/llama-cpp/api-keys
+        done
+      '';
 
       # The single LAN gate: Caddy terminates TLS with the host-supplied
       # self-signed cert and reverse-proxies to the loopback compat-proxy
