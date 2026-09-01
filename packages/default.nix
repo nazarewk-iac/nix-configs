@@ -30,6 +30,7 @@ in
   kdn-gamingctl = pkgs.callPackage ./kdn-gamingctl { };
   kdn-keepass = pkgs.callPackage ./kdn-keepass { };
   kdn-nix = pkgs.callPackage ./kdn-nix { };
+  kdn-ssh-access = pkgs.callPackage ./kdn-ssh-access { };
   kdn-yk = pkgs.callPackage ./kdn-yk { };
   klg = pkgs.callPackage ./klg { };
   klog-time-tracker = pkgs.callPackage ./klog-time-tracker { };
