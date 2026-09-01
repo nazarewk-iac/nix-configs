@@ -10,8 +10,21 @@ import subprocess
 import sys
 
 import boto3
+import botocore.exceptions
 
 LOGIN_MARGIN = datetime.timedelta(minutes=1)
+
+
+def describe_client_error(exc):
+    """Return a short message for an AWS API error. No traceback."""
+    error = getattr(exc, "response", {}).get("Error", {})
+    code = error.get("Code", "Error")
+    if code in ("AccessDenied", "AccessDeniedException"):
+        return "access denied"
+    message = error.get("Message")
+    if message:
+        return f"{code}: {message}"
+    return str(exc)
 
 
 def sso_login(session_name=None):
@@ -200,37 +213,49 @@ def cmd_generate_kubeconfig(args):
         role = profile["sso_role_name"]
         sso_session = profile.get("sso_session")
 
-        if sso_session not in sso_cache:
-            sso_cache[sso_session] = make_sso_client(sso_session, args.region)
-        token, sso = sso_cache[sso_session]
+        # List the clusters for this profile. Continue on an API error.
+        try:
+            if sso_session not in sso_cache:
+                sso_cache[sso_session] = make_sso_client(sso_session, args.region)
+            token, sso = sso_cache[sso_session]
+            clusters = list(iter_eks_clusters(account_id, role, token, sso, eks_region))
+        except botocore.exceptions.ClientError as exc:
+            print(f"  SKIP {aws_profile}: {describe_client_error(exc)}", file=sys.stderr)
+            continue
 
-        for cluster in iter_eks_clusters(account_id, role, token, sso, eks_region):
+        for cluster in clusters:
             cluster_long_alias = to_name(cluster, aws_profile)
             # `user` has arguments related to the specific cluster
             user_alias = to_name(cluster, aws_profile)
             short_alias = to_name(args.prefix, cluster)
             cluster_arn = f"arn:aws:eks:{eks_region}:{account_id}:cluster/{cluster}"
             print(f"  {aws_profile=}  ({user_alias=} {role=} / {cluster=})", file=sys.stderr)
-            subprocess.run(
-                [
-                    "aws", "eks", "update-kubeconfig",
-                    "--name", cluster,
-                    "--region", eks_region,
-                    "--profile", aws_profile,
-                    "--user-alias", user_alias,
-                    "--alias", cluster_long_alias,
-                ],
-                check=True,
-            )
-            if short_alias != aws_profile:
+            # Register the cluster. Continue on a command error.
+            try:
                 subprocess.run(
                     [
-                        "kubectl", "config", "set-context", short_alias,
-                        "--cluster", cluster_arn,
-                        "--user", user_alias,
+                        "aws", "eks", "update-kubeconfig",
+                        "--name", cluster,
+                        "--region", eks_region,
+                        "--profile", aws_profile,
+                        "--user-alias", user_alias,
+                        "--alias", cluster_long_alias,
                     ],
                     check=True,
                 )
+                if short_alias != aws_profile:
+                    subprocess.run(
+                        [
+                            "kubectl", "config", "set-context", short_alias,
+                            "--cluster", cluster_arn,
+                            "--user", user_alias,
+                        ],
+                        check=True,
+                    )
+            except subprocess.CalledProcessError as exc:
+                print(f"  SKIP {cluster} ({aws_profile}): command exited {exc.returncode}",
+                      file=sys.stderr)
+                continue
 
 
 def main():
@@ -270,12 +295,20 @@ def main():
     )
 
     args = parser.parse_args()
-    if args.command == "list":
-        cmd_list(args)
-    elif args.command == "generate-profiles":
-        cmd_generate_profiles(args)
-    elif args.command == "generate-kubeconfig":
-        cmd_generate_kubeconfig(args)
+    # Catch known errors and print one line. Do not print a traceback.
+    try:
+        if args.command == "list":
+            cmd_list(args)
+        elif args.command == "generate-profiles":
+            cmd_generate_profiles(args)
+        elif args.command == "generate-kubeconfig":
+            cmd_generate_kubeconfig(args)
+    except botocore.exceptions.ClientError as exc:
+        print(f"error: {describe_client_error(exc)}", file=sys.stderr)
+        sys.exit(1)
+    except (botocore.exceptions.BotoCoreError, subprocess.CalledProcessError, RuntimeError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
