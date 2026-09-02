@@ -160,6 +160,147 @@ def build_base_tree(repo, slot_cfg) -> dict:
     return labels
 
 
+def build_incoming_tree(repo, slot_cfg) -> dict:
+    """Frozen base plus new upstream commits fetched but not merged.
+
+    ``P1``, ``P2`` are children of ``U2`` on the public remote
+    (``main@upstream`` = ``P2``), not in ``@``'s ancestry, so
+    ``upstream-incoming`` = ``{P1, P2}``. ``@`` rests empty on the merge ``M``.
+    ``upstream-tip`` = ``P2``, ``fork-tip`` = ``M``, ``merge-frozen`` = ``{M}``.
+    This models "new upstream arrived; integrate it".
+
+    Returns ``labels`` with A, U1, U2, F1, M, P1, P2, and ``@``.
+    """
+    labels = {}
+    repo.write("README.md", "# repo\n")
+    repo.describe("chore: readme")
+    labels["A"] = repo.change_id("@")
+    a = labels["A"]
+
+    labels["U1"] = _node(repo, [a], "feat: shared module", {"modules/shared.nix": "# u1\n"})
+    labels["U2"] = _node(repo, [labels["U1"]], "feat: shared edit", {"modules/shared.nix": "# u2\n"})
+    labels["F1"] = _node(
+        repo, [a], "feat: host wiring", {"hosts/PLACEHOLDER-SENSITIVE.nix": "# host\n"}
+    )
+    labels["M"] = _node(repo, [labels["U2"], labels["F1"]], "chore(merge): merge in upstream")
+
+    repo.register_remote("upstream")
+    repo.register_remote("fork")
+    repo.bookmark_set("upstream", labels["U2"])
+    repo.bookmark_set("main", labels["M"])
+    _push_rev_as(repo, "upstream", labels["U2"], "main")  # main@upstream = U2 (last synced)
+    repo.push("fork", "upstream")
+    repo.push("fork", "main")  # upstream@fork = U2, main@fork = M (frozen)
+
+    # New upstream arrives as children of U2 (fetched, not merged into @).
+    labels["P1"] = _node(repo, [labels["U2"]], "feat: public one", {"flake.lock": "v1\n"})
+    labels["P2"] = _node(repo, [labels["P1"]], "feat: public two", {"flake.lock": "v2\n"})
+    _push_rev_as(repo, "upstream", labels["P2"], "main")  # main@upstream = P2 (advanced)
+
+    repo.new(labels["M"])  # rest @ back on the merge
+    labels["@"] = repo.change_id("@")
+
+    repo.cfg = slot_cfg
+    repo.apply_config()
+    return labels
+
+
+def build_mutable_incoming_tree(repo, slot_cfg) -> dict:
+    """A published base merge (M0, frozen) with a mutable merge (M1) above it.
+
+    ``main@fork`` = ``M0`` (a prior publish, so the fork aliases classify
+    correctly and ``trunk()`` resolves), while the current merge ``M1`` is
+    mutable. ``UL1`` is a local upstream commit that is not on the public remote,
+    so ``upstream-local`` = ``{UL1}``. New upstream ``P1``, ``P2`` are fetched
+    (``main@upstream`` = ``P2``), so ``upstream-incoming`` = ``{P1, P2}``.
+    ``merge-frozen`` is empty (M1 is mutable). ``@`` rests empty on ``M1``.
+
+    Returns ``labels`` with A, U1, F1, M0, UL1, M1, P1, P2, and ``@``.
+    """
+    labels = {}
+    repo.write("README.md", "# repo\n")
+    repo.describe("chore: readme")
+    labels["A"] = repo.change_id("@")
+    a = labels["A"]
+
+    labels["U1"] = _node(repo, [a], "feat: shared module", {"modules/shared.nix": "# u1\n"})
+    labels["F1"] = _node(
+        repo, [a], "feat: host wiring", {"hosts/PLACEHOLDER-SENSITIVE.nix": "# host\n"}
+    )
+    labels["M0"] = _node(
+        repo, [labels["U1"], labels["F1"]], "chore(upstream): merge (published)"
+    )
+
+    repo.register_remote("upstream")
+    repo.register_remote("fork")
+    repo.bookmark_set("upstream", labels["U1"])
+    repo.bookmark_set("main", labels["M0"])
+    _push_rev_as(repo, "upstream", labels["U1"], "main")  # main@upstream = U1
+    repo.push("fork", "upstream")  # upstream@fork = U1
+    repo.push("fork", "main")  # main@fork = M0 (frozen prior publish)
+
+    # Local upstream work, not pushed to the public remote.
+    labels["UL1"] = _node(repo, [labels["U1"]], "feat: local upstream fix", {"modules/local.nix": "# ul1\n"})
+    # A new mutable merge folds the local upstream work over the published merge.
+    labels["M1"] = _node(repo, [labels["UL1"], labels["M0"]], "chore(upstream): merge")
+
+    # New upstream arrives as children of U1; the public remote advances.
+    labels["P1"] = _node(repo, [labels["U1"]], "feat: public one", {"flake.lock": "v1\n"})
+    labels["P2"] = _node(repo, [labels["P1"]], "feat: public two", {"flake.lock": "v2\n"})
+    _push_rev_as(repo, "upstream", labels["P2"], "main")  # main@upstream = P2
+
+    repo.new(labels["M1"])  # rest @ on the mutable merge
+    labels["@"] = repo.change_id("@")
+
+    repo.cfg = slot_cfg
+    repo.apply_config()
+    return labels
+
+
+def build_conflict_tree(repo, slot_cfg) -> dict:
+    """Frozen base where a local commit and new upstream edit the same file.
+
+    ``U1`` writes ``conf.txt`` = ``base``. A local commit ``L`` above the merge
+    changes it to ``local``; new upstream ``P1`` changes it to ``public``. So
+    integrating ``L`` with ``P1`` produces a conflict on ``conf.txt``.
+    ``fork-tip`` = ``L``, ``upstream-incoming-tip`` = ``P1``.
+
+    Returns ``labels`` with A, U1, F1, M, L, P1, and ``@``.
+    """
+    labels = {}
+    repo.write("README.md", "# repo\n")
+    repo.describe("chore: readme")
+    labels["A"] = repo.change_id("@")
+    a = labels["A"]
+
+    labels["U1"] = _node(repo, [a], "feat: shared conf", {"conf.txt": "base\n"})
+    labels["F1"] = _node(
+        repo, [a], "feat: host wiring", {"hosts/PLACEHOLDER-SENSITIVE.nix": "# host\n"}
+    )
+    labels["M"] = _node(repo, [labels["U1"], labels["F1"]], "chore(upstream): merge")
+
+    repo.register_remote("upstream")
+    repo.register_remote("fork")
+    repo.bookmark_set("upstream", labels["U1"])
+    repo.bookmark_set("main", labels["M"])
+    _push_rev_as(repo, "upstream", labels["U1"], "main")
+    repo.push("fork", "upstream")
+    repo.push("fork", "main")  # main@fork = M (frozen)
+
+    # A local change above the merge edits conf.txt.
+    labels["L"] = _node(repo, [labels["M"]], "feat: local tweak", {"conf.txt": "local\n"})
+    # New upstream edits the same file differently.
+    labels["P1"] = _node(repo, [labels["U1"]], "feat: public tweak", {"conf.txt": "public\n"})
+    _push_rev_as(repo, "upstream", labels["P1"], "main")  # main@upstream = P1
+
+    repo.new(labels["L"])  # @ on the local commit (fork-tip)
+    labels["@"] = repo.change_id("@")
+
+    repo.cfg = slot_cfg
+    repo.apply_config()
+    return labels
+
+
 def build_frozen_tree(repo, slot_cfg) -> dict:
     """Reference graph with the merge pushed to the fork remote (frozen)."""
     return build_reference(repo, slot_cfg, push_main_fork=True)
