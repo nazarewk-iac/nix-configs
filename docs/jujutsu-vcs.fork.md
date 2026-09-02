@@ -1,53 +1,30 @@
 ---
 type: Reference
-description: The jj fork topology, its revset aliases, and the common fork-management use cases they cover.
-timestamp: 2026-08-04T00:00:00+02:00
+description: The jj fork topology, its revset aliases, and the verified fork-management golden paths.
+timestamp: 2026-09-02T00:00:00+02:00
 ---
 
 # Jujutsu (jj) VCS — Fork Workflow
 
 **TL;DR.** A private fork remote sits next to a public upstream remote. One merge commit (`main`)
-joins both lines. `@` is a plain empty change with a single parent — the merge. You rebase that
-one merge forward onto new upstream. Split every local change by **content sensitivity**: generic
-work — including the task docs that record it — goes on the upstream chain; only sensitive content
-stays fork-side.
+joins both lines. `@` is a plain empty change with a single parent — the merge. Split every local
+change by **content sensitivity**. Generic work goes on the upstream chain. The task docs that
+record the work go there too. Only sensitive content stays fork-side.
 
 > **Agent note:** This file is installed as `.claude/rules/jujutsu-vcs.fork.md` in a repo with
-> `kdn.jj.fork.enable = true`. See [jujutsu-vcs.md](jujutsu-vcs.md) for the fork-agnostic base
-> patterns this extends, and [flake-update.fork.md](flake-update.fork.md) for the concrete update
-> workflow that uses this topology.
+> `kdn.jj.fork.enable = true`. For the fork-agnostic day-to-day golden paths (split, squash,
+> absorb, amend, rebase, restore, bookmarks, conflicts), see
+> [jujutsu-vcs.md](jujutsu-vcs.md#day-to-day-golden-paths) — this file does not repeat them. For
+> the concrete update workflow, see [flake-update.fork.md](flake-update.fork.md).
 >
-> **Run `jj fork-help` to read this file** from any shell in the repo. It opens a pager when
-> interactive (`$PAGER`, then `less`, then `cat`), and prints plain text when piped.
-
-## Overview
-
-The fork keeps **one** merge and rebases it proactively, so every local change stays on top of the
-newest upstream. Named revset aliases make the common checks short: which local work is unsafe to
-push, whether the merge can be reused or must be rebuilt, and what upstream is not integrated yet.
-The use cases below are ordered from "what is my state" to "change the graph".
-
-## Contents
-
-- [Topology](#topology) — the shape of the graph
-- [Single-purpose merge](#single-purpose-merge) — why there is only one merge
-- [Content sensitivity, not task boundaries](#content-sensitivity-not-task-boundaries) — how to
-  split a change
-- [Named revset aliases](#named-revset-aliases) — the alias table
-- [Common use cases](#common-use-cases) — step-by-step recipes
-  1. [What is on top of the merge that should not be there?](#1-what-is-on-top-of-the-merge-that-should-not-be-there)
-  2. [Do I need a new merge, or can I reuse the current one?](#2-do-i-need-a-new-merge-or-can-i-reuse-the-current-one)
-  3. [What new upstream commits are not integrated yet?](#3-what-new-upstream-commits-are-not-integrated-yet)
-  4. [Pull upstream in — rebase the local upstream chain](#4-pull-upstream-in--rebase-the-local-upstream-chain-onto-the-new-upstream)
-  5. [Build a new merge (the default when the merge is frozen)](#5-build-a-new-merge-the-default-when-the-merge-is-frozen)
-  6. [Make X an ancestor of Y without breaking the topology](#6-make-x-an-ancestor-of-y-without-breaking-the-topology)
-  7. [Verify before you declare done](#7-verify-before-you-declare-done)
-- [Warnings](#warnings)
+> Every golden-path recipe below is proven by a test under `checks/jj-experiments/` (linked
+> inline). The `jj fork-audit` tool command is the exception — it is verified by use, not by the
+> pytest harness. Run `jj fork-help` to read this file from any shell in the repo.
 
 ## Topology
 
-A private fork remote sits next to the public upstream remote. `main` is a single merge of both
-lines. `@` is a plain empty change with a single parent — the merge:
+`main` is a single merge of both lines. `@` is a plain empty change with a single parent — the
+merge:
 
 ```
 main@<upstream-remote> ──► ...upstream-chain... ──► upstream
@@ -57,181 +34,147 @@ main@<upstream-remote> ──► ...upstream-chain... ──► upstream
 main@<fork-remote> ──► ...fork-chain...
 ```
 
-`@` has one parent, the merge. It reaches `upstream` through the merge, not by a direct edge.
-This single-parent `@` is the resting shape you review from.
+`@` reaches `upstream` through the merge, not by a direct edge. This single-parent `@` is the
+resting shape you review from. `upstream` and `main` are **bookmark** names; they differ from the
+**remote** names (`kdn.jj.upstream.remote` / `kdn.jj.fork.remote`).
 
-**Dual-parent `@`, one exception.** After you publish — `jj sync-remotes`, or any point where the
-merge becomes immutable — you stack new work with `jj new -d main -d upstream` (equivalently
-`jj new fork-tip upstream-tip`). That gives `@` both tips as parents. It restores the starting
-state that `nix run '.#update'` expects (`@` on top of both `main` and `upstream`). This is the
-only place a dual-parent `@` is correct. Use cases 4 and 5 below end with this step.
-
-`upstream` and `main` are **bookmark** names in this repo's convention. `upstream` tracks the
-public chain tip. `main` tracks the merge of both chains. Both are distinct from the **remote**
-names (`kdn.jj.upstream.remote` / `kdn.jj.fork.remote`), which may differ.
+**Dual-parent `@`, one exception.** Right after you publish (`jj sync-remotes`), you stack new work
+with `jj new -d main -d upstream` (equivalently `jj new fork-tip upstream-tip`). That gives `@`
+both tips as parents and restores the state `nix run '.#update'` expects. This is the only place a
+dual-parent `@` is correct. Never `jj describe` a dual-parent `@` — it becomes a merge that
+inherits the fork parent (see [Hazards](#hazards)).
 
 ## Single-purpose merge
 
-This repo keeps **one** merge and rebases it proactively. Every local change stays on top of the
-upstream tip. This avoids a second merge line: you do not maintain one merge to pull safe changes
-into the fork main and a separate merge to pull the upstream main into the working copies. One
-merge, always rebased forward onto the newest upstream.
+This repo keeps **one** merge and moves it forward. Every local change stays on top of the newest
+upstream. You do not keep a second merge line. When the merge is still local it is rebased in
+place; when it is published it is immutable, so you build a new merge forward instead.
 
 ## Content sensitivity, not task boundaries
 
 Split a change by **what the content is**, not by which task produced it. The predicate is
-`fork-direct` — the sensitive-content check (see the alias table). Route each part by that:
+`fork-direct` (see the alias table).
 
-- **Generic content** (tools, conventions, shared modules, and the **task docs that record the
-  work as done**) goes on the **upstream chain**. Upstream then shows the task is complete.
-- **Sensitive content** (employer hosts, internal names, credentials) stays **fork-side**, above
-  the merge.
+- **Generic content** (tools, conventions, shared modules, and the task docs that record the work)
+  goes on the **upstream chain**.
+- **Sensitive content** (private hosts, internal names, credentials) stays **fork-side**.
 
-A task that produces both is normal. Move the generic parts down onto the upstream chain and keep
-only the sensitive parts on the fork side. Write the task docs employer-neutral so they can live
-upstream. `jj split -m 'msg' -- <paths>` and `jj squash --from <src> --into <dst> -- <paths>` move
-content between commits without an editor.
+`jj fork-audit` lists any fork-sensitive content in your local commits, at line level (file paths,
+diff lines, and messages that match the denied patterns). Run it before you treat a commit as
+upstream-safe. A task that produces both kinds of content is normal — route each part.
 
 ## Named revset aliases
 
-The `kdn.jj.fork` devenv slot defines these aliases. Prefer the named alias over an inline revset
-so the common checks stay short. Use `jj log -r '<alias>'` to list any set.
+The `kdn.jj.fork` devenv slot defines these. Prefer the named alias over an inline revset. Their
+behavior is verified in [test_revsets.md](../checks/jj-experiments/test_revsets.md).
 
 | Alias                   | Meaning |
 |-------------------------|---------|
 | `tree-merge`            | The merge commit `@` sits on. The anchor between local work above and history below. |
 | `upstream-incoming`     | Upstream commits fetched but not yet in the local tree. |
-| `upstream-incoming-tip` | The newest upstream-incoming commit. The rebase destination. |
-| `to-rebase`             | All local described work above the merge. The changes to relocate onto new upstream. |
+| `upstream-incoming-tip` | The public remote tip (`main@<upstream-remote>`). The integration destination. |
+| `to-rebase`             | All local described work above the merge. |
 | `upstream-safe`         | The content-clean subset of `to-rebase` (safe to push upstream). |
 | `fork-leaked`           | Local work above the merge that carries fork-sensitive content. |
 | `merge-frozen`          | Non-empty when the merge is already pushed or immutable. |
-| `upstream-local`        | Local upstream-side commits below the merge, not yet on the public remote (the pre-merge chain). |
-| `pushed`                | Changes reachable from any remote bookmark. |
-| `pushed-fork`           | Changes reachable from a fork remote bookmark. |
-| `pushed-upstream`       | Changes reachable from an upstream remote bookmark. |
-| `fork`                  | Fork-tagged changes (topology plus content). |
-| `fork-direct`           | Fork-sensitive content predicate (content only). |
-| `upstream-chain`        | Named non-empty commits on the upstream side. |
-| `fork-chain`            | Named non-empty commits on the fork side. |
-| `upstream-tip`          | Latest commit in the upstream chain. |
-| `fork-tip`              | Latest commit in the fork chain. |
+| `upstream-local`        | Local upstream-side commits below the merge, not yet on the public remote. |
+| `pushed` / `pushed-fork` / `pushed-upstream` | Changes reachable from a (fork/upstream) remote bookmark. |
+| `fork` / `fork-direct`  | Fork-tagged changes (topology + content) / the content-only predicate. |
+| `upstream-chain` / `fork-chain` | Named non-empty commits on the upstream / fork side. |
+| `upstream-tip` / `fork-tip` | Latest commit in the upstream / fork chain (by commit time). |
 
-## Common use cases
-
-### 1. What is on top of the merge that should not be there?
+## State checks
 
 ```bash
-jj log -r 'to-rebase'     # all local work above the merge
-jj log -r 'fork-leaked'   # the subset that carries fork-sensitive content
+jj fork-audit                    # fork-sensitive content in local commits, at line level
+jj log -r 'fork-leaked'          # upstream-destined work carrying fork content — must be empty
+jj log -r 'merge-frozen'         # empty → the merge is mutable; non-empty → build forward
+jj git fetch --all-remotes; jj log -r 'upstream-incoming'   # unmerged upstream
 ```
 
-`fork-leaked` non-empty means a change would fail an upstream push. Rename the sensitive term or
-keep the change fork-side.
+## Golden paths
 
-### 2. Do I need a new merge, or can I reuse the current one?
+### Place a generic (upstream) change — [test_placement.md](../checks/jj-experiments/test_placement.md)
+
+Two commands that work on a frozen and a mutable tree:
 
 ```bash
-jj log -r 'merge-frozen'    # empty → reuse the merge; non-empty → build a NEW merge
+# generic content in @, then:
+jj new --no-edit -B @ -m 'chore(upstream): merge'
+jj split -A upstream-tip -B fork-tip -m 'feat(...): generic' -- <generic files>
 ```
 
-Empty means the merge is still local and mutable. Rebase it in place. Non-empty means it is
-already pushed or immutable. Build a new merge instead (see use case 5).
+Command 1 inserts a fresh mutable commit above the current merge; it becomes the new merge once
+command 2 adds the upstream parent. Command 2 grafts the generic commit onto `upstream-tip` and
+into that merge. When a mutable merge already exists, the single
+`jj split -A upstream-tip -B fork-tip` is enough. **Frozen-vs-mutable rule:** `-B fork-tip`
+re-parents the fork tip, so it needs that tip **mutable**; command 1 manufactures a mutable merge
+on a frozen tree. The old frozen merge stays an ancestor — the precondition `jj sync-remotes`
+fast-forwards on.
 
-### 3. What new upstream commits are not integrated yet?
+### Place a fork-sensitive change — [test_placement.md](../checks/jj-experiments/test_placement.md)
+
+- **Leaf tweak** (a one-off host tweak): `jj split -m 'feat(fork): ...' -- <sensitive files>`. It
+  stays above the merge on the fork chain and becomes `fork-tip`; `jj sync-remotes` pushes it to
+  `main@<fork-remote>`. `fork-leaked` lists it — for a leaf that is informational, not a gate.
+- **Durable fork-base change** (folds into the merge):
+  ```bash
+  jj split -A fork-tip -m 'feat(fork): base wiring' -- <sensitive files>
+  jj new upstream-tip fork-tip -m 'chore(upstream): merge'
+  jj new                                   # empty @ on top
+  ```
+- **Mixed `@`** (generic + sensitive): route the generic part with the upstream recipe, then carve
+  the sensitive remainder as a leaf.
+
+### Pull upstream in — [test_rebase.md](../checks/jj-experiments/test_rebase.md)
 
 ```bash
-jj git fetch --remote=<upstream-remote> --remote=<fork-remote>
-jj log -r 'upstream-incoming'
-```
-
-### 4. Pull upstream in — rebase the local upstream chain onto the new upstream
-
-This is the single-purpose merge in action. The local upstream-side commits below the merge
-(`upstream-local`) form a chain that diverged from the public tip. Rebase the **root** of that
-chain onto the new upstream tip. The chain, the merge, `to-rebase`, and `@` all follow as
-descendants, and the merge keeps its fork parent:
-
-```bash
+jj git fetch --all-remotes
+# frozen merge (published): build a new merge forward
+jj new fork-tip upstream-incoming-tip -m 'chore(upstream): merge'
+# mutable merge: rebase the local upstream chain and reuse the merge
 jj rebase -s 'roots(upstream-local)' -d 'upstream-incoming-tip'
-jj bookmark set upstream -r 'upstream-incoming-tip'
-jj bookmark set main -r 'tree-merge'
-jj new -d main -d upstream   # fresh empty @ on both parents
-devenv build shell           # confirm the pulled-in upstream still builds
 ```
 
-> **Do NOT** rebase `tree-merge` directly with `-d upstream-incoming-tip -d main@<fork-remote>`.
-> That replaces the merge parents and orphans the pre-merge `upstream-local` chain out of the
-> merge ancestry. Rebase `roots(upstream-local)` so the whole chain moves and the merge keeps its
-> original parents.
+After either, `upstream-incoming` is empty. A conflict is recorded in the merge (not aborted):
+detect with `jj log -r 'conflicts()'`, edit the files to the merged content, then snapshot.
 
-### 5. Build a new merge (the default when the merge is frozen)
+### Make X an ancestor of Y — [test_deleak.md](../checks/jj-experiments/test_deleak.md)
 
-When `merge-frozen` is non-empty, this is the **default** — not an edge case. A frozen merge is
-already published, so you build a new one rather than rewrite it. Constructing the `main` merge
-topology is a legitimate, structural use of `jj new` — not a work checkpoint:
+A fork change `Y` depends on a generic change `X`, but `X` is not yet in its ancestry:
 
 ```bash
-jj new 'fork-tip' 'upstream-incoming-tip' -m 'chore(merge): merge in upstream'
-jj bookmark set main -r @
-jj new -d main -d upstream
+jj rebase -s Y -d X -d <Y-existing-parent>   # Y becomes merge(X, old parent)
 ```
 
-### 6. Make X an ancestor of Y without breaking the topology
+### De-leak an upstream-destined commit — [test_deleak.md](../checks/jj-experiments/test_deleak.md)
 
-Use this when a fork-side change Y depends on a generic change X (for example, host wiring Y that
-uses a slot defined in X), but Y does not yet have X in its ancestry. Add X as a second parent of
-Y and keep Y's existing parent. `jj rebase -s` moves Y (and its descendants) onto the given
-destinations, and multiple `-d` flags make Y a merge of all of them:
+A commit on the upstream side carries fork content (`fork-leaked` lists it):
+
+- **Split** the sensitive file out: `jj split -m 'feat(fork): ...' -- <sensitive file>` — the
+  generic remainder is then `upstream-safe`.
+- **Reword** when only the message matches a denied pattern: `jj describe -r <id> -m '<neutral>'`.
+
+## Hazards
+
+Verified in [test_hazards.md](../checks/jj-experiments/test_hazards.md).
+
+- **Never rewrite a pushed/immutable commit.** `jj describe`/`jj squash --into`/`jj rebase` on it
+  fail with `Commit <id> is immutable`. Build forward instead.
+- **Never `jj describe` a dual-parent `@`.** It becomes a described merge that keeps both parents,
+  including the fork one. Commit upstream-side work while `@` has a single upstream parent, then
+  restore the dual-parent `@` with `jj new -d main -d upstream`.
+- **`upstream-tip`/`fork-tip` follow commit time** (`latest()`), not graph position. If a tip
+  resolves to the wrong commit, fix the commit time; do not assume topological order.
+
+## Verify before you declare done
 
 ```bash
-jj rebase -s Y -d X -d <Y-existing-parent>
+jj log -r 'fork-leaked'          # must be empty (or only intended fork leaves)
+jj log -r 'upstream-incoming'    # must be empty after a pull
+devenv build shell               # the build passes
 ```
 
-Concrete example — make the slot commit `X` an ancestor of the host-wiring commit `Y`, while `Y`
-keeps its old merge parent `P`:
-
-```bash
-jj rebase -s Y -d X -d P
-```
-
-`Y` becomes a merge of `X` and `P`, so the dependency of `Y` on `X` now shows in the graph. The
-descendants of `Y` (the merge, `@`) follow and keep their shape. Confirm afterward:
-
-```bash
-jj log -r 'parents(Y)'      # must list both X and P
-jj log -r 'fork-leaked'     # must stay empty
-```
-
-### 7. Verify before you declare done
-
-```bash
-# no fork content leaked into the local work:
-jj log -r 'fork-leaked'         # must be empty
-
-# upstream has exactly one parent (not a stray merge):
-jj log -r 'parents(upstream)' --no-graph -T 'change_id.short() ++ " " ++ bookmarks ++ " " ++ description.first_line() ++ "\n"'
-
-# all upstream is integrated:
-jj log -r 'upstream-incoming'   # must be empty after the rebase
-
-# the build passes:
-devenv build shell
-```
-
-When `upstream` has more than one parent, rebase it onto just the upstream chain tip:
-
-```bash
-jj rebase --revision upstream --destination 'upstream-tip'
-jj bookmark set upstream -r upstream
-```
-
-## Warnings
-
-> A dual-parent `@` exists only right after you publish (see [Topology](#topology)). While it is
-> dual-parent, do NOT `jj describe` it: that turns `@` into a merge commit that inherits all
-> parents, including the fork ones. Always commit upstream-side work while `@` has a single
-> upstream-chain parent. Then restore the dual-parent `@` with `jj new -d main -d upstream`.
-
-See [flake-update.fork.md](flake-update.fork.md) for the concrete update workflow that feeds into
-this topology.
+Bookmarks are moved by `jj sync-remotes`, not by hand. See
+[flake-update.fork.md](flake-update.fork.md) for the concrete update workflow that uses this
+topology.
