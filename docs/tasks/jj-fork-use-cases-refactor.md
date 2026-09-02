@@ -1,7 +1,7 @@
 ---
 type: Task
 description: Define and verify the full matrix of jj change-placement cases in the fork topology, build a 3-repo pytest harness, and rewrite the skill examples.
-status: todo
+status: done
 authored_by: agent
 timestamp: 2026-09-02T00:00:00+02:00
 ---
