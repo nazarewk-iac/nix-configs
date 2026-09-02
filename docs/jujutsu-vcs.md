@@ -54,19 +54,16 @@ The empty change on top is a **wrap-up** step, not a checkpoint or a container.
 - An empty `@` with no description is correct **only at the tip**, after the described work below
   it is complete.
 
-### Preferred flow: split and squash, not rebase
+### Preferred flow: accumulate, then carve
 
 **Never create a new commit before you make changes.** Let edits accumulate in `@`, then:
 
 - Use `jj split -- <files>` to carve part of `@` into a new named commit (accepts multiple
   `-- path1 path2 ...`).
-- Use `jj squash --from @ --into <target>` to fold `@` into an existing unpushed commit.
-
-**Rebase is a last resort.** It moves commits around and can scramble parent relationships,
-especially in a fork workflow with multiple merge commits. Prefer this:
+- Use `jj squash --from @ --into <target>` to fold `@` into an existing mutable commit.
 
 ```bash
-# wrong: create a commit up front, then wrestle with rebases to fix topology
+# wrong: create a commit up front, then wrestle to fix topology
 jj new upstream -m 'feat: thing'
 # ...make changes...
 
@@ -76,10 +73,12 @@ jj split -m 'feat: thing' -- path/to/file          # carve off into a new named 
 jj squash --from @ --into <change-id> -m 'msg'     # fold into an existing commit
 ```
 
-`jj rebase` stays legitimate when the graph topology genuinely needs a change (e.g. after you
-fetch new upstream commits that a merge must absorb — see
-[jujutsu-vcs.fork.md](jujutsu-vcs.fork.md)), or when you construct/restore a merge commit
-(`jj new <a> <b>`). These are structural operations, not work checkpoints.
+**`jj rebase` and `jj edit` are normal, safe tools — on mutable commits.** Use `jj rebase` to
+reorder or restack local work, and `jj edit` to amend a commit in place. The one hard rule: never
+rewrite a **pushed or immutable** commit — jj refuses it, so build forward instead (revert-forward;
+see the day-to-day golden paths below and the fork forbidden cases). Prefer `jj split`/`jj squash`
+for routine carving of `@`; reach for `jj rebase` when the graph shape itself must change (reorder,
+restack, or construct a merge with `jj new <a> <b>`).
 
 ---
 
@@ -211,6 +210,69 @@ that is NOT the tip working copy is a stray — describe it, fold it, or abandon
 errors before you finish. When this repo has a fork remote configured, see
 [jujutsu-vcs.fork.md](jujutsu-vcs.fork.md) for the fork-specific finish state (dual-parent `@`,
 `upstream-tip`/`fork-tip` bookmark advancement).
+
+---
+
+## Day-to-day golden paths
+
+The shortest correct command for each common jj operation. Every path below is verified by a test
+in `checks/jj-experiments/` (branch-agnostic; run `pytest checks/jj-experiments/`). The paired
+`test_<group>.md` holds the detail and the caveats. Fork and branch-topology cases (change
+placement, pull upstream in, frozen-vs-mutable, forbidden rewrites) live in
+[jujutsu-vcs.fork.md](jujutsu-vcs.fork.md).
+
+### Golden-path index
+
+| Operation | Golden path | Detail |
+|---|---|---|
+| Read a file at a revision | `jj file show -r <rev> <path>` | [test_inspect.md](../checks/jj-experiments/test_inspect.md) |
+| Diff a commit / a range | `jj diff -r <id>` · `jj diff --from <X> --to <Y>` (`--stat`, `--name-only`) | [test_inspect.md](../checks/jj-experiments/test_inspect.md) |
+| Read the graph | `jj log --no-pager -r '<revset>' -T '<template>'` | [test_inspect.md](../checks/jj-experiments/test_inspect.md) |
+| Amend in place | `jj edit <id>` … edit … `jj new <tip>` | [test_amend.md](../checks/jj-experiments/test_amend.md) |
+| Fold a fixup down | `jj squash --into <id>` | [test_amend.md](../checks/jj-experiments/test_amend.md) |
+| Reword | `jj describe -r <id> -m '…'` | [test_amend.md](../checks/jj-experiments/test_amend.md) |
+| Auto-route fixups | `jj absorb` | [test_squash_absorb.md](../checks/jj-experiments/test_squash_absorb.md) |
+| Squash chosen files | `jj squash --from @ --into <id> -- <files>` | [test_squash_absorb.md](../checks/jj-experiments/test_squash_absorb.md) |
+| Reorder two changes | `jj rebase -r <A> --insert-after <B>` | [test_restructure.md](../checks/jj-experiments/test_restructure.md) |
+| Split a committed commit | `jj split -r <id> -m '…' -- <files>` | [test_restructure.md](../checks/jj-experiments/test_restructure.md) |
+| Abandon a change | `jj abandon <id>` | [test_restructure.md](../checks/jj-experiments/test_restructure.md) |
+| Revert-forward (pushed) | `jj revert -r <id> --insert-after <tip>` | [test_restructure.md](../checks/jj-experiments/test_restructure.md) |
+| Duplicate (cherry-pick) | `jj duplicate <id> --onto <dest>` | [test_restructure.md](../checks/jj-experiments/test_restructure.md) |
+| Drop a redundant merge parent | `jj simplify-parents -r <merge>` | [test_restructure.md](../checks/jj-experiments/test_restructure.md) |
+| Discard one file / all of `@` | `jj restore <path>` · `jj restore` | [test_recover.md](../checks/jj-experiments/test_recover.md) |
+| Restore a file from a revision | `jj restore --from <rev> <path>` | [test_recover.md](../checks/jj-experiments/test_recover.md) |
+| Roll back | `jj undo` (last op) · `jj op log` + `jj op restore <op>` (multi-step) | [test_recover.md](../checks/jj-experiments/test_recover.md) |
+| Bookmark CRUD | `jj bookmark create/set[/--allow-backwards]/delete/list --all-remotes` | [test_bookmarks.md](../checks/jj-experiments/test_bookmarks.md) |
+| Push / fetch a bookmark | `jj git push --remote <r> --bookmark <b>` · `jj git fetch --remote <r>` | [test_bookmarks.md](../checks/jj-experiments/test_bookmarks.md) |
+| Untrack a file | add to `.gitignore`, then `jj file untrack <path>` | [test_bookmarks.md](../checks/jj-experiments/test_bookmarks.md) |
+| Detect / resolve a conflict | `jj log -r 'conflicts()'` → edit to merged content → snapshot | [test_conflicts.md](../checks/jj-experiments/test_conflicts.md) |
+
+### Notes and gotchas
+
+- `jj status` takes no `-r`. To read another revision use `jj diff -r <rev>` or `jj show <rev>`.
+  Always pass `--no-pager` in a non-interactive shell.
+- `jj edit`, `jj describe`, `jj squash`, `jj absorb`, and `jj rebase` all **rewrite** commits, so
+  they work only on **mutable** commits. jj refuses to rewrite a pushed or immutable commit —
+  build forward instead. To undo a pushed change, revert-forward with `jj revert`.
+- `jj absorb` sends each hunk to the mutable ancestor that last touched those lines. It skips
+  immutable ancestors and leaves ambiguous hunks in `@`. Use explicit `jj squash --from/--into --
+  <files>` when you need a specific target.
+- `jj file untrack` needs the path gitignored first, or the next snapshot re-adds it. The
+  subcommand is `jj file untrack`, not `jj untrack`.
+- `jj bookmark set` refuses a backward or sideways move without `--allow-backwards`.
+- jj records a conflict **inside** the commit with its own markers (`<<<<<<<` / `%%%%%%%` /
+  `>>>>>>>`). Detect with `jj log -r 'conflicts()'`; resolve by editing each file to the merged
+  content and running any jj command to snapshot. Never run the interactive `jj resolve` in an
+  agent — it opens a merge tool and hangs.
+- After `jj edit <interior commit>`, a plain `jj new` makes a child of that commit; run `jj new
+  <tip>` to return to the tip.
+
+### Fork / branch topology
+
+For change placement (generic vs fork-sensitive content), pulling new upstream in, the
+frozen-vs-mutable rules, and the forbidden rewrites, see
+[jujutsu-vcs.fork.md](jujutsu-vcs.fork.md). Those cases are verified by `test_placement.py`,
+`test_rebase.py`, `test_hazards.py`, `test_deleak.py`, `test_advanced.py`, and `test_revsets.py`.
 
 ---
 
