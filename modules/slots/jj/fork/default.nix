@@ -32,6 +32,16 @@ let
     runtimeEnv = sharedRuntimeEnv;
     text = builtins.readFile ./check-fork-contamination.sh;
   };
+
+  forkAudit = pkgs.writeShellApplication {
+    name = "jj-fork-audit";
+    runtimeInputs = [
+      pkgs.git
+      pkgs.jujutsu
+    ];
+    runtimeEnv = sharedRuntimeEnv;
+    text = builtins.readFile ./fork-audit.sh;
+  };
 in
 {
   config = lib.mkIf (cfg.enable && cfg.fork.enable) {
@@ -108,6 +118,12 @@ in
         # that replaces the merge parents and orphans this chain out of the merge ancestry.
         upstream-local = "pushed-upstream..(::tree-merge & ~fork)";
       };
+      aliases.fork-audit = [
+        "util"
+        "exec"
+        "--"
+        (lib.getExe forkAudit)
+      ];
       aliases.fork-help = [
         "util"
         "exec"
@@ -182,6 +198,8 @@ in
     };
 
     devenv = {
+      packages = [ forkAudit ];
+
       enterShell = lib.mkAfter ''
         ${lib.optionalString (cfg.fork.url != null) ''
           _kdn_jj_ensure_remote ${lib.escapeShellArg cfg.fork.remote} ${lib.escapeShellArg cfg.fork.url}
