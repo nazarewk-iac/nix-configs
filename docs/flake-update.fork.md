@@ -296,8 +296,11 @@ jq -r '.nodes as $n | [ .nodes|to_entries[]|.key as $o|(.value.inputs//{})|to_en
 ## Post-update fixes
 
 If a build fails, fix the files in `@` (the empty top). Then place the fix on the correct chain,
-so the topology stays correct and `jj sync-remotes` picks the right tips. The method depends on
-whether the tips are pushed yet. Check first:
+so the topology stays correct and `jj sync-remotes` picks the right tips. The placement below is
+the fork golden path specialized for this workflow — see
+[jujutsu-vcs.fork.md § Golden paths](jujutsu-vcs.fork.md#golden-paths) for the general recipes and
+the frozen-vs-mutable rule (`-B fork-tip` needs a mutable fork tip; a frozen tree builds forward).
+The method depends on whether the tips are pushed yet. Check first:
 
 ```bash
 jj log -r 'fork-tip' --no-graph -T 'if(immutable, "PUSHED", "not pushed") ++ "\n"'
