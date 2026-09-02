@@ -1,7 +1,7 @@
 ---
 type: Task
 description: Build a pytest suite that spins up a self-contained devenv plus three colocated jj repos (local, upstream, fork) to verify the fork revset aliases behave as documented.
-status: todo
+status: done
 authored_by: agent
 timestamp: 2026-08-03T15:15:00+02:00
 ---
