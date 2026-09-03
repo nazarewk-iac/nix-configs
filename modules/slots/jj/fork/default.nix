@@ -8,9 +8,12 @@
 let
   cfg = config.kdn.jj;
 
+  # Join the patterns with a newline, not a space. A consumer script reads them
+  # with `mapfile -t`, so a pattern that contains a space stays one element and
+  # matches the `fork-direct` revset globs.
   sharedRuntimeEnv = {
-    SENSITIVE_FILE_PATTERNS = lib.concatStringsSep " " cfg.fork.deniedFilePatterns;
-    SENSITIVE_MESSAGE_PATTERNS = lib.concatStringsSep " " cfg.fork.deniedMessagePatterns;
+    SENSITIVE_FILE_PATTERNS = lib.concatStringsSep "\n" cfg.fork.deniedFilePatterns;
+    SENSITIVE_MESSAGE_PATTERNS = lib.concatStringsSep "\n" cfg.fork.deniedMessagePatterns;
   };
 
   prePushHook = pkgs.writeShellApplication {
@@ -18,7 +21,7 @@ let
     runtimeInputs = [ pkgs.git ];
     runtimeEnv = sharedRuntimeEnv // {
       PRIVATE_REMOTE = cfg.fork.remote;
-      BLOCK_PUSH_MESSAGE_PATTERNS = lib.concatStringsSep " " cfg.alwaysBlockedMessagePatterns;
+      BLOCK_PUSH_MESSAGE_PATTERNS = lib.concatStringsSep "\n" cfg.alwaysBlockedMessagePatterns;
     };
     text = builtins.readFile ../pre-push.sh;
   };
