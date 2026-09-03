@@ -45,7 +45,8 @@ When a recipe is novel or risky, verify it before you apply it to the live repo:
 test to `checks/jj-experiments/` and run it hermetically with
 `nix run .#jj-experiments-run -- -k <name>`. A throwaway check is loose; if you keep it, it MUST
 follow the harness conventions in `checks/jj-experiments/README.md` (isolation via `mkrepo`, a
-paired `test_<group>.md`, Simple Technical English, placeholder patterns only).
+paired `test_<group>.md`, Simple Technical English, placeholder patterns only). `test_push`
+(`checks/jj-experiments/test_push.py` + `test_push.md`) is the reference example for adding a group.
 
 ## This repo's non-negotiables
 
