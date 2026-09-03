@@ -17,7 +17,7 @@ This skill is the short index. Full detail lives in the docs and the verified ex
 - Day-to-day golden paths + index: [docs/jujutsu-vcs.md](../../../docs/jujutsu-vcs.md#day-to-day-golden-paths).
 - Fork topology: [docs/jujutsu-vcs.fork.md](../../../docs/jujutsu-vcs.fork.md).
 - Verified worked examples: `checks/jj-experiments/test_<group>.py` + `test_<group>.md`.
-- Test a jj case on-demand (or embed it): add a harness test, run `nix run .#jj-experiments-run -- -k <name>`. A throwaway check is loose; a committed one MUST follow the conventions in [checks/jj-experiments/README.md](../../../checks/jj-experiments/README.md).
+- Test a jj case on-demand (or embed it): add a harness test, run `nix run .#jj-experiments-run -- -k <name>`. A throwaway check is loose; a committed one MUST follow the conventions in [checks/jj-experiments/README.md](../../../checks/jj-experiments/README.md). To add or verify a recipe, copy `test_push` (`checks/jj-experiments/test_push.py` + `test_push.md`) as the template.
 - Deep troubleshooting: the `jj-expert` subagent.
 
 ## Critical rules (agent safety)

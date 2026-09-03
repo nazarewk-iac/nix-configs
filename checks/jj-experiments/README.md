@@ -170,3 +170,19 @@ deterministic commit times, pair a `test_<group>.py` with a `test_<group>.md` (s
 placeholder patterns only — never a real sensitive term. The design and philosophy behind these
 conventions are in the
 [design doc](../../docs/tasks/jj-fork-use-cases-refactor.design.md).
+
+## Extend the harness — worked example
+
+`test_push.py` + [`test_push.md`](test_push.md) are the reference for adding a
+new group. They show the whole method end to end:
+
+- Build state from the `mkrepo` fixture; simulate a remote that moved ahead with
+  two repos on one bare.
+- Reuse a `topologies.py` builder — `build_push_base`, `advance_remote`,
+  `push_feature` — for the repeated scaffolding.
+- Rely on the `Repo` builders' auto-incrementing commit times, and pair the
+  tests with a prose `test_push.md`.
+- **Start inline, then extract when it repeats:** `test_push` landed inline in
+  one commit; the shared scaffolding moved into `topologies.py` in a follow-up.
+
+Copy this group as the template for a new one.
