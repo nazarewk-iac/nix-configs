@@ -36,54 +36,12 @@ Verified jj-0.44 facts these tests pin down (they differ from first guesses):
 
 from __future__ import annotations
 
+import topologies
 
-def _origin_with_main(mkrepo):
-    """Make repo ``a`` with a pushed ``main`` on a base commit.
-
-    Returns ``(a, bare, base)``. ``a`` has ``origin`` registered, ``main`` set to
-    the base commit and pushed (so ``main`` tracks ``main@origin``), and an empty
-    ``@`` on top of the base.
-    """
-    a = mkrepo("a")
-    bare = a.register_remote("origin")
-    base = a.commit("feat: base", {"base.txt": "0\n"})
-    a.bookmark_set("main", base)
-    a.push("origin", "main")
-    return a, bare, base
-
-
-def _advance_remote(mkrepo, bare, message, files):
-    """From a second repo sharing ``bare``, move ``main`` ahead by one commit.
-
-    The second repo tracks ``main@origin`` first — a fetched bookmark is untracked,
-    so without tracking its push is a no-op.
-    """
-    b = mkrepo("b")
-    b.register_remote("origin", bare)
-    b.fetch("origin")
-    b.jj("bookmark", "track", "main@origin")
-    b.jj("new", "main")
-    moved = b.commit(message, files)
-    b.bookmark_set("main", moved)
-    b.push("origin", "main")
-    return moved
-
-
-def _push_feature(mkrepo, bare, name, message, files):
-    """From a second repo sharing ``bare``, create and push a feature branch.
-
-    Returns the pushed tip. The branch is a **non-trunk** remote bookmark, so a
-    repo that fetches it can track it and treat it as mutable.
-    """
-    b = mkrepo("bf")
-    b.register_remote("origin", bare)
-    b.fetch("origin")
-    b.jj("bookmark", "track", "main@origin")
-    b.jj("new", "main")
-    tip = b.commit(message, files)
-    b.jj("bookmark", "create", name, "-r", tip)
-    b.jj("git", "push", "--remote", "origin", "-b", name)
-    return tip
+# The shared scaffolding — build_push_base, advance_remote, push_feature — was
+# extracted into topologies.py once it repeated across these tests. The
+# golden-path steps (fetch / rebase / bookmark / push) stay inline in each test,
+# because those steps are the lesson.
 
 
 def test_publish_anonymous_pr_branch(mkrepo):
@@ -92,7 +50,7 @@ def test_publish_anonymous_pr_branch(mkrepo):
     Golden path: ``jj git push -c <rev>``. jj creates an auto-named
     ``push-<change-id-prefix>`` bookmark and pushes it. No branch name needed.
     """
-    a, _, base = _origin_with_main(mkrepo)
+    a, _, base = topologies.build_push_base(mkrepo)
     work = a.commit("feat: my change", {"change.txt": "1\n"})
 
     a.jj("git", "push", "--remote", "origin", "-c", work)
@@ -111,7 +69,7 @@ def test_publish_named_branch_tracks_no_allow_new(mkrepo):
     push creates the remote bookmark and starts tracking it, so a later push of
     the same branch just works.
     """
-    a, _, base = _origin_with_main(mkrepo)
+    a, _, base = topologies.build_push_base(mkrepo)
     work = a.commit("feat: work", {"work.txt": "1\n"})
     a.jj("bookmark", "create", "feature", "-r", work)
 
@@ -129,7 +87,7 @@ def test_fast_forward_update(mkrepo):
 
     Golden path: fetch (no remote change), set the bookmark, push.
     """
-    a, _, base = _origin_with_main(mkrepo)
+    a, _, base = topologies.build_push_base(mkrepo)
     work = a.commit("feat: ahead", {"ahead.txt": "1\n"})
     a.fetch("origin")  # remote unchanged
 
@@ -150,11 +108,11 @@ def test_behind_whole_stack_rebase_b(mkrepo):
     discarding the remote's commit. So the discipline is: fetch, then rebase onto
     the incoming tip, so the push is a clean fast-forward, not a sideways clobber.
     """
-    a, bare, base = _origin_with_main(mkrepo)
+    a, bare, base = topologies.build_push_base(mkrepo)
     c1 = a.commit("feat: c1", {"c1.txt": "1\n"})
     c2 = a.commit("feat: c2", {"c2.txt": "2\n"})
 
-    _advance_remote(mkrepo, bare, "feat: remote moved", {"remote.txt": "9\n"})
+    topologies.advance_remote(mkrepo, bare, "feat: remote moved", {"remote.txt": "9\n"})
 
     # The guard: before fetching, the stale force-with-lease REJECTS the push.
     a.bookmark_set("main", c2)
@@ -186,11 +144,11 @@ def test_behind_tip_only_rebase_r(mkrepo):
     ``jj rebase -r <tip> -d main@origin`` moves only that commit; jj reparents its
     descendants onto its former parent, so the lower commit stays on the old base.
     """
-    a, bare, base = _origin_with_main(mkrepo)
+    a, bare, base = topologies.build_push_base(mkrepo)
     c1 = a.commit("feat: c1", {"c1.txt": "1\n"})
     c2 = a.commit("feat: c2", {"c2.txt": "2\n"})
 
-    _advance_remote(mkrepo, bare, "feat: remote moved", {"remote.txt": "9\n"})
+    topologies.advance_remote(mkrepo, bare, "feat: remote moved", {"remote.txt": "9\n"})
     a.fetch("origin")
 
     a.jj("rebase", "-r", c2, "-d", "main@origin")
@@ -207,18 +165,18 @@ def test_insert_incoming_refused_for_trunk_or_untracked(mkrepo):
     (b) an **untracked** remote bookmark — untracked remote bookmarks are
     immutable by default. In both cases you cannot move the fetched commit.
     """
-    a, bare, base = _origin_with_main(mkrepo)
+    a, bare, base = topologies.build_push_base(mkrepo)
     a.commit("feat: c1", {"c1.txt": "1\n"})
 
     # (a) the trunk main@origin is immutable even though `a` tracks it.
-    _advance_remote(mkrepo, bare, "feat: remote moved", {"remote.txt": "9\n"})
+    topologies.advance_remote(mkrepo, bare, "feat: remote moved", {"remote.txt": "9\n"})
     a.fetch("origin")
     refused_trunk = a.jj("rebase", "-r", "main@origin", "--insert-before", "@", check=False)
     assert refused_trunk.returncode != 0
     assert "immutable" in refused_trunk.stderr.lower()
 
     # (b) an UNTRACKED feature bookmark is immutable too.
-    _push_feature(mkrepo, bare, "featx", "feat: incoming", {"fx.txt": "1\n"})
+    topologies.push_feature(mkrepo, bare, "featx", "feat: incoming", {"fx.txt": "1\n"})
     a.fetch("origin")  # featx@origin arrives untracked
     refused_untracked = a.jj("rebase", "-r", "featx@origin", "--insert-before", "@", check=False)
     assert refused_untracked.returncode != 0
@@ -235,10 +193,10 @@ def test_insert_incoming_succeeds_on_tracked_feature(mkrepo):
     the new position with ``jj git push -b feat``. This is the track → insert →
     push shape, available only for a mutable (non-trunk) branch.
     """
-    a, bare, base = _origin_with_main(mkrepo)
+    a, bare, base = topologies.build_push_base(mkrepo)
     c1 = a.commit("feat: my work", {"c1.txt": "1\n"})
 
-    _push_feature(mkrepo, bare, "feat", "feat: incoming", {"inc.txt": "1\n"})
+    topologies.push_feature(mkrepo, bare, "feat", "feat: incoming", {"inc.txt": "1\n"})
     a.fetch("origin")
 
     a.jj("bookmark", "track", "feat@origin")          # track the non-trunk branch first
@@ -259,7 +217,7 @@ def test_divergent_rebase_resolves(mkrepo):
     Remote advances two commits; local advances one. ``jj rebase -b @`` replays the
     local commit onto the remote tip with no conflict (disjoint files), then push.
     """
-    a, bare, base = _origin_with_main(mkrepo)
+    a, bare, base = topologies.build_push_base(mkrepo)
     mine = a.commit("feat: mine", {"mine.txt": "1\n"})
 
     b = mkrepo("b")

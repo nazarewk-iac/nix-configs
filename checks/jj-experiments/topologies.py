@@ -375,3 +375,62 @@ def build_branch_tree(repo) -> dict:
     repo.cfg.revset_alias("branch", 'trunk()..@ & ~description("")')
     repo.cfg.revset_alias("branch-tip", "heads(branch)")
     return labels
+
+
+# --- push-to-branch scaffolding -------------------------------------------
+#
+# These three take the ``mkrepo`` fixture (not a single ``repo``) because a
+# push scenario needs more than one repo: one that publishes a branch and a
+# second that moves the same remote. So, unlike the ``build_*`` graph builders
+# above, ``build_push_base`` returns the repo handle and its bare path, not just
+# a labels dict. They were extracted from ``test_push.py`` once the scaffolding
+# repeated across its tests (the "start inline, extract when it repeats" method).
+
+
+def build_push_base(mkrepo):
+    """Make repo ``a`` with a pushed ``main`` on a base commit.
+
+    Returns ``(a, bare, base)``. ``a`` has ``origin`` registered, ``main`` set to
+    the base commit and pushed (so ``main`` tracks ``main@origin``), and an empty
+    ``@`` on top of the base.
+    """
+    a = mkrepo("a")
+    bare = a.register_remote("origin")
+    base = a.commit("feat: base", {"base.txt": "0\n"})
+    a.bookmark_set("main", base)
+    a.push("origin", "main")
+    return a, bare, base
+
+
+def advance_remote(mkrepo, bare, message, files):
+    """From a second repo sharing ``bare``, move ``main`` ahead by one commit.
+
+    The second repo tracks ``main@origin`` first — a fetched bookmark is untracked,
+    so without tracking its push is a no-op. Returns the moved change id.
+    """
+    b = mkrepo("b")
+    b.register_remote("origin", bare)
+    b.fetch("origin")
+    b.jj("bookmark", "track", "main@origin")
+    b.jj("new", "main")
+    moved = b.commit(message, files)
+    b.bookmark_set("main", moved)
+    b.push("origin", "main")
+    return moved
+
+
+def push_feature(mkrepo, bare, name, message, files):
+    """From a second repo sharing ``bare``, create and push a feature branch.
+
+    Returns the pushed tip. The branch is a **non-trunk** remote bookmark, so a
+    repo that fetches it can track it and treat it as mutable.
+    """
+    b = mkrepo("bf")
+    b.register_remote("origin", bare)
+    b.fetch("origin")
+    b.jj("bookmark", "track", "main@origin")
+    b.jj("new", "main")
+    tip = b.commit(message, files)
+    b.jj("bookmark", "create", name, "-r", tip)
+    b.jj("git", "push", "--remote", "origin", "-b", name)
+    return tip
