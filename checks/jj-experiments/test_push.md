@@ -70,21 +70,24 @@ feature/PR branch. Proven by `test_behind_whole_stack_rebase_b`.
 After `jj git fetch`, a remote bookmark arrives **untracked**. A push from that
 repo only moves the branch after `jj bookmark track <name>@<remote>` (the branch
 you pushed yourself is already tracked). This is why the "remote moved ahead"
-test tracks first — see `_advance_remote` in `test_push.py`.
+test tracks first — see `advance_remote` in `topologies.py`.
 
 ## Extend the harness — a worked example
 
 `test_push.py` is the reference for adding a group. To add or verify a jj recipe,
 copy its shape:
 
-- **Build state inline with `mkrepo` and the `Repo` helpers.** Each test makes
-  its own repos and bare remotes — `register_remote`, `commit`, `bookmark_set`,
-  `push`, `fetch` — so the whole flow reads in one function. See `conftest.py` for
-  the full `Repo` API.
+- **Build state inline first, then extract when it repeats.** Each test started
+  self-contained — its own repos and bare remotes via `register_remote`,
+  `commit`, `bookmark_set`, `push`, `fetch` — so the whole flow read in one
+  function. Once that setup repeated across tests, the shared scaffolding
+  (`build_push_base`, `advance_remote`, `push_feature`) moved into
+  `topologies.py`; the golden-path steps stayed inline, because those steps are
+  the lesson. See `conftest.py` for the full `Repo` API.
 - **Simulate a remote that moved ahead** with the two-repos-share-one-bare trick:
   a second repo registers the **same bare** (`register_remote(name, bare)`),
   tracks the bookmark, commits, and pushes; the first repo fetches and is behind.
-  `_advance_remote` shows it.
+  `topologies.advance_remote` shows it.
 - **Assert with revsets, not text.** `Repo.ids("<revset>")` returns change ids.
   Use `<rev>::` for "descendants of" — not `<rev>..`, which is a different range
   operator. Read `Repo.log_graph` output when a test surprises you.
