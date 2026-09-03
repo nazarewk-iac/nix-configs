@@ -321,3 +321,57 @@ def build_mixed_working_copy(repo, slot_cfg) -> dict:
     repo.write("modules/generic.nix", "# generic work\n")
     repo.write("hosts/PLACEHOLDER-SENSITIVE-extra.nix", "# sensitive work\n")
     return labels
+
+
+def build_branch_tree(repo) -> dict:
+    """A long-lived local branch beside a shared trunk (no fork, no content split).
+
+    One remote ``origin`` holds the trunk. The branch ``B1 -> B2`` sits on an
+    earlier trunk base ``A`` while ``main@origin`` has advanced to new trunk
+    commits ``T1 -> T2`` (fetched, not yet integrated). ``@`` rests empty on the
+    branch tip.
+
+    Branch-mode revset aliases are added as flag overlays AFTER ``main@origin``
+    exists, so no alias names a missing ref during the build:
+
+    - ``trunk()``            = ``main@origin`` (the shared trunk tip)
+    - ``trunk-incoming``     = ``@..main@origin`` (fetched, not yet integrated)
+    - ``trunk-incoming-tip`` = ``main@origin``
+    - ``branch``             = ``trunk()..@ & ~description("")`` (local branch commits)
+    - ``branch-tip``         = ``heads(branch)``
+
+    So ``trunk-incoming`` = {T1, T2}; ``branch`` = {B1, B2}. The pushed trunk
+    (A, T1, T2) is immutable; the branch (B1, B2) is mutable. This mirrors the
+    fork's `upstream-incoming`/`upstream-incoming-tip` aliases minus the fork
+    remote and the content split.
+
+    No fork slot is needed (use ``mkrepo()`` with the default
+    ``JJConfig.without_slot()``). Returns ``labels`` with A, B1, B2, T1, T2, @.
+    """
+    labels = {}
+    repo.write("README.md", "# repo\n")
+    repo.describe("chore: readme")
+    labels["A"] = repo.change_id("@")
+    a = labels["A"]
+
+    # long-lived branch off A (local, mutable)
+    labels["B1"] = _node(repo, [a], "feat: branch one", {"branch/b1.txt": "b1\n"})
+    labels["B2"] = _node(repo, [labels["B1"]], "feat: branch two", {"branch/b2.txt": "b2\n"})
+
+    # trunk advances off A and is published to origin (immutable once pushed)
+    labels["T1"] = _node(repo, [a], "feat: trunk one", {"trunk/t1.txt": "t1\n"})
+    labels["T2"] = _node(repo, [labels["T1"]], "feat: trunk two", {"trunk/t2.txt": "t2\n"})
+    repo.register_remote("origin")
+    _push_rev_as(repo, "origin", labels["T2"], "main")  # main@origin = T2
+
+    repo.new(labels["B2"])  # rest @ empty on the branch tip
+    labels["@"] = repo.change_id("@")
+
+    # Branch-mode aliases: flag overlays, active from the next jj call. main@origin
+    # exists now, so trunk()/immutable_heads() resolve without a missing-ref trap.
+    repo.cfg.revset_alias("trunk()", "main@origin")
+    repo.cfg.revset_alias("trunk-incoming", "@..main@origin")
+    repo.cfg.revset_alias("trunk-incoming-tip", "main@origin")
+    repo.cfg.revset_alias("branch", 'trunk()..@ & ~description("")')
+    repo.cfg.revset_alias("branch-tip", "heads(branch)")
+    return labels
