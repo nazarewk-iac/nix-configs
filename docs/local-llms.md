@@ -1,7 +1,7 @@
 ---
 type: Reference
-description: Local LLM serving via the kdn.llm.local slot — full option synopsis, architecture, and the brys host as a concrete deployment example.
-timestamp: 2026-08-30T00:00:00+02:00
+description: Local LLM serving via the kdn.llm.local slot (llama-server router mode + Caddy TLS reverse proxy) — full option synopsis, architecture, and the brys host as a concrete deployment example.
+timestamp: 2026-08-31T00:00:00+02:00
 ---
 
 # Local LLM serving
@@ -10,22 +10,31 @@ How the `kdn.llm.local` standalone slot serves local LLMs on a NixOS host.
 This document covers the concept, the global download behaviour, and a
 concrete example single-host deployment on **brys**.
 
-Reference docs: [slot README](../modules/slots/llm/README.md), [beginner
-guide](eli5-llama-swap.md).
+Reference docs: [slot README](../modules/slots/llm/README.md).
 
 ## Concept
 
-`kdn.llm.local` runs local LLMs behind llama-swap, which exposes one
-OpenAI-compatible HTTP API and spawns an underlying `llama-server` per model on
-demand. One model runs in RAM at a time; the others stay on disk. Models are
-downloaded sequentially by a single service, directly in the host network
-namespace, with HF transfer concurrency capped by `download.mode`.
+`kdn.llm.local` runs a single llama-server (from llama.cpp) in **router mode**:
+one OpenAI-compatible HTTP API on loopback that loads/unloads individual GGUFs
+on demand (`--models-max 1`, exactly one model resident at a time). A
+self-signed-certificate **Caddy** reverse proxy exposes the endpoint on the LAN
+over HTTPS. Between Caddy and the loopback server sits one OpenCode DSML
+compat-proxy that translates DSML/XML tool calls and passes every other path
+through, so one instance fronts the self-routing server.
+
+```
+LAN client ──HTTPS──▶ Caddy (:80/:443) ──▶ compat-proxy (:9530) ──▶ llama-server (:39703, --api-key-file)
+```
 
 To enable on any NixOS host, inside its `mkSlots` block:
 
 ```nix
 kdn.llm.local.enable = true;
 kdn.llm.local.modelsDir = "/var/lib/kdn/llms/models";    # required, no default
+kdn.llm.local.domain = "brys.lan.etra.net.int.kdn.im";     # required, LAN hostname
+kdn.llm.local.certs.certFile = "/run/configs/.../public.key";   # required
+kdn.llm.local.certs.keyFile = "/run/configs/.../private.key";   # required
+kdn.llm.local.apiKeyFile = "/run/configs/.../api-keys";         # optional
 kdn.llm.local.download.mode = "slow";                    # global: slow | fast-polite
 # ... per-model `kdn.llm.local.models.<name>` entries ...
 ```
@@ -55,10 +64,11 @@ slot.
 
 ### Serving endpoint
 
-- llama-swap HTTP API: `http://127.0.0.1:39703` (OpenAI-compatible).
-- Talk to it with any OpenAI-compatible client; set the `model` field to a
-  model name or alias. llama-swap loads the requested GGUF and unloads the
-  previous one automatically.
+- llama-server router HTTP API (loopback, `--api-key-file`): `127.0.0.1:39703`.
+- LAN endpoint over HTTPS: `https://brys.lan.etra.net.int.kdn.im/v1`, pinned to
+  a self-signed cert and API-key protected. `POST /v1/chat/completions` with the
+  `model` field set to a model name or alias; the router loads/swaps the GGUF
+  automatically. Auth: `Authorization: Bearer <key>` (`brys/llama-server/api-keys`).
 
 ### Models (all enabled on brys)
 
@@ -94,6 +104,18 @@ decrypted to `/run/configs/llms/huggingface/token` by the host's
 `sops-install-secrets` wiring (`kdn.security.secrets.sops.files."llms"` in
 `hosts/brys/default.nix`, basePath `/run/configs/llms`, keyPrefix
 `huggingface`).
+
+The LAN llama-server API key and the self-signed Caddy certificate are
+decrypted under `/run/configs/brys/` by a second
+`kdn.security.secrets.sops.files."llms-brys"` entry (basePath `/run/configs`,
+keyPrefix `brys`):
+- `brys/llama-server/api-keys` → `/run/configs/brys/llama-server/api-keys`
+- `brys/llms/certs/public.key` → `/run/configs/brys/llms/certs/public.key`
+- `brys/llms/certs/private.key` → `/run/configs/brys/llms/certs/private.key`
+
+The certificate is pre-generated once (openssl EC P-256, SAN
+`brys.lan.etra.net.int.kdn.im`, 10 years) and stored in the sops file — there
+is no cert-generation logic in the module system.
 
 ### Status / known state
 

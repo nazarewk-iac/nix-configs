@@ -1,15 +1,26 @@
 ---
 type: Reference
-description: Standalone NixOS slot serving local LLMs via llama-swap, with sequential, concurrency-capped model downloads. Currently applied to the brys host.
-timestamp: 2026-08-30T00:00:00+02:00
+description: Standalone NixOS slot serving local LLMs via llama-server router mode behind a self-signed-certificate Caddy reverse proxy, with a server-side OpenCode DSML compat-proxy and a generic client slot. Currently applied to the brys host.
+timestamp: 2026-08-31T00:00:00+02:00
 ---
 
 # kdn.llm.local — local LLM serving
 
-A standalone NixOS slot that serves several local LLMs behind
-[llama-swap](https://github.com/mostlygeek/llama-swap). llama-swap spawns an
-underlying `llama-server` (from llama.cpp) on demand and exposes a single
-OpenAI-compatible HTTP API. One model runs at a time; the others stay on disk.
+A standalone NixOS slot that serves several local LLMs with a single
+llama-server (from llama.cpp) running in **router mode**: it owns one
+OpenAI-compatible HTTP API on loopback, loading/unloading individual GGUFs on
+demand. Exactly **one** model is resident in RAM at a time (`--models-max 1`);
+the others stay on disk.
+
+A self-signed-certificate **Caddy** reverse proxy exposes the endpoint on the
+LAN (`brys.lan.etra.net.int.kdn.im`, TCP 80/443 only). Between Caddy and the
+loopback server sits one OpenCode DSML compat-proxy instance that both
+translates DeepSeek DSML / Qwen XML tool calls and passes every other path
+through — so a single instance correctly fronts a server that does its own
+model routing.
+
+A companion generic **client** slot (`kdn.llm.client`) consumes the endpoint:
+it trusts the self-signed cert, injects the API key, and configures opencode.
 
 Currently applied to the **brys** host (`hosts/brys/default.nix`). See
 [`docs/local-llms.md`](../../../docs/local-llms.md) for a deployment example
@@ -21,8 +32,15 @@ and the exact brys state.
   options. It never references or assigns a `modules/universal/`- or
   `modules/meta/`-declared option (no `kdn.env.*`, `kdn.disks.*`, `kdnConfig`).
   See [Slots Standalone](../../../.agents/rules/slots-standalone.md).
-- **One model at a time.** llama-swap loads the requested model into RAM and
-  unloads it when you ask for a different one.
+- **One model at a time.** The router loads the requested model into RAM and
+  unloads it when you ask for a different one. Loaded models stay resident once
+  loaded (the router caches them), so slow-to-load frontier models don't churn.
+- **Loopback-only back end.** llama-server and the compat-proxy bind
+  `127.0.0.1`. Only Caddy listens on the network (80/443, hard-coded,
+  non-configurable).
+- **API-key protected.** llama-server is started with `--api-key-file` (a
+  host-wired path); the compat-proxy forwards the client's Bearer header so the
+  key reaches llama-server.
 - **Sequential downloads.** A single download service walks all enabled models
   one at a time in the host network namespace, with HF transfer concurrency
   capped by `download.mode` (slow / fast-polite).
@@ -40,7 +58,16 @@ slots = kdnConfig.self.mkSlots {
   kdn.llm.local.enable = true;
   kdn.llm.local.modelsDir = "/var/lib/kdn/llms/models"; # required, no default
 
-  kdn.llm.local.download.mode = "slow";      # global (default "slow" | "fast-polite")
+  # LAN endpoint (required): the Caddy vhost hostname + its self-signed cert.
+  kdn.llm.local.domain = "brys.lan.etra.net.int.kdn.im";
+  kdn.llm.local.certs.certFile = "/run/configs/brys/llms/certs/public.key";
+  kdn.llm.local.certs.keyFile = "/run/configs/brys/llms/certs/private.key";
+  kdn.llm.local.apiKeyFile = "/run/configs/brys/llama-server/api-keys"; # optional
+
+  kdn.llm.local.compatProxy.enable = true;    # default true
+  kdn.llm.local.compatProxy.port = 9530;       # loopback, between Caddy and server
+
+  kdn.llm.local.download.mode = "slow";        # global (default "slow" | "fast-polite")
 
   kdn.llm.local.models = {
     qwen3-30b-a3b = {
@@ -54,23 +81,49 @@ slots = kdnConfig.self.mkSlots {
 };
 ```
 
-`modelsDir` has no default and must be supplied by the host. The host may also
-register the same path in its own persistence machinery (for example
-`kdn.disks.persist...` in a repo that uses `modules/universal/`). The slot
-does not create or own any specific mountpoint.
+`modelsDir`, `domain`, and the two cert paths have no defaults and must be
+supplied by the host. The host may also register `modelsDir` in its own
+persistence machinery (for example `kdn.disks.persist...`). The slot does not
+create or own any specific mountpoint.
+
+### Certificates
+
+The self-signed certificate is **generated once, outside the module system**,
+and stored as a secret. There is no cert-generation logic anywhere in the
+module tree — the slot only reads the decrypted files. To (re)generate:
+
+```bash
+openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 \
+  -nodes -keyout private.key -out public.key -days 3650 \
+  -subj "/CN=brys.lan.etra.net.int.kdn.im" \
+  -addext "subjectAltName=DNS:brys.lan.etra.net.int.kdn.im"
+```
+
+...then encrypt both files (and the API key) into `llms.nonsensitive.sops.yaml`
+under `brys/` so they decrypt to the paths the host wired above.
 
 ## Serving
 
-- llama-swap listens on `127.0.0.1:39703` by default. Override with
-  `kdn.llm.local.server.host` / `server.port`.
-- `server.healthCheckTimeout` (default `300`) — seconds llama-swap waits for a
-  model to become ready before failing it. Multi-hundred-GB CPU models can take
-  minutes to load, so this is raised above llama-swap's ~120s default.
-- Send requests to `POST /v1/chat/completions` at that address. Set the
-  `model` field to a model name or alias. llama-swap loads or swaps the model
-  automatically.
-- `services.llama-swap.openFirewall` is left to the host to set if the server
-  must be reachable beyond localhost.
+Topology (all but Caddy on loopback):
+
+```
+LAN client ──HTTPS──▶ Caddy (:80/:443) ──▶ compat-proxy (:9530) ──▶ llama-server (:39703, --api-key-file)
+```
+
+- `kdn.llm.local.server.host` / `server.port` (defaults `127.0.0.1`/`39703`)
+  set the router llama-server bind address. Keep `server.host` on loopback.
+- `kdn.llm.local.domain` is the Caddy vhost hostname. Caddy terminates TLS with
+  `certs.certFile`/`certs.keyFile` and reverse-proxies to the loopback
+  compat-proxy. Firewall `allowedTCPPorts` is **hard-coded** to `[80 443]` and
+  not configurable.
+- `kdn.llm.local.compatProxy.enable` (default `true`) puts the DSML compat-proxy
+  in the path. Disable it to talk straight to llama-server over Caddy (you'd
+  lose DSML translation). `compatProxy.port` is loopback.
+- `apiKeyFile` (optional) is given to llama-server via `--api-key-file`. When
+  set, clients must send `Authorization: Bearer <key>`; the compat-proxy
+  forwards it on both streaming and non-streaming paths (`forwardClientAuth`).
+- Send requests to `/v1/chat/completions` on the domain. Set the `model` field
+  to a model name or alias. The router loads or swaps the model automatically.
 
 ## Downloading models
 
@@ -95,40 +148,67 @@ Global download options (`kdn.llm.local.download.*`):
     adaptive ramping, fixed low concurrency). Faster than `"slow"`, far
     gentler than Xet's full `"fast"`. This is the Tier 1 XET mitigation.
 - `download.xetConcurrency` (default `2`) — Xet download concurrency used in
-  `"fast-polite"` mode (the value of `HF_XET_FIXED_DOWNLOAD_CONCURRENCY` and
-  `HF_XET_NUM_CONCURRENT_RANGE_GETS`). Higher = faster but more aggressive.
+  `"fast-polite"` mode.
 - `download.tokenFile` (default `null`) — path to a file with a HuggingFace
   token, loaded via systemd `LoadCredential`. The host wires this (e.g. via
-  sops-nix to `/run/configs/llms/huggingface/token`). When null, downloads run
-  anonymously (rate-limited).
+  sops-nix to `/run/configs/llms/huggingface/token`).
 
 ## Per-model options
 
 | Option | Type | Default | Meaning |
 |---|---|---|---|
-| `enable` | bool | `false` | serve this model in llama-swap |
+| `enable` | bool | `false` | serve this model in the router server |
 | `hfRepo` | string | required | HuggingFace repo `owner/name` |
 | `hfFile` | string | required | GGUF path within `hfRepo`; may be a subdir path or the first shard of a split |
-| `download.glob` | string or null | `null` | glob within `hfRepo` that the download fetches (e.g. all shards of a split); when set the download always runs |
-| `aliases` | list of string | `[]` | extra names llama-swap answers to |
+| `download.glob` | string or null | `null` | glob within `hfRepo` the download fetches (e.g. all shards of a split); when set the download always runs |
+| `aliases` | list of string | `[]` | extra names the router server answers to |
 | `threads` | int or null | `null` | `llama-server -t` (null lets llama-server choose) |
-| `ttl` | int | `3600` | seconds llama-swap keeps the model loaded after its last request before unloading (1h default; set higher for slow-to-load models like `deepseek-v4-flash`) |
 | `download.enable` | bool | `true` | include in the sequential download run |
 | `download.force` | bool | `false` | re-download even if present |
 
-`ttl` is per model. Set, for example, `ttl = 86400` (24h) on a large model you
-want to keep resident instead of re-loading repeatedly.
+Router-mode note: the router generates the `--models-preset` INI from these
+options at build time — each enabled model becomes a `[<name>]` section with
+`model = <abs path>` plus optional `alias`/`threads`. The section name (the
+slot's model attr name) is the model id the API answers to, so client configs
+keyed on friendly names (`deepseek-v4-flash`, `frontier`, ...) keep working.
 
-Download mode (`download.mode`) is **global** (`kdn.llm.local.download.mode`),
-not per model.
+There is no per-model `ttl` in router mode; the router keeps a loaded model
+resident once loaded. Set `--models-max` implicitly to `1` (exactly one model
+resident). The slot hard-codes `models-max=1` to preserve the "one model at a
+time" behaviour; it is not configurable.
 
 Only `enable = true` models are configured and downloaded. Keep the other
 models declared-but-disabled to add them later with a one-line change.
 
+## Client slot (`kdn.llm.client`)
+
+A generic consumer of the endpoint, in `modules/slots/llm/client/`. Enable it
+on any host that should use the LAN llama-server:
+
+```nix
+kdn.llm.client.enable = true;
+kdn.llm.client.baseURL = "https://brys.lan.etra.net.int.kdn.im/v1";
+kdn.llm.client.caCertFile = "/path/to/public.key";   # trust the self-signed cert
+kdn.llm.client.apiKeyFile = "/path/to/api-key";      # optional
+kdn.llm.client.models = {
+  "deepseek-v4-flash" = { displayName = "deepseek-v4-flash (LAN)"; };
+};
+```
+
+- **NixOS:** installs `caCertFile` into the system CA store
+  (`security.pki.certificateFiles`).
+- **devenv:** writes an opencode `@ai-sdk/openai-compatible` provider bound to
+  `baseURL` with `{env:KDN_LLM_API_KEY}`, and ships an `opencode-kdn-lan` wrapper
+  that loads the key from `apiKeyFile` and points `NODE_EXTRA_CA_CERTS` at
+  `caCertFile` before exec'ing opencode.
+
+The client slot is generic — it has no host identity hard-coded.
+
 ## Operations
 
-- **Status:** `kdn-llm-status` (installed into PATH) shows llama-swap status,
-  the download service, and recent download logs.
+- **Status:** `kdn-llm-status` (installed into PATH) shows the router
+  llama-server, the loopback compat-proxy, Caddy, the download service, and
+  recent download logs.
 - **Run a download:** `systemctl start kdn-llm-download` (or the
   `kdn-llm-download.target`).
 - **Watch a download:** `journalctl -fu kdn-llm-download`.
@@ -141,6 +221,3 @@ models declared-but-disabled to add them later with a one-line change.
   ~18 GB model loads in under a minute.
 - First request to a loaded model may appear to hang while it loads — that is
   normal.
-
-See [`docs/eli5-llama-swap.md`](../../../docs/eli5-llama-swap.md) for a
-plain-English explanation of how model swapping works.
