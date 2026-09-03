@@ -174,6 +174,30 @@ in {
       type = lib.types.path;
       description = "Path to the corresponding PEM private key for Caddy.";
     };
+    # Extra domain names the leaf cert carries (beyond `domain`). The Caddy
+    # vhost listens on `domain` and each additional SAN's hostname, all served
+    # by the same cert/key.
+    certs.sans = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [];
+      example = [
+        "brys.lan.drek.net.int.kdn.im"
+        "brys.priv.nb.net.int.kdn.im"
+      ];
+      description = "Additional hostnames the Caddy cert covers (SANs).";
+    };
+    # Addresses/interfaces the Caddy vhost binds, one per SAN-facing network
+    # (e.g. each VLAN/interface a SAN hostname resolves on). Empty binds on the
+    # default interface only.
+    certs.listenAddresses = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [];
+      example = [
+        "192.168.41.31"
+        "100.79.164.36"
+      ];
+      description = "Addresses the Caddy vhost listens on (one per SAN interface).";
+    };
     apiKeyDir = lib.mkOption {
       type = lib.types.nullOr lib.types.path;
       default = null;
@@ -349,11 +373,26 @@ in {
       # (which passes through to the llama-server). Hard-coded 80/443 only.
       services.caddy = {
         enable = true;
-        virtualHosts.${cfg.domain}.extraConfig = ''
-          tls ${cfg.certs.certFile} ${cfg.certs.keyFile}
-          reverse_proxy 127.0.0.1:${toString cfg.compatProxy.port}
-        '';
+        virtualHosts.${cfg.domain} = {
+          # Bind each SAN-facing interface/address (so the cert's domains all
+          # answer), plus serve every SAN hostname.
+          listenAddresses = cfg.certs.listenAddresses;
+          # Extra hostnames the same vhost answers to; never the primary (that's
+          # the vhost key itself).
+          serverAliases = lib.remove cfg.domain cfg.certs.sans;
+          extraConfig = ''
+            tls ${cfg.certs.certFile} {$CREDENTIALS_DIRECTORY}/llm-key
+            reverse_proxy 127.0.0.1:${toString cfg.compatProxy.port}
+          '';
+        };
       };
+
+      # Inject the raw-decrypted leaf private key into Caddy at runtime. systemd
+      # copies /run/secrets/.../llm.key into the unit's private credential dir
+      # (visible only to the unit), never a world-readable static path.
+      systemd.services.caddy.serviceConfig.LoadCredential = [
+        "llm-key:${cfg.certs.keyFile}"
+      ];
 
       networking.firewall.allowedTCPPorts = [
         80

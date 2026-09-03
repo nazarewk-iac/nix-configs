@@ -10,6 +10,11 @@
     # devenv CLI and shell hooks.
     kdn.devenv.enable = true;
 
+    # Trust the KDN CA (data/ca.pub) system-wide; reference the offline CA key path.
+    kdn.ca.kdn.enable = true;
+    kdn.ca.kdn.certFile = "${kdnConfig.self}/data/ca.pub";
+    kdn.ca.kdn.keySopsFile = "${kdnConfig.self}/data/ca.key.sops";
+
     # Local LLM serving (llama-server router mode, TLS behind caddy). Models are
     # registered under kdn.disks.persist."usr/data" further below; the slot
     # receives only the path and the cert/key path fragments.
@@ -18,11 +23,18 @@
     # HF token for faster/authenticated downloads, wired via sops below to
     # /run/configs/llms/huggingface/token.
     kdn.llm.local.download.tokenFile = "/run/configs/llms/huggingface/token";
-    # LAN endpoint hostname + self-signed cert paths, decrypted via sops below
-    # to /run/configs/llms/.
+    # LAN endpoint hostname + leaf cert paths (signed by the KDN CA). The public
+    # cert is referenced from the repo store; the private key is raw sops-decrypted
+    # on brys into /run/secrets (see the kdn-llm-leaf-key service) and loaded into
+    # Caddy via LoadCredential.
     kdn.llm.local.domain = "brys.lan.etra.net.int.kdn.im";
-    kdn.llm.local.certs.certFile = "/run/configs/llms/certs/public.key";
-    kdn.llm.local.certs.keyFile = "/run/configs/llms/certs/private.key";
+    kdn.llm.local.certs.certFile = "${kdnConfig.self}/hosts/brys/certs/llm.pub";
+    kdn.llm.local.certs.keyFile = "/run/secrets/kdn/brys/llm.key";
+    kdn.llm.local.certs.sans = [
+      "brys.lan.etra.net.int.kdn.im"
+      "brys.lan.drek.net.int.kdn.im"
+      "brys.priv.nb.net.int.kdn.im"
+    ];
     kdn.llm.local.apiKeyDir = "/run/configs/llms/llama-server/api-keys";
     # Global download: fast-polite keeps Xet enabled but with a configurable,
     # capped concurrency. Tuned to target roughly 500-700 Mbit/s; raise/lower
@@ -349,13 +361,40 @@ in {
       ];
     }
     {
-      # Shared /run/configs/llms secrets: HF token, self-signed Caddy cert, and
-      # llama-server API keys. Decrypted to their full sops key paths under
-      # /run/configs/llms/. Shared with the oams host (same mount point).
+      # Shared /run/configs/llms secrets: HF token and llama-server API keys.
+      # Decrypted to their full sops key paths under /run/configs/llms/. Shared
+      # with the oams host (same mount point).
       kdn.security.secrets.sops.files."llms" = {
         sopsFile = "${kdnConfig.self}/llms.nonsensitive.sops.yaml";
         basePath = "/run/configs/llms";
         sops.mode = "0444";
+      };
+    }
+    {
+      # Raw-decrypt the brys LLM leaf PRIVATE key from hosts/brys/certs/llm.key.sops
+      # into /run/secrets (root-only tmpfs) before Caddy starts. Uses the wrapped
+      # `sops` (age identity auto-imported from brys' SSH host key). The pub cert is
+      # referenced directly from the store (no decryption). Caddy loads the key via
+      # LoadCredential (see the llm slot's caddy wiring).
+      systemd.services.kdn-llm-leaf-key = {
+        description = "Decrypt brys LLM leaf private key into /run/secrets";
+        wantedBy = ["caddy.service"];
+        before = ["caddy.service"];
+        path = [pkgs.sops pkgs.coreutils];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          User = "root";
+          Group = "root";
+        };
+        script = ''
+          set -euo pipefail
+          mkdir -p /run/secrets/kdn/brys
+          ${pkgs.sops}/bin/sops decrypt --output-type binary \
+            ${kdnConfig.self}/hosts/brys/certs/llm.key.sops \
+            > /run/secrets/kdn/brys/llm.key
+          chmod 0400 /run/secrets/kdn/brys/llm.key
+        '';
       };
     }
     {
