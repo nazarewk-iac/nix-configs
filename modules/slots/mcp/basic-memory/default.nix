@@ -29,7 +29,7 @@ in
       };
       memory-sensitive = {
         command = "${bms}/bin/basic-memory-sensitive mcp";
-        description = "basic-memory sensitive knowledge base (private, company-specific)";
+        description = "basic-memory sensitive knowledge base (private, internal)";
       };
     };
 

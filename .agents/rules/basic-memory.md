@@ -13,7 +13,7 @@ Two knowledge bases are available as MCP backends:
   Default project: `public/default`. Create new projects as siblings: `public/<project-name>/`.
 
 - **memory-sensitive** — anything that should not be publicly disclosed: internal systems,
-  credentials hints, employer-specific knowledge, internal architecture, work-specific tooling,
+  credentials hints, private or sensitive knowledge, internal architecture, internal tooling,
   internal configs. When in doubt about sensitivity, prefer sensitive.
   Projects live under `~/.local/share/kdn-nix-configs/knowledge/sensitive/`.
   Default project: `sensitive/default`. Create new projects as siblings: `sensitive/<project-name>/`.
@@ -21,7 +21,7 @@ Two knowledge bases are available as MCP backends:
 ## Routing rules
 
 - Store in **memory-sensitive**: company names, internal hostnames, employee names, credentials,
-  internal architecture, work-specific tooling, employer configs, anything marked confidential.
+  internal architecture, internal tooling, internal configs, anything marked confidential.
 - Store in **memory-public**: Nix conventions, open-source package notes, public tooling workflows,
   general programming patterns, anything safe to publish.
 - When a note spans both: split it — public facts in memory-public, sensitive context in
