@@ -9,6 +9,13 @@
     inherit pkgs;
     # devenv CLI and shell hooks.
     kdn.devenv.enable = true;
+
+    # Trust the KDN CA system-wide so the brys LLM leaf cert verifies. As a
+    # development machine, oams also mounts the (encrypted, offliine) CA key blob
+    # for manual reference; it does NOT host the LLM solution, so no leaf cert.
+    kdn.ca.kdn.enable = true;
+    kdn.ca.kdn.certFile = "${kdnConfig.self}/data/ca.pub";
+    kdn.ca.kdn.keySopsFile = "${kdnConfig.self}/data/ca.key.sops";
   };
 in {
   imports = [
@@ -209,8 +216,8 @@ in {
       security.sudo.wheelNeedsPassword = false;
     }
     {
-      # Shared /run/configs/llms secrets (same mount as brys): self-signed Caddy
-      # cert for the LAN llama-server endpoint and its API keys.
+      # Shared /run/configs/llms secrets (same mount as brys): HF token and
+      # llama-server API keys. The leaf cert moved to hosts/brys/ (brys only).
       kdn.security.secrets.sops.files."llms" = {
         sopsFile = "${kdnConfig.self}/llms.nonsensitive.sops.yaml";
         basePath = "/run/configs/llms";
