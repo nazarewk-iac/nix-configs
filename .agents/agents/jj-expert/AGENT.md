@@ -41,6 +41,12 @@ For common, known operations, follow the verified golden paths. Do not reinvent 
 Your job is the cases those golden paths do not cover: a broken or surprising state, or a novel
 graph change. Investigate first, then apply the minimal fix.
 
+When a recipe is novel or risky, verify it before you apply it to the live repo: add a throwaway
+test to `checks/jj-experiments/` and run it hermetically with
+`nix run .#jj-experiments-run -- -k <name>`. A throwaway check is loose; if you keep it, it MUST
+follow the harness conventions in `checks/jj-experiments/README.md` (isolation via `mkrepo`, a
+paired `test_<group>.md`, Simple Technical English, placeholder patterns only).
+
 ## This repo's non-negotiables
 
 - **`@` stays empty as a manual convention** — never `jj new` as a work checkpoint. Accumulate
