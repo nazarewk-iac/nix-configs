@@ -3,9 +3,10 @@
 # A thin `mkSlots` instance scoped to the oams host, imported by the primary
 # `devenv.nix` via `profiles.hostname."oams".module`. It enables opencode (via
 # the generic `kdn.opencode` slot) and feeds the required info to
-# `kdn.llm.client`, which writes the opencode provider and ships the wrapper.
-# This file is intentionally minimal — just the endpoint details from the shared
-# /run/configs/llms mount.
+# `kdn.llm.client`, which writes the opencode provider. The `opencode-kdn`
+# wrapper injects the brys API key. The self-signed cert is trusted system-wide
+# on oams via the `kdn.ca.kdn` slot (security.pki). This file is intentionally
+# minimal.
 #
 # Only the host whose hostname is `oams` auto-activates this profile.
 {
@@ -16,10 +17,12 @@
 (inputs.nix-configs.mkSlots {
   inherit pkgs;
 
-  # The generic opencode slot turns opencode on and supplies the default
-  # permission skeleton; kdn.llm.client adds the per-upstream providers +
-  # wrappers.
+  # The generic opencode slot turns opencode on, supplies the default
+  # permission skeleton, and provides the single `opencode-kdn` wrapper. The
+  # brys API key is injected into that wrapper via wrapper.envFiles.
+  # kdn.llm.client adds the per-upstream provider (no per-upstream wrapper).
   kdn.opencode.enable = true;
+  kdn.opencode.wrapper.envFiles.KDN_LLM_API_KEY_brys = "/run/configs/llms/llama-server/api-keys/default";
 
   kdn.llm.client.enable = true;
   kdn.llm.client.upstreams.brys = {

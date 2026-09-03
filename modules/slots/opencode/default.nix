@@ -22,7 +22,9 @@
 #
 # The `opencode-kdn` wrapper loads REQUESTY_API_KEY from
 # ~/.local/share/opencode/auth.json via jq, then execs the real opencode. It is
-# generic and ships with the slot.
+# generic, ships with the slot, and is extensible via `kdn.opencode.wrapper`
+# (env / envFiles / preExec) so consumers can inject secrets or add pre-exec
+# steps to the single entrypoint.
 #
 # This slot is STANDALONE. It uses only `lib`, `pkgs`, `config`, and plain
 # devenv options (opencode.*, packages). It never references or assigns an
@@ -33,8 +35,7 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   cfg = config.kdn.opencode;
 
   # Default permission policy. Kept in the slot as a global default so any host
@@ -80,19 +81,27 @@ let
     };
   };
 
-  # Wrapper that loads REQUESTY_API_KEY from opencode's auth.json (via jq) so
-  # a `requesty-proxy` provider — which uses {env:REQUESTY_API_KEY} — can
-  # authenticate. Run `opencode-kdn` inside the devenv shell.
+  # Single opencode entrypoint, assembled from the extensible `wrapper` option.
+  # Base: loads REQUESTY_API_KEY from opencode's auth.json (via jq) for a
+  # `requesty-proxy` provider. Then:
+  #   - exports every literal `wrapper.env` (NAME=VALUE)
+  #   - exports every `wrapper.envFiles` entry by reading the file (NAME=$(cat)
+  #   - runs `wrapper.preExec` (extra shell lines)
+  # This lets consumer modules (e.g. a LAN LLM client) extend the wrapper's
+  # env/pre-exec behaviour instead of the slot enumerating every use-case.
+  # Run `opencode-kdn` inside the devenv shell.
   opencodeKdn = pkgs.writeShellScriptBin "opencode-kdn" ''
     set -euo pipefail
     export REQUESTY_API_KEY="$(${lib.getExe pkgs.jq} -r '.requesty.key // empty' "$HOME/.local/share/opencode/auth.json" 2>/dev/null || true)"
     if [ -z "''${REQUESTY_API_KEY:-}" ]; then
       echo "opencode-kdn: no requesty key found in ~/.local/share/opencode/auth.json" >&2
     fi
+    ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: value: "export ${name}=${lib.escapeShellArg value}") cfg.wrapper.env)}
+    ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: path: "export ${name}=\"$(cat ${path})\"") cfg.wrapper.envFiles)}
+    ${cfg.wrapper.preExec}
     exec ${lib.getExe pkgs.opencode} "$@"
   '';
-in
-{
+in {
   options.kdn.opencode = {
     enable = lib.mkEnableOption "in-devenv opencode configuration (opencode.jsonc + wrapper)";
 
@@ -120,10 +129,43 @@ in
     settings = lib.mkOption {
       type = lib.types.attrsOf lib.types.anything;
       default = lib.mkDefault {
-        provider.requesty = { };
+        provider.requesty = {};
         permission = defaultPermission;
       };
       description = "opencode config written to opencode.jsonc (provider, permission, ...).";
+    };
+
+    # Extensions to the `opencode-kdn` wrapper. Data-driven so any consumer
+    # module can extend the single entrypoint (env injection, pre-exec steps)
+    # without a per-upstream wrapper. Emitted roughly as:
+    #   export NAME=VALUE                      (wrapper.env)
+    #   export NAME="$(cat /path)"             (wrapper.envFiles)
+    #   <wrapper.preExec>
+    #   exec opencode "$@"
+    # Self-signed CA trust is handled system-wide (security.pki), so no
+    # NODE_EXTRA_CA_CERTS injection is needed here.
+    wrapper = lib.mkOption {
+      type = lib.types.submodule {
+        options = {
+          env = lib.mkOption {
+            type = lib.types.attrsOf lib.types.str;
+            default = {};
+            description = "Literal NAME=VALUE exports set by opencode-kdn before exec.";
+          };
+          envFiles = lib.mkOption {
+            type = lib.types.attrsOf lib.types.path;
+            default = {};
+            description = "env NAME -> file path; opencode-kdn exports NAME as the file contents.";
+          };
+          preExec = lib.mkOption {
+            type = lib.types.lines;
+            default = "";
+            description = "Extra shell lines run by opencode-kdn before exec'ing opencode.";
+          };
+        };
+      };
+      default = {};
+      description = "Extensions to the opencode-kdn wrapper (env, env-files, pre-exec).";
     };
   };
 

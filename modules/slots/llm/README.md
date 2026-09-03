@@ -189,31 +189,31 @@ models declared-but-disabled to add them later with a one-line change.
 
 The endpoint is consumed over HTTPS with the shared `/run/configs/llms` mount
 (the self-signed cert and the API key). A **client slot**
-(`modules/slots/llm/client/`) adds an opencode provider and an
-`opencode-kdn-<name>` wrapper (key injection + cert trust) per configured
-upstream; it does **not** enable opencode itself. Each upstream is keyed by
-name (`upstreams.<name>` → `provider.<name>` + `opencode-kdn-<name>`). The
-consumer's devenv enables `kdn.opencode` (turns opencode on) plus
-`kdn.llm.client` as a thin passthrough (see `hosts/oams/devenv.nix`):
+(`modules/slots/llm/client/`) adds an opencode provider per configured
+upstream; it does **not** enable opencode itself and ships **no** per-upstream
+wrapper. Each upstream is keyed by name (`upstreams.<name>` →
+`provider.<name>`). The consumer's devenv enables `kdn.opencode` (turns
+opencode on and provides the single `opencode-kdn` wrapper, with the API key
+injected via `wrapper.envFiles`), trusts the self-signed cert system-wide via
+`security.pki`, and enables `kdn.llm.client` as a thin passthrough (see
+`hosts/oams/devenv.nix`):
 
 ```nix
 kdn.opencode.enable = true;                 # turns opencode on + default permission
+kdn.opencode.wrapper.envFiles.KDN_LLM_API_KEY_brys = "/run/configs/llms/llama-server/api-keys/default";
 kdn.llm.client.enable = true;
 kdn.llm.client.upstreams.brys = {
   enable = true;
-  baseURL = "https://brys.lan.etra.net.int.kdn.im/v1";
-  caCertFile = "/run/configs/llms/certs/public.key";
-  apiKeyFile = "/run/configs/llms/llama-server/api-keys/default";
+  baseURL = "https://brys.priv.nb.net.int.kdn.im/v1";
   models = { "deepseek-v4-flash" = { ... }; };
 };
 # ... add more upstreams as upstreams.<other> = { ... };
 ```
 
 For the `brys` upstream, the slot adds an `@ai-sdk/openai-compatible`
-`provider.brys` bound to `baseURL` and ships an `opencode-kdn-brys` wrapper
-that loads the key from `apiKeyFile` (as `KDN_LLM_API_KEY_brys`) and points
-`NODE_EXTRA_CA_CERTS` at `caCertFile`. Run opencode via
-`opencode-kdn-brys` inside the devenv shell so the key and cert are injected.
+`provider.brys` bound to `baseURL` with `apiKey = {env:KDN_LLM_API_KEY_brys}`.
+The single `opencode-kdn` wrapper loads that key from the `envFiles` path you
+set; run opencode via `opencode-kdn` inside the devenv shell.
 
 ## Operations
 
