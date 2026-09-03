@@ -65,7 +65,9 @@ below are under `checks/jj-experiments/`.
 ## Fork topology (only when this repo is a fork)
 
 Quick check: `jj config list --repo` lists `revset-aliases.fork-tip`. If it does not, skip this —
-a plain repo uses only the day-to-day paths above. Full detail:
+a plain repo uses only the day-to-day paths above. The shared branch workflows (integrate trunk,
+hazards, X→Y) live in [docs/jujutsu-vcs.md](../../../docs/jujutsu-vcs.md#branch-workflows); only the
+fork-specific content routing below is fork-only. Full detail:
 [docs/jujutsu-vcs.fork.md](../../../docs/jujutsu-vcs.fork.md). Proofs: `test_placement.md`,
 `test_rebase.md`, `test_hazards.md`, `test_deleak.md`, `test_revsets.md`.
 
