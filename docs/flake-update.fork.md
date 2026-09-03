@@ -325,6 +325,10 @@ working copy on top of the fork merge.
 This step rewrites the fork merge. That is fine while the fork merge is still **mutable** (not
 pushed). Do NOT do this after a push — see the next section.
 
+`--insert-after`/`--insert-before` are the long forms of `-A`/`-B`. This is the mutable-tree
+placement golden path; see [jujutsu-vcs.fork.md](jujutsu-vcs.fork.md#golden-paths) and its proof
+[test_placement.md](../checks/jj-experiments/test_placement.md).
+
 ### Public fix, tips ALREADY pushed
 
 After `jj sync-remotes`, both tips are immutable. **NEVER rewrite a pushed commit.** Do NOT use
@@ -344,6 +348,9 @@ FIX=$(jj log -r @ --no-graph -T 'change_id.short()')
 jj new fork-tip "$FIX" -m 'chore(fork): merge <fix> from upstream'
 jj new fork-tip                                 # park an empty single-parent @ for review
 ```
+
+This build-forward pattern (never rewrite a pushed commit; add a new merge on top) is the frozen
+pull-upstream golden path; see its proof [test_rebase.md](../checks/jj-experiments/test_rebase.md).
 
 The result:
 
