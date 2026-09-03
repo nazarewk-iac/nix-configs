@@ -244,6 +244,7 @@ placement, pull upstream in, frozen-vs-mutable, forbidden rewrites) live in
 | Roll back | `jj undo` (last op) · `jj op log` + `jj op restore <op>` (multi-step) | [test_recover.md](../checks/jj-experiments/test_recover.md) |
 | Bookmark CRUD | `jj bookmark create/set[/--allow-backwards]/delete/list --all-remotes` | [test_bookmarks.md](../checks/jj-experiments/test_bookmarks.md) |
 | Push / fetch a bookmark | `jj git push --remote <r> --bookmark <b>` · `jj git fetch --remote <r>` | [test_bookmarks.md](../checks/jj-experiments/test_bookmarks.md) |
+| Push a change to a branch/fork | fetch · `jj rebase -b @ -d <branch>@<remote>` · set · `jj git push -b <branch>` | [test_push.md](../checks/jj-experiments/test_push.md) |
 | Untrack a file | add to `.gitignore`, then `jj file untrack <path>` | [test_bookmarks.md](../checks/jj-experiments/test_bookmarks.md) |
 | Detect / resolve a conflict | `jj log -r 'conflicts()'` → edit to merged content → snapshot | [test_conflicts.md](../checks/jj-experiments/test_conflicts.md) |
 
@@ -318,6 +319,35 @@ Either way `trunk-incoming` ends empty and the pushed trunk keeps its commit id.
 rule:** you can rebase or rewrite only a **mutable** branch. A pushed commit is immutable, so build
 forward — add a new merge — instead of a rewrite. A conflict is recorded in the commit, not aborted:
 detect it with `jj log -r 'conflicts()'`, edit each file to the merged content, then snapshot.
+
+### Push the branch to a remote
+
+Publish your work to a shared branch, a feature branch, or a fork remote. Fetch first, put your
+work on top of the incoming tip, then push:
+
+```bash
+jj git fetch --remote=<remote>
+jj rebase -b @ -d <branch>@<remote>       # skip if you are already ahead
+jj bookmark set <branch> -r <your-rev>
+jj git push --remote=<remote> -b <branch>
+```
+
+- **Safe default — push a feature/PR branch, never over the primary.** Do not `jj bookmark set main`
+  and push; publish your own branch and open a PR. Anonymous (usual): `jj git push -c <rev>` creates a
+  `push-<id>` bookmark and pushes it. Named: `jj bookmark create <name>` then `jj git push -b <name>`
+  — jj 0.44 has no `--allow-new`; the push starts tracking the new bookmark. Both leave `main@<remote>`
+  untouched. The fork remote is the same command with `--remote=<fork>`.
+- **Move your work, not the incoming.** You cannot rebase the fetched tip under your work when it is
+  immutable: `main@<remote>` (`trunk()`, always) or an untracked bookmark — `jj rebase -r … --insert-before @`
+  is refused. Rebase your own mutable stack (`-b @`) or one change (`-r <tip>`) onto it instead. (The
+  insert *does* work on a **tracked, non-trunk feature branch**: `jj bookmark track feat@<remote>` first.)
+- **A stale push is rejected; a post-fetch push can clobber.** With force-with-lease, a push made
+  **before** you fetch the moved remote is **rejected** ("stale info") — the real guard. Only **after**
+  a fetch does a bare push move the bookmark **sideways** and discard the remote's commit. So fetch,
+  then rebase onto the incoming tip so the push fast-forwards; `jj git push … --dry-run` shows "move
+  sideways" when it would clobber. There is no fast-forward-only flag.
+
+Verified by [test_push.md](../checks/jj-experiments/test_push.md).
 
 ### Make X an ancestor of Y
 
