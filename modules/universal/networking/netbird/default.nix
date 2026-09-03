@@ -17,7 +17,7 @@ in
   options.kdn.networking.netbird = {
     useOwnPackages = lib.mkOption {
       type = lib.types.bool;
-      default = true;
+      default = false;
     };
     admins = lib.mkOption {
       type = with lib.types; listOf str;
