@@ -31,9 +31,9 @@ operation log and working state in each repo's `.jj/`, not under `$HOME`. So
 nothing reads or writes the developer's real config, and every write stays in
 the temp tree. The temp tree is removed on test teardown.
 
-## Two run modes
+## Run modes
 
-Both modes run the same test files.
+All modes run the same test files.
 
 - **Flake check (headless, in the Nix sandbox):**
   ```bash
@@ -49,6 +49,15 @@ Both modes run the same test files.
   ```
   The shell provides python, pytest, jujutsu, and git, and exports the same
   `JJ_FORK_CONFIG_TOML`.
+- **Subset runner app (any pytest flags, hermetic, no `--impure`):**
+  ```bash
+  nix run .#jj-experiments-run -- -k <case> -x
+  ```
+  It forwards the args to a sandboxed `nom build` of `subset-runner.nix`. No args
+  runs the whole suite. A re-run is a cache hit **only on an unchanged working
+  tree** — `path:` re-hashes the whole tree, so any edit (even to an unrelated
+  file) forces a rerun. On a cache hit it prints no test output; pass `--rebuild`
+  to force a rerun.
 
 A test that needs the real fork aliases calls `harness.slot_config()`. It skips
 when `JJ_FORK_CONFIG_TOML` is absent (for example a bare `pytest` run with no
@@ -142,5 +151,22 @@ aliases resolve the same way on every run, with no sleeps.
 - `test_smoke.py` is the harness self-test, not a use-case family, so it is the
   one `test_*.py` file with no paired `.md`.
 
-Add a throwaway experiment as a small test function; delete it when done. Run
-one with `pytest -k <name>`.
+## Test a case on-demand, or embed it
+
+To check a jj recipe on-demand — or embed it permanently — add a small test
+function to a `test_<group>.py` (build state with `mkrepo`/`Repo`/`JJConfig`),
+then run it hermetically:
+
+```bash
+nix run .#jj-experiments-run -- -k <name>     # sandboxed; or `pytest -k <name>` in the devenv shell
+```
+
+Delete a throwaway function when done; keep it to record the case permanently.
+
+**A throwaway check is loose — it may skip these conventions. Anything you commit MUST follow
+them:** build state through `mkrepo`/`Repo`/`JJConfig` (never touch the real repo), stamp
+deterministic commit times, pair a `test_<group>.py` with a `test_<group>.md` (see
+[Layout convention](#layout-convention)), write prose in Simple Technical English, and use
+placeholder patterns only — never a real sensitive term. The design and philosophy behind these
+conventions are in the
+[design doc](../../docs/tasks/jj-fork-use-cases-refactor.design.md).
