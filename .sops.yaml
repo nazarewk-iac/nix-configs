@@ -60,12 +60,6 @@ keys:
     # SSH-KEYS-DEFINITION-INSERT-ABOVE
 
 creation_rules:
-  - path_regex: 'hosts/.*/.*\.sops(\.[^.]+)?$'
-    key_groups:
-      - age:
-          - *yk-oams-touch
-          - *yk-brys-touch
-          - *yk-pton-touch
   - path_regex: 'dns\.sops\.[^.]+$'
     key_groups:
       - age:
@@ -108,6 +102,23 @@ creation_rules:
           # defaults
           - *yk-brys-unattended
           - *yk-oams-unattended
+  - path_regex: '.*brys.*\.key\.sops'
+    key_groups:
+      - age:
+          - *yk-brys-touch
+          - *yk-oams-touch
+          - *ssh-brys
+  - path_regex: '.*\.key\.sops'
+    key_groups:
+      - age:
+          - *yk-brys-touch
+          - *yk-oams-touch
+  - path_regex: 'hosts/.*/.*\.sops(\.[^.]+)?$'
+    key_groups:
+      - age:
+          - *yk-oams-touch
+          - *yk-brys-touch
+          - *yk-pton-touch
   - key_groups:
       - age:
           - *yk-etra-touch
