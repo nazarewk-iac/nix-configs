@@ -6,16 +6,21 @@ timestamp: 2026-09-02T00:00:00+02:00
 
 # Jujutsu (jj) VCS — Fork Workflow
 
-**TL;DR.** A private fork remote sits next to a public upstream remote. One merge commit (`main`)
-joins both lines. `@` is a plain empty change with a single parent — the merge. Split every local
-change by **content sensitivity**. Generic work goes on the upstream chain. The task docs that
-record the work go there too. Only sensitive content stays fork-side.
+**TL;DR.** A fork is a long-lived merge-style branch (see
+[jujutsu-vcs.md](jujutsu-vcs.md#branch-workflows)) plus a content-routing and a second-remote
+layer. This file documents only those extras. A private fork remote sits next to a public upstream
+remote. One merge commit (`main`) joins both lines. `@` is a plain empty change with a single
+parent — the merge. Split every local change by **content sensitivity**. Generic work goes on the
+upstream chain. The task docs that record the work go there too. Only sensitive content stays
+fork-side.
 
 > **Agent note:** This file is installed as `.claude/rules/jujutsu-vcs.fork.md` in a repo with
 > `kdn.jj.fork.enable = true`. For the fork-agnostic day-to-day golden paths (split, squash,
 > absorb, amend, rebase, restore, bookmarks, conflicts), see
-> [jujutsu-vcs.md](jujutsu-vcs.md#day-to-day-golden-paths) — this file does not repeat them. For
-> the concrete update workflow, see [flake-update.fork.md](flake-update.fork.md).
+> [jujutsu-vcs.md](jujutsu-vcs.md#day-to-day-golden-paths). For the shared branch workflows
+> (integrate trunk, hazards, X→Y), see [jujutsu-vcs.md](jujutsu-vcs.md#branch-workflows). This file
+> does not repeat either. For the concrete update workflow, see
+> [flake-update.fork.md](flake-update.fork.md).
 >
 > Every golden-path recipe below is proven by a test under `checks/jj-experiments/` (linked
 > inline). The `jj fork-audit` tool command is the exception — it is verified by use, not by the
@@ -126,26 +131,15 @@ fast-forwards on.
 - **Mixed `@`** (generic + sensitive): route the generic part with the upstream recipe, then carve
   the sensitive remainder as a leaf.
 
-### Pull upstream in — [test_rebase.md](../checks/jj-experiments/test_rebase.md)
+### Pull upstream in, and make X an ancestor of Y
 
-```bash
-jj git fetch --all-remotes
-# frozen merge (published): build a new merge forward
-jj new fork-tip upstream-incoming-tip -m 'chore(upstream): merge'
-# mutable merge: rebase the local upstream chain and reuse the merge
-jj rebase -s 'roots(upstream-local)' -d 'upstream-incoming-tip'
-```
-
-After either, `upstream-incoming` is empty. A conflict is recorded in the merge (not aborted):
-detect with `jj log -r 'conflicts()'`, edit the files to the merged content, then snapshot.
-
-### Make X an ancestor of Y — [test_deleak.md](../checks/jj-experiments/test_deleak.md)
-
-A fork change `Y` depends on a generic change `X`, but `X` is not yet in its ancestry:
-
-```bash
-jj rebase -s Y -d X -d <Y-existing-parent>   # Y becomes merge(X, old parent)
-```
+These are the shared branch workflows — see
+[jujutsu-vcs.md § Branch workflows](jujutsu-vcs.md#branch-workflows) (proof:
+[test_rebase.md](../checks/jj-experiments/test_rebase.md)). The fork's trunk is the upstream chain,
+so its trunk aliases are `upstream-incoming-tip` and `upstream-local`: on a frozen merge build
+forward with `jj new fork-tip upstream-incoming-tip`; on a mutable merge rebase with
+`jj rebase -s 'roots(upstream-local)' -d 'upstream-incoming-tip'`. Make X an ancestor of Y with
+`jj rebase -s Y -d X -d <Y-existing-parent>`, unchanged.
 
 ### De-leak an upstream-destined commit — [test_deleak.md](../checks/jj-experiments/test_deleak.md)
 
@@ -157,15 +151,11 @@ A commit on the upstream side carries fork content (`fork-leaked` lists it):
 
 ## Hazards
 
-Verified in [test_hazards.md](../checks/jj-experiments/test_hazards.md).
-
-- **Never rewrite a pushed/immutable commit.** `jj describe`/`jj squash --into`/`jj rebase` on it
-  fail with `Commit <id> is immutable`. Build forward instead.
-- **Never `jj describe` a dual-parent `@`.** It becomes a described merge that keeps both parents,
-  including the fork one. Commit upstream-side work while `@` has a single upstream parent, then
-  restore the dual-parent `@` with `jj new -d main -d upstream`.
-- **`upstream-tip`/`fork-tip` follow commit time** (`latest()`), not graph position. If a tip
-  resolves to the wrong commit, fix the commit time; do not assume topological order.
+The hazards are shared — see [jujutsu-vcs.md § Branch workflows](jujutsu-vcs.md#branch-workflows)
+(proof: [test_hazards.md](../checks/jj-experiments/test_hazards.md)): never rewrite a
+pushed/immutable commit (build forward), never `jj describe` a dual-parent `@` (see
+[Topology](#topology)), and the `upstream-tip`/`fork-tip` aliases follow commit time, not graph
+position.
 
 ## Verify before you declare done
 

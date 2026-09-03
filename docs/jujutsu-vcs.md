@@ -267,12 +267,74 @@ placement, pull upstream in, frozen-vs-mutable, forbidden rewrites) live in
 - After `jj edit <interior commit>`, a plain `jj new` makes a child of that commit; run `jj new
   <tip>` to return to the tip.
 
-### Fork / branch topology
+### Branch and fork topology
 
-For change placement (generic vs fork-sensitive content), pulling new upstream in, the
-frozen-vs-mutable rules, and the forbidden rewrites, see
-[jujutsu-vcs.fork.md](jujutsu-vcs.fork.md). Those cases are verified by `test_placement.py`,
-`test_rebase.py`, `test_hazards.py`, `test_deleak.py`, `test_advanced.py`, and `test_revsets.py`.
+[Branch workflows](#branch-workflows) below cover the shared long-lived-branch operations
+(integrate trunk, the frozen-vs-mutable rule, hazards, X→Y). A fork is one instance of that model.
+The fork-specific extras — content routing, `jj fork-audit`, and the two-remote sync — are in
+[jujutsu-vcs.fork.md](jujutsu-vcs.fork.md), verified by `test_placement.py`, `test_rebase.py`,
+`test_hazards.py`, `test_deleak.py`, `test_advanced.py`, and `test_revsets.py`.
+
+---
+
+## Branch workflows
+
+A long-lived branch tracks a shared trunk and integrates new trunk from time to time, staying a
+mutable line on top of it. A fork is one instance of this model — a merge-style branch plus a
+content-routing and a second-remote layer (see
+[jujutsu-vcs.fork.md](jujutsu-vcs.fork.md)). The recipes here are trunk-agnostic and verified by
+[test_branch.md](../checks/jj-experiments/test_branch.md); the hazards by
+[test_hazards.md](../checks/jj-experiments/test_hazards.md).
+
+Handy aliases for a branch off a trunk (the fork slot ships the fork analogs — see the fork doc):
+`trunk-incoming` = `@..main@<remote>` (fetched but unmerged trunk), `trunk-incoming-tip` =
+`main@<remote>`, `branch` = `trunk()..@ & ~description("")`, `branch-tip` = `heads(branch)`.
+
+### Add a change to the branch
+
+A plain split on top — no merge needed:
+
+```bash
+jj split -m 'feat: ...' -- <files>
+```
+
+When the branch keeps a merge with trunk (the fork's shape), place the change with `-A`/`-B`
+instead — see the fork doc's placement recipe.
+
+### Integrate new trunk
+
+Fetch, then either rebase the branch onto the new trunk (linear) or merge the new trunk in (keeps a
+merge):
+
+```bash
+jj git fetch --all-remotes
+# rebase — linear, needs a mutable branch:
+jj rebase -s 'roots(branch)' -d 'trunk-incoming-tip'
+# or merge — keeps a merge (the fork's shape):
+jj new branch-tip trunk-incoming-tip -m 'merge trunk'
+```
+
+Either way `trunk-incoming` ends empty and the pushed trunk keeps its commit id. **Frozen-vs-mutable
+rule:** you can rebase or rewrite only a **mutable** branch. A pushed commit is immutable, so build
+forward — add a new merge — instead of a rewrite. A conflict is recorded in the commit, not aborted:
+detect it with `jj log -r 'conflicts()'`, edit each file to the merged content, then snapshot.
+
+### Make X an ancestor of Y
+
+`Y` needs a change `X` in its ancestry, and `Y` keeps its existing parent:
+
+```bash
+jj rebase -s Y -d X -d <Y-existing-parent>   # Y becomes merge(X, old parent)
+```
+
+### Hazards
+
+- **Never rewrite a pushed or immutable commit.** `jj describe`/`jj squash --into`/`jj rebase` on
+  it fail with `Commit <id> is immutable`. Build forward instead.
+- **Never `jj describe` a dual-parent `@`** (a merge-style branch). It becomes a described merge
+  that keeps both parents. Commit on a single-parent `@`, then restore the dual-parent `@`.
+- **`branch-tip` and the `*-tip` aliases follow commit time** (`latest()`), not graph position. Fix
+  the commit time if a tip resolves to the wrong commit.
 
 ---
 
@@ -292,7 +354,7 @@ After you fetch, keep `@` current:
 
 ```bash
 jj git fetch --remote=<upstream-remote>
-jj rebase -s @ -d upstream    # or: -d main@<upstream-remote>
+jj rebase -s @ -d main@<upstream-remote>    # onto the freshly fetched tip
 ```
 
 ---
