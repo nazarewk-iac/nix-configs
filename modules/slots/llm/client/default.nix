@@ -2,15 +2,15 @@
 #
 # Adds opencode providers for one or more LAN llama-servers exposed over HTTPS
 # (see the sibling `kdn.llm.local` server slot). Each upstream is keyed by
-# name in `kdn.llm.client.upstreams.<name>`. For each upstream the slot:
-#   - writes a `provider.<name>` into opencode's settings
-#   - ships an `opencode-kdn-<name>` wrapper that injects the API key and
-#     points NODE_EXTRA_CA_CERTS at the endpoint's self-signed cert before
-#     exec'ing opencode
+# name in `kdn.llm.client.upstreams.<name>` and the slot writes a
+# `provider.<name>` into opencode's settings (baseURL, apiKey {env:...},
+# models). It ships no per-upstream wrapper: key injection is delegated to the
+# single `opencode-kdn` wrapper via `kdn.opencode.envFile`, and self-signed CA
+# trust is handled system-wide (security.pki).
 #
 # It does NOT enable opencode itself — the consumer enables `kdn.opencode`
-# (which turns opencode on and supplies the default permission skeleton). This
-# slot only adds `provider.<name>` settings and wrapper packages.
+# (which turns opencode on, supplies the default permission skeleton, and the
+# `opencode-kdn` wrapper). This slot only adds `provider.<name>` settings.
 #
 # The consumer is a thin passthrough: it only supplies, per upstream, the
 # required info (baseURL, caCertFile, apiKeyFile, models).
@@ -47,19 +47,6 @@
         u.models;
     };
   };
-
-  # Build the key-injecting wrapper for an upstream: run `opencode-kdn-<name>`.
-  toWrapper = _: u:
-    pkgs.writeShellScriptBin "opencode-kdn-${u.name}" ''
-      set -euo pipefail
-      ${lib.optionalString (u.apiKeyFile != null) ''
-        export KDN_LLM_API_KEY_${u.name}="$(cat ${u.apiKeyFile})"
-      ''}
-      ${lib.optionalString (u.caCertFile != null) ''
-        export NODE_EXTRA_CA_CERTS="${u.caCertFile}"
-      ''}
-      exec ${lib.getExe pkgs.opencode} "$@"
-    '';
 in {
   options.kdn.llm.client = {
     enable = lib.mkEnableOption "LAN LLM client (opencode pointed at HTTPS llama-servers)";
@@ -91,25 +78,31 @@ in {
               description = "Base URL of the LAN llama-server (through its TLS proxy).";
             };
 
-            # Trusted CA certificate. null => opencode trusts the system store only.
+            # Trusted CA certificate (informational for the consumer). null => opencode
+            # trusts the system store only; with a self-signed endpoint, the host wires
+            # this via security.pki.certificateFiles (system-wide) instead.
             caCertFile = lib.mkOption {
               type = lib.types.nullOr lib.types.path;
               default = null;
               description = ''
-                Path to the self-signed PEM public certificate of the endpoint,
-                used by the opencode-kdn-<name> wrapper via NODE_EXTRA_CA_CERTS so
-                opencode's Node runtime trusts it. null does not add any CA.
+                Path to the self-signed PEM public certificate of the endpoint.
+                Informational: the consumer trusts it system-wide via
+                security.pki.certificateFiles (self-signed CA is not injected
+                per-upstream). null means the endpoint uses a publicly-trusted
+                cert chain.
               '';
             };
 
-            # API key. null => the endpoint needs no key.
+            # API key. The consumer injects it into opencode via
+            # kdn.opencode.envFile. null => the endpoint needs no key.
             apiKeyFile = lib.mkOption {
               type = lib.types.nullOr lib.types.path;
               default = null;
               description = ''
-                Path to a file holding the API key (one line). The
-                opencode-kdn-<name> wrapper loads it as KDN_LLM_API_KEY_<name> so
-                the provider can authenticate. null means the endpoint needs no key.
+                Path to a file holding the API key (one line). The provider uses
+                apiKey {env:KDN_LLM_API_KEY_<name>}; the consumer loads this file
+                into that var via kdn.opencode.envFile. null means the endpoint
+                needs no key.
               '';
             };
 
@@ -149,12 +142,10 @@ in {
     devenv = {
       # Merge provider.<name> for every enabled upstream into opencode's
       # settings. The consumer must enable `kdn.opencode` (which turns opencode
-      # on and supplies the default permission skeleton); this slot does not
-      # enable opencode itself.
+      # on and supplies the single `opencode-kdn` wrapper); this slot does not
+      # enable opencode itself nor ship per-upstream wrappers — key
+      # injection for each upstream is done via kdn.opencode.envFile.
       opencode.settings = lib.mkMerge (lib.mapAttrsToList toProvider enabledUpstreams);
-
-      # One key-injecting wrapper per enabled upstream.
-      packages = lib.mapAttrsToList toWrapper enabledUpstreams;
     };
   };
 }
