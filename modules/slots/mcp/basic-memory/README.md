@@ -40,7 +40,7 @@ Devenv slot module that adds two isolated [basic-memory](https://github.com/basi
 |---|---|
 | `default.nix` | Nix module (`kdn.mcp.basic-memory`) |
 | `routing.md` | Claude Code rule: routing + OKF format guidance (installed as `.claude/rules/basic-memory.md`) |
-| `routing-*.md` | Employer-specific routing addenda (loaded separately in overlay commits, not part of kdn) |
+| `routing-*.md` | Private, sensitive-context routing addenda (loaded separately in overlay commits, not part of kdn) |
 
 ## Usage in devenv.nix
 
