@@ -21,3 +21,7 @@
 # SOPS-encrypted links
 !/*/ssh-keys/ssh_host_*_key.{sops,pub}
 !/*/luks/*.sops.header
+
+# per-host certs (e.g. brys LLM leaf)
+!/*/certs/*.pub
+!/*/certs/*.key.sops

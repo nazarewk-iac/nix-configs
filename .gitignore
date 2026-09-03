@@ -48,6 +48,12 @@
 !/.agents/
 !/.claude
 
+# KDN private CA material (data/) and per-host certs (hosts/*/certs/)
+!/data/ca.pub
+!/data/ca.key.sops
+!/hosts/*/certs/*.pub
+!/hosts/*/certs/*.key.sops
+
 # devenv-managed symlinks into /nix/store — never commit these
 /.agents/rules/basic-memory*.md
 /.agents/rules/flake-update.fork.md
