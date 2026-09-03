@@ -63,10 +63,12 @@ jj root &>/dev/null || {
 default_revset='mutable() & ~empty() & ~description("")'
 revset="${revset:-$default_revset}"
 
-# shellcheck disable=SC2206
-file_patterns=($SENSITIVE_FILE_PATTERNS)
-# shellcheck disable=SC2206
-msg_patterns=($SENSITIVE_MESSAGE_PATTERNS)
+# Read each whole pattern as one array element (newline-delimited). This keeps a
+# pattern that contains a space intact, so the audit matches the fork-direct revset.
+file_patterns=()
+[ -n "$SENSITIVE_FILE_PATTERNS" ] && mapfile -t file_patterns <<< "$SENSITIVE_FILE_PATTERNS"
+msg_patterns=()
+[ -n "$SENSITIVE_MESSAGE_PATTERNS" ] && mapfile -t msg_patterns <<< "$SENSITIVE_MESSAGE_PATTERNS"
 
 if [ "${#file_patterns[@]}" -eq 0 ] && [ "${#msg_patterns[@]}" -eq 0 ]; then
   echo "jj-fork-audit: no denied patterns configured (this is not a fork repo)" >&2
@@ -110,7 +112,13 @@ if jj log -r 'fork-direct' --no-graph -T '""' &>/dev/null; then
   select_revset="($revset) & fork-direct"
 fi
 
-mapfile -t commits < <(jj log -r "$select_revset" --no-graph -T 'change_id.short() ++ "\n"' 2>/dev/null || true)
+# Capture the jj exit status. A bad revset must fail loudly, not report "clean".
+if ! commits_raw="$(jj log -r "$select_revset" --no-graph -T 'change_id.short() ++ "\n"' 2>&1)"; then
+  echo "jj-fork-audit: cannot evaluate revset '${revset}':" >&2
+  printf '%s\n' "$commits_raw" >&2
+  exit 2
+fi
+mapfile -t commits <<< "$commits_raw"
 
 found=0
 

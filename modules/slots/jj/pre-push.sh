@@ -2,7 +2,7 @@
 set -eEuo pipefail
 
 # PRIVATE_REMOTE, SENSITIVE_FILE_PATTERNS, SENSITIVE_MESSAGE_PATTERNS,
-# BLOCK_PUSH_MESSAGE_PATTERNS are baked in via runtimeEnv as space-separated strings.
+# BLOCK_PUSH_MESSAGE_PATTERNS are baked in via runtimeEnv as newline-separated strings.
 
 # $1 is the remote name when called directly by git.
 # When invoked via the pre-commit framework, git's argv is not forwarded but
@@ -15,12 +15,14 @@ fi
 
 ZERO_SHA="0000000000000000000000000000000000000000"
 
-# shellcheck disable=SC2206
-file_patterns=($SENSITIVE_FILE_PATTERNS)
-# shellcheck disable=SC2206
-message_patterns=($SENSITIVE_MESSAGE_PATTERNS)
-# shellcheck disable=SC2206
-block_patterns=($BLOCK_PUSH_MESSAGE_PATTERNS)
+# Read each whole pattern as one array element (newline-delimited), so a pattern
+# that contains a space stays intact.
+file_patterns=()
+[ -n "$SENSITIVE_FILE_PATTERNS" ] && mapfile -t file_patterns <<< "$SENSITIVE_FILE_PATTERNS"
+message_patterns=()
+[ -n "$SENSITIVE_MESSAGE_PATTERNS" ] && mapfile -t message_patterns <<< "$SENSITIVE_MESSAGE_PATTERNS"
+block_patterns=()
+[ -n "$BLOCK_PUSH_MESSAGE_PATTERNS" ] && mapfile -t block_patterns <<< "$BLOCK_PUSH_MESSAGE_PATTERNS"
 
 file_grep_args=(-q -i)
 for p in "${file_patterns[@]}"; do
