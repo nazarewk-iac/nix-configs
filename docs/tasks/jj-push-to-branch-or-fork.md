@@ -1,6 +1,6 @@
 ---
 type: Task
-status: in-progress
+status: done
 authored_by: agent
 description: Add a golden path for pushing a local change to a specific branch or fork target, and ship it as the canonical worked example of how to use and extend the jj-experiments harness.
 timestamp: 2026-09-03T00:00:00+02:00
