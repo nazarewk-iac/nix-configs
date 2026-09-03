@@ -27,9 +27,7 @@
   kdn.llm.client.enable = true;
   kdn.llm.client.upstreams.brys = {
     enable = true;
-    baseURL = "https://brys.lan.etra.net.int.kdn.im/v1";
-    caCertFile = "/run/configs/llms/certs/public.key";
-    apiKeyFile = "/run/configs/llms/llama-server/api-keys/default";
+    baseURL = "https://brys.priv.nb.net.int.kdn.im/v1";
     models = {
       "deepseek-v4-flash" = {
         name = "deepseek-v4-flash (brys, LAN)";
