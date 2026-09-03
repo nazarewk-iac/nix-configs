@@ -1,5 +1,12 @@
 huggingface:
     token: ENC[AES256_GCM,data:p1e6A5E+H3Ae31G4LdAujE+yxBLhV0wYFsxWwvx57rq+R0PUXg==,iv:LpYEzUEFm7+H62a2M67YtKekJGn6tUGzF82QF07q8M4=,tag:LecTNCkfSSgHBrkeIxwh6A==,type:str]
+brys:
+    llama-server:
+        api-keys: ENC[AES256_GCM,data:otoYvomvitqOiBLkyPCWFjqVEUJsK5uwvUmBf0H8NRiw1N+s3TLelQ==,iv:H6Hl+HkpcxEtEwKxXJSkcxcyagN/H7AaW85t81j5+SQ=,tag:ofZUbqSMw+jVwo1XjlafKw==,type:str]
+    llms:
+        certs:
+            public.key: ENC[AES256_GCM,data:WAeaNBOVhqrwDpHfrcSnU0cjCOvIeguGTjvXLD0C01IU8E8ReEctxIosRuVNov4qyxNehpuBlPTfZYghBlWgkKPzKWix+83lrMPJLnkQfkDHsOtvpqicBt+f9z30VYe0hrDUmiER2ZLHLpB4GlNAkW9A7cwnYmlxLsQnva14Lll1DnElD29kMX/Q68srXmjnH+8iv1v8En1gDOPOcrWwmJkTK0/ftQ4S75grAZy0eEAI15g1qOQz+JSidgKfAev0cpRwZDXDeoiqRzPVv5IFgSdkAonhdZQLbOcspVy8gMufd9NmjY94xfCaog6i5XJwoAPWCxxNIOn29EiKEl8PGjvDFSMiuR+/2cn62+wg4q+UsG0D+hI2Y5P7FvUGdkhScesZYj0hrVuAUQqxm9nF2L0+sQVNWwNbUb0Mjp3ag3jbAbn1hqxvaUm9Ww00Velu8zd1hO8mZUVHPqBuYpUPuU1+iYylIu/UfyUZ2WCjcu9eUHYc1L8F3hsB9UnIBy1zwT7iu38kickrI9raHUoGA5ltd+5H/4gZFCixkzyuRz6zb5g0d/fLJbPH7ua/6JtnUbJXp6cgih64VY8K9NOPTevq94bWX3pqshmodw2MYf0qBCCfOyznDgn72E3leqBGil7aWyYN2IKtS+p1P/MuRavmMpr94C19hSax80XFc+TVtwSm2x64ISo++e0BhWEjNR0YjsKgL1oJf0RPcubsvWm+kbtA2t8pozDjffxxqTuTOR9Tnfqp+++WCX4OtXfenwFmJ1gmOUJo861oN3vUuvOh7lPeZTDwhcP+9FfzrfnXnqJ3J91i+IIpQ1y6VzXcItbsN5WTrhygpLWwZS+wYa09I7C+klt5uSR8m3khcnlY5DzTsDDZHcAhKTIGZ9za29kK8cvYjBTKZyvC,iv:Q7kGp775ooxiKDThTvw8g+jj14uCNvl4tm0CE9e+I84=,tag:iPP6A/u5tHCWv6drjOjlQg==,type:str]
+            private.key: ENC[AES256_GCM,data:B22NSMdc9b6N+B5YQsfQwES5CNbCakCKNgAp1b7DbEoS6cPYU2gVLHJ2/jNjW4Aym0OoUdimttvO7jI1u5r3+v0PKV2jC1VyEwQutyVbz38BSPX5lDD2N9IovPrFqXOeeV6s4fixNUd/whH7eqb/h0k0xbrj5rsRp3+XrqMfqlj5xO0+wx4dt0XVnRI4mfuagkDBdy3MYEKGYtwuEwFhucLrxXpyiSk8bvY7jy+YqGabF/HbEvgzQJcFvhSS8zMbp9CV/N7mdY1SiCY6yy3aDM17rWNYH/1FEXQrKAhquGGGdzTFjNkI8cEDEnnoxFKQyA==,iv:GMp4eeF3Xg6zDnvwAshG3Nham0cltSa6nmvmjVB8n7c=,tag:fhaqdTeDn1TjceMejm/S/g==,type:str]
 sops:
     age:
         - enc: |
@@ -32,7 +39,7 @@ sops:
             23Y=
             -----END AGE ENCRYPTED FILE-----
           recipient: age1yubikey1q25g9xpunct74wnn29dgcgep78q666dkhpfg2flltg92fvyrew02j28464d
-    lastmodified: "2026-08-29T20:58:10Z"
-    mac: ENC[AES256_GCM,data:+A6uBfSq/QOLOgMink3QMqaXVecnCBuiaV8oOhXVSVnXHfJ7pW/THErnqoUMHbf4ayO5i9bFSNB30sE3AMwBrCz8o/JUT6lxoDZ+WmEV+y//h2h62OSiG5fORHHE99kwxheGdRQveSvUSJfFPqIK+hF+xGgEI8LvaGfRHYmtG/8=,iv:KlJMuHAAEtC2ZQyk34AeZ14ptcPMMox/a9CBd6ZwrLo=,tag:5WTjt7QwracUBPtjipzR0A==,type:str]
+    lastmodified: "2026-08-31T14:24:20Z"
+    mac: ENC[AES256_GCM,data:t66s92rFeukwl+pORZ+Nqa6F1y+n9x4NfE1npAdoPsTVoNHUwlKJiVyrWo7To7ZOKMoaWvQXIK5buxnqjbGOGWeeGDKKI1zE87NJ5o/sFbvKInT4j7pSj4IevotMqWgtPwYCKPT0ZlReEG26vbera95XgY0grWlF9ydE7C2lSfo=,iv:UgIsA0R7qphw5p7Q8g5cBBRWfrJDitwWtwKCD8bKdcY=,tag:5+s4rjKsj07xWkbUQDtA7Q==,type:str]
     unencrypted_suffix: _unencrypted
     version: 3.13.3

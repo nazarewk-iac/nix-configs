@@ -4,20 +4,25 @@
   lib,
   kdnConfig,
   ...
-}:
-let
+}: let
   slots = kdnConfig.self.mkSlots {
     inherit pkgs;
     # devenv CLI and shell hooks.
     kdn.devenv.enable = true;
 
-    # Local LLM serving (llama-swap). Models are registered under
-    # kdn.disks.persist."usr/data" further below; the slot receives only the path.
+    # Local LLM serving (llama-server router mode, TLS behind caddy). Models are
+    # registered under kdn.disks.persist."usr/data" further below; the slot
+    # receives only the path and the cert/key path fragments.
     kdn.llm.local.enable = true;
     kdn.llm.local.modelsDir = "/var/lib/kdn/llms/models";
     # HF token for faster/authenticated downloads, wired via sops below to
     # /run/configs/llms/huggingface/token.
     kdn.llm.local.download.tokenFile = "/run/configs/llms/huggingface/token";
+    # LAN endpoint hostname + self-signed cert paths, decrypted via sops below.
+    kdn.llm.local.domain = "brys.lan.etra.net.int.kdn.im";
+    kdn.llm.local.certs.certFile = "/run/configs/brys/llms/certs/public.key";
+    kdn.llm.local.certs.keyFile = "/run/configs/brys/llms/certs/private.key";
+    kdn.llm.local.apiKeyFile = "/run/configs/brys/llama-server/api-keys";
     # Global download: fast-polite keeps Xet enabled but with a configurable,
     # capped concurrency. Tuned to target roughly 500-700 Mbit/s; raise/lower
     # `xetConcurrency` to trade speed vs network aggression. Downloads run
@@ -29,13 +34,13 @@ let
         enable = true;
         hfRepo = "Qwen/Qwen3-30B-A3B-GGUF";
         hfFile = "Qwen3-30B-A3B-Q4_K_M.gguf";
-        aliases = [ "fast" ];
+        aliases = ["fast"];
       };
       qwen3-next-80b = {
         enable = true;
         hfRepo = "unsloth/Qwen3-Next-80B-A3B-Instruct-GGUF";
         hfFile = "Qwen3-Next-80B-A3B-Instruct-Q4_K_M.gguf";
-        aliases = [ "balanced" ];
+        aliases = ["balanced"];
       };
       # deepseek-v4-flash: big, multi-shard, frontier quality. Slow to load.
       # download.glob fetches all 4 shards (~104 GB); llama serves shard 00001.
@@ -46,8 +51,7 @@ let
         hfRepo = "unsloth/DeepSeek-V4-Flash-GGUF";
         hfFile = "UD-IQ3_XXS/DeepSeek-V4-Flash-UD-IQ3_XXS-00001-of-00004.gguf";
         download.glob = "UD-IQ3_XXS/DeepSeek-V4-Flash-UD-IQ3_XXS-*.gguf";
-        aliases = [ "frontier" ];
-        ttl = 86400; # 24h
+        aliases = ["frontier"];
       };
       # Qwen3-235B split into 2 parts; download.glob fetches both.
       qwen3-235b = {
@@ -75,8 +79,7 @@ let
       };
     };
   };
-in
-{
+in {
   imports = [
     kdnConfig.self.nixosModules.default
     slots.config.nixos
@@ -84,13 +87,13 @@ in
 
   config = lib.mkMerge [
     {
-      home-manager.sharedModules = [ slots.config.home ];
+      home-manager.sharedModules = [slots.config.home];
     }
     {
       kdn.hostName = "brys";
 
       system.stateVersion = "24.11";
-      home-manager.sharedModules = [ { home.stateVersion = "24.11"; } ];
+      home-manager.sharedModules = [{home.stateVersion = "24.11";}];
       networking.hostId = "0a989258"; # cut -c-8 </proc/sys/kernel/random/uuid
     }
     {
@@ -128,20 +131,20 @@ in
       };
     }
     /*
-         {
-        # automated unlock using Clevis through Tang server
-        boot.initrd.network.flushBeforeStage2 = true;
-        networking.interfaces.enp5s0.useDHCP = true;
-        networking.interfaces.enp6s0.useDHCP = true;
+       {
+      # automated unlock using Clevis through Tang server
+      boot.initrd.network.flushBeforeStage2 = true;
+      networking.interfaces.enp5s0.useDHCP = true;
+      networking.interfaces.enp6s0.useDHCP = true;
 
-        boot.initrd.network.enable = true; # this is systemd-networkd all he way through anyway
-        boot.initrd.systemd.network.wait-online.enable = true;
-        boot.initrd.systemd.network.wait-online.anyInterface = true;
-        boot.initrd.systemd.network.wait-online.timeout = 15;
+      boot.initrd.network.enable = true; # this is systemd-networkd all he way through anyway
+      boot.initrd.systemd.network.wait-online.enable = true;
+      boot.initrd.systemd.network.wait-online.anyInterface = true;
+      boot.initrd.systemd.network.wait-online.timeout = 15;
 
-        #boot.initrd.clevis.useTang = true;
-        #boot.initrd.clevis.devices."brys-main-crypted".secretFile = ./brys-main-crypted.jwe;
-      }
+      #boot.initrd.clevis.useTang = true;
+      #boot.initrd.clevis.devices."brys-main-crypted".secretFile = ./brys-main-crypted.jwe;
+    }
     */
     {
       # TODO: those are unlocked automatically using TPM2, switch to etra (or k8s cluster) backed Clevis+Tang unlock
@@ -206,63 +209,63 @@ in
       kdn.networking.ifaces."drek".address.internal4 = "192.168.41.31/24";
     }
     /*
-      (let
-        iface = "vm-nbt-1";
-        microvmPersistNames = ["microvm"] ++ builtins.attrNames config.kdn.disks.base;
-      in {
-        systemd.network.networks."40-ethernet-2.5g" = {
-          matchConfig.Name = [iface];
-        };
+    (let
+      iface = "vm-nbt-1";
+      microvmPersistNames = ["microvm"] ++ builtins.attrNames config.kdn.disks.base;
+    in {
+      systemd.network.networks."40-ethernet-2.5g" = {
+        matchConfig.Name = [iface];
+      };
 
-        microvm.vms.nbt-1 = {
-          autostart = true;
-          restartIfChanged = true;
-          specialArgs =
-            kdn.configure {
-              moduleType = "nixos";
-            } {
-              kdn.features.microvm-guest = true;
-            };
-          config = {
-            imports = [
-              kdn.self.nixosModules.default
-            ];
-            config = lib.mkMerge [
-              {
-                kdn.hostName = "brys-uvm-nbt-1";
-                system.stateVersion = "25.05";
-                home-manager.sharedModules = [{home.stateVersion = "25.05";}];
-                networking.hostId = "fb6ff1fa"; # cut -c-8 </proc/sys/kernel/random/uuid
-                kdn.security.secrets.enable = false;
-
-                kdn.networking.netbird.clients.priv.enable = false;
-              }
-              {
-                microvm.interfaces = [
-                  {
-                    type = "tap";
-                    id = iface;
-                    mac = "42:e2:ce:6a:ce:c1";
-                  }
-                ];
-                systemd.network.enable = true;
-
-                systemd.network.networks."20-lan" = {
-                  matchConfig.Type = "ether";
-                  networkConfig = {
-                    DHCP = true;
-                    IPv6AcceptRA = true;
-                    LinkLocalAddressing = "ipv6";
-
-                    IPv6PrivacyExtensions = true;
-                    IPv6LinkLocalAddressGenerationMode = "stable-privacy";
-                  };
-                };
-              }
-            ];
+      microvm.vms.nbt-1 = {
+        autostart = true;
+        restartIfChanged = true;
+        specialArgs =
+          kdn.configure {
+            moduleType = "nixos";
+          } {
+            kdn.features.microvm-guest = true;
           };
+        config = {
+          imports = [
+            kdn.self.nixosModules.default
+          ];
+          config = lib.mkMerge [
+            {
+              kdn.hostName = "brys-uvm-nbt-1";
+              system.stateVersion = "25.05";
+              home-manager.sharedModules = [{home.stateVersion = "25.05";}];
+              networking.hostId = "fb6ff1fa"; # cut -c-8 </proc/sys/kernel/random/uuid
+              kdn.security.secrets.enable = false;
+
+              kdn.networking.netbird.clients.priv.enable = false;
+            }
+            {
+              microvm.interfaces = [
+                {
+                  type = "tap";
+                  id = iface;
+                  mac = "42:e2:ce:6a:ce:c1";
+                }
+              ];
+              systemd.network.enable = true;
+
+              systemd.network.networks."20-lan" = {
+                matchConfig.Type = "ether";
+                networkConfig = {
+                  DHCP = true;
+                  IPv6AcceptRA = true;
+                  LinkLocalAddressing = "ipv6";
+
+                  IPv6PrivacyExtensions = true;
+                  IPv6LinkLocalAddressGenerationMode = "stable-privacy";
+                };
+              };
+            }
+          ];
         };
-      })
+      };
+    })
     */
     {
       services.bpftune.enable = true;
@@ -272,7 +275,7 @@ in
       kdn.disks.nixBuildDir.tmpfs.size = "64G";
     }
     {
-      networking.hosts."10.116.89.68" = [ "gipe" ];
+      networking.hosts."10.116.89.68" = ["gipe"];
       networking.networkmanager.ensureProfiles.profiles.gipe = {
         connection = {
           id = "gipe";
@@ -290,7 +293,7 @@ in
       };
     }
     {
-      networking.hosts."192.168.88.1" = [ "talt-mgmt" ];
+      networking.hosts."192.168.88.1" = ["talt-mgmt"];
       networking.networkmanager.ensureProfiles.profiles.talt-mgmt = {
         connection = {
           id = "talt-mgmt";
@@ -308,7 +311,7 @@ in
       };
     }
     {
-      networking.hosts."192.168.2.1" = [ "mokerlink" ];
+      networking.hosts."192.168.2.1" = ["mokerlink"];
       networking.networkmanager.ensureProfiles.profiles.mokerlink-switch = {
         connection = {
           id = "mokerlink-switch";
@@ -350,6 +353,16 @@ in
         keyPrefix = "huggingface";
         sopsFile = "${kdnConfig.self}/llms.nonsensitive.sops.yaml";
         basePath = "/run/configs/llms";
+        sops.mode = "0444";
+      };
+    }
+    {
+      # LAN llama-server API keys + self-signed Caddy cert, decrypted to their
+      # full sops key paths under /run/configs/brys/.
+      kdn.security.secrets.sops.files."llms-brys" = {
+        keyPrefix = "brys";
+        sopsFile = "${kdnConfig.self}/llms.nonsensitive.sops.yaml";
+        basePath = "/run/configs";
         sops.mode = "0444";
       };
     }

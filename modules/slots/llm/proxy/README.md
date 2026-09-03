@@ -69,6 +69,13 @@ Per instance, `forwardClientAuth = true` enables that streaming-path
 forwarding. Leave it `false` (default) for a local, auth-less backend such as
 llama-swap so the client's key is never sent to it.
 
+> **Server-side instance.** The `kdn.llm.local` slot also runs a loopback
+> compat-proxy systemd service (`kdn-llm-proxy-lan`, `forwardClientAuth=true`)
+> between Caddy and the router llama-server, so the LAN endpoint keeps the
+> client's Bearer key flowing to a `--api-key-file`-protected llama-server.
+> That instance is owned by the `kdn.llm.local` slot (not this one); it is
+> mentioned here for completeness because it reuses the same package.
+
 ## Options
 
 ### Top-level
