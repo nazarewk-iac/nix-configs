@@ -38,22 +38,14 @@ in
   # jj-experiments harness: runs the isolated 3-repo pytest suite headless. The
   # rendered fork slot config is passed in through JJ_FORK_CONFIG_TOML so the
   # tests resolve the real revset aliases without a devenv shell.
-  jj-experiments-pytest =
-    pkgs.runCommand "jj-experiments-pytest-check"
-      {
-        nativeBuildInputs = [
-          (pkgs.python3.withPackages (ps: [ ps.pytest ]))
-          pkgs.jujutsu
-          pkgs.git
-        ];
-        JJ_FORK_CONFIG_TOML = jjForkConfigToml;
-      }
-      ''
-        export HOME="$(mktemp -d)"
-        cp -r ${jjExperimentsSuite}/. ./suite
-        chmod -R u+w ./suite
-        cd ./suite
-        python3 -m pytest -v
-        touch "$out"
-      '';
+  #
+  # This whole-suite check is the CI gate. It goes through the parameterized
+  # builder with no extra pytest args. To run a subset, use the same builder via
+  # checks/jj-experiments/subset-runner.nix (or `nix run .#jj-experiments-run`).
+  jj-experiments-pytest = import ./jj-experiments/mk-pytest.nix {
+    inherit pkgs lib;
+    suite = jjExperimentsSuite;
+    toml = jjForkConfigToml;
+    # extraArgs = [ ];  # whole suite
+  };
 }

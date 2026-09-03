@@ -433,6 +433,35 @@
             type = "app";
             program = lib.getExe inputs'.disko-zfs.packages.default;
           };
+          # Run a subset of the jj-experiments suite through a hermetic nix build.
+          # It forwards any pytest flags:
+          #   nix run '.#jj-experiments-run' -- -k placement -x
+          # The args become a JSON array and drive checks/jj-experiments/subset-runner.nix.
+          # The build is sandboxed and needs no `--impure`. No args runs the whole suite.
+          apps.jj-experiments-run = {
+            type = "app";
+            program = lib.getExe (
+              pkgs.writeShellApplication {
+                name = "jj-experiments-run";
+                runtimeInputs = with pkgs; [
+                  nix-output-monitor
+                  nix
+                  jq
+                  coreutils
+                ];
+                text = ''
+                  root="''${JJX_REPO:-$PWD}"
+                  if [ "$#" -eq 0 ]; then
+                    json='[]'
+                  else
+                    json=$(printf '%s\n' "$@" | jq -R . | jq -sc .)
+                  fi
+                  exec nom build --file "$root/checks/jj-experiments/subset-runner.nix" \
+                    --argstr repo "$root" --argstr extraArgsJSON "$json" --no-link -L
+                '';
+              }
+            );
+          };
           checks = pkgs.callPackages ./checks (
             self.kdnMetaModule.config.output.mkSubmodule {
               moduleType = "checks";
