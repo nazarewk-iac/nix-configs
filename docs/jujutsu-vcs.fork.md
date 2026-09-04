@@ -97,6 +97,10 @@ jj log -r 'merge-frozen'         # empty → the merge is mutable; non-empty →
 jj git fetch --all-remotes; jj log -r 'upstream-incoming'   # unmerged upstream
 ```
 
+To read the full topology of what a fetch brought in — arrived commits, your divergence, the merge
+base, and `jj op show`/`jj op diff` — see
+[Inspect what you fetched](jujutsu-vcs.md#inspect-what-you-fetched).
+
 ## Golden paths
 
 ### Place a generic (upstream) change — [test_placement.md](../checks/jj-experiments/test_placement.md)
