@@ -24,6 +24,90 @@ full mandate and the reason behind each exception.
 
 ---
 
+## For git users — start here
+
+New to jj? This primer maps your git model to jj. Read it once, then use the golden paths below.
+
+### Change vs commit
+
+- A jj **change** is a commit that keeps a stable **change ID** across rewrites. The **commit ID**
+  changes when the content or metadata changes; the change ID does not. Use the change ID when you
+  mean "this commit, across amendments".
+- There is **no staging area** and **no branch checkout**. `@` is the commit you edit right now —
+  an always-committed working tree that auto-snapshots your files on every `jj` command.
+
+### Mutable vs immutable
+
+jj rewrites a **mutable** commit freely (amend, rebase, split, squash). jj **refuses** to rewrite
+an **immutable** commit. A commit is immutable when it is pushed, or when `immutable_heads()`
+matches it — in this repo, anything reachable from `trunk()` or a remote bookmark. This is why
+some `jj rebase` or `jj edit` commands stop with "would rewrite immutable commits".
+
+### Why `@` stays empty (this repo)
+
+`@` auto-snapshots your working files into whatever commit it points at. An empty tip means your
+next edits do not silently change already-described work. If you edit while `@` is a described
+commit, jj adds your changes to that commit on the next snapshot — that is the footgun the empty
+tip avoids. Full convention:
+[When to leave an empty change on top](#when-to-leave-an-empty-change-on-top).
+
+### Bookmark vs branch
+
+- A **bookmark** is jj's branch: a named pointer to a commit.
+- A **tracked** bookmark has an upstream set (like `git branch --set-upstream-to`). A freshly
+  **fetched** bookmark arrives **untracked** — like a `refs/remotes/…` ref you have not adopted.
+  Adopt it with `jj bookmark track <name>@<remote>`.
+- There is **no "detached HEAD"**: `@` is always a real commit.
+
+### Revset cheatsheet (the six you need first)
+
+| Revset | Meaning |
+|---|---|
+| `@` | the working copy |
+| `@-` | the working copy's parent |
+| `x::` | `x` and its descendants |
+| `::x` | `x` and its ancestors |
+| `x..y` | commits in `y` but not in `x` |
+| `trunk()` / `mutable()` | the main-branch tip / all rewritable commits |
+
+`x::` (descendants) is not the same as `x..` (a range). Do not confuse them.
+
+### git → jj command map
+
+| git | jj |
+|---|---|
+| `git status` | `jj status` |
+| `git commit` / `--amend` | `jj describe` (message) · `jj commit` · amend: `jj edit <rev>` … edit … then `jj new <tip>` to return to an empty tip |
+| `git checkout <branch>` / switch | `jj new <rev>` or `jj edit <rev>` — no checkout; you edit a commit directly |
+| `git switch -c <name>` | `jj bookmark create <name>` |
+| `git stash` | park: `jj new`; resume: `jj edit <parked>` (no separate stash/pop) |
+| `git rebase` | `jj rebase -s/-b/-r <rev> -d <dest>` |
+| `git cherry-pick` | `jj duplicate` |
+| `git reset --hard` | `jj restore` (files) · `jj abandon` (whole commit) |
+| `git revert` | `jj revert` |
+| `git reflog` | `jj op log` + `jj undo` / `jj op restore` |
+| `git push` | `jj git push` |
+
+### Safe push checklist
+
+> 1. `jj git fetch --remote=<remote>` — see the real remote state.
+> 2. `jj rebase -b @ -d <branch>@<remote>` — put your work on top of the incoming tip.
+> 3. `jj git push --dry-run` — if it prints "move sideways", STOP and reconcile.
+> 4. To never risk the primary branch, push a feature or PR branch — `jj git push -c <rev>` or a
+>    named bookmark — not `main`.
+>
+> Force-with-lease rejects a **pre-fetch** push, but a **post-fetch** bare push can clobber. The
+> push worked example is [test_push.md](../checks/jj-experiments/test_push.md).
+
+**"Never push" (the repo rule) is for agents.** The push recipes here are for the maintainer to
+run.
+
+For the full command set see the [golden-path index](#golden-path-index); for the fork topology
+see [jujutsu-vcs.fork.md](jujutsu-vcs.fork.md); for worked, tested examples see
+`checks/jj-experiments/test_<group>.md`.
+
+---
+
 ## The working copy (@)
 
 `@` is your scratch space: an unnamed change where edits accumulate. Unlike git's staging area,
