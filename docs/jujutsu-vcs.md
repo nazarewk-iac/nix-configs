@@ -329,6 +329,8 @@ placement, pull upstream in, frozen-vs-mutable, forbidden rewrites) live in
 | Bookmark CRUD | `jj bookmark create/set[/--allow-backwards]/delete/list --all-remotes` | [test_bookmarks.md](../checks/jj-experiments/test_bookmarks.md) |
 | Push / fetch a bookmark | `jj git push --remote <r> --bookmark <b>` · `jj git fetch --remote <r>` | [test_bookmarks.md](../checks/jj-experiments/test_bookmarks.md) |
 | Push a change to a branch/fork | fetch · `jj rebase -b @ -d <branch>@<remote>` · set · `jj git push -b <branch>` | [test_push.md](../checks/jj-experiments/test_push.md) |
+| Inspect what you fetched | `jj op show @` · `jj log -r '@..main@<remote>'` (all incoming) · `jj log -r 'main@<remote>..@ & ~empty()'` (divergence) | [test_rebase.md](../checks/jj-experiments/test_rebase.md) |
+| Merge in incoming changes | `jj new <mine> <incoming-tip> -m 'chore(upstream): merge'` | [test_rebase.md](../checks/jj-experiments/test_rebase.md) |
 | Untrack a file | add to `.gitignore`, then `jj file untrack <path>` | [test_bookmarks.md](../checks/jj-experiments/test_bookmarks.md) |
 | Detect / resolve a conflict | `jj log -r 'conflicts()'` → edit to merged content → snapshot | [test_conflicts.md](../checks/jj-experiments/test_conflicts.md) |
 
@@ -385,6 +387,25 @@ jj split -m 'feat: ...' -- <files>
 
 When the branch keeps a merge with trunk (the fork's shape), place the change with `-A`/`-B`
 instead — see the fork doc's placement recipe.
+
+### Inspect what you fetched
+
+Before you integrate, read the topology of what a fetch brought in. Verified by
+`test_inspect_incoming_after_fetch` in [test_rebase.md](../checks/jj-experiments/test_rebase.md)
+(branch-agnostic):
+
+```bash
+jj git fetch --all-remotes
+jj op show @                              # what THIS fetch changed: arrived commits + moved bookmarks
+jj op diff --from @- --to @               # the same, as a diff between two operations
+jj log -r '@..main@<remote>'              # ALL incoming commits (the full new range)
+jj log -r 'main@<remote>..@ & ~empty()'   # your divergence; empty ⇒ strictly behind (fast-forward)
+jj log -r 'heads(::@ & ::main@<remote>)'  # the merge base (last shared commit)
+```
+
+Use `@..<incoming>` for the whole incoming range — `<incoming> ~ ::@` reports only the tip (a
+bookmark resolves to one commit). `jj op show @` right after a fetch is the clearest report of what
+you just pulled in: it lists each arrived commit and every bookmark that moved.
 
 ### Integrate new trunk
 

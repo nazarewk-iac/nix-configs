@@ -93,3 +93,45 @@ def test_conflict_on_integration_detect_and_resolve(mkrepo, harness):
     repo.jj("status")                             # snapshot the resolution
     assert repo.ids("conflicts()") == set()       # clean tree
     assert repo.ids("fork-leaked") == set()
+
+
+def test_inspect_incoming_after_fetch(mkrepo):
+    """Read the topology of what a fetch brought in — before integrating it.
+
+    A fetch moves ``main@origin`` ahead by two commits (``one``, ``two``); the
+    local repo starts strictly behind, then makes a local commit so it diverges.
+    Needs no fork slot — these inspection commands are branch-agnostic.
+    """
+    a, bare, base = topologies.build_push_base(mkrepo)
+
+    # remote advances by two commits (single helper repo, inline)
+    b = mkrepo("b")
+    b.register_remote("origin", bare)
+    b.fetch("origin")
+    b.jj("bookmark", "track", "main@origin")
+    b.jj("new", "main")
+    one = b.commit("feat: incoming one", {"one.txt": "1\n"})
+    two = b.commit("feat: incoming two", {"two.txt": "2\n"})
+    b.bookmark_set("main", two)
+    b.push("origin", "main")
+
+    a.fetch("origin")
+
+    # `jj op show @` (the fetch op) reports the arrived commit and the moved bookmark.
+    op = a.jj_out("op", "show", "@")
+    assert "incoming two" in op        # the newly arrived commit
+    assert "main@origin" in op         # the remote bookmark that moved
+
+    # ALL incoming commits = `@..<incoming>` (the full new range).
+    assert a.ids("@..main@origin") == {one, two}
+    # `<incoming> ~ ::@` reports only the TIP, not the range — the pitfall.
+    assert a.ids("main@origin ~ ::@") == {two}
+    # The merge base (last shared commit) = `heads(::@ & ::<incoming>)`.
+    assert a.ids("heads(::@ & ::main@origin)") == {base}
+    # No local work yet, so no divergence → strictly behind (fast-forward possible).
+    assert a.ids("main@origin..@ & ~empty()") == set()
+
+    # Make a local commit → now the branch diverges from the incoming tip.
+    mine = a.commit("feat: my local work", {"mine.txt": "1\n"})
+    assert a.ids("main@origin..@ & ~empty()") == {mine}   # divergence = my local work
+    assert a.ids("@..main@origin") == {one, two}          # incoming set unchanged

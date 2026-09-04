@@ -88,3 +88,27 @@ jj log -r 'conflicts()'                # now empty
 Verified post-conditions (`test_conflict_on_integration_detect_and_resolve`):
 `conflicts()` lists the new merge, then is empty after writing the resolved file
 and snapshotting; `fork-leaked` stays empty.
+
+## Inspect what you fetched
+
+Before you integrate, read the topology of what a fetch brought in. Proven by
+`test_inspect_incoming_after_fetch` (branch-agnostic; needs no fork slot).
+
+```bash
+jj git fetch --all-remotes
+jj op show @                              # what THIS fetch changed: arrived commits + moved bookmarks
+jj op diff --from @- --to @               # the same, as a diff between two operations
+jj log -r '@..main@<remote>'              # ALL incoming commits (the full new range)
+jj log -r 'main@<remote>..@ & ~empty()'   # your divergence; empty ⇒ strictly behind (fast-forward)
+jj log -r 'heads(::@ & ::main@<remote>)'  # the merge base (last shared commit)
+```
+
+Verified caveats:
+
+- Use `@..<incoming>` for the **whole** incoming range. `<incoming> ~ ::@` reports
+  only the **tip** — a bookmark resolves to one commit, so it hides the rest.
+- `<incoming>..@` lists commits you have that the incoming lacks; add `& ~empty()`
+  to drop the empty working copy. Empty result ⇒ no divergence, so a plain
+  fast-forward; non-empty ⇒ you diverged and must rebase or merge to integrate.
+- `jj op show @` right after a fetch is the clearest "what did I just pull in":
+  it lists each arrived commit and every local/remote bookmark that moved.
