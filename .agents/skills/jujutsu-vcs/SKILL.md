@@ -14,6 +14,7 @@ timestamp: 2026-09-02T00:00:00+02:00
 
 This skill is the short index. Full detail lives in the docs and the verified examples:
 
+- New to jj? Read the "For git users" primer in [docs/jujutsu-vcs.md](../../../docs/jujutsu-vcs.md#for-git-users--start-here) first.
 - Day-to-day golden paths + index: [docs/jujutsu-vcs.md](../../../docs/jujutsu-vcs.md#day-to-day-golden-paths).
 - Fork topology: [docs/jujutsu-vcs.fork.md](../../../docs/jujutsu-vcs.fork.md).
 - Verified worked examples: `checks/jj-experiments/test_<group>.py` + `test_<group>.md`.
@@ -22,7 +23,8 @@ This skill is the short index. Full detail lives in the docs and the verified ex
 
 ## Critical rules (agent safety)
 
-- **Never push.** The user reviews and pushes.
+- **Never push.** The user reviews and pushes. (This rule is for agents; the push recipes in the
+  docs are for the maintainer to run.)
 - **Never rewrite a pushed or immutable commit** — jj errors `is immutable`. Build forward.
 - **Always pass `-m 'msg'` and `-- <files>`; set `JJ_EDITOR=true`.** Never interactive
   (`jj split -i`, `jj squash -i`, `jj resolve` open a picker and hang).
