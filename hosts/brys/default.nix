@@ -48,30 +48,49 @@
         hfRepo = "Qwen/Qwen3-30B-A3B-GGUF";
         hfFile = "Qwen3-30B-A3B-Q4_K_M.gguf";
         aliases = ["fast"];
+        perf.contextSize = 131072;
       };
       qwen3-next-80b = {
         enable = true;
         hfRepo = "unsloth/Qwen3-Next-80B-A3B-Instruct-GGUF";
         hfFile = "Qwen3-Next-80B-A3B-Instruct-Q4_K_M.gguf";
         aliases = ["balanced"];
+        perf.contextSize = 131072;
       };
       # deepseek-v4-flash: big, multi-shard, frontier quality. Slow to load.
       # download.glob fetches all 4 shards (~104 GB); llama serves shard 00001.
       # Keep it loaded for 24h (default is 1h) — it takes minutes to load, so
       # hold it in RAM rather than churning the swap frequently.
+      # Shard 00001 is legitimately small (~5 MB — it is the split descriptor +
+      # mmap header); llama mmaps shards 02-04 for the full weights. The DSpark
+      # draft (~10.9 GB) is downloaded through the same kdn-llm-download
+      # mechanism and feeds model-draft (spec-type draft-dspark).
       deepseek-v4-flash = {
         enable = true;
         hfRepo = "unsloth/DeepSeek-V4-Flash-GGUF";
         hfFile = "UD-IQ3_XXS/DeepSeek-V4-Flash-UD-IQ3_XXS-00001-of-00004.gguf";
         download.glob = "UD-IQ3_XXS/DeepSeek-V4-Flash-UD-IQ3_XXS-*.gguf";
         aliases = ["frontier"];
+        # Try 256K MLA KV (≈22.8 GB) first per operator preference; if it
+        # thrash-swaps (model 103 + draft 11 + KV 22.8 ≈ 140 GB > 128 GB),
+        # fall back to 131072 (128K, KV ≈ 11.4 GB → ≈128 GB total).
+        perf.contextSize = 262144;
+        perf.reasoning = "off";
+        perf.specType = "draft-dspark";
+        draft = {
+          enable = true;
+          hfRepo = "unsloth/DeepSeek-V4-Flash-0731-GGUF";
+          hfFile = "dspark-DeepSeek-V4-Flash-0731-Q8_0.gguf";
+        };
       };
-      # Qwen3-235B split into 2 parts; download.glob fetches both.
+      # Qwen3-235B split into 2 parts; download.glob fetches both. 64K ctx ≈
+      # 25 GB KV, well within 128 GB.
       qwen3-235b = {
         enable = true;
         hfRepo = "mradermacher/Qwen3-235B-A22B-i1-GGUF";
         hfFile = "Qwen3-235B-A22B.i1-IQ2_M.gguf.part1of2";
         download.glob = "Qwen3-235B-A22B.i1-IQ2_M.gguf.part*";
+        perf.contextSize = 65536;
       };
       # Qwen3-Coder-Next split into 4 shards; download.glob fetches all of them.
       qwen3-coder-next = {
@@ -79,6 +98,7 @@
         hfRepo = "Qwen/Qwen3-Coder-Next-GGUF";
         hfFile = "Qwen3-Coder-Next-Q4_K_M/Qwen3-Coder-Next-Q4_K_M-00001-of-00004.gguf";
         download.glob = "Qwen3-Coder-Next-Q4_K_M/Qwen3-Coder-Next-Q4_K_M-*.gguf";
+        perf.contextSize = 131072;
       };
       gpt-oss-120b = {
         enable = true;
@@ -89,6 +109,8 @@
         enable = true;
         hfRepo = "microsoft/phi-4-gguf";
         hfFile = "phi-4-Q4_K.gguf";
+        # 16K is Phi-4's hard architectural context ceiling.
+        perf.contextSize = 16384;
       };
     };
   };
@@ -113,6 +135,12 @@ in {
       kdn.profile.machine.workstation.enable = true;
       kdn.hw.gpu.amd.enable = true;
       kdn.hw.cpu.amd.enable = true;
+
+      # CPU-only MoE inference is memory-bandwidth bound: keep all cores pinned
+      # high. The default `powersave` governor ramps cores unevenly and roughly
+      # halves throughput + adds ~45s to first token on DeepSeek V4 Flash
+      # (verified: 6.25 tok/s / 1.06s TTFT vs 3.27 tok/s / 47s TTFT).
+      powerManagement.cpuFreqGovernor = "performance";
 
       kdn.programs.photoprism.enable = false;
 
@@ -194,6 +222,21 @@ in {
       kdn.networking.enable = true;
       kdn.networking.debug = true;
       kdn.networking.iface.default = "kdn-eth-2g";
+
+      # Fixing sporadic `network-online.target` stalls on rebuilds: the primary
+      # link (kdn-eth-2g, default route) is managed by systemd-networkd and is
+      # deliberately unmanaged in NetworkManager (only the autoconnect=false
+      # gipe/talt/mokerlink profiles use NM). With both
+      # `systemd-networkd-wait-online` and `NetworkManager-wait-online` wanted
+      # by network-online.target, nm-online never sees a connection it manages
+      # and can keep the target from settling during switch-triggered networkd
+      # restarts, so dependent services (atuin-login, llm downloads) fail until
+      # reboot. systemd-networkd is the authoritative provider, so drop NM's
+      # wait-online; the target then only waits for the networkd-managed link.
+      systemd.services."NetworkManager-wait-online" = {
+        wantedBy = lib.mkForce [];
+        requiredBy = lib.mkForce [];
+      };
 
       kdn.networking.ifaces."kdn-eth-2g".selector.mac = "04:42:1a:ed:8b:03";
       kdn.networking.ifaces."kdn-eth-2g".dynamicIPClient = true;
@@ -399,6 +442,21 @@ in {
     }
     {
       services.angrr.enable = false;
+    }
+    {
+      # Boot-selectable minimal LLM-only entry. `inheritParentConfig = false`
+      # gives it a clean top-level: only the disk/LUKS/networking/ssh/kdn-user
+      # and the LLM slot, with desktop/workstation/gaming turned off, so DeepSeek
+      # gets the whole machine. NEVER activate via switch-to-configuration —
+      # select it from the bootloader; kernel tuning only applies on a cold boot.
+      specialisation.llm-minimal = {
+        inheritParentConfig = false;
+        configuration = {
+          imports = [
+            ./llm-minimal.nix
+          ];
+        };
+      };
     }
   ];
 }

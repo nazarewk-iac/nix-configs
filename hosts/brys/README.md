@@ -15,7 +15,8 @@ useful for LLMs). CPU-only local LLM serving.
 ## Local LLM serving
 
 brys runs several local LLMs through the standalone `kdn.llm.local` slot
-(backend: llama-swap, OpenAI-compatible API on `127.0.0.1:39703`).
+(backend: llama-server router mode, OpenAI-compatible API on `127.0.0.1:39703`,
+DSpark speculative decoding on DeepSeek V4 Flash).
 
 The exact deployed state — models, serving endpoint, download mode and rate
 cap, persistence, and secrets — is documented in
