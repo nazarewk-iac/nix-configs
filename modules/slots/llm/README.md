@@ -166,10 +166,25 @@ Global download options (`kdn.llm.local.download.*`):
 | `hfRepo` | string | required | HuggingFace repo `owner/name` |
 | `hfFile` | string | required | GGUF path within `hfRepo`; may be a subdir path or the first shard of a split |
 | `download.glob` | string or null | `null` | glob within `hfRepo` the download fetches (e.g. all shards of a split); when set the download always runs |
-| `aliases` | list of string | `[]` | extra names the router server answers to |
-| `threads` | int or null | `null` | `llama-server -t` (null lets llama-server choose) |
+| `download.minBytes` | int or null | `null` | minimum acceptable size in bytes for `hfFile`; a smaller existing file is treated as a stub — both it and its HF etag metadata are deleted and it is re-downloaded. Use on split models so an interrupted first shard is repaired. |
 | `download.enable` | bool | `true` | include in the sequential download run |
 | `download.force` | bool | `false` | re-download even if present |
+| `aliases` | list of string | `[]` | extra names the router server answers to |
+| `perf.threads` | int or null | `null` | `llama-server -t`; null uses the slot default `16` |
+| `perf.flashAttention` | `on`/`off`/`auto` | `on` | `--flash-attn` |
+| `perf.contextSize` | int or null | `null` | `--ctx-size` (KV-cache RAM budget); null uses the model default |
+| `perf.mmap` | bool | `true` | memory-map the model file |
+| `perf.parallel` | int | `1` | `--parallel` server slots (1 wastes no KV cache) |
+| `perf.reasoning` | `on`/`off`/`auto` | `off` | `--reasoning`; off skips invisible thinking so short queries stream immediately |
+| `perf.specType` | string | `draft-dspark` | `--spec-type` used when `draft.enable` is set |
+| `draft.enable` | bool | `false` | download and use a speculative-decoding draft model for this model |
+| `draft.hfRepo` | string | `""` | HuggingFace repo of the draft GGUF |
+| `draft.hfFile` | string | `""` | GGUF file name of the draft within `draft.hfRepo` |
+
+The draft model is fetched by `kdn-llm-download` **before** the parent model
+(so it is ready when the router loads the parent), but it is *not* registered
+as a router model — it only feeds `model-draft`/`spec-type` on the parent's
+preset section.
 
 Router-mode note: the router generates the `--models-preset` INI from these
 options at build time — each enabled model becomes a `[<name>]` section with
