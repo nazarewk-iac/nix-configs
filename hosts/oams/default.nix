@@ -178,6 +178,93 @@ in {
       networking.networkmanager.logLevel = "DEBUG";
     }
     {
+      # Join the shared brys LAN VLANs from oams. NetworkManager VLAN profiles
+      # REQUIRE a concrete parent device (an empty/unmatched parent is silently
+      # dropped on reload), so these are bound to oams' ethernet NIC `enp4s0`,
+      # mirroring the existing working `VLAN: pic` profile on this host.
+      #
+      # None of these AUTO-CONNECT: bring one up manually with
+      #   nmcli connection up vlan-<pic|mgmt|drek>
+      #
+      # Addressing mirrors brys' per-VLAN scheme: DHCP is primary (brys runs
+      # `dynamicIPClient` on each), and each also carries a static secondary
+      # address as a guaranteed fallback so the VLAN has an IP even when no
+      # DHCP server answers. oams picks a distinct host IP on the same subnet
+      # as brys so the two never collide. If you plug the cable into a
+      # different NIC, change `vlan.parent` to that device.
+      networking.networkmanager.ensureProfiles.profiles = {
+        vlan-pic = {
+          connection = {
+            id = "vlan-pic";
+            type = "vlan";
+            interface-name = "pic";
+            autoconnect = "no";
+            permissions = "user:kdn:;";
+          };
+          ethernet = {};
+          vlan = {
+            id = 1859;
+            parent = "enp4s0";
+          };
+          ipv4 = {
+            method = "auto"; # DHCP, fallback to static below
+            address1 = "10.92.0.6/24"; # brys .5 / oams .6
+            may-fail = "yes";
+          };
+          ipv6 = {
+            method = "auto";
+            addr-gen-mode = "stable-privacy";
+          };
+        };
+        vlan-mgmt = {
+          connection = {
+            id = "vlan-mgmt";
+            type = "vlan";
+            interface-name = "mgmt";
+            autoconnect = "no";
+            permissions = "user:kdn:;";
+          };
+          ethernet = {};
+          vlan = {
+            id = 946;
+            parent = "enp4s0";
+          };
+          ipv4 = {
+            method = "auto"; # DHCP, fallback to static below
+            address1 = "192.168.252.33/24"; # brys .32 / oams .33
+            may-fail = "yes";
+          };
+          ipv6 = {
+            method = "auto";
+            addr-gen-mode = "stable-privacy";
+          };
+        };
+        vlan-drek = {
+          connection = {
+            id = "vlan-drek";
+            type = "vlan";
+            interface-name = "drek";
+            autoconnect = "no";
+            permissions = "user:kdn:;";
+          };
+          ethernet = {};
+          vlan = {
+            id = 3547;
+            parent = "enp4s0";
+          };
+          ipv4 = {
+            method = "auto"; # DHCP, fallback to static below
+            address1 = "192.168.41.32/24"; # brys .31 / oams .32
+            may-fail = "yes";
+          };
+          ipv6 = {
+            method = "auto";
+            addr-gen-mode = "stable-privacy";
+          };
+        };
+      };
+    }
+    {
       # keep all the mountpoints and software available
       kdn.profile.machine.gaming.enable = true;
       # kdn.profile.machine.gaming.vulkan.deviceId = "1002:73df";
