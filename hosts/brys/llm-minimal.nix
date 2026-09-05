@@ -48,9 +48,9 @@ let
         perf.contextSize = 262144;
         perf.reasoning = "off";
         perf.specType = "draft-dspark";
-        perf.cpuRange = "1-15";
+        perf.cpuRange = "1-12";
         perf.cpuStrict = true;
-        perf.threads = 15;
+        perf.threads = 12;
         draft = {
           enable = true;
           hfRepo = "unsloth/DeepSeek-V4-Flash-0731-GGUF";
