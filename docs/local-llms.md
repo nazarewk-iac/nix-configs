@@ -83,6 +83,20 @@ slot.
 | `gpt-oss-120b` | — | `unsloth/gpt-oss-120b-GGUF` / `gpt-oss-120b-F16.gguf` | ~65 GB |
 | `phi-4` | — | `microsoft/phi-4-gguf` / `phi-4-Q4_K.gguf` | ~9 GB |
 
+Serving is CPU-only (the Radeon Pro W6600 is unusable for this model family).
+Per-model serving knobs on brys: `threads=16` (physical cores, SMT is counter
+productive for memory-bound inference), `flash-attn=on`, `mmap=on`,
+`parallel=1`, `reasoning=off`, and these context sizes:
+
+| Model | ctx-size | Notes |
+|---|---|---|
+| `deepseek-v4-flash` | 262144 | MLA; verified to fit/load at 256K on the 128 GB host (~101 GB RSS, no swap thrash) |
+| `qwen3-30b-a3b` | 131072 | |
+| `qwen3-next-80b` | 131072 | |
+| `qwen3-coder-next` | 131072 | |
+| `qwen3-235b` | 65536 | 128K KV would exceed RAM (141 GB) |
+| `phi-4` | 16384 | hard architectural ceiling |
+
 ### Download configuration on brys
 
 - **Service:** `kdn-llm-download` — sequential, one model at a time.
@@ -119,6 +133,65 @@ is no cert-generation logic in the module system.
 
 - `qwen3-30b-a3b` and `qwen3-next-80b` were fully downloaded and verified on
   the 2026-08-29 smoke test.
-- `deepseek-v4-flash` still only has a 5 MB stub from the earliest attempt; a
-  `systemctl start kdn-llm-download` run (fast-polite) will fetch it fully.
+- `deepseek-v4-flash` is fully downloaded (all four `UD-IQ3_XXS` shards
+  present; `00001-of-00004` is legitimately ~5 MB — it is the split descriptor
+  that llama mmap-links to the large shards `02/03/04` for the full ~103 GB
+  weights). The model also uses the DSpark drafter
+  (`dspark-DeepSeek-V4-Flash-0731-Q8_0.gguf`, ~10.9 GB) for speculative
+  decoding; both fetch through `kdn-llm-download`.
 - Go-to status command: `kdn-llm-status`.
+
+### Measured memory bandwidth (brys)
+
+Real RAM throughput measured via a STREAM-style benchmark compiled for `znver3`
+and run on brys under the `performance` governor (2026-09-05). This supersedes
+the earlier *assumed* DDR4 figure of ~50 GB/s.
+
+| op | MiB working set | GB/s |
+|---|---|---|
+| COPY | 4096 | 39.80 |
+| TRIAD | 4096 | 27.90 |
+| ADD | 4096 | 26.74 |
+| SCALE | 4096 | 24.20 |
+| COPY | 320 | 38.81 |
+
+Implication for the tok/s ceiling: CPU decode reads activated weights
+sequentially, so **COPY (~40 GB/s)** is the right figure. DeepSeek V4 Flash
+IQ3_XXS reads ~5 GB of activated params per token, so the realistic ceiling is
+**~8 tok/s** (was ~9–10 from the assumed 50 GB/s). The 6.25 tok/s best reachis
+~78% of the real hardware ceiling.
+
+### Benchmark result log (append-only)
+
+Each row records a config tweak, the resulting server-side `print_timing`
+eval tok/s on DS4 (warm), and the model load time. New results are appended
+at the bottom.
+
+| timestamp | tweak | server eval tok/s | ms/tok | vs prev | client tok/s | load time | note |
+|---|---|---|---|---|---|---|---|
+| 2026-09-05 19:41 | baseline (isolcpus=1-15, threads=16, no cpu-range) | 2.28 | 439 | — | 0.30 | ~1:40 | page-cache cold/churned |
+| 2026-09-05 20:03 | `cpu-range=1-15` + `cpu-strict=1` + `threads=15` | 2.33 | 428 | 0.05 (==) | 0.31 | 1:45 (19:53:20 → 19:55:05) | still cold |
+| 2026-09-05 20:07 | cpu-range same config, run 1 | 3.92 | 255 | ↑ | 0.53 | warm | page cache recovering |
+| 2026-09-05 20:08 | cpu-range same config, run 2 | **5.75** | 174 | ↑ | 0.78 | warm | fully warm → matches 6.5-6.7 baseline |
+| 2026-09-05 20:21 | `transparent_hugepage=always` (reboot), run 1 | 5.03 | 199 | — | 0.34 | cold | still warming |
+| 2026-09-05 20:22 | `transparent_hugepage=always`, run 2 (warm) | 6.37 | 157 | ≈ | 0.82 | warm | no change vs madvise (THP no-op on file mmaps) |
+| 2026-09-05 20:39 | `cpu-range` + `specDraftNMax=4` + `specDraftPrio=2`, run 1 | 3.21 | 312 | ↓ | 0.44 | warm | mean len↑3.95 but still warming |
+| 2026-09-05 20:41 | cpu-range + n_max=4 + prio=2, run 2 (warm) | **4.39** | 228 | **↓ regression** | 0.58 | warm | draft mean len 3.62, acceptance 0.66; HIGHER n_max slower on CPU (matches rohitraj) → REVERT |
+| 2026-09-05 20:50 | revert: cpu-range, DSpark defaults + madvise (reboot), run 1 | 6.21 | 161 | ↑ | 0.41 | cold→warm | confirms revert |
+| 2026-09-05 20:51 | revert confirmed, run 2 (warm) | **6.91** | 145 | ↑↑ NEW BEST | 0.89 | warm | ~86% of ~8 t/s ceiling; DSpark n_max+prio was the regression |
+
+**Key mechanism finding (2026-09-05 ~20:10):** the DS4 weights are `mmap`-backed and go
+fully resident as **file-backed page cache** (~77 GB `RssFile` on the worker), plus ~14 GB
+anonymous (`RssAnon`) → ~92 GB RSS on a 128 GB host. It does NOT re-read on demand *after the
+first warm pass*, BUT if anything pressures page cache (a nix build/copy, a stream bench, erm:
+essentially any large alloc), the kernel evicts those file pages and llama re-reads them from
+disk on next decode → throughput collapses to disk-bound (~2-3 t/s, even 0.9). Once warm and
+undisturbed it holds ~5.75-6.7 t/s. **Thus the 2.28/0.9 "regressions" were page-cache churn,
+not isolation or cpu affinity.** Always: warm fully, keep the box otherwise idle, then bench;
+record RSS/residency with the result. A big lever is keeping the ~92 GB resident without churn.
+
+**Caveat (2026-09-05 ~20:06):** the 19:41 "baseline" (and the handover 0.9) were likely
+artefacts of page-cache churn, not isolation. The SAME process (3064, isolation unchanged)
+read 6.51 and 6.69 t/s at 19:14/19:16, then 2.28 at 19:41 right after nix-daemon build/copy
+disk reads began. The mmap'd ~103 GB GGUF re-reads from disk if page cache is evicted
+→ disk-bound. Treat any single bench that follows a build/copy as invalid; re-warm and re-run.

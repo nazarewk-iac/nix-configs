@@ -69,6 +69,9 @@
           "cpu-range = ${perf.cpuRange}"
           "cpu-strict = ${if perf.cpuStrict then "1" else "0"}"
         ]
+        ++ lib.optionals (perf.loadMode != null) [
+          "load-mode = ${perf.loadMode}"
+        ]
         ++ lib.optionals (perf.contextSize != null) [
           "ctx-size = ${toString perf.contextSize}"
         ]
@@ -457,6 +460,18 @@ in {
               default = true;
               description = "memory-map the model file (mmap) instead of copying it into RAM page-cache.";
             };
+            options.perf.loadMode = lib.mkOption {
+              type = with lib.types; nullOr str;
+              default = null;
+              description = ''
+                llama-server memory load mode for this model (--load-mode).
+                Sets how the mmap'd weights are locked into RAM. "mlock"
+                mlock(2)s the pages so file-back page cache cannot be evicted
+                under memory pressure; requires an unlimited MEMLOCK rlimit
+                (the slot sets LimitMEMLOCK accordingly). Null omits the flag
+                and lets llama use its default (mmap).
+              '';
+            };
             options.perf.parallel = lib.mkOption {
               type = lib.types.int;
               default = 1;
@@ -568,6 +583,9 @@ in {
       systemd.services.llama-cpp.serviceConfig.ReadWritePaths = [
         cfg.modelsDir
       ];
+      # Raise the mlock rlimit so an mlock'd model (~100 GB) can be locked:
+      # systemd defaults LimitMEMLOCK to 8 MiB, which would fail any mlock.
+      systemd.services.llama-cpp.serviceConfig.LimitMEMLOCK = "infinity";
 
       # Assemble the per-key files under apiKeyDir into a single file in
       # llama-cpp's StateDirectory (writable by its DynamicUser), stripping
