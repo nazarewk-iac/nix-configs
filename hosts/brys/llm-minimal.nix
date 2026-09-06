@@ -36,6 +36,14 @@ let
     kdn.llm.local.apiKeyDir = "/run/configs/llms/llama-server/api-keys";
     kdn.llm.local.download.mode = "fast-polite";
     kdn.llm.local.download.xetConcurrency = 8;
+    # Second router on :39704 holds the freely-swapping small set (phi-4,
+    # qwen3-30b-a3b), keeping DS4 hot on the primary :39703.
+    kdn.llm.local.routers.small = {
+      enable = true;
+      port = 39704;
+      threads = 8;
+      apiKeyDir = "/run/configs/llms/llama-server/api-keys";
+    };
     # Same models/per-model perf as the main host, but DeepSeek biased to its
     # verified-working 256K context (nothing else competes for RAM here).
     kdn.llm.local.models = {
@@ -44,7 +52,7 @@ let
         hfRepo = "unsloth/DeepSeek-V4-Flash-GGUF";
         hfFile = "UD-IQ3_XXS/DeepSeek-V4-Flash-UD-IQ3_XXS-00001-of-00004.gguf";
         download.glob = "UD-IQ3_XXS/DeepSeek-V4-Flash-UD-IQ3_XXS-*.gguf";
-        aliases = ["frontier"];
+        aliases = [ "frontier" ];
         perf.contextSize = 131072;
         perf.reasoning = "off";
         perf.specType = "draft-dspark";
@@ -63,20 +71,22 @@ let
         enable = true;
         hfRepo = "Qwen/Qwen3-30B-A3B-GGUF";
         hfFile = "Qwen3-30B-A3B-Q4_K_M.gguf";
-        aliases = ["fast"];
+        aliases = [ "fast" ];
+        mainRouter = "small";
         perf.contextSize = 131072;
       };
       qwen3-next-80b = {
         enable = true;
         hfRepo = "unsloth/Qwen3-Next-80B-A3B-Instruct-GGUF";
         hfFile = "Qwen3-Next-80B-A3B-Instruct-Q4_K_M.gguf";
-        aliases = ["balanced"];
+        aliases = [ "balanced" ];
         perf.contextSize = 131072;
       };
       phi-4 = {
         enable = true;
         hfRepo = "microsoft/phi-4-gguf";
         hfFile = "phi-4-Q4_K.gguf";
+        mainRouter = "small";
         perf.contextSize = 16384;
       };
       qwen3-coder-next = {
@@ -101,7 +111,8 @@ let
       };
     };
   };
-in {
+in
+{
   imports = [
     kdnConfig.self.nixosModules.default
     slots.config.nixos
@@ -110,7 +121,7 @@ in {
   config = lib.mkMerge [
     # ---- Boot as a minimal appliance ---------------------------------------
     {
-      system.nixos.tags = ["llm-minimal"];
+      system.nixos.tags = [ "llm-minimal" ];
       system.stateVersion = "24.11";
       systemd.defaultUnit = lib.mkForce "multi-user.target";
 
@@ -124,7 +135,7 @@ in {
       networking.hostId = "0a989258"; # ZFS requirement (same as main brys)
       kdn.locale.enable = true;
 
-      home-manager.sharedModules = [{home.stateVersion = "24.11";}];
+      home-manager.sharedModules = [ { home.stateVersion = "24.11"; } ];
       home-manager.users."kdn".home.stateVersion = "24.11";
     }
 
@@ -182,8 +193,8 @@ in {
       # systemd-networkd is the authoritative provider; drop NM's wait-online
       # so network-online.target settles (same fix as the main host).
       systemd.services."NetworkManager-wait-online" = {
-        wantedBy = lib.mkForce [];
-        requiredBy = lib.mkForce [];
+        wantedBy = lib.mkForce [ ];
+        requiredBy = lib.mkForce [ ];
       };
     }
 
@@ -200,9 +211,12 @@ in {
       # Raw-decrypt the LLM leaf PRIVATE key into /run/secrets before Caddy.
       systemd.services.kdn-llm-leaf-key = {
         description = "Decrypt brys LLM leaf private key into /run/secrets";
-        wantedBy = ["caddy.service"];
-        before = ["caddy.service"];
-        path = [pkgs.sops pkgs.coreutils];
+        wantedBy = [ "caddy.service" ];
+        before = [ "caddy.service" ];
+        path = [
+          pkgs.sops
+          pkgs.coreutils
+        ];
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
@@ -258,7 +272,7 @@ in {
       '';
       # Show it even before login on the virtual consoles.
       environment.etc."issue.d".text = "";
-      systemd.tmpfiles.rules = [];
+      systemd.tmpfiles.rules = [ ];
     }
 
     # ---- Performance tuning for CPU-only inference ----------------------
