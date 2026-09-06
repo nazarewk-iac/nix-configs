@@ -161,6 +161,26 @@ IQ3_XXS reads ~5 GB of activated params per token, so the realistic ceiling is
 **~8 tok/s** (was ~9–10 from the assumed 50 GB/s). The 6.25 tok/s best reachis
 ~78% of the real hardware ceiling.
 
+### Measured per-model hardware constraints (brys, 2026-09-06)
+
+Each model loaded via a manual `llama-server` (llama.cpp 10408, `mmap`, threads 12) one at a time on
+the 128 GB box (DeepSeek router also resident for the small models). Resident working set = `VmRSS`
+= `RssAnon` (compute/KV buffers) + `RssFile` (mmap'd weights). `warm t/s` = 128-token generation.
+
+| model | file | VmRSS | RssAnon | RssFile | VmPeak | load | warm t/s | coexist w/ DS4? |
+|---|---|---|---|---|---|---|---|---|
+| `phi-4` | 8.5 G | 17.7 G | 8.9 G | 8.7 G | 23 G | ~18 s | 2.86 | yes (fits; evicts little) |
+| `qwen3-30b-a3b` | 18 G | 44.4 G | 26.4 G | 18.0 G | 50 G | ~42 s | 11.41 | partial (evicts ~45 G of DS4 cache) |
+| `qwen3-coder-next` | 45 G | 65.6 G | 39.6 G | 25.9 G | 91 G | ~105 s | 5.34 | no (fully evicts DS4) |
+| `qwen3-next-80b` | 46 G | 80.0 G | 39.2 G | 40.8 G | 94 G | ~99 s | 3.29 | no (fully evicts DS4) |
+| `qwen3-235b` | 72 G | (fail) ~100 G est | — | — | — | fail @65 G avail | — | no (needs box alone) |
+| `gpt-oss-120b` | 84 G | ~100 G est | — | — | — | — | — | no (needs box alone) |
+
+Multi-model implication: `models-max=1` (one resident at a time) is the right policy on 128 GB. Only
+`phi-4` (17.7 G) fits comfortably alongside DeepSeek; `qwen3-30b` (44.4 G) fits but evicts ~45 G of
+DS4's weight cache (DS4 re-reads from disk on next use). Every 45 G+ MoE fully evicts DS4 and needs
+the box to itself.
+
 ### Benchmark result log (append-only)
 
 Each row records a config tweak, the resulting server-side `print_timing`
