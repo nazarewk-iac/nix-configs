@@ -57,6 +57,47 @@ let
           hfFile = "dspark-DeepSeek-V4-Flash-0731-Q8_0.gguf";
         };
       };
+      # Smaller models (all downloaded on brys). Added for benchmarking/tuning;
+      # DeepSeek block above is intentionally left byte-identical (do not touch).
+      qwen3-30b-a3b = {
+        enable = true;
+        hfRepo = "Qwen/Qwen3-30B-A3B-GGUF";
+        hfFile = "Qwen3-30B-A3B-Q4_K_M.gguf";
+        aliases = ["fast"];
+        perf.contextSize = 131072;
+      };
+      qwen3-next-80b = {
+        enable = true;
+        hfRepo = "unsloth/Qwen3-Next-80B-A3B-Instruct-GGUF";
+        hfFile = "Qwen3-Next-80B-A3B-Instruct-Q4_K_M.gguf";
+        aliases = ["balanced"];
+        perf.contextSize = 131072;
+      };
+      phi-4 = {
+        enable = true;
+        hfRepo = "microsoft/phi-4-gguf";
+        hfFile = "phi-4-Q4_K.gguf";
+        perf.contextSize = 16384;
+      };
+      qwen3-coder-next = {
+        enable = true;
+        hfRepo = "Qwen/Qwen3-Coder-Next-GGUF";
+        hfFile = "Qwen3-Coder-Next-Q4_K_M/Qwen3-Coder-Next-Q4_K_M-00001-of-00004.gguf";
+        download.glob = "Qwen3-Coder-Next-Q4_K_M/Qwen3-Coder-Next-Q4_K_M-*.gguf";
+        perf.contextSize = 131072;
+      };
+      qwen3-235b = {
+        enable = true;
+        hfRepo = "mradermacher/Qwen3-235B-A22B-i1-GGUF";
+        hfFile = "Qwen3-235B-A22B.i1-IQ2_M.gguf.part1of2";
+        download.glob = "Qwen3-235B-A22B.i1-IQ2_M.gguf.part*";
+        perf.contextSize = 65536;
+      };
+      gpt-oss-120b = {
+        enable = true;
+        hfRepo = "unsloth/gpt-oss-120b-GGUF";
+        hfFile = "gpt-oss-120b-F16.gguf";
+      };
     };
   };
 in {
