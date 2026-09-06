@@ -25,7 +25,10 @@ python3.pkgs.buildPythonApplication {
       rev = "1ae3a3d65289541555160b4590936705f5dd9ab9";
       hash = "sha256-UdCHABshTLF782SdhJEypiCuu3nxk8HCTfJ1m7TIapk=";
     };
-    patches = [ ./patches/forward-auth.patch ];
+    patches = [
+      ./patches/forward-auth.patch
+      ./patches/router.patch
+    ];
   };
 
   nativeBuildInputs = [ py ];

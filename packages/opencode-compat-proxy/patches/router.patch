@@ -1,0 +1,103 @@
+--- a/proxy.py	2026-09-06 12:32:15.513199655 +0200
++++ b/proxy.py	2026-09-06 12:32:25.666594218 +0200
+@@ -33,6 +33,32 @@
+ # when unset the streaming path keeps the original no-auth behaviour.
+ FORWARD_AUTHORIZATION = os.environ.get("FORWARD_AUTHORIZATION", "").lower() in ("1", "true", "yes")
+ 
++# Model-based routing across two llama-server routers. The frontier router
++# (default $UPSTREAM_URL) always exists; $SMALL_UPSTREAM_URL optionally adds a
++# second "small" router that swaps among the freely-swapping small-set models.
++# When $SMALL_UPSTREAM_URL is unset, routing is OFF and every request goes to
++# UPSTREAM exactly as before (single-router backward compatibility).
++SMALL_UPSTREAM_URL = os.environ.get("SMALL_UPSTREAM_URL")
++UPSTREAMS = {"frontier": UPSTREAM}
++# {model-or-alias: "small"} membership table, configurable via a comma-separated
++# $SMALL_MODELS list (defaults to the design's small-set aliases). Anything not
++# in the table routes to the frontier/UPSTREAM router.
++ROUTE = {}
++if SMALL_UPSTREAM_URL:
++    UPSTREAMS["small"] = SMALL_UPSTREAM_URL
++    for m in (x.strip() for x in os.environ.get("SMALL_MODELS", "phi-4,qwen3-30b-a3b,fast").split(",")):
++        if m:
++            ROUTE[m] = "small"
++
++
++def upstream_for(model):
++    """Return the base URL for a model: the small router when it is a small-set
++    member and that router is configured, otherwise UPSTREAM (frontier)."""
++    if SMALL_UPSTREAM_URL and ROUTE.get(model) == "small":
++        return UPSTREAMS["small"]
++    return UPSTREAM
++
++
+ HOP_BY_HOP = frozenset({
+     "connection", "keep-alive", "proxy-authenticate", "proxy-authorization",
+     "te", "trailers", "transfer-encoding", "upgrade",
+@@ -536,9 +562,11 @@
+     return find_raw_tool_start(text)
+ 
+ 
+-async def stream_with_sections(upstream_req, forwarded_for="", upstream_headers=None):
++async def stream_with_sections(upstream_req, forwarded_for="", upstream_headers=None, upstream=None):
+     chunk_id = "chatcmpl-" + uuid.uuid4().hex[:12]
+     model = upstream_req.get("model", "deepseek")
++    # Route this stream to the caller-chosen upstream (default frontier/UPSTREAM).
++    upstream = upstream if upstream is not None else UPSTREAM
+ 
+     req_headers = {"Accept": "text/event-stream"}
+     if upstream_headers and FORWARD_AUTHORIZATION:
+@@ -553,7 +581,7 @@
+         resp = await client.send(
+             client.build_request(
+                 "POST",
+-                UPSTREAM + "/v1/chat/completions",
++                upstream + "/v1/chat/completions",
+                 json=upstream_req,
+                 headers=req_headers,
+             ),
+@@ -749,11 +777,13 @@
+                 )
+             return Response(content=r.content, status_code=r.status_code, headers=dict(r.headers))
+         log.info("RESPONSE: streaming via stream_with_sections")
+-        return await stream_with_sections(j, client_host, upstream_headers)
++        return await stream_with_sections(j, client_host, upstream_headers,
++                                          upstream=upstream_for(j.get("model")))
+ 
+     async with httpx.AsyncClient() as client:
++        chat_upstream = upstream_for(j.get("model") if j else None)
+         upstream_resp = await client.post(
+-            UPSTREAM + "/v1/chat/completions",
++            chat_upstream + "/v1/chat/completions",
+             json=j if j is not None else json.loads(body_bytes),
+             headers=upstream_headers,
+             timeout=None,
+@@ -777,11 +807,24 @@
+ 
+ 
+ @app.get("/v1/models")
+-async def models_list():
+-    async with httpx.AsyncClient() as client:
+-        resp = await client.get(UPSTREAM + "/v1/models", timeout=None)
+-    log.info("MODELS: %d models returned", len(resp.json().get("data", [])))
+-    return JSONResponse(content=resp.json(), status_code=resp.status_code)
++async def models_list(request: Request):
++    # Merge the model listings from the frontier (UPSTREAM) and, when configured,
++    # the small router, deduping by model id. Forward the client's Authorization
++    # header (the original dropped it) so routers with --api-key-file respond.
++    auth = request.headers.get("authorization")
++    headers = {"Authorization": auth} if auth else {}
++    sources = [UPSTREAM] + ([UPSTREAMS["small"]] if SMALL_UPSTREAM_URL else [])
++    merged = {}
++    for base in sources:
++        async with httpx.AsyncClient() as client:
++            resp = await client.get(base + "/v1/models", headers=headers, timeout=None)
++        if resp.status_code != 200:
++            log.warning("MODELS: %s returned %d", base, resp.status_code)
++            continue
++        for m in resp.json().get("data", []):
++            merged[m.get("id")] = m
++    log.info("MODELS: %d models returned", len(merged))
++    return JSONResponse(content={"object": "list", "data": list(merged.values())}, status_code=200)
+ 
+ 
+ 
