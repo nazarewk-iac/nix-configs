@@ -14,17 +14,69 @@ Reference docs: [slot README](../modules/slots/llm/README.md).
 
 ## Concept
 
-`kdn.llm.local` runs a single llama-server (from llama.cpp) in **router mode**:
-one OpenAI-compatible HTTP API on loopback that loads/unloads individual GGUFs
-on demand (`--models-max 1`, exactly one model resident at a time). A
-self-signed-certificate **Caddy** reverse proxy exposes the endpoint on the LAN
-over HTTPS. Between Caddy and the loopback server sits one OpenCode DSML
-compat-proxy that translates DSML/XML tool calls and passes every other path
-through, so one instance fronts the self-routing server.
+`kdn.llm.local` runs one or more llama-server processes (from llama.cpp) in
+**router mode**: each owns an OpenAI-compatible HTTP API on loopback that
+loads/unloads individual GGUFs on demand (`--models-max 1`, exactly one model
+resident at a time in that router). The primary **frontier** router
+(`services.llama-cpp`, `:39703`) holds the default "main" model set; any number
+of optional extra routers (`kdn.llm.local.routers.<name>`) host smaller
+freely-swapping sets. A self-signed-certificate **Caddy** reverse proxy exposes
+the endpoint on the LAN over HTTPS. Between Caddy and the servers sits one
+OpenCode DSML compat-proxy that both translates DSML/XML tool calls and routes
+each request's `model=` field to the router that owns it (unknown models fall
+back to the frontier), merging all routers' `/v1/models`. A single instance
+fronts the whole N-router topology.
 
 ```
-LAN client ──HTTPS──▶ Caddy (:80/:443) ──▶ compat-proxy (:9530) ──▶ llama-server (:39703, --api-key-file)
+LAN client ──HTTPS──▶ Caddy (:80/:443) ──▶ compat-proxy (:9530) ─┬─▶ llama-server "main" (:39703, --api-key-file)
+                                                                  └─▶ llama-server "small" (:39704, --api-key-file)
+                                                                  └─▶ ... any further `routers.<name>` ...
 ```
+
+### N-router topology and routing
+
+The compat-proxy maps each request's `model` (a name or an alias) through its
+`ROUTE` table to the owning router's base URL; anything unrouted (including
+`None`) goes to the frontier `UPSTREAM_URL`. `GET /v1/models` walks every
+configured router and merges the listings, deduped by model id. Each router
+runs `--models-max 1`, so model load/unload on that router is an on-demand swap
+within the router only — the frontier's resident model is untouched.
+
+Why split at all? A single `models-max=1` router thrashes DeepSeek V4 Flash's
+(DS4) ~77 GB weight page-cache whenever a second model loads (see the measured
+per-model table below: any 45 G+ MoE fully evicts DS4's resident weights, see
+`qwen3-coder-next` 65.6 G, `qwen3-next-80b` 80 G, `gpt-oss-120b` ~100 G,
+`qwen3-235b` ~100 G). Splitting lets DS4 stay resident/hot on the frontier
+router (its ~92 GB working set held against page-cache pressure) while the
+small set swaps freely on its own router; only `phi-4` (17.7 G) or
+`qwen3-30b-a3b` (44.4 G but evicting ~45 G of DS4 cache) ever risk touching
+the frontier's cache in a single-router layout. Facts only — no extrapolation
+beyond the measured footprints in the table below.
+
+### Option contract
+
+All of this is configured through `kdn.llm.local` in a host's `mkSlots` block:
+
+- `kdn.llm.local.routers.<name>` (`attrsOf`) — each entry enables an extra
+  llama-server router with `enable`, `port`, `threads`, `apiKeyDir`. Router
+  **names must be lowercase alphanumeric** (e.g. `small`, `coder`) so the
+  proxy's env key `ROUTER_<NAME>_*` round-trips through its hyphenated slug
+  back to the on-disk section name.
+- `kdn.llm.local.models.<name>.mainRouter` — which router owns the model
+  (`"main"` = the frontier/default server; any other value the equally-named
+  `routers.<name>`). A model lands in exactly one router's preset INI.
+- `kdn.llm.local.models.<name>.aliases` — extra names routed to that model's
+  router too.
+
+The compat-proxy honors, per router: `ROUTER_<NAME>_URL`
+(`http://127.0.0.1:<port>`) + `ROUTER_<NAME>_MODELS` (`m1,m2,...`, names +
+aliases). The legacy `SMALL_UPSTREAM_URL` + `SMALL_MODELS` pair is sugar for a
+router named `small`; the slot now emits the general `ROUTER_<NAME>_*` form for
+every enabled router (including `small`). A future host adds a third router by
+declaring `routers.<name>` + pointing the relevant models' `mainRouter` at it —
+the slot generates its env vars automatically. See
+[`packages/opencode-compat-proxy/patches/router.patch`](../packages/opencode-compat-proxy/patches/router.patch)
+for the proxy contract.
 
 To enable on any NixOS host, inside its `mkSlots` block:
 
@@ -64,12 +116,39 @@ slot.
 
 ### Serving endpoint
 
-- llama-server router HTTP API (loopback, `--api-key-file`): `127.0.0.1:39703`.
+- Two llama-server routers on loopback, each `--api-key-file`:
+  - **`main`** (frontier): `127.0.0.1:39703`, threads 16. Holds the default
+    set (everything without an explicit `mainRouter`): `deepseek-v4-flash`
+    (alias `frontier`), plus the main host's non-small models.
+  - **`small`** (`kdn.llm.local.routers.small`): `127.0.0.1:39704`, threads 8.
+    Holds the freely-swapping small set (see below).
+- One loopback compat-proxy `:9530` in front of both, with `routerProxyEnv`
+  emitting `ROUTER_SMALL_URL` + `ROUTER_SMALL_MODELS`.
 - LAN endpoint over HTTPS: `https://brys.lan.etra.net.int.kdn.im/v1`, pinned to
   a self-signed cert and API-key protected. `POST /v1/chat/completions` with the
-  `model` field set to a model name or alias; the router loads/swaps the GGUF
-  automatically. Auth: `Authorization: Bearer <key>`
+  `model` field set to a model name or alias; the compat-proxy routes it to the
+  owning router (unknown → frontier), which loads/swaps the GGUF automatically.
+  Auth: `Authorization: Bearer <key>`
   (`llama-server/api-keys/default` in the sops tree).
+
+### Router split on brys
+
+The `llm-minimal` boot specialisation is the two-router deployment (boot-selected,
+never activated in place):
+
+- **`main`** `:39703`, threads 16 — frontier. `deepseek-v4-flash` (alias
+  `frontier`, DSpark draft, 256K→halved to a stable 131072 ctx) lives here and
+  stays resident/hot; it is the default `mainRouter` for all models in
+  `hosts/brys/llm-minimal.nix` that do not name another router.
+- **`small`** `:39704`, threads 8 — `kdn.llm.local.routers.small`, hosts every
+  small model in the specialisation that sets `mainRouter = "small"`:
+  `qwen3-30b-a3b` (alias `fast`), `qwen3-next-80b` (alias `balanced`),
+  `phi-4`, `qwen3-coder-next`, `qwen3-235b`, `gpt-oss-120b`. `--models-max 1`
+  on this router shares/evicts only among these — DS4 on the frontier stays put.
+
+The **main `brys` host** (`hosts/brys/default.nix`) enables no extra routers
+(all models keep the default `mainRouter = "main"`), so its compat-proxy gets no
+`ROUTER_*` env and behaves exactly as the original single-router setup.
 
 ### Models (all enabled on brys)
 
@@ -179,7 +258,10 @@ the 128 GB box (DeepSeek router also resident for the small models). Resident wo
 Multi-model implication: `models-max=1` (one resident at a time) is the right policy on 128 GB. Only
 `phi-4` (17.7 G) fits comfortably alongside DeepSeek; `qwen3-30b` (44.4 G) fits but evicts ~45 G of
 DS4's weight cache (DS4 re-reads from disk on next use). Every 45 G+ MoE fully evicts DS4 and needs
-the box to itself.
+the box to itself. **This is exactly why the topology splits into two routers** (see "Router split on
+brys"): the frontier router keeps DS4 hot while the `small` router owns the 45 G+ swapping set, so it
+never touches DS4's cache — only `qwen3-30b-a3b` on the small side is a partial-eviction risk inside
+its own router's resident cache, not DS4's.
 
 ### Benchmark result log (append-only)
 
