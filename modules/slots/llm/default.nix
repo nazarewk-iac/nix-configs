@@ -787,6 +787,12 @@ in
               UPSTREAM_URL = "http://127.0.0.1:${toString cfg.server.port}";
               PROXY_HOST = "127.0.0.1";
               PROXY_PORT = toString cfg.compatProxy.port;
+              # Route the small-set models to the "small" router (if enabled):
+              # the proxy splits the routers' /v1/models and picks the upstream
+              # by the request's model= field.
+              SMALL_UPSTREAM_URL = lib.mkIf (cfg.routers.small.enable or false) (
+                "http://127.0.0.1:${toString cfg.routers.small.port}"
+              );
               # llama-server authenticates the client's Bearer key; forward it
               # on the streaming path too.
               FORWARD_AUTHORIZATION = "true";
