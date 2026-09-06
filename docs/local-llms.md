@@ -150,6 +150,18 @@ The **main `brys` host** (`hosts/brys/default.nix`) enables no extra routers
 (all models keep the default `mainRouter = "main"`), so its compat-proxy gets no
 `ROUTER_*` env and behaves exactly as the original single-router setup.
 
+**Co-residency cost (measured, Phase 3):** the two routers keep DS4 resident (it
+never cold-reloads across small-model swaps on `small`), but on the ~40 GB/s
+bandwidth-bound box any resident small model contends for the same memory
+bandwidth. Even an *idle-but-resident* small model (phi-4, 8 GB) halves DS4
+(~6.7 → ~3 t/s); an *actively generating* small model drops DS4 to ~1.75–2.2 t/s
+(67–74% hit) and a 65 GB+ MoE (qwen3-coder-next) crushes it to ~0.9–1.1 t/s and
+evicts DS4's weight cache (RSS 67→15 GB). Best co-tenant by far is
+`qwen3-30b-a3b` (fast, low bandwidth, ~2.2 t/s DS4 hit, cache intact). Treat the
+big 45 GB+ models as exclusive/DS4-degrading, not cheap co-resident tasks. Also
+note: a router's `--sleep-idle-seconds -1` pins its last resident model, so DS4
+is never truly "alone" once the small set has been touched.
+
 ### Models (all enabled on brys)
 
 | Name | Alias | hfRepo / file | Size |
@@ -253,7 +265,7 @@ the 128 GB box (DeepSeek router also resident for the small models). Resident wo
 | `qwen3-coder-next` | 45 G | 65.6 G | 39.6 G | 25.9 G | 91 G | ~105 s | 5.34 | no (fully evicts DS4) |
 | `qwen3-next-80b` | 46 G | 80.0 G | 39.2 G | 40.8 G | 94 G | ~99 s | 3.29 | no (fully evicts DS4) |
 | `qwen3-235b` | 72 G | (fail) ~100 G est | — | — | — | fail @65 G avail | — | no (needs box alone) |
-| `gpt-oss-120b` | 84 G | ~100 G est | — | — | — | — | — | no (needs box alone) |
+| `gpt-oss-120b` (Q4_K_M) | 58.5 G | 72.2 G | 60.2 G | 11.8 G | 128 G | ~129 s | **12.7** | yes (fits; DS4 file-cache evicted, re-faults) |
 
 Multi-model implication: `models-max=1` (one resident at a time) is the right policy on 128 GB. Only
 `phi-4` (17.7 G) fits comfortably alongside DeepSeek; `qwen3-30b` (44.4 G) fits but evicts ~45 G of
