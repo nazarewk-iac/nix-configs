@@ -1,39 +1,87 @@
---- a/proxy.py	2026-09-06 12:32:15.513199655 +0200
-+++ b/proxy.py	2026-09-06 12:32:25.666594218 +0200
-@@ -33,6 +33,32 @@
+--- a/proxy.py	2026-09-06 18:59:00.000256560 +0200
++++ b/proxy.py	2026-09-06 18:58:36.526161080 +0200
+@@ -33,6 +33,80 @@
  # when unset the streaming path keeps the original no-auth behaviour.
  FORWARD_AUTHORIZATION = os.environ.get("FORWARD_AUTHORIZATION", "").lower() in ("1", "true", "yes")
  
-+# Model-based routing across two llama-server routers. The frontier router
-+# (default $UPSTREAM_URL) always exists; $SMALL_UPSTREAM_URL optionally adds a
-+# second "small" router that swaps among the freely-swapping small-set models.
-+# When $SMALL_UPSTREAM_URL is unset, routing is OFF and every request goes to
-+# UPSTREAM exactly as before (single-router backward compatibility).
++# Model-based routing across an arbitrary number of llama-server routers. The
++# frontier router (default $UPSTREAM_URL) always exists and is the fallback.
++# Each extra router is a pair of env vars holding its base URL and the
++# comma-separated model list that maps onto it:
++#   ROUTER_<NAME>_URL=http://127.0.0.1:<port>   ROUTER_<NAME>_MODELS=m1,m2,...
++# Router names are case-insensitive and normalized to lowercase hyphens; blank
++# names and blank model ids are ignored; a ROUTER_*_URL is ignored if empty.
++# The legacy pair $SMALL_UPSTREAM_URL + $SMALL_MODELS is kept as sugar for a
++# router literally named "small" and wins that slot; when both are set the
++# legacy value and the legacy default model list apply. When no router env is
++# set at all, routing is OFF and every request goes to UPSTREAM exactly as
++# before (single-router backward compatibility).
 +SMALL_UPSTREAM_URL = os.environ.get("SMALL_UPSTREAM_URL")
 +UPSTREAMS = {"frontier": UPSTREAM}
-+# {model-or-alias: "small"} membership table, configurable via a comma-separated
-+# $SMALL_MODELS list (defaults to the design's small-set aliases). Anything not
-+# in the table routes to the frontier/UPSTREAM router.
++# {model-or-alias: "router"} membership table built from every configured router.
++# Anything not in the table routes to the frontier/UPSTREAM router.
 +ROUTE = {}
-+if SMALL_UPSTREAM_URL:
-+    UPSTREAMS["small"] = SMALL_UPSTREAM_URL
-+    for m in (x.strip() for x in os.environ.get("SMALL_MODELS", "phi-4,qwen3-30b-a3b,fast").split(",")):
-+        if m:
-+            ROUTE[m] = "small"
++
++
++def _slug(name):
++    """Normalize a router name from its env var to a lowercase hyphen slug."""
++    return re.sub(r"\W+", "-", name.strip()).strip("-").lower()
++
++
++def _find_env(name_upper):
++    """Read an env var ignoring case; return None when absent/blank."""
++    for k, v in os.environ.items():
++        if k.upper() == name_upper:
++            return v
++    return None
++
++
++def _configured_routers():
++    """Collect {slug: url} from ROUTER_*_URL vars plus legacy "small" sugar."""
++    routers = {}
++    for k, v in os.environ.items():
++        upper = k.upper()
++        if not (upper.startswith("ROUTER_") and upper.endswith("_URL")):
++            continue
++        slug = _slug(upper[len("ROUTER_"):-len("_URL")])
++        if slug:
++            routers[slug] = v
++    if SMALL_UPSTREAM_URL:
++        routers["small"] = SMALL_UPSTREAM_URL
++    return routers
++
++
++def _build_route():
++    """Map each routed model to the first router naming it; default small set
++    applies only to the legacy "small" router when $SMALL_UPSTREAM_URL is set."""
++    built = {}
++    for name, _ in _configured_routers().items():
++        var = "ROUTER_" + name.upper() + "_MODELS"
++        if name == "small" and _find_env(var) is None and SMALL_UPSTREAM_URL:
++            mods = os.environ.get("SMALL_MODELS", "phi-4,qwen3-30b-a3b,fast")
++        else:
++            mods = _find_env(var) or ""
++        for m in (x.strip() for x in mods.split(",")):
++            if m and m not in built:
++                built[m] = name
++    return built
++
++
++for name, url in _configured_routers().items():
++    UPSTREAMS[name] = url
++ROUTE = _build_route()
 +
 +
 +def upstream_for(model):
-+    """Return the base URL for a model: the small router when it is a small-set
-+    member and that router is configured, otherwise UPSTREAM (frontier)."""
-+    if SMALL_UPSTREAM_URL and ROUTE.get(model) == "small":
-+        return UPSTREAMS["small"]
-+    return UPSTREAM
++    """Return the base URL for a model: the router it maps to in ROUTE, or the
++    frontier/UPSTREAM router for anything unrouted (unknown or None)."""
++    return UPSTREAMS.get(ROUTE.get(model), UPSTREAM)
 +
 +
  HOP_BY_HOP = frozenset({
      "connection", "keep-alive", "proxy-authenticate", "proxy-authorization",
      "te", "trailers", "transfer-encoding", "upgrade",
-@@ -536,9 +562,11 @@
+@@ -536,9 +610,11 @@
      return find_raw_tool_start(text)
  
  
@@ -46,7 +94,7 @@
  
      req_headers = {"Accept": "text/event-stream"}
      if upstream_headers and FORWARD_AUTHORIZATION:
-@@ -553,7 +581,7 @@
+@@ -553,7 +629,7 @@
          resp = await client.send(
              client.build_request(
                  "POST",
@@ -55,7 +103,7 @@
                  json=upstream_req,
                  headers=req_headers,
              ),
-@@ -749,11 +777,13 @@
+@@ -749,11 +825,13 @@
                  )
              return Response(content=r.content, status_code=r.status_code, headers=dict(r.headers))
          log.info("RESPONSE: streaming via stream_with_sections")
@@ -71,7 +119,7 @@
              json=j if j is not None else json.loads(body_bytes),
              headers=upstream_headers,
              timeout=None,
-@@ -777,11 +807,24 @@
+@@ -777,11 +855,23 @@
  
  
  @app.get("/v1/models")
@@ -81,14 +129,13 @@
 -    log.info("MODELS: %d models returned", len(resp.json().get("data", [])))
 -    return JSONResponse(content=resp.json(), status_code=resp.status_code)
 +async def models_list(request: Request):
-+    # Merge the model listings from the frontier (UPSTREAM) and, when configured,
-+    # the small router, deduping by model id. Forward the client's Authorization
++    # Merge the model listings from the frontier (UPSTREAM) and every configured
++    # extra router, deduping by model id. Forward the client's Authorization
 +    # header (the original dropped it) so routers with --api-key-file respond.
 +    auth = request.headers.get("authorization")
 +    headers = {"Authorization": auth} if auth else {}
-+    sources = [UPSTREAM] + ([UPSTREAMS["small"]] if SMALL_UPSTREAM_URL else [])
 +    merged = {}
-+    for base in sources:
++    for base in UPSTREAMS.values():
 +        async with httpx.AsyncClient() as client:
 +            resp = await client.get(base + "/v1/models", headers=headers, timeout=None)
 +        if resp.status_code != 200:
