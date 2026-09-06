@@ -102,8 +102,9 @@
       };
       gpt-oss-120b = {
         enable = true;
-        hfRepo = "unsloth/gpt-oss-120b-GGUF";
-        hfFile = "gpt-oss-120b-F16.gguf";
+        hfRepo = "bartowski/openai_gpt-oss-120b-GGUF";
+        hfFile = "openai_gpt-oss-120b-Q4_K_M/openai_gpt-oss-120b-Q4_K_M-00001-of-00002.gguf";
+        download.glob = "openai_gpt-oss-120b-Q4_K_M/openai_gpt-oss-120b-Q4_K_M-*.gguf";
       };
       phi-4 = {
         enable = true;
