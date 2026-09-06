@@ -45,7 +45,7 @@ let
         hfFile = "UD-IQ3_XXS/DeepSeek-V4-Flash-UD-IQ3_XXS-00001-of-00004.gguf";
         download.glob = "UD-IQ3_XXS/DeepSeek-V4-Flash-UD-IQ3_XXS-*.gguf";
         aliases = ["frontier"];
-        perf.contextSize = 262144;
+        perf.contextSize = 131072;
         perf.reasoning = "off";
         perf.specType = "draft-dspark";
         perf.cpuRange = "1-12";
