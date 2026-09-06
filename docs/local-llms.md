@@ -138,13 +138,19 @@ never activated in place):
 
 - **`main`** `:39703`, threads 16 — frontier. `deepseek-v4-flash` (alias
   `frontier`, DSpark draft, 256K→halved to a stable 131072 ctx) lives here and
-  stays resident/hot; it is the default `mainRouter` for all models in
-  `hosts/brys/llm-minimal.nix` that do not name another router.
-- **`small`** `:39704`, threads 8 — `kdn.llm.local.routers.small`, hosts every
-  small model in the specialisation that sets `mainRouter = "small"`:
-  `qwen3-30b-a3b` (alias `fast`), `qwen3-next-80b` (alias `balanced`),
-  `phi-4`, `qwen3-coder-next`, `qwen3-235b`, `gpt-oss-120b`. `--models-max 1`
-  on this router shares/evicts only among these — DS4 on the frontier stays put.
+  stays resident/hot and **alone** (`--models-max 1`); it is the default
+  `mainRouter` for all models in `hosts/brys/llm-minimal.nix` that do not name
+  another router.
+- **`small`** `:39704`, threads 8 — `kdn.llm.local.routers.small`, a **set router**:
+  hosts every small model in the specialisation that sets `mainRouter = "small"`
+  (`qwen3-30b-a3b` [alias `fast`], `qwen3-next-80b` [alias `balanced`],
+  `phi-4`, `qwen3-coder-next`, `qwen3-235b`, `gpt-oss-120b`). `--models-max 2`
+  keeps up to two of them resident together as a set (measured coexistable
+  pairs, e.g. `{qwen3-30b-a3b, qwen3-coder-next}` ~108 G anon, only ~35-40 %
+  co-active loss), swapping as a unit against DS4 — DS4 on the frontier stays
+  alone. A third coexistent member is viable at the RAM ceiling (mounts are
+  read-only mmap whose file pages recycle to page-cache, so file-size sums
+  overstate real anon usage).
 
 The **main `brys` host** (`hosts/brys/default.nix`) enables no extra routers
 (all models keep the default `mainRouter = "main"`), so its compat-proxy gets no
