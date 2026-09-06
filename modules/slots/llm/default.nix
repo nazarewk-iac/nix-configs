@@ -135,6 +135,29 @@ let
     lib.filterAttrs (_: r: r.enable) cfg.routers
   );
 
+  # One ROUTER_<NAME>_URL / ROUTER_<NAME>_MODELS env pair per enabled extra
+  # router, consumed by the compat-proxy's model-based routing. The proxy
+  # reads the URL from the uppercase key and replies to models by id (name +
+  # aliases) exactly as listed in the MODELS var; anything unrouted falls back
+  # to UPSTREAM_URL. Router names must be lowercase-alnum (asserted below) so
+  # this uppercase key round-trips through the proxy's hyphenated slug. When
+  # no extra router is enabled this is {} and the env falls back to the
+  # original single-router behaviour (only UPSTREAM_URL).
+  routerProxyEnv =
+    lib.mapAttrs' (
+      name: r: lib.nameValuePair "ROUTER_${lib.toUpper name}_URL" ("http://127.0.0.1:${toString r.port}")
+    ) enabledRouters
+    // lib.mapAttrs' (
+      name: _:
+      lib.nameValuePair "ROUTER_${lib.toUpper name}_MODELS" (
+        lib.concatStringsSep "," (
+          lib.concatMap (modelName: [ modelName ] ++ (cfg.models.${modelName}.aliases or [ ])) (
+            builtins.attrNames (routerModels name)
+          )
+        )
+      )
+    ) enabledRouters;
+
   # One raw systemd unit per extra router, modelled on the primary
   # services.llama-cpp ExecStart/hardening.
   routerUnits = lib.mapAttrs' (
@@ -717,6 +740,23 @@ in
 
   config = lib.mkIf cfg.enable {
     nixos = { pkgs, ... }: {
+      # The proxy's ROUTER_<NAME>_* env round-trips through a lowercase-hyphen
+      # slug: an uppercase key is slugged to the original name only if that name
+      # is plain lowercase-alnum. Anything with a hyphen, underscore, or upper
+      # case would not match the on-disk router section. Keep router names
+      # lowercase-alnum (e.g. "small", "coder").
+      assertions = lib.mkIf (enabledRouters != { }) [
+        {
+          assertion = lib.all (name: lib.match "^[a-z0-9]+$" name != null) (
+            builtins.attrNames enabledRouters
+          );
+          message =
+            "kdn.llm.local.routers names must be lowercase alphanumeric "
+            + "(no hyphens, underscores, or upper case); got: "
+            + lib.concatStringsSep ", " (builtins.attrNames enabledRouters);
+        }
+      ];
+
       # The router server: one process, on-demand model load, exactly one
       # resident at a time (models-max=1). API-key enforced from a host-wired
       # file. Uses nixpkgs' services.llama-cpp mapping settings.* to flags.
@@ -783,16 +823,18 @@ in
             after = [ "network-online.target" ];
             wants = [ "network-online.target" ];
 
-            environment = {
+            environment = routerProxyEnv // {
               UPSTREAM_URL = "http://127.0.0.1:${toString cfg.server.port}";
               PROXY_HOST = "127.0.0.1";
               PROXY_PORT = toString cfg.compatProxy.port;
-              # Route the small-set models to the "small" router (if enabled):
-              # the proxy splits the routers' /v1/models and picks the upstream
-              # by the request's model= field.
-              SMALL_UPSTREAM_URL = lib.mkIf (cfg.routers.small.enable or false) (
-                "http://127.0.0.1:${toString cfg.routers.small.port}"
-              );
+              # Model-based routing to each enabled extra router: the proxy
+              # reads ROUTER_<NAME>_URL and answers to every model id (name +
+              # aliases) in ROUTER_<NAME>_MODELS on that upstream; anything
+              # unrouted falls back to UPSTREAM_URL. The small router needs no
+              # special case — ROUTER_SMALL_* covers it identically (the older
+              # SMALL_UPSTREAM_URL sugar is dropped; the proxy treats them the
+              # same). Emitting neither when no router is enabled preserves the
+              # original single-router behaviour verbatim.
               # llama-server authenticates the client's Bearer key; forward it
               # on the streaming path too.
               FORWARD_AUTHORIZATION = "true";
