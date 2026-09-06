@@ -80,6 +80,7 @@ let
         hfRepo = "unsloth/Qwen3-Next-80B-A3B-Instruct-GGUF";
         hfFile = "Qwen3-Next-80B-A3B-Instruct-Q4_K_M.gguf";
         aliases = [ "balanced" ];
+        mainRouter = "small";
         perf.contextSize = 131072;
       };
       phi-4 = {
@@ -94,6 +95,7 @@ let
         hfRepo = "Qwen/Qwen3-Coder-Next-GGUF";
         hfFile = "Qwen3-Coder-Next-Q4_K_M/Qwen3-Coder-Next-Q4_K_M-00001-of-00004.gguf";
         download.glob = "Qwen3-Coder-Next-Q4_K_M/Qwen3-Coder-Next-Q4_K_M-*.gguf";
+        mainRouter = "small";
         perf.contextSize = 131072;
       };
       qwen3-235b = {
@@ -101,6 +103,7 @@ let
         hfRepo = "mradermacher/Qwen3-235B-A22B-i1-GGUF";
         hfFile = "Qwen3-235B-A22B.i1-IQ2_M.gguf.part1of2";
         download.glob = "Qwen3-235B-A22B.i1-IQ2_M.gguf.part*";
+        mainRouter = "small";
         perf.contextSize = 65536;
       };
       gpt-oss-120b = {
@@ -108,6 +111,7 @@ let
         hfRepo = "bartowski/openai_gpt-oss-120b-GGUF";
         hfFile = "openai_gpt-oss-120b-Q4_K_M/openai_gpt-oss-120b-Q4_K_M-00001-of-00002.gguf";
         download.glob = "openai_gpt-oss-120b-Q4_K_M/openai_gpt-oss-120b-Q4_K_M-*.gguf";
+        mainRouter = "small";
       };
     };
   };
