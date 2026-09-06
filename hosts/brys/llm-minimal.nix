@@ -38,10 +38,16 @@ let
     kdn.llm.local.download.xetConcurrency = 8;
     # Second router on :39704 holds the freely-swapping small set (phi-4,
     # qwen3-30b-a3b), keeping DS4 hot on the primary :39703.
+    # Second router on :39704 is a SET router: `modelsMax 2` keeps a pair of
+    # confirmed-coexistable small models resident together (measured: e.g.
+    # {qwen3-30b-a3b, qwen3-coder-next} run ~108G anon and only lose ~35-40%
+    # to co-active bandwidth sharing), swapping as a unit against DS4. DS4 on
+    # the primary :39703 stays alone (models-max 1).
     kdn.llm.local.routers.small = {
       enable = true;
       port = 39704;
       threads = 8;
+      modelsMax = 2;
       apiKeyDir = "/run/configs/llms/llama-server/api-keys";
     };
     # Same models/per-model perf as the main host, but DeepSeek biased to its
