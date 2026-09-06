@@ -175,7 +175,7 @@ let
             "--host ${cfg.server.host}"
             "--port ${toString r.port}"
             "--models-preset ${presetIni name}"
-            "--models-max 1"
+            "--models-max ${toString r.modelsMax}"
             "--sleep-idle-seconds -1"
             "--threads ${toString r.threads}"
           ]
@@ -383,6 +383,19 @@ in
                 router keeps the host's full thread budget; extra routers
                 default lower so the frontier on the primary keeps most of the
                 physical cores.
+              '';
+            };
+            options.modelsMax = lib.mkOption {
+              type = lib.types.int;
+              default = 1;
+              description = ''
+                How many of this router's models may be resident in RAM at once
+                (--models-max). 1 is the default: exactly one model resident at
+                a time, loaded on request and unloaded when a different model
+                needs the slot (the "exclusive set" behaviour). Raise it on a
+                set-router to keep several compatible small models coexisting as
+                a bundle. The primary/frontier router should stay at 1 so DS4 is
+                always alone.
               '';
             };
             options.apiKeyDir = lib.mkOption {
