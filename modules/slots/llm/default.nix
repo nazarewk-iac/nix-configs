@@ -25,7 +25,8 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.llm.local;
 
   hf = lib.getExe pkgs.python3Packages.huggingface-hub;
@@ -34,15 +35,21 @@
 
   # Absolute path of a downloaded model file within modelsDir:
   #   <modelsDir>/<hfRepo>/<hfFile>
-  modelFile = name: let
-    m = cfg.models.${name};
-  in "${cfg.modelsDir}/${m.hfRepo}/${m.hfFile}";
+  modelFile =
+    name:
+    let
+      m = cfg.models.${name};
+    in
+    "${cfg.modelsDir}/${m.hfRepo}/${m.hfFile}";
 
   # Absolute path of a draft model file (same layout as a model file):
   #   <modelsDir>/<hfRepo>/<hfFile>
-  draftFile = name: let
-    d = cfg.models.${name}.draft;
-  in "${cfg.modelsDir}/${d.hfRepo}/${d.hfFile}";
+  draftFile =
+    name:
+    let
+      d = cfg.models.${name}.draft;
+    in
+    "${cfg.modelsDir}/${d.hfRepo}/${d.hfFile}";
 
   # Render a per-model preset section. `version` and the per-model keys map
   # 1:1 to llama-server CLI flags (key = flag name minus leading dashes; the
@@ -53,13 +60,16 @@
   # Common defaults: memory-bandwidth-bound CPU inference wants physical
   # threads only (-t 16 on a 16-core part), flash attention on, and a single
   # parallel slot so no KV cache is wasted on extra slots.
-  presetSection = name: let
-    m = cfg.models.${name};
-    perf = m.perf;
-    threads = if perf.threads != null then perf.threads else 16;
-  in
+  presetSection =
+    name:
+    let
+      m = cfg.models.${name};
+      perf = m.perf;
+      threads = if perf.threads != null then perf.threads else 16;
+    in
     lib.concatLines (
-      ([
+      (
+        [
           "[${name}]"
           "model = ${modelFile name}"
           "threads = ${toString threads}"
@@ -75,7 +85,7 @@
         ++ lib.optionals (perf.contextSize != null) [
           "ctx-size = ${toString perf.contextSize}"
         ]
-        ++ lib.optionals (m.aliases != []) [
+        ++ lib.optionals (m.aliases != [ ]) [
           "alias = ${lib.concatStringsSep "," m.aliases}"
         ]
         ++ [
@@ -99,17 +109,100 @@
       )
     );
 
-  modelPresetIni = pkgs.writeText "models-preset.ini" (
-    lib.concatStringsSep "\n" (lib.mapAttrsToList (name: _: presetSection name) enabledModels)
+  # Filter the model set to one router's membership. "main" is the primary
+  # services.llama-cpp router and serves everything left on the default
+  # mainRouter; any other name selects models.foo.mainRouter == name.
+  routerModels =
+    routerName: lib.filterAttrs (name: m: m.enable && m.mainRouter == routerName) cfg.models;
+
+  # Render the filtered models-preset INI for a router. The primary keeps its
+  # store name; extra routers get models-router-<name>.ini. Reuses the exact
+  # per-model presetSection (unchanged perf.* / perf options for members).
+  presetIni =
+    routerName:
+    let
+      iniName = if routerName == "main" then "models-preset.ini" else "models-router-${routerName}.ini";
+    in
+    pkgs.writeText iniName (
+      lib.concatStringsSep "\n" (
+        lib.mapAttrsToList (name: _: presetSection name) (routerModels routerName)
+      )
+    );
+
+  # Enabled extra routers (everything except "main", which stays on
+  # services.llama-cpp).
+  enabledRouters = lib.filterAttrs (name: _: name != "main") (
+    lib.filterAttrs (_: r: r.enable) cfg.routers
   );
+
+  # One raw systemd unit per extra router, modelled on the primary
+  # services.llama-cpp ExecStart/hardening.
+  routerUnits = lib.mapAttrs' (
+    name: r:
+    lib.nameValuePair "llama-cpp-router-${name}" {
+      description = "llama-server router for the ${name} model set";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "network.target" ];
+      wants = [ "network.target" ];
+
+      serviceConfig = {
+        ExecStart = lib.concatStringsSep " " (
+          [
+            "${cfg.package}/bin/llama-server"
+            "--host ${cfg.server.host}"
+            "--port ${toString r.port}"
+            "--models-preset ${presetIni name}"
+            "--models-max 1"
+            "--sleep-idle-seconds -1"
+            "--threads ${toString r.threads}"
+          ]
+          ++ lib.optionals (r.apiKeyDir != null) [
+            "--api-key-file /var/lib/llama-cpp-${name}/api-keys"
+          ]
+        );
+        # Same hardening as the primary unit: unlimited mlock (models may be
+        # loaded with load-mode mlock), DynamicUser, strict containment.
+        DynamicUser = true;
+        LimitMEMLOCK = "infinity";
+        NoNewPrivileges = true;
+        PrivateMounts = true;
+        PrivateTmp = true;
+        ProtectClock = true;
+        ProtectHome = true;
+        ProtectKernelTunables = true;
+        ProtectSystem = "strict";
+        ReadWritePaths = [ cfg.modelsDir ];
+        Restart = "on-failure";
+        RestrictAddressFamilies = [
+          "AF_INET"
+          "AF_INET6"
+          "AF_UNIX"
+        ];
+        StateDirectory = "llama-cpp-${name}";
+        WorkingDirectory = "/var/lib/llama-cpp-${name}";
+      };
+
+      # Assemble per-key files under r.apiKeyDir into the router's own
+      # StateDirectory file, mirroring the primary's preStart (same sed
+      # stripping of comments/empty lines + guaranteed trailing newline).
+      preStart = lib.mkIf (r.apiKeyDir != null) ''
+        : > /var/lib/llama-cpp-${name}/api-keys
+        for f in ${r.apiKeyDir}/*; do
+          [ -f "$f" ] || continue
+          ${lib.getExe' pkgs.gnused "sed"} -e 's/[[:space:]]*#.*$//' -e '/^[[:space:]]*$/d' "$f" >> /var/lib/llama-cpp-${name}/api-keys
+          printf '\n' >> /var/lib/llama-cpp-${name}/api-keys
+        done
+      '';
+    }
+  ) enabledRouters;
 
   # Global download env vars by mode, applied to every model download.
   modeEnv =
-    if cfg.download.mode == "slow"
-    then {
-      HF_XET_HIGH_PERFORMANCE = "false";
-      HF_HUB_DISABLE_XET = "true";
-    }
+    if cfg.download.mode == "slow" then
+      {
+        HF_XET_HIGH_PERFORMANCE = "false";
+        HF_HUB_DISABLE_XET = "true";
+      }
     else
       # fast-polite: pin concurrency to the configurable value.
       {
@@ -126,94 +219,99 @@
   # downloaded directly) or a shard set (glob set, downloaded via --include
   # so all shards land on disk). In both cases llama-server serves m.hfFile
   # and auto-discovers sibling shards next to it.
-  downloadStep = name: m: let
-    dir = "${cfg.modelsDir}/${m.hfRepo}";
-    # A glob always re-runs hf download (hf skips shards already present);
-    # the "already present" fast-path only applies to a plain single-file
-    # download.
-    alwaysDownload = m.download.glob != null;
-    # Arguments selecting what to fetch. A glob is passed via --include
-    # (snapshot_download path); a single file is passed positionally.
-    fileArgs =
-      if m.download.glob != null
-      then "--include ${builtins.toJSON m.download.glob} --local-dir ${dir}"
-      else ''"${m.hfFile}" --local-dir ${dir}'';
-    shown =
-      if m.download.glob != null
-      then m.download.glob
-      else m.hfFile;
-    # HF keeps agent/poison metadata under <repo>/.cache/huggingface/download.
-    # When `hfFile` points at a shard and `download.minBytes` set, delete the
-    # target (and its etag metadata) if it is an incomplete stub so a repair
-    # re-download actually runs — otherwise HF sees the metadata and skips.
-    repair = m.download.minBytes != null;
-    repairCmd = ''
-      if [ -f "$target" ] && [ "$(stat -c%s "$target")" -lt ${toString m.download.minBytes} ]; then
-        echo "[${name}] removing incomplete stub ($(stat -c%s "$target") B < ${toString m.download.minBytes} B)"
-        rm -f "$target" ${dir}/.cache/huggingface/download/${m.hfFile}.metadata ${dir}/.cache/huggingface/download/${m.hfFile}.lock
-      fi
-    '';
-  in ''
-    target=${modelFile name}
-    ${lib.optionalString (repair) repairCmd}
-    if [ -f "$target" ] && [ "${toString m.download.force}" != "1" ] && [ "${toString alwaysDownload}" != "1" ]; then
-      echo "[${name}] already present: $target"
-    else
-      echo "[${name}] downloading ${m.hfRepo}/${shown} (mode=${cfg.download.mode})"
-      mkdir -p ${dir}
-      ${lib.optionalString (modeEnv != {}) ''
-      export ${lib.concatStringsSep " " (lib.mapAttrsToList (k: v: "${k}=${v}") modeEnv)}
-    ''}
-      ${hf} download ${m.hfRepo} ${fileArgs}
-      if [ -f "$target" ]; then
-        echo "[${name}] done: $target ($(du -sh "$target" | cut -f1))"
+  downloadStep =
+    name: m:
+    let
+      dir = "${cfg.modelsDir}/${m.hfRepo}";
+      # A glob always re-runs hf download (hf skips shards already present);
+      # the "already present" fast-path only applies to a plain single-file
+      # download.
+      alwaysDownload = m.download.glob != null;
+      # Arguments selecting what to fetch. A glob is passed via --include
+      # (snapshot_download path); a single file is passed positionally.
+      fileArgs =
+        if m.download.glob != null then
+          "--include ${builtins.toJSON m.download.glob} --local-dir ${dir}"
+        else
+          ''"${m.hfFile}" --local-dir ${dir}'';
+      shown = if m.download.glob != null then m.download.glob else m.hfFile;
+      # HF keeps agent/poison metadata under <repo>/.cache/huggingface/download.
+      # When `hfFile` points at a shard and `download.minBytes` set, delete the
+      # target (and its etag metadata) if it is an incomplete stub so a repair
+      # re-download actually runs — otherwise HF sees the metadata and skips.
+      repair = m.download.minBytes != null;
+      repairCmd = ''
+        if [ -f "$target" ] && [ "$(stat -c%s "$target")" -lt ${toString m.download.minBytes} ]; then
+          echo "[${name}] removing incomplete stub ($(stat -c%s "$target") B < ${toString m.download.minBytes} B)"
+          rm -f "$target" ${dir}/.cache/huggingface/download/${m.hfFile}.metadata ${dir}/.cache/huggingface/download/${m.hfFile}.lock
+        fi
+      '';
+    in
+    ''
+      target=${modelFile name}
+      ${lib.optionalString (repair) repairCmd}
+      if [ -f "$target" ] && [ "${toString m.download.force}" != "1" ] && [ "${toString alwaysDownload}" != "1" ]; then
+        echo "[${name}] already present: $target"
       else
-        echo "[${name}] FAILED: expected file missing at $target" >&2
-        exit 1
+        echo "[${name}] downloading ${m.hfRepo}/${shown} (mode=${cfg.download.mode})"
+        mkdir -p ${dir}
+        ${lib.optionalString (modeEnv != { }) ''
+          export ${lib.concatStringsSep " " (lib.mapAttrsToList (k: v: "${k}=${v}") modeEnv)}
+        ''}
+        ${hf} download ${m.hfRepo} ${fileArgs}
+        if [ -f "$target" ]; then
+          echo "[${name}] done: $target ($(du -sh "$target" | cut -f1))"
+        else
+          echo "[${name}] FAILED: expected file missing at $target" >&2
+          exit 1
+        fi
       fi
-    fi
-    # Make the model tree world-readable so any user (and the
-    # llama-cpp router DynamicUser) can read it: 644 on files, 755 on dirs.
-    # HF downloads world-readable files but a persisted modelsDir may be
-    # root:root 0750, blocking traverse. Runs on both the fresh-download
-    # and already-present paths.
-    chmod -R a+rX ${dir}
-  '';
+      # Make the model tree world-readable so any user (and the
+      # llama-cpp router DynamicUser) can read it: 644 on files, 755 on dirs.
+      # HF downloads world-readable files but a persisted modelsDir may be
+      # root:root 0750, blocking traverse. Runs on both the fresh-download
+      # and already-present paths.
+      chmod -R a+rX ${dir}
+    '';
 
   # Download step for a speculative-decoding DRAFT model. It is fetched into
   # the same modelsDir layout (<repo>/<file>) but is never registered as a
   # router model — it only feeds `--model-draft` on its main model's preset
   # section, so it must download before/with its parent. Reuses the standard
   # single-file download path (positional file + local-dir).
-  draftStep = name:
-    if !(cfg.models.${name}.draft.enable)
-    then ""
-    else let
-      d = cfg.models.${name}.draft;
-      dir = "${cfg.modelsDir}/${d.hfRepo}";
-      target = draftFile name;
-      shown = d.hfFile;
-    in ''
-      target=${target}
-      if [ -f "$target" ]; then
-        echo "[${name}] draft already present: $target"
-      else
-        echo "[${name}] downloading draft ${d.hfRepo}/${shown} (mode=${cfg.download.mode})"
-        mkdir -p ${dir}
-        ${lib.optionalString (modeEnv != {}) ''
-        export ${lib.concatStringsSep " " (lib.mapAttrsToList (k: v: "${k}=${v}") modeEnv)}
-        ''}
-        ${hf} download ${d.hfRepo} ${shown} --local-dir ${dir}
+  draftStep =
+    name:
+    if !(cfg.models.${name}.draft.enable) then
+      ""
+    else
+      let
+        d = cfg.models.${name}.draft;
+        dir = "${cfg.modelsDir}/${d.hfRepo}";
+        target = draftFile name;
+        shown = d.hfFile;
+      in
+      ''
+        target=${target}
         if [ -f "$target" ]; then
-          echo "[${name}] draft done: $target ($(du -sh "$target" | cut -f1))"
+          echo "[${name}] draft already present: $target"
         else
-          echo "[${name}] draft FAILED: expected file missing at $target" >&2
-          exit 1
+          echo "[${name}] downloading draft ${d.hfRepo}/${shown} (mode=${cfg.download.mode})"
+          mkdir -p ${dir}
+          ${lib.optionalString (modeEnv != { }) ''
+            export ${lib.concatStringsSep " " (lib.mapAttrsToList (k: v: "${k}=${v}") modeEnv)}
+          ''}
+          ${hf} download ${d.hfRepo} ${shown} --local-dir ${dir}
+          if [ -f "$target" ]; then
+            echo "[${name}] draft done: $target ($(du -sh "$target" | cut -f1))"
+          else
+            echo "[${name}] draft FAILED: expected file missing at $target" >&2
+            exit 1
+          fi
         fi
-      fi
-      chmod -R a+rX ${dir}
-    '';
-in {
+        chmod -R a+rX ${dir}
+      '';
+in
+{
   options.kdn.llm.local = {
     enable = lib.mkEnableOption "local LLM serving via llama-server router mode";
 
@@ -236,6 +334,52 @@ in {
       type = lib.types.port;
       default = 39703;
       description = "Port the router llama-server listens on.";
+    };
+
+    # Extra llama-server routers, modelled on the primary services.llama-cpp
+    # unit. Each selects its model set through models.<name>.mainRouter (a
+    # router name of "main" means the primary server) instead of copying model
+    # definitions, so per-model perf.* / options stay the single source of
+    # truth. "main" itself is always reserved for the primary server and is
+    # deliberately excluded here (cfg.routers."main" is ignored).
+    routers = lib.mkOption {
+      type = lib.types.attrsOf (
+        lib.types.submodule (
+          { lib, ... }: {
+            options.enable = lib.mkEnableOption "this llama-server router";
+            options.port = lib.mkOption {
+              type = lib.types.port;
+              default = 39704;
+              description = "Port this llama-server router listens on.";
+            };
+            options.threads = lib.mkOption {
+              type = lib.types.int;
+              default = 8;
+              description = ''
+                Compute thread count for this router (--threads). The primary
+                router keeps the host's full thread budget; extra routers
+                default lower so the frontier on the primary keeps most of the
+                physical cores.
+              '';
+            };
+            options.apiKeyDir = lib.mkOption {
+              type = lib.types.nullOr lib.types.path;
+              default = null;
+              description = ''
+                Directory of API-key files for this router
+                (--api-key-file). Same layout and behaviour as the primary's
+                apiKeyDir: each file holds one key, comments/empty lines are
+                stripped by a preStart that assembles them into the router's
+                own StateDirectory file. When null, this router requires no
+                key. Defaults to null; the host typically points it at the
+                same /run/configs/... clone of the primary's apiKeyDir.
+              '';
+            };
+          }
+        )
+      );
+      default = { };
+      description = "Additional llama-server routers, each serving the models whose mainRouter matches its name.";
     };
 
     package = lib.mkOption {
@@ -265,7 +409,7 @@ in {
     # by the same cert/key.
     certs.sans = lib.mkOption {
       type = lib.types.listOf lib.types.str;
-      default = [];
+      default = [ ];
       example = [
         "brys.lan.drek.net.int.kdn.im"
         "brys.priv.nb.net.int.kdn.im"
@@ -277,7 +421,7 @@ in {
     # default interface only.
     certs.listenAddresses = lib.mkOption {
       type = lib.types.listOf lib.types.str;
-      default = [];
+      default = [ ];
       example = [
         "192.168.41.31"
         "100.79.164.36"
@@ -353,11 +497,22 @@ in {
     models = lib.mkOption {
       type = lib.types.attrsOf (
         lib.types.submodule (
-          {lib, ...}: {
+          { lib, ... }: {
             options.enable = lib.mkEnableOption "load this model in the router server";
+            options.mainRouter = lib.mkOption {
+              type = lib.types.str;
+              default = "main";
+              description = ''
+                Which llama-server router owns this model. "main" (the default)
+                means the primary services.llama-cpp server on cfg.server.port;
+                any other value routes the model to the equally-named entry in
+                cfg.routers. A model appears in exactly one router's preset INI
+                (and the router that owns it).
+              '';
+            };
             options.aliases = lib.mkOption {
               type = lib.types.listOf lib.types.str;
-              default = [];
+              default = [ ];
               description = "Extra names the router server answers to for this model.";
             };
             options.hfRepo = lib.mkOption {
@@ -424,7 +579,11 @@ in {
               '';
             };
             options.perf.flashAttention = lib.mkOption {
-              type = lib.types.enum ["on" "off" "auto"];
+              type = lib.types.enum [
+                "on"
+                "off"
+                "auto"
+              ];
               default = "on";
               description = "Flash Attention mode for this model (-fa).";
             };
@@ -478,7 +637,11 @@ in {
               description = "number of server slots for this model (-np / --parallel). 1 wastes no KV cache on extra slots.";
             };
             options.perf.reasoning = lib.mkOption {
-              type = lib.types.enum ["on" "off" "auto"];
+              type = lib.types.enum [
+                "on"
+                "off"
+                "auto"
+              ];
               default = "off";
               description = ''
                 Reasoning/thinking mode for this model (-rea). `off` skips the
@@ -547,59 +710,137 @@ in {
           }
         )
       );
-      default = {};
+      default = { };
       description = "LLM models to serve via the router llama-server. Only enabled models are served and downloaded.";
     };
   };
 
   config = lib.mkIf cfg.enable {
-    nixos = {pkgs, ...}: {
+    nixos = { pkgs, ... }: {
       # The router server: one process, on-demand model load, exactly one
       # resident at a time (models-max=1). API-key enforced from a host-wired
       # file. Uses nixpkgs' services.llama-cpp mapping settings.* to flags.
       services.llama-cpp = {
         enable = true;
         inherit (cfg) package;
-        settings =
-          {
-            host = cfg.server.host;
-            port = cfg.server.port;
-            models-preset = modelPresetIni;
-            models-max = 1;
-            # Keep the resident model loaded indefinitely: -1 disables the
-            # idle-unload timer entirely (there is no per-model ttl in router
-            # mode; unloading only happens when a queued request needs the
-            # models-max slot). Set explicitly so future router defaults
-            # cannot change this behaviour.
-            sleep-idle-seconds = -1;
-          }
-          // lib.optionalAttrs (cfg.apiKeyDir != null) {
-            api-key-file = "/var/lib/llama-cpp/api-keys";
-          };
+        settings = {
+          host = cfg.server.host;
+          port = cfg.server.port;
+          models-preset = presetIni "main";
+          models-max = 1;
+          # Keep the resident model loaded indefinitely: -1 disables the
+          # idle-unload timer entirely (there is no per-model ttl in router
+          # mode; unloading only happens when a queued request needs the
+          # models-max slot). Set explicitly so future router defaults
+          # cannot change this behaviour.
+          sleep-idle-seconds = -1;
+        }
+        // lib.optionalAttrs (cfg.apiKeyDir != null) {
+          api-key-file = "/var/lib/llama-cpp/api-keys";
+        };
         openFirewall = false;
       };
 
-      # The router runs as a DynamicUser and must read the models.
-      systemd.services.llama-cpp.serviceConfig.ReadWritePaths = [
-        cfg.modelsDir
-      ];
-      # Raise the mlock rlimit so an mlock'd model (~100 GB) can be locked:
-      # systemd defaults LimitMEMLOCK to 8 MiB, which would fail any mlock.
-      systemd.services.llama-cpp.serviceConfig.LimitMEMLOCK = "infinity";
+      # One raw unit per enabled extra router (all but "main"), each with its
+      # own filtered models-preset INI, port, and api-key file. Folded into a
+      # single systemd.services merge so partial per-unit defs below (preStart,
+      # proxy, download) coexist without a whole-namespace definition clash.
+      systemd.services = lib.mkMerge [
+        routerUnits
+        {
+          # The router runs as a DynamicUser and must read the models.
+          llama-cpp.serviceConfig.ReadWritePaths = [
+            cfg.modelsDir
+          ];
+          # Raise the mlock rlimit so an mlock'd model (~100 GB) can be locked:
+          # systemd defaults LimitMEMLOCK to 8 MiB, which would fail any mlock.
+          llama-cpp.serviceConfig.LimitMEMLOCK = "infinity";
+          # Assemble the per-key files under apiKeyDir into a single file in
+          # llama-cpp's StateDirectory (writable by its DynamicUser), stripping
+          # comment (#) and empty lines. llama-server's --api-key-file reads the
+          # assembled file. A guaranteed newline is appended after each file so
+          # keys never run together if a source file lacks a trailing newline.
+          llama-cpp.preStart = lib.mkIf (cfg.apiKeyDir != null) ''
+            : > /var/lib/llama-cpp/api-keys
+            for f in ${cfg.apiKeyDir}/*; do
+              [ -f "$f" ] || continue
+              ${lib.getExe' pkgs.gnused "sed"} -e 's/[[:space:]]*#.*$//' -e '/^[[:space:]]*$/d' "$f" >> /var/lib/llama-cpp/api-keys
+              printf '\n' >> /var/lib/llama-cpp/api-keys
+            done
+          '';
+          # Inject the raw-decrypted leaf private key into Caddy at runtime.
+          caddy.serviceConfig.LoadCredential = [
+            "llm-key:${cfg.certs.keyFile}"
+          ];
+          # One loopback compat-proxy in front of the router server. It
+          # forwards the client's Authorization header (the Bearer key that
+          # llama-server's --api-key-file validates) on the streaming path too,
+          # and passes every other path through, so a single instance is enough
+          # for the router.
+          "kdn-llm-proxy-lan" = lib.mkIf cfg.compatProxy.enable {
+            description = "OpenCode DSML compat proxy → local router llama-server";
+            wantedBy = [ "multi-user.target" ];
+            after = [ "network-online.target" ];
+            wants = [ "network-online.target" ];
 
-      # Assemble the per-key files under apiKeyDir into a single file in
-      # llama-cpp's StateDirectory (writable by its DynamicUser), stripping
-      # comment (#) and empty lines. llama-server's --api-key-file reads the
-      # assembled file. A guaranteed newline is appended after each file so keys
-      # never run together if a source file lacks a trailing newline.
-      systemd.services.llama-cpp.preStart = lib.mkIf (cfg.apiKeyDir != null) ''
-        : > /var/lib/llama-cpp/api-keys
-        for f in ${cfg.apiKeyDir}/*; do
-          [ -f "$f" ] || continue
-          ${lib.getExe' pkgs.gnused "sed"} -e 's/[[:space:]]*#.*$//' -e '/^[[:space:]]*$/d' "$f" >> /var/lib/llama-cpp/api-keys
-          printf '\n' >> /var/lib/llama-cpp/api-keys
-        done
-      '';
+            environment = {
+              UPSTREAM_URL = "http://127.0.0.1:${toString cfg.server.port}";
+              PROXY_HOST = "127.0.0.1";
+              PROXY_PORT = toString cfg.compatProxy.port;
+              # llama-server authenticates the client's Bearer key; forward it
+              # on the streaming path too.
+              FORWARD_AUTHORIZATION = "true";
+            };
+
+            serviceConfig = {
+              ExecStart = "${lib.getExe pkgs.kdn.opencode-compat-proxy}";
+              Restart = "always";
+              RestartSec = "5s";
+              DynamicUser = true;
+              NoNewPrivileges = true;
+              PrivateTmp = true;
+              ProtectSystem = "strict";
+              ProtectHome = true;
+            };
+          };
+          # A single sequential download service. It walks all enabled models
+          # one at a time, downloads each (skipping ones already present,
+          # unless forced), and logs a status line after each.
+          "kdn-llm-download" = {
+            description = "Download enabled local LLM models, one at a time";
+            # Downloads run only once the network is up, and never touch
+            # multi-user.target. Started by (wantedBy) network-online.target,
+            # after it, so they never block boot or activation.
+            wantedBy = lib.mkIf (enabledModels != { }) [ "kdn-llm-download.target" ];
+            partOf = lib.mkIf (enabledModels != { }) [ "kdn-llm-download.target" ];
+            wants = [ "network-online.target" ];
+            after = [ "network-online.target" ];
+
+            path = [
+              pkgs.python3Packages.huggingface-hub
+              pkgs.coreutils # du, cut
+            ];
+
+            serviceConfig = {
+              Type = "oneshot";
+              Restart = "on-failure";
+              RestartSec = "10s";
+              LoadCredential = lib.optional (cfg.download.tokenFile != null) "HF_TOKEN:${cfg.download.tokenFile}";
+            };
+
+            script = ''
+              set -euo pipefail
+              if [ -n "''${CREDENTIALS_DIRECTORY:-}" ] && [ -f "''${CREDENTIALS_DIRECTORY}/HF_TOKEN" ]; then
+                export HF_TOKEN="$(cat "''${CREDENTIALS_DIRECTORY}/HF_TOKEN")"
+              fi
+              # Dependencies (draft models) first, then the main models.
+              ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: _: draftStep name) enabledModels)}
+              ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: m: downloadStep name m) enabledModels)}
+              echo "all configured downloads complete"
+            '';
+          };
+        }
+      ];
 
       # The single LAN gate: Caddy terminates TLS with the host-supplied
       # self-signed cert and reverse-proxies to the loopback compat-proxy
@@ -620,92 +861,15 @@ in {
         };
       };
 
-      # Inject the raw-decrypted leaf private key into Caddy at runtime. systemd
-      # copies /run/secrets/.../llm.key into the unit's private credential dir
-      # (visible only to the unit), never a world-readable static path.
-      systemd.services.caddy.serviceConfig.LoadCredential = [
-        "llm-key:${cfg.certs.keyFile}"
-      ];
-
       networking.firewall.allowedTCPPorts = [
         80
         443
       ];
 
-      # One loopback compat-proxy in front of the router server. It forwards
-      # the client's Authorization header (the Bearer key that llama-server's
-      # --api-key-file validates) on the streaming path too, and passes every
-      # other path through, so a single instance is enough for the router.
-      systemd.services."kdn-llm-proxy-lan" = lib.mkIf cfg.compatProxy.enable {
-        description = "OpenCode DSML compat proxy → local router llama-server";
-        wantedBy = ["multi-user.target"];
-        after = ["network-online.target"];
-        wants = ["network-online.target"];
-
-        environment = {
-          UPSTREAM_URL = "http://127.0.0.1:${toString cfg.server.port}";
-          PROXY_HOST = "127.0.0.1";
-          PROXY_PORT = toString cfg.compatProxy.port;
-          # llama-server authenticates the client's Bearer key; forward it on
-          # the streaming path too.
-          FORWARD_AUTHORIZATION = "true";
-        };
-
-        serviceConfig = {
-          ExecStart = "${lib.getExe pkgs.kdn.opencode-compat-proxy}";
-          Restart = "always";
-          RestartSec = "5s";
-          DynamicUser = true;
-          NoNewPrivileges = true;
-          PrivateTmp = true;
-          ProtectSystem = "strict";
-          ProtectHome = true;
-        };
-      };
-
-      # A single sequential download service. It walks all enabled models one
-      # at a time, downloads each (skipping ones already present, unless
-      # forced), and logs a status line after each. Downloads run directly in
-      # the host network namespace; `download.mode` controls how aggressively
-      # HF transfers (env-based concurrency capping). No netns / NAT / tc.
-      systemd.services."kdn-llm-download" = {
-        description = "Download enabled local LLM models, one at a time";
-        # Downloads run only once the network is up, and never touch
-        # multi-user.target. Started by (wantedBy) network-online.target,
-        # after it, so they never block boot or activation.
-        wantedBy = lib.mkIf (enabledModels != {}) ["kdn-llm-download.target"];
-        partOf = lib.mkIf (enabledModels != {}) ["kdn-llm-download.target"];
-        wants = ["network-online.target"];
-        after = ["network-online.target"];
-
-        path = [
-          pkgs.python3Packages.huggingface-hub
-          pkgs.coreutils # du, cut
-        ];
-
-        serviceConfig = {
-          Type = "oneshot";
-          Restart = "on-failure";
-          RestartSec = "10s";
-          LoadCredential = lib.optional (cfg.download.tokenFile != null) "HF_TOKEN:${cfg.download.tokenFile}";
-        };
-
-        script = ''
-          set -euo pipefail
-          if [ -n "''${CREDENTIALS_DIRECTORY:-}" ] && [ -f "''${CREDENTIALS_DIRECTORY}/HF_TOKEN" ]; then
-            export HF_TOKEN="$(cat "''${CREDENTIALS_DIRECTORY}/HF_TOKEN")"
-          fi
-          # Dependencies (draft models) first, then the main models.
-          ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: _: draftStep name) enabledModels)}
-          ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: m: downloadStep name m) enabledModels)}
-          echo "all configured downloads complete"
-        '';
-      };
-
       systemd.targets."kdn-llm-download" = {
         description = "Download enabled local LLM models";
-        after = ["network-online.target"];
-        wants = ["network-online.target"];
+        after = [ "network-online.target" ];
+        wants = [ "network-online.target" ];
       };
 
       environment.systemPackages = [
@@ -713,7 +877,7 @@ in {
         pkgs.python3Packages.huggingface-hub
         (pkgs.writeShellApplication {
           name = "kdn-llm-status";
-          runtimeInputs = [pkgs.systemd];
+          runtimeInputs = [ pkgs.systemd ];
           text = ''
             echo "== llama-server (router) =="
             systemctl status llama-cpp --no-pager || true
