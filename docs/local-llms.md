@@ -137,7 +137,7 @@ The `llm-minimal` boot specialisation is the two-router deployment (boot-selecte
 never activated in place):
 
 - **`main`** `:39703`, threads 16 — frontier. `deepseek-v4-flash` (alias
-  `frontier`, DSpark draft, 256K→halved to a stable 131072 ctx) lives here and
+  `frontier`, DSpark draft, unified 192K ctx) lives here and
   stays resident/hot and **alone** (`--models-max 1`); it is the default
   `mainRouter` for all models in `hosts/brys/llm-minimal.nix` that do not name
   another router.
@@ -187,7 +187,7 @@ productive for memory-bound inference), `flash-attn=on`, `mmap=on`,
 
 | Model | ctx-size | Notes |
 |---|---|---|
-| `deepseek-v4-flash` | 262144 | MLA; verified to fit/load at 256K on the 128 GB host (~101 GB RSS, no swap thrash) |
+| `deepseek-v4-flash` | 196608 | MLA; 192K is a compromise — 131072 (KV ~11.4 GB) is the stability-proven rung (Expt A), 262144 (KV ~22.8 GB) fits (~101 GB RSS) but oscillates on ~1-3 GB free headroom |
 | `qwen3-30b-a3b` | 131072 | |
 | `qwen3-next-80b` | 131072 | |
 | `qwen3-coder-next` | 131072 | |

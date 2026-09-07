@@ -71,10 +71,11 @@
         hfFile = "UD-IQ3_XXS/DeepSeek-V4-Flash-UD-IQ3_XXS-00001-of-00004.gguf";
         download.glob = "UD-IQ3_XXS/DeepSeek-V4-Flash-UD-IQ3_XXS-*.gguf";
         aliases = ["frontier"];
-        # Try 256K MLA KV (≈22.8 GB) first per operator preference; if it
-        # thrash-swaps (model 103 + draft 11 + KV 22.8 ≈ 140 GB > 128 GB),
-        # fall back to 131072 (128K, KV ≈ 11.4 GB → ≈128 GB total).
-        perf.contextSize = 262144;
+        # 192K MLA KV (≈17.1 GB) — unified across both brys boot entries. A
+        # compromise between the stability-proven 128K rung (EXPERIMENT A) and
+        # the original 256K which oscillates on the ~1-3 GB free headroom;
+        # 128K remains the most stable if fragility appears.
+        perf.contextSize = 196608;
         perf.reasoning = "off";
         perf.specType = "draft-dspark";
         draft = {

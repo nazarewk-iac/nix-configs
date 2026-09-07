@@ -50,8 +50,9 @@ let
       modelsMax = 2;
       apiKeyDir = "/run/configs/llms/llama-server/api-keys";
     };
-    # Same models/per-model perf as the main host, but DeepSeek biased to its
-    # verified-working 256K context (nothing else competes for RAM here).
+    # Same models/per-model perf as the main host, but DeepSeek biased to a
+    # 192K context (a compromise: 128K is the stability-proven rung from
+    # EXPERIMENT A, 256K fits but oscillates on the ~1-3 GB free headroom).
     kdn.llm.local.models = {
       deepseek-v4-flash = {
         enable = true;
@@ -59,7 +60,7 @@ let
         hfFile = "UD-IQ3_XXS/DeepSeek-V4-Flash-UD-IQ3_XXS-00001-of-00004.gguf";
         download.glob = "UD-IQ3_XXS/DeepSeek-V4-Flash-UD-IQ3_XXS-*.gguf";
         aliases = [ "frontier" ];
-        perf.contextSize = 131072;
+        perf.contextSize = 196608;
         perf.reasoning = "off";
         perf.specType = "draft-dspark";
         perf.cpuRange = "1-12";
