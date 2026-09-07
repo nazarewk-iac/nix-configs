@@ -1,6 +1,6 @@
 ---
 type: Reference
-description: Standalone slot that configures in-devenv opencode declaratively (opencode.jsonc via devenv's opencode.settings) and ships the opencode-kdn wrapper. A bare capability — consumers supply the providers/models/upstreams via the settings option; brys wires its local model through a hostname-scoped devenv profile.
+description: Standalone slot that configures in-devenv opencode declaratively (opencode.jsonc via devenv's opencode.settings) and ships an `opencode` wrapper binary. A bare capability — consumers supply the providers/models/upstreams via the settings option; brys wires its local model through a hostname-scoped devenv profile.
 timestamp: 2026-08-30T00:00:00+02:00
 ---
 
@@ -19,9 +19,9 @@ The slot is intentionally generalised — it exposes the *capability* and declar
 no specific providers, models, or upstreams itself:
 
 - Generates `opencode.jsonc` from the `settings` option (free-form attrset).
-- Ships the `opencode-kdn` wrapper (loads `REQUESTY_API_KEY` from
-  `~/.local/share/opencode/auth.json` via `jq`, then execs opencode).
-- Puts `pkgs.opencode` on PATH.
+- Ships the `opencode` wrapper as the `opencode` binary on PATH (loads
+  `REQUESTY_API_KEY` from `~/.local/share/opencode/auth.json` via `jq`, then
+  execs the real opencode by absolute path).
 
 Because no specific model/provider wiring is baked in, enabling the slot
 globally is harmless: a default `settings` skeleton (native `requesty` provider,
@@ -43,7 +43,7 @@ wiring.
 | Option | Type | Default | Meaning |
 |---|---|---|---|
 | `enable` | bool | `false` | enable in-devenv opencode config |
-| `package` | package | `pkgs.opencode` | opencode binary on PATH |
+| `package` | package | `pkgs.opencode` | real opencode binary the wrapper execs (kept off bare PATH) |
 | `settings` | attrsOf anything | benign skeleton | opencode config written to `opencode.jsonc` (model, provider, permission) |
 
 `settings` is written verbatim to `opencode.jsonc`; use it to set `model`,
@@ -51,13 +51,16 @@ wiring.
 `model = "requesty/deepseek-v4-flash-0731"`, `provider.requesty = {}`, and the
 permission block.
 
-## opencode-kdn wrapper
+## `opencode` wrapper
 
-`kdn.opencode` ships an `opencode-kdn` wrapper (on PATH inside the shell) that
-loads `REQUESTY_API_KEY` from `~/.local/share/opencode/auth.json` via `jq`
-(`.requesty.key`) and then execs the real `opencode`. Run OpenCode via
-`opencode-kdn` so a `requesty-proxy` provider authenticates; a plain `opencode`
-outside the wrapper won't have the key for that provider.
+`kdn.opencode` ships the opencode entrypoint as an **`opencode`** binary on PATH
+that is itself the wrapper: it loads `REQUESTY_API_KEY` from
+`~/.local/share/opencode/auth.json` via `jq` (`.requesty.key`), and also
+applies key/env/pre-exec injection from `kdn.opencode.wrapper`, then execs the
+real `pkgs.opencode` by absolute store path. The real binary is NOT put on PATH,
+so a bare `opencode` in the shell always activates the wrapper — a `requesty-proxy`
+provider authenticates without an extra `opencode-kdn` step. Run `opencode`
+directly (the wrapper is `opencode`).
 
 ## Standalone
 

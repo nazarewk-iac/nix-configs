@@ -39,8 +39,9 @@ in {
       };
 
       # In-devenv opencode capability: generates a benign opencode.jsonc and
-      # puts `opencode` + `opencode-kdn` on PATH on every host. The brys-specific
-      # model/proxy wiring lives in the hostname-gated profile below.
+      # puts an `opencode` wrapper (key/svc auth) on PATH on every host. The
+      # brys-specific model/proxy wiring lives in the hostname-gated profile
+      # below.
       kdn.opencode.enable = true;
     }).config.devenv
   ];
