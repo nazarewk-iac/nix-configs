@@ -446,6 +446,18 @@ in
           linger = true;
           uid = 31893;
           isNormalUser = true;
+          subUidRanges = [
+            {
+              startUid = config.users.users.kdn.uid * 65536;
+              count = 65536;
+            }
+          ];
+          subGidRanges = [
+            {
+              startUid = config.users.users.kdn.uid * 65536;
+              count = 65536;
+            }
+          ];
           extraGroups = lib.filter (group: lib.hasAttr group config.users.groups) [
             "adbusers"
             "audio"

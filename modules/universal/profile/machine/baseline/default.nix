@@ -151,31 +151,20 @@ in
               "dmask=0077"
             ];
           })
-          (
-            let
-              content =
-                let
-                  gen = pkgs.writers.writePython3Bin "generate-subuid" { } ''
-                    import os
-
-                    with open(os.environ["out"], "w") as f:
-                        for uid in range(1000, 65536):
-                            f.write(f"{uid}:{uid * 65536}:{65536}\n")
-                  '';
-                in
-                pkgs.runCommand "etc-subuid-subgid" { } (lib.getExe gen);
-            in
-            {
-              services.userborn.enable = true;
-              services.userborn.passwordFilesLocation = "/var/lib/nixos/userborn/etc";
-              # nixpkgs now generates /etc/subuid and /etc/subgid itself.
-              # Force the wide range mapping that rootless containers need.
-              environment.etc."subuid".source = lib.mkForce content;
-              environment.etc."subuid".mode = lib.mkForce "0444";
-              environment.etc."subgid".source = lib.mkForce content;
-              environment.etc."subgid".mode = lib.mkForce "0444";
-            }
-          )
+          {
+            # Native /etc/subuid + /etc/subgid management via services.userborn.
+            # userborn generates the per-user subordinate ranges (auto from
+            # `autoSubUidGidRange`, or explicit `subUidRanges`/`subGidRanges`) into
+            # passwordFilesLocation and bind-mounts them read-only into /etc
+            # (newuidmap rejects symlinks), so setup-etc must NOT also own these
+            # files via environment.etc — declaring them fights the bind mount and
+            # breaks activation. This replaced the old wide-range
+            # environment.etc."subuid"/"subgid" force which the read-only mount
+            # could never overwrite. Rootless podman only needs the per-user range
+            # userborn allocates, so no manual ranges are required.
+            services.userborn.enable = true;
+            services.userborn.passwordFilesLocation = "/var/lib/nixos/userborn/etc";
+          }
           {
             hardware.enableRedistributableFirmware = true;
             boot.initrd.systemd.emergencyAccess = "$y$j9T$fioAEKxXi2LmH.9HyzVJ4/$Ot4PUjYdz7ELvJBOnS1YgQFNW89SCxB/yyGVaq4Aux0";
