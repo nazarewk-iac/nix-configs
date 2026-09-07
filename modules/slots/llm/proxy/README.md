@@ -156,27 +156,27 @@ Example `opencode.json` provider entries:
 }
 ```
 
-### `opencode-kdn` wrapper (devenv)
+### `opencode` wrapper (devenv)
 
 The `requesty-proxy` provider needs `REQUESTY_API_KEY` set. The slot ships an
-`opencode-kdn` wrapper (installed in the devenv `packages` when the slot is
+`opencode` wrapper (installed in the devenv `packages` when the slot is
 active) that loads the key from `~/.local/share/opencode/auth.json` via `jq`
 (`.requesty.key`) and then execs the real `opencode`:
 
 ```bash
-opencode-kdn           # inside the devenv shell; sets REQUESTY_API_KEY
+opencode              # inside the devenv shell; sets REQUESTY_API_KEY
 ```
 
-Run OpenCode via `opencode-kdn` (in the devenv shell) so the proxied requesty
-provider authenticates. Raw `opencode` outside the wrapper won't have the key
-for `requesty-proxy/*`.
+The wrapper IS the `opencode` binary on PATH (the real opencode is exec'd by
+absolute store path), so running `opencode` in the devenv shell is always the
+wrapper and the proxied requesty provider authenticates.
 
 ## Operations
 
 - NixOS: `systemctl status kdn-llm-proxy-<name>`, `journalctl -fu
   kdn-llm-proxy-<name>`.
 - devenv: `devenv processes list` / `devenv up` to start instances.
-- devenv: use `opencode-kdn` (installed on PATH) to run OpenCode with
+- devenv: run `opencode` (installed on PATH) — it is the wrapper, so it has
   `REQUESTY_API_KEY` loaded for the `requesty-proxy` provider.
 
 ## Standalone

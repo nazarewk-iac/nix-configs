@@ -4,13 +4,13 @@
 # (see the sibling `kdn.llm.local` server slot). Each upstream is keyed by
 # name in `kdn.llm.client.upstreams.<name>` and the slot writes a
 # `provider.<name>` into opencode's settings (baseURL, apiKey {env:...},
-# models). It ships no per-upstream wrapper: key injection is delegated to the
-# single `opencode-kdn` wrapper via `kdn.opencode.envFile`, and self-signed CA
-# trust is handled system-wide (security.pki).
+# models). Key injection is delegated to the single `opencode` wrapper via
+# `kdn.opencode.wrapper.envFiles`, and self-signed CA trust is handled
+# system-wide (security.pki).
 #
 # It does NOT enable opencode itself — the consumer enables `kdn.opencode`
-# (which turns opencode on, supplies the default permission skeleton, and the
-# `opencode-kdn` wrapper). This slot only adds `provider.<name>` settings.
+# (which turns opencode on and supplies the default permission skeleton and the
+# `opencode` wrapper). This slot only adds `provider.<name>` settings.
 #
 # The consumer is a thin passthrough: it only supplies, per upstream, the
 # required info (baseURL, caCertFile, apiKeyFile, models).
@@ -57,9 +57,9 @@ in {
           options = {
             enable = lib.mkEnableOption "this upstream in opencode";
 
-            # Canonical provider/wrapper key; defaults to the attr name so a
-            # consumer writes `upstreams.brys` and gets `provider.brys` +
-            # `opencode-kdn-brys`, but can still override.
+            # Canonical provider key; defaults to the attr name so a
+            # consumer writes `upstreams.brys` and gets `provider.brys`,
+            # but can still override.
             name = lib.mkOption {
               type = lib.types.str;
               default = name;
@@ -142,9 +142,9 @@ in {
     devenv = {
       # Merge provider.<name> for every enabled upstream into opencode's
       # settings. The consumer must enable `kdn.opencode` (which turns opencode
-      # on and supplies the single `opencode-kdn` wrapper); this slot does not
-      # enable opencode itself nor ship per-upstream wrappers — key
-      # injection for each upstream is done via kdn.opencode.envFile.
+      # on and supplies the `opencode` wrapper); this slot does not enable
+      # opencode itself nor ship per-upstream wrappers — key injection for each
+      # upstream is done via kdn.opencode.wrapper.envFiles.
       opencode.settings = lib.mkMerge (lib.mapAttrsToList toProvider enabledUpstreams);
     };
   };

@@ -27,7 +27,7 @@
     provider = {
       # Native requesty — direct API, auth from auth.json.
       requesty = { };
-      # Requesty via DSML proxy; needs REQUESTY_API_KEY (see opencode-kdn).
+      # Requesty via DSML proxy; needs REQUESTY_API_KEY (see the opencode wrapper).
       requesty-proxy = {
         npm = "@ai-sdk/openai-compatible";
         name = "DeepSeek V4 Flash (Requesty via DSML proxy)";

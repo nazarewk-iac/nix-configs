@@ -208,7 +208,7 @@ The endpoint is consumed over HTTPS with the shared `/run/configs/llms` mount
 upstream; it does **not** enable opencode itself and ships **no** per-upstream
 wrapper. Each upstream is keyed by name (`upstreams.<name>` →
 `provider.<name>`). The consumer's devenv enables `kdn.opencode` (turns
-opencode on and provides the single `opencode-kdn` wrapper, with the API key
+opencode on and provides the `opencode` wrapper, with the API key
 injected via `wrapper.envFiles`), trusts the self-signed cert system-wide via
 `security.pki`, and enables `kdn.llm.client` as a thin passthrough (see
 `hosts/oams/devenv.nix`):
@@ -227,8 +227,8 @@ kdn.llm.client.upstreams.brys = {
 
 For the `brys` upstream, the slot adds an `@ai-sdk/openai-compatible`
 `provider.brys` bound to `baseURL` with `apiKey = {env:KDN_LLM_API_KEY_brys}`.
-The single `opencode-kdn` wrapper loads that key from the `envFiles` path you
-set; run opencode via `opencode-kdn` inside the devenv shell.
+The `opencode` wrapper loads that key from the `envFiles` path you
+set; run opencode via `opencode` inside the devenv shell.
 
 ## Operations
 
