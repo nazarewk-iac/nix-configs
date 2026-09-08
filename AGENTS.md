@@ -28,6 +28,7 @@ read the full doc when you need detail.
 
 | Doc | Contents |
 |---|---|
+| [docs/generalization-plan.md](docs/tasks/2026-09/generalization/definition.md) | Checkpointed plan to make the modules reusable by an external adopter; hub for `docs/tasks/generalization-0NN-*.md` |
 | [docs/flake-update.md](docs/flake-update.md) | Flake update procedure, commit structure, testing |
 | [docs/flake-update.fork.md](docs/flake-update.fork.md) | Fork-specific update workflow (merge commit, flake-lock-merge) |
 | [docs/jujutsu-vcs.md](docs/jujutsu-vcs.md) | jj patterns: working copy, split, squash, rebase |
