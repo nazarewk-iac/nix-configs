@@ -51,6 +51,14 @@ binary is the single source of that drop-in (`emit-ssh-config`).
 
 At run time the config comes from `--config <file>` or `$KDN_SSH_ACCESS_CONFIG`. The configured
 package bakes the latter into a wrapper, so an installed `kdn-ssh-access` needs no `--config`.
+The wrapper uses `--set-default`, so the precedence is `--config` first, then an exported
+`$KDN_SSH_ACCESS_CONFIG`, then the baked path. Point the installed binary at another graph like
+this:
+
+```bash
+kdn-ssh-access debug --config ./other-graph.json brys   # one command
+KDN_SSH_ACCESS_CONFIG=./other-graph.json kdn-ssh-access debug brys
+```
 
 ## Modes
 
