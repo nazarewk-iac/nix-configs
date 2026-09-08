@@ -10,11 +10,16 @@
 // or builds an `ssh` ProxyJump chain (>=2 edges). Only the first (local) hop is probed; the rest
 // are resolved on-the-hop by ssh. No local overlay (NetBird) is needed.
 //
-// Modes: proxy <host> <port> | ssh [args...] | emit-ssh-config | route <host>.
+// Modes: proxy <host> <port> | ssh [args...] | emit-ssh-config | route <host> | debug [host...].
 // The host arg is `kdn-<name>[+tag]...`; tags: direct, remote, via=<host>, 4, 6.
+//
+// `debug` is the entry point when a connection fails: it validates the graph, resolves the uplink
+// and edge addresses, checks the ssh binary and the agent, reports the reachability cache, probes
+// the first hop, and names the route a real run selects. See README.md.
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -238,6 +243,69 @@ func storeVerdict(addr string, ok bool) {
 	}
 }
 
+// readVerdict returns the raw cached value and its age, with no TTL check. The debug mode uses it
+// to show a stale verdict that a normal run would still honour.
+func readVerdict(addr string) (val bool, age time.Duration, known bool) {
+	fi, err := os.Stat(verdictFile(addr))
+	if err != nil {
+		return false, 0, false
+	}
+	data, err := os.ReadFile(verdictFile(addr))
+	if err != nil || len(data) < 1 {
+		return false, 0, false
+	}
+	return data[0] == '1', time.Since(fi.ModTime()), true
+}
+
+// clearVerdicts deletes every cached verdict for the current network. It returns the count removed.
+func clearVerdicts() int {
+	dir := filepath.Join(cacheDir(), "reach")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return 0
+	}
+	n := 0
+	prefix := netFingerprint() + "_"
+	for _, e := range entries {
+		if !strings.HasPrefix(e.Name(), prefix) {
+			continue
+		}
+		if os.Remove(filepath.Join(dir, e.Name())) == nil {
+			n++
+		}
+	}
+	return n
+}
+
+// countVerdicts returns the number of cached verdicts for the current network and for all others.
+func countVerdicts() (mine, others int) {
+	entries, err := os.ReadDir(filepath.Join(cacheDir(), "reach"))
+	if err != nil {
+		return 0, 0
+	}
+	prefix := netFingerprint() + "_"
+	for _, e := range entries {
+		if strings.HasPrefix(e.Name(), prefix) {
+			mine++
+		} else {
+			others++
+		}
+	}
+	return mine, others
+}
+
+// probeFresh dials host:port and ignores the cache, so the debug report states the current truth.
+// It does not store the verdict — a debug run must not change what the next real run sees.
+func probeFresh(host string, port int, timeout time.Duration) (time.Duration, error) {
+	start := time.Now()
+	conn, err := net.DialTimeout("tcp", net.JoinHostPort(host, strconv.Itoa(port)), timeout)
+	took := time.Since(start)
+	if err == nil {
+		conn.Close()
+	}
+	return took, err
+}
+
 // dialCached returns a live connection to host:port (the one that the direct pipe then uses — no
 // throwaway probe). It returns nil at once when a fresh negative verdict is cached, and it records
 // the new verdict either way.
@@ -455,30 +523,34 @@ func parseSpec(sshHost string) spec {
 	return s
 }
 
+// filterReason returns "" when the spec's tags keep this path, or the reason that drops it. The
+// debug mode prints the reason; filterPaths only needs the empty/non-empty result.
+func filterReason(p []step, s spec) string {
+	// +direct keeps LAN-origin paths; +remote keeps internet-origin paths (the WAN entry or a
+	// relay chain). The first edge's origin is always "lan" or "internet".
+	if s.onlyDirect && !(len(p) >= 1 && p[0].edge.From == "lan") {
+		return "+direct needs a lan-origin path"
+	}
+	if s.onlyRemote && !(len(p) >= 1 && p[0].edge.From == "internet") {
+		return "+remote needs an internet-origin path"
+	}
+	if s.via != "" {
+		for _, st := range p {
+			if st.dest == s.via {
+				return ""
+			}
+		}
+		return fmt.Sprintf("+via=%s is not on this path", s.via)
+	}
+	return ""
+}
+
 func filterPaths(paths [][]step, s spec) [][]step {
 	var out [][]step
 	for _, p := range paths {
-		// +direct keeps LAN-origin paths; +remote keeps internet-origin paths (the WAN entry or a
-		// relay chain). The first edge's origin is always "lan" or "internet".
-		if s.onlyDirect && !(len(p) >= 1 && p[0].edge.From == "lan") {
-			continue
+		if filterReason(p, s) == "" {
+			out = append(out, p)
 		}
-		if s.onlyRemote && !(len(p) >= 1 && p[0].edge.From == "internet") {
-			continue
-		}
-		if s.via != "" {
-			found := false
-			for _, st := range p {
-				if st.dest == s.via {
-					found = true
-					break
-				}
-			}
-			if !found {
-				continue
-			}
-		}
-		out = append(out, p)
 	}
 	return out
 }
@@ -541,10 +613,18 @@ func edgePort(e Edge) int {
 	return e.Port
 }
 
-// runChain writes a per-invocation ssh config with a Host stanza per relay (ProxyJump-linked) and
-// runs `ssh -F cfg -W <target>:<port> <lastRelay>` as a child. r1Addr is the locally-resolved
+// chainPlan holds everything a relay chain needs: the generated ssh config, the `-W` target, and
+// the alias of the last relay. buildChainPlan resolves it without any connection, so the debug
+// mode can show the exact stanzas and target that runChain would use.
+type chainPlan struct {
+	sshConfig string
+	target    string
+	lastAlias string
+}
+
+// buildChainPlan renders a Host stanza per relay (ProxyJump-linked). r1Addr is the locally-resolved
 // address of the first relay; every later relay's address is a literal resolved on its predecessor.
-func runChain(cfg *Config, self string, p []step, r1Addr string) error {
+func buildChainPlan(cfg *Config, p []step, r1Addr string) (chainPlan, error) {
 	// relays are the destinations of all steps except the last; the last step's edge addresses the target.
 	relays := p[:len(p)-1]
 	last := p[len(p)-1]
@@ -556,7 +636,7 @@ func runChain(cfg *Config, self string, p []step, r1Addr string) error {
 		if i > 0 {
 			h, err := edgeLiteral(st.edge) // later relays: literal resolved on the previous hop
 			if err != nil {
-				return err
+				return chainPlan{}, err
 			}
 			host = h
 		}
@@ -576,6 +656,25 @@ func runChain(cfg *Config, self string, p []step, r1Addr string) error {
 		b.WriteString("\n")
 	}
 
+	targetAddr, err := edgeLiteral(last.edge)
+	if err != nil {
+		return chainPlan{}, err
+	}
+	return chainPlan{
+		sshConfig: b.String(),
+		target:    net.JoinHostPort(targetAddr, strconv.Itoa(edgePort(last.edge))),
+		lastAlias: fmt.Sprintf("kdnhop%d", len(relays)-1),
+	}, nil
+}
+
+// runChain writes the plan's ssh config to a per-invocation file and runs
+// `ssh -F cfg -W <target>:<port> <lastRelay>` as a child.
+func runChain(cfg *Config, self string, p []step, r1Addr string) error {
+	plan, err := buildChainPlan(cfg, p, r1Addr)
+	if err != nil {
+		return err
+	}
+
 	dir := cacheDir()
 	_ = os.MkdirAll(dir, 0o700)
 	tmp, err := os.CreateTemp(dir, "chain-*.config")
@@ -583,7 +682,7 @@ func runChain(cfg *Config, self string, p []step, r1Addr string) error {
 		return err
 	}
 	defer os.Remove(tmp.Name())
-	if _, err := tmp.WriteString(b.String()); err != nil {
+	if _, err := tmp.WriteString(plan.sshConfig); err != nil {
 		tmp.Close()
 		return err
 	}
@@ -593,12 +692,7 @@ func runChain(cfg *Config, self string, p []step, r1Addr string) error {
 	if err != nil {
 		return err
 	}
-	lastAlias := fmt.Sprintf("kdnhop%d", len(relays)-1)
-	targetAddr, err := edgeLiteral(last.edge)
-	if err != nil {
-		return err
-	}
-	target := net.JoinHostPort(targetAddr, strconv.Itoa(edgePort(last.edge)))
+	target, lastAlias := plan.target, plan.lastAlias
 	args := []string{"-F", tmp.Name(), "-o", "ConnectTimeout=5", "-W", target, lastAlias}
 	dbg("run ssh %s (target %s via %s)", strings.Join(args, " "), target, pathString(p))
 	cmd := exec.Command(sshPath, args...)
@@ -719,12 +813,394 @@ func modeRoute(cfg *Config, args []string) {
 	}
 }
 
+// ---------- debug ----------
+
+// The debug mode covers the known failure modes without opening an ssh session. It validates the
+// graph, resolves every uplink and edge address, reports the reachability cache, probes only the
+// first (local) hop, and prints the route and the ssh stanzas that a real run would use.
+
+// report counts the verdicts of the debug checks and prints them as they happen.
+type report struct {
+	fails int
+	warns int
+}
+
+func (r *report) section(title string)      { fmt.Printf("\n== %s ==\n", title) }
+func (r *report) ok(f string, a ...any)     { fmt.Printf("  ok    "+f+"\n", a...) }
+func (r *report) info(f string, a ...any)   { fmt.Printf("        "+f+"\n", a...) }
+func (r *report) detail(f string, a ...any) { fmt.Printf("          "+f+"\n", a...) }
+
+func (r *report) warn(f string, a ...any) {
+	r.warns++
+	fmt.Printf("  warn  "+f+"\n", a...)
+}
+
+func (r *report) fail(f string, a ...any) {
+	r.fails++
+	fmt.Printf("  FAIL  "+f+"\n", a...)
+}
+
+func expandHome(p string) string {
+	if p == "~" || strings.HasPrefix(p, "~/") {
+		if home, err := os.UserHomeDir(); err == nil {
+			return filepath.Join(home, strings.TrimPrefix(strings.TrimPrefix(p, "~"), "/"))
+		}
+	}
+	return p
+}
+
+// debugConfig reports the config source and its size.
+func debugConfig(cfg *Config, cfgPath string, r *report) {
+	r.section("config")
+	r.ok("path %s", cfgPath)
+	r.info("%d hosts, %d uplinks", len(cfg.Hosts), len(cfg.Uplinks))
+	r.info("defaults: user=%q maxHops=%d probeTimeout=%dms cacheTtl=%ds ipPref=%s",
+		cfg.Defaults.User, cfg.Defaults.MaxHops, cfg.Defaults.LanProbeTimeoutMs,
+		cfg.Defaults.CacheTtlSeconds, cfg.Defaults.IPVersionPreference)
+	if len(cfg.Hosts) == 0 {
+		r.fail("the config declares no hosts")
+	}
+}
+
+// debugGraph repeats the module.nix edge rules at run time (a hand-written or non-Nix config skips
+// them), then reports every host that has no path from "me".
+func debugGraph(cfg *Config, r *report) {
+	r.section("graph")
+	known := map[string]bool{"internet": true, "lan": true}
+	for n := range cfg.Hosts {
+		known[n] = true
+	}
+	names := sortedHostNames(cfg)
+	bad := 0
+	for _, hn := range names {
+		h := cfg.Hosts[hn]
+		if len(h.ReachedFrom) == 0 {
+			r.warn("hosts.%s: no reachedFrom edges — the host is never reachable", hn)
+			bad++
+		}
+		for i, e := range h.ReachedFrom {
+			loc := fmt.Sprintf("hosts.%s.reachedFrom[%d]", hn, i)
+			if !known[e.From] {
+				r.fail(`%s: from=%q must be "internet", "lan", or a defined host`, loc, e.From)
+				bad++
+			}
+			if e.From == hn {
+				r.fail("%s: from=%q is the host itself", loc, e.From)
+				bad++
+			}
+			if e.Address == "" && e.AddressFile == "" && e.Uplink == "" {
+				r.fail("%s: needs address, addressFile, or uplink", loc)
+				bad++
+			}
+			if e.Uplink != "" && e.From != "internet" {
+				r.fail(`%s: uplink applies only to from="internet"`, loc)
+				bad++
+			}
+			if e.Uplink != "" {
+				if _, ok := cfg.Uplinks[e.Uplink]; !ok {
+					r.fail("%s: unknown uplink %q", loc, e.Uplink)
+					bad++
+				}
+			}
+		}
+	}
+	if bad == 0 {
+		r.ok("all %d hosts have valid edges", len(cfg.Hosts))
+	}
+	for _, hn := range names {
+		if len(findPaths(cfg, hn)) == 0 {
+			r.warn("no path me -> %s (check the edge origins, or raise defaults.maxHops=%d)",
+				hn, cfg.Defaults.MaxHops)
+		}
+	}
+}
+
+// debugEnvironment checks what the ssh child needs: the ssh binary, the agent socket, and the
+// identity file. A missing agent socket is the usual cause of an auth failure on a route that the
+// probe reports as reachable.
+func debugEnvironment(cfg *Config, r *report) {
+	r.section("environment")
+	if p, err := exec.LookPath("ssh"); err != nil {
+		r.fail("ssh not on PATH: %v (relay chains and the `ssh` mode cannot run)", err)
+	} else {
+		r.ok("ssh %s", p)
+	}
+	if fp := netFingerprint(); fp == "nonet" {
+		r.fail("no network: the routing table selects no source address for a default route")
+	} else {
+		r.ok("network fingerprint %s (local source address for a default route)", fp)
+	}
+	r.info("cache dir %s", cacheDir())
+
+	sock := os.Getenv("SSH_AUTH_SOCK")
+	switch {
+	case sock == "":
+		r.fail("SSH_AUTH_SOCK is unset — the emitted config pins IdentityAgent to it, so auth fails")
+	default:
+		if _, err := os.Stat(sock); err != nil {
+			r.fail("SSH_AUTH_SOCK=%s is not usable: %v", sock, err)
+		} else {
+			r.ok("SSH_AUTH_SOCK %s", sock)
+			debugAgentKeys(r)
+		}
+	}
+
+	if cfg.Defaults.IdentityFile == "" {
+		r.info("defaults.identityFile is unset — auth relies on the agent alone")
+	} else if p := expandHome(cfg.Defaults.IdentityFile); func() bool { _, err := os.Stat(p); return err != nil }() {
+		r.warn("defaults.identityFile %s does not exist", p)
+	} else {
+		r.ok("identityFile %s", p)
+	}
+}
+
+// debugAgentKeys asks the agent for its identities. Exit code 1 means the agent holds no key.
+func debugAgentKeys(r *report) {
+	path, err := exec.LookPath("ssh-add")
+	if err != nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, path, "-l").CombinedOutput()
+	lines := 0
+	for _, l := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if strings.TrimSpace(l) != "" {
+			lines++
+		}
+	}
+	if err != nil {
+		r.warn("ssh-add -l: %v (%s)", err, strings.TrimSpace(string(out)))
+		return
+	}
+	r.detail("agent holds %d identity/identities", lines)
+}
+
+// debugUplinks resolves every uplink address, so a missing or empty WAN address file shows up here
+// and not as an unexplained "no reachable route".
+func debugUplinks(cfg *Config, r *report) {
+	if len(cfg.Uplinks) == 0 {
+		return
+	}
+	r.section("uplinks")
+	names := make([]string, 0, len(cfg.Uplinks))
+	for n := range cfg.Uplinks {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	for _, n := range names {
+		u := cfg.Uplinks[n]
+		r.info("%s:", n)
+		for _, f := range []struct {
+			label, lit, file string
+		}{
+			{"ipv6", u.IPv6, u.IPv6File},
+			{"ipv4", u.IPv4, u.IPv4File},
+		} {
+			switch {
+			case f.lit != "":
+				r.detail("%s %s (literal)", f.label, f.lit)
+			case f.file != "":
+				if v, err := readFileValue(f.file); err != nil {
+					r.warn("uplink %s.%sFile %s: %v", n, f.label, f.file, err)
+				} else {
+					r.detail("%s %s (from %s)", f.label, v, f.file)
+				}
+			}
+		}
+		if u.IPv4 == "" && u.IPv4File == "" && u.IPv6 == "" && u.IPv6File == "" {
+			r.fail("uplink %s has no address at all", n)
+		}
+	}
+}
+
+// debugCache reports the cached reachability verdicts. A stale negative verdict makes a real run
+// skip a route that is up again; --clear-cache removes it.
+func debugCache(cfg *Config, r *report, cleared int) {
+	r.section("reachability cache")
+	if cleared > 0 {
+		r.ok("cleared %d verdict(s) for this network", cleared)
+	}
+	mine, others := countVerdicts()
+	r.info("%d verdict(s) for this network, %d for other networks (ttl %ds)",
+		mine, others, cfg.Defaults.CacheTtlSeconds)
+	r.info("clear with: kdn-ssh-access debug --clear-cache   (or rm -rf %s)",
+		filepath.Join(cacheDir(), "reach"))
+}
+
+func sortedHostNames(cfg *Config) []string {
+	names := make([]string, 0, len(cfg.Hosts))
+	for n := range cfg.Hosts {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	return names
+}
+
+// debugHost diagnoses one host spec: it lists the paths that the tags drop and why, then walks the
+// kept paths in rank order, resolves the entry addresses, probes the first hop, and shows the ssh
+// stanzas for a chain. The first path with a reachable entry is the one a real run selects.
+func debugHost(cfg *Config, arg string, r *report, timeout time.Duration, probe bool) {
+	s := parseSpec(arg)
+	r.section("host " + s.host)
+	if _, ok := cfg.Hosts[s.host]; !ok {
+		r.fail("unknown host %q — known: %s", s.host, strings.Join(sortedHostNames(cfg), " "))
+		return
+	}
+	r.info("spec: host=%s direct=%v remote=%v via=%q family=%q",
+		s.host, s.onlyDirect, s.onlyRemote, s.via, s.family)
+
+	all := findPaths(cfg, s.host)
+	if len(all) == 0 {
+		r.fail("no path me -> %s in the graph (check edge origins, or defaults.maxHops=%d)",
+			s.host, cfg.Defaults.MaxHops)
+		return
+	}
+	var kept [][]step
+	for _, p := range all {
+		if reason := filterReason(p, s); reason != "" {
+			r.info("dropped: %s  (%s)", pathString(p), reason)
+		} else {
+			kept = append(kept, p)
+		}
+	}
+	if len(kept) == 0 {
+		r.fail("all %d path(s) to %s are dropped by the tags", len(all), s.host)
+		return
+	}
+	rankPaths(kept)
+	r.ok("%d path(s) kept of %d", len(kept), len(all))
+
+	selected := -1
+	for i, p := range kept {
+		kind := "chain"
+		if len(p) == 1 {
+			kind = "direct"
+		}
+		r.info("%d. [prio %3d, %d hop] %-6s %s", i+1, pathPriority(p), len(p), kind, pathString(p))
+
+		origin := p[0].edge
+		addrs, err := entryAddrs(cfg, origin, s.family)
+		if err != nil {
+			r.fail("path %d: entry address: %v", i+1, err)
+			continue
+		}
+		for _, addr := range addrs {
+			port := edgePort(origin)
+			target := net.JoinHostPort(addr, strconv.Itoa(port))
+			cachedVal, age, cacheKnown := readVerdict(target)
+			cacheFresh := cacheKnown && age <= time.Duration(cfg.Defaults.CacheTtlSeconds)*time.Second
+			if cacheKnown {
+				note := "expired, a real run re-probes"
+				if cacheFresh {
+					note = "a real run honours this, not the probe below"
+				}
+				r.detail("cache %s -> %v (age %s, %s)", target, cachedVal, age.Truncate(time.Second), note)
+			}
+			if !probe {
+				r.detail("entry %s (probe skipped)", target)
+				if selected < 0 && !(cacheFresh && !cachedVal) {
+					selected = i
+				}
+				continue
+			}
+			took, perr := probeFresh(addr, port, timeout)
+			if perr != nil {
+				r.detail("probe %s -> unreachable after %s: %v", target, took.Truncate(time.Microsecond), perr)
+				continue
+			}
+			r.detail("probe %s -> ok in %s", target, took.Truncate(time.Microsecond))
+			// A fresh negative verdict wins over the live probe: the real run skips this address
+			// without a dial. This is the "debug says ok but ssh still fails" case.
+			if cacheFresh && !cachedVal {
+				r.warn("%s answers now, but a fresh cached verdict says unreachable — a real run skips it; use --clear-cache", target)
+				continue
+			}
+			if len(p) > 1 {
+				plan, perr := buildChainPlan(cfg, p, addr)
+				if perr != nil {
+					r.fail("path %d: relay address: %v", i+1, perr)
+					continue
+				}
+				r.detail("would run: ssh -F <tmp> -o ConnectTimeout=5 -W %s %s", plan.target, plan.lastAlias)
+				for _, l := range strings.Split(strings.TrimRight(plan.sshConfig, "\n"), "\n") {
+					r.detail("  | %s", l)
+				}
+			}
+			if selected < 0 {
+				selected = i
+			}
+			break
+		}
+	}
+	if selected < 0 {
+		r.fail("no reachable route for %s — every entry address failed the probe", s.host)
+		return
+	}
+	r.ok("a real run selects path %d: %s", selected+1, pathString(kept[selected]))
+}
+
+func modeDebug(cfg *Config, cfgPath string, args []string) {
+	probe := true
+	clear := false
+	timeout := time.Duration(cfg.Defaults.LanProbeTimeoutMs) * time.Millisecond
+	var hosts []string
+	for i := 0; i < len(args); i++ {
+		switch a := args[i]; {
+		case a == "--no-probe" || a == "--config-only":
+			probe = false
+		case a == "--clear-cache":
+			clear = true
+		case a == "--timeout":
+			if i+1 >= len(args) {
+				fatal("--timeout needs a value in milliseconds")
+			}
+			ms, err := strconv.Atoi(args[i+1])
+			if err != nil || ms <= 0 {
+				fatal("--timeout: %q is not a positive number of milliseconds", args[i+1])
+			}
+			timeout = time.Duration(ms) * time.Millisecond
+			i++
+		case strings.HasPrefix(a, "-"):
+			fatal("debug: unknown flag %q (--config-only|--no-probe|--clear-cache|--timeout <ms>)", a)
+		default:
+			hosts = append(hosts, a)
+		}
+	}
+
+	cleared := 0
+	if clear {
+		cleared = clearVerdicts()
+	}
+
+	r := &report{}
+	debugConfig(cfg, cfgPath, r)
+	debugGraph(cfg, r)
+	debugEnvironment(cfg, r)
+	debugUplinks(cfg, r)
+	debugCache(cfg, r, cleared)
+	// Default to a reachability test of every host. Naming a host narrows the test; --config-only
+	// (--no-probe) reduces it to the static checks and makes the run offline and instant.
+	targets := hosts
+	if len(targets) == 0 {
+		targets = sortedHostNames(cfg)
+	}
+	for _, h := range targets {
+		debugHost(cfg, h, r, timeout, probe)
+	}
+
+	fmt.Printf("\n== summary ==\n  %d failure(s), %d warning(s)\n", r.fails, r.warns)
+	if r.fails > 0 {
+		os.Exit(1)
+	}
+}
+
 // ---------- main ----------
 
 func main() {
 	args := os.Args[1:]
 	if len(args) == 0 {
-		fatal("usage: kdn-ssh-access <proxy|ssh|emit-ssh-config|route> [--config <file>] ...")
+		fatal("usage: kdn-ssh-access <proxy|ssh|emit-ssh-config|route|debug> [--config <file>] ...")
 	}
 	mode := args[0]
 	args = args[1:]
@@ -764,7 +1240,9 @@ func main() {
 		fmt.Print(emitSSHConfig(cfg, self, cfgPath))
 	case "route":
 		modeRoute(cfg, rest)
+	case "debug":
+		modeDebug(cfg, cfgPath, rest)
 	default:
-		fatal("unknown mode %q (proxy|ssh|emit-ssh-config|route)", mode)
+		fatal("unknown mode %q (proxy|ssh|emit-ssh-config|route|debug)", mode)
 	}
 }
