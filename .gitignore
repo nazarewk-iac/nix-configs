@@ -38,6 +38,8 @@
 !/flake.lock
 !/devenv.yaml
 !/devenv.lock
+# machine-local slot settings — never tracked (see the note in devenv.nix)
+/devenv.slots.local.nix
 
 !/.flake.patches/
 !/modules/shared/universal/profile/user/kdn/

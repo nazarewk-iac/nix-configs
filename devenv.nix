@@ -4,18 +4,22 @@
   lib,
   ...
 }: let
-  extraDevenvFiles = lib.pipe (builtins.readDir ./.) [
-    builtins.attrNames
-    (builtins.filter (
-      name:
-        name
-        != "devenv.nix"
-        && name != "devenv.local.nix"
-        && lib.hasPrefix "devenv." name
-        && lib.hasSuffix ".nix" name
-    ))
-    (map (name: ./. + "/${name}"))
-  ];
+  # Machine-local slot settings. This is the ONLY extra file that reaches `mkSlots`.
+  # Git does not track it (see `.gitignore`), so no commit chain can add or remove it.
+  # Copy a `devenv.slots.local.*.example.nix` file, then re-enter the shell.
+  #
+  # A path literal like this one resolves against the real working directory, so an
+  # untracked file is visible. Only `inputs.nix-configs` (`git+file:.`) is git-filtered.
+  #
+  # This directory is NOT scanned for other `devenv.*.nix` files any more. A tracked file
+  # belongs to one commit chain. When the working copy moves to a chain without that file,
+  # jj deletes the file, and every setting in it turns off with no warning. `kdn.jj.fork`
+  # is one of these settings: the fork revset aliases and the push checks then disappear,
+  # and the generated jj repo config shrinks to a stub. The failure is silent.
+  #
+  # Do NOT put slot settings in devenv's own `devenv.local.nix` either. devenv loads that
+  # file into the devenv module set, where the `kdn.*` slot options do not exist.
+  localSlots = lib.optional (builtins.pathExists ./devenv.slots.local.nix) ./devenv.slots.local.nix;
 in {
   # argc drives the subcommand dispatch in the zellij-llm/kdn-slug bash packages; keep it on
   # PATH so the standalone scripts run and get tested in the shell.
@@ -24,7 +28,7 @@ in {
   imports = [
     (inputs.nix-configs.mkSlots {
       inherit pkgs;
-      imports = extraDevenvFiles;
+      imports = localSlots;
 
       kdn.isSourceRepo = true;
 
