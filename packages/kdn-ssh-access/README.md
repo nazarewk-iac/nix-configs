@@ -31,9 +31,17 @@ To connect, the dispatcher:
 2. Ranks them by the sum of the edge priorities; a lower sum wins. Hop count breaks a tie.
 3. Walks the ranked paths and takes the first one whose **entry address answers on TCP**.
 4. For a 1-edge path it pipes the connection it just opened. For a longer path it writes a
-   temporary ssh config with one `Host kdnhopN` stanza per relay and runs `ssh -W <target> <lastHop>`.
+   temporary ssh config with one `Host kdnhopN-<relay>` stanza per relay and runs
+   `ssh -W <target> <lastHop>`.
 
 Only the **first (local) hop** is probed. Every later hop is resolved by ssh on the hop before it.
+
+The temporary config ends with `Include ~/.ssh/config`, but only when that file exists. `-F`
+replaces the user config, so without the include a hop loses every user setting — `ControlMaster`
+above all. With it, one authentication to a relay serves every path attempt of the same burst: a
+touch-required key then asks for one tap, not one tap per attempt. The alias carries the relay
+name, because a user `ControlPath` with `%n` keys on the alias — a bare `kdnhop0` would let a
+persisted master for one relay serve a connection meant for another one.
 
 ## Configuration
 
@@ -138,7 +146,7 @@ The default output is a summary. Each level adds to it:
 |---|---|
 | (default) | One line per check, one line per host route, one line per session, the summary |
 | `-v` | The `defaults`, the resolved paths of the binaries and the addresses, the ranked path list per host, the ssh command line |
-| `-vv` | Each probe with its timing, the cached verdicts, the paths that the tags drop, the `Host kdnhopN` stanzas of a chain, and ssh's own stderr |
+| `-vv` | Each probe with its timing, the cached verdicts, the paths that the tags drop, the `Host kdnhopN-<relay>` stanzas of a chain, and ssh's own stderr |
 | `-vvv` | Passes `-v` to ssh, so its full handshake goes to the trace |
 
 A line where ssh asks you for something — a hardware-key tap, a PIN, a passphrase — always passes

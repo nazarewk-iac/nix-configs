@@ -651,8 +651,13 @@ func buildChainPlan(cfg *Config, p []step, r1Addr string) (chainPlan, error) {
 	last := p[len(p)-1]
 
 	var b strings.Builder
+	aliases := make([]string, len(relays))
 	for i, st := range relays {
-		alias := fmt.Sprintf("kdnhop%d", i)
+		// The alias carries the relay name, because it lands in the ControlPath of the user config
+		// (`%n` is the name on the command line). A bare "kdnhop0" would let a persisted master for
+		// one relay serve a connection meant for another one.
+		alias := fmt.Sprintf("kdnhop%d-%s", i, st.dest)
+		aliases[i] = alias
 		host := r1Addr // first relay resolved locally (uplink/lan)
 		if i > 0 {
 			h, err := edgeLiteral(st.edge) // later relays: literal resolved on the previous hop
@@ -672,10 +677,14 @@ func buildChainPlan(cfg *Config, p []step, r1Addr string) (chainPlan, error) {
 			fmt.Fprintf(&b, "    HostKeyAlias %s\n", h.HostKeyAlias)
 		}
 		if i > 0 {
-			fmt.Fprintf(&b, "    ProxyJump kdnhop%d\n", i-1)
+			fmt.Fprintf(&b, "    ProxyJump %s\n", aliases[i-1])
 		}
 		b.WriteString("\n")
 	}
+	// The hop runs with `-F`, which replaces the user config. Pull it back in, so the user's own
+	// settings — ControlMaster above all — apply to the relay connection too. One authentication
+	// then serves every path attempt of one burst, instead of one tap per attempt.
+	b.WriteString(userConfigInclude())
 
 	targetAddr, err := edgeLiteral(last.edge)
 	if err != nil {
@@ -684,8 +693,23 @@ func buildChainPlan(cfg *Config, p []step, r1Addr string) (chainPlan, error) {
 	return chainPlan{
 		sshConfig: b.String(),
 		target:    net.JoinHostPort(targetAddr, strconv.Itoa(edgePort(last.edge))),
-		lastAlias: fmt.Sprintf("kdnhop%d", len(relays)-1),
+		lastAlias: aliases[len(relays)-1],
 	}, nil
+}
+
+// userConfigInclude returns an `Include ~/.ssh/config` line, or "" when that file does not exist.
+// ssh treats an Include that matches no file as harmless, but a config we generate says only what
+// is true, so a machine with no user config gets no include at all.
+func userConfigInclude() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	path := filepath.Join(home, ".ssh", "config")
+	if !fileExists(path) {
+		return ""
+	}
+	return "Include " + path + "\n"
 }
 
 // runChain writes the plan's ssh config to a per-invocation file and runs
@@ -796,8 +820,7 @@ func modeSSH(cfg *Config, self, cfgPath string, args []string) {
 	dir := cacheDir()
 	_ = os.MkdirAll(dir, 0o700)
 	dropin := filepath.Join(dir, "ssh_config")
-	home, _ := os.UserHomeDir()
-	content := emitSSHConfig(cfg, self, cfgPath) + "\nInclude " + filepath.Join(home, ".ssh", "config") + "\n"
+	content := emitSSHConfig(cfg, self, cfgPath) + userConfigInclude()
 	if err := os.WriteFile(dropin, []byte(content), 0o600); err != nil {
 		fatal("write drop-in: %v", err)
 	}
@@ -1258,8 +1281,7 @@ func sessionDropIn(cfg *Config, self, cfgPath string) (string, error) {
 		return "", err
 	}
 	path := filepath.Join(dir, "debug_ssh_config")
-	home, _ := os.UserHomeDir()
-	content := emitSSHConfig(cfg, self, cfgPath) + "\nInclude " + filepath.Join(home, ".ssh", "config") + "\n"
+	content := emitSSHConfig(cfg, self, cfgPath) + userConfigInclude()
 	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		return "", err
 	}
