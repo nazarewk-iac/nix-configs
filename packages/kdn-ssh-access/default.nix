@@ -21,6 +21,10 @@ buildGoModule (finalAttrs: {
 
   # Produce a configured variant: a wrapper with the topology JSON baked in (KDN_SSH_ACCESS_CONFIG),
   # carrying the generated access JSON and ssh drop-in as `passthru.accessConfig` / `.sshConfig`.
+  #
+  # `--set-default`, not `--set`: the baked path is a fallback. A caller that exports
+  # KDN_SSH_ACCESS_CONFIG then tests another graph with the installed binary, and `--config <file>`
+  # still wins over both. `--set` made the wrapper ignore the variable it documents.
   passthru.withConfig =
     configAttrs:
     let
@@ -35,7 +39,7 @@ buildGoModule (finalAttrs: {
           ''
             mkdir -p "$out/bin"
             makeWrapper ${lib.getExe finalAttrs.finalPackage} "$out/bin/kdn-ssh-access" \
-              --set KDN_SSH_ACCESS_CONFIG ${accessConfig}
+              --set-default KDN_SSH_ACCESS_CONFIG ${accessConfig}
           '';
       # The binary is the single source for the ssh drop-in; run the wrapped (config-baked) binary
       # so the emitted ProxyCommand points at itself. (passthru is not part of the derivation hash,
