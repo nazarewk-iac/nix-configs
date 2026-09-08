@@ -60,6 +60,33 @@ nom build .#sources  # builds symlink tree of all flake inputs for inspection
 
 Tested NixOS hosts: brys, etra, oams. Darwin host: anji.
 
+## Local devenv slot settings
+
+`devenv.nix` loads exactly one extra file into its `mkSlots` call: `devenv.slots.local.nix`.
+Git ignores it, so no commit chain can add or remove it. It holds `kdn.*` slot settings only.
+A path literal reaches an untracked file; only `inputs.nix-configs` (`git+file:.`) is
+git-filtered.
+
+**When the file is missing, restore it before you do other work.** Look for an example file and
+copy it:
+
+```bash
+ls devenv.slots.local.*.example.nix
+cp devenv.slots.local.<name>.example.nix devenv.slots.local.nix
+```
+
+Then re-enter the devenv shell. Some settings only take effect after that — for example
+`kdn.jj.fork.enable`, which supplies the fork revset aliases (`jj fork-audit`,
+`jj sync-remotes`) and the push checks.
+
+Two things `devenv.nix` deliberately does NOT do:
+
+- It does not scan the directory for `devenv.*.nix` files. A tracked file belongs to one commit
+  chain. When the working copy moves to a chain without the file, jj deletes it and the settings
+  turn off with no warning.
+- It does not use devenv's own `devenv.local.nix`. devenv loads that file into the devenv module
+  set, where the `kdn.*` slot options do not exist.
+
 ## Discovering devenv options
 
 When the MCP gateway is unavailable, use `WebFetch` on **https://devenv.sh/reference/options/** to look up devenv module options (git-hooks, files, packages, etc.).
