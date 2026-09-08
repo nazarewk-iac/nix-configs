@@ -7,8 +7,14 @@
 }: let
   slots = kdnConfig.self.mkSlots {
     inherit pkgs;
+    # kdn's own host connectivity graph (moss/etra/drek/oams/brys/anji).
+    imports = ["${kdnConfig.self}/modules/slots/ssh-access/kdn-graph.nix"];
+
     # devenv CLI and shell hooks.
     kdn.devenv.enable = true;
+
+    # Topology-aware remote SSH access (kdn-* dispatcher); graph comes from the import above.
+    kdn.ssh-access.enable = true;
 
     # Trust the KDN CA system-wide so the brys LLM leaf cert verifies. As a
     # development machine, oams also mounts the (encrypted, offliine) CA key blob
