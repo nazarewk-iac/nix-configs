@@ -67,7 +67,7 @@ kdn-ssh-access ssh [args...]        # ssh with a generated drop-in config (the `
 kdn-ssh-access proxy <host> <port>  # the ProxyCommand; not run by hand
 kdn-ssh-access emit-ssh-config      # print the ssh drop-in
 kdn-ssh-access route <host>         # list ranked paths, no probe, no connection
-kdn-ssh-access debug [host...]      # full diagnosis (see below)
+kdn-ssh-access debug [host...]      # full diagnosis, and a real session (see below)
 ```
 
 ## Host spec and tags
@@ -92,65 +92,95 @@ ssh kdn-myhost+via=relay # force a specific relay
 ## Start with `debug`
 
 ```bash
-kdn-ssh-access debug <host>
+kdn-ssh-access debug <host>          # checks, probes, and a real session
+kdn-ssh-access debug --no-connect    # checks and probes only — no session, no tap
 ```
 
-`debug` **opens no ssh session and authenticates nothing**. It only reads the config, resolves
-addresses, runs `ssh-add -l`, and makes raw TCP connects. A hardware token therefore needs **no
-tap** for a debug run. It also **does not write** the reachability cache, so it cannot change what
-the next real run sees.
+`debug` runs in four stages, and prints one line per result:
 
-It exits `1` when any check fails, so it works in a script.
+| Stage | Does |
+|---|---|
+| `checks` | Reads the config, validates the graph, checks `ssh` and the agent, resolves the uplinks, counts the cached verdicts |
+| `routes` | Ranks the paths per host, resolves the entry addresses, probes the first hop |
+| `session` | Opens a real ssh session per host and runs `true` there |
+| `summary` | Counts the failures and the warnings, and names what stayed untested |
 
-**A reachability test is the default.** With no host argument it tests **every** host in the graph.
-Name one or more hosts (a bare name or a full `kdn-name+tag` spec) to narrow the test.
+**The session runs by default**, because the first three stages stop before authentication. Only a
+real session covers the auth, the host keys, and every hop after the first. `debug` prints a banner
+before it starts one. The caveats:
+
+- a session can ask for a **hardware-key tap**, one per host;
+- a session **writes the reachability cache**, exactly like any other real run;
+- a session **fails on an unknown host key**, because `BatchMode=yes` allows no prompt.
+
+`debug` exits `1` when any check fails, so it works in a script.
+
+With no host argument it covers **every** host in the graph. Name one or more hosts (a bare name or
+a full `kdn-name+tag` spec) to narrow the run.
 
 | Flag | Effect |
 |---|---|
+| `--no-connect` | Skip the session. Checks and probes only, and no tap |
+| `--config-only` | Static checks only — no probe and no session. Offline and instant. `--no-probe` is an alias |
 | `--clear-cache` | Delete every cached reachability verdict for the current network first |
-| `--config-only` | Static checks only — no TCP probe. Offline and instant. `--no-probe` is an alias |
 | `--timeout <ms>` | Override `defaults.lanProbeTimeoutMs` for the probes |
+| `--connect-timeout <s>` | Deadline per session (30 s by default) |
+| `-v` / `--verbose` / `--details` | Add one level of detail. Repeat it: `-vv`, `-vvv` |
 
 Use `--config-only` after a config change, when offline, or when the probes are too slow to wait
-for. Everything except the probe still runs, so the graph and address checks stay in effect.
+for. Use `--no-connect` when you cannot tap the token.
 
-## What `debug` reports
+## Detail levels
 
-| Section | Catches |
+The default output is a summary. Each level adds to it:
+
+| Level | Adds |
 |---|---|
-| `config` | Wrong `--config` path, a parse failure, an empty host set, unexpected defaults |
-| `graph` | An invalid `from`, an edge with no address, `uplink` on a non-internet edge, an unknown uplink name, a host with no edges, a host with no path from `me` (often `maxHops` too low) |
-| `environment` | `ssh` not on `PATH`, no network at all, an unset or dead `SSH_AUTH_SOCK`, an empty agent, a missing `identityFile` |
-| `uplinks` | A missing or empty WAN address file, an uplink with no address — the usual cause of an unexplained "no reachable route" |
-| `reachability cache` | Verdict counts for this network and for others |
-| `host <name>` | Which paths the tags drop and why, address resolution per path, a live probe of each entry address, the exact ssh stanzas a chain would use, and the path a real run selects |
+| (default) | One line per check, one line per host route, one line per session, the summary |
+| `-v` | The `defaults`, the resolved paths of the binaries and the addresses, the ranked path list per host, the ssh command line |
+| `-vv` | Each probe with its timing, the cached verdicts, the paths that the tags drop, the `Host kdnhopN` stanzas of a chain, and ssh's own stderr |
+| `-vvv` | Passes `-v` to ssh, so its full handshake goes to the trace |
 
-The last line of a host section names the selected path. That answers both "why did it take that
-route" and "why did nothing work".
+A line where ssh asks you for something — a hardware-key tap, a PIN, a passphrase — always passes
+through live, at every level. One case escapes that: when the **agent** holds a touch-required key,
+the agent signs in its own process, so its "Confirm user presence" line never reaches `debug`. A tap
+wait is therefore silent, and a session that runs longer than 2 s prints a note of its own instead.
 
-## Per-host output
+## Example output
 
 ```
-== host myhost ==
-        spec: host=myhost direct=false remote=false via="" family=""
-        dropped: me -> myhost(lan)  (+remote needs an internet-origin path)
-  ok    2 path(s) kept of 3
-        1. [prio  10, 1 hop] direct me -> myhost(lan)
-          probe myhost.lan.example.:22 -> unreachable after 1.001s: lookup ...: i/o timeout
-        2. [prio  60, 2 hop] chain  me -> relay(internet) -> myhost(relay)
-          probe [2001:db8::2]:22 -> unreachable after 1.1ms: connect: no route to host
-          probe 198.51.100.7:22 -> ok in 25ms
-          would run: ssh -F <tmp> -o ConnectTimeout=5 -W myhost.lan.example.:22 kdnhop0
-            | Host kdnhop0
-            |     HostName 198.51.100.7
-            |     Port 22
-            |     IdentityAgent SSH_AUTH_SOCK
-            |     User kdn
-            |     HostKeyAlias relay
-  ok    a real run selects path 2: me -> relay(internet) -> myhost(relay)
+== checks ==
+  ok    config    6 host(s), 1 uplink(s) — /nix/store/….json
+  ok    graph     all 6 host(s) have valid edges and a path from me
+  ok    env       ssh ok, net 172_28_91_33, agent 1 key(s)
+  ok    uplinks   home: ipv6 2001:db8::2, ipv4 198.51.100.7
+        cache     2 verdict(s) for this network, 0 for other networks (ttl 30s)
+
+== routes ==
+  ok    myhost    path 2/3  me -> relay(internet) -> myhost(relay)  (prio 60, 2 hops, entry 198.51.100.7:22)
+
+== session ==
+        A real ssh session to 1 host(s), each running `true` on arrival. Every session:
+          - can ask for a hardware-key tap;
+          - writes the reachability cache, like any real run;
+          - fails on an unknown host key, because BatchMode allows no prompt.
+        Opt out with:
+          --no-connect     static checks and TCP probes only — no session, no tap
+          --config-only    static checks only — offline and instant
+          debug <host>...  narrow the run to the hosts you name
+  ok    myhost    session ok in 1.42s, `true` exited 0 — ssh used chain me -> relay(internet) -> myhost(relay)
+
+== summary ==
+        1 host(s) in scope, 0 failure(s), 0 warning(s)
 ```
 
-`debug` probes every path, not only the winner, so it also tells you whether a fallback works.
+The `routes` line names the path a real run selects. The `session` line names the path ssh
+**really** took: the session runs the true `ProxyCommand`, which records its route into the file
+that `$KDN_SSH_ACCESS_ROUTE_FILE` names. (ssh sends the `ProxyCommand` stderr to `/dev/null` unless
+ssh itself runs verbose, so a log line cannot carry that fact.) When the two lines disagree, the
+cache changed between the two stages.
+
+`debug` walks every path, not only the winner, so `-vv` also tells you whether a fallback works.
 
 ## The reachability cache
 
@@ -177,7 +207,8 @@ kdn-ssh-access debug --clear-cache <host>
 
 ## Verbose trace of a real run
 
-`debug` explains the decision. To watch an actual connection, set the environment variable:
+`debug -vvv` traces the session it opens itself. To trace a command of your own, set the
+environment variable:
 
 ```bash
 KDN_SSH_ACCESS_DEBUG=1 ssh kdn-myhost
@@ -190,10 +221,10 @@ full `ssh … -W …` command of a chain. Add `-vvv` to see ssh's own view:
 KDN_SSH_ACCESS_DEBUG=1 ssh -vvv kdn-myhost
 ```
 
-## Failures that `debug` cannot see
+## Failures the session catches
 
-`debug` stops before authentication, so these stay invisible to it. Reach for
-`KDN_SSH_ACCESS_DEBUG=1 ssh -vvv` instead:
+The first three stages stop before authentication, so these need the session — or a manual
+`KDN_SSH_ACCESS_DEBUG=1 ssh -vvv`. `debug` prints a hint next to each of them:
 
 | Symptom | Likely cause |
 |---|---|
@@ -205,11 +236,13 @@ KDN_SSH_ACCESS_DEBUG=1 ssh -vvv kdn-myhost
 ## Quick checklist
 
 ```bash
-kdn-ssh-access debug                      # reachability test of every host (the default)
-kdn-ssh-access debug <host>               # narrow it to one host
+kdn-ssh-access debug                      # every host: checks, probes, and a real session
+kdn-ssh-access debug <host>               # narrow it to one host (one tap)
+kdn-ssh-access debug --no-connect         # no session and no tap
 kdn-ssh-access debug --config-only        # static checks only, offline and instant
+kdn-ssh-access debug -vv <host>           # add the probes, the stanzas, and ssh's stderr
 kdn-ssh-access debug --clear-cache <host> # after a network change
 kdn-ssh-access route <host>               # ranked paths only, no probe
 kdn-ssh-access emit-ssh-config            # what ssh actually reads
-KDN_SSH_ACCESS_DEBUG=1 ssh -vvv kdn-<host>   # a real connection, fully traced
+KDN_SSH_ACCESS_DEBUG=1 ssh -vvv kdn-<host>   # trace a command of your own
 ```
