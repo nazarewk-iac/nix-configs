@@ -1,0 +1,100 @@
+---
+type: Task
+description: Choose slots or den as the single reimplementation target, on the evidence from the den spike and the conditional-imports requirement.
+status: open
+authored_by: agent
+timestamp: 2026-09-08T17:30:00+02:00
+---
+
+# 006 — direction decision: slots or den
+
+Hub: [../generalization-plan.md](../definition.md). Gated on
+[004](../004-den-spike/definition.md) and
+[005](../005-conditional-imports-requirement/definition.md).
+
+Goal: pick **one** target for reimplementing the relevant pieces of `modules/universal`. Build the
+winner. Do not build the loser.
+
+## The two options
+
+1. **Reimplement the relevant pieces onto slots.** Extend `lib/slots/schema.nix` with whatever the
+   005 requirement needs, most likely a data-driven conditional-import mechanism.
+2. **Reimplement the relevant pieces onto den.** Adopt `denful/den` as the framework, with the
+   spike from 004 as the evidence.
+
+## What is explicitly not an option
+
+**Retrofitting `modules/universal` in place.** It does not make sense here, for two independent
+reasons.
+
+First, `.agents/rules/slots-standalone.md` forbids exactly the intra-tree option coupling that
+makes the universal tree valuable. The measured coupling:
+
+| Coupling | Reach |
+|---|---|
+| `kdn.env.packages` / `kdn.env.variables` | 108 files, 152 references, declared once in `modules/universal/env/default.nix` |
+| `kdn.security.secrets.sops.files` | 18 files, 50 references |
+| `kdn.profile.*` | sets 105 distinct `kdn.*.enable` paths against 169 distinct `options.kdn.*` prefixes |
+| `kdn.disks.persist` | across the disko/ZFS engine |
+
+A conversion that honours the standalone rule loses this. A conversion that breaks the rule
+re-invents `modules/universal` under a new name.
+
+Second, `modules/meta` solves a real problem — see 005. A retrofit would have to reproduce it
+anyway.
+
+So the question is not "how do we convert the tree", it is "which framework do we reimplement the
+pieces worth keeping onto".
+
+## Decision inputs
+
+From [004](../004-den-spike/definition.md):
+
+| Criterion | Weight |
+|---|---|
+| 2 — an adopter imports a resolved aspect as a plain drop-in, without adopting den | **decisive** |
+| 1 — a `devenv` class can exist (13 of 20 slots target devenv) | near-fatal if it fails |
+| 3 — den satisfies the 005 requirement | required |
+| 4 — the 1→N mixed-aspect collision is gone | important, workaround exists |
+
+From [005](../005-conditional-imports-requirement/definition.md): the conformance test, and the
+confirmed answer to whether any `imports` list depends on evaluated `config` rather than static
+data.
+
+## How to decide
+
+Score both options against the same list. Write the score down.
+
+| Question | slots | den |
+|---|---|---|
+| Satisfies the 005 requirement | needs new mechanism — cost? | 004 criterion 3 |
+| Adopter imports a drop-in without learning the framework | already true — `mkSlots` is small | 004 criterion 2 |
+| devenv support | native, 13 slots ship today | 004 criterion 1 |
+| API stability | this repo owns it | v0.x, no stable API, 2 maintainers do 90% of commits |
+| Maintenance burden | this repo carries it all | shared, but with upstream drift risk |
+| Cost to reach parity for the pieces worth keeping | — | — |
+
+Two honest asymmetries to weigh, not to hide:
+
+- **slots is a known quantity that this repo maintains alone.** Its schema is 72 LOC. Extending it
+  is cheap and fully controlled, but every future need is also this repo's own work.
+- **den is a better-designed abstraction with real project risk.** v0.x, no patch release ever,
+  about 2.5 months of unreleased drift on `main`, and a core that rests on a single-author
+  dependency.
+
+## Output
+
+A `.done.md` sibling with:
+
+1. the chosen direction, in one sentence;
+2. the score table, filled in with evidence;
+3. the pieces of `modules/universal` judged worth reimplementing, and the ones to drop;
+4. a strangler-fig sequence for the winner — no big bang;
+5. what happens to `modules/slots` if den wins, and to `modules/den/` if slots wins. Neither tree
+   should be left half-migrated.
+
+## Constraint on the outcome
+
+Whatever wins, the adopter entry point must not force an adopter to learn the creator's framework
+choice. That boundary is framework-agnostic, and 001 and 002 establish it before this decision is
+made — deliberately, so the decision cannot break it.
