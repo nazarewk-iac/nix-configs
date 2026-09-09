@@ -288,13 +288,12 @@ rebuild of the tool, not because the plain form is wrong.
 - [x] Add the structural lock gate (research § 8, assertion 7) to a `checks/` derivation
       or to the push path. A name-only or pattern-only check cannot catch a lock-node
       leak.
-- [ ] **Deferred to the owner** — extend `kdn.jj.fork.deniedFilePatterns` with the spelling
-      that appears in the fork-only lock node keys and their `url` fields. Confirm the fix
-      with `jj fork-audit -q --color=never <the mixed commit>`; it must exit 1. The pattern
-      list lives in the git-ignored `devenv.slots.local.nix`, and an agent must not read or
-      print that file. Own task:
+- [x] Extend `kdn.jj.fork.deniedFilePatterns` with the spelling that appears in the fork-only
+      lock node keys. **The owner did this on 2026-09-09.** The measurement then showed the
+      confirmation step was wrong: a line-level check cannot see a value-only lock node update,
+      because the org name sits on the unchanged key line. So `jj fork-audit <the update
+      commit>` stays exit 0 by design, and assertion 7 stays the gate. Own task, now closed:
       [fork-denied-patterns-miss-lock-nodes.md](../fork-denied-patterns-miss-lock-nodes/definition.md).
-      `hack/flake-update-complete.sh` assertion 7 covers this class today.
 - [x] `modules/slots/jj/fork/check-fork-contamination.sh` — the hook runs at `pre-commit`
       and reads the git index, so jj never triggers it. Decide whether to move the content
       check to the push path or to drop the hook.
@@ -339,10 +338,11 @@ tip is the merge, or a descendant of it.
 | `jj fork-audit -q --color=never 'upstream-tip'` exits 0 | **met** as written. Read it with the caveat below |
 | every host evaluates to a `drvPath` on both chains | **open**. Not run |
 
-Caveat on the fork-audit criterion: the pattern list still misses the fork-only lock nodes, so
-exit 0 is weak evidence on its own. Assertion 7 gives the independent proof — it counts 0
+Caveat on the fork-audit criterion: exit 0 is weak evidence on its own, and the owner's pattern
+fix does not change that. A line-level check cannot see a value-only lock node update, because the
+org name sits on the unchanged key line. Assertion 7 gives the independent proof — it counts 0
 fork-only nodes on the upstream tip, and it needs no pattern. See
-[fork-denied-patterns-miss-lock-nodes.md](../fork-denied-patterns-miss-lock-nodes/definition.md).
+[fork-denied-patterns-miss-lock-nodes.done.md](../fork-denied-patterns-miss-lock-nodes/done.md).
 
 The last criterion is testable today, and it is the only work left:
 

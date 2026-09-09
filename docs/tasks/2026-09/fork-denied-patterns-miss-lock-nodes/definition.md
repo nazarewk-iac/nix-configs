@@ -1,12 +1,19 @@
 ---
 type: Task
 description: The fork denied-pattern list does not match fork-only lock node keys, so the content check passes a commit that mixes private and public lock content.
-status: open
+status: done
+solution: fork-denied-patterns-miss-lock-nodes.done.md
 authored_by: agent
 timestamp: 2026-09-09T18:30:00+02:00
 ---
 
 # The denied-pattern list misses fork-only lock nodes
+
+> ✅ **Done** — see the solution in
+> [fork-denied-patterns-miss-lock-nodes.done.md](done.md).
+> The owner added the pattern on 2026-09-09. The measurement then showed the true cause is
+> narrower than this file first stated: a line-level check cannot see a **value-only** lock
+> node update at all.
 
 Found while the flake update procedure gaps were repaired
 ([flake-update-procedure-gaps.md](../flake-update-procedure-gaps/definition.md)).
@@ -65,11 +72,14 @@ new pattern against the list. The owner must do this one.
    not put that string in a tracked file — `devenv.slots.local.nix` is git-ignored, which is why
    it is the right home. Skip the tap with the public org: it needs no pattern.
 3. Re-enter the devenv shell.
-4. Confirm the check now catches it:
+4. Confirm the check catches a commit that **adds or renames** a private node:
    ```bash
-   jj fork-audit -q --color=never <that-commit>   # must exit 1
+   jj log -r 'diff_lines(glob-i:*<segment>*) & files(flake.lock)'   # must list commits
    ```
-5. Re-check that `upstream-safe` no longer holds that commit.
+   Do **not** expect `jj fork-audit <the update commit>` to exit 1. A value-only update changes
+   the `rev` and `narHash` lines, and the org name sits on the unchanged key line. The done file
+   holds the measurement.
+5. Re-check that `upstream-safe` no longer holds a commit that adds a private node.
 
 ## The interim cover
 
