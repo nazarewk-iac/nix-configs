@@ -248,15 +248,8 @@ jj file show --revision @ --at-op <op-id> <path> > /tmp/recovered-<name>
 # diff/verify, then copy back into place
 ```
 
-**What works:** when parallel, filesystem-isolated work is genuinely needed, create a real second
-jj workspace instead. Put it *outside* this repo's directory tree, never nested under it:
-
-```bash
-# sibling directory, NOT ./something-under-here. --name is required: the default name would
-# otherwise come from the basename and keep the leading dot.
-jj workspace add --name <slug> -r <base-rev> ../.nix-configs--<slug>
-cd ../.nix-configs--<slug> && jj new        # start the isolated work on a fresh change, not @
-```
+**What works:** a real second jj workspace. Read the next section before you create one — the
+creation command is only step one of five, and two of the remaining steps stop a silent failure.
 
 Before you trust *any* claimed isolation (a tool's `isolation: "worktree"` flag, a manually
 created directory, anything), verify it is real:
@@ -268,6 +261,152 @@ jj log -r @ --no-graph -T change_id                       # run from BOTH direct
 
 When you cannot confirm a distinct change id in a genuinely distinct workspace, do not run
 concurrent work there. Fall back to work in sequence in the main working copy.
+
+---
+
+## jj workspaces: the sanctioned parallel-isolation mechanism
+
+Task and full evidence: [tasks/jj-workspaces-parallel-agents.md](tasks/jj-workspaces-parallel-agents.md).
+Executable proof: [`checks/jj-experiments/test_workspaces.py`](../checks/jj-experiments/test_workspaces.py).
+Two environment hazards that bite after setup: [vcs-workspaces.md](vcs-workspaces.md).
+
+A workspace gives a genuinely separate working copy: its own `.jj/working_copy`, its own `@`, and
+no `.git` at all. jj reconciles the shared op log by itself. Measured on jj 0.45.1: 30 concurrent
+snapshots, no truncation, no loss, no divergent commit.
+
+### Naming convention
+
+```
+~/dev/github.com/nazarewk-iac/nix-configs/            # trunk checkout
+~/dev/github.com/nazarewk-iac/.nix-configs--<slug>/   # workspace
+```
+
+- Pattern: `../.<repo-dir>--<slug>/`. `<slug>` is a short kebab-case task name.
+- The path must be **outside** the repo tree. A nested path risks the outer repo's file watchers
+  and tools recursing into it.
+- Keep the leading dot: `fd`, `rg` and most editor scans skip a hidden directory, so the sibling
+  never appears in a search of the parent directory.
+- **Always pass `--name <slug>`.** Without it, jj takes the workspace name from the destination
+  basename and the leading dot goes into the name.
+
+### The five steps
+
+```bash
+# 1. create it, from the trunk
+jj workspace add --name <slug> -r <base-rev> ../.nix-configs--<slug>
+cd ../.nix-configs--<slug>
+jj new                      # start on a fresh change, never on the trunk's @
+
+# 2. verify the isolation is real, from BOTH directories
+jj workspace list           # must show more than one workspace
+jj log -r @ --no-graph -T change_id      # the two values MUST differ
+
+# 3. bootstrap the one load-bearing untracked file
+cp ../nix-configs/devenv.slots.local.nix .
+
+# 4. point the flake input at the trunk (see below); then
+devenv shell
+
+# 5. clean up when done, either order, from the trunk for `forget`
+jj workspace forget <slug>
+rm -rf ../.nix-configs--<slug>
+```
+
+`jj workspace update-stale` recovers a stale workspace. A repo-wide op-log rewind (`jj op restore`)
+run from another workspace is the one condition known to produce one; an ordinary rewrite of the
+workspace's `@` does not.
+
+### Step 3: why the bootstrap copy is mandatory
+
+A fresh workspace holds **tracked files only**, so every git-ignored file is absent.
+`devenv.nix` loads `devenv.slots.local.nix` through
+`lib.optional (builtins.pathExists ./devenv.slots.local.nix)`, so a missing file is skipped with
+no warning. That silence is the whole hazard: without the copy, the workspace's slot settings
+collapse to defaults, `kdn.jj.fork.enable` turns off, and the generated jj config shrinks from
+2568 bytes with 4 fork aliases to a 64-byte stub with none.
+
+Copy nothing else. `.devenv/`, `.direnv/`, `.pre-commit-config.yaml`, `.claude/settings.json`,
+`.agents/skills/` and every `/nix/store` symlink regenerate on the first `devenv shell`.
+
+### Step 4: a workspace has no `.git`, so `git+file:.` cannot resolve
+
+`devenv.yaml` sets `inputs.nix-configs.url = git+file:.`. From a workspace that string reaches
+`git ls-remote`, which reads `file:.` as an scp-style remote and tries SSH to a host named `file`:
+
+```
+ssh: Could not resolve hostname file: nodename nor servname provided, or not known
+  × Lock validation failed:
+         … while fetching the input 'git+file:.'
+```
+
+`flake.nix`'s `nix-configs = self` does **not** fail this way. A bare `.` degrades to a `path:`
+flake, so `nix eval '.#…'` works from a workspace. That degradation carries its own cost: a
+`path:` flake copies git-ignored content into the store, so every `.#` reference copies the whole
+`.devenv/` tree once devenv has created it. Prefer the pinned input below over `.#` in a workspace.
+
+**The fix: a git-ignored `devenv.local.yaml` in the workspace, with `ref` AND `rev` both set to the
+same commit id.**
+
+```yaml
+inputs:
+  nix-configs:
+    url: git+file:///Users/<you>/dev/github.com/nazarewk-iac/nix-configs?ref=<REV>&rev=<REV>
+```
+
+```bash
+jj log -r 'fork-tip' --no-graph -T commit_id     # run in the trunk to get <REV>
+```
+
+Three measured details that make this the only sound form:
+
+- **`rev=` alone fails.** devenv rewrites the lock node, drops a bare `rev`, and defaults `ref` to
+  `master`, which this repo does not have: `revspec 'master' not found`.
+- **An unpinned `git+file:///<abs-path>` works but reads the trunk's working tree and index on
+  every evaluation.** That re-introduces the `prek` / `git write-tree` race. The pin ignores the
+  working tree completely — verified with a dirty tracked file, where the unpinned form locked a
+  `dirtyRev` and the pinned form did not.
+- **`devenv -o nix-configs '<url>' <subcommand>` also works, but it must be typed every time.** A
+  bare `devenv` command fails even when `devenv.lock` already holds the pinned node, because devenv
+  validates `locked.original` against `devenv.yaml` and refetches on a mismatch.
+
+`devenv.local.yaml` is git-ignored. `devenv.lock` is **not** — devenv rewrites it in the workspace.
+Never commit that change.
+
+### devenv state is per directory
+
+`DEVENV_ROOT`, `DEVENV_DOTFILE`, `DEVENV_STATE` and the `devenv.runtime` socket directory all
+derive from the shell's directory, so the trunk and a workspace never collide. Measured:
+`/tmp/devenv-18f6d5f` (trunk) against `/tmp/devenv-34e4006` (workspace).
+
+One `DEVENV_*` hazard remains, and it is the inherited-environment case in
+[vcs-workspaces.md](vcs-workspaces.md): `DEVENV_ROOT` is fixed at shell-entry time and does not
+follow a later `cd`. Enter `devenv shell` **from the workspace root**.
+
+### The shared jj repo config is the one devenv target that is not per workspace
+
+`jj config path --repo` returns **one shared file** for the trunk and every workspace. The id in
+that path comes from `.jj/repo/config-id`, a random value written once at `jj git init`, and a
+secondary workspace reaches the same store through its `.jj/repo` pointer file.
+
+`modules/slots/jj/default.nix` therefore guards its `enterShell` symlink: it writes the shared
+config only when `.jj/repo` is a directory, which is true in the default workspace and false in a
+secondary one. A workspace prints `kdn.jj: secondary jj workspace — the shared jj repo config
+stays untouched` and inherits the trunk's aliases instead. `jj config path --workspace` is per
+workspace and is unaffected.
+
+### A workspace never activates a system
+
+**A workspace evaluates, builds and tests. It never activates.** Activation is machine-global, not
+directory-scoped: a `switch` replaces `/run/current-system`, restarts services and mutates `/etc`.
+Two workspaces cannot each hold a different current system, and the trunk cannot detect that a
+workspace overwrote its activation. A parallel agent has no mandate to change the machine.
+
+Allowed: `nix build`, `nix eval`, `nix flake check`, `nix run '.#darwin-rebuild' -- build`,
+`./nixos-rebuild.sh build`, `devenv shell`/`eval`/`build shell`, pytest, formatters, linters.
+
+Forbidden: any `switch`/`boot`/`test` activation, `home-manager switch`, anything that needs sudo
+to change the running system, and `git push` / `jj git push` / `jj sync-remotes` /
+`jj bookmark set`. A `switch` and a push are always the user's call, from the trunk.
 
 ---
 

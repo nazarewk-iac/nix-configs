@@ -1,7 +1,8 @@
 ---
 type: Task
 description: Adopt jj workspaces as the sanctioned isolation mechanism for parallel sub-agent work, with a sibling naming convention, a mandatory bootstrap step, and a ban on system activation from a workspace.
-status: open
+status: done
+solution: jj-workspaces-parallel-agents.done.md
 authored_by: agent
 timestamp: 2026-09-09T00:00:00+02:00
 ---
@@ -65,9 +66,14 @@ jj workspace forget <slug>
 rm -rf ../.nix-configs--<slug>
 ```
 
-`jj workspace update-stale` recovers a stale workspace. Exactly one condition produces one: a
-repo-wide op-log rewind (`jj op restore`) run from another workspace. An ordinary rewrite of the
-workspace's `@` does not — jj 0.44 recovers on its own.
+`jj workspace update-stale` recovers a stale workspace. A repo-wide op-log rewind (`jj op restore`)
+run from another workspace is the one condition known to produce one. An ordinary rewrite of the
+workspace's `@` does not — jj recovers on its own.
+
+**"Exactly one condition" is UNVERIFIED.** On jj 0.45.1 the `jj workspace --help` text names no
+condition and only links `https://docs.jj-vcs.dev/latest/working-copy/#stale-working-copy`. The
+`op restore` case is proven by `test_op_restore_makes_another_workspace_stale`; no measurement rules
+out a second cause.
 
 ## Bootstrap step — mandatory
 
@@ -83,9 +89,17 @@ resolves to **one shared file** for the trunk and every workspace.
 `modules/slots/jj/default.nix` `enterShell` runs
 `ln -sfn <generated> "$(jj config path --repo)"`. A `devenv shell` in a workspace with no
 `devenv.slots.local.nix` therefore writes a stub over the shared file and strips the fork revset
-aliases and the push checks **from the trunk as well**. The failure is silent.
+aliases and the push checks **from the trunk as well**.
+
+**The mechanism of the silence, measured:** `devenv.nix:22` loads the file through
+`lib.optional (builtins.pathExists ./devenv.slots.local.nix)`. A missing file is skipped, with no
+warning and no error. The slot settings then collapse to their defaults, `kdn.jj.fork.enable` turns
+off, and the generated config shrinks to a 64-byte stub.
 
 `jj config path --workspace` is per workspace, so it is unaffected.
+
+Checklist item 2 now also guards the write in the slot itself, so the copy is no longer the only
+protection. Keep the copy anyway — `devenv.slots.local.nix` carries every other slot setting too.
 
 Do **not** copy anything else. `.devenv/`, `.direnv/`, `.pre-commit-config.yaml`,
 `.claude/settings.json`, `.agents/skills/`, and every `/nix/store` symlink regenerate on the first
@@ -93,19 +107,34 @@ Do **not** copy anything else. `.devenv/`, `.direnv/`, `.pre-commit-config.yaml`
 
 ## Hazard: a workspace has no `.git`
 
-A workspace directory holds `.jj` and no `.git` at all. Two consequences:
+A workspace directory holds `.jj` and no `.git` at all. Consequences, as measured on
+jj 0.45.1 / devenv 2.2.3:
 
-1. `devenv.yaml` sets `inputs.nix-configs.url = git+file:.`, and `flake.nix` sets
-   `nix-configs = self`. Both resolve through a `git+file://` fetcher, which needs a `.git`. Neither
-   works from a workspace.
-2. The git-hooks install task has no repo to install into.
+1. `devenv.yaml` sets `inputs.nix-configs.url = git+file:.`. That literal string cannot resolve
+   from a workspace. Nix hands `file:.` to `git ls-remote`, which reads it as an scp-style remote
+   and tries SSH to a host named `file`:
+   ```
+   ssh: Could not resolve hostname file: nodename nor servname provided, or not known
+     × Lock validation failed:
+            … while fetching the input 'git+file:.'
+   ```
+   The failure comes from devenv's own bootstrap resolver,
+   `<workspace>/.devenv/bootstrap/resolve-lock.nix:84`.
+2. `flake.nix`'s `nix-configs = self` does **NOT** fail. **Correction, measured 2026-09-09:** an
+   earlier version of this section claimed both fail. Without a `.git`, Nix silently degrades a
+   bare `.` to a `path:` flake and `self` becomes that path flake. From a workspace,
+   `nix flake metadata .` exits 0 with `resolvedUrl = path:/…/.nix-configs--<slug>`, and
+   `nix eval '.#packages.aarch64-darwin.kdn-nix-fmt.drvPath'` succeeds. Only the explicit
+   `git+file:.` string cannot degrade.
+3. The git-hooks install task has no repo to install into. **UNTESTED** — no `devenv shell` was
+   entered during the measurement run, so `git-hooks` never ran.
 
-`path:.` is **not** a substitute. It needs no `.git`, but it copies git-ignored files into the
-store, and `.devenv/` alone is hundreds of megabytes.
-
-Chosen mitigation: an absolute, pinned reference to the trunk checkout,
-`git+file:///<abs-path-to-trunk>?rev=<commit-id>`. The pin has a second benefit: it removes the
-`prek` / `git write-tree` re-snapshot race that has truncated files in the trunk.
+`path:` is not a substitute, but it is also not a choice. It is what a workspace **gets
+automatically** for any `.#` reference, and it copies git-ignored content into the store.
+Measured: a probe with a 20 MiB git-ignored `.devenv/blob`, named in `.gitignore`, produced a
+21 MB store path that contained the blob. So every `nix build '.#…'` in a workspace copies the
+whole `.devenv/` tree once devenv has created it. The earlier claim "`.devenv/` alone is hundreds
+of megabytes" stays **UNVERIFIED** — the real directory was never measured.
 
 ## devenv independence
 
@@ -116,7 +145,7 @@ devenv state is per-directory, so a workspace and the trunk do not collide:
 | `DEVENV_ROOT` | the shell's directory | yes |
 | `DEVENV_DOTFILE` | `DEVENV_ROOT + "/.devenv"` | yes |
 | `DEVENV_STATE` | `DEVENV_DOTFILE + "/state"` | yes |
-| `devenv.runtime` | `<XDG_RUNTIME_DIR or /tmp>/devenv-<sha256(dotfile)[0:7]>` | yes — the hash is over the dotfile path |
+| `devenv.runtime` | `<XDG_RUNTIME_DIR or /tmp>/devenv-<hash>` | yes — measured `/tmp/devenv-18f6d5f` (trunk) against `/tmp/devenv-34e4006` (workspace); the `sha256(dotfile)[0:7]` formula itself is UNTESTED |
 | `PREK_HOME`, `devenv.local.yaml`, git hooks | under `DEVENV_ROOT` | yes |
 | Nix daemon store, `~/.cache/nix` | machine-global | shared, and already concurrency-safe |
 
@@ -162,41 +191,150 @@ A `switch` is always the user's call, from the trunk.
 
 ### 1. Document the convention
 
-- [ ] Add a `jj workspaces` section to `docs/jujutsu-vcs.md`: the naming convention, the creation
+- [x] Add a `jj workspaces` section to `docs/jujutsu-vcs.md`: the naming convention, the creation
       command, the verify step, the bootstrap step, the cleanup step, and the hazards above.
+      Done 2026-09-09: § "jj workspaces: the sanctioned parallel-isolation mechanism", with the
+      five steps, the `devenv.local.yaml` pin, the shared-config guard, and the activation ban.
 - [x] Replace the `../nix-configs-ws-<name>` guidance in `.agents/rules/jujutsu-vcs.md` with a
       pointer to that section, plus the naming pattern and the activation prohibition in short form.
       Done 2026-09-09: the rule file, `docs/jujutsu-vcs.md` and `docs/vcs-workspaces.md` all name
       `../.nix-configs--<slug>` and the mandatory `--name <slug>`. The activation prohibition is
       still only in this task file — item 1's first box owns that move.
-- [ ] Add the doc row to the `docs/` table in `CLAUDE.md`.
+- [x] Add the doc row to the `docs/` table in `CLAUDE.md`. Done 2026-09-09 in `AGENTS.md` —
+      `CLAUDE.md` is a symlink to it. Added a row for `docs/vcs-workspaces.md` and named the
+      workspace convention in the `docs/jujutsu-vcs.md` row.
 
 ### 2. Guard the shared jj repo config
 
-- [ ] Decide whether `modules/slots/jj/default.nix` should refuse to write the shared repo config
-      when the current workspace is not `default`, or whether the mandatory bootstrap step is
-      enough. Record the decision here.
+- [x] **Decision, 2026-09-09: add the guard. The bootstrap copy alone is not enough.**
+      Implemented in `modules/slots/jj/default.nix` `enterShell`.
+
+**The hazard is real and quantified.** `jj config path --repo` returns the same absolute file from
+the trunk and from a workspace. The generated config in three states:
+
+| State | Size | `fork-tip` / `upstream-tip` mentions |
+|---|---|---|
+| Trunk, live symlink target | 2568 B | 4 |
+| Workspace **with** `devenv.slots.local.nix` | 2568 B | 4 |
+| Workspace **without** it | **64 B** | **0** |
+
+The 64-byte stub holds only the `"#schema"` line. A bootstrap-less `devenv shell` in a workspace
+therefore strips `revset-aliases.fork-tip`, `revset-aliases.upstream-tip`, `aliases.fork-audit`,
+`aliases.sync-remotes`, `aliases.sync-upstream`, `aliases.fork-help` and the `git.push` checks
+**from the trunk**.
+
+**Why the bootstrap copy is not sufficient:** even with the file, the workspace's generated store
+path differs from the trunk's, because the embedded `doc=` path differs. So a workspace shell always
+retargets the trunk's symlink. With the copy the damage is cosmetic; without it the trunk loses the
+fork tooling. The copy downgrades a silent breakage to a silent retarget. It does not remove it.
+
+**The guard, and why it tests for SECONDARY rather than for default:**
+
+```sh
+if test -n "$_jj_root" && test -f "$_jj_root/.jj/repo"; then
+  echo "kdn.jj: secondary jj workspace — the shared jj repo config stays untouched" >&2
+elif test -n "$_jj_config_path"; then
+  ln -sfn <generated> "$_jj_config_path"
+fi
+```
+
+`.jj/repo` is a **directory** in the default workspace and a small **pointer file** in a secondary
+one. The test asks whether this is a secondary workspace, so an unknown future jj layout makes the
+shell write the file — today's behaviour — and never makes the default workspace lose its config.
+That is the safe fail direction. New case:
+`test_secondary_workspace_is_detectable_from_the_filesystem`.
+
+**Rejected alternative: write to `jj config path --workspace` instead.** That layer is genuinely per
+workspace (verified: an alias written there resolves in that workspace and errors in the default
+one), so it looks like the root-cause fix. It loses on two counts:
+
+1. **It drops a benefit that is already proven and used.**
+   `test_fork_revset_aliases_resolve_from_a_workspace` shows a fresh workspace resolves `fork-tip`
+   and `upstream-tip` through the shared `--repo` layer, before it ever runs `devenv shell`. Under
+   `--workspace` a new workspace would have no fork aliases until its own shell built, and its first
+   command is often exactly `jj log -r fork-tip`.
+2. **It needs a migration.** The existing `--repo` symlink would stay and keep merging as a stale
+   layer, so the change would have to delete it.
+
+Nobody wants per-workspace jj aliases, so the sharing is a feature. Guard the write; keep the share.
+
+**What the `<hash>` in the config path is keyed on — measured, since this was the open question.**
+It is a **random value written once at `jj git init`** and persisted in `.jj/repo/config-id`. It is
+not derived from the repo path, the workspace path, or a store path. Evidence: `cat
+.jj/repo/config-id` equals the path component byte-for-byte; moving a repo directory keeps the id;
+`jj git init` twice at the same path yields two different ids. A secondary workspace reaches the
+same id through its `.jj/repo` pointer file. `jj workspace add` pre-creates the
+`~/.config/jj/workspaces/<id>/` directory, so a guard needs no `mkdir -p`.
 
 ### 3. Decide the `git+file:` mitigation
 
-- [ ] Record how a workspace overrides `inputs.nix-configs`. Candidates: a `devenv.local.yaml` with
-      the absolute pinned URL, or a documented `--override-input` on the command line. Do not change
-      the trunk's `devenv.yaml`.
+- [x] **Decision, 2026-09-09: a git-ignored `devenv.local.yaml` in the workspace, with `ref` AND
+      `rev` both set to the same commit id.** The trunk's `devenv.yaml` is unchanged.
+
+```yaml
+inputs:
+  nix-configs:
+    url: git+file:///Users/<you>/dev/github.com/nazarewk-iac/nix-configs?ref=<REV>&rev=<REV>
+```
+
+`<REV>` comes from `jj log -r 'fork-tip' --no-graph -T commit_id`, run in the trunk.
+
+devenv merges `inputs:` from `devenv.local.yaml` last, and it wins — confirmed in the devenv source
+at `devenv-core/src/config.rs:14`, `:725` (`// Load devenv.local.yaml last (if it exists) to allow
+local overrides`) and `:727-745`.
+
+Verified end to end from a workspace: `devenv eval 'name'` → `{"name": "devenv-shell"}`;
+`devenv eval 'claude.code.hooks.jj-guard'` → the full hook attrset, so the slots tree evaluated;
+`devenv build shell` → a `devenv-shell` store path.
+
+**`ref=` is mandatory. A bare `rev=` fails.** devenv rewrites the `locked` node, drops a lone
+`rev`, and defaults `ref` to `master`, which this repo does not have:
+`error: resolving Git reference 'master': revspec 'master' not found`. **This corrects the URL form
+this task file proposed earlier** (`?rev=<commit-id>` alone). Setting `ref` to the commit id is what
+Nix does for the trunk anyway — `nix flake metadata .` in the trunk locks `ref=<rev>&rev=<rev>`.
+
+**The pin does remove the `prek` / `git write-tree` re-snapshot race — verified.** With a tracked
+file modified but not committed in a probe repo:
+
+| URL | `locked` | evaluated value |
+|---|---|---|
+| unpinned `git+file:///<abs>` | `dirtyRev: "…-dirty"`, no `rev` | `"v2-DIRTY"` |
+| `?ref=<REV>&rev=<REV>` | `rev=<REV>`, narHash unchanged | `"v1"` |
+
+**Runner-up: `devenv -o nix-configs '<url>' <subcommand>`** (`devenv/src/cli.rs:433-439`, a global
+option). It works and locks the same node. It lost because it must be typed on **every** devenv
+invocation: a bare `devenv eval` fails even when `devenv.lock` already holds the pinned node, since
+devenv validates `locked.original` against `devenv.yaml` and refetches on a mismatch. Every
+wrapper, `direnv` hook and editor integration would need the flag, and a missed one fails with the
+confusing SSH-to-host-`file` error. It is also less discoverable than a file in the workspace.
+
+**Third place: unpinned absolute `git+file:///<abs-path>`.** It evaluates and builds, but its
+`locked` node holds no `rev`, so Nix re-reads the trunk's working tree and index on every
+evaluation. That is the race the pin exists to remove.
+
+**Cost to write into the convention:** both mechanisms rewrite the **tracked** `devenv.lock` in the
+workspace (`jj status` → `M devenv.lock`). This is unavoidable, because devenv rewrites the lock
+whenever the effective input URL differs from it. The agent must not commit that change.
+`devenv.local.yaml` itself is git-ignored and cannot be committed by accident.
 
 ## Exit criteria
 
-1. `docs/jujutsu-vcs.md` holds the full convention. `.agents/rules/jujutsu-vcs.md` holds the
-   pointer and no longer names `../nix-configs-ws-<name>`. `CLAUDE.md` lists the doc.
-2. `nix run '.#jj-experiments-run' -- -k workspaces` passes every case.
-3. The bootstrap step, the activation prohibition, and the three hazards are written in prose an
-   agent can follow with no further research.
-4. Checklist items 2 and 3 have a recorded decision.
+All four are met. Solution: [jj-workspaces-parallel-agents.done.md](done.md).
+
+1. [x] `docs/jujutsu-vcs.md` holds the full convention. `.agents/rules/jujutsu-vcs.md` holds the
+       pointer and no longer names `../nix-configs-ws-<name>`. `CLAUDE.md` lists the doc.
+2. [x] `nix run '.#jj-experiments-run' -- -k workspaces` passes every case — **17 passed** on
+       2026-09-09, up from 16 with the new detection case.
+3. [x] The bootstrap step, the activation prohibition, and the three hazards are written in prose an
+       agent can follow with no further research.
+4. [x] Checklist items 2 and 3 have a recorded decision.
 
 ## Out of scope
 
 - Any change to the Agent/Workflow tool's `isolation` option. It creates a git worktree, which
   stays forbidden.
-- A colocated jj workspace. jj 0.44.0 has no `jj workspace add --colocate` flag.
+- A colocated jj workspace. Re-checked on jj **0.45.1**: `jj workspace add` still offers only
+  `--name`, `-r/--revision`, `-m/--message` and `--sparse-patterns`. No colocate flag.
 - An automatic workspace lifecycle wrapper. Establish the manual convention first.
 - Any change to the trunk's `devenv.yaml` `inputs.nix-configs` URL.
 - Multi-user or remote workspaces.

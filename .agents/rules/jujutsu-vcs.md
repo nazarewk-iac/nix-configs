@@ -60,6 +60,19 @@ slash command, which shells raw `git commit` internally. Never use `/commit` in 
 > workspace) and compare `jj log -r @ --no-graph -T change_id` from both directories — they must
 > differ. When you cannot confirm a distinct change id in a distinct workspace, do not run
 > concurrent work — do it in sequence in the main working copy instead.
+>
+> **Read [docs/jujutsu-vcs.md](../../docs/jujutsu-vcs.md) § "jj workspaces" before you create one.**
+> The creation command is one of five steps. Two more stop a silent failure: `cp
+> ../nix-configs/devenv.slots.local.nix .` (a fresh workspace holds tracked files only, and
+> `devenv.nix` skips the missing file with no warning), and a git-ignored `devenv.local.yaml` that
+> repoints `inputs.nix-configs` at the trunk with `?ref=<REV>&rev=<REV>` (a workspace has no
+> `.git`, so `git+file:.` cannot resolve). Do not commit the `devenv.lock` change that follows.
+>
+> **A workspace evaluates, builds and tests. It NEVER activates.** No `switch`/`boot`/`test`, no
+> `home-manager switch`, nothing that needs sudo to change the running system, and no
+> `git push` / `jj git push` / `jj sync-remotes` / `jj bookmark set`. Activation is machine-global,
+> so a workspace would silently overwrite whatever the trunk activated. A `switch` and a push are
+> always the user's call, from the trunk.
 
 - **Leave an empty `jj` change on top only when you wrap up finished, described work** — it gives
   the user a clean working copy to review from. Do NOT stack one above undescribed or parked work.
