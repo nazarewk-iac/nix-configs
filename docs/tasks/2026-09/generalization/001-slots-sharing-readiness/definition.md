@@ -51,6 +51,78 @@ Fix the comparison. Correct the comment to match the option docs.
    from the git-ignored `devenv.slots.local.nix`, so an absent local file turns protection off
    with no warning. Guard on the array length instead, and fail loudly.
 
+### Read this before you fix the comparison — the guard is inert three ways over
+
+Measured on 2026-09-09 in throwaway repos under `/tmp`, with an isolated `HOME`, `JJ_CONFIG`, and
+`GIT_CONFIG_GLOBAL=/dev/null`. jj 0.44.0, prek 0.5.2. Each finding is **verified**, and each one
+alone is enough to make the hook pass everything. So the inverted comparison at lines 64-67 is
+**not** the reason private content reaches the public remote. It is the third reason.
+
+**Defect A — `jj` fires no git hook.** A colocated repo held an executable `.git/hooks/pre-push`
+that printed a marker and exited 1.
+
+| Command | Hook ran | Exit | Result |
+|---|---|---|---|
+| `jj git push --remote=origin --bookmark=main` | **no** | 0 | the remote gained the ref |
+| `git push origin main` (control) | **yes** | 1 | git refused the push |
+| `jj commit -m …` | **no** | 0 | jj created the commit |
+
+This repo pushes with `jj git push` everywhere except one line
+(`modules/slots/jj/fork/default.nix:193`, the public push, which uses raw `git push`). So the only
+push that reaches the hook is the public one — the exact push that lines 64-67 then skip.
+
+It also makes `modules/slots/jj/fork/check-fork-contamination.sh` **dead code**: it is the only
+content-aware check in the repo, and `fork/default.nix:217` installs it at the `pre-commit` stage,
+which jj never fires.
+
+**Defect B — prek hands the hook no stdin, so the loop body never runs.** Both hooks install
+through devenv `git-hooks`, which is **prek**, not python pre-commit (`.git/hooks/pre-push` names
+`prek-0.5.2`). A probe hook at the `pre-push` stage with `pass_filenames = false` received:
+
+```
+argc=0  argv=[]
+PRE_COMMIT_REMOTE_NAME=origin
+PRE_COMMIT_REMOTE_BRANCH=refs/heads/main
+--- stdin ---            (empty)
+```
+
+Control, a **native** `.git/hooks/pre-push` on the same push:
+
+```
+argc=2  argv=[origin <url>]
+--- stdin ---
+refs/heads/main <local_sha> refs/heads/main 0000000000000000000000000000000000000000
+```
+
+prek parses the ref lines itself (it sets `PRE_COMMIT_TO_REF`) and forwards none of them.
+`pre-push.sh:42` reads its ref lines from stdin:
+
+```bash
+while read -r _local_ref local_sha remote_ref remote_sha; do
+```
+
+With no stdin the loop iterates **zero** times. So every check inside it never runs, including the
+always-on blocked-message check at lines 54-62. The hook always exits 0.
+
+**Defect C — `push_remote` never holds a remote name.** `argc=0` means `$1` is empty, so line 10
+falls back to `${PRE_COMMIT_REMOTE_BRANCH%%/*}`. Measured, that expands `refs/heads/main` to
+**`refs`**. The variable that does hold the remote name is `PRE_COMMIT_REMOTE_NAME`, and the script
+never reads it. So `push_remote` is `refs` on every push, and the comparison at line 65 is never
+equal — even for the private fork.
+
+**What this means for the fix.** Correct all four, in this order:
+
+1. Read the remote name from `PRE_COMMIT_REMOTE_NAME`, with `$1` as the fallback (defect C).
+2. Take the ref range from `PRE_COMMIT_FROM_REF`/`PRE_COMMIT_TO_REF` when stdin is empty, or fail
+   loudly on an empty stdin. Never treat empty stdin as "nothing to check" (defect B).
+3. Invert the comparison at lines 64-67, and correct the comment (the original P0).
+4. Move the guard out of `.git/hooks/` for jj-driven pushes (defect A). jj offers no hook
+   mechanism, so the check must run inside a wrapper — a jj alias that checks, then pushes.
+   Without this, every `jj git push` stays unchecked whatever else you fix.
+
+Cross-reference: [fork-contribution-access-tiers.research.md](../../fork-contribution-access-tiers/research.md)
+§ A5 and [flake-update-procedure-gaps.research.md](../../flake-update-procedure-gaps/research.md) § O18.
+
 ### Record, do not fix
 
 For a new branch the range is `main..$local_sha` (line 49), which is empty when that branch **is**
@@ -67,6 +139,9 @@ Add cases to `checks/jj-experiments`:
 | commit message that matches an always-blocked pattern | blocked on both remotes |
 | empty pattern list | loud failure, not a silent pass |
 | new branch with a zero remote sha | no `git diff` error |
+| hook invoked through prek, with no stdin | loud failure, not a silent pass (defect B) |
+| `push_remote` resolved from a prek environment | the real remote name, never `refs` (defect C) |
+| push through `jj git push` | the wrapper runs the check (defect A) |
 
 ## 2. Document the overlay requirement
 
