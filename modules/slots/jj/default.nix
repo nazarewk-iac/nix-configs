@@ -51,7 +51,13 @@ in
     fork.deniedFilePatterns = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
-      description = "File path patterns (case-insensitive) blocked from pushing to non-fork remotes.";
+      description = ''
+        File path patterns (case-insensitive) blocked from pushing to non-fork remotes.
+
+        The pre-push hook is one net, not the gate: `jj git push` fires no git hook, and the
+        pattern list matches a path or a line, never lock-file structure. `jj fork-audit` is the
+        content gate, and `hack/flake-update-complete.sh` is the structural gate.
+      '';
     };
     fork.deniedMessagePatterns = lib.mkOption {
       type = lib.types.listOf lib.types.str;
