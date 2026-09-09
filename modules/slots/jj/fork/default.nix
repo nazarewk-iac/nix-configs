@@ -89,6 +89,12 @@ in
         upstream-incoming = "@..main@${cfg.upstream.remote}";
         upstream-incoming-tip = "main@${cfg.upstream.remote}";
 
+        # fork-incoming / fork-incoming-tip: the same pair for the fork remote. Step 0 of the
+        # update procedure reads both pairs after a fetch. Both must be empty before the update
+        # starts, because every later placement reads a remote-tracking ref.
+        fork-incoming = "@..main@${cfg.fork.remote}";
+        fork-incoming-tip = "main@${cfg.fork.remote}";
+
         # to-rebase: all local described work above the tree merge, i.e. the changes to relocate
         # onto new upstream. Use roots(to-rebase) as the rebase source.
         to-rebase = "tree-merge..@ & ~description(\"\")";
