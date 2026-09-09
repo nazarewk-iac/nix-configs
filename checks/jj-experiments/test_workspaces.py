@@ -294,6 +294,38 @@ def test_repo_config_overwrite_from_workspace_strips_trunk_aliases(mkrepo):
     assert gone.returncode != 0
 
 
+def test_secondary_workspace_is_detectable_from_the_filesystem(mkrepo):
+    """``.jj/repo`` tells a secondary workspace apart from the default one.
+
+    ``modules/slots/jj/default.nix`` uses this test in ``enterShell`` to decide
+    whether to write the shared ``--repo`` config. The probe asks whether this
+    is a SECONDARY workspace, so an unknown future layout writes the file, and
+    the default workspace never loses its config.
+    """
+    repo = mkrepo()
+    repo.commit("feat: base", {"a.nix": "1\n"})
+    ws = repo.workspace_add("slot")
+
+    # The default workspace holds a real store directory.
+    assert (repo.path / ".jj" / "repo").is_dir()
+    assert not (repo.path / ".jj" / "repo").is_file()
+    # A secondary workspace holds a pointer file of a few bytes.
+    assert (ws.path / ".jj" / "repo").is_file()
+    assert not (ws.path / ".jj" / "repo").is_dir()
+
+    # `jj workspace list` is the cross-check the slot comment names. It prints
+    # every path relative to the CURRENT workspace root, so the default row
+    # reads "." exactly when the caller sits in the default workspace.
+    def default_row(handle):
+        for line in handle.jj_out("workspace", "list").splitlines():
+            if line.startswith("default:"):
+                return line.split(": ", 1)[1].split()[0]
+        raise AssertionError("no default row")
+
+    assert default_row(repo) == "."
+    assert default_row(ws) != "."
+
+
 # --- 5. fork revset aliases from a workspace -------------------------------
 
 

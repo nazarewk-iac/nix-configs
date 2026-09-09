@@ -84,11 +84,25 @@ in
 
       enterShell = ''
         # symlink jj repo config (merged across all kdn.jj.* modules) to the generated store path
+        #
+        # `jj config path --repo` returns ONE shared file for the default workspace and every
+        # secondary workspace, because the id in the path comes from `.jj/repo/config-id` and a
+        # secondary workspace reaches the same store through a `.jj/repo` pointer file. So a
+        # `devenv shell` in a secondary workspace would write over the default workspace's config
+        # and strip its aliases. Only the default workspace writes the file.
+        #
+        # The test asks whether this is a SECONDARY workspace, not whether it is the default one.
+        # `.jj/repo` is a directory in the default workspace and a small pointer file in a
+        # secondary one. A future jj layout change therefore makes this shell write the file, which
+        # is today's behaviour, and never makes the default workspace lose its config.
         _jj_config_path="$(jj config path --repo 2>/dev/null)" || true
-        if test -n "$_jj_config_path"; then
+        _jj_root="$(jj root 2>/dev/null)" || true
+        if test -n "$_jj_root" && test -f "$_jj_root/.jj/repo"; then
+          echo "kdn.jj: secondary jj workspace — the shared jj repo config stays untouched" >&2
+        elif test -n "$_jj_config_path"; then
           ln -sfn ${jjRepoConfig} "$_jj_config_path"
         fi
-        unset _jj_config_path
+        unset _jj_config_path _jj_root
 
         # add a remote (by name/url) via jj itself, no git CLI required, if not already present
         _kdn_jj_ensure_remote() {
