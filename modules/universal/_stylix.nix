@@ -58,9 +58,30 @@ lib.optionalAttrs
           "home-manager"
         ])
         {
-          stylix.cursor.name = lib.mkDefault "phinger-cursors-${config.stylix.polarity}";
-          stylix.cursor.package = lib.mkDefault pkgs.phinger-cursors;
-          stylix.cursor.size = lib.mkDefault 32;
+          /*
+            2026-09-09: a platform check is required, not only the module type check above. A
+            home-manager child of a darwin host also has the "home-manager" type.
+
+            stylix >=5e38098 sets `home.pointerCursor.<target>.enable` from its gtk, x11 and
+            sway home-manager targets, and adds no platform guard there. `home.pointerCursor`
+            works on Linux only, and its `name` option has no default. Any definition inside
+            that submodule turns the home-manager module on, so the module then reads the
+            missing `name` and the evaluation stops. A Linux-only cursor keeps `stylix.cursor`
+            null on darwin, so those stylix targets stay inert.
+
+            Two shapes are mandatory here:
+            - `lib.mkIf`, not a condition on `optionalAttrs`. A condition on `optionalAttrs`
+              forces `pkgs` while the module system still collects definitions, which gives an
+              infinite recursion. `lib.mkIf` defers the test until the option merge.
+            - one `mkIf` around the whole attrset, not one per key. `stylix.cursor` is a
+              `nullOr submodule`, so a per-key `mkIf` still leaves the parent definition
+              `{ }` in place and the cursor never becomes null.
+          */
+          stylix.cursor = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
+            name = lib.mkDefault "phinger-cursors-${config.stylix.polarity}";
+            package = lib.mkDefault pkgs.phinger-cursors;
+            size = lib.mkDefault 32;
+          };
         }
       )
       (lib.optionalAttrs (kdnConfig.util.hasParentOfAnyType [ "nixos" ]) (
