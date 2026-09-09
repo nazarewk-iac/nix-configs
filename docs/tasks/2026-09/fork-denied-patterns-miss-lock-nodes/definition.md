@@ -29,11 +29,21 @@ None of them matches a fork-only **lock node key**. Measured on the previous upd
 | lock nodes the commit changed | 45 |
 | fork-only nodes in the commit's `flake.lock` | 5 |
 | of those, changed in the commit | 4 |
+| of the 5, **private** (need a pattern) | 4 |
+| of the 5, public content that only the fork declares | 1 |
 | `jj fork-audit -q --color=never <that commit>` | "no fork-sensitive content found", exit **0** |
 | the same commit in the `upstream-safe` revset | yes |
 
 So a commit that genuinely mixes private and public lock content reads as clean, and the
 revsets place it on the public chain.
+
+The 5 fork-only nodes are all homebrew tap inputs, and their node key spells the GitHub org.
+Four keys carry the private org segment. One carries a public org, and the owner confirmed on
+2026-09-09 that a public tap is fine to publish. So the pattern list needs **one** entry, the
+private org segment — not one per tap.
+
+A pattern on `brew-tap` alone is wrong. The public chain already holds 3 brew-tap nodes, so
+that pattern would block the public chain against itself.
 
 ## Why it is deferred
 
@@ -49,8 +59,11 @@ new pattern against the list. The owner must do this one.
      <(jj file show -r 'fork-tip' flake.lock | jq -r '.nodes[.root].inputs|keys[]' | sort) \
      <(git show 'refs/remotes/kdn/main:flake.lock' | jq -r '.nodes[.root].inputs|keys[]' | sort)
    ```
-2. Add the spelling those keys carry to `kdn.jj.fork.deniedFilePatterns` in
-   `devenv.slots.local.nix`. Do not print the file.
+   The command lists the root input names. Here they match the node keys one to one.
+2. Add the private org segment from those keys to `kdn.jj.fork.deniedFilePatterns` in
+   `devenv.slots.local.nix`. One entry covers all 4 private taps. Do not print the file, and do
+   not put that string in a tracked file — `devenv.slots.local.nix` is git-ignored, which is why
+   it is the right home. Skip the tap with the public org: it needs no pattern.
 3. Re-enter the devenv shell.
 4. Confirm the check now catches it:
    ```bash
@@ -63,3 +76,9 @@ new pattern against the list. The owner must do this one.
 `hack/flake-update-complete.sh` assertion 7 compares node **key sets** across the two chains, so
 it needs no pattern at all. It catches this class of leak today. Keep the pattern check as a
 second net, never as the gate.
+
+Assertion 7 measures chain **divergence**, not sensitivity. It flags the public tap too, because
+the public `flake.nix` does not declare that input. That report is still correct: a lock node that
+the flake does not declare is unreachable, and assertion 10 flags it as well. When the owner adds
+a public tap to the public `flake.nix`, the node stops being fork-only and assertion 7 stops
+flagging it. The script needs no change for that.
