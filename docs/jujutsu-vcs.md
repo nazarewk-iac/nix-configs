@@ -215,6 +215,42 @@ this repo through `/nix/store`) when you specifically need working-directory sem
 
 ---
 
+## Redirect hazard: never write into the file a `jj` read is reading
+
+**A command that reads a tracked file through `jj` must NOT redirect into that same file.** This
+shape destroys the file and every copy of it in the descendants:
+
+```bash
+# WRONG — this empties devenv.lock in @ and in every descendant commit:
+jj file show -r <other-rev> devenv.lock | jq '...' > devenv.lock
+```
+
+**Mechanism, in order.** The shell opens the redirect **before** it starts the pipeline, so the
+working-copy file is already 0 bytes when `jj file show` runs. `jj file show` then snapshots the
+working copy first, as every `jj` command does — so the empty file becomes the real content of
+`@`. When `<other-rev>` is a **descendant** of `@`, jj rebases that empty file into it, and the
+read returns nothing. `jq` reports a parse error and writes an empty file over the top.
+
+Measured once in this repo: one run of the documented `devenv.lock` strip wiped `devenv.lock` in
+`@` and in every descendant commit.
+
+**Recovery:** `jj op restore <op-before-the-snapshot>`. Find the op with `jj op log`; the target
+is the operation **before** the `snapshot working copy` entry that the failed command created.
+
+**Correct shape** — read into a temporary file, transform, then `mv` into place:
+
+```bash
+jj file show -r <other-rev> devenv.lock > /tmp/in.json
+jq '...' /tmp/in.json > /tmp/out.json
+mv /tmp/out.json devenv.lock
+```
+
+The same rule covers `jj diff`, `jj show`, `jj file list` and any other read — the snapshot is a
+property of the `jj` command, not of the subcommand. It also covers a read of a file in `@`
+itself: `jj file show -r @ x | … > x` truncates `x` before the read.
+
+---
+
 ## Worktree hazard: git worktrees share the single `.jj` store — never use one here
 
 > ⚠️ **NEVER use a `git worktree` in this repo.** This covers any tool that creates one under the
