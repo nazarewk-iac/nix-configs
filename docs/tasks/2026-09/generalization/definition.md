@@ -112,7 +112,7 @@ Severity is from an adopter's point of view. The listed checkpoint fixes the gap
 | 3 | No adopter entry point — no template, no example `devenv.yaml`/`devenv.nix`, no adopter-facing doc | High | 001 |
 | 4 | `devenv.yaml` pins the adopter's nixpkgs to the creator's nixpkgs fork through `follows: nix-configs/nixpkgs` | High | 001 |
 | 5 | Personal data inside the slots tree — `modules/slots/ssh-access/kdn-graph.nix`, 176 LOC of hosts, LAN IPs, WAN ports, `*.kdn.im` zones | Medium | 007, 009 |
-| 6 | Personal defaults in shared options — `kdn.jj.upstream.remote = "kdn"`, `alwaysBlockedMessagePatterns = [ "scratchpad" ]`, `opencode`'s hardwired `requesty` provider, `llm` examples with homelab FQDNs | Medium | 007 |
+| 6 | Personal defaults in shared options — `kdn.jj.upstream.remote = "kdn"`, `alwaysBlockedMessagePatterns = [ "scratchpad" ]`, `opencode`'s hardwired `requesty` provider, `llm` examples with homelab FQDNs, and `identityAgentPatterns` (see below) | Medium | 007 |
 | 7 | Slots ship the creator's opinions — `kdn.jj` installs a jj-only mandate as an agent rule; 5 slots read repo content through `${inputs.nix-configs}/.agents/…` | Medium | 007 |
 | 8 | Two slots default to `enable = true` (`mcp/snoop`, `mcp/pretty-print`), against this repo's own side-effect-free rule | Medium | 007 |
 | 9 | No CI check proves that a slot evaluates standalone and avoids universal options — `.agents/rules/slots-standalone.md` states the rule, nothing enforces it | Medium | 001 |
@@ -130,6 +130,17 @@ I reproduced it in a throwaway repo. The repo set `PRIVATE_REMOTE=<fork>`, and o
 path in the denied set. Current code: a push to the public remote exits **0**, so the hook permits
 it. With the guard inverted: the public remote exits **1** and the hook blocks it; the fork exits
 **0** and the hook permits it. That matches the documented intent.
+
+### Gap 6 has a measured example: `identityAgentPatterns`
+
+`packages/kdn-ssh-access/module.nix:127` declares `identityAgentPatterns`, "Extra Host patterns
+forced to `$SSH_AUTH_SOCK`". The option exists **only** to claw hosts back out of an `IdentityAgent`
+blanket that a fork-only module writes for `Host *`. An adopter inherits the option and no blanket,
+so for an adopter the option has no purpose.
+
+This is the clearest form of gap 6: a shared public option that compensates for a personal module's
+over-broad write. [tasks/ssh-agent-scoping.md](../ssh-agent-scoping/definition.md) holds the measured
+mechanism and owns the fix.
 
 ## Corrections to earlier assumptions
 
@@ -225,12 +236,17 @@ Darwin hosts build on a Darwin machine, or through `remote=`. Do not run
 ## Open research
 
 Two research passes serve 008 and 010. Both are read-only. Neither changes a module. Each delivers
-a `.research.md` sibling next to its task file.
+a `.research.md` sibling next to its task file. A third pass is complete and now has an owning task.
 
 | Research | Feeds | Scope |
 |---|---|---|
 | Default sops file inventory | [008](008-sops-default-inventory/definition.md) | The four lists in 008 |
 | Lix flake laziness | [010](010-flake-input-overhead/definition.md) | Q1-Q4 in 010 |
+| Darwin VM testing — **done**, two `.research.md` files | [darwin-vm-testing.md](../darwin-vm-testing/definition.md) | A guest loop for the activation-level exit tests of 002, 003 and 009 |
+
+The Darwin VM testing task carries one finding that **changes this hub**: a fresh-guest Darwin build
+forces every `brew-tap--*` flake input, so gap 12 is a real blocker on that path, not only hygiene.
+See the re-grade work item in that task.
 
 Read the task file first. Each task file states its own method and deliverable, so you need no
 extra brief.

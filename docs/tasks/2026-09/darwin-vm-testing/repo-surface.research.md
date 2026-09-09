@@ -7,6 +7,8 @@ authored_by: agent
 
 # Darwin VM testing — the repo surface
 
+Owning task: [darwin-vm-testing.md](definition.md).
+
 ## Summary
 
 Four exit tests need a fresh macOS guest. All four are activation-level or first-boot-level.
