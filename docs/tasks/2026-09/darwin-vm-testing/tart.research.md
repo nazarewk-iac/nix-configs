@@ -7,6 +7,8 @@ authored_by: agent
 
 # Automated nix-darwin tests in ephemeral macOS VMs on Apple Silicon
 
+Owning task: [darwin-vm-testing.md](definition.md).
+
 Every claim below carries a tag. `verified` means a primary source: a file in the project's own
 repository, an official reference document, an issue or pull request body, or a command that ran on
 `<private-host>`. `unverified` means a blog post, a vendor summary, an absence of evidence, or an
