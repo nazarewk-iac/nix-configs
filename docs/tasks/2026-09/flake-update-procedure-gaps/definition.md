@@ -1,9 +1,9 @@
 ---
 type: Task
-description: Repair the flake update procedure — add a fetch and a reconcile step, a start-state branch, and a completion check.
+description: Repair the flake update procedure — add a fetch and a reconcile step, a start-state branch, a lock-structure check, and a completion check.
 status: open
 authored_by: agent
-timestamp: 2026-09-09T00:00:00+02:00
+timestamp: 2026-09-09T12:00:00+02:00
 ---
 
 # Repair the flake update procedure
@@ -45,6 +45,103 @@ file. The worst three:
 3. **O10** — no doc checks that the `devenv.lock` strip list is not empty. An empty list
    makes the transform a no-op and every fork node stays in the public `devenv.lock`.
 
+## Defects measured during the 2026-09-09 update run
+
+An operator ran one full fork update and split it across the two chains. These four defects
+stopped the run. Each one is **verified** on the real graph, not inferred.
+
+### D4 — the `devenv.lock` strip command destroys its own input
+
+`docs/flake-update.fork.md:184-192` and `.agents/skills/flake-update-fork/SKILL.md:43-46`
+both give this shape:
+
+```bash
+jj file show -r "$FORK_UPDATE" devenv.lock | jq … > devenv.lock
+```
+
+The shell opens the redirect **before** it starts the pipeline, so `devenv.lock` is already
+0 bytes when `jj file show` runs. `jj file show` then snapshots the working copy, and the
+empty file becomes the content of `@`. In the documented flow `@` is the public-inputs
+commit and `$FORK_UPDATE` is the fork merge, which is a **descendant** of `@`. So jj rebases
+the empty file into `$FORK_UPDATE`, and the read returns nothing. `jq` reports
+`Invalid numeric literal at line 1, column 8` and writes an empty file.
+
+Measured: one run wiped `devenv.lock` in `@` and in every descendant.
+`jj op restore <op-before-the-snapshot>` recovered it.
+
+Fix: write to a temporary file, then move it into place.
+
+```bash
+jj file show -r "$FORK_UPDATE" devenv.lock > /tmp/fork.devenv.lock
+jq … /tmp/fork.devenv.lock | jq -j '.' > /tmp/public.devenv.lock
+mv /tmp/public.devenv.lock devenv.lock
+```
+
+The same hazard applies to any command that reads a tracked file through `jj` and redirects
+into that file. Add the rule to the jj doc, not only to the update doc.
+
+### D5 — no structural check on the stripped `devenv.lock`
+
+A hand-written variant of the strip transform wrote `"inputs": null` on 49 nodes that hold
+no inputs. The public and the fork `devenv.lock` both carried the fault. No procedure step
+found it. `devenv build shell` failed later with:
+
+```
+error: expected a set but found null
+… at .devenv/bootstrap/resolve-lock.nix:131
+```
+
+`resolve-lock.nix:125` reads `node.inputs or { }`. The `or` operator answers a **missing**
+attribute only. It does not answer `null`, so the null reaches `builtins.mapAttrs` and the
+evaluation stops. A node that holds no inputs must **omit** the key. `flake.lock` never
+writes `"inputs": null`.
+
+The documented transform is **not** the cause. Its guard `if .inputs then … else . end` is
+null-safe. The cause is that the procedure permits a hand-written substitute and then checks
+nothing.
+
+Add three assertions after the strip, for both lock files:
+
+1. No node holds `"inputs": null`.
+2. Every string input value names a node that exists (referential integrity).
+3. The public node count equals the fork node count minus the strip-list length.
+
+### D6 — root cause of D2, measured
+
+`modules/slots/jj/fork/default.nix:69` defines the third term of the `fork` alias as
+`((remote_bookmarks(remote=<fork-remote>) ~ upstream@<fork-remote>)::)`. The `::` suffix tags
+**every descendant** of the fork bookmark. So `upstream-chain`, which is
+`~description("") & ~fork`, can never hold a commit above the tree merge, whatever that
+commit contains. `upstream-tip` therefore resolves **below** the tree merge on any graph that
+already carries local work.
+
+Consequence: the one-command step 2,
+`jj new --insert-after upstream-tip --insert-before fork-tip`, builds a merge that spans from
+below the tree merge to the very top of the stack. This is the mechanism behind D2 and O12.
+
+`upstream-safe` does not have this fault. It is `to-rebase & ~fork-direct`, and
+`fork-direct` tests **content**, not topology.
+
+### D7 — no build check on either chain
+
+The procedure builds host configurations only. Nothing builds the devenv shell, so a broken
+`devenv.lock` reaches the push. D5 proves the gap: the fault survived every documented check
+and appeared only when the operator entered the shell.
+
+Add one build per chain to the verify step. Both passed after the D5 repair:
+
+| Chain | `@` position | Result |
+|---|---|---|
+| fork | `fork-tip` | `devenv build shell` exit 0 |
+| upstream | `upstream-tip` | `devenv build shell` exit 0 |
+
+### Not a defect — `nix run '.#flake-lock-merge'` from the working tree
+
+One run failed with `error: 'packages.aarch64-darwin' is not an attribute set`. A re-test on
+the settled graph passed. The failure is a symptom of an inconsistent working-copy lock, not a
+fault in the tool or in the invocation. The pinned-rev form stays useful because it avoids a
+rebuild of the tool, not because the plain form is wrong.
+
 ## Work items
 
 ### Docs
@@ -80,6 +177,17 @@ file. The worst three:
       `main@<public-remote>` (O3).
 - [ ] `docs/flake-update.md:66-71` — point the patch branch at `docs/flake-patches.md` and
       the `flake-patches` skill; keep one branch per failure cause (O14).
+- [ ] `docs/flake-update.fork.md:184-192` — write the strip through a temporary file, then
+      `mv` it into place. Never redirect into the file the pipeline reads (D4).
+- [ ] `docs/flake-update.fork.md` — add the three structural assertions after the strip
+      (D5), and state that a hand-written substitute transform is not permitted.
+- [ ] `docs/flake-update.fork.md` — add `devenv build shell` on each chain to the verify
+      step (D7).
+- [ ] `docs/jujutsu-vcs.md` — add the general rule from D4: a command that reads a tracked
+      file through `jj` must not redirect into that same file, because jj snapshots the
+      working copy first and a rebase carries the truncated file to the descendants.
+- [ ] `docs/flake-update.fork.md` — record the D6 mechanism next to the insert command, so
+      the reader understands **why** `upstream-tip` resolves below the tree merge.
 
 ### Agent rules
 
@@ -115,6 +223,9 @@ file. The worst three:
 - [ ] Add `fork-incoming = @..main@<fork-remote>` and
       `fork-incoming-tip = main@<fork-remote>` to `modules/slots/jj/fork/default.nix`, as
       a mirror of `upstream-incoming` (lines 89–90).
+- [ ] Add a lock-structure check to the completion script: no `"inputs": null` in either
+      lock, referential integrity of every string input value, and the public node count
+      equals the fork node count minus the strip-list length (D5).
 
 ### Code, separate commits (O18)
 
@@ -146,11 +257,19 @@ file. The worst three:
 - [ ] Every relative link in the four doc and rule files, and in both skills, resolves.
 - [ ] The public-chain leak gate is structural, and it does not depend on the pattern list.
 - [ ] `jj fork-audit -q --color=never 'upstream-tip'` exits 0 on a finished update.
+- [ ] No documented command redirects into a file that the same pipeline reads through `jj`.
+- [ ] Neither lock file holds `"inputs": null`, and every string input value names a node
+      that exists.
+- [ ] `devenv build shell` exits 0 with `@` on `upstream-tip`, and again with `@` on
+      `fork-tip`.
 
 ## Out of scope
 
 - The current update in the working copy. Do not run it, and do not repair the graph as
   part of this task. This task changes documents and adds a check.
+  **Update, 2026-09-09:** an operator has since run and split that update by hand. D4 to D7
+  come from that run. The graph is repaired and both chains build. This task still owns only
+  the documents and the check.
 - Contribution access tiers. Another task owns
   `docs/tasks/fork-contribution-access-tiers*.md`.
 - The `flake-lock-merge` tool itself. Its behavior is correct; only the docs around it
