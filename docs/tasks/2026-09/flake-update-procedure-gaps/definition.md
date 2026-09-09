@@ -135,6 +135,45 @@ Add one build per chain to the verify step. Both passed after the D5 repair:
 | fork | `fork-tip` | `devenv build shell` exit 0 |
 | upstream | `upstream-tip` | `devenv build shell` exit 0 |
 
+### D8 — no darwin evaluation gate, and no chain rule for a post-update fix
+
+The update bumped `stylix` from `a9e5a76` to `5e38098`. That bump broke **every** darwin host. The
+operator found it only when they ran their own `darwin-rebuild build`, after the graph was already
+split and parked.
+
+Measured cause. Old `stylix` held exactly one `home.pointerCursor` definition, in
+`stylix/hm/cursor.nix`, and that file guards on `pkgs.stdenv.hostPlatform.isLinux`. New `stylix`
+adds three more, in `modules/gtk/hm.nix:35`, `modules/x11/hm.nix:20` and `modules/sway/hm.nix:87`,
+and **none of the three has a platform guard**. `home-manager`'s own
+`modules/config/home-cursor.nix` is byte-identical across the bump, so home-manager is not part of
+the cause.
+
+This repo then met the new behaviour, because `modules/universal/_stylix.nix` gated
+`stylix.cursor.*` on the **module type** `[ "nixos" "home-manager" ]`. A home-manager child of a
+darwin host also has the type `home-manager`, so it received a cursor. Any definition inside the
+`home.pointerCursor` submodule turns that Linux-only home-manager module on, and the module then
+reads `name`, which has no default:
+
+```
+error: The option `home-manager.users.kdn.home.pointerCursor.name' was accessed but has no value
+defined. Try setting the option.
+```
+
+Two separate gaps follow:
+
+1. **No evaluation gate for darwin.** The verify step builds host configurations, but the run never
+   evaluated a darwin host. A `nix eval` of the toplevel `drvPath` costs no build and catches this
+   whole class of fault. Add one per host, for both chains.
+2. **No rule for where a post-update fix belongs.** A fork host surfaced this fault, but the fix is
+   a generic module fix and it carries no private content. So it belongs on the **public** chain,
+   below the tree merge, and the fork chain inherits it through the merge. No doc states that rule,
+   and the obvious move — commit it on top of `fork-tip` — puts a public fix on the private chain
+   where it never reaches the public remote.
+
+The rule to write down: place a post-update fix by its **content**, not by the host that found it.
+Run `jj fork-audit` on the fix to decide. When the audit passes, insert the fix after
+`upstream-tip` and before the tree merge.
+
 ### Not a defect — `nix run '.#flake-lock-merge'` from the working tree
 
 One run failed with `error: 'packages.aarch64-darwin' is not an attribute set`. A re-test on
@@ -183,6 +222,13 @@ rebuild of the tool, not because the plain form is wrong.
       (D5), and state that a hand-written substitute transform is not permitted.
 - [ ] `docs/flake-update.fork.md` — add `devenv build shell` on each chain to the verify
       step (D7).
+- [ ] `docs/flake-update.fork.md` — add an evaluation gate to the verify step: for every nixos
+      and every darwin host, on both chains, run
+      `nix eval --raw '.#<configurations>.<host>.config.system.build.toplevel.drvPath'`. It costs
+      no build and it catches an input bump that breaks one platform only (D8).
+- [ ] `docs/flake-update.fork.md` — state the chain rule for a post-update fix: place the fix by
+      its **content**, not by the host that found it. Confirm with `jj fork-audit`. Insert a
+      public fix after `upstream-tip` and before the tree merge, so the fork inherits it (D8).
 - [ ] `docs/jujutsu-vcs.md` — add the general rule from D4: a command that reads a tracked
       file through `jj` must not redirect into that same file, because jj snapshots the
       working copy first and a rebase carries the truncated file to the descendants.
@@ -262,6 +308,10 @@ rebuild of the tool, not because the plain form is wrong.
       that exists.
 - [ ] `devenv build shell` exits 0 with `@` on `upstream-tip`, and again with `@` on
       `fork-tip`.
+- [ ] Every nixos host and every darwin host evaluates to a `drvPath` on both chains, before the
+      hand-off.
+- [ ] The docs state how to choose the chain for a post-update fix, and they name `jj fork-audit`
+      as the test.
 
 ## Out of scope
 
