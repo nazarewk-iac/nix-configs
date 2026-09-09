@@ -67,6 +67,9 @@ slash command, which shells raw `git commit` internally. Never use `/commit` in 
 > `devenv.nix` skips the missing file with no warning), and a git-ignored `devenv.local.yaml` that
 > repoints `inputs.nix-configs` at the trunk with `?ref=<REV>&rev=<REV>` (a workspace has no
 > `.git`, so `git+file:.` cannot resolve). Do not commit the `devenv.lock` change that follows.
+> Expect `devenv:git-hooks:run` to **fail** in every workspace shell (no `.git` to install into).
+> The shell still enters and exits 0, so that failure is normal — but a workspace runs no
+> pre-commit checks, so run the formatter and the linters from the trunk.
 >
 > **A workspace evaluates, builds and tests. It NEVER activates.** No `switch`/`boot`/`test`, no
 > `home-manager switch`, nothing that needs sudo to change the running system, and no

@@ -126,8 +126,11 @@ Measured from a real probe workspace at `../.nix-configs--wsprobe`, created at `
 | `devenv info`, stock `devenv.yaml` | fails with the SSH-to-host-`file` error |
 | `devenv eval 'claude.code.hooks.jj-guard'`, pinned | full hook attrset |
 | `devenv build shell`, pinned | `/nix/store/…-devenv-shell` |
-| unpinned URL against a dirty tracked file | locks `dirtyRev`, evaluates the uncommitted value |
-| pinned URL against the same dirty file | ignores the working tree |
+| `devenv shell -- <cmd>`, pinned | shell enters, exits 0; `DEVENV_ROOT` points at the workspace |
+| the guard, in that same shell | message printed; shared config sha and 4 fork aliases unchanged |
+| `devenv:git-hooks:run`, same shell | **fails** — `git rev-parse --show-toplevel` exit 128, no `.git` |
+| unpinned URL against a dirty tracked file | evaluates the **uncommitted** value; `locked` holds nothing volatile |
+| pinned URL against the same dirty file | evaluates the **committed** value; `locked` keeps `ref` only |
 | `DEVENV_ROOT` / `DOTFILE` / `STATE` / runtime | all four differ from the trunk's |
 
 The probe workspace was forgotten and removed, and the trunk's shared jj config was verified
@@ -135,14 +138,37 @@ byte-identical before and after (`sha256 7656a6c2…` both times).
 
 ## Follow-up notes
 
-- **Still UNVERIFIED, deliberately.** The `git-hooks` install failure in a workspace — no
-  `devenv shell` was entered during measurement, so `git-hooks` never ran. The claim that
-  `jj workspace update-stale` has *exactly one* cause: jj 0.45.1's help text names no condition and
-  only the `op restore` case is proven. The `sha256(dotfile)[0:7]` formula for `devenv.runtime`; only
-  the independence was measured. The real `.devenv/` size, so "hundreds of megabytes" stays a guess.
-- **`devenv.lock` is tracked and devenv rewrites it in the workspace.** Unavoidable: devenv rewrites
-  the lock whenever the effective input URL differs from it. The convention says not to commit that
-  change. A cleaner fix would need a devenv feature that separates a local override from the lock.
+- **The guard is verified live, and so is the `git-hooks` failure.** A real `devenv shell` ran in a
+  workspace on 2026-09-09. The guard printed its message and the shared jj config stayed
+  byte-identical (`sha256 7656a6c2…`) with all 4 fork aliases. `git-hooks` fails harder than this
+  file first claimed: `devenv:git-hooks:run` **fails** on `git rev-parse --show-toplevel` exit 128
+  and cascades into `devenv:enterTest`. The shell still enters and exits 0. So a workspace runs no
+  pre-commit checks — run the formatter and the linters from the trunk.
+- **Still UNVERIFIED.** The claim that `jj workspace update-stale` has *exactly one* cause: jj
+  0.45.1's help text names no condition and only the `op restore` case is proven. The
+  `sha256(dotfile)[0:7]` formula for `devenv.runtime`; only the independence was measured. The real
+  `.devenv/` size, so "hundreds of megabytes" stays a guess.
+- **A locked 1Password breaks every `jj` command, not just a commit.** Hit during the workspace run:
+  `SSH sign failed … 1Password: failed to fill whole buffer`, from a plain `jj log -r @`. The cause
+  is that jj snapshots the working copy first, and the snapshot commit needs the signing key. Read
+  the symptom as "the key is unavailable", never as workspace damage.
+- **`devenv.lock` is tracked and devenv rewrites it in the workspace.** Confirmed unavoidable, now
+  from source rather than by inference. `original` is written unstripped, so any url change lands in
+  it; the staleness test is full JSON equality of the whole lock graph; validation runs
+  unconditionally; and devenv has no `--frozen` / `--no-write-lock-file` equivalent. The convention
+  says not to commit that change.
+- **The trunk's rev-less `nix-configs` lock node is by design, not a procedure gap.** Nix strips
+  every volatile attribute from a **local** input, and a git input is local when its url scheme is
+  `file` — so `url: git+file:.` can never hold a rev. It cannot be stabilized by any command, flag or
+  url form, because the strip sits in the serializer downstream of all of them. devenv depends on
+  this (a local input must stay a live tree so the eval cache tracks edits) and ships the same shape
+  for its own self-input. See the task file § "Why the trunk's own `nix-configs` lock node carries no
+  rev".
+- **One earlier measurement was wrong and is corrected.** This file's verification table previously
+  said an unpinned `git+file:///<abs>` locks a `dirtyRev`. devenv records nothing volatile for either
+  form. That observation came from a different writer, most likely Lix's `nix flake lock`. The
+  conclusion it supported — the pin ignores the working tree, the unpinned form does not — is
+  re-verified with devenv and stands.
 - **The guard is not enforced.** Nothing stops a future edit from writing the shared path again. A
   `checks/` case that renders `enterShell` and greps for the test would close that.
 - **jj 0.45.1 additions worth a look later:** `jj workspace rename`, and `jj workspace list -T

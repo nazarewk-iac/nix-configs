@@ -357,20 +357,52 @@ inputs:
 jj log -r 'fork-tip' --no-graph -T commit_id     # run in the trunk to get <REV>
 ```
 
-Three measured details that make this the only sound form:
+**Why `ref=` is mandatory, and `rev=` alone fails.** Nix strips every volatile attribute —
+`rev`, `narHash`, `lastModified`, `revCount`, `dirtyRev`, `dirtyShortRev` — from the `locked` node
+of any **local** input, and a git input counts as local when its url scheme is `file`. The code is
+`src/libflake/lockfile.cc` ("Strip volatile attributes from local inputs to avoid lock file
+churn"), and `isLocal` is `src/libfetchers/git.cc`. So `ref` is the **only** pin that survives into
+`locked`. Set `ref` to the commit id. With no `ref`, devenv falls back to a default branch and this
+repo has no `master`: `revspec 'master' not found`.
 
-- **`rev=` alone fails.** devenv rewrites the lock node, drops a bare `rev`, and defaults `ref` to
-  `master`, which this repo does not have: `revspec 'master' not found`.
-- **An unpinned `git+file:///<abs-path>` works but reads the trunk's working tree and index on
-  every evaluation.** That re-introduces the `prek` / `git write-tree` race. The pin ignores the
-  working tree completely — verified with a dirty tracked file, where the unpinned form locked a
-  `dirtyRev` and the pinned form did not.
-- **`devenv -o nix-configs '<url>' <subcommand>` also works, but it must be typed every time.** A
-  bare `devenv` command fails even when `devenv.lock` already holds the pinned node, because devenv
-  validates `locked.original` against `devenv.yaml` and refetches on a mismatch.
+Measured against a dirty dependency tree, with devenv 2.2.3:
 
-`devenv.local.yaml` is git-ignored. `devenv.lock` is **not** — devenv rewrites it in the workspace.
-Never commit that change.
+| url form | `locked` node | evaluated value |
+|---|---|---|
+| unpinned `git+file:///<abs>` | `{type, url}` — nothing volatile | the **uncommitted** working-tree value |
+| `?ref=<REV>&rev=<REV>` | `{ref: <REV>, type, url}` — `rev` stripped | the **committed** value |
+
+So the unpinned form reads the trunk's working tree on every evaluation, which re-introduces the
+`prek` / `git write-tree` race. The pin ignores the working tree. Do not read a missing `rev` in
+`locked` as a broken pin — `ref` is doing the work.
+
+**`devenv -o nix-configs '<url>' <subcommand>` also works, but it must be typed every time.** A
+bare `devenv` command fails even when `devenv.lock` already holds the pinned node. devenv compares
+the node's `original` against `devenv.yaml` and refetches on a mismatch (`src/libflake/flake.cc`),
+and devenv's `--override-input` rewrites the declared url rather than applying a sticky override.
+
+**`devenv.local.yaml` is git-ignored; `devenv.lock` is not.** devenv rewrites the lock in the
+workspace, and that cannot be avoided: `original` is written **unstripped**, so any url change lands
+in it, and the staleness test is full JSON equality of the whole lock graph. Never commit that
+change.
+
+### `git-hooks` fails in a workspace — loudly, but it does not block the shell
+
+Because a workspace has no `.git`, the `git-hooks` integration cannot install. Measured on
+2026-09-09, this is not a silent skip: the devenv task **fails** and the failure cascades.
+
+```
+WARNING: git-hooks.nix: skipping hook installation: fatal: not a git repository
+error: Command `git rev-parse --show-toplevel` exited with an error: exit status: 128
+✖ Running devenv:git-hooks:run in 881ms (failed)
+✖ Running devenv:enterTest in 334ns (dependency failed)
+✖ Running tasks in 5.16s (failed)
+```
+
+The shell still enters, and `devenv shell -- <cmd>` still exits 0. `.pre-commit-config.yaml` is
+still symlinked and `prek` is still on `PATH` — they simply have no repo to act on. So expect this
+output in every workspace shell and do not read it as a broken bootstrap. It also means a workspace
+runs **no** pre-commit checks; run the formatter and the linters from the trunk before you commit.
 
 ### devenv state is per directory
 
@@ -388,11 +420,16 @@ follow a later `cd`. Enter `devenv shell` **from the workspace root**.
 that path comes from `.jj/repo/config-id`, a random value written once at `jj git init`, and a
 secondary workspace reaches the same store through its `.jj/repo` pointer file.
 
-`modules/slots/jj/default.nix` therefore guards its `enterShell` symlink: it writes the shared
-config only when `.jj/repo` is a directory, which is true in the default workspace and false in a
-secondary one. A workspace prints `kdn.jj: secondary jj workspace — the shared jj repo config
-stays untouched` and inherits the trunk's aliases instead. `jj config path --workspace` is per
-workspace and is unaffected.
+`modules/slots/jj/default.nix` therefore guards its `enterShell` symlink. The guard asks whether
+`.jj/repo` is a **file**, which is true only in a secondary workspace — it is a directory in the
+default workspace. That polarity is deliberate: an unknown future jj layout then makes the shell
+write the file, which is today's behaviour, instead of making the default workspace lose its
+config. A workspace prints `kdn.jj: secondary jj workspace — the shared jj repo config stays
+untouched` and inherits the trunk's aliases instead. `jj config path --workspace` is per workspace
+and is unaffected.
+
+Verified live on 2026-09-09 from a real workspace: the message appeared, and the shared config
+stayed byte-identical (`sha256 7656a6c2…` before and after) with all 4 fork-alias mentions intact.
 
 ### A workspace never activates a system
 
