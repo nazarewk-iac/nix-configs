@@ -12,16 +12,16 @@ Hub: [../generalization-plan.md](../definition.md). Depends on 001. Part of the 
 commit chain. Do not push.
 
 Goal: an external adopter enables the dual-arch Rosetta builder in their own nix-darwin
-configuration, then builds multi-arch containers in their own repos.
+configuration. Then the adopter builds multi-arch containers in their own repos.
 
 ## The adopter API is a minimal `mkSlots` call
 
-An adopter calling `mkSlots` is acceptable and expected. The requirement is narrower:
+An adopter may call `mkSlots`. That is acceptable and expected. The requirement is narrower:
 
 > The slot must not depend on the other module types at all.
 
-So do **not** extract the slot into a plain nix-darwin module, and do not add a payload/wrapper
-split. Verify the independence instead, and document the call.
+So do **not** extract the slot into a plain nix-darwin module. Do not add a payload/wrapper split.
+Verify the independence instead. Document the call.
 
 ## What the slot is today
 
@@ -41,8 +41,8 @@ Favourable facts, already verified:
 - Its only external need is `inputs.nix-rosetta-builder`, which `mkSlots` supplies through
   `specialArgs`.
 - `nix-rosetta-builder` writes its own `nix.buildMachines` entry with
-  `systems = [ <hostLinux> "x86_64-linux" ]` (`docs/multi-arch-builder.md:170`), so the slot needs
-  no builder wiring from this repo.
+  `systems = [ <hostLinux> "x86_64-linux" ]` (`docs/multi-arch-builder.md:170`). So the slot needs
+  no builder configuration from this repo.
 
 It must **not** gain any dependency on `modules/universal/profile/remote-builders/default.nix`
 (`docs/multi-arch-builder.md:295`), which holds the creator's own fleet inventory.
@@ -51,13 +51,13 @@ It must **not** gain any dependency on `modules/universal/profile/remote-builder
 
 This is the substantive code change in this checkpoint.
 
-`nix-rosetta-builder` needs an existing Linux builder to build its own Lima guest image the first
-time (`docs/multi-arch-builder.md:176`). So a first-time adopter needs stock `nix.linux-builder`
-running, then the Rosetta VM, then optionally the stock builder off again. Today the adopter has to
-know this and wire it by hand.
+`nix-rosetta-builder` needs a Linux builder that already exists to build its own Lima guest image
+the first time (`docs/multi-arch-builder.md:176`). So a first-time adopter needs stock
+`nix.linux-builder` active first, then the Rosetta VM, then optionally the stock builder off again.
+Today the adopter must know this and wire it by hand.
 
-Make the slot express the phases. Sketch of the option surface, to be settled during
-implementation:
+Make the slot express the phases. Settle the option surface during implementation. This is a
+sketch:
 
 | Phase | Meaning |
 |---|---|
@@ -66,11 +66,11 @@ implementation:
 
 Requirements:
 
-- The default must be safe for a first-time adopter, so the bootstrap phase is reachable without
-  reading source.
+- The default must be safe for a first-time adopter. The adopter must reach the bootstrap phase
+  without a read of the source.
 - Both builders on at once must not conflict over `nix.buildMachines` entries or SSH ports.
-- The transition must not need a manual edit between two `darwin-rebuild switch` runs if that can
-  be avoided; if it cannot, say so in the option description and in the runbook.
+- Avoid a manual edit between two `darwin-rebuild switch` runs. When you cannot avoid it, say so in
+  the option description and in the runbook.
 
 ## 2. Tell the adopter about the `i686-linux` gap
 
@@ -81,21 +81,21 @@ registers only the x86_64 ELF magic. Full analysis:
 An adopter hits this on any 32-bit derivation. State the limitation in the slot's option
 description and in the adopter doc. Do not attempt a fix here.
 
-## 3. Verify the container use case is covered
+## 3. Verify the builder covers the container use case
 
 The stated need is "build other repos' multi-arch containers". Confirm what the builder does and
 does not cover. `docs/multi-arch-container-builder.md` is a handover doc of approaches with
-tradeoffs, and it states it "Requires the dual-arch builder" — so image-index stitching stays the
+tradeoffs. It states it "Requires the dual-arch builder". So the image-index assembly stays the
 adopter's own job.
 
-Check whether anything else is needed that the slot does not supply: container tooling, `binfmt`,
-registry authentication, or `extra-platforms`. Report the answer in the adopter doc rather than
-adding scope here.
+Check what else the adopter needs that the slot does not supply: container tooling, `binfmt`,
+registry authentication, or `extra-platforms`. Report the answer in the adopter doc. Do not add
+scope here.
 
 ## 4. Document the call
 
-Add the worked `mkSlots` snippet to `docs/slots-for-adopters.md` (created in 001) and reference it
-from the runbook (003). An adopter needs: one flake input, one `mkSlots` call, one
+Add the worked `mkSlots` snippet to `docs/slots-for-adopters.md` (from 001). Reference it from the
+runbook (003). An adopter needs: one flake input, one `mkSlots` call, one
 `kdn.darwin.rosetta-builder.enable = true`, and the `imports` entry for the rendered `darwin`
 target.
 
@@ -111,5 +111,5 @@ target.
 
 ## Out of scope
 
-Extracting the slot into a plain nix-darwin module. Fixing `i686-linux`. Building the container
-image-index tooling.
+Do not extract the slot into a plain nix-darwin module. Do not fix `i686-linux`. Do not build the
+container image-index tooling.

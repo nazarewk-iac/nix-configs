@@ -8,12 +8,12 @@ authored_by: agent
 
 # Generalization plan
 
-Make the modules reusable by an **external adopter** — anybody but this repo's creator — with
-none of the creator's personal configuration.
+Make the modules reusable by an **external adopter** — anybody but this repo's creator. The adopter
+gets none of the creator's personal configuration.
 
-This file is the **hub**. It holds the checkpoint index, the dependency graph, the shared
-patterns, and the readiness audit. Each checkpoint has its own task file under `docs/tasks/`.
-A fresh agent reads this hub plus one task file.
+This file is the **hub**. It holds the checkpoint index, the dependency graph, the shared patterns,
+and the readiness audit. Each checkpoint has its own task file under `docs/tasks/`. A fresh agent
+reads this hub plus one task file.
 
 ## Context
 
@@ -21,27 +21,27 @@ The repo holds three module trees:
 
 | Tree | Files | LOC | Nature |
 |---|---|---|---|
-| `modules/meta/` | 3 | 363 | A separate `lib.evalModules` universe (`class = "kdn-meta"`), evaluated **before** NixOS/Darwin/HM and injected as `specialArgs.kdnConfig`. |
-| `modules/universal/` | 194 | 19,689 | Loaded in every context, scoped by `kdnConfig.util.*` guards. |
+| `modules/meta/` | 3 | 363 | A separate `lib.evalModules` universe (`class = "kdn-meta"`). The repo evaluates it **before** NixOS/Darwin/HM, then injects it as `specialArgs.kdnConfig`. |
+| `modules/universal/` | 194 | 19,689 | Every context loads it. The `kdnConfig.util.*` guards scope it. |
 | `modules/slots/` | 20 | 3,168 | Self-contained by rule. Emits into 5 `deferredModule` targets. |
 
 `modules/slots/` is already close to shareable. `modules/universal/` and `modules/meta/` carry
 personal data: homelab topologies, sops files, YubiKey serials, WiFi SSIDs, real password hashes.
 
-One concrete adopter use case drives the early checkpoints: the `rosetta-builder` module must work
-in anybody's nix-darwin, so an adopter builds multi-arch containers in their own repos.
+One concrete adopter use case drives the early checkpoints. The `rosetta-builder` module must work
+in anybody's nix-darwin. Then an adopter builds multi-arch containers in their own repos.
 
 ## Decisions
 
 | Question | Decision |
 |---|---|
 | Term for anybody but the creator | **external adopter**; their repo is the **adopter repo**. |
-| Where code lives | **ONE public repo.** A separate library repo is rejected. |
-| Where personal data lives | **ONE folder**, referenced from there. This supersedes the scattered `kdn-*.nix`-next-to-the-module precedent. |
-| Evaluator | **Lix 2.95.2.** No CppNix or Determinate Nix assumptions. |
-| Adopter API | Calling a **minimal `mkSlots`** is fine. The requirement is that slots do not depend on the other module types — not that slots become plain modules. |
+| Where code lives | **ONE public repo.** Do not add a separate library repo. |
+| Where personal data lives | **ONE folder.** Modules reference it from there. This supersedes the scattered `kdn-*.nix`-next-to-the-module precedent. |
+| Evaluator | **Lix 2.95.2.** Assume no CppNix and no Determinate Nix. |
+| Adopter API | A call to a **minimal `mkSlots`** is fine. The requirement: a slot does not depend on the other module types. A slot does not need to become a plain module. |
 | Retrofit `modules/universal` into slots | **No.** See [Direction](#direction-slots-or-den). |
-| den | Evaluate **early**, before any reimplementation work. |
+| den | Evaluate it **early**, before any reimplementation work. |
 
 ## Checkpoint index
 
@@ -51,12 +51,12 @@ in anybody's nix-darwin, so an adopter builds multi-arch containers in their own
 | 002 | [generalization-002-rosetta-builder-adopter-dropin.md](002-rosetta-builder-adopter-dropin/definition.md) | `rosetta-builder` works in an adopter's nix-darwin through a minimal `mkSlots`. |
 | 003 | [generalization-003-nix-darwin-getting-started.md](003-nix-darwin-getting-started/definition.md) | A runbook from zero to a multi-arch build, with real pain points. |
 | 004 | [generalization-004-den-spike.md](004-den-spike/definition.md) | Decide whether den can be the target framework. **Direction gate.** |
-| 005 | [generalization-005-conditional-imports-requirement.md](005-conditional-imports-requirement/definition.md) | Write down what `modules/meta` actually solves, as a testable requirement. |
-| 006 | [generalization-006-direction-decision.md](006-direction-decision/definition.md) | Choose slots or den as the reimplementation target. Gated on 004 + 005. |
+| 005 | [generalization-005-conditional-imports-requirement.md](005-conditional-imports-requirement/definition.md) | State what `modules/meta` solves, as a testable requirement. |
+| 006 | [generalization-006-direction-decision.md](006-direction-decision/definition.md) | Choose slots or den as the reimplementation target. Gate: 004 + 005. |
 | 007 | [generalization-007-depersonalize-slots.md](007-depersonalize-slots/definition.md) | Lift the creator's personal defaults and opinions out of shared slot options. |
-| 008 | [generalization-008-sops-default-inventory.md](008-sops-default-inventory/definition.md) | An exact list of what depends on the default sops file and its key schema. |
+| 008 | [generalization-008-sops-default-inventory.md](008-sops-default-inventory/definition.md) | An exact list of what depends on the default sops file, plus its key schema. |
 | 009 | [generalization-009-personal-data-folder.md](009-personal-data-folder/definition.md) | One folder holds all personal data. The tree evaluates without it. |
-| 010 | [generalization-010-flake-input-overhead.md](010-flake-input-overhead/definition.md) | Research, then maybe spike, smoothing out a 106-node lock. |
+| 010 | [generalization-010-flake-input-overhead.md](010-flake-input-overhead/definition.md) | Research, then maybe spike, ways to make a 106-node lock cheaper. |
 
 ## Dependency graph
 
@@ -75,75 +75,82 @@ wave 4 — needs the direction and the inventory
   006 + 008 ──► 009
 ```
 
-Wave 2 runs early on purpose. Reimplementing modules onto slots and then again onto den is the
-waste this ordering prevents.
+Wave 2 runs early on purpose. It prevents one waste: work onto slots first, then the same work
+onto den.
 
 ## Direction: slots or den
 
 The plan does **not** retrofit `modules/universal` into slots. `modules/meta` solves a real
-problem, and any target framework must solve it too:
+problem. Any target framework must solve it too:
 
-> **Conditional imports of third-party modules, driven by data rather than by module `config`.**
-> Example: the Raspberry Pi 4 modules, imported only when a host sets the matching
-> `kdnConfig.features.*` flag. A plain `evalModules` cannot do this without infinite recursion,
-> which is why `modules/meta` exists as a pre-pass.
+> **Data drives conditional imports of third-party modules. Module `config` does not.** Example:
+> the tree imports the Raspberry Pi 4 modules only when a host sets the correct
+> `kdnConfig.features.*` flag. A plain `evalModules` cannot do this. It hits infinite recursion.
+> `modules/meta` exists as a pre-pass for this reason.
 
-Checkpoint 005 turns that into a written, testable requirement. Checkpoint 004 tests whether den
-satisfies it. Checkpoint 006 then picks slots or den, once — and the losing option is not built.
+Checkpoint 005 turns that into a written, testable requirement. Checkpoint 004 tests den against
+it. Checkpoint 006 then picks slots or den, once. Nobody builds the option that loses.
 
-den looks less abstract and better matched to this problem than the alternatives in that space.
-The load-bearing unknown is whether an adopter imports a den aspect as a plain drop-in module
-**without adopting den** — see 004, criterion 2. That criterion decides it.
+den looks less abstract than the alternatives in that space, and it fits this problem better. One
+unknown carries the decision: can an adopter import a den aspect as a plain drop-in module, with no
+adoption of den? See 004, criterion 2. That criterion decides it.
+
+A Darwin host can also boot a NixOS guest. So 004 can prove Home Manager **activation**, not only
+evaluation. microvm.nix supports a Darwin host at the revision this repo pins —
+`hypervisorsOnDarwin = [ "qemu" "vfkit" ]`, and `vmHostPackages` selects plain `qemu` off Linux.
+Treat that as a second phase of 004, behind the evaluation-level criteria. Every criterion that
+decides the direction evaluates without a boot, so a boot alone decides nothing.
 
 ## Readiness audit — the 12 gaps
 
-Severity is from an adopter's point of view. The owning checkpoint fixes it.
+Severity is from an adopter's point of view. The listed checkpoint fixes the gap.
 
 | # | Gap | Severity | Owner |
 |---|---|---|---|
-| 1 | `pre-push.sh` remote guard is inverted — private content is permitted to the public remote | **P0** | 001 |
-| 2 | The overlay requirement `overlays = [ inputs.nix-configs.overlays.packages ]` is undocumented; 7 slots use `pkgs.kdn.*` | High | 001 |
+| 1 | `pre-push.sh` remote guard is inverted — it permits private content to the public remote | **P0** | 001 |
+| 2 | Nothing documents the overlay requirement `overlays = [ inputs.nix-configs.overlays.packages ]`; 7 slots use `pkgs.kdn.*` | High | 001 |
 | 3 | No adopter entry point — no template, no example `devenv.yaml`/`devenv.nix`, no adopter-facing doc | High | 001 |
 | 4 | `devenv.yaml` pins the adopter's nixpkgs to the creator's nixpkgs fork through `follows: nix-configs/nixpkgs` | High | 001 |
 | 5 | Personal data inside the slots tree — `modules/slots/ssh-access/kdn-graph.nix`, 176 LOC of hosts, LAN IPs, WAN ports, `*.kdn.im` zones | Medium | 007, 009 |
 | 6 | Personal defaults in shared options — `kdn.jj.upstream.remote = "kdn"`, `alwaysBlockedMessagePatterns = [ "scratchpad" ]`, `opencode`'s hardwired `requesty` provider, `llm` examples with homelab FQDNs | Medium | 007 |
 | 7 | Slots ship the creator's opinions — `kdn.jj` installs a jj-only mandate as an agent rule; 5 slots read repo content through `${inputs.nix-configs}/.agents/…` | Medium | 007 |
 | 8 | Two slots default to `enable = true` (`mcp/snoop`, `mcp/pretty-print`), against this repo's own side-effect-free rule | Medium | 007 |
-| 9 | No CI check that a slot evaluates standalone or avoids universal options — `.agents/rules/slots-standalone.md` states the rule, nothing enforces it | Medium | 001 |
+| 9 | No CI check proves that a slot evaluates standalone and avoids universal options — `.agents/rules/slots-standalone.md` states the rule, nothing enforces it | Medium | 001 |
 | 10 | `kdn.*` is a personal namespace on a shared library | Low — **do not rename**, the churn buys nothing | — |
-| 11 | The `users` slot target is unused — no slot assigns it | Low — **keep it** | — |
+| 11 | No slot assigns the `users` slot target | Low — **keep it** | — |
 | 12 | Lock size: 106 nodes / 60 root inputs reach an adopter's lock as text | Low | 010 |
 
 ### Gap 1 is verified, not theoretical
 
 `modules/slots/jj/pre-push.sh:64-67` skips the denied-file and denied-message checks for every
-remote **except** the private fork, while the option docs
-(`modules/slots/jj/default.nix:54,59`) promise the opposite.
+remote **except** the private fork. The option docs (`modules/slots/jj/default.nix:54,59`) promise
+the opposite.
 
-Reproduced in a throwaway repo with `PRIVATE_REMOTE=<fork>` and a commit that adds a path matching
-a denied pattern. Current code: push to the public remote exits **0** (allowed). With the guard
-inverted: public exits **1** (blocked), fork exits **0** (allowed) — the documented intent.
+I reproduced it in a throwaway repo. The repo set `PRIVATE_REMOTE=<fork>`, and one commit added a
+path in the denied set. Current code: a push to the public remote exits **0**, so the hook permits
+it. With the guard inverted: the public remote exits **1** and the hook blocks it; the fork exits
+**0** and the hook permits it. That matches the documented intent.
 
 ## Corrections to earlier assumptions
 
 Record these. Two of them remove work that looked necessary.
 
 1. **An adopter does not fetch this repo's 60 inputs, and needs no SSH key to lock.** Lix's
-   `lix/libexpr/flake/call-flake.nix` maps lock nodes with `builtins.mapAttrs`, so an
-   unreferenced node is never fetched. `flake.cc` `computeLocks` keeps an existing input as
-   metadata with no network I/O. An adopter pays one whole-tree fetch (**4.1 MB**) plus ~106 lock
-   nodes of text. So gap 12 is hygiene, not a blocker.
-2. **`lazy-trees` is not available on Lix and is not coming.**
+   `lix/libexpr/flake/call-flake.nix` maps lock nodes with `builtins.mapAttrs`, so Lix never
+   fetches a node that nothing references. `flake.cc` `computeLocks` keeps an input it already
+   knows as metadata, with no network I/O. An adopter pays one whole-tree fetch (**4.1 MB**) plus
+   ~106 lock nodes of text. So gap 12 is hygiene, not a blocker.
+2. **Lix has no `lazy-trees`, and will not get it.**
    `nix --extra-experimental-features lazy-trees eval --expr 1` warns
    `unknown experimental feature 'lazy-trees'`. Lix states it will not use the upstream
-   implementation. Lix also has a documented **flakes feature freeze**. Optional or lazy flake
-   inputs do not exist anywhere. So no checkpoint may depend on an evaluator feature landing.
-3. **Do not adopt a third-party lock aggregator.** The candidates in this space are about one
-   month old and single-maintainer, and they solve the mirror-image problem — consuming many
-   flakes cheaply, not exporting a small library from a big flake.
+   implementation. Lix also has a documented **flakes feature freeze**. No evaluator offers
+   optional or lazy flake inputs. So no checkpoint may depend on a new evaluator feature.
+3. **Do not adopt a third-party lock aggregator.** The candidates in this space are about one month
+   old, and one maintainer runs each. They also solve the mirror-image problem — they consume many
+   flakes cheaply. They do not export a small library from a big flake.
 
-Checkpoint 010 re-verifies the remaining open questions about `follows` laziness and `?dir=`
-subflakes, because the recommendation there is not yet settled.
+Checkpoint 010 re-verifies the open questions about `follows` laziness and `?dir=` subflakes. The
+recommendation there is not yet settled.
 
 ## Shared patterns
 
@@ -156,29 +163,29 @@ nix eval --raw '.#darwinConfigurations.<host>.config.system.build.toplevel.drvPa
 nix eval --raw '.#nixosConfigurations.<host>.config.system.build.toplevel.drvPath'
 ```
 
-After the refactor, record again and diff. An unchanged path proves the refactor is a no-op.
-This turns a bulk refactor into a mechanical loop, and it is the safety net for 007 and 009.
+After the refactor, record again and diff. An equal path proves the refactor is a no-op. This turns
+a bulk refactor into a mechanical loop. It is the safety net for 007 and 009.
 
-**Measured cost: 93 s for one warm Darwin host** (28 s user, 12 s system, all inputs already in
-the store). 16 hosts is about 25 minutes in sequence. Use it as a checkpoint gate, not per edit.
-For per-edit feedback use `devenv eval '<option.path>'`.
+**Measured cost: 93 s for one warm Darwin host** (28 s user, 12 s system, all inputs already in the
+store). 16 hosts take about 25 minutes in sequence. Use it as a checkpoint gate, not per edit. For
+per-edit feedback use `devenv eval '<option.path>'`.
 
 ### Pattern V2 — the adopter-hostile eval
 
-Any checkpoint that claims adopter safety proves it two ways:
+Any checkpoint that claims adopter safety must prove it two ways. First, with no SSH agent and no
+usable key:
 
 ```bash
-# no SSH agent, no usable key
 SSH_AUTH_SOCK= GIT_SSH_COMMAND='ssh -o BatchMode=yes -o IdentitiesOnly=yes -o IdentityFile=/dev/null' \
   nix eval …
 ```
 
-and with the personal data folder absent (after 009).
+Second, with no personal data folder present (after 009).
 
 ### Pattern V3 — the scratch adopter repo
 
-The only honest test of an adopter path is a flake **outside** this repo that declares one input
-and enables one thing. Create it under `/tmp`, never inside this repo's tree.
+Only one honest test of an adopter path exists: a flake **outside** this repo that declares one
+input and enables one thing. Create it under `/tmp`. Never create it inside this repo's tree.
 
 ## Verification
 
@@ -192,52 +199,56 @@ and enables one thing. Create it under `/tmp`, never inside this repo's tree.
 | Format | `nix run .#kdn-nix-fmt --` | before each commit |
 | Adopter safety | Pattern V2 | 001, 002, 009 |
 
-Darwin hosts build on a Darwin machine or through `remote=`. Do not run
+Darwin hosts build on a Darwin machine, or through `remote=`. Do not run
 `nom build .#darwinConfigurations.<host>.system` on Linux.
 
 ## Out of scope
 
-- Renaming the `kdn.*` namespace (gap 10).
-- Deleting the `users` slot target (gap 11).
-- Retrofitting `modules/universal` into slots — see [Direction](#direction-slots-or-den).
-- Switching off Lix.
+- A rename of the `kdn.*` namespace (gap 10).
+- Removal of the `users` slot target (gap 11).
+- A retrofit of `modules/universal` into slots — see [Direction](#direction-slots-or-den).
+- A move away from Lix.
 - Any push. The creator reviews and pushes.
 
-## Related work already tracked
+## Related work, already in `docs/tasks/`
 
-- [tasks/slots-modules-architecture.md](../../slots-modules-architecture.md) — in progress;
-  documents which architecture rules apply to slots. Checkpoint 001 links to it, and must not
-  duplicate it.
+- [tasks/slots-modules-architecture.md](../../slots-modules-architecture.md) — in progress. It
+  states which architecture rules apply to slots. Checkpoint 001 links to it. Do not duplicate it.
 - [tasks/rosetta-builder-i686-linux.md](../../rosetta-builder-i686-linux.md) — a known
   `rosetta-builder` limitation. Checkpoints 002 and 003 must tell an adopter about it.
 - [tasks/multi-arch-rosetta-builder.done.md](../../multi-arch-rosetta-builder.done.md) — the
   original builder work.
 - [multi-arch-builder.md](../../../multi-arch-builder.md) and
-  [multi-arch-container-builder.md](../../../multi-arch-container-builder.md) — the existing builder docs.
+  [multi-arch-container-builder.md](../../../multi-arch-container-builder.md) — the builder docs that exist
+  today.
 
-## Open research — resume next session
+## Open research
 
-Two research passes were stopped part way on 2026-09-08, before they reported. **Relaunch both.**
-A subagent is session-scoped, so a new session cannot resume the old one — start each again from
-the scope below. Both are read-only research. Neither changes a module.
+Two research passes serve 008 and 010. Both are read-only. Neither changes a module. Each delivers
+a `.research.md` sibling next to its task file.
 
-| Research | Feeds | Scope | State when stopped |
-|---|---|---|---|
-| Default sops file inventory | [008](008-sops-default-inventory/definition.md) | The four lists in 008 | Reached an evaluation trace that proved one unguarded consumer. That finding is already written into 008. |
-| Lix flake laziness | [010](010-flake-input-overhead/definition.md) | Q1-Q4 in 010 | Produced two grep-level leads, both written into 010. No question answered. |
+| Research | Feeds | Scope |
+|---|---|---|
+| Default sops file inventory | [008](008-sops-default-inventory/definition.md) | The four lists in 008 |
+| Lix flake laziness | [010](010-flake-input-overhead/definition.md) | Q1-Q4 in 010 |
 
-Read the owning task file first. Each one states its own method and deliverable, so no extra
-briefing is needed. Both deliver a `.research.md` sibling.
+Read the task file first. Each task file states its own method and deliverable, so you need no
+extra brief.
 
-Run them at the same time — they touch different subsystems and do not conflict. Pick the model per
-the tiering rule: these are evidence-gathering passes with a verification loop, so `sonnet` fits;
-escalate only on a wrong or shallow claim.
+A first attempt at both stopped part way on 2026-09-08. It kept two facts, and the task files now
+hold them: 008 records one unguarded consumer from an evaluation trace; 010 records two grep-level
+leads. No question got an answer.
 
-## Writing constraint for every deliverable
+Run the two passes at the same time. They touch different subsystems, so they do not conflict.
+A subagent is session-scoped, so a new session starts each pass again from the scope above. Pick
+the model per the model-tier rule: each pass gathers evidence and then verifies it, so `sonnet` fits.
+Escalate only on a wrong or shallow claim.
+
+## Constraints on every deliverable
 
 These docs go to the public remote. Some paths in the working copy exist only on the private fork
-chain. **Never cite a fork-only path** in any deliverable, example, or commit message, and never
-name the creator's employer.
+chain. **Never cite a fork-only path** in any deliverable, example, or commit message. Never name
+the creator's employer.
 
 Check a path before you cite it:
 
@@ -247,15 +258,25 @@ git ls-tree -r --name-only "$PUB" -- <path> | head -1   # empty output means do 
 ```
 
 Beware: `<bookmark>@<remote>` is jj syntax. `git ls-tree` needs the git ref
-(`refs/remotes/<remote>/<branch>`), and it fails **silently** on a bad ref name — which reads as
-"fork-only" for every path and hides real leaks.
+(`refs/remotes/<remote>/<branch>`). It fails **silently** on a bad ref name. Every path then reads
+as fork-only, and a real leak stays hidden.
 
 Use `hosts/anji` as the Darwin example host; it is public. When a verified finding comes from a
-fork-only file, state the finding and omit the path. Use a neutral placeholder for private remote
-and host names.
+fork-only file, state the finding and omit the path. Use a neutral placeholder for a private remote
+name and a private host name.
+
+### Language
+
+Write every deliverable in strict ASD-STE100 Simple Technical English. See
+`.agents/rules/simple-technical-english.md`. Then **verify your own output** against it. Check for
+these four faults, in this order:
+
+1. `-ing` forms — gerunds and participles. Keep them only inside a technical name.
+2. Passive voice. Name the actor and use an active verb.
+3. Sentence length. At most 20 words for an instruction, 25 for a description.
+4. Synonym drift. Never use a second word for a term you already used.
 
 ## Process
 
-All commits go through `jj`, in conventional commit format, always with `-m 'msg'` and
-`-- <files>` passed explicitly. Never `jj bookmark set`. Never a git worktree in this repo. Write
-all prose, comments, and commit messages in strict ASD-STE100 Simple Technical English.
+All commits go through `jj`, in conventional commit format. Always pass `-m 'msg'` and
+`-- <files>` explicitly. Never run `jj bookmark set`. Never create a git worktree in this repo.

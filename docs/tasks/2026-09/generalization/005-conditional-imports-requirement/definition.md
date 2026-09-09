@@ -11,22 +11,22 @@ timestamp: 2026-09-08T17:30:00+02:00
 Hub: [../generalization-plan.md](../definition.md). Together with 004 it gates 006.
 
 Goal: state what `modules/meta` solves as a written, testable requirement. Any framework that
-replaces it must satisfy the requirement. Without this written down, 006 cannot be decided on
+replaces it must satisfy the requirement. Without this written down, nobody can decide 006 on
 evidence.
 
 ## Why this exists
 
-`modules/meta` is not accidental complexity. It solves a real problem, and the plan does **not**
-retrofit `modules/universal` into slots partly because that would discard the solution without
-replacing it.
+`modules/meta` is not accidental complexity. It solves a real problem. The plan does **not**
+retrofit `modules/universal` into slots. One reason: a retrofit discards the solution and puts
+nothing in its place.
 
 ## The requirement, as measured
 
 `modules/meta/default.nix:207` declares 5 feature flags: `rpi4`, `installer`, `darwin-utm-guest`,
 `microvm-host`, `microvm-guest`.
 
-Those flags are **static data**, not module config. They come from `hosts/<host>/meta.json`, read
-at `flake.nix:260`:
+Those flags are **static data**, not module config. They come from `hosts/<host>/meta.json`, which
+`flake.nix:260` reads:
 
 | Host | `features` in `meta.json` |
 |---|---|
@@ -36,8 +36,8 @@ at `flake.nix:260`:
 | the other 12 hosts | none |
 
 `modules/meta` evaluates those flags in a separate `lib.evalModules` universe with
-`class = "kdn-meta"`, **before** the NixOS/Darwin/HM evaluation, and injects the result as
-`specialArgs.kdnConfig`. That ordering is the whole trick.
+`class = "kdn-meta"`. It runs **before** the NixOS/Darwin/HM evaluation. It then injects the result
+as `specialArgs.kdnConfig`. That order is the whole trick.
 
 The payoff is at `modules/universal/profile/hardware/rpi4/default.nix:22`:
 
@@ -54,9 +54,9 @@ The payoff is at `modules/universal/profile/hardware/rpi4/default.nix:22`:
   );
 ```
 
-**Three third-party modules are imported only when a host declares the flag.** A plain
-`evalModules` cannot do this from its own `config`, because `imports` must be known before
-`config` is evaluated. That is the infinite recursion `modules/meta` avoids.
+**The tree imports three third-party modules only when a host declares the flag.** A plain
+`evalModules` cannot do this from its own `config`. `imports` must resolve before the evaluation of
+`config`. That is the infinite recursion `modules/meta` avoids.
 
 Other call sites of the same capability:
 
@@ -75,7 +75,7 @@ The requirement is **data-driven** conditional imports, not **config-driven** co
 The flags are static JSON per host. Nothing computes them from evaluated module `config`. This
 matters directly for 004:
 
-- den's resolution runs before `evalModules`, driven by entity and context **data**. That matches
+- den's resolution runs before `evalModules`. Entity and context **data** drive it. That matches
   this requirement.
 - den's open question (#569) is about imports that depend on module **config**. This repo does not
   appear to need that.
@@ -87,21 +87,21 @@ exists, it changes the 006 decision.
 ## Deliverables
 
 1. **The requirement statement** — one paragraph, precise enough to test against a framework.
-2. **The audit** — every site where `imports` depends on data, and a confirmed statement that no
-   site depends on evaluated `config` (or the list of sites that do).
+2. **The audit** — every site where `imports` depends on data. Add a confirmed statement that no
+   site depends on evaluated `config`. List the sites that do, if any exist.
 3. **A conformance test** — a minimal reproduction that a candidate framework either passes or
    fails. It should express: "given a host that declares flag X as data, import third-party module
    Y; given a host that does not, do not import it, and do not evaluate it."
-4. **What else `modules/meta` provides**, so nothing is lost silently. Beyond `features.*` it
+4. **What else `modules/meta` provides**, so you lose nothing silently. Beyond `features.*` it
    supplies `util.ifTypes`/`ifHM`/`ifHMParent`/`hasParentOfAnyType`/`loadModules`/`hasSops`,
    `output.mkSubmodule`, `hostName`, `k8s.clusters`, and the `parent`/`parents` chain. For each,
    state whether it is essential, replaceable, or removable.
 
-Useful measured context for item 4: 182 of 194 files in `modules/universal/` reference
-`kdnConfig`, across 316 guard call sites — but **275 of those 316 map directly onto slot target
-keys**, so the guards are largely mechanical. The genuinely hard part is the conditional imports
-above, plus the option coupling described in 006.
+Useful measured context for item 4: 182 of 194 files in `modules/universal/` reference `kdnConfig`,
+across 316 guard call sites. But **275 of those 316 map directly onto slot target keys**, so the
+guards are largely mechanical. The genuinely hard part is the conditional imports above, plus the
+option coupling that 006 describes.
 
 ## Exit criteria
 
-The conformance test from item 3 exists and runs. 004 can be scored against it.
+The conformance test from item 3 exists and runs. You can score 004 against it.
