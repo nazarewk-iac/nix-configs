@@ -36,6 +36,21 @@ let
     text = builtins.readFile ./check-fork-contamination.sh;
   };
 
+  # The structural gate for a finished fork flake update. It cannot be a `checks/` derivation: it
+  # reads remote-tracking refs and the jj revset engine, so it is impure by nature. It cannot be a
+  # git hook either, because `jj git push` fires none. So it ships as a command, and
+  # `sync-upstream` prints its verdict before the push prompt.
+  flakeUpdateComplete = pkgs.writeShellApplication {
+    name = "jj-flake-update-complete";
+    runtimeInputs = [
+      pkgs.git
+      pkgs.jujutsu
+      pkgs.jq
+    ];
+    runtimeEnv.KDN_PUBLIC_REMOTE = cfg.upstream.remote;
+    text = builtins.readFile ../../../../hack/flake-update-complete.sh;
+  };
+
   forkAudit = pkgs.writeShellApplication {
     name = "jj-fork-audit";
     runtimeInputs = [
@@ -133,6 +148,12 @@ in
         "--"
         (lib.getExe forkAudit)
       ];
+      aliases.update-check = [
+        "util"
+        "exec"
+        "--"
+        (lib.getExe flakeUpdateComplete)
+      ];
       aliases.fork-help = [
         "util"
         "exec"
@@ -192,6 +213,11 @@ in
           echo "Tip: $tip"
           echo "Changes to push to ${cfg.upstream.remote}:main (since main@${cfg.upstream.remote}):"
           jj log -r "main@${cfg.upstream.remote}..''${tip}" --stat
+          # A warning, never a block: this alias also serves an ordinary push, where the
+          # finished-update shape does not apply. Read the verdict, then answer the prompt.
+          echo '--- flake update completion check (advisory) ---'
+          ${lib.getExe flakeUpdateComplete} || true
+          echo '--- end of the completion check ---'
           read -rp "Push ${cfg.upstream.remote}:main? (y/n)" -n 1
           echo
           if test "$REPLY" == y ; then
@@ -207,7 +233,10 @@ in
     };
 
     devenv = {
-      packages = [ forkAudit ];
+      packages = [
+        forkAudit
+        flakeUpdateComplete
+      ];
 
       enterShell = lib.mkAfter ''
         ${lib.optionalString (cfg.fork.url != null) ''
