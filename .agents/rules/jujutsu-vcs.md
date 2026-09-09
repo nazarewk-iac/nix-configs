@@ -36,6 +36,13 @@ slash command, which shells raw `git commit` internally. Never use `/commit` in 
 > `jj squash` — they open an editor by default. `jj split` accepts multiple `-- path1 path2 ...`.
 > **Never `jj edit` to read a file** — use `jj file show --revision <id> <path>`.
 
+> **Never redirect into the file a `jj` read is reading.** `jj file show -r <rev> x | … > x`
+> truncates `x` **before** the read starts. `jj file show` then snapshots the empty file into `@`,
+> and jj rebases that empty file into every descendant — so the read returns nothing and the file
+> is lost at several revisions. Measured on 2026-09-09 with `devenv.lock`; `jj op restore
+> <op-before-the-snapshot>` recovered it. Write to a temporary file, then `mv`. The same rule
+> covers `jj diff`, `jj show` and `jj file list`.
+
 > ⚠️ **BIG FAT WARNING — NEVER use a git worktree in this repo. A parallel agent needs a real jj
 > workspace, created OUTSIDE this repo's tree, on a fresh change.**
 > `git worktree` (what the Agent/Workflow tool's `isolation: "worktree"` option creates under the
