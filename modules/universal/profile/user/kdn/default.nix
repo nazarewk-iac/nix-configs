@@ -392,7 +392,7 @@ in
                 text = "${lib.getExe pkgs.kdn.kdn-keepass} drag0nius.kdbx";
               })
               vlc
-              subtitleedit
+              #subtitleedit # 2026-09-09: removed from nixpkgs, it relies on gtk2
               subtitleeditor
               ffsubsync
               haruna
