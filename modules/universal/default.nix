@@ -122,8 +122,18 @@ in
               - the original cause (introducing the check) https://github.com/NixOS/nixpkgs/pull/532778
             */
             let
+              /*
+                Do NOT add a package here when its metadata check already passes upstream.
+                An `overridePythonAttrs` call changes the derivation hash, so the binary cache
+                cannot match it, and every dependent package rebuilds too.
+
+                Measured on 2026-09-09 at nixpkgs d6524aa:
+                - upstream python314Packages.scipy: cache.nixos.org returns 200
+                - the same package with this override: 404
+                `scipy` was in this list, so `brys` had to compile it. That build needs more
+                memory than the rosetta-builder guest holds, and the compiler was killed.
+              */
               affected = [
-                "scipy"
                 "cython_0"
               ];
             in
