@@ -23,14 +23,14 @@ this repo's own hosts. A changed drvPath means a real behaviour change that need
 | Line | Content |
 |---|---|
 | `:103` | `export REQUESTY_API_KEY="$(jq -r '.requesty.key // empty' …)"` |
-| `:105` | a warning message naming requesty |
+| `:105` | a warning message that names requesty |
 | `:140` | `provider.requesty = {};` in the default settings |
 
-Move it into its own sub-module that **does not need to be enabled**. An adopter who enables
-`kdn.opencode` must not get a commercial provider wired in by default.
+Move it into its own sub-module. An adopter does not have to enable that sub-module. An adopter who
+enables `kdn.opencode` must not get a commercial provider by default.
 
-Note that `modules/slots/llm/proxy/` already treats requesty correctly — as one instance of a
-general `instances.<name>` option with `upstreamUrl` (`:100`), documented by example in its README.
+Note that `modules/slots/llm/proxy/` already treats requesty correctly. It is one instance of a
+general `instances.<name>` option with `upstreamUrl` (`:100`). Its README documents it by example.
 Follow that pattern.
 
 ## 2. Lift the personal defaults out of shared options
@@ -50,8 +50,8 @@ Follow that pattern.
 
 `modules/slots/ca/default.nix` (91 LOC) is the correctly parametrized exemplar — real `certFile`
 and `keySopsFile` options, with the creator's own paths only in the docstring. Note that its
-`example` at `:74-75` still shows `"${kdnConfig.self}/data/ca.pub"`, which is doc-only and not a
-rule violation, but it misleads a reader. Fix the example.
+`example` at `:74-75` still shows `"${kdnConfig.self}/data/ca.pub"`. That is doc-only, and not a
+rule violation. But it misleads a reader. Fix the example.
 
 ## 3. Make the two default-on slots side-effect free
 
@@ -61,18 +61,18 @@ rule violation, but it misleads a reader. Fix the example.
 | `modules/slots/mcp/pretty-print/default.nix` | `:103` — `default = true` |
 
 `.agents/rules/nix-conventions.md` states that all modules must be side-effect free by default.
-These two break it. Flip them, then set them explicitly in this repo's own `devenv.nix` so
-behaviour here does not change — verify with Pattern V1.
+These two break it. Flip them. Then set them explicitly in this repo's own `devenv.nix`, so
+behaviour here does not change. Verify with Pattern V1.
 
 ## 4. Decide what a slot writes into the adopter repo
 
-Enabling `kdn.jj` installs `.agents/rules/jujutsu-vcs.md`, which is a jj-only mandate, plus the
-fork-workflow docs. 5 slots read repo content through `${inputs.nix-configs}/.agents/…`: `jj`,
-`jj/fork`, `nix`, `zellij`, `mcp/basic-memory`.
+When an adopter enables `kdn.jj`, the slot installs `.agents/rules/jujutsu-vcs.md`, a jj-only
+mandate, plus the fork-workflow docs. 5 slots read repo content through
+`${inputs.nix-configs}/.agents/…`: `jj`, `jj/fork`, `nix`, `zellij`, `mcp/basic-memory`.
 
 This is not automatically wrong — an adopter may want the rules. But it must be a choice. Add an
-option to opt out of the shipped agent rules, and default it so that an adopter does not silently
-receive the creator's working agreements.
+option to opt out of the shipped agent rules. Default it so an adopter does not silently receive
+the creator's own rules.
 
 Every `files` block already reads `config.kdn.isSourceRepo`, which the loader declares rather than
 the slot. Keep that.
@@ -82,9 +82,9 @@ the slot. Keep that.
 `modules/slots/ssh-access/kdn-graph.nix` is 176 LOC of the creator's hosts, LAN and management IPs
 (`192.168.41/73/252.*`), WAN ports, `*.kdn.im` zones, and literal addresses.
 
-The mechanism is sound and its header documents it: a `kdn-` prefix, not auto-loaded because the
-loader only picks up `*/default.nix`, imported explicitly from a host's `mkSlots` call. **The
-location is wrong** — personal data belongs in the single folder from
+The mechanism is sound, and its header documents it. It uses a `kdn-` prefix. The loader does not
+pick it up, because the loader reads only `*/default.nix`. A host imports it explicitly from its
+`mkSlots` call. **The location is wrong** — personal data belongs in the single folder from
 [009](../009-personal-data-folder/definition.md).
 
 Two actions here:
@@ -100,7 +100,7 @@ Two actions here:
 
 ## Exit criteria
 
-- Pattern V1: every host's drvPath is unchanged, or each change is justified in the `.done.md`.
+- Pattern V1: every host's drvPath is unchanged, or the `.done.md` justifies each change.
 - Pattern V3: a scratch adopter flake enables `kdn.opencode` and gets **no** commercial provider.
 - The standalone check from 001 item 5 still passes.
 - `nix run .#kdn-nix-fmt --` is clean.

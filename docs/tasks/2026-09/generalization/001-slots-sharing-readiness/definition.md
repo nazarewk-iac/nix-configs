@@ -6,13 +6,13 @@ authored_by: agent
 timestamp: 2026-09-08T17:30:00+02:00
 ---
 
-# 001 — slots sharing readiness
+# 001 — readiness to share slots
 
 Hub: [../generalization-plan.md](../definition.md). This is checkpoint 001, the head of
 the first commit chain. Do not push.
 
-Goal: an external adopter consumes `modules/slots` today, and the one bug that leaks private
-content is fixed.
+Goal: an external adopter consumes `modules/slots` today. Fix the one bug that leaks private
+content.
 
 ## 1. P0 — fix the inverted remote guard
 
@@ -30,31 +30,31 @@ The guard at lines 64-67 skips the denied-file and denied-message checks for eve
 
 `PRIVATE_REMOTE` is `cfg.fork.remote` (`modules/slots/jj/fork/default.nix:23`). The option docs
 say the opposite — `modules/slots/jj/default.nix:54` and `:59` both read "blocked from pushing to
-**non-fork** remotes". So private content is blocked from the private fork and permitted to the
-public remote.
+**non-fork** remotes". So the hook blocks private content to the private fork, and permits it to
+the public remote.
 
-**Verified.** In a throwaway repo with `PRIVATE_REMOTE=<fork>` and a commit that adds a path
-matching a denied pattern: current code pushes to the public remote with exit **0** (allowed).
-With the comparison inverted: public exits **1** (blocked), fork exits **0** (allowed).
+**Verified.** Take a throwaway repo with `PRIVATE_REMOTE=<fork>`, and a commit that adds a path
+that matches a denied pattern. Current code pushes to the public remote with exit **0** (allowed).
+With an inverted comparison: public exits **1** (blocked), fork exits **0** (allowed).
 
-Fix the comparison, and correct the comment to match the option docs.
+Fix the comparison. Correct the comment to match the option docs.
 
 ### Two more defects in the same script — fix both
 
 1. **Line 69 ignores the computed range.** It passes `"$remote_sha" "$local_sha"` to `git diff`
-   instead of the `$range` built at lines 47-52. A new branch has a zero remote sha, which
-   `git diff` rejects. The message check at line 81 uses `$range` correctly; the file check does
-   not. Use `git diff --name-only "$range"`.
+   instead of the `$range` from lines 47-52. A new branch has a zero remote sha, which `git diff`
+   rejects. The message check at line 81 uses `$range` correctly. The file check does not. Use
+   `git diff --name-only "$range"`.
 2. **An empty pattern list disables the check silently.** Lines 27-40 build
    `file_grep_args=(-q -i)` with no `-e` argument when the pattern list is empty. `grep` then
-   exits 2, and the `if` at line 69 reads that as "no match", so the check **passes**. Patterns
-   come from the git-ignored `devenv.slots.local.nix`, so a missing local file turns protection
-   off with no warning. Guard on array length and fail loudly instead.
+   exits 2. The `if` at line 69 reads that as "no match", so the check **passes**. Patterns come
+   from the git-ignored `devenv.slots.local.nix`, so an absent local file turns protection off
+   with no warning. Guard on the array length instead, and fail loudly.
 
 ### Record, do not fix
 
-For a new branch the range is `main..$local_sha` (line 49), which is empty when the pushed branch
-**is** `main`. Note it in the script as a known limitation.
+For a new branch the range is `main..$local_sha` (line 49), which is empty when that branch **is**
+`main`. Note it in the script as a known limitation.
 
 ### Tests
 
@@ -62,9 +62,9 @@ Add cases to `checks/jj-experiments`:
 
 | Case | Expected |
 |---|---|
-| public remote + file matching a denied pattern | blocked |
-| fork remote + file matching a denied pattern | permitted |
-| commit message matching an always-blocked pattern | blocked on both remotes |
+| public remote + file that matches a denied pattern | blocked |
+| fork remote + file that matches a denied pattern | permitted |
+| commit message that matches an always-blocked pattern | blocked on both remotes |
 | empty pattern list | loud failure, not a silent pass |
 | new branch with a zero remote sha | no `git diff` error |
 
@@ -86,17 +86,17 @@ Requirements:
 - It enables one small slot as a worked example.
 - It calls `mkSlots` directly. That is the supported adopter API — see the note below.
 
-`checks/jj-experiments/devenv.nix` is the working precedent for standalone slots consumption from
-a subdirectory. Reuse its shape:
+`checks/jj-experiments/devenv.nix` is the precedent for standalone slots consumption from a
+subdirectory. Reuse its shape:
 
 ```nix
 mkSlots = inputs.nix-configs.lib.kdn.mkSlots;
 slotsPath = inputs.nix-configs + "/modules/slots";
 ```
 
-> **Calling `mkSlots` is fine.** The adopter API is not "plain modules". The requirement is that a
-> slot does not depend on the other module types. Do not extract slots into plain modules for the
-> sake of it.
+> **A call to `mkSlots` is fine.** The adopter API is not "plain modules". The requirement is that
+> a slot does not depend on the other module types. Do not extract slots into plain modules for
+> the sake of it.
 
 ## 4. Adopter-facing doc
 
@@ -106,7 +106,7 @@ Create `docs/slots-for-adopters.md`, `type: How-To`. Cover:
 - how to call `mkSlots` and enable a slot;
 - the overlay requirement;
 - **what each slot writes into the adopter repo.** State plainly that `kdn.jj` installs the
-  creator's jj-only mandate as an agent rule, and that 5 slots read repo content through
+  creator's jj-only mandate as an agent rule. Also state that 5 slots read repo content through
   `${inputs.nix-configs}/.agents/…` (`jj`, `jj/fork`, `nix`, `zellij`, `mcp/basic-memory`).
 
 Link to `modules/slots/README.md` and `.agents/rules/slots-standalone.md`. Do not duplicate them.
@@ -132,8 +132,8 @@ and `git ls-remote https://github.com/browsers-software/homebrew-tap HEAD` succe
 key.
 
 This is **hygiene, not a blocker** — see correction 1 in the hub. An adopter never references this
-input, so Lix never fetches it. It is the only `ssh://` input on the public branch; the others
-belong to the private chain and must not be named in any deliverable.
+input, so Lix never fetches it. It is the only `ssh://` input on the public branch. The others
+belong to the private chain. Do not name them in any deliverable.
 
 ## Exit criteria
 
@@ -146,5 +146,5 @@ belong to the private chain and must not be named in any deliverable.
 
 ## Out of scope
 
-Renaming `kdn.*`. Moving `kdn-graph.nix` (that is 009). Changing the distribution shape (that is
-010). Lifting personal defaults out of slot options (that is 007).
+Do not rename `kdn.*`. Do not move `kdn-graph.nix` (that is 009). Do not change the distribution
+shape (that is 010). Do not lift personal defaults out of slot options (that is 007).
