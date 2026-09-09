@@ -394,6 +394,9 @@ echo "fork-tip=$ft  upstream-tip=$ut"
 ck "two tips, one per chain, and they differ" "$r"
 
 # 2. the fork tip is a merge with exactly two parents
+#    SUPERSEDED — do not copy assertions 2 and 3 from here. They must test `tree-merge`, because a
+#    fork-only fix legitimately sits above the merge and `fork-tip` is then that leaf. The shipped
+#    version is `hack/flake-update-complete.sh`.
 [ "$(jj log -r 'fork-tip' --no-graph -T 'parents.len()')" = 2 ] && r=pass || r=fail
 ck "fork tip is a merge with two parents" "$r"
 

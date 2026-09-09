@@ -145,6 +145,13 @@ that the pattern check misses today.
 Assertion 6 must run before assertion 7: it proves the two lock files on the upstream tip differ
 from `refs/remotes/$PUB/main`, which assertion 7 then reads as a real chain split.
 
+**Assertions 2 and 3 test the tree merge, not `fork-tip`.** The first draft tested `fork-tip`, and
+that was wrong. A fork-only fix legitimately sits above the merge, and `fork-tip` is then that
+leaf, so the check rejected a correctly finished update. This is the same trap the docs name with
+the `-B tree-merge`, never `-B fork-tip` rule. Assertion 3b keeps the old intent: the fork tip is
+the merge itself, or a descendant of it (`fork-tip & tree-merge::`). The header line also prints
+the tree merge now.
+
 ### Where the gate lives, and why
 
 It is **not** a `checks/` derivation: it reads remote-tracking refs and the jj revset engine, so it
@@ -186,7 +193,9 @@ They complete the pair with `upstream-incoming`. Step 0 reads both pairs after a
 
 | What | Command | Result |
 |---|---|---|
-| the completion check runs and FAILs on today's graph | `bash hack/flake-update-complete.sh` | 3 FAIL, 9 PASS, exit 1. The 3: fork tip is not a merge, upstream tip is only an ancestor, `@` held content at the time |
+| the completion check FAILs on an incomplete graph | `bash hack/flake-update-complete.sh` | 3 FAIL, 9 PASS, exit 1 before the operator split the update |
+| the completion check PASSes on the finished graph | the same command, after the split and the assertion 2/3 fix | **21 PASS, 0 FAIL, exit 0** |
+| read the exit code without a pipe | `… >/tmp/log 2>&1; echo $?` | a `\| tail` pipeline reports **tail's** status, so it printed 0 while the script exited 1 |
 | the jq resolver has no false positives | baseline run on `flake.lock` | dangling 0, unreachable 0 |
 | the resolver still detects a real fault | drop a referenced node | dangling 1 |
 | the resolver still detects an unreachable node | drop a root edge | unreachable 1 |
@@ -211,7 +220,8 @@ devenv module set. Use `devenv eval 'packages'` instead.
    list sits in the git-ignored `devenv.slots.local.nix`, whose content is itself a set of private
    strings. An agent must not read or print it, so an agent cannot verify a new pattern.
    Assertion 7 covers the class in the meantime.
-3. **Three exit criteria await the next real update.** All three need a finished update to test
-   against, and this task's own scope forbids running one. See the table in the task file.
+3. **One exit criterion stays open.** Every nixos and darwin host must evaluate to a `drvPath` on
+   both chains. It is testable today, because a finished graph exists. The other two criteria
+   closed on 2026-09-09 — see the table in the task file.
 4. **Nothing was pushed, and no bookmark moved.** `jj sync-remotes` reads the topology and moves
    both bookmarks. The user reviews and pushes.

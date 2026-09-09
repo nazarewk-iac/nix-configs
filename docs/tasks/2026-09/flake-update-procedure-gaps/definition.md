@@ -304,13 +304,13 @@ rebuild of the tool, not because the plain form is wrong.
 - [x] Every doc, rule and skill states the fetch step and the reconcile branch.
 - [x] Every doc, rule and skill states the start-state table, and which states need work
       first.
-- [ ] The completion check exists as a runnable script, and it FAILs on the current
+- [x] The completion check exists as a runnable script, and it FAILs on the current
       incomplete state and PASSes on a finished update.
 - [x] The `devenv.lock` strip list holds no hardcoded prefix, and an empty list stops the
       run.
 - [x] Every relative link in the four doc and rule files, and in both skills, resolves.
 - [x] The public-chain leak gate is structural, and it does not depend on the pattern list.
-- [ ] `jj fork-audit -q --color=never 'upstream-tip'` exits 0 on a finished update.
+- [x] `jj fork-audit -q --color=never 'upstream-tip'` exits 0 on a finished update.
 - [x] No documented command redirects into a file that the same pipeline reads through `jj`.
 - [x] Neither lock file holds `"inputs": null`, and every string input value names a node
       that exists.
@@ -321,19 +321,37 @@ rebuild of the tool, not because the plain form is wrong.
 - [x] The docs state how to choose the chain for a post-update fix, and they name `jj fork-audit`
       as the test.
 
-### The three open criteria, and why they stay open
+### The one open criterion
 
-Three criteria above need a **finished** update to test against. No finished update exists,
-and the "Out of scope" section below forbids one as part of this task. So they carry over to
-the next real update run:
+Two of the three criteria that needed a finished update closed on 2026-09-09. The operator had
+already split the update in the working copy by hand, so a finished graph did exist. The check
+now reports **21 PASS, 0 FAIL, exit 0** on it.
 
-| Criterion | What it needs | Current state |
-|---|---|---|
-| the completion check PASSes on a finished update | a graph with a 2-parent fork tip and a distinct upstream tip | the script FAILs 3 of 12 assertions on today's graph, which is the intended half of the test |
-| `jj fork-audit -q --color=never 'upstream-tip'` exits 0 | a public chain with no fork content | blocked by the deferred pattern list; the check exits 0 today for the wrong reason |
-| every host evaluates to a `drvPath` on both chains | a real update to evaluate | not run; this task changes documents and adds checks |
+Closing them needed one fix to the check itself. Assertions 2 and 3 tested `fork-tip`, where they
+must test `tree-merge`. A fork-only fix legitimately sits above the merge, and `fork-tip` is then
+that leaf. So the check rejected a correctly finished update — the same trap the docs name with
+the `-B tree-merge`, never `-B fork-tip` rule. A new assertion 3b keeps the old intent: the fork
+tip is the merge, or a descendant of it.
 
-The first half of criterion 1 is met: the script FAILs on the current incomplete state.
+| Criterion | State |
+|---|---|
+| the completion check FAILs on the incomplete state and PASSes on a finished update | **met**. It reported 3 FAIL before the operator's split, and 0 FAIL after |
+| `jj fork-audit -q --color=never 'upstream-tip'` exits 0 | **met** as written. Read it with the caveat below |
+| every host evaluates to a `drvPath` on both chains | **open**. Not run |
+
+Caveat on the fork-audit criterion: the pattern list still misses the fork-only lock nodes, so
+exit 0 is weak evidence on its own. Assertion 7 gives the independent proof — it counts 0
+fork-only nodes on the upstream tip, and it needs no pattern. See
+[fork-denied-patterns-miss-lock-nodes.md](../fork-denied-patterns-miss-lock-nodes/definition.md).
+
+The last criterion is testable today, and it is the only work left:
+
+```bash
+nix eval --raw '.#nixosConfigurations.<host>.config.system.build.toplevel.drvPath'
+```
+
+Run it per host, once with `@` on `upstream-tip` and once on `fork-tip`. A warm Darwin host takes
+about 93 s. Darwin hosts must evaluate on a Darwin machine or through `remote=`.
 
 ## Out of scope
 
