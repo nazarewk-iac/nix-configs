@@ -126,8 +126,20 @@ jj 0.45.1 / devenv 2.2.3:
    `nix flake metadata .` exits 0 with `resolvedUrl = path:/…/.nix-configs--<slug>`, and
    `nix eval '.#packages.aarch64-darwin.kdn-nix-fmt.drvPath'` succeeds. Only the explicit
    `git+file:.` string cannot degrade.
-3. The git-hooks install task has no repo to install into. **UNTESTED** — no `devenv shell` was
-   entered during the measurement run, so `git-hooks` never ran.
+3. The git-hooks install task has no repo to install into. **VERIFIED 2026-09-09** by a real
+   `devenv shell` entry in a workspace. It is not a silent skip — the devenv task fails and the
+   failure cascades:
+   ```
+   WARNING: git-hooks.nix: skipping hook installation: fatal: not a git repository
+   error: Command `git rev-parse --show-toplevel` exited with an error: exit status: 128
+   ✖ Running devenv:git-hooks:run in 881ms (failed)
+   ✖ Running devenv:enterTest in 334ns (dependency failed)
+   ✖ Running tasks in 5.16s (failed)
+   ```
+   The shell still enters and `devenv shell -- <cmd>` exits 0, so the failure is loud but not
+   blocking. `.pre-commit-config.yaml` is still symlinked and `prek` is still on `PATH`; they have
+   no repo to act on. Consequence for the convention: a workspace runs **no** pre-commit checks, so
+   the formatter and the linters must run from the trunk before a commit.
 
 `path:` is not a substitute, but it is also not a choice. It is what a workspace **gets
 automatically** for any `.#` reference, and it copies git-ignored content into the store.
@@ -287,19 +299,30 @@ Verified end to end from a workspace: `devenv eval 'name'` → `{"name": "devenv
 `devenv eval 'claude.code.hooks.jj-guard'` → the full hook attrset, so the slots tree evaluated;
 `devenv build shell` → a `devenv-shell` store path.
 
-**`ref=` is mandatory. A bare `rev=` fails.** devenv rewrites the `locked` node, drops a lone
-`rev`, and defaults `ref` to `master`, which this repo does not have:
-`error: resolving Git reference 'master': revspec 'master' not found`. **This corrects the URL form
-this task file proposed earlier** (`?rev=<commit-id>` alone). Setting `ref` to the commit id is what
-Nix does for the trunk anyway — `nix flake metadata .` in the trunk locks `ref=<rev>&rev=<rev>`.
+**`ref=` is mandatory. A bare `rev=` fails.** **This corrects the URL form this task file proposed
+earlier** (`?rev=<commit-id>` alone). The root cause is now traced to source, not just observed.
+Nix strips `rev`, `narHash`, `lastModified`, `revCount`, `dirtyRev` and `dirtyShortRev` from the
+`locked` node of any input it considers **local**, and a git input is local when its url scheme is
+`file`. See `src/libflake/lockfile.cc`, whose comment reads "Strip volatile attributes from local
+inputs to avoid lock file churn. Local inputs are always fetched fresh", and `isLocal` in
+`src/libfetchers/git.cc`. So `ref` is the only pin that survives into `locked`. With no `ref`,
+devenv falls back to a default branch and this repo has no `master`:
+`error: resolving Git reference 'master': revspec 'master' not found`.
 
-**The pin does remove the `prek` / `git write-tree` re-snapshot race — verified.** With a tracked
-file modified but not committed in a probe repo:
+**The pin does remove the `prek` / `git write-tree` re-snapshot race — re-verified 2026-09-09 with
+devenv itself.** A probe dependency repo at `v1-COMMITTED`, then modified to
+`v2-DIRTY-UNCOMMITTED` without a commit:
 
 | URL | `locked` | evaluated value |
 |---|---|---|
-| unpinned `git+file:///<abs>` | `dirtyRev: "…-dirty"`, no `rev` | `"v2-DIRTY"` |
-| `?ref=<REV>&rev=<REV>` | `rev=<REV>`, narHash unchanged | `"v1"` |
+| unpinned `git+file:///<abs>` | `{type, url}` — nothing volatile at all | `"v2-DIRTY-UNCOMMITTED"` |
+| `?ref=<REV>&rev=<REV>` | `{ref: <REV>, type, url}` — `rev` stripped | `"v1-COMMITTED"` |
+
+**This corrects the `locked` column of the earlier version of this table**, which claimed the
+unpinned form records `dirtyRev` and the pinned form keeps `rev` and a narHash. Neither is true of
+devenv: it records nothing volatile for either form. That earlier observation came from a different
+writer — most likely Lix's own `nix flake lock`, which has no such strip step. The behavioural
+conclusion is unchanged and now rests on devenv's own output.
 
 **Runner-up: `devenv -o nix-configs '<url>' <subcommand>`** (`devenv/src/cli.rs:433-439`, a global
 option). It works and locks the same node. It lost because it must be typed on **every** devenv
@@ -313,9 +336,45 @@ confusing SSH-to-host-`file` error. It is also less discoverable than a file in 
 evaluation. That is the race the pin exists to remove.
 
 **Cost to write into the convention:** both mechanisms rewrite the **tracked** `devenv.lock` in the
-workspace (`jj status` → `M devenv.lock`). This is unavoidable, because devenv rewrites the lock
-whenever the effective input URL differs from it. The agent must not commit that change.
+workspace (`jj status` → `M devenv.lock`). The agent must not commit that change.
 `devenv.local.yaml` itself is git-ignored and cannot be committed by accident.
+
+The rewrite is genuinely unavoidable, and the reason is now traced to source rather than inferred.
+Two mechanisms combine:
+
+1. `original` is written **unstripped** (`src/libflake/lockfile.cc`), so any url change lands in it.
+   No url spelling repoints the input without a change to `original`.
+2. The staleness test is **full serialized-JSON equality of the whole lock graph**
+   (`LockFile::operator==`, which compares `toJSON()`), and lock validation runs unconditionally
+   before the backend is built.
+
+devenv also offers no escape hatch: it has no `--frozen`, `--no-write-lock-file` or
+`--no-update-lock-file`; `--offline` only changes substituters and applies after validation; and
+devenv's `--override-input` rewrites the declared url rather than applying a sticky override.
+
+### Why the trunk's own `nix-configs` lock node carries no rev — by design, not a gap
+
+This came up as a suspected defect in the flake-update procedure, so it is recorded here. In the
+trunk's `devenv.lock`, exactly **1 of 107** nodes has no `rev` and no `narHash`: `nix-configs`, the
+self-input declared as `url: git+file:.`. It has never carried a rev in any revision of the file,
+and in older revisions it was `{"path": ".", "type": "path"}`.
+
+That is the same local-input strip described above — `file:` scheme, so every volatile attribute is
+erased. Three further facts make it deliberate rather than accidental:
+
+- The lock **parser** accepts an unlocked local node with no warning, and `LockFile::isUnlocked`
+  never reports a local node as unlocked. So it cannot block a lock write.
+- devenv depends on the behaviour. `devenv-nix-backend/bootstrap/resolve-lock.nix` explains that a
+  local input with no pinned narHash must resolve to the live filesystem path, because a store copy
+  would hide edits from the eval cache.
+- devenv ships the same shape for itself: its own `devenv.yaml` declares `devenv: url: .?dir=src/modules`
+  and its committed `devenv.lock` node has no `narHash` and no `rev`.
+
+**Verdict: the node cannot be stabilized.** No devenv command, flag or url form writes a rev into
+it, because the strip sits in the serializer downstream of every option. A local input is
+intentionally not a pin — it is a live tree, re-read on every evaluation. So `nix run '.#update'`
+plus `devenv update` leave the file correct, and no step is missing from the procedure. devenv's
+own docs never mention this, which is why the shape reads as a defect.
 
 ## Exit criteria
 
