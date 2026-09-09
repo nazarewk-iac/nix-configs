@@ -164,8 +164,11 @@ A `switch` is always the user's call, from the trunk.
 
 - [ ] Add a `jj workspaces` section to `docs/jujutsu-vcs.md`: the naming convention, the creation
       command, the verify step, the bootstrap step, the cleanup step, and the hazards above.
-- [ ] Replace the `../nix-configs-ws-<name>` guidance in `.agents/rules/jujutsu-vcs.md` with a
+- [x] Replace the `../nix-configs-ws-<name>` guidance in `.agents/rules/jujutsu-vcs.md` with a
       pointer to that section, plus the naming pattern and the activation prohibition in short form.
+      Done 2026-09-09: the rule file, `docs/jujutsu-vcs.md` and `docs/vcs-workspaces.md` all name
+      `../.nix-configs--<slug>` and the mandatory `--name <slug>`. The activation prohibition is
+      still only in this task file — item 1's first box owns that move.
 - [ ] Add the doc row to the `docs/` table in `CLAUDE.md`.
 
 ### 2. Guard the shared jj repo config

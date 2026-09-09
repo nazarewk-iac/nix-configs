@@ -7,15 +7,18 @@ timestamp: 2026-07-30T16:23:55+02:00
 # Working in a sibling `jj workspace add` directory
 
 > **See also:** [jujutsu-vcs.md](jujutsu-vcs.md) for the workspace mandate itself (why
-> `jj workspace add ../nix-configs-ws-<name>` is the *only* sanctioned parallel-isolation
+> `jj workspace add --name <slug> ../.nix-configs--<slug>` is the *only* sanctioned parallel-isolation
 > mechanism, why git-worktree corrupts the shared `.jj` store, and how to verify isolation is
 > real). This doc covers two environment/tracking hazards that bite *after* you're set up in a
 > sibling workspace — neither is a jj-mechanics bug; both are consequences of state that doesn't
 > follow you into the sibling dir.
 
 When a background agent works in a `jj workspace add` sibling directory (created OUTSIDE this
-repo's tree, e.g. `../nix-configs-ws-<name>`), two things do **not** automatically follow it
+repo's tree, at `../.nix-configs--<slug>`), two things do **not** automatically follow it
 into the workspace. Both surfaced during real use on 2026-07-30.
+
+The examples below quote the observed output from that day, which still shows the older
+`nix-configs-ws-<name>` path. The hazards do not depend on the directory name.
 
 ## Hazard 1 — `$DEVENV_ROOT` stays pinned to the main checkout
 

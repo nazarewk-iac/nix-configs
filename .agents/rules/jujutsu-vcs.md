@@ -48,10 +48,13 @@ slash command, which shells raw `git commit` internally. Never use `/commit` in 
 > (`jj-guard` blocks it anyway). Never accept an Agent/Workflow `isolation: "worktree"` result at
 > face value in this repo.
 >
-> When parallel, filesystem-isolated work is genuinely needed: use `jj workspace add <path>`. The
-> `<path>` **must be a sibling directory OUTSIDE this repo's tree** (e.g.
-> `../nix-configs-ws-<name>`), never nested under it. A nested path risks the outer repo's file
-> watchers/tools recursing into it. `jj workspace add` gives a genuinely separate working copy.
+> When parallel, filesystem-isolated work is genuinely needed: use
+> `jj workspace add --name <slug> -r <base-rev> <path>`. The `<path>` **must be a sibling directory
+> OUTSIDE this repo's tree**, and the convention is `../.<repo-dir>--<slug>` — for this repo,
+> `../.nix-configs--<slug>`. Never nest it under the repo. A nested path risks the outer repo's file
+> watchers/tools recursing into it. Always pass `--name <slug>`, because `jj workspace add` otherwise
+> takes the workspace name from the destination basename and the leading dot goes into the name.
+> `jj workspace add` gives a genuinely separate working copy.
 > Snapshot it with `jj new` at once to start on a fresh change. Never reuse the main working
 > copy's change id. Verify the isolation with `jj workspace list` (it must show more than one
 > workspace) and compare `jj log -r @ --no-graph -T change_id` from both directories — they must

@@ -252,8 +252,10 @@ jj file show --revision @ --at-op <op-id> <path> > /tmp/recovered-<name>
 jj workspace instead. Put it *outside* this repo's directory tree, never nested under it:
 
 ```bash
-jj workspace add ../nix-configs-ws-<name>   # sibling directory, NOT ./something-under-here
-cd ../nix-configs-ws-<name> && jj new       # start the isolated work on a fresh change, not @
+# sibling directory, NOT ./something-under-here. --name is required: the default name would
+# otherwise come from the basename and keep the leading dot.
+jj workspace add --name <slug> -r <base-rev> ../.nix-configs--<slug>
+cd ../.nix-configs--<slug> && jj new        # start the isolated work on a fresh change, not @
 ```
 
 Before you trust *any* claimed isolation (a tool's `isolation: "worktree"` flag, a manually
