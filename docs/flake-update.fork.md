@@ -390,10 +390,13 @@ for f in flake.lock devenv.lock; do
   n=$(jq -r '[.nodes|to_entries[]|select(.value.inputs==null and (.value|has("inputs")))]|length' "$f")
   test "$n" = 0 || echo "FAIL: $f has $n node(s) with \"inputs\": null"
 
-  # 2. every string input value names a node that exists (referential integrity)
+  # 2. every string input value names a node that exists (referential integrity).
+  #    Check the STRING form only. An array value such as ["nixpkgs-lib"] is a follows path from
+  #    the ROOT node, not a node key, so a check that reads .[0] as a key reports a false
+  #    dangling edge on every follows (measured: 3 false positives on this repo's flake.lock).
+  #    hack/flake-update-complete.sh resolves the array form properly.
   d=$(jq -r '.nodes as $n | [ .nodes|to_entries[]|.key as $o | (.value.inputs//{})|to_entries[]
-    | (.value|if type=="array" then .[0] else . end) as $t
-    | select($n[$t]==null) | "\($o)->\($t)" ] | length' "$f")
+    | .value | select(type=="string") | select($n[.]==null) ] | length' "$f")
   test "$d" = 0 || echo "FAIL: $f has $d dangling input edge(s)"
 done
 
