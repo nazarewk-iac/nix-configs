@@ -1,32 +1,36 @@
 #!/usr/bin/env bash
-# Pre-commit hook: reject fork-specific content staged on a kdn/upstream-side commit.
+# Reject fork-specific content on an upstream-side change.
 #
-# Skips if:
-#   - not in a jj repo
-#   - current jj change has no description (unnamed working copy scratch change)
-#   - current jj change is in fork-chain (fork-side, content is expected there)
+# It skips when:
+#   - the directory is not a jj repo
+#   - `@` has no description (an unnamed working copy scratch change)
+#   - `@` is already in `fork-chain` (fork side, where the content belongs)
 #
 # SENSITIVE_FILE_PATTERNS and SENSITIVE_MESSAGE_PATTERNS are baked in via runtimeEnv.
+#
+# KNOWN LIMIT — `jj commit` fires no `.git/hooks/pre-commit` (measured), so this hook runs on a
+# raw `git commit` only, which the repo mandate forbids. Treat it as a net for the rare direct
+# git path. The real gates are `jj fork-audit` (content) and the pre-push hook (push path).
+#
+# It reads jj's own view of `@`, not `git diff --cached`. jj stages nothing, so the git index is
+# empty in normal use and an index-based check sees no content at all.
 
 set -eEuo pipefail
 
-# Skip if not in a jj repo
 jj root &>/dev/null || exit 0
 
 change_id="$(jj log -r @ --no-graph -T 'change_id' 2>/dev/null)"
 description="$(jj log -r @ --no-graph -T 'description' 2>/dev/null)"
 
-# Skip if unnamed working copy
 [ -n "$description" ] || exit 0
 
-# Skip if this change is already in fork-chain (fork-side commit)
-if jj log -r "fork-chain & ${change_id}" --no-graph -T 'change_id' 2>/dev/null | grep -q .; then
+# Skip when `@` already belongs to the fork chain.
+if [ -n "$(jj log -r "fork-chain & ${change_id}" --no-graph -T '"x"' 2>/dev/null)" ]; then
   exit 0
 fi
 
-# On upstream-chain side: check staged content for fork-sensitive patterns.
-# Read each whole pattern as one array element (newline-delimited), so a pattern
-# that contains a space stays intact.
+# Read each whole pattern as one array element (newline-delimited), so a pattern that contains a
+# space stays intact.
 file_patterns=()
 [ -n "$SENSITIVE_FILE_PATTERNS" ] && mapfile -t file_patterns <<< "$SENSITIVE_FILE_PATTERNS"
 diff_patterns=()
@@ -36,24 +40,41 @@ if [ -n "$SENSITIVE_FILE_PATTERNS" ]; then
   diff_patterns+=("${_fp[@]}")
 fi
 
+# An empty list builds a grep with no `-e`, which passes in silence. The patterns come from the
+# git-ignored `devenv.slots.local.nix`, so a missing local file would disable this check with no
+# warning. Fail loudly instead.
+if [ "${#file_patterns[@]}" -eq 0 ] || [ "${#diff_patterns[@]}" -eq 0 ]; then
+  cat >&2 <<'MSG'
+ERROR: the sensitive-pattern lists are empty, so this check cannot protect anything.
+  Restore `devenv.slots.local.nix` and re-enter the devenv shell.
+  Set KDN_JJ_PRE_PUSH_ALLOW_EMPTY=1 to commit anyway.
+MSG
+  [ "${KDN_JJ_PRE_PUSH_ALLOW_EMPTY:-}" = 1 ] || exit 1
+fi
+
+# Never pass `-q`: grep closes the pipe on the first match, the writer takes SIGPIPE, and
+# `pipefail` turns the pipeline into a failure — so a match reads as "no match". Redirect to
+# /dev/null instead, which keeps grep reading to the end.
+file_grep_args=(-i)
+for p in "${file_patterns[@]}"; do file_grep_args+=('-e' "$p"); done
+diff_grep_args=(-i)
+for p in "${diff_patterns[@]}"; do diff_grep_args+=('-e' "$p"); done
+
 failed=0
 
-for p in "${file_patterns[@]}"; do
-  if git diff --cached --name-only | grep -qi "$p"; then
-    echo "ERROR: staged file path matches fork-sensitive pattern '$p'" >&2
-    echo "  This appears to be a kdn/upstream-side commit." >&2
-    echo "  Move fork-specific content to a fork-side commit instead." >&2
-    failed=1
-  fi
-done
+# Report the matched path or line, never the pattern. A pattern is private configuration.
+if jj diff -r @ --name-only | grep "${file_grep_args[@]}" >/dev/null; then
+  echo "ERROR: a file path in @ matches a fork-sensitive pattern:" >&2
+  jj diff -r @ --name-only | grep "${file_grep_args[@]}" | sed 's/^/  /' >&2 || true
+  echo "  @ looks like an upstream-side change. Move the content to a fork-side commit." >&2
+  failed=1
+fi
 
-for p in "${diff_patterns[@]}"; do
-  if git diff --cached | grep -qi "$p"; then
-    echo "ERROR: staged diff content matches fork-sensitive pattern '$p'" >&2
-    echo "  This appears to be a kdn/upstream-side commit." >&2
-    echo "  Move fork-specific content to a fork-side commit instead." >&2
-    failed=1
-  fi
-done
+if jj diff -r @ --git | grep -I "${diff_grep_args[@]}" >/dev/null; then
+  echo "ERROR: a diff line in @ matches a fork-sensitive pattern:" >&2
+  jj diff -r @ --git | grep -I -n "${diff_grep_args[@]}" | head -5 | sed 's/^/  /' >&2 || true
+  echo "  @ looks like an upstream-side change. Move the content to a fork-side commit." >&2
+  failed=1
+fi
 
 exit "$failed"
