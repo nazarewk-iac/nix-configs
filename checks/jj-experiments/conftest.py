@@ -173,11 +173,13 @@ class Repo:
     _ts: int = _EPOCH
 
     # --- raw command runners -------------------------------------------------
-    def jj(self, *args, check: bool = True, input: str | None = None):
+    def jj(self, *args, check: bool = True, input: str | None = None, cwd: Path | None = None):
+        # ``cwd`` defaults to the repo dir. Pass it only to run jj from a
+        # subdirectory (for example, to prove which workspace jj resolves).
         cmd = ["jj", "--no-pager", *self.cfg.config_args(), *args]
         return subprocess.run(
             cmd,
-            cwd=self.path,
+            cwd=cwd or self.path,
             env=self.env,
             capture_output=True,
             text=True,
@@ -341,6 +343,63 @@ class Repo:
             args += ["--remote", remote]
         self.jj(*args)
         return self
+
+    # --- workspaces ----------------------------------------------------------
+    def workspace_add(self, name: str, *, revision: str | None = None) -> "Repo":
+        """Add a jj workspace in a sibling dir and return a ``Repo`` for it.
+
+        The destination is ``<parent-of-repo>/.<repo-dir>--<name>``. This is the
+        same shape the real repo uses (``../.<repo-dir>--<slug>/``): a workspace
+        never sits inside the repo tree. ``--name`` is always explicit, because
+        jj takes the default workspace name from the destination basename, and
+        that basename starts with a dot.
+
+        The returned handle shares ``env``, ``cfg`` and ``harness`` with this
+        repo, so ``Harness.cleanup`` removes the workspace dir too. Its
+        timestamp counter starts far ahead of this repo's counter, so the two
+        handles never stamp two commits with the same time.
+        """
+        dest = self.path.parent / f".{self.path.name}--{name}"
+        args = ["workspace", "add", "--name", name]
+        if revision is not None:
+            args += ["-r", revision]
+        self.jj(*args, str(dest))
+        return dataclasses.replace(self, path=dest.resolve(), _ts=self._ts + 1000 * _STEP)
+
+    def workspace_list(self) -> dict[str, str]:
+        """Return ``{workspace name: change id of that workspace's ``@``}``."""
+        out = self.jj_out(
+            "workspace",
+            "list",
+            "-T",
+            'name ++ "\\t" ++ target.change_id().shortest(12) ++ "\\n"',
+        )
+        entries = {}
+        for line in out.splitlines():
+            if not line:
+                continue
+            name, _, change_id = line.partition("\t")
+            entries[name] = change_id
+        return entries
+
+    def workspace_forget(self, name: str) -> "Repo":
+        """Drop a workspace from the repo. The directory stays on disk."""
+        self.jj("workspace", "forget", name)
+        return self
+
+    def workspace_root(self, *, cwd: Path | None = None) -> Path:
+        """Return the workspace root jj resolves from ``cwd`` (default: repo dir)."""
+        return Path(self.jj_out("workspace", "root", cwd=cwd)).resolve()
+
+    def op_id(self) -> str:
+        """Return the current operation head id.
+
+        ``--ignore-working-copy`` keeps the query from adding a snapshot
+        operation, so the returned id stays the head after the call.
+        """
+        return self.jj_out(
+            "op", "log", "--ignore-working-copy", "--no-graph", "--limit", "1", "-T", "id.short()"
+        )
 
 
 @dataclasses.dataclass
