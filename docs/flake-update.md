@@ -45,6 +45,7 @@ upstream ──► chore(flake): update
 ## Quick summary
 
 ```bash
+jj git fetch --all-remotes   # ALWAYS first — the update itself never fetches
 # @ is the empty working copy on top of upstream
 nix run '.#update'
 devenv update    # updates devenv.lock (separate resolver from flake.lock)
@@ -61,6 +62,26 @@ jj bookmark set upstream -r @-
 ---
 
 ## Step-by-step
+
+### 0. Fetch, then reconcile
+
+```bash
+jj git fetch --all-remotes
+jj log -r 'main@<public-remote>..@'   # your local work, not on the remote yet
+jj log -r '@..main@<public-remote>'   # new remote commits, not in your tree yet
+```
+
+`nix run '.#update'` runs `nix flake update` and the patch updater only. It **never** fetches. So
+without this step every later revision reads a stale remote-tracking ref.
+
+When the second command prints commits, the public tip moved. Rebase your local chain onto the new
+tip **before** you start the update, so the update lands on current history:
+
+```bash
+jj rebase -s 'roots(main@<public-remote>..@)' -d 'main@<public-remote>'
+```
+
+When both commands print nothing, there is nothing to reconcile. Go on.
 
 ### 1. Run the update
 
