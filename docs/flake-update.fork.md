@@ -272,6 +272,27 @@ of both. But `flake-lock-merge` cannot produce the public `devenv.lock`:
 - The two files use different resolvers: `nix flake lock` writes `flake.lock`; `devenv` writes
   `devenv.lock`. Same schema, different writer.
 
+### The `nix-configs` node has no rev, and that is correct
+
+Do not treat this as an unfinished update. In `devenv.lock`, exactly one node — `nix-configs`, the
+self-input declared in `devenv.yaml` as `url: git+file:.` — holds no `rev`, no `narHash` and no
+`lastModified`:
+
+```json
+{"type": "git", "url": "file:."}
+```
+
+Nix strips every volatile attribute from the `locked` node of a **local** input, and a git input
+counts as local when its url scheme is `file` (`src/libflake/lockfile.cc`, `src/libfetchers/git.cc`).
+The comment there reads "Strip volatile attributes from local inputs to avoid lock file churn. Local
+inputs are always fetched fresh". devenv depends on that: a local input must stay a live tree, so the
+eval cache tracks edits to the repo. devenv ships the same shape for its own self-input.
+
+**No command, flag or url form can pin it**, because the strip sits in the serializer downstream of
+all of them. So `nix run '.#update'` plus `devenv update` leave this node correct, and the procedure
+needs no extra step. The same local-input exemption is why the parser accepts the node, and why the
+`nix flake lock` failure above is specific to that command rather than a sign of a bad lock.
+
 So `devenv.lock` needs the `jq` transform from [step 3](#3-insert-the-upstream-update-in-one-command).
 The transform does what `flake-lock-merge` does to `flake.lock`:
 
