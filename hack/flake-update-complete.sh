@@ -43,20 +43,30 @@ nz() { [ -n "$(jj log -r "$1" --no-graph -T '"x"' 2>/dev/null)" ]; }
 
 ft=$(jj log -r 'fork-tip' --no-graph -T 'change_id.short()' 2>/dev/null)
 ut=$(jj log -r 'upstream-tip' --no-graph -T 'change_id.short()' 2>/dev/null)
-echo "fork-tip=$ft  upstream-tip=$ut"
+tm=$(jj log -r 'tree-merge' --no-graph -T 'change_id.short()' 2>/dev/null)
+echo "fork-tip=$ft  upstream-tip=$ut  tree-merge=$tm"
 
 # 1. two commits exist, one per chain. This alone proves nothing — see the header.
 { [ -n "$ft" ] && [ -n "$ut" ] && [ "$ft" != "$ut" ]; } && r=pass || r=fail
 ck "two tips, one per chain, and they differ" "$r"
 
-# 2. the fork tip is a merge with exactly two parents
-[ "$(jj log -r 'fork-tip' --no-graph -T 'parents.len()' 2>/dev/null)" = 2 ] && r=pass || r=fail
-ck "fork tip is a merge with two parents" "$r"
+# 2. the tree merge is a merge with exactly two parents.
+#
+#    Test the MERGE, never `fork-tip`. A fork-only fix legitimately sits above the merge, and
+#    `fork-tip` is then that leaf, not the merge. The docs state the same rule for the insert:
+#    `-B tree-merge`, never `-B fork-tip`.
+[ "$(jj log -r 'tree-merge' --no-graph -T 'parents.len()' 2>/dev/null)" = 2 ] && r=pass || r=fail
+ck "the tree merge has two parents" "$r"
 
 # 3. one parent is the upstream tip. An ancestor is not enough — the link is the point of
 #    the shape.
-nz 'parents(fork-tip) & upstream-tip' && r=pass || r=fail
-ck "the upstream tip is a parent of the fork tip" "$r"
+nz 'parents(tree-merge) & upstream-tip' && r=pass || r=fail
+ck "the upstream tip is a parent of the tree merge" "$r"
+
+# 3b. the fork chain carries the merge: the fork tip is the merge itself, or a descendant of it.
+#     `tree-merge::` includes the merge, so one revset covers both cases.
+nz 'fork-tip & tree-merge::' && r=pass || r=fail
+ck "the fork tip is the tree merge or a descendant of it" "$r"
 
 # 4. the published fork main stays an ancestor, so the fork push is a fast-forward
 nz "main@$FORK & ::fork-tip" && r=pass || r=fail
