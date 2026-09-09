@@ -1,6 +1,6 @@
 ---
 type: Reference
-description: Gotchas when a background agent works in a jj-workspace-add sibling dir — stale DEVENV_ROOT and untracked-but-required files.
+description: Gotchas when a background agent works in a jj-workspace-add sibling dir — stale DEVENV_ROOT, untracked-but-required files, and `path:` flakes copying git-ignored content.
 timestamp: 2026-07-30T16:23:55+02:00
 ---
 
@@ -88,6 +88,23 @@ deny-everything-then-allow-list pattern; add the file via a sibling `.gitignore`
 symlinks are *expected* to be regenerated per-workspace by `devenv shell` — those don't need
 tracking, but they do reinforce that a sibling workspace needs its own `devenv shell` entry.
 
+**One devenv-managed target is NOT per workspace:** the shared jj repo config at
+`jj config path --repo`. It resolves to the same file from the trunk and from every workspace, so
+the slot's `enterShell` symlink would write over the trunk's config. `modules/slots/jj/default.nix`
+now guards that write. See [jujutsu-vcs.md](jujutsu-vcs.md) § "jj workspaces".
+
+## Hazard 3 — `.#` in a workspace copies git-ignored content into the store
+
+A workspace has no `.git`. Nix therefore cannot resolve a bare `.` as a git flake and degrades it
+to a `path:` flake. A `path:` flake copies the **whole directory**, git-ignored files included.
+
+Measured: a probe directory with a 20 MiB git-ignored `.devenv/blob`, named in `.gitignore`,
+produced a 21 MB store path that **contained** the blob. So in a workspace every `nix build '.#…'`
+and `nix eval '.#…'` copies the whole `.devenv/` tree once devenv has created it.
+
+**Fix:** reference the trunk through the pinned input from
+[jujutsu-vcs.md](jujutsu-vcs.md) § "jj workspaces" step 4, not through `.#`.
+
 ## Quick checklist before running agent work in a sibling workspace
 
 1. `jj workspace list` shows more than one workspace, and `jj log -r @ -T change_id` differs
@@ -95,3 +112,5 @@ tracking, but they do reinforce that a sibling workspace needs its own `devenv s
 2. Enter a fresh `devenv shell` **from the workspace root** (re-points all `DEVENV_*`), or unset
    the inherited `DEVENV_*` vars.
 3. Confirm every build-required file is tracked (no gitignored inputs to anything you'll build).
+4. Use the pinned `devenv.local.yaml` input, not `.#` — otherwise a `path:` flake copies your whole
+   `.devenv/` into the store (hazard 3).

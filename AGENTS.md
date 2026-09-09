@@ -31,8 +31,9 @@ read the full doc when you need detail.
 | [docs/generalization-plan.md](docs/tasks/2026-09/generalization/definition.md) | Checkpointed plan to make the modules reusable by an external adopter; hub for `docs/tasks/generalization-0NN-*.md` |
 | [docs/flake-update.md](docs/flake-update.md) | Flake update procedure, commit structure, testing |
 | [docs/flake-update.fork.md](docs/flake-update.fork.md) | Fork-specific update workflow (merge commit, flake-lock-merge) |
-| [docs/jujutsu-vcs.md](docs/jujutsu-vcs.md) | jj patterns: working copy, split, squash, rebase |
+| [docs/jujutsu-vcs.md](docs/jujutsu-vcs.md) | jj patterns: working copy, split, squash, rebase, and the full `jj workspace` convention |
 | [docs/jujutsu-vcs.fork.md](docs/jujutsu-vcs.fork.md) | jj fork topology: dual-parent `@`, bookmark hygiene, rebasing the fork merge |
+| [docs/vcs-workspaces.md](docs/vcs-workspaces.md) | Two hazards that bite *after* setup in a sibling jj workspace: inherited `$DEVENV_ROOT`, untracked build inputs |
 | [docs/mcp-setup.md](docs/mcp-setup.md) | MCP gateway architecture, configuration, backends, lifecycle |
 | [docs/mcpsnoop.md](docs/mcpsnoop.md) | mcpsnoop traffic inspector: setup, TUI usage, filtering, workflows |
 | [docs/nix-dev.md](docs/nix-dev.md) | Nix development: building devenv shell, vendored lockfile recovery, hash updates |
