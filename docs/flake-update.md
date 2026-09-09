@@ -17,9 +17,21 @@ For jj patterns referenced here, see [jujutsu-vcs.md](jujutsu-vcs.md).
 
 ---
 
+## Which procedure applies
+
+> **This procedure applies when `kdn.jj.fork.enable = false`.** In a repo that maintains a private
+> fork remote, [flake-update.fork.md](flake-update.fork.md) **overrides every step below** — the
+> commit structure, the bookmark handling and the testing gates all differ.
+>
+> In a fork repo, `jj sync-remotes` moves every bookmark from the topology. **Never run
+> `jj bookmark set`** there. The `jj bookmark set` commands below are correct only in a non-fork
+> repo.
+
+---
+
 ## Commit structure
 
-The update produces a **kdn-side chain** on top of the current `upstream` bookmark:
+The update produces a chain on top of the current `upstream` bookmark:
 
 ```
 upstream ──► chore(flake): update
@@ -63,12 +75,21 @@ devenv update
 `devenv update` updates `devenv.lock`, which has a separate resolver. Without a fork, both lock
 files go into the same described commit — no strip step is needed.
 
-If a patch fails to apply, check whether it was already merged into the upstream repo:
-- If merged: remove the entry from `.flake.patches/config.toml` and delete the `.patch` file.
-- Then re-run patches only (inputs already updated):
-  ```bash
-  nix run '.#update' -- g:patches
-  ```
+If a patch fails to apply, **find the cause first**. The action differs per cause, so do not
+default to deleting the patch. The full decision procedure lives in
+[flake-patches.md](flake-patches.md) and in the `flake-patches` skill.
+
+| Cause | Detection | Action |
+|---|---|---|
+| the patch landed upstream | `gh api "repos/NixOS/nixpkgs/compare/nixos-unstable...<commit>" --jq '.status'` returns `behind` or `identical` | remove the entry from `.flake.patches/config.toml`, delete the `.patch` file |
+| the patch has not landed yet, and the context moved | the same call returns `ahead`, and the hunk offsets fail | re-fetch the patch from the PR, keep the entry |
+| the upstream PR was closed or rewritten | the patch URL 404s, or the diff changed shape | decide whether the change is still wanted; re-derive or drop it |
+
+Then re-run patches only (the inputs are already updated):
+
+```bash
+nix run '.#update' -- g:patches
+```
 
 ### 2. Describe and advance upstream
 
@@ -111,9 +132,12 @@ Use the pre-update revision to run `darwin-rebuild` without rebuilding it agains
 inputs (faster, avoids unnecessary recompilation of the tool itself):
 
 ```bash
-PRE_UPDATE_REV=$(jj log -r 'upstream@<fork-remote>' --no-graph -T 'commit_id')
+PRE_UPDATE_REV=$(jj log -r 'main@<public-remote>' --no-graph -T 'commit_id')
 nix run "git+file://$PWD?rev=${PRE_UPDATE_REV}#darwin-rebuild" -- build
 ```
+
+A non-fork repo has no fork remote, so the anchor is `main@<public-remote>`. In a fork repo the
+anchor is `upstream@<fork-remote>` — see [flake-update.fork.md](flake-update.fork.md).
 
 Or use the current working tree (rebuilds the app against new inputs):
 
