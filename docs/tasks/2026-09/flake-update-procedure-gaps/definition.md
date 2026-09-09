@@ -1,12 +1,16 @@
 ---
 type: Task
 description: Repair the flake update procedure — add a fetch and a reconcile step, a start-state branch, a lock-structure check, and a completion check.
-status: open
+status: done
+solution: flake-update-procedure-gaps.done.md
 authored_by: agent
 timestamp: 2026-09-09T12:00:00+02:00
 ---
 
 # Repair the flake update procedure
+
+> ✅ **Done** — see the solution in
+> [flake-update-procedure-gaps.done.md](done.md).
 
 Findings and the corrected procedure: [flake-update-procedure-gaps.research.md](research.md).
 
@@ -185,133 +189,151 @@ rebuild of the tool, not because the plain form is wrong.
 
 ### Docs
 
-- [ ] `docs/flake-update.fork.md` — add **step 0**: `jj git fetch --all-remotes`, then the
+- [x] `docs/flake-update.fork.md` — add **step 0**: `jj git fetch --all-remotes`, then the
       reconcile table (four outcomes: nothing moved, public tip moved, fork tip moved,
       both moved). State that a rebase is required in one case only.
-- [ ] `docs/flake-update.fork.md` — add **step 1**: the start-state table with the five
+- [x] `docs/flake-update.fork.md` — add **step 1**: the start-state table with the five
       states and the first step for each. Mark states (ii), (iii) and (iv) as "work first".
-- [ ] `docs/flake-update.fork.md` — add the case (iv) correction sequence (reorder before
+- [x] `docs/flake-update.fork.md` — add the case (iv) correction sequence (reorder before
       the update, oldest safe commit first).
-- [ ] `docs/flake-update.fork.md:95,159` — add the mutable-merge guard before the insert
+- [x] `docs/flake-update.fork.md:95,159` — add the mutable-merge guard before the insert
       command (O12).
-- [ ] `docs/flake-update.fork.md:99-106,185-192` — drop the `^brew-tap--` prefix filter;
+- [x] `docs/flake-update.fork.md:99-106,185-192` — drop the `^brew-tap--` prefix filter;
       derive the strip list from the root-inputs diff (O9).
-- [ ] `docs/flake-update.fork.md:185-193` — assert the strip list is not empty (O10).
-- [ ] `docs/flake-update.fork.md:82-112` — add the patch-file move to the quick summary
+- [x] `docs/flake-update.fork.md:185-193` — assert the strip list is not empty (O10).
+- [x] `docs/flake-update.fork.md:82-112` — add the patch-file move to the quick summary
       (O11).
-- [ ] `docs/flake-update.fork.md:209-215` — replace "Verify the topology" with the
+- [x] `docs/flake-update.fork.md:209-215` — replace "Verify the topology" with the
       completion check (D3, O13).
-- [ ] `docs/flake-update.fork.md:227` — use `"$f"`, not the hardcoded `flake.lock` (O8).
-- [ ] `docs/flake-update.fork.md:9-11` — correct the claim about which file the slot
+- [x] `docs/flake-update.fork.md:227` — use `"$f"`, not the hardcoded `flake.lock` (O8).
+- [x] `docs/flake-update.fork.md:9-11` — correct the claim about which file the slot
       installs (O7).
-- [ ] `docs/flake-update.fork.md` — add `jj fork-audit -q --color=never 'upstream-tip'` to
+- [x] `docs/flake-update.fork.md` — add `jj fork-audit -q --color=never 'upstream-tip'` to
       the verify step (O16), and a warning that the two pushes are not atomic and the
       public push runs first (O17).
-- [ ] `docs/flake-update.fork.md:399-408` — state that the NixOS build of `upstream-tip`
+- [x] `docs/flake-update.fork.md:399-408` — state that the NixOS build of `upstream-tip`
       gates the public push, and the Darwin build of `fork-tip` gates the private push
       (O15).
-- [ ] `docs/flake-update.md:22-30` — add the guard: this procedure applies when
+- [x] `docs/flake-update.md:22-30` — add the guard: this procedure applies when
       `kdn.jj.fork.enable = false` (O1, O2).
-- [ ] `docs/flake-update.md:114` — replace `upstream@<fork-remote>` with
+- [x] `docs/flake-update.md:114` — replace `upstream@<fork-remote>` with
       `main@<public-remote>` (O3).
-- [ ] `docs/flake-update.md:66-71` — point the patch branch at `docs/flake-patches.md` and
+- [x] `docs/flake-update.md:66-71` — point the patch branch at `docs/flake-patches.md` and
       the `flake-patches` skill; keep one branch per failure cause (O14).
-- [ ] `docs/flake-update.fork.md:184-192` — write the strip through a temporary file, then
+- [x] `docs/flake-update.fork.md:184-192` — write the strip through a temporary file, then
       `mv` it into place. Never redirect into the file the pipeline reads (D4).
-- [ ] `docs/flake-update.fork.md` — add the three structural assertions after the strip
+- [x] `docs/flake-update.fork.md` — add the three structural assertions after the strip
       (D5), and state that a hand-written substitute transform is not permitted.
-- [ ] `docs/flake-update.fork.md` — add `devenv build shell` on each chain to the verify
+- [x] `docs/flake-update.fork.md` — add `devenv build shell` on each chain to the verify
       step (D7).
-- [ ] `docs/flake-update.fork.md` — add an evaluation gate to the verify step: for every nixos
+- [x] `docs/flake-update.fork.md` — add an evaluation gate to the verify step: for every nixos
       and every darwin host, on both chains, run
       `nix eval --raw '.#<configurations>.<host>.config.system.build.toplevel.drvPath'`. It costs
       no build and it catches an input bump that breaks one platform only (D8).
-- [ ] `docs/flake-update.fork.md` — state the chain rule for a post-update fix: place the fix by
+- [x] `docs/flake-update.fork.md` — state the chain rule for a post-update fix: place the fix by
       its **content**, not by the host that found it. Confirm with `jj fork-audit`. Insert a
       public fix after `upstream-tip` and before the tree merge, so the fork inherits it (D8).
-- [ ] `docs/jujutsu-vcs.md` — add the general rule from D4: a command that reads a tracked
+- [x] `docs/jujutsu-vcs.md` — add the general rule from D4: a command that reads a tracked
       file through `jj` must not redirect into that same file, because jj snapshots the
       working copy first and a rebase carries the truncated file to the descendants.
-- [ ] `docs/flake-update.fork.md` — record the D6 mechanism next to the insert command, so
+- [x] `docs/flake-update.fork.md` — record the D6 mechanism next to the insert command, so
       the reader understands **why** `upstream-tip` resolves below the tree merge.
 
 ### Agent rules
 
-- [ ] `.agents/rules/flake-update.fork.md` — add the fetch line, the start-state check,
+- [x] `.agents/rules/flake-update.fork.md` — add the fetch line, the start-state check,
       and the completion check to the quick sequence. Add the mutable-merge guard.
-- [ ] `.agents/rules/flake-update.fork.md:28-34` — align the graph drawing with the doc
+- [x] `.agents/rules/flake-update.fork.md:28-34` — align the graph drawing with the doc
       (S7).
-- [ ] `.agents/rules/flake-update.md:9,11,13` — correct the three broken links (O4).
-- [ ] `.agents/rules/flake-update.md:17-27` — add the fork guard (O2), add
+- [x] `.agents/rules/flake-update.md:9,11,13` — correct the three broken links (O4).
+- [x] `.agents/rules/flake-update.md:17-27` — add the fork guard (O2), add
       `devenv update` (S12), and replace `upstream@<fork-remote>` (O3).
 
 ### Skills
 
-- [ ] `.agents/skills/flake-update-fork/SKILL.md:8` — correct the link depth (O6).
-- [ ] `.agents/skills/flake-update-fork/SKILL.md` — add step 0 (fetch + reconcile), the
+- [x] `.agents/skills/flake-update-fork/SKILL.md:8` — correct the link depth (O6).
+- [x] `.agents/skills/flake-update-fork/SKILL.md` — add step 0 (fetch + reconcile), the
       start-state gate, the mutable-merge guard and the completion check. Align the step
       numbers with the doc (S6).
-- [ ] `.agents/skills/flake-update-fork/SKILL.md:66-67` — align the graph drawing (S7).
-- [ ] `.agents/skills/flake-update/SKILL.md:8-10` — correct the three broken links (O5).
-- [ ] `.agents/skills/flake-update/SKILL.md:20-21` — add the fork guard (S1).
-- [ ] `.agents/skills/flake-update/SKILL.md:42` — replace `upstream@<fork-remote>` (S3).
-- [ ] `.agents/skills/flake-update/SKILL.md:9` — name the `flake-update-fork` skill, not
+- [x] `.agents/skills/flake-update-fork/SKILL.md:66-67` — align the graph drawing (S7).
+- [x] `.agents/skills/flake-update/SKILL.md:8-10` — correct the three broken links (O5).
+- [x] `.agents/skills/flake-update/SKILL.md:20-21` — add the fork guard (S1).
+- [x] `.agents/skills/flake-update/SKILL.md:42` — replace `upstream@<fork-remote>` (S3).
+- [x] `.agents/skills/flake-update/SKILL.md:9` — name the `flake-update-fork` skill, not
       only the doc (S11).
-- [ ] Both skills — decide how a consumer repo reaches the full docs. Every `docs/…` link
+- [x] Both skills — decide how a consumer repo reaches the full docs. Every `docs/…` link
       is dead after the slot installs the skill (S10). Either inline the essentials, or
       link to a stable URL.
 
 ### New artifacts
 
-- [ ] Add the completion check as a script, for example
+- [x] Add the completion check as a script, for example
       `hack/flake-update-complete.sh`. Ten assertions, exit 1 on any FAIL. The text is in
       the research file § 8.
-- [ ] Add `fork-incoming = @..main@<fork-remote>` and
+- [x] Add `fork-incoming = @..main@<fork-remote>` and
       `fork-incoming-tip = main@<fork-remote>` to `modules/slots/jj/fork/default.nix`, as
       a mirror of `upstream-incoming` (lines 89–90).
-- [ ] Add a lock-structure check to the completion script: no `"inputs": null` in either
+- [x] Add a lock-structure check to the completion script: no `"inputs": null` in either
       lock, referential integrity of every string input value, and the public node count
       equals the fork node count minus the strip-list length (D5).
 
 ### Code, separate commits (O18)
 
-- [ ] `modules/slots/jj/pre-push.sh:65-67` — invert the gate, or correct
+- [x] `modules/slots/jj/pre-push.sh:65-67` — invert the gate, or correct
       `modules/slots/jj/default.nix:54`. Decide which behavior is intended first.
-- [ ] `modules/slots/jj/pre-push.sh:10` — read `PRE_COMMIT_REMOTE_NAME`, not
+- [x] `modules/slots/jj/pre-push.sh:10` — read `PRE_COMMIT_REMOTE_NAME`, not
       `${PRE_COMMIT_REMOTE_BRANCH%%/*}`.
-- [ ] `modules/slots/jj/pre-push.sh:69` — use the `range` bounds, so the zero sha never
+- [x] `modules/slots/jj/pre-push.sh:69` — use the `range` bounds, so the zero sha never
       reaches `git diff`.
-- [ ] Add the structural lock gate (research § 8, assertion 7) to a `checks/` derivation
+- [x] Add the structural lock gate (research § 8, assertion 7) to a `checks/` derivation
       or to the push path. A name-only or pattern-only check cannot catch a lock-node
       leak.
-- [ ] Extend `kdn.jj.fork.deniedFilePatterns` with the spelling that appears in the
-      fork-only lock node keys and their `url` fields. Confirm the fix with
-      `jj fork-audit -q --color=never <the mixed commit>`; it must exit 1.
-- [ ] `modules/slots/jj/fork/check-fork-contamination.sh` — the hook runs at `pre-commit`
+- [ ] **Deferred to the owner** — extend `kdn.jj.fork.deniedFilePatterns` with the spelling
+      that appears in the fork-only lock node keys and their `url` fields. Confirm the fix
+      with `jj fork-audit -q --color=never <the mixed commit>`; it must exit 1. The pattern
+      list lives in the git-ignored `devenv.slots.local.nix`, and an agent must not read or
+      print that file. Own task:
+      [fork-denied-patterns-miss-lock-nodes.md](../fork-denied-patterns-miss-lock-nodes/definition.md).
+      `hack/flake-update-complete.sh` assertion 7 covers this class today.
+- [x] `modules/slots/jj/fork/check-fork-contamination.sh` — the hook runs at `pre-commit`
       and reads the git index, so jj never triggers it. Decide whether to move the content
       check to the push path or to drop the hook.
 
 ## Exit criteria
 
-- [ ] Every doc, rule and skill states the fetch step and the reconcile branch.
-- [ ] Every doc, rule and skill states the start-state table, and which states need work
+- [x] Every doc, rule and skill states the fetch step and the reconcile branch.
+- [x] Every doc, rule and skill states the start-state table, and which states need work
       first.
 - [ ] The completion check exists as a runnable script, and it FAILs on the current
       incomplete state and PASSes on a finished update.
-- [ ] The `devenv.lock` strip list holds no hardcoded prefix, and an empty list stops the
+- [x] The `devenv.lock` strip list holds no hardcoded prefix, and an empty list stops the
       run.
-- [ ] Every relative link in the four doc and rule files, and in both skills, resolves.
-- [ ] The public-chain leak gate is structural, and it does not depend on the pattern list.
+- [x] Every relative link in the four doc and rule files, and in both skills, resolves.
+- [x] The public-chain leak gate is structural, and it does not depend on the pattern list.
 - [ ] `jj fork-audit -q --color=never 'upstream-tip'` exits 0 on a finished update.
-- [ ] No documented command redirects into a file that the same pipeline reads through `jj`.
-- [ ] Neither lock file holds `"inputs": null`, and every string input value names a node
+- [x] No documented command redirects into a file that the same pipeline reads through `jj`.
+- [x] Neither lock file holds `"inputs": null`, and every string input value names a node
       that exists.
-- [ ] `devenv build shell` exits 0 with `@` on `upstream-tip`, and again with `@` on
+- [x] `devenv build shell` exits 0 with `@` on `upstream-tip`, and again with `@` on
       `fork-tip`.
 - [ ] Every nixos host and every darwin host evaluates to a `drvPath` on both chains, before the
       hand-off.
-- [ ] The docs state how to choose the chain for a post-update fix, and they name `jj fork-audit`
+- [x] The docs state how to choose the chain for a post-update fix, and they name `jj fork-audit`
       as the test.
+
+### The three open criteria, and why they stay open
+
+Three criteria above need a **finished** update to test against. No finished update exists,
+and the "Out of scope" section below forbids one as part of this task. So they carry over to
+the next real update run:
+
+| Criterion | What it needs | Current state |
+|---|---|---|
+| the completion check PASSes on a finished update | a graph with a 2-parent fork tip and a distinct upstream tip | the script FAILs 3 of 12 assertions on today's graph, which is the intended half of the test |
+| `jj fork-audit -q --color=never 'upstream-tip'` exits 0 | a public chain with no fork content | blocked by the deferred pattern list; the check exits 0 today for the wrong reason |
+| every host evaluates to a `drvPath` on both chains | a real update to evaluate | not run; this task changes documents and adds checks |
+
+The first half of criterion 1 is met: the script FAILs on the current incomplete state.
 
 ## Out of scope
 
