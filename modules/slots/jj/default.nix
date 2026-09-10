@@ -22,13 +22,15 @@ in
 
     alwaysBlockedMessagePatterns = lib.mkOption {
       type = lib.types.listOf lib.types.str;
-      default = [ "scratchpad" ];
+      # Empty by default. A pattern is a property of one repository, so the consumer supplies it.
+      default = [ ];
       description = "Commit message patterns always blocked from pushing to any remote.";
     };
 
     upstream.remote = lib.mkOption {
       type = lib.types.str;
-      default = "kdn";
+      # `origin` is the git default. A consumer with another name sets this option.
+      default = "origin";
       description = "Name of the public upstream remote.";
     };
     upstream.url = lib.mkOption {

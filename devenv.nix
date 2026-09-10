@@ -36,6 +36,10 @@ in
 
       kdn.nix.enable = true;
       kdn.jj.enable = true;
+      # These two values belong to this repository, not to the slot. The slot defaults are now
+      # neutral (`origin` and an empty list), so these two lines keep the behaviour unchanged.
+      kdn.jj.upstream.remote = "kdn";
+      kdn.jj.alwaysBlockedMessagePatterns = [ "scratchpad" ];
       kdn.zellij.enable = true;
       kdn.gh.enable = true;
 
