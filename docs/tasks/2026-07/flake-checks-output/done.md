@@ -8,7 +8,7 @@ timestamp: 2026-07-31T11:12:00+02:00
 
 # Solution — `flake.nix`'s `checks =` output
 
-Task: [flake-checks-output.md](flake-checks-output.md).
+Task: [flake-checks-output.md](definition.md).
 
 ## Root cause analysis
 

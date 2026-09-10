@@ -12,7 +12,7 @@ workflows on facts. Each `test_<group>.py` file pairs with a `<group>.md` file
 that explains its use-cases.
 
 See the design in
-[../../docs/tasks/jj-fork-use-cases-refactor.design.md](../../docs/tasks/jj-fork-use-cases-refactor.design.md)
+[../../docs/tasks/jj-fork-use-cases-refactor.design.md](../../docs/tasks/2026-09/jj-fork-use-cases-refactor/design.md)
 and the base patterns in [../../docs/jujutsu-vcs.md](../../docs/jujutsu-vcs.md).
 
 ## Complete `$HOME` isolation
@@ -169,7 +169,7 @@ deterministic commit times, pair a `test_<group>.py` with a `test_<group>.md` (s
 [Layout convention](#layout-convention)), write prose in Simple Technical English, and use
 placeholder patterns only — never a real sensitive term. The design and philosophy behind these
 conventions are in the
-[design doc](../../docs/tasks/jj-fork-use-cases-refactor.design.md).
+[design doc](../../docs/tasks/2026-09/jj-fork-use-cases-refactor/design.md).
 
 ## Extend the harness — worked example
 

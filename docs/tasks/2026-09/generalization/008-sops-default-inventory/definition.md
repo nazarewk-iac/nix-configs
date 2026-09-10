@@ -99,7 +99,7 @@ that does the same.
 ## Deliverable
 
 A `.research.md` sibling, in the shape of
-[jj-experiments-subset-check.research.md](../../../jj-experiments-subset-check.research.md), with the four
+[jj-experiments-subset-check.research.md](../../jj-experiments-subset-check/research.md), with the four
 lists above. Each row carries a file and line reference. Tag every absent-file behaviour cell
 **verified** or **unverified**.
 

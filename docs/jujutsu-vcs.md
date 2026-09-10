@@ -302,7 +302,7 @@ concurrent work there. Fall back to work in sequence in the main working copy.
 
 ## jj workspaces: the sanctioned parallel-isolation mechanism
 
-Task and full evidence: [tasks/jj-workspaces-parallel-agents.md](tasks/jj-workspaces-parallel-agents.md).
+Task and full evidence: [tasks/jj-workspaces-parallel-agents.md](tasks/2026-09/jj-workspaces-parallel-agents/definition.md).
 Executable proof: [`checks/jj-experiments/test_workspaces.py`](../checks/jj-experiments/test_workspaces.py).
 Two environment hazards that bite after setup: [vcs-workspaces.md](vcs-workspaces.md).
 

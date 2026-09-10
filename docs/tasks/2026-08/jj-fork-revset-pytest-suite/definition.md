@@ -62,8 +62,8 @@ depend on it. Drop or change it if it does not hold.
 - **Self-reference into the repo from the temporary devenv.** Idea: the temporary devenv points
   `inputs.nix-configs` (or equivalent) at this repo so the test runs the real slot code. Two
   fetcher choices, with different semantics (see the "Colocation hazard" notes in
-  [docs/jujutsu-vcs.md](../jujutsu-vcs.md) and the self-reference notes in
-  [.agents/rules/nix-conventions.md](../../.agents/rules/nix-conventions.md)):
+  [docs/jujutsu-vcs.md](../../../jujutsu-vcs.md) and the self-reference notes in
+  [.agents/rules/nix-conventions.md](../../../../.agents/rules/nix-conventions.md)):
   - `git+file:` reads git's index. It shows committed changes and dirty edits to tracked files,
     but NOT a brand-new untracked file until `git add`.
   - `path:` copies the working directory (filtered by `.gitignore`) and sees new files at once.
