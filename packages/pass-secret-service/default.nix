@@ -48,8 +48,10 @@ let
           patches = [
             (
               with pkgs;
-              substituteAll {
-                src = ./pypass-mark-executables.patch;
+              # nixpkgs removed `substituteAll`. `replaceVars` takes `src` as its first argument
+              # and it also fails the build on an unmatched or an unused name. The six names below
+              # match the six `@name@` placeholders of the patch exactly.
+              replaceVars ./pypass-mark-executables.patch {
                 version = pbr_version;
                 git_exec = "${git}/bin/git";
                 grep_exec = "${gnugrep}/bin/grep";
