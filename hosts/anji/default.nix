@@ -35,6 +35,11 @@ in
     {
       kdn.hostName = "anji";
       kdn.profile.machine.baseline.enable = true;
+
+      # Register one Homebrew tap per `brew-tap--*` flake input. The option defaults to `false`, so
+      # that an external adopter of `modules/universal` inherits no tap of this flake. This host
+      # keeps the scan on, so its evaluated tap list stays exactly what it was.
+      kdn.homebrew.tapsFromFlakeInputs = true;
     }
     {
       system.stateVersion = 6;

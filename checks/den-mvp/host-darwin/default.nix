@@ -1,5 +1,10 @@
 # A build-only nix-darwin host. It never activates. See ../README.md.
-{ den, inputs, kdn, ... }:
+{
+  den,
+  inputs,
+  kdn,
+  ...
+}:
 {
   den.hosts.aarch64-darwin.host-darwin = {
     # den's default `instantiate` for the `darwin` class is `inputs.darwin.lib.darwinSystem`, and
@@ -33,6 +38,11 @@
     # `zellij` is `devenv`-only, like `gh`. Both routes must give one identical Claude Code
     # allowlist, and ../tests.nix asserts that equality.
     kdn.zellij
+
+    # The Homebrew concern. The aspect names no tap, no cask and no formula, so the three
+    # placeholders below are the whole set. ../tests.nix asserts each list exactly, and that
+    # equality proves the aspect adds nothing of its own.
+    kdn.homebrew
   ];
 
   den.aspects.host-darwin.darwin = {
@@ -41,5 +51,10 @@
 
     # nix-darwin asserts this value. `7` is what it names for a new installation on 2026-09-10.
     system.stateVersion = 7;
+
+    # The Homebrew placeholders. Each name is fictional, so no activation ever finds it.
+    kdn.homebrew.taps = [ "example-org/example-tap" ];
+    kdn.homebrew.casks = [ "example-cask" ];
+    kdn.homebrew.brews = [ "example-brew" ];
   };
 }

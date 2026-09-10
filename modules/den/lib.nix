@@ -37,6 +37,7 @@ let
     ca = ./aspects/ca.nix;
     devenv-cli = ./aspects/devenv-cli.nix;
     gh = ./aspects/gh.nix;
+    homebrew = ./aspects/homebrew.nix;
     jj = ./aspects/jj.nix;
     jj-fork = ./aspects/jj-fork.nix;
     llm = ./aspects/llm.nix;

@@ -590,6 +590,7 @@ let
         "ca"
         "devenv-cli"
         "gh"
+        "homebrew"
         "jj"
         "jj-fork"
         "llm"
@@ -746,6 +747,102 @@ let
       name = "denModules.ca holds a non-empty imports list";
       expected = true;
       actual = (builtins.length flake.denModules.ca.imports) > 0;
+    }
+  ];
+
+  # ------------------------------------------------------------------ homebrew
+
+  # The Homebrew aspect. It is the first port with **no** slot ancestor, and it is the opt-in answer to
+  # a force: `modules/universal/default.nix` configures Homebrew on every darwin host with no switch.
+  #
+  # Every list assertion is an exact equality on purpose. `./host-darwin/default.nix` supplies one
+  # placeholder per list, so equality proves the aspect names no tap, no cask and no formula of its
+  # own.
+  #
+  # nix-darwin coerces a plain string into a tap, cask or brew submodule, so each read below maps the
+  # `name` attribute back out.
+  brewNames = builtins.map (entry: entry.name);
+
+  homebrewAssertions = [
+    {
+      name = "the aspect turns nix-darwin's own homebrew module on";
+      expected = true;
+      actual = darwinCfg.homebrew.enable;
+    }
+    {
+      name = "each list holds the entity's own placeholder and no default of the aspect's";
+      expected = {
+        taps = [ "example-org/example-tap" ];
+        casks = [ "example-cask" ];
+        brews = [ "example-brew" ];
+      };
+      actual = {
+        taps = brewNames darwinCfg.homebrew.taps;
+        casks = brewNames darwinCfg.homebrew.casks;
+        brews = brewNames darwinCfg.homebrew.brews;
+      };
+    }
+    # The aspect declares each list with an empty default, so an adopter who supplies nothing gets
+    # nothing. This reads the aspect's own option set, not the entity's values.
+    {
+      name = "a consumer that supplies no value gets three empty lists";
+      expected = {
+        taps = [ ];
+        casks = [ ];
+        brews = [ ];
+      };
+      actual =
+        let
+          bare = inputs.nix-darwin.lib.darwinSystem {
+            system = null;
+            modules = [
+              flake.denModules.homebrew
+              {
+                nixpkgs.hostPlatform = "aarch64-darwin";
+                system.primaryUser = "den";
+                system.stateVersion = 7;
+              }
+            ];
+          };
+        in
+        {
+          taps = bare.config.kdn.homebrew.taps;
+          casks = bare.config.kdn.homebrew.casks;
+          brews = bare.config.kdn.homebrew.brews;
+        };
+    }
+    # The three `onActivation` values mirror what `modules/universal/default.nix` sets today.
+    {
+      name = "the three onActivation values mirror the tree";
+      expected = {
+        upgrade = true;
+        autoUpdate = false;
+        cleanup = "zap";
+      };
+      actual = {
+        inherit (darwinCfg.homebrew.onActivation) upgrade autoUpdate cleanup;
+      };
+    }
+    # The aspect stays compatible with a hand-managed Homebrew, so it brings no nix-homebrew module.
+    {
+      name = "the aspect declares no nix-homebrew option";
+      expected = false;
+      actual = darwinCfg ? nix-homebrew;
+    }
+    {
+      name = "the library route resolves the aspect for the darwin class";
+      expected = 1;
+      actual = builtins.length (
+        denLib.imports {
+          class = "darwin";
+          aspects = [ "homebrew" ];
+        }
+      );
+    }
+    {
+      name = "denModules.homebrew holds a non-empty imports list";
+      expected = true;
+      actual = (builtins.length flake.denModules.homebrew.imports) > 0;
     }
   ];
 
@@ -1825,6 +1922,7 @@ let
     den-eval-devenv-cli = mkEvalCheck "devenv-cli" devenvCliAssertions;
     den-eval-ssh-agent = mkEvalCheck "ssh-agent" sshAgentAssertions;
     den-eval-ca = mkEvalCheck "ca" caAssertions;
+    den-eval-homebrew = mkEvalCheck "homebrew" homebrewAssertions;
     den-eval-zellij = mkEvalCheck "zellij" zellijAssertions;
     den-eval-opencode = mkEvalCheck "opencode" opencodeAssertions;
     den-eval-mcp = mkEvalCheck "mcp" mcpAssertions;
