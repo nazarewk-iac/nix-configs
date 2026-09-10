@@ -592,6 +592,9 @@ let
         "gh"
         "jj"
         "jj-fork"
+        "llm"
+        "llm-client"
+        "llm-proxy"
         "mcp"
         "mcp-basic-memory"
         "mcp-pretty-print"
@@ -1723,6 +1726,94 @@ let
     }
   ];
 
+  # ----------------------------------------------------------------------- llm
+
+  # The `llm` family is the first one that spans two classes. `llm` emits `nixos`, `llm-client` emits
+  # `devenv`, and `llm-proxy` emits both.
+  #
+  # No parallel entity includes an aspect of this family yet, so every assertion below reads a route
+  # and not a built configuration. `../den-mvp/host-nixos` and `../den-mvp/devenv` gain the
+  # inclusions in a later commit, and the deeper assertions come with them.
+  llmAssertions = [
+    {
+      name = "the library route resolves each aspect for its own class";
+      expected = {
+        llm = 1;
+        llm-client = 1;
+        llm-proxy-nixos = 1;
+        llm-proxy-devenv = 1;
+      };
+      actual = {
+        llm = builtins.length (
+          denLib.imports {
+            class = "nixos";
+            aspects = [ "llm" ];
+          }
+        );
+        llm-client = builtins.length (
+          denLib.imports {
+            class = "devenv";
+            aspects = [ "llm-client" ];
+          }
+        );
+        # One aspect, two classes. Each route resolves on its own, so the shared option module
+        # reaches both class trees.
+        llm-proxy-nixos = builtins.length (
+          denLib.imports {
+            class = "nixos";
+            aspects = [ "llm-proxy" ];
+          }
+        );
+        llm-proxy-devenv = builtins.length (
+          denLib.imports {
+            class = "devenv";
+            aspects = [ "llm-proxy" ];
+          }
+        );
+      };
+    }
+    # `llm-client` names `opencode` in its own `includes`, so one aspect name still gives one module.
+    # den collapses the pair.
+    {
+      name = "the whole family resolves in one devenv list, with the opencode diamond collapsed";
+      expected = 2;
+      actual = builtins.length (
+        denLib.imports {
+          class = "devenv";
+          aspects = [
+            "llm-client"
+            "llm-proxy"
+          ];
+        }
+      );
+    }
+    {
+      name = "both exported modules hold a non-empty imports list";
+      expected = {
+        llm = true;
+        llm-client = true;
+      };
+      actual = {
+        llm = (builtins.length flake.denModules.llm.imports) > 0;
+        llm-client = (builtins.length flake.denModules.llm-client.imports) > 0;
+      };
+    }
+    # `llm-proxy` has no `denModules` entry, because the zero-argument export form names exactly one
+    # class. `devenv-cli` is absent for the same reason. This line states the fact, so a later change
+    # to the export surface cannot pass in silence.
+    {
+      name = "a multi-class aspect gets no zero-argument export";
+      expected = {
+        llm-proxy = false;
+        devenv-cli = false;
+      };
+      actual = {
+        llm-proxy = flake.denModules ? llm-proxy;
+        devenv-cli = flake.denModules ? devenv-cli;
+      };
+    }
+  ];
+
   # ------------------------------------------------------------------ the check set
 
   # Tier 1 runs anywhere: the comparison is an evaluation and the derivation is local.
@@ -1739,6 +1830,7 @@ let
     den-eval-mcp = mkEvalCheck "mcp" mcpAssertions;
     den-eval-nix = mkEvalCheck "nix" nixAssertions;
     den-eval-jj = mkEvalCheck "jj" jjAssertions;
+    den-eval-llm = mkEvalCheck "llm" llmAssertions;
   };
 
   # Tier 2 and tier 3 build a real artifact, so each one needs a builder for its own platform. The

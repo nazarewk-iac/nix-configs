@@ -39,6 +39,9 @@ let
     gh = ./aspects/gh.nix;
     jj = ./aspects/jj.nix;
     jj-fork = ./aspects/jj-fork.nix;
+    llm = ./aspects/llm.nix;
+    llm-client = ./aspects/llm-client.nix;
+    llm-proxy = ./aspects/llm-proxy.nix;
     mcp = ./aspects/mcp.nix;
     mcp-basic-memory = ./aspects/mcp-basic-memory.nix;
     mcp-pretty-print = ./aspects/mcp-pretty-print.nix;

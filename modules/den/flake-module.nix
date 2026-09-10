@@ -146,6 +146,22 @@ in
   flake.denModules.jj = resolveChecked "devenv" "jj" kdn.jj;
   flake.denModules.jj-fork = resolveChecked "devenv" "jj-fork" kdn.jj-fork;
 
+  # The `llm` family, three aspects across two classes.
+  #
+  # `llm` serves local models on a NixOS host, so its one class is `nixos`. `llm-client` adds an
+  # opencode provider to a devenv shell, so its one class is `devenv`; it includes `opencode`, and it
+  # joins that aspect's diamond.
+  #
+  # `llm-proxy` has no entry here on purpose. It emits both `nixos` and `devenv`, and the
+  # zero-argument `denModules.<aspect>` form names exactly one class. `devenv-cli` is absent for the
+  # same reason. An adopter reaches a multi-class aspect through `denLib.imports { class = …; }`,
+  # which states the class.
+  #
+  # DECISION TO REVISE: a `denModules.<aspect>-<class>` naming convention would export every class of
+  # every aspect. That is a surface decision for the whole tree, not part of this one port.
+  flake.denModules.llm = resolveChecked "nixos" "llm" kdn.llm;
+  flake.denModules.llm-client = resolveChecked "devenv" "llm-client" kdn.llm-client;
+
   # The `mcp` family. Each child resolves on its own, and the parent comes with it through
   # `includes`. den dedupes the diamond, so one shell holds one copy of the gateway.
   flake.denModules.mcp = resolveChecked "devenv" "mcp" kdn.mcp;
