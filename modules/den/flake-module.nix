@@ -122,6 +122,7 @@ in
       den.aspects.rosetta-builder;
   flake.denModules.ca = resolveChecked "nixos" "ca" den.aspects.ca;
   flake.denModules.gh = resolveChecked "devenv" "gh" den.aspects.gh;
+  flake.denModules.opencode = resolveChecked "devenv" "opencode" den.aspects.opencode;
   flake.denModules.ssh-agent = resolveChecked "homeManager" "ssh-agent" den.aspects.ssh-agent;
   flake.denModules.zellij = resolveChecked "devenv" "zellij" den.aspects.zellij;
 }
