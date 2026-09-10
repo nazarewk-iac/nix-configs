@@ -198,6 +198,11 @@ it. The adopter surface is library mode, and `flake.denLib` ships it.
 | `devenv-cli` aspect | present — the **four-target** aspect. It ports `modules/slots/devenv/` and adds a `devenv` target the slot has none of. |
 | `zellij` aspect | present — a full port of `modules/slots/zellij/`. It is the first aspect with a Claude Code hook, the first that installs a repository file, and the first that reaches a `packages/` derivation with a plain `pkgs.callPackage` and **no overlay**. |
 | `opencode` aspect | present — a full port of `modules/slots/opencode/`. It is the **de-personalized** port: the slot hardcodes one commercial provider and the creator's checkout path, and the aspect declares an option for each instead. |
+| `mcp` aspect | present — a full port of `modules/slots/mcp/`. It holds the gateway, the backend translation and the Claude Code registration. `mcp-servers-nix` is a `devenv.yaml` input, so no den evaluation reaches it: the aspect takes the source as the option `kdn.mcp.serversNix` instead, and the consumer passes it. |
+| `mcp-snoop` aspect | present — a port of `modules/slots/mcp/snoop/`. It carries **no `enable`**; inclusion is the switch. It wraps the gateway command through the `kdn.mcp.commandOverlays` list. |
+| `mcp-pretty-print` aspect | present — a port of `modules/slots/mcp/pretty-print/`. It builds a Python application and a plugin package, and it registers a `PermissionRequest` hook. It carries no `enable` either. |
+| `mcp-basic-memory` aspect | present — the second **de-personalized** port. The slot names the creator's two knowledge bases, their aliases and their root path; the aspect names none and declares `kdn.mcp.basic-memory.{knowledgeRoot,bases}` instead. |
+| The `mcp` diamond | measured 2026-09-10. Three aspects include `mcp`, and den collapses the diamond: one shell holds one gateway package. It dedupes a nested diamond and separately resolved siblings alike, because it keys each target module per aspect. So an option belongs in the aspect that reads it, and no shared declaration file is needed. |
 | `kdn.isSourceRepo` | present — [common/source-repo.nix](common/source-repo.nix) declares it once. An aspect imports that file **by path**, because the module system dedupes an import by path and rejects two inline declarations of one option. |
 | `host-darwin` host | evaluates and builds a nix-darwin system, a devenv shell and one home-manager generation |
 | `host-nixos` host | evaluates a NixOS system, a devenv shell and one home-manager generation. It carries a real `nixos`-class aspect. |
@@ -205,7 +210,7 @@ it. The adopter surface is library mode, and `flake.denLib` ships it.
 | Standalone home-manager | present — `home-darwin` and `home-linux`, with no den entity. This is the adopter shape. |
 | The `dev` den user | present — one shared user at `checks/den-mvp/users/`. It makes the `homeManager` class reachable. |
 | `checks.<system>.den-mvp` | present — the current architecture, with `.all` for every system |
-| Test harness | present — 9 evaluation checks, 7 artifact checks, 4 smoke runs. See [checks/den-mvp/README.md](../../checks/den-mvp/README.md#tests). |
+| Test harness | present — 10 evaluation checks, 7 artifact checks, 4 smoke runs. See [checks/den-mvp/README.md](../../checks/den-mvp/README.md#tests). |
 | Smoke-test runner | present — `nix run '.#checks.aarch64-darwin.den-mvp.smoke'`. 11 of 11 pass on this machine. |
 | A VM test for `host-nixos` | deferred — tier 1 and tier 2 read every value a guest would, and no darwin VM framework exists |
 | An automated `hosts/anji` parity check | deferred — it evaluates a whole personal host (~93 s) and it reads sops metadata |
@@ -213,7 +218,7 @@ it. The adopter surface is library mode, and `flake.denLib` ships it.
 | A `nixos`-class aspect | present — `devenv-cli` reaches `host-nixos` |
 | `home` target | present — through `devenv-cli`, on both routes |
 | A coupled pair of slots (`jj` plus `mcp`) | not started — order 7 of the milestone 2 plan |
-| Parity with all 18 slots | **the milestone 2 goal**, set 2026-09-10. 7 of 18 done, 11 left (~3,281 LOC). See [004-den-spike](../../docs/tasks/2026-09/generalization/004-den-spike/definition.md#milestone-2-covers-every-slot--scope-decision-2026-09-10). |
+| Parity with all 18 slots | **the milestone 2 goal**, set 2026-09-10. 11 of 18 done, 7 left (1,948 LOC of `default.nix`). See [004-den-spike](../../docs/tasks/2026-09/generalization/004-den-spike/definition.md#milestone-2-covers-every-slot--scope-decision-2026-09-10). |
 
 The slot tree remains the supported route. See
 [docs/slots-for-adopters.md](../../docs/slots-for-adopters.md).

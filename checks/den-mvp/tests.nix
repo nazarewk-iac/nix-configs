@@ -528,6 +528,10 @@ let
         "ca"
         "devenv-cli"
         "gh"
+        "mcp"
+        "mcp-basic-memory"
+        "mcp-pretty-print"
+        "mcp-snoop"
         "opencode"
         "rosetta-builder"
         "ssh-agent"
@@ -923,6 +927,120 @@ let
     }
   ];
 
+  # The `mcp` family, four aspects in one diamond. `mcp-snoop` includes `mcp`, and
+  # `mcp-basic-memory` includes `mcp-pretty-print`, which includes `mcp` too. So these assertions
+  # test two things at once: each aspect's own promise, and that den collapses the diamond.
+  #
+  # `mcp-servers-nix` is a `devenv.yaml` input, so no den evaluation reaches the real one. The
+  # entity passes ../mcp-servers-nix-stub instead, and the stub turns the aspect's own `programs`
+  # declarations into servers. So the translation code gets a real test on both branches.
+  mcpBackendNames = shell: sorted (builtins.attrNames shell.kdn.mcp.backends);
+  mcpPnames = shell: builtins.filter (n: n == "mcp-gateway") (map (p: p.pname or "") shell.packages);
+
+  mcpAssertions = [
+    # ---- the parent aspect: the translation from `programs` to gateway backends
+    {
+      name = "every declared program and every extra backend reaches the gateway";
+      expected = [
+        "fetch"
+        "filesystem"
+        "memory-archive"
+        "memory-general"
+        "sequential-thinking"
+        "stub-http"
+        "time"
+      ];
+      actual = mcpBackendNames devenvDarwin;
+    }
+    {
+      name = "devenv-linux translates the same backend set";
+      expected = mcpBackendNames devenvDarwin;
+      actual = mcpBackendNames devenvLinux;
+    }
+    {
+      name = "a stdio server folds its args into one command string";
+      expected = "/den-mvp/bin/filesystem /nix/store";
+      actual = devenvDarwin.kdn.mcp.backends.filesystem.command;
+    }
+    {
+      name = "an http server takes the url key and never a command";
+      expected = [
+        "description"
+        "headers"
+        "http_url"
+      ];
+      actual = sorted (builtins.attrNames devenvDarwin.kdn.mcp.backends.stub-http);
+    }
+    {
+      name = "the gateway registers with Claude Code as a stdio server";
+      expected = "stdio";
+      actual = devenvDarwin.claude.code.mcpServers.mcp-gateway.type;
+    }
+    {
+      name = "no warning fires while the entity supplies a servers source";
+      expected = [ ];
+      actual = devenvDarwin.warnings;
+    }
+
+    # ---- the diamond. Three aspects include `mcp`, and the shell must hold one gateway.
+    {
+      name = "the diamond collapses to exactly one gateway package";
+      expected = 1;
+      actual = builtins.length (mcpPnames devenvDarwin);
+    }
+
+    # ---- `mcp-snoop`: it wraps the gateway command, exactly once
+    {
+      name = "the snoop aspect adds exactly one command overlay";
+      expected = 1;
+      actual = builtins.length devenvDarwin.kdn.mcp.commandOverlays;
+    }
+    {
+      name = "the registered command is the snoop wrapper, not the gateway itself";
+      expected = true;
+      actual = lib.hasSuffix "-mcp-gateway-snoop-wrapper" devenvDarwin.claude.code.mcpServers.mcp-gateway.command;
+    }
+
+    # ---- `mcp-pretty-print`: the permission hook
+    {
+      name = "the pretty-print hook registers on the gateway invoke tool";
+      expected = {
+        hookType = "PermissionRequest";
+        matcher = "mcp__mcp-gateway__gateway_invoke";
+      };
+      actual = {
+        inherit (devenvDarwin.claude.code.hooks.mcp-gateway-pretty-print) hookType matcher;
+      };
+    }
+
+    # ---- `mcp-basic-memory`: one wrapper per base, and the formatter that renders it
+    {
+      name = "the basic-memory formatter reaches the pretty-print plugin set";
+      expected = [ "basic-memory" ];
+      actual = sorted (builtins.attrNames devenvDarwin.kdn.mcp.pretty-print.formatters);
+    }
+    {
+      name = "each base backend calls its own wrapper binary in mcp mode";
+      expected = true;
+      actual = lib.hasSuffix "/bin/basic-memory-general mcp" devenvDarwin.kdn.mcp.backends.memory-general.command;
+    }
+    {
+      name = "each base backend carries the description the entity gave it";
+      expected = "den MVP general knowledge base";
+      actual = devenvDarwin.kdn.mcp.backends.memory-general.description;
+    }
+    {
+      name = "the agent rule installs when the consumer is not the source repository";
+      expected = true;
+      actual = devenvDarwin.files ? ".claude/rules/basic-memory.md";
+    }
+    {
+      name = "the agent rule stays out of the source repository, which commits it";
+      expected = false;
+      actual = devenvLinux.files ? ".claude/rules/basic-memory.md";
+    }
+  ];
+
   # ------------------------------------------------------------------ the check set
 
   # Tier 1 runs anywhere: the comparison is an evaluation and the derivation is local.
@@ -936,6 +1054,7 @@ let
     den-eval-ca = mkEvalCheck "ca" caAssertions;
     den-eval-zellij = mkEvalCheck "zellij" zellijAssertions;
     den-eval-opencode = mkEvalCheck "opencode" opencodeAssertions;
+    den-eval-mcp = mkEvalCheck "mcp" mcpAssertions;
   };
 
   # Tier 2 and tier 3 build a real artifact, so each one needs a builder for its own platform. The

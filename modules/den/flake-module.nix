@@ -122,6 +122,17 @@ in
       den.aspects.rosetta-builder;
   flake.denModules.ca = resolveChecked "nixos" "ca" den.aspects.ca;
   flake.denModules.gh = resolveChecked "devenv" "gh" den.aspects.gh;
+
+  # The `mcp` family. Each child resolves on its own, and the parent comes with it through
+  # `includes`. den dedupes the diamond, so one shell holds one copy of the gateway.
+  flake.denModules.mcp = resolveChecked "devenv" "mcp" den.aspects.mcp;
+  flake.denModules.mcp-basic-memory =
+    resolveChecked "devenv" "mcp-basic-memory"
+      den.aspects.mcp-basic-memory;
+  flake.denModules.mcp-pretty-print =
+    resolveChecked "devenv" "mcp-pretty-print"
+      den.aspects.mcp-pretty-print;
+  flake.denModules.mcp-snoop = resolveChecked "devenv" "mcp-snoop" den.aspects.mcp-snoop;
   flake.denModules.opencode = resolveChecked "devenv" "opencode" den.aspects.opencode;
   flake.denModules.ssh-agent = resolveChecked "homeManager" "ssh-agent" den.aspects.ssh-agent;
   flake.denModules.zellij = resolveChecked "devenv" "zellij" den.aspects.zellij;
