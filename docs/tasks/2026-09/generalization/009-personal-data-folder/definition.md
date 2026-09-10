@@ -93,6 +93,32 @@ The dependency is deliberately one-directional — only 19 files read `kdn.profi
 way. A profile is the entry point an adopter replaces; it must not become something modules read
 back from.
 
+## The den port — what stays in place, and where it goes
+
+The den port (order 2 onward of [004](../004-den-spike/definition.md)) meets this personal data
+before this checkpoint runs. The creator's instruction on 2026-09-10: **keep the files where they
+are for now, and log where each one is expected to go.** So a den aspect may keep a personal
+default in place, but the destination must appear in the table below.
+
+The rule the port follows: **an aspect is universal code, and the data belongs to the consumer.**
+So an aspect declares an option and reads it; the entity supplies the value. `ca` is the first
+aspect that shows the shape — it declares `kdn.ca.<name>` and holds no certificate path of its own.
+The test entity generates throwaway certificates instead.
+
+| Aspect / slot | Personal data it holds today | Expected destination |
+|---|---|---|
+| `ca` | none — the option carries the data | n/a. The creator's own certificates join the folder as data files. |
+| `ssh-agent` | none | n/a |
+| `gh`, `devenv-cli`, `rosetta-builder` | none | n/a |
+| `jj` | `upstream.remote` default `"kdn"`; `alwaysBlockedMessagePatterns` default `[ "scratchpad" ]` | the folder supplies both as data; the option default becomes empty. Overlaps [007](../007-depersonalize-slots/definition.md) item 1. |
+| `opencode` | the commercial provider `requesty`; `"~/dev/**" = "allow"` in 5 blocks | the folder supplies the provider and the path allowlist. Overlaps 007 item 2. |
+| `llm` | homelab FQDNs and overlay IP addresses in the option examples | the folder holds the real values; the examples become neutral. Overlaps 007 item 3. |
+| `ssh-access` | `modules/slots/ssh-access/kdn-graph.nix`, 176 LOC of hosts, LAN addresses, WAN ports and `*.kdn.im` zones | the folder, wholesale. Already listed in Tier 3 above. This is why `ssh-access` is last in the port order. |
+| `mcp` / `basic-memory` | knowledge-base paths under the creator's own `~/.local/share/…` | the folder supplies the paths as data. |
+
+Keep this table current as each order lands. It is the input list for the move, and it records what
+the port deliberately did not fix.
+
 ## Exit criteria
 
 - Pattern V1: all 16 hosts have unchanged drvPaths, or you justify each change.
