@@ -14,9 +14,11 @@
 # **No tier runs during activation.** Tier 2 reads a built store path and never executes it. Tier 3
 # runs `config.test`, which devenv keeps separate from `enterShell`. Nothing here needs sudo.
 #
-# A VM test (`pkgs.testers.runNixOSTest`) stays out for now. `host-nixos` carries no aspect yet, so
-# a booted guest would assert nothing that tier 1 does not already cover. No darwin VM framework
-# exists at all. See ./README.md.
+# A VM test (`pkgs.testers.runNixOSTest`) stays out for now. `host-nixos` **does** carry a real
+# `nixos`-class aspect since `devenv-cli` landed, so a booted guest is no longer vacuous. But every
+# value it would read is either a static option value or a file in the toplevel, and tier 1 and
+# tier 2 already read both. A VM earns its cost only for a runtime behaviour — a service that must
+# start, an activation that must converge. No darwin VM framework exists at all. See ./README.md.
 {
   pkgs,
   lib,
@@ -101,14 +103,28 @@ let
   # ------------------------------------------------------------------ the entities
 
   darwinCfg = flake.denConfigurations.host-darwin.config;
+  nixosCfg = flake.denConfigurations.host-nixos.config;
   devenvDarwin = flake.denDevenvShells.devenv-darwin;
   devenvLinux = flake.denDevenvShells.devenv-linux;
   hostShellDarwin = flake.denDevenvShells.host-darwin;
+
+  # The two standalone home-manager configurations. They belong to no den host, and they are the
+  # shape an external adopter uses. See ./home/default.nix.
+  homeDarwin = flake.denHomeConfigurations.home-darwin;
+  homeLinux = flake.denHomeConfigurations.home-linux;
+
+  # The two home-manager generations that a den **host** forwards. Tier 2 greps all four.
+  hmHostDarwin = darwinCfg.home-manager.users.dev.home.activationPackage;
+  hmHostNixos = nixosCfg.home-manager.users.dev.home.activationPackage;
 
   ghAllow = devenvDarwin.claude.code.permissions.rules.Bash.allow;
   ghPackageCount =
     shell: builtins.length (builtins.filter (p: lib.hasPrefix "gh-" (p.name or "")) shell.packages);
   sorted = builtins.sort (a: b: a < b);
+
+  # `devenv-cli` puts exactly one `pkgs.devenv` into every package list it touches. A count catches
+  # a miss and an accidental duplicate with one assertion.
+  devenvCount = ps: builtins.length (builtins.filter (p: (p.pname or "") == "devenv") ps);
 
   # ------------------------------------------------------------------ tier 1 assertions
 
@@ -214,6 +230,155 @@ let
     }
   ];
 
+  # The `devenv-cli` aspect is the four-target port, and it is the only aspect that reaches every
+  # den class this harness covers. So these assertions are the full-matrix test.
+  #
+  # Two inclusion shapes matter, and they are not the same test:
+  #
+  #  * A **host** inclusion delivers `nixos`/`darwin` plus `devenv`. It does **not** deliver
+  #    `homeManager`, because den partitions by scope. Measured on 2026-09-10: with the aspect at
+  #    host scope alone, `home-manager.users.dev.home.packages` held **0** devenv; with it at both
+  #    host scope and user scope, **1**. So the `dev` user aspect includes it a second time. See
+  #    ./users/default.nix.
+  #  * A **standalone** home-manager evaluation carries no den entity at all. See ./home/default.nix.
+  devenvCliAssertions = [
+    # ---- the `nixos` and `darwin` targets. One shared module, two class trees.
+    {
+      name = "darwin systemPackages holds one devenv";
+      expected = 1;
+      actual = devenvCount darwinCfg.environment.systemPackages;
+    }
+    {
+      name = "nixos systemPackages holds one devenv";
+      expected = 1;
+      actual = devenvCount nixosCfg.environment.systemPackages;
+    }
+    # `nix.extraOptions` is a free-text block and another module may append to it. So test for the
+    # two lines, never for equality.
+    {
+      name = "darwin nix.extraOptions keeps outputs and derivations";
+      expected = true;
+      actual =
+        lib.hasInfix "keep-outputs = true" darwinCfg.nix.extraOptions
+        && lib.hasInfix "keep-derivations = true" darwinCfg.nix.extraOptions;
+    }
+    {
+      name = "nixos nix.extraOptions keeps outputs and derivations";
+      expected = true;
+      actual =
+        lib.hasInfix "keep-outputs = true" nixosCfg.nix.extraOptions
+        && lib.hasInfix "keep-derivations = true" nixosCfg.nix.extraOptions;
+    }
+
+    # ---- the `devenv` target. The slot has no such target; this half is new.
+    {
+      name = "every devenv shell holds one devenv package";
+      expected = {
+        devenv-darwin = 1;
+        devenv-linux = 1;
+        host-darwin = 1;
+        host-nixos = 1;
+      };
+      actual = lib.mapAttrs (_: shell: devenvCount shell.packages) flake.denDevenvShells;
+    }
+
+    # ---- the `homeManager` target, forwarded through a den user
+    {
+      name = "both hosts forward exactly one home-manager user";
+      expected = {
+        host-darwin = [ "dev" ];
+        host-nixos = [ "dev" ];
+      };
+      actual = {
+        host-darwin = builtins.attrNames darwinCfg.home-manager.users;
+        host-nixos = builtins.attrNames nixosCfg.home-manager.users;
+      };
+    }
+    {
+      name = "the forwarded user holds one devenv on both hosts";
+      expected = {
+        host-darwin = 1;
+        host-nixos = 1;
+      };
+      actual = {
+        host-darwin = devenvCount darwinCfg.home-manager.users.dev.home.packages;
+        host-nixos = devenvCount nixosCfg.home-manager.users.dev.home.packages;
+      };
+    }
+    {
+      name = "define-user derives the home directory from the host system";
+      expected = {
+        host-darwin = "/Users/dev";
+        host-nixos = "/home/dev";
+      };
+      actual = {
+        host-darwin = darwinCfg.home-manager.users.dev.home.homeDirectory;
+        host-nixos = nixosCfg.home-manager.users.dev.home.homeDirectory;
+      };
+    }
+    {
+      name = "define-user declares the OS account on both classes";
+      expected = {
+        host-darwin = true;
+        host-nixos = true;
+      };
+      actual = {
+        host-darwin = darwinCfg.users.users ? dev;
+        host-nixos = nixosCfg.users.users ? dev;
+      };
+    }
+    {
+      name = "primary-user sets system.primaryUser";
+      expected = "dev";
+      actual = darwinCfg.system.primaryUser;
+    }
+
+    # ---- the standalone home-manager route, with no den entity
+    {
+      name = "each standalone home configuration holds one devenv";
+      expected = {
+        home-darwin = 1;
+        home-linux = 1;
+      };
+      actual = {
+        home-darwin = devenvCount homeDarwin.config.home.packages;
+        home-linux = devenvCount homeLinux.config.home.packages;
+      };
+    }
+
+    # ---- the library route. One module per class, through `denLib.imports`.
+    #
+    # `denModules.devenv-cli` deliberately does not exist. That zero-argument form names one common
+    # class per aspect, and a four-class aspect has none. `denLib.imports` is the general form, and
+    # this asserts it reaches every class.
+    {
+      name = "denLib.imports resolves one module on each of the four classes";
+      expected = {
+        darwin = 1;
+        devenv = 1;
+        homeManager = 1;
+        nixos = 1;
+      };
+      actual =
+        lib.genAttrs
+          [
+            "darwin"
+            "devenv"
+            "homeManager"
+            "nixos"
+          ]
+          (
+            class:
+            builtins.length (
+              denLib.imports {
+                inherit class;
+                aspects = [ "devenv-cli" ];
+              }
+            )
+          );
+    }
+  ];
+
   # `denLib` ships two guards. This asserts both fire, and that the good path still works.
   den = denLib.eval { };
 
@@ -267,8 +432,9 @@ let
       );
     }
     {
-      name = "the registry holds both ported aspects";
+      name = "the registry holds every ported aspect";
       expected = [
+        "devenv-cli"
         "gh"
         "rosetta-builder"
       ];
@@ -322,6 +488,21 @@ let
         }
       ];
 
+  # The shell-hook greps, shared by all four home-manager artifact checks. `devenv-cli` writes one
+  # hook per shell, and home-manager writes an `initExtra` only for an **enabled** shell — so this
+  # also proves the test subject turned all three on.
+  #
+  # The generated line reads `<store-path>/bin/devenv hook <shell>`, so `devenv hook <shell>` is a
+  # literal substring of it.
+  hmHookGreps = ''
+    for pair in 'bash .bashrc' 'zsh .zshrc' 'fish .config/fish/config.fish'; do
+      # shellcheck disable=SC2086
+      set -- $pair
+      echo "  the $1 hook in $2" >&2
+      grep -Fq "devenv hook $1" "$target/home-files/$2"
+    done
+  '';
+
   # ------------------------------------------------------------------ the check set
 
   # Tier 1 runs anywhere: the comparison is an evaluation and the derivation is local.
@@ -330,6 +511,7 @@ let
     den-eval-gh = mkEvalCheck "gh" ghAssertions;
     den-eval-guards = mkEvalCheck "guards" guardAssertions;
     den-eval-routes = mkEvalCheck "routes" routeAssertions;
+    den-eval-devenv-cli = mkEvalCheck "devenv-cli" devenvCliAssertions;
   };
 
   # Tier 2 and tier 3 build a real artifact, so each one needs a builder for its own platform. The
@@ -340,6 +522,13 @@ let
         echo "  the nix.conf holds the substituters opinion" >&2
         grep -Fqx 'builders-use-substitutes = true' "$target/etc/nix/nix.conf"
 
+        echo "  the nix.conf holds both devenv-cli garbage-collector opinions" >&2
+        grep -Fqx 'keep-outputs = true' "$target/etc/nix/nix.conf"
+        grep -Fqx 'keep-derivations = true' "$target/etc/nix/nix.conf"
+
+        echo "  devenv is on the system path" >&2
+        test -x "$target/sw/bin/devenv"
+
         echo "  the launchd plist exists" >&2
         test -f "$target/Library/LaunchDaemons/org.nixos.rosetta-builderd.plist"
 
@@ -347,13 +536,36 @@ let
         grep -Fq 'org.nixos.rosetta-builderd' "$target/activate"
       '';
 
+      # The `homeManager` half, both routes. The host route proves den forwards the aspect to
+      # `home-manager.users.dev`; the standalone route proves the same half is a valid
+      # home-manager module with no den entity at all.
+      den-artifact-hm-host-darwin = mkArtifactCheck "hm-host-darwin" hmHostDarwin hmHookGreps;
+      den-artifact-home-darwin = mkArtifactCheck "home-darwin" homeDarwin.activationPackage hmHookGreps;
+
       den-smoke-devenv-darwin = mkSmokeCheck "devenv-darwin" devenvDarwin;
       den-smoke-host-darwin = mkSmokeCheck "host-darwin" hostShellDarwin;
     };
 
-    # `host-nixos` carries no aspect yet, so it has no artifact worth a grep. Its shell does hold
-    # `gh`, through `den.policies.host-to-devenv`.
+    # `host-nixos` carries a real `nixos`-class aspect since `devenv-cli` landed, so it finally has
+    # an artifact worth a grep. Its shell also holds `gh`, through `den.policies.host-to-devenv`.
+    #
+    # One script shape fits both classes. The NixOS toplevel links `$out/etc` to
+    # `system.build.etc/etc` and `$out/sw` to `system.path`
+    # (`<nixpkgs>/nixos/modules/system/activation/top-level.nix:34,36`); nix-darwin does the same at
+    # `<nix-darwin>/modules/system/default.nix:152,153`.
     x86_64-linux = {
+      den-artifact-host-nixos = mkArtifactCheck "host-nixos" nixosCfg.system.build.toplevel ''
+        echo "  the nix.conf holds both devenv-cli garbage-collector opinions" >&2
+        grep -Fqx 'keep-outputs = true' "$target/etc/nix/nix.conf"
+        grep -Fqx 'keep-derivations = true' "$target/etc/nix/nix.conf"
+
+        echo "  devenv is on the system path" >&2
+        test -x "$target/sw/bin/devenv"
+      '';
+
+      den-artifact-hm-host-nixos = mkArtifactCheck "hm-host-nixos" hmHostNixos hmHookGreps;
+      den-artifact-home-linux = mkArtifactCheck "home-linux" homeLinux.activationPackage hmHookGreps;
+
       den-smoke-devenv-linux = mkSmokeCheck "devenv-linux" devenvLinux;
       den-smoke-host-nixos = mkSmokeCheck "host-nixos" flake.denDevenvShells.host-nixos;
     };
