@@ -1,6 +1,6 @@
 ---
 type: Task
-description: Make modules/slots consumable by an external adopter today, and fix the inverted pre-push guard that permits private content to the public remote.
+description: Make modules/slots consumable by an external adopter today; the pre-push remote guard is already repaired, so a fork audit stays the real content gate.
 status: open
 authored_by: agent
 timestamp: 2026-09-08T17:30:00+02:00
@@ -11,137 +11,72 @@ timestamp: 2026-09-08T17:30:00+02:00
 Hub: [../generalization-plan.md](../definition.md). This is checkpoint 001, the head of
 the first commit chain. Do not push.
 
-Goal: an external adopter consumes `modules/slots` today. Fix the one bug that leaks private
-content.
+Goal: an external adopter consumes `modules/slots` today. The leak bug is already fixed; item 1
+records the state and the limit that remains.
 
-## 1. P0 — fix the inverted remote guard
+## 1. P0 — the remote guard is repaired; the hook stays one net, not the gate
 
-**File:** `modules/slots/jj/pre-push.sh`
+**Status: fixed in the tree.** Commit `e710bc92` ("fix(slots/jj): guard the public remote and
+check diff content, not only paths", 2026-09-09) rewrote `modules/slots/jj/pre-push.sh` and
+`modules/slots/jj/fork/check-fork-contamination.sh`. Every line number below is measured against
+the current tree on 2026-09-10.
 
-The guard at lines 64-67 skips the denied-file and denied-message checks for every remote
-**except** the private fork:
+The guard direction is now correct. `pre-push.sh:92-95` returns early **only** for the private
+fork remote, so every other remote runs the content checks:
 
 ```bash
-  # Remote protection: only applies when pushing to the private fork remote
-  if test "$push_remote" != "$PRIVATE_REMOTE"; then
-    continue
+  # The private fork remote may receive private content. Every other remote may not.
+  if [ -n "$push_remote" ] && [ "$push_remote" = "$PRIVATE_REMOTE" ]; then
+    return 0
   fi
 ```
 
-`PRIVATE_REMOTE` is `cfg.fork.remote` (`modules/slots/jj/fork/default.nix:23`). The option docs
-say the opposite — `modules/slots/jj/default.nix:54` and `:59` both read "blocked from pushing to
-**non-fork** remotes". So the hook blocks private content to the private fork, and permits it to
-the public remote.
+That matches the option text, which is unchanged: `modules/slots/jj/default.nix:55` and `:66` both
+read "blocked from pushing to non-fork remotes".
 
-**Verified.** Take a throwaway repo with `PRIVATE_REMOTE=<fork>`, and a commit that adds a path
-that matches a denied pattern. Current code pushes to the public remote with exit **0** (allowed).
-With an inverted comparison: public exits **1** (blocked), fork exits **0** (allowed).
+### What the fix covers
 
-Fix the comparison. Correct the comment to match the option docs.
+| Old defect | Where it is fixed now |
+|---|---|
+| Inverted remote comparison | `pre-push.sh:92-95` — the private remote is the only exemption |
+| `push_remote` resolved to the literal `refs` | `:23` reads `$1`, then `PRE_COMMIT_REMOTE_NAME`; `:24-32` match the remote URL as a last resort; `:21-22` record the trap |
+| Empty pattern list passed in silence | `:49-58` fail loudly, with a `KDN_JJ_PRE_PUSH_ALLOW_EMPTY=1` escape hatch |
+| Empty stdin skipped the whole loop | `:136-152` fail closed for a public remote, pass for the private one, and accept a named `KDN_JJ_PRE_PUSH_RANGE` |
+| The file check ignored the computed range | `check_range` at `:77-116` takes revision arguments; `:126-133` build them per ref |
+| A new ref used `main..$local_sha`, empty when the branch **is** `main` | `:132` uses `--not --remotes=` instead |
+| A path check could not see a private string in a public file | `:107-114` grep the diff content too |
+| `grep -q` plus `pipefail` read a match as "no match" | `:60-68` never pass `-q` |
 
-### Two more defects in the same script — fix both
+The two known limits are written into the script header at `:11-17`.
 
-1. **Line 69 ignores the computed range.** It passes `"$remote_sha" "$local_sha"` to `git diff`
-   instead of the `$range` from lines 47-52. A new branch has a zero remote sha, which `git diff`
-   rejects. The message check at line 81 uses `$range` correctly. The file check does not. Use
-   `git diff --name-only "$range"`.
-2. **An empty pattern list disables the check silently.** Lines 27-40 build
-   `file_grep_args=(-q -i)` with no `-e` argument when the pattern list is empty. `grep` then
-   exits 2. The `if` at line 69 reads that as "no match", so the check **passes**. Patterns come
-   from the git-ignored `devenv.slots.local.nix`, so an absent local file turns protection off
-   with no warning. Guard on the array length instead, and fail loudly.
+### The limit that still holds
 
-### Read this before you fix the comparison — the guard is inert three ways over
+**`jj git push` fires no git hook.** The hook runs only on a real `git push`. In this repo the one
+alias that uses raw git for the public push is `jj sync-upstream`
+(`modules/slots/jj/fork/default.nix:225`). Every other push goes through `jj git push` and reaches
+no hook. So `jj fork-audit` is the content gate, and `hack/flake-update-complete.sh` is the
+structural gate. `modules/slots/jj/default.nix:57-59` and `:68-70` state this in the option docs.
 
-Measured on 2026-09-09 in throwaway repos under `/tmp`, with an isolated `HOME`, `JJ_CONFIG`, and
-`GIT_CONFIG_GLOBAL=/dev/null`. jj 0.44.0, prek 0.5.2. Each finding is **verified**, and each one
-alone is enough to make the hook pass everything. So the inverted comparison at lines 64-67 is
-**not** the reason private content reaches the public remote. It is the third reason.
+The same limit keeps `modules/slots/jj/fork/check-fork-contamination.sh` inert as a hook: it
+installs at the `pre-commit` stage (`modules/slots/jj/fork/default.nix:247-252`), and jj fires no
+`pre-commit` hook either. It is useful only when it runs by hand or through `jj fork-audit`.
 
-**Defect A — `jj` fires no git hook.** A colocated repo held an executable `.git/hooks/pre-push`
-that printed a marker and exited 1.
+### Tests — landed
 
-| Command | Hook ran | Exit | Result |
-|---|---|---|---|
-| `jj git push --remote=origin --bookmark=main` | **no** | 0 | the remote gained the ref |
-| `git push origin main` (control) | **yes** | 1 | git refused the push |
-| `jj commit -m …` | **no** | 0 | jj created the commit |
+`checks/jj-experiments/test_prepush.py` holds 15 cases (lines 109-294). They cover the public
+block on a path, on a message and on a diff line, the private-remote pass, the always-blocked
+message on both remotes, the loud failure and the escape hatch for an empty pattern list, an
+unknown remote treated as public, the no-stdin fail-closed and private-pass paths, the named
+range, and the new-ref and delete-only pushes.
 
-This repo pushes with `jj git push` everywhere except one line
-(`modules/slots/jj/fork/default.nix:193`, the public push, which uses raw `git push`). So the only
-push that reaches the hook is the public one — the exact push that lines 64-67 then skip.
+### Remaining work for this checkpoint
 
-It also makes `modules/slots/jj/fork/check-fork-contamination.sh` **dead code**: it is the only
-content-aware check in the repo, and `fork/default.nix:217` installs it at the `pre-commit` stage,
-which jj never fires.
-
-**Defect B — prek hands the hook no stdin, so the loop body never runs.** Both hooks install
-through devenv `git-hooks`, which is **prek**, not python pre-commit (`.git/hooks/pre-push` names
-`prek-0.5.2`). A probe hook at the `pre-push` stage with `pass_filenames = false` received:
-
-```
-argc=0  argv=[]
-PRE_COMMIT_REMOTE_NAME=origin
-PRE_COMMIT_REMOTE_BRANCH=refs/heads/main
---- stdin ---            (empty)
-```
-
-Control, a **native** `.git/hooks/pre-push` on the same push:
-
-```
-argc=2  argv=[origin <url>]
---- stdin ---
-refs/heads/main <local_sha> refs/heads/main 0000000000000000000000000000000000000000
-```
-
-prek parses the ref lines itself (it sets `PRE_COMMIT_TO_REF`) and forwards none of them.
-`pre-push.sh:42` reads its ref lines from stdin:
-
-```bash
-while read -r _local_ref local_sha remote_ref remote_sha; do
-```
-
-With no stdin the loop iterates **zero** times. So every check inside it never runs, including the
-always-on blocked-message check at lines 54-62. The hook always exits 0.
-
-**Defect C — `push_remote` never holds a remote name.** `argc=0` means `$1` is empty, so line 10
-falls back to `${PRE_COMMIT_REMOTE_BRANCH%%/*}`. Measured, that expands `refs/heads/main` to
-**`refs`**. The variable that does hold the remote name is `PRE_COMMIT_REMOTE_NAME`, and the script
-never reads it. So `push_remote` is `refs` on every push, and the comparison at line 65 is never
-equal — even for the private fork.
-
-**What this means for the fix.** Correct all four, in this order:
-
-1. Read the remote name from `PRE_COMMIT_REMOTE_NAME`, with `$1` as the fallback (defect C).
-2. Take the ref range from `PRE_COMMIT_FROM_REF`/`PRE_COMMIT_TO_REF` when stdin is empty, or fail
-   loudly on an empty stdin. Never treat empty stdin as "nothing to check" (defect B).
-3. Invert the comparison at lines 64-67, and correct the comment (the original P0).
-4. Move the guard out of `.git/hooks/` for jj-driven pushes (defect A). jj offers no hook
-   mechanism, so the check must run inside a wrapper — a jj alias that checks, then pushes.
-   Without this, every `jj git push` stays unchecked whatever else you fix.
+A wrapper that checks before it pushes, so a `jj git push` cannot bypass the content check. jj
+offers no hook mechanism, so the check must live in a jj alias. Until then, run `jj fork-audit`
+before any push.
 
 Cross-reference: [fork-contribution-access-tiers.research.md](../../fork-contribution-access-tiers/research.md)
 § A5 and [flake-update-procedure-gaps.research.md](../../flake-update-procedure-gaps/research.md) § O18.
-
-### Record, do not fix
-
-For a new branch the range is `main..$local_sha` (line 49), which is empty when that branch **is**
-`main`. Note it in the script as a known limitation.
-
-### Tests
-
-Add cases to `checks/jj-experiments`:
-
-| Case | Expected |
-|---|---|
-| public remote + file that matches a denied pattern | blocked |
-| fork remote + file that matches a denied pattern | permitted |
-| commit message that matches an always-blocked pattern | blocked on both remotes |
-| empty pattern list | loud failure, not a silent pass |
-| new branch with a zero remote sha | no `git diff` error |
-| hook invoked through prek, with no stdin | loud failure, not a silent pass (defect B) |
-| `push_remote` resolved from a prek environment | the real remote name, never `refs` (defect C) |
-| push through `jj git push` | the wrapper runs the check (defect A) |
 
 ## 2. Document the overlay requirement
 
@@ -198,7 +133,7 @@ Add a check that each slot evaluates on its own and references no universal or m
 
 ## 6. One-line input hygiene
 
-`flake.nix:14` on the public branch pins
+`flake.nix:25-26` on the public branch pins
 `git+ssh://git@github.com/browsers-software/homebrew-tap`. Change it to
 `github:Browsers-software/homebrew-tap`.
 

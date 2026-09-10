@@ -2,7 +2,7 @@
 type: Task
 description: The fork denied-pattern list does not match fork-only lock node keys, so the content check passes a commit that mixes private and public lock content.
 status: done
-solution: fork-denied-patterns-miss-lock-nodes.done.md
+solution: done.md
 authored_by: agent
 timestamp: 2026-09-09T18:30:00+02:00
 ---

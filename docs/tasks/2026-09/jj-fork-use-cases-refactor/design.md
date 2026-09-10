@@ -1,6 +1,7 @@
 ---
 type: Design
 description: Build an isolated pytest harness in checks/jj-experiments, verify golden-path jj recipes on facts for both fork/branch topology and day-to-day operations, finish the revset-alias suite, and rewrite the jj docs and skill to be short and teachable.
+task: definition.md
 authored_by: agent
 timestamp: 2026-09-02T00:00:00+02:00
 ---

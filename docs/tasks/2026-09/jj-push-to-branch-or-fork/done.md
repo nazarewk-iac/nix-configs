@@ -1,7 +1,8 @@
 ---
-type: Task
+type: Solution
 authored_by: agent
 description: Solution record for push-to-branch-or-fork — the verified golden path and the canonical harness-extension example.
+task: definition.md
 timestamp: 2026-09-04T00:00:00+02:00
 ---
 

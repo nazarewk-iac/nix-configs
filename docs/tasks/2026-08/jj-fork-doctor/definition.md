@@ -1,7 +1,7 @@
 ---
 type: Task
 description: Package a do-nothing `jj-fork-doctor` Python script (wrapped as `jj fork-doctor`) that analyzes fork topology through revset aliases and offers exact remedy commands for the user to confirm and run.
-status: todo
+status: open
 authored_by: agent
 timestamp: 2026-08-03T17:00:00+02:00
 ---

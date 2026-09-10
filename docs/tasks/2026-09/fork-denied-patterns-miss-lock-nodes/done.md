@@ -1,8 +1,7 @@
 ---
 type: Solution
 description: The owner added the private org pattern; the measurement shows a line-level check cannot see a value-only lock node update, so the structural assertion stays the gate.
-task: fork-denied-patterns-miss-lock-nodes.md
-status: done
+task: definition.md
 authored_by: agent
 timestamp: 2026-09-09T21:30:00+02:00
 ---

@@ -1,7 +1,7 @@
 ---
-type: Task
+type: Solution
 description: Solution — a zellij-llm pane drops to an interactive shell after its command exits, so the session stays alive, and wait/watch detect completion with a per-run file marker under the cache root.
-status: done
+task: definition.md
 authored_by: agent
 timestamp: 2026-07-31T18:30:00+02:00
 ---

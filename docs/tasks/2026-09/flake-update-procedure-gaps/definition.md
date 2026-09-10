@@ -2,7 +2,7 @@
 type: Task
 description: Repair the flake update procedure — add a fetch and a reconcile step, a start-state branch, a lock-structure check, and a completion check.
 status: done
-solution: flake-update-procedure-gaps.done.md
+solution: done.md
 authored_by: agent
 timestamp: 2026-09-09T12:00:00+02:00
 ---

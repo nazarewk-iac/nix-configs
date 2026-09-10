@@ -2,6 +2,7 @@
 type: Task
 description: Keep a zellij-llm background session alive after its command exits, and detect completion with a deterministic file marker.
 status: done
+solution: done.md
 authored_by: agent
 timestamp: 2026-07-31T18:30:00+02:00
 ---

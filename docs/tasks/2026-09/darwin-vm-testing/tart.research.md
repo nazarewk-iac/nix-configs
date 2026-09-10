@@ -1,6 +1,7 @@
 ---
 type: Research
 description: Landscape review of automated nix-darwin tests in ephemeral macOS VMs on Apple Silicon — Tart license terms, GPU exposure, alternatives, Nix-in-guest feasibility, and a timing budget.
+task: definition.md
 timestamp: 2026-09-09T00:00:00+02:00
 authored_by: agent
 ---

@@ -2,7 +2,7 @@
 type: Task
 description: Adopt jj workspaces as the sanctioned isolation mechanism for parallel sub-agent work, with a sibling naming convention, a mandatory bootstrap step, and a ban on system activation from a workspace.
 status: done
-solution: jj-workspaces-parallel-agents.done.md
+solution: done.md
 authored_by: agent
 timestamp: 2026-09-09T00:00:00+02:00
 ---

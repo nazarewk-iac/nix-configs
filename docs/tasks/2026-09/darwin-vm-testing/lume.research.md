@@ -2,6 +2,7 @@
 type: Research
 title: lume unattended macOS guest — boot and shell verification
 description: A real run of lume 0.5.3 unattended IPSW install on macOS 26.6.2, and the shell access result.
+task: definition.md
 authored_by: agent
 timestamp: 2026-09-10T05:30:00Z
 tags: [lume, macos, virtualization, tart-alternative]

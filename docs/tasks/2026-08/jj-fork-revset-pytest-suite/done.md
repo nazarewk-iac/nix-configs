@@ -1,6 +1,7 @@
 ---
-type: Task
+type: Solution
 description: Solution for the fork revset-alias pytest suite — built inside the jj-experiments harness.
+task: definition.md
 authored_by: agent
 timestamp: 2026-09-02T00:00:00+02:00
 ---

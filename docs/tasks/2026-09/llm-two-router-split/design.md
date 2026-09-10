@@ -1,6 +1,7 @@
 ---
 type: Design
 description: Split the brys LLM slot into two llama-server routers (DS4 frontier + freely-swapping small set) behind one front-facing endpoint, routed on the JSON model field in the compat-proxy.
+task: definition.md
 authored_by: agent
 timestamp: 2026-09-06T00:00:00+02:00
 ---

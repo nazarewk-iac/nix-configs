@@ -1,8 +1,9 @@
 ---
 type: Research
 description: Can a subset of the jj-experiments pytest suite run through the nix build runner, and which approach is most ergonomic.
+task: definition.md
 authored_by: agent
-timestamp: 2026-09-03
+timestamp: 2026-09-03T00:00:00+02:00
 ---
 
 # Run a subset of jj-experiments through nix build

@@ -1,7 +1,7 @@
 ---
-type: Task
+type: Solution
 description: Solution — a rosetta-builder darwin slot lets an aarch64-darwin host build both aarch64-linux and x86_64-linux locally through nix-rosetta-builder (Option C); x86_64 runs under Rosetta 2, not QEMU-TCG.
-status: done
+task: definition.md
 authored_by: agent
 timestamp: 2026-08-04T12:00:00+02:00
 ---

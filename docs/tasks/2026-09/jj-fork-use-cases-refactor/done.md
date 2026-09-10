@@ -1,6 +1,7 @@
 ---
-type: Task
+type: Solution
 description: Solution for jj-fork-use-cases-refactor — the isolated pytest harness, the verified golden-path matrix, and the docs/skill rewrite.
+task: definition.md
 authored_by: agent
 timestamp: 2026-09-03T00:00:00+02:00
 ---
