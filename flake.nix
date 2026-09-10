@@ -153,7 +153,12 @@
       flakeLib = lib.kdn.flakes.forFlake self;
     in
     (flake-parts.lib.mkFlake { inherit inputs; } {
-      systems = import inputs.systems;
+      # `inputs.systems` is `nix-systems/default`, which still lists `x86_64-darwin`. Nixpkgs
+      # 26.11 dropped that platform, and every evaluation of it throws "Nixpkgs 26.11 has dropped
+      # support for x86_64-darwin". `nix flake check --all-systems` reads each system, so the
+      # throw stops the whole check. Measured 2026-09-10. Every Darwin host here is
+      # `aarch64-darwin`, so the platform has no use.
+      systems = builtins.filter (system: system != "x86_64-darwin") (import inputs.systems);
 
       # The parallel den tree. It adds outputs and it changes none. See modules/den/README.md.
       imports = [ ./modules/den/flake-module.nix ];
