@@ -38,6 +38,7 @@ let
       # den's flakeModule declares no `flake.<output>` option by itself. Each output needs its own
       # declaration, and den ships one module per output name it knows.
       inputs.den.flakeOutputs.darwinConfigurations
+      inputs.den.flakeOutputs.nixosConfigurations
 
       # One class per target that den does not know about.
       ./classes/devenv.nix
@@ -45,8 +46,11 @@ let
       # One aspect per reimplemented slot. The slot itself stays in place and keeps working.
       ./aspects/rosetta-builder.nix
 
-      # One entity per parallel host.
-      ./entities/den-darwin.nix
+      # One directory per parallel host. They live under `hosts/den-mvp/` because
+      # `flake.hostConfigurations` reads `hosts/` one level deep only, so it never sees them. See
+      # ../../hosts/den-mvp/README.md.
+      ../../hosts/den-mvp/den-darwin
+      ../../hosts/den-mvp/den-nixos
 
       # devenv needs a root directory, and only the flake knows one.
       { kdn.den.devenv.root = "${self}"; }
@@ -83,7 +87,12 @@ in
 
   # den writes each entity result to `flake.<intoAttr>` inside its own evaluation. Read the result
   # back with no `or { }` fallback: a wiring mistake must fail loudly here, not pass in silence.
-  flake.denConfigurations = eval.config.flake.darwinConfigurations;
+  #
+  # Both classes land in one attribute set on purpose. A den host name is unique across the classes,
+  # and one flat set keeps the compare commands short. `.config.system.build.toplevel` is the same
+  # path in both classes.
+  flake.denConfigurations =
+    eval.config.flake.darwinConfigurations // eval.config.flake.nixosConfigurations;
   flake.denDevenvShells = eval.config.flake.devenvShells;
 
   # The adopter-facing surface. An adopter imports a plain module and never adopts den.

@@ -1,11 +1,10 @@
-# The parallel den host.
+# A build-only den host for the `darwin` class.
 #
-# It exists so den builds a real nix-darwin system with no change to any file under `hosts/`.
-# A den host must NOT live in `hosts/`: `flake.hostConfigurations` reads that directory from a
-# listing, and it sends every host there through `modules/meta`. den replaces that pre-pass, so a
-# den host that inherits it proves nothing.
+# It mirrors a real Darwin workstation at the **slot** level, so a den module can be compared
+# against the slot it replaces. See ../README.md for the compare commands and for the reason this
+# directory is invisible to `flake.hostConfigurations`.
 #
-# This host never activates. It evaluates and it builds only. It carries no personal data, and no
+# This host never activates. It evaluates and it builds. It carries no personal data, and no
 # machine uses its name.
 { den, inputs, ... }:
 {
