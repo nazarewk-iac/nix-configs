@@ -354,6 +354,22 @@
         "type": "github"
       }
     },
+    "den": {
+      "locked": {
+        "lastModified": 1788557660,
+        "narHash": "sha256-d+MZh9bFT8FrI6FCCEKr/Jar0ipVbX0lm2/1/7wjFQI=",
+        "owner": "denful",
+        "repo": "den",
+        "rev": "d50f0fce6fc1a8ba00fd0d310746d0e8ecc2f70d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "denful",
+        "repo": "den",
+        "rev": "d50f0fce6fc1a8ba00fd0d310746d0e8ecc2f70d",
+        "type": "github"
+      }
+    },
     "devenv": {
       "inputs": {
         "cachix": "cachix",
@@ -989,6 +1005,23 @@
         "type": "github"
       }
     },
+    "nix-effects": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1778686186,
+        "narHash": "sha256-oxjrcHFSV2+Rxg4LE4Hupa5HjleTvU1Ir6jp5SburLE=",
+        "owner": "denful",
+        "repo": "nix-effects",
+        "rev": "c3c68a45deb892d028711eeff8b80937e30a90dd",
+        "type": "github"
+      },
+      "original": {
+        "owner": "denful",
+        "repo": "nix-effects",
+        "rev": "c3c68a45deb892d028711eeff8b80937e30a90dd",
+        "type": "github"
+      }
+    },
     "nix-fast-build": {
       "inputs": {
         "flake-parts": [
@@ -1577,6 +1610,7 @@
         "brew-tap--homebrew--core": "brew-tap--homebrew--core",
         "colmena": "colmena",
         "crane": "crane",
+        "den": "den",
         "devenv": "devenv",
         "disko": "disko",
         "disko-zfs": "disko-zfs",
@@ -1593,6 +1627,7 @@
         "lanzaboote": "lanzaboote",
         "microvm": "microvm",
         "nix-darwin": "nix-darwin",
+        "nix-effects": "nix-effects",
         "nix-fast-build": "nix-fast-build",
         "nix-homebrew": "nix-homebrew",
         "nix-rosetta-builder": "nix-rosetta-builder",
