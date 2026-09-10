@@ -95,6 +95,22 @@ in
         services.openssh.enable = true;
         environment.etc."kdn/source-flake".source = kdnConfig.self;
         nix.gc.automatic = true;
+        # `nix-collect-garbage` with no options deletes only an unreachable store
+        # path. It never deletes an old profile generation, and every generation is
+        # a garbage-collector root. So a stale generation holds its whole closure
+        # forever, and `keep-outputs`/`keep-derivations` make that closure much
+        # bigger than the system itself.
+        #
+        # `--delete-older-than 7d` deletes each profile generation older than 7
+        # days, then collects every path that loses its last root. It keeps the
+        # generation that was active 7 days ago, so one rollback target always
+        # survives.
+        #
+        # Nix has no age test for a store path. A profile generation is the only
+        # age-based handle the built-in collector offers. An out-link such as
+        # `result` needs angrr instead — see
+        # ../../../../../docs/tasks/2026-09/angrr-result-retention/definition.md.
+        nix.gc.options = lib.mkDefault "--delete-older-than 7d";
         services.angrr.enable = lib.mkDefault true;
         services.angrr.settings = {
           temporary-root-policies = {
@@ -134,6 +150,18 @@ in
       (kdnConfig.util.ifTypes [ "darwin" ] (
         lib.mkMerge [
           { home-manager.sharedModules = [ { kdn.profile.machine.baseline.enable = true; } ]; }
+          {
+            # nix-darwin runs the collector weekly, on Sunday at 03:15
+            # (`<nix-darwin>/modules/services/nix-gc/default.nix:34`). A 7-day
+            # threshold then takes up to 14 days to act on a generation. NixOS runs
+            # it daily, because `nix.gc.dates` defaults to `[ "03:15" ]`. Match that.
+            nix.gc.interval = lib.mkDefault [
+              {
+                Hour = 3;
+                Minute = 15;
+              }
+            ];
+          }
           (lib.mkIf config.kdn.security.secrets.allowed {
             system.activationScripts.postActivation.text = lib.mkOrder 1501 ''
               chmod -R go+r /run/configs
