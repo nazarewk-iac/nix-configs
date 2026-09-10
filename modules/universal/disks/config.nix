@@ -220,7 +220,23 @@ in
                   directory = sysUser.home;
                   user = sysUser.name;
                   group = sysUser.group;
-                  mode = userCfg.homeDirMode;
+                  # `preservation` emits a rule for this exact path as well. Its
+                  # `intermediateHomeRules` (`lib.nix:220`) reads the readOnly `homeMode`, which
+                  # follows `users.users.<name>.homeMode`. That rule appears for every user with
+                  # a non-empty preserved entry at this same location. Two values of one tmpfiles
+                  # `d.mode` stop the evaluation with `conflicting definition values`. So this
+                  # entry reads the same source, and one value governs the home directory.
+                  #
+                  # Measured 2026-09-10 on pryll: user `bn` has `homeLocation = "usr/data"` and
+                  # preserved entries at that location, so both rules met. User `kdn` has
+                  # `homeLocation = "disposable"` and no preserved entry there, so no host with
+                  # `kdn` alone ever showed the conflict.
+                  #
+                  # `homeMode` is "700" -- the nixpkgs default. `userCfg.homeDirMode` is "0750".
+                  # TODO: decide which mode a home directory takes. To make "0750" the one value,
+                  # set `users.users.<name>.homeMode` from `homeDirMode` instead. That loosens
+                  # every real home directory, so it needs a decision, not a silent change.
+                  mode = sysUser.homeMode;
                 }
               ];
             }
