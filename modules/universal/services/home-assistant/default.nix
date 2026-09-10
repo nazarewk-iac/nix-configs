@@ -51,7 +51,11 @@ in
       lib.mkMerge [
         {
           services.home-assistant.enable = true;
-          services.home-assistant.openFirewall = true;
+          # `services.home-assistant.openFirewall` no longer exists. nixpkgs removed it,
+          # because the frontend port is not in the YAML config any more, so the module
+          # cannot read the port at evaluation time. The port is open here instead. 8123 is
+          # the default of Home Assistant, and this module sets no other port.
+          networking.firewall.allowedTCPPorts = [ 8123 ];
           services.home-assistant.config = {
             # Includes dependencies for a basic setup
             # https://www.home-assistant.io/integrations/default_config/
