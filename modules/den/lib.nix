@@ -26,6 +26,7 @@ let
     devenv-cli = ./aspects/devenv-cli.nix;
     gh = ./aspects/gh.nix;
     rosetta-builder = ./aspects/rosetta-builder.nix;
+    ssh-agent = ./aspects/ssh-agent.nix;
   };
 
   # `nix-effects` is explicit on purpose. den's `nix/lib/fx.nix` otherwise fetches it with

@@ -17,6 +17,9 @@ let
   # One aspect list, shared by every standalone home configuration.
   aspects = [
     den.aspects.devenv-cli
+
+    # The `homeManager`-only aspect. The standalone route is the shape an external adopter uses.
+    den.aspects.ssh-agent
   ];
 
   mkHome =

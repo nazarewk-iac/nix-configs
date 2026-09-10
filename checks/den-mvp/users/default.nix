@@ -32,6 +32,10 @@
       # inclusions at two scopes is the shape that works, and `den-eval-devenv-cli` asserts both
       # halves land.
       den.aspects.devenv-cli
+
+      # A `homeManager`-only aspect. It **must** sit here and not in a host aspect: den partitions
+      # by scope, so a host-scope `homeManager` half reaches no user.
+      den.aspects.ssh-agent
     ];
 
     homeManager = {
