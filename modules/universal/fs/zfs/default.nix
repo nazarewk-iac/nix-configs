@@ -69,7 +69,41 @@ in
               zfs-prune-snapshots
               sanoid
             ];
-            boot.kernelPackages = lib.mkDefault kernelPackage;
+            # An out-of-tree ZFS module needs a kernel that the ZFS version supports, so this
+            # module picks one. A hardware module picks a kernel too, and it also uses
+            # `lib.mkDefault`. Equal priority stops the evaluation with
+            # `The option `boot.kernelPackages' is defined multiple times`. Measured 2026-09-10
+            # on the rpi4 host: `nixos-hardware`'s `raspberry-pi/4/default.nix:31` sets the
+            # vendor kernel, which the Pi needs for its own hardware.
+            #
+            # `lib.mkOverride 1200` sits between two standard priorities, so a hardware
+            # module now wins and this value stays the fallback:
+            #
+            #   1000 = `lib.mkDefault`      -- what a hardware module uses. It must win.
+            #   1200 = this value           -- stronger than the option default, weaker than 1000.
+            #   1500 = `lib.mkOptionDefault` -- the `default` of the option declaration.
+            #
+            # 1500 is not free: an option `default` is itself a definition at 1500, and nixpkgs
+            # declares one at `<nixpkgs>/nixos/modules/system/boot/kernel.nix:69`. A value of
+            # 1500 here ties with it and stops every ZFS host. Measured 2026-09-10 on brys.
+            #
+            # This module holds the only `boot.kernelPackages` definition in the repository --
+            # every other reference reads the option. So no host without a hardware kernel
+            # changes.
+            #
+            # Verified 2026-09-10: no rpi4 host holds a ZFS filesystem. `fileSystems` of the
+            # rpi4 host lists none, and `kdn.fs.zfs.enable` is true only because
+            # `modules/universal/profile/machine/baseline/default.nix:295` sets
+            # `lib.mkDefault true` for every baseline host.
+            #
+            # So this priority change is correct, and a second question stays open: should the
+            # baseline profile enable ZFS on a host that mounts no ZFS filesystem? A `switch` on
+            # the rpi4 host now compiles the ZFS modules against the vendor kernel. The
+            # evaluation passes; the build is unproven.
+            #
+            # TODO: decide whether the baseline profile keeps `kdn.fs.zfs.enable` on a host with
+            # no ZFS filesystem.
+            boot.kernelPackages = lib.mkOverride 1200 kernelPackage;
             boot.loader.grub.copyKernels = true;
             boot.kernelParams = [ "nohibernate" ];
             boot.initrd.supportedFilesystems = [ "zfs" ];
