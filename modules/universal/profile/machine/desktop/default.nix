@@ -122,7 +122,7 @@ in
           ];
         }
         (kdnConfig.util.ifTypes [ "nixos" ] {
-          services.xserver.xkb.layout = "pl";
+          services.xserver.xkb.layout = config.kdn.locale.xkbLayout;
           console.useXkbConfig = lib.mkDefault true;
           services.libinput.enable = lib.mkDefault true;
           services.libinput.touchpad.disableWhileTyping = lib.mkDefault true;

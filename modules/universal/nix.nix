@@ -1,4 +1,16 @@
+/*
+  The value of `kdn.nixConfig`. `./_options.nix` calls this file and passes the module arguments,
+  so the settings below read the narrow options an adopter can change.
+
+  This is a plain function, not a module. It declares no option and it emits no config.
+*/
+{
+  config,
+  ...
+}:
 let
+  cfg = config.kdn;
+
   adminUsers = [
     "@wheel" # linux
     "@admin" # macos
@@ -22,16 +34,10 @@ in
       "nix-command"
       "flakes"
     ];
-    trusted-public-keys = [
-      "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-      "nixpkgs-update.cachix.org-1:6y6Z2JdoL3APdu6/+Iy8eZX2ajf09e4EE9SnxSML1W8="
-      "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw="
-    ];
-    substituters = [
-      "https://nix-community.cachix.org"
-      "https://nixpkgs-update.cachix.org"
-      "https://devenv.cachix.org"
-    ];
+    # `kdn.nix.substituters` keeps each URL next to its public key, so the two lists below stay
+    # aligned. A substituter with no matching key fails at run time.
+    trusted-public-keys = map (entry: entry.publicKey) cfg.nix.substituters;
+    substituters = map (entry: entry.url) cfg.nix.substituters;
     allowed-users = adminUsers ++ allowedUsers;
     trusted-users = adminUsers;
     build-dir = "/nix/var/nix/builds";
@@ -39,13 +45,10 @@ in
 
   nixpkgs.config = {
     allowAliases = true;
-    allowUnfree = true;
+    allowUnfree = cfg.nixpkgs.allowUnfree;
 
-    permittedInsecurePackages = [
-      "litestream-0.3.13"
-      "electron-28.3.3" # loqseq dependency
-      "electron-27.3.11" # loqseq dependency? 2024-07-12
-      "olm-3.2.16" # required for Matrix clients
-    ];
+    # The list lives in the option default at `./_options.nix`. `types.listOf` concatenates every
+    # definition, so a literal here would be a definition an adopter can add to but never remove.
+    permittedInsecurePackages = cfg.nixpkgs.permittedInsecurePackages;
   };
 }

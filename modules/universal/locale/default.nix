@@ -12,9 +12,29 @@ in
   options.kdn.locale = {
     enable = lib.mkEnableOption "locale setup";
 
+    /*
+      The time zone of the machine.
+
+      The type stays plain `str`, not `nullOr str`. `null` cannot work here: the Home Manager
+      branch below writes `kdn.env.variables.TZ`, and `kdn.env.variables` has type `attrsOf str`.
+      A `null` time zone therefore stops the evaluation of every Home Manager user. An adopter
+      changes the value; they cannot unset it.
+    */
     timezone = lib.mkOption {
       type = lib.types.str;
       default = "Europe/Warsaw";
+      example = "Etc/UTC";
+    };
+
+    /*
+      The X keyboard layout. `modules/universal/profile/machine/desktop` reads it for
+      `services.xserver.xkb.layout`, and `modules/universal/desktop/sway` reads it for the Sway
+      `xkb_layout` input setting.
+    */
+    xkbLayout = lib.mkOption {
+      type = lib.types.str;
+      default = "pl";
+      example = "us";
     };
 
     primary = lib.mkOption {
