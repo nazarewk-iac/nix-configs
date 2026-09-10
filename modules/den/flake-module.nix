@@ -9,6 +9,7 @@
 #   flake.den                      the raw den evaluation — a debug handle
 #   flake.denConfigurations.<name>  a nix-darwin or a NixOS system that den builds
 #   flake.denDevenvShells.<name>    a devenv shell that den builds
+#   flake.denHomeConfigurations.<name>  a standalone home-manager configuration that den builds
 #   flake.denModules.<aspect>       a plain module for an external adopter
 #   flake.denLib                    the adopter-facing library — a thin `imports` wrapper plus the
 #                                   raw den machinery
@@ -62,7 +63,9 @@ let
       # standalone shell. See ../../checks/den-mvp/README.md.
       ../../checks/den-mvp/host-darwin
       ../../checks/den-mvp/host-nixos
+      ../../checks/den-mvp/users
       ../../checks/den-mvp/devenv
+      ../../checks/den-mvp/home
     ];
   };
 
@@ -103,6 +106,7 @@ in
   flake.denConfigurations =
     eval.config.flake.darwinConfigurations // eval.config.flake.nixosConfigurations;
   flake.denDevenvShells = eval.config.flake.devenvShells;
+  flake.denHomeConfigurations = eval.config.flake.homeConfigurations;
 
   # The adopter-facing surface. A caller imports a plain module and never adopts den.
   #
