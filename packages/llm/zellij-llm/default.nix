@@ -1,5 +1,9 @@
+# `kdn-slug` is a plain argument, not `pkgs.kdn.kdn-slug`. A caller then reaches this package
+# with a direct `pkgs.callPackage` and needs none of this repository's overlays.
+# `modules/den/aspects/` uses that route.
 {
   pkgs,
+  kdn-slug,
   ...
 }:
 let
@@ -10,7 +14,8 @@ let
       zellij
       jq
       coreutils
-      kdn.kdn-slug
+    ] ++ [
+      kdn-slug
     ];
     # `eval "$(argc --argc-eval ...)"` injects the argc_* variables at runtime. shellcheck
     # cannot see that, so it flags every read of one as SC2154 ("referenced but not assigned").
