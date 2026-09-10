@@ -126,6 +126,18 @@ let
     shell: builtins.length (builtins.filter (p: lib.hasPrefix "gh-" (p.name or "")) shell.packages);
   sorted = builtins.sort (a: b: a < b);
 
+  # Every allow rule this tree emits starts with a tool name and one space. So one predicate names
+  # the aspect that owns a rule.
+  ownedBy = tools: r: lib.any (tool: lib.hasPrefix "${tool} " r) tools;
+
+  # The two routes do not carry one identical allowlist any more. `host-darwin` includes `gh` and
+  # `zellij`; a standalone shell includes `nix` too, and that aspect writes its own rules. So the
+  # route-equality assertion compares the shared subset.
+  sharedAllow = builtins.filter (ownedBy [
+    "gh"
+    "zellij"
+  ]);
+
   # `devenv-cli` puts exactly one `pkgs.devenv` into every package list it touches. A count catches
   # a miss and an accidental duplicate with one assertion.
   devenvCount = ps: builtins.length (builtins.filter (p: (p.pname or "") == "devenv") ps);
@@ -193,10 +205,12 @@ let
       expected = [ ];
       actual = builtins.filter (
         r:
-        !(lib.any (tool: lib.hasPrefix "${tool} " r) [
+        !(ownedBy [
+          "devenv"
           "gh"
+          "nix"
           "zellij"
-        ])
+        ] r)
       ) ghAllow;
     }
     {
@@ -234,9 +248,9 @@ let
       ) ghRules;
     }
     {
-      name = "the host route and the standalone route give one allowlist";
-      expected = ghAllow;
-      actual = hostShellDarwin.claude.code.permissions.rules.Bash.allow;
+      name = "both routes give one allowlist for the aspects they share";
+      expected = sharedAllow ghAllow;
+      actual = sharedAllow hostShellDarwin.claude.code.permissions.rules.Bash.allow;
     }
   ];
 
@@ -576,6 +590,7 @@ let
         "mcp-basic-memory"
         "mcp-pretty-print"
         "mcp-snoop"
+        "nix"
         "opencode"
         "rosetta-builder"
         "ssh-agent"
@@ -986,10 +1001,12 @@ let
     {
       name = "every declared program and every extra backend reaches the gateway";
       expected = [
+        "devenv"
         "fetch"
         "filesystem"
         "memory-archive"
         "memory-general"
+        "nixos"
         "sequential-thinking"
         "stub-http"
         "time"
@@ -1085,6 +1102,200 @@ let
     }
   ];
 
+  # ------------------------------------------------------------------ nix
+
+  # The `nix` aspect is the first port whose coupling runs **downward**: it writes two of the `mcp`
+  # aspect's own options through `includes`. It is also the first aspect that registers a git-hooks
+  # pre-commit hook, so it is the first that needs a real flake input inside the devenv class — see
+  # `den.devenv.inputs` in ../../modules/den/classes/devenv.nix.
+  #
+  # Three groups of assertion cover the three defects the port fixes:
+  #
+  #  1. The `devenv` MCP backend runs a wrapper, so `DEVENV_ROOT` expands at run time. The slot froze
+  #     a read-only store copy of the whole repository into `env.DEVENV_ROOT`.
+  #  2. `kdn.nix.extraBashAllow` carries the consumer's own flake app. The slot hardcoded one app of
+  #     this repository.
+  #  3. Each installed file comes from a relative path literal, so the derivation reads one file.
+  nixHook = devenvDarwin.claude.code.hooks.git-hooks-run;
+  nixStoreSymlinkHook = devenvDarwin.git-hooks.hooks.check-nix-store-symlinks;
+
+  # The `nix` aspect installs two skills and one rule. Every path below is relative to the consumer's
+  # own working tree.
+  nixFilePaths = [
+    ".claude/skills/flake-update/SKILL.md"
+    ".claude/skills/flake-patches/SKILL.md"
+    ".claude/rules/okf-format.md"
+  ];
+
+  nixAssertions = [
+    # ---- the shell packages
+    {
+      name = "both language servers and the formatter reach the shell packages";
+      expected = [
+        1
+        1
+        1
+      ];
+      actual = map (countNamed devenvDarwin) [
+        "nil"
+        "nixd"
+        "nixfmt"
+      ];
+    }
+    {
+      name = "the linux shell holds the same three packages";
+      expected = [
+        1
+        1
+        1
+      ];
+      actual = map (countNamed devenvLinux) [
+        "nil"
+        "nixd"
+        "nixfmt"
+      ];
+    }
+
+    # ---- the two MCP backends, written through `includes`
+    {
+      name = "the nixos option-search program is on";
+      expected = true;
+      actual = devenvDarwin.kdn.mcp.programs.nixos.enable;
+    }
+    {
+      name = "the devenv backend command is a wrapper script, not a bare command";
+      expected = true;
+      actual = lib.hasSuffix "-devenv-mcp-wrapper" devenvDarwin.kdn.mcp.backends.devenv.command;
+    }
+    {
+      name = "the devenv backend freezes no repository store path in its environment";
+      expected = false;
+      actual = devenvDarwin.kdn.mcp.backends.devenv ? env;
+    }
+    {
+      name = "the devenv backend keeps the description the slot gave it";
+      expected = "devenv — search nixpkgs packages and devenv options";
+      actual = devenvDarwin.kdn.mcp.backends.devenv.description;
+    }
+
+    # ---- the Claude Code allowlist
+    {
+      name = "the allowlist holds a read-only nix entry";
+      expected = true;
+      actual = lib.elem "nix eval *" ghAllow;
+    }
+    {
+      name = "the entity's own extraBashAllow value reaches the allowlist";
+      expected = true;
+      actual = lib.elem "nix run .#example-formatter -- *" ghAllow;
+    }
+    # The aspect names no flake app of its own, so the entity's one placeholder is the whole set. A
+    # bare `nix run *` wildcard executes an arbitrary flake app, so it must never appear here.
+    {
+      name = "every nix run rule comes from the entity, and none is a bare wildcard";
+      expected = [ "nix run .#example-formatter -- *" ];
+      actual = builtins.filter (lib.hasPrefix "nix run") ghAllow;
+    }
+
+    # ---- the two git-hooks halves
+    {
+      name = "the git-hooks-run hook runs the whole suite";
+      expected = true;
+      actual = lib.hasInfix "--all-files" nixHook.command;
+    }
+    {
+      name = "the git-hooks-run hook keeps devenv's own file-edit matcher";
+      expected = "^(Edit|MultiEdit|Write)$";
+      actual = nixHook.matcher;
+    }
+    {
+      name = "the store-symlink hook is registered on both stages";
+      expected = {
+        enable = true;
+        always_run = true;
+        pass_filenames = false;
+        stages = [
+          "pre-commit"
+          "pre-push"
+        ];
+      };
+      actual = {
+        inherit (nixStoreSymlinkHook)
+          enable
+          always_run
+          pass_filenames
+          stages
+          ;
+      };
+    }
+    # The stub submodule that devenv falls back to declares `enable` alone, and its `package` option
+    # does not exist. So a real package name here proves the class carries the real flake input.
+    {
+      name = "the real git-hooks input reaches the class, so the hook runner is prek";
+      expected = {
+        enable = true;
+        package = "prek";
+      };
+      actual = {
+        inherit (devenvDarwin.git-hooks) enable;
+        package = lib.getName devenvDarwin.git-hooks.package;
+      };
+    }
+
+    # ---- the three installed files, and both branches of `kdn.isSourceRepo`
+    {
+      name = "an adopter shell installs both skills and the rule";
+      expected = [
+        true
+        true
+        true
+      ];
+      actual = map (path: devenvDarwin.files ? ${path}) nixFilePaths;
+    }
+    {
+      name = "the source repository installs none of the three, because it commits them";
+      expected = [
+        false
+        false
+        false
+      ];
+      actual = map (path: devenvLinux.files ? ${path}) nixFilePaths;
+    }
+    {
+      name = "each source names one file inside the tree the evaluation already reads";
+      expected = [
+        true
+        true
+        true
+      ];
+      actual =
+        lib.zipListsWith (path: suffix: lib.hasSuffix suffix (toString devenvDarwin.files.${path}.source))
+          nixFilePaths
+          [
+            "/.agents/skills/flake-update/SKILL.md"
+            "/.agents/skills/flake-patches/SKILL.md"
+            "/.agents/rules/okf-format.md"
+          ];
+    }
+
+    # ---- the two adopter routes
+    {
+      name = "the library route resolves the aspect for the devenv class";
+      expected = 1;
+      actual = builtins.length (
+        denLib.imports {
+          class = "devenv";
+          aspects = [ "nix" ];
+        }
+      );
+    }
+    {
+      name = "denModules.nix holds a non-empty imports list";
+      expected = true;
+      actual = (builtins.length flake.denModules.nix.imports) > 0;
+    }
+  ];
+
   # ------------------------------------------------------------------ the check set
 
   # Tier 1 runs anywhere: the comparison is an evaluation and the derivation is local.
@@ -1099,6 +1310,7 @@ let
     den-eval-zellij = mkEvalCheck "zellij" zellijAssertions;
     den-eval-opencode = mkEvalCheck "opencode" opencodeAssertions;
     den-eval-mcp = mkEvalCheck "mcp" mcpAssertions;
+    den-eval-nix = mkEvalCheck "nix" nixAssertions;
   };
 
   # Tier 2 and tier 3 build a real artifact, so each one needs a builder for its own platform. The

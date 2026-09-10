@@ -144,6 +144,10 @@ in
   flake.denModules.mcp-basic-memory = resolveChecked "devenv" "mcp-basic-memory" kdn.mcp-basic-memory;
   flake.denModules.mcp-pretty-print = resolveChecked "devenv" "mcp-pretty-print" kdn.mcp-pretty-print;
   flake.denModules.mcp-snoop = resolveChecked "devenv" "mcp-snoop" kdn.mcp-snoop;
+
+  # The `nix` aspect includes `mcp`, because it writes two of that aspect's options. So it joins the
+  # same diamond as the three children above.
+  flake.denModules.nix = resolveChecked "devenv" "nix" kdn.nix;
   flake.denModules.opencode = resolveChecked "devenv" "opencode" kdn.opencode;
   flake.denModules.ssh-agent = resolveChecked "homeManager" "ssh-agent" kdn.ssh-agent;
   flake.denModules.zellij = resolveChecked "devenv" "zellij" kdn.zellij;
