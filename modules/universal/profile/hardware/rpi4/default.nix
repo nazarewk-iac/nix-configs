@@ -16,13 +16,24 @@ let
   rpi4.any = kdnConfig.features.rpi4;
   rpi4.normal = rpi4.any && !kdnConfig.features.installer;
   rpi4.installer = rpi4.any && kdnConfig.features.installer;
+
+  # An `imports` list has no context guard, and the auto-loader loads this file into the
+  # home-manager evaluation too. Every module below is a NixOS module:
+  # `inputs.nixos-hardware.nixosModules.raspberry-pi-4` reaches
+  # `raspberry-pi/common/firmware.nix`, which sets `boot.loader.*`. home-manager declares no
+  # `boot` option, so the evaluation of this host failed with
+  # `The option `home-manager.users.<user>.boot' does not exist`.
+  #
+  # The `config` block below already carries `kdnConfig.util.ifTypes [ "nixos" ]`. Only the
+  # `imports` list lacked the same limit.
+  rpi4.nixos = rpi4.any && kdnConfig.moduleType == "nixos";
 in
 {
-  imports = self.lib.lists.optionals rpi4.any (
+  imports = self.lib.lists.optionals rpi4.nixos (
     [
       "${inputs.nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64.nix"
     ]
-    ++ self.lib.lists.optionals rpi4.any [
+    ++ [
       inputs.argon40-nix.nixosModules.default
       inputs.nixos-hardware.nixosModules.raspberry-pi-4
     ]
