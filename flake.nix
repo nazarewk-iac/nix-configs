@@ -24,6 +24,9 @@
   inputs.brew.url = "github:Homebrew/brew/5.1.8";
   inputs.colmena.url = "github:zhaofengli/colmena";
   inputs.crane.url = "github:ipetkov/crane";
+  # den plus its own dependency. Both hold the exact revision the 004 den spike measured, and den
+  # itself declares no flake input. See modules/den/README.md before you move either pin.
+  inputs.den.url = "github:denful/den/d50f0fce6fc1a8ba00fd0d310746d0e8ecc2f70d";
   inputs.disko.url = "github:nix-community/disko";
   inputs.devenv.url = "github:cachix/devenv";
   inputs.disko-zfs.url = "github:numtide/disko-zfs";
@@ -41,6 +44,10 @@
   inputs.lanzaboote.url = "github:nix-community/lanzaboote";
   inputs.microvm.url = "github:astro/microvm.nix";
   inputs.nix-darwin.url = "github:LnL7/nix-darwin";
+  # den's core dependency. It must be explicit: den otherwise fetches it with
+  # `builtins.fetchTarball` at evaluation time, and no consumer lock records that fetch.
+  inputs.nix-effects.flake = false;
+  inputs.nix-effects.url = "github:denful/nix-effects/c3c68a45deb892d028711eeff8b80937e30a90dd";
   inputs.nix-fast-build.url = "github:Mic92/nix-fast-build";
   inputs.nix-homebrew.url = "github:zhaofengli/nix-homebrew";
   inputs.nix-rosetta-builder.url = "github:cpick/nix-rosetta-builder";
@@ -147,6 +154,9 @@
     in
     (flake-parts.lib.mkFlake { inherit inputs; } {
       systems = import inputs.systems;
+
+      # The parallel den tree. It adds outputs and it changes none. See modules/den/README.md.
+      imports = [ ./modules/den/flake-module.nix ];
 
       flake.overlays.packages = inputs.nixpkgs.lib.composeManyExtensions [
         (final: prev: {
