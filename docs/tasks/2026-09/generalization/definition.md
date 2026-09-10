@@ -239,7 +239,7 @@ values. The 004 den milestone used
 `nix eval --json '.#darwinConfigurations' --apply builtins.attrNames`.
 
 **Exception — a den configuration is immune, so Pattern V1 works there.** den's evaluation never
-reads `self`. Measured on 2026-09-10: `denConfigurations.den-darwin` kept the byte-identical
+reads `self`. Measured on 2026-09-10: `denConfigurations.host-darwin` kept the byte-identical
 `drvPath` `7zhp7889kchljri5j7phaakfvzv9j3ph-darwin-system-26.11.4cff07d.drv` across a file move
 **and** the addition of a second den host. So a den refactor gets the full gate that the slot and
 universal routes cannot have. Gate on `denConfigurations`; `denDevenvShells` reads `self` through

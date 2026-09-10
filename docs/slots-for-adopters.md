@@ -24,10 +24,18 @@ A copy-ready starting point is in [templates/adopter/](../templates/adopter/READ
 > and the spike that tested it passed on 2026-09-10. One flake output resolves a den aspect into a
 > plain module on this side of the boundary, so you import a plain module and you never adopt den.
 >
-> **The first such output exists: `denModules.rosetta-builder`.** Add this repository as an input,
-> then put `inputs.nix-configs.denModules.rosetta-builder` in your nix-darwin `imports`. You call no
-> `mkSlots`, you need no overlay, and you write no den code. Only that one module is ready today.
-> Use `mkSlots` below for every other slot. See
+> **Two den outputs exist today.** `denLib.imports` is the general one. Add this repository as an
+> input, then call it in the `imports` of your devenv, nix-darwin or NixOS module:
+>
+> ```nix
+> imports = inputs.nix-configs.denLib.imports { class = "devenv"; aspects = [ "gh" ]; };
+> ```
+>
+> `denModules.<aspect>` is the zero-argument form for one aspect in its common class:
+> `denModules.rosetta-builder` (class `darwin`) and `denModules.gh` (class `devenv`). Either way you
+> call no `mkSlots`, you need no overlay, and you write no den code.
+>
+> **Two aspects are ported so far.** Use `mkSlots` below for the other 16 slots. See
 > [modules/den/README.md](../modules/den/README.md) and
 > [004-den-spike](tasks/2026-09/generalization/004-den-spike/definition.md), phase 2.
 
