@@ -26,6 +26,7 @@ let
     ca = ./aspects/ca.nix;
     devenv-cli = ./aspects/devenv-cli.nix;
     gh = ./aspects/gh.nix;
+    opencode = ./aspects/opencode.nix;
     rosetta-builder = ./aspects/rosetta-builder.nix;
     ssh-agent = ./aspects/ssh-agent.nix;
     zellij = ./aspects/zellij.nix;

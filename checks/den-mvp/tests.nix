@@ -528,6 +528,7 @@ let
         "ca"
         "devenv-cli"
         "gh"
+        "opencode"
         "rosetta-builder"
         "ssh-agent"
         "zellij"
@@ -816,6 +817,112 @@ let
     }
   ];
 
+  # ------------------------------------------------------------------ opencode
+
+  # The aspect declares eight options and holds no data. `./devenv/default.nix` supplies every value
+  # as a neutral placeholder, so these assertions also prove the aspect names no provider, no model
+  # and no checkout path by itself.
+  #
+  # `devenv-darwin` keeps the real `pkgs.opencode` and names a model. `devenv-linux` overrides the
+  # package and leaves `defaultModel` null, so both negative cases get a test.
+  ocSettings = devenvDarwin.opencode.settings;
+  ocPermission = ocSettings.permission;
+  ocWrapper = lib.head (builtins.filter (p: lib.getName p == "opencode") devenvDarwin.packages);
+
+  opencodeAssertions = [
+    {
+      name = "devenv's own opencode integration is on";
+      expected = true;
+      actual = devenvDarwin.opencode.enable;
+    }
+    {
+      name = "the shell holds exactly one binary named opencode";
+      expected = 1;
+      actual = countNamed devenvDarwin "opencode";
+    }
+    {
+      name = "that binary is the wrapper, not the real opencode";
+      expected = false;
+      actual = ocWrapper.outPath == devenvDarwin.kdn.opencode.package.outPath;
+    }
+    {
+      name = "the default package is the real opencode";
+      expected = "opencode";
+      actual = lib.getName devenvDarwin.kdn.opencode.package;
+    }
+    {
+      name = "a package override reaches the wrapper";
+      expected = "opencode-under-test";
+      actual = lib.getName devenvLinux.kdn.opencode.package;
+    }
+    {
+      name = "every allowed path reaches the read permission block";
+      expected = {
+        "/nix/store/**" = "allow";
+        "~/src/**" = "allow";
+      };
+      actual = ocPermission.read;
+    }
+    {
+      name = "the four read-only tools share one allow map";
+      expected = [
+        ocPermission.read
+        ocPermission.read
+        ocPermission.read
+      ];
+      actual = [
+        ocPermission.glob
+        ocPermission.grep
+        ocPermission.list
+      ];
+    }
+    {
+      name = "a reach outside the project asks first";
+      expected = "ask";
+      actual = ocPermission.external_directory."*";
+    }
+    {
+      name = "a write asks first";
+      expected = "ask";
+      actual = ocPermission.edit;
+    }
+    {
+      name = "an unlisted shell command asks first";
+      expected = "ask";
+      actual = ocPermission.bash."*";
+    }
+    {
+      name = "the consumer supplies the only provider name";
+      expected = [ "example-provider" ];
+      actual = builtins.attrNames ocSettings.provider;
+    }
+    {
+      name = "a named default model reaches opencode.jsonc";
+      expected = "example-provider/example-model";
+      actual = ocSettings.model;
+    }
+    {
+      name = "a null default model writes no model key";
+      expected = false;
+      actual = devenvLinux.opencode.settings ? model;
+    }
+    {
+      name = "the library route resolves the aspect for the devenv class";
+      expected = 1;
+      actual = builtins.length (
+        denLib.imports {
+          class = "devenv";
+          aspects = [ "opencode" ];
+        }
+      );
+    }
+    {
+      name = "denModules.opencode holds a non-empty imports list";
+      expected = true;
+      actual = (builtins.length flake.denModules.opencode.imports) > 0;
+    }
+  ];
+
   # ------------------------------------------------------------------ the check set
 
   # Tier 1 runs anywhere: the comparison is an evaluation and the derivation is local.
@@ -828,6 +935,7 @@ let
     den-eval-ssh-agent = mkEvalCheck "ssh-agent" sshAgentAssertions;
     den-eval-ca = mkEvalCheck "ca" caAssertions;
     den-eval-zellij = mkEvalCheck "zellij" zellijAssertions;
+    den-eval-opencode = mkEvalCheck "opencode" opencodeAssertions;
   };
 
   # Tier 2 and tier 3 build a real artifact, so each one needs a builder for its own platform. The

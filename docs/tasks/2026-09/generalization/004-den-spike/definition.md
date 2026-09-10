@@ -260,7 +260,7 @@ each one needs, and it puts the cheap tests first:
 | 1 | `ssh-agent` | 76 | `home` | **Done.** The user scope alone. No host target at all. |
 | 2 | `ca` | 91 | `nixos` | **Done.** The first `nixos`-only aspect. The option lives inside the `nixos` target. |
 | 3 | `nix` | 148 | `devenv` | A slot that reads repository content through `${inputs.nix-configs}`. It also sets `kdn.mcp.*`, so it now runs **after** the `mcp` family. |
-| 4 | `opencode` | 197 | `devenv` | Personal defaults inside a shared option — it overlaps 004 of the plan. |
+| 4 | `opencode` | 197 | `devenv` | **Done.** The first de-personalized port: `authKeys`, `settings` and `allowedPaths` replace the provider name and the checkout path that the slot hardcodes. It also fixes one slot defect — a consumer that set `settings` lost the whole permission baseline. |
 | 5 | `zellij` | 221 | `devenv` | **Done.** It ships a skill file, two Claude Code hooks and two `packages/` derivations. It needed two new mechanisms: `kdn.isSourceRepo` in `modules/den/common/source-repo.nix`, and a plain `pkgs.callPackage` route to `packages/llm/` with no overlay. |
 | 6 | `mcp` family — `mcp`, `snoop`, `pretty-print`, `basic-memory` | 646 | `devenv` | **Slot-to-slot option coupling.** The first hard case. |
 | 7 | `jj` family — `jj`, `jj/fork` | 949 | `devenv` | The second coupled pair, and the largest shell payload. |
