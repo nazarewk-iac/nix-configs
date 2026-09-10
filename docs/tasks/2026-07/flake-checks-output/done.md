@@ -1,7 +1,7 @@
 ---
 type: Solution
 description: Fixed the flake `checks =` wiring via `.config.output.mkSubmodule` and proved the plumbing with a minimal `hello` "hello world" check.
-task: flake-checks-output.md
+task: definition.md
 authored_by: agent
 timestamp: 2026-07-31T11:12:00+02:00
 ---

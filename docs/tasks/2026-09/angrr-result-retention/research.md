@@ -1,7 +1,7 @@
 ---
-type: Reference
+type: Research
 description: Why angrr deletes a live `result` out-link, why the Darwin job never runs, and the measured fix.
-status: open
+task: definition.md
 authored_by: agent
 timestamp: 2026-09-10T14:20:00+02:00
 ---

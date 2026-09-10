@@ -1,6 +1,7 @@
 ---
-type: Task
+type: Solution
 description: Solution for the jj workspaces convention — the shared jj repo config guard, the pinned devenv input, and the documented five-step procedure.
+task: definition.md
 authored_by: agent
 timestamp: 2026-09-09T14:00:00+02:00
 ---

@@ -1,7 +1,7 @@
 ---
-type: Task
+type: Solution
 description: Solution — zellij-llm is simpler to use: derived names, persist-by-default panes, watch/wait subcommands, early socket-length error, and a matching skill doc.
-status: done
+task: definition.md
 authored_by: agent
 timestamp: 2026-07-31T14:45:00+02:00
 ---

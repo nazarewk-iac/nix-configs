@@ -1,7 +1,7 @@
 ---
-type: Task
+type: Solution
 description: Solution — zellij-llm derives its session name from kdn-slug by default, capped to the zellij socket-path limit, with a verbatim --session override.
-status: done
+task: definition.md
 authored_by: agent
 timestamp: 2026-07-31T14:45:00+02:00
 ---

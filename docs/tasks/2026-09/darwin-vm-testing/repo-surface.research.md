@@ -1,6 +1,7 @@
 ---
 type: Research
 description: Inventory of what an ephemeral macOS VM test harness must run for the generalization plan, and which check and rebuild surface already exists in this repo.
+task: definition.md
 timestamp: 2026-09-09T00:00:00+02:00
 authored_by: agent
 ---

@@ -1,7 +1,7 @@
 ---
 type: Research
 description: Measured mechanism of SSH authentication, SSH commit signing, and the switch between two signing keys on the Darwin workstation.
-status: in-progress
+task: definition.md
 authored_by: agent
 timestamp: 2026-09-10T17:00:00+02:00
 ---

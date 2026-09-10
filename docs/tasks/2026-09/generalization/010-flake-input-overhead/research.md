@@ -1,6 +1,7 @@
 ---
 type: Research
 description: Lix-verified answers to Q1-Q4 on flake input overhead, with a ranked list of techniques for this repo's cost and an adopter's cost.
+task: definition.md
 authored_by: agent
 timestamp: 2026-09-09T12:00:00+02:00
 ---

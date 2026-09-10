@@ -1,6 +1,7 @@
 ---
 type: Research
 description: An evaluation-verified inventory of every consumer, key path, and hard coupling of the default sops file.
+task: definition.md
 authored_by: agent
 timestamp: 2026-09-09T10:24:48+02:00
 ---

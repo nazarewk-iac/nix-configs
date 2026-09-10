@@ -1,7 +1,7 @@
 ---
-type: Reference
+type: Research
 description: Findings and the corrected fork flake update procedure, with a fetch step, a reconcile branch per start state, and a completion check.
-status: open
+task: definition.md
 authored_by: agent
 timestamp: 2026-09-09T00:00:00+02:00
 ---
@@ -528,7 +528,7 @@ Prefer `jj fork-audit -q`.
 
 | # | File and line | Defect | Corrected text |
 |---|---|---|---|
-| O1 | `docs/flake-update.md:22-30` | Claims the update makes a chain on top of `upstream`, and that `@` sits on top of `upstream`. False in a fork repo. | Add a guard: "This procedure applies when `kdn.jj.fork.enable = false`. In a fork repo use `[flake-update.fork.md](flake-update.fork.md)`, which overrides every step below." The link target is a sibling of `docs/flake-update.md`, so it stays a plain file name. |
+| O1 | `docs/flake-update.md:22-30` | Claims the update makes a chain on top of `upstream`, and that `@` sits on top of `upstream`. False in a fork repo. | Add a guard: "This procedure applies when `kdn.jj.fork.enable = false`. In a fork repo use [flake-update.fork.md](../../../flake-update.fork.md), which overrides every step below." In `docs/flake-update.md` the target is a sibling, so write it there as the plain file name `flake-update.fork.md`. |
 | O2 | `docs/flake-update.md:41-42,77,99`; `.agents/rules/flake-update.md:22-23,26,52-53` | Tells the operator to run `jj bookmark set upstream`. The fork rule forbids it. | Same guard as O1, plus one line: "In a fork repo `jj sync-remotes` moves every bookmark. Never run `jj bookmark set`." |
 | O3 | `docs/flake-update.md:114`; `.agents/rules/flake-update.md:33`; `.agents/skills/flake-update/SKILL.md:42` | The non-fork files use `upstream@<fork-remote>` as the pre-update anchor. A non-fork repo has no fork remote. | Use `main@<public-remote>`. |
 | O4 | `.agents/rules/flake-update.md:9,11,13` | Links are relative to the repo root, so they resolve to `.agents/rules/docs/…`. All three are broken (**verified** with a file test). | `../../docs/flake-update.md`, `../../docs/flake-update.fork.md`, `../../docs/jujutsu-vcs.md`, `jujutsu-vcs.md`. |

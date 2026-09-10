@@ -1,7 +1,7 @@
 ---
 type: Design
 description: Design and parked state of the signing slot, the narrowed 1Password IdentityAgent block, and the plain-key route switch.
-status: in-progress
+task: definition.md
 authored_by: agent
 timestamp: 2026-09-10T17:30:00+02:00
 ---

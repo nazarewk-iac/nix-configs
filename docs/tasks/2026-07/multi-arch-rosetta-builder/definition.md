@@ -2,6 +2,7 @@
 type: Task
 description: Add a Rosetta-backed dual-arch (aarch64-linux + x86_64-linux) Nix builder darwin slot via nix-rosetta-builder (docs/multi-arch-builder.md Option C), and wire it to an aarch64-darwin host.
 status: done
+solution: done.md
 authored_by: agent
 timestamp: 2026-07-31T12:00:00+02:00
 ---

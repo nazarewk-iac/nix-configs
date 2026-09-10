@@ -2,7 +2,7 @@
 type: Task
 description: flake.nix's `checks =` output evaluated to a call-error because `self.kdnMetaModule` was invoked directly instead of via `.config.output.mkSubmodule`.
 status: done
-solution: flake-checks-output.done.md
+solution: done.md
 authored_by: agent
 timestamp: 2026-07-31T11:12:00+02:00
 ---

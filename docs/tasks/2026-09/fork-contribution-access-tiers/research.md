@@ -1,7 +1,7 @@
 ---
-type: Reference
+type: Research
 description: Evidence on what each fork procedure assumes about push access, plus one designed contribution procedure per access tier.
-status: open
+task: definition.md
 authored_by: agent
 timestamp: 2026-09-09T00:00:00+02:00
 ---

@@ -1,8 +1,7 @@
 ---
 type: Solution
 description: How the flake update procedure gaps were repaired — a fetch step, a start-state table, a structural lock gate, and a repaired push hook.
-task: flake-update-procedure-gaps.md
-status: done
+task: definition.md
 authored_by: agent
 timestamp: 2026-09-09T20:00:00+02:00
 ---
