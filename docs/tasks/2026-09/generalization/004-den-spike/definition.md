@@ -79,20 +79,31 @@ anywhere else. `flake.lock` gained exactly two nodes — den declares no flake i
 | Loader and the four outputs | `modules/den/flake-module.nix` | A nested `lib.evalModules`, not a flake-parts module. |
 | `devenv` class | `modules/den/classes/devenv.nix` | den ships none. 13 of 18 slots need it. |
 | First aspect | `modules/den/aspects/rosetta-builder.nix` | Core options only. The guest-size options stay in the slot. |
-| Parallel host | `modules/den/entities/den-darwin.nix` | It evaluates and builds. It never activates. |
+| Parallel hosts | `hosts/den-mvp/den-darwin/`, `hosts/den-mvp/den-nixos/` | Both evaluate and build. Neither activates. |
 
-**A den host must not live in `hosts/`.** `flake.hostConfigurations` reads that directory from a
-listing and sends every entry through `modules/meta`. den replaces that pre-pass, so a den host
-under `hosts/` proves nothing.
+**A den host lives at `hosts/den-mvp/<host>/`, one level below the host loader's reach.**
+`flake.hostConfigurations` (`flake.nix:264`) reads `hosts/` **one level only**, and it keeps an entry
+only when that entry holds a `default.nix` plus a `meta.json` or a `meta.nix`. `hosts/den-mvp/` holds
+none of the three, so the loader drops it. The invisibility is the requirement: every entry the
+loader keeps goes through `modules/meta`, and den replaces that pre-pass. `hosts/install-iso/` is the
+existing precedent. See [hosts/den-mvp/README.md](../../../../hosts/den-mvp/README.md).
 
-Four commands verify the milestone. Each one passed:
+Six commands verify the milestone. Each one passed:
 
 ```bash
 nix eval --json '.#denModules.rosetta-builder' --apply 'm: builtins.length m.imports'
 nix eval --raw '.#denConfigurations.den-darwin.config.system.build.toplevel.drvPath'
+nix eval --raw '.#denConfigurations.den-nixos.config.system.build.toplevel.drvPath'
 nix eval --raw '.#denDevenvShells.den-darwin.shell.drvPath'
 nix eval --json '.#darwinConfigurations' --apply builtins.attrNames   # unchanged
+nix eval --json '.#hostConfigurations' --apply builtins.attrNames     # no den host present
 ```
+
+**The first slot-against-den comparison ran, and it agrees.** `anji` against `den-darwin`:
+`config.nix-rosetta-builder` is identical, and so is
+`config.nix.settings.builders-use-substitutes`. `config.nix.buildMachines` differs, because `anji`
+also gets personal remote builders from `modules/universal/profile/remote-builders/`. den ports none
+of that tree, so that difference is expected.
 
 **Three facts the milestone measured**, each one a trap for the next milestone:
 
@@ -104,13 +115,22 @@ nix eval --json '.#darwinConfigurations' --apply builtins.attrNames   # unchange
    overrides `instantiate` instead of an input alias.
 3. A bare nix-darwin host needs `system.primaryUser` and `system.stateVersion`.
    `modules/universal` supplies neither on its own.
+4. A build-only NixOS host needs a root `fileSystems."/"` (a `tmpfs` names no hardware),
+   `boot.loader.grub.enable = false` (GRUB is on by default and then asserts a non-empty `devices`),
+   and `system.stateVersion`.
 
-**Pattern V1 does not apply to this tree.** `flake.nix` sets `nix-configs = self`, so the whole
-tree hash enters every derivation. A new file changes every `drvPath`. This milestone proved
-additivity by output **names** instead: `darwinConfigurations` still lists the same hosts.
+**Pattern V1 fails for the slot route, and it works for a den host.** `flake.nix:250` sets
+`nix-configs = self`, so the whole tree hash enters every `modules/universal`-derived derivation and
+a new file changes every `drvPath` there. A den evaluation never reads `self`. Measured on
+2026-09-10: `denConfigurations.den-darwin` kept the byte-identical `drvPath`
+`7zhp7889kchljri5j7phaakfvzv9j3ph-darwin-system-26.11.4cff07d.drv` across a file move **and** the
+addition of `den-nixos`. So Pattern V1 is a real no-op gate for every den refactor. Gate on
+`denConfigurations`, not on `denDevenvShells` — only `kdn.den.devenv.root` reads `self`, and it
+reaches the shells.
 
 Milestone 2 owns the next three pieces: a `home` target, one devenv-only slot, and the coupled
-`jj`+`mcp` pair. The README status table tracks them.
+`jj`+`mcp` pair. `den-nixos` carries no aspect yet; it is the landing place for the first ported
+NixOS aspect. The README status table tracks them.
 
 ## Why this comes first
 
