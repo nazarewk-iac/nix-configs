@@ -1,12 +1,17 @@
 ---
 type: Task
 description: Narrow the 1Password IdentityAgent blanket from `Host *` to the github hosts, and decide whether git signing needs a per-host scope.
-status: open
+status: in-progress
 authored_by: agent
 timestamp: 2026-09-09T12:40:00+02:00
 ---
 
 # Scope the SSH agent and the git signing key
+
+Supporting documents:
+
+- [research.md](research.md) — the measured mechanism of authentication, signing and the switch.
+- [design.md](design.md) — the design, the implemented file set and the parked state.
 
 A fork-only Home Manager module writes an `IdentityAgent` blanket for `Host *`. The blanket sends
 every SSH connection to the 1Password agent. A shared public option then claws individual hosts
@@ -92,13 +97,18 @@ So do not gate a github fetch on a tap. Keep the gate for the LAN and the homela
 
 ## Work items
 
-- [ ] Narrow the blanket in the fork-only module from `Host *` to `Host github.com gist.github.com`.
-      This edit lands on the fork chain.
+- [x] Narrow the blanket in the fork-only module from `Host *` to
+      `Host github.com gist.github.com ssh.github.com`. Done on 2026-09-10 through the new
+      per-host `git.auth.hosts` option of that module. The edit lands on the fork chain. It is not
+      active yet: it needs a rebuild.
 - [ ] Re-check `identityAgentPatterns` after the narrow. It probably shrinks to an empty list. If it
       does, decide whether the option stays as a general capability or goes away. This decision
       lands on the public chain, because the option is public.
-- [ ] Decide whether git signing needs the `includeIf "hasconfig:remote.*.url:..."` scope, or
-      whether a global `gpgSign = true` is acceptable. Record the decision either way.
+- [x] Decide whether git signing needs the `includeIf "hasconfig:remote.*.url:..."` scope, or
+      whether a global `gpgSign = true` is acceptable. Decision on 2026-09-10: keep the global
+      `gpgSign = true`, and switch the KEY, not the scope. A per-remote `includeIf` cannot help a
+      commit that carries no remote yet. `modules/slots/signing/` gives the switch. See
+      [design.md](design.md).
 - [ ] Re-verify the tap behaviour per host class after the change, and correct the tap rule if the
       answer moves.
 
