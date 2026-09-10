@@ -45,6 +45,26 @@ let
           devenv.tmpdir = "/tmp";
           inherit name;
         }
+
+        # A module function, not a plain attrset: this `config` must be the devenv evaluation's own,
+        # not the den `config` that the outer function closes over.
+        #
+        # These shells are built. The devenv CLI never drives them. devenv's `tasks` module gates a
+        # bash prelude on `devenv.cli.version`: a null or a pre-2.0 value prepends
+        # `devenv-tasks run devenv:enterTest` to `enterTest`. That binary needs a writable
+        # `devenv.dotfile` and a task source, and a build sandbox gives it neither — a smoke test
+        # then fails with `Error: NoSource`. Pinning the version to the module tree's own version
+        # drops the prelude, so `config.test` holds the plain assertions.
+        #
+        # It also silences the CLI-versus-modules mismatch warning, because the two now agree.
+        # `<devenv>/src/modules/tasks.nix:476,486` and `update-check.nix:55,76`. Measured on
+        # 2026-09-10.
+        (
+          { config, ... }:
+          {
+            devenv.cli.version = lib.mkDefault config.devenv.latestVersion;
+          }
+        )
       ]
       ++ modules;
     }).config;

@@ -153,6 +153,10 @@ it. The adopter surface is library mode, and `flake.denLib` ships it.
 | `host-nixos` host | evaluates a NixOS system plus a devenv shell. It carries **no** aspect yet. |
 | Standalone devenv shells | present — `devenv-darwin` and `devenv-linux`, with no den entity |
 | `checks.<system>.den-mvp` | present — the current architecture, with `.all` for every system |
+| Test harness | present — 5 evaluation checks, 1 artifact check, 4 smoke runs. See [checks/den-mvp/README.md](../../checks/den-mvp/README.md#tests). |
+| Smoke-test runner | present — `nix run '.#checks.aarch64-darwin.den-mvp.smoke'`. 8 of 8 pass on this machine. |
+| A VM test for `host-nixos` | deferred — it waits for the first `nixos`-class aspect, and no darwin VM framework exists |
+| An automated `hosts/anji` parity check | deferred — it evaluates a whole personal host (~93 s) and it reads sops metadata |
 | Library mode (`den.nixModule`) | shipped as `denLib` — a thin `imports` wrapper plus the raw machinery |
 | A `nixos`-class aspect | not started — `host-nixos` is the landing place |
 | `home` target | not started |

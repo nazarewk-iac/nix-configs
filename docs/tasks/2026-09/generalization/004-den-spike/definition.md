@@ -181,6 +181,29 @@ and a rename. `denDevenvShells.devenv-darwin` kept
 file. Removal of the `"${self}"` root extended the gate from `denConfigurations` to all four
 outputs.
 
+**The MVP now tests itself, in three tiers.** `checks/den-mvp/tests.nix` holds them, and
+`checks/default.nix` merges them into `checks.<system>`. Tier 1 compares evaluated option values.
+Tier 2 greps the built nix-darwin toplevel — nix-darwin's own `release.nix` pattern. Tier 3 runs
+each devenv shell's `config.test`. **No tier activates anything**, and none needs sudo: tier 2 reads
+a store path and never runs it, and tier 3 uses `enterTest`, which devenv keeps separate from
+`enterShell`. `nix run '.#checks.aarch64-darwin.den-mvp.smoke'` builds every check and prints one
+summary — 8 of 8 pass on 2026-09-10. The `gh` aspect carries its own offline assertions, so they
+travel with the aspect to an external adopter.
+
+`den-eval-routes` turns the hand-measured `drvPath` claim above into a test, so the library route
+and the `flakeModule` route cannot drift apart in silence.
+
+One trap the harness found: a den devenv shell must pin `devenv.cli.version`. A null value makes
+devenv's `tasks` module prepend `devenv-tasks run devenv:enterTest` to `enterTest`
+(`<devenv>/src/modules/tasks.nix:486`), and that binary needs a writable `devenv.dotfile` plus a
+task source. A build sandbox gives it neither, so a smoke test fails with `Error: NoSource`.
+`config.devenv.latestVersion` is the right value, and it also silences the version-mismatch warning.
+
+Two test kinds stay deferred, both for a stated reason. A `runNixOSTest` VM test waits for the first
+`nixos`-class aspect, because `host-nixos` carries none and a booted guest would assert nothing that
+tier 1 already covers. And an automated `hosts/anji`-against-`host-darwin` parity check evaluates a
+whole personal host (about 93 s) and reads sops metadata.
+
 The adopter-facing library-mode export is done. Milestone 2 owns the next three pieces: a `home`
 target, one coupled slot pair (`jj` plus `mcp`), and the first `nixos`-class aspect. `host-nixos`
 carries no aspect yet; it is the landing place for that aspect. The README status table tracks
