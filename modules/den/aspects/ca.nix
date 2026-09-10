@@ -38,7 +38,7 @@
 # 3. **No custom module argument.** A target module below takes `config`, `lib` and `pkgs` only.
 { ... }:
 {
-  den.aspects.ca.nixos =
+  kdn.ca.nixos =
     { config, lib, ... }:
     let
       enabled = lib.filterAttrs (_: ca: ca.enable) config.kdn.ca;

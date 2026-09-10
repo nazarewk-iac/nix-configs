@@ -13,6 +13,10 @@
 #   flake.denModules.<aspect>       a plain module for an external adopter
 #   flake.denLib                    the adopter-facing library — a thin `imports` wrapper plus the
 #                                   raw den machinery
+#   flake.denful.kdn                the reusable aspect library, for an adopter who **does** adopt
+#                                   den. It is the whole surface in one output, and
+#                                   `denModules`/`denLib` stay the route for an adopter who does not
+#                                   adopt den.
 {
   inputs,
   ...
@@ -49,11 +53,16 @@ let
       inputs.den.flakeOutputs.darwinConfigurations
       inputs.den.flakeOutputs.nixosConfigurations
 
+      # The two namespaces. Every reusable aspect lives in `kdn`; the creator's own data-carrying
+      # aspects live in `personal`, which is never exported. See ./namespaces.nix.
+      ./namespaces.nix
+
       # One class per target that den does not know about.
       ./classes/devenv.nix
 
-      # One aspect per reimplemented slot. The slot itself stays in place and keeps working. The
-      # registry lives in ./lib.nix, so the flake route and the library route cannot drift apart.
+      # One aspect per reimplemented slot, each one in the `kdn` namespace. The slot itself stays in
+      # place and keeps working. The registry lives in ./lib.nix, so the flake route and the
+      # library route cannot drift apart.
     ]
     ++ denLib.attrValues library.aspectModules
     ++ [
@@ -70,6 +79,9 @@ let
   };
 
   den = eval.config.den;
+
+  # The reusable aspect library. The `flake.denful` output below hands the same set to an adopter.
+  kdn = den.ful.kdn;
 
   # Condition 1 of the 004 spike.
   #
@@ -97,6 +109,11 @@ in
 {
   flake.den = den;
 
+  # The namespace output. `namespaces.nix` writes `denful.kdn` inside den's own evaluation, so this
+  # line copies it out to this flake. An adopter who adopts den merges it with
+  # `(inputs.den.namespace "kdn" [ inputs.nix-configs ])`. See ./namespaces.nix.
+  flake.denful = eval.config.flake.denful;
+
   # den writes each entity result to `flake.<intoAttr>` inside its own evaluation. Read the result
   # back with no `or { }` fallback: a wiring mistake must fail loudly here, not pass in silence.
   #
@@ -117,23 +134,17 @@ in
   # `denModules.<aspect>` stays as the zero-argument form: one already-resolved plain module per
   # aspect, for that aspect's common class. Use it when one aspect and one class is the whole need.
   flake.denLib = library;
-  flake.denModules.rosetta-builder =
-    resolveChecked "darwin" "rosetta-builder"
-      den.aspects.rosetta-builder;
-  flake.denModules.ca = resolveChecked "nixos" "ca" den.aspects.ca;
-  flake.denModules.gh = resolveChecked "devenv" "gh" den.aspects.gh;
+  flake.denModules.rosetta-builder = resolveChecked "darwin" "rosetta-builder" kdn.rosetta-builder;
+  flake.denModules.ca = resolveChecked "nixos" "ca" kdn.ca;
+  flake.denModules.gh = resolveChecked "devenv" "gh" kdn.gh;
 
   # The `mcp` family. Each child resolves on its own, and the parent comes with it through
   # `includes`. den dedupes the diamond, so one shell holds one copy of the gateway.
-  flake.denModules.mcp = resolveChecked "devenv" "mcp" den.aspects.mcp;
-  flake.denModules.mcp-basic-memory =
-    resolveChecked "devenv" "mcp-basic-memory"
-      den.aspects.mcp-basic-memory;
-  flake.denModules.mcp-pretty-print =
-    resolveChecked "devenv" "mcp-pretty-print"
-      den.aspects.mcp-pretty-print;
-  flake.denModules.mcp-snoop = resolveChecked "devenv" "mcp-snoop" den.aspects.mcp-snoop;
-  flake.denModules.opencode = resolveChecked "devenv" "opencode" den.aspects.opencode;
-  flake.denModules.ssh-agent = resolveChecked "homeManager" "ssh-agent" den.aspects.ssh-agent;
-  flake.denModules.zellij = resolveChecked "devenv" "zellij" den.aspects.zellij;
+  flake.denModules.mcp = resolveChecked "devenv" "mcp" kdn.mcp;
+  flake.denModules.mcp-basic-memory = resolveChecked "devenv" "mcp-basic-memory" kdn.mcp-basic-memory;
+  flake.denModules.mcp-pretty-print = resolveChecked "devenv" "mcp-pretty-print" kdn.mcp-pretty-print;
+  flake.denModules.mcp-snoop = resolveChecked "devenv" "mcp-snoop" kdn.mcp-snoop;
+  flake.denModules.opencode = resolveChecked "devenv" "opencode" kdn.opencode;
+  flake.denModules.ssh-agent = resolveChecked "homeManager" "ssh-agent" kdn.ssh-agent;
+  flake.denModules.zellij = resolveChecked "devenv" "zellij" kdn.zellij;
 }

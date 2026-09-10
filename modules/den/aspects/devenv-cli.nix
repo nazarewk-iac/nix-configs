@@ -15,7 +15,7 @@
 # ## The name
 #
 # `devenv-cli`, not `devenv`. `devenv` is already a den **class** in this tree
-# (`../classes/devenv.nix`), and `kdn.den.devenv.*` is already an option prefix. An aspect named
+# (`../classes/devenv.nix`), and `den.devenv.*` is already an option prefix. An aspect named
 # `devenv` would read as one of those at every call site.
 #
 # ## Two limits this tree holds for every aspect
@@ -43,15 +43,15 @@ let
     };
 in
 {
-  den.aspects.devenv-cli.nixos = systemModule;
-  den.aspects.devenv-cli.darwin = systemModule;
+  kdn.devenv-cli.nixos = systemModule;
+  kdn.devenv-cli.darwin = systemModule;
 
   # den names this class `homeManager`. The slot's target is `home`. The two mean the same thing.
   #
   # The aspect enables **no** shell. It fills in the hook for each shell that the consumer enables,
   # and home-manager writes an `initExtra` only for an enabled shell. A slot must not turn a user's
   # login shell on.
-  den.aspects.devenv-cli.homeManager =
+  kdn.devenv-cli.homeManager =
     { lib, pkgs, ... }:
     {
       home.packages = [ pkgs.devenv ];
@@ -68,7 +68,7 @@ in
     };
 
   # The new target. The slot has none — see the header.
-  den.aspects.devenv-cli.devenv =
+  kdn.devenv-cli.devenv =
     { pkgs, ... }:
     {
       packages = [ pkgs.devenv ];

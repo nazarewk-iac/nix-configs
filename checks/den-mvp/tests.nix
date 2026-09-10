@@ -518,9 +518,53 @@ let
       actual = builtins.length (
         denLib.imports {
           class = "devenv";
-          select = d: [ d.aspects.gh ];
+          select = d: [ d.ful.${denLib.namespaceName}.gh ];
         }
       );
+    }
+
+    # ---- the namespaces. See ../../modules/den/namespaces.nix.
+    {
+      name = "the library route carries the namespace, and it holds every registry aspect";
+      expected = builtins.attrNames denLib.aspectModules;
+      actual = builtins.filter (n: builtins.elem n (builtins.attrNames denLib.aspectModules)) (
+        builtins.attrNames den.ful.${denLib.namespaceName}
+      );
+    }
+    {
+      name = "the namespace holds no aspect outside the registry";
+      expected = [ ];
+      actual = lib.subtractLists (
+        (builtins.attrNames denLib.aspectModules)
+        ++ [
+          "_"
+          "classes"
+          "schema"
+          "stages"
+        ]
+      ) (builtins.attrNames den.ful.${denLib.namespaceName});
+    }
+    {
+      name = "the library route creates no `personal` namespace";
+      expected = false;
+      actual = den.ful ? personal;
+    }
+    {
+      name = "the flake route exports the namespace as one output";
+      expected = true;
+      actual = flake.denful ? ${denLib.namespaceName};
+    }
+    {
+      name = "the exported namespace holds every registry aspect";
+      expected = builtins.attrNames denLib.aspectModules;
+      actual = builtins.filter (n: builtins.elem n (builtins.attrNames denLib.aspectModules)) (
+        builtins.attrNames flake.denful.${denLib.namespaceName}
+      );
+    }
+    {
+      name = "the flake route never exports the `personal` namespace";
+      expected = false;
+      actual = flake.denful ? personal;
     }
     {
       name = "the registry holds every ported aspect";

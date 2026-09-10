@@ -12,6 +12,17 @@
 # no `den.default`, so none of den's batteries load. `den.flakeModule` imports all of den's
 # `modules/` tree, and the batteries live there.
 #
+# ## The namespace, and the two modules it needs here
+#
+# Every reusable aspect lives in the `kdn` namespace — see ./namespaces.nix. `nixModule` declares
+# neither `den.ful` nor `den.classes`, so a namespace needs two extra modules on this route.
+# Measured on 2026-09-10: with both of them, the library route carries a namespace, and den still
+# collapses a diamond `includes` to one import.
+#
+# This route creates the `kdn` namespace **unexported**, and it creates no `personal` namespace at
+# all. A consumer's own `modules` may declare aspects in `kdn`; a reference to `personal` fails
+# here by design.
+#
 # Measured on 2026-09-10: for both ported aspects, this route and the `flakeModule` route give one
 # identical `drvPath`. See
 # ../../docs/tasks/2026-09/generalization/004-den-spike/definition.md.
@@ -35,6 +46,30 @@ let
     ssh-agent = ./aspects/ssh-agent.nix;
     zellij = ./aspects/zellij.nix;
   };
+
+  # The namespace name. `namespaces.nix` uses the same one on the `flakeModule` route.
+  namespaceName = "kdn";
+
+  # den's namespace machinery is not in `den.nixModule`. Two modules make it reachable:
+  #
+  #   1. den's own `modules/aspects.nix` declares `den.ful` and `flake.denful`. It needs the `den`
+  #      module argument, and `nixModule` supplies that (`_module.args.den = config.den`).
+  #   2. `den.classes` needs a declaration, because `namespace.nix` merges each source's classes
+  #      into it. Nothing on this route reads the value, so a plain `raw` shim is enough. den's own
+  #      declaration lives in `modules/options.nix`, which also declares `den.hosts` and
+  #      `den.schema` — importing that file would pull in the entity machinery this route avoids.
+  namespaceSupport = [
+    (import (inputs.den + "/modules/aspects.nix"))
+    {
+      options.den.classes = lib.mkOption {
+        type = lib.types.lazyAttrsOf lib.types.raw;
+        default = { };
+        internal = true;
+        visible = false;
+        description = "A shim for `den.namespace`. See ./lib.nix.";
+      };
+    }
+  ];
 
   # `nix-effects` is explicit on purpose. den's `nix/lib/fx.nix` otherwise fetches it with
   # `builtins.fetchTarball` at evaluation time, and no consumer lock records that fetch.
@@ -60,7 +95,13 @@ let
       # `den.nixModule` closes over inputs for den's own use and forwards none. An aspect file that
       # takes `inputs` fails with `attribute 'inputs' missing` without this line.
       specialArgs.inputs = denInputs;
-      modules = [ (inputs.den.nixModule denInputs) ] ++ lib.attrValues aspectModules ++ modules;
+      modules = [
+        (inputs.den.nixModule denInputs)
+      ]
+      ++ namespaceSupport
+      ++ [ (inputs.den.namespace namespaceName false) ]
+      ++ lib.attrValues aspectModules
+      ++ modules;
     }).config.den;
 
   # Resolve one aspect into a plain module, and assert that it configures something.
@@ -94,7 +135,7 @@ let
       '';
 in
 {
-  inherit aspectModules eval resolve;
+  inherit aspectModules eval resolve namespaceName;
 
   # den's own library entry point, unwrapped.
   inherit (inputs.den) nixModule;
@@ -111,8 +152,9 @@ in
   #   }
   #
   # `class` names any evaluation domain. den needs no `den.classes` entry for it.
-  # `aspects` names entries of `aspectModules` above.
-  # `select` takes the den handle and returns a list of aspects, for an aspect of your own.
+  # `aspects` names entries of `aspectModules` above. Each one resolves through `den.ful.kdn`.
+  # `select` takes the den handle and returns a list of aspects, for an aspect of your own. Reach a
+  #   namespaced aspect with `d: [ d.ful.kdn.<name> ]`.
   # `modules` adds den modules to the library evaluation, for example a file that declares one.
   # `extraInputs` overrides or adds flake inputs. It defaults to this repository's own inputs, so a
   # caller needs no `nix-rosetta-builder` input of their own.
@@ -130,14 +172,16 @@ in
       # A typo must fail when the caller builds the list, not later when the module system happens
       # to force one element. A `throw` inside `map` stays unevaluated through `builtins.length`,
       # so check every name first and let the `if` carry the throw.
-      unknown = lib.subtractLists (builtins.attrNames den.aspects) aspects;
+      # The registry is the name list, not `den.ful.kdn`. A namespace attribute set also holds the
+      # structural keys `_`, `schema`, `classes` and `stages`, and none of those is an aspect.
+      unknown = lib.subtractLists (builtins.attrNames aspectModules) aspects;
       byName =
         if unknown == [ ] then
-          map (name: den.aspects.${name}) aspects
+          map (name: den.ful.${namespaceName}.${name}) aspects
         else
           throw ''
             den: no aspect named ${builtins.concatStringsSep ", " (map (n: "`${n}`") unknown)}.
-            Known aspects: ${builtins.concatStringsSep ", " (builtins.attrNames den.aspects)}.
+            Known aspects: ${builtins.concatStringsSep ", " (builtins.attrNames aspectModules)}.
           '';
     in
     map (resolve den class) (byName ++ select den);

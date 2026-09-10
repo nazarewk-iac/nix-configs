@@ -34,7 +34,7 @@
 #    own arguments instead, and close over it.
 { ... }:
 {
-  den.aspects.ssh-agent.homeManager =
+  kdn.ssh-agent.homeManager =
     {
       config,
       lib,

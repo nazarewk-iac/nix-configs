@@ -1,5 +1,5 @@
 # A build-only nix-darwin host. It never activates. See ../README.md.
-{ den, inputs, ... }:
+{ den, inputs, kdn, ... }:
 {
   den.hosts.aarch64-darwin.host-darwin = {
     # den's default `instantiate` for the `darwin` class is `inputs.darwin.lib.darwinSystem`, and
@@ -19,20 +19,20 @@
 
   # den finds a host's aspect by the host name, so this attribute name is the wiring.
   den.aspects.host-darwin.includes = [
-    den.aspects.rosetta-builder
+    kdn.rosetta-builder
 
     # `gh` emits into the `devenv` target only. It proves a devenv aspect reaches the shell that
     # `den.policies.host-to-devenv` derives from this host, and it changes no darwin option.
-    den.aspects.gh
+    kdn.gh
 
     # The four-target aspect. This inclusion delivers its `darwin` and `devenv` halves. Its
     # `homeManager` half arrives through the `dev` user, because den partitions by scope — see
     # ../users/default.nix.
-    den.aspects.devenv-cli
+    kdn.devenv-cli
 
     # `zellij` is `devenv`-only, like `gh`. Both routes must give one identical Claude Code
     # allowlist, and ../tests.nix asserts that equality.
-    den.aspects.zellij
+    kdn.zellij
   ];
 
   den.aspects.host-darwin.darwin = {

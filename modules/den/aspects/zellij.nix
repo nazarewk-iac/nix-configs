@@ -61,7 +61,7 @@
 #    An argument such as `inputs` would force the consumer to pass `specialArgs`.
 { ... }:
 {
-  den.aspects.zellij.devenv =
+  kdn.zellij.devenv =
     {
       config,
       lib,

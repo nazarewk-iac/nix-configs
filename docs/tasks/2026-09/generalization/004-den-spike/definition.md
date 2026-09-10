@@ -107,7 +107,7 @@ nix eval --json '.#hostConfigurations' --apply builtins.attrNames     # no den e
 also gets personal remote builders from `modules/universal/profile/remote-builders/`. den ports none
 of that tree, so that difference is expected.
 
-**Three facts the milestone measured**, each one a trap for the next milestone:
+**Four facts the milestone measured**, each one a trap for the next milestone:
 
 1. `den.flakeModule` declares **no** `flake.<output>` option. Each output name needs its own
    declaration. den ships `inputs.den.flakeOutputs.<name>` for the names it knows. A custom class
@@ -243,8 +243,9 @@ The user set the target: **reimplement all of `modules/slots/` as den aspects.**
 sample is not the goal. The earlier plan named one coupled pair (`jj` plus `mcp`); that pair is now
 one step in a full port.
 
-`modules/slots/` holds 18 slots plus a 22-line loader, and 4,160 lines of Nix and shell. Three
-slots are ported:
+`modules/slots/` holds 18 slots plus a 22-line loader, and 4,160 lines of Nix and shell. **11 den
+aspects exist now.** The order table below marks each finished slot **Done**. These three were the
+first ports, at the time of the scope decision:
 
 | Slot | LOC | State |
 |---|---|---|
@@ -252,8 +253,9 @@ slots are ported:
 | `devenv` | 61 | full port, plus a `devenv` target the slot has none of — `modules/den/aspects/devenv-cli.nix` |
 | `rosetta-builder` | 180 | core options only. The guest-size options stay in the slot. |
 
-Fifteen slots remain, at about **3,866 lines**. The order below groups them by the den mechanism
-each one needs, and it puts the cheap tests first:
+**Seven slot files remain, at 1,948 lines.** That count reads `default.nix` files only, and no shell
+file. The seven are `nix`, `jj`, `jj/fork`, `llm`, `llm/client`, `llm/proxy` and `ssh-access`. The
+order below groups them by the den mechanism each one needs, and it puts the cheap tests first:
 
 | Order | Slot or family | LOC | Slot targets | What it tests |
 |---|---|---|---|---|
@@ -267,9 +269,72 @@ each one needs, and it puts the cheap tests first:
 | 8 | `llm` family — `llm`, `llm/client`, `llm/proxy` | 1,287 | `nixos`, `devenv` | One family that spans two classes. |
 | 9 | `ssh-access` | 251 | `devenv`, `home` | **Blocked on 009.** It carries personal data. |
 
-### Three obstacles the inventory names
+### den namespaces land — 2026-09-10, after order 6 and before order 3
 
-Each one is read from the source, and none of them is solved yet.
+**Done.** Every reusable aspect moved from `den.aspects.<name>` to `den.ful.kdn.<name>`. The new file
+`modules/den/namespaces.nix` creates two namespaces with `inputs.den.namespace`:
+
+| Namespace | Exported | Holds |
+|---|---|---|
+| `den.ful.kdn` | yes, as the flake output `flake.denful.kdn` | every reusable aspect |
+| `den.ful.personal` | no, never | the creator's own data-carrying aspects. It is empty today. |
+
+**The non-export is the enforcement.** An external adopter cannot name a `personal` aspect at all,
+because no flake output carries it. So condition 2 of phase 2 is structural now, not a doc rule.
+
+Five facts, each read from den's own source at the pinned revision:
+
+1. `inputs.den.namespace` is a top-level export of den, with the signature `name: sources: module`.
+   It creates the option `den.ful.<name>`, a module-argument alias `<name>`, and — when the second
+   argument exports — the output `flake.denful.<name>` of den's own evaluation.
+   `modules/den/flake-module.nix` copies that one attribute out to this repository's flake with
+   `flake.denful = eval.config.flake.denful;`.
+2. **The namespace name is the merge key.** den merges every source's `denful.<name>` into the one
+   option `den.ful.<name>`. So two repositories that export the same namespace name **and** the same
+   aspect name merge into one aspect: a list option such as `includes` concatenates, and a scalar
+   option fails with `defined multiple times`. den's own test `test-multiple-sources-merged` proves
+   this is deliberate. There is no export-time alias, so the option path, the module argument and the
+   flake output always carry one name. `kdn` is unique enough to make an accidental merge unlikely.
+3. **The library route needs two extra modules.** `options.den.ful` and `options.flake.denful` live
+   in den's `modules/aspects.nix`, and only `den.flakeModule` loads that file — `den.nixModule` loads
+   neither option. So `modules/den/lib.nix` adds that file, plus a small shim that declares
+   `options.den.classes`. The shim is needed because den's `namespace.nix` writes `den.classes`, and
+   `nixModule` does not declare it. den's own `modules/options.nix` would also work, but it declares
+   `den.hosts` and `den.schema` too, and the library route avoids that entity machinery.
+4. **den still collapses a diamond `includes` under a namespace.** A probe returned an `imports`
+   list of length 1 and one option declaration. So the `mcp` family of order 6 keeps its mechanism.
+5. **An entity aspect stays in `den.aspects`.** den finds a host's aspect by the host name and a
+   user's aspect by the user name, and it looks in `den.aspects` only. A namespaced aspect reaches an
+   entity through `includes` alone. So `checks/den-mvp/host-darwin/default.nix` keeps
+   `den.aspects.host-darwin` and includes `kdn.gh`. den's own batteries stay at `den.batteries.*`.
+
+**The conversion found one bug.** `modules/den/classes/devenv.nix` declared its class options under
+`kdn.den.devenv.*`. At den level the alias `kdn` is a namespace with a freeform type, so a
+declaration under `kdn.<anything>` becomes an **aspect** named `<anything>`. The prefix put a phantom
+aspect named `den` into `den.ful.kdn`, and that phantom reached the exported output
+`flake.denful.kdn` too. The fix renames the prefix to `den.devenv.*`. After the fix, `den.ful.kdn`
+holds exactly the 11 registry aspects and no phantom.
+
+**The general rule the bug produces.** At the top level of an aspect file, `kdn.<name>` names an
+**aspect**. Inside a target module, `kdn.<name>` is an **option path** of the consumer's own
+configuration. The `kdn.*` option prefix stays reserved for a consumer, inside a target module.
+
+`checks/den-mvp/tests.nix` gained six namespace assertions in the `den-eval-guards` set: the library
+route carries the namespace and holds every registry aspect; the namespace holds no aspect outside
+the registry; the library route creates no `personal` namespace; the flake route exports the
+namespace as one output; the exported namespace holds every registry aspect; and the flake route
+never exports `personal`. `den-eval-guards` now passes 11 of 11, and every `aarch64-darwin` den check
+builds and passes — **15 of 15**. A system holds 15 den checks: 10 evaluation, 3 artifact and 2
+smoke, plus the `den-mvp` build gate. `x86_64-linux` holds 15 too.
+
+The conversion touched `modules/den/namespaces.nix` (new), `modules/den/lib.nix`,
+`modules/den/flake-module.nix`, `modules/den/classes/devenv.nix`, all 11 aspect files, all 5 entity
+files under `checks/den-mvp/`, and `checks/den-mvp/tests.nix`. Order 3 (`nix`) starts on the
+namespaced tree.
+
+### Four obstacles the inventory names
+
+Each one is read from the source. Each entry states whether it is solved.
 
 1. **Slot-to-slot option coupling. Solved by order 6.** `modules/slots/mcp/snoop/default.nix:22-23`
    reads `config.kdn.mcp.enable` and writes `kdn.mcp.commandOverlays`. So one slot configures
