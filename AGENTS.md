@@ -29,6 +29,7 @@ read the full doc when you need detail.
 | Doc | Contents |
 |---|---|
 | [docs/tasks/2026-09/generalization/](docs/tasks/2026-09/generalization/definition.md) | Umbrella task: make the modules reusable by an external adopter. It indexes the numbered sub-tasks in the same directory. |
+| [docs/den-for-adopters.md](docs/den-for-adopters.md) | den aspects for an external adopter: the 20 aspects, four worked examples, the priority rule, 10 caveats, the lock cost |
 | [docs/flake-update.md](docs/flake-update.md) | Flake update procedure, commit structure, testing |
 | [docs/flake-update.fork.md](docs/flake-update.fork.md) | Fork-specific update workflow (merge commit, flake-lock-merge) |
 | [docs/jujutsu-vcs.md](docs/jujutsu-vcs.md) | jj patterns: working copy, split, squash, rebase, and the full `jj workspace` convention |
