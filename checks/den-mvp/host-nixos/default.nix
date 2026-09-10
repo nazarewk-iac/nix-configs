@@ -21,10 +21,45 @@
     # to this host's shell. Its `homeManager` half arrives through the `dev` user instead, because
     # den partitions by scope — see ../users/default.nix.
     den.aspects.devenv-cli
+
+    # The first **`nixos`-only** aspect. It declares `kdn.ca` and reads it. The data below belongs
+    # to this entity, not to the aspect.
+    den.aspects.ca
   ];
 
   den.aspects.host-nixos.nixos =
-    { config, ... }:
+    { config, pkgs, ... }:
+    let
+      # Two throwaway CA certificates, generated at build time. A test entity must carry its own
+      # data: an aspect stays universal, and the creator's own certificates live in one personal
+      # folder. So this host generates certificates and holds no real key.
+      #
+      # `-days 7300` is 20 years. It keeps the notAfter date before 2049, so the encoding stays
+      # UTCTime and every parser accepts it. OpenSSL 3 marks a self-signed `req -x509` certificate
+      # as a CA already; the explicit extension states the intent.
+      testCerts =
+        pkgs.runCommand "den-mvp-test-ca"
+          {
+            nativeBuildInputs = [ pkgs.openssl ];
+          }
+          ''
+            mkdir -p "$out"
+            for pair in 'a:den-mvp test CA A' 'b:den-mvp test CA B'; do
+              name="''${pair%%:*}"
+              subject="''${pair#*:}"
+              openssl req -x509 -newkey rsa:2048 -noenc -days 7300 \
+                -subj "/CN=$subject" \
+                -addext 'basicConstraints=critical,CA:TRUE' \
+                -keyout "$out/$name.key" -out "$out/$name.pub"
+            done
+          '';
+
+      # A stand-in for a SOPS-encrypted key. The aspect mounts the blob and never decrypts it, so
+      # the content only has to exist.
+      fakeSopsKey = pkgs.writeText "den-mvp-ca.key.sops" ''
+        # not a real sops file — the `ca` aspect mounts this blob and never reads it
+      '';
+    in
     {
       networking.hostName = "host-nixos";
 
@@ -42,5 +77,21 @@
       # Track the nixpkgs release this flake pins, because a build-only host keeps no state to
       # stay compatible with.
       system.stateVersion = config.system.nixos.release;
+
+      # Three `kdn.ca` instances cover all three branches of the aspect:
+      #   `den-mvp-test`  the plain case — one public certificate, no key
+      #   `den-mvp-keyed` the optional encrypted key as well
+      #   `den-mvp-off`   a disabled instance, which must mount nothing at all
+      # The disabled instance holds no certificate on purpose. The system CA bundle rejects the
+      # content, so a broken filter fails the build instead of passing in silence.
+      kdn.ca.den-mvp-test.enable = true;
+      kdn.ca.den-mvp-test.certFile = "${testCerts}/a.pub";
+
+      kdn.ca.den-mvp-keyed.enable = true;
+      kdn.ca.den-mvp-keyed.certFile = "${testCerts}/b.pub";
+      kdn.ca.den-mvp-keyed.keySopsFile = fakeSopsKey;
+
+      kdn.ca.den-mvp-off.enable = false;
+      kdn.ca.den-mvp-off.certFile = pkgs.writeText "den-mvp-off.pub" "not a certificate\n";
     };
 }

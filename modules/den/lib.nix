@@ -23,6 +23,7 @@ let
   # The aspect registry. `flake-module.nix` reads the same attribute set, so the two routes cannot
   # drift apart. One entry per reimplemented slot.
   aspectModules = {
+    ca = ./aspects/ca.nix;
     devenv-cli = ./aspects/devenv-cli.nix;
     gh = ./aspects/gh.nix;
     rosetta-builder = ./aspects/rosetta-builder.nix;

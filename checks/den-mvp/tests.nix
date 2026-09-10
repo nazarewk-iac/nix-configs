@@ -515,6 +515,7 @@ let
     {
       name = "the registry holds every ported aspect";
       expected = [
+        "ca"
         "devenv-cli"
         "gh"
         "rosetta-builder"
@@ -599,6 +600,71 @@ let
     done
   '';
 
+  # ------------------------------------------------------------------ ca
+
+  # The `nixos`-only aspect. `host-nixos` carries three instances, one per branch of the aspect —
+  # see ./host-nixos/default.nix. Every value below is a plain option read, so this stays tier 1: it
+  # runs on a darwin machine with no linux builder.
+  caCerts = map toString nixosCfg.security.pki.certificateFiles;
+
+  caAssertions = [
+    {
+      name = "the aspect declares kdn.ca, and the entity supplies the data";
+      expected = true;
+      actual = nixosCfg.kdn.ca.den-mvp-test.enable;
+    }
+    {
+      name = "the public certificate mounts world-readable";
+      expected = "0444";
+      actual = nixosCfg.environment.etc."kdn/ca/den-mvp-test.pub".mode;
+    }
+    {
+      name = "the mounted source is the certificate the entity passed";
+      expected = toString nixosCfg.kdn.ca.den-mvp-test.certFile;
+      actual = toString nixosCfg.environment.etc."kdn/ca/den-mvp-test.pub".source;
+    }
+    {
+      name = "an enabled certificate reaches the system CA bundle";
+      expected = true;
+      actual = builtins.elem (toString nixosCfg.kdn.ca.den-mvp-test.certFile) caCerts;
+    }
+    {
+      name = "a CA with no encrypted key mounts no key blob";
+      expected = false;
+      actual = nixosCfg.environment.etc ? "kdn/ca/den-mvp-test.key.sops";
+    }
+    {
+      name = "a CA with an encrypted key mounts it root-only";
+      expected = "0400";
+      actual = nixosCfg.environment.etc."kdn/ca/den-mvp-keyed.key.sops".mode;
+    }
+    {
+      name = "a disabled CA mounts nothing";
+      expected = false;
+      actual = nixosCfg.environment.etc ? "kdn/ca/den-mvp-off.pub";
+    }
+    {
+      name = "a disabled CA reaches no system CA bundle";
+      expected = false;
+      actual = builtins.elem (toString nixosCfg.kdn.ca.den-mvp-off.certFile) caCerts;
+    }
+    {
+      name = "the library route resolves the aspect for the nixos class";
+      expected = 1;
+      actual = builtins.length (
+        denLib.imports {
+          class = "nixos";
+          aspects = [ "ca" ];
+        }
+      );
+    }
+    {
+      name = "denModules.ca holds a non-empty imports list";
+      expected = true;
+      actual = (builtins.length flake.denModules.ca.imports) > 0;
+    }
+  ];
+
   # ------------------------------------------------------------------ the check set
 
   # Tier 1 runs anywhere: the comparison is an evaluation and the derivation is local.
@@ -609,6 +675,7 @@ let
     den-eval-routes = mkEvalCheck "routes" routeAssertions;
     den-eval-devenv-cli = mkEvalCheck "devenv-cli" devenvCliAssertions;
     den-eval-ssh-agent = mkEvalCheck "ssh-agent" sshAgentAssertions;
+    den-eval-ca = mkEvalCheck "ca" caAssertions;
   };
 
   # Tier 2 and tier 3 build a real artifact, so each one needs a builder for its own platform. The
@@ -662,6 +729,20 @@ let
 
         echo "  devenv is on the system path" >&2
         test -x "$target/sw/bin/devenv"
+
+        echo "  each enabled CA mounts its public certificate" >&2
+        test -f "$target/etc/kdn/ca/den-mvp-test.pub"
+        test -f "$target/etc/kdn/ca/den-mvp-keyed.pub"
+
+        echo "  the encrypted key blob mounts for the keyed CA only" >&2
+        test -f "$target/etc/kdn/ca/den-mvp-keyed.key.sops"
+        test ! -e "$target/etc/kdn/ca/den-mvp-test.key.sops"
+
+        echo "  a disabled CA mounts nothing" >&2
+        test ! -e "$target/etc/kdn/ca/den-mvp-off.pub"
+
+        echo "  the system CA bundle is not empty" >&2
+        test -s "$target/etc/ssl/certs/ca-certificates.crt"
       '';
 
       den-artifact-hm-host-nixos = mkArtifactCheck "hm-host-nixos" hmHostNixos hmHookGreps;

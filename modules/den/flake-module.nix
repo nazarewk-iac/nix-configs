@@ -120,6 +120,7 @@ in
   flake.denModules.rosetta-builder =
     resolveChecked "darwin" "rosetta-builder"
       den.aspects.rosetta-builder;
+  flake.denModules.ca = resolveChecked "nixos" "ca" den.aspects.ca;
   flake.denModules.gh = resolveChecked "devenv" "gh" den.aspects.gh;
   flake.denModules.ssh-agent = resolveChecked "homeManager" "ssh-agent" den.aspects.ssh-agent;
 }
