@@ -454,7 +454,7 @@ in
           ];
           subGidRanges = [
             {
-              startUid = config.users.users.kdn.uid * 65536;
+              startGid = config.users.users.kdn.uid * 65536;
               count = 65536;
             }
           ];
