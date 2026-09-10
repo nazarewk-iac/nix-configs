@@ -79,27 +79,29 @@ anywhere else. `flake.lock` gained exactly two nodes — den declares no flake i
 | Loader and the four outputs | `modules/den/flake-module.nix` | A nested `lib.evalModules`, not a flake-parts module. |
 | `devenv` class | `modules/den/classes/devenv.nix` | den ships none. 13 of 18 slots need it. |
 | First aspect | `modules/den/aspects/rosetta-builder.nix` | Core options only. The guest-size options stay in the slot. |
-| Parallel hosts | `hosts/den-mvp/den-darwin/`, `hosts/den-mvp/den-nixos/` | Both evaluate and build. Neither activates. |
+| First devenv aspect | `modules/den/aspects/gh.nix` | A full port of `modules/slots/gh/`. |
+| Parallel entities | `checks/den-mvp/{host-darwin,host-nixos,devenv}/` | They evaluate and build. None activates. |
+| Build gate | `checks.<system>.den-mvp` | The current architecture. `.all` covers every system. |
 
-**A den host lives at `hosts/den-mvp/<host>/`, one level below the host loader's reach.**
-`flake.hostConfigurations` (`flake.nix:264`) reads `hosts/` **one level only**, and it keeps an entry
-only when that entry holds a `default.nix` plus a `meta.json` or a `meta.nix`. `hosts/den-mvp/` holds
-none of the three, so the loader drops it. The invisibility is the requirement: every entry the
-loader keeps goes through `modules/meta`, and den replaces that pre-pass. `hosts/install-iso/` is the
-existing precedent. See [hosts/den-mvp/README.md](../../../../hosts/den-mvp/README.md).
+**The entities live at `checks/den-mvp/`, not in `hosts/`.** They build and never activate, so they
+are test artifacts, and `checks/` states that in the path. `hosts/` is wrong for a second reason:
+every entry `flake.hostConfigurations` keeps goes through `modules/meta`, and den replaces that
+pre-pass. A den host that inherits `modules/meta` proves nothing. See
+[checks/den-mvp/README.md](../../../../checks/den-mvp/README.md).
 
-Six commands verify the milestone. Each one passed:
+Seven commands verify the milestone. Each one passed:
 
 ```bash
 nix eval --json '.#denModules.rosetta-builder' --apply 'm: builtins.length m.imports'
-nix eval --raw '.#denConfigurations.den-darwin.config.system.build.toplevel.drvPath'
-nix eval --raw '.#denConfigurations.den-nixos.config.system.build.toplevel.drvPath'
-nix eval --raw '.#denDevenvShells.den-darwin.shell.drvPath'
-nix eval --json '.#darwinConfigurations' --apply builtins.attrNames   # unchanged
-nix eval --json '.#hostConfigurations' --apply builtins.attrNames     # no den host present
+nix eval --json '.#denModules.gh' --apply 'm: builtins.length m.imports'
+nix eval --raw '.#denConfigurations.host-darwin.config.system.build.toplevel.drvPath'
+nix eval --raw '.#denConfigurations.host-nixos.config.system.build.toplevel.drvPath'
+nix eval --json '.#denDevenvShells' --apply builtins.attrNames
+nix build  '.#checks.aarch64-darwin.den-mvp'
+nix eval --json '.#hostConfigurations' --apply builtins.attrNames     # no den entity present
 ```
 
-**The first slot-against-den comparison ran, and it agrees.** `anji` against `den-darwin`:
+**The first slot-against-den comparison ran, and it agrees.** `anji` against `host-darwin`:
 `config.nix-rosetta-builder` is identical, and so is
 `config.nix.settings.builders-use-substitutes`. `config.nix.buildMachines` differs, because `anji`
 also gets personal remote builders from `modules/universal/profile/remote-builders/`. den ports none
@@ -119,18 +121,70 @@ of that tree, so that difference is expected.
    `boot.loader.grub.enable = false` (GRUB is on by default and then asserts a non-empty `devices`),
    and `system.stateVersion`.
 
-**Pattern V1 fails for the slot route, and it works for a den host.** `flake.nix:250` sets
+**Criterion 2 passes, and den also runs as a plain library.** `den.nixModule inputs` is a second
+entry point. It imports four files and exposes exactly `{ aspects, lib, policies }` — no
+`den.hosts`, no `den.schema`, no `den.classes` and no `den.default`. `den.flakeModule` is what
+imports all of den's `modules/` tree, and the batteries live there. `den.lib.aspects.resolve
+"<class>" <aspect>` takes an arbitrary class name and needs no entity. den's own CI asserts the
+shape in `templates/ci/modules/internal-api/den-as-lib.nix`.
+
+Measured on 2026-09-10, for both ported aspects, the library route and the `flakeModule` route give
+one **identical** `drvPath`:
+
+| aspect | class | library-mode result | identical `drvPath` |
+|---|---|---|---|
+| `gh` | `devenv` | `gh-2.100.0` in the shell, `claude.code.enable = true` | yes |
+| `rosetta-builder` | `darwin` | `nix.buildMachines` carries `aarch64-linux x86_64-linux` | yes |
+
+The `rosetta-builder` test used a bare `nix-darwin.lib.darwinSystem` with no `modules/universal`, no
+`mkSlots` and no `kdnConfig` — the real adopter shape. Three limits hold: the consumer must pass
+`specialArgs.inputs` itself; library mode covers aspects and not entities, because `den.schema.host`
+is absent; and two simple aspects are not a full sample.
+
+**Library mode now ships as `flake.denLib`.** `modules/den/lib.nix` holds it, and it owns the aspect
+registry too, so the library route and the `flakeModule` route read one list. The thin wrapper is
+one call, and it drops straight into any target module:
+
+```nix
+imports = inputs.nix-configs.denLib.imports { class = "devenv"; aspects = [ "gh" ]; };
+```
+
+The raw machinery sits beside it — `nixModule`, `eval`, `resolve` and `aspectModules`. This
+repository's own entities keep the `den.flakeModule` route, because entity resolution needs it.
+
+Two guards protect the wrapper, both measured on 2026-09-10. An unknown aspect name throws when the
+caller builds the list, not later when the module system forces one element. And a **whole-aspect**
+function — `{ host, ... }: { name = …; devenv = …; }` — resolves to `{ imports = [ ]; }`, so
+`resolve` throws. This sharpens condition 2 above: a **per-target** function
+(`devenv = { host, ... }: …`) resolves non-empty, and it then fails inside the caller's own
+evaluation with `attribute 'host' missing`. So the guard catches the first shape only.
+
+**Two failures closed, and their root causes are separate.**
+
+1. A den host with `class = "devenv"` fails with `The option 'nixpkgs' does not exist. Definition
+   values: - In 'devenv@insecure-predicate/os'`. den always includes its `insecure-predicate` aspect
+   through `den.default.includes`, and the aspect injects `${host.class}.imports` with an OS-shaped
+   module that sets `config.nixpkgs`. A host whose class is not an OS class then breaks. A bare
+   `resolve` never reads `den.default`, so the standalone shells declare no entity at all.
+2. `kdn.den.devenv.root` cannot hold a store path. devenv's `claude.code` integration writes
+   `files."${devenv.root}/.claude/settings.json"`, which makes the root a **dynamic attribute
+   name**, and Nix rejects such a name when it refers to a store path
+   (`<devenv>/src/modules/integrations/claude.nix:977`). The option now defaults to `/den-mvp`.
+
+**Pattern V1 fails for the slot route, and it works for every den output.** `flake.nix:250` sets
 `nix-configs = self`, so the whole tree hash enters every `modules/universal`-derived derivation and
 a new file changes every `drvPath` there. A den evaluation never reads `self`. Measured on
-2026-09-10: `denConfigurations.den-darwin` kept the byte-identical `drvPath`
-`7zhp7889kchljri5j7phaakfvzv9j3ph-darwin-system-26.11.4cff07d.drv` across a file move **and** the
-addition of `den-nixos`. So Pattern V1 is a real no-op gate for every den refactor. Gate on
-`denConfigurations`, not on `denDevenvShells` — only `kdn.den.devenv.root` reads `self`, and it
-reaches the shells.
+2026-09-10: `denConfigurations.host-darwin` kept the byte-identical `drvPath`
+`7zhp7889kchljri5j7phaakfvzv9j3ph-darwin-system-26.11.4cff07d.drv` across a file move, a second host
+and a rename. `denDevenvShells.devenv-darwin` kept
+`k7iqgp8lv0qk2qp3vqkxii8m4gg8g7v3-devenv-darwin.drv` across a perturbation of an unrelated tracked
+file. Removal of the `"${self}"` root extended the gate from `denConfigurations` to all four
+outputs.
 
-Milestone 2 owns the next three pieces: a `home` target, one devenv-only slot, and the coupled
-`jj`+`mcp` pair. `den-nixos` carries no aspect yet; it is the landing place for the first ported
-NixOS aspect. The README status table tracks them.
+The adopter-facing library-mode export is done. Milestone 2 owns the next three pieces: a `home`
+target, one coupled slot pair (`jj` plus `mcp`), and the first `nixos`-class aspect. `host-nixos`
+carries no aspect yet; it is the landing place for that aspect. The README status table tracks
+them.
 
 ## Why this comes first
 
