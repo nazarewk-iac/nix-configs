@@ -482,7 +482,12 @@
             (lib.filterAttrs (n: pkg: lib.isDerivation pkg)
               (flakeLib.overlayedInputs { inherit system; }).nixpkgs.kdn
             )
-            {
+            # `nixosGenerate` builds a whole NixOS system, so every package in it needs a Linux
+            # `hostPlatform`. On `aarch64-darwin` the evaluation stops at busybox: "Refusing to
+            # evaluate package 'busybox-1.37.0' ... because it is not available on the requested
+            # hostPlatform". `nix flake check` reads every entry of `packages.<system>`, so an
+            # unguarded entry fails the whole check on a Darwin machine.
+            (lib.optionalAttrs (lib.hasSuffix "-linux" system) {
               install-iso = inputs.nixos-generators.nixosGenerate {
                 format = "install-iso";
                 inherit system;
@@ -491,7 +496,8 @@
                 specialArgs = (self.kdnMetaModule.config.output.mkSubmodule { moduleType = "nixos"; }).specialArgs;
                 modules = [ ./hosts/install-iso ];
               };
-
+            })
+            {
               sources =
                 let
                   flattenInputs =
