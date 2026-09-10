@@ -25,9 +25,12 @@ in
       };
 
       hardware.graphics.extraPackages = with pkgs; [
-        vaapiIntel # LIBVA_DRIVER_NAME=i965 (older but works better for Firefox/Chromium)
+        # nixpkgs removed two aliases here. `vaapiIntel` is now `intel-vaapi-driver`, and
+        # `vaapiVdpau` is now `libva-vdpau-driver`. Measured 2026-09-10: each alias stops the
+        # evaluation of every host with an Intel GPU.
+        intel-vaapi-driver # LIBVA_DRIVER_NAME=i965 (older but works better for Firefox/Chromium)
         libvdpau-va-gl
-        vaapiVdpau
+        libva-vdpau-driver
         intel-media-driver # LIBVA_DRIVER_NAME=iHD
       ];
     }
