@@ -8,7 +8,7 @@ let
   # subdir devenv only has its own inputs (nix-configs, nixpkgs), so pass those.
   # inputs.nix-configs is the parent flake: it carries .lib (the extended lib
   # with lib.kdn.mkSlots) and the modules/slots tree.
-  jjForkConfigToml = import ./render-fork-config.nix {
+  jjFork = import ./render-fork-config.nix {
     inherit pkgs;
     mkSlots = inputs.nix-configs.lib.kdn.mkSlots;
     slotsPath = inputs.nix-configs + "/modules/slots";
@@ -26,7 +26,9 @@ in
   # Export the rendered fork aliases for pytest. Run `pytest -k <case>` in this
   # shell to exercise a single use-case.
   enterShell = ''
-    export JJ_FORK_CONFIG_TOML=${jjForkConfigToml}
+    export JJ_FORK_CONFIG_TOML=${jjFork.toml}
+    export KDN_JJ_PRE_PUSH_SH=${jjFork.prePush}
     echo "jj-experiments: JJ_FORK_CONFIG_TOML=$JJ_FORK_CONFIG_TOML"
+    echo "jj-experiments: KDN_JJ_PRE_PUSH_SH=$KDN_JJ_PRE_PUSH_SH"
   '';
 }

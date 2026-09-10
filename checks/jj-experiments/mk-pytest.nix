@@ -12,6 +12,7 @@
   lib,
   suite, # the suite source (a store path or fileset.toSource result)
   toml, # the rendered fork slot config, exported as JJ_FORK_CONFIG_TOML
+  prePush, # the pre-push hook script, exported as KDN_JJ_PRE_PUSH_SH
   extraArgs ? [ ],
 }:
 pkgs.runCommand "jj-experiments-pytest-check"
@@ -22,6 +23,7 @@ pkgs.runCommand "jj-experiments-pytest-check"
       pkgs.git
     ];
     JJ_FORK_CONFIG_TOML = toml;
+    KDN_JJ_PRE_PUSH_SH = prePush;
   }
   ''
     export HOME="$(mktemp -d)"

@@ -63,6 +63,12 @@ A test that needs the real fork aliases calls `harness.slot_config()`. It skips
 when `JJ_FORK_CONFIG_TOML` is absent (for example a bare `pytest` run with no
 slot). The Phase 0 smoke tests need no slot and always run.
 
+All three run modes export a second variable, `KDN_JJ_PRE_PUSH_SH`: the path of
+`modules/slots/jj/pre-push.sh`. `test_prepush.py` runs that script directly and
+bakes its own placeholder pattern lists, and it skips when the variable is
+absent. Both variables come from `render-fork-config.nix`, which returns
+`{ toml, prePush }`.
+
 ## The API
 
 `conftest.py` provides two fixtures and three classes.

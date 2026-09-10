@@ -21,7 +21,7 @@ let
   flake = builtins.getFlake ("path:" + repo);
   pkgs = flake.inputs.nixpkgs.legacyPackages.${builtins.currentSystem};
   lib = flake.lib;
-  toml = import (flake + "/checks/jj-experiments/render-fork-config.nix") {
+  jjFork = import (flake + "/checks/jj-experiments/render-fork-config.nix") {
     inherit pkgs;
     mkSlots = lib.kdn.mkSlots;
     slotsPath = flake + "/modules/slots";
@@ -30,7 +30,8 @@ let
   };
 in
 import (flake + "/checks/jj-experiments/mk-pytest.nix") {
-  inherit pkgs lib toml;
+  inherit pkgs lib;
+  inherit (jjFork) toml prePush;
   suite = flake + "/checks/jj-experiments"; # store-path string; `cp -r` copies it
   extraArgs = builtins.fromJSON extraArgsJSON;
 }
