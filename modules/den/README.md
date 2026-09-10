@@ -59,6 +59,29 @@ They build and they never activate, so they are test artifacts. `checks/` states
 proves nothing. `checks/` sits outside the loader's reach by construction. Verified:
 `nix eval --json '.#hostConfigurations' --apply builtins.attrNames` lists no den entity.
 
+## The drop-in rule — no `specialArgs`, no machinery
+
+**A consumer imports a resolved module and passes nothing else.** No `specialArgs`, no
+`kdnConfig`, no wrapper function, no overlay. The creator stated this goal again on 2026-09-10:
+the `modules/universal` plus `modules/meta` pair needs `kdnConfig` in `specialArgs`, and that
+requirement is what made each new module kind expensive. The slot tree avoided it. This tree must
+avoid it too.
+
+One mechanical rule keeps it true:
+
+> **A target module takes `config`, `lib` and `pkgs` only** — the arguments that every NixOS,
+> nix-darwin, home-manager and devenv evaluation already gives. An argument such as `inputs` or
+> `kdnConfig` makes the consumer supply `specialArgs`. When an aspect needs a flake input, take it
+> in **the aspect file's own** arguments (`{ inputs, ... }:` at the top of the file) and close over
+> it. den supplies that from its own evaluation, so the value is already bound when the resolved
+> module reaches the consumer.
+
+`den-eval-routes` proves the property: it evaluates `denModules.rosetta-builder` inside a bare
+`nix-darwin.lib.darwinSystem` with **no** `specialArgs`, and it compares the `drvPath` against the
+library route. `modules/slots/` needs one `overlays` line for `pkgs.kdn.*`; an aspect that needs a
+custom package must carry it the same way — through this file's own arguments, never through the
+consumer's `pkgs`.
+
 ## The five conditions from the spike
 
 The spike measured these. Each one is a rule for this tree, not advice.
@@ -170,6 +193,7 @@ it. The adopter surface is library mode, and `flake.denLib` ships it.
 | devenv class | present |
 | `rosetta-builder` aspect | core content only — the guest-size options are **not** ported |
 | `gh` aspect | present — the first `devenv`-target aspect, a full port of `modules/slots/gh/` |
+| `ssh-agent` aspect | present — the first **`homeManager`-only** aspect. A full port of `modules/slots/ssh-agent/`. |
 | `devenv-cli` aspect | present — the **four-target** aspect. It ports `modules/slots/devenv/` and adds a `devenv` target the slot has none of. |
 | `host-darwin` host | evaluates and builds a nix-darwin system, a devenv shell and one home-manager generation |
 | `host-nixos` host | evaluates a NixOS system, a devenv shell and one home-manager generation. It carries a real `nixos`-class aspect. |
@@ -177,7 +201,7 @@ it. The adopter surface is library mode, and `flake.denLib` ships it.
 | Standalone home-manager | present — `home-darwin` and `home-linux`, with no den entity. This is the adopter shape. |
 | The `dev` den user | present — one shared user at `checks/den-mvp/users/`. It makes the `homeManager` class reachable. |
 | `checks.<system>.den-mvp` | present — the current architecture, with `.all` for every system |
-| Test harness | present — 5 evaluation checks, 7 artifact checks, 4 smoke runs. See [checks/den-mvp/README.md](../../checks/den-mvp/README.md#tests). |
+| Test harness | present — 6 evaluation checks, 7 artifact checks, 4 smoke runs. See [checks/den-mvp/README.md](../../checks/den-mvp/README.md#tests). |
 | Smoke-test runner | present — `nix run '.#checks.aarch64-darwin.den-mvp.smoke'`. 11 of 11 pass on this machine. |
 | A VM test for `host-nixos` | deferred — tier 1 and tier 2 read every value a guest would, and no darwin VM framework exists |
 | An automated `hosts/anji` parity check | deferred — it evaluates a whole personal host (~93 s) and it reads sops metadata |
@@ -185,7 +209,7 @@ it. The adopter surface is library mode, and `flake.denLib` ships it.
 | A `nixos`-class aspect | present — `devenv-cli` reaches `host-nixos` |
 | `home` target | present — through `devenv-cli`, on both routes |
 | A coupled pair of slots (`jj` plus `mcp`) | not started — order 7 of the milestone 2 plan |
-| Parity with all 18 slots | **the milestone 2 goal**, set 2026-09-10. 3 of 18 done, 15 left (~3,866 LOC). See [004-den-spike](../../docs/tasks/2026-09/generalization/004-den-spike/definition.md#milestone-2-covers-every-slot--scope-decision-2026-09-10). |
+| Parity with all 18 slots | **the milestone 2 goal**, set 2026-09-10. 4 of 18 done, 14 left (~3,790 LOC). See [004-den-spike](../../docs/tasks/2026-09/generalization/004-den-spike/definition.md#milestone-2-covers-every-slot--scope-decision-2026-09-10). |
 
 The slot tree remains the supported route. See
 [docs/slots-for-adopters.md](../../docs/slots-for-adopters.md).

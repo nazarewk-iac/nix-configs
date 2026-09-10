@@ -379,6 +379,87 @@ let
     }
   ];
 
+  # The `ssh-agent` aspect is the first **`homeManager`-only** port. So these assertions test the
+  # user scope on its own, on both routes and on both platforms.
+  #
+  # The platform split is the point of the last two. The aspect adds the `ssh-agent-claim` login
+  # agent on darwin only, because it exists to remove the macOS built-in agent. A Linux user gets
+  # the systemd user service from home-manager and no claim agent.
+  sshAgentAssertions = [
+    # ---- the standalone route, with no den entity
+    {
+      name = "each standalone home configuration runs the agent";
+      expected = {
+        home-darwin = true;
+        home-linux = true;
+      };
+      actual = {
+        home-darwin = homeDarwin.config.services.ssh-agent.enable;
+        home-linux = homeLinux.config.services.ssh-agent.enable;
+      };
+    }
+    # The nixpkgs `openssh` build links libfido2, and the macOS built-in agent supports no
+    # `sk-ssh-ed25519` key. So the package choice is the reason this aspect exists.
+    {
+      name = "the agent package is the nixpkgs openssh build";
+      expected = {
+        home-darwin = "openssh";
+        home-linux = "openssh";
+      };
+      actual = {
+        home-darwin = homeDarwin.config.services.ssh-agent.package.pname;
+        home-linux = homeLinux.config.services.ssh-agent.package.pname;
+      };
+    }
+
+    # ---- the host route, through the `dev` user
+    {
+      name = "both hosts forward the agent to the user";
+      expected = {
+        host-darwin = true;
+        host-nixos = true;
+      };
+      actual = {
+        host-darwin = darwinCfg.home-manager.users.dev.services.ssh-agent.enable;
+        host-nixos = nixosCfg.home-manager.users.dev.services.ssh-agent.enable;
+      };
+    }
+
+    # ---- the platform split
+    {
+      name = "the claim agent exists on darwin and on darwin only";
+      expected = {
+        home-darwin = true;
+        home-linux = false;
+        host-darwin = true;
+        host-nixos = false;
+      };
+      actual = {
+        home-darwin = homeDarwin.config.launchd.agents ? ssh-agent-claim;
+        home-linux = homeLinux.config.launchd.agents ? ssh-agent-claim;
+        host-darwin = darwinCfg.home-manager.users.dev.launchd.agents ? ssh-agent-claim;
+        host-nixos = nixosCfg.home-manager.users.dev.launchd.agents ? ssh-agent-claim;
+      };
+    }
+    {
+      name = "the Linux user gets the systemd user service instead";
+      expected = true;
+      actual = homeLinux.config.systemd.user.services ? ssh-agent;
+    }
+
+    # ---- the library route. One module, and it needs no `specialArgs`.
+    {
+      name = "denLib.imports resolves one homeManager module";
+      expected = 1;
+      actual = builtins.length (
+        denLib.imports {
+          class = "homeManager";
+          aspects = [ "ssh-agent" ];
+        }
+      );
+    }
+  ];
+
   # `denLib` ships two guards. This asserts both fire, and that the good path still works.
   den = denLib.eval { };
 
@@ -437,6 +518,7 @@ let
         "devenv-cli"
         "gh"
         "rosetta-builder"
+        "ssh-agent"
       ];
       actual = sorted (builtins.attrNames denLib.aspectModules);
     }
@@ -494,6 +576,20 @@ let
   #
   # The generated line reads `<store-path>/bin/devenv hook <shell>`, so `devenv hook <shell>` is a
   # literal substring of it.
+  # The darwin-only greps. home-manager links the generation's `LaunchAgents` directory into the
+  # activation package (`<home-manager>/modules/launchd/default.nix:207`) and it names each plist
+  # `org.nix-community.home.<agent>.plist` (`:13,78`).
+  hmLaunchdGreps = ''
+    echo "  the home-manager ssh-agent plist" >&2
+    test -f "$target/LaunchAgents/org.nix-community.home.ssh-agent.plist"
+
+    echo "  the ssh-agent-claim login agent plist" >&2
+    test -f "$target/LaunchAgents/org.nix-community.home.ssh-agent-claim.plist"
+
+    echo "  the claim agent runs at load" >&2
+    grep -Fq 'RunAtLoad' "$target/LaunchAgents/org.nix-community.home.ssh-agent-claim.plist"
+  '';
+
   hmHookGreps = ''
     for pair in 'bash .bashrc' 'zsh .zshrc' 'fish .config/fish/config.fish'; do
       # shellcheck disable=SC2086
@@ -512,6 +608,7 @@ let
     den-eval-guards = mkEvalCheck "guards" guardAssertions;
     den-eval-routes = mkEvalCheck "routes" routeAssertions;
     den-eval-devenv-cli = mkEvalCheck "devenv-cli" devenvCliAssertions;
+    den-eval-ssh-agent = mkEvalCheck "ssh-agent" sshAgentAssertions;
   };
 
   # Tier 2 and tier 3 build a real artifact, so each one needs a builder for its own platform. The
@@ -539,8 +636,12 @@ let
       # The `homeManager` half, both routes. The host route proves den forwards the aspect to
       # `home-manager.users.dev`; the standalone route proves the same half is a valid
       # home-manager module with no den entity at all.
-      den-artifact-hm-host-darwin = mkArtifactCheck "hm-host-darwin" hmHostDarwin hmHookGreps;
-      den-artifact-home-darwin = mkArtifactCheck "home-darwin" homeDarwin.activationPackage hmHookGreps;
+      den-artifact-hm-host-darwin = mkArtifactCheck "hm-host-darwin" hmHostDarwin (
+        hmHookGreps + hmLaunchdGreps
+      );
+      den-artifact-home-darwin = mkArtifactCheck "home-darwin" homeDarwin.activationPackage (
+        hmHookGreps + hmLaunchdGreps
+      );
 
       den-smoke-devenv-darwin = mkSmokeCheck "devenv-darwin" devenvDarwin;
       den-smoke-host-darwin = mkSmokeCheck "host-darwin" hostShellDarwin;
