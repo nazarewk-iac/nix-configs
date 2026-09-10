@@ -166,8 +166,9 @@ in
       ];
       claude.code.agents = lib.mkIf (!config.kdn.isSourceRepo) {
         jj-expert = {
-          description = "Deep jj (Jujutsu VCS) troubleshooting: divergent changes, conflicts, graph surgery, revset/fileset/template questions.";
-          proactive = true;
+          # devenv removed `claude.code.agents.<name>.proactive` on 2026-08-16, and a definition of it
+          # is now a hard assertion failure. The phrase in the description carries the same intent.
+          description = "Deep jj (Jujutsu VCS) troubleshooting: divergent changes, conflicts, graph surgery, revset/fileset/template questions. Use proactively.";
           prompt = builtins.readFile "${inputs.nix-configs}/.agents/agents/jj-expert/AGENT.md";
         };
       };
