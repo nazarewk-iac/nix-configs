@@ -13,12 +13,12 @@ in
     enable = lib.mkEnableOption "rambox setup";
   };
 
-  config = lib.mkMerge [
-    (kdnConfig.util.ifHMParent {
-      home-manager.sharedModules = [ { kdn.programs.rambox = lib.mkDefault cfg; } ];
-    })
-    (lib.optionalAttrs (kdnConfig.util.hasParentOfAnyType [ "nixos" ]) (
-      lib.mkIf cfg.enable (
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      (kdnConfig.util.ifHMParent {
+        home-manager.sharedModules = [ { kdn.programs.rambox = lib.mkDefault cfg; } ];
+      })
+      (lib.optionalAttrs (kdnConfig.util.hasParentOfAnyType [ "nixos" ]) (
         lib.mkMerge [
           {
             kdn.apps."rambox" = {
@@ -32,7 +32,7 @@ in
             };
           }
         ]
-      )
-    ))
-  ];
+      ))
+    ]
+  );
 }

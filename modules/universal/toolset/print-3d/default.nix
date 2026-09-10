@@ -13,12 +13,12 @@ in
     enable = lib.mkEnableOption "print-3d tooling";
   };
 
-  config = lib.mkMerge [
-    (kdnConfig.util.ifHMParent {
-      home-manager.sharedModules = [ { kdn.toolset.print-3d = lib.mkDefault cfg; } ];
-    })
-    (lib.optionalAttrs (kdnConfig.util.hasParentOfAnyType [ "nixos" ]) (
-      lib.mkIf cfg.enable {
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      (kdnConfig.util.ifHMParent {
+        home-manager.sharedModules = [ { kdn.toolset.print-3d = lib.mkDefault cfg; } ];
+      })
+      (lib.optionalAttrs (kdnConfig.util.hasParentOfAnyType [ "nixos" ]) {
         kdn.programs.blender.enable = true;
         /*
           TODO: re-enable when build is fixed
@@ -26,7 +26,7 @@ in
            see https://nixpk.gs/pr-tracker.html?pr=369729
         */
         # kdn.programs.orca-slicer.enable = true;
-      }
-    ))
-  ];
+      })
+    ]
+  );
 }

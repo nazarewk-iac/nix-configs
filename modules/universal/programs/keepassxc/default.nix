@@ -35,9 +35,15 @@ in
     (lib.mkIf cfg.service.enable {
       kdn.env.variables = envs;
     })
-    (kdnConfig.util.ifHMParent {
-      home-manager.sharedModules = [ { kdn.programs.keepassxc = lib.mkDefault cfg; } ];
-    })
+    /*
+      The forward needs its own guard. `service.enable` above stays outside `cfg.enable`,
+      so this module cannot hoist one `lib.mkIf cfg.enable` over every branch.
+    */
+    (lib.mkIf cfg.enable (
+      kdnConfig.util.ifHMParent {
+        home-manager.sharedModules = [ { kdn.programs.keepassxc = lib.mkDefault cfg; } ];
+      }
+    ))
     (kdnConfig.util.ifHM (
       lib.mkIf cfg.enable (
         lib.mkMerge [

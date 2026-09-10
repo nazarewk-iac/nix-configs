@@ -66,28 +66,32 @@ in
     };
   };
 
-  config = lib.mkMerge [
-    (lib.mkIf cfg.enable {
-      kdn.env.packages = [
-        (cfg.package.override {
-          configure =
-            { availablePlugins, ... }:
-            {
-              scripts = cfg.scripts;
-              init = cfg.init;
-            };
-        })
-      ];
-    })
-    (kdnConfig.util.ifHMParent {
-      home-manager.sharedModules = [ { kdn.programs.weechat = lib.mkDefault cfg; } ];
-    })
-    (lib.optionalAttrs (kdnConfig.util.hasParentOfAnyType [ "nixos" ]) (
-      lib.mkIf cfg.enable {
+  /*
+    `package`, `init` and `scripts` keep a non-false default. The home-manager child
+    declares the same defaults, so the guarded forward gives the same values.
+  */
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      {
+        kdn.env.packages = [
+          (cfg.package.override {
+            configure =
+              { availablePlugins, ... }:
+              {
+                scripts = cfg.scripts;
+                init = cfg.init;
+              };
+          })
+        ];
+      }
+      (kdnConfig.util.ifHMParent {
+        home-manager.sharedModules = [ { kdn.programs.weechat = lib.mkDefault cfg; } ];
+      })
+      (lib.optionalAttrs (kdnConfig.util.hasParentOfAnyType [ "nixos" ]) {
         kdn.disks.persist."usr/config".directories = [
           ".config/weechat"
         ];
-      }
-    ))
-  ];
+      })
+    ]
+  );
 }

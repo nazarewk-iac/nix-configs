@@ -215,18 +215,8 @@ in
           }
           (lib.mkIf hasWorkstation {
             kdn.disks.persist."usr/data".directories = [ "dev" ];
-            /*
-              Both options keep the plain priority (100), not `lib.mkDefault`.
-
-              The owning module forwards the host value into home-manager with
-              `home-manager.sharedModules = [ { kdn.<opt> = lib.mkDefault cfg; } ]`,
-              and that forward sits outside `lib.mkIf cfg.enable`. So a host that
-              leaves the option off still pushes `lib.mkDefault false` into every
-              home-manager user. A `lib.mkDefault true` here ties with it and the
-              evaluation stops. Make the forward conditional in the module first.
-            */
-            kdn.services.syncthing.enable = true;
-            kdn.programs.weechat.enable = true;
+            kdn.services.syncthing.enable = lib.mkDefault true;
+            kdn.programs.weechat.enable = lib.mkDefault true;
           })
           (lib.mkIf config.kdn.programs.firefox.enable (
             lib.mkMerge [
@@ -350,10 +340,8 @@ in
               };
           })
           (lib.mkIf config.kdn.desktop.enable {
-            # Both keep the plain priority — see the note at
-            # `kdn.services.syncthing.enable` above.
-            kdn.programs.keepassxc.enable = true;
-            kdn.programs.keepassxc.service.enable = true;
+            kdn.programs.keepassxc.enable = lib.mkDefault true;
+            kdn.programs.keepassxc.service.enable = lib.mkDefault true;
             kdn.programs.keepassxc.service.searchDirs = [
               "${config.home.homeDirectory}/${nc.rel}/important/keepass"
             ];
@@ -434,23 +422,18 @@ in
           })
           (lib.mkIf (hasWorkstation && config.kdn.desktop.enable) {
             # TODO: migrate to universal, split out a private instead of workstation profile?
-            #
-            # Every option here keeps the plain priority (100) — see the note at
-            # `kdn.services.syncthing.enable` above. `kdn.programs.torrent` is the one
-            # exception: that module guards its home-manager forward with
-            # `lib.mkIf cfg.enable`, so no `lib.mkDefault false` reaches this user.
-            kdn.programs.beeper.enable = true;
-            kdn.programs.matrix.enable = true;
-            kdn.programs.ente-photos.enable = true;
+            kdn.programs.beeper.enable = lib.mkDefault true;
+            kdn.programs.matrix.enable = lib.mkDefault true;
+            kdn.programs.ente-photos.enable = lib.mkDefault true;
             # kdn.programs.logseq.enable = true; # TODO: 2026-08-29: broken build
-            kdn.programs.nextcloud-client.enable = true;
-            kdn.programs.rambox.enable = true;
-            kdn.programs.signal.enable = true;
-            kdn.programs.slack.enable = true;
-            kdn.programs.spotify.enable = true;
-            kdn.programs.tidal.enable = true;
+            kdn.programs.nextcloud-client.enable = lib.mkDefault true;
+            kdn.programs.rambox.enable = lib.mkDefault true;
+            kdn.programs.signal.enable = lib.mkDefault true;
+            kdn.programs.slack.enable = lib.mkDefault true;
+            kdn.programs.spotify.enable = lib.mkDefault true;
+            kdn.programs.tidal.enable = lib.mkDefault true;
             kdn.programs.torrent.enable = lib.mkDefault true;
-            kdn.toolset.print-3d.enable = true;
+            kdn.toolset.print-3d.enable = lib.mkDefault true;
           })
           (lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
             kdn.env.packages = with pkgs; [

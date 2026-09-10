@@ -13,17 +13,17 @@ in
     enable = lib.mkEnableOption "Syncthing file synchronization";
   };
 
-  config = lib.mkMerge [
-    (lib.mkIf cfg.enable {
-      kdn.env.packages = with pkgs; [
-        stc-cli
-      ];
-    })
-    (kdnConfig.util.ifHMParent {
-      home-manager.sharedModules = [ { kdn.services.syncthing = lib.mkDefault cfg; } ];
-    })
-    (lib.optionalAttrs (kdnConfig.util.hasParentOfAnyType [ "nixos" ]) (
-      lib.mkIf cfg.enable {
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      {
+        kdn.env.packages = with pkgs; [
+          stc-cli
+        ];
+      }
+      (kdnConfig.util.ifHMParent {
+        home-manager.sharedModules = [ { kdn.services.syncthing = lib.mkDefault cfg; } ];
+      })
+      (lib.optionalAttrs (kdnConfig.util.hasParentOfAnyType [ "nixos" ]) {
         services.syncthing.enable = true;
         services.syncthing.extraOptions = [
           # see https://docs.syncthing.net/users/syncthing.html
@@ -43,7 +43,7 @@ in
         systemd.user.services.syncthing = {
           Unit.After = [ "paths.target" ];
         };
-      }
-    ))
-  ];
+      })
+    ]
+  );
 }

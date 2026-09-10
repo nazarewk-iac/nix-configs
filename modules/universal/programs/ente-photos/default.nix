@@ -15,12 +15,12 @@ in
     package = lib.mkPackageOption pkgs [ "ente-desktop" ] { };
   };
 
-  config = lib.mkMerge [
-    (kdnConfig.util.ifHMParent {
-      home-manager.sharedModules = [ { kdn.programs.ente-photos = lib.mkDefault cfg; } ];
-    })
-    (lib.optionalAttrs (kdnConfig.util.hasParentOfAnyType [ "nixos" ]) (
-      lib.mkIf cfg.enable (
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      (kdnConfig.util.ifHMParent {
+        home-manager.sharedModules = [ { kdn.programs.ente-photos = lib.mkDefault cfg; } ];
+      })
+      (lib.optionalAttrs (kdnConfig.util.hasParentOfAnyType [ "nixos" ]) (
         lib.mkMerge [
           {
             kdn.apps.ente-photos-desktop = {
@@ -35,7 +35,7 @@ in
             };
           }
         ]
-      )
-    ))
-  ];
+      ))
+    ]
+  );
 }

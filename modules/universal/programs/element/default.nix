@@ -29,12 +29,16 @@ in
     };
   };
 
-  config = lib.mkMerge [
-    (kdnConfig.util.ifHMParent {
-      home-manager.sharedModules = [ { kdn.programs.matrix = lib.mkDefault cfg; } ];
-    })
-    (lib.optionalAttrs (kdnConfig.util.hasParentOfAnyType [ "nixos" ]) (
-      lib.mkIf cfg.enable (
+  /*
+    `element`, `gomuks` and `nheko` default to true, not false. The home-manager child
+    declares the same defaults, so the guarded forward gives the same values.
+  */
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      (kdnConfig.util.ifHMParent {
+        home-manager.sharedModules = [ { kdn.programs.matrix = lib.mkDefault cfg; } ];
+      })
+      (lib.optionalAttrs (kdnConfig.util.hasParentOfAnyType [ "nixos" ]) (
         lib.mkMerge [
           (lib.mkIf cfg.element.enable {
             # TODO: try out gomuks https://github.com/tulir/gomuks for better client responsiveness?
@@ -102,7 +106,7 @@ in
             };
           })
         ]
-      )
-    ))
-  ];
+      ))
+    ]
+  );
 }
