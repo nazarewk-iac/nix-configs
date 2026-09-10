@@ -27,8 +27,6 @@ in
   kdnctl = pkgs.callPackage ./kdnctl { };
   kdn-anonymize = pkgs.callPackage ./kdn-anonymize { };
   kdn-cidata-iso = pkgs.callPackage ./kdn-cidata-iso { };
-  kdn-gamingctl = pkgs.callPackage ./kdn-gamingctl { };
-  kdn-keepass = pkgs.callPackage ./kdn-keepass { };
   kdn-nix = pkgs.callPackage ./kdn-nix { };
   kdn-ssh-access = pkgs.callPackage ./kdn-ssh-access { };
   kdn-yk = pkgs.callPackage ./kdn-yk { };
@@ -37,9 +35,6 @@ in
   lnav = pkgs.callPackage ./lnav/package.nix { };
   pinentry = pkgs.callPackage ./pinentry { };
   ss-util = pkgs.callPackage ./ss-util { };
-  sway-vnc = pkgs.callPackage ./sway-vnc { };
-  systemd-cryptsetup = pkgs.callPackage ./systemd-cryptsetup { };
-  systemd-find-cycles = pkgs.callPackage ./systemd-find-cycles { };
   tc-redirect-tap = pkgs.callPackage ./tc-redirect-tap { };
   whicher = pkgs.callPackage ./whicher { };
 
@@ -66,4 +61,28 @@ in
   # The one consumer is `modules/universal/programs/gnupg/default.nix:101`, inside a NixOS-only
   # block, so no Darwin evaluation reads this attribute.
   pass-secret-service = pkgs.callPackage ./pass-secret-service { };
+
+  # Each package below needs a Linux-only dependency, and each consumer sits inside a
+  # `kdnConfig.util.ifTypes [ "nixos" ]` block. So no Darwin evaluation reads any of them.
+  #
+  # `kdn-gamingctl` runs `systemd`, `supergfxctl` and `sway`.
+  # Consumer: hosts/oams/default.nix:280.
+  kdn-gamingctl = pkgs.callPackage ./kdn-gamingctl { };
+
+  # `kdn-keepass` runs `sway` and `systemd`.
+  # Consumers: modules/universal/programs/keepassxc/default.nix:33,105 and
+  # modules/universal/profile/user/kdn/default.nix:405.
+  kdn-keepass = pkgs.callPackage ./kdn-keepass { };
+
+  # `sway-vnc` runs `wayvnc` and `sway`, both Wayland programs.
+  # Consumer: modules/universal/desktop/sway/remote/default.nix:29.
+  sway-vnc = pkgs.callPackage ./sway-vnc { };
+
+  # `systemd-cryptsetup` symlinks `${systemd}/lib/systemd/systemd-cryptsetup`.
+  # Consumer: modules/universal/toolset/fs/encryption/default.nix:12.
+  systemd-cryptsetup = pkgs.callPackage ./systemd-cryptsetup { };
+
+  # `systemd-find-cycles` reads the output of `systemd-analyze dot`.
+  # Consumer: modules/universal/profile/machine/baseline/default.nix:248.
+  systemd-find-cycles = pkgs.callPackage ./systemd-find-cycles { };
 }
