@@ -64,7 +64,20 @@ in
         kdn.development.llm.claude-code.enable = lib.mkDefault config.kdn.profile.machine.dev.enable;
         kdn.development.llm.opencode.enable = lib.mkDefault config.kdn.profile.machine.dev.enable;
         kdn.development.llm.pi.enable = lib.mkDefault config.kdn.profile.machine.dev.enable;
-        kdn.development.llm.omp.enable = lib.mkDefault config.kdn.profile.machine.dev.enable;
+        /*
+          TODO: 2026-09-10 — turn omp back on once it builds on the arm64 Darwin build path.
+
+          omp cannot build in the x86_64 Rosetta guest, for two independent reasons and neither of
+          them is a defect here:
+            1. The upstream [profile.release] uses lto = "fat" and codegen-units = 1, so rustc
+               dies with SIGKILL in the 6 GiB guest while it links jj-lib.
+            2. installCheckPhase runs `omp --smoke-test`, which forks `omp lsp mux` and then
+               blocks. Measured 11m52s elapsed against 4s of CPU time at load 0.11. More guest
+               memory does not change this.
+          Both hosts that want omp run x86_64 natively with far more memory, so neither blocker
+          exists there. Revert this line, do not build on it.
+        */
+        kdn.development.llm.omp.enable = lib.mkDefault false;
         kdn.env.packages = with pkgs; [
           kdn.kdnctl
           # (yt-dlp.overrideAttrs (final: {
