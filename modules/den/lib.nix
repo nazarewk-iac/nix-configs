@@ -41,6 +41,7 @@ let
     mcp-basic-memory = ./aspects/mcp-basic-memory.nix;
     mcp-pretty-print = ./aspects/mcp-pretty-print.nix;
     mcp-snoop = ./aspects/mcp-snoop.nix;
+    nix = ./aspects/nix.nix;
     opencode = ./aspects/opencode.nix;
     rosetta-builder = ./aspects/rosetta-builder.nix;
     ssh-agent = ./aspects/ssh-agent.nix;
@@ -135,7 +136,12 @@ let
       '';
 in
 {
-  inherit aspectModules eval resolve namespaceName;
+  inherit
+    aspectModules
+    eval
+    resolve
+    namespaceName
+    ;
 
   # den's own library entry point, unwrapped.
   inherit (inputs.den) nixModule;

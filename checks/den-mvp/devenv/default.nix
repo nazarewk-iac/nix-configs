@@ -16,6 +16,7 @@
 {
   config,
   den,
+  inputs,
   kdn,
   lib,
   ...
@@ -47,7 +48,19 @@ let
     # environment, so one build per shell is enough.
     kdn.mcp-snoop
     kdn.mcp-basic-memory
+
+    # The `nix` aspect. It includes `mcp` too, because it writes two of that aspect's options — so
+    # this list holds four includers of one parent and still must give one gateway. It is also the
+    # first aspect that registers a git-hooks pre-commit hook, so it is the reason
+    # `den.devenv.inputs.git-hooks` below exists.
+    kdn.nix
   ];
+
+  # The data for the `nix` aspect. The aspect allow-lists no flake app of its own, because an app
+  # name belongs to the consumer. So the entity names one neutral placeholder.
+  nixData = {
+    kdn.nix.extraBashAllow = [ "nix run .#example-formatter -- *" ];
+  };
 
   # The data for the `mcp` family. The aspects name no knowledge base, no knowledge root and no
   # `mcp-servers-nix` source, so the entity supplies each one.
@@ -110,6 +123,13 @@ let
     };
 in
 {
+  # The real `git-hooks` flake input, for every devenv shell this tree builds. The `nix` aspect
+  # registers a pre-commit hook, and devenv reads the input from `specialArgs.inputs` — see
+  # ../../../modules/den/classes/devenv.nix. A flake reaches its own inputs' inputs, so this needs no
+  # new entry in `flake.nix` and no lock file change. `devenv` renamed the input from
+  # `pre-commit-hooks` to `git-hooks`; `flake.lock` records the current name.
+  den.devenv.inputs.git-hooks = inputs.devenv.inputs.git-hooks;
+
   flake.devenvShells = lib.mapAttrs mkStandalone {
     # The adopter shape. `kdn.isSourceRepo` keeps its default `false`, so the `zellij` aspect
     # installs its skill file. `kdn.opencode.package` keeps its default, so the wrapper execs the
@@ -118,6 +138,7 @@ in
     devenv-darwin.extra = [
       opencodeData
       mcpData
+      nixData
       { kdn.opencode.defaultModel = "example-provider/example-model"; }
     ];
 
@@ -129,6 +150,7 @@ in
     devenv-linux.extra = [
       opencodeData
       mcpData
+      nixData
       { kdn.isSourceRepo = true; }
       (
         { pkgs, ... }:

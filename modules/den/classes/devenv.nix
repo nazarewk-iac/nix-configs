@@ -33,10 +33,15 @@ let
       name,
       system,
       modules,
+      extraInputs ? { },
     }:
     (lib.evalModules {
       class = "devenv";
-      specialArgs.inputs = { };
+      # devenv reads an integration input straight out of `specialArgs.inputs`. `git-hooks` is the
+      # one this tree needs, and this repository declares that input in `devenv.yaml` only — so no
+      # den evaluation reaches it. `den.devenv.inputs` lets an entity pass its own value, and the
+      # per-shell `extraInputs` argument overrides one entry of it.
+      specialArgs.inputs = cfg.inputs // extraInputs;
       modules = [
         (inputs.devenv.outPath + "/src/modules/top-level.nix")
         {
@@ -102,6 +107,26 @@ in
 
       So `"''${self}"` cannot be the value. Measured on 2026-09-10 against
       `<devenv>/src/modules/integrations/claude.nix:977`.
+    '';
+  };
+
+  options.den.devenv.inputs = lib.mkOption {
+    type = lib.types.lazyAttrsOf lib.types.raw;
+    default = { };
+    description = ''
+      Flake inputs that a devenv evaluation receives as `specialArgs.inputs`.
+
+      devenv reads an integration input from that attribute set.
+      `<devenv>/src/modules/integrations/git-hooks.nix:19` reads `inputs.git-hooks`, and it falls
+      back to a stub submodule that accepts no real hook when the input is absent. A hook then fails
+      an assertion instead of running. This repository declares `git-hooks` in `devenv.yaml` only,
+      so no den evaluation reaches it and no aspect can supply it.
+
+      An entity passes its own value, for example
+      `den.devenv.inputs.git-hooks = inputs.devenv.inputs.git-hooks;`. A flake reaches its own
+      inputs' inputs, so that line needs no new entry in `flake.nix` and no lock file change.
+
+      The per-shell `extraInputs` argument of `mkShell` overrides one entry for one shell.
     '';
   };
 
