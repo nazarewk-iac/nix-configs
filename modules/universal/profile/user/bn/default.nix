@@ -36,7 +36,11 @@ in
           {
             kdn.programs.firefox.profileNames = [ "bn" ];
             programs.firefox.profiles.bn = {
-              id = 0;
+              # No `id` here. The `kdn` user module holds the profile-id registry and gives this
+              # profile id 2. home-manager asserts that the ids of one user are unique
+              # (`<home-manager>/modules/programs/firefox/mkFirefoxModule.nix:179`), and the
+              # registry already gives id 0 to the `kdn` profile. An `id = 0` here both
+              # conflicted with the registry and broke that assertion. Measured 2026-09-10.
               settings."intl.locale.requested" = "pl";
             };
           }
