@@ -3,7 +3,8 @@
   pkgs,
   lib,
   ...
-}: let
+}:
+let
   # Machine-local slot settings. This is the ONLY extra file that reaches `mkSlots`.
   # Git does not track it (see `.gitignore`), so no commit chain can add or remove it.
   # Copy a `devenv.slots.local.*.example.nix` file, then re-enter the shell.
@@ -20,10 +21,11 @@
   # Do NOT put slot settings in devenv's own `devenv.local.nix` either. devenv loads that
   # file into the devenv module set, where the `kdn.*` slot options do not exist.
   localSlots = lib.optional (builtins.pathExists ./devenv.slots.local.nix) ./devenv.slots.local.nix;
-in {
+in
+{
   # argc drives the subcommand dispatch in the zellij-llm/kdn-slug bash packages; keep it on
   # PATH so the standalone scripts run and get tested in the shell.
-  packages = [pkgs.argc];
+  packages = [ pkgs.argc ];
 
   imports = [
     (inputs.nix-configs.mkSlots {
@@ -40,6 +42,10 @@ in {
       kdn.mcp = {
         enable = true;
         basic-memory.enable = true;
+        # Both children now default to false, so a consumer opts in. This repository wants both, and
+        # these two lines keep the behaviour that the old `default = true` gave.
+        snoop.enable = true;
+        pretty-print.enable = true;
       };
 
       # In-devenv opencode capability: generates a benign opencode.jsonc and
@@ -61,5 +67,5 @@ in {
   # only on a host whose hostname is "oams".
   profiles.hostname."oams".module = import ./hosts/oams/devenv.nix;
 
-  overlays = [inputs.nix-configs.overlays.packages];
+  overlays = [ inputs.nix-configs.overlays.packages ];
 }
