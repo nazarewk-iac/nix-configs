@@ -243,7 +243,7 @@ The user set the target: **reimplement all of `modules/slots/` as den aspects.**
 sample is not the goal. The earlier plan named one coupled pair (`jj` plus `mcp`); that pair is now
 one step in a full port.
 
-`modules/slots/` holds 18 slots plus a 22-line loader, and 4,160 lines of Nix and shell. **12 den
+`modules/slots/` holds 18 slots plus a 22-line loader, and 4,160 lines of Nix and shell. **14 den
 aspects exist now.** The order table below marks each finished slot **Done**. These three were the
 first ports, at the time of the scope decision:
 
@@ -253,9 +253,16 @@ first ports, at the time of the scope decision:
 | `devenv` | 61 | full port, plus a `devenv` target the slot has none of — `modules/den/aspects/devenv-cli.nix` |
 | `rosetta-builder` | 180 | core options only. The guest-size options stay in the slot. |
 
-**Six slot files remain, at 1,819 lines.** That count reads `default.nix` files only, and no shell
-file. The six are `jj`, `jj/fork`, `llm`, `llm/client`, `llm/proxy` and `ssh-access`. The
-order below groups them by the den mechanism each one needs, and it puts the cheap tests first:
+**Five slot files remain, at 1,558 lines** (measured 2026-09-10 with `wc -l`). That count reads
+`default.nix` files only, and no shell file. The five are `llm` (964), `llm/client` (151),
+`llm/proxy` (172), `signing` (196) and `ssh-access` (75). `modules/slots/**/default.nix` holds 19
+slot files and 3,392 lines, plus the 22-line loader.
+
+The earlier count named six files at 1,819 lines and left `signing` out. Two corrections apply: the
+`jj` pair is ported now, and `signing` belongs on the list. The `LOC` column below keeps the figures
+of the scope decision, so a row can differ from a fresh `wc -l`. The `jj` row is the exception: it
+carries the measured 457 lines of `default.nix`, where the earlier 949 counted four shell files too.
+The order groups the slots by the den mechanism each one needs, and it puts the cheap tests first:
 
 | Order | Slot or family | LOC | Slot targets | What it tests |
 |---|---|---|---|---|
@@ -265,9 +272,10 @@ order below groups them by the den mechanism each one needs, and it puts the che
 | 4 | `opencode` | 197 | `devenv` | **Done.** The first de-personalized port: `authKeys`, `settings` and `allowedPaths` replace the provider name and the checkout path that the slot hardcodes. It also fixes one slot defect — a consumer that set `settings` lost the whole permission baseline. |
 | 5 | `zellij` | 221 | `devenv` | **Done.** It ships a skill file, two Claude Code hooks and two `packages/` derivations. It needed two new mechanisms: `kdn.isSourceRepo` in `modules/den/common/source-repo.nix`, and a plain `pkgs.callPackage` route to `packages/llm/` with no overlay. |
 | 6 | `mcp` family — `mcp`, `snoop`, `pretty-print`, `basic-memory` | 476 | `devenv` | **Done.** Slot-to-slot option coupling, solved with `includes` and no shared declaration file. Two mechanisms measured — see below. |
-| 7 | `jj` family — `jj`, `jj/fork` | 949 | `devenv` | The second coupled pair, and the largest shell payload. |
+| 7 | `jj` family — `jj`, `jj/fork` | 457 | `devenv` | **Done.** The second coupled pair, and the largest shell payload. Two aspects, `jj` and `jj-fork`, where `jj-fork` names `jj` in `includes` and `jj` names `mcp`. So one shell now holds four direct includers of one parent and still gets one gateway. It needed no new mechanism. See below. |
 | 8 | `llm` family — `llm`, `llm/client`, `llm/proxy` | 1,287 | `nixos`, `devenv` | One family that spans two classes. |
 | 9 | `ssh-access` | 251 | `devenv`, `home` | **Blocked on 009.** It carries personal data. |
+| 10 | `signing` | 196 | `home` | The `home` target alone, plus a second `home` aspect beside `ssh-agent`. It carries personal data too — a signer principal and a key path. |
 
 ### den namespaces land — 2026-09-10, after order 6 and before order 3
 
@@ -331,6 +339,47 @@ The conversion touched `modules/den/namespaces.nix` (new), `modules/den/lib.nix`
 `modules/den/flake-module.nix`, `modules/den/classes/devenv.nix`, all 12 aspect files, all 5 entity
 files under `checks/den-mvp/`, and `checks/den-mvp/tests.nix`. Order 3 (`nix`) starts on the
 namespaced tree.
+
+### Order 7 — the `jj` pair lands, 2026-09-10
+
+**Done.** Two new files, `modules/den/aspects/jj.nix` and `modules/den/aspects/jj-fork.nix`.
+`kdn.jj-fork.includes = [ kdn.jj ]` and `kdn.jj.includes = [ kdn.mcp ]`, so the pair joins the `mcp`
+diamond. `checks/den-mvp/devenv/default.nix` lists the leaf `kdn.jj-fork` alone, and both shells
+still hold one gateway. The port needed **no new den mechanism**.
+
+Five options carry the data the slot hardcoded. `jj.nix` declares `kdn.jj.upstream.remote` (default
+`"origin"`, where the slot named one person's remote), `kdn.jj.upstream.url` and the freeform
+`kdn.jj.config`. `jj-fork.nix` declares `kdn.jj.alwaysBlockedMessagePatterns` (default `[ ]`, where
+the slot held one real pattern), `kdn.jj.fork.remote`, `kdn.jj.fork.url`,
+`kdn.jj.fork.deniedFilePatterns` and `kdn.jj.fork.deniedMessagePatterns`. Every option path stays
+exactly as the slot spells it. The rule that splits them: **an option belongs in the aspect that
+reads it.**
+
+The port found one real defect, in the slot. `modules/slots/jj/default.nix` sets
+`claude.code.agents.jj-expert.proactive`, and devenv removed that option on 2026-08-16
+(`<devenv>/src/modules/integrations/claude.nix:367,958`). A definition of it is a hard assertion
+failure now. The slot never trips it, because it gates the agent on `kdn.isSourceRepo` and this
+repository sets that flag true. `devenv-darwin` sets the flag false, so the den entity surfaced the
+latent failure. The aspect drops `proactive` and adds "Use proactively." to the description — the
+migration devenv prescribes. **The slot fix needs its own commit.**
+
+The failure also showed a test-tier gap: a failed devenv assertion throws only when something reads
+`config.shell` or `config.test`, so a tier-1 evaluation check passes over it. `den-eval-jj` now
+asserts an empty failed-assertion list for both shells.
+
+`modules/slots/jj/pre-push.sh:92-95` needed no port fix. The brief named the remote check inverted;
+a measurement on 2026-09-10 shows it correct, and `../definition.md` records that P0 as fixed with
+15 tests.
+
+Counts, each measured after the port: `den.ful.kdn` holds **14** aspects. A system holds **17** den
+checks — 12 evaluation, 3 artifact and 2 smoke — plus the `den-mvp` build gate, so
+`nix eval '.#checks.<system>'` lists 18 `den*` names on both `aarch64-darwin` and `x86_64-linux`.
+`nix run '.#checks.aarch64-darwin.den-mvp.smoke'` reports **18 passed, 0 failed**. `den-eval-jj`
+passes **32 of 32**, and `den-eval-guards` passes 11 of 11.
+
+The port defers every design choice to the user. The creator's instruction of 2026-09-10 says to
+mirror the slot and to record each decision instead. The nine `DECISION TO REVISE` lines sit in
+`../.worklog.md` under the 2026-09-10 entry.
 
 ### Four obstacles the inventory names
 

@@ -208,6 +208,10 @@ let
         !(ownedBy [
           "devenv"
           "gh"
+          # The `jj` aspect owns every `git ` rule too. Those five are the read-only git exceptions
+          # that its own guard script names, so they move to a `git` aspect when one exists.
+          "git"
+          "jj"
           "nix"
           "zellij"
         ] r)
@@ -586,6 +590,8 @@ let
         "ca"
         "devenv-cli"
         "gh"
+        "jj"
+        "jj-fork"
         "mcp"
         "mcp-basic-memory"
         "mcp-pretty-print"
@@ -1004,6 +1010,7 @@ let
         "devenv"
         "fetch"
         "filesystem"
+        "jj"
         "memory-archive"
         "memory-general"
         "nixos"
@@ -1043,7 +1050,8 @@ let
       actual = devenvDarwin.warnings;
     }
 
-    # ---- the diamond. Three aspects include `mcp`, and the shell must hold one gateway.
+    # ---- the diamond. Four aspects name `mcp` in their own `includes` — `mcp-snoop`,
+    # `mcp-pretty-print`, `nix` and `jj` — and the shell must hold one gateway.
     {
       name = "the diamond collapses to exactly one gateway package";
       expected = 1;
@@ -1296,6 +1304,425 @@ let
     }
   ];
 
+  # ------------------------------------------------------------------ jj and jj-fork
+
+  # The `jj` family, a coupled pair in one diamond. `jj-fork` includes `jj`, and `jj` includes `mcp`.
+  # ./devenv/default.nix lists the leaf only, so these assertions prove the parent arrives with it.
+  #
+  # The family is the first port that de-personalizes a **default**. Three values carried one
+  # person's own data: the public remote name, and the pattern list that blocks a push. Each one is
+  # now an option with a neutral default, and the entity supplies a placeholder. So an exact-equality
+  # assertion on each list also proves the aspect adds nothing of its own.
+  #
+  # `devenv-darwin` leaves `kdn.isSourceRepo` false and sets both remote URLs. `devenv-linux` sets
+  # the flag true and names no URL. So both branches of `files`, of the agent guard and of the
+  # `enterShell` block get a test.
+  jjConfig = devenvDarwin.kdn.jj.config;
+  jjRevsets = jjConfig.revset-aliases;
+  jjHook = devenvDarwin.claude.code.hooks.jj-guard;
+  jjRules = builtins.filter (lib.hasPrefix "jj ") ghAllow;
+
+  # The `fork-help` alias is `[ "util" "exec" "--" "bash" "-c" <script> ]`, so the script is the last
+  # element.
+  forkHelpScript = lib.last jjConfig.aliases.fork-help;
+
+  jjFilePaths = [
+    ".claude/rules/jujutsu-vcs.md"
+    ".claude/skills/jujutsu-vcs/SKILL.md"
+    ".claude/rules/flake-update.fork.md"
+    ".claude/skills/flake-update-fork/SKILL.md"
+  ];
+
+  jjAssertions = [
+    # ---- the shell packages. The parent adds jujutsu; the fork half adds the two commands.
+    {
+      name = "the shell holds exactly one jujutsu, one audit command and one update check";
+      expected = [
+        1
+        1
+        1
+      ];
+      actual = map (countNamed devenvDarwin) [
+        "jujutsu"
+        "jj-fork-audit"
+        "jj-flake-update-complete"
+      ];
+    }
+    {
+      name = "the linux shell holds the same three";
+      expected = [
+        1
+        1
+        1
+      ];
+      actual = map (countNamed devenvLinux) [
+        "jujutsu"
+        "jj-fork-audit"
+        "jj-flake-update-complete"
+      ];
+    }
+
+    # ---- the two MCP writes, through `includes`
+    {
+      name = "the jj backend runs the jj-mcp binary, with no overlay";
+      expected = true;
+      actual = lib.hasSuffix "/bin/jj-mcp" devenvDarwin.kdn.mcp.backends.jj.command;
+    }
+    {
+      name = "the jj backend keeps the description the slot gave it";
+      expected = "jj — Jujutsu version control tools";
+      actual = devenvDarwin.kdn.mcp.backends.jj.description;
+    }
+    # The gateway's own git backend duplicates the jj backend for a colocated repository, and it names
+    # git operations that this repository forbids. So the aspect turns it off, and no backend appears.
+    {
+      name = "the gateway git backend is off, and it reaches no backend";
+      expected = {
+        enable = false;
+        present = false;
+      };
+      actual = {
+        inherit (devenvDarwin.kdn.mcp.programs.git) enable;
+        present = devenvDarwin.kdn.mcp.backends ? git;
+      };
+    }
+
+    # ---- the raw-git guard hook. It warns and never blocks.
+    {
+      name = "the guard hook matches every Bash call before it runs";
+      expected = {
+        hookType = "PreToolUse";
+        matcher = "Bash";
+      };
+      actual = { inherit (jjHook) hookType matcher; };
+    }
+    {
+      name = "the guard hook runs a store path from the consumer's own root";
+      expected = true;
+      actual =
+        lib.hasInfix ''cd "$DEVENV_ROOT"'' jjHook.command && lib.hasInfix builtins.storeDir jjHook.command;
+    }
+
+    # ---- the Claude Code allowlist. The negative assertions are the point.
+    {
+      name = "the allowlist holds the read-only jj log rule";
+      expected = true;
+      actual = lib.elem "jj log *" ghAllow;
+    }
+    {
+      name = "the allowlist holds no bare jj wildcard";
+      expected = [ ];
+      actual = builtins.filter (r: r == "jj *" || r == "jj*") ghAllow;
+    }
+    # A narrow `jj file show *` rule must never widen to `jj file *`, because `jj file chmod`,
+    # `jj file track` and `jj file untrack` all mutate.
+    {
+      name = "the allowlist holds no wide jj file or jj config rule";
+      expected = [ ];
+      actual = builtins.filter (r: r == "jj file *" || r == "jj config *") ghAllow;
+    }
+    {
+      name = "the allowlist holds no mutating jj subcommand";
+      expected = [ ];
+      actual = builtins.filter (
+        r:
+        lib.any (sub: lib.hasPrefix "jj ${sub}" r) [
+          "abandon"
+          "bookmark delete"
+          "bookmark set"
+          "commit"
+          "describe"
+          "edit"
+          "git push"
+          "new"
+          "op restore"
+          "rebase"
+          "split"
+          "squash"
+          "undo"
+        ]
+      ) jjRules;
+    }
+
+    # ---- the fork remotes
+    {
+      name = "the fork remote takes every push, and both remotes take a fetch";
+      expected = {
+        push = "private";
+        fetch = [
+          "private"
+          "public"
+        ];
+      };
+      actual = { inherit (jjConfig.git) push fetch; };
+    }
+
+    # ---- the revset aliases. Each expected value names the entity's own placeholders only.
+    {
+      name = "trunk() names the fork remote's own main bookmark";
+      expected = "main@private";
+      actual = jjRevsets."trunk()";
+    }
+    {
+      name = "both incoming tips name the right remote";
+      expected = {
+        upstream-incoming-tip = "main@public";
+        fork-incoming-tip = "main@private";
+      };
+      actual = {
+        inherit (jjRevsets) upstream-incoming-tip fork-incoming-tip;
+      };
+    }
+    # The sensitive-content predicate. Each denied file pattern becomes a path glob and a changed-line
+    # glob; each denied message pattern becomes a description glob. So this equality proves the whole
+    # mapping, and it proves the aspect names no pattern of its own.
+    {
+      name = "fork-direct maps every entity pattern and adds none";
+      expected = lib.concatStringsSep " | " [
+        "files(prefix-glob-i:**/*den-mvp-denied-path**)"
+        "diff_lines(glob-i:*den-mvp-denied-path*)"
+        "description(glob-i:*den-mvp-denied-message*)"
+      ];
+      actual = jjRevsets.fork-direct;
+    }
+    # An ancestor-set difference, never `::(A ~ B)`. The comment in the aspect states why.
+    {
+      name = "the fork alias keeps the ancestor-set difference";
+      expected = lib.concatStringsSep " | " [
+        "fork-direct"
+        "(::remote_bookmarks(remote=\"private\")) ~ (::upstream@private)"
+        "(remote_bookmarks(remote=\"private\") ~ upstream@private)::"
+      ];
+      actual = jjRevsets.fork;
+    }
+    # `upstream-safe` must subtract `fork-direct`, the content predicate — never `fork`, which tags
+    # every descendant of the fork main and would drop a safe local change too.
+    {
+      name = "upstream-safe subtracts the content predicate, not the topology alias";
+      expected = "to-rebase & ~fork-direct";
+      actual = jjRevsets.upstream-safe;
+    }
+    {
+      name = "the revset alias set holds every name the fork workflow reads";
+      expected = [
+        "fork"
+        "fork-chain"
+        "fork-direct"
+        "fork-incoming"
+        "fork-incoming-tip"
+        "fork-leaked"
+        "fork-tip"
+        "merge-frozen"
+        "pushed"
+        "pushed-fork"
+        "pushed-upstream"
+        "to-rebase"
+        "tree-merge"
+        "trunk()"
+        "upstream-chain"
+        "upstream-incoming"
+        "upstream-incoming-tip"
+        "upstream-local"
+        "upstream-safe"
+        "upstream-tip"
+      ];
+      actual = sorted (builtins.attrNames jjRevsets);
+    }
+
+    # ---- the five jj aliases
+    {
+      name = "the config holds the five fork aliases";
+      expected = [
+        "fork-audit"
+        "fork-help"
+        "sync-remotes"
+        "sync-upstream"
+        "update-check"
+      ];
+      actual = sorted (builtins.attrNames jjConfig.aliases);
+    }
+    # The fork document is one file in the store, not a copy of the whole tree. A `/docs/` segment in
+    # the script would mean the slot's `"${inputs.nix-configs}/…"` route came across.
+    {
+      name = "fork-help reads one file, and no whole-tree copy";
+      expected = {
+        oneFile = true;
+        treeCopy = false;
+      };
+      actual = {
+        oneFile = lib.hasInfix "-jujutsu-vcs.fork.md" forkHelpScript;
+        treeCopy = lib.hasInfix "/docs/jujutsu-vcs.fork.md" forkHelpScript;
+      };
+    }
+    # `sync-upstream` is the one route that reaches the public remote with a real `git push`, so it is
+    # the one route the pre-push hook can see. `jj git push` fires no hook at all.
+    {
+      name = "sync-upstream pushes the public remote through real git";
+      expected = true;
+      actual = lib.hasInfix "git -C \"$(jj root)\" push public upstream:main" (
+        lib.last jjConfig.aliases.sync-upstream
+      );
+    }
+
+    # ---- the two git hooks
+    {
+      name = "the pre-push guard runs on every push, with no file list";
+      expected = {
+        enable = true;
+        always_run = true;
+        pass_filenames = false;
+        stages = [ "pre-push" ];
+      };
+      actual = {
+        inherit (devenvDarwin.git-hooks.hooks.jj-pre-push)
+          enable
+          always_run
+          pass_filenames
+          stages
+          ;
+      };
+    }
+    {
+      name = "the contamination check runs on every commit, with no file list";
+      expected = {
+        enable = true;
+        always_run = true;
+        pass_filenames = false;
+        stages = [ "pre-commit" ];
+      };
+      actual = {
+        inherit (devenvDarwin.git-hooks.hooks.jj-check-fork-contamination)
+          enable
+          always_run
+          pass_filenames
+          stages
+          ;
+      };
+    }
+
+    # ---- the pattern lists. Each one holds the entity's placeholder and nothing else.
+    {
+      name = "every pattern list holds the entity's own value and no default of the aspect's";
+      expected = {
+        alwaysBlocked = [ "den-mvp-blocked-message" ];
+        deniedFiles = [ "den-mvp-denied-path" ];
+        deniedMessages = [ "den-mvp-denied-message" ];
+      };
+      actual = {
+        alwaysBlocked = devenvDarwin.kdn.jj.alwaysBlockedMessagePatterns;
+        deniedFiles = devenvDarwin.kdn.jj.fork.deniedFilePatterns;
+        deniedMessages = devenvDarwin.kdn.jj.fork.deniedMessagePatterns;
+      };
+    }
+
+    # ---- the four installed files, the agent, and both branches of `kdn.isSourceRepo`
+    {
+      name = "an adopter shell installs both rules and both skills";
+      expected = [
+        true
+        true
+        true
+        true
+      ];
+      actual = map (path: devenvDarwin.files ? ${path}) jjFilePaths;
+    }
+    {
+      name = "the source repository installs none of the four, because it commits them";
+      expected = [
+        false
+        false
+        false
+        false
+      ];
+      actual = map (path: devenvLinux.files ? ${path}) jjFilePaths;
+    }
+    {
+      name = "each source names one file inside the tree the evaluation already reads";
+      expected = [
+        true
+        true
+        true
+        true
+      ];
+      actual =
+        lib.zipListsWith (path: suffix: lib.hasSuffix suffix (toString devenvDarwin.files.${path}.source))
+          jjFilePaths
+          [
+            "/.agents/rules/jujutsu-vcs.md"
+            "/.agents/skills/jujutsu-vcs/SKILL.md"
+            "/.agents/rules/flake-update.fork.md"
+            "/.agents/skills/flake-update-fork/SKILL.md"
+          ];
+    }
+    {
+      name = "the jj-expert agent installs for an adopter and stays out of the source repository";
+      expected = {
+        adopter = true;
+        sourceRepo = false;
+      };
+      actual = {
+        adopter = devenvDarwin.claude.code.agents ? jj-expert;
+        sourceRepo = devenvLinux.claude.code.agents ? jj-expert;
+      };
+    }
+    # devenv removed `claude.code.agents.<name>.proactive` on 2026-08-16, and a definition of it is
+    # now a hard assertion failure. The prescribed migration is a phrase in the description. The slot
+    # still sets the option, and it never notices, because this repository gates the agent off.
+    {
+      name = "the agent asks for automatic delegation through its description";
+      expected = true;
+      actual = lib.hasInfix "Use proactively" devenvDarwin.claude.code.agents.jj-expert.description;
+    }
+    # This is the cheap gate for the whole class. A failed devenv assertion throws only when
+    # something reads `config.shell` or `config.test`, so tier 3 catches it and tier 1 does not. This
+    # line reads the list itself, so one evaluation names every failure.
+    {
+      name = "neither shell holds a failed devenv assertion";
+      expected = {
+        devenv-darwin = [ ];
+        devenv-linux = [ ];
+      };
+      actual = {
+        devenv-darwin = map (a: a.message) (builtins.filter (a: !a.assertion) devenvDarwin.assertions);
+        devenv-linux = map (a: a.message) (builtins.filter (a: !a.assertion) devenvLinux.assertions);
+      };
+    }
+
+    # ---- the two adopter routes, once per aspect
+    {
+      name = "the library route resolves each aspect for the devenv class";
+      expected = {
+        jj = 1;
+        jj-fork = 1;
+      };
+      actual = {
+        jj = builtins.length (
+          denLib.imports {
+            class = "devenv";
+            aspects = [ "jj" ];
+          }
+        );
+        jj-fork = builtins.length (
+          denLib.imports {
+            class = "devenv";
+            aspects = [ "jj-fork" ];
+          }
+        );
+      };
+    }
+    {
+      name = "both exported modules hold a non-empty imports list";
+      expected = {
+        jj = true;
+        jj-fork = true;
+      };
+      actual = {
+        jj = (builtins.length flake.denModules.jj.imports) > 0;
+        jj-fork = (builtins.length flake.denModules.jj-fork.imports) > 0;
+      };
+    }
+  ];
+
   # ------------------------------------------------------------------ the check set
 
   # Tier 1 runs anywhere: the comparison is an evaluation and the derivation is local.
@@ -1311,6 +1738,7 @@ let
     den-eval-opencode = mkEvalCheck "opencode" opencodeAssertions;
     den-eval-mcp = mkEvalCheck "mcp" mcpAssertions;
     den-eval-nix = mkEvalCheck "nix" nixAssertions;
+    den-eval-jj = mkEvalCheck "jj" jjAssertions;
   };
 
   # Tier 2 and tier 3 build a real artifact, so each one needs a builder for its own platform. The

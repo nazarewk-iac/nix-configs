@@ -27,7 +27,7 @@ inputs, and one `imports` entry for `flake-module.nix`. A flake input cannot liv
 |---|---|
 | `flake-module.nix` | The only wiring. It evaluates den and exports the outputs. |
 | `namespaces.nix` | The two den namespaces. Every reusable aspect sits at `den.ful.kdn.<name>`. |
-| `classes/devenv.nix` | A den class for devenv. den ships none, and 13 of 18 slots target devenv. |
+| `classes/devenv.nix` | A den class for devenv. den ships none, and 14 of 19 slots target devenv. |
 | `aspects/<slot>.nix` | One aspect per reimplemented slot. |
 
 The entities live **outside** this tree, at
@@ -68,7 +68,7 @@ configuration. The `kdn.*` option prefix stays reserved for a consumer, inside a
 That trap already cost one bug. `classes/devenv.nix` declared its class options under
 `kdn.den.devenv.*`, so den read a phantom aspect named `den` into `den.ful.kdn`, and the phantom
 reached the exported output too. The prefix is `den.devenv.*` now, and `den.ful.kdn` holds exactly
-the 12 registry aspects and no phantom.
+the 14 registry aspects and no phantom.
 
 **An entity aspect stays in `den.aspects`.** den finds a host's aspect by the host name and a user's
 aspect by the user name, and it looks in `den.aspects` only. A namespaced aspect reaches an entity
@@ -258,7 +258,9 @@ it. The adopter surface is library mode, and `flake.denLib` ships it.
 | `mcp-snoop` aspect | present — a port of `modules/slots/mcp/snoop/`. It carries **no `enable`**; inclusion is the switch. It wraps the gateway command through the `kdn.mcp.commandOverlays` list. |
 | `mcp-pretty-print` aspect | present — a port of `modules/slots/mcp/pretty-print/`. It builds a Python application and a plugin package, and it registers a `PermissionRequest` hook. It carries no `enable` either. |
 | `mcp-basic-memory` aspect | present — the second **de-personalized** port. The slot names the creator's two knowledge bases, their aliases and their root path; the aspect names none and declares `kdn.mcp.basic-memory.{knowledgeRoot,bases}` instead. |
-| The `mcp` diamond | measured 2026-09-10. Three aspects include `mcp`, and den collapses the diamond: one shell holds one gateway package. It dedupes a nested diamond and separately resolved siblings alike, because it keys each target module per aspect. So an option belongs in the aspect that reads it, and no shared declaration file is needed. |
+| `jj` aspect | present — a port of `modules/slots/jj/`. It includes `mcp`, because it writes that aspect's `extraBackends.jj` and turns the gateway's own `git` backend off. It is the third **de-personalized** port: the slot defaults the public remote to one person's own remote name, and the aspect defaults it to `origin`. |
+| `jj-fork` aspect | present — a port of `modules/slots/jj/fork/`. It includes `jj`, so the pair is the second parent-child couple after `mcp-snoop`. It holds 20 revset aliases, 5 jj aliases, 2 git hooks and 2 commands. Its own `alwaysBlockedMessagePatterns` default is empty; the slot defaults it to one real pattern. |
+| The `mcp` diamond | measured 2026-09-10. Four aspects include `mcp` — `mcp-snoop`, `mcp-pretty-print`, `nix` and `jj` — and den collapses the diamond: one shell holds one gateway package. It dedupes a nested diamond and separately resolved siblings alike, because it keys each target module per aspect. So an option belongs in the aspect that reads it, and no shared declaration file is needed. |
 | `kdn.isSourceRepo` | present — [common/source-repo.nix](common/source-repo.nix) declares it once. An aspect imports that file **by path**, because the module system dedupes an import by path and rejects two inline declarations of one option. |
 | `host-darwin` host | evaluates and builds a nix-darwin system, a devenv shell and one home-manager generation |
 | `host-nixos` host | evaluates a NixOS system, a devenv shell and one home-manager generation. It carries a real `nixos`-class aspect. |
@@ -266,15 +268,15 @@ it. The adopter surface is library mode, and `flake.denLib` ships it.
 | Standalone home-manager | present — `home-darwin` and `home-linux`, with no den entity. This is the adopter shape. |
 | The `dev` den user | present — one shared user at `checks/den-mvp/users/`. It makes the `homeManager` class reachable. |
 | `checks.<system>.den-mvp` | present — the current architecture, with `.all` for every system |
-| Test harness | present — 3 tiers. **Per system** it holds 16 den checks: 11 evaluation, 3 artifact and 2 smoke, plus the `den-mvp` build gate. `aarch64-darwin` holds 16, and `x86_64-linux` holds 16. **Across all systems** the totals are 7 artifact checks and 4 smoke runs, because each class has its own artifact. See [checks/den-mvp/README.md](../../checks/den-mvp/README.md#tests). `den-eval-guards` passes 11 of 11, and 6 of those assertions cover the namespaces. |
-| Smoke-test runner | present — `nix run '.#checks.aarch64-darwin.den-mvp.smoke'`. It builds the 16 `aarch64-darwin` den checks and prints one summary. It reports 17 passed and 0 failed on this machine, because the count holds the build gate too. |
+| Test harness | present — 3 tiers. **Per system** it holds 17 den checks: 12 evaluation, 3 artifact and 2 smoke, plus the `den-mvp` build gate. `aarch64-darwin` holds 17, and `x86_64-linux` holds 17. **Across all systems** the totals are 6 artifact checks and 4 smoke runs, because each class has its own artifact. See [checks/den-mvp/README.md](../../checks/den-mvp/README.md#tests). `den-eval-guards` passes 11 of 11, and 6 of those assertions cover the namespaces. `den-eval-jj` passes 32 of 32. |
+| Smoke-test runner | present — `nix run '.#checks.aarch64-darwin.den-mvp.smoke'`. It builds the 17 `aarch64-darwin` den checks and prints one summary. It reports 18 passed and 0 failed on this machine, because the count holds the build gate too. |
 | A VM test for `host-nixos` | deferred — tier 1 and tier 2 read every value a guest would, and no darwin VM framework exists |
 | An automated `hosts/anji` parity check | deferred — it evaluates a whole personal host (~93 s) and it reads sops metadata |
 | Library mode (`den.nixModule`) | shipped as `denLib` — a thin `imports` wrapper plus the raw machinery |
 | A `nixos`-class aspect | present — `devenv-cli` reaches `host-nixos` |
 | `home` target | present — through `devenv-cli`, on both routes |
-| A coupled pair of slots (`jj` plus `mcp`) | not started — order 7 of the milestone 2 plan |
-| Parity with all 18 slots | **the milestone 2 goal**, set 2026-09-10. 12 of 18 done, 6 left (1,819 LOC of `default.nix`). See [004-den-spike](../../docs/tasks/2026-09/generalization/004-den-spike/definition.md#milestone-2-covers-every-slot--scope-decision-2026-09-10). |
+| A coupled pair of slots (`jj` plus `mcp`) | present — order 7 of the milestone 2 plan. `jj-fork` includes `jj`, and `jj` includes `mcp`, so the pair sits in the same diamond as the `mcp` family. |
+| Parity with all 19 slots | **the milestone 2 goal**, set 2026-09-10. 14 of 19 done, 5 left (1,558 LOC of `default.nix`, measured 2026-09-10). The remainder is `llm`, `llm/client`, `llm/proxy`, `signing` and `ssh-access`. See [004-den-spike](../../docs/tasks/2026-09/generalization/004-den-spike/definition.md#milestone-2-covers-every-slot--scope-decision-2026-09-10). |
 
 The slot tree remains the supported route. See
 [docs/slots-for-adopters.md](../../docs/slots-for-adopters.md).
@@ -282,7 +284,7 @@ The slot tree remains the supported route. See
 ## Verify
 
 ```bash
-# the exported namespace — the 12 reusable aspects, and no phantom
+# the exported namespace — the 14 reusable aspects, and no phantom
 nix eval --json '.#denful.kdn' --apply 'builtins.attrNames'
 
 # the entity aspect and host names den knows about

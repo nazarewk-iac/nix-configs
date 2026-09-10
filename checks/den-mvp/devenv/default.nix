@@ -54,6 +54,14 @@ let
     # first aspect that registers a git-hooks pre-commit hook, so it is the reason
     # `den.devenv.inputs.git-hooks` below exists.
     kdn.nix
+
+    # The `jj` family, a coupled pair. Only the leaf appears here: `jj-fork` includes `jj`, and `jj`
+    # includes `mcp`. So this list now reaches four direct includers of one parent and still must
+    # give one gateway. `jjData` below supplies every value, because neither aspect names a remote.
+    #
+    # The family stays out of both host aspect lists. `gh` and `zellij` already prove the
+    # host-to-devenv route, and this family builds an npm package, so one build per shell is enough.
+    kdn.jj-fork
   ];
 
   # The data for the `nix` aspect. The aspect allow-lists no flake app of its own, because an app
@@ -82,6 +90,28 @@ let
       aliases = [ "bma" ];
       description = "den MVP archive knowledge base";
     };
+  };
+
+  # The data for the `jj` family. Every value here is a neutral placeholder. Both aspects name no
+  # remote and no denied pattern: a remote name and a denied pattern are the consumer's own private
+  # configuration, and a denied pattern reaches a world-readable store path through `runtimeEnv`.
+  jjData = {
+    kdn.jj.upstream.remote = "public";
+    kdn.jj.fork.remote = "private";
+
+    # Three pattern lists, each one a neutral term that names nothing real. The real lists live in
+    # this repository's own git-ignored `devenv.slots.local.nix`, never in a test and never in a
+    # default.
+    kdn.jj.alwaysBlockedMessagePatterns = [ "den-mvp-blocked-message" ];
+    kdn.jj.fork.deniedFilePatterns = [ "den-mvp-denied-path" ];
+    kdn.jj.fork.deniedMessagePatterns = [ "den-mvp-denied-message" ];
+  };
+
+  # The two remote URLs reach `enterShell` only. `devenv-darwin` sets both and `devenv-linux` sets
+  # neither, so both branches of the `optionalString` get a test.
+  jjUrlData = {
+    kdn.jj.upstream.url = "https://example.invalid/den-mvp/public.git";
+    kdn.jj.fork.url = "https://example.invalid/den-mvp/private.git";
   };
 
   # The data for the `opencode` aspect. Every value here is a neutral placeholder — the aspect
@@ -139,6 +169,8 @@ in
       opencodeData
       mcpData
       nixData
+      jjData
+      jjUrlData
       { kdn.opencode.defaultModel = "example-provider/example-model"; }
     ];
 
@@ -151,6 +183,7 @@ in
       opencodeData
       mcpData
       nixData
+      jjData
       { kdn.isSourceRepo = true; }
       (
         { pkgs, ... }:
