@@ -500,58 +500,67 @@
             {
               sources =
                 let
+                  # A flake input graph holds cycles, because a `follows` can point back up the
+                  # tree. So a walk of `input.inputs` must record every path it already took.
+                  #
+                  # The earlier walk did not. It recursed on `input.inputs` with no record, and it
+                  # deduplicated only after the walk finished — too late to end one. Both
+                  # `nix flake check` and `nix build .#sources` then failed with
+                  # `stack overflow; max-call-depth exceeded`, on Darwin and on Linux.
+                  #
+                  # This walk goes one level at a time, and it drops a path it already holds. So it
+                  # ends on any graph. It also keeps the **shallowest** name for each path, which is
+                  # the choice the earlier `sort` by depth plus the dedupe made.
+                  #
+                  # `level` is a list of `{ name, input }`.
                   flattenInputs =
-                    depth: prefix:
-                    lib.flip lib.pipe [
-                      (lib.mapAttrsToList (
-                        name: input:
-                        let
-                          fullName = if prefix == "" then name else "${prefix}__${name}";
-                          children = input.inputs or { };
-                        in
-                        [
-                          {
-                            name = fullName;
-                            path = input.outPath;
-                            inherit depth;
-                          }
-                        ]
-                        ++ flattenInputs (depth + 1) fullName children
-                      ))
-                      lib.concatLists
-                    ];
+                    seen: level:
+                    if level == [ ] then
+                      [ ]
+                    else
+                      let
+                        step =
+                          lib.foldl'
+                            (
+                              acc: entry:
+                              let
+                                key = builtins.unsafeDiscardStringContext entry.input.outPath;
+                              in
+                              if acc.seen ? ${key} then
+                                acc
+                              else
+                                {
+                                  seen = acc.seen // {
+                                    ${key} = true;
+                                  };
+                                  kept = acc.kept ++ [ entry ];
+                                }
+                            )
+                            {
+                              inherit seen;
+                              kept = [ ];
+                            }
+                            level;
 
-                  deduplicateByPath =
-                    lib.foldl'
-                      (
-                        acc: entry:
-                        let
-                          key = builtins.unsafeDiscardStringContext entry.path;
-                        in
-                        if acc.seen ? ${key} then
-                          acc
-                        else
-                          {
-                            seen = acc.seen // {
-                              ${key} = true;
-                            };
-                            result = acc.result ++ [ entry ];
-                          }
-                      )
-                      {
-                        seen = { };
-                        result = [ ];
-                      };
+                        next = lib.concatMap (
+                          entry:
+                          lib.mapAttrsToList (name: input: {
+                            name = "${entry.name}__${name}";
+                            inherit input;
+                          }) (entry.input.inputs or { })
+                        ) step.kept;
+                      in
+                      map (entry: {
+                        inherit (entry) name;
+                        path = entry.input.outPath;
+                      }) step.kept
+                      ++ flattenInputs step.seen next;
                 in
                 lib.pipe inputs [
                   (lib.flip removeAttrs [ "self" ])
                   (lib.attrsets.filterAttrs (key: _: !(lib.strings.hasSuffix "-upstream" key)))
-                  (flattenInputs 0 "")
-                  (builtins.sort (a: b: a.depth < b.depth)) # shallowest first
-                  (e: (deduplicateByPath e).result)
-                  (map (e: {
-                    inherit (e) name path;
-                  })) # strip depth before linkFarm
+                  (lib.mapAttrsToList (name: input: { inherit name input; }))
+                  (flattenInputs { })
                   (
                     l:
                     l
