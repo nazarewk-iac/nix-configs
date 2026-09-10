@@ -36,19 +36,45 @@ in
       {
         claude.code.enable = true;
 
-        # The default hook uses just `prek` by name, which fails outside devenv shell.
-        # Use the absolute store path so Claude Code can find it regardless of PATH.
+        # Two deviations from devenv's default, and each one prevents a measured data loss.
+        #
+        # 1. The absolute store path. The default names `prek` alone, which fails outside a devenv
+        #    shell, so Claude Code finds it whatever the PATH holds.
+        #
+        # 2. `--all-files`. Without it, prek stashes the unstaged changes around the run:
+        #    `git rm --cached`, `git write-tree`, then **`git checkout -- <repo-root>`** over the
+        #    whole working copy, then `git apply <patch>` to put the changes back
+        #    (`prek/src/store/keeper.rs:45-54,90,145,157-189`).
+        #
+        #    In a colocated jj repository the git index holds the `@-` tree, plus an intent-to-add
+        #    stub for each new file. So `write-tree` records the **parent** commit, `diff-index`
+        #    reports the whole of `@` as unstaged, and the `checkout` discards the current jj
+        #    change on every single edit. The restore is not reliable. It lives in `Drop`
+        #    (`keeper.rs:220-228`) and `main.rs:462-472` installs a SIGINT handler only, so a
+        #    SIGTERM leaves the tree reverted with no message. And a jj snapshot inside the ~10 ms
+        #    window between `write-tree` and `diff-index` re-adds a new file as the empty blob, so
+        #    the patch says `--- /dev/null`, the checkout writes 0 bytes, and the restoring
+        #    `git apply` then fails with "already exists in working directory".
+        #
+        #    That checkout also rewrites `devenv.lock`, which is a watched path, so it wakes the
+        #    devenv file watcher twice per edit. The rebuild then re-fetches `git+file:.` while
+        #    prek's non-atomic writes are still in flight — that is the "unexpected end-of-file"
+        #    symptom.
+        #
+        #    `--all-files` removes the writer instead of narrowing it.
+        #    `requires_clean_worktree()` is false for `FileSelection::All`
+        #    (`prek/src/cli/run/filter.rs:435-437`), so no `write-tree`, no `diff-index`, no
+        #    `checkout` and no patch file run at all. No feedback is lost: both hooks this repo
+        #    configures are `always_run` with `pass_filenames = false`, so a file list never
+        #    reached them. Whole-suite runtime is 168 ms. Measured on 2026-09-10.
         claude.code.hooks.git-hooks-run.command =
-          ''cd "$DEVENV_ROOT" && ${lib.getExe config.git-hooks.package} run'';
+          ''cd "$DEVENV_ROOT" && ${lib.getExe config.git-hooks.package} run --all-files'';
 
         # Restore the upstream matcher. devenv scopes git-hooks-run to file edits by default
         # (^(Edit|MultiEdit|Write)$). But the command override above defines the submodule, so
         # each unset field falls back to its per-field default, and `matcher` resets to "" (every
-        # tool). An empty matcher runs `prek run` after EVERY tool call, and `prek run` does
-        # `git write-tree`, which writes `.git`. A nix `git+file:` fetch archives the dirty tree
-        # at the same time. The two race, the store snapshot truncates, and the build fails with
-        # "unexpected end-of-file". Scope the hook back to file edits so read-only calls (a build
-        # peek, a status check) during a long build do not fire `prek`.
+        # tool). An empty matcher then runs the hook after EVERY tool call, including a read-only
+        # one during a long build. Scope it back to the file edits.
         claude.code.hooks.git-hooks-run.matcher = "^(Edit|MultiEdit|Write)$";
 
         # Read-only/evaluation-only commands — safe to always allow, no side effects. `nix run`
