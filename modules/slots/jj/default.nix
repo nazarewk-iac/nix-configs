@@ -62,7 +62,13 @@ in
     fork.deniedMessagePatterns = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
-      description = "Commit message patterns (case-insensitive) blocked from pushing to non-fork remotes.";
+      description = ''
+        Commit message patterns (case-insensitive) blocked from pushing to non-fork remotes.
+
+        The same limit as `deniedFilePatterns` applies: a bare `jj git push` fires no git hook, so
+        it runs no check at all. Only a real `git push` fires the hook, and `jj sync-upstream` is
+        the one alias that uses `git push` for the public remote.
+      '';
     };
 
     config = lib.mkOption {
