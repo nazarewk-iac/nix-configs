@@ -15,6 +15,26 @@ Hub: [../generalization-plan.md](../definition.md). Gated on
 Goal: pick **one** target for the reimplementation of the relevant pieces of `modules/universal`.
 Build the winner. Do not build the loser.
 
+## The creator's stated preference — 2026-09-10
+
+> "I would prefer the adopter to use the den config if the spike works out."
+
+The spike worked out. 004 phase 1 answered criterion 2 **PASS**, criterion 1 **PASS**, and
+criterion 4 **REFUTED**. So **den is the default choice for the adopter-facing configuration**, and
+this task now carries the burden of proof against den, not for it.
+
+Two things this preference does **not** settle:
+
+1. **Criterion 3 stays open** until 005 states the conditional-imports requirement. A failure there
+   is still a reason to pick slots.
+2. **The adopter never adopts den.** The preference is that an adopter consumes a **den-resolved
+   plain module**, which is exactly what criterion 2 measured. It is not that an adopter writes den
+   aspects. See the constraint at the end of this file.
+
+Record the risk plainly in the outcome: den's `den.lib.aspects.resolve` is labelled `Internal`, den
+publishes no CHANGELOG, and discussion #569 is unanswered. `mkSlots` carries none of that risk. The
+preference accepts it; it does not remove it.
+
 ## The two options
 
 1. **Reimplement the relevant pieces onto slots.** Extend `lib/slots/schema.nix` with whatever the

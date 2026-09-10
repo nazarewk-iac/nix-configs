@@ -8,7 +8,7 @@ timestamp: 2026-09-08T17:30:00+02:00
 
 # 002 — `rosetta-builder` for an external adopter
 
-Hub: [../generalization-plan.md](../definition.md). Depends on 001. Part of the first
+Hub: [the generalization umbrella task](../definition.md). Depends on 001. Part of the first
 commit chain. Do not push.
 
 Goal: an external adopter enables the dual-arch Rosetta builder in their own nix-darwin
@@ -25,7 +25,7 @@ Verify the independence instead. Document the call.
 
 ## What the slot is today
 
-`modules/slots/rosetta-builder/default.nix`, 41 LOC. It imports
+`modules/slots/rosetta-builder/default.nix`. It imports
 `inputs.nix-rosetta-builder.darwinModules.default` and adds three opinions:
 
 ```nix
@@ -33,6 +33,13 @@ nix-rosetta-builder.enable = true;
 nix-rosetta-builder.onDemand = lib.mkDefault true;
 nix.settings.builders-use-substitutes = lib.mkDefault true;
 ```
+
+It also declares three guest options of its own — `guest.diskSizeMax`, `guest.minFree` and
+`guest.maxFree` — and one assertion that holds the effective `diskSize` at or under the ceiling
+`guest.diskSizeMax` (`"150GiB"`). The slot deliberately does **not** set `diskSize`: upstream's
+`100GiB` default stands, because any change to `diskSize` destroys and recreates the guest. The
+`darwin` target is a module function, not a plain attribute set, because the assertion must read
+the consumer's own effective `diskSize`.
 
 Favourable facts, already verified:
 
@@ -108,6 +115,25 @@ target.
 - The evaluation pulls in no `modules/universal` or `modules/meta` option.
 - The bootstrap phase and the steady phase both evaluate.
 - A real `x86_64-linux` derivation builds on the Darwin host through the Rosetta builder.
+  **This one criterion runs on bare metal only.** It is unreachable in a macOS guest, and that is
+  permanent — see the boundary below.
+
+## The nested-virtualization boundary
+
+Every other criterion above runs in a macOS guest. This last one never can.
+
+`nix-rosetta-builder` drives `limactl`, which starts a **Linux** virtual machine. A Linux guest
+inside a macOS guest needs nested virtualization. Apple exposes
+`isNestedVirtualizationEnabled` on `VZGenericPlatformConfiguration` only, which is the Linux-guest
+platform class. The property does not exist on `VZMacPlatformConfiguration`. So a macOS guest
+cannot start any virtual machine of its own, whatever the host chip is.
+
+Tart states the same limit from the other side: its `--nested` flag reads "Enable nested
+virtualization if possible" and it rejects a macOS guest.
+
+Consequence for the test plan: the Linux builder sits **beside** the macOS guest on the bare-metal
+host, never inside it. A macOS guest verifies the adopter's evaluation, the option surface and the
+runbook prose. Bare metal verifies the build itself. Record which side proved which claim.
 
 ## Out of scope
 

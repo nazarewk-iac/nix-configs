@@ -1,17 +1,67 @@
 ---
 type: Task
 description: Evaluate the denful/den framework as the reimplementation target before any module rewrite starts, with a drop-in import test as the decisive criterion.
-status: open
+status: in-progress
 authored_by: agent
 timestamp: 2026-09-08T17:30:00+02:00
 ---
 
 # 004 — den spike
 
-Hub: [../generalization-plan.md](../definition.md). **Run this as early as possible.**
+Hub: [the generalization umbrella task](../definition.md). **Run this as early as possible.**
 Together with 005 it gates 006.
 
 Goal: decide whether `denful/den` can be the target framework, before anybody rewrites a module.
+
+## Phase 1 verdict — 2026-09-10
+
+Measured in scratch flakes under `/tmp/den-spike/`, on den `main` and on v0.18.0. Every command
+and output is in [research.md](research.md). No file in this repository changed.
+
+| Criterion | Verdict |
+|---|---|
+| 2 — an adopter imports a resolved aspect, with no den in their own code | **PASS**, with two limits |
+| 1 — a `devenv` class can exist | **PASS** |
+| 3 — the conditional-imports requirement | **BLOCKED** on 005, not tested |
+| 4 — the 1→N mixed-aspect collision | **REFUTED** — it does not reproduce |
+
+The kill criterion does not fire. So phase 2 starts: build `modules/den/` additively.
+
+**The two limits on criterion 2.** An entity-parametric aspect (`{ host, ... }`) and a den battery
+both drop to `{ imports = [ ]; }` across the boundary, with no warning and no error. The same
+aspects work inside den. Two workarounds are verified: the producer pre-binds a host with
+`den.lib.resolveEntity`, or the producer exports `<host>.mainModule` (whole-host granularity).
+Second, den stays a transitive lock node in the adopter's own lock — a module is a closure, so no
+serialization removes it. The claim holds for the adopter's code and concepts, not for their lock.
+
+**The "Internal" label is a stability warning, not a correctness warning.** den's own
+`modules/outputs.nix` calls `resolve`; the documented alternative `mainModule` is a one-line
+projection of the same code and is also `internal = true`;
+`explanation/library-vs-framework.mdx` recommends it with no caveat. But there is no CHANGELOG,
+and commit `6254414` silently changed the arity from 3 to 2. Discussion #569 is still unanswered
+after 3.5 months, and the author's only reply links the page that warns against production use.
+So the technical risk is low and the social risk is high.
+
+**A new risk this spike found.** `nix/lib/fx.nix` fetches `denful/nix-effects` with
+`builtins.fetchTarball` at evaluation time, keyed off den's own vendored
+`templates/ci/flake.lock`. No consumer lock records it. Reproduced with a `nix-effects`-free
+flake that still evaluates. So phase 2 must declare `nix-effects` explicitly.
+
+**Five conditions on phase 2**, from the spike and from the creator's preference:
+
+1. Assert every exported module has a non-empty `imports` list. The silent-empty failure above is
+   otherwise invisible.
+2. Keep an adopter-facing aspect free of entity data. Use a plain option instead.
+3. Declare `nix-effects` as an explicit input.
+4. Leave criterion 3 open until 005 states the conditional-imports requirement.
+5. **Ship the adopter path as a den-resolved plain module.** The creator stated the preference on
+   2026-09-10: an adopter should use the den config once the spike works out. So phase 2 owns an
+   adopter-facing flake output that runs `den.lib.aspects.resolve` on this side of the boundary. The
+   adopter imports a plain module, and the adopter never adopts den. That is criterion 2's measured
+   shape, so treat this as a deliverable, not an experiment. Condition 1 is the guard that stops the
+   silent-empty failure from reaching an adopter.
+   [../../../slots-for-adopters.md](../../../slots-for-adopters.md) documents the interim `mkSlots`
+   route, and it must gain the den route when phase 2 lands it.
 
 ## Why this comes first
 
@@ -56,6 +106,9 @@ unanswered since 2026-05-24. Ask there, or open a new question.
 
 **If criterion 2 fails, den does not deliver the goal.** Say so plainly and stop.
 
+**Answered — PASS, with two limits.** See the phase 1 verdict above, and
+[research.md](research.md) for the seven cases and the two verified workarounds.
+
 ### Criterion 1 — can a `devenv` class exist at all
 
 den has **no** devenv class. Zero mentions in its docs, code, issues, or discussions.
@@ -68,6 +121,17 @@ rests on one **unverified** point: devenv must be reachable as a flake-parts mod
 `evalModules` target.
 
 13 of 20 slots target devenv. So a failure here is close to fatal.
+
+**Answered — PASS.** devenv is a plain `lib.evalModules` target: `<src>/src/modules/top-level.nix`,
+with mandatory `specialArgs.inputs` (it may be `{ }`), `_module.args.pkgs`, `devenv.root`,
+`devenv.tmpdir`, and the shell at `config.shell`. It needs no `--impure`, no CLI, and no
+CppNix-only builtin. A ~30-line `den.classes.devenv` produced real derivation paths on three
+routes, and den's own `policy.instantiate` route gives a bit-identical `drvPath` on `main` and on
+v0.18.0. `SPIKE_HOST=igloo` proved entity data reaches a devenv aspect.
+
+**Correction to the sketch above:** copy `templates/terranix-demo/modules/terranix.nix`, which uses
+`policy.instantiate`. Do not copy `devshell.nix` — devenv is a separate `evalModules` universe, not
+a flake-parts module.
 
 ### Criterion 3 — does den satisfy the conditional-imports requirement
 
@@ -90,6 +154,13 @@ The option 'boot.kernelPackages' is defined multiple times
 The documented workaround splits every mixed aspect into host and user halves. The author says that
 defeats the point of aspect-oriented configuration. den's PR #609 fixed a related leak. v0.16
 through v0.18 changed `entity.aspect` semantics, so this may be stale. **Re-test on current den.**
+
+**Answered — REFUTED.** `boot.kernelPackages` resolves to one value on both revisions, with one
+mixed aspect included by two `homeManager` users. The collision message stays reachable for a
+genuine two-aspect conflict, and it now carries useful `nixos@<aspect>` labels. One side finding to
+keep: a **host**-scope mixed aspect's `homeManager` half never reaches
+`home-manager.users.<user>`. That is den's scope partitioning, and `den.batteries.forward` is the
+bridge.
 
 ## Risks to record in the outcome
 
