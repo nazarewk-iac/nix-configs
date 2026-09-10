@@ -34,20 +34,20 @@ in
     (lib.mkIf cfg.enable (
       lib.mkMerge [
         {
-          kdn.desktop.base.enable = true;
-          kdn.desktop.enable = true;
-          kdn.hw.audio.enable = true;
-          kdn.hw.gpu.enable = true;
-          kdn.hw.qmk.enable = true;
-          kdn.profile.machine.basic.enable = true;
-          kdn.programs.browsers-launcher.enable = true;
-          kdn.programs.chrome.enable = true;
-          kdn.programs.chromium.enable = true;
-          kdn.programs.firefox.enable = true;
-          kdn.programs.kdeconnect.enable = true;
-          kdn.programs.office.enable = true;
-          kdn.programs.thunderbird.enable = true;
-          kdn.services.printing.enable = true;
+          kdn.desktop.base.enable = lib.mkDefault true;
+          kdn.desktop.enable = lib.mkDefault true;
+          kdn.hw.audio.enable = lib.mkDefault true;
+          kdn.hw.gpu.enable = lib.mkDefault true;
+          kdn.hw.qmk.enable = lib.mkDefault true;
+          kdn.profile.machine.basic.enable = lib.mkDefault true;
+          kdn.programs.browsers-launcher.enable = lib.mkDefault true;
+          kdn.programs.chrome.enable = lib.mkDefault true;
+          kdn.programs.chromium.enable = lib.mkDefault true;
+          kdn.programs.firefox.enable = lib.mkDefault true;
+          kdn.programs.kdeconnect.enable = lib.mkDefault true;
+          kdn.programs.office.enable = lib.mkDefault true;
+          kdn.programs.thunderbird.enable = lib.mkDefault true;
+          kdn.services.printing.enable = lib.mkDefault true;
 
           kdn.env.packages = with pkgs; [
             imagemagick
@@ -123,12 +123,12 @@ in
         }
         (kdnConfig.util.ifTypes [ "nixos" ] {
           services.xserver.xkb.layout = "pl";
-          console.useXkbConfig = true;
-          services.libinput.enable = true;
-          services.libinput.touchpad.disableWhileTyping = true;
-          services.libinput.touchpad.naturalScrolling = true;
-          services.libinput.touchpad.tapping = true;
-          services.xserver.synaptics.twoFingerScroll = true;
+          console.useXkbConfig = lib.mkDefault true;
+          services.libinput.enable = lib.mkDefault true;
+          services.libinput.touchpad.disableWhileTyping = lib.mkDefault true;
+          services.libinput.touchpad.naturalScrolling = lib.mkDefault true;
+          services.libinput.touchpad.tapping = lib.mkDefault true;
+          services.xserver.synaptics.twoFingerScroll = lib.mkDefault true;
 
           boot.extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
           kdn.env.packages = with pkgs; [

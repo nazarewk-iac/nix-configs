@@ -23,7 +23,7 @@ in
     lib.mkIf cfg.enable (
       lib.mkMerge [
         {
-          kdn.profile.machine.baseline.enable = true;
+          kdn.profile.machine.baseline.enable = lib.mkDefault true;
 
           # BOOT
           boot.initrd.availableKernelModules = [
@@ -39,7 +39,7 @@ in
           # TODO: not sure whether it's mandatory to use grub on Hetzner?
           boot.loader.systemd-boot.enable = lib.mkForce false;
 
-          boot.loader.grub.enable = true;
+          boot.loader.grub.enable = lib.mkDefault true;
           # conflict in specialisation.boot-debug
           boot.loader.grub.splashImage = lib.mkForce null;
           boot.loader.grub.device = "/dev/sda";

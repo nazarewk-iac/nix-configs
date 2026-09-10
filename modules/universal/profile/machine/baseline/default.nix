@@ -55,16 +55,16 @@ in
       ))
       # universal
       {
-        kdn.enable = true;
-        kdn.locale.enable = true;
-        kdn.profile.user.kdn.enable = true;
-        kdn.headless.base.enable = true;
+        kdn.enable = lib.mkDefault true;
+        kdn.locale.enable = lib.mkDefault true;
+        kdn.profile.user.kdn.enable = lib.mkDefault true;
+        kdn.headless.base.enable = lib.mkDefault true;
 
         kdn.profile.remote-builders.enable = lib.mkDefault true;
         kdn.profile.default-secrets.enable = lib.mkDefault true;
         kdn.hw.usbip.enable = lib.mkDefault true;
         kdn.development.git.enable = lib.mkDefault true;
-        kdn.networking.dynamic-hosts.enable = true;
+        kdn.networking.dynamic-hosts.enable = lib.mkDefault true;
         kdn.programs.direnv.enable = lib.mkDefault true;
         kdn.development.shell.enable = lib.mkDefault true;
         kdn.hw.yubikey.enable = lib.mkDefault true;
@@ -92,9 +92,9 @@ in
       }
       # shared/darwin-nixos
       (kdnConfig.util.ifTypes [ "nixos" "darwin" ] {
-        services.openssh.enable = true;
+        services.openssh.enable = lib.mkDefault true;
         environment.etc."kdn/source-flake".source = kdnConfig.self;
-        nix.gc.automatic = true;
+        nix.gc.automatic = lib.mkDefault true;
         # `nix-collect-garbage` with no options deletes only an unreachable store
         # path. It never deletes an old profile generation, and every generation is
         # a garbage-collector root. So a stale generation holds its whole closure
@@ -144,12 +144,12 @@ in
         };
       })
       (kdnConfig.util.ifTypes [ "nixos" ] {
-        services.angrr.enableNixGcIntegration = true;
+        services.angrr.enableNixGcIntegration = lib.mkDefault true;
       })
       # darwin
       (kdnConfig.util.ifTypes [ "darwin" ] (
         lib.mkMerge [
-          { home-manager.sharedModules = [ { kdn.profile.machine.baseline.enable = true; } ]; }
+          { home-manager.sharedModules = [ { kdn.profile.machine.baseline.enable = lib.mkDefault true; } ]; }
           {
             # nix-darwin runs the collector weekly, on Sunday at 03:15
             # (`<nix-darwin>/modules/services/nix-gc/default.nix:34`). A 7-day
@@ -172,7 +172,7 @@ in
       # nixos
       (kdnConfig.util.ifTypes [ "nixos" ] (
         lib.mkMerge [
-          { home-manager.sharedModules = [ { kdn.profile.machine.baseline.enable = true; } ]; }
+          { home-manager.sharedModules = [ { kdn.profile.machine.baseline.enable = lib.mkDefault true; } ]; }
           (lib.mkIf (config.disko.enableConfig or false) {
             fileSystems."/boot".options = [
               "fmask=0077"
@@ -190,11 +190,11 @@ in
             # environment.etc."subuid"/"subgid" force which the read-only mount
             # could never overwrite. Rootless podman only needs the per-user range
             # userborn allocates, so no manual ranges are required.
-            services.userborn.enable = true;
+            services.userborn.enable = lib.mkDefault true;
             services.userborn.passwordFilesLocation = "/var/lib/nixos/userborn/etc";
           }
           {
-            hardware.enableRedistributableFirmware = true;
+            hardware.enableRedistributableFirmware = lib.mkDefault true;
             boot.initrd.systemd.emergencyAccess = "$y$j9T$fioAEKxXi2LmH.9HyzVJ4/$Ot4PUjYdz7ELvJBOnS1YgQFNW89SCxB/yyGVaq4Aux0";
             boot.initrd.systemd.enable = lib.mkDefault true;
             boot.loader.efi.canTouchEfiVariables = lib.mkDefault true;
@@ -215,7 +215,7 @@ in
             ];
           }
           {
-            networking.nftables.enable = true;
+            networking.nftables.enable = lib.mkDefault true;
             networking.networkmanager.appendNameservers = [ ];
             networking.nameservers = lib.mkIf (!config.networking.networkmanager.enable) (
               with config.networking.networkmanager; insertNameservers ++ appendNameservers
@@ -233,8 +233,8 @@ in
             systemd.network.config.networkConfig.UseDomains = lib.mkDefault true;
           }
           {
-            services.openssh.enable = true;
-            services.openssh.openFirewall = true;
+            services.openssh.enable = lib.mkDefault true;
+            services.openssh.openFirewall = lib.mkDefault true;
             services.openssh.settings.PasswordAuthentication = lib.mkDefault false;
             services.openssh.settings.GatewayPorts = "clientspecified";
             programs.ssh.extraConfig = lib.mkBefore ''
@@ -287,9 +287,9 @@ in
               }
               // (commands "sc" "systemctl")
               // (commands "uc" "systemctl --user");
-            services.locate.enable = true;
+            services.locate.enable = lib.mkDefault true;
             services.locate.package = pkgs.mlocate;
-            services.locate.pruneBindMounts = true;
+            services.locate.pruneBindMounts = lib.mkDefault true;
             kdn.networking.resolved.enable = lib.mkDefault true;
             services.avahi.enable = lib.mkDefault false;
             kdn.fs.zfs.enable = lib.mkDefault true;
@@ -353,7 +353,7 @@ in
               };
             }
           )
-          { home-manager.sharedModules = [ { kdn.development.git.enable = true; } ]; }
+          { home-manager.sharedModules = [ { kdn.development.git.enable = lib.mkDefault true; } ]; }
           {
             systemd.tmpfiles.rules = [
               "L /etc/nixos/flake.nix       - - - - flake.nix.rel"

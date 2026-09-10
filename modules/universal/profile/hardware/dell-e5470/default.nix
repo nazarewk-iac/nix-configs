@@ -18,7 +18,7 @@ in
   config = kdnConfig.util.ifTypes [ "nixos" ] (
     lib.mkIf cfg.enable {
       #kdn.hw.intel-graphics-fix.enable = true;
-      kdn.hw.modem.enable = true;
+      kdn.hw.modem.enable = lib.mkDefault true;
 
       # BOOT
       boot.initrd.availableKernelModules = [
@@ -28,9 +28,9 @@ in
       boot.kernelModules = [ "kvm-intel" ];
 
       boot.initrd.kernelModules = [ "dm-snapshot" ];
-      kdn.hw.gpu.intel.enable = true;
+      kdn.hw.gpu.intel.enable = lib.mkDefault true;
 
-      zramSwap.enable = true;
+      zramSwap.enable = lib.mkDefault true;
       zramSwap.memoryPercent = 50;
       zramSwap.priority = 100;
     }

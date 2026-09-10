@@ -101,11 +101,11 @@ in
         }
         {
           # work around invalid modules caused by `hardware.enableAllHardware
-          boot.initrd.allowMissingModules = true;
+          boot.initrd.allowMissingModules = lib.mkDefault true;
         }
         (mkIfRPi4 cfg.i2c.enable {
-          hardware.i2c.enable = true;
-          hardware.raspberry-pi."4".i2c1.enable = true;
+          hardware.i2c.enable = lib.mkDefault true;
+          hardware.raspberry-pi."4".i2c1.enable = lib.mkDefault true;
           kdn.env.packages = with pkgs; [
             i2c-tools
           ];
@@ -159,7 +159,7 @@ in
                 };
             in
             {
-              kdn.profile.hardware.rpi4.i2c.enable = true;
+              kdn.profile.hardware.rpi4.i2c.enable = lib.mkDefault true;
               kdn.env.packages = [
                 watcherScript
               ];
@@ -167,7 +167,7 @@ in
           )
         )
         (mkIfRPi4 cfg.hat.lte.enable {
-          kdn.hw.modem.enable = true;
+          kdn.hw.modem.enable = lib.mkDefault true;
 
           boot.initrd.availableKernelModules = [
             "rndis_host"
@@ -176,7 +176,7 @@ in
         })
         (mkIfRPi4 cfg.hat.fan.enable {
           # FAN HAT seems to be the same as in Argon One case?
-          programs.argon.one.enable = true;
+          programs.argon.one.enable = lib.mkDefault true;
           programs.argon.one.settings = {
             # Is 'celsius' by default, can also be set to 'fahrenheit'
             displayUnits = "celsius";
