@@ -62,6 +62,11 @@ let
     # The family stays out of both host aspect lists. `gh` and `zellij` already prove the
     # host-to-devenv route, and this family builds an npm package, so one build per shell is enough.
     kdn.jj-fork
+
+    # A two-class aspect. This list tests its `devenv` half; ../home/default.nix tests the
+    # `homeManager` half. `../ssh-access-graph.nix` supplies the graph, because the aspect holds
+    # none.
+    kdn.ssh-access
   ];
 
   # The data for the `nix` aspect. The aspect allow-lists no flake app of its own, because an app
@@ -171,6 +176,7 @@ in
       nixData
       jjData
       jjUrlData
+      ../ssh-access-graph.nix
       { kdn.opencode.defaultModel = "example-provider/example-model"; }
     ];
 
@@ -178,6 +184,9 @@ in
     #
     # It also holds the two negative cases of the `opencode` aspect: a `package` override, and
     # `defaultModel` left null so the `model` key stays out of `opencode.jsonc`.
+    #
+    # It names no ssh-access graph either, so the empty-graph branch gets a test: no `kdn-<name>`
+    # alias at all, and a drop-in with the generic `Host kdn-*` stanza alone.
     devenv-linux.system = "x86_64-linux";
     devenv-linux.extra = [
       opencodeData

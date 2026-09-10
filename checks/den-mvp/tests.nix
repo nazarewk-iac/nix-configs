@@ -142,6 +142,19 @@ let
   # a miss and an accidental duplicate with one assertion.
   devenvCount = ps: builtins.length (builtins.filter (p: (p.pname or "") == "devenv") ps);
 
+  # A package list holds a package with this exact `name`. `name` carries the version suffix for a
+  # versioned package, so every caller below names a package that sets none.
+  hasPackageNamed = name: ps: lib.any (p: (p.name or "") == name) ps;
+
+  # The two ends of the `signing` aspect's one promise: git and jj must read one identical
+  # `allowed_signers` file. Each reader takes a home-manager `config`.
+  gitAllowedSigners = cfg: cfg.programs.git.settings.gpg.ssh.allowedSignersFile;
+  jjAllowedSigners = cfg: cfg.programs.jujutsu.settings.signing.backends.ssh.allowed-signers;
+
+  # The ssh drop-in the `ssh-access` aspect installs. The `40-` prefix lets a consumer order its own
+  # drop-ins around it.
+  dropInPath = ".ssh/config.d/40-kdn-ssh-access.config";
+
   # ------------------------------------------------------------------ tier 1 assertions
 
   # The `rosetta-builder` aspect promises four option values plus one launchd daemon. This is the
@@ -603,6 +616,8 @@ let
         "nix"
         "opencode"
         "rosetta-builder"
+        "signing"
+        "ssh-access"
         "ssh-agent"
         "zellij"
       ];
@@ -1896,18 +1911,290 @@ let
       };
     }
     # `llm-proxy` has no `denModules` entry, because the zero-argument export form names exactly one
-    # class. `devenv-cli` is absent for the same reason. This line states the fact, so a later change
-    # to the export surface cannot pass in silence.
+    # class. `devenv-cli` and `ssh-access` are absent for the same reason. This line states the fact,
+    # so a later change to the export surface cannot pass in silence.
     {
       name = "a multi-class aspect gets no zero-argument export";
       expected = {
         llm-proxy = false;
         devenv-cli = false;
+        ssh-access = false;
       };
       actual = {
         llm-proxy = flake.denModules ? llm-proxy;
         devenv-cli = flake.denModules ? devenv-cli;
+        ssh-access = flake.denModules ? ssh-access;
       };
+    }
+  ];
+
+  # The `signing` aspect is a `homeManager`-only port, like `ssh-agent`. So these assertions read the
+  # user scope alone, on both routes and on both platforms.
+  #
+  # The aspect holds no key. Every principal and every public key comes from the test subject, so an
+  # assertion here compares wiring and never key material. See ./home/default.nix and
+  # ./users/default.nix.
+  signingAssertions = [
+    # ---- the script reaches every user, on both routes
+    {
+      name = "each standalone home configuration installs kdn-signing";
+      expected = {
+        home-darwin = true;
+        home-linux = true;
+      };
+      actual = {
+        home-darwin = hasPackageNamed "kdn-signing" homeDarwin.config.home.packages;
+        home-linux = hasPackageNamed "kdn-signing" homeLinux.config.home.packages;
+      };
+    }
+    {
+      name = "both hosts forward kdn-signing to the user";
+      expected = {
+        host-darwin = true;
+        host-nixos = true;
+      };
+      actual = {
+        host-darwin = hasPackageNamed "kdn-signing" darwinCfg.home-manager.users.dev.home.packages;
+        host-nixos = hasPackageNamed "kdn-signing" nixosCfg.home-manager.users.dev.home.packages;
+      };
+    }
+
+    # ---- one file, two tools. This is the whole point of the aspect: without the wiring each tool
+    # signs but verifies nothing, and `jj log -T 'signature.status()'` reports `SIGNED bad`.
+    {
+      name = "git and jj read one identical allowed_signers file";
+      expected = {
+        home-darwin = true;
+        home-linux = true;
+        host-darwin = true;
+        host-nixos = true;
+      };
+      actual = lib.mapAttrs (_: cfg: gitAllowedSigners cfg == jjAllowedSigners cfg) {
+        home-darwin = homeDarwin.config;
+        home-linux = homeLinux.config;
+        host-darwin = darwinCfg.home-manager.users.dev;
+        host-nixos = nixosCfg.home-manager.users.dev;
+      };
+    }
+    {
+      name = "the wired file is a store path";
+      expected = true;
+      actual = lib.hasPrefix builtins.storeDir (gitAllowedSigners homeLinux.config);
+    }
+    # The standalone subject names two signers and the host user names one. So two different entry
+    # lists must give two different files, and the generator cannot be a constant.
+    {
+      name = "a different entry list gives a different file";
+      expected = true;
+      actual = gitAllowedSigners homeLinux.config != gitAllowedSigners darwinCfg.home-manager.users.dev;
+    }
+
+    # ---- rule 2: inclusion is the switch. The slot's `kdn.signing.enable` is gone.
+    {
+      name = "the aspect declares no `enable` option";
+      expected = false;
+      actual = homeLinux.options.kdn.signing ? enable;
+    }
+    # ---- the neutral defaults. An adopter who supplies nothing gets no file and no personal name.
+    {
+      name = "allowedSigners defaults to the empty list";
+      expected = [ ];
+      actual = homeLinux.options.kdn.signing.allowedSigners.default;
+    }
+    # The slot defaults this to a name that carries one person's own namespace. The port names no
+    # person. See gap 6 of ../../docs/tasks/2026-09/generalization/definition.md.
+    {
+      name = "the plain key-file default names no person";
+      expected = "~/.ssh/id_ed25519_plain_signing";
+      actual = homeLinux.options.kdn.signing.plain.keyFile.default;
+    }
+
+    # ---- the export surface. One class, so the zero-argument form exists.
+    {
+      name = "denLib.imports resolves one homeManager module";
+      expected = 1;
+      actual = builtins.length (
+        denLib.imports {
+          class = "homeManager";
+          aspects = [ "signing" ];
+        }
+      );
+    }
+    {
+      name = "the flake exports a zero-argument module with a non-empty imports list";
+      expected = true;
+      actual = (builtins.length flake.denModules.signing.imports) > 0;
+    }
+  ];
+
+  # The `ssh-access` aspect emits two classes, `homeManager` and `devenv`. So these assertions read
+  # both halves, and they read the empty-graph branch too.
+  #
+  # The aspect holds no graph. Every host name, address, port and key path comes from
+  # ./ssh-access-graph.nix, and every value there is fictional. No assertion opens a connection: the
+  # comparisons are evaluations, and even the shell's own `enterTest` calls `emit-ssh-config` alone.
+  sshAccessAssertions = [
+    # ---- the de-personalized default. The shared schema file
+    # ../../packages/kdn-ssh-access/module.nix defaults `defaults.user` to one person's login name,
+    # and the aspect overrides it to null at priority 1400. `devenv-linux` names no graph, so it is
+    # the one subject that reads the neutralized value.
+    {
+      name = "the user default is null when the consumer names no graph";
+      expected = null;
+      actual = devenvLinux.kdn.ssh-access.defaults.user;
+    }
+    {
+      name = "a consumer's own graph wins over the neutral default";
+      expected = {
+        devenv-darwin = "den-mvp";
+        home-linux = "den-mvp";
+        host-darwin = "den-mvp";
+      };
+      actual = {
+        devenv-darwin = devenvDarwin.kdn.ssh-access.defaults.user;
+        home-linux = homeLinux.config.kdn.ssh-access.defaults.user;
+        host-darwin = darwinCfg.home-manager.users.dev.kdn.ssh-access.defaults.user;
+      };
+    }
+    {
+      name = "the graph reaches every consumer that names one";
+      expected = {
+        devenv-darwin = [
+          "alpha"
+          "beta"
+        ];
+        home-darwin = [
+          "alpha"
+          "beta"
+        ];
+        home-linux = [
+          "alpha"
+          "beta"
+        ];
+        host-darwin = [
+          "alpha"
+          "beta"
+        ];
+      };
+      actual = lib.mapAttrs (_: cfg: sorted (builtins.attrNames cfg.kdn.ssh-access.hosts)) {
+        devenv-darwin = devenvDarwin;
+        home-darwin = homeDarwin.config;
+        home-linux = homeLinux.config;
+        host-darwin = darwinCfg.home-manager.users.dev;
+      };
+    }
+    {
+      name = "the empty-graph consumer holds no host and no uplink";
+      expected = {
+        hosts = [ ];
+        uplinks = [ ];
+      };
+      actual = {
+        hosts = builtins.attrNames devenvLinux.kdn.ssh-access.hosts;
+        uplinks = builtins.attrNames devenvLinux.kdn.ssh-access.uplinks;
+      };
+    }
+
+    # ---- the `homeManager` half: the ssh drop-in, plus the binary on the user's PATH
+    {
+      name = "each home route installs the drop-in at the ordered path";
+      expected = {
+        home-darwin = true;
+        home-linux = true;
+        host-darwin = true;
+        host-nixos = true;
+      };
+      actual = lib.mapAttrs (_: cfg: cfg.home.file ? ${dropInPath}) {
+        home-darwin = homeDarwin.config;
+        home-linux = homeLinux.config;
+        host-darwin = darwinCfg.home-manager.users.dev;
+        host-nixos = nixosCfg.home-manager.users.dev;
+      };
+    }
+    # The binary is the single source of the drop-in: `kdn-ssh-access emit-ssh-config` prints it, and
+    # `passthru.sshConfig` captures the output. So the file and the route logic cannot disagree.
+    {
+      name = "the drop-in comes from the binary's own emit-ssh-config";
+      expected = true;
+      actual =
+        "${homeLinux.config.home.file.${dropInPath}.source}"
+        == "${homeLinux.config.kdn.ssh-access.package.sshConfig}";
+    }
+    # A graph must change the emitted file. An equal path would mean the graph reaches nothing.
+    {
+      name = "a graph changes the emitted drop-in";
+      expected = true;
+      actual =
+        "${homeLinux.config.kdn.ssh-access.package.sshConfig}"
+        != "${devenvLinux.kdn.ssh-access.package.sshConfig}";
+    }
+    {
+      name = "each home route installs the binary";
+      expected = {
+        home-darwin = true;
+        home-linux = true;
+        host-darwin = true;
+        host-nixos = true;
+      };
+      actual = lib.mapAttrs (_: cfg: hasPackageNamed "kdn-ssh-access-configured" cfg.home.packages) {
+        home-darwin = homeDarwin.config;
+        home-linux = homeLinux.config;
+        host-darwin = darwinCfg.home-manager.users.dev;
+        host-nixos = nixosCfg.home-manager.users.dev;
+      };
+    }
+
+    # ---- the `devenv` half: the binary and the short shim, and no file at all
+    {
+      name = "every devenv shell holds the binary and the short shim";
+      expected = {
+        devenv-darwin = true;
+        devenv-linux = true;
+        host-darwin = true;
+      };
+      actual =
+        lib.mapAttrs
+          (
+            _: shell:
+            hasPackageNamed "kdn-ssh-access-configured" shell.packages
+            && hasPackageNamed "ssh-access" shell.packages
+          )
+          {
+            devenv-darwin = devenvDarwin;
+            devenv-linux = devenvLinux;
+            host-darwin = hostShellDarwin;
+          };
+    }
+
+    # ---- rule 2: inclusion is the switch. The slot's `kdn.ssh-access.enable` is gone.
+    {
+      name = "the aspect declares no `enable` option";
+      expected = false;
+      actual = homeLinux.config.kdn.ssh-access ? enable;
+    }
+
+    # ---- the library route, one call per class. Neither call needs `specialArgs`.
+    {
+      name = "denLib.imports resolves one module per class";
+      expected = {
+        homeManager = 1;
+        devenv = 1;
+      };
+      actual =
+        lib.mapAttrs
+          (
+            class: _:
+            builtins.length (
+              denLib.imports {
+                inherit class;
+                aspects = [ "ssh-access" ];
+              }
+            )
+          )
+          {
+            homeManager = null;
+            devenv = null;
+          };
     }
   ];
 
@@ -1929,6 +2216,8 @@ let
     den-eval-nix = mkEvalCheck "nix" nixAssertions;
     den-eval-jj = mkEvalCheck "jj" jjAssertions;
     den-eval-llm = mkEvalCheck "llm" llmAssertions;
+    den-eval-signing = mkEvalCheck "signing" signingAssertions;
+    den-eval-ssh-access = mkEvalCheck "ssh-access" sshAccessAssertions;
   };
 
   # Tier 2 and tier 3 build a real artifact, so each one needs a builder for its own platform. The
