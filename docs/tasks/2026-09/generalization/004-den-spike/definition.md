@@ -187,8 +187,8 @@ Tier 2 greps the built nix-darwin toplevel — nix-darwin's own `release.nix` pa
 each devenv shell's `config.test`. **No tier activates anything**, and none needs sudo: tier 2 reads
 a store path and never runs it, and tier 3 uses `enterTest`, which devenv keeps separate from
 `enterShell`. `nix run '.#checks.aarch64-darwin.den-mvp.smoke'` builds every check and prints one
-summary — 8 of 8 pass on 2026-09-10. The `gh` aspect carries its own offline assertions, so they
-travel with the aspect to an external adopter.
+summary — **11 of 11 pass on 2026-09-10**. The `gh` and `devenv-cli` aspects carry their own
+offline assertions, so they travel with the aspect to an external adopter.
 
 `den-eval-routes` turns the hand-measured `drvPath` claim above into a test, so the library route
 and the `flakeModule` route cannot drift apart in silence.
@@ -199,15 +199,44 @@ devenv's `tasks` module prepend `devenv-tasks run devenv:enterTest` to `enterTes
 task source. A build sandbox gives it neither, so a smoke test fails with `Error: NoSource`.
 `config.devenv.latestVersion` is the right value, and it also silences the version-mismatch warning.
 
-Two test kinds stay deferred, both for a stated reason. A `runNixOSTest` VM test waits for the first
-`nixos`-class aspect, because `host-nixos` carries none and a booted guest would assert nothing that
-tier 1 already covers. And an automated `hosts/anji`-against-`host-darwin` parity check evaluates a
-whole personal host (about 93 s) and reads sops metadata.
+**A four-target aspect closes the full-matrix gap.** No slot in this repository targets all four
+kinds; the widest is `modules/slots/devenv/`, at three (`nixos`, `darwin`, `home`). So
+`modules/den/aspects/devenv-cli.nix` ports that slot and **adds** a `devenv` target the slot has
+none of. It is now the only aspect that reaches every den class the harness covers, and
+`den-eval-devenv-cli` asserts 12 values across all four.
 
-The adopter-facing library-mode export is done. Milestone 2 owns the next three pieces: a `home`
-target, one coupled slot pair (`jj` plus `mcp`), and the first `nixos`-class aspect. `host-nixos`
-carries no aspect yet; it is the landing place for that aspect. The README status table tracks
-them.
+Reaching the `homeManager` class needed a den **user**, not a home-manager import.
+`<den>/modules/aspects/batteries/home-manager.nix` imports
+`inputs.home-manager.<class>Modules.home-manager` into the host by itself and forwards each user's
+`homeManager` config to `home-manager.users.<userName>`. `checks/den-mvp/users/` holds the one shared
+`dev` user. Two traps came out of that work, and neither gives an error:
+
+1. A user's `classes` defaults to `[ "user" ]`, with **no** `homeManager`
+   (`<den>/nix/lib/entities/host.nix:157`). A user that omits it silently gets no home-manager
+   generation, and the `homeManager` half of every aspect it includes goes nowhere.
+2. **den partitions an aspect by scope.** A four-target aspect must be included **twice** on a host:
+   once in the host aspect for `nixos`/`darwin`/`devenv`, once in the user aspect for `homeManager`.
+   Measured on 2026-09-10: host scope alone gave **0** devenv in
+   `home-manager.users.dev.home.packages`; both scopes gave **1**.
+
+`denModules.<aspect>` cannot carry `devenv-cli`. That zero-argument form names one common class per
+aspect, and this one has four. `denLib.imports` is the general form, and the test asserts it resolves
+one module on each class.
+
+`checks/den-mvp/home/` adds the standalone home-manager route beside the host route. The two answer
+different questions. The standalone route asks whether an aspect's `homeManager` half is a valid
+home-manager module on its own — the shape an external adopter uses. The host route asks whether den
+forwards that half into a real system, and only it can hit trap 2 above.
+
+One test kind stays deferred, for a stated reason. An automated `hosts/anji`-against-`host-darwin`
+parity check evaluates a whole personal host (about 93 s) and reads sops metadata. A `runNixOSTest`
+VM test is no longer blocked — `host-nixos` carries a real `nixos`-class aspect now — but it still
+earns nothing: every value a guest would read is a static option value or a file in the toplevel,
+and tier 1 and tier 2 read both. A VM pays off only for a runtime behaviour.
+
+The adopter-facing library-mode export is done. Milestone 2 has one piece left: a coupled slot pair
+(`jj` plus `mcp`). The `home` target and the first `nixos`-class aspect are both done, through
+`devenv-cli`. The README status table tracks them.
 
 ## Why this comes first
 
