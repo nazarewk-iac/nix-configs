@@ -1,7 +1,7 @@
 ---
 type: Reference
 description: The parallel den implementation of this repository's module surface, additive to modules/slots and modules/universal.
-timestamp: 2026-09-10T07:15:00+02:00
+timestamp: 2026-09-10T13:05:00+02:00
 authored_by: agent
 ---
 
@@ -40,6 +40,7 @@ class, plus every standalone devenv shell. Its README states the layout and the 
 | `den` | The raw den evaluation. Use it to read `den.aspects` and `den.hosts` in a debug session. |
 | `denConfigurations.<host>` | A nix-darwin or a NixOS system that den builds. Both classes share one flat set. |
 | `denDevenvShells.<host>` | A devenv shell that den builds. |
+| `denHomeConfigurations.<name>` | A **standalone** home-manager configuration. It belongs to no den host. |
 | `denModules.<aspect>` | A **plain module** for an external adopter. It holds no den. |
 | `denLib` | The adopter-facing library. `denLib.imports { … }` returns a list for `imports = [ … ]`. |
 
@@ -134,6 +135,26 @@ Three limits hold:
   `{ imports = [ ]; }`. A **per-target** function — `devenv = { host, ... }: …` — resolves
   non-empty, and it then fails inside the caller's own evaluation with `attribute 'host' missing`.
   Measured on 2026-09-10. `denLib.resolve` throws on the first shape. It cannot catch the second.
+- **`denModules.<aspect>` cannot carry a multi-class aspect.** That zero-argument form names one
+  common class per aspect, and `devenv-cli` has four. So the registry ships no
+  `denModules.devenv-cli`. `denLib.imports { class = …; aspects = [ "devenv-cli" ]; }` is the general
+  form, and `den-eval-devenv-cli` asserts it resolves one module on each of the four classes.
+
+### Two traps the den entity model sets
+
+Both cost real time to find, and neither gives an error.
+
+1. **A den user's `classes` defaults to `[ "user" ]`, with no `homeManager`**
+   (`<den>/nix/lib/entities/host.nix:157`). A user that omits it silently gets no home-manager
+   generation, and the `homeManager` half of every aspect it includes goes nowhere.
+2. **den partitions an aspect by scope.** A four-target aspect must be included **twice** on a
+   host: once in the host aspect for `nixos`/`darwin`/`devenv`, and once in the user aspect for
+   `homeManager`. Measured on 2026-09-10 with `devenv-cli`: host scope alone gave **0** devenv in
+   `home-manager.users.dev.home.packages`; both scopes gave **1**.
+
+den imports home-manager into a host by itself, through
+`<den>/modules/aspects/batteries/home-manager.nix`. A host needs no home-manager import — it needs
+a user. [`checks/den-mvp/users/`](../../checks/den-mvp/README.md) holds the one this tree uses.
 
 Two guards protect the wrapper. An unknown aspect name throws when the caller builds the list, not
 later when the module system happens to force one element. An empty resolved `imports` list throws
@@ -149,17 +170,20 @@ it. The adopter surface is library mode, and `flake.denLib` ships it.
 | devenv class | present |
 | `rosetta-builder` aspect | core content only — the guest-size options are **not** ported |
 | `gh` aspect | present — the first `devenv`-target aspect, a full port of `modules/slots/gh/` |
-| `host-darwin` host | evaluates and builds a nix-darwin system plus a devenv shell |
-| `host-nixos` host | evaluates a NixOS system plus a devenv shell. It carries **no** aspect yet. |
+| `devenv-cli` aspect | present — the **four-target** aspect. It ports `modules/slots/devenv/` and adds a `devenv` target the slot has none of. |
+| `host-darwin` host | evaluates and builds a nix-darwin system, a devenv shell and one home-manager generation |
+| `host-nixos` host | evaluates a NixOS system, a devenv shell and one home-manager generation. It carries a real `nixos`-class aspect. |
 | Standalone devenv shells | present — `devenv-darwin` and `devenv-linux`, with no den entity |
+| Standalone home-manager | present — `home-darwin` and `home-linux`, with no den entity. This is the adopter shape. |
+| The `dev` den user | present — one shared user at `checks/den-mvp/users/`. It makes the `homeManager` class reachable. |
 | `checks.<system>.den-mvp` | present — the current architecture, with `.all` for every system |
-| Test harness | present — 5 evaluation checks, 1 artifact check, 4 smoke runs. See [checks/den-mvp/README.md](../../checks/den-mvp/README.md#tests). |
-| Smoke-test runner | present — `nix run '.#checks.aarch64-darwin.den-mvp.smoke'`. 8 of 8 pass on this machine. |
-| A VM test for `host-nixos` | deferred — it waits for the first `nixos`-class aspect, and no darwin VM framework exists |
+| Test harness | present — 5 evaluation checks, 7 artifact checks, 4 smoke runs. See [checks/den-mvp/README.md](../../checks/den-mvp/README.md#tests). |
+| Smoke-test runner | present — `nix run '.#checks.aarch64-darwin.den-mvp.smoke'`. 11 of 11 pass on this machine. |
+| A VM test for `host-nixos` | deferred — tier 1 and tier 2 read every value a guest would, and no darwin VM framework exists |
 | An automated `hosts/anji` parity check | deferred — it evaluates a whole personal host (~93 s) and it reads sops metadata |
 | Library mode (`den.nixModule`) | shipped as `denLib` — a thin `imports` wrapper plus the raw machinery |
-| A `nixos`-class aspect | not started — `host-nixos` is the landing place |
-| `home` target | not started |
+| A `nixos`-class aspect | present — `devenv-cli` reaches `host-nixos` |
+| `home` target | present — through `devenv-cli`, on both routes |
 | A coupled pair of slots (`jj` plus `mcp`) | not started |
 | Parity with all 18 slots | not started |
 

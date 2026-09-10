@@ -1,7 +1,7 @@
 ---
 type: Reference
 description: The build-only den entities that prove the parallel den tree evaluates and builds.
-timestamp: 2026-09-10T10:15:00+02:00
+timestamp: 2026-09-10T13:05:00+02:00
 authored_by: agent
 ---
 
@@ -19,13 +19,35 @@ The tree itself is [modules/den/](../../modules/den/README.md).
 |---|---|---|
 | `host-darwin/` | den host, class `darwin`, `aarch64-darwin` | `denConfigurations.host-darwin`, `denDevenvShells.host-darwin` |
 | `host-nixos/` | den host, class `nixos`, `x86_64-linux` | `denConfigurations.host-nixos`, `denDevenvShells.host-nixos` |
+| `users/` | the one den user both hosts share | `home-manager.users.dev` inside each host |
 | `devenv/` | standalone shells, no den host | `denDevenvShells.devenv-darwin`, `denDevenvShells.devenv-linux` |
+| `home/` | standalone home-manager, no den host | `denHomeConfigurations.home-darwin`, `denHomeConfigurations.home-linux` |
 
 A den host produces two results: a system, and a shell from
-`den.policies.host-to-devenv`. Both read one aspect list. The `devenv/` directory holds every
-standalone shell in one file, because a standalone shell needs no entity.
+`den.policies.host-to-devenv`. Both read one aspect list. The `devenv/` and `home/` directories
+each hold every standalone entry in one file, because a standalone target needs no entity.
 
 `modules/den/flake-module.nix` imports each directory into the den evaluation.
+
+## Two traps the den user model sets
+
+Both are measured, and both cost real time to find. `users/default.nix` holds the long form.
+
+1. **`classes` defaults to `[ "user" ]`, with no `homeManager`.** den declares that default at
+   `<den>/nix/lib/entities/host.nix:157`. A user that omits `homeManager` silently gets no
+   home-manager generation, and the `homeManager` half of every aspect it includes goes nowhere. So
+   each host states the list in full. den's own `templates/minimal` carries the comment
+   `classes = [ "user" ]; # no homeManager`, which reads as if the default included it.
+2. **den partitions an aspect by scope.** A four-target aspect must be included **twice** on a
+   host: once in the host aspect, for `nixos`/`darwin`/`devenv`, and once in the user aspect, for
+   `homeManager`. A host-scope inclusion never reaches `home-manager.users.<user>`. Measured on
+   2026-09-10 with `devenv-cli`: host scope alone gave **0** devenv in
+   `home-manager.users.dev.home.packages`; both scopes gave **1**.
+
+den imports home-manager into the host by itself —
+`<den>/modules/aspects/batteries/home-manager.nix` calls `den.lib.home-env.makeHomeEnv` with
+`getModule = { host, ... }: inputs.home-manager."${host.class}Modules".home-manager`. So a host
+needs no home-manager import of its own. It needs a user.
 
 ## Why these live here and not in `hosts/`
 
@@ -92,8 +114,14 @@ tiers. `checks/default.nix` merges them into `checks.<system>.*`.
 | `den-eval-gh` | 1 — evaluation | the package, the Claude Code opt-in, and that no mutating rule entered the allowlist |
 | `den-eval-guards` | 1 — evaluation | both `denLib` guards fire, and the good path still returns one module |
 | `den-eval-routes` | 1 — evaluation | `denLib.imports` and `denModules` give one `drvPath` in a bare nix-darwin system |
-| `den-artifact-host-darwin` | 2 — artifact | the built toplevel holds the `nix.conf` line, the launchd plist and the `activate` reference |
-| `den-smoke-devenv-darwin` | 3 — smoke run | `gh` really runs, from the standalone shell's own `enterTest` |
+| `den-eval-devenv-cli` | 1 — evaluation | the full matrix: 12 assertions over all four den classes, both hosts, both home-manager routes and `denLib.imports` |
+| `den-artifact-host-darwin` | 2 — artifact | the built toplevel holds three `nix.conf` lines, `sw/bin/devenv`, the launchd plist and the `activate` reference |
+| `den-artifact-hm-host-darwin` | 2 — artifact | the generation den forwards to `home-manager.users.dev` writes all three shell hooks |
+| `den-artifact-home-darwin` | 2 — artifact | the same, for the **standalone** home-manager route that carries no den entity |
+| `den-artifact-host-nixos` | 2 — artifact | the NixOS toplevel holds both `nix.conf` lines and `sw/bin/devenv` |
+| `den-artifact-hm-host-nixos` | 2 — artifact | the NixOS host's forwarded generation writes all three shell hooks |
+| `den-artifact-home-linux` | 2 — artifact | the standalone Linux home-manager generation does the same |
+| `den-smoke-devenv-darwin` | 3 — smoke run | `gh` and `devenv` really run, from the standalone shell's own `enterTest` |
 | `den-smoke-host-darwin` | 3 — smoke run | the same, from the shell that `den.policies.host-to-devenv` derives |
 | `den-smoke-devenv-linux` | 3 — smoke run | the same, on `x86_64-linux` |
 | `den-smoke-host-nixos` | 3 — smoke run | the same, from the NixOS host's shell |
@@ -101,6 +129,9 @@ tiers. `checks/default.nix` merges them into `checks.<system>.*`.
 Tier 1 runs on any machine: the comparison is an evaluation and the derivation is local. Tier 2 and
 tier 3 build a real artifact, so `tests.nix` keeps only this machine's entries — the same rule the
 `den-mvp` aggregate follows.
+
+**11 of 11 pass on an `aarch64-darwin` machine**, measured on 2026-09-10. The six
+`x86_64-linux` entries evaluate to a `drvPath` from Darwin, and they need a Linux builder to build.
 
 **No tier activates anything.** Tier 2 reads a built store path and never executes it. Tier 3 runs
 devenv's `config.test`, which devenv keeps separate from `enterShell`, so no assertion runs on
@@ -128,9 +159,11 @@ summary. Pass a flake reference as the first argument to test another checkout.
 
 ### Not covered yet
 
-- **A VM test.** `pkgs.testers.runNixOSTest` is the right tool for `host-nixos`, and it waits for
-  the first `nixos`-class aspect — the host carries none, so a booted guest would assert nothing
-  that tier 1 already covers. No darwin VM framework exists at all.
+- **A VM test.** `pkgs.testers.runNixOSTest` is the right tool for `host-nixos`. The host **does**
+  carry a real `nixos`-class aspect now, so a booted guest is no longer vacuous. But every value it
+  would read is a static option value or a file in the toplevel, and tier 1 and tier 2 read both. A
+  VM earns its cost only for a runtime behaviour — a service that must start, an activation that
+  must converge. No darwin VM framework exists at all.
 - **A slot-against-den parity check.** `hosts/anji` versus `denConfigurations.host-darwin` agrees
   today, measured by hand on 2026-09-10. It is not automated, because it evaluates a whole personal
   host — about 93 s, and it reads sops metadata.
