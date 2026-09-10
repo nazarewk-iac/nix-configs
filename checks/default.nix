@@ -16,6 +16,33 @@ let
   # The real fork slot artifacts: the config TOML the tests read through
   # JJ_FORK_CONFIG_TOML, and the pre-push script they read through
   # KDN_JJ_PRE_PUSH_SH. inputs.self is the nix-configs flake.
+  # Every den MVP entity, as one flat set of buildable derivations. A den host yields a system
+  # toplevel; a devenv shell yields its shell derivation. See den-mvp/README.md.
+  denEntities =
+    let
+      configs = lib.mapAttrs' (
+        name: cfg: lib.nameValuePair "config-${name}" cfg.config.system.build.toplevel
+      ) inputs.self.denConfigurations;
+      shells = lib.mapAttrs' (
+        name: cfg: lib.nameValuePair "shell-${name}" cfg.shell
+      ) inputs.self.denDevenvShells;
+    in
+    configs // shells;
+
+  # A derivation carries its own platform, so one filter covers both kinds.
+  denForThisSystem = lib.filterAttrs (
+    _: drv: drv.system == pkgs.stdenv.hostPlatform.system
+  ) denEntities;
+
+  mkDenAggregate =
+    name: entities:
+    pkgs.linkFarm name (
+      lib.mapAttrsToList (n: path: {
+        name = n;
+        inherit path;
+      }) entities
+    );
+
   jjFork = import ./jj-experiments/render-fork-config.nix {
     inherit pkgs;
     mkSlots = inputs.self.lib.kdn.mkSlots;
@@ -49,4 +76,19 @@ in
     inherit (jjFork) toml prePush;
     # extraArgs = [ ];  # whole suite
   };
+
+  # den MVP build gate. It proves that the parallel den tree still evaluates and builds.
+  #
+  # The default check builds only the entities of the current system, so it needs no remote
+  # builder. `den-mvp.all` builds every entity of every system, and a foreign system needs a
+  # builder for that platform. `nix flake check` builds the default only, because `.all` sits in
+  # `passthru`.
+  #
+  #   nix build '.#checks.aarch64-darwin.den-mvp'
+  #   nix build '.#checks.aarch64-darwin.den-mvp.all'
+  den-mvp = (mkDenAggregate "den-mvp" denForThisSystem).overrideAttrs (prev: {
+    passthru = (prev.passthru or { }) // {
+      all = mkDenAggregate "den-mvp-all" denEntities;
+    };
+  });
 }

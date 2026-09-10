@@ -7,12 +7,13 @@
 # New outputs:
 #
 #   flake.den                      the raw den evaluation — a debug handle
-#   flake.denConfigurations.<host>  a nix-darwin system that den builds
-#   flake.denDevenvShells.<host>    a devenv shell that den builds
+#   flake.denConfigurations.<name>  a nix-darwin or a NixOS system that den builds
+#   flake.denDevenvShells.<name>    a devenv shell that den builds
 #   flake.denModules.<aspect>       a plain module for an external adopter
+#   flake.denLib                    the adopter-facing library — a thin `imports` wrapper plus the
+#                                   raw den machinery
 {
   inputs,
-  self,
   ...
 }:
 let
@@ -30,6 +31,13 @@ let
     nix-effects.lib = import inputs.nix-effects { lib = denLib; };
   };
 
+  # The adopter-facing library. It uses `den.nixModule`, not `den.flakeModule`, so it loads none of
+  # den's batteries. It also owns the aspect registry that the evaluation below reads.
+  library = import ./lib.nix {
+    inherit inputs;
+    lib = denLib;
+  };
+
   eval = denLib.evalModules {
     specialArgs.inputs = denInputs;
     modules = [
@@ -43,17 +51,18 @@ let
       # One class per target that den does not know about.
       ./classes/devenv.nix
 
-      # One aspect per reimplemented slot. The slot itself stays in place and keeps working.
-      ./aspects/rosetta-builder.nix
+      # One aspect per reimplemented slot. The slot itself stays in place and keeps working. The
+      # registry lives in ./lib.nix, so the flake route and the library route cannot drift apart.
+    ]
+    ++ denLib.attrValues library.aspectModules
+    ++ [
 
-      # One directory per parallel host. They live under `hosts/den-mvp/` because
-      # `flake.hostConfigurations` reads `hosts/` one level deep only, so it never sees them. See
-      # ../../hosts/den-mvp/README.md.
-      ../../hosts/den-mvp/den-darwin
-      ../../hosts/den-mvp/den-nixos
-
-      # devenv needs a root directory, and only the flake knows one.
-      { kdn.den.devenv.root = "${self}"; }
+      # The parallel entities. They live under `checks/den-mvp/` because they are test artifacts,
+      # not real hosts. One directory per den host, plus one `devenv/` directory that holds every
+      # standalone shell. See ../../checks/den-mvp/README.md.
+      ../../checks/den-mvp/host-darwin
+      ../../checks/den-mvp/host-nixos
+      ../../checks/den-mvp/devenv
     ];
   };
 
@@ -95,8 +104,17 @@ in
     eval.config.flake.darwinConfigurations // eval.config.flake.nixosConfigurations;
   flake.denDevenvShells = eval.config.flake.devenvShells;
 
-  # The adopter-facing surface. An adopter imports a plain module and never adopts den.
+  # The adopter-facing surface. A caller imports a plain module and never adopts den.
+  #
+  # `denLib` is the wrapper. `denLib.imports { class = "devenv"; aspects = [ "gh" ]; }` returns a
+  # list for `imports = [ … ]`. It also carries the raw machinery (`nixModule`, `eval`, `resolve`,
+  # `aspectModules`) for a caller that needs more. See ./lib.nix.
+  #
+  # `denModules.<aspect>` stays as the zero-argument form: one already-resolved plain module per
+  # aspect, for that aspect's common class. Use it when one aspect and one class is the whole need.
+  flake.denLib = library;
   flake.denModules.rosetta-builder =
     resolveChecked "darwin" "rosetta-builder"
       den.aspects.rosetta-builder;
+  flake.denModules.gh = resolveChecked "devenv" "gh" den.aspects.gh;
 }
