@@ -18,7 +18,11 @@ in
     };
     theme = lib.mkOption {
       type = with lib.types; str;
-      default = "kde6";
+      # `qt.platformTheme` is an enum of `<nixpkgs>/nixos/modules/config/qt.nix:10`, and it holds
+      # no "kde6". The accepted names are gnome, gtk2, kde, lxqt and qt5ct. The `kde` entry
+      # already carries the Qt6 packages (`kdePackages.plasma-integration`), so "kde" is the
+      # Plasma 6 value. "kde6" stopped the evaluation of every KDE host. Measured 2026-09-10.
+      default = "kde";
     };
     style = lib.mkOption {
       type = with lib.types; str;
