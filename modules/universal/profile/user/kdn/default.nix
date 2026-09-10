@@ -105,7 +105,7 @@ in
       })
       (kdnConfig.util.ifHMParent {
         home-manager.users.kdn.kdn.profile.user.kdn = {
-          enable = true;
+          enable = lib.mkDefault true;
           username = cfg.username;
         };
         home-manager.users.root.programs.gpg.publicKeys = [
@@ -118,7 +118,7 @@ in
       (kdnConfig.util.ifHM (
         lib.mkMerge [
           {
-            kdn.programs.ssh-client.enable = true;
+            kdn.programs.ssh-client.enable = lib.mkDefault true;
             home.file.".ssh/config.d/kdn.config".source =
               config.lib.file.mkOutOfStoreSymlink "/run/configs/networking/ssh_config/kdn";
 
@@ -179,7 +179,7 @@ in
             # programs.git.signing.key = "CDDFE1610327F6F7A693125698C23F71A188991B";
             programs.git.signing.key = null;
             programs.git.signing.format = "openpgp"; # 2023-03-23: default changed to null
-            programs.git.signing.signByDefault = true;
+            programs.git.signing.signByDefault = lib.mkDefault true;
             programs.git.ignores = [ (builtins.readFile ./.gitignore.tpl) ];
             programs.git.attributes = [ (builtins.readFile ./.gitattributes) ];
             # to authenticate hub: ln -s ~/.config/gh/hosts.yml ~/.config/hub
@@ -215,6 +215,16 @@ in
           }
           (lib.mkIf hasWorkstation {
             kdn.disks.persist."usr/data".directories = [ "dev" ];
+            /*
+              Both options keep the plain priority (100), not `lib.mkDefault`.
+
+              The owning module forwards the host value into home-manager with
+              `home-manager.sharedModules = [ { kdn.<opt> = lib.mkDefault cfg; } ]`,
+              and that forward sits outside `lib.mkIf cfg.enable`. So a host that
+              leaves the option off still pushes `lib.mkDefault false` into every
+              home-manager user. A `lib.mkDefault true` here ties with it and the
+              evaluation stops. Make the forward conditional in the module first.
+            */
             kdn.services.syncthing.enable = true;
             kdn.programs.weechat.enable = true;
           })
@@ -223,7 +233,7 @@ in
               {
                 # Firefox
                 # don't search/expand single-word searchbars
-                programs.firefox.policies.GoToIntranetSiteForSingleWordEntryInAddressBar = true;
+                programs.firefox.policies.GoToIntranetSiteForSingleWordEntryInAddressBar = lib.mkDefault true;
                 kdn.programs.firefox.profileNames = [ "kdn" ];
                 programs.firefox.profiles.kdn = {
                   id = 0;
@@ -306,7 +316,7 @@ in
               "${config.home.homeDirectory}/${nc.rel}/images/screenshots";
           })
           (lib.mkIf (config.kdn.desktop.enable && kdnConfig.util.hasParentOfAnyType [ "nixos" ]) {
-            xdg.mime.enable = true;
+            xdg.mime.enable = lib.mkDefault true;
             xdg.desktopEntries.uri-to-clipboard =
               let
                 bin = pkgs.writeShellScript "uri-to-clipboard" ''
@@ -340,6 +350,8 @@ in
               };
           })
           (lib.mkIf config.kdn.desktop.enable {
+            # Both keep the plain priority — see the note at
+            # `kdn.services.syncthing.enable` above.
             kdn.programs.keepassxc.enable = true;
             kdn.programs.keepassxc.service.enable = true;
             kdn.programs.keepassxc.service.searchDirs = [
@@ -422,6 +434,11 @@ in
           })
           (lib.mkIf (hasWorkstation && config.kdn.desktop.enable) {
             # TODO: migrate to universal, split out a private instead of workstation profile?
+            #
+            # Every option here keeps the plain priority (100) — see the note at
+            # `kdn.services.syncthing.enable` above. `kdn.programs.torrent` is the one
+            # exception: that module guards its home-manager forward with
+            # `lib.mkIf cfg.enable`, so no `lib.mkDefault false` reaches this user.
             kdn.programs.beeper.enable = true;
             kdn.programs.matrix.enable = true;
             kdn.programs.ente-photos.enable = true;
@@ -432,7 +449,7 @@ in
             kdn.programs.slack.enable = true;
             kdn.programs.spotify.enable = true;
             kdn.programs.tidal.enable = true;
-            kdn.programs.torrent.enable = true;
+            kdn.programs.torrent.enable = lib.mkDefault true;
             kdn.toolset.print-3d.enable = true;
           })
           (lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
@@ -456,7 +473,7 @@ in
       (kdnConfig.util.ifTypes [ "nixos" ] {
         users.users.kdn = {
           initialHashedPassword = "$y$j9T$yl3J5zGJ5Yq8c6fXMGxNk.$XE3X8aWpD3FeakMBD/fUmCExXMuy7B6tm7ZECmuxpF4";
-          linger = true;
+          linger = lib.mkDefault true;
           uid = 31893;
           isNormalUser = true;
           subUidRanges = [

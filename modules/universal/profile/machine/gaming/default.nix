@@ -25,10 +25,10 @@ in
   config = kdnConfig.util.ifTypes [ "nixos" ] (
     lib.mkIf cfg.enable {
       # see https://nixos.wiki/wiki/Steam
-      programs.steam.enable = true;
-      programs.steam.remotePlay.openFirewall = true;
-      programs.steam.localNetworkGameTransfers.openFirewall = true;
-      programs.steam.protontricks.enable = true;
+      programs.steam.enable = lib.mkDefault true;
+      programs.steam.remotePlay.openFirewall = lib.mkDefault true;
+      programs.steam.localNetworkGameTransfers.openFirewall = lib.mkDefault true;
+      programs.steam.protontricks.enable = lib.mkDefault true;
 
       nixpkgs.config.allowUnfreePredicate =
         pkg:

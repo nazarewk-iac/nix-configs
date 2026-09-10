@@ -20,23 +20,23 @@ in
         kdn.env.packages = with pkgs; [
           lsix # image thumbnails in terminal
         ];
-        kdn.profile.machine.baseline.enable = true;
-        kdn.programs.gnupg.enable = true;
+        kdn.profile.machine.baseline.enable = lib.mkDefault true;
+        kdn.programs.gnupg.enable = lib.mkDefault true;
       }
       (kdnConfig.util.ifTypes [ "nixos" ] (
         lib.mkMerge [
           {
-            networking.networkmanager.wifi.powersave = true;
+            networking.networkmanager.wifi.powersave = lib.mkDefault true;
 
-            boot.loader.systemd-boot.memtest86.enable = true;
+            boot.loader.systemd-boot.memtest86.enable = lib.mkDefault true;
 
             # HARDWARE
-            hardware.usb-modeswitch.enable = true;
+            hardware.usb-modeswitch.enable = lib.mkDefault true;
             kdn.env.packages = with pkgs; [ usb-modeswitch ];
-            kdn.hw.bluetooth.enable = true;
+            kdn.hw.bluetooth.enable = lib.mkDefault true;
           }
           {
-            services.flatpak.enable = true;
+            services.flatpak.enable = lib.mkDefault true;
             systemd.services.flatpak-repo = {
               wantedBy = [ "multi-user.target" ];
               path = [ config.services.flatpak.package ];
@@ -46,8 +46,8 @@ in
             };
           }
           {
-            programs.appimage.enable = true;
-            programs.appimage.binfmt = true;
+            programs.appimage.enable = lib.mkDefault true;
+            programs.appimage.binfmt = lib.mkDefault true;
           }
           (
             let

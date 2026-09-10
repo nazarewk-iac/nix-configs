@@ -249,7 +249,7 @@ in
                 };
               })
               (kdnConfig.util.ifTypes [ "nixos" "darwin" ] {
-                nix.distributedBuilds = true;
+                nix.distributedBuilds = lib.mkDefault true;
                 nix.buildMachines = cfg.buildMachines;
               })
             ]

@@ -27,7 +27,7 @@ in
 {
   config = {
     # TODO: use `xdg.mimeApps.defaultApplicationPackages` where appropriate
-    xdg.mimeApps.enable = true;
+    xdg.mimeApps.enable = lib.mkDefault true;
     xdg.mimeApps.associations.added = { };
     xdg.mimeApps.defaultApplications = {
       "application/pdf" = pdf;

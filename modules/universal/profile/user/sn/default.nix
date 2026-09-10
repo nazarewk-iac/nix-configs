@@ -77,8 +77,8 @@ in
             services.flameshot.settings.General.savePath = "${config.home.homeDirectory}/Downloads/screenshots";
           }
           (lib.mkIf (kdnConfig.util.hasParentOfAnyType [ "nixos" ]) {
-            xdg.mime.enable = true;
-            xdg.mimeApps.enable = true;
+            xdg.mime.enable = lib.mkDefault true;
+            xdg.mimeApps.enable = lib.mkDefault true;
             xdg.mimeApps.associations.added = { };
             xdg.mimeApps.defaultApplications =
               let
@@ -144,7 +144,7 @@ in
         };
         home-manager.users.sn = {
           kdn.profile.user.sn = {
-            enable = true;
+            enable = lib.mkDefault true;
             osConfig = config.users.users.sn;
           };
         };
