@@ -29,6 +29,10 @@
     # `homeManager` half arrives through the `dev` user, because den partitions by scope — see
     # ../users/default.nix.
     den.aspects.devenv-cli
+
+    # `zellij` is `devenv`-only, like `gh`. Both routes must give one identical Claude Code
+    # allowlist, and ../tests.nix asserts that equality.
+    den.aspects.zellij
   ];
 
   den.aspects.host-darwin.darwin = {
