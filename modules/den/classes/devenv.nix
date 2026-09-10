@@ -9,6 +9,14 @@
 # `devenv.root` and `devenv.tmpdir` are mandatory and carry no default. The shell is at
 # `config.shell`. It needs no `--impure`, no devenv CLI and no CppNix-only builtin. Measured on
 # 2026-09-10 — see 004-den-spike/research.md, criterion 1.
+#
+# The class serves two routes:
+#
+#   1. Every den host also produces a shell, through `den.policies.host-to-devenv`. This is the
+#      real repository shape: one host, one shell, one aspect list.
+#   2. A standalone shell that belongs to no host. It calls `den.lib.aspects.resolve "devenv"` on
+#      each aspect and passes the results to `kdn.den.devenv.mkShell`. It declares no den entity.
+#      See ../../../checks/den-mvp/devenv/default.nix.
 {
   den,
   inputs,
@@ -16,6 +24,31 @@
   config,
   ...
 }:
+let
+  cfg = config.kdn.den.devenv;
+
+  # One devenv evaluation. Both routes below call it, so they cannot drift apart.
+  mkShell =
+    {
+      name,
+      system,
+      modules,
+    }:
+    (lib.evalModules {
+      class = "devenv";
+      specialArgs.inputs = { };
+      modules = [
+        (inputs.devenv.outPath + "/src/modules/top-level.nix")
+        {
+          _module.args.pkgs = import inputs.nixpkgs { inherit system; };
+          devenv.root = cfg.root;
+          devenv.tmpdir = "/tmp";
+          inherit name;
+        }
+      ]
+      ++ modules;
+    }).config;
+in
 {
   # den declares one `flake.<output>` option per output name it knows. `devenvShells` is not one of
   # them, so this class declares its own. Without the declaration the whole evaluation fails with
@@ -23,25 +56,53 @@
   options.flake.devenvShells = lib.mkOption {
     type = lib.types.lazyAttrsOf lib.types.raw;
     default = { };
-    description = "One evaluated devenv configuration per den host.";
+    description = "One evaluated devenv configuration per den host and per standalone shell.";
   };
 
   options.kdn.den.devenv.root = lib.mkOption {
     type = lib.types.str;
+    default = "/den-mvp";
     description = ''
       Value for devenv's own mandatory `devenv.root` option. devenv declares no default for it.
 
-      A flake output cannot know the directory the user stands in, so this holds the flake's own
-      store path. A real interactive shell needs the real working directory, and the devenv CLI
-      passes that itself.
+      The default is a placeholder, because these shells build and never run interactively. A real
+      interactive shell needs the real working directory, and the devenv CLI passes that itself.
+
+      **The value must not be a store path.** devenv's `claude.code` integration writes
+      `files."''${devenv.root}/.claude/settings.json"`, which makes the root a *dynamic attribute
+      name*. Nix rejects such a name when it refers to a store path:
+
+        error: the string '/nix/store/…-source/.claude/settings.json' is not allowed to refer to a
+        store path
+
+      So `"''${self}"` cannot be the value. Measured on 2026-09-10 against
+      `<devenv>/src/modules/integrations/claude.nix:977`.
+    '';
+  };
+
+  options.kdn.den.devenv.mkShell = lib.mkOption {
+    type = lib.types.raw;
+    readOnly = true;
+    description = ''
+      Evaluate one devenv configuration. The standalone route calls it directly, and the
+      `host-to-devenv` policy calls it as a host's `instantiate`.
+
+      `name` and `system` are arguments because den calls `instantiate` with `{ modules }` and
+      nothing else. Measured on 2026-09-10 with a probe entity.
+
+      Do not wrap this in a helper that returns a whole den module. A den module whose **keys**
+      come from `config` is an infinite recursion: the module system must read `config` to learn
+      which options the module defines, and `config` needs every module first. Keep the keys
+      static and read `config` in the values only.
     '';
   };
 
   config = {
     den.classes.devenv = { };
 
-    # host → devenv shell. Every den host also produces one shell, so one entity and one aspect list
-    # serve both targets.
+    kdn.den.devenv.mkShell = mkShell;
+
+    # host → devenv shell. Every den host gets one shell from its own aspect list.
     den.policies.host-to-devenv =
       { host, ... }:
       [
@@ -50,20 +111,11 @@
           class = "devenv";
           instantiate =
             { modules, ... }:
-            (lib.evalModules {
-              class = "devenv";
-              specialArgs.inputs = { };
-              modules = [
-                (inputs.devenv.outPath + "/src/modules/top-level.nix")
-                {
-                  _module.args.pkgs = import inputs.nixpkgs { system = host.system; };
-                  devenv.root = config.kdn.den.devenv.root;
-                  devenv.tmpdir = "/tmp";
-                  name = "${host.name}-devenv";
-                }
-              ]
-              ++ modules;
-            }).config;
+            mkShell {
+              name = "${host.name}-devenv";
+              inherit (host) system;
+              inherit modules;
+            };
           intoAttr = [
             "devenvShells"
             host.name
