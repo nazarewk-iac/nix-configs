@@ -262,7 +262,7 @@ each one needs, and it puts the cheap tests first:
 | 3 | `nix` | 148 | `devenv` | A slot that reads repository content through `${inputs.nix-configs}`. It also sets `kdn.mcp.*`, so it now runs **after** the `mcp` family. |
 | 4 | `opencode` | 197 | `devenv` | **Done.** The first de-personalized port: `authKeys`, `settings` and `allowedPaths` replace the provider name and the checkout path that the slot hardcodes. It also fixes one slot defect — a consumer that set `settings` lost the whole permission baseline. |
 | 5 | `zellij` | 221 | `devenv` | **Done.** It ships a skill file, two Claude Code hooks and two `packages/` derivations. It needed two new mechanisms: `kdn.isSourceRepo` in `modules/den/common/source-repo.nix`, and a plain `pkgs.callPackage` route to `packages/llm/` with no overlay. |
-| 6 | `mcp` family — `mcp`, `snoop`, `pretty-print`, `basic-memory` | 646 | `devenv` | **Slot-to-slot option coupling.** The first hard case. |
+| 6 | `mcp` family — `mcp`, `snoop`, `pretty-print`, `basic-memory` | 476 | `devenv` | **Done.** Slot-to-slot option coupling, solved with `includes` and no shared declaration file. Two mechanisms measured — see below. |
 | 7 | `jj` family — `jj`, `jj/fork` | 949 | `devenv` | The second coupled pair, and the largest shell payload. |
 | 8 | `llm` family — `llm`, `llm/client`, `llm/proxy` | 1,287 | `nixos`, `devenv` | One family that spans two classes. |
 | 9 | `ssh-access` | 251 | `devenv`, `home` | **Blocked on 009.** It carries personal data. |
@@ -271,15 +271,38 @@ each one needs, and it puts the cheap tests first:
 
 Each one is read from the source, and none of them is solved yet.
 
-1. **Slot-to-slot option coupling.** `modules/slots/mcp/snoop/default.nix:22-23` reads
-   `config.kdn.mcp.enable` and writes `kdn.mcp.commandOverlays`. So one slot configures another
-   slot's option. den partitions an aspect by class and by scope, so a shared option needs one
-   owner and one evaluation. Order 6 above is the first test of this, and it is the reason the
-   earlier plan named a coupled pair.
+1. **Slot-to-slot option coupling. Solved by order 6.** `modules/slots/mcp/snoop/default.nix:22-23`
+   reads `config.kdn.mcp.enable` and writes `kdn.mcp.commandOverlays`. So one slot configures
+   another slot's option. The aspect answer is `includes`: `mcp-snoop.includes = [ mcp ]` puts both
+   target modules into one evaluation, so the child writes the parent's option directly.
+
+   **Measured on 2026-09-10: den dedupes a diamond.** Three probes. `childA.includes = [ base ]`
+   plus `childB.includes = [ base ]` plus `top.includes = [ childA childB ]` gives an `imports`
+   list of length 1, and `base` declares its option exactly once. Resolving `base`, `childA` and
+   `childB` **separately** and merging all three results dedupes too. den keys each target module
+   per aspect, and the module system drops a repeated key — see den's
+   `nix/lib/home-env.nix:74`. `den-eval-mcp` asserts the built form: three aspects include `mcp`,
+   and the shell holds exactly one gateway package.
+
+   So a shared option needs **no** shared declaration file. It belongs in the aspect that reads
+   it, next to that code. `modules/den/common/source-repo.nix` stays a by-path import only because
+   `kdn.isSourceRepo` has several unrelated writers.
 2. **A slot writes a target option flat.** `modules/slots/mcp/snoop/default.nix:34` sets
    `devenv.packages` with no target wrapper. The slot loader accepts that. den needs the value
    inside a class target, so each such site needs a rewrite.
-3. **`ssh-access` holds personal data.** `modules/slots/ssh-access/kdn-graph.nix` carries hosts,
+3. **A flake input can be out of reach. Worked around in order 6.** `mcp-servers-nix` is declared
+   in `devenv.yaml` only, never in `flake.nix`, so no den evaluation can reach it. Adding it as a
+   flake input would change `flake.lock`, and that would rewrite a pre-checkpoint commit. So the
+   aspect takes the source as the option `kdn.mcp.serversNix` (`nullOr raw`, default `null`) and
+   the consumer passes it. This is the better adopter shape as well: the adopter passes their own
+   source, and a `null` raises a warning that names what stays inert.
+
+   The cost is one test gap: no den check exercises the **real** `mcp-servers-nix`. A stub at
+   `checks/den-mvp/mcp-servers-nix-stub/` implements the one function the aspect calls, so the
+   translation code is tested on the `stdio`, `args` and `http` branches — but the real server set
+   is not.
+
+4. **`ssh-access` holds personal data.** `modules/slots/ssh-access/kdn-graph.nix` carries hosts,
    LAN addresses and zones. It moves to the personal folder of
    [009](../009-personal-data-folder/definition.md) first, so order 9 waits for that checkpoint.
 

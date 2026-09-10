@@ -26,6 +26,10 @@ let
     ca = ./aspects/ca.nix;
     devenv-cli = ./aspects/devenv-cli.nix;
     gh = ./aspects/gh.nix;
+    mcp = ./aspects/mcp.nix;
+    mcp-basic-memory = ./aspects/mcp-basic-memory.nix;
+    mcp-pretty-print = ./aspects/mcp-pretty-print.nix;
+    mcp-snoop = ./aspects/mcp-snoop.nix;
     opencode = ./aspects/opencode.nix;
     rosetta-builder = ./aspects/rosetta-builder.nix;
     ssh-agent = ./aspects/ssh-agent.nix;

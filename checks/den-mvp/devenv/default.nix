@@ -36,7 +36,39 @@ let
     # below supplies every value. It stays out of the two host aspect lists on purpose: `gh` and
     # `zellij` already prove the host-to-devenv route, and one wrapper build per shell is enough.
     den.aspects.opencode
+
+    # The `mcp` family, four aspects. Only the two leaves appear here: `mcp-snoop` includes `mcp`,
+    # and `mcp-basic-memory` includes `mcp-pretty-print`, which includes `mcp` too. So the list
+    # itself proves den dedupes the diamond — one shell must hold one gateway, not two.
+    #
+    # The family stays out of both host aspect lists. `gh` and `zellij` already prove the
+    # host-to-devenv route, and this family builds a Python application and a Python virtual
+    # environment, so one build per shell is enough.
+    den.aspects.mcp-snoop
+    den.aspects.mcp-basic-memory
   ];
+
+  # The data for the `mcp` family. The aspects name no knowledge base, no knowledge root and no
+  # `mcp-servers-nix` source, so the entity supplies each one.
+  mcpData = {
+    # The stub source. `mcp-servers-nix` is a `devenv.yaml` input, so no den evaluation reaches the
+    # real one. The stub implements the one function the aspect calls, and it turns the aspect's own
+    # `programs` declarations into servers — so the translation code gets a real test. See
+    # ../mcp-servers-nix-stub/lib/default.nix.
+    kdn.mcp.serversNix = ../mcp-servers-nix-stub;
+
+    # Two bases, with neutral names. The creator's own bases and the creator's own knowledge root
+    # belong in the real consumer, never in an aspect and never here.
+    kdn.mcp.basic-memory.knowledgeRoot = "$HOME/.local/share/den-mvp/knowledge";
+    kdn.mcp.basic-memory.bases.general = {
+      aliases = [ "bmg" ];
+      description = "den MVP general knowledge base";
+    };
+    kdn.mcp.basic-memory.bases.archive = {
+      aliases = [ "bma" ];
+      description = "den MVP archive knowledge base";
+    };
+  };
 
   # The data for the `opencode` aspect. Every value here is a neutral placeholder — the aspect
   # itself names no provider, no model and no checkout path. See
@@ -84,6 +116,7 @@ in
     devenv-darwin.system = "aarch64-darwin";
     devenv-darwin.extra = [
       opencodeData
+      mcpData
       { kdn.opencode.defaultModel = "example-provider/example-model"; }
     ];
 
@@ -94,6 +127,7 @@ in
     devenv-linux.system = "x86_64-linux";
     devenv-linux.extra = [
       opencodeData
+      mcpData
       { kdn.isSourceRepo = true; }
       (
         { pkgs, ... }:
