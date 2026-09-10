@@ -224,7 +224,23 @@ in
             nix-homebrew.enable = true;
             nix-homebrew.enableRosetta = pkgs.stdenv.hostPlatform.isAarch64;
 
-            nix-homebrew.taps =
+            /*
+              The flake-input tap scan, now opt-in.
+
+              It reads every `brew-tap--<owner>--<repo>` input of the flake that owns this tree and
+              registers each one as a tap. So a consumer inherits the taps of that flake, including a
+              private one. `kdn.homebrew.tapsFromFlakeInputs` defaults to `false`, and each darwin
+              host of this repository sets it to `true` in its own file.
+
+              `homebrew.taps` above reads `config.nix-homebrew.taps`, so an off switch empties both.
+
+              DECISION TO REVISE: `homebrew.enable`, `nix-homebrew.enable` and the three
+              `onActivation` values above stay forced on every darwin host. This commit flips the tap
+              scan alone, because the scan is the part that carries another flake's own data. The rest
+              of the Homebrew opinion needs the same treatment, and
+              `modules/den/aspects/homebrew.nix` already holds the standalone form of it.
+            */
+            nix-homebrew.taps = lib.mkIf cfg.homebrew.tapsFromFlakeInputs (
               let
                 prefix = "brew-tap--";
               in
@@ -239,7 +255,8 @@ in
                     value = src;
                   }
                 ))
-              ];
+              ]
+            );
           }
           # FIXES
           {

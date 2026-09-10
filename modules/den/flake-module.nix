@@ -138,6 +138,10 @@ in
   flake.denModules.ca = resolveChecked "nixos" "ca" kdn.ca;
   flake.denModules.gh = resolveChecked "devenv" "gh" kdn.gh;
 
+  # The Homebrew concern. It emits the `darwin` class alone, and every list it feeds starts empty. So
+  # an adopter that imports this module gets nix-darwin's `homebrew` module on and no package at all.
+  flake.denModules.homebrew = resolveChecked "darwin" "homebrew" kdn.homebrew;
+
   # The `jj` family, a coupled pair. `jj-fork` names `jj` in its own `includes`, and `jj` names
   # `mcp`, so both entries below join the same diamond as the `mcp` family. den dedupes it.
   #
