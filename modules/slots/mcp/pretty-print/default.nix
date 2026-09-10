@@ -99,9 +99,9 @@ let
 in
 {
   options.kdn.mcp.pretty-print = {
-    enable = lib.mkEnableOption "pretty-printing of mcp-gateway gateway_invoke calls" // {
-      default = true;
-    };
+    # A slot is side-effect free by default — see .agents/rules/nix-conventions.md. A consumer that
+    # wants the pretty-printer sets this option, as devenv.nix of this repository does.
+    enable = lib.mkEnableOption "pretty-printing of mcp-gateway gateway_invoke calls";
 
     formatters = lib.mkOption {
       type = lib.types.attrsOf (lib.types.submodule formatterSubmodule);

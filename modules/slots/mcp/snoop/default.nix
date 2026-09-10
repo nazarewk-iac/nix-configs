@@ -14,9 +14,9 @@ let
 in
 {
   options.kdn.mcp.snoop = {
-    enable = lib.mkEnableOption "mcpsnoop transparent MCP traffic inspector" // {
-      default = true;
-    };
+    # A slot is side-effect free by default — see .agents/rules/nix-conventions.md. A consumer that
+    # wants the inspector sets this option, as devenv.nix of this repository does.
+    enable = lib.mkEnableOption "mcpsnoop transparent MCP traffic inspector";
   };
 
   config = lib.mkIf (config.kdn.mcp.enable && cfg.enable) {
