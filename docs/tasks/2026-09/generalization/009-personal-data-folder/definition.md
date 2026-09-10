@@ -115,6 +115,7 @@ The test entity generates throwaway certificates instead.
 | `llm` | homelab FQDNs and overlay IP addresses in the option examples | the folder holds the real values; the examples become neutral. Overlaps 007 item 3. |
 | `ssh-access` | `modules/slots/ssh-access/kdn-graph.nix`, 176 LOC of hosts, LAN addresses, WAN ports and `*.kdn.im` zones | the folder, wholesale. Already listed in Tier 3 above. This is why `ssh-access` is last in the port order. |
 | `mcp` / `basic-memory` | knowledge-base paths under the creator's own `~/.local/share/…` | the folder supplies the paths as data. |
+| `zellij` | none | n/a for the data. But `modules/den/aspects/zellij.nix` reads `wait-for-devenv.sh` and `wait-for-devenv-start.sh` from `modules/slots/zellij/`. Both scripts move to `modules/den/aspects/zellij/` when the slot tree goes away, and the aspect file becomes a directory. A duplicate copy today would drift in silence; a dangling path later fails loudly. |
 
 Keep this table current as each order lands. It is the input list for the move, and it records what
 the port deliberately did not fix.

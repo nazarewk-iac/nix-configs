@@ -27,18 +27,33 @@ let
     # The four-target aspect. Its `devenv` half is new — the slot has none. See
     # ../../../modules/den/aspects/devenv-cli.nix.
     den.aspects.devenv-cli
+
+    # The `zellij` aspect. It is the first aspect that installs a repository file, so it also tests
+    # the `kdn.isSourceRepo` switch below.
+    den.aspects.zellij
   ];
 
+  # `extra` holds plain consumer modules, next to the resolved aspects. The two shells differ in
+  # one value only, so both branches of `kdn.isSourceRepo` get a test — see ../tests.nix.
   mkStandalone =
-    name: system:
+    name:
+    {
+      system,
+      extra ? [ ],
+    }:
     config.kdn.den.devenv.mkShell {
       inherit name system;
-      modules = map (den.lib.aspects.resolve "devenv") aspects;
+      modules = (map (den.lib.aspects.resolve "devenv") aspects) ++ extra;
     };
 in
 {
   flake.devenvShells = lib.mapAttrs mkStandalone {
-    devenv-darwin = "aarch64-darwin";
-    devenv-linux = "x86_64-linux";
+    # The adopter shape. `kdn.isSourceRepo` keeps its default `false`, so the `zellij` aspect
+    # installs its skill file.
+    devenv-darwin.system = "aarch64-darwin";
+
+    # This repository's own shape. It commits the skill file itself, so no aspect installs one.
+    devenv-linux.system = "x86_64-linux";
+    devenv-linux.extra = [ { kdn.isSourceRepo = true; } ];
   };
 }

@@ -118,6 +118,10 @@ let
   hmHostNixos = nixosCfg.home-manager.users.dev.home.activationPackage;
 
   ghAllow = devenvDarwin.claude.code.permissions.rules.Bash.allow;
+
+  # Two aspects now write into one allowlist, so a gh-only assertion reads this narrowed list. Every
+  # rule the `gh` aspect emits starts with `gh `.
+  ghRules = builtins.filter (lib.hasPrefix "gh ") ghAllow;
   ghPackageCount =
     shell: builtins.length (builtins.filter (p: lib.hasPrefix "gh-" (p.name or "")) shell.packages);
   sorted = builtins.sort (a: b: a < b);
@@ -185,9 +189,15 @@ let
       actual = lib.elem "gh pr diff *" ghAllow;
     }
     {
-      name = "every allow rule names gh";
+      name = "every allow rule names a tool that an included aspect owns";
       expected = [ ];
-      actual = builtins.filter (r: !(lib.hasPrefix "gh " r)) ghAllow;
+      actual = builtins.filter (
+        r:
+        !(lib.any (tool: lib.hasPrefix "${tool} " r) [
+          "gh"
+          "zellij"
+        ])
+      ) ghAllow;
     }
     {
       name = "the allowlist holds no generic `gh api` passthrough";
@@ -221,7 +231,7 @@ let
           "comment"
           "delete"
         ]
-      ) ghAllow;
+      ) ghRules;
     }
     {
       name = "the host route and the standalone route give one allowlist";
@@ -520,6 +530,7 @@ let
         "gh"
         "rosetta-builder"
         "ssh-agent"
+        "zellij"
       ];
       actual = sorted (builtins.attrNames denLib.aspectModules);
     }
@@ -665,6 +676,146 @@ let
     }
   ];
 
+  # ------------------------------------------------------------------ zellij
+
+  # The first aspect with a Claude Code hook, and the first that installs a repository file.
+  #
+  # `devenv-darwin` leaves `kdn.isSourceRepo` false, so it installs the skill file. `devenv-linux`
+  # sets it true, so it installs none. Both branches of the `files` guard then get a test — see
+  # ./devenv/default.nix.
+  zellijHooks = devenvDarwin.claude.code.hooks;
+  zellijAllow = builtins.filter (lib.hasPrefix "zellij") ghAllow;
+  skillPath = ".claude/skills/zellij/SKILL.md";
+
+  # `lib.getName` reads `pname` when a derivation carries one, and it parses `name` otherwise. So one
+  # helper counts a nixpkgs package and a `writeShellApplication` alike.
+  countNamed = shell: n: builtins.length (builtins.filter (p: lib.getName p == n) shell.packages);
+
+  zellijAssertions = [
+    {
+      name = "the shell holds exactly one zellij";
+      expected = 1;
+      actual = countNamed devenvDarwin "zellij";
+    }
+    {
+      name = "the shell holds the kdn-slug helper, with no overlay";
+      expected = 1;
+      actual = countNamed devenvDarwin "kdn-slug";
+    }
+    {
+      name = "the shell holds the zellij-llm helper, with no overlay";
+      expected = 1;
+      actual = countNamed devenvDarwin "zellij-llm";
+    }
+    {
+      name = "the linux shell holds the same three packages";
+      expected = [
+        1
+        1
+        1
+      ];
+      actual = map (countNamed devenvLinux) [
+        "zellij"
+        "kdn-slug"
+        "zellij-llm"
+      ];
+    }
+    {
+      name = "the PreToolUse hook matches a Bash call";
+      expected = {
+        hookType = "PreToolUse";
+        matcher = "Bash";
+      };
+      actual = {
+        inherit (zellijHooks.zellij-wait-for-devenv) hookType matcher;
+      };
+    }
+    {
+      name = "the PostToolUse hook matches a file write";
+      expected = {
+        hookType = "PostToolUse";
+        matcher = "^(Edit|MultiEdit|Write)$";
+      };
+      actual = {
+        inherit (zellijHooks.zellij-wait-for-devenv-start) hookType matcher;
+      };
+    }
+    {
+      name = "each hook runs a store path";
+      expected = [
+        true
+        true
+      ];
+      actual = map (h: lib.hasPrefix builtins.storeDir h) [
+        zellijHooks.zellij-wait-for-devenv.command
+        zellijHooks.zellij-wait-for-devenv-start.command
+      ];
+    }
+    {
+      name = "the allowlist holds the one static read of the agent's own pane";
+      expected = true;
+      actual = lib.elem ''zellij action dump-screen -p "$ZELLIJ_PANE_ID" | tail -n 1'' zellijAllow;
+    }
+    {
+      name = "the allowlist holds no wildcard pane read";
+      expected = [ ];
+      actual = builtins.filter (r: lib.hasInfix "dump-screen" r && lib.hasInfix "*" r) zellijAllow;
+    }
+    {
+      name = "the allowlist holds no mutating action and no other content read";
+      expected = [ ];
+      actual = builtins.filter (
+        r:
+        lib.any (a: lib.hasInfix a r) [
+          "new-pane"
+          "new-tab"
+          "go-to-tab"
+          "focus-pane-id"
+          "close-"
+          "kill-session"
+          "delete-session"
+          "write"
+          "paste"
+          "send-keys"
+          "subscribe"
+          "edit-scrollback"
+        ]
+      ) zellijAllow;
+    }
+    {
+      name = "an adopter shell installs the skill file";
+      expected = true;
+      actual = devenvDarwin.files ? ${skillPath};
+    }
+    {
+      name = "the skill source names one file inside the tree the evaluation already reads";
+      expected = true;
+      actual = lib.hasSuffix "/.agents/skills/zellij/SKILL.md" (
+        toString devenvDarwin.files.${skillPath}.source
+      );
+    }
+    {
+      name = "the source repository installs no skill file";
+      expected = false;
+      actual = devenvLinux.files ? ${skillPath};
+    }
+    {
+      name = "the library route resolves the aspect for the devenv class";
+      expected = 1;
+      actual = builtins.length (
+        denLib.imports {
+          class = "devenv";
+          aspects = [ "zellij" ];
+        }
+      );
+    }
+    {
+      name = "denModules.zellij holds a non-empty imports list";
+      expected = true;
+      actual = (builtins.length flake.denModules.zellij.imports) > 0;
+    }
+  ];
+
   # ------------------------------------------------------------------ the check set
 
   # Tier 1 runs anywhere: the comparison is an evaluation and the derivation is local.
@@ -676,6 +827,7 @@ let
     den-eval-devenv-cli = mkEvalCheck "devenv-cli" devenvCliAssertions;
     den-eval-ssh-agent = mkEvalCheck "ssh-agent" sshAgentAssertions;
     den-eval-ca = mkEvalCheck "ca" caAssertions;
+    den-eval-zellij = mkEvalCheck "zellij" zellijAssertions;
   };
 
   # Tier 2 and tier 3 build a real artifact, so each one needs a builder for its own platform. The
