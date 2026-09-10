@@ -7,6 +7,14 @@
     # nix-darwin's own default for `system` reads `builtins.currentSystem`. den itself passes
     # `{ modules }` and nothing else.
     instantiate = args: inputs.nix-darwin.lib.darwinSystem (args // { system = null; });
+
+    # `homeManager` must be explicit. den's default is `[ "user" ]` alone, so a user that omits it
+    # gets no home-manager generation and every aspect's `homeManager` half goes nowhere.
+    # `../users/default.nix` holds the `dev` aspect.
+    users.dev.classes = [
+      "user"
+      "homeManager"
+    ];
   };
 
   # den finds a host's aspect by the host name, so this attribute name is the wiring.
@@ -16,10 +24,17 @@
     # `gh` emits into the `devenv` target only. It proves a devenv aspect reaches the shell that
     # `den.policies.host-to-devenv` derives from this host, and it changes no darwin option.
     den.aspects.gh
+
+    # The four-target aspect. This inclusion delivers its `darwin` and `devenv` halves. Its
+    # `homeManager` half arrives through the `dev` user, because den partitions by scope — see
+    # ../users/default.nix.
+    den.aspects.devenv-cli
   ];
 
   den.aspects.host-darwin.darwin = {
-    system.primaryUser = "den";
+    # `system.primaryUser` now comes from `den.batteries.primary-user` on the `dev` user aspect.
+    # Two definitions would conflict.
+
     # nix-darwin asserts this value. `7` is what it names for a new installation on 2026-09-10.
     system.stateVersion = 7;
   };

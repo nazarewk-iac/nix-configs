@@ -23,6 +23,10 @@ let
   # One aspect list, shared by every standalone shell.
   aspects = [
     den.aspects.gh
+
+    # The four-target aspect. Its `devenv` half is new — the slot has none. See
+    # ../../../modules/den/aspects/devenv-cli.nix.
+    den.aspects.devenv-cli
   ];
 
   mkStandalone =
