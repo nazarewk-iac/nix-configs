@@ -13,12 +13,12 @@ in
     enable = lib.mkEnableOption "slack setup";
   };
 
-  config = lib.mkMerge [
-    (kdnConfig.util.ifHMParent {
-      home-manager.sharedModules = [ { kdn.programs.slack = lib.mkDefault cfg; } ];
-    })
-    (lib.optionalAttrs (kdnConfig.util.hasParentOfAnyType [ "nixos" ]) (
-      lib.mkIf cfg.enable (
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      (kdnConfig.util.ifHMParent {
+        home-manager.sharedModules = [ { kdn.programs.slack = lib.mkDefault cfg; } ];
+      })
+      (lib.optionalAttrs (kdnConfig.util.hasParentOfAnyType [ "nixos" ]) (
         lib.mkMerge [
           {
             xdg.configFile."pipewire/pipewire.conf.d/51-slack.conf".text = builtins.toJSON {
@@ -60,7 +60,7 @@ in
             };
           }
         ]
-      )
-    ))
-  ];
+      ))
+    ]
+  );
 }

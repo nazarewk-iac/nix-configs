@@ -13,12 +13,12 @@ in
     enable = lib.mkEnableOption "nextcloud-client-desktop setup";
   };
 
-  config = lib.mkMerge [
-    (kdnConfig.util.ifHMParent {
-      home-manager.sharedModules = [ { kdn.programs.nextcloud-client = lib.mkDefault cfg; } ];
-    })
-    (lib.optionalAttrs (kdnConfig.util.hasParentOfAnyType [ "nixos" ]) (
-      lib.mkIf cfg.enable (
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      (kdnConfig.util.ifHMParent {
+        home-manager.sharedModules = [ { kdn.programs.nextcloud-client = lib.mkDefault cfg; } ];
+      })
+      (lib.optionalAttrs (kdnConfig.util.hasParentOfAnyType [ "nixos" ]) (
         lib.mkMerge [
           {
             /*
@@ -43,7 +43,7 @@ in
             };
           }
         ]
-      )
-    ))
-  ];
+      ))
+    ]
+  );
 }

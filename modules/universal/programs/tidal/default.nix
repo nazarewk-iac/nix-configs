@@ -13,12 +13,12 @@ in
     enable = lib.mkEnableOption "tidal setup";
   };
 
-  config = lib.mkMerge [
-    (kdnConfig.util.ifHMParent {
-      home-manager.sharedModules = [ { kdn.programs.tidal = lib.mkDefault cfg; } ];
-    })
-    (lib.optionalAttrs (kdnConfig.util.hasParentOfAnyType [ "nixos" ]) (
-      lib.mkIf cfg.enable (
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      (kdnConfig.util.ifHMParent {
+        home-manager.sharedModules = [ { kdn.programs.tidal = lib.mkDefault cfg; } ];
+      })
+      (lib.optionalAttrs (kdnConfig.util.hasParentOfAnyType [ "nixos" ]) (
         lib.mkMerge [
           {
             xdg.configFile."pipewire/pipewire.conf.d/51-tidal-hifi.conf".text = builtins.toJSON {
@@ -61,7 +61,7 @@ in
             };
           }
         ]
-      )
-    ))
-  ];
+      ))
+    ]
+  );
 }
