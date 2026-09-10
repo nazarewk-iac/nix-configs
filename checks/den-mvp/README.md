@@ -112,9 +112,16 @@ tiers. `checks/default.nix` merges them into `checks.<system>.*`.
 |---|---|---|
 | `den-eval-rosetta-builder` | 1 — evaluation | the aspect sets four option values and one launchd daemon |
 | `den-eval-gh` | 1 — evaluation | the package, the Claude Code opt-in, and that no mutating rule entered the allowlist |
-| `den-eval-guards` | 1 — evaluation | both `denLib` guards fire, and the good path still returns one module |
+| `den-eval-guards` | 1 — evaluation | both `denLib` guards fire, the good path still returns one module, and the namespace holds the registry and no phantom |
 | `den-eval-routes` | 1 — evaluation | `denLib.imports` and `denModules` give one `drvPath` in a bare nix-darwin system |
 | `den-eval-devenv-cli` | 1 — evaluation | the full matrix: 12 assertions over all four den classes, both hosts, both home-manager routes and `denLib.imports` |
+| `den-eval-ssh-agent` | 1 — evaluation | the user scope alone: the aspect reaches a home-manager generation and no host target |
+| `den-eval-ca` | 1 — evaluation | the first `nixos`-only aspect, with the option inside the `nixos` target |
+| `den-eval-zellij` | 1 — evaluation | the skill file, the two Claude Code hooks and the `kdn.isSourceRepo` switch, on both branches |
+| `den-eval-opencode` | 1 — evaluation | the de-personalized options, and that a consumer's `settings` keeps the permission baseline |
+| `den-eval-mcp` | 1 — evaluation | the four-aspect family: one gateway per shell, every backend name in the generated YAML |
+| `den-eval-nix` | 1 — evaluation | the pre-commit hook, `den.devenv.inputs.git-hooks`, and the `$DEVENV_ROOT` expansion that replaces a frozen store path |
+| `den-eval-jj` | 1 — evaluation | the coupled pair: the generated repo config, the revset and sync aliases, both git hooks, the read-only Bash allowlist, and an empty failed-assertion list in both shells |
 | `den-artifact-host-darwin` | 2 — artifact | the built toplevel holds three `nix.conf` lines, `sw/bin/devenv`, the launchd plist and the `activate` reference |
 | `den-artifact-hm-host-darwin` | 2 — artifact | the generation den forwards to `home-manager.users.dev` writes all three shell hooks |
 | `den-artifact-home-darwin` | 2 — artifact | the same, for the **standalone** home-manager route that carries no den entity |
@@ -130,8 +137,11 @@ Tier 1 runs on any machine: the comparison is an evaluation and the derivation i
 tier 3 build a real artifact, so `tests.nix` keeps only this machine's entries — the same rule the
 `den-mvp` aggregate follows.
 
-**11 of 11 pass on an `aarch64-darwin` machine**, measured on 2026-09-10. The six
-`x86_64-linux` entries evaluate to a `drvPath` from Darwin, and they need a Linux builder to build.
+**17 of 17 pass on an `aarch64-darwin` machine**, measured on 2026-09-10: 12 evaluation, 3 artifact
+and 2 smoke. The 12 evaluation checks assert 150 values together, and `den-eval-jj` holds 32 of them.
+The five `x86_64-linux` entries evaluate to a `drvPath` from Darwin, and they need a Linux builder to
+build. `nix eval '.#checks.<system>'` lists 18 `den*` names on each system, because the `den-mvp`
+build gate joins the 17.
 
 **No tier activates anything.** Tier 2 reads a built store path and never executes it. Tier 3 runs
 devenv's `config.test`, which devenv keeps separate from `enterShell`, so no assertion runs on

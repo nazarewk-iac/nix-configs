@@ -37,6 +37,8 @@ let
     ca = ./aspects/ca.nix;
     devenv-cli = ./aspects/devenv-cli.nix;
     gh = ./aspects/gh.nix;
+    jj = ./aspects/jj.nix;
+    jj-fork = ./aspects/jj-fork.nix;
     mcp = ./aspects/mcp.nix;
     mcp-basic-memory = ./aspects/mcp-basic-memory.nix;
     mcp-pretty-print = ./aspects/mcp-pretty-print.nix;

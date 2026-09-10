@@ -138,6 +138,14 @@ in
   flake.denModules.ca = resolveChecked "nixos" "ca" kdn.ca;
   flake.denModules.gh = resolveChecked "devenv" "gh" kdn.gh;
 
+  # The `jj` family, a coupled pair. `jj-fork` names `jj` in its own `includes`, and `jj` names
+  # `mcp`, so both entries below join the same diamond as the `mcp` family. den dedupes it.
+  #
+  # A repository with one remote takes `jj` alone. A repository with a public remote and a private
+  # fork takes `jj-fork`, which brings `jj` with it.
+  flake.denModules.jj = resolveChecked "devenv" "jj" kdn.jj;
+  flake.denModules.jj-fork = resolveChecked "devenv" "jj-fork" kdn.jj-fork;
+
   # The `mcp` family. Each child resolves on its own, and the parent comes with it through
   # `includes`. den dedupes the diamond, so one shell holds one copy of the gateway.
   flake.denModules.mcp = resolveChecked "devenv" "mcp" kdn.mcp;
