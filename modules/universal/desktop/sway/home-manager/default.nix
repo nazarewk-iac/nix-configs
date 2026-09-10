@@ -253,7 +253,7 @@
               natural_scroll = "enabled";
             };
             input."type:keyboard" = {
-              xkb_layout = "pl";
+              xkb_layout = config.kdn.locale.xkbLayout;
               # https://major.io/2022/05/24/sway-reload-causes-a-firefox-crash/
               # xkb_numlock = "enable";
               repeat_delay = "333";

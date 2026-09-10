@@ -127,7 +127,6 @@
   inputs.nixos-anywhere.inputs.treefmt-nix.follows = "treefmt-nix";
   inputs.nixos-avf.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nixos-crostini.inputs.nixpkgs.follows = "nixpkgs";
-  inputs.nixos-crostini.inputs.nixos-generators.follows = "nixos-generators";
   inputs.nixos-generators.inputs.nixlib.follows = "nixpkgs-lib";
   inputs.nixos-generators.inputs.nixpkgs.follows = "nixpkgs";
   inputs.rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
