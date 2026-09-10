@@ -243,7 +243,7 @@ The user set the target: **reimplement all of `modules/slots/` as den aspects.**
 sample is not the goal. The earlier plan named one coupled pair (`jj` plus `mcp`); that pair is now
 one step in a full port.
 
-`modules/slots/` holds 18 slots plus a 22-line loader, and 4,160 lines of Nix and shell. **11 den
+`modules/slots/` holds 18 slots plus a 22-line loader, and 4,160 lines of Nix and shell. **12 den
 aspects exist now.** The order table below marks each finished slot **Done**. These three were the
 first ports, at the time of the scope decision:
 
@@ -253,15 +253,15 @@ first ports, at the time of the scope decision:
 | `devenv` | 61 | full port, plus a `devenv` target the slot has none of — `modules/den/aspects/devenv-cli.nix` |
 | `rosetta-builder` | 180 | core options only. The guest-size options stay in the slot. |
 
-**Seven slot files remain, at 1,948 lines.** That count reads `default.nix` files only, and no shell
-file. The seven are `nix`, `jj`, `jj/fork`, `llm`, `llm/client`, `llm/proxy` and `ssh-access`. The
+**Six slot files remain, at 1,819 lines.** That count reads `default.nix` files only, and no shell
+file. The six are `jj`, `jj/fork`, `llm`, `llm/client`, `llm/proxy` and `ssh-access`. The
 order below groups them by the den mechanism each one needs, and it puts the cheap tests first:
 
 | Order | Slot or family | LOC | Slot targets | What it tests |
 |---|---|---|---|---|
 | 1 | `ssh-agent` | 76 | `home` | **Done.** The user scope alone. No host target at all. |
 | 2 | `ca` | 91 | `nixos` | **Done.** The first `nixos`-only aspect. The option lives inside the `nixos` target. |
-| 3 | `nix` | 148 | `devenv` | A slot that reads repository content through `${inputs.nix-configs}`. It also sets `kdn.mcp.*`, so it now runs **after** the `mcp` family. |
+| 3 | `nix` | 148 | `devenv` | **Done.** A slot that reads repository content through `${inputs.nix-configs}`. It also sets `kdn.mcp.*`, so it ran **after** the `mcp` family. It needed one new mechanism, `den.devenv.inputs`, because a pre-commit hook needs the `git-hooks` flake input. It also fixes one whole-tree store copy: a run-time wrapper expands `$DEVENV_ROOT`, where the slot froze a read-only store path. |
 | 4 | `opencode` | 197 | `devenv` | **Done.** The first de-personalized port: `authKeys`, `settings` and `allowedPaths` replace the provider name and the checkout path that the slot hardcodes. It also fixes one slot defect — a consumer that set `settings` lost the whole permission baseline. |
 | 5 | `zellij` | 221 | `devenv` | **Done.** It ships a skill file, two Claude Code hooks and two `packages/` derivations. It needed two new mechanisms: `kdn.isSourceRepo` in `modules/den/common/source-repo.nix`, and a plain `pkgs.callPackage` route to `packages/llm/` with no overlay. |
 | 6 | `mcp` family — `mcp`, `snoop`, `pretty-print`, `basic-memory` | 476 | `devenv` | **Done.** Slot-to-slot option coupling, solved with `includes` and no shared declaration file. Two mechanisms measured — see below. |
@@ -313,7 +313,7 @@ Five facts, each read from den's own source at the pinned revision:
 declaration under `kdn.<anything>` becomes an **aspect** named `<anything>`. The prefix put a phantom
 aspect named `den` into `den.ful.kdn`, and that phantom reached the exported output
 `flake.denful.kdn` too. The fix renames the prefix to `den.devenv.*`. After the fix, `den.ful.kdn`
-holds exactly the 11 registry aspects and no phantom.
+holds exactly the 12 registry aspects and no phantom.
 
 **The general rule the bug produces.** At the top level of an aspect file, `kdn.<name>` names an
 **aspect**. Inside a target module, `kdn.<name>` is an **option path** of the consumer's own
@@ -324,11 +324,11 @@ route carries the namespace and holds every registry aspect; the namespace holds
 the registry; the library route creates no `personal` namespace; the flake route exports the
 namespace as one output; the exported namespace holds every registry aspect; and the flake route
 never exports `personal`. `den-eval-guards` now passes 11 of 11, and every `aarch64-darwin` den check
-builds and passes — **15 of 15**. A system holds 15 den checks: 10 evaluation, 3 artifact and 2
-smoke, plus the `den-mvp` build gate. `x86_64-linux` holds 15 too.
+builds and passes — **16 of 16**. A system holds 16 den checks: 11 evaluation, 3 artifact and 2
+smoke, plus the `den-mvp` build gate. `x86_64-linux` holds 16 too.
 
 The conversion touched `modules/den/namespaces.nix` (new), `modules/den/lib.nix`,
-`modules/den/flake-module.nix`, `modules/den/classes/devenv.nix`, all 11 aspect files, all 5 entity
+`modules/den/flake-module.nix`, `modules/den/classes/devenv.nix`, all 12 aspect files, all 5 entity
 files under `checks/den-mvp/`, and `checks/den-mvp/tests.nix`. Order 3 (`nix`) starts on the
 namespaced tree.
 
