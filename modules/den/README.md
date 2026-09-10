@@ -194,6 +194,7 @@ it. The adopter surface is library mode, and `flake.denLib` ships it.
 | `rosetta-builder` aspect | core content only — the guest-size options are **not** ported |
 | `gh` aspect | present — the first `devenv`-target aspect, a full port of `modules/slots/gh/` |
 | `ssh-agent` aspect | present — the first **`homeManager`-only** aspect. A full port of `modules/slots/ssh-agent/`. |
+| `ca` aspect | present — the first **`nixos`-only** aspect. A full port of `modules/slots/ca/`. It declares `kdn.ca` **inside** its own `nixos` target, so one plain module both declares the option and serves it. |
 | `devenv-cli` aspect | present — the **four-target** aspect. It ports `modules/slots/devenv/` and adds a `devenv` target the slot has none of. |
 | `host-darwin` host | evaluates and builds a nix-darwin system, a devenv shell and one home-manager generation |
 | `host-nixos` host | evaluates a NixOS system, a devenv shell and one home-manager generation. It carries a real `nixos`-class aspect. |
@@ -201,7 +202,7 @@ it. The adopter surface is library mode, and `flake.denLib` ships it.
 | Standalone home-manager | present — `home-darwin` and `home-linux`, with no den entity. This is the adopter shape. |
 | The `dev` den user | present — one shared user at `checks/den-mvp/users/`. It makes the `homeManager` class reachable. |
 | `checks.<system>.den-mvp` | present — the current architecture, with `.all` for every system |
-| Test harness | present — 6 evaluation checks, 7 artifact checks, 4 smoke runs. See [checks/den-mvp/README.md](../../checks/den-mvp/README.md#tests). |
+| Test harness | present — 7 evaluation checks, 7 artifact checks, 4 smoke runs. See [checks/den-mvp/README.md](../../checks/den-mvp/README.md#tests). |
 | Smoke-test runner | present — `nix run '.#checks.aarch64-darwin.den-mvp.smoke'`. 11 of 11 pass on this machine. |
 | A VM test for `host-nixos` | deferred — tier 1 and tier 2 read every value a guest would, and no darwin VM framework exists |
 | An automated `hosts/anji` parity check | deferred — it evaluates a whole personal host (~93 s) and it reads sops metadata |
@@ -209,7 +210,7 @@ it. The adopter surface is library mode, and `flake.denLib` ships it.
 | A `nixos`-class aspect | present — `devenv-cli` reaches `host-nixos` |
 | `home` target | present — through `devenv-cli`, on both routes |
 | A coupled pair of slots (`jj` plus `mcp`) | not started — order 7 of the milestone 2 plan |
-| Parity with all 18 slots | **the milestone 2 goal**, set 2026-09-10. 4 of 18 done, 14 left (~3,790 LOC). See [004-den-spike](../../docs/tasks/2026-09/generalization/004-den-spike/definition.md#milestone-2-covers-every-slot--scope-decision-2026-09-10). |
+| Parity with all 18 slots | **the milestone 2 goal**, set 2026-09-10. 5 of 18 done, 13 left (~3,699 LOC). See [004-den-spike](../../docs/tasks/2026-09/generalization/004-den-spike/definition.md#milestone-2-covers-every-slot--scope-decision-2026-09-10). |
 
 The slot tree remains the supported route. See
 [docs/slots-for-adopters.md](../../docs/slots-for-adopters.md).

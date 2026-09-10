@@ -258,7 +258,7 @@ each one needs, and it puts the cheap tests first:
 | Order | Slot or family | LOC | Slot targets | What it tests |
 |---|---|---|---|---|
 | 1 | `ssh-agent` | 76 | `home` | **Done.** The user scope alone. No host target at all. |
-| 2 | `ca` | 91 | `nixos` | A `nixos`-only aspect. |
+| 2 | `ca` | 91 | `nixos` | **Done.** The first `nixos`-only aspect. The option lives inside the `nixos` target. |
 | 3 | `nix` | 148 | `devenv` | A slot that reads repository content through `${inputs.nix-configs}`. |
 | 4 | `opencode` | 197 | `devenv` | Personal defaults inside a shared option — it overlaps 004 of the plan. |
 | 5 | `zellij` | 221 | `devenv` | A slot that ships an agent rule and a skill. |
