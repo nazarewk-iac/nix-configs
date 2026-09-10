@@ -110,8 +110,14 @@ conditions on phase 2.
 **The creator prefers den for the adopter-facing configuration**, stated on 2026-09-10 and
 conditional on the spike. The spike passed, so den is now the default choice and 006 carries the
 burden of proof against it. The adopter still never adopts den: the adopter imports a plain module
-that this repository resolves. [slots-for-adopters.md](../../../slots-for-adopters.md) documents the
-interim `mkSlots` route until 004 phase 2 lands the den route.
+that this repository resolves.
+
+**Phase 2 milestone 1 landed on 2026-09-10.** `modules/den/` holds the loader, a `devenv` class, the
+`rosetta-builder` aspect and one parallel host that never activates. The first adopter-facing den
+output exists: `denModules.rosetta-builder`. The tree is additive — no file under `modules/slots/`,
+`modules/universal/` or `modules/meta/` changed, and `darwinConfigurations` still lists the same
+hosts. See [modules/den/README.md](../../../../modules/den/README.md) and the phase 2 section of
+[004's definition](004-den-spike/definition.md). `mkSlots` stays the route for the other 17 slots.
 
 Criterion 3 stays open until 005 states the conditional-imports requirement, so den is the
 preferred direction, not yet a settled one. 006 records the score either way.
@@ -221,6 +227,16 @@ a bulk refactor into a mechanical loop. It is the safety net for 007 and 009.
 **Measured cost: 93 s for one warm Darwin host** (28 s user, 12 s system, all inputs already in the
 store). 16 hosts take about 25 minutes in sequence. Use it as a checkpoint gate, not per edit. For
 per-edit feedback use `devenv eval '<option.path>'`.
+
+**Limit — the pattern proves nothing when a file appears or disappears.** `flake.nix:250` sets
+`nix-configs = self`, so the whole tree hash enters every derivation this flake builds. A new file
+changes every `drvPath`, even a file that no host reads. Measured on 2026-09-10: a dirty tree gave
+`pz1xx9…` and the same tree clean gave `pi6dg3…` for one unchanged host.
+
+So Pattern V1 covers an **edit** to a tracked file only. For a refactor that adds or moves a file,
+prove additivity a second way — compare the output **names**, and diff one host's evaluated option
+values. The 004 den milestone used
+`nix eval --json '.#darwinConfigurations' --apply builtins.attrNames`.
 
 ### Pattern V2 — the adopter-hostile eval
 
