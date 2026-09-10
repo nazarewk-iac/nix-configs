@@ -65,10 +65,6 @@ in
   # Each package below needs a Linux-only dependency, and each consumer sits inside a
   # `kdnConfig.util.ifTypes [ "nixos" ]` block. So no Darwin evaluation reads any of them.
   #
-  # `kdn-gamingctl` runs `systemd`, `supergfxctl` and `sway`.
-  # Consumer: hosts/oams/default.nix:280.
-  kdn-gamingctl = pkgs.callPackage ./kdn-gamingctl { };
-
   # `kdn-keepass` runs `sway` and `systemd`.
   # Consumers: modules/universal/programs/keepassxc/default.nix:33,105 and
   # modules/universal/profile/user/kdn/default.nix:405.
@@ -85,4 +81,14 @@ in
   # `systemd-find-cycles` reads the output of `systemd-analyze dot`.
   # Consumer: modules/universal/profile/machine/baseline/default.nix:248.
   systemd-find-cycles = pkgs.callPackage ./systemd-find-cycles { };
+}
+# x86_64-linux-only packages.
+#
+# The guard above is not enough for a package with an x86_64-only dependency. Measured 2026-09-10:
+# `nix flake check --all-systems` stopped at `packages.aarch64-linux.kdn-gamingctl`.
+// lib.optionalAttrs (pkgs.stdenv.hostPlatform.isLinux && pkgs.stdenv.hostPlatform.isx86_64) {
+  # `kdn-gamingctl` runs `systemd`, `supergfxctl` and `sway`. nixpkgs gives `supergfxctl`
+  # `meta.platforms = [ "x86_64-linux" ]`, so an `aarch64-linux` evaluation refuses it.
+  # Consumer: hosts/oams/default.nix:280, an x86_64-linux host.
+  kdn-gamingctl = pkgs.callPackage ./kdn-gamingctl { };
 }
