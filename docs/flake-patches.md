@@ -6,7 +6,7 @@ timestamp: 2026-07-03T16:33:57+02:00
 
 # Flake Patches
 
-> **Agent summary:** [.agents/rules/flake-patches.md](../.agents/rules/flake-patches.md)
+> **Agent summary:** [.agents/skills/flake-patches/SKILL.md](../.agents/skills/flake-patches/SKILL.md)
 
 Patches are applied on top of flake inputs when upstream fixes exist but haven't yet landed
 in the channel we track (typically `nixos-unstable`). Patching is not exclusive to nixpkgs —
