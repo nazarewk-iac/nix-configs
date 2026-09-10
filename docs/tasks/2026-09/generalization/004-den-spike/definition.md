@@ -63,6 +63,55 @@ flake that still evaluates. So phase 2 must declare `nix-effects` explicitly.
    [../../../slots-for-adopters.md](../../../slots-for-adopters.md) documents the interim `mkSlots`
    route, and it must gain the den route when phase 2 lands it.
 
+## Phase 2 — milestone 1 lands — 2026-09-10
+
+`modules/den/` now exists. It holds the loader, one class, one aspect and one host. See
+[modules/den/README.md](../../../../modules/den/README.md) for the layout, the status table and the
+verification commands. Five conditions above are met: the export guard throws on an empty `imports`
+list, the ported aspect takes no entity argument, and `nix-effects` is an explicit input.
+
+**The tree is additive.** No file under `modules/slots/`, `modules/universal/` or `modules/meta/`
+changed. `flake.nix` gained two inputs and one `imports` line, because a flake input cannot live
+anywhere else. `flake.lock` gained exactly two nodes — den declares no flake input of its own.
+
+| Piece | Path | Note |
+|---|---|---|
+| Loader and the four outputs | `modules/den/flake-module.nix` | A nested `lib.evalModules`, not a flake-parts module. |
+| `devenv` class | `modules/den/classes/devenv.nix` | den ships none. 13 of 18 slots need it. |
+| First aspect | `modules/den/aspects/rosetta-builder.nix` | Core options only. The guest-size options stay in the slot. |
+| Parallel host | `modules/den/entities/den-darwin.nix` | It evaluates and builds. It never activates. |
+
+**A den host must not live in `hosts/`.** `flake.hostConfigurations` reads that directory from a
+listing and sends every entry through `modules/meta`. den replaces that pre-pass, so a den host
+under `hosts/` proves nothing.
+
+Four commands verify the milestone. Each one passed:
+
+```bash
+nix eval --json '.#denModules.rosetta-builder' --apply 'm: builtins.length m.imports'
+nix eval --raw '.#denConfigurations.den-darwin.config.system.build.toplevel.drvPath'
+nix eval --raw '.#denDevenvShells.den-darwin.shell.drvPath'
+nix eval --json '.#darwinConfigurations' --apply builtins.attrNames   # unchanged
+```
+
+**Three facts the milestone measured**, each one a trap for the next milestone:
+
+1. `den.flakeModule` declares **no** `flake.<output>` option. Each output name needs its own
+   declaration. den ships `inputs.den.flakeOutputs.<name>` for the names it knows. A custom class
+   output such as `devenvShells` needs a hand-written `lib.mkOption`.
+2. den calls `instantiate { modules = [ … ]; }` and never passes `system`. Its darwin default is
+   `inputs.darwin.lib.darwinSystem`, and this repo names that input `nix-darwin`. So the host
+   overrides `instantiate` instead of an input alias.
+3. A bare nix-darwin host needs `system.primaryUser` and `system.stateVersion`.
+   `modules/universal` supplies neither on its own.
+
+**Pattern V1 does not apply to this tree.** `flake.nix` sets `nix-configs = self`, so the whole
+tree hash enters every derivation. A new file changes every `drvPath`. This milestone proved
+additivity by output **names** instead: `darwinConfigurations` still lists the same hosts.
+
+Milestone 2 owns the next three pieces: a `home` target, one devenv-only slot, and the coupled
+`jj`+`mcp` pair. The README status table tracks them.
+
 ## Why this comes first
 
 If den wins, this repo throws away the work to reimplement modules onto slots. If den loses, the
