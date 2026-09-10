@@ -38,6 +38,8 @@
 !/flake.lock
 !/devenv.yaml
 !/devenv.lock
+# the adopter template ships a devenv.yaml, and `*.yaml` is not allowlisted
+!/templates/adopter/devenv.yaml
 # machine-local slot settings — never tracked (see the note in devenv.nix)
 /devenv.slots.local.nix
 

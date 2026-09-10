@@ -1,0 +1,16 @@
+# Adopter template — devenv inputs.
+#
+# Two rules matter here.
+#
+# 1. Point `nixpkgs` at YOUR nixpkgs. Do NOT write `follows: nix-configs/nixpkgs`.
+#    That input is the author's own nixpkgs fork, and a `follows` hands your whole
+#    shell to somebody else's pin. The failure is silent: the shell still builds.
+#
+# 2. Do NOT add a `follows` that points INTO nix-configs' own inputs. A lock node
+#    that nothing references is never fetched, so you pay one tree fetch and a list
+#    of lock nodes as text. A `follows` inward forces a real fetch of that input.
+inputs:
+  nixpkgs:
+    url: github:NixOS/nixpkgs/nixos-unstable
+  nix-configs:
+    url: github:nazarewk-iac/nix-configs
