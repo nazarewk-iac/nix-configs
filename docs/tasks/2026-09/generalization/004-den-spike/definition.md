@@ -234,9 +234,62 @@ VM test is no longer blocked — `host-nixos` carries a real `nixos`-class aspec
 earns nothing: every value a guest would read is a static option value or a file in the toplevel,
 and tier 1 and tier 2 read both. A VM pays off only for a runtime behaviour.
 
-The adopter-facing library-mode export is done. Milestone 2 has one piece left: a coupled slot pair
-(`jj` plus `mcp`). The `home` target and the first `nixos`-class aspect are both done, through
-`devenv-cli`. The README status table tracks them.
+The adopter-facing library-mode export is done. The `home` target and the first `nixos`-class
+aspect are both done, through `devenv-cli`.
+
+## Milestone 2 covers every slot — scope decision, 2026-09-10
+
+The user set the target: **reimplement all of `modules/slots/` as den aspects.** A representative
+sample is not the goal. The earlier plan named one coupled pair (`jj` plus `mcp`); that pair is now
+one step in a full port.
+
+`modules/slots/` holds 18 slots plus a 22-line loader, and 4,160 lines of Nix and shell. Three
+slots are ported:
+
+| Slot | LOC | State |
+|---|---|---|
+| `gh` | 53 | full port — `modules/den/aspects/gh.nix` |
+| `devenv` | 61 | full port, plus a `devenv` target the slot has none of — `modules/den/aspects/devenv-cli.nix` |
+| `rosetta-builder` | 180 | core options only. The guest-size options stay in the slot. |
+
+Fifteen slots remain, at about **3,866 lines**. The order below groups them by the den mechanism
+each one needs, and it puts the cheap tests first:
+
+| Order | Slot or family | LOC | Slot targets | What it tests |
+|---|---|---|---|---|
+| 1 | `ssh-agent` | 76 | `home` | The user scope alone. No host target at all. |
+| 2 | `ca` | 91 | `nixos` | A `nixos`-only aspect. |
+| 3 | `nix` | 148 | `devenv` | A slot that reads repository content through `${inputs.nix-configs}`. |
+| 4 | `opencode` | 197 | `devenv` | Personal defaults inside a shared option — it overlaps 004 of the plan. |
+| 5 | `zellij` | 221 | `devenv` | A slot that ships an agent rule and a skill. |
+| 6 | `mcp` family — `mcp`, `snoop`, `pretty-print`, `basic-memory` | 646 | `devenv` | **Slot-to-slot option coupling.** The first hard case. |
+| 7 | `jj` family — `jj`, `jj/fork` | 949 | `devenv` | The second coupled pair, and the largest shell payload. |
+| 8 | `llm` family — `llm`, `llm/client`, `llm/proxy` | 1,287 | `nixos`, `devenv` | One family that spans two classes. |
+| 9 | `ssh-access` | 251 | `devenv`, `home` | **Blocked on 009.** It carries personal data. |
+
+### Three obstacles the inventory names
+
+Each one is read from the source, and none of them is solved yet.
+
+1. **Slot-to-slot option coupling.** `modules/slots/mcp/snoop/default.nix:22-23` reads
+   `config.kdn.mcp.enable` and writes `kdn.mcp.commandOverlays`. So one slot configures another
+   slot's option. den partitions an aspect by class and by scope, so a shared option needs one
+   owner and one evaluation. Order 6 above is the first test of this, and it is the reason the
+   earlier plan named a coupled pair.
+2. **A slot writes a target option flat.** `modules/slots/mcp/snoop/default.nix:34` sets
+   `devenv.packages` with no target wrapper. The slot loader accepts that. den needs the value
+   inside a class target, so each such site needs a rewrite.
+3. **`ssh-access` holds personal data.** `modules/slots/ssh-access/kdn-graph.nix` carries hosts,
+   LAN addresses and zones. It moves to the personal folder of
+   [009](../009-personal-data-folder/definition.md) first, so order 9 waits for that checkpoint.
+
+### What needs no new den mechanism
+
+The four-class matrix is proven — `den-eval-devenv-cli` asserts 12 values across `nixos`, `darwin`,
+`devenv` and `homeManager`. So orders 1 to 5 need port work only, not den research. Note the name
+change: a slot calls the target `home`, and den calls the class `homeManager`.
+
+The README status table tracks each row.
 
 ## Why this comes first
 

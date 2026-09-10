@@ -184,8 +184,8 @@ it. The adopter surface is library mode, and `flake.denLib` ships it.
 | Library mode (`den.nixModule`) | shipped as `denLib` — a thin `imports` wrapper plus the raw machinery |
 | A `nixos`-class aspect | present — `devenv-cli` reaches `host-nixos` |
 | `home` target | present — through `devenv-cli`, on both routes |
-| A coupled pair of slots (`jj` plus `mcp`) | not started |
-| Parity with all 18 slots | not started |
+| A coupled pair of slots (`jj` plus `mcp`) | not started — order 7 of the milestone 2 plan |
+| Parity with all 18 slots | **the milestone 2 goal**, set 2026-09-10. 3 of 18 done, 15 left (~3,866 LOC). See [004-den-spike](../../docs/tasks/2026-09/generalization/004-den-spike/definition.md#milestone-2-covers-every-slot--scope-decision-2026-09-10). |
 
 The slot tree remains the supported route. See
 [docs/slots-for-adopters.md](../../docs/slots-for-adopters.md).
