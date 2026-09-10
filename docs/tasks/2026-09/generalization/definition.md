@@ -47,16 +47,16 @@ in anybody's nix-darwin. Then an adopter builds multi-arch containers in their o
 
 | # | Task file | Goal |
 |---|---|---|
-| 001 | [generalization-001-slots-sharing-readiness.md](001-slots-sharing-readiness/definition.md) | An adopter consumes `modules/slots` today. Fix the one bug that leaks private content. |
-| 002 | [generalization-002-rosetta-builder-adopter-dropin.md](002-rosetta-builder-adopter-dropin/definition.md) | `rosetta-builder` works in an adopter's nix-darwin through a minimal `mkSlots`. |
-| 003 | [generalization-003-nix-darwin-getting-started.md](003-nix-darwin-getting-started/definition.md) | A runbook from zero to a multi-arch build, with real pain points. |
-| 004 | [generalization-004-den-spike.md](004-den-spike/definition.md) | Decide whether den can be the target framework. **Direction gate.** |
-| 005 | [generalization-005-conditional-imports-requirement.md](005-conditional-imports-requirement/definition.md) | State what `modules/meta` solves, as a testable requirement. |
-| 006 | [generalization-006-direction-decision.md](006-direction-decision/definition.md) | Choose slots or den as the reimplementation target. Gate: 004 + 005. |
-| 007 | [generalization-007-depersonalize-slots.md](007-depersonalize-slots/definition.md) | Lift the creator's personal defaults and opinions out of shared slot options. |
-| 008 | [generalization-008-sops-default-inventory.md](008-sops-default-inventory/definition.md) | An exact list of what depends on the default sops file, plus its key schema. |
-| 009 | [generalization-009-personal-data-folder.md](009-personal-data-folder/definition.md) | One folder holds all personal data. The tree evaluates without it. |
-| 010 | [generalization-010-flake-input-overhead.md](010-flake-input-overhead/definition.md) | Research, then maybe spike, ways to make a 106-node lock cheaper. |
+| 001 | [001-slots-sharing-readiness](001-slots-sharing-readiness/definition.md) | An adopter consumes `modules/slots` today. Fix the one bug that leaks private content. |
+| 002 | [002-rosetta-builder-adopter-dropin](002-rosetta-builder-adopter-dropin/definition.md) | `rosetta-builder` works in an adopter's nix-darwin through a minimal `mkSlots`. |
+| 003 | [003-nix-darwin-getting-started](003-nix-darwin-getting-started/definition.md) | A runbook from zero to a multi-arch build, with real pain points. |
+| 004 | [004-den-spike](004-den-spike/definition.md) | Decide whether den can be the target framework. **Direction gate.** |
+| 005 | [005-conditional-imports-requirement](005-conditional-imports-requirement/definition.md) | State what `modules/meta` solves, as a testable requirement. |
+| 006 | [006-direction-decision](006-direction-decision/definition.md) | Choose slots or den as the reimplementation target. Gate: 004 + 005. |
+| 007 | [007-depersonalize-slots](007-depersonalize-slots/definition.md) | Lift the creator's personal defaults and opinions out of shared slot options. |
+| 008 | [008-sops-default-inventory](008-sops-default-inventory/definition.md) | An exact list of what depends on the default sops file, plus its key schema. |
+| 009 | [009-personal-data-folder](009-personal-data-folder/definition.md) | One folder holds all personal data. The tree evaluates without it. |
+| 010 | [010-flake-input-overhead](010-flake-input-overhead/definition.md) | Research, then maybe spike, ways to make a 106-node lock cheaper. |
 
 ## Dependency graph
 
@@ -92,8 +92,29 @@ Checkpoint 005 turns that into a written, testable requirement. Checkpoint 004 t
 it. Checkpoint 006 then picks slots or den, once. Nobody builds the option that loses.
 
 den looks less abstract than the alternatives in that space, and it fits this problem better. One
-unknown carries the decision: can an adopter import a den aspect as a plain drop-in module, with no
-adoption of den? See 004, criterion 2. That criterion decides it.
+unknown carried the decision: can an adopter import a den aspect as a plain drop-in module, with no
+adoption of den?
+
+**Answered on 2026-09-10 — PASS, with two limits.** 004 phase 1 measured it on den `main` and on
+v0.18.0. `den.lib.aspects.resolve` returns a plain module an adopter imports with no den in their
+own code. Criterion 1 (a `devenv` class) also passes, and criterion 4 (the mixed-aspect collision)
+does not reproduce. So the kill criterion does not fire, and phase 2 builds `modules/den/`
+additively.
+
+The two limits shape any den work. An entity-parametric aspect and a den battery both drop to
+`{ imports = [ ]; }` across the boundary, with no warning. And den stays a transitive lock node in
+the adopter's own lock. See [004-den-spike/research.md](004-den-spike/research.md) for the
+evidence, and the phase 1 verdict in [004's definition](004-den-spike/definition.md) for the four
+conditions on phase 2.
+
+**The creator prefers den for the adopter-facing configuration**, stated on 2026-09-10 and
+conditional on the spike. The spike passed, so den is now the default choice and 006 carries the
+burden of proof against it. The adopter still never adopts den: the adopter imports a plain module
+that this repository resolves. [slots-for-adopters.md](../../../slots-for-adopters.md) documents the
+interim `mkSlots` route until 004 phase 2 lands the den route.
+
+Criterion 3 stays open until 005 states the conditional-imports requirement, so den is the
+preferred direction, not yet a settled one. 006 records the score either way.
 
 A Darwin host can also boot a NixOS guest. So 004 can prove Home Manager **activation**, not only
 evaluation. microvm.nix supports a Darwin host at the revision this repo pins —
@@ -107,10 +128,10 @@ Severity is from an adopter's point of view. The listed checkpoint fixes the gap
 
 | # | Gap | Severity | Owner |
 |---|---|---|---|
-| 1 | `pre-push.sh` remote guard is inverted — it permits private content to the public remote | **P0** | 001 |
-| 2 | Nothing documents the overlay requirement `overlays = [ inputs.nix-configs.overlays.packages ]`; 7 slots use `pkgs.kdn.*` | High | 001 |
-| 3 | No adopter entry point — no template, no example `devenv.yaml`/`devenv.nix`, no adopter-facing doc | High | 001 |
-| 4 | `devenv.yaml` pins the adopter's nixpkgs to the creator's nixpkgs fork through `follows: nix-configs/nixpkgs` | High | 001 |
+| 1 | `pre-push.sh` remote guard is inverted — it permits private content to the public remote | **P0** — **fixed 2026-09-10**, plus 15 tests | 001 |
+| 2 | Nothing documents the overlay requirement `overlays = [ inputs.nix-configs.overlays.packages ]`; 7 slots use `pkgs.kdn.*` | High — **fixed 2026-09-10** in `docs/slots-for-adopters.md` and `templates/adopter/` | 001 |
+| 3 | No adopter entry point — no template, no example `devenv.yaml`/`devenv.nix`, no adopter-facing doc | High — **fixed 2026-09-10**: `templates/adopter/` plus `docs/slots-for-adopters.md` | 001 |
+| 4 | `devenv.yaml` pins the adopter's nixpkgs to the creator's nixpkgs fork through `follows: nix-configs/nixpkgs` | High — **fixed 2026-09-10**: the template points `nixpkgs` at nixos-unstable and says why | 001 |
 | 5 | Personal data inside the slots tree — `modules/slots/ssh-access/kdn-graph.nix`, 176 LOC of hosts, LAN IPs, WAN ports, `*.kdn.im` zones | Medium | 007, 009 |
 | 6 | Personal defaults in shared options — `kdn.jj.upstream.remote = "kdn"`, `alwaysBlockedMessagePatterns = [ "scratchpad" ]`, `opencode`'s hardwired `requesty` provider, `llm` examples with homelab FQDNs, and `identityAgentPatterns` (see below) | Medium | 007 |
 | 7 | Slots ship the creator's opinions — `kdn.jj` installs a jj-only mandate as an agent rule; 5 slots read repo content through `${inputs.nix-configs}/.agents/…` | Medium | 007 |
@@ -120,16 +141,25 @@ Severity is from an adopter's point of view. The listed checkpoint fixes the gap
 | 11 | No slot assigns the `users` slot target | Low — **keep it** | — |
 | 12 | Lock size: 106 nodes / 60 root inputs reach an adopter's lock as text | Low | 010 |
 
-### Gap 1 is verified, not theoretical
+### Gap 1 was verified, then fixed
 
-`modules/slots/jj/pre-push.sh:64-67` skips the denied-file and denied-message checks for every
-remote **except** the private fork. The option docs (`modules/slots/jj/default.nix:54,59`) promise
-the opposite.
+The old code skipped the denied-file and denied-message checks for every remote **except** the
+private fork. The option docs (`modules/slots/jj/default.nix:54,59`) promise the opposite.
 
 I reproduced it in a throwaway repo. The repo set `PRIVATE_REMOTE=<fork>`, and one commit added a
-path in the denied set. Current code: a push to the public remote exits **0**, so the hook permits
-it. With the guard inverted: the public remote exits **1** and the hook blocks it; the fork exits
-**0** and the hook permits it. That matches the documented intent.
+path in the denied set. The old code let a push to the public remote exit **0**, so the hook
+permitted it.
+
+**Fixed on 2026-09-10.** The guard now returns early for the private fork only
+(`modules/slots/jj/pre-push.sh:93`). Two latent defects in the same script went with it: an empty
+pattern list now fails loudly instead of passing in silence (lines 49-58), and a new ref asks git
+for the commits the remote lacks instead of a `git diff` on a zero sha (line 132).
+
+`checks/jj-experiments/test_prepush.py` holds 15 cases, and
+[test_prepush.md](../../../../checks/jj-experiments/test_prepush.md) holds the prose. The suite
+runs the plain script and bakes `PLACEHOLDER-*` patterns, so no real sensitive term enters the
+tests. Two limits stay recorded there: a delete-only push to a public remote fails closed, and the
+group does not prove the one-line `writeShellApplication` wrapper.
 
 ### Gap 6 has a measured example: `identityAgentPatterns`
 
@@ -141,6 +171,17 @@ so for an adopter the option has no purpose.
 This is the clearest form of gap 6: a shared public option that compensates for a personal module's
 over-broad write. [tasks/ssh-agent-scoping.md](../ssh-agent-scoping/definition.md) holds the measured
 mechanism and owns the fix.
+
+### What an adopter can do today — 2026-09-10
+
+The honest summary: **an adopter consumes `modules/slots` today.** Gaps 1 to 4 are fixed.
+[slots-for-adopters.md](../../../slots-for-adopters.md) states the API, the overlay requirement and
+what each slot writes into the adopter repo. [templates/adopter/](../../../../templates/adopter/README.md)
+is the copy-ready shape.
+
+What an adopter cannot do today is consume one slot as a plain module, with no `mkSlots` call.
+Checkpoint 002 owns that for `rosetta-builder`, and 004 phase 2 owns the den route the creator
+prefers.
 
 ## Corrections to earlier assumptions
 
