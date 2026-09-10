@@ -35,7 +35,6 @@ in
   klg = pkgs.callPackage ./klg { };
   klog-time-tracker = pkgs.callPackage ./klog-time-tracker { };
   lnav = pkgs.callPackage ./lnav/package.nix { };
-  pass-secret-service = pkgs.callPackage ./pass-secret-service { };
   pinentry = pkgs.callPackage ./pinentry { };
   ss-util = pkgs.callPackage ./ss-util { };
   sway-vnc = pkgs.callPackage ./sway-vnc { };
@@ -52,4 +51,19 @@ in
   aws-sso = pkgs.callPackage ./aws-sso { };
   flake-lock-merge = pkgs.callPackage ./flake-lock-merge { };
   kdn-nix-fmt = pkgs.callPackage ./kdn-nix-fmt { };
+}
+# Linux-only packages.
+#
+# `nix flake check` reads every entry of `packages.<system>`, so a package that cannot exist on
+# this platform fails the whole check. Keep such a package out of the set instead.
+// lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+  # `pass-secret-service` serves the freedesktop Secret Service D-Bus API. macOS uses Keychain,
+  # so the package has no purpose there. nixpkgs states the same limit on the dependency:
+  # `pypass` sets `meta.broken = stdenv.hostPlatform.isDarwin`
+  # (<nixpkgs>/pkgs/development/python-modules/pypass/default.nix:78). The override below keeps
+  # `overridePythonAttrs`, which does not clear `meta.broken`.
+  #
+  # The one consumer is `modules/universal/programs/gnupg/default.nix:101`, inside a NixOS-only
+  # block, so no Darwin evaluation reads this attribute.
+  pass-secret-service = pkgs.callPackage ./pass-secret-service { };
 }
