@@ -185,7 +185,7 @@ Create `docs/slots-for-adopters.md`, `type: How-To`. Cover:
   `${inputs.nix-configs}/.agents/…` (`jj`, `jj/fork`, `nix`, `zellij`, `mcp/basic-memory`).
 
 Link to `modules/slots/README.md` and `.agents/rules/slots-standalone.md`. Do not duplicate them.
-Do not duplicate [slots-modules-architecture.md](../../../slots-modules-architecture.md), which is in
+Do not duplicate [slots-modules-architecture.md](../../../2026-08/slots-modules-architecture/definition.md), which is in
 progress and covers which architecture rules apply to slots.
 
 ## 5. Enforce the standalone rule in CI

@@ -8,7 +8,7 @@ timestamp: 2026-08-07T00:00:00+02:00
 
 # Rosetta builder — build i686-linux derivations
 
-The Rosetta darwin builder ([multi-arch-rosetta-builder.done.md](multi-arch-rosetta-builder.done.md),
+The Rosetta darwin builder ([multi-arch-rosetta-builder.done.md](../../2026-07/multi-arch-rosetta-builder/done.md),
 `modules/slots/rosetta-builder/default.nix`) builds `aarch64-linux` and `x86_64-linux`. It cannot
 build `i686-linux`. So a `nom build` of a NixOS `toplevel` from the aarch64-darwin host fails on
 any 32-bit derivation.

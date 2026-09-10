@@ -9,7 +9,7 @@ timestamp: 2026-07-31T11:12:00+02:00
 
 # `flake.nix`'s `checks =` output is broken — `self.kdnMetaModule` called directly instead of via `.config.output.mkSubmodule`
 
-> ✅ **Done** — see the solution in [flake-checks-output.done.md](flake-checks-output.done.md).
+> ✅ **Done** — see the solution in [flake-checks-output.done.md](done.md).
 
 **Status:** pre-existing bug, confirmed present at commit `21c72b92` (before any of the
 `packages/llm/{kdn-slug,zellij-llm}` work that surfaced it) — not introduced by that work.

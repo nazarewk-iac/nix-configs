@@ -8,11 +8,11 @@ timestamp: 2026-07-31T12:00:00+02:00
 
 # Multi-arch Rosetta builder slot
 
-Implement [docs/multi-arch-builder.md](../multi-arch-builder.md) **Option C**
+Implement [docs/multi-arch-builder.md](../../../multi-arch-builder.md) **Option C**
 (`cpick/nix-rosetta-builder`) so an `aarch64-darwin` host builds **both** `aarch64-linux` and
 `x86_64-linux` locally. x86_64 runs under Rosetta 2 (near-native) instead of QEMU-TCG.
 Container-image stitching
-([docs/multi-arch-container-builder.md](../multi-arch-container-builder.md)) is out of scope for
+([docs/multi-arch-container-builder.md](../../../multi-arch-container-builder.md)) is out of scope for
 this task — builder first.
 
 ## Approach (host-specific first, slot later)

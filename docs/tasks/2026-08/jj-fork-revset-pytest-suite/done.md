@@ -7,7 +7,7 @@ timestamp: 2026-09-02T00:00:00+02:00
 
 # Solution — pytest suite for jj fork revset aliases
 
-> Completed as part of [jj-fork-use-cases-refactor](jj-fork-use-cases-refactor.md). That task
+> Completed as part of [jj-fork-use-cases-refactor](../../2026-09/jj-fork-use-cases-refactor/definition.md). That task
 > builds the shared `checks/jj-experiments/` harness; this suite is the first test group in it,
 > so the two tasks were finished together.
 

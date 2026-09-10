@@ -90,7 +90,7 @@ literal error text where it exists, because that is what an adopter searches for
 | `nix flake lock --reference-lock-file` rejects a temp path | macOS `/tmp` is a symlink to `/private/tmp` and Nix validates the real path | Resolve with `os.path.realpath` (`packages/flake-lock-merge/flake_lock_merge/cli.py`) |
 | `sudo nom build` leaves root-owned store paths or breaks the builder | Only `darwin-rebuild` needs root, not the build | Split it: build unprivileged, then `sudo darwin-rebuild …` |
 | The login shell has no effect | nix-darwin does not set it from `programs.fish` | Set `users.users.<name>.shell` |
-| `error: a 'i686-linux' … is required to build …, but I am a 'aarch64-darwin'` | Rosetta for Linux is x86_64-only. If you advertise `i686-linux`, the failure only moves from schedule time to build time | Known gap — [rosetta-builder-i686-linux.md](../../../rosetta-builder-i686-linux.md) |
+| `error: a 'i686-linux' … is required to build …, but I am a 'aarch64-darwin'` | Rosetta for Linux is x86_64-only. If you advertise `i686-linux`, the failure only moves from schedule time to build time | Known gap — [rosetta-builder-i686-linux.md](../../../2026-08/rosetta-builder-i686-linux/definition.md) |
 | `error: unexpected end-of-file` from a `git+file://` fetch | A dangling `refs/remotes/<remote>/HEAD` symref | `git remote set-head <remote> <branch>` |
 | `stdenv.isDarwin` deprecation warnings | nixpkgs moved to `stdenv.hostPlatform.*` | Use the new attribute |
 

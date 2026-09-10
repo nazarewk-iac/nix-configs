@@ -28,9 +28,11 @@ This is an incomplete list of incorporated software/systems:
 
 ## Tasks
 
-Repository tasks are tracked as one file per task under [`docs/tasks/`](docs/tasks/README.md) —
-a finished task is tagged `status: done` in frontmatter and gains a sibling `<task>.done.md`
-solution file. See [docs/tasks/README.md](docs/tasks/README.md) for the full convention. (The
+Repository tasks are tracked as one directory per task under
+[`docs/tasks/<YYYY-MM>/<slug>/`](docs/tasks/README.md) — a finished task is tagged
+`status: done` in `definition.md` and gains a sibling `done.md` solution file. A closely related
+family of parts nests as sub-task directories under one umbrella task. See
+[docs/tasks/README.md](docs/tasks/README.md) for the full convention. (The
 legacy root `TASKS.md` is being phased out.)
 
 ## Custom ISO installer

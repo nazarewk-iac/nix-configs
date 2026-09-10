@@ -133,7 +133,7 @@ test before any conclusion rests on them.
 ## Deliverable
 
 A `.research.md` sibling, in the shape of
-[jj-experiments-subset-check.research.md](../../../jj-experiments-subset-check.research.md), with:
+[jj-experiments-subset-check.research.md](../../jj-experiments-subset-check/research.md), with:
 
 1. an answer to each of Q1-Q4, each tagged confirmed or unverified, with quoted source;
 2. an honest ranked list of techniques that measurably reduce **(a)** this repo's own lock and eval

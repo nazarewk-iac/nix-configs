@@ -223,11 +223,11 @@ Darwin hosts build on a Darwin machine, or through `remote=`. Do not run
 
 ## Related work, already in `docs/tasks/`
 
-- [tasks/slots-modules-architecture.md](../../slots-modules-architecture.md) — in progress. It
+- [tasks/slots-modules-architecture.md](../../2026-08/slots-modules-architecture/definition.md) — in progress. It
   states which architecture rules apply to slots. Checkpoint 001 links to it. Do not duplicate it.
-- [tasks/rosetta-builder-i686-linux.md](../../rosetta-builder-i686-linux.md) — a known
+- [tasks/rosetta-builder-i686-linux.md](../../2026-08/rosetta-builder-i686-linux/definition.md) — a known
   `rosetta-builder` limitation. Checkpoints 002 and 003 must tell an adopter about it.
-- [tasks/multi-arch-rosetta-builder.done.md](../../multi-arch-rosetta-builder.done.md) — the
+- [tasks/multi-arch-rosetta-builder.done.md](../../2026-07/multi-arch-rosetta-builder/done.md) — the
   original builder work.
 - [multi-arch-builder.md](../../../multi-arch-builder.md) and
   [multi-arch-container-builder.md](../../../multi-arch-container-builder.md) — the builder docs that exist

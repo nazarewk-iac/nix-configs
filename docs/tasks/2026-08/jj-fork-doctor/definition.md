@@ -79,7 +79,7 @@ common real-world mess. Consider an alias or a direct bookmark-vs-alias comparis
 ## Packaging
 
 - Scaffold with `nix run .#init-py-script -- jj-fork-doctor` (see
-  [.agents/rules/packaging-python.md](../../.agents/rules/packaging-python.md)).
+  [.agents/rules/packaging-python.md](../../../../.agents/rules/packaging-python.md)).
 - Binary name `jj-fork-doctor`; module `jj_fork_doctor.cli`; `prog="jj-fork-doctor"`.
 - Wrap as `jj fork-doctor` — add `aliases.fork-doctor` in `modules/slots/jj/fork/default.nix`,
   next to `fork-help`, pointing at the packaged binary
@@ -90,7 +90,7 @@ common real-world mess. Consider an alias or a direct bookmark-vs-alias comparis
 
 ## Relation to the pytest suite task
 
-This is a strong driver for [jj-fork-revset-pytest-suite.md](jj-fork-revset-pytest-suite.md). The
+This is a strong driver for [jj-fork-revset-pytest-suite.md](../jj-fork-revset-pytest-suite/definition.md). The
 doctor is deterministic analysis over a known topology, so the same three-repo fixture
 (local/upstream/fork) can assert both the alias results and the doctor's reported situation +
 suggested commands. Build the fixture once; use it for both. Consider building the doctor and the
@@ -114,7 +114,7 @@ Two rebase forms cover the two directions of movement. Note both for the impleme
   > on 2026-08-03 when `fork-leaked` was empty. When fork commits ARE interleaved, `upstream-safe`
   > is a non-contiguous revset. It is unverified whether `jj rebase -r '<revset>'` can lift a
   > non-contiguous subset and leave the fork commits in place. Test this empirically against the
-  > MVP pytest suite ([jj-fork-revset-pytest-suite.md](jj-fork-revset-pytest-suite.md)) before the
+  > MVP pytest suite ([jj-fork-revset-pytest-suite.md](../jj-fork-revset-pytest-suite/definition.md)) before the
   > doctor offers this command for the interleaved case.
 
 - **Step 5 — pull new upstream in, rebase the pre-merge upstream chain onto the fetched tip:**
@@ -123,7 +123,7 @@ Two rebase forms cover the two directions of movement. Note both for the impleme
   ```
   `-s` moves the chain root and all its descendants (the merge, `to-rebase`, `@`) as one. The
   merge keeps its fork parent. See use case 4 in
-  [../jujutsu-vcs.fork.md](../jujutsu-vcs.fork.md) for the full sequence and the warning against
+  [../jujutsu-vcs.fork.md](../../../jujutsu-vcs.fork.md) for the full sequence and the warning against
   rebasing `tree-merge` directly.
 
 - **No rebase preview.** `jj rebase` has no `--dry-run`. The doctor cannot show a real preview for

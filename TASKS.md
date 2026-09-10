@@ -6,10 +6,10 @@ timestamp: 2026-07-10T12:19:48+02:00
 
 # Tasks
 
-> ⚠️ **Legacy file — being phased out.** New tasks live as one file per task under
-> `docs/tasks/<task>.md`. Before starting work on any entry below, **first move it** to
-> `docs/tasks/<task>.md`, then work it there. When a task is done, tag it `status: done` in its
-> frontmatter and add a sibling `docs/tasks/<task>.done.md` with the solution. When the last
+> ⚠️ **Legacy file — being phased out.** New tasks live as one directory per task under
+> `docs/tasks/<YYYY-MM>/<slug>/`. Before starting work on any entry below, **first move it** to
+> `docs/tasks/<YYYY-MM>/<slug>/definition.md`, then work it there. When a task is done, tag it
+> `status: done` in that file and add a sibling `done.md` with the solution. When the last
 > entry here is migrated out, **delete this file.**
 
 ## Backlog

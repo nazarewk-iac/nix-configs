@@ -18,7 +18,7 @@ AI Agent Guidance for nix-configs Repository.
 - [Packaging Python Scripts](.agents/rules/packaging-python.md) — `init-py-script`, `mkPythonScript`, `default.nix` pattern
 - [Flake Update](.agents/rules/flake-update.md) — update procedure, patch handling, testing (full doc: [docs/flake-update.md](docs/flake-update.md))
 - [MCP Setup](.agents/rules/mcp-setup.md) — gateway architecture, adding backends, mcpsnoop (full doc: [docs/mcp-setup.md](docs/mcp-setup.md))
-- [Tasks](.agents/rules/tasks.md) — one file per task under `docs/tasks/`, done-tag + sibling solution file (full doc: [docs/tasks/README.md](docs/tasks/README.md))
+- [Tasks](.agents/rules/tasks.md) — one directory per task at `docs/tasks/<YYYY-MM>/<slug>/`, recursive sub-tasks, done-tag + sibling solution file; a work-run status belongs in the task's `.worklog.md` (full doc: [docs/tasks/README.md](docs/tasks/README.md))
 - [Simple Technical English](.agents/rules/simple-technical-english.md) — strict ASD-STE100 for all docs, code comments, and chat; domain-vocabulary exception; ask the user before you drop STE
 
 ## docs/ — full documentation
@@ -28,7 +28,7 @@ read the full doc when you need detail.
 
 | Doc | Contents |
 |---|---|
-| [docs/generalization-plan.md](docs/tasks/2026-09/generalization/definition.md) | Checkpointed plan to make the modules reusable by an external adopter; hub for `docs/tasks/generalization-0NN-*.md` |
+| [docs/tasks/2026-09/generalization/](docs/tasks/2026-09/generalization/definition.md) | Umbrella task: make the modules reusable by an external adopter. It indexes the numbered sub-tasks in the same directory. |
 | [docs/flake-update.md](docs/flake-update.md) | Flake update procedure, commit structure, testing |
 | [docs/flake-update.fork.md](docs/flake-update.fork.md) | Fork-specific update workflow (merge commit, flake-lock-merge) |
 | [docs/jujutsu-vcs.md](docs/jujutsu-vcs.md) | jj patterns: working copy, split, squash, rebase, and the full `jj workspace` convention |
@@ -37,7 +37,7 @@ read the full doc when you need detail.
 | [docs/mcp-setup.md](docs/mcp-setup.md) | MCP gateway architecture, configuration, backends, lifecycle |
 | [docs/mcpsnoop.md](docs/mcpsnoop.md) | mcpsnoop traffic inspector: setup, TUI usage, filtering, workflows |
 | [docs/nix-dev.md](docs/nix-dev.md) | Nix development: building devenv shell, vendored lockfile recovery, hash updates |
-| [docs/tasks/README.md](docs/tasks/README.md) | Tasks convention: one file per task, done-tag + sibling solution, frontmatter schema |
+| [docs/tasks/README.md](docs/tasks/README.md) | Tasks convention: one directory per task under `<YYYY-MM>/`, done-tag + sibling solution, frontmatter schema |
 
 ## Nix Store Symlinks
 

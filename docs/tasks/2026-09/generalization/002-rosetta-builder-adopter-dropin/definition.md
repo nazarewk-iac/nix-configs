@@ -76,7 +76,7 @@ Requirements:
 
 The builder cannot build `i686-linux`. Rosetta for Linux is x86_64-only, so its binfmt handler
 registers only the x86_64 ELF magic. Full analysis:
-[rosetta-builder-i686-linux.md](../../../rosetta-builder-i686-linux.md).
+[rosetta-builder-i686-linux.md](../../../2026-08/rosetta-builder-i686-linux/definition.md).
 
 An adopter hits this on any 32-bit derivation. State the limitation in the slot's option
 description and in the adopter doc. Do not attempt a fix here.
