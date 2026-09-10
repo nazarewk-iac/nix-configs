@@ -16,26 +16,27 @@
 {
   config,
   den,
+  kdn,
   lib,
   ...
 }:
 let
   # One aspect list, shared by every standalone shell.
   aspects = [
-    den.aspects.gh
+    kdn.gh
 
     # The four-target aspect. Its `devenv` half is new — the slot has none. See
     # ../../../modules/den/aspects/devenv-cli.nix.
-    den.aspects.devenv-cli
+    kdn.devenv-cli
 
     # The `zellij` aspect. It is the first aspect that installs a repository file, so it also tests
     # the `kdn.isSourceRepo` switch below.
-    den.aspects.zellij
+    kdn.zellij
 
     # The `opencode` aspect. It declares options and holds no data of its own, so `opencodeData`
     # below supplies every value. It stays out of the two host aspect lists on purpose: `gh` and
     # `zellij` already prove the host-to-devenv route, and one wrapper build per shell is enough.
-    den.aspects.opencode
+    kdn.opencode
 
     # The `mcp` family, four aspects. Only the two leaves appear here: `mcp-snoop` includes `mcp`,
     # and `mcp-basic-memory` includes `mcp-pretty-print`, which includes `mcp` too. So the list
@@ -44,8 +45,8 @@ let
     # The family stays out of both host aspect lists. `gh` and `zellij` already prove the
     # host-to-devenv route, and this family builds a Python application and a Python virtual
     # environment, so one build per shell is enough.
-    den.aspects.mcp-snoop
-    den.aspects.mcp-basic-memory
+    kdn.mcp-snoop
+    kdn.mcp-basic-memory
   ];
 
   # The data for the `mcp` family. The aspects name no knowledge base, no knowledge root and no
@@ -103,7 +104,7 @@ let
       system,
       extra ? [ ],
     }:
-    config.kdn.den.devenv.mkShell {
+    config.den.devenv.mkShell {
       inherit name system;
       modules = (map (den.lib.aspects.resolve "devenv") aspects) ++ extra;
     };

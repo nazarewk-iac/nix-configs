@@ -54,7 +54,7 @@
 #    own arguments instead, and close over it.
 { ... }:
 {
-  den.aspects.mcp.devenv =
+  kdn.mcp.devenv =
     {
       config,
       lib,

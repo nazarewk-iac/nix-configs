@@ -15,7 +15,7 @@
 #   1. Every den host also produces a shell, through `den.policies.host-to-devenv`. This is the
 #      real repository shape: one host, one shell, one aspect list.
 #   2. A standalone shell that belongs to no host. It calls `den.lib.aspects.resolve "devenv"` on
-#      each aspect and passes the results to `kdn.den.devenv.mkShell`. It declares no den entity.
+#      each aspect and passes the results to `den.devenv.mkShell`. It declares no den entity.
 #      See ../../../checks/den-mvp/devenv/default.nix.
 {
   den,
@@ -25,7 +25,7 @@
   ...
 }:
 let
-  cfg = config.kdn.den.devenv;
+  cfg = config.den.devenv;
 
   # One devenv evaluation. Both routes below call it, so they cannot drift apart.
   mkShell =
@@ -73,13 +73,18 @@ in
   # den declares one `flake.<output>` option per output name it knows. `devenvShells` is not one of
   # them, so this class declares its own. Without the declaration the whole evaluation fails with
   # `The option 'flake.devenvShells' does not exist`.
+  # The class options sit under `den.devenv`, not under `kdn.den.devenv`. At den level `kdn` is the
+  # namespace alias that `../namespaces.nix` creates, and its type is freeform — so a declaration
+  # under `kdn.<anything>` becomes an **aspect** named `<anything>`. Measured on 2026-09-10: the old
+  # prefix put a phantom aspect `den` into `den.ful.kdn`, and it reached `flake.denful.kdn` too. The
+  # `kdn.*` prefix stays reserved for a consumer's own configuration, inside a target module.
   options.flake.devenvShells = lib.mkOption {
     type = lib.types.lazyAttrsOf lib.types.raw;
     default = { };
     description = "One evaluated devenv configuration per den host and per standalone shell.";
   };
 
-  options.kdn.den.devenv.root = lib.mkOption {
+  options.den.devenv.root = lib.mkOption {
     type = lib.types.str;
     default = "/den-mvp";
     description = ''
@@ -100,7 +105,7 @@ in
     '';
   };
 
-  options.kdn.den.devenv.mkShell = lib.mkOption {
+  options.den.devenv.mkShell = lib.mkOption {
     type = lib.types.raw;
     readOnly = true;
     description = ''
@@ -120,7 +125,7 @@ in
   config = {
     den.classes.devenv = { };
 
-    kdn.den.devenv.mkShell = mkShell;
+    den.devenv.mkShell = mkShell;
 
     # host → devenv shell. Every den host gets one shell from its own aspect list.
     den.policies.host-to-devenv =

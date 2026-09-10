@@ -12,7 +12,7 @@
 #
 # The user is named `dev`, not `den`. `den.aspects.den` would read as den's own namespace at every
 # call site.
-{ den, ... }:
+{ den, kdn, ... }:
 {
   den.aspects.dev = {
     includes = [
@@ -31,11 +31,11 @@
       # reaches `home-manager.users.<user>`. `modules/den/README.md` records the trap. Two
       # inclusions at two scopes is the shape that works, and `den-eval-devenv-cli` asserts both
       # halves land.
-      den.aspects.devenv-cli
+      kdn.devenv-cli
 
       # A `homeManager`-only aspect. It **must** sit here and not in a host aspect: den partitions
       # by scope, so a host-scope `homeManager` half reaches no user.
-      den.aspects.ssh-agent
+      kdn.ssh-agent
     ];
 
     homeManager = {

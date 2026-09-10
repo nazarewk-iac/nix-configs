@@ -51,11 +51,11 @@
 #    argument such as `inputs` or `kdnConfig` would force the consumer to pass `specialArgs`, and
 #    that machinery is the whole reason this tree exists. `inputs` is captured in **this file's** own
 #    arguments below, and the target module closes over it.
-{ den, inputs, ... }:
+{ inputs, kdn, ... }:
 {
-  den.aspects.mcp-basic-memory.includes = [ den.aspects.mcp-pretty-print ];
+  kdn.mcp-basic-memory.includes = [ kdn.mcp-pretty-print ];
 
-  den.aspects.mcp-basic-memory.devenv =
+  kdn.mcp-basic-memory.devenv =
     {
       config,
       lib,

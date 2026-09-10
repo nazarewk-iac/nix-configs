@@ -1,5 +1,5 @@
 # A build-only NixOS host. It never activates and it names no hardware. See ../README.md.
-{ den, ... }:
+{ den, kdn, ... }:
 {
   # `x86_64-linux` matches the real NixOS hosts, so a comparison uses the same platform. den derives
   # `class = "nixos"` from the system suffix, and its default `instantiate` is
@@ -15,16 +15,16 @@
 
   den.aspects.host-nixos.includes = [
     # `gh` emits into the `devenv` target only, so it changes no NixOS option.
-    den.aspects.gh
+    kdn.gh
 
     # The first aspect that reaches this host's `nixos` target. It also delivers the `devenv` half
     # to this host's shell. Its `homeManager` half arrives through the `dev` user instead, because
     # den partitions by scope — see ../users/default.nix.
-    den.aspects.devenv-cli
+    kdn.devenv-cli
 
     # The first **`nixos`-only** aspect. It declares `kdn.ca` and reads it. The data below belongs
     # to this entity, not to the aspect.
-    den.aspects.ca
+    kdn.ca
   ];
 
   den.aspects.host-nixos.nixos =

@@ -26,11 +26,11 @@
 #    across the export boundary, in silence.
 # 2. **No `enable` option.** Inclusion is the switch.
 # 3. **No custom module argument.** A target module below takes `config`, `lib` and `pkgs` only.
-{ den, ... }:
+{ kdn, ... }:
 {
-  den.aspects.mcp-snoop.includes = [ den.aspects.mcp ];
+  kdn.mcp-snoop.includes = [ kdn.mcp ];
 
-  den.aspects.mcp-snoop.devenv =
+  kdn.mcp-snoop.devenv =
     { lib, pkgs, ... }:
     let
       mcpsnoop = pkgs.callPackage ../../../packages/mcpsnoop { };

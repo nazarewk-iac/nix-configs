@@ -20,7 +20,7 @@
 # ported yet**. The slot keeps them, and every real host still goes through the slot.
 { inputs, ... }:
 {
-  den.aspects.rosetta-builder.darwin = {
+  kdn.rosetta-builder.darwin = {
     imports = [
       inputs.nix-rosetta-builder.darwinModules.default
     ];

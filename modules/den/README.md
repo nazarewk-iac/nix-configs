@@ -1,7 +1,7 @@
 ---
 type: Reference
 description: The parallel den implementation of this repository's module surface, additive to modules/slots and modules/universal.
-timestamp: 2026-09-10T13:05:00+02:00
+timestamp: 2026-09-10T17:05:00+02:00
 authored_by: agent
 ---
 
@@ -26,6 +26,7 @@ inputs, and one `imports` entry for `flake-module.nix`. A flake input cannot liv
 | Path | Role |
 |---|---|
 | `flake-module.nix` | The only wiring. It evaluates den and exports the outputs. |
+| `namespaces.nix` | The two den namespaces. Every reusable aspect sits at `den.ful.kdn.<name>`. |
 | `classes/devenv.nix` | A den class for devenv. den ships none, and 13 of 18 slots target devenv. |
 | `aspects/<slot>.nix` | One aspect per reimplemented slot. |
 
@@ -33,11 +34,56 @@ The entities live **outside** this tree, at
 [`checks/den-mvp/`](../../checks/den-mvp/README.md). That directory holds one build-only host per
 class, plus every standalone devenv shell. Its README states the layout and the build commands.
 
+## The two den namespaces
+
+Every reusable aspect sits under a **den namespace**. [`namespaces.nix`](namespaces.nix) creates two
+of them with `inputs.den.namespace`:
+
+| Namespace | Exported | Holds |
+|---|---|---|
+| `den.ful.kdn` | yes, as the flake output `flake.denful.kdn` | every reusable aspect |
+| `den.ful.personal` | no, never | the creator's own data-carrying aspects. It is empty today. |
+
+**The non-export is the enforcement point.** An external adopter cannot name a `personal` aspect at
+all, because no flake output carries it. The split is structural, not a doc rule.
+
+`inputs.den.namespace` is a top-level export of den, with the signature `name: sources: module`. It
+creates three things: the option `den.ful.<name>`, a module-argument alias `<name>`, and — when the
+second argument exports — the output `flake.denful.<name>` of den's own evaluation.
+`flake-module.nix` copies that one attribute out with `flake.denful = eval.config.flake.denful;`.
+
+**The namespace name is the merge key.** den merges every source's `denful.<name>` into the one
+option `den.ful.<name>`. So two repositories that export the same namespace name **and** the same
+aspect name merge into one aspect: a list option such as `includes` concatenates, and a scalar
+option fails with `defined multiple times`. den's own test `test-multiple-sources-merged` proves
+this is deliberate. There is no export-time alias, so the option path, the module argument and the
+flake output always carry one name. The name `kdn` is unique enough to make an accidental merge
+unlikely.
+
+**`kdn` has two spellings, and each one means something else.** At the top level of an aspect file,
+`kdn.<name>` names an **aspect** — the namespace alias carries a freeform type, so any name under it
+becomes an aspect. Inside a target module, `kdn.<name>` is an **option path** of the consumer's own
+configuration. The `kdn.*` option prefix stays reserved for a consumer, inside a target module.
+
+That trap already cost one bug. `classes/devenv.nix` declared its class options under
+`kdn.den.devenv.*`, so den read a phantom aspect named `den` into `den.ful.kdn`, and the phantom
+reached the exported output too. The prefix is `den.devenv.*` now, and `den.ful.kdn` holds exactly
+the 11 registry aspects and no phantom.
+
+**An entity aspect stays in `den.aspects`.** den finds a host's aspect by the host name and a user's
+aspect by the user name, and it looks in `den.aspects` only. A namespaced aspect reaches an entity
+through `includes` alone. So `checks/den-mvp/host-darwin/default.nix` keeps
+`den.aspects.host-darwin` and includes `kdn.gh`. den's own batteries stay at `den.batteries.*`.
+
+**den still collapses a diamond `includes` under a namespace.** A probe returned an `imports` list
+of length 1 and one option declaration. The `mcp` family depends on that behaviour.
+
 ## Outputs
 
 | Output | Contents |
 |---|---|
-| `den` | The raw den evaluation. Use it to read `den.aspects` and `den.hosts` in a debug session. |
+| `den` | The raw den evaluation. Use it to read `den.ful.kdn`, `den.aspects` and `den.hosts` in a debug session. |
+| `denful.kdn` | The exported namespace — every reusable aspect, for a consumer that runs den itself. |
 | `denConfigurations.<host>` | A nix-darwin or a NixOS system that den builds. Both classes share one flat set. |
 | `denDevenvShells.<host>` | A devenv shell that den builds. |
 | `denHomeConfigurations.<name>` | A **standalone** home-manager configuration. It belongs to no den host. |
@@ -138,6 +184,15 @@ needs no registry entry. `modules` adds den modules to the library evaluation. `
 overrides an input, and it defaults to this repository's own inputs — so you need no
 `nix-rosetta-builder` input of your own.
 
+**The library route carries the namespace too, and it exports nothing.** `options.den.ful` and
+`options.flake.denful` live in den's `modules/aspects.nix`, and only `den.flakeModule` loads that
+file — `den.nixModule` declares neither option. So [`lib.nix`](lib.nix) adds two modules of its own:
+den's `modules/aspects.nix`, plus a small shim that declares `options.den.classes`. The shim is
+needed because den's `namespace.nix` writes `den.classes`, and `nixModule` does not declare it.
+den's own `modules/options.nix` would also work, but it declares `den.hosts` and `den.schema` too,
+and the library route avoids that entity machinery. The library route creates the `kdn` namespace
+**unexported**, and it creates no `personal` namespace at all.
+
 Measured on 2026-09-10, for both ported aspects, against the full `flakeModule` route:
 
 | aspect | class | library-mode result | same `drvPath` as `flakeModule` |
@@ -191,6 +246,7 @@ it. The adopter surface is library mode, and `flake.denLib` ships it.
 | Item | State |
 |---|---|
 | devenv class | present |
+| den namespaces | present — `namespaces.nix` creates the exported `kdn` and the never-exported `personal`. Every reusable aspect sits at `den.ful.kdn.<name>`. |
 | `rosetta-builder` aspect | core content only — the guest-size options are **not** ported |
 | `gh` aspect | present — the first `devenv`-target aspect, a full port of `modules/slots/gh/` |
 | `ssh-agent` aspect | present — the first **`homeManager`-only** aspect. A full port of `modules/slots/ssh-agent/`. |
@@ -210,8 +266,8 @@ it. The adopter surface is library mode, and `flake.denLib` ships it.
 | Standalone home-manager | present — `home-darwin` and `home-linux`, with no den entity. This is the adopter shape. |
 | The `dev` den user | present — one shared user at `checks/den-mvp/users/`. It makes the `homeManager` class reachable. |
 | `checks.<system>.den-mvp` | present — the current architecture, with `.all` for every system |
-| Test harness | present — 10 evaluation checks, 7 artifact checks, 4 smoke runs. See [checks/den-mvp/README.md](../../checks/den-mvp/README.md#tests). |
-| Smoke-test runner | present — `nix run '.#checks.aarch64-darwin.den-mvp.smoke'`. 11 of 11 pass on this machine. |
+| Test harness | present — 3 tiers. **Per system** it holds 15 den checks: 10 evaluation, 3 artifact and 2 smoke, plus the `den-mvp` build gate. `aarch64-darwin` holds 15, and `x86_64-linux` holds 15. **Across all systems** the totals are 7 artifact checks and 4 smoke runs, because each class has its own artifact. See [checks/den-mvp/README.md](../../checks/den-mvp/README.md#tests). `den-eval-guards` passes 11 of 11, and 6 of those assertions cover the namespaces. |
+| Smoke-test runner | present — `nix run '.#checks.aarch64-darwin.den-mvp.smoke'`. It builds the 15 `aarch64-darwin` den checks and prints one summary. 15 of 15 pass on this machine. |
 | A VM test for `host-nixos` | deferred — tier 1 and tier 2 read every value a guest would, and no darwin VM framework exists |
 | An automated `hosts/anji` parity check | deferred — it evaluates a whole personal host (~93 s) and it reads sops metadata |
 | Library mode (`den.nixModule`) | shipped as `denLib` — a thin `imports` wrapper plus the raw machinery |
@@ -226,7 +282,10 @@ The slot tree remains the supported route. See
 ## Verify
 
 ```bash
-# the aspect and host names den knows about
+# the exported namespace — the 11 reusable aspects, and no phantom
+nix eval --json '.#denful.kdn' --apply 'builtins.attrNames'
+
+# the entity aspect and host names den knows about
 nix eval --json '.#den.aspects' --apply 'builtins.attrNames'
 
 # the adopter-facing plain module — it must hold a non-empty `imports` list
@@ -267,7 +326,7 @@ of a second host, and a rename. `denDevenvShells.devenv-darwin` kept
 `k7iqgp8lv0qk2qp3vqkxii8m4gg8g7v3-devenv-darwin.drv` across a perturbation of an unrelated tracked
 file.
 
-The shells were **not** immune before. `kdn.den.devenv.root` held `"${self}"`, so the tree hash
+The shells were **not** immune before. `den.devenv.root` held `"${self}"`, so the tree hash
 reached each one. That assignment is gone, and the gate now covers all four outputs. Use it for
 every den refactor. The slot route still has no such gate.
 

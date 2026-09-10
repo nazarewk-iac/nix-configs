@@ -12,7 +12,7 @@
 # silence — see the guard in ../flake-module.nix.
 { ... }:
 {
-  den.aspects.gh.devenv =
+  kdn.gh.devenv =
     { pkgs, lib, ... }:
     {
       packages = [ pkgs.gh ];

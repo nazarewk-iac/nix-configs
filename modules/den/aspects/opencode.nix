@@ -45,7 +45,7 @@
 # 3. **No custom module argument.** The target module below takes `config`, `lib` and `pkgs` only.
 { ... }:
 {
-  den.aspects.opencode.devenv =
+  kdn.opencode.devenv =
     {
       config,
       lib,
