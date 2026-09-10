@@ -13,9 +13,6 @@ let
     fileset = lib.fileset.fileFilter (file: file.hasExt "py") ./jj-experiments;
   };
 
-  # The real fork slot artifacts: the config TOML the tests read through
-  # JJ_FORK_CONFIG_TOML, and the pre-push script they read through
-  # KDN_JJ_PRE_PUSH_SH. inputs.self is the nix-configs flake.
   # Every den MVP entity, as one flat set of buildable derivations. A den host yields a system
   # toplevel; a devenv shell yields its shell derivation. See den-mvp/README.md.
   denEntities =
@@ -43,6 +40,13 @@ let
       }) entities
     );
 
+  # The den MVP test harness: tier 1 evaluation assertions, tier 2 artifact greps, tier 3 smoke
+  # runs, plus the semi-automated runner. See den-mvp/tests.nix.
+  denTests = import ./den-mvp/tests.nix { inherit pkgs lib inputs; };
+
+  # The real fork slot artifacts: the config TOML the tests read through
+  # JJ_FORK_CONFIG_TOML, and the pre-push script they read through
+  # KDN_JJ_PRE_PUSH_SH. inputs.self is the nix-configs flake.
   jjFork = import ./jj-experiments/render-fork-config.nix {
     inherit pkgs;
     mkSlots = inputs.self.lib.kdn.mkSlots;
@@ -51,7 +55,8 @@ let
     extraInputs = inputs;
   };
 in
-{
+denTests.checks
+// {
   # Minimal "hello world" check: proves the `checks.<system>` plumbing evaluates and
   # builds end-to-end (flake.nix mkSubmodule wiring + checks/default.nix), independent
   # of the heavier pytest checks whose sandbox behaviour still needs verifying.
@@ -77,7 +82,8 @@ in
     # extraArgs = [ ];  # whole suite
   };
 
-  # den MVP build gate. It proves that the parallel den tree still evaluates and builds.
+  # den MVP build gate. It proves that the parallel den tree still evaluates and builds. It asserts
+  # nothing — the `den-eval-*`, `den-artifact-*` and `den-smoke-*` checks above do that.
   #
   # The default check builds only the entities of the current system, so it needs no remote
   # builder. `den-mvp.all` builds every entity of every system, and a foreign system needs a
@@ -86,9 +92,11 @@ in
   #
   #   nix build '.#checks.aarch64-darwin.den-mvp'
   #   nix build '.#checks.aarch64-darwin.den-mvp.all'
+  #   nix run   '.#checks.aarch64-darwin.den-mvp.smoke'
   den-mvp = (mkDenAggregate "den-mvp" denForThisSystem).overrideAttrs (prev: {
     passthru = (prev.passthru or { }) // {
       all = mkDenAggregate "den-mvp-all" denEntities;
+      inherit (denTests) smoke;
     };
   });
 }

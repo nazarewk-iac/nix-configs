@@ -62,7 +62,9 @@ let
   resolve =
     den: class: aspect:
     let
-      name = aspect.name or "<unnamed>";
+      # A whole-aspect function has no `name` attribute, and `or` does not catch the type error
+      # that `<function>.name` raises. Test the shape first, so the message below stays reachable.
+      name = if lib.isFunction aspect then "<function>" else aspect.name or "<unnamed>";
       module = den.lib.aspects.resolve class aspect;
     in
     if (builtins.length (module.imports or [ ])) > 0 then
