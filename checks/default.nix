@@ -13,9 +13,10 @@ let
     fileset = lib.fileset.fileFilter (file: file.hasExt "py") ./jj-experiments;
   };
 
-  # The real fork slot config, rendered to a TOML the tests read through
-  # JJ_FORK_CONFIG_TOML. inputs.self is the nix-configs flake.
-  jjForkConfigToml = import ./jj-experiments/render-fork-config.nix {
+  # The real fork slot artifacts: the config TOML the tests read through
+  # JJ_FORK_CONFIG_TOML, and the pre-push script they read through
+  # KDN_JJ_PRE_PUSH_SH. inputs.self is the nix-configs flake.
+  jjFork = import ./jj-experiments/render-fork-config.nix {
     inherit pkgs;
     mkSlots = inputs.self.lib.kdn.mkSlots;
     slotsPath = inputs.self + "/modules/slots";
@@ -45,7 +46,7 @@ in
   jj-experiments-pytest = import ./jj-experiments/mk-pytest.nix {
     inherit pkgs lib;
     suite = jjExperimentsSuite;
-    toml = jjForkConfigToml;
+    inherit (jjFork) toml prePush;
     # extraArgs = [ ];  # whole suite
   };
 }
