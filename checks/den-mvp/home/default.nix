@@ -21,7 +21,41 @@ let
 
     # The `homeManager`-only aspect. The standalone route is the shape an external adopter uses.
     kdn.ssh-agent
+
+    # The second `homeManager`-only aspect. It holds no key, so `signingData` below supplies every
+    # principal and every public key.
+    kdn.signing
+
+    # A two-class aspect. This route tests its `homeManager` half; ../devenv/default.nix tests the
+    # `devenv` half. The graph comes from ../ssh-access-graph.nix, and every value there is
+    # fictional.
+    kdn.ssh-access
   ];
+
+  # The data for the `signing` aspect. Every key below is a throw-away test key, and every principal
+  # sits under `example.invalid`. The aspect names none of them.
+  #
+  # The `signing` aspect gates its whole body on `programs.git.enable`, so the test subject turns git
+  # on. It also turns jj on, so the jj half of the `allowed_signers` wiring gets a test.
+  signingData = {
+    programs.git.enable = true;
+    programs.git.settings.user.name = "den MVP";
+    programs.git.settings.user.email = "den-mvp@example.invalid";
+
+    programs.jujutsu.enable = true;
+
+    kdn.signing.allowedSigners = [
+      {
+        principals = [ "den-mvp@example.invalid" ];
+        key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExampleDenMvpTestKeyOnlyNotRealAAAA den MVP test key";
+      }
+      {
+        principals = [ "den-mvp-second@example.invalid" ];
+        namespaces = [ "git" ];
+        key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExampleDenMvpSecondKeyNotRealAAAAAA den MVP second test key";
+      }
+    ];
+  };
 
   mkHome =
     name: system:
@@ -31,6 +65,8 @@ let
     inputs.home-manager.lib.homeManagerConfiguration {
       pkgs = import inputs.nixpkgs { inherit system; };
       modules = map (den.lib.aspects.resolve "homeManager") aspects ++ [
+        signingData
+        ../ssh-access-graph.nix
         {
           # A standalone home-manager evaluation carries no user entity, so these three come from
           # here instead of from `den.batteries.define-user`.

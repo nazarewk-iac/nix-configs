@@ -177,6 +177,19 @@ in
   # same diamond as the three children above.
   flake.denModules.nix = resolveChecked "devenv" "nix" kdn.nix;
   flake.denModules.opencode = resolveChecked "devenv" "opencode" kdn.opencode;
+
+  # The two user-scope aspects. Each one emits `homeManager`, so a den host reaches it through a
+  # **user** and never through the host aspect.
+  #
+  # `signing` holds no key, no principal and no allowed-signers entry. So an adopter who imports this
+  # module gets the `kdn-signing` route switch on PATH and no change to git or jj.
+  flake.denModules.signing = resolveChecked "homeManager" "signing" kdn.signing;
   flake.denModules.ssh-agent = resolveChecked "homeManager" "ssh-agent" kdn.ssh-agent;
+
+  # `ssh-access` has no entry here on purpose. It emits both `homeManager` and `devenv`, and the
+  # zero-argument `denModules.<aspect>` form names exactly one class. `llm-proxy` and `devenv-cli` are
+  # absent for the same reason. An adopter reaches a multi-class aspect through
+  # `denLib.imports { class = …; }`, which states the class.
+
   flake.denModules.zellij = resolveChecked "devenv" "zellij" kdn.zellij;
 }

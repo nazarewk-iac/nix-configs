@@ -36,12 +36,42 @@
       # A `homeManager`-only aspect. It **must** sit here and not in a host aspect: den partitions
       # by scope, so a host-scope `homeManager` half reaches no user.
       kdn.ssh-agent
+
+      # The second `homeManager`-only aspect. Same scope rule: a signing key belongs to one user, so
+      # a host-scope inclusion would reach nobody.
+      kdn.signing
+
+      # A two-class aspect. This inclusion delivers its `homeManager` half — the ssh drop-in and the
+      # binary on the user's PATH. Its `devenv` half reaches the host shell through
+      # `den.policies.host-to-devenv`, so the host aspect needs no second inclusion.
+      kdn.ssh-access
     ];
 
     homeManager = {
+      # The fictional host graph for the `ssh-access` aspect. The aspect holds none, so the test
+      # subject supplies one. Every name and every address there is fictional.
+      imports = [ ../ssh-access-graph.nix ];
+
       # home-manager asserts this option. `26.11` is the newest value the pinned home-manager
       # accepts (`<home-manager>/modules/misc/version.nix`).
       home.stateVersion = "26.11";
+
+      # The `signing` aspect gates its whole body on `programs.git.enable`, so the test user turns
+      # git on. It also turns jj on, so the jj half of the `allowed_signers` wiring gets a test.
+      #
+      # The aspect holds no key. Both entries below are throw-away test keys, and both principals sit
+      # under `example.invalid`.
+      programs.git.enable = true;
+      programs.git.settings.user.name = "den MVP";
+      programs.git.settings.user.email = "den-mvp@example.invalid";
+      programs.jujutsu.enable = true;
+
+      kdn.signing.allowedSigners = [
+        {
+          principals = [ "den-mvp@example.invalid" ];
+          key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExampleDenMvpTestKeyOnlyNotRealAAAA den MVP test key";
+        }
+      ];
 
       # The aspect fills in a hook for each shell and enables none — a slot must not choose a
       # user's login shell. So the **test user** enables all three, and tier 2 then has a real
