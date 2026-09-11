@@ -47,6 +47,29 @@ def edges($n; $root; $k):
   ($n[$k].inputs // {}) | [to_entries[] | res($n; $root; .value)];
 '
 
+# Assertion 7 reads this. Input is the FORK lock; `$u` holds the PUBLIC (upstream-tip) lock.
+# It prints every node key of the fork lock that is fork-only.
+#
+# A node is fork-only when the PUBLIC-NAMED edge graph cannot reach it from the root. An edge
+# (node k, input name) counts as public-named when the public lock declares that same input name
+# at that same node k. So the baseline is what the PUBLIC flake declares, never a snapshot of the
+# last public push. A brand-new public input is public-named at once, and never flags.
+#
+# Bind the input name to `$e` first. Inside `has(...)` the `.` rebinds to the object under test,
+# so a bare `.key` there reads as null and jq aborts.
+# shellcheck disable=SC2016  # every $ below is a jq variable, not a shell variable
+FORK_ONLY_JQ='
+  .nodes as $n | .root as $root | ($u.nodes // {}) as $un
+| ( [ $n | keys[] as $k
+      | { key: $k,
+          value: [ ($n[$k].inputs // {}) | to_entries[] as $e
+                   | select(($un | has($k)) and (($un[$k].inputs // {}) | has($e.key)))
+                   | res($n; $root; $e.value) ] } ] | from_entries ) as $padj
+| def grow($s): ($s + ([$s[] | $padj[.] // []] | add // [])) | unique;
+  ([$root] | until(grow(.) == .; grow(.))) as $pubreach
+| (($n | keys) - $pubreach)[]
+'
+
 fail=0
 ck() { if [ "$2" = pass ]; then echo "PASS  $1"; else echo "FAIL  $1"; fail=1; fi; }
 nz() { [ -n "$(jj log -r "$1" --no-graph -T '"x"' 2>/dev/null)" ]; }
@@ -98,13 +121,23 @@ for f in flake.lock devenv.lock; do
 done
 
 # 7. no fork-only lock node in the upstream commit. This is the structural leak gate, and it
-#    needs no pattern list. A pattern check cannot replace it: the current list does not match
-#    lock content at all.
+#    needs no pattern list. `FORK_ONLY_JQ` above holds the definition.
+#
+#    An earlier version defined a fork-only node as "on fork-tip, minus the already-pushed public
+#    lock". That set is "new since the last public push", NOT "private", so the assertion failed
+#    on every public input addition. It failed on `den` and `nix-effects` on 2026-09-12, with no
+#    leak present. See docs/tasks/2026-09/update-complete-node-baseline/.
+#
+#    Measured coverage. A strip that leaves a fork node behind with no edge to it FAILS here, and
+#    also fails assertion 10. A leak that carries its root edge passes both, because the lock then
+#    declares the input as public — that shape needs a private input name in the public flake.nix,
+#    and the fork-audit net below matches it.
 for f in flake.lock devenv.lock; do
   n=$(comm -12 \
-    <(jj file show -r 'upstream-tip' "$f" 2>/dev/null | jq -r '.nodes|keys[]' | sort) \
-    <(comm -23 <(jj file show -r 'fork-tip' "$f" 2>/dev/null | jq -r '.nodes|keys[]' | sort) \
-      <(git show "refs/remotes/$PUB/main:$f" 2>/dev/null | jq -r '.nodes|keys[]' | sort)) |
+    <(jj file show -r 'upstream-tip' "$f" 2>/dev/null | jq -r '.nodes|keys[]' | sort -u) \
+    <(jq -r --slurpfile U <(jj file show -r 'upstream-tip' "$f" 2>/dev/null) \
+        '$U[0] as $u | '"$LOCK_JQ$FORK_ONLY_JQ" \
+        <(jj file show -r 'fork-tip' "$f" 2>/dev/null) | sort -u) |
     wc -l | tr -d ' ')
   [ "$n" = 0 ] && r=pass || r=fail
   ck "$f on the upstream tip holds no fork-only node ($n found)" "$r"
