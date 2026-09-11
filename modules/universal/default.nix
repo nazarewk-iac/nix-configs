@@ -60,7 +60,26 @@ in
     curFile = ./default.nix;
     src = ./.;
     suffixes = [ "/default.nix" ];
-  };
+  }
+  /*
+    The personal data folder.
+
+    Each file is a module. It assigns options that this tree declares, so a module holds no
+    personal value of its own. `builtins.filter builtins.pathExists` drops an absent file, so
+    an adopter deletes the folder and the tree still evaluates.
+
+    Do NOT scan the folder. `lib.filesystem.listFilesRecursive` on a missing directory raises
+    an error that `builtins.tryEval` does not catch (measured 2026-09-11). An explicit list is
+    the only safe form, so add one line per new data file.
+
+    A string absolute path is a valid module. nixpkgs `lib/modules.nix` reaches
+    `applyModuleArgsIfFunction (toString m) (import m) args` for it.
+  */
+  ++ builtins.filter builtins.pathExists [
+    "${self}/data/desktop-sway-kanshi.nix"
+    "${self}/data/hw-edid.nix"
+    "${self}/data/services-printing.nix"
+  ];
 
   config = lib.mkMerge [
     (kdnConfig.util.ifHMParent {

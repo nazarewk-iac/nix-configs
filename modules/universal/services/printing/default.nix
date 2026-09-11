@@ -17,6 +17,37 @@ in
       type = with lib.types; listOf str;
       default = [ "lpadmin" ];
     };
+
+    printers = lib.mkOption {
+      type = with lib.types; listOf (attrsOf anything);
+      description = ''
+        Printers this host ensures. Each entry matches one `hardware.printers.ensurePrinters`
+        entry, so it takes `name`, `deviceUri`, `model`, and the optional `location`,
+        `description` and `ppdOptions` keys.
+
+        `listOf` supplies an empty list, so a host with no printer data still gets CUPS.
+      '';
+      example = lib.literalExpression ''
+        [
+          {
+            name = "office";
+            location = "Office";
+            deviceUri = "ipp://printer.example.com";
+            model = "drv:///sample.drv/generic.ppd";
+            ppdOptions.PageSize = "A4";
+          }
+        ]
+      '';
+    };
+
+    defaultPrinter = lib.mkOption {
+      type = with lib.types; nullOr str;
+      default = null;
+      description = ''
+        Name of the default printer, or `null` for no default. The name must match one
+        `printers` entry.
+      '';
+    };
   };
 
   config = kdnConfig.util.ifTypes [ "nixos" ] (
@@ -64,16 +95,13 @@ in
           ];
         }
         {
-          hardware.printers.ensureDefaultPrinter = lib.mkDefault "HP-M110w-home";
-          hardware.printers.ensurePrinters = [
-            {
-              name = "HP-M110w-home";
-              location = "Home";
-              deviceUri = "ipp://192.168.41.25";
-              model = "drv:///hp/hpcups.drv/hp-laserjet_m109-m112.ppd";
-              ppdOptions.PageSize = "A4";
-            }
-          ];
+          # `lib.mkDefault` keeps today's priority 1000, so a host still overrides with a plain
+          # assignment. No module forwards the whole `cfg` of this module into Home Manager, so
+          # this `lib.mkDefault` cannot tie with a forwarded definition.
+          hardware.printers.ensureDefaultPrinter = lib.mkIf (cfg.defaultPrinter != null) (
+            lib.mkDefault cfg.defaultPrinter
+          );
+          hardware.printers.ensurePrinters = cfg.printers;
         }
       ]
     )
