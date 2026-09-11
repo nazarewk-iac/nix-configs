@@ -11,6 +11,47 @@ timestamp: 2026-09-08T17:30:00+02:00
 Hub: [the generalization umbrella task](../definition.md). Depends on 001. Part of the first
 commit chain. Do not push.
 
+## Outcome, measured 2026-09-11
+
+Three of the four items below are closed. Item 1 stays open.
+
+**The drop-in already works, and it needs no `mkSlots`.** The den route exports the aspect as a
+plain nix-darwin module at `modules/den/flake-module.nix:166`. A scratch flake outside this tree,
+with one input and one `imports` entry, evaluates it:
+
+```bash
+# /tmp/rosetta-dropin-probe/flake.nix — one input, one imports entry, nothing else
+env -u SSH_AUTH_SOCK nix eval --no-write-lock-file '.#darwinConfigurations.probe.config' \
+  --apply 'c: { kdnKeys = builtins.attrNames c.kdn; guest = c.kdn.rosetta-builder.guest;
+                toplevel = c.system.build.toplevel.drvPath; }'
+# { guest = { diskSizeMax = "150GiB"; maxFree = null; minFree = null; };
+#   kdnKeys = [ "rosetta-builder" ];
+#   toplevel = "/nix/store/…-darwin-system-26.11.4cff07d.drv"; }
+```
+
+So exit criteria "Pattern V3", "Pattern V2" and "no `modules/universal` option" all pass, on a
+macOS guest. `kdnKeys` holds one name, which is the proof of the last one.
+
+**Decision on the deliverable: documentation only.** `denModules.rosetta-builder` **is** the
+plain module the task asks for. A second module would be dead code. The three guest options
+(`guest.diskSizeMax`, `guest.minFree`, `guest.maxFree`) are ported to
+`modules/den/aspects/rosetta-builder.nix`, and `diskSizeMax` is `nullOr str` there, so an adopter
+can drop the ceiling.
+
+**Item 2 and item 3 are closed by documentation.** `docs/den-for-adopters.md` § "Caveats" now
+carries caveat 11: the three-switch bootstrap, the `i686-linux` gap and the list of what the
+aspect does not supply for a container build.
+
+**Item 1 stays open, and it holds a genuine conflict.** A phase option cannot make one switch
+bootstrap the guest, because Nix builds the closure before it activates the generation. So the
+adopter runs two or three switches whatever the option surface is. A phase option with a
+bootstrap **default** would also flip `nix-rosetta-builder.enable` to `false` for every consumer
+that exists today, which the behaviour-preservation rule forbids. The two requirements in item 1
+— "the default must be safe for a first-time adopter" and today's behaviour — cannot both hold.
+The owner decides. Two facts help: upstream picks ssh port `31122` against `nix.linux-builder`'s
+`31022`, so the two builders coexist with no repository code; and
+`hosts/anji/default.nix:27-32` already holds a per-host bool for the same job.
+
 Goal: an external adopter enables the dual-arch Rosetta builder in their own nix-darwin
 configuration. Then the adopter builds multi-arch containers in their own repos.
 

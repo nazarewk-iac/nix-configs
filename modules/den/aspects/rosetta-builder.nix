@@ -36,6 +36,19 @@
 #
 # Every default below keeps `lima.yaml` byte-identical: the two free-space options default to
 # `null`, and `diskSizeMax` sets nothing at all.
+#
+# ## Two limits an adopter must know
+#
+# 1. **The guest cannot build `i686-linux`.** Rosetta for Linux is x86_64-only, so its binfmt
+#    handler registers only the x86_64 ELF magic, and the aarch64 guest kernel cannot run 32-bit
+#    x86. Any 32-bit derivation fails. An entry in `nix.buildMachines[].systems` only moves the
+#    failure from schedule time to build time. See
+#    docs/tasks/2026-08/rosetta-builder-i686-linux/definition.md.
+# 2. **The first guest needs a Linux builder that already runs.** Nix builds the guest image before
+#    it activates the generation, so a stock `nix.linux-builder` in the same generation is too late.
+#    Turn `nix.linux-builder` on, switch, then add this aspect and switch again. The two builders
+#    coexist: upstream picks ssh port 31122 because `nix.linux-builder` uses 31022. See
+#    docs/den-for-adopters.md, caveat 11.
 { inputs, ... }:
 {
   # A module function, not a plain attribute set. The assertion below reads the consumer's own
