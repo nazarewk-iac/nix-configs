@@ -62,7 +62,11 @@ in
             X = "select_line_above";
           };
         };
-        programs.helix.defaultEditor = true;
+        # A `lib.mkDefault`, so a consumer names another editor with a plain assignment.
+        programs.helix.defaultEditor = lib.mkDefault true;
+        # This line stays plain on purpose. `modules/universal/headless/base` writes
+        # `programs.vim.defaultEditor = lib.mkDefault true`. A second `lib.mkDefault` here holds
+        # the other value at the same priority 1000, so the evaluation stops with a conflict.
         programs.vim.defaultEditor = false;
         stylix.targets.helix.enable = false;
       })

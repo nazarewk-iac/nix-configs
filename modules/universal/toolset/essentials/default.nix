@@ -58,8 +58,9 @@ in
         kdn.programs.handlr.enable = lib.mkDefault true;
       }
       (kdnConfig.util.ifHM {
-        programs.difftastic.enable = true; # diff highlighter
-        programs.difftastic.options.background = "dark"; # diff highlighter
+        # A `lib.mkDefault` on each, so a consumer drops difftastic or picks a light background.
+        programs.difftastic.enable = lib.mkDefault true; # diff highlighter
+        programs.difftastic.options.background = lib.mkDefault "dark"; # diff highlighter
       })
     ]
   );

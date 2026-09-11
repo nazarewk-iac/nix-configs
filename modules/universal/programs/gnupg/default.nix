@@ -20,6 +20,16 @@ in
       default = pkgs.kdn.pinentry;
     };
     pass-secret-service.enable = lib.mkEnableOption "pass-secret-service";
+    disableGnomeKeyring = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        Turn gnome-keyring off when `pass-secret-service` serves the Secret Service D-Bus name.
+
+        Two secret services cannot own one name, so this repository turns gnome-keyring off. Set
+        this option to `false` to keep gnome-keyring and lose the pass-backed secret service.
+      '';
+    };
   };
 
   config = lib.mkMerge [
@@ -109,10 +119,15 @@ in
                       ExecStartPost = "${pkgs.coreutils}/bin/sleep 2";
                     };
                   };
-
+                }
+                # Two secret services cannot own one D-Bus name, so this block removes
+                # gnome-keyring. The `lib.mkForce` stays: it beats the desktop modules that turn
+                # gnome-keyring on. A consumer who wants gnome-keyring sets
+                # `kdn.programs.gnupg.disableGnomeKeyring = false`.
+                (lib.mkIf cfg.disableGnomeKeyring {
                   services.gnome.gnome-keyring.enable = lib.mkForce false;
                   home-manager.sharedModules = [ { services.gnome-keyring.enable = lib.mkForce false; } ];
-                }
+                })
                 (lib.mkIf config.kdn.desktop.sway.enable {
                   systemd.user.services."dbus-org.freedesktop.secrets" = {
                     requires = [ config.kdn.desktop.sway.systemd.envs.target ];

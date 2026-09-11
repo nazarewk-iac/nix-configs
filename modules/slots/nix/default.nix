@@ -55,12 +55,13 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    kdn.mcp.programs.nixos.enable = true;
-    kdn.mcp.extraBackends.devenv = {
-      command = "devenv mcp";
-      description = "devenv — search nixpkgs packages and devenv options";
-      env.DEVENV_ROOT = toString inputs.nix-configs;
-    };
+    # Each leaf is a `lib.mkDefault`, so a consumer drops the backend or repoints one field with
+    # a plain assignment. A `lib.mkDefault` on the whole stanza would lose the other fields.
+    kdn.mcp.programs.nixos.enable = lib.mkDefault true;
+    kdn.mcp.extraBackends.devenv.command = lib.mkDefault "devenv mcp";
+    kdn.mcp.extraBackends.devenv.description =
+      lib.mkDefault "devenv — search nixpkgs packages and devenv options";
+    kdn.mcp.extraBackends.devenv.env.DEVENV_ROOT = lib.mkDefault (toString inputs.nix-configs);
 
     # A module function (not a plain attrset) so `config` here resolves against the real
     # devenv evaluation this fragment gets spliced into — needed for `config.git-hooks.package`,
@@ -68,7 +69,7 @@ in
     devenv =
       { config, lib, ... }:
       {
-        claude.code.enable = true;
+        claude.code.enable = lib.mkDefault true;
 
         # Two deviations from devenv's default, and each one prevents a measured data loss.
         #
