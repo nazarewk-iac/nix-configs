@@ -123,13 +123,32 @@ Link to `modules/slots/README.md` and `.agents/rules/slots-standalone.md`. Do no
 Do not duplicate [slots-modules-architecture.md](../../../2026-08/slots-modules-architecture/definition.md), which is in
 progress and covers which architecture rules apply to slots.
 
-## 5. Enforce the standalone rule in CI
+## 5. Enforce the standalone rule in CI — **done**
 
-`.agents/rules/slots-standalone.md` states that a slot must not reference or assign any
-`modules/universal` or `modules/meta` option. Nothing enforces it. `checks/` holds only a jj
-pytest suite.
+`checks/standalone.nix` holds the gate. `checks/default.nix:49` imports it and `:63` merges its
+outputs, so `nix flake check` runs it. It exports two checks: `standalone-slots` and
+`standalone-aspects`.
 
-Add a check that each slot evaluates on its own and references no universal or meta option.
+`standalone-slots` asserts two things:
+
+| Assertion | Mechanism |
+|---|---|
+| No slot names a universal option, a meta option, or `kdnConfig` | a source scan of every `.nix` file under `modules/slots/`, over 31 needles |
+| The whole slots tree resolves with `pkgs` and `inputs` alone | one `mkSlots` render; the target key set must equal the six known targets |
+
+Measured on 2026-09-11:
+
+* `nix eval --no-eval-cache '.#checks.aarch64-darwin' --apply builtins.attrNames` lists both
+  checks.
+* The `standalone-slots` build script reads
+  `standalone slots: 2 of 2 assertions pass`.
+* A shell replica of the scan finds **zero** violations across the 19 slot files.
+
+So the check needs **no allowlist for a slot**. `checks/standalone.nix:232` allowlists exactly
+one aspect `enable` option, and that entry is a debt of the aspect tree, not of the slots tree.
+
+Two known limits stay: the scan cannot see a computed option path, and it flags a rule name in a
+trailing comment as a false positive. `checks/standalone.nix:8-24` records both.
 
 ## 6. One-line input hygiene
 

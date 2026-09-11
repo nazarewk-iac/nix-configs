@@ -140,4 +140,9 @@ Wiring a slot value into `modules/universal/`-declared options happens only
 in the consuming host config (`hosts/*/default.nix`) or the consumer's own
 `devenv.nix` — never inside a slot.
 
+`checks/standalone.nix` enforces this rule as the `standalone-slots` check. It greps every slot
+file for a universal or meta option name, and it resolves the whole tree with `pkgs` and
+`inputs` alone. Run it with
+`nix build '.#checks.aarch64-darwin.standalone-slots'`.
+
 Full detail and rationale: [`.agents/rules/slots-standalone.md`](../../.agents/rules/slots-standalone.md).
