@@ -35,10 +35,8 @@
       # One small slot as a worked example.
       kdn.zellij.enable = true;
 
-      # These two declare `default = true`, against the repository's own rule that
-      # a module stays side-effect free until you enable it. Turn them off here.
-      kdn.mcp.snoop.enable = false;
-      kdn.mcp.pretty-print.enable = false;
+      # `kdn.mcp.snoop.enable` and `kdn.mcp.pretty-print.enable` both default to false, so this
+      # template needs no line for either. Set one to true only when you want that child.
     }).config.devenv
   ];
 

@@ -72,15 +72,15 @@ in plain text.
 |---|---|---|---|---|---|---|
 | 1. Homebrew turns on for every Darwin host that sets `kdn.enable` | `modules/universal/default.nix:209,224` | own aspect | yes — one `mkIf cfg.enable` block also holds `networking`, `nix.gc` and the tap wiring | **shipped 2026-09-11**: `kdn.homebrew.enable`, default **false**. `modules/universal/_options.nix` declares it. The darwin block of `modules/universal/default.nix` sets `lib.mkDefault true`, so `anji` and every other darwin host of this repository keep today's value. An adopter writes a plain `false`. | `kdn.homebrew.enable`, default false | M |
 | 2. The tap wiring forces every `brew-tap--*` flake input | `modules/universal/default.nix:227-243` | own aspect (same switch as row 1) | yes | **partly shipped 2026-09-11**: `kdn.homebrew.enable` now gates the tap scan too, so an adopter drops it with one `false`. The attribute set of taps stays open — section 3 item 3 owns it. | an attribute set of taps, default empty | S |
-| 3. 6 of 8 `brew-tap--*` inputs use `git+ssh://`, so a machine with no key stops | `flake.nix` — 8 tap `url` lines, 6 of them `git+ssh` (organisation name masked) | option | no | no | the tap set becomes a consumer value, so the inputs leave `flake.nix` | M |
+| 3. 6 of 8 `brew-tap--*` inputs use `git+ssh://`, so a machine with no key stops | `flake.nix` — 8 tap `url` lines, 6 of them `git+ssh` (organisation name masked) | option | no | den needs no scan — `modules/den/aspects/homebrew.nix:49` declares `kdn.homebrew.taps`, default empty. **Fixed for the fetch 2026-09-11**: `kdn.homebrew.tapsFromFlakeInputs` defaults to false and `lib.mkIf` guards the scan, so no `git+ssh://` fetch reaches an adopter at `nix flake lock` or at `nix eval`. Measured on a cold tree with unreachable tap URLs — see section 2 item 3. The 8 lock nodes stay in the adopter's lock; section 3 item 3 owns that. | the tap set becomes a consumer value, so the inputs leave `flake.nix` | M |
 | 4. Podman on Darwin needs Homebrew | `modules/universal/virtualisation/containers/podman/default.nix:27` | own aspect | yes — the container runtime and Homebrew share one switch | no | `kdn.virtualisation.containers.podman.darwin.viaHomebrew`, default false | S |
 | 5. The browser launcher installs Homebrew casks | `modules/universal/programs/browsers-launcher/default.nix:34` | own aspect | no | no | an attribute set of casks, default empty | S |
 | 6. fish, zsh and atuin turn on for every host with the baseline | `modules/universal/headless/base/default.nix:31-33` | own aspect | yes — one `mkIf` block sets 12 plain enables | **partly shipped 2026-09-11**: all 13 plain enables of that block are now `lib.mkDefault true`, so an adopter opts out per item with a plain `false`. A separate `enable` per shell stays open. | one `enable` per shell, default false | M |
 | 7. fish becomes the login shell | `modules/universal/headless/base/default.nix:41` | option | yes (row 6) | no | `kdn.programs.fish.defaultShell`, default false | S |
 | 8. zellij turns on in home-manager | `modules/universal/headless/base/default.nix:48` | own aspect | yes (row 6) | **shipped 2026-09-11**: `kdn.headless.base.zellij.enable`, default true. The bundle scope is deliberate — `headless/base` forwards its whole `cfg` into Home Manager as one `lib.mkDefault`, so a `kdn.programs.*` name would tie at priority 1000 and conflict. The `zellij` aspect still covers the devenv target only. | `kdn.programs.zellij.enable`, default false | S |
-| 9. vim installs and takes `defaultEditor` | `modules/universal/headless/base/default.nix:123-124` | own aspect | **shipped 2026-09-11**: `kdn.headless.base.vim.enable`, default true. Same bundle scope, same reason as row 8. | `kdn.programs.vim.enable`, default false | S |
+| 9. vim installs and takes `defaultEditor` | `modules/universal/headless/base/default.nix:123-124` | own aspect | yes (row 6) | **shipped 2026-09-11**: `kdn.headless.base.vim.enable`, default true. Same bundle scope, same reason as row 8. | `kdn.programs.vim.enable`, default false | S |
 | 10. helix takes `defaultEditor` with a plain assignment | `modules/universal/programs/terminal-ide/default.nix:65` | option | yes — the editor and the language servers share one switch | no | `lib.mkDefault true` | XS |
-| 11. A wezterm key-binding config lands in the home directory | `modules/universal/headless/base/default.nix:107` | own aspect | **shipped 2026-09-11**: `kdn.headless.base.wezterm.enable`, default true. Same bundle scope, same reason as row 8. Another module also writes `programs.wezterm.extraConfig`, so the switch removes this block's part only. | `kdn.programs.wezterm.enable`, default false | S |
+| 11. A wezterm key-binding config lands in the home directory | `modules/universal/headless/base/default.nix:107` | own aspect | yes (row 6) | **shipped 2026-09-11**: `kdn.headless.base.wezterm.enable`, default true. Same bundle scope, same reason as row 8. Another module also writes `programs.wezterm.extraConfig`, so the switch removes this block's part only. | `kdn.programs.wezterm.enable`, default false | S |
 | 12. gnupg also turns on `pass` | `modules/universal/programs/gnupg/default.nix:53` | own aspect | yes — the agent, the pinentry and the password manager share one switch | no | `kdn.programs.gnupg.passwordStore.enable`, default false | S |
 | 13. The basic profile turns gnupg on with a plain assignment | `modules/universal/profile/machine/basic/default.nix:24` | option | yes (row 12) | no | `lib.mkDefault true` | XS |
 | 14. gnupg force-disables gnome-keyring | `modules/universal/programs/gnupg/default.nix:113-114` | option | yes (row 12) | no | `kdn.programs.gnupg.disableGnomeKeyring`, default true | XS |
@@ -117,8 +117,8 @@ in plain text.
 | 45. 5 slots install agent rules and skills into the adopter repo; `kdn.isSourceRepo` is the only switch | `modules/slots/jj/default.nix:23,61,213`, `modules/slots/jj/fork/default.nix:267`, `modules/slots/nix/default.nix:22,134`, `modules/slots/zellij/default.nix:56,125`, `modules/slots/mcp/basic-memory/default.nix:23,140` | option — **007 item 4 owns the slot half** | no longer — one switch per slot covers the opinion, and the tool stays | **fixed on both routes** — `modules/den/aspects/jj.nix:112,277`, `jj-fork.nix:157,432`, `nix.nix:97,223`, `zellij.nix:98,160`, `mcp-basic-memory.nix:172,257` | **shipped**: `kdn.<name>.installAgentRules`, default **false** (section 3 item 4, candidate A). The 3 consumers set it true: `devenv.nix:54-58`, `checks/den-mvp/devenv/default.nix:120-124`, `checks/den-mvp/host-darwin/default.nix:52` | S |
 | 46. The `jj` slot also registers a proactive `jj-expert` subagent | `modules/slots/jj/default.nix:204`, and `modules/den/aspects/jj.nix:270` | option | no longer (row 45) | **fixed on both routes** — the same switch as row 45 gates the subagent | **shipped**: `kdn.jj.installAgentRules`, default false | XS |
 | 47. Four slots turn Claude Code on; `jj` uses a plain assignment | `modules/slots/gh/default.nix:89`, `modules/slots/zellij/default.nix:65`, `modules/slots/nix/default.nix:37`, `modules/slots/jj/default.nix:132` | option | yes | den keeps `mkDefault` — `gh.nix:20`, `zellij.nix:102`, `nix.nix:126`, `jj.nix:198`. den already fixed the plain `jj` case. | `lib.mkDefault true` everywhere | XS |
-| 48. The mcp snoop slot defaults to on, against this repo's own side-effect-free rule | `modules/slots/mcp/snoop/default.nix:18` | own aspect | no | **fixed** — the `mcp-snoop` aspect carries no `enable`, so inclusion is the switch | drop `default = true` | XS |
-| 49. The mcp pretty-print slot defaults to on, for the same reason | `modules/slots/mcp/pretty-print/default.nix:103` | own aspect | no | **fixed** — `mcp-pretty-print` carries no `enable` | drop `default = true` | XS |
+| 48. The mcp snoop slot defaults to on, against this repo's own side-effect-free rule | `modules/slots/mcp/snoop/default.nix:19` | own aspect | no | **fixed on both routes** — the `mcp-snoop` aspect carries no `enable`, and the slot option is now `lib.mkEnableOption`, so it defaults to false | `lib.mkEnableOption` | XS |
+| 49. The mcp pretty-print slot defaults to on, for the same reason | `modules/slots/mcp/pretty-print/default.nix:104` | own aspect | no | **fixed on both routes** — `mcp-pretty-print` carries no `enable`, and the slot option is now `lib.mkEnableOption` | `lib.mkEnableOption` | XS |
 | 50. The mcp gateway forces four backends | `modules/slots/mcp/default.nix:132-136` | option | yes | **the port reproduces it** — `modules/den/aspects/mcp.nix:207-211` | `lib.mkDefault` on each | XS |
 | 51. The `nix` slot forces one MCP program and one extra backend | `modules/slots/nix/default.nix:24-29` | option | yes — nix tooling and the MCP gateway share one switch | **reproduced** — `modules/den/aspects/nix.nix:114` | `lib.mkDefault` | XS |
 | 52. The `nix` slot freezes this repository's own checkout into the devenv MCP backend | `modules/slots/nix/default.nix:28` | **mandatory to fix** — an adopter's backend points at the wrong tree | no | **fixed** — `modules/den/aspects/nix.nix:84-87` reads `DEVENV_ROOT` at run time | n/a | XS |
@@ -142,11 +142,16 @@ in plain text.
 Eight items, ranked by adopter value against effort. Each line names the change and one command
 that proves it.
 
-1. **Flip the two default-on mcp slots to `default = false`, then set both true in this repo's own
-   `devenv.nix`.** Rows 48 and 49. This is the only place the repository breaks its own written
-   rule, and the den aspects already prove the shape works.
-   `devenv eval 'claude.code.mcpServers.mcp-gateway.command'` — the snoop wrapper must leave the
-   command when the option is false.
+1. **fixed 2026-09-10** — both mcp children now default to false, and `devenv.nix` sets both true.
+   Rows 48 and 49. This was the only place the repository broke its own written rule.
+   `d630e819 refactor(slots/mcp): make the snoop and pretty-print children opt-in` did the flip:
+   each option is now `lib.mkEnableOption`, not a `default = true`. `devenv.nix:71-72` restores the
+   two `true` values, so this repository's behaviour stays identical. The `templates/adopter`
+   example dropped its two `false` lines on 2026-09-11, because they are no-ops now.
+   Measured on 2026-09-11 with `devenv eval 'claude.code.mcpServers.mcp-gateway.command'`:
+   with `snoop.enable = true` the command is `…-mcp-gateway-snoop-wrapper`; with `false` it is
+   `…-mcp-gateway-wrapper`, so the wrapper leaves. With `pretty-print.enable = false` the hook
+   `claude.code.hooks.mcp-gateway-pretty-print` is absent.
 
 2. **fixed 2026-09-11** — Homebrew now sits behind `kdn.homebrew.enable`, default **false**. Rows 1
    and 2. This was the trigger for the whole task. A Darwin adopter who already runs Homebrew used
@@ -159,11 +164,31 @@ that proves it.
    `nix eval --json '.#darwinConfigurations.anji.config.homebrew.enable'` — it must stay true for
    `anji`, because the darwin block sets the new option.
 
-3. **Make the tap set a consumer attribute set, default empty.** Rows 2 and 3. It removes 6
-   `git+ssh://` fetches from an adopter's Darwin build, and the hub already grades this as a real
-   blocker on the fresh-guest path.
-   `SSH_AUTH_SOCK= nix eval --json '.#darwinConfigurations.anji.config.nix-homebrew.taps' --apply builtins.attrNames`
-   — Pattern V2 must reach a result with no key present.
+3. **fixed 2026-09-11 for the fetch; the lock text stays with section 3 item 3.** Rows 2 and 3.
+   `kdn.homebrew.tapsFromFlakeInputs` now defaults to **false** (`modules/universal/_options.nix:142`),
+   and the flake-input scan sits behind `lib.mkIf cfg.homebrew.tapsFromFlakeInputs`
+   (`modules/universal/default.nix:247`). `hosts/anji/default.nix:42` sets it true, so `anji` keeps
+   today's 8 taps.
+   **Measured on 2026-09-11**, from a scratch adopter flake in `/tmp` that imports
+   `nix-configs.darwinModules.default` with the flake's own `kdnMetaModule` special arguments and
+   assigns **nothing** to `kdn.homebrew.*`. Every `nix eval` ran with `--no-eval-cache` under
+   `SSH_AUTH_SOCK=` and a `GIT_SSH_COMMAND` wrapper that logs each attempt:
+   `nix-homebrew.taps` → `[ ]`, `homebrew.taps` → `[ ]`, `homebrew.casks` → `[ ]`,
+   `homebrew.brews` → `[ ]`, `kdn.homebrew.tapsFromFlakeInputs` → `false`. Zero ssh attempts.
+   A warm store could hide a fetch, so the run repeated on a cold copy: a `git archive HEAD` tree
+   in `/tmp` with the 6 `git+ssh` tap URLs repointed at an unreachable
+   `git+ssh://git@127.0.0.1:2222/nope-N`. At the defaults the evaluation exits 0 with `[ ]` and no
+   ssh attempt. With `tapsFromFlakeInputs` forced true the same tree fails on
+   `git+ssh://…/nope-1` and the ssh log records the attempt. So the switch stops the fetch, not a
+   cache.
+   **Three costs, measured separately.** (a) Lock text — **real and unavoidable**: the adopter's
+   own `flake.lock` inherits all 8 `brew-tap--*` nodes, 109 nodes in total. (b) Fetch at
+   `nix flake lock` — **none**. (c) Fetch at `nix eval` of the Darwin config — **none** at the
+   defaults. Only (a) remains, and section 3 item 3 candidate B owns it: it needs the user's
+   decision, because it removes the inputs from `flake.nix`.
+   One fact this row does **not** cover: an adopter's `kdn.homebrew.enable` still evaluates to
+   `true`, because the darwin block sets `lib.mkDefault true`. Row 1 designed that on purpose — an
+   adopter opts out with a plain `false`.
 
 4. **Drop `readOnly` from `kdn.nixConfig`, and give `allowUnfree`, `permittedInsecurePackages` and
    the substituter list neutral defaults.** Rows 30 to 33. `readOnly` refuses every assignment, so
@@ -229,6 +254,16 @@ Every item where the smallest safe change still needs a decision the user reserv
    `kdn.homebrew.taps`, an attribute set of paths, so the inputs leave `flake.nix` and the
    adopter's lock loses 8 nodes.
 
+   **Candidate A already shipped, and a measurement on 2026-09-11 narrowed this question.** The
+   gate exists: `kdn.homebrew.tapsFromFlakeInputs`, default false, at
+   `modules/universal/_options.nix:142` and `modules/universal/default.nix:247`. An adopter at the
+   defaults now pays **lock text only** — no `git+ssh://` fetch happens at `nix flake lock` or at
+   `nix eval` of a Darwin host, proved on a cold tree with 6 unreachable tap URLs. So the open
+   question is no longer "does an adopter with no key stop?"; it is only "do the 8 inherited lock
+   nodes justify the move to candidate B?". The den route already answers candidate B for itself:
+   `modules/den/aspects/homebrew.nix:49` declares `kdn.homebrew.taps` with an empty default and
+   reads no flake input.
+
 4. `DECIDED 2026-09-11` — **Does an adopter get the agent rules by default, or never?** Rows 45
    and 46. Candidate A: `installAgentRules` defaults to false, so an adopter opts in. Candidate
    B: it defaults to true, and the docs say how to opt out — the rules carry real value, and a
@@ -285,7 +320,7 @@ adds two more facts 007 does not hold:
 - The den port **already fixed** rows 54 to 57 and row 59 in the aspect files. So each slot edit
   is a copy of a measured value, not a design step.
 - Rows 48 and 49 are 007 item 3, and the den aspects prove the no-`enable` shape works. So the
-  flip needs no new option.
+  flip needed no new option, and it **landed on 2026-09-10** in commit `d630e819`.
 
 ### Already owned by 009
 
