@@ -16,7 +16,26 @@ Goal: an adopter who enables a slot gets a neutral baseline, not the creator's s
 Use **Pattern V1** (the drvPath equality gate) throughout. Every change here should be a no-op for
 this repo's own hosts. A changed drvPath means a real behaviour change that needs justification.
 
-## 1. Split the `requesty` provider into an opt-in sub-module
+## Item status, measured 2026-09-11
+
+| Item | State | Where the work landed |
+|---|---|---|
+| 1 — split the commercial provider out | **done** | `kdn.opencode.settings` and `kdn.opencode.authKeys` both default to `{ }`. This repository restores its own provider and credential in `devenv.nix`. |
+| 2 — lift the personal defaults out | **done** for every measured row (`kdn.jj.upstream.remote`, `kdn.jj.alwaysBlockedMessagePatterns`, `kdn.opencode.allowedPaths`, the `kdn.llm` examples, the `kdn.ca` example). Two rows stay open as **decisions**, not as work: the client env-var name and the service unit prefix. | The three restores sit in `devenv.nix`. |
+| 3 — make the two default-on slots side-effect free | **done** | Both children now use a bare `lib.mkEnableOption`. `devenv.nix` sets both to `true`. |
+| 4 — decide what a slot writes into the adopter repo | **done** | Five `installAgentRules` options, all `default = false`, each gated by `cfg.installAgentRules && !isSourceRepo`. `devenv.nix` sets all five to `true`. |
+| 5 — move the ssh-access graph out of the slots tree | **in progress** | The file move is done; the adopter-facing pattern document is open. |
+| 6 — the two non-goals | not applicable | No action by design. |
+
+A sweep for a personal literal under `modules/slots/` (`~/dev/`, a home checkout path, a personal
+DNS zone, a home LAN CIDR) returns **no file**. Items 1 to 4 need no further code change.
+
+## 1. Split the `requesty` provider into an opt-in sub-module — DONE
+
+> **Done.** The slot names no provider now. `settings` and `authKeys` both default to `{ }`, and
+> the wrapper reads only the credentials that `authKeys` names. This repository states its own
+> provider, its own credential and its own checkout glob in `devenv.nix`. The line references
+> below point at the pre-fix file and no longer resolve.
 
 `modules/slots/opencode/default.nix` hardwires the commercial provider `requesty`:
 
@@ -33,7 +52,16 @@ Note that `modules/slots/llm/proxy/` already treats requesty correctly. It is on
 general `instances.<name>` option with `upstreamUrl` (`:100`). Its README documents it by example.
 Follow that pattern.
 
-## 2. Lift the personal defaults out of shared options
+## 2. Lift the personal defaults out of shared options — DONE, except two decisions
+
+> **Done** for every row that names a default. Each option carries a neutral default now, and
+> `devenv.nix` restores this repository's own value beside a comment that states why. The `kdn.ca`
+> example no longer shows a `kdnConfig.self` path.
+>
+> **Two rows are decisions for the owner, not work:** the client env-var name, and the service
+> unit prefix. Both are stable public contracts. A rename breaks every consumer that already sets
+> the variable or reads the unit name, and it buys an adopter nothing that a prefix option does
+> not. Leave both as they are until the owner decides.
 
 | Option | File | Current default | Action |
 |---|---|---|---|
@@ -53,7 +81,13 @@ and `keySopsFile` options, with the creator's own paths only in the docstring. N
 `example` at `:74-75` still shows `"${kdnConfig.self}/data/ca.pub"`. That is doc-only, and not a
 rule violation. But it misleads a reader. Fix the example.
 
-## 3. Make the two default-on slots side-effect free
+## 3. Make the two default-on slots side-effect free — DONE
+
+> **Done.** Both children use a bare `lib.mkEnableOption`, so each defaults to `false`. Each file
+> carries a comment that cites the side-effect-free rule. `devenv.nix` sets `snoop.enable = true`
+> and `pretty-print.enable = true` inside its `kdn.mcp` block, so this repository keeps the old
+> behaviour. Two probes confirm it: `devenv eval 'slots.kdn.mcp.snoop.enable'` and
+> `devenv eval 'slots.kdn.mcp.pretty-print.enable'` both return `true`.
 
 | File | Line |
 |---|---|
@@ -64,7 +98,12 @@ rule violation. But it misleads a reader. Fix the example.
 These two break it. Flip them. Then set them explicitly in this repo's own `devenv.nix`, so
 behaviour here does not change. Verify with Pattern V1.
 
-## 4. Decide what a slot writes into the adopter repo
+## 4. Decide what a slot writes into the adopter repo — DONE
+
+> **Done.** Five slots gained an `installAgentRules` option, and every one defaults to `false`:
+> `nix`, `jj`, `jj/fork`, `zellij` and `mcp/basic-memory`. Each `files` block reads
+> `cfg.installAgentRules && !config.kdn.isSourceRepo`, so an adopter receives no rule file until
+> it asks. `devenv.nix` sets all five to `true`, because this repository authors those files.
 
 When an adopter enables `kdn.jj`, the slot installs `.agents/rules/jujutsu-vcs.md`, a jj-only
 mandate, plus the fork-workflow docs. 5 slots read repo content through

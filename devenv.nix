@@ -66,16 +66,16 @@ in
         # This repository's own knowledge root. The slot default names no repository now, so this
         # line keeps the note paths that the old default gave.
         basic-memory.knowledgeRoot = "$HOME/.local/share/kdn-nix-configs/knowledge";
-      # The slot names no base now. These two entries keep the backends and the note paths that
-      # the old hardwired `let` bindings gave.
-      basic-memory.bases.public = {
-        aliases = [ "bmp" ];
-        description = "basic-memory public knowledge base (open-source tooling, public knowledge)";
-      };
-      basic-memory.bases.sensitive = {
-        aliases = [ "bms" ];
-        description = "basic-memory sensitive knowledge base (private, internal)";
-      };
+        # The slot names no base now. These two entries keep the backends and the note paths that
+        # the old hardwired `let` bindings gave.
+        basic-memory.bases.public = {
+          aliases = [ "bmp" ];
+          description = "basic-memory public knowledge base (open-source tooling, public knowledge)";
+        };
+        basic-memory.bases.sensitive = {
+          aliases = [ "bms" ];
+          description = "basic-memory sensitive knowledge base (private, internal)";
+        };
         # Both children now default to false, so a consumer opts in. This repository wants both, and
         # these two lines keep the behaviour that the old `default = true` gave.
         snoop.enable = true;
