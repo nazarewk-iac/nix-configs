@@ -1,6 +1,6 @@
 ---
 type: Solution
-status: done
+task: definition.md
 description: Both guard defects take a context-correct test, and one check per defect forces the path that laziness hid.
 authored_by: agent
 timestamp: 2026-09-11T00:00:00Z

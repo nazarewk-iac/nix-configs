@@ -1,12 +1,15 @@
 ---
 type: Task
 description: Write a nix-darwin getting-started runbook that takes an adopter from zero to a multi-arch build, with a caveats table built from this repo's own verified history.
-status: open
+status: done
+solution: done.md
 authored_by: agent
 timestamp: 2026-09-08T17:30:00+02:00
 ---
 
 # 003 — nix-darwin getting-started runbook
+
+**Done on 2026-09-11.** Solution: [done.md](done.md).
 
 Hub: [../generalization-plan.md](../definition.md). Depends on
 [002](../002-rosetta-builder-adopter-dropin/definition.md). Last of the first commit chain. Do not

@@ -1,12 +1,16 @@
 ---
 type: Task
 description: Split the local LLM slot into two llama-server routers, so one frontier model stays hot while the small models swap freely behind one endpoint.
-status: in-progress
+status: done
+solution: done.md
 authored_by: agent
 timestamp: 2026-09-06T00:00:00+02:00
 ---
 
 # Two-router LLM split
+
+**Done on 2026-09-11.** Solution: [done.md](done.md). The "Current state" section below is a
+record of the mid-task state and no longer holds.
 
 Design: [design.md](design.md).
 

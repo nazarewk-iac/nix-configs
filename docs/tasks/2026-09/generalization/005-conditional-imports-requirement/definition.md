@@ -9,6 +9,8 @@ timestamp: 2026-09-08T17:30:00+02:00
 
 # 005 — the conditional-imports requirement
 
+**Done on 2026-09-11.** Solution: [done.md](done.md).
+
 Hub: [../generalization-plan.md](../definition.md). Together with 004 it gates 006.
 
 Goal: state what `modules/meta` solves as a written, testable requirement. Any framework that

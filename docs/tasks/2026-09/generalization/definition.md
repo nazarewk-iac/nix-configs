@@ -65,8 +65,9 @@ in anybody's nix-darwin. Then an adopter builds multi-arch containers in their o
 | 014 | [014-machine-layer-migration](014-machine-layer-migration/definition.md) | Migrate the machine layer — `modules/universal` plus `modules/meta` — onto the chosen framework, in measured batches. Gate: 005 + 006 + 009. |
 | 015 | [015-den-check-harness-platforms](015-den-check-harness-platforms/definition.md) | Give the den check harness a second platform, and lower three plain-priority values to `lib.mkDefault`. It blocks `hw-rpi4` and any aspect that owns the boot loader. |
 
-Every checkpoint is `open` today, with three exceptions: 004 and 015 are `in-progress`, and 012 is
-`not-scheduled` — 012 is a reference map, not a schedule.
+Four checkpoints are `done`: 003, 005, 008 and 010. Each carries a `done.md`. Two are
+`in-progress`: 004 and 015. 012 is `not-scheduled` — it is a reference map, not a schedule. The
+other eight stay `open`: 001, 002, 006, 007, 009, 011, 013 and 014.
 
 ## Dependency graph
 
