@@ -33,6 +33,11 @@ let
 
   enabledModels = lib.filterAttrs (_: m: m.enable) cfg.models;
 
+  # The download set. `download.enable` needs its own filter: `enabledModels` reads `m.enable`
+  # alone, so a model that asks for no download got one anyway. `modules/den/aspects/llm.nix`
+  # carries the same filter.
+  downloadModels = lib.filterAttrs (_: m: m.download.enable) enabledModels;
+
   # Absolute path of a downloaded model file within modelsDir:
   #   <modelsDir>/<hfRepo>/<hfFile>
   modelFile =
@@ -888,8 +893,8 @@ in
             # Downloads run only once the network is up, and never touch
             # multi-user.target. Started by (wantedBy) network-online.target,
             # after it, so they never block boot or activation.
-            wantedBy = lib.mkIf (enabledModels != { }) [ "kdn-llm-download.target" ];
-            partOf = lib.mkIf (enabledModels != { }) [ "kdn-llm-download.target" ];
+            wantedBy = lib.mkIf (downloadModels != { }) [ "kdn-llm-download.target" ];
+            partOf = lib.mkIf (downloadModels != { }) [ "kdn-llm-download.target" ];
             wants = [ "network-online.target" ];
             after = [ "network-online.target" ];
 
@@ -911,8 +916,8 @@ in
                 export HF_TOKEN="$(cat "''${CREDENTIALS_DIRECTORY}/HF_TOKEN")"
               fi
               # Dependencies (draft models) first, then the main models.
-              ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: _: draftStep name) enabledModels)}
-              ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: m: downloadStep name m) enabledModels)}
+              ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: _: draftStep name) downloadModels)}
+              ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: m: downloadStep name m) downloadModels)}
               echo "all configured downloads complete"
             '';
           };

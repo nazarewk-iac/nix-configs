@@ -40,7 +40,7 @@
 #
 # ## The de-personalized port
 #
-# The slot carried the creator's own network in five places. Every one of them is now neutral:
+# Five values named the creator's own network. Every one is neutral here, and in the slot too:
 #
 #  * `domain` gave one homelab fully-qualified name as its example. The example now names a
 #    placeholder domain.
@@ -49,8 +49,8 @@
 #    two documentation-range addresses.
 #  * `modelsDir` had no default at all, so the aspect could not evaluate without consumer data. It
 #    now defaults to a neutral system path.
-#  * the preset generator hardcoded a thread count that matched one 16-core machine. It is now an
-#    option, and the default omits the flag.
+#  * the preset generator held a fixed thread count for one 16-core machine. It is an option now,
+#    and the default omits the flag. The slot holds the same option now.
 #
 # ## The LAN gate is optional now
 #
@@ -676,8 +676,7 @@
           Fallback thread count for a model that names no `perf.threads`. `null` writes no `threads`
           key at all, so `llama-server` picks its own count.
 
-          The slot hardcoded 16, the physical core count of one machine. A machine-specific number is
-          consumer data, so it is an option here and the default omits the flag.
+          A thread count is machine data, so the default omits the flag. The example shows the shape.
         '';
       };
 
@@ -767,8 +766,7 @@
           Addresses the Caddy vhost binds, one per network that a certificate hostname resolves on.
           An empty list binds the default interface only.
 
-          The slot's example named two real addresses of one private network. The example here names
-          two documentation-range addresses.
+          The example names two documentation-range addresses, from RFC 5737.
         '';
       };
 
