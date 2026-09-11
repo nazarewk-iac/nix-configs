@@ -56,6 +56,9 @@
 # `.json` and every `.toml`. A narrow pattern keeps every other `.json` and `.toml` ignored.
 !/modules/den/aspects/*/*.json
 !/modules/den/aspects/*/*.toml
+# den aspect payload files with a `.yaml` extension. `*` above ignores a `.yaml` name, so the stylix
+# base16 palette next to /modules/den/aspects/stylix.nix needs this line.
+!/modules/den/aspects/*.yaml
 !/modules/shared/universal/profile/user/kdn/
 !/LICENSE
 
