@@ -21,14 +21,14 @@
 #
 # ## The de-personalized port
 #
-# Two slot defaults carried one person's own data:
+# Every default in this file names no person, and the slot now agrees:
 #
-#  * `alwaysBlockedMessagePatterns` defaulted to a real pattern. A denied pattern is private
-#    configuration, so the default here is the empty list and the consumer names its own patterns.
-#  * `upstream.remote` defaulted to a personal remote name. ./jj.nix holds that option, and it
-#    defaults to `"origin"`.
+#  * `alwaysBlockedMessagePatterns` defaults to the empty list, and the consumer names its own
+#    patterns. An empty list is an explicit no-op, not a silent pass — see `pre-push.sh`.
+#  * `upstream.remote` defaults to `"origin"`. ./jj.nix holds that option.
 #
-# Both denied-pattern lists already defaulted to the empty list in the slot, so they need no change.
+# Commit 71e0149b gave the slot the same two neutral defaults, so the two trees agree. Both
+# denied-pattern lists default to the empty list in both trees.
 #
 # ## A denied pattern reaches the store
 #
@@ -146,10 +146,11 @@
         description = ''
           Commit message patterns that no push may carry, to any remote.
 
-          The slot defaulted this to one real pattern of one person's own workflow. A denied pattern
-          is private configuration, so the default here is empty and the consumer names its own.
+          A denied pattern is private configuration, so the default is empty and the consumer names
+          its own. The slot carries the same empty default.
 
           The pre-push hook reads this list. `jj git push` fires no git hook, so it runs no check.
+          An empty list is an explicit no-op: the hook tests the count and skips the check.
         '';
         example = [ "scratch" ];
       };

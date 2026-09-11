@@ -42,7 +42,12 @@ in
       type = lib.types.listOf lib.types.str;
       # Empty by default. A pattern is a property of one repository, so the consumer supplies it.
       default = [ ];
-      description = "Commit message patterns always blocked from pushing to any remote.";
+      description = ''
+        Commit message patterns always blocked from pushing to any remote.
+
+        An empty list is an explicit no-op: `pre-push.sh` tests the count and skips the
+        always-blocked check. It never builds a `grep` call with no pattern.
+      '';
     };
 
     upstream.remote = lib.mkOption {
