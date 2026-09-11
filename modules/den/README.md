@@ -68,7 +68,7 @@ configuration. The `kdn.*` option prefix stays reserved for a consumer, inside a
 That trap already cost one bug. `classes/devenv.nix` declared its class options under
 `kdn.den.devenv.*`, so den read a phantom aspect named `den` into `den.ful.kdn`, and the phantom
 reached the exported output too. The prefix is `den.devenv.*` now, and `den.ful.kdn` holds exactly
-the 20 registry aspects. Two structural keys, `schema` and `classes`, also appear as
+the 21 registry aspects. Two structural keys, `schema` and `classes`, also appear as
 attribute names. `modules/den/lib.nix:190` names them, and neither is an aspect.
 
 **An entity aspect stays in `den.aspects`.** den finds a host's aspect by the host name and a user's
@@ -88,8 +88,10 @@ of length 1 and one option declaration. The `mcp` family depends on that behavio
 | `denConfigurations.<host>` | A nix-darwin or a NixOS system that den builds. Both classes share one flat set. |
 | `denDevenvShells.<host>` | A devenv shell that den builds. |
 | `denHomeConfigurations.<name>` | A **standalone** home-manager configuration. It belongs to no den host. |
-| `denModules.<aspect>` | A **plain module** for an external adopter. It holds no den. |
+| `denModules.<aspect>` | A **plain module** for an external adopter. It holds no den. One aspect, its common class. |
+| `denModules.<aspect>-<class>` | The same, for every valid aspect-class pair. 26 keys on 2026-09-11. |
 | `denLib` | The adopter-facing library. `denLib.imports { … }` returns a list for `imports = [ … ]`. |
+| `denLib.pairs` | aspect name → the classes it emits. The list of valid pairs. |
 
 `denLib` and `denModules` are the point of the whole tree. An adopter imports a plain module, and
 the adopter never adopts den. `denLib.imports` is the general form. `denModules.<aspect>` is the
@@ -177,6 +179,8 @@ The raw machinery sits beside the wrapper, for a caller that needs more:
 | `denLib.aspectModules` | The aspect registry — one path per reimplemented slot. |
 | `denLib.eval` | One den library evaluation. It returns the `den` handle. |
 | `denLib.resolve` | `resolve <den> <class> <aspect>`, with the non-empty-`imports` guard. |
+| `denLib.pairsFor` | `pairsFor <den>` — aspect name → the classes it emits. |
+| `denLib.pairModulesFor` | `pairModulesFor <den>` — `"<aspect>-<class>"` → a resolved module. |
 | `denLib.nixModule` | den's own entry point, unwrapped. |
 
 `imports` takes five arguments. `class` names any evaluation domain. `aspects` names registry
@@ -248,7 +252,7 @@ it. The adopter surface is library mode, and `flake.denLib` ships it.
 |---|---|
 | devenv class | present |
 | den namespaces | present — `namespaces.nix` creates the exported `kdn` and the never-exported `personal`. Every reusable aspect sits at `den.ful.kdn.<name>`. |
-| `rosetta-builder` aspect | core content only — the guest-size options are **not** ported |
+| `rosetta-builder` aspect | present — a full port. It carries the core content plus the three `kdn.rosetta-builder.guest.*` options, and it is the only aspect with an `assertions` entry. |
 | `gh` aspect | present — the first `devenv`-target aspect, a full port of `modules/slots/gh/` |
 | `ssh-agent` aspect | present — the first **`homeManager`-only** aspect. A full port of `modules/slots/ssh-agent/`. |
 | `ca` aspect | present — the first **`nixos`-only** aspect. A full port of `modules/slots/ca/`. It declares `kdn.ca` **inside** its own `nixos` target, so one plain module both declares the option and serves it. |
@@ -277,7 +281,7 @@ it. The adopter surface is library mode, and `flake.denLib` ships it.
 | A `nixos`-class aspect | present — `devenv-cli` reaches `host-nixos` |
 | `home` target | present — through `devenv-cli`, on both routes |
 | A coupled pair of slots (`jj` plus `mcp`) | present — order 7 of the milestone 2 plan. `jj-fork` includes `jj`, and `jj` includes `mcp`, so the pair sits in the same diamond as the `mcp` family. |
-| Parity with all 19 slots | **reached 2026-09-11.** 19 of 19 done. The registry holds 20 aspects, because the `devenv` slot gains a `devenv-cli` aspect and the `homebrew` aspect has no slot. See [004-den-spike](../../docs/tasks/2026-09/generalization/004-den-spike/definition.md#milestone-2-covers-every-slot--scope-decision-2026-09-10). |
+| Parity with all 19 slots | **reached 2026-09-11.** 19 of 19 done. The registry holds 21 aspects, because the `devenv` slot gains a `devenv-cli` aspect and the two Homebrew aspects have no slot. See [004-den-spike](../../docs/tasks/2026-09/generalization/004-den-spike/definition.md#milestone-2-covers-every-slot--scope-decision-2026-09-10). |
 
 The slot tree remains the supported route. See
 [docs/slots-for-adopters.md](../../docs/slots-for-adopters.md).

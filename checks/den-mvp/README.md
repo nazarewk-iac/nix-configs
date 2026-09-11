@@ -137,15 +137,15 @@ Tier 1 runs on any machine: the comparison is an evaluation and the derivation i
 tier 3 build a real artifact, so `tests.nix` keeps only this machine's entries — the same rule the
 `den-mvp` aggregate follows.
 
-**25 of 25 pass on an `aarch64-darwin` machine**, measured on 2026-09-11: 20 evaluation, 3 artifact
-and 2 smoke. The 20 evaluation checks assert about 216 values together, and `den-eval-jj` holds 32
+**26 of 26 pass on an `aarch64-darwin` machine**, measured on 2026-09-11: 21 evaluation, 3 artifact
+and 2 smoke. The 21 evaluation checks assert about 241 values together, and `den-eval-jj` holds 32
 of them. The five `x86_64-linux` entries evaluate to a `drvPath` from Darwin, and they need a Linux
 builder to build. `nix eval '.#checks.<system>'` lists one name more than that on each system,
 because the `den-mvp` build gate joins the set.
 
-The registry at [`modules/den/lib.nix`](../../modules/den/lib.nix) holds **20** aspects. Four checks
-are cross-cutting. Each one reads a **bare consumer** — a plain evaluation with no den entity, no
-`kdnConfig` and no overlay, one helper per class:
+The registry at [`modules/den/lib.nix`](../../modules/den/lib.nix) holds **20** aspects and **25**
+(aspect, class) pairs. Five checks are cross-cutting. Each one reads a **bare consumer** — a plain
+evaluation with no den entity, no `kdnConfig` and no overlay, one helper per class:
 
 | Check | What it proves |
 |---|---|
@@ -153,6 +153,13 @@ are cross-cutting. Each one reads a **bare consumer** — a plain evaluation wit
 | `den-eval-priority` | a consumer's own plain definition beats the aspect's, and the one place where it still cannot |
 | `den-eval-frozen-paths` | no backend freezes an environment value, and the gateway finds its configuration at run time |
 | `den-eval-coverage` | every registry aspect names a subject that evaluates its target module |
+| `den-eval-instantiate` | every one of the 25 (aspect, class) pairs forces its whole target module body, in a bare consumer, on every system |
+
+`den-eval-coverage` reads a hand-written table, so it proves a name exists. `den-eval-instantiate`
+reads the registry and forces a `drvPath` per pair, so it proves the body evaluates. Measured on
+2026-09-11: with one planted `throw` per class, the four other cross-cutting checks and
+`standalone-aspects` all pass, and `den-eval-instantiate` fails on exactly the four planted pairs.
+It adds about 48 s to this file's evaluation, and `darwin` is more than half of that.
 
 **No tier activates anything.** Tier 2 reads a built store path and never executes it. Tier 3 runs
 devenv's `config.test`, which devenv keeps separate from `enterShell`, so no assertion runs on

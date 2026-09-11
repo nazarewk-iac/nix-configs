@@ -107,6 +107,35 @@ let
       '';
 in
 {
+  # `flake.denModules` needs an option declaration before a second module can add to it.
+  # flake-parts types every undeclared `flake.<name>` as `types.unique types.raw`
+  # (<flake-parts>/modules/flake.nix:14-29), so two definitions of one undeclared output throw
+  # `defined multiple times while it's expected to be unique`. Measured on 2026-09-11.
+  # `lazyAttrsOf raw` merges per key instead, and it forces no value. den's own
+  # `nix/flakeOutputs.nix` recommends the same shape.
+  #
+  # The declaration sits in an `imports` entry, because this file also sets `flake.*` keys
+  # directly. A module that carries an `options` attribute at its own top level must move every
+  # config key under `config`, and that would rewrite this whole file.
+  imports = [
+    {
+      options.flake.denModules = denLib.mkOption {
+        type = denLib.types.lazyAttrsOf denLib.types.raw;
+        default = { };
+        description = ''
+          One already-resolved plain module per adopter-facing export. Two shapes share the set:
+          `<aspect>` for one aspect in its one common class, and `<aspect>-<class>` for every
+          valid aspect-class pair.
+        '';
+      };
+    }
+
+    # The flat pair surface: `denModules.<aspect>-<class>`, one key per valid pair. 26 keys on
+    # 2026-09-11. `./lib.nix` derives the class list from the aspect itself, so an invalid pair
+    # gets no key. It takes this route's own `den` handle, so it costs no second den evaluation.
+    { flake.denModules = library.pairModulesFor den; }
+  ];
+
   flake.den = den;
 
   # The namespace output. `namespaces.nix` writes `denful.kdn` inside den's own evaluation, so this
@@ -161,8 +190,11 @@ in
   # same reason. An adopter reaches a multi-class aspect through `denLib.imports { class = …; }`,
   # which states the class.
   #
-  # DECISION TO REVISE: a `denModules.<aspect>-<class>` naming convention would export every class of
-  # every aspect. That is a surface decision for the whole tree, not part of this one port.
+  # The `denModules.<aspect>-<class>` naming convention now exists, and the `imports` block at the
+  # top of this file publishes all 25 valid pairs. So `denModules.llm-proxy-devenv`,
+  # `denModules.llm-proxy-nixos`, `denModules.devenv-cli-<class>` and
+  # `denModules.ssh-access-<class>` all reach a caller. The zero-argument names below stay, because
+  # they are shorter and they carry the common class of each aspect.
   flake.denModules.llm = resolveChecked "nixos" "llm" kdn.llm;
   flake.denModules.llm-client = resolveChecked "devenv" "llm-client" kdn.llm-client;
 

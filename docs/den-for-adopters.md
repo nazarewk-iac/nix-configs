@@ -69,7 +69,9 @@ from the `modules/slots/` route, which needs one `overlays` line.
 | Handle | Shape | Use |
 |---|---|---|
 | `denModules.<aspect>` | an already-resolved plain module | one aspect, in its one common class |
+| `denModules.<aspect>-<class>` | an already-resolved plain module | one aspect, in one named class it emits |
 | `denLib.imports { class; aspects; }` | a **list** of plain modules | any aspect, in any class it emits |
+| `denLib.pairs` | aspect name → a list of class names | list the valid `<aspect>-<class>` keys |
 
 `denModules.<aspect>` drops straight into a `modules` list.
 
@@ -126,9 +128,8 @@ command per example.
 
             kdn.homebrew.taps = [ "example-org/example-tap" ];
             kdn.homebrew.casks = [ "example-cask" ];
-            # nix-darwin's own default is "none". This aspect keeps the author's "zap", which
-            # deletes a package the generated Brewfile does not name. Set it back yourself.
-            kdn.homebrew.onActivation.cleanup = "none";
+            # The aspect defaults this to nix-darwin's own "none", so you keep every cask you
+            # installed by hand. Write "zap" only when Nix owns your whole Homebrew installation.
           }
         ];
       };
@@ -337,16 +338,16 @@ itself.
 | devenv, no CLI | `nix eval --no-eval-cache --raw '.#packages.aarch64-darwin.shell.drvPath'` | 0 |
 
 Four more evaluations cover **every** aspect in **every** class it emits — 25 aspect-class pairs
-across 20 aspects. All four exit 0:
+across 21 aspects. All four exit 0:
 
 | Class | Aspects in one evaluation |
 |---|---|
 | `devenv` | `devenv-cli`, `gh`, `jj`, `jj-fork`, `llm-client`, `llm-proxy`, `mcp`, `mcp-basic-memory`, `mcp-pretty-print`, `mcp-snoop`, `nix`, `opencode`, `ssh-access`, `zellij` |
 | `nixos` | `ca`, `devenv-cli`, `llm`, `llm-proxy` |
-| `darwin` | `devenv-cli`, `homebrew`, `rosetta-builder` |
+| `darwin` | `devenv-cli`, `homebrew`, `homebrew-nix-managed`, `rosetta-builder` |
 | `homeManager` | `devenv-cli`, `signing`, `ssh-access`, `ssh-agent` |
 
-## The 20 aspects
+## The 21 aspects
 
 | Aspect | Classes | `denModules` | What it gives you |
 |---|---|---|---|
@@ -354,6 +355,7 @@ across 20 aspects. All four exit 0:
 | `devenv-cli` | `nixos`, `darwin`, `homeManager`, `devenv` | **no** | Puts the `devenv` CLI on PATH. The one four-class aspect. |
 | `gh` | `devenv` | yes | The GitHub CLI, plus a read-only Bash allowlist for Claude Code. |
 | `homebrew` | `darwin` | yes | Turns nix-darwin's `homebrew` module on. Three empty lists, three `onActivation` values. |
+| `homebrew-nix-managed` | `darwin` | pair form only | Lets nix-homebrew own the Homebrew installation, with immutable taps. Includes `homebrew`. |
 | `jj` | `devenv` | yes | The `jj` binary, a repo config, an agent rule, a `jj-mcp` backend. Includes `mcp`. |
 | `jj-fork` | `devenv` | yes | The fork-remote half: 2 remotes, 20 revset aliases, 5 aliases, 2 git hooks. Includes `jj`. |
 | `llm` | `nixos` | yes | Serves local GGUF models from one `llama-server` router, behind one Caddy vhost. |
@@ -374,21 +376,22 @@ across 20 aspects. All four exit 0:
 Verify the list yourself:
 
 ```bash
-nix eval --no-eval-cache --json '<flakeref>#denLib.aspectModules' --apply builtins.attrNames   # 20
+nix eval --no-eval-cache --json '<flakeref>#denLib.aspectModules' --apply builtins.attrNames   # 21
 nix eval --no-eval-cache --json '<flakeref>#denModules'          --apply builtins.attrNames   # 17
-# `denful.kdn` returns 22 names, not 20: the 20 aspects plus the structural keys `schema` and
+# `denful.kdn` returns 23 names, not 21: the 21 aspects plus the structural keys `schema` and
 # `classes`. `modules/den/lib.nix:190` records that neither key is an aspect.
 ```
 
 ### The option prefix does not always match the aspect name
 
-Five aspects declare no option at all: `devenv-cli`, `gh`, `mcp-snoop`, `rosetta-builder` and
-`ssh-agent`. For the rest, the prefix is this:
+Four aspects declare no option at all: `devenv-cli`, `gh`, `mcp-snoop` and `ssh-agent`. For the
+rest, the prefix is this:
 
 | Aspect | Option prefix |
 |---|---|
 | `ca` | `kdn.ca.<instance>` |
 | `homebrew` | `kdn.homebrew` |
+| `homebrew-nix-managed` | `kdn.homebrew.nixManaged` |
 | `jj` | `kdn.jj` |
 | `jj-fork` | `kdn.jj.fork`, plus `kdn.jj.alwaysBlockedMessagePatterns` |
 | `llm` | `kdn.llm.local` |
@@ -399,6 +402,7 @@ Five aspects declare no option at all: `devenv-cli`, `gh`, `mcp-snoop`, `rosetta
 | `mcp-pretty-print` | `kdn.mcp.pretty-print` |
 | `nix` | `kdn.nix` |
 | `opencode` | `kdn.opencode` |
+| `rosetta-builder` | `kdn.rosetta-builder.guest` |
 | `signing` | `kdn.signing` |
 | `ssh-access` | `kdn.ssh-access` |
 | `zellij` | `kdn.zellij` |
@@ -573,10 +577,10 @@ This caveat stays only so you do not treat the warning as expected when you read
 
 These three aspects change the machine at the first activation:
 
-- `homebrew` turns nix-darwin's `homebrew` module on
-  (`modules/den/aspects/homebrew.nix:122`), and `kdn.homebrew.onActivation.cleanup` defaults to
-  `"zap"` (`modules/den/aspects/homebrew.nix:104-106`). `"zap"` deletes a hand-installed cask.
-  **Fix:** set `kdn.homebrew.onActivation.cleanup = "none";` first.
+- `homebrew` turns nix-darwin's `homebrew` module on, at `lib.mkDefault` priority. It runs an
+  activation, and it writes a Brewfile. `kdn.homebrew.onActivation.cleanup` defaults to `"none"`,
+  so no package of yours is deleted. **Fix:** set `homebrew.enable = false;` to keep the option
+  list and drop the activation.
 - `llm` sets `services.llama-cpp.enable = true` with no guard
   (`modules/den/aspects/llm.nix:875`), so a router starts with no model.
   **Fix:** set `services.llama-cpp.enable = lib.mkForce false;`, or remove the import.
