@@ -1,8 +1,10 @@
 # Check bundles. A bundle is one `linkFarm` over the checks it names, so one `nix build` runs every
-# member and nix builds the members in parallel. A bare `nix flake check` takes 660 s; the four fast
-# bundles together take about 111 s. Two rules hold: a non-VM bundle finishes in under 60 s, and every
-# check joins one bundle. A check that breaks 60 s alone belongs in `bundle-slow`. Four bundles read a
-# name prefix, so a new fast check joins by itself. Times measured 2026-09-11 on `aarch64-darwin`,
+# member and nix builds the members in parallel. A bare `nix flake check` measured 660.6 s before the
+# 30 `dev-*` aspects landed. `den-eval-instantiate` then grew by 300 s, so expect about 960 s now.
+# Never run it. The four fast bundles together take about 119 s. Two rules hold: a non-VM bundle
+# finishes in under 60 s, and every check joins one bundle. A check that breaks 60 s alone belongs in
+# `bundle-slow`, and a bundle over 60 s sheds its heaviest member to the same place. Four bundles read
+# a name prefix, so a new fast check joins by itself. Times measured 2026-09-11 on `aarch64-darwin`,
 # warm store. ./README.md holds the full table.
 {
   pkgs,
@@ -19,10 +21,17 @@ let
         path = checks.${n};
       }) (builtins.filter (n: checks ? ${n}) members)
     );
-  # Each one breaks 60 s alone: 83.3, 58.0, 75.0 and 188.4 s.
+  # Four members break 60 s alone: 83.3, 358.0, 75.0 and 188.4 s. `den-eval-instantiate` cost 58.0 s
+  # until the 30 `dev-*` aspects took the registry from 137 pairs to 201, measured 2026-09-11.
+  #
+  # `den-eval-hw` is the one member that does not break 60 s alone. It costs 25.3 s, and it is the
+  # heaviest member of `bundle-den`. Four batches of aspects together took that bundle to 75.4 s, over
+  # the 60 s ceiling, so the bundle sheds its heaviest member. Two runs then gave 49.3 s and 50.2 s.
+  # That keeps the ceiling true, and it keeps every other area check one command away.
   slow = [
     "den-eval-routes"
     "den-eval-instantiate"
+    "den-eval-hw"
     "den-mvp"
     "jj-experiments-pytest"
   ];
@@ -49,7 +58,7 @@ in
     ++ crossCutting
     ++ byPrefix "universal-eval-"
   );
-  # 47.0 s. One assertion set per den aspect: every `den-eval-*` that is neither cross-cutting nor
+  # About 50 s. One assertion set per den aspect: every `den-eval-*` that is neither cross-cutting nor
   # slow. A new aspect check joins by itself.
   bundle-den = mkBundle "den" (lib.subtractLists (crossCutting ++ slow) (byPrefix "den-eval-"));
   # 18.0 s. The two package test suites that finish in seconds.
@@ -60,7 +69,7 @@ in
   # 43.7 s with the system closure already in the store; a cold store builds a system first, and that
   # costs minutes. Empty on `aarch64-linux`, which carries neither prefix.
   bundle-artifact = mkBundle "artifact" (byPrefix "den-artifact-" ++ byPrefix "den-smoke-");
-  # About 383 s.
+  # 710.6 s. `den-eval-instantiate` alone holds 358.0 s of that.
   bundle-slow = mkBundle "slow" slow;
   # Reserved and empty. No VM test exists — ./den-mvp/tests.nix states why. This is the one bundle the
   # 60 s rule does not cover.
