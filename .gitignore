@@ -51,6 +51,11 @@
 # needs a line here.
 !/modules/den/aspects/*/gitignore
 !/modules/den/aspects/*/tool-versions
+!/modules/den/aspects/*/wofi-config
+# den aspect payload files with an extension that has no global allow line. `*` above ignores every
+# `.json` and every `.toml`. A narrow pattern keeps every other `.json` and `.toml` ignored.
+!/modules/den/aspects/*/*.json
+!/modules/den/aspects/*/*.toml
 !/modules/shared/universal/profile/user/kdn/
 !/LICENSE
 

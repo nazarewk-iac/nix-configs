@@ -36,6 +36,17 @@ let
   aspectModules = {
     apps = ./aspects/apps.nix;
     ca = ./aspects/ca.nix;
+    desktop-base = ./aspects/desktop-base.nix;
+    desktop-kde = ./aspects/desktop-kde.nix;
+    desktop-remote-server = ./aspects/desktop-remote-server.nix;
+    desktop-sway-kanshi = ./aspects/desktop-sway-kanshi.nix;
+    desktop-sway-media-keys = ./aspects/desktop-sway-small.nix;
+    desktop-sway-nwg-panel = ./aspects/desktop-sway-nwg.nix;
+    desktop-sway-nwg-shell = ./aspects/desktop-sway-nwg.nix;
+    desktop-sway-swaylock = ./aspects/desktop-sway-small.nix;
+    desktop-sway-swaync = ./aspects/desktop-sway-small.nix;
+    desktop-sway-swayr = ./aspects/desktop-sway-small.nix;
+    desktop-sway-waybar = ./aspects/desktop-sway-waybar.nix;
     dev-android = ./aspects/dev-android.nix;
     dev-ansible = ./aspects/dev-ansible.nix;
     dev-cloud = ./aspects/dev-cloud.nix;
