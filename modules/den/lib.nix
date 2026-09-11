@@ -39,10 +39,12 @@ let
     desktop-base = ./aspects/desktop-base.nix;
     desktop-kde = ./aspects/desktop-kde.nix;
     desktop-remote-server = ./aspects/desktop-remote-server.nix;
+    desktop-sway = ./aspects/desktop-sway.nix;
     desktop-sway-kanshi = ./aspects/desktop-sway-kanshi.nix;
     desktop-sway-media-keys = ./aspects/desktop-sway-small.nix;
     desktop-sway-nwg-panel = ./aspects/desktop-sway-nwg.nix;
     desktop-sway-nwg-shell = ./aspects/desktop-sway-nwg.nix;
+    desktop-sway-remote = ./aspects/desktop-sway.nix;
     desktop-sway-swaylock = ./aspects/desktop-sway-small.nix;
     desktop-sway-swaync = ./aspects/desktop-sway-small.nix;
     desktop-sway-swayr = ./aspects/desktop-sway-small.nix;
