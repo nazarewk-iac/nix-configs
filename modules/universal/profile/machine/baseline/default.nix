@@ -15,6 +15,49 @@ in
       type = lib.types.ints.unsigned;
       default = 0;
     };
+
+    /*
+      The five switches below split one bundle into one concern per switch.
+
+      One profile used to turn on a named user, a garbage-collection policy, two overlay-network
+      clients, a file-sync client and a link to one checkout path together. An adopter wants some of
+      them and not the rest.
+
+      Each default keeps the value this repository uses today. A `true` default costs nothing when
+      `enable` is `false`, because the whole `config` sits behind `enable`. An adopter writes a plain
+      `false`, which wins over an option default and over a `mkDefault`.
+    */
+    primaryUser.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      example = false;
+      description = "Turn on the `kdn` user profile of this tree. An adopter names its own user.";
+    };
+    garbageCollection.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      example = false;
+      description = "Turn on the `nix.gc` policy and the angrr retention service.";
+    };
+    overlayNetworks.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      example = false;
+      description = "Turn on the named overlay-network clients of this tree.";
+    };
+    nextcloudClient.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      example = false;
+      description = "Turn on the system Nextcloud client when the secrets of this tree are present.";
+    };
+    flakeCheckoutLinks.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = cfg.primaryUser.enable;
+      defaultText = lib.literalExpression "config.kdn.profile.machine.baseline.primaryUser.enable";
+      example = false;
+      description = "Link `/etc/nixos/flake.nix` to the checkout in the primary user home directory.";
+    };
   };
 
   config = lib.mkIf cfg.enable (
@@ -57,7 +100,6 @@ in
       {
         kdn.enable = lib.mkDefault true;
         kdn.locale.enable = lib.mkDefault true;
-        kdn.profile.user.kdn.enable = lib.mkDefault true;
         kdn.headless.base.enable = lib.mkDefault true;
 
         kdn.profile.remote-builders.enable = lib.mkDefault true;
@@ -70,6 +112,9 @@ in
         kdn.hw.yubikey.enable = lib.mkDefault true;
         kdn.security.disk-encryption.enable = lib.mkDefault true;
       }
+      (lib.mkIf cfg.primaryUser.enable {
+        kdn.profile.user.kdn.enable = lib.mkDefault true;
+      })
       {
         kdn.env.packages = with pkgs; [
           git
@@ -94,63 +139,71 @@ in
       (kdnConfig.util.ifTypes [ "nixos" "darwin" ] {
         services.openssh.enable = lib.mkDefault true;
         environment.etc."kdn/source-flake".source = kdnConfig.self;
-        nix.gc.automatic = lib.mkDefault true;
-        # `nix-collect-garbage` with no options deletes only an unreachable store
-        # path. It never deletes an old profile generation, and every generation is
-        # a garbage-collector root. So a stale generation holds its whole closure
-        # forever, and `keep-outputs`/`keep-derivations` make that closure much
-        # bigger than the system itself.
-        #
-        # `--delete-older-than 7d` deletes each profile generation older than 7
-        # days, then collects every path that loses its last root. It keeps the
-        # generation that was active 7 days ago, so one rollback target always
-        # survives.
-        #
-        # Nix has no age test for a store path. A profile generation is the only
-        # age-based handle the built-in collector offers. An out-link such as
-        # `result` needs angrr instead — see
-        # ../../../../../docs/tasks/2026-09/angrr-result-retention/definition.md.
-        nix.gc.options = lib.mkDefault "--delete-older-than 7d";
-        services.angrr.enable = lib.mkDefault true;
-        services.angrr.settings = {
-          temporary-root-policies = {
-            direnv = {
-              path-regex = "/\\.direnv/";
-              period = "7d";
-            };
-            result = {
-              path-regex = "/result[^/]*$";
-              period = "5d";
-            };
-          };
-          profile-policies = {
-            system = {
-              profile-paths = [ "/nix/var/nix/profiles/system" ];
-              keep-since = "14d";
-              keep-latest-n = 5;
-              keep-booted-system = true;
-              keep-current-system = true;
-            };
-            user = {
-              enable = false;
-              profile-paths = [
-                "~/.local/state/nix/profiles/profile"
-                "/nix/var/nix/profiles/per-user/root/profile"
-              ];
-              keep-since = "1d";
-              keep-latest-n = 1;
-            };
-          };
-        };
       })
+      (kdnConfig.util.ifTypes [ "nixos" "darwin" ] (
+        lib.mkIf cfg.garbageCollection.enable {
+          nix.gc.automatic = lib.mkDefault true;
+          # `nix-collect-garbage` with no options deletes only an unreachable store
+          # path. It never deletes an old profile generation, and every generation is
+          # a garbage-collector root. So a stale generation holds its whole closure
+          # forever, and `keep-outputs`/`keep-derivations` make that closure much
+          # bigger than the system itself.
+          #
+          # `--delete-older-than 7d` deletes each profile generation older than 7
+          # days, then collects every path that loses its last root. It keeps the
+          # generation that was active 7 days ago, so one rollback target always
+          # survives.
+          #
+          # Nix has no age test for a store path. A profile generation is the only
+          # age-based handle the built-in collector offers. An out-link such as
+          # `result` needs angrr instead — see
+          # ../../../../../docs/tasks/2026-09/angrr-result-retention/definition.md.
+          nix.gc.options = lib.mkDefault "--delete-older-than 7d";
+          services.angrr.enable = lib.mkDefault true;
+          services.angrr.settings = {
+            temporary-root-policies = {
+              direnv = {
+                path-regex = "/\\.direnv/";
+                period = "7d";
+              };
+              result = {
+                path-regex = "/result[^/]*$";
+                period = "5d";
+              };
+            };
+            profile-policies = {
+              system = {
+                profile-paths = [ "/nix/var/nix/profiles/system" ];
+                keep-since = "14d";
+                keep-latest-n = 5;
+                keep-booted-system = true;
+                keep-current-system = true;
+              };
+              user = {
+                enable = false;
+                profile-paths = [
+                  "~/.local/state/nix/profiles/profile"
+                  "/nix/var/nix/profiles/per-user/root/profile"
+                ];
+                keep-since = "1d";
+                keep-latest-n = 1;
+              };
+            };
+          };
+        }
+      ))
       (kdnConfig.util.ifTypes [ "nixos" ] {
-        services.angrr.enableNixGcIntegration = lib.mkDefault true;
+        # `services.angrr.enableNixGcIntegration` declares no default of its own, and angrr
+        # supplies one only when `services.angrr.enable` is true. So this assignment stays
+        # outside a guard and follows the switch. A guard leaves the option undefined, and
+        # then every read of it fails.
+        services.angrr.enableNixGcIntegration = lib.mkDefault cfg.garbageCollection.enable;
       })
       # darwin
       (kdnConfig.util.ifTypes [ "darwin" ] (
         lib.mkMerge [
           { home-manager.sharedModules = [ { kdn.profile.machine.baseline.enable = lib.mkDefault true; } ]; }
-          {
+          (lib.mkIf cfg.garbageCollection.enable {
             # nix-darwin runs the collector weekly, on Sunday at 03:15
             # (`<nix-darwin>/modules/services/nix-gc/default.nix:34`). A 7-day
             # threshold then takes up to 14 days to act on a generation. NixOS runs
@@ -161,7 +214,7 @@ in
                 Minute = 15;
               }
             ];
-          }
+          })
           (lib.mkIf config.kdn.security.secrets.allowed {
             system.activationScripts.postActivation.text = lib.mkOrder 1501 ''
               chmod -R go+r /run/configs
@@ -354,15 +407,17 @@ in
             }
           )
           { home-manager.sharedModules = [ { kdn.development.git.enable = lib.mkDefault true; } ]; }
-          {
+          # The link target reads the home directory of the primary user, so the default of
+          # `flakeCheckoutLinks.enable` follows `primaryUser.enable`.
+          (lib.mkIf cfg.flakeCheckoutLinks.enable {
             systemd.tmpfiles.rules = [
               "L /etc/nixos/flake.nix       - - - - flake.nix.rel"
               "L /etc/nixos/flake.nix.abs   - - - - ${config.kdn.profile.user.kdn.homeDir}/dev/github.com/nazarewk-iac/nix-configs/flake.nix"
               "L /etc/nixos/flake.nix.rel   - - - - ../..${config.kdn.profile.user.kdn.homeDir}/dev/github.com/nazarewk-iac/nix-configs/flake.nix"
             ];
-          }
-          { kdn.networking.tailscale.enable = false; }
-          {
+          })
+          (lib.mkIf cfg.overlayNetworks.enable {
+            kdn.networking.tailscale.enable = false;
             kdn.networking.netbird.default.enable = false;
             kdn.networking.netbird.default.environment.NB_DISABLE_DNS = "true";
             kdn.networking.netbird.default.environment.NB_BLOCK_INBOUND = "true";
@@ -373,8 +428,10 @@ in
             kdn.networking.netbird.clients.t1.idx = 5;
             kdn.networking.netbird.clients.t2.idx = 6;
             kdn.networking.netbird.clients.t3.idx = 7;
-          }
-          { kdn.services.nextcloud-client-nixos.enable = config.kdn.security.secrets.allowed; }
+          })
+          (lib.mkIf cfg.nextcloudClient.enable {
+            kdn.services.nextcloud-client-nixos.enable = lib.mkDefault config.kdn.security.secrets.allowed;
+          })
           (lib.mkIf config.kdn.security.secrets.allowed {
             systemd.services.sops-install-secrets.postStart = ''
               chmod -R go+r /run/configs
