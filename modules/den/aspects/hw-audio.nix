@@ -20,7 +20,8 @@
 #
 # 1. **The desktop read becomes an option.** The old module keys its graphical extras on a desktop
 #    `enable` flag. A den aspect has no `enable`, so a desktop flag can never exist. The aspect
-#    declares `kdn.hw.audio.graphical` and the consumer states it.
+#    declares `kdn.hw.audio.graphical`, and that option defaults to the shared switch
+#    `kdn.graphical` of ../common/graphical.nix.
 # 2. **The persistence write becomes a read-only output.** The old module writes the four user paths
 #    into the persistence buckets of the `disks` area. This aspect publishes
 #    `kdn.hw.audio.persist.{directories,files}` instead, and the consumer wires them. It follows the
@@ -52,17 +53,24 @@ let
   # The five options. Both targets import this one module, so an adopter states one opinion and both
   # classes read it.
   declaration =
-    { lib, ... }:
+    { config, lib, ... }:
     {
+      imports = [ ../common/graphical.nix ];
+
       options.kdn.hw.audio.graphical = lib.mkOption {
         type = lib.types.bool;
-        default = false;
+        default = config.kdn.graphical;
+        defaultText = lib.literalExpression "config.kdn.graphical";
         example = true;
         description = ''
           Install the graphical audio helpers, for example the PulseAudio volume control.
 
           The old module reads a desktop `enable` flag here. A den aspect has no `enable`, so the
           consumer states this opinion instead.
+
+          The default follows the shared switch `kdn.graphical`, from ../common/graphical.nix. So
+          one consumer line turns every graphical extra on. A consumer that sets this option
+          directly still wins, because a plain value beats a default.
         '';
       };
 

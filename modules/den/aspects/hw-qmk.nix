@@ -24,7 +24,8 @@
 #
 # 1. **The desktop read becomes an own option.** The old module installs `vial` behind
 #    `config.kdn.desktop.enable`. A den aspect declares no reachable `enable`, so the port declares
-#    `kdn.hw.qmk.graphical` instead. A consumer that runs a desktop sets it to `true`.
+#    `kdn.hw.qmk.graphical` instead. That option defaults to the shared switch `kdn.graphical` of
+#    ../common/graphical.nix, so one consumer line covers every graphical extra.
 #    `graphical` is declared for both classes, so a consumer sets it without a class check, but only
 #    the `nixos` target acts on it, because `vial` is unsupported on Darwin.
 # 2. **The two Oryx scripts move into this file.** The old module reads `./oryx-flash.sh` and
@@ -43,17 +44,24 @@
 { ... }:
 let
   declaration =
-    { lib, ... }:
+    { config, lib, ... }:
     {
+      imports = [ ../common/graphical.nix ];
+
       options.kdn.hw.qmk.graphical = lib.mkOption {
         type = lib.types.bool;
-        default = false;
+        default = config.kdn.graphical;
+        defaultText = lib.literalExpression "config.kdn.graphical";
         example = true;
         description = ''
           This machine runs a desktop, so the aspect adds the graphical layout editor `vial`.
 
           The old module reads `kdn.desktop.enable` here. A den aspect declares no reachable
           `enable`, so a consumer sets this option instead.
+
+          The default follows the shared switch `kdn.graphical`, from ../common/graphical.nix. So
+          one consumer line turns every graphical extra on. A consumer that sets this option
+          directly still wins, because a plain value beats a default.
 
           The option exists for the `darwin` class too, so a consumer sets it with no class check.
           The `darwin` target ignores it, because `vial` is unsupported on `aarch64-darwin`.

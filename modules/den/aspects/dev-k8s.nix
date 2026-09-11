@@ -21,7 +21,8 @@
 # 3. **The old `kdn.development.data.enable` write becomes an `includes` entry.** den collapses the
 #    diamond, so several aspects may name `dev-data` and it loads once.
 # 4. **The Lens install becomes an option.** The old module reads `kdn.desktop.enable`. den has no
-#    `enable` option at all, so a desktop machine states `kdn.dev-k8s.lens.install` itself.
+#    `enable` option at all, so `kdn.dev-k8s.lens.install` defaults to the shared switch
+#    `kdn.graphical` of ../common/graphical.nix. A consumer also sets the option directly.
 # 5. **`lib.mkIf` leaves the package list.** `filter-packages.nix` forces `outPath` on every
 #    element, and an unresolved `mkIf` attribute set has none. `lib.optional` gives the same result
 #    and it resolves at once.
@@ -37,17 +38,22 @@
 { kdn, ... }:
 let
   declaration =
-    { lib, ... }:
+    { config, lib, ... }:
     {
+      imports = [ ../common/graphical.nix ];
+
       options.kdn.dev-k8s.lens.install = lib.mkOption {
         type = lib.types.bool;
-        default = false;
+        default = config.kdn.graphical;
+        defaultText = lib.literalExpression "config.kdn.graphical";
         example = true;
         description = ''
           Install Lens, the Kubernetes IDE.
 
           The old module reads `kdn.desktop.enable` for this. A den aspect declares no `enable`
-          option, so a machine with a desktop states the value here.
+          option, so the default follows the shared switch `kdn.graphical`, from
+          ../common/graphical.nix. A consumer that sets this option directly still wins, because a
+          plain value beats a default.
         '';
       };
     };
