@@ -129,11 +129,13 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    kdn.mcp.programs.filesystem.enable = true;
-    kdn.mcp.programs.filesystem.args = [ "/nix/store" ];
-    kdn.mcp.programs.sequential-thinking.enable = true;
-    kdn.mcp.programs.time.enable = true;
-    kdn.mcp.programs.fetch.enable = true;
+    # The baseline backends, each a `lib.mkDefault`. A consumer drops one with a plain `false`,
+    # or names its own `args`. Measured: `attrsOf anything` carries the priority to every leaf.
+    kdn.mcp.programs.filesystem.enable = lib.mkDefault true;
+    kdn.mcp.programs.filesystem.args = lib.mkDefault [ "/nix/store" ];
+    kdn.mcp.programs.sequential-thinking.enable = lib.mkDefault true;
+    kdn.mcp.programs.time.enable = lib.mkDefault true;
+    kdn.mcp.programs.fetch.enable = lib.mkDefault true;
 
     devenv = {
       packages = [ pkgs.mcp-gateway ];

@@ -166,7 +166,7 @@ in
         ''}
       '';
 
-      claude.code.enable = true;
+      claude.code.enable = lib.mkDefault true;
       claude.code.hooks.jj-guard = {
         hookType = "PreToolUse";
         matcher = "Bash";

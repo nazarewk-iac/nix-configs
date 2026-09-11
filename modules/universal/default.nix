@@ -92,7 +92,8 @@ in
             networking.hostName = cfg.hostName;
             nix.registry.nixpkgs.flake = inputs.nixpkgs;
             nix.optimise.automatic = true;
-            nix.package =
+            # A `lib.mkDefault`, so a consumer keeps CppNix or another nix with a plain assignment.
+            nix.package = lib.mkDefault (
               let
                 latest = pkgs.lixPackageSets.latest.lix;
               in
@@ -103,7 +104,8 @@ in
                   doInstallCheck = false;
                 })
               else
-                latest;
+                latest
+            );
             nixpkgs.overlays = [ self.overlays.default ];
           }
           (lib.mkIf (!kdnConfig.features.microvm-guest) {

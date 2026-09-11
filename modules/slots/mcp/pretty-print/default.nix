@@ -145,7 +145,7 @@ in
     devenv = {
       packages = [ cfg.package ];
 
-      claude.code.enable = true;
+      claude.code.enable = lib.mkDefault true;
       claude.code.hooks.mcp-gateway-pretty-print = {
         hookType = "PermissionRequest";
         matcher = "mcp__mcp-gateway__gateway_invoke";

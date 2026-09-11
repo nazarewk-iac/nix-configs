@@ -46,8 +46,9 @@ I measured both with `lib.evalModules` on 2026-09-10.
 | `readOnly = true` on the option | **refused** — no assignment reaches it at all. |
 | `types.listOf` | the two lists concatenate. The adopter adds an entry; the adopter cannot remove one. |
 
-So a plain `= true` is the hard case. `modules/universal/profile/` holds **65** of them, measured
-with `grep -c 'kdn\..*\.enable = true;'` across that tree.
+So a plain `= true` is the hard case. `modules/universal/profile/` held **65** of them when this
+task started, measured with `grep -c 'kdn\..*\.enable = true;'` across that tree. **The same grep
+prints 3 comment lines and no real site on 2026-09-11** — section 2 item 5 records the sweep.
 
 ## Effort scale
 
@@ -79,11 +80,11 @@ in plain text.
 | 7. fish becomes the login shell | `modules/universal/headless/base/default.nix:41` | option | yes (row 6) | no | `kdn.programs.fish.defaultShell`, default false | S |
 | 8. zellij turns on in home-manager | `modules/universal/headless/base/default.nix:48` | own aspect | yes (row 6) | **shipped 2026-09-11**: `kdn.headless.base.zellij.enable`, default true. The bundle scope is deliberate — `headless/base` forwards its whole `cfg` into Home Manager as one `lib.mkDefault`, so a `kdn.programs.*` name would tie at priority 1000 and conflict. The `zellij` aspect still covers the devenv target only. | `kdn.programs.zellij.enable`, default false | S |
 | 9. vim installs and takes `defaultEditor` | `modules/universal/headless/base/default.nix:123-124` | own aspect | yes (row 6) | **shipped 2026-09-11**: `kdn.headless.base.vim.enable`, default true. Same bundle scope, same reason as row 8. | `kdn.programs.vim.enable`, default false | S |
-| 10. helix takes `defaultEditor` with a plain assignment | `modules/universal/programs/terminal-ide/default.nix:65` | option | yes — the editor and the language servers share one switch | no | `lib.mkDefault true` | XS |
+| 10. helix takes `defaultEditor` with a plain assignment | `modules/universal/programs/terminal-ide/default.nix:65` | option | yes — the editor and the language servers share one switch | **shipped 2026-09-11**: the line reads `programs.helix.defaultEditor = lib.mkDefault true`. The next line, `programs.vim.defaultEditor = false`, stays plain on purpose: `modules/universal/headless/base/default.nix:158` already writes `lib.mkDefault true` to that option, so a second `lib.mkDefault` holds the other value at priority 1000 and the evaluation stops. | `lib.mkDefault true` | XS |
 | 11. A wezterm key-binding config lands in the home directory | `modules/universal/headless/base/default.nix:107` | own aspect | yes (row 6) | **shipped 2026-09-11**: `kdn.headless.base.wezterm.enable`, default true. Same bundle scope, same reason as row 8. Another module also writes `programs.wezterm.extraConfig`, so the switch removes this block's part only. | `kdn.programs.wezterm.enable`, default false | S |
 | 12. gnupg also turns on `pass` | `modules/universal/programs/gnupg/default.nix:53` | own aspect | yes — the agent, the pinentry and the password manager share one switch | no | `kdn.programs.gnupg.passwordStore.enable`, default false | S |
-| 13. The basic profile turns gnupg on with a plain assignment | `modules/universal/profile/machine/basic/default.nix:24` | option | yes (row 12) | no | `lib.mkDefault true` | XS |
-| 14. gnupg force-disables gnome-keyring | `modules/universal/programs/gnupg/default.nix:113-114` | option | yes (row 12) | no | `kdn.programs.gnupg.disableGnomeKeyring`, default true | XS |
+| 13. The basic profile turns gnupg on with a plain assignment | `modules/universal/profile/machine/basic/default.nix:24` | option | yes (row 12) | **already fixed**: the profile sweep of section 2 item 5 reached this line. It reads `kdn.programs.gnupg.enable = lib.mkDefault true`. | `lib.mkDefault true` | XS |
+| 14. gnupg force-disables gnome-keyring | `modules/universal/programs/gnupg/default.nix:113-114` | option | yes (row 12) | **shipped 2026-09-11**: `kdn.programs.gnupg.disableGnomeKeyring`, default true, guards both lines through a `lib.mkIf`. The two `lib.mkForce false` assignments stay inside the guard, because a desktop module turns gnome-keyring on and only a force beats it. | `kdn.programs.gnupg.disableGnomeKeyring`, default true | XS |
 | 15. The signing key file name carries the creator's initials | `modules/slots/signing/default.nix:82` | option | no | no aspect — `signing` is one of the 5 unported slots | no default, or `~/.ssh/id_ed25519_signing` | XS |
 | 16. The dev profile turns podman and the container stack on with plain assignments | `modules/universal/profile/machine/dev/default.nix:48-49` | own aspect | yes — 17 toolchains and the runtime share one profile | **shipped 2026-09-11**: `kdn.profile.machine.dev.containers.enable`, default true, gates the runtime alone. Every assignment in the profile is already `lib.mkDefault`. | `lib.mkDefault true` | XS |
 | 17. 17 language toolchains turn on with one profile | `modules/universal/profile/machine/dev/default.nix:26-43` | own aspect | yes | **partly shipped 2026-09-11**: `kdn.profile.machine.dev.languages.enable`, default true, drops all 18 toolchains at once, and `desktop.enable` drops the desktop pull. One aspect per language stays open for the den port. | keep `mkDefault`; give each language its own aspect | M |
@@ -103,7 +104,7 @@ in plain text.
 | 31. `allowUnfree = true` for every host | `modules/universal/nix.nix:42` | option | yes (row 30) | no | `kdn.nixpkgs.allowUnfree`, default false | XS |
 | 32. Four insecure packages are permitted globally, for three personal applications | `modules/universal/nix.nix:44-49` | option | yes (row 30) | no | `permittedInsecurePackages`, default empty | XS |
 | 33. Three cachix substituters and their public keys apply to every host; a list merge cannot remove one | `modules/universal/nix.nix:25-34` | option | yes (row 30) | no | a list option, default empty | XS |
-| 34. Lix replaces the nix package with a plain assignment | `modules/universal/default.nix:95-106` | option | no | no | `lib.mkDefault` | XS |
+| 34. Lix replaces the nix package with a plain assignment | `modules/universal/default.nix:95-106` | option | no | **shipped 2026-09-11**: `nix.package = lib.mkDefault (…)`. No other module of this tree writes `nix.package`, so a consumer keeps CppNix with a plain assignment. | `lib.mkDefault` | XS |
 | 35. `!include /etc/nix/nix.sensitive.conf` and one access-token file | `modules/universal/nix.nix:12-17` | **mandatory** — a `!include` with the leading `!` never fails on a missing file, so it is already adopter-safe | no | no | keep | n/a |
 | 36. The baseline profile turns the creator's own user on | `modules/universal/profile/machine/baseline/default.nix:60` (the brief said 59) | option — **009 hard blocker 1 owns it** | yes — the baseline also sets `kdn.enable`, the locale and the headless base | **partly shipped 2026-09-11**: `kdn.profile.machine.baseline.primaryUser.enable`, default true, drops the user without touching the locale or the headless base. 009 hard blocker 1 still owns the end state, a baseline with no user at all. | no user at all; the host names its own | M |
 | 37. One sops file path is hardwired at three sites | `modules/universal/profile/default-secrets/default.nix:21,25,85` | option — **[008](../008-sops-default-inventory/definition.md) and 009 own it** | yes | no | `sopsFile` per secret, default null | M |
@@ -116,11 +117,11 @@ in plain text.
 | 44. 176 LOC of host graph, LAN addresses, WAN ports and homelab zones | `modules/slots/ssh-access/kdn-graph.nix` (every FQDN masked) | option — **[007](../007-depersonalize-slots/definition.md) item 5 and 009 tier 3 own it** | no | no aspect — `ssh-access` is unported | the graph is already a consumer value; only the file moves | S |
 | 45. 5 slots install agent rules and skills into the adopter repo; `kdn.isSourceRepo` is the only switch | `modules/slots/jj/default.nix:23,61,213`, `modules/slots/jj/fork/default.nix:267`, `modules/slots/nix/default.nix:22,134`, `modules/slots/zellij/default.nix:56,125`, `modules/slots/mcp/basic-memory/default.nix:23,140` | option — **007 item 4 owns the slot half** | no longer — one switch per slot covers the opinion, and the tool stays | **fixed on both routes** — `modules/den/aspects/jj.nix:112,277`, `jj-fork.nix:157,432`, `nix.nix:97,223`, `zellij.nix:98,160`, `mcp-basic-memory.nix:172,257` | **shipped**: `kdn.<name>.installAgentRules`, default **false** (section 3 item 4, candidate A). The 3 consumers set it true: `devenv.nix:54-58`, `checks/den-mvp/devenv/default.nix:120-124`, `checks/den-mvp/host-darwin/default.nix:52` | S |
 | 46. The `jj` slot also registers a proactive `jj-expert` subagent | `modules/slots/jj/default.nix:204`, and `modules/den/aspects/jj.nix:270` | option | no longer (row 45) | **fixed on both routes** — the same switch as row 45 gates the subagent | **shipped**: `kdn.jj.installAgentRules`, default false | XS |
-| 47. Four slots turn Claude Code on; `jj` uses a plain assignment | `modules/slots/gh/default.nix:89`, `modules/slots/zellij/default.nix:65`, `modules/slots/nix/default.nix:37`, `modules/slots/jj/default.nix:132` | option | yes | den keeps `mkDefault` — `gh.nix:20`, `zellij.nix:102`, `nix.nix:126`, `jj.nix:198`. den already fixed the plain `jj` case. | `lib.mkDefault true` everywhere | XS |
+| 47. Four slots turn Claude Code on; `jj` uses a plain assignment | `modules/slots/gh/default.nix:89`, `modules/slots/zellij/default.nix:65`, `modules/slots/nix/default.nix:37`, `modules/slots/jj/default.nix:132` | option | yes | **shipped 2026-09-11**: every slot writes `lib.mkDefault true` now. `jj`, `nix` and `mcp/pretty-print` were the three plain sites; `gh` and `zellij` already used a default. Two identical `lib.mkDefault true` definitions merge, because `types.bool` accepts equal values. | `lib.mkDefault true` everywhere | XS |
 | 48. The mcp snoop slot defaults to on, against this repo's own side-effect-free rule | `modules/slots/mcp/snoop/default.nix:19` | own aspect | no | **fixed on both routes** — the `mcp-snoop` aspect carries no `enable`, and the slot option is now `lib.mkEnableOption`, so it defaults to false | `lib.mkEnableOption` | XS |
 | 49. The mcp pretty-print slot defaults to on, for the same reason | `modules/slots/mcp/pretty-print/default.nix:104` | own aspect | no | **fixed on both routes** — `mcp-pretty-print` carries no `enable`, and the slot option is now `lib.mkEnableOption` | `lib.mkEnableOption` | XS |
-| 50. The mcp gateway forces four backends | `modules/slots/mcp/default.nix:132-136` | option | yes | **the port reproduces it** — `modules/den/aspects/mcp.nix:207-211` | `lib.mkDefault` on each | XS |
-| 51. The `nix` slot forces one MCP program and one extra backend | `modules/slots/nix/default.nix:24-29` | option | yes — nix tooling and the MCP gateway share one switch | **reproduced** — `modules/den/aspects/nix.nix:114` | `lib.mkDefault` | XS |
+| 50. The mcp gateway forces four backends | `modules/slots/mcp/default.nix:132-136` | option | yes | **shipped 2026-09-11** on the slot route: all five lines read `lib.mkDefault`, `filesystem.args` included. Measured with `lib.evalModules`: an `attrsOf anything` option carries the priority to every leaf, so a consumer drops one backend with a plain `false`. The den aspect (`modules/den/aspects/mcp.nix:207-211`) still holds the plain form. | `lib.mkDefault` on each | XS |
+| 51. The `nix` slot forces one MCP program and one extra backend | `modules/slots/nix/default.nix:24-29` | option | yes — nix tooling and the MCP gateway share one switch | **shipped 2026-09-11** on the slot route: one `lib.mkDefault` per leaf — `programs.nixos.enable`, `extraBackends.devenv.command`, `.description` and `.env.DEVENV_ROOT`. A `lib.mkDefault` on the whole stanza is wrong here: a consumer who repoints one field then loses the other two, because the higher-priority definition replaces the set. The den aspect (`modules/den/aspects/nix.nix:134-135`) still holds the plain form. | `lib.mkDefault` | XS |
 | 52. The `nix` slot freezes this repository's own checkout into the devenv MCP backend | `modules/slots/nix/default.nix:28` | **mandatory to fix** — an adopter's backend points at the wrong tree | no | **fixed** — `modules/den/aspects/nix.nix:84-87` reads `DEVENV_ROOT` at run time | n/a | XS |
 | 53. The `jj` slot writes two MCP settings, and turns the git backend off | `modules/slots/jj/default.nix:88-92` | option | yes | **stronger in den** — `modules/den/aspects/jj.nix:79` puts `kdn.mcp` in the aspect's own `includes`, so `jj` pulls the whole gateway | `lib.mkDefault`, plus a bool to skip the coupling | S |
 | 54. `opencode` hardwires one commercial provider at three sites | `modules/slots/opencode/default.nix:103,105,140` | own aspect — **007 item 1 owns it** | yes — the wrapper and the provider share one switch | **fixed** — the aspect declares `authKeys` and `settings`, and names no provider | a provider sub-option, default off | S |
@@ -134,7 +135,7 @@ in plain text.
 | 62. The `devenv` slot writes `keep-outputs` and `keep-derivations` as free-form text | `modules/slots/devenv/default.nix:25-28` | **mandatory** — devenv holds its garbage-collector roots through both settings | no | `devenv-cli` | keep | n/a |
 | 63. The `nix` slot leaves a `hello` script that names this repository | `modules/slots/nix/default.nix:124-126` | option | no | **fixed** — `modules/den/aspects/nix.nix:52` records the removal | remove the script | XS |
 | 64. `toolset/essentials` names four personal tool choices in one package list | `modules/universal/toolset/essentials/default.nix:26-27,37,55` | own aspect | yes — 20 packages share one switch | no | split the list per concern | S |
-| 65. difftastic gets a dark background with a plain assignment | `modules/universal/toolset/essentials/default.nix:61-62` | option | yes (row 64) | no | `lib.mkDefault` | XS |
+| 65. difftastic gets a dark background with a plain assignment | `modules/universal/toolset/essentials/default.nix:61-62` | option | yes (row 64) | **shipped 2026-09-11**: both lines read `lib.mkDefault`, so a consumer drops difftastic or picks a light background. | `lib.mkDefault` | XS |
 | 66. The ssh-agent slot permanently disables the macOS built-in agent for the user | `modules/slots/ssh-agent/default.nix:59-60` | **mandatory** — the slot exists for this, and its own `enable` already gates it | no | the `ssh-agent` aspect | n/a | n/a |
 
 ## Section 2 — the ranked first cuts
@@ -196,11 +197,58 @@ that proves it.
    remove a substituter either.
    `nix eval '.#nixosConfigurations.brys.options.kdn.nixConfig.readOnly'` — it must print `false`.
 
-5. **Change every plain `= true` in `modules/universal/profile/` to `lib.mkDefault true`.** Rows
-   6, 9, 13, 16, 25, 26 and 42, plus 58 more sites. One mechanical pass unlocks every opt-out in
-   this table below the profile layer, and it changes no evaluated value.
-   `nix eval --raw '.#nixosConfigurations.brys.config.system.build.toplevel.drvPath'` — Pattern
-   V1, and the path must not change.
+5. **fixed 2026-09-11** — the profile tree holds **no** plain `kdn.*.enable = true` any more, and
+   the same shape now carries `lib.mkDefault` at 16 more sites outside the profile tree. Rows 6, 9,
+   10, 13, 14, 16, 25, 26, 34, 42, 47, 50, 51 and 65.
+
+   **The profile sweep itself landed before this batch.** Commits `59297fe8`, `85cc3df9`, `57be8246`
+   and `d54b45a9` did it. Measured on 2026-09-11 at `b0e8f3d4`:
+   `grep -rn 'kdn\..*\.enable = true;' modules/universal/profile/` prints **3** lines and all three
+   are comments. `grep -rn 'enable = lib.mkDefault true;' modules/universal/profile/` prints **131**
+   lines, **97** of them a `kdn.*` option. The 29 remaining `= true;` lines of that tree are not
+   opt-out sites: 12 are option declarations (`default = true`, `readOnly = true`), and the rest are
+   nixpkgs user attributes (`isNormalUser`, `createHome`, `isHidden`, `isSystemUser`), nix settings
+   (`keep-booted-system`, `keep-current-system`), `inheritParentConfig`, `pyproject` and one
+   `serviceConfig.RemainAfterExit`.
+
+   **This batch converted 16 assignments in 7 files**, every one an XS row of the same shape:
+   `programs/terminal-ide/default.nix` 1 site (row 10), `universal/default.nix` 1 site (row 34),
+   `toolset/essentials/default.nix` 2 sites (row 65), `slots/jj/default.nix` 1 site,
+   `slots/mcp/pretty-print/default.nix` 1 site and `slots/nix/default.nix` 1 site (row 47),
+   `slots/mcp/default.nix` 5 sites (row 50), `slots/nix/default.nix` 4 more sites (row 51).
+   An eighth file takes a different route: `programs/gnupg/default.nix` (row 14) gains
+   `kdn.programs.gnupg.disableGnomeKeyring`, default `true`, and puts the two `lib.mkForce false`
+   lines behind `lib.mkIf`. A `lib.mkForce` stays forced; the new option is the opt-out path.
+
+   Rows 50 and 51 use a `lib.mkDefault` **per leaf**, not one on the whole stanza. Three
+   `lib.evalModules` tests measured why: `attrsOf anything` carries the priority down to every leaf,
+   and a `lib.mkDefault` on a whole attrset makes a partial plain override drop the siblings.
+
+   **Two sites stay plain, and each reason is a measured module-system fact.**
+   `programs/terminal-ide/default.nix:66` writes `programs.vim.defaultEditor = false` while
+   `headless/base/default.nix:158` writes `lib.mkDefault true` to the same option. A second
+   `lib.mkDefault` ties at priority 1000 with a different value, so the evaluation stops.
+   `slots/jj/default.nix:129` writes `kdn.mcp.programs.git.enable = false`; row 53 owns that line,
+   because the fix needs a bool to skip the coupling, not a priority change.
+
+   **Two more XS rows look like this shape and are not.** Row 27 asks for `lib.mkDefault false` on
+   `kdn.desktop.enable`; the line is already `lib.mkDefault true`, so the open part is a **value**
+   flip that every Darwin host must then answer. Row 52 asks to unfreeze
+   `extraBackends.devenv.env.DEVENV_ROOT`; the `lib.mkDefault` of row 51 gives an adopter the
+   override, but the run-time read of `DEVENV_ROOT` stays with row 52.
+
+   **Verification.** `drvPath` equality proves nothing in this tree, because `kdnConfig.self`
+   reaches the evaluated config and every edit therefore moves every host path. This batch used an
+   option-value probe instead: each touched option path, host-side and per Home Manager user, on
+   the pristine `b0e8f3d4` and on the dirty tree, with `--no-eval-cache`.
+   **Result on 2026-09-11:** 15 hosts, 609 leaf values compared, **0 differ**. The single change is
+   the new `disableGnomeKeyring` option, absent on the pristine reference and `true` on the dirty
+   tree, on every host. `nix flake check --no-eval-cache` exits **0** with 125 pytest tests passed.
+   `toplevel.drvPath` was forced on **3 hosts only** — `brys`, `oams` and one darwin host — because
+   the force proves nothing but that the evaluation completes, and the per-host option probe plus
+   `nix flake check` already prove that. The formatter reindented **0 lines**: `git diff --stat` and
+   `git diff -w --stat` agree at 8 `.nix` files, 46 insertions, 21 deletions.
+   See the worklog of this directory for the command list.
 
 6. **fixed** — `installAgentRules` now exists on the 5 slots and the 5 den aspects that write
    `.claude/` files. Rows 45 and 46. An adopter who does not use `jj` never receives the jj mandate
@@ -217,6 +265,23 @@ that proves it.
    24. Two literals sit in two unrelated trees today, so a layout change needs two edits.
    `nix eval '.#nixosConfigurations.brys.config.services.xserver.xkb.layout'` — it must still read
    the personal value from the host.
+
+   **What landed deviates from this text on two points, and the deviation is deliberate.**
+   `kdn.locale.xkbLayout` exists (`modules/universal/locale/default.nix:34-37`) and both consumers
+   read it — `profile/machine/desktop/default.nix:125` and
+   `desktop/sway/home-manager/default.nix:256`. So one edit now changes the layout of both trees,
+   which was the point of the row. But:
+   - The default is `"pl"`, not `"us"`. A `modules/universal` option serves **16 host directories**
+     of this repository. A neutral default flips the value for each host that wants the personal
+     one, so the flip is 15 more consumer edits, not one. [009](../009-personal-data-folder/definition.md)
+     owns the personal-data folder, and that folder is where the personal value belongs. Rows 21 and
+     22 stay open for 009.
+   - `kdn.locale.timezone` keeps the literal `"Europe/Warsaw"` and the type stays `str`, not
+     `nullOr str`. A `null` time zone **stops the evaluation**: the Home Manager branch writes
+     `kdn.env.variables.TZ = cfg.timezone` (`modules/universal/locale/default.nix:115`) and
+     `kdn.env.variables` has type `attrsOf str` (`modules/universal/env/default.nix:54-55`). So a
+     `nullOr` default needs a guard in the Home Manager branch first. That is 009 tier 2 work, and
+     row 23 already names 009 as the owner. The module carries this reason as a comment.
 
 8. **Copy the four defaults the den aspects already fixed back into the slots.** Rows 54 to 57.
    The aspect files hold the measured, de-personalized value, so each slot edit is a copy with no
@@ -242,6 +307,13 @@ Every item where the smallest safe change still needs a decision the user reserv
    The session note `../.session-2026-09-10.md` records the five splits as approved under the
    delegated class, so the work went ahead. This item stays `DECISION TO REVISE`, because the
    aspect-versus-profile question is untouched. Rows 25 and 64 are also untouched.
+
+   **The `lib.mkDefault` sweep of section 2 item 5 does not answer this item either, and the status
+   stays `DECISION TO REVISE`.** A priority change makes candidate A workable — an adopter opts out
+   of one item with a plain assignment — but it argues for neither candidate. Candidate B asks
+   whether a profile stays one bundle or becomes a list of aspects, and no priority answers that
+   question. Row 25 keeps 14 desktop modules in one file, and row 64 keeps 20 packages in one list.
+   Both rows are unchanged in shape; only the priority moved.
 
 2. `DECISION TO REVISE` — **Does `stylix` keep a whole-tree switch, or does theming become one
    aspect?** Row 18. Candidate A: add `kdn.stylix.enable`, default false, and leave
