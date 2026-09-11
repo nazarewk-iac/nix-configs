@@ -168,15 +168,15 @@
       "locked": {
         "lastModified": 1787953104,
         "narHash": "sha256-RTsDzIJd1BauPy0RcBnkh3tDaLJ8+bZ6ri5clS6KdsY=",
-        "ref": "refs/heads/main",
+        "owner": "Browsers-software",
+        "repo": "homebrew-tap",
         "rev": "c20f6ad99a9716990ea222f14f41a66961636b38",
-        "revCount": 33,
-        "type": "git",
-        "url": "ssh://git@github.com/browsers-software/homebrew-tap"
+        "type": "github"
       },
       "original": {
-        "type": "git",
-        "url": "ssh://git@github.com/browsers-software/homebrew-tap"
+        "owner": "Browsers-software",
+        "repo": "homebrew-tap",
+        "type": "github"
       }
     },
     "brew-tap--homebrew--cask": {
