@@ -45,6 +45,12 @@
 /devenv.slots.local.nix
 
 !/.flake.patches/
+# den aspect data files with no extension. A den aspect reads a payload file next to itself, and
+# the name drops the leading dot on purpose: a real `.gitignore` inside the aspect tree would hide
+# a source file from the `git+file:` fetcher. `*` above ignores an extensionless name, so each one
+# needs a line here.
+!/modules/den/aspects/*/gitignore
+!/modules/den/aspects/*/tool-versions
 !/modules/shared/universal/profile/user/kdn/
 !/LICENSE
 
