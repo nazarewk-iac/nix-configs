@@ -77,10 +77,13 @@ in
               default = nbCfg.name;
             };
             secrets = lib.mkOption {
-              readOnly = true;
+              description = ''
+                Sops secrets subtree of this client, or `null` when the tree holds none.
+                `readOnly` is gone, so an adopter can point this at their own secrets layout.
+              '';
               default =
                 let
-                  secrets = config.kdn.security.secrets.sops.secrets.default.netbird;
+                  secrets = config.kdn.security.secrets.sops.secrets.default.netbird or { };
                 in
                 if secrets ? "${nbCfg.secretKey}" then secrets."${nbCfg.secretKey}" else null;
             };

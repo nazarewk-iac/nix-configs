@@ -72,26 +72,44 @@ in
         else
           "/home/${cfg.username}";
     };
-    ssh = lib.mkOption {
-      readOnly = true;
+    ssh.authorizedKeysFile = lib.mkOption {
+      type = with lib.types; nullOr path;
+      default = if builtins.pathExists ./.ssh/authorized_keys then ./.ssh/authorized_keys else null;
+      description = ''
+        File that seeds `ssh.authorizedKeysList`, one key per line.
+        `null` means the tree carries no key file, so the list starts empty.
+      '';
+    };
+    ssh.authorizedKeysList = lib.mkOption {
+      type = with lib.types; listOf str;
       default =
-        let
-          authorizedKeysPath = ./.ssh/authorized_keys;
-          authorizedKeysList = lib.trivial.pipe authorizedKeysPath [
-            builtins.readFile
-            (lib.strings.splitString "\n")
-          ];
-        in
-        {
-          inherit authorizedKeysList authorizedKeysPath;
-
-          authorizedKeysText = builtins.concatStringsSep "\n" authorizedKeysList;
-        };
+        if cfg.ssh.authorizedKeysFile == null then
+          [ ]
+        else
+          lib.strings.splitString "\n" (builtins.readFile cfg.ssh.authorizedKeysFile);
+      description = "Public keys of the user account. An adopter sets their own list here.";
+    };
+    ssh.authorizedKeysText = lib.mkOption {
+      type = with lib.types; str;
+      default = builtins.concatStringsSep "\n" cfg.ssh.authorizedKeysList;
+      description = "`authorizedKeysList` as one text block.";
+    };
+    ssh.authorizedKeysPath = lib.mkOption {
+      type = with lib.types; path;
+      default = pkgs.writeText "kdn-authorized-keys" cfg.ssh.authorizedKeysText;
+      description = ''
+        `authorizedKeysList` as a file, for an `openssh.authorizedKeys.keyFiles` reader.
+        The content equals the seed file, so the reader sees the same bytes as before.
+      '';
     };
     gpg.publicKeys = lib.mkOption {
-      type = with lib.types; path;
-      readOnly = true;
-      default = pkgs.writeText "kdn-gpg-pubkeys.txt" (builtins.readFile ./gpg-pubkeys.txt);
+      type = with lib.types; nullOr path;
+      default =
+        if builtins.pathExists ./gpg-pubkeys.txt then
+          pkgs.writeText "kdn-gpg-pubkeys.txt" (builtins.readFile ./gpg-pubkeys.txt)
+        else
+          null;
+      description = "GPG keyring to trust. `null` means the tree carries no keyring.";
     };
   };
 
@@ -131,6 +149,14 @@ in
           # }))
           kdn.kagi-cli
         ];
+        /*
+          Keep the literal `kdn`. These three lists hold **system user attribute names**, and this
+          module declares its account as `users.users.kdn` everywhere. `cfg.username` holds the
+          login name, which is not the same string on every host. A measurement on 2026-09-11 read
+          `["root", "<login>"]` on one host where the two differ, and a new
+          `home-manager.users.<login>` appeared with it. `yubikey.appId` and `netbird.admins` want
+          the login name, so they keep `cfg.username`.
+        */
         kdn.programs.atuin.users = [ "kdn" ];
         kdn.programs.fish.defaultShellUsers = [ "kdn" ];
         kdn.hw.yubikey.appId = "pam://${cfg.username}";
@@ -152,7 +178,7 @@ in
           nextcloud.enable = lib.mkDefault cfg.nextcloud.enable;
           firefoxProfiles.enable = lib.mkDefault cfg.firefoxProfiles.enable;
         };
-        home-manager.users.root.programs.gpg.publicKeys = [
+        home-manager.users.root.programs.gpg.publicKeys = lib.optionals (cfg.gpg.publicKeys != null) [
           {
             source = cfg.gpg.publicKeys;
             trust = "ultimate";
@@ -204,7 +230,7 @@ in
           }
           {
             # GPG
-            programs.gpg.publicKeys = [
+            programs.gpg.publicKeys = lib.optionals (cfg.gpg.publicKeys != null) [
               {
                 source = cfg.gpg.publicKeys;
                 trust = "ultimate";
@@ -500,7 +526,7 @@ in
       (kdnConfig.util.ifTypes [ "darwin" ] {
         system.primaryUser = lib.mkDefault cfg.username;
         nix-homebrew.user = cfg.username;
-        users.users.kdn.home = "/Users/${cfg.username}";
+        users.users.kdn.home = lib.mkDefault "/Users/${cfg.username}";
       })
       (kdnConfig.util.ifTypes [ "nixos" ] {
         users.users.kdn = {
