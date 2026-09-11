@@ -7,7 +7,7 @@ authored_by: agent
 
 # The pre-push guard: which remote may receive private content
 
-The hook is `modules/slots/jj/pre-push.sh`. The fork slot bakes the pattern
+The hook is `hack/pre-push.sh`. The fork slot bakes the pattern
 lists into it (`modules/slots/jj/fork/default.nix`, `runtimeEnv`). The
 executable proof is `test_prepush.py`.
 

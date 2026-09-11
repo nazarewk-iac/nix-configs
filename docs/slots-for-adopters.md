@@ -201,7 +201,7 @@ tracks the rest.
 ## The jj pre-push guard: what it does and does not protect
 
 `kdn.jj.fork` installs a `pre-push` hook that refuses to push content matching a private pattern
-list to any remote other than your private one. The hook is `modules/slots/jj/pre-push.sh`, and
+list to any remote other than your private one. The hook is `hack/pre-push.sh`, and
 [checks/jj-experiments/test_prepush.md](../checks/jj-experiments/test_prepush.md) states the
 per-remote matrix that 15 tests prove.
 

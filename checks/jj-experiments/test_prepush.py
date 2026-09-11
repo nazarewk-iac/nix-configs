@@ -1,6 +1,6 @@
 """Pre-push hook cases: which remote may receive private content.
 
-The hook is `modules/slots/jj/pre-push.sh`. The suite reads its path from
+The hook is `hack/pre-push.sh`. The suite reads its path from
 `KDN_JJ_PRE_PUSH_SH` and runs the plain script, so each case bakes its own
 pattern lists. Every pattern here is a PLACEHOLDER-* string; no real sensitive
 term appears. See test_prepush.md for the prose.
