@@ -70,23 +70,23 @@ in plain text.
 
 | Item | File:line | Verdict (own aspect / option / mandatory) | Bundled? | In den today? | Closest-to-current option shape | Effort |
 |---|---|---|---|---|---|---|
-| 1. Homebrew turns on for every Darwin host that sets `kdn.enable` | `modules/universal/default.nix:209,224` | own aspect | yes — one `mkIf cfg.enable` block also holds `networking`, `nix.gc` and the tap wiring | no — the darwin-class port reaches it | `kdn.homebrew.enable`, default false | M |
-| 2. The tap wiring forces every `brew-tap--*` flake input | `modules/universal/default.nix:227-243` | own aspect (same switch as row 1) | yes | no | an attribute set of taps, default empty | S |
+| 1. Homebrew turns on for every Darwin host that sets `kdn.enable` | `modules/universal/default.nix:209,224` | own aspect | yes — one `mkIf cfg.enable` block also holds `networking`, `nix.gc` and the tap wiring | **shipped 2026-09-11**: `kdn.homebrew.enable`, default **false**. `modules/universal/_options.nix` declares it. The darwin block of `modules/universal/default.nix` sets `lib.mkDefault true`, so `anji` and every other darwin host of this repository keep today's value. An adopter writes a plain `false`. | `kdn.homebrew.enable`, default false | M |
+| 2. The tap wiring forces every `brew-tap--*` flake input | `modules/universal/default.nix:227-243` | own aspect (same switch as row 1) | yes | **partly shipped 2026-09-11**: `kdn.homebrew.enable` now gates the tap scan too, so an adopter drops it with one `false`. The attribute set of taps stays open — section 3 item 3 owns it. | an attribute set of taps, default empty | S |
 | 3. 6 of 8 `brew-tap--*` inputs use `git+ssh://`, so a machine with no key stops | `flake.nix` — 8 tap `url` lines, 6 of them `git+ssh` (organisation name masked) | option | no | no | the tap set becomes a consumer value, so the inputs leave `flake.nix` | M |
 | 4. Podman on Darwin needs Homebrew | `modules/universal/virtualisation/containers/podman/default.nix:27` | own aspect | yes — the container runtime and Homebrew share one switch | no | `kdn.virtualisation.containers.podman.darwin.viaHomebrew`, default false | S |
 | 5. The browser launcher installs Homebrew casks | `modules/universal/programs/browsers-launcher/default.nix:34` | own aspect | no | no | an attribute set of casks, default empty | S |
-| 6. fish, zsh and atuin turn on for every host with the baseline | `modules/universal/headless/base/default.nix:31-33` | own aspect | yes — one `mkIf` block sets 12 plain enables | no | one `enable` per shell, default false | M |
+| 6. fish, zsh and atuin turn on for every host with the baseline | `modules/universal/headless/base/default.nix:31-33` | own aspect | yes — one `mkIf` block sets 12 plain enables | **partly shipped 2026-09-11**: all 13 plain enables of that block are now `lib.mkDefault true`, so an adopter opts out per item with a plain `false`. A separate `enable` per shell stays open. | one `enable` per shell, default false | M |
 | 7. fish becomes the login shell | `modules/universal/headless/base/default.nix:41` | option | yes (row 6) | no | `kdn.programs.fish.defaultShell`, default false | S |
-| 8. zellij turns on in home-manager | `modules/universal/headless/base/default.nix:48` | own aspect | yes (row 6) | the `zellij` aspect covers the devenv target only | `kdn.programs.zellij.enable`, default false | S |
-| 9. vim installs and takes `defaultEditor` | `modules/universal/headless/base/default.nix:123-124` | own aspect | yes (row 6) | no | `kdn.programs.vim.enable`, default false | S |
+| 8. zellij turns on in home-manager | `modules/universal/headless/base/default.nix:48` | own aspect | yes (row 6) | **shipped 2026-09-11**: `kdn.headless.base.zellij.enable`, default true. The bundle scope is deliberate — `headless/base` forwards its whole `cfg` into Home Manager as one `lib.mkDefault`, so a `kdn.programs.*` name would tie at priority 1000 and conflict. The `zellij` aspect still covers the devenv target only. | `kdn.programs.zellij.enable`, default false | S |
+| 9. vim installs and takes `defaultEditor` | `modules/universal/headless/base/default.nix:123-124` | own aspect | **shipped 2026-09-11**: `kdn.headless.base.vim.enable`, default true. Same bundle scope, same reason as row 8. | `kdn.programs.vim.enable`, default false | S |
 | 10. helix takes `defaultEditor` with a plain assignment | `modules/universal/programs/terminal-ide/default.nix:65` | option | yes — the editor and the language servers share one switch | no | `lib.mkDefault true` | XS |
-| 11. A wezterm key-binding config lands in the home directory | `modules/universal/headless/base/default.nix:107` | own aspect | yes (row 6) | no | `kdn.programs.wezterm.enable`, default false | S |
+| 11. A wezterm key-binding config lands in the home directory | `modules/universal/headless/base/default.nix:107` | own aspect | **shipped 2026-09-11**: `kdn.headless.base.wezterm.enable`, default true. Same bundle scope, same reason as row 8. Another module also writes `programs.wezterm.extraConfig`, so the switch removes this block's part only. | `kdn.programs.wezterm.enable`, default false | S |
 | 12. gnupg also turns on `pass` | `modules/universal/programs/gnupg/default.nix:53` | own aspect | yes — the agent, the pinentry and the password manager share one switch | no | `kdn.programs.gnupg.passwordStore.enable`, default false | S |
 | 13. The basic profile turns gnupg on with a plain assignment | `modules/universal/profile/machine/basic/default.nix:24` | option | yes (row 12) | no | `lib.mkDefault true` | XS |
 | 14. gnupg force-disables gnome-keyring | `modules/universal/programs/gnupg/default.nix:113-114` | option | yes (row 12) | no | `kdn.programs.gnupg.disableGnomeKeyring`, default true | XS |
 | 15. The signing key file name carries the creator's initials | `modules/slots/signing/default.nix:82` | option | no | no aspect — `signing` is one of the 5 unported slots | no default, or `~/.ssh/id_ed25519_signing` | XS |
-| 16. The dev profile turns podman and the container stack on with plain assignments | `modules/universal/profile/machine/dev/default.nix:48-49` | own aspect | yes — 17 toolchains and the runtime share one profile | no | `lib.mkDefault true` | XS |
-| 17. 17 language toolchains turn on with one profile | `modules/universal/profile/machine/dev/default.nix:26-43` | own aspect | yes | no | keep `mkDefault`; give each language its own aspect | M |
+| 16. The dev profile turns podman and the container stack on with plain assignments | `modules/universal/profile/machine/dev/default.nix:48-49` | own aspect | yes — 17 toolchains and the runtime share one profile | **shipped 2026-09-11**: `kdn.profile.machine.dev.containers.enable`, default true, gates the runtime alone. Every assignment in the profile is already `lib.mkDefault`. | `lib.mkDefault true` | XS |
+| 17. 17 language toolchains turn on with one profile | `modules/universal/profile/machine/dev/default.nix:26-43` | own aspect | yes | **partly shipped 2026-09-11**: `kdn.profile.machine.dev.languages.enable`, default true, drops all 18 toolchains at once, and `desktop.enable` drops the desktop pull. One aspect per language stays open for the den port. | keep `mkDefault`; give each language its own aspect | M |
 | 18. stylix turns on with no `kdn.*` switch at all | `modules/universal/_stylix.nix:37` | own aspect | yes — the theme, the fonts and the cursor share one file | no | `kdn.stylix.enable`, default false | M |
 | 19. The wallpaper comes from the creator's own Nextcloud share | `modules/universal/_stylix.nix:39-44` (FQDN masked) | option | yes (row 18) | no | `stylix.image` with no default; the consumer supplies it | S |
 | 20. Fira Code becomes the monospace font, and two font packages install system-wide | `modules/universal/_stylix.nix:52-53,96-99` | option | yes (row 18) | no | `fonts.packages` follows `stylix.fonts`, and holds no literal | S |
@@ -105,14 +105,14 @@ in plain text.
 | 33. Three cachix substituters and their public keys apply to every host; a list merge cannot remove one | `modules/universal/nix.nix:25-34` | option | yes (row 30) | no | a list option, default empty | XS |
 | 34. Lix replaces the nix package with a plain assignment | `modules/universal/default.nix:95-106` | option | no | no | `lib.mkDefault` | XS |
 | 35. `!include /etc/nix/nix.sensitive.conf` and one access-token file | `modules/universal/nix.nix:12-17` | **mandatory** — a `!include` with the leading `!` never fails on a missing file, so it is already adopter-safe | no | no | keep | n/a |
-| 36. The baseline profile turns the creator's own user on | `modules/universal/profile/machine/baseline/default.nix:60` (the brief said 59) | option — **009 hard blocker 1 owns it** | yes — the baseline also sets `kdn.enable`, the locale and the headless base | no | no user at all; the host names its own | M |
+| 36. The baseline profile turns the creator's own user on | `modules/universal/profile/machine/baseline/default.nix:60` (the brief said 59) | option — **009 hard blocker 1 owns it** | yes — the baseline also sets `kdn.enable`, the locale and the headless base | **partly shipped 2026-09-11**: `kdn.profile.machine.baseline.primaryUser.enable`, default true, drops the user without touching the locale or the headless base. 009 hard blocker 1 still owns the end state, a baseline with no user at all. | no user at all; the host names its own | M |
 | 37. One sops file path is hardwired at three sites | `modules/universal/profile/default-secrets/default.nix:21,25,85` | option — **[008](../008-sops-default-inventory/definition.md) and 009 own it** | yes | no | `sopsFile` per secret, default null | M |
 | 38. A real root password hash and a real initrd emergency hash | `modules/universal/profile/machine/baseline/default.nix:198,245` | option — **009 tier 3 owns it** | no | no | no default; the host supplies both | S |
 | 39. A 55-line `ssh_known_hosts` fleet file loads for every NixOS host | `modules/universal/profile/machine/baseline/default.nix:322` | option — **009 tier 3 owns it** | no | no | `knownHostsFiles`, default empty | XS |
-| 40. The creator's checkout path is hardwired at three sites | `modules/universal/development/nix/default.nix:27`, `modules/universal/profile/machine/baseline/default.nix:360-361` | option | yes — the option default reads `kdn.profile.user.kdn.homeDir`, so it needs the creator's user module | no | `kdn.development.nix.flake.path`, default null; skip the tmpfiles link when null | S |
-| 41. Four named overlay network clients turn on with the baseline | `modules/universal/profile/machine/baseline/default.nix:369-375` | option — **009 tier 3 owns it** | yes | no | an attribute set of clients, default empty | S |
-| 42. The baseline also turns a Nextcloud desktop client on | `modules/universal/profile/machine/baseline/default.nix:377` | own aspect | yes | no | `lib.mkDefault false` | XS |
-| 43. A personal Nextcloud share path appears in two modules | `modules/universal/profile/user/kdn/default.nix:11`, `modules/universal/programs/photoprism/default.nix:27` (FQDN masked) | option — **009 tier 3 owns it** | no | no | the consumer supplies the path | S |
+| 40. The creator's checkout path is hardwired at three sites | `modules/universal/development/nix/default.nix:27`, `modules/universal/profile/machine/baseline/default.nix:360-361` | option | yes — the option default reads `kdn.profile.user.kdn.homeDir`, so it needs the creator's user module | **partly shipped 2026-09-11**: `kdn.profile.machine.baseline.flakeCheckoutLinks.enable` drops the three tmpfiles links. Its default follows `primaryUser.enable`, because the link target reads the primary user's home directory. `kdn.development.nix.flake.path` stays open. | `kdn.development.nix.flake.path`, default null; skip the tmpfiles link when null | S |
+| 41. Four named overlay network clients turn on with the baseline | `modules/universal/profile/machine/baseline/default.nix:369-375` | option — **009 tier 3 owns it** | yes | **partly shipped 2026-09-11**: `kdn.profile.machine.baseline.overlayNetworks.enable`, default true, drops both overlay-network clients of this tree. The attribute set of clients stays with 009 tier 3. | an attribute set of clients, default empty | S |
+| 42. The baseline also turns a Nextcloud desktop client on | `modules/universal/profile/machine/baseline/default.nix:377` | own aspect | yes | **shipped 2026-09-11**: `kdn.profile.machine.baseline.nextcloudClient.enable`, default true. It keeps the `kdn.security.secrets.allowed` condition, so today's value stays. | `lib.mkDefault false` | XS |
+| 43. A personal Nextcloud share path appears in two modules | `modules/universal/profile/user/kdn/default.nix:11`, `modules/universal/programs/photoprism/default.nix:27` (FQDN masked) | option — **009 tier 3 owns it** | no | **partly shipped 2026-09-11**: `kdn.profile.user.kdn.nextcloud.enable`, default true, drops every consumer of the sync share in `profile/user/kdn` — the password-store link, the screenshot path and the password-manager search directory. The path itself stays with 009 tier 3. | the consumer supplies the path | S |
 | 44. 176 LOC of host graph, LAN addresses, WAN ports and homelab zones | `modules/slots/ssh-access/kdn-graph.nix` (every FQDN masked) | option — **[007](../007-depersonalize-slots/definition.md) item 5 and 009 tier 3 own it** | no | no aspect — `ssh-access` is unported | the graph is already a consumer value; only the file moves | S |
 | 45. 5 slots install agent rules and skills into the adopter repo; `kdn.isSourceRepo` is the only switch | `modules/slots/jj/default.nix:23,61,213`, `modules/slots/jj/fork/default.nix:267`, `modules/slots/nix/default.nix:22,134`, `modules/slots/zellij/default.nix:56,125`, `modules/slots/mcp/basic-memory/default.nix:23,140` | option — **007 item 4 owns the slot half** | no longer — one switch per slot covers the opinion, and the tool stays | **fixed on both routes** — `modules/den/aspects/jj.nix:112,277`, `jj-fork.nix:157,432`, `nix.nix:97,223`, `zellij.nix:98,160`, `mcp-basic-memory.nix:172,257` | **shipped**: `kdn.<name>.installAgentRules`, default **false** (section 3 item 4, candidate A). The 3 consumers set it true: `devenv.nix:54-58`, `checks/den-mvp/devenv/default.nix:120-124`, `checks/den-mvp/host-darwin/default.nix:52` | S |
 | 46. The `jj` slot also registers a proactive `jj-expert` subagent | `modules/slots/jj/default.nix:204`, and `modules/den/aspects/jj.nix:270` | option | no longer (row 45) | **fixed on both routes** — the same switch as row 45 gates the subagent | **shipped**: `kdn.jj.installAgentRules`, default false | XS |
@@ -148,11 +148,16 @@ that proves it.
    `devenv eval 'claude.code.mcpServers.mcp-gateway.command'` — the snoop wrapper must leave the
    command when the option is false.
 
-2. **Put Homebrew behind `kdn.homebrew.enable`, default false.** Rows 1 and 2. This is the
-   trigger for the whole task. A Darwin adopter who already runs Homebrew today gets a second,
-   declarative Homebrew with `onActivation.cleanup = "zap"`.
+2. **fixed 2026-09-11** — Homebrew now sits behind `kdn.homebrew.enable`, default **false**. Rows 1
+   and 2. This was the trigger for the whole task. A Darwin adopter who already runs Homebrew used
+   to get a second, declarative Homebrew with `onActivation.cleanup = "zap"`.
+   `modules/universal/_options.nix` declares the switch. The darwin block of
+   `modules/universal/default.nix` sets `lib.mkDefault true`, so every darwin host of this
+   repository keeps today's value and an adopter opts out with a plain `false`.
+   Measured on `anji`: with the switch off, `homebrew.enable`, `nix-homebrew.enable` and the
+   `HOMEBREW_READ_ONLY` shell export all leave, and nothing else moves.
    `nix eval --json '.#darwinConfigurations.anji.config.homebrew.enable'` — it must stay true for
-   `anji`, because `anji` sets the new option.
+   `anji`, because the darwin block sets the new option.
 
 3. **Make the tap set a consumer attribute set, default empty.** Rows 2 and 3. It removes 6
    `git+ssh://` fetches from an adopter's Darwin build, and the hub already grades this as a real
@@ -202,6 +207,16 @@ Every item where the smallest safe change still needs a decision the user reserv
    aspects?** Rows 6, 17, 25 and 64. Candidate A: keep the profile, and change 65 plain `= true`
    assignments to `mkDefault`, so an adopter opts out per item. Candidate B: split each profile
    into one aspect per concern, and let the adopter name the list.
+
+   **Partial work landed on 2026-09-11, and it does not answer this question.** Five bundles now
+   carry one sub-switch per concern: the darwin block of `modules/universal/default.nix`,
+   `headless/base`, `profile/machine/dev`, `profile/machine/baseline` and `profile/user/kdn`. That
+   is candidate A plus a group switch per concern. It is a **within-profile** split, so it adds no
+   aspect and it removes no profile. Each profile still holds every concern.
+
+   The session note `../.session-2026-09-10.md` records the five splits as approved under the
+   delegated class, so the work went ahead. This item stays `DECISION TO REVISE`, because the
+   aspect-versus-profile question is untouched. Rows 25 and 64 are also untouched.
 
 2. `DECISION TO REVISE` — **Does `stylix` keep a whole-tree switch, or does theming become one
    aspect?** Row 18. Candidate A: add `kdn.stylix.enable`, default false, and leave

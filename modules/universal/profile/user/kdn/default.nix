@@ -14,6 +14,44 @@ in
 {
   options.kdn.profile.user.kdn = {
     enable = lib.mkEnableOption "enable my user profiles";
+
+    /*
+      The four switches below split one bundle into one concern per switch.
+
+      One user profile used to turn on the LLM harnesses, a version-control identity, a file-sync
+      layout and a browser profile set together. An adopter who reuses this profile wants some of
+      them and not the rest. A version-control identity and a browser profile set carry a real name,
+      so they are the first two an adopter drops.
+
+      Each default is `true`, the value this repository uses today. A `true` default costs nothing
+      when `enable` is `false`, because the whole `config` sits behind `enable`. An adopter writes a
+      plain `false`, which wins over the `mkDefault` forward into Home Manager.
+    */
+    llm.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      example = false;
+      description = "Turn on the LLM harnesses of this tree on a development machine.";
+    };
+    vcsIdentity.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      example = false;
+      description = "Write the git and jj identity, the signing choice and the credential helper.";
+    };
+    nextcloud.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      example = false;
+      description = "Point the password store, the screenshots and the time logs at the sync share.";
+    };
+    firefoxProfiles.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      example = false;
+      description = "Declare the named Firefox profiles and containers of this tree.";
+    };
+
     username = lib.mkOption {
       type = with lib.types; str;
       default = "kdn";
@@ -59,7 +97,7 @@ in
 
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
-      {
+      (lib.mkIf cfg.llm.enable {
         # Enable the LLM harnesses only on a development machine, not on servers.
         kdn.development.llm.claude-code.enable = lib.mkDefault config.kdn.profile.machine.dev.enable;
         kdn.development.llm.opencode.enable = lib.mkDefault config.kdn.profile.machine.dev.enable;
@@ -78,6 +116,8 @@ in
           exists there. Revert this line, do not build on it.
         */
         kdn.development.llm.omp.enable = lib.mkDefault false;
+      })
+      {
         kdn.env.packages = with pkgs; [
           kdn.kdnctl
           # (yt-dlp.overrideAttrs (final: {
@@ -107,6 +147,10 @@ in
         home-manager.users.kdn.kdn.profile.user.kdn = {
           enable = lib.mkDefault true;
           username = cfg.username;
+          # Forward the per-concern switches, so one host-side `false` reaches Home Manager too.
+          vcsIdentity.enable = lib.mkDefault cfg.vcsIdentity.enable;
+          nextcloud.enable = lib.mkDefault cfg.nextcloud.enable;
+          firefoxProfiles.enable = lib.mkDefault cfg.firefoxProfiles.enable;
         };
         home-manager.users.root.programs.gpg.publicKeys = [
           {
@@ -166,14 +210,16 @@ in
                 trust = "ultimate";
               }
             ];
+          }
+          (lib.mkIf cfg.nextcloud.enable {
             home.activation = {
               linkPasswordStore = lib.hm.dag.entryBetween [ "linkGeneration" ] [ "writeBoundary" ] ''
                 $DRY_RUN_CMD ln -sfT "${nc.rel}/important/password-store" "$HOME/.password-store"
               '';
             };
-          }
+          })
           # kdn.programs.password-store.enable = true; # currently inside gnupg
-          {
+          (lib.mkIf cfg.vcsIdentity.enable {
             programs.gh.enable = false;
             programs.gh.gitCredentialHelper.enable = false;
             # programs.git.signing.key = "CDDFE1610327F6F7A693125698C23F71A188991B";
@@ -212,13 +258,13 @@ in
               signing.behavior = "own";
               signing.backend = "gpg";
             };
-          }
+          })
           (lib.mkIf hasWorkstation {
             kdn.disks.persist."usr/data".directories = [ "dev" ];
             kdn.services.syncthing.enable = lib.mkDefault true;
             kdn.programs.weechat.enable = lib.mkDefault true;
           })
-          (lib.mkIf config.kdn.programs.firefox.enable (
+          (lib.mkIf (config.kdn.programs.firefox.enable && cfg.firefoxProfiles.enable) (
             lib.mkMerge [
               {
                 # Firefox
@@ -299,7 +345,7 @@ in
           (lib.mkIf config.kdn.desktop.enable {
             xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
           })
-          (lib.mkIf config.kdn.desktop.enable {
+          (lib.mkIf (config.kdn.desktop.enable && cfg.nextcloud.enable) {
             # see https://github.com/nix-community/home-manager/issues/2104#issuecomment-861676751
             home.file."${nc.rel}/images/screenshots/.keep".source = builtins.toFile "keep" "";
             services.flameshot.settings.General.savePath =
@@ -342,10 +388,13 @@ in
           (lib.mkIf config.kdn.desktop.enable {
             kdn.programs.keepassxc.enable = lib.mkDefault true;
             kdn.programs.keepassxc.service.enable = lib.mkDefault true;
+            kdn.programs.keepassxc.service.fileName = "drag0nius.kdbx";
+          })
+          # Only the search directory comes from the sync share, so it splits off from keepassxc.
+          (lib.mkIf (config.kdn.desktop.enable && cfg.nextcloud.enable) {
             kdn.programs.keepassxc.service.searchDirs = [
               "${config.home.homeDirectory}/${nc.rel}/important/keepass"
             ];
-            kdn.programs.keepassxc.service.fileName = "drag0nius.kdbx";
           })
           (lib.mkIf (config.kdn.desktop.sway.enable)
             (import ./mimeapps.nix { inherit config pkgs lib; }).config
@@ -392,7 +441,7 @@ in
               PartOf = [ config.wayland.systemd.target ];
             };
           })
-          (lib.mkIf hasWorkstation {
+          (lib.mkIf (hasWorkstation && cfg.nextcloud.enable) {
             # TODO: migrate to universal, split out a private instead of workstation profile?
             xdg.configFile."klg/config.toml".source =
               config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/${nc.rel}/time-logs/klg/config.toml";

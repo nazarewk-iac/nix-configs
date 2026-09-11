@@ -17,6 +17,35 @@ in
   options.kdn.headless.base = {
     enable = lib.mkEnableOption "basic headless system configuration";
     debugPolkit = lib.mkEnableOption "polkit debugging";
+
+    /*
+      The three switches below split one bundle into one concern per switch.
+
+      A developer already owns a terminal multiplexer, an editor and a terminal emulator, or objects
+      to this tree's choice. So each one gets its own switch.
+
+      Each default is `true`, the value this repository uses today. A `true` default costs nothing
+      when `enable` is `false`, because the whole `config` sits behind `enable`. An adopter writes a
+      plain `false`, which wins over the `mkDefault` forward into Home Manager.
+    */
+    zellij.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      example = false;
+      description = "Configure the zellij multiplexer, and auto-attach the `main` session in fish.";
+    };
+    vim.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      example = false;
+      description = "Install vim, and make it the default editor.";
+    };
+    wezterm.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      example = false;
+      description = "Write a wezterm key-binding file into the home directory.";
+    };
   };
 
   config = lib.mkMerge [
@@ -25,26 +54,30 @@ in
       home-manager.sharedModules = [ { kdn.headless.base = lib.mkDefault cfg; } ];
     })
     # platform-agnostic kdn.* enables
+    # Every line below is `lib.mkDefault`, so an adopter refuses one item with a plain `false`.
+    # A plain `= true` sits at priority 100 and collides with a plain `false`, which stops the
+    # evaluation. Each value stays the value this repository uses today.
     (lib.mkIf cfg.enable {
-      kdn.development.data.enable = true;
-      kdn.hw.basic.enable = true;
-      kdn.programs.atuin.enable = true;
-      kdn.programs.fish.enable = true;
-      kdn.programs.zsh.enable = true;
-      kdn.toolset.essentials.enable = true;
-      kdn.toolset.fs.enable = true;
-      kdn.toolset.fs.encryption.enable = true;
-      kdn.toolset.network.enable = true;
-      kdn.toolset.unix.enable = true;
-      kdn.toolset.nix.enable = true;
-      kdn.toolset.ide.enable = true; # TODO: pulling it in for Helix, move it out into dedicated module
-      kdn.programs.fish.defaultShell = true;
+      kdn.development.data.enable = lib.mkDefault true;
+      kdn.hw.basic.enable = lib.mkDefault true;
+      kdn.programs.atuin.enable = lib.mkDefault true;
+      kdn.programs.fish.enable = lib.mkDefault true;
+      kdn.programs.zsh.enable = lib.mkDefault true;
+      kdn.toolset.essentials.enable = lib.mkDefault true;
+      kdn.toolset.fs.enable = lib.mkDefault true;
+      kdn.toolset.fs.encryption.enable = lib.mkDefault true;
+      kdn.toolset.network.enable = lib.mkDefault true;
+      kdn.toolset.unix.enable = lib.mkDefault true;
+      kdn.toolset.nix.enable = lib.mkDefault true;
+      # TODO: pulling it in for Helix, move it out into dedicated module
+      kdn.toolset.ide.enable = lib.mkDefault true;
+      kdn.programs.fish.defaultShell = lib.mkDefault true;
     })
     # home-manager
     (kdnConfig.util.ifHM (
       lib.mkIf cfg.enable (
         lib.mkMerge [
-          {
+          (lib.mkIf cfg.zellij.enable {
             programs.zellij.enable = true;
             programs.zellij.enableBashIntegration = true;
             # fish has its own auto-attach-to-`main` logic below instead of the generic
@@ -103,7 +136,8 @@ in
 
             # fix Delete working as Ctrl + H on external keyboard
             programs.zellij.settings.support_kitty_keyboard_protocol = true;
-
+          })
+          (lib.mkIf cfg.wezterm.enable {
             programs.wezterm.extraConfig = ''
               config.keys = {
                 -- Make Backspace send ^? (0x7F) instead of ^H (0x08)
@@ -118,8 +152,8 @@ in
                 },
               }
             '';
-          }
-          {
+          })
+          (lib.mkIf cfg.vim.enable {
             programs.vim.enable = true;
             programs.vim.defaultEditor = lib.mkDefault true;
             programs.vim.extraConfig = ''
@@ -148,7 +182,7 @@ in
               set undolevels=1000  " Number of undo levels
               set backspace=indent,eol,start  " Backspace behaviour
             '';
-          }
+          })
           (
             let
               xdgAttrs.all = (builtins.attrNames config.xdg.userDirs.extraConfig) ++ [

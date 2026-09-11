@@ -105,6 +105,26 @@
     };
 
     /*
+      Manage Homebrew on a darwin host.
+
+      A developer who already runs Homebrew objects to a second, declarative one. The nix-darwin
+      Homebrew module also sets `onActivation.cleanup = "zap"`, so it removes every formula it does
+      not know. So the whole Homebrew opinion needs its own switch, apart from `kdn.enable`.
+
+      The default is `false`. `./default.nix` sets `lib.mkDefault true` inside the darwin block, so
+      every darwin host of this repository keeps today's value. An adopter writes a plain `false`,
+      which wins over that `mkDefault`.
+
+      The switch covers `homebrew.enable`, `nix-homebrew.enable`, the three `onActivation` values,
+      the tap list and the two `HOMEBREW_READ_ONLY` shell exports.
+    */
+    homebrew.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      example = true;
+    };
+
+    /*
       Register one Homebrew tap per `brew-tap--*` flake input.
 
       `./default.nix` scans `kdnConfig.inputs` for that prefix and writes each match to

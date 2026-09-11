@@ -194,6 +194,12 @@ in
             networking.computerName = lib.mkDefault config.kdn.hostName;
           }
           {
+            # Homebrew is its own concern, so it carries its own switch.
+            # `kdn.homebrew.enable` defaults to `false`, and this line keeps every darwin host of
+            # this repository on today's value. An adopter writes a plain `false` to opt out.
+            kdn.homebrew.enable = lib.mkDefault true;
+          }
+          (lib.mkIf cfg.homebrew.enable {
             nix-homebrew.mutableTaps = false;
             homebrew.onActivation.upgrade = true;
             homebrew.onActivation.autoUpdate = false;
@@ -204,8 +210,8 @@ in
             programs.fish.interactiveShellInit = ''
               set -gx HOMEBREW_READ_ONLY 1
             '';
-          }
-          {
+          })
+          (lib.mkIf cfg.homebrew.enable {
             homebrew.enable = true;
 
             # see https://github.com/zhaofengli/nix-homebrew/issues/128
@@ -234,11 +240,9 @@ in
 
               `homebrew.taps` above reads `config.nix-homebrew.taps`, so an off switch empties both.
 
-              DECISION TO REVISE: `homebrew.enable`, `nix-homebrew.enable` and the three
-              `onActivation` values above stay forced on every darwin host. This commit flips the tap
-              scan alone, because the scan is the part that carries another flake's own data. The rest
-              of the Homebrew opinion needs the same treatment, and
-              `modules/den/aspects/homebrew.nix` already holds the standalone form of it.
+              `kdn.homebrew.enable` now guards this whole block, so a host drops the tap scan and the
+              rest of the Homebrew opinion apart. `modules/den/aspects/homebrew.nix` holds the
+              standalone form of the same options.
             */
             nix-homebrew.taps = lib.mkIf cfg.homebrew.tapsFromFlakeInputs (
               let
@@ -257,7 +261,7 @@ in
                 ))
               ]
             );
-          }
+          })
           # FIXES
           {
             home-manager.sharedModules = [
