@@ -103,6 +103,13 @@ let
     mcp-pretty-print = ./aspects/mcp-pretty-print.nix;
     mcp-snoop = ./aspects/mcp-snoop.nix;
     monitoring-prometheus-stack = ./aspects/monitoring.nix;
+    net-dynamic-hosts = ./aspects/net-dynamic-hosts.nix;
+    net-interfaces = ./aspects/net-interfaces.nix;
+    net-netbird = ./aspects/net-netbird.nix;
+    net-openfortivpn = ./aspects/net-openfortivpn.nix;
+    net-openvpn = ./aspects/net-openvpn.nix;
+    net-resolved = ./aspects/net-resolved.nix;
+    net-tailscale = ./aspects/net-tailscale.nix;
     nix = ./aspects/nix.nix;
     nix-config = ./aspects/nix-config.nix;
     nix-remote-builder = ./aspects/nix-remote-builder.nix;

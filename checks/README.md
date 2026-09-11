@@ -52,6 +52,7 @@ first: `SYS=aarch64-darwin` — or `x86_64-linux`, or `aarch64-linux`.
 | `den-smoke-devenv-darwin` | the shell's own `enterTest` really runs | artifact | 18.9 | `nix build --no-eval-cache -L '.#checks.aarch64-darwin.den-smoke-devenv-darwin'` |
 | `zellij-llm-pytest` | the `zellij-llm` package's own pytest suite | pkgs | 17.1 | `nix build --no-eval-cache -L ".#checks.$SYS.zellij-llm-pytest"` |
 | `den-eval-toolset-small` | 14 assertions: the toolset, packaging, emulation, outputs and monitoring aspects | den | 14.7 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-toolset-small"` |
+| `den-eval-networking` | 27 assertions over 4 bare consumers: the seven `net-*` aspects | den | 13.3 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-networking"` |
 | `den-eval-development` | 26 assertions over 22 bare consumers: the 30 `dev-*` aspects | den | 11.2 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-development"` |
 | `den-eval-disks-fs` | 22 assertions over 9 bare consumers: the disks and filesystem aspects | den | 7.3 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-disks-fs"` |
 | `den-eval-frozen-paths` | no backend freezes an environment value | core | 5.6 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-frozen-paths"` |

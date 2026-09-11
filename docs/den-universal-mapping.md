@@ -216,14 +216,14 @@ A `—` in the prefix column means the module declares no option; it only writes
 
 | old module | `kdn.*` prefix | den aspect | Status |
 |---|---|---|---|
-| `modules/universal/networking/default.nix` | `kdn.networking` | — | `not ported` |
-| `modules/universal/networking/dynamic-hosts/default.nix` | `kdn.networking.dynamic-hosts` | — | `not ported` |
-| `modules/universal/networking/netbird/default.nix` | `kdn.networking.netbird` | — | `not ported` |
-| `modules/universal/networking/openfortivpn/default.nix` | `kdn.networking.openfortivpn` | — | `not ported` |
-| `modules/universal/networking/openvpn/default.nix` | `kdn.networking.openvpn` | — | `not ported` |
-| `modules/universal/networking/resolved/default.nix` | `kdn.networking.resolved` | — | `not ported` |
+| `modules/universal/networking/default.nix` | `kdn.networking` | `net-interfaces` | `ported` |
+| `modules/universal/networking/dynamic-hosts/default.nix` | `kdn.networking.dynamic-hosts` | `net-dynamic-hosts` | `ported` |
+| `modules/universal/networking/netbird/default.nix` | `kdn.networking.netbird` | `net-netbird` | `ported` |
+| `modules/universal/networking/openfortivpn/default.nix` | `kdn.networking.openfortivpn` | `net-openfortivpn` | `ported` |
+| `modules/universal/networking/openvpn/default.nix` | `kdn.networking.openvpn` | `net-openvpn` | `ported` |
+| `modules/universal/networking/resolved/default.nix` | `kdn.networking.resolved` | `net-resolved` | `ported` |
 | `modules/universal/networking/router/default.nix` | `kdn.networking.router` | — | `not ported` |
-| `modules/universal/networking/tailscale/default.nix` | `kdn.networking.tailscale` | — | `not ported` |
+| `modules/universal/networking/tailscale/default.nix` | `kdn.networking.tailscale` | `net-tailscale` | `ported` |
 
 ### nix
 
