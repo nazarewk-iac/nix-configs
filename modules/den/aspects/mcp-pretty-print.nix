@@ -29,8 +29,8 @@
 #
 # ## Two differences from the slot
 #
-# 1. **No `enable` option.** The slot defaults `kdn.mcp.pretty-print.enable = true`, against this
-#    repository's own side-effect-free rule. Inclusion is the switch here.
+# 1. **No `enable` option.** The slot declares `kdn.mcp.pretty-print.enable`, and it defaults to
+#    false since 2026-09-10. Inclusion is the switch here, so this aspect needs no option at all.
 # 2. **The hook script comes from the slot tree.** `mcp_gateway_pretty_print.py` still lives beside
 #    the slot. A relative path reads it, so no copy can drift; a dangling path fails loudly, and a
 #    duplicate would not. The file moves next to this aspect when the slot tree goes away — logged

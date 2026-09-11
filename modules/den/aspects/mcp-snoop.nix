@@ -11,8 +11,8 @@
 #
 # ## Two differences from the slot
 #
-# 1. **No `enable` option.** The slot defaults `kdn.mcp.snoop.enable = true`, which breaks this
-#    repository's own side-effect-free rule. Inclusion is the switch here.
+# 1. **No `enable` option.** The slot declares `kdn.mcp.snoop.enable`, and it defaults to false
+#    since 2026-09-10. Inclusion is the switch here, so this aspect needs no option at all.
 # 2. **The package comes from a plain `callPackage`.** The slot reads `pkgs.kdn.mcpsnoop`, so a
 #    consumer must add this repository's overlay first. A relative path needs no overlay, and it
 #    stays inside the tree the evaluation already reads.
