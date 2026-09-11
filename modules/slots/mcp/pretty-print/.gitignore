@@ -16,4 +16,3 @@
 
 !*.nix
 .*.nix
-!/mcp_gateway_pretty_print.py

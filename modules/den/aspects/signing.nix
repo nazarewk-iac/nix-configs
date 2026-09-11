@@ -53,10 +53,9 @@
 #
 # ## One file, a relative path literal
 #
-# The aspect reads `kdn-signing.sh` from the slot directory. The creator's instruction on 2026-09-10
-# keeps every file in place for now. A duplicate copy drifts in silence, and a dangling path fails
-# loudly, so den reads the slot's copy. When the slot tree goes away, the script moves to
-# `modules/den/aspects/signing/` and this file becomes a directory. ./jj.nix records the same plan.
+# The aspect reads `kdn-signing.sh` from `hack/`, and so does the slot. One copy, two relative path
+# literals, so no duplicate can drift. A retirement of `modules/slots/` needs no script rescue.
+# `hack/flake-update-complete.sh` set the precedent, and ./jj.nix records the same shape.
 # See ../../../docs/tasks/2026-09/generalization/009-personal-data-folder/definition.md.
 #
 # ## The three rules this tree holds for every aspect
@@ -176,7 +175,7 @@
           : "''${KDN_SIGNING_ALLOWED_SIGNERS:=${allowedSignersFile}}"
           : "''${KDN_SIGNING_PLAIN_KEY:=${plainKeyFile}}"
         ''
-        + builtins.readFile ../../slots/signing/kdn-signing.sh;
+        + builtins.readFile ../../../hack/kdn-signing.sh;
       };
     in
     {
