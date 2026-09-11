@@ -20,7 +20,6 @@ naming mark are also out.
 
 | `file:line` | The open question | Stakes | Owning task |
 |---|---|---|---|
-| `modules/den/aspects/homebrew.nix:113` | Does the cask cleanup keep `"zap"`, or take nix-darwin's safe `"none"`? | high | [013](013-opt-in-boundaries/definition.md) |
 | `modules/den/aspects/ssh-access.nix:66` | Does the shared schema file keep the personal default that the slot route reads? | high | [umbrella gap 6](definition.md) |
 | `modules/den/aspects/llm.nix:35` | Does this aspect keep its own copy of the proxy unit, or include `llm-proxy` and write one instance? | high | [004](004-den-spike/definition.md) |
 | `modules/den/aspects/llm-client.nix:27` | Does the aspect include `opencode` and own the API key variable, or keep the slot's plain settings write? | high | [004](004-den-spike/definition.md) |
