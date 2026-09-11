@@ -1,7 +1,7 @@
 # Check bundles. A bundle is one `linkFarm` over the checks it names, so one `nix build` runs every
 # member and nix builds the members in parallel. A bare `nix flake check` takes 660 s; the four fast
 # bundles together take about 111 s. Two rules hold: a non-VM bundle finishes in under 60 s, and every
-# check joins one bundle. A check that breaks 60 s alone belongs in `bundle-slow`. Three bundles read a
+# check joins one bundle. A check that breaks 60 s alone belongs in `bundle-slow`. Four bundles read a
 # name prefix, so a new fast check joins by itself. Times measured 2026-09-11 on `aarch64-darwin`,
 # warm store. ./README.md holds the full table.
 {
@@ -36,7 +36,8 @@ let
   ];
 in
 {
-  # 16.7 s. The broad tripwires. Run this first after any edit.
+  # The broad tripwires. Run this first after any edit. A new `universal-eval-*` check joins by
+  # itself, so a guard test of `modules/universal/` needs no edit here.
   bundle-core = mkBundle "core" (
     [
       "hello"
@@ -46,6 +47,7 @@ in
       "conditional-imports-repository"
     ]
     ++ crossCutting
+    ++ byPrefix "universal-eval-"
   );
   # 32.2 s. One assertion set per den aspect: every `den-eval-*` that is neither cross-cutting nor
   # slow. A new aspect check joins by itself.
