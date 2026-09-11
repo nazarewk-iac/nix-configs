@@ -18,17 +18,21 @@ import sits behind `builtins.filter builtins.pathExists`, so an absent file is a
 
 ## Sort rule
 
-Apply the four steps in order. The first match wins.
+Apply the five steps in order. The first match wins.
 
 | # | Test | Directory |
 |---|---|---|
 | 1 | The file references `kdnConfig` in any way (argument, `kdnConfig.self`, `kdnConfig.util`, `kdnConfig.features`). | `universal-deps/` |
 | 2 | No `kdnConfig`, and every consumer is under `modules/universal/**`. | `universal-safe/` |
 | 3 | No `kdnConfig`, and every consumer sits in one system kind only. | `nixos/`, `darwin/` or `hm/` |
-| 4 | Nothing above fits. | `data/` top level, marked `UNSORTED` below |
+| 4 | Nothing above fits. | `data/` top level — ask the owner |
+| 5 | Every consumer is a slot or a den aspect, through `mkSlots { imports = … }` or a den entity. | `slots/` |
 
 Rule 1 beats rule 3. When both match, the row carries a `Kind:` note, so a later re-sort is
 possible.
+
+Rule 5 also beats rule 3 and rule 4, so read it first. A slot consumer is a stronger signal than
+the system kind: a slot evaluates in its own universe, and the file must move with the slot.
 
 `nixos/`, `darwin/` and `hm/` hold no file today. No current file matches rule 3.
 
@@ -66,22 +70,26 @@ Each file keeps its base name. The directory carries the kind, so a name such as
 `.gitignore` carries one negation per payload file. Add a new negation for a new payload file,
 because line 5 ignores everything by default.
 
-## Top level — `UNSORTED`, owner decision
+## `slots/` — read by a slot or a den aspect
 
 | File | What it holds | Read by | Shape |
 |---|---|---|---|
-| `slots-ssh-access.nix` | The owner's SSH connectivity graph: host aliases, reach paths, uplink files and agent match patterns. | `hosts/brys`, `hosts/oams` and the work host, through `mkSlots { imports = … }` | attrset, was a function |
+| `slots-ssh-access.nix` | The owner's SSH connectivity graph: host aliases, reach paths, uplink files and agent match patterns. | `hosts/anji`, `hosts/brys`, `hosts/oams` and the work host, through `mkSlots { imports = … }` | attrset, was a function |
 
-Why it stays at the top level:
+Why the file sits here:
 
+- Rule 5 matches. Every consumer reads the file through `mkSlots { imports = … }`, so the file
+  belongs to the slot universe and not to a system kind.
 - Rule 1 does not match. The evaluated body reads no `kdnConfig`. Only the header comment shows
   `kdnConfig.self` inside a usage example.
 - Rule 2 does not match. No consumer is under `modules/universal/**`. The file feeds the
   `kdn.ssh-access` slot.
-- Rule 3 does not match. Two consumers are `nixos` hosts and one is a `darwin` host, so the
+- Rule 3 does not match either. Two consumers are `nixos` hosts and two are `darwin` hosts, so the
   consumers span more than one system kind.
 
-A `slots/` directory is the obvious home, but that name is not in the ladder. The owner decides.
+A host reads the file with a path literal behind `builtins.pathExists`, so a tree without the file
+still evaluates. `modules/den/aspects/ssh-access.nix` reads the same option shape, so a future den
+host puts its own data file here too.
 
 ## How to add a file
 
