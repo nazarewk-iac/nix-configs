@@ -30,7 +30,16 @@ in
       kdn.env.packages = [
         finalPackage
       ]
-      ++ lib.optional (kdnConfig.util.hasParentOfAnyType [ "nixos" ]) pkgs.kdn.kdn-keepass;
+      /*
+        The guard reads the platform, not the parent chain.
+
+        `hasParentOfAnyType` walks the parent chain. A NixOS host has no NixOS parent, so the
+        old guard hides the package on every host. It reaches the user profile alone.
+
+        `pkgs.kdn.kdn-keepass` runs `sway` and `systemd`. `packages/default.nix` keeps it out
+        of the Darwin package set, so the platform test is the correct one.
+      */
+      ++ lib.optional pkgs.stdenv.hostPlatform.isLinux pkgs.kdn.kdn-keepass;
     })
     (lib.mkIf cfg.service.enable {
       kdn.env.variables = envs;

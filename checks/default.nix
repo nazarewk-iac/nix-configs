@@ -53,6 +53,11 @@ let
   # docs/tasks/2026-09/generalization/005-conditional-imports-requirement/.
   conditionalImportsTests = import ./conditional-imports.nix { inherit pkgs lib inputs; };
 
+  # The two guard defects of `modules/universal/`, as a runnable test. Each check evaluates one
+  # module file in both contexts and forces the attribute path that laziness hides. See
+  # universal-guards.nix and docs/tasks/2026-09/latent-guard-defects/.
+  universalGuardTests = import ./universal-guards.nix { inherit pkgs lib inputs; };
+
   # The real fork slot artifacts: the config TOML the tests read through
   # JJ_FORK_CONFIG_TOML, and the pre-push script they read through
   # KDN_JJ_PRE_PUSH_SH. inputs.self is the nix-configs flake.
@@ -67,6 +72,7 @@ in
 denTests.checks
 // standaloneTests.checks
 // conditionalImportsTests.checks
+// universalGuardTests.checks
 // {
   # Minimal "hello world" check: proves the `checks.<system>` plumbing evaluates and
   # builds end-to-end (flake.nix mkSubmodule wiring + checks/default.nix), independent

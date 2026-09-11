@@ -5,10 +5,18 @@
   pkgs,
   config,
   kdnConfig,
+  osConfig ? null,
   ...
 }:
 let
   cfg = config.kdn.virtualisation.containers;
+
+  /*
+    Home Manager runs standalone, or under a NixOS parent, or under a Darwin parent.
+    `osConfig` is null in the standalone case, and it holds no `boot` option under a Darwin
+    parent. The null test comes first, so neither `?` probe ever reads a null value.
+  */
+  hasOciHook = osConfig != null && osConfig ? boot && osConfig.boot ? kernelPackages;
 in
 {
   options.kdn.virtualisation.containers = {
@@ -92,8 +100,10 @@ in
               engine = {
                 init_path = "${pkgs.catatonit}/bin/catatonit";
               }
-              // lib.optionalAttrs cfg.ociSeccompBpfHook.enable {
-                hooks_dir = [ config.boot.kernelPackages.oci-seccomp-bpf-hook ];
+              // lib.optionalAttrs (cfg.ociSeccompBpfHook.enable && hasOciHook) {
+                # A Home Manager module set holds no `boot` option. The value comes from the
+                # parent, and `hasOciHook` proves the parent has one.
+                hooks_dir = [ osConfig.boot.kernelPackages.oci-seccomp-bpf-hook ];
               };
             };
             # /home/kdn/.config/containers/storage.conf

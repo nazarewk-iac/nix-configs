@@ -62,12 +62,13 @@ in
   # block, so no Darwin evaluation reads this attribute.
   pass-secret-service = pkgs.callPackage ./pass-secret-service { };
 
-  # Each package below needs a Linux-only dependency, and each consumer sits inside a
-  # `kdnConfig.util.ifTypes [ "nixos" ]` block. So no Darwin evaluation reads any of them.
+  # Each package below needs a Linux-only dependency, and a Linux guard covers each consumer.
+  # The guard is `kdnConfig.util.ifTypes [ "nixos" ]`, or `pkgs.stdenv.hostPlatform.isLinux`.
+  # So no Darwin evaluation reads any of them.
   #
   # `kdn-keepass` runs `sway` and `systemd`.
-  # Consumers: modules/universal/programs/keepassxc/default.nix:33,105 and
-  # modules/universal/profile/user/kdn/default.nix:405.
+  # Consumers: modules/universal/programs/keepassxc/default.nix and
+  # modules/universal/profile/user/kdn/default.nix.
   kdn-keepass = pkgs.callPackage ./kdn-keepass { };
 
   # `sway-vnc` runs `wayvnc` and `sway`, both Wayland programs.
