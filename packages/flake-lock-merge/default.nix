@@ -21,8 +21,7 @@ mkPythonScript {
   inherit src python;
   name = "flake-lock-merge";
   pythonModule = "flake_lock_merge.cli";
-  requirementsFileText = ''
-  '';
+  requirementsFileText = "";
   runtimeDeps = with pkgs; [
     nix
     jujutsu

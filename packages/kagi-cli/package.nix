@@ -32,11 +32,11 @@ rustPlatform.buildRustPackage (finalAttrs: {
     installShellFiles
   ];
   postInstall = ''
-     gen() { "$out/bin/${finalAttrs.meta.mainProgram}" completion generate "$@" ; }
-     installShellCompletion --cmd ${finalAttrs.meta.mainProgram} \
-       --bash <(gen bash) \
-       --fish <(gen fish) \
-       --zsh <(gen zsh)
+    gen() { "$out/bin/${finalAttrs.meta.mainProgram}" completion generate "$@" ; }
+    installShellCompletion --cmd ${finalAttrs.meta.mainProgram} \
+      --bash <(gen bash) \
+      --fish <(gen fish) \
+      --zsh <(gen zsh)
   '';
 
   meta = with lib; {

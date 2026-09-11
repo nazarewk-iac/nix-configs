@@ -74,12 +74,10 @@ let
   );
 
   # defaultEnv // safeEnv // rawEnv, rendered as export statements
-  envLines = lib.pipe
-    (defaultEnv // (lib.mapAttrs (_: lib.escapeShellArg) safeEnv) // rawEnv)
-    [
-      (lib.mapAttrsToList (k: v: "export ${k}=${v}"))
-      (lib.concatStringsSep "\n")
-    ];
+  envLines = lib.pipe (defaultEnv // (lib.mapAttrs (_: lib.escapeShellArg) safeEnv) // rawEnv) [
+    (lib.mapAttrsToList (k: v: "export ${k}=${v}"))
+    (lib.concatStringsSep "\n")
+  ];
 in
 pkgs.symlinkJoin {
   name = binName;
