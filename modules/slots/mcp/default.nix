@@ -137,6 +137,15 @@ in
     kdn.mcp.programs.time.enable = lib.mkDefault true;
     kdn.mcp.programs.fetch.enable = lib.mkDefault true;
 
+    # Pin these two servers to nixpkgs' own packages. `mcp-servers-nix` reads the unversioned
+    # `typescript` attribute, which nixpkgs moved to TypeScript 7 on 2026-09-01. TypeScript 7 drops
+    # the automatic `node_modules/@types/*` include, so both builds fail with `TS2591: Cannot find
+    # name 'process'`. nixpkgs fixed its own two copies with a `postPatch` that writes
+    # `types: ["node"]`. This `pkgs` holds no `mcp-servers-nix` overlay, so the two bare names below
+    # reach the fixed packages. Both are in the binary cache, so this costs no build time.
+    kdn.mcp.programs.filesystem.package = lib.mkDefault pkgs.mcp-server-filesystem;
+    kdn.mcp.programs.sequential-thinking.package = lib.mkDefault pkgs.mcp-server-sequential-thinking;
+
     devenv = {
       packages = [ pkgs.mcp-gateway ];
 
@@ -144,6 +153,34 @@ in
       enterShell = ''
         ln -sfn ${gatewayConfig} "$DEVENV_ROOT/${stableConfigLink}"
       '';
+
+      # Make the inert `programs` translation visible. `mcp-servers-nix` is unreachable from this
+      # slot: `flake.mkSlots` (flake.nix) hardwires `specialArgs.inputs` to the `flake.nix` input
+      # set, and the input is declared in `devenv.yaml` only. So `mcp-servers-nix` above is null,
+      # `servers` is empty, and every enabled `kdn.mcp.programs` entry reaches no backend.
+      #
+      # This is a warning, never an assertion. An assertion would stop the evaluation of every
+      # consumer today, this repository's own devenv shell included. `modules/den/aspects/mcp.nix`
+      # warns in the same way for its own null `kdn.mcp.serversNix`.
+      #
+      # A consumer that declares no enabled program stays silent. `extraBackends` alone is a
+      # correct setup, so it must raise nothing.
+      warnings =
+        let
+          inert = lib.attrNames (
+            lib.filterAttrs (_: program: (program.enable or false) == true) cfg.programs
+          );
+        in
+        lib.optional (mcp-servers-nix == null && inert != [ ]) ''
+          kdn.mcp: the mcp-servers-nix source is missing, so ${toString (builtins.length inert)} declared backend(s) reach no gateway: ${lib.concatStringsSep ", " inert}.
+          Cause: modules/slots/mcp/default.nix reads inputs.mcp-servers-nix. flake.mkSlots in
+          flake.nix passes the flake.nix input set, and mcp-servers-nix is declared in devenv.yaml
+          only. The input is therefore null and the whole kdn.mcp.programs translation is inert.
+          Only kdn.mcp.extraBackends reaches the gateway now.
+          Fix: give this slot the mcp-servers-nix source. Add the input to flake.nix, or declare a
+          kdn.mcp.serversNix option as modules/den/aspects/mcp.nix does and pass your own source.
+          To silence this warning instead, set each name above to enable = false.
+        '';
 
       # Register only the gateway with Claude Code via stdio — not individual servers.
       # commandOverlays allows other slots to wrap the command (e.g. mcp/snoop).
