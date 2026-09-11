@@ -691,6 +691,11 @@ let
         "net-openfortivpn"
         "net-openvpn"
         "net-resolved"
+        "net-router"
+        "net-router-ddns"
+        "net-router-dhcp"
+        "net-router-dns"
+        "net-router-dns-rewrites"
         "net-tailscale"
         "nix"
         "nix-config"
@@ -2756,13 +2761,24 @@ let
   # nixpkgs then asserts `networking.hostId`. A ZFS host carries a unique id, and no aspect may
   # invent one, so the consumer owns that line. Every real host of ./../../hosts/ writes it.
   #
-  # Keep this table at one entry. A new entry means an aspect asks the consumer for data, and that
-  # needs a decision, not a table row.
+  # Keep this table small. A new entry means an aspect asks the consumer for data, and that needs a
+  # decision, not a table row.
+  #
+  # The second entry carries such a decision. `net-router-ddns` publishes the router's own public
+  # address to DNS, so it must read the two files that hold that address. Neither file has a
+  # default, because a wrong default publishes a wrong address. The DDNS updater reads each path at
+  # run time, so `/dev/null` satisfies the evaluation here.
   forceData = {
     "fs-zfs/nixos" = [ { networking.hostId = "deadbeef"; } ];
+    "net-router-ddns/nixos" = [
+      {
+        kdn.networking.router.addr.public.ipv4.path = "/dev/null";
+        kdn.networking.router.addr.public.ipv6.path = "/dev/null";
+      }
+    ];
   };
 
-  # No consumer data at all, except the one `forceData` entry above. Measured on 2026-09-11: all
+  # No consumer data at all, except the `forceData` entries above. Measured on 2026-09-11: all
   # pairs of that day force with an empty consumer. An aspect that starts to need data fails here,
   # and that is the correct direction — an external adopter meets the same failure.
   forcedPairs = lib.concatLists (

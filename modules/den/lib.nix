@@ -123,6 +123,11 @@ let
     net-openfortivpn = ./aspects/net-openfortivpn.nix;
     net-openvpn = ./aspects/net-openvpn.nix;
     net-resolved = ./aspects/net-resolved.nix;
+    net-router = ./aspects/net-router.nix;
+    net-router-ddns = ./aspects/net-router.nix;
+    net-router-dhcp = ./aspects/net-router.nix;
+    net-router-dns = ./aspects/net-router.nix;
+    net-router-dns-rewrites = ./aspects/net-router.nix;
     net-tailscale = ./aspects/net-tailscale.nix;
     nix = ./aspects/nix.nix;
     nix-config = ./aspects/nix-config.nix;
