@@ -15,7 +15,9 @@ let
   lightctl = "${lib.getExe' pkgs.avizo "lightctl"} -d";
 in
 {
-  config = kdnConfig.util.ifHM (
+  # `ifHM` passes on a darwin parent too, and `kdn.desktop.sway.keys` gets a value only in a
+  # NixOS context. Match the sibling `default.nix` and require a NixOS parent.
+  config = lib.optionalAttrs (kdnConfig.util.hasParentOfAnyType [ "nixos" ]) (
     lib.mkIf cfg.enable {
       services.avizo.enable = true;
       services.avizo.settings = { };
