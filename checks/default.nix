@@ -44,6 +44,10 @@ let
   # runs, plus the semi-automated runner. See den-mvp/tests.nix.
   denTests = import ./den-mvp/tests.nix { inherit pkgs lib inputs; };
 
+  # The standalone rule gate. It reads the slot sources and the aspect option trees, so it builds
+  # no system and it needs no builder for another platform. See standalone.nix.
+  standaloneTests = import ./standalone.nix { inherit pkgs lib inputs; };
+
   # The real fork slot artifacts: the config TOML the tests read through
   # JJ_FORK_CONFIG_TOML, and the pre-push script they read through
   # KDN_JJ_PRE_PUSH_SH. inputs.self is the nix-configs flake.
@@ -56,6 +60,7 @@ let
   };
 in
 denTests.checks
+// standaloneTests.checks
 // {
   # Minimal "hello world" check: proves the `checks.<system>` plumbing evaluates and
   # builds end-to-end (flake.nix mkSubmodule wiring + checks/default.nix), independent
