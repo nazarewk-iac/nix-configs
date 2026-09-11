@@ -319,6 +319,11 @@ let
         devenv-linux = 1;
         host-darwin = 1;
         host-nixos = 1;
+
+        # `hosts-den/orr/` is a real den host, so `den.policies.host-to-devenv` derives a shell for
+        # it too. That host includes no aspect with a `devenv` target, so its shell holds no
+        # `devenv` package. Measured on 2026-09-11.
+        orr = 0;
       };
       actual = lib.mapAttrs (_: shell: devenvCount shell.packages) flake.denDevenvShells;
     }
@@ -615,6 +620,8 @@ let
         "mcp-pretty-print"
         "mcp-snoop"
         "nix"
+        "nix-config"
+        "nix-remote-builder"
         "opencode"
         "rosetta-builder"
         "signing"
@@ -2733,6 +2740,182 @@ let
     }
   ];
 
+  # ------------------------------------------------------------------ batch 1: the root options
+  #
+  # The two aspects of the machine-layer batch 1, in the bare adopter shape. A host probe cannot
+  # reach the priority ladder, so these assertions use `bareDarwinSystem`: a plain nix-darwin
+  # evaluation, no den entity, no `mkSlots` and no `kdnConfig`.
+  #
+  # Two of them are the traps the design named. Trap 1: a plain list **replaces** the whole option
+  # default, so an adopter can remove an entry. Trap 2: a plain `null` removes the `build-dir` key,
+  # which `lib.mkOptionDefault` could not do — an option's own `default` is a priority-1500
+  # definition, so it ties.
+  nixConfigAssertions =
+    let
+      both = denLib.imports {
+        class = "darwin";
+        aspects = [
+          "nix-config"
+          "nix-remote-builder"
+        ];
+      };
+
+      # A consumer that writes nothing. It must keep this tree's own value.
+      plain = (bareDarwinSystem both).config;
+
+      # A consumer that neutralises the build directory and replaces the insecure list.
+      overridden =
+        (bareDarwinSystem (
+          both
+          ++ [
+            {
+              kdn.nix.buildDir = null;
+              kdn.nixpkgs.permittedInsecurePackages = [ "x" ];
+            }
+          ]
+        )).config;
+
+      # A consumer that renames the builder account and moves its uid. Every one of these five
+      # leaves was `readOnly` in `modules/universal/nix/remote-builder/default.nix`, so none of
+      # these assignments was possible before the port.
+      renamed =
+        (bareDarwinSystem (
+          both
+          ++ [
+            {
+              kdn.nix.remote-builder.name = "adopter-builder";
+              kdn.nix.remote-builder.user.id = 31000;
+              kdn.nix.remote-builder.user.ssh.IdentityFile = "/var/lib/secrets/builder.key";
+            }
+          ]
+        )).config;
+    in
+    [
+      # ---- `kdn.hostName`, from ../../modules/den/common/host-name.nix
+      {
+        name = "a bare darwin consumer that sets no networking.hostName gets an empty kdn.hostName";
+        expected = "";
+        actual = plain.kdn.hostName;
+      }
+
+      # ---- the nine `nix-config` options, at their own defaults
+      {
+        name = "the default writes the three substituters, each with its own key";
+        expected = {
+          urls = [
+            "https://nix-community.cachix.org"
+            "https://nixpkgs-update.cachix.org"
+            "https://devenv.cachix.org"
+          ];
+          keyCount = 3;
+        };
+        actual = {
+          urls = map (entry: entry.url) plain.kdn.nix.substituters;
+          keyCount = builtins.length (map (entry: entry.publicKey) plain.kdn.nix.substituters);
+        };
+      }
+      {
+        name = "the default writes both admin groups and both allowed groups";
+        expected = [
+          "@wheel"
+          "@admin"
+          "@users"
+          "@staff"
+        ];
+        actual = plain.nix.settings.allowed-users;
+      }
+      {
+        name = "the default trusts the two admin groups";
+        expected = true;
+        actual = lib.all (group: builtins.elem group plain.nix.settings.trusted-users) [
+          "@wheel"
+          "@admin"
+        ];
+      }
+      {
+        name = "the default writes the build directory";
+        expected = "/nix/var/nix/builds";
+        actual = plain.nix.settings.build-dir;
+      }
+      {
+        name = "the default writes both !include lines and nothing else";
+        expected = "!include /etc/nix/nix.sensitive.conf\n!include /etc/nix/nix.access-tokens.auto.conf\n";
+        actual = plain.nix.extraOptions;
+      }
+      {
+        name = "the default accepts the four insecure packages this tree needs";
+        expected = 4;
+        actual = builtins.length plain.nixpkgs.config.permittedInsecurePackages;
+      }
+      {
+        name = "the default accepts an unfree licence and keeps the nixpkgs aliases";
+        expected = {
+          allowUnfree = true;
+          allowAliases = true;
+        };
+        actual = {
+          inherit (plain.nixpkgs.config) allowUnfree allowAliases;
+        };
+      }
+
+      # ---- trap 1 and trap 2, the priority ladder
+      {
+        name = "trap 1: a plain list replaces the whole insecure-package default";
+        expected = [ "x" ];
+        actual = overridden.nixpkgs.config.permittedInsecurePackages;
+      }
+      {
+        name = "trap 2: a plain null removes the build-dir key";
+        expected = false;
+        actual = overridden.nix.settings ? build-dir;
+      }
+
+      # ---- the 18 `nix-remote-builder` leaves
+      {
+        name = "the builder defaults keep this tree's own account, group and uid";
+        expected = {
+          name = "kdn-nix-remote-build";
+          userName = "kdn-nix-remote-build";
+          groupName = "kdn-nix-remote-build";
+          userId = 25839;
+          groupId = 25839;
+          use = false;
+          localhostUse = false;
+        };
+        actual = {
+          inherit (plain.kdn.nix.remote-builder) name use;
+          userName = plain.kdn.nix.remote-builder.user.name;
+          groupName = plain.kdn.nix.remote-builder.group.name;
+          userId = plain.kdn.nix.remote-builder.user.id;
+          groupId = plain.kdn.nix.remote-builder.group.id;
+          localhostUse = plain.kdn.nix.remote-builder.localhost.use;
+        };
+      }
+      {
+        name = "the five dropped readOnly flags let an adopter rename the builder account";
+        expected = {
+          name = "adopter-builder";
+          userName = "adopter-builder";
+          groupName = "adopter-builder";
+          localhostSshUser = "adopter-builder";
+          groupId = 31000;
+          use = true;
+        };
+        actual = {
+          inherit (renamed.kdn.nix.remote-builder) name use;
+          userName = renamed.kdn.nix.remote-builder.user.name;
+          groupName = renamed.kdn.nix.remote-builder.group.name;
+          localhostSshUser = renamed.kdn.nix.remote-builder.localhost.sshUser;
+          groupId = renamed.kdn.nix.remote-builder.group.id;
+        };
+      }
+      {
+        name = "the aspect emits no config of its own, so `localhost.use` stays off with no host key";
+        expected = false;
+        actual = renamed.kdn.nix.remote-builder.localhost.use;
+      }
+    ];
+
   # ------------------------------------------------------------------ coverage tripwire
 
   # The `llm` family reached the registry, passed "the registry holds every ported aspect", and still
@@ -2764,6 +2947,8 @@ let
     mcp-pretty-print = "devenv";
     mcp-snoop = "devenv";
     nix = "devenv, defaultsShell";
+    nix-config = "host-darwin, orr";
+    nix-remote-builder = "host-darwin, orr";
     opencode = "devenv, defaultsShell";
     rosetta-builder = "host-darwin";
     signing = "users/dev, home";
@@ -2796,6 +2981,7 @@ let
     den-eval-opencode = mkEvalCheck "opencode" opencodeAssertions;
     den-eval-mcp = mkEvalCheck "mcp" mcpAssertions;
     den-eval-nix = mkEvalCheck "nix" nixAssertions;
+    den-eval-nix-config = mkEvalCheck "nix-config" nixConfigAssertions;
     den-eval-jj = mkEvalCheck "jj" jjAssertions;
     den-eval-llm = mkEvalCheck "llm" llmAssertions;
     den-eval-signing = mkEvalCheck "signing" signingAssertions;

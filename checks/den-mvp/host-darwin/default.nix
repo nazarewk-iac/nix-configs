@@ -43,6 +43,12 @@
     # placeholders below are the whole set. ../tests.nix asserts each list exactly, and that
     # equality proves the aspect adds nothing of its own.
     kdn.homebrew
+
+    # The two aspects of batch 1. They give this host the `darwin` class subject for both: the
+    # `nix.conf` opinion, and the 18 remote-builder declarations. `hosts-den/orr/` is the `nixos`
+    # class subject for the same pair.
+    kdn.nix-config
+    kdn.nix-remote-builder
   ];
 
   # The `devenv` half of this host aspect. `den.policies.host-to-devenv` derives one shell from the
@@ -58,6 +64,14 @@
 
     # nix-darwin asserts this value. `7` is what it names for a new installation on 2026-09-10.
     system.stateVersion = 7;
+
+    # The one restore of this batch. `kdn.nix-config` imports `../common/host-name.nix`, and that
+    # option defaults to `networking.hostName`. nix-darwin types that option `nullOr (strMatching …)`
+    # and defaults it to **null**, so `kdn.hostName` would be the empty string on this host. The
+    # NixOS side needs no such line: ../host-nixos/default.nix already sets it.
+    # Measured on 2026-09-11: without this line `kdn.hostName` is ""; with it the value is
+    # "host-darwin".
+    networking.hostName = "host-darwin";
 
     # The Homebrew placeholders. Each name is fictional, so no activation ever finds it.
     kdn.homebrew.taps = [ "example-org/example-tap" ];
