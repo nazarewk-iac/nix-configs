@@ -1,7 +1,7 @@
 ---
 type: How-To
 description: How an external adopter consumes this repository's modules/slots tree in their own repo.
-timestamp: 2026-09-10T07:20:00+02:00
+timestamp: 2026-09-11T06:43:55+02:00
 authored_by: agent
 ---
 
@@ -17,27 +17,27 @@ rule that keeps a slot independent. This page does not repeat either of them.
 
 A copy-ready starting point is in [templates/adopter/](../templates/adopter/README.md).
 
-> **Draft state.** Every fact below is verified against the tree at the timestamp above. One item
-> is marked `TODO(verify)`, and you must not trust that item until somebody clears it.
+> **Draft state.** Every fact below is verified against the tree at the timestamp above. A line
+> reference and a default value both drift fast, so check the frontmatter date against the
+> revision you consume. One item is marked `TODO(verify)`, and you must not trust that item until
+> somebody clears it.
 
-> **This route is the interim one.** The author prefers that you consume a **den config** instead,
-> and the spike that tested it passed on 2026-09-10. One flake output resolves a den aspect into a
-> plain module on this side of the boundary, so you import a plain module and you never adopt den.
+> **Two routes exist. Read this before you pick one.**
 >
-> **Two den outputs exist today.** `denLib.imports` is the general one. Add this repository as an
-> input, then call it in the `imports` of your devenv, nix-darwin or NixOS module:
+> | Route | Real consumers in this repository | State |
+> |---|---|---|
+> | slots — this page | 5 host directories under `hosts/`, plus the root `devenv.nix` | the route the repository runs on |
+> | den aspects — [docs/den-for-adopters.md](den-for-adopters.md) | none; every den entity is a test artifact under `checks/den-mvp/` | evaluated, never activated |
 >
-> ```nix
-> imports = inputs.nix-configs.denLib.imports { class = "devenv"; aspects = [ "gh" ]; };
-> ```
+> So the slot route is proven in daily use, and the den route is proven only by evaluation. The
+> den route is the newer surface, and it needs no overlay and no `mkSlots` call. The repository
+> owner has not chosen between the two —
+> [006-direction-decision](tasks/2026-09/generalization/006-direction-decision/definition.md)
+> is open. Expect this page to change when that decision lands.
 >
-> `denModules.<aspect>` is the zero-argument form for one aspect in its common class:
-> `denModules.rosetta-builder` (class `darwin`) and `denModules.gh` (class `devenv`). Either way you
-> call no `mkSlots`, you need no overlay, and you write no den code.
->
-> **Two aspects are ported so far.** Use `mkSlots` below for the other 16 slots. See
-> [modules/den/README.md](../modules/den/README.md) and
-> [004-den-spike](tasks/2026-09/generalization/004-den-spike/definition.md), phase 2.
+> **All 19 slots have a den aspect.** There are 20 aspects, because `devenv-cli` splits one slot
+> across four classes. So you can reach every slot through either route. See
+> [modules/den/README.md](../modules/den/README.md).
 
 ## What a slot is
 
@@ -48,17 +48,18 @@ plus plain nixpkgs options. A slot never reads an option that `modules/universal
 declares. That rule is what makes a slot safe for you to adopt — those two trees hold the author's
 personal data and they will be rewritten.
 
-There are **18** slots today:
+There are **19** slots today. Count them with `find modules/slots -name default.nix`: that returns
+20 files, and `modules/slots/default.nix` is the recursive loader, not a slot.
 
 | Slot | Slot | Slot |
 |---|---|---|
 | `ca` | `llm/proxy` | `nix` |
 | `devenv` | `mcp` | `opencode` |
 | `gh` | `mcp/basic-memory` | `rosetta-builder` |
-| `jj` | `mcp/pretty-print` | `ssh-access` |
-| `jj/fork` | `mcp/snoop` | `ssh-agent` |
-| `llm` | | `zellij` |
-| `llm/client` | | |
+| `jj` | `mcp/pretty-print` | `signing` |
+| `jj/fork` | `mcp/snoop` | `ssh-access` |
+| `llm` | | `ssh-agent` |
+| `llm/client` | | `zellij` |
 
 ## The five targets
 
@@ -75,9 +76,9 @@ There are **18** slots today:
 
 ## The API: call `mkSlots`
 
-The supported entry point is the flake output `inputs.nix-configs.mkSlots` (`flake.nix:284`). Do
+The supported entry point is the flake output `inputs.nix-configs.mkSlots` (`flake.nix:298`). Do
 not look for plain NixOS or nix-darwin modules. The flake exports the whole `modules/universal`
-tree as `nixosModules.default` and `darwinModules.default` (`flake.nix:283,327`), it exports no
+tree as `nixosModules.default` and `darwinModules.default` (`flake.nix:297,341`), it exports no
 per-slot plain module, and it exports no `homeModules` at all.
 
 `mkSlots` takes **one** attrset. It removes `pkgs` and treats everything that is left as a module,
@@ -125,8 +126,8 @@ inputs:
     (inputs.nix-configs.mkSlots {
       inherit pkgs;
       kdn.zellij.enable = true;          # one small slot as a worked example
-      kdn.mcp.snoop.enable = false;      # both of these default to TRUE
-      kdn.mcp.pretty-print.enable = false;
+      # `kdn.mcp.snoop.enable` and `kdn.mcp.pretty-print.enable` both default to false, so this
+      # example needs no line for either. Set one to true only when you want that child.
     }).config.devenv
   ];
 
@@ -174,21 +175,27 @@ A single option controls all of it: `kdn.isSourceRepo` (`modules/slots/default.n
 `false` by default, and `false` means "install the agent files". Set it `true` only inside this
 repository itself. So an adopter gets these files unless the adopter disables the slot.
 
-### Two slots turn themselves on
+### Every slot stays off until you enable it
 
-`kdn.mcp.snoop` and `kdn.mcp.pretty-print` both declare `default = true`. This breaks the
-repository's own rule that a module is side-effect free until you enable it. Set them to `false`
-explicitly when you do not want them.
+Each slot declares `enable` with `lib.mkEnableOption`, so each one defaults to `false`. That
+includes `kdn.mcp.snoop` and `kdn.mcp.pretty-print`, which an earlier version of this page named
+as exceptions. They are not exceptions any more. You write no line to keep a slot off.
 
-### Personal defaults you will want to override
+### Personal defaults: three that are already neutral
 
-| Option | Default | Why it matters |
+An earlier version of this page named three personal defaults. All three are gone. Measured on
+2026-09-11:
+
+| Option | Default today | Note |
 |---|---|---|
-| `kdn.jj.upstream.remote` | `"kdn"` | the author's remote name, not yours |
-| `kdn.jj.alwaysBlockedMessagePatterns` | `[ "scratchpad" ]` | the author's own convention |
-| `kdn.opencode` provider | `requesty` is hardwired | a commercial provider you may not use |
+| `kdn.jj.upstream.remote` | `"origin"` | `modules/slots/jj/default.nix:51`; the git default |
+| `kdn.jj.alwaysBlockedMessagePatterns` | `[ ]` | `modules/slots/jj/default.nix:44`; a pattern belongs to one repository |
+| `kdn.opencode.settings` | `{ }` | `modules/slots/opencode/default.nix:135`; the slot names no provider |
 
-Checkpoint 007 lifts these out of the shared options. Until then, override them yourself.
+This repository sets its own values in its own `devenv.nix`, not in the slot. So you inherit
+nothing personal from these three. Other slots may still carry a personal default;
+[007-depersonalize-slots](tasks/2026-09/generalization/007-depersonalize-slots/definition.md)
+tracks the rest.
 
 ## The jj pre-push guard: what it does and does not protect
 
