@@ -96,7 +96,7 @@ An unknown aspect name fails at once, when you build the list, and it prints eve
 
 ```
 error: den: no aspect named `hg`.
-Known aspects: ca, devenv-cli, gh, homebrew, jj, jj-fork, llm, llm-client, llm-proxy, mcp, …
+Known aspects: ca, devenv-cli, gh, homebrew, homebrew-nix-managed, jj, jj-fork, llm, llm-client, …
 ```
 
 ## Minimal examples that work
@@ -337,7 +337,7 @@ itself.
 | devenv, CLI | `devenv build shell` | 0 |
 | devenv, no CLI | `nix eval --no-eval-cache --raw '.#packages.aarch64-darwin.shell.drvPath'` | 0 |
 
-Four more evaluations cover **every** aspect in **every** class it emits — 25 aspect-class pairs
+Four more evaluations cover **every** aspect in **every** class it emits — 26 aspect-class pairs
 across 21 aspects. All four exit 0:
 
 | Class | Aspects in one evaluation |
@@ -377,9 +377,11 @@ Verify the list yourself:
 
 ```bash
 nix eval --no-eval-cache --json '<flakeref>#denLib.aspectModules' --apply builtins.attrNames   # 21
-nix eval --no-eval-cache --json '<flakeref>#denModules'          --apply builtins.attrNames   # 17
+nix eval --no-eval-cache --json '<flakeref>#denModules'          --apply builtins.attrNames   # 43
+# `denModules` holds 43 keys: 17 zero-argument `<aspect>` names, plus 26 `<aspect>-<class>` pairs.
 # `denful.kdn` returns 23 names, not 21: the 21 aspects plus the structural keys `schema` and
-# `classes`. `modules/den/lib.nix:190` records that neither key is an aspect.
+# `classes`. `modules/den/lib.nix:165` declares `aspectStructuralKeys`, and neither key is an
+# aspect.
 ```
 
 ### The option prefix does not always match the aspect name
@@ -451,20 +453,23 @@ the same option.
 
 ## Caveats
 
-Ten items. Each one is measured.
+Eleven items. Each one is measured.
 
-### 1. Three aspects have no `denModules` entry
+### 1. Four aspects have no zero-argument `denModules` entry
 
 `denModules.<aspect>` names exactly one class per aspect, so it cannot carry a multi-class aspect.
+Three of the four are multi-class. The fourth, `homebrew-nix-managed`, emits one class only, and
+`flake-module.nix` registers no zero-argument name for it. Use the pair form for all four.
 
 | Aspect | Classes | Reach it with |
 |---|---|---|
 | `devenv-cli` | 4 | `denLib.imports { class = "<one of the four>"; aspects = [ "devenv-cli" ]; }` |
 | `llm-proxy` | 2 | `denLib.imports { class = "nixos"; … }` or `class = "devenv"` |
 | `ssh-access` | 2 | `denLib.imports { class = "homeManager"; … }` or `class = "devenv"` |
+| `homebrew-nix-managed` | 1 | `denModules.homebrew-nix-managed-darwin`, or `denLib.imports { class = "darwin"; … }` |
 
-`denLib.aspectModules` holds 20 names. `denModules` holds 17. Verified against
-`modules/den/flake-module.nix`, which states the reason in a comment.
+`denLib.aspectModules` holds 21 names. `denModules` holds 43: 17 zero-argument names plus 26
+pairs. `modules/den/flake-module.nix` states the multi-class reason in a comment.
 
 ### 2. devenv needs an explicit `git-hooks` input
 
@@ -520,7 +525,7 @@ describes the current tree, not the pin. Pick a revision at or after `85cc3df9`.
 `modules/universal/` is not for you in any case. It holds the author's personal data, and it will
 be rewritten.
 
-### 6. Cost: 103 lock nodes, and a large first fetch
+### 6. Cost: 108 lock nodes, and a large first fetch
 
 See the [Cost](#cost) section below.
 
@@ -582,11 +587,56 @@ These three aspects change the machine at the first activation:
   so no package of yours is deleted. **Fix:** set `homebrew.enable = false;` to keep the option
   list and drop the activation.
 - `llm` sets `services.llama-cpp.enable = true` with no guard
-  (`modules/den/aspects/llm.nix:875`), so a router starts with no model.
+  (`modules/den/aspects/llm.nix:873`), so a router starts with no model.
   **Fix:** set `services.llama-cpp.enable = lib.mkForce false;`, or remove the import.
-- `rosetta-builder` sets `nix-rosetta-builder.enable = true`
-  (`modules/den/aspects/rosetta-builder.nix:29`), which builds a Linux VM.
-  **Fix:** remove the import.
+- `rosetta-builder` sets `nix-rosetta-builder.enable = lib.mkDefault true`
+  (`modules/den/aspects/rosetta-builder.nix:143`), which builds a Linux VM.
+  **Fix:** set `nix-rosetta-builder.enable = false;` — a plain value beats `lib.mkDefault`, so you
+  need no `lib.mkForce`. Or remove the import.
+
+### 11. `rosetta-builder` needs two switches, and it cannot build `i686-linux`
+
+Added on 2026-09-11, after the verification run that § "Cost" records. Each item below is measured
+on its own.
+
+**You cannot get this builder in one `darwin-rebuild switch`.** `nix-rosetta-builder` builds its
+own Lima guest image, and that image is a Linux closure. Nix builds a whole closure **before** it
+activates the generation, so a stock `nix.linux-builder` that the *same* generation turns on is
+not running yet. Upstream states the same dance (`nix-rosetta-builder/README.md`). Run three
+switches:
+
+| Switch | Your configuration | What it gives you |
+|---|---|---|
+| 1 | `nix.linux-builder.enable = true;`, and **no** `denModules.rosetta-builder` import | A stock `aarch64-linux` builder. Keep it uncustomized, so it comes from the binary cache. |
+| 2 | Keep `nix.linux-builder.enable = true;`, and add the `denModules.rosetta-builder` import | Switch 1's builder builds the Rosetta guest image. Both builders then run. |
+| 3 | Drop `nix.linux-builder.enable`, keep the import | The Rosetta guest alone. |
+
+Switch 3 is optional. The two builders coexist with no conflict: upstream picks ssh port `31122`
+because `nix.linux-builder` uses `31022`, the two `nix.buildMachines` host names differ
+(`rosetta-builder` against `linux-builder`), and `nix.buildMachines` is a list, so the two entries
+concatenate. The aspect declares no option for the phases, so you edit your own configuration
+between the switches.
+
+**The guest cannot build `i686-linux`.** Rosetta for Linux is x86_64-only, and its `binfmt`
+handler registers only the x86_64 ELF magic. The aarch64 guest kernel cannot run 32-bit x86. So
+any 32-bit derivation fails:
+
+```
+error: a 'i686-linux' with features {} is required to build '…-brgenml1lpr-3.1.0-1.drv',
+but I am a 'aarch64-darwin' …
+```
+
+Adding `i686-linux` to `nix.buildMachines[].systems` only moves the failure from schedule time to
+build time. A `qemu-user` handler inside the guest image is the one known route, and it is
+untested here. Full analysis:
+[docs/tasks/2026-08/rosetta-builder-i686-linux/definition.md](tasks/2026-08/rosetta-builder-i686-linux/definition.md).
+
+**What the aspect does not give you.** It gives you `aarch64-linux` and `x86_64-linux` build
+capacity, and nothing else. For a multi-arch container image you supply your own image-index
+tooling, your own registry credentials and your own `nix2container` input — see
+[docs/multi-arch-container-builder.md](multi-arch-container-builder.md). You need no `binfmt` on
+the host and no `extra-platforms`, because the guest's `nix.buildMachines` entry already carries
+both systems.
 
 ### A tool defect, not a repository defect
 

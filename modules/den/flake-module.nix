@@ -191,7 +191,7 @@ in
   # which states the class.
   #
   # The `denModules.<aspect>-<class>` naming convention now exists, and the `imports` block at the
-  # top of this file publishes all 25 valid pairs. So `denModules.llm-proxy-devenv`,
+  # top of this file publishes all 26 valid pairs. So `denModules.llm-proxy-devenv`,
   # `denModules.llm-proxy-nixos`, `denModules.devenv-cli-<class>` and
   # `denModules.ssh-access-<class>` all reach a caller. The zero-argument names below stay, because
   # they are shorter and they carry the common class of each aspect.
