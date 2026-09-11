@@ -605,6 +605,7 @@ let
     {
       name = "the registry holds every ported aspect";
       expected = [
+        "apps"
         "ca"
         "devenv-cli"
         "gh"
@@ -615,6 +616,7 @@ let
         "llm"
         "llm-client"
         "llm-proxy"
+        "locale"
         "mcp"
         "mcp-basic-memory"
         "mcp-pretty-print"
@@ -624,6 +626,7 @@ let
         "nix-remote-builder"
         "opencode"
         "rosetta-builder"
+        "secrets"
         "signing"
         "ssh-access"
         "ssh-agent"
@@ -2674,9 +2677,12 @@ let
   # A standalone home-manager harness, in the same bare-consumer shape as `bareNixos`,
   # `bareDarwin` and `bareShell`. It repeats the three lines ./home/default.nix needs, and it
   # names no real user.
-  bareHome =
+  # `bareHomeConfiguration` returns the whole evaluation, so an assertion reads a config value.
+  # `bareHome` returns the `drvPath` alone, which `forceOf.homeManager` needs. The split mirrors the
+  # `bareDarwinSystem` and `bareDarwin` pair above.
+  bareHomeConfiguration =
     modules:
-    (inputs.home-manager.lib.homeManagerConfiguration {
+    inputs.home-manager.lib.homeManagerConfiguration {
       pkgs = import inputs.nixpkgs { system = "aarch64-darwin"; };
       modules = modules ++ [
         {
@@ -2685,7 +2691,9 @@ let
           home.stateVersion = "26.11";
         }
       ];
-    }).activationPackage.drvPath;
+    };
+
+  bareHome = modules: (bareHomeConfiguration modules).activationPackage.drvPath;
 
   # One force per class. Each one returns a `drvPath`, so the evaluation runs the whole target
   # module body.
@@ -2916,6 +2924,295 @@ let
       }
     ];
 
+  # ------------------------------------------------------------------ batch 2: apps, locale, secrets
+  #
+  # The three aspects of the machine-layer batch 2, in the bare adopter shape. `apps` claims the
+  # `homeManager` class alone, so the home subject carries it. `locale` and `secrets` claim three
+  # classes each, so the nixos subject and the darwin subject carry both.
+  #
+  # Two of these assertions are the traps the design named. Trap 1: a plain list **replaces** the
+  # whole `kdn.locale.extra` default, so an adopter can remove an entry. Trap 2: the Home Manager
+  # `force` writes sit under one `lib.mkIf`, never one per leaf. A per-leaf `mkIf` still creates the
+  # `xdg.configFile."user-dirs.dirs"` entry, and Home Manager then asserts that the entry names no
+  # source. The `userDirsFiles` row is that guard.
+  batch2Assertions =
+    let
+      hostAspects = [
+        "locale"
+        "secrets"
+      ];
+
+      nixosModules = denLib.imports {
+        class = "nixos";
+        aspects = hostAspects;
+      };
+
+      nixosPlain = (bareNixos nixosModules).config;
+
+      darwinPlain =
+        (bareDarwinSystem (
+          denLib.imports {
+            class = "darwin";
+            aspects = hostAspects;
+          }
+        )).config;
+
+      homeModules = denLib.imports {
+        class = "homeManager";
+        aspects = [ "apps" ] ++ hostAspects;
+      };
+
+      # A user that names no application at all.
+      homePlain = (bareHomeConfiguration homeModules).config;
+
+      # A user that names two applications. `jq` installs no package, so it proves the switch.
+      homeApps =
+        (bareHomeConfiguration (
+          homeModules
+          ++ [
+            {
+              kdn.apps.hello.enable = true;
+              kdn.apps.hello.dirs.config = [ "hello" ];
+              kdn.apps.hello.dirs.disposable = [ "/tmp-hello" ];
+              kdn.apps.hello.files.state = [ "hello/last-run" ];
+              kdn.apps.jq.enable = true;
+              kdn.apps.jq.package.install = false;
+            }
+          ]
+        )).config;
+
+      # The adopter override path. The primary locale stays in the replacement list, because the
+      # nixpkgs `i18n` module warns when `supportedLocales` drops the default locale.
+      overridden =
+        (bareNixos (
+          nixosModules
+          ++ [
+            {
+              kdn.locale.timezone = "Europe/Warsaw";
+              kdn.locale.extra = [
+                "pl_PL.UTF-8/UTF-8"
+                "en_GB.UTF-8/UTF-8"
+              ];
+              kdn.security.secrets.allow = false;
+            }
+          ]
+        )).config;
+
+      appNames =
+        packages:
+        map lib.getName (
+          lib.filter (
+            p:
+            lib.elem (lib.getName p) [
+              "hello"
+              "jq"
+            ]
+          ) packages
+        );
+    in
+    [
+      # ---- `locale`, nixos class
+      {
+        name = "a bare nixos consumer gets the whole i18n opinion of the aspect";
+        expected = {
+          defaultLocale = "en_GB.UTF-8";
+          supportedLocales = [
+            "C.UTF-8/UTF-8"
+            "en_US.UTF-8/UTF-8"
+            "en_GB.UTF-8/UTF-8"
+          ];
+          extraLocaleSettings = {
+            LANGUAGE = "en_GB.UTF-8";
+            LC_ALL = "en_GB.UTF-8";
+            LC_TIME = "en_GB.UTF-8";
+          };
+          timeZone = "Etc/UTC";
+        };
+        actual = {
+          inherit (nixosPlain.i18n) defaultLocale supportedLocales extraLocaleSettings;
+          timeZone = nixosPlain.time.timeZone;
+        };
+      }
+
+      # ---- `locale`, darwin class
+      {
+        name = "a bare darwin consumer gets the cask language list and the four login variables";
+        expected = {
+          caskLanguage = "en-GB,en-US,en";
+          timeZone = "Etc/UTC";
+          LANG = "en_GB.UTF-8";
+          LANGUAGE = "en_GB.UTF-8";
+          LC_ALL = "en_GB.UTF-8";
+          LC_TIME = "en_GB.UTF-8";
+        };
+        actual = {
+          caskLanguage = darwinPlain.homebrew.caskArgs.language;
+          timeZone = darwinPlain.time.timeZone;
+          inherit (darwinPlain.environment.variables)
+            LANG
+            LANGUAGE
+            LC_ALL
+            LC_TIME
+            ;
+        };
+      }
+
+      # ---- `locale`, homeManager class
+      {
+        name = "a bare home consumer gets TZ and the four locale variables in its session";
+        expected = {
+          TZ = "Etc/UTC";
+          LANG = "en_GB.UTF-8";
+          LANGUAGE = "en_GB.UTF-8";
+          LC_ALL = "en_GB.UTF-8";
+          LC_TIME = "en_GB.UTF-8";
+        };
+        actual = {
+          inherit (homePlain.home.sessionVariables)
+            TZ
+            LANG
+            LANGUAGE
+            LC_ALL
+            LC_TIME
+            ;
+        };
+      }
+      {
+        name = "the three force writes sit under one mkIf, so no empty user-dirs.dirs entry appears";
+        expected = [
+          "locale.conf"
+          "user-dirs.locale"
+        ];
+        actual = builtins.attrNames homePlain.xdg.configFile;
+      }
+
+      # ---- `secrets`, three classes
+      {
+        name = "secrets are allowed by default on every class, because allowed now tracks allow alone";
+        expected = {
+          nixos = true;
+          darwin = true;
+          home = true;
+        };
+        actual = {
+          nixos = nixosPlain.kdn.security.secrets.allowed;
+          darwin = darwinPlain.kdn.security.secrets.allowed;
+          home = homePlain.kdn.security.secrets.allowed;
+        };
+      }
+      {
+        name = "the nixos class declares the two ordering targets, and the first upholds the second";
+        expected = {
+          description = "kdn's secrets loaded for the first time";
+          upholds = [ "kdn-secrets-reload.target" ];
+          reloadPartOf = [ "kdn-secrets.target" ];
+        };
+        actual = {
+          inherit (nixosPlain.systemd.targets.kdn-secrets) description upholds;
+          reloadPartOf = nixosPlain.systemd.targets.kdn-secrets-reload.partOf;
+        };
+      }
+
+      # ---- `apps`, homeManager class
+      {
+        name = "a user that names no application installs no application and keeps no path";
+        expected = {
+          packages = [ ];
+          directories = {
+            "disposable" = [ ];
+            "usr/cache" = [ ];
+            "usr/config" = [ ];
+            "usr/data" = [ ];
+            "usr/reproducible" = [ ];
+            "usr/state" = [ ];
+          };
+          files = {
+            "disposable" = [ ];
+            "usr/cache" = [ ];
+            "usr/config" = [ ];
+            "usr/data" = [ ];
+            "usr/reproducible" = [ ];
+            "usr/state" = [ ];
+          };
+        };
+        actual = {
+          packages = appNames homePlain.home.packages;
+          inherit (homePlain.kdn.apps-persist) directories files;
+        };
+      }
+      {
+        name = "package.install = false keeps the entry and installs nothing";
+        expected = [ "hello" ];
+        actual = appNames homeApps.home.packages;
+      }
+      {
+        name = "an enabled application lands in the right persistence bucket, with the prefix applied";
+        expected = {
+          directories = {
+            "disposable" = [ "tmp-hello" ];
+            "usr/cache" = [ ];
+            "usr/config" = [ ".config/hello" ];
+            "usr/data" = [ ];
+            "usr/reproducible" = [ ];
+            "usr/state" = [ ];
+          };
+          files = {
+            "disposable" = [ ];
+            "usr/cache" = [ ];
+            "usr/config" = [ ];
+            "usr/data" = [ ];
+            "usr/reproducible" = [ ];
+            "usr/state" = [ ".local/state/hello/last-run" ];
+          };
+        };
+        actual = {
+          inherit (homeApps.kdn.apps-persist) directories files;
+        };
+      }
+      {
+        name = "package.final defaults to the nixpkgs attribute the entry name gives";
+        expected = "hello";
+        actual = lib.getName homeApps.kdn.apps.hello.package.final;
+      }
+
+      # ---- the adopter override path
+      {
+        name = "a plain list definition replaces the whole supportedLocales default";
+        expected = {
+          timeZone = "Europe/Warsaw";
+          supportedLocales = [
+            "pl_PL.UTF-8/UTF-8"
+            "en_GB.UTF-8/UTF-8"
+          ];
+          secretsAllowed = false;
+        };
+        actual = {
+          timeZone = overridden.time.timeZone;
+          supportedLocales = overridden.i18n.supportedLocales;
+          secretsAllowed = overridden.kdn.security.secrets.allowed;
+        };
+      }
+
+      # ---- the forces. Each one runs the whole target module body, assertions included.
+      {
+        name = "every batch 2 subject builds, so each target module body evaluates";
+        expected = {
+          nixos = true;
+          darwin = true;
+          home = true;
+          homeApps = true;
+          overridden = true;
+        };
+        actual = {
+          nixos = builtins.isString nixosPlain.system.build.toplevel.drvPath;
+          darwin = builtins.isString darwinPlain.system.build.toplevel.drvPath;
+          home = builtins.isString homePlain.home.activationPackage.drvPath;
+          homeApps = builtins.isString homeApps.home.activationPackage.drvPath;
+          overridden = builtins.isString overridden.system.build.toplevel.drvPath;
+        };
+      }
+    ];
+
   # ------------------------------------------------------------------ coverage tripwire
 
   # The `llm` family reached the registry, passed "the registry holds every ported aspect", and still
@@ -2929,6 +3226,7 @@ let
   # mechanical guard: it forces every (aspect, class) pair straight from the registry, so it needs
   # no row here and it cannot rot.
   instantiatedBy = {
+    apps = "den-eval-batch2 (bare home, plain and with two applications)";
     ca = "host-nixos";
     devenv-cli = "host-darwin, host-nixos, users/dev, home, devenv";
     gh = "host-darwin, host-nixos, devenv";
@@ -2942,6 +3240,7 @@ let
     llm = "llmNixos";
     llm-client = "llmClientShell";
     llm-proxy = "llmProxyNixos";
+    locale = "orr, den-eval-batch2 (bare nixos, bare darwin, bare home)";
     mcp = "devenv, bareShell";
     mcp-basic-memory = "devenv, defaultsShell";
     mcp-pretty-print = "devenv";
@@ -2951,6 +3250,7 @@ let
     nix-remote-builder = "host-darwin, orr";
     opencode = "devenv, defaultsShell";
     rosetta-builder = "host-darwin";
+    secrets = "orr, den-eval-batch2 (bare nixos, bare darwin, bare home)";
     signing = "users/dev, home";
     ssh-access = "users/dev, home, devenv";
     ssh-agent = "users/dev, home";
@@ -2991,6 +3291,7 @@ let
     den-eval-frozen-paths = mkEvalCheck "frozen-paths" frozenPathAssertions;
     den-eval-coverage = mkEvalCheck "coverage" coverageAssertions;
     den-eval-instantiate = mkEvalCheck "instantiate" instantiateAssertions;
+    den-eval-batch2 = mkEvalCheck "batch2" batch2Assertions;
   };
 
   # Tier 2 and tier 3 build a real artifact, so each one needs a builder for its own platform. The
