@@ -49,7 +49,7 @@ in
     ++ crossCutting
     ++ byPrefix "universal-eval-"
   );
-  # 32.2 s. One assertion set per den aspect: every `den-eval-*` that is neither cross-cutting nor
+  # 47.0 s. One assertion set per den aspect: every `den-eval-*` that is neither cross-cutting nor
   # slow. A new aspect check joins by itself.
   bundle-den = mkBundle "den" (lib.subtractLists (crossCutting ++ slow) (byPrefix "den-eval-"));
   # 18.0 s. The two package test suites that finish in seconds.

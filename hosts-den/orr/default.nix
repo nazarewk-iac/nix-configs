@@ -31,6 +31,8 @@
   den.hosts.aarch64-linux.orr.class = "nixos";
 
   den.aspects.orr.includes = [
+    kdn.hw-usbip
+    kdn.hw-yubikey
     kdn.locale
     kdn.nix-config
     kdn.nix-remote-builder
