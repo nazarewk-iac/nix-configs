@@ -32,6 +32,7 @@ read the full doc when you need detail.
 | [docs/den-for-adopters.md](docs/den-for-adopters.md) | den aspects for an external adopter: the 21 aspects, four worked examples, the priority rule, 10 caveats, the lock cost |
 | [docs/slots-for-adopters.md](docs/slots-for-adopters.md) | The older `modules/slots` route for an external adopter: `mkSlots`, the packages overlay, what a slot writes into your repo |
 | [docs/den-universal-mapping.md](docs/den-universal-mapping.md) | One row per `modules/universal` module: the `kdn.*` prefix it declares, its `modules/den/aspects` counterpart, and a port status. Plus the reverse list, the known gaps, and the commands that refresh every count. |
+| [docs/tasks/2026-09/eval-performance/research.md](docs/tasks/2026-09/eval-performance/research.md) | Evaluation-time profiling: Lix has no eval profiler, a CppNix client against the Lix daemon does. One real flamegraph of host `anji`, the top cost centres, and the protocol for a fair universal-versus-den comparison. |
 | [docs/flake-update.md](docs/flake-update.md) | Flake update procedure, commit structure, testing |
 | [docs/flake-update.fork.md](docs/flake-update.fork.md) | Fork-specific update workflow (merge commit, flake-lock-merge) |
 | [docs/jujutsu-vcs.md](docs/jujutsu-vcs.md) | jj patterns: working copy, split, squash, rebase, and the full `jj workspace` convention |
