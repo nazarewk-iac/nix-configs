@@ -35,14 +35,16 @@ lib.optionalAttrs
         */
 
         stylix.enable = true;
-        # required to evaluate stylix
-        stylix.image = lib.mkDefault (
-          pkgs.fetchurl {
-            # non-expiring share link
-            url = "https://nc.nazarewk.pw/s/XSR3x6AkwZAiyBo/download/13754-mushrooms-toadstools-glow-photoshop-3840x2160.jpg";
-            sha256 = "sha256-1d/kdFn8v0i1PTeOPytYNUB1TxsuBLNf4+nRgSOYQu4=";
-          }
-        );
+        /*
+          stylix needs an image to evaluate, so this module keeps a neutral fallback.
+
+          `data/stylix.nix` supplies the real wallpaper at `lib.mkDefault`, which is priority
+          1000. This definition therefore needs a weaker priority. `lib.mkOptionDefault` is
+          wrong: 1500 ties with the option's own `default`, and `stylix.image` is a `nullOr`
+          type, so the tie raises `defined both null and not null`. 1250 sits strictly between
+          1000 and 1500 and avoids both problems.
+        */
+        stylix.image = lib.mkOverride 1250 pkgs.nixos-artwork.wallpapers.simple-dark-gray.gnomeFilePath;
         stylix.polarity = lib.mkDefault "dark";
         stylix.base16Scheme = lib.mkDefault ./stylix.pallette.yaml;
 

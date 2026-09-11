@@ -77,8 +77,13 @@ in
   */
   ++ builtins.filter builtins.pathExists [
     "${self}/data/desktop-sway-kanshi.nix"
+    "${self}/data/development-nix.nix"
     "${self}/data/hw-edid.nix"
+    "${self}/data/locale.nix"
+    "${self}/data/programs-photoprism.nix"
     "${self}/data/services-printing.nix"
+    "${self}/data/services-samba.nix"
+    "${self}/data/stylix.nix"
   ];
 
   config = lib.mkMerge [
