@@ -2,7 +2,7 @@
 type: Task
 status: in-progress
 description: Checkpointed plan to make this repo's modules reusable by an external adopter without the creator's personal configuration.
-timestamp: 2026-09-08T17:30:00+02:00
+timestamp: 2026-09-11T12:00:00+02:00
 authored_by: agent
 ---
 
@@ -17,13 +17,14 @@ reads this hub plus one task file.
 
 ## Context
 
-The repo holds three module trees:
+The repo holds four module trees. Re-measured on 2026-09-11:
 
 | Tree | Files | LOC | Nature |
 |---|---|---|---|
 | `modules/meta/` | 3 | 363 | A separate `lib.evalModules` universe (`class = "kdn-meta"`). The repo evaluates it **before** NixOS/Darwin/HM, then injects it as `specialArgs.kdnConfig`. |
-| `modules/universal/` | 194 | 19,689 | Every context loads it. The `kdnConfig.util.*` guards scope it. |
-| `modules/slots/` | 19 slots + 1 loader | 3,599 | Self-contained by rule. Emits into 5 `deferredModule` targets. `find` returns 20 `default.nix` files; `modules/slots/default.nix` is the recursive loader, not a slot. |
+| `modules/universal/` | 194 | 20,370 | Every context loads it. The `kdnConfig.util.*` guards scope it. |
+| `modules/slots/` | 19 slots + 1 loader | 3,686 | Self-contained by rule. Emits into 5 `deferredModule` targets. `find` returns 20 `default.nix` files; `modules/slots/default.nix` is the recursive loader, not a slot. |
+| `modules/den/` | 26 | 5,815 | The den route: 21 aspects, a loader, the classes and the flake module. It is additive — no file of the other three trees changed. |
 
 `modules/slots/` is already close to shareable. `modules/universal/` and `modules/meta/` carry
 personal data: homelab topologies, sops files, YubiKey serials, WiFi SSIDs, real password hashes.
@@ -41,6 +42,7 @@ in anybody's nix-darwin. Then an adopter builds multi-arch containers in their o
 | Evaluator | **Lix 2.95.2.** Assume no CppNix and no Determinate Nix. |
 | Adopter API | A call to a **minimal `mkSlots`** is fine. The requirement: a slot does not depend on the other module types. A slot does not need to become a plain module. |
 | Retrofit `modules/universal` into slots | **No.** See [Direction](#direction-slots-or-den). |
+| Migrate `modules/universal` onto the chosen framework | **Yes.** [014](014-machine-layer-migration/definition.md) owns it. This is a different question from the row above: that row rejects `modules/slots/` as the target; this row migrates onto whatever 006 picks. |
 | den | Evaluate it **early**, before any reimplementation work. |
 
 ## Checkpoint index
@@ -56,7 +58,14 @@ in anybody's nix-darwin. Then an adopter builds multi-arch containers in their o
 | 007 | [007-depersonalize-slots](007-depersonalize-slots/definition.md) | Lift the creator's personal defaults and opinions out of shared slot options. |
 | 008 | [008-sops-default-inventory](008-sops-default-inventory/definition.md) | An exact list of what depends on the default sops file, plus its key schema. |
 | 009 | [009-personal-data-folder](009-personal-data-folder/definition.md) | One folder holds all personal data. The tree evaluates without it. |
-| 010 | [010-flake-input-overhead](010-flake-input-overhead/definition.md) | Research, then maybe spike, ways to make a 106-node lock cheaper. |
+| 010 | [010-flake-input-overhead](010-flake-input-overhead/definition.md) | Research, then maybe spike, ways to make a 108-node lock cheaper. |
+| 011 | [011-whole-tree-store-copies](011-whole-tree-store-copies/definition.md) | Replace a whole-repository store copy with a single-file reference, so an unrelated edit stops a rebuild. |
+| 012 | [012-darwin-host-clone](012-darwin-host-clone/definition.md) | A reference map that sizes a den clone of the darwin workstation, plus three NixOS follow-on hosts and the parity method. |
+| 013 | [013-opt-in-boundaries](013-opt-in-boundaries/definition.md) | 66 measured rows: every item an adopter wants to switch off and today cannot, with one verdict each. |
+| 014 | [014-machine-layer-migration](014-machine-layer-migration/definition.md) | Migrate the machine layer — `modules/universal` plus `modules/meta` — onto the chosen framework, in measured batches. Gate: 005 + 006 + 009. |
+
+Every checkpoint is `open` today, with two exceptions: 004 is `in-progress`, and 012 is
+`not-scheduled` — 012 is a reference map, not a schedule.
 
 ## Dependency graph
 
@@ -69,14 +78,25 @@ wave 2 — direction gate; start as early as possible
   005 ──┘
 
 wave 3 — independent of the direction; any time after 001
-  007       008       010
+  007       008       010       011       013
 
 wave 4 — needs the direction and the inventory
   006 + 008 ──► 009
+
+wave 5 — needs the requirement, the direction and the personal-data folder
+  005 + 006 + 009 ──► 014
 ```
 
 Wave 2 runs early on purpose. It prevents one waste: work onto slots first, then the same work
 onto den.
+
+011 and 013 need no gate, so they join wave 3. 011 grows one row at a time, while somebody reads
+code for another reason. 013 already carries a verdict per row.
+
+012 sits outside every wave. It is a reference map, and it depends on the aspect coverage of 004,
+not on a wave. 014 is the last wave: its own gate table names 005, 006 and 009, and it states that
+it executes nothing until all three land. Two parts of 014 — the per-area audit and the batch
+order — are inventory work and start today.
 
 ## Direction: slots or den
 
@@ -85,8 +105,14 @@ problem. Any target framework must solve it too:
 
 > **Data drives conditional imports of third-party modules. Module `config` does not.** Example:
 > the tree imports the Raspberry Pi 4 modules only when a host sets the correct
-> `kdnConfig.features.*` flag. A plain `evalModules` cannot do this. It hits infinite recursion.
+> `kdnConfig.features.*` flag. Module `config` cannot do this — it hits infinite recursion.
 > `modules/meta` exists as a pre-pass for this reason.
+
+Refined by 005 on 2026-09-11: a plain `lib.evalModules` **can** meet the requirement, through
+`specialArgs`. Only `config` and `_module.args` recurse. `modules/meta` is a typed way to compute
+the payload, not the capability. The audit found 6 such sites, and **0** that depend on evaluated
+`config`. See
+[005-conditional-imports-requirement/research.md](005-conditional-imports-requirement/research.md).
 
 Checkpoint 005 turns that into a written, testable requirement. Checkpoint 004 tests den against
 it. Checkpoint 006 then picks slots or den, once. Nobody builds the option that loses.
@@ -117,7 +143,12 @@ that this repository resolves.
 output exists: `denModules.rosetta-builder`. The tree is additive — no file under `modules/slots/`,
 `modules/universal/` or `modules/meta/` changed, and `darwinConfigurations` still lists the same
 hosts. See [modules/den/README.md](../../../../modules/den/README.md) and the phase 2 section of
-[004's definition](004-den-spike/definition.md). `mkSlots` stays the route for the other 17 slots.
+[004's definition](004-den-spike/definition.md).
+
+**Milestone 2 finished on 2026-09-11: no slot remains unported.** All 19 slots have an aspect, and
+the registry holds 21 — the extra one is `homebrew`, which no slot covers. `flake.denModules` now
+exports 43 keys: 21 bare aspect names plus 22 `<aspect>-<class>` pairs. `mkSlots` stays a
+supported route; it is no longer the only route.
 
 Criterion 3 stays open until 005 states the conditional-imports requirement, so den is the
 preferred direction, not yet a settled one. 006 records the score either way.
@@ -132,20 +163,24 @@ decides the direction evaluates without a boot, so a boot alone decides nothing.
 
 Severity is from an adopter's point of view. The listed checkpoint fixes the gap.
 
+**Re-graded on 2026-09-11: 8 of the 12 gaps are fixed** — 1, 2, 3, 4, 8 and 9 outright, and 6 and
+7 down to Low with one item each left. Gaps 10 and 11 keep their "do not change" verdict. So gap 5
+and gap 12 are the only open gaps with an owning checkpoint.
+
 | # | Gap | Severity | Owner |
 |---|---|---|---|
 | 1 | `pre-push.sh` remote guard is inverted — it permits private content to the public remote | **P0** — **fixed 2026-09-10**, plus 15 tests | 001 |
 | 2 | Nothing documents the overlay requirement `overlays = [ inputs.nix-configs.overlays.packages ]`; 7 slots use `pkgs.kdn.*` | High — **fixed 2026-09-10** in `docs/slots-for-adopters.md` and `templates/adopter/` | 001 |
 | 3 | No adopter entry point — no template, no example `devenv.yaml`/`devenv.nix`, no adopter-facing doc | High — **fixed 2026-09-10**: `templates/adopter/` plus `docs/slots-for-adopters.md` | 001 |
 | 4 | `devenv.yaml` pins the adopter's nixpkgs to the creator's nixpkgs fork through `follows: nix-configs/nixpkgs` | High — **fixed 2026-09-10**: the template points `nixpkgs` at nixos-unstable and says why | 001 |
-| 5 | Personal data inside the slots tree — `data/slots-ssh-access.nix`, 176 LOC of hosts, LAN IPs, WAN ports, `*.kdn.im` zones | Medium | 007, 009 |
-| 6 | Personal defaults in shared options — `kdn.jj.upstream.remote = "kdn"`, `alwaysBlockedMessagePatterns = [ "scratchpad" ]`, `opencode`'s hardwired `requesty` provider, `llm` examples with homelab FQDNs, and `identityAgentPatterns` (see below) | Medium | 007 |
-| 7 | Slots ship the creator's opinions — `kdn.jj` installs a jj-only mandate as an agent rule; 5 slots read repo content through `${inputs.nix-configs}/.agents/…` | Medium | 007 |
-| 8 | Two slots default to `enable = true` (`mcp/snoop`, `mcp/pretty-print`), against this repo's own side-effect-free rule | Medium | 007 |
-| 9 | No CI check proves that a slot evaluates standalone and avoids universal options — `.agents/rules/slots-standalone.md` states the rule, nothing enforces it | Medium | 001 |
+| 5 | Personal data in the `data/` folder, which the slots read — `data/slots-ssh-access.nix`, 190 LOC of hosts, LAN IPs, WAN ports, `*.kdn.im` zones | Medium — the folder consolidation of 009 partly landed 2026-09-11: `data/` now holds 10 personal-data files, and the tree still needs them | 007, 009 |
+| 6 | Personal defaults in shared options — the `jj` upstream remote name, the always-blocked message pattern, `opencode`'s hardwired provider, `llm` examples with homelab FQDNs, and `identityAgentPatterns` (see below) | Low — **4 of 5 fixed 2026-09-11**: the upstream remote defaults to `origin`, the blocked-pattern list is empty, `opencode` names no provider, and the `llm` examples use `*.example.invalid`. Only `identityAgentPatterns` remains | 007 |
+| 7 | Slots ship the creator's opinions — `kdn.jj` installs a jj-only mandate as an agent rule; 5 slots read repo content through the whole-tree store path | Low — **the opinion is opt-in since 2026-09-11**: `installAgentRules` gates the rule, the `jj-expert` subagent and the instruction files on all 5 slots, and it defaults to false. The whole-tree read stays; 011 owns it | 007, 011 |
+| 8 | Two slots default to `enable = true` (`mcp/snoop`, `mcp/pretty-print`), against this repo's own side-effect-free rule | **fixed 2026-09-10** — both options read `lib.mkEnableOption`, and `devenv.nix` restores the two `true` values | 007 |
+| 9 | No CI check proves that a slot evaluates standalone and avoids universal options — `.agents/rules/slots-standalone.md` states the rule, nothing enforces it | **fixed 2026-09-11** — `checks/standalone.nix` runs a source scan plus an option-tree walk, for the slots **and** the aspects. `checks/default.nix` registers it | 001 |
 | 10 | `kdn.*` is a personal namespace on a shared library | Low — **do not rename**, the churn buys nothing | — |
 | 11 | No slot assigns the `users` slot target | Low — **keep it** | — |
-| 12 | Lock size: 106 nodes / 60 root inputs reach an adopter's lock as text | Low | 010 |
+| 12 | Lock size: 108 nodes / 62 root inputs reach an adopter's lock as text | Low — the **fetch** is gated since 2026-09-11; only the text remains | 010 |
 
 ### Gap 1 was verified, then fixed
 
@@ -178,26 +213,34 @@ This is the clearest form of gap 6: a shared public option that compensates for 
 over-broad write. [tasks/ssh-agent-scoping.md](../ssh-agent-scoping/definition.md) holds the measured
 mechanism and owns the fix.
 
-### What an adopter can do today — 2026-09-10
+### What an adopter can do today — 2026-09-11
 
-The honest summary: **an adopter consumes `modules/slots` today.** Gaps 1 to 4 are fixed.
-[slots-for-adopters.md](../../../slots-for-adopters.md) states the API, the overlay requirement and
-what each slot writes into the adopter repo. [templates/adopter/](../../../../templates/adopter/README.md)
-is the copy-ready shape.
+The honest summary: **an adopter consumes the tooling layer two ways today.** 8 of the 12 gaps are
+fixed.
 
-What an adopter cannot do today is consume one slot as a plain module, with no `mkSlots` call.
-Checkpoint 002 owns that for `rosetta-builder`, and 004 phase 2 owns the den route the creator
-prefers.
+Route 1 — `mkSlots`. [slots-for-adopters.md](../../../slots-for-adopters.md) states the API, the
+overlay requirement and what each slot writes into the adopter repo.
+[templates/adopter/](../../../../templates/adopter/README.md) is the copy-ready shape.
+
+Route 2 — a plain module, with **no** `mkSlots` call and no den in the adopter's own code.
+`flake.denModules` exports 43 keys: 21 bare aspect names plus 22 `<aspect>-<class>` pairs.
+[den-for-adopters.md](../../../den-for-adopters.md) states the 20 aspects, the priority rule, 10
+caveats and the lock cost. So the limit the earlier text recorded is gone.
+
+What an adopter **cannot** consume today is the machine layer: `modules/universal/` and
+`modules/meta/` still need `specialArgs.kdnConfig`, and 94% of their files take that argument.
+[014](014-machine-layer-migration/definition.md) owns that gap, behind its three gates.
 
 ## Corrections to earlier assumptions
 
 Record these. Two of them remove work that looked necessary.
 
-1. **An adopter does not fetch this repo's 60 inputs, and needs no SSH key to lock.** Lix's
+1. **An adopter does not fetch this repo's 62 inputs, and needs no SSH key to lock.** Lix's
    `lix/libexpr/flake/call-flake.nix` maps lock nodes with `builtins.mapAttrs`, so Lix never
    fetches a node that nothing references. `flake.cc` `computeLocks` keeps an input it already
    knows as metadata, with no network I/O. An adopter pays one whole-tree fetch (**4.1 MB**) plus
-   ~106 lock nodes of text. So gap 12 is hygiene, not a blocker.
+   108 lock nodes of text. So gap 12 is hygiene, not a blocker. Re-measured on 2026-09-11 with
+   `jq '.nodes | length'` and `jq '.nodes.root.inputs | length'`.
 2. **Lix has no `lazy-trees`, and will not get it.**
    `nix --extra-experimental-features lazy-trees eval --expr 1` warns
    `unknown experimental feature 'lazy-trees'`. Lix states it will not use the upstream
@@ -212,38 +255,63 @@ recommendation there is not yet settled.
 
 ## Shared patterns
 
-### Pattern V1 — the drvPath equality gate
+### Pattern V1 — the option-value probe
 
-Before a refactor, record the derivation path of every host:
+> **A `drvPath` equality gate does NOT work in this repository. Never use one.** The earlier
+> version of this pattern gated a refactor on `system.build.toplevel.drvPath`, and it claimed the
+> gate held for an edit to a tracked file. **That claim is refuted.** `flake.nix:275` and `:321`
+> set `nix-configs = self`, and
+> `modules/universal/profile/machine/baseline/default.nix:141` writes
+> `environment.etc."kdn/source-flake".source = kdnConfig.self`. Line 69 of the same file does the
+> same for Home Manager. So the whole repository tree is a build input of every host.
+> Measured on 2026-09-11:
+> `nix eval --raw '.#darwinConfigurations.anji.config.environment.etc."kdn/source-flake".source'`
+> returns one store path, and that path holds **780 files** — the whole tree. An edit to **any**
+> tracked file moves that path, so it moves every host `drvPath`. A `drvPath` diff therefore
+> proves nothing here: it never returns "equal", whatever the refactor did.
+> Task [011](011-whole-tree-store-copies/definition.md) owns the two whole-tree copies. A
+> `drvPath` gate stays impossible until 011 removes them.
+
+Probe the **derived option values** instead. The values are what behaviour preservation means, and
+they do not carry the tree hash.
+
+1. Name every option path the refactor touches, plus the derived values that read them.
+2. Record each value on the pristine parent revision, over all 16 host configurations and every
+   Home Manager user. Use `--no-eval-cache`.
+3. Record the same values on the new tree.
+4. Diff. Every value must match. A new option that the parent does not declare is the only
+   allowed difference, and it needs one sentence of justification.
 
 ```bash
-nix eval --raw '.#darwinConfigurations.<host>.config.system.build.toplevel.drvPath'
-nix eval --raw '.#nixosConfigurations.<host>.config.system.build.toplevel.drvPath'
+# per host, per option path
+nix eval --json --no-eval-cache '.#darwinConfigurations.<host>.config.<option.path>'
+nix eval --json --no-eval-cache '.#nixosConfigurations.<host>.config.<option.path>'
+# per Home Manager user
+nix eval --json --no-eval-cache \
+  '.#nixosConfigurations.<host>.config.home-manager.users.<user>.<option.path>'
+# the output name set, for a refactor that adds, moves or deletes a file
+nix eval --json '.#darwinConfigurations' --apply builtins.attrNames
 ```
 
-After the refactor, record again and diff. An equal path proves the refactor is a no-op. This turns
-a bulk refactor into a mechanical loop. It is the safety net for 007 and 009.
+The pattern is the safety net for 007, 009 and 014. It scales: one run of it on 2026-09-11
+compared **609 leaf values across 15 hosts** and found 0 differences, for a 16-assignment change
+in 7 files. See [013](013-opt-in-boundaries/definition.md) section 2 item 5.
 
-**Measured cost: 93 s for one warm Darwin host** (28 s user, 12 s system, all inputs already in the
-store). 16 hosts take about 25 minutes in sequence. Use it as a checkpoint gate, not per edit. For
-per-edit feedback use `devenv eval '<option.path>'`.
+Two rules keep the probe honest:
 
-**Limit — the pattern proves nothing when a file appears or disappears.** `flake.nix:250` sets
-`nix-configs = self`, so the whole tree hash enters every derivation this flake builds. A new file
-changes every `drvPath`, even a file that no host reads. Measured on 2026-09-10: a dirty tree gave
-`pz1xx9…` and the same tree clean gave `pi6dg3…` for one unchanged host.
+- **A new file is invisible until `git add`.** A flake host evaluation never reads a git-ignored
+  file, so the parent-versus-new diff is meaningless until the new file is tracked.
+- **`toplevel.drvPath` still has one use: it proves the evaluation completes.** Force it on 2 or 3
+  hosts as a smoke test, never as an equality gate. `nix flake check --no-eval-cache` covers the
+  rest. For per-edit feedback use `devenv eval '<option.path>'`.
 
-So Pattern V1 covers an **edit** to a tracked file only. For a refactor that adds or moves a file,
-prove additivity a second way — compare the output **names**, and diff one host's evaluated option
-values. The 004 den milestone used
-`nix eval --json '.#darwinConfigurations' --apply builtins.attrNames`.
-
-**Exception — a den configuration is immune, so Pattern V1 works there.** den's evaluation never
-reads `self`. Measured on 2026-09-10: `denConfigurations.host-darwin` kept the byte-identical
-`drvPath` `7zhp7889kchljri5j7phaakfvzv9j3ph-darwin-system-26.11.4cff07d.drv` across a file move
-**and** the addition of a second den host. So a den refactor gets the full gate that the slot and
-universal routes cannot have. Gate on `denConfigurations`; `denDevenvShells` reads `self` through
-`kdn.den.devenv.root`.
+**den is the one route where a path gate would work, and it is not needed.** den's evaluation
+never reads `self`. Measured on 2026-09-10: `denConfigurations.host-darwin` kept a byte-identical
+`drvPath` across a file move **and** the addition of a second den host. So a den-internal refactor
+may gate on `denConfigurations`. `denDevenvShells` reads `self` through `kdn.den.devenv.root`, so
+it does not qualify. And a den host never matches the existing configuration of the same machine —
+the module structure differs, so
+[012](012-darwin-host-clone/definition.md) compares name sets, not paths.
 
 ### Pattern V2 — the adopter-hostile eval
 
@@ -269,7 +337,7 @@ input and enables one thing. Create it under `/tmp`. Never create it inside this
 | Option value | `devenv eval '<option.path>'` | per edit |
 | Evaluation | `nix flake check` | per checkpoint |
 | Adopter shape | Pattern V3 scratch flake | 001, 002 |
-| No-op proof | Pattern V1 drvPath diff | 007, 009 |
+| No-op proof | Pattern V1 option-value probe | 007, 009, 014 |
 | Hook behaviour | `checks/jj-experiments` per-remote cases | 001 |
 | Format | `nix run .#kdn-nix-fmt --` | before each commit |
 | Adopter safety | Pattern V2 | 001, 002, 009 |
@@ -281,7 +349,10 @@ Darwin hosts build on a Darwin machine, or through `remote=`. Do not run
 
 - A rename of the `kdn.*` namespace (gap 10).
 - Removal of the `users` slot target (gap 11).
-- A retrofit of `modules/universal` into slots — see [Direction](#direction-slots-or-den).
+- A retrofit of `modules/universal` into slots — see [Direction](#direction-slots-or-den). A
+  **migration** of `modules/universal` onto the framework 006 chooses is a different question, and
+  it is **in** scope: [014](014-machine-layer-migration/definition.md) owns it. 014 repeats the
+  retrofit-into-slots exclusion in its own "Out of scope" section.
 - A move away from Lix.
 - Any push. The creator reviews and pushes.
 
@@ -308,9 +379,12 @@ a `.research.md` sibling next to its task file. A third pass is complete and now
 | Lix flake laziness | [010](010-flake-input-overhead/definition.md) | Q1-Q4 in 010 |
 | Darwin VM testing — **done**, two `.research.md` files | [darwin-vm-testing.md](../darwin-vm-testing/definition.md) | A guest loop for the activation-level exit tests of 002, 003 and 009 |
 
-The Darwin VM testing task carries one finding that **changes this hub**: a fresh-guest Darwin build
-forces every `brew-tap--*` flake input, so gap 12 is a real blocker on that path, not only hygiene.
-See the re-grade work item in that task.
+The Darwin VM testing task carried one finding that changed this hub: a fresh-guest Darwin build
+forced every `brew-tap--*` flake input, so gap 12 read as a real blocker on that path.
+**That re-grade is reverted on 2026-09-11.** `kdn.homebrew.tapsFromFlakeInputs` now defaults to
+false and a `lib.mkIf` guards the tap scan, so no tap input is forced at `nix flake lock` or at a
+Darwin `nix eval`. This repository restores its own 8 taps in its darwin host config. Gap 12 is
+lock text only, and 013 section 2 item 3 holds the cold-tree measurement.
 
 Read the task file first. Each task file states its own method and deliverable, so you need no
 extra brief.
