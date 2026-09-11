@@ -34,7 +34,8 @@
 # through the `lan` and `internet` edges: a `lan` edge only wins when the machine sits on that LAN.
 #
 # Topology: drek = primary edge/WAN router (it forwards to etra); etra = secondary homelab router;
-# brys, oams, and anji sit on etra's ethernet and on drek's WiFi (etra is preferred).
+# brys, oams, and anji sit on etra's ethernet and also reach drek (etra is preferred). anji and
+# brys reach drek over its WiFi; oams reaches it over VLAN 3547 tagged on ethernet, not WiFi.
 # A lower `priority` is tried first. The commented relay edges need each target's address as the
 # relay host sees it; fill one in to unlock that path.
 #
@@ -114,6 +115,18 @@
           address = "192.168.252.33";
           priority = 12;
         }
+        # oams reaches drek over NetworkManager profile `vlan-drek` (hosts/oams/default.nix):
+        # VLAN 3547 tagged on ethernet `enp4s0`, NOT WiFi, and `autoconnect = "no"`. So this path
+        # exists only after someone runs `nmcli connection up vlan-drek` on oams, and the lease
+        # moves. Use the FQDN: drek serves its own `lan.drek` zone, so it tracks the lease. A
+        # `lan` edge is probed, so it wins only when this machine really sits on drek's LAN, and
+        # it stays behind the etra edges above because etra's ethernet is preferred.
+        # Measured 2026-09-12: the FQDN answered sshd on 192.168.41.57 from drek's WiFi.
+        {
+          from = "lan";
+          address = "oams.lan.drek.net.int.kdn.im.";
+          priority = 14;
+        }
         # etra cannot resolve the FQDN yet, so the mgmt address goes first here.
         #
         # Both relay entries failed on 2026-09-08: etra answered `No route to host` for .33, and
@@ -130,7 +143,13 @@
           address = "oams.lan.etra.net.int.kdn.im.";
           priority = 43;
         }
-        # { from = "drek"; address = "<oams on drek WiFi>"; priority = 50; }
+        # A relay through drek is not probed, so the priority alone picks the final address. drek
+        # resolves its own zone, so the FQDN is safe here too.
+        {
+          from = "drek";
+          address = "oams.lan.drek.net.int.kdn.im.";
+          priority = 50;
+        }
         # { from = "moss"; address = "<oams as moss sees it, NetBird>"; priority = 70; }
       ];
 

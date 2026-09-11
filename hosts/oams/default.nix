@@ -199,11 +199,13 @@ in
       #   nmcli connection up vlan-<pic|mgmt|drek>
       #
       # Addressing mirrors brys' per-VLAN scheme: DHCP is primary (brys runs
-      # `dynamicIPClient` on each), and each also carries a static secondary
-      # address as a guaranteed fallback so the VLAN has an IP even when no
-      # DHCP server answers. oams picks a distinct host IP on the same subnet
-      # as brys so the two never collide. If you plug the cable into a
-      # different NIC, change `vlan.parent` to that device.
+      # `dynamicIPClient` on each). `pic` and `mgmt` also carry a static
+      # secondary address as a guaranteed fallback, so the VLAN has an IP even
+      # when no DHCP server answers. oams picks a distinct host IP on the same
+      # subnet as brys so the two never collide. A static fallback is only safe
+      # outside the subnet's DHCP pool — `drek` therefore runs DHCP alone, see
+      # the note on that profile. If you plug the cable into a different NIC,
+      # change `vlan.parent` to that device.
       networking.networkmanager.ensureProfiles.profiles = {
         vlan-pic = {
           connection = {
@@ -265,8 +267,12 @@ in
             parent = "enp4s0";
           };
           ipv4 = {
-            method = "auto"; # DHCP, fallback to static below
-            address1 = "192.168.41.32/24"; # brys .31 / oams .32
+            # DHCP only, with no static fallback. drek's pool includes .32, so the static
+            # fallback this profile used to carry was not safe: on 2026-09-12 a webcam held
+            # .32 (PTR `preorder-onlooker.lan.drek.net.int.kdn.im`). Reach oams here by the
+            # `lan.drek` FQDN, which follows the lease, and add a static address back only
+            # after drek reserves one outside the pool.
+            method = "auto";
             may-fail = "yes";
           };
           ipv6 = {
