@@ -108,6 +108,14 @@ Pattern V1 does **not** hold for the `modules/universal` route, because `flake.n
 `den-mvp` builds and asserts nothing. [`tests.nix`](tests.nix) holds the assertions, in three
 tiers. `checks/default.nix` merges them into `checks.<system>.*`.
 
+For the standalone command of each check below, its measured time and its bundle, see
+[`../README.md`](../README.md). Most den checks sit in `bundle-core` or `bundle-den`, and both
+finish in under 40 s:
+
+```bash
+nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-den'
+```
+
 | Check | Tier | What it proves |
 |---|---|---|
 | `den-eval-rosetta-builder` | 1 — evaluation | the aspect sets four option values and one launchd daemon |
