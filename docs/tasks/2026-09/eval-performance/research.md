@@ -615,7 +615,16 @@ fresh machine, every CI runner and every garbage-collected store.
 
 ### How to run it
 
-No context needed. Copy and paste.
+`hack/eval-profile.sh` now does every step below in one command, and it adds the four guards. See
+[design.md](design.md) § 1. Run the script; read the steps below to understand what it does, or to
+run one step on its own.
+
+```bash
+hack/eval-profile.sh                                  # host anji, the default attribute
+KDN_EVAL_READ_ONLY=1 hack/eval-profile.sh             # pure evaluation, no instantiation
+```
+
+The manual route, with no context needed. Copy and paste.
 
 ```bash
 cd ~/dev/github.com/nazarewk-iac/nix-configs

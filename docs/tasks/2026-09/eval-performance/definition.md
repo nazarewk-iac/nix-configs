@@ -3,7 +3,7 @@ type: Task
 description: Cut host evaluation time in this repo, and set up a fair evaluation-cost comparison between the universal tree and the den tree.
 status: in-progress
 authored_by: agent
-timestamp: 2026-09-11T17:00:00+02:00
+timestamp: 2026-09-11T22:00:00+02:00
 ---
 
 # Evaluation performance
@@ -85,6 +85,15 @@ The task is done when all of these hold:
 4. The parity-gated tree comparison protocol is written, reviewed, and either run or explicitly
    deferred with a named blocker.
 5. Every cut has a recorded before-and-after measurement in `.worklog.md`.
+6. `hack/eval-profile.sh` reproduces a profile of `anji` in one command, and its ranked table names
+   `nixpkgs/lib/sources.nix` as the top file by self time at 25 % or more. [research.md](research.md)
+   measured 31.7 % for that file, so a 25 % floor leaves room for sample noise.
+7. `den-eval-instantiate` costs 250.0 s or less, against the 358.0 s in
+   [../../../../checks/README.md](../../../../checks/README.md), and `bundle-den` does not rise
+   above its recorded 108.0 s.
+
+[design.md](design.md) holds the design for criteria 4, 6 and 7, and it ranks every proposal by
+value per unit of risk.
 
 ## The `drvPath` caveat
 
@@ -98,5 +107,8 @@ universal tree, compare option values or compare the closure of the built system
 - [../generalization/definition.md](../generalization/definition.md) — the umbrella task that
   drives the two trees toward parity.
 - [../../../../checks/README.md](../../../../checks/README.md) — the check bundles and their
-  measured times. `den-eval-instantiate` costs 358 s for 201 pairs in one single-threaded
-  evaluator, so a cut here pays back there too.
+  measured times. `den-eval-instantiate` costs 358.0 s in one single-threaded evaluator, over the
+  205 aspects of the registry and every class each one emits, so a cut here pays back there too.
+- [design.md](design.md) — the design of the measurement harness, the runnable tree comparison and
+  the one identified check-speed lever.
+- [status.md](status.md) — where the work is parked, and the named blocker.
