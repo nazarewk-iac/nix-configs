@@ -36,7 +36,7 @@ in
                 default = name;
               };
               port = lib.mkOption {
-                type = with lib.types; uint;
+                type = with lib.types; port;
                 default = 53;
               };
               interface = lib.mkOption {
@@ -71,12 +71,11 @@ in
               nsCfg:
               builtins.concatStringsSep "" [
                 nsCfg.addr
-                ":${nsCfg.port}"
+                ":${toString nsCfg.port}"
                 (lib.strings.optionalString (nsCfg.interface != null) "%${nsCfg.interface}")
                 (lib.strings.optionalString (nsCfg.sni != null) "#${nsCfg.sni}")
               ]
             ))
-            builtins.concatLists
           ];
         }
       ]
