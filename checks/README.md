@@ -19,7 +19,7 @@ One command per bundle; nix builds the members in parallel. Swap `aarch64-darwin
 `aarch64-linux` on those systems.
 
 ```bash
-nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-core'      # 16.7 s, after any edit
+nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-core'      # about 9 s, after any edit
 nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-den'       # about 50 s, modules/den/aspects/
 nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-pkgs'      # 18.0 s, packages/
 nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-artifact'  # 43.7 s, a built artifact
@@ -30,10 +30,10 @@ nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-slow'      # 710.6 
 first. `bundle-den` holds one assertion set per den aspect. One member is the exception: `den-eval-hw`
 sits in `bundle-slow` at 25.3 s, under the 60 s mark. Four batches of aspects took `bundle-den` to
 75.4 s, so the bundle shed its heaviest member and came back to about 50 s. Every non-VM bundle stays
-under 60 s;
-`bundle-slow` and `bundle-vm` are the two exceptions, and `bundle-vm` is reserved and empty because no
-VM test exists yet. `bundle-artifact` holds the 43.7 s only with the system closure already in the
-store, and it is empty on `aarch64-linux`, which carries no `den-artifact-*` and no `den-smoke-*`.
+under 60 s; `bundle-slow` and `bundle-vm` are the two exceptions, and `bundle-vm` is reserved and
+empty because no VM test exists yet. `bundle-artifact` holds the 43.7 s only with the system closure
+already in the store, and it is empty on `aarch64-linux`, which carries no `den-artifact-*` and no
+`den-smoke-*`.
 
 ## Every check
 
