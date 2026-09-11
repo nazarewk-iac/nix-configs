@@ -239,7 +239,11 @@ let
             "/var/lib/containerd"
           ];
         }
-        (lib.optionalAttrs hasFsZfs {
+        # This write reads a `disks` option, so it waits for **both** aspects. `fs-zfs` alone
+        # declares `kdn.fs.zfs.containers` and leaves `kdn.disks.zpool-main` undeclared, and the
+        # read would then throw. `fs-zfs` defaults the same value from `kdn.hostName`, so a
+        # consumer without `disks` loses nothing here.
+        (lib.optionalAttrs (hasFsZfs && hasDisks) {
           kdn.fs.zfs.containers.fsname = "${config.kdn.disks.zpool-main.name}/containerd/storage";
         })
         (lib.optionalAttrs hasDisks {
