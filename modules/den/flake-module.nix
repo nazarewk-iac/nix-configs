@@ -43,6 +43,21 @@ let
     lib = denLib;
   };
 
+  # The real den hosts. One directory per host under `../../hosts-den/`, read at evaluation time.
+  #
+  # `builtins.readDir` is static data, so it drives `imports` with no recursion. A module `config`
+  # and a `_module.args` both abort with `infinite recursion` in that position; a directory read and
+  # a `specialArgs` do not. Measured in
+  # ../../docs/tasks/2026-09/generalization/ round 3, and again on 2026-09-11.
+  #
+  # The filter keeps a directory alone, so `../../hosts-den/README.md` stays out of the list.
+  #
+  # A host directory holds `default.nix` and nothing else is required. It carries **no `meta.json`**:
+  # the host file states its own system and its own class. See ../../hosts-den/README.md.
+  denHostModules = denLib.mapAttrsToList (name: _: ../../hosts-den + "/${name}") (
+    denLib.filterAttrs (_: type: type == "directory") (builtins.readDir ../../hosts-den)
+  );
+
   eval = denLib.evalModules {
     specialArgs.inputs = denInputs;
     modules = [
@@ -75,7 +90,8 @@ let
       ../../checks/den-mvp/users
       ../../checks/den-mvp/devenv
       ../../checks/den-mvp/home
-    ];
+    ]
+    ++ denHostModules;
   };
 
   den = eval.config.den;
@@ -191,7 +207,7 @@ in
   # which states the class.
   #
   # The `denModules.<aspect>-<class>` naming convention now exists, and the `imports` block at the
-  # top of this file publishes all 26 valid pairs. So `denModules.llm-proxy-devenv`,
+  # top of this file publishes all 30 valid pairs. So `denModules.llm-proxy-devenv`,
   # `denModules.llm-proxy-nixos`, `denModules.devenv-cli-<class>` and
   # `denModules.ssh-access-<class>` all reach a caller. The zero-argument names below stay, because
   # they are shorter and they carry the common class of each aspect.
