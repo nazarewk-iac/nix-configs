@@ -19,16 +19,22 @@
 #
 # ## What it holds today
 #
-# The two aspects of batch 1, and the minimum a NixOS evaluation asserts: a root file system and a
-# disabled GRUB. It is a skeleton, not yet a replica of `hosts/orr/`. Each later batch adds the
-# aspects it ports, and the compare command above is the gate.
+# The two aspects of batch 1, the two host-class aspects of batch 2, and the minimum a NixOS
+# evaluation asserts: a root file system and a disabled GRUB. It is a skeleton, not yet a replica of
+# `hosts/orr/`. Each later batch adds the aspects it ports, and the compare command above is the
+# gate.
+#
+# `kdn.apps` is absent on purpose. That aspect claims the `homeManager` class alone, and this host
+# names no user yet.
 { kdn, ... }:
 {
   den.hosts.aarch64-linux.orr.class = "nixos";
 
   den.aspects.orr.includes = [
+    kdn.locale
     kdn.nix-config
     kdn.nix-remote-builder
+    kdn.secrets
   ];
 
   den.aspects.orr.nixos = {
