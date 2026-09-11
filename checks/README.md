@@ -3,15 +3,24 @@ type: Reference
 title: Checks — bundles and standalone commands
 description: Every check, its bundle, its measured time and its exact standalone command.
 authored_by: agent
-timestamp: 2026-09-11T00:00:00Z
+timestamp: 2026-09-11T20:45:00+02:00
 ---
 
 # Checks
 
-**Do not run a bare `nix flake check`.** It builds all 51 attributes of `checks.<system>`. It measured
-**660.6 s** before the 30 `dev-*` aspects landed; `den-eval-instantiate` then grew by 300 s, so expect
-about **960 s** now. `bundle-slow` alone runs 710.6 s on a warm store. Four checks cost over a minute
-each: `den-eval-instantiate` runs 358 s and `jj-experiments-pytest` runs 188 s. Run a bundle instead.
+**Do not run a bare `nix flake check`.** It builds all **63** attributes of `checks.<system>` on
+`aarch64-darwin`, counted 2026-09-11 with:
+
+```bash
+nix eval --raw '.#checks.aarch64-darwin' --apply 'x: toString (builtins.length (builtins.attrNames x))'
+```
+
+Six of the 63 are the bundles, so 57 are real checks. The bare run measured **660.6 s** before the 30
+`dev-*` aspects landed. `den-eval-instantiate` then grew by 300 s, and 12 more checks landed after
+that run. So **960 s is a lower bound, not a measurement**. Nobody re-measures it: the measurement
+costs the same 15 minutes the rule exists to save. `bundle-slow` alone runs 710.6 s on a warm store.
+Four checks cost over a minute each: `den-eval-instantiate` runs 358 s and `jj-experiments-pytest`
+runs 188 s. Run a bundle instead.
 
 ## Bundles
 
@@ -19,8 +28,8 @@ One command per bundle; nix builds the members in parallel. Swap `aarch64-darwin
 `aarch64-linux` on those systems.
 
 ```bash
-nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-core'      # about 9 s, after any edit
-nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-den'       # 91.5 s, modules/den/aspects/
+nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-core'      # 11.1 s, after any edit
+nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-den'       # 108.0 s, modules/den/aspects/
 nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-pkgs'      # 18.0 s, packages/
 nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-artifact'  # 43.7 s, a built artifact
 nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-slow'      # 710.6 s, before a hand-off
@@ -31,10 +40,26 @@ first. `bundle-den` holds one assertion set per den aspect. Two members are the 
 sits in `bundle-slow` at 25.3 s and `den-eval-programs` at 19.4 s, both under the 60 s mark. Each one
 was the heaviest member of `bundle-den` when it moved. Four batches of aspects took `bundle-den` to
 75.4 s and the first shed brought it to about 50 s. Five more area checks then took it to 98.6 s, and
-the second shed brought it to 79.1 s. `den-eval-root-orphans` then took it to 91.5 s — still over the
-ceiling, measured 2026-09-11. So `bundle-den` is
-now a third exception, and the owner decides the next step. `bundle-slow` and `bundle-vm` are the two
-declared exceptions, and `bundle-vm` is reserved and
+the second shed brought it to 79.1 s. Five more `den-eval-*` checks then landed, and the bundle now
+runs **108.0 s**, measured 2026-09-11.
+
+### The 60 s ceiling now has a third exception: `bundle-den`
+
+`bundle-den` keeps its time. It sheds no further member. The reasoning, recorded 2026-09-11:
+
+- A shed moves cost into `bundle-slow`, and nobody runs that bundle per edit. So a shed **hides** the
+  cost. It does not remove it.
+- `bundle-core`, at 11.1 s, is the real per-edit tripwire. `bundle-den` is the area bundle you run when
+  you touch an aspect, and about 100 s is acceptable for that job.
+- 205 aspects cannot fit one 60 s bundle. A split needs a new bundle name, and a bundle name is an
+  infrastructure decision that belongs to the repository owner.
+
+Nothing above closes the question. **The owner should revise this decision.** The alternative is a
+split of `bundle-den` into two area bundles. The five newest members are all cheap — `den-eval-user`
+10.6 s, `den-eval-batch2` 9.3 s, `den-eval-router` 5.8 s, `den-eval-harness-split` 1.8 s and
+`den-eval-graphical` 1.7 s — so no single shed helps.
+
+`bundle-slow` and `bundle-vm` are the other two declared exceptions, and `bundle-vm` is reserved and
 empty because no VM test exists yet. `bundle-artifact` holds the 43.7 s only with the system closure
 already in the store, and it is empty on `aarch64-linux`, which carries no `den-artifact-*` and no
 `den-smoke-*`.
@@ -43,6 +68,11 @@ already in the store, and it is empty on `aarch64-linux`, which carries no `den-
 
 Measured 2026-09-11 on `aarch64-darwin`, warm store, one check per invocation. Slowest first. Set `SYS`
 first: `SYS=aarch64-darwin` — or `x86_64-linux`, or `aarch64-linux`.
+
+**Every time below is a snapshot of 2026-09-11.** A time drifts up as its area grows: an assertion set
+gets more subjects with each batch of aspects. Nobody re-measures the whole table per edit, because one
+run of all 57 checks costs more than 15 minutes. Re-measure the one row you change, and the bundle it
+joins.
 
 | Check | Proves | Bundle | Sec | Standalone command |
 |---|---|---|---|---|
@@ -63,10 +93,13 @@ first: `SYS=aarch64-darwin` — or `x86_64-linux`, or `aarch64-linux`.
 | `den-eval-development` | 26 assertions over 22 bare consumers: the 30 `dev-*` aspects | den | 11.2 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-development"` |
 | `den-eval-security` | 22 assertions over 7 bare consumers: the four `security-*` aspects | den | 11.0 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-security"` |
 | `den-eval-virtualisation` | 11 assertions over 3 bare consumers: the two `virt-microvm-*` aspects | den | 11.0 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-virtualisation"` |
+| `den-eval-user` | 23 assertions over 3 bare consumers: the `user` aspect and the shared `kdn.users` schema | den | 10.6 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-user"` |
+| `den-eval-batch2` | 12 assertions over 3 bare consumers: the `apps`, `locale` and `secrets` aspects, plus both design traps | den | 9.3 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-batch2"` |
 | `den-eval-desktop-leaves` | 35 assertions over 7 bare consumers: the 11 desktop leaf aspects | den | 9.0 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-desktop-leaves"` |
 | `den-eval-root-orphans` | 12 assertions over 4 bare consumers: `stylix`, `stylix-home` and `hm-bootstrap` | den | 8.9 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-root-orphans"` |
 | `den-eval-disks-fs` | 22 assertions over 9 bare consumers: the disks and filesystem aspects | den | 7.3 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-disks-fs"` |
 | `den-eval-sway-core` | 26 assertions over 5 bare consumers: the sway session core and its VNC extras | den | 7.0 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-sway-core"` |
+| `den-eval-router` | 22 assertions over 5 bare consumers: the five `net-router*` aspects, with RFC placeholder data only | den | 5.8 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-router"` |
 | `den-eval-frozen-paths` | no backend freezes an environment value | core | 5.6 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-frozen-paths"` |
 | `kdn-slug-pytest` | the `kdn-slug` package's own pytest suite | pkgs | 4.5 | `nix build --no-eval-cache -L ".#checks.$SYS.kdn-slug-pytest"` |
 | `den-eval-mcp` | one gateway per shell, every backend name in the YAML | den | 4.5 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-mcp"` |
@@ -90,6 +123,8 @@ first: `SYS=aarch64-darwin` — or `x86_64-linux`, or `aarch64-linux`.
 | `universal-eval-containers` | the Home Manager branch reads the parent through `osConfig` | core | ‡ | `nix build --no-eval-cache -L ".#checks.$SYS.universal-eval-containers"` |
 | `conditional-imports-repository` | this repository's own conditional imports resolve | core | 2.0 | `nix build --no-eval-cache -L ".#checks.$SYS.conditional-imports-repository"` |
 | `den-eval-ca` | the first `nixos`-only aspect, with its option in the `nixos` target | den | 1.9 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-ca"` |
+| `den-eval-harness-split` | the directory scan of `den-mvp/assertions/` finds a file, and every `harness.nix` export arrives | den | 1.8 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-harness-split"` |
+| `den-eval-graphical` | the shared `kdn.graphical` switch, in both end states | den | 1.7 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-graphical"` |
 | `den-smoke-host-darwin` | the same `enterTest`, from the host-derived shell | artifact | 1.7 | `nix build --no-eval-cache -L '.#checks.aarch64-darwin.den-smoke-host-darwin'` |
 | `den-eval-coverage` | every registry aspect names a subject that evaluates | core | 1.7 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-coverage"` |
 | `den-eval-priority` | a consumer's own plain definition beats the aspect's | core | 1.3 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-priority"` |
