@@ -59,8 +59,12 @@ split of `bundle-den` into two area bundles. The five newest members are all che
 10.6 s, `den-eval-batch2` 9.3 s, `den-eval-router` 5.8 s, `den-eval-harness-split` 1.8 s and
 `den-eval-graphical` 1.7 s — so no single shed helps.
 
-`bundle-slow` and `bundle-vm` are the other two declared exceptions, and `bundle-vm` is reserved and
-empty because no VM test exists yet. `bundle-artifact` holds the 43.7 s only with the system closure
+`bundle-slow` and `bundle-vm` are the other two declared exceptions. `bundle-vm` is empty, and it
+stays empty: a bundle member is a derivation, and the Nix sandbox grants a macOS guest neither the
+Hypervisor entitlement, nor network access, nor a writable disk image. The Darwin guest activation
+gate is a flake app instead — `nix run '.#darwin-vm-test' -- run`, 5 to 15 minutes, by hand only.
+`docs/tasks/2026-09/darwin-vm-testing/design.md` § 7 holds the argument.
+`bundle-artifact` holds the 43.7 s only with the system closure
 already in the store, and it is empty on `aarch64-linux`, which carries no `den-artifact-*` and no
 `den-smoke-*`.
 

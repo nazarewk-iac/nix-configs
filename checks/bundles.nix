@@ -97,7 +97,20 @@ in
   bundle-artifact = mkBundle "artifact" (byPrefix "den-artifact-" ++ byPrefix "den-smoke-");
   # 710.6 s. `den-eval-instantiate` alone holds 358.0 s of that.
   bundle-slow = mkBundle "slow" slow;
-  # Reserved and empty. No VM test exists — ./den-mvp/tests.nix states why. This is the one bundle the
-  # 60 s rule does not cover.
+  # Empty, and it stays empty. A VM test can NEVER join a bundle, so this is not a reserved slot
+  # that somebody fills later.
+  #
+  # The reason is structural. `mkBundle` above is a `linkFarm` over entries of `checks`, so every
+  # member is a derivation. A macOS guest needs three things the Nix sandbox refuses: the Hypervisor
+  # entitlement, network access, and a writable disk image outside the store. It also needs `sudo`
+  # inside the guest and it mutates a 120 GB disk image. None of that belongs in a derivation.
+  # ./den-mvp/tests.nix:21 states the same conclusion from the other side.
+  #
+  # The Darwin guest activation gate therefore lands as a flake app, `apps.darwin-vm-test`. It runs
+  # 5 to 15 minutes per run and it never enters a per-edit loop.
+  # docs/tasks/2026-09/darwin-vm-testing/design.md § 7 holds the full argument.
+  #
+  # The owner may delete this name instead. A bundle name is an infrastructure decision, so this
+  # file keeps the name and only corrects the reason.
   bundle-vm = mkBundle "vm" [ ];
 }

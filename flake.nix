@@ -487,6 +487,41 @@
               }
             );
           };
+          # The macOS-guest activation gate. It is NOT a check and it joins NO bundle: a bundle
+          # member is a derivation, and the Nix sandbox grants no Hypervisor entitlement, no network
+          # and no writable disk image. `bundle-vm` therefore stays empty for ever — see
+          # ./checks/bundles.nix and docs/tasks/2026-09/darwin-vm-testing/design.md.
+          #
+          # Run it by hand, never per edit. `bake` costs 40 to 60 min once; `run` costs 5 to 15 min.
+          #
+          #   nix run '.#darwin-vm-test' -- bake
+          #   nix run '.#darwin-vm-test' -- run
+          #
+          # It needs no host `sudo` — Apple Virtualization runs unprivileged — and it deletes only a
+          # guest it made itself, under the `kdn-vmtest-clone-` prefix. `tart` comes from Homebrew,
+          # because the nixpkgs package is stale at 2.30.6 and marked unfree.
+          #
+          # The app carries NO evaluation-time platform guard, for two measured reasons. A second
+          # `apps = lib.optionalAttrs ... ` in this attribute set is a duplicate-attribute error,
+          # because the lines above already define `apps.<name>`. Moving the guard into `imports`
+          # then reads `pkgs` from `_module.args`, and the module system answers that with
+          # `error: infinite recursion encountered`. The script guards itself instead: it looks for
+          # `tart` and exits with an install hint when it finds none. `tart` is macOS-only.
+          apps.darwin-vm-test = {
+            type = "app";
+            program = lib.getExe (
+              pkgs.writeShellApplication {
+                name = "darwin-vm-test";
+                runtimeInputs = with pkgs; [
+                  coreutils
+                  curl
+                  gnugrep
+                  nix
+                ];
+                text = builtins.readFile ./hack/darwin-vm-test.sh;
+              }
+            );
+          };
           # The bundles ride on the assembled check set, so they attach here and not in
           # ./checks/default.nix. ./checks/README.md holds the measured time of each bundle.
           checks =
