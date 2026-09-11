@@ -88,7 +88,7 @@ slash command, which shells raw `git commit` internally. Never use `/commit` in 
   the user a clean working copy to review from. Do NOT stack one above undescribed or parked work.
 - **NEVER push changes** — the user reviews and pushes.
 - ⚠️ **A bare `jj git push` runs no content check.** `jj git push` fires no git hook, so the
-  deny-pattern guard in `modules/slots/jj/pre-push.sh` never runs there. Only a real `git push`
+  deny-pattern guard in `hack/pre-push.sh` never runs there. Only a real `git push`
   fires that hook, and `jj sync-upstream` is the one alias that uses `git push` for the public
   remote. So reach the public remote through `jj sync-remotes` or `jj sync-upstream` only, never
   with a hand-written `jj git push`. `jj fork-audit` is the content gate, and
