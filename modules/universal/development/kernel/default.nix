@@ -33,11 +33,11 @@ in
             kmod
             e2fsprogs
             jfsutils
-            reiserfsprogs
+            # nixpkgs removed `reiserfsprogs` on 2025-11-13. ReiserFS has no upstream maintenance.
             xfsprogs
             squashfs-tools-ng
             btrfs-progs
-            pcmciaUtils
+            pcmciautils
             unixtools.quota
             ppp
             nfs-utils
