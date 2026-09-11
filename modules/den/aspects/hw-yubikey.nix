@@ -86,9 +86,12 @@ let
       secretsAllowed = config.kdn.security.secrets.allowed or true;
     in
     {
+      imports = [ ../common/graphical.nix ];
+
       options.kdn.hw.yubikey.graphical = lib.mkOption {
         type = lib.types.bool;
-        default = false;
+        default = config.kdn.graphical;
+        defaultText = lib.literalExpression "config.kdn.graphical";
         example = true;
         description = ''
           This machine runs a desktop, so the aspect adds the graphical authenticator
@@ -96,6 +99,10 @@ let
 
           The old module reads `kdn.desktop.enable` here. A den aspect declares no reachable
           `enable`, so a consumer sets this option instead.
+
+          The default follows the shared switch `kdn.graphical`, from ../common/graphical.nix. So
+          one consumer line turns every graphical extra on. A consumer that sets this option
+          directly still wins, because a plain value beats a default.
 
           `yubioath-flutter` is unsupported on `aarch64-darwin`, so a Darwin class installs nothing
           even when the value is `true`.
