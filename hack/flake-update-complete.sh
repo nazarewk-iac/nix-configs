@@ -10,13 +10,23 @@
 #
 # Remote names come from the jj config, so this file holds no remote name.
 #   FORK — the private remote, from `git.push` (the fork slot sets it).
-#   PUB  — the public remote; override with KDN_PUBLIC_REMOTE.
+#   PUB  — the public remote, from `git.fetch` minus FORK; override with KDN_PUBLIC_REMOTE.
 set -uo pipefail
 
-PUB="${KDN_PUBLIC_REMOTE:-kdn}"
 FORK="${KDN_FORK_REMOTE:-$(jj config get git.push 2>/dev/null)}"
 if [ -z "$FORK" ]; then
   echo 'FAIL  cannot find the fork remote — set KDN_FORK_REMOTE, or enable the kdn.jj.fork slot' >&2
+  exit 1
+fi
+# The fork slot sets `git.fetch` to both remotes, so the public one is the entry that is not
+# FORK. `jj config get` prints a TOML list, so strip the brackets and the quotes first. The slot
+# normally sets KDN_PUBLIC_REMOTE through runtimeEnv; this route serves a direct `bash` call.
+PUB="${KDN_PUBLIC_REMOTE:-}"
+if [ -z "$PUB" ]; then
+  PUB="$(jj config get git.fetch 2>/dev/null | tr -d '[]" ' | tr ',' '\n' | grep -vxF "$FORK" | head -1)"
+fi
+if [ -z "$PUB" ]; then
+  echo 'FAIL  cannot find the public remote — set KDN_PUBLIC_REMOTE' >&2
   exit 1
 fi
 

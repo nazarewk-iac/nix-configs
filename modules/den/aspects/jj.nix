@@ -30,9 +30,9 @@
 #
 # ## The de-personalized port
 #
-# `kdn.jj.upstream.remote` defaulted to one person's own remote name. A default like that reaches
-# every adopter and every generated script, so the aspect defaults to `"origin"` instead. The
-# consumer names its own remote. See gap 6 of
+# `kdn.jj.upstream.remote` once defaulted to one person's own remote name. A default like that
+# reaches every adopter and every generated script, so both trees default to `"origin"` now.
+# Commit 71e0149b gave the slot the same default. The consumer names its own remote. See gap 6 of
 # ../../../docs/tasks/2026-09/generalization/definition.md.
 #
 # ## The agent files carry this repository's own opinion
@@ -133,8 +133,8 @@
         description = ''
           Name of the public remote — the one every published change reaches.
 
-          The slot defaulted this to one person's own remote name, so every adopter inherited it and
-          every generated script carried it. The default here names no person. A consumer sets its
+          A default that names one person reaches every adopter and every generated script, so this
+          default names no person. The slot carries the same `"origin"` default. A consumer sets its
           own name, and ./jj-fork.nix reads the same value for the public half of the fork topology.
         '';
         example = "public";
@@ -172,8 +172,7 @@
         # Each leaf is a `lib.mkDefault`, so a consumer repoints the backend, or re-enables the
         # gateway's own `git` backend, with a plain assignment. The paired slot matches.
         kdn.mcp.extraBackends.jj.command = lib.mkDefault "${jj-mcp}/bin/jj-mcp";
-        kdn.mcp.extraBackends.jj.description =
-          lib.mkDefault "jj — Jujutsu version control tools";
+        kdn.mcp.extraBackends.jj.description = lib.mkDefault "jj — Jujutsu version control tools";
         kdn.mcp.programs.git.enable = lib.mkDefault false;
 
         packages = [ pkgs.jujutsu ];
@@ -260,14 +259,10 @@
         # One agent, and two agent files. Each source is a relative path literal, so the derivation
         # reads one file. See the header.
         #
-        # The slot also sets `proactive = true`. devenv removed that option on 2026-08-16, and it
-        # turns a definition into a hard assertion failure. So a literal port does not evaluate. The
-        # migration devenv prescribes is a phrase in the description, and this line carries it. See
+        # The slot once set `proactive = true`. devenv removed that option on 2026-08-16, and a
+        # definition of it is now a hard assertion failure. Commit 575b9aa7 dropped it from the slot,
+        # so both trees now carry the migration devenv prescribes: a phrase in the description. See
         # `<devenv>/src/modules/integrations/claude.nix:367,958`.
-        #
-        # The slot never hits the assertion, because it gates the agent on `kdn.isSourceRepo` and
-        # this repository sets that flag true. A consumer with the flag false gets the failure. That
-        # is a slot defect, and it needs its own commit.
         claude.code.agents = lib.mkIf (cfg.installAgentRules && !config.kdn.isSourceRepo) {
           jj-expert = {
             description = "Deep jj (Jujutsu VCS) troubleshooting: divergent changes, conflicts, graph surgery, revset/fileset/template questions. Use proactively.";

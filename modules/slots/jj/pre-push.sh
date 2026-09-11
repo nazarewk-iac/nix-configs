@@ -82,8 +82,12 @@ check_range() {
   msgs=$(git log --format='%s' "$@")
   files=$(git log --format= --name-only "$@" | sort -u)
 
-  # Always on: block certain commit messages on every remote.
-  if printf '%s\n' "$msgs" | grep "${block_grep_args[@]}" >/dev/null; then
+  # Block certain commit messages on every remote. The list may legitimately be empty — the
+  # option default is `[ ]` — and an empty list builds `grep -i` with no `-e`, which exits 2.
+  # `if` reads exit 2 as "no match", so the check would pass in silence. Test the count first,
+  # so an empty list is an explicit no-op and never a silent pass.
+  if [ "${#block_patterns[@]}" -gt 0 ] \
+    && printf '%s\n' "$msgs" | grep "${block_grep_args[@]}" >/dev/null; then
     echo "ERROR: a commit message matches an always-blocked pattern. Refusing push to '$ref'." >&2
     printf '%s\n' "$msgs" | grep "${block_grep_args[@]}" | sed 's/^/  /' >&2 || true
     return 1
