@@ -18,7 +18,13 @@
 # `nixos`-class aspect since `devenv-cli` landed, so a booted guest is no longer vacuous. But every
 # value it would read is either a static option value or a file in the toplevel, and tier 1 and
 # tier 2 already read both. A VM earns its cost only for a runtime behaviour — a service that must
-# start, an activation that must converge. No darwin VM framework exists at all. See ./README.md.
+# start, an activation that must converge. See ./README.md.
+#
+# For a **darwin** guest there is no framework at all, and none can exist inside a check: a macOS
+# guest needs the Hypervisor entitlement, a network and a writable disk image, and the Nix sandbox
+# grants none of the three. So the darwin activation gate lives outside `checks/`, as the flake app
+# `apps.darwin-vm-test`. `../bundles.nix` records why `bundle-vm` stays empty, and
+# docs/tasks/2026-09/darwin-vm-testing/design.md holds the design.
 {
   pkgs,
   lib,
@@ -2744,28 +2750,20 @@ let
   # classes. A new **class** does not: `forceOf` holds no harness for it, and the pair then throws
   # with that instruction.
 
-  # den adds these keys to every aspect attribute set. The remaining keys name the classes the
-  # aspect emits. `../standalone.nix` holds the same list; keep the two in step.
-  aspectStructuralKeys = [
-    "_"
-    "__functor"
-    "__providesForwarded"
-    "classes"
-    "description"
-    "excludes"
-    "includes"
-    "meta"
-    "name"
-    "policies"
-    "provides"
-  ];
+  # The classes one aspect emits, from `denLib.pairs`.
+  #
+  # This used to subtract a local copy of den's structural keys from `den.ful.<ns>.<name>`. That
+  # copy drifted against `../standalone.nix` and against ../../modules/den/lib.nix, and it carried
+  # no guard for a class den gained.
+  #
+  # `denLib.pairs` is `pairsFor defaultDen` (../../modules/den/lib.nix), so every reader shares ONE
+  # den library evaluation. Ten files under ./assertions/ already read it. It also throws when an
+  # aspect emits a class that `exportClasses` does not list, which the local copy could not do.
+  aspectClassesOf = name: denLib.pairs.${name};
 
-  aspectClassesOf =
-    name:
-    lib.subtractLists aspectStructuralKeys (builtins.attrNames den.ful.${denLib.namespaceName}.${name});
-
-  # Every (aspect, class) pair the registry yields. 26 pairs: the 25 measured on 2026-09-11,
-  # plus `homebrew-nix-managed/darwin`.
+  # Every (aspect, class) pair the registry yields. The registry held 205 aspects on 2026-09-11,
+  # and each one emits one to four classes. Read the live list with
+  # `nix eval --json '.#denLib.pairs'`; never hard-code the count here.
   forcePairs = lib.concatLists (
     lib.mapAttrsToList (name: _: map (class: "${name}/${class}") (aspectClassesOf name)) (
       denLib.aspectModules
@@ -2853,13 +2851,22 @@ let
               harness for it. Add one to `forceOf`, next to `nixos`, `darwin`, `homeManager` and
               `devenv`.
             '');
-          drv = force (
-            denLib.imports {
-              inherit class;
-              aspects = [ name ];
-            }
-            ++ (forceData."${name}/${class}" or [ ])
-          );
+          # `denLib.pairModules`, not `denLib.imports`.
+          #
+          # `denLib.imports` holds its own `eval` INSIDE the function, so each call starts a fresh
+          # den library evaluation — one per pair here, and the registry holds 205 aspects.
+          # `denLib.pairModules` resolves every valid pair from the one shared `defaultDen`, so this
+          # whole walk pays for one den evaluation and shares it with every `denLib.pairs` reader.
+          #
+          # The two routes build the same expression: `pairModulesFor` maps
+          # `resolve den class den.ful.<ns>.<name>`, and `imports` maps the same `resolve` over the
+          # same `den.ful.<ns>.<name>`, for a single-aspect call with no `modules`, no `extraInputs`
+          # and the default `select`. `pairModules` returns the module and not a one-element list,
+          # so this wraps it.
+          #
+          # An invalid pair has no key, so a wrong class fails with `attribute … missing` instead of
+          # a silent empty force. `aspectClassesOf` above only yields valid pairs.
+          drv = force ([ denLib.pairModules."${name}-${class}" ] ++ (forceData."${name}/${class}" or [ ]));
         in
         if lib.isString drv then "${name}/${class}" else "${name}/${class}: broken"
       ) (aspectClassesOf name)
