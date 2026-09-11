@@ -160,7 +160,8 @@ let
   # nheko needs `olm`, and nixpkgs marks `olm` insecure. Home Manager's own `programs.nheko` module
   # writes the package straight into `home.packages`, so `../../../modules/den/common/filter-packages.nix`
   # never sees it and cannot drop it. A bare subject holds no `permittedInsecurePackages`, so the
-  # evaluation would die. The aspect keeps the old `true` default; this subject alone turns it off.
+  # evaluation would die. The aspect now defaults the option to `false`, so this line is only an
+  # explicit restatement of that default.
   homePolicy = {
     kdn.programs.matrix.nheko.use = false;
   };

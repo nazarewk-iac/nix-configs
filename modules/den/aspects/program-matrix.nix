@@ -51,10 +51,22 @@
         description = "Install FluffyChat. It holds no persistence entry yet.";
       };
 
+      # A recorded deviation from old-tree parity. The old module defaults nheko on, but nheko needs
+      # `olm`, and nixpkgs marks `olm` insecure. Home Manager's own `programs.nheko` module writes
+      # the package straight into `home.packages`, so the shared package filter never sees it.
+      # An aspect has no reachable `enable`, so inclusion is the only switch. A consumer who
+      # includes this aspect must get a configuration that evaluates. The old default cannot
+      # evaluate without `permittedInsecurePackages`, so parity here means a broken default.
+      # A consumer who wants nheko sets this option to `true` and permits `olm` as well.
       options.kdn.programs.matrix.nheko.use = lib.mkOption {
         type = lib.types.bool;
-        default = true;
-        description = "Install and configure nheko.";
+        default = false;
+        description = ''
+          Install and configure nheko.
+
+          The default is `false`, because nheko needs the insecure `olm` package. Turn it on and
+          add `olm` to `nixpkgs.config.permittedInsecurePackages` yourself.
+        '';
       };
 
       config = lib.mkMerge [
