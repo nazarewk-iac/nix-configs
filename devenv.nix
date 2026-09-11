@@ -35,6 +35,9 @@ in
       kdn.isSourceRepo = true;
 
       kdn.nix.enable = true;
+      # This repository's own formatter app. The slot allow-lists no app name now, so this line
+      # keeps the Bash allow rule that the slot used to carry.
+      kdn.nix.extraBashAllow = [ "nix run .#kdn-nix-fmt -- *" ];
       kdn.jj.enable = true;
       # These two values belong to this repository, not to the slot. The slot defaults are now
       # neutral (`origin` and an empty list), so these two lines keep the behaviour unchanged.
@@ -60,6 +63,9 @@ in
       kdn.mcp = {
         enable = true;
         basic-memory.enable = true;
+        # This repository's own knowledge root. The slot default names no repository now, so this
+        # line keeps the note paths that the old default gave.
+        basic-memory.knowledgeRoot = "$HOME/.local/share/kdn-nix-configs/knowledge";
         # Both children now default to false, so a consumer opts in. This repository wants both, and
         # these two lines keep the behaviour that the old `default = true` gave.
         snoop.enable = true;
@@ -71,6 +77,15 @@ in
       # brys-specific model/proxy wiring lives in the hostname-gated profile
       # below.
       kdn.opencode.enable = true;
+      # These three values belong to this repository, not to the slot. The slot defaults are now
+      # neutral (an empty provider set, the store path only, and no credential), so the three
+      # settings below keep the behaviour unchanged.
+      kdn.opencode.settings.provider.requesty = { };
+      kdn.opencode.allowedPaths = [
+        "/nix/store/**"
+        "~/dev/**"
+      ];
+      kdn.opencode.authKeys.REQUESTY_API_KEY = "requesty";
     }).config.devenv
   ];
 

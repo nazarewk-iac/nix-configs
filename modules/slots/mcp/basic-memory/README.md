@@ -21,8 +21,10 @@ Devenv slot module that adds two isolated [basic-memory](https://github.com/basi
 
 ## Knowledge base layout
 
+`knowledgeRoot` sets the root. The default is `$HOME/.local/share/basic-memory`.
+
 ```
-~/.local/share/kdn-nix-configs/knowledge/
+<knowledgeRoot>/
 ├── .config/
 │   ├── basic-memory-public/    ← isolated db + config for public instance
 │   └── basic-memory-sensitive/ ← isolated db + config for sensitive instance

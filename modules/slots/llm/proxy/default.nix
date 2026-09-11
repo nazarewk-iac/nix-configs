@@ -4,11 +4,11 @@
 # FastAPI layer that sits between OpenCode and an LLM backend, translating
 # DeepSeek DSML / Qwen XML raw tool calls into OpenAI-compatible `tool_calls`
 # JSON on the stream. It forwards the client's `Authorization` header through
-# unchanged, so a Requesty key supplied by OpenCode flows straight to the
+# unchanged, so a client key supplied by OpenCode flows straight to the
 # upstream with no server-side secret needed.
 #
 # The `instances` attrset lets a host run several proxies at once — for example
-# one pointed at the Requesty router and one pointed at a local llama-swap model
+# one in front of a commercial router API and one in front of a local llama-server
 # (`http://127.0.0.1:39703`) — each on its own port.
 #
 # Per-instance `forwardClientAuth` enables forwarding the client Authorization
@@ -97,8 +97,9 @@ in
                 type = lib.types.str;
                 description = ''
                   Upstream LLM backend base URL (the proxy appends the request
-                  path). Examples: Requesty "https://router.requesty.ai" or a
-                  local llama-swap "http://127.0.0.1:39703".
+                  path). A commercial router API and a local llama-server are both
+                  valid, for example `https://router.requesty.ai` or
+                  `http://127.0.0.1:39703`.
 
                   Note: the proxy passes the client Authorization header through
                   unchanged, so point it only at backends that should receive
@@ -131,9 +132,9 @@ in
                   Forward the client's Authorization header to the upstream on
                   the streaming chat path. The original proxy only forwards it
                   on non-streaming requests; our patch extends that to streaming
-                  when this is true. Enable when the upstream (e.g. Requesty)
-                  authenticates via the client's API key. Leave false for a
-                  local auth-less backend.
+                  when this is true. Turn it on when the upstream authenticates
+                  with the client's own API key. Keep it off for a local backend
+                  that needs no key.
                 '';
               };
 

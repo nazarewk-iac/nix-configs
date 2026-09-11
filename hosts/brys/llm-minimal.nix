@@ -23,6 +23,9 @@ let
     # LLM serving is the whole point of this boot entry: same slot wiring as
     # the main brys config (models, DSpark draft, download, caddy/proxy).
     kdn.llm.local.enable = true;
+    # This machine has 16 physical cores. The slot names no thread count now, so this
+    # line keeps the `threads` key that the old slot default wrote.
+    kdn.llm.local.defaultThreads = 16;
     kdn.llm.local.modelsDir = "/var/lib/kdn/llms/models";
     kdn.llm.local.download.tokenFile = "/run/configs/llms/huggingface/token";
     kdn.llm.local.domain = "brys.lan.etra.net.int.kdn.im";

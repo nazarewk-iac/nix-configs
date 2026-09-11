@@ -7,14 +7,17 @@
 }:
 let
   cfg = config.kdn.mcp.basic-memory;
-  bmp = pkgs.kdn.basic-memory.mkWrapper {
-    name = "public";
-    aliases = [ "bmp" ];
-  };
-  bms = pkgs.kdn.basic-memory.mkWrapper {
-    name = "sensitive";
-    aliases = [ "bms" ];
-  };
+  # One wrapper per knowledge base. `knowledgeRoot` states where the notes live, so the
+  # package's own default path never applies and no repository name reaches the store.
+  mkBase =
+    name: aliases:
+    pkgs.kdn.basic-memory.mkWrapper {
+      inherit name aliases;
+      home = "${cfg.knowledgeRoot}/${name}";
+      configDir = "${cfg.knowledgeRoot}/.config/basic-memory-${name}";
+    };
+  bmp = mkBase "public" [ "bmp" ];
+  bms = mkBase "sensitive" [ "bms" ];
 in
 {
   options.kdn.mcp.basic-memory = {
@@ -32,6 +35,18 @@ in
 
         The option covers the instruction file only. The MCP backends and the wrapper binaries stay
         in place.
+      '';
+    };
+
+    knowledgeRoot = lib.mkOption {
+      type = lib.types.str;
+      default = "$HOME/.local/share/basic-memory";
+      description = ''
+        Root directory for every knowledge base. The wrapper expands it at run time,
+        so a shell variable such as `$HOME` is correct here.
+
+        One base gets `<root>/<name>` for its notes, and
+        `<root>/.config/basic-memory-<name>` for its own configuration.
       '';
     };
   };

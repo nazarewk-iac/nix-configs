@@ -23,6 +23,9 @@
 
   # In-devenv opencode, pointed at brys's local model via the DSML proxies.
   kdn.opencode.enable = true;
+  # The slot names no credential of its own now, so this line keeps the wrapper's
+  # REQUESTY_API_KEY export that the `requesty-proxy` provider below reads.
+  kdn.opencode.authKeys.REQUESTY_API_KEY = "requesty";
   kdn.opencode.settings = {
     provider = {
       # Native requesty — direct API, auth from auth.json.

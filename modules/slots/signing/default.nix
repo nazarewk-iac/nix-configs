@@ -64,7 +64,7 @@ in
       default = [ ];
       example = [
         {
-          principals = [ "someone@example.com" ];
+          principals = [ "someone@example.invalid" ];
           key = "ssh-ed25519 AAAAC3Nz... hardware key";
         }
       ];

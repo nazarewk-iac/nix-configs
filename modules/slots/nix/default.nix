@@ -36,6 +36,22 @@ in
         stay in place.
       '';
     };
+
+    extraBashAllow = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      example = [ "nix run .#my-formatter -- *" ];
+      description = ''
+        Extra Claude Code Bash allow rules, next to the read-only `nix` and `devenv`
+        rules below.
+
+        An app name belongs to the consumer, not to a reusable slot, so the consumer
+        names its own app here.
+
+        Keep every rule read-only or idempotent. A bare `nix run *` wildcard executes
+        an arbitrary flake app, so it must never enter this list.
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -96,8 +112,9 @@ in
         claude.code.hooks.git-hooks-run.matcher = "^(Edit|MultiEdit|Write)$";
 
         # Read-only/evaluation-only commands — safe to always allow, no side effects. `nix run`
-        # itself is deliberately NOT allowed as a bare wildcard (it executes arbitrary flake apps);
-        # only this repo's own idempotent formatter is allow-listed by exact invocation.
+        # itself is deliberately NOT allowed as a bare wildcard (it executes arbitrary flake apps).
+        # A consumer allow-lists its own flake app by exact invocation through
+        # `kdn.nix.extraBashAllow`.
         claude.code.permissions.rules.Bash.allow = [
           "nix build *"
           "nix eval *"
@@ -109,8 +126,8 @@ in
           "nix why-depends *"
           "devenv build *"
           "devenv eval *"
-          "nix run .#kdn-nix-fmt -- *"
-        ];
+        ]
+        ++ cfg.extraBashAllow;
 
         packages = with pkgs; [
           nil
