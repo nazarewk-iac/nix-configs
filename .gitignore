@@ -53,9 +53,9 @@
 !/.agents/
 !/.claude
 
-# KDN private CA material (data/) and per-host certs (hosts/*/certs/)
-!/data/ca.pub
-!/data/ca.key.sops
+# KDN private CA material (data/ca/) and per-host certs (hosts/*/certs/)
+!/data/ca/ca.pub
+!/data/ca/ca.key.sops
 !/hosts/*/certs/*.pub
 !/hosts/*/certs/*.key.sops
 

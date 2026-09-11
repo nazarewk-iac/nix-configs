@@ -17,10 +17,10 @@ let
     # Topology-aware remote SSH access (kdn-* dispatcher); graph comes from the import above.
     kdn.ssh-access.enable = true;
 
-    # Trust the KDN CA (data/ca.pub) system-wide; reference the offline CA key path.
+    # Trust the KDN CA (data/ca/ca.pub) system-wide; reference the offline CA key path.
     kdn.ca.kdn.enable = true;
-    kdn.ca.kdn.certFile = "${kdnConfig.self}/data/ca.pub";
-    kdn.ca.kdn.keySopsFile = "${kdnConfig.self}/data/ca.key.sops";
+    kdn.ca.kdn.certFile = "${kdnConfig.self}/data/ca/ca.pub";
+    kdn.ca.kdn.keySopsFile = "${kdnConfig.self}/data/ca/ca.key.sops";
 
     # Local LLM serving (llama-server router mode, TLS behind caddy). Models are
     # registered under kdn.disks.persist."usr/data" further below; the slot

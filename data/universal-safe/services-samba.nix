@@ -1,8 +1,11 @@
 /*
   Personal network data for `kdn.services.samba`.
 
-  This file is a module, not a data attribute set. It assigns an option that
+  This file is a module, not a data value. It assigns an option that
   `modules/universal/services/samba/default.nix` declares, so that module names no home LAN.
+
+  The body reads no module argument, so the file is a plain attribute set with no function head.
+  nixpkgs `lib/modules.nix` accepts both forms.
 
   `modules/universal/default.nix` imports this file behind `builtins.pathExists`. An adopter
   deletes the file and `hostsAllow` falls back to loopback only.
@@ -14,7 +17,6 @@
   `lib.mkDefault` at `services/samba/default.nix:44`, which is priority 1000. This assignment
   sits at priority 100 and wins with the same value.
 */
-{ ... }:
 {
   config.kdn.services.samba.defaults.hostsAllow = [
     "192.168.0.0/16"

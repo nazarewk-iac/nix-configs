@@ -38,8 +38,8 @@ lib.optionalAttrs
         /*
           stylix needs an image to evaluate, so this module keeps a neutral fallback.
 
-          `data/stylix.nix` supplies the real wallpaper at `lib.mkDefault`, which is priority
-          1000. This definition therefore needs a weaker priority. `lib.mkOptionDefault` is
+          `data/universal-deps/stylix.nix` supplies the real wallpaper at `lib.mkDefault`,
+          which is priority 1000. This definition therefore needs a weaker priority. `lib.mkOptionDefault` is
           wrong: 1500 ties with the option's own `default`, and `stylix.image` is a `nullOr`
           type, so the tie raises `defined both null and not null`. 1250 sits strictly between
           1000 and 1500 and avoids both problems.

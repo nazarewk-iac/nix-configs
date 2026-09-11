@@ -18,7 +18,7 @@ encrypted on disk and only decrypted manually when (re)signing a leaf cert.
 The CA key is a raw SOPS binary file. Decrypt it on demand:
 
 ```bash
-sops decrypt --output-type binary data/ca.key.sops > /tmp/ca.key
+sops decrypt --output-type binary data/ca/ca.key.sops > /tmp/ca.key
 ```
 
 The decrypted file is an EC private key (PEM):
@@ -44,12 +44,12 @@ openssl req -new -key llm.key -out llm.csr -sha256 \
   -subj "$subj" -addext "subjectAltName=$sans"
 
 # sign with the CA (decode the CA key first, see above)
-openssl x509 -req -in llm.csr -CA data/ca.pub -CAkey /tmp/ca.key \
+openssl x509 -req -in llm.csr -CA data/ca/ca.pub -CAkey /tmp/ca.key \
   -CAcreateserial -out llm.pub -days 3650 -sha256 \
   -copy_extensions copy
 
 # verify
-openssl verify -CAfile data/ca.pub llm.pub
+openssl verify -CAfile data/ca/ca.pub llm.pub
 ```
 
 ## Storing a leaf certificate
@@ -69,5 +69,5 @@ Use the same age recipients as the other KDN sops files (see any `*.sops.yaml`
 
 ## Trust
 
-Add `data/ca.pub` to the system CA authorities on the hosts that consume
+Add `data/ca/ca.pub` to the system CA authorities on the hosts that consume
 services signed by this CA via the `kdn.ca` slot (`security.pki.certificateFiles`).

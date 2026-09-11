@@ -1,9 +1,12 @@
 /*
   Personal locale data for `kdn.locale`.
 
-  This file is a module, not a data attribute set. It assigns options that
+  This file is a module, not a data value. It assigns options that
   `modules/universal/locale/default.nix` declares, so that module holds no time zone, no
   national keyboard layout and no national locale.
+
+  The body reads no module argument, so the file is a plain attribute set with no function head.
+  nixpkgs `lib/modules.nix` accepts both forms.
 
   `modules/universal/default.nix` imports this file behind `builtins.pathExists`. An adopter
   deletes the file and the four options fall back to a neutral English value.
@@ -16,7 +19,6 @@
   `modules/universal/profile/user/{sn,bn}` assign both at priority 100, so a second
   priority-100 definition would stop the evaluation.
 */
-{ ... }:
 {
   config.kdn.locale.timezone = "Europe/Warsaw";
   config.kdn.locale.xkbLayout = "pl";

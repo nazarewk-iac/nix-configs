@@ -62,7 +62,7 @@ in
     suffixes = [ "/default.nix" ];
   }
   /*
-    The personal data folder.
+    The personal data folder. `data/README.md` holds the sort rule for each sub-directory.
 
     Each file is a module. It assigns options that this tree declares, so a module holds no
     personal value of its own. `builtins.filter builtins.pathExists` drops an absent file, so
@@ -76,14 +76,16 @@ in
     `applyModuleArgsIfFunction (toString m) (import m) args` for it.
   */
   ++ builtins.filter builtins.pathExists [
-    "${self}/data/desktop-sway-kanshi.nix"
-    "${self}/data/development-nix.nix"
-    "${self}/data/hw-edid.nix"
-    "${self}/data/locale.nix"
-    "${self}/data/programs-photoprism.nix"
-    "${self}/data/services-printing.nix"
-    "${self}/data/services-samba.nix"
-    "${self}/data/stylix.nix"
+    # `data/universal-deps/` — a file that reads `kdnConfig`.
+    "${self}/data/universal-deps/desktop-sway-kanshi.nix"
+    "${self}/data/universal-deps/development-nix.nix"
+    "${self}/data/universal-deps/stylix.nix"
+    # `data/universal-safe/` — a file that reads no `kdnConfig`.
+    "${self}/data/universal-safe/hw-edid.nix"
+    "${self}/data/universal-safe/locale.nix"
+    "${self}/data/universal-safe/programs-photoprism.nix"
+    "${self}/data/universal-safe/services-printing.nix"
+    "${self}/data/universal-safe/services-samba.nix"
   ];
 
   config = lib.mkMerge [

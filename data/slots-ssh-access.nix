@@ -44,7 +44,6 @@
 # `lan.etra.net.int.kdn.im` zone yet, so every `from = "etra"` edge puts the static mgmt address
 # first and keeps the FQDN as the next entry, for when that zone works. anji holds no static
 # address, so its relay path depends on that zone alone.
-{ ... }:
 {
   kdn.ssh-access = {
     # Direct connections to the personal LANs use the OpenSSH (hardware token) agent. Without
