@@ -92,7 +92,7 @@
           PRIVATE_REMOTE = cfg.fork.remote;
           BLOCK_PUSH_MESSAGE_PATTERNS = lib.concatStringsSep "\n" cfg.alwaysBlockedMessagePatterns;
         };
-        text = builtins.readFile ../../slots/jj/pre-push.sh;
+        text = builtins.readFile ../../../hack/pre-push.sh;
       };
 
       checkForkContamination = pkgs.writeShellApplication {
@@ -102,7 +102,7 @@
           pkgs.jujutsu
         ];
         runtimeEnv = sharedRuntimeEnv;
-        text = builtins.readFile ../../slots/jj/fork/check-fork-contamination.sh;
+        text = builtins.readFile ../../../hack/check-fork-contamination.sh;
       };
 
       # The structural gate for a finished fork flake update. It cannot be a `checks/` derivation: it
@@ -127,7 +127,7 @@
           pkgs.jujutsu
         ];
         runtimeEnv = sharedRuntimeEnv;
-        text = builtins.readFile ../../slots/jj/fork/fork-audit.sh;
+        text = builtins.readFile ../../../hack/fork-audit.sh;
       };
 
       # The same generator call as ./jj.nix, on the same option value. Nix gives one derivation for

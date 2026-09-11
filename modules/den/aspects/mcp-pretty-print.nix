@@ -31,10 +31,10 @@
 #
 # 1. **No `enable` option.** The slot declares `kdn.mcp.pretty-print.enable`, and it defaults to
 #    false since 2026-09-10. Inclusion is the switch here, so this aspect needs no option at all.
-# 2. **The hook script comes from the slot tree.** `mcp_gateway_pretty_print.py` still lives beside
-#    the slot. A relative path reads it, so no copy can drift; a dangling path fails loudly, and a
-#    duplicate would not. The file moves next to this aspect when the slot tree goes away — logged
-#    in ../../../docs/tasks/2026-09/generalization/009-personal-data-folder/definition.md.
+# 2. **The hook script comes from `hack/`.** `mcp_gateway_pretty_print.py` sits in the neutral
+#    directory that both trees read, next to `flake-update-complete.sh`. A relative path literal
+#    reads it, so no copy can drift, and a retirement of `modules/slots/` needs no script rescue —
+#    logged in ../../../docs/tasks/2026-09/generalization/009-personal-data-folder/definition.md.
 #
 # ## The three rules this tree holds for every aspect
 #
@@ -143,7 +143,7 @@
 
             installPhase = ''
               mkdir -p "$out/bin"
-              install -m755 ${../../slots/mcp/pretty-print/mcp_gateway_pretty_print.py} \
+              install -m755 ${../../../hack/mcp_gateway_pretty_print.py} \
                 "$out/bin/mcp-gateway-pretty-print"
             '';
           };

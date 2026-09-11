@@ -46,18 +46,17 @@
 #
 # ## Three files, each a relative path literal
 #
-# The slot reads `jj-guard.sh` from its own directory. It reads the rule, the skill and the agent
+# Both trees read `jj-guard.sh` from `hack/`. The slot reads the rule, the skill and the agent
 # prompt through `"${inputs.nix-configs}/…"`, and each one of those is a second whole-tree store
 # copy. Every read here is a relative path literal, so the derivation depends on one file and not on
 # the whole tree. See
 # ../../../docs/tasks/2026-09/generalization/011-whole-tree-store-copies/definition.md.
 #
-# ## Where the shell script moves later
+# ## Where the shell script lives
 #
-# This aspect reads `jj-guard.sh` from the slot directory. The creator's instruction on 2026-09-10
-# keeps every file in place for now. A duplicate copy drifts in silence, and a dangling path fails
-# loudly, so den reads the slot's copy. When the slot tree goes away, the script moves to
-# `modules/den/aspects/jj/` and this file becomes a directory. See
+# `hack/jj-guard.sh` is the one copy. No aspect reads the slot tree any more, so a retirement of
+# `modules/slots/` needs no script rescue. `hack/flake-update-complete.sh` set the precedent: one
+# neutral file, two readers, one relative path literal each. See
 # ../../../docs/tasks/2026-09/generalization/009-personal-data-folder/definition.md.
 #
 # ## What the port keeps unchanged
@@ -101,7 +100,7 @@
       jjGuardHook = pkgs.writeShellApplication {
         name = "jj-guard";
         runtimeInputs = [ pkgs.jq ];
-        text = builtins.readFile ../../slots/jj/jj-guard.sh;
+        text = builtins.readFile ../../../hack/jj-guard.sh;
       };
     in
     {

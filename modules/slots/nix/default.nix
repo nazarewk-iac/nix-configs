@@ -12,7 +12,7 @@ let
   checkNixStoreSymlinks = pkgs.writeShellApplication {
     name = "check-nix-store-symlinks";
     runtimeInputs = [ pkgs.git ];
-    text = builtins.readFile ./check-nix-store-symlinks.sh;
+    text = builtins.readFile ../../../hack/check-nix-store-symlinks.sh;
   };
 
   # The `devenv mcp` backend command. A frozen `env.DEVENV_ROOT` pointed every consumer at this

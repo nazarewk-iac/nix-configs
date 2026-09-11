@@ -37,7 +37,7 @@ let
       pkgs.jq
       pkgs.gawk
     ];
-    text = builtins.readFile ./wait-for-devenv.sh;
+    text = builtins.readFile ../../../hack/wait-for-devenv.sh;
   };
 
   waitForDevenvStart = pkgs.writeShellApplication {
@@ -46,7 +46,7 @@ let
       pkgs.jq
       pkgs.gawk
     ];
-    text = builtins.readFile ./wait-for-devenv-start.sh;
+    text = builtins.readFile ../../../hack/wait-for-devenv-start.sh;
   };
 in
 {

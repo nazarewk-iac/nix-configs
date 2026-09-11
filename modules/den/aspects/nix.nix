@@ -30,7 +30,7 @@
 #
 # ## Four repository files, each a relative path literal
 #
-# The slot reads `check-nix-store-symlinks.sh` from its own directory. It reads two skills and one
+# Both trees read `check-nix-store-symlinks.sh` from `hack/`. The slot reads two skills and one
 # rule through `"${inputs.nix-configs}/…"`. Every read here is a relative path literal, so the
 # derivation depends on one file and not on the whole tree.
 #
@@ -40,12 +40,11 @@
 # line, and this repository turns it on explicitly. See
 # ../../../docs/tasks/2026-09/generalization/013-opt-in-boundaries/definition.md, rows 45 and 46.
 #
-# ## Where the shell script moves later
+# ## Where the shell script lives
 #
-# This aspect reads `check-nix-store-symlinks.sh` from the slot directory. The creator's instruction
-# on 2026-09-10 keeps every file in place for now. A duplicate copy drifts in silence, and a dangling
-# path fails loudly, so den reads the slot's copy. When the slot tree goes away, the script moves to
-# `modules/den/aspects/nix/` and this file becomes a directory. See
+# `hack/check-nix-store-symlinks.sh` is the one copy, and both trees read it by relative path
+# literal. No duplicate can drift, and a retirement of `modules/slots/` needs no script rescue.
+# `hack/flake-update-complete.sh` set the precedent. See
 # ../../../docs/tasks/2026-09/generalization/009-personal-data-folder/definition.md.
 #
 # ## What the port drops
@@ -79,7 +78,7 @@
       checkNixStoreSymlinks = pkgs.writeShellApplication {
         name = "check-nix-store-symlinks";
         runtimeInputs = [ pkgs.git ];
-        text = builtins.readFile ../../slots/nix/check-nix-store-symlinks.sh;
+        text = builtins.readFile ../../../hack/check-nix-store-symlinks.sh;
       };
 
       # The `devenv mcp` backend command. The slot froze a store path into `env.DEVENV_ROOT`; this

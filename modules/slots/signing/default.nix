@@ -176,7 +176,7 @@ in
             : "''${KDN_SIGNING_ALLOWED_SIGNERS:=${allowedSignersFile}}"
             : "''${KDN_SIGNING_PLAIN_KEY:=${plainKeyFile}}"
           ''
-          + builtins.readFile ./kdn-signing.sh;
+          + builtins.readFile ../../../hack/kdn-signing.sh;
         };
       in
       # Skip a user without git, for example root. The `home` target serves every

@@ -44,12 +44,11 @@
 #     ../../../docs/tasks/2026-09/generalization/011-whole-tree-store-copies/definition.md.
 #  3. **`kdn.isSourceRepo` arrives through an import by path.** See ../common/source-repo.nix.
 #
-# ## Where the two shell scripts move later
+# ## Where the two shell scripts live
 #
-# This aspect reads `wait-for-devenv.sh` and `wait-for-devenv-start.sh` from the slot directory. The
-# creator's instruction on 2026-09-10 keeps every file in place for now. A duplicate copy drifts in
-# silence, and a dangling path fails loudly, so den reads the slot's copy. When the slot tree goes
-# away, the two scripts move to `modules/den/aspects/zellij/` and this file becomes a directory. See
+# This aspect reads `wait-for-devenv.sh` and `wait-for-devenv-start.sh` from `hack/`, and so does
+# the slot. One copy each, two relative path literals each, so no duplicate can drift. A retirement
+# of `modules/slots/` needs no script rescue. `hack/flake-update-complete.sh` set the precedent. See
 # ../../../docs/tasks/2026-09/generalization/009-personal-data-folder/definition.md.
 #
 # ## The three rules this tree holds for every aspect
@@ -80,7 +79,7 @@
           pkgs.jq
           pkgs.gawk
         ];
-        text = builtins.readFile ../../slots/zellij/wait-for-devenv.sh;
+        text = builtins.readFile ../../../hack/wait-for-devenv.sh;
       };
 
       waitForDevenvStart = pkgs.writeShellApplication {
@@ -89,7 +88,7 @@
           pkgs.jq
           pkgs.gawk
         ];
-        text = builtins.readFile ../../slots/zellij/wait-for-devenv-start.sh;
+        text = builtins.readFile ../../../hack/wait-for-devenv-start.sh;
       };
     in
     {

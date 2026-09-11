@@ -129,7 +129,7 @@ in
 
         installPhase = ''
           mkdir -p "$out/bin"
-          install -m755 ${./mcp_gateway_pretty_print.py} "$out/bin/mcp-gateway-pretty-print"
+          install -m755 ${../../../../hack/mcp_gateway_pretty_print.py} "$out/bin/mcp-gateway-pretty-print"
         '';
       };
       description = ''

@@ -2,7 +2,7 @@
 #
 # It returns two attributes:
 #   toml    - the rendered jj config, exported as JJ_FORK_CONFIG_TOML
-#   prePush - the pre-push hook SCRIPT, exported as KDN_JJ_PRE_PUSH_SH
+#   prePush - the pre-push hook SCRIPT from `hack/`, exported as KDN_JJ_PRE_PUSH_SH
 #
 # `prePush` is the plain script, not the `writeShellApplication` wrapper. The
 # wrapper exports `runtimeEnv` inside itself, so a caller cannot override the
@@ -58,5 +58,7 @@ let
 in
 {
   toml = (pkgs.formats.toml { }).generate "jj-fork-config.toml" rendered.config.kdn.jj.config;
-  prePush = slotsPath + "/jj/pre-push.sh";
+  # The plain script now lives in the neutral `hack/` directory, which both the slot tree and the
+  # den tree read. A relative path literal reaches it from this file, so no caller passes a path.
+  prePush = ../../hack/pre-push.sh;
 }

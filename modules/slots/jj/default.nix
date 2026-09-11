@@ -13,7 +13,7 @@ let
   jjGuardHook = pkgs.writeShellApplication {
     name = "jj-guard";
     runtimeInputs = [ pkgs.jq ];
-    text = builtins.readFile ./jj-guard.sh;
+    text = builtins.readFile ../../../hack/jj-guard.sh;
   };
 in
 {

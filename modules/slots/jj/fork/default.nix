@@ -23,7 +23,7 @@ let
       PRIVATE_REMOTE = cfg.fork.remote;
       BLOCK_PUSH_MESSAGE_PATTERNS = lib.concatStringsSep "\n" cfg.alwaysBlockedMessagePatterns;
     };
-    text = builtins.readFile ../pre-push.sh;
+    text = builtins.readFile ../../../../hack/pre-push.sh;
   };
 
   checkForkContamination = pkgs.writeShellApplication {
@@ -33,7 +33,7 @@ let
       pkgs.jujutsu
     ];
     runtimeEnv = sharedRuntimeEnv;
-    text = builtins.readFile ./check-fork-contamination.sh;
+    text = builtins.readFile ../../../../hack/check-fork-contamination.sh;
   };
 
   # The structural gate for a finished fork flake update. It cannot be a `checks/` derivation: it
@@ -58,7 +58,7 @@ let
       pkgs.jujutsu
     ];
     runtimeEnv = sharedRuntimeEnv;
-    text = builtins.readFile ./fork-audit.sh;
+    text = builtins.readFile ../../../../hack/fork-audit.sh;
   };
 in
 {
