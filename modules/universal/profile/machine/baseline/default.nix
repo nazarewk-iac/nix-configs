@@ -27,11 +27,28 @@ in
       `enable` is `false`, because the whole `config` sits behind `enable`. An adopter writes a plain
       `false`, which wins over an option default and over a `mkDefault`.
     */
+    /*
+      One option names the user profile, and one switch turns it on. The name is unique to one
+      person, so it belongs to an option. The default keeps the profile this tree uses today.
+
+      `null` means the baseline names no user at all. Then `primaryUser.enable` follows to `false`,
+      and every host names its own user.
+    */
+    primaryUser.profile = lib.mkOption {
+      type = with lib.types; nullOr str;
+      default = "kdn";
+      example = null;
+      description = ''
+        Attribute name under `kdn.profile.user` that the baseline turns on.
+        The named attribute must exist. This tree declares `kdn`, `sn` and `bn`.
+      '';
+    };
     primaryUser.enable = lib.mkOption {
       type = lib.types.bool;
-      default = true;
+      default = cfg.primaryUser.profile != null;
+      defaultText = lib.literalExpression "config.kdn.profile.machine.baseline.primaryUser.profile != null";
       example = false;
-      description = "Turn on the `kdn` user profile of this tree. An adopter names its own user.";
+      description = "Turn on the user profile that `primaryUser.profile` names. An adopter names its own user.";
     };
     garbageCollection.enable = lib.mkOption {
       type = lib.types.bool;
@@ -112,8 +129,9 @@ in
         kdn.hw.yubikey.enable = lib.mkDefault true;
         kdn.security.disk-encryption.enable = lib.mkDefault true;
       }
-      (lib.mkIf cfg.primaryUser.enable {
-        kdn.profile.user.kdn.enable = lib.mkDefault true;
+      # The attribute name comes from the option, so the baseline holds no user name of its own.
+      (lib.mkIf (cfg.primaryUser.enable && cfg.primaryUser.profile != null) {
+        kdn.profile.user.${cfg.primaryUser.profile}.enable = lib.mkDefault true;
       })
       {
         kdn.env.packages = with pkgs; [

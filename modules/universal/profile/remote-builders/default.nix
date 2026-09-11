@@ -174,6 +174,17 @@ in
     buildMachines = lib.mkOption {
       type = with lib.types; listOf attrs;
     };
+    /*
+      One option names the key files of the builder account. The module used to read one user
+      profile of this tree directly. The default keeps that profile, and a consumer replaces the
+      whole list. A definition replaces an option default, so no list concatenates here.
+    */
+    authorizedKeysFiles = lib.mkOption {
+      type = with lib.types; listOf path;
+      default = [ config.kdn.profile.user.kdn.ssh.authorizedKeysPath ];
+      defaultText = lib.literalExpression "[ config.kdn.profile.user.kdn.ssh.authorizedKeysPath ]";
+      description = "Public-key files that the remote-builder account accepts.";
+    };
   };
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
@@ -192,7 +203,7 @@ in
             # TODO: cut it out into baseline?
             kdn.security.secrets.sops.files."ssh" = {
               keyPrefix = "nix/ssh";
-              sopsFile = "${kdnConfig.self}/default.unattended.sops.yaml";
+              sopsFile = config.kdn.security.secrets.sops.defaultFile;
               basePath = "/run/configs";
               sops.mode = "0440";
               overrides = lib.mkBefore [
@@ -274,9 +285,7 @@ in
                     shell = pkgs.bashInteractive;
                     description = bCfg.description;
                     createHome = false;
-                    openssh.authorizedKeys.keyFiles = [
-                      config.kdn.profile.user.kdn.ssh.authorizedKeysPath
-                    ];
+                    openssh.authorizedKeys.keyFiles = cfg.authorizedKeysFiles;
                   }
                   (kdnConfig.util.ifTypes [ "darwin" ] {
                     description = bCfg.description;

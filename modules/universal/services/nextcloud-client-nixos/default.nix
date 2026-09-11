@@ -35,7 +35,10 @@ in
     enable = lib.mkEnableOption "nextcloud-client-nixos";
   };
 
-  config = lib.mkIf cfg.enable (
+  # The three reads in the `let` above index `config.sops.secrets` by literal name. A tree with no
+  # sops file holds none of those names, and the read stops the evaluation. So the whole `config`
+  # waits for the secrets as well as for `enable`. 008 list 3 rank 2 records this defect.
+  config = lib.mkIf (cfg.enable && config.kdn.security.secrets.allowed) (
     lib.mkMerge [
       {
         kdn.env.packages = with pkgs; [

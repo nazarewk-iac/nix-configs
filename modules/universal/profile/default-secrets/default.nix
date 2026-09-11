@@ -16,15 +16,26 @@ in
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
-        kdn.security.secrets.enable = lib.mkDefault true;
-        kdn.security.secrets.sops.files."default" = {
-          sopsFile = "${kdnConfig.self}/default.unattended.sops.yaml";
-        };
-        kdn.security.secrets.sops.files."networking" = {
-          keyPrefix = "networking";
-          sopsFile = "${kdnConfig.self}/default.unattended.sops.yaml";
-          basePath = "/run/configs";
-          sops.mode = "0444";
+        # This profile owns the personal literal. The engine option holds no path, so an adopter
+        # that keeps the profile still names its own file.
+        kdn.security.secrets.sops.defaultFile =
+          lib.mkDefault "${kdnConfig.self}/default.unattended.sops.yaml";
+        # The discovery engine calls `builtins.readFile` on that file, and an absent path stops the
+        # whole evaluation. So the switch follows the presence of the file. A consumer with no file
+        # then reaches the state 008 calls mode A, and it needs no second setting.
+        kdn.security.secrets.enable = lib.mkDefault config.kdn.security.secrets.sops.hasDefaultFile;
+        # `sopsFile` is `types.path`, so a `null` value is a type error. Declare no entry at all
+        # when the file is absent.
+        kdn.security.secrets.sops.files = lib.mkIf config.kdn.security.secrets.sops.hasDefaultFile {
+          "default" = {
+            sopsFile = config.kdn.security.secrets.sops.defaultFile;
+          };
+          "networking" = {
+            keyPrefix = "networking";
+            sopsFile = config.kdn.security.secrets.sops.defaultFile;
+            basePath = "/run/configs";
+            sops.mode = "0444";
+          };
         };
       }
       (kdnConfig.util.ifTypes [ "nixos" "darwin" ] (
@@ -80,11 +91,13 @@ in
         ]
       ))
       {
-        kdn.security.secrets.sops.files."anonymization" = {
-          keyPrefix = "anonymization";
-          sopsFile = "${kdnConfig.self}/default.unattended.sops.yaml";
-          basePath = "/run/configs";
-          sops.mode = "0444";
+        kdn.security.secrets.sops.files = lib.mkIf config.kdn.security.secrets.sops.hasDefaultFile {
+          "anonymization" = {
+            keyPrefix = "anonymization";
+            sopsFile = config.kdn.security.secrets.sops.defaultFile;
+            basePath = "/run/configs";
+            sops.mode = "0444";
+          };
         };
 
         kdn.env.packages = [

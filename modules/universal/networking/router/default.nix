@@ -42,7 +42,9 @@ let
       coreutils
       gnused
     ]);
-    runtimeEnv.TSIG_KEY_PATH = config.sops.templates."knot/sops-key.admin.conf".path;
+    # `tsig.keyTpls` defaults to `{ }`, and the template set below then holds no `knot/sops-key.*`
+    # entry. `or` keeps this wrapper evaluable for a tree that holds no key.
+    runtimeEnv.TSIG_KEY_PATH = config.sops.templates."knot/sops-key.admin.conf".path or "/dev/null";
     runtimeEnv.KNOT_ADDR = cfg.knot.localAddress;
     runtimeEnv.KNOT_PORT = toString cfg.knot.localPort;
     runtimeEnv.PUBLIC_IPV4_PATH = cfg.addr.public.ipv4.path;
@@ -60,7 +62,8 @@ let
       gnused
       pkgs.kdn.kdn-sops-secrets
     ]);
-    runtimeEnv.TSIG_KEY_PATH = config.sops.templates."knot/sops-key.admin.conf".path;
+    # Same reason as the wrapper above: an empty `tsig.keyTpls` gives no template.
+    runtimeEnv.TSIG_KEY_PATH = config.sops.templates."knot/sops-key.admin.conf".path or "/dev/null";
     runtimeEnv.KNOT_ADDR = cfg.knot.localAddress;
     runtimeEnv.KNOT_PORT = toString cfg.knot.localPort;
     text = builtins.readFile ./kdn-router-knot-ddns-update.sh;
@@ -1432,13 +1435,16 @@ in
               };
               kea.dhcp-ddns.settings = {
                 dns-server-timeout = 500;
-                tsig-keys = [
-                  {
-                    name = keaTSIGName;
-                    algorithm = cfg.tsig.keyTpls.${keaTSIGName}.algorithm;
-                    secret-file = cfg.tsig.keaSecrets.${keaTSIGName}.secret.path;
-                  }
-                ];
+                # Both sets default to `{ }`, and both reads index them by one literal name. A tree
+                # with no key then holds neither entry. `optional` drops the whole key instead, so
+                # the setting carries no fake value.
+                tsig-keys =
+                  lib.lists.optional (cfg.tsig.keyTpls ? "${keaTSIGName}" && cfg.tsig.keaSecrets ? "${keaTSIGName}")
+                    {
+                      name = keaTSIGName;
+                      algorithm = cfg.tsig.keyTpls.${keaTSIGName}.algorithm;
+                      secret-file = cfg.tsig.keaSecrets.${keaTSIGName}.secret.path;
+                    };
                 loggers = [
                   {
                     name = "kea-dhcp-ddns";
