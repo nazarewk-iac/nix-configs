@@ -26,42 +26,39 @@
   ...
 }:
 let
-  flake = inputs.self;
-  denLib = flake.denLib;
+  # The shared harness: the tier 1 check builder plus one bare consumer per den class. ./harness.nix
+  # holds every one of them, so an area file under ./assertions/ reads the same names.
+  harness = import ./harness.nix { inherit pkgs lib inputs; };
+
+  inherit (harness)
+    flake
+    denLib
+    mkEvalCheck
+    bareDarwinSystem
+    bareDarwin
+    bareNixos
+    bareShell
+    bareHomeConfiguration
+    bareHome
+    forceOf
+    ;
+
+  # The per-area assertion files. ./assertions/default.nix scans that directory, so a new area needs
+  # one new file and no edit here. That file also states the `git add` trap.
+  areas = import ./assertions {
+    inherit
+      pkgs
+      lib
+      inputs
+      harness
+      ;
+  };
+
   thisSystem = pkgs.stdenv.hostPlatform.system;
 
   # ------------------------------------------------------------------ tier helpers
 
-  # Tier 1. Every assertion is `{ name; expected; actual; }`. A mismatch prints one line per
-  # failure and fails the build. The comparison happens at evaluation time; the derivation only
-  # reports it, so it stays a local `runCommand` on any platform.
-  mkEvalCheck =
-    name: assertions:
-    let
-      failures = lib.filter (a: a.actual != a.expected) assertions;
-      total = toString (builtins.length assertions);
-      line = a: "  ${a.name}: want ${builtins.toJSON a.expected}, got ${builtins.toJSON a.actual}";
-    in
-    pkgs.runCommand "den-eval-${name}"
-      {
-        preferLocalBuild = true;
-        allowSubstitutes = false;
-      }
-      (
-        if failures == [ ] then
-          ''
-            echo "den eval ${name}: ${total} of ${total} assertions pass" >&2
-            touch $out
-          ''
-        else
-          ''
-            {
-              echo "den eval ${name}: ${toString (builtins.length failures)} of ${total} assertions FAIL"
-            ${lib.concatMapStringsSep "\n" (a: "  echo ${lib.escapeShellArg (line a)}") failures}
-            } >&2
-            exit 1
-          ''
-      );
+  # Tier 1 lives in ./harness.nix, next to the bare consumers every assertion needs.
 
   # Tier 2. `target` is a derivation, so the interpolation both names the store path and adds the
   # build dependency. The script reads `$target`.
@@ -608,119 +605,87 @@ let
         "apps"
         "ca"
         "devenv-cli"
+        "disks"
+        "disks-persist"
+        "emulation-wine"
+        "fs-luks-zfs"
+        "fs-watch"
+        "fs-zfs"
         "gh"
         "homebrew"
         "homebrew-nix-managed"
+        "hw-audio"
+        "hw-basic"
+        "hw-bluetooth"
+        "hw-cpu-amd"
+        "hw-cpu-intel"
+        "hw-edid"
+        "hw-gpu"
+        "hw-gpu-amd"
+        "hw-gpu-intel"
+        "hw-intel-graphics-fix"
+        "hw-modem"
+        "hw-nanokvm"
+        "hw-qmk"
+        "hw-usbip"
+        "hw-yubikey"
         "jj"
         "jj-fork"
         "llm"
         "llm-client"
         "llm-proxy"
         "locale"
+        "managed"
         "mcp"
         "mcp-basic-memory"
         "mcp-pretty-print"
         "mcp-snoop"
+        "monitoring-prometheus-stack"
         "nix"
         "nix-config"
         "nix-remote-builder"
         "opencode"
+        "outputs-host"
+        "packaging-asdf"
         "rosetta-builder"
         "secrets"
+        "service-caddy"
+        "service-coredns"
+        "service-home-assistant"
+        "service-iperf3"
+        "service-nextcloud-client"
+        "service-postgresql"
+        "service-printing"
+        "service-samba"
+        "service-syncthing"
+        "service-zammad"
         "signing"
         "ssh-access"
         "ssh-agent"
+        "toolset-diagrams"
+        "toolset-essentials"
+        "toolset-fs"
+        "toolset-fs-encryption"
+        "toolset-logs-processing"
+        "toolset-mikrotik"
+        "toolset-network"
+        "toolset-network-gui"
+        "toolset-nix"
+        "toolset-tracing"
+        "toolset-unix"
+        "virt-containers"
+        "virt-containers-dagger"
+        "virt-containers-distrobox"
+        "virt-containers-docker"
+        "virt-containers-podman"
+        "virt-containers-x11docker"
+        "virt-libvirtd"
+        "virt-vagrant"
         "zellij"
       ];
       actual = sorted (builtins.attrNames denLib.aspectModules);
     }
   ];
-
-  # The adopter shape: a bare nix-darwin system with no `modules/universal`, no `mkSlots` and no
-  # `kdnConfig`. Both routes get one identical extra module list, so an unequal `drvPath` proves the
-  # library route and the `flakeModule` route drifted apart. The README states this equality as a
-  # measurement; this makes it a test.
-  bareDarwinSystem =
-    modules:
-    inputs.nix-darwin.lib.darwinSystem {
-      # nix-darwin's own default for `system` reads `builtins.currentSystem`, which is impure.
-      system = null;
-      modules = modules ++ [
-        {
-          nixpkgs.hostPlatform = "aarch64-darwin";
-          system.primaryUser = "den";
-          system.stateVersion = 7;
-        }
-      ];
-    };
-
-  bareDarwin = modules: (bareDarwinSystem modules).config.system.build.toplevel.drvPath;
-
-  # The `nixos` class, in the same adopter shape. This is the one subject that forces the `nixos`
-  # target of `llm` and of `llm-proxy` to evaluate: no den entity includes either aspect, and
-  # `den.lib.aspects.resolve` returns an `imports` list without ever reading a target module.
-  #
-  # The extra lines are the same ones ./host-nixos/default.nix needs, and they name no hardware.
-  # Measured on 2026-09-11: `denModules.llm` evaluates here with no consumer data at all.
-  bareNixos =
-    modules:
-    inputs.nixpkgs.lib.nixosSystem {
-      modules = modules ++ [
-        (
-          { config, ... }:
-          {
-            nixpkgs.hostPlatform = "x86_64-linux";
-            fileSystems."/" = {
-              device = "none";
-              fsType = "tmpfs";
-            };
-            boot.loader.grub.enable = false;
-            system.stateVersion = config.system.nixos.release;
-          }
-        )
-      ];
-    };
-
-  # The `devenv` class, in the same adopter shape. `den.devenv.mkShell` returns `.config` alone
-  # (../../modules/den/classes/devenv.nix:75), so no existing subject can read an option default.
-  # This helper returns the whole evaluation, so an assertion reads `.options.<path>.default`.
-  #
-  # It repeats the four mandatory devenv lines from that class and adds nothing else. So it also
-  # proves the drop-in route: a plain `lib.evalModules`, no den entity, no `kdnConfig` and no
-  # overlay. `specialArgs.inputs` carries `git-hooks` alone, because devenv reads that one input
-  # directly and the `nix` aspect registers a pre-commit hook.
-  bareShell =
-    {
-      aspects ? [ ],
-      modules ? [ ],
-      system ? "aarch64-darwin",
-    }:
-    lib.evalModules {
-      class = "devenv";
-      specialArgs.inputs = {
-        inherit (inputs.devenv.inputs) git-hooks;
-      };
-      modules = [
-        (inputs.devenv.outPath + "/src/modules/top-level.nix")
-        {
-          _module.args.pkgs = import inputs.nixpkgs { inherit system; };
-          devenv.root = "/den-mvp-bare";
-          devenv.tmpdir = "/tmp";
-          name = "den-mvp-bare";
-        }
-        (
-          { config, ... }:
-          {
-            devenv.cli.version = lib.mkDefault config.devenv.latestVersion;
-          }
-        )
-      ]
-      ++ denLib.imports {
-        class = "devenv";
-        inherit aspects;
-      }
-      ++ modules;
-    };
 
   routeAssertions =
     if !(inputs ? nix-darwin) then
@@ -2674,36 +2639,6 @@ let
     name:
     lib.subtractLists aspectStructuralKeys (builtins.attrNames den.ful.${denLib.namespaceName}.${name});
 
-  # A standalone home-manager harness, in the same bare-consumer shape as `bareNixos`,
-  # `bareDarwin` and `bareShell`. It repeats the three lines ./home/default.nix needs, and it
-  # names no real user.
-  # `bareHomeConfiguration` returns the whole evaluation, so an assertion reads a config value.
-  # `bareHome` returns the `drvPath` alone, which `forceOf.homeManager` needs. The split mirrors the
-  # `bareDarwinSystem` and `bareDarwin` pair above.
-  bareHomeConfiguration =
-    modules:
-    inputs.home-manager.lib.homeManagerConfiguration {
-      pkgs = import inputs.nixpkgs { system = "aarch64-darwin"; };
-      modules = modules ++ [
-        {
-          home.username = "dev";
-          home.homeDirectory = "/Users/dev";
-          home.stateVersion = "26.11";
-        }
-      ];
-    };
-
-  bareHome = modules: (bareHomeConfiguration modules).activationPackage.drvPath;
-
-  # One force per class. Each one returns a `drvPath`, so the evaluation runs the whole target
-  # module body.
-  forceOf = {
-    nixos = modules: (bareNixos modules).config.system.build.toplevel.drvPath;
-    darwin = bareDarwin;
-    homeManager = bareHome;
-    devenv = modules: (bareShell { inherit modules; }).config.shell.drvPath;
-  };
-
   # Every (aspect, class) pair the registry yields. 26 pairs: the 25 measured on 2026-09-11,
   # plus `homebrew-nix-managed/darwin`.
   forcePairs = lib.concatLists (
@@ -2712,10 +2647,19 @@ let
     )
   );
 
-  # No consumer data at all. Measured on 2026-09-11: all 25 pairs of that day force with an empty
-  # consumer, so
-  # this needs no data table and no allowlist. An aspect that starts to need data fails here, and
-  # that is the correct direction — an external adopter meets the same failure.
+  # The one pair that nixpkgs itself refuses with an empty consumer. `fs-zfs` turns ZFS on, and
+  # nixpkgs then asserts `networking.hostId`. A ZFS host carries a unique id, and no aspect may
+  # invent one, so the consumer owns that line. Every real host of ./../../hosts/ writes it.
+  #
+  # Keep this table at one entry. A new entry means an aspect asks the consumer for data, and that
+  # needs a decision, not a table row.
+  forceData = {
+    "fs-zfs/nixos" = [ { networking.hostId = "deadbeef"; } ];
+  };
+
+  # No consumer data at all, except the one `forceData` entry above. Measured on 2026-09-11: all
+  # pairs of that day force with an empty consumer. An aspect that starts to need data fails here,
+  # and that is the correct direction — an external adopter meets the same failure.
   forcedPairs = lib.concatLists (
     lib.mapAttrsToList (
       name: _:
@@ -2724,7 +2668,7 @@ let
         let
           force =
             forceOf.${class} or (throw ''
-              den: aspect `${name}` emits the class `${class}`, and ./tests.nix holds no bare
+              den: aspect `${name}` emits the class `${class}`, and ./harness.nix holds no bare
               harness for it. Add one to `forceOf`, next to `nixos`, `darwin`, `homeManager` and
               `devenv`.
             '');
@@ -2733,6 +2677,7 @@ let
               inherit class;
               aspects = [ name ];
             }
+            ++ (forceData."${name}/${class}" or [ ])
           );
         in
         if lib.isString drv then "${name}/${class}" else "${name}/${class}: broken"
@@ -3225,37 +3170,96 @@ let
   # This table stays a readable index of the entities. `den-eval-instantiate` above is the
   # mechanical guard: it forces every (aspect, class) pair straight from the registry, so it needs
   # no row here and it cannot rot.
-  instantiatedBy = {
+  # A later batch adds its own rows inside its own ./assertions/<area>.nix file, under
+  # `instantiatedBy`. ./assertions/default.nix merges every such set, and the join below adds it to
+  # this base table. So a new aspect needs no edit here.
+  baseInstantiatedBy = {
     apps = "den-eval-batch2 (bare home, plain and with two applications)";
     ca = "host-nixos";
     devenv-cli = "host-darwin, host-nixos, users/dev, home, devenv";
+    disks = "den-eval-disks-fs (bare nixos, plain and with two LUKS volumes)";
+    disks-persist = "den-eval-disks-fs (bare home, with the apps aspect and without it)";
+    emulation-wine = "den-eval-toolset-small (bare home, x86 and non-x86)";
+    fs-luks-zfs = "den-eval-disks-fs (bare nixos, with a host-written layout and without one)";
+    fs-watch = "den-eval-disks-fs (bare nixos, with one instance and with none)";
+    fs-zfs = "den-eval-disks-fs (bare nixos, one real layout)";
     gh = "host-darwin, host-nixos, devenv";
     homebrew = "host-darwin";
     # No den entity includes this aspect, and no host may: it changes a real Homebrew
     # installation. `den-eval-instantiate` forces its `darwin` body from the registry, in a bare
     # consumer, so the body still gets coverage.
     homebrew-nix-managed = "den-eval-instantiate (bare darwin force only)";
+    hw-audio = "den-eval-hw (bare nixos, plain and graphical; bare home)";
+    hw-basic = "den-eval-hw (bare nixos)";
+    hw-bluetooth = "den-eval-hw (bare nixos)";
+    hw-cpu-amd = "den-eval-hw (bare nixos)";
+    hw-cpu-intel = "den-eval-hw (bare nixos)";
+    hw-edid = "den-eval-hw (bare nixos)";
+    hw-gpu = "den-eval-hw (bare nixos, plain, VFIO and the overlay subject)";
+    hw-gpu-amd = "den-eval-hw (bare nixos)";
+    hw-gpu-intel = "den-eval-hw (bare nixos)";
+    hw-intel-graphics-fix = "den-eval-hw (bare nixos, plain and with an override)";
+    hw-modem = "den-eval-hw (bare nixos)";
+    hw-nanokvm = "den-eval-hw (bare nixos)";
+    hw-qmk = "den-eval-hw (bare nixos, plain and graphical; bare darwin)";
+    hw-usbip = "den-eval-hw (bare nixos, one interface and every interface)";
+    hw-yubikey = "den-eval-hw (bare nixos, with and without a secret; bare darwin; bare home)";
     jj = "devenv, defaultsShell";
     jj-fork = "devenv, defaultsShell";
     llm = "llmNixos";
     llm-client = "llmClientShell";
     llm-proxy = "llmProxyNixos";
     locale = "orr, den-eval-batch2 (bare nixos, bare darwin, bare home)";
+    managed = "den-eval-services (bare nixos, bare darwin)";
     mcp = "devenv, bareShell";
     mcp-basic-memory = "devenv, defaultsShell";
     mcp-pretty-print = "devenv";
     mcp-snoop = "devenv";
+    monitoring-prometheus-stack = "den-eval-toolset-small (bare nixos, plain and tuned)";
     nix = "devenv, defaultsShell";
     nix-config = "host-darwin, orr";
     nix-remote-builder = "host-darwin, orr";
     opencode = "devenv, defaultsShell";
+    outputs-host = "den-eval-toolset-small (bare nixos, plain and tuned)";
+    packaging-asdf = "den-eval-toolset-small (bare nixos, bare darwin, bare home)";
     rosetta-builder = "host-darwin";
     secrets = "orr, den-eval-batch2 (bare nixos, bare darwin, bare home)";
+    service-caddy = "den-eval-services (bare nixos)";
+    service-coredns = "den-eval-services (bare nixos, plain and with one rewrite)";
+    service-home-assistant = "den-eval-services (bare nixos, plain and with zigbee)";
+    service-iperf3 = "den-eval-services (bare nixos, with and without a secret)";
+    service-nextcloud-client = "den-eval-services (bare nixos, with and without a secret)";
+    service-postgresql = "den-eval-services (bare nixos)";
+    service-printing = "den-eval-services (bare nixos, plain and with one printer)";
+    service-samba = "den-eval-services (bare nixos, plain and with consumer data)";
+    service-syncthing = "den-eval-services (bare home, darwin and Linux)";
+    service-zammad = "den-eval-services (bare nixos, privileged and unprivileged port)";
     signing = "users/dev, home";
     ssh-access = "users/dev, home, devenv";
     ssh-agent = "users/dev, home";
+    toolset-diagrams = "den-eval-toolset-small (bare home)";
+    toolset-essentials = "den-eval-toolset-small (bare nixos, bare darwin, bare home)";
+    toolset-fs = "den-eval-toolset-small (bare nixos, bare darwin, bare home)";
+    toolset-fs-encryption = "den-eval-toolset-small (bare nixos, bare darwin, bare home)";
+    toolset-logs-processing = "den-eval-toolset-small (bare nixos, bare darwin, bare home)";
+    toolset-mikrotik = "den-eval-toolset-small (bare nixos, bare darwin, bare home)";
+    toolset-network = "den-eval-toolset-small (bare nixos, bare darwin, bare home)";
+    toolset-network-gui = "den-eval-toolset-small (bare nixos, bare darwin, bare home)";
+    toolset-nix = "den-eval-toolset-small (bare nixos, bare home)";
+    toolset-tracing = "den-eval-toolset-small (bare nixos)";
+    toolset-unix = "den-eval-toolset-small (bare nixos, bare darwin, bare home)";
+    virt-containers = "den-eval-services (bare nixos, bare home, darwin and Linux)";
+    virt-containers-dagger = "den-eval-services (bare nixos, bare darwin, bare home)";
+    virt-containers-distrobox = "den-eval-services (bare nixos)";
+    virt-containers-docker = "den-eval-services (bare nixos, the docker subject)";
+    virt-containers-podman = "den-eval-services (bare nixos, bare darwin)";
+    virt-containers-x11docker = "den-eval-services (bare nixos)";
+    virt-libvirtd = "den-eval-services (bare nixos, bare home)";
+    virt-vagrant = "den-eval-services (bare nixos)";
     zellij = "host-darwin, devenv, defaultsShell";
   };
+
+  instantiatedBy = baseInstantiatedBy // areas.instantiatedBy;
 
   coverageAssertions = [
     {
@@ -3267,8 +3271,9 @@ let
 
   # ------------------------------------------------------------------ the check set
 
-  # Tier 1 runs anywhere: the comparison is an evaluation and the derivation is local.
-  portable = {
+  # Tier 1 runs anywhere: the comparison is an evaluation and the derivation is local. This set
+  # holds the areas that predate ./assertions/; the loader adds one check per area file below.
+  portableHere = {
     den-eval-rosetta-builder = mkEvalCheck "rosetta-builder" rosettaBuilderAssertions;
     den-eval-gh = mkEvalCheck "gh" ghAssertions;
     den-eval-guards = mkEvalCheck "guards" guardAssertions;
@@ -3293,6 +3298,16 @@ let
     den-eval-instantiate = mkEvalCheck "instantiate" instantiateAssertions;
     den-eval-batch2 = mkEvalCheck "batch2" batch2Assertions;
   };
+
+  # Each area file adds one `den-eval-<area>` check. A duplicate name would replace a check above in
+  # silence, so the merge names the collision and fails.
+  collisions = lib.intersectLists (builtins.attrNames portableHere) (builtins.attrNames areas.checks);
+
+  portable =
+    if collisions == [ ] then
+      portableHere // areas.checks
+    else
+      throw "den: ./tests.nix and ./assertions/ both declare ${builtins.toJSON collisions}";
 
   # Tier 2 and tier 3 build a real artifact, so each one needs a builder for its own platform. The
   # caller keeps only this machine's entry, exactly like the `den-mvp` aggregate.

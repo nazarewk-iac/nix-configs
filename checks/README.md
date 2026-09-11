@@ -19,7 +19,7 @@ One command per bundle; nix builds the members in parallel. Swap `aarch64-darwin
 
 ```bash
 nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-core'      # 16.7 s, after any edit
-nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-den'       # ~35 s, modules/den/aspects/
+nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-den'       # ~58 s, modules/den/aspects/
 nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-pkgs'      # 18.0 s, packages/
 nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-artifact'  # 43.7 s, a built artifact
 nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-slow'      # ~383 s, before a hand-off
@@ -43,8 +43,11 @@ first: `SYS=aarch64-darwin` — or `x86_64-linux`, or `aarch64-linux`.
 | `den-mvp` | the whole parallel den tree evaluates and builds | slow | 75.0 | `nix build --no-eval-cache -L ".#checks.$SYS.den-mvp"` |
 | `den-eval-instantiate` | every (aspect, class) pair forces its target module body | slow | 58.0 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-instantiate"` |
 | `den-artifact-host-darwin` | the darwin toplevel holds the nix.conf lines and the plist | artifact | 46.7 | `nix build --no-eval-cache -L '.#checks.aarch64-darwin.den-artifact-host-darwin'` |
+| `den-eval-services` | 48 assertions over 7 bare consumers: the service, managed-file and virtualisation aspects | den | 31.8 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-services"` |
 | `den-smoke-devenv-darwin` | the shell's own `enterTest` really runs | artifact | 18.9 | `nix build --no-eval-cache -L '.#checks.aarch64-darwin.den-smoke-devenv-darwin'` |
 | `zellij-llm-pytest` | the `zellij-llm` package's own pytest suite | pkgs | 17.1 | `nix build --no-eval-cache -L ".#checks.$SYS.zellij-llm-pytest"` |
+| `den-eval-toolset-small` | 14 assertions: the toolset, packaging, emulation, outputs and monitoring aspects | den | 14.7 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-toolset-small"` |
+| `den-eval-disks-fs` | 22 assertions over 9 bare consumers: the disks and filesystem aspects | den | 7.3 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-disks-fs"` |
 | `den-eval-frozen-paths` | no backend freezes an environment value | core | 5.6 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-frozen-paths"` |
 | `kdn-slug-pytest` | the `kdn-slug` package's own pytest suite | pkgs | 4.5 | `nix build --no-eval-cache -L ".#checks.$SYS.kdn-slug-pytest"` |
 | `den-eval-mcp` | one gateway per shell, every backend name in the YAML | den | 4.5 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-mcp"` |
