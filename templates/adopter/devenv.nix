@@ -2,7 +2,7 @@
 #
 # Read docs/slots-for-adopters.md first. This file is the minimum that works.
 #
-# THE API is `inputs.nix-configs.mkSlots` (flake.nix:284). You pass `pkgs` plus your
+# THE API is `inputs.nix-configs.mkSlots` (flake.nix:309). You pass `pkgs` plus your
 # own slot settings as one attrset, and you read back one target:
 #   .config.devenv  .config.nixos  .config.darwin  .config.home  .config.users
 # Everything you pass other than `pkgs` becomes a module, so `imports` works too.

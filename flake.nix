@@ -4,6 +4,17 @@
   inputs.nixpkgs.url = "github:nazarewk-iac/nixpkgs/nixos-unstable";
   inputs.nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-25.05";
 
+  # NOTE FOR AN EXTERNAL ADOPTER
+  # `nixpkgs` points at a personal fork of nixos-unstable. The fork carries only the patches that
+  # `.flake.patches/config.toml` declares. When no patch is active, its revision and its narHash
+  # equal `nixpkgs-upstream`. To use your own tree, set this in your own flake:
+  #   inputs.nix-configs.inputs.nixpkgs.follows = "nixpkgs";
+  # Four more inputs use the same pattern: `nixos-avf`, `nixos-crostini`, `preservation` and
+  # `sops-nix`. Each one takes an `nixpkgs`-style override.
+  #
+  # Every `*-upstream` input is an anchor for `.flake.patches/update.py`. No output reads one, and
+  # `.#sources` drops them. They cost an adopter one extra fetch each.
+
   inputs.nixpkgs-lib.follows = "nixpkgs";
 
   # * pinned inputs to keep up to date manually
