@@ -24,7 +24,8 @@
   pkgs,
   config,
   ...
-}: let
+}:
+let
   cfg = config.kdn.llm.client;
 
   enabledUpstreams = lib.filterAttrs (_: u: u.enable) cfg.upstreams;
@@ -38,102 +39,103 @@
         baseURL = u.baseURL;
         apiKey = "{env:KDN_LLM_API_KEY_${u.name}}";
       };
-      models =
-        lib.mapAttrs (_: m: {
-          name = m.name;
-          limit.context = m.context;
-          limit.output = m.output;
-        })
-        u.models;
+      models = lib.mapAttrs (_: m: {
+        name = m.name;
+        limit.context = m.context;
+        limit.output = m.output;
+      }) u.models;
     };
   };
-in {
+in
+{
   options.kdn.llm.client = {
     enable = lib.mkEnableOption "LAN LLM client (opencode pointed at HTTPS llama-servers)";
 
     upstreams = lib.mkOption {
-      type = lib.types.attrsOf (lib.types.submodule (
-        {name, ...}: {
-          options = {
-            enable = lib.mkEnableOption "this upstream in opencode";
+      type = lib.types.attrsOf (
+        lib.types.submodule (
+          { name, ... }: {
+            options = {
+              enable = lib.mkEnableOption "this upstream in opencode";
 
-            # Canonical provider key; defaults to the attr name so a
-            # consumer writes `upstreams.brys` and gets `provider.brys`,
-            # but can still override.
-            name = lib.mkOption {
-              type = lib.types.str;
-              default = name;
-              description = "Provider/wrapper key for this upstream.";
-            };
+              # Canonical provider key; defaults to the attr name so a
+              # consumer writes `upstreams.moss` and gets `provider.moss`,
+              # but can still override.
+              name = lib.mkOption {
+                type = lib.types.str;
+                default = name;
+                description = "Provider/wrapper key for this upstream.";
+              };
 
-            displayName = lib.mkOption {
-              type = lib.types.str;
-              default = name;
-              description = "Human-readable provider name shown in opencode.";
-            };
+              displayName = lib.mkOption {
+                type = lib.types.str;
+                default = name;
+                description = "Human-readable provider name shown in opencode.";
+              };
 
-            baseURL = lib.mkOption {
-              type = lib.types.str;
-              example = "https://brys.lan.etra.net.int.kdn.im/v1";
-              description = "Base URL of the LAN llama-server (through its TLS proxy).";
-            };
+              baseURL = lib.mkOption {
+                type = lib.types.str;
+                example = "https://llm.example.invalid/v1";
+                description = "Base URL of the LAN llama-server (through its TLS proxy).";
+              };
 
-            # Trusted CA certificate (informational for the consumer). null => opencode
-            # trusts the system store only; with a self-signed endpoint, the host wires
-            # this via security.pki.certificateFiles (system-wide) instead.
-            caCertFile = lib.mkOption {
-              type = lib.types.nullOr lib.types.path;
-              default = null;
-              description = ''
-                Path to the self-signed PEM public certificate of the endpoint.
-                Informational: the consumer trusts it system-wide via
-                security.pki.certificateFiles (self-signed CA is not injected
-                per-upstream). null means the endpoint uses a publicly-trusted
-                cert chain.
-              '';
-            };
+              # Trusted CA certificate (informational for the consumer). null => opencode
+              # trusts the system store only; with a self-signed endpoint, the host wires
+              # this via security.pki.certificateFiles (system-wide) instead.
+              caCertFile = lib.mkOption {
+                type = lib.types.nullOr lib.types.path;
+                default = null;
+                description = ''
+                  Path to the self-signed PEM public certificate of the endpoint.
+                  Informational: the consumer trusts it system-wide via
+                  security.pki.certificateFiles (self-signed CA is not injected
+                  per-upstream). null means the endpoint uses a publicly-trusted
+                  cert chain.
+                '';
+              };
 
-            # API key. The consumer injects it into opencode via
-            # kdn.opencode.envFile. null => the endpoint needs no key.
-            apiKeyFile = lib.mkOption {
-              type = lib.types.nullOr lib.types.path;
-              default = null;
-              description = ''
-                Path to a file holding the API key (one line). The provider uses
-                apiKey {env:KDN_LLM_API_KEY_<name>}; the consumer loads this file
-                into that var via kdn.opencode.envFile. null means the endpoint
-                needs no key.
-              '';
-            };
+              # API key. The consumer injects it into opencode via
+              # kdn.opencode.envFile. null => the endpoint needs no key.
+              apiKeyFile = lib.mkOption {
+                type = lib.types.nullOr lib.types.path;
+                default = null;
+                description = ''
+                  Path to a file holding the API key (one line). The provider uses
+                  apiKey {env:KDN_LLM_API_KEY_<name>}; the consumer loads this file
+                  into that var via kdn.opencode.envFile. null means the endpoint
+                  needs no key.
+                '';
+              };
 
-            models = lib.mkOption {
-              type = lib.types.attrsOf (
-                lib.types.submodule (
-                  {...}: {
-                    options.name = lib.mkOption {
-                      type = lib.types.str;
-                      description = "Human-readable model name shown in opencode.";
-                    };
-                    options.context = lib.mkOption {
-                      type = lib.types.int;
-                      default = 65536;
-                      description = "Context window limit for opencode.";
-                    };
-                    options.output = lib.mkOption {
-                      type = lib.types.int;
-                      default = 8192;
-                      description = "Output token limit for opencode.";
-                    };
-                  }
-                )
-              );
-              default = {};
-              description = "Models exposed by this LAN endpoint, as opencode provider entries.";
+              models = lib.mkOption {
+                type = lib.types.attrsOf (
+                  lib.types.submodule (
+                    { ... }: {
+                      options.name = lib.mkOption {
+                        type = lib.types.str;
+                        description = "Human-readable model name shown in opencode.";
+                      };
+                      options.context = lib.mkOption {
+                        type = lib.types.int;
+                        default = 65536;
+                        description = "Context window limit for opencode.";
+                      };
+                      options.output = lib.mkOption {
+                        type = lib.types.int;
+                        default = 8192;
+                        description = "Output token limit for opencode.";
+                      };
+                    }
+                  )
+                );
+                default = { };
+                description = "Models exposed by this LAN endpoint, as opencode provider entries.";
+              };
             };
-          };
-        }
-      ));
-      default = {};
+          }
+        )
+      );
+      default = { };
       description = "Upstream LAN llama-servers to expose as opencode providers, keyed by name.";
     };
   };

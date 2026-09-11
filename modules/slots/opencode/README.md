@@ -19,15 +19,15 @@ The slot is intentionally generalised — it exposes the *capability* and declar
 no specific providers, models, or upstreams itself:
 
 - Generates `opencode.jsonc` from the `settings` option (free-form attrset).
-- Ships the `opencode` wrapper as the `opencode` binary on PATH (loads
-  `REQUESTY_API_KEY` from `~/.local/share/opencode/auth.json` via `jq`, then
-  execs the real opencode by absolute path).
+- Ships the `opencode` wrapper as the `opencode` binary on PATH. The wrapper reads
+  every credential named in `authKeys` from `authFile` via `jq`, then execs the
+  real opencode by absolute path.
 
-Because no specific model/provider wiring is baked in, enabling the slot
-globally is harmless: a default `settings` skeleton (native `requesty` provider,
-a working default model, and the permission block) is emitted on every host.
-Consumers override/extend `settings` — typically via a hostname-scoped devenv
-profile — to add the proxied/local providers they actually want.
+The slot names no provider and no model of its own, so a global enable is
+harmless. Only the permission baseline is emitted on every host, and
+`allowedPaths` states which path globs a read-only tool reaches. Consumers extend
+`settings` — typically through a hostname-scoped devenv profile — to add the
+providers they want.
 
 ## brys example
 
@@ -44,23 +44,26 @@ wiring.
 |---|---|---|---|
 | `enable` | bool | `false` | enable in-devenv opencode config |
 | `package` | package | `pkgs.opencode` | real opencode binary the wrapper execs (kept off bare PATH) |
-| `settings` | attrsOf anything | benign skeleton | opencode config written to `opencode.jsonc` (model, provider, permission) |
+| `settings` | attrsOf anything | `{ }` | opencode config written to `opencode.jsonc` (model, provider, permission) |
+| `allowedPaths` | listOf str | `[ "/nix/store/**" ]` | path globs a read-only tool reaches with no question |
+| `authFile` | str | `$HOME/.local/share/opencode/auth.json` | opencode's own credential store, read by the wrapper |
+| `authKeys` | attrsOf str | `{ }` | env var name → provider id in `authFile` |
 
 `settings` is written verbatim to `opencode.jsonc`; use it to set `model`,
-`provider`, `permission`, or any other opencode key. The default skeleton is:
-`model = "requesty/deepseek-v4-flash-0731"`, `provider.requesty = {}`, and the
-permission block.
+`provider`, `permission`, or any other opencode key. The default is empty. The
+slot merges the permission baseline under `settings` in its own `config`, so a
+`permission` key here replaces that baseline in full.
 
 ## `opencode` wrapper
 
 `kdn.opencode` ships the opencode entrypoint as an **`opencode`** binary on PATH
-that is itself the wrapper: it loads `REQUESTY_API_KEY` from
-`~/.local/share/opencode/auth.json` via `jq` (`.requesty.key`), and also
+that is itself the wrapper. For each `authKeys.<VAR> = "<provider>"` entry it
+reads `.<provider>.key` out of `authFile` with `jq` and exports `<VAR>`. It also
 applies key/env/pre-exec injection from `kdn.opencode.wrapper`, then execs the
 real `pkgs.opencode` by absolute store path. The real binary is NOT put on PATH,
-so a bare `opencode` in the shell always activates the wrapper — a `requesty-proxy`
-provider authenticates without an extra `opencode-kdn` step. Run `opencode`
-directly (the wrapper is `opencode`).
+so a bare `opencode` in the shell always activates the wrapper — a proxied
+provider authenticates with no extra step. Run `opencode` directly (the wrapper
+is `opencode`).
 
 ## Standalone
 

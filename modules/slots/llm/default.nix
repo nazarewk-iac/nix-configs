@@ -57,22 +57,27 @@ let
   # keys (host, port, api-key, alias routing) are never emitted here. Global
   # defaults are folded into every section rather than relying on a `[*]`
   # catch-all section, which some builds do not honour.
-  # Common defaults: memory-bandwidth-bound CPU inference wants physical
-  # threads only (-t 16 on a 16-core part), flash attention on, and a single
-  # parallel slot so no KV cache is wasted on extra slots.
+  # Common defaults: memory-bandwidth-bound CPU inference wants physical threads
+  # only, flash attention on, and a single parallel slot so no KV cache is wasted
+  # on extra slots. A thread count belongs to one machine, so it comes from
+  # `kdn.llm.local.defaultThreads` and the key stays out when nobody names one.
   presetSection =
     name:
     let
       m = cfg.models.${name};
       perf = m.perf;
-      threads = if perf.threads != null then perf.threads else 16;
+      threads = if perf.threads != null then perf.threads else cfg.defaultThreads;
     in
     lib.concatLines (
       (
         [
           "[${name}]"
           "model = ${modelFile name}"
+        ]
+        ++ lib.optionals (threads != null) [
           "threads = ${toString threads}"
+        ]
+        ++ [
           "flash-attn = ${perf.flashAttention}"
         ]
         ++ lib.optionals (perf.cpuRange != null) [
@@ -348,6 +353,19 @@ in
       '';
     };
 
+    defaultThreads = lib.mkOption {
+      type = with lib.types; nullOr ints.positive;
+      default = null;
+      example = 16;
+      description = ''
+        Fallback thread count for a model that names no `perf.threads`. `null` writes
+        no `threads` key at all, so `llama-server` picks its own count.
+
+        A thread count matches the physical core count of one machine, so it is
+        consumer data and the default omits the flag.
+      '';
+    };
+
     server.host = lib.mkOption {
       type = lib.types.str;
       default = "127.0.0.1";
@@ -406,9 +424,9 @@ in
                 (--api-key-file). Same layout and behaviour as the primary's
                 apiKeyDir: each file holds one key, comments/empty lines are
                 stripped by a preStart that assembles them into the router's
-                own StateDirectory file. When null, this router requires no
-                key. Defaults to null; the host typically points it at the
-                same /run/configs/... clone of the primary's apiKeyDir.
+                own StateDirectory file. `null` makes this router need no key.
+                The consumer normally points it at the same directory as the
+                primary `apiKeyDir`.
               '';
             };
           }
@@ -429,7 +447,7 @@ in
     # default: the host owns the cert paths and the API-key file.
     domain = lib.mkOption {
       type = lib.types.str;
-      example = "brys.lan.etra.net.int.kdn.im";
+      example = "llm.example.invalid";
       description = "Public hostname of the Caddy vhost (also the cert CN/SAN).";
     };
     certs.certFile = lib.mkOption {
@@ -447,8 +465,8 @@ in
       type = lib.types.listOf lib.types.str;
       default = [ ];
       example = [
-        "brys.lan.drek.net.int.kdn.im"
-        "brys.priv.nb.net.int.kdn.im"
+        "llm.alt.example.invalid"
+        "llm.vpn.example.invalid"
       ];
       description = "Additional hostnames the Caddy cert covers (SANs).";
     };
@@ -459,8 +477,8 @@ in
       type = lib.types.listOf lib.types.str;
       default = [ ];
       example = [
-        "192.168.41.31"
-        "100.79.164.36"
+        "192.0.2.10"
+        "198.51.100.10"
       ];
       description = "Addresses the Caddy vhost listens on (one per SAN interface).";
     };
@@ -470,9 +488,8 @@ in
       description = ''
         Directory of API-key files for the router llama-server
         (--api-key-file). Each file under it holds exactly one key; comment
-        lines (starting with #) and empty lines are ignored. The host wires this
-        (e.g. via sops-nix to /run/configs/llms/llama-server/api-keys/, where
-        each sops key under it decrypts to one file). A prestart step assembles
+        lines (starting with #) and empty lines are ignored. The consumer wires the
+        directory, for example from its own secret manager. A prestart step assembles
         all files into a single file the server actually reads. When null, the
         server requires no key.
       '';
@@ -524,9 +541,8 @@ in
       default = null;
       description = ''
         Path to a file containing a HuggingFace token (HF_TOKEN). Plain token
-        text, no KEY= line. The host wires this (e.g. via sops-nix to
-        /run/configs/llms/huggingface/token). When null, downloads run
-        anonymously (rate-limited).
+        text, no KEY= line. The consumer wires it, for example from its own secret
+        manager. When null, downloads run anonymously (rate-limited).
       '';
     };
 
@@ -602,16 +618,16 @@ in
             # Per-model serving performance. These map to keys in that model's
             # preset INI section, which the router expands onto the model's
             # child process. Defaults target CPU-only memory-bandwidth-bound
-            # inference on a ~16-core part: physical threads only, flash
-            # attention on, a single parallel slot, mmap on, reasoning off.
+            # inference: physical threads only, flash attention on, a single
+            # parallel slot, mmap on, reasoning off.
             options.perf.threads = lib.mkOption {
               type = with lib.types; nullOr ints.positive;
               default = null;
               description = ''
-                llama-server thread count for this model (-t). null uses the
-                slot default of 16 (physical cores). Memory-bound inference
-                slows with more threads than physical cores (SMT contention),
-                so prefer 16 on a 5950X rather than 32.
+                llama-server thread count for this model (-t). null falls back to
+                `kdn.llm.local.defaultThreads`. Memory-bound inference slows with
+                more threads than physical cores (SMT contention), so prefer the
+                physical core count.
               '';
             };
             options.perf.flashAttention = lib.mkOption {

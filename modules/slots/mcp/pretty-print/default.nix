@@ -51,7 +51,7 @@ let
           '';
           example = ''
             def select(ctx):
-                return ctx["server"] in ("memory-public", "memory-sensitive")
+                return ctx["server"] == "memory-public"
 
 
             def run(ctx):

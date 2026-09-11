@@ -22,7 +22,16 @@
   # is injected into that wrapper via wrapper.envFiles. kdn.llm.client adds the
   # per-upstream provider (no per-upstream wrapper).
   kdn.opencode.enable = true;
-  kdn.opencode.wrapper.envFiles.KDN_LLM_API_KEY_brys = "/run/configs/llms/llama-server/api-keys/default";
+  kdn.opencode.wrapper.envFiles.KDN_LLM_API_KEY_brys =
+    "/run/configs/llms/llama-server/api-keys/default";
+  # The slot defaults are neutral now. These three settings keep the behaviour that
+  # the old slot defaults gave on this host.
+  kdn.opencode.settings.provider.requesty = { };
+  kdn.opencode.allowedPaths = [
+    "/nix/store/**"
+    "~/dev/**"
+  ];
+  kdn.opencode.authKeys.REQUESTY_API_KEY = "requesty";
 
   kdn.llm.client.enable = true;
   kdn.llm.client.upstreams.brys = {

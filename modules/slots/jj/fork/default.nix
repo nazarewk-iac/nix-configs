@@ -247,7 +247,7 @@ in
       git-hooks.hooks.jj-check-fork-contamination = {
         enable = true;
         name = "jj-check-fork-contamination";
-        description = "Reject fork-specific content staged on a kdn/upstream-side commit";
+        description = "Reject fork-specific content staged on a public-side commit";
         entry = lib.getExe checkForkContamination;
         stages = [ "pre-commit" ];
         pass_filenames = false;

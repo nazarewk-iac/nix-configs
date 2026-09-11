@@ -105,7 +105,7 @@ in
         garbage collector lock and deletes store paths until free space passes `max-free`
         (upstream `7G`). A build that still needs a deleted path then fails.
 
-        Measured on 2026-09-10 with a 99 G guest disk: one `brys` pass logged 622
+        Measured on 2026-09-10 with a 99 G guest disk: one host-build pass logged 622
         `deleting '/nix/store/…'` lines. A full manual collection freed 72.5 GiB over 9930 paths
         and took guest free space from 19.1 GB to 96.0 GB. After that, every pass deleted nothing.
 
