@@ -40,6 +40,7 @@ read the full doc when you need detail.
 | [docs/mcpsnoop.md](docs/mcpsnoop.md) | mcpsnoop traffic inspector: setup, TUI usage, filtering, workflows |
 | [docs/nix-dev.md](docs/nix-dev.md) | Nix development: building devenv shell, vendored lockfile recovery, hash updates |
 | [docs/tasks/README.md](docs/tasks/README.md) | Tasks convention: one directory per task under `<YYYY-MM>/`, done-tag + sibling solution, frontmatter schema |
+| [checks/README.md](checks/README.md) | Every check: its bundle, its measured time and its exact standalone command. Never run a bare `nix flake check` — it takes 11 minutes. |
 
 ## Nix Store Symlinks
 

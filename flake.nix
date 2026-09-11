@@ -487,11 +487,21 @@
               }
             );
           };
-          checks = pkgs.callPackages ./checks (
-            self.kdnMetaModule.config.output.mkSubmodule {
-              moduleType = "checks";
-            }
-          );
+          # The bundles ride on the assembled check set, so they attach here and not in
+          # ./checks/default.nix. ./checks/README.md holds the measured time of each bundle.
+          checks =
+            let
+              base = pkgs.callPackages ./checks (
+                self.kdnMetaModule.config.output.mkSubmodule {
+                  moduleType = "checks";
+                }
+              );
+            in
+            base
+            // import ./checks/bundles.nix {
+              inherit pkgs lib;
+              checks = base;
+            };
           devShells = { };
           packages = lib.mkMerge [
             (lib.filterAttrs (n: pkg: lib.isDerivation pkg)
