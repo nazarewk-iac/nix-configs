@@ -25,7 +25,11 @@ timestamp: 2026-09-11T22:00:00+02:00
   self time, and the `nix-rosetta-builder` disk-image reference, about 31 %. Both change host
   output, so both need a closure proof and not a `drvPath` proof.
 - The tree comparison is written but **not run**. The two trees are not at feature parity.
-- The `denLib.pairModules` lever may or may not have landed with this design; see the git log.
+- The `denLib.pairModules` lever **landed** as `perf(checks): resolve every den pair from one
+  evaluation`, and it touches `checks/den-mvp/tests.nix` alone. `den-eval-instantiate` passes 1 of 1
+  assertions. Its 250 s acceptance number stays **unmeasured**: the one run after the change took
+  909 s against a 358.0 s baseline, and a cold store after a 142 GB garbage collection confounds
+  that number. Re-measure on a warm store before you read it as either a win or a loss.
 - The other 79 `denLib.imports` call sites under `checks/` still start one den library evaluation
   each.
 
