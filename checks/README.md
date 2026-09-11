@@ -8,9 +8,10 @@ timestamp: 2026-09-11T00:00:00Z
 
 # Checks
 
-**Do not run a bare `nix flake check`.** It builds all 38 checks of this system and takes over
-**660 s** — 11 minutes on a warm store. Four checks cost over a minute each, and
-`jj-experiments-pytest` alone runs 188 s. Run a bundle instead.
+**Do not run a bare `nix flake check`.** It builds all 51 attributes of `checks.<system>`. It measured
+**660.6 s** before the 30 `dev-*` aspects landed; `den-eval-instantiate` then grew by 300 s, so expect
+about **960 s** now. `bundle-slow` alone runs 710.6 s on a warm store. Four checks cost over a minute
+each: `den-eval-instantiate` runs 358 s and `jj-experiments-pytest` runs 188 s. Run a bundle instead.
 
 ## Bundles
 
@@ -19,14 +20,17 @@ One command per bundle; nix builds the members in parallel. Swap `aarch64-darwin
 
 ```bash
 nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-core'      # 16.7 s, after any edit
-nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-den'       # ~58 s, modules/den/aspects/
+nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-den'       # about 50 s, modules/den/aspects/
 nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-pkgs'      # 18.0 s, packages/
 nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-artifact'  # 43.7 s, a built artifact
-nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-slow'      # ~383 s, before a hand-off
+nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-slow'      # 710.6 s, before a hand-off
 ```
 
 `bundle-core` is the broad tripwire: the plumbing, the standalone rule and the cross-cutting set. Run it
-first. `bundle-den` holds one assertion set per den aspect. Every non-VM bundle stays under 60 s;
+first. `bundle-den` holds one assertion set per den aspect. One member is the exception: `den-eval-hw`
+sits in `bundle-slow` at 25.3 s, under the 60 s mark. Four batches of aspects took `bundle-den` to
+75.4 s, so the bundle shed its heaviest member and came back to about 50 s. Every non-VM bundle stays
+under 60 s;
 `bundle-slow` and `bundle-vm` are the two exceptions, and `bundle-vm` is reserved and empty because no
 VM test exists yet. `bundle-artifact` holds the 43.7 s only with the system closure already in the
 store, and it is empty on `aarch64-linux`, which carries no `den-artifact-*` and no `den-smoke-*`.
@@ -38,15 +42,17 @@ first: `SYS=aarch64-darwin` — or `x86_64-linux`, or `aarch64-linux`.
 
 | Check | Proves | Bundle | Sec | Standalone command |
 |---|---|---|---|---|
+| `den-eval-instantiate` | every (aspect, class) pair forces its target module body | slow | 358.0 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-instantiate"` |
 | `jj-experiments-pytest` | the isolated 3-repo jj suite, headless | slow | 188.4 | `nix build --no-eval-cache -L ".#checks.$SYS.jj-experiments-pytest"` |
 | `den-eval-routes` | `denLib.imports` and `denModules` give one `drvPath` | slow | 83.3 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-routes"` |
 | `den-mvp` | the whole parallel den tree evaluates and builds | slow | 75.0 | `nix build --no-eval-cache -L ".#checks.$SYS.den-mvp"` |
-| `den-eval-instantiate` | every (aspect, class) pair forces its target module body | slow | 58.0 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-instantiate"` |
 | `den-artifact-host-darwin` | the darwin toplevel holds the nix.conf lines and the plist | artifact | 46.7 | `nix build --no-eval-cache -L '.#checks.aarch64-darwin.den-artifact-host-darwin'` |
 | `den-eval-services` | 48 assertions over 7 bare consumers: the service, managed-file and virtualisation aspects | den | 31.8 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-services"` |
+| `den-eval-hw` | 32 assertions over 6 bare consumers: the 15 hardware aspects | slow | 25.3 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-hw"` |
 | `den-smoke-devenv-darwin` | the shell's own `enterTest` really runs | artifact | 18.9 | `nix build --no-eval-cache -L '.#checks.aarch64-darwin.den-smoke-devenv-darwin'` |
 | `zellij-llm-pytest` | the `zellij-llm` package's own pytest suite | pkgs | 17.1 | `nix build --no-eval-cache -L ".#checks.$SYS.zellij-llm-pytest"` |
 | `den-eval-toolset-small` | 14 assertions: the toolset, packaging, emulation, outputs and monitoring aspects | den | 14.7 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-toolset-small"` |
+| `den-eval-development` | 26 assertions over 22 bare consumers: the 30 `dev-*` aspects | den | 11.2 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-development"` |
 | `den-eval-disks-fs` | 22 assertions over 9 bare consumers: the disks and filesystem aspects | den | 7.3 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-disks-fs"` |
 | `den-eval-frozen-paths` | no backend freezes an environment value | core | 5.6 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-frozen-paths"` |
 | `kdn-slug-pytest` | the `kdn-slug` package's own pytest suite | pkgs | 4.5 | `nix build --no-eval-cache -L ".#checks.$SYS.kdn-slug-pytest"` |
