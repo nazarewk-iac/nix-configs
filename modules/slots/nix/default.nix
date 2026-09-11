@@ -156,12 +156,13 @@ in
           always_run = true;
         };
 
+        # One file per entry, not a whole tree. A relative path literal makes a single-file store
+        # object. An interpolation of `inputs.nix-configs` names the whole repository tree instead,
+        # so an edit to any unrelated file then changes the store path. Measured 2026-09-11.
         files = lib.mkIf (cfg.installAgentRules && !isSourceRepo) {
-          ".claude/skills/flake-update/SKILL.md".source =
-            "${inputs.nix-configs}/.agents/skills/flake-update/SKILL.md";
-          ".claude/skills/flake-patches/SKILL.md".source =
-            "${inputs.nix-configs}/.agents/skills/flake-patches/SKILL.md";
-          ".claude/rules/okf-format.md".source = "${inputs.nix-configs}/.agents/rules/okf-format.md";
+          ".claude/skills/flake-update/SKILL.md".source = ../../../.agents/skills/flake-update/SKILL.md;
+          ".claude/skills/flake-patches/SKILL.md".source = ../../../.agents/skills/flake-patches/SKILL.md;
+          ".claude/rules/okf-format.md".source = ../../../.agents/rules/okf-format.md;
         };
       };
   };

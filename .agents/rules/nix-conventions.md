@@ -26,12 +26,19 @@ into a tracked directory (e.g. `.agents/rules/`, `hack/git/hooks/`), add it to `
 
 ### Self-reference: `inputs.nix-configs` / `inputs.kdn-configs-src`
 
-Slot modules under `modules/slots/*/default.nix` source `.agents/rules/*.md` and
+Some slot modules under `modules/slots/*/default.nix` source `.agents/rules/*.md` and
 `.agents/skills/*/SKILL.md` files via `"${inputs.nix-configs}/.agents/..."` — `inputs.nix-configs`
 is declared in `devenv.yaml` as `url: git+file:.` (this repo, self-referential), and in `flake.nix`
-the flake sets `nix-configs = self;` for the same purpose in `kdnMetaModule`. Existing usages:
-`modules/slots/nix/default.nix`, `modules/slots/jj/default.nix`, `modules/slots/jj/fork/default.nix`,
-`modules/slots/mcp/basic-memory/default.nix`.
+the flake sets `nix-configs = self;` for the same purpose in `kdnMetaModule`. Remaining usages:
+`modules/slots/jj/default.nix`, `modules/slots/jj/fork/default.nix`.
+
+**Prefer a relative path literal for a single file.** `../../../.agents/rules/okf-format.md` makes a
+single-file store object. `"${inputs.nix-configs}/.agents/rules/okf-format.md"` names the **whole**
+repository tree instead, so an edit to any unrelated file changes the store path and every consumer
+copies the tree again. Measured with `builtins.getContext` on 2026-09-11. Use the interpolation only
+when the value really is the tree. Converted already:
+`modules/slots/nix/default.nix`, `modules/slots/zellij/default.nix`,
+`modules/slots/mcp/basic-memory/default.nix`, `modules/slots/ssh-access/default.nix`.
 
 `packages/*/default.nix` scripts (e.g. `aws-sso`, `flake-lock-merge`, `kdn-nix-fmt`,
 `init-py-script/template`) use a differently-named but analogous self-reference,

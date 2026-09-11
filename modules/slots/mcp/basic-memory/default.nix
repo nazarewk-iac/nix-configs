@@ -189,8 +189,10 @@ in
     devenv = {
       packages = lib.attrValues wrappers;
 
+      # One file, not a whole tree. This file sits one level deeper than the other slots, so the
+      # literal needs four `..` steps.
       files = lib.mkIf (cfg.installAgentRules && !config.kdn.isSourceRepo) {
-        ".claude/rules/basic-memory.md".source = "${inputs.nix-configs}/.agents/rules/basic-memory.md";
+        ".claude/rules/basic-memory.md".source = ../../../../.agents/rules/basic-memory.md;
       };
     };
   };
