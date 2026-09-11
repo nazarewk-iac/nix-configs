@@ -1,0 +1,37 @@
+# Adopter template (den route) — devenv inputs.
+#
+# ONE input is enough. devenv supplies its own `nixpkgs` when you declare none, and it takes
+# `cachix/devenv-nixpkgs`. Measured on 2026-09-11: this file, with the `nix-configs` entry alone,
+# evaluates `denModules.gh` from a directory outside the repository.
+#
+# WARNING — the published branch does not carry the den tree yet. Measured on 2026-09-11: the last
+# commit that touches `modules/den/` is on no remote branch. So the URL below gives you
+# `attribute 'denModules' missing` today. Point the input at a local clone until the den tree
+# reaches `main`:
+#
+#   nix-configs:
+#     url: git+file:///absolute/path/to/your/clone/of/nix-configs
+#
+# NEVER write `nixpkgs: follows: nix-configs/nixpkgs`. That input is
+# `github:nazarewk-iac/nixpkgs/nixos-unstable` (see `inputs.nixpkgs.url` in this repository's
+# `flake.nix`) — the author's own fork, which carries private patches. A `follows` hands your whole
+# shell to somebody else's pin, and the failure is silent: the shell still builds.
+#
+# To control your own nixpkgs, uncomment the two lines below. Measured on 2026-09-11 with a rev
+# that differs from this repository's own nixpkgs: the evaluation passes, and every store path in
+# the shell comes from your rev.
+inputs:
+  nix-configs:
+    url: github:nazarewk-iac/nix-configs
+  #nixpkgs:
+  #  url: github:NixOS/nixpkgs/nixos-unstable
+
+# Two aspects need one more input. `nix` and `jj-fork` register git hooks, and the devenv CLI does
+# not supply `git-hooks` itself. Add this block only when you import one of those two:
+#
+#  git-hooks:
+#    url: github:cachix/git-hooks.nix
+#
+# One family needs one more still. The `mcp` aspects read `kdn.mcp.serversNix`, which defaults to
+# `null`. Add `mcp-servers-nix` and set that option only when you import one of them. See caveat 3
+# of docs/den-for-adopters.md.
