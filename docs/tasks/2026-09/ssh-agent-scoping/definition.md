@@ -66,7 +66,7 @@ identityAgentPatterns = lib.mkOption {
 ```
 
 Consumers: `packages/kdn-ssh-access/default.nix:76`, `modules/slots/ssh-access/default.nix:50`, and
-`modules/slots/ssh-access/kdn-graph.nix:39`.
+`data/slots-ssh-access.nix:39`.
 
 ### Why this matters beyond one workstation
 

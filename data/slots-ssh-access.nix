@@ -1,19 +1,33 @@
-# kdn's own host connectivity graph for `kdn.ssh-access`.
+# The owner's own host connectivity graph for `kdn.ssh-access`.
 #
-# The `kdn-` prefix marks this as private data, not a shared or reusable module: it describes one
-# person's machines and networks. Another user of this repo writes their own graph file and imports
-# that instead. The reusable parts are the slot (`default.nix`) and the schema
-# (`packages/kdn-ssh-access/module.nix`).
+# This file is private data, not a shared or reusable module. It describes one person's machines and
+# networks. The reusable parts stay in the repository: the slot
+# (`modules/slots/ssh-access/default.nix`), the den aspect (`modules/den/aspects/ssh-access.nix`),
+# and the schema (`packages/kdn-ssh-access/module.nix`).
 #
-# This file is NOT auto-loaded: `modules/slots/default.nix` only picks up `*/default.nix`.
-# Import it explicitly from a host's `mkSlots` call. The host keeps `enable` and everything
-# machine-local (for example `defaults.identityFile`):
+# It lives in `data/`, the one personal-data folder. The `slots-` prefix marks the target module
+# set: this file loads into a **slots** module set, so do NOT add it to the list in
+# `modules/universal/default.nix`. The option `kdn.ssh-access` does not exist in that tree.
+#
+# No loader picks this file up. `modules/slots/default.nix` reads `*/default.nix` only, and the
+# folder is never scanned. A host names the file in its own `mkSlots` call, behind a
+# `pathExists` guard. The host keeps `enable` and everything machine-local (for example
+# `defaults.identityFile`):
 #
 #   slots = kdnConfig.self.mkSlots {
 #     inherit pkgs;
-#     imports = [ "${kdnConfig.self}/modules/slots/ssh-access/kdn-graph.nix" ];
+#     imports = builtins.filter builtins.pathExists [ "${kdnConfig.self}/data/slots-ssh-access.nix" ];
 #     kdn.ssh-access.enable = true;
 #   };
+#
+# HOW TO SUPPLY YOUR OWN GRAPH (007 item 5):
+#   1. Delete this file, or keep the folder empty. Every schema key defaults to a neutral value
+#      (`hosts = { }`, `uplinks = { }`, `identityAgentPatterns = [ ]`), so the host still evaluates
+#      and the ssh drop-in comes out empty.
+#   2. Write your own `data/slots-ssh-access.nix`. Assign `kdn.ssh-access.hosts`, `.uplinks` and
+#      `.identityAgentPatterns` only. Declare nothing; the slot and the schema declare it all.
+#   3. Keep `enable` and `defaults.identityFile` in the host file, not here. This file must stay
+#      machine-independent.
 #
 # The graph is machine-independent. An edge says how a host is reached FROM a place, not from one
 # specific machine, so every machine shares the same data. Each machine finds its own position

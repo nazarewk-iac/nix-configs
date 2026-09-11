@@ -138,7 +138,7 @@ Severity is from an adopter's point of view. The listed checkpoint fixes the gap
 | 2 | Nothing documents the overlay requirement `overlays = [ inputs.nix-configs.overlays.packages ]`; 7 slots use `pkgs.kdn.*` | High — **fixed 2026-09-10** in `docs/slots-for-adopters.md` and `templates/adopter/` | 001 |
 | 3 | No adopter entry point — no template, no example `devenv.yaml`/`devenv.nix`, no adopter-facing doc | High — **fixed 2026-09-10**: `templates/adopter/` plus `docs/slots-for-adopters.md` | 001 |
 | 4 | `devenv.yaml` pins the adopter's nixpkgs to the creator's nixpkgs fork through `follows: nix-configs/nixpkgs` | High — **fixed 2026-09-10**: the template points `nixpkgs` at nixos-unstable and says why | 001 |
-| 5 | Personal data inside the slots tree — `modules/slots/ssh-access/kdn-graph.nix`, 176 LOC of hosts, LAN IPs, WAN ports, `*.kdn.im` zones | Medium | 007, 009 |
+| 5 | Personal data inside the slots tree — `data/slots-ssh-access.nix`, 176 LOC of hosts, LAN IPs, WAN ports, `*.kdn.im` zones | Medium | 007, 009 |
 | 6 | Personal defaults in shared options — `kdn.jj.upstream.remote = "kdn"`, `alwaysBlockedMessagePatterns = [ "scratchpad" ]`, `opencode`'s hardwired `requesty` provider, `llm` examples with homelab FQDNs, and `identityAgentPatterns` (see below) | Medium | 007 |
 | 7 | Slots ship the creator's opinions — `kdn.jj` installs a jj-only mandate as an agent rule; 5 slots read repo content through `${inputs.nix-configs}/.agents/…` | Medium | 007 |
 | 8 | Two slots default to `enable = true` (`mcp/snoop`, `mcp/pretty-print`), against this repo's own side-effect-free rule | Medium | 007 |

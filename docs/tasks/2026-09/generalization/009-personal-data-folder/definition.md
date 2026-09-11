@@ -17,7 +17,7 @@ personal files in. The tree evaluates when the folder is absent.
 
 The decision behind this: personal data in one place is easier to manage and to separate out. This
 supersedes the earlier scattered `kdn-*.nix`-next-to-the-module precedent.
-`modules/slots/ssh-access/kdn-graph.nix` is the last example of it.
+`data/slots-ssh-access.nix` is the last example of it.
 
 Use **Pattern V1** throughout. A data move must not change any host's derivation.
 
@@ -63,7 +63,7 @@ Measured across `modules/universal/` (194 files, 19,689 LOC):
 | `modules/universal/hw/edid/` | 3 named monitors |
 | `modules/universal/desktop/sway/**/kanshi` | named display arrangements |
 | `modules/meta/k8s/clusters/pic` | a cluster definition |
-| `modules/slots/ssh-access/kdn-graph.nix` | 176 LOC — coordinated with [007](../007-depersonalize-slots/definition.md) item 5 |
+| `data/slots-ssh-access.nix` | 176 LOC — coordinated with [007](../007-depersonalize-slots/definition.md) item 5 |
 
 ## The two hard blockers
 
@@ -121,7 +121,7 @@ The test entity generates throwaway certificates instead.
 | `jj` | `upstream.remote` default `"kdn"`; `alwaysBlockedMessagePatterns` default `[ "scratchpad" ]` | the folder supplies both as data; the option default becomes empty. Overlaps [007](../007-depersonalize-slots/definition.md) item 1. |
 | `opencode` | the commercial provider `requesty`; `"~/dev/**" = "allow"` in 5 blocks | **the den aspect already holds neither.** `modules/den/aspects/opencode.nix` declares `authKeys`, `settings` and `allowedPaths`, and the consumer supplies each value. The folder then holds the creator's three values as data. Overlaps 007 item 2. |
 | `llm` | homelab FQDNs and overlay IP addresses in the option examples | the folder holds the real values; the examples become neutral. Overlaps 007 item 3. |
-| `ssh-access` | `modules/slots/ssh-access/kdn-graph.nix`, 176 LOC of hosts, LAN addresses, WAN ports and `*.kdn.im` zones | the folder, wholesale. Already listed in Tier 3 above. This is why `ssh-access` is last in the port order. |
+| `ssh-access` | `data/slots-ssh-access.nix`, 176 LOC of hosts, LAN addresses, WAN ports and `*.kdn.im` zones | the folder, wholesale. Already listed in Tier 3 above. This is why `ssh-access` is last in the port order. |
 | `mcp` | none — `kdn.mcp.serversNix`, `programs` and `extraBackends` all take consumer values | n/a. The creator's own gateway host, port and backend set join the folder as data. |
 | `mcp-snoop`, `mcp-pretty-print` | none | n/a for the data. But `modules/den/aspects/mcp-pretty-print.nix` reads `mcp_gateway_pretty_print.py` from `modules/slots/mcp/pretty-print/`. That script moves to `modules/den/aspects/mcp-pretty-print/` when the slot tree goes away, and the aspect file becomes a directory. Same shape as the `zellij` row below. |
 | `mcp-basic-memory` | **the den aspect already holds none.** The slot names the creator's two bases `public` and `sensitive`, their aliases `bmp` and `bms`, their descriptions, and the root `~/.local/share/kdn-nix-configs/knowledge`. `modules/den/aspects/mcp-basic-memory.nix` declares `kdn.mcp.basic-memory.{knowledgeRoot,bases}` and names no base at all. | the folder holds those five values as data. The aspect still reads one repository file, `.agents/rules/basic-memory.md`, and that file is generic. |
