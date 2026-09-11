@@ -59,12 +59,14 @@ first: `SYS=aarch64-darwin` — or `x86_64-linux`, or `aarch64-linux`.
 | `den-eval-toolset-small` | 14 assertions: the toolset, packaging, emulation, outputs and monitoring aspects | den | 14.7 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-toolset-small"` |
 | `den-eval-networking` | 27 assertions over 4 bare consumers: the seven `net-*` aspects | den | 13.3 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-networking"` |
 | `den-eval-k8s` | 23 assertions over 8 bare consumers: the five `service-k8s*` aspects | den | 12.0 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-k8s"` |
+| `den-eval-machine-profiles` | 19 assertions over 6 bare consumers: the 13 machine-profile bundles, plus the `includes` graph of every one | den | 12.0 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-machine-profiles"` |
 | `den-eval-development` | 26 assertions over 22 bare consumers: the 30 `dev-*` aspects | den | 11.2 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-development"` |
 | `den-eval-security` | 22 assertions over 7 bare consumers: the four `security-*` aspects | den | 11.0 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-security"` |
 | `den-eval-virtualisation` | 11 assertions over 3 bare consumers: the two `virt-microvm-*` aspects | den | 11.0 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-virtualisation"` |
 | `den-eval-desktop-leaves` | 35 assertions over 7 bare consumers: the 11 desktop leaf aspects | den | 9.0 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-desktop-leaves"` |
 | `den-eval-root-orphans` | 12 assertions over 4 bare consumers: `stylix`, `stylix-home` and `hm-bootstrap` | den | 8.9 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-root-orphans"` |
 | `den-eval-disks-fs` | 22 assertions over 9 bare consumers: the disks and filesystem aspects | den | 7.3 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-disks-fs"` |
+| `den-eval-sway-core` | 26 assertions over 5 bare consumers: the sway session core and its VNC extras | den | 7.0 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-sway-core"` |
 | `den-eval-frozen-paths` | no backend freezes an environment value | core | 5.6 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-frozen-paths"` |
 | `kdn-slug-pytest` | the `kdn-slug` package's own pytest suite | pkgs | 4.5 | `nix build --no-eval-cache -L ".#checks.$SYS.kdn-slug-pytest"` |
 | `den-eval-mcp` | one gateway per shell, every backend name in the YAML | den | 4.5 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-mcp"` |
