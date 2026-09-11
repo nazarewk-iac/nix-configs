@@ -18,6 +18,24 @@ in
 {
   options.kdn.nix = {
     enable = lib.mkEnableOption "nix development tooling in devenv";
+
+    installAgentRules = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = ''
+        Install this slot's agent instruction files into the consumer repository.
+
+        The files are `.claude/skills/flake-update/SKILL.md`,
+        `.claude/skills/flake-patches/SKILL.md` and `.claude/rules/okf-format.md`.
+
+        They state the author's own procedures: how to update a flake, how to keep a patch, and which
+        frontmatter every markdown file carries. The default is false, so you get the files only when
+        you ask for them. This repository turns the option on explicitly in its own `devenv.nix`.
+
+        The option covers instruction files only. The packages, the git hooks and the MCP backends
+        stay in place.
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -113,7 +131,7 @@ in
           always_run = true;
         };
 
-        files = lib.mkIf (!isSourceRepo) {
+        files = lib.mkIf (cfg.installAgentRules && !isSourceRepo) {
           ".claude/skills/flake-update/SKILL.md".source =
             "${inputs.nix-configs}/.agents/skills/flake-update/SKILL.md";
           ".claude/skills/flake-patches/SKILL.md".source =

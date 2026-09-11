@@ -52,6 +52,22 @@ in
 {
   options.kdn.zellij = {
     enable = lib.mkEnableOption "zellij terminal multiplexer devenv integration";
+
+    installAgentRules = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = ''
+        Install this slot's agent instruction file into the consumer repository.
+
+        The file is `.claude/skills/zellij/SKILL.md`. It states the author's own mandate: an agent
+        never reads and never changes the user's own zellij session. The default is false, so you get
+        the file only when you ask for it. This repository turns the option on explicitly in its own
+        `devenv.nix`.
+
+        The option covers the instruction file only. The packages, the two hooks and the Bash
+        allowlist stay in place.
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -106,7 +122,7 @@ in
         ''zellij action dump-screen -p "$ZELLIJ_PANE_ID" | tail -n 1''
       ];
 
-      files = lib.mkIf (!config.kdn.isSourceRepo) {
+      files = lib.mkIf (cfg.installAgentRules && !config.kdn.isSourceRepo) {
         ".claude/skills/zellij/SKILL.md".source = "${inputs.nix-configs}/.agents/skills/zellij/SKILL.md";
       };
     };

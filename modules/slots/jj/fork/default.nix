@@ -264,7 +264,7 @@ in
         always_run = true;
       };
 
-      files = lib.mkIf (!config.kdn.isSourceRepo) {
+      files = lib.mkIf (cfg.fork.installAgentRules && !config.kdn.isSourceRepo) {
         ".claude/rules/flake-update.fork.md".source =
           "${inputs.nix-configs}/.agents/rules/flake-update.fork.md";
         ".claude/skills/flake-update-fork/SKILL.md".source =

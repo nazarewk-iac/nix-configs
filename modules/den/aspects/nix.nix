@@ -35,9 +35,10 @@
 # derivation depends on one file and not on the whole tree.
 #
 # The two skills describe **this repository's own fork update workflow**. So an adopter with no fork
-# gets two skills it does not use. They install anyway, with `kdn.isSourceRepo` as the only switch,
-# exactly as every other ported aspect installs its own files. A `fork` option belongs to the `jj`
-# family, and that family is a later port.
+# gets two skills it does not use. Two switches now gate them: `kdn.isSourceRepo`, and
+# `kdn.nix.installAgentRules`. The second one defaults to false, so an adopter opts in with one
+# line, and this repository turns it on explicitly. See
+# ../../../docs/tasks/2026-09/generalization/013-opt-in-boundaries/definition.md, rows 45 and 46.
 #
 # ## Where the shell script moves later
 #
@@ -92,6 +93,25 @@
       # One declaration of `kdn.isSourceRepo`, imported by path. The module system rejects two inline
       # declarations of one option, and it drops a repeated import by path. See ../common/.
       imports = [ ../common/source-repo.nix ];
+
+      options.kdn.nix.installAgentRules = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = ''
+          Install this aspect's agent instruction files into the consumer repository.
+
+          The files are `.claude/skills/flake-update/SKILL.md`,
+          `.claude/skills/flake-patches/SKILL.md` and `.claude/rules/okf-format.md`.
+
+          They state the author's own procedures: how to update a flake, how to keep a patch, and
+          which frontmatter every markdown file carries. The default is false, so you get the files
+          only when you ask for them. This repository turns the option on explicitly in
+          `checks/den-mvp/devenv/default.nix`.
+
+          The option covers instruction files only. The packages, the git hooks and the MCP backends
+          stay in place.
+        '';
+      };
 
       options.kdn.nix.extraBashAllow = lib.mkOption {
         type = lib.types.listOf lib.types.str;
@@ -200,7 +220,7 @@
         };
 
         # One file per entry, not a whole tree. See the header.
-        files = lib.mkIf (!config.kdn.isSourceRepo) {
+        files = lib.mkIf (cfg.installAgentRules && !config.kdn.isSourceRepo) {
           ".claude/skills/flake-update/SKILL.md".source = ../../../.agents/skills/flake-update/SKILL.md;
           ".claude/skills/flake-patches/SKILL.md".source = ../../../.agents/skills/flake-patches/SKILL.md;
           ".claude/rules/okf-format.md".source = ../../../.agents/rules/okf-format.md;

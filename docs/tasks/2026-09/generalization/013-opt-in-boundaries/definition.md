@@ -114,8 +114,8 @@ in plain text.
 | 42. The baseline also turns a Nextcloud desktop client on | `modules/universal/profile/machine/baseline/default.nix:377` | own aspect | yes | no | `lib.mkDefault false` | XS |
 | 43. A personal Nextcloud share path appears in two modules | `modules/universal/profile/user/kdn/default.nix:11`, `modules/universal/programs/photoprism/default.nix:27` (FQDN masked) | option — **009 tier 3 owns it** | no | no | the consumer supplies the path | S |
 | 44. 176 LOC of host graph, LAN addresses, WAN ports and homelab zones | `modules/slots/ssh-access/kdn-graph.nix` (every FQDN masked) | option — **[007](../007-depersonalize-slots/definition.md) item 5 and 009 tier 3 own it** | no | no aspect — `ssh-access` is unported | the graph is already a consumer value; only the file moves | S |
-| 45. 5 slots install agent rules and skills into the adopter repo; `kdn.isSourceRepo` is the only switch | `modules/slots/jj/default.nix:175-179`, `modules/slots/jj/fork/default.nix:269-271`, `modules/slots/nix/default.nix:116-122`, `modules/slots/zellij/default.nix:109-111`, `modules/slots/mcp/basic-memory/default.nix:125-127` | option — **007 item 4 owns the slot half** | yes — the tool and the opinion share one switch | **the den port reproduces it** — `modules/den/aspects/jj.nix:251-252`, `jj-fork.nix:415-417`, `nix.nix:204-206`, `zellij.nix:142`, `mcp-basic-memory.nix:242` | `kdn.<name>.installAgentRules`, default false | S |
-| 46. The `jj` slot also registers a proactive `jj-expert` subagent | `modules/slots/jj/default.nix:167-173`, and `modules/den/aspects/jj.nix:242-248` | option | yes (row 45) | yes, unchanged | an `enable`, default false | XS |
+| 45. 5 slots install agent rules and skills into the adopter repo; `kdn.isSourceRepo` is the only switch | `modules/slots/jj/default.nix:23,61,213`, `modules/slots/jj/fork/default.nix:267`, `modules/slots/nix/default.nix:22,134`, `modules/slots/zellij/default.nix:56,125`, `modules/slots/mcp/basic-memory/default.nix:23,140` | option — **007 item 4 owns the slot half** | no longer — one switch per slot covers the opinion, and the tool stays | **fixed on both routes** — `modules/den/aspects/jj.nix:112,277`, `jj-fork.nix:157,432`, `nix.nix:97,223`, `zellij.nix:98,160`, `mcp-basic-memory.nix:172,257` | **shipped**: `kdn.<name>.installAgentRules`, default **false** (section 3 item 4, candidate A). The 3 consumers set it true: `devenv.nix:54-58`, `checks/den-mvp/devenv/default.nix:120-124`, `checks/den-mvp/host-darwin/default.nix:52` | S |
+| 46. The `jj` slot also registers a proactive `jj-expert` subagent | `modules/slots/jj/default.nix:204`, and `modules/den/aspects/jj.nix:270` | option | no longer (row 45) | **fixed on both routes** — the same switch as row 45 gates the subagent | **shipped**: `kdn.jj.installAgentRules`, default false | XS |
 | 47. Four slots turn Claude Code on; `jj` uses a plain assignment | `modules/slots/gh/default.nix:89`, `modules/slots/zellij/default.nix:65`, `modules/slots/nix/default.nix:37`, `modules/slots/jj/default.nix:132` | option | yes | den keeps `mkDefault` — `gh.nix:20`, `zellij.nix:102`, `nix.nix:126`, `jj.nix:198`. den already fixed the plain `jj` case. | `lib.mkDefault true` everywhere | XS |
 | 48. The mcp snoop slot defaults to on, against this repo's own side-effect-free rule | `modules/slots/mcp/snoop/default.nix:18` | own aspect | no | **fixed** — the `mcp-snoop` aspect carries no `enable`, so inclusion is the switch | drop `default = true` | XS |
 | 49. The mcp pretty-print slot defaults to on, for the same reason | `modules/slots/mcp/pretty-print/default.nix:103` | own aspect | no | **fixed** — `mcp-pretty-print` carries no `enable` | drop `default = true` | XS |
@@ -172,11 +172,16 @@ that proves it.
    `nix eval --raw '.#nixosConfigurations.brys.config.system.build.toplevel.drvPath'` — Pattern
    V1, and the path must not change.
 
-6. **Add `installAgentRules`, default false, to the 5 slots and the 5 den aspects that write
-   `.claude/` files.** Rows 45 and 46. An adopter who does not use `jj` inherits a jj mandate and
-   a proactive subagent today. The den port reproduced this, so it needs the fix twice.
-   `nix eval --json '.#denDevenvShells.devenv-darwin.config.files' --apply builtins.attrNames` —
-   no `.claude/rules/` entry may appear with the option false.
+6. **fixed** — `installAgentRules` now exists on the 5 slots and the 5 den aspects that write
+   `.claude/` files. Rows 45 and 46. An adopter who does not use `jj` never receives the jj mandate
+   or the subagent. The default is **false**: section 3 item 4 picked candidate A. The 3 consumers
+   in this repository set it true, so this repository's own behaviour stays identical.
+   Measured on 2026-09-11. With the explicit `true`, the written file set, the subagent, the 5 Claude
+   Code hooks, the 3 git hooks and the MCP server registration are byte-identical to `upstream-tip`
+   (`57be824`) on both routes. With the default, all 10 instruction files leave and every functional
+   file stays: `.mcp.json`, `.pre-commit-config.yaml` and `.claude/settings.json`.
+   `nix eval --json '.#denDevenvShells.devenv-darwin.files' --apply builtins.attrNames` —
+   every `.claude/rules/` entry there comes from an explicit `installAgentRules = true`.
 
 7. **Add `kdn.locale.xkbLayout`, default `"us"`, and default the time zone to null.** Rows 21 to
    24. Two literals sit in two unrelated trees today, so a layout change needs two edits.
@@ -209,10 +214,18 @@ Every item where the smallest safe change still needs a decision the user reserv
    `kdn.homebrew.taps`, an attribute set of paths, so the inputs leave `flake.nix` and the
    adopter's lock loses 8 nodes.
 
-4. `DECISION TO REVISE` — **Does an adopter get the agent rules by default, or never?** Rows 45
+4. `DECIDED 2026-09-11` — **Does an adopter get the agent rules by default, or never?** Rows 45
    and 46. Candidate A: `installAgentRules` defaults to false, so an adopter opts in. Candidate
    B: it defaults to true, and the docs say how to opt out — the rules carry real value, and a
    silent absence is its own surprise.
+   **The user picked candidate A.** A slot has exactly one consumer in this repository, `devenv.nix`,
+   so a neutral default costs 5 lines and no host edit. A neutral default is also the honest one: an
+   adopter who uses plain git must not silently receive a rule that forbids raw `git`.
+   The option exists on all 5 slots and all 5 aspects and defaults to `false`. This repository sets
+   it true in `devenv.nix`, in `checks/den-mvp/devenv/default.nix` and in
+   `checks/den-mvp/host-darwin/default.nix`, so its own behaviour stays identical. The option covers
+   the instruction files only; every hook, allowlist, package and MCP registration stays
+   unconditional.
 
 5. `DECISION TO REVISE` — **Does `kdn.jj` keep the MCP coupling?** Row 53. The den aspect made it
    stronger: `modules/den/aspects/jj.nix:79` puts `kdn.mcp` in the aspect's `includes`, so `jj`

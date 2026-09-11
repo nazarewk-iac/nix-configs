@@ -69,6 +69,8 @@
       ...
     }:
     let
+      cfg = config.kdn.zellij;
+
       kdn-slug = pkgs.callPackage ../../../packages/llm/kdn-slug { };
       zellij-llm = pkgs.callPackage ../../../packages/llm/zellij-llm { inherit kdn-slug; };
 
@@ -93,72 +95,90 @@
     {
       imports = [ ../common/source-repo.nix ];
 
-      packages = [
-        pkgs.zellij
-        kdn-slug
-        zellij-llm
-      ];
+      options.kdn.zellij.installAgentRules = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = ''
+          Install this aspect's agent instruction file into the consumer repository.
 
-      claude.code.enable = lib.mkDefault true;
+          The file is `.claude/skills/zellij/SKILL.md`. It states the author's own mandate: an agent
+          never reads and never changes the user's own zellij session. The default is false, so you
+          get the file only when you ask for it. This repository turns the option on explicitly in
+          `checks/den-mvp/devenv/default.nix`.
 
-      claude.code.hooks.zellij-wait-for-devenv = {
-        hookType = "PreToolUse";
-        matcher = "Bash";
-        command = lib.getExe waitForDevenv;
+          The option covers the instruction file only. The packages, the two hooks and the Bash
+          allowlist stay in place.
+        '';
       };
 
-      claude.code.hooks.zellij-wait-for-devenv-start = {
-        hookType = "PostToolUse";
-        matcher = "^(Edit|MultiEdit|Write)$";
-        command = lib.getExe waitForDevenvStart;
+      config = {
+        packages = [
+          pkgs.zellij
+          kdn-slug
+          zellij-llm
+        ];
+
+        claude.code.enable = lib.mkDefault true;
+
+        claude.code.hooks.zellij-wait-for-devenv = {
+          hookType = "PreToolUse";
+          matcher = "Bash";
+          command = lib.getExe waitForDevenv;
+        };
+
+        claude.code.hooks.zellij-wait-for-devenv-start = {
+          hookType = "PostToolUse";
+          matcher = "^(Edit|MultiEdit|Write)$";
+          command = lib.getExe waitForDevenvStart;
+        };
+
+        # Read-only discovery. It reveals no pane content and it changes no session, tab or pane
+        # state. Each rule matches with no `--session` (the agent's own attached session) and with an
+        # explicit `--session <name>`.
+        claude.code.permissions.rules.Bash.allow = [
+          "zellij --help"
+          "zellij help*"
+          "zellij * --help"
+          "zellij list-sessions*"
+          "zellij action list-panes *"
+          "zellij --session * action list-panes *"
+          "zellij action list-tabs *"
+          "zellij --session * action list-tabs *"
+          "zellij action list-clients*"
+          "zellij --session * action list-clients*"
+          "zellij action current-tab-info*"
+          "zellij --session * action current-tab-info*"
+          # Idempotent. It creates the agent's own detached session when none exists, and it is a
+          # no-op otherwise. It never reaches a session that a user attached.
+          "zellij attach --create-background *"
+          # Exact and static, with no wildcard. It always names the agent's own pane, for example to
+          # read the last status line of an asynchronous devenv rebuild.
+          ''zellij action dump-screen -p "$ZELLIJ_PANE_ID" | tail -n 1''
+        ];
+
+        # One file, not a whole tree. See rule 2 in the header.
+        files = lib.mkIf (cfg.installAgentRules && !config.kdn.isSourceRepo) {
+          ".claude/skills/zellij/SKILL.md".source = ../../../.agents/skills/zellij/SKILL.md;
+        };
+
+        # The aspect's own smoke test. It travels with the aspect, so an adopter gets it too.
+        #
+        # devenv puts this in `config.enterTest` (`types.lines`, so several aspects merge). It runs
+        # under `devenv test` and under `checks.<system>.den-smoke-*`. It never runs on shell entry,
+        # and it never runs during a nix-darwin or a NixOS activation.
+        #
+        # Every assertion stays offline. The check runs inside the build sandbox, which has no
+        # network, no real `$HOME` and no zellij server. So no assertion starts a session.
+        enterTest = ''
+          echo "• zellij: the binary reports a version" >&2
+          zellij --version | grep -qE '^zellij [0-9]+\.'
+
+          echo "• zellij: kdn-slug parses its arguments" >&2
+          kdn-slug --help >/dev/null
+
+          echo "• zellij: zellij-llm lists its subcommands" >&2
+          zellij-llm --help 2>&1 | grep -qE 'spawn'
+        '';
       };
-
-      # Read-only discovery. It reveals no pane content and it changes no session, tab or pane
-      # state. Each rule matches with no `--session` (the agent's own attached session) and with an
-      # explicit `--session <name>`.
-      claude.code.permissions.rules.Bash.allow = [
-        "zellij --help"
-        "zellij help*"
-        "zellij * --help"
-        "zellij list-sessions*"
-        "zellij action list-panes *"
-        "zellij --session * action list-panes *"
-        "zellij action list-tabs *"
-        "zellij --session * action list-tabs *"
-        "zellij action list-clients*"
-        "zellij --session * action list-clients*"
-        "zellij action current-tab-info*"
-        "zellij --session * action current-tab-info*"
-        # Idempotent. It creates the agent's own detached session when none exists, and it is a
-        # no-op otherwise. It never reaches a session that a user attached.
-        "zellij attach --create-background *"
-        # Exact and static, with no wildcard. It always names the agent's own pane, for example to
-        # read the last status line of an asynchronous devenv rebuild.
-        ''zellij action dump-screen -p "$ZELLIJ_PANE_ID" | tail -n 1''
-      ];
-
-      # One file, not a whole tree. See rule 2 in the header.
-      files = lib.mkIf (!config.kdn.isSourceRepo) {
-        ".claude/skills/zellij/SKILL.md".source = ../../../.agents/skills/zellij/SKILL.md;
-      };
-
-      # The aspect's own smoke test. It travels with the aspect, so an adopter gets it too.
-      #
-      # devenv puts this in `config.enterTest` (`types.lines`, so several aspects merge). It runs
-      # under `devenv test` and under `checks.<system>.den-smoke-*`. It never runs on shell entry,
-      # and it never runs during a nix-darwin or a NixOS activation.
-      #
-      # Every assertion stays offline. The check runs inside the build sandbox, which has no
-      # network, no real `$HOME` and no zellij server. So no assertion starts a session.
-      enterTest = ''
-        echo "• zellij: the binary reports a version" >&2
-        zellij --version | grep -qE '^zellij [0-9]+\.'
-
-        echo "• zellij: kdn-slug parses its arguments" >&2
-        kdn-slug --help >/dev/null
-
-        echo "• zellij: zellij-llm lists its subcommands" >&2
-        zellij-llm --help 2>&1 | grep -qE 'spawn'
-      '';
     };
 }

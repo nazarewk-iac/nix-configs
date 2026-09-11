@@ -154,6 +154,24 @@
         example = [ "scratch" ];
       };
 
+      options.kdn.jj.fork.installAgentRules = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = ''
+          Install this aspect's agent instruction files into the consumer repository.
+
+          The files are `.claude/rules/flake-update.fork.md` and
+          `.claude/skills/flake-update-fork/SKILL.md`.
+
+          They state the author's own fork update procedure. The default is false, so you get the
+          files only when you ask for them. This repository turns the option on explicitly in
+          `checks/den-mvp/devenv/default.nix`.
+
+          The option covers instruction files only. The revset aliases, the git hooks and the commands
+          stay in place.
+        '';
+      };
+
       options.kdn.jj.fork.remote = lib.mkOption {
         type = lib.types.str;
         default = "";
@@ -411,7 +429,7 @@
           always_run = true;
         };
 
-        files = lib.mkIf (!config.kdn.isSourceRepo) {
+        files = lib.mkIf (cfg.fork.installAgentRules && !config.kdn.isSourceRepo) {
           ".claude/rules/flake-update.fork.md".source = ../../../.agents/rules/flake-update.fork.md;
           ".claude/skills/flake-update-fork/SKILL.md".source =
             ../../../.agents/skills/flake-update-fork/SKILL.md;
