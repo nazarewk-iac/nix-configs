@@ -34,6 +34,7 @@ let
   # The aspect registry. `flake-module.nix` reads the same attribute set, so the two routes cannot
   # drift apart. One entry per reimplemented slot.
   aspectModules = {
+    apps = ./aspects/apps.nix;
     ca = ./aspects/ca.nix;
     devenv-cli = ./aspects/devenv-cli.nix;
     gh = ./aspects/gh.nix;
@@ -44,6 +45,7 @@ let
     llm = ./aspects/llm.nix;
     llm-client = ./aspects/llm-client.nix;
     llm-proxy = ./aspects/llm-proxy.nix;
+    locale = ./aspects/locale.nix;
     mcp = ./aspects/mcp.nix;
     mcp-basic-memory = ./aspects/mcp-basic-memory.nix;
     mcp-pretty-print = ./aspects/mcp-pretty-print.nix;
@@ -53,6 +55,7 @@ let
     nix-remote-builder = ./aspects/nix-remote-builder.nix;
     opencode = ./aspects/opencode.nix;
     rosetta-builder = ./aspects/rosetta-builder.nix;
+    secrets = ./aspects/secrets.nix;
     signing = ./aspects/signing.nix;
     ssh-access = ./aspects/ssh-access.nix;
     ssh-agent = ./aspects/ssh-agent.nix;
