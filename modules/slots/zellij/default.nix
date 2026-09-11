@@ -122,8 +122,10 @@ in
         ''zellij action dump-screen -p "$ZELLIJ_PANE_ID" | tail -n 1''
       ];
 
+      # One file, not a whole tree. A relative path literal makes a single-file store object; an
+      # interpolation of `inputs.nix-configs` names the whole repository tree.
       files = lib.mkIf (cfg.installAgentRules && !config.kdn.isSourceRepo) {
-        ".claude/skills/zellij/SKILL.md".source = "${inputs.nix-configs}/.agents/skills/zellij/SKILL.md";
+        ".claude/skills/zellij/SKILL.md".source = ../../../.agents/skills/zellij/SKILL.md;
       };
     };
   };

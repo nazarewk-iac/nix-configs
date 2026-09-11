@@ -16,10 +16,12 @@
 }:
 let
   cfg = config.kdn.ssh-access;
-  # Reference the schema via the self-input path (the intended way for slots to source repo files).
+  # Reference the schema with a relative path literal, so the evaluation reads one file and not
+  # the whole repository tree. `modules/den/aspects/ssh-access.nix` reads the same file the same
+  # way.
   # Note: do NOT use `pkgs.…configModule` here — `pkgs` is config-derived and this is an option
-  # *type*, which would be an infinite recursion. `inputs` is a specialArg, so it is safe.
-  configModule = inputs.nix-configs + "/packages/kdn-ssh-access/module.nix";
+  # *type*, which would be an infinite recursion.
+  configModule = ../../../packages/kdn-ssh-access/module.nix;
 
   sshAccessShim = pkgs.writeShellScriptBin "ssh-access" ''
     exec ${cfg.package}/bin/kdn-ssh-access ssh "$@"
