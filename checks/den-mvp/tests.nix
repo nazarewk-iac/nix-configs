@@ -2768,6 +2768,10 @@ let
   # address to DNS, so it must read the two files that hold that address. Neither file has a
   # default, because a wrong default publishes a wrong address. The DDNS updater reads each path at
   # run time, so `/dev/null` satisfies the evaluation here.
+  # The third entry carries a decision as well. sops-nix needs a declarative user creation route, so
+  # `security-secrets-sops` asserts `services.userborn.enable || services.sysusers.enable`. Neither
+  # option is on in a bare consumer, so the pair cannot force without this row. The choice of route
+  # belongs to the consumer, not to the aspect. ./assertions/security.nix states the same fact.
   forceData = {
     "fs-zfs/nixos" = [ { networking.hostId = "deadbeef"; } ];
     "net-router-ddns/nixos" = [
@@ -2776,6 +2780,7 @@ let
         kdn.networking.router.addr.public.ipv6.path = "/dev/null";
       }
     ];
+    "security-secrets-sops/nixos" = [ { services.userborn.enable = true; } ];
   };
 
   # No consumer data at all, except the `forceData` entries above. Measured on 2026-09-11: all
