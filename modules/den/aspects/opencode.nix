@@ -93,7 +93,7 @@
       # the jq filter reads `.<provider>.key`. An empty attribute set emits no line at all, so the
       # aspect names no provider by itself.
       authExports = lib.mapAttrsToList (name: provider: ''
-        export ${name}="$(${lib.getExe pkgs.jq} -r ${lib.escapeShellArg ".${provider}.key // empty"} ${cfg.authFile} 2>/dev/null || true)"
+        export ${name}="$(${lib.getExe pkgs.jq} -r ${lib.escapeShellArg ".${provider}.key // empty"} "${cfg.authFile}" 2>/dev/null || true)"
         if [ -z "''${${name}:-}" ]; then
           echo "opencode: the kdn wrapper found no ${provider} key in ${cfg.authFile}" >&2
         fi
