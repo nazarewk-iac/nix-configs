@@ -137,11 +137,22 @@ Tier 1 runs on any machine: the comparison is an evaluation and the derivation i
 tier 3 build a real artifact, so `tests.nix` keeps only this machine's entries — the same rule the
 `den-mvp` aggregate follows.
 
-**17 of 17 pass on an `aarch64-darwin` machine**, measured on 2026-09-10: 12 evaluation, 3 artifact
-and 2 smoke. The 12 evaluation checks assert 150 values together, and `den-eval-jj` holds 32 of them.
-The five `x86_64-linux` entries evaluate to a `drvPath` from Darwin, and they need a Linux builder to
-build. `nix eval '.#checks.<system>'` lists 18 `den*` names on each system, because the `den-mvp`
-build gate joins the 17.
+**25 of 25 pass on an `aarch64-darwin` machine**, measured on 2026-09-11: 20 evaluation, 3 artifact
+and 2 smoke. The 20 evaluation checks assert about 216 values together, and `den-eval-jj` holds 32
+of them. The five `x86_64-linux` entries evaluate to a `drvPath` from Darwin, and they need a Linux
+builder to build. `nix eval '.#checks.<system>'` lists one name more than that on each system,
+because the `den-mvp` build gate joins the set.
+
+The registry at [`modules/den/lib.nix`](../../modules/den/lib.nix) holds **20** aspects. Four checks
+are cross-cutting. Each one reads a **bare consumer** — a plain evaluation with no den entity, no
+`kdnConfig` and no overlay, one helper per class:
+
+| Check | What it proves |
+|---|---|
+| `den-eval-defaults` | the option default an adopter really gets: the opt-in boundary, and every de-personalized value |
+| `den-eval-priority` | a consumer's own plain definition beats the aspect's, and the one place where it still cannot |
+| `den-eval-frozen-paths` | no backend freezes an environment value, and the gateway finds its configuration at run time |
+| `den-eval-coverage` | every registry aspect names a subject that evaluates its target module |
 
 **No tier activates anything.** Tier 2 reads a built store path and never executes it. Tier 3 runs
 devenv's `config.test`, which devenv keeps separate from `enterShell`, so no assertion runs on

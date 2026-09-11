@@ -629,9 +629,9 @@ let
   # `kdnConfig`. Both routes get one identical extra module list, so an unequal `drvPath` proves the
   # library route and the `flakeModule` route drifted apart. The README states this equality as a
   # measurement; this makes it a test.
-  bareDarwin =
+  bareDarwinSystem =
     modules:
-    (inputs.nix-darwin.lib.darwinSystem {
+    inputs.nix-darwin.lib.darwinSystem {
       # nix-darwin's own default for `system` reads `builtins.currentSystem`, which is impure.
       system = null;
       modules = modules ++ [
@@ -641,7 +641,75 @@ let
           system.stateVersion = 7;
         }
       ];
-    }).config.system.build.toplevel.drvPath;
+    };
+
+  bareDarwin = modules: (bareDarwinSystem modules).config.system.build.toplevel.drvPath;
+
+  # The `nixos` class, in the same adopter shape. This is the one subject that forces the `nixos`
+  # target of `llm` and of `llm-proxy` to evaluate: no den entity includes either aspect, and
+  # `den.lib.aspects.resolve` returns an `imports` list without ever reading a target module.
+  #
+  # The extra lines are the same ones ./host-nixos/default.nix needs, and they name no hardware.
+  # Measured on 2026-09-11: `denModules.llm` evaluates here with no consumer data at all.
+  bareNixos =
+    modules:
+    inputs.nixpkgs.lib.nixosSystem {
+      modules = modules ++ [
+        (
+          { config, ... }:
+          {
+            nixpkgs.hostPlatform = "x86_64-linux";
+            fileSystems."/" = {
+              device = "none";
+              fsType = "tmpfs";
+            };
+            boot.loader.grub.enable = false;
+            system.stateVersion = config.system.nixos.release;
+          }
+        )
+      ];
+    };
+
+  # The `devenv` class, in the same adopter shape. `den.devenv.mkShell` returns `.config` alone
+  # (../../modules/den/classes/devenv.nix:75), so no existing subject can read an option default.
+  # This helper returns the whole evaluation, so an assertion reads `.options.<path>.default`.
+  #
+  # It repeats the four mandatory devenv lines from that class and adds nothing else. So it also
+  # proves the drop-in route: a plain `lib.evalModules`, no den entity, no `kdnConfig` and no
+  # overlay. `specialArgs.inputs` carries `git-hooks` alone, because devenv reads that one input
+  # directly and the `nix` aspect registers a pre-commit hook.
+  bareShell =
+    {
+      aspects ? [ ],
+      modules ? [ ],
+      system ? "aarch64-darwin",
+    }:
+    lib.evalModules {
+      class = "devenv";
+      specialArgs.inputs = {
+        inherit (inputs.devenv.inputs) git-hooks;
+      };
+      modules = [
+        (inputs.devenv.outPath + "/src/modules/top-level.nix")
+        {
+          _module.args.pkgs = import inputs.nixpkgs { inherit system; };
+          devenv.root = "/den-mvp-bare";
+          devenv.tmpdir = "/tmp";
+          name = "den-mvp-bare";
+        }
+        (
+          { config, ... }:
+          {
+            devenv.cli.version = lib.mkDefault config.devenv.latestVersion;
+          }
+        )
+      ]
+      ++ denLib.imports {
+        class = "devenv";
+        inherit aspects;
+      }
+      ++ modules;
+    };
 
   routeAssertions =
     if !(inputs ? nix-darwin) then
@@ -1285,6 +1353,25 @@ let
       expected = true;
       actual = devenvDarwin.kdn.mcp.programs.nixos.enable;
     }
+    /*
+      The two `package` pins guard a nixpkgs break: `mcp-servers-nix` reads the unversioned
+      `typescript` attribute, which now resolves to TypeScript 7, and those two builds fail.
+      `lib.getExe` also proves `meta.mainProgram` stays set.
+    */
+    {
+      name = "mcp: the filesystem server takes nixpkgs' own package";
+      expected = true;
+      actual = lib.hasSuffix "/bin/mcp-server-filesystem" (
+        lib.getExe devenvDarwin.kdn.mcp.programs.filesystem.package
+      );
+    }
+    {
+      name = "mcp: the sequential-thinking server takes nixpkgs' own package";
+      expected = true;
+      actual = lib.hasSuffix "/bin/mcp-server-sequential-thinking" (
+        lib.getExe devenvDarwin.kdn.mcp.programs.sequential-thinking.package
+      );
+    }
     {
       name = "the devenv backend command is a wrapper script, not a bare command";
       expected = true;
@@ -1926,6 +2013,82 @@ let
         ssh-access = flake.denModules ? ssh-access;
       };
     }
+
+    # ---- the target modules. Every assertion above counts modules in a list, and
+    # `den.lib.aspects.resolve` never reads a target module body. So until this block landed, the
+    # `nixos` target of `llm` (49 options) and of `llm-proxy`, and the `devenv` target of
+    # `llm-client`, evaluated in no check at all. These three subjects force all three.
+    {
+      name = "the nixos target of each aspect evaluates with no consumer data";
+      expected = {
+        llm = true;
+        llm-proxy = true;
+      };
+      actual = {
+        llm = succeeds llmNixos.config.kdn.llm.local.modelsDir;
+        llm-proxy = succeeds llmProxyNixos.config.kdn.llm.proxy.instances;
+      };
+    }
+    {
+      name = "the devenv target of llm-client evaluates with no consumer data";
+      expected = true;
+      actual = succeeds llmClientShell.config.kdn.llm.client.upstreams;
+    }
+    # An aspect is additive and carries no `enable`, so inclusion alone must configure nothing.
+    {
+      name = "no instance and no upstream exists until the consumer names one";
+      expected = {
+        routers = { };
+        models = { };
+        instances = { };
+        upstreams = { };
+      };
+      actual = {
+        routers = llmNixos.config.kdn.llm.local.routers;
+        models = llmNixos.config.kdn.llm.local.models;
+        instances = llmProxyNixos.config.kdn.llm.proxy.instances;
+        upstreams = llmClientShell.config.kdn.llm.client.upstreams;
+      };
+    }
+
+    # ---- the de-personalized defaults. The slot froze one machine's own model directory and one
+    # hardcoded thread count. See ../../modules/den/aspects/llm.nix:50-53.
+    {
+      name = "the models directory is a neutral system path";
+      expected = "/var/lib/kdn/llm/models";
+      actual = llmNixos.options.kdn.llm.local.modelsDir.default;
+    }
+    {
+      name = "the thread count comes from the consumer, so the flag stays out";
+      expected = null;
+      actual = llmNixos.options.kdn.llm.local.defaultThreads.default;
+    }
+    {
+      name = "each listen address is a loopback default";
+      expected = {
+        llm = "127.0.0.1";
+        llm-proxy = "127.0.0.1";
+      };
+      actual = {
+        llm = llmNixos.options.kdn.llm.local.server.host.default;
+        llm-proxy = (llmProxyNixos.options.kdn.llm.proxy.instances.type.getSubOptions [ ]).host.default;
+      };
+    }
+    {
+      name = "a proxy instance opens no firewall port and forwards no client credential";
+      expected = {
+        openFirewall = false;
+        forwardClientAuth = false;
+      };
+      actual =
+        let
+          sub = llmProxyNixos.options.kdn.llm.proxy.instances.type.getSubOptions [ ];
+        in
+        {
+          openFirewall = sub.openFirewall.default;
+          forwardClientAuth = sub.forwardClientAuth.default;
+        };
+    }
   ];
 
   # The `signing` aspect is a `homeManager`-only port, like `ssh-agent`. So these assertions read the
@@ -2198,6 +2361,287 @@ let
     }
   ];
 
+  # ------------------------------------------------------------------ the bare subjects
+
+  # One bare consumer per class, shared by the four sets below and by `llmAssertions`. Each one
+  # supplies **no** data, so `.options.<path>.default` is the value an adopter really gets.
+  llmNixos = bareNixos [ flake.denModules.llm ];
+  llmProxyNixos = bareNixos (
+    denLib.imports {
+      class = "nixos";
+      aspects = [ "llm-proxy" ];
+    }
+  );
+  llmClientShell = bareShell { aspects = [ "llm-client" ]; };
+
+  # Every `devenv` aspect that declares an option, in one subject and with no consumer data.
+  defaultsShell = bareShell {
+    aspects = [
+      "jj-fork"
+      "nix"
+      "zellij"
+      "opencode"
+      "mcp-basic-memory"
+    ];
+  };
+
+  # ------------------------------------------------------------------ option defaults
+
+  # An option default is a promise to an adopter, and a header comment is not a test. Two facts make
+  # this set worth its lines:
+  #
+  #  1. A stale default claim survives review. ../../modules/den/aspects/mcp.nix:30-32 still says the
+  #     `mcp/snoop` and `mcp/pretty-print` slots "both default `enable = true`", while both slot
+  #     sources use `lib.mkEnableOption`, which is false.
+  #  2. `den.devenv.mkShell` returns `.config` alone, so before `bareShell` existed no subject could
+  #     read a `devenv`-class default at all.
+  aspectDefaultsAssertions = [
+    # ---- the opt-in boundary. Five declarations, one meaning: an aspect writes a file into the
+    # consumer's own tree only when the consumer asks. A `true` default here would push this
+    # repository's own work mandate into an adopter's working tree.
+    {
+      name = "every agent-rule install stays opt-in";
+      expected = {
+        zellij = false;
+        nix = false;
+        jj = false;
+        jj-fork = false;
+        basic-memory = false;
+      };
+      actual = {
+        zellij = defaultsShell.options.kdn.zellij.installAgentRules.default;
+        nix = defaultsShell.options.kdn.nix.installAgentRules.default;
+        jj = defaultsShell.options.kdn.jj.installAgentRules.default;
+        jj-fork = defaultsShell.options.kdn.jj.fork.installAgentRules.default;
+        basic-memory = defaultsShell.options.kdn.mcp.basic-memory.installAgentRules.default;
+      };
+    }
+    # The shared switch from ../../modules/den/common/source-repo.nix. An adopter must get the files,
+    # so the default is false and this repository sets the value true itself.
+    {
+      name = "a consumer is not the source repository by default";
+      expected = false;
+      actual = defaultsShell.options.kdn.isSourceRepo.default;
+    }
+
+    # ---- de-personalization. Each slot default below named one person's own remote, one person's
+    # own pattern or one person's own folder. See gap 6 of
+    # ../../docs/tasks/2026-09/generalization/definition.md.
+    {
+      name = "each remote name is generic, and the fork names none at all";
+      expected = {
+        upstream = "origin";
+        fork = "";
+      };
+      actual = {
+        upstream = defaultsShell.options.kdn.jj.upstream.remote.default;
+        fork = defaultsShell.options.kdn.jj.fork.remote.default;
+      };
+    }
+    # A denied pattern is private configuration, and `runtimeEnv` puts it into a world-readable store
+    # path. So every pattern list starts empty and the consumer names its own.
+    {
+      name = "every denied pattern list starts empty";
+      expected = {
+        message = [ ];
+        forkFile = [ ];
+        forkMessage = [ ];
+      };
+      actual = {
+        message = defaultsShell.options.kdn.jj.alwaysBlockedMessagePatterns.default;
+        forkFile = defaultsShell.options.kdn.jj.fork.deniedFilePatterns.default;
+        forkMessage = defaultsShell.options.kdn.jj.fork.deniedMessagePatterns.default;
+      };
+    }
+    # Each value below expands at run time inside a generated script. A store path here freezes one
+    # checkout, and an absolute home path names one person.
+    {
+      name = "each data path is a run-time home lookup, not a store path and not a person";
+      expected = {
+        knowledgeRoot = "$HOME/.local/share/basic-memory";
+        authFile = "$HOME/.local/share/opencode/auth.json";
+      };
+      actual = {
+        knowledgeRoot = defaultsShell.options.kdn.mcp.basic-memory.knowledgeRoot.default;
+        authFile = defaultsShell.options.kdn.opencode.authFile.default;
+      };
+    }
+    {
+      name = "the knowledge base set starts empty";
+      expected = { };
+      actual = defaultsShell.config.kdn.mcp.basic-memory.bases;
+    }
+    # The read allowlist starts at the store alone. A checkout path here names one machine.
+    {
+      name = "the opencode read allowlist starts at the store alone";
+      expected = [ "/nix/store/**" ];
+      actual = defaultsShell.options.kdn.opencode.allowedPaths.default;
+    }
+    {
+      name = "the gateway listens on loopback";
+      expected = {
+        host = "127.0.0.1";
+        port = 39400;
+      };
+      actual = {
+        host = defaultsShell.options.kdn.mcp.host.default;
+        port = defaultsShell.options.kdn.mcp.port.default;
+      };
+    }
+    # The `mcp-servers-nix` source belongs to the consumer, so the aspect names none.
+    {
+      name = "the aspect names no mcp-servers-nix source";
+      expected = null;
+      actual = defaultsShell.options.kdn.mcp.serversNix.default;
+    }
+  ];
+
+  # ------------------------------------------------------------------ definition priority
+
+  # A priority conflict stops the whole evaluation, and it appears only when a consumer defines the
+  # same option the aspect defines. No existing assertion does that, so this set does.
+  #
+  # Six aspects write `claude.code.enable = lib.mkDefault true` (gh, jj, mcp, mcp-pretty-print, nix,
+  # zellij). Equal definitions at priority 1000 merge, and a consumer's plain value at priority 100
+  # wins. A change to `lib.mkForce` or to a plain assignment breaks that, and assertion 1 catches it.
+  priorityAssertions = [
+    {
+      name = "a consumer's plain value overrides six mkDefault definitions";
+      expected = false;
+      actual =
+        (bareShell {
+          aspects = [
+            "gh"
+            "nix"
+            "zellij"
+          ];
+          modules = [ { claude.code.enable = false; } ];
+        }).config.claude.code.enable;
+    }
+
+    # ---- the measured hazard. ../../modules/den/aspects/homebrew.nix:120-131 assigns six nix-darwin
+    # options at plain priority 100, so a consumer's own plain value collides and the evaluation
+    # stops. Measured on 2026-09-11: the plain override throws, and `lib.mkForce` works.
+    #
+    # These three assertions state today's behaviour, so the hazard cannot hide. When the aspect
+    # moves to `lib.mkDefault` — see the plan's "Coordination needed" — delete the `succeeds`
+    # assertion and expect `"none"` from the plain override instead.
+    {
+      name = "the aspect's own cleanup value reaches a bare consumer";
+      expected = "zap";
+      actual = (bareDarwinSystem [ flake.denModules.homebrew ]).config.homebrew.onActivation.cleanup;
+    }
+    {
+      name = "a consumer's plain cleanup value still collides with the aspect's own";
+      expected = false;
+      actual =
+        succeeds
+          (bareDarwinSystem [
+            flake.denModules.homebrew
+            { homebrew.onActivation.cleanup = "none"; }
+          ]).config.homebrew.onActivation.cleanup;
+    }
+    {
+      name = "lib.mkForce is the one override that works today";
+      expected = "none";
+      actual =
+        (bareDarwinSystem [
+          flake.denModules.homebrew
+          { homebrew.onActivation.cleanup = lib.mkForce "none"; }
+        ]).config.homebrew.onActivation.cleanup;
+    }
+  ];
+
+  # ------------------------------------------------------------------ frozen store paths
+
+  # The measured defect: the `nix` slot set `env.DEVENV_ROOT = toString inputs.nix-configs` on the
+  # `devenv` MCP backend, so an adopter's tool pointed at a store copy of **this** repository. See
+  # ../../modules/den/aspects/nix.nix:19-29.
+  #
+  # One assertion in `nixAssertions` guards that one backend. This set generalizes it: no backend of
+  # either shell may carry an `env` block, and the gateway must find its own configuration through a
+  # run-time `DEVENV_ROOT` lookup instead of a build-time path.
+  backendsWithEnv =
+    shell: sorted (builtins.attrNames (lib.filterAttrs (_: b: b ? env) shell.kdn.mcp.backends));
+
+  frozenPathAssertions = [
+    {
+      name = "no backend of either shell freezes an environment value";
+      expected = {
+        devenv-darwin = [ ];
+        devenv-linux = [ ];
+      };
+      actual = {
+        devenv-darwin = backendsWithEnv devenvDarwin;
+        devenv-linux = backendsWithEnv devenvLinux;
+      };
+    }
+    # `enterShell` repoints a stable in-project symlink on every entry, and the gateway wrapper reads
+    # that path through `DEVENV_ROOT`. So `.mcp.json` holds no per-build path, and the consumer's own
+    # root always wins.
+    {
+      name = "the gateway configuration link is a run-time DEVENV_ROOT lookup";
+      expected = {
+        devenv-darwin = true;
+        devenv-linux = true;
+      };
+      actual = {
+        devenv-darwin = lib.hasInfix "$DEVENV_ROOT/.devenv/mcp-gateway.yaml" devenvDarwin.enterShell;
+        devenv-linux = lib.hasInfix "$DEVENV_ROOT/.devenv/mcp-gateway.yaml" devenvLinux.enterShell;
+      };
+    }
+    # A bare consumer reaches the same shape with no data of its own. So the run-time lookup is a
+    # property of the aspect, and not of this tree's own test subjects.
+    {
+      name = "a bare consumer gets the same run-time lookup";
+      expected = true;
+      actual =
+        lib.hasInfix "$DEVENV_ROOT/.devenv/mcp-gateway.yaml"
+          (bareShell {
+            aspects = [ "mcp" ];
+          }).config.enterShell;
+    }
+  ];
+
+  # ------------------------------------------------------------------ coverage tripwire
+
+  # The `llm` family reached the registry, passed "the registry holds every ported aspect", and still
+  # evaluated in no target module at all. Nothing stopped it. This set is the tripwire: every registry
+  # aspect must name the subject whose **target module** it reaches, so a new aspect cannot land with
+  # a resolve-only test again.
+  #
+  # Add a row when you add an aspect, and name a real subject. A resolve count is not a subject.
+  instantiatedBy = {
+    ca = "host-nixos";
+    devenv-cli = "host-darwin, host-nixos, users/dev, home, devenv";
+    gh = "host-darwin, host-nixos, devenv";
+    homebrew = "host-darwin";
+    jj = "devenv, defaultsShell";
+    jj-fork = "devenv, defaultsShell";
+    llm = "llmNixos";
+    llm-client = "llmClientShell";
+    llm-proxy = "llmProxyNixos";
+    mcp = "devenv, bareShell";
+    mcp-basic-memory = "devenv, defaultsShell";
+    mcp-pretty-print = "devenv";
+    mcp-snoop = "devenv";
+    nix = "devenv, defaultsShell";
+    opencode = "devenv, defaultsShell";
+    rosetta-builder = "host-darwin";
+    signing = "users/dev, home";
+    ssh-access = "users/dev, home, devenv";
+    ssh-agent = "users/dev, home";
+    zellij = "host-darwin, devenv, defaultsShell";
+  };
+
+  coverageAssertions = [
+    {
+      name = "every registry aspect names a subject that evaluates its target module";
+      expected = sorted (builtins.attrNames denLib.aspectModules);
+      actual = sorted (builtins.attrNames instantiatedBy);
+    }
+  ];
+
   # ------------------------------------------------------------------ the check set
 
   # Tier 1 runs anywhere: the comparison is an evaluation and the derivation is local.
@@ -2218,6 +2662,10 @@ let
     den-eval-llm = mkEvalCheck "llm" llmAssertions;
     den-eval-signing = mkEvalCheck "signing" signingAssertions;
     den-eval-ssh-access = mkEvalCheck "ssh-access" sshAccessAssertions;
+    den-eval-defaults = mkEvalCheck "defaults" aspectDefaultsAssertions;
+    den-eval-priority = mkEvalCheck "priority" priorityAssertions;
+    den-eval-frozen-paths = mkEvalCheck "frozen-paths" frozenPathAssertions;
+    den-eval-coverage = mkEvalCheck "coverage" coverageAssertions;
   };
 
   # Tier 2 and tier 3 build a real artifact, so each one needs a builder for its own platform. The
