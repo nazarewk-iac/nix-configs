@@ -422,7 +422,7 @@ Each one is read from the source. Each entry states whether it is solved.
    translation code is tested on the `stdio`, `args` and `http` branches — but the real server set
    is not.
 
-4. **`ssh-access` holds personal data.** `modules/slots/ssh-access/kdn-graph.nix` carries hosts,
+4. **`ssh-access` holds personal data.** `data/slots-ssh-access.nix` carries hosts,
    LAN addresses and zones. It moves to the personal folder of
    [009](../009-personal-data-folder/definition.md) first, so order 9 waits for that checkpoint.
 

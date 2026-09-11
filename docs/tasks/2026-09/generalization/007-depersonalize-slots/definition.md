@@ -79,7 +79,7 @@ the slot. Keep that.
 
 ## 5. Move `kdn-graph.nix` out of the slots tree
 
-`modules/slots/ssh-access/kdn-graph.nix` is 176 LOC of the creator's hosts, LAN and management IPs
+`data/slots-ssh-access.nix` is 176 LOC of the creator's hosts, LAN and management IPs
 (`192.168.41/73/252.*`), WAN ports, `*.kdn.im` zones, and literal addresses.
 
 The mechanism is sound, and its header documents it. It uses a `kdn-` prefix. The loader does not
