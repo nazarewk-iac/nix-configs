@@ -10,7 +10,7 @@ timestamp: 2026-09-11T00:00:00Z
 
 Full doc, with a command and a measured time per check: [checks/README.md](../../checks/README.md)
 
-**Never run a bare `nix flake check`.** It builds all 36 checks and takes over 660 s — 11 minutes,
+**Never run a bare `nix flake check`.** It builds all 38 checks and takes over 660 s — 11 minutes,
 measured 2026-09-11. Run a bundle. `bundle-core` 16.7 s covers any edit; `bundle-den` about 35 s covers
 `modules/den/aspects/`; `bundle-pkgs` 18.0 s covers `packages/`; `bundle-artifact` 43.7 s covers a
 built artifact; `bundle-slow` about 383 s runs before a hand-off. `bundle-vm` is reserved and empty.

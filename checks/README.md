@@ -8,7 +8,7 @@ timestamp: 2026-09-11T00:00:00Z
 
 # Checks
 
-**Do not run a bare `nix flake check`.** It builds all 36 checks of this system and takes over
+**Do not run a bare `nix flake check`.** It builds all 38 checks of this system and takes over
 **660 s** — 11 minutes on a warm store. Four checks cost over a minute each, and
 `jj-experiments-pytest` alone runs 188 s. Run a bundle instead.
 
@@ -64,6 +64,8 @@ first: `SYS=aarch64-darwin` — or `x86_64-linux`, or `aarch64-linux`.
 | `standalone-slots` | no slot names a universal option, a meta option or `kdnConfig` | core | 2.3 | `nix build --no-eval-cache -L ".#checks.$SYS.standalone-slots"` |
 | `den-eval-opencode` | the de-personalized options, and the permission baseline | den | 2.2 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-opencode"` |
 | `standalone-aspects` | every aspect resolves with `pkgs` alone, with no reachable `enable` | core | 2.0 | `nix build --no-eval-cache -L ".#checks.$SYS.standalone-aspects"` |
+| `universal-eval-keepassxc` | the platform guard reaches the NixOS host and the user profile | core | ‡ | `nix build --no-eval-cache -L ".#checks.$SYS.universal-eval-keepassxc"` |
+| `universal-eval-containers` | the Home Manager branch reads the parent through `osConfig` | core | ‡ | `nix build --no-eval-cache -L ".#checks.$SYS.universal-eval-containers"` |
 | `conditional-imports-repository` | this repository's own conditional imports resolve | core | 2.0 | `nix build --no-eval-cache -L ".#checks.$SYS.conditional-imports-repository"` |
 | `den-eval-ca` | the first `nixos`-only aspect, with its option in the `nixos` target | den | 1.9 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-ca"` |
 | `den-smoke-host-darwin` | the same `enterTest`, from the host-derived shell | artifact | 1.7 | `nix build --no-eval-cache -L '.#checks.aarch64-darwin.den-smoke-host-darwin'` |
@@ -106,5 +108,6 @@ nix build --no-eval-cache -L --keep-going ".#checks.$SYS.<name>"
 - **`--keep-going`** — a bundle stops at its first failed member without it, so one failure hides the
   rest.
 
-The assertions live in `den-mvp/tests.nix`, in `standalone.nix` and in each aspect's own `enterTest`.
+The assertions live in `den-mvp/tests.nix`, in `standalone.nix`, in `universal-guards.nix` and in
+each aspect's own `enterTest`.
 `bundles.nix` holds the member lists.
