@@ -129,10 +129,19 @@ let
     packaging-asdf = ./aspects/packaging.nix;
     rosetta-builder = ./aspects/rosetta-builder.nix;
     secrets = ./aspects/secrets.nix;
+    security-disk-encryption = ./aspects/security-disk-encryption.nix;
+    security-secrets-age = ./aspects/security-secrets-age.nix;
+    security-secrets-sops = ./aspects/security-secrets-sops.nix;
+    security-secure-boot = ./aspects/security-secure-boot.nix;
     service-caddy = ./aspects/service-caddy.nix;
     service-coredns = ./aspects/service-coredns.nix;
     service-home-assistant = ./aspects/service-home-assistant.nix;
     service-iperf3 = ./aspects/service-iperf3.nix;
+    service-k8s = ./aspects/service-k8s.nix;
+    service-k8s-controlplane-lb = ./aspects/service-k8s.nix;
+    service-k8s-kubeadm = ./aspects/service-k8s.nix;
+    service-k8s-management = ./aspects/service-k8s.nix;
+    service-k8s-node = ./aspects/service-k8s.nix;
     service-nextcloud-client = ./aspects/service-nextcloud-client.nix;
     service-postgresql = ./aspects/service-postgresql.nix;
     service-printing = ./aspects/service-printing.nix;
@@ -160,6 +169,8 @@ let
     virt-containers-podman = ./aspects/virt-containers-podman.nix;
     virt-containers-x11docker = ./aspects/virt-containers-x11docker.nix;
     virt-libvirtd = ./aspects/virt-libvirtd.nix;
+    virt-microvm-guest = ./aspects/virt-microvm-guest.nix;
+    virt-microvm-host = ./aspects/virt-microvm-host.nix;
     virt-vagrant = ./aspects/virt-vagrant.nix;
     zellij = ./aspects/zellij.nix;
   };
