@@ -1,6 +1,7 @@
 ---
 type: Task
-status: open
+status: done
+solution: done.md
 description: Two guard defects in modules/universal that laziness hides today. A den port makes both reachable.
 authored_by: agent
 timestamp: 2026-09-11T00:00:00Z
