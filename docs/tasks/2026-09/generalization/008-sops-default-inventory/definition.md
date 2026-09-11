@@ -1,12 +1,15 @@
 ---
 type: Task
 description: Produce an exact list of what depends on the default sops file, its key schema, and which consumers fail when the file is absent.
-status: open
+status: done
+solution: done.md
 authored_by: agent
 timestamp: 2026-09-08T17:30:00+02:00
 ---
 
 # 008 — default sops file inventory
+
+**Done on 2026-09-11.** Solution: [done.md](done.md).
 
 Hub: [../generalization-plan.md](../definition.md). Independent of the direction gate.
 Run it any time after 001. Checkpoint 009 needs its output.

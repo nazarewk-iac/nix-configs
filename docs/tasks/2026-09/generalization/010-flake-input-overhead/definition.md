@@ -1,12 +1,16 @@
 ---
 type: Task
 description: Research, then maybe spike, ways to smooth out a 106-node flake lock on Lix, for both the creator's own cost and an adopter's cost.
-status: open
+status: done
+solution: done.md
 authored_by: agent
 timestamp: 2026-09-08T17:30:00+02:00
 ---
 
 # 010 — flake input overhead
+
+**Done on 2026-09-11.** Solution: [done.md](done.md). Two recommended follow-up actions stay
+un-applied; `done.md` § "Follow-up notes" names both.
 
 Hub: [../generalization-plan.md](../definition.md). Independent of everything after 001.
 Run it whenever.
