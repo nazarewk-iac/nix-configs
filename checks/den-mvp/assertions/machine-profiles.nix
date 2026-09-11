@@ -405,6 +405,31 @@ in
       };
     }
     {
+      name = "angrr reaches the devenv root class, reports before it deletes, and wakes up on Darwin";
+      expected = {
+        devenvRegexNixos = "/\\.devenv/";
+        devenvPeriodNixos = "30d";
+        devenvRegexDarwin = "/\\.devenv/";
+        devenvPeriodDarwin = "30d";
+        dryRunNixos = [ "--dry-run" ];
+        dryRunDarwin = [ "--dry-run" ];
+        logLevelNixos = "debug";
+        darwinTimer = true;
+        darwinLog = "/var/log/angrr.log";
+      };
+      actual = {
+        devenvRegexNixos = nixosPlain.services.angrr.settings.temporary-root-policies.devenv.path-regex;
+        devenvPeriodNixos = nixosPlain.services.angrr.settings.temporary-root-policies.devenv.period;
+        devenvRegexDarwin = darwinPlain.services.angrr.settings.temporary-root-policies.devenv.path-regex;
+        devenvPeriodDarwin = darwinPlain.services.angrr.settings.temporary-root-policies.devenv.period;
+        dryRunNixos = nixosPlain.services.angrr.extraArgs;
+        dryRunDarwin = darwinPlain.services.angrr.extraArgs;
+        logLevelNixos = nixosPlain.services.angrr.logLevel;
+        darwinTimer = darwinPlain.services.angrr.timer.enable;
+        darwinLog = darwinPlain.launchd.daemons.angrr.serviceConfig.StandardOutPath;
+      };
+    }
+    {
       name = "the flake links stay away until a consumer names its own checkout";
       expected = [ ];
       actual = builtins.filter (

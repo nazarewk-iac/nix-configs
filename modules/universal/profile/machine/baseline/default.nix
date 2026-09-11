@@ -56,6 +56,18 @@ in
       example = false;
       description = "Turn on the `nix.gc` policy and the angrr retention service.";
     };
+    garbageCollection.dryRun = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      example = false;
+      description = ''
+        Make angrr report and delete nothing. It adds `--dry-run` to `services.angrr.extraArgs`,
+        and it raises `services.angrr.logLevel` to `debug` so the log names each skipped root.
+
+        The default is `true`, because the Darwin daemon has never run one single time and no
+        person has read a NixOS run. Read one report per host, then set this to `false`.
+      '';
+    };
     overlayNetworks.enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
@@ -178,6 +190,12 @@ in
           # ../../../../../docs/tasks/2026-09/angrr-result-retention/definition.md.
           nix.gc.options = lib.mkDefault "--delete-older-than 7d";
           services.angrr.enable = lib.mkDefault true;
+          # The safe first state. `--dry-run` makes angrr print every verdict and remove no file
+          # (`<angrr>/angrr/src/run.rs:551`). `debug` adds the line that names each root a policy
+          # skips (`<angrr>/angrr/src/policy/temporary.rs:40-46`); that miss is exactly the
+          # `.devenv`-versus-`.direnv` defect the `devenv` policy below closes.
+          services.angrr.extraArgs = lib.mkIf cfg.garbageCollection.dryRun [ "--dry-run" ];
+          services.angrr.logLevel = lib.mkIf cfg.garbageCollection.dryRun (lib.mkDefault "debug");
           services.angrr.settings = {
             temporary-root-policies = {
               direnv = {
@@ -187,6 +205,24 @@ in
               result = {
                 path-regex = "/result[^/]*$";
                 period = "5d";
+              };
+              # 24 of the 29 auto roots of the Darwin host live under `.devenv/`, and 13 of them
+              # were last written between 43 and 105 days ago (measured 2026-09-11). The `direnv`
+              # policy above cannot reach them: `.devenv` and `.direnv` are separate directories,
+              # and this repo carries no `.envrc`. So the largest root class had no policy at all,
+              # and `run.rs:156` keeps an unmatched root forever.
+              #
+              # 30 days sits inside a measured empty band. No root of that set is between 17 and
+              # 42 days old, so this period reaps every dead project root and it keeps every root
+              # of an active project.
+              #
+              # One trade-off: angrr reads the mtime of the link target (`run.rs:319`), and devenv
+              # rewrites a link only when the derivation changes. So a link of an active project
+              # can age out. devenv recreates it on the next shell entry, so the cost is one
+              # rebuild, never lost work.
+              devenv = {
+                path-regex = "/\\.devenv/";
+                period = "30d";
               };
             };
             profile-policies = {
@@ -232,6 +268,20 @@ in
                 Minute = 15;
               }
             ];
+            # The one line that starts angrr on Darwin. `services.angrr.timer.enable` is the only
+            # trigger there, because nix-darwin ships no `nix-gc.service` and the Darwin module
+            # declares no `enableNixGcIntegration`. Without the timer the plist carries
+            # `RunAtLoad = false` and no `StartCalendarInterval`, so the daemon never wakes up.
+            # Measured 2026-09-11 in `/Library/LaunchDaemons/org.nixos.angrr.plist`.
+            #
+            # `timer.dates` stays unset. The NixOS type is `str` and the Darwin type is
+            # `listOf (attrsOf int)`, so no shared block can name it. Both defaults are 03:00.
+            services.angrr.timer.enable = lib.mkDefault true;
+            # launchd sends the output of a daemon to `/dev/null` when neither path is set, and
+            # the live plist sets neither. So the dry-run report would be lost. nix-darwin uses
+            # the same pattern for its own daemons (`modules/services/netbird.nix:30`).
+            launchd.daemons.angrr.serviceConfig.StandardOutPath = "/var/log/angrr.log";
+            launchd.daemons.angrr.serviceConfig.StandardErrorPath = "/var/log/angrr.log";
           })
           (lib.mkIf config.kdn.security.secrets.allowed {
             system.activationScripts.postActivation.text = lib.mkOrder 1501 ''
