@@ -121,8 +121,7 @@
             description = ''
               Base URL of the remote llama-server, through its own TLS proxy.
 
-              The slot's example named one real host of a private network. The example here names a
-              placeholder domain.
+              The example names a placeholder domain. A consumer writes its own endpoint.
             '';
           };
 

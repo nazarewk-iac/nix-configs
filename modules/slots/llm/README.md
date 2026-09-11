@@ -13,7 +13,7 @@ demand. Exactly **one** model is resident in RAM at a time (`--models-max 1`);
 the others stay on disk.
 
 A self-signed-certificate **Caddy** reverse proxy exposes the endpoint on the
-LAN (`brys.lan.etra.net.int.kdn.im`, TCP 80/443 only). Between Caddy and the
+LAN (`llm.example.invalid`, TCP 80/443 only). Between Caddy and the
 loopback server sits one OpenCode DSML compat-proxy instance that both
 translates DeepSeek DSML / Qwen XML tool calls and passes every other path
 through — so a single instance correctly fronts a server that does its own
@@ -61,7 +61,7 @@ slots = kdnConfig.self.mkSlots {
   kdn.llm.local.modelsDir = "/var/lib/kdn/llms/models"; # required, no default
 
   # LAN endpoint (required): the Caddy vhost hostname + its self-signed cert.
-  kdn.llm.local.domain = "brys.lan.etra.net.int.kdn.im";
+  kdn.llm.local.domain = "llm.example.invalid";
   kdn.llm.local.certs.certFile = "/run/configs/llms/certs/public.key";
   kdn.llm.local.certs.keyFile = "/run/configs/llms/certs/private.key";
   kdn.llm.local.apiKeyDir = "/run/configs/llms/llama-server/api-keys"; # optional
@@ -97,8 +97,8 @@ module tree — the slot only reads the decrypted files. To (re)generate:
 ```bash
 openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 \
   -nodes -keyout private.key -out public.key -days 3650 \
-  -subj "/CN=brys.lan.etra.net.int.kdn.im" \
-  -addext "subjectAltName=DNS:brys.lan.etra.net.int.kdn.im"
+  -subj "/CN=llm.example.invalid" \
+  -addext "subjectAltName=DNS:llm.example.invalid"
 ```
 
 ...then encrypt both files (and the API key) into `llms.nonsensitive.sops.yaml`
@@ -219,7 +219,7 @@ kdn.opencode.wrapper.envFiles.KDN_LLM_API_KEY_brys = "/run/configs/llms/llama-se
 kdn.llm.client.enable = true;
 kdn.llm.client.upstreams.brys = {
   enable = true;
-  baseURL = "https://brys.priv.nb.net.int.kdn.im/v1";
+  baseURL = "https://llm.example.invalid/v1";
   models = { "deepseek-v4-flash" = { ... }; };
 };
 # ... add more upstreams as upstreams.<other> = { ... };
