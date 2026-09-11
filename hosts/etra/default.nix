@@ -8,7 +8,26 @@
 let
   inherit (kdnConfig) self;
   rCfg = config.kdn.networking.router;
-  netconf = config.kdn.security.secrets.sops.placeholders.networking;
+  /*
+    `placeholders.networking` comes from the personal sops file. A tree with no such file holds no
+    such attribute, and the read stops the whole evaluation. The fallback keeps the shape and holds
+    the RFC 3849 documentation prefix, so the router evaluates and routes nothing real.
+
+    A guard cannot replace this fallback: the router needs the values, not a switch.
+  */
+  netconfFallback = {
+    ipv6.network.etra.lan = {
+      network = "2001:db8:0:1::";
+      netmask = "64";
+      address.gateway = "2001:db8:0:1::1";
+    };
+    ipv6.network.etra.pic = {
+      network = "2001:db8:0:2::";
+      netmask = "64";
+      address.gateway = "2001:db8:0:2::1";
+    };
+  };
+  netconf = config.kdn.security.secrets.sops.placeholders.networking or netconfFallback;
 
   ula = {
     network = "fd12:ed4e:366d::";
@@ -385,27 +404,36 @@ in
       services.kresd.instances = 2;
     }
     {
+      # `or` covers the tree with no sops file. A `lib.mkIf` guard cannot: both router options are
+      # `types.path` with no default (networking/router/default.nix:502-507), and the module reads
+      # both in a top-level `let` (:48-49). A guard leaves them undefined, and the read then fails.
       kdn.networking.router.addr.public.ipv4.path =
-        config.sops.secrets."networking/ipv4/network/isp/uplink/address/client".path;
+        config.sops.secrets."networking/ipv4/network/isp/uplink/address/client".path or "/dev/null";
       kdn.networking.router.addr.public.ipv6.path =
-        config.sops.secrets."networking/ipv6/network/isp/prefix/etra/address/gateway".path;
+        config.sops.secrets."networking/ipv6/network/isp/prefix/etra/address/gateway".path or "/dev/null";
     }
     {
       kdn.hw.nanokvm.enable = true;
     }
     {
-      kdn.security.secrets.sops.files."dns" = {
-        sopsFile = "${self}/dns.sops.yaml";
+      # Both entries read one personal file. An absent path stops the whole evaluation inside
+      # `builtins.readFile`, so declare no entry at all when the file is absent.
+      kdn.security.secrets.sops.files = lib.mkIf (builtins.pathExists "${self}/dns.sops.yaml") {
+        "dns" = {
+          sopsFile = "${self}/dns.sops.yaml";
+        };
+        "dns-kea" = {
+          keyPrefix = "knot-dns/keys";
+          filters = [ (lib.strings.hasPrefix "kea.etra") ];
+          sopsFile = "${self}/dns.sops.yaml";
+          sops.owner = "kea";
+        };
       };
+      # `or { }` covers the tree with no key. Both router options default to `{ }`
+      # (networking/router/default.nix:767-771), so an empty set gives no template and no key.
       kdn.networking.router.tsig.keyTpls =
-        config.kdn.security.secrets.sops.placeholders.dns.knot-dns.keys;
-      kdn.security.secrets.sops.files."dns-kea" = {
-        keyPrefix = "knot-dns/keys";
-        filters = [ (lib.strings.hasPrefix "kea.etra") ];
-        sopsFile = "${self}/dns.sops.yaml";
-        sops.owner = "kea";
-      };
-      kdn.networking.router.tsig.keaSecrets = config.kdn.security.secrets.sops.secrets.dns-kea;
+        config.kdn.security.secrets.sops.placeholders.dns.knot-dns.keys or { };
+      kdn.networking.router.tsig.keaSecrets = config.kdn.security.secrets.sops.secrets.dns-kea or { };
     }
     {
       # kdn.nix.remote-builder.localhost.publicHostKey = "??";

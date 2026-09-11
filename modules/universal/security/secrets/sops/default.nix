@@ -35,6 +35,26 @@ in
       type = with lib.types; bool;
       default = config.kdn.security.secrets.enable;
     };
+    /*
+      One option names the sops file that the default profiles read. The engine holds no path of
+      its own, so a consumer that names no file gets no secret and the tree still evaluates.
+
+      `hasDefaultFile` tests the path before any read. `lib/sops/default.nix` calls
+      `builtins.readFile`, and an absent path stops the whole evaluation. `builtins.tryEval` does
+      not catch that, so the test must come first.
+    */
+    defaultFile = lib.mkOption {
+      type = with lib.types; nullOr path;
+      default = null;
+      example = "/etc/nixos/my.unattended.sops.yaml";
+      description = "Sops file that the default profiles read. `null` means the tree holds none.";
+    };
+    hasDefaultFile = lib.mkOption {
+      readOnly = true;
+      type = with lib.types; bool;
+      default = cfg.defaultFile != null && builtins.pathExists cfg.defaultFile;
+      description = "True when `defaultFile` names a path that exists.";
+    };
     files = lib.mkOption {
       default = { };
       type = lib.types.attrsOf (
