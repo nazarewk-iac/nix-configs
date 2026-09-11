@@ -49,6 +49,8 @@ let
     mcp-pretty-print = ./aspects/mcp-pretty-print.nix;
     mcp-snoop = ./aspects/mcp-snoop.nix;
     nix = ./aspects/nix.nix;
+    nix-config = ./aspects/nix-config.nix;
+    nix-remote-builder = ./aspects/nix-remote-builder.nix;
     opencode = ./aspects/opencode.nix;
     rosetta-builder = ./aspects/rosetta-builder.nix;
     signing = ./aspects/signing.nix;
@@ -210,7 +212,7 @@ let
 
   # "<aspect>-<class>" → one already-resolved plain module, one key per valid pair.
   #
-  # 26 keys, from 21 aspects. Every value is lazy, and every value goes through the
+  # 30 keys, from 23 aspects. Every value is lazy, and every value goes through the
   # `resolve` guard above, so an empty module cannot reach a caller.
   #
   # Cost, measured on 2026-09-11: the key set alone 1.03 s, one key 0.99 s, all 25 keys of that day 1.02 s.
