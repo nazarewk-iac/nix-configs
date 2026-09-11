@@ -27,7 +27,7 @@ inputs, and one `imports` entry for `flake-module.nix`. A flake input cannot liv
 |---|---|
 | `flake-module.nix` | The only wiring. It evaluates den and exports the outputs. |
 | `namespaces.nix` | The two den namespaces. Every reusable aspect sits at `den.ful.kdn.<name>`. |
-| `classes/devenv.nix` | A den class for devenv. den ships none, and 14 of 19 slots target devenv. |
+| `classes/devenv.nix` | A den class for devenv. den ships none, and 12 of 19 slots target devenv. |
 | `aspects/<slot>.nix` | One aspect per reimplemented slot. |
 
 The entities live **outside** this tree, at
@@ -68,7 +68,8 @@ configuration. The `kdn.*` option prefix stays reserved for a consumer, inside a
 That trap already cost one bug. `classes/devenv.nix` declared its class options under
 `kdn.den.devenv.*`, so den read a phantom aspect named `den` into `den.ful.kdn`, and the phantom
 reached the exported output too. The prefix is `den.devenv.*` now, and `den.ful.kdn` holds exactly
-the 14 registry aspects and no phantom.
+the 20 registry aspects. Two structural keys, `schema` and `classes`, also appear as
+attribute names. `modules/den/lib.nix:190` names them, and neither is an aspect.
 
 **An entity aspect stays in `den.aspects`.** den finds a host's aspect by the host name and a user's
 aspect by the user name, and it looks in `den.aspects` only. A namespaced aspect reaches an entity
@@ -276,7 +277,7 @@ it. The adopter surface is library mode, and `flake.denLib` ships it.
 | A `nixos`-class aspect | present — `devenv-cli` reaches `host-nixos` |
 | `home` target | present — through `devenv-cli`, on both routes |
 | A coupled pair of slots (`jj` plus `mcp`) | present — order 7 of the milestone 2 plan. `jj-fork` includes `jj`, and `jj` includes `mcp`, so the pair sits in the same diamond as the `mcp` family. |
-| Parity with all 19 slots | **the milestone 2 goal**, set 2026-09-10. 14 of 19 done, 5 left (1,558 LOC of `default.nix`, measured 2026-09-10). The remainder is `llm`, `llm/client`, `llm/proxy`, `signing` and `ssh-access`. See [004-den-spike](../../docs/tasks/2026-09/generalization/004-den-spike/definition.md#milestone-2-covers-every-slot--scope-decision-2026-09-10). |
+| Parity with all 19 slots | **reached 2026-09-11.** 19 of 19 done. The registry holds 20 aspects, because the `devenv` slot gains a `devenv-cli` aspect and the `homebrew` aspect has no slot. See [004-den-spike](../../docs/tasks/2026-09/generalization/004-den-spike/definition.md#milestone-2-covers-every-slot--scope-decision-2026-09-10). |
 
 The slot tree remains the supported route. See
 [docs/slots-for-adopters.md](../../docs/slots-for-adopters.md).
@@ -284,7 +285,7 @@ The slot tree remains the supported route. See
 ## Verify
 
 ```bash
-# the exported namespace — the 14 reusable aspects, and no phantom
+# the exported namespace — 22 names: the 20 reusable aspects, plus `schema` and `classes`
 nix eval --json '.#denful.kdn' --apply 'builtins.attrNames'
 
 # the entity aspect and host names den knows about

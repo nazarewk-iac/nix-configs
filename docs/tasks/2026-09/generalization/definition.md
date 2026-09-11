@@ -23,7 +23,7 @@ The repo holds three module trees:
 |---|---|---|---|
 | `modules/meta/` | 3 | 363 | A separate `lib.evalModules` universe (`class = "kdn-meta"`). The repo evaluates it **before** NixOS/Darwin/HM, then injects it as `specialArgs.kdnConfig`. |
 | `modules/universal/` | 194 | 19,689 | Every context loads it. The `kdnConfig.util.*` guards scope it. |
-| `modules/slots/` | 20 | 3,168 | Self-contained by rule. Emits into 5 `deferredModule` targets. |
+| `modules/slots/` | 19 slots + 1 loader | 3,599 | Self-contained by rule. Emits into 5 `deferredModule` targets. `find` returns 20 `default.nix` files; `modules/slots/default.nix` is the recursive loader, not a slot. |
 
 `modules/slots/` is already close to shareable. `modules/universal/` and `modules/meta/` carry
 personal data: homelab topologies, sops files, YubiKey serials, WiFi SSIDs, real password hashes.

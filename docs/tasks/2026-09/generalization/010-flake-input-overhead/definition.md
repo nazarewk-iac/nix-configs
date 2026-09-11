@@ -18,8 +18,8 @@ first. Spike only if the research finds a worthwhile target.
 
 | Metric | Value |
 |---|---|
-| `flake.lock` | 106 nodes, 60 root inputs |
-| `devenv.lock` | 112 nodes |
+| `flake.lock` | 108 nodes, 62 root inputs (re-measured 2026-09-11) |
+| `devenv.lock` | 114 nodes (re-measured 2026-09-11) |
 | Repo tree | 4.1 MB, 2292 revisions |
 | Evaluator | Lix 2.95.2, aarch64-darwin |
 | devenv | 2.2.3 |

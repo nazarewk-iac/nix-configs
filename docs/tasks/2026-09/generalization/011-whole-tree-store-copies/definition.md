@@ -44,6 +44,8 @@ literal already — the creator chose that route on 2026-09-10. See
 | `modules/slots/mcp/basic-memory/default.nix:126` | 1 rule | reading order 6 of the den port |
 | `modules/universal/profile/default-secrets/default.nix:21,25,85` | `default.unattended.sops.yaml` | overlaps [008](../008-sops-default-inventory/definition.md) |
 | `modules/universal/profile/remote-builders/default.nix:195` | the same sops file | overlaps 008 |
+| `modules/universal/profile/machine/baseline/default.nix:69` | the **whole** flake tree — `xdg.configFile."kdn/source-flake".source = kdnConfig.self` | added 2026-09-11; the table missed it |
+| `modules/universal/profile/machine/baseline/default.nix:141` | the **whole** flake tree — `environment.etc."kdn/source-flake".source` | added 2026-09-11; the table missed it |
 
 ## Notes per site
 
@@ -52,8 +54,11 @@ literal already — the creator chose that route on 2026-09-10. See
   fetch. A relative path literal removes both.
 - `modules/slots/jj/fork/default.nix:166` builds a shell variable inside a script, so the store
   path lands in the script text. A relative path literal changes only the interpolation.
-- The two `modules/universal/` sites carry a second problem: the file holds personal data. Fix them
-  with [009](../009-personal-data-folder/definition.md), not on their own.
+- The two sops sites under `modules/universal/` carry a second problem: the file holds personal
+  data. Fix them with [009](../009-personal-data-folder/definition.md), not on their own.
+- `modules/universal/profile/machine/baseline/default.nix:69,141` are different in kind. They copy
+  the **whole** tree, not one file, so a relative path literal cannot fix them. The consumer needs
+  an option that names what to publish, or the copy goes away.
 
 ## Exit criteria
 

@@ -35,6 +35,10 @@ Those flags are **static data**, not module config. They come from `hosts/<host>
 | `oams` | `{"microvm-host":true}` |
 | the other 12 hosts | none |
 
+The table covers the **15** host directories that carry a `meta.json`. `hosts/` holds 16
+directories; `hosts/install-iso/` has no `meta.json`, because it is an installer image and not a
+host. So 3 + 12 = 15 is right, and a "16 hosts" figure elsewhere counts the image too.
+
 `modules/meta` evaluates those flags in a separate `lib.evalModules` universe with
 `class = "kdn-meta"`. It runs **before** the NixOS/Darwin/HM evaluation. It then injects the result
 as `specialArgs.kdnConfig`. That order is the whole trick.

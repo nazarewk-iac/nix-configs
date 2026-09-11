@@ -43,6 +43,7 @@ Measured across `modules/universal/` (194 files, 19,689 LOC):
 | File | Personal data |
 |---|---|
 | `modules/universal/profile/default-secrets/default.nix` | `sopsFile = "${kdnConfig.self}/default.unattended.sops.yaml"` at 3 sites, plus that file's key layout — see 008 |
+| `modules/universal/profile/remote-builders/default.nix` | a 4th pin of the same sops file — see [008/research.md](../008-sops-default-inventory/research.md) |
 | `modules/universal/locale/default.nix` | defaults `Europe/Warsaw` and `pl` |
 | `modules/universal/_stylix.nix:42` | a wallpaper URL on the creator's own Nextcloud |
 | `modules/universal/development/nix/default.nix:27` | defaults to the creator's checkout path |
@@ -68,9 +69,16 @@ Measured across `modules/universal/` (194 files, 19,689 LOC):
 
 Solve both, or the folder cannot be optional.
 
-1. **`modules/universal/profile/machine/baseline` unconditionally sets
-   `kdn.profile.user.kdn.enable = true`** (line 59). Every host that uses the baseline profile
-   gets the creator's user account. An adopter needs the baseline without the user.
+1. **`modules/universal/profile/machine/baseline` sets `kdn.profile.user.kdn.enable`, now behind a
+   switch.** **Partly shipped 2026-09-11:** the assignment is no longer unconditional. The option
+   `kdn.profile.machine.baseline.primaryUser.enable` is declared at
+   `modules/universal/profile/machine/baseline/default.nix:30`, the guard `lib.mkIf
+   cfg.primaryUser.enable` sits at `:115`, and the assignment reads
+   `kdn.profile.user.kdn.enable = lib.mkDefault true;` at `:116`. An adopter writes
+   `primaryUser.enable = false` and gets the baseline without the user. The end state — a
+   baseline that names no user at all — stays open, and section 3 item 7 of
+   [013](../013-opt-in-boundaries/definition.md) holds the decision. Only 4 files under `hosts/`
+   name any `kdn.profile.user`, so the migration cost is small.
 2. **`modules/universal/profile/default-secrets` hardwires one sops file path and its key schema.**
    See 008 for the exact dependency list.
 
@@ -124,7 +132,11 @@ the port deliberately did not fix.
 
 ## Exit criteria
 
-- Pattern V1: all 16 hosts have unchanged drvPaths, or you justify each change.
+- **Pattern V1 does not apply here.** `flake.nix:250` passes `self` into the module set, so
+  `kdnConfig.self` reaches evaluated config and every edit changes every host's `drvPath`. Use
+  an option-value probe instead — see the hub `definition.md`, § "corrections to earlier
+  assumptions". `hosts/` holds 16 directories, and 15 carry `meta.json`; `hosts/install-iso/`
+  is an installer image, not a host.
 - Pattern V2: the tree evaluates with the personal folder absent, for at least one NixOS host and
   one Darwin host.
 - `rg` finds no personal IP, FQDN, serial, SSID, or password hash outside the folder.

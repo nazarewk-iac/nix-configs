@@ -81,8 +81,9 @@ or a real restructure.
 
 The sites that hardwire the file path or the key layout. They do not read a discovered value. Start
 from `modules/universal/profile/default-secrets/default.nix`. It pins `sopsFile` to a path under
-the flake root at three sites, plus that file's key layout. Confirm the count. Find any other site
-that does the same.
+the flake root at three sites, plus that file's key layout. **The count is confirmed: four sites in
+two files** — three in `modules/universal/profile/default-secrets/default.nix` and one in
+`modules/universal/profile/remote-builders/default.nix`. See `research.md`.
 
 ## Method
 
