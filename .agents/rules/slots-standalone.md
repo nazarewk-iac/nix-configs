@@ -31,6 +31,34 @@ This explicitly includes, but is not limited to, all `kdn.*` options:
 - any helper function or module imported from `modules/universal/`
   or `modules/meta/`
 
+## Enforcement
+
+`checks/standalone.nix` enforces this rule. It exports two checks:
+
+| Check | It gates |
+|---|---|
+| `standalone-slots` | every `.nix` file under `modules/slots/` |
+| `standalone-aspects` | every `.nix` file under `modules/den/aspects/` |
+
+`standalone-slots` runs two mechanisms. A **source scan** greps each slot file for every
+`kdn.*` leaf that `modules/universal/` declares, for the `modules/meta/` prefix, and for
+`kdnConfig`. A **tree resolve** renders the whole slots tree through `mkSlots` with `pkgs` and
+`inputs` as the only special arguments, so a slot that takes `kdnConfig` fails there.
+
+The scan drops a whole-line comment and keeps a trailing comment. So a rule name inside a
+trailing comment fails the check. Put such a name on its own comment line.
+
+The scan cannot see a computed path such as `kdn.${name}.x`. Do not build one.
+
+Run the gate:
+
+```bash
+nix build '.#checks.aarch64-darwin.standalone-slots'
+```
+
+There is **no allowlist for a slot**. Zero slots violate the rule, measured 2026-09-11, and the
+check passes with 2 of 2 assertions. Keep it that way: fix the slot, never the check.
+
 ## What a slot may use
 
 A slot may use the standard NixOS/HM module arguments:
