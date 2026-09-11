@@ -73,7 +73,7 @@ From [004](../004-den-spike/definition.md):
 | Criterion | Weight |
 |---|---|
 | 2 — an adopter imports a resolved aspect as a plain drop-in, and does not adopt den | **decisive** |
-| 1 — a `devenv` class can exist (13 of 20 slots target devenv) | near-fatal if it fails |
+| 1 — a `devenv` class can exist (12 of 19 slots target devenv) | near-fatal if it fails |
 | 3 — den satisfies the 005 requirement | required |
 | 4 — the 1→N mixed-aspect collision is gone | important, workaround exists |
 
@@ -89,7 +89,7 @@ Score both options against the same list. Write the score down.
 |---|---|---|
 | Satisfies the 005 requirement | needs new mechanism — cost? | 004 criterion 3 |
 | Adopter imports a drop-in with no need to learn the framework | already true — `mkSlots` is small | 004 criterion 2 |
-| devenv support | native, 13 slots ship today | 004 criterion 1 |
+| devenv support | native, 12 slots ship today | 004 criterion 1 |
 | API stability | this repo owns it | v0.x, no stable API, 2 maintainers do 90% of commits |
 | Maintenance burden | this repo carries it all | shared, but with upstream drift risk |
 | Cost to reach parity for the pieces this repo keeps | — | — |

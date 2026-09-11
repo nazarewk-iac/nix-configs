@@ -243,8 +243,8 @@ The user set the target: **reimplement all of `modules/slots/` as den aspects.**
 sample is not the goal. The earlier plan named one coupled pair (`jj` plus `mcp`); that pair is now
 one step in a full port.
 
-`modules/slots/` holds 18 slots plus a 22-line loader, and 4,160 lines of Nix and shell. **14 den
-aspects exist now.** The order table below marks each finished slot **Done**. These three were the
+`modules/slots/` holds 19 slots plus a 22-line loader, and 5,561 lines of Nix and shell. **20 den
+aspects exist now** (re-measured 2026-09-11; the text below keeps the figures of 2026-09-10). The order table below marks each finished slot **Done**. These three were the
 first ports, at the time of the scope decision:
 
 | Slot | LOC | State |
@@ -253,10 +253,13 @@ first ports, at the time of the scope decision:
 | `devenv` | 61 | full port, plus a `devenv` target the slot has none of — `modules/den/aspects/devenv-cli.nix` |
 | `rosetta-builder` | 180 | core options only. The guest-size options stay in the slot. |
 
+**Superseded 2026-09-11: no slot file remains unported.** All five now have an aspect in
+`modules/den/lib.nix:36-56`. The figure below is the state of 2026-09-10, kept for the record.
+
 **Five slot files remain, at 1,558 lines** (measured 2026-09-10 with `wc -l`). That count reads
 `default.nix` files only, and no shell file. The five are `llm` (964), `llm/client` (151),
 `llm/proxy` (172), `signing` (196) and `ssh-access` (75). `modules/slots/**/default.nix` holds 19
-slot files and 3,392 lines, plus the 22-line loader.
+slot files and 3,577 lines, plus the 22-line loader (re-measured 2026-09-11).
 
 The earlier count named six files at 1,819 lines and left `signing` out. Two corrections apply: the
 `jj` pair is ported now, and `signing` belongs on the list. The `LOC` column below keeps the figures
@@ -274,7 +277,7 @@ The order groups the slots by the den mechanism each one needs, and it puts the 
 | 6 | `mcp` family — `mcp`, `snoop`, `pretty-print`, `basic-memory` | 476 | `devenv` | **Done.** Slot-to-slot option coupling, solved with `includes` and no shared declaration file. Two mechanisms measured — see below. |
 | 7 | `jj` family — `jj`, `jj/fork` | 457 | `devenv` | **Done.** The second coupled pair, and the largest shell payload. Two aspects, `jj` and `jj-fork`, where `jj-fork` names `jj` in `includes` and `jj` names `mcp`. So one shell now holds four direct includers of one parent and still gets one gateway. It needed no new mechanism. See below. |
 | 8 | `llm` family — `llm`, `llm/client`, `llm/proxy` | 1,287 | `nixos`, `devenv` | One family that spans two classes. |
-| 9 | `ssh-access` | 251 | `devenv`, `home` | **Blocked on 009.** It carries personal data. |
+| 9 | `ssh-access` | 251 | `devenv`, `home` | **Ported 2026-09-11** as `modules/den/aspects/ssh-access.nix`. The personal data stays with 009. The 251 is the family total: `default.nix` 75 plus `kdn-graph.nix` 176. The 75 quoted above counts `default.nix` alone. |
 | 10 | `signing` | 196 | `home` | The `home` target alone, plus a second `home` aspect beside `ssh-agent`. It carries personal data too — a signer principal and a key path. |
 
 ### den namespaces land — 2026-09-10, after order 6 and before order 3
@@ -336,7 +339,8 @@ builds and passes — **16 of 16**. A system holds 16 den checks: 11 evaluation,
 smoke, plus the `den-mvp` build gate. `x86_64-linux` holds 16 too.
 
 The conversion touched `modules/den/namespaces.nix` (new), `modules/den/lib.nix`,
-`modules/den/flake-module.nix`, `modules/den/classes/devenv.nix`, all 12 aspect files, all 5 entity
+`modules/den/flake-module.nix`, `modules/den/classes/devenv.nix`, all 12 aspect files that existed
+then (there are 20 now), all 5 entity
 files under `checks/den-mvp/`, and `checks/den-mvp/tests.nix`. Order 3 (`nix`) starts on the
 namespaced tree.
 
@@ -371,7 +375,9 @@ asserts an empty failed-assertion list for both shells.
 a measurement on 2026-09-10 shows it correct, and `../definition.md` records that P0 as fixed with
 15 tests.
 
-Counts, each measured after the port: `den.ful.kdn` holds **14** aspects. A system holds **17** den
+Counts, each measured after the port: `den.ful.kdn` held **14** aspects then, and holds **20** now
+(re-measured 2026-09-11; `nix eval --json '.#denful.kdn' --apply builtins.attrNames` returns 22
+names, because `schema` and `classes` are structural keys, not aspects). A system holds **17** den
 checks — 12 evaluation, 3 artifact and 2 smoke — plus the `den-mvp` build gate, so
 `nix eval '.#checks.<system>'` lists 18 `den*` names on both `aarch64-darwin` and `x86_64-linux`.
 `nix run '.#checks.aarch64-darwin.den-mvp.smoke'` reports **18 passed, 0 failed**. `den-eval-jj`
