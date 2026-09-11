@@ -20,6 +20,17 @@ in
       default = pkgs.kdn.pinentry;
     };
     pass-secret-service.enable = lib.mkEnableOption "pass-secret-service";
+    passwordStore.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      example = false;
+      description = ''
+        Install and configure `pass` next to the GnuPG agent.
+
+        A consumer that already owns a password manager sets this to `false` and keeps the agent,
+        the pinentry and the smartcard tooling.
+      '';
+    };
     disableGnomeKeyring = lib.mkOption {
       type = lib.types.bool;
       default = true;
@@ -60,12 +71,15 @@ in
           ];
         }
         (kdnConfig.util.ifHM {
-          programs.password-store.enable = true;
-          programs.password-store.settings = {
-            PASSWORD_STORE_DIR = "${config.home.homeDirectory}/.password-store";
-            PASSWORD_STORE_CLIP_TIME = "10";
-            # for Android interoperability, see https://github.com/drduh/YubiKey-Guide/issues/152#issuecomment-852176877
-            PASSWORD_STORE_GPG_OPTS = "--no-throw-keyids";
+          # `pass` is a separate concern from the agent, so it carries its own switch.
+          programs.password-store = lib.mkIf cfg.passwordStore.enable {
+            enable = true;
+            settings = {
+              PASSWORD_STORE_DIR = "${config.home.homeDirectory}/.password-store";
+              PASSWORD_STORE_CLIP_TIME = "10";
+              # for Android interoperability, see https://github.com/drduh/YubiKey-Guide/issues/152#issuecomment-852176877
+              PASSWORD_STORE_GPG_OPTS = "--no-throw-keyids";
+            };
           };
           programs.gpg.settings.no-throw-keyids = true;
           programs.gpg.enable = true;

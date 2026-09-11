@@ -27,6 +27,15 @@ in
         "::/0"
       ];
     };
+    defaults.workgroup = lib.mkOption {
+      type = lib.types.str;
+      default = "KDN";
+      example = "WORKGROUP";
+      description = ''
+        SMB workgroup name. The default is this repository's own name, so a consumer that wants
+        the Windows default states `WORKGROUP` itself.
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable (
@@ -39,7 +48,7 @@ in
         services.samba.openFirewall = true;
         services.samba.usershares.enable = true;
         services.samba.settings.global = {
-          "workgroup" = "KDN";
+          "workgroup" = cfg.defaults.workgroup;
           "server string" = "${config.kdn.hostName}-SMB";
           "netbios name" = config.kdn.hostName;
           "security" = "user";

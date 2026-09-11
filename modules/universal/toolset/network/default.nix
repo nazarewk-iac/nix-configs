@@ -41,7 +41,7 @@ in
       })
       (kdnConfig.util.ifTypes [ "nixos" ] {
         programs.wireshark.enable = true;
-        kdn.services.iperf3.enable = true;
+        kdn.services.iperf3.enable = lib.mkDefault true;
         kdn.env.packages = with pkgs; [
           conntrack-tools
           ebtables

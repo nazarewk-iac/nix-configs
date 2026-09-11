@@ -94,7 +94,7 @@ in
     ))
     (kdnConfig.util.ifTypes [ "nixos" ] (
       lib.mkIf cfg.enable {
-        kdn.packaging.asdf.enable = true;
+        kdn.packaging.asdf.enable = lib.mkDefault true;
 
         home-manager.sharedModules = [ { kdn.development.terraform.enable = true; } ];
       }

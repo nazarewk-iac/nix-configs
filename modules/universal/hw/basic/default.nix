@@ -17,7 +17,7 @@ in
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
-        kdn.toolset.unix.enable = true;
+        kdn.toolset.unix.enable = lib.mkDefault true;
       }
       (kdnConfig.util.ifTypes [ "nixos" ] {
         kdn.env.packages =

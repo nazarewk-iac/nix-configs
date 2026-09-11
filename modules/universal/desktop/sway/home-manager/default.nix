@@ -109,6 +109,9 @@
 
             include /etc/sway/config.d/*
           '';
+          # Keep the plain priority. `programs/wofi` forwards its whole `cfg` into Home Manager at
+          # `lib.mkDefault`, so a `lib.mkDefault true` here makes a 1000-to-1000 tie and stops the
+          # evaluation of every Home Manager user (measured 2026-09-11 on brys).
           kdn.programs.wofi.enable = true;
           wayland.windowManager.sway.config = {
             defaultWorkspace = "workspace number 1";
@@ -324,7 +327,7 @@
             libqalculate
           ];
 
-          kdn.desktop.sway.kanshi.enable = true;
+          kdn.desktop.sway.kanshi.enable = lib.mkDefault true;
           services.kanshi.systemdTarget = "kdn-sway-kdn-sway-session.target";
         }
         (

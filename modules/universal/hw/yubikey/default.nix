@@ -49,7 +49,7 @@ in
           # SOPS+age config
           kdn.security.secrets.age.plugins = with pkgs; [ age-plugin-yubikey ];
           kdn.env.packages = with pkgs; [ age-plugin-yubikey ];
-          kdn.programs.gnupg.enable = true;
+          kdn.programs.gnupg.enable = lib.mkDefault true;
           kdn.security.secrets.age.genScripts = [
             (pkgs.writeShellApplication {
               name = "kdn-sops-age-gen-keys-yubikey";

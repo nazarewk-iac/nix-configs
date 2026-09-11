@@ -8,16 +8,20 @@
 let
   cfg = config.kdn.mcp.basic-memory;
   # One wrapper per knowledge base. `knowledgeRoot` states where the notes live, so the
-  # package's own default path never applies and no repository name reaches the store.
-  mkBase =
-    name: aliases:
+  # package's own default path never applies and no repository name reaches the store. Each
+  # wrapper bakes its own paths, so two bases never share a database or a configuration
+  # directory. The shape matches modules/den/aspects/mcp-basic-memory.nix.
+  wrappers = lib.mapAttrs (
+    name: base:
     pkgs.kdn.basic-memory.mkWrapper {
-      inherit name aliases;
+      inherit name;
+      inherit (base) aliases;
       home = "${cfg.knowledgeRoot}/${name}";
       configDir = "${cfg.knowledgeRoot}/.config/basic-memory-${name}";
-    };
-  bmp = mkBase "public" [ "bmp" ];
-  bms = mkBase "sensitive" [ "bms" ];
+    }
+  ) cfg.bases;
+
+  binOf = name: "${wrappers.${name}}/bin/basic-memory-${name}";
 in
 {
   options.kdn.mcp.basic-memory = {
@@ -49,19 +53,54 @@ in
         `<root>/.config/basic-memory-<name>` for its own configuration.
       '';
     };
+
+    bases = lib.mkOption {
+      default = { };
+      type = lib.types.attrsOf (
+        lib.types.submodule {
+          options.aliases = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [ ];
+            description = ''
+              Extra binary names for this base, next to `basic-memory-<name>`. Use a short one
+              for daily typing.
+            '';
+            example = [ "bmp" ];
+          };
+
+          options.description = lib.mkOption {
+            type = lib.types.str;
+            description = "Text the gateway shows for this backend.";
+          };
+        }
+      );
+      description = ''
+        One entry per knowledge base. The entry name becomes the wrapper binary
+        `basic-memory-<name>`, the gateway backend `memory-<name>` and the notes directory
+        `<knowledgeRoot>/<name>`.
+
+        The slot names no base of its own. The consumer decides how many bases exist, what each
+        one holds, and how each one is described.
+      '';
+      example = lib.literalExpression ''
+        {
+          public = {
+            aliases = [ "bmp" ];
+            description = "public knowledge base";
+          };
+        }
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable {
-    kdn.mcp.extraBackends = {
-      memory-public = {
-        command = "${bmp}/bin/basic-memory-public mcp";
-        description = "basic-memory public knowledge base (open-source tooling, public knowledge)";
-      };
-      memory-sensitive = {
-        command = "${bms}/bin/basic-memory-sensitive mcp";
-        description = "basic-memory sensitive knowledge base (private, internal)";
-      };
-    };
+    kdn.mcp.extraBackends = lib.mapAttrs' (
+      name: base:
+      lib.nameValuePair "memory-${name}" {
+        command = "${binOf name} mcp";
+        inherit (base) description;
+      }
+    ) cfg.bases;
 
     # basic-memory calls carry markdown note content (write_note) or plain identifiers
     # (delete_note, read_content, ...) as arguments — preview those directly, before approval,
@@ -79,8 +118,9 @@ in
       import subprocess
 
       BINARIES = {
-          "memory-public": "${bmp}/bin/basic-memory-public",
-          "memory-sensitive": "${bms}/bin/basic-memory-sensitive",
+      ${lib.concatMapStringsSep "\n      " (
+        name: "    ${builtins.toJSON "memory-${name}"}: ${builtins.toJSON (binOf name)},"
+      ) (lib.attrNames cfg.bases)}
       }
 
 
@@ -147,10 +187,7 @@ in
     '';
 
     devenv = {
-      packages = [
-        bmp
-        bms
-      ];
+      packages = lib.attrValues wrappers;
 
       files = lib.mkIf (cfg.installAgentRules && !config.kdn.isSourceRepo) {
         ".claude/rules/basic-memory.md".source = "${inputs.nix-configs}/.agents/rules/basic-memory.md";

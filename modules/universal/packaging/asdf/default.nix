@@ -21,7 +21,7 @@ in
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
-        kdn.toolset.essentials.enable = true; # coreutils
+        kdn.toolset.essentials.enable = lib.mkDefault true; # coreutils
         kdn.env.packages = [
           cfg.package
         ];

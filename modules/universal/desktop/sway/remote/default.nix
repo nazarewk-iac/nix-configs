@@ -16,7 +16,7 @@ in
 
   config = kdnConfig.util.ifTypes [ "nixos" ] (
     lib.mkIf cfg.enable {
-      kdn.desktop.sway.enable = true;
+      kdn.desktop.sway.enable = lib.mkDefault true;
 
       # Multi-output directions:
       # - https://www.reddit.com/r/swaywm/comments/k1zl41/thank_you_devs_free_ipad_repurposed_as_a_second/

@@ -17,14 +17,14 @@ in
   config = lib.mkMerge [
     (kdnConfig.util.ifHM (
       lib.mkIf cfg.enable {
-        kdn.development.nodejs.enable = true;
+        kdn.development.nodejs.enable = lib.mkDefault true;
         programs.helix.extraPackages = with pkgs; [ vscode-langservers-extracted ];
       }
     ))
     (kdnConfig.util.ifTypes [ "nixos" ] (
       lib.mkIf cfg.enable {
         home-manager.sharedModules = [ { kdn.development.web.enable = true; } ];
-        kdn.development.nodejs.enable = true;
+        kdn.development.nodejs.enable = lib.mkDefault true;
       }
     ))
   ];

@@ -14,6 +14,14 @@ let
     runtimeInputs = [ pkgs.git ];
     text = builtins.readFile ./check-nix-store-symlinks.sh;
   };
+
+  # The `devenv mcp` backend command. A frozen `env.DEVENV_ROOT` pointed every consumer at this
+  # repository's own checkout, so the wrapper reads the variable at run time instead. The paired
+  # den aspect already does this.
+  devenvMcpWrapper = pkgs.writeShellScript "devenv-mcp-wrapper" ''
+    cd "''${DEVENV_ROOT:?the devenv MCP backend needs DEVENV_ROOT}"
+    exec ${lib.getExe pkgs.devenv} mcp
+  '';
 in
 {
   options.kdn.nix = {
@@ -58,10 +66,9 @@ in
     # Each leaf is a `lib.mkDefault`, so a consumer drops the backend or repoints one field with
     # a plain assignment. A `lib.mkDefault` on the whole stanza would lose the other fields.
     kdn.mcp.programs.nixos.enable = lib.mkDefault true;
-    kdn.mcp.extraBackends.devenv.command = lib.mkDefault "devenv mcp";
+    kdn.mcp.extraBackends.devenv.command = lib.mkDefault "${devenvMcpWrapper}";
     kdn.mcp.extraBackends.devenv.description =
       lib.mkDefault "devenv — search nixpkgs packages and devenv options";
-    kdn.mcp.extraBackends.devenv.env.DEVENV_ROOT = lib.mkDefault (toString inputs.nix-configs);
 
     # A module function (not a plain attrset) so `config` here resolves against the real
     # devenv evaluation this fragment gets spliced into — needed for `config.git-hooks.package`,
@@ -156,10 +163,6 @@ in
             "${inputs.nix-configs}/.agents/skills/flake-patches/SKILL.md";
           ".claude/rules/okf-format.md".source = "${inputs.nix-configs}/.agents/rules/okf-format.md";
         };
-
-        scripts.hello.exec = ''
-          echo "hello from nix-configs devenv"
-        '';
       };
   };
 }

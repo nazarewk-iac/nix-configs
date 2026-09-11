@@ -25,6 +25,9 @@ in
     ))
     (kdnConfig.util.ifHM (
       lib.mkIf cfg.enable {
+        # Keep the plain priority. `emulation/wine` forwards its whole `cfg` into Home Manager at
+        # `lib.mkDefault`, so a `lib.mkDefault true` here makes a 1000-to-1000 tie and stops the
+        # evaluation of every workstation (measured 2026-09-11 on brys and oams).
         kdn.emulation.wine.enable = true;
         kdn.apps.winbox4 = {
           enable = true;

@@ -210,7 +210,7 @@ in
           ];
         }
         {
-          kdn.desktop.base.enable = true;
+          kdn.desktop.base.enable = lib.mkDefault true;
 
           systemd.user.services.thunar.enable = false; # doesn't pick up proper MIME types when run as daemon
 

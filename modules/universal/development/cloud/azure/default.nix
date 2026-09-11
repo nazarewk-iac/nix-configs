@@ -15,7 +15,7 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    kdn.development.dotnet.enable = true;
+    kdn.development.dotnet.enable = lib.mkDefault true;
     kdn.env.packages = with pkgs; [
       powershell
       azure-cli

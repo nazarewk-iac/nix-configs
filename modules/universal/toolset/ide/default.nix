@@ -23,9 +23,9 @@ in
     (kdnConfig.util.ifHM (
       lib.mkIf cfg.enable (
         lib.mkMerge [
-          { kdn.programs.terminal-ide.enable = true; }
+          { kdn.programs.terminal-ide.enable = lib.mkDefault true; }
           (lib.mkIf config.kdn.desktop.enable {
-            kdn.development.jetbrains.enable = true;
+            kdn.development.jetbrains.enable = lib.mkDefault true;
           })
         ]
       )

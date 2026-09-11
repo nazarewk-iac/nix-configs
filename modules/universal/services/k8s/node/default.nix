@@ -42,7 +42,7 @@
           swapDevices = lib.mkForce [ ];
         }
         {
-          kdn.toolset.network.enable = true;
+          kdn.toolset.network.enable = lib.mkDefault true;
           kdn.env.packages = with pkgs; [
             nerdctl
           ];

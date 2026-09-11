@@ -90,7 +90,7 @@ in
               builtins.attrValues
               (builtins.filter (e: e ? caskName))
             ];
-          kdn.programs.dconf.enable = true;
+          kdn.programs.dconf.enable = lib.mkDefault true;
         })
         (kdnConfig.util.ifHM {
           # gtk.gtk4.theme.name = config.gtk.theme.name;
@@ -119,7 +119,7 @@ in
             }
             {
               hardware.uinput.enable = true;
-              kdn.programs.ydotool.enable = true;
+              kdn.programs.ydotool.enable = lib.mkDefault true;
               programs.wshowkeys.enable = true;
               services.accounts-daemon.enable = true;
               services.dleyna.enable = true;

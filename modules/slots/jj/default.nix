@@ -122,11 +122,11 @@ in
   config = lib.mkIf cfg.enable {
     kdn.jj.config."#schema" = "https://docs.jj-vcs.dev/latest/config-schema.json";
 
-    kdn.mcp.extraBackends.jj = {
-      command = "${pkgs.kdn.jj-mcp}/bin/jj-mcp";
-      description = "jj — Jujutsu version control tools";
-    };
-    kdn.mcp.programs.git.enable = false;
+    # Each leaf is a `lib.mkDefault`, so a consumer repoints the backend, or re-enables the
+    # gateway's own `git` backend, with a plain assignment instead of `lib.mkForce`.
+    kdn.mcp.extraBackends.jj.command = lib.mkDefault "${pkgs.kdn.jj-mcp}/bin/jj-mcp";
+    kdn.mcp.extraBackends.jj.description = lib.mkDefault "jj — Jujutsu version control tools";
+    kdn.mcp.programs.git.enable = lib.mkDefault false;
 
     devenv = {
       packages = [ pkgs.jujutsu ];

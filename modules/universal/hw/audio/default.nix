@@ -98,7 +98,7 @@ in
               }
             ];
             # required by easyeffects
-            kdn.programs.dconf.enable = true;
+            kdn.programs.dconf.enable = lib.mkDefault true;
           })
         ]
       ))

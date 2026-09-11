@@ -169,11 +169,12 @@
         #
         # The gateway's own `git` backend stays off. It duplicates the jj backend for a colocated
         # repository, and it names git operations that this repository forbids.
-        kdn.mcp.extraBackends.jj = {
-          command = "${jj-mcp}/bin/jj-mcp";
-          description = "jj — Jujutsu version control tools";
-        };
-        kdn.mcp.programs.git.enable = false;
+        # Each leaf is a `lib.mkDefault`, so a consumer repoints the backend, or re-enables the
+        # gateway's own `git` backend, with a plain assignment. The paired slot matches.
+        kdn.mcp.extraBackends.jj.command = lib.mkDefault "${jj-mcp}/bin/jj-mcp";
+        kdn.mcp.extraBackends.jj.description =
+          lib.mkDefault "jj — Jujutsu version control tools";
+        kdn.mcp.programs.git.enable = lib.mkDefault false;
 
         packages = [ pkgs.jujutsu ];
 

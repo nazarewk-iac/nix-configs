@@ -15,8 +15,8 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    kdn.development.nodejs.enable = true;
-    kdn.development.lua.enable = true;
+    kdn.development.nodejs.enable = lib.mkDefault true;
+    kdn.development.lua.enable = lib.mkDefault true;
 
     kdn.env.packages = with pkgs; [
       redis

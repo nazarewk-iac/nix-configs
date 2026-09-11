@@ -552,8 +552,8 @@ in
         boot.initrd.systemd.enable = true;
 
         disko.enableConfig = true;
-        kdn.fs.zfs.enable = true;
-        kdn.security.disk-encryption.enable = true;
+        kdn.fs.zfs.enable = lib.mkDefault true;
+        kdn.security.disk-encryption.enable = lib.mkDefault true;
         boot.zfs.requestEncryptionCredentials = false;
       })
     ]

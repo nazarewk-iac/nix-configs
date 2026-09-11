@@ -54,7 +54,7 @@ in
       services.zammad.host = cfg.host;
       services.zammad.port = 80;
 
-      kdn.services.postgresql.enable = true;
+      kdn.services.postgresql.enable = lib.mkDefault true;
       services.zammad.database.createLocally = true;
 
       services.zammad.redis.host = cfg.redis.host;
