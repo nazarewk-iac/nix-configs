@@ -63,8 +63,9 @@ in anybody's nix-darwin. Then an adopter builds multi-arch containers in their o
 | 012 | [012-darwin-host-clone](012-darwin-host-clone/definition.md) | A reference map that sizes a den clone of the darwin workstation, plus three NixOS follow-on hosts and the parity method. |
 | 013 | [013-opt-in-boundaries](013-opt-in-boundaries/definition.md) | 66 measured rows: every item an adopter wants to switch off and today cannot, with one verdict each. |
 | 014 | [014-machine-layer-migration](014-machine-layer-migration/definition.md) | Migrate the machine layer — `modules/universal` plus `modules/meta` — onto the chosen framework, in measured batches. Gate: 005 + 006 + 009. |
+| 015 | [015-den-check-harness-platforms](015-den-check-harness-platforms/definition.md) | Give the den check harness a second platform, and lower three plain-priority values to `lib.mkDefault`. It blocks `hw-rpi4` and any aspect that owns the boot loader. |
 
-Every checkpoint is `open` today, with two exceptions: 004 is `in-progress`, and 012 is
+Every checkpoint is `open` today, with three exceptions: 004 and 015 are `in-progress`, and 012 is
 `not-scheduled` — 012 is a reference map, not a schedule.
 
 ## Dependency graph
