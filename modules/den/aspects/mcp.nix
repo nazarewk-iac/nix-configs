@@ -27,9 +27,10 @@
 # copy of this module, and its option declarations evaluate exactly once. den keys each target
 # module per aspect, and the module system drops a repeated key.
 #
-# **No child carries an `enable` option.** The slots `mcp/snoop` and `mcp/pretty-print` both default
-# `enable = true`, against this repository's own side-effect-free rule. Inclusion is the switch here,
-# so that default disappears.
+# **No child carries an `enable` option.** The slots `mcp/snoop` and `mcp/pretty-print` declare
+# `enable` with `lib.mkEnableOption`, so both default to `false` (measured 2026-09-11 at
+# `modules/slots/mcp/snoop/default.nix:19` and `modules/slots/mcp/pretty-print/default.nix:104`).
+# Inclusion is the switch here, so a child needs no switch of its own.
 #
 # ## `mcp-servers-nix` is a consumer value, not an input
 #
@@ -204,11 +205,24 @@
         kdn.mcp.backends = (lib.mapAttrs toBackend servers) // cfg.extraBackends;
 
         # The baseline backends. Each one is read-only or local, and none needs a credential.
-        kdn.mcp.programs.filesystem.enable = true;
-        kdn.mcp.programs.filesystem.args = [ "/nix/store" ];
-        kdn.mcp.programs.sequential-thinking.enable = true;
-        kdn.mcp.programs.time.enable = true;
-        kdn.mcp.programs.fetch.enable = true;
+        # Each leaf is a `lib.mkDefault`, so a consumer drops one backend with a plain
+        # assignment. The paired slot uses the same shape.
+        kdn.mcp.programs.filesystem.enable = lib.mkDefault true;
+        kdn.mcp.programs.filesystem.args = lib.mkDefault [ "/nix/store" ];
+        kdn.mcp.programs.sequential-thinking.enable = lib.mkDefault true;
+        kdn.mcp.programs.time.enable = lib.mkDefault true;
+        kdn.mcp.programs.fetch.enable = lib.mkDefault true;
+
+        # Pin these two servers to nixpkgs' own packages. `mcp-servers-nix` reads the unversioned
+        # `typescript` attribute, which nixpkgs moved to TypeScript 7 on 2026-09-01. TypeScript 7
+        # drops the automatic `node_modules/@types/*` include, so both builds fail with
+        # `TS2591: Cannot find name 'process'`. nixpkgs fixed its own two copies with a `postPatch`
+        # that writes `types: ["node"]`. This `pkgs` holds no `mcp-servers-nix` overlay, so the two
+        # bare names below reach the fixed packages. Both are in the binary cache, so this costs no
+        # build time. Each line is a `lib.mkDefault`, so a consumer repoints one package with a
+        # plain assignment.
+        kdn.mcp.programs.filesystem.package = lib.mkDefault pkgs.mcp-server-filesystem;
+        kdn.mcp.programs.sequential-thinking.package = lib.mkDefault pkgs.mcp-server-sequential-thinking;
 
         packages = [ pkgs.mcp-gateway ];
 
