@@ -25,12 +25,24 @@ in
     flake.path = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
       default = "${config.kdn.profile.user.kdn.homeDir}/dev/github.com/nazarewk-iac/nix-configs";
+      defaultText = lib.literalExpression ''"''${config.kdn.profile.user.kdn.homeDir}/dev/github.com/nazarewk-iac/nix-configs"'';
+      example = null;
+      description = ''
+        Path of the flake checkout this machine rebuilds from.
+
+        `null` means the machine names no checkout. Then `nh.flake` carries no value and the
+        baseline writes no `/etc/nixos/flake.nix` link. The default reads the primary user's home
+        directory, so a tree with no primary user must set this option or `null`.
+
+        A `lib.mkOptionDefault` cannot neutralise this default, because the type is `nullOr`. Use
+        `lib.mkOverride 1400` when a consumer must un-set it.
+      '';
     };
   };
 
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
-      { kdn.toolset.nix.enable = true; }
+      { kdn.toolset.nix.enable = lib.mkDefault true; }
       (kdnConfig.util.ifHMParent {
         home-manager.sharedModules = [ { kdn.development.nix = cfg; } ];
       })

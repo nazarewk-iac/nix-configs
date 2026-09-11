@@ -63,7 +63,7 @@ in
     lib.mkIf cfg.enable (
       lib.mkMerge [
         {
-          kdn.fs.zfs.enable = true;
+          kdn.fs.zfs.enable = lib.mkDefault true;
 
           boot.zfs.forceImportRoot = false;
           boot.zfs.extraPools = [ cfg.poolName ];

@@ -131,11 +131,13 @@
       config = {
         # Both writes below belong to the `mcp` aspect's own options. `includes` puts that aspect's
         # target module into this same evaluation, so this file writes them directly.
-        kdn.mcp.programs.nixos.enable = true;
-        kdn.mcp.extraBackends.devenv = {
-          command = "${devenvMcpWrapper}";
-          description = "devenv — search nixpkgs packages and devenv options";
-        };
+        # Each leaf is a `lib.mkDefault`, so a consumer drops the backend or repoints one field
+        # with a plain assignment. A `lib.mkDefault` on the whole stanza would lose the other
+        # fields. The paired slot uses the same shape.
+        kdn.mcp.programs.nixos.enable = lib.mkDefault true;
+        kdn.mcp.extraBackends.devenv.command = lib.mkDefault "${devenvMcpWrapper}";
+        kdn.mcp.extraBackends.devenv.description =
+          lib.mkDefault "devenv — search nixpkgs packages and devenv options";
 
         packages = [
           pkgs.nil

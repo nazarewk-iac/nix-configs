@@ -11,6 +11,16 @@ in
 {
   options.kdn.programs.browsers-launcher = {
     enable = lib.mkEnableOption "`browsers` selector setup";
+
+    casks = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ "browsers" ];
+      example = [ ];
+      description = ''
+        Homebrew casks the Darwin route installs. The write also needs `kdn.homebrew.enable`, so
+        a consumer that runs its own Homebrew receives no cask from this module.
+      '';
+    };
   };
 
   config = lib.mkMerge [
@@ -31,9 +41,7 @@ in
     (kdnConfig.util.ifTypes [ "darwin" ] (
       lib.mkIf cfg.enable {
         kdn.apps.browsers.package.install = false;
-        homebrew.casks = [
-          "browsers"
-        ];
+        homebrew.casks = lib.mkIf config.kdn.homebrew.enable cfg.casks;
       }
     ))
   ];

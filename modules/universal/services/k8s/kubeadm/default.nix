@@ -36,10 +36,13 @@ in
           networking.firewall.enable = false;
         }
         {
+          # Keep the plain priority. `profile/machine/baseline` sets this client to
+          # `lib.mkDefault true`, so a `lib.mkDefault false` here makes a 1000-to-1000 tie and
+          # stops the evaluation of every kubeadm host (measured 2026-09-11 on pwet, turo, yost).
           kdn.networking.netbird.clients.priv.enable = false;
         }
         {
-          kdn.services.k8s.node.enable = true;
+          kdn.services.k8s.node.enable = lib.mkDefault true;
           virtualisation.containerd.enable = true;
           virtualisation.containerd.configFile = ./containerd-config.toml;
           kdn.env.packages = [

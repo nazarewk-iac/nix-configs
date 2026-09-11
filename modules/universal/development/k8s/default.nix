@@ -17,7 +17,7 @@ in
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
-        kdn.development.data.enable = true;
+        kdn.development.data.enable = lib.mkDefault true;
 
         kdn.env.packages = with pkgs; [
           (lib.mkIf config.kdn.desktop.enable lens) # kubernetes IDE

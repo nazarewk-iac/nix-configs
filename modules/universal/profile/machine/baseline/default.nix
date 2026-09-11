@@ -53,8 +53,8 @@ in
     };
     flakeCheckoutLinks.enable = lib.mkOption {
       type = lib.types.bool;
-      default = cfg.primaryUser.enable;
-      defaultText = lib.literalExpression "config.kdn.profile.machine.baseline.primaryUser.enable";
+      default = cfg.primaryUser.enable && config.kdn.development.nix.flake.path != null;
+      defaultText = lib.literalExpression "config.kdn.profile.machine.baseline.primaryUser.enable && config.kdn.development.nix.flake.path != null";
       example = false;
       description = "Link `/etc/nixos/flake.nix` to the checkout in the primary user home directory.";
     };
@@ -410,11 +410,17 @@ in
           # The link target reads the home directory of the primary user, so the default of
           # `flakeCheckoutLinks.enable` follows `primaryUser.enable`.
           (lib.mkIf cfg.flakeCheckoutLinks.enable {
-            systemd.tmpfiles.rules = [
-              "L /etc/nixos/flake.nix       - - - - flake.nix.rel"
-              "L /etc/nixos/flake.nix.abs   - - - - ${config.kdn.profile.user.kdn.homeDir}/dev/github.com/nazarewk-iac/nix-configs/flake.nix"
-              "L /etc/nixos/flake.nix.rel   - - - - ../..${config.kdn.profile.user.kdn.homeDir}/dev/github.com/nazarewk-iac/nix-configs/flake.nix"
-            ];
+            # One option names the checkout. The literal used to appear here and in
+            # `kdn.development.nix.flake.path`, so the two could drift apart.
+            systemd.tmpfiles.rules =
+              let
+                flakePath = config.kdn.development.nix.flake.path;
+              in
+              [
+                "L /etc/nixos/flake.nix       - - - - flake.nix.rel"
+                "L /etc/nixos/flake.nix.abs   - - - - ${flakePath}/flake.nix"
+                "L /etc/nixos/flake.nix.rel   - - - - ../..${flakePath}/flake.nix"
+              ];
           })
           (lib.mkIf cfg.overlayNetworks.enable {
             kdn.networking.tailscale.enable = false;

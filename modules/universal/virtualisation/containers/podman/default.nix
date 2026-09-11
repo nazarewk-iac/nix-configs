@@ -12,6 +12,20 @@ in
 {
   options.kdn.virtualisation.containers.podman = {
     enable = lib.mkEnableOption "Podman setup";
+
+    darwin.viaHomebrew = lib.mkOption {
+      type = lib.types.bool;
+      default = config.kdn.homebrew.enable;
+      defaultText = lib.literalExpression "config.kdn.homebrew.enable";
+      example = false;
+      description = ''
+        Take the Darwin `podman` binary from Homebrew.
+
+        The default follows `kdn.homebrew.enable`, so a consumer that runs its own Homebrew gets
+        no declarative brew from this module. Darwin has no other podman route in this tree, so
+        `false` leaves the host with no podman binary.
+      '';
+    };
   };
 
   config = lib.mkMerge [
@@ -23,9 +37,9 @@ in
     (kdnConfig.util.ifTypes [ "darwin" ] (
       lib.mkIf cfg.enable (
         lib.mkMerge [
-          {
+          (lib.mkIf cfg.darwin.viaHomebrew {
             homebrew.brews = [ "podman" ];
-          }
+          })
         ]
       )
     ))

@@ -30,7 +30,7 @@ in
               virtiofsd
             ];
           };
-          kdn.programs.dconf.enable = true;
+          kdn.programs.dconf.enable = lib.mkDefault true;
           networking.firewall.checkReversePath = false;
           networking.networkmanager.unmanaged = [ "interface-name:virbr*" ];
           # TODO: is it needed?

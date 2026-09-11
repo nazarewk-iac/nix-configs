@@ -18,7 +18,7 @@ in
     lib.mkIf cfg.enable (
       lib.mkMerge [
         {
-          kdn.virtualisation.libvirtd.enable = true;
+          kdn.virtualisation.libvirtd.enable = lib.mkDefault true;
           kdn.env.packages = with pkgs; [
             vagrant
           ];

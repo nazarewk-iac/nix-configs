@@ -795,7 +795,7 @@ in
     lib.mkIf cfg.enable (
       lib.mkMerge [
         {
-          kdn.fs.watch.enable = true;
+          kdn.fs.watch.enable = lib.mkDefault true;
           networking.useDHCP = lib.mkDefault false;
           networking.networkmanager.enable = false;
           systemd.network.enable = true;
@@ -1754,7 +1754,7 @@ in
         }
         (lib.mkIf (cfg.kresd.rewrites != { }) {
           # TODO: watch out for kresd 6.0+ version for native support of rewrites
-          kdn.services.coredns.enable = true;
+          kdn.services.coredns.enable = lib.mkDefault true;
           kdn.services.coredns.rewrites = builtins.mapAttrs (_: rewriteCfg: {
             inherit (rewriteCfg) from to upstreams;
             binds = [ cfg.coredns.localAddress ];

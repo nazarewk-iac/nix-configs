@@ -79,7 +79,7 @@ in
 
     plain.keyFile = lib.mkOption {
       type = lib.types.str;
-      default = "~/.ssh/id_ed25519_kdn_plain";
+      default = "~/.ssh/id_ed25519_plain_signing";
       example = "~/.ssh/id_ed25519_signing";
       description = ''
         Private key file of the plain route. The module never creates this file. Create it by

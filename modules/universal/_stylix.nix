@@ -93,9 +93,11 @@ lib.optionalAttrs
       ))
       (kdnConfig.util.ifTypes [ "nixos" ] {
         fonts.fontDir.enable = true;
-        fonts.packages = with pkgs; [
-          fira-code
-          fira-code-symbols
+        # Follow `stylix.fonts.monospace`, so one override moves the installed font too. The
+        # symbols package has no stylix option, so it stays a literal.
+        fonts.packages = [
+          config.stylix.fonts.monospace.package
+          pkgs.fira-code-symbols
         ];
         stylix.enableReleaseChecks = lib.strings.versionAtLeast config.system.nixos.version "26.11";
       })
