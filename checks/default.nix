@@ -48,6 +48,11 @@ let
   # no system and it needs no builder for another platform. See standalone.nix.
   standaloneTests = import ./standalone.nix { inherit pkgs lib inputs; };
 
+  # The conditional-imports conformance test. It states, as a runnable test, the one requirement
+  # `modules/meta/` exists to solve. See conditional-imports.nix and
+  # docs/tasks/2026-09/generalization/005-conditional-imports-requirement/.
+  conditionalImportsTests = import ./conditional-imports.nix { inherit pkgs lib inputs; };
+
   # The real fork slot artifacts: the config TOML the tests read through
   # JJ_FORK_CONFIG_TOML, and the pre-push script they read through
   # KDN_JJ_PRE_PUSH_SH. inputs.self is the nix-configs flake.
@@ -61,6 +66,7 @@ let
 in
 denTests.checks
 // standaloneTests.checks
+// conditionalImportsTests.checks
 // {
   # Minimal "hello world" check: proves the `checks.<system>` plumbing evaluates and
   # builds end-to-end (flake.nix mkSubmodule wiring + checks/default.nix), independent

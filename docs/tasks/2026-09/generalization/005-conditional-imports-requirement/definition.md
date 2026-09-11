@@ -1,7 +1,8 @@
 ---
 type: Task
 description: Write down what modules/meta actually solves — data-driven conditional imports of third-party modules — as a testable requirement any target framework must satisfy.
-status: open
+status: done
+solution: done.md
 authored_by: agent
 timestamp: 2026-09-08T17:30:00+02:00
 ---
@@ -31,7 +32,7 @@ Those flags are **static data**, not module config. They come from `hosts/<host>
 | Host | `features` in `meta.json` |
 |---|---|
 | `briv` | `{"rpi4":true}` |
-| `kdn-rpi4-bootstrap` | `{"rpi4":true}` |
+| `kdn-rpi4-bootstrap` | `{"rpi4":true,"installer":true}` |
 | `oams` | `{"microvm-host":true}` |
 | the other 12 hosts | none |
 
@@ -62,6 +63,13 @@ The payoff is at `modules/universal/profile/hardware/rpi4/default.nix:22`:
 `evalModules` cannot do this from its own `config`. `imports` must resolve before the evaluation of
 `config`. That is the infinite recursion `modules/meta` avoids.
 
+**Correction, measured on 2026-09-11.** A plain `lib.evalModules` **can** meet this requirement.
+`specialArgs` reaches `imports`, because Nix resolves a `specialArgs` value before the module set.
+Only two routes recurse: module `config`, and `_module.args`. So `modules/meta` is not the
+capability — it is a typed pre-pass that computes the `specialArgs` payload. A candidate framework
+needs one `specialArgs`-shaped route and nothing more. That makes the requirement a much easier
+target than the hub states. See [research.md](research.md) § "The four routes".
+
 Other call sites of the same capability:
 
 | File | Flag | Use |
@@ -69,7 +77,7 @@ Other call sites of the same capability:
 | `modules/universal/virtualisation/microvm/guest/default.nix:15` | `microvm-guest` | `imports = … optionals (!flag)` |
 | `modules/universal/profile/hardware/darwin-utm-guest/default.nix:13` | `darwin-utm-guest` | gate |
 | `modules/universal/virtualisation/microvm/host/default.nix:19` | `microvm-host` | option default |
-| `modules/universal/default.nix:109` | `microvm-guest` | `lib.mkIf` on config — **not** an import, so not in scope |
+| `modules/universal/default.nix:135` | `microvm-guest` | `lib.mkIf` on config — **not** an import, so not in scope |
 | `hosts/briv/default.nix:17,21`, `hosts/kdn-rpi4-bootstrap/default.nix:13,17` | `rpi4`, `installer` | assertions |
 
 ## The critical distinction
@@ -109,3 +117,27 @@ option coupling that 006 describes.
 ## Exit criteria
 
 The conformance test from item 3 exists and runs. You can score 004 against it.
+
+Met on 2026-09-11.
+
+## The deliverables, as landed
+
+| Item | Where |
+|---|---|
+| 1. the requirement statement | [done.md](done.md) § "Solution" |
+| 2. the audit | [research.md](research.md) § "Every `imports` site" — 37 sites, **0** driven by evaluated `config` |
+| 3. the conformance test | `checks/conditional-imports.nix` plus `checks/conditional-imports/` |
+| 4. what else `modules/meta` provides | [research.md](research.md) § "The rest of `modules/meta`" |
+
+The audit found **6** third-party conditional import sites, not 3. Three kinds of static data
+drive them: `features.*` at 3 sites, `moduleType` at 5 sites, `parent == null` at 1 site. Two
+sites the text above misses are `modules/universal/default.nix:21` and
+`modules/universal/_stylix.nix:19`.
+
+Run the test:
+
+```bash
+nix build '.#checks.aarch64-darwin.conditional-imports-mechanism'
+nix build '.#checks.aarch64-darwin.conditional-imports-repository'
+nix run   '.#checks.aarch64-darwin.conditional-imports-mechanism.recursion'
+```
