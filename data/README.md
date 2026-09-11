@@ -74,6 +74,7 @@ because line 5 ignores everything by default.
 
 | File | What it holds | Read by | Shape |
 |---|---|---|---|
+| `den-users.nix` | The owner's three human accounts: login name, uid, full name, groups and the three public key file paths. It holds no password hash. | nothing yet — `modules/den/aspects/user.nix` reads the option shape, and a den host adds the import | attrset |
 | `slots-ssh-access.nix` | The owner's SSH connectivity graph: host aliases, reach paths, uplink files and agent match patterns. | `hosts/anji`, `hosts/brys`, `hosts/oams` and the work host, through `mkSlots { imports = … }` | attrset, was a function |
 
 Why the file sits here:

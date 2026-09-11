@@ -770,6 +770,7 @@ let
         "toolset-nix"
         "toolset-tracing"
         "toolset-unix"
+        "user"
         "virt-containers"
         "virt-containers-dagger"
         "virt-containers-distrobox"
