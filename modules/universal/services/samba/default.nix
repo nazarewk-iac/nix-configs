@@ -13,8 +13,15 @@ in
     enable = lib.mkEnableOption "SMB shares setup";
     defaults.hostsAllow = lib.mkOption {
       type = with lib.types; listOf str;
+      # The fallback names loopback only. `data/services-samba.nix` adds the owner's LAN, and a
+      # consumer with no data folder states its own network here.
       default = [
-        "192.168.0.0/16"
+        "127.0.0.0/8"
+        "localhost"
+        "::1"
+      ];
+      example = [
+        "10.0.0.0/8"
         "127.0.0.0/8"
         "localhost"
         "::1"

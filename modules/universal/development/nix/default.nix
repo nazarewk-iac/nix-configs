@@ -24,15 +24,16 @@ in
 
     flake.path = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
-      default = "${config.kdn.profile.user.kdn.homeDir}/dev/github.com/nazarewk-iac/nix-configs";
-      defaultText = lib.literalExpression ''"''${config.kdn.profile.user.kdn.homeDir}/dev/github.com/nazarewk-iac/nix-configs"'';
-      example = null;
+      default = null;
+      example = "/etc/nixos";
       description = ''
         Path of the flake checkout this machine rebuilds from.
 
         `null` means the machine names no checkout. Then `nh.flake` carries no value and the
-        baseline writes no `/etc/nixos/flake.nix` link. The default reads the primary user's home
-        directory, so a tree with no primary user must set this option or `null`.
+        baseline writes no `/etc/nixos/flake.nix` link.
+
+        The module names no checkout of its own. `data/development-nix.nix` supplies the owner's
+        path, and a consumer with no data folder states the path or keeps `null`.
 
         A `lib.mkOptionDefault` cannot neutralise this default, because the type is `nullOr`. Use
         `lib.mkOverride 1400` when a consumer must un-set it.

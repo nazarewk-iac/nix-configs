@@ -22,8 +22,8 @@ in
     */
     timezone = lib.mkOption {
       type = lib.types.str;
-      default = "Europe/Warsaw";
-      example = "Etc/UTC";
+      default = "Etc/UTC";
+      example = "Europe/Warsaw";
     };
 
     /*
@@ -33,8 +33,8 @@ in
     */
     xkbLayout = lib.mkOption {
       type = lib.types.str;
-      default = "pl";
-      example = "us";
+      default = "us";
+      example = "pl";
     };
 
     primary = lib.mkOption {
@@ -44,13 +44,13 @@ in
 
     extra = lib.mkOption {
       type = with lib.types; listOf str;
+      # The fallback keeps `en_GB.UTF-8`, because `kdn.locale.primary` defaults to it. A
+      # `supportedLocales` list without the default locale breaks a NixOS host.
       default = [
         # see https://sourceware.org/git/?p=glibc.git;a=blob;f=localedata/SUPPORTED
         "C.UTF-8/UTF-8"
         "en_US.UTF-8/UTF-8"
         "en_GB.UTF-8/UTF-8"
-        "pl_PL.UTF-8/UTF-8"
-        "pl_PL/ISO-8859-2"
       ];
     };
 
@@ -60,8 +60,6 @@ in
         "en-GB"
         "en-US"
         "en"
-        "pl-PL"
-        "pl"
       ];
     };
 
