@@ -9,7 +9,9 @@ let
   slots = kdnConfig.self.mkSlots {
     inherit pkgs;
     # kdn's own host connectivity graph (moss/etra/drek/oams/brys/anji).
-    imports = builtins.filter builtins.pathExists [ "${kdnConfig.self}/data/slots-ssh-access.nix" ];
+    imports = builtins.filter builtins.pathExists [
+      "${kdnConfig.self}/data/slots/slots-ssh-access.nix"
+    ];
 
     # devenv CLI and shell hooks.
     kdn.devenv.enable = true;
