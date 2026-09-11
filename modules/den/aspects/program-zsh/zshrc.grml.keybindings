@@ -1,0 +1,251 @@
+# keybindings extracted out of https://grml.org/zsh/#grmlzshconfig
+
+# Use emacs-like key bindings by default:
+bindkey -e
+
+# Custom widgets:
+
+## beginning-of-line OR beginning-of-buffer OR beginning of history
+## by: Bart Schaefer <schaefer@brasslantern.com>, Bernhard Tittelbach
+function beginning-or-end-of-somewhere () {
+    local hno=$HISTNO
+    if [[ ( "${LBUFFER[-1]}" == $'\n' && "${WIDGET}" == beginning-of* ) || \
+      ( "${RBUFFER[1]}" == $'\n' && "${WIDGET}" == end-of* ) ]]; then
+        zle .${WIDGET:s/somewhere/buffer-or-history/} "$@"
+    else
+        zle .${WIDGET:s/somewhere/line-hist/} "$@"
+        if (( HISTNO != hno )); then
+            zle .${WIDGET:s/somewhere/buffer-or-history/} "$@"
+        fi
+    fi
+}
+zle -N beginning-of-somewhere beginning-or-end-of-somewhere
+zle -N end-of-somewhere beginning-or-end-of-somewhere
+
+# add a command line to the shells history without executing it
+function commit-to-history () {
+    print -rs ${(z)BUFFER}
+    zle send-break
+}
+zle -N commit-to-history
+
+# only slash should be considered as a word separator:
+function slash-backward-kill-word () {
+    local WORDCHARS="${WORDCHARS:s@/@}"
+    # zle backward-word
+    zle backward-kill-word
+}
+zle -N slash-backward-kill-word
+
+function zrcgotwidget () {
+    (( ${+widgets[$1]} ))
+}
+
+function zrcgotkeymap () {
+    [[ -n ${(M)keymaps:#$1} ]]
+}
+
+# The actual terminal setup hooks and bindkey-calls:
+
+# An array to note missing features to ease diagnosis in case of problems.
+typeset -ga grml_missing_features
+
+function zrcbindkey () {
+    if (( ARGC )) && zrcgotwidget ${argv[-1]}; then
+        bindkey "$@"
+    fi
+}
+
+function bind2maps () {
+    local i sequence widget
+    local -a maps
+
+    while [[ "$1" != "--" ]]; do
+        maps+=( "$1" )
+        shift
+    done
+    shift
+
+    if [[ "$1" == "-s" ]]; then
+        shift
+        sequence="$1"
+    else
+        sequence="${key[$1]}"
+    fi
+    widget="$2"
+
+    [[ -z "$sequence" ]] && return 1
+
+    for i in "${maps[@]}"; do
+        zrcbindkey -M "$i" "$sequence" "$widget"
+    done
+}
+
+if (( ${+terminfo[smkx]} )) && (( ${+terminfo[rmkx]} )); then
+    function zle-smkx () {
+        emulate -L zsh
+        printf '%s' ${terminfo[smkx]}
+    }
+    function zle-rmkx () {
+        emulate -L zsh
+        printf '%s' ${terminfo[rmkx]}
+    }
+    function zle-line-init () {
+        zle-smkx
+    }
+    function zle-line-finish () {
+        zle-rmkx
+    }
+    zle -N zle-line-init
+    zle -N zle-line-finish
+else
+    for i in {s,r}mkx; do
+        (( ${+terminfo[$i]} )) || grml_missing_features+=($i)
+    done
+    unset i
+fi
+
+typeset -A key
+key=(
+    Home     "${terminfo[khome]}"
+    End      "${terminfo[kend]}"
+    Insert   "${terminfo[kich1]}"
+    Delete   "${terminfo[kdch1]}"
+    Up       "${terminfo[kcuu1]}"
+    Down     "${terminfo[kcud1]}"
+    Left     "${terminfo[kcub1]}"
+    Right    "${terminfo[kcuf1]}"
+    PageUp   "${terminfo[kpp]}"
+    PageDown "${terminfo[knp]}"
+    BackTab  "${terminfo[kcbt]}"
+)
+
+# Guidelines for adding key bindings:
+#
+#   - Do not add hardcoded escape sequences, to enable non standard key
+#     combinations such as Ctrl-Meta-Left-Cursor. They are not easily portable.
+#
+#   - Adding Ctrl characters, such as '^b' is okay; note that '^b' and '^B' are
+#     the same key.
+#
+#   - All keys from the $key[] mapping are obviously okay.
+#
+#   - Most terminals send "ESC x" when Meta-x is pressed. Thus, sequences like
+#     '\ex' are allowed in here as well.
+
+bind2maps emacs             -- Home   beginning-of-somewhere
+bind2maps       viins vicmd -- Home   vi-beginning-of-line
+bind2maps emacs             -- End    end-of-somewhere
+bind2maps       viins vicmd -- End    vi-end-of-line
+bind2maps emacs viins       -- Insert overwrite-mode
+bind2maps             vicmd -- Insert vi-insert
+bind2maps emacs             -- Delete delete-char
+bind2maps       viins vicmd -- Delete vi-delete-char
+bind2maps emacs viins vicmd -- Up     up-line-or-search
+bind2maps emacs viins vicmd -- Down   down-line-or-search
+bind2maps emacs             -- Left   backward-char
+bind2maps       viins vicmd -- Left   vi-backward-char
+bind2maps emacs             -- Right  forward-char
+bind2maps       viins vicmd -- Right  vi-forward-char
+#k# Perform abbreviation expansion
+bind2maps emacs viins       -- -s '^x.' zleiab
+#k# Display list of abbreviations that would expand
+bind2maps emacs viins       -- -s '^xb' help-show-abk
+#k# mkdir -p <dir> from string under cursor or marked area
+bind2maps emacs viins       -- -s '^xM' inplaceMkDirs
+#k# display help for keybindings and ZLE
+bind2maps emacs viins       -- -s '^xz' help-zle
+#k# Insert files and test globbing
+bind2maps emacs viins       -- -s "^xf" insert-files
+#k# Edit the current line in \kbd{\$EDITOR}
+bind2maps emacs viins       -- -s '\ee' edit-command-line
+#k# search history backward for entry beginning with typed text
+bind2maps emacs viins       -- -s '^xp' history-beginning-search-backward-end
+#k# search history forward for entry beginning with typed text
+bind2maps emacs viins       -- -s '^xP' history-beginning-search-forward-end
+#k# search history backward for entry beginning with typed text
+bind2maps emacs viins       -- PageUp history-beginning-search-backward-end
+#k# search history forward for entry beginning with typed text
+bind2maps emacs viins       -- PageDown history-beginning-search-forward-end
+bind2maps emacs viins       -- -s "^x^h" commit-to-history
+#k# Kill left-side word or everything up to next slash
+bind2maps emacs viins       -- -s '\ev' slash-backward-kill-word
+#k# Kill left-side word or everything up to next slash
+bind2maps emacs viins       -- -s '\e^h' slash-backward-kill-word
+#k# Kill left-side word or everything up to next slash
+bind2maps emacs viins       -- -s '\e^?' slash-backward-kill-word
+# Do history expansion on space:
+bind2maps emacs viins       -- -s ' ' magic-space
+#k# Trigger menu-complete
+bind2maps emacs viins       -- -s '\ei' menu-complete  # menu completion via esc-i
+#k# Insert a timestamp on the command line (yyyy-mm-dd)
+bind2maps emacs viins       -- -s '^xd' insert-datestamp
+#k# Insert last typed word
+bind2maps emacs viins       -- -s "\em" insert-last-typed-word
+#k# A smart shortcut for \kbd{fg<enter>}
+bind2maps emacs viins       -- -s '^z' grml-zsh-fg
+#k# prepend the current command with "sudo"
+bind2maps emacs viins       -- -s "^os" sudo-command-line
+#k# jump to after first word (for adding options)
+bind2maps emacs viins       -- -s '^x1' jump_after_first_word
+#k# complete word from history with menu
+bind2maps emacs viins       -- -s "^x^x" hist-complete
+
+# insert unicode character
+# usage example: 'ctrl-x i' 00A7 'ctrl-x i' will give you an Â§
+# See for example http://unicode.org/charts/ for unicode characters code
+#k# Insert Unicode character
+bind2maps emacs viins       -- -s '^xi' insert-unicode-char
+
+# use the new *-pattern-* widgets for incremental history search
+if zrcgotwidget history-incremental-pattern-search-backward; then
+    for seq wid in '^r' history-incremental-pattern-search-backward \
+                   '^s' history-incremental-pattern-search-forward
+    do
+        bind2maps emacs viins vicmd -- -s $seq $wid
+    done
+    builtin unset -v seq wid
+fi
+
+if zrcgotkeymap menuselect; then
+    #m# k Shift-tab Perform backwards menu completion
+    bind2maps menuselect -- BackTab reverse-menu-complete
+
+    #k# menu selection: pick item but stay in the menu
+    bind2maps menuselect -- -s '\e^M' accept-and-menu-complete
+    # also use + and INSERT since it's easier to press repeatedly
+    bind2maps menuselect -- -s '+' accept-and-menu-complete
+    bind2maps menuselect -- Insert accept-and-menu-complete
+
+    # accept a completion and try to complete again by using menu
+    # completion; very useful with completing directories
+    # by using 'undo' one's got a simple file browser
+    bind2maps menuselect -- -s '^o' accept-and-infer-next-history
+fi
+
+# Finally, here are still a few hardcoded escape sequences; Special sequences
+# like Ctrl-<Cursor-key> etc do suck a fair bit, because they are not
+# standardised and most of the time are not available in a terminals terminfo
+# entry.
+#
+# While we do not encourage adding bindings like these, we will keep these for
+# backward compatibility.
+
+## use Ctrl-left-arrow and Ctrl-right-arrow for jumping to word-beginnings on
+## the command line.
+# URxvt sequences:
+bind2maps emacs viins vicmd -- -s '\eOc' forward-word
+bind2maps emacs viins vicmd -- -s '\eOd' backward-word
+# These are for xterm:
+bind2maps emacs viins vicmd -- -s '\e[1;5C' forward-word
+bind2maps emacs viins vicmd -- -s '\e[1;5D' backward-word
+## the same for alt-left-arrow and alt-right-arrow
+# URxvt again:
+bind2maps emacs viins vicmd -- -s '\e\e[C' forward-word
+bind2maps emacs viins vicmd -- -s '\e\e[D' backward-word
+# Xterm again:
+bind2maps emacs viins vicmd -- -s '^[[1;3C' forward-word
+bind2maps emacs viins vicmd -- -s '^[[1;3D' backward-word
+# Also try ESC Left/Right:
+bind2maps emacs viins vicmd -- -s '\e'${key[Right]} forward-word
+bind2maps emacs viins vicmd -- -s '\e'${key[Left]}  backward-word
