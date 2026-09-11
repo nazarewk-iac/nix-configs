@@ -705,6 +705,19 @@ let
         "opencode"
         "outputs-host"
         "packaging-asdf"
+        "profile-baseline"
+        "profile-baseline-flake-links"
+        "profile-baseline-gc"
+        "profile-basic"
+        "profile-desktop"
+        "profile-dev"
+        "profile-gaming"
+        "profile-headless"
+        "profile-headless-vim"
+        "profile-headless-wezterm"
+        "profile-headless-zellij"
+        "profile-hetzner"
+        "profile-workstation"
         "program-atuin"
         "program-beeper"
         "program-blender"
@@ -2774,6 +2787,34 @@ let
   # `security-secrets-sops` asserts `services.userborn.enable || services.sysusers.enable`. Neither
   # option is on in a bare consumer, so the pair cannot force without this row. The choice of route
   # belongs to the consumer, not to the aspect. ./assertions/security.nix states the same fact.
+  #
+  # The machine-profile bundles add three more such decisions, and each one reaches several pairs,
+  # because `denLib.imports` follows `includes`. The three bindings below name each decision once.
+  #
+  # `profile-baseline` writes `users.mutableUsers = false`, so nixpkgs asserts that the root account
+  # or a wheel user holds a password or an SSH key. A bare consumer declares no user at all. An
+  # aspect must never invent a credential, so the consumer owns that line. `/dev/null` is an empty
+  # file, and the evaluation only needs the path.
+  rootCredential = {
+    kdn.profile-baseline.rootHashedPasswordFile = "/dev/null";
+  };
+  # `profile-basic` turns Flatpak on, and nixpkgs asserts `xdg.portal.enable`. That option then
+  # asserts a non-empty `xdg.portal.extraPortals`, so the row must name a backend as well. The portal
+  # belongs to `desktop-base`, and `profile-basic` does not include it.
+  # `modules/universal/profile/machine/basic` writes the same pair, so this is old-tree parity, not a
+  # port defect. A consumer that wants Flatpak on a headless machine names the portal itself.
+  flatpakPortal =
+    { pkgs, ... }:
+    {
+      xdg.portal.enable = true;
+      xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+    };
+  # `profile-gaming` names Steam, and `profile-workstation` names the JetBrains IDEs. nixpkgs marks
+  # each one unfree. An aspect must never widen a consumer's licence policy, so the consumer owns
+  # this line too. ./assertions/machine-profiles.nix states the same fact for the gaming aspect.
+  unfree = {
+    nixpkgs.config.allowUnfree = true;
+  };
   forceData = {
     "fs-zfs/nixos" = [ { networking.hostId = "deadbeef"; } ];
     "net-router-ddns/nixos" = [
@@ -2783,6 +2824,18 @@ let
       }
     ];
     "security-secrets-sops/nixos" = [ { services.userborn.enable = true; } ];
+    "profile-baseline/nixos" = [ rootCredential ];
+    "profile-basic/nixos" = [
+      rootCredential
+      flatpakPortal
+    ];
+    "profile-desktop/nixos" = [ rootCredential ];
+    "profile-gaming/nixos" = [ unfree ];
+    "profile-hetzner/nixos" = [ rootCredential ];
+    "profile-workstation/nixos" = [
+      rootCredential
+      unfree
+    ];
   };
 
   # No consumer data at all, except the `forceData` entries above. Measured on 2026-09-11: all
