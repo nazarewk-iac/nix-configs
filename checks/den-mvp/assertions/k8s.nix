@@ -307,9 +307,12 @@ let
       };
     }
     {
-      name = "the node aspect writes no ZFS dataset while no disk aspect loads";
-      # `disko` and `kdn.fs.zfs` belong to other aspects. A consumer that wants the container
-      # dataset includes `disks` and `fs-zfs` too, and only then do the two writes appear.
+      name = "the node aspect declares no storage option of its own";
+      # `disko` and `kdn.fs.zfs` belong to other aspects. This assertion proves the node aspect
+      # brings neither one in, so a consumer without them keeps a small option set.
+      #
+      # It proves nothing about the two gated writes. A write to an undeclared option **fails** the
+      # evaluation; it never turns this probe true. The next assertion covers the writes.
       expected = {
         disko = false;
         fsZfs = false;
@@ -318,6 +321,44 @@ let
         disko = nixosBare ? disko;
         fsZfs = (nixosBare.kdn.fs or { }) ? zfs;
       };
+    }
+    {
+      name = "the two storage writes land once the disk aspects load, and read the pool name";
+      # The gates are `hasDisks` and `hasFsZfs`, and both writes read `kdn.disks.zpool-main.name`.
+      # So both need the `disks` aspect. This subject holds all three aspects and proves it.
+      #
+      # It reads option values only. It never forces `system.build.toplevel`, so the ZFS
+      # `networking.hostId` assertion of nixpkgs stays quiet and the subject needs no force data.
+      expected = {
+        fsname = "den-store-main/containerd/storage";
+        dataset = {
+          type = "zfs_volume";
+          extraArgs = [ "-p" ];
+          autoSnapshot = "false";
+        };
+      };
+      actual =
+        let
+          storage =
+            (bareNixos (
+              denLib.imports {
+                class = "nixos";
+                aspects = k8sNames ++ [
+                  "disks"
+                  "fs-zfs"
+                ];
+              }
+              ++ [ { networking.hostName = "den-store"; } ]
+            )).config;
+          volume = storage.disko.devices.zpool."den-store-main".datasets."containerd/storage";
+        in
+        {
+          fsname = storage.kdn.fs.zfs.containers.fsname;
+          dataset = {
+            inherit (volume) type extraArgs;
+            autoSnapshot = volume.options."com.sun:auto-snapshot";
+          };
+        };
     }
 
     # ---------------------------------------------------------------- service-k8s-kubeadm

@@ -58,7 +58,7 @@ first: `SYS=aarch64-darwin` — or `x86_64-linux`, or `aarch64-linux`.
 | `zellij-llm-pytest` | the `zellij-llm` package's own pytest suite | pkgs | 17.1 | `nix build --no-eval-cache -L ".#checks.$SYS.zellij-llm-pytest"` |
 | `den-eval-toolset-small` | 14 assertions: the toolset, packaging, emulation, outputs and monitoring aspects | den | 14.7 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-toolset-small"` |
 | `den-eval-networking` | 27 assertions over 4 bare consumers: the seven `net-*` aspects | den | 13.3 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-networking"` |
-| `den-eval-k8s` | 23 assertions over 8 bare consumers: the five `service-k8s*` aspects | den | 12.0 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-k8s"` |
+| `den-eval-k8s` | 24 assertions over 9 bare consumers: the five `service-k8s*` aspects | den | 12.0 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-k8s"` |
 | `den-eval-machine-profiles` | 19 assertions over 6 bare consumers: the 13 machine-profile bundles, plus the `includes` graph of every one | den | 12.0 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-machine-profiles"` |
 | `den-eval-development` | 26 assertions over 22 bare consumers: the 30 `dev-*` aspects | den | 11.2 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-development"` |
 | `den-eval-security` | 22 assertions over 7 bare consumers: the four `security-*` aspects | den | 11.0 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-security"` |
