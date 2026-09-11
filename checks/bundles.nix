@@ -24,14 +24,19 @@ let
   # Four members break 60 s alone: 83.3, 358.0, 75.0 and 188.4 s. `den-eval-instantiate` cost 58.0 s
   # until the 30 `dev-*` aspects took the registry from 137 pairs to 201, measured 2026-09-11.
   #
-  # `den-eval-hw` is the one member that does not break 60 s alone. It costs 25.3 s, and it is the
-  # heaviest member of `bundle-den`. Four batches of aspects together took that bundle to 75.4 s, over
-  # the 60 s ceiling, so the bundle sheds its heaviest member. Two runs then gave 49.3 s and 50.2 s.
-  # That keeps the ceiling true, and it keeps every other area check one command away.
+  # Two members do not break 60 s alone. Each one is the heaviest member `bundle-den` holds at the
+  # time it moves here, and each move follows the shed rule above.
+  #
+  #   - `den-eval-hw`, 25.3 s alone. Four batches of aspects took `bundle-den` to 75.4 s, so the
+  #     bundle shed it. Two runs then gave 49.3 s and 50.2 s.
+  #   - `den-eval-programs`, 19.4 s alone. Five more area checks took `bundle-den` to 98.6 s, so the
+  #     bundle shed it too. The shed saves 19.5 s and the bundle then runs 79.1 s, measured
+  #     2026-09-11. One shed no longer restores the 60 s ceiling. The owner decides the next step.
   slow = [
     "den-eval-routes"
     "den-eval-instantiate"
     "den-eval-hw"
+    "den-eval-programs"
     "den-mvp"
     "jj-experiments-pytest"
   ];
@@ -58,8 +63,8 @@ in
     ++ crossCutting
     ++ byPrefix "universal-eval-"
   );
-  # About 50 s. One assertion set per den aspect: every `den-eval-*` that is neither cross-cutting nor
-  # slow. A new aspect check joins by itself.
+  # 79.1 s, measured 2026-09-11. One assertion set per den aspect: every `den-eval-*` that is neither
+  # cross-cutting nor slow. A new aspect check joins by itself. This bundle is over the 60 s ceiling.
   bundle-den = mkBundle "den" (lib.subtractLists (crossCutting ++ slow) (byPrefix "den-eval-"));
   # 18.0 s. The two package test suites that finish in seconds.
   bundle-pkgs = mkBundle "pkgs" [
