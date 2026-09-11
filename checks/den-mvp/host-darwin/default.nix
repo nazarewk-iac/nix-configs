@@ -63,5 +63,12 @@
     kdn.homebrew.taps = [ "example-org/example-tap" ];
     kdn.homebrew.casks = [ "example-cask" ];
     kdn.homebrew.brews = [ "example-brew" ];
+
+    # The restore. The aspect defaults `cleanup` to nix-darwin's safe `"none"`, so that a stranger
+    # keeps a cask they installed by hand. This repository manages Homebrew from Nix alone, and
+    # `modules/universal/default.nix` sets `"zap"` for every darwin host. This line keeps the den
+    # route on the same value, and it also proves the `lib.mkDefault` in the aspect: a plain value
+    # here overrides the aspect with no `lib.mkForce`.
+    kdn.homebrew.onActivation.cleanup = "zap";
   };
 }

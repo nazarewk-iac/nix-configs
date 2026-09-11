@@ -38,6 +38,7 @@ let
     devenv-cli = ./aspects/devenv-cli.nix;
     gh = ./aspects/gh.nix;
     homebrew = ./aspects/homebrew.nix;
+    homebrew-nix-managed = ./aspects/homebrew-nix-managed.nix;
     jj = ./aspects/jj.nix;
     jj-fork = ./aspects/jj-fork.nix;
     llm = ./aspects/llm.nix;
@@ -142,6 +143,100 @@ let
         'host' missing`. So keep an exported aspect free of entity data, and give it a plain option
         instead. Measured on 2026-09-10.
       '';
+
+  # Every class name that an aspect of this repository emits.
+  #
+  # This list is a **drift alarm**, not the source of truth. `pairClasses` below reads the class
+  # keys off the aspect itself, and it throws when it finds a key this list misses. Measured on
+  # 2026-09-11: den declares 14 class names — `nix eval --json '.#den.classes' --apply
+  # builtins.attrNames` prints `apps checks darwin devShells devenv hjem homeManager legacyPackages
+  # maid nixos os packages user wsl` — and the 21 aspects use these four.
+  exportClasses = [
+    "nixos"
+    "darwin"
+    "homeManager"
+    "devenv"
+  ];
+
+  # The keys den itself puts on a resolved aspect. None of them names a class.
+  #
+  # Measured on 2026-09-11 with `nix eval --json '.#denful.kdn' --apply 'ns: builtins.mapAttrs
+  # (n: v: builtins.attrNames v) ns'`. Both routes give the same 11 keys.
+  aspectStructuralKeys = [
+    "_"
+    "__functor"
+    "__providesForwarded"
+    "classes"
+    "description"
+    "excludes"
+    "includes"
+    "meta"
+    "name"
+    "policies"
+    "provides"
+  ];
+
+  # The classes one aspect emits.
+  #
+  # The **aspect** is the source of truth. den's namespace type is freeform, so it keeps a class
+  # key only when the aspect file defines that class. `ca` holds `nixos` alone, and `devenv-cli`
+  # holds all four. So an invalid pair gets no key and cannot reach a caller.
+  #
+  # `aspect.classes` is not the source of truth: it is `[ ]` for every one of the 21 aspects.
+  # Measured on 2026-09-11.
+  pairClasses =
+    den: name:
+    let
+      classes = lib.subtractLists aspectStructuralKeys (
+        builtins.attrNames den.ful.${namespaceName}.${name}
+      );
+      missed = lib.subtractLists exportClasses classes;
+    in
+    if missed == [ ] then
+      classes
+    else
+      throw ''
+        den: aspect `${name}` emits class ${
+          builtins.concatStringsSep ", " (map (c: "`${c}`") missed)
+        }, and ./lib.nix does not list it.
+
+        Add the name to `exportClasses` when den gained a class. Add it to `aspectStructuralKeys`
+        when den gained a structural key that is not a class. Do not silence this by dropping the
+        check: an unlisted class means the pair export omits a real target.
+      '';
+
+  # aspect name → the list of classes it emits. This is the list of valid pairs, in one place.
+  pairsFor = den: lib.genAttrs (builtins.attrNames aspectModules) (pairClasses den);
+
+  # "<aspect>-<class>" → one already-resolved plain module, one key per valid pair.
+  #
+  # 26 keys, from 21 aspects. Every value is lazy, and every value goes through the
+  # `resolve` guard above, so an empty module cannot reach a caller.
+  #
+  # Cost, measured on 2026-09-11: the key set alone 1.03 s, one key 0.99 s, all 25 keys of that day 1.02 s.
+  # The den evaluation dominates, and `resolve` builds a shallow `{ imports = [ … ]; }`.
+  #
+  # No two keys can collide. No aspect name ends with `-nixos`, `-darwin`, `-homeManager` or
+  # `-devenv`, so the separator is unambiguous. The `throwIf` proves that at evaluation time.
+  pairModulesFor =
+    den:
+    let
+      entries = lib.concatMap (
+        name:
+        map (class: {
+          name = "${name}-${class}";
+          value = resolve den class den.ful.${namespaceName}.${name};
+        }) (pairClasses den name)
+      ) (builtins.attrNames aspectModules);
+      names = map (entry: entry.name) entries;
+    in
+    lib.throwIf (builtins.length names != builtins.length (lib.unique names))
+      "den: two aspect-class pairs share one export name. See `pairModulesFor` in ./lib.nix."
+      (builtins.listToAttrs entries);
+
+  # One den evaluation for the two published attribute sets below. Both stay lazy, so a caller
+  # that reads neither pays nothing.
+  defaultDen = eval { };
 in
 {
   inherit
@@ -149,7 +244,27 @@ in
     eval
     resolve
     namespaceName
+    exportClasses
+    pairsFor
+    pairModulesFor
     ;
+
+  # aspect name → the classes it emits. Read it to list every valid pair with no source read:
+  #
+  #   nix eval --json '.#denLib.pairs'
+  pairs = pairsFor defaultDen;
+
+  # The flat drop-in surface: one key per valid aspect-class pair.
+  #
+  #   imports = [ inputs.nix-configs.denModules.rosetta-builder-darwin ];
+  #
+  # `./flake-module.nix` publishes the same shape as `denModules.<aspect>-<class>`, from the flake
+  # route's own den handle, so that route pays no second den evaluation. This attribute serves a
+  # caller that already holds `denLib` and wants no second entry point.
+  #
+  # An **invalid** pair is absent, so Nix reports `attribute 'rosetta-builder-nixos' missing`.
+  # `pairs` above lists the valid ones.
+  pairModules = pairModulesFor defaultDen;
 
   # den's own library entry point, unwrapped.
   inherit (inputs.den) nixModule;

@@ -604,6 +604,7 @@ let
         "devenv-cli"
         "gh"
         "homebrew"
+        "homebrew-nix-managed"
         "jj"
         "jj-fork"
         "llm"
@@ -2519,36 +2520,49 @@ let
         }).config.claude.code.enable;
     }
 
-    # ---- the measured hazard. ../../modules/den/aspects/homebrew.nix:120-131 assigns six nix-darwin
-    # options at plain priority 100, so a consumer's own plain value collides and the evaluation
-    # stops. Measured on 2026-09-11: the plain override throws, and `lib.mkForce` works.
+    # ---- the measured hazard, now closed for the four scalar values.
+    # ../../modules/den/aspects/homebrew.nix:128-147 assigns `homebrew.enable` and the three
+    # `onActivation` values with `lib.mkDefault`, so a consumer's own plain value overrides them.
+    # Measured on 2026-09-11: at plain priority 100 the same override threw a conflict, and only
+    # `lib.mkForce` won.
     #
-    # These three assertions state today's behaviour, so the hazard cannot hide. When the aspect
-    # moves to `lib.mkDefault` — see the plan's "Coordination needed" — delete the `succeeds`
-    # assertion and expect `"none"` from the plain override instead.
+    # The three lists stay at plain priority, and that is deliberate. A `listOf` merges two plain
+    # definitions by concatenation, so a consumer's own list adds to the aspect's list and throws
+    # nothing. A `mkDefault` there would make the consumer's list replace the option value instead.
     {
-      name = "the aspect's own cleanup value reaches a bare consumer";
-      expected = "zap";
+      name = "the aspect's own cleanup default reaches a bare consumer";
+      expected = "none";
       actual = (bareDarwinSystem [ flake.denModules.homebrew ]).config.homebrew.onActivation.cleanup;
     }
     {
-      name = "a consumer's plain cleanup value still collides with the aspect's own";
-      expected = false;
-      actual =
-        succeeds
-          (bareDarwinSystem [
-            flake.denModules.homebrew
-            { homebrew.onActivation.cleanup = "none"; }
-          ]).config.homebrew.onActivation.cleanup;
-    }
-    {
-      name = "lib.mkForce is the one override that works today";
-      expected = "none";
+      name = "a consumer's plain cleanup value overrides the aspect's mkDefault";
+      expected = "zap";
       actual =
         (bareDarwinSystem [
           flake.denModules.homebrew
-          { homebrew.onActivation.cleanup = lib.mkForce "none"; }
+          { homebrew.onActivation.cleanup = "zap"; }
         ]).config.homebrew.onActivation.cleanup;
+    }
+    {
+      name = "a consumer's plain cask list adds to the aspect's, and throws no conflict";
+      expected = [
+        "consumer-cask"
+        "example-cask"
+      ];
+      # nix-darwin coerces every `homebrew.casks` entry to a submodule, so the merged value holds
+      # attribute sets and `builtins.sort` cannot compare them. Read the `name` of each entry.
+      # Measured on 2026-09-11: a sort of the raw list throws `cannot compare a set with a set`.
+      actual = sorted (
+        map (cask: cask.name or cask) (
+          (bareDarwinSystem [
+            flake.denModules.homebrew
+            {
+              kdn.homebrew.casks = [ "example-cask" ];
+              homebrew.casks = [ "consumer-cask" ];
+            }
+          ]).config.homebrew.casks
+        )
+      );
     }
   ];
 
@@ -2603,6 +2617,122 @@ let
     }
   ];
 
+  # ------------------------------------------------------------------ the instantiation force
+
+  # `den.lib.aspects.resolve` returns an `imports` list and forces no target module body. So an
+  # aspect that names a class proves nothing until some subject forces a value out of that class.
+  # The `instantiatedBy` table below names one subject per aspect **by hand**, and nothing checks
+  # that the named subject really forces the body.
+  #
+  # This set closes that hole with no list of its own. It reads the registry, asks den which
+  # classes each aspect emits, and forces one bare class harness per pair. A `drvPath` is the
+  # force: it runs the whole target module body, and it needs no builder — so every pair runs on
+  # every machine, unlike a tier 2 artifact check.
+  #
+  # Measured on 2026-09-11 in a scratch copy of `modules/den/`, with one planted `throw` per class:
+  #
+  #   | planted in                    | the `../standalone.nix` option walk | this check              |
+  #   |-------------------------------|-------------------------------------|-------------------------|
+  #   | `llm` nixos body              | 25 of 25 pass                       | llm/nixos FAIL          |
+  #   | `homebrew` darwin body        | 25 of 25 pass                       | homebrew/darwin FAIL    |
+  #   | `zellij` devenv body          | 25 of 25 pass                       | zellij/devenv FAIL      |
+  #   | `ssh-agent` homeManager body  | 25 of 25 pass                       | ssh-agent/homeManager FAIL |
+  #
+  # Cost, measured the same day: about +48 s on the 78 s this file already needs.
+  #
+  # A new **aspect** enters coverage on its own — the registry gives the name and den gives the
+  # classes. A new **class** does not: `forceOf` holds no harness for it, and the pair then throws
+  # with that instruction.
+
+  # den adds these keys to every aspect attribute set. The remaining keys name the classes the
+  # aspect emits. `../standalone.nix` holds the same list; keep the two in step.
+  aspectStructuralKeys = [
+    "_"
+    "__functor"
+    "__providesForwarded"
+    "classes"
+    "description"
+    "excludes"
+    "includes"
+    "meta"
+    "name"
+    "policies"
+    "provides"
+  ];
+
+  aspectClassesOf =
+    name:
+    lib.subtractLists aspectStructuralKeys (builtins.attrNames den.ful.${denLib.namespaceName}.${name});
+
+  # A standalone home-manager harness, in the same bare-consumer shape as `bareNixos`,
+  # `bareDarwin` and `bareShell`. It repeats the three lines ./home/default.nix needs, and it
+  # names no real user.
+  bareHome =
+    modules:
+    (inputs.home-manager.lib.homeManagerConfiguration {
+      pkgs = import inputs.nixpkgs { system = "aarch64-darwin"; };
+      modules = modules ++ [
+        {
+          home.username = "dev";
+          home.homeDirectory = "/Users/dev";
+          home.stateVersion = "26.11";
+        }
+      ];
+    }).activationPackage.drvPath;
+
+  # One force per class. Each one returns a `drvPath`, so the evaluation runs the whole target
+  # module body.
+  forceOf = {
+    nixos = modules: (bareNixos modules).config.system.build.toplevel.drvPath;
+    darwin = bareDarwin;
+    homeManager = bareHome;
+    devenv = modules: (bareShell { inherit modules; }).config.shell.drvPath;
+  };
+
+  # Every (aspect, class) pair the registry yields. 26 pairs: the 25 measured on 2026-09-11,
+  # plus `homebrew-nix-managed/darwin`.
+  forcePairs = lib.concatLists (
+    lib.mapAttrsToList (name: _: map (class: "${name}/${class}") (aspectClassesOf name)) (
+      denLib.aspectModules
+    )
+  );
+
+  # No consumer data at all. Measured on 2026-09-11: all 25 pairs of that day force with an empty
+  # consumer, so
+  # this needs no data table and no allowlist. An aspect that starts to need data fails here, and
+  # that is the correct direction — an external adopter meets the same failure.
+  forcedPairs = lib.concatLists (
+    lib.mapAttrsToList (
+      name: _:
+      map (
+        class:
+        let
+          force =
+            forceOf.${class} or (throw ''
+              den: aspect `${name}` emits the class `${class}`, and ./tests.nix holds no bare
+              harness for it. Add one to `forceOf`, next to `nixos`, `darwin`, `homeManager` and
+              `devenv`.
+            '');
+          drv = force (
+            denLib.imports {
+              inherit class;
+              aspects = [ name ];
+            }
+          );
+        in
+        if lib.isString drv then "${name}/${class}" else "${name}/${class}: broken"
+      ) (aspectClassesOf name)
+    ) denLib.aspectModules
+  );
+
+  instantiateAssertions = [
+    {
+      name = "every aspect and class forces its target module body in a bare consumer";
+      expected = forcePairs;
+      actual = forcedPairs;
+    }
+  ];
+
   # ------------------------------------------------------------------ coverage tripwire
 
   # The `llm` family reached the registry, passed "the registry holds every ported aspect", and still
@@ -2611,11 +2741,19 @@ let
   # a resolve-only test again.
   #
   # Add a row when you add an aspect, and name a real subject. A resolve count is not a subject.
+  #
+  # This table stays a readable index of the entities. `den-eval-instantiate` above is the
+  # mechanical guard: it forces every (aspect, class) pair straight from the registry, so it needs
+  # no row here and it cannot rot.
   instantiatedBy = {
     ca = "host-nixos";
     devenv-cli = "host-darwin, host-nixos, users/dev, home, devenv";
     gh = "host-darwin, host-nixos, devenv";
     homebrew = "host-darwin";
+    # No den entity includes this aspect, and no host may: it changes a real Homebrew
+    # installation. `den-eval-instantiate` forces its `darwin` body from the registry, in a bare
+    # consumer, so the body still gets coverage.
+    homebrew-nix-managed = "den-eval-instantiate (bare darwin force only)";
     jj = "devenv, defaultsShell";
     jj-fork = "devenv, defaultsShell";
     llm = "llmNixos";
@@ -2666,6 +2804,7 @@ let
     den-eval-priority = mkEvalCheck "priority" priorityAssertions;
     den-eval-frozen-paths = mkEvalCheck "frozen-paths" frozenPathAssertions;
     den-eval-coverage = mkEvalCheck "coverage" coverageAssertions;
+    den-eval-instantiate = mkEvalCheck "instantiate" instantiateAssertions;
   };
 
   # Tier 2 and tier 3 build a real artifact, so each one needs a builder for its own platform. The

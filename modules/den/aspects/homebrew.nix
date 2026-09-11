@@ -11,8 +11,13 @@
 # ## What it does
 #
 # It turns nix-darwin's own `homebrew` module on. It then feeds three consumer-supplied lists to it —
-# `taps`, `casks` and `brews` — plus the three `onActivation` values the tree sets today. Each value
-# is an option, so the aspect itself names no tap, no cask and no formula.
+# `taps`, `casks` and `brews` — plus three `onActivation` values. Each value is an option, so the
+# aspect itself names no tap, no cask and no formula.
+#
+# Two `onActivation` values mirror `modules/universal/default.nix`. The third, `cleanup`, does not:
+# it defaults to nix-darwin's own `"none"`, because `"zap"` deletes a package a stranger installed
+# by hand. This repository writes `"zap"` back in its own consumer, so its opinion is explicit
+# instead of inherited. See the option's own description.
 #
 # ## What it deliberately leaves out
 #
@@ -103,31 +108,42 @@
           "uninstall"
           "zap"
         ];
-        default = "zap";
+        default = "none";
         description = ''
           What happens to a Homebrew package that the generated Brewfile does not name.
 
-          `"zap"` removes the package and every file of a cask. It mirrors the value the tree sets
-          today, and it suits a consumer that manages Homebrew from Nix alone.
+          The default is `"none"`, which is also nix-darwin's own default. It keeps every package a
+          consumer installed by hand. This is the one aspect default that does **not** mirror this
+          repository's legacy tree, and the reason is damage: `"zap"` removes the package and every
+          file of a cask, so a first activation deletes work a stranger never gave to Nix.
 
-          DECISION TO REVISE: `"zap"` deletes an adopter's own hand-installed cask on the first
-          activation. `"none"` — nix-darwin's own default — is the safe value for an adopter, but it
-          changes this repository's own opinion. The creator decides which one this aspect keeps.
+          `"zap"` suits a consumer that manages Homebrew from Nix alone. Such a consumer writes the
+          value explicitly. This repository does exactly that, in
+          `checks/den-mvp/host-darwin/default.nix`, so its own opinion survives the safe default.
         '';
-        example = "none";
+        example = "zap";
       };
 
       config = {
         # Inclusion is the switch, so the aspect turns the module on with no guard.
-        homebrew.enable = true;
+        #
+        # `lib.mkDefault` on the four scalar values below is deliberate. Measured on 2026-09-11: at
+        # plain priority a consumer's own `homebrew.onActivation.cleanup = "none";` throws a
+        # conflict instead of an override, and only `lib.mkForce` wins. A `mkDefault` lets a plain
+        # consumer value win, which is what an adopter expects.
+        homebrew.enable = lib.mkDefault true;
 
+        # The three lists stay at plain priority, and that is also deliberate. A `listOf` merges two
+        # plain definitions by concatenation, so a consumer's own `homebrew.casks` **adds** to this
+        # one and throws nothing. A `mkDefault` here would make the consumer's list *replace* the
+        # value of `kdn.homebrew.casks` instead, which loses data with no warning.
         homebrew.taps = cfg.taps;
         homebrew.casks = cfg.casks;
         homebrew.brews = cfg.brews;
 
-        homebrew.onActivation.upgrade = cfg.onActivation.upgrade;
-        homebrew.onActivation.autoUpdate = cfg.onActivation.autoUpdate;
-        homebrew.onActivation.cleanup = cfg.onActivation.cleanup;
+        homebrew.onActivation.upgrade = lib.mkDefault cfg.onActivation.upgrade;
+        homebrew.onActivation.autoUpdate = lib.mkDefault cfg.onActivation.autoUpdate;
+        homebrew.onActivation.cleanup = lib.mkDefault cfg.onActivation.cleanup;
       };
     };
 }
