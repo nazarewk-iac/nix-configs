@@ -1,9 +1,10 @@
 ---
 type: Task
+title: Test nix-darwin in an ephemeral macOS guest
 description: Build a repeatable test loop that activates a nix-darwin configuration in an ephemeral macOS guest, so the generalization exit tests run on a clean machine.
-status: open
+status: in-progress
 authored_by: agent
-timestamp: 2026-09-09T13:00:00+02:00
+timestamp: 2026-09-11T00:00:00+02:00
 ---
 
 # Test nix-darwin in an ephemeral macOS guest
@@ -20,9 +21,23 @@ faults an adopter meets first. This task builds the guest loop that makes those 
   check and rebuild surface already exists here.
 - [lume.research.md](lume.research.md) — a real lume 0.5.3 unattended run on macOS 26.6.2, the
   shell result, three reproduced upstream defects, and the boot-to-SSH number.
+- [research.md](research.md) — the 2026-09-11 re-check: what changed in the repository, a fresh
+  read of the tart licence and subcommand list, and the list of claims that stay unverified.
 
-Both files hold the measured evidence and the citations. This file holds only the decisions, the
-blockers and the work.
+## The decision, settled 2026-09-11
+
+[design.md](design.md) holds the full design. Three lines of it:
+
+- **The tool is tart**, 2.33.0 or later, from Homebrew. `tart exec` runs a guest command with no
+  `ssh`, so blocker 14 stops mattering everywhere but the closure copy.
+- **The subject is `denConfigurations.host-darwin`**, not a personal host. It retires blockers 2,
+  3 and 4 below.
+- **`bundle-vm` can never hold this test.** A bundle member is a derivation, and the Nix sandbox
+  grants no Hypervisor entitlement, no network and no writable disk image. The test lands as
+  `apps.darwin-vm-test` instead, and `bundle-vm` stays empty.
+
+The research files hold the measured evidence and the citations. This file holds only the
+decisions, the blockers and the work.
 
 ## Target shape
 
@@ -188,11 +203,12 @@ lume gives the from-IPSW install, an HTTP API, a SIP switch, and JSON docs a har
 
 ### Repo-side — these stop a guest before any test runs
 
-1. **The `git+ssh://` homebrew tap input.** `modules/universal/default.nix:217-232` derives
-   `nix-homebrew.taps` from **every** `brew-tap--*` input, so a Darwin host build forces all of
-   them. One public input at `flake.nix:14` uses `git+ssh://`. A guest with no SSH key stops here.
-   Checkpoint 001 item 6 already asks for the one-line fix at
-   `generalization-001-slots-sharing-readiness.md:199-207`.
+1. ~~**The `git+ssh://` homebrew tap input.**~~ **RESOLVED 2026-09-11.** The tap scan is now
+   opt-in. `modules/universal/default.nix:275` reads
+   `nix-homebrew.taps = lib.mkIf cfg.homebrew.tapsFromFlakeInputs (...)`, and the comment at
+   `:266-267` records the default: `kdn.homebrew.tapsFromFlakeInputs` is `false`, and each Darwin
+   host of this repository opts in from its own file. A den subject sets the option nowhere, so it
+   forces no tap input and needs no SSH key.
 2. **The creator's macOS account.** Without an override, a Darwin host build wants the creator's
    `/Users/<name>` and a matching `system.primaryUser`. nix-darwin does not synthesize `home` or
    `uid` for a macOS-created user, so Home Manager evaluates `home = null`. The only working
