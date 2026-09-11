@@ -20,8 +20,8 @@ in
         Directory that the module bind-mounts onto the photoprism originals path.
 
         `null` means the module mounts nothing, and photoprism then reads whatever the
-        originals path already holds. `data/programs-photoprism.nix` supplies the owner's
-        directory.
+        originals path already holds.
+        `data/universal-safe/programs-photoprism.nix` supplies the owner's directory.
 
         A `lib.mkOptionDefault` cannot neutralise this default, because the type is `nullOr`.
         Use `lib.mkOverride 1400` when a consumer must un-set it.

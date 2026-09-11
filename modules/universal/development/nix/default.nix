@@ -32,8 +32,8 @@ in
         `null` means the machine names no checkout. Then `nh.flake` carries no value and the
         baseline writes no `/etc/nixos/flake.nix` link.
 
-        The module names no checkout of its own. `data/development-nix.nix` supplies the owner's
-        path, and a consumer with no data folder states the path or keeps `null`.
+        The module names no checkout of its own. `data/universal-deps/development-nix.nix`
+        supplies the owner's path, and a consumer with no data folder states the path or keeps `null`.
 
         A `lib.mkOptionDefault` cannot neutralise this default, because the type is `nullOr`. Use
         `lib.mkOverride 1400` when a consumer must un-set it.

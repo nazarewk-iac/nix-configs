@@ -140,7 +140,8 @@ in
         inherit (execLib) mkWorkspaces;
       };
       description = ''
-        Helpers that a `profiles` definition needs. `data/desktop-sway-kanshi.nix` reads them.
+        Helpers that a `profiles` definition needs.
+        `data/universal-deps/desktop-sway-kanshi.nix` reads them.
 
         `mkOutput` takes a device, an x position, a y position and an extra attribute set.
         `mkWorkspaces` takes a workspace-name-to-device map and returns an `exec` list.

@@ -21,8 +21,8 @@ let
     # development machine, oams also mounts the (encrypted, offliine) CA key blob
     # for manual reference; it does NOT host the LLM solution, so no leaf cert.
     kdn.ca.kdn.enable = true;
-    kdn.ca.kdn.certFile = "${kdnConfig.self}/data/ca.pub";
-    kdn.ca.kdn.keySopsFile = "${kdnConfig.self}/data/ca.key.sops";
+    kdn.ca.kdn.certFile = "${kdnConfig.self}/data/ca/ca.pub";
+    kdn.ca.kdn.keySopsFile = "${kdnConfig.self}/data/ca/ca.key.sops";
   };
 in
 {
