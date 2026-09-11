@@ -1,7 +1,7 @@
 ---
 type: How-To
 description: How an external adopter imports this repository's den aspects as plain NixOS, nix-darwin, Home Manager or devenv modules.
-timestamp: 2026-09-11T00:41:03+02:00
+timestamp: 2026-09-11T06:43:55+02:00
 authored_by: agent
 ---
 
@@ -14,10 +14,30 @@ Read [modules/den/README.md](../modules/den/README.md) for the architecture. Thi
 repeat it. [docs/slots-for-adopters.md](slots-for-adopters.md) describes the older
 `modules/slots/` route, which stays in place.
 
-> **Every command below ran on `aarch64-darwin`, against revision
-> `ab1c207522dcf720965f7459614258eab408f1df`.** Six scratch projects outside this repository held
-> the commands. Each one used a local `git+file:` flakeref with `?rev=<that revision>`. The
+> **How proven is this route? Read this before you pick it.**
+>
+> | Route | Real consumers in this repository | State |
+> |---|---|---|
+> | den aspects — this page | none; every den entity is a test artifact under `checks/den-mvp/` | evaluated, never activated |
+> | slots — [docs/slots-for-adopters.md](slots-for-adopters.md) | 5 host directories under `hosts/`, plus the root `devenv.nix` | the route the repository runs on |
+>
+> `modules/den/flake-module.nix:70-71` names the den entities "test artifacts, not real hosts". So
+> no machine activates a den aspect today, and the § "What is untested" list below is the honest
+> limit of this route. The slot route is older, it needs one `overlays` line, and it carries every
+> host this repository runs. The repository owner has not chosen between the two —
+> [006-direction-decision](tasks/2026-09/generalization/006-direction-decision/definition.md) is
+> open.
+>
+> Pick den when a clean import and no `specialArgs` matter more to you than a track record.
+
+> **Every command below ran on `aarch64-darwin`.** Six scratch projects outside this repository
+> held the commands. Each one used a local `git+file:` flakeref with `?rev=<a revision>`. The
 > examples print the public `github:` form instead. That is the one difference.
+>
+> The first run pinned revision `ab1c207522dcf720965f7459614258eab408f1df`. A second run on
+> 2026-09-11 pinned `b0e8f3d4388f28bb4a6c28e80b74b351635fdc99` and re-checked the three flake
+> examples, the two entry points, the aspect counts and the ten caveats. Every lock figure in
+> § "Cost" comes from the second run; the `du` rows come from the first and are not re-measured.
 
 ## What an aspect is
 
@@ -64,6 +84,11 @@ A bare list in a `modules` list fails. Measured:
 ```
 error: Module imports can't be nested lists. Perhaps you meant to remove one level of lists?
 ```
+
+Two things about that message. It comes from nixpkgs, so it names neither den nor the aspect. And
+the real run printed 724 lines of trace around it. The only hint at the cause is a `_file` line
+such as `_file = "nixos@kdn/llm-proxy";` inside the dumped definitions. So keep the
+`{ imports = …; }` wrapper.
 
 An unknown aspect name fails at once, when you build the list, and it prints every known name:
 
@@ -240,9 +265,7 @@ inputs:
 
   kdn.mcp.serversNix = inputs.mcp-servers-nix;
 
-  # Two baseline MCP servers do not build today. See caveat 9.
-  kdn.mcp.programs.filesystem.enable = lib.mkForce false;
-  kdn.mcp.programs.sequential-thinking.enable = lib.mkForce false;
+  # Two baseline MCP servers take nixpkgs' packages, so both build. See caveat 9.
 }
 ```
 
@@ -353,12 +376,14 @@ Verify the list yourself:
 ```bash
 nix eval --no-eval-cache --json '<flakeref>#denLib.aspectModules' --apply builtins.attrNames   # 20
 nix eval --no-eval-cache --json '<flakeref>#denModules'          --apply builtins.attrNames   # 17
+# `denful.kdn` returns 22 names, not 20: the 20 aspects plus the structural keys `schema` and
+# `classes`. `modules/den/lib.nix:190` records that neither key is an aspect.
 ```
 
 ### The option prefix does not always match the aspect name
 
-Six aspects declare no option at all: `devenv-cli`, `gh`, `mcp-snoop`, `rosetta-builder`,
-`ssh-agent` and `zellij`. For the rest, the prefix is this:
+Five aspects declare no option at all: `devenv-cli`, `gh`, `mcp-snoop`, `rosetta-builder` and
+`ssh-agent`. For the rest, the prefix is this:
 
 | Aspect | Option prefix |
 |---|---|
@@ -376,6 +401,7 @@ Six aspects declare no option at all: `devenv-cli`, `gh`, `mcp-snoop`, `rosetta-
 | `opencode` | `kdn.opencode` |
 | `signing` | `kdn.signing` |
 | `ssh-access` | `kdn.ssh-access` |
+| `zellij` | `kdn.zellij` |
 
 No rule maps an aspect name to its option prefix. Read the aspect file when you are not sure.
 
@@ -494,12 +520,18 @@ be rewritten.
 
 See the [Cost](#cost) section below.
 
-### 7. You need no ssh key
+### 7. You need no ssh key to evaluate
 
-The lock holds exactly one `ssh://` input, and it is a public Homebrew tap on github.com. No aspect
-reads it, and Nix never fetches a lock node that nothing references.
+The lock holds **six** `ssh://` inputs. All six are Homebrew taps on github.com, and not all of
+them are public. No aspect reads any of them, and Nix never fetches a lock node that nothing
+references. So an evaluation needs no key.
 
-Measured — the nix-darwin example exits 0 with an empty agent:
+Two limits on that statement:
+
+- Add no `homebrew` tap that names a private remote. You then need read access to it.
+- The measurement below ran with a warm store. A cold first fetch with no key stays untested.
+
+Measured on 2026-09-11 — the nix-darwin example exits 0 with an empty agent:
 
 ```bash
 SSH_AUTH_SOCK= \
@@ -507,28 +539,35 @@ GIT_SSH_COMMAND='ssh -o BatchMode=yes -o IdentitiesOnly=yes -o IdentityFile=/dev
   nix eval --no-eval-cache --raw '.#darwinConfigurations.example.config.system.build.toplevel.drvPath'
 ```
 
-### 8. One harmless warning prints on every command
+### 8. A warning this page used to list is now gone
+
+An earlier state of this repository printed this on every command:
 
 ```
 warning: input 'nix-configs/nixos-crostini' has an override for a non-existent input 'nixos-generators'
 ```
 
-- **Cause:** this repository's `flake.nix` sets a `follows` for an input that
-  `nixos-crostini` no longer declares.
-- **Effect:** none. Ignore it.
-- **Fix:** none on your side. It is this repository's own defect to clear.
+- **Cause:** `flake.nix` set a `follows` for an input that `nixos-crostini` no longer declares.
+- **State:** fixed. Commit `57be8246` removed the override, after the revision the examples pin.
+- **Measured on 2026-09-11:** four separate `nix eval` runs printed no such warning.
 
-### 9. Two baseline MCP servers do not build today
+This caveat stays only so you do not treat the warning as expected when you read an older note.
 
-- **Symptom:** `devenv build shell` fails with an npm error inside
-  `mcp-server-filesystem-2026.7.10.drv`: `error TS2591: Cannot find name 'process'`.
-- **Cause:** the `mcp` aspect turns on four baseline `programs.*` servers — `filesystem`,
-  `sequential-thinking`, `time` and `fetch`. Two of them fail to build from `mcp-servers-nix` on
-  `aarch64-darwin`, at both the unpinned tip and the revision this repository pins.
-- **Fix:** `kdn.mcp.programs.filesystem.enable = lib.mkForce false;` and the same for
-  `sequential-thinking`. `lib.mkForce` is needed here because the aspect sets both at plain
-  priority — this is the caveat in "How to override" made real.
-- The evaluation always succeeds. Only the build fails.
+### 9. Two baseline MCP servers take nixpkgs' packages, not `mcp-servers-nix`'s
+
+- **Symptom:** none today. Both servers build.
+- **Cause:** `mcp-servers-nix` reads the unversioned `typescript` attribute, and nixpkgs moved that
+  attribute to TypeScript 7 on 2026-09-01. TypeScript 7 drops the automatic
+  `node_modules/@types/*` include, so `mcp-server-filesystem` and
+  `mcp-server-sequential-thinking` fail to build from `mcp-servers-nix`. The break is nixpkgs-wide,
+  not platform-specific: `pkgs/top-level/all-packages.nix` reads `typescript = typescript_7;` with
+  no platform condition. nixpkgs carries a patch in its own two copies.
+- **What the aspect does:** it sets `kdn.mcp.programs.filesystem.package` and
+  `kdn.mcp.programs.sequential-thinking.package` to nixpkgs' packages, both at `lib.mkDefault`
+  (`modules/den/aspects/mcp.nix:224-225`). The slot route sets the same two
+  (`modules/slots/mcp/default.nix:146-147`).
+- **Override:** a plain assignment beats `lib.mkDefault`, so you need no `lib.mkForce` here.
+- Drop both lines when `mcp-servers-nix` pins TypeScript 6, or when it adds the same patch.
 
 ### 10. Three aspects act on import
 
@@ -563,9 +602,9 @@ Measured from the nix-darwin example, which is the smallest of the four.
 
 | Item | Value | Measured with |
 |---|---|---|
-| lock nodes, without the root node | 103 | `jq` over the adopter `flake.lock` |
-| by type | 97 `github`, 4 `git`, 1 `gitlab`, 1 `tarball` — the `github:` form gives 98 and 3 | same |
-| `ssh://` inputs | 1, a public tap on github.com, and no aspect reads it | same |
+| lock nodes, without the root node | 108 | `jq` over the adopter `flake.lock` |
+| by type | 97 `github`, 9 `git`, 1 `gitlab`, 1 `tarball` — the `github:` form gives 98 and 8 | same |
+| `ssh://` inputs | 6, all Homebrew taps on github.com, and no aspect reads one | same |
 | nixpkgs source tree | 334 MB | `du -sm` |
 | every direct input, deduplicated | 1314 MB across 52 paths | `du -sm` over `nix flake archive --json` |
 | full lock tree | about 3.0 GB across 92 paths | `nix flake archive` |
