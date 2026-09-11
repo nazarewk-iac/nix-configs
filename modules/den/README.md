@@ -69,7 +69,7 @@ That trap already cost one bug. `classes/devenv.nix` declared its class options 
 `kdn.den.devenv.*`, so den read a phantom aspect named `den` into `den.ful.kdn`, and the phantom
 reached the exported output too. The prefix is `den.devenv.*` now, and `den.ful.kdn` holds exactly
 the 21 registry aspects. Two structural keys, `schema` and `classes`, also appear as
-attribute names. `modules/den/lib.nix:190` names them, and neither is an aspect.
+attribute names. `modules/den/lib.nix:165` declares `aspectStructuralKeys`, and neither key is an aspect.
 
 **An entity aspect stays in `den.aspects`.** den finds a host's aspect by the host name and a user's
 aspect by the user name, and it looks in `den.aspects` only. A namespaced aspect reaches an entity
@@ -273,8 +273,8 @@ it. The adopter surface is library mode, and `flake.denLib` ships it.
 | Standalone home-manager | present — `home-darwin` and `home-linux`, with no den entity. This is the adopter shape. |
 | The `dev` den user | present — one shared user at `checks/den-mvp/users/`. It makes the `homeManager` class reachable. |
 | `checks.<system>.den-mvp` | present — the current architecture, with `.all` for every system |
-| Test harness | present — 3 tiers. **Per system** it holds 17 den checks: 12 evaluation, 3 artifact and 2 smoke, plus the `den-mvp` build gate. `aarch64-darwin` holds 17, and `x86_64-linux` holds 17. **Across all systems** the totals are 6 artifact checks and 4 smoke runs, because each class has its own artifact. See [checks/den-mvp/README.md](../../checks/den-mvp/README.md#tests). `den-eval-guards` passes 11 of 11, and 6 of those assertions cover the namespaces. `den-eval-jj` passes 32 of 32. |
-| Smoke-test runner | present — `nix run '.#checks.aarch64-darwin.den-mvp.smoke'`. It builds the 17 `aarch64-darwin` den checks and prints one summary. It reports 18 passed and 0 failed on this machine, because the count holds the build gate too. |
+| Test harness | present — 3 tiers. **Per system** it holds 26 den checks: 21 evaluation, 3 artifact and 2 smoke, plus the `den-mvp` build gate. `aarch64-darwin` holds 26, and `x86_64-linux` holds 26. **Across all systems** the totals are 6 artifact checks and 4 smoke runs, because each class has its own artifact. See [checks/den-mvp/README.md](../../checks/den-mvp/README.md#tests). `den-eval-guards` passes 11 of 11, and 6 of those assertions cover the namespaces. `den-eval-jj` passes 32 of 32. |
+| Smoke-test runner | present — `nix run '.#checks.aarch64-darwin.den-mvp.smoke'`. It builds the 26 `aarch64-darwin` den checks plus the `den-mvp` build gate, so the summary counts 27. |
 | A VM test for `host-nixos` | deferred — tier 1 and tier 2 read every value a guest would, and no darwin VM framework exists |
 | An automated `hosts/anji` parity check | deferred — it evaluates a whole personal host (~93 s) and it reads sops metadata |
 | Library mode (`den.nixModule`) | shipped as `denLib` — a thin `imports` wrapper plus the raw machinery |
@@ -289,7 +289,7 @@ The slot tree remains the supported route. See
 ## Verify
 
 ```bash
-# the exported namespace — 22 names: the 20 reusable aspects, plus `schema` and `classes`
+# the exported namespace — 23 names: the 21 reusable aspects, plus `schema` and `classes`
 nix eval --json '.#denful.kdn' --apply 'builtins.attrNames'
 
 # the entity aspect and host names den knows about

@@ -13,10 +13,12 @@ adopter** — anybody other than the author of this repository.
 The full prose is in [docs/slots-for-adopters.md](../../docs/slots-for-adopters.md). Read that
 first. The two files here carry the same facts as comments, so the template stands alone.
 
-**This template is the interim route.** The author prefers that you consume a den config, and the
-spike that tested it passed on 2026-09-10. That route replaces `mkSlots` here once it lands. See
-[004-den-spike](../../docs/tasks/2026-09/generalization/004-den-spike/definition.md), phase 2,
-condition 5.
+**Two routes exist, and the owner has not chosen between them.** This template uses `mkSlots`, the
+route every real host in this repository runs on. The den route needs no overlay and no `mkSlots`
+call, and it is proven by evaluation only. See
+[docs/den-for-adopters.md](../../docs/den-for-adopters.md) and
+[006-direction-decision](../../docs/tasks/2026-09/generalization/006-direction-decision/definition.md),
+which stays `status: open`.
 
 ## Use it
 

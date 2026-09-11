@@ -35,8 +35,9 @@ A copy-ready starting point is in [templates/adopter/](../templates/adopter/READ
 > [006-direction-decision](tasks/2026-09/generalization/006-direction-decision/definition.md)
 > is open. Expect this page to change when that decision lands.
 >
-> **All 19 slots have a den aspect.** There are 20 aspects, because `devenv-cli` splits one slot
-> across four classes. So you can reach every slot through either route. See
+> **All 19 slots have a den aspect.** There are 21 aspects: one per slot, plus `homebrew` and
+> `homebrew-nix-managed`, which have no slot. So you can reach every slot through either route.
+> See
 > [modules/den/README.md](../modules/den/README.md).
 
 ## What a slot is
@@ -76,9 +77,9 @@ There are **19** slots today. Count them with `find modules/slots -name default.
 
 ## The API: call `mkSlots`
 
-The supported entry point is the flake output `inputs.nix-configs.mkSlots` (`flake.nix:298`). Do
+The supported entry point is the flake output `inputs.nix-configs.mkSlots` (`flake.nix:309`). Do
 not look for plain NixOS or nix-darwin modules. The flake exports the whole `modules/universal`
-tree as `nixosModules.default` and `darwinModules.default` (`flake.nix:297,341`), it exports no
+tree as `nixosModules.default` and `darwinModules.default` (`flake.nix:308,352`), it exports no
 per-slot plain module, and it exports no `homeModules` at all.
 
 `mkSlots` takes **one** attrset. It removes `pkgs` and treats everything that is left as a module,
@@ -188,9 +189,9 @@ An earlier version of this page named three personal defaults. All three are gon
 
 | Option | Default today | Note |
 |---|---|---|
-| `kdn.jj.upstream.remote` | `"origin"` | `modules/slots/jj/default.nix:51`; the git default |
+| `kdn.jj.upstream.remote` | `"origin"` | `modules/slots/jj/default.nix:56`; the git default |
 | `kdn.jj.alwaysBlockedMessagePatterns` | `[ ]` | `modules/slots/jj/default.nix:44`; a pattern belongs to one repository |
-| `kdn.opencode.settings` | `{ }` | `modules/slots/opencode/default.nix:135`; the slot names no provider |
+| `kdn.opencode.settings` | `{ }` | `modules/slots/opencode/default.nix:141`; the slot names no provider |
 
 This repository sets its own values in its own `devenv.nix`, not in the slot. So you inherit
 nothing personal from these three. Other slots may still carry a personal default;
@@ -244,6 +245,8 @@ from an adopter's position.
 
 - The `modules/universal` and `modules/meta` trees. They hold personal data and they are not for
   you.
-- Turning a slot into a plain nix-darwin or NixOS module. `rosetta-builder` gets that treatment in
-  checkpoint 002.
+- Turning a slot into a plain nix-darwin or NixOS module. The den route already does that for
+  every aspect, `rosetta-builder` included: one flake input and one `imports` entry, with no
+  `mkSlots` call. See [den-for-adopters.md](den-for-adopters.md). Checkpoint 002 measured it and
+  added no second module.
 - Consuming the tree without flakes.
