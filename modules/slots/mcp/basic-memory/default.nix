@@ -19,6 +19,21 @@ in
 {
   options.kdn.mcp.basic-memory = {
     enable = lib.mkEnableOption "basic-memory knowledge base MCP backends";
+
+    installAgentRules = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = ''
+        Install this slot's agent instruction file into the consumer repository.
+
+        The file is `.claude/rules/basic-memory.md`. It states the author's own routing rule: which
+        knowledge base takes which note. The default is false, so you get the file only when you ask
+        for it. This repository turns the option on explicitly in its own `devenv.nix`.
+
+        The option covers the instruction file only. The MCP backends and the wrapper binaries stay
+        in place.
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -122,7 +137,7 @@ in
         bms
       ];
 
-      files = lib.mkIf (!config.kdn.isSourceRepo) {
+      files = lib.mkIf (cfg.installAgentRules && !config.kdn.isSourceRepo) {
         ".claude/rules/basic-memory.md".source = "${inputs.nix-configs}/.agents/rules/basic-memory.md";
       };
     };

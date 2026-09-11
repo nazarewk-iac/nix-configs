@@ -21,8 +21,10 @@ which spells out the consent policy this allowlist implements.
 - Sets `claude.code.enable = lib.mkDefault true` (a default, not a force — a consuming repo can
   still turn Claude Code integration off)
 - Installs a narrow `claude.code.permissions.rules.Bash.allow` list (see below)
-- Installs `.claude/skills/zellij/SKILL.md` (skipped when `kdn.isSourceRepo` — this repo commits
-  the skill directly instead of symlinking it from the Nix store)
+- Installs `.claude/skills/zellij/SKILL.md` only when `kdn.zellij.installAgentRules = true`. The
+  option defaults to false, so an adopter opts in and gets no mandate it did not ask for. This repo
+  sets it true in `devenv.nix`, and `kdn.isSourceRepo` still skips the file — this repo commits the
+  skill directly instead of a symlink into the Nix store
 - Installs a `zellij-wait-for-devenv` `PreToolUse` hook on `Bash` calls (see below)
 - Installs a `zellij-wait-for-devenv-start` `PostToolUse` hook on `Edit`/`MultiEdit`/`Write` calls
   (see below)

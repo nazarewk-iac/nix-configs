@@ -20,6 +20,24 @@ in
   options.kdn.jj = {
     enable = lib.mkEnableOption "jj version control devenv integration";
 
+    installAgentRules = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = ''
+        Install this slot's agent instruction files into the consumer repository.
+
+        The files are `.claude/rules/jujutsu-vcs.md`, `.claude/skills/jujutsu-vcs/SKILL.md` and the
+        `jj-expert` Claude Code subagent.
+
+        They state the author's own work mandate: never use raw `git`, always use `jj`. The default
+        is false, so you get the files only when you ask for them. This repository turns the option
+        on explicitly in its own `devenv.nix`.
+
+        The option covers instruction files only. The `jj-guard` hook, the Bash allowlist and the
+        `jj` package stay in place.
+      '';
+    };
+
     alwaysBlockedMessagePatterns = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       # Empty by default. A pattern is a property of one repository, so the consumer supplies it.
@@ -40,6 +58,23 @@ in
     };
 
     fork.enable = lib.mkEnableOption "fork-remote jj config (revset aliases, push/fetch remotes, pre-push protection)";
+    fork.installAgentRules = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = ''
+        Install the fork slot's agent instruction files into the consumer repository.
+
+        The files are `.claude/rules/flake-update.fork.md` and
+        `.claude/skills/flake-update-fork/SKILL.md`.
+
+        They state the author's own fork update procedure. The default is false, so you get the
+        files only when you ask for them. This repository turns the option on explicitly in its own
+        `devenv.nix`.
+
+        The option covers instruction files only. The revset aliases, the git hooks and the commands
+        stay in place.
+      '';
+    };
     fork.remote = lib.mkOption {
       type = lib.types.str;
       default = "";
@@ -166,7 +201,7 @@ in
         "git show *"
         "git check-ignore *"
       ];
-      claude.code.agents = lib.mkIf (!config.kdn.isSourceRepo) {
+      claude.code.agents = lib.mkIf (cfg.installAgentRules && !config.kdn.isSourceRepo) {
         jj-expert = {
           # devenv removed `claude.code.agents.<name>.proactive` on 2026-08-16, and a definition of it
           # is now a hard assertion failure. The phrase in the description carries the same intent.
@@ -175,7 +210,7 @@ in
         };
       };
 
-      files = lib.mkIf (!config.kdn.isSourceRepo) {
+      files = lib.mkIf (cfg.installAgentRules && !config.kdn.isSourceRepo) {
         ".claude/rules/jujutsu-vcs.md".source = "${inputs.nix-configs}/.agents/rules/jujutsu-vcs.md";
         ".claude/skills/jujutsu-vcs/SKILL.md".source =
           "${inputs.nix-configs}/.agents/skills/jujutsu-vcs/SKILL.md";

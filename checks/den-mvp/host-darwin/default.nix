@@ -45,6 +45,13 @@
     kdn.homebrew
   ];
 
+  # The `devenv` half of this host aspect. `den.policies.host-to-devenv` derives one shell from the
+  # list above, and the `zellij` aspect installs its skill file into that shell. The option defaults
+  # to false, so an adopter opts in; this host asks for the file, and its shell keeps the file it had.
+  den.aspects.host-darwin.devenv = {
+    kdn.zellij.installAgentRules = true;
+  };
+
   den.aspects.host-darwin.darwin = {
     # `system.primaryUser` now comes from `den.batteries.primary-user` on the `dev` user aspect.
     # Two definitions would conflict.

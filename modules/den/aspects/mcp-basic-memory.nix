@@ -169,6 +169,22 @@
       imports = [ ../common/source-repo.nix ];
 
       options.kdn.mcp.basic-memory = {
+        installAgentRules = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = ''
+            Install this aspect's agent instruction file into the consumer repository.
+
+            The file is `.claude/rules/basic-memory.md`. It states the author's own routing rule:
+            which knowledge base takes which note. The default is false, so you get the file only
+            when you ask for it. This repository turns the option on explicitly in
+            `checks/den-mvp/devenv/default.nix`.
+
+            The option covers the instruction file only. The MCP backends and the wrapper binaries
+            stay in place.
+          '';
+        };
+
         knowledgeRoot = lib.mkOption {
           type = lib.types.str;
           default = "$HOME/.local/share/basic-memory";
@@ -238,7 +254,7 @@
 
         # This repository commits the rule file itself, so a store symlink would hide the tracked
         # copy. Every other consumer gets the file installed.
-        files = lib.mkIf (!config.kdn.isSourceRepo) {
+        files = lib.mkIf (cfg.installAgentRules && !config.kdn.isSourceRepo) {
           ".claude/rules/basic-memory.md".source = ../../../.agents/rules/basic-memory.md;
         };
 

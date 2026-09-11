@@ -112,6 +112,18 @@ let
     kdn.jj.fork.deniedMessagePatterns = [ "den-mvp-denied-message" ];
   };
 
+  # The agent instruction files, for the four aspects that install one. Each `installAgentRules`
+  # option defaults to false, so an adopter opts in and no aspect pushes this repository's own work
+  # mandate into another tree. Both shells ask for every file here, so `kdn.isSourceRepo` stays the
+  # one difference between them — see the two `extra` lists below.
+  agentRulesData = {
+    kdn.zellij.installAgentRules = true;
+    kdn.nix.installAgentRules = true;
+    kdn.jj.installAgentRules = true;
+    kdn.jj.fork.installAgentRules = true;
+    kdn.mcp.basic-memory.installAgentRules = true;
+  };
+
   # The two remote URLs reach `enterShell` only. `devenv-darwin` sets both and `devenv-linux` sets
   # neither, so both branches of the `optionalString` get a test.
   jjUrlData = {
@@ -176,6 +188,7 @@ in
       nixData
       jjData
       jjUrlData
+      agentRulesData
       ../ssh-access-graph.nix
       { kdn.opencode.defaultModel = "example-provider/example-model"; }
     ];
@@ -193,6 +206,7 @@ in
       mcpData
       nixData
       jjData
+      agentRulesData
       { kdn.isSourceRepo = true; }
       (
         { pkgs, ... }:

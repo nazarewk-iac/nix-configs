@@ -38,10 +38,11 @@
 # ## The agent files carry this repository's own opinion
 #
 # The rule, the skill and the agent prompt state a jj-only mandate and this repository's own fork
-# workflow. So an adopter that uses plain git gets an opinion it did not ask for. They install
-# anyway, with `kdn.isSourceRepo` as the only switch — exactly as ./nix.nix installs its two skills.
-# Gap 7 of the same table tracks the general question, and a per-file switch belongs to that
-# checkpoint, not to this port.
+# workflow. So an adopter that uses plain git gets an opinion it did not ask for. Two switches now
+# gate all three: `kdn.isSourceRepo`, and `kdn.jj.installAgentRules`. The second one defaults to
+# false, so an adopter opts in with one line, and this repository turns it on explicitly. It
+# covers the three files only — the `jj-guard` hook, the Bash allowlist and the `jj` package stay.
+# See ../../../docs/tasks/2026-09/generalization/013-opt-in-boundaries/definition.md, rows 45 and 46.
 #
 # ## Three files, each a relative path literal
 #
@@ -107,6 +108,24 @@
       # One declaration of `kdn.isSourceRepo`, imported by path. The module system rejects two inline
       # declarations of one option, and it drops a repeated import by path. See ../common/.
       imports = [ ../common/source-repo.nix ];
+
+      options.kdn.jj.installAgentRules = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = ''
+          Install this aspect's agent instruction files into the consumer repository.
+
+          The files are `.claude/rules/jujutsu-vcs.md`, `.claude/skills/jujutsu-vcs/SKILL.md` and the
+          `jj-expert` Claude Code subagent.
+
+          They state the author's own work mandate: never use raw `git`, always use `jj`. The default
+          is false, so you get the files only when you ask for them. This repository turns the option
+          on explicitly in `checks/den-mvp/devenv/default.nix`.
+
+          The option covers instruction files only. The `jj-guard` hook, the Bash allowlist and the
+          `jj` package stay in place.
+        '';
+      };
 
       options.kdn.jj.upstream.remote = lib.mkOption {
         type = lib.types.str;
@@ -248,14 +267,14 @@
         # The slot never hits the assertion, because it gates the agent on `kdn.isSourceRepo` and
         # this repository sets that flag true. A consumer with the flag false gets the failure. That
         # is a slot defect, and it needs its own commit.
-        claude.code.agents = lib.mkIf (!config.kdn.isSourceRepo) {
+        claude.code.agents = lib.mkIf (cfg.installAgentRules && !config.kdn.isSourceRepo) {
           jj-expert = {
             description = "Deep jj (Jujutsu VCS) troubleshooting: divergent changes, conflicts, graph surgery, revset/fileset/template questions. Use proactively.";
             prompt = builtins.readFile ../../../.agents/agents/jj-expert/AGENT.md;
           };
         };
 
-        files = lib.mkIf (!config.kdn.isSourceRepo) {
+        files = lib.mkIf (cfg.installAgentRules && !config.kdn.isSourceRepo) {
           ".claude/rules/jujutsu-vcs.md".source = ../../../.agents/rules/jujutsu-vcs.md;
           ".claude/skills/jujutsu-vcs/SKILL.md".source = ../../../.agents/skills/jujutsu-vcs/SKILL.md;
         };

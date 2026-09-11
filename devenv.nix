@@ -43,6 +43,20 @@ in
       kdn.zellij.enable = true;
       kdn.gh.enable = true;
 
+      # This repository authors the agent instruction files, so it asks for every one of them.
+      # Each `installAgentRules` option defaults to false: an adopter states its own work mandate,
+      # and no slot pushes this repository's mandate into another tree. The five lines below keep
+      # the behaviour that the old `default = true` gave.
+      #
+      # They belong here, and not in `devenv.slots.local.nix`. That file holds machine-local
+      # identity only, git does not track it, and a missing file would drop these settings with no
+      # warning. `kdn.jj.fork.installAgentRules` stays inert until `kdn.jj.fork.enable` is true.
+      kdn.nix.installAgentRules = true;
+      kdn.jj.installAgentRules = true;
+      kdn.jj.fork.installAgentRules = true;
+      kdn.zellij.installAgentRules = true;
+      kdn.mcp.basic-memory.installAgentRules = true;
+
       kdn.mcp = {
         enable = true;
         basic-memory.enable = true;
