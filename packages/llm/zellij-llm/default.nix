@@ -9,14 +9,17 @@
 let
   zellij-llm = pkgs.writeShellApplication {
     name = "zellij-llm";
-    runtimeInputs = with pkgs; [
-      argc
-      zellij
-      jq
-      coreutils
-    ] ++ [
-      kdn-slug
-    ];
+    runtimeInputs =
+      with pkgs;
+      [
+        argc
+        zellij
+        jq
+        coreutils
+      ]
+      ++ [
+        kdn-slug
+      ];
     # `eval "$(argc --argc-eval ...)"` injects the argc_* variables at runtime. shellcheck
     # cannot see that, so it flags every read of one as SC2154 ("referenced but not assigned").
     # See packages/llm/kdn-slug/default.nix for the same exclusion.
