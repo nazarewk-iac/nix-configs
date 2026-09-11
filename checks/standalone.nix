@@ -176,6 +176,25 @@ let
   aspectNames = builtins.attrNames denLib.aspectModules;
   classesOf = name: lib.subtractLists structuralKeys (builtins.attrNames namespace.${name});
 
+  # A bare `lib.evalModules` holds no platform option namespace, so `options.programs` and
+  # `options.services` are absent. A third-party module that reads `options.programs ? <name>` at
+  # its own top level then aborts with `attribute 'programs' missing`, and the abort says nothing
+  # about the aspect. stylix's Home Manager tree does exactly that in `modules/neovim/nvf.nix` and
+  # in eight sibling files, so `stylix-home/homeManager` cannot resolve without a shim.
+  #
+  # This stub is upstream's own answer, not an invention here. stylix builds its documentation
+  # through the same bare `evalModules`, and `doc/eval_compat.nix` plus `doc/hm_compat.nix` declare
+  # one sink option under each prefix for that reason. The stub makes the prefix exist, so
+  # `options.programs ? nvf` answers `false` instead of aborting.
+  #
+  # The stub cannot hide a violation. It touches `programs` and `services` only, while
+  # `reachableEnables` walks the `kdn` subtree, and `_module.check = false` already tolerates every
+  # undeclared definition.
+  thirdPartyStub = {
+    options.programs.__stub = lib.mkSinkUndeclaredOptions { };
+    options.services.__stub = lib.mkSinkUndeclaredOptions { };
+  };
+
   # One option tree per (aspect, class) pair. `pkgs` is the only special argument, so a target
   # module that takes `inputs`, `kdnConfig` or an entity argument fails right here.
   # `_module.check = false` tolerates every definition that names a consumer option, so the tree
@@ -183,11 +202,15 @@ let
   optionsOf =
     name: class:
     (lib.evalModules {
-      modules = denLib.imports {
-        inherit class;
-        aspects = [ name ];
-      }
-      ++ [ { _module.check = false; } ];
+      modules =
+        denLib.imports {
+          inherit class;
+          aspects = [ name ];
+        }
+        ++ [
+          thirdPartyStub
+          { _module.check = false; }
+        ];
       specialArgs = {
         inherit pkgs;
       };
@@ -236,9 +259,7 @@ let
       name:
       lib.concatMap (
         class:
-        map (path: "${name}/${class}: ${path}") (
-          reachableEnables "kdn" ((optionsOf name class).kdn or { })
-        )
+        map (path: "${name}/${class}: ${path}") (reachableEnables "kdn" ((optionsOf name class).kdn or { }))
       ) (classesOf name)
     ) aspectNames
   );

@@ -85,6 +85,7 @@ let
     fs-watch = ./aspects/fs.nix;
     fs-zfs = ./aspects/fs.nix;
     gh = ./aspects/gh.nix;
+    hm-bootstrap = ./aspects/hm-bootstrap.nix;
     homebrew = ./aspects/homebrew.nix;
     homebrew-nix-managed = ./aspects/homebrew-nix-managed.nix;
     hw-audio = ./aspects/hw-audio.nix;
@@ -92,6 +93,8 @@ let
     hw-bluetooth = ./aspects/hw-bluetooth.nix;
     hw-cpu-amd = ./aspects/hw-cpu-amd.nix;
     hw-cpu-intel = ./aspects/hw-cpu-intel.nix;
+    hw-darwin-utm-guest = ./aspects/hw-darwin-utm-guest.nix;
+    hw-dell-e5470 = ./aspects/hw-dell-e5470.nix;
     hw-edid = ./aspects/hw-edid.nix;
     hw-gpu = ./aspects/hw-gpu.nix;
     hw-gpu-amd = ./aspects/hw-gpu-amd.nix;
@@ -191,6 +194,8 @@ let
     signing = ./aspects/signing.nix;
     ssh-access = ./aspects/ssh-access.nix;
     ssh-agent = ./aspects/ssh-agent.nix;
+    stylix = ./aspects/stylix.nix;
+    stylix-home = ./aspects/stylix.nix;
     toolset-diagrams = ./aspects/toolset.nix;
     toolset-essentials = ./aspects/toolset.nix;
     toolset-fs = ./aspects/toolset.nix;

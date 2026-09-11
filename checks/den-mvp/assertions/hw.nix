@@ -1,4 +1,4 @@
-# Tier-1 assertions for the 15 hardware aspects of batch 6.
+# Tier-1 assertions for the 17 hardware aspects of batch 6 and batch 18.
 #
 # Every assertion is `{ name; expected; actual; }`, and `mkEvalCheck` compares the two at evaluation
 # time. Nothing here builds a system and nothing activates.
@@ -7,7 +7,8 @@
 #
 # | Subject | Class | What it states |
 # |---|---|---|
-# | `nixosPlain` | `nixos` | all 15 aspects, no consumer opinion at all |
+# | `nixosPlain` | `nixos` | all 17 aspects, no consumer opinion at all |
+# | `nixosDellOnly` | `nixos` | `hw-dell-e5470` alone, to prove its two `includes` entries |
 # | `nixosLaptop` | `nixos` | two GPUs, a VFIO passthrough, a desktop, an open firewall |
 # | `nixosOverlay` | `nixos` | a replacement `supergfxctl`, through the overlay route |
 # | `nixosNoSecrets` | `nixos` | the `secrets` aspect with `allow = false` |
@@ -37,6 +38,8 @@ let
     "hw-bluetooth"
     "hw-cpu-amd"
     "hw-cpu-intel"
+    "hw-darwin-utm-guest"
+    "hw-dell-e5470"
     "hw-edid"
     "hw-gpu"
     "hw-gpu-amd"
@@ -123,6 +126,17 @@ let
   );
   homePlain = homeConfiguration.config;
 
+  # `hw-dell-e5470` alone. `nixosPlain` cannot prove the two `includes` entries, because
+  # `hw-gpu-intel` and `hw-modem` are already in `hwNames`. This subject holds the one aspect, so a
+  # value from either included aspect can only arrive through `includes`.
+  nixosDellOnlySystem = bareNixos (
+    denLib.imports {
+      class = "nixos";
+      aspects = [ "hw-dell-e5470" ];
+    }
+  );
+  nixosDellOnly = nixosDellOnlySystem.config;
+
   has = name: packages: lib.elem name (map lib.getName packages);
 in
 [
@@ -157,6 +171,8 @@ in
       hw-bluetooth = [ "nixos" ];
       hw-cpu-amd = [ "nixos" ];
       hw-cpu-intel = [ "nixos" ];
+      hw-darwin-utm-guest = [ "nixos" ];
+      hw-dell-e5470 = [ "nixos" ];
       hw-edid = [ "nixos" ];
       hw-gpu = [ "nixos" ];
       hw-gpu-amd = [ "nixos" ];
@@ -522,5 +538,65 @@ in
       disable-application = "piv";
     };
     actual = homePlain.programs.gpg.scdaemonSettings;
+  }
+
+  # ---------------------------------------------------------------- hw-darwin-utm-guest
+  {
+    name = "hw-darwin-utm-guest loads the QEMU guest profile and the two UTM initrd modules";
+    expected = {
+      balloon = true;
+      xhci = true;
+      sr = true;
+    };
+    actual = {
+      balloon = lib.elem "virtio_balloon" nixosPlain.boot.initrd.kernelModules;
+      xhci = lib.elem "xhci_pci" nixosPlain.boot.initrd.availableKernelModules;
+      sr = lib.elem "sr_mod" nixosPlain.boot.initrd.availableKernelModules;
+    };
+  }
+
+  # ---------------------------------------------------------------- hw-dell-e5470
+  {
+    name = "hw-dell-e5470 loads the four laptop kernel modules";
+    expected = {
+      kvm = true;
+      sdmmc = true;
+      ethernet = true;
+      snapshot = true;
+    };
+    actual = {
+      kvm = lib.elem "kvm-intel" nixosPlain.boot.kernelModules;
+      sdmmc = lib.elem "rtsx_pci_sdmmc" nixosPlain.boot.initrd.availableKernelModules;
+      ethernet = lib.elem "e1000e" nixosPlain.boot.initrd.availableKernelModules;
+      snapshot = lib.elem "dm-snapshot" nixosPlain.boot.initrd.kernelModules;
+    };
+  }
+  {
+    name = "hw-dell-e5470 turns zram swap on at half of the memory";
+    expected = {
+      enable = true;
+      memoryPercent = 50;
+      priority = 100;
+    };
+    actual = {
+      enable = nixosPlain.zramSwap.enable;
+      memoryPercent = nixosPlain.zramSwap.memoryPercent;
+      priority = nixosPlain.zramSwap.priority;
+    };
+  }
+  {
+    name = "hw-dell-e5470 pulls the Intel GPU aspect and the modem aspect in by itself";
+    expected = {
+      i915 = true;
+      networkManager = true;
+      modemManager = true;
+      kvm = true;
+    };
+    actual = {
+      i915 = lib.elem "i915" nixosDellOnly.boot.initrd.kernelModules;
+      networkManager = nixosDellOnly.networking.networkmanager.enable;
+      modemManager = nixosDellOnly.systemd.services.ModemManager.enable;
+      kvm = lib.elem "kvm-intel" nixosDellOnly.boot.kernelModules;
+    };
   }
 ]

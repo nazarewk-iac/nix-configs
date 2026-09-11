@@ -653,6 +653,7 @@ let
         "fs-watch"
         "fs-zfs"
         "gh"
+        "hm-bootstrap"
         "homebrew"
         "homebrew-nix-managed"
         "hw-audio"
@@ -660,6 +661,8 @@ let
         "hw-bluetooth"
         "hw-cpu-amd"
         "hw-cpu-intel"
+        "hw-darwin-utm-guest"
+        "hw-dell-e5470"
         "hw-edid"
         "hw-gpu"
         "hw-gpu-amd"
@@ -759,6 +762,8 @@ let
         "signing"
         "ssh-access"
         "ssh-agent"
+        "stylix"
+        "stylix-home"
         "toolset-diagrams"
         "toolset-essentials"
         "toolset-fs"
@@ -3294,6 +3299,8 @@ let
     hw-bluetooth = "den-eval-hw (bare nixos)";
     hw-cpu-amd = "den-eval-hw (bare nixos)";
     hw-cpu-intel = "den-eval-hw (bare nixos)";
+    hw-darwin-utm-guest = "den-eval-hw (bare nixos)";
+    hw-dell-e5470 = "den-eval-hw (bare nixos, plain and alone)";
     hw-edid = "den-eval-hw (bare nixos)";
     hw-gpu = "den-eval-hw (bare nixos, plain, VFIO and the overlay subject)";
     hw-gpu-amd = "den-eval-hw (bare nixos)";

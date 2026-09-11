@@ -20,7 +20,7 @@ One command per bundle; nix builds the members in parallel. Swap `aarch64-darwin
 
 ```bash
 nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-core'      # about 9 s, after any edit
-nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-den'       # 79.1 s, modules/den/aspects/
+nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-den'       # 91.5 s, modules/den/aspects/
 nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-pkgs'      # 18.0 s, packages/
 nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-artifact'  # 43.7 s, a built artifact
 nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-slow'      # 710.6 s, before a hand-off
@@ -31,7 +31,8 @@ first. `bundle-den` holds one assertion set per den aspect. Two members are the 
 sits in `bundle-slow` at 25.3 s and `den-eval-programs` at 19.4 s, both under the 60 s mark. Each one
 was the heaviest member of `bundle-den` when it moved. Four batches of aspects took `bundle-den` to
 75.4 s and the first shed brought it to about 50 s. Five more area checks then took it to 98.6 s, and
-the second shed brought it to 79.1 s — still over the ceiling, measured 2026-09-11. So `bundle-den` is
+the second shed brought it to 79.1 s. `den-eval-root-orphans` then took it to 91.5 s — still over the
+ceiling, measured 2026-09-11. So `bundle-den` is
 now a third exception, and the owner decides the next step. `bundle-slow` and `bundle-vm` are the two
 declared exceptions, and `bundle-vm` is reserved and
 empty because no VM test exists yet. `bundle-artifact` holds the 43.7 s only with the system closure
@@ -51,7 +52,7 @@ first: `SYS=aarch64-darwin` — or `x86_64-linux`, or `aarch64-linux`.
 | `den-mvp` | the whole parallel den tree evaluates and builds | slow | 75.0 | `nix build --no-eval-cache -L ".#checks.$SYS.den-mvp"` |
 | `den-artifact-host-darwin` | the darwin toplevel holds the nix.conf lines and the plist | artifact | 46.7 | `nix build --no-eval-cache -L '.#checks.aarch64-darwin.den-artifact-host-darwin'` |
 | `den-eval-services` | 48 assertions over 7 bare consumers: the service, managed-file and virtualisation aspects | den | 31.8 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-services"` |
-| `den-eval-hw` | 32 assertions over 6 bare consumers: the 15 hardware aspects | slow | 25.3 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-hw"` |
+| `den-eval-hw` | 36 assertions over 7 bare consumers: the 17 hardware aspects | slow | 23.6 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-hw"` |
 | `den-eval-programs` | 56 assertions over 6 bare consumers: the 40 `program-*` aspects | slow | 19.4 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-programs"` |
 | `den-smoke-devenv-darwin` | the shell's own `enterTest` really runs | artifact | 18.9 | `nix build --no-eval-cache -L '.#checks.aarch64-darwin.den-smoke-devenv-darwin'` |
 | `zellij-llm-pytest` | the `zellij-llm` package's own pytest suite | pkgs | 17.1 | `nix build --no-eval-cache -L ".#checks.$SYS.zellij-llm-pytest"` |
@@ -62,6 +63,7 @@ first: `SYS=aarch64-darwin` — or `x86_64-linux`, or `aarch64-linux`.
 | `den-eval-security` | 22 assertions over 7 bare consumers: the four `security-*` aspects | den | 11.0 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-security"` |
 | `den-eval-virtualisation` | 11 assertions over 3 bare consumers: the two `virt-microvm-*` aspects | den | 11.0 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-virtualisation"` |
 | `den-eval-desktop-leaves` | 35 assertions over 7 bare consumers: the 11 desktop leaf aspects | den | 9.0 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-desktop-leaves"` |
+| `den-eval-root-orphans` | 12 assertions over 4 bare consumers: `stylix`, `stylix-home` and `hm-bootstrap` | den | 8.9 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-root-orphans"` |
 | `den-eval-disks-fs` | 22 assertions over 9 bare consumers: the disks and filesystem aspects | den | 7.3 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-disks-fs"` |
 | `den-eval-frozen-paths` | no backend freezes an environment value | core | 5.6 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-frozen-paths"` |
 | `kdn-slug-pytest` | the `kdn-slug` package's own pytest suite | pkgs | 4.5 | `nix build --no-eval-cache -L ".#checks.$SYS.kdn-slug-pytest"` |
