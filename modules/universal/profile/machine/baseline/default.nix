@@ -11,6 +11,7 @@ in
 {
   options.kdn.profile.machine.baseline = {
     enable = lib.mkEnableOption "baseline machine profile for server/non-interactive use";
+    bootDebug = lib.mkEnableOption "boot debugging specialisations";
     initrd.emergency.rebootTimeout = lib.mkOption {
       type = lib.types.ints.unsigned;
       default = 0;
@@ -521,7 +522,7 @@ in
                 "rd.systemd.default_debug_tty=tty10"
               ];
             in
-            lib.mkIf (config.boot.initrd.systemd.enable) {
+            lib.mkIf (config.boot.initrd.systemd.enable && cfg.bootDebug) {
               specialisation.emergency = {
                 inheritParentConfig = true;
                 configuration = {
