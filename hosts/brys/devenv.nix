@@ -1,29 +1,28 @@
-# brys-specific devenv slot instance.
+# brys-specific devenv profile.
 #
-# A second `mkSlots` instance scoped to the brys host, imported by the primary
-# `devenv.nix` via `profiles.hostname."brys".module`. Because this file runs
-# its own `mkSlots`, it can set `kdn.*` options (slot-domain) and yields a pure
-# devenv module (`.config.devenv`) that the devenv-domain profile consumes.
+# A profile scoped to the brys host, imported by the primary `devenv.nix` via
+# `profiles.hostname."brys".module`. It is a plain devenv module: it imports the den
+# aspects it needs and sets their options. The parent shell already imports `opencode`,
+# so den collapses the diamond and one wrapper reaches this shell.
 #
-# It enables the in-devenv opencode capability with the brys-specific model
-# wiring that would otherwise have to live in the generic `kdn.opencode` slot:
+# It enables the in-devenv opencode capability with the brys-specific model wiring:
 #   - requesty routed through the DSML proxy (:9526, forwardClientAuth)
 #   - the local llama-swap model routed through a local DSML proxy (:9533)
 #
-# Only the host whose hostname is `brys` auto-activates this profile, so the
-# rich provider/model config is scoped to brys and every other host keeps the
-# benign global `kdn.opencode` skeleton.
+# Only the host whose hostname is `brys` auto-activates this profile, so the rich
+# provider/model config is scoped to brys and every other host keeps the benign global
+# opencode skeleton.
 {
-  pkgs,
   inputs,
   ...
 }:
-(inputs.nix-configs.mkSlots {
-  inherit pkgs;
+{
+  imports = inputs.nix-configs.denLib.imports {
+    class = "devenv";
+    aspects = [ "llm-proxy" ];
+  };
 
-  # In-devenv opencode, pointed at brys's local model via the DSML proxies.
-  kdn.opencode.enable = true;
-  # The slot names no credential of its own now, so this line keeps the wrapper's
+  # The slot named no credential of its own, so this line keeps the wrapper's
   # REQUESTY_API_KEY export that the `requesty-proxy` provider below reads.
   kdn.opencode.authKeys.REQUESTY_API_KEY = "requesty";
   kdn.opencode.settings = {
@@ -101,7 +100,6 @@
   };
 
   # The model proxies, run as devenv processes on brys.
-  kdn.llm.proxy.enable = true;
   kdn.llm.proxy.instances.requesty = {
     enable = true;
     upstreamUrl = "https://router.requesty.ai";
@@ -113,4 +111,4 @@
     upstreamUrl = "http://127.0.0.1:39703";
     port = 9533;
   };
-}).config.devenv
+}
