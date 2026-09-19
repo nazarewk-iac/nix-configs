@@ -337,13 +337,10 @@ jj new                      # start on a fresh change, never on the trunk's @
 jj workspace list           # must show more than one workspace
 jj log -r @ --no-graph -T change_id      # the two values MUST differ
 
-# 3. bootstrap the one load-bearing untracked file
-cp ../nix-configs/devenv.slots.local.nix .
-
-# 4. point the flake input at the trunk (see below); then
+# 3. point the flake input at the trunk (see below); then
 devenv shell
 
-# 5. clean up when done, either order, from the trunk for `forget`
+# 4. clean up when done, either order, from the trunk for `forget`
 jj workspace forget <slug>
 rm -rf ../.nix-configs--<slug>
 ```
@@ -352,17 +349,12 @@ rm -rf ../.nix-configs--<slug>
 run from another workspace is the one condition known to produce one; an ordinary rewrite of the
 workspace's `@` does not.
 
-### Step 3: why the bootstrap copy is mandatory
+### Step 3: a workspace holds tracked files only
 
-A fresh workspace holds **tracked files only**, so every git-ignored file is absent.
-`devenv.nix` loads `devenv.slots.local.nix` through
-`lib.optional (builtins.pathExists ./devenv.slots.local.nix)`, so a missing file is skipped with
-no warning. That silence is the whole hazard: without the copy, the workspace's slot settings
-collapse to defaults, `kdn.jj.fork.enable` turns off, and the generated jj config shrinks from
-2568 bytes with 4 fork aliases to a 64-byte stub with none.
-
-Copy nothing else. `.devenv/`, `.direnv/`, `.pre-commit-config.yaml`, `.claude/settings.json`,
-`.agents/skills/` and every `/nix/store` symlink regenerate on the first `devenv shell`.
+A fresh workspace holds **tracked files only**, so every git-ignored file is absent. `devenv.nix`
+is self-contained, so this costs no setting: the shell evaluates from the tracked tree alone.
+`.devenv/`, `.direnv/`, `.pre-commit-config.yaml`, `.claude/settings.json`, `.agents/skills/` and
+every `/nix/store` symlink regenerate on the first `devenv shell`.
 
 ### Step 4: a workspace has no `.git`, so `git+file:.` cannot resolve
 

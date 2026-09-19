@@ -41,12 +41,13 @@ if [ -n "$SENSITIVE_FILE_PATTERNS" ]; then
 fi
 
 # An empty list builds a grep with no `-e`, which passes in silence. The patterns come from the
-# git-ignored `devenv.slots.local.nix`, so a missing local file would disable this check with no
-# warning. Fail loudly instead.
+# consumer's own fork settings, so an unset list would disable this check with no warning. Fail
+# loudly instead.
 if [ "${#file_patterns[@]}" -eq 0 ] || [ "${#diff_patterns[@]}" -eq 0 ]; then
   cat >&2 <<'MSG'
 ERROR: the sensitive-pattern lists are empty, so this check cannot protect anything.
-  Restore `devenv.slots.local.nix` and re-enter the devenv shell.
+  Set `kdn.jj.fork.deniedFilePatterns` and `kdn.jj.fork.deniedMessagePatterns` in your fork,
+  then re-enter the devenv shell.
   Set KDN_JJ_PRE_PUSH_ALLOW_EMPTY=1 to commit anyway.
 MSG
   [ "${KDN_JJ_PRE_PUSH_ALLOW_EMPTY:-}" = 1 ] || exit 1

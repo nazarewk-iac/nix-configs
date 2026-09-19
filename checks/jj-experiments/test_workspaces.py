@@ -115,8 +115,8 @@ def test_untracked_file_does_not_travel_into_a_workspace(mkrepo):
 
     ws = repo.workspace_add("slot")
     assert (ws.path / "a.nix").is_file()
-    # This is hazard 3: `devenv.slots.local.nix` is git-ignored, so a workspace
-    # never gets it. An agent must copy it before any devenv work.
+    # Hazard 3: a git-ignored settings file never reaches a workspace. A fork
+    # must copy its own settings before any devenv work there.
     assert not (ws.path / "local.nix").exists()
 
 

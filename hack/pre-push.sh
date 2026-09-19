@@ -44,14 +44,13 @@ block_patterns=()
 
 # An empty list builds `grep -i` with no `-e`, which reads the next argument as the pattern and
 # matches almost nothing, or exits 2. `if` then reads that as "no match" and the check passes in
-# silence. The patterns come from the git-ignored `devenv.slots.local.nix`, so a missing local
-# file would disable the guard with no warning. Fail loudly instead.
+# silence. The patterns come from the consumer's own fork settings, so an unset list would
+# disable the guard with no warning. Fail loudly instead.
 if [ "${#file_patterns[@]}" -eq 0 ] || [ "${#message_patterns[@]}" -eq 0 ]; then
   cat >&2 <<'MSG'
 ERROR: the sensitive-pattern lists are empty, so this hook cannot protect anything.
-  Restore `devenv.slots.local.nix` and re-enter the devenv shell:
-    ls devenv.slots.local.*.example.nix
-    cp devenv.slots.local.<name>.example.nix devenv.slots.local.nix
+  Set `kdn.jj.fork.deniedFilePatterns` and `kdn.jj.fork.deniedMessagePatterns` in your fork,
+  then re-enter the devenv shell.
   Set KDN_JJ_PRE_PUSH_ALLOW_EMPTY=1 to push anyway.
 MSG
   [ "${KDN_JJ_PRE_PUSH_ALLOW_EMPTY:-}" = 1 ] || exit 1
