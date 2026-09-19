@@ -74,6 +74,13 @@ in
     */
     {
       services.asusd.enable = true;
+      # G513QY (product id 0x1866) edge lightbar pulses red on suspend whenever
+      # the keyboard zone has `sleep: true`. asusctl 6.4.0 changed the default
+      # for pre-2021 devices from one merged KeyboardAndLightbar state (all
+      # false) to per-zone states defaulting to all true, so the regenerated
+      # aura_1866.ron re-enabled the suspend animation. Pin the file so the
+      # keyboard stays lit while awake but both zones stay dark on sleep.
+      services.asusd.auraConfigs."1866".source = ./aura_1866.ron;
       kdn.hw.gpu.multiGPU.enable = true;
       programs.rog-control-center.enable = true;
       # nixpkgs `programs.rog-control-center.autoStart` calls
