@@ -69,11 +69,11 @@ slash command, which shells raw `git commit` internally. Never use `/commit` in 
 > concurrent work — do it in sequence in the main working copy instead.
 >
 > **Read [docs/jujutsu-vcs.md](../../docs/jujutsu-vcs.md) § "jj workspaces" before you create one.**
-> The creation command is one of five steps. Two more stop a silent failure: `cp
-> ../nix-configs/devenv.slots.local.nix .` (a fresh workspace holds tracked files only, and
-> `devenv.nix` skips the missing file with no warning), and a git-ignored `devenv.local.yaml` that
-> repoints `inputs.nix-configs` at the trunk with `?ref=<REV>&rev=<REV>` (a workspace has no
-> `.git`, so `git+file:.` cannot resolve). Do not commit the `devenv.lock` change that follows.
+> The creation command is one of four steps. One more stops a silent failure: a git-ignored
+> `devenv.local.yaml` that repoints `inputs.nix-configs` at the trunk with `?ref=<REV>&rev=<REV>`
+> (a workspace has no `.git`, so `git+file:.` cannot resolve). Do not commit the `devenv.lock`
+> change that follows. `devenv.nix` is self-contained, so a fresh workspace needs no settings
+> file.
 > Expect `devenv:git-hooks:run` to **fail** in every workspace shell (no `.git` to install into).
 > The shell still enters and exits 0, so that failure is normal — but a workspace runs no
 > pre-commit checks, so run the formatter and the linters from the trunk.

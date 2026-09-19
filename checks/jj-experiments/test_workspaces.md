@@ -77,17 +77,18 @@ operation does. `jj op restore` is the one such command an agent may plausibly r
 | `jj config path --repo` | `$XDG_CONFIG_HOME/jj/repos/<hash>/config.toml` | **Yes** — one file for the trunk and every workspace |
 | `jj config path --workspace` | `$XDG_CONFIG_HOME/jj/workspaces/<hash>/config.toml` | No — one file per workspace |
 
-`modules/slots/jj/default.nix` `enterShell` runs `ln -sfn <generated> "$(jj config path --repo)"`.
-That target is the **shared** file. A `devenv shell` in a workspace therefore rewrites the trunk's
-repo config too. When the workspace has no `devenv.slots.local.nix`, the generated file shrinks to a
-stub, and the fork revset aliases plus the push checks disappear from the trunk with no warning.
+The `jj` aspect's `enterShell` runs `ln -sfn <generated> "$(jj config path --repo)"`. That target
+is the **shared** file. A `devenv shell` in a workspace therefore rewrites the trunk's repo config
+too. When the workspace's own settings differ, the generated file can shrink to a stub, and the
+fork revset aliases plus the push checks disappear from the trunk with no warning.
 
 `test_repo_config_overwrite_from_workspace_strips_trunk_aliases` reproduces the failure directly: it
 writes a stub over the shared path from the workspace, then shows the trunk can no longer read a
 repo-scope revset alias it set earlier.
 
-The mitigation is the mandatory bootstrap step in the task file: copy `devenv.slots.local.nix` into
-the workspace **before** the first `devenv shell` there.
+A downstream fork mitigates this by giving the workspace the same fork settings as the trunk before
+the first `devenv shell` there. This repository is upstream and carries no such settings, so its
+workspaces need no bootstrap step.
 
 ## 5. Fork revset aliases
 

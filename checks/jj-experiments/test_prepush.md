@@ -35,12 +35,11 @@ string, so the hook also greps the range diff. That is why row 3 exists.
 ## Three fail-safe rules
 
 1. **An empty pattern list is a defect, not a permission.** The lists come from
-   the git-ignored `devenv.slots.local.nix`. When that file is absent, the hook
-   would build `grep -i` with no `-e`, which exits 2 — and `if` reads that as
-   "no match", so every check would pass in silence. The hook fails loudly
-   instead, and names the file to restore
-   (`test_an_empty_pattern_list_fails_loudly`). `KDN_JJ_PRE_PUSH_ALLOW_EMPTY=1`
-   is the explicit escape hatch
+   the consumer's own fork settings. When they are unset, the hook would build
+   `grep -i` with no `-e`, which exits 2 — and `if` reads that as "no match", so
+   every check would pass in silence. The hook fails loudly instead, and names
+   the options to set (`test_an_empty_pattern_list_fails_loudly`).
+   `KDN_JJ_PRE_PUSH_ALLOW_EMPTY=1` is the explicit escape hatch
    (`test_an_empty_pattern_list_has_an_explicit_escape_hatch`).
 2. **An unknown remote is public.** With no argv and no `PRE_COMMIT_*` variable
    the hook cannot name the remote, so it applies the content checks

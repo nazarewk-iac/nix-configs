@@ -104,9 +104,8 @@ let
     kdn.jj.upstream.remote = "public";
     kdn.jj.fork.remote = "private";
 
-    # Three pattern lists, each one a neutral term that names nothing real. The real lists live in
-    # this repository's own git-ignored `devenv.slots.local.nix`, never in a test and never in a
-    # default.
+    # Three pattern lists, each one a neutral term that names nothing real. A real list belongs to
+    # the consumer's own fork, never in a test and never in a default.
     kdn.jj.alwaysBlockedMessagePatterns = [ "den-mvp-blocked-message" ];
     kdn.jj.fork.deniedFilePatterns = [ "den-mvp-denied-path" ];
     kdn.jj.fork.deniedMessagePatterns = [ "den-mvp-denied-message" ];
