@@ -348,8 +348,8 @@ in
             networking.useNetworkd = lib.mkDefault true;
             systemd.network.wait-online.enable = lib.mkDefault (
               lib.attrsets.filterAttrs (
-                _: net: !(net.linkConfig.Unmanaged or false) config.systemd.network.networks
-              ) != { }
+                _: net: !(net.linkConfig.Unmanaged or false)
+              ) config.systemd.network.networks != { }
             );
             systemd.network.wait-online.anyInterface = lib.mkDefault true;
             systemd.network.config.networkConfig.UseDomains = lib.mkDefault true;
