@@ -25,3 +25,6 @@
 # per-host certs (e.g. brys LLM leaf)
 !/*/certs/*.pub
 !/*/certs/*.key.sops
+
+# per-host aura LED configs (e.g. oams G513QY suspend animation)
+!/*/aura_*.ron
