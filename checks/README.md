@@ -93,7 +93,7 @@ joins.
 | `den-eval-toolset-small` | 14 assertions: the toolset, packaging, emulation, outputs and monitoring aspects | den | 14.7 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-toolset-small"` |
 | `den-eval-networking` | 27 assertions over 4 bare consumers: the seven `net-*` aspects | den | 13.3 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-networking"` |
 | `den-eval-k8s` | 24 assertions over 9 bare consumers: the five `service-k8s*` aspects | den | 12.0 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-k8s"` |
-| `den-eval-machine-profiles` | 19 assertions over 6 bare consumers: the 13 machine-profile bundles, plus the `includes` graph of every one | den | 12.0 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-machine-profiles"` |
+| `den-eval-machine-profiles` | 19 assertions over 6 bare consumers: the 12 machine-profile bundles, plus the `includes` graph of every one | den | 12.0 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-machine-profiles"` |
 | `den-eval-development` | 26 assertions over 22 bare consumers: the 30 `dev-*` aspects | den | 11.2 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-development"` |
 | `den-eval-security` | 22 assertions over 7 bare consumers: the four `security-*` aspects | den | 11.0 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-security"` |
 | `den-eval-virtualisation` | 11 assertions over 3 bare consumers: the two `virt-microvm-*` aspects | den | 11.0 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-virtualisation"` |
@@ -119,7 +119,7 @@ joins.
 | `den-eval-ssh-agent` | the user scope alone, and the platform split | den | 2.6 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-ssh-agent"` |
 | `den-eval-gh` | the package, the opt-in, and no mutating rule in the allowlist | den | 2.5 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-gh"` |
 | `den-eval-llm` | each aspect of the family resolves for its own class | den | 2.5 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-llm"` |
-| `den-eval-zellij` | the skill file, both hooks, both source-repo branches | den | 2.5 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-zellij"` |
+| `den-eval-zellij` | the skill file, both hooks, both source-repo branches, and the `zellij-web` service | den | 2.5 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-zellij"` |
 | `standalone-slots` | no slot names a universal option, a meta option or `kdnConfig` | core | 2.3 | `nix build --no-eval-cache -L ".#checks.$SYS.standalone-slots"` |
 | `den-eval-opencode` | the de-personalized options, and the permission baseline | den | 2.2 | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-opencode"` |
 | `standalone-aspects` | every aspect resolves with `pkgs` alone, with no reachable `enable` | core | 2.0 | `nix build --no-eval-cache -L ".#checks.$SYS.standalone-aspects"` |

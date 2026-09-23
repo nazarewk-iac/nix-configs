@@ -240,4 +240,9 @@ in
   # `denLib.imports { class = …; }`, which states the class.
 
   flake.denModules.zellij = resolveChecked "devenv" "zellij" kdn.zellij;
+
+  # The web interface. It includes `zellij`, so one import carries the base configuration too. Its
+  # `nixos` and `homeManager` halves both read `kdn.zellij.web.*`; the zero-argument form names the
+  # `nixos` class, and an adopter reaches the `homeManager` half through `denLib.imports`.
+  flake.denModules.zellij-web = resolveChecked "nixos" "zellij-web" kdn.zellij-web;
 }

@@ -147,7 +147,6 @@ let
     profile-headless = ./aspects/profile-headless.nix;
     profile-headless-vim = ./aspects/profile-headless.nix;
     profile-headless-wezterm = ./aspects/profile-headless.nix;
-    profile-headless-zellij = ./aspects/profile-headless.nix;
     profile-hetzner = ./aspects/profile-hetzner.nix;
     profile-workstation = ./aspects/profile-workstation.nix;
     program-atuin = ./aspects/program-atuin.nix;
@@ -239,6 +238,7 @@ let
     virt-microvm-host = ./aspects/virt-microvm-host.nix;
     virt-vagrant = ./aspects/virt-vagrant.nix;
     zellij = ./aspects/zellij.nix;
+    zellij-web = ./aspects/zellij.nix;
   };
 
   # The namespace name. `namespaces.nix` uses the same one on the `flakeModule` route.

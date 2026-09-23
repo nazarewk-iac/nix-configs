@@ -58,7 +58,84 @@
 # 2. **No `enable` option.** Inclusion is the switch.
 # 3. **No custom module argument.** The target module below takes `config`, `lib` and `pkgs` only.
 #    An argument such as `inputs` would force the consumer to pass `specialArgs`.
-{ ... }:
+#
+# ## The web aspect
+#
+# `kdn.zellij-web` adds the built-in zellij web interface. It includes `kdn.zellij`, so it carries
+# the base configuration too. The interface is a systemd user service on Linux, and it binds
+# loopback by default. A consumer sets `kdn.zellij.web.*`: `bindAddress`, `port`, `certFile`,
+# `keyFile`, `keySopsFile`, `user` and `firewallInterfaces`.
+#
+# The aspect declares no `enable` option. Inclusion is the switch, as rule 2 states. The `web`
+# options hold no `enable` either, so the standalone check finds no reachable one.
+#
+# The `nixos` target opens the port on each named interface and decrypts a SOPS key when one is
+# named. The `homeManager` target writes the user service when `certFile` is set.
+{ kdn, ... }:
+let
+  # The shared web option declarations. Both `zellij-web` targets import this one module, so the
+  # `nixos` tree and the `homeManager` tree hold one identical option set. The declarations carry
+  # no `enable`: inclusion of the aspect is the switch.
+  optionsModule =
+    { lib, ... }:
+    {
+      options.kdn.zellij.web = {
+        bindAddress = lib.mkOption {
+          type = lib.types.str;
+          default = "127.0.0.1";
+          example = "0.0.0.0";
+          description = ''
+            Address the web server binds. The default keeps it on loopback. Set `0.0.0.0` to
+            expose it, and open the port with `firewallInterfaces`.
+          '';
+        };
+
+        port = lib.mkOption {
+          type = lib.types.port;
+          default = 8082;
+          description = "TCP port of the web server.";
+        };
+
+        certFile = lib.mkOption {
+          type = lib.types.nullOr lib.types.path;
+          default = null;
+          description = "PEM certificate the web server serves. Required off loopback.";
+        };
+
+        keyFile = lib.mkOption {
+          type = lib.types.nullOr lib.types.path;
+          default = null;
+          description = ''
+            PEM private key of `certFile`. It must be readable by the user that runs the web
+            server. When `keySopsFile` is set and this is null, the module decrypts the key to a
+            user-readable path and uses that path.
+          '';
+        };
+
+        keySopsFile = lib.mkOption {
+          type = lib.types.nullOr lib.types.path;
+          default = null;
+          description = ''
+            SOPS-encrypted (raw/binary) private key. A system service decrypts it into
+            `/run/secrets/kdn/zellij/<hostName>.key`, owned by `user`, mode 0400. Set `user`.
+          '';
+        };
+
+        user = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
+          default = null;
+          description = "OS user that runs the web server and owns the decrypted key.";
+        };
+
+        firewallInterfaces = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          example = [ "nb-priv" ];
+          description = "Interfaces whose firewall opens `port`.";
+        };
+      };
+    };
+in
 {
   kdn.zellij.devenv =
     {
@@ -179,5 +256,167 @@
           zellij-llm --help 2>&1 | grep -qE 'spawn'
         '';
       };
+    };
+
+  # The Home Manager zellij configuration. It is the same body as the universal module, so the two
+  # trees cannot drift. It imports `../common/persist.nix` for the two `kdn.disks.persist` buckets it
+  # writes. It does not import `optionsModule`: it declares no web option.
+  kdn.zellij.homeManager =
+    {
+      config,
+      lib,
+      ...
+    }:
+    {
+      imports = [ ../common/persist.nix ];
+
+      config = {
+        programs.zellij.enable = true;
+        programs.zellij.enableBashIntegration = true;
+        # fish has its own auto-attach-to-`main` logic below instead of the generic
+        # home-manager auto-start snippet: enabling both stacks two zellij-launchers in
+        # sequence, so quitting/detaching from `main` falls through into the second one
+        # spawning a brand new unnamed session.
+        programs.zellij.enableFishIntegration = false;
+        programs.zellij.enableZshIntegration = true;
+        programs.zellij.attachExistingSession = false; # don't attach to just any session
+
+        # auto-attach to `main` session, but never over SSH: SSH sessions should land in a
+        # plain shell unless zellij is invoked explicitly.
+        #
+        # Attach only when `main` has no client attached on THIS machine. This stops zellij
+        # from opening in every terminal window: the first window attaches, the next windows
+        # get a plain shell. `zellij action list-clients` sees only clients on the local
+        # zellij server (one server per machine), so a `main` open on a remote host over SSH
+        # is a separate server and does not count here.
+        programs.fish.interactiveShellInit = ''
+          if status is-interactive; and not set -q ZELLIJ; and not set -q SSH_CONNECTION; and not set -q SSH_TTY
+            set -l kdn_zellij_clients (zellij --session main action list-clients 2>/dev/null)
+            if string match --quiet 'CLIENT_ID*' -- $kdn_zellij_clients[1]; and test (count $kdn_zellij_clients) -gt 1
+              # `main` is attached in another window on this machine; land in a plain shell.
+            else
+              zellij attach --create main
+            end
+          end
+        '';
+        kdn.disks.persist."usr/cache".directories = [ ".cache/zellij" ];
+        # The web server keeps its login tokens here.
+        kdn.disks.persist."usr/data".directories = [ ".local/share/zellij" ];
+        programs.zellij.settings.scroll_buffer_size = 1 * 1000 * 1000;
+        # TODO: this is "temporary" measure to use built-in theme instead of stylix
+        programs.zellij.settings.theme = "dracula";
+        # fix Delete working as Ctrl + H on external keyboard
+        programs.zellij.settings.support_kitty_keyboard_protocol = true;
+      };
+    };
+
+  # The web interface. It includes the base aspect, so it carries the configuration above too.
+  kdn.zellij-web.includes = [ kdn.zellij ];
+
+  # The user service. It runs on Linux only, and it needs a certificate. A missing key is not fatal
+  # at start: the unit restarts until the decrypt service or the consumer supplies it.
+  kdn.zellij-web.homeManager =
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
+    let
+      cfg = config.kdn.zellij;
+
+      # The key the user service reads. A host that sets `keyFile` names its own path; a host that
+      # sets `keySopsFile` gets the decrypted copy.
+      webKeyPath =
+        if cfg.web.keyFile != null then
+          cfg.web.keyFile
+        else
+          "/run/secrets/kdn/zellij/${config.kdn.hostName}.key";
+    in
+    {
+      imports = [
+        optionsModule
+        ../common/host-name.nix
+      ];
+
+      config = lib.mkIf (pkgs.stdenv.hostPlatform.isLinux && cfg.web.certFile != null) {
+        systemd.user.services.zellij-web = {
+          Unit = {
+            Description = "Zellij web interface";
+            After = [ "network.target" ];
+          };
+          Service = {
+            Type = "simple";
+            ExecStart = lib.escapeShellArgs [
+              (lib.getExe config.programs.zellij.finalPackage)
+              "web"
+              "--start"
+              "--ip"
+              cfg.web.bindAddress
+              "--port"
+              (toString cfg.web.port)
+              "--cert"
+              cfg.web.certFile
+              "--key"
+              webKeyPath
+            ];
+            # The key may not exist yet at first start; retry.
+            Restart = "on-failure";
+            RestartSec = 5;
+          };
+          Install.WantedBy = [ "default.target" ];
+        };
+      };
+    };
+
+  # The system side. It opens the port on each named interface, and it decrypts a SOPS key when one
+  # is named. Both halves are inert when the consumer names neither.
+  kdn.zellij-web.nixos =
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
+    let
+      cfg = config.kdn.zellij;
+    in
+    {
+      imports = [
+        optionsModule
+        ../common/host-name.nix
+      ];
+
+      config = lib.mkMerge [
+        (lib.mkIf (cfg.web.firewallInterfaces != [ ]) {
+          networking.firewall.interfaces = lib.genAttrs cfg.web.firewallInterfaces (_: {
+            allowedTCPPorts = [ cfg.web.port ];
+          });
+        })
+        (lib.mkIf (cfg.web.keySopsFile != null) {
+          systemd.services.kdn-zellij-web-key = {
+            description = "Decrypt the zellij web TLS private key into /run/secrets";
+            wantedBy = [ "multi-user.target" ];
+            path = [
+              pkgs.sops
+              pkgs.coreutils
+            ];
+            serviceConfig = {
+              Type = "oneshot";
+              RemainAfterExit = true;
+              User = "root";
+              Group = "root";
+            };
+            script = ''
+              set -euo pipefail
+              mkdir -p /run/secrets/kdn/zellij
+              ${pkgs.sops}/bin/sops decrypt --output-type binary \
+                ${cfg.web.keySopsFile} > /run/secrets/kdn/zellij/${config.kdn.hostName}.key
+              chown ${cfg.web.user} /run/secrets/kdn/zellij/${config.kdn.hostName}.key
+              chmod 0400 /run/secrets/kdn/zellij/${config.kdn.hostName}.key
+            '';
+          };
+        })
+      ];
     };
 }

@@ -37,11 +37,11 @@ Two trees carry a private subtree. Every count below excludes it.
 
 | Status | Old modules | Meaning |
 |---|---|---|
-| `ported` | 167 | An aspect exists and `modules/den/lib.nix` registers it. |
+| `ported` | 168 | An aspect exists and `modules/den/lib.nix` registers it. |
 | `not ported` | 5 | No aspect names it yet. |
 | `shared` | 1 | No aspect, but a file under `modules/den/common/` serves the concern. |
 | `excluded` | 3 | A deliberate decision keeps it out of den. |
-| **Total** | **176** | Every `modules/universal/**/default.nix`, private subtree excluded. |
+| **Total** | **177** | Every `modules/universal/**/default.nix`, private subtree excluded. |
 
 `refresh.sh measure` prints the four counts, and `refresh.sh fix` derives the `Status` cell of every
 row from the registry. So the column cannot drift from the registry; only a `shared` or an
@@ -60,20 +60,21 @@ Registry side, measured on the same stack:
 | Registry targets that do not exist | 0 |
 
 The registry is a **many-to-one** map, so a `readDir` scan of `modules/den/aspects/` gives the wrong
-name count. Parse the attribute set instead. Ten files serve more than one name:
+name count. Parse the attribute set instead. Eleven files serve more than one name:
 
 | File | Names it serves |
 |---|---|
 | `aspects/toolset.nix` | 11 |
 | `aspects/service-k8s.nix` | 5 |
 | `aspects/net-router.nix` | 5 |
-| `aspects/profile-headless.nix` | 4 |
 | `aspects/desktop-sway-small.nix` | 4 |
+| `aspects/profile-headless.nix` | 3 |
 | `aspects/profile-baseline.nix` | 3 |
 | `aspects/fs.nix` | 3 |
 | `aspects/stylix.nix` | 2 |
 | `aspects/desktop-sway.nix` | 2 |
 | `aspects/desktop-sway-nwg.nix` | 2 |
+| `aspects/zellij.nix` | 2 |
 
 A directory target holds a `default.nix` plus its data files. Two targets have that shape today:
 `aspects/program-gnupg` and `aspects/program-zsh`.
@@ -334,6 +335,7 @@ Four more aspects come from this area and get no row, because each ports a file 
 | `modules/universal/programs/weechat/default.nix` | `kdn.programs.weechat` | `program-weechat` | `ported` |
 | `modules/universal/programs/wofi/default.nix` | `kdn.programs.wofi` | `program-wofi` | `ported` |
 | `modules/universal/programs/ydotool/default.nix` | `kdn.programs.ydotool` | `program-ydotool` | `ported` |
+| `modules/universal/programs/zellij/default.nix` | `kdn.programs.zellij` | `zellij` (base) and `zellij-web` (web interface) | `ported` |
 | `modules/universal/programs/zsh/default.nix` | `kdn.programs.zsh` | `program-zsh` | `ported` |
 
 ### security
@@ -439,7 +441,7 @@ aspects, the registry holds 205, and four split names also appear in a main-tabl
 | `signing` | `modules/slots/signing/default.nix` |
 | `ssh-access` | `modules/slots/ssh-access/default.nix` |
 | `ssh-agent` | `modules/slots/ssh-agent/default.nix` |
-| `zellij` | `modules/slots/zellij/default.nix` |
+| `zellij` | `modules/slots/zellij/default.nix`, plus the Home Manager half of `modules/universal/programs/zellij/default.nix` |
 
 The `nix` name is taken by the slot port, so the old-tree `nix`/`nixpkgs` opinion becomes
 `nix-config`. See the header of `modules/den/aspects/nix-config.nix`.
@@ -466,8 +468,8 @@ The `nix` name is taken by the slot port, so the old-tree `nix`/`nixpkgs` opinio
 | `net-router-ddns` | The same split: the dynamic-DNS client. |
 | `profile-baseline-gc` | A split of `modules/universal/profile/machine/baseline/default.nix`: the store garbage-collection opinion. |
 | `profile-baseline-flake-links` | The same split: the flake registry links, `nixos` alone. |
-| `profile-headless-zellij` | A split of `modules/universal/headless/base/default.nix`: one tool per leaf, `homeManager` alone. |
-| `profile-headless-vim` | The same split. |
+| `zellij-web` | The web half of `modules/universal/programs/zellij/default.nix`: the systemd user service, the firewall and the key decrypt. It includes `zellij`, so one inclusion carries the base configuration. |
+| `profile-headless-vim` | A split of `modules/universal/headless/base/default.nix`: one tool per leaf, `homeManager` alone. |
 | `profile-headless-wezterm` | The same split. |
 | `service-k8s-management` | A split of `modules/universal/services/k8s/default.nix`: the command set of a machine that administers a cluster, without the node half. |
 

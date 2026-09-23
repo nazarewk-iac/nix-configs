@@ -721,7 +721,6 @@ let
         "profile-headless"
         "profile-headless-vim"
         "profile-headless-wezterm"
-        "profile-headless-zellij"
         "profile-hetzner"
         "profile-workstation"
         "program-atuin"
@@ -813,6 +812,7 @@ let
         "virt-microvm-host"
         "virt-vagrant"
         "zellij"
+        "zellij-web"
       ];
       actual = sorted (builtins.attrNames denLib.aspectModules);
     }
@@ -1051,6 +1051,39 @@ let
   # helper counts a nixpkgs package and a `writeShellApplication` alike.
   countNamed = shell: n: builtins.length (builtins.filter (p: lib.getName p == n) shell.packages);
 
+  # The `zellij-web` aspect, in the bare adopter shape. It includes `zellij`, and it emits `nixos`
+  # and `homeManager`, so it needs one subject per class.
+  #
+  # The `homeManager` subject is a Linux one, because the web server is a systemd **user** service
+  # and the aspect holds it behind `pkgs.stdenv.hostPlatform.isLinux`. `bareHomeConfiguration` pins
+  # darwin, so this subject repeats its three lines with a Linux `pkgs`. The first subject names no
+  # certificate, so it proves the guard; the second names one, so the service gets a test.
+  zellijWebNixos = (bareNixos [ flake.denModules.zellij-web ]).config;
+
+  mkZellijWebHome =
+    modules:
+    (inputs.home-manager.lib.homeManagerConfiguration {
+      pkgs = import inputs.nixpkgs { system = "x86_64-linux"; };
+      modules =
+        denLib.imports {
+          class = "homeManager";
+          aspects = [ "zellij-web" ];
+        }
+        ++ modules
+        ++ [
+          {
+            home.username = "dev";
+            home.homeDirectory = "/home/dev";
+            home.stateVersion = "26.11";
+          }
+        ];
+    }).config;
+
+  zellijWebHome = mkZellijWebHome [ ];
+  zellijWebHomeWithCert = mkZellijWebHome [
+    { kdn.zellij.web.certFile = "/etc/ssl/zellij.pub"; }
+  ];
+
   zellijAssertions = [
     {
       name = "the shell holds exactly one zellij";
@@ -1173,6 +1206,88 @@ let
       name = "denModules.zellij holds a non-empty imports list";
       expected = true;
       actual = (builtins.length flake.denModules.zellij.imports) > 0;
+    }
+
+    # ---- `zellij-web`. It includes `zellij`, and it emits `nixos` and `homeManager`.
+    {
+      name = "the library route resolves zellij-web on both of its classes";
+      expected = {
+        nixos = 1;
+        homeManager = 1;
+      };
+      actual = {
+        nixos = builtins.length (
+          denLib.imports {
+            class = "nixos";
+            aspects = [ "zellij-web" ];
+          }
+        );
+        homeManager = builtins.length (
+          denLib.imports {
+            class = "homeManager";
+            aspects = [ "zellij-web" ];
+          }
+        );
+      };
+    }
+    {
+      name = "denModules.zellij-web holds a non-empty imports list";
+      expected = true;
+      actual = (builtins.length flake.denModules.zellij-web.imports) > 0;
+    }
+    {
+      name = "the nixos and homeManager targets carry one identical web option set";
+      expected = {
+        bindAddress = "127.0.0.1";
+        port = 8082;
+        firewallInterfaces = [ ];
+        certFile = null;
+      };
+      actual = {
+        inherit (zellijWebNixos.kdn.zellij.web) bindAddress port firewallInterfaces;
+        certFile = zellijWebHome.kdn.zellij.web.certFile;
+      };
+    }
+    {
+      name = "the homeManager target carries the base zellij config through includes";
+      expected = {
+        enable = true;
+        scrollback = 1000000;
+      };
+      actual = {
+        enable = zellijWebHome.programs.zellij.enable;
+        scrollback = zellijWebHome.programs.zellij.settings.scroll_buffer_size;
+      };
+    }
+    {
+      name = "no certificate means no user service";
+      expected = false;
+      actual = lib.attrByPath [ "systemd" "user" "services" ] { } zellijWebHome ? zellij-web;
+    }
+    {
+      name = "a certificate writes the user service with the default bind and port";
+      expected = {
+        present = true;
+        type = "simple";
+        bind = true;
+        port = true;
+        cert = true;
+        wantedBy = [ "default.target" ];
+      };
+      actual =
+        let
+          svc = zellijWebHomeWithCert.systemd.user.services.zellij-web;
+          raw = svc.Service.ExecStart;
+          exec = if lib.isList raw then lib.concatStringsSep " " (map toString raw) else raw;
+        in
+        {
+          present = true;
+          type = svc.Service.Type;
+          bind = lib.hasInfix "--ip 127.0.0.1" exec;
+          port = lib.hasInfix "--port 8082" exec;
+          cert = lib.hasInfix "--cert /etc/ssl/zellij.pub" exec;
+          wantedBy = svc.Install.WantedBy;
+        };
     }
   ];
 
@@ -3447,6 +3562,7 @@ let
     virt-libvirtd = "den-eval-services (bare nixos, bare home)";
     virt-vagrant = "den-eval-services (bare nixos)";
     zellij = "host-darwin, devenv, defaultsShell";
+    zellij-web = "zellijWebNixos, zellijWebHome";
   };
 
   instantiatedBy = baseInstantiatedBy // areas.instantiatedBy;

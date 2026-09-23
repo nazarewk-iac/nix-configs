@@ -37,5 +37,16 @@
       # TODO: anji times out on using moss as DNS resolver (port 5353)
       kdn.networking.resolved.multicastDNS = "false";
     }
+    {
+      kdn.programs.zellij.web = {
+        enable = true;
+        bindAddress = "0.0.0.0";
+        port = 8082;
+        certFile = "${kdnConfig.self}/hosts/moss/certs/zellij.pub";
+        keySopsFile = "${kdnConfig.self}/hosts/moss/certs/zellij.key.sops";
+        user = "kdn";
+        firewallInterfaces = [ "nb-priv" ];
+      };
+    }
   ];
 }

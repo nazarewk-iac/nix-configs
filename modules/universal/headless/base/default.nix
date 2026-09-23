@@ -19,21 +19,15 @@ in
     debugPolkit = lib.mkEnableOption "polkit debugging";
 
     /*
-      The three switches below split one bundle into one concern per switch.
+      The two switches below split one bundle into one concern per switch.
 
-      A developer already owns a terminal multiplexer, an editor and a terminal emulator, or objects
-      to this tree's choice. So each one gets its own switch.
+      A developer already owns an editor and a terminal emulator, or objects to this tree's
+      choice. So each one gets its own switch.
 
       Each default is `true`, the value this repository uses today. A `true` default costs nothing
       when `enable` is `false`, because the whole `config` sits behind `enable`. An adopter writes a
       plain `false`, which wins over the `mkDefault` forward into Home Manager.
     */
-    zellij.enable = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      example = false;
-      description = "Configure the zellij multiplexer, and auto-attach the `main` session in fish.";
-    };
     vim.enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
@@ -62,6 +56,7 @@ in
       kdn.hw.basic.enable = lib.mkDefault true;
       kdn.programs.atuin.enable = lib.mkDefault true;
       kdn.programs.fish.enable = lib.mkDefault true;
+      kdn.programs.zellij.enable = lib.mkDefault true;
       kdn.programs.zsh.enable = lib.mkDefault true;
       kdn.toolset.essentials.enable = lib.mkDefault true;
       kdn.toolset.fs.enable = lib.mkDefault true;
@@ -77,66 +72,6 @@ in
     (kdnConfig.util.ifHM (
       lib.mkIf cfg.enable (
         lib.mkMerge [
-          (lib.mkIf cfg.zellij.enable {
-            programs.zellij.enable = true;
-            programs.zellij.enableBashIntegration = true;
-            # fish has its own auto-attach-to-`main` logic below instead of the generic
-            # home-manager auto-start snippet: enabling both stacks two zellij-launchers in
-            # sequence, so quitting/detaching from `main` falls through into the second one
-            # spawning a brand new unnamed session.
-            programs.zellij.enableFishIntegration = false;
-            programs.zellij.enableZshIntegration = true;
-            programs.zellij.attachExistingSession = false; # don't attach to just any session
-            # auto-attach to `main` session, but never over SSH: SSH sessions should land in a
-            # plain shell unless zellij is invoked explicitly.
-            #
-            # Attach only when `main` has no client attached on THIS machine. This stops zellij
-            # from opening in every terminal window: the first window attaches, the next windows
-            # get a plain shell. `zellij action list-clients` sees only clients on the local
-            # zellij server (one server per machine), so a `main` open on a remote host over SSH
-            # is a separate server and does not count here.
-            #
-            # `list-clients` always exits 0, so the state comes from stdout:
-            #   - running + attached  -> `CLIENT_ID ...` header plus one row per client
-            #   - running + detached  -> header only
-            #   - missing or EXITED   -> zellij prints the session list (no `CLIENT_ID` header)
-            # So "attached here" = the header is present AND at least one client row follows.
-            programs.fish.interactiveShellInit = ''
-              if status is-interactive; and not set -q ZELLIJ; and not set -q SSH_CONNECTION; and not set -q SSH_TTY
-                set -l kdn_zellij_clients (zellij --session main action list-clients 2>/dev/null)
-                if string match --quiet 'CLIENT_ID*' -- $kdn_zellij_clients[1]; and test (count $kdn_zellij_clients) -gt 1
-                  # `main` is attached in another window on this machine; land in a plain shell.
-                else
-                  zellij attach --create main
-                end
-              end
-            '';
-            ## auto-starting zellij gets a little too annyoing in nested sessions
-            ## TODO: try also passing `SendEnv` (client) / `AcceptEnv` (server), https://superuser.com/a/702751
-            #programs.fish.interactiveShellInit = lib.mkOrder 200 ''
-            #  if string match --quiet --ignore-case "jetbrains-*" "$TERMINAL_EMULATOR"
-            #    set KDN_ZELLIJ_SKIP "inside jetbrains terminal"
-            #  end
-            #  if test -n "$KDN_ZELLIJ_SKIP"
-            #    echo "zellij skip because: $KDN_ZELLIJ_SKIP" >&2
-            #  else
-            #    eval (${lib.getExe config.programs.zellij.package} setup --generate-auto-start fish | string collect)
-            #  end
-            #'';
-            kdn.disks.persist."usr/cache".directories = [ ".cache/zellij" ];
-            programs.zellij.settings.scroll_buffer_size = 1 * 1000 * 1000;
-
-            # TODO: this is "temporary" measure to use built-in theme instead of stylix
-            programs.zellij.settings.theme = "dracula";
-            # an example to customize the stylix theme
-            programs.zellij.themes.stylix.default = with config.lib.stylix.colors.withHashtag; {
-              ## TODO: this is not the right color to override in stylix theme (barely legible green text on grey background on the ribbon)
-              # ribbon_unselected.background = "#${base01}";
-            };
-
-            # fix Delete working as Ctrl + H on external keyboard
-            programs.zellij.settings.support_kitty_keyboard_protocol = true;
-          })
           (lib.mkIf cfg.wezterm.enable {
             programs.wezterm.extraConfig = ''
               config.keys = {
