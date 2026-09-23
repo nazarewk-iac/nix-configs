@@ -1,4 +1,4 @@
-# Tier-1 assertions for the 13 machine-profile aspects of batch 19.
+# Tier-1 assertions for the 12 machine-profile aspects of batch 19.
 #
 # Every assertion is `{ name; expected; actual; }`, and `mkEvalCheck` compares the two at
 # evaluation time. Nothing here builds a system and nothing activates.
@@ -28,7 +28,7 @@
 # | `homePlain` | `homeManager` | the 9 aspects that emit a `homeManager` target |
 #
 # `denLib.imports` calls den's own `resolve`, and that resolver **follows** `includes`. So each
-# subject holds the whole reachable graph, not the 13 bundle files alone. Every one of the 22 names
+# subject holds the whole reachable graph, not the 12 bundle files alone. Every one of the 22 names
 # the bundles reach must exist in the registry, or the evaluation fails with an undefined attribute.
 #
 # `mkEvalCheck` reads named option values, so it never forces `config.assertions`. A nixpkgs
@@ -58,7 +58,6 @@ let
     "profile-headless"
     "profile-headless-vim"
     "profile-headless-wezterm"
-    "profile-headless-zellij"
     "profile-hetzner"
     "profile-workstation"
   ];
@@ -129,7 +128,6 @@ let
       "hw-basic"
       "profile-headless-vim"
       "profile-headless-wezterm"
-      "profile-headless-zellij"
       "program-atuin"
       "program-fish"
       "program-terminal-ide"
@@ -140,6 +138,7 @@ let
       "toolset-network"
       "toolset-nix"
       "toolset-unix"
+      "zellij"
     ];
     profile-hetzner = [ "profile-baseline" ];
     profile-workstation = [
@@ -200,7 +199,6 @@ let
     ];
     profile-headless-vim = [ "homeManager" ];
     profile-headless-wezterm = [ "homeManager" ];
-    profile-headless-zellij = [ "homeManager" ];
     profile-hetzner = [ "nixos" ];
     profile-workstation = [
       "darwin"
@@ -324,6 +322,7 @@ in
           "service-"
           "toolset-"
           "virt-"
+          "zellij"
         ])
       ) everyIncludeName;
     }
@@ -590,7 +589,6 @@ in
     profile-headless = "den-eval-machine-profiles (bare nixos, bare darwin, bare home)";
     profile-headless-vim = "den-eval-machine-profiles (bare home)";
     profile-headless-wezterm = "den-eval-machine-profiles (bare home)";
-    profile-headless-zellij = "den-eval-machine-profiles (bare home)";
     profile-hetzner = "den-eval-machine-profiles (bare nixos)";
     profile-workstation = "den-eval-machine-profiles (bare nixos, bare darwin, bare home)";
   };

@@ -339,5 +339,16 @@ in
     {
       services.angrr.enable = false;
     }
+    {
+      kdn.programs.zellij.web = {
+        enable = true;
+        bindAddress = "0.0.0.0";
+        port = 8082;
+        certFile = "${kdnConfig.self}/hosts/oams/certs/zellij.pub";
+        keySopsFile = "${kdnConfig.self}/hosts/oams/certs/zellij.key.sops";
+        user = "kdn";
+        firewallInterfaces = [ "nb-priv" ];
+      };
+    }
   ];
 }

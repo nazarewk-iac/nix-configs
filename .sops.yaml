@@ -102,6 +102,36 @@ creation_rules:
           # defaults
           - *yk-brys-unattended
           - *yk-oams-unattended
+  # One rule per host, so each leaf key goes to its own host alone plus the admin touch keys.
+  # A shared rule would grant every listed host SSH access to every other host's key.
+  - path_regex: 'hosts/oams/certs/zellij\.key\.sops$'
+    key_groups:
+      - age:
+          - *ssh-oams
+          - *yk-oams-touch
+          - *yk-brys-touch
+          - *yk-pton-touch
+  - path_regex: 'hosts/brys/certs/zellij\.key\.sops$'
+    key_groups:
+      - age:
+          - *ssh-brys
+          - *yk-oams-touch
+          - *yk-brys-touch
+          - *yk-pton-touch
+  - path_regex: 'hosts/etra/certs/zellij\.key\.sops$'
+    key_groups:
+      - age:
+          - *ssh-etra
+          - *yk-oams-touch
+          - *yk-brys-touch
+          - *yk-pton-touch
+  - path_regex: 'hosts/moss/certs/zellij\.key\.sops$'
+    key_groups:
+      - age:
+          - *ssh-moss
+          - *yk-oams-touch
+          - *yk-brys-touch
+          - *yk-pton-touch
   - path_regex: '.*brys.*\.key\.sops'
     key_groups:
       - age:

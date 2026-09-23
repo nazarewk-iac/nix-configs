@@ -1,25 +1,26 @@
-# The `headless/base` module of the old tree, as four den aspects.
+# The `headless/base` module of the old tree, as three den aspects.
 #
 # The old module stays in place and keeps working. This file is the parallel den implementation.
 #
 # ## What it does
 #
 # `profile-headless` is a bundle. It names the aspects a headless machine needs, and it carries the
-# sudo, sysctl, polkit and XDG-persist opinions of the old module. Three leaves carry one tool each.
+# sudo, sysctl, polkit and XDG-persist opinions of the old module. Two leaves carry one tool each.
 #
 # ## Class list
 #
 #   - `profile-headless` — `nixos`, `darwin` and `homeManager`
-#   - `profile-headless-zellij`, `profile-headless-vim`, `profile-headless-wezterm` — `homeManager`
+#   - `profile-headless-vim`, `profile-headless-wezterm` — `homeManager`
 #
 # ## What the port changes
 #
 # 1. **`enable` goes.** Inclusion is the switch.
 # 2. **The 13 `enable` writes become `includes` entries.** den collapses a diamond, so several
 #    aspects may name the same one.
-# 3. **The three sub-switches become three aspects.** The old module declares `zellij.enable`,
-#    `vim.enable` and `wezterm.enable`. Each one is a reachable `enable`, and rule 2 forbids that. A
-#    leaf aspect is the den switch: a consumer drops one leaf and keeps the other two.
+# 3. **The two sub-switches become two aspects.** The old module declares `vim.enable` and
+#    `wezterm.enable`. Each one is a reachable `enable`, and rule 2 forbids that. A leaf aspect is
+#    the den switch: a consumer drops one leaf and keeps the other. The old `zellij.enable` moves to
+#    the shared `kdn.zellij` aspect, which `modules/universal` and this bundle both name.
 # 4. **`kdn.programs.fish.defaultShell` goes.** An aspect writes no option of another aspect. The
 #    consumer wires that value on `program-fish`.
 # 5. **`kdn.toolset.ide.enable` becomes `program-terminal-ide`.** The registry holds no
@@ -68,7 +69,7 @@ in
     kdn.hw-basic
     kdn.profile-headless-vim
     kdn.profile-headless-wezterm
-    kdn.profile-headless-zellij
+    kdn.zellij
     kdn.program-atuin
     kdn.program-fish
     kdn.program-terminal-ide
@@ -178,56 +179,6 @@ in
           );
           kdn.disks.persist."usr/cache".directories = process xdgAttrs.cache;
         };
-    };
-
-  # The zellij leaf. A consumer that owns another multiplexer drops this one name.
-  kdn.profile-headless-zellij.homeManager =
-    { lib, ... }:
-    {
-      imports = [ ../common/persist.nix ];
-
-      config = {
-        programs.zellij.enable = true;
-        programs.zellij.enableBashIntegration = true;
-        # fish has its own auto-attach-to-`main` logic below instead of the generic home-manager
-        # auto-start snippet: two zellij launchers in sequence mean that a detach from `main` falls
-        # through into the second one, which starts a new unnamed session.
-        programs.zellij.enableFishIntegration = false;
-        programs.zellij.enableZshIntegration = true;
-        programs.zellij.attachExistingSession = false; # do not attach to just any session
-
-        # Auto-attach to the `main` session, but never over SSH: an SSH session lands in a plain
-        # shell unless the user starts zellij by hand.
-        #
-        # Attach only when `main` has no client attached on THIS machine. That stops zellij from
-        # opening in every terminal window: the first window attaches, and the next windows get a
-        # plain shell. `zellij action list-clients` sees only a client of the local zellij server
-        # (one server per machine), so a `main` open on a remote host over SSH does not count.
-        #
-        # `list-clients` always exits 0, so the state comes from stdout:
-        #   - running + attached  -> a `CLIENT_ID ...` header plus one row per client
-        #   - running + detached  -> the header alone
-        #   - missing or EXITED   -> zellij prints the session list, with no `CLIENT_ID` header
-        # So "attached here" means the header is present AND at least one client row follows.
-        programs.fish.interactiveShellInit = ''
-          if status is-interactive; and not set -q ZELLIJ; and not set -q SSH_CONNECTION; and not set -q SSH_TTY
-            set -l kdn_zellij_clients (zellij --session main action list-clients 2>/dev/null)
-            if string match --quiet 'CLIENT_ID*' -- $kdn_zellij_clients[1]; and test (count $kdn_zellij_clients) -gt 1
-              # `main` is attached in another window on this machine; land in a plain shell.
-            else
-              zellij attach --create main
-            end
-          end
-        '';
-
-        kdn.disks.persist."usr/cache".directories = [ ".cache/zellij" ];
-
-        programs.zellij.settings.scroll_buffer_size = 1 * 1000 * 1000;
-        # TODO: a temporary measure — use the built-in theme instead of stylix.
-        programs.zellij.settings.theme = "dracula";
-        # fix Delete, which acts as Ctrl + H on an external keyboard
-        programs.zellij.settings.support_kitty_keyboard_protocol = true;
-      };
     };
 
   # The vim leaf. A consumer that owns another editor drops this one name.

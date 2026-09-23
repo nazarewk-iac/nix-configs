@@ -476,5 +476,16 @@ in
         };
       };
     }
+    {
+      kdn.programs.zellij.web = {
+        enable = true;
+        bindAddress = "0.0.0.0";
+        port = 8082;
+        certFile = "${kdnConfig.self}/hosts/brys/certs/zellij.pub";
+        keySopsFile = "${kdnConfig.self}/hosts/brys/certs/zellij.key.sops";
+        user = "kdn";
+        firewallInterfaces = [ "nb-priv" ];
+      };
+    }
   ];
 }
