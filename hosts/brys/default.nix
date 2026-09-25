@@ -133,6 +133,7 @@ in
   imports = [
     kdnConfig.self.nixosModules.default
     slots.config.nixos
+    "${kdnConfig.self}/data/ca/ca-dag.nix"
     {
       imports = kdnConfig.self.denLib.imports {
         class = "nixos";

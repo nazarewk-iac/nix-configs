@@ -46,8 +46,30 @@ type App struct {
 	// SSHSigner signs an SSH user or host certificate. A test injects a fake, so the suite needs no
 	// `ssh-keygen` and no CA.
 	SSHSigner smallstep.SSHSigner
+	// Signer generates keys and creates or signs TLS certificates. A test injects a fake, so the
+	// suite needs no `step` and no CA.
+	Signer smallstep.Signer
 	// Decryptor decrypts a SOPS CA key. A test injects a fake, so the suite needs no `sops`.
 	Decryptor sops.Decryptor
+	// Encryptor SOPS-encrypts a managed private key. A test injects a fake, so the suite needs no
+	// `sops`.
+	Encryptor sops.Encryptor
+}
+
+// signer returns the injected TLS signer, or the real `step` driver.
+func (a *App) signer() smallstep.Signer {
+	if a.Signer != nil {
+		return a.Signer
+	}
+	return smallstep.StepCLI{Verbose: a.Options.Verbose, Logf: a.Logf}
+}
+
+// encryptor returns the injected encryptor, or the real `sops` driver.
+func (a *App) encryptor() sops.Encryptor {
+	if a.Encryptor != nil {
+		return a.Encryptor
+	}
+	return sops.CLI{Verbose: a.Options.Verbose, Logf: a.Logf}
 }
 
 // sshSigner returns the injected SSH signer, or the real `ssh-keygen` driver.

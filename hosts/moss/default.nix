@@ -11,6 +11,7 @@
     kdnConfig.self.nixosModules.default
     (modulesPath + "/profiles/qemu-guest.nix")
     (modulesPath + "/profiles/headless.nix")
+    "${kdnConfig.self}/data/ca/ca-dag.nix"
     {
       imports = kdnConfig.self.denLib.imports {
         class = "nixos";
