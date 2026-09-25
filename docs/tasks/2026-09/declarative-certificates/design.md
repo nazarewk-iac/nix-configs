@@ -201,13 +201,40 @@ empty attr set is the no-op. Inclusion is the switch.
 
 ### 5.1 Package
 
-The CLI lives at `packages/kdn-certs/`. It is Python, built with `mkPythonScript`, following the
-`packages/init-py-script/template/` recipe. It uses `fire` or `argparse`. `fire` matches the two
-existing Python CLIs.
+The CLI lives at `packages/kdn-certs/`. It is **Go**, built with `buildGoModule`, following
+`packages/kdn-ssh-access/` (self-contained, no `kdnConfig` dependency) and `packages/kdnctl/` (the
+cobra + charmbracelet stack).
 
-`runtimeDeps` puts `step`, `step-ca`, `nix` and `sops` on the wrapped PATH. The package is
+The package is self-contained under `packages/kdn-certs/`, so an external adopter can reuse it:
+
+```
+packages/kdn-certs/
+├── default.nix
+├── go.mod
+├── go.sum
+├── main.go
+├── cmd/            # one file per command (cobra)
+├── internal/       # walk, dedup, dag, iso8601, smallstep, sops
+└── README.md
+```
+
+CLI and UI stack (the repo's `tools/kdnctl/go.mod` already pins the charmbracelet family):
+
+| Concern | Library |
+|---|---|
+| Command tree, flags, completions | `github.com/spf13/cobra` + `github.com/spf13/pflag` |
+| Structured logging | `github.com/charmbracelet/log` |
+| Pretty output (tables, colors) | `github.com/charmbracelet/lipgloss` |
+| Progress (spinner, bar) | `github.com/charmbracelet/bubbles` (`progress`, `spinner`) |
+
+`buildGoModule` wraps the binary with `makeBinaryWrapper`, so `step`, `step-ca`, `nix` and `sops`
+are on the runtime PATH. `postInstall` installs the shell completions from
+`kdn-certs completion <shell>`, exactly as `packages/kdnctl/default.nix` does. The package is
 registered in `packages/default.nix` before the `# AUTO_PACKAGE_PLACEHOLDER #` line, alphabetically
 sorted. `nix run .#kdn-certs` then resolves through `packages.<system>` with no `apps` entry.
+
+`--json` prints machine-readable output. The pretty UI is the default for a terminal; a pipe or
+`--json` gets plain output, so the CLI stays scriptable.
 
 ### 5.2 Command table
 
@@ -383,11 +410,12 @@ worklog.
 
 ## 8 — The testing plan
 
-### 8.1 CLI pytest suite
+### 8.1 CLI Go test suite
 
-The suite lives under `packages/kdn-certs/tests/`. Expose it as `passthru.tests.pytest`, as
-`packages/llm/kdn-slug/default.nix` does. Alias it in `checks/default.nix` as `kdn-certs-pytest`.
-Add the name to `bundle-pkgs` in `checks/bundles.nix`.
+The suite lives under `packages/kdn-certs/internal/` as `*_test.go` files, plus `cmd/` tests. Expose
+it as `passthru.tests.go-test` (a `runCommand` that runs `go test ./...`), as
+`packages/kdn-ssh-access` exposes its own `passthru`. Alias it in `checks/default.nix` as
+`kdn-certs-test`. Add the name to `bundle-pkgs` in `checks/bundles.nix`.
 
 | Case | What it proves |
 |---|---|
@@ -400,12 +428,11 @@ Add the name to `bundle-pkgs` in `checks/bundles.nix`.
 | `--dry-run` | The command prints the plan and writes no file. |
 | Flag parsing | `--flake`, `--force`, `--json` and `--verbose` reach the command. |
 
-Keep every case offline. Mock the `nix eval` call and the `step` call, so the suite needs no flake
-and no CA.
-
-The sign cases that need a real CA use a **test CA with an unattended key**. The test CA lives
-outside `data/`, under `checks/` or a temporary directory. Its recipient is a test identity, so the
-suite signs with no YubiKey. The real CA key stays YubiKey-touch confirmed.
+Keep every case offline. Mock the `nix eval` call and the `step` call behind an interface, so the
+suite needs no flake and no CA. The sign cases that need a real CA use a **test CA with an
+unattended key**. The test CA lives outside `data/`, under `checks/` or a temporary directory. Its
+recipient is a test identity, so the suite signs with no YubiKey. The real CA key stays YubiKey-touch
+confirmed.
 
 ### 8.2 den aspect checks
 
