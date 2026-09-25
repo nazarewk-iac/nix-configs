@@ -70,6 +70,34 @@ Changes 3 and 4 touch every den check, so measure `bundle-core`, `bundle-den` an
 went from 137 pairs to over 200. A second platform adds a second whole evaluation for each pair that
 opts in, not for every pair.
 
+## The builder dependence, and remote builders
+
+The user stated the rule on 2026-09-25: **the option set required for evaluation must not depend on
+the builder.** A check that forces an aspect must not realize a derivation for a foreign system.
+
+Measured on 2026-09-25: `den-eval-instantiate` and `den-eval-development` fail on an `x86_64-linux`
+host because they force an `aarch64-darwin` derivation. The mechanism is
+`lib/python/mkPythonScript.nix:67-71`. It calls `builtins.readFile` on a `writeText` requirements
+file, so forcing an aspect that builds a Python package realizes that derivation, tagged with the
+**target** system. `modules/den/aspects/dev-cloud-aws.nix` pulls `packages/aws-sso` this way, so any
+check that forces it needs an `aarch64-darwin` builder.
+
+Two directions remove the dependence:
+
+1. **A remote builder.** The tree already configures distributed builds
+   (`modules/universal/profile/remote-builders/default.nix:263-264` sets `nix.distributedBuilds` and
+   `nix.buildMachines`). A check host with `aarch64-darwin` in its `buildMachines` realizes the
+   foreign derivation on that builder, so the option set stays builder-independent from the caller's
+   view. This expands the set of systems a single check host can cover. Record which builder serves
+   which system, and prove it with one foreign pair.
+2. **A pure evaluation route.** Remove the eval-time `builtins.readFile` from `mkPythonScript`, so
+   forcing an aspect realizes no derivation at all. This is the stronger fix: the option set then
+   depends on no builder, remote or local.
+
+Prefer direction 2 where it is cheap. Use direction 1 to expand coverage to systems that no local
+builder can serve. Do not add a per-aspect platform table to work around the dependence: that hides
+it instead of removing it.
+
 ## Exit test
 
 `hw-rpi4` enters the registry, `den-eval-instantiate` passes, and `bundle-core` still passes. No
