@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -8,10 +9,15 @@ import (
 	"kdn-certs/internal/dag"
 	"kdn-certs/internal/dedup"
 	"kdn-certs/internal/generate"
-	"kdn-certs/internal/smallstep"
-	"kdn-certs/internal/sops"
 	"kdn-certs/internal/walk"
 )
+
+// applyResponse is the `apply --json` payload. It carries the generation result and the per-target
+// failures, so a machine reader sees both.
+type applyResponse struct {
+	Result   generate.Result `json:"result"`
+	Failures []walk.Failure  `json:"failures"`
+}
 
 // newApplyCmd builds `kdn-certs apply`.
 func newApplyCmd(app *App) *cobra.Command {
@@ -25,7 +31,7 @@ func newApplyCmd(app *App) *cobra.Command {
 				return err
 			}
 
-			cas, err := walk.MergeCAs(targets)
+			cas, err := walk.MergeCAs(targets.Targets)
 			if err != nil {
 				return err
 			}
@@ -36,13 +42,13 @@ func newApplyCmd(app *App) *cobra.Command {
 				return err
 			}
 
-			result := dedup.Merge(targets)
+			result := dedup.Merge(targets.Targets)
 
 			deps := generate.Deps{
 				Root:      app.Options.Flake,
-				Signer:    smallstep.StepCLI{Verbose: app.Options.Verbose, Logf: app.Logf},
-				Decryptor: sops.CLI{Verbose: app.Options.Verbose, Logf: app.Logf},
-				Encryptor: sops.CLI{Verbose: app.Options.Verbose, Logf: app.Logf},
+				Signer:    app.signer(),
+				Decryptor: app.decryptor(),
+				Encryptor: app.encryptor(),
 				Force:     app.Options.Force,
 				DryRun:    app.Options.DryRun,
 				Logf:      app.Logf,
@@ -54,8 +60,14 @@ func newApplyCmd(app *App) *cobra.Command {
 			}
 
 			if app.Options.JSON {
-				return app.printApplyJSON(out)
+				encoder := json.NewEncoder(app.Out)
+				encoder.SetIndent("", "  ")
+				if err := encoder.Encode(applyResponse{Result: out, Failures: targets.Failures}); err != nil {
+					return err
+				}
+				return failuresError(targets.Failures)
 			}
+
 			if app.Options.DryRun {
 				entries := make([]planEntry, 0, len(out.Actions))
 				for _, action := range out.Actions {
@@ -67,11 +79,15 @@ func newApplyCmd(app *App) *cobra.Command {
 						Reason:   string(action.Reason),
 					})
 				}
-				return app.printPlan(entries)
+				if err := app.printPlan(entries, targets.Failures); err != nil {
+					return err
+				}
+				return failuresError(targets.Failures)
 			}
 
+			app.reportFailures(targets.Failures)
 			fmt.Fprintf(app.Out, "generated %d of %d certificates\n", out.Generated, len(out.Actions))
-			return nil
+			return failuresError(targets.Failures)
 		},
 	}
 }

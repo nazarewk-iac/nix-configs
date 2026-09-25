@@ -66,14 +66,18 @@ func runSSHLogin(app *App, host string, opts sshLoginOptions) error {
 	if err != nil {
 		return err
 	}
+	app.reportFailures(targets.Failures)
 
 	// Step 1. The target is a declared `ssh-host` leaf. Its `ca` is the SSH CA.
-	cas, err := walk.MergeCAs(targets)
+	cas, err := walk.MergeCAs(targets.Targets)
 	if err != nil {
 		return err
 	}
-	cert, ok := findSSHHost(targets, host)
+	cert, ok := findSSHHost(targets.Targets, host)
 	if !ok {
+		if err := failuresError(targets.Failures); err != nil {
+			return err
+		}
 		return fmt.Errorf("no ssh-host certificate names host %q", host)
 	}
 	ca, ok := cas[cert.CA]
