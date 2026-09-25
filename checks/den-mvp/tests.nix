@@ -611,6 +611,7 @@ let
         "apps"
         "ca"
         "ca-dag"
+        "ca-manager"
         "certificates"
         "desktop-base"
         "desktop-kde"

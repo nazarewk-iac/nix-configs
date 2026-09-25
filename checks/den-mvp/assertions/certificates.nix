@@ -272,6 +272,16 @@ let
       sopsFileSuffix = lib.removePrefix (toString repoRoot) (toString secret.sopsFile);
     };
 
+  # The CA manager subject. It includes `ca-dag` and adds the `kdn-certs` CLI to the shell. The
+  # standalone devenv harness resolves it, so the package build and the `enterTest` are reachable.
+  caManagerShell =
+    (bareShell {
+      aspects = [ "ca-manager" ];
+    }).config;
+
+  # The `kdn-certs` package in the shell's package list.
+  caManagerPackage = lib.findFirst (p: lib.getName p == "kdn-certs") null caManagerShell.packages;
+
   # A subject that declares a leaf but names no `repoRoot`. Reading `certPath` must fail loudly.
   repoRootMissing =
     (bareNixos (
@@ -292,6 +302,7 @@ in
 {
   instantiatedBy = {
     ca-dag = "den-eval-certificates (bare nixos, bare darwin, bare home, bare devenv)";
+    ca-manager = "den-eval-certificates (bare devenv)";
     certificates = "den-eval-certificates (bare nixos, bare darwin, bare home, bare devenv)";
   };
 
@@ -525,6 +536,38 @@ in
         ca-dag = sorted denLib.pairs.ca-dag;
         certificates = sorted denLib.pairs.certificates;
       };
+    }
+
+    # ---- the CA manager. It is devenv-only, so one class and one subject.
+    {
+      name = "ca-manager emits the devenv class alone";
+      expected = [ "devenv" ];
+      actual = sorted denLib.pairs.ca-manager;
+    }
+    {
+      name = "the ca-manager shell carries the kdn-certs package";
+      expected = "kdn-certs";
+      actual = if caManagerPackage == null then null else lib.getName caManagerPackage;
+    }
+    {
+      name = "the ca-manager shell carries the CA DAG option set through includes";
+      expected = { };
+      actual = caManagerShell.kdn.ca-dag.cas;
+    }
+    {
+      name = "the ca-manager shell runs kdn-certs --help in its enterTest";
+      expected = true;
+      actual = lib.hasInfix "kdn-certs --help" caManagerShell.enterTest;
+    }
+    {
+      name = "the library route resolves ca-manager for the devenv class";
+      expected = 1;
+      actual = builtins.length (
+        denLib.imports {
+          class = "devenv";
+          aspects = [ "ca-manager" ];
+        }
+      );
     }
   ];
 }

@@ -1,7 +1,8 @@
 ---
 type: Task
 description: Add the kdn.ca-manager aspect, which puts the kdn-certs CLI and the CA DAG into a devenv shell and owns the smallstep server lifecycle.
-status: open
+status: done
+solution: done.md
 authored_by: agent
 timestamp: 2026-09-25T17:29:39+02:00
 parent: ../definition.md
