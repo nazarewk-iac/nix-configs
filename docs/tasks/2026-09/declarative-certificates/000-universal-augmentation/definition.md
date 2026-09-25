@@ -1,7 +1,8 @@
 ---
 type: Task
 description: Explore partial augmentation of a universal (old-tree) host with one den aspect through denLib.imports, so a host adopts one aspect at a time and migrates gradually.
-status: open
+status: done
+solution: done.md
 parent: ../definition.md
 authored_by: agent
 timestamp: 2026-09-25T17:29:39+02:00
