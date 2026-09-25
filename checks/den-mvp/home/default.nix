@@ -30,6 +30,12 @@ let
     # `devenv` half. The graph comes from ../ssh-access-graph.nix, and every value there is
     # fictional.
     kdn.ssh-access
+
+    # The certificate data layer and the leaf option set. Both are empty here, so the inclusion is a
+    # no-op; it proves the explicit-include route of decision D3 on a standalone home configuration.
+    # See ../../../modules/den/aspects/ca-dag.nix and ./certificates.nix.
+    kdn.ca-dag
+    kdn.certificates
   ];
 
   # The data for the `signing` aspect. Every key below is a throw-away test key, and every principal

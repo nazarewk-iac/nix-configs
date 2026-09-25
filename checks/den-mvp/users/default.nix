@@ -45,6 +45,12 @@
       # binary on the user's PATH. Its `devenv` half reaches the host shell through
       # `den.policies.host-to-devenv`, so the host aspect needs no second inclusion.
       kdn.ssh-access
+
+      # The certificate data layer and the leaf option set, at user scope. They are empty here, so
+      # the inclusion is a no-op; it proves the explicit-include route of decision D3 on a den user.
+      # See ../../../modules/den/aspects/ca-dag.nix and ./certificates.nix.
+      kdn.ca-dag
+      kdn.certificates
     ];
 
     homeManager = {

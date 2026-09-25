@@ -67,6 +67,12 @@ let
     # `homeManager` half. `../ssh-access-graph.nix` supplies the graph, because the aspect holds
     # none.
     kdn.ssh-access
+
+    # The certificate data layer and the leaf option set. Both are empty here, so the inclusion is a
+    # no-op; it proves the explicit-include route of decision D3 on a standalone devenv shell. The
+    # design's § 2.2 caveat names these two aspects for exactly this list.
+    kdn.ca-dag
+    kdn.certificates
   ];
 
   # The data for the `nix` aspect. The aspect allow-lists no flake app of its own, because an app
