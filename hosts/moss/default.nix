@@ -11,6 +11,15 @@
     kdnConfig.self.nixosModules.default
     (modulesPath + "/profiles/qemu-guest.nix")
     (modulesPath + "/profiles/headless.nix")
+    {
+      imports = kdnConfig.self.denLib.imports {
+        class = "nixos";
+        aspects = [
+          "ca-dag"
+          "certificates"
+        ];
+      };
+    }
   ];
   config = lib.mkMerge [
     {
@@ -38,12 +47,25 @@
       kdn.networking.resolved.multicastDNS = "false";
     }
     {
+      kdn.certificates.repoRoot = kdnConfig.self;
+      kdn.certificates.certs.zellij-web = {
+        ca = "kdn";
+        type = "tls-server";
+        commonName = "moss.priv.nb.net.int.kdn.im";
+        sans = [ "moss.priv.nb.net.int.kdn.im" ];
+        directory = "hosts/moss/certs";
+        certFile = "zellij.pub";
+        keyFile = "zellij.key";
+        keySource = "managed";
+      };
+    }
+    {
       kdn.programs.zellij.web = {
         enable = true;
         bindAddress = "0.0.0.0";
         port = 8082;
-        certFile = "${kdnConfig.self}/hosts/moss/certs/zellij.pub";
-        keySopsFile = "${kdnConfig.self}/hosts/moss/certs/zellij.key.sops";
+        certFile = config.kdn.certificates.certs.zellij-web.certPath;
+        keyFile = config.kdn.certificates.certs.zellij-web.keyPath;
         user = "kdn";
         firewallInterfaces = [ "nb-priv" ];
       };
