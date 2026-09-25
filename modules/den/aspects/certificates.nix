@@ -11,14 +11,36 @@
 # exposes two derived values per leaf:
 #
 #   - `certPath` — a store path to the public certificate, safe to read at build time.
-#   - `keyPath`  — the runtime path under `/run/secrets` that holds the decrypted private key, so no
-#                  store path holds the secret.
+#   - `keyPath`  — the runtime path that holds the decrypted private key, so no store path holds the
+#                  secret.
 #
 # ## The storage rule
 #
-# The public certificate is `<directory>/<certFile>`, plain and committed. The private key is
-# `<directory>/<keyFile>.sops`, a raw/binary SOPS file, committed. This aspect declares paths only.
-# It never decrypts the key and never reads the file content.
+# The public certificate is `<repoRoot>/<directory>/<certFile>`, plain and committed. The private key
+# is `<repoRoot>/<directory>/<keyFile>.sops`, a raw/binary SOPS file, committed. This aspect declares
+# paths only. It never decrypts the key and never reads the file content.
+#
+# ## The repository root
+#
+# `repoRoot` is a consumer-provided option. It names the root of the tree that holds the certificate
+# files. A declared certificate needs it, so a missing value is a hard error at the one point that
+# reads it. The aspect holds **no** implicit default: an external adopter who imports this aspect
+# gets a path inside their own tree, never inside the `nix-configs` store tree.
+#
+# ## The private key and sops-nix
+#
+# The three host and home classes import the pinned `sops-nix` module and write one `sops.secrets`
+# entry per declared key:
+#
+#   - `format = "binary"` — sops writes the raw key bytes, exactly as `hack/kdn-ca-sign.sh` does.
+#   - `sopsFile = <repoRoot>/<directory>/<keyFile>.sops` — the committed raw/binary SOPS file.
+#   - `keyPath` reads `config.sops.secrets.<name>.path`, so the consumer reads the decrypted runtime
+#     path and no store path holds the secret.
+#
+# The `devenv` class carries no sops-nix module. Its `keyPath` is the fixed runtime path
+# `/run/secrets/kdn/certificates/<name>.key`, which the `kdn-certs` CLI fills with its own decrypt
+# primitive (`sops decrypt --output-type binary`). A devenv shell owns no system activation, so it
+# cannot run the sops-nix installer.
 #
 # ## The `directory` default
 #
@@ -32,18 +54,38 @@
 #    across the export boundary, in silence.
 # 2. **No `enable` option.** Inclusion is the switch. An empty `kdn.certificates.certs` is the no-op.
 # 3. **No custom module argument.** A target module below takes `config`, `lib` and `pkgs` only.
-{ ... }:
+#    `inputs` comes from this file's own scope, because the check harness passes `pkgs` alone to a
+#    target.
+{ inputs, ... }:
 let
-  # The root of this repository, as a relative path. `certPath` names the committed public
-  # certificate inside the flake source tree, exactly as the old host files name
-  # `"${kdnConfig.self}/hosts/<host>/certs/zellij.pub"`. It is a store path in a flake evaluation,
-  # so it is safe to read at build time.
-  repoRoot = ../../..;
+  # The sops-nix secret name of one leaf key. The nested name keeps the decrypted path at
+  # `/run/secrets/kdn/certificates/<name>.key`, the path the design § 4.1 states.
+  secretName = name: "kdn/certificates/${name}.key";
 
-  # One target module serves every class. The option set is identical in all four.
-  target =
+  # One target module factory. `sopsModule` is the sops-nix module of the class, or `null` for the
+  # `devenv` class, which carries no sops-nix. `keyPathFor` reads the decrypted runtime path of one
+  # key from the outer target config.
+  mkTarget =
+    {
+      sopsModule ? null,
+      keyPathFor,
+    }:
     { config, lib, ... }:
     let
+      cfg = config.kdn.certificates;
+
+      # The outer config, captured before the submodule shadows `config`.
+      outerConfig = config;
+
+      # The repository root the consumer names. A declared certificate needs it, so a missing value
+      # is a hard error at the one point that reads it. The binding stays lazy: an empty
+      # `kdn.certificates.certs` never forces it.
+      repoRoot =
+        if cfg.repoRoot == null then
+          throw "kdn.certificates: set `kdn.certificates.repoRoot` when you declare a certificate"
+        else
+          cfg.repoRoot;
+
       # The host name is read once here, outside the submodule, so the submodule default can close
       # over it. A submodule's own `config` cannot see the outer `kdn.hostName`.
       hostName = config.kdn.hostName;
@@ -92,13 +134,13 @@ let
           options.certFile = lib.mkOption {
             type = lib.types.str;
             default = "${name}.pub";
-            description = "The public certificate filename. The file is `<directory>/<certFile>`, plain and committed.";
+            description = "The public certificate filename. The file is `<directory>/<certFile>` under `repoRoot`, plain and committed.";
           };
 
           options.keyFile = lib.mkOption {
             type = lib.types.str;
             default = "${name}.key";
-            description = "The private key filename. The stored key is `<directory>/<keyFile>.sops`, a raw/binary SOPS file.";
+            description = "The private key filename. The stored key is `<directory>/<keyFile>.sops` under `repoRoot`, a raw/binary SOPS file.";
           };
 
           options.keySource = lib.mkOption {
@@ -122,21 +164,37 @@ let
           options.certPath = lib.mkOption {
             type = lib.types.path;
             readOnly = true;
-            description = "A store path to the committed public certificate, `<directory>/<certFile>`.";
+            description = "A store path to the committed public certificate, `<repoRoot>/<directory>/<certFile>`.";
           };
 
           options.keyPath = lib.mkOption {
             type = lib.types.path;
             readOnly = true;
-            description = "The runtime path under `/run/secrets` that holds the decrypted private key.";
+            description = "The runtime path that holds the decrypted private key.";
           };
 
           config.certPath = "${toString repoRoot}/${config.directory}/${config.certFile}";
-          config.keyPath = "/run/secrets/kdn/certificates/${name}.key";
+          config.keyPath = keyPathFor {
+            config = outerConfig;
+            inherit name;
+          };
         };
     in
     {
-      imports = [ ../common/host-name.nix ];
+      imports = [ ../common/host-name.nix ] ++ lib.optional (sopsModule != null) sopsModule;
+
+      options.kdn.certificates.repoRoot = lib.mkOption {
+        type = lib.types.nullOr lib.types.path;
+        default = null;
+        example = ../../..;
+        description = ''
+          The root of the tree that holds the certificate files. A declared certificate needs it, so
+          set it when `kdn.certificates.certs` is not empty.
+
+          The aspect holds no implicit default. An external adopter names their own tree root, so
+          `certPath` never points into the `nix-configs` store tree.
+        '';
+      };
 
       options.kdn.certificates.certs = lib.mkOption {
         type = lib.types.attrsOf (lib.types.submodule certsSubmodule);
@@ -152,11 +210,48 @@ let
         };
         description = "The leaf certificates, keyed by name.";
       };
+
+      # The sops-nix wiring. It runs only when a certificate is declared, so an empty option set
+      # stays a true no-op. The `devenv` class carries no sops-nix module, so it writes no secret.
+      config = lib.mkIf (cfg.certs != { }) (
+        lib.optionalAttrs (sopsModule != null) {
+          sops.secrets = lib.mapAttrs' (
+            name: cert:
+            lib.nameValuePair (secretName name) {
+              format = "binary";
+              sopsFile = "${toString repoRoot}/${cert.directory}/${cert.keyFile}.sops";
+            }
+          ) cfg.certs;
+        }
+      );
     };
 in
 {
-  kdn.certificates.nixos = target;
-  kdn.certificates.darwin = target;
-  kdn.certificates.homeManager = target;
-  kdn.certificates.devenv = target;
+  kdn.certificates.nixos = mkTarget {
+    sopsModule = inputs.sops-nix.nixosModules.sops;
+    keyPathFor =
+      { config, name }:
+      config.sops.secrets.${secretName name}.path;
+  };
+
+  kdn.certificates.darwin = mkTarget {
+    sopsModule = inputs.sops-nix.darwinModules.default;
+    keyPathFor =
+      { config, name }:
+      config.sops.secrets.${secretName name}.path;
+  };
+
+  kdn.certificates.homeManager = mkTarget {
+    sopsModule = inputs.sops-nix.homeManagerModules.sops;
+    keyPathFor =
+      { config, name }:
+      config.sops.secrets.${secretName name}.path;
+  };
+
+  # The `devenv` class carries no sops-nix module. The CLI decrypt primitive fills this path.
+  kdn.certificates.devenv = mkTarget {
+    keyPathFor =
+      { name, ... }:
+      "/run/secrets/kdn/certificates/${name}.key";
+  };
 }

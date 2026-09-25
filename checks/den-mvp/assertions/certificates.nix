@@ -13,12 +13,19 @@
 # exact option values back. The subjects read option values only and force no `drvPath`, because
 # `den-eval-instantiate` already forces every (aspect, class) pair.
 #
-# ## The `certPath` fixture
+# ## The `repoRoot` fixture
 #
-# `certPath` is a store path to the public certificate. The aspect builds it from the repo-relative
-# `directory` and `certFile` against this repository's own root, exactly as the old host files name
+# `certPath` is a store path to the public certificate. The aspect builds it from the consumer's
+# `repoRoot` and the repo-relative `directory` and `certFile`. Every declared subject names
+# `repoRoot = ../../..`, exactly as the old host files name
 # `"${kdnConfig.self}/hosts/<host>/certs/zellij.pub"`. No test subject names a real certificate, and
 # a `lib.types.path` accepts a path that no file occupies yet.
+#
+# ## The sops-nix wiring
+#
+# The `nixos`, `darwin` and `homeManager` classes import the pinned sops-nix module and write one
+# `sops.secrets` entry per declared key. The `devenv` class carries no sops-nix, so its `keyPath` is
+# the fixed `/run/secrets/kdn/certificates/<name>.key` the CLI decrypt primitive fills.
 {
   lib,
   denLib,
@@ -30,6 +37,10 @@
 }:
 let
   sorted = lib.sort (a: b: a < b);
+
+  # The repository root this test tree lives in. The declared subjects name it through the
+  # consumer-provided `repoRoot` option, exactly as an external adopter would name their own tree.
+  repoRoot = ../../..;
 
   # Both aspects, resolved once per class. `denLib.imports` returns a list, so a caller wraps it in
   # `{ imports = …; }` for a `modules` list.
@@ -66,6 +77,7 @@ let
   };
 
   certData = {
+    kdn.certificates.repoRoot = repoRoot;
     kdn.certificates.certs.den-mvp-leaf = {
       ca = "intermediate-ca";
       type = "tls-server";
@@ -80,6 +92,16 @@ let
       keySource = "managed";
       minGenerationDate = "2026-09-01";
     };
+  };
+
+  # The consumer's own sops-nix key source, for the three classes that import sops-nix. sops-nix
+  # asserts one when `sops.secrets` is not empty, and the aspect never names a key source of its
+  # own. `validateSopsFiles = false` keeps the fixture offline: the declared `.sops` file does not
+  # exist, and no real key is needed to read the option values. The `devenv` class carries no
+  # sops-nix, so its subject names none of this.
+  sopsData = {
+    sops.age.keyFile = "/dev/null";
+    sops.validateSopsFiles = false;
   };
 
   # The empty-option subjects, one per class. Each class needs its own evaluation shape.
@@ -102,6 +124,7 @@ let
       ++ [
         caData
         certData
+        sopsData
       ]
     )).config;
   declaredDarwin =
@@ -110,6 +133,7 @@ let
       ++ [
         caData
         certData
+        sopsData
       ]
     )).config;
   declaredHome =
@@ -118,6 +142,7 @@ let
       ++ [
         caData
         certData
+        sopsData
       ]
     )).config;
   declaredDevenv =
@@ -232,6 +257,37 @@ let
     keySource = "managed";
     minGenerationDate = "2026-09-01";
   };
+
+  # The sops secret name the aspect derives from one leaf key.
+  secretName = name: "kdn/certificates/${name}.key";
+
+  # The one `sops.secrets` entry the aspect writes for the declared leaf.
+  sopsEntry =
+    cfg:
+    let
+      secret = cfg.sops.secrets.${secretName "den-mvp-leaf"};
+    in
+    {
+      format = secret.format;
+      sopsFileSuffix = lib.removePrefix (toString repoRoot) (toString secret.sopsFile);
+    };
+
+  # A subject that declares a leaf but names no `repoRoot`. Reading `certPath` must fail loudly.
+  repoRootMissing =
+    (bareNixos (
+      aspectsFor "nixos"
+      ++ [
+        sopsData
+        {
+          kdn.certificates.certs.no-root = {
+            ca = "root-ca";
+            type = "tls-server";
+            commonName = "no-root.example.invalid";
+            keySource = "managed";
+          };
+        }
+      ]
+    )).config.kdn.certificates.certs.no-root.certPath;
 in
 {
   instantiatedBy = {
@@ -269,6 +325,19 @@ in
         devenv = emptyDevenv.kdn.certificates.certs;
         homeManager = emptyHome.kdn.certificates.certs;
         nixos = emptyNixos.kdn.certificates.certs;
+      };
+    }
+    {
+      name = "an empty option set writes no sops secret on any class";
+      expected = {
+        darwin = { };
+        homeManager = { };
+        nixos = { };
+      };
+      actual = {
+        darwin = emptyDarwin.sops.secrets;
+        homeManager = emptyHome.sops.secrets;
+        nixos = emptyNixos.sops.secrets;
       };
     }
 
@@ -312,13 +381,53 @@ in
         in
         {
           isStorePath = lib.hasPrefix builtins.storeDir p;
-          suffix = lib.removePrefix (toString ../../..) p;
+          suffix = lib.removePrefix (toString repoRoot) p;
         };
     }
     {
-      name = "keyPath is the decrypted runtime path under /run/secrets";
+      name = "a declared leaf without repoRoot fails loudly when certPath is read";
+      expected = false;
+      actual = (builtins.tryEval (builtins.isString (toString repoRootMissing))).success;
+    }
+
+    # ---- the sops-nix wiring
+    {
+      name = "the nixos class writes one binary sops secret per declared key";
+      expected = {
+        format = "binary";
+        sopsFileSuffix = "/hosts/den-mvp/certs/den-mvp.key.sops";
+      };
+      actual = sopsEntry declaredNixos;
+    }
+    {
+      name = "the darwin class writes the same sops secret";
+      expected = sopsEntry declaredNixos;
+      actual = sopsEntry declaredDarwin;
+    }
+    {
+      name = "the homeManager class writes the same sops secret";
+      expected = sopsEntry declaredNixos;
+      actual = sopsEntry declaredHome;
+    }
+    {
+      name = "keyPath on nixos reads the sops-nix decrypted path";
       expected = "/run/secrets/kdn/certificates/den-mvp-leaf.key";
       actual = toString declaredNixos.kdn.certificates.certs.den-mvp-leaf.keyPath;
+    }
+    {
+      name = "keyPath on homeManager reads the sops-nix decrypted path";
+      expected = "/Users/dev/.config/sops-nix/secrets/kdn/certificates/den-mvp-leaf.key";
+      actual = toString declaredHome.kdn.certificates.certs.den-mvp-leaf.keyPath;
+    }
+    {
+      name = "keyPath on devenv falls back to the CLI decrypt path";
+      expected = "/run/secrets/kdn/certificates/den-mvp-leaf.key";
+      actual = toString declaredDevenv.kdn.certificates.certs.den-mvp-leaf.keyPath;
+    }
+    {
+      name = "the devenv class declares no sops option";
+      expected = false;
+      actual = declaredDevenv ? sops;
     }
     {
       name = "the default directory reads kdn.hostName";
@@ -327,8 +436,10 @@ in
         (bareNixos (
           aspectsFor "nixos"
           ++ [
+            sopsData
             {
               networking.hostName = "host-nixos";
+              kdn.certificates.repoRoot = repoRoot;
               kdn.certificates.certs.by-default = {
                 ca = "root-ca";
                 type = "tls-server";
