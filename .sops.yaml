@@ -138,6 +138,14 @@ creation_rules:
           - *yk-brys-touch
           - *yk-oams-touch
           - *ssh-brys
+  # The fresh managed KDN root CA (decision D-B). It is encrypted to the two unattended YubiKey
+  # identities only, so `kdn-certs ca init` runs with no touch and no PIN. The user rotates it to a
+  # touch-required CA later; see docs/tasks/2026-09/declarative-certificates/007-ca-rotation/.
+  - path_regex: 'data/ca/kdn\.key\.sops$'
+    key_groups:
+      - age:
+          - *yk-oams-unattended
+          - *yk-brys-unattended
   - path_regex: '.*\.key\.sops'
     key_groups:
       - age:

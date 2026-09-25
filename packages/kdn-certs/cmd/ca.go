@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/spf13/cobra"
 
+	"kdn-certs/internal/cainit"
 	"kdn-certs/internal/dag"
 	"kdn-certs/internal/walk"
 )
@@ -20,24 +22,9 @@ func newCACmd(app *App) *cobra.Command {
 		&cobra.Command{
 			Use:   "init",
 			Short: "Initialize the CA graph from the top",
-			Long:  "Initialize the CA DAG from the top: root first, then each intermediate.",
+			Long:  "Initialize the CA DAG from the top: root first, then each intermediate. Generate each managed key, create the self-signed root or the intermediate, write the public certificate, and SOPS-encrypt the private key. An external CA is left alone.",
 			RunE: func(cmd *cobra.Command, args []string) error {
-				targets, err := app.loadTargets()
-				if err != nil {
-					return err
-				}
-				cas, err := walk.MergeCAs(targets)
-				if err != nil {
-					return err
-				}
-				order, err := dag.Sort(cas)
-				if err != nil {
-					return err
-				}
-				for _, name := range order {
-					fmt.Fprintf(app.Out, "%s\t%s\t%s\n", name, cas[name].Type, cas[name].CommonName)
-				}
-				return nil
+				return runCAInit(app)
 			},
 		},
 		&cobra.Command{
@@ -62,4 +49,50 @@ func newCACmd(app *App) *cobra.Command {
 	)
 
 	return caCmd
+}
+
+// runCAInit walks the CA graph and creates every managed CA.
+func runCAInit(app *App) error {
+	targets, err := app.loadTargets()
+	if err != nil {
+		return err
+	}
+	cas, err := walk.MergeCAs(targets)
+	if err != nil {
+		return err
+	}
+	// The topological sort validates the graph: a cycle and a dangling parent are hard errors.
+	if _, err := dag.Sort(cas); err != nil {
+		return err
+	}
+
+	deps := cainit.Deps{
+		Root:      app.Options.Flake,
+		Signer:    app.signer(),
+		Decryptor: app.decryptor(),
+		Encryptor: app.encryptor(),
+		Force:     app.Options.Force,
+		DryRun:    app.Options.DryRun,
+		Logf:      app.Logf,
+	}
+
+	out, err := cainit.Run(cas, deps)
+	if err != nil {
+		return err
+	}
+
+	if app.Options.JSON {
+		encoder := json.NewEncoder(app.Out)
+		encoder.SetIndent("", "  ")
+		return encoder.Encode(out)
+	}
+
+	for _, action := range out.Actions {
+		fmt.Fprintf(app.Out, "%s\t%s\t%s\t%s\n", action.Name, action.Type, action.CommonName, action.Reason)
+	}
+	if app.Options.DryRun {
+		return nil
+	}
+	fmt.Fprintf(app.Out, "created %d of %d CAs\n", out.Created, len(out.Actions))
+	return nil
 }

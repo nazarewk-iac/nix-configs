@@ -1,6 +1,6 @@
 ---
 type: Solution
-description: The four universal hosts oams, brys, etra and moss adopt kdn.certificates through the denLib.imports augmentation line and read certPath/keyPath in kdn.programs.zellij.web; the real zellij key pairs and the kdn CA signing run stay pending on the YubiKey.
+description: The four universal hosts oams, brys, etra and moss adopt kdn.certificates through the denLib.imports augmentation line and read certPath/keyPath in kdn.programs.zellij.web; the key-readability gap is closed by the owner option (D-A) and the missing kdn CA node by a shared managed CA (D-B); the real leaf signing run stays pending on the YubiKey.
 timestamp: 2026-09-25T22:15:00+02:00
 authored_by: agent
 ---
@@ -113,15 +113,11 @@ at evaluation time. The migration introduces the `sops.secrets` entry, so the to
 
 So the code is complete and the toplevels evaluate once the four `.sops` files exist.
 
-`nix run .#kdn-certs -- apply --flake . --dry-run` reports a second gap:
-
-```
-kdn-certs: certificate "zellij-web" names CA "kdn", which is not declared
-```
-
-The leaf names `ca = "kdn"`, but no target declares `kdn.ca-dag.cas.kdn`. The design § 3 names the
-root CA node `kdn` with `keySource = "external"`, but 006's declaration block shows the leaf alone.
-See Follow-up notes.
+`nix run .#kdn-certs -- apply --flake . --dry-run` reported a second gap, now closed by decision
+D-B. The leaf names `ca = "kdn"`, and no target declared `kdn.ca-dag.cas.kdn`. `data/ca/ca-dag.nix`
+now declares the node once, and the four hosts import it. `kdn-certs apply --dry-run` no longer
+reports a missing CA; the leaf is `missing` because its own key pair does not exist yet. See
+Follow-up notes 2 and 3.
 
 ## Follow-up notes
 
@@ -132,19 +128,37 @@ prompts for the YubiKey touch, because the `kdn` CA key is SOPS-encrypted to Yub
 `kdn-certs apply` at a YubiKey, then the four toplevels evaluate and acceptance steps 3 and 4
 (`openssl verify` and the idempotent second run) pass.
 
-**2 — The key-readability gap (significant decision).** The `kdn.certificates` sops wiring writes the
-key as a root-only secret: `owner = null`, `uid = 0`, `mode = "0400"`, path
+**2 — The key-readability gap — RESOLVED (decision D-A).** The `kdn.certificates` sops wiring wrote
+the key as a root-only secret: `owner = null`, `uid = 0`, `mode = "0400"`, path
 `/run/secrets/kdn/certificates/zellij-web.key`. The zellij web service is
-`systemd.user.services.zellij-web`, a **user** service, so it cannot read a root-only file. The old
-universal module solved this with a root oneshot `systemd.services.kdn-zellij-web-key` that
-`chown`ed the decrypted key to `kdn`; the migration drops `keySopsFile`, so that oneshot is gone
-(measured: `systemd.services ? kdn-zellij-web-key` is `false`). The migration loses that step. This
-is reported, not fixed. See the task `.worklog.md` for the full option list.
+`systemd.user.services.zellij-web`, a **user** service, so it could not read a root-only file. The
+old universal module solved this with a root oneshot `systemd.services.kdn-zellij-web-key` that
+`chown`ed the decrypted key to `kdn`; the migration dropped `keySopsFile`, so that oneshot was gone
+(measured: `systemd.services ? kdn-zellij-web-key` is `false`).
 
-**3 — The missing `kdn` CA node (significant decision).** `kdn-certs apply` needs
-`kdn.ca-dag.cas.kdn` to resolve the leaf's `ca = "kdn"`. No target declares it, so `apply` refuses.
-The node must be declared once (a shared data module) or per host. This is data, not a frozen-shape
-change, but it is outside 006's explicit work list, so it is deferred. See the task `.worklog.md`.
+The user chose option (a) on 2026-09-25, an approved amendment to the frozen leaf shape. The leaf
+option set gained `owner` (`nullOr str`, default `null`). When set, the aspect writes
+`sops.secrets.<name>.owner = <owner>`; the `nixos` sops module then derives the group from the owner
+(`users.<owner>.group`), and the `darwin` module keeps its `staff` default. The `homeManager` sops
+module declares no `owner`, so that class ignores the value. The four hosts set `owner = "kdn"`, so
+the zellij web user service reads the key. Measured on all four hosts:
+`{ owner = "kdn"; group = "users"; mode = "0400"; path = "/run/secrets/kdn/certificates/zellij-web.key"; }`.
+
+**3 — The missing `kdn` CA node — RESOLVED (decision D-B).** `kdn-certs apply` needed
+`kdn.ca-dag.cas.kdn` to resolve the leaf's `ca = "kdn"`. No target declared it, so `apply` refused.
+The user chose a **fresh managed CA** on 2026-09-25. `data/ca/ca-dag.nix` declares the node once, and
+the four hosts import it: `kdn.ca-dag.cas.kdn` = root, `commonName = "KDN certificates root CA"`,
+`directory = "data/ca"`, `certFile = "kdn.crt"`, `keyFile = "kdn.key"`, `keySource = "managed"`,
+`ssh = true`. `kdn-certs ca init` now creates it for real: it generates the key, creates the
+self-signed root, writes `data/ca/kdn.crt`, and SOPS-encrypts the key to `data/ca/kdn.key.sops`. The
+`.sops.yaml` rule `data/ca/kdn\.key\.sops$` names the two unattended YubiKey identities only
+(`yk-oams-unattended`, `yk-brys-unattended`), so `ca init` needs no touch and no PIN. The old
+`data/ca/ca.pub` and `data/ca/ca.key.sops` are untouched. The rotation to a touch-required CA is
+follow-up [007-ca-rotation](../007-ca-rotation/definition.md).
+
+`data/ca/kdn.crt` verifies against itself and `data/ca/kdn.key.sops` holds exactly the two
+unattended recipients. `kdn-certs apply` (leaf signing) still needs the unattended YubiKey identity
+to decrypt the CA key, so the four leaf pairs stay pending on the user's run.
 
 **4 — `den-eval-instantiate` is unverified on this host** (environmental `aarch64-darwin` pull), as
 recorded in 001, 002 and 003. The host edits do not touch that check.

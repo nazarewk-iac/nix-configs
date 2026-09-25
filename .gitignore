@@ -67,6 +67,10 @@
 # KDN private CA material (data/ca/) and per-host certs (hosts/*/certs/)
 !/data/ca/ca.pub
 !/data/ca/ca.key.sops
+# The fresh managed KDN root CA (decision D-B). The public certificate is committed plain; the
+# private key is committed as raw/binary SOPS, encrypted to the two unattended YubiKey identities.
+!/data/ca/kdn.crt
+!/data/ca/kdn.key.sops
 !/hosts/*/certs/*.pub
 !/hosts/*/certs/*.key.sops
 

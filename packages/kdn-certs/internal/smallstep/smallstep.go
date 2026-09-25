@@ -149,24 +149,32 @@ func (s StepCLI) SignLeaf(req LeafRequest) error {
 	return s.run("step", args...)
 }
 
-// CreateCA creates a root or an intermediate CA.
+// CreateCA creates a root or an intermediate CA from an existing key.
+//
+// `--key` names the caller's key, so `step` signs those bytes instead of generating its own. The
+// caller then owns the key and SOPS-encrypts it. `--no-password --insecure` keeps the key
+// unencrypted, so the plaintext lives only in the caller's temporary directory. See design § 3.1.
 func (s StepCLI) CreateCA(req CARequest) error {
 	args := []string{
 		"certificate", "create",
 		req.CommonName,
 		req.CertPath,
-		req.KeyPath,
+		"--key", req.KeyPath,
 		"--profile", "root-ca",
+		"--no-password",
+		"--insecure",
 	}
 	if req.Type == "intermediate" {
 		args = []string{
 			"certificate", "create",
 			req.CommonName,
 			req.CertPath,
-			req.KeyPath,
+			"--key", req.KeyPath,
 			"--profile", "intermediate-ca",
 			"--ca", req.ParentCert,
 			"--ca-key", req.ParentKey,
+			"--no-password",
+			"--insecure",
 		}
 	}
 	return s.run("step", args...)

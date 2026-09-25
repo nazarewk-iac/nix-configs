@@ -89,3 +89,19 @@ an external adopter gets a path inside their own tree.
 its own scope (the den library evaluation supplies `specialArgs.inputs`), exactly as
 `security-secrets-sops.nix` does. The `devenv` class takes no input, so the coupling stays on the
 three host and home classes.
+
+## Amendment — the `owner` option (decision D-A)
+
+The frozen leaf shape gained one option, `owner` (`nullOr str`, default `null`). It is a deliberate,
+user-approved amendment, and it closes the key-readability gap that 006 reported: the zellij web
+service is a systemd **user** service, and the default sops key file is root-only.
+
+When a leaf names `owner`, the aspect writes `sops.secrets.<name>.owner = <owner>`. The `nixos` sops
+module then derives the group from the owner (`users.<owner>.group`); the `darwin` module keeps its
+`staff` default. The `homeManager` sops module declares no `owner` option, so that class ignores the
+value — the aspect gates the write on a per-class `ownerSupport` flag. `mode` stays `0400`. The four
+universal hosts set `owner = "kdn"`.
+
+`checks/den-mvp/assertions/certificates.nix` covers the option default, the `nixos` owner plus
+derived group, the `darwin` owner plus `staff` group, and the `homeManager` ignore. The
+`den-eval-defaults` check reads the submodule default through `bareShell`.
