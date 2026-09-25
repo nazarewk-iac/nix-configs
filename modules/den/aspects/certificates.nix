@@ -37,6 +37,11 @@
 #   - `keyPath` reads `config.sops.secrets.<name>.path`, so the consumer reads the decrypted runtime
 #     path and no store path holds the secret.
 #
+# A leaf that names `owner` writes `sops.secrets.<name>.owner = <owner>`. The `nixos` sops module
+# derives the group from the owner; the `darwin` module defaults the group to `staff`. `mode` stays
+# `0400`. A service that runs as a non-root user needs it, because the default key file is
+# root-only.
+#
 # The `devenv` class carries no sops-nix module. Its `keyPath` is the fixed runtime path
 # `/run/secrets/kdn/certificates/<name>.key`, which the `kdn-certs` CLI fills with its own decrypt
 # primitive (`sops decrypt --output-type binary`). A devenv shell owns no system activation, so it
@@ -64,11 +69,13 @@ let
 
   # One target module factory. `sopsModule` is the sops-nix module of the class, or `null` for the
   # `devenv` class, which carries no sops-nix. `keyPathFor` reads the decrypted runtime path of one
-  # key from the outer target config.
+  # key from the outer target config. `ownerSupport` records whether the class's sops module declares
+  # the `owner` option: the `nixos` and `darwin` modules do, the `homeManager` module does not.
   mkTarget =
     {
       sopsModule ? null,
       keyPathFor,
+      ownerSupport ? false,
     }:
     { config, lib, ... }:
     let
@@ -161,6 +168,17 @@ let
             '';
           };
 
+          options.owner = lib.mkOption {
+            type = lib.types.nullOr lib.types.str;
+            default = null;
+            description = ''
+              The owner of the decrypted key file. When set, the aspect writes
+              `sops.secrets.<name>.owner = <owner>`, and sops-nix derives the group from the owner.
+              `mode` stays `0400`. A service that runs as a non-root user needs this, because the
+              default key file is root-only.
+            '';
+          };
+
           options.certPath = lib.mkOption {
             type = lib.types.path;
             readOnly = true;
@@ -213,14 +231,23 @@ let
 
       # The sops-nix wiring. It runs only when a certificate is declared, so an empty option set
       # stays a true no-op. The `devenv` class carries no sops-nix module, so it writes no secret.
+      #
+      # `owner` is written only when the leaf names one and the class's sops module declares the
+      # option. The `nixos` module then derives the group from the owner (`users.<owner>.group`);
+      # the `darwin` module defaults the group to `staff`. `mode` stays `0400`. A service that runs
+      # as a non-root user needs it, because the default key file is root-only. The `homeManager`
+      # sops module declares no `owner`, so that class ignores it.
       config = lib.mkIf (cfg.certs != { }) (
         lib.optionalAttrs (sopsModule != null) {
           sops.secrets = lib.mapAttrs' (
             name: cert:
-            lib.nameValuePair (secretName name) {
-              format = "binary";
-              sopsFile = "${toString repoRoot}/${cert.directory}/${cert.keyFile}.sops";
-            }
+            lib.nameValuePair (secretName name) (
+              {
+                format = "binary";
+                sopsFile = "${toString repoRoot}/${cert.directory}/${cert.keyFile}.sops";
+              }
+              // lib.optionalAttrs (ownerSupport && cert.owner != null) { owner = cert.owner; }
+            )
           ) cfg.certs;
         }
       );
@@ -229,6 +256,7 @@ in
 {
   kdn.certificates.nixos = mkTarget {
     sopsModule = inputs.sops-nix.nixosModules.sops;
+    ownerSupport = true;
     keyPathFor =
       { config, name }:
       config.sops.secrets.${secretName name}.path;
@@ -236,6 +264,7 @@ in
 
   kdn.certificates.darwin = mkTarget {
     sopsModule = inputs.sops-nix.darwinModules.default;
+    ownerSupport = true;
     keyPathFor =
       { config, name }:
       config.sops.secrets.${secretName name}.path;

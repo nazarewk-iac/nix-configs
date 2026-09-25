@@ -359,6 +359,7 @@ in
         certFile = "zellij.pub";
         keyFile = "zellij.key";
         keySource = "managed";
+        owner = "kdn";
       };
     }
     {

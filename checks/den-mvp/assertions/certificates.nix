@@ -239,6 +239,7 @@ let
         keyFile
         keySource
         minGenerationDate
+        owner
         ;
     };
 
@@ -256,6 +257,7 @@ let
     keyFile = "den-mvp.key";
     keySource = "managed";
     minGenerationDate = "2026-09-01";
+    owner = null;
   };
 
   # The sops secret name the aspect derives from one leaf key.
@@ -270,6 +272,62 @@ let
     {
       format = secret.format;
       sopsFileSuffix = lib.removePrefix (toString repoRoot) (toString secret.sopsFile);
+    };
+
+  # A subject that declares the same leaf with an explicit `owner`. The `nixos` and `darwin`
+  # classes write `sops.secrets.<name>.owner`. The `nixos` sops module derives the group from the
+  # owner (`users.<owner>.group`), so that subject also declares the owner account. The `darwin`
+  # sops module defaults the group to `staff`. The `homeManager` sops module declares no `owner`,
+  # so that class ignores it.
+  ownerData = {
+    kdn.certificates.certs.den-mvp-leaf.owner = "kdn";
+  };
+  ownerUser = {
+    users.users.kdn.group = "users";
+  };
+
+  declaredNixosOwned =
+    (bareNixos (
+      aspectsFor "nixos"
+      ++ [
+        caData
+        certData
+        sopsData
+        ownerData
+        ownerUser
+      ]
+    )).config;
+  declaredDarwinOwned =
+    (bareDarwinSystem (
+      aspectsFor "darwin"
+      ++ [
+        caData
+        certData
+        sopsData
+        ownerData
+      ]
+    )).config;
+  declaredHomeOwned =
+    (bareHomeConfiguration (
+      aspectsFor "homeManager"
+      ++ [
+        caData
+        certData
+        sopsData
+        ownerData
+      ]
+    )).config;
+
+  # The `owner` and derived `group` of one declared key, or `null` when the class writes neither.
+  # The `homeManager` sops module declares no `owner`, so the `or null` keeps that class readable.
+  ownerEntry =
+    cfg:
+    let
+      secret = cfg.sops.secrets.${secretName "den-mvp-leaf"};
+    in
+    {
+      owner = secret.owner or null;
+      group = secret.group or null;
     };
 
   # The CA manager subject. It includes `ca-dag` and adds the `kdn-certs` CLI to the shell. The
@@ -419,6 +477,43 @@ in
       name = "the homeManager class writes the same sops secret";
       expected = sopsEntry declaredNixos;
       actual = sopsEntry declaredHome;
+    }
+    {
+      name = "a leaf with no owner writes no owner and no group";
+      expected = {
+        owner = null;
+        group = null;
+      };
+      actual = ownerEntry declaredNixos;
+    }
+    {
+      name = "the nixos class writes the leaf owner, and sops-nix derives the group";
+      expected = {
+        owner = "kdn";
+        group = "users";
+      };
+      actual = ownerEntry declaredNixosOwned;
+    }
+    {
+      name = "the darwin class writes the same leaf owner and derived group";
+      expected = {
+        owner = "kdn";
+        group = "staff";
+      };
+      actual = ownerEntry declaredDarwinOwned;
+    }
+    {
+      name = "the homeManager class ignores owner, because its sops module declares no owner option";
+      expected = {
+        owner = null;
+        group = null;
+      };
+      actual = ownerEntry declaredHomeOwned;
+    }
+    {
+      name = "the declared leaf returns the owner option value";
+      expected = "kdn";
+      actual = declaredNixosOwned.kdn.certificates.certs.den-mvp-leaf.owner;
     }
     {
       name = "keyPath on nixos reads the sops-nix decrypted path";
