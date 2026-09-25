@@ -31,6 +31,10 @@
     # ../../../modules/den/aspects/ca-dag.nix and ./certificates.nix.
     kdn.ca-dag
     kdn.certificates
+
+    # The SSH CA. Its CA set and leaf set are empty here, so the inclusion is a no-op; it proves the
+    # explicit-include route of decision D3 on a den host. See ../../../modules/den/aspects/ssh-ca.nix.
+    kdn.ssh-ca
   ];
 
   den.aspects.host-nixos.nixos =

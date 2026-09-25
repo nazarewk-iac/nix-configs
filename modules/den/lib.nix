@@ -216,6 +216,7 @@ let
     signing = ./aspects/signing.nix;
     ssh-access = ./aspects/ssh-access.nix;
     ssh-agent = ./aspects/ssh-agent.nix;
+    ssh-ca = ./aspects/ssh-ca.nix;
     stylix = ./aspects/stylix.nix;
     stylix-home = ./aspects/stylix.nix;
     toolset-diagrams = ./aspects/toolset.nix;
