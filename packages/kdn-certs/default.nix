@@ -23,6 +23,7 @@
   sops,
   age,
   openssl,
+  openssh,
   ...
 }:
 let
@@ -85,11 +86,12 @@ buildGoModule (finalAttrs: {
     '';
   };
 
-  # The test-CA integration check. It runs the same Go suite with `step`, `sops`, `age` and
-  # `openssl` on PATH and `KDN_CERTS_TEST_CA=1` set, so `internal/generate` drives the real loop
-  # against a temporary unattended CA. The test CA lives under the test's own temp dir, outside
-  # `data/`, and its key is encrypted to a test age identity. So the suite signs with no YubiKey and
-  # the real CA key is never read. See design § 8.1.
+  # The test-CA integration check. It runs the same Go suite with `step`, `sops`, `age`, `openssl`
+  # and `ssh-keygen` on PATH and `KDN_CERTS_TEST_CA=1` set, so `internal/generate` drives the real
+  # loop against a temporary unattended CA and `internal/smallstep` signs real SSH certificates. The
+  # test CA lives under the test's own temp dir, outside `data/`, and its key is encrypted to a test
+  # age identity. So the suite signs with no YubiKey and the real CA key is never read. See design
+  # § 8.1.
   passthru.tests.go-test-ca = buildGoModule {
     pname = "kdn-certs-go-test-ca";
     version = "0.0.1";
@@ -101,6 +103,7 @@ buildGoModule (finalAttrs: {
       sops
       age
       openssl
+      openssh
     ];
 
     doCheck = true;

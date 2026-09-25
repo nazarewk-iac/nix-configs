@@ -13,6 +13,8 @@ import (
 	"kdn-certs/internal/decl"
 	"kdn-certs/internal/dedup"
 	"kdn-certs/internal/generate"
+	"kdn-certs/internal/smallstep"
+	"kdn-certs/internal/sops"
 	"kdn-certs/internal/walk"
 )
 
@@ -41,6 +43,27 @@ type App struct {
 	In io.Reader
 	// Evaluator reads the declarations. A test injects a fake, so the suite needs no flake.
 	Evaluator walk.Evaluator
+	// SSHSigner signs an SSH user or host certificate. A test injects a fake, so the suite needs no
+	// `ssh-keygen` and no CA.
+	SSHSigner smallstep.SSHSigner
+	// Decryptor decrypts a SOPS CA key. A test injects a fake, so the suite needs no `sops`.
+	Decryptor sops.Decryptor
+}
+
+// sshSigner returns the injected SSH signer, or the real `ssh-keygen` driver.
+func (a *App) sshSigner() smallstep.SSHSigner {
+	if a.SSHSigner != nil {
+		return a.SSHSigner
+	}
+	return smallstep.StepCLI{Verbose: a.Options.Verbose, Logf: a.Logf}
+}
+
+// decryptor returns the injected decryptor, or the real `sops` driver.
+func (a *App) decryptor() sops.Decryptor {
+	if a.Decryptor != nil {
+		return a.Decryptor
+	}
+	return sops.CLI{Verbose: a.Options.Verbose, Logf: a.Logf}
 }
 
 // Logf prints one verbose line to the error stream.

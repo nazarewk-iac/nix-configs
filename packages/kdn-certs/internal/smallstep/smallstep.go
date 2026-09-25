@@ -24,6 +24,36 @@ type Signer interface {
 	CreateCA(req CARequest) error
 }
 
+// SSHSigner signs an SSH user or host certificate. `ssh-keygen -s` is the OpenSSH-native signer: it
+// reads the CA private key directly and needs no `ca.json` and no provisioner. So an SSH sign works
+// with the same SOPS-sourced CA key the TLS signer uses.
+type SSHSigner interface {
+	// GenerateSSHKey writes a new unencrypted ed25519 private key to `keyOut`, with its public key
+	// at `keyOut+".pub"`.
+	GenerateSSHKey(keyOut string) error
+	// SignSSH signs the public key at `req.PubKeyPath` and writes the certificate next to it.
+	SignSSH(req SSHCertRequest) error
+}
+
+// SSHCertRequest is one SSH certificate signing request.
+//
+// `ssh-keygen -s` writes `<PubKeyPath without .pub>-cert.pub`. The caller reads that path.
+type SSHCertRequest struct {
+	// KeyID is the certificate identity, for example `alice@example`.
+	KeyID string
+	// Principals are the login names (user cert) or host names (host cert) the certificate is valid
+	// for.
+	Principals []string
+	// Validity is an OpenSSH validity interval, for example `+8h` or `+30d`.
+	Validity string
+	// Host makes a host certificate instead of a user certificate.
+	Host bool
+	// PubKeyPath is the public key to sign.
+	PubKeyPath string
+	// CAKeyPath is the decrypted SSH CA private key.
+	CAKeyPath string
+}
+
 // LeafRequest is one leaf signing request.
 //
 // `KeyPath` is an existing private key. The caller generates it (when `keySource = "managed"`) or
@@ -140,6 +170,34 @@ func (s StepCLI) CreateCA(req CARequest) error {
 		}
 	}
 	return s.run("step", args...)
+}
+
+// GenerateSSHKey writes an unencrypted ed25519 private key to `keyOut`, with its public key at
+// `keyOut+".pub"`. `ssh-keygen` is the OpenSSH-native tool, so the key is an OpenSSH key and the
+// user certificate can be presented by `ssh` with no conversion.
+func (s StepCLI) GenerateSSHKey(keyOut string) error {
+	return s.run("ssh-keygen", "-t", "ed25519", "-N", "", "-q", "-f", keyOut)
+}
+
+// SignSSH signs the public key at `req.PubKeyPath` with the SSH CA key at `req.CAKeyPath`.
+//
+// `ssh-keygen -s <ca> -I <key-id> -n <principals> -V <validity> <pub>` writes
+// `<pub without .pub>-cert.pub`. `-h` makes a host certificate. This route needs no `ca.json` and
+// no provisioner, so it signs with the same SOPS-sourced CA key the TLS signer uses.
+func (s StepCLI) SignSSH(req SSHCertRequest) error {
+	args := []string{
+		"-s", req.CAKeyPath,
+		"-I", req.KeyID,
+		"-V", req.Validity,
+	}
+	if len(req.Principals) > 0 {
+		args = append(args, "-n", strings.Join(req.Principals, ","))
+	}
+	if req.Host {
+		args = append(args, "-h")
+	}
+	args = append(args, req.PubKeyPath)
+	return s.run("ssh-keygen", args...)
 }
 
 // Zombie is one leftover process or stale PID file that `doctor` found.

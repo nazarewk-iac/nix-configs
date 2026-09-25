@@ -51,6 +51,11 @@
       # See ../../../modules/den/aspects/ca-dag.nix and ./certificates.nix.
       kdn.ca-dag
       kdn.certificates
+
+      # The SSH CA, at user scope. Its CA set is empty here, so the inclusion is a no-op; it proves
+      # the explicit-include route of decision D3 on a den user. See
+      # ../../../modules/den/aspects/ssh-ca.nix.
+      kdn.ssh-ca
     ];
 
     homeManager = {

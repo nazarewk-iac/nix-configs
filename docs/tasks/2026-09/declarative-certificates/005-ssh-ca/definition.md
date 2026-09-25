@@ -1,7 +1,8 @@
 ---
 type: Task
 description: Add the kdn.ssh-ca aspect for SSH certificate login, with server trust, client trust, host certs, user certs and the kdn-certs ssh login flow.
-status: open
+status: done
+solution: done.md
 parent: ../definition.md
 authored_by: agent
 timestamp: 2026-09-25T17:29:39+02:00

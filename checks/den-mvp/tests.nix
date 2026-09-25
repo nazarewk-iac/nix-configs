@@ -790,6 +790,7 @@ let
         "signing"
         "ssh-access"
         "ssh-agent"
+        "ssh-ca"
         "stylix"
         "stylix-home"
         "toolset-diagrams"
