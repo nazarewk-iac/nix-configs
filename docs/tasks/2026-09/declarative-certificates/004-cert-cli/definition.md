@@ -1,6 +1,6 @@
 ---
 type: Task
-description: Add the kdn-certs Python CLI, which walks every den and legacy target, deduplicates the cert declarations, and drives the smallstep generation.
+description: Add the kdn-certs Go CLI, which walks every den and legacy target, deduplicates the cert declarations, and drives the smallstep generation.
 status: open
 authored_by: agent
 timestamp: 2026-09-25T17:29:39+02:00
@@ -32,51 +32,93 @@ reads the resolved option path, so it does not depend on how the aspect arrives.
 
 ## The package
 
-The plan scaffolds the package with `nix run .#init-py-script -- kdn-certs`, then fixes the three
-template faults that `.agents/rules/packaging-python.md` names.
+The CLI is **Go**, so it is reusable outside this repository. It follows `packages/kdn-ssh-access/`
+(self-contained source, no `kdnConfig` dependency) and `packages/kdnctl/` (the cobra +
+charmbracelet stack).
 
-`packages/kdn-certs/default.nix` follows the `mkPythonScript` recipe:
+`packages/kdn-certs/default.nix` follows the `buildGoModule` recipe:
 
 ```nix
 {
-  pkgs,
   lib,
-  __inputs__ ? { },
+  buildGoModule,
+  makeBinaryWrapper,
+  installShellFiles,
+  step-cli,
+  step-ca,
+  nix,
+  sops,
   ...
 }:
 let
-  python = pkgs.python314;
-  src = lib.fileset.toSource {
-    root = ./.;
-    fileset = lib.fileset.fileFilter (file: file.hasExt "py") ./kdn_certs;
-  };
-
-  mkPythonScript =
-    if __inputs__ ? inputs.kdn-configs-src then
-      import (__inputs__.inputs.kdn-configs-src + /lib/python/mkPythonScript.nix) { inherit lib pkgs; }
-    else
-      lib.kdn.mkPythonScript pkgs;
-in
-mkPythonScript {
-  inherit src python;
-  name = "kdn-certs";
-  pythonModule = "kdn_certs.cli";
-  requirementsFileText = ''
-    fire
-    structlog
-  '';
-  runtimeDeps = with pkgs; [
+  runtimeDeps = [
     step-cli
     step-ca
     nix
     sops
   ];
-}
+in
+buildGoModule (finalAttrs: {
+  pname = "kdn-certs";
+  version = "0.0.1";
+  meta.mainProgram = "kdn-certs";
+
+  src = lib.sourceByRegex ./. [
+    ''^go\.(mod|sum)$''
+    "^cmd$"
+    "^cmd/.*\.go$"
+    "^internal$"
+    "^internal/.*\.go$"
+    ''^main\.go$''
+  ];
+
+  vendorHash = "sha256-…"; # fill after the first build
+
+  nativeBuildInputs = [
+    installShellFiles
+    makeBinaryWrapper
+  ];
+
+  subPackages = [ "." ];
+
+  postInstall = ''
+    installShellCompletion --cmd ${finalAttrs.meta.mainProgram} \
+      --bash <("$out/bin/${finalAttrs.meta.mainProgram}" completion bash) \
+      --fish <("$out/bin/${finalAttrs.meta.mainProgram}" completion fish) \
+      --zsh <("$out/bin/${finalAttrs.meta.mainProgram}" completion zsh)
+  '';
+
+  postFixup = ''
+    wrapProgram "$out/bin/${finalAttrs.meta.mainProgram}" \
+      --prefix PATH : ${lib.strings.escapeShellArg (lib.makeBinPath runtimeDeps)}
+  '';
+})
 ```
 
-`name` matches the binary name. The template leaves `nix-name-placeholder`, so the plan replaces it.
-`runtimeDeps` puts `step`, `step-ca`, `nix` and `sops` on the wrapped PATH. `fire` or `argparse`
-both work; `fire` matches the two existing Python CLIs.
+The layout mirrors `tools/kdnctl/`:
+
+```
+packages/kdn-certs/
+├── default.nix
+├── go.mod
+├── go.sum
+├── main.go
+├── cmd/            # one file per command (cobra)
+├── internal/       # walk, dedup, dag, iso8601, smallstep, sops
+└── README.md
+```
+
+The UI stack (the repo's `tools/kdnctl/go.mod` already pins the charmbracelet family):
+
+| Concern | Library |
+|---|---|
+| Command tree, flags, completions | `github.com/spf13/cobra` + `github.com/spf13/pflag` |
+| Structured logging | `github.com/charmbracelet/log` |
+| Pretty output (tables, colors) | `github.com/charmbracelet/lipgloss` |
+| Progress (spinner, bar) | `github.com/charmbracelet/bubbles` (`progress`, `spinner`) |
+
+`--json` prints machine-readable output. The pretty UI is the default for a terminal; a pipe or
+`--json` gets plain output, so the CLI stays scriptable.
 
 The plan registers the package in `packages/default.nix` before the `# AUTO_PACKAGE_PLACEHOLDER #`
 line, alphabetically sorted:
@@ -213,13 +255,14 @@ Regenerate a cert when one of three conditions holds:
 Topologically sort the CA nodes by `parent`. Process the roots first, then each intermediate, then
 the leaves. A cycle in `parent` is a hard error. A `parent` that names no CA is a hard error.
 
-## The pytest plan
+## The Go test plan
 
-The suite lives under `packages/kdn-certs/tests/`. Expose it as `passthru.tests.pytest`, as
-`packages/llm/kdn-slug/default.nix` does. Alias it in `checks/default.nix`:
+The suite lives under `packages/kdn-certs/internal/` as `*_test.go` files, plus `cmd/` tests. Expose
+it as `passthru.tests.go-test` (a `runCommand` that runs `go test ./...`), as
+`packages/kdn-ssh-access` exposes its own `passthru`. Alias it in `checks/default.nix`:
 
 ```nix
-kdn-certs-pytest = pkgs.kdn.kdn-certs.passthru.tests.pytest;
+kdn-certs-test = pkgs.kdn.kdn-certs.passthru.tests.go-test;
 ```
 
 The plan adds the name to `bundle-pkgs` in `checks/bundles.nix`.
@@ -238,15 +281,16 @@ Cover these cases:
 | `--dry-run` | The command prints the plan and writes no file. |
 | Flag parsing | `--flake`, `--force`, `--json` and `--verbose` reach the command. |
 
-Keep every case offline. Mock the `nix eval` call and the `step` call, so the suite needs no flake
-and no CA. A test CA with an unattended key is allowed, so the suite signs without a YubiKey.
+Keep every case offline. Mock the `nix eval` call and the `step` call behind an interface, so the
+suite needs no flake and no CA. A test CA with an unattended key is allowed, so the suite signs
+without a YubiKey.
 
 ## Acceptance
 
 - `nix run .#kdn-certs -- --help` prints the command table.
 - `nix run .#kdn-certs -- plan --flake . --dry-run` lists the declarations and writes no file.
-- `nix build '.#checks.<system>.kdn-certs-pytest'` passes.
-- `bundle-pkgs` holds `kdn-certs-pytest`.
+- `nix build '.#checks.<system>.kdn-certs-test'` passes.
+- `bundle-pkgs` holds `kdn-certs-test`.
 
 ## Out of scope
 

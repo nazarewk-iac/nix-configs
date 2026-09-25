@@ -76,8 +76,8 @@ through `denLib.imports { aspects = [ … ]; }`. The design deliberately does **
 The storage rule: the public certificate is `<directory>/<certFile>` and it is committed plain.
 The private key is `<directory>/<keyFile>.sops` and it is committed as raw/binary SOPS.
 
-The CLI package lives at `packages/kdn-certs/`. It is Python, built with `mkPythonScript`, and it
-shells out to `step`, `step-ca` and `nix`.
+The CLI package lives at `packages/kdn-certs/`. It is Go, built with `buildGoModule`, and it
+shells out to `step`, `step-ca`, `nix` and `sops`.
 
 ## Sub-task index
 
@@ -87,7 +87,7 @@ shells out to `step`, `step-ca` and `nix`.
 | 001 | [001-ca-dag/definition.md](001-ca-dag/definition.md) | Add the `kdn.ca-dag` aspect: the CA graph as data, with no generation and no system trust. |
 | 002 | [002-cert-declarations/definition.md](002-cert-declarations/definition.md) | Add the `kdn.certificates` aspect: the leaf option set and the `certPath`/`keyPath` consumption. |
 | 003 | [003-ca-manager/definition.md](003-ca-manager/definition.md) | Add the `kdn.ca-manager` aspect: the CLI and the CA DAG in a devenv shell, plus the smallstep lifecycle. |
-| 004 | [004-cert-cli/definition.md](004-cert-cli/definition.md) | Add the `kdn-certs` Python CLI: the walk, the dedup, the rotation test and the smallstep driver. |
+| 004 | [004-cert-cli/definition.md](004-cert-cli/definition.md) | Add the `kdn-certs` Go CLI: the walk, the dedup, the rotation test and the smallstep driver. |
 | 005 | [005-ssh-ca/definition.md](005-ssh-ca/definition.md) | Add the `kdn.ssh-ca` aspect: server trust, client trust, host certificates and the `ssh login` flow. |
 | 006 | [006-zellij-migration/definition.md](006-zellij-migration/definition.md) | Replace the manual zellij file pair on four hosts with a `kdn.certificates` declaration. |
 
