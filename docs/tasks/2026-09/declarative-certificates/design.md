@@ -454,6 +454,41 @@ no edit to a shared file. It holds one bare-consumer subject per class.
 brand-new area file stays invisible until git tracks it. Run
 `git ls-files -- checks/den-mvp/assertions/` and confirm the new file before trusting a result.
 
+### 8.5 The option set must not depend on the builder
+
+The user stated the rule on 2026-09-25: **the option set required for evaluation must not depend on
+the builder.** A check that forces an aspect must not realize a derivation for a foreign system.
+
+Measured on 2026-09-25: `den-eval-instantiate` fails on an `x86_64-linux` host because it forces an
+`aarch64-darwin` derivation. The mechanism is `lib/python/mkPythonScript.nix:67-71`. It calls
+`builtins.readFile` on a `writeText` requirements file, so forcing an aspect that builds a Python
+package realizes that derivation, tagged with the **target** system. `dev-cloud-aws` pulls
+`packages/aws-sso` this way, so any check that forces it needs an `aarch64-darwin` builder.
+
+This is not a certificate defect, and the certificate aspects themselves are pure: reading
+`kdn.certificates` and `kdn.ca-dag` realizes no derivation. The rule still binds the design:
+
+- The certificate aspects must stay pure. They declare options and derive paths; they build nothing.
+- A check that forces a certificate pair must not need a foreign builder.
+- The `ca-manager` aspect ships the `kdn-certs` Go package. A check that forces `ca-manager` builds
+  that package for the host system only, so it needs no foreign builder.
+
+The general fix is **not** in this task. It belongs to
+[015 — den check harness platforms](../generalization/015-den-check-harness-platforms/definition.md),
+which gives the harness more than one platform. Two directions are open there:
+
+1. **A remote builder.** The tree already configures distributed builds
+   (`modules/universal/profile/remote-builders/default.nix:263-264` sets `nix.distributedBuilds` and
+   `nix.buildMachines`). A check host with `aarch64-darwin` in its `buildMachines` realizes the
+   foreign derivation on that builder, and the option set stays builder-independent from the
+   caller's view.
+2. **A pure evaluation route.** Remove the eval-time `builtins.readFile` from `mkPythonScript`, so
+   forcing an aspect realizes no derivation at all.
+
+Until one lands, `den-eval-instantiate` and `den-eval-development` stay unverified on a single
+platform. Record the gap in the task worklog. Do not add a per-aspect platform table to work around
+it: that hides the builder dependence instead of removing it.
+
 ---
 
 ## 9 — The zellij migration
@@ -530,6 +565,7 @@ SOPS.
 | 4 | A crash may leave a zombie `step-ca` process or a stale PID file | `kdn-certs doctor` owns the cleanup |
 | 5 | The CA private key needs a YubiKey touch | the CLI prompts for the touch; the leaf work is automated |
 | 6 | The universal-host augmentation line may clash on option declarations | `000-universal-augmentation` verifies it and records the caveats |
+| 7 | `den-eval-instantiate` needs a foreign builder for some aspects | pre-existing, not a certificate defect — see § 8.5 and [015](../generalization/015-den-check-harness-platforms/definition.md) |
 
 ---
 
