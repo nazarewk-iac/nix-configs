@@ -85,6 +85,11 @@ denTests.checks
   kdn-slug-pytest = pkgs.kdn.kdn-slug.passthru.tests.pytest;
   zellij-llm-pytest = pkgs.kdn.zellij-llm.passthru.tests.pytest;
 
+  # The `kdn-certs` Go suite. Every case mocks the `nix eval` and the `step` call behind an
+  # interface, so the check needs no flake, no CA and no network. See
+  # ../packages/kdn-certs/default.nix.
+  kdn-certs-test = pkgs.kdn.kdn-certs.passthru.tests.go-test;
+
   # jj-experiments harness: runs the isolated 3-repo pytest suite headless. The
   # rendered fork slot config is passed in through JJ_FORK_CONFIG_TOML so the
   # tests resolve the real revset aliases without a devenv shell.
