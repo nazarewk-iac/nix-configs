@@ -610,6 +610,8 @@ let
       expected = [
         "apps"
         "ca"
+        "ca-dag"
+        "certificates"
         "desktop-base"
         "desktop-kde"
         "desktop-remote-server"

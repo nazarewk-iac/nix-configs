@@ -49,6 +49,12 @@
     # class subject for the same pair.
     kdn.nix-config
     kdn.nix-remote-builder
+
+    # The certificate data layer and the leaf option set. Both are empty here, so the inclusion is a
+    # no-op; it proves the explicit-include route of decision D3 on a den host. See
+    # ../../../modules/den/aspects/ca-dag.nix and ./certificates.nix.
+    kdn.ca-dag
+    kdn.certificates
   ];
 
   # The `devenv` half of this host aspect. `den.policies.host-to-devenv` derives one shell from the
