@@ -1,7 +1,8 @@
 ---
 type: Task
 description: Add the kdn-certs Go CLI, which walks every den and legacy target, deduplicates the cert declarations, and drives the smallstep generation.
-status: open
+status: done
+solution: done.md
 authored_by: agent
 timestamp: 2026-09-25T17:29:39+02:00
 parent: ../definition.md

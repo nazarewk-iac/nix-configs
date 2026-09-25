@@ -87,8 +87,9 @@ in
   # cross-cutting nor slow. A new aspect check joins by itself. This bundle is a declared exception to
   # the 60 s ceiling; the header comment holds the decision and its reasoning.
   bundle-den = mkBundle "den" (lib.subtractLists (crossCutting ++ slow) (byPrefix "den-eval-"));
-  # 18.0 s. The two package test suites that finish in seconds.
+  # 18.0 s. The three package test suites that finish in seconds.
   bundle-pkgs = mkBundle "pkgs" [
+    "kdn-certs-test"
     "kdn-slug-pytest"
     "zellij-llm-pytest"
   ];
