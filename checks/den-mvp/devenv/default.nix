@@ -73,6 +73,11 @@ let
     # design's § 2.2 caveat names these two aspects for exactly this list.
     kdn.ca-dag
     kdn.certificates
+
+    # The CA manager. It includes `ca-dag` and adds the `kdn-certs` CLI to the shell. This is the
+    # one standalone shell that names it, so its `enterTest` runs `kdn-certs --help` under
+    # `den-smoke-devenv-*`. See ../../../modules/den/aspects/ca-manager.nix.
+    kdn.ca-manager
   ];
 
   # The data for the `nix` aspect. The aspect allow-lists no flake app of its own, because an app

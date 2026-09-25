@@ -37,6 +37,7 @@ let
     apps = ./aspects/apps.nix;
     ca = ./aspects/ca.nix;
     ca-dag = ./aspects/ca-dag.nix;
+    ca-manager = ./aspects/ca-manager.nix;
     certificates = ./aspects/certificates.nix;
     desktop-base = ./aspects/desktop-base.nix;
     desktop-kde = ./aspects/desktop-kde.nix;
