@@ -32,7 +32,8 @@
 # The three host and home classes import the pinned `sops-nix` module and write one `sops.secrets`
 # entry per declared key:
 #
-#   - `format = "binary"` — sops writes the raw key bytes, exactly as `hack/kdn-ca-sign.sh` does.
+#   - `format = "binary"` — sops writes the raw key bytes, so the committed key is a raw/binary SOPS
+#     file and not a YAML or JSON document.
 #   - `sopsFile = <repoRoot>/<directory>/<keyFile>.sops` — the committed raw/binary SOPS file.
 #   - `keyPath` reads `config.sops.secrets.<name>.path`, so the consumer reads the decrypted runtime
 #     path and no store path holds the secret.
