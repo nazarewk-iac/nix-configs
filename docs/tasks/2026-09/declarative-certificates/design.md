@@ -354,7 +354,7 @@ class, not one lifetime for all.
 
 ### 7.1 Server side
 
-The aspect writes two settings into `services.openssh.settings`:
+The aspect writes two directives into the server configuration:
 
 - `TrustedUserCAKeys` names the SSH CA public key. A user certificate that the CA signs then logs
   in, with no per-user `authorized_keys` line.
@@ -362,6 +362,29 @@ The aspect writes two settings into `services.openssh.settings`:
 
 The CA public key comes from `kdn.ca-dag.cas.<name>` with `ssh = true`. The host certificate comes
 from `kdn.certificates.certs.<name>` with `type = "ssh-host"`.
+
+The write mechanism differs per class, because the two platforms expose different options:
+
+| Class | Option | Mechanism |
+|---|---|---|
+| `nixos` | `services.openssh.settings.TrustedUserCAKeys` and `.HostCertificate` | the nixpkgs option |
+| `darwin` | `services.openssh.extraConfig` | a `sshd_config` fragment |
+
+**Measured on 2026-09-25:** nix-darwin declares `services.openssh.extraConfig`
+(`<nix-darwin>/modules/services/openssh.nix:84`), which it writes to
+`/etc/ssh/sshd_config.d/100-nix-darwin.conf` (`:129`). It declares no `services.openssh.settings`.
+So the `darwin` class writes the two directives as text:
+
+```nix
+services.openssh.extraConfig = ''
+  TrustedUserCAKeys ${caPubPath}
+  HostCertificate ${hostCertPath}
+'';
+```
+
+The user chose this route on 2026-09-25 (option A): it uses the existing nix-darwin option and keeps
+the frozen aspect shape. A local shim that declares `services.openssh.settings` on nix-darwin was
+rejected, because it risks an option-shape clash with upstream nix-darwin.
 
 ### 7.2 Client side
 
@@ -398,13 +421,12 @@ it.
 `kdn.ssh-access` option from `kdn.ssh-ca`, and do not read a `kdn.ssh-ca` option from
 `kdn.ssh-access`.
 
-### 7.5 Risk — nix-darwin `services.openssh.settings`
+### 7.5 nix-darwin server route — resolved
 
-**UNVERIFIED:** whether nix-darwin declares `services.openssh.settings`. The `nixos` class sets the
-two settings with no doubt. The `darwin` class may not expose the same option. If the option is
-absent, the `darwin` class must write the equivalent `sshd_config` fragment another way, or it must
-drop the server half. Verify this before the `darwin` work starts. Record the result in the task
-worklog.
+**Resolved on 2026-09-25.** nix-darwin declares `services.openssh.extraConfig`, not
+`services.openssh.settings`. The `darwin` class writes the two directives as a `sshd_config`
+fragment through `extraConfig`. See § 7.1 for the mechanism and the measured source. No open risk
+remains here.
 
 ---
 
@@ -560,7 +582,7 @@ SOPS.
 | # | Risk | State |
 |---|---|---|
 | 1 | A host-derived devenv shell may not reach an aspect that the host names | **UNVERIFIED** — name the aspects in the standalone shells by hand |
-| 2 | nix-darwin may not declare `services.openssh.settings` | **UNVERIFIED** — verify before the `darwin` work |
+| 2 | nix-darwin declares `services.openssh.extraConfig`, not `.settings` | **resolved 2026-09-25** — `darwin` writes a `sshd_config` fragment; see § 7.1 |
 | 3 | A new leaf key needs its own `creation_rules` entry above the generic rule | design rule — see [research.md](research.md) § 3 |
 | 4 | A crash may leave a zombie `step-ca` process or a stale PID file | `kdn-certs doctor` owns the cleanup |
 | 5 | The CA private key needs a YubiKey touch | the CLI prompts for the touch; the leaf work is automated |

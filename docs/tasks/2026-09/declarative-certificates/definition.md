@@ -114,5 +114,6 @@ design therefore adds `kdn.certificates` and `kdn.ca-dag` to each standalone dev
 (`checks/den-mvp/devenv/default.nix`). A measurement must settle this. Record the result in the
 task worklog.
 
-**UNVERIFIED:** whether nix-darwin declares `services.openssh.settings`. See
-[005-ssh-ca/definition.md](005-ssh-ca/definition.md).
+**Resolved 2026-09-25:** nix-darwin declares `services.openssh.extraConfig`, not
+`services.openssh.settings`. The `darwin` class writes a `sshd_config` fragment. See
+[005-ssh-ca/definition.md](005-ssh-ca/definition.md) and [design.md](design.md) § 7.1.
