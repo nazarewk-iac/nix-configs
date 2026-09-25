@@ -2611,6 +2611,16 @@ let
     ];
   };
 
+  # The leaf option set, with no consumer data. It reads a submodule default, which `bareShell`
+  # exposes through `.options`. The `owner` option is the D-A amendment: it lets a leaf key go to a
+  # non-root service account.
+  certificatesShell = bareShell {
+    aspects = [
+      "ca-dag"
+      "certificates"
+    ];
+  };
+
   # ------------------------------------------------------------------ option defaults
 
   # An option default is a promise to an adopter, and a header comment is not a test. Two facts make
@@ -2622,6 +2632,30 @@ let
   #  2. `den.devenv.mkShell` returns `.config` alone, so before `bareShell` existed no subject could
   #     read a `devenv`-class default at all.
   aspectDefaultsAssertions = [
+    # ---- the certificate leaf shape. The `owner` option is the D-A amendment, and the other
+    # values are the frozen design § 4 shape. A submodule default is reachable only through
+    # `.options`, so this subject reads each one.
+    {
+      name = "a leaf declares the owner option, and it defaults to null";
+      expected = {
+        owner = null;
+        keySource = null;
+        minGenerationDate = null;
+        principals = [ ];
+        sans = [ ];
+      };
+      actual =
+        let
+          sub = certificatesShell.options.kdn.certificates.certs.type.getSubOptions [ ];
+        in
+        {
+          owner = sub.owner.default;
+          keySource = sub.keySource.default or null;
+          minGenerationDate = sub.minGenerationDate.default;
+          principals = sub.principals.default;
+          sans = sub.sans.default;
+        };
+    }
     # ---- the opt-in boundary. Five declarations, one meaning: an aspect writes a file into the
     # consumer's own tree only when the consumer asks. A `true` default here would push this
     # repository's own work mandate into an adopter's working tree.
