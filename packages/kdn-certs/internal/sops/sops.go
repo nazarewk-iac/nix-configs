@@ -16,12 +16,30 @@ type Decryptor interface {
 	Decrypt(sopsFile string, dest string) error
 }
 
-// CLI is the real decryptor. It shells out to `sops`.
+// Encryptor encrypts one plaintext file to a raw/binary SOPS file.
+type Encryptor interface {
+	// Encrypt writes the raw bytes of `plainFile` to `sopsFile` as a raw/binary SOPS file.
+	Encrypt(plainFile string, sopsFile string) error
+}
+
+// CLI is the real decryptor and encryptor. It shells out to `sops`.
 type CLI struct {
 	// Verbose prints each command before it runs.
 	Verbose bool
 	// Logf receives one line per command when Verbose is set.
 	Logf func(format string, args ...any)
+	// ConfigPath is the `.sops.yaml` to read. Empty means `sops` searches from the working
+	// directory, which is correct when the CLI runs at the tree root. A caller that runs from
+	// another directory sets it.
+	ConfigPath string
+}
+
+// configArgs returns the `--config` prefix, or nothing when no path is set.
+func (c CLI) configArgs() []string {
+	if c.ConfigPath == "" {
+		return nil
+	}
+	return []string{"--config", c.ConfigPath}
 }
 
 // Decrypt runs `sops decrypt --output-type binary <sopsFile>` and writes the result to `dest`.
@@ -32,7 +50,8 @@ func (c CLI) Decrypt(sopsFile string, dest string) error {
 	if c.Verbose && c.Logf != nil {
 		c.Logf("sops decrypt --output-type binary %s > %s", sopsFile, dest)
 	}
-	cmd := exec.Command("sops", "decrypt", "--output-type", "binary", sopsFile)
+	args := append(c.configArgs(), "decrypt", "--output-type", "binary", sopsFile)
+	cmd := exec.Command("sops", args...)
 	cmd.Stdin = os.Stdin
 	cmd.Stderr = os.Stderr
 	out, err := cmd.Output()
@@ -41,6 +60,32 @@ func (c CLI) Decrypt(sopsFile string, dest string) error {
 	}
 	if err := os.WriteFile(dest, out, 0o400); err != nil {
 		return fmt.Errorf("write %s: %w", dest, err)
+	}
+	return nil
+}
+
+// Encrypt runs `sops encrypt --output-type binary --filename-override <sopsFile> --output <sopsFile>`
+// over `plainFile`.
+//
+// `--filename-override` makes SOPS select the `creation_rules` entry by the destination path, not by
+// the temporary plaintext path. Without it, SOPS would match the generic rule and the per-host rule
+// above it would never fire. See research § 3.
+func (c CLI) Encrypt(plainFile string, sopsFile string) error {
+	if c.Verbose && c.Logf != nil {
+		c.Logf("sops encrypt --output-type binary --filename-override %s --output %s %s", sopsFile, sopsFile, plainFile)
+	}
+	args := append(c.configArgs(),
+		"encrypt",
+		"--output-type", "binary",
+		"--filename-override", sopsFile,
+		"--output", sopsFile,
+		plainFile,
+	)
+	cmd := exec.Command("sops", args...)
+	cmd.Stdin = os.Stdin
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("sops encrypt %s: %w", sopsFile, err)
 	}
 	return nil
 }

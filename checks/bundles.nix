@@ -90,6 +90,7 @@ in
   # 18.0 s. The three package test suites that finish in seconds.
   bundle-pkgs = mkBundle "pkgs" [
     "kdn-certs-test"
+    "kdn-certs-test-ca"
     "kdn-slug-pytest"
     "zellij-llm-pytest"
   ];

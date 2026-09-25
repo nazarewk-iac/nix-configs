@@ -83,10 +83,60 @@ All commands exit 0:
 
 ## Follow-up notes
 
-**The generation is not wired yet.** `kdn-certs apply` prints the plan and returns an error without
-`--dry-run`, because the sign flow needs a real CA and a YubiKey touch. The `internal/smallstep`
-package holds the `step` driver and the zombie scan; the per-certificate generation loop is the
-remaining work. This is reported as a follow-up, not a blocker: the design's acceptance for this
-sub-task is the walk, the dedup, the rotation test and the CLI surface.
-
 **`vendorHash` is filled.** The value is `sha256-IxYf6IDDLYRlbGY2R+wvsD7MTWdOUJh1PcKinLgvv4s=`.
+
+## Amendment — the generation loop is wired
+
+`kdn-certs apply` now drives the real loop. The earlier cut printed the plan and returned an error
+without `--dry-run`, because the sign flow needs a CA. The loop is the remaining work of the
+sub-task, and it landed here.
+
+### What the loop does
+
+`internal/generate` runs one pass over the deduplicated certificates:
+
+1. Walk the declarations and merge the CA graph (`walk.MergeCAs`).
+2. Sort the graph topologically (`dag.Sort`). A cycle and a dangling parent stay hard errors.
+3. For each certificate, read the committed public certificate (`internal/certinfo`) and decide the
+   mismatch (`internal/mismatch`): a stale `notBefore`, an issuer-CN mismatch, `--force`, or a
+   missing file.
+4. On a regeneration: decrypt the CA key on demand, generate the leaf key when `keySource =
+   "managed"`, sign the public certificate with `step`, and SOPS-encrypt the private key next to it.
+
+`--dry-run` prints the plan and writes nothing. The loop processes the certificates in the
+deterministic `dedup.Result.Sorted` order, so a second run with no change is idempotent.
+
+### The `step` invocation
+
+`step certificate create <cn> <cert> --key <key> --ca <ca.crt> --ca-key <ca.key>` signs the
+caller's key bytes, so the CLI owns them and SOPS-encrypts them. The managed key comes from
+`step crypto keypair --kty EC --curve P-256 --no-password --insecure`. A managed key is written
+plain only to a temporary directory, encrypted, and removed. The `--san` flag is repeated once per
+name: a comma-joined list is read as one DNS name. The CA key is always SOPS-sourced
+(`<directory>/<keyFile>.sops`); `sops` prompts for the YubiKey touch inside the decrypt when the key
+is encrypted to YubiKey identities.
+
+An SSH leaf (`ssh-user`, `ssh-host`) is refused by the TLS signer with a clear error. The SSH sign
+flow needs the `step ca` SSH provisioner and belongs to sub-task 005.
+
+### The test-CA integration check
+
+`internal/generate/generate_test.go` drives the loop against a **test CA** that lives under the
+test's own temporary directory, outside `data/`. Its key is encrypted to a test age identity, so
+the suite signs with no YubiKey and the real CA key is never read. The test asserts that the public
+certificate verifies against the test CA, that the private key is a raw/binary SOPS file, that the
+leaf issuer is the declared CA common name, and that a second run regenerates nothing.
+
+The plain `go test ./...` suite has no `step`, `sops` or `age` on PATH, so the integration test
+skips. The `kdn-certs-test-ca` check provides them and sets `KDN_CERTS_TEST_CA=1`. It is exposed as
+`passthru.tests.go-test-ca`, aliased in `checks/default.nix`, and added to `bundle-pkgs`.
+
+### Verification steps (amendment)
+
+All commands exit 0:
+
+| Command | Result |
+|---|---|
+| `nix build --no-eval-cache -L '.#checks.x86_64-linux.kdn-certs-test'` | the mocked Go suite passes |
+| `nix build --no-eval-cache -L '.#checks.x86_64-linux.kdn-certs-test-ca'` | the test-CA loop signs and verifies |
+| `nix run --no-eval-cache '.#kdn-certs' -- apply --flake . --dry-run` | walks the real flake, prints `no certificates declared` |

@@ -21,6 +21,8 @@
   step-ca,
   nix,
   sops,
+  age,
+  openssl,
   ...
 }:
 let
@@ -78,6 +80,31 @@ buildGoModule (finalAttrs: {
     # `doCheck = true` runs `go test ./...` in the check phase. The install phase only touches the
     # output, because the test result is the whole product.
     doCheck = true;
+    installPhase = ''
+      touch "$out"
+    '';
+  };
+
+  # The test-CA integration check. It runs the same Go suite with `step`, `sops`, `age` and
+  # `openssl` on PATH and `KDN_CERTS_TEST_CA=1` set, so `internal/generate` drives the real loop
+  # against a temporary unattended CA. The test CA lives under the test's own temp dir, outside
+  # `data/`, and its key is encrypted to a test age identity. So the suite signs with no YubiKey and
+  # the real CA key is never read. See design § 8.1.
+  passthru.tests.go-test-ca = buildGoModule {
+    pname = "kdn-certs-go-test-ca";
+    version = "0.0.1";
+
+    inherit src vendorHash;
+
+    nativeBuildInputs = [
+      step-cli
+      sops
+      age
+      openssl
+    ];
+
+    doCheck = true;
+    KDN_CERTS_TEST_CA = "1";
     installPhase = ''
       touch "$out"
     '';
