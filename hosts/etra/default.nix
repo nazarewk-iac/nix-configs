@@ -91,6 +91,15 @@ in
 {
   imports = [
     kdnConfig.self.nixosModules.default
+    {
+      imports = kdnConfig.self.denLib.imports {
+        class = "nixos";
+        aspects = [
+          "ca-dag"
+          "certificates"
+        ];
+      };
+    }
   ];
 
   config = lib.mkMerge [
@@ -441,12 +450,25 @@ in
       kdn.nix.remote-builder.localhost.speedFactor = 4;
     }
     {
+      kdn.certificates.repoRoot = kdnConfig.self;
+      kdn.certificates.certs.zellij-web = {
+        ca = "kdn";
+        type = "tls-server";
+        commonName = "etra.priv.nb.net.int.kdn.im";
+        sans = [ "etra.priv.nb.net.int.kdn.im" ];
+        directory = "hosts/etra/certs";
+        certFile = "zellij.pub";
+        keyFile = "zellij.key";
+        keySource = "managed";
+      };
+    }
+    {
       kdn.programs.zellij.web = {
         enable = true;
         bindAddress = "0.0.0.0";
         port = 8082;
-        certFile = "${kdnConfig.self}/hosts/etra/certs/zellij.pub";
-        keySopsFile = "${kdnConfig.self}/hosts/etra/certs/zellij.key.sops";
+        certFile = config.kdn.certificates.certs.zellij-web.certPath;
+        keyFile = config.kdn.certificates.certs.zellij-web.keyPath;
         user = "kdn";
         firewallInterfaces = [ "nb-priv" ];
       };

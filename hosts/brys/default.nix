@@ -133,6 +133,15 @@ in
   imports = [
     kdnConfig.self.nixosModules.default
     slots.config.nixos
+    {
+      imports = kdnConfig.self.denLib.imports {
+        class = "nixos";
+        aspects = [
+          "ca-dag"
+          "certificates"
+        ];
+      };
+    }
   ];
 
   config = lib.mkMerge [
@@ -477,12 +486,25 @@ in
       };
     }
     {
+      kdn.certificates.repoRoot = kdnConfig.self;
+      kdn.certificates.certs.zellij-web = {
+        ca = "kdn";
+        type = "tls-server";
+        commonName = "brys.priv.nb.net.int.kdn.im";
+        sans = [ "brys.priv.nb.net.int.kdn.im" ];
+        directory = "hosts/brys/certs";
+        certFile = "zellij.pub";
+        keyFile = "zellij.key";
+        keySource = "managed";
+      };
+    }
+    {
       kdn.programs.zellij.web = {
         enable = true;
         bindAddress = "0.0.0.0";
         port = 8082;
-        certFile = "${kdnConfig.self}/hosts/brys/certs/zellij.pub";
-        keySopsFile = "${kdnConfig.self}/hosts/brys/certs/zellij.key.sops";
+        certFile = config.kdn.certificates.certs.zellij-web.certPath;
+        keyFile = config.kdn.certificates.certs.zellij-web.keyPath;
         user = "kdn";
         firewallInterfaces = [ "nb-priv" ];
       };

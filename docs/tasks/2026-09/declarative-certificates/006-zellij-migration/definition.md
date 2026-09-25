@@ -1,7 +1,8 @@
 ---
 type: Task
 description: Replace hack/kdn-ca-sign.sh and the four manual zellij.{pub,key.sops} files with a kdn.certificates.certs.zellij-web declaration on oams, brys, etra and moss.
-status: open
+status: done
+solution: done.md
 parent: ../definition.md
 authored_by: agent
 timestamp: 2026-09-25T17:29:39+02:00
