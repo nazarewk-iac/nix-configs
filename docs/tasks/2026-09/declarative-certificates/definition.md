@@ -91,6 +91,7 @@ shells out to `step`, `step-ca`, `nix` and `sops`.
 | 005 | [005-ssh-ca/definition.md](005-ssh-ca/definition.md) | Add the `kdn.ssh-ca` aspect: server trust, client trust, host certificates and the `ssh login` flow. |
 | 006 | [006-zellij-migration/definition.md](006-zellij-migration/definition.md) | Replace the manual zellij file pair on four hosts with a `kdn.certificates` declaration. |
 | 007 | [007-ca-rotation/definition.md](007-ca-rotation/definition.md) | Rotate the unattended KDN root CA to a touch-required CA, with a migration window for the leaves. |
+| 008 | [008-apply-ssh-signing/definition.md](008-apply-ssh-signing/definition.md) | Wire the SSH sign branch into `kdn-certs apply`, so `apply` generates and signs `ssh-user` and `ssh-host` leaves too. |
 
 The umbrella stays `status: in-progress` until every sub-task is `done`.
 
