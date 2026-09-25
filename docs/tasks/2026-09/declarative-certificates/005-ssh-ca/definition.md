@@ -37,12 +37,23 @@ user and home names `kdn.ssh-ca` in its own `includes`.
 
 ## Server side
 
-The aspect writes two settings into `services.openssh.settings`:
+The aspect writes two directives into the server configuration:
 
 - `TrustedUserCAKeys` names the SSH CA public key. A user certificate that the CA signs then logs
   in, with no per-user `authorized_keys` line. This trust covers both the interactive and the
   automation certificate class.
 - `HostCertificate` names the host certificate. The server presents it to every client.
+
+The write mechanism differs per class, because the two platforms expose different options:
+
+| Class | Option |
+|---|---|
+| `nixos` | `services.openssh.settings.TrustedUserCAKeys` and `.HostCertificate` |
+| `darwin` | `services.openssh.extraConfig`, as a `sshd_config` fragment |
+
+**Measured on 2026-09-25:** nix-darwin declares `services.openssh.extraConfig`
+(`<nix-darwin>/modules/services/openssh.nix:84`), not `services.openssh.settings`. The user chose
+the `extraConfig` route on 2026-09-25. See [../design.md](../design.md) § 7.1.
 
 The CA public key comes from `kdn.ca-dag.cas.<name>` with `ssh = true`. The host certificate comes
 from `kdn.certificates.certs.<name>` with `type = "ssh-host"`.
@@ -113,17 +124,17 @@ directory. It lets the test suite sign without a YubiKey. It never signs a real 
 `kdn.ssh-access` option from `kdn.ssh-ca`, and do not read a `kdn.ssh-ca` option from
 `kdn.ssh-access`.
 
-## Risk — nix-darwin `services.openssh.settings`
+## nix-darwin server route — resolved
 
-**UNVERIFIED:** whether nix-darwin declares `services.openssh.settings`. The `nixos` class sets the
-two settings with no doubt. The `darwin` class may not expose the same option. If the option is
-absent, the `darwin` class must write the equivalent `sshd_config` fragment another way, or it must
-drop the server half. Verify this before the `darwin` work starts. Record the result in the task
-worklog.
+**Resolved on 2026-09-25.** nix-darwin declares `services.openssh.extraConfig`, not
+`services.openssh.settings`. The `darwin` class writes the two directives as a `sshd_config`
+fragment through `extraConfig`. The user chose this route. See [../design.md](../design.md) § 7.1.
+No open risk remains here.
 
 ## Acceptance
 
 - The `nixos` and `homeManager` classes evaluate with a bare consumer.
+- The `darwin` class writes the two directives through `services.openssh.extraConfig`.
 - The server holds `TrustedUserCAKeys` and `HostCertificate` when the consumer declares the CA and
   the host cert.
 - The client writes `~/.ssh/config.d/50-kdn-ssh-ca.config` and the `@cert-authority` line.
