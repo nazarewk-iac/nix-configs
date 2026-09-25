@@ -90,6 +90,12 @@ denTests.checks
   # ../packages/kdn-certs/default.nix.
   kdn-certs-test = pkgs.kdn.kdn-certs.passthru.tests.go-test;
 
+  # The `kdn-certs` test-CA integration suite. It runs the same Go suite with `step`, `sops`, `age`
+  # and `openssl` on PATH, so `internal/generate` drives the real generation loop against a
+  # temporary unattended CA. The test CA lives outside `data/` and its key is encrypted to a test
+  # age identity, so the suite signs with no YubiKey. See design § 8.1.
+  kdn-certs-test-ca = pkgs.kdn.kdn-certs.passthru.tests.go-test-ca;
+
   # jj-experiments harness: runs the isolated 3-repo pytest suite headless. The
   # rendered fork slot config is passed in through JJ_FORK_CONFIG_TOML so the
   # tests resolve the real revset aliases without a devenv shell.

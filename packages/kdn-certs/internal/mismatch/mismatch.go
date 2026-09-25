@@ -5,11 +5,14 @@
 package mismatch
 
 import (
-	"time"
-
+	"kdn-certs/internal/certinfo"
 	"kdn-certs/internal/decl"
 	"kdn-certs/internal/iso8601"
 )
+
+// Existing is the state of a certificate that is already on disk. It aliases `certinfo.Info`, so a
+// reader of the public certificate feeds `Decide` with no conversion.
+type Existing = certinfo.Info
 
 // Reason names why a certificate must be regenerated.
 type Reason string
@@ -26,14 +29,6 @@ const (
 	// ReasonMissing means no certificate file exists yet.
 	ReasonMissing Reason = "missing"
 )
-
-// Existing is the state of a certificate that is already on disk.
-type Existing struct {
-	// NotBefore is the certificate's own not-before date.
-	NotBefore time.Time
-	// IssuerCN is the common name of the certificate issuer.
-	IssuerCN string
-}
 
 // Decide returns the regeneration reason for one certificate.
 //

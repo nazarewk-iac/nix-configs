@@ -15,15 +15,20 @@ import (
 // Signer signs a certificate and generates a key. The interface keeps the CLI testable with no
 // `step` binary and no CA.
 type Signer interface {
-	// GenerateKey writes a new private key to `keyOut`.
+	// GenerateKey writes a new unencrypted EC P-256 private key to `keyOut`. The caller SOPS-encrypts
+	// it immediately, so the plaintext key is never committed.
 	GenerateKey(keyOut string) error
-	// SignLeaf signs `csr`-equivalent options into `certOut` with the CA key.
+	// SignLeaf signs the key at `req.KeyPath` into `req.CertPath` with the CA key.
 	SignLeaf(req LeafRequest) error
 	// CreateCA creates a self-signed root or an intermediate.
 	CreateCA(req CARequest) error
 }
 
 // LeafRequest is one leaf signing request.
+//
+// `KeyPath` is an existing private key. The caller generates it (when `keySource = "managed"`) or
+// decrypts it (when `keySource = "external"`) before the sign call. `step certificate create` then
+// signs that key with `--key`, so the CLI owns the key bytes and can SOPS-encrypt them.
 type LeafRequest struct {
 	CommonName string
 	SANs       []string
@@ -67,29 +72,49 @@ func (s StepCLI) run(name string, args ...string) error {
 	return nil
 }
 
-// GenerateKey writes an EC P-256 private key to `keyOut`.
+// GenerateKey writes an unencrypted EC P-256 private key to `keyOut`, with its public key at
+// `keyOut+".pub"`.
+//
+// `--no-password --insecure` keeps the key unencrypted, so the caller can SOPS-encrypt it at once.
+// The plaintext file lives in a temporary directory and never reaches the tree.
 func (s StepCLI) GenerateKey(keyOut string) error {
-	return s.run("step", "crypto", "keypair", "ecdsa", "--curve", "P-256", keyOut, keyOut+".pub")
+	return s.run(
+		"step", "crypto", "keypair",
+		"--kty", "EC",
+		"--curve", "P-256",
+		"--no-password",
+		"--insecure",
+		keyOut+".pub",
+		keyOut,
+	)
 }
 
-// SignLeaf signs one leaf certificate.
+// SignLeaf signs the existing private key at `req.KeyPath` into `req.CertPath`.
+//
+// `--key` names the leaf key, so `step` signs the caller's key bytes instead of generating its own.
+// The caller then owns those bytes and SOPS-encrypts them. This is the only `step certificate
+// create` form that both accepts an existing key and needs no `step-kms-plugin`.
+//
+// A `tls-server` or `tls-client` leaf uses this call. An SSH leaf needs the `step ca` SSH
+// provisioner, which sub-task 005 owns; this call refuses it loudly instead of running a wrong
+// command.
 func (s StepCLI) SignLeaf(req LeafRequest) error {
+	if req.Type == "ssh-user" || req.Type == "ssh-host" {
+		return fmt.Errorf("ssh leaf %q: the SSH sign flow is sub-task 005, not the TLS signer", req.CommonName)
+	}
+
 	args := []string{
 		"certificate", "create",
 		req.CommonName,
 		req.CertPath,
-		req.KeyPath,
+		"--key", req.KeyPath,
 		"--ca", req.CACertPath,
 		"--ca-key", req.CAKeyPath,
 	}
-	if len(req.SANs) > 0 {
-		args = append(args, "--san", strings.Join(req.SANs, ","))
-	}
-	if req.Type == "ssh-user" || req.Type == "ssh-host" {
-		args = append(args, "--ssh")
-		if len(req.Principals) > 0 {
-			args = append(args, "--principal", strings.Join(req.Principals, ","))
-		}
+	// `--san` takes one value per flag. A comma-joined list is read as one DNS name, so repeat the
+	// flag instead.
+	for _, san := range req.SANs {
+		args = append(args, "--san", san)
 	}
 	return s.run("step", args...)
 }

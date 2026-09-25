@@ -12,6 +12,7 @@ import (
 
 	"kdn-certs/internal/decl"
 	"kdn-certs/internal/dedup"
+	"kdn-certs/internal/generate"
 	"kdn-certs/internal/walk"
 )
 
@@ -122,6 +123,13 @@ func (a *App) printPlan(entries []planEntry) error {
 		fmt.Fprintf(a.Out, "%-24s %-16s %-12s %s\n", entry.Name, entry.CA, entry.Type, entry.Reason)
 	}
 	return nil
+}
+
+// printApplyJSON prints the apply result as JSON.
+func (a *App) printApplyJSON(out generate.Result) error {
+	encoder := json.NewEncoder(a.Out)
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(out)
 }
 
 // dedupCerts walks the flake and returns the deduplicated certificate set.
