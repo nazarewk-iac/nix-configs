@@ -55,6 +55,14 @@ func writeFile(t *testing.T, dir string, rel string, content string) string {
 	return path
 }
 
+// isolateTmp points `TMPDIR` at the test's own temp dir, so every `os.MkdirTemp("", …)` the
+// production code makes lands under a directory Go removes at test end. No plaintext key can
+// survive in the shared `/tmp`. See item 4 of the cleanup batch.
+func isolateTmp(t *testing.T, root string) {
+	t.Helper()
+	t.Setenv("TMPDIR", root)
+}
+
 // setupTestCA builds a temporary test CA with an unattended key and returns the tree root, the CA
 // graph and the age key file path.
 func setupTestCA(t *testing.T) (root string, cas decl.CAs, ageKeyFile string) {
@@ -64,6 +72,7 @@ func setupTestCA(t *testing.T) (root string, cas decl.CAs, ageKeyFile string) {
 	requireTool(t, "age-keygen")
 
 	root = t.TempDir()
+	isolateTmp(t, root)
 	caDir := filepath.Join(root, "ca")
 	if err := os.MkdirAll(caDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -194,6 +203,24 @@ func TestGenerateAgainstTestCA(t *testing.T) {
 	}
 	if second.Generated != 0 {
 		t.Errorf("second run generated %d certificates, want 0 (idempotent)", second.Generated)
+	}
+
+	// Every temporary directory the loop made is gone, so no plaintext key survives the run.
+	assertNoTempLeftovers(t, root)
+}
+
+// assertNoTempLeftovers proves item 4: the production `os.MkdirTemp("", "kdn-certs-…")` calls clean
+// up after themselves. `TMPDIR` points at the test's own temp dir, so a leftover would appear here.
+func assertNoTempLeftovers(t *testing.T, tmpRoot string) {
+	t.Helper()
+	entries, err := os.ReadDir(tmpRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, entry := range entries {
+		if strings.HasPrefix(entry.Name(), "kdn-certs-") {
+			t.Errorf("temporary directory %q survived the run", filepath.Join(tmpRoot, entry.Name()))
+		}
 	}
 }
 
