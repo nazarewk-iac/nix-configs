@@ -6,13 +6,16 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 
+	"kdn-certs/internal/certinfo"
 	"kdn-certs/internal/decl"
 	"kdn-certs/internal/dedup"
 	"kdn-certs/internal/generate"
+	"kdn-certs/internal/mismatch"
 	"kdn-certs/internal/smallstep"
 	"kdn-certs/internal/sops"
 	"kdn-certs/internal/walk"
@@ -127,8 +130,9 @@ func NewRootWithApp(app *App) *cobra.Command {
 	return root
 }
 
-// loadTargets walks the flake and merges the CA graph.
-func (a *App) loadTargets() ([]decl.Target, error) {
+// loadTargets walks the flake. A target whose subtree fails to evaluate is reported through the
+// returned Result, not as an error, so the caller still acts on the readable targets.
+func (a *App) loadTargets() (walk.Result, error) {
 	evaluator := a.Evaluator
 	if evaluator == nil {
 		evaluator = walk.NixEvaluator{
@@ -140,6 +144,41 @@ func (a *App) loadTargets() ([]decl.Target, error) {
 	return walk.Walk(evaluator)
 }
 
+// reportFailures prints each failed target to the error stream. It runs before the command output,
+// so a partial run names what it skipped. `--json` keeps the failures in the machine-readable
+// payload instead, so this print is skipped there.
+func (a *App) reportFailures(failures []walk.Failure) {
+	if len(failures) == 0 {
+		return
+	}
+	for _, failure := range failures {
+		fmt.Fprintf(a.Err, "target %s failed: %s\n", failure.Target, failure.Error)
+	}
+}
+
+// existingCert reads the committed public certificate of one certificate declaration. A missing
+// file returns nil, which `mismatch.Decide` reads as "no certificate yet". The read is pure Go, so
+// `plan` and `status` report the same reason `apply` does.
+func (a *App) existingCert(cert decl.Cert) (*certinfo.Info, error) {
+	rel := filepath.Join(cert.Directory, cert.CertFile)
+	abs := rel
+	if !filepath.IsAbs(rel) {
+		abs = filepath.Join(a.Options.Flake, rel)
+	}
+	return certinfo.Read(abs)
+}
+
+// decide returns the regeneration reason of one certificate, reading the committed certificate the
+// same way `apply` does. `caCommonName` is the declared common name of the signing CA, which the
+// caller reads from the merged CA graph.
+func (a *App) decide(cert decl.Cert, caCommonName string, force bool) (mismatch.Reason, error) {
+	existing, err := a.existingCert(cert)
+	if err != nil {
+		return mismatch.ReasonNone, err
+	}
+	return mismatch.Decide(cert, existing, caCommonName, force)
+}
+
 // planEntry is one line of the plan output.
 type planEntry struct {
 	Name     string `json:"name"`
@@ -149,13 +188,16 @@ type planEntry struct {
 	Reason   string `json:"reason"`
 }
 
-// printPlan prints the plan as JSON or as a table.
-func (a *App) printPlan(entries []planEntry) error {
+// printPlan prints the plan as JSON or as a table. The failures join the JSON payload, so a machine
+// reader sees which targets were skipped.
+func (a *App) printPlan(entries []planEntry, failures []walk.Failure) error {
 	if a.Options.JSON {
 		encoder := json.NewEncoder(a.Out)
 		encoder.SetIndent("", "  ")
-		return encoder.Encode(entries)
+		return encoder.Encode(planResponse{Entries: entries, Failures: failures})
 	}
+
+	a.reportFailures(failures)
 
 	if len(entries) == 0 {
 		fmt.Fprintln(a.Out, "no certificates declared")
@@ -170,6 +212,16 @@ func (a *App) printPlan(entries []planEntry) error {
 	return nil
 }
 
+// failuresError returns one aggregate error when a target failed, or nil when every target was
+// readable. The command still printed the readable work before this error, so the exit code is 1
+// and the partial action stands.
+func failuresError(failures []walk.Failure) error {
+	if len(failures) == 0 {
+		return nil
+	}
+	return walk.Result{Failures: failures}.Err()
+}
+
 // printApplyJSON prints the apply result as JSON.
 func (a *App) printApplyJSON(out generate.Result) error {
 	encoder := json.NewEncoder(a.Out)
@@ -177,11 +229,12 @@ func (a *App) printApplyJSON(out generate.Result) error {
 	return encoder.Encode(out)
 }
 
-// dedupCerts walks the flake and returns the deduplicated certificate set.
-func (a *App) dedupCerts() (dedup.Result, error) {
-	targets, err := a.loadTargets()
+// dedupCerts walks the flake and returns the deduplicated certificate set plus the per-target
+// failures of the walk. The caller decides whether a failure becomes a non-zero exit.
+func (a *App) dedupCerts() (dedup.Result, []walk.Failure, error) {
+	result, err := a.loadTargets()
 	if err != nil {
-		return dedup.Result{}, err
+		return dedup.Result{}, nil, err
 	}
-	return dedup.Merge(targets), nil
+	return dedup.Merge(result.Targets), result.Failures, nil
 }

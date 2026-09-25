@@ -33,15 +33,19 @@ func newCACmd(app *App) *cobra.Command {
 			Long:  "Sign one leaf. Prompt for the YubiKey touch when the CA key needs it.",
 			Args:  cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
-				result, err := app.dedupCerts()
+				result, failures, err := app.dedupCerts()
 				if err != nil {
 					return err
 				}
+				app.reportFailures(failures)
 				for _, cert := range result.Sorted() {
 					if cert.Name == args[0] {
 						fmt.Fprintf(app.Out, "sign %s with CA %s\n", cert.Name, cert.CA)
-						return nil
+						return failuresError(failures)
 					}
+				}
+				if err := failuresError(failures); err != nil {
+					return err
 				}
 				return fmt.Errorf("no certificate named %q", args[0])
 			},
@@ -57,7 +61,7 @@ func runCAInit(app *App) error {
 	if err != nil {
 		return err
 	}
-	cas, err := walk.MergeCAs(targets)
+	cas, err := walk.MergeCAs(targets.Targets)
 	if err != nil {
 		return err
 	}
@@ -87,12 +91,13 @@ func runCAInit(app *App) error {
 		return encoder.Encode(out)
 	}
 
+	app.reportFailures(targets.Failures)
 	for _, action := range out.Actions {
 		fmt.Fprintf(app.Out, "%s\t%s\t%s\t%s\n", action.Name, action.Type, action.CommonName, action.Reason)
 	}
 	if app.Options.DryRun {
-		return nil
+		return failuresError(targets.Failures)
 	}
 	fmt.Fprintf(app.Out, "created %d of %d CAs\n", out.Created, len(out.Actions))
-	return nil
+	return failuresError(targets.Failures)
 }

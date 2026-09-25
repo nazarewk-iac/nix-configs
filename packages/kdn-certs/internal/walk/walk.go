@@ -1,13 +1,16 @@
 // Package walk enumerates every certificate declaration site of a flake.
 //
 // It reads the den tree and the legacy tree. A missing option is an empty set, never an error, so a
-// target that adopts the tree partly is still walkable. See design § 5.4.
+// target that adopts the tree partly is still walkable. A target whose subtree evaluation fails is
+// not fatal either: the walk records the failure, keeps the readable targets, and lets the caller
+// act on them. See design § 5.4.
 package walk
 
 import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
+	"strings"
 
 	"kdn-certs/internal/decl"
 )
@@ -55,69 +58,94 @@ const (
 	applyNames = `builtins.attrNames`
 )
 
-// Walk reads every declaration site of the flake and returns one Target per site.
+// Failure is one target whose subtree evaluation failed. The walk keeps the readable targets, so
+// one broken host does not hide the rest.
+type Failure struct {
+	// Target is the target name, for example `nixosConfigurations.broken`.
+	Target string `json:"target"`
+	// Error is the failure message.
+	Error string `json:"error"`
+}
+
+// Result holds the readable targets and the per-target failures of one walk.
+type Result struct {
+	// Targets are the targets whose declarations were readable.
+	Targets []decl.Target
+	// Failures are the targets whose subtree evaluation failed.
+	Failures []Failure
+}
+
+// Err returns one aggregate error when a target failed, or nil when every target was readable.
+func (r Result) Err() error {
+	if len(r.Failures) == 0 {
+		return nil
+	}
+	names := make([]string, 0, len(r.Failures))
+	for _, failure := range r.Failures {
+		names = append(names, failure.Target)
+	}
+	return fmt.Errorf("%d target(s) failed to evaluate: %s", len(r.Failures), strings.Join(names, ", "))
+}
+
+// Walk reads every declaration site of the flake and returns one Target per readable site.
 //
 // The den tree and the legacy tree are both read. A legacy host that no augmentation line reaches
-// returns an empty set and raises no error.
-func Walk(e Evaluator) ([]decl.Target, error) {
-	var targets []decl.Target
+// returns an empty set and raises no error. A target whose own subtree fails to evaluate is
+// recorded under `Result.Failures`; the walk continues with the readable targets.
+func Walk(e Evaluator) (Result, error) {
+	var result Result
 
 	// 1. den hosts. `den.hosts` is one host set per system.
 	hostNames, err := names(e, "den.hosts", `x: builtins.concatLists (builtins.map builtins.attrNames (builtins.attrValues x))`)
 	if err != nil {
-		return nil, err
+		return Result{}, err
 	}
 	for _, host := range hostNames {
-		target, err := readTarget(e, "denConfigurations."+host+".config", "denConfigurations."+host)
-		if err != nil {
-			return nil, err
-		}
-		targets = append(targets, target)
+		readInto(&result, e, "denConfigurations."+host+".config", "denConfigurations."+host)
 	}
 
 	// 2. den home configurations.
 	homeNames, err := names(e, "denHomeConfigurations", applyNames)
 	if err != nil {
-		return nil, err
+		return Result{}, err
 	}
 	for _, home := range homeNames {
-		target, err := readTarget(e, "denHomeConfigurations."+home+".config", "denHomeConfigurations."+home)
-		if err != nil {
-			return nil, err
-		}
-		targets = append(targets, target)
+		readInto(&result, e, "denHomeConfigurations."+home+".config", "denHomeConfigurations."+home)
 	}
 
 	// 3. den devenv shells. `den.devenv.mkShell` returns `.config` alone, so the read is one level
 	// shorter than the host read.
 	shellNames, err := names(e, "denDevenvShells", applyNames)
 	if err != nil {
-		return nil, err
+		return Result{}, err
 	}
 	for _, shell := range shellNames {
-		target, err := readTarget(e, "denDevenvShells."+shell, "denDevenvShells."+shell)
-		if err != nil {
-			return nil, err
-		}
-		targets = append(targets, target)
+		readInto(&result, e, "denDevenvShells."+shell, "denDevenvShells."+shell)
 	}
 
 	// 4. The legacy tree. A universal host that sub-task 000 augments appears here.
 	for _, output := range []string{"nixosConfigurations", "darwinConfigurations", "homeConfigurations"} {
 		legacyNames, err := names(e, output, applyNames)
 		if err != nil {
-			return nil, err
+			return Result{}, err
 		}
 		for _, name := range legacyNames {
-			target, err := readTarget(e, output+"."+name+".config", output+"."+name)
-			if err != nil {
-				return nil, err
-			}
-			targets = append(targets, target)
+			readInto(&result, e, output+"."+name+".config", output+"."+name)
 		}
 	}
 
-	return targets, nil
+	return result, nil
+}
+
+// readInto reads one target. A readable target joins `result.Targets`; a failed one joins
+// `result.Failures` and the walk continues.
+func readInto(result *Result, e Evaluator, configAttr string, name string) {
+	target, err := readTarget(e, configAttr, name)
+	if err != nil {
+		result.Failures = append(result.Failures, Failure{Target: name, Error: err.Error()})
+		return
+	}
+	result.Targets = append(result.Targets, target)
 }
 
 // names reads one attribute-name list.
