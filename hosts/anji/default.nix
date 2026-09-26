@@ -33,6 +33,8 @@ let
   #
   # The owner runs every activation. The stock builder's working directory is
   # `/anji-ext-01/linux-builder`, so the `anji-ext-01` volume must be unlocked and mounted first.
+  # The full procedure, with the prerequisite and the verify commands, is in
+  # docs/multi-arch-builder.md, "Bootstrapping the Rosetta builder on `anji`".
   legacyLinuxBuilder = false;
   rosettaBuilder = true;
   bootstrapBuilder = false;
