@@ -71,20 +71,31 @@ up.
 `hosts/anji/default.nix` splits the two builders into two independent flags, so the bootstrap is
 three switches:
 
-| Phase | `legacyLinuxBuilder` | `rosettaBuilder` | What the switch does |
-|---|---|---|---|
-| 1 | `true` | `false` | The stock builder comes up. Its image **is** substitutable, so it needs no Linux builder. |
-| 2 | `true` | `true` | The build phase dispatches the Rosetta image to the now-running stock builder. Both guests run. |
-| 3 | `false` | `true` | The stock builder detaches. The Rosetta guest keeps its already-built image. |
+| Phase | `legacyLinuxBuilder` | `rosettaBuilder` | `bootstrapBuilder` | What the switch does |
+|---|---|---|---|---|
+| 1 | `true` | `false` | `true` | The stock builder comes up. Its image **is** substitutable, so it needs no Linux builder. |
+| 2 | `true` | `true` | `false` | The build phase dispatches the Rosetta image to the now-running stock builder. Both guests run. |
+| 3 | `false` | `true` | `false` | The stock builder detaches. The Rosetta guest keeps its already-built image. |
 
 Do not skip phase 2. A direct jump from phase 1 to phase 3 removes the only builder that can build
 the Rosetta image, and the switch fails before the Rosetta guest exists.
+
+`bootstrapBuilder` is `true` only in phase 1. It sets `kdn.hosts.anji.initialLinuxBuilder`, which
+skips the custom `nix.linux-builder.config` and the `nix.linux-builder.package` override. The
+custom guest imports `./linux-builder.nix`, and that guest embeds `kdn-authorized-keys`, a
+host-unique `aarch64-linux` derivation. The stock image holds no such derivation, so it is
+substitutable and phase 1 needs no running Linux builder. Phase 2 and phase 3 set
+`bootstrapBuilder = false`, so they build the custom guest.
 
 ### Prerequisite — unlock and mount the external volume
 
 The stock builder's working directory is `/anji-ext-01/linux-builder`, on an encrypted external
 APFS volume. The volume must be unlocked and mounted before phase 1, or the stock builder cannot
-write its disk image:
+write its disk image.
+
+`hosts/anji/default.nix` now unlocks and mounts both external volumes at boot, so this prerequisite
+is automatic. The block reads each passphrase from the System keychain and runs before the
+builder's activation. See [hosts/anji/disks.md](../hosts/anji/disks.md). To unlock by hand:
 
 ```bash
 ssh anji 'sudo diskutil apfs unlockVolume anji-ext-01 -nomount \
@@ -97,22 +108,22 @@ disks and follows the same unlock pattern.
 
 ### The three switches
 
-Set the two flags in `hosts/anji/default.nix`, then run the switch. `darwin-rebuild switch` is a
+Set the three flags in `hosts/anji/default.nix`, then run the switch. `darwin-rebuild switch` is a
 host-level action for the owner.
 
 ```bash
-# Phase 1 — stock builder on, Rosetta off
-#   set: legacyLinuxBuilder = true; rosettaBuilder = false;
+# Phase 1 — stock builder on, Rosetta off, bootstrap guest
+#   set: legacyLinuxBuilder = true; rosettaBuilder = false; bootstrapBuilder = true;
 nix run '.#darwin-rebuild' -- switch remote=anji
 ssh anji 'cat /etc/nix/machines; limactl list'
 
 # Phase 2 — both on; builds the Rosetta image
-#   set: legacyLinuxBuilder = true; rosettaBuilder = true;
+#   set: legacyLinuxBuilder = true; rosettaBuilder = true; bootstrapBuilder = false;
 nix run '.#darwin-rebuild' -- switch remote=anji
 ssh anji 'cat /etc/nix/machines'
 
 # Phase 3 — stock builder off, Rosetta on (steady state)
-#   set: legacyLinuxBuilder = false; rosettaBuilder = true;
+#   set: legacyLinuxBuilder = false; rosettaBuilder = true; bootstrapBuilder = false;
 nix run '.#darwin-rebuild' -- switch remote=anji
 ssh anji 'cat /etc/nix/machines; limactl list'
 ```
