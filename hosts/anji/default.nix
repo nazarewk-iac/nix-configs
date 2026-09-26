@@ -16,9 +16,25 @@ let
   # To re-attach: set `legacyLinuxBuilder = true;` here. Nothing else changes.
   #
   # ORDER TRAP on a real machine: nix-rosetta-builder needs an existing Linux builder to build its
-  # own guest image the first time. So on a fresh machine, re-attach this first, activate, wait for
-  # the Rosetta guest, then set it back to `false`. The owner runs every activation.
+  # own guest image the first time. The Rosetta guest image is a plain `aarch64-linux` derivation,
+  # and it is not substitutable, so the switch that first builds it needs a Linux builder that is
+  # already running. The stock `nix.linux-builder` is that builder, and it starts only at
+  # activation. So a generation that holds both cannot build the Rosetta image: the build phase
+  # runs before the stock builder is up.
+  #
+  # The bootstrap is therefore three switches, and the two flags below are independent on purpose:
+  #
+  #   1. `legacyLinuxBuilder = true; rosettaBuilder = false;`  — stock builder on, Rosetta off.
+  #      Switch. The stock builder comes up.
+  #   2. `legacyLinuxBuilder = true; rosettaBuilder = true;`   — both on. Switch. The build phase
+  #      dispatches the Rosetta image to the now-running stock builder. Both guests run.
+  #   3. `legacyLinuxBuilder = false; rosettaBuilder = true;`  — stock builder off, Rosetta on.
+  #      Switch. The Rosetta guest keeps its already-built image.
+  #
+  # The owner runs every activation. The stock builder's working directory is
+  # `/anji-ext-01/linux-builder`, so the `anji-ext-01` volume must be unlocked and mounted first.
   legacyLinuxBuilder = false;
+  rosettaBuilder = true;
   bootstrapBuilder = false;
 
   slots = kdnConfig.self.mkSlots {
@@ -29,7 +45,7 @@ let
       "${kdnConfig.self}/data/slots/slots-ssh-access.nix"
     ];
 
-    kdn.darwin.rosetta-builder.enable = true;
+    kdn.darwin.rosetta-builder.enable = rosettaBuilder;
     # Replace the macOS built-in ssh-agent with the FIDO2-capable OpenSSH agent.
     kdn.home.ssh-agent.enable = true;
     # devenv CLI and shell hooks.
@@ -72,7 +88,7 @@ in
       # keeps the scan on, so its evaluated tap list stays exactly what it was.
       kdn.homebrew.tapsFromFlakeInputs = true;
     }
-    {
+    (lib.optionalAttrs rosettaBuilder {
       # Rosetta builder guest disk, stated on purpose. This host is a Mac mini M2 with a 256 GB
       # disk, and the guest disk is a sparse file on it. `100GiB` is also the upstream default of
       # `nix-rosetta-builder`, and no module in this tree assigns `diskSize`, so this line changes
@@ -81,8 +97,12 @@ in
       #
       # Do NOT set `kdn.darwin.rosetta-builder.guest.minFree` or `.maxFree`. A non-null value
       # regenerates `lima.yaml`, and the daemon then runs `limactl delete --force` on the guest.
+      #
+      # `optionalAttrs`, not `mkIf`: `mkIf false` still checks the option name against the declared
+      # option set, and `nix-rosetta-builder` exists only while its module is imported. So
+      # `rosettaBuilder = false` must drop the attribute entirely.
       nix-rosetta-builder.diskSize = "100GiB";
-    }
+    })
     {
       system.stateVersion = 6;
       home-manager.sharedModules = [ { home.stateVersion = "26.05"; } ];
