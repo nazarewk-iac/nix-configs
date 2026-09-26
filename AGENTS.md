@@ -20,6 +20,7 @@ AI Agent Guidance for nix-configs Repository.
 - [MCP Setup](.agents/rules/mcp-setup.md) — gateway architecture, adding backends, mcpsnoop (full doc: [docs/mcp-setup.md](docs/mcp-setup.md))
 - [Tasks](.agents/rules/tasks.md) — one directory per task at `docs/tasks/<YYYY-MM>/<slug>/`, recursive sub-tasks, done-tag + sibling solution file; a work-run status belongs in the task's `.worklog.md` (full doc: [docs/tasks/README.md](docs/tasks/README.md))
 - [Simple Technical English](.agents/rules/simple-technical-english.md) — strict ASD-STE100 for all docs, code comments, and chat; domain-vocabulary exception; ask the user before you drop STE
+- [Darwin Quirks](.agents/rules/darwin-quirks.md) — on macOS, surface an unpredicted behaviour to the user, then record it in [docs/darwin-quirks.md](docs/darwin-quirks.md) after confirmation
 
 ## docs/ — full documentation
 
@@ -42,6 +43,8 @@ read the full doc when you need detail.
 | [docs/mcp-setup.md](docs/mcp-setup.md) | MCP gateway architecture, configuration, backends, lifecycle |
 | [docs/mcpsnoop.md](docs/mcpsnoop.md) | mcpsnoop traffic inspector: setup, TUI usage, filtering, workflows |
 | [docs/nix-dev.md](docs/nix-dev.md) | Nix development: building devenv shell, vendored lockfile recovery, hash updates |
+| [docs/darwin-quirks.md](docs/darwin-quirks.md) | General macOS-only behaviours: Full Disk Access on external volumes, the locked login keychain over SSH, encrypted APFS locking on unmount |
+| [hosts/anji/disks.md](hosts/anji/disks.md) | The `anji` external volumes: UUIDs, mount paths, unlock procedure, Full Disk Access for the builder, boot auto-unlock |
 | [docs/tasks/README.md](docs/tasks/README.md) | Tasks convention: one directory per task under `<YYYY-MM>/`, done-tag + sibling solution, frontmatter schema |
 | [checks/README.md](checks/README.md) | Every check: its bundle, its measured time and its exact standalone command. Never run a bare `nix flake check` — it takes 11 minutes. |
 
