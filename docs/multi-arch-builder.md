@@ -59,6 +59,83 @@ ssh-ng://builder@linux-builder aarch64-linux /etc/nix/builder_ed25519 1 1 kvm,be
 
 ---
 
+## Bootstrapping the Rosetta builder on `anji`
+
+The Rosetta guest image is a plain `aarch64-linux` derivation, and it is **not substitutable**: it
+is absent from `cache.nixos.org` and from every cache this tree configures. So the activation that
+first builds it needs an `aarch64-linux` builder that is **already running**. The stock
+`nix.linux-builder` is that builder, but it starts only at activation. A generation that holds both
+builders therefore cannot build the Rosetta image: the build phase runs before the stock builder is
+up.
+
+`hosts/anji/default.nix` splits the two builders into two independent flags, so the bootstrap is
+three switches:
+
+| Phase | `legacyLinuxBuilder` | `rosettaBuilder` | What the switch does |
+|---|---|---|---|
+| 1 | `true` | `false` | The stock builder comes up. Its image **is** substitutable, so it needs no Linux builder. |
+| 2 | `true` | `true` | The build phase dispatches the Rosetta image to the now-running stock builder. Both guests run. |
+| 3 | `false` | `true` | The stock builder detaches. The Rosetta guest keeps its already-built image. |
+
+Do not skip phase 2. A direct jump from phase 1 to phase 3 removes the only builder that can build
+the Rosetta image, and the switch fails before the Rosetta guest exists.
+
+### Prerequisite — unlock and mount the external volume
+
+The stock builder's working directory is `/anji-ext-01/linux-builder`, on an encrypted external
+APFS volume. The volume must be unlocked and mounted before phase 1, or the stock builder cannot
+write its disk image:
+
+```bash
+ssh anji 'sudo diskutil apfs unlockVolume anji-ext-01 -nomount \
+  && sudo diskutil mount anji-ext-01 \
+  && df -h /anji-ext-01'
+```
+
+The passphrase is in the owner's KeePass; `diskutil` prompts for it. `anji-ext-02` holds the UTM
+disks and follows the same unlock pattern.
+
+### The three switches
+
+Set the two flags in `hosts/anji/default.nix`, then run the switch. `darwin-rebuild switch` is a
+host-level action for the owner.
+
+```bash
+# Phase 1 — stock builder on, Rosetta off
+#   set: legacyLinuxBuilder = true; rosettaBuilder = false;
+nix run '.#darwin-rebuild' -- switch remote=anji
+ssh anji 'cat /etc/nix/machines; limactl list'
+
+# Phase 2 — both on; builds the Rosetta image
+#   set: legacyLinuxBuilder = true; rosettaBuilder = true;
+nix run '.#darwin-rebuild' -- switch remote=anji
+ssh anji 'cat /etc/nix/machines'
+
+# Phase 3 — stock builder off, Rosetta on (steady state)
+#   set: legacyLinuxBuilder = false; rosettaBuilder = true;
+nix run '.#darwin-rebuild' -- switch remote=anji
+ssh anji 'cat /etc/nix/machines; limactl list'
+```
+
+### Verify
+
+```bash
+ssh anji 'nix build --no-link --print-out-paths "nixpkgs#legacyPackages.aarch64-linux.hello"'
+ssh anji 'nix build --no-link --print-out-paths "nixpkgs#legacyPackages.x86_64-linux.hello"'
+```
+
+Both must succeed. `/etc/nix/machines` must list `rosetta-builder` with both `aarch64-linux` and
+`x86_64-linux`.
+
+### `optionalAttrs`, not `mkIf`
+
+The `nix-rosetta-builder.diskSize` line sits under `lib.optionalAttrs rosettaBuilder`. It must not
+be an `lib.mkIf`: `mkIf false` still checks the option name against the declared option set, and
+`nix-rosetta-builder` exists only while its module is imported. So `rosettaBuilder = false` must
+drop the attribute entirely.
+
+---
+
 ## Background: why the store is *already* single & how transfer works
 
 Understanding this decides most of the design. In **remote-builder** mode (what
