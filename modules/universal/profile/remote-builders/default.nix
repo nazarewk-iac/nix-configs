@@ -225,7 +225,7 @@ in
                 )
                 # WARNING: this entry needs to be here to prevent infinite recursion
                 (key: old: {
-                  mode = if key == "ssh/${bCfg.user.name}/id_ed25519" then "0440" else old.mode or "0440";
+                  mode = if key == "ssh/${bCfg.user.name}/id_ed25519" then "0400" else old.mode or "0440";
                 })
               ];
             };
