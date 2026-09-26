@@ -32,12 +32,13 @@ let
   #      Switch. The Rosetta guest keeps its already-built image.
   #
   # The owner runs every activation. The stock builder's working directory is
-  # `/anji-ext-01/linux-builder`, so the `anji-ext-01` volume must be unlocked and mounted first.
-  # The full procedure, with the prerequisite and the verify commands, is in
+  # `/anji-ext-01/linux-builder`. This host unlocks and mounts both external volumes in
+  # `preActivation` at boot, so the volume is ready before the builder's own `preActivation` block
+  # runs. The full procedure, with the prerequisite and the verify commands, is in
   # docs/multi-arch-builder.md, "Bootstrapping the Rosetta builder on `anji`".
-  legacyLinuxBuilder = false;
-  rosettaBuilder = true;
-  bootstrapBuilder = false;
+  legacyLinuxBuilder = true;
+  rosettaBuilder = false;
+  bootstrapBuilder = true;
 
   slots = kdnConfig.self.mkSlots {
     inherit pkgs;
@@ -272,6 +273,38 @@ in
             system = toGuest stdenv.hostPlatform.system;
           };
     })
+    {
+      # Unlock and mount the two external volumes at boot. The passphrases live in the System
+      # keychain, one item per volume, keyed by the volume UUID. `diskutil` does not read the
+      # keychain itself, so this script reads each passphrase with `security` and pipes it to
+      # `diskutil -stdinpassphrase`. `unlockVolume` also mounts, and it is idempotent, so the
+      # script skips a mounted volume.
+      #
+      # `mkBefore` is required. nix-darwin's `nix.linux-builder` writes `mkdir -p
+      # /anji-ext-01/linux-builder` into `preActivation`, and the activation script runs with
+      # `set -e`. An unmounted volume exposes its mount point on the read-only system volume, so
+      # that `mkdir` fails and aborts the whole activation. This block must run first.
+      #
+      # See docs/darwin-quirks.md and hosts/anji/disks.md.
+      system.activationScripts.preActivation.text = lib.mkBefore ''
+        for uuid in \
+          E630CAE6-D3FB-44C1-9B38-F6211F128B79 \
+          14E59EC3-0C46-4D5C-9CCE-B3D716896F14
+        do
+          if /usr/sbin/diskutil info "$uuid" 2>/dev/null | grep -q "Mounted:.*Yes"; then
+            continue
+          fi
+          pw="$(/usr/bin/security find-generic-password -s "$uuid" -a "$uuid" -w /Library/Keychains/System.keychain 2>/dev/null)" || {
+            echo "anji-ext-unlock: no System keychain item for $uuid" >&2
+            continue
+          }
+          printf "%s" "$pw" | /usr/sbin/diskutil apfs unlockVolume "$uuid" -stdinpassphrase || {
+            echo "anji-ext-unlock: unlock failed for $uuid" >&2
+            continue
+          }
+        done
+      '';
+    }
     {
       # The dev machine profile is permanent now, so this host mirrors the work host.
       kdn.profile.machine.dev.enable = true;
