@@ -63,17 +63,29 @@
   ...
 }:
 let
+  # Read the requirement text without a build. A `writeText` value carries its own `.text`, and
+  # that attribute needs no build. A plain path needs `builtins.readFile`. `builtins.readFile` on a
+  # `writeText` derivation builds it for the target system. An evaluation on another system then
+  # fails when no builder serves that system.
+  readRequirementText =
+    file:
+    if builtins.isAttrs file && file ? text then
+      file.text
+    else if builtins.pathExists file then
+      builtins.readFile file
+    else
+      "";
+
   readRequirementNames =
-    path:
-    lib.trivial.pipe path [
-      (p: if builtins.pathExists p then builtins.readFile p else "")
+    file:
+    lib.trivial.pipe (readRequirementText file) [
       (lib.strings.splitString "\n")
       (map (builtins.match "^([[:alnum:]_-]+).*$"))
       lib.lists.flatten
       (builtins.filter (line: line != "" && line != null))
     ];
 
-  mkPythonDeps = path: pp: map (pkgName: pp."${pkgName}") (readRequirementNames path);
+  mkPythonDeps = file: pp: map (pkgName: pp."${pkgName}") (readRequirementNames file);
 
   pythonInstance = python.override { inherit packageOverrides; };
 
