@@ -40,6 +40,41 @@ let
   rosettaBuilder = false;
   bootstrapBuilder = true;
 
+  # Unlock and mount the two external volumes. The passphrases live in the System keychain, one
+  # item per volume, keyed by the volume UUID. `diskutil` does not read the keychain itself, so
+  # this script reads each passphrase with `security` and pipes it to `diskutil
+  # -stdinpassphrase`. `unlockVolume` also mounts, and it is idempotent: a mounted volume is
+  # skipped, so a repeated run is safe.
+  #
+  # Two mechanisms run this script, and both are needed:
+  #
+  #   - `preActivation` under `lib.mkBefore`. nix-darwin's `nix.linux-builder` writes `mkdir -p
+  #     /anji-ext-01/linux-builder` into `preActivation`, and the activation script runs with
+  #     `set -e`. An unmounted volume exposes its mount point on the read-only system volume, so
+  #     that `mkdir` fails and aborts the whole activation. The unlock must run first.
+  #   - a launchd daemon. It re-runs the script after boot, so a volume that appears late, or one
+  #     that a user unmounted, comes back without a full activation.
+  #
+  # See docs/darwin-quirks.md and hosts/anji/disks.md.
+  unlockVolumesScript = ''
+    for uuid in \
+      E630CAE6-D3FB-44C1-9B38-F6211F128B79 \
+      14E59EC3-0C46-4D5C-9CCE-B3D716896F14
+    do
+      if /usr/sbin/diskutil info "$uuid" 2>/dev/null | /usr/bin/grep -q "Mounted:.*Yes"; then
+        continue
+      fi
+      pw="$(/usr/bin/security find-generic-password -s "$uuid" -a "$uuid" -w /Library/Keychains/System.keychain 2>/dev/null)" || {
+        echo "anji-ext-unlock: no System keychain item for $uuid" >&2
+        continue
+      }
+      printf "%s" "$pw" | /usr/sbin/diskutil apfs unlockVolume "$uuid" -stdinpassphrase || {
+        echo "anji-ext-unlock: unlock failed for $uuid" >&2
+        continue
+      }
+    done
+  '';
+
   slots = kdnConfig.self.mkSlots {
     inherit pkgs;
     # This flake's own host connectivity graph. `pathExists` keeps the import optional, so a tree
@@ -274,36 +309,19 @@ in
           };
     })
     {
-      # Unlock and mount the two external volumes at boot. The passphrases live in the System
-      # keychain, one item per volume, keyed by the volume UUID. `diskutil` does not read the
-      # keychain itself, so this script reads each passphrase with `security` and pipes it to
-      # `diskutil -stdinpassphrase`. `unlockVolume` also mounts, and it is idempotent, so the
-      # script skips a mounted volume.
-      #
-      # `mkBefore` is required. nix-darwin's `nix.linux-builder` writes `mkdir -p
-      # /anji-ext-01/linux-builder` into `preActivation`, and the activation script runs with
-      # `set -e`. An unmounted volume exposes its mount point on the read-only system volume, so
-      # that `mkdir` fails and aborts the whole activation. This block must run first.
-      #
-      # See docs/darwin-quirks.md and hosts/anji/disks.md.
-      system.activationScripts.preActivation.text = lib.mkBefore ''
-        for uuid in \
-          E630CAE6-D3FB-44C1-9B38-F6211F128B79 \
-          14E59EC3-0C46-4D5C-9CCE-B3D716896F14
-        do
-          if /usr/sbin/diskutil info "$uuid" 2>/dev/null | grep -q "Mounted:.*Yes"; then
-            continue
-          fi
-          pw="$(/usr/bin/security find-generic-password -s "$uuid" -a "$uuid" -w /Library/Keychains/System.keychain 2>/dev/null)" || {
-            echo "anji-ext-unlock: no System keychain item for $uuid" >&2
-            continue
-          }
-          printf "%s" "$pw" | /usr/sbin/diskutil apfs unlockVolume "$uuid" -stdinpassphrase || {
-            echo "anji-ext-unlock: unlock failed for $uuid" >&2
-            continue
-          }
-        done
-      '';
+      # Unlock and mount the external volumes. `unlockVolumesScript` states why both mechanisms
+      # are needed. See docs/darwin-quirks.md and hosts/anji/disks.md.
+      system.activationScripts.preActivation.text = lib.mkBefore unlockVolumesScript;
+
+      launchd.daemons.anji-ext-unlock = {
+        script = unlockVolumesScript;
+        serviceConfig = {
+          RunAtLoad = true;
+          KeepAlive = false;
+          StandardOutPath = "/var/log/anji-ext-unlock.log";
+          StandardErrorPath = "/var/log/anji-ext-unlock.log";
+        };
+      };
     }
     {
       # The dev machine profile is permanent now, so this host mirrors the work host.
