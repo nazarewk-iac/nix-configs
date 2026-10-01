@@ -21,12 +21,29 @@ SSH session succeeds.
 is `kTCCServiceSystemPolicyAllFiles`, also named Full Disk Access. A process needs this grant to
 touch the volume. An SSH session inherits the grant of `sshd`. A launchd daemon does not.
 
-**TCC keys on the binary path, not the user or the parent.** Each nixpkgs bump changes the store
-path of `bash`. TCC then sees a new binary and denies it. The old path keeps its grant. This makes
-a manual grant fragile.
+**Per-job responsible process.** TCC evaluates each launchd job by its **responsible process**: the
+job's top-level program, the value of `ProgramArguments[0]`. A granted top-level binary confers
+access to its whole process tree. A denied top-level binary fails. A grant does not cross a job
+boundary.
 
-**Evidence.** Measured on 2026-09-26. Every test ran as root, in the same directory, with the same
-uid. Only the binary changed the result:
+**TCC keys on the binary path.** Each nixpkgs bump changes the store path of `bash` and `nix`. TCC
+then sees a new binary and denies it. The old path keeps its grant. This makes a manual grant
+fragile.
+
+**Evidence.** Measured on 2026-10-01 with real launchd jobs. A denied binary was `bash-5.2p37`
+(`auth_value=0`); a granted binary was `bash-5.3p9` (`auth_value=2`):
+
+| Job top-level | Action | Result |
+|---|---|---|
+| granted binary | spawns a denied binary | **OK** |
+| granted binary | grandchild (denied spawns denied) | **OK** |
+| granted binary | `exec`-replaces itself with a denied binary | **OK** |
+| `/bin/sh` | spawns granted, then denied | **OK** |
+| denied binary | runs itself | **FAIL** |
+| job A granted, job B denied | two separate jobs | **B fails** |
+
+Earlier, on 2026-09-26, every test ran as root in the same directory with the same uid. Only the
+binary changed the result:
 
 | Binary | Internal disk | External volume |
 |---|---|---|
@@ -45,16 +62,39 @@ sudo sqlite3 '/Library/Application Support/com.apple.TCC/TCC.db' \
 
 - A symlink from an internal path to the external path. TCC resolves the real path.
 - A nested mount of the volume under the boot volume. `mount_apfs` returns `Operation not permitted`.
-- `exec` of the denied binary from `/bin/sh`. TCC checks the executed binary, not the parent.
 - A hard link to the external volume. The volumes differ, so the link fails.
 
-**Fixes.** Two routes exist:
+**Fixes.** Three routes exist:
 
 1. Move the working directory to the internal disk. No grant is needed. This route survives a
    nixpkgs bump.
 2. Grant Full Disk Access to the exact binary path. The owner does this by hand in System Settings,
    because SIP protects the TCC database from a script. Repeat the grant after each nixpkgs bump
-   that changes `bash`.
+   that changes the binary.
+3. Make a **stable binary** the job's top-level. Put one binary at a fixed path, grant it Full Disk
+   Access once, and let it spawn the churning binary. The grant then survives every nixpkgs bump,
+   because the top-level path never changes.
+
+## Nix's bash needs Full Disk Access
+
+**Symptom.** A Nix-managed launchd daemon fails with `Operation not permitted` on an external
+volume, while the same command from an SSH session succeeds. The log names a store path under
+`/nix/store/...-bash-.../bin/bash`.
+
+**Cause.** TCC evaluates the job by its responsible process: the top-level program. A Nix daemon
+runs a script with a `#!/nix/store/...-bash-.../bin/bash` shebang, so the responsible process is
+that bash, not `/bin/sh`. The bash path changes with every nixpkgs bump, and TCC denies each new
+path.
+
+**Fix.** Grant Full Disk Access to the exact bash path in System Settings → Privacy & Security →
+Full Disk Access. Find the path in the daemon's log or in the script shebang:
+
+```bash
+head -1 /nix/store/<hash>-linux-builder-start
+```
+
+The grant is per store path. A nixpkgs bump that changes bash needs a new grant. SIP protects the
+TCC database, so a script cannot add the grant. The stable-binary route above avoids the repeat.
 
 ## The login keychain is locked over SSH
 
@@ -116,3 +156,17 @@ point directory sits on the read-only system volume. A `mkdir` under that path f
 `Read-only file system`. A boot script that prepares the mount point must unlock and mount the
 volume first. In nix-darwin, use `lib.mkBefore` on `system.activationScripts.preActivation.text`
 to order the unlock before any other `preActivation` writer.
+
+## launchd does not create a missing WorkingDirectory
+
+**Symptom.** A launchd daemon with a `WorkingDirectory` key does not run. Its state is
+`not running` and its last exit code is `78: EX_CONFIG`. The program never starts.
+
+**Cause.** launchd does not create the `WorkingDirectory`. A missing directory fails the job before
+the program runs.
+
+**Fix.** Create the directory before the daemon starts. Use a `preActivation` step, or point
+`WorkingDirectory` at a path that already exists.
+
+**Related trap.** A Nix builder whose working directory is on an unmounted external volume hits
+both this quirk and the read-only mount point above. The unlock must run first.
