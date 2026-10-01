@@ -106,6 +106,24 @@ ssh anji 'sudo diskutil apfs unlockVolume anji-ext-01 -nomount \
 The passphrase is in the owner's KeePass; `diskutil` prompts for it. `anji-ext-02` holds the UTM
 disks and follows the same unlock pattern.
 
+### Prerequisite — Full Disk Access for the stock builder
+
+The stock builder's guest image embeds a `bash` from `/nix/store`, and its launchd daemon runs
+that bash. macOS TCC denies a launchd daemon access to an external volume unless the daemon's
+**responsible process** holds Full Disk Access. Without the grant, the daemon fails with
+`Operation not permitted` and the guest never starts.
+
+Grant Full Disk Access to the exact bash path in System Settings → Privacy & Security → Full Disk
+Access. Find the path in the builder's log:
+
+```bash
+ssh anji 'sudo head -1 /nix/store/*-linux-builder-start'
+```
+
+The grant is per store path. A nixpkgs bump that changes bash needs a new grant. The full
+mechanism is in [docs/darwin-quirks.md](darwin-quirks.md), "Full Disk Access gates an external
+volume" and "Nix's bash needs Full Disk Access".
+
 ### The three switches
 
 Set the three flags in `hosts/anji/default.nix`, then run the switch. `darwin-rebuild switch` is a
