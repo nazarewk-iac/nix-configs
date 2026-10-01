@@ -43,8 +43,10 @@ read the full doc when you need detail.
 | [docs/mcp-setup.md](docs/mcp-setup.md) | MCP gateway architecture, configuration, backends, lifecycle |
 | [docs/mcpsnoop.md](docs/mcpsnoop.md) | mcpsnoop traffic inspector: setup, TUI usage, filtering, workflows |
 | [docs/nix-dev.md](docs/nix-dev.md) | Nix development: building devenv shell, vendored lockfile recovery, hash updates |
-| [docs/darwin-quirks.md](docs/darwin-quirks.md) | General macOS-only behaviours: Full Disk Access on external volumes, the locked login keychain over SSH, encrypted APFS locking on unmount |
+| [docs/darwin-quirks.md](docs/darwin-quirks.md) | General macOS-only behaviours: Full Disk Access on external volumes, the locked login keychain over SSH, encrypted APFS locking on unmount, launchd WorkingDirectory |
 | [hosts/anji/disks.md](hosts/anji/disks.md) | The `anji` external volumes: UUIDs, mount paths, unlock procedure, Full Disk Access for the builder, boot auto-unlock |
+| [hosts/anji/bootstrap.md](hosts/anji/bootstrap.md) | Non-default macOS settings on `anji` outside Lix and nix-darwin: hostname, locale, FileVault, SSH, firewall, power, Full Disk Access, users, and how to reproduce each |
+| [docs/guides/git-forking.md](docs/guides/git-forking.md) | Fork a repository with the GitHub CLI, rename the remotes, and disable unused repository features |
 | [docs/tasks/README.md](docs/tasks/README.md) | Tasks convention: one directory per task under `<YYYY-MM>/`, done-tag + sibling solution, frontmatter schema |
 | [checks/README.md](checks/README.md) | Every check: its bundle, its measured time and its exact standalone command. Never run a bare `nix flake check` — it takes 11 minutes. |
 
