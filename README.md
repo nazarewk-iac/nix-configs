@@ -288,6 +288,60 @@ Used this snippet to gain initial access to nixos-avf (a NixOS VM on Android pho
 }
 ```
 
+## Booting into a NixOS specialisation
+
+A `specialisation.<name>` (e.g. the `llm-minimal` entry on `brys`) is a child
+of its parent host generation. `nixos-rebuild` builds the parent together with
+all its specialisations, and the systemd-boot installer writes one boot entry
+per specialisation, taken from the parent generation's `boot.json`
+(`org.nixos.specialisation.v1`). The entry is titled `NixOS (<name>)`.
+
+Two facts decide how you use it:
+
+- **`--specialisation` works with `switch`/`test` only.** `nixos-rebuild boot
+  --specialisation <name>` fails. `switch --specialisation` also activates the
+  specialisation in place.
+- **Kernel parameters apply on a cold boot only.** A specialisation that
+  changes `boot.kernelParams` (e.g. `isolcpus`, `zfs.zfs_arc_max`) must be
+  *booted*, not switched into.
+
+So the flow is: build and install the new entries, arm the wanted entry, reboot.
+
+```shell
+# 1. Build + install the parent generation and its specialisation entries.
+#    `boot` does NOT activate anything; the running system is untouched.
+./nixos-rebuild.sh boot remote=brys
+
+# 2. Arm the specialisation entry for the next boot. The wrapper picks the
+#    latest boot entry whose title contains the given string, newest first.
+./select-boot-entry.sh brys llm-minimal           # one-shot (next boot only)
+./select-boot-entry.sh brys llm-minimal --persist # make it the default
+./select-boot-entry.sh brys llm-minimal --list    # show matches, change nothing
+
+# 3. Reboot (or pass --reboot to the wrapper to arm and reboot in one step).
+ssh brys sudo systemctl reboot
+```
+
+`select-boot-entry.sh` reads `bootctl list --json=short` over SSH, keeps the
+entries whose title contains `<match>` (case-insensitive), sorts them by the
+generation number in the `version` field, and `bootctl set-oneshot` (or
+`set-default`) the newest. It requires `jq`. Add `--rebuild` to run step 1 for
+you first; it is off by default so that arming an already-built entry is cheap.
+
+Manual equivalent of step 2, without the wrapper:
+
+```shell
+ssh brys sudo bootctl list --json=short |
+  jq -r '.[] | select(.title | ascii_downcase | contains("llm-minimal")) | "\(.id)\t\(.version)"'
+ssh brys sudo bootctl set-oneshot nixos-<hash>.conf
+```
+
+A specialisation built standalone (`nix build
+'.#nixosConfigurations.<host>.config.specialisation.<name>.configuration.system.build.toplevel'`)
+is not a registered generation, so `switch-to-configuration boot` emits no entry
+for it. Build the **parent** host (step 1) instead, or write a
+`/boot/loader/entries/<name>.conf` by hand and `bootctl set-oneshot` it.
+
 ## Interaction between NixOS and Home Manager
 
 - https://jdisaacs.com/blog/nixos-config/

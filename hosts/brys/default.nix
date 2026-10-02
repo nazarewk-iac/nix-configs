@@ -6,12 +6,27 @@
   ...
 }:
 let
+  # Shared local-LLM serving config, also used by the llm-minimal boot
+  # specialisation (see ./llm.nix). The main profile keeps a smaller DeepSeek
+  # context (128K) and leaves its threads unpinned: it shares the box with the
+  # desktop, while the specialisation gets the isolated cores and the full 192K.
+  llm = import ./llm.nix {
+    inherit lib pkgs kdnConfig;
+    contextSize = 131072;
+    cpuPinned = false;
+  };
+
   slots = kdnConfig.self.mkSlots {
     inherit pkgs;
-    # kdn's own host connectivity graph (moss/etra/drek/oams/brys/anji).
-    imports = builtins.filter builtins.pathExists [
+    imports = [
+      # Local LLM serving (llama-server router mode, TLS behind caddy). Models
+      # are registered under kdn.disks.persist."usr/data" by the shared module;
+      # the slot receives only the path and the cert/key path fragments.
+      llm.slot
+      # kdn's own host connectivity graph (moss/etra/drek/oams/brys/anji).
+    ] ++ (builtins.filter builtins.pathExists [
       "${kdnConfig.self}/data/slots/slots-ssh-access.nix"
-    ];
+    ]);
 
     # devenv CLI and shell hooks.
     kdn.devenv.enable = true;
@@ -23,116 +38,15 @@ let
     kdn.ca.kdn.enable = true;
     kdn.ca.kdn.certFile = "${kdnConfig.self}/data/ca/ca.pub";
     kdn.ca.kdn.keySopsFile = "${kdnConfig.self}/data/ca/ca.key.sops";
-
-    # Local LLM serving (llama-server router mode, TLS behind caddy). Models are
-    # registered under kdn.disks.persist."usr/data" further below; the slot
-    # receives only the path and the cert/key path fragments.
-    kdn.llm.local.enable = true;
-    # This machine has 16 physical cores. The slot names no thread count now, so this
-    # line keeps the `threads` key that the old slot default wrote.
-    kdn.llm.local.defaultThreads = 16;
-    kdn.llm.local.modelsDir = "/var/lib/kdn/llms/models";
-    # HF token for faster/authenticated downloads, wired via sops below to
-    # /run/configs/llms/huggingface/token.
-    kdn.llm.local.download.tokenFile = "/run/configs/llms/huggingface/token";
-    # LAN endpoint hostname + leaf cert paths (signed by the KDN CA). The public
-    # cert is referenced from the repo store; the private key is raw sops-decrypted
-    # on brys into /run/secrets (see the kdn-llm-leaf-key service) and loaded into
-    # Caddy via LoadCredential.
-    kdn.llm.local.domain = "brys.lan.etra.net.int.kdn.im";
-    kdn.llm.local.certs.certFile = "${kdnConfig.self}/hosts/brys/certs/llm.pub";
-    kdn.llm.local.certs.keyFile = "/run/secrets/kdn/brys/llm.key";
-    kdn.llm.local.certs.sans = [
-      "brys.lan.etra.net.int.kdn.im"
-      "brys.lan.drek.net.int.kdn.im"
-      "brys.priv.nb.net.int.kdn.im"
-    ];
-    kdn.llm.local.apiKeyDir = "/run/configs/llms/llama-server/api-keys";
-    # Global download: fast-polite keeps Xet enabled but with a configurable,
-    # capped concurrency. Tuned to target roughly 500-700 Mbit/s; raise/lower
-    # `xetConcurrency` to trade speed vs network aggression. Downloads run
-    # sequentially in the host network namespace.
-    kdn.llm.local.download.mode = "fast-polite";
-    kdn.llm.local.download.xetConcurrency = 8;
-    kdn.llm.local.models = {
-      qwen3-30b-a3b = {
-        enable = true;
-        hfRepo = "Qwen/Qwen3-30B-A3B-GGUF";
-        hfFile = "Qwen3-30B-A3B-Q4_K_M.gguf";
-        aliases = [ "fast" ];
-        perf.contextSize = 131072;
-      };
-      qwen3-next-80b = {
-        enable = true;
-        hfRepo = "unsloth/Qwen3-Next-80B-A3B-Instruct-GGUF";
-        hfFile = "Qwen3-Next-80B-A3B-Instruct-Q4_K_M.gguf";
-        aliases = [ "balanced" ];
-        perf.contextSize = 131072;
-      };
-      # deepseek-v4-flash: big, multi-shard, frontier quality. Slow to load.
-      # download.glob fetches all 4 shards (~104 GB); llama serves shard 00001.
-      # Keep it loaded for 24h (default is 1h) — it takes minutes to load, so
-      # hold it in RAM rather than churning the swap frequently.
-      # Shard 00001 is legitimately small (~5 MB — it is the split descriptor +
-      # mmap header); llama mmaps shards 02-04 for the full weights. The DSpark
-      # draft (~10.9 GB) is downloaded through the same kdn-llm-download
-      # mechanism and feeds model-draft (spec-type draft-dspark).
-      deepseek-v4-flash = {
-        enable = true;
-        hfRepo = "unsloth/DeepSeek-V4-Flash-GGUF";
-        hfFile = "UD-IQ3_XXS/DeepSeek-V4-Flash-UD-IQ3_XXS-00001-of-00004.gguf";
-        download.glob = "UD-IQ3_XXS/DeepSeek-V4-Flash-UD-IQ3_XXS-*.gguf";
-        aliases = [ "frontier" ];
-        # 192K MLA KV (≈17.1 GB) — unified across both brys boot entries. A
-        # compromise between the stability-proven 128K rung (EXPERIMENT A) and
-        # the original 256K which oscillates on the ~1-3 GB free headroom;
-        # 128K remains the most stable if fragility appears.
-        perf.contextSize = 196608;
-        perf.reasoning = "off";
-        perf.specType = "draft-dspark";
-        draft = {
-          enable = true;
-          hfRepo = "unsloth/DeepSeek-V4-Flash-0731-GGUF";
-          hfFile = "dspark-DeepSeek-V4-Flash-0731-Q8_0.gguf";
-        };
-      };
-      # Qwen3-235B split into 2 parts; download.glob fetches both. 64K ctx ≈
-      # 25 GB KV, well within 128 GB.
-      qwen3-235b = {
-        enable = true;
-        hfRepo = "mradermacher/Qwen3-235B-A22B-i1-GGUF";
-        hfFile = "Qwen3-235B-A22B.i1-IQ2_M.gguf.part1of2";
-        download.glob = "Qwen3-235B-A22B.i1-IQ2_M.gguf.part*";
-        perf.contextSize = 65536;
-      };
-      # Qwen3-Coder-Next split into 4 shards; download.glob fetches all of them.
-      qwen3-coder-next = {
-        enable = true;
-        hfRepo = "Qwen/Qwen3-Coder-Next-GGUF";
-        hfFile = "Qwen3-Coder-Next-Q4_K_M/Qwen3-Coder-Next-Q4_K_M-00001-of-00004.gguf";
-        download.glob = "Qwen3-Coder-Next-Q4_K_M/Qwen3-Coder-Next-Q4_K_M-*.gguf";
-        perf.contextSize = 131072;
-      };
-      gpt-oss-120b = {
-        enable = true;
-        hfRepo = "bartowski/openai_gpt-oss-120b-GGUF";
-        hfFile = "openai_gpt-oss-120b-Q4_K_M/openai_gpt-oss-120b-Q4_K_M-00001-of-00002.gguf";
-        download.glob = "openai_gpt-oss-120b-Q4_K_M/openai_gpt-oss-120b-Q4_K_M-*.gguf";
-      };
-      phi-4 = {
-        enable = true;
-        hfRepo = "microsoft/phi-4-gguf";
-        hfFile = "phi-4-Q4_K.gguf";
-        # 16K is Phi-4's hard architectural context ceiling.
-        perf.contextSize = 16384;
-      };
-    };
   };
 in
 {
   imports = [
     kdnConfig.self.nixosModules.default
     slots.config.nixos
+    # LLM secrets, model persistence and the leaf-key decrypt service. Shared
+    # with the llm-minimal boot specialisation via ./llm.nix.
+    llm.nixos
     "${kdnConfig.self}/data/ca/ca-dag.nix"
     {
       imports = kdnConfig.self.denLib.imports {
@@ -416,57 +330,6 @@ in
     }
     {
       security.sudo.wheelNeedsPassword = false;
-    }
-    {
-      # Keep local LLM models on the persistent usr/data dataset.
-      kdn.disks.persist."usr/data".directories = [
-        {
-          directory = "/var/lib/kdn/llms/models";
-          # World-readable so any user (and llama-swap's DynamicUser) can read
-          # the models; the download script keeps files 644 / dirs 755.
-          mode = "0755";
-        }
-      ];
-    }
-    {
-      # Shared /run/configs/llms secrets: HF token and llama-server API keys.
-      # Decrypted to their full sops key paths under /run/configs/llms/. Shared
-      # with the oams host (same mount point).
-      kdn.security.secrets.sops.files."llms" = {
-        sopsFile = "${kdnConfig.self}/llms.nonsensitive.sops.yaml";
-        basePath = "/run/configs/llms";
-        sops.mode = "0444";
-      };
-    }
-    {
-      # Raw-decrypt the brys LLM leaf PRIVATE key from hosts/brys/certs/llm.key.sops
-      # into /run/secrets (root-only tmpfs) before Caddy starts. Uses the wrapped
-      # `sops` (age identity auto-imported from brys' SSH host key). The pub cert is
-      # referenced directly from the store (no decryption). Caddy loads the key via
-      # LoadCredential (see the llm slot's caddy wiring).
-      systemd.services.kdn-llm-leaf-key = {
-        description = "Decrypt brys LLM leaf private key into /run/secrets";
-        wantedBy = [ "caddy.service" ];
-        before = [ "caddy.service" ];
-        path = [
-          pkgs.sops
-          pkgs.coreutils
-        ];
-        serviceConfig = {
-          Type = "oneshot";
-          RemainAfterExit = true;
-          User = "root";
-          Group = "root";
-        };
-        script = ''
-          set -euo pipefail
-          mkdir -p /run/secrets/kdn/brys
-          ${pkgs.sops}/bin/sops decrypt --output-type binary \
-            ${kdnConfig.self}/hosts/brys/certs/llm.key.sops \
-            > /run/secrets/kdn/brys/llm.key
-          chmod 0400 /run/secrets/kdn/brys/llm.key
-        '';
-      };
     }
     {
       services.angrr.enable = false;
