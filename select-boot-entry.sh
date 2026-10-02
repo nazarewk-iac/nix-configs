@@ -68,7 +68,7 @@ if test -z "${host}" || test -z "${match}"; then
 fi
 
 if ! command -v jq >/dev/null; then
-  echo "boot-specialisation: jq is required" >&2
+  echo "select-boot-entry: jq is required" >&2
   exit 1
 fi
 
@@ -86,7 +86,7 @@ entries="$(run_remote sudo bootctl list --json=short)"
 # `version` field. Sorted descending so the newest comes first.
 selected="$(
   jq -r --arg m "${match}" '
-    map(select(.title | ascii_downcase | contains($m | ascii_downcase)))
+    map(select((.title // "") | ascii_downcase | contains($m | ascii_downcase)))
     | map(. + { gen: ((.version | try (capture("Generation (?<g>[0-9]+)").g) catch "0") // "0" | tonumber) })
     | sort_by(.gen) | reverse
     | .[]
@@ -95,7 +95,7 @@ selected="$(
 )"
 
 if test -z "${selected}"; then
-  echo "boot-specialisation: no boot entry title contains '${match}' on ${host}" >&2
+  echo "select-boot-entry: no boot entry title contains '${match}' on ${host}" >&2
   exit 1
 fi
 

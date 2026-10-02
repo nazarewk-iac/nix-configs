@@ -20,11 +20,12 @@
 let
   # Shared local-LLM serving config, also used by the main brys profile
   # (hosts/brys/default.nix, see ./llm.nix). The specialisation gets the whole
-  # box, so it keeps the full 192K DeepSeek context and pins its threads to the
-  # isolated cores (the boot params below add isolcpus=1-15).
+  # box, so it keeps the full 320K DeepSeek context and pins its threads to the
+  # isolated cores (the boot params below add isolcpus=1-15). EXPERIMENT: 256K
+  # was stable with the 8 GiB ZFS ARC cap in ./llm.nix; 320K is the next rung.
   llm = import ./llm.nix {
     inherit lib pkgs kdnConfig;
-    contextSize = 196608;
+    contextSize = 327680;
     cpuPinned = true;
   };
 
