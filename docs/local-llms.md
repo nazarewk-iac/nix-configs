@@ -136,8 +136,8 @@ slot.
 The `llm-minimal` boot specialisation is the two-router deployment (boot-selected,
 never activated in place):
 
-- **`main`** `:39703`, threads 16 — frontier. `deepseek-v4-flash` (alias
-  `frontier`, DSpark draft, unified 192K ctx) lives here and
+- **`main`** `:39703`, threads 12 — frontier. `deepseek-v4-flash` (alias
+  `frontier`, DSpark draft, 320K ctx) lives here and
   stays resident/hot and **alone** (`--models-max 1`); it is the default
   `mainRouter` for all models in `hosts/brys/llm-minimal.nix` that do not name
   another router.
@@ -152,9 +152,9 @@ never activated in place):
   read-only mmap whose file pages recycle to page-cache, so file-size sums
   overstate real anon usage).
 
-The **main `brys` host** (`hosts/brys/default.nix`) enables no extra routers
-(all models keep the default `mainRouter = "main"`), so its compat-proxy gets no
-`ROUTER_*` env and behaves exactly as the original single-router setup.
+The **main `brys` host** (`hosts/brys/default.nix`) now draws from the same
+`hosts/brys/llm.nix` as the specialisation, so it also runs the `small` router;
+it differs only by DeepSeek context (128K instead of 320K) and unpinned threads.
 
 **Co-residency cost (measured, Phase 3):** the two routers keep DS4 resident (it
 never cold-reloads across small-model swaps on `small`), but on the ~40 GB/s
@@ -187,12 +187,51 @@ productive for memory-bound inference), `flash-attn=on`, `mmap=on`,
 
 | Model | ctx-size | Notes |
 |---|---|---|
-| `deepseek-v4-flash` | 196608 | MLA; 192K is a compromise — 131072 (KV ~11.4 GB) is the stability-proven rung (Expt A), 262144 (KV ~22.8 GB) fits (~101 GB RSS) but oscillates on ~1-3 GB free headroom |
+| `deepseek-v4-flash` | 327680 (320K) | MLA; the specialisation runs 320K. See "ZFS ARC quirk" below — the old ">192K oscillates" rule was ARC churn, not the context |
 | `qwen3-30b-a3b` | 131072 | |
 | `qwen3-next-80b` | 131072 | |
 | `qwen3-coder-next` | 131072 | |
 | `qwen3-235b` | 65536 | 128K KV would exceed RAM (141 GB) |
 | `phi-4` | 16384 | hard architectural ceiling |
+
+The **main `brys` profile** uses a smaller DeepSeek context (131072) and leaves
+its threads unpinned: it shares the box with the desktop. The specialisation
+gets the whole machine, so it takes 320K and pins to the isolated cores.
+Both draw the rest of their config from the shared `hosts/brys/llm.nix`.
+
+### ZFS ARC quirk (required for large contexts)
+
+The model GGUFs live on ZFS (`usr/data`). ZFS's ARC is a *second* cache beside
+the Linux page cache that backs the `mmap`'d weights, and its default `c_max`
+is about half of RAM. On brys it grew to ~65 GB and the kernel then evicted the
+mmap'd ~103 GB DeepSeek weights to make room — every request re-read them from
+disk. Measured before the cap: prefill **0.18 tok/s**, 6.3M major faults,
+271 GB read, and the single server slot blocked all queued requests.
+
+`hosts/brys/llm.nix` therefore caps it, shared by both boot entries:
+
+```nix
+boot.kernelParams = [ "zfs.zfs_arc_max=8589934592" ];  # 8 GiB
+```
+
+The cap is a kernel module parameter, so it only applies on a **cold boot**
+(reboot into the entry; a `switch` does not apply it). To apply it live without
+a reboot: `echo 8589934592 | sudo tee /sys/module/zfs/parameters/zfs_arc_max`.
+
+With the cap the weights stay fully resident and the context is no longer the
+constraint. Measured on brys, 8 GiB ARC, warm (DSpark acceptance in parens):
+
+| ctx | DS4 RSS | RssAnon (KV) | idle major faults |
+|---|---|---|---|
+| 192K (old, uncapped) | ~92 GB | ~14 GB | 138/s (ARC thrash) |
+| 256K | 115.7 GB | 14.6 GB | 0/s |
+| 320K | 110.6 GB | 15.0 GB | 0/s |
+
+KV is cheap for this MLA model (~0.4–1.4 GB per 64K), so RSS is dominated by
+the ~101 GB of weights. Throughput is draft-acceptance bound, identical across
+contexts: ~4.8 tok/s at ~48% acceptance, ~8.6 tok/s at ~70% (~7.9 tok/s warm
+peak). Headroom stays ~1 GB free / ~101 GB reclaimable, so a co-resident
+small-router model or a build can still evict the weights.
 
 ### Download configuration on brys
 
@@ -337,3 +376,10 @@ manual harness). Practical warm peak is **~6.9-7.2 t/s ≈ 87-90 % of the ~8 t/s
 the only remaining lever flagged for a future session is **memory cgroup v2 isolation** of the
 serving unit (so spiky allocs fail in their own cgroup and cannot reclaim the weights), or shrinking
 the working set via a smaller `contextSize`.
+
+**Resolved (2026-10-02):** the "physical RAM capacity" framing above was incomplete. The missing
+allocator was the **ZFS ARC** (default `c_max` ≈ half of RAM), which grew to ~65 GB and competed for
+the same physical RAM as the `mmap`'d weights. Capping it (`zfs_arc_max=8589934592`, 8 GiB) keeps
+the weights resident with **zero idle major faults**, and the 192K ceiling disappears — 256K and
+320K both hold. `contextSize` was never the binding constraint; the ARC was. See "ZFS ARC quirk"
+above for the figures. The mlock/cgroup ideas above are moot for this cause.
