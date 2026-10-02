@@ -18,118 +18,28 @@
   ...
 }:
 let
+  # Shared local-LLM serving config, also used by the main brys profile
+  # (hosts/brys/default.nix, see ./llm.nix). The specialisation gets the whole
+  # box, so it keeps the full 192K DeepSeek context and pins its threads to the
+  # isolated cores (the boot params below add isolcpus=1-15).
+  llm = import ./llm.nix {
+    inherit lib pkgs kdnConfig;
+    contextSize = 196608;
+    cpuPinned = true;
+  };
+
   slots = kdnConfig.self.mkSlots {
     inherit pkgs;
     # LLM serving is the whole point of this boot entry: same slot wiring as
     # the main brys config (models, DSpark draft, download, caddy/proxy).
-    kdn.llm.local.enable = true;
-    # This machine has 16 physical cores. The slot names no thread count now, so this
-    # line keeps the `threads` key that the old slot default wrote.
-    kdn.llm.local.defaultThreads = 16;
-    kdn.llm.local.modelsDir = "/var/lib/kdn/llms/models";
-    kdn.llm.local.download.tokenFile = "/run/configs/llms/huggingface/token";
-    kdn.llm.local.domain = "brys.lan.etra.net.int.kdn.im";
-    kdn.llm.local.certs.certFile = "${kdnConfig.self}/hosts/brys/certs/llm.pub";
-    kdn.llm.local.certs.keyFile = "/run/secrets/kdn/brys/llm.key";
-    kdn.llm.local.certs.sans = [
-      "brys.lan.etra.net.int.kdn.im"
-      "brys.lan.drek.net.int.kdn.im"
-      "brys.priv.nb.net.int.kdn.im"
-    ];
-    kdn.llm.local.apiKeyDir = "/run/configs/llms/llama-server/api-keys";
-    kdn.llm.local.download.mode = "fast-polite";
-    kdn.llm.local.download.xetConcurrency = 8;
-    # Second router on :39704 holds the freely-swapping small set (phi-4,
-    # qwen3-30b-a3b), keeping DS4 hot on the primary :39703.
-    # Second router on :39704 is a SET router: `modelsMax 2` keeps a pair of
-    # confirmed-coexistable small models resident together (measured: e.g.
-    # {qwen3-30b-a3b, qwen3-coder-next} run ~108G anon and only lose ~35-40%
-    # to co-active bandwidth sharing), swapping as a unit against DS4. DS4 on
-    # the primary :39703 stays alone (models-max 1).
-    kdn.llm.local.routers.small = {
-      enable = true;
-      port = 39704;
-      threads = 8;
-      modelsMax = 2;
-      apiKeyDir = "/run/configs/llms/llama-server/api-keys";
-    };
-    # Same models/per-model perf as the main host, but DeepSeek biased to a
-    # 192K context (a compromise: 128K is the stability-proven rung from
-    # EXPERIMENT A, 256K fits but oscillates on the ~1-3 GB free headroom).
-    kdn.llm.local.models = {
-      deepseek-v4-flash = {
-        enable = true;
-        hfRepo = "unsloth/DeepSeek-V4-Flash-GGUF";
-        hfFile = "UD-IQ3_XXS/DeepSeek-V4-Flash-UD-IQ3_XXS-00001-of-00004.gguf";
-        download.glob = "UD-IQ3_XXS/DeepSeek-V4-Flash-UD-IQ3_XXS-*.gguf";
-        aliases = [ "frontier" ];
-        perf.contextSize = 196608;
-        perf.reasoning = "off";
-        perf.specType = "draft-dspark";
-        perf.cpuRange = "1-12";
-        perf.cpuStrict = true;
-        perf.threads = 12;
-        draft = {
-          enable = true;
-          hfRepo = "unsloth/DeepSeek-V4-Flash-0731-GGUF";
-          hfFile = "dspark-DeepSeek-V4-Flash-0731-Q8_0.gguf";
-        };
-      };
-      # Smaller models (all downloaded on brys). Added for benchmarking/tuning;
-      # DeepSeek block above is intentionally left byte-identical (do not touch).
-      qwen3-30b-a3b = {
-        enable = true;
-        hfRepo = "Qwen/Qwen3-30B-A3B-GGUF";
-        hfFile = "Qwen3-30B-A3B-Q4_K_M.gguf";
-        aliases = [ "fast" ];
-        mainRouter = "small";
-        perf.contextSize = 131072;
-      };
-      qwen3-next-80b = {
-        enable = true;
-        hfRepo = "unsloth/Qwen3-Next-80B-A3B-Instruct-GGUF";
-        hfFile = "Qwen3-Next-80B-A3B-Instruct-Q4_K_M.gguf";
-        aliases = [ "balanced" ];
-        mainRouter = "small";
-        perf.contextSize = 131072;
-      };
-      phi-4 = {
-        enable = true;
-        hfRepo = "microsoft/phi-4-gguf";
-        hfFile = "phi-4-Q4_K.gguf";
-        mainRouter = "small";
-        perf.contextSize = 16384;
-      };
-      qwen3-coder-next = {
-        enable = true;
-        hfRepo = "Qwen/Qwen3-Coder-Next-GGUF";
-        hfFile = "Qwen3-Coder-Next-Q4_K_M/Qwen3-Coder-Next-Q4_K_M-00001-of-00004.gguf";
-        download.glob = "Qwen3-Coder-Next-Q4_K_M/Qwen3-Coder-Next-Q4_K_M-*.gguf";
-        mainRouter = "small";
-        perf.contextSize = 131072;
-      };
-      qwen3-235b = {
-        enable = true;
-        hfRepo = "mradermacher/Qwen3-235B-A22B-i1-GGUF";
-        hfFile = "Qwen3-235B-A22B.i1-IQ2_M.gguf.part1of2";
-        download.glob = "Qwen3-235B-A22B.i1-IQ2_M.gguf.part*";
-        mainRouter = "small";
-        perf.contextSize = 65536;
-      };
-      gpt-oss-120b = {
-        enable = true;
-        hfRepo = "bartowski/openai_gpt-oss-120b-GGUF";
-        hfFile = "openai_gpt-oss-120b-Q4_K_M/openai_gpt-oss-120b-Q4_K_M-00001-of-00002.gguf";
-        download.glob = "openai_gpt-oss-120b-Q4_K_M/openai_gpt-oss-120b-Q4_K_M-*.gguf";
-        mainRouter = "small";
-      };
-    };
+    imports = [ llm.slot ];
   };
 in
 {
   imports = [
     kdnConfig.self.nixosModules.default
     slots.config.nixos
+    llm.nixos
   ];
 
   config = lib.mkMerge [
@@ -212,47 +122,12 @@ in
       };
     }
 
-    # ---- Secrets (LLM token + caddy leaf key, same as main brys) ----------
+    # ---- Secrets / LLM wiring -------------------------------------------
+    # The LLM sops file, the model persistence directory and the leaf-key
+    # service are shared with the main brys profile via ./llm.nix (imported
+    # above).
     {
       security.sudo.wheelNeedsPassword = false;
-
-      kdn.security.secrets.sops.files."llms" = {
-        sopsFile = "${kdnConfig.self}/llms.nonsensitive.sops.yaml";
-        basePath = "/run/configs/llms";
-        sops.mode = "0444";
-      };
-
-      # Raw-decrypt the LLM leaf PRIVATE key into /run/secrets before Caddy.
-      systemd.services.kdn-llm-leaf-key = {
-        description = "Decrypt brys LLM leaf private key into /run/secrets";
-        wantedBy = [ "caddy.service" ];
-        before = [ "caddy.service" ];
-        path = [
-          pkgs.sops
-          pkgs.coreutils
-        ];
-        serviceConfig = {
-          Type = "oneshot";
-          RemainAfterExit = true;
-          User = "root";
-          Group = "root";
-        };
-        script = ''
-          set -euo pipefail
-          mkdir -p /run/secrets/kdn/brys
-          ${pkgs.sops}/bin/sops decrypt --output-type binary \
-            ${kdnConfig.self}/hosts/brys/certs/llm.key.sops \
-            > /run/secrets/kdn/brys/llm.key
-          chmod 0400 /run/secrets/kdn/brys/llm.key
-        '';
-      };
-
-      kdn.disks.persist."usr/data".directories = [
-        {
-          directory = "/var/lib/kdn/llms/models";
-          mode = "0755";
-        }
-      ];
     }
 
     # ---- Strip everything non-mandatory --------------------------------
@@ -299,6 +174,7 @@ in
         "processor.max_cstate=1"
         "amd_pstate=active"
         "numa_balancing=disable"
+        # The ZFS ARC cap lives in ./llm.nix, shared with the main profile.
         "quiet"
         "loglevel=3"
       ];
