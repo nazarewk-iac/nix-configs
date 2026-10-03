@@ -42,13 +42,13 @@
     apiKeyFile = "/run/configs/llms/llama-server/api-keys/default";
     models = {
       "deepseek-v4-flash" = {
-        name = "deepseek-v4-flash (brys, LAN) [192K]";
-        context = 196608;
+        name = "deepseek-v4-flash (brys, LAN) [320K]";
+        context = 327680;
         output = 8192;
       };
       "frontier" = {
-        name = "frontier (deepseek-v4-flash alias, brys) [192K]";
-        context = 196608;
+        name = "frontier (deepseek-v4-flash alias, brys) [320K]";
+        context = 327680;
         output = 8192;
       };
       "gpt-oss-120b" = {
