@@ -20,13 +20,15 @@
 let
   # Shared local-LLM serving config, also used by the main brys profile
   # (hosts/brys/default.nix, see ./llm.nix). The specialisation gets the whole
-  # box, so it keeps the full 320K DeepSeek context and pins its threads to the
-  # isolated cores (the boot params below add isolcpus=1-15). EXPERIMENT: 256K
-  # was stable with the 8 GiB ZFS ARC cap in ./llm.nix; 320K is the next rung.
+  # box and runs the full 320K DeepSeek context. `cpuPinned = false` though the
+  # boot params below still add isolcpus=1-15: the `--cpu-range`/`--cpu-strict`
+  # flags stall prefill on llama-cpp 0.4.0, so the scheduler places the threads
+  # itself (see ./llm.nix). EXPERIMENT: 256K and 320K are both stable with the
+  # 8 GiB ZFS ARC cap.
   llm = import ./llm.nix {
     inherit lib pkgs kdnConfig;
     contextSize = 327680;
-    cpuPinned = true;
+    cpuPinned = false;
   };
 
   slots = kdnConfig.self.mkSlots {

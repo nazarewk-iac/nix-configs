@@ -196,8 +196,9 @@ productive for memory-bound inference), `flash-attn=on`, `mmap=on`,
 
 The **main `brys` profile** uses a smaller DeepSeek context (131072) and leaves
 its threads unpinned: it shares the box with the desktop. The specialisation
-gets the whole machine, so it takes 320K and pins to the isolated cores.
-Both draw the rest of their config from the shared `hosts/brys/llm.nix`.
+gets the whole machine, so it takes 320K. Both draw the rest of their config
+from the shared `hosts/brys/llm.nix` (which deliberately sets no CPU affinity —
+see "Prefill tuning" below).
 
 ### ZFS ARC quirk (required for large contexts)
 
@@ -228,10 +229,45 @@ constraint. Measured on brys, 8 GiB ARC, warm (DSpark acceptance in parens):
 | 320K | 110.6 GB | 15.0 GB | 0/s |
 
 KV is cheap for this MLA model (~0.4–1.4 GB per 64K), so RSS is dominated by
-the ~101 GB of weights. Throughput is draft-acceptance bound, identical across
-contexts: ~4.8 tok/s at ~48% acceptance, ~8.6 tok/s at ~70% (~7.9 tok/s warm
-peak). Headroom stays ~1 GB free / ~101 GB reclaimable, so a co-resident
-small-router model or a build can still evict the weights.
+the ~101 GB of weights. Decode throughput is draft-acceptance bound: ~4.8 tok/s
+at ~48% acceptance, ~8.6 tok/s at ~70%. Headroom stays ~1 GB free / ~101 GB
+reclaimable, so a co-resident small-router model or a build can still evict the
+weights.
+
+#### Prefill (prompt processing) tuning
+
+Two faults made long prompts appear hung. Both are now fixed in
+`hosts/brys/llm.nix` + the slot.
+
+1. **`--cpu-range`/`--cpu-strict` stall prefill on llama-cpp 0.4.0 (build
+   10809).** In this build the affinity applies with the wrong scope: a server
+   started with `--cpu-range 1-12` (pinned or not strict) never emits a prompt
+   timing line at any context — decode is pinned, the prompt threadpool is not
+   placed correctly and spins. Unpinned, prefill runs. So the DeepSeek perf sets
+   **no** `cpuRange`/`cpuStrict`; the scheduler places the threads on the
+   isolated cores itself. (Decode was unaffected, which is why only long prompts
+   exposed it.)
+2. **The llama default `ubatch` is 512.** Prompt processing is bandwidth-bound
+   on the activated MoE expert weights; a small physical batch reuses them over
+   too few tokens. `--ubatch-size`/`--batch-size` of 4096 is the single biggest
+   prefill lever. Measured on brys at 320K with the DSpark draft, warm,
+   cache-miss prompt (1385 tokens):
+
+   | ubatch | prefill | wall |
+   |---|---|---|
+   | 512 (default) | 7.2 tok/s | 194 s |
+   | 1024 | 10.2 | 137 s |
+   | 2048 | 13.8 | 103 s |
+   | **4096** | **15.8** | 89 s |
+   | 8192 | 17.1 @128K / regresses memory | — |
+
+   Live through the router (threads 16, ctx 320K): **15.2–16.5 tok/s**. Threads
+   above 12 did not help (15 threads: 13.2). The knobs live in the slot as
+   `perf.batchSize`/`perf.ubatchSize` (asserted `ubatchSize <= batchSize`) and
+   are set on `deepseek-v4-flash` only.
+
+Identical repeat prompts hit llama's prefix cache and return in ~1–2 s, so
+always benchmark with a fresh, cache-missing prompt.
 
 ### Download configuration on brys
 
