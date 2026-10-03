@@ -22,18 +22,33 @@
   cpuPinned ? true,
 }:
 let
-  # DeepSeek V4 Flash perf. The pinned variant matches the specialisation's
-  # isolated cores; the unpinned variant lets the scheduler place the threads
-  # and falls back to `defaultThreads`.
+  # DeepSeek V4 Flash perf.
+  #
+  # CPU affinity is deliberately NOT set. On llama-cpp 0.4.0 (build 10809) the
+  # `--cpu-range`/`--cpu-strict` affinity applies with the wrong scope: decode
+  # is pinned but the prompt-processing threadpool is not placed correctly, and
+  # on this isolcpus box a pinned server stalls prefill outright (measured: a
+  # ~2k-token prompt never emits a timing line with `--cpu-range 1-12`, pinned
+  # or not strict). Left unpinned the scheduler places the 12 threads on the
+  # isolated cores by itself and prefill runs (~7.5 tok/s over a 2k prompt).
+  # `cpuPinned` is kept as a parameter for the ablation record but must stay
+  # false. `threads` follows `defaultThreads` (16) unless overridden.
   deepseekPerf = {
     contextSize = contextSize;
     reasoning = "off";
     specType = "draft-dspark";
+    # Prefill (prompt processing) on this 284B MoE is bandwidth-bound on the
+    # activated expert weights. The llama default ubatch of 512 reuses them
+    # over too few tokens; 4096 reuses them across a whole chunk. Measured on
+    # brys, warm, cache-miss prompt: ubatch 512 -> 7.2 tok/s prefill, 2048 ->
+    # 13.8, 4096 -> 15.8 at 320K (18.4 at 128K). 8192 regressed. batchSize
+    # must be >= ubatchSize.
+    batchSize = 4096;
+    ubatchSize = 4096;
   }
   // lib.optionalAttrs cpuPinned {
     cpuRange = "1-12";
     cpuStrict = true;
-    threads = 12;
   };
 in
 {

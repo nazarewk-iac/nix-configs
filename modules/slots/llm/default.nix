@@ -95,6 +95,12 @@ let
         ++ lib.optionals (perf.contextSize != null) [
           "ctx-size = ${toString perf.contextSize}"
         ]
+        ++ lib.optionals (perf.batchSize != null) [
+          "batch-size = ${toString perf.batchSize}"
+        ]
+        ++ lib.optionals (perf.ubatchSize != null) [
+          "ubatch-size = ${toString perf.ubatchSize}"
+        ]
         ++ lib.optionals (m.aliases != [ ]) [
           "alias = ${lib.concatStringsSep "," m.aliases}"
         ]
@@ -693,6 +699,29 @@ in
               default = 1;
               description = "number of server slots for this model (-np / --parallel). 1 wastes no KV cache on extra slots.";
             };
+            options.perf.batchSize = lib.mkOption {
+              type = with lib.types; nullOr ints.positive;
+              default = null;
+              description = ''
+                Logical maximum batch size (-b / --batch-size). Must be >=
+                `ubatchSize`. A larger batch lets prompt processing reuse the
+                activated MoE expert weights across more tokens, which is the
+                dominant cost on a large sparse model. On brys, raising this
+                from the 2048 default to 4096 roughly doubled DeepSeek V4 Flash
+                CPU prefill (7.5 -> 15.8 tok/s). NULL keeps the llama default.
+              '';
+            };
+            options.perf.ubatchSize = lib.mkOption {
+              type = with lib.types; nullOr ints.positive;
+              default = null;
+              description = ''
+                Physical maximum batch size (-ub / --ubatch-size): the chunk
+                the compute graph runs per step. This is the single biggest
+                prefill lever measured on brys; the 512 default left the box at
+                ~7.5 tok/s while 2048-4096 reached ~15.8-18.4. Must be
+                <= `batchSize`. NULL keeps the llama default.
+              '';
+            };
             options.perf.reasoning = lib.mkOption {
               type = lib.types.enum [
                 "on"
@@ -779,17 +808,33 @@ in
       # is plain lowercase-alnum. Anything with a hyphen, underscore, or upper
       # case would not match the on-disk router section. Keep router names
       # lowercase-alnum (e.g. "small", "coder").
-      assertions = lib.mkIf (enabledRouters != { }) [
-        {
-          assertion = lib.all (name: lib.match "^[a-z0-9]+$" name != null) (
-            builtins.attrNames enabledRouters
-          );
-          message =
-            "kdn.llm.local.routers names must be lowercase alphanumeric "
-            + "(no hyphens, underscores, or upper case); got: "
-            + lib.concatStringsSep ", " (builtins.attrNames enabledRouters);
-        }
-      ];
+      assertions =
+        lib.mapAttrsToList
+          (
+            name: m:
+            let
+              b = m.perf.batchSize;
+              ub = m.perf.ubatchSize;
+            in
+            {
+              assertion = b == null || ub == null || ub <= b;
+              message =
+                "kdn.llm.local.models.${name}: perf.ubatchSize (${toString ub}) "
+                + "must be <= perf.batchSize (${toString b}).";
+            }
+          )
+          (lib.filterAttrs (_: m: m.enable && m.perf.ubatchSize != null) cfg.models)
+        ++ lib.optionals (enabledRouters != { }) [
+          {
+            assertion = lib.all (name: lib.match "^[a-z0-9]+$" name != null) (
+              builtins.attrNames enabledRouters
+            );
+            message =
+              "kdn.llm.local.routers names must be lowercase alphanumeric "
+              + "(no hyphens, underscores, or upper case); got: "
+              + lib.concatStringsSep ", " (builtins.attrNames enabledRouters);
+          }
+        ];
 
       # The router server: one process, on-demand model load, exactly one
       # resident at a time (models-max=1). API-key enforced from a host-wired
