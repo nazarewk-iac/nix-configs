@@ -64,6 +64,13 @@ Separately, the specialisation also runs a second router,
 
 ## Proposed approach
 
+The explored candidate is `--parallel 4 --kv-unified --ctx-size 327680` (one
+shared 320K pool, each slot free to use it; see [`research.md`](research.md)).
+Small-context sub-agents need no server change — a shared pool is
+usage-proportional, so a small request is automatically small — but a
+*guarantee* needs a preconfigured client model entry (smaller `limit.context`) or
+a uniform server cap.
+
 - Add a `perf.kvUnified` (and keep `perf.parallel`) option to the slot and the
   den `llm` aspect; emit `--kv-unified`/`--no-kv-unified`. See `perf.batchSize`
   for the pattern just added.
@@ -101,9 +108,14 @@ Separately, the specialisation also runs a second router,
 
 ## References
 
+- [`research.md`](research.md) — the theoretical exploration: 320K ctx with
+  `--parallel 4` under unified KV, and how to allow smaller-context sub-agents
+  (client vs server, on-demand vs preconfigured).
 - [`docs/local-llms.md`](../../../docs/local-llms.md) — deployment, the ZFS ARC
   quirk, and the prefill tuning (affinity stall, ubatch).
 - `modules/slots/llm/default.nix` — `perf.*` options and preset rendering.
 - `hosts/brys/llm.nix` — shared brys LLM config (router + specialisation).
+- `hosts/oams/devenv.nix` — the `kdn.llm.client` provider entries (where a
+  smaller-context sub-agent model entry would be added).
 - Source for the `kv_unified` default logic: llama.cpp `common/common.h`,
-  `common/arg.cpp`, `tools/server/server.cpp`.
+  `common/arg.cpp`, `tools/server/server.cpp`, `src/llama-context.cpp`.
