@@ -160,6 +160,11 @@
           ++ [
             "mmap = ${if perf.mmap then "on" else "off"}"
             "parallel = ${toString perf.parallel}"
+          ]
+          ++ lib.optionals (perf.kvUnified != null) [
+            "kv-unified = ${if perf.kvUnified then "on" else "off"}"
+          ]
+          ++ [
             "reasoning = ${perf.reasoning}"
           ]
           ++ lib.optionals m.draft.enable [
@@ -590,6 +595,19 @@
           description = "Number of server slots for this model (`--parallel`). 1 wastes no KV cache.";
         };
 
+        options.perf.kvUnified = lib.mkOption {
+          type = with lib.types; nullOr bool;
+          default = null;
+          description = ''
+            Share one KV cache pool across every slot (`--kv-unified` / `--no-kv-unified`).
+            `null` omits the key, so llama.cpp decides: it turns unified KV on only when the
+            slot count is left at its auto default (`n_parallel = -1`). Because this aspect
+            always writes an explicit `parallel`, set `true` here to turn the shared pool on.
+            With a shared pool `ctx-size` is the pool total, not per slot, so raising
+            `parallel` does not multiply KV RAM.
+          '';
+        };
+
         options.perf.batchSize = lib.mkOption {
           type = with lib.types; nullOr ints.positive;
           default = null;
@@ -883,21 +901,19 @@
         # alphanumeric. A hyphen, an underscore or an uppercase letter would not match the on-disk
         # router section.
         assertions =
-          lib.mapAttrsToList
-            (
-              name: m:
-              let
-                b = m.perf.batchSize;
-                ub = m.perf.ubatchSize;
-              in
-              {
-                assertion = b == null || ub == null || ub <= b;
-                message =
-                  "kdn.llm.local.models.${name}: perf.ubatchSize (${toString ub}) "
-                  + "must be <= perf.batchSize (${toString b}).";
-              }
-            )
-            (lib.filterAttrs (_: m: m.enable && m.perf.ubatchSize != null) cfg.models)
+          lib.mapAttrsToList (
+            name: m:
+            let
+              b = m.perf.batchSize;
+              ub = m.perf.ubatchSize;
+            in
+            {
+              assertion = b == null || ub == null || ub <= b;
+              message =
+                "kdn.llm.local.models.${name}: perf.ubatchSize (${toString ub}) "
+                + "must be <= perf.batchSize (${toString b}).";
+            }
+          ) (lib.filterAttrs (_: m: m.enable && m.perf.ubatchSize != null) cfg.models)
           ++ lib.optionals (enabledRouters != { }) [
             {
               assertion = lib.all (name: lib.match "^[a-z0-9]+$" name != null) (

@@ -175,6 +175,9 @@ Global download options (`kdn.llm.local.download.*`):
 | `perf.contextSize` | int or null | `null` | `--ctx-size` (KV-cache RAM budget); null uses the model default |
 | `perf.mmap` | bool | `true` | memory-map the model file |
 | `perf.parallel` | int | `1` | `--parallel` server slots (1 wastes no KV cache) |
+| `perf.kvUnified` | bool or null | `null` | `--kv-unified`/`--no-kv-unified`; null omits it. With unified KV `ctx-size` is one shared pool, not per slot |
+| `perf.batchSize` | int or null | `null` | `--batch-size`; larger reuses activated MoE experts over more tokens |
+| `perf.ubatchSize` | int or null | `null` | `--ubatch-size`; the biggest prefill lever (must be `<= batchSize`) |
 | `perf.reasoning` | `on`/`off`/`auto` | `off` | `--reasoning`; off skips invisible thinking so short queries stream immediately |
 | `perf.specType` | string | `draft-dspark` | `--spec-type` used when `draft.enable` is set |
 | `draft.enable` | bool | `false` | download and use a speculative-decoding draft model for this model |
