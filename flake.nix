@@ -61,7 +61,7 @@
   inputs.nix-effects.url = "github:denful/nix-effects/c3c68a45deb892d028711eeff8b80937e30a90dd";
   inputs.nix-fast-build.url = "github:Mic92/nix-fast-build";
   inputs.nix-homebrew.url = "github:zhaofengli/nix-homebrew";
-  inputs.nix-rosetta-builder.url = "github:cpick/nix-rosetta-builder";
+  inputs.nix-rosetta-builder.url = "github:nazarewk/nix-rosetta-builder/feat/customize-working-directory";
   inputs.nix-rosetta-builder.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nixcasks.url = "github:jacekszymanski/nixcasks";
   inputs.nixos-anywhere.url = "github:numtide/nixos-anywhere";

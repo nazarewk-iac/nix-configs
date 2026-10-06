@@ -1286,15 +1286,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1770491098,
-        "narHash": "sha256-ZfhynJqgV3A9hEivcgOEZa+TZnJPc26lIUjzKsSchgI=",
-        "owner": "cpick",
+        "lastModified": 1791245239,
+        "narHash": "sha256-cCutBlM0cPbqw6QqcWLVZloIgsol5aNTXnO3rhoZ//0=",
+        "owner": "nazarewk",
         "repo": "nix-rosetta-builder",
-        "rev": "50e6070082e0b4fbaf67dd8f346892a1a9ed685c",
+        "rev": "0f95e61b73e7ac2a1b4c7ad9de76d53330b916ae",
         "type": "github"
       },
       "original": {
-        "owner": "cpick",
+        "owner": "nazarewk",
+        "ref": "feat/customize-working-directory",
         "repo": "nix-rosetta-builder",
         "type": "github"
       }
