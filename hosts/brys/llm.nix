@@ -1,7 +1,7 @@
 # Shared LLM serving configuration for brys.
 #
-# The main host (hosts/brys/default.nix) and the llm-minimal boot specialisation
-# (hosts/brys/llm-minimal.nix) serve the DeepSeek V4 Flash frontier model through
+# The main host (hosts/brys/default.nix) and the llm-ds4 boot specialisation
+# (hosts/brys/llm-ds4.nix) serve the DeepSeek V4 Flash frontier model through
 # the same `kdn.llm.local` slot. The llm-small boot specialisation
 # (hosts/brys/llm-small.nix) serves the small-model router instead, with no
 # frontier model. This file owns that shared wiring so the consumers cannot
@@ -35,6 +35,27 @@ let
   # The small-model router set, split out so a frontier-only host never pulls it
   # in. See hosts/brys/llm-routers.nix.
   small = import ./llm-routers.nix;
+
+  # The DS4 client context tiers (hosts/oams/devenv.nix). Every tier id and its
+  # `-think` variant must be a server alias of `deepseek-v4-flash`: the
+  # compat-proxy routes an unknown id to the frontier upstream but does not
+  # rewrite it, and llama-server then rejects the unknown id with HTTP 400. The
+  # base tier id is the model name itself, so it needs no alias. Keep this list
+  # in step with `ds4Contexts` in hosts/oams/devenv.nix.
+  ds4TierSuffixes = [
+    "256k"
+    "192k"
+    "128k"
+    "96k"
+    "64k"
+    "32k"
+    "16k"
+  ];
+  ds4Aliases = [
+    "frontier"
+  ]
+  ++ map (s: "deepseek-v4-flash-${s}") ds4TierSuffixes
+  ++ map (s: "deepseek-v4-flash${s}-think") ([ "" ] ++ map (s: "-${s}") ds4TierSuffixes);
 
   # DeepSeek V4 Flash perf.
   #
@@ -93,16 +114,7 @@ let
       hfRepo = "unsloth/DeepSeek-V4-Flash-GGUF";
       hfFile = "UD-IQ3_XXS/DeepSeek-V4-Flash-UD-IQ3_XXS-00001-of-00004.gguf";
       download.glob = "UD-IQ3_XXS/DeepSeek-V4-Flash-UD-IQ3_XXS-*.gguf";
-      aliases = [
-        "frontier"
-        "deepseek-v4-flash-256k"
-        "deepseek-v4-flash-192k"
-        "deepseek-v4-flash-128k"
-        "deepseek-v4-flash-96k"
-        "deepseek-v4-flash-64k"
-        "deepseek-v4-flash-32k"
-        "deepseek-v4-flash-16k"
-      ];
+      aliases = ds4Aliases;
       perf = deepseekPerf;
       draft = {
         enable = true;
