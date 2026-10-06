@@ -116,13 +116,18 @@ slot.
 
 ### Serving endpoint
 
-- The standard boot (main host and the `llm-minimal` specialisation) serves
+- The standard boot (main host and the `llm-ds4` specialisation) serves
   **DeepSeek V4 Flash only**, from one llama-server router on loopback:
   - **`main`** (frontier): `127.0.0.1:39703`, threads 16. Holds
     `deepseek-v4-flash` (alias `frontier`); `--models-max 1` keeps it resident
     and alone. **Four slots share one unified KV pool** (`parallel=4`,
     `kv-unified=on`, `ctx-size=327680`), so a second request no longer queues
     behind the first request's full prefill. There is no per-slot cap.
+  - **Measured concurrency (2026-10-06):** a short request returned in **3.7 s**
+    while a 256-token request was in flight (121.8 s) — neither waited for the
+    other. Prefill ran at 7.9–15.9 tok/s; DS4 stayed resident (`RssFile`
+    92.6 GB, **0 idle major faults**, no OOM); DSpark acceptance 0.44 at
+    `parallel 4`. See the benchmark log below.
 - One loopback compat-proxy `:9530` in front of it, with `routerProxyEnv`
   emitting `ROUTER_SMALL_URL` + `ROUTER_SMALL_MODELS` only on the `llm-small`
   boot entry.
@@ -140,7 +145,7 @@ The frontier and the small set no longer share a boot. Both entries are
 (never activated in place), and both share the appliance body in
 `hosts/brys/llm-appliance.nix`:
 
-- **`llm-minimal`** (`hosts/brys/llm-minimal.nix`) — DeepSeek V4 Flash alone.
+- **`llm-ds4`** (`hosts/brys/llm-ds4.nix`) — DeepSeek V4 Flash alone.
   `withFrontier = true; withSmall = false`. 320K shared KV pool, 4 slots,
   DSpark draft. The main `brys` profile matches it (at 128K, unpinned).
 - **`llm-small`** (`hosts/brys/llm-small.nix`) — the small-model set alone.
@@ -196,43 +201,56 @@ gets the whole machine, so it takes 320K. Both draw the rest of their config
 from the shared `hosts/brys/llm.nix` (which deliberately sets no CPU affinity —
 see "Prefill tuning" below).
 
-### Client context tiers (oams)
+### Client context tiers and thinking variants (oams)
 
 The DS4 endpoint is tiered **on the client side only**. Unified KV makes the
 server pool usage-proportional, so a small request is already cheap without any
 server flag; there is deliberately no `--kv-unified-per-slot` cap. Instead
 `hosts/oams/devenv.nix` declares the same `deepseek-v4-flash` at several
-practical context budgets, plus one opencode subagent per tier:
+practical context budgets, a **thinking** variant of each, and one opencode
+subagent per (tier, thinking) pair:
 
-| provider model id | context | opencode agent |
+| provider model id | context | agents (plain / thinking) |
 |---|---|---|
-| `deepseek-v4-flash` | 327680 (320K, the full shared pool) | `ds4-320k` |
-| `deepseek-v4-flash-256k` | 262144 | `ds4-256k` |
-| `deepseek-v4-flash-192k` | 196608 | `ds4-192k` |
-| `deepseek-v4-flash-128k` | 131072 | `ds4-128k` |
-| `deepseek-v4-flash-96k` | 98304 | `ds4-96k` |
-| `deepseek-v4-flash-64k` | 65536 | `ds4-64k` |
-| `deepseek-v4-flash-32k` | 32768 | `ds4-32k` |
-| `deepseek-v4-flash-16k` | 16384 | `ds4-16k` |
+| `deepseek-v4-flash` | 327680 (320K, the full shared pool) | `ds4-320k` / `ds4-320k-think` |
+| `deepseek-v4-flash-256k` | 262144 | `ds4-256k` / `ds4-256k-think` |
+| `deepseek-v4-flash-192k` | 196608 | `ds4-192k` / `ds4-192k-think` |
+| `deepseek-v4-flash-128k` | 131072 | `ds4-128k` / `ds4-128k-think` |
+| `deepseek-v4-flash-96k` | 98304 | `ds4-96k` / `ds4-96k-think` |
+| `deepseek-v4-flash-64k` | 65536 | `ds4-64k` / `ds4-64k-think` |
+| `deepseek-v4-flash-32k` | 32768 | `ds4-32k` / `ds4-32k-think` |
+| `deepseek-v4-flash-16k` | 16384 | `ds4-16k` / `ds4-16k-think` |
 
 `output` scales with the tier (`min(8192, context/4)`) so input + output fit the
-window. **16K is the smallest useful subagent tier:** opencode sends a
-~5K-token system prompt plus tool schemas, so an 8K window overflows and the
-request stalls. Verified 2026-10-06: a 16K subagent read a file and returned the
-right answer.
+window. **16K is the smallest useful subagent tier:** opencode sends an
+8.6K–10.2K-token system prompt plus tool schemas, so an 8K window cannot fit and
+the request stalls (observed 2026-10-06). A 16K subagent read a file and returned
+the right answer; 16K is tight, 32K is comfortable.
 
-Every tier id hits the same DS4 model and the same shared 320K pool; the tier
-only bounds what the client sends, which is what lets a sub-agent stay cheap.
-`deepseek-v4-flash` (320K) and the `frontier` alias stay the default choice for
-a main agent.
+**Thinking is per request, not per model.** llama-server takes
+`chat_template_kwargs.enable_thinking` and returns the thinking in a separate
+`reasoning_content` field. `reasoning_effort` alone is a no-op; it needs
+`enable_thinking` too. opencode passes a model's `options` object **verbatim**
+into the chat-completions body (verified with an echo server), so a thinking
+variant is just a model entry with:
 
-> **The tier ids are server aliases, not a proxy fallback.** The compat-proxy
-> routes an id it does not know to the frontier *upstream*, but it does not
-> rewrite the id, and llama-server then rejects an unknown id with HTTP 400
-> (`model '...' not found`). So a purely client-side tier cannot be routed: the
-> `deepseek-v4-flash-<n>k` ids must be listed in `hosts/brys/llm.nix` as
-> aliases of `deepseek-v4-flash`. They add no KV cap and no memory; `--parallel
-> 4` shares the one unified pool whatever alias a request names.
+```nix
+options.chat_template_kwargs.enable_thinking = true;
+reasoning = true; # opencode parses the thinking output
+```
+
+Every id hits the same DS4 model and the same shared 320K pool; the tier only
+bounds what the client sends. `deepseek-v4-flash` (320K) and the `frontier` alias
+stay the default choice for a main agent.
+
+> **The tier and `-think` ids are server aliases, not a proxy fallback.** The
+> compat-proxy routes an id it does not know to the frontier *upstream*, but it
+> does not rewrite the id, and llama-server then rejects an unknown id with HTTP
+> 400 (`model '...' not found`). So a purely client-side tier cannot be routed:
+> every `deepseek-v4-flash-<n>k[-think]` id must be listed in `hosts/brys/llm.nix`
+> as an alias of `deepseek-v4-flash` (the list is computed from one
+> `ds4TierSuffixes` list). They add no KV cap and no memory; `--parallel 4`
+> shares the one unified pool whatever alias a request names.
 
 ### ZFS ARC quirk (required for large contexts)
 
@@ -418,7 +436,7 @@ at the bottom.
 | 2026-09-06 02:3x | EXPERIMENT B: memcg-v2 cap (runtime, competing allocator) — unprotected | 5.28 | 189 | ↓ | 5.27 | warm | default-cgroup `stress-ng --vm-bytes 18G` evicted ~18 GB weights (buff/cache 103→85) → collapse |
 | 2026-09-06 02:3x | EXPERIMENT B: memcg-v2 cap (runtime) — same allocator under `MemoryMax=4G` scope | **6.49** | 154 | ↑ PROTECTED | 6.49 | warm | competitor memcg-OOM-killed in its own scope; weights stayed resident; serving stayed fast → cgroup cap IS the robustness mechanism |
 | 2026-09-06 03:0x | EXPERIMENT C: ik_llama.cpp fork swap | — | — | SKIP | — | — | not drop-in (no router mode, no `--cpu-range`); bandwidth-bound → no peak upside; DSpark syntax differs. Packaging easy (own flake) but moot. Kept upstream llama.cpp |
-| 2026-10-06 12:4x | unified KV: `parallel 4` + `kv-unified on`, ctx 327680 (cold boot `llm-minimal` gen 652) | 2.22 | 451 | — | — | ~3:16 (first load) | **concurrency confirmed**: a short request (8 tok) returned in **3.7 s** while a 256-token request was in flight (121.8 s) — no head-of-line blocking; server logged `n_slots = 4, n_ctx_slot = 327680, kv_unified = 'true'`; DS4 `RssFile` 92.6 GB, **0 idle major faults**, no OOM; DSpark acceptance 0.44 at `parallel 4` (draft still works) |
+| 2026-10-06 12:4x | unified KV: `parallel 4` + `kv-unified on`, ctx 327680 (cold boot `llm-ds4` gen 652) | 2.22 | 451 | — | — | ~3:16 (first load) | **concurrency confirmed**: a short request (8 tok) returned in **3.7 s** while a 256-token request was in flight (121.8 s) — no head-of-line blocking; server logged `n_slots = 4, n_ctx_slot = 327680, kv_unified = 'true'`; DS4 `RssFile` 92.6 GB, **0 idle major faults**, no OOM; DSpark acceptance 0.44 at `parallel 4` (draft still works) |
 
 **Key mechanism finding (2026-09-05 ~20:10):** the DS4 weights are `mmap`-backed and go
 fully resident as **file-backed page cache** (~77 GB `RssFile` on the worker), plus ~14 GB
