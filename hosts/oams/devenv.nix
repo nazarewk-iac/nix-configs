@@ -45,29 +45,45 @@ let
     32768 # 32K
     16384 # 16K: smallest useful subagent tier
   ];
-  ds4TierId =
-    ctx: if ctx == 327680 then "deepseek-v4-flash" else "deepseek-v4-flash-${toString (ctx / 1024)}k";
+  ds4K = ctx: toString (ctx / 1024);
+  ds4TierId = ctx: if ctx == 327680 then "deepseek-v4-flash" else "deepseek-v4-flash-${ds4K ctx}k";
+  # One model entry for a tier. `think` adds server-side thinking: opencode sends
+  # the `options` object verbatim in the request body, and llama-server turns the
+  # thinking block on from `chat_template_kwargs.enable_thinking`.
+  ds4Model =
+    think: ctx:
+    {
+      name = "deepseek-v4-flash (brys, LAN) [${ds4K ctx}K${lib.optionalString think ", thinking"}]";
+      context = ctx;
+      output = lib.min 8192 (ctx / 4);
+      reasoning = think;
+    }
+    // lib.optionalAttrs think {
+      options.chat_template_kwargs.enable_thinking = true;
+    };
+  # One model per (tier, thinking) pair. The thinking id is `<tier-id>-think`, which
+  # must be a server alias too (see hosts/brys/llm.nix).
   ds4Models = lib.listToAttrs (
-    map (
-      ctx:
-      lib.nameValuePair (ds4TierId ctx) {
-        name = "deepseek-v4-flash (brys, LAN) [${toString (ctx / 1024)}K]";
-        context = ctx;
-        output = lib.min 8192 (ctx / 4);
-      }
-    ) ds4Contexts
+    lib.concatMap (ctx: [
+      (lib.nameValuePair (ds4TierId ctx) (ds4Model false ctx))
+      (lib.nameValuePair "${ds4TierId ctx}-think" (ds4Model true ctx))
+    ]) ds4Contexts
   );
-  # One opencode subagent per tier, so each context size is directly usable and
-  # a caller can pick the cheapest one that fits the task.
+  # One opencode subagent per (tier, thinking) pair, so every combination is
+  # directly usable and a caller can pick the cheapest one that fits the task.
   ds4Agents = lib.listToAttrs (
-    map (
-      ctx:
-      lib.nameValuePair "ds4-${toString (ctx / 1024)}k" {
-        description = "DeepSeek V4 Flash on brys with a ${toString (ctx / 1024)}K context budget.";
+    lib.concatMap (ctx: [
+      (lib.nameValuePair "ds4-${ds4K ctx}k" {
+        description = "DeepSeek V4 Flash on brys with a ${ds4K ctx}K context budget.";
         mode = "subagent";
         model = "brys/${ds4TierId ctx}";
-      }
-    ) ds4Contexts
+      })
+      (lib.nameValuePair "ds4-${ds4K ctx}k-think" {
+        description = "DeepSeek V4 Flash on brys, ${ds4K ctx}K context budget, server-side thinking on.";
+        mode = "subagent";
+        model = "brys/${ds4TierId ctx}-think";
+      })
+    ]) ds4Contexts
   );
 in
 {
@@ -107,7 +123,7 @@ in
         output = 8192;
       };
       # Small models. brys serves these only when booted into the llm-small
-      # specialisation; on the default/llm-minimal boot the compat-proxy falls
+      # specialisation; on the default/llm-ds4 boot the compat-proxy falls
       # back to the frontier (DS4). They are kept so a small-only boot is usable
       # without a client change.
       "gpt-oss-120b" = {
