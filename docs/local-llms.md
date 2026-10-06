@@ -116,14 +116,16 @@ slot.
 
 ### Serving endpoint
 
-- Two llama-server routers on loopback, each `--api-key-file`:
-  - **`main`** (frontier): `127.0.0.1:39703`, threads 16. Holds the default
-    set (everything without an explicit `mainRouter`): `deepseek-v4-flash`
-    (alias `frontier`), plus the main host's non-small models.
-  - **`small`** (`kdn.llm.local.routers.small`): `127.0.0.1:39704`, threads 8.
-    Holds the freely-swapping small set (see below).
-- One loopback compat-proxy `:9530` in front of both, with `routerProxyEnv`
-  emitting `ROUTER_SMALL_URL` + `ROUTER_SMALL_MODELS`.
+- The standard boot (main host and the `llm-minimal` specialisation) serves
+  **DeepSeek V4 Flash only**, from one llama-server router on loopback:
+  - **`main`** (frontier): `127.0.0.1:39703`, threads 16. Holds
+    `deepseek-v4-flash` (alias `frontier`); `--models-max 1` keeps it resident
+    and alone. **Four slots share one unified KV pool** (`parallel=4`,
+    `kv-unified=on`, `ctx-size=327680`), so a second request no longer queues
+    behind the first request's full prefill. There is no per-slot cap.
+- One loopback compat-proxy `:9530` in front of it, with `routerProxyEnv`
+  emitting `ROUTER_SMALL_URL` + `ROUTER_SMALL_MODELS` only on the `llm-small`
+  boot entry.
 - LAN endpoint over HTTPS: `https://brys.lan.etra.net.int.kdn.im/v1`, pinned to
   a self-signed cert and API-key protected. `POST /v1/chat/completions` with the
   `model` field set to a model name or alias; the compat-proxy routes it to the
@@ -131,42 +133,35 @@ slot.
   Auth: `Authorization: Bearer <key>`
   (`llama-server/api-keys/default` in the sops tree).
 
-### Router split on brys
+### Boot specialisations: frontier or small, never both
 
-The `llm-minimal` boot specialisation is the two-router deployment (boot-selected,
-never activated in place):
+The frontier and the small set no longer share a boot. Both entries are
+`inheritParentConfig = false` boot specialisations, selected from the bootloader
+(never activated in place), and both share the appliance body in
+`hosts/brys/llm-appliance.nix`:
 
-- **`main`** `:39703`, threads 12 — frontier. `deepseek-v4-flash` (alias
-  `frontier`, DSpark draft, 320K ctx) lives here and
-  stays resident/hot and **alone** (`--models-max 1`); it is the default
-  `mainRouter` for all models in `hosts/brys/llm-minimal.nix` that do not name
-  another router.
-- **`small`** `:39704`, threads 8 — `kdn.llm.local.routers.small`, a **set router**:
-  hosts every small model in the specialisation that sets `mainRouter = "small"`
-  (`qwen3-30b-a3b` [alias `fast`], `qwen3-next-80b` [alias `balanced`],
-  `phi-4`, `qwen3-coder-next`, `qwen3-235b`, `gpt-oss-120b`). `--models-max 2`
-  keeps up to two of them resident together as a set (measured coexistable
-  pairs, e.g. `{qwen3-30b-a3b, qwen3-coder-next}` ~108 G anon, only ~35-40 %
-  co-active loss), swapping as a unit against DS4 — DS4 on the frontier stays
-  alone. A third coexistent member is viable at the RAM ceiling (mounts are
-  read-only mmap whose file pages recycle to page-cache, so file-size sums
-  overstate real anon usage).
+- **`llm-minimal`** (`hosts/brys/llm-minimal.nix`) — DeepSeek V4 Flash alone.
+  `withFrontier = true; withSmall = false`. 320K shared KV pool, 4 slots,
+  DSpark draft. The main `brys` profile matches it (at 128K, unpinned).
+- **`llm-small`** (`hosts/brys/llm-small.nix`) — the small-model set alone.
+  `withFrontier = false; withSmall = true`. `kdn.llm.local.routers.small`
+  (`:39704`, threads 8) is a **set router**: `--models-max 2` keeps up to two
+  confirmed-coexistable small models resident together, and the primary
+  `:39703` router holds no model.
 
-The **main `brys` host** (`hosts/brys/default.nix`) now draws from the same
-`hosts/brys/llm.nix` as the specialisation, so it also runs the `small` router;
-it differs only by DeepSeek context (128K instead of 320K) and unpinned threads.
+The choice lives in `hosts/brys/llm.nix`'s `withFrontier` / `withSmall`
+arguments, so a frontier host never even pulls the small-model definitions in.
 
-**Co-residency cost (measured, Phase 3):** the two routers keep DS4 resident (it
-never cold-reloads across small-model swaps on `small`), but on the ~40 GB/s
-bandwidth-bound box any resident small model contends for the same memory
-bandwidth. Even an *idle-but-resident* small model (phi-4, 8 GB) halves DS4
-(~6.7 → ~3 t/s); an *actively generating* small model drops DS4 to ~1.75–2.2 t/s
-(67–74% hit) and a 65 GB+ MoE (qwen3-coder-next) crushes it to ~0.9–1.1 t/s and
-evicts DS4's weight cache (RSS 67→15 GB). Best co-tenant by far is
-`qwen3-30b-a3b` (fast, low bandwidth, ~2.2 t/s DS4 hit, cache intact). Treat the
-big 45 GB+ models as exclusive/DS4-degrading, not cheap co-resident tasks. Also
-note: a router's `--sleep-idle-seconds -1` pins its last resident model, so DS4
-is never truly "alone" once the small set has been touched.
+**Why the split (measured, Phase 3):** on the ~40 GB/s bandwidth-bound box any
+resident small model contends for the same memory bandwidth. Even an
+*idle-but-resident* small model (phi-4, 8 GB) halves DS4 (~6.7 → ~3 t/s); an
+*actively generating* small model drops DS4 to ~1.75–2.2 t/s (67–74% hit) and a
+65 GB+ MoE (qwen3-coder-next) crushes it to ~0.9–1.1 t/s and evicts DS4's weight
+cache (RSS 67→15 GB). Best co-tenant by far is `qwen3-30b-a3b` (fast, low
+bandwidth, ~2.2 t/s DS4 hit, cache intact), but a router's
+`--sleep-idle-seconds -1` pins its last resident model, so DS4 is never truly
+"alone" once the small set has been touched. The only robust answer is a
+separate boot entry.
 
 ### Models (all enabled on brys)
 
@@ -183,7 +178,8 @@ is never truly "alone" once the small set has been touched.
 Serving is CPU-only (the Radeon Pro W6600 is unusable for this model family).
 Per-model serving knobs on brys: `threads=16` (physical cores, SMT is counter
 productive for memory-bound inference), `flash-attn=on`, `mmap=on`,
-`parallel=1`, `reasoning=off`, and these context sizes:
+`reasoning=off`. DeepSeek V4 Flash adds `parallel=4` + `kv-unified=on`; every
+other model keeps `parallel=1`. Context sizes:
 
 | Model | ctx-size | Notes |
 |---|---|---|
@@ -199,6 +195,44 @@ its threads unpinned: it shares the box with the desktop. The specialisation
 gets the whole machine, so it takes 320K. Both draw the rest of their config
 from the shared `hosts/brys/llm.nix` (which deliberately sets no CPU affinity —
 see "Prefill tuning" below).
+
+### Client context tiers (oams)
+
+The DS4 endpoint is tiered **on the client side only**. Unified KV makes the
+server pool usage-proportional, so a small request is already cheap without any
+server flag; there is deliberately no `--kv-unified-per-slot` cap. Instead
+`hosts/oams/devenv.nix` declares the same `deepseek-v4-flash` at several
+practical context budgets, plus one opencode subagent per tier:
+
+| provider model id | context | opencode agent |
+|---|---|---|
+| `deepseek-v4-flash` | 327680 (320K, the full shared pool) | `ds4-320k` |
+| `deepseek-v4-flash-256k` | 262144 | `ds4-256k` |
+| `deepseek-v4-flash-192k` | 196608 | `ds4-192k` |
+| `deepseek-v4-flash-128k` | 131072 | `ds4-128k` |
+| `deepseek-v4-flash-96k` | 98304 | `ds4-96k` |
+| `deepseek-v4-flash-64k` | 65536 | `ds4-64k` |
+| `deepseek-v4-flash-32k` | 32768 | `ds4-32k` |
+| `deepseek-v4-flash-16k` | 16384 | `ds4-16k` |
+
+`output` scales with the tier (`min(8192, context/4)`) so input + output fit the
+window. **16K is the smallest useful subagent tier:** opencode sends a
+~5K-token system prompt plus tool schemas, so an 8K window overflows and the
+request stalls. Verified 2026-10-06: a 16K subagent read a file and returned the
+right answer.
+
+Every tier id hits the same DS4 model and the same shared 320K pool; the tier
+only bounds what the client sends, which is what lets a sub-agent stay cheap.
+`deepseek-v4-flash` (320K) and the `frontier` alias stay the default choice for
+a main agent.
+
+> **The tier ids are server aliases, not a proxy fallback.** The compat-proxy
+> routes an id it does not know to the frontier *upstream*, but it does not
+> rewrite the id, and llama-server then rejects an unknown id with HTTP 400
+> (`model '...' not found`). So a purely client-side tier cannot be routed: the
+> `deepseek-v4-flash-<n>k` ids must be listed in `hosts/brys/llm.nix` as
+> aliases of `deepseek-v4-flash`. They add no KV cap and no memory; `--parallel
+> 4` shares the one unified pool whatever alias a request names.
 
 ### ZFS ARC quirk (required for large contexts)
 
@@ -384,6 +418,7 @@ at the bottom.
 | 2026-09-06 02:3x | EXPERIMENT B: memcg-v2 cap (runtime, competing allocator) — unprotected | 5.28 | 189 | ↓ | 5.27 | warm | default-cgroup `stress-ng --vm-bytes 18G` evicted ~18 GB weights (buff/cache 103→85) → collapse |
 | 2026-09-06 02:3x | EXPERIMENT B: memcg-v2 cap (runtime) — same allocator under `MemoryMax=4G` scope | **6.49** | 154 | ↑ PROTECTED | 6.49 | warm | competitor memcg-OOM-killed in its own scope; weights stayed resident; serving stayed fast → cgroup cap IS the robustness mechanism |
 | 2026-09-06 03:0x | EXPERIMENT C: ik_llama.cpp fork swap | — | — | SKIP | — | — | not drop-in (no router mode, no `--cpu-range`); bandwidth-bound → no peak upside; DSpark syntax differs. Packaging easy (own flake) but moot. Kept upstream llama.cpp |
+| 2026-10-06 12:4x | unified KV: `parallel 4` + `kv-unified on`, ctx 327680 (cold boot `llm-minimal` gen 652) | 2.22 | 451 | — | — | ~3:16 (first load) | **concurrency confirmed**: a short request (8 tok) returned in **3.7 s** while a 256-token request was in flight (121.8 s) — no head-of-line blocking; server logged `n_slots = 4, n_ctx_slot = 327680, kv_unified = 'true'`; DS4 `RssFile` 92.6 GB, **0 idle major faults**, no OOM; DSpark acceptance 0.44 at `parallel 4` (draft still works) |
 
 **Key mechanism finding (2026-09-05 ~20:10):** the DS4 weights are `mmap`-backed and go
 fully resident as **file-backed page cache** (~77 GB `RssFile` on the worker), plus ~14 GB
