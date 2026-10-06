@@ -4,7 +4,7 @@
 # clean top-level (`inheritParentConfig = false`) boot entry that serves only the
 # small-model router (`kdn.llm.local.routers.small`, :39704) with no DeepSeek
 # frontier model, so the small set has the whole machine. It is the counterpart
-# of ./llm-minimal.nix (DS4 alone): the two are mutually exclusive, because DS4
+# of ./llm-ds4.nix (DS4 alone): the two are mutually exclusive, because DS4
 # needs the whole box. The common appliance body lives in ./llm-appliance.nix.
 {
   lib,

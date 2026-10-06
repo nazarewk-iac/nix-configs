@@ -1,4 +1,4 @@
-# Minimal DeepSeek-only specialisation for brys.
+# DeepSeek-only specialisation for brys.
 #
 # BOOT-SELECTED ONLY, NEVER ACTIVATED via switch-to-configuration. This is a
 # clean top-level (`inheritParentConfig = false`) boot entry that serves the
@@ -35,10 +35,10 @@ import ./llm-appliance.nix {
     kdnConfig
     llm
     ;
-  tag = "llm-minimal";
+  tag = "llm-ds4";
   banner = ''
     \e[1;33m============================================================\e[0m
-    \e[1;31m  Minimal LLM-ONLY instance  (brys / llm-minimal)\e[0m
+    \e[1;31m  DeepSeek-only instance  (brys / llm-ds4)\e[0m
     \e[1;33m============================================================\e[0m
     Booted into the isolated DeepSeek-serving topology. Freeing the whole
     machine for local LLM inference; no desktop, no workstation services.

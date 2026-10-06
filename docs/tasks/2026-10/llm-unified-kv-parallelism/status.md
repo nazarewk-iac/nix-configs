@@ -21,8 +21,8 @@ and `kvUnified = true`. No `--kv-unified-per-slot` cap anywhere.
 
 **Small router spun out.** `hosts/brys/llm.nix` gained `withFrontier` / `withSmall`.
 The shared appliance body moved to `hosts/brys/llm-appliance.nix`. Boot entries:
-`llm-minimal` (DS4 only) and `llm-small` (`routers.small` only, new). Wired under
-`specialisation.llm-minimal` / `specialisation.llm-small` in `hosts/brys/default.nix`.
+`llm-ds4` (DS4 only) and `llm-small` (`routers.small` only, new). Wired under
+`specialisation.llm-ds4` / `specialisation.llm-small` in `hosts/brys/default.nix`.
 
 **Client tiers (`hosts/oams/devenv.nix`).** The same DS4 at eight context sizes
 (320K…16K) plus one opencode subagent per tier (`ds4-320k`…`ds4-16k`). `output`
@@ -33,8 +33,8 @@ verified 2026-10-06, a `ds4-16k` subagent read `hosts/brys/llm-routers.nix` and
 returned the six model names.
 
 **Deployed and measured (cold boot, 2026-10-06).** `nixos-rebuild.sh boot
-remote=brys` + `select-boot-entry.sh brys llm-minimal --reboot`. Running
-`nixos-system-brys-llm-minimal-26.11.20260908.d6524aa`, `isolcpus=1-15` and
+remote=brys` + `select-boot-entry.sh brys llm-ds4 --reboot`. Running
+`nixos-system-brys-llm-ds4-26.11.20260908.d6524aa`, `isolcpus=1-15` and
 `zfs_arc_max=8589934592` applied. Server log:
 `n_slots = 4, n_ctx_slot = 327680, kv_unified = 'true'`. Only `llama-cpp.service`
 runs (no small router).

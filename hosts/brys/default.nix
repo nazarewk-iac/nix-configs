@@ -6,7 +6,7 @@
   ...
 }:
 let
-  # Shared local-LLM serving config, also used by the llm-minimal boot
+  # Shared local-LLM serving config, also used by the llm-ds4 boot
   # specialisation (see ./llm.nix). The main profile keeps a smaller DeepSeek
   # context (128K) and leaves its threads unpinned: it shares the box with the
   # desktop, while the specialisation gets the isolated cores and the full 320K.
@@ -50,7 +50,7 @@ in
     kdnConfig.self.nixosModules.default
     slots.config.nixos
     # LLM secrets, model persistence and the leaf-key decrypt service. Shared
-    # with the llm-minimal boot specialisation via ./llm.nix.
+    # with the llm-ds4 boot specialisation via ./llm.nix.
     llm.nixos
     "${kdnConfig.self}/data/ca/ca-dag.nix"
     {
@@ -345,11 +345,11 @@ in
       # and the LLM slot, with desktop/workstation/gaming turned off, so DeepSeek
       # gets the whole machine. NEVER activate via switch-to-configuration —
       # select it from the bootloader; kernel tuning only applies on a cold boot.
-      specialisation.llm-minimal = {
+      specialisation.llm-ds4 = {
         inheritParentConfig = false;
         configuration = {
           imports = [
-            ./llm-minimal.nix
+            ./llm-ds4.nix
           ];
         };
       };

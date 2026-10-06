@@ -14,7 +14,7 @@ timestamp: 2026-10-06T00:29:35+02:00
 
 ## Context
 
-The `llm-minimal` specialisation on brys serves `deepseek-v4-flash` (DS4) from one
+The `llm-ds4` specialisation on brys serves `deepseek-v4-flash` (DS4) from one
 `llama-server` router (`:39703`). Current relevant settings, in the shared
 `hosts/brys/llm.nix` and the slot `modules/slots/llm/default.nix`:
 

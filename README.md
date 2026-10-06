@@ -290,7 +290,7 @@ Used this snippet to gain initial access to nixos-avf (a NixOS VM on Android pho
 
 ## Booting into a NixOS specialisation
 
-A `specialisation.<name>` (e.g. the `llm-minimal` entry on `brys`) is a child
+A `specialisation.<name>` (e.g. the `llm-ds4` entry on `brys`) is a child
 of its parent host generation. `nixos-rebuild` builds the parent together with
 all its specialisations, and the systemd-boot installer writes one boot entry
 per specialisation, taken from the parent generation's `boot.json`
@@ -314,9 +314,9 @@ So the flow is: build and install the new entries, arm the wanted entry, reboot.
 
 # 2. Arm the specialisation entry for the next boot. The wrapper picks the
 #    latest boot entry whose title contains the given string, newest first.
-./select-boot-entry.sh brys llm-minimal           # one-shot (next boot only)
-./select-boot-entry.sh brys llm-minimal --persist # make it the default
-./select-boot-entry.sh brys llm-minimal --list    # show matches, change nothing
+./select-boot-entry.sh brys llm-ds4           # one-shot (next boot only)
+./select-boot-entry.sh brys llm-ds4 --persist # make it the default
+./select-boot-entry.sh brys llm-ds4 --list    # show matches, change nothing
 
 # 3. Reboot (or pass --reboot to the wrapper to arm and reboot in one step).
 ssh brys sudo systemctl reboot
@@ -332,7 +332,7 @@ Manual equivalent of step 2, without the wrapper:
 
 ```shell
 ssh brys sudo bootctl list --json=short |
-  jq -r '.[] | select(.title | ascii_downcase | contains("llm-minimal")) | "\(.id)\t\(.version)"'
+  jq -r '.[] | select(.title | ascii_downcase | contains("llm-ds4")) | "\(.id)\t\(.version)"'
 ssh brys sudo bootctl set-oneshot nixos-<hash>.conf
 ```
 
