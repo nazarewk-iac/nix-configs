@@ -4,9 +4,11 @@
 # (hosts/brys/llm-ds4.nix) serve the DeepSeek V4 Flash frontier model through
 # the same `kdn.llm.local` slot. The llm-small boot specialisation
 # (hosts/brys/llm-small.nix) serves the small-model router instead, with no
-# frontier model. This file owns that shared wiring so the consumers cannot
-# drift: the slot assignments, the LLM secrets, the leaf-key service, the model
-# persistence directory and the ZFS ARC cap all live here.
+# frontier model. The llm-qwen boot specialisation (hosts/brys/llm-qwen.nix)
+# serves the Qwen3.8-Flash-Next model alone. This file owns that shared wiring
+# so the consumers cannot drift: the slot assignments, the LLM secrets, the
+# leaf-key service, the model persistence directory and the ZFS ARC cap all
+# live here.
 #
 # The consumers differ in these knobs, so all are arguments:
 #
@@ -22,6 +24,11 @@
 #     (default false). A frontier host and a small host are mutually exclusive
 #     in practice: DS4 needs the whole box, so the small set is spun out to its
 #     own boot specialisation.
+#   * `withQwen` — wire the Qwen3.8-Flash-Next model on the primary router
+#     (default false). It is a frontier-class model, so a host enables it or
+#     DeepSeek, not both.
+#   * `qwenContextSize` — Qwen's KV-cache context (default 131072). The
+#     llm-qwen specialisation names it explicitly.
 {
   lib,
   pkgs,
@@ -30,6 +37,8 @@
   cpuPinned ? true,
   withFrontier ? true,
   withSmall ? false,
+  withQwen ? false,
+  qwenContextSize ? 131072,
 }:
 let
   # The small-model router set, split out so a frontier-only host never pulls it
@@ -95,6 +104,21 @@ let
     cpuStrict = true;
   };
 
+  # Qwen3.8-Flash-Next perf. Sparse MoE (512 experts, 10 active) with hybrid
+  # GDN+QSA attention. Only every 4th layer is full attention, so KV is small:
+  # ~3 GiB at 128K, F16. Memory-bandwidth-bound like DeepSeek; batch/ubatch
+  # reuse the activated expert weights during prefill. Measured on brys:
+  # batch/ubatch 4096/4096 raised prefill from 20.1 to 39.9 tok/s on a
+  # 3.4k-token prompt. `parallel = 1`: the QSA cache is patched for a single
+  # slot only; verify before raising it.
+  qwenPerf = {
+    contextSize = qwenContextSize;
+    reasoning = "off";
+    batchSize = 4096;
+    ubatchSize = 4096;
+    parallel = 1;
+  };
+
   # The DeepSeek V4 Flash frontier model, on the primary router. deepseek-v4-flash
   # is big, multi-shard, frontier quality, and slow to load. download.glob
   # fetches all 4 shards (~104 GB); llama serves shard 00001. Shard 00001 is
@@ -121,6 +145,27 @@ let
         hfRepo = "unsloth/DeepSeek-V4-Flash-0731-GGUF";
         hfFile = "dspark-DeepSeek-V4-Flash-0731-Q8_0.gguf";
       };
+    };
+  };
+
+  # Qwen3.8-Flash-Next, the newest sparse frontier candidate. Unsloth UD-IQ4_XS
+  # (~94 GB, 3 shards) keeps the 51B n-gram embedding table inside the weight
+  # shards, so the whole tree stays resident (no --lazy-mode). The first shard
+  # is a ~11 MB split descriptor; llama-server mmaps shards 02-03 for the
+  # weights. Aliases: `qwen` and `frontier` (this model is the frontier of the
+  # llm-qwen boot entry).
+  qwenModels = lib.optionalAttrs withQwen {
+    "qwen3.8-flash-next" = {
+      enable = true;
+      hfRepo = "unsloth/Qwen3.8-Flash-Next-GGUF";
+      hfFile = "UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf";
+      download.glob = "UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-*.gguf";
+      download.minBytes = 10000000;
+      aliases = [
+        "qwen"
+        "frontier"
+      ];
+      perf = qwenPerf;
     };
   };
 in
@@ -150,7 +195,7 @@ in
 
       # Router and model definitions. The small set is included only for a
       # small-only host; a frontier host keeps DS4 alone on the box.
-      models = (lib.optionalAttrs withSmall small.kdn.llm.local.models) // frontierModels;
+      models = (lib.optionalAttrs withSmall small.kdn.llm.local.models) // frontierModels // qwenModels;
     }
     // lib.optionalAttrs withSmall {
       routers.small = small.kdn.llm.local.routers.small;

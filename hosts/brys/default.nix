@@ -364,6 +364,16 @@ in
           ];
         };
       };
+      # Qwen3.8-Flash-Next-only counterpart: serves the sparse Qwen frontier
+      # alone with the whole box. See hosts/brys/llm-qwen.nix.
+      specialisation.llm-qwen = {
+        inheritParentConfig = false;
+        configuration = {
+          imports = [
+            ./llm-qwen.nix
+          ];
+        };
+      };
     }
     {
       kdn.certificates.repoRoot = kdnConfig.self;
