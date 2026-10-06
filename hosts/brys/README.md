@@ -16,7 +16,16 @@ useful for LLMs). CPU-only local LLM serving.
 
 brys runs several local LLMs through the standalone `kdn.llm.local` slot
 (backend: llama-server router mode, OpenAI-compatible API on `127.0.0.1:39703`,
-DSpark speculative decoding on DeepSeek V4 Flash).
+DSpark speculative decoding on DeepSeek V4 Flash). The DeepSeek frontier runs
+four slots over one unified 320K KV pool; the small-model set is spun out to its
+own boot entry so it never competes with DS4 for RAM.
+
+Two boot-selected appliance specialisations exist (never activated in place):
+
+- `llm-minimal` (`llm-minimal.nix`) — DeepSeek V4 Flash alone, whole box.
+- `llm-small` (`llm-small.nix`) — the small-model router alone, no DS4.
+
+Both share `llm-appliance.nix` and `llm.nix`.
 
 The exact deployed state — models, serving endpoint, download mode and rate
 cap, persistence, and secrets — is documented in

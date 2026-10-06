@@ -9,11 +9,15 @@ let
   # Shared local-LLM serving config, also used by the llm-minimal boot
   # specialisation (see ./llm.nix). The main profile keeps a smaller DeepSeek
   # context (128K) and leaves its threads unpinned: it shares the box with the
-  # desktop, while the specialisation gets the isolated cores and the full 192K.
+  # desktop, while the specialisation gets the isolated cores and the full 320K.
+  # The small-model set is spun out to the llm-small specialisation, so this
+  # profile serves DS4 alone (withSmall = false).
   llm = import ./llm.nix {
     inherit lib pkgs kdnConfig;
     contextSize = 131072;
     cpuPinned = false;
+    withFrontier = true;
+    withSmall = false;
   };
 
   slots = kdnConfig.self.mkSlots {
@@ -24,7 +28,8 @@ let
       # the slot receives only the path and the cert/key path fragments.
       llm.slot
       # kdn's own host connectivity graph (moss/etra/drek/oams/brys/anji).
-    ] ++ (builtins.filter builtins.pathExists [
+    ]
+    ++ (builtins.filter builtins.pathExists [
       "${kdnConfig.self}/data/slots/slots-ssh-access.nix"
     ]);
 
@@ -345,6 +350,17 @@ in
         configuration = {
           imports = [
             ./llm-minimal.nix
+          ];
+        };
+      };
+      # Small-model-only counterpart: serves the `routers.small` set with no
+      # DeepSeek frontier. The two entries are mutually exclusive (DS4 needs the
+      # whole box). See hosts/brys/llm-small.nix and docs/local-llms.md.
+      specialisation.llm-small = {
+        inheritParentConfig = false;
+        configuration = {
+          imports = [
+            ./llm-small.nix
           ];
         };
       };
