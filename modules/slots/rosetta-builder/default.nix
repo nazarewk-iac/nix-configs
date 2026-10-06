@@ -129,6 +129,23 @@ in
         ⚠️ A change here destroys and recreates the guest, exactly like `guest.minFree`.
       '';
     };
+
+    guest.workingDir = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      example = "/anji-ext-01/rosetta-builder";
+      description = ''
+        Working directory for the Lima guest VM. `null` keeps the upstream default
+        (`/var/lib/rosetta-builder`). Set to relocate the guest disk and data to an
+        external volume.
+
+        This option requires the fork at `nazarewk/nix-rosetta-builder` which added
+        the upstream `nix-rosetta-builder.workingDir` option.
+
+        ⚠️ A change here regenerates `lima.yaml` and therefore **destroys and recreates
+        the guest** — see the "Guest resources" note at the top of this file.
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -145,6 +162,8 @@ in
         nix-rosetta-builder.enable = true;
         # Power the VM off when idle.
         nix-rosetta-builder.onDemand = lib.mkDefault true;
+        # Relocate the guest working directory when set (requires fork).
+        nix-rosetta-builder.workingDir = lib.mkIf (cfg.guest.workingDir != null) cfg.guest.workingDir;
         # Let the VM pull build inputs from public caches, instead of the host uploading everything
         # over the slow VM link (see docs/multi-arch-builder.md "Sharing the store").
         nix.settings.builders-use-substitutes = lib.mkDefault true;
