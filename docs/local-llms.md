@@ -138,11 +138,11 @@ slot.
   Auth: `Authorization: Bearer <key>`
   (`llama-server/api-keys/default` in the sops tree).
 
-### Boot specialisations: frontier or small, never both
+### Boot specialisations: one model family per boot
 
-The frontier and the small set no longer share a boot. Both entries are
+The frontier model and the small set no longer share a boot. All entries are
 `inheritParentConfig = false` boot specialisations, selected from the bootloader
-(never activated in place), and both share the appliance body in
+(never activated in place), and all share the appliance body in
 `hosts/brys/llm-appliance.nix`:
 
 - **`llm-ds4`** (`hosts/brys/llm-ds4.nix`) — DeepSeek V4 Flash alone.
@@ -153,9 +153,12 @@ The frontier and the small set no longer share a boot. Both entries are
   (`:39704`, threads 8) is a **set router**: `--models-max 2` keeps up to two
   confirmed-coexistable small models resident together, and the primary
   `:39703` router holds no model.
+- **`llm-qwen`** (`hosts/brys/llm-qwen.nix`) — Qwen3.8-Flash-Next alone.
+  `withFrontier = false; withSmall = false; withQwen = true`. 128K context,
+  batch/ubatch 4096, `parallel 1`, F16 KV.
 
-The choice lives in `hosts/brys/llm.nix`'s `withFrontier` / `withSmall`
-arguments, so a frontier host never even pulls the small-model definitions in.
+The choice lives in `hosts/brys/llm.nix`'s `withFrontier` / `withSmall` /
+`withQwen` arguments, so a host pulls in only the model family it needs.
 
 **Why the split (measured, Phase 3):** on the ~40 GB/s bandwidth-bound box any
 resident small model contends for the same memory bandwidth. Even an
@@ -175,6 +178,7 @@ separate boot entry.
 | `qwen3-30b-a3b` | `fast` | `Qwen/Qwen3-30B-A3B-GGUF` / `Qwen3-30B-A3B-Q4_K_M.gguf` | ~18 GB |
 | `qwen3-next-80b` | `balanced` | `unsloth/Qwen3-Next-80B-A3B-Instruct-GGUF` / `...-Q4_K_M.gguf` | ~48 GB |
 | `deepseek-v4-flash` | `frontier` | `unsloth/DeepSeek-V4-Flash-GGUF` / `UD-IQ3_XXS/...-00001-of-00004.gguf` | ~103 GB (multi-shard) |
+| `qwen3.8-flash-next` | `qwen`/`frontier` | `unsloth/Qwen3.8-Flash-Next-GGUF` / `UD-IQ4_XS/...-00001-of-00003.gguf` | ~94 GB (3 shards) |
 | `qwen3-235b` | — | `mradermacher/Qwen3-235B-A22B-i1-GGUF` / `...IQ2_M.gguf.part1of2` | ~77 GB |
 | `qwen3-coder-next` | — | `Qwen/Qwen3-Coder-Next-GGUF` / `...-Q4_K_M-00001-of-00004.gguf` | ~48 GB |
 | `gpt-oss-120b` | — | `unsloth/gpt-oss-120b-GGUF` / `gpt-oss-120b-F16.gguf` | ~65 GB |
@@ -408,6 +412,49 @@ brys"): the frontier router keeps DS4 hot while the `small` router owns the 45 G
 never touches DS4's cache — only `qwen3-30b-a3b` on the small side is a partial-eviction risk inside
 its own router's resident cache, not DS4's.
 
+### Qwen3.8-Flash-Next on brys (2026-10-06)
+
+`Qwen/Qwen3.8-Flash-Next` (`Qwen4ExpForConditionalGeneration`, `model_type
+qwen4_exp`) is a very sparse hybrid model. It has 48 layers, but only every 4th
+layer is full attention (12 of 48); the other layers use GDN linear attention.
+It has 2 KV heads, `head_dim` 256, and 512 experts with 10 active per token plus
+one shared expert. The weight shards also hold a 51B n-gram embedding table.
+
+Served build: **llama.cpp 0.4.0 (build 10809, commit `5266f24`)**. The build
+carries `llama_model_qwen4exp`, so the model loads. The build does **not** carry
+the `qwen4exp` MTP graph (no `graph_mtp` symbol), so the Unsloth MTP draft heads
+do not work here. The Unsloth MTP README states that stock mainline needs PR
+#28243 or their fork. Speculative decoding stays off for now.
+
+Chosen quant: **`unsloth/Qwen3.8-Flash-Next-GGUF` `UD-IQ4_XS`**, 3 shards,
+93.7 GB total (10,946,624 + 49,835,229,856 + 43,836,407,744 bytes). The shards
+keep the n-gram table inside the weights. The download took ~22 min. The hybrid
+attention makes KV tiny for this model, so IQ4_XS fits under the 8 GiB ARC cap
+with room to spare. `UD-Q4_K_XL` is ~10 GB bigger and tight.
+
+Deployed config (`hosts/brys/llm.nix` `qwenPerf`): ctx-size 131072, batch-size
+4096, ubatch-size 4096, parallel 1, threads 16, flash-attn on, mmap on,
+reasoning off, KV type F16 (the build default). Aliases `qwen` and `frontier`.
+The server reports `n_slots = 1`, `n_ctx_slot = 131072`, `kv_unified = 'false'`,
+and a 16-thread pool.
+
+Measured on brys, cold-booted into `llm-qwen`, model warm:
+
+- cold model load ~90 s.
+- prefill: 20.1 tok/s at ubatch 1024 (964 tokens / 47.9 s); **39.9 tok/s** at
+  ubatch 4096 (run 1: 3425 tok / 85.7 s = 39.95; run 2: 3430 tok / 85.9 s =
+  39.91). The ubatch lever gives the same ~2x gain as on DeepSeek.
+- decode: 300 tokens at 4.75 tok/s (predicted_ms 62985). Earlier short samples
+  read 3.3-5.5 tok/s (36 tokens).
+- warm prefix-cache repeat: ~1-6.6 s wall.
+- residency: `VmRSS` ~86 GB (`RssFile` ~58 GB, `RssAnon` ~28 GB), `VmSwap` 0,
+  `free -g` available ~87 GB, **0 idle major faults/s**, no OOM in the kernel
+  log.
+
+For reference, DeepSeek V4 Flash does 15.2-16.5 tok/s prefill and ~5-8.6 tok/s
+decode. So Qwen prefill is ~2.4x DeepSeek, and Qwen decode is slightly lower.
+The Kagi thread gives a 128K-200K context range; only 128K is verified here.
+
 ### Benchmark result log (append-only)
 
 Each row records a config tweak, the resulting server-side `print_timing`
@@ -437,6 +484,8 @@ at the bottom.
 | 2026-09-06 02:3x | EXPERIMENT B: memcg-v2 cap (runtime) — same allocator under `MemoryMax=4G` scope | **6.49** | 154 | ↑ PROTECTED | 6.49 | warm | competitor memcg-OOM-killed in its own scope; weights stayed resident; serving stayed fast → cgroup cap IS the robustness mechanism |
 | 2026-09-06 03:0x | EXPERIMENT C: ik_llama.cpp fork swap | — | — | SKIP | — | — | not drop-in (no router mode, no `--cpu-range`); bandwidth-bound → no peak upside; DSpark syntax differs. Packaging easy (own flake) but moot. Kept upstream llama.cpp |
 | 2026-10-06 12:4x | unified KV: `parallel 4` + `kv-unified on`, ctx 327680 (cold boot `llm-ds4` gen 652) | 2.22 | 451 | — | — | ~3:16 (first load) | **concurrency confirmed**: a short request (8 tok) returned in **3.7 s** while a 256-token request was in flight (121.8 s) — no head-of-line blocking; server logged `n_slots = 4, n_ctx_slot = 327680, kv_unified = 'true'`; DS4 `RssFile` 92.6 GB, **0 idle major faults**, no OOM; DSpark acceptance 0.44 at `parallel 4` (draft still works) |
+| 2026-10-06 | **Qwen3.8-Flash-Next** UD-IQ4_XS, ubatch/batch 1024 (baseline) | 20.1 (prefill) | — | — | — | ~90 s (cold) | model warm on `llm-qwen`; 964 tok / 47.9 s; this row is Qwen, not DS4 |
+| 2026-10-06 | **Qwen3.8-Flash-Next** UD-IQ4_XS, ubatch/batch 4096 | **39.9 (prefill)** | — | ~2x | — | ~90 s (cold) | run 1: 3425 tok / 85.7 s = 39.95; run 2: 3430 tok / 85.9 s = 39.91; decode 300 tok at 4.75 t/s; VmRSS ~86 GB, 0 idle major faults; this row is Qwen, not DS4 |
 
 **Key mechanism finding (2026-09-05 ~20:10):** the DS4 weights are `mmap`-backed and go
 fully resident as **file-backed page cache** (~77 GB `RssFile` on the worker), plus ~14 GB
