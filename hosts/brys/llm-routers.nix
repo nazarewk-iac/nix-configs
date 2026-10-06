@@ -6,7 +6,7 @@
 #
 # The small set is spun out of the frontier hosts: it is imported by ./llm.nix
 # only when `withSmall = true`, and only the llm-small boot specialisation sets
-# that (see hosts/brys/llm-small.nix). The llm-minimal entry and the main brys
+# that (see hosts/brys/llm-small.nix). The llm-ds4 entry and the main brys
 # profile serve DS4 alone, so the small set never competes with DS4's ~101 GB of
 # mmap'd weights for RAM.
 {

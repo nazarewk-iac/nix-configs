@@ -22,7 +22,7 @@ own boot entry so it never competes with DS4 for RAM.
 
 Two boot-selected appliance specialisations exist (never activated in place):
 
-- `llm-minimal` (`llm-minimal.nix`) — DeepSeek V4 Flash alone, whole box.
+- `llm-ds4` (`llm-ds4.nix`) — DeepSeek V4 Flash alone, whole box.
 - `llm-small` (`llm-small.nix`) — the small-model router alone, no DS4.
 
 Both share `llm-appliance.nix` and `llm.nix`.
