@@ -1,6 +1,6 @@
 # Shared body of the brys LLM-only boot specialisations.
 #
-# brys has two boot-selected appliance entries, both `inheritParentConfig =
+# brys has three boot-selected appliance entries, all `inheritParentConfig =
 # false`, so each is a clean top-level with the desktop/workstation/gaming
 # profiles left out:
 #
@@ -8,6 +8,8 @@
 #     alone, with the whole box.
 #   * llm-small (hosts/brys/llm-small.nix) — the small-model router alone, with
 #     no frontier model.
+#   * llm-qwen (hosts/brys/llm-qwen.nix) — the Qwen3.8-Flash-Next model alone,
+#     with the whole box.
 #
 # They differ only in the `llm` wiring, the `tag` and the pre-login `banner`.
 # This file owns the common appliance body (hardware, disks/LUKS, networking,
