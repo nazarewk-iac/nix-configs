@@ -84,11 +84,16 @@
             baseURL = u.baseURL;
             apiKey = "{env:${keyVar u}}";
           };
-          models = lib.mapAttrs (_: m: {
-            name = m.name;
-            limit.context = m.context;
-            limit.output = m.output;
-          }) u.models;
+          models = lib.mapAttrs (
+            _: m:
+            {
+              name = m.name;
+              limit.context = m.context;
+              limit.output = m.output;
+            }
+            // lib.optionalAttrs m.reasoning { reasoning = true; }
+            // lib.optionalAttrs (m.options != { }) { inherit (m) options; }
+          ) u.models;
         };
       };
 
@@ -163,6 +168,29 @@
                   type = lib.types.int;
                   default = 8192;
                   description = "Output token limit, for opencode.";
+                };
+                options.reasoning = lib.mkOption {
+                  type = lib.types.bool;
+                  default = false;
+                  description = ''
+                    Mark this model as reasoning-capable in opencode, so it parses the model's
+                    thinking output. It does not by itself turn thinking on; set `options` for that.
+                  '';
+                };
+                options.options = lib.mkOption {
+                  type = lib.types.attrsOf lib.types.anything;
+                  default = { };
+                  description = ''
+                    Extra request-body fields that opencode sends verbatim for this model. opencode
+                    merges them into the chat-completions body, so they reach llama-server. Use it
+                    to turn on server-side thinking, for example:
+
+                    ```nix
+                    options = { chat_template_kwargs = { enable_thinking = true; }; };
+                    ```
+
+                    Verified 2026-10-06: a per-model `options` object reaches the server unchanged.
+                  '';
                 };
               }
             );
