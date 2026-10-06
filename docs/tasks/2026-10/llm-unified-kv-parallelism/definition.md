@@ -1,16 +1,16 @@
 ---
 type: Task
 description: Give brys' DeepSeek router unified KV plus a parallel-slot mode, and stop the small-model router from competing with DS4 for the box.
-status: open
+status: in-progress
 authored_by: agent
 timestamp: 2026-10-06T00:29:35+02:00
 ---
 
 # Unified KV cache + parallelism for brys, and evict the small-model router
 
-> **Status:** open. This is a follow-up to the prefill work in
-> [`docs/local-llms.md`](../../../docs/local-llms.md) ("Prefill (prompt processing) tuning").
-> Nothing here is implemented yet.
+> **Status:** in-progress. The configuration is implemented and evaluates; the
+> on-box measurement (throughput, residency, concurrency) is still pending.
+> See [status.md](status.md).
 
 ## Context
 
