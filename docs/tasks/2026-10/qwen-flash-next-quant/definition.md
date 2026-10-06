@@ -1,16 +1,15 @@
 ---
 type: Task
 description: Stand up Qwen3.8-Flash-Next in its best-fit quant as a new brys boot specialisation, then benchmark and tune it in practice.
-status: open
+status: done
+solution: done.md
 authored_by: agent
 timestamp: 2026-10-06T16:58:30+02:00
 ---
 
 # Qwen3.8-Flash-Next as a brys specialisation — pick the quant, then tune
 
-> **Status:** open. **No implementation yet.** This is a handover to a fresh
-> session. It states the goal, the facts already gathered, the approach, and the
-> open questions. Read it end to end before you touch a file.
+> ✅ **Done** — see the solution in [done.md](done.md).
 
 ## Context
 
