@@ -13,8 +13,63 @@
 # Only the host whose hostname is `oams` auto-activates this profile.
 {
   inputs,
+  lib,
   ...
 }:
+let
+  # The same DeepSeek V4 Flash endpoint, tiered by the context window that the
+  # client reserves. The server shares one 320K KV pool (unified KV, 4 slots),
+  # so a smaller tier costs nothing server-side: the pool is
+  # usage-proportional and a small request is automatically small. There is
+  # deliberately no server-side per-slot cap (`--kv-unified-per-slot`); the tier
+  # only bounds what opencode sends, which is what lets a sub-agent stay cheap.
+  #
+  # 16K is the smallest useful subagent tier: opencode sends a ~5K-token system
+  # prompt plus tool schemas, so an 8K window overflows and the request stalls.
+  # Verified 2026-10-06: a 16K subagent read a file and returned the right
+  # answer. `output` scales with the tier, so input + output fit the window
+  # (16K -> 4K output, 32K+ -> 8K).
+  #
+  # Every tier points at the same DS4 model. The tier ids must be server aliases
+  # of `deepseek-v4-flash` (see hosts/brys/llm.nix): the compat-proxy routes an
+  # unknown id to the frontier upstream but does not rewrite it, and
+  # llama-server then rejects it with HTTP 400. The aliases add no KV cap and no
+  # memory — `parallel 4` shares the one unified pool.
+  ds4Contexts = [
+    327680 # 320K: the full shared pool
+    262144 # 256K
+    196608 # 192K
+    131072 # 128K
+    98304 # 96K
+    65536 # 64K
+    32768 # 32K
+    16384 # 16K: smallest useful subagent tier
+  ];
+  ds4TierId =
+    ctx: if ctx == 327680 then "deepseek-v4-flash" else "deepseek-v4-flash-${toString (ctx / 1024)}k";
+  ds4Models = lib.listToAttrs (
+    map (
+      ctx:
+      lib.nameValuePair (ds4TierId ctx) {
+        name = "deepseek-v4-flash (brys, LAN) [${toString (ctx / 1024)}K]";
+        context = ctx;
+        output = lib.min 8192 (ctx / 4);
+      }
+    ) ds4Contexts
+  );
+  # One opencode subagent per tier, so each context size is directly usable and
+  # a caller can pick the cheapest one that fits the task.
+  ds4Agents = lib.listToAttrs (
+    map (
+      ctx:
+      lib.nameValuePair "ds4-${toString (ctx / 1024)}k" {
+        description = "DeepSeek V4 Flash on brys with a ${toString (ctx / 1024)}K context budget.";
+        mode = "subagent";
+        model = "brys/${ds4TierId ctx}";
+      }
+    ) ds4Contexts
+  );
+in
 {
   imports = inputs.nix-configs.denLib.imports {
     class = "devenv";
@@ -28,6 +83,9 @@
   # The slot defaults are neutral now. These two settings keep the behaviour that the old
   # slot defaults gave on this host.
   kdn.opencode.settings.provider.requesty = { };
+  # The DS4 context tiers, as opencode subagents. Each one names a tiered provider
+  # model (see `kdn.llm.client.upstreams.brys.models` below).
+  kdn.opencode.settings.agent = ds4Agents;
   kdn.opencode.allowedPaths = [
     "/nix/store/**"
     "~/dev/**"
@@ -40,17 +98,18 @@
     # The aspect writes the wrapper environment entry from this file, so no manual
     # `kdn.opencode.wrapper.envFiles` line is needed.
     apiKeyFile = "/run/configs/llms/llama-server/api-keys/default";
-    models = {
-      "deepseek-v4-flash" = {
-        name = "deepseek-v4-flash (brys, LAN) [320K]";
-        context = 327680;
-        output = 8192;
-      };
+    # The DS4 tiers (generated above) plus the `frontier` alias and the small
+    # models.
+    models = ds4Models // {
       "frontier" = {
         name = "frontier (deepseek-v4-flash alias, brys) [320K]";
         context = 327680;
         output = 8192;
       };
+      # Small models. brys serves these only when booted into the llm-small
+      # specialisation; on the default/llm-minimal boot the compat-proxy falls
+      # back to the frontier (DS4). They are kept so a small-only boot is usable
+      # without a client change.
       "gpt-oss-120b" = {
         name = "gpt-oss-120b (brys, LAN)";
         context = 65536;
