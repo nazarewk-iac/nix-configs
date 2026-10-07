@@ -77,7 +77,8 @@ Acceptance criteria:
 - Boots and serves the model over the LAN endpoint: **pass**.
 - Stays resident, idle major faults ~0, no OOM, healthy `MemAvailable`: **pass**.
 - Prefill and decode recorded against the `llm-ds4` baseline: **pass**.
-- Short concurrency check if `parallel > 1`: **not run** — `parallel` is 1.
+- Short concurrency check if `parallel > 1`: **pass** — the config later moved to
+  `parallel 4`; see the Concurrency note below.
 - Measured rows and the chosen quant written into `docs/local-llms.md`: **pass**.
 - A `done.md` once verified: **this file**.
 
@@ -153,3 +154,33 @@ The canonical `llm-qwen` entry now also runs the MTP draft head on the W6600
 (Vulkan), with the main model + KV on the CPU. The CPU-only variant and the
 separate `llm-qwen-gpu` entry were dropped and folded into this one; see
 [qwen-gpu-offload](../qwen-gpu-offload/done.md).
+
+## Concurrency (2026-10-07)
+
+The deployed `llm-qwen` entry now runs **4 slots on one unified KV pool**:
+`qwenPerf.parallel` 1 -> **4** and `qwenPerf.kvUnified = true` (per-model
+`perf.parallel` / `perf.kvUnified`; there is no global parallel). The server
+logs `n_slots = 4, n_ctx_slot = 1048576, kv_unified = 'true'`.
+
+The old Kagi-thread claim that the QSA cache is single-slot only is **false**
+for the pinned llama.cpp v0.6.0 (commit `d812350`). The QSA indexer cache is a
+per-slot side buffer over the attention cells:
+`src/llama-memory-hybrid-idx.h:14-15` (the indexer is a side buffer over the
+attention cells with the same streams/slots),
+`src/llama-memory-hybrid-idx.cpp:70-73` (built with the same `n_seq_max` /
+`unified` / `kv_size`), and `src/llama-model.cpp:2481-2493`
+(`n_seq_max = cparams.n_seq_max`, no cap). The MTP draft is multi-sequence too
+(`common/speculative.cpp`). KV sizing: `src/llama-context.cpp:294-297` — with
+`--kv-unified` `n_ctx_seq = n_ctx` and the total cells are `n_ctx` regardless of
+`parallel`, so `parallel` never multiplies KV RAM.
+
+Measured on `llm-qwen`:
+
+- A short request returned in **2.4-4.6 s** while a 400-token request was in
+  flight. With `parallel = 1` the same short request **waited 51.5 s**
+  (serialised). Concurrency now matches DS4.
+- Single-request throughput is unchanged: counting-300 decode 14.16 t/s
+  (`parallel 4`) vs 13.44 (`parallel 1`); prose-300 4.97 t/s (acceptance-bound);
+  prefill ~22.4 vs 18.0 t/s.
+- Memory: `VmRSS` ~101 GB, `RssAnon` ~37.5 GB (only ~3 GB more than
+  `parallel 1` — the shared pool), no OOM, `VmSwap` 0.
