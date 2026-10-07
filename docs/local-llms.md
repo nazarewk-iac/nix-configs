@@ -462,6 +462,42 @@ The slot gained the long-context options that this config uses:
 `qwenRopeScale`, `qwenRopeFreqBase`, `qwenYarnOrigCtx` and `qwenCacheTypeK` /
 `qwenCacheTypeV` arguments.
 
+### MTP draft tuning (2026-10-07)
+
+MTP draft depth is the `spec-draft-n-max` value (the maximum draft tokens per
+step). The first MTP build used `n-max 2`. A sweep at 1M context (v0.6.0, MTP on,
+F16 KV, parallel 1, threads 16, two prompts, 300 tokens, temp 0, warm second run)
+shows that deeper drafts help until acceptance falls. "Realistic" is a Python
+merge-function prompt; "control" is a plain count from 1 to 300.
+
+| n-max | realistic decode t/s | realistic accept / mean len | control decode t/s | control accept |
+|---|---|---|---|---|
+| 1 | 8.13 | 0.980 / 1.98 | 8.15 | 1.000 |
+| 2 (old default) | 8.90 | 0.919 / 2.84 | 9.28 | 1.000 |
+| 3 | 10.42 | 0.893 / 3.68 | 11.38 | 1.000 |
+| **5 (chosen)** | **11.18** | 0.858 / 5.25 | 12.92 | 1.000 |
+| 8 | 8.86 | 0.711 / 6.64 | 13.72 | 1.000 |
+
+`n-max 5` is the best realistic decode (11.18 t/s). `n-max 8` raises control
+throughput (13.72 t/s) but regresses the realistic prompt: acceptance falls to
+0.711, so the draft overhead dominates. The chosen value is
+`qwenSpecDraftNMax = 5`.
+
+Two more knobs were tested and kept null:
+
+- `spec-draft-prio = 2` made no difference (11.09 vs 11.18 t/s, noise).
+- `spec-draft-p-min` 0.5/0.8 raised acceptance (0.886/0.908) but lowered the mean
+  accepted length (5.16/4.95), so net throughput was flat or worse.
+
+**Bug fix.** `modules/slots/llm/default.nix` emitted `spec-draft-p-min` without
+`toString`, so a float value failed Nix evaluation (`cannot coerce a float to a
+string`). It now reads `${toString perf.specDraftPMin}`.
+`modules/den/aspects/llm.nix` already had the `toString`, so it did not change.
+
+The new `hosts/brys/llm.nix` arguments are `qwenSpecDraftNMax`,
+`qwenSpecDraftPMin` and `qwenSpecDraftPrio`. `hosts/brys/llm-qwen.nix` sets
+`qwenSpecDraftNMax = 5`; p-min and prio stay null.
+
 ### Long-context ladder (2026-10-07)
 
 The model GGUF declares `n_ctx_train = 262144` (256K) and no rope scaling, so a
@@ -548,6 +584,12 @@ at the bottom.
 | 2026-10-07 | **Qwen3.8-Flash-Next** + v0.6.0 b11429, MTP on, ctx 262144 (ladder) | 30.6 (prefill) | — | — | — | warm | decode 7.51 t/s; RssFile 59.7 GiB, RssAnon 31.8 GiB, RSS 91.4 GiB, free available 81 GB; 0 idle major faults; no OOM; coherence 17*23=391, Paris OK; this row is Qwen, not DS4 |
 | 2026-10-07 | **Qwen3.8-Flash-Next** + v0.6.0 b11429, MTP on, ctx 524288, YaRN x2 | 29.3 (prefill) | — | — | — | warm | decode 7.58 t/s; RssFile 59.7 GiB, RssAnon 40.0 GiB, RSS 99.7 GiB, free available 73 GB; 0 idle major faults; no OOM; coherence OK; this row is Qwen, not DS4 |
 | 2026-10-07 | **Qwen3.8-Flash-Next** + v0.6.0 b11429, MTP on, ctx 1048576, YaRN x4 (**deployed**) | 30.8 (prefill) | — | — | — | warm | decode 9.3 t/s steady; RssFile 59.7 GiB, RssAnon 56.4 GiB, RSS 116.0 GiB, free available 60 GB; 0 idle major faults; no OOM; coherence 391, Paris, bat+ball=$0.10 OK; F16 KV; this row is Qwen, not DS4 |
+| 2026-10-07 | **Qwen MTP** sweep: v0.6.0 b11429, MTP on, ctx 1048576, `spec-draft-n-max 1` | 8.13 | — | — | — | warm | Qwen MTP sweep: realistic decode 8.13 t/s, accept 0.980, mean len 1.98; control decode 8.15 t/s, accept 1.000; this row is Qwen, not DS4 |
+| 2026-10-07 | **Qwen MTP** sweep: `spec-draft-n-max 2` (old default) | 8.90 | — | — | — | warm | Qwen MTP sweep: realistic decode 8.90 t/s, accept 0.919, mean len 2.84; control decode 9.28 t/s, accept 1.000; this row is Qwen, not DS4 |
+| 2026-10-07 | **Qwen MTP** sweep: `spec-draft-n-max 3` | 10.42 | — | — | — | warm | Qwen MTP sweep: realistic decode 10.42 t/s, accept 0.893, mean len 3.68; control decode 11.38 t/s, accept 1.000; this row is Qwen, not DS4 |
+| 2026-10-07 | **Qwen MTP** sweep: `spec-draft-n-max 5` (**chosen**) | **11.18** | — | — | — | warm | Qwen MTP sweep: realistic decode 11.18 t/s, accept 0.858, mean len 5.25; control decode 12.92 t/s, accept 1.000; this row is Qwen, not DS4 |
+| 2026-10-07 | **Qwen MTP** sweep: `spec-draft-n-max 8` | 8.86 | — | — | — | warm | Qwen MTP sweep: realistic decode 8.86 t/s, accept 0.711, mean len 6.64; control decode 13.72 t/s, accept 1.000; regresses the realistic prompt; this row is Qwen, not DS4 |
+| 2026-10-07 | **Qwen MTP** knobs: `spec-draft-prio 2`, and `spec-draft-p-min` 0.5/0.8 | — | — | — | — | warm | prio 2: 11.09 vs 11.18 t/s (noise); p-min 0.5/0.8: accept 0.886/0.908 but mean len 5.16/4.95, net flat or worse; both kept null; this row is Qwen, not DS4 |
 
 **Key mechanism finding (2026-09-05 ~20:10):** the DS4 weights are `mmap`-backed and go
 fully resident as **file-backed page cache** (~77 GB `RssFile` on the worker), plus ~14 GB
