@@ -155,7 +155,10 @@ The frontier model and the small set no longer share a boot. All entries are
   `:39703` router holds no model.
 - **`llm-qwen`** (`hosts/brys/llm-qwen.nix`) — Qwen3.8-Flash-Next alone.
   `withFrontier = false; withSmall = false; withQwen = true`. 1M context
-  (YaRN x4), batch/ubatch 4096, `parallel 1`, F16 KV.
+  (YaRN x4), batch/ubatch 4096, `parallel 1`, F16 KV, and the MTP draft head
+  on the W6600 (Vulkan) with the main model + KV on the CPU. The earlier
+  CPU-only entry and the separate `llm-qwen-gpu` entry were folded into this
+  one.
 
 The choice lives in `hosts/brys/llm.nix`'s `withFrontier` / `withSmall` /
 `withQwen` arguments, so a host pulls in only the model family it needs.
@@ -462,14 +465,18 @@ The slot gained the long-context options that this config uses:
 `qwenRopeScale`, `qwenRopeFreqBase`, `qwenYarnOrigCtx` and `qwenCacheTypeK` /
 `qwenCacheTypeV` arguments.
 
-### GPU-offload specialisation (`llm-qwen-gpu`, 2026-10-07)
+### GPU draft head (`llm-qwen`, 2026-10-07)
 
-A fourth boot entry, `llm-qwen-gpu` (`hosts/brys/llm-qwen-gpu.nix`), runs the
-same Qwen shape on the Vulkan build
+The `llm-qwen` entry runs the Qwen shape on the Vulkan build
 (`pkgs.kdn.llama-cpp-v0_6_0-vulkan`) with the MTP draft head on the Radeon Pro
 W6600. `hardware.graphics.enable = true` + `hardware.graphics.extraPackages =
 [ pkgs.mesa ]` expose the RADV ICD, and `MESA_VK_DEVICE_SELECT=1002:73e3!` (plus
 the preset key `device = Vulkan0`) pin the W6600 and never the 4 GB Lexa.
+
+This started as a separate `llm-qwen-gpu` boot entry beside a CPU-only
+`llm-qwen`; once the GPU draft head proved the only winning variant, the two
+were folded into the single canonical `llm-qwen` entry (the CPU-only entry
+dropped).
 
 The intended dense-layer offload (`-ngl 99 -cmoe -nkvo`) is **slower**: at 1M
 context the 24 GiB F16 KV must stay on the CPU, so every attention step crosses

@@ -119,6 +119,10 @@ no OOM.
 
 ## Follow-up notes
 
+- **Folded into `llm-qwen` (2026-10-07).** The `llm-qwen-gpu` entry was folded
+  into the canonical `llm-qwen` entry (`hosts/brys/llm-qwen.nix` now holds the
+  GPU-draft config) and the CPU-only `llm-qwen` was dropped, so there is one
+  Qwen boot specialisation.
 - **Prompt dependence.** The historical CPU figure is 11.18 t/s, from a different
   merge prompt with acceptance 0.858. This task's prompt gives 9.13 t/s on the
   same CPU config. The GPU win is measured against that same-prompt CPU run:

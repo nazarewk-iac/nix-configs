@@ -146,3 +146,10 @@ accepted length, so net throughput was flat or worse. Both stay null. Final
 setting: `qwenSpecDraftNMax = 5`, p-min null, prio null. The slot
 `spec-draft-p-min` bug (the missing `toString`) is fixed; see
 [docs/local-llms.md](../../../local-llms.md).
+
+## GPU draft head (2026-10-07)
+
+The canonical `llm-qwen` entry now also runs the MTP draft head on the W6600
+(Vulkan), with the main model + KV on the CPU. The CPU-only variant and the
+separate `llm-qwen-gpu` entry were dropped and folded into this one; see
+[qwen-gpu-offload](../qwen-gpu-offload/done.md).
