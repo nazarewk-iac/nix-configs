@@ -47,6 +47,12 @@
   qwenContextSize ? 131072,
   llamaPackage ? pkgs.llama-cpp,
   qwenMtp ? false,
+  # MTP speculative-decode tuning, used only when `qwenMtp` is set. `nMax` is
+  # the max draft tokens per step; `pMin`/`prio` are emitted only when non-null
+  # so the preset INI keeps llama's own defaults otherwise.
+  qwenSpecDraftNMax ? 2,
+  qwenSpecDraftPMin ? null,
+  qwenSpecDraftPrio ? null,
   qwenRopeScaling ? null,
   qwenRopeScale ? null,
   qwenRopeFreqBase ? null,
@@ -146,7 +152,13 @@ let
   }
   // lib.optionalAttrs qwenMtp {
     specType = "draft-mtp";
-    specDraftNMax = 2;
+    specDraftNMax = qwenSpecDraftNMax;
+  }
+  // lib.optionalAttrs (qwenSpecDraftPMin != null) {
+    specDraftPMin = qwenSpecDraftPMin;
+  }
+  // lib.optionalAttrs (qwenSpecDraftPrio != null) {
+    specDraftPrio = qwenSpecDraftPrio;
   };
 
   # The DeepSeek V4 Flash frontier model, on the primary router. deepseek-v4-flash

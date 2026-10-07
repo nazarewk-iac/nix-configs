@@ -27,6 +27,7 @@ let
     # fixes the Unsloth fork lacks. MTP stays on (the v0.6.0 build has it too).
     llamaPackage = pkgs.kdn.llama-cpp-v0_6_0;
     qwenMtp = true;
+    qwenSpecDraftNMax = 5;
     # YaRN x4: 256K native -> 1M. F16 KV (~24 GiB) is tight; fall back to
     # q8_0 KV if the load OOMs.
     qwenRopeScaling = "yarn";
