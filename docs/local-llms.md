@@ -424,6 +424,90 @@ brys"): the frontier router keeps DS4 hot while the `small` router owns the 45 G
 never touches DS4's cache — only `qwen3-30b-a3b` on the small side is a partial-eviction risk inside
 its own router's resident cache, not DS4's.
 
+### Hardware and ZFS (brys, 2026-10-08)
+
+Full hardware inventory of the box, the storage under the model dataset, the
+measured ZFS read throughput, and the `--lazy-mode` PLE-offload result.
+
+**CPU / RAM.** AMD Ryzen 9 5950X, 16 cores / 32 threads, one NUMA node,
+64 MiB L3 (2 x 32 MiB), 8 MiB L2, boost to 5086 MHz. 125 GiB usable RAM, no
+swap.
+
+**GPUs.**
+
+| PCI | device | id | VRAM |
+|---|---|---|---|
+| `0d:00.0` | Radeon PRO W6600 (RADV NAVI23) | `1002:73e3` | 7.98 GiB (`8573157376` B) |
+| `0e:00.0` | Lexa PRO (Radeon 540/550) | `1002:699f` | 4.00 GiB (`4294967296` B) |
+
+`MESA_VK_DEVICE_SELECT=1002:73e3!` pins the W6600 as `Vulkan0`; the Lexa is
+never selected.
+
+**Disks / pool.** Two NVMe devices hold the pool. Two SATA HDDs and a USB
+stick are not part of it.
+
+| device | size | model |
+|---|---|---|
+| `nvme0n1` | 1.9 T | SSDPR-PX700-02T-80 |
+| `nvme1n1` | 1.8 T | Viper VP4300L 2TB |
+
+Both are LUKS2-encrypted (`px700-brys-crypted`, `vp4300-brys-crypted`) and
+form a **2-device mirror**:
+
+```
+brys-main (ONLINE, 1.81 T, 1006 G alloc, 850 G free, 51% frag)
+  mirror-0
+    dm-...-px700-brys-crypted   ONLINE
+    dm-...-vp4300-brys-crypted  ONLINE
+```
+
+The model dataset is `brys-main/brys/impermanence/usr/data` (735 G used,
+793 G avail), mounted at `/nix/persist/usr/data` and persisted to
+`/var/lib/kdn/llms/models`. Properties: `recordsize 128K`, `compression lz4`,
+`primarycache all`, `atime on`, `sync standard`, `logbias latency`,
+`direct standard`, `special_small_blocks 0`. The ZFS ARC cap is 8 GiB
+(`zfs_arc_max=8589934592`).
+
+**Measured ZFS read throughput (2026-10-08).** `fio --direct=1`, 32 GiB
+incompressible scratch file on the dataset, QD32, after `drop_caches`:
+
+| read | throughput |
+|---|---|
+| dataset, sequential (mirror) | **2873 MiB/s (3.01 GB/s)** |
+| `nvme0n1` raw, sequential | 1033 MiB/s (1083 MB/s) |
+| `nvme1n1` raw, sequential | 1064 MiB/s (1115 MB/s) |
+
+`zpool iostat -v` during the dataset read showed both mirror legs active at
+about 1.4 GB/s each (2.8 GB/s aggregate), and the ARC stayed at about 2.4 GB,
+far below the 8 GiB cap. The read is therefore **device-bound, not ARC-bound**.
+The mirror delivers about 3 GB/s, roughly 7.5% of the ~40 GB/s RAM COPY
+bandwidth.
+
+**PLE / `--lazy-mode` SSD offload.** The v0.6.0 Vulkan build has
+`--lazy-mode {on,auto,off}`; the default is `auto` (on for tensors larger than
+4 GiB). A manual server at ctx 524288 (YaRN x2), `parallel 4`, `kv-unified`,
+F16 KV, threads 16, MTP `draft-mtp` n-max 5, `--load-mode mmap`, on the W6600:
+
+| `--lazy-mode` | idle VmRSS | RssFile | RssAnon | prefill 1.7K tok | decode 128 tok warm |
+|---|---|---|---|---|---|
+| `off` | 111.2 GB | 92.2 GB | 19.1 GB | 19.70 t/s | 11.14 t/s |
+| `auto` (default) | 65.0 GB | 46.0 GB | 19.1 GB | 19.20 t/s | 12.26 t/s |
+| `on` | 65.0 GB | 46.0 GB | 19.1 GB | 19.19 t/s | 12.69 t/s |
+
+`auto` and `on` are identical: the default already offloads the same tensors,
+so the served behaviour already keeps the lazy tensors on SSD. Forcing
+`--lazy-mode off` makes them resident and costs **about 46 GB of RAM** for no
+throughput gain (prefill unchanged; decode flat to slightly lower). The
+offloaded set is larger than the ~28.8 GB PLE / n-gram table estimate, so
+`--lazy-mode` covers other large tensors too. Under load the `on` resident set
+grows (idle 65.0 GB to 82.7 GB after a 1.7K prefill and 256 decode tokens),
+still well below the 111 GB fully-resident case. This corrects the earlier note
+that the n-gram table "stays resident (no `--lazy-mode`)".
+
+**ngram verdict.** `--spec-type ngram-mod` alone hung `qwen4exp` (about 13
+cores stuck for an hour, below 1 tok/s). Rejected. MTP (`draft-mtp`) stays the
+speculative path.
+
 ### Qwen3.8-Flash-Next on brys (2026-10-06)
 
 `Qwen/Qwen3.8-Flash-Next` (`Qwen4ExpForConditionalGeneration`, `model_type
