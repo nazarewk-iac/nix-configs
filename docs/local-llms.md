@@ -154,8 +154,8 @@ The frontier model and the small set no longer share a boot. All entries are
   confirmed-coexistable small models resident together, and the primary
   `:39703` router holds no model.
 - **`llm-qwen`** (`hosts/brys/llm-qwen.nix`) — Qwen3.8-Flash-Next alone.
-  `withFrontier = false; withSmall = false; withQwen = true`. 128K context,
-  batch/ubatch 4096, `parallel 1`, F16 KV.
+  `withFrontier = false; withSmall = false; withQwen = true`. 1M context
+  (YaRN x4), batch/ubatch 4096, `parallel 1`, F16 KV.
 
 The choice lives in `hosts/brys/llm.nix`'s `withFrontier` / `withSmall` /
 `withQwen` arguments, so a host pulls in only the model family it needs.
@@ -426,11 +426,13 @@ carry the `qwen4exp` MTP graph (no `graph_mtp` symbol), so the Unsloth MTP draft
 heads do not work here. The Unsloth MTP README states that stock mainline needs
 PR #28243 or their fork.
 
-**MTP build (2026-10-07):** the `llm-qwen` entry now selects the in-repo
-`packages/llama-cpp` build with the `qwen4exp` MTP graph. MTP is a
-speculative-decode draft head, so it needs a build that holds the graph.
-Upstream v0.6.0 (build 11429) and the Unsloth fork both hold it. The server
-enables the draft with `spec-type draft-mtp`. See
+**MTP build (2026-10-07):** the `llm-qwen` entry selects the in-repo
+`pkgs.kdn.llama-cpp-v0_6_0` build (ggml-org v0.6.0, build 11429). That build
+holds the `qwen4exp` MTP graph, so MTP is on: `spec-type = draft-mtp` with the
+self-contained draft `MTP/mtp-Qwen3.8-Flash-Next-Q8_0.gguf` and
+`spec-draft-n-max 2`. The Unsloth fork also holds the graph. v0.6.0 is the
+deployed package because it carries the long-context QSA indexer memory and mask
+fixes that the fork lacks. See
 [packages/llama-cpp/README.md](../packages/llama-cpp/README.md) for the two
 derivations and their update steps.
 
@@ -445,15 +447,45 @@ keep the n-gram table inside the weights. The download took ~22 min. The hybrid
 attention makes KV tiny for this model, so IQ4_XS fits under the 8 GiB ARC cap
 with room to spare. `UD-Q4_K_XL` is ~10 GB bigger and tight.
 
-Deployed config (`hosts/brys/llm.nix` `qwenPerf`): ctx-size 131072, batch-size
-4096, ubatch-size 4096, parallel 1, threads 16, flash-attn on, reasoning off,
-KV type F16 (the build default). Aliases `qwen` and `frontier`. The 0.4.0 build
-takes `mmap on`; the MTP builds need `perf.mmap = null` (see the MTP build
-paragraph above).
-The server reports `n_slots = 1`, `n_ctx_slot = 131072`, `kv_unified = 'false'`,
+Deployed config (`hosts/brys/llm-qwen.nix`): ctx-size 1048576 (1M), YaRN x4
+(`rope-scale` 4.0, `rope-freq-base` 10000000, `yarn-orig-ctx` 262144),
+batch-size 4096, ubatch-size 4096, parallel 1, threads 16, flash-attn on,
+reasoning off, KV type F16. Aliases `qwen` and `frontier`. The MTP builds need
+`perf.mmap = null` (see the MTP build paragraph above).
+The server reports `n_slots = 1`, `n_ctx_slot = 1048576`, `kv_unified = 'false'`,
 and a 16-thread pool.
 
-Measured on brys, cold-booted into `llm-qwen`, model warm:
+The slot gained the long-context options that this config uses:
+`perf.ropeScaling` (none/linear/yarn), `perf.ropeScale`, `perf.ropeFreqBase`,
+`perf.yarnOrigCtx`, and the KV-quantisation fallback `perf.cacheTypeK` /
+`perf.cacheTypeV`. `hosts/brys/llm.nix` exposes them as the `qwenRopeScaling`,
+`qwenRopeScale`, `qwenRopeFreqBase`, `qwenYarnOrigCtx` and `qwenCacheTypeK` /
+`qwenCacheTypeV` arguments.
+
+### Long-context ladder (2026-10-07)
+
+The model GGUF declares `n_ctx_train = 262144` (256K) and no rope scaling, so a
+context above 256K needs the YaRN flags. Measured on brys with MTP on, parallel
+1, threads 16, F16 KV, ZFS ARC 8 GiB:
+
+| ctx | rope | KV | RssFile | RssAnon | RSS | free available | idle maj_fault/s | prefill t/s | decode t/s | coherence | OOM |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 262144 | none | F16 | 59.7 GiB | 31.8 GiB | 91.4 GiB | 81 GB | 0 | 30.6 | 7.51 | 17*23=391, Paris OK | no |
+| 524288 | yarn x2 | F16 | 59.7 GiB | 40.0 GiB | 99.7 GiB | 73 GB | 0 | 29.3 | 7.58 | OK | no |
+| 1048576 | yarn x4 | F16 | 59.7 GiB | 56.4 GiB | 116.0 GiB | 60 GB | 0 | 30.8 | 9.3 steady | 391, Paris, bat+ball=$0.10 OK | no |
+
+KV is 24 KiB/token at F16 (12 full-attention layers x 2 KV heads x 256 head_dim
+x 2 x 2 bytes), so 6/12/24 GiB at 256K/512K/1M. F16 KV fits at 1M, so the q8_0
+fallback (`perf.cacheTypeK`/`perf.cacheTypeV`) stays untested. 1M leaves only
+about 1-2 GiB free (about 60 GB reclaimable page cache). The KV is pre-allocated
+at load, so idle serving is stable. A large concurrent allocation, for example a
+nix build, can evict the mmap'd weights. Static YaRN did not degrade the
+short-context probes.
+
+### 128K baseline (2026-10-06)
+
+Measured on brys, cold-booted into `llm-qwen`, model warm, before the long-context
+work:
 
 - cold model load ~90 s.
 - prefill: 20.1 tok/s at ubatch 1024 (964 tokens / 47.9 s); **39.9 tok/s** at
@@ -475,7 +507,8 @@ noise of the 0.4.0 baseline. The full table is in
 
 For reference, DeepSeek V4 Flash does 15.2-16.5 tok/s prefill and ~5-8.6 tok/s
 decode. So Qwen prefill is ~2.4x DeepSeek, and Qwen decode is slightly lower.
-The Kagi thread gives a 128K-200K context range; only 128K is verified here.
+The Kagi thread gives a 128K-200K context range; brys now serves 1M with YaRN x4
+(see the long-context ladder above).
 
 ### Benchmark result log (append-only)
 
@@ -511,7 +544,10 @@ at the bottom.
 | 2026-10-07 | **Qwen3.8-Flash-Next** + llama.cpp **0.4.0 b10809** (control), no MTP | 5.65 | — | — | — | warm | decode 300 tok; prefill 36.6 t/s; RSS 82.3 GiB; 0 idle major faults; this row is Qwen, not DS4 |
 | 2026-10-07 | **Qwen3.8-Flash-Next** + llama.cpp **0.6.0 b11429** (config A), no MTP | 5.81 | — | vs 0.4.0 ≈ | — | warm | decode 300 tok; prefill 37.7 t/s; RSS 81.3 GiB; 0 idle major faults; this row is Qwen, not DS4 |
 | 2026-10-07 | **Qwen3.8-Flash-Next** + llama.cpp **0.6.0 b11429** (config B), MTP on | **9.50** | — | +68% | — | warm | decode 300 tok; prefill 35.2 t/s; MTP acceptance 1.000, mean len 2.99; RSS 87.8 GiB; 0 idle major faults; this row is Qwen, not DS4 |
-| 2026-10-07 | **Qwen3.8-Flash-Next** + llama.cpp **unsloth b11098** (config C), MTP on | **9.56** | — | +69% (≈ B) | — | warm | decode 300 tok; prefill 36.8 t/s; MTP acceptance 1.000, mean len 2.99; RSS 86.6 GiB; 0 idle major faults; **deployed config**; this row is Qwen, not DS4 |
+| 2026-10-07 | **Qwen3.8-Flash-Next** + llama.cpp **unsloth b11098** (config C), MTP on | **9.56** | — | +69% (≈ B) | — | warm | decode 300 tok; prefill 36.8 t/s; MTP acceptance 1.000, mean len 2.99; RSS 86.6 GiB; 0 idle major faults; short-context fork result, not deployed; this row is Qwen, not DS4 |
+| 2026-10-07 | **Qwen3.8-Flash-Next** + v0.6.0 b11429, MTP on, ctx 262144 (ladder) | 30.6 (prefill) | — | — | — | warm | decode 7.51 t/s; RssFile 59.7 GiB, RssAnon 31.8 GiB, RSS 91.4 GiB, free available 81 GB; 0 idle major faults; no OOM; coherence 17*23=391, Paris OK; this row is Qwen, not DS4 |
+| 2026-10-07 | **Qwen3.8-Flash-Next** + v0.6.0 b11429, MTP on, ctx 524288, YaRN x2 | 29.3 (prefill) | — | — | — | warm | decode 7.58 t/s; RssFile 59.7 GiB, RssAnon 40.0 GiB, RSS 99.7 GiB, free available 73 GB; 0 idle major faults; no OOM; coherence OK; this row is Qwen, not DS4 |
+| 2026-10-07 | **Qwen3.8-Flash-Next** + v0.6.0 b11429, MTP on, ctx 1048576, YaRN x4 (**deployed**) | 30.8 (prefill) | — | — | — | warm | decode 9.3 t/s steady; RssFile 59.7 GiB, RssAnon 56.4 GiB, RSS 116.0 GiB, free available 60 GB; 0 idle major faults; no OOM; coherence 391, Paris, bat+ball=$0.10 OK; F16 KV; this row is Qwen, not DS4 |
 
 **Key mechanism finding (2026-09-05 ~20:10):** the DS4 weights are `mmap`-backed and go
 fully resident as **file-backed page cache** (~77 GB `RssFile` on the worker), plus ~14 GB

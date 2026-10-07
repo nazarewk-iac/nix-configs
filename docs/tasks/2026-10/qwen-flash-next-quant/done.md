@@ -88,9 +88,38 @@ Acceptance criteria:
   that stock mainline needs PR #28243 or their fork.
 - **Speculation is not wired.** `--spec-type` / n-gram speculation is untested;
   the 5950X user in the Kagi thread used `--spec-type ngram-mod`.
-- **Only 128K context is tested.** The Kagi thread gives a 128K-200K range. 200K
-  is unverified.
+- **Only 128K context was tested in the first pass.** The Kagi thread gives a
+  128K-200K range. The long-context follow-up below extends this to 1M.
 - **Frontier question is open.** Decide whether Qwen replaces DeepSeek V4 Flash
   as the frontier model, or stays a separate entry.
 - **Optional oams client tier.** The `llm-qwen` model has no client-side context
   tier yet (compare the DeepSeek tiers in `hosts/oams/devenv.nix`).
+
+## Follow-up: long context (2026-10-07)
+
+The deployed `llm-qwen` entry now serves **1M context** (YaRN x4), up from the
+128K baseline. The package moved to `pkgs.kdn.llama-cpp-v0_6_0` (ggml-org
+v0.6.0, build 11429), with MTP still on (`spec-type = draft-mtp`, self-contained
+`MTP/mtp-Qwen3.8-Flash-Next-Q8_0.gguf`, `spec-draft-n-max 2`). See
+[llama-cpp-latest-package](../llama-cpp-latest-package/definition.md).
+
+Measured on brys, MTP on, parallel 1, threads 16, F16 KV, ZFS ARC 8 GiB:
+
+| ctx | rope | KV | RssAnon | RSS | free available | prefill t/s | decode t/s | coherence | OOM |
+|---|---|---|---|---|---|---|---|---|---|
+| 262144 | none | F16 | 31.8 GiB | 91.4 GiB | 81 GB | 30.6 | 7.51 | 17*23=391, Paris OK | no |
+| 524288 | yarn x2 | F16 | 40.0 GiB | 99.7 GiB | 73 GB | 29.3 | 7.58 | OK | no |
+| 1048576 | yarn x4 | F16 | 56.4 GiB | 116.0 GiB | 60 GB | 30.8 | 9.3 steady | 391, Paris, bat+ball=$0.10 OK | no |
+
+The model GGUF declares `n_ctx_train = 262144` and no rope scaling, so a context
+above 256K needs the YaRN flags (rope-scale 4.0, rope-freq-base 10000000,
+yarn-orig-ctx 262144). KV is 24 KiB/token at F16 (12 full-attention layers x 2 KV
+heads x 256 head_dim x 2 x 2 bytes), so 6/12/24 GiB at 256K/512K/1M. F16 KV fits
+at 1M, so the q8_0 fallback was not needed. 1M leaves only about 1-2 GiB free
+(about 60 GB reclaimable page cache); the KV is pre-allocated at load, so idle
+serving is stable, but a large concurrent allocation can evict the mmap'd
+weights. Static YaRN did not degrade the short-context probes.
+
+Decision: keep `llm-qwen` at 1M context, YaRN x4, F16 KV. The new slot options
+are `perf.ropeScaling`, `perf.ropeScale`, `perf.ropeFreqBase`,
+`perf.yarnOrigCtx`, `perf.cacheTypeK` and `perf.cacheTypeV`.

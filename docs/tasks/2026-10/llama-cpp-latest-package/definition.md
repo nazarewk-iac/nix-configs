@@ -81,8 +81,12 @@ Findings:
   difference is noise.
 - No run hit OOM.
 
-The deployed config is **C** (the Unsloth fork with MTP). See
-`hosts/brys/llm-qwen.nix`.
+The deployed package is **`llama-cpp-v0_6_0`** (config A/B) with MTP on, not C.
+v0.6.0 carries the long-context QSA indexer memory and mask fixes that the
+Unsloth fork lacks, so it is the build for the 1M-context work. The fork's short
+decode edge (9.56 vs 9.50 t/s) is noise and does not outweigh those fixes. See
+`hosts/brys/llm-qwen.nix` and the long-context ladder in
+[docs/local-llms.md](../../../local-llms.md).
 
 ## Update procedure
 

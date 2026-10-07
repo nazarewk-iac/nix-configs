@@ -15,7 +15,9 @@ timestamp: 2026-10-07T10:00:00+02:00
 - Both derivations build and expose the `draft-mtp` spec type.
 - The benchmark ran on brys. The results table is in
   [definition.md](definition.md#results-brys-2026-10-07).
-- The deployed config on brys is C: the Unsloth fork with MTP. See
+- The deployed package on brys is `llama-cpp-v0_6_0` (config A/B) with MTP on,
+  not the Unsloth fork (C). v0.6.0 carries the long-context QSA indexer memory
+  and mask fixes the fork lacks, so it is the build for the 1M-context work. See
   `hosts/brys/llm-qwen.nix`.
 - The `perf.mmap` slot option is now nullable. The two new builds dropped
   `--mmap`, and the router rejects the key. `hosts/brys/llm.nix` sets
