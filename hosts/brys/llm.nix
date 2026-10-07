@@ -47,6 +47,12 @@
   qwenContextSize ? 131072,
   llamaPackage ? pkgs.llama-cpp,
   qwenMtp ? false,
+  qwenRopeScaling ? null,
+  qwenRopeScale ? null,
+  qwenRopeFreqBase ? null,
+  qwenYarnOrigCtx ? null,
+  qwenCacheTypeK ? null,
+  qwenCacheTypeV ? null,
 }:
 let
   # The small-model router set, split out so a frontier-only host never pulls it
@@ -129,6 +135,14 @@ let
     # remains) and the router rejects the `mmap` preset key. Omit it; the
     # default load mode is mmap, so the served behaviour is unchanged.
     mmap = null;
+    # Long-context extension (all null at the native 262144 window). Each is
+    # emitted only when non-null, so the preset INI stays clean otherwise.
+    ropeScaling = qwenRopeScaling;
+    ropeScale = qwenRopeScale;
+    ropeFreqBase = qwenRopeFreqBase;
+    yarnOrigCtx = qwenYarnOrigCtx;
+    cacheTypeK = qwenCacheTypeK;
+    cacheTypeV = qwenCacheTypeV;
   }
   // lib.optionalAttrs qwenMtp {
     specType = "draft-mtp";
