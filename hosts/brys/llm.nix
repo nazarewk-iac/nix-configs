@@ -30,8 +30,9 @@
 #   * `qwenContextSize` — Qwen's KV-cache context (default 131072). The
 #     llm-qwen specialisation names it explicitly.
 #   * `llamaPackage` — the llama.cpp build that provides `llama-server`
-#     (default `pkgs.llama-cpp`, the pinned 0.4.0). The Qwen MTP benchmark
-#     selects the in-repo v0.6.0 or Unsloth-fork builds instead.
+#     (default `pkgs.llama-cpp`, the pinned 0.4.0; `qwenGpu = true` defaults it
+#     to the in-repo v0.6.0 Vulkan build instead). An explicit value always
+#     wins over the `qwenGpu` default.
 #   * `qwenMtp` — use the Qwen model's MTP head for speculative decode
 #     (default false). It adds the draft model and the `draft-mtp` spec type.
 #     Only the v0.6.0 and Unsloth-fork builds contain the MTP graph.
@@ -44,8 +45,15 @@
   withFrontier ? true,
   withSmall ? false,
   withQwen ? false,
+  # `qwenGpu` turns on the W6600 Vulkan path shared by the Qwen-serving
+  # specialisations: it defaults the llama.cpp build to the v0.6.0 Vulkan
+  # package, puts the MTP draft head on the GPU, pins the device to the W6600,
+  # and exports the runtime `gpu` config (see the return value). An
+  # explicitly-passed `llamaPackage` / `qwenDraftNGpuLayers` / `qwenDevice`
+  # still wins over the default.
+  qwenGpu ? false,
   qwenContextSize ? 131072,
-  llamaPackage ? pkgs.llama-cpp,
+  llamaPackage ? null,
   qwenMtp ? false,
   # MTP speculative-decode tuning, used only when `qwenMtp` is set. `nMax` is
   # the max draft tokens per step; `pMin`/`prio` are emitted only when non-null
@@ -94,6 +102,54 @@ let
   ++ map (s: "deepseek-v4-flash-${s}") ds4TierSuffixes
   ++ map (s: "deepseek-v4-flash${s}-think") ([ "" ] ++ map (s: "-${s}") ds4TierSuffixes);
 
+  # The Qwen context tiers. Like the DS4 tiers above, every tier id must be a
+  # real server alias of `qwen3.8-flash-next` so the compat-proxy can route an
+  # unknown tier id to the Qwen upstream without llama-server rejecting it with
+  # HTTP 400. The base model id itself is the 1M tier. Thinking is selected per
+  # request (chat_template_kwargs), not per alias, so no thinking aliases are
+  # needed.
+  #
+  # `frontier` belongs to DS4 when DS4 is also served (the combined
+  # llms-frontier entry); a router rejects two models claiming one alias. The
+  # dedicated Qwen entry (no DS4) keeps `frontier`.
+  qwenTierSuffixes = [
+    "256k"
+    "128k"
+    "64k"
+    "32k"
+    "16k"
+  ];
+  qwenAliases = [
+    "qwen"
+  ]
+  ++ lib.optional (!withFrontier) "frontier"
+  ++ map (s: "qwen3.8-flash-next-${s}") qwenTierSuffixes;
+
+  # GPU-offload defaults. `qwenGpu` turns on the W6600 Vulkan path: the v0.6.0
+  # Vulkan llama.cpp build, the MTP draft head on the GPU, and the device pinned
+  # to the W6600. An explicitly-passed argument still wins.
+  llamaPackage' =
+    if llamaPackage != null then
+      llamaPackage
+    else if qwenGpu then
+      pkgs.kdn.llama-cpp-v0_6_0-vulkan
+    else
+      pkgs.llama-cpp;
+  qwenDraftNGpuLayers' =
+    if qwenDraftNGpuLayers != null then
+      qwenDraftNGpuLayers
+    else if qwenGpu then
+      99
+    else
+      null;
+  qwenDevice' =
+    if qwenDevice != null then
+      qwenDevice
+    else if qwenGpu then
+      "Vulkan0"
+    else
+      null;
+
   # DeepSeek V4 Flash perf.
   #
   # CPU affinity is deliberately NOT set. On llama-cpp 0.4.0 (build 10809) the
@@ -109,6 +165,11 @@ let
     contextSize = contextSize;
     reasoning = "off";
     specType = "draft-dspark";
+    # The v0.6.0 build (selected by `qwenGpu`) dropped `--mmap` and the router
+    # rejects the `mmap` preset key, so the combined specialisation must omit it
+    # for DS4 too. The pinned 0.4.0 build keeps `mmap = on` (its default is mmap,
+    # so the served behaviour is unchanged either way).
+    mmap = if qwenGpu then null else true;
     # Prefill (prompt processing) on this 284B MoE is bandwidth-bound on the
     # activated expert weights. The llama default ubatch of 512 reuses them
     # over too few tokens; 4096 reuses them across a whole chunk. Measured on
@@ -167,11 +228,11 @@ let
   // lib.optionalAttrs qwenNoKvOffload {
     noKvOffload = true;
   }
-  // lib.optionalAttrs (qwenDraftNGpuLayers != null) {
-    draftNGpuLayers = qwenDraftNGpuLayers;
+  // lib.optionalAttrs (qwenDraftNGpuLayers' != null) {
+    draftNGpuLayers = qwenDraftNGpuLayers';
   }
-  // lib.optionalAttrs (qwenDevice != null) {
-    device = qwenDevice;
+  // lib.optionalAttrs (qwenDevice' != null) {
+    device = qwenDevice';
   }
   // lib.optionalAttrs qwenMtp {
     specType = "draft-mtp";
@@ -217,8 +278,9 @@ let
   # (~94 GB, 3 shards) keeps the 51B n-gram embedding table inside the weight
   # shards, so the whole tree stays resident (no --lazy-mode). The first shard
   # is a ~11 MB split descriptor; llama-server mmaps shards 02-03 for the
-  # weights. Aliases: `qwen` and `frontier` (this model is the frontier of the
-  # llm-qwen boot entry).
+  # weights. Aliases: `qwen`, the context tiers (`qwen3.8-flash-next-<n>k`), and
+  # `frontier` when DS4 is not also served; see qwenAliases above. The base model
+  # id is the 1M tier.
   qwenModels = lib.optionalAttrs withQwen {
     "qwen3.8-flash-next" = {
       enable = true;
@@ -226,10 +288,7 @@ let
       hfFile = "UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf";
       download.glob = "UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-*.gguf";
       download.minBytes = 10000000;
-      aliases = [
-        "qwen"
-        "frontier"
-      ];
+      aliases = qwenAliases;
       perf = qwenPerf;
     }
     // lib.optionalAttrs qwenMtp {
@@ -249,7 +308,7 @@ in
     kdn.llm.local = {
       enable = true;
       # The host picks the llama.cpp build; the Qwen MTP benchmark swaps it.
-      package = llamaPackage;
+      package = llamaPackage';
       # This machine has 16 physical cores. The slot names no thread count now,
       # so this line keeps the `threads` key that the old slot default wrote.
       defaultThreads = 16;
@@ -274,6 +333,19 @@ in
     // lib.optionalAttrs withSmall {
       routers.small = small.kdn.llm.local.routers.small;
     };
+  };
+
+  # Runtime graphics/ICD config for the W6600 Vulkan path, exported only when
+  # `qwenGpu` is set. A Qwen-serving specialisation merges this into its NixOS
+  # config (see hosts/brys/llm-qwen.nix, hosts/brys/llms-frontier.nix): expose
+  # the Mesa RADV Vulkan ICD to the loader and pin the llama-cpp process tree to
+  # the W6600 (`1002:73e3`) so the 4 GB Lexa (`Vulkan1`) is never selected. The
+  # `device = Vulkan0` preset key is the in-process belt to this env-var
+  # suspenders.
+  gpu = lib.optionalAttrs qwenGpu {
+    hardware.graphics.enable = true;
+    hardware.graphics.extraPackages = [ pkgs.mesa ];
+    systemd.services.llama-cpp.environment.MESA_VK_DEVICE_SELECT = "1002:73e3!";
   };
 
   # The NixOS-side LLM configuration. Import this as a module. It owns the

@@ -1,6 +1,6 @@
 # Shared body of the brys LLM-only boot specialisations.
 #
-# brys has three boot-selected appliance entries, all `inheritParentConfig =
+# brys has four boot-selected appliance entries, all `inheritParentConfig =
 # false`, so each is a clean top-level with the desktop/workstation/gaming
 # profiles left out:
 #
@@ -11,6 +11,9 @@
 #   * llm-qwen (hosts/brys/llm-qwen.nix) — the Qwen3.8-Flash-Next model alone,
 #     with the whole box and the MTP draft head on the W6600 (Vulkan); the main
 #     model + KV stay on the CPU.
+#   * llms-frontier (hosts/brys/llms-frontier.nix) — DS4 and Qwen in one router
+#     with `--models-max 1`: a request for either swaps the resident model
+#     without a reboot.
 #
 # They differ only in the `llm` wiring, the `tag`, the pre-login `banner` and
 # the optional `extraConfig`. This file owns the common appliance body

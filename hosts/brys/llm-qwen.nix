@@ -30,14 +30,14 @@ let
     withSmall = false;
     withQwen = true;
     qwenContextSize = 1048576;
-    # The Vulkan build: v0.6.0 source and MTP graph, with GGML_VULKAN on.
-    llamaPackage = pkgs.kdn.llama-cpp-v0_6_0-vulkan;
+    # The W6600 Vulkan path: the v0.6.0 Vulkan build, the MTP draft head on the
+    # GPU, and the device pinned to the W6600. `qwenGpu` owns the shared
+    # package/draft/device defaults and exports the runtime graphics config
+    # (llm.gpu). qwenNGpuLayers stays null, so the main model keeps llama's
+    # CPU-only default.
+    qwenGpu = true;
     qwenMtp = true;
     qwenSpecDraftNMax = 5;
-    # Draft head on the GPU, main model + KV on the CPU. qwenNGpuLayers stays
-    # null, so the main model keeps llama's CPU-only default.
-    qwenDraftNGpuLayers = 99;
-    qwenDevice = "Vulkan0";
     # YaRN x4: 256K native -> 1M. F16 KV (~24 GiB) stays on the CPU.
     qwenRopeScaling = "yarn";
     qwenRopeScale = 4.0;
@@ -66,13 +66,7 @@ import ./llm-appliance.nix {
     Login with your usual kdn/SSH credentials. Use the normal host to do
     anything else.
   '';
-  # Runtime-only bits: expose the Mesa RADV Vulkan ICD to the loader, and pin
-  # the llama-cpp process tree to the W6600 (`1002:73e3`) so the 4 GB Lexa
-  # (`Vulkan1`) is never selected. The `device = Vulkan0` preset key is the
-  # in-process belt to this env-var suspenders.
-  extraConfig = {
-    hardware.graphics.enable = true;
-    hardware.graphics.extraPackages = [ pkgs.mesa ];
-    systemd.services.llama-cpp.environment.MESA_VK_DEVICE_SELECT = "1002:73e3!";
-  };
+  # The runtime graphics/ICD config is owned by llm.nix (`llm.gpu`) so the
+  # dedicated and combined Qwen specialisations cannot drift.
+  extraConfig = llm.gpu;
 }
