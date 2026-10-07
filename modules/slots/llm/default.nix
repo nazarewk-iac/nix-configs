@@ -142,7 +142,7 @@ let
           "spec-draft-n-max = ${toString perf.specDraftNMax}"
         ]
         ++ lib.optionals (m.draft.enable && perf.specDraftPMin != null) [
-          "spec-draft-p-min = ${perf.specDraftPMin}"
+          "spec-draft-p-min = ${toString perf.specDraftPMin}"
         ]
         ++ lib.optionals (m.draft.enable && perf.specDraftPrio != null) [
           "spec-draft-prio = ${toString perf.specDraftPrio}"
