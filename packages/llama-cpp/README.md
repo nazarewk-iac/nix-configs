@@ -1,17 +1,38 @@
 # Updating the llama.cpp builds
 
-This directory holds two CPU-only llama.cpp builds from source, for the
-Qwen3.8-Flash-Next (`qwen4exp`) work on brys:
+This directory holds llama.cpp builds from source, for the Qwen3.8-Flash-Next
+(`qwen4exp`) work on brys:
 
-| Attribute | Source | Version | Build | Commit |
-|---|---|---|---|---|
-| `llama-cpp-v0_6_0` | `ggml-org/llama.cpp` | 0.6.0 | 11429 | `d812350` |
-| `llama-cpp-unsloth-mtp` | `danielhanchen/llama.cpp`, branch `qwen4exp/mtp` | 0.4.1 | 11098 | `6fcaa16` |
+| Attribute | Source | Version | Build | Commit | Backend |
+|---|---|---|---|---|---|
+| `llama-cpp-v0_6_0` | `ggml-org/llama.cpp` | 0.6.0 | 11429 | `d812350` | CPU |
+| `llama-cpp-v0_6_0-vulkan` | `ggml-org/llama.cpp` | 0.6.0 | 11429 | `d812350` | CPU + Vulkan |
+| `llama-cpp-unsloth-mtp` | `danielhanchen/llama.cpp`, branch `qwen4exp/mtp` | 0.4.1 | 11098 | `6fcaa16` | CPU |
 
 The pinned nixpkgs `llama-cpp` is 0.4.0 (build 10809). That build has no
-`qwen4exp` MTP graph, so the server cannot use the model MTP head. The two
-derivations above add the MTP graph. Both drop the embedded web UI on purpose.
-See [default.nix](default.nix) for the build flags.
+`qwen4exp` MTP graph, so the server cannot use the model MTP head. The
+derivations above add the MTP graph. Every build drops the embedded web UI on
+purpose. See [default.nix](default.nix) for the build flags.
+
+## The Vulkan variant
+
+`llama-cpp-v0_6_0-vulkan` is the same v0.6.0 source with `GGML_VULKAN` on. It
+adds `shaderc` (native), `vulkan-headers`, `vulkan-loader` and `spirv-headers`.
+`GGML_CPU_ALL_VARIANTS` and `GGML_BACKEND_DL` stay true, so the CPU keeps every
+expert and the KV cache and Vulkan offloads the dense layers only. This is the
+build for the Radeon Pro W6600 (`gfx1032`) on brys. Build it with:
+
+```bash
+nix build .#llama-cpp-v0_6_0-vulkan --no-link
+```
+
+The build compiles the whole Vulkan shader set, so it is much slower than the
+CPU-only build. To use it, the host must expose the Mesa RADV Vulkan ICD (see
+`hardware.graphics.enable` and `hardware.graphics.extraPackages`). The GPU
+device is selected at runtime; on a two-GPU host set `MESA_VK_DEVICE_SELECT` to
+the wanted `vendor:device` pair. The GPU-offload specialisation and the smoke
+test are recorded in
+[docs/tasks/2026-10/qwen-gpu-offload/definition.md](../../docs/tasks/2026-10/qwen-gpu-offload/definition.md).
 
 The task that added these builds:
 [docs/tasks/2026-10/llama-cpp-latest-package/definition.md](../../docs/tasks/2026-10/llama-cpp-latest-package/definition.md).

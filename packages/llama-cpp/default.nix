@@ -1,19 +1,22 @@
 # See README.md in this directory for how to update these builds.
 #
-# Two CPU-only llama.cpp builds from source, for the Qwen3.8-Flash-Next
-# (`qwen4exp`) work on brys.
+# llama.cpp builds from source, for the Qwen3.8-Flash-Next (`qwen4exp`) work on
+# brys.
 #
 # The pinned nixpkgs `llama-cpp` is 0.4.0 (build 10809). That build does not
 # contain the merged `qwen4exp` MTP graph, so the server cannot use the model
-# MTP head for speculative decode. The two derivations below provide:
+# MTP head for speculative decode. The derivations below provide:
 #
-#   * `llama-cpp-v0_6_0` — the ggml-org v0.6.0 release. It merges MTP for
-#     `qwen4exp` (PR #29761) and the mask/indexer performance fixes.
+#   * `llama-cpp-v0_6_0` — the ggml-org v0.6.0 release, CPU-only. It merges MTP
+#     for `qwen4exp` (PR #29761) and the mask/indexer performance fixes.
+#   * `llama-cpp-v0_6_0-vulkan` — the same source with the Vulkan backend, for
+#     the Radeon Pro W6600 on brys. Experts and KV stay on the CPU; Vulkan
+#     offloads the dense layers.
 #   * `llama-cpp-unsloth-mtp` — the Unsloth fork branch `qwen4exp/mtp`, the
 #     build the Unsloth docs name. It has an older base, so it is only for a
 #     comparison benchmark.
 #
-# Both derivations drop the embedded web UI. The server API, the MTP graph and
+# Every derivation drops the embedded web UI. The server API, the MTP graph and
 # `--help` do not need the UI. Dropping it removes the npm dependency tree and
 # its `npmDepsHash`, and it shortens the build. Upstream CMake builds no UI when
 # `LLAMA_BUILD_UI` and `LLAMA_USE_PREBUILT_UI` are both OFF; it then prints
@@ -37,6 +40,10 @@ let
       src,
       buildNumber,
       buildCommit,
+      # Build the Vulkan backend (for the AMD Radeon Pro W6600 on brys). The
+      # default is the CPU-only build: the CPU keeps the experts and the KV
+      # cache, and Vulkan offloads the dense layers.
+      vulkan ? false,
     }:
     pkgs.stdenv.mkDerivation {
       inherit pname version src;
@@ -49,17 +56,27 @@ let
         "dev"
       ];
 
-      nativeBuildInputs = with pkgs; [
-        cmake
-        installShellFiles
-        ninja
-        pkg-config
-      ];
+      nativeBuildInputs =
+        with pkgs;
+        [
+          cmake
+          installShellFiles
+          ninja
+          pkg-config
+        ]
+        ++ lib.optionals vulkan [ shaderc ];
 
-      buildInputs = with pkgs; [
-        blas
-        openssl
-      ];
+      buildInputs =
+        with pkgs;
+        [
+          blas
+          openssl
+        ]
+        ++ lib.optionals vulkan [
+          vulkan-headers
+          vulkan-loader
+          spirv-headers
+        ];
 
       cmakeFlags = [
         # -march=native would make the build non-deterministic.
@@ -77,10 +94,11 @@ let
         (cmakeBool "GGML_HIP" false)
         (cmakeBool "GGML_METAL" false)
         (cmakeBool "GGML_RPC" false)
-        (cmakeBool "GGML_VULKAN" false)
+        (cmakeBool "GGML_VULKAN" vulkan)
         # Build every CPU variant and select one at runtime. This prevents an
         # illegal instruction on an older CPU and gives the best speed on a
-        # newer one.
+        # newer one. The experts and the KV cache stay on the CPU in the Vulkan
+        # build too, so this stays true.
         (cmakeBool "GGML_CPU_ALL_VARIANTS" true)
         (cmakeBool "GGML_BACKEND_DL" true)
         # No embedded web UI. See the file header.
@@ -98,7 +116,9 @@ let
       doCheck = false;
 
       meta = {
-        description = "Inference of LLaMA and other models in C/C++ (CPU-only, no web UI)";
+        description = "Inference of LLaMA and other models in C/C++ (${
+          if vulkan then "CPU+Vulkan" else "CPU-only"
+        }, no web UI)";
         homepage = "https://github.com/ggml-org/llama.cpp";
         license = lib.licenses.mit;
         mainProgram = "llama-server";
@@ -106,12 +126,11 @@ let
       };
     };
 in
-{
-  # ggml-org v0.6.0 (build 11429, commit d812350). The version string cannot be
-  # an attribute name (a dot is not valid in a Nix identifier), so the
-  # attribute uses underscores.
-  llama-cpp-v0_6_0 = mkLlamaCpp {
-    pname = "llama-cpp";
+let
+  # ggml-org v0.6.0 (build 11429, commit d812350). Shared by the CPU-only and
+  # the Vulkan builds below, so the two cannot drift on the source or the build
+  # number.
+  v0_6_0 = {
     version = "0.6.0";
     buildNumber = "11429";
     buildCommit = "d812350";
@@ -122,6 +141,23 @@ in
       hash = "sha256-l6l6JIlIVTaVC6xh5M4fRHFtXsweQuugtkNTWHcZZF4=";
     };
   };
+in
+{
+  # The version string cannot be an attribute name (a dot is not valid in a Nix
+  # identifier), so the attribute uses underscores.
+  llama-cpp-v0_6_0 = mkLlamaCpp (v0_6_0 // { pname = "llama-cpp"; });
+
+  # The same v0.6.0 source with the Vulkan backend on, for the Radeon Pro
+  # W6600 on brys. The CPU keeps every expert and the KV cache
+  # (`GGML_CPU_ALL_VARIANTS` and `GGML_BACKEND_DL` stay true); Vulkan offloads
+  # the dense layers only. See packages/llama-cpp/README.md.
+  llama-cpp-v0_6_0-vulkan = mkLlamaCpp (
+    v0_6_0
+    // {
+      pname = "llama-cpp-vulkan";
+      vulkan = true;
+    }
+  );
 
   # Unsloth fork, branch `qwen4exp/mtp`, head 6fcaa16 (2026-09-21), base
   # version 0.4.1, build 11098.
