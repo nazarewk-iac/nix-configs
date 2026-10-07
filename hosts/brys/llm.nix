@@ -29,6 +29,12 @@
 #     DeepSeek, not both.
 #   * `qwenContextSize` — Qwen's KV-cache context (default 131072). The
 #     llm-qwen specialisation names it explicitly.
+#   * `llamaPackage` — the llama.cpp build that provides `llama-server`
+#     (default `pkgs.llama-cpp`, the pinned 0.4.0). The Qwen MTP benchmark
+#     selects the in-repo v0.6.0 or Unsloth-fork builds instead.
+#   * `qwenMtp` — use the Qwen model's MTP head for speculative decode
+#     (default false). It adds the draft model and the `draft-mtp` spec type.
+#     Only the v0.6.0 and Unsloth-fork builds contain the MTP graph.
 {
   lib,
   pkgs,
@@ -39,6 +45,8 @@
   withSmall ? false,
   withQwen ? false,
   qwenContextSize ? 131072,
+  llamaPackage ? pkgs.llama-cpp,
+  qwenMtp ? false,
 }:
 let
   # The small-model router set, split out so a frontier-only host never pulls it
@@ -117,6 +125,14 @@ let
     batchSize = 4096;
     ubatchSize = 4096;
     parallel = 1;
+    # The v0.6.0 and Unsloth builds dropped `--mmap` (only `--load-mode`
+    # remains) and the router rejects the `mmap` preset key. Omit it; the
+    # default load mode is mmap, so the served behaviour is unchanged.
+    mmap = null;
+  }
+  // lib.optionalAttrs qwenMtp {
+    specType = "draft-mtp";
+    specDraftNMax = 2;
   };
 
   # The DeepSeek V4 Flash frontier model, on the primary router. deepseek-v4-flash
@@ -166,6 +182,13 @@ let
         "frontier"
       ];
       perf = qwenPerf;
+    }
+    // lib.optionalAttrs qwenMtp {
+      draft = {
+        enable = true;
+        hfRepo = "unsloth/Qwen3.8-Flash-Next-GGUF";
+        hfFile = "MTP/mtp-Qwen3.8-Flash-Next-Q8_0.gguf";
+      };
     };
   };
 in
@@ -176,6 +199,8 @@ in
   slot = {
     kdn.llm.local = {
       enable = true;
+      # The host picks the llama.cpp build; the Qwen MTP benchmark swaps it.
+      package = llamaPackage;
       # This machine has 16 physical cores. The slot names no thread count now,
       # so this line keeps the `threads` key that the old slot default wrote.
       defaultThreads = 16;
