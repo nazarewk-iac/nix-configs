@@ -420,11 +420,24 @@ layer is full attention (12 of 48); the other layers use GDN linear attention.
 It has 2 KV heads, `head_dim` 256, and 512 experts with 10 active per token plus
 one shared expert. The weight shards also hold a 51B n-gram embedding table.
 
-Served build: **llama.cpp 0.4.0 (build 10809, commit `5266f24`)**. The build
-carries `llama_model_qwen4exp`, so the model loads. The build does **not** carry
-the `qwen4exp` MTP graph (no `graph_mtp` symbol), so the Unsloth MTP draft heads
-do not work here. The Unsloth MTP README states that stock mainline needs PR
-#28243 or their fork. Speculative decoding stays off for now.
+First served build: **llama.cpp 0.4.0 (build 10809, commit `5266f24`)**. The
+build carries `llama_model_qwen4exp`, so the model loads. The build does **not**
+carry the `qwen4exp` MTP graph (no `graph_mtp` symbol), so the Unsloth MTP draft
+heads do not work here. The Unsloth MTP README states that stock mainline needs
+PR #28243 or their fork.
+
+**MTP build (2026-10-07):** the `llm-qwen` entry now selects the in-repo
+`packages/llama-cpp` build with the `qwen4exp` MTP graph. MTP is a
+speculative-decode draft head, so it needs a build that holds the graph.
+Upstream v0.6.0 (build 11429) and the Unsloth fork both hold it. The server
+enables the draft with `spec-type draft-mtp`. See
+[packages/llama-cpp/README.md](../packages/llama-cpp/README.md) for the two
+derivations and their update steps.
+
+The MTP builds dropped `--mmap`. They have only `--load-mode`, and the router
+rejects the `mmap` preset key at startup. `hosts/brys/llm.nix` therefore sets
+`perf.mmap = null` for Qwen, which omits the key. The default load mode is mmap,
+so the served behaviour does not change.
 
 Chosen quant: **`unsloth/Qwen3.8-Flash-Next-GGUF` `UD-IQ4_XS`**, 3 shards,
 93.7 GB total (10,946,624 + 49,835,229,856 + 43,836,407,744 bytes). The shards
@@ -433,8 +446,10 @@ attention makes KV tiny for this model, so IQ4_XS fits under the 8 GiB ARC cap
 with room to spare. `UD-Q4_K_XL` is ~10 GB bigger and tight.
 
 Deployed config (`hosts/brys/llm.nix` `qwenPerf`): ctx-size 131072, batch-size
-4096, ubatch-size 4096, parallel 1, threads 16, flash-attn on, mmap on,
-reasoning off, KV type F16 (the build default). Aliases `qwen` and `frontier`.
+4096, ubatch-size 4096, parallel 1, threads 16, flash-attn on, reasoning off,
+KV type F16 (the build default). Aliases `qwen` and `frontier`. The 0.4.0 build
+takes `mmap on`; the MTP builds need `perf.mmap = null` (see the MTP build
+paragraph above).
 The server reports `n_slots = 1`, `n_ctx_slot = 131072`, `kv_unified = 'false'`,
 and a 16-thread pool.
 
@@ -450,6 +465,13 @@ Measured on brys, cold-booted into `llm-qwen`, model warm:
 - residency: `VmRSS` ~86 GB (`RssFile` ~58 GB, `RssAnon` ~28 GB), `VmSwap` 0,
   `free -g` available ~87 GB, **0 idle major faults/s**, no OOM in the kernel
   log.
+
+**MTP result (2026-10-07, warm, 300-token decode):** the MTP draft raised decode
+from **5.65 to about 9.5 tok/s (+68%)**, at a mean accepted length of 2.99 and
+an acceptance of 1.000. The upstream v0.6.0 build and the Unsloth fork are
+within about 1-4% of each other, which is noise. v0.6.0 without MTP is within
+noise of the 0.4.0 baseline. The full table is in
+[docs/tasks/2026-10/llama-cpp-latest-package/definition.md](tasks/2026-10/llama-cpp-latest-package/definition.md).
 
 For reference, DeepSeek V4 Flash does 15.2-16.5 tok/s prefill and ~5-8.6 tok/s
 decode. So Qwen prefill is ~2.4x DeepSeek, and Qwen decode is slightly lower.
@@ -486,6 +508,10 @@ at the bottom.
 | 2026-10-06 12:4x | unified KV: `parallel 4` + `kv-unified on`, ctx 327680 (cold boot `llm-ds4` gen 652) | 2.22 | 451 | — | — | ~3:16 (first load) | **concurrency confirmed**: a short request (8 tok) returned in **3.7 s** while a 256-token request was in flight (121.8 s) — no head-of-line blocking; server logged `n_slots = 4, n_ctx_slot = 327680, kv_unified = 'true'`; DS4 `RssFile` 92.6 GB, **0 idle major faults**, no OOM; DSpark acceptance 0.44 at `parallel 4` (draft still works) |
 | 2026-10-06 | **Qwen3.8-Flash-Next** UD-IQ4_XS, ubatch/batch 1024 (baseline) | 20.1 (prefill) | — | — | — | ~90 s (cold) | model warm on `llm-qwen`; 964 tok / 47.9 s; this row is Qwen, not DS4 |
 | 2026-10-06 | **Qwen3.8-Flash-Next** UD-IQ4_XS, ubatch/batch 4096 | **39.9 (prefill)** | — | ~2x | — | ~90 s (cold) | run 1: 3425 tok / 85.7 s = 39.95; run 2: 3430 tok / 85.9 s = 39.91; decode 300 tok at 4.75 t/s; VmRSS ~86 GB, 0 idle major faults; this row is Qwen, not DS4 |
+| 2026-10-07 | **Qwen3.8-Flash-Next** + llama.cpp **0.4.0 b10809** (control), no MTP | 5.65 | — | — | — | warm | decode 300 tok; prefill 36.6 t/s; RSS 82.3 GiB; 0 idle major faults; this row is Qwen, not DS4 |
+| 2026-10-07 | **Qwen3.8-Flash-Next** + llama.cpp **0.6.0 b11429** (config A), no MTP | 5.81 | — | vs 0.4.0 ≈ | — | warm | decode 300 tok; prefill 37.7 t/s; RSS 81.3 GiB; 0 idle major faults; this row is Qwen, not DS4 |
+| 2026-10-07 | **Qwen3.8-Flash-Next** + llama.cpp **0.6.0 b11429** (config B), MTP on | **9.50** | — | +68% | — | warm | decode 300 tok; prefill 35.2 t/s; MTP acceptance 1.000, mean len 2.99; RSS 87.8 GiB; 0 idle major faults; this row is Qwen, not DS4 |
+| 2026-10-07 | **Qwen3.8-Flash-Next** + llama.cpp **unsloth b11098** (config C), MTP on | **9.56** | — | +69% (≈ B) | — | warm | decode 300 tok; prefill 36.8 t/s; MTP acceptance 1.000, mean len 2.99; RSS 86.6 GiB; 0 idle major faults; **deployed config**; this row is Qwen, not DS4 |
 
 **Key mechanism finding (2026-09-05 ~20:10):** the DS4 weights are `mmap`-backed and go
 fully resident as **file-backed page cache** (~77 GB `RssFile` on the worker), plus ~14 GB
