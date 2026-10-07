@@ -155,10 +155,11 @@ The frontier model and the small set no longer share a boot. All entries are
   `:39703` router holds no model.
 - **`llm-qwen`** (`hosts/brys/llm-qwen.nix`) — Qwen3.8-Flash-Next alone.
   `withFrontier = false; withSmall = false; withQwen = true`. 1M context
-  (YaRN x4), batch/ubatch 4096, `parallel 1`, F16 KV, and the MTP draft head
-  on the W6600 (Vulkan) with the main model + KV on the CPU. The earlier
-  CPU-only entry and the separate `llm-qwen-gpu` entry were folded into this
-  one.
+  (YaRN x4), batch/ubatch 4096, F16 KV, and the MTP draft head on the W6600
+  (Vulkan) with the main model + KV on the CPU. **Four slots share one unified
+  KV pool** (`parallel=4`, `kv-unified=on`, `ctx-size=1048576`), so a second
+  request no longer queues behind the first. The earlier CPU-only entry and the
+  separate `llm-qwen-gpu` entry were folded into this one.
 
 The choice lives in `hosts/brys/llm.nix`'s `withFrontier` / `withSmall` /
 `withQwen` arguments, so a host pulls in only the model family it needs.
@@ -187,11 +188,12 @@ separate boot entry.
 | `gpt-oss-120b` | — | `unsloth/gpt-oss-120b-GGUF` / `gpt-oss-120b-F16.gguf` | ~65 GB |
 | `phi-4` | — | `microsoft/phi-4-gguf` / `phi-4-Q4_K.gguf` | ~9 GB |
 
-Serving is CPU-only (the Radeon Pro W6600 is unusable for this model family).
-Per-model serving knobs on brys: `threads=16` (physical cores, SMT is counter
-productive for memory-bound inference), `flash-attn=on`, `mmap=on`,
-`reasoning=off`. DeepSeek V4 Flash adds `parallel=4` + `kv-unified=on`; every
-other model keeps `parallel=1`. Context sizes:
+Serving runs the main model on the CPU. The W6600 is unusable for the dense
+weights, but it does run the Qwen MTP draft head (see below). Per-model serving
+knobs on brys: `threads=16` (physical cores, SMT is counter productive for
+memory-bound inference), `flash-attn=on`, `mmap=on`, `reasoning=off`. DeepSeek
+V4 Flash and Qwen3.8-Flash-Next both add `parallel=4` + `kv-unified=on`; the
+other models keep `parallel=1`. Context sizes:
 
 | Model | ctx-size | Notes |
 |---|---|---|
@@ -459,10 +461,10 @@ with room to spare. `UD-Q4_K_XL` is ~10 GB bigger and tight.
 
 Deployed config (`hosts/brys/llm-qwen.nix`): ctx-size 1048576 (1M), YaRN x4
 (`rope-scale` 4.0, `rope-freq-base` 10000000, `yarn-orig-ctx` 262144),
-batch-size 4096, ubatch-size 4096, parallel 1, threads 16, flash-attn on,
-reasoning off, KV type F16. Aliases `qwen` and `frontier`. The MTP builds need
-`perf.mmap = null` (see the MTP build paragraph above).
-The server reports `n_slots = 1`, `n_ctx_slot = 1048576`, `kv_unified = 'false'`,
+batch-size 4096, ubatch-size 4096, parallel 4 with unified KV, threads 16,
+flash-attn on, reasoning off, KV type F16. Aliases `qwen` and `frontier`. The
+MTP builds need `perf.mmap = null` (see the MTP build paragraph above).
+The server reports `n_slots = 4`, `n_ctx_slot = 1048576`, `kv_unified = 'true'`,
 and a 16-thread pool.
 
 The slot gained the long-context options that this config uses:
@@ -471,6 +473,34 @@ The slot gained the long-context options that this config uses:
 `perf.cacheTypeV`. `hosts/brys/llm.nix` exposes them as the `qwenRopeScaling`,
 `qwenRopeScale`, `qwenRopeFreqBase`, `qwenYarnOrigCtx` and `qwenCacheTypeK` /
 `qwenCacheTypeV` arguments.
+
+### Concurrency (2026-10-07)
+
+The deployed `llm-qwen` entry runs **4 slots on one unified KV pool**
+(`parallel = 4`, `kvUnified = true`), the same shape as DS4. The server logs
+`n_slots = 4, n_ctx_slot = 1048576, kv_unified = 'true'`.
+
+The old Kagi-thread claim that the QSA indexer cache is single-slot only is
+**false** for the pinned llama.cpp v0.6.0 (commit `d812350`). The QSA indexer
+cache is a per-slot side buffer over the attention cells, built with the same
+`n_seq_max` / `unified` / `kv_size` as the cells:
+`src/llama-memory-hybrid-idx.h:14-15`,
+`src/llama-memory-hybrid-idx.cpp:70-73`, and
+`src/llama-model.cpp:2481-2493` (`n_seq_max = cparams.n_seq_max`, no cap). The
+MTP draft is multi-sequence too (`common/speculative.cpp`).
+
+With `--kv-unified`, `src/llama-context.cpp:294-297` sets `n_ctx_seq = n_ctx`,
+so the total cell count is `n_ctx` regardless of `parallel`. `parallel` never
+multiplies KV RAM.
+
+**Measured:** a short request returned in **2.4-4.6 s** while a 400-token
+request was in flight. At `parallel = 1` the same short request **waited 51.5 s**
+(serialised). Concurrency now matches DS4.
+
+**Single-request throughput is unchanged:** counting-300 decode 14.16 t/s at
+`parallel 4` vs 13.44 at `parallel 1`; prose-300 4.97 t/s (acceptance-bound);
+prefill ~22.4 vs 18.0 t/s. Memory: `VmRSS` ~101 GB, `RssAnon` ~37.5 GB (only
+~3 GB more than `parallel 1` — the shared pool), `VmSwap` 0, no OOM.
 
 ### GPU draft head (`llm-qwen`, 2026-10-07)
 
@@ -501,9 +531,10 @@ exposes them as `qwenNGpuLayers`, `qwenCpuMoe`, `qwenNoKvOffload`,
 
 MTP draft depth is the `spec-draft-n-max` value (the maximum draft tokens per
 step). The first MTP build used `n-max 2`. A sweep at 1M context (v0.6.0, MTP on,
-F16 KV, parallel 1, threads 16, two prompts, 300 tokens, temp 0, warm second run)
-shows that deeper drafts help until acceptance falls. "Realistic" is a Python
-merge-function prompt; "control" is a plain count from 1 to 300.
+F16 KV, parallel 1 pre-concurrency, threads 16, two prompts, 300 tokens, temp 0,
+warm second run) shows that deeper drafts help until acceptance falls.
+"Realistic" is a Python merge-function prompt; "control" is a plain count from
+1 to 300.
 
 | n-max | realistic decode t/s | realistic accept / mean len | control decode t/s | control accept |
 |---|---|---|---|---|
@@ -537,7 +568,7 @@ The new `hosts/brys/llm.nix` arguments are `qwenSpecDraftNMax`,
 
 The model GGUF declares `n_ctx_train = 262144` (256K) and no rope scaling, so a
 context above 256K needs the YaRN flags. Measured on brys with MTP on, parallel
-1, threads 16, F16 KV, ZFS ARC 8 GiB:
+1 pre-concurrency, threads 16, F16 KV, ZFS ARC 8 GiB:
 
 | ctx | rope | KV | RssFile | RssAnon | RSS | free available | idle maj_fault/s | prefill t/s | decode t/s | coherence | OOM |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -618,7 +649,7 @@ at the bottom.
 | 2026-10-07 | **Qwen3.8-Flash-Next** + llama.cpp **unsloth b11098** (config C), MTP on | **9.56** | — | +69% (≈ B) | — | warm | decode 300 tok; prefill 36.8 t/s; MTP acceptance 1.000, mean len 2.99; RSS 86.6 GiB; 0 idle major faults; short-context fork result, not deployed; this row is Qwen, not DS4 |
 | 2026-10-07 | **Qwen3.8-Flash-Next** + v0.6.0 b11429, MTP on, ctx 262144 (ladder) | 30.6 (prefill) | — | — | — | warm | decode 7.51 t/s; RssFile 59.7 GiB, RssAnon 31.8 GiB, RSS 91.4 GiB, free available 81 GB; 0 idle major faults; no OOM; coherence 17*23=391, Paris OK; this row is Qwen, not DS4 |
 | 2026-10-07 | **Qwen3.8-Flash-Next** + v0.6.0 b11429, MTP on, ctx 524288, YaRN x2 | 29.3 (prefill) | — | — | — | warm | decode 7.58 t/s; RssFile 59.7 GiB, RssAnon 40.0 GiB, RSS 99.7 GiB, free available 73 GB; 0 idle major faults; no OOM; coherence OK; this row is Qwen, not DS4 |
-| 2026-10-07 | **Qwen3.8-Flash-Next** + v0.6.0 b11429, MTP on, ctx 1048576, YaRN x4 (**deployed**) | 30.8 (prefill) | — | — | — | warm | decode 9.3 t/s steady; RssFile 59.7 GiB, RssAnon 56.4 GiB, RSS 116.0 GiB, free available 60 GB; 0 idle major faults; no OOM; coherence 391, Paris, bat+ball=$0.10 OK; F16 KV; this row is Qwen, not DS4 |
+| 2026-10-07 | **Qwen3.8-Flash-Next** + v0.6.0 b11429, MTP on, ctx 1048576, YaRN x4 (parallel 1, pre-concurrency) | 30.8 (prefill) | — | — | — | warm | decode 9.3 t/s steady; RssFile 59.7 GiB, RssAnon 56.4 GiB, RSS 116.0 GiB, free available 60 GB; 0 idle major faults; no OOM; coherence 391, Paris, bat+ball=$0.10 OK; F16 KV; this row is Qwen, not DS4 |
 | 2026-10-07 | **Qwen MTP** sweep: v0.6.0 b11429, MTP on, ctx 1048576, `spec-draft-n-max 1` | 8.13 | — | — | — | warm | Qwen MTP sweep: realistic decode 8.13 t/s, accept 0.980, mean len 1.98; control decode 8.15 t/s, accept 1.000; this row is Qwen, not DS4 |
 | 2026-10-07 | **Qwen MTP** sweep: `spec-draft-n-max 2` (old default) | 8.90 | — | — | — | warm | Qwen MTP sweep: realistic decode 8.90 t/s, accept 0.919, mean len 2.84; control decode 9.28 t/s, accept 1.000; this row is Qwen, not DS4 |
 | 2026-10-07 | **Qwen MTP** sweep: `spec-draft-n-max 3` | 10.42 | — | — | — | warm | Qwen MTP sweep: realistic decode 10.42 t/s, accept 0.893, mean len 3.68; control decode 11.38 t/s, accept 1.000; this row is Qwen, not DS4 |
@@ -628,6 +659,7 @@ at the bottom.
 | 2026-10-07 | **Qwen GPU** `llm-qwen-gpu`: Vulkan build, `-ngl 99 -cmoe -nkvo` | 2.01 | — | — | — | warm | decode 2.01 t/s (vs 9.13 CPU same prompt); prefill 44.7 t/s; accept 0.708; VRAM 7.30 GiB; GPU busy 11%/75%; the 24 GiB CPU KV makes every attention step cross PCIe; this row is Qwen, not DS4 |
 | 2026-10-07 | **Qwen GPU** partial `-ngl 8` / `-ngl 20` (no `-cmoe`) | 5.89 / 5.04 | — | — | — | warm | decode 5.89/5.04 t/s; prefill 14.4/14.6 t/s; VRAM ~7.9 GiB; still slower than CPU; this row is Qwen, not DS4 |
 | 2026-10-07 | **Qwen GPU** `llm-qwen-gpu` final: `n-gpu-layers-draft 99` + `device Vulkan0` | **10.82** | — | — | — | warm | decode 10.82 t/s (**+18.5%** vs 9.13 CPU same prompt); prefill 16.9 t/s; accept 0.731, mean len 4.55; RSS 95.3 GB, VRAM 6.40 GiB, GPU busy 12%/99%; 0 idle major faults, no OOM; MTP draft head on the W6600, main model + KV on CPU; this row is Qwen, not DS4 |
+| 2026-10-07 | **Qwen3.8-Flash-Next** + v0.6.0 b11429, MTP on, ctx 1048576, `parallel 4` + `kv-unified on` (**deployed**) | 14.16 | — | vs `parallel 1` ≈ | — | warm | **concurrency**: short request returned in **2.4-4.6 s** while a 400-token request was in flight; at `parallel 1` the same short request waited **51.5 s** (serialised); server logged `n_slots = 4, n_ctx_slot = 1048576, kv_unified = 'true'`; counting-300 decode 14.16 t/s vs 13.44 at `parallel 1`; prose-300 4.97 t/s (acceptance-bound); prefill ~22.4 vs 18.0 t/s; VmRSS ~101 GB, RssAnon ~37.5 GB, VmSwap 0, no OOM; QSA indexer cache is a per-slot side buffer, so the Kagi single-slot claim is false; this row is Qwen, not DS4 |
 
 **Key mechanism finding (2026-09-05 ~20:10):** the DS4 weights are `mmap`-backed and go
 fully resident as **file-backed page cache** (~77 GB `RssFile` on the worker), plus ~14 GB
