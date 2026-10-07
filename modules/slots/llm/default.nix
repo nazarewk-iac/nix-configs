@@ -95,6 +95,24 @@ let
         ++ lib.optionals (perf.contextSize != null) [
           "ctx-size = ${toString perf.contextSize}"
         ]
+        ++ lib.optionals (perf.ropeScaling != null) [
+          "rope-scaling = ${perf.ropeScaling}"
+        ]
+        ++ lib.optionals (perf.ropeScale != null) [
+          "rope-scale = ${toString perf.ropeScale}"
+        ]
+        ++ lib.optionals (perf.ropeFreqBase != null) [
+          "rope-freq-base = ${toString perf.ropeFreqBase}"
+        ]
+        ++ lib.optionals (perf.yarnOrigCtx != null) [
+          "yarn-orig-ctx = ${toString perf.yarnOrigCtx}"
+        ]
+        ++ lib.optionals (perf.cacheTypeK != null) [
+          "cache-type-k = ${perf.cacheTypeK}"
+        ]
+        ++ lib.optionals (perf.cacheTypeV != null) [
+          "cache-type-v = ${perf.cacheTypeV}"
+        ]
         ++ lib.optionals (perf.batchSize != null) [
           "batch-size = ${toString perf.batchSize}"
         ]
@@ -682,6 +700,65 @@ in
                 Prompt context size (-c) for this model. NULL lets llama-server
                 use the model default. Set per model to match KV-cache RAM
                 budget (e.g. DeepSeek 65536, Qwen3-MoE 131072).
+              '';
+            };
+            options.perf.ropeScaling = lib.mkOption {
+              type =
+                with lib.types;
+                nullOr (enum [
+                  "none"
+                  "linear"
+                  "yarn"
+                ]);
+              default = null;
+              description = ''
+                RoPE scaling type for this model (--rope-scaling). NULL omits the
+                key, so llama-server uses the model default (none for this
+                GGUF, whose n_ctx_train is 262144). Set "yarn" to extend context
+                beyond the native window.
+              '';
+            };
+            options.perf.ropeScale = lib.mkOption {
+              type = with lib.types; nullOr float;
+              default = null;
+              description = ''
+                RoPE scaling factor (--rope-scale). With yarn this is the
+                context-extension factor: 2.0 for 512K from a 256K native
+                window, 4.0 for 1M. NULL omits the key.
+              '';
+            };
+            options.perf.ropeFreqBase = lib.mkOption {
+              type = with lib.types; nullOr ints.positive;
+              default = null;
+              description = ''
+                RoPE base frequency (--rope-freq-base). For yarn on this model
+                the upstream recommendation is 10000000. NULL omits the key.
+              '';
+            };
+            options.perf.yarnOrigCtx = lib.mkOption {
+              type = with lib.types; nullOr ints.positive;
+              default = null;
+              description = ''
+                Original (training) context length yarn scales from
+                (--yarn-orig-ctx). For this model 262144. NULL omits the key.
+              '';
+            };
+            options.perf.cacheTypeK = lib.mkOption {
+              type = with lib.types; nullOr str;
+              default = null;
+              description = ''
+                KV-cache K quantisation type (--cache-type-k, e.g. "q8_0").
+                NULL omits the key and keeps F16. Use only when the F16 KV does
+                not fit at a large context.
+              '';
+            };
+            options.perf.cacheTypeV = lib.mkOption {
+              type = with lib.types; nullOr str;
+              default = null;
+              description = ''
+                KV-cache V quantisation type (--cache-type-v, e.g. "q8_0").
+                NULL omits the key and keeps F16. Use only when the F16 KV does
+                not fit at a large context.
               '';
             };
             options.perf.mmap = lib.mkOption {

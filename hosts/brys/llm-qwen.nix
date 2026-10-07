@@ -22,10 +22,17 @@ let
     withFrontier = false;
     withSmall = false;
     withQwen = true;
-    qwenContextSize = 131072;
-    # Config C: Unsloth fork + MTP. Best measured decode (9.56 t/s warm).
-    llamaPackage = pkgs.kdn.llama-cpp-unsloth-mtp;
+    qwenContextSize = 1048576;
+    # Upstream v0.6.0: it carries the long-context QSA indexer memory/mask
+    # fixes the Unsloth fork lacks. MTP stays on (the v0.6.0 build has it too).
+    llamaPackage = pkgs.kdn.llama-cpp-v0_6_0;
     qwenMtp = true;
+    # YaRN x4: 256K native -> 1M. F16 KV (~24 GiB) is tight; fall back to
+    # q8_0 KV if the load OOMs.
+    qwenRopeScaling = "yarn";
+    qwenRopeScale = 4.0;
+    qwenRopeFreqBase = 10000000;
+    qwenYarnOrigCtx = 262144;
   };
 in
 import ./llm-appliance.nix {
@@ -43,7 +50,7 @@ import ./llm-appliance.nix {
     Booted into the isolated Qwen-serving topology. Freeing the whole
     machine for local LLM inference; no desktop, no workstation services.
 
-    Qwen3.8-Flash-Next @ 128K ctx, F16 KV, single slot, UD-IQ4_XS.
+    Qwen3.8-Flash-Next @ 1M ctx (YaRN x4), F16 KV, single slot, UD-IQ4_XS.
     \e[1;33m============================================================\e[0m
     Login with your usual kdn/SSH credentials. Use the normal host to do
     anything else.
