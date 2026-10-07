@@ -104,8 +104,10 @@ let
         ++ lib.optionals (m.aliases != [ ]) [
           "alias = ${lib.concatStringsSep "," m.aliases}"
         ]
-        ++ [
+        ++ lib.optionals (perf.mmap != null) [
           "mmap = ${if perf.mmap then "on" else "off"}"
+        ]
+        ++ [
           "parallel = ${toString perf.parallel}"
         ]
         ++ lib.optionals (perf.kvUnified != null) [
@@ -683,9 +685,15 @@ in
               '';
             };
             options.perf.mmap = lib.mkOption {
-              type = lib.types.bool;
+              type = with lib.types; nullOr bool;
               default = true;
-              description = "memory-map the model file (mmap) instead of copying it into RAM page-cache.";
+              description = ''
+                memory-map the model file (mmap) instead of copying it into RAM
+                page-cache. `null` omits the key entirely, so llama-server uses
+                its own default. Needed for builds that dropped `--mmap` (for
+                example llama.cpp v0.6.0, which has only `--load-mode`): the
+                router rejects an unknown preset key at startup.
+              '';
             };
             options.perf.loadMode = lib.mkOption {
               type = with lib.types; nullOr str;

@@ -6,9 +6,11 @@
 }:
 let
   llm = import ./llm { inherit pkgs lib; };
+  llama-cpp = import ./llama-cpp { inherit pkgs lib; };
 in
 (import ./netbird { inherit pkgs lib; })
 // llm
+// llama-cpp
 // {
   inherit llm;
 

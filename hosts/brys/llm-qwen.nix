@@ -23,6 +23,9 @@ let
     withSmall = false;
     withQwen = true;
     qwenContextSize = 131072;
+    # Config C: Unsloth fork + MTP. Best measured decode (9.56 t/s warm).
+    llamaPackage = pkgs.kdn.llama-cpp-unsloth-mtp;
+    qwenMtp = true;
   };
 in
 import ./llm-appliance.nix {
