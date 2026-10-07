@@ -59,6 +59,14 @@
   qwenYarnOrigCtx ? null,
   qwenCacheTypeK ? null,
   qwenCacheTypeV ? null,
+  # GPU-offload knobs for the Qwen model, used only by the llm-qwen-gpu
+  # specialisation. Each stays off/null on the CPU-only path, so its preset
+  # section is byte-identical to before.
+  qwenNGpuLayers ? null,
+  qwenCpuMoe ? false,
+  qwenNoKvOffload ? false,
+  qwenDraftNGpuLayers ? null,
+  qwenDevice ? null,
 }:
 let
   # The small-model router set, split out so a frontier-only host never pulls it
@@ -149,6 +157,21 @@ let
     yarnOrigCtx = qwenYarnOrigCtx;
     cacheTypeK = qwenCacheTypeK;
     cacheTypeV = qwenCacheTypeV;
+  }
+  // lib.optionalAttrs (qwenNGpuLayers != null) {
+    nGpuLayers = qwenNGpuLayers;
+  }
+  // lib.optionalAttrs qwenCpuMoe {
+    cpuMoe = true;
+  }
+  // lib.optionalAttrs qwenNoKvOffload {
+    noKvOffload = true;
+  }
+  // lib.optionalAttrs (qwenDraftNGpuLayers != null) {
+    draftNGpuLayers = qwenDraftNGpuLayers;
+  }
+  // lib.optionalAttrs (qwenDevice != null) {
+    device = qwenDevice;
   }
   // lib.optionalAttrs qwenMtp {
     specType = "draft-mtp";
