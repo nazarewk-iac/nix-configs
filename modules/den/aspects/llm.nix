@@ -154,6 +154,18 @@
           ++ lib.optionals (perf.ubatchSize != null) [
             "ubatch-size = ${toString perf.ubatchSize}"
           ]
+          ++ lib.optionals (perf.nGpuLayers != null) [
+            "n-gpu-layers = ${toString perf.nGpuLayers}"
+          ]
+          ++ lib.optionals perf.cpuMoe [
+            "cpu-moe = on"
+          ]
+          ++ lib.optionals perf.noKvOffload [
+            "no-kv-offload = on"
+          ]
+          ++ lib.optionals (perf.device != null) [
+            "device = ${perf.device}"
+          ]
           ++ lib.optionals (m.aliases != [ ]) [
             "alias = ${lib.concatStringsSep "," m.aliases}"
           ]
@@ -179,6 +191,9 @@
           ]
           ++ lib.optionals (m.draft.enable && perf.specDraftPrio != null) [
             "spec-draft-prio = ${toString perf.specDraftPrio}"
+          ]
+          ++ lib.optionals (m.draft.enable && perf.draftNGpuLayers != null) [
+            "n-gpu-layers-draft = ${toString perf.draftNGpuLayers}"
           ]
         );
 
@@ -626,6 +641,55 @@
             Physical maximum batch size (`--ubatch-size`), the chunk the compute graph runs per step.
             The single biggest prefill lever measured on brys: the 512 default left the box at ~7.5 tok/s
             while 2048-4096 reached ~13.8-15.8 at 320K. Must be <= `batchSize`. NULL keeps the default.
+          '';
+        };
+
+        options.perf.nGpuLayers = lib.mkOption {
+          type = with lib.types; nullOr ints.positive;
+          default = null;
+          description = ''
+            Layers to offload to the GPU (`-ngl` / `--n-gpu-layers`). `null` omits the key, so the
+            build keeps its CPU-only default. Set high (for example 99) to offload the dense layers
+            while `cpuMoe` keeps the MoE expert tensors on the CPU. It needs a GPU-enabled llama.cpp
+            build and a reachable device.
+          '';
+        };
+
+        options.perf.cpuMoe = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = ''
+            Keep every MoE expert tensor on the CPU (`--cpu-moe`). Use it with `nGpuLayers` so the
+            dense layers sit in VRAM and the large sparse expert set stays in system RAM. It emits
+            `cpu-moe = on` only when true.
+          '';
+        };
+
+        options.perf.noKvOffload = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = ''
+            Keep the KV cache on the CPU (`--no-kv-offload`). Use it with `nGpuLayers` so a large
+            long-context KV does not compete with the dense weights for VRAM. It emits
+            `no-kv-offload = on` only when true.
+          '';
+        };
+
+        options.perf.draftNGpuLayers = lib.mkOption {
+          type = with lib.types; nullOr ints.positive;
+          default = null;
+          description = ''
+            Draft-model layers to offload to the GPU (`--n-gpu-layers-draft`). It is meaningful with
+            `draft.enable` only. `null` omits the key.
+          '';
+        };
+
+        options.perf.device = lib.mkOption {
+          type = with lib.types; nullOr str;
+          default = null;
+          description = ''
+            Device(s) to use for offloading (`--device`, for example "Vulkan0"). `null` omits the
+            key. Use it to pin a multi-GPU host to the wanted Vulkan device.
           '';
         };
 
