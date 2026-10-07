@@ -365,23 +365,13 @@ in
         };
       };
       # Qwen3.8-Flash-Next-only counterpart: serves the sparse Qwen frontier
-      # alone with the whole box. See hosts/brys/llm-qwen.nix.
+      # alone with the whole box and the MTP draft head on the W6600 (Vulkan);
+      # the main model + KV stay on the CPU. See hosts/brys/llm-qwen.nix.
       specialisation.llm-qwen = {
         inheritParentConfig = false;
         configuration = {
           imports = [
             ./llm-qwen.nix
-          ];
-        };
-      };
-      # Qwen3.8-Flash-Next with the MTP draft head on the W6600 (Vulkan) and
-      # the main model + KV on the CPU. Same shape as llm-qwen, different
-      # llama.cpp build and draft placement. See hosts/brys/llm-qwen-gpu.nix.
-      specialisation.llm-qwen-gpu = {
-        inheritParentConfig = false;
-        configuration = {
-          imports = [
-            ./llm-qwen-gpu.nix
           ];
         };
       };

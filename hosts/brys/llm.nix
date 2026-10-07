@@ -59,9 +59,9 @@
   qwenYarnOrigCtx ? null,
   qwenCacheTypeK ? null,
   qwenCacheTypeV ? null,
-  # GPU-offload knobs for the Qwen model, used only by the llm-qwen-gpu
-  # specialisation. Each stays off/null on the CPU-only path, so its preset
-  # section is byte-identical to before.
+  # GPU-offload knobs for the Qwen model, used by the llm-qwen specialisation
+  # for the W6600 MTP draft head. Each stays off/null unless set, so the main
+  # brys profile's preset section is byte-identical to before.
   qwenNGpuLayers ? null,
   qwenCpuMoe ? false,
   qwenNoKvOffload ? false,
