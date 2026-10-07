@@ -184,3 +184,6 @@ Measured on `llm-qwen`:
   prefill ~22.4 vs 18.0 t/s.
 - Memory: `VmRSS` ~101 GB, `RssAnon` ~37.5 GB (only ~3 GB more than
   `parallel 1` — the shared pool), no OOM, `VmSwap` 0.
+
+Higher parallelism was swept on both entries and does not help; see the
+parallelism ceiling in [docs/local-llms.md](../../../local-llms.md).

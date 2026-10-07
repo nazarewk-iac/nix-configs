@@ -502,6 +502,44 @@ request was in flight. At `parallel = 1` the same short request **waited 51.5 s*
 prefill ~22.4 vs 18.0 t/s. Memory: `VmRSS` ~101 GB, `RssAnon` ~37.5 GB (only
 ~3 GB more than `parallel 1` — the shared pool), `VmSwap` 0, no OOM.
 
+#### Parallelism ceiling (2026-10-07)
+
+Both entries keep `parallel = 4`. A sweep on brys, same harness, warm, shows that
+higher parallelism does not help either model. Both are bandwidth-bound sparse
+MoE: concurrent sequences widen the activated-expert union, so aggregate
+throughput stays near the single-request ceiling.
+
+Qwen3.8-Flash-Next (`llm-qwen`, 1M ctx, YaRN x4, MTP on the W6600, unified KV):
+
+| p | single decode t/s | agg t/s C=4 | agg t/s C=8 | VmRSS / RssAnon / RssFile | errors |
+|---|---|---|---|---|---|
+| 4 | 9.29-9.35 | 2.01 | 1.65 | ~98-101 / ~37-39 / ~60-61 GB | none |
+| 8 | 7.84 | 1.34 | pathological (>40 min, 0.05 t/s) | 81 / 42.9 / 38.1 GB | none |
+| 16 | 4.24 | timeout 180 s | timeout | 98.8 / 44.8 / 54.0 GB | none |
+| 32 | — | — | — | — | `ggml_abort` at load, HTTP 500 |
+
+DS4 (`llm-ds4`, 320K, DSpark draft on the CPU, unified KV):
+
+| p | single decode t/s | agg t/s C=4 | agg t/s C=8 | VmRSS / RssAnon / RssFile |
+|---|---|---|---|---|
+| 4 | 5.10 | 2.80 | 2.11 | 119 / 24.3 / 94.9 GB |
+| 8 | 4.17 | 2.21 | timeout 900 s | 118.8 / 36.5 / 82.4 GB (3971 faults/5 s) |
+
+Findings:
+
+- `parallel = 4` is the sweet spot for both. Higher values hurt.
+- Qwen scales worse than DS4 (aggregate/single 0.21 vs 0.55). At 1M context only
+  about 60 GB of the 94 GB weights stays resident, and each extra slot's
+  anonymous state evicts more weights (`RssFile` 60 to 38 GB at p=8). DS4 keeps
+  94.9 of 103 GB resident.
+- The Qwen `parallel = 4` aggregate is flat across concurrency: C=1 6.4, C=2 3.9,
+  C=3 6.15, C=4 6.08 t/s.
+- **Multi-sequence prefill is pathological on this build.** At Qwen p=4, C=4, a
+  22-token prefill took 75.8 s against 3.1 s at C=2. Staggering the starts
+  restored the aggregate to about 6.08 t/s, near the single-request rate. A
+  single long prompt is fine: 6,211 tokens at 29.87 t/s under the shared 1M pool.
+- No config change resulted. Both entries stay at `parallel = 4`.
+
 ### GPU draft head (`llm-qwen`, 2026-10-07)
 
 The `llm-qwen` entry runs the Qwen shape on the Vulkan build
