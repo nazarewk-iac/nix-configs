@@ -462,6 +462,27 @@ The slot gained the long-context options that this config uses:
 `qwenRopeScale`, `qwenRopeFreqBase`, `qwenYarnOrigCtx` and `qwenCacheTypeK` /
 `qwenCacheTypeV` arguments.
 
+### GPU-offload specialisation (`llm-qwen-gpu`, 2026-10-07)
+
+A fourth boot entry, `llm-qwen-gpu` (`hosts/brys/llm-qwen-gpu.nix`), runs the
+same Qwen shape on the Vulkan build
+(`pkgs.kdn.llama-cpp-v0_6_0-vulkan`) with the MTP draft head on the Radeon Pro
+W6600. `hardware.graphics.enable = true` + `hardware.graphics.extraPackages =
+[ pkgs.mesa ]` expose the RADV ICD, and `MESA_VK_DEVICE_SELECT=1002:73e3!` (plus
+the preset key `device = Vulkan0`) pin the W6600 and never the 4 GB Lexa.
+
+The intended dense-layer offload (`-ngl 99 -cmoe -nkvo`) is **slower**: at 1M
+context the 24 GiB F16 KV must stay on the CPU, so every attention step crosses
+PCIe and decode falls to 2.0 t/s. Partial `-ngl` (8/20/40) is also slower than
+the CPU (5.0-5.9 t/s). The only win is offloading the ~6 GB draft head: the main
+model and KV stay in RAM, decode rises to **10.82 t/s** (from 9.13 on the same
+prompt). See [docs/tasks/2026-10/qwen-gpu-offload/done.md](tasks/2026-10/qwen-gpu-offload/done.md).
+
+The slot and den aspect gained the knobs `perf.nGpuLayers`, `perf.cpuMoe`,
+`perf.noKvOffload`, `perf.draftNGpuLayers` and `perf.device`; `hosts/brys/llm.nix`
+exposes them as `qwenNGpuLayers`, `qwenCpuMoe`, `qwenNoKvOffload`,
+`qwenDraftNGpuLayers` and `qwenDevice`.
+
 ### MTP draft tuning (2026-10-07)
 
 MTP draft depth is the `spec-draft-n-max` value (the maximum draft tokens per
@@ -590,6 +611,9 @@ at the bottom.
 | 2026-10-07 | **Qwen MTP** sweep: `spec-draft-n-max 5` (**chosen**) | **11.18** | — | — | — | warm | Qwen MTP sweep: realistic decode 11.18 t/s, accept 0.858, mean len 5.25; control decode 12.92 t/s, accept 1.000; this row is Qwen, not DS4 |
 | 2026-10-07 | **Qwen MTP** sweep: `spec-draft-n-max 8` | 8.86 | — | — | — | warm | Qwen MTP sweep: realistic decode 8.86 t/s, accept 0.711, mean len 6.64; control decode 13.72 t/s, accept 1.000; regresses the realistic prompt; this row is Qwen, not DS4 |
 | 2026-10-07 | **Qwen MTP** knobs: `spec-draft-prio 2`, and `spec-draft-p-min` 0.5/0.8 | — | — | — | — | warm | prio 2: 11.09 vs 11.18 t/s (noise); p-min 0.5/0.8: accept 0.886/0.908 but mean len 5.16/4.95, net flat or worse; both kept null; this row is Qwen, not DS4 |
+| 2026-10-07 | **Qwen GPU** `llm-qwen-gpu`: Vulkan build, `-ngl 99 -cmoe -nkvo` | 2.01 | — | — | — | warm | decode 2.01 t/s (vs 9.13 CPU same prompt); prefill 44.7 t/s; accept 0.708; VRAM 7.30 GiB; GPU busy 11%/75%; the 24 GiB CPU KV makes every attention step cross PCIe; this row is Qwen, not DS4 |
+| 2026-10-07 | **Qwen GPU** partial `-ngl 8` / `-ngl 20` (no `-cmoe`) | 5.89 / 5.04 | — | — | — | warm | decode 5.89/5.04 t/s; prefill 14.4/14.6 t/s; VRAM ~7.9 GiB; still slower than CPU; this row is Qwen, not DS4 |
+| 2026-10-07 | **Qwen GPU** `llm-qwen-gpu` final: `n-gpu-layers-draft 99` + `device Vulkan0` | **10.82** | — | — | — | warm | decode 10.82 t/s (**+18.5%** vs 9.13 CPU same prompt); prefill 16.9 t/s; accept 0.731, mean len 4.55; RSS 95.3 GB, VRAM 6.40 GiB, GPU busy 12%/99%; 0 idle major faults, no OOM; MTP draft head on the W6600, main model + KV on CPU; this row is Qwen, not DS4 |
 
 **Key mechanism finding (2026-09-05 ~20:10):** the DS4 weights are `mmap`-backed and go
 fully resident as **file-backed page cache** (~77 GB `RssFile` on the worker), plus ~14 GB
