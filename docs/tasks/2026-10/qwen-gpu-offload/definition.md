@@ -10,6 +10,9 @@ timestamp: 2026-10-07T13:19:11+02:00
 # Qwen3.8-Flash-Next on the W6600: a Vulkan GPU-offload specialisation
 
 > ✅ **Done** — see the solution in [done.md](done.md).
+>
+> **Post-task note (2026-10-07):** the `llm-qwen-gpu` entry was folded into the
+> canonical `llm-qwen` entry; the CPU-only `llm-qwen` was dropped.
 
 ## Goal
 
