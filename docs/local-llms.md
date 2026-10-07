@@ -208,25 +208,45 @@ gets the whole machine, so it takes 320K. Both draw the rest of their config
 from the shared `hosts/brys/llm.nix` (which deliberately sets no CPU affinity —
 see "Prefill tuning" below).
 
-### Client context tiers and thinking variants (oams)
+### Client context tiers and the thinking matrix (oams)
 
-The DS4 endpoint is tiered **on the client side only**. Unified KV makes the
-server pool usage-proportional, so a small request is already cheap without any
-server flag; there is deliberately no `--kv-unified-per-slot` cap. Instead
-`hosts/oams/devenv.nix` declares the same `deepseek-v4-flash` at several
-practical context budgets, a **thinking** variant of each, and one opencode
-subagent per (tier, thinking) pair:
+Both brys model families are tiered **on the client side only** in
+`hosts/oams/devenv.nix`. Unified KV makes the server pool usage-proportional, so
+a small request is already cheap without any server flag; there is deliberately
+no `--kv-unified-per-slot` cap. Instead the file declares the same model at
+several practical context budgets, and one opencode subagent per (model, tier,
+thinking level).
 
-| provider model id | context | agents (plain / thinking) |
+**Thinking matrix.** The common levels are `off`, `low`, `medium` and `high`.
+Each level maps to that model's own `chat_template_kwargs`. Thinking is per
+request, not per model, so a model entry carries no options — only
+`reasoning = true`, which tells opencode to parse the thinking output. opencode
+passes an agent's `options` object **verbatim** into the chat-completions body
+(verified with an echo server).
+
+| level | DS4 `deepseek-v4-flash` | Qwen `qwen3.8-flash-next` |
 |---|---|---|
-| `deepseek-v4-flash` | 327680 (320K, the full shared pool) | `ds4-320k` / `ds4-320k-think` |
-| `deepseek-v4-flash-256k` | 262144 | `ds4-256k` / `ds4-256k-think` |
-| `deepseek-v4-flash-192k` | 196608 | `ds4-192k` / `ds4-192k-think` |
-| `deepseek-v4-flash-128k` | 131072 | `ds4-128k` / `ds4-128k-think` |
-| `deepseek-v4-flash-96k` | 98304 | `ds4-96k` / `ds4-96k-think` |
-| `deepseek-v4-flash-64k` | 65536 | `ds4-64k` / `ds4-64k-think` |
-| `deepseek-v4-flash-32k` | 32768 | `ds4-32k` / `ds4-32k-think` |
-| `deepseek-v4-flash-16k` | 16384 | `ds4-16k` / `ds4-16k-think` |
+| `off` | `enable_thinking=false` | `enable_thinking=false` |
+| `low` | `enable_thinking=true` | `enable_thinking=true`, `reasoning_effort="low"` |
+| `medium` | `enable_thinking=true` | `enable_thinking=true`, `reasoning_effort="medium"` |
+| `high` | `enable_thinking=true`, `reasoning_effort="max"` | `enable_thinking=true`, `reasoning_effort="xhigh"` |
+
+DS4's template honours only `reasoning_effort = "max"`, so its `low` and
+`medium` are equivalent thinking-on. Qwen's template accepts `xhigh`, `medium`
+and `low` (there is no `none`), so `high` maps to `xhigh`.
+
+**Agent naming scheme.** One subagent per (model, tier, level), named
+`<prefix>-<tier>-<level>`, for example `ds4-320k-off`, `ds4-128k-high`,
+`qwen-1m-off`, `qwen-256k-medium`. The prefix is `ds4` or `qwen`; every agent is
+`mode = "subagent"` and names `brys/<tier-id>`. The tier is the DS4 label
+(`320k`, `256k`, … `16k`) or the Qwen label (`1m`, `256k`, … `16k`).
+
+**Provider model ids and tiers:**
+
+| family | base model id | tier ids | contexts |
+|---|---|---|---|
+| DS4 | `deepseek-v4-flash` (320K) | `deepseek-v4-flash`, `deepseek-v4-flash-<n>k` | 327680, 262144, 196608, 131072, 98304, 65536, 32768, 16384 |
+| Qwen | `qwen3.8-flash-next` (1M) | `qwen3.8-flash-next`, `qwen3.8-flash-next-<n>k` | 1048576, 262144, 131072, 65536, 32768, 16384 |
 
 `output` scales with the tier (`min(8192, context/4)`) so input + output fit the
 window. **16K is the smallest useful subagent tier:** opencode sends an
@@ -234,30 +254,17 @@ window. **16K is the smallest useful subagent tier:** opencode sends an
 the request stalls (observed 2026-10-06). A 16K subagent read a file and returned
 the right answer; 16K is tight, 32K is comfortable.
 
-**Thinking is per request, not per model.** llama-server takes
-`chat_template_kwargs.enable_thinking` and returns the thinking in a separate
-`reasoning_content` field. `reasoning_effort` alone is a no-op; it needs
-`enable_thinking` too. opencode passes a model's `options` object **verbatim**
-into the chat-completions body (verified with an echo server), so a thinking
-variant is just a model entry with:
+Every id hits the same model on brys and the same shared pool; the tier only
+bounds what the client sends. The base id (320K DS4 / 1M Qwen) and the `frontier`
+alias stay the default choice for a main agent.
 
-```nix
-options.chat_template_kwargs.enable_thinking = true;
-reasoning = true; # opencode parses the thinking output
-```
-
-Every id hits the same DS4 model and the same shared 320K pool; the tier only
-bounds what the client sends. `deepseek-v4-flash` (320K) and the `frontier` alias
-stay the default choice for a main agent.
-
-> **The tier and `-think` ids are server aliases, not a proxy fallback.** The
-> compat-proxy routes an id it does not know to the frontier *upstream*, but it
-> does not rewrite the id, and llama-server then rejects an unknown id with HTTP
-> 400 (`model '...' not found`). So a purely client-side tier cannot be routed:
-> every `deepseek-v4-flash-<n>k[-think]` id must be listed in `hosts/brys/llm.nix`
-> as an alias of `deepseek-v4-flash` (the list is computed from one
-> `ds4TierSuffixes` list). They add no KV cap and no memory; `--parallel 4`
-> shares the one unified pool whatever alias a request names.
+> **The tier ids are server aliases, not a proxy fallback.** The compat-proxy
+> routes an id it does not know to the frontier *upstream*, but it does not
+> rewrite the id, and llama-server then rejects an unknown id with HTTP 400
+> (`model '...' not found`). So a purely client-side tier cannot be routed:
+> every `deepseek-v4-flash-<n>k` and `qwen3.8-flash-next-<n>k` id must be listed
+> in `hosts/brys/llm.nix` as an alias of its base model. They add no KV cap and
+> no memory. Thinking needs no alias at all: it is selected per request.
 
 ### ZFS ARC quirk (required for large contexts)
 
