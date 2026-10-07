@@ -375,6 +375,17 @@ in
           ];
         };
       };
+      # Combined frontier counterpart: serves DS4 and Qwen through one router
+      # with `--models-max 1`, so a request for either swaps the resident model
+      # without a reboot. See hosts/brys/llms-frontier.nix.
+      specialisation.llms-frontier = {
+        inheritParentConfig = false;
+        configuration = {
+          imports = [
+            ./llms-frontier.nix
+          ];
+        };
+      };
     }
     {
       kdn.certificates.repoRoot = kdnConfig.self;
