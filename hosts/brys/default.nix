@@ -374,6 +374,17 @@ in
           ];
         };
       };
+      # Qwen3.8-Flash-Next with the MTP draft head on the W6600 (Vulkan) and
+      # the main model + KV on the CPU. Same shape as llm-qwen, different
+      # llama.cpp build and draft placement. See hosts/brys/llm-qwen-gpu.nix.
+      specialisation.llm-qwen-gpu = {
+        inheritParentConfig = false;
+        configuration = {
+          imports = [
+            ./llm-qwen-gpu.nix
+          ];
+        };
+      };
     }
     {
       kdn.certificates.repoRoot = kdnConfig.self;

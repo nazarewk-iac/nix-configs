@@ -1,6 +1,6 @@
 # Shared body of the brys LLM-only boot specialisations.
 #
-# brys has three boot-selected appliance entries, all `inheritParentConfig =
+# brys has four boot-selected appliance entries, all `inheritParentConfig =
 # false`, so each is a clean top-level with the desktop/workstation/gaming
 # profiles left out:
 #
@@ -10,11 +10,13 @@
 #     no frontier model.
 #   * llm-qwen (hosts/brys/llm-qwen.nix) — the Qwen3.8-Flash-Next model alone,
 #     with the whole box.
+#   * llm-qwen-gpu (hosts/brys/llm-qwen-gpu.nix) — the same Qwen model with the
+#     MTP draft head on the W6600 (Vulkan) and the main model + KV on the CPU.
 #
-# They differ only in the `llm` wiring, the `tag` and the pre-login `banner`.
-# This file owns the common appliance body (hardware, disks/LUKS, networking,
-# the baseline profile, the service strip, the kernel tuning), so the two
-# entries cannot drift.
+# They differ only in the `llm` wiring, the `tag`, the pre-login `banner` and
+# the optional `extraConfig`. This file owns the common appliance body
+# (hardware, disks/LUKS, networking, the baseline profile, the service strip,
+# the kernel tuning), so the entries cannot drift.
 #
 # BOOT-SELECTED ONLY, NEVER ACTIVATED via switch-to-configuration. Kernel tuning
 # and the ZFS ARC cap only apply on a cold boot.
@@ -25,6 +27,10 @@
   tag,
   banner,
   llm,
+  # Extra NixOS config merged last, for a single specialisation's own runtime
+  # bits (for example the Vulkan graphics stack and the device-selection env).
+  # Defaults to empty, so the other entries are unaffected.
+  extraConfig ? { },
 }:
 let
   slots = kdnConfig.self.mkSlots {
@@ -179,5 +185,8 @@ in
       # they are guaranteed bootable; the reduction comes from services/desktop
       # off.
     }
+
+    # ---- Entry-specific extras -------------------------------------------
+    extraConfig
   ];
 }
