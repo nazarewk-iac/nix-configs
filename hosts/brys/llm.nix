@@ -198,14 +198,18 @@ let
   # ~3 GiB at 128K, F16. Memory-bandwidth-bound like DeepSeek; batch/ubatch
   # reuse the activated expert weights during prefill. Measured on brys:
   # batch/ubatch 4096/4096 raised prefill from 20.1 to 39.9 tok/s on a
-  # 3.4k-token prompt. `parallel = 1`: the QSA cache is patched for a single
-  # slot only; verify before raising it.
+  # 3.4k-token prompt. `parallel = 4` with `kvUnified`: the v0.6.0 QSA indexer
+  # cache is a side buffer over the attention cells with the same streams and
+  # slots (llama-memory-hybrid-idx.h:15), and the MTP draft is per-seq
+  # (common/speculative.cpp:1428), so multiple slots are supported. The unified
+  # pool makes `ctx-size` the total shared across the four slots.
   qwenPerf = {
     contextSize = qwenContextSize;
     reasoning = "off";
     batchSize = 4096;
     ubatchSize = 4096;
-    parallel = 1;
+    parallel = 4;
+    kvUnified = true;
     # The v0.6.0 and Unsloth builds dropped `--mmap` (only `--load-mode`
     # remains) and the router rejects the `mmap` preset key. Omit it; the
     # default load mode is mmap, so the served behaviour is unchanged.

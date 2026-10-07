@@ -61,7 +61,8 @@ import ./llm-appliance.nix {
     on the Radeon Pro W6600 (Vulkan); the main model and KV cache stay on
     the CPU.
 
-    Qwen3.8-Flash-Next @ 1M ctx (YaRN x4), F16 KV, single slot, UD-IQ4_XS.
+    Qwen3.8-Flash-Next @ 1M ctx (YaRN x4), F16 KV, 4 slots (unified pool),
+    UD-IQ4_XS.
     \e[1;33m============================================================\e[0m
     Login with your usual kdn/SSH credentials. Use the normal host to do
     anything else.
