@@ -44,6 +44,11 @@ let
       # default is the CPU-only build: the CPU keeps the experts and the KV
       # cache, and Vulkan offloads the dense layers.
       vulkan ? false,
+      # Build the BLAS backend and link OpenBLAS. The default is on, as the
+      # pinned nixpkgs build. The BLAS backend dequantizes a quantized `src0`
+      # to F32 and calls `cblas_sgemm`; on brys that stalls fresh prompt
+      # processing, so the `-noblas` variant below turns it off. See README.md.
+      blas ? true,
       # Optional source patches, applied on top of `src` (patchPhase). Used for
       # the `--no-mmap-prefetch` variant that carries an unmerged upstream PR.
       patches ? [ ],
@@ -77,9 +82,9 @@ let
       buildInputs =
         with pkgs;
         [
-          blas
           openssl
         ]
+        ++ lib.optionals blas [ blas ]
         ++ lib.optionals vulkan [
           vulkan-headers
           vulkan-loader
@@ -95,7 +100,7 @@ let
         (cmakeBool "LLAMA_BUILD_IS_DEV" false)
         (cmakeBool "LLAMA_OPENSSL" true)
         (cmakeBool "BUILD_SHARED_LIBS" true)
-        (cmakeBool "GGML_BLAS" true)
+        (cmakeBool "GGML_BLAS" blas)
         # brys serves these models on the CPU alone.
         (cmakeBool "GGML_CLBLAST" false)
         (cmakeBool "GGML_CUDA" false)
@@ -183,6 +188,20 @@ in
     // {
       pname = "llama-cpp-vulkan";
       vulkan = true;
+    }
+  );
+
+  # The same v0.6.0 Vulkan build with the BLAS backend off (`GGML_BLAS=false`,
+  # no OpenBLAS input). It drops `bin/libggml-blas.so`, so the CPU falls back
+  # to the ggml CPU backend for the dense-layer matmuls. The A/B on brys
+  # (docs/local-llms.md) tests whether this removes the fresh-prompt prefill
+  # stall of the BLAS backend.
+  llama-cpp-v0_6_0-vulkan-noblas = mkLlamaCpp (
+    v0_6_0
+    // {
+      pname = "llama-cpp-vulkan-noblas";
+      vulkan = true;
+      blas = false;
     }
   );
 
