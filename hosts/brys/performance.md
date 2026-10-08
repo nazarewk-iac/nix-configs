@@ -123,6 +123,11 @@ echo 8589934592 | sudo tee /sys/module/zfs/parameters/zfs_arc_max
 The serving-side effect and the measured context ladder are in
 [docs/local-llms.md](../../docs/local-llms.md), "ZFS ARC quirk".
 
+When a model runs on the main `brys` profile and shares the box with the
+desktop, the tested RAM levers are in
+[docs/local-llms.md](../../docs/local-llms.md), "Freeing RAM when colocating a
+model with a workstation".
+
 ## Measured memory bandwidth
 
 Real RAM throughput measured via a STREAM-style benchmark compiled for `znver3`

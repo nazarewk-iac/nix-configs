@@ -342,6 +342,64 @@ Two faults made long prompts appear hung. Both are now fixed in
 Identical repeat prompts hit llama's prefix cache and return in ~1–2 s, so
 always benchmark with a fresh, cache-missing prompt.
 
+### Freeing RAM when colocating a model with a workstation
+
+The main `brys` profile shares the box with the desktop. The boot
+specialisations (`llm-ds4`, `llm-qwen`, `llms-frontier`) do not: the selected
+model owns the whole machine. A colocated model must return RAM to the desktop,
+so it needs other defaults than a dedicated appliance. This section collects the
+tested RAM levers.
+
+The numbers are from brys with Qwen3.8-Flash-Next `UD-IQ4_XS` (93.7 GB), unless
+a row says otherwise. **brys** means a measured brys experiment. **general**
+means the effect follows from the mechanism and was not timed on brys.
+
+| lever | effect on RAM | trade-off | source |
+|---|---|---|---|
+| `--lazy-mode auto` (default) | offloads the PLE / n-gram table and other large tensors to SSD; `off` → `auto` freed **~46 GB** (`RssFile` 92.2 → 46.0 GB) | none measured; decode rose slightly (11.14 → 12.26 t/s). `on` is identical to `auto` here | brys |
+| context size | the direct KV-RAM knob; Qwen 1M → 512K F16 KV freed **~16 GB** (`RssAnon` 35.7 → 19.9 GB) | a shorter window; keep ≥512K for the current workload | brys |
+| `-ctk q8_0 -ctv q8_0` | halves KV (1M: ~24 → ~12 GiB); at 512K `RssAnon` 19.9 → 13.1 GB | decode is slightly slower (~8.49 → ~7.9 t/s) | brys |
+| `--cache-ram` (default 8192 MiB) | lower it to shrink the prompt cache; `1024` frees RAM | decode is slightly slower (~7.9 t/s at 512K q8_0) | brys |
+| `parallel` (slots) | `4` → `1` frees a few GB of per-slot state | loses concurrency; head-of-line blocking returns | brys |
+| MTP draft on the GPU | moves the ~4–6 GB draft head to VRAM, off system RAM | needs a GPU; speeds decode | general |
+| smaller quant | `UD-IQ3_XXS` (82 GB) vs `UD-IQ4_XS` (93.7 GB) frees **~12 GB** | a quality drop (85.4% vs 89.6% top-1) | brys |
+| `mmap` + 8 GiB ZFS ARC cap | weights stay file-backed and reclaimable; the cap stops ZFS from holding a second copy | none for serving; see the [ZFS ARC quirk](#zfs-arc-quirk-required-for-large-contexts) | brys |
+
+Notes on the table:
+
+- **`--lazy-mode` is the biggest lever and is already the default.** Do not set
+  `off` on a colocated host: it makes the large tensors resident and costs about
+  46 GB for no throughput gain. The served behaviour already keeps them on SSD.
+  The full table is in "`--lazy-mode` SSD offload (brys)" below.
+- **Context and KV quantisation are the two direct controls.** Lower the context
+  first; add `q8_0` KV only if the context is already at its floor.
+- **Keep `mmap`; do not use `--load-mode mlock`.** mlock pins the weights and
+  defeats reclaim. With `mmap`, the kernel reclaims weight pages under memory
+  pressure, so a colocated model slows down instead of OOM. The 8 GiB ZFS ARC cap
+  stops ZFS from holding a second copy of the same data (see the
+  [ZFS ARC quirk](#zfs-arc-quirk-required-for-large-contexts)).
+- **`parallel 4` is cheap.** It adds only about 3 GB over `parallel 1`, because
+  the pool is unified. Keep it when concurrency matters. See the
+  [Concurrency](#concurrency-2026-10-07) section below.
+- **The old `q8_0` warning does not hold here.** The claim that `q8_0` is buggy
+  for `qwen4exp` does not reproduce on llama.cpp v0.6.0: no assertion and no
+  loop.
+
+**Tested and rejected.** `--no-mmap-prefetch` (upstream PR #29250) and a newer
+master build gave no RAM or throughput win. `--load-mode none` OOMs the W6600.
+See "The first-request stall" below.
+
+**General principle.** For colocation, prefer `mmap` + `--lazy-mode auto` + a
+modest context, and optionally `q8_0` KV. Accept a slower first token and a
+slower decode under memory pressure: the kernel reclaims the file-backed weight
+pages, so the model degrades instead of failing. For maximum speed, use a
+dedicated boot specialisation, where the model owns the RAM.
+
+Related work: [qwen-flash-next-quant](tasks/2026-10/qwen-flash-next-quant/),
+[qwen-gpu-offload](tasks/2026-10/qwen-gpu-offload/), and
+[llm-unified-kv-parallelism](tasks/2026-10/llm-unified-kv-parallelism/). The
+hardware side is in [hosts/brys/performance.md](../hosts/brys/performance.md).
+
 ### Download configuration on brys
 
 - **Service:** `kdn-llm-download` — sequential, one model at a time.
