@@ -211,6 +211,35 @@ in
     }
   );
 
+  # The same master source with the open upstream PR #25294 applied. That PR
+  # streams MoE routed-expert weights from disk on demand: `--moe-stream`,
+  # `--moe-stream-cache <NG|Ns>`, `--moe-stream-io-threads N` and
+  # `--moe-stream-direct` (O_DIRECT). Streaming auto-disables mmap. The PR head
+  # predates the `qwen4exp` arch, so the patch is a manual port onto master
+  # (the PR conflicts with the already-merged `--moe-cache-mib` MoE cache in
+  # `build_moe_ffn`/`build_lora_mm_id`; both mechanisms are kept).
+  llama-cpp-master-moe-stream-vulkan = mkLlamaCpp (
+    master
+    // {
+      pname = "llama-cpp-master-moe-stream-vulkan";
+      vulkan = true;
+      patches = [ ./25294-moe-stream.patch ];
+    }
+  );
+
+  # The same master source with the open upstream PR #26414 applied. That PR
+  # adds `--pin-hot-experts N` (mlock the N hottest MoE experts per layer so
+  # the page cache cannot evict them), `--pin-hot-experts-budget-mib N` and the
+  # `--load-mode mmap+pin` mode. The patch is a manual port onto master.
+  llama-cpp-master-pin-hot-experts-vulkan = mkLlamaCpp (
+    master
+    // {
+      pname = "llama-cpp-master-pin-hot-experts-vulkan";
+      vulkan = true;
+      patches = [ ./26414-pin-hot-experts.patch ];
+    }
+  );
+
   # Unsloth fork, branch `qwen4exp/mtp`, head 6fcaa16 (2026-09-21), base
   # version 0.4.1, build 11098.
   llama-cpp-unsloth-mtp = mkLlamaCpp {
