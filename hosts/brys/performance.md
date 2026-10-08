@@ -172,6 +172,36 @@ itself. This is why the topology splits into two routers — see
 [docs/local-llms.md](../../docs/local-llms.md), "N-router topology and
 routing".
 
+## Warm long-task decode (Qwen vs DS4)
+
+Measured on brys, warm and contention-free, through the `llms-frontier` router,
+on 1500–2000-token generations at temp 0. These are **post-no-BLAS** numbers
+(see "The BLAS backend stall" in [docs/local-llms.md](../../docs/local-llms.md)).
+"Sustained decode" covers the whole generation; "1st-half → 2nd-half" splits it
+in two.
+
+| model | ctx depth | sustained decode | spec acceptance / mean-len | 1st-half → 2nd-half |
+|---|---|---|---|---|
+| Qwen3.8-Flash-Next | ~0.2K | 9.9 t/s | 0.73 / 4.65 | 9.1 → 10.8 |
+| Qwen3.8-Flash-Next | ~16K | 8.1 t/s | 0.64 / 4.18 | 7.8 → 8.5 |
+| DeepSeek V4 Flash | ~0.2K | 3.2–3.4 t/s | 0.65–0.69 / 4.2–4.4 | 2.7 → 3.9 |
+| DeepSeek V4 Flash | ~16K | 3.2 t/s | 0.63 / 4.2 | 2.7 → 3.9 |
+
+**Qwen is ~2.5–3× faster than DS4** for warm long coding tasks (2.53× at 16K).
+
+**Decode holds up over a long generation.** The second half is consistently
+faster than the first (rising acceptance); there is no decay.
+
+**Context depth barely matters here.** The per-token forward cost moves ≤9%
+(Qwen) or ~0% (DS4) from 0.2K to 16K. The t/s difference between the 0.2K and
+16K rows is driven by speculative acceptance (content-dependent), not attention
+length.
+
+Warm prefill at 16K: ~20 t/s (DS4), ~32 t/s (Qwen).
+
+The earlier ~120–150 s first-request stall was the **BLAS backend**, not shader
+compilation. The no-BLAS build removes it.
+
 ## To test later (no changes yet)
 
 - Update BIOS 5013 → 5044.
