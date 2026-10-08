@@ -44,9 +44,17 @@ let
       # default is the CPU-only build: the CPU keeps the experts and the KV
       # cache, and Vulkan offloads the dense layers.
       vulkan ? false,
+      # Optional source patches, applied on top of `src` (patchPhase). Used for
+      # the `--no-mmap-prefetch` variant that carries an unmerged upstream PR.
+      patches ? [ ],
     }:
     pkgs.stdenv.mkDerivation {
-      inherit pname version src;
+      inherit
+        pname
+        version
+        src
+        patches
+        ;
 
       __structuredAttrs = true;
       strictDeps = true;
@@ -141,6 +149,25 @@ let
       hash = "sha256-l6l6JIlIVTaVC6xh5M4fRHFtXsweQuugtkNTWHcZZF4=";
     };
   };
+
+  # ggml-org master, head 9c2e0e4 (2026-10-08). Ten commits after the last
+  # tagged build b11480, so the build number is 11480 + 10. Master still
+  # prefetches model weights with `MADV_WILLNEED` unconditionally
+  # (`ml.init_mappings(true, ...)`), so the `-vulkan` build below has no
+  # `--no-mmap-prefetch` flag; use `--load-mode none` to disable mmap (and
+  # therefore the prefetch) instead. See `llama-cpp-master-noprefetch-vulkan`
+  # for the same source with the open upstream PR #29250 applied.
+  master = {
+    version = "0.6.0-unstable-2026-10-08";
+    buildNumber = "11490";
+    buildCommit = "9c2e0e4";
+    src = pkgs.fetchFromGitHub {
+      owner = "ggml-org";
+      repo = "llama.cpp";
+      rev = "9c2e0e491a822adae1f0b1c831adb4160057d24f";
+      hash = "sha256-6S2c/usl0ZbuGG/iZXKhSJyz6PK3Ab2uGtpO9tF7LKI=";
+    };
+  };
 in
 {
   # The version string cannot be an attribute name (a dot is not valid in a Nix
@@ -156,6 +183,31 @@ in
     // {
       pname = "llama-cpp-vulkan";
       vulkan = true;
+    }
+  );
+
+  # ggml-org master, Vulkan backend, for the `--no-mmap-prefetch` experiment on
+  # brys. Master carries the `--load-mode` rework (auto/none/mmap/mlock/
+  # mmap+mlock/dio) and the `--lazy-mode` on-demand tensor reads, but no
+  # `--no-mmap-prefetch`: the prefetch stays hardcoded to `true`.
+  llama-cpp-master-vulkan = mkLlamaCpp (
+    master
+    // {
+      pname = "llama-cpp-master-vulkan";
+      vulkan = true;
+    }
+  );
+
+  # The same master source with the open upstream PR #29250 applied. That PR
+  # adds `llama_model_params.mmap_prefetch` and the `--no-mmap-prefetch` CLI
+  # flag, so mmap stays on (unlike `--load-mode none`) while the blocking
+  # `MADV_WILLNEED` prefetch of the whole ~94 GB file is skipped.
+  llama-cpp-master-noprefetch-vulkan = mkLlamaCpp (
+    master
+    // {
+      pname = "llama-cpp-master-noprefetch-vulkan";
+      vulkan = true;
+      patches = [ ./29250-no-mmap-prefetch.patch ];
     }
   );
 

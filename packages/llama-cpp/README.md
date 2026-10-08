@@ -7,7 +7,20 @@ This directory holds llama.cpp builds from source, for the Qwen3.8-Flash-Next
 |---|---|---|---|---|---|
 | `llama-cpp-v0_6_0` | `ggml-org/llama.cpp` | 0.6.0 | 11429 | `d812350` | CPU |
 | `llama-cpp-v0_6_0-vulkan` | `ggml-org/llama.cpp` | 0.6.0 | 11429 | `d812350` | CPU + Vulkan |
+| `llama-cpp-master-vulkan` | `ggml-org/llama.cpp` master | 0.6.0-unstable-2026-10-08 | 11490 | `9c2e0e4` | CPU + Vulkan |
+| `llama-cpp-master-noprefetch-vulkan` | the same master + PR #29250 | 0.6.0-unstable-2026-10-08 | 11490 | `9c2e0e4` | CPU + Vulkan |
 | `llama-cpp-unsloth-mtp` | `danielhanchen/llama.cpp`, branch `qwen4exp/mtp` | 0.4.1 | 11098 | `6fcaa16` | CPU |
+
+The two `master` rows are an experiment, not a served build. They test whether a
+newer llama.cpp or `--no-mmap-prefetch` removes the ~140 s first-request stall
+of Qwen3.8-Flash-Next on brys. The result is negative: the stall is cold-cache
+read bound, not prefetch bound; the prefetch at load actually warms the cache
+and lowers the first-request time. `--no-mmap-prefetch` shortens the load
+(140 s to 84 s) but lengthens the first request (142 s to 192 s) and lowers
+steady decode (4.2 to 2.4 t/s). `--load-mode none` crashes the W6600
+(`amdgpu: Not enough memory for command submission`). Neither build is selected
+by any host. See [docs/tasks/2026-10/llama-cpp-latest-package/](../../docs/tasks/2026-10/llama-cpp-latest-package/)
+and the benchmark in [docs/local-llms.md](../../docs/local-llms.md).
 
 The pinned nixpkgs `llama-cpp` is 0.4.0 (build 10809). That build has no
 `qwen4exp` MTP graph, so the server cannot use the model MTP head. The
