@@ -84,6 +84,13 @@ slash command, which shells raw `git commit` internally. Never use `/commit` in 
 > so a workspace would silently overwrite whatever the trunk activated. A `switch` and a push are
 > always the user's call, from the trunk.
 
+- **Commit and absorb as you go, into logical changesets.** The moment a piece of work is a
+  self-contained change, carve it out with `jj split -m 'msg' -- <files>`; fold a small fixup into
+  the changeset that introduced the line with `jj absorb`. Do not let unrelated edits pile up in
+  `@` and describe them as one lump at the end.
+- **Prefer `jj split` over `jj describe` + a bare `jj new`.** `jj split` leaves the follow-on change
+  in `@` and keeps every finished unit as its own described change; `jj describe` names the whole
+  working copy at once, and a following unnamed `jj new` buries it under a fresh empty change.
 - **Leave an empty `jj` change on top only when you wrap up finished, described work** — it gives
   the user a clean working copy to review from. Do NOT stack one above undescribed or parked work.
 - **NEVER push changes** — the user reviews and pushes.

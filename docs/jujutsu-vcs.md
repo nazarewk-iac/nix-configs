@@ -146,6 +146,11 @@ The empty change on top is a **wrap-up** step, not a checkpoint or a container.
   `-- path1 path2 ...`).
 - Use `jj squash --from @ --into <target>` to fold `@` into an existing mutable commit.
 
+Prefer `jj split` over `jj describe` + a bare `jj new`: `jj describe` names the **whole** working
+copy at once, and the following unnamed `jj new` buries that named change under a fresh empty
+change. `jj split` names one logical changeset and leaves the rest of the work in `@`, so commit and
+absorb as each change lands rather than describing one lump at the end.
+
 ```bash
 # wrong: create a commit up front, then wrestle to fix topology
 jj new upstream -m 'feat: thing'
