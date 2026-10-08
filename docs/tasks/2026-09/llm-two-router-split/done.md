@@ -43,7 +43,7 @@ enables it.
 
 A host that names no extra router keeps the old single-router behaviour.
 
-### 2. The proxy — `packages/opencode-compat-proxy/patches/router.patch`
+### 2. The proxy — the `router` branch of the `nazarewk-iac/opencode_compat_proxy` fork
 
 | Line | Content |
 |---|---|
@@ -83,7 +83,8 @@ grep -n "routers" modules/slots/llm/default.nix | sed -n '1,20p'
 grep -n "mainRouter" modules/slots/llm/default.nix
 
 # the proxy routes per model and merges the model list
-grep -n "UPSTREAMS\|^ROUTE\|_build_route" packages/opencode-compat-proxy/patches/router.patch
+git -C ~/dev/github.com/nazarewk-iac/opencode_compat_proxy show router:proxy.py \
+  | grep -n "UPSTREAMS\|^ROUTE\|_build_route"
 
 # the host enables the second router, and six models pick it
 grep -n "routers\|mainRouter" hosts/brys/llm-minimal.nix

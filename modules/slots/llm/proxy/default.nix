@@ -12,8 +12,9 @@
 # (`http://127.0.0.1:39703`) — each on its own port.
 #
 # Per-instance `forwardClientAuth` enables forwarding the client Authorization
-# header on the streaming path (a patch to proxy.py). See packages/
-# opencode-compat-proxy/patches/forward-auth.patch.
+# header on the streaming path. See the `forward-auth` branch of the
+# `nazarewk-iac/opencode_compat_proxy` fork (the `opencode-compat-proxy` flake
+# input).
 #
 # This slot is STANDALONE. It uses only `lib`, `pkgs`, `config`, and plain
 # NixOS / devenv options (systemd.services.*, networking.firewall.*,

@@ -12,8 +12,8 @@
 # example one in front of a commercial router API and one in front of a local llama-server.
 #
 # `forwardClientAuth` forwards the client's `Authorization` header on the streaming path too. The
-# original proxy forwards it on the non-streaming path only, and a patch in this repository extends
-# it. See `packages/opencode-compat-proxy/patches/forward-auth.patch`.
+# original proxy forwards it on the non-streaming path only; the `forward-auth` branch of the
+# `nazarewk-iac/opencode_compat_proxy` fork (the `opencode-compat-proxy` flake input) extends it.
 #
 # ## The classes — the first aspect in this tree with two
 #
