@@ -732,3 +732,39 @@ the same physical RAM as the `mmap`'d weights. Capping it (`zfs_arc_max=85899345
 the weights resident with **zero idle major faults**, and the 192K ceiling disappears — 256K and
 320K both hold. `contextSize` was never the binding constraint; the ARC was. See "ZFS ARC quirk"
 above for the figures. The mlock/cgroup ideas above are moot for this cause.
+
+### The first-request stall: master and `--no-mmap-prefetch` (brys, 2026-10-08)
+
+Hypothesis: the `MADV_WILLNEED` prefetch that llama.cpp issues at load reads the
+whole ~94 GB file and thrashes the 125 GB box, which causes the first-request
+stall. Upstream PR #29250 adds `--no-mmap-prefetch` to skip that prefetch. The
+PR is **open, not merged** as of 2026-10-08; master head `9c2e0e4` (build 11490)
+has no such flag, and v0.6.0 (build 11429) has no such flag. Both support
+`--load-mode none`, which drops mmap (and therefore the prefetch).
+
+Two new builds were added to [packages/llama-cpp](packages/llama-cpp/README.md):
+`llama-cpp-master-vulkan` and `llama-cpp-master-noprefetch-vulkan` (master plus
+PR #29250). All builds were made on brys (32 threads), each in about 2 min 5 s.
+
+Benchmark: a manual `llama-server` with the served `llm-qwen` shape (Vulkan MTP
+draft head on the W6600, 1M ctx YaRN x4, F16 KV, batch/ubatch 4096, threads 16,
+`parallel 4 --kv-unified`, MTP `draft-mtp` n-max 5). The page cache was dropped
+before each run, so every run starts cold. `first` is a fresh 201-token prompt
+right after load; `steady` is a 300-token decode, temp 0; `prefill` is 1821
+tokens.
+
+| build / flag | load | first request | steady decode | prefill 1.8K |
+|---|---|---|---|---|
+| v0.6.0 (default) | 140.2 s | 141.8 s (1.42 t/s) | 4.20 t/s | 19.6 t/s |
+| master (default) | 140.3 s | 143.5 s (1.40 t/s) | 4.20 t/s | 19.9 t/s |
+| master + `--no-mmap-prefetch` | 84.0 s | 191.7 s (1.05 t/s) | 2.36 t/s | 15.6 t/s |
+| master + `--load-mode none` | — | crashed (W6600 OOM) | — | — |
+
+Verdict: **neither a newer master nor `--no-mmap-prefetch` removes the stall.**
+The stall is cold-read bound, not prefetch bound. The load-time prefetch warms
+the page cache, so it *helps* the first request; skipping it moves the cost from
+load into the first request and lowers steady decode. The total time to the first
+token is about the same either way (v0.6.0 282 s, noprefetch 276 s).
+`--load-mode none` fails: the W6600 reports `amdgpu: Not enough memory for
+command submission` and the context fails to initialise. No host selects either
+build; the served config is unchanged.
