@@ -830,3 +830,64 @@ token is about the same either way (v0.6.0 282 s, noprefetch 276 s).
 `--load-mode none` fails: the W6600 reports `amdgpu: Not enough memory for
 command submission` and the context fails to initialise. No host selects either
 build; the served config is unchanged.
+
+### The BLAS backend stall: small fresh prompts (brys, 2026-10-08)
+
+The `llama-cpp-v0_6_0-vulkan` build sets `GGML_BLAS=true` and links OpenBLAS.
+The BLAS backend (`ggml_backend_blas_mul_mat`) dequantizes a quantized `src0`
+to F32 and calls `cblas_sgemm`. On brys this stalls fresh prompt processing.
+This test A/Bs a no-BLAS build (`llama-cpp-v0_6_0-vulkan-noblas`,
+`GGML_BLAS=false`, no `bin/libggml-blas.so`) against the served build.
+
+Method: a manual `llama-server` with the served `llm-qwen` shape (Qwen3.8-
+Flash-Next UD-IQ4_XS, 1M ctx YaRN x4, F16 KV, batch/ubatch 4096, threads 16,
+`parallel 4 --kv-unified`, MTP `draft-mtp` n-max 5 on the W6600). Warm, no
+cache drops. `fresh` is a cache-miss prompt (`cache_prompt=false`); `decode` is
+300 tokens at temp 0 with `ignore_eos`. Both builds were run in the same
+session; `bin/libggml-blas.so` is the only difference.
+
+Qwen3.8-Flash-Next, manual server:
+
+| fresh prefill | BLAS | no-BLAS | ratio |
+|---|---|---|---|
+| 124 tok (first after load) | 1.03 t/s | 8.0-10.3 t/s | ~10x |
+| 124 tok (second) | 1.10 t/s | 16.6-17.7 t/s | ~16x |
+| 1762 tok | 19.35 t/s | 26.1-30.8 t/s | ~1.6x |
+| 14047 tok | 32.69 t/s | 38.15 t/s | ~1.2x |
+| decode 300 tok | 4.35 t/s | 5.66 t/s | ~1.3x |
+
+Load was 82 s (BLAS) and 77-80 s (no-BLAS). The earlier inconsistency is
+resolved: **the catastrophic stall is specific to small fresh prompts.** A
+~120-token prefill is 10-16x slower with BLAS, but the cost is amortized at 2K
+and 16K. BLAS is still slower at every size, and decode is about 30% slower.
+
+DeepSeek V4 Flash (IQ3_XXS, DSpark draft, 327680 ctx), manual server, warm:
+
+| fresh prefill | BLAS | no-BLAS |
+|---|---|---|
+| 127 tok | 0.58 t/s | 1.91 t/s |
+| 1807 tok | 13.92 t/s | 31.26 t/s |
+| decode 300 tok | 4.97 t/s | 4.84 t/s |
+
+The same small-prompt stall appears on DS4 (3.3x), the 2K prefill is 2.2x
+faster, and decode is unchanged.
+
+**Verdict: no-BLAS wins.** The build is adopted. `qwenGpu` in
+[hosts/brys/llm.nix](../hosts/brys/llm.nix) now defaults `llamaPackage` to
+`llama-cpp-v0_6_0-vulkan-noblas`, so `llm-qwen` and `llms-frontier` use it (the
+combined entry serves DS4 through the same build).
+
+Served `llms-frontier` (no-BLAS), measured after a cold boot (generation 693):
+
+| metric | value |
+|---|---|
+| first request (cold boot) | 169 s wall = ~141 s cold model load + 27.7 s first prefill (123 tok, 4.43 t/s) |
+| warm fresh 124-tok prefill | 7.0 s (17.45 t/s) |
+| warm fresh 1761-tok prefill | 65.4 s (26.92 t/s) |
+| warm decode 300 tok | 4.22 t/s |
+
+Before, the served first request after a load was ~130 s, dominated by the BLAS
+prefill stall (a 124-token prefill at 1.03 t/s). The warm first-request prefill
+is now 7.0 s. The cold-boot total is dominated by the ~141 s cold disk read of
+the ~94 GB file, which is build-independent; a BLAS build under the same cold
+boot would add the ~120 s stall.

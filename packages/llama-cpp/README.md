@@ -7,6 +7,7 @@ This directory holds llama.cpp builds from source, for the Qwen3.8-Flash-Next
 |---|---|---|---|---|---|
 | `llama-cpp-v0_6_0` | `ggml-org/llama.cpp` | 0.6.0 | 11429 | `d812350` | CPU |
 | `llama-cpp-v0_6_0-vulkan` | `ggml-org/llama.cpp` | 0.6.0 | 11429 | `d812350` | CPU + Vulkan |
+| `llama-cpp-v0_6_0-vulkan-noblas` | `ggml-org/llama.cpp` | 0.6.0 | 11429 | `d812350` | CPU + Vulkan, no BLAS |
 | `llama-cpp-master-vulkan` | `ggml-org/llama.cpp` master | 0.6.0-unstable-2026-10-08 | 11490 | `9c2e0e4` | CPU + Vulkan |
 | `llama-cpp-master-noprefetch-vulkan` | the same master + PR #29250 | 0.6.0-unstable-2026-10-08 | 11490 | `9c2e0e4` | CPU + Vulkan |
 | `llama-cpp-master-moe-stream-vulkan` | the same master + PR #25294 | 0.6.0-unstable-2026-10-08 | 11490 | `9c2e0e4` | CPU + Vulkan |
@@ -53,6 +54,25 @@ test are recorded in
 The task that added these builds:
 [docs/tasks/2026-10/llama-cpp-latest-package/definition.md](../../docs/tasks/2026-10/llama-cpp-latest-package/definition.md).
 The deployment and the benchmark log:
+[docs/local-llms.md](../../docs/local-llms.md).
+
+## The no-BLAS variant
+
+`llama-cpp-v0_6_0-vulkan-noblas` is the same v0.6.0 Vulkan source with
+`GGML_BLAS=false` and no OpenBLAS input. It drops `bin/libggml-blas.so`, so the
+CPU uses the ggml CPU backend for the dense-layer matmuls. Build it with:
+
+```bash
+nix build .#llama-cpp-v0_6_0-vulkan-noblas --no-link
+```
+
+The BLAS backend dequantizes a quantized `src0` to F32 and calls `cblas_sgemm`.
+On brys that stalls small fresh prompts: a 124-token fresh prefill ran at
+1.0 t/s with BLAS against 10.3-17.7 t/s without (a 10-16x stall). The stall is
+specific to small prompts. A 2K prefill is 1.6x and a 16K prefill 1.2x faster
+without BLAS, and a 300-token decode is about 30% faster. `qwenGpu` in
+[hosts/brys/llm.nix](../../hosts/brys/llm.nix) now defaults to this build, so
+`llm-qwen` and `llms-frontier` use it. The full A/B is in
 [docs/local-llms.md](../../docs/local-llms.md).
 
 ## Expert-streaming experiments (negative)
