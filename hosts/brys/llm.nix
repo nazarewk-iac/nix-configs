@@ -165,6 +165,15 @@ let
     contextSize = contextSize;
     reasoning = "off";
     specType = "draft-dspark";
+    # DSpark draft depth (--spec-draft-n-max). The DSpark drafter has a trained
+    # block size of 5, so llama clamps any larger value to 5. Measured on brys
+    # (320K unified KV, warm steady decode): n-max 2 = 5.8 t/s, 3 (the llama
+    # default) = 6.5, 4 = 6.5, 5 = 6.8. n-max 5 is the best and the maximum
+    # effective value; acceptance falls (0.78 vs 0.88) but the mean accepted
+    # length rises (4.82 vs 3.63), so the net decode is about 6% above the
+    # default. The Unsloth "3 is the sweet spot, larger is slower" note does not
+    # hold on this CPU+DSpark build.
+    specDraftNMax = 5;
     # The v0.6.0 build (selected by `qwenGpu`) dropped `--mmap` and the router
     # rejects the `mmap` preset key, so the combined specialisation must omit it
     # for DS4 too. The pinned 0.4.0 build keeps `mmap = on` (its default is mmap,
