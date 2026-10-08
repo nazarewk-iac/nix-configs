@@ -44,14 +44,16 @@ within the router only — the frontier's resident model is untouched.
 
 Why split at all? A single `models-max=1` router thrashes DeepSeek V4 Flash's
 (DS4) ~77 GB weight page-cache whenever a second model loads (see the measured
-per-model table below: any 45 G+ MoE fully evicts DS4's resident weights, see
-`qwen3-coder-next` 65.6 G, `qwen3-next-80b` 80 G, `gpt-oss-120b` ~100 G,
-`qwen3-235b` ~100 G). Splitting lets DS4 stay resident/hot on the frontier
-router (its ~92 GB working set held against page-cache pressure) while the
-small set swaps freely on its own router; only `phi-4` (17.7 G) or
-`qwen3-30b-a3b` (44.4 G but evicting ~45 G of DS4 cache) ever risk touching
-the frontier's cache in a single-router layout. Facts only — no extrapolation
-beyond the measured footprints in the table below.
+per-model table in
+[hosts/brys/performance.md](../hosts/brys/performance.md): any 45 G+ MoE fully
+evicts DS4's resident weights, see `qwen3-coder-next` 65.6 G,
+`qwen3-next-80b` 80 G, `gpt-oss-120b` ~100 G, `qwen3-235b` ~100 G). Splitting
+lets DS4 stay resident/hot on the frontier router (its ~92 GB working set held
+against page-cache pressure) while the small set swaps freely on its own
+router; only `phi-4` (17.7 G) or `qwen3-30b-a3b` (44.4 G but evicting ~45 G of
+DS4 cache) ever risk touching the frontier's cache in a single-router layout.
+Facts only — no extrapolation beyond the measured footprints in
+[hosts/brys/performance.md](../hosts/brys/performance.md).
 
 ### Option contract
 
@@ -275,7 +277,10 @@ the Linux page cache that backs the `mmap`'d weights, and its default `c_max`
 is about half of RAM. On brys it grew to ~65 GB and the kernel then evicted the
 mmap'd ~103 GB DeepSeek weights to make room — every request re-read them from
 disk. Measured before the cap: prefill **0.18 tok/s**, 6.3M major faults,
-271 GB read, and the single server slot blocked all queued requests.
+271 GB read, and the single server slot blocked all queued requests. The
+storage-side detail (the mirror, the measured NVMe throughput, and why the ARC
+competes with the weights) is in
+[hosts/brys/performance.md](../hosts/brys/performance.md).
 
 `hosts/brys/llm.nix` therefore caps it, shared by both boot entries:
 
@@ -381,109 +386,15 @@ is no cert-generation logic in the module system.
   decoding; both fetch through `kdn-llm-download`.
 - Go-to status command: `kdn-llm-status`.
 
-### Measured memory bandwidth (brys)
+### Hardware and performance
 
-Real RAM throughput measured via a STREAM-style benchmark compiled for `znver3`
-and run on brys under the `performance` governor (2026-09-05). This supersedes
-the earlier *assumed* DDR4 figure of ~50 GB/s.
+The box hardware, the ZFS mirror and the ARC cap, the measured memory bandwidth,
+and the per-model resident footprints are in
+[hosts/brys/performance.md](../hosts/brys/performance.md).
 
-| op | MiB working set | GB/s |
-|---|---|---|
-| COPY | 4096 | 39.80 |
-| TRIAD | 4096 | 27.90 |
-| ADD | 4096 | 26.74 |
-| SCALE | 4096 | 24.20 |
-| COPY | 320 | 38.81 |
+### `--lazy-mode` SSD offload (brys)
 
-Implication for the tok/s ceiling: CPU decode reads activated weights
-sequentially, so **COPY (~40 GB/s)** is the right figure. DeepSeek V4 Flash
-IQ3_XXS reads ~5 GB of activated params per token, so the realistic ceiling is
-**~8 tok/s** (was ~9–10 from the assumed 50 GB/s). The 6.25 tok/s best reachis
-~78% of the real hardware ceiling.
-
-### Measured per-model hardware constraints (brys, 2026-09-06)
-
-Each model loaded via a manual `llama-server` (llama.cpp 10408, `mmap`, threads 12) one at a time on
-the 128 GB box (DeepSeek router also resident for the small models). Resident working set = `VmRSS`
-= `RssAnon` (compute/KV buffers) + `RssFile` (mmap'd weights). `warm t/s` = 128-token generation.
-
-| model | file | VmRSS | RssAnon | RssFile | VmPeak | load | warm t/s | coexist w/ DS4? |
-|---|---|---|---|---|---|---|---|---|
-| `phi-4` | 8.5 G | 17.7 G | 8.9 G | 8.7 G | 23 G | ~18 s | 2.86 | yes (fits; evicts little) |
-| `qwen3-30b-a3b` | 18 G | 44.4 G | 26.4 G | 18.0 G | 50 G | ~42 s | 11.41 | partial (evicts ~45 G of DS4 cache) |
-| `qwen3-coder-next` | 45 G | 65.6 G | 39.6 G | 25.9 G | 91 G | ~105 s | 5.34 | no (fully evicts DS4) |
-| `qwen3-next-80b` | 46 G | 80.0 G | 39.2 G | 40.8 G | 94 G | ~99 s | 3.29 | no (fully evicts DS4) |
-| `qwen3-235b` | 72 G | (fail) ~100 G est | — | — | — | fail @65 G avail | — | no (needs box alone) |
-| `gpt-oss-120b` (Q4_K_M) | 58.5 G | 72.2 G | 60.2 G | 11.8 G | 128 G | ~129 s | **12.7** | yes (fits; DS4 file-cache evicted, re-faults) |
-
-Multi-model implication: `models-max=1` (one resident at a time) is the right policy on 128 GB. Only
-`phi-4` (17.7 G) fits comfortably alongside DeepSeek; `qwen3-30b` (44.4 G) fits but evicts ~45 G of
-DS4's weight cache (DS4 re-reads from disk on next use). Every 45 G+ MoE fully evicts DS4 and needs
-the box to itself. **This is exactly why the topology splits into two routers** (see "Router split on
-brys"): the frontier router keeps DS4 hot while the `small` router owns the 45 G+ swapping set, so it
-never touches DS4's cache — only `qwen3-30b-a3b` on the small side is a partial-eviction risk inside
-its own router's resident cache, not DS4's.
-
-### Hardware and ZFS (brys, 2026-10-08)
-
-Full hardware inventory of the box, the storage under the model dataset, the
-measured ZFS read throughput, and the `--lazy-mode` PLE-offload result.
-
-**CPU / RAM.** AMD Ryzen 9 5950X, 16 cores / 32 threads, one NUMA node,
-64 MiB L3 (2 x 32 MiB), 8 MiB L2, boost to 5086 MHz. 125 GiB usable RAM, no
-swap.
-
-**GPUs.**
-
-| PCI | device | id | VRAM |
-|---|---|---|---|
-| `0d:00.0` | Radeon PRO W6600 (RADV NAVI23) | `1002:73e3` | 7.98 GiB (`8573157376` B) |
-| `0e:00.0` | Lexa PRO (Radeon 540/550) | `1002:699f` | 4.00 GiB (`4294967296` B) |
-
-`MESA_VK_DEVICE_SELECT=1002:73e3!` pins the W6600 as `Vulkan0`; the Lexa is
-never selected.
-
-**Disks / pool.** Two NVMe devices hold the pool. Two SATA HDDs and a USB
-stick are not part of it.
-
-| device | size | model |
-|---|---|---|
-| `nvme0n1` | 1.9 T | SSDPR-PX700-02T-80 |
-| `nvme1n1` | 1.8 T | Viper VP4300L 2TB |
-
-Both are LUKS2-encrypted (`px700-brys-crypted`, `vp4300-brys-crypted`) and
-form a **2-device mirror**:
-
-```
-brys-main (ONLINE, 1.81 T, 1006 G alloc, 850 G free, 51% frag)
-  mirror-0
-    dm-...-px700-brys-crypted   ONLINE
-    dm-...-vp4300-brys-crypted  ONLINE
-```
-
-The model dataset is `brys-main/brys/impermanence/usr/data` (735 G used,
-793 G avail), mounted at `/nix/persist/usr/data` and persisted to
-`/var/lib/kdn/llms/models`. Properties: `recordsize 128K`, `compression lz4`,
-`primarycache all`, `atime on`, `sync standard`, `logbias latency`,
-`direct standard`, `special_small_blocks 0`. The ZFS ARC cap is 8 GiB
-(`zfs_arc_max=8589934592`).
-
-**Measured ZFS read throughput (2026-10-08).** `fio --direct=1`, 32 GiB
-incompressible scratch file on the dataset, QD32, after `drop_caches`:
-
-| read | throughput |
-|---|---|
-| dataset, sequential (mirror) | **2873 MiB/s (3.01 GB/s)** |
-| `nvme0n1` raw, sequential | 1033 MiB/s (1083 MB/s) |
-| `nvme1n1` raw, sequential | 1064 MiB/s (1115 MB/s) |
-
-`zpool iostat -v` during the dataset read showed both mirror legs active at
-about 1.4 GB/s each (2.8 GB/s aggregate), and the ARC stayed at about 2.4 GB,
-far below the 8 GiB cap. The read is therefore **device-bound, not ARC-bound**.
-The mirror delivers about 3 GB/s, roughly 7.5% of the ~40 GB/s RAM COPY
-bandwidth.
-
-**PLE / `--lazy-mode` SSD offload.** The v0.6.0 Vulkan build has
+The v0.6.0 Vulkan build has
 `--lazy-mode {on,auto,off}`; the default is `auto` (on for tensors larger than
 4 GiB). A manual server at ctx 524288 (YaRN x2), `parallel 4`, `kv-unified`,
 F16 KV, threads 16, MTP `draft-mtp` n-max 5, `--load-mode mmap`, on the W6600:
@@ -507,6 +418,10 @@ that the n-gram table "stays resident (no `--lazy-mode`)".
 **ngram verdict.** `--spec-type ngram-mod` alone hung `qwen4exp` (about 13
 cores stuck for an hour, below 1 tok/s). Rejected. MTP (`draft-mtp`) stays the
 speculative path.
+
+**Server logs.** A manual one-off `llama-server` run should pass
+`--log-file <path>`, so its output stays inspectable after the run. The running
+service logs to journald: `journalctl -u llama-cpp`.
 
 ### Qwen3.8-Flash-Next on brys (2026-10-06)
 

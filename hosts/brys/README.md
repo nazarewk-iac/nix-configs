@@ -29,4 +29,5 @@ Both share `llm-appliance.nix` and `llm.nix`.
 
 The exact deployed state — models, serving endpoint, download mode and rate
 cap, persistence, and secrets — is documented in
-[`docs/local-llms.md`](../../docs/local-llms.md).
+[`docs/local-llms.md`](../../docs/local-llms.md). The box hardware and the
+measured performance are in [`performance.md`](performance.md).
