@@ -75,6 +75,11 @@
   inputs.nixos-hardware.url = "github:nixos/nixos-hardware";
   inputs.nur.url = "github:nix-community/NUR";
   inputs.oh-my-pi.url = "github:can1357/oh-my-pi";
+  # OpenCode DSML compat-proxy. The nazarewk-iac fork's `main` aggregates the
+  # patches this repo used to apply (Authorization forwarding, per-model routing,
+  # streaming usage). Upstream has no flake.nix, so this is a plain source input.
+  inputs.opencode-compat-proxy.flake = false;
+  inputs.opencode-compat-proxy.url = "github:nazarewk-iac/opencode_compat_proxy";
   inputs.pyproject-nix.url = "github:pyproject-nix/pyproject.nix";
   inputs.pyproject-build-systems.url = "github:pyproject-nix/build-system-pkgs";
   inputs.uv2nix.url = "github:pyproject-nix/uv2nix";

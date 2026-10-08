@@ -1522,6 +1522,22 @@
         "type": "github"
       }
     },
+    "opencode-compat-proxy": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1791496362,
+        "narHash": "sha256-L90+1uk8y7/e7gAzj0+nLwk5jGdfwHME6tXiFhskpPM=",
+        "owner": "nazarewk-iac",
+        "repo": "opencode_compat_proxy",
+        "rev": "891cb20c535ccc988ee1e26b069dc5f5776e5daf",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nazarewk-iac",
+        "repo": "opencode_compat_proxy",
+        "type": "github"
+      }
+    },
     "preservation": {
       "locked": {
         "lastModified": 1757927621,
@@ -1648,6 +1664,7 @@
         "nixpkgs-upstream": "nixpkgs-upstream",
         "nur": "nur",
         "oh-my-pi": "oh-my-pi",
+        "opencode-compat-proxy": "opencode-compat-proxy",
         "preservation": "preservation",
         "preservation-upstream": "preservation-upstream",
         "pyproject-build-systems": "pyproject-build-systems",
