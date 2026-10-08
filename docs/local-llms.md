@@ -711,6 +711,10 @@ decode. So Qwen prefill is ~2.4x DeepSeek, and Qwen decode is slightly lower.
 The Kagi thread gives a 128K-200K context range; brys now serves 1M with YaRN x4
 (see the long-context ladder above).
 
+On **warm long coding tasks** (1500-2000-token generations) the decode order
+reverses: **Qwen is ~2.5-3x faster than DS4**. See "Warm long-task decode (Qwen
+vs DS4)" in [hosts/brys/performance.md](../hosts/brys/performance.md).
+
 ### Benchmark result log (append-only)
 
 Each row records a config tweak, the resulting server-side `print_timing`
