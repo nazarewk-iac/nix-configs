@@ -31,8 +31,8 @@
 #     llm-qwen specialisation names it explicitly.
 #   * `llamaPackage` — the llama.cpp build that provides `llama-server`
 #     (default `pkgs.llama-cpp`, the pinned 0.4.0; `qwenGpu = true` defaults it
-#     to the in-repo v0.6.0 Vulkan build instead). An explicit value always
-#     wins over the `qwenGpu` default.
+#     to the in-repo v0.6.0 Vulkan no-BLAS build instead). An explicit value
+#     always wins over the `qwenGpu` default.
 #   * `qwenMtp` — use the Qwen model's MTP head for speculative decode
 #     (default false). It adds the draft model and the `draft-mtp` spec type.
 #     Only the v0.6.0 and Unsloth-fork builds contain the MTP graph.
@@ -47,8 +47,8 @@
   withQwen ? false,
   # `qwenGpu` turns on the W6600 Vulkan path shared by the Qwen-serving
   # specialisations: it defaults the llama.cpp build to the v0.6.0 Vulkan
-  # package, puts the MTP draft head on the GPU, pins the device to the W6600,
-  # and exports the runtime `gpu` config (see the return value). An
+  # no-BLAS package, puts the MTP draft head on the GPU, pins the device to the
+  # W6600, and exports the runtime `gpu` config (see the return value). An
   # explicitly-passed `llamaPackage` / `qwenDraftNGpuLayers` / `qwenDevice`
   # still wins over the default.
   qwenGpu ? false,
@@ -126,13 +126,21 @@ let
   ++ map (s: "qwen3.8-flash-next-${s}") qwenTierSuffixes;
 
   # GPU-offload defaults. `qwenGpu` turns on the W6600 Vulkan path: the v0.6.0
-  # Vulkan llama.cpp build, the MTP draft head on the GPU, and the device pinned
-  # to the W6600. An explicitly-passed argument still wins.
+  # Vulkan no-BLAS llama.cpp build, the MTP draft head on the GPU, and the
+  # device pinned to the W6600. An explicitly-passed argument still wins.
+  #
+  # The no-BLAS build is deliberate: the BLAS backend (`GGML_BLAS=true`)
+  # dequantizes a quantized `src0` to F32 and calls `cblas_sgemm`, which stalls
+  # small fresh prompts on brys (measured 2026-10-08: a 124-token fresh prefill
+  # ran at 1.0 t/s with BLAS against 10.3-17.7 t/s without, a 10-16x stall).
+  # The stall is specific to small prompts; 2K prefill is 1.6x and 16K 1.2x
+  # faster without BLAS, and 300-token decode is ~30% faster. See
+  # packages/llama-cpp/README.md and docs/local-llms.md.
   llamaPackage' =
     if llamaPackage != null then
       llamaPackage
     else if qwenGpu then
-      pkgs.kdn.llama-cpp-v0_6_0-vulkan
+      pkgs.kdn.llama-cpp-v0_6_0-vulkan-noblas
     else
       pkgs.llama-cpp;
   qwenDraftNGpuLayers' =
