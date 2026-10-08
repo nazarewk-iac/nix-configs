@@ -28,8 +28,8 @@ The design is written and part of it is in the tree:
 - `modules/slots/llm/default.nix:114-135` filters the model preset per router, and `:362-383`
   declares `kdn.llm.local.routers` with the extra `llama-server` units.
 - Each model selects its router through `models.<name>.mainRouter`.
-- `packages/opencode-compat-proxy/patches/router.patch` adds the `UPSTREAMS`/`ROUTE` tables and
-  the `SMALL_UPSTREAM_URL` shortcut to the compat-proxy.
+- The `router` branch of the `nazarewk-iac/opencode_compat_proxy` fork adds the `UPSTREAMS`/`ROUTE`
+  tables and the `SMALL_UPSTREAM_URL` shortcut to the compat-proxy.
 - No host enables an extra router yet, so the split is unused in production.
 
 ## Exit test

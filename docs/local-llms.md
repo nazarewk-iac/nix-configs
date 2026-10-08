@@ -61,10 +61,12 @@ OpenCode forces `stream_options.include_usage: true` on its OpenAI-compatible
 providers, and llama-server answers with a final SSE chunk that has an empty
 `choices` array plus a `usage` (and `timings`) object. The compat-proxy must pass
 that chunk through, or the OpenCode token counter stays at zero for every
-self-hosted model. The `stream-usage.patch` in
-[`packages/opencode-compat-proxy/patches/`](../packages/opencode-compat-proxy/patches/)
-keeps it on both the plain-text and the DSML tool-call streaming paths (the
-non-streaming path always carried `usage`). See
+self-hosted model. The proxy keeps it on both the plain-text and the DSML
+tool-call streaming paths (the non-streaming path always carried `usage`). The
+proxy source is the
+[`nazarewk-iac/opencode_compat_proxy`](https://github.com/nazarewk-iac/opencode_compat_proxy)
+fork, a `flake = false` input; its `main` aggregates the three patches and its
+`stream-usage` branch holds the usage fix alone. See
 [tasks/2026-10/opencode-self-hosted-token-stats/done.md](tasks/2026-10/opencode-self-hosted-token-stats/done.md).
 
 ### Option contract
@@ -88,9 +90,9 @@ aliases). The legacy `SMALL_UPSTREAM_URL` + `SMALL_MODELS` pair is sugar for a
 router named `small`; the slot now emits the general `ROUTER_<NAME>_*` form for
 every enabled router (including `small`). A future host adds a third router by
 declaring `routers.<name>` + pointing the relevant models' `mainRouter` at it —
-the slot generates its env vars automatically. See
-[`packages/opencode-compat-proxy/patches/router.patch`](../packages/opencode-compat-proxy/patches/router.patch)
-for the proxy contract.
+the slot generates its env vars automatically. See the `router` branch of the
+[`nazarewk-iac/opencode_compat_proxy`](https://github.com/nazarewk-iac/opencode_compat_proxy)
+fork for the proxy contract.
 
 To enable on any NixOS host, inside its `mkSlots` block:
 

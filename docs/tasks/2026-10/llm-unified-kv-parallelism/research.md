@@ -146,7 +146,7 @@ The two levels:
   `limit.context`, e.g. `"deepseek-v4-flash-sub"` with `context = 65536` and a
   `[64K]` label, then point the sub-agent definitions at it. The server treats an
   unknown model id by **falling back to the frontier router**
-  (`packages/opencode-compat-proxy/patches/router.patch`:
+  (the `router` branch of the `nazarewk-iac/opencode_compat_proxy` fork:
   `UPSTREAMS = {"frontier": UPSTREAM}`, "anything not in the table routes to the
   frontier"), so the second id hits DS4 exactly as `deepseek-v4-flash` does — the
   only difference is the client-side context budget. This costs no extra server
