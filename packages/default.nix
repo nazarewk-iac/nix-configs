@@ -44,7 +44,7 @@ in
   basic-memory = pkgs.callPackage ./basic-memory { inherit __inputs__; };
   jj-mcp = pkgs.callPackage ./jj-mcp { };
   mcpsnoop = pkgs.callPackage ./mcpsnoop { };
-  opencode-compat-proxy = pkgs.callPackage ./opencode-compat-proxy { };
+  opencode-compat-proxy = pkgs.callPackage ./opencode-compat-proxy { inherit __inputs__; };
   # AUTO_PACKAGE_PLACEHOLDER #
   aws-sso = pkgs.callPackage ./aws-sso { };
   flake-lock-merge = pkgs.callPackage ./flake-lock-merge { };

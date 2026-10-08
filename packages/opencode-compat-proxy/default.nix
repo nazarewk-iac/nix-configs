@@ -1,10 +1,19 @@
 {
   lib,
   python3,
-  fetchFromGitHub,
-  applyPatches,
+  __inputs__ ? { },
 }:
 let
+  # The source is the nazarewk-iac fork of the upstream project. The fork's
+  # `main` already carries the patches this repo used to apply by hand
+  # (Authorization forwarding, per-model router routing, and streaming usage).
+  # `flake.nix` declares it as a `flake = false` input named
+  # `opencode-compat-proxy`; the fork has no flake.nix of its own.
+  inputs = __inputs__.inputs or { };
+  src =
+    inputs.opencode-compat-proxy
+      or (throw "opencode-compat-proxy requires the `opencode-compat-proxy` flake input");
+
   py = python3.withPackages (
     ps: with ps; [
       fastapi
@@ -15,22 +24,10 @@ let
 in
 python3.pkgs.buildPythonApplication {
   pname = "opencode-compat-proxy";
-  version = "unstable-2026-07-01";
+  version = "unstable-2026-10-08";
   format = "other";
 
-  src = applyPatches {
-    src = fetchFromGitHub {
-      owner = "ladiossoop5star";
-      repo = "opencode_compat_proxy";
-      rev = "1ae3a3d65289541555160b4590936705f5dd9ab9";
-      hash = "sha256-UdCHABshTLF782SdhJEypiCuu3nxk8HCTfJ1m7TIapk=";
-    };
-    patches = [
-      ./patches/forward-auth.patch
-      ./patches/router.patch
-      ./patches/stream-usage.patch
-    ];
-  };
+  inherit src;
 
   nativeBuildInputs = [ py ];
 
@@ -71,7 +68,7 @@ python3.pkgs.buildPythonApplication {
 
   meta = with lib; {
     description = "OpenAI-compatible proxy translating DeepSeek DSML and Qwen XML tool calls for OpenCode";
-    homepage = "https://github.com/ladiossoop5star/opencode_compat_proxy";
+    homepage = "https://github.com/nazarewk-iac/opencode_compat_proxy";
     license = licenses.mit;
     maintainers = [ ];
     mainProgram = "opencode-compat-proxy";
