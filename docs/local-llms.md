@@ -387,7 +387,11 @@ Notes on the table:
 
 **Tested and rejected.** `--no-mmap-prefetch` (upstream PR #29250) and a newer
 master build gave no RAM or throughput win. `--load-mode none` OOMs the W6600.
-See "The first-request stall" below.
+See "The first-request stall" below. Expert streaming (`--moe-stream`, upstream
+PR #25294) also loses: it cuts RSS to ~41 GiB but drops prefill by 65% and decode
+by 34%, because the model is ~75% resident and O_DIRECT bypasses the page cache
+that serves it. See "Expert-streaming experiments (negative)" in
+[packages/llama-cpp/README.md](packages/llama-cpp/README.md).
 
 **General principle.** For colocation, prefer `mmap` + `--lazy-mode auto` + a
 modest context, and optionally `q8_0` KV. Accept a slower first token and a
