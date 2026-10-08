@@ -28,6 +28,7 @@ python3.pkgs.buildPythonApplication {
     patches = [
       ./patches/forward-auth.patch
       ./patches/router.patch
+      ./patches/stream-usage.patch
     ];
   };
 
