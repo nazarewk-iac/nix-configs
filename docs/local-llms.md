@@ -52,8 +52,20 @@ lets DS4 stay resident/hot on the frontier router (its ~92 GB working set held
 against page-cache pressure) while the small set swaps freely on its own
 router; only `phi-4` (17.7 G) or `qwen3-30b-a3b` (44.4 G but evicting ~45 G of
 DS4 cache) ever risk touching the frontier's cache in a single-router layout.
-Facts only — no extrapolation beyond the measured footprints in
-[hosts/brys/performance.md](../hosts/brys/performance.md).
+  Facts only — no extrapolation beyond the measured footprints in
+  [hosts/brys/performance.md](../hosts/brys/performance.md).
+
+### Token usage in streams
+
+OpenCode forces `stream_options.include_usage: true` on its OpenAI-compatible
+providers, and llama-server answers with a final SSE chunk that has an empty
+`choices` array plus a `usage` (and `timings`) object. The compat-proxy must pass
+that chunk through, or the OpenCode token counter stays at zero for every
+self-hosted model. The `stream-usage.patch` in
+[`packages/opencode-compat-proxy/patches/`](../packages/opencode-compat-proxy/patches/)
+keeps it on both the plain-text and the DSML tool-call streaming paths (the
+non-streaming path always carried `usage`). See
+[tasks/2026-10/opencode-self-hosted-token-stats/done.md](tasks/2026-10/opencode-self-hosted-token-stats/done.md).
 
 ### Option contract
 
