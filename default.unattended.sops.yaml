@@ -18,7 +18,7 @@ netbird:
         env: ENC[AES256_GCM,data:G1kiHQEc+jCe8HbLuyBylQEoayqz92XFKPsGTYml2yQcTkTNYMQU1ORfFQ==,iv:rWT8PPMJu66/MT0Rj5MhMfWhgPAQpZzVvrzpN9XB4zQ=,tag:/Q6LqEHYFWtW2e0Y+CWMXA==,type:str]
 nix:
     access-tokens:
-        github.com: ENC[AES256_GCM,data:kjQHds/86fwnf0EaG238rhizbJ9oYBeHzZenANw0ftsIvFbrdUl+dq4VXcb1QsxBz4645jKZsHpUVi5CG789V5Waae2cGzHWmt9BDFolnUStJ2kKElY0yB3wfia5,iv:F/AqepI1/1oe1PNMykzP/7Y4N/TJ94jk3C9s1PNhLpw=,tag:1zqPuAcboeEj50tGPwcRug==,type:str]
+        github.com: ENC[AES256_GCM,data:jl+ypmRIY4eK5LPbSK/HaMg9bXCKcaPctG8VdpQLPwI9VaNDOEUT6S/8ht2AaFmNAsy5+/lsqAFTukwboCf5KzMCZlughrzvTaI8ndQZh1W1ew/2CpMiuIUhPS2s,iv:MVOWk7sqVYE/fnvgYmx5SQQf39Vdwjj5RGzsjtd7V9w=,tag:Z3tYPPUQTD/+5jxOPieApg==,type:str]
     ssh:
         kdn-nix-remote-build:
             id_ed25519: ENC[AES256_GCM,data:/hpgZBUc/wYY3lXCvjmiHXtc+ac3l7p29pVlRQ7JJvtl+17Sh2e7Y5fP6HrMKD2ABkOQOWcerGvKyQxBuOaNfuw1SsXkWZAeTwmQi1uALNpG72hItXC3wO6bTfNMqrzY8kLk/kuvpMAFWL4gPgpR5JZt36Aikq8mpnBF8n+xA9iTQFOIS7F+vdyWQf+mtev47Q0X1btObmANzfjNFYx/16FUjHksYRbbSRQp8HhVW9feQCvJVUx5hQK8GYDi5TeBNopVFhORtJmWVBCrIT5mcSpl+ycD1rdAweiuXwq1bsPZj73rWrxWZfWqUrKzcwvBsSr2yXDTvhiulNd2KJw/1mDhTxR0VB2te8itqlUDUHUoCTd1jbt8hF261Dh1Ph1UgtfSSq3tp1QdUF/rIiSG0oy3MC2Zyq7eG04I9HWL+QiuYZCY5tkk28CoVF5S54Z6jNwe5nmDRhpGU8my2IwVGP/BjKwIDoxBfUpyKUt9Pz3GdtfxXxqbRRvfxGYAFzBd1kb7o/6RKu8c1f+2I3/om9CdYw0lg4lDxBb9,iv:aV0kgAP4XFXvbL2l7Lh3DWF1OZ0x9Rt5Wj2FGZgEBnc=,tag:WUHjb+ZZ/hYKImiF3KjO8w==,type:str]
@@ -326,7 +326,7 @@ sops:
             L64=
             -----END AGE ENCRYPTED FILE-----
           recipient: age1yubikey1q25g9xpunct74wnn29dgcgep78q666dkhpfg2flltg92fvyrew02j28464d
-    lastmodified: "2026-10-08T06:26:34Z"
-    mac: ENC[AES256_GCM,data:8oidsJhCCFniy/+GKNEbc+o9g+OHrPekhFbi/bbPS89pWZZdJ4LzCj29zHbL6zL5MCzee49ruGd4lVeLkb2EDIJ5AvTUcnxeOezI2iszg3ifR+8n1jAbbXriHUgbeach+Yix5x4MZqaIVzp2kyWzG1JC5klqRt+XLc0VQUFbhQs=,iv:KM7tcQZDeuocW7FQkSfZnDxKQ0fukbrtvtxSZAmUt+A=,tag:uSJgxdrNRW43Fvv16Rahlw==,type:str]
+    lastmodified: "2026-10-09T07:05:50Z"
+    mac: ENC[AES256_GCM,data:On85AveIf08Fj2U9vBj6LAB0CmsFRTMSNwtTp3XbkxjRwm1VytKnoMwqtwjRzFn8czE3+k3BhhqHAr78bWd7BDFrajNz4M+V0cqbeqHzG8GYMXgWf7N1bOYHPbZmeOjKQh+IZf/VgJoY3MrJFMUOo9HyzP62e7B0np8c7GRY1G0=,iv:4WTu0daH77eaAmeVylH0Eo1opfmjlEHoz6tLtMmzPoU=,tag:W+oFlBTvl2KZPLb9q0yIYQ==,type:str]
     unencrypted_suffix: _unencrypted
     version: 3.13.3
