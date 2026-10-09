@@ -118,21 +118,26 @@ let
   qwenTierId =
     ctx: if ctx == 1048576 then "qwen3.8-flash-next" else "qwen3.8-flash-next-${qwenTierLabel ctx}";
 
-  # One model entry for a tier. Thinking is per agent now, so no tier carries
-  # `options`; `reasoning = true` only tells opencode to parse the model's
-  # thinking output. `output` scales with the tier so input + output fit the
-  # window.
+  # One model entry for a tier. The model is the context tier; the thinking
+  # matrix is exposed as `variants` on that model, so the user selects the tier
+  # as the model and cycles the variant for the thinking level. The model's own
+  # `options` set the default level (`low`); the server also defaults to `low`.
+  # `reasoning = true` tells opencode to parse the model's thinking output.
+  # `output` scales with the tier so input + output fit the window.
   tierModel =
     {
       modelId,
       tierLabel,
       context,
+      thinking,
     }:
     {
       name = "${modelId} (brys, LAN) [${tierLabel}]";
       context = context;
       output = lib.min 8192 (context / 4);
       reasoning = true;
+      options.chat_template_kwargs = thinking.low;
+      variants = lib.mapAttrs (_: kwargs: { chat_template_kwargs = kwargs; }) thinking;
     };
 
   ds4Models = lib.listToAttrs (
@@ -142,6 +147,7 @@ let
         modelId = "deepseek-v4-flash";
         tierLabel = "${ds4K ctx}K";
         context = ctx;
+        thinking = ds4Thinking;
       })
     ) ds4Contexts
   );
@@ -152,6 +158,7 @@ let
         modelId = "qwen3.8-flash-next";
         tierLabel = qwenTierLabel ctx;
         context = ctx;
+        thinking = qwenThinking;
       })
     ) qwenContexts
   );

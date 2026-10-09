@@ -93,6 +93,7 @@
             }
             // lib.optionalAttrs m.reasoning { reasoning = true; }
             // lib.optionalAttrs (m.options != { }) { inherit (m) options; }
+            // lib.optionalAttrs (m.variants != { }) { inherit (m) variants; }
           ) u.models;
         };
       };
@@ -190,6 +191,24 @@
                     ```
 
                     Verified 2026-10-06: a per-model `options` object reaches the server unchanged.
+                  '';
+                };
+                options.variants = lib.mkOption {
+                  type = lib.types.attrsOf (lib.types.attrsOf lib.types.anything);
+                  default = { };
+                  description = ''
+                    opencode model variants: a variant name to a set of request-body fields that
+                    override this model's `options` when the variant is selected. Use it to expose a
+                    thinking matrix on one model, for example:
+
+                    ```nix
+                    variants.low = {
+                      chat_template_kwargs = { enable_thinking = true; reasoning_effort = "low"; };
+                    };
+                    ```
+
+                    In the TUI, select the model and cycle the variant (the `variant_cycle`
+                    keybind). The model's own `options` are the default variant.
                   '';
                 };
               }
