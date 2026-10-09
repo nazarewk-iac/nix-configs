@@ -50,7 +50,9 @@ let
     export const KdnLlmSessionId: Plugin = async () => {
       return {
         "chat.headers": async (input, output) => {
-          if (PROVIDERS.has(input.provider.info.id)) {
+          // The provider id lives on input.model.providerID. input.provider is the
+          // provider *context* object (source/info/options) and has no `.info.id`.
+          if (PROVIDERS.has(input.model.providerID)) {
             output.headers["x-session-id"] = input.sessionID
           }
         },
