@@ -116,6 +116,19 @@ let
         ++ lib.optionals (perf.cacheRam != null) [
           "cache-ram = ${toString perf.cacheRam}"
         ]
+        ++ lib.optionals (perf.ctxCheckpoints != null) [
+          "ctx-checkpoints = ${toString perf.ctxCheckpoints}"
+        ]
+        ++ lib.optionals (perf.checkpointMinStep != null) [
+          "checkpoint-min-step = ${toString perf.checkpointMinStep}"
+        ]
+        ++ lib.optionals (perf.sessionHeaders != null) [
+          "slot-save-path = ${cfg.sessionStore.path}"
+          "slot-save-sessions = ${perf.sessionHeaders}"
+        ]
+        ++ lib.optionals (perf.sessionMaxSessions != null) [
+          "slot-save-sessions-max = ${toString perf.sessionMaxSessions}"
+        ]
         ++ lib.optionals (perf.batchSize != null) [
           "batch-size = ${toString perf.batchSize}"
         ]
@@ -499,6 +512,57 @@ in
       description = "llama.cpp package providing llama-server.";
     };
 
+    # Disk-backed session store for the session-keyed automatic save/restore
+    # (llama.cpp PR #29738) and the context-checkpoint appendix (#26004). A
+    # model opts in with `perf.sessionHeaders`; this option supplies the
+    # directory, the ownership, and the prune policy.
+    sessionStore = lib.mkOption {
+      default = null;
+      type = lib.types.nullOr (
+        lib.types.submodule {
+          options = {
+            path = lib.mkOption {
+              type = lib.types.str;
+              example = "/var/lib/kdn/llms/sessions";
+              description = ''
+                Absolute path of the session save directory (--slot-save-path).
+                The directory must exist when a child starts. Persist it (for
+                example under `usr/cache`) and give it the `group` below with
+                mode 0770.
+              '';
+            };
+            group = lib.mkOption {
+              type = lib.types.str;
+              default = "llama-cpp-sessions";
+              description = ''
+                Group that owns the session directory. The slot creates the
+                group and adds it to the llama-cpp DynamicUser as a
+                supplementary group, so a persisted directory with a fixed group
+                and mode 0770 stays writable.
+              '';
+            };
+            maxBytes = lib.mkOption {
+              type = lib.types.ints.positive;
+              default = 200 * 1024 * 1024 * 1024;
+              description = "Delete the oldest session files when the directory exceeds this many bytes (LRU by mtime).";
+            };
+            maxAgeMinutes = lib.mkOption {
+              type = with lib.types; nullOr ints.positive;
+              default = null;
+              example = 1440;
+              description = "Delete session files older than this many minutes. NULL disables the age rule.";
+            };
+            pruneInterval = lib.mkOption {
+              type = lib.types.str;
+              default = "15min";
+              description = "How often the prune timer runs (systemd.time span).";
+            };
+          };
+        }
+      );
+      description = "Disk-backed session store for --slot-save-path / --slot-save-sessions. NULL keeps the feature off.";
+    };
+
     # LAN exposure: a self-signed-certificate Caddy vhost in front of one
     # compat-proxy in front of the loopback llama-server. None of these have a
     # default: the host owns the cert paths and the API-key file.
@@ -837,6 +901,53 @@ in
                 so raising `parallel` does not multiply KV RAM.
               '';
             };
+            options.perf.ctxCheckpoints = lib.mkOption {
+              type = with lib.types; nullOr int;
+              default = null;
+              description = ''
+                Maximum number of context checkpoints per slot
+                (--ctx-checkpoints / -ctxcp). A checkpoint is a snapshot of the
+                sequence state at a user-turn boundary, used to rewind to a
+                prefix when a follow-up diverges from the cached prompt. For a
+                hybrid model a checkpoint holds only the recurrent state; for an
+                attention-only model it holds the whole KV up to that point.
+                NULL omits the key (llama default 32). Needs a llama.cpp build
+                with the checkpoint appendix (see packages/llama-cpp).
+              '';
+            };
+            options.perf.checkpointMinStep = lib.mkOption {
+              type = with lib.types; nullOr ints.positive;
+              default = null;
+              description = ''
+                Minimum spacing between context checkpoints in tokens
+                (--checkpoint-min-step / -cms). A checkpoint saves a re-prefill,
+                so set this to `minutes * 60 * prefill_tok_s` (for example 10500
+                for about five minutes at 35 tok/s). NULL omits the key (llama
+                default 8192).
+              '';
+            };
+            options.perf.sessionHeaders = lib.mkOption {
+              type = with lib.types; nullOr str;
+              default = null;
+              description = ''
+                Enable session-keyed automatic save/restore
+                (--slot-save-sessions). A comma-separated list of HTTP header
+                names, in priority order, that may carry the conversation
+                session id; the body field `session_id` always wins. NULL omits
+                the key, so the feature stays off. Requires
+                `kdn.llm.local.sessionStore`, which supplies the directory.
+              '';
+            };
+            options.perf.sessionMaxSessions = lib.mkOption {
+              type = with lib.types; nullOr ints.positive;
+              default = null;
+              description = ''
+                Maximum number of session save files to keep
+                (--slot-save-sessions-max). NULL omits the key (llama default
+                128). The byte cap is enforced separately by the session-store
+                prune timer, so this is a second, count-based bound.
+              '';
+            };
             options.perf.batchSize = lib.mkOption {
               type = with lib.types; nullOr ints.positive;
               default = null;
@@ -1038,7 +1149,18 @@ in
               + "(no hyphens, underscores, or upper case); got: "
               + lib.concatStringsSep ", " (builtins.attrNames enabledRouters);
           }
-        ];
+        ]
+        ++ lib.optionals
+          (
+            lib.any (m: m.perf.sessionHeaders != null) (lib.attrValues enabledModels)
+            && cfg.sessionStore == null
+          )
+          [
+            {
+              assertion = false;
+              message = "kdn.llm.local: a model sets perf.sessionHeaders but kdn.llm.local.sessionStore is null; set sessionStore to supply the save directory.";
+            }
+          ];
 
       # The router server: one process, on-demand model load, exactly one
       # resident at a time (models-max=1). API-key enforced from a host-wired
@@ -1071,10 +1193,11 @@ in
       systemd.services = lib.mkMerge [
         routerUnits
         {
-          # The router runs as a DynamicUser and must read the models.
-          llama-cpp.serviceConfig.ReadWritePaths = [
-            cfg.modelsDir
-          ];
+          # The router runs as a DynamicUser and must read the models, and write
+          # the session store when one is configured.
+          llama-cpp.serviceConfig.ReadWritePaths =
+            [ cfg.modelsDir ]
+            ++ lib.optionals (cfg.sessionStore != null) [ cfg.sessionStore.path ];
           # Raise the mlock rlimit so an mlock'd model (~100 GB) can be locked:
           # systemd defaults LimitMEMLOCK to 8 MiB, which would fail any mlock.
           llama-cpp.serviceConfig.LimitMEMLOCK = "infinity";
@@ -1171,7 +1294,53 @@ in
             '';
           };
         }
+        (lib.mkIf (cfg.sessionStore != null) {
+          llama-cpp.serviceConfig.SupplementaryGroups = [ cfg.sessionStore.group ];
+          kdn-llm-session-prune = {
+            description = "Prune the llama-server disk session store";
+            path = with pkgs; [
+              coreutils
+              findutils
+              gawk
+            ];
+            serviceConfig.Type = "oneshot";
+            script = ''
+              set -euo pipefail
+              dir=${lib.escapeShellArg cfg.sessionStore.path}
+              max_bytes=${toString cfg.sessionStore.maxBytes}
+              if [ -d "$dir" ]; then
+                ${lib.optionalString (cfg.sessionStore.maxAgeMinutes != null) ''
+                  find "$dir" -maxdepth 1 -type f -name 'llama-session-*' -mmin +${toString cfg.sessionStore.maxAgeMinutes} -delete
+                ''}
+                total=$(find "$dir" -maxdepth 1 -type f -printf '%s\n' | awk '{s+=$1} END {print s+0}')
+                if [ "$total" -gt "$max_bytes" ]; then
+                  while IFS= read -r f; do
+                    [ "$total" -le "$max_bytes" ] && break
+                    sz=$(stat -c %s "$f")
+                    rm -f -- "$f"
+                    total=$((total - sz))
+                  done < <(find "$dir" -maxdepth 1 -type f -printf '%T@ %p\n' | sort -n | cut -d' ' -f2-)
+                fi
+              fi
+            '';
+          };
+        })
       ];
+
+      # Session store group: the persisted directory is owned by this fixed
+      # group and the llama-cpp DynamicUser joins it (see SupplementaryGroups
+      # above). Defined only when the slot configures a sessionStore.
+      users.groups = lib.mkIf (cfg.sessionStore != null) {
+        ${cfg.sessionStore.group} = { };
+      };
+
+      systemd.timers.kdn-llm-session-prune = lib.mkIf (cfg.sessionStore != null) {
+        wantedBy = [ "timers.target" ];
+        timerConfig = {
+          OnBootSec = "5min";
+          OnUnitActiveSec = cfg.sessionStore.pruneInterval;
+        };
+      };
 
       # The single LAN gate: Caddy terminates TLS with the host-supplied
       # self-signed cert and reverse-proxies to the loopback compat-proxy
