@@ -83,6 +83,7 @@
   qwenYarnOrigCtx ? null,
   qwenCacheTypeK ? null,
   qwenCacheTypeV ? null,
+  qwenCacheRam ? null,
   # GPU-offload knobs for the Qwen model, used by the llm-qwen specialisation
   # for the W6600 MTP draft head. Each stays off/null unless set, so the main
   # brys profile's preset section is byte-identical to before.
@@ -266,6 +267,7 @@ let
     yarnOrigCtx = qwenYarnOrigCtx;
     cacheTypeK = qwenCacheTypeK;
     cacheTypeV = qwenCacheTypeV;
+    cacheRam = qwenCacheRam;
   }
   // lib.optionalAttrs (qwenNGpuLayers != null) {
     nGpuLayers = qwenNGpuLayers;
