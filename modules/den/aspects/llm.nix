@@ -148,6 +148,9 @@
           ++ lib.optionals (perf.contextSize != null) [
             "ctx-size = ${toString perf.contextSize}"
           ]
+          ++ lib.optionals (perf.cacheRam != null) [
+            "cache-ram = ${toString perf.cacheRam}"
+          ]
           ++ lib.optionals (perf.batchSize != null) [
             "batch-size = ${toString perf.batchSize}"
           ]
@@ -587,6 +590,18 @@
           description = ''
             Prompt context size for this model (`-c`). `null` keeps the model default. Set it per
             model to match the KV-cache RAM budget.
+          '';
+        };
+
+        options.perf.cacheRam = lib.mkOption {
+          type = with lib.types; nullOr int;
+          default = null;
+          description = ''
+            Maximum prompt-cache size in MiB (`--cache-ram` / `-cram`). The prompt cache stores KV
+            states of processed prompts for prefix reuse across requests; when full it evicts the
+            oldest entry. `null` omits the key, so llama-server keeps its 8192 MiB default. `-1`
+            means no limit, `0` disables the cache. It grows on demand, so the value is a ceiling,
+            not an allocation.
           '';
         };
 
