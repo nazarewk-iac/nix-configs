@@ -28,13 +28,16 @@ let
     withSmall = false;
     withQwen = true;
     qwenContextSize = 1048576;
-    # The v0.6.0 build (needed for the Qwen MTP graph) with the MTP draft head
-    # on the CPU. `qwenGpu = true` selects the v0.6.0 build; `qwenVulkan = false`
-    # keeps it off the W6600, which hard-hangs under this workload (see the note
-    # in ./llm.nix). qwenNGpuLayers stays null, so the main model keeps llama's
-    # CPU-only default.
+    # The fork build (needed for the Qwen MTP graph, and the only build with the
+    # #26004 checkpoint persistence + the rebased #29738 session-keyed
+    # save/restore) with the MTP draft head on the CPU. `qwenGpu = true` selects
+    # the v0.6.0 build as the fallback; `llamaPackage` overrides it with the
+    # session build. `qwenVulkan = false` keeps it off the W6600, which
+    # hard-hangs under this workload (see the note in ./llm.nix). qwenNGpuLayers
+    # stays null, so the main model keeps llama's CPU-only default.
     qwenGpu = true;
     qwenVulkan = false;
+    llamaPackage = pkgs.kdn.llama-cpp-sessions;
     qwenMtp = true;
     qwenSpecDraftNMax = 5;
     # YaRN x4: 256K native -> 1M. F16 KV (~24 GiB) stays on the CPU.
@@ -42,12 +45,12 @@ let
     qwenRopeScale = 4.0;
     qwenRopeFreqBase = 10000000;
     qwenYarnOrigCtx = 262144;
-    # Prompt cache: 37 GiB. llama's 8 GiB default held barely one ~5.7 GiB
-    # prompt and evicted constantly ("making room for prompt cache entry").
-    # The cache grows on demand, so this is a ceiling, not an allocation; a
-    # full one still leaves ~8 GiB MemAvailable on this 125 GiB box. See
-    # docs/tasks/2026-10/llm-prompt-cache-ram/.
-    qwenCacheRam = 36864;
+    # Prompt cache: 16 GiB, down from 37 GiB. The disk session store
+    # (docs/tasks/2026-10/llm-session-cache-persistence/) now persists whole
+    # sessions, so the RAM prompt cache only needs to cover the shared system
+    # prompt. The freed RAM funds the ~112 MiB context checkpoints (see
+    # qwenPerf). It grows on demand, so this is a ceiling, not an allocation.
+    qwenCacheRam = 16384;
   };
 in
 import ./llm-appliance.nix {
