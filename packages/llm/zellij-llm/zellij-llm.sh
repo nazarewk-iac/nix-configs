@@ -514,4 +514,215 @@ _resolve_pane_ref() {
   _pane_id_by_title "$session" "$ref"
 }
 
+# ---------------------------------------------------------------------------
+# opencode: run and drive OpenCode sessions in this session's panes.
+#
+# An OpenCode session is a long-lived TUI, not a one-shot command. `spawn` starts
+# one in a pane (inside the project's devenv when one is present), `send` types a
+# prompt into it, `watch` reports when a turn goes idle or errors, `list` shows
+# the panes and their OpenCode session id, and `attach` prints how to open the
+# session by hand.
+# ---------------------------------------------------------------------------
+
+# @cmd Run and drive OpenCode sessions in this session's panes
+# @option --session Session name; overrides the kdn-slug-derived default and is used verbatim
+# @option --sep Top-level name separator; forwarded to kdn-slug (default `:`)
+# @option --repo-sep Repo-path separator; forwarded to kdn-slug (default `_`)
+# @option --max-len Extra cap on the derived name length; never exceeds the socket budget
+# @option --tag* Extra name components; forwarded to kdn-slug as repeatable --tag
+opencode() {
+  # argc calls this only when no subcommand follows. The real work is in the
+  # `opencode::<sub>` functions below.
+  echo "usage: zellij-llm opencode <spawn|send|watch|list|attach> [options]" >&2
+  echo "run 'zellij-llm opencode <sub> --help' for one subcommand" >&2
+  return 2
+}
+
+# @cmd Spawn an OpenCode session in a new pane (inside devenv when present)
+# @option --session Session name; overrides the kdn-slug-derived default and is used verbatim
+# @option --pane=opencode Short kebab-case pane name/title
+# @option --cwd Working directory for the pane (defaults to the current directory)
+# @flag --ephemeral Close the pane when OpenCode exits (default: drop to a shell for review)
+# @flag --wait Follow the pane until OpenCode exits, then print EXIT:<code>
+# @option --mode[=stream|heartbeat] With --wait: stream forwards live output; heartbeat prints elapsed-time lines
+# @option --interval=2 Heartbeat poll interval in seconds (--wait --mode heartbeat only)
+# @flag --no-devenv Do not wrap the command in `devenv shell --` even when a devenv is present
+# @option --opencode-bin=opencode The OpenCode executable to run
+# @option --model OpenCode model id to pass as `--model`
+# @option --opencode-arg* Extra argument passed to the OpenCode command (repeatable)
+# @flag --dry-run Print the command that would run, then exit (no pane is created)
+# @option --sep Top-level name separator; forwarded to kdn-slug (default `:`)
+# @option --repo-sep Repo-path separator; forwarded to kdn-slug (default `_`)
+# @option --max-len Extra cap on the derived name length; never exceeds the socket budget
+# @option --tag* Extra name components; forwarded to kdn-slug as repeatable --tag
+opencode::spawn() {
+  # Default the pane's working directory to the caller's, so devenv detection and
+  # the pane agree, and `devenv shell` finds the project.
+  : "${argc_cwd:=$PWD}"
+  if [[ "${argc_dry_run:-0}" == 1 ]]; then
+    printf '%s\n' "$(_opencode_command)"
+    return 0
+  fi
+  printf '%s' "$(_opencode_command)" | _run_spawn "${argc_wait:-0}"
+}
+
+# @cmd Send a prompt to a running OpenCode pane and submit it
+# @option --session Session name; overrides the kdn-slug-derived default and is used verbatim
+# @option --pane=opencode Pane id (bare integer or terminal_<id>) or pane title/name
+# @option --text! The prompt text to type into the pane
+# @flag --no-submit Type the text but do not press Enter
+# @option --sep Top-level name separator; forwarded to kdn-slug (default `:`)
+# @option --repo-sep Repo-path separator; forwarded to kdn-slug (default `_`)
+# @option --max-len Extra cap on the derived name length; never exceeds the socket budget
+# @option --tag* Extra name components; forwarded to kdn-slug as repeatable --tag
+opencode::send() {
+  local session pane_id
+  session="$(_session_name)"
+  pane_id="$(_resolve_pane_ref "$session" "$argc_pane")"
+  if [[ -z "$pane_id" || "$pane_id" == null ]]; then
+    echo "no pane '${argc_pane}' in session '${session}'" >&2
+    return 1
+  fi
+  # write-chars goes to the focused pane, so focus the target first. This changes
+  # the active pane only inside this tool's own session.
+  zellij --session "$session" action focus-pane-id "$pane_id"
+  zellij --session "$session" action write-chars "$argc_text"
+  if [[ "${argc_no_submit:-0}" != 1 ]]; then
+    sleep 0.2
+    zellij --session "$session" action write 13
+  fi
+}
+
+# @cmd Watch an OpenCode pane: report idle/error transitions, optionally for a bounded time
+# @option --session Session name; overrides the kdn-slug-derived default and is used verbatim
+# @option --pane=opencode Pane id (bare integer or terminal_<id>) or pane title/name
+# @option --for Watch for this long then return (for example 30m, 2h); default: until the turn goes idle
+# @option --interval=10 Poll interval in seconds
+# @option --sep Top-level name separator; forwarded to kdn-slug (default `:`)
+# @option --repo-sep Repo-path separator; forwarded to kdn-slug (default `_`)
+# @option --max-len Extra cap on the derived name length; never exceeds the socket budget
+# @option --tag* Extra name components; forwarded to kdn-slug as repeatable --tag
+opencode::watch() {
+  local session pane_id
+  session="$(_session_name)"
+  pane_id="$(_resolve_pane_ref "$session" "$argc_pane")"
+  _watch_opencode "$session" "$pane_id" "${argc_for:-}" "${argc_interval:-10}"
+}
+
+# @cmd List the OpenCode panes in this session with their OpenCode session id
+# @option --session Session name; overrides the kdn-slug-derived default and is used verbatim
+# @option --sep Top-level name separator; forwarded to kdn-slug (default `:`)
+# @option --repo-sep Repo-path separator; forwarded to kdn-slug (default `_`)
+# @option --max-len Extra cap on the derived name length; never exceeds the socket budget
+# @option --tag* Extra name components; forwarded to kdn-slug as repeatable --tag
+opencode::list() {
+  local session
+  session="$(_session_name)"
+  _list_opencode "$session"
+}
+
+# @cmd Print the `zellij attach` command for this session
+# @option --session Session name; overrides the kdn-slug-derived default and is used verbatim
+# @option --sep Top-level name separator; forwarded to kdn-slug (default `:`)
+# @option --repo-sep Repo-path separator; forwarded to kdn-slug (default `_`)
+# @option --max-len Extra cap on the derived name length; never exceeds the socket budget
+# @option --tag* Extra name components; forwarded to kdn-slug as repeatable --tag
+opencode::attach() {
+  local session
+  session="$(_session_name)"
+  printf 'zellij attach %q\n' "$session"
+}
+
+# True when a devenv project is present in the pane's working directory.
+_has_devenv() {
+  local dir="${argc_cwd:-$PWD}"
+  [[ -f "$dir/devenv.nix" || -f "$dir/devenv.yaml" ]]
+}
+
+# The command line for `opencode spawn`: `devenv shell -- opencode ...` when a
+# devenv is present (and --no-devenv is not set), else `opencode ...`. Quoted with
+# `%q` so the pane's `bash -xeEuo pipefail` runs it unchanged.
+_opencode_command() {
+  local -a cmd=()
+  if [[ "${argc_no_devenv:-0}" != 1 ]] && _has_devenv; then
+    cmd+=(devenv shell --)
+  fi
+  cmd+=("${argc_opencode_bin:-opencode}")
+  [[ -n "${argc_model:-}" ]] && cmd+=(--model "$argc_model")
+  local a
+  for a in "${argc_opencode_arg[@]:-}"; do
+    [[ -n "$a" ]] && cmd+=("$a")
+  done
+  local q
+  printf -v q '%q ' "${cmd[@]}"
+  printf '%s' "${q% }"
+}
+
+# Parse a duration like 30s, 30m, 2h, or a bare number of seconds, into seconds.
+_parse_duration() {
+  local spec="$1" n unit
+  n="${spec%[smh]}"
+  unit="${spec: -1}"
+  case "$unit" in
+  s) printf '%s' "$n" ;;
+  m) printf '%s' "$((n * 60))" ;;
+  h) printf '%s' "$((n * 3600))" ;;
+  *) printf '%s' "$spec" ;;
+  esac
+}
+
+# Watch an OpenCode pane. RUNNING while OpenCode's "esc interrupt" indicator is
+# present; IDLE when it is gone (the turn finished). Prints state transitions and
+# any error line. With $3 (for) set, returns after that long; without it, returns
+# on the first RUNNING->IDLE transition (so start it before `send`).
+_watch_opencode() {
+  local session="$1" pane_id="$2" for_spec="$3" interval="$4"
+  if [[ -z "$pane_id" || "$pane_id" == null ]]; then
+    echo "no pane in session '${session}'" >&2
+    return 1
+  fi
+  local start deadline="" state last="" snap err
+  start="$(date +%s)"
+  if [[ -n "$for_spec" ]]; then
+    deadline=$((start + $(_parse_duration "$for_spec")))
+  fi
+  while true; do
+    snap="$(zellij --session "$session" action dump-screen -p "$pane_id" 2>/dev/null || true)"
+    if printf '%s' "$snap" | grep -q "esc interrupt"; then
+      state=RUNNING
+    else
+      state=IDLE
+    fi
+    if [[ "$state" != "$last" ]]; then
+      echo "[$(date +%H:%M:%S)] state=${state}"
+      # `|| true` keeps `set -o pipefail` from aborting on a no-match grep.
+      err="$(printf '%s' "$snap" | grep -iE "error|failed|exception|panic" | grep -viE "0 errors" | tail -1 | tr -s ' ' | cut -c1-200 || true)"
+      [[ -n "$err" ]] && echo "[$(date +%H:%M:%S)] error: ${err}"
+      # A RUNNING -> IDLE transition means the turn finished.
+      if [[ "$state" == IDLE && -n "$last" && -z "$for_spec" ]]; then
+        return 0
+      fi
+      last="$state"
+    fi
+    if [[ -n "$deadline" && "$(date +%s)" -ge "$deadline" ]]; then
+      echo "[$(date +%H:%M:%S)] watch window ended (state=${state})"
+      return 0
+    fi
+    sleep "$interval"
+  done
+}
+
+# List the non-plugin panes and the OpenCode session id (ses_...) each one shows.
+_list_opencode() {
+  local session="$1"
+  zellij --session "$session" action list-panes --json --all \
+    | jq -r '.[] | select(.is_plugin==false) | [.id, .title] | @tsv' \
+    | while IFS=$'\t' read -r id title; do
+      local sid
+      # `|| true` keeps `set -o pipefail` from aborting on a pane with no `ses_` id.
+      sid="$(zellij --session "$session" action dump-screen -p "$id" 2>/dev/null | grep -oE 'ses_[A-Za-z0-9]+' | tail -1 || true)"
+      printf '%s\t%s\t%s\n' "$id" "$title" "${sid:-}"
+    done
+}
+
 eval "$(argc --argc-eval "$0" "$@")"
