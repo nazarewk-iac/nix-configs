@@ -365,8 +365,8 @@ in
         };
       };
       # Qwen3.8-Flash-Next-only counterpart: serves the sparse Qwen frontier
-      # alone with the whole box and the MTP draft head on the W6600 (Vulkan);
-      # the main model + KV stay on the CPU. See hosts/brys/llm-qwen.nix.
+      # alone with the whole box and the MTP draft head + main model + KV on the
+      # CPU (the W6600 is disabled; it hard-hangs). See hosts/brys/llm-qwen.nix.
       specialisation.llm-qwen = {
         inheritParentConfig = false;
         configuration = {

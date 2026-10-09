@@ -171,8 +171,10 @@ The frontier model and the small set no longer share a boot. All entries are
   `:39703` router holds no model.
 - **`llm-qwen`** (`hosts/brys/llm-qwen.nix`) — Qwen3.8-Flash-Next alone.
   `withFrontier = false; withSmall = false; withQwen = true`. 1M context
-  (YaRN x4), batch/ubatch 4096, F16 KV, and the MTP draft head on the W6600
-  (Vulkan) with the main model + KV on the CPU. **Four slots share one unified
+  (YaRN x4), batch/ubatch 4096, F16 KV, and the MTP draft head + the main model
+  + KV all on the CPU. The W6600 is **not** used (it hard-hangs; see
+  [GPU draft head](#gpu-draft-head-llm-qwen-2026-10-07--disabled-2026-10-09)).
+  **Four slots share one unified
   KV pool** (`parallel=4`, `kv-unified=on`, `ctx-size=1048576`), so a second
   request no longer queues behind the first. The earlier CPU-only entry and the
   separate `llm-qwen-gpu` entry were folded into this one.
@@ -615,9 +617,21 @@ Findings:
   single long prompt is fine: 6,211 tokens at 29.87 t/s under the shared 1M pool.
 - No config change resulted. Both entries stay at `parallel = 4`.
 
-### GPU draft head (`llm-qwen`, 2026-10-07)
+### GPU draft head (`llm-qwen`, 2026-10-07) — DISABLED 2026-10-09
 
-The `llm-qwen` entry runs the Qwen shape on the Vulkan build
+> ⚠️ **The W6600 Vulkan draft head is disabled on brys.** It hard-hangs under the
+> Qwen workload: at ~40.6K tokens of context the amdgpu compute ring
+> (`comp_1.2.0`) times out and the kernel resets it ("device wedged, but
+> recovered through reset"), but the radv Vulkan context is lost, so every later
+> decode fails instantly with `vk::Queue::submit: ErrorDeviceLost`. llama-server
+> sends an error mid-stream and OpenCode closes the turn with an empty assistant
+> message — the session "stops without answering" until the server is restarted.
+> The gain was only ~18% decode (10.82 vs ~9.1 t/s), so both Qwen specialisations
+> set `qwenVulkan = false` and run the MTP draft head on the CPU (`qwenGpu = true`
+> still selects the MTP-capable v0.6.0 build). Do not re-enable without a
+> driver/firmware fix. The history below is kept for the record.
+
+The `llm-qwen` entry ran the Qwen shape on the Vulkan build
 (`pkgs.kdn.llama-cpp-v0_6_0-vulkan`) with the MTP draft head on the Radeon Pro
 W6600. `hardware.graphics.enable = true` + `hardware.graphics.extraPackages =
 [ pkgs.mesa ]` expose the RADV ICD, and `MESA_VK_DEVICE_SELECT=1002:73e3!` (plus

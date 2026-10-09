@@ -3,7 +3,7 @@
 # BOOT-SELECTED ONLY, NEVER ACTIVATED via switch-to-configuration. This is a
 # clean top-level (`inheritParentConfig = false`) boot entry that serves BOTH
 # frontier models through one router: DeepSeek V4 Flash (320K, DSpark draft) and
-# Qwen3.8-Flash-Next (1M ctx, YaRN x4, MTP draft head on the W6600 Vulkan). The
+# Qwen3.8-Flash-Next (1M ctx, YaRN x4, MTP draft head on the CPU). The
 # primary router runs with `--models-max 1`, so only one model is resident at a
 # time and a request for the other swaps it in (~90-120 s reload) with no
 # reboot. The default "brys" entry is unaffected. The common appliance body
@@ -12,8 +12,8 @@
 # Why one router for both: the dedicated ./llm-ds4.nix and ./llm-qwen.nix entries
 # each hold one model for the whole box. This entry trades the per-model tuning
 # for not having to reboot to switch which frontier answers. The Qwen path is
-# identical to ./llm-qwen.nix (shared via ./llm.nix `qwenGpu`); the DS4 path is
-# identical to ./llm-ds4.nix.
+# identical to ./llm-qwen.nix (shared via ./llm.nix `qwenGpu`/`qwenVulkan`); the
+# DS4 path is identical to ./llm-ds4.nix.
 {
   lib,
   pkgs,
@@ -23,9 +23,9 @@
 let
   # Shared local-LLM serving config (see ./llm.nix). Both frontier models on the
   # primary router; `cpuPinned = false` for the same llama-cpp 0.4.0
-  # prefill-stall reason as the other entries. `qwenGpu = true` owns the W6600
-  # Vulkan package/draft/device defaults and exports the runtime graphics
-  # config (llm.gpu).
+  # prefill-stall reason as the other entries. `qwenGpu = true` selects the
+  # v0.6.0 build; `qwenVulkan = false` keeps the MTP draft head off the W6600,
+  # which hard-hangs under this workload (see the note in ./llm.nix).
   llm = import ./llm.nix {
     inherit lib pkgs kdnConfig;
     contextSize = 327680;
@@ -35,6 +35,7 @@ let
     withSmall = false;
     qwenContextSize = 1048576;
     qwenGpu = true;
+    qwenVulkan = false;
     qwenMtp = true;
     qwenSpecDraftNMax = 5;
     # YaRN x4: 256K native -> 1M. F16 KV (~24 GiB) stays on the CPU.
@@ -60,7 +61,7 @@ import ./llm-appliance.nix {
     resident model (~90-120 s reload), no reboot.
 
     DeepSeek V4 Flash @ 320K ctx, DSpark draft, 4 shared slots.
-    Qwen3.8-Flash-Next @ 1M ctx (YaRN x4), MTP draft head on the W6600.
+    Qwen3.8-Flash-Next @ 1M ctx (YaRN x4), MTP draft head on the CPU.
     \e[1;33m============================================================\e[0m
     Login with your usual kdn/SSH credentials. Use the normal host to do
     anything else.
