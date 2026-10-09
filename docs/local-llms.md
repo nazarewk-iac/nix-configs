@@ -1,16 +1,18 @@
 ---
 type: Reference
-description: Local LLM serving via the kdn.llm.local slot (llama-server router mode + Caddy TLS reverse proxy) — full option synopsis, architecture, and the brys host as a concrete deployment example.
+description: Local LLM serving via the den `llm` aspect (llama-server router mode + Caddy TLS reverse proxy) — full option synopsis, architecture, and the brys host as a concrete deployment example.
 timestamp: 2026-08-31T00:00:00+02:00
 ---
 
 # Local LLM serving
 
-How the `kdn.llm.local` standalone slot serves local LLMs on a NixOS host.
+How the `kdn.llm.local` den aspect serves local LLMs on a NixOS host.
 This document covers the concept, the global download behaviour, and a
 concrete example single-host deployment on **brys**.
 
-Reference docs: [slot README](../modules/slots/llm/README.md).
+Reference docs: [the den `llm` aspect](../modules/den/aspects/llm.nix). The
+universal `modules/slots/llm` server slot was removed once brys moved to the
+aspect; the `client` and `proxy` subslots stay for now.
 
 ## Concept
 
@@ -107,7 +109,7 @@ kdn.llm.local.download.mode = "slow";                    # global: slow | fast-p
 # ... per-model `kdn.llm.local.models.<name>` entries ...
 ```
 
-Full option reference: [slot README](../modules/slots/llm/README.md).
+Full option reference: [the den `llm` aspect](../modules/den/aspects/llm.nix).
 
 ## Global download behaviour
 
