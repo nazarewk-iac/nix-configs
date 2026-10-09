@@ -1,7 +1,7 @@
 /*
-  Assemble `/etc/nix/netrc` from the `/etc/nix/netrc.d/*.conf` drop-in
+  Assemble `/etc/nix/netrc` from the `/etc/nix/netrc.d/*.netrc` drop-in
   directory, on every change. The fragments come from sops templates (for
-  example `/etc/nix/netrc.d/kdn-github.conf` from the `nix/access-tokens`
+  example `/etc/nix/netrc.d/kdn-github.netrc` from the `nix/access-tokens`
   secret), so no credential is ever written by hand.
 
   This is the same shape as `kdn.networking.dynamic-hosts` for `/etc/hosts`:
@@ -29,7 +29,7 @@ let
     text = ''
       mkdir -p /etc/nix/netrc.d
       {
-        find /etc/nix/netrc.d -name '*.conf' \
+        find /etc/nix/netrc.d -name '*.netrc' \
           -exec printf '# START %s\n' {} \; \
           -exec cat {} \; \
           -exec printf '# END %s\n\n' {} \;
