@@ -113,6 +113,9 @@ let
         ++ lib.optionals (perf.cacheTypeV != null) [
           "cache-type-v = ${perf.cacheTypeV}"
         ]
+        ++ lib.optionals (perf.cacheRam != null) [
+          "cache-ram = ${toString perf.cacheRam}"
+        ]
         ++ lib.optionals (perf.batchSize != null) [
           "batch-size = ${toString perf.batchSize}"
         ]
@@ -777,6 +780,20 @@ in
                 KV-cache V quantisation type (--cache-type-v, e.g. "q8_0").
                 NULL omits the key and keeps F16. Use only when the F16 KV does
                 not fit at a large context.
+              '';
+            };
+            options.perf.cacheRam = lib.mkOption {
+              type = with lib.types; nullOr int;
+              default = null;
+              description = ''
+                Maximum prompt-cache size in MiB (--cache-ram / -cram). The
+                prompt cache stores KV states of processed prompts for prefix
+                reuse across requests; when full it evicts the oldest entry
+                (llama logs "making room for prompt cache entry"). NULL omits
+                the key, so llama-server keeps its 8192 MiB default. -1 means
+                no limit, 0 disables the cache. Raise it when the eviction
+                warnings are frequent and the box has headroom; it grows on
+                demand, so the value is a ceiling, not an allocation.
               '';
             };
             options.perf.mmap = lib.mkOption {

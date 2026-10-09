@@ -173,6 +173,7 @@ Global download options (`kdn.llm.local.download.*`):
 | `perf.threads` | int or null | `null` | `llama-server -t`; null uses the slot default `16` |
 | `perf.flashAttention` | `on`/`off`/`auto` | `on` | `--flash-attn` |
 | `perf.contextSize` | int or null | `null` | `--ctx-size` (KV-cache RAM budget); null uses the model default |
+| `perf.cacheRam` | int or null | `null` | `--cache-ram` (MiB); the prompt-cache ceiling (8192 MiB llama default). `-1` = no limit, `0` = off. Grows on demand |
 | `perf.mmap` | bool | `true` | memory-map the model file |
 | `perf.parallel` | int | `1` | `--parallel` server slots (1 wastes no KV cache) |
 | `perf.kvUnified` | bool or null | `null` | `--kv-unified`/`--no-kv-unified`; null omits it. With unified KV `ctx-size` is one shared pool, not per slot |
