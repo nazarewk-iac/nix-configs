@@ -1,12 +1,15 @@
 ---
 type: Task
 description: Add a `zellij-llm opencode` subcommand set to spawn, drive, and watch OpenCode sessions in dedicated zellij panes, activating devenv when a devenv.nix is present.
-status: open
+status: done
+solution: done.md
 authored_by: agent
 timestamp: 2026-10-10T02:00:00+02:00
 ---
 
 # `zellij-llm opencode`: drive OpenCode sessions in dedicated panes
+
+> ✅ **Done** — see the solution in [done.md](done.md).
 
 ## Context
 
