@@ -37,6 +37,7 @@ in
   klog-time-tracker = pkgs.callPackage ./klog-time-tracker { };
   lnav = pkgs.callPackage ./lnav/package.nix { };
   pinentry = pkgs.callPackage ./pinentry { };
+  rambox = pkgs.callPackage ./rambox { };
   ss-util = pkgs.callPackage ./ss-util { };
   tc-redirect-tap = pkgs.callPackage ./tc-redirect-tap { };
   whicher = pkgs.callPackage ./whicher { };
