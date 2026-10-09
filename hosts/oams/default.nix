@@ -374,5 +374,11 @@ in
         firewallInterfaces = [ "nb-priv" ];
       };
     }
+    {
+      # oams tracks the newest Rambox Linux release from `packages/rambox`
+      # (nixpkgs' wrapper, version bumped). See that package for the
+      # version/hash to bump.
+      kdn.apps."rambox".package.original = pkgs.kdn.rambox;
+    }
   ];
 }
