@@ -2,17 +2,15 @@
 #
 # BOOT-SELECTED ONLY, NEVER ACTIVATED via switch-to-configuration. This is a
 # clean top-level (`inheritParentConfig = false`) boot entry that serves the
-# Qwen3.8-Flash-Next frontier model with the MTP draft head on the Radeon Pro
-# W6600 (Vulkan) and the main model + KV cache on the CPU. The default "brys"
-# entry is unaffected. The common appliance body lives in ./llm-appliance.nix.
+# Qwen3.8-Flash-Next frontier model with the MTP draft head and the main model +
+# KV cache on the CPU. The default "brys" entry is unaffected. The common
+# appliance body lives in ./llm-appliance.nix.
 #
-# Why draft-only offload: the benchmark (docs/local-llms.md) shows that moving
-# the main model's dense layers to the 8 GB W6600 with the 1M-context KV cache
-# pinned to the CPU is far slower (`-ngl 99 -cmoe -nkvo`: 2.0 tok/s decode vs
-# 9.1 CPU), because every attention step then crosses PCIe to the CPU-resident
-# KV. Offloading only the ~6 GB MTP draft head keeps the main model's weights
-# and KV together in RAM and removes the draft's per-step CPU cost: decode rose
-# to 10.5 tok/s (+15% over CPU), the only variant that beats the CPU baseline.
+# The W6600 is NOT used. The earlier draft-only offload put the ~6 GB MTP draft
+# head on the W6600 (decode 10.5 t/s, +15% over CPU), but the W6600 hard-hangs
+# under this workload: at ~40.6K tokens of context the amdgpu ring times out and
+# the Vulkan context is lost, after which every decode fails with
+# `ErrorDeviceLost` and OpenCode gets empty responses. See the note in ./llm.nix.
 {
   lib,
   pkgs,
@@ -30,12 +28,13 @@ let
     withSmall = false;
     withQwen = true;
     qwenContextSize = 1048576;
-    # The W6600 Vulkan path: the v0.6.0 Vulkan build, the MTP draft head on the
-    # GPU, and the device pinned to the W6600. `qwenGpu` owns the shared
-    # package/draft/device defaults and exports the runtime graphics config
-    # (llm.gpu). qwenNGpuLayers stays null, so the main model keeps llama's
+    # The v0.6.0 build (needed for the Qwen MTP graph) with the MTP draft head
+    # on the CPU. `qwenGpu = true` selects the v0.6.0 build; `qwenVulkan = false`
+    # keeps it off the W6600, which hard-hangs under this workload (see the note
+    # in ./llm.nix). qwenNGpuLayers stays null, so the main model keeps llama's
     # CPU-only default.
     qwenGpu = true;
+    qwenVulkan = false;
     qwenMtp = true;
     qwenSpecDraftNMax = 5;
     # YaRN x4: 256K native -> 1M. F16 KV (~24 GiB) stays on the CPU.
@@ -58,8 +57,7 @@ import ./llm-appliance.nix {
     \e[1;31m  Qwen-only instance  (brys / llm-qwen)\e[0m
     \e[1;33m============================================================\e[0m
     Booted into the isolated Qwen-serving topology with the MTP draft head
-    on the Radeon Pro W6600 (Vulkan); the main model and KV cache stay on
-    the CPU.
+    and the main model + KV cache on the CPU (the W6600 is not used).
 
     Qwen3.8-Flash-Next @ 1M ctx (YaRN x4), F16 KV, 4 slots (unified pool),
     UD-IQ4_XS.

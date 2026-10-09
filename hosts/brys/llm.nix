@@ -45,13 +45,29 @@
   withFrontier ? true,
   withSmall ? false,
   withQwen ? false,
-  # `qwenGpu` turns on the W6600 Vulkan path shared by the Qwen-serving
-  # specialisations: it defaults the llama.cpp build to the v0.6.0 Vulkan
-  # no-BLAS package, puts the MTP draft head on the GPU, pins the device to the
-  # W6600, and exports the runtime `gpu` config (see the return value). An
-  # explicitly-passed `llamaPackage` / `qwenDraftNGpuLayers` / `qwenDevice`
+  # `qwenGpu` selects the v0.6.0 llama.cpp build, the one that carries the
+  # `qwen4exp` MTP graph the Qwen-serving specialisations need for MTP. It does
+  # NOT by itself touch the GPU.
+  #
+  # `qwenVulkan` additionally offloads the MTP draft head to the W6600 over
+  # Vulkan, pins the device, and exports the runtime `gpu` config. It defaults
+  # to `qwenGpu` for compatibility, but every Qwen specialisation sets it
+  # `false`: the W6600 hard-hangs under this workload.
+  #
+  # Why `qwenVulkan` is off on brys (measured 2026-10-09): at ~40.6K tokens of
+  # context the amdgpu compute ring (`comp_1.2.0`) times out; the kernel resets
+  # the ring ("device wedged, but recovered through reset"), but the radv Vulkan
+  # context is lost, so every following decode fails instantly with
+  # `vk::Queue::submit: ErrorDeviceLost`. llama-server sends an error mid-stream
+  # and OpenCode closes the turn with an empty assistant message, so the session
+  # "stops without answering" until the server is restarted. The GPU draft head
+  # was only ~18% faster decode (10.82 vs ~9.1 t/s), so the CPU MTP path is the
+  # stable choice. Do not re-enable without a driver/firmware fix.
+  #
+  # An explicitly-passed `llamaPackage` / `qwenDraftNGpuLayers` / `qwenDevice`
   # still wins over the default.
   qwenGpu ? false,
+  qwenVulkan ? qwenGpu,
   qwenContextSize ? 131072,
   llamaPackage ? null,
   qwenMtp ? false,
@@ -125,9 +141,9 @@ let
   ++ lib.optional (!withFrontier) "frontier"
   ++ map (s: "qwen3.8-flash-next-${s}") qwenTierSuffixes;
 
-  # GPU-offload defaults. `qwenGpu` turns on the W6600 Vulkan path: the v0.6.0
-  # Vulkan no-BLAS llama.cpp build, the MTP draft head on the GPU, and the
-  # device pinned to the W6600. An explicitly-passed argument still wins.
+  # Build and offload defaults. `qwenGpu` picks the v0.6.0 build (CPU-only);
+  # `qwenVulkan` swaps in the Vulkan no-BLAS variant and offloads the draft
+  # head. An explicitly-passed argument still wins.
   #
   # The no-BLAS build is deliberate: the BLAS backend (`GGML_BLAS=true`)
   # dequantizes a quantized `src0` to F32 and calls `cblas_sgemm`, which stalls
@@ -139,21 +155,23 @@ let
   llamaPackage' =
     if llamaPackage != null then
       llamaPackage
-    else if qwenGpu then
+    else if qwenVulkan then
       pkgs.kdn.llama-cpp-v0_6_0-vulkan-noblas
+    else if qwenGpu then
+      pkgs.kdn.llama-cpp-v0_6_0
     else
       pkgs.llama-cpp;
   qwenDraftNGpuLayers' =
     if qwenDraftNGpuLayers != null then
       qwenDraftNGpuLayers
-    else if qwenGpu then
+    else if qwenVulkan then
       99
     else
       null;
   qwenDevice' =
     if qwenDevice != null then
       qwenDevice
-    else if qwenGpu then
+    else if qwenVulkan then
       "Vulkan0"
     else
       null;
@@ -357,13 +375,13 @@ in
   };
 
   # Runtime graphics/ICD config for the W6600 Vulkan path, exported only when
-  # `qwenGpu` is set. A Qwen-serving specialisation merges this into its NixOS
-  # config (see hosts/brys/llm-qwen.nix, hosts/brys/llms-frontier.nix): expose
-  # the Mesa RADV Vulkan ICD to the loader and pin the llama-cpp process tree to
-  # the W6600 (`1002:73e3`) so the 4 GB Lexa (`Vulkan1`) is never selected. The
-  # `device = Vulkan0` preset key is the in-process belt to this env-var
-  # suspenders.
-  gpu = lib.optionalAttrs qwenGpu {
+  # `qwenVulkan` is set (off on brys: the W6600 hard-hangs). A Qwen-serving
+  # specialisation merges this into its NixOS config (see hosts/brys/llm-qwen.nix,
+  # hosts/brys/llms-frontier.nix): expose the Mesa RADV Vulkan ICD to the loader
+  # and pin the llama-cpp process tree to the W6600 (`1002:73e3`) so the 4 GB
+  # Lexa (`Vulkan1`) is never selected. The `device = Vulkan0` preset key is the
+  # in-process belt to this env-var suspenders.
+  gpu = lib.optionalAttrs qwenVulkan {
     hardware.graphics.enable = true;
     hardware.graphics.extraPackages = [ pkgs.mesa ];
     systemd.services.llama-cpp.environment.MESA_VK_DEVICE_SELECT = "1002:73e3!";
