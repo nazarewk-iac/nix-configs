@@ -35,10 +35,11 @@ This skill is the short index. Full detail lives in the docs and the verified ex
   repo. Then run `jj new` inside it. Verify the isolation with `jj workspace list`.
 - **Never Claude Code `/commit`** — it runs raw `git commit`, bypasses jj, and `jj-guard` cannot
   catch it. Use `jj describe`/`jj commit`.
-- **Commit as you go, in logical changesets.** Carve each self-contained change out with
-  `jj split -m 'msg' -- <files>` as it lands; fold a fixup into the changeset that introduced the
-  line with `jj absorb`. Prefer `jj split` over `jj describe` + a bare `jj new`: the split leaves the
-  follow-on change in `@`, while the describe+new pair buries the named change under an unnamed one.
+- **Commit as you go, in logical changesets — proactively, not on request.** Carve each
+  self-contained change out with `jj split -m 'msg' -- <files>` as it lands; fold a fixup into the
+  changeset that introduced the line with `jj absorb`. **Do not wait for the user to ask you to
+  commit.** Prefer `jj split` over `jj describe` + a bare `jj new`: the split leaves the follow-on
+  change in `@`, while the describe+new pair buries the named change under an unnamed one.
 - **`@` empty is a manual convention** — `jj describe`/`jj commit` do not create a fresh `@`. Run
   `jj new` yourself, and only to wrap up finished work.
 - **Read a file from any revision with `jj file show -r <id> <path>`** — never `jj edit` to read.
