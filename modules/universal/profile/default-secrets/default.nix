@@ -72,6 +72,22 @@ in
                         '')
                       ];
                     };
+                    # One netrc fragment. `/etc/nix/netrc` is assembled from
+                    # `/etc/nix/netrc.d/*.conf` by `kdn-gen-netrc` (see
+                    # kdn.security.dynamic-netrc). This fragment holds the
+                    # GitHub token from the same `nix/access-tokens` secret as
+                    # the access-tokens line above, so both stay in step. It
+                    # replaces the hand-placed `/etc/nix/netrc`, which held a
+                    # deprecated GitHub password.
+                    "nix-netrc-github" = {
+                      path = "/etc/nix/netrc.d/kdn-github.conf";
+                      mode = "0444";
+                      content = ''
+                        machine github.com login x-access-token password ${
+                          config.kdn.security.secrets.sops.placeholders.default.nix.access-tokens."github.com"
+                        }
+                      '';
+                    };
                   }
                 ]
               )

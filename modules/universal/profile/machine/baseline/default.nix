@@ -137,6 +137,7 @@ in
         kdn.hw.usbip.enable = lib.mkDefault true;
         kdn.development.git.enable = lib.mkDefault true;
         kdn.networking.dynamic-hosts.enable = lib.mkDefault true;
+        kdn.security.dynamic-netrc.enable = lib.mkDefault true;
         kdn.programs.direnv.enable = lib.mkDefault true;
         kdn.development.shell.enable = lib.mkDefault true;
         kdn.hw.yubikey.enable = lib.mkDefault true;
