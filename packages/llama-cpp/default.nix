@@ -84,7 +84,7 @@ let
         [
           openssl
         ]
-        ++ lib.optionals blas [ blas ]
+        ++ lib.optionals blas [ pkgs.blas ]
         ++ lib.optionals vulkan [
           vulkan-headers
           vulkan-loader
