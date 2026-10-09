@@ -586,7 +586,6 @@ in
             }
             {
               kdn.disks.persist."usr/config".files = [
-                "/etc/nix/netrc"
                 "/etc/nix/nix.sensitive.conf"
               ];
               home-manager.sharedModules = [
