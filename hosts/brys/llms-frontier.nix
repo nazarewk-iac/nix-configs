@@ -43,6 +43,12 @@ let
     qwenRopeScale = 4.0;
     qwenRopeFreqBase = 10000000;
     qwenYarnOrigCtx = 262144;
+    # Prompt cache: 37 GiB. llama's 8 GiB default held barely one ~5.7 GiB
+    # prompt and evicted constantly ("making room for prompt cache entry").
+    # The cache grows on demand, so this is a ceiling, not an allocation; a
+    # full one still leaves ~8 GiB MemAvailable on this 125 GiB box. See
+    # docs/tasks/2026-10/llm-prompt-cache-ram/.
+    qwenCacheRam = 36864;
   };
 in
 import ./llm-appliance.nix {

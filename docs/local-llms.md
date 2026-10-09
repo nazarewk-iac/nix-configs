@@ -386,7 +386,7 @@ means the effect follows from the mechanism and was not timed on brys.
 | `--lazy-mode auto` (default) | offloads the PLE / n-gram table and other large tensors to SSD; `off` → `auto` freed **~46 GB** (`RssFile` 92.2 → 46.0 GB) | none measured; decode rose slightly (11.14 → 12.26 t/s). `on` is identical to `auto` here | brys |
 | context size | the direct KV-RAM knob; Qwen 1M → 512K F16 KV freed **~16 GB** (`RssAnon` 35.7 → 19.9 GB) | a shorter window; keep ≥512K for the current workload | brys |
 | `-ctk q8_0 -ctv q8_0` | halves KV (1M: ~24 → ~12 GiB); at 512K `RssAnon` 19.9 → 13.1 GB | decode is slightly slower (~8.49 → ~7.9 t/s) | brys |
-| `--cache-ram` (default 8192 MiB) | lower it to shrink the prompt cache; `1024` frees RAM | decode is slightly slower (~7.9 t/s at 512K q8_0) | brys |
+| `--cache-ram` (default 8192 MiB) | lower it to shrink the prompt cache; `1024` frees RAM. The Qwen entries raise it to **36864** (37 GiB) instead, to stop the constant evictions of the ~5.7 GiB entries | decode is slightly slower (~7.9 t/s at 512K q8_0); a full 37 GiB cache evicts weight pages | brys |
 | `parallel` (slots) | `4` → `1` frees a few GB of per-slot state | loses concurrency; head-of-line blocking returns | brys |
 | MTP draft on the GPU | moves the ~4–6 GB draft head to VRAM, off system RAM | needs a GPU; speeds decode | general |
 | smaller quant | `UD-IQ3_XXS` (82 GB) vs `UD-IQ4_XS` (93.7 GB) frees **~12 GB** | a quality drop (85.4% vs 89.6% top-1) | brys |
@@ -400,6 +400,14 @@ Notes on the table:
   The full table is in "`--lazy-mode` SSD offload (brys)" below.
 - **Context and KV quantisation are the two direct controls.** Lower the context
   first; add `q8_0` KV only if the context is already at its floor.
+- **The prompt cache is a separate ceiling, not the KV cache.** `--cache-ram`
+  (default 8192 MiB) bounds the cross-request prompt cache; when it fills,
+  llama-server evicts the oldest entry (the `making room for prompt cache
+  entry` log line). One long Qwen prompt is ~5.7 GiB, so the default held
+  barely one and evicted constantly. The Qwen entries (`llm-qwen`,
+  `llms-frontier`) set `perf.cacheRam = 36864` (37 GiB). The cache grows on
+  demand, so the value is a ceiling, not an allocation; a full one still leaves
+  ~8 GiB `MemAvailable` on the 125 GiB box.
 - **Keep `mmap`; do not use `--load-mode mlock`.** mlock pins the weights and
   defeats reclaim. With `mmap`, the kernel reclaims weight pages under memory
   pressure, so a colocated model slows down instead of OOM. The 8 GiB ZFS ARC cap
