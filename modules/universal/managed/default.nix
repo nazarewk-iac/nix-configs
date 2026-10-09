@@ -109,13 +109,15 @@ in
             ];
 
             mkDelDirCmd = dirCfg: ''
-              ${lib.getExe pkgs.findutils} \
-                ${dirCfg.path} \
-                -mindepth ${toString dirCfg.mindepth} -maxdepth ${toString dirCfg.maxdepth} \
-                -type f \
-                ${lib.escapeShellArgs infixArgs} \
-                ${lib.escapeShellArgs (mkExistingArgs dirCfg.path)} \
-                -printf '> removed: %p\n' -delete
+              if [ -d ${lib.escapeShellArg dirCfg.path} ]; then
+                ${lib.getExe pkgs.findutils} \
+                  ${dirCfg.path} \
+                  -mindepth ${toString dirCfg.mindepth} -maxdepth ${toString dirCfg.maxdepth} \
+                  -type f \
+                  ${lib.escapeShellArgs infixArgs} \
+                  ${lib.escapeShellArgs (mkExistingArgs dirCfg.path)} \
+                  -printf '> removed: %p\n' -delete
+              fi
             '';
 
             delCmds = lib.pipe cfg.directories [
