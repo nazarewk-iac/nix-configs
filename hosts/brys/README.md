@@ -18,14 +18,21 @@ brys runs several local LLMs through the standalone `kdn.llm.local` slot
 (backend: llama-server router mode, OpenAI-compatible API on `127.0.0.1:39703`,
 DSpark speculative decoding on DeepSeek V4 Flash). The DeepSeek frontier runs
 four slots over one unified 320K KV pool; the small-model set is spun out to its
-own boot entry so it never competes with DS4 for RAM.
+own boot entry so it never competes with DS4 for RAM. Qwen3.8-Flash-Next runs at
+1M context (YaRN x4) with the MTP draft head on the CPU and a 37 GiB prompt
+cache (`perf.cacheRam`, set to stop the constant evictions of ~5.7 GiB entries).
 
-Two boot-selected appliance specialisations exist (never activated in place):
+Four boot-selected appliance specialisations exist (normally selected from the
+bootloader; `nixos-rebuild switch --specialisation <name>` also activates one in
+place):
 
 - `llm-ds4` (`llm-ds4.nix`) — DeepSeek V4 Flash alone, whole box.
 - `llm-small` (`llm-small.nix`) — the small-model router alone, no DS4.
+- `llm-qwen` (`llm-qwen.nix`) — Qwen3.8-Flash-Next alone, whole box.
+- `llms-frontier` (`llms-frontier.nix`) — DS4 and Qwen in one router with
+  `--models-max 1`, so a request swaps the resident model without a reboot.
 
-Both share `llm-appliance.nix` and `llm.nix`.
+All four share `llm-appliance.nix` and `llm.nix`.
 
 The exact deployed state — models, serving endpoint, download mode and rate
 cap, persistence, and secrets — is documented in
