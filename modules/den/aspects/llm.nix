@@ -1401,7 +1401,12 @@
             # The extra hostnames of this one vhost. The primary is the vhost key itself.
             serverAliases = lib.remove cfg.domain cfg.certs.sans;
             extraConfig = ''
-              tls ${cfg.certs.certFile} {$CREDENTIALS_DIRECTORY}/llm-key
+              # The literal credential path, not `{$CREDENTIALS_DIRECTORY}`:
+              # systemd does not pass `CREDENTIALS_DIRECTORY` to `ExecReload`, so
+              # `caddy reload` adapts the Caddyfile with an empty value and the
+              # reload fails with "open /llm-key: no such file or directory".
+              # The path is stable for the `caddy.service` unit.
+              tls ${cfg.certs.certFile} /run/credentials/caddy.service/llm-key
               reverse_proxy 127.0.0.1:${toString cfg.compatProxy.port}
             '';
           };
