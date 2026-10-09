@@ -1,12 +1,15 @@
 ---
 type: Task
 description: Give llama-server a disk-backed, session-keyed prompt-cache store, so 10-20+ local LLM sessions survive a server restart and resume without a full re-prefill.
-status: open
+status: done
+solution: done.md
 authored_by: agent
 timestamp: 2026-10-09T21:15:00+02:00
 ---
 
 # Persist llama-server session KV caches to disk
+
+> ✅ **Done** — see the solution in [done.md](done.md).
 
 ## Context
 
