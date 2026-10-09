@@ -83,11 +83,12 @@ must prevent this interruption.
 Two packages do this work for you. Use them. Do not write raw
 `zellij attach --create-background`, `action new-pane`, or `subscribe` calls yourself.
 
-- `zellij-llm` (`packages/llm/zellij-llm/`) is the tool you call. It has six subcommands:
-  `spawn`, `spawn-and-watch`, `watch`, `wait`, `peek`, and `list`. It derives the session name
-  itself (see below), so `--session` is optional. It creates the session (idempotent). It makes
-  the stacked-pane layout. It runs the command from stdin with `bash -xeEuo pipefail`. Run
-  `zellij-llm --help` or `zellij-llm <subcommand> --help` for all flags.
+- `zellij-llm` (`packages/llm/zellij-llm/`) is the tool you call. It has six command
+  subcommands — `spawn`, `spawn-and-watch`, `watch`, `wait`, `peek`, and `list` — plus an
+  `opencode` command group (see below). It derives the session name itself (see below), so
+  `--session` is optional. It creates the session (idempotent). It makes the stacked-pane layout.
+  It runs the command from stdin with `bash -xeEuo pipefail`. Run `zellij-llm --help`,
+  `zellij-llm <subcommand> --help`, or `zellij-llm opencode <sub> --help` for all flags.
 - `kdn-slug` (`packages/llm/kdn-slug/`) makes the names. `zellij-llm` calls it for you. You
   rarely call it directly. It finds the repository with `jj` or `git`. It finds the session id of
   the current harness. For example, it reads `$CLAUDE_CODE_SESSION_ID`. It has a top-level
@@ -142,6 +143,39 @@ zellij-llm list
 
 Do not poll with `sleep N; zellij-llm peek`. Use `wait`, `watch`, or `spawn --wait` instead. A
 poll wastes time or reads a half-finished log.
+
+### Drive an OpenCode session: `zellij-llm opencode`
+
+OpenCode is a long-lived TUI, not a one-shot command, so it has its own group. `spawn` starts one
+in a pane and wraps it in `devenv shell --` when a `devenv.nix` or `devenv.yaml` is present (pass
+`--no-devenv` to opt out). `send` types a prompt into a running pane. `watch` follows a turn:
+it prints `state=RUNNING` while OpenCode's `esc interrupt` indicator is present and `state=IDLE`
+when the turn finishes, and it returns on the first `RUNNING -> IDLE` transition. `list` shows
+each pane and the OpenCode session id (`ses_...`) it displays. `attach` prints the `zellij attach`
+command.
+
+```bash
+# start OpenCode in a pane (devenv-wrapped when the project has one)
+zellij-llm opencode spawn --pane opencode --model brys/qwen3.8-flash-next
+
+# type a prompt and submit it (--no-submit types without pressing Enter)
+zellij-llm opencode send --pane opencode --text 'continue the work'
+
+# watch a turn: without --for it returns when the turn goes idle; with --for it returns after
+# that long (for example 30m, 2h). It reports an error line when it sees one.
+zellij-llm opencode watch --pane opencode --for 30m
+
+# the panes and their OpenCode session id (ses_...)
+zellij-llm opencode list
+
+# how to attach by hand
+zellij-llm opencode attach
+```
+
+`zellij-llm opencode spawn --dry-run` prints the command it would run (no pane). The `spawn`
+command also takes `--wait` (follow until OpenCode exits) and `--opencode-arg` (repeatable, extra
+OpenCode arguments). This is the supported way to drive an OpenCode session from another agent;
+it replaces the manual "focus the pane, type a prompt, press Enter" loop.
 
 `spawn` keeps the pane open after the command exits, so you can review the output later. Pass
 `--ephemeral` to close the pane the moment its command exits.
@@ -231,6 +265,7 @@ Code always prompts for those, as the rule above requires.
 | `kdn-slug names --type <session\|tab\|pane> ...` | Make the naming-convention strings above | Read-only, no allowlist needed |
 | `zellij-llm spawn` / `spawn-and-watch` / `watch` / `wait` / `list` (your own session) | Preferred wrapper for the state-change calls above | Prompts the same as the raw calls. Not yet in the Bash allowlist |
 | `zellij-llm peek` (your own session) | Preferred wrapper for `action dump-screen` | Like `dump-screen` above, but works only on your own session |
+| `zellij-llm opencode spawn/send/watch/list/attach` (your own session) | Start, drive, and watch an OpenCode session in a pane | Prompts the same as the raw calls. `send` focuses the pane and types, so it changes state; never point it at the user's session |
 
 ## Gotchas
 
