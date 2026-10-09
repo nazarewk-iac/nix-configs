@@ -210,7 +210,7 @@ Serving runs the main model on the CPU. The W6600 is unusable for the dense
 weights, and its use for the Qwen MTP draft head is disabled (see below).
 Per-model serving knobs on brys: `threads=16` (physical cores, SMT is counter
 productive for memory-bound inference), `flash-attn=on`, `mmap=on`, and
-`reasoning` (Qwen `auto` with default effort `low`, DS4 `off`). DeepSeek
+`reasoning` (both `auto` with default effort `low`). DeepSeek
 V4 Flash and Qwen3.8-Flash-Next both add `parallel=4` + `kv-unified=on`; the
 other models keep `parallel=1`. Context sizes:
 
@@ -239,13 +239,14 @@ several practical context budgets, and one opencode subagent per (model, tier,
 thinking level).
 
 **Thinking matrix.** The common levels are `off`, `low`, `medium` and `high`.
-Each level maps to that model's own `chat_template_kwargs`. The Qwen model's
-server preset defaults to `reasoning = auto` (thinking on; the template decides)
-with `reasoning-effort = low`, so a request that sets no kwargs still thinks at
-low effort. A client overrides both per request: opencode passes an agent's
-`options` object **verbatim** into the chat-completions body (verified with an
-echo server). The model entry also carries `reasoning = true`, which tells
-opencode to parse the thinking output.
+Each level maps to that model's own `chat_template_kwargs`. Both server presets
+default to `reasoning = auto` (thinking on; the template decides) with
+`reasoning-effort = low`, so a request that sets no kwargs still thinks at low
+effort (for DS4, whose template honours only `max`, that is thinking-on at the
+template default). A client overrides both per request: opencode passes an
+agent's `options` object **verbatim** into the chat-completions body (verified
+with an echo server). The model entry also carries `reasoning = true`, which
+tells opencode to parse the thinking output.
 
 On the client the matrix is exposed as **model variants**
 (`hosts/oams/devenv.nix`): each context tier is a `brys` model and

@@ -189,7 +189,12 @@ let
   # false. `threads` follows `defaultThreads` (16) unless overridden.
   deepseekPerf = {
     contextSize = contextSize;
-    reasoning = "off";
+    # Thinking is available to clients: `auto` lets the template decide (on for
+    # this reasoning model). DS4's template honours only `reasoning_effort =
+    # "max"`, so the default `low` is the template's thinking-on with no explicit
+    # effort; a caller sets `max` per request via chat_template_kwargs.
+    reasoning = "auto";
+    reasoningEffort = "low";
     specType = "draft-dspark";
     # DSpark draft depth (--spec-draft-n-max). The DSpark drafter has a trained
     # block size of 5, so llama clamps any larger value to 5. Measured on brys
