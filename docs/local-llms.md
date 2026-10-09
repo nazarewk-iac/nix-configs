@@ -247,6 +247,13 @@ low effort. A client overrides both per request: opencode passes an agent's
 echo server). The model entry also carries `reasoning = true`, which tells
 opencode to parse the thinking output.
 
+On the client the matrix is exposed as **model variants**
+(`hosts/oams/devenv.nix`): each context tier is a `brys` model and
+`off`/`low`/`medium`/`high` are its variants. The model's default is `low`, so
+the tier alone thinks at low effort; in the TUI pick the tier as the model and
+cycle the variant (the `variant_cycle` keybind) for another level. The same
+matrix is also one opencode subagent per (tier, level), for task delegation.
+
 | level | DS4 `deepseek-v4-flash` | Qwen `qwen3.8-flash-next` |
 |---|---|---|
 | `off` | `enable_thinking=false` | `enable_thinking=false` |
