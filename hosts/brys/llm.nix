@@ -268,6 +268,22 @@ let
     cacheTypeK = qwenCacheTypeK;
     cacheTypeV = qwenCacheTypeV;
     cacheRam = qwenCacheRam;
+    # Session cache: automatic save/restore keyed by the x-session-id header
+    # (llama.cpp PR #29738), plus context checkpoints so an edited or branched
+    # follow-up rewinds to a user-turn boundary instead of re-prefilling the
+    # whole prompt. checkpointMinStep is `minutes * 60 * prefill_tok_s`; 10500
+    # is about five minutes at 35 tok/s.
+    #
+    # Measured on brys 2026-10-09: the GDN recurrent state is ~112 MiB, and for
+    # this hybrid model a checkpoint is the recurrent state only (the attention
+    # KV is not stored), so each checkpoint is ~112 MiB in RAM and in the file
+    # appendix. 32 checkpoints x 4 slots is at most ~14 GiB, which fits after
+    # `qwenCacheRam` was lowered to 16 GiB. See
+    # docs/tasks/2026-10/llm-session-cache-persistence/.
+    sessionHeaders = "x-session-id";
+    sessionMaxSessions = 64;
+    ctxCheckpoints = 32;
+    checkpointMinStep = 10500;
   }
   // lib.optionalAttrs (qwenNGpuLayers != null) {
     nGpuLayers = qwenNGpuLayers;
@@ -376,6 +392,17 @@ in
       download.mode = "fast-polite";
       download.xetConcurrency = 8;
 
+      # Disk-backed session cache for the Qwen specialisations. The model opts
+      # in with perf.sessionHeaders (see qwenPerf). The directory is persisted
+      # under usr/cache (see the nixos block) and pruned to maxBytes /
+      # maxAgeMinutes by the slot's kdn-llm-session-prune timer.
+      sessionStore = {
+        path = "/var/lib/kdn/llms/sessions";
+        group = "llama-cpp-sessions";
+        maxBytes = 200 * 1024 * 1024 * 1024;
+        maxAgeMinutes = 1440;
+      };
+
       # Router and model definitions. The small set is included only for a
       # small-only host; a frontier host keeps DS4 alone on the box.
       models = (lib.optionalAttrs withSmall small.kdn.llm.local.models) // frontierModels // qwenModels;
@@ -409,6 +436,19 @@ in
         # World-readable so any user (and the llama-cpp DynamicUser) can read
         # the models; the download script keeps files 644 / dirs 755.
         mode = "0755";
+      }
+    ];
+
+    # Keep the llama-server session cache on the persistent usr/cache dataset.
+    # Mode 0770 with the llama-cpp-sessions group: the llama-cpp DynamicUser
+    # joins that group (the slot wires it), so the persisted directory stays
+    # writable without world access. A session file holds plaintext prompt
+    # tokens and KV, so it must not be world-readable.
+    kdn.disks.persist."usr/cache".directories = [
+      {
+        directory = "/var/lib/kdn/llms/sessions";
+        mode = "0770";
+        group = "llama-cpp-sessions";
       }
     ];
 
