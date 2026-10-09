@@ -428,7 +428,7 @@ aspects, the registry holds 205, and four split names also appear in a main-tabl
 | `gh` | `modules/slots/gh/default.nix` |
 | `jj` | `modules/slots/jj/default.nix` |
 | `jj-fork` | `modules/slots/jj/fork/default.nix` |
-| `llm` | `modules/slots/llm/default.nix` |
+| `llm` | (source slot removed 2026-10-10; the aspect is now the only implementation, brys uses it) |
 | `llm-client` | `modules/slots/llm/client/default.nix` |
 | `llm-proxy` | `modules/slots/llm/proxy/default.nix` |
 | `mcp` | `modules/slots/mcp/default.nix` |
