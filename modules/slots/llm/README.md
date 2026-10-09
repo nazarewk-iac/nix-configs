@@ -179,6 +179,7 @@ Global download options (`kdn.llm.local.download.*`):
 | `perf.batchSize` | int or null | `null` | `--batch-size`; larger reuses activated MoE experts over more tokens |
 | `perf.ubatchSize` | int or null | `null` | `--ubatch-size`; the biggest prefill lever (must be `<= batchSize`) |
 | `perf.reasoning` | `on`/`off`/`auto` | `off` | `--reasoning`; off skips invisible thinking so short queries stream immediately |
+| `perf.reasoningEffort` | `minimal`/`low`/`medium`/`high`/`xhigh`/`max` or null | `null` | `--reasoning-effort` default given to the chat template; null omits it (template default). A caller overrides it per request via `chat_template_kwargs` |
 | `perf.specType` | string | `draft-dspark` | `--spec-type` used when `draft.enable` is set |
 | `draft.enable` | bool | `false` | download and use a speculative-decoding draft model for this model |
 | `draft.hfRepo` | string | `""` | HuggingFace repo of the draft GGUF |

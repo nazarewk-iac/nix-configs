@@ -146,6 +146,9 @@ let
         ++ [
           "reasoning = ${perf.reasoning}"
         ]
+        ++ lib.optionals (perf.reasoningEffort != null) [
+          "reasoning-effort = ${perf.reasoningEffort}"
+        ]
         ++ lib.optionals m.draft.enable [
           "spec-type = ${perf.specType}"
           "model-draft = ${draftFile name}"
@@ -902,6 +905,25 @@ in
                 immediately (biggest apparent speedup on reasoning models).
                 Callers can still opt in per request via chat_template_kwargs
                 (enable_thinking / reasoning_effort) without a restart.
+              '';
+            };
+            options.perf.reasoningEffort = lib.mkOption {
+              type = lib.types.nullOr (
+                lib.types.enum [
+                  "minimal"
+                  "low"
+                  "medium"
+                  "high"
+                  "xhigh"
+                  "max"
+                ]
+              );
+              default = null;
+              description = ''
+                Default reasoning effort for this model (--reasoning-effort),
+                given to the chat template. NULL omits the key, so llama keeps
+                the template default. Callers override it per request via
+                chat_template_kwargs (reasoning_effort).
               '';
             };
             options.perf.specType = lib.mkOption {

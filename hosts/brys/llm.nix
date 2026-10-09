@@ -240,7 +240,11 @@ let
   # pool makes `ctx-size` the total shared across the four slots.
   qwenPerf = {
     contextSize = qwenContextSize;
-    reasoning = "off";
+    # Thinking is available to clients: `auto` lets the template decide, so it is
+    # on for this reasoning model, and the default effort is `low`. A caller
+    # overrides the level per request via chat_template_kwargs.reasoning_effort.
+    reasoning = "auto";
+    reasoningEffort = "low";
     batchSize = 4096;
     ubatchSize = 4096;
     parallel = 4;

@@ -179,6 +179,9 @@
           ++ [
             "reasoning = ${perf.reasoning}"
           ]
+          ++ lib.optionals (perf.reasoningEffort != null) [
+            "reasoning-effort = ${perf.reasoningEffort}"
+          ]
           ++ lib.optionals m.draft.enable [
             "spec-type = ${perf.specType}"
             "model-draft = ${draftFile name}"
@@ -704,6 +707,25 @@
             Reasoning mode for this model (`-rea`). `off` skips the invisible thinking block, so a
             short query streams tokens at once. A caller still opts in per request through
             `chat_template_kwargs`, with no restart.
+          '';
+        };
+
+        options.perf.reasoningEffort = lib.mkOption {
+          type = lib.types.nullOr (
+            lib.types.enum [
+              "minimal"
+              "low"
+              "medium"
+              "high"
+              "xhigh"
+              "max"
+            ]
+          );
+          default = null;
+          description = ''
+            Default reasoning effort for this model (`--reasoning-effort`), given to the chat
+            template. NULL omits the key, so llama keeps the template default. A caller overrides
+            it per request through `chat_template_kwargs` (`reasoning_effort`).
           '';
         };
 
