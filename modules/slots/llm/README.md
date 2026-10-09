@@ -174,6 +174,10 @@ Global download options (`kdn.llm.local.download.*`):
 | `perf.flashAttention` | `on`/`off`/`auto` | `on` | `--flash-attn` |
 | `perf.contextSize` | int or null | `null` | `--ctx-size` (KV-cache RAM budget); null uses the model default |
 | `perf.cacheRam` | int or null | `null` | `--cache-ram` (MiB); the prompt-cache ceiling (8192 MiB llama default). `-1` = no limit, `0` = off. Grows on demand |
+| `perf.ctxCheckpoints` | int or null | `null` | `--ctx-checkpoints`; max context checkpoints per slot (llama default 32). A checkpoint is a rewind point at a user-turn boundary; for a hybrid model it holds only the recurrent state. Needs the `llama-cpp-sessions` build |
+| `perf.checkpointMinStep` | int or null | `null` | `--checkpoint-min-step` tokens; set to `minutes * 60 * prefill_tok_s` (llama default 8192) |
+| `perf.sessionHeaders` | string or null | `null` | `--slot-save-sessions`; comma-separated HTTP header names that carry the session id. Enables the disk session cache and emits `slot-save-path` from `sessionStore`. Requires `sessionStore` |
+| `perf.sessionMaxSessions` | int or null | `null` | `--slot-save-sessions-max`; count bound on saved session files (llama default 128). The byte/age bound is the `sessionStore` prune |
 | `perf.mmap` | bool | `true` | memory-map the model file |
 | `perf.parallel` | int | `1` | `--parallel` server slots (1 wastes no KV cache) |
 | `perf.kvUnified` | bool or null | `null` | `--kv-unified`/`--no-kv-unified`; null omits it. With unified KV `ctx-size` is one shared pool, not per slot |
@@ -185,6 +189,19 @@ Global download options (`kdn.llm.local.download.*`):
 | `draft.enable` | bool | `false` | download and use a speculative-decoding draft model for this model |
 | `draft.hfRepo` | string | `""` | HuggingFace repo of the draft GGUF |
 | `draft.hfFile` | string | `""` | GGUF file name of the draft within `draft.hfRepo` |
+
+### Disk session store
+
+`kdn.llm.local.sessionStore` (default `null`) supplies the disk store for
+`perf.sessionHeaders`. When set it has `path` (absolute, must exist),
+`group` (default `llama-cpp-sessions`; the slot creates it and adds it to the
+llama-cpp DynamicUser), `maxBytes` (default 200 GiB), `maxAgeMinutes` (default
+`null`) and `pruneInterval` (default `15min`). The slot runs a
+`kdn-llm-session-prune` service and timer that delete the oldest files past
+`maxBytes` and any file older than `maxAgeMinutes`. Persist `path` yourself
+(for example under `usr/cache`) with mode `0770` and `group`. The session files
+hold plaintext prompt tokens and KV, so the directory must not be
+world-readable.
 
 The draft model is fetched by `kdn-llm-download` **before** the parent model
 (so it is ready when the router loads the parent), but it is *not* registered

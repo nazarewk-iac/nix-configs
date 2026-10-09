@@ -13,6 +13,8 @@ This directory holds llama.cpp builds from source, for the Qwen3.8-Flash-Next
 | `llama-cpp-master-moe-stream-vulkan` | the same master + PR #25294 | 0.6.0-unstable-2026-10-08 | 11490 | `9c2e0e4` | CPU + Vulkan |
 | `llama-cpp-master-pin-hot-experts-vulkan` | the same master + PR #26414 | 0.6.0-unstable-2026-10-08 | 11490 | `9c2e0e4` | CPU + Vulkan |
 | `llama-cpp-unsloth-mtp` | `danielhanchen/llama.cpp`, branch `qwen4exp/mtp` | 0.4.1 | 11098 | `6fcaa16` | CPU |
+| `llama-cpp-sessions` | `nazarewk-iac/llama.cpp`, branch `main` (master + #26004 + rebased #29738) | 0.6.0-unstable-2026-10-09 | 11539 | `6beadd4d6` | CPU |
+| `llama-cpp-sessions-vulkan` | the same fork source | 0.6.0-unstable-2026-10-09 | 11539 | `6beadd4d6` | CPU + Vulkan |
 
 The `master` rows are experiments, not served builds. The `master-vulkan` and
 `master-noprefetch-vulkan` rows test whether a
@@ -148,6 +150,35 @@ Read the branch head. The output gives the commit:
 ```bash
 git ls-remote https://github.com/danielhanchen/llama.cpp refs/heads/qwen4exp/mtp
 ```
+
+### The session build (`nazarewk-iac/llama.cpp`)
+
+`llama-cpp-sessions` is the fork `nazarewk-iac/llama.cpp`, branch `main`. The
+branch is upstream master plus one cherry-picked commit: PR #29738
+("session-keyed automatic slot save/restore"), rebased so its factored save
+path also appends the #26004 context-checkpoint appendix. Upstream #26004 is
+already in master; the fork exists only because #29738 is still open and does
+not compile against current master (it used the removed `fs_list` helper).
+
+To update it when upstream master moves:
+
+```bash
+# 1. Rebase the PR onto the new master in a local clone of the fork.
+git fetch upstream master && git fetch upstream pull/29738/head:pr29738
+git checkout -B main upstream/master && git cherry-pick pr29738
+# 2. Resolve the server-context.cpp conflicts: keep both the #26004 checkpoint
+#    appendix and the #29738 session path. Rewrite any removed helper
+#    (fs_list -> std::filesystem::directory_iterator).
+# 3. Push to the fork's main, then read the new rev and hash.
+git push --force origin main
+nix run nixpkgs#nix-prefetch-github -- nazarewk-iac llama.cpp --rev <rev>
+```
+
+Update `src.rev`, `src.hash`, `buildCommit` and `buildNumber` in
+[default.nix](default.nix). The build number is the upstream tag plus the
+commit count (`git describe --tags`).
+
+When #29738 merges upstream, delete the fork build and pin upstream master.
 
 ## Get the source hash
 
