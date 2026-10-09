@@ -454,6 +454,39 @@ Model files live at `/var/lib/kdn/llms/models`, registered under
 `kdn.disks.persist."usr/data"` (ZFS `usr/data` dataset) so they survive
 reboots.
 
+### Disk session cache (Qwen)
+
+The Qwen specialisations keep each conversation's KV state on disk, keyed by a
+client session id. A request that carries the id resumes from its saved state
+instead of re-prefilling the whole prompt, and the state survives a server
+restart. This needs the `llama-cpp-sessions` build
+(`packages/llama-cpp`), which carries upstream #26004 (checkpoint persistence)
+plus the rebased PR #29738 (session-keyed save/restore).
+
+- **Store:** `/var/lib/kdn/llms/sessions`, persisted under
+  `kdn.disks.persist."usr/cache"` with mode `0770` and group
+  `llama-cpp-sessions`. The llama-cpp DynamicUser joins that group. The files
+  hold plaintext prompt tokens and KV, so the directory must not be
+  world-readable.
+- **Server flags** (per model, emitted by the slot): `slot-save-path`,
+  `slot-save-sessions = x-session-id`, `slot-save-sessions-max = 64`,
+  `ctx-checkpoints = 32`, `checkpoint-min-step = 10500`.
+- **Client:** the `kdn.llm.client` slot writes an opencode plugin
+  (`.opencode/plugins/kdn-llm-session-id.ts`) that sends `x-session-id` for the
+  LAN provider ids.
+- **Prune:** the `kdn-llm-session-prune` timer (every 15 min) deletes files
+  older than 24 h and, if the store is over 200 GB, the oldest first. Upstream
+  `--slot-save-sessions-max` is a separate count bound applied at startup.
+- **Sizes** (measured 2026-10-09): the GDN recurrent state is ~112 MiB, and a
+  checkpoint is the recurrent state only, so each checkpoint is ~112 MiB. A
+  65-token session file is 356 MB (~114 MB base + 2 checkpoints). For a long
+  session the attention KV (24 KiB/token at F16) becomes the larger term.
+  `ctx-checkpoints 32` bounds the checkpoint RAM at ~14 GiB over four slots,
+  which is why `perf.cacheRam` is 16384 MiB, not 36864.
+
+See [llm-session-cache-persistence](tasks/2026-10/llm-session-cache-persistence/)
+for the full record.
+
 ### Secrets
 
 All LLM secrets live in one shared sops file (`llms.nonsensitive.sops.yaml`) and
