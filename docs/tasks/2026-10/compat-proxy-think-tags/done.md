@@ -94,3 +94,21 @@ unchanged; `flake.lock` was updated to the new fork rev
   (pre-existing, harmless on this host).
 - The raw angle-bracket tags in this task's docs are written as `&lt;…&gt;`
   entities because the agent harness strips literal tags from tool input.
+
+## Follow-up (2026-10-09) — sibling Thought blocks
+
+The first fix exposed a second proxy bug. Each emitted delta carried
+`"tool_calls": []`. OpenCode 1.18.29's `@ai-sdk/openai-compatible` adapter closes
+the active reasoning block on any non-null `delta.tool_calls`, even an empty
+array. Every 32-char section therefore ended its own reasoning block, and the TUI
+showed one "Thought" block per chunk.
+
+Fix (fork commit `53aec40`): drop the `tool_calls` field from the emitted
+`content` and `reasoning_content` deltas.
+
+The standalone test now folds the stream with the adapter's own rule and asserts
+one reasoning block. It passes on the fixed tree and the new package, and fails
+on the previous package with three blocks. Package `w487g7vh…`; brys main
+toplevel `z3ql1hh9…`; `llms-frontier` `fdcpp0ii…` and `llm-qwen` `06qyyn5b…`
+carry the fix. **Not activated** — left for the maintainer.
+
