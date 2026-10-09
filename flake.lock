@@ -1525,11 +1525,11 @@
     "opencode-compat-proxy": {
       "flake": false,
       "locked": {
-        "lastModified": 1791496362,
-        "narHash": "sha256-L90+1uk8y7/e7gAzj0+nLwk5jGdfwHME6tXiFhskpPM=",
+        "lastModified": 1791540301,
+        "narHash": "sha256-L52kRQ1TV+PbHL8t7YCSX1pSD0htm9SqiXdz2DElBOg=",
         "owner": "nazarewk-iac",
         "repo": "opencode_compat_proxy",
-        "rev": "891cb20c535ccc988ee1e26b069dc5f5776e5daf",
+        "rev": "fb4f861576433f1863a458d8f39dc53fe80a754a",
         "type": "github"
       },
       "original": {
