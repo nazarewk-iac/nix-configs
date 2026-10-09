@@ -1,6 +1,7 @@
-# The `llm` slot, as a den aspect. It ports `modules/slots/llm/default.nix`.
-#
-# The slot stays in place and keeps working. This file is the parallel den implementation.
+# The `llm` aspect: local GGUF serving. It was ported from the universal
+# `modules/slots/llm/default.nix` server slot, which was removed on 2026-10-10
+# once brys moved to this aspect. This file is now the only implementation of
+# the LLM server. The `llm-client` and `llm-proxy` subslots stay in place.
 #
 # ## What it does
 #
