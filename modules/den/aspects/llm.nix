@@ -89,10 +89,11 @@
 
       hf = lib.getExe pkgs.python3Packages.huggingface-hub;
 
-      # The compat proxy comes from a plain `callPackage`, with no overlay. The slot reads
-      # `pkgs.kdn.opencode-compat-proxy`, so a consumer must add this repository's `packages` overlay
-      # first. A relative path needs no overlay. ./mcp-snoop.nix carries the same pattern.
-      compatProxyPkg = pkgs.callPackage ../../../packages/opencode-compat-proxy { };
+      # The compat proxy. The package reads its own source from the `opencode-compat-proxy` flake
+      # input, and the den aspect has no `inputs`, so the repository overlay that supplies it
+      # (`pkgs.kdn.opencode-compat-proxy`) is the route. A consumer adds this repository's `packages`
+      # overlay, exactly as the slot route required. ./mcp-snoop.nix carries a similar pattern.
+      compatProxyPkg = pkgs.kdn.opencode-compat-proxy;
 
       enabledModels = lib.filterAttrs (_: m: m.enable) cfg.models;
 
@@ -148,8 +149,39 @@
           ++ lib.optionals (perf.contextSize != null) [
             "ctx-size = ${toString perf.contextSize}"
           ]
+          ++ lib.optionals (perf.ropeScaling != null) [
+            "rope-scaling = ${perf.ropeScaling}"
+          ]
+          ++ lib.optionals (perf.ropeScale != null) [
+            "rope-scale = ${toString perf.ropeScale}"
+          ]
+          ++ lib.optionals (perf.ropeFreqBase != null) [
+            "rope-freq-base = ${toString perf.ropeFreqBase}"
+          ]
+          ++ lib.optionals (perf.yarnOrigCtx != null) [
+            "yarn-orig-ctx = ${toString perf.yarnOrigCtx}"
+          ]
+          ++ lib.optionals (perf.cacheTypeK != null) [
+            "cache-type-k = ${perf.cacheTypeK}"
+          ]
+          ++ lib.optionals (perf.cacheTypeV != null) [
+            "cache-type-v = ${perf.cacheTypeV}"
+          ]
           ++ lib.optionals (perf.cacheRam != null) [
             "cache-ram = ${toString perf.cacheRam}"
+          ]
+          ++ lib.optionals (perf.ctxCheckpoints != null) [
+            "ctx-checkpoints = ${toString perf.ctxCheckpoints}"
+          ]
+          ++ lib.optionals (perf.checkpointMinStep != null) [
+            "checkpoint-min-step = ${toString perf.checkpointMinStep}"
+          ]
+          ++ lib.optionals (perf.sessionHeaders != null) [
+            "slot-save-path = ${cfg.sessionStore.path}"
+            "slot-save-sessions = ${perf.sessionHeaders}"
+          ]
+          ++ lib.optionals (perf.sessionMaxSessions != null) [
+            "slot-save-sessions-max = ${toString perf.sessionMaxSessions}"
           ]
           ++ lib.optionals (perf.batchSize != null) [
             "batch-size = ${toString perf.batchSize}"
@@ -172,8 +204,10 @@
           ++ lib.optionals (m.aliases != [ ]) [
             "alias = ${lib.concatStringsSep "," m.aliases}"
           ]
-          ++ [
+          ++ lib.optionals (perf.mmap != null) [
             "mmap = ${if perf.mmap then "on" else "off"}"
+          ]
+          ++ [
             "parallel = ${toString perf.parallel}"
           ]
           ++ lib.optionals (perf.kvUnified != null) [
@@ -593,6 +627,60 @@
           '';
         };
 
+        options.perf.ropeScaling = lib.mkOption {
+          type =
+            with lib.types;
+            nullOr (enum [
+              "none"
+              "linear"
+              "yarn"
+            ]);
+          default = null;
+          description = ''
+            RoPE scaling type (`--rope-scaling`). `null` omits the key, so llama-server uses the
+            model default. Set `"yarn"` to extend the context past the native window.
+          '';
+        };
+
+        options.perf.ropeScale = lib.mkOption {
+          type = with lib.types; nullOr float;
+          default = null;
+          description = ''
+            RoPE scaling factor (`--rope-scale`). With `yarn` this is the context-extension factor:
+            2.0 for 512K from a 256K native window, 4.0 for 1M. `null` omits the key.
+          '';
+        };
+
+        options.perf.ropeFreqBase = lib.mkOption {
+          type = with lib.types; nullOr ints.positive;
+          default = null;
+          description = "RoPE base frequency (`--rope-freq-base`). `null` omits the key.";
+        };
+
+        options.perf.yarnOrigCtx = lib.mkOption {
+          type = with lib.types; nullOr ints.positive;
+          default = null;
+          description = "Original (training) context length `yarn` scales from (`--yarn-orig-ctx`). `null` omits the key.";
+        };
+
+        options.perf.cacheTypeK = lib.mkOption {
+          type = with lib.types; nullOr str;
+          default = null;
+          description = ''
+            KV-cache K quantisation type (`--cache-type-k`, e.g. `"q8_0"`). `null` keeps F16. Use it
+            only when F16 KV does not fit at a large context.
+          '';
+        };
+
+        options.perf.cacheTypeV = lib.mkOption {
+          type = with lib.types; nullOr str;
+          default = null;
+          description = ''
+            KV-cache V quantisation type (`--cache-type-v`, e.g. `"q8_0"`). `null` keeps F16. Use it
+            only when F16 KV does not fit at a large context.
+          '';
+        };
+
         options.perf.cacheRam = lib.mkOption {
           type = with lib.types; nullOr int;
           default = null;
@@ -605,10 +693,60 @@
           '';
         };
 
+        options.perf.ctxCheckpoints = lib.mkOption {
+          type = with lib.types; nullOr int;
+          default = null;
+          description = ''
+            Maximum context checkpoints per slot (`--ctx-checkpoints` / `-ctxcp`). A checkpoint is a
+            snapshot of the sequence state at a user-turn boundary, used to rewind to a prefix when
+            a follow-up diverges from the cached prompt. For a hybrid model a checkpoint holds only
+            the recurrent state; for an attention-only model it holds the whole KV up to that point.
+            `null` omits the key (llama default 32). Needs a llama.cpp build with the checkpoint
+            appendix (see packages/llama-cpp).
+          '';
+        };
+
+        options.perf.checkpointMinStep = lib.mkOption {
+          type = with lib.types; nullOr ints.positive;
+          default = null;
+          description = ''
+            Minimum spacing between context checkpoints in tokens (`--checkpoint-min-step` / `-cms`).
+            A checkpoint saves a re-prefill, so set this to `minutes * 60 * prefill_tok_s` (for
+            example 10500 for about five minutes at 35 tok/s). `null` omits the key (llama default
+            8192).
+          '';
+        };
+
+        options.perf.sessionHeaders = lib.mkOption {
+          type = with lib.types; nullOr str;
+          default = null;
+          description = ''
+            Enable session-keyed automatic save/restore (`--slot-save-sessions`). A comma-separated
+            list of HTTP header names, in priority order, that may carry the conversation session
+            id; the body field `session_id` always wins. `null` omits the key, so the feature stays
+            off. Requires `kdn.llm.local.sessionStore`, which supplies the directory.
+          '';
+        };
+
+        options.perf.sessionMaxSessions = lib.mkOption {
+          type = with lib.types; nullOr ints.positive;
+          default = null;
+          description = ''
+            Maximum number of session save files to keep (`--slot-save-sessions-max`). `null` omits
+            the key (llama default 128). The byte cap is enforced separately by the session-store
+            prune timer, so this is a second, count-based bound.
+          '';
+        };
+
         options.perf.mmap = lib.mkOption {
-          type = lib.types.bool;
+          type = with lib.types; nullOr bool;
           default = true;
-          description = "Memory-map the model file, instead of a copy into the page cache.";
+          description = ''
+            Memory-map the model file, instead of a copy into the page cache. `null` omits the key,
+            so llama-server uses its own default. Needed for builds that dropped `--mmap` (for
+            example llama.cpp v0.6.0, which has only `--load-mode`): the router rejects an unknown
+            preset key at startup.
+          '';
         };
 
         options.perf.loadMode = lib.mkOption {
@@ -861,6 +999,53 @@
         description = "The llama.cpp package that supplies `llama-server`.";
       };
 
+      # The disk-backed session store for the session-keyed automatic save/restore
+      # (`perf.sessionHeaders`) and the context-checkpoint appendix. `null` keeps the feature off.
+      options.kdn.llm.local.sessionStore = lib.mkOption {
+        default = null;
+        type = lib.types.nullOr (
+          lib.types.submodule {
+            options = {
+              path = lib.mkOption {
+                type = lib.types.str;
+                example = "/var/lib/kdn/llms/sessions";
+                description = ''
+                  Absolute path of the session save directory (`--slot-save-path`). The directory
+                  must exist when a child starts. Persist it (for example under `usr/cache`) and give
+                  it the `group` below with mode 0770.
+                '';
+              };
+              group = lib.mkOption {
+                type = lib.types.str;
+                default = "llama-cpp-sessions";
+                description = ''
+                  Group that owns the session directory. The aspect creates the group and adds it to
+                  the llama-cpp DynamicUser as a supplementary group, so a persisted directory with a
+                  fixed group and mode 0770 stays writable.
+                '';
+              };
+              maxBytes = lib.mkOption {
+                type = lib.types.ints.positive;
+                default = 200 * 1024 * 1024 * 1024;
+                description = "Delete the oldest session files when the directory exceeds this many bytes (LRU by mtime).";
+              };
+              maxAgeMinutes = lib.mkOption {
+                type = with lib.types; nullOr ints.positive;
+                default = null;
+                example = 1440;
+                description = "Delete session files older than this many minutes. `null` disables the age rule.";
+              };
+              pruneInterval = lib.mkOption {
+                type = lib.types.str;
+                default = "15min";
+                description = "How often the prune timer runs (systemd.time span).";
+              };
+            };
+          }
+        );
+        description = "Disk-backed session store for `--slot-save-path` / `--slot-save-sessions`. `null` keeps the feature off.";
+      };
+
       # The LAN gate. All three values below come from the consumer, and all three must hold a value
       # before the Caddy vhost appears.
       options.kdn.llm.local.domain = lib.mkOption {
@@ -1025,7 +1210,18 @@
                 + "(no hyphen, no underscore, no upper case); got: "
                 + lib.concatStringsSep ", " (builtins.attrNames enabledRouters);
             }
-          ];
+          ]
+          ++ lib.optionals
+            (
+              lib.any (m: m.perf.sessionHeaders != null) (lib.attrValues enabledModels)
+              && cfg.sessionStore == null
+            )
+            [
+              {
+                assertion = false;
+                message = "kdn.llm.local: a model sets perf.sessionHeaders but kdn.llm.local.sessionStore is null; set sessionStore to supply the save directory.";
+              }
+            ];
 
         # The primary router: one process, an on-demand model load, exactly one resident model. The
         # nixpkgs module maps `settings.*` onto the flags.
@@ -1054,8 +1250,11 @@
         systemd.services = lib.mkMerge [
           routerUnits
           {
-            # The router runs as a DynamicUser, and it must read the models.
-            llama-cpp.serviceConfig.ReadWritePaths = [ cfg.modelsDir ];
+            # The router runs as a DynamicUser, and it must read the models and write the session
+            # store when one is configured.
+            llama-cpp.serviceConfig.ReadWritePaths =
+              [ cfg.modelsDir ]
+              ++ lib.optionals (cfg.sessionStore != null) [ cfg.sessionStore.path ];
             # Raise the mlock limit, so an mlocked model locks. systemd defaults MEMLOCK to 8 MiB,
             # and that fails every mlock of a large model.
             llama-cpp.serviceConfig.LimitMEMLOCK = "infinity";
@@ -1141,7 +1340,54 @@
               '';
             };
           }
+          # The disk session store: let the llama-cpp DynamicUser join the group that owns the
+          # persisted directory, and prune the store on a timer. Both only when a store is set.
+          (lib.mkIf (cfg.sessionStore != null) {
+            llama-cpp.serviceConfig.SupplementaryGroups = [ cfg.sessionStore.group ];
+            kdn-llm-session-prune = {
+              description = "Prune the llama-server disk session store";
+              path = with pkgs; [
+                coreutils
+                findutils
+                gawk
+              ];
+              serviceConfig.Type = "oneshot";
+              script = ''
+                set -euo pipefail
+                dir=${lib.escapeShellArg cfg.sessionStore.path}
+                max_bytes=${toString cfg.sessionStore.maxBytes}
+                if [ -d "$dir" ]; then
+                  ${lib.optionalString (cfg.sessionStore.maxAgeMinutes != null) ''
+                    find "$dir" -maxdepth 1 -type f -name 'llama-session-*' -mmin +${toString cfg.sessionStore.maxAgeMinutes} -delete
+                  ''}
+                  total=$(find "$dir" -maxdepth 1 -type f -printf '%s\n' | awk '{s+=$1} END {print s+0}')
+                  if [ "$total" -gt "$max_bytes" ]; then
+                    while IFS= read -r f; do
+                      [ "$total" -le "$max_bytes" ] && break
+                      sz=$(stat -c %s "$f")
+                      rm -f -- "$f"
+                      total=$((total - sz))
+                    done < <(find "$dir" -maxdepth 1 -type f -printf '%T@ %p\n' | sort -n | cut -d' ' -f2-)
+                  fi
+                fi
+              '';
+            };
+          })
         ];
+
+        # The session store group: the persisted directory is owned by this fixed group and the
+        # llama-cpp DynamicUser joins it (see SupplementaryGroups above).
+        users.groups = lib.mkIf (cfg.sessionStore != null) {
+          ${cfg.sessionStore.group} = { };
+        };
+
+        systemd.timers.kdn-llm-session-prune = lib.mkIf (cfg.sessionStore != null) {
+          wantedBy = [ "timers.target" ];
+          timerConfig = {
+            OnBootSec = "5min";
+            OnUnitActiveSec = cfg.sessionStore.pruneInterval;
+          };
+        };
 
         # The one LAN gate. Caddy terminates TLS with the consumer's own certificate, and it reverse
         # proxies to the loopback compat proxy, which passes through to the router.
