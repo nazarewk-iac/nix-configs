@@ -370,9 +370,11 @@ in
   # The `kdn.llm.local.*` slot assignments. Merge this into the host's own
   # `mkSlots` call: a second `mkSlots` call would collide on the read-only
   # `slots` option that every rendered target declares.
+  # The data half of the LLM wiring, consumed by the den `llm` aspect (inclusion
+  # is the switch, so there is no `enable`). See the `nixos` attrset below for
+  # the host-side half.
   slot = {
     kdn.llm.local = {
-      enable = true;
       # The host picks the llama.cpp build; the Qwen MTP benchmark swaps it.
       package = llamaPackage';
       # This machine has 16 physical cores. The slot names no thread count now,
@@ -400,7 +402,7 @@ in
         path = "/var/lib/kdn/llms/sessions";
         group = "llama-cpp-sessions";
         maxBytes = 200 * 1024 * 1024 * 1024;
-        maxAgeMinutes = 1440;
+        # No age rule: prune only when the store exceeds maxBytes.
       };
 
       # Router and model definitions. The small set is included only for a

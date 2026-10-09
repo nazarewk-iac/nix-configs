@@ -23,11 +23,10 @@ let
   slots = kdnConfig.self.mkSlots {
     inherit pkgs;
     imports = [
-      # Local LLM serving (llama-server router mode, TLS behind caddy). Models
-      # are registered under kdn.disks.persist."usr/data" by the shared module;
-      # the slot receives only the path and the cert/key path fragments.
-      llm.slot
       # kdn's own host connectivity graph (moss/etra/drek/oams/brys/anji).
+      # Local LLM serving moved from the universal slot to the den `llm` aspect
+      # (see the imports list below); its `kdn.llm.local` data comes from
+      # `llm.slot` there.
     ]
     ++ (builtins.filter builtins.pathExists [
       "${kdnConfig.self}/data/slots/slots-ssh-access.nix"
@@ -53,12 +52,16 @@ in
     # with the llm-ds4 boot specialisation via ./llm.nix.
     llm.nixos
     "${kdnConfig.self}/data/ca/ca-dag.nix"
+    # Local LLM serving via the den `llm` aspect (llama-server router mode, TLS
+    # behind Caddy). `llm.slot` supplies the `kdn.llm.local` data.
+    llm.slot
     {
       imports = kdnConfig.self.denLib.imports {
         class = "nixos";
         aspects = [
           "ca-dag"
           "certificates"
+          "llm"
         ];
       };
     }

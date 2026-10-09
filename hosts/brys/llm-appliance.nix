@@ -34,20 +34,19 @@
   # Defaults to empty, so the other entries are unaffected.
   extraConfig ? { },
 }:
-let
-  slots = kdnConfig.self.mkSlots {
-    inherit pkgs;
-    # LLM serving is the whole point of these boot entries: the same slot wiring
-    # as the main brys config (models, downloads, caddy/proxy).
-    imports = [ llm.slot ];
-  };
-in
 {
   imports = [
     kdnConfig.self.nixosModules.default
-    slots.config.nixos
+    # LLM serving via the den `llm` aspect (llama-server router mode, TLS behind
+    # Caddy); `llm.slot` supplies the `kdn.llm.local` data, and `llm.nixos` the
+    # host-side secrets and model persistence.
+    llm.slot
     llm.nixos
-  ];
+  ]
+  ++ kdnConfig.self.denLib.imports {
+    class = "nixos";
+    aspects = [ "llm" ];
+  };
 
   config = lib.mkMerge [
     # ---- Boot as a minimal appliance ---------------------------------------
