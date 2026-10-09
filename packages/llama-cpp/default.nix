@@ -173,6 +173,24 @@ let
       hash = "sha256-6S2c/usl0ZbuGG/iZXKhSJyz6PK3Ab2uGtpO9tF7LKI=";
     };
   };
+
+  # nazarewk-iac/llama.cpp `main`, head 472a415b5 (2026-10-09). It is upstream
+  # master 79e2e74 (tag b11538, which already carries the merged #26004 context
+  # checkpoint persistence) plus one cherry-picked commit: PR #29738
+  # "session-keyed automatic slot save/restore", rebased so its factored save
+  # path also appends the #26004 checkpoint appendix. This is the build the Qwen
+  # session cache uses. Update it with the procedure in README.md.
+  sessions = {
+    version = "0.6.0-unstable-2026-10-09";
+    buildNumber = "11539";
+    buildCommit = "6beadd4d6";
+    src = pkgs.fetchFromGitHub {
+      owner = "nazarewk-iac";
+      repo = "llama.cpp";
+      rev = "6beadd4d6b73a87c61208cf76067eb7fd64ffea0";
+      hash = "sha256-IoCECNiydNqdokxf31tJdKMwPF4J4MnO2IMw8Zv+ZmM=";
+    };
+  };
 in
 {
   # The version string cannot be an attribute name (a dot is not valid in a Nix
@@ -213,6 +231,26 @@ in
     master
     // {
       pname = "llama-cpp-master-vulkan";
+      vulkan = true;
+    }
+  );
+
+  # The Qwen session-cache build: nazarewk-iac fork `main`, CPU-only. It carries
+  # the merged #26004 checkpoint persistence plus the rebased #29738
+  # session-keyed save/restore. See the `sessions` source above.
+  llama-cpp-sessions = mkLlamaCpp (
+    sessions
+    // {
+      pname = "llama-cpp-sessions";
+    }
+  );
+
+  # The same fork source with the Vulkan backend, for parity with the other
+  # master builds.
+  llama-cpp-sessions-vulkan = mkLlamaCpp (
+    sessions
+    // {
+      pname = "llama-cpp-sessions-vulkan";
       vulkan = true;
     }
   );
