@@ -58,13 +58,14 @@ def session():
         subprocess.run(["zellij", "delete-session", name], capture_output=True)
 
 
-def run(*args, input_text=None, check=True):
+def run(*args, input_text=None, check=True, timeout=None):
     return subprocess.run(
         args,
         input=input_text,
         capture_output=True,
         text=True,
         check=check,
+        timeout=timeout,
     )
 
 
@@ -275,6 +276,96 @@ def test_derived_session_fits_socket_and_runs(session):
     finally:
         subprocess.run(["zellij", "kill-session", derived], capture_output=True, env=env)
         subprocess.run(["zellij", "delete-session", derived], capture_output=True, env=env)
+
+
+# A fake OpenCode TUI: it shows a session id and the "esc interrupt" running
+# indicator for a few seconds, then clears and goes idle. Enough for `list` and
+# `watch` to exercise the real parsing.
+FAKE_OPENCODE = """\
+#!/usr/bin/env bash
+echo "ses_fake000000000000000000000000"
+echo "esc interrupt"
+sleep 3
+printf '\\033[2J\\033[H'
+echo "ses_fake000000000000000000000000"
+echo "opencode idle prompt"
+sleep 300
+"""
+
+
+def make_fake_opencode(tmp_path):
+    p = tmp_path / "fake-opencode"
+    p.write_text(FAKE_OPENCODE)
+    p.chmod(0o755)
+    return str(p)
+
+
+def test_opencode_attach_prints_command(session):
+    out = run("zellij-llm", "opencode", "attach", "--session", session)
+    assert session in out.stdout
+    assert "zellij attach" in out.stdout
+
+
+def test_opencode_spawn_dry_run_wraps_devenv(tmp_path):
+    # A devenv project (devenv.nix present) wraps the command in `devenv shell --`.
+    (tmp_path / "devenv.nix").write_text("{ }\n")
+    out = run("zellij-llm", "opencode", "spawn", "--cwd", str(tmp_path), "--dry-run")
+    assert out.stdout.strip().startswith("devenv shell -- opencode")
+
+
+def test_opencode_spawn_dry_run_no_devenv(tmp_path):
+    out = run("zellij-llm", "opencode", "spawn", "--cwd", str(tmp_path), "--dry-run")
+    assert out.stdout.strip().startswith("opencode")
+    # --model and --opencode-arg pass through.
+    out = run(
+        "zellij-llm", "opencode", "spawn", "--cwd", str(tmp_path), "--dry-run",
+        "--model", "brys/qwen3.8-flash-next", "--opencode-arg=--print-logs",
+    )
+    assert "--model brys/qwen3.8-flash-next" in out.stdout
+    assert "--print-logs" in out.stdout
+
+
+def test_opencode_spawn_and_list(session, tmp_path):
+    fake = make_fake_opencode(tmp_path)
+    run(
+        "zellij-llm", "opencode", "spawn", "--session", session, "--pane", "oc",
+        "--no-devenv", "--opencode-bin", "bash", "--opencode-arg", fake,
+    )
+    assert wait_for(lambda: "ses_fake000000000000000000000000" in peek(session, "oc", full=True), timeout=15)
+    out = run("zellij-llm", "opencode", "list", "--session", session)
+    assert "ses_fake000000000000000000000000" in out.stdout
+    assert "oc" in out.stdout
+
+
+def test_opencode_watch_reports_running_then_idle(session, tmp_path):
+    fake = make_fake_opencode(tmp_path)
+    run(
+        "zellij-llm", "opencode", "spawn", "--session", session, "--pane", "ocw",
+        "--no-devenv", "--opencode-bin", "bash", "--opencode-arg", fake,
+    )
+    # The fake shows "esc interrupt" for ~3s, then goes idle. A bounded watch must
+    # observe both states and return on its own.
+    assert wait_for(lambda: "esc interrupt" in peek(session, "ocw"), timeout=15)
+    out = run(
+        "zellij-llm", "opencode", "watch", "--session", session, "--pane", "ocw",
+        "--interval", "1", "--for", "10s",
+        check=False, timeout=40,
+    )
+    assert "state=RUNNING" in out.stdout
+    assert "state=IDLE" in out.stdout
+    assert "watch window ended" in out.stdout
+
+
+def test_opencode_send_returns_ok(session, tmp_path):
+    fake = make_fake_opencode(tmp_path)
+    run(
+        "zellij-llm", "opencode", "spawn", "--session", session, "--pane", "ocs",
+        "--no-devenv", "--opencode-bin", "bash", "--opencode-arg", fake,
+    )
+    assert wait_for(lambda: "ses_fake" in peek(session, "ocs", full=True), timeout=15)
+    out = run("zellij-llm", "opencode", "send", "--session", session, "--pane", "ocs",
+              "--text", "continue the work", check=False, timeout=15)
+    assert out.returncode == 0
 
 
 if __name__ == "__main__":
