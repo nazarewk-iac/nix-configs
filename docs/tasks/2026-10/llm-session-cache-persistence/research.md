@@ -368,3 +368,38 @@ repo.
 - [docs/local-llms.md](../../../local-llms.md) — model geometry and RAM levers.
 - Upstream: #29678, #29738, #26004, #29201, #20697, #24004, #20822, #28194,
   #28276, #28619, #26676, #30129.
+
+## 10. Measured results (2026-10-09)
+
+All numbers are from the `llms-frontier` boot on brys, the
+`nazarewk-iac/llama.cpp` build `6beadd4d6` (`llama-cpp-sessions`).
+
+| Quantity | Value |
+|---|---|
+| GDN recurrent state (per sequence) | ~112 MiB |
+| Context checkpoint (hybrid, recurrent only) | ~112 MiB |
+| Session file, 65-token prompt, 2 checkpoints | 356 MB |
+| of which checkpoint appendix | 225.142 MiB (journal) |
+| Draft state file `.dft` | ~130-158 KB |
+| `--ctx-checkpoints 32` worst-case RAM (4 slots) | ~14 GiB |
+| Qwen child `VmRSS` with `cache-ram 16384` | ~116.5 GB |
+
+The recurrent state dominates a short session: the base file is ~114 MB even
+for 65 tokens, because the attention KV for a few tokens is tiny but the GDN
+state is fixed at ~112 MiB. For a long session the attention KV (24 KiB/token
+at F16) becomes the larger term.
+
+Restart round trip (Qwen, `session_id` = `test-1`, slot 3):
+
+```
+evict  -> journal: appended 2 context checkpoint(s) (225.142 MiB)
+restart
+request -> timings: prompt_n 4, cache_n 42
+          journal: restored 2 context checkpoint(s)
+                   restored session test-1 from .../llama-session-test-1.bin
+```
+
+Manual mechanism on the pinned v0.6.0 build (Qwen2.5-0.5B, 12 KiB/token, no
+checkpoint appendix): cold `prompt_n 2001 / cache_n 0`; save 24,657,848 bytes;
+restart; restore; same prompt `prompt_n 1 / cache_n 2000`; continuation
+`prompt_n 7 / cache_n 2001`.
