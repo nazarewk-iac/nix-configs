@@ -149,7 +149,8 @@ The empty change on top is a **wrap-up** step, not a checkpoint or a container.
 Prefer `jj split` over `jj describe` + a bare `jj new`: `jj describe` names the **whole** working
 copy at once, and the following unnamed `jj new` buries that named change under a fresh empty
 change. `jj split` names one logical changeset and leaves the rest of the work in `@`, so commit and
-absorb as each change lands rather than describing one lump at the end.
+absorb as each change lands rather than describing one lump at the end. **Commit proactively — do
+not wait for the user to explicitly ask you to commit.**
 
 ```bash
 # wrong: create a commit up front, then wrestle to fix topology

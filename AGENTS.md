@@ -8,6 +8,15 @@ timestamp: 2026-07-09T15:32:54+02:00
 
 AI Agent Guidance for nix-configs Repository.
 
+## Committing is expected, not requested
+
+Commit as you go. The moment a piece of work is a self-contained change, carve
+it out of `@` with `jj split -m 'msg' -- <files>`; fold a small fixup into the
+changeset that introduced the line with `jj absorb`. **Do this proactively — do
+not wait for the user to explicitly ask you to commit.** Do not let unrelated
+edits pile up in `@`. Never push; the user reviews and pushes. See
+[Jujutsu VCS](.agents/rules/jujutsu-vcs.md).
+
 ## Topic Files
 
 - [Jujutsu VCS](.agents/rules/jujutsu-vcs.md) — jj mandate, working copy, split, bookmark hygiene, fork rebase (full doc: [docs/jujutsu-vcs.md](docs/jujutsu-vcs.md), fork topology: [docs/jujutsu-vcs.fork.md](docs/jujutsu-vcs.fork.md); short pointer also at [version-control.md](.agents/rules/version-control.md))
