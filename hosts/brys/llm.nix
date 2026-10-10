@@ -130,6 +130,7 @@ let
   # llms-frontier entry); a router rejects two models claiming one alias. The
   # dedicated Qwen entry (no DS4) keeps `frontier`.
   qwenTierSuffixes = [
+    "512k"
     "256k"
     "128k"
     "64k"
