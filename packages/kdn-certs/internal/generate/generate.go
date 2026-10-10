@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"kdn-certs/internal/certinfo"
 	"kdn-certs/internal/decl"
@@ -26,6 +27,14 @@ import (
 type Signer interface {
 	GenerateKey(keyOut string) error
 	SignLeaf(req smallstep.LeafRequest) error
+}
+
+// SSHSigner generates an ed25519 key and signs an SSH user or host certificate. It is
+// `smallstep.SSHSigner`. `apply` reaches it for a leaf whose `type` is `ssh-user` or `ssh-host`;
+// the TLS `Signer` refuses those. See sub-task 008.
+type SSHSigner interface {
+	GenerateSSHKey(keyOut string) error
+	SignSSH(req smallstep.SSHCertRequest) error
 }
 
 // Decryptor decrypts a SOPS key file. It is `sops.Decryptor`.
@@ -44,6 +53,9 @@ type Deps struct {
 	Root string
 	// Signer generates keys and signs leaves.
 	Signer Signer
+	// SSHSigner generates an ed25519 key and signs SSH leaves. It may be nil when the caller knows
+	// no `ssh-user` or `ssh-host` leaf is declared; an SSH leaf with a nil SSHSigner is a hard error.
+	SSHSigner SSHSigner
 	// Decryptor decrypts an `external` CA or leaf key.
 	Decryptor Decryptor
 	// Encryptor SOPS-encrypts a managed private key.
@@ -140,11 +152,120 @@ func Run(cas decl.CAs, result dedup.Result, deps Deps) (Result, error) {
 	return out, nil
 }
 
+// sshValidityDefault is the OpenSSH validity interval `apply` asks the SSH CA to sign. `apply` is
+// the automation path, so the interval is the long automation class of design § 7.0, not the short
+// interactive one `ssh login` uses. The exact value is a security choice for the task owner; this
+// default is what makes a declared `ssh-host` leaf re-signable without an interactive tool.
+const sshValidityDefault = "+30d"
+
 // generateOne generates one certificate: key, sign, write the public cert, SOPS-encrypt the key.
 //
 // The private key is written plain to a temporary file, SOPS-encrypted next to the public
 // certificate, and the temporary file is removed. So no plaintext key survives the call.
+//
+// A `tls-server` or `tls-client` leaf goes through `generateTLS`. An `ssh-user` or `ssh-host` leaf
+// goes through `generateSSH`. See sub-task 008.
 func generateOne(deps Deps, ca decl.CA, cert decl.Cert, certAbs string, keyAbs string) error {
+	if cert.Type == "ssh-user" || cert.Type == "ssh-host" {
+		return generateSSH(deps, ca, cert, certAbs, keyAbs)
+	}
+	return generateTLS(deps, ca, cert, certAbs, keyAbs)
+}
+
+// sshDecryptedCA decrypts the CA key into the temporary directory `tmpDir` and returns its plain
+// path. Both the TLS and the SSH path need it; the SSH sign reads the private key directly and needs
+// no `ca.json`.
+func sshDecryptedCA(deps Deps, ca decl.CA, tmpDir string) (string, error) {
+	caKeyAbs := deps.absPath(filepath.Join(ca.Directory, ca.KeyFile+".sops"))
+	caKeyPlain := filepath.Join(tmpDir, "ca.key")
+	if err := deps.Decryptor.Decrypt(caKeyAbs, caKeyPlain); err != nil {
+		return "", err
+	}
+	return caKeyPlain, nil
+}
+
+// generateSSH signs an `ssh-user` or `ssh-host` leaf with the SSH CA using the OpenSSH-native
+// `ssh-keygen` path that `ssh login` already proves.
+//
+// The leaf key must be `managed`: `ssh login` owns the interactive `external` case, and `apply`
+// generates the key here so the private key can be SOPS-encrypted the same way a TLS leaf's is. The
+// declared CA must sign SSH (`ssh = true`), exactly as `ssh login` requires.
+func generateSSH(deps Deps, ca decl.CA, cert decl.Cert, certAbs string, keyAbs string) error {
+	if !ca.SSH {
+		return fmt.Errorf("ssh leaf %q: CA %q does not sign SSH certificates (`ssh = true` is not set)", cert.Name, ca.Name)
+	}
+	if cert.KeySource != "managed" {
+		return fmt.Errorf("ssh leaf %q has keySource %q, want managed: `apply` generates and signs a managed SSH key; an external SSH key is issued by `kdn-certs ssh login`", cert.Name, cert.KeySource)
+	}
+	if deps.SSHSigner == nil {
+		return fmt.Errorf("ssh leaf %q: no SSH signer is wired into generate.Deps", cert.Name)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(certAbs), 0o755); err != nil {
+		return fmt.Errorf("create %s: %w", filepath.Dir(certAbs), err)
+	}
+
+	tmpDir, err := os.MkdirTemp("", "kdn-certs-")
+	if err != nil {
+		return fmt.Errorf("create temp dir: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	caKeyPlain, err := sshDecryptedCA(deps, ca, tmpDir)
+	if err != nil {
+		return err
+	}
+
+	// The leaf key: an ed25519 pair at `<tmpDir>/leaf.key` and `.pub`. `ssh-keygen -s` writes the
+	// certificate at `<tmpDir>/leaf.key-cert.pub`.
+	leafKeyPlain := filepath.Join(tmpDir, "leaf.key")
+	if err := deps.SSHSigner.GenerateSSHKey(leafKeyPlain); err != nil {
+		return err
+	}
+
+	req := smallstep.SSHCertRequest{
+		KeyID:      cert.CommonName,
+		Principals: cert.Principals,
+		Validity:   sshValidityDefault,
+		Host:       cert.Type == "ssh-host",
+		PubKeyPath: leafKeyPlain + ".pub",
+		CAKeyPath:  caKeyPlain,
+	}
+	if err := deps.SSHSigner.SignSSH(req); err != nil {
+		return err
+	}
+
+	// Move the signed certificate from the temporary directory to the declared `<certFile>` path.
+	signedCert := strings.TrimSuffix(leafKeyPlain+".pub", ".pub") + "-cert.pub"
+	if err := moveFile(signedCert, certAbs); err != nil {
+		return err
+	}
+
+	if err := deps.Encryptor.Encrypt(leafKeyPlain, keyAbs); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// moveFile moves `src` to `dst`, across filesystems if needed. The temporary directory and the tree
+// may live on different mounts, so a plain `os.Rename` can fail with EXDEV.
+func moveFile(src, dst string) error {
+	if err := os.Rename(src, dst); err == nil {
+		return nil
+	}
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return fmt.Errorf("read %s: %w", src, err)
+	}
+	if err := os.WriteFile(dst, data, 0o644); err != nil {
+		return fmt.Errorf("write %s: %w", dst, err)
+	}
+	return os.Remove(src)
+}
+
+// generateTLS signs a `tls-server` or `tls-client` leaf with `step`.
+func generateTLS(deps Deps, ca decl.CA, cert decl.Cert, certAbs string, keyAbs string) error {
 	if err := os.MkdirAll(filepath.Dir(certAbs), 0o755); err != nil {
 		return fmt.Errorf("create %s: %w", filepath.Dir(certAbs), err)
 	}

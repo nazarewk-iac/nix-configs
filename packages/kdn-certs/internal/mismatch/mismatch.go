@@ -48,6 +48,11 @@ func Decide(cert decl.Cert, existing *Existing, caCommonName string, force bool)
 	if stale {
 		return ReasonStale, nil
 	}
+	// An OpenSSH certificate carries no issuer common name, so the issuer test cannot apply to it.
+	// A re-issued SSH certificate is caught by staleness or `--force`. See sub-task 008.
+	if existing.IsSSH {
+		return ReasonNone, nil
+	}
 	if existing.IssuerCN != caCommonName {
 		return ReasonIssuer, nil
 	}

@@ -76,3 +76,38 @@ func TestDecideCurrent(t *testing.T) {
 		t.Errorf("Decide(current) = %q, want %q", reason, ReasonNone)
 	}
 }
+
+// TestDecideSSHSkipsIssuer proves an OpenSSH certificate is never regenerated on an issuer mismatch:
+// it carries no issuer common name, so the issuer test cannot apply. Sub-task 008.
+func TestDecideSSHSkipsIssuer(t *testing.T) {
+	cert := decl.Cert{CA: "ca", Type: "ssh-host"}
+	existing := &Existing{
+		NotBefore: time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC),
+		IssuerCN:  "",
+		IsSSH:     true,
+	}
+	reason, err := Decide(cert, existing, "ca", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reason != ReasonNone {
+		t.Errorf("Decide(ssh, CA named %q) = %q, want %q", "ca", reason, ReasonNone)
+	}
+}
+
+// TestDecideSSHStillStale proves the staleness test still fires for an SSH certificate: skipping the
+// issuer check must not make an SSH leaf immune to rotation by `minGenerationDate`.
+func TestDecideSSHStillStale(t *testing.T) {
+	cert := decl.Cert{CA: "ca", Type: "ssh-host", MinGenerationDate: ptr("2026-07-01")}
+	existing := &Existing{
+		NotBefore: time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC),
+		IsSSH:     true,
+	}
+	reason, err := Decide(cert, existing, "ca", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reason != ReasonStale {
+		t.Errorf("Decide(ssh, stale) = %q, want %q", reason, ReasonStale)
+	}
+}

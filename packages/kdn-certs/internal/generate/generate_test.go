@@ -97,12 +97,18 @@ func setupTestCA(t *testing.T) (root string, cas decl.CAs, ageKeyFile string) {
 	}
 
 	// The `.sops.yaml` the CLI reads. One rule per key path, so the leaf key rule is exercised too.
+	// The last rule mirrors the real `hosts/.*/.*\.sops` rule in `.sops.yaml`, which covers SSH leaf
+	// key files (`id_host`, `id_ed25519`) that carry no `.key` infix.
 	writeFile(t, root, ".sops.yaml", `creation_rules:
   - path_regex: ca/root\.key\.sops$
     key_groups:
       - age:
           - `+recipient+`
   - path_regex: hosts/.*/certs/zellij\.key\.sops$
+    key_groups:
+      - age:
+          - `+recipient+`
+  - path_regex: hosts/.*/.*\.sops$
     key_groups:
       - age:
           - `+recipient+`
@@ -270,4 +276,156 @@ func runCapture(t *testing.T, dir string, env []string, name string, args ...str
 		t.Fatalf("%s %v: %v", name, args, err)
 	}
 	return string(out)
+}
+
+// sshTestCert is a managed `ssh-host` leaf the loop must generate through the OpenSSH path.
+func sshTestCert() decl.Cert {
+	return decl.Cert{
+		Name:       "host-ssh",
+		CA:         "kdn",
+		Type:       "ssh-host",
+		CommonName: "host.example.invalid",
+		Principals: []string{"host.example.invalid"},
+		Directory:  "hosts/test/ssh",
+		CertFile:   "id_host-cert.pub",
+		KeyFile:    "id_host",
+		KeySource:  "managed",
+	}
+}
+
+// TestGenerateSSHHostAgainstTestCA drives the SSH branch of the loop end to end: an `ssh-host` leaf,
+// an SSH-capable CA, an ed25519 key, and a signed host certificate that verifies under the CA. A
+// second run must be idempotent — the existing `-cert.pub` is read as an OpenSSH certificate, not
+// re-signed. Sub-task 008.
+func TestGenerateSSHHostAgainstTestCA(t *testing.T) {
+	if os.Getenv("KDN_CERTS_TEST_CA") == "" {
+		t.Skip("set KDN_CERTS_TEST_CA=1; the kdn-certs-test-ca check does")
+	}
+	requireTool(t, "ssh-keygen")
+	requireTool(t, "openssl")
+
+	root, cas, ageKeyFile := setupTestCA(t)
+	t.Setenv("SOPS_AGE_KEY_FILE", ageKeyFile)
+
+	// The CA must sign SSH for an ssh-host leaf.
+	ca := cas["kdn"]
+	ca.SSH = true
+	cas["kdn"] = ca
+
+	cert := sshTestCert()
+	result := dedup.Result{Certs: map[string]decl.Cert{cert.DedupKey(): cert}}
+
+	deps := generate.Deps{
+		Root:      root,
+		Signer:    smallstep.StepCLI{},
+		SSHSigner: smallstep.StepCLI{},
+		Decryptor: sops.CLI{ConfigPath: filepath.Join(root, ".sops.yaml")},
+		Encryptor: sops.CLI{ConfigPath: filepath.Join(root, ".sops.yaml")},
+		Logf:      t.Logf,
+	}
+
+	out, err := generate.Run(cas, result, deps)
+	if err != nil {
+		t.Fatalf("generate.Run ssh-host: %v", err)
+	}
+	if out.Generated != 1 {
+		t.Fatalf("generated %d, want 1", out.Generated)
+	}
+
+	certPath := filepath.Join(root, "hosts/test/ssh/id_host-cert.pub")
+	keyPath := filepath.Join(root, "hosts/test/ssh/id_host.sops")
+	if _, err := os.Stat(keyPath); err != nil {
+		t.Fatalf("managed SSH key not written: %v", err)
+	}
+
+	// The certificate is a host certificate for the declared principal.
+	list := runCapture(t, root, nil, "ssh-keygen", "-L", "-f", certPath)
+	if !strings.Contains(list, "host certificate") {
+		t.Errorf("not a host certificate:\n%s", list)
+	}
+	if !strings.Contains(list, "host.example.invalid") {
+		t.Errorf("principal missing:\n%s", list)
+	}
+
+	// Acceptance 4: the certificate verifies under the declared SSH CA.
+	verifySSHCertUnderCA(t, certPath, filepath.Join(root, "ca/root.key"))
+
+	// A second run regenerates nothing: the existing -cert.pub parses as an OpenSSH certificate and
+	// the issuer test is skipped for SSH, so it is treated as current.
+	second, err := generate.Run(cas, result, deps)
+	if err != nil {
+		t.Fatalf("second generate.Run ssh-host: %v", err)
+	}
+	if second.Generated != 0 {
+		t.Errorf("second run generated %d, want 0 (idempotent)", second.Generated)
+	}
+	assertNoTempLeftovers(t, root)
+}
+
+// TestGenerateSSHRefusesNonSSHCA is the hard error when an ssh leaf names a CA that does not
+// sign SSH.
+func TestGenerateSSHRefusesNonSSHCA(t *testing.T) {
+	if os.Getenv("KDN_CERTS_TEST_CA") == "" {
+		t.Skip("set KDN_CERTS_TEST_CA=1; the kdn-certs-test-ca check does")
+	}
+
+	root, cas, ageKeyFile := setupTestCA(t)
+	t.Setenv("SOPS_AGE_KEY_FILE", ageKeyFile)
+
+	// cas["kdn"].SSH is false by default.
+	cert := sshTestCert()
+	result := dedup.Result{Certs: map[string]decl.Cert{cert.DedupKey(): cert}}
+
+	deps := generate.Deps{
+		Root:      root,
+		Signer:    smallstep.StepCLI{},
+		SSHSigner: smallstep.StepCLI{},
+		Decryptor: sops.CLI{ConfigPath: filepath.Join(root, ".sops.yaml")},
+		Encryptor: sops.CLI{ConfigPath: filepath.Join(root, ".sops.yaml")},
+		Logf:      t.Logf,
+	}
+
+	if _, err := generate.Run(cas, result, deps); err == nil {
+		t.Fatal("expected an error for an ssh-host leaf under a non-SSH CA")
+	} else if !strings.Contains(err.Error(), "does not sign SSH") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+// TestGenerateDryRunListsSSHHost proves acceptance 1: `--dry-run` reports an ssh-host leaf with a
+// reason instead of an error, and writes nothing.
+func TestGenerateDryRunListsSSHHost(t *testing.T) {
+	if os.Getenv("KDN_CERTS_TEST_CA") == "" {
+		t.Skip("set KDN_CERTS_TEST_CA=1; the kdn-certs-test-ca check does")
+	}
+
+	root, cas, ageKeyFile := setupTestCA(t)
+	t.Setenv("SOPS_AGE_KEY_FILE", ageKeyFile)
+	ca := cas["kdn"]
+	ca.SSH = true
+	cas["kdn"] = ca
+
+	cert := sshTestCert()
+	result := dedup.Result{Certs: map[string]decl.Cert{cert.DedupKey(): cert}}
+
+	deps := generate.Deps{
+		Root:      root,
+		Signer:    smallstep.StepCLI{},
+		SSHSigner: smallstep.StepCLI{},
+		Decryptor: sops.CLI{ConfigPath: filepath.Join(root, ".sops.yaml")},
+		Encryptor: sops.CLI{ConfigPath: filepath.Join(root, ".sops.yaml")},
+		DryRun:    true,
+		Logf:      t.Logf,
+	}
+
+	out, err := generate.Run(cas, result, deps)
+	if err != nil {
+		t.Fatalf("dry-run generate.Run ssh-host: %v", err)
+	}
+	if out.Generated != 1 || len(out.Actions) != 1 || out.Actions[0].Reason == "" {
+		t.Fatalf("dry-run did not report the ssh-host leaf with a reason: %+v", out.Actions)
+	}
+	if _, err := os.Stat(filepath.Join(root, "hosts/test/ssh/id_host-cert.pub")); !os.IsNotExist(err) {
+		t.Errorf("dry run wrote an SSH certificate")
+	}
 }
