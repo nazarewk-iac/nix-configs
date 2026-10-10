@@ -3,7 +3,7 @@
 # BOOT-SELECTED ONLY, NEVER ACTIVATED via switch-to-configuration. This is a
 # clean top-level (`inheritParentConfig = false`) boot entry that serves BOTH
 # frontier models through one router: DeepSeek V4 Flash (320K, DSpark draft) and
-# Qwen3.8-Flash-Next (1M ctx, YaRN x4, MTP draft head on the CPU). The
+# Qwen3.8-Flash-Next (1M ctx, YaRN x4, MTP draft head disabled). The
 # primary router runs with `--models-max 1`, so only one model is resident at a
 # time and a request for the other swaps it in (~90-120 s reload) with no
 # reboot. The default "brys" entry is unaffected. The common appliance body
@@ -40,7 +40,12 @@ let
     # session-keyed save/restore (packages/llama-cpp `sessions`). It replaces
     # the plain v0.6.0 build for both models on this router.
     llamaPackage = pkgs.kdn.llama-cpp-sessions;
-    qwenMtp = true;
+    # MTP speculative decode is OFF. The implementation stays (the `qwenMtp`,
+    # `qwenSpecDraftNMax`/`PMin`/`Prio` options and the draft model entry in
+    # ./llm.nix) — only this switch flips it. The Qwen MTP draft head accepted
+    # only ~0.42 of drafts (mean len 3.11, measured 2026-10-11), so the
+    # speculative overhead did not pay for itself. Set true to re-enable.
+    qwenMtp = false;
     qwenSpecDraftNMax = 5;
     # YaRN x4: 256K native -> 1M. q8_0 KV halves the 1M pool (~24 -> ~12 GiB),
     # returned to the mmap'd weight working set so decode stops faulting weights
@@ -76,7 +81,7 @@ import ./llm-appliance.nix {
     resident model (~90-120 s reload), no reboot.
 
     DeepSeek V4 Flash @ 320K ctx, DSpark draft, 4 shared slots.
-    Qwen3.8-Flash-Next @ 1M ctx (YaRN x4), MTP draft head on the CPU.
+    Qwen3.8-Flash-Next @ 1M ctx (YaRN x4), q8_0 KV, MTP off.
     \e[1;33m============================================================\e[0m
     Login with your usual kdn/SSH credentials. Use the normal host to do
     anything else.
