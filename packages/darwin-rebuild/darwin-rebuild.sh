@@ -58,11 +58,17 @@ nom_build_args=(
 
 cmd="${1}"
 shift 1
-: "${name:="${1:-"$(hostname -s)"}"}"
+# Target selection. `KDN_DARWIN_HOST` overrides the positional argument. Do not honour a generic
+# `name` environment variable here: a devenv shell exports `name=devenv-shell-env`, which used to
+# hijack this script's target selection in every devenv-derived terminal.
+kdn_host="${KDN_DARWIN_HOST:-}"
+if test -z "${kdn_host}"; then
+  kdn_host="${1:-$(hostname -s)}"
+fi
 remote=""
 remote_host=""
 test $# -lt 1 || shift 1
-remote_spec="${name}"
+remote_spec="${kdn_host}"
 if [[ "${remote_spec:-}" == remote=* ]]; then
   remote="${remote_spec#remote=*}"
   if [[ "${remote}" == *+* ]]; then
@@ -78,10 +84,10 @@ if test -n "${remote:-}"; then
   # remote="etra"
 
   if [[ "${remote}" == *=* ]]; then
-    name="${remote%=*}"
+    kdn_host="${remote%=*}"
     remote="${remote#*=}"
   else
-    name="${remote}"
+    kdn_host="${remote}"
   fi
   addr="${remote}"
 
@@ -94,8 +100,8 @@ if test -n "${remote:-}"; then
     addr="$(discover_hostname "${addr}")"
   fi
 
-  if test -z "${name:-}"; then
-    name="${addr%%.*}"
+  if test -z "${kdn_host:-}"; then
+    kdn_host="${addr%%.*}"
   fi
 
   if test -n "${user:-}"; then
@@ -108,7 +114,7 @@ if test -n "${remote:-}"; then
     # --sudo
   )
 elif [[ -n "${1:-}" && "${1}" != -* ]]; then
-  name="${1}"
+  kdn_host="${1}"
   shift 1
 fi
 
@@ -121,10 +127,10 @@ while test "$#" -gt 0; do
 done
 
 flake_path="$(nix eval --raw "$src#self.sourceInfo.outPath")"
-post_args+=(--flake "${flake_path}#${name}")
+post_args+=(--flake "${flake_path}#${kdn_host}")
 if test -n "${remote_host}"; then
   nix copy --to "ssh-ng://${remote_host}" "${flake_path}"
-  ssh -t "$remote_host" "DEBUG='${DEBUG}' nix run '$flake_path#darwin-rebuild' -- ${cmd@Q} ${name@Q} ${nom_build_args[*]@Q} -- ${post_args[*]@Q}"
+  ssh -t "$remote_host" "DEBUG='${DEBUG}' nix run '$flake_path#darwin-rebuild' -- ${cmd@Q} ${kdn_host@Q} ${nom_build_args[*]@Q} -- ${post_args[*]@Q}"
 else
   pre_cmd=(bash)
   if test "${DRY_RUN:-0}" == 1; then
@@ -138,5 +144,5 @@ else
   # required for the linux-builder, otherwise throws error about not being on linux and that substitutes are not allowed
   nom_build_args+=(--always-allow-substitutes)
 
-  "${pre_cmd[@]}" "nom build --no-link '${flake_path}#darwinConfigurations.${name}.system' ${nom_build_args[*]@Q} && sudo darwin-rebuild ${pre_args[*]@Q} ${cmd@Q} ${post_args[*]@Q}"
+  "${pre_cmd[@]}" "nom build --no-link '${flake_path}#darwinConfigurations.${kdn_host}.system' ${nom_build_args[*]@Q} && sudo darwin-rebuild ${pre_args[*]@Q} ${cmd@Q} ${post_args[*]@Q}"
 fi
