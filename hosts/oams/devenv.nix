@@ -108,6 +108,7 @@ let
   # needed.
   qwenContexts = [
     1048576 # 1M: the base model id
+    786432 # 768K
     524288 # 512K
     262144 # 256K
     131072 # 128K
