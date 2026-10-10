@@ -36,9 +36,9 @@ let
   # `preActivation` at boot, so the volume is ready before the builder's own `preActivation` block
   # runs. The full procedure, with the prerequisite and the verify commands, is in
   # docs/multi-arch-builder.md, "Bootstrapping the Rosetta builder on `anji`".
-  legacyLinuxBuilder = true;
-  rosettaBuilder = false;
-  bootstrapBuilder = true;
+  legacyLinuxBuilder = false;
+  rosettaBuilder = true;
+  bootstrapBuilder = false;
 
   # Unlock and mount the two external volumes. The passphrases live in the System keychain, one
   # item per volume, keyed by the volume UUID. `diskutil` does not read the keychain itself, so
@@ -84,6 +84,14 @@ let
     ];
 
     kdn.darwin.rosetta-builder.enable = rosettaBuilder;
+    # Put the guest disk on the external volume, not on the 256 GB internal disk. The fork input
+    # `nazarewk/nix-rosetta-builder` adds the `workingDir` option this needs. No guest exists yet
+    # (the phase-2 switch creates the first one), so this relocates nothing and destroys nothing.
+    # The volume unlocks in `preActivation` and at boot before the daemon needs it.
+    kdn.darwin.rosetta-builder.guest.workingDir = "/anji-ext-01/rosetta-builder";
+    # Raise the ceiling from the slot default `150GiB` for the owner's ~200+ GB builds (2026-10-11).
+    # The disk is sparse, so the ceiling only bounds growth on the 2 TB external volume.
+    kdn.darwin.rosetta-builder.guest.diskSizeMax = "1100GiB";
     # Replace the macOS built-in ssh-agent with the FIDO2-capable OpenSSH agent.
     kdn.home.ssh-agent.enable = true;
     # devenv CLI and shell hooks.
@@ -127,11 +135,10 @@ in
       kdn.homebrew.tapsFromFlakeInputs = true;
     }
     (lib.optionalAttrs rosettaBuilder {
-      # Rosetta builder guest disk, stated on purpose. This host is a Mac mini M2 with a 256 GB
-      # disk, and the guest disk is a sparse file on it. `100GiB` is also the upstream default of
-      # `nix-rosetta-builder`, and no module in this tree assigns `diskSize`, so this line changes
-      # no evaluated value, regenerates no `lima.yaml`, and destroys no guest. The slot ceiling
-      # `kdn.darwin.rosetta-builder.guest.diskSizeMax` stays `150GiB`.
+      # Rosetta builder guest disk, sized for the owner's ~200+ GB Linux builds (2026-10-11). The
+      # guest disk is a sparse file on the external volume (`guest.workingDir`), so a large ceiling
+      # costs only what a build actually writes. ⚠️ A change to `diskSize` regenerates `lima.yaml`
+      # and recreates the guest; done here on purpose while the guest is a day old.
       #
       # Do NOT set `kdn.darwin.rosetta-builder.guest.minFree` or `.maxFree`. A non-null value
       # regenerates `lima.yaml`, and the daemon then runs `limactl delete --force` on the guest.
@@ -139,7 +146,11 @@ in
       # `optionalAttrs`, not `mkIf`: `mkIf false` still checks the option name against the declared
       # option set, and `nix-rosetta-builder` exists only while its module is imported. So
       # `rosettaBuilder = false` must drop the attribute entirely.
-      nix-rosetta-builder.diskSize = "100GiB";
+      nix-rosetta-builder.diskSize = "1024GiB";
+      # 8 of the M2's 8 cores; 8 GiB of its 16 GiB RAM. The host idles through a build, and the
+      # Rosetta VM is the only Linux builder since phase 3 detached the stock one.
+      nix-rosetta-builder.cores = 8;
+      nix-rosetta-builder.memory = "8GiB";
     })
     {
       system.stateVersion = 6;
