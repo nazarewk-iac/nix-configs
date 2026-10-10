@@ -271,8 +271,9 @@ let
     # Session cache: automatic save/restore keyed by the x-session-id header
     # (llama.cpp PR #29738), plus context checkpoints so an edited or branched
     # follow-up rewinds to a user-turn boundary instead of re-prefilling the
-    # whole prompt. checkpointMinStep is `minutes * 60 * prefill_tok_s`; 10500
-    # is about five minutes at 35 tok/s.
+    # whole prompt. checkpointMinStep is `seconds * prefill_tok_s`; 900 is about
+    # 30 seconds at ~30 tok/s (measured base-prompt prefill). Deploy and measure
+    # before activating.
     #
     # Measured on brys 2026-10-09: the GDN recurrent state is ~112 MiB, and for
     # this hybrid model a checkpoint is the recurrent state only (the attention
@@ -283,7 +284,7 @@ let
     sessionHeaders = "x-session-id";
     sessionMaxSessions = 64;
     ctxCheckpoints = 32;
-    checkpointMinStep = 10500;
+    checkpointMinStep = 900;
   }
   // lib.optionalAttrs (qwenNGpuLayers != null) {
     nGpuLayers = qwenNGpuLayers;
