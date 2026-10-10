@@ -8,6 +8,21 @@ timestamp: 2026-10-10T11:00:00+02:00
 
 # Warm-start session for fresh OpenCode sessions and sub-agents
 
+> **Feasibility proven.** The mechanism works and the design is settled; the
+> operational wiring remains. See [research.md](research.md).
+
+## Findings (measured 2026-10-10, brys)
+
+- The OpenCode base prompt (system message + 10 tools) is **~12K tokens**; a
+  cold prefill costs ~7 min at ~29 tok/s.
+- The mechanism works: a fresh session on a slot that already holds the base
+  prefix reuses it (`prompt_n 16, cache_n 12075`), and a saved base file
+  restores into a slot in ~150 ms (`prompt_n 4, cache_n 12087`).
+- **Constraint:** a session-keyed request bypasses LCP slot selection
+  (`get_available_slot`, fork `server-context.cpp:2021`). So a fresh session
+  reuses the base only if its LRU victim slot is warm. Warm **all** slots with
+  the base; it then self-sustains.
+
 ## Context
 
 Every new OpenCode session and every sub-agent (the `ds4-*` / `qwen-*` agents in
