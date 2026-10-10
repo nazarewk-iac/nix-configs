@@ -579,6 +579,21 @@ fixes that the fork lacks. See
 [packages/llama-cpp/README.md](../packages/llama-cpp/README.md) for the two
 derivations and their update steps.
 
+**MTP disabled (2026-10-11):** `qwenMtp` is off on brys. The 2026-10-07
+benchmark ran warm at 128K with a 300-token decode and measured acceptance
+1.000, so MTP gave +68% decode (5.65 -> 9.5 t/s). At the served long-context
+config the draft head accepted only ~0.42 of drafts (mean len 3.11,
+`--spec-draft-n-max 5`, observed over many turns on `llms-frontier`), so the
+speculation overhead no longer repaid its cost. The implementation stays
+(`qwenMtp`, `qwenSpecDraftNMax`/`PMin`/`Prio` and the `MTP/…-Q8_0.gguf` draft
+entry in `hosts/brys/llm.nix`); only the switch is false. Re-enable by setting
+`qwenMtp = true` in `hosts/brys/llm-qwen.nix` and `hosts/brys/llms-frontier.nix`.
+
+A session file written under MTP-on cannot be restored under MTP-off: the
+server logs `state_read_data: incompatible key rotation (0 instead of 256)` and
+`failed to restore kv cache`, then starts that session fresh. This is one-time
+per stale file; the next save under MTP-off is compatible.
+
 The MTP builds dropped `--mmap`. They have only `--load-mode`, and the router
 rejects the `mmap` preset key at startup. `hosts/brys/llm.nix` therefore sets
 `perf.mmap = null` for Qwen, which omits the key. The default load mode is mmap,

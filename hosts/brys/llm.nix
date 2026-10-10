@@ -36,6 +36,18 @@
 #   * `qwenMtp` — use the Qwen model's MTP head for speculative decode
 #     (default false). It adds the draft model and the `draft-mtp` spec type.
 #     Only the v0.6.0 and Unsloth-fork builds contain the MTP graph.
+#
+#     DISABLED on brys (2026-10-11). The 2026-10-07 benchmark ran warm at 128K
+#     with a 300-token decode and measured acceptance 1.000, so MTP gave +68%
+#     decode (5.65 -> 9.5 t/s). At the served long-context config the draft head
+#     accepted only ~0.42 of tokens (mean len 3.11, `--spec-draft-n-max 5`,
+#     observed over many turns), so the speculation no longer repaid its cost.
+#     The implementation stays; only the switch is false. Both Qwen-serving
+#     entries set `qwenMtp = false` (hosts/brys/llm-qwen.nix,
+#     hosts/brys/llms-frontier.nix). Re-enable by setting it `true` there. A
+#     session saved under MTP-on cannot be restored under MTP-off
+#     (`state_read_data: incompatible key rotation`); the server logs one error
+#     and starts that session fresh.
 {
   lib,
   pkgs,
