@@ -1,7 +1,8 @@
 ---
 type: Task
-description: Research and decide whether the Nix store on host `anji` can move to an external drive, and record the verdict with evidence.
-status: open
+description: Move the Nix store on host `anji` to an external APFS volume, with a boot-safe unlock. The owner needs ~200+ GB Linux builder disks, which do not fit the 256 GB internal disk.
+status: in-progress
+migration: migration/definition.md
 authored_by: agent
 timestamp: 2026-10-01T17:38:07+02:00
 ---
@@ -135,7 +136,20 @@ The Nix installer does not manage such a binary. This task must decide whether t
 7. What is the measured build-time penalty of an external Thunderbolt SSD against the
    internal NVMe for typical `anji` workloads?
 
-## Verdict so far
+## Owner decision (2026-10-11)
+
+**Migrate.** The owner expects to run fully fledged `x86_64-linux` and `aarch64-linux` builds of
+~200+ GB. That does not fit the 256 GB internal disk beside the OS, and it also exceeds the current
+Rosetta guest ceiling (`diskSizeMax = 150GiB`). The store backing volume and the builder guest
+disks must live on the external 2 TB volumes. The plan with exact steps and rollback is in
+[migration/definition.md](migration/definition.md).
+
+The 2026-10-11 launchd probes (table in the migration task) settled the open TCC questions: the
+externals enumerate as **USB**, so a non-platform binary in a daemon context cannot touch them
+without an FDA grant on its exact path, while Apple platform binaries and user login contexts are
+fine. The migration therefore requires the stable bootstrap binary, and is feasible.
+
+## Verdict so far (superseded by the decision above)
 
 **Feasible with caveats, leaning not recommended for this host.** The backing volume can
 move. The decisive blocker is TCC plus the upstream `activate-system` failure. The cheaper
