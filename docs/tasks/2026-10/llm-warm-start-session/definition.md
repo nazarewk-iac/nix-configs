@@ -23,6 +23,18 @@ timestamp: 2026-10-10T11:00:00+02:00
   reuses the base only if its LRU victim slot is warm. Warm **all** slots with
   the base; it then self-sustains.
 
+## Findings (measured 2026-10-12, brys)
+
+- A resumed long session can re-process its **whole** prompt, not the new tail
+  (`n_prompt_tokens_cache = 0`). The cause is the hybrid GDN model: llama.cpp
+  reuses a prefix only if a context checkpoint covers the divergence point. An
+  early divergence (the OpenCode system prompt embeds the current date, which
+  changes at midnight) lands before the first checkpoint, so the server forces a
+  full re-process. See [hybrid-reuse.research.md](hybrid-reuse.research.md).
+- The warm prefix must therefore match up to the first user message, or a
+  checkpoint must sit at the divergence point. A warm base alone does not help
+  when the system prompt changes.
+
 ## Context
 
 Every new OpenCode session and every sub-agent (the `ds4-*` / `qwen-*` agents in
@@ -91,6 +103,8 @@ least the common prefix.
 
 ## References
 
+- [hybrid-reuse.research.md](hybrid-reuse.research.md) — why a resumed hybrid
+  session re-prefills the whole context.
 - [../opencode-session-id-forwarding/done.md](../opencode-session-id-forwarding/done.md)
   — the session id now reaches llama-server.
 - [../llm-session-cache-persistence/done.md](../llm-session-cache-persistence/done.md)
