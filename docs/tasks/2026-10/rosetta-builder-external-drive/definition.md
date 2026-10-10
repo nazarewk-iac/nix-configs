@@ -1,7 +1,8 @@
 ---
 type: Task
 description: Move the Rosetta builder guest disk from the internal disk of host `anji` to an external drive by patching the upstream module in a fork.
-status: open
+status: done
+solution: done.md
 authored_by: agent
 timestamp: 2026-10-01T17:38:07+02:00
 ---
