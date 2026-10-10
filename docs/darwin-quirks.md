@@ -42,6 +42,14 @@ fragile.
 | denied binary | runs itself | **FAIL** |
 | job A granted, job B denied | two separate jobs | **B fails** |
 
+**Refined 2026-10-11 (macOS 26.1, `anji`, USB SSDs).** Two rows of that table need a sharper edge.
+The tree coverage comes from a **granted** top-level, never from a platform binary. With the volume
+as the write target: a `/bin/sh` top-level writes fine itself, but its **child** and its
+**exec-image** (both a `/nix/store` bash) fail — spawning under an exempt parent confers nothing.
+Also: a USB-attached SSD is gated even when `diskutil info` reports `Removable Media: Fixed`
+(`Protocol: USB` is what matters), and the mount option `nobrowse` changes nothing. A user login
+(SSH) session still writes fine, because the responsible binary (`sshd`) is exempt.
+
 Earlier, on 2026-09-26, every test ran as root in the same directory with the same uid. Only the
 binary changed the result:
 
