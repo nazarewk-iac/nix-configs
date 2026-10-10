@@ -42,17 +42,22 @@ let
     llamaPackage = pkgs.kdn.llama-cpp-sessions;
     qwenMtp = true;
     qwenSpecDraftNMax = 5;
-    # YaRN x4: 256K native -> 1M. F16 KV (~24 GiB) stays on the CPU.
+    # YaRN x4: 256K native -> 1M. q8_0 KV halves the 1M pool (~24 -> ~12 GiB),
+    # returned to the mmap'd weight working set so decode stops faulting weights
+    # from disk (measured 2026-10-10: ~80K major faults/s at 1M F16 KV pinned the
+    # box; see docs/local-llms.md). Decode is slightly slower per step but the
+    # whole run is far faster because the weights stay resident.
     qwenRopeScaling = "yarn";
     qwenRopeScale = 4.0;
     qwenRopeFreqBase = 10000000;
     qwenYarnOrigCtx = 262144;
-    # Prompt cache: 16 GiB, down from 37 GiB. The disk session store
+    qwenCacheTypeK = "q8_0";
+    qwenCacheTypeV = "q8_0";
+    # Prompt cache: 8 GiB, down from 16. The disk session store
     # (docs/tasks/2026-10/llm-session-cache-persistence/) now persists whole
-    # sessions, so the RAM prompt cache only needs to cover the shared system
-    # prompt. The freed RAM funds the ~112 MiB context checkpoints (see
-    # qwenPerf). It grows on demand, so this is a ceiling, not an allocation.
-    qwenCacheRam = 16384;
+    # sessions, so the RAM prompt cache only needs the shared system prompt.
+    # It grows on demand, so this is a ceiling, not an allocation.
+    qwenCacheRam = 8192;
   };
 in
 import ./llm-appliance.nix {
