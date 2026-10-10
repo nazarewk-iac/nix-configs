@@ -44,15 +44,16 @@ func newApplyCmd(app *App) *cobra.Command {
 
 			result := dedup.Merge(targets.Targets)
 
-			deps := generate.Deps{
-				Root:      app.Options.Flake,
-				Signer:    app.signer(),
-				Decryptor: app.decryptor(),
-				Encryptor: app.encryptor(),
-				Force:     app.Options.Force,
-				DryRun:    app.Options.DryRun,
-				Logf:      app.Logf,
-			}
+		deps := generate.Deps{
+			Root:      app.Options.Flake,
+			Signer:    app.signer(),
+			SSHSigner: app.sshSigner(),
+			Decryptor: app.decryptor(),
+			Encryptor: app.encryptor(),
+			Force:     app.Options.Force,
+			DryRun:    app.Options.DryRun,
+			Logf:      app.Logf,
+		}
 
 			out, err := generate.Run(cas, result, deps)
 			if err != nil {

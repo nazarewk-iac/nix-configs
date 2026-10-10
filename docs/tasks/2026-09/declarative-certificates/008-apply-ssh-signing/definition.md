@@ -1,7 +1,8 @@
 ---
 type: Task
 description: Wire the SSH sign branch into kdn-certs apply, so apply generates and signs ssh-user and ssh-host leaves as well as TLS leaves.
-status: open
+status: done
+solution: done.md
 parent: ../definition.md
 authored_by: agent
 timestamp: 2026-09-26T00:00:00+02:00
