@@ -132,6 +132,15 @@ creation_rules:
           - *yk-oams-touch
           - *yk-brys-touch
           - *yk-pton-touch
+  # The brys SSH host-certificate key. sshd reads it at runtime, so the host's own age key is a
+  # recipient, next to the admin touch YubiKeys — the same shape as the zellij-web rules above.
+  - path_regex: 'hosts/brys/certs/ssh_host_ed25519\.key\.sops$'
+    key_groups:
+      - age:
+          - *ssh-brys
+          - *yk-oams-touch
+          - *yk-brys-touch
+          - *yk-pton-touch
   - path_regex: '.*brys.*\.key\.sops'
     key_groups:
       - age:
