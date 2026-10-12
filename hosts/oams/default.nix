@@ -48,6 +48,25 @@ in
       home-manager.sharedModules = [ slots.config.home ];
     }
     {
+      # SSH CA client trust for the kdn user. The `50-kdn-ssh-ca.config` drop-in presents
+      # `~/.ssh/id_ed25519-cert.pub`, the user certificate written by `kdn-certs ssh login <host>`,
+      # and the managed `known_hosts` fragment trusts every host certificate the KDN CA signs.
+      # Inclusion is the switch: the aspect carries no `enable` option.
+      home-manager.sharedModules =
+        (kdnConfig.self.denLib.imports {
+          class = "homeManager";
+          aspects = [ "ssh-ca" ];
+        })
+        ++ [
+          # The home-manager copy of the option trees resolves the CA path the same way, so it
+          # needs the CA node and the repository root too.
+          "${kdnConfig.self}/data/ca/ca-dag.nix"
+          {
+            kdn.certificates.repoRoot = kdnConfig.self;
+          }
+        ];
+    }
+    {
       kdn.hostName = "oams";
 
       system.stateVersion = "26.05";

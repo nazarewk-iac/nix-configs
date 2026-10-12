@@ -61,6 +61,7 @@ in
         aspects = [
           "ca-dag"
           "certificates"
+          "ssh-ca"
           "llm"
         ];
       };
@@ -402,6 +403,26 @@ in
         keyFile = "zellij.key";
         keySource = "managed";
         owner = "kdn";
+      };
+      # The SSH host certificate. The `ssh-ca` aspect pairs it with its managed key so sshd
+      # presents it beside the classic `/etc/ssh` identities; clients that trust the KDN CA
+      # (`@cert-authority`) verify the host by CA, and older clients keep their known key
+      # (OpenSSH `prefer_local_hostkeys`).
+      kdn.certificates.certs.ssh-host-brys = {
+        ca = "kdn";
+        type = "ssh-host";
+        commonName = "brys";
+        principals = [
+          "brys"
+          "brys.lan.etra.net.int.kdn.im"
+          "brys.lan.drek.net.int.kdn.im"
+          "brys.priv.nb.net.int.kdn.im"
+          "brys.netbird.cloud"
+        ];
+        directory = "hosts/brys/certs";
+        certFile = "ssh_host_ed25519-cert.pub";
+        keyFile = "ssh_host_ed25519";
+        keySource = "managed";
       };
     }
     {
