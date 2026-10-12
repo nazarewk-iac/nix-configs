@@ -61,6 +61,9 @@ type SSHCertRequest struct {
 // signs that key with `--key`, so the CLI owns the key bytes and can SOPS-encrypt them.
 type LeafRequest struct {
 	CommonName string
+	// Validity is a `step` not-after interval, for example "+90d". Empty keeps the `step` default
+	// of 24 hours, which is too short for a committed leaf.
+	Validity   string
 	SANs       []string
 	Principals []string
 	Type       string
@@ -137,6 +140,11 @@ func (s StepCLI) SignLeaf(req LeafRequest) error {
 		"certificate", "create",
 		req.CommonName,
 		req.CertPath,
+		// `-f` overwrites the committed certificate without the interactive prompt. `apply`
+		// regenerates in place — an expired leaf, a rotation — so the target file exists. Without
+		// this flag `step` asks on /dev/tty and a headless run dies. Measured 2026-10-12 re-issuing
+		// the zellij-web leaves.
+		"-f",
 		"--key", req.KeyPath,
 		"--ca", req.CACertPath,
 		"--ca-key", req.CAKeyPath,
@@ -145,6 +153,9 @@ func (s StepCLI) SignLeaf(req LeafRequest) error {
 	// flag instead.
 	for _, san := range req.SANs {
 		args = append(args, "--san", san)
+	}
+	if req.Validity != "" {
+		args = append(args, "--not-after", req.Validity)
 	}
 	return s.run("step", args...)
 }
@@ -159,6 +170,11 @@ func (s StepCLI) CreateCA(req CARequest) error {
 		"certificate", "create",
 		req.CommonName,
 		req.CertPath,
+		// `-f` overwrites the committed certificate without the interactive prompt. `apply`
+		// regenerates in place — an expired leaf, a rotation — so the target file exists. Without
+		// this flag `step` asks on /dev/tty and a headless run dies. Measured 2026-10-12 re-issuing
+		// the zellij-web leaves.
+		"-f",
 		"--key", req.KeyPath,
 		"--profile", "root-ca",
 		"--no-password",
