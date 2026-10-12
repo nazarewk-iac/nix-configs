@@ -105,6 +105,24 @@ There is no per-plugin `enabled` flag in v1. A plugin is disabled by removing
 its file, or all external plugins are disabled with `OPENCODE_PURE=1` /
 `--pure`.
 
+## The skill the prompt points at
+
+The replacement line names the `current-date` skill, so the model can obtain the
+date on demand.
+
+- **Location and format:** `.opencode/skills/<name>/SKILL.md`, YAML frontmatter
+  with required `name` and `description`. The directory name must equal `name`
+  (`^[a-z0-9]+(-[a-z0-9]+)*$`, 1-64 chars).
+- **Discovery:** `packages/opencode/src/skill/index.ts` scans project
+  `.opencode/skills/`, global `~/.config/opencode/skills/`, and the
+  Claude/agent-compatible `.claude/skills/` and `.agents/skills/`. Symlinks are
+  followed, so a devenv `files."...".text` entry works.
+- **Injection:** the system prompt gets only each skill's **name, description
+  and location** (`Skill.fmt(list, { verbose: true })` in `session/system.ts`),
+  sorted by name. The **full body is not in the system prompt**; the `skill`
+  tool returns it as a tool result. So the listing is stable across days, and
+  the skill does not reintroduce a date into the prompt.
+
 ## References
 
 - Upstream: `github.com/anomalyco/opencode` `v1.18.29`, files
