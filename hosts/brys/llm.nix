@@ -25,8 +25,10 @@
 #     in practice: DS4 needs the whole box, so the small set is spun out to its
 #     own boot specialisation.
 #   * `withQwen` — wire the Qwen3.8-Flash-Next model on the primary router
-#     (default false). It is a frontier-class model, so a host enables it or
-#     DeepSeek, not both.
+#     (default false). It is a frontier-class model. The default `brys` profile
+#     and the `llms-frontier` specialisation serve it beside DeepSeek
+#     (`--models-max 1` swaps the resident model); the `llm-qwen` specialisation
+#     serves it alone.
 #   * `qwenContextSize` — Qwen's KV-cache context (default 131072). The
 #     llm-qwen specialisation names it explicitly.
 #   * `llamaPackage` — the llama.cpp build that provides `llama-server`
