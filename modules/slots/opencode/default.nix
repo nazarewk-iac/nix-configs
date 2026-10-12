@@ -89,8 +89,9 @@ let
   # opencode injects the current date into the system prompt (a `Today's date:` line in its
   # `<env>` block). The date changes at midnight, so the prompt prefix changes and a
   # server-side KV/prompt cache cannot reuse it. On a hybrid (recurrent) local model that
-  # forces a full re-prefill of the whole conversation. This plugin removes the date line,
-  # so the system prompt stays byte-stable for the life of a conversation.
+  # forces a full re-prefill of the whole conversation. This plugin replaces the date with a
+  # stable line that points at the `current-date` skill, so the prompt stays byte-stable and
+  # the model still knows how to obtain the date on demand.
   #
   # The hook is `experimental` and opencode-v1 only; it is guarded so a missing or renamed
   # hook never breaks a request. See docs/tasks/2026-10/opencode-stable-system-prompt/.
@@ -105,20 +106,22 @@ let
     // midnight, so the prompt prefix changes and a server-side KV/prompt
     // cache cannot reuse it. On a hybrid (recurrent) local model that
     // forces a full re-prefill of the whole conversation. This plugin
-    // removes the date line, so the system prompt stays byte-stable for the
-    // life of a conversation.
+    // replaces the date with a stable line that points at the
+    // `current-date` skill, so the prompt stays byte-stable and the model
+    // still knows how to obtain the date on demand.
     //
     // The hook is experimental and opencode-v1 only. It is guarded so a
     // missing or renamed hook never breaks a request.
 
-    const DATE_LINE = /^[ \t]*Today's date:.*\n?/gm
+    const DATE_LINE = /^([ \t]*)Today's date:.*$/gm
+    const STABLE_DATE_LINE = "$1Today's date: not injected (kept out of the prompt so it stays stable); use the `current-date` skill when you need it."
 
     export const KdnStableSystemPrompt: Plugin = async () => {
       return {
         "experimental.chat.system.transform": async (_input, output) => {
           if (!output || !Array.isArray(output.system)) return
           output.system = output.system.map((part) =>
-            typeof part === "string" ? part.replace(DATE_LINE, "") : part,
+            typeof part === "string" ? part.replace(DATE_LINE, STABLE_DATE_LINE) : part,
           )
         },
       }
@@ -127,6 +130,12 @@ let
     export default KdnStableSystemPrompt
   '';
 
+  # The plugin replaces the date line with a pointer to the `current-date` skill. The skill
+  # itself is tracked repo content at `.opencode/skills/current-date/SKILL.md` (it is
+  # opencode-specific, so it lives in `.opencode/`, not `.agents/skills/`). It is not
+  # generated here, so git can track it. See
+  # docs/tasks/2026-10/opencode-stable-system-prompt/.
+  #
   # Single opencode entrypoint, assembled from the extensible `wrapper` option.
   # Base: reads every credential named in `authKeys` from `authFile` via jq. Then:
   #   - exports every literal `wrapper.env` (NAME=VALUE)
@@ -278,8 +287,10 @@ in
         opencodeBin
       ];
 
-      # A stable system prompt: strip the injected date so the prompt prefix does not change at
-      # midnight. opencode auto-loads everything under `.opencode/plugins/`.
+      # A stable system prompt: replace the injected date with a pointer to the `current-date`
+      # skill, so the prompt prefix does not change at midnight. opencode auto-loads everything
+      # under `.opencode/plugins/`. The `current-date` skill is tracked repo content under
+      # `.opencode/skills/`, not generated here.
       files.".opencode/plugins/kdn-opencode-stable-prompt.ts".text = stablePromptPlugin;
     };
   };

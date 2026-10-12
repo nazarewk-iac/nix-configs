@@ -64,6 +64,17 @@
 !/.agents/
 !/.claude
 
+# The opencode-specific skills are tracked; the rest of `.opencode/` (node_modules, the
+# devenv-generated plugins, package files) stays ignored. `.*/` above ignores the whole
+# `.opencode/` directory, so each level down to the skill file needs a re-include.
+!/.opencode/
+/.opencode/*
+!/.opencode/skills/
+/.opencode/skills/*
+!/.opencode/skills/*/
+/.opencode/skills/*/*
+!/.opencode/skills/*/SKILL.md
+
 # KDN private CA material (data/ca/) and per-host certs (hosts/*/certs/)
 !/data/ca/ca.pub
 !/data/ca/ca.key.sops
