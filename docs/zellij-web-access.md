@@ -1,7 +1,7 @@
 ---
 type: How-To
 description: Generate zellij-web login tokens on the host, and connect from an Android phone (Firefox) or another Linux machine over the NetBird VPN.
-timestamp: 2026-10-10T12:00:00+02:00
+timestamp: 2026-10-12T16:30:00+02:00
 ---
 
 # Zellij web access
@@ -151,6 +151,34 @@ root is `data/ca/kdn.crt` (CN "KDN certificates root CA"). The private key is
 SOPS-encrypted at `hosts/<host>/certs/zellij.key.sops` and decrypted at runtime by
 sops-nix; the systemd unit reads the decrypted path. No other host (for example `gaz`)
 runs the web interface.
+
+## Certificate lifetime and renewal
+
+Each `zellij-web` leaf is valid for 90 days (the TLS default `2160h` in
+`packages/kdn-certs/internal/generate/generate.go`; the earlier `step` default of 24 hours expired
+all four leaves the day after the first issuance, fixed 2026-10-12). Renew before expiry:
+
+1. On a machine holding the unattended YubiKey (oams or brys), inside this repo:
+
+   ```console
+   $ nix run .#kdn-certs -- apply            # or `--dry-run` to list reasons first
+   ```
+
+   An expired leaf reports reason `expired` and is re-signed with a fresh key.
+2. Commit the changed `hosts/<host>/certs/zellij.pub` and `zellij.key.sops`.
+3. Activate each affected host (`nixos-rebuild switch`), then restart the user service — the
+   activation may leave the old process holding the old certificate:
+
+   ```console
+   $ ssh <host> systemctl --user restart zellij-web
+   ```
+
+4. Verify:
+
+   ```console
+   $ curl -s --cacert data/ca/kdn.crt -o /dev/null -w '%{http_code}\n' https://<host>.priv.nb.net.int.kdn.im:8082/
+   $ openssl s_client -connect <host>:8082 -servername <host>.priv.nb.net.int.kdn.im </dev/null 2>/dev/null | openssl x509 -noout -enddate
+   ```
 
 ## Sources
 
