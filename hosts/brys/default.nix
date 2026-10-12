@@ -11,13 +11,34 @@ let
   # context (128K) and leaves its threads unpinned: it shares the box with the
   # desktop, while the specialisation gets the isolated cores and the full 320K.
   # The small-model set is spun out to the llm-small specialisation, so this
-  # profile serves DS4 alone (withSmall = false).
+  # profile serves no small models (withSmall = false).
+  #
+  # Both frontier models are served, exactly as the llms-frontier boot entry:
+  # DS4 and Qwen3.8-Flash-Next through one router with `--models-max 1`, so a
+  # request for either swaps the resident model (~90-120 s) with no reboot. The
+  # Qwen knobs mirror ./llms-frontier.nix (1M ctx, YaRN x4, q8_0 KV, MTP off,
+  # the llama-cpp-sessions build); the DS4 context stays at the default profile's
+  # 128K.
   llm = import ./llm.nix {
     inherit lib pkgs kdnConfig;
     contextSize = 131072;
     cpuPinned = false;
     withFrontier = true;
     withSmall = false;
+    withQwen = true;
+    qwenContextSize = 1048576;
+    qwenGpu = true;
+    qwenVulkan = false;
+    llamaPackage = pkgs.kdn.llama-cpp-sessions;
+    qwenMtp = false;
+    qwenSpecDraftNMax = 5;
+    qwenRopeScaling = "yarn";
+    qwenRopeScale = 4.0;
+    qwenRopeFreqBase = 10000000;
+    qwenYarnOrigCtx = 262144;
+    qwenCacheTypeK = "q8_0";
+    qwenCacheTypeV = "q8_0";
+    qwenCacheRam = 8192;
   };
 
   slots = kdnConfig.self.mkSlots {

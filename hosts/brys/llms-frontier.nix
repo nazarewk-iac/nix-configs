@@ -6,8 +6,10 @@
 # Qwen3.8-Flash-Next (1M ctx, YaRN x4, MTP draft head disabled). The
 # primary router runs with `--models-max 1`, so only one model is resident at a
 # time and a request for the other swaps it in (~90-120 s reload) with no
-# reboot. The default "brys" entry is unaffected. The common appliance body
-# lives in ./llm-appliance.nix.
+# reboot. The default "brys" entry now serves the same pair (see
+# hosts/brys/default.nix) but at the default profile's 128K DS4 context and
+# without the isolcpus/ARC tuning; this entry keeps the full 320K DS4 and the
+# appliance kernel. The common appliance body lives in ./llm-appliance.nix.
 #
 # Why one router for both: the dedicated ./llm-ds4.nix and ./llm-qwen.nix entries
 # each hold one model for the whole box. This entry trades the per-model tuning

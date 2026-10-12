@@ -134,13 +134,17 @@ slot.
 
 ### Serving endpoint
 
-- The standard boot (main host and the `llm-ds4` specialisation) serves
-  **DeepSeek V4 Flash only**, from one llama-server router on loopback:
+- The standard boot (main host) and the `llms-frontier` specialisation serve
+  **both frontier models** — DeepSeek V4 Flash and Qwen3.8-Flash-Next — from one
+  llama-server router on loopback. The `llm-ds4` specialisation serves DeepSeek
+  alone and `llm-qwen` Qwen alone:
   - **`main`** (frontier): `127.0.0.1:39703`, threads 16. Holds
-    `deepseek-v4-flash` (alias `frontier`); `--models-max 1` keeps it resident
-    and alone. **Four slots share one unified KV pool** (`parallel=4`,
-    `kv-unified=on`, `ctx-size=327680`), so a second request no longer queues
-    behind the first request's full prefill. There is no per-slot cap.
+    `deepseek-v4-flash` (alias `frontier`) and `qwen3.8-flash-next` (alias
+    `qwen`); `--models-max 1` keeps only one resident, so a request for the
+    other swaps it in (~90-120 s). **Four slots share one unified KV pool**
+    (`parallel=4`, `kv-unified=on`), so a second request no longer queues behind
+    the first request's full prefill. There is no per-slot cap; `ctx-size` is
+    327680 on the specialisations and 131072 on the main profile.
   - **Measured concurrency (2026-10-06):** a short request returned in **3.7 s**
     while a 256-token request was in flight (121.8 s) — neither waited for the
     other. Prefill ran at 7.9–15.9 tok/s; DS4 stayed resident (`RssFile`
@@ -165,7 +169,7 @@ The frontier model and the small set no longer share a boot. All entries are
 
 - **`llm-ds4`** (`hosts/brys/llm-ds4.nix`) — DeepSeek V4 Flash alone.
   `withFrontier = true; withSmall = false`. 320K shared KV pool, 4 slots,
-  DSpark draft. The main `brys` profile matches it (at 128K, unpinned).
+  DSpark draft. The main `brys` profile serves the same model at 128K, unpinned.
 - **`llm-small`** (`hosts/brys/llm-small.nix`) — the small-model set alone.
   `withFrontier = false; withSmall = true`. `kdn.llm.local.routers.small`
   (`:39704`, threads 8) is a **set router**: `--models-max 2` keeps up to two
