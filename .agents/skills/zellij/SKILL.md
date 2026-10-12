@@ -26,6 +26,32 @@ keystrokes from the user. For example, it can take an answer to a permission pro
 can show any user action. The user does not always want this content in the conversation. You
 cannot undo a close. You cannot recover the scrollback of a closed pane.
 
+## Write to a pane without stealing focus
+
+`zellij action write-chars -p <pane-id> <chars>` and
+`zellij action send-keys -p <pane-id> <keys>` type into the **named** pane and do **not** change
+the focused pane. This is the mode to use when the user asks you to type a command into a
+specific pane of their session, for example their `local-llm` shell. The user keeps working in
+their own pane while you drive the other one.
+
+- `write-chars` sends literal characters and does **not** press Enter. Follow it with
+  `send-keys -p <id> Enter` to submit the line.
+- `send-keys` sends key names: `Enter`, `Ctrl c`, `F1`, `Alt Shift b`. Use `Ctrl c` to clear a
+  partial line before you type.
+- `paste -p <id>` uses bracketed paste and is more reliable for multi-line input.
+- `write -p <id>` sends raw bytes; use it for a control byte such as `13` (Enter).
+
+It is still a state change — it types into the pane and can run a command — so ask the user first,
+the same as any other state change. It is not a content read. This mode was verified on
+2026-10-12: `write-chars -p 0` left the focused pane unchanged (`list-panes` still reported the
+other pane as `is_focused: true`).
+
+```bash
+# type a command into pane 0 of session main, then submit it, without changing focus
+zellij --session main action write-chars -p 0 'ls -l .opencode/skills/'
+zellij --session main action send-keys -p 0 Enter
+```
+
 ## Read the user's session
 
 Discovery does not need a question first. Use it to find the correct pane:
@@ -259,6 +285,7 @@ Code always prompts for those, as the rule above requires.
 | `attach --create-background *` | Create or reuse a detached session of your own | Pre-allowed — creates only your session |
 | `action dump-screen -p <id> [-f] [-a]` | Snapshot pane viewport or scrollback | Not allowlisted — always prompts. Ask the user which pane first, every time |
 | `subscribe -p <id> --format json` | Stream pane updates (NDJSON) | Not allowlisted — always prompts. Ask first |
+| `action write-chars -p <id>` / `send-keys -p <id>` / `paste -p <id>` | Type into a **named** pane without changing focus | Not allowlisted — always prompts. Ask first; it still types into the pane |
 | `edit-scrollback` | Open scrollback in `$EDITOR` | Not allowlisted — always prompts. Ask first |
 | `action new-pane` / `new-tab` / `go-to-tab*` / `focus-pane-id` / `close-*` / `kill-session` | Create, focus, or destroy state | Not allowlisted — always prompts. Never do this on the user's session. Do it in your own session |
 | `action new-pane --stacked --name <n> -- <cmd>` (your own session) | Run a command in a new stacked pane | Still prompts (not allowlisted). This is correct: it changes state, even in your own session |
