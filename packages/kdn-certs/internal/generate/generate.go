@@ -231,7 +231,7 @@ func generateSSH(deps Deps, ca decl.CA, cert decl.Cert, certAbs string, keyAbs s
 
 	req := smallstep.SSHCertRequest{
 		KeyID:      cert.CommonName,
-		Principals: cert.Principals,
+		Principals: sshPrincipals(cert),
 		Validity:   sshValidityDefault,
 		Host:       cert.Type == "ssh-host",
 		PubKeyPath: leafKeyPlain + ".pub",
@@ -252,6 +252,35 @@ func generateSSH(deps Deps, ca decl.CA, cert decl.Cert, certAbs string, keyAbs s
 	}
 
 	return nil
+}
+
+// sshPrincipals returns the principals to sign into an SSH certificate.
+//
+// A host certificate also names every fully-qualified principal with a trailing dot. A client that
+// connects to `host.example.com.` presents that exact string, and OpenSSH does not strip the dot
+// before it matches a certificate principal, so a dot-less-only certificate is rejected for the
+// trailing-dot name. The repo's `kdn-ssh-access` addresses use that trailing-dot form, so a host
+// certificate must carry both. A user certificate and a short name pass through unchanged.
+func sshPrincipals(cert decl.Cert) []string {
+	if cert.Type != "ssh-host" {
+		return cert.Principals
+	}
+	out := make([]string, 0, len(cert.Principals)*2)
+	seen := make(map[string]bool, len(cert.Principals)*2)
+	add := func(p string) {
+		if p == "" || seen[p] {
+			return
+		}
+		seen[p] = true
+		out = append(out, p)
+	}
+	for _, p := range cert.Principals {
+		add(p)
+		if strings.Contains(p, ".") && !strings.HasSuffix(p, ".") {
+			add(p + ".")
+		}
+	}
+	return out
 }
 
 // moveFile moves `src` to `dst`, across filesystems if needed. The temporary directory and the tree
