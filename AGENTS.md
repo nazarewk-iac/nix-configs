@@ -14,7 +14,12 @@ Commit as you go. The moment a piece of work is a self-contained change, carve
 it out of `@` with `jj split -m 'msg' -- <files>`; fold a small fixup into the
 changeset that introduced the line with `jj absorb`. **Do this proactively — do
 not wait for the user to explicitly ask you to commit.** Do not let unrelated
-edits pile up in `@`. Never push; the user reviews and pushes. See
+edits pile up in `@`. Never push; the user reviews and pushes.
+
+**Always end with an unnamed `@` at the tip.** After your last commit, run
+`jj new` so the working copy is a fresh, undescribed change. Never leave `@`
+carrying a description: the next edit would silently join an already-described
+change, and the user reviews from the tip. See
 [Jujutsu VCS](.agents/rules/jujutsu-vcs.md).
 
 ## Topic Files

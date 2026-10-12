@@ -45,11 +45,11 @@ some `jj rebase` or `jj edit` commands stop with "would rewrite immutable commit
 
 ### Why `@` stays empty (this repo)
 
-`@` auto-snapshots your working files into whatever commit it points at. An empty tip means your
+`@` auto-snapshots your working files into whatever commit it points at. An unnamed tip means your
 next edits do not silently change already-described work. If you edit while `@` is a described
-commit, jj adds your changes to that commit on the next snapshot — that is the footgun the empty
+commit, jj adds your changes to that commit on the next snapshot — that is the footgun the unnamed
 tip avoids. Full convention:
-[When to leave an empty change on top](#when-to-leave-an-empty-change-on-top).
+[Always end with an unnamed `@` at the tip](#always-end-with-an-unnamed--at-the-tip).
 
 ### Bookmark vs branch
 
@@ -125,18 +125,18 @@ jj split -m 'feat(...): description' -- path/to/file
 # commit as @'s parent
 ```
 
-### When to leave an empty change on top
+### Always end with an unnamed `@` at the tip
 
-The empty change on top is a **wrap-up** step, not a checkpoint or a container.
+The unnamed change on top is the **required finish state** for every work session.
 
-- Run `jj new` to leave an empty `@` **only when you finish described work**. It gives the user a
-  clean working copy to review from.
-- Do NOT stack an empty change **above** undescribed or parked work. That buries the working copy
-  one level down. When you park work, keep `@` on the parked change itself.
+- Run `jj new` after your last commit, so `@` is a fresh, undescribed change the user reviews and
+  continues from.
+- `@` must **never** carry a description. A described `@` is the footgun: the next edit silently
+  joins that already-described change. Described work (finished or parked) belongs **below** `@`.
 - Do NOT create an undescribed change in the middle of the graph as a checkpoint or a container.
-  `jj split` already creates the follow-on change for you; you do not add one by hand.
-- An empty `@` with no description is correct **only at the tip**, after the described work below
-  it is complete.
+  `jj split` creates the follow-on change for you when it carves work out; run `jj new` only to
+  leave the final unnamed `@`.
+- An unnamed `@` is correct **only at the tip**.
 
 ### Preferred flow: accumulate, then carve
 
@@ -483,12 +483,12 @@ to change the running system, and `git push` / `jj git push` / `jj sync-remotes`
 
 ## Required finish state
 
-After you **finish** a work session, `@` must be empty (no description, no content) on top of the
-correct parent. This is the wrap-up step from "When to leave an empty change on top" above. Do it
-only when the described work below `@` is complete — not to park half-done work.
+After you **finish** a work session, `@` must be an **unnamed** change (no description) on top of
+the correct parent. Run `jj new` after your last commit. `@` must never carry a description — the
+next edit would silently join it.
 
 ```bash
-# leave @ empty on top of the current tip:
+# leave an unnamed @ on top of the current tip:
 jj new
 ```
 

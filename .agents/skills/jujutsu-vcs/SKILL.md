@@ -38,10 +38,11 @@ This skill is the short index. Full detail lives in the docs and the verified ex
 - **Commit as you go, in logical changesets — proactively, not on request.** Carve each
   self-contained change out with `jj split -m 'msg' -- <files>` as it lands; fold a fixup into the
   changeset that introduced the line with `jj absorb`. **Do not wait for the user to ask you to
-  commit.** Prefer `jj split` over `jj describe` + a bare `jj new`: the split leaves the follow-on
-  change in `@`, while the describe+new pair buries the named change under an unnamed one.
-- **`@` empty is a manual convention** — `jj describe`/`jj commit` do not create a fresh `@`. Run
-  `jj new` yourself, and only to wrap up finished work.
+  commit.** Prefer `jj split` over `jj describe` for carving: the split leaves the follow-on
+  change in `@`.
+- **Always end with an unnamed `@` at the tip.** Run `jj new` after your last commit, so the
+  working copy is a fresh, undescribed change the user reviews from. `@` must never carry a
+  description.
 - **Read a file from any revision with `jj file show -r <id> <path>`** — never `jj edit` to read.
 - **Investigate config with `jj config list --repo`** (never poke `.jj/`). Empty or `#schema`-only
   output means the repo config is not loaded — pause and ask the user to re-enter the devenv shell.
