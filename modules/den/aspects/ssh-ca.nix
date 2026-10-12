@@ -93,11 +93,13 @@ let
       cat ${caPubFile} >> $out
     '';
 
-  # The two server directives, as `sshd_config` text. The `nixos` class passes them through the
-  # `services.openssh.settings` option; the `darwin` class writes them through
-  # `services.openssh.extraConfig`.
-  serverDirectives = caPubFile: hostCertPath: ''
+  # The server directives, as `sshd_config` text. `HostKey` must name the private key behind the
+  # host certificate: sshd pairs a `HostCertificate` with a configured identity key, and a managed
+  # leaf's key lives at its SOPS runtime path, not beside the store certificate. Measured
+  # 2026-10-12 — the two-directive form alone left the issued certificate unused.
+  serverDirectives = caPubFile: hostKeyPath: hostCertPath: ''
     TrustedUserCAKeys ${caPubFile}
+    HostKey ${hostKeyPath}
     HostCertificate ${hostCertPath}
   '';
 
@@ -145,10 +147,14 @@ in
     in
     {
       config = lib.mkIf (sshCa != null && hostCert != null) {
-        services.openssh.settings = {
-          TrustedUserCAKeys = toString (mkSshCaPubKey pkgs (caCertPath config sshCa));
-          HostCertificate = toString hostCert.certPath;
-        };
+        services.openssh.settings.TrustedUserCAKeys = toString (mkSshCaPubKey pkgs (caCertPath config sshCa));
+        # `HostKey` and `HostCertificate` travel together in `extraConfig`. Setting
+        # `services.openssh.settings.HostKey` would override nixpkgs' own `HostKey` list;
+        # `extraConfig` appends, so the existing host identities stay.
+        services.openssh.extraConfig = ''
+          HostKey ${hostCert.keyPath}
+          HostCertificate ${toString hostCert.certPath}
+        '';
       };
     };
 
@@ -168,7 +174,11 @@ in
     in
     {
       config = lib.mkIf (sshCa != null && hostCert != null) {
-        services.openssh.extraConfig = serverDirectives (mkSshCaPubKey pkgs (caCertPath config sshCa)) hostCert.certPath;
+        services.openssh.extraConfig =
+          serverDirectives
+            (mkSshCaPubKey pkgs (caCertPath config sshCa))
+            hostCert.keyPath
+            (toString hostCert.certPath);
       };
     };
 
