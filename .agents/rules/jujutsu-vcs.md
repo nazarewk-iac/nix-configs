@@ -25,12 +25,12 @@ slash command, which shells raw `git commit` internally. Never use `/commit` in 
 > <target>`. Rebase is a last resort — use it only for a genuine topology fix or to construct a
 > merge commit (`jj new <a> <b>`), never as routine work.
 
-> **The empty change on top is for wrap-up only.** Run `jj new` to leave an empty `@` **only when
-> you finish described work**, so the user gets a clean working copy to review from. Do NOT stack
-> an empty change above undescribed or parked work — that buries the working copy one level down.
-> When you park work, keep `@` on the parked change itself. Never leave an undescribed change in
-> the middle of the graph as a container or a checkpoint. `jj split` already creates the
-> follow-on change for you; you do not add one by hand.
+> **Always end with an unnamed `@` at the tip.** After your last commit, run `jj new` so the
+> working copy is a fresh, undescribed change. `@` must **never** carry a description: the next
+> edit would silently join an already-described change, and the user reviews from the tip. Never
+> leave a described change as `@`. Never leave an undescribed change in the middle of the graph as
+> a container or a checkpoint. `jj split` creates the follow-on change for you when it carves work
+> out; run `jj new` only to leave the final unnamed `@`.
 
 > **Non-interactive:** always pass `-m 'msg'` and `-- <files>` to `jj split`/`jj describe`/
 > `jj squash` — they open an editor by default. `jj split` accepts multiple `-- path1 path2 ...`.
@@ -92,8 +92,9 @@ slash command, which shells raw `git commit` internally. Never use `/commit` in 
 - **Prefer `jj split` over `jj describe` + a bare `jj new`.** `jj split` leaves the follow-on change
   in `@` and keeps every finished unit as its own described change; `jj describe` names the whole
   working copy at once, and a following unnamed `jj new` buries it under a fresh empty change.
-- **Leave an empty `jj` change on top only when you wrap up finished, described work** — it gives
-  the user a clean working copy to review from. Do NOT stack one above undescribed or parked work.
+- **Always end a session with an unnamed `@` at the tip** — run `jj new` after your last commit,
+  so the user reviews and continues from a fresh working copy. Never leave `@` on a described
+  change.
 - **NEVER push changes** — the user reviews and pushes.
 - ⚠️ **A bare `jj git push` runs no content check.** `jj git push` fires no git hook, so the
   deny-pattern guard in `hack/pre-push.sh` never runs there. Only a real `git push`
