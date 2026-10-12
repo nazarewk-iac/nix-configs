@@ -22,37 +22,48 @@ injection. See [research.md](research.md).
 
 ## Solution
 
-A plugin written into `.opencode/plugins/` removes the `Today's date:` line. It
-uses the v1 hook `experimental.chat.system.transform`, which receives the system
-prompt as a mutable `string[]`:
+A plugin written into `.opencode/plugins/` replaces the `Today's date:` line
+with a stable line that points at a `current-date` skill. It uses the v1 hook
+`experimental.chat.system.transform`, which receives the system prompt as a
+mutable `string[]`:
 
 ```ts
-const DATE_LINE = /^[ \t]*Today's date:.*\n?/gm
+const DATE_LINE = /^([ \t]*)Today's date:.*$/gm
+const STABLE_DATE_LINE = "$1Today's date: not injected (kept out of the prompt so it stays stable); use the `current-date` skill when you need it."
 
 export const KdnStableSystemPrompt: Plugin = async () => {
   return {
     "experimental.chat.system.transform": async (_input, output) => {
       if (!output || !Array.isArray(output.system)) return
       output.system = output.system.map((part) =>
-        typeof part === "string" ? part.replace(DATE_LINE, "") : part,
+        typeof part === "string" ? part.replace(DATE_LINE, STABLE_DATE_LINE) : part,
       )
     },
   }
 }
 ```
 
+The skill `.opencode/skills/current-date/SKILL.md` tells the model to run `date`
+when it needs the current date. OpenCode injects only the skill's name and
+description into the system prompt (stable and sorted); the body loads on demand
+through the `skill` tool.
+
 The plugin is guarded: a missing, renamed or differently-shaped hook never
 throws, so a request is never broken.
 
+**The plugin is generated; the skill is tracked repo content.** The aspect
+generates the plugin as a `/nix/store` symlink, so it cannot be committed. The
+skill is opencode-specific, so it lives in `.opencode/` (not `.agents/skills/`)
+and is committed as a real file. `.gitignore` re-includes
+`.opencode/skills/*/SKILL.md` while the rest of `.opencode/` stays ignored.
+
 The generator lives in both OpenCode trees, so they stay in parity:
 
-- `modules/den/aspects/opencode.nix` — the aspect. `stablePromptPlugin` plus
-  `files.".opencode/plugins/kdn-opencode-stable-prompt.ts".text`.
-- `modules/slots/opencode/default.nix` — the slot, the same string and `files`
-  entry.
+- `modules/den/aspects/opencode.nix` — the aspect. `stablePromptPlugin` and the
+  `files` entry for the plugin.
+- `modules/slots/opencode/default.nix` — the slot, the same.
 
-The date is removed, not frozen. The system prompt is now byte-identical for the
-life of a conversation.
+The system prompt is now byte-identical for the life of a conversation.
 
 ## Verification steps
 
@@ -63,7 +74,7 @@ life of a conversation.
    nix-instantiate --parse modules/slots/opencode/default.nix
    ```
 
-2. The module evaluates and produces the file:
+2. The module evaluates and produces the plugin:
 
    ```
    res.config.files  ->  [ ".opencode/plugins/kdn-opencode-stable-prompt.ts" ]
@@ -72,24 +83,36 @@ life of a conversation.
 3. The generated plugin text runs correctly under Node:
 
    ```
-   date removed: true
    stable across days: true
+   mentions skill: true
    guard ok
    ```
 
-4. Entering the shell materializes the file:
+4. The skill is tracked, the rest of `.opencode/` is not:
+
+   ```
+   git status --porcelain --untracked-files=all .opencode/
+   ?? .opencode/skills/current-date/SKILL.md
+   git check-ignore .opencode/plugins/kdn-opencode-stable-prompt.ts   # ignored
+   ```
+
+5. Entering the shell regenerates the plugin symlink and leaves the tracked
+   skill file untouched:
 
    ```
    devenv shell -- true
-   ls -la .opencode/plugins/
-   kdn-opencode-stable-prompt.ts -> /nix/store/...-opencode-plugins-kdn-opencode-stable-prompt.ts
+   test -L .opencode/skills/current-date/SKILL.md && echo symlink || echo "real file"
    ```
 
 ## Follow-up notes
 
-- **Restart OpenCode** to load the plugin. A running instance keeps the old
-  prompt until it reloads its plugins.
+- **Restart OpenCode** to load the plugin and the skill. A running instance
+  keeps the old prompt until it reloads.
 - The hook is `experimental` and v1-only. OpenCode v2 replaces it with
   `ctx.session.hook("context", ...)`. Revisit the plugin on a v2 upgrade.
-- The date is no longer available to the model. If that matters, the alternative
-  is to freeze the first-seen date per session id instead of removing it.
+- The date is no longer injected, so the model must run `date` (the skill) to
+  answer a date question. The alternative is to freeze the first-seen date per
+  session id instead of pointing at the skill.
+- The instruction content (`AGENTS.md`) is re-read on every request, so editing
+  it mid-session still moves the prefix. See
+  [prompt-volatility.research.md](prompt-volatility.research.md).
