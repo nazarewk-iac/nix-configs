@@ -19,6 +19,9 @@ const sshHostCert = "ssh-ed25519-cert-v01@openssh.com AAAAIHNzaC1lZDI1NTE5LWNlcn
 // wantValidAfter is the stored `valid_after` of both fixtures (2029-12-31T23:00:00Z).
 const wantValidAfter = 1893452400
 
+// wantValidBefore is the stored `valid_before` of both fixtures (2030-12-31T23:00:00Z).
+const wantValidBefore = 1924988400
+
 func writeFixture(t *testing.T, name, content string) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), name)
@@ -41,6 +44,9 @@ func TestReadSSHUserCertificate(t *testing.T) {
 	}
 	if got := info.NotBefore.Unix(); got != wantValidAfter {
 		t.Errorf("NotBefore epoch = %d, want %d", got, wantValidAfter)
+	}
+	if got := info.NotAfter.Unix(); got != wantValidBefore {
+		t.Errorf("NotAfter epoch = %d, want %d", got, wantValidBefore)
 	}
 	// An OpenSSH certificate has no issuer common name.
 	if info.IssuerCN != "" {

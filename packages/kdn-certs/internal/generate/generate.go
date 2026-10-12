@@ -158,6 +158,12 @@ func Run(cas decl.CAs, result dedup.Result, deps Deps) (Result, error) {
 // default is what makes a declared `ssh-host` leaf re-signable without an interactive tool.
 const sshValidityDefault = "+30d"
 
+// tlsValidityDefault is the X.509 leaf lifetime `apply` asks the TLS signer for. `step` defaults to
+// 24 hours, which expired the committed zellij-web leaves within a day of issuance (measured
+// 2026-09-26). A committed leaf is renewed by hand or by the expiry test in `mismatch`, so the
+// lifetime is an automation-class window with slack: 90 days.
+const tlsValidityDefault = "2160h" // 90 days
+
 // generateOne generates one certificate: key, sign, write the public cert, SOPS-encrypt the key.
 //
 // The private key is written plain to a temporary file, SOPS-encrypted next to the public
@@ -303,6 +309,7 @@ func generateTLS(deps Deps, ca decl.CA, cert decl.Cert, certAbs string, keyAbs s
 
 	req := smallstep.LeafRequest{
 		CommonName: cert.CommonName,
+		Validity:   tlsValidityDefault,
 		SANs:       cert.SANs,
 		Principals: cert.Principals,
 		Type:       cert.Type,

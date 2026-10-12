@@ -28,6 +28,9 @@ type Info struct {
 	// NotBefore is the certificate's own not-before date. For an SSH certificate it is the
 	// certificate `valid_after` field.
 	NotBefore time.Time
+	// NotAfter is the certificate's expiry. The zero time means "no expiry recorded", which an
+	// OpenSSH "indefinite" `valid_before` maps to.
+	NotAfter time.Time
 	// IssuerCN is the common name of the certificate issuer. It is empty for an SSH certificate,
 	// which carries no issuer common name.
 	IssuerCN string
@@ -64,7 +67,11 @@ func Read(path string) (*Info, error) {
 		return nil, fmt.Errorf("parse certificate %s: %w", path, err)
 	}
 
-	return &Info{NotBefore: cert.NotBefore.UTC(), IssuerCN: cert.Issuer.CommonName}, nil
+	return &Info{
+		NotBefore: cert.NotBefore.UTC(),
+		NotAfter:  cert.NotAfter.UTC(),
+		IssuerCN:  cert.Issuer.CommonName,
+	}, nil
 }
 
 // isSshCertificate reports whether the file is an OpenSSH certificate line, for example
@@ -84,8 +91,9 @@ func isSshCertificate(raw []byte) bool {
 // The blob is the base64 field of the first line. The wire layout, in order, is: string certtype
 // (`ssh-…-cert-v01@openssh.com`), string nonce, string key, uint64 serial, uint32 cert_type
 // (1 = user, 2 = host), string key_id, string principals (a nested blob, skipped here), then uint64
-// valid_after. Only cert_type and valid_after are needed; the rest is read to advance the cursor. The
-// layout is `sshkey_cert_serialize` in portable OpenSSH `sshkey.c`.
+// valid_after and uint64 valid_before. Only cert_type and the two validity bounds are needed; the
+// rest is read to advance the cursor. The layout is `sshkey_cert_serialize` in portable OpenSSH
+// `sshkey.c`.
 func readSSH(path string, raw []byte) (*Info, error) {
 	fields := strings.Fields(string(raw))
 	if len(fields) < 2 {
@@ -127,11 +135,27 @@ func readSSH(path string, raw []byte) (*Info, error) {
 	if err != nil {
 		return nil, sshFieldErr(path, "valid_after", err)
 	}
+	validBefore, err := r.u64()
+	if err != nil {
+		return nil, sshFieldErr(path, "valid_before", err)
+	}
 
 	return &Info{
 		NotBefore: time.Unix(int64(validAfter), 0).UTC(),
+		NotAfter:  sshNotAfter(validBefore),
 		IsSSH:     true,
 	}, nil
+}
+
+// sshNotAfter converts an OpenSSH `valid_before` epoch. `ssh-keygen -V ...:none` and very large
+// sentinels encode "indefinite"; anything beyond the year 9999 maps to the zero time, which the
+// caller reads as "never expires".
+func sshNotAfter(validBefore uint64) time.Time {
+	const maxEpoch = 253402300799 // year 9999
+	if validBefore > maxEpoch {
+		return time.Time{}
+	}
+	return time.Unix(int64(validBefore), 0).UTC()
 }
 
 func sshFieldErr(path, field string, err error) error {

@@ -111,3 +111,38 @@ func TestDecideSSHStillStale(t *testing.T) {
 		t.Errorf("Decide(ssh, stale) = %q, want %q", reason, ReasonStale)
 	}
 }
+
+// TestDecideExpired proves an expired certificate regenerates even with no `minGenerationDate`:
+// the committed zellij-web leaves expired silently at the 24-hour `step` default. Sub-task 008.
+func TestDecideExpired(t *testing.T) {
+	cert := decl.Cert{CA: "ca"}
+	existing := &Existing{
+		NotBefore: time.Date(2026, 9, 25, 0, 0, 0, 0, time.UTC),
+		NotAfter:  time.Date(2026, 9, 26, 0, 0, 0, 0, time.UTC),
+		IssuerCN:  "ca",
+	}
+	reason, err := Decide(cert, existing, "ca", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reason != ReasonExpired {
+		t.Errorf("Decide(expired) = %q, want %q", reason, ReasonExpired)
+	}
+}
+
+// TestDecideNoExpiryZero means an SSH "indefinite" bound (zero NotAfter) never trips the expiry test.
+func TestDecideNoExpiryZero(t *testing.T) {
+	cert := decl.Cert{CA: "ca"}
+	existing := &Existing{
+		NotBefore: time.Date(2026, 9, 25, 0, 0, 0, 0, time.UTC),
+		NotAfter:  time.Time{},
+		IssuerCN:  "ca",
+	}
+	reason, err := Decide(cert, existing, "ca", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reason != ReasonNone {
+		t.Errorf("Decide(indefinite) = %q, want %q", reason, ReasonNone)
+	}
+}

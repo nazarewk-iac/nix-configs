@@ -1,10 +1,12 @@
 // Package mismatch decides whether a certificate must be regenerated.
 //
-// Three conditions trigger a regeneration: a stale `notBefore`, an issuer CN that does not match the
-// declared CA, and `--force`. See design § 5.7.
+// Four conditions trigger a regeneration: an expired certificate, a stale `notBefore`, an issuer CN
+// that does not match the declared CA, and `--force`. See design § 5.7.
 package mismatch
 
 import (
+	"time"
+
 	"kdn-certs/internal/certinfo"
 	"kdn-certs/internal/decl"
 	"kdn-certs/internal/iso8601"
@@ -28,6 +30,9 @@ const (
 	ReasonForced Reason = "forced"
 	// ReasonMissing means no certificate file exists yet.
 	ReasonMissing Reason = "missing"
+	// ReasonExpired means the certificate's own not-after date is in the past. A committed leaf
+	// with no `minGenerationDate` would otherwise never be renewed by hand.
+	ReasonExpired Reason = "expired"
 )
 
 // Decide returns the regeneration reason for one certificate.
@@ -40,6 +45,11 @@ func Decide(cert decl.Cert, existing *Existing, caCommonName string, force bool)
 	}
 	if existing == nil {
 		return ReasonMissing, nil
+	}
+	// An expired certificate is regenerated regardless of its generation date. A zero `NotAfter`
+	// means "no expiry recorded" (an OpenSSH indefinite bound) and never triggers this.
+	if !existing.NotAfter.IsZero() && !existing.NotAfter.After(time.Now()) {
+		return ReasonExpired, nil
 	}
 	stale, err := iso8601.Before(existing.NotBefore, cert.MinGenerationDate)
 	if err != nil {
