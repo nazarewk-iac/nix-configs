@@ -28,6 +28,9 @@ in
           ++ lib.lists.optionals (with pkgs.stdenv.hostPlatform; isLinux && isx86_64 && config.kdn.desktop.enable) [
             hardinfo2 # 2025-04-28: error: 'hardinfo' has been removed as it was abandoned upstream. Consider using 'hardinfo2' instead.
           ]
+          ++ lib.lists.optionals (!config.kdn.minimalServer) [
+            hw-probe # note: 2024-06-25: weights ~560 MiB
+          ]
           ++ lib.lists.optionals config.kdn.desktop.enable [
             mesa-demos # used to be glxinfo
             vulkan-caps-viewer
@@ -35,7 +38,6 @@ in
           ]
           ++ [
             hddtemp
-            hw-probe # note: 2024-06-25: weights ~560 MiB
             inxi
             lm_sensors
             lshw
