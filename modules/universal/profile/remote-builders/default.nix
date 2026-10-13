@@ -271,7 +271,17 @@ in
                   - https://daiderd.com/nix-darwin/manual/index.html#opt-users.users._name_.name
                   - https://search.nixos.org/options?channel=24.11&from=0&size=50&sort=alpha_asc&type=packages&query=users.users
                 */
-                nix.settings.trusted-users = [
+                /*
+                  The remote-build account connects to the daemon, so it must be in
+                  `allowed-users`. It must NOT be in `trusted-users`. A trusted client sends the
+                  derivation through `buildDerivation`, and that goal sets `useDerivation =
+                  false`, which skips the build hook. So a trusted builder builds locally and
+                  never forwards to its own builders. An untrusted client uses
+                  `buildPathsWithResults`, which does forward. A host that is only a builder
+                  (never a client of another builder) still needs this. See
+                  docs/lix-caveats.md.
+                */
+                nix.settings.allowed-users = [
                   "@${bCfg.group.name}"
                 ];
                 users.groups."${bCfg.group.name}" = {
