@@ -24,10 +24,14 @@ in
           with pkgs;
           [
             dmidecode
-            mesa-demos # used to be glxinfo
           ]
           ++ lib.lists.optionals (with pkgs.stdenv.hostPlatform; isLinux && isx86_64) [
             hardinfo2 # 2025-04-28: error: 'hardinfo' has been removed as it was abandoned upstream. Consider using 'hardinfo2' instead.
+          ]
+          ++ lib.lists.optionals config.kdn.desktop.enable [
+            mesa-demos # used to be glxinfo
+            vulkan-caps-viewer
+            vulkan-tools
           ]
           ++ [
             hddtemp
@@ -39,9 +43,6 @@ in
             pciutils # lspci
             sysfsutils # systool
             usbutils # lsusb
-
-            vulkan-caps-viewer
-            vulkan-tools
 
             (lib.kdn.shell.writeShellScript pkgs ./bin/lsiommu.sh {
               runtimeInputs = with pkgs; [ findutils ];

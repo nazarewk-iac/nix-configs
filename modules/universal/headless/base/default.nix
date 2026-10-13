@@ -65,7 +65,9 @@ in
       kdn.toolset.unix.enable = lib.mkDefault true;
       kdn.toolset.nix.enable = lib.mkDefault true;
       # TODO: pulling it in for Helix, move it out into dedicated module
-      kdn.toolset.ide.enable = lib.mkDefault true;
+      # Helix and its full tree-sitter grammar set add a large closure. A minimal server
+      # keeps the editor out.
+      kdn.toolset.ide.enable = lib.mkDefault (!config.kdn.minimalServer);
       kdn.programs.fish.defaultShell = lib.mkDefault true;
     })
     # home-manager
