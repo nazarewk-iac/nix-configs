@@ -78,3 +78,11 @@ idempotent. See [hosts/anji/disks.md](../../../hosts/anji/disks.md).
 - [hosts/anji/disks.md](../../../hosts/anji/disks.md) — the external volumes.
 - [rosetta-builder-external-drive](../rosetta-builder-external-drive/definition.md) — the follow-up
   that moves the guest disk.
+
+## Follow-up
+
+`anji` now serves `aarch64-linux` to every host, not only to itself. A client dispatches a build to
+`anji`, and `anji` forwards it to `rosetta-builder`. See
+[remote-builder-anji-for-clients](../remote-builder-anji-for-clients/definition.md). That work
+found a Lix behaviour: a **trusted** builder does not forward. The remote-build account is now
+allowed but not trusted ([docs/lix-caveats.md](../../../lix-caveats.md)).
