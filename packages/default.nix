@@ -29,6 +29,7 @@ in
   kdnctl = pkgs.callPackage ./kdnctl { };
   kdn-anonymize = pkgs.callPackage ./kdn-anonymize { };
   kdn-certs = pkgs.callPackage ./kdn-certs { };
+  kdn-nix-bootstrap = pkgs.callPackage ./kdn-nix-bootstrap { };
   kdn-cidata-iso = pkgs.callPackage ./kdn-cidata-iso { };
   kdn-nix = pkgs.callPackage ./kdn-nix { };
   kdn-ssh-access = pkgs.callPackage ./kdn-ssh-access { };
