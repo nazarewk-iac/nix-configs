@@ -72,19 +72,16 @@ in
     # LLM secrets, model persistence and the leaf-key decrypt service. Shared
     # with the llm-ds4 boot specialisation via ./llm.nix.
     llm.nixos
-    "${kdnConfig.self}/data/ca/ca-dag.nix"
+    # The SSH host certificate, the CA DAG and the `ssh-ca` aspect. Shared with
+    # every boot specialisation (see hosts/brys/llm-appliance.nix).
+    ./ssh-ca.nix
     # Local LLM serving via the den `llm` aspect (llama-server router mode, TLS
     # behind Caddy). `llm.slot` supplies the `kdn.llm.local` data.
     llm.slot
     {
       imports = kdnConfig.self.denLib.imports {
         class = "nixos";
-        aspects = [
-          "ca-dag"
-          "certificates"
-          "ssh-ca"
-          "llm"
-        ];
+        aspects = [ "llm" ];
       };
     }
   ];
@@ -413,7 +410,8 @@ in
       };
     }
     {
-      kdn.certificates.repoRoot = kdnConfig.self;
+      # The SSH host certificate and `repoRoot` live in ./ssh-ca.nix, shared with
+      # every boot specialisation.
       kdn.certificates.certs.zellij-web = {
         ca = "kdn";
         type = "tls-server";
@@ -424,26 +422,6 @@ in
         keyFile = "zellij.key";
         keySource = "managed";
         owner = "kdn";
-      };
-      # The SSH host certificate. The `ssh-ca` aspect pairs it with its managed key so sshd
-      # presents it beside the classic `/etc/ssh` identities; clients that trust the KDN CA
-      # (`@cert-authority`) verify the host by CA, and older clients keep their known key
-      # (OpenSSH `prefer_local_hostkeys`).
-      kdn.certificates.certs.ssh-host-brys = {
-        ca = "kdn";
-        type = "ssh-host";
-        commonName = "brys";
-        principals = [
-          "brys"
-          "brys.lan.etra.net.int.kdn.im"
-          "brys.lan.drek.net.int.kdn.im"
-          "brys.priv.nb.net.int.kdn.im"
-          "brys.netbird.cloud"
-        ];
-        directory = "hosts/brys/certs";
-        certFile = "ssh_host_ed25519-cert.pub";
-        keyFile = "ssh_host_ed25519.key";
-        keySource = "managed";
       };
     }
     {

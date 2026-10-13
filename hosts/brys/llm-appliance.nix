@@ -42,6 +42,10 @@
     # host-side secrets and model persistence.
     llm.slot
     llm.nixos
+    # The SSH host certificate, the CA DAG and the `ssh-ca` aspect. Shared with
+    # the main profile via ./ssh-ca.nix, so every brys boot presents the host
+    # certificate and accepts CA user certificates.
+    ./ssh-ca.nix
   ]
   ++ kdnConfig.self.denLib.imports {
     class = "nixos";
