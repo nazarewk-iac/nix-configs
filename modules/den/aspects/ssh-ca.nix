@@ -155,6 +155,11 @@ in
           HostKey ${hostCert.keyPath}
           HostCertificate ${toString hostCert.certPath}
         '';
+        # sshd reads the managed host key from its SOPS runtime path, so it must wait for the
+        # secrets. Without this order the host certificate is absent on a cold boot: sshd starts
+        # before `sops-install-secrets` and never retries the load. See `kdn-secrets.target`.
+        systemd.services.sshd.after = [ "kdn-secrets.target" ];
+        systemd.services.sshd.requires = [ "kdn-secrets.target" ];
       };
     };
 
