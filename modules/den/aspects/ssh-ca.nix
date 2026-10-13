@@ -30,9 +30,14 @@
 #
 # ## The classes
 #
-# `nixos`, `darwin` and `homeManager`. The server half is the first two; the client half is the
-# third. An empty `kdn.ca-dag.cas` and an empty `kdn.certificates.certs` are the no-op, so inclusion
-# alone changes nothing.
+# `nixos`, `darwin`, `homeManager` and `devenv`. The server half is the first two; the client half
+# is `homeManager`. An empty `kdn.ca-dag.cas` and an empty `kdn.certificates.certs` are the no-op,
+# so inclusion alone changes nothing.
+#
+# The `devenv` class is the operator's shell. It includes `ca-manager`, so a shell that asks for
+# `ssh-ca` also holds the `kdn-certs` CLI and the CA DAG. A user who signs a user certificate
+# (`kdn-certs ssh login <host>`) and the host that serves it therefore share one aspect. The
+# host classes stay inert: a NixOS host reads the DAG data, not the CLI.
 #
 # ## The client drop-in
 #
@@ -128,9 +133,15 @@ in
 {
   # The SSH CA reads the CA graph and the leaf set, so it carries both option trees. An import
   # dedupes by path, so a consumer that already includes either aspect pays nothing extra.
+  #
+  # `ca-manager` joins the set so a shell that asks for `ssh-ca` also holds the `kdn-certs` CLI
+  # and the CA DAG. A user who signs a user certificate (`kdn-certs ssh login <host>`) and the
+  # host that serves it therefore share one aspect. `ca-manager` is devenv-only; on a NixOS or a
+  # darwin host it resolves to the no-op, so the host classes above gain no binary.
   kdn.ssh-ca.includes = [
     kdn.ca-dag
     kdn.certificates
+    kdn.ca-manager
   ];
 
   # The server half on NixOS. It writes the two directives through the nixpkgs option.
