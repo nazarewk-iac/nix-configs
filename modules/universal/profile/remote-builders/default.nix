@@ -80,18 +80,17 @@ let
         }
         {
           hostName = "anji";
+          # `anji` is aarch64-darwin, and it runs a QEMU aarch64-linux builder. So it serves
+          # `aarch64-linux` too: its own daemon forwards each such build to that builder VM
+          # (`nix.distributedBuilds` is on there). One entry covers every system, so no separate
+          # `anji-linux-builder` host name is needed.
           systems = [
             "aarch64-darwin"
             "x86_64-darwin"
+            "aarch64-linux"
           ];
           maxJobs = 4;
           speedFactor = 8; # 4 perf and 4 efficiency cores
-        }
-        {
-          hostName = "anji-linux-builder";
-          systems = [ "aarch64-linux" ];
-          maxJobs = 4;
-          speedFactor = 6;
         }
       ]
       [
@@ -250,13 +249,6 @@ in
                   BatchMode = "yes";
                   IdentitiesOnly = lib.mkDefault (config.home.username == "root");
                   IdentityFile = bCfg.user.ssh.IdentityFile;
-                };
-                programs.ssh.settings."Match host anji-linux-builder" = {
-                  ProxyJump = lib.mkIf (config.kdn.hostName != "anji") "${bCfg.user.name}@anji";
-                  User = bCfg.user.name;
-                  Hostname = "localhost";
-                  Port = 31022;
-                  HostKeyAlias = "anji-linux-builder";
                 };
               })
               (kdnConfig.util.ifTypes [ "nixos" "darwin" ] {
