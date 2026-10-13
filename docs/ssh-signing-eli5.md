@@ -87,7 +87,7 @@ kdn.certificates.certs.ssh-host-<name> = {
 
 ## Two facts that bite
 
-- **The stamp expires.** A user certificate lives 8 hours by default. A host certificate lives 30
+- **The stamp expires.** A user certificate lives 8 hours by default. A host certificate lives 90
   days.
 - **A trailing dot is a different name.** OpenSSH does not strip the dot. The host certificate must
   name `brys.lan.etra.net.int.kdn.im.` as well as `brys.lan.etra.net.int.kdn.im`. The repo now does
