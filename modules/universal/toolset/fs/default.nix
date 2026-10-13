@@ -76,7 +76,9 @@ in
     ))
     (kdnConfig.util.ifTypes [ "nixos" ] (
       lib.mkIf cfg.enable {
-        kdn.toolset.tracing.enable = lib.mkDefault true;
+        # `bpftrace` and `bcc` pull the full clang and LLVM libraries, about 1.5 GiB. A minimal
+        # server keeps them out. The same value lives in `toolset/unix`; both must agree.
+        kdn.toolset.tracing.enable = lib.mkDefault (!config.kdn.minimalServer);
         kdn.toolset.fs.encryption.enable = lib.mkDefault true;
       }
     ))

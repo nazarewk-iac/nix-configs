@@ -16,7 +16,9 @@ in
 
   config = lib.mkMerge [
     (lib.mkIf cfg.enable {
-      kdn.toolset.tracing.enable = lib.mkDefault true;
+      # `bpftrace` and `bcc` pull the full clang and LLVM libraries, about 1.5 GiB. A minimal
+      # server keeps them out.
+      kdn.toolset.tracing.enable = lib.mkDefault (!config.kdn.minimalServer);
       kdn.env.packages = with pkgs; [
         btop
         htop
