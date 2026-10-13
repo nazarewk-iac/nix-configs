@@ -30,7 +30,6 @@ in
             # END kdn.git-utils
           ''
         ];
-        programs.difftastic.git.enable = true;
 
         kdn.env.packages = with pkgs; [
           git
@@ -42,14 +41,18 @@ in
         programs.jujutsu.enable = true;
         programs.jujutsu.settings = {
           ui.default-command = "log";
+          ui.paginate = "auto"; # turn off pager by default
+        }
+        // lib.optionalAttrs (!config.kdn.minimalServer) {
+          # `difftastic` is a large Rust binary. A minimal server keeps the plain jj diff.
           ui.diff-formatter = [
             (lib.getExe config.programs.difftastic.package)
             "--color=always"
             "$left"
             "$right"
           ];
-          ui.paginate = "auto"; # turn off pager by default
         };
+        programs.difftastic.git.enable = lib.mkIf (!config.kdn.minimalServer) true;
       }
     ))
   ];

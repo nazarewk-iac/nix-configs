@@ -59,7 +59,7 @@ in
       }
       (kdnConfig.util.ifHM {
         # A `lib.mkDefault` on each, so a consumer drops difftastic or picks a light background.
-        programs.difftastic.enable = lib.mkDefault true; # diff highlighter
+        programs.difftastic.enable = lib.mkDefault (!config.kdn.minimalServer); # diff highlighter
         programs.difftastic.options.background = lib.mkDefault "dark"; # diff highlighter
       })
     ]
