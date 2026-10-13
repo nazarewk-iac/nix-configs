@@ -110,5 +110,18 @@ lib.optionalAttrs
       (kdnConfig.util.ifTypes [ "nixos" "home-manager" ] {
         stylix.targets.gtksourceview.enable = false;
       })
+      /*
+        A headless host runs no graphical toolkit. The stylix `qt` target forces
+        `qt.enable = true` on NixOS, and that pulls the full Qt 5 and Qt 6 stack into the system
+        closure for no benefit. So the target follows the desktop switch.
+
+        The `gtk` target stays on. It enables `programs.dconf`, and the Home Manager
+        `dconfSettings` activation fails without the `ca.desrt.dconf` D-Bus service.
+      */
+      (kdnConfig.util.ifTypes [ "nixos" "home-manager" ] (
+        lib.mkIf (!config.kdn.desktop.enable) {
+          stylix.targets.qt.enable = false;
+        }
+      ))
     ];
   }

@@ -29,6 +29,9 @@
       system.stateVersion = "26.05";
       home-manager.sharedModules = [ { home.stateVersion = "26.05"; } ];
       networking.hostId = "550ded62"; # cut -c-8 </proc/sys/kernel/random/uuid
+
+      # A headless Hetzner server. Remove documentation and diagnostic tooling.
+      kdn.minimalServer = true;
     }
     {
       /*

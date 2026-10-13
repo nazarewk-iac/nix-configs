@@ -142,5 +142,23 @@
       default = false;
       example = true;
     };
+
+    /*
+      Remove every package this tree does not need on a server.
+
+      The option covers documentation, and the tools that only diagnose or document a system. A
+      desktop host wants those tools, and a server does not.
+
+      The default is `false`, the value this repository uses today.
+    */
+    minimalServer = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      example = true;
+      description = ''
+        Remove documentation and diagnostic tooling that a server does not need.
+        Such a set keeps the system closure small.
+      '';
+    };
   };
 }

@@ -77,7 +77,10 @@ in
     };
     nextcloudClient.enable = lib.mkOption {
       type = lib.types.bool;
-      default = true;
+      default = config.kdn.desktop.enable;
+      # The default follows the desktop switch, because the client pulls a full Qt and
+      # Chromium-based engine into the closure. A headless host does not need it.
+      defaultText = lib.literalExpression "config.kdn.desktop.enable";
       example = false;
       description = "Turn on the system Nextcloud client when the secrets of this tree are present.";
     };
@@ -148,24 +151,25 @@ in
         kdn.profile.user.${cfg.primaryUser.profile}.enable = lib.mkDefault true;
       })
       {
-        kdn.env.packages = with pkgs; [
-          git
-          bash
-          curl
-          jq
-          sshfs
+        kdn.env.packages =
+          with pkgs;
+          [
+            git
+            bash
+            curl
+            jq
+            sshfs
 
-          nix-derivation # pretty-derivation
-          nix-output-monitor
-          nix-du
-          nix-tree
-          pkgs.kdn.kdn-nix
-
-          # TODO: remove after resolving https://github.com/sfcompute/hardware_report/issues/22 ?
-          (lib.mkIf (
-            !pkgs.stdenv.hostPlatform.isDarwin
-          ) kdnConfig.self.inputs.hardware-report.packages."${pkgs.stdenv.hostPlatform.system}".default)
-        ];
+            nix-output-monitor
+            nix-du
+            nix-tree
+            pkgs.kdn.kdn-nix
+          ]
+          # `nix-derivation` (pretty-derivation) drags the full GHC and its documentation into
+          # the closure. A minimal server does not need it.
+          ++ lib.lists.optionals (!config.kdn.minimalServer) [
+            nix-derivation
+          ];
       }
       # shared/darwin-nixos
       (kdnConfig.util.ifTypes [ "nixos" "darwin" ] {

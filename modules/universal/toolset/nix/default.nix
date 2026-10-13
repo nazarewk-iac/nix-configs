@@ -19,15 +19,21 @@ in
         home-manager.sharedModules = [ { kdn.toolset.nix.enable = true; } ];
       })
       (kdnConfig.util.ifNotHMParent {
-        kdn.env.packages = with pkgs; [
-          nix-derivation # pretty-derivation
-          nix-weather # check for packages in cache
-          nix-output-monitor
-          nix-du
-          nix-tree
-          nix-update
-          pkgs.kdn.kdn-nix
-        ];
+        kdn.env.packages =
+          with pkgs;
+          [
+            nix-weather # check for packages in cache
+            nix-output-monitor
+            nix-du
+            nix-tree
+            nix-update
+            pkgs.kdn.kdn-nix
+          ]
+          # `nix-derivation` (pretty-derivation) drags the full GHC and its documentation into
+          # the closure. A server does not need a pretty printer for derivations.
+          ++ lib.lists.optionals (!config.kdn.minimalServer) [
+            nix-derivation
+          ];
       })
       (kdnConfig.util.ifTypes [ "nixos" ] {
         programs.fish.interactiveShellInit = ''

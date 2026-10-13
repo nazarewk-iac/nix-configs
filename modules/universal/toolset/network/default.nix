@@ -16,23 +16,27 @@ in
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
-        kdn.env.packages = with pkgs; [
-          (lib.meta.setPrio 10 nettools)
-          (lib.meta.setPrio 20 inetutils) # telnet etc.
-          socat
-          arp-scan
-          bind # provides: dnssec-*, named-*, ...
-          dnsutils # another output of `pkgs.bind`, provides: dig, delv, nslookup, nsupdate
-          nmap
-          bandwhich
-          tcpdump
-          # wol # TODO: 2026-05-05: broken build
-          iperf
-          speedtest-go
-          speedtest-cli
-          ssh-tools
-          (lib.hiPrio wireshark-cli)
-        ];
+        kdn.env.packages =
+          with pkgs;
+          [
+            (lib.meta.setPrio 10 nettools)
+            (lib.meta.setPrio 20 inetutils) # telnet etc.
+            socat
+            arp-scan
+            bind # provides: dnssec-*, named-*, ...
+            dnsutils # another output of `pkgs.bind`, provides: dig, delv, nslookup, nsupdate
+            bandwhich
+            tcpdump
+            # wol # TODO: 2026-05-05: broken build
+            iperf
+            speedtest-go
+            speedtest-cli
+            ssh-tools
+          ]
+          ++ lib.lists.optionals (!config.kdn.minimalServer) [
+            nmap
+            (lib.hiPrio wireshark-cli)
+          ];
       }
       (lib.mkIf config.kdn.desktop.enable {
         kdn.env.packages = with pkgs; [
@@ -40,7 +44,9 @@ in
         ];
       })
       (kdnConfig.util.ifTypes [ "nixos" ] {
-        programs.wireshark.enable = true;
+        # The NixOS module adds `wireshark-cli` to the system environment on its own, so the
+        # switch follows `minimalServer` as well.
+        programs.wireshark.enable = !config.kdn.minimalServer;
         kdn.services.iperf3.enable = lib.mkDefault true;
         kdn.env.packages = with pkgs; [
           conntrack-tools
