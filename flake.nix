@@ -189,6 +189,17 @@
               __inputs__ = { inherit inputs; };
             });
         })
+        # `typescript-language-server` 6.0.2 ships a stale `pnpmDeps` hash. The pinned `pnpm_12`
+        # produces a different tarball than the hash records, so the FOD fails on every build. The
+        # fetched output is healthy, so the tree records the real hash here. Remove this entry when
+        # upstream corrects the package.
+        (final: prev: {
+          typescript-language-server = prev.typescript-language-server.overrideAttrs (old: {
+            pnpmDeps = old.pnpmDeps.overrideAttrs (_: {
+              outputHash = "sha256-xR/EF60lVBsITKgH7wCM2wHM46PFQevD51KfCENSUH4=";
+            });
+          });
+        })
       ];
 
       flake.overlays.default = inputs.nixpkgs.lib.composeManyExtensions [

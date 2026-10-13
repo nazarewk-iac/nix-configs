@@ -29,6 +29,9 @@
       system.stateVersion = "25.05";
       home-manager.sharedModules = [ { home.stateVersion = "25.05"; } ];
       networking.hostId = "b86e74e8"; # cut -c-8 </proc/sys/kernel/random/uuid
+
+      # A headless Raspberry Pi 4. Remove documentation and diagnostic tooling.
+      kdn.minimalServer = true;
     }
     {
       kdn.profile.machine.baseline.enable = true;
