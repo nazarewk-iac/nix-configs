@@ -244,12 +244,18 @@ in
           # configuration related to SSH identities/authorized keys and nix remote builder
           (lib.mkIf bCfg.use (
             lib.mkMerge [
-              (kdnConfig.util.ifHM {
-                programs.ssh.settings."Match User ${bCfg.user.name}" = {
-                  BatchMode = "yes";
-                  IdentitiesOnly = lib.mkDefault (config.home.username == "root");
-                  IdentityFile = bCfg.user.ssh.IdentityFile;
-                };
+              # The nix daemon runs the build hook as root, so root's SSH is the one that matters.
+              # The system SSH config applies to root too, and it carries the builder identity. A
+              # Home Manager block does not work here: `IdentityFile` reads the sops secrets of the
+              # target module type, and that set is empty in the Home Manager context, so `use`
+              # stays `false` there and the block never appears.
+              (kdnConfig.util.ifTypes [ "nixos" "darwin" ] {
+                programs.ssh.extraConfig = ''
+                  Match User ${bCfg.user.name}
+                    BatchMode yes
+                    IdentitiesOnly yes
+                    IdentityFile ${bCfg.user.ssh.IdentityFile}
+                '';
               })
               (kdnConfig.util.ifTypes [ "nixos" "darwin" ] {
                 nix.distributedBuilds = lib.mkDefault true;
