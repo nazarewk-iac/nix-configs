@@ -215,7 +215,13 @@ in
 {
   imports = inputs.nix-configs.denLib.imports {
     class = "devenv";
-    aspects = [ "llm-client" ];
+    # `ssh-ca` pulls in `ca-manager`, so this shell holds the `kdn-certs` CLI and the CA DAG.
+    # That is the client half of the SSH CA: `kdn-certs ssh login <host>` writes the user
+    # certificate this host presents.
+    aspects = [
+      "llm-client"
+      "ssh-ca"
+    ];
   };
 
   # The generic opencode aspect turns opencode on, supplies the default permission
