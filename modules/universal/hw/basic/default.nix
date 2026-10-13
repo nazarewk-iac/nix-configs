@@ -25,7 +25,7 @@ in
           [
             dmidecode
           ]
-          ++ lib.lists.optionals (with pkgs.stdenv.hostPlatform; isLinux && isx86_64) [
+          ++ lib.lists.optionals (with pkgs.stdenv.hostPlatform; isLinux && isx86_64 && config.kdn.desktop.enable) [
             hardinfo2 # 2025-04-28: error: 'hardinfo' has been removed as it was abandoned upstream. Consider using 'hardinfo2' instead.
           ]
           ++ lib.lists.optionals config.kdn.desktop.enable [

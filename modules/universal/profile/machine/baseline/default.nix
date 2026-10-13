@@ -367,7 +367,9 @@ in
             programs.ssh.extraConfig = lib.mkBefore ''
               Include /etc/ssh/ssh_config.d/*.config
             '';
-            location.provider = "geoclue2";
+            # `geoclue2` pulls ModemManager and libqmi. A minimal server does not need the
+            # location provider, so the option keeps its upstream `manual` value there.
+            location.provider = lib.mkIf (!config.kdn.minimalServer) "geoclue2";
             users.mutableUsers = false;
             users.users.root.initialHashedPassword = lib.mkForce "$y$j9T$AhbnpYZawNWNGfuq1h9/p0$jmitwtZwTr72nBgvg2TEmrGmhRR30sQ.hQ7NZk1NqJD";
             kdn.env.packages = with pkgs; [

@@ -10,14 +10,21 @@ let
 
   fallbackPinentry =
     with pkgs.stdenv.hostPlatform;
-    if isDarwin then pkgs.pinentry_mac else pkgs.pinentry-all;
+    if isDarwin then
+      pkgs.pinentry_mac
+    else if config.kdn.minimalServer then
+      pkgs.pinentry-curses
+    else
+      pkgs.pinentry-all;
 in
 {
   options.kdn.programs.gnupg = {
     enable = lib.mkEnableOption "GnuPG forwarding to remote systems";
     pinentry = lib.mkOption {
       type = lib.types.package;
-      default = pkgs.kdn.pinentry;
+      # `pkgs.kdn.pinentry` bundles the Qt and GNOME3 pinentries, and that pulls the full Qt
+      # stack. A minimal server uses the curses pinentry only.
+      default = if config.kdn.minimalServer then pkgs.pinentry-curses else pkgs.kdn.pinentry;
     };
     pass-secret-service.enable = lib.mkEnableOption "pass-secret-service";
     passwordStore.enable = lib.mkOption {
