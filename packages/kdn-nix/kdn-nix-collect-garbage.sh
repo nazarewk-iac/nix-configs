@@ -142,7 +142,7 @@ clean_leftovers() {
 
 main() {
   actions=("${@}")
-  test "${#actions[@]}" -gt 0 || actions=(leftovers orphaned-users users system)
+  test "${#actions[@]}" -gt 0 || actions=(leftovers orphaned_users users system)
 
   for action in "${actions[@]}"; do
     clean_"${action}"
