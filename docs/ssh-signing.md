@@ -77,7 +77,7 @@ sudo journalctl -u sshd -n 20 | grep -i 'CA SHA256'
 nix run .#kdn-certs -- apply        # signs every declared leaf that is missing/expired
 ```
 
-The host certificate lives 30 days (the automation class, `sshValidityDefault`). `apply` renews it
+The host certificate lives 90 days (the automation class, `sshValidityDefault`). `apply` renews it
 when expired — same as TLS leaves — and the next activation on `brys` reloads sshd. The private half
 goes to `hosts/brys/certs/ssh_host_ed25519.key.sops`, encrypted by the usual `.sops.yaml` rule.
 

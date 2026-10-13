@@ -154,9 +154,11 @@ func Run(cas decl.CAs, result dedup.Result, deps Deps) (Result, error) {
 
 // sshValidityDefault is the OpenSSH validity interval `apply` asks the SSH CA to sign. `apply` is
 // the automation path, so the interval is the long automation class of design § 7.0, not the short
-// interactive one `ssh login` uses. The exact value is a security choice for the task owner; this
-// default is what makes a declared `ssh-host` leaf re-signable without an interactive tool.
-const sshValidityDefault = "+30d"
+// interactive one `ssh login` uses. A host identity is long-lived: no client pins it, and a renewal
+// costs a rebuild and a reboot of every host that presents the certificate. 90 days matches the TLS
+// leaves (`tlsValidityDefault`) and keeps the fleet's host identities on one renewal rhythm. The
+// exact value stays a security choice for the task owner.
+const sshValidityDefault = "+90d"
 
 // tlsValidityDefault is the X.509 leaf lifetime `apply` asks the TLS signer for. `step` defaults to
 // 24 hours, which expired the committed zellij-web leaves within a day of issuance (measured
