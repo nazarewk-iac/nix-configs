@@ -200,6 +200,16 @@
             });
           });
         })
+        # `atuin` 18.23.0 fails its darwin e2e tests (`e2e_capture` and `e2e_pty`). That is
+        # nixpkgs issue #573527. The tests drive an interactive bash in a pty, and they time out
+        # on darwin. Skip the checks on darwin. Remove this entry when the package passes its
+        # tests on darwin again.
+        (final: prev:
+          prev.lib.optionalAttrs prev.stdenv.hostPlatform.isDarwin {
+            atuin = prev.atuin.overrideAttrs (_: {
+              doCheck = false;
+            });
+          })
       ];
 
       flake.overlays.default = inputs.nixpkgs.lib.composeManyExtensions [
