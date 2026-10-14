@@ -116,3 +116,32 @@ The system prompt is now byte-identical for the life of a conversation.
 - The instruction content (`AGENTS.md`) is re-read on every request, so editing
   it mid-session still moves the prefix. See
   [prompt-volatility.research.md](prompt-volatility.research.md).
+
+## Correction (2026-10-14) — the first plugin never took effect
+
+The first plugin reassigned the array instead of mutating it:
+
+```ts
+output.system = output.system.map((part) => part.replace(DATE_LINE, STABLE_DATE_LINE))
+```
+
+OpenCode ignores the hook's return value. `LLMRequestPrep.prepare` builds its own
+`system` array, passes `{ system }` to the trigger, and keeps using that same
+array afterwards. Reassigning `output.system` to a new array is therefore
+silently lost; only an in-place mutation reaches the request. The date was never
+stripped, so the midnight rollover and the full re-prefill continued.
+
+Proved with a mock upstream: with the `.map` reassignment the system message
+still contained `Today's date: ...`; with `output.system[i] = ...` it contained
+the stable line. The original "runs correctly under Node" check called the hook
+in isolation and inspected `output.system` itself, so it did not catch this.
+
+The fix mutates the array in place:
+
+```ts
+for (let i = 0; i < output.system.length; i++) {
+  if (typeof output.system[i] === "string") {
+    output.system[i] = output.system[i].replace(DATE_LINE, STABLE_DATE_LINE)
+  }
+}
+```

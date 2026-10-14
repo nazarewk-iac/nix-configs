@@ -133,9 +133,14 @@
           return {
             "experimental.chat.system.transform": async (_input, output) => {
               if (!output || !Array.isArray(output.system)) return
-              output.system = output.system.map((part) =>
-                typeof part === "string" ? part.replace(DATE_LINE, STABLE_DATE_LINE) : part,
-              )
+              // Mutate in place. opencode ignores the hook's return value and keeps
+              // its own `system` array reference, so reassigning `output.system`
+              // (e.g. via `.map`) is silently lost.
+              for (let i = 0; i < output.system.length; i++) {
+                if (typeof output.system[i] === "string") {
+                  output.system[i] = output.system[i].replace(DATE_LINE, STABLE_DATE_LINE)
+                }
+              }
             },
           }
         }
