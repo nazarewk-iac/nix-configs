@@ -8,6 +8,12 @@ timestamp: 2026-10-11T11:05:00+02:00
 
 # Split the Qwen CPU-only and GPU configs on `brys`
 
+> ⏸️ **Parked 2026-10-14** — we are not moving forward with the Qwen GPU path: the W6600
+> amdgpu compute ring hangs under memory pressure (large contexts), see
+> [w6600-amdgpu-hang](../w6600-amdgpu-hang/definition.md) (root cause: llama.cpp #27306,
+> `draft-mtp` decode trips the RADV ring timeout). Revisit this split only when that task
+> concludes the GPU path is safe.
+
 ## Context
 
 - `qwen-gpu-offload` (done, 2026-10-07) folded `llm-qwen-gpu` into the canonical `llm-qwen`
