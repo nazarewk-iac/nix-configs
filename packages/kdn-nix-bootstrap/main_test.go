@@ -88,6 +88,25 @@ func TestLoadJobConfig(t *testing.T) {
 	if _, err := loadJobConfig(bad, "test"); err == nil {
 		t.Error("empty argv must fail")
 	}
+	pass := writeConfigs(t, storeJSON(t.TempDir()), `{"argv":["/bin/true"],"passFds":2}`)
+	cfg, err = loadJobConfig(pass, "test")
+	if err != nil || cfg.PassFds != 2 {
+		t.Errorf("passFds: cfg=%+v err=%v", cfg, err)
+	}
+}
+
+func TestLaunchdFds(t *testing.T) {
+	files, err := launchdFds(0)
+	if err != nil || len(files) != 0 {
+		t.Errorf("count 0: %v %v", files, err)
+	}
+	// A descriptor far above anything this test process opens must report a clear error rather
+	// than hand back a broken file.
+	if _, err := launchdFds(4096); err == nil {
+		t.Error("closed descriptor must fail")
+	} else if !strings.Contains(err.Error(), "not open") {
+		t.Errorf("error text: %v", err)
+	}
 }
 
 func TestStoreMounted(t *testing.T) {
