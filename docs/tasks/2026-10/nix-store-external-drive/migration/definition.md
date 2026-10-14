@@ -1,7 +1,7 @@
 ---
 type: Task
 description: Migrate the Nix store backing volume of `anji` onto the external USB SSD, gated on a stable bootstrap binary that holds the Full Disk Access grant every launchd daemon needs.
-status: open
+status: in-progress
 parent: ../definition.md
 authored_by: agent
 timestamp: 2026-10-11T17:30:00+02:00
@@ -74,6 +74,71 @@ leading option, and the probes above are what promote it from idea to requiremen
    6. Soak ≥ 1 week with the old internal volume untouched as rollback (restore = flip fstab +
       plists back via one activation from git).
    7. Delete the old internal `Nix Store` volume (reclaims 54+ GB), only after the soak.
+
+## Cutover runbook (2026-10-14)
+
+The config lives in `hosts/anji/default.nix` behind `storeOnExternal`. With the flag off the host
+evaluates and activates exactly as before. Every launchd daemon whose payload is a nix binary
+(`nix-daemon`, `activate-system`, `sops-install-secrets`, `rosetta-builderd`, `angrr`, `nix-gc`,
+`nix-optimise`, `anji-ext-unlock`) gets `/usr/local/bin/kdn-nix-bootstrap run <label>`;
+`darwin-store` becomes `kdn-nix-bootstrap mount-store`. Two details the first draft missed:
+
+- The bootstrap config dir (`/etc/kdn/nix-bootstrap/`) holds **real files** written by the
+  activation's `preActivation`, not `environment.etc` symlinks: the symlinks resolve into
+  `/nix/store`, which is precisely the volume the bootstrap reads those files before mounting.
+- `rosetta-builderd` is launchd socket-activated (fd 3). Go closes inherited descriptors on spawn,
+  so the bootstrap re-passes them (`passFds` in the job json, `main.go launchdFds`).
+
+Stage 1 — staged enable (no reboot, store still internal, no grant needed). The swapped plists
+run against the internal store because `storeMounted` only asks "is anything mounted at `/nix`",
+so this proves the whole wrapper chain while it is still cheap to undo:
+
+```bash
+# flip storeOnExternal = true; in hosts/anji/default.nix, then
+nix run '.#darwin-rebuild' -- switch remote=anji
+ssh anji 'sudo /usr/local/bin/kdn-nix-bootstrap status'          # mounted
+ssh anji 'sudo ls /etc/kdn/nix-bootstrap /etc/kdn/nix-bootstrap/jobs'
+ssh anji 'nix build nixpkgs#hello --no-link'                     # daemon alive through the swap
+```
+
+Stage 2 — owner grant (GUI, on anji). System Settings → Privacy & Security → Full Disk Access →
+`+` → `Cmd+Shift+G` `/usr/local/bin/kdn-nix-bootstrap`. Then re-measure the two facts the design
+depends on, because `anji` moved to macOS **27.0.1** and the 2026-10-11/12 probes were 26.1:
+(a) a granted top-level binary confers access on its whole process tree, (b) the tree reaches USB
+volumes. Probe: a temporary `LaunchDaemon` with `ProgramArguments = [/usr/local/bin/kdn-nix-bootstrap,
+run, probe]` and a job json `{"argv":["/bin/sh","-c","echo ok > /anji-ext-02/.tcc-probe"]}`;
+`launchctl kickstart -k system/…probe`, read the file, then bootout. Never point a probe at
+`nix-daemon` — a second daemon re-binds the daemon socket (trap noted above).
+
+Stage 3 — cutover window (owner supervises the reboot):
+
+```bash
+# 1. quiesce: no builds running; stop the daemon so the store is frozen
+ssh anji 'sudo launchctl bootout system/org.nixos.nix-daemon'
+# 2. final sync pass (repeat of stage-0 command below, same excludes)
+# 3. flip the /nix line of /etc/fstab to UUID A8D810B7-5177-4930-890A-10CD1BF7AC96
+#    (same options: rw,noauto,nobrowse,suid,owners)
+# 4. remove the installer leftovers so they cannot crash-loop on the new volume:
+#    /Library/LaunchDaemons/systems.lix.nix-installer.nix-hook.plist
+#    (it waits on /nix/nix-installer, which the sync copies; repair without a grant would loop)
+# 5. sudo diskutil unmount /private/nix-new ; sudo reboot
+```
+
+Verify after boot (Acceptance test below): `mount | grep /nix` shows `disk7s2`; daemons running;
+`nix build nixpkgs#legacyPackages.x86_64-linux.hello --option substitute false`; `limactl list` +
+one ssh-ng build from the Rosetta guest on ext-01; `/run/secrets/kdn` populated.
+
+Rollback until step 7 of the plan is taken: flip the fstab line back, reboot. The plists and the
+bootstrap work against whichever volume holds `/nix` — `storeMounted` is volume-agnostic by design.
+
+Sync command used for pass 2 (2026-10-14) — note it mirrors the **whole volume** (`/nix/`), not
+just `store`: the volume root also carries `var/` (profiles, gc roots, daemon socket dir) and
+`nix-installer`. Pass 1 had copied `store` only.
+
+Stage 0 — done: volume `Nix Store Ext` (disk7s2, unencrypted on the encrypted `anji-ext-02`
+container — unlock runs on the container anchor, the ext-02 volume UUID, whose System keychain
+item already exists), pass 1 rsync (50 G, 2026-10-13), `packages/kdn-nix-bootstrap`, and the
+staged config above.
 
 ## Acceptance test
 
