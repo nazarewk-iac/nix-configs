@@ -52,7 +52,7 @@ in
           kdn.env.packages = with pkgs; [
             imagemagick
             p7zip
-            pdftk
+            qpdf
             (lib.mkIf (pkgs.stdenv.hostPlatform.isLinux) playerctl)
             rar
             smartmontools
