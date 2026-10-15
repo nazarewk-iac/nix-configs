@@ -602,3 +602,46 @@ SOPS.
   augmentation line.
 - No migration of the `llm` certificate on brys. That is a later consumer.
 - No implementation. This task delivers the plan only. See § 0.
+
+---
+
+## 12 — Certificate handling versus sops-nix
+
+The owner asked why a manual decrypt path sits next to the zellij-web certificate, and why not
+sops-nix. Answer: on the hosts, sops-nix does the runtime job. The manual `sops` calls live at
+sign time and in dead code.
+
+**(a) The leaf key at rest.** `hosts/moss/certs/zellij.key.sops` holds the zellij-web private key
+for `moss`. It is a raw/binary SOPS file, and the repo commits it. The `.sops.yaml` rule at
+`.sops.yaml:128` names four age recipients: `ssh-moss` (the host SSH key) plus three admin touch
+YubiKeys. One rule per host, so no host reads the key of another host. `hosts/oams`, `hosts/brys`
+and `hosts/etra` hold the same shape.
+
+**(b) The runtime decrypt.** The `certificates` aspect writes one `sops.secrets` entry per leaf
+(`modules/den/aspects/certificates.nix:243-251`): `format = "binary"`, `sopsFile` at the committed
+`.sops` path. The nixos class exposes `keyPath` as `config.sops.secrets.<name>.path`
+(`modules/den/aspects/certificates.nix:258-264`). sops-nix decrypts at activation into
+`/run/secrets/kdn/certificates/zellij-web.key`, owner `kdn`, mode `0400`. Measured on moss: the
+`ExecStart` of the `zellij-web` user service reads that path, and the file sits under
+`/run/secrets.d/1/`. The host-key recipient is what makes the boot decrypt unattended.
+
+**(c) Why the CA key takes no such route.** A host that holds the CA key can sign new
+certificates, so the CA key must never reach a host through sops-nix. The `kdn-certs` CLI shells
+out to `sops decrypt` and `sops encrypt` at author time (`packages/kdn-certs/internal/sops/sops.go`).
+Custody stays with YubiKeys: `data/ca/kdn.key.sops` names the two unattended YubiKey identities
+only (`.sops.yaml:153-157`, `docs/ssh-signing.md:25`), so signing runs headless for the key holder.
+The old `data/ca/ca.key.sops` matches the generic rule at `.sops.yaml:158`: touch YubiKeys only.
+Rotation to a touch-required CA is task [007-ca-rotation](007-ca-rotation/definition.md).
+
+**(d) The dead manual path.** Before sub-task 006, each host set `keySopsFile`, and a root oneshot
+`kdn-zellij-web-key` ran `sops decrypt` into `/run/secrets/kdn/zellij/<host>.key`
+(`modules/universal/programs/zellij/default.nix:64,186`; same in
+`modules/den/aspects/zellij.nix:397`). Sub-task 006 replaced it: each host now reads
+`keyFile = config.kdn.certificates.certs.zellij-web.keyPath` (`hosts/moss/default.nix:92`). No host
+sets `keySopsFile` any more, and `kdn-zellij-web-key` does not exist on moss (measured 2026-10-15).
+The gap is the dead code only. One-line fix: delete the `kdn-zellij-web-key` service and the
+`keySopsFile` option from both zellij modules.
+
+The `devenv` class is the one true manual fill: a devenv shell has no system activation, so the CLI
+decrypt primitive writes `/run/secrets/kdn/certificates/<name>.key`
+(`modules/den/aspects/certificates.nix:282-285`).
