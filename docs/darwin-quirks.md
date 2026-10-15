@@ -50,6 +50,21 @@ Also: a USB-attached SSD is gated even when `diskutil info` reports `Removable M
 (`Protocol: USB` is what matters), and the mount option `nobrowse` changes nothing. A user login
 (SSH) session still writes fine, because the responsible binary (`sshd`) is exempt.
 
+**Confirmed 2026-10-15 (macOS 27.0.1, `anji`).** The tree model survives the major OS release and
+is now the production path: `/usr/local/bin/kdn-nix-bootstrap` holds one grant, and a nix-store
+bash three levels below it (`bootstrap → /bin/sh → nix bash`) writes to a USB volume inside a real
+launchd job (`tcc-ok`). Three further measurements from the same host:
+
+- launchd does **not** place a socket-activation fd at descriptor 3 of the job. A socket-activated
+  process fetches it itself with `launch_activate_socket(name)`, and launchd answers for **every**
+  process of that job — so a wrapped `rosetta-builderd` gets its `Sockets.Listener` through the
+  bootstrap without any fd hand-down.
+- A socket-activated job whose plist carries `StandardOutPath` or `StandardErrorPath` is refused
+  with `EX_CONFIG` on 27. nix-darwin sets those only for non-socket jobs, which is why the probe
+  hit it only after adding them by hand.
+- A volume that drops out of `/etc/fstab` loses its `nobrowse` and auto-mounts visibly under
+  `/Volumes/` again — relevant when an fstab entry is flipped during a migration.
+
 Earlier, on 2026-09-26, every test ran as root in the same directory with the same uid. Only the
 binary changed the result:
 
