@@ -54,7 +54,7 @@ let
   # The Full Disk Access grant on `/usr/local/bin/kdn-nix-bootstrap` is a manual GUI step the owner
   # performs after the binary first lands and before the cutover reboot. Flipping this flag before
   # that grant leaves every nix daemon unable to touch the external volume.
-  storeOnExternal = false;
+  storeOnExternal = true;
 
   # The external store volume: `Nix Store Ext`, created 2026-10-13 on the `anji-ext-02` APFS
   # container. It carries no own encryption, so its unlock is the container unlock: `diskutil` on
@@ -461,7 +461,7 @@ in
         mkdir -p /etc/kdn/nix-bootstrap/jobs /usr/local/bin
         cp -f ${bootstrapConfigDrv}/store.json /etc/kdn/nix-bootstrap/store.json
         cp -f ${bootstrapConfigDrv}/jobs/*.json /etc/kdn/nix-bootstrap/jobs/
-        cp -f ${pkgs.kdn-nix-bootstrap}/bin/kdn-nix-bootstrap ${bootstrapPath}
+        cp -f ${pkgs.kdn.kdn-nix-bootstrap}/bin/kdn-nix-bootstrap ${bootstrapPath}
         chmod 0755 ${bootstrapPath}
       '';
 
