@@ -65,35 +65,22 @@ let
 
   bootstrapPath = "/usr/local/bin/kdn-nix-bootstrap";
 
-  # Daemons whose nix-darwin `command` is re-homed behind the bootstrap. `passFds` is the number of
-  # launchd socket-activation descriptors the child must inherit: `rosetta-builderd` listens on the
-  # `Sockets.Listener` fd, every other job takes none.
-  bootstrapJobs = {
-    nix-daemon = {
-      passFds = 0;
-    };
-    activate-system = {
-      passFds = 0;
-    };
-    sops-install-secrets = {
-      passFds = 0;
-    };
-    rosetta-builderd = {
-      passFds = 1;
-    };
-    angrr = {
-      passFds = 0;
-    };
-    nix-gc = {
-      passFds = 0;
-    };
-    nix-optimise = {
-      passFds = 0;
-    };
-    anji-ext-unlock = {
-      passFds = 0;
-    };
-  };
+  # Daemons whose nix-darwin `command` is re-homed behind the bootstrap. Socket activation
+  # survives the spawn unchanged: launchd resolves a job's `launch_activate_socket` call for
+  # every process of that job, so `rosetta-builderd` gets its `Sockets.Listener` from inside the
+  # wrapper. Measured 2026-10-15 on macOS 27.0.1: a cache-less x86_64-linux source build ran on
+  # the guest through the wrapped builderd. (launchd does NOT pre-place the socket at descriptor
+  # 3 for the wrapper — an explicit fd re-pass is both unnecessary and wrong.)
+  bootstrapJobs = [
+    "nix-daemon"
+    "activate-system"
+    "sops-install-secrets"
+    "rosetta-builderd"
+    "angrr"
+    "nix-gc"
+    "nix-optimise"
+    "anji-ext-unlock"
+  ];
 
   bootstrapStoreJson = builtins.toJSON {
     uuid = storeVolumeUuid;
@@ -108,7 +95,7 @@ let
       cp ${pkgs.writeText "store.json" bootstrapStoreJson} "$out/store.json"
     ''
     + lib.concatStringsSep "\n" (
-      lib.mapAttrsToList (name: job: ''
+      map (name: ''
         cp ${
           pkgs.writeText "${name}.json" (
             builtins.toJSON {
@@ -119,7 +106,6 @@ let
               ];
               waitPath = "/nix/store";
               env = { };
-              passFds = job.passFds;
             }
           )
         } "$out/jobs/${name}.json"
@@ -458,13 +444,18 @@ in
       # above, captured into a job file) from `/etc/kdn/nix-bootstrap/jobs/<name>.json`. The
       # EnvironmentVariables of each plist stay — the bootstrap passes its own environment on.
       launchd.daemons =
-        lib.mapAttrs (name: _: {
-          serviceConfig.ProgramArguments = lib.mkForce [
-            bootstrapPath
-            "run"
-            name
-          ];
-        }) bootstrapJobs
+        builtins.listToAttrs (
+          map (name: {
+            inherit name;
+            value = {
+              serviceConfig.ProgramArguments = lib.mkForce [
+                bootstrapPath
+                "run"
+                name
+              ];
+            };
+          }) bootstrapJobs
+        )
         // {
           # The mount job itself: no payload file, the bootstrap reads `store.json` and unlocks the
           # anchor container before mounting the store volume at `/nix`. This plist was created by
@@ -498,14 +489,10 @@ in
 
       # Fail the evaluation when a wrapped daemon has no command: the swap would then write an
       # empty payload and the job would die at boot.
-      assertions = lib.pipe bootstrapJobs [
-        (lib.mapAttrsToList (
-          name: _: {
-            assertion = config.launchd.daemons."${name}".command != "";
-            message = "kdn-nix-bootstrap: launchd.daemons.${name} has no command to wrap";
-          }
-        ))
-      ];
+      assertions = map (name: {
+        assertion = config.launchd.daemons."${name}".command != "";
+        message = "kdn-nix-bootstrap: launchd.daemons.${name} has no command to wrap";
+      }) bootstrapJobs;
     })
     {
       # The dev machine profile is permanent now, so this host mirrors the work host.
