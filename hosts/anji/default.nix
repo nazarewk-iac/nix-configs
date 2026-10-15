@@ -473,18 +473,27 @@ in
           };
         };
 
-      # Real files at the fixed config dir, plus the binary at its TCC-granted path. `mkAfter` so
-      # the volumes are unlocked first, and everything lands before launchd reloads the plists at
-      # the end of this same activation. Re-copying the binary on every activation keeps the fixed
-      # path current; after a nixpkgs bump that changes the binary, check that the FDA grant
-      # survived (docs/darwin-quirks.md: a grant keyed to a path on a replaced binary is the one
-      # case that has not been measured).
+      # Real files at the fixed config dir, plus the binary at its TCC-granted path — installed
+      # ONCE and never replaced in place. `mkAfter` so the volumes are unlocked first, and
+      # everything lands before launchd reloads the plists at the end of this same activation.
+      #
+      # Two measured TCC facts (docs/darwin-quirks.md) make replacement hostile, both seen
+      # 2026-10-15 on macOS 27.0.1: (1) the grant binds the binary's cdhash — writing different
+      # bytes at the granted path flips the entry to DENIED (auth_value 0) for the whole tree,
+      # until the owner re-grants in the GUI; (2) `cp -f` truncates the vnode a running job is
+      # executing from, tainting it so even the ORIGINAL bytes SIGKILL at exec ("rejecting
+      # invalid page ... tainted"). So: create-if-missing only. Rotating the bootstrap is an
+      # explicit, owner-coordinated move: `rm /usr/local/bin/kdn-nix-bootstrap`, activate, re-grant.
       system.activationScripts.preActivation.text = lib.mkAfter ''
         mkdir -p /etc/kdn/nix-bootstrap/jobs /usr/local/bin
         cp -f ${bootstrapConfigDrv}/store.json /etc/kdn/nix-bootstrap/store.json
         cp -f ${bootstrapConfigDrv}/jobs/*.json /etc/kdn/nix-bootstrap/jobs/
-        cp -f ${pkgs.kdn.kdn-nix-bootstrap}/bin/kdn-nix-bootstrap ${bootstrapPath}
-        chmod 0755 ${bootstrapPath}
+        if [ ! -e ${bootstrapPath} ]; then
+          cp ${pkgs.kdn.kdn-nix-bootstrap}/bin/kdn-nix-bootstrap ${bootstrapPath}.new
+          chmod 0755 ${bootstrapPath}.new
+          mv -f ${bootstrapPath}.new ${bootstrapPath}
+          echo "anji: kdn-nix-bootstrap installed — it needs a Full Disk Access grant before the next activation of a store-on-external config" >&2
+        fi
       '';
 
       # Fail the evaluation when a wrapped daemon has no command: the swap would then write an

@@ -64,6 +64,14 @@ launchd job (`tcc-ok`). Three further measurements from the same host:
   hit it only after adding them by hand.
 - A volume that drops out of `/etc/fstab` loses its `nobrowse` and auto-mounts visibly under
   `/Volumes/` again — relevant when an fstab entry is flipped during a migration.
+- **A grant does not survive replacing the binary at the granted path — it flips to DENIED.**
+  When the bytes at `/usr/local/bin/kdn-nix-bootstrap` changed (cdhash mismatch), macOS set the
+  entry's `auth_value` to 0 (visible in the TCC database) and every launchd job running through it
+  lost volume access — no re-prompt, just denial until the owner re-grants in the GUI. Grants
+  therefore bind path AND cdhash. Corollary: never rewrite a granted binary with `cp -f` — it
+  truncates the vnode a running job maps from, and even restoring the original bytes afterwards
+  leaves the kernel killing execs with "rejecting invalid page … (tainted)". Replace atomically
+  (`cp` to a sibling + `mv`), and in practice install-if-missing and rotate only with the owner.
 
 Earlier, on 2026-09-26, every test ran as root in the same directory with the same uid. Only the
 binary changed the result:
