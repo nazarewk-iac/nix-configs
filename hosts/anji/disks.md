@@ -11,10 +11,24 @@ volumes hold the large data:
 
 | Volume | UUID | Mount path | Holds |
 |---|---|---|---|
-| `anji-ext-01` | `E630CAE6-D3FB-44C1-9B38-F6211F128B79` | `/anji-ext-01` | the stock `nix.linux-builder` working directory |
-| `anji-ext-02` | `14E59EC3-0C46-4D5C-9CCE-B3D716896F14` | `/anji-ext-02` | the UTM disks |
+| `anji-ext-01` | `E630CAE6-D3FB-44C1-9B38-F6211F128B79` | `/anji-ext-01` (disk9s1) | the stock `nix.linux-builder` working directory and the Rosetta guest disks |
+| `anji-ext-02` | `14E59EC3-0C46-4D5C-9CCE-B3D716896F14` | `/anji-ext-02` (disk7s1) | the UTM disks, and the container of the `Nix Store Ext` volume |
 
 Both volumes are encrypted APFS. `/etc/fstab` mounts them with `noauto,nobrowse,suid,owners`.
+
+The Nix store itself lives on a third volume, on the `anji-ext-02` container:
+
+| Volume | UUID | Mount path | Holds |
+|---|---|---|---|
+| `Nix Store Ext` | `A8D810B7-5177-4930-890A-10CD1BF7AC96` | `/nix` (disk7s2) | the Nix store. An unencrypted volume inside the encrypted `anji-ext-02` container, mounted at `/nix` since the 2026-10-15 cutover |
+| `Nix Store` | `b5b3a9c8-86a2-4aff-b45a-bf563b7152a2` | `/Volumes/Nix Store` (disk3s7) | the internal pre-cutover store volume. Rollback copy until the soak of the migration ends |
+
+`Nix Store Ext` has no own encryption, so its unlock is the container unlock: `diskutil` on any
+encrypted volume of a container unlocks every volume of that container. The anchor is
+`anji-ext-02` itself, and its System keychain item (below) is the secret for both. The
+`org.nixos.darwin-store` launchd job runs `/usr/local/bin/kdn-nix-bootstrap mount-store`, which
+reads `/etc/kdn/nix-bootstrap/store.json`. The migration task:
+[docs/tasks/2026-10/nix-store-external-drive/definition.md](../../docs/tasks/2026-10/nix-store-external-drive/definition.md).
 
 ## Unlock and mount
 
