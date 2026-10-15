@@ -62,11 +62,6 @@ type JobConfig struct {
 	Argv     []string          `json:"argv"`
 	WaitPath string            `json:"waitPath"`
 	Env      map[string]string `json:"env"`
-	// PassFds is the count of file descriptors launchd passed to this job (socket activation
-	// hands the listener at descriptor 3). Go closes inherited descriptors when it spawns, so
-	// the bootstrap must re-pass them through ExtraFiles or the socket-activated child loses
-	// its listener.
-	PassFds int `json:"passFds"`
 }
 
 // execer runs a command and returns its combined output. Tests replace it.
@@ -234,6 +229,10 @@ func waitPath(path string, timeout time.Duration) error {
 // exit code to report. The nix binary stays a child: exec-replacing it would move the gated
 // image to the job root and TCC would deny it (measured 2026-10-12), while children of this
 // granted top-level binary pass.
+//
+// Socket activation survives the wrapper: launchd resolves `launch_activate_socket` by the
+// calling process's job, and a spawn of this job counts as this job — measured 2026-10-15 on
+// macOS 27.0.1 with rosetta-builderd. launchd does not hand descriptor 3 to the wrapper itself.
 func runJob(dir, label string, ex execer, stdout, stderr io.Writer, log func(string, ...any)) (int, error) {
 	mounted, err := storeMounted(dir, ex)
 	if err != nil {
@@ -257,13 +256,6 @@ func runJob(dir, label string, ex execer, stdout, stderr io.Writer, log func(str
 	cmd.Env = os.Environ()
 	for k, v := range job.Env {
 		cmd.Env = append(cmd.Env, k+"="+v)
-	}
-	if job.PassFds > 0 {
-		fds, err := launchdFds(job.PassFds)
-		if err != nil {
-			return 1, err
-		}
-		cmd.ExtraFiles = fds
 	}
 	if err := cmd.Start(); err != nil {
 		return 1, fmt.Errorf("spawn %s: %w", job.Argv[0], err)
@@ -298,22 +290,6 @@ func runJob(dir, label string, ex execer, stdout, stderr io.Writer, log func(str
 		}
 		return 1, err
 	}
-}
-
-// launchdFds collects the first `count` descriptors launchd placed for socket activation.
-// launchd starts handing sockets at descriptor 3, and Go closes inherited descriptors when it
-// spawns, so each one must be re-passed through ExtraFiles. A descriptor that is not open is an
-// error: a socket-activated job that silently loses its listener just wedges.
-func launchdFds(count int) ([]*os.File, error) {
-	files := make([]*os.File, 0, count)
-	for i := 0; i < count; i++ {
-		fd := uintptr(3 + i)
-		if _, _, errno := syscall.Syscall(syscall.SYS_FCNTL, fd, syscall.F_GETFD, 0); errno != 0 {
-			return nil, fmt.Errorf("descriptor %d is not open: %w", fd, errno)
-		}
-		files = append(files, os.NewFile(fd, fmt.Sprintf("launchd-%d", fd)))
-	}
-	return files, nil
 }
 
 // clampCode turns a signal death (-1) into a plain failure code.
