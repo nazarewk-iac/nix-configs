@@ -98,6 +98,7 @@ in
         aspects = [
           "ca-dag"
           "certificates"
+          "ssh-ca"
         ];
       };
     }
@@ -465,6 +466,25 @@ in
         keyFile = "zellij.key";
         keySource = "managed";
         owner = "kdn";
+      };
+
+      # The SSH host certificate. `principals` names the short name (checked by the
+      # `kdn-*` dispatcher through `HostKeyAlias`) and each FQDN a client may use.
+      kdn.certificates.certs.ssh-host-etra = {
+        ca = "kdn";
+        type = "ssh-host";
+        commonName = "etra";
+        principals = [
+          "etra"
+          "etra.lan.etra.net.int.kdn.im"
+          "etra.lan.drek.net.int.kdn.im"
+          "etra.priv.nb.net.int.kdn.im"
+          "etra.netbird.cloud"
+        ];
+        directory = "hosts/etra/certs";
+        certFile = "ssh_host_ed25519-cert.pub";
+        keyFile = "ssh_host_ed25519.key";
+        keySource = "managed";
       };
     }
     {

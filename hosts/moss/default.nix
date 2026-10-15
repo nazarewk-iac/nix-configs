@@ -18,6 +18,7 @@
         aspects = [
           "ca-dag"
           "certificates"
+          "ssh-ca"
         ];
       };
     }
@@ -62,6 +63,24 @@
         keyFile = "zellij.key";
         keySource = "managed";
         owner = "kdn";
+      };
+
+      # The SSH host certificate. `principals` names the short name (checked by the
+      # `kdn-*` dispatcher through `HostKeyAlias`) and each FQDN a client may use.
+      kdn.certificates.certs.ssh-host-moss = {
+        ca = "kdn";
+        type = "ssh-host";
+        commonName = "moss";
+        principals = [
+          "moss"
+          "moss.kdn.im"
+          "moss.priv.nb.net.int.kdn.im"
+          "moss.netbird.cloud"
+        ];
+        directory = "hosts/moss/certs";
+        certFile = "ssh_host_ed25519-cert.pub";
+        keyFile = "ssh_host_ed25519.key";
+        keySource = "managed";
       };
     }
     {

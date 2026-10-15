@@ -38,6 +38,7 @@ in
         aspects = [
           "ca-dag"
           "certificates"
+          "ssh-ca"
         ];
       };
     }
@@ -380,6 +381,26 @@ in
         keyFile = "zellij.key";
         keySource = "managed";
         owner = "kdn";
+      };
+
+      # The SSH host certificate. `principals` names every form a client may connect
+      # with: the short name (what the `kdn-*` dispatcher checks through `HostKeyAlias`)
+      # and each FQDN. See hosts/brys/ssh-ca.nix for the same shape.
+      kdn.certificates.certs.ssh-host-oams = {
+        ca = "kdn";
+        type = "ssh-host";
+        commonName = "oams";
+        principals = [
+          "oams"
+          "oams.lan.etra.net.int.kdn.im"
+          "oams.lan.drek.net.int.kdn.im"
+          "oams.priv.nb.net.int.kdn.im"
+          "oams.netbird.cloud"
+        ];
+        directory = "hosts/oams/certs";
+        certFile = "ssh_host_ed25519-cert.pub";
+        keyFile = "ssh_host_ed25519.key";
+        keySource = "managed";
       };
     }
     {
