@@ -87,7 +87,10 @@ evaluates and activates exactly as before. Every launchd daemon whose payload is
   activation's `preActivation`, not `environment.etc` symlinks: the symlinks resolve into
   `/nix/store`, which is precisely the volume the bootstrap reads those files before mounting.
 - `rosetta-builderd` is launchd socket-activated (fd 3). Go closes inherited descriptors on spawn,
-  so the bootstrap re-passes them (`passFds` in the job json, `main.go launchdFds`).
+  so the wrapper must not block them. Measured 2026-10-15 on macOS 27.0.1: launchd resolves a
+  job's `launch_activate_socket` call for every process of that job, so a plain spawn of
+  `rosetta-builderd` from the bootstrap gets the `Sockets.Listener` fd — no descriptor re-pass is
+  needed (and launchd does not place the socket at fd 3 for the wrapper, so a re-pass is wrong).
 
 Stage 1 — staged enable (no reboot, store still internal, no grant needed). The swapped plists
 run against the internal store because `storeMounted` only asks "is anything mounted at `/nix`",
