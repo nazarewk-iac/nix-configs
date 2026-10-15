@@ -34,9 +34,14 @@ timestamp: 2026-10-15T17:50:00+02:00
 
 ## Remaining
 
-- Soak at least one week with the internal `Nix Store` volume untouched as the rollback.
-- The internal volume now auto-mounts visibly at `/Volumes/Nix Store` (it left fstab, so it lost
-  `nobrowse`); keep it out of the way with a `noauto,nobrowse` fstab line or eject it.
+- **Owner action: re-grant Full Disk Access to `/usr/local/bin/kdn-nix-bootstrap`.** The stage-3
+  verification run included an activation that re-installed the binary in place; macOS flipped
+  the TCC entry to DENIED (auth_value 0) and the wrapped daemons lost volume access. The original
+  granted bytes are back at the path (install-once semantics now enforced in the config); the GUI
+  entry must be toggled/re-added once. Then: kickstart every wrapped daemon, re-run the probe set,
+  and re-run the source-build + guest-build acceptance.
+- Soak at least one week with the internal `Nix Store` volume untouched as the rollback (it is
+  pinned `noauto,nobrowse` in fstab and unmounted).
 - `limactl`/builder guest image drift (instance yaml 0908 image vs 1011 config) recreates the
   guest whenever the check runs — unrelated to the store, but it delays the first build after a
   boot. Track it with the rosetta-builder tasks.
