@@ -201,6 +201,17 @@ in
   imports = [
     kdnConfig.self.darwinModules.default
     slots.config.darwin
+    "${kdnConfig.self}/data/ca/ca-dag.nix"
+    {
+      imports = kdnConfig.self.denLib.imports {
+        class = "darwin";
+        aspects = [
+          "ca-dag"
+          "certificates"
+          "ssh-ca"
+        ];
+      };
+    }
   ];
 
   options.kdn.hosts.anji = {
@@ -245,6 +256,26 @@ in
     }
     {
       home-manager.sharedModules = [ slots.config.home ];
+    }
+    {
+      # The SSH host certificate. `principals` names the short name (checked by the
+      # `kdn-*` dispatcher through `HostKeyAlias`) and each FQDN a client may use.
+      kdn.certificates.repoRoot = kdnConfig.self;
+      kdn.certificates.certs.ssh-host-anji = {
+        ca = "kdn";
+        type = "ssh-host";
+        commonName = "anji";
+        principals = [
+          "anji"
+          "anji.lan.etra.net.int.kdn.im"
+          "anji.priv.nb.net.int.kdn.im"
+          "anji.netbird.cloud"
+        ];
+        directory = "hosts/anji/certs";
+        certFile = "ssh_host_ed25519-cert.pub";
+        keyFile = "ssh_host_ed25519.key";
+        keySource = "managed";
+      };
     }
     {
       environment.systemPackages = with pkgs; [
