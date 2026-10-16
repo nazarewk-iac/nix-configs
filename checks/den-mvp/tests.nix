@@ -1085,7 +1085,12 @@ let
 
   zellijWebHome = mkZellijWebHome [ ];
   zellijWebHomeWithCert = mkZellijWebHome [
-    { kdn.zellij.web.certFile = "/etc/ssl/zellij.pub"; }
+    {
+      kdn.zellij.web = {
+        certFile = "/etc/ssl/zellij.pub";
+        keyFile = "/etc/ssl/zellij.key";
+      };
+    }
   ];
 
   zellijAssertions = [
@@ -1276,6 +1281,7 @@ let
         bind = true;
         port = true;
         cert = true;
+        key = true;
         wantedBy = [ "default.target" ];
       };
       actual =
@@ -1290,6 +1296,7 @@ let
           bind = lib.hasInfix "--ip 127.0.0.1" exec;
           port = lib.hasInfix "--port 8082" exec;
           cert = lib.hasInfix "--cert /etc/ssl/zellij.pub" exec;
+          key = lib.hasInfix "--key /etc/ssl/zellij.key" exec;
           wantedBy = svc.Install.WantedBy;
         };
     }

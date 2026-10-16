@@ -468,7 +468,7 @@ The `nix` name is taken by the slot port, so the old-tree `nix`/`nixpkgs` opinio
 | `net-router-ddns` | The same split: the dynamic-DNS client. |
 | `profile-baseline-gc` | A split of `modules/universal/profile/machine/baseline/default.nix`: the store garbage-collection opinion. |
 | `profile-baseline-flake-links` | The same split: the flake registry links, `nixos` alone. |
-| `zellij-web` | The web half of `modules/universal/programs/zellij/default.nix`: the systemd user service, the firewall and the key decrypt. It includes `zellij`, so one inclusion carries the base configuration. |
+| `zellij-web` | The web half of `modules/universal/programs/zellij/default.nix`: the systemd user service and the firewall. It includes `zellij`, so one inclusion carries the base configuration. |
 | `profile-headless-vim` | A split of `modules/universal/headless/base/default.nix`: one tool per leaf, `homeManager` alone. |
 | `profile-headless-wezterm` | The same split. |
 | `service-k8s-management` | A split of `modules/universal/services/k8s/default.nix`: the command set of a machine that administers a cluster, without the node half. |

@@ -13,14 +13,6 @@
 }:
 let
   cfg = config.kdn.programs.zellij;
-
-  # The key the user service reads. A host that sets `keySopsFile` gets the decrypted copy;
-  # a host that sets `keyFile` names its own path.
-  webKeyPath =
-    if cfg.web.keyFile != null then
-      cfg.web.keyFile
-    else
-      "/run/secrets/kdn/zellij/${config.kdn.hostName}.key";
 in
 {
   options.kdn.programs.zellij = {
@@ -56,17 +48,7 @@ in
         default = null;
         description = ''
           PEM private key of `certFile`. It must be readable by the user that runs the web
-          server. When `keySopsFile` is set and this is null, the module decrypts the key to a
-          user-readable path and uses that path.
-        '';
-      };
-
-      keySopsFile = lib.mkOption {
-        type = lib.types.nullOr lib.types.path;
-        default = null;
-        description = ''
-          SOPS-encrypted (raw/binary) private key. A system service decrypts it into
-          `/run/secrets/kdn/zellij/<hostName>.key`, owned by `user`, mode 0400. Set `user`.
+          server.
         '';
       };
 
@@ -150,7 +132,7 @@ in
                   "--cert"
                   cfg.web.certFile
                   "--key"
-                  webKeyPath
+                  cfg.web.keyFile
                 ];
                 # The key may not exist yet at first start; retry.
                 Restart = "on-failure";
@@ -166,14 +148,8 @@ in
           {
             assertions = [
               {
-                assertion =
-                  !cfg.web.enable
-                  || (cfg.web.certFile != null && (cfg.web.keyFile != null || cfg.web.keySopsFile != null));
-                message = "kdn.programs.zellij.web: `certFile` and one of `keyFile`/`keySopsFile` are required when the web interface is on";
-              }
-              {
-                assertion = !(cfg.web.enable && cfg.web.keySopsFile != null) || cfg.web.user != null;
-                message = "kdn.programs.zellij.web: `user` is required when `keySopsFile` is set";
+                assertion = !cfg.web.enable || (cfg.web.certFile != null && cfg.web.keyFile != null);
+                message = "kdn.programs.zellij.web: `certFile` and `keyFile` are required when the web interface is on";
               }
             ];
           }
@@ -181,30 +157,6 @@ in
             networking.firewall.interfaces = lib.genAttrs cfg.web.firewallInterfaces (_: {
               allowedTCPPorts = [ cfg.web.port ];
             });
-          })
-          (lib.mkIf (cfg.web.enable && cfg.web.keySopsFile != null) {
-            systemd.services.kdn-zellij-web-key = {
-              description = "Decrypt the zellij web TLS private key into /run/secrets";
-              wantedBy = [ "multi-user.target" ];
-              path = [
-                pkgs.sops
-                pkgs.coreutils
-              ];
-              serviceConfig = {
-                Type = "oneshot";
-                RemainAfterExit = true;
-                User = "root";
-                Group = "root";
-              };
-              script = ''
-                set -euo pipefail
-                mkdir -p /run/secrets/kdn/zellij
-                ${pkgs.sops}/bin/sops decrypt --output-type binary \
-                  ${cfg.web.keySopsFile} > /run/secrets/kdn/zellij/${config.kdn.hostName}.key
-                chown ${cfg.web.user} /run/secrets/kdn/zellij/${config.kdn.hostName}.key
-                chmod 0400 /run/secrets/kdn/zellij/${config.kdn.hostName}.key
-              '';
-            };
           })
         ]
       ))
