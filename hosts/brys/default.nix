@@ -39,6 +39,13 @@ let
     qwenCacheTypeK = "q8_0";
     qwenCacheTypeV = "q8_0";
     qwenCacheRam = 8192;
+    # Multimodal (vision): load the Qwen projector (`mmproj-F16.gguf`), so
+    # llama-server on the main profile accepts image and video input as well as
+    # text. Set false to serve Qwen text-only. There is no separate vision
+    # specialisation; this one switch turns it on for the main host, and the
+    # projector downloads only when it is true. See
+    # docs/tasks/2026-10/qwen-3.8-flash-next-multimodal/.
+    qwenVision = true;
   };
 
   slots = kdnConfig.self.mkSlots {

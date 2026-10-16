@@ -185,6 +185,15 @@ The frontier model and the small set no longer share a boot. All entries are
   request no longer queues behind the first. The earlier CPU-only entry and the
   separate `llm-qwen-gpu` entry were folded into this one.
 
+**Multimodal (vision).** Qwen is `image-text-to-text`, so it accepts image and
+video input once its projector loads. The `qwenVision` argument in
+`hosts/brys/llm.nix` (default false) adds the `mmproj-F16.gguf` projector to the
+Qwen model; the **main `brys` profile sets it true**, so image and video input
+work on the normal host. Flip it false to serve text-only. The `llm-qwen` and
+`llms-frontier` boot entries keep the default (text-only). The projector
+downloads with the model. See
+[docs/tasks/2026-10/qwen-3.8-flash-next-multimodal/](tasks/2026-10/qwen-3.8-flash-next-multimodal/definition.md).
+
 The choice lives in `hosts/brys/llm.nix`'s `withFrontier` / `withSmall` /
 `withQwen` arguments, so a host pulls in only the model family it needs.
 
@@ -441,6 +450,7 @@ pages, so the model degrades instead of failing. For maximum speed, use a
 dedicated boot specialisation, where the model owns the RAM.
 
 Related work: [qwen-flash-next-quant](tasks/2026-10/qwen-flash-next-quant/),
+[qwen-3.8-flash-next-multimodal](tasks/2026-10/qwen-3.8-flash-next-multimodal/),
 [qwen-gpu-offload](tasks/2026-10/qwen-gpu-offload/), and
 [llm-unified-kv-parallelism](tasks/2026-10/llm-unified-kv-parallelism/). The
 hardware side is in [hosts/brys/performance.md](../hosts/brys/performance.md).

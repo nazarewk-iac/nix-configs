@@ -118,6 +118,14 @@
         in
         "${cfg.modelsDir}/${d.hfRepo}/${d.hfFile}";
 
+      # Absolute path of a multimodal projector file. Same layout as a model file.
+      mmprojFile =
+        name:
+        let
+          p = cfg.models.${name}.mmproj;
+        in
+        "${cfg.modelsDir}/${p.hfRepo}/${p.hfFile}";
+
       # Render one per-model preset section. Each key maps to one `llama-server` flag, minus the
       # leading dashes, and the router expands it onto that model's child process. A router-owned key
       # (host, port, api-key, alias routing) never appears here. Every global default folds into
@@ -133,6 +141,9 @@
           [
             "[${name}]"
             "model = ${modelFile name}"
+          ]
+          ++ lib.optionals m.mmproj.enable [
+            "mmproj = ${mmprojFile name}"
           ]
           ++ lib.optionals (threads != null) [
             "threads = ${toString threads}"
@@ -443,6 +454,41 @@
                 echo "[${name}] draft done: $target ($(du -sh "$target" | cut -f1))"
               else
                 echo "[${name}] draft FAILED: expected file missing at $target" >&2
+                exit 1
+              fi
+            fi
+            chmod -R a+rX ${dir}
+          '';
+
+      # The download step of a multimodal (vision) projector. It lands in the same layout, and it
+      # never becomes a router model: it feeds `--mmproj` on its own model's preset section. So it
+      # must download before its parent.
+      mmprojStep =
+        name:
+        if !(cfg.models.${name}.mmproj.enable) then
+          ""
+        else
+          let
+            p = cfg.models.${name}.mmproj;
+            dir = "${cfg.modelsDir}/${p.hfRepo}";
+            target = mmprojFile name;
+            shown = p.hfFile;
+          in
+          ''
+            target=${target}
+            if [ -f "$target" ]; then
+              echo "[${name}] mmproj already present: $target"
+            else
+              echo "[${name}] downloading mmproj ${p.hfRepo}/${shown} (mode=${cfg.download.mode})"
+              mkdir -p ${dir}
+              ${lib.optionalString (modeEnv != { }) ''
+                export ${lib.concatStringsSep " " (lib.mapAttrsToList (k: v: "${k}=${v}") modeEnv)}
+              ''}
+              ${hf} download ${p.hfRepo} ${shown} --local-dir ${dir}
+              if [ -f "$target" ]; then
+                echo "[${name}] mmproj done: $target ($(du -sh "$target" | cut -f1))"
+              else
+                echo "[${name}] mmproj FAILED: expected file missing at $target" >&2
                 exit 1
               fi
             fi
@@ -923,6 +969,26 @@
           '';
         };
 
+        # An optional multimodal projector (`mmproj`). A vision-capable GGUF model needs a separate
+        # projector file (`--mmproj`) before llama-server accepts image or video input. It downloads
+        # through the same mechanism as the draft model, and it never becomes a router model: only
+        # `mmproj` in the parent's preset names it.
+        options.mmproj.enable = lib.mkEnableOption "a multimodal (vision) projector for this model";
+
+        options.mmproj.hfRepo = lib.mkOption {
+          type = lib.types.str;
+          default = "";
+          example = "unsloth/Qwen3.8-Flash-Next-GGUF";
+          description = "Repository of the projector GGUF, in `owner/name` form.";
+        };
+
+        options.mmproj.hfFile = lib.mkOption {
+          type = lib.types.str;
+          default = "";
+          example = "mmproj-F16.gguf";
+          description = "File name of the projector GGUF inside `mmproj.hfRepo`.";
+        };
+
         # An optional speculative-decoding DRAFT model. It downloads through the same mechanism, and
         # it never becomes a router model: only `model-draft` in the parent's preset names it.
         options.draft.enable = lib.mkEnableOption "a speculative-decoding draft model for this model";
@@ -1212,17 +1278,18 @@
                 + lib.concatStringsSep ", " (builtins.attrNames enabledRouters);
             }
           ]
-          ++ lib.optionals
-            (
-              lib.any (m: m.perf.sessionHeaders != null) (lib.attrValues enabledModels)
-              && cfg.sessionStore == null
-            )
-            [
-              {
-                assertion = false;
-                message = "kdn.llm.local: a model sets perf.sessionHeaders but kdn.llm.local.sessionStore is null; set sessionStore to supply the save directory.";
-              }
-            ];
+          ++
+            lib.optionals
+              (
+                lib.any (m: m.perf.sessionHeaders != null) (lib.attrValues enabledModels)
+                && cfg.sessionStore == null
+              )
+              [
+                {
+                  assertion = false;
+                  message = "kdn.llm.local: a model sets perf.sessionHeaders but kdn.llm.local.sessionStore is null; set sessionStore to supply the save directory.";
+                }
+              ];
 
         # The primary router: one process, an on-demand model load, exactly one resident model. The
         # nixpkgs module maps `settings.*` onto the flags.
@@ -1253,9 +1320,10 @@
           {
             # The router runs as a DynamicUser, and it must read the models and write the session
             # store when one is configured.
-            llama-cpp.serviceConfig.ReadWritePaths =
-              [ cfg.modelsDir ]
-              ++ lib.optionals (cfg.sessionStore != null) [ cfg.sessionStore.path ];
+            llama-cpp.serviceConfig.ReadWritePaths = [
+              cfg.modelsDir
+            ]
+            ++ lib.optionals (cfg.sessionStore != null) [ cfg.sessionStore.path ];
             # Raise the mlock limit, so an mlocked model locks. systemd defaults MEMLOCK to 8 MiB,
             # and that fails every mlock of a large model.
             llama-cpp.serviceConfig.LimitMEMLOCK = "infinity";
@@ -1334,7 +1402,8 @@
                 if [ -n "''${CREDENTIALS_DIRECTORY:-}" ] && [ -f "''${CREDENTIALS_DIRECTORY}/HF_TOKEN" ]; then
                   export HF_TOKEN="$(cat "''${CREDENTIALS_DIRECTORY}/HF_TOKEN")"
                 fi
-                # Every dependency first, so a draft model lands before its parent.
+                # Every dependency first, so a draft model or a projector lands before its parent.
+                ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: _: mmprojStep name) downloadModels)}
                 ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: _: draftStep name) downloadModels)}
                 ${lib.concatStringsSep "\n" (lib.mapAttrsToList downloadStep downloadModels)}
                 echo "all configured downloads complete"
