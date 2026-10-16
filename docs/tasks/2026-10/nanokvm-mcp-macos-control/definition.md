@@ -77,8 +77,9 @@ This file records how an agent uses it.
   Disk Access flow, no reboot/power controls. If the screen state looks wrong after an action,
   press Escape, screenshot, and stop to report.
 - If the Mac shows a lock screen, there is no login password available to the agent — stop and
-  report. If System Settings demands Touch ID or an admin password to change grants, stop and
-  report.
+  report. System Settings demands the admin password to change grants; the agent may type it from
+  the secret store (`pass show hosts/anji/users/kdn/password`, fetched into a shell variable only —
+  never printed, never on a command line, built into the `type_text` JSON with `jq --arg`).
 
 ## Findings from the 2026-10-16 grant attempt (run 2)
 
@@ -103,3 +104,27 @@ This file records how an agent uses it.
   (0 `kTCCServiceAppleEvents` rows for System Events).
 - Calendar's "What's New" onboarding auto-opened once on the shared desktop and had to be quit;
   a stray Dock-area click can launch GUI apps on an unattended Mac.
+
+## Findings from the 2026-10-16 password run (run 3) — PARTIAL, not granted
+
+- The owner password **can** be injected through `cube_type_text` into the auth sheet: with the
+  sheet fully rendered and the field clicked at (960,614), dots appear in the field band
+  (x≈853–967 for 12 chars). The grant path is end-to-end possible; it just did not complete.
+- The dominant failure is **input latency on the cube side**: the sheet renders 5–10s after "+",
+  and queued keys/clicks during that window land on whatever was on screen (the sidebar search
+  accumulated stray characters — later cleared; verified never to have contained the password).
+  A "2s then screenshot" cadence is NOT sufficient for this sheet; poll until the frame matches
+  the expected state before every next event.
+- Two submissions were consumed (max allowed): the first typed during sheet rendering (focus
+  uncertain), the second had a stray probe character before the password. The sheet rejects with
+  no visible error and does not clear the field — distinguish "rejected" from "never received"
+  only with per-step frame confirmation.
+- Stuck keyboard / dead-keyboard state was fixed twice by USB-gadget rebind on the cube:
+  `echo "" > /sys/kernel/config/usb_gadget/g0/UDC; sleep 1.5; echo 4340000.usb > .../UDC`
+  (video + network unaffected; Mac re-enumerates HID in ~2s).
+- Ground truth for key delivery: `ioreg -c IOHIDSystem | grep HIDIdleTime` over SSH resets on each
+  injected key even under a modal sheet.
+- Anji's keyboard layout is **Polish Pro**; harmless for an alphanumeric secret, but symbol-heavy
+  passwords would need scan-code care.
+- The un-filed grant target and TCC state are unchanged (0 rows for the path; everything else
+  untouched).
