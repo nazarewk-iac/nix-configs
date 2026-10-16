@@ -64,13 +64,13 @@
 # `kdn.zellij-web` adds the built-in zellij web interface. It includes `kdn.zellij`, so it carries
 # the base configuration too. The interface is a systemd user service on Linux, and it binds
 # loopback by default. A consumer sets `kdn.zellij.web.*`: `bindAddress`, `port`, `certFile`,
-# `keyFile`, `keySopsFile`, `user` and `firewallInterfaces`.
+# `keyFile`, `user` and `firewallInterfaces`.
 #
 # The aspect declares no `enable` option. Inclusion is the switch, as rule 2 states. The `web`
 # options hold no `enable` either, so the standalone check finds no reachable one.
 #
-# The `nixos` target opens the port on each named interface and decrypts a SOPS key when one is
-# named. The `homeManager` target writes the user service when `certFile` is set.
+# The `nixos` target opens the port on each named interface. The `homeManager` target writes the
+# user service when `certFile` is set.
 { kdn, ... }:
 let
   # The shared web option declarations. Both `zellij-web` targets import this one module, so the
@@ -107,17 +107,7 @@ let
           default = null;
           description = ''
             PEM private key of `certFile`. It must be readable by the user that runs the web
-            server. When `keySopsFile` is set and this is null, the module decrypts the key to a
-            user-readable path and uses that path.
-          '';
-        };
-
-        keySopsFile = lib.mkOption {
-          type = lib.types.nullOr lib.types.path;
-          default = null;
-          description = ''
-            SOPS-encrypted (raw/binary) private key. A system service decrypts it into
-            `/run/secrets/kdn/zellij/<hostName>.key`, owned by `user`, mode 0400. Set `user`.
+            server.
           '';
         };
 
@@ -314,7 +304,7 @@ in
   kdn.zellij-web.includes = [ kdn.zellij ];
 
   # The user service. It runs on Linux only, and it needs a certificate. A missing key is not fatal
-  # at start: the unit restarts until the decrypt service or the consumer supplies it.
+  # at start: the unit restarts until the consumer supplies it.
   kdn.zellij-web.homeManager =
     {
       config,
@@ -324,20 +314,9 @@ in
     }:
     let
       cfg = config.kdn.zellij;
-
-      # The key the user service reads. A host that sets `keyFile` names its own path; a host that
-      # sets `keySopsFile` gets the decrypted copy.
-      webKeyPath =
-        if cfg.web.keyFile != null then
-          cfg.web.keyFile
-        else
-          "/run/secrets/kdn/zellij/${config.kdn.hostName}.key";
     in
     {
-      imports = [
-        optionsModule
-        ../common/host-name.nix
-      ];
+      imports = [ optionsModule ];
 
       config = lib.mkIf (pkgs.stdenv.hostPlatform.isLinux && cfg.web.certFile != null) {
         systemd.user.services.zellij-web = {
@@ -358,7 +337,7 @@ in
               "--cert"
               cfg.web.certFile
               "--key"
-              webKeyPath
+              cfg.web.keyFile
             ];
             # The key may not exist yet at first start; retry.
             Restart = "on-failure";
@@ -369,8 +348,8 @@ in
       };
     };
 
-  # The system side. It opens the port on each named interface, and it decrypts a SOPS key when one
-  # is named. Both halves are inert when the consumer names neither.
+  # The system side. It opens the port on each named interface. It is inert when the consumer
+  # names none.
   kdn.zellij-web.nixos =
     {
       config,
@@ -382,41 +361,12 @@ in
       cfg = config.kdn.zellij;
     in
     {
-      imports = [
-        optionsModule
-        ../common/host-name.nix
-      ];
+      imports = [ optionsModule ];
 
-      config = lib.mkMerge [
-        (lib.mkIf (cfg.web.firewallInterfaces != [ ]) {
-          networking.firewall.interfaces = lib.genAttrs cfg.web.firewallInterfaces (_: {
-            allowedTCPPorts = [ cfg.web.port ];
-          });
-        })
-        (lib.mkIf (cfg.web.keySopsFile != null) {
-          systemd.services.kdn-zellij-web-key = {
-            description = "Decrypt the zellij web TLS private key into /run/secrets";
-            wantedBy = [ "multi-user.target" ];
-            path = [
-              pkgs.sops
-              pkgs.coreutils
-            ];
-            serviceConfig = {
-              Type = "oneshot";
-              RemainAfterExit = true;
-              User = "root";
-              Group = "root";
-            };
-            script = ''
-              set -euo pipefail
-              mkdir -p /run/secrets/kdn/zellij
-              ${pkgs.sops}/bin/sops decrypt --output-type binary \
-                ${cfg.web.keySopsFile} > /run/secrets/kdn/zellij/${config.kdn.hostName}.key
-              chown ${cfg.web.user} /run/secrets/kdn/zellij/${config.kdn.hostName}.key
-              chmod 0400 /run/secrets/kdn/zellij/${config.kdn.hostName}.key
-            '';
-          };
-        })
-      ];
+      config = lib.mkIf (cfg.web.firewallInterfaces != [ ]) {
+        networking.firewall.interfaces = lib.genAttrs cfg.web.firewallInterfaces (_: {
+          allowedTCPPorts = [ cfg.web.port ];
+        });
+      };
     };
 }
