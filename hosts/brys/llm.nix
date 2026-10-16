@@ -85,6 +85,14 @@
   qwenContextSize ? 131072,
   llamaPackage ? null,
   qwenMtp ? false,
+  # `qwenVision` wires the multimodal (vision) projector (`mmproj-F16.gguf`, ~0.8 GB)
+  # onto the Qwen model. The model is `image-text-to-text`, so llama-server accepts
+  # image and video input only when the projector is loaded. Default false: a
+  # consumer that omits it serves Qwen text-only, and the projector is downloaded
+  # and served only when it is true. The main `brys` profile sets it true
+  # (hosts/brys/default.nix); the `llm-qwen` and `llms-frontier` boot entries keep
+  # the default. See docs/tasks/2026-10/qwen-3.8-flash-next-multimodal/.
+  qwenVision ? false,
   # MTP speculative-decode tuning, used only when `qwenMtp` is set. `nMax` is
   # the max draft tokens per step; `pMin`/`prio` are emitted only when non-null
   # so the preset INI keeps llama's own defaults otherwise.
@@ -379,6 +387,13 @@ let
         enable = true;
         hfRepo = "unsloth/Qwen3.8-Flash-Next-GGUF";
         hfFile = "MTP/mtp-Qwen3.8-Flash-Next-Q8_0.gguf";
+      };
+    }
+    // lib.optionalAttrs qwenVision {
+      mmproj = {
+        enable = true;
+        hfRepo = "unsloth/Qwen3.8-Flash-Next-GGUF";
+        hfFile = "mmproj-F16.gguf";
       };
     };
   };
