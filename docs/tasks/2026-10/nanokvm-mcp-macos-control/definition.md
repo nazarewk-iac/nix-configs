@@ -52,6 +52,20 @@ This file records how an agent uses it.
     -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"cube_screenshot","arguments":{"quality":60}}}'
   ```
 
+## Operating notes
+
+- After every key/mouse action: `sleep 2`, then screenshot, review, then act. The feed lags the
+  injection — a screenshot taken immediately after an action shows the pre-action screen (the
+  first run was cancelled for exactly this reason). If the screen looks unchanged or half-typed,
+  wait another 2s and screenshot again before acting.
+- If the video feed is black at start, the display may be asleep: send one `Shift` keypress, wait
+  2s, screenshot; repeat once; if still black, report.
+- Save screenshots incrementally as `/tmp/opencode/nanokvm/NN-name.jpg`. The agent model may lack
+  image input; review with OCR (`tesseract` via a small shell helper) plus pixel diffs between
+  shots to prove an action landed.
+- To reach an exact System Settings pane without fighting shortcuts:
+  `ssh kdn-anji open "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_AllFiles"`.
+
 ## Constraints
 
 - **Never commit the API key** — not into the repo, not into a worklog entry, not into a report.
@@ -65,3 +79,27 @@ This file records how an agent uses it.
 - If the Mac shows a lock screen, there is no login password available to the agent — stop and
   report. If System Settings demands Touch ID or an admin password to change grants, stop and
   report.
+
+## Findings from the 2026-10-16 grant attempt (run 2)
+
+- Outcome: **BLOCKED(password)** for the FDA grant of
+  `/nix/store/f0b9dbw2gl596cm03pvdsss72381qhlp-bash-5.3p15/bin/bash` (sha256
+  `0fba4021f093052f39b68e789f12be8e96c0680837679971a5be9ff6679c8821`, the shebang of the current
+  system's `activate` and of the newest `anji-ext-unlock-start`). The pane reached, the "+" click
+  worked, and macOS 26 answered with a modal sheet: *"Privacy & Security is trying to modify your
+  system settings. Enter your password to continue with Privacy & Security"* (user
+  `Krzysztof Nazarewski`, buttons Modify Settings / Cancel). No Touch ID on a Mac mini. Reproduced
+  twice (initial + one retry). The agent path needs the owner to type the login password.
+- Cmd+Space did **not** open Spotlight on `anji` (three tries, verified by screenshot diff — only
+  the clock changed). The Apple menu (logo at ≈(27,14) of 1920x1080) and menu-bar app menus do
+  open with absolute clicks, so key/mouse injection itself works.
+- `cube_press_keys` names are KeyboardEvent codes: `KeyQ` works, lowercase `q` does not.
+- Absolute click coordinates map 1:1 to the 1920x1080 console feed (normalized 0.0–1.0).
+- Small "+" / "-" controls under the FDA app list are too small for default OCR: crop the region,
+  `magick -resize 400%`, `tesseract --psm 6` (found at (854,857) of 1920x1080).
+- TCC automation prompts — e.g. triggered by `osascript` over SSH — appear as modal sheets on the
+  **console GUI**, stacked over whatever panel is open, and swallow clicks there. Run no AppleScript
+  needing Automation permission mid-KVM-session. The stray prompt was cancelled; it left no grant
+  (0 `kTCCServiceAppleEvents` rows for System Events).
+- Calendar's "What's New" onboarding auto-opened once on the shared desktop and had to be quit;
+  a stray Dock-area click can launch GUI apps on an unattended Mac.
