@@ -198,3 +198,63 @@ nix eval --impure --expr 'let f = builtins.getFlake (toString ./.); i = f.inputs
 
 After the next flake update, re-run the third command: if it moves, the yaml moved, and the first
 daemon start will recreate the guest.
+
+## 2026-10-18 live investigation
+
+Live investigation on `anji` (macOS 27.0.1). The guest sshd never comes up. Two **independent**
+defects cause this. Either one alone stops provisioning.
+
+### Defect 1 — launchd PATH drops `/usr/bin` from first position
+
+The fork's module builds the launchd job `PATH` without `/usr/bin` first. Lima's guest bootstrap
+then runs the nixpkgs `openssh` (built without GSSAPI) to provision the guest. That ssh rejects
+lima's `-o GSSAPIAuthentication=no`, so the provisioning ssh dies and the guest sshd never comes
+up.
+
+- **Fix:** `launchd.daemons.rosetta-builderd.path = lib.mkBefore [ "/usr/bin" ]` in
+  `hosts/anji/default.nix`.
+- **Verified:** the eval'd `PATH` starts with `/usr/bin` and matches a live plist edit
+  byte-for-byte.
+
+### Defect 2 — socket-activation `ESRCH`
+
+The daemon is re-homed behind `kdn-nix-bootstrap` (that wrapper holds the Full Disk Access grant).
+With the default `onDemand = true`, lima calls `launch_activate_socket("Listener")` from
+`limactl hostagent`. That process is a **grandchild** of the wrapper.
+
+launchd resolves the socket by the calling process's job. The grandchild has a different bootstrap,
+so the call fails with `ESRCH` ("no such process"). The hostagent then exits ~19 s into every
+start:
+
+```
+ha.stderr.log: Driver stopped due to error: "launchd socket \"Listener\" failed to activate: no such process"
+```
+
+launchd respawns it, and the VZ guest is torn down and rebooted before it finishes booting.
+**Measured:** `runs=132`, one cycle per ~19 s. The wrapper's own comment that claims socket
+activation survives was measured on the non-`onDemand` path.
+
+- **Fix:** `nix-rosetta-builder.onDemand = false` — this drops `Sockets.Listener` and sets
+  `KeepAlive = true`. Also force-clear the empty `Sockets` key the fork leaves behind:
+  `launchd.daemons.rosetta-builderd.serviceConfig.Sockets = lib.mkForce { }`. The fork sets
+  `Sockets."Listener" = optionalAttrs cfg.onDemand {...}`, which with `false` renders an empty
+  `<dict/>`.
+
+### Note for the fork
+
+This fixes the daemon lifecycle only. A fork fix should **drop** the `Sockets` key entirely instead
+of emptying it.
+
+### Activation attempt (blocked)
+
+A `nix run '.#darwin-rebuild' -- switch remote=anji` was attempted and **failed after 1h48m**: the
+remote builder `briv.lan` ran out of disk space while building the aarch64-linux NixOS guest image:
+
+```
+cat: write error: No space left on device    # /nix/store/...-nixos-disk-image.drv
+```
+
+`onDemand = false` changes the guest image (`logind` `IdleAction` is baked into it), so the image
+genuinely rebuilds. The switch must be re-run after freeing disk on `briv`. `anji` is still on the
+previous generation; the live plist is hand-patched to the intended state but the daemon is not
+loaded.

@@ -65,12 +65,14 @@ let
 
   bootstrapPath = "/usr/local/bin/kdn-nix-bootstrap";
 
-  # Daemons whose nix-darwin `command` is re-homed behind the bootstrap. Socket activation
-  # survives the spawn unchanged: launchd resolves a job's `launch_activate_socket` call for
-  # every process of that job, so `rosetta-builderd` gets its `Sockets.Listener` from inside the
-  # wrapper. Measured 2026-10-15 on macOS 27.0.1: a cache-less x86_64-linux source build ran on
-  # the guest through the wrapped builderd. (launchd does NOT pre-place the socket at descriptor
-  # 3 for the wrapper — an explicit fd re-pass is both unnecessary and wrong.)
+  # Daemons whose nix-darwin `command` is re-homed behind the bootstrap. The wrapper's own comment
+  # claimes socket activation survives the spawn (launchd resolves `launch_activate_socket` by the
+  # calling process's job, and a spawn counts as the job). That is FALSE for this grandchild
+  # process: launchd's top-level process is the wrapper, `limactl hostagent` is its child, and the
+  # socket call from the grandchild fails with ESRCH. This is why `rosetta-builderd` sets
+  # `onDemand = false` (see the rosettaBuilder block) — that path never calls
+  # `launch_activate_socket`. (launchd does NOT pre-place the socket at descriptor 3 for the
+  # wrapper — an explicit fd re-pass is both unnecessary and wrong.)
   bootstrapJobs = [
     "nix-daemon"
     "activate-system"
@@ -235,6 +237,36 @@ in
       # Rosetta VM is the only Linux builder since phase 3 detached the stock one.
       nix-rosetta-builder.cores = 8;
       nix-rosetta-builder.memory = "8GiB";
+      # builderd's launchd PATH must start with /usr/bin. The fork's module (module.nix:307-326)
+      # builds the job PATH without it, so lima's guest bootstrap execs the nix openssh from PATH;
+      # nixpkgs builds openssh without GSSAPI, and lima passes `-o GSSAPIAuthentication=no`, which
+      # that build rejects as an unsupported option — the guest provisioning ssh then dies and the
+      # VM never becomes reachable (measured 2026-10-17 on macOS 27.0.1; live plist edit with this
+      # same prefix fixed it: Apple ssh 10.3.1 parses the option and the guest booted + served
+      # sshd). `mkBefore` prepends to the fork's list; the fork should carry /usr/bin upstream.
+      launchd.daemons.rosetta-builderd.path = lib.mkBefore [ "/usr/bin" ];
+      # Disable socket activation. The daemon is re-homed behind `kdn-nix-bootstrap`
+      # (`bootstrapJobs` above) for the Full Disk Access grant, so launchd's top-level process is
+      # the wrapper and `limactl hostagent` is a *grandchild*. On the onDemand path lima calls
+      # `launch_activate_socket("Listener")` from that grandchild; the call resolves the socket by
+      # the calling process's launchd job, the grandchild has a different bootstrap, and the call
+      # fails with ESRCH ("no such process"). The hostagent then exits ~19 s into every start
+      # (`ha.stderr.log`: `Driver stopped due to error: "launchd socket \"Listener\" failed to
+      # activate: no such process"`), launchd respawns it, and the VZ guest is torn down and
+      # rebooted before it can finish booting — the guest sshd never becomes reachable (measured
+      # 2026-10-17; runs=132, one cycle per ~19 s). The wrapper comment that claims socket
+      # activation survives was measured on the non-onDemand path, where `forwardLaunchdToSSH` is
+      # never taken. `onDemand = false` drops `Sockets.Listener` from the plist entirely and sets
+      # `KeepAlive = true`, so the daemon keeps the VM resident and lima uses plain SSH forwarding
+      # on `port` (module.nix:393-399, module.nix:246). The trade-off: the guest no longer powers
+      # off when idle, which is right for a build host. NOTE: this changes the generated
+      # `lima.yaml` (`ssh.launchdSocketName`), so the next daemon start recreates the guest once.
+      nix-rosetta-builder.onDemand = false;
+      # The fork sets `Sockets."Listener" = optionalAttrs cfg.onDemand {...}`. With
+      # `onDemand = false` that is `{}`, but the key still renders — an empty `<dict/>` inside
+      # `<key>Sockets</key>`. launchd would then register an empty socket. Clear it so the plist
+      # carries no `Sockets` block at all. (A fork fix should drop the key, not empty it.)
+      launchd.daemons.rosetta-builderd.serviceConfig.Sockets = lib.mkForce { };
     })
     {
       system.stateVersion = 6;
