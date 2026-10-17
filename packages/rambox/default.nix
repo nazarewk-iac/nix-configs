@@ -19,6 +19,16 @@
 # wrapper below sets `$APPIMAGE` to its own host path, so Rambox registers a
 # handler that works. See `writeUserDesktopEntry` and `linuxDesktopExec` in the
 # bundled `app.asar`.
+#
+# That runtime registration is unreliable anyway. `installIcon` copies the
+# read-only store icon with `fs.copyFileSync`, which copies the source mode, so
+# the result in `~/.local/share/icons/rambox.png` is read-only. The next launch
+# cannot overwrite it, `copyFileSync` throws `EACCES`, and the `try`/`catch`
+# around `writeUserDesktopEntry` aborts before it writes the desktop file. So
+# Rambox writes its deep-link handler once, at best. The `desktopItem` below
+# therefore carries the scheme itself, and the user's `mimeapps.list` names
+# `rambox.desktop` as the handler. The host then never depends on Rambox's own
+# write, and `Exec=rambox %u` follows the package through updates.
 {
   appimageTools,
   lib,
@@ -48,9 +58,10 @@ appimageTools.wrapType2 rec {
   desktopItem = makeDesktopItem {
     desktopName = "Rambox";
     name = "rambox";
-    exec = "rambox";
+    exec = "rambox %u";
     icon = "rambox";
     categories = [ "Network" ];
+    mimeTypes = [ "x-scheme-handler/rambox" ];
   };
 
   appimageContents = appimageTools.extract {
