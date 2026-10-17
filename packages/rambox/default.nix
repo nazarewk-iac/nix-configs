@@ -3,12 +3,29 @@
 # `version` and `hash` when a newer Linux AppImage appears. Upstream ships the
 # Linux AppImage after the macOS/Windows builds, so the newest release can have
 # no Linux asset at all (for example 3.1.0).
+#
+# Electron opens external links through `shell.openExternal`, which execs the
+# sandbox `xdg-open`. `wrapType2` builds an FHS sandbox, and that sandbox ships
+# the stock `xdg-utils` `xdg-open`. The stock script does not know `sway`, so it
+# picks its generic fallback list, where `google-chrome` wins. The override below
+# installs the handlr `xdg-open` at a high priority, so the sandbox resolves the
+# user's default handlers the same way the host does.
 {
   appimageTools,
   lib,
   fetchurl,
   makeDesktopItem,
 }:
+let
+  # The same `xdg-open` the `program-handlr` aspect installs on the host.
+  xdg-open =
+    pkgs:
+    pkgs.writeShellApplication {
+      name = "xdg-open";
+      runtimeInputs = [ pkgs.handlr-regex ];
+      text = ''handlr open "$@"'';
+    };
+in
 appimageTools.wrapType2 rec {
   pname = "rambox";
   version = "3.1.1";
@@ -36,7 +53,13 @@ appimageTools.wrapType2 rec {
     install -Dm644 ${desktopItem}/share/applications/* $out/share/applications
   '';
 
-  extraPkgs = pkgs: [ pkgs.procps ];
+  extraPkgs =
+    pkgs: with pkgs; [
+      procps
+      handlr-regex
+      wofi
+      (lib.meta.hiPrio (xdg-open pkgs))
+    ];
 
   meta = {
     description = "Workspace Simplifier - a cross-platform application organizing web services into Workspaces similar to browser profiles";
