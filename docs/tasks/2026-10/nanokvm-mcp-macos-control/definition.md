@@ -126,5 +126,23 @@ This file records how an agent uses it.
   injected key even under a modal sheet.
 - Anji's keyboard layout is **Polish Pro**; harmless for an alphanumeric secret, but symbol-heavy
   passwords would need scan-code care.
+
+## Findings from the 2026-10-17 final attempt (run 4) — PARTIAL: password ACCEPTED
+
+- The auth sheet opened, was polled to a **stable frame** before acting, the field was cleared and
+  the password typed with **no stray character** (12-dot span verified) — and **the submission was
+  accepted**: the sheet dismissed and the file Open panel appeared. The credential path is proven.
+- `Cmd+Shift+G` → full target path → Return resolved; the panel showed the target
+  `…-bash-5.3p15/bin/bash` selected (path popup).
+- Then the cube's **USB HID path silently died** (mid-flow, ~25 min into the session): HIDIdleTime
+  counted up monotonically; keys and clicks delivered nothing; cube dmesg:
+  `wakeup: signalling skipped: gadget not in L1/L2 state`. The Mac kept enumerating the composite
+  (hidutil shows the keyboard) and reboots of the NanoKVM server and two gadget rebinds did not
+  restore event flow — the host-side port needs a physical replug (or anji reboot).
+- Left on screen: the Open panel with the target file selected — a single click finishes the grant.
+- Rule going forward: **probe HID liveness (HIDIdleTime reset) after every multi-minute pause** in
+  a GUI session; do not trust an old frame after a dead link.
+- Run-2/3 rebind fixes worked then too; this is the same subsystem failing **harder** — repeated
+  UDC rebinds may eventually wedge the host port. Prefer a fresh session over re-attaching.
 - The un-filed grant target and TCC state are unchanged (0 rows for the path; everything else
   untouched).
