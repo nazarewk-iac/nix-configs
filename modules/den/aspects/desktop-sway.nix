@@ -355,6 +355,21 @@ let
         description = "Run all three XDG desktop portals with verbose logging.";
       };
 
+      options.kdn.desktop-sway.browser.command = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = "${pkgs.handlr-regex}/bin/handlr open";
+        defaultText = lib.literalExpression ''"''${pkgs.handlr-regex}/bin/handlr open"'';
+        example = "firefox";
+        description = ''
+          The value the session exports as `BROWSER`.
+
+          `$BROWSER` is a colon-separated list of commands, split into arguments on spaces. Many
+          programs read it before any desktop default, so a stray value overrides the `xdg-open`
+          handler. The default routes it to the handlr chooser, which opens the same picker as
+          `xdg-open`. `null` leaves `BROWSER` unset.
+        '';
+      };
+
       options.kdn.desktop-sway.polkitAgent.package = lib.mkOption {
         type = lib.types.package;
         default = pkgs.kdePackages.polkit-kde-agent-1;
@@ -657,6 +672,11 @@ let
             # into the session environment instead.
             GTK_USE_PORTAL = "1";
             NIXOS_OZONE_WL = "1";
+          }
+          // lib.optionalAttrs (cfg.browser.command != null) {
+            # Some programs read `$BROWSER` before any desktop default. See the option for the
+            # value and the splitting rule.
+            BROWSER = cfg.browser.command;
           };
 
           systemd.user.services."${cfg.systemd.sway.name}" = {

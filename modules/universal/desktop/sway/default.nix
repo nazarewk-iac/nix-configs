@@ -22,6 +22,20 @@ in
     };
     portals.debug = lib.mkEnableOption "XDG desktop portal debugging";
 
+    browser.command = lib.mkOption {
+      type = with lib.types; nullOr str;
+      default = "${pkgs.handlr-regex}/bin/handlr open";
+      example = "firefox";
+      description = ''
+        The value the session exports as `BROWSER`.
+
+        `$BROWSER` is a colon-separated list of commands, split into arguments on spaces. Many
+        programs read it before any desktop default, so a stray value overrides the `xdg-open`
+        handler. The default routes it to the handlr chooser, which opens the same picker as
+        `xdg-open`. `null` leaves `BROWSER` unset.
+      '';
+    };
+
     keys = lib.mkOption {
       type = lib.types.submodule { freeformType = jsonFormat.type; };
     };
@@ -234,6 +248,11 @@ in
             # warning: The option `xdg.portal.gtkUsePortal' defined in `/nix/store/y48ib2rr4sd4y8v4wdxqiff2jydjir1z-source/modules/desktop/sway/base/default.nix' has been deprecated. Setting the variable globally with `environment.sessionVariables' NixOS option can have unforseen side-effects.
             GTK_USE_PORTAL = "1";
             NIXOS_OZONE_WL = "1";
+          }
+          // lib.optionalAttrs (cfg.browser.command != null) {
+            # Some programs read `$BROWSER` before any desktop default. See the option for the
+            # value and the splitting rule.
+            BROWSER = cfg.browser.command;
           };
 
           systemd.user.services."${config.kdn.desktop.sway.systemd.sway.name}" = {
