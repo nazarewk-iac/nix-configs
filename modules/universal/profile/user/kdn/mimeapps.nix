@@ -63,6 +63,7 @@ in
       "x-scheme-handler/http" = browsers.preferred;
       "x-scheme-handler/https" = browsers.preferred;
       "x-scheme-handler/msteams" = teams;
+      "x-scheme-handler/rambox" = [ "rambox.desktop" ];
       "x-scheme-handler/rdp" = remmina;
       "x-scheme-handler/remmina" = remmina;
       "x-scheme-handler/spice" = remmina;
