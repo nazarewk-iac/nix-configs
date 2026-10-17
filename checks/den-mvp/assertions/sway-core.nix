@@ -233,13 +233,15 @@ let
       name = "the two environment option sets keep the old counts and reach the session";
       expected = {
         defaults = 2;
-        environment = 8;
+        environment = 9;
         gdk = true;
+        browser = true;
       };
       actual = {
         defaults = builtins.length swayCfg.environmentDefaults;
         environment = builtins.length swayCfg.environment;
         gdk = lib.any (lib.hasPrefix "GDK_BACKEND=") swayCfg.environment;
+        browser = lib.any (lib.hasPrefix "BROWSER=") swayCfg.environment;
       };
     }
     {
