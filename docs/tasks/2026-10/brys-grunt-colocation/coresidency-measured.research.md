@@ -99,3 +99,50 @@ llama-swap `matrix` `evict_costs` plus `sets` expresses this co-residency:
 
 - The small GPU-fit grunts can share a set with the orchestrator.
 - The big CPU MoEs belong in an "orchestrator idle" set.
+
+## Concurrent small-dense benchmark (added 2026-10-18)
+
+The nine small dense models downloaded later were measured **concurrently** on
+brys: each batch starts several `llama-server` processes on distinct ports with
+4 threads each, and every server answers `/health` before measurement starts.
+Only the 8 GB W6600 limits the GPU runs, so those stay one at a time. All values
+are measured, same method as the table above.
+
+| model | file size | RssFile | RssAnon | VmRSS | decode t/s | prefill t/s | mode |
+|---|---|---|---|---|---|---|---|
+| ministral-3-3b-instruct | 2.15 G | 2,119 MiB | 1,778 MiB | 3,898 MiB | 17.4 | 480 | CPU |
+| ministral-3-3b-instruct | 2.15 G | 355 MiB | 74 MiB | 429 MiB | 79.3 | 1369 | GPU |
+| ministral-3-3b-reasoning | 2.15 G | 2,119 MiB | 1,778 MiB | 3,898 MiB | 18.9 | 202 | CPU |
+| ministral-3-3b-reasoning | 2.15 G | 355 MiB | 74 MiB | 429 MiB | 80.9 | 933 | GPU |
+| ministral-3-8b-instruct | 5.2 G | 5,100 MiB | 2,303 MiB | 7,403 MiB | 8.1 | 244 | CPU |
+| ministral-3-8b-instruct | 5.2 G | 328 MiB | 74 MiB | 402 MiB | 38.4 | 576 | GPU |
+| ministral-3-8b-reasoning | 5.2 G | 5,100 MiB | 2,303 MiB | 7,403 MiB | 8.5 | 56 | CPU |
+| ministral-3-8b-reasoning | 5.2 G | 328 MiB | 74 MiB | 402 MiB | 38.9 | 458 | GPU |
+| gemma-4-e2b | 3.11 G | 3,052 MiB | 263 MiB | 3,315 MiB | 23.8 | 37.8 | CPU |
+| gemma-4-e2b | 3.11 G | 1,833 MiB | 133 MiB | 1,967 MiB | 83.5 | 38.8 | GPU |
+| gemma-4-12b | 7.12 G | 6,971 MiB | 1,871 MiB | 8,842 MiB | 5.76 | 10.4 | CPU |
+| tmax-2b | 1.27 G | 1,265 MiB | 385 MiB | 1,650 MiB | 28.6 | 79.7 | CPU |
+| tmax-2b | 1.27 G | 440 MiB | 117 MiB | 557 MiB | 110.7 | 311 | GPU |
+| tmax-9b | 5.63 G | 5,518 MiB | 839 MiB | 6,358 MiB | 7.18 | 20.7 | CPU |
+| tmax-9b | 5.63 G | 591 MiB | 117 MiB | 708 MiB | 36.9 | 121 | GPU |
+| olmo-3-7b-instruct | 4.47 G | 4,374 MiB | 11,445 MiB | 15,819 MiB | 9.83 | 25.9 | CPU |
+| olmo-3-7b-instruct | 4.47 G | 261 MiB | 62 MiB | 323 MiB | 40.4 | 136 | GPU |
+
+Batches: CPU-1 = the six models up to gemma-4-e2b (resident sum ~22 GB);
+CPU-2 = gemma-4-12b, tmax-9b, olmo-3-7b (resident sum ~17 GB). Both stay well
+under the ~100 GB cap, so the concurrency does not disturb the live orchestrator.
+GPU runs are serial (single 8 GB W6600).
+
+Findings:
+
+- **GPU fit is the fast lane.** Every model that fits the 8 GB card decodes at
+  37-110 tok/s on Vulkan0, while the same model on CPU is 6-14 tok/s. The best
+  grunts by speed are `tmax-2b` (110.7) and `gemma-4-e2b` (83.5).
+- **`olmo-3-7b-instruct` is an outlier.** CPU `RssAnon` is 11,445 MiB for a
+  4.47 G file: its chat template needs a fallback. It only loads with
+  `--no-jinja --chat-template chatml`, otherwise it fails with
+  `Unable to generate parser for this template ... filter 'tojson'`. Its CPU VmRSS
+  (15.8 GB) makes it a poor co-resident; on GPU it is fine (323 MiB).
+  This is a llama.cpp template-compatibility gap, not a brys issue.
+- **`gemma-4-12b` prefill is slow** (10.4 tok/s CPU) even though its decode is
+  acceptable, so it is a weak interactive model.

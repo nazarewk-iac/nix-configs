@@ -47,42 +47,75 @@ demand, answers to every model id and alias itself, and evicts a running child
 when a queued request needs its slot. The topology becomes:
 
 ```
-LAN client ──HTTPS──▶ Caddy (:80/:443) ──▶ compat-proxy (:9530) ──▶ llama-swap (:39704, /v1/models)
+LAN client ──HTTPS──▶ Caddy (:80/:443) ──▶ compat-proxy (:9530) ──▶ llama-swap (:39700, /v1/models)
                                                                         └─▶ child llama-server (one per model, on demand)
 ```
 
 The compat-proxy no longer fans out to per-router upstreams: it points its
-`UPSTREAM_URL` at the llama-swap port, and llama-swap answers to every id, so no
-`ROUTER_<NAME>_*` table appears. The child `llama-server` processes inherit the
-llama-swap unit's systemd namespace. To validate a bearer key they read a
-`--api-key-file` that llama-swap's own `preStart` assembles into its cache
-directory (`/var/cache/llama-swap/api-keys`), because the router path's
-`llama-cpp.preStart` no longer runs.
+`UPSTREAM_URL` at the llama-swap port (`swap.port`, default `39700`), and
+llama-swap answers to every id, so no `ROUTER_<NAME>_*` table appears. The child
+`llama-server` processes inherit the llama-swap unit's systemd namespace.
+
+**Auth.** The swap children get `--api-key-file /var/cache/llama-swap/api-keys`,
+because the router path's `llama-cpp.preStart` no longer runs. A llama-swap
+`preStart` assembles the per-key files under `apiKeyDir` into that one file in
+llama-swap's own `CacheDirectory` (its DynamicUser can write there); the
+compat-proxy forwards the bearer it receives. Each child validates the same
+bearer the router path validated.
 
 The swap-mode options (all inert until `swap.enable` is set):
 
 | Option | Meaning |
 |---|---|
 | `swap.enable` | Turn llama-swap into the single model-lifecycle owner. |
-| `swap.port` | Loopback port llama-swap listens on; the compat-proxy targets it. |
-| `swap.healthCheckTimeout` | Seconds llama-swap waits for a new child to answer before it fails the request. |
-| `swap.routerEngine` | `"matrix"` (evict-cost policy) or `"group"` (one group per router). |
+| `swap.port` | Loopback port llama-swap listens on (default `39700`); the compat-proxy targets it. |
+| `swap.healthCheckTimeout` | Seconds llama-swap waits for a new child to answer before it fails the request (default `900`, so a cold frontier load of ~90-120 s fits). |
+| `swap.routerEngine` | `"matrix"` (evict-cost policy, chosen on brys) or `"group"` (one group per router). |
 | `swap.persistentModels` | Model ids llama-swap must never evict for another model. |
-| `swap.vulkanDeviceSelect` | Value of `MESA_VK_DEVICE_SELECT` for the llama-swap unit (replaces the router-mode pin on `llama-cpp`). |
 | `swap.packageOverrides` | Per-model llama.cpp build, so one child can differ from `kdn.llm.local.package`. |
+| `swap.vulkanDeviceSelect` | Value of `MESA_VK_DEVICE_SELECT` for the llama-swap unit (replaces the router-mode pin on `llama-cpp`). |
 
-### Matrix routing
+### Matrix routing on brys
 
 With `swap.routerEngine = "matrix"` brys sets two persistent models,
-`deepseek-v4-flash` (the frontier) and `qwen3.8-flash-next` (the grunt). The
-frontier models swap among themselves within the `main` set; each extra router
-gets a set that lets its grunt run **alongside** a frontier model. A persistent
-model carries a high evict cost (1000), so a grunt request evicts the other
-grunt, never the frontier.
+`deepseek-v4-flash` and `qwen3.8-flash-next`. The engine gives each model an
+`evict_costs` entry — **1000** for a persistent (frontier) model, **1** for a
+grunt — and groups models into `sets`. A request for a model evicts every
+running model that is **not** in the same set, and a set that keeps a frontier
+beats one that drops it. The rendered sets are:
 
-Only brys's swapping entries (`llms-frontier`, the Qwen/grunt builds) use swap
-mode. `llm-ds4` and `llm-small` still use router mode (per-router
+```
+main        = (deepseek-v4-flash | qwen3.8-flash-next)   # frontier models swap among themselves
+with_grunt  = (qwen3.5-4b) & (deepseek-v4-flash | qwen3.8-flash-next)
+```
+
+So the two frontier models swap among themselves (`main` holds them with `|`),
+while the GPU grunt (`qwen3.5-4b`) runs **alongside** a frontier model
+(`with_grunt` ANDs it with the frontier set) and never evicts it: a grunt
+request evicts the other grunt, not the frontier.
+
+Only brys's swapping entries use swap mode: the main `brys` profile
+(`hosts/brys/default.nix`), `llms-frontier` and `llm-qwen` all set
+`withSwap = true`. `llm-ds4` and `llm-small` still use router mode (per-router
 `llama-server` units), so their output stays unchanged.
+
+### `--load-mode` (v0.6.0 build)
+
+The v0.6.0 build dropped `--mmap`/`--no-mmap`; it accepts only `--load-mode`.
+The swap `cmd` therefore emits `--load-mode mmap|none` (the router-mode INI key
+`mmap = on|off` maps onto that), and a model that sets `perf.loadMode` uses that
+value directly. See "The MTP builds dropped `--mmap`" in
+[Qwen3.8-Flash-Next on brys](#qwen38-flash-next-on-brys-2026-10-06).
+
+### Hot reload
+
+llama-swap's config watch (`-watch-config`, a 2 s `os.Stat` poll; also `SIGHUP`)
+is **stop-the-world**: it stops every upstream child, cuts in-flight requests
+and fails queued ones (llama-swap issue #1202). The mitigation is to **never
+reload in place**: run with `-watch-config=false`, regenerate the config at
+activation, and keep the hitless route layer (Caddy/proxy) in front. The full
+survey is [router-hot-reload.research.md](tasks/2026-10/brys-grunt-colocation/router-hot-reload.research.md);
+the migration is [llama-swap-migration.design.md](tasks/2026-10/brys-grunt-colocation/llama-swap-migration.design.md).
 
 ## N-router topology and routing
 
@@ -551,6 +584,27 @@ plus the rebased PR #29738 (session-keyed save/restore).
 
 See [llm-session-cache-persistence](tasks/2026-10/llm-session-cache-persistence/)
 for the full record.
+
+### Model auto-discovery (client)
+
+`kdn.llm.client.upstreams.<name>.discovery.enable = true` stops the aspect from
+writing a hand-listed `models` block into the opencode provider. Instead the
+aspect writes a local pinned plugin (`.opencode/plugins/kdn-models-discovery.ts`)
+that runs the opencode `config` hook, fetches `<baseURL>/models` (the
+OpenAI-compatible model list; `discovery.url` overrides the path) and merges
+every discovered id into `provider.<name>.models`. A discovered id that is not
+hand-listed gets a minimal entry (its id as the name); a hand-listed id keeps its
+entry, so the configured `models` become a per-model **metadata overlay**
+(context, output, reasoning, options, variants) applied on top of the discovered
+list. A fetch failure leaves the static overlay in place, so the shell still
+works offline.
+
+The plugin is a local `.ts` file written into `.opencode/plugins/`, so it is
+**pinned by this repo's commit** — no npm fetch, no `@latest`, no network at
+startup for the plugin itself. A local plugin is needed because opencode 1.19.0
+(the nixpkgs pin) has no native `/v1/models` discovery; that lives on the
+unmerged 2.0 line. The `config` hook (`@opencode-ai/plugin`) is the verified
+extension point. See [the `llm-client` aspect](../modules/den/aspects/llm-client.nix).
 
 ### Secrets
 
