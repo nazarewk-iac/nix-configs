@@ -247,8 +247,12 @@ in
     # The aspect writes the wrapper environment entry from this file, so no manual
     # `kdn.opencode.wrapper.envFiles` line is needed.
     apiKeyFile = "/run/configs/llms/llama-server/api-keys/default";
+    # With discovery on, the model id list now comes from the server's `/v1/models`;
+    # the `models` block below stays as the per-model metadata overlay.
+    discovery.enable = true;
     # The DS4 and Qwen tiers (generated above) plus the `frontier` alias and the small
-    # models.
+    # models. These supply context/output and the thinking options/variants as the
+    # discovery overlay; the id list itself comes from the server.
     models =
       ds4Models
       // qwenModels
