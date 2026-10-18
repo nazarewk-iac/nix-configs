@@ -14,6 +14,9 @@ Reference docs: [the den `llm` aspect](../modules/den/aspects/llm.nix). The
 universal `modules/slots/llm` server slot was removed once brys moved to the
 aspect; the `client` and `proxy` subslots stay for now.
 
+> See [llama-swap mode](#llama-swap-mode) for the alternative lifecycle owner
+> that replaces the per-router `llama-server` units.
+
 ## Concept
 
 `kdn.llm.local` runs one or more llama-server processes (from llama.cpp) in
@@ -35,7 +38,53 @@ LAN client ──HTTPS──▶ Caddy (:80/:443) ──▶ compat-proxy (:9530) 
                                                                   └─▶ ... any further `routers.<name>` ...
 ```
 
-### N-router topology and routing
+## llama-swap mode
+
+`kdn.llm.local.swap.enable = true` replaces every per-router `llama-server`
+unit with one [llama-swap](https://github.com/mostlygeek/llama-swap) process.
+llama-swap owns every model child: it starts a `llama-server` per model on
+demand, answers to every model id and alias itself, and evicts a running child
+when a queued request needs its slot. The topology becomes:
+
+```
+LAN client ──HTTPS──▶ Caddy (:80/:443) ──▶ compat-proxy (:9530) ──▶ llama-swap (:39704, /v1/models)
+                                                                        └─▶ child llama-server (one per model, on demand)
+```
+
+The compat-proxy no longer fans out to per-router upstreams: it points its
+`UPSTREAM_URL` at the llama-swap port, and llama-swap answers to every id, so no
+`ROUTER_<NAME>_*` table appears. The child `llama-server` processes inherit the
+llama-swap unit's systemd namespace. To validate a bearer key they read a
+`--api-key-file` that llama-swap's own `preStart` assembles into its cache
+directory (`/var/cache/llama-swap/api-keys`), because the router path's
+`llama-cpp.preStart` no longer runs.
+
+The swap-mode options (all inert until `swap.enable` is set):
+
+| Option | Meaning |
+|---|---|
+| `swap.enable` | Turn llama-swap into the single model-lifecycle owner. |
+| `swap.port` | Loopback port llama-swap listens on; the compat-proxy targets it. |
+| `swap.healthCheckTimeout` | Seconds llama-swap waits for a new child to answer before it fails the request. |
+| `swap.routerEngine` | `"matrix"` (evict-cost policy) or `"group"` (one group per router). |
+| `swap.persistentModels` | Model ids llama-swap must never evict for another model. |
+| `swap.vulkanDeviceSelect` | Value of `MESA_VK_DEVICE_SELECT` for the llama-swap unit (replaces the router-mode pin on `llama-cpp`). |
+| `swap.packageOverrides` | Per-model llama.cpp build, so one child can differ from `kdn.llm.local.package`. |
+
+### Matrix routing
+
+With `swap.routerEngine = "matrix"` brys sets two persistent models,
+`deepseek-v4-flash` (the frontier) and `qwen3.8-flash-next` (the grunt). The
+frontier models swap among themselves within the `main` set; each extra router
+gets a set that lets its grunt run **alongside** a frontier model. A persistent
+model carries a high evict cost (1000), so a grunt request evicts the other
+grunt, never the frontier.
+
+Only brys's swapping entries (`llms-frontier`, the Qwen/grunt builds) use swap
+mode. `llm-ds4` and `llm-small` still use router mode (per-router
+`llama-server` units), so their output stays unchanged.
+
+## N-router topology and routing
 
 The compat-proxy maps each request's `model` (a name or an alias) through its
 `ROUTE` table to the owning router's base URL; anything unrouted (including
