@@ -122,6 +122,12 @@
   qwenNoKvOffload ? false,
   qwenDraftNGpuLayers ? null,
   qwenDevice ? null,
+  # `withSwap` turns on the llama-swap lifecycle engine on the matrix routing policy: one process
+  # owns every model child, the frontier models swap among themselves, and the grunt runs alongside
+  # a frontier model. It sets `kdn.llm.local.swap` (see the slot below). Enable it only where the
+  # grunt / Qwen sessions build is present, because the matrix sets name the grunt and frontier
+  # routers. The default is false, so the DS4 and small entries keep router mode byte-identical.
+  withSwap ? false,
 }:
 let
   # The small-model router sets, split out so a frontier-only host never pulls
@@ -477,6 +483,17 @@ in
     }
     // lib.optionalAttrs withGrunt {
       routers.grunt = grunt.kdn.llm.local.routers.grunt;
+    }
+    // lib.optionalAttrs withSwap {
+      swap = {
+        enable = true;
+        routerEngine = "matrix";
+        persistentModels = [
+          "deepseek-v4-flash"
+          "qwen3.8-flash-next"
+        ];
+        vulkanDeviceSelect = "1002:73e3!";
+      };
     };
   };
 
