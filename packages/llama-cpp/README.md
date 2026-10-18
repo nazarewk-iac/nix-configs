@@ -15,6 +15,7 @@ This directory holds llama.cpp builds from source, for the Qwen3.8-Flash-Next
 | `llama-cpp-unsloth-mtp` | `danielhanchen/llama.cpp`, branch `qwen4exp/mtp` | 0.4.1 | 11098 | `6fcaa16` | CPU |
 | `llama-cpp-sessions` | `nazarewk-iac/llama.cpp`, branch `main` (master + #26004 + rebased #29738) | 0.6.0-unstable-2026-10-09 | 11539 | `6beadd4d6` | CPU |
 | `llama-cpp-sessions-vulkan` | the same fork source | 0.6.0-unstable-2026-10-09 | 11539 | `6beadd4d6` | CPU + Vulkan |
+| `llama-cpp-sessions-vulkan-noblas` | the same fork source | 0.6.0-unstable-2026-10-09 | 11539 | `6beadd4d6` | CPU + Vulkan, no BLAS |
 
 The `master` rows are experiments, not served builds. The `master-vulkan` and
 `master-noprefetch-vulkan` rows test whether a

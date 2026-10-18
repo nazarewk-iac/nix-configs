@@ -255,6 +255,22 @@ in
     }
   );
 
+  # The same fork source (session cache) with the Vulkan backend AND the BLAS
+  # backend off. This is the build that carries both the session cache
+  # (#26004 + rebased #29738) and the Vulkan offload at once, so the GPU grunt
+  # and the Qwen session cache can coexist in one process. Matches the
+  # `llama-cpp-v0_6_0-vulkan-noblas` flags (`GGML_BLAS=false`, no OpenBLAS
+  # input): the BLAS backend stalls fresh prompts on brys (see the `blas`
+  # note in `mkLlamaCpp` and README.md).
+  llama-cpp-sessions-vulkan-noblas = mkLlamaCpp (
+    sessions
+    // {
+      pname = "llama-cpp-sessions-vulkan-noblas";
+      vulkan = true;
+      blas = false;
+    }
+  );
+
   # The same master source with the open upstream PR #29250 applied. That PR
   # adds `llama_model_params.mmap_prefetch` and the `--no-mmap-prefetch` CLI
   # flag, so mmap stays on (unlike `--load-mode none`) while the blocking

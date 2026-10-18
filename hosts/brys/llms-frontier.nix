@@ -35,12 +35,23 @@ let
     withFrontier = true;
     withQwen = true;
     withSmall = false;
+    # Colocate the fast GPU grunt beside the two frontier models: `routers.grunt`
+    # (:39705) serves Qwen3.5-4B on the W6600, so a `grunt` request never evicts
+    # whichever frontier model is resident on the primary router. This also
+    # promotes `llm.gpu` (merged as `extraConfig` below) and selects the Vulkan
+    # llama.cpp build. See docs/tasks/2026-10/brys-grunt-colocation/.
+    withGrunt = true;
     qwenContextSize = 1048576;
     qwenGpu = true;
     qwenVulkan = false;
     # The fork build with #26004 checkpoint persistence + the rebased #29738
     # session-keyed save/restore (packages/llama-cpp `sessions`). It replaces
     # the plain v0.6.0 build for both models on this router.
+    #
+    # NOTE: `withGrunt = true` above overrides this with the Vulkan no-BLAS
+    # build, because the GPU grunt needs Vulkan and the aspect carries ONE
+    # `llamaPackage` for every router. The session-cache features therefore have
+    # no effect while the grunt is colocated. See the trade-off note in ./llm.nix.
     llamaPackage = pkgs.kdn.llama-cpp-sessions;
     # MTP speculative decode is OFF. The implementation stays (the `qwenMtp`,
     # `qwenSpecDraftNMax`/`PMin`/`Prio` options and the draft model entry in

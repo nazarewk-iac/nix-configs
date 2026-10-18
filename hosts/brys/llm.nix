@@ -59,6 +59,14 @@
   withFrontier ? true,
   withSmall ? false,
   withQwen ? false,
+  # `withGrunt` wires the GPU grunt set (`routers.grunt`, :39705) and its models
+  # (default false). It is the fast small co-tenant for the Qwen orchestrator,
+  # served on its OWN router so a grunt request never evicts the orchestrator.
+  # When true it also promotes the W6600 runtime config below and switches the
+  # `llamaPackage` default to the Vulkan build (see the package note). The
+  # Qwen-serving entries set it true; the DS4 and small entries leave it false,
+  # so their output stays byte-identical.
+  withGrunt ? false,
   # `qwenGpu` selects the v0.6.0 llama.cpp build, the one that carries the
   # `qwen4exp` MTP graph the Qwen-serving specialisations need for MTP. It does
   # NOT by itself touch the GPU.
@@ -116,9 +124,12 @@
   qwenDevice ? null,
 }:
 let
-  # The small-model router set, split out so a frontier-only host never pulls it
-  # in. See hosts/brys/llm-routers.nix.
-  small = import ./llm-routers.nix;
+  # The small-model router sets, split out so a frontier-only host never pulls
+  # them in. `small` is the CPU set (:39704); `grunt` is the GPU set (:39705)
+  # colocated with the Qwen orchestrator. See hosts/brys/llm-routers.nix.
+  routers = import ./llm-routers.nix;
+  small = routers.small;
+  grunt = routers.grunt;
 
   # The DS4 client context tiers (hosts/oams/devenv.nix). Every tier id and its
   # `-think` variant must be a server alias of `deepseek-v4-flash`: the
@@ -177,8 +188,23 @@ let
   # The stall is specific to small prompts; 2K prefill is 1.6x and 16K 1.2x
   # faster without BLAS, and 300-token decode is ~30% faster. See
   # packages/llama-cpp/README.md and docs/local-llms.md.
+  #
+  # When `withGrunt` is set the host serves a GPU grunt beside Qwen, so it needs
+  # a build with BOTH the Vulkan backend (for the W6600) AND the session-cache
+  # patches (llama.cpp PR #26004 checkpoint persistence + the rebased #29738
+  # session-keyed save/restore) that the Qwen entries rely on. One build serves
+  # the whole aspect, so the combined `pkgs.kdn.llama-cpp-sessions-vulkan-noblas`
+  # is selected: it is built from the same fork source as `llama-cpp-sessions`
+  # and adds `vulkan = true; blas = false;`. This removes the earlier trade-off
+  # where a GPU grunt dropped Qwen's session cache. `withGrunt` takes precedence
+  # over an explicit `llamaPackage` so the combined build is used on every
+  # colocated entry; `llama-cpp-sessions-vulkan-noblas` is a superset of both
+  # `llama-cpp-sessions` (session cache) and `llama-cpp-v0_6_0-vulkan-noblas`
+  # (Vulkan, no BLAS).
   llamaPackage' =
-    if llamaPackage != null then
+    if withGrunt then
+      pkgs.kdn.llama-cpp-sessions-vulkan-noblas
+    else if llamaPackage != null then
       llamaPackage
     else if qwenVulkan then
       pkgs.kdn.llama-cpp-v0_6_0-vulkan-noblas
@@ -438,22 +464,33 @@ in
       };
 
       # Router and model definitions. The small set is included only for a
-      # small-only host; a frontier host keeps DS4 alone on the box.
-      models = (lib.optionalAttrs withSmall small.kdn.llm.local.models) // frontierModels // qwenModels;
+      # small-only host; a frontier host keeps DS4 alone on the box. The grunt
+      # set is included only for a GPU-grunt host (the Qwen-serving entries).
+      models =
+        (lib.optionalAttrs withSmall small.kdn.llm.local.models)
+        // (lib.optionalAttrs withGrunt grunt.kdn.llm.local.models)
+        // frontierModels
+        // qwenModels;
     }
     // lib.optionalAttrs withSmall {
       routers.small = small.kdn.llm.local.routers.small;
+    }
+    // lib.optionalAttrs withGrunt {
+      routers.grunt = grunt.kdn.llm.local.routers.grunt;
     };
   };
 
-  # Runtime graphics/ICD config for the W6600 Vulkan path, exported only when
-  # `qwenVulkan` is set (off on brys: the W6600 hard-hangs). A Qwen-serving
-  # specialisation merges this into its NixOS config (see hosts/brys/llm-qwen.nix,
-  # hosts/brys/llms-frontier.nix): expose the Mesa RADV Vulkan ICD to the loader
-  # and pin the llama-cpp process tree to the W6600 (`1002:73e3`) so the 4 GB
-  # Lexa (`Vulkan1`) is never selected. The `device = Vulkan0` preset key is the
-  # in-process belt to this env-var suspenders.
-  gpu = lib.optionalAttrs qwenVulkan {
+  # Runtime graphics/ICD config for the W6600 Vulkan path, exported when
+  # `qwenVulkan` OR `withGrunt` is set. `qwenVulkan` alone is off on brys (the
+  # W6600 hard-hangs under Qwen's MTP draft workload); `withGrunt` turns the same
+  # block on so a GPU grunt can reach the W6600 without enabling Qwen's MTP draft
+  # head. A Qwen-serving specialisation merges this into its NixOS config (see
+  # hosts/brys/llm-qwen.nix, hosts/brys/llms-frontier.nix, hosts/brys/default.nix):
+  # expose the Mesa RADV Vulkan ICD to the loader and pin the llama-cpp process
+  # tree to the W6600 (`1002:73e3`) so the 4 GB Lexa (`Vulkan1`) is never
+  # selected. The `device = Vulkan0` preset key is the in-process belt to this
+  # env-var suspenders.
+  gpu = lib.optionalAttrs (qwenVulkan || withGrunt) {
     hardware.graphics.enable = true;
     hardware.graphics.extraPackages = [ pkgs.mesa ];
     systemd.services.llama-cpp.environment.MESA_VK_DEVICE_SELECT = "1002:73e3!";

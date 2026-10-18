@@ -26,6 +26,10 @@ let
     withFrontier = true;
     withSmall = false;
     withQwen = true;
+    # Colocate the fast GPU grunt beside the orchestrator: `routers.grunt`
+    # (:39705) serves Qwen3.5-4B on the W6600, so a `grunt` request never
+    # evicts Qwen. See docs/tasks/2026-10/brys-grunt-colocation/.
+    withGrunt = true;
     qwenContextSize = 1048576;
     qwenGpu = true;
     qwenVulkan = false;
@@ -97,6 +101,11 @@ in
     {
       home-manager.sharedModules = [ slots.config.home ];
     }
+    # The W6600 Vulkan runtime config for the GPU grunt (`hardware.graphics`,
+    # `mesa`, and `MESA_VK_DEVICE_SELECT`), owned by ./llm.nix (`llm.gpu`) so the
+    # main profile and the Qwen specialisations cannot drift. Empty unless
+    # `withGrunt`/`qwenVulkan` is set.
+    llm.gpu
     {
       kdn.hostName = "brys";
 
