@@ -463,6 +463,27 @@
         n: _: if lib.elem n cfg.swap.persistentModels then 1000 else 1
       ) enabledModels;
 
+      # The `matrix` sets: on a request for a model, llama-swap evicts every running model that is
+      # not in the same set. The frontier models may not co-run, so one set groups them with `|`;
+      # each extra router gets a set that lets it run ALONGSIDE a frontier model
+      # (`<grunt> & (<frontier>)`). The frontier expression runs the frontier models alone (they
+      # swap among themselves). A router with no enabled model is skipped.
+      routerIds = routerName: builtins.attrNames (routerModels routerName);
+      setExpr = ids: "(" + lib.concatStringsSep " | " ids + ")";
+      frontierIds = routerIds "main";
+      matrixSets =
+        (lib.optionalAttrs (frontierIds != [ ]) { main = setExpr frontierIds; })
+        // lib.mapAttrs' (
+          rname: _:
+          let
+            gruntIds = routerIds rname;
+          in
+          lib.optionalAttrs (gruntIds != [ ]) {
+            name = "with_${rname}";
+            value = setExpr gruntIds + " & " + setExpr frontierIds;
+          }
+        ) enabledRouters;
+
       # The llama-swap `config.yaml` settings, rendered from the existing model data. The nixpkgs
       # `services.llama-swap` module writes it through `pkgs.formats.yaml`.
       swapConfig = {
@@ -477,7 +498,10 @@
           if cfg.swap.routerEngine == "matrix" then
             {
               use = "matrix";
-              settings.matrix.evict_costs = swapEvictCosts;
+              settings.matrix = {
+                evict_costs = swapEvictCosts;
+                sets = matrixSets;
+              };
             }
           else
             {
@@ -1348,6 +1372,18 @@
         '';
       };
 
+      options.kdn.llm.local.swap.vulkanDeviceSelect = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = ''
+          Value of `MESA_VK_DEVICE_SELECT` for the llama-swap unit, or null to leave it unset. When
+          set, it pins every child llama-server that llama-swap starts to the named Vulkan device
+          (for example `1002:73e3!` for the W6600). This is the swap-mode equivalent of the option
+          the router mode sets on `llama-cpp`: under swap that unit is disabled, so the pin must sit
+          on the llama-swap unit instead. The default is null, so the output is unchanged.
+        '';
+      };
+
       options.kdn.llm.local.swap.packageOverrides = lib.mkOption {
         type = lib.types.attrsOf lib.types.package;
         default = { };
@@ -1623,6 +1659,27 @@
         # hardening, the download unit and the session store remain.
         systemd.services = lib.mkMerge [
           (lib.mkIf (!cfg.swap.enable) routerUnits)
+          (lib.mkIf cfg.swap.enable {
+            # The nixpkgs module runs llama-swap under `ProtectSystem = "strict"` with a DynamicUser,
+            # so the sandbox must be told which host paths the children may read and write. The
+            # children (`llama-server`) inherit this unit's namespace: they read the model GGUFs and
+            # write the session store. `PrivateUsers` is turned off so the supplementary session
+            # group can reach a host directory that the DynamicUser does not own.
+            llama-swap.serviceConfig = {
+              PrivateUsers = lib.mkForce false;
+              ReadOnlyPaths = [ cfg.modelsDir ];
+              ReadWritePaths =
+                [ cfg.modelsDir ]
+                ++ lib.optionals (cfg.sessionStore != null) [ cfg.sessionStore.path ];
+              LimitMEMLOCK = "infinity";
+            }
+            // lib.optionalAttrs (cfg.sessionStore != null) {
+              SupplementaryGroups = [ cfg.sessionStore.group ];
+            };
+          })
+          (lib.mkIf (cfg.swap.enable && cfg.swap.vulkanDeviceSelect != null) {
+            llama-swap.environment.MESA_VK_DEVICE_SELECT = cfg.swap.vulkanDeviceSelect;
+          })
           {
             # The router runs as a DynamicUser, and it must read the models and write the session
             # store when one is configured.
