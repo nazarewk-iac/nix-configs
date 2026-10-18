@@ -166,3 +166,13 @@ Ollama `keep_alive`/`OLLAMA_MAX_LOADED_MODELS` (docs.ollama.com). LiteLLM routin
 **`[I]`:** llama-swap NixOS derivation effort (Go + UI build); that matrix/groups do not
 read measured bytes (schema lists no memory field); the exact shell gate and cgroup
 sizing numbers for brys.
+
+## Hot reload of protocol (2026-10-18)
+
+The requirement that the router accept config changes — add, remove or edit model
+definitions and routes — with **zero dropped in-flight requests** and ideally **zero
+model eviction** is surveyed separately in
+[router-hot-reload.research.md](router-hot-reload.research.md). It records that
+llama-swap's config watch reloads stop-the-world, that `llama-server` router mode
+reloads one preset hitlessly via `GET /models?reload=1`, that the generic proxies
+reload hitlessly but own no models, and the smallest zero-drop artefact.
