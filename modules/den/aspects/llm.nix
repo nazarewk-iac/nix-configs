@@ -266,6 +266,227 @@
           )
         );
 
+      # The llama.cpp build that serves one model. `swap.packageOverrides` names a per-model binary,
+      # so a child can run a different build than `cfg.package` (the design's fix for the
+      # one-package constraint). Every other model uses `cfg.package`.
+      modelPackage = name: cfg.swap.packageOverrides.${name} or cfg.package;
+
+      # The full `llama-server` argv of one model, as a word list. It is the same field set that
+      # `presetSection` writes as INI keys, now as CLI flags for llama-swap's `cmd`. The port is the
+      # literal llama-swap macro `''${PORT}`, not a Nix value. The `alias` line moves out: llama-swap
+      # owns aliases through the per-model `aliases:` list (see `swapModel`).
+      swapFlags =
+        name:
+        let
+          m = cfg.models.${name};
+          perf = m.perf;
+          threads = if perf.threads != null then perf.threads else cfg.defaultThreads;
+        in
+        [
+          "--model"
+          (modelFile name)
+        ]
+        ++ lib.optionals m.mmproj.enable [
+          "--mmproj"
+          (mmprojFile name)
+        ]
+        ++ lib.optionals (threads != null) [
+          "--threads"
+          (toString threads)
+        ]
+        ++ [
+          "--flash-attn"
+          perf.flashAttention
+        ]
+        ++ lib.optionals (perf.cpuRange != null) [
+          "--cpu-range"
+          perf.cpuRange
+          "--cpu-strict"
+          (if perf.cpuStrict then "1" else "0")
+        ]
+        ++ lib.optionals (perf.loadMode != null) [
+          "--load-mode"
+          perf.loadMode
+        ]
+        ++ lib.optionals (perf.contextSize != null) [
+          "--ctx-size"
+          (toString perf.contextSize)
+        ]
+        ++ lib.optionals (perf.ropeScaling != null) [
+          "--rope-scaling"
+          perf.ropeScaling
+        ]
+        ++ lib.optionals (perf.ropeScale != null) [
+          "--rope-scale"
+          (toString perf.ropeScale)
+        ]
+        ++ lib.optionals (perf.ropeFreqBase != null) [
+          "--rope-freq-base"
+          (toString perf.ropeFreqBase)
+        ]
+        ++ lib.optionals (perf.yarnOrigCtx != null) [
+          "--yarn-orig-ctx"
+          (toString perf.yarnOrigCtx)
+        ]
+        ++ lib.optionals (perf.cacheTypeK != null) [
+          "--cache-type-k"
+          perf.cacheTypeK
+        ]
+        ++ lib.optionals (perf.cacheTypeV != null) [
+          "--cache-type-v"
+          perf.cacheTypeV
+        ]
+        ++ lib.optionals (perf.cacheRam != null) [
+          "--cache-ram"
+          (toString perf.cacheRam)
+        ]
+        ++ lib.optionals (perf.ctxCheckpoints != null) [
+          "--ctx-checkpoints"
+          (toString perf.ctxCheckpoints)
+        ]
+        ++ lib.optionals (perf.checkpointMinStep != null) [
+          "--checkpoint-min-step"
+          (toString perf.checkpointMinStep)
+        ]
+        ++ lib.optionals (perf.sessionHeaders != null) [
+          "--slot-save-path"
+          cfg.sessionStore.path
+          "--slot-save-sessions"
+          perf.sessionHeaders
+        ]
+        ++ lib.optionals (perf.sessionMaxSessions != null) [
+          "--slot-save-sessions-max"
+          (toString perf.sessionMaxSessions)
+        ]
+        ++ lib.optionals (perf.batchSize != null) [
+          "--batch-size"
+          (toString perf.batchSize)
+        ]
+        ++ lib.optionals (perf.ubatchSize != null) [
+          "--ubatch-size"
+          (toString perf.ubatchSize)
+        ]
+        ++ lib.optionals (perf.nGpuLayers != null) [
+          "--n-gpu-layers"
+          (toString perf.nGpuLayers)
+        ]
+        ++ lib.optionals perf.cpuMoe [ "--cpu-moe" ]
+        ++ lib.optionals perf.noKvOffload [ "--no-kv-offload" ]
+        ++ lib.optionals (perf.device != null) [
+          "--device"
+          perf.device
+        ]
+        ++ lib.optionals (perf.mmap != null) [
+          (if perf.mmap then "--mmap" else "--no-mmap")
+        ]
+        ++ [
+          "--parallel"
+          (toString perf.parallel)
+        ]
+        ++ lib.optionals (perf.kvUnified != null) [
+          (if perf.kvUnified then "--kv-unified" else "--no-kv-unified")
+        ]
+        ++ [
+          "--reasoning"
+          perf.reasoning
+        ]
+        ++ lib.optionals (perf.reasoningEffort != null) [
+          "--reasoning-effort"
+          perf.reasoningEffort
+        ]
+        ++ lib.optionals m.draft.enable [
+          "--spec-type"
+          perf.specType
+          "--model-draft"
+          (draftFile name)
+        ]
+        ++ lib.optionals (m.draft.enable && perf.specDraftNMax != null) [
+          "--spec-draft-n-max"
+          (toString perf.specDraftNMax)
+        ]
+        ++ lib.optionals (m.draft.enable && perf.specDraftPMin != null) [
+          "--spec-draft-p-min"
+          (toString perf.specDraftPMin)
+        ]
+        ++ lib.optionals (m.draft.enable && perf.specDraftPrio != null) [
+          "--spec-draft-prio"
+          (toString perf.specDraftPrio)
+        ]
+        ++ lib.optionals (m.draft.enable && perf.draftNGpuLayers != null) [
+          "--n-gpu-layers-draft"
+          (toString perf.draftNGpuLayers)
+        ];
+
+      # One `models.<id>` entry: a full `llama-server` argv with the `''${PORT}` macro, the model's
+      # alias list, and, when the model overrides its package, a binary path from that build.
+      swapModel =
+        name:
+        let
+          m = cfg.models.${name};
+        in
+        {
+          name = name;
+          cmd = lib.concatStringsSep " " (
+            [
+              (lib.getExe' (modelPackage name) "llama-server")
+              "--port"
+              "\${PORT}"
+              "--host"
+              cfg.server.host
+            ]
+            ++ swapFlags name
+          );
+        }
+        // lib.optionalAttrs (m.aliases != [ ]) {
+          inherit (m) aliases;
+        };
+
+      # The `group` engine: one group per router, holding its model set. The primary router (`main`)
+      # is a group too, so the frontier models have a home. A group that holds a persistent model
+      # never evicts; `swap = false` keeps a group's members coexisting.
+      swapGroups = lib.listToAttrs (
+        map (rname: {
+          name = rname;
+          value = {
+            members = builtins.attrNames (routerModels rname);
+            persistent = lib.any (n: lib.elem n cfg.swap.persistentModels) (
+              builtins.attrNames (routerModels rname)
+            );
+            swap = false;
+          };
+        }) (lib.filter (rname: routerModels rname != { }) ([ "main" ] ++ builtins.attrNames enabledRouters))
+      );
+
+      # The `matrix` engine: one `evict_costs` entry per model. A persistent model costs a lot to
+      # evict, so a grunt request evicts the other grunt, never the frontier.
+      swapEvictCosts = lib.mapAttrs (
+        n: _: if lib.elem n cfg.swap.persistentModels then 1000 else 1
+      ) enabledModels;
+
+      # The llama-swap `config.yaml` settings, rendered from the existing model data. The nixpkgs
+      # `services.llama-swap` module writes it through `pkgs.formats.yaml`.
+      swapConfig = {
+        healthCheckTimeout = cfg.swap.healthCheckTimeout;
+        logLevel = "info";
+        includeAliasesInList = true;
+        startPort = 10001;
+        # Never auto-unload: the child stays warm until a swap needs its slot.
+        globalTTL = 0;
+        unloadTimeout = 30;
+        routing.router =
+          if cfg.swap.routerEngine == "matrix" then
+            {
+              use = "matrix";
+              settings.matrix.evict_costs = swapEvictCosts;
+            }
+          else
+            {
+              use = "group";
+              settings.groups = swapGroups;
+            };
+        models = lib.mapAttrs (name: _: swapModel name) enabledModels;
+      };
+
       # Every enabled extra router. `"main"` stays on `services.llama-cpp`.
       enabledRouters = lib.filterAttrs (name: _: name != "main") (
         lib.filterAttrs (_: r: r.enable) cfg.routers
@@ -1066,6 +1287,78 @@
         description = "The llama.cpp package that supplies `llama-server`.";
       };
 
+      # llama-swap as an alternative model-lifecycle owner. All of it is inert while `enable` is
+      # false: the aspect keeps the per-router `services.llama-cpp` units and the compat proxy
+      # points at the primary router, exactly as before. See
+      # docs/tasks/2026-10/brys-grunt-colocation/llama-swap-migration.design.md.
+      options.kdn.llm.local.swap.enable = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = ''
+          Enable llama-swap as the single model-lifecycle owner. When set, llama-swap replaces the
+          per-router `llama-server` units, the compat proxy points at `swap.port`, and this aspect
+          renders one llama-swap `config.yaml` from the model data.
+
+          The default is disabled, so inclusion alone keeps today's router-mode behaviour and the
+          output is unchanged.
+        '';
+      };
+
+      options.kdn.llm.local.swap.port = lib.mkOption {
+        type = lib.types.port;
+        default = 39700;
+        description = ''
+          Loopback port llama-swap listens on. The compat proxy targets it when `swap.enable` is
+          set. The default is a free port beside the router ports.
+        '';
+      };
+
+      options.kdn.llm.local.swap.healthCheckTimeout = lib.mkOption {
+        type = lib.types.int;
+        default = 900;
+        description = ''
+          Seconds llama-swap waits for a freshly started child to answer its health check before it
+          gives up. A cold frontier load takes minutes, so the default keeps generous headroom (the
+          routing research measured about 90-120 s for a frontier swap).
+        '';
+      };
+
+      options.kdn.llm.local.swap.routerEngine = lib.mkOption {
+        type = lib.types.enum [
+          "group"
+          "matrix"
+        ];
+        default = "group";
+        description = ''
+          Routing policy llama-swap uses to decide which child to evict. `"group"` renders one group
+          per router, and the persistent set never evicts; `"matrix"` renders `evict_costs` with the
+          persistent models set high. Both express the same never-evict rule; `"group"` is the
+          smaller config.
+        '';
+      };
+
+      options.kdn.llm.local.swap.persistentModels = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        description = ''
+          Model ids that llama-swap must never evict for another model (the frontier and
+          orchestrator set). The generator marks them persistent in the `"group"` engine, or gives
+          them a high `evict_costs` in the `"matrix"` engine. An empty list evicts by plain idle
+          order.
+        '';
+      };
+
+      options.kdn.llm.local.swap.packageOverrides = lib.mkOption {
+        type = lib.types.attrsOf lib.types.package;
+        default = { };
+        description = ''
+          Per-model `llama-server` binary override, keyed by model name. It lets one child run a
+          different llama.cpp build than `kdn.llm.local.package` (for example a session-cache build
+          for one model and a Vulkan build for another). A model with no entry uses
+          `kdn.llm.local.package`.
+        '';
+      };
+
       # The disk-backed session store for the session-keyed automatic save/restore
       # (`perf.sessionHeaders`) and the context-checkpoint appendix. `null` keeps the feature off.
       options.kdn.llm.local.sessionStore = lib.mkOption {
@@ -1294,7 +1587,8 @@
         # The primary router: one process, an on-demand model load, exactly one resident model. The
         # nixpkgs module maps `settings.*` onto the flags.
         services.llama-cpp = {
-          enable = true;
+          # When llama-swap owns the children, the router units do not start.
+          enable = !cfg.swap.enable;
           inherit (cfg) package;
           settings = {
             host = cfg.server.host;
@@ -1312,11 +1606,23 @@
           openFirewall = false;
         };
 
+        # One llama-swap process that owns every model child and answers to every model id and
+        # alias. It appears only when `swap.enable` is set; the nixpkgs module writes the
+        # `config.yaml` from `settings` and hardens the unit. The compat proxy points at its port.
+        services.llama-swap = lib.mkIf cfg.swap.enable {
+          enable = true;
+          listenAddress = cfg.server.host;
+          port = cfg.swap.port;
+          settings = swapConfig;
+          openFirewall = false;
+        };
+
         # One raw unit per extra router, each with its own preset INI, port and key file. Everything
         # folds into one `systemd.services` merge, so the partial definitions below coexist with no
-        # whole-namespace clash.
+        # whole-namespace clash. With `swap.enable` the router set is empty, so only the shared
+        # hardening, the download unit and the session store remain.
         systemd.services = lib.mkMerge [
-          routerUnits
+          (lib.mkIf (!cfg.swap.enable) routerUnits)
           {
             # The router runs as a DynamicUser, and it must read the models and write the session
             # store when one is configured.
@@ -1351,14 +1657,17 @@
               after = [ "network-online.target" ];
               wants = [ "network-online.target" ];
 
-              environment = routerProxyEnv // {
-                UPSTREAM_URL = "http://127.0.0.1:${toString cfg.server.port}";
+              environment = (lib.optionalAttrs (!cfg.swap.enable) routerProxyEnv) // {
+                UPSTREAM_URL = "http://127.0.0.1:${
+                  toString (if cfg.swap.enable then cfg.swap.port else cfg.server.port)
+                }";
                 PROXY_HOST = "127.0.0.1";
                 PROXY_PORT = toString cfg.compatProxy.port;
                 # The proxy reads `ROUTER_<NAME>_URL` and answers to every model id in
                 # `ROUTER_<NAME>_MODELS` on that upstream. Anything else falls back to
                 # `UPSTREAM_URL`. With no extra router, neither key appears and the behaviour is the
-                # original single-router one.
+                # original single-router one. With `swap.enable` llama-swap answers to every id
+                # itself, so the whole `ROUTER_*` table is suppressed.
                 FORWARD_AUTHORIZATION = "true";
               };
 
