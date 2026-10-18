@@ -271,6 +271,11 @@
       # one-package constraint). Every other model uses `cfg.package`.
       modelPackage = name: cfg.swap.packageOverrides.${name} or cfg.package;
 
+      # The assembled key file for swap mode. llama-swap runs under a DynamicUser with
+      # `CacheDirectory = "llama-swap"`, so the unit can write `/var/cache/llama-swap` in its own
+      # `preStart`, and the child `llama-server` processes inherit that namespace and read it.
+      swapKeyFile = "/var/cache/llama-swap/api-keys";
+
       # The full `llama-server` argv of one model, as a word list. It is the same field set that
       # `presetSection` writes as INI keys, now as CLI flags for llama-swap's `cmd`. The port is the
       # literal llama-swap macro `''${PORT}`, not a Nix value. The `alias` line moves out: llama-swap
@@ -376,8 +381,16 @@
           "--device"
           perf.device
         ]
-        ++ lib.optionals (perf.mmap != null) [
-          (if perf.mmap then "--mmap" else "--no-mmap")
+        ++ lib.optionals (perf.loadMode != null) [
+          "--load-mode"
+          perf.loadMode
+        ]
+        ++ lib.optionals (perf.loadMode == null && perf.mmap != null) [
+          # The v0.6.0 and later builds dropped `--mmap`/`--no-mmap`; they accept only `--load-mode`.
+          # The router-mode INI key `mmap = on|off` maps onto that here. A model that needs the old
+          # flag sets `perf.loadMode` instead (then this branch is skipped).
+          "--load-mode"
+          (if perf.mmap then "mmap" else "none")
         ]
         ++ [
           "--parallel"
@@ -435,6 +448,13 @@
               cfg.server.host
             ]
             ++ swapFlags name
+            # Under swap the router's own `llama-cpp.preStart` no longer runs, so llama-swap
+            # assembles the same key file into its own cache directory (see `llama-swap.preStart`).
+            # Every child validates that bearer key with the same flag the router path uses.
+            ++ lib.optionals (cfg.apiKeyDir != null) [
+              "--api-key-file"
+              swapKeyFile
+            ]
           );
         }
         // lib.optionalAttrs (m.aliases != [ ]) {
@@ -1668,14 +1688,28 @@
             llama-swap.serviceConfig = {
               PrivateUsers = lib.mkForce false;
               ReadOnlyPaths = [ cfg.modelsDir ];
-              ReadWritePaths =
-                [ cfg.modelsDir ]
-                ++ lib.optionals (cfg.sessionStore != null) [ cfg.sessionStore.path ];
+              ReadWritePaths = [
+                cfg.modelsDir
+              ]
+              ++ lib.optionals (cfg.sessionStore != null) [ cfg.sessionStore.path ];
               LimitMEMLOCK = "infinity";
             }
             // lib.optionalAttrs (cfg.sessionStore != null) {
               SupplementaryGroups = [ cfg.sessionStore.group ];
             };
+            # Assemble the per-key files under `apiKeyDir` into one file in llama-swap's own cache
+            # directory, which its DynamicUser can write (`CacheDirectory = "llama-swap"`). It mirrors
+            # the router path's `llama-cpp.preStart`: it strips a comment line and an empty line, and
+            # it adds a trailing newline, so two keys never run together. The children read it through
+            # `--api-key-file` (see `swapModel`).
+            llama-swap.preStart = lib.mkIf (cfg.apiKeyDir != null) ''
+              : > ${swapKeyFile}
+              for f in ${cfg.apiKeyDir}/*; do
+                [ -f "$f" ] || continue
+                ${lib.getExe' pkgs.gnused "sed"} -e 's/[[:space:]]*#.*$//' -e '/^[[:space:]]*$/d' "$f" >> ${swapKeyFile}
+                printf '\n' >> ${swapKeyFile}
+              done
+            '';
           })
           (lib.mkIf (cfg.swap.enable && cfg.swap.vulkanDeviceSelect != null) {
             llama-swap.environment.MESA_VK_DEVICE_SELECT = cfg.swap.vulkanDeviceSelect;
@@ -1864,11 +1898,24 @@
           pkgs.python3Packages.huggingface-hub
           (pkgs.writeShellApplication {
             name = "kdn-llm-status";
-            runtimeInputs = [ pkgs.systemd ];
+            runtimeInputs = [
+              pkgs.systemd
+              pkgs.curl
+            ];
             text = ''
-              echo "== llama-server (router) =="
-              systemctl status llama-cpp --no-pager || true
-              echo
+              ${lib.optionalString cfg.swap.enable ''
+                echo "== llama-swap (router) =="
+                systemctl status llama-swap --no-pager || true
+                echo
+                echo "== llama-swap models =="
+                curl -fsS "http://${cfg.server.host}:${toString cfg.swap.port}/v1/models" || true
+                echo
+              ''}
+              ${lib.optionalString (!cfg.swap.enable) ''
+                echo "== llama-server (router) =="
+                systemctl status llama-cpp --no-pager || true
+                echo
+              ''}
               ${lib.optionalString cfg.compatProxy.enable ''
                 echo "== loopback compat proxy =="
                 systemctl status kdn-llm-proxy-lan --no-pager || true
