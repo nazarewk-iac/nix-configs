@@ -145,51 +145,25 @@ let
   grunt = routers.grunt;
   surveyed = routers.surveyed;
 
-  # The DS4 client context tiers (hosts/oams/devenv.nix). Every tier id and its
-  # `-think` variant must be a server alias of `deepseek-v4-flash`: the
-  # compat-proxy routes an unknown id to the frontier upstream but does not
-  # rewrite it, and llama-server then rejects the unknown id with HTTP 400. The
-  # base tier id is the model name itself, so it needs no alias. Keep this list
-  # in step with `ds4Contexts` in hosts/oams/devenv.nix.
-  ds4TierSuffixes = [
-    "256k"
-    "192k"
-    "128k"
-    "96k"
-    "64k"
-    "32k"
-    "16k"
-  ];
+  # DS4 aliases. `frontier` is the compatibility name an outside client may use
+  # for "the strong model". Thinking is selected per request
+  # (`chat_template_kwargs`), so no thinking aliases exist. There are deliberately
+  # no context-tier aliases: llama-swap cannot bound context per alias and the
+  # client discovery-only config runs each request at the model's real maximum.
   ds4Aliases = [
     "frontier"
-  ]
-  ++ map (s: "deepseek-v4-flash-${s}") ds4TierSuffixes
-  ++ map (s: "deepseek-v4-flash${s}-think") ([ "" ] ++ map (s: "-${s}") ds4TierSuffixes);
+  ];
 
-  # The Qwen context tiers. Like the DS4 tiers above, every tier id must be a
-  # real server alias of `qwen3.8-flash-next` so the compat-proxy can route an
-  # unknown tier id to the Qwen upstream without llama-server rejecting it with
-  # HTTP 400. The base model id itself is the 1M tier. Thinking is selected per
-  # request (chat_template_kwargs), not per alias, so no thinking aliases are
-  # needed.
+  # Qwen aliases. `qwen` is the short name; thinking is per request, so no
+  # thinking aliases. Like DS4, no context-tier aliases.
   #
   # `frontier` belongs to DS4 when DS4 is also served (the combined
   # llms-frontier entry); a router rejects two models claiming one alias. The
   # dedicated Qwen entry (no DS4) keeps `frontier`.
-  qwenTierSuffixes = [
-    "768k"
-    "512k"
-    "256k"
-    "128k"
-    "64k"
-    "32k"
-    "16k"
-  ];
   qwenAliases = [
     "qwen"
   ]
-  ++ lib.optional (!withFrontier) "frontier"
-  ++ map (s: "qwen3.8-flash-next-${s}") qwenTierSuffixes;
+  ++ lib.optional (!withFrontier) "frontier";
 
   # Build and offload defaults. `qwenGpu` picks the v0.6.0 build (CPU-only);
   # `qwenVulkan` swaps in the Vulkan no-BLAS variant and offloads the draft
@@ -288,8 +262,8 @@ let
     # KV RAM. A second request no longer queues behind the first request's full
     # prefill. There is deliberately no server-side per-slot cap
     # (`--kv-unified-per-slot`): the shared pool is usage-proportional, so a
-    # small request is automatically small, and the client tiers the context
-    # instead (see hosts/oams/devenv.nix).
+    # small request is automatically small and a large one reaches the full
+    # window. No context tiers are needed.
     parallel = 4;
     kvUnified = true;
   }
@@ -381,14 +355,9 @@ let
   # fetches all 4 shards (~104 GB); llama serves shard 00001. Shard 00001 is
   # legitimately small (~5 MB — the split descriptor + mmap header); llama mmaps
   # shards 02-04 for the full weights. The DSpark draft (~10.9 GB) feeds
-  # model-draft (spec-type draft-dspark).
-  #
-  # The `deepseek-v4-flash-<n>k` aliases exist so the client-side context tiers
-  # (hosts/oams/devenv.nix) are routable. The compat-proxy only falls back at
-  # the routing level; llama-server still validates the model id, so an unknown
-  # id is a 400. The tiers must therefore be real server aliases of the one DS4
-  # model. They add no KV cap and no extra memory: `--parallel 4` shares the one
-  # unified pool regardless of which alias a request names.
+  # model-draft (spec-type draft-dspark). Aliases: `frontier` (see ds4Aliases
+  # above). There are no context tiers: the client runs each request at the
+  # model's real maximum.
   frontierModels = lib.optionalAttrs withFrontier {
     deepseek-v4-flash = {
       enable = true;
@@ -409,9 +378,8 @@ let
   # (~94 GB, 3 shards) keeps the 51B n-gram embedding table inside the weight
   # shards, so the whole tree stays resident (no --lazy-mode). The first shard
   # is a ~11 MB split descriptor; llama-server mmaps shards 02-03 for the
-  # weights. Aliases: `qwen`, the context tiers (`qwen3.8-flash-next-<n>k`), and
-  # `frontier` when DS4 is not also served; see qwenAliases above. The base model
-  # id is the 1M tier.
+  # weights. Aliases: `qwen`, and `frontier` when DS4 is not also served; see
+  # qwenAliases above. There are no context tiers.
   qwenModels = lib.optionalAttrs withQwen {
     "qwen3.8-flash-next" = {
       enable = true;

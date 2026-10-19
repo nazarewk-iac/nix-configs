@@ -442,14 +442,30 @@ gets the whole machine, so it takes 320K. Both draw the rest of their config
 from the shared `hosts/brys/llm.nix` (which deliberately sets no CPU affinity —
 see "Prefill tuning" below).
 
-### Client context tiers and the thinking matrix (oams)
+### Thinking matrix and server-driven context (oams)
 
-Both brys model families are tiered **on the client side only** in
-`hosts/oams/devenv.nix`. Unified KV makes the server pool usage-proportional, so
-a small request is already cheap without any server flag; there is deliberately
-no `--kv-unified-per-slot` cap. Instead the file declares the same model at
-several practical context budgets, and one opencode subagent per (model, tier,
-thinking level).
+`hosts/oams/devenv.nix` configures **discovery only**
+(`kdn.llm.client.upstreams.brys.discovery.enable = true`). The model id list,
+each model's name, and each model's context all come from the server's
+`/v1/models`.
+
+**Server-driven context.** llama-swap renders a model's `capabilities.context`
+into the top-level `context_length` field of `/v1/models`, for every id and
+alias. The `llm` aspect emits `capabilities.context` from each model's
+`perf.contextSize` (see `modules/den/aspects/llm.nix`), and the generated
+discovery plugin (`modules/den/aspects/llm-client.nix`) reads it back and sets
+each model's `limit.context`. No per-model client config is needed, and the
+value arrives with no cold start (unlike `/props`, which starts the model to
+answer).
+
+**One context per model, at its real maximum.** llama-swap has no per-alias
+capabilities and no per-alias context, and the unified KV pool is
+usage-proportional — a request only occupies the tokens it actually sends. So a
+model cannot be bounded per client, and there is deliberately no
+`--kv-unified-per-slot` cap. Each request therefore runs at the model's real
+maximum: **DS4 at 320K, Qwen at 1M**. The former `<n>k` tier aliases are
+removed; keeping them would only have advertised a smaller window that the
+server does not enforce.
 
 **Thinking matrix.** The common levels are `off`, `low`, `medium` and `high`.
 Each level maps to that model's own `chat_template_kwargs`. Both server presets
@@ -458,15 +474,7 @@ default to `reasoning = auto` (thinking on; the template decides) with
 effort (for DS4, whose template honours only `max`, that is thinking-on at the
 template default). A client overrides both per request: opencode passes an
 agent's `options` object **verbatim** into the chat-completions body (verified
-with an echo server). The model entry also carries `reasoning = true`, which
-tells opencode to parse the thinking output.
-
-On the client the matrix is exposed as **model variants**
-(`hosts/oams/devenv.nix`): each context tier is a `brys` model and
-`off`/`low`/`medium`/`high` are its variants. The model's default is `low`, so
-the tier alone thinks at low effort; in the TUI pick the tier as the model and
-cycle the variant (the `variant_cycle` keybind) for another level. The same
-matrix is also one opencode subagent per (tier, level), for task delegation.
+with an echo server).
 
 | level | DS4 `deepseek-v4-flash` | Qwen `qwen3.8-flash-next` |
 |---|---|---|
@@ -479,36 +487,24 @@ DS4's template honours only `reasoning_effort = "max"`, so its `low` and
 `medium` are equivalent thinking-on. Qwen's template accepts `xhigh`, `medium`
 and `low` (there is no `none`), so `high` maps to `xhigh`.
 
-**Agent naming scheme.** One subagent per (model, tier, level), named
-`<prefix>-<tier>-<level>`, for example `ds4-320k-off`, `ds4-128k-high`,
-`qwen-1m-off`, `qwen-256k-medium`. The prefix is `ds4` or `qwen`; every agent is
-`mode = "subagent"` and names `brys/<tier-id>`. The tier is the DS4 label
-(`320k`, `256k`, … `16k`) or the Qwen label (`1m`, `256k`, … `16k`).
+**Agent naming scheme.** One subagent per (model, thinking level), named
+`<prefix>-<level>`, for example `ds4-off`, `ds4-high`, `qwen-off`,
+`qwen-high`. The prefix is `ds4` or `qwen`; every agent is `mode = "subagent"`
+and names `brys/<base-model-id>`. There are no tier agents: every request runs
+at the model's maximum context (see above).
 
-**Provider model ids and tiers:**
+Every id hits the same model on brys and the same shared pool. The base id
+(320K DS4 / 1M Qwen) and the `frontier` alias stay the default choice for a main
+agent.
 
-| family | base model id | tier ids | contexts |
-|---|---|---|---|
-| DS4 | `deepseek-v4-flash` (320K) | `deepseek-v4-flash`, `deepseek-v4-flash-<n>k` | 327680, 262144, 196608, 131072, 98304, 65536, 32768, 16384 |
-| Qwen | `qwen3.8-flash-next` (1M) | `qwen3.8-flash-next`, `qwen3.8-flash-next-<n>k` | 1048576, 262144, 131072, 65536, 32768, 16384 |
-
-`output` scales with the tier (`min(8192, context/4)`) so input + output fit the
-window. **16K is the smallest useful subagent tier:** opencode sends an
-8.6K–10.2K-token system prompt plus tool schemas, so an 8K window cannot fit and
-the request stalls (observed 2026-10-06). A 16K subagent read a file and returned
-the right answer; 16K is tight, 32K is comfortable.
-
-Every id hits the same model on brys and the same shared pool; the tier only
-bounds what the client sends. The base id (320K DS4 / 1M Qwen) and the `frontier`
-alias stay the default choice for a main agent.
-
-> **The tier ids are server aliases, not a proxy fallback.** The compat-proxy
-> routes an id it does not know to the frontier *upstream*, but it does not
-> rewrite the id, and llama-server then rejects an unknown id with HTTP 400
-> (`model '...' not found`). So a purely client-side tier cannot be routed:
-> every `deepseek-v4-flash-<n>k` and `qwen3.8-flash-next-<n>k` id must be listed
-> in `hosts/brys/llm.nix` as an alias of its base model. They add no KV cap and
-> no memory. Thinking needs no alias at all: it is selected per request.
+> **Server-driven context needs no aliases.** Earlier the client used
+> `<n>k` tier aliases, which required every id to be a server alias: the
+> compat-proxy routes an unknown id to the frontier *upstream* but does not
+> rewrite it, and llama-server then rejects the unknown id with HTTP 400
+> (`model '...' not found`). With server-driven context the only ids are the base
+> model ids and the `frontier`/`qwen`/`grunt` names; context comes from
+> `context_length`, not from a tier alias. Thinking needs no alias at all: it is
+> selected per request.
 
 ### ZFS ARC quirk (required for large contexts)
 
