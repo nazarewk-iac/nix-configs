@@ -17,9 +17,9 @@
   ...
 }:
 let
-  # The common thinking levels. Every model tier gets one opencode subagent per
-  # level, named `<prefix>-<tier>-<level>`, so a caller picks a model, a context
-  # budget and a thinking depth in one name.
+  # The common thinking levels. Every model gets one opencode subagent per level,
+  # named `<prefix>-<level>`, so a caller picks a model and a thinking depth in
+  # one name.
   thinkingLevels = [
     "off"
     "low"
@@ -70,102 +70,47 @@ let
     };
   };
 
-  # The DeepSeek V4 Flash context tiers, on the client side. The server shares
-  # one 320K KV pool (unified KV, 4 slots), so a smaller tier costs nothing
-  # server-side: the pool is usage-proportional and a small request is
-  # automatically small. There is deliberately no server-side per-slot cap
-  # (`--kv-unified-per-slot`); the tier only bounds what opencode sends, which is
-  # what lets a sub-agent stay cheap.
+  # The server shares one KV pool per model (unified KV, 4 slots). The pool is
+  # usage-proportional: a request only occupies the tokens it actually sends, so a
+  # small request is automatically small and a large one reaches the full window.
+  # There is deliberately no server-side per-slot cap (`--kv-unified-per-slot`),
+  # and llama-swap has no per-alias context either, so a model's context cannot be
+  # limited per client. Each request therefore runs at the model's real maximum:
+  # DS4 at 320K, Qwen at 1M. Discovery reads those maxima from the server (see
+  # `kdn.llm.client.upstreams.brys` below); no tier aliases are used.
   #
-  # 16K is the smallest useful subagent tier: opencode sends a ~5K-token system
-  # prompt plus tool schemas, so an 8K window overflows and the request stalls.
-  # Verified 2026-10-06: a 16K subagent read a file and returned the right
-  # answer. `output` scales with the tier, so input + output fit the window
-  # (16K -> 4K output, 32K+ -> 8K).
-  #
-  # Every tier points at the same DS4 model. The tier ids must be server aliases
-  # of `deepseek-v4-flash` (see hosts/brys/llm.nix): the compat-proxy routes an
-  # unknown id to the frontier upstream but does not rewrite it, and
-  # llama-server then rejects it with HTTP 400. The aliases add no KV cap and no
-  # memory — `parallel 4` shares the one unified pool.
-  ds4Contexts = [
-    327680 # 320K: the full shared pool
-    262144 # 256K
-    196608 # 192K
-    131072 # 128K
-    98304 # 96K
-    65536 # 64K
-    32768 # 32K
-    16384 # 16K: smallest useful subagent tier
-  ];
-  ds4K = ctx: toString (ctx / 1024);
-  ds4TierId = ctx: if ctx == 327680 then "deepseek-v4-flash" else "deepseek-v4-flash-${ds4K ctx}k";
-
-  # The Qwen3.8-Flash-Next context tiers. The 1M tier is the base model id
-  # itself; every smaller tier is a server alias `qwen3.8-flash-next-<n>k`
-  # (see hosts/brys/llm.nix). Thinking is selected per request
-  # (`chat_template_kwargs`), not per alias, so no thinking aliases exist or are
-  # needed.
-  qwenContexts = [
-    1048576 # 1M: the base model id
-    786432 # 768K
-    524288 # 512K
-    262144 # 256K
-    131072 # 128K
-    65536 # 64K
-    32768 # 32K
-    16384 # 16K: smallest useful subagent tier
-  ];
-  qwenTierLabel = ctx: if ctx == 1048576 then "1m" else "${toString (ctx / 1024)}k";
-  qwenTierId =
-    ctx: if ctx == 1048576 then "qwen3.8-flash-next" else "qwen3.8-flash-next-${qwenTierLabel ctx}";
-
-  # One model entry for a tier. The model is the context tier; the thinking
-  # matrix is exposed as `variants` on that model, so the user selects the tier
-  # as the model and cycles the variant for the thinking level. The model's own
-  # `options` set the default level (`low`); the server also defaults to `low`.
-  # `reasoning = true` tells opencode to parse the model's thinking output.
-  # One opencode subagent per (model, tier, level). The level picks the request
-  # body's `chat_template_kwargs`; the model entry itself carries no options.
-  mkTierAgents =
+  # One opencode subagent per (model, level). The agent's `options` carry that
+  # model's `chat_template_kwargs`; the provider model id is the base model id.
+  mkAgents =
     {
       prefix,
       modelLabel,
-      tierLabel,
-      tierId,
+      modelId,
       thinking,
-      contexts,
     }:
     lib.listToAttrs (
-      lib.concatMap (
-        ctx:
-        map (
-          level:
-          lib.nameValuePair "${prefix}-${tierLabel ctx}-${level}" {
-            description = "${modelLabel} on brys, ${tierLabel ctx} context budget, thinking ${level}.";
-            mode = "subagent";
-            model = "brys/${tierId ctx}";
-            options.chat_template_kwargs = thinking.${level};
-          }
-        ) thinkingLevels
-      ) contexts
+      map (
+        level:
+        lib.nameValuePair "${prefix}-${level}" {
+          description = "${modelLabel} on brys, thinking ${level}.";
+          mode = "subagent";
+          model = "brys/${modelId}";
+          options.chat_template_kwargs = thinking.${level};
+        }
+      ) thinkingLevels
     );
 
-  ds4Agents = mkTierAgents {
+  ds4Agents = mkAgents {
     prefix = "ds4";
     modelLabel = "DeepSeek V4 Flash";
-    tierLabel = ctx: "${ds4K ctx}k";
-    tierId = ds4TierId;
+    modelId = "deepseek-v4-flash";
     thinking = ds4Thinking;
-    contexts = ds4Contexts;
   };
-  qwenAgents = mkTierAgents {
+  qwenAgents = mkAgents {
     prefix = "qwen";
     modelLabel = "Qwen3.8-Flash-Next";
-    tierLabel = qwenTierLabel;
-    tierId = qwenTierId;
+    modelId = "qwen3.8-flash-next";
     thinking = qwenThinking;
-    contexts = qwenContexts;
   };
   # DS4 low and medium are equivalent: its template ignores `reasoning_effort`
   # except for `max`. DS4 high is `reasoning_effort = "max"`. Qwen high is the
@@ -191,9 +136,8 @@ in
   # The slot defaults are neutral now. These two settings keep the behaviour that the old
   # slot defaults gave on this host.
   kdn.opencode.settings.provider.requesty = { };
-  # Every (model, tier, thinking level) combination as an opencode subagent. Each one
-  # names a tiered provider model (see `kdn.llm.client.upstreams.brys.models` below) and
-  # carries that model's `chat_template_kwargs` for the level.
+  # One opencode subagent per (model, thinking level). Each one names a brys
+  # provider model and carries that model's `chat_template_kwargs` for the level.
   kdn.opencode.settings.agent = tierAgents;
   kdn.opencode.allowedPaths = [
     "/nix/store/**"
@@ -208,8 +152,10 @@ in
     # `kdn.opencode.wrapper.envFiles` line is needed.
     apiKeyFile = "/run/configs/llms/llama-server/api-keys/default";
     # Only discovery is configured. The model id list, the served context, and the
-    # per-model names all come from the server's `/v1/models` (the server publishes
-    # each model's context as `metadata.context`). There is no hand-written overlay.
+    # per-model names all come from the server's `/v1/models` (llama-swap publishes
+    # each model's context as the top-level `context_length`). There is no
+    # hand-written overlay, so every request runs at the model's real maximum
+    # context (DS4 320K, Qwen 1M).
     discovery.enable = true;
   };
 }
