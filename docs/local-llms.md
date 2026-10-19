@@ -85,14 +85,18 @@ running model that is **not** in the same set, and a set that keeps a frontier
 beats one that drops it. The rendered sets are:
 
 ```
-main        = (deepseek-v4-flash | qwen3.8-flash-next)   # frontier models swap among themselves
-with_grunt  = (qwen3.5-4b) & (deepseek-v4-flash | qwen3.8-flash-next)
+main           = (deepseek-v4-flash | qwen3.8-flash-next)   # frontier models swap among themselves
+with_grunt     = (qwen3.5-4b) & (deepseek-v4-flash | qwen3.8-flash-next)
+with_surveyed  = (<28 surveyed grunts>) & (deepseek-v4-flash | qwen3.8-flash-next)
 ```
 
 So the two frontier models swap among themselves (`main` holds them with `|`),
-while the GPU grunt (`qwen3.5-4b`) runs **alongside** a frontier model
-(`with_grunt` ANDs it with the frontier set) and never evicts it: a grunt
-request evicts the other grunt, not the frontier.
+while a grunt runs **alongside** a frontier model (`with_grunt`/`with_surveyed`
+AND it with the frontier set) and never evicts it: a grunt request evicts the
+other grunt, not the frontier. Every surveyed model is cost 1, so it is always
+the model that loses a slot. This is the mechanism that lets the four boot
+specialisations collapse to one config; see
+[single-specialisation.design.md](tasks/2026-10/brys-grunt-colocation/single-specialisation.design.md).
 
 Only brys's swapping entries use swap mode: the main `brys` profile
 (`hosts/brys/default.nix`), `llms-frontier` and `llm-qwen` all set
@@ -116,6 +120,32 @@ reload in place**: run with `-watch-config=false`, regenerate the config at
 activation, and keep the hitless route layer (Caddy/proxy) in front. The full
 survey is [router-hot-reload.research.md](tasks/2026-10/brys-grunt-colocation/router-hot-reload.research.md);
 the migration is [llama-swap-migration.design.md](tasks/2026-10/brys-grunt-colocation/llama-swap-migration.design.md).
+
+### Observability and stats
+
+llama-swap is **stateless**: one Go binary, no database, no history. Verified on
+brys — `--help` shows only config/listen/TLS/watch flags; `/var/cache/llama-swap`
+holds only `api-keys` and the GPU shader caches; the unit is `DynamicUser` with
+`CacheDirectory = "llama-swap"`. No config key persists model statistics across
+a restart.
+
+What is available, live only:
+
+| Source | What it gives | Persisted? |
+|---|---|---|
+| llama-swap `/metrics` | System-level Prometheus: `llamaswap_cpu_util_percent{core}`, `memory_{free,total,used}_bytes`, `swap_{total,used}_bytes`, `load_average`, `network_bytes_total`. **No per-model or token/tps metric.** | No (scrape-only) |
+| llama-server child response | Per-response `timings`: `prompt_per_second`, `predicted_per_second`, `predicted_n`, etc. This is what the benchmark tables read. | No |
+| llama-swap `/ui` (:39700) | Live per-model token metrics and request inspection in the browser. | No |
+| `/logs`, `/logs/stream/:model` | In-memory log ring buffer, per model. | No |
+| `/running` | The currently loaded models. | No |
+
+**Per-model tps history needs an external store.** Scrape llama-swap `/metrics`
+(system) plus each child's metrics into Prometheus/VictoriaMetrics and graph with
+Grafana. Note two gaps today: the swap children are **not** started with
+`llama-server --metrics`, so the child token counters are not exposed; and
+llama-swap has no per-model `--metrics` toggle. `perf.extraFlags` (see the model
+table) is the hook that would add `--metrics` per model if that is ever wanted.
+This document records the status only; nothing is wired.
 
 ## N-router topology and routing
 
