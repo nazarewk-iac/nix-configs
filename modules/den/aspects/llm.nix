@@ -291,6 +291,7 @@
           "--model"
           (modelFile name)
         ]
+        ++ lib.optionals cfg.swap.debug [ "--verbose" ]
         ++ lib.optionals m.mmproj.enable [
           "--mmproj"
           (mmprojFile name)
@@ -509,7 +510,16 @@
       # `services.llama-swap` module writes it through `pkgs.formats.yaml`.
       swapConfig = {
         healthCheckTimeout = cfg.swap.healthCheckTimeout;
-        logLevel = "info";
+        logLevel = if cfg.swap.debug then "debug" else "info";
+        # In debug mode route every stream to stdout, so a child that crashes
+        # explains itself. `upstream` copies each child's own log, which carries
+        # the llama-server load failure (tensor mismatch, OOM, bad template);
+        # `http` adds one access-log line per request. The unit's journald then
+        # holds the whole picture.
+        logToStdout = if cfg.swap.debug then "both" else "proxy";
+        logTimeFormat = if cfg.swap.debug then "rfc3339nano" else "";
+        # Larger request/response capture ring, for the UI's request inspector.
+        captureBuffer = if cfg.swap.debug then 50 else 10;
         includeAliasesInList = true;
         startPort = 10001;
         # Never auto-unload: the child stays warm until a swap needs its slot.
@@ -1377,6 +1387,26 @@
           Seconds llama-swap waits for a freshly started child to answer its health check before it
           gives up. A cold frontier load takes minutes, so the default keeps generous headroom (the
           routing research measured about 90-120 s for a frontier swap).
+        '';
+      };
+
+      options.kdn.llm.local.swap.debug = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = ''
+          Turn on verbose diagnostics for a first run, so a crash explains itself.
+
+          When on, llama-swap runs at `logLevel = "debug"` with `logToStdout =
+          "both"` (proxy, upstream and HTTP access streams), `logTimeFormat =
+          "rfc3339nano"` and a larger request capture buffer; and every swap
+          child gets `--verbose`. The upstream stream is the important one: it
+          copies each child's own log, which carries the llama-server reason a
+          model failed to load (tensor mismatch, out-of-memory, a bad chat
+          template). All of it lands in the `llama-swap` journal.
+
+          This is noisier and costs some throughput (`--verbose` and a larger
+          capture buffer), so run it only while bringing a host up, then set it
+          back to `false`.
         '';
       };
 

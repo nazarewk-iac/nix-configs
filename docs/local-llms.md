@@ -74,6 +74,7 @@ The swap-mode options (all inert until `swap.enable` is set):
 | `swap.persistentModels` | Model ids llama-swap must never evict for another model. |
 | `swap.packageOverrides` | Per-model llama.cpp build, so one child can differ from `kdn.llm.local.package`. |
 | `swap.vulkanDeviceSelect` | Value of `MESA_VK_DEVICE_SELECT` for the llama-swap unit (replaces the router-mode pin on `llama-cpp`). |
+| `swap.debug` | Verbose diagnostics window: llama-swap `logLevel = "debug"`, `logToStdout = "both"`, `logTimeFormat = "rfc3339nano"`, a larger capture buffer, and `--verbose` on every child. The **upstream** stdout stream copies each child's own log, which carries the real reason a model failed to load. Noisier and slower, so it is off by default and meant only while bringing a host up. |
 
 ### Matrix routing on brys
 
