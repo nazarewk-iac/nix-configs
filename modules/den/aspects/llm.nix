@@ -381,6 +381,7 @@
           "--device"
           perf.device
         ]
+        ++ perf.extraFlags
         ++ lib.optionals (perf.loadMode != null) [
           "--load-mode"
           perf.loadMode
@@ -1158,6 +1159,18 @@
           description = ''
             Device(s) to use for offloading (`--device`, for example "Vulkan0"). `null` omits the
             key. Use it to pin a multi-GPU host to the wanted Vulkan device.
+          '';
+        };
+
+        options.perf.extraFlags = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          example = [ "--no-jinja" "--chat-template" "chatml" ];
+          description = ''
+            Extra raw `llama-server` flags for this model, appended verbatim to the swap child
+            command. Use it for a flag with no dedicated option here (for example the
+            `olmo-3-7b` template fallback `--no-jinja --chat-template chatml`). Only the swap path
+            emits these flags; the router-mode preset INI does not carry them.
           '';
         };
 
