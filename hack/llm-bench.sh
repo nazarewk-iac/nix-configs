@@ -33,10 +33,10 @@ Flags:
   --key-file PATH     A file with the bearer key. Default: /tmp/opencode/brys.key.
   --steps LIST        A comma-separated list of steps. Default: all steps.
                       Steps: cold-start, warm-start, decode, prefill, ttft,
-                      reuse, mem, faults.
+                      reuse, mem, faults, vram.
   --max-tokens N      The decode cap. Default: 128.
   --prompt-tokens N   The prefill target token count. Default: 2048.
-  --ssh-host HOST     The ssh host for mem and faults. Default: kdn-brys.
+  --ssh-host HOST     The ssh host for mem, faults and vram. Default: kdn-brys.
                       An empty value skips the ssh steps.
   --json              Print one JSON object per row instead of TSV.
   --timeout SECONDS   The per-request curl timeout. Default: 600.
@@ -73,10 +73,10 @@ done
 case "$MAX_TOKENS" in '' | *[!0-9]*) die "--max-tokens must be a positive integer" ;; esac
 case "$PROMPT_TOKENS" in '' | *[!0-9]*) die "--prompt-tokens must be a positive integer" ;; esac
 
-readonly ALL_STEPS="cold-start,warm-start,decode,prefill,ttft,reuse,mem,faults"
+readonly ALL_STEPS="cold-start,warm-start,decode,prefill,ttft,reuse,mem,faults,vram"
 if [ -z "$STEPS" ]; then
   STEPS="$ALL_STEPS"
-  # mem and faults need ssh; drop them when the caller disabled ssh.
+  # mem, faults and vram need ssh; drop them when the caller disabled ssh.
   if [ -z "$SSH_HOST" ]; then
     STEPS="cold-start,warm-start,decode,prefill,ttft,reuse"
   fi
@@ -356,6 +356,24 @@ step_faults() {
   row faults idle "major_faults_s" "$faults"
 }
 
+# GPU VRAM of the W6600, read from sysfs over ssh. There is no amd-smi or
+# rocm-smi on brys, and the box serves one model at a time, so the card-wide
+# counters report the serving child. A CPU-only model leaves them near zero.
+step_vram() {
+  if [ -z "$SSH_HOST" ]; then
+    echo "$PROG: vram needs --ssh-host; skipped" >&2
+    return 0
+  fi
+  local raw used total
+  raw="$(ssh -o BatchMode=yes "$SSH_HOST" \
+    "cat /sys/class/drm/card1/device/mem_info_vram_used /sys/class/drm/card1/device/mem_info_vram_total" 2>/dev/null)" || return 1
+  used="$(awk 'NR==1{print $1}' <<<"$raw")"
+  total="$(awk 'NR==2{print $1}' <<<"$raw")"
+  [ -n "$used" ] && [ -n "$total" ] || { echo "$PROG: cannot read VRAM from $SSH_HOST" >&2; return 1; }
+  row vram run "vram_used_MiB" "$(python3 -c "print(round($used/1048576,1))")"
+  row vram run "vram_total_MiB" "$(python3 -c "print(round($total/1048576,1))")"
+}
+
 # ---------------------------------------------------------------- run
 
 print_header
@@ -368,5 +386,6 @@ step_enabled ttft && step_ttft
 step_enabled reuse && step_reuse
 step_enabled mem && step_mem
 step_enabled faults && step_faults
+step_enabled vram && step_vram
 
 exit 0
