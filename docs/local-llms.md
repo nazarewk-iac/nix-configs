@@ -603,10 +603,12 @@ means the effect follows from the mechanism and was not timed on brys.
 
 Notes on the table:
 
-- **`--lazy-mode` is the biggest lever and is already the default.** Do not set
-  `off` on a colocated host: it makes the large tensors resident and costs about
-  46 GB for no throughput gain. The served behaviour already keeps them on SSD.
-  The full table is in "`--lazy-mode` SSD offload (brys)" below.
+- **`--lazy-mode` is already the default, and it is a speed knob, not a RAM
+  lever.** `auto` and `on` are identical. `off` makes the large tensors resident
+  and is faster on a cold-request box (see the 2026-10-19 correction below), but
+  it does **not** raise real RAM use with `mmap`: the weights stay reclaimable in
+  `buff/cache`. Read system `used`, not process `VmRSS`. The full table is in
+  "`--lazy-mode` SSD offload (brys)" below.
 - **Context and KV quantisation are the two direct controls.** Lower the context
   first; add `q8_0` KV only if the context is already at its floor.
 - **The prompt cache is a separate ceiling, not the KV cache.** `--cache-ram`
@@ -776,13 +778,25 @@ F16 KV, threads 16, MTP `draft-mtp` n-max 5, `--load-mode mmap`, on the W6600:
 
 `auto` and `on` are identical: the default already offloads the same tensors,
 so the served behaviour already keeps the lazy tensors on SSD. Forcing
-`--lazy-mode off` makes them resident and costs **about 46 GB of RAM** for no
-throughput gain (prefill unchanged; decode flat to slightly lower). The
-offloaded set is larger than the ~28.8 GB PLE / n-gram table estimate, so
-`--lazy-mode` covers other large tensors too. Under load the `on` resident set
-grows (idle 65.0 GB to 82.7 GB after a 1.7K prefill and 256 decode tokens),
-still well below the 111 GB fully-resident case. This corrects the earlier note
-that the n-gram table "stays resident (no `--lazy-mode`)".
+`--lazy-mode off` makes them resident. The offloaded set is larger than the
+~28.8 GB PLE / n-gram table estimate, so `--lazy-mode` covers other large
+tensors too. Under load the `on` resident set grows (idle 65.0 GB to 82.7 GB
+after a 1.7K prefill and 256 decode tokens), still well below the 111 GB
+fully-resident case. This corrects the earlier note that the n-gram table
+"stays resident (no `--lazy-mode`)".
+
+> **Correction (2026-10-19, standalone measurement):** `--lazy-mode off` does
+> **not** cost 46 GB of real RAM. With `mmap` (the default), the weights live in
+> the page cache (`buff/cache`), which the kernel can reclaim. The 46 GiB shows
+> as process `RssFile`, but system `used` is the same (~15.7 GB) for `off` and
+> `auto`. So `--lazy-mode off` is faster (decode 5.22 vs 3.23 t/s, prefill 73.6
+> vs 44.3 at ctx 16384), because it reads the large tensors once at load instead
+> of re-reading them from disk per token. It is not a RAM cost.
+> **Always read system `used`, not process `VmRSS`.** See
+> [offload-measurements.research.md](tasks/2026-10/llm-benchmark-suite/002-disk-offload/offload-measurements.research.md).
+> Note the earlier 11.14-vs-12.26 decode result was at ctx 524288 with MTP on,
+> where the lazy re-read is cheap; at ctx 16384 without MTP the direction
+> reverses.
 
 **ngram verdict.** `--spec-type ngram-mod` alone hung `qwen4exp` (about 13
 cores stuck for an hour, below 1 tok/s). Rejected. MTP (`draft-mtp`) stays the
