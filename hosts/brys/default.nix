@@ -30,6 +30,7 @@ let
     # (:39705) serves Qwen3.5-4B on the W6600, so a `grunt` request never
     # evicts Qwen. See docs/tasks/2026-10/brys-grunt-colocation/.
     withGrunt = true;
+    withSurveyed = true;
     withSwap = true;
     qwenContextSize = 1048576;
     qwenGpu = true;

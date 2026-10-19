@@ -67,6 +67,13 @@
   # Qwen-serving entries set it true; the DS4 and small entries leave it false,
   # so their output stays byte-identical.
   withGrunt ? false,
+  # `withSurveyed` wires the surveyed grunt set (`routers.surveyed`, :39706) and
+  # its models (default false). It registers the successfully-loading GGUF models
+  # from the co-residency survey as EVICTABLE low-priority grunts, so a request
+  # for any of them never evicts the frontier. It is enabled alongside `withGrunt`
+  # on the swap profiles: the GPU grunts need the Vulkan build and `llm.gpu` that
+  # `withGrunt` already selects.
+  withSurveyed ? false,
   # `qwenGpu` selects the v0.6.0 llama.cpp build, the one that carries the
   # `qwen4exp` MTP graph the Qwen-serving specialisations need for MTP. It does
   # NOT by itself touch the GPU.
@@ -136,6 +143,7 @@ let
   routers = import ./llm-routers.nix;
   small = routers.small;
   grunt = routers.grunt;
+  surveyed = routers.surveyed;
 
   # The DS4 client context tiers (hosts/oams/devenv.nix). Every tier id and its
   # `-think` variant must be a server alias of `deepseek-v4-flash`: the
@@ -475,15 +483,24 @@ in
       models =
         (lib.optionalAttrs withSmall small.kdn.llm.local.models)
         // (lib.optionalAttrs withGrunt grunt.kdn.llm.local.models)
+        // (lib.optionalAttrs withSurveyed surveyed.kdn.llm.local.models)
         // frontierModels
         // qwenModels;
     }
-    // lib.optionalAttrs withSmall {
-      routers.small = small.kdn.llm.local.routers.small;
-    }
-    // lib.optionalAttrs withGrunt {
-      routers.grunt = grunt.kdn.llm.local.routers.grunt;
-    }
+    // (
+      # A single `routers` key: the outer `//` is a shallow merge, so one
+      # `routers.<name>` branch per flag would overwrite the previous one. Nest
+      # the flags here instead.
+      let
+        extraRouters =
+          (lib.optionalAttrs withSmall { small = small.kdn.llm.local.routers.small; })
+          // (lib.optionalAttrs withGrunt { grunt = grunt.kdn.llm.local.routers.grunt; })
+          // (lib.optionalAttrs withSurveyed { surveyed = surveyed.kdn.llm.local.routers.surveyed; });
+      in
+      lib.optionalAttrs (extraRouters != { }) {
+        routers = extraRouters;
+      }
+    )
     // lib.optionalAttrs withSwap {
       swap = {
         enable = true;
@@ -507,7 +524,7 @@ in
   # tree to the W6600 (`1002:73e3`) so the 4 GB Lexa (`Vulkan1`) is never
   # selected. The `device = Vulkan0` preset key is the in-process belt to this
   # env-var suspenders.
-  gpu = lib.optionalAttrs (qwenVulkan || withGrunt) {
+  gpu = lib.optionalAttrs (qwenVulkan || withGrunt || withSurveyed) {
     hardware.graphics.enable = true;
     hardware.graphics.extraPackages = [ pkgs.mesa ];
     systemd.services.llama-cpp.environment.MESA_VK_DEVICE_SELECT = "1002:73e3!";
