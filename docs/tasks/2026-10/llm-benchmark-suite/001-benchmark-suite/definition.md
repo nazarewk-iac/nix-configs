@@ -1,7 +1,7 @@
 ---
 type: Task
 description: Repeatable benchmark suite over every enabled brys model: decode/prefill tok/s, cold start (first enable), RAM/VRAM, context and cache capacity, plus opencode cold/warm start on this repository.
-status: in-progress
+status: done
 authored_by: agent
 timestamp: 2026-10-19T18:12:00+02:00
 ---

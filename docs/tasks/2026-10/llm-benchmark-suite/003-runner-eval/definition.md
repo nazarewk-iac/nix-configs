@@ -1,12 +1,15 @@
 ---
 type: Task
 description: Package Strata in Nix and evaluate it, and other runners, against llama.cpp for serving Qwen3.8-Flash-Next on brys, with a like-for-like benchmark.
-status: in-progress
+status: done
+solution: done.md
 authored_by: agent
 timestamp: 2026-10-19T18:14:00+02:00
 ---
 
 # 003 — Runner evaluation (Strata, others)
+
+> Done — closed as researched-only. See the solution in [done.md](done.md).
 
 ## Goal
 
@@ -69,3 +72,9 @@ brys, judged on a like-for-like benchmark. Strata is the first candidate.
 - <https://github.com/Niko1221/Strata>
 - [packages/llama-cpp/default.nix](../../../../packages/llama-cpp/default.nix)
 - [docs/local-llms.md](../../../local-llms.md)
+
+## Outcome
+
+Closed as researched-only by the user. No runner is built and none is adopted
+now. Strata does not fit brys. The survey and the feasibility study remain. The
+condition to reopen the task is in [done.md](done.md).
