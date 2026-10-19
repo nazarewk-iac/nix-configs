@@ -137,4 +137,100 @@
       };
     };
   };
+
+  # The `surveyed` set: the successfully-loading GGUF models from the
+  # co-residency survey (docs/tasks/2026-10/brys-grunt-colocation/), registered as
+  # EVICTABLE low-priority grunts. None is in `swap.persistentModels`, so each has
+  # `evict_cost = 1`: a request for any of them never evicts the frontier. A model
+  # whose file is <= ~7 GB runs fully on the W6600 (`nGpuLayers = 99`, `device =
+  # "Vulkan0"`); every bigger model stays on the CPU. The three smallest also get
+  # a `-cpu` variant. `download.enable = false` because the files already exist
+  # under /var/lib/kdn/llms/models/surveyed (reached by `hfRepo = "surveyed"`).
+  # The corrupt `nemotron-3.5-bolt-74b` is deliberately omitted (it fails to load).
+  surveyed =
+    let
+      # A fully-GPU grunt: the whole model fits the 8 GB W6600 at 16K context.
+      mkGpu =
+        name: extra:
+        {
+          enable = true;
+          hfRepo = "surveyed";
+          hfFile = "${name}.gguf";
+          download.enable = false;
+          mainRouter = "surveyed";
+          perf = {
+            contextSize = 16384;
+            nGpuLayers = 99;
+            device = "Vulkan0";
+            parallel = 1;
+            threads = 8;
+          } // extra;
+        };
+      # A CPU grunt: no GPU offload, a modest context and few threads, so it
+      # barely competes with the frontier for cores.
+      mkCpu =
+        name: ctx:
+        {
+          enable = true;
+          hfRepo = "surveyed";
+          hfFile = "${name}.gguf";
+          download.enable = false;
+          mainRouter = "surveyed";
+          perf = {
+            contextSize = ctx;
+            parallel = 1;
+            threads = 8;
+          };
+        };
+    in
+    {
+      kdn.llm.local.routers.surveyed = {
+        enable = true;
+        port = 39706;
+        threads = 8;
+        modelsMax = 1;
+        apiKeyDir = "/run/configs/llms/llama-server/api-keys";
+      };
+
+      kdn.llm.local.models = {
+        # Smallest models, fully on the GPU.
+        "qwen3.5-0.8b" = mkGpu "qwen3.5-0.8b" { };
+        "qwen3.5-2b" = mkGpu "qwen3.5-2b" { };
+        "tmax-2b" = mkGpu "tmax-2b" { };
+        # Small dense models that fit the W6600.
+        "granite-4.2-3b" = mkGpu "granite-4.2-3b" { };
+        "ministral-3-3b-instruct" = mkGpu "ministral-3-3b-instruct" { };
+        "ministral-3-3b-reasoning" = mkGpu "ministral-3-3b-reasoning" { };
+        "gemma-4-e2b" = mkGpu "gemma-4-e2b" { };
+        # olmo-3-7b needs a template fallback: its own template uses `tojson`,
+        # which llama's Jinja parser rejects, so it loads only with `chatml`.
+        "olmo-3-7b-instruct" = mkGpu "olmo-3-7b-instruct" {
+          extraFlags = [ "--no-jinja" "--chat-template" "chatml" ];
+        };
+        "gemma-4-e4b" = mkGpu "gemma-4-e4b" { };
+        "granite-4.2-8b" = mkGpu "granite-4.2-8b" { };
+        "ministral-3-8b-instruct" = mkGpu "ministral-3-8b-instruct" { };
+        "ministral-3-8b-reasoning" = mkGpu "ministral-3-8b-reasoning" { };
+        "tmax-9b" = mkGpu "tmax-9b" { };
+        "mimo-v2.6-qwen-9b" = mkGpu "mimo-v2.6-qwen-9b" { };
+
+        # CPU variants of the three smallest, reachable by a `-cpu` id.
+        "qwen3.5-0.8b-cpu" = mkCpu "qwen3.5-0.8b" 8192;
+        "qwen3.5-2b-cpu" = mkCpu "qwen3.5-2b" 8192;
+        "tmax-2b-cpu" = mkCpu "tmax-2b" 8192;
+
+        # Bigger models stay on the CPU (no GPU offload).
+        "gemma-4-12b" = mkCpu "gemma-4-12b" 16384;
+        "gemma-4-26b-a4b" = mkCpu "gemma-4-26b-a4b" 8192;
+        "qwen3.6-27b" = mkCpu "qwen3.6-27b" 8192;
+        "granite-4.2-30b" = mkCpu "granite-4.2-30b" 8192;
+        "gemma-4-31b" = mkCpu "gemma-4-31b" 8192;
+        "glm-4.7-flash" = mkCpu "glm-4.7-flash" 8192;
+        "olmo-3.1-32b" = mkCpu "olmo-3.1-32b" 8192;
+        "seed-oss-36b" = mkCpu "seed-oss-36b" 8192;
+        "qwen3.5-35b-a3b" = mkCpu "qwen3.5-35b-a3b" 8192;
+        "qwen3.6-35b-a3b" = mkCpu "qwen3.6-35b-a3b" 8192;
+        "nemotron-3.5-lightning-30b" = mkCpu "nemotron-3.5-lightning-30b" 8192;
+      };
+    };
 }

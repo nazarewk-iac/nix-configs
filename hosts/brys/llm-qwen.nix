@@ -34,6 +34,7 @@ let
     # and selects the Vulkan llama.cpp build. See
     # docs/tasks/2026-10/brys-grunt-colocation/.
     withGrunt = true;
+    withSurveyed = true;
     withSwap = true;
     qwenContextSize = 1048576;
     # The fork build (needed for the Qwen MTP graph, and the only build with the
