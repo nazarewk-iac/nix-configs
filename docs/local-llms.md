@@ -703,13 +703,13 @@ for the full record.
 writing a hand-listed `models` block into the opencode provider. Instead the
 aspect writes a local pinned plugin (`.opencode/plugins/kdn-models-discovery.ts`)
 that runs the opencode `config` hook, fetches `<baseURL>/models` (the
-OpenAI-compatible model list; `discovery.url` overrides the path) and merges
-every discovered id into `provider.<name>.models`. A discovered id that is not
-hand-listed gets a minimal entry (its id as the name); a hand-listed id keeps its
-entry, so the configured `models` become a per-model **metadata overlay**
-(context, output, reasoning, options, variants) applied on top of the discovered
-list. A fetch failure leaves the static overlay in place, so the shell still
-works offline.
+OpenAI-compatible model list; `discovery.url` overrides the path) and adds every
+discovered id to `provider.<name>.models`. Each entry gets `name` and
+`limit.context`; the context comes from the server's top-level `context_length`
+field, and `limit.output` is `min(8192, context/4)`. A hand-listed `models`
+block may still be supplied as a metadata overlay (reasoning, options, variants)
+for the ids it names; it is optional. A fetch failure leaves any overlay in
+place, so the shell still works offline.
 
 The plugin is a local `.ts` file written into `.opencode/plugins/`, so it is
 **pinned by this repo's commit** — no npm fetch, no `@latest`, no network at
@@ -717,6 +717,14 @@ startup for the plugin itself. A local plugin is needed because opencode 1.19.0
 (the nixpkgs pin) has no native `/v1/models` discovery; that lives on the
 unmerged 2.0 line. The `config` hook (`@opencode-ai/plugin`) is the verified
 extension point. See [the `llm-client` aspect](../modules/den/aspects/llm-client.nix).
+
+**Server contract.** llama-swap renders a model's `capabilities.context` into
+the top-level `context_length` of `/v1/models`, for every id and alias. The
+`llm` aspect emits it from each model's `perf.contextSize`. There is no per-alias
+context: every alias reports its base model's maximum. Measured on brys
+2026-10-19: 34 ids, all 34 with `context_length`, and a full sweep of all 34
+through the compat-proxy returned HTTP 200. See
+[server-context-2026-10-19.research.md](tasks/2026-10/brys-grunt-colocation/server-context-2026-10-19.research.md).
 
 ### Secrets
 
@@ -1090,6 +1098,7 @@ at the bottom.
 | 2026-10-07 | **Qwen GPU** partial `-ngl 8` / `-ngl 20` (no `-cmoe`) | 5.89 / 5.04 | — | — | — | warm | decode 5.89/5.04 t/s; prefill 14.4/14.6 t/s; VRAM ~7.9 GiB; still slower than CPU; this row is Qwen, not DS4 |
 | 2026-10-07 | **Qwen GPU** `llm-qwen-gpu` final: `n-gpu-layers-draft 99` + `device Vulkan0` | **10.82** | — | — | — | warm | decode 10.82 t/s (**+18.5%** vs 9.13 CPU same prompt); prefill 16.9 t/s; accept 0.731, mean len 4.55; RSS 95.3 GB, VRAM 6.40 GiB, GPU busy 12%/99%; 0 idle major faults, no OOM; MTP draft head on the W6600, main model + KV on CPU; this row is Qwen, not DS4 |
 | 2026-10-07 | **Qwen3.8-Flash-Next** + v0.6.0 b11429, MTP on, ctx 1048576, `parallel 4` + `kv-unified on` (**deployed**) | 14.16 | — | vs `parallel 1` ≈ | — | warm | **concurrency**: short request returned in **2.4-4.6 s** while a 400-token request was in flight; at `parallel 1` the same short request waited **51.5 s** (serialised); server logged `n_slots = 4, n_ctx_slot = 1048576, kv_unified = 'true'`; counting-300 decode 14.16 t/s vs 13.44 at `parallel 1`; prose-300 4.97 t/s (acceptance-bound); prefill ~22.4 vs 18.0 t/s; VmRSS ~101 GB, RssAnon ~37.5 GB, VmSwap 0, no OOM; QSA indexer cache is a per-slot side buffer, so the Kagi single-slot claim is false; this row is Qwen, not DS4 |
+| 2026-10-19 | **server-driven context + all-model sweep** (`llms-frontier`, llama-swap) | — | — | — | — | cold/warm | `/v1/models` = 34 ids, all 34 carry `context_length` (from each model's `capabilities.context`); the discovery plugin set `limit.context` on all 34; a one-line prompt to every id returned **34/34 HTTP 200, 0 failures**; cold-load wall time 1-8 s (small), 30-50 s (large surveyed), ~120 s (DS4/Qwen cold); `*-reasoning` and the frontier models return empty content (output in the reasoning field); tier aliases removed (56 → 34 ids) |
 
 **Key mechanism finding (2026-09-05 ~20:10):** the DS4 weights are `mmap`-backed and go
 fully resident as **file-backed page cache** (~77 GB `RssFile` on the worker), plus ~14 GB
