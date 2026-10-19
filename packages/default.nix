@@ -17,6 +17,8 @@ in
   link-python = pkgs.callPackage ./link-python { };
   init-py-script = pkgs.callPackage ./init-py-script { };
 
+  ik-llama-cpp = pkgs.callPackage ./ik-llama-cpp { };
+
   # changed to manual list due to infinite recursion errors
   darwin-rebuild = pkgs.callPackage ./darwin-rebuild { };
   data-converters = pkgs.callPackage ./data-converters { };
