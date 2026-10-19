@@ -441,6 +441,14 @@
         in
         {
           name = name;
+          # Publish the served context as the model's `capabilities.context`. llama-swap
+          # renders that into the top-level `context_length` field of `/v1/models`, and it
+          # does so for every id and alias. A client (the discovery plugin) then reads the
+          # real context straight from the server, with no per-model client config and no
+          # cold-start (unlike `/props`, which starts the model to answer).
+          capabilities = lib.optionalAttrs (m.perf.contextSize != null) {
+            context = m.perf.contextSize;
+          };
           cmd = lib.concatStringsSep " " (
             [
               (lib.getExe' (modelPackage name) "llama-server")
@@ -1175,7 +1183,11 @@
         options.perf.extraFlags = lib.mkOption {
           type = lib.types.listOf lib.types.str;
           default = [ ];
-          example = [ "--no-jinja" "--chat-template" "chatml" ];
+          example = [
+            "--no-jinja"
+            "--chat-template"
+            "chatml"
+          ];
           description = ''
             Extra raw `llama-server` flags for this model, appended verbatim to the swap child
             command. Use it for a flag with no dedicated option here (for example the
