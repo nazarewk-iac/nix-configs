@@ -125,46 +125,6 @@ let
   # as the model and cycles the variant for the thinking level. The model's own
   # `options` set the default level (`low`); the server also defaults to `low`.
   # `reasoning = true` tells opencode to parse the model's thinking output.
-  # `output` scales with the tier so input + output fit the window.
-  tierModel =
-    {
-      modelId,
-      tierLabel,
-      context,
-      thinking,
-    }:
-    {
-      name = "${modelId} (brys, LAN) [${tierLabel}]";
-      context = context;
-      output = lib.min 8192 (context / 4);
-      reasoning = true;
-      options.chat_template_kwargs = thinking.low;
-      variants = lib.mapAttrs (_: kwargs: { chat_template_kwargs = kwargs; }) thinking;
-    };
-
-  ds4Models = lib.listToAttrs (
-    map (
-      ctx:
-      lib.nameValuePair (ds4TierId ctx) (tierModel {
-        modelId = "deepseek-v4-flash";
-        tierLabel = "${ds4K ctx}K";
-        context = ctx;
-        thinking = ds4Thinking;
-      })
-    ) ds4Contexts
-  );
-  qwenModels = lib.listToAttrs (
-    map (
-      ctx:
-      lib.nameValuePair (qwenTierId ctx) (tierModel {
-        modelId = "qwen3.8-flash-next";
-        tierLabel = qwenTierLabel ctx;
-        context = ctx;
-        thinking = qwenThinking;
-      })
-    ) qwenContexts
-  );
-
   # One opencode subagent per (model, tier, level). The level picks the request
   # body's `chat_template_kwargs`; the model entry itself carries no options.
   mkTierAgents =
@@ -247,65 +207,9 @@ in
     # The aspect writes the wrapper environment entry from this file, so no manual
     # `kdn.opencode.wrapper.envFiles` line is needed.
     apiKeyFile = "/run/configs/llms/llama-server/api-keys/default";
-    # With discovery on, the model id list now comes from the server's `/v1/models`;
-    # the `models` block below stays as the per-model metadata overlay.
+    # Only discovery is configured. The model id list, the served context, and the
+    # per-model names all come from the server's `/v1/models` (the server publishes
+    # each model's context as `metadata.context`). There is no hand-written overlay.
     discovery.enable = true;
-    # The DS4 and Qwen tiers (generated above) plus the `frontier` alias and the small
-    # models. These supply context/output and the thinking options/variants as the
-    # discovery overlay; the id list itself comes from the server.
-    models =
-      ds4Models
-      // qwenModels
-      // {
-        "frontier" = {
-          name = "frontier (deepseek-v4-flash alias, brys) [320K]";
-          context = 327680;
-          output = 8192;
-        };
-        # Small models. brys serves these only when booted into the llm-small
-        # specialisation; on the default/llm-ds4 boot the compat-proxy falls
-        # back to the frontier (DS4). They are kept so a small-only boot is usable
-        # without a client change.
-        "gpt-oss-120b" = {
-          name = "gpt-oss-120b (brys, LAN)";
-          context = 65536;
-          output = 8192;
-        };
-        "phi-4" = {
-          name = "phi-4 (brys, LAN)";
-          context = 16384;
-          output = 8192;
-        };
-        "qwen3-235b" = {
-          name = "qwen3-235b (brys, LAN)";
-          context = 65536;
-          output = 8192;
-        };
-        "qwen3-30b-a3b" = {
-          name = "qwen3-30b-a3b (brys, LAN)";
-          context = 65536;
-          output = 8192;
-        };
-        "fast" = {
-          name = "fast (qwen3-30b-a3b alias, brys)";
-          context = 65536;
-          output = 8192;
-        };
-        "qwen3-coder-next" = {
-          name = "qwen3-coder-next (brys, LAN)";
-          context = 65536;
-          output = 8192;
-        };
-        "qwen3-next-80b" = {
-          name = "qwen3-next-80b (brys, LAN)";
-          context = 65536;
-          output = 8192;
-        };
-        "balanced" = {
-          name = "balanced (qwen3-next-80b alias, brys)";
-          context = 65536;
-          output = 8192;
-        };
-      };
   };
 }

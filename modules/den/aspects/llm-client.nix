@@ -180,24 +180,43 @@
             // the overlay gets a minimal entry (its id as the name). A hand-listed id keeps
             // its overlay. A fetch failure leaves the static overlay in place, so the shell
             // still works offline.
-            const UPSTREAMS = ${builtins.toJSON payload}
+            type Upstream = {
+              provider: string
+              url: string
+              overlay: Record<string, Record<string, unknown>>
+            }
+
+            const UPSTREAMS: Upstream[] = ${builtins.toJSON payload}
 
             export const KdnModelsDiscovery: Plugin = async () => ({
               config: async (config) => {
                 for (const u of UPSTREAMS) {
                   const prov = config.provider?.[u.provider]
                   if (!prov) continue
-                  let ids = []
+                  let entries: Array<{ id: string; context?: number }> = []
                   try {
                     const res = await fetch(u.url)
                     const body = await res.json()
-                    ids = (body.data ?? []).map((m: { id: string }) => m.id)
+                    // The server publishes the served context as the top-level
+                    // `context_length` field (llama-swap renders it from the model's
+                    // `capabilities.context`). It is present for every id and alias, so
+                    // the real context comes from the server, not the client config.
+                    entries = (body.data ?? []).map(
+                      (m: { id: string; context_length?: number }) => ({
+                        id: m.id,
+                        context: m.context_length,
+                      }),
+                    )
                   } catch {
                     // Offline or unreachable: fall back to the overlay alone.
                   }
                   prov.models ??= {}
-                  for (const id of ids) {
-                    prov.models[id] = { ...(prov.models[id] ?? { name: id }), ...(u.overlay[id] ?? {}) }
+                  for (const e of entries) {
+                    const base: Record<string, unknown> = { name: e.id }
+                    if (typeof e.context === "number" && e.context > 0) {
+                      base.limit = { context: e.context, output: Math.min(8192, Math.floor(e.context / 4)) }
+                    }
+                    prov.models[e.id] = { ...base, ...(prov.models[e.id] ?? {}), ...(u.overlay[e.id] ?? {}) }
                   }
                   // Apply the overlay to hand-listed ids even when the fetch failed, so a
                   // configured model is never lost.
