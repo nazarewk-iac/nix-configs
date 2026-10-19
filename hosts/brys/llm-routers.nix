@@ -104,8 +104,11 @@
 
     kdn.llm.local.models."qwen3.5-4b" = {
       enable = true;
-      hfRepo = "unsloth/Qwen3.5-4B-GGUF";
-      hfFile = "Qwen3.5-4B-Q4_K_M.gguf";
+      # The file lives in the `surveyed` tree on brys; the `unsloth/Qwen3.5-4B-GGUF`
+      # download was never run, so this path resolves to the copy that exists.
+      hfRepo = "surveyed";
+      hfFile = "qwen3.5-4b.gguf";
+      download.enable = false;
       mainRouter = "grunt";
       aliases = [ "grunt" ];
       perf = {
@@ -126,8 +129,10 @@
     # the 4B.
     kdn.llm.local.models."qwen3.5-9b" = {
       enable = false;
-      hfRepo = "unsloth/Qwen3.5-9B-GGUF";
-      hfFile = "Qwen3.5-9B-Q4_K_M.gguf";
+      # Same as the 4B: the file is in the `surveyed` tree, not a `unsloth` download.
+      hfRepo = "surveyed";
+      hfFile = "qwen3.5-9b.gguf";
+      download.enable = false;
       mainRouter = "grunt";
       perf = {
         contextSize = 16384;
