@@ -1,7 +1,8 @@
 ---
 type: Task
 description: Umbrella task for a full local-LLM benchmark suite on brys (tok/s, cold/warm starts, memory, caches), a standalone disk-offload/RAM-reduction study, and an evaluation of Strata and other runners versus llama.cpp.
-status: in-progress
+status: done
+solution: done.md
 authored_by: agent
 timestamp: 2026-10-19T18:10:00+02:00
 ---
@@ -28,9 +29,9 @@ Three related efforts, tracked as sub-tasks in this directory:
 
 | # | Sub-task | Directory | Status |
 |---|---|---|---|
-| 001 | Benchmark suite | [001-benchmark-suite/](001-benchmark-suite/definition.md) | open |
-| 002 | Disk-offload / RAM-reduction study | [002-disk-offload/](002-disk-offload/definition.md) | open |
-| 003 | Runner evaluation (Strata, others) | [003-runner-eval/](003-runner-eval/definition.md) | open |
+| 001 | Benchmark suite | [001-benchmark-suite/](001-benchmark-suite/definition.md) | done |
+| 002 | Disk-offload / RAM-reduction study | [002-disk-offload/](002-disk-offload/definition.md) | done |
+| 003 | Runner evaluation (Strata, others) | [003-runner-eval/](003-runner-eval/definition.md) | done (researched-only) |
 
 ## Decisions taken (umbrella)
 
