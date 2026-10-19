@@ -505,6 +505,12 @@ in
       swap = {
         enable = true;
         routerEngine = "matrix";
+        # Verbose diagnostics window while brys is brought up: llama-swap at
+        # debug log level with every stream (proxy/upstream/http) on stdout and
+        # `--verbose` on each child, so a failed load explains itself. Turn this
+        # back to false once the topology is trusted (see
+        # kdn.llm.local.swap.debug).
+        debug = true;
         persistentModels = [
           "deepseek-v4-flash"
           "qwen3.8-flash-next"
