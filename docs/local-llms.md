@@ -193,6 +193,91 @@ kdn.llm.local.download.mode = "slow";                    # global: slow | fast-p
 
 Full option reference: [the den `llm` aspect](../modules/den/aspects/llm.nix).
 
+## All models (unified table)
+
+Every numeric column is measured on brys on 2026-10-18 except
+`params`/`license`/`ctx`, which come from the 2026 model survey. `RssAnon` and
+`VmRSS` are MiB; decode and prefill are tok/s. `ctx (served)` is the context the
+run used: 16384 for every measured run, or the registered served context for a
+model with no measurement. A dash means not applicable.
+
+| model | class | params (active) | license | file GB | ctx (served) | RssAnon | VmRSS | decode t/s | prefill t/s | mode | registered in |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| qwen3.8-flash-next | frontier | — | — | 93.7 | 1048576 | — | — | — | — | — | swap main |
+| deepseek-v4-flash | frontier | ~180B MoE | custom | 103 | 327680 | — | — | — | — | — | swap main |
+| qwen3.5-4b | grunt | 4B dense (hybrid Gated-DeltaNet) | Apache-2.0 | 2.6 | 16384 | 114 | 643 | 60.8 | 158.0 | GPU | swap with_grunt (:39705) |
+| qwen3.5-4b | grunt | 4B dense (hybrid Gated-DeltaNet) | Apache-2.0 | 2.6 | 16384 | 2118 | 4733 | 13.0 | 68.7 | CPU | swap with_grunt (:39705) |
+| qwen3.5-9b | grunt | 9B dense (hybrid) | Apache-2.0 | 5.3 | 16384 | 3437 | 8855 | 5.6 | 40.8 | CPU | swap with_grunt (:39705, disabled) |
+| phi-4 | small-cpu | — | — | 9 | 16384 | — | — | — | — | — | router small (:39704, llm-small) |
+| qwen3-30b-a3b | small-cpu | — | — | 18 | 131072 | — | — | — | — | — | router small (:39704, llm-small) |
+| qwen3-next-80b | small-cpu | — | — | 48 | 131072 | — | — | — | — | — | router small (:39704, llm-small) |
+| qwen3-coder-next | small-cpu | — | — | 48 | 131072 | — | — | — | — | — | router small (:39704, llm-small) |
+| gpt-oss-120b | small-cpu | — | — | 65 | — | — | — | — | — | — | router small (:39704, llm-small) |
+| qwen3-235b | small-cpu | — | — | 77 | 65536 | — | — | — | — | — | router small (:39704, llm-small) |
+| qwen3.5-0.8b | surveyed-gpu | 0.8B dense | Apache-2.0 | 0.5 | 16384 | 114 | 348 | 163.4 | 63.8 | GPU | swap with_surveyed (:39706, GPU) |
+| qwen3.5-0.8b | surveyed-gpu | 0.8B dense | Apache-2.0 | 0.5 | 16384 | 535 | 1043 | 55.8 | 43.0 | CPU | swap with_surveyed (:39706, GPU) |
+| qwen3.5-2b | surveyed-gpu | 2B dense (hybrid) | Apache-2.0 | 1.2 | 16384 | 114 | 544 | 116.8 | 273.5 | GPU | swap with_surveyed (:39706, GPU) |
+| qwen3.5-2b | surveyed-gpu | 2B dense (hybrid) | Apache-2.0 | 1.2 | 16384 | 864 | 2085 | 20.1 | 118.5 | CPU | swap with_surveyed (:39706, GPU) |
+| tmax-2b | surveyed-gpu | 2B dense | Apache-2.0 | 1.27 | 16384 | 117 | 557 | 110.7 | 311 | GPU | swap with_surveyed (:39706, GPU) |
+| tmax-2b | surveyed-gpu | 2B dense | Apache-2.0 | 1.27 | 16384 | 385 | 1650 | 28.6 | 79.7 | CPU | swap with_surveyed (:39706, GPU) |
+| granite-4.2-3b | surveyed-gpu | 3B dense | Apache-2.0 | 2.1 | 16384 | 59 | 232 | 83.9 | 223.6 | GPU | swap with_surveyed (:39706, GPU) |
+| granite-4.2-3b | surveyed-gpu | 3B dense | Apache-2.0 | 2.1 | 16384 | 2770 | 4906 | 19.8 | 174.0 | CPU | swap with_surveyed (:39706, GPU) |
+| ministral-3-3b-instruct | surveyed-gpu | — | — | 2.15 | 16384 | 74 | 429 | 79.3 | 1369 | GPU | swap with_surveyed (:39706, GPU) |
+| ministral-3-3b-instruct | surveyed-gpu | — | — | 2.15 | 16384 | 1778 | 3898 | 17.4 | 480 | CPU | swap with_surveyed (:39706, GPU) |
+| ministral-3-3b-reasoning | surveyed-gpu | — | — | 2.15 | 16384 | 74 | 429 | 80.9 | 933 | GPU | swap with_surveyed (:39706, GPU) |
+| ministral-3-3b-reasoning | surveyed-gpu | — | — | 2.15 | 16384 | 1778 | 3898 | 18.9 | 202 | CPU | swap with_surveyed (:39706, GPU) |
+| gemma-4-e2b | surveyed-gpu | — | — | 3.11 | 16384 | 133 | 1967 | 83.5 | 38.8 | GPU | swap with_surveyed (:39706, GPU) |
+| gemma-4-e2b | surveyed-gpu | — | — | 3.11 | 16384 | 263 | 3315 | 23.8 | 37.8 | CPU | swap with_surveyed (:39706, GPU) |
+| olmo-3-7b-instruct | surveyed-gpu | — | — | 4.47 | 16384 | 62 | 323 | 40.4 | 136 | GPU | swap with_surveyed (:39706, GPU) |
+| olmo-3-7b-instruct | surveyed-gpu | — | — | 4.47 | 16384 | 11445 | 15819 | 9.83 | 25.9 | CPU | swap with_surveyed (:39706, GPU) |
+| gemma-4-e4b | surveyed-gpu | 4.5B eff (8B w/ embeddings) | Apache-2.0 | 4.8 | 16384 | 170 | 2936 | 56.6 | 46.6 | GPU | swap with_surveyed (:39706, GPU) |
+| gemma-4-e4b | surveyed-gpu | 4.5B eff (8B w/ embeddings) | Apache-2.0 | 4.8 | 16384 | 2600 | 7512 | 9.6 | 50.5 | CPU | swap with_surveyed (:39706, GPU) |
+| granite-4.2-8b | surveyed-gpu | 8B dense | Apache-2.0 | 5.0 | 16384 | 46 | 298 | 38.6 | 146.0 | GPU | swap with_surveyed (:39706, GPU) |
+| granite-4.2-8b | surveyed-gpu | 8B dense | Apache-2.0 | 5.0 | 16384 | 6270 | 11349 | 8.2 | 71.1 | CPU | swap with_surveyed (:39706, GPU) |
+| ministral-3-8b-instruct | surveyed-gpu | — | — | 5.2 | 16384 | 74 | 402 | 38.4 | 576 | GPU | swap with_surveyed (:39706, GPU) |
+| ministral-3-8b-instruct | surveyed-gpu | — | — | 5.2 | 16384 | 2303 | 7403 | 8.1 | 244 | CPU | swap with_surveyed (:39706, GPU) |
+| ministral-3-8b-reasoning | surveyed-gpu | — | — | 5.2 | 16384 | 74 | 402 | 38.9 | 458 | GPU | swap with_surveyed (:39706, GPU) |
+| ministral-3-8b-reasoning | surveyed-gpu | — | — | 5.2 | 16384 | 2303 | 7403 | 8.5 | 56 | CPU | swap with_surveyed (:39706, GPU) |
+| mimo-v2.6-qwen-9b | surveyed-gpu | 9B dense | Apache-2.0 | 5.5 | 16384 | 3754 | 9325 | 5.7 | 28.1 | CPU | swap with_surveyed (:39706, GPU) |
+| tmax-9b | surveyed-gpu | 9B dense | Apache-2.0 | 5.63 | 16384 | 117 | 708 | 36.9 | 121 | GPU | swap with_surveyed (:39706, GPU) |
+| tmax-9b | surveyed-gpu | 9B dense | Apache-2.0 | 5.63 | 16384 | 839 | 6358 | 7.18 | 20.7 | CPU | swap with_surveyed (:39706, GPU) |
+| qwen3.5-0.8b-cpu | surveyed-cpu | 0.8B dense | Apache-2.0 | 0.5 | 16384 | 535 | 1043 | 55.8 | 43.0 | CPU | swap with_surveyed (:39706, CPU) |
+| qwen3.5-2b-cpu | surveyed-cpu | 2B dense (hybrid) | Apache-2.0 | 1.2 | 16384 | 864 | 2085 | 20.1 | 118.5 | CPU | swap with_surveyed (:39706, CPU) |
+| tmax-2b-cpu | surveyed-cpu | 2B dense | Apache-2.0 | 1.27 | 16384 | 385 | 1650 | 28.6 | 79.7 | CPU | swap with_surveyed (:39706, CPU) |
+| gemma-4-12b | surveyed-cpu | 11.95B dense | Apache-2.0 | 7.12 | 16384 | 1871 | 8842 | 5.76 | 10.4 | CPU | swap with_surveyed (:39706, CPU) |
+| gemma-4-26b-a4b | surveyed-cpu | 25.2B / 3.8B (MoE) | Apache-2.0 | 14 | 16384 | 14482 | 28248 | 14.5 | 67.7 | CPU | swap with_surveyed (:39706, CPU) |
+| qwen3.6-27b | surveyed-cpu | 27B dense | Apache-2.0 | 16 | 16384 | 11759 | 27798 | 1.8 | 10.1 | CPU | swap with_surveyed (:39706, CPU) |
+| granite-4.2-30b | surveyed-cpu | 30B dense | Apache-2.0 | 17 | 16384 | 17029 | 33865 | 2.1 | 17.1 | CPU | swap with_surveyed (:39706, CPU) |
+| gemma-4-31b | surveyed-cpu | 31B dense | Apache-2.0 | 18 | 16384 | 19319 | 36790 | 1.7 | 9.3 | CPU | swap with_surveyed (:39706, CPU) |
+| glm-4.7-flash | surveyed-cpu | 30B / ~3B (MoE) | MIT | 18 | 16384 | 13886 | 31352 | 11.5 | 46.5 | CPU | swap with_surveyed (:39706, CPU) |
+| olmo-3.1-32b | surveyed-cpu | 32B | Apache-2.0 | 19 | 16384 | 18361 | 36951 | 2.3 | 17.6 | CPU | swap with_surveyed (:39706, CPU) |
+| seed-oss-36b | surveyed-cpu | 36B dense | Apache-2.0 | 20 | 16384 | 20178 | 40937 | 2.0 | 12.0 | CPU | swap with_surveyed (:39706, CPU) |
+| qwen3.5-35b-a3b | surveyed-cpu | 35B / 3B (MoE) | Apache-2.0 | 21 | 16384 | 12210 | 33206 | 9.2 | 45.9 | CPU | swap with_surveyed (:39706, CPU) |
+| qwen3.6-35b-a3b | surveyed-cpu | 35B / ~3B (MoE) | Apache-2.0 | 21 | 16384 | 12210 | 33320 | 10.9 | 49.7 | CPU | swap with_surveyed (:39706, CPU) |
+| nemotron-3.5-lightning-30b | surveyed-cpu | 30B / 3B (Mamba-2 + MoE hybrid) | OpenMDW-1.1 | 24 | 16384 | 363 | 23527 | 12.9 | 44.0 | CPU | swap with_surveyed (:39706, CPU) |
+| nemotron-3.5-bolt-74b | bench-only | 74B / 9B | OpenMDW-1.1 | 21 | — | — | — | — | — | — | — (bench only) |
+
+Source research files: [coresidency-measured.research.md](tasks/2026-10/brys-grunt-colocation/coresidency-measured.research.md)
+(all measured columns), [models-2026.research.md](tasks/2026-10/brys-grunt-colocation/models-2026.research.md)
+and [models-2026-mid-large.research.md](tasks/2026-10/brys-grunt-colocation/models-2026-mid-large.research.md)
+(`params`/`license`), [single-specialisation.design.md](tasks/2026-10/brys-grunt-colocation/single-specialisation.design.md)
+(the `sets`/`evict_costs`), `hosts/brys/llm-routers.nix` and
+`hosts/brys/{default,llm-qwen,llms-frontier,llm-ds4,llm-small}.nix` (registration).
+
+### Coverage gaps
+
+- **KV cache** is measured only at the served context length (16384 for the
+  survey runs). It scales with context, so the footprint of a long-context model
+  (Qwen at 1M, DS4 at 320K) is understated here.
+- **Prompt / reuse cache is not in the table at all.** The only prompt-cache
+  measurement is warm-start prefix reuse in
+  [llm-warm-start-session/measurements-2026-10-18.research.md](tasks/2026-10/llm-warm-start-session/measurements-2026-10-18.research.md)
+  (0.44 s vs 76.1 s, ~174x) for two models.
+- **Registered but unmeasured:** `deepseek-v4-flash`, `qwen3.8-flash-next`, and
+  the six `small-cpu` set members.
+- **Measured but not registered:** only `nemotron-3.5-bolt-74b` (it fails to
+  load; deliberately omitted from the swap config).
+
 ## Global download behaviour
 
 Applies to all models equally (not per model):
