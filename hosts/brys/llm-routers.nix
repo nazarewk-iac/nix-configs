@@ -228,6 +228,7 @@
         "gemma-4-12b" = mkCpu "gemma-4-12b" 16384;
         "gemma-4-26b-a4b" = mkCpu "gemma-4-26b-a4b" 8192;
         "qwen3.6-27b" = mkCpu "qwen3.6-27b" 8192;
+        "qwen3.8-27b" = mkCpu "qwen3.8-27b" 32768;
         "granite-4.2-30b" = mkCpu "granite-4.2-30b" 8192;
         "gemma-4-31b" = mkCpu "gemma-4-31b" 8192;
         "glm-4.7-flash" = mkCpu "glm-4.7-flash" 8192;
