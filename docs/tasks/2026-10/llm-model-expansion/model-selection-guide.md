@@ -1,6 +1,6 @@
 ---
 type: Reference
-description: Plain-language guide to every measured local-LLM candidate on brys, for a reader new to LLMs: what each model is good for, its pros and cons, and a ranked shortlist per size and speed bucket.
+description: Plain-language guide to every measured local-LLM candidate on brys, for a reader new to LLMs: what each model is good for, its pros and cons, ranked picks per size and speed bucket, and workflow bundles that can become llama-swap groups.
 timestamp: 2026-10-20T22:30:00+02:00
 ---
 
@@ -52,8 +52,13 @@ below is a grunt or a specialist.
 | **ministral-3-3b-instruct** | 2.2 GB | 79 | quick chat, summarising; GPU-fit | long context |
 | **qwen3.5-4b** | 2.6 GB | 61 | strong small general model, the default small grunt | hard reasoning |
 
-**Pick:** `qwen3.5-4b` as the everyday small grunt (best all-round tiny).
-`qwen3.5-0.8b` when you want pure speed.
+**Picks (tiny):**
+
+1. **`qwen3.5-4b`** — the everyday small grunt; best all-round at this size.
+2. **`qwen3.5-0.8b`** — pure speed: routing, classification, tiny rewrites.
+3. **`granite-4.2-3b`** — when the job needs tool-calling, not raw speed.
+
+Runner-up: `ministral-3-3b-instruct` (chat/summarise).
 
 ### Small (3-6 GB) — Fast
 
@@ -68,8 +73,14 @@ below is a grunt or a specialist.
 | **ornith-1.5-9b** | 5.4 GB | 7.2 | **vision** at 9B (image understanding) | coding; slow for its size |
 | **qwen3-vl-8b** | 5.0 GB | 8.4 | vision: OCR, captions, image Q&A | coding; slow decode |
 
-**Pick:** `granite-4.2-8b` for tool-calling, `ministral-3-8b-instruct` for general
-chat. For **vision**, see the vision section below.
+**Picks (small):**
+
+1. **`granite-4.2-8b`** — tool-calling and agent steps.
+2. **`ministral-3-8b-instruct`** — general chat; balanced.
+3. **`tmax-9b`** or **`mimo-v2.6-qwen-9b`** — a fast 9B when you want more room
+   than the tiny class.
+
+For **vision**, see the workflow bundles below.
 
 ### Mid (7-17 GB) — Fast to Usable
 
@@ -83,8 +94,15 @@ chat. For **vision**, see the vision section below.
 | **qwen3.6-27b** | 16.8 GB | 3.1 | proven daily driver, vision | superseded by 3.8 |
 | **jirackdeltanet-27b** | 15.7 GB | 2.2 | experiment; little independent proof | unclear lineage, thin coverage |
 
-**Pick:** `lfm2.5-24b-a2b` for speed at mid size, `qwen3.8-27b` for quality+
-vision. `mellum` for a cheap fast reasoner.
+**Picks (mid):**
+
+1. **`lfm2.5-24b-a2b`** — the fastest big generalist; RAG, terminal chains, tool
+   use. Do not use it for code.
+2. **`qwen3.8-27b`** — the quality+vision pick; strong chat, tool-calling, and
+   vision in one model.
+3. **`mellum-2.1-12b-a2.5b`** — a cheap, fast reasoner for sub-agent work.
+
+Runner-up: `gemma-4-12b` when you need image+audio and a small footprint.
 
 ### Large (17-25 GB) — Usable to Slow
 
@@ -109,9 +127,18 @@ vision. `mellum` for a cheap fast reasoner.
 | **ornith-1.5-35b-a3b** | 21.7 GB | 8.8 | **vision MoE**, good speed+vision | coding |
 | **swift-1.5-qwen3.8-27b** | 11.0 GB | 2.0 | low-quant merge of 3.8-27B | a merge, not a new base |
 
-**Best large picks:** `qwen3.5-35b-a3b` / `qwen3.6-35b-a3b` (fast general),
-`glm-4.7-flash` (fast general), `qwen3-vl-30b-a3b` (vision), `north-mini-code-1.0`
-(code), `nemotron-3-nano-30b-a3b` (long context).
+**Picks (large), by role:**
+
+1. **General chat:** `qwen3.5-35b-a3b` **or** `qwen3.6-35b-a3b` **or**
+   `glm-4.7-flash` — all fast 30-35B MoE. Keep one.
+2. **Vision:** `qwen3-vl-30b-a3b` (fast) — the best speed/vision trade.
+3. **Code:** `north-mini-code-1.0` (fast, tool use) or `qwen3-coder-30b-a3b`
+   (pure Qwen, best prefill).
+4. **Long context / research:** `nemotron-3-nano-30b-a3b` (hybrid Mamba, 1M
+   context).
+5. **Audio + vision + text:** `qwen3-omni-30b-a3b`.
+
+Runner-up: `ornith-1.5-35b-a3b` (vision MoE at good speed).
 
 ### Specialists (any size)
 
@@ -123,21 +150,113 @@ vision. `mellum` for a cheap fast reasoner.
 | **hy-memory-30b-a3b** | 17.0 GB | writing an agent's long-term memory store | not a chat model |
 | **gemma-4-12b** | 7.1 GB | image + audio understanding | see mid bucket |
 
-## Recommendation: a small, useful fleet
+## Workflow bundles (candidate llama-swap groups)
 
-If you want to keep only a handful, this set covers almost every job:
+A **bundle** is a group of models for one kind of job. Each bundle maps to a
+llama-swap group/set: the members may co-reside, and a request names the model.
+The bundles overlap on purpose — a model can belong to more than one.
 
-1. **`qwen3.5-4b`** — the fast everyday grunt (61 tok/s). Non-negotiable.
-2. **`lfm2.5-24b-a2b`** — the fast big generalist (23 tok/s). Best speed/brain trade.
-3. **`qwen3.5-35b-a3b`** (or `glm-4.7-flash`) — a heavier generalist when quality
-   matters (20-23 tok/s).
-4. **`north-mini-code-1.0`** — the code specialist (18 tok/s).
-5. **`qwen3-vl-30b-a3b`** — vision, at good speed (15.7 tok/s).
-6. **`qwen3-omni-30b-a3b`** — audio + vision, if you want speech in (8.8 tok/s).
-7. **`qwen3-embedding-4b`** + **`qwen3-reranker-4b`** — retrieval for RAG.
-8. The two **frontier** models — the orchestrators, one resident at a time.
+Each bundle lists its members, a suggested **default** (the one to reach for
+first), and a **fast** alternative when latency matters more than quality.
 
-That is 8 grunts/specialists plus 2 orchestrators.
+### 1. Everyday Q&A and writing
+
+| role | model | speed |
+|---|---|---|
+| default | `qwen3.5-35b-a3b` (or `glm-4.7-flash`) | 20-23 tok/s |
+| fast | `qwen3.5-4b` | 61 tok/s |
+| quality | `qwen3.8-27b` | 2.45 tok/s |
+
+Use the fast member for interactive tasks, the default for most answers, the
+quality member when the answer must be right and time does not matter.
+
+### 2. Coding
+
+| role | model | speed |
+|---|---|---|
+| default | `north-mini-code-1.0` | 18 tok/s |
+| alternate | `qwen3-coder-30b-a3b` | 9 tok/s |
+| quality (slow) | `qwen3.8-27b` | 2.45 tok/s |
+
+`north-mini-code-1.0` is fast and tools-capable; `qwen3-coder-30b-a3b` is a pure
+Qwen coder with the best prefill. Neither replaces the orchestrator for large
+edits.
+
+### 3. Vision (images)
+
+| role | model | speed |
+|---|---|---|
+| default | `qwen3-vl-30b-a3b` | 15.7 tok/s |
+| fast / GPU | `qwen3-vl-8b` | 8.4 tok/s |
+| quality (slow) | `qwen3.8-27b` | 2.45 tok/s |
+
+Use for OCR, captions, "what is in this image". `qwen3-vl-8b` is small enough for
+the GPU; the 30B-A3B is the better default.
+
+### 4. Audio + vision (speech in)
+
+| role | model | speed |
+|---|---|---|
+| default | `qwen3-omni-30b-a3b` | 8.8 tok/s |
+
+The only model that takes audio, images, and text in one server. Use it when you
+need speech understanding; otherwise skip it.
+
+### 5. Reasoning sub-agent
+
+| role | model | speed |
+|---|---|---|
+| default | `mellum-2.1-12b-a2.5b` | 14.8 tok/s |
+| long-context | `nemotron-3-nano-30b-a3b` | 12.1 tok/s |
+
+For step-by-step work handed off by the orchestrator. `nemotron` when the
+context is long; `mellum` when speed matters.
+
+### 6. Agent tools, RAG, terminal
+
+| role | model | speed |
+|---|---|---|
+| default | `lfm2.5-24b-a2b` | 23 tok/s |
+| retrieval | `qwen3-embedding-4b` + `qwen3-reranker-4b` | n/a |
+
+`lfm2.5` is built for tool use, data extraction, RAG, and command chains — not
+coding. The embedding and reranker models turn text into vectors and re-order
+search results for a RAG pipeline.
+
+### 7. Tiny / always-on grunt
+
+| role | model | speed |
+|---|---|---|
+| default | `qwen3.5-4b` | 61 tok/s |
+| speed | `qwen3.5-0.8b` | 208 tok/s |
+| tools | `granite-4.2-3b` | 85 tok/s |
+
+For routing, classification, and small rewrites where latency is the point.
+
+### 8. Orchestrators (frontier)
+
+| role | model | note |
+|---|---|---|
+| default | `qwen3.8-flash-next` | 1M context, vision; the primary brain |
+| alternate | `deepseek-v4-flash` | 320K context; the other heavy model |
+
+Only one fits in RAM at a time. These plan and review; the bundles above do the
+fast work.
+
+## Recommended minimal fleet
+
+If you want the smallest set that still covers every bundle, keep:
+
+- **Orchestrators:** `qwen3.8-flash-next`, `deepseek-v4-flash`.
+- **General:** `qwen3.5-4b` (fast), `qwen3.5-35b-a3b` (default).
+- **Mid quality+vision:** `qwen3.8-27b`.
+- **Code:** `north-mini-code-1.0`.
+- **Vision:** `qwen3-vl-30b-a3b`.
+- **Tools/RAG:** `lfm2.5-24b-a2b`, `qwen3-embedding-4b`, `qwen3-reranker-4b`.
+
+That is 8 grunts/specialists plus the 2 orchestrators, and it covers bundles 1-3
+and 6-8. Add `qwen3-omni-30b-a3b` for bundle 4 and `mellum-2.1-12b` or
+`nemotron-3-nano-30b-a3b` for bundle 5 if you need them.
 
 ## What to drop first (least useful on this machine)
 
