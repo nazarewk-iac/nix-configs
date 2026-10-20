@@ -1,7 +1,7 @@
 ---
 type: Task
 description: Follow-ups from the local-LLM benchmark suite: a harness VRAM step, KV-quant/cache-ram measurement at the served 1M context, building and testing the experimental llama.cpp master variants, and packaging ik_llama.cpp for a runner comparison.
-status: in-progress
+status: done
 authored_by: agent
 timestamp: 2026-10-19T21:45:00+02:00
 ---
