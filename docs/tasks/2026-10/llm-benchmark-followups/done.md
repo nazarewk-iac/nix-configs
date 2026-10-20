@@ -67,6 +67,10 @@ A/B (through llama-swap) is the next step if wanted.
 
 ## Open follow-ups
 
-- Apply `q8_0` KV to the served Qwen at 1M (a config change, awaiting a
-  decision).
 - Serve ik_llama.cpp through llama-swap for a full A/B.
+- `q8_0` KV at 1M is **already applied and deployed**: the host files set
+  `qwenCacheTypeK/V = "q8_0"` (commit `wzyozlvvxrrr`) and the running
+  `llms-frontier` swap config carries `--cache-type-k q8_0 --cache-type-v q8_0`
+  at `--ctx-size 1048576`. No further change is needed. The served
+  `--cache-ram` is `8192`; the F2 study found `36864` also safe but not
+  necessary.
