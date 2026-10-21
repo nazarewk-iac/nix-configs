@@ -152,6 +152,7 @@ let
   # client discovery-only config runs each request at the model's real maximum.
   ds4Aliases = [
     "frontier"
+    "orchestrate-deep-slow-alt"
   ];
 
   # Qwen aliases. `qwen` is the short name; thinking is per request, so no
@@ -162,6 +163,7 @@ let
   # dedicated Qwen entry (no DS4) keeps `frontier`.
   qwenAliases = [
     "qwen"
+    "orchestrate-deep-slow"
   ]
   ++ lib.optional (!withFrontier) "frontier";
 
