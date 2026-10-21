@@ -65,12 +65,11 @@ choice. There is no `-main` suffix: the bare id is the main.
 
 ## The scheme applied
 
-Each row is one alias id, the model it currently resolves to, and that model's
-measured decode on brys. The `-alt` id resolves to the alternate model for the
-slot. A bare id is the primary; there is no `-main`.
-
-Models marked "(new)" are downloaded and measured but not yet registered; this
-change registers them.
+This is the **implemented** set: the aliases live in `hosts/brys/llm-routers.nix`
+(and `hosts/brys/llm.nix` for the frontier). Each row is one alias id, the model
+it resolves to, and that model's measured decode on brys. The `-alt` id resolves
+to the alternate model for the slot. A bare id is the primary; there is no
+`-main`.
 
 ### chat — everyday Q&A and writing
 
@@ -78,43 +77,42 @@ change registers them.
 |---|---|---|
 | `chat-dumb-fast` | `qwen3.5-4b` | 61 |
 | `chat-dumb-fast-alt` | `granite-4.2-3b` | 85 |
-| `chat-quick-fast` | `qwen3.5-4b` | 61 |
-| `chat-std-fast` | `lfm2.5-24b-a2b` (new) | 23 |
+| `chat-std-fast` | `lfm2.5-24b-a2b` | 23 |
 | `chat-std-mid` | `qwen3.5-35b-a3b` | 23 |
+| `chat-std-mid-long` | `nemotron-3-nano-30b-a3b` | 12.1 |
 | `chat-deep-slow` | `qwen3.8-27b` | 2.45 |
-| `chat-deep-slow-alt` | `deepseek-v4-flash` | 1.46 |
 
 ### code — code generation and edits
 
 | id | model | decode |
 |---|---|---|
 | `code-quick-fast` | `qwen3.5-4b` | 61 |
-| `code-std-fast` | `north-mini-code-1.0` (new) | 18 |
-| `code-std-fast-alt` | `qwen3-coder-30b-a3b` (new) | 9.1 |
+| `code-std-fast` | `north-mini-code-1.0` | 18 |
+| `code-std-fast-alt` | `mellum-2.1-12b-a2.5b-thinking` | 14.8 |
 | `code-deep-slow` | `qwen3.8-27b` | 2.45 |
 
 ### vision — images
 
 | id | model | decode |
 |---|---|---|
-| `vision-quick-fast` | `qwen3-vl-8b` (new) | 8.4 |
-| `vision-std-fast` | `qwen3-vl-30b-a3b` (new) | 15.7 |
-| `vision-std-fast-alt` | `ornith-1.5-35b-a3b` (new) | 8.8 |
+| `vision-quick-fast` | `qwen3-vl-8b-instruct` | 8.4 |
+| `vision-std-fast` | `qwen3-vl-30b-a3b` | 15.7 |
+| `vision-std-fast-alt` | `ornith-1.5-35b-a3b` | 8.8 |
 | `vision-deep-slow` | `qwen3.8-27b` | 2.45 |
 
 ### audio — speech in
 
 | id | model | decode |
 |---|---|---|
-| `audio-std-mid` | `qwen3-omni-30b-a3b` (new) | 8.8 |
+| `audio-std-mid` | `qwen3-omni-30b-a3b` | 8.8 |
 
 ### reason — step-by-step sub-agent
 
 | id | model | decode |
 |---|---|---|
-| `reason-quick-fast` | `mellum-2.1-12b-a2.5b` (new) | 14.8 |
+| `reason-quick-fast` | `mellum-2.1-12b-a2.5b-thinking` | 14.8 |
 | `reason-quick-fast-alt` | `ministral-3-3b-reasoning` | 81 |
-| `reason-std-fast` | `nemotron-3-nano-30b-a3b` (new) | 12.1 |
+| `reason-std-fast` | `nemotron-3-nano-30b-a3b` | 12.1 |
 | `reason-deep-slow` | `qwen3.8-27b` | 2.45 |
 
 ### tools — agent tools, function calling
@@ -122,7 +120,7 @@ change registers them.
 | id | model | decode |
 |---|---|---|
 | `tools-dumb-fast` | `granite-4.2-3b` | 85 |
-| `tools-std-fast` | `lfm2.5-24b-a2b` (new) | 23 |
+| `tools-std-fast` | `lfm2.5-24b-a2b` | 23 |
 | `tools-std-fast-alt` | `granite-4.2-8b` | 39 |
 | `tools-deep-slow` | `qwen3.8-27b` | 2.45 |
 
@@ -130,13 +128,13 @@ change registers them.
 
 | id | model | endpoint |
 |---|---|---|
-| `embed-std-fast` | `qwen3-embedding-4b` (new) | `/v1/embeddings` |
+| `embed-std-fast` | `qwen3-embedding-4b` | `/v1/embeddings` |
 
 ### rank — retrieval reranking
 
 | id | model | endpoint |
 |---|---|---|
-| `rank-std-fast` | `qwen3-reranker-4b` (new) | `/v1/rerank` |
+| `rank-std-fast` | `qwen3-reranker-4b` | `/v1/rerank` |
 
 ### tiny — always-on, latency-first
 
@@ -155,28 +153,32 @@ change registers them.
 
 Two orchestrator ids, because only one fits in RAM at a time.
 
-## Tagged variants (optional)
+## Tagged variants
 
-A tag narrows an id without a new complexity or speed. Use a tag only when a
-real need appears. The `-alt` suffix stays last.
+A tag narrows an id without a new complexity or speed. The `-alt` suffix stays
+last. These four are implemented:
 
 | id | meaning | model |
 |---|---|---|
 | `chat-std-mid-long` | long-context chat | `nemotron-3-nano-30b-a3b` |
 | `code-std-fast-moe` | fast MoE coder | `north-mini-code-1.0` |
 | `vision-std-fast-moe` | fast MoE VLM | `qwen3-vl-30b-a3b` |
-| `chat-deep-slow-think` | thinking on | `qwen3.8-27b` |
+| `reason-quick-fast-alt` | alternate quick reasoner | `ministral-3-3b-reasoning` |
 
-## How to implement
+## How to re-point or add an alias
 
-1. Register each "(new)" model in `hosts/brys/llm-routers.nix` (the `surveyed`
-   set) with `hfRepo = "surveyed"`, `download.enable = false`, and a `perf`
-   block.
-2. Attach the ids: add the id string to the assigned model's `aliases` list.
+1. To register a new model, add it to `hosts/brys/llm-routers.nix` (the
+   `surveyed` set) with `hfRepo = "surveyed"`, `download.enable = false`, and a
+   `perf` block.
+2. To attach an id, add the id string to the assigned model's `aliases` list.
    An alias is a routing name; it adds no KV cap and no memory.
 3. The frontier ids go in `hosts/brys/llm.nix` (`frontierModels`/`qwenModels`).
 4. Redeploy the `llms-frontier` specialisation.
 5. Confirm every id appears in `/v1/models` with the right `context_length`.
+
+To move an alias to a different model, move the string to that model's `aliases`
+and remove it from the old one. An alias must be unique; two models that claim
+one alias are rejected.
 
 A `-long` tag only works if the assigned model's served context is actually
 long, because an alias adds no context of its own.
