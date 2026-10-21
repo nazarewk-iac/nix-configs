@@ -375,7 +375,10 @@
         "mellum-2.1-12b-a2.5b-thinking" = mkCpu {
           name = "mellum-2.1-12b-a2.5b-thinking";
           ctx = 32768;
-          aliases = [ "reason-quick-fast" ];
+          aliases = [
+            "reason-quick-fast"
+            "code-std-fast-alt"
+          ];
         };
         "nemotron-3-nano-30b-a3b" = mkCpu {
           name = "nemotron-3-nano-30b-a3b";
@@ -392,11 +395,6 @@
             "code-std-fast"
             "code-std-fast-moe"
           ];
-        };
-        "qwen3-coder-30b-a3b" = mkCpu {
-          name = "qwen3-coder-30b-a3b";
-          ctx = 32768;
-          aliases = [ "code-std-fast-alt" ];
         };
         "qwen3-vl-8b-instruct" = mkCpu {
           name = "qwen3-vl-8b-instruct";
