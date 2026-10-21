@@ -110,7 +110,12 @@
       hfFile = "qwen3.5-4b.gguf";
       download.enable = false;
       mainRouter = "grunt";
-      aliases = [ "grunt" ];
+      aliases = [
+        "grunt"
+        "chat-dumb-fast"
+        "code-quick-fast"
+        "tiny-quick-fast"
+      ];
       perf = {
         contextSize = 16384;
         nGpuLayers = 99;
@@ -154,39 +159,83 @@
   # The corrupt `nemotron-3.5-bolt-74b` is deliberately omitted (it fails to load).
   surveyed =
     let
+      # The stable purpose aliases (see
+      # ../../docs/tasks/2026-10/llm-model-expansion/alias-scheme.design.md).
+      # A client names an intent (`chat-std-fast`); the server maps it to a model.
+      # To re-point an id, move the string to another model's `aliases`.
+      #
       # A fully-GPU grunt: the whole model fits the 8 GB W6600 at 16K context.
+      # `aliases` names the stable intent ids this model answers to; `mmproj`
+      # (a set) attaches a vision/audio projector.
       mkGpu =
-        name: extra:
+        {
+          name,
+          aliases ? [ ],
+          extra ? { },
+          mmproj ? null,
+        }:
         {
           enable = true;
           hfRepo = "surveyed";
           hfFile = "${name}.gguf";
           download.enable = false;
           mainRouter = "surveyed";
+          inherit aliases;
           perf = {
             contextSize = 16384;
             nGpuLayers = 99;
             device = "Vulkan0";
             parallel = 1;
             threads = 8;
-          } // extra;
-        };
+          }
+          // extra;
+        }
+        // (
+          if mmproj != null then
+            {
+              mmproj = {
+                enable = true;
+                hfRepo = "surveyed";
+                hfFile = mmproj;
+              };
+            }
+          else
+            { }
+        );
       # A CPU grunt: no GPU offload, a modest context and few threads, so it
       # barely competes with the frontier for cores.
       mkCpu =
-        name: ctx:
+        {
+          name,
+          ctx,
+          aliases ? [ ],
+          mmproj ? null,
+        }:
         {
           enable = true;
           hfRepo = "surveyed";
           hfFile = "${name}.gguf";
           download.enable = false;
           mainRouter = "surveyed";
+          inherit aliases;
           perf = {
             contextSize = ctx;
             parallel = 1;
             threads = 8;
           };
-        };
+        }
+        // (
+          if mmproj != null then
+            {
+              mmproj = {
+                enable = true;
+                hfRepo = "surveyed";
+                hfFile = mmproj;
+              };
+            }
+          else
+            { }
+        );
     in
     {
       kdn.llm.local.routers.surveyed = {
@@ -199,44 +248,193 @@
 
       kdn.llm.local.models = {
         # Smallest models, fully on the GPU.
-        "qwen3.5-0.8b" = mkGpu "qwen3.5-0.8b" { };
-        "qwen3.5-2b" = mkGpu "qwen3.5-2b" { };
-        "tmax-2b" = mkGpu "tmax-2b" { };
+        "qwen3.5-0.8b" = mkGpu {
+          name = "qwen3.5-0.8b";
+          aliases = [ "tiny-dumb-fast" ];
+        };
+        "qwen3.5-2b" = mkGpu {
+          name = "qwen3.5-2b";
+          aliases = [ "tiny-dumb-fast-alt" ];
+        };
+        "tmax-2b" = mkGpu { name = "tmax-2b"; };
         # Small dense models that fit the W6600.
-        "granite-4.2-3b" = mkGpu "granite-4.2-3b" { };
-        "ministral-3-3b-instruct" = mkGpu "ministral-3-3b-instruct" { };
-        "ministral-3-3b-reasoning" = mkGpu "ministral-3-3b-reasoning" { };
-        "gemma-4-e2b" = mkGpu "gemma-4-e2b" { };
+        "granite-4.2-3b" = mkGpu {
+          name = "granite-4.2-3b";
+          aliases = [
+            "tools-dumb-fast"
+            "chat-dumb-fast-alt"
+          ];
+        };
+        "ministral-3-3b-instruct" = mkGpu { name = "ministral-3-3b-instruct"; };
+        "ministral-3-3b-reasoning" = mkGpu {
+          name = "ministral-3-3b-reasoning";
+          aliases = [ "reason-quick-fast-alt" ];
+        };
+        "gemma-4-e2b" = mkGpu { name = "gemma-4-e2b"; };
         # olmo-3-7b needs a template fallback: its own template uses `tojson`,
         # which llama's Jinja parser rejects, so it loads only with `chatml`.
-        "olmo-3-7b-instruct" = mkGpu "olmo-3-7b-instruct" {
-          extraFlags = [ "--no-jinja" "--chat-template" "chatml" ];
+        "olmo-3-7b-instruct" = mkGpu {
+          name = "olmo-3-7b-instruct";
+          extra.extraFlags = [
+            "--no-jinja"
+            "--chat-template"
+            "chatml"
+          ];
         };
-        "gemma-4-e4b" = mkGpu "gemma-4-e4b" { };
-        "granite-4.2-8b" = mkGpu "granite-4.2-8b" { };
-        "ministral-3-8b-instruct" = mkGpu "ministral-3-8b-instruct" { };
-        "ministral-3-8b-reasoning" = mkGpu "ministral-3-8b-reasoning" { };
-        "tmax-9b" = mkGpu "tmax-9b" { };
-        "mimo-v2.6-qwen-9b" = mkGpu "mimo-v2.6-qwen-9b" { };
+        "gemma-4-e4b" = mkGpu { name = "gemma-4-e4b"; };
+        "granite-4.2-8b" = mkGpu {
+          name = "granite-4.2-8b";
+          aliases = [ "tools-std-fast-alt" ];
+        };
+        "ministral-3-8b-instruct" = mkGpu { name = "ministral-3-8b-instruct"; };
+        "ministral-3-8b-reasoning" = mkGpu { name = "ministral-3-8b-reasoning"; };
+        "tmax-9b" = mkGpu { name = "tmax-9b"; };
+        "mimo-v2.6-qwen-9b" = mkGpu { name = "mimo-v2.6-qwen-9b"; };
 
         # CPU variants of the three smallest, reachable by a `-cpu` id.
-        "qwen3.5-0.8b-cpu" = mkCpu "qwen3.5-0.8b" 8192;
-        "qwen3.5-2b-cpu" = mkCpu "qwen3.5-2b" 8192;
-        "tmax-2b-cpu" = mkCpu "tmax-2b" 8192;
+        "qwen3.5-0.8b-cpu" = mkCpu {
+          name = "qwen3.5-0.8b";
+          ctx = 8192;
+        };
+        "qwen3.5-2b-cpu" = mkCpu {
+          name = "qwen3.5-2b";
+          ctx = 8192;
+        };
+        "tmax-2b-cpu" = mkCpu {
+          name = "tmax-2b";
+          ctx = 8192;
+        };
 
         # Bigger models stay on the CPU (no GPU offload).
-        "gemma-4-12b" = mkCpu "gemma-4-12b" 16384;
-        "gemma-4-26b-a4b" = mkCpu "gemma-4-26b-a4b" 8192;
-        "qwen3.6-27b" = mkCpu "qwen3.6-27b" 8192;
-        "qwen3.8-27b" = mkCpu "qwen3.8-27b" 32768;
-        "granite-4.2-30b" = mkCpu "granite-4.2-30b" 8192;
-        "gemma-4-31b" = mkCpu "gemma-4-31b" 8192;
-        "glm-4.7-flash" = mkCpu "glm-4.7-flash" 8192;
-        "olmo-3.1-32b" = mkCpu "olmo-3.1-32b" 8192;
-        "seed-oss-36b" = mkCpu "seed-oss-36b" 8192;
-        "qwen3.5-35b-a3b" = mkCpu "qwen3.5-35b-a3b" 8192;
-        "qwen3.6-35b-a3b" = mkCpu "qwen3.6-35b-a3b" 8192;
-        "nemotron-3.5-lightning-30b" = mkCpu "nemotron-3.5-lightning-30b" 8192;
+        "gemma-4-12b" = mkCpu {
+          name = "gemma-4-12b";
+          ctx = 16384;
+        };
+        "gemma-4-26b-a4b" = mkCpu {
+          name = "gemma-4-26b-a4b";
+          ctx = 8192;
+        };
+        "qwen3.6-27b" = mkCpu {
+          name = "qwen3.6-27b";
+          ctx = 8192;
+        };
+        "qwen3.8-27b" = mkCpu {
+          name = "qwen3.8-27b";
+          ctx = 32768;
+          aliases = [
+            "chat-deep-slow"
+            "code-deep-slow"
+            "vision-deep-slow"
+            "reason-deep-slow"
+            "tools-deep-slow"
+          ];
+        };
+        "granite-4.2-30b" = mkCpu {
+          name = "granite-4.2-30b";
+          ctx = 8192;
+        };
+        "gemma-4-31b" = mkCpu {
+          name = "gemma-4-31b";
+          ctx = 8192;
+        };
+        "glm-4.7-flash" = mkCpu {
+          name = "glm-4.7-flash";
+          ctx = 8192;
+        };
+        "olmo-3.1-32b" = mkCpu {
+          name = "olmo-3.1-32b";
+          ctx = 8192;
+        };
+        "seed-oss-36b" = mkCpu {
+          name = "seed-oss-36b";
+          ctx = 8192;
+        };
+        "qwen3.5-35b-a3b" = mkCpu {
+          name = "qwen3.5-35b-a3b";
+          ctx = 8192;
+          aliases = [ "chat-std-mid" ];
+        };
+        "qwen3.6-35b-a3b" = mkCpu {
+          name = "qwen3.6-35b-a3b";
+          ctx = 8192;
+        };
+        "nemotron-3.5-lightning-30b" = mkCpu {
+          name = "nemotron-3.5-lightning-30b";
+          ctx = 8192;
+        };
+
+        # New candidates (measured 2026-10-20), registered with purpose aliases.
+        "lfm2.5-24b-a2b" = mkCpu {
+          name = "lfm2.5-24b-a2b";
+          ctx = 32768;
+          aliases = [
+            "chat-std-fast"
+            "tools-std-fast"
+          ];
+        };
+        "mellum-2.1-12b-a2.5b-thinking" = mkCpu {
+          name = "mellum-2.1-12b-a2.5b-thinking";
+          ctx = 32768;
+          aliases = [ "reason-quick-fast" ];
+        };
+        "nemotron-3-nano-30b-a3b" = mkCpu {
+          name = "nemotron-3-nano-30b-a3b";
+          ctx = 32768;
+          aliases = [
+            "reason-std-fast"
+            "chat-std-mid-long"
+          ];
+        };
+        "north-mini-code-1.0" = mkCpu {
+          name = "north-mini-code-1.0";
+          ctx = 32768;
+          aliases = [
+            "code-std-fast"
+            "code-std-fast-moe"
+          ];
+        };
+        "qwen3-coder-30b-a3b" = mkCpu {
+          name = "qwen3-coder-30b-a3b";
+          ctx = 32768;
+          aliases = [ "code-std-fast-alt" ];
+        };
+        "qwen3-vl-8b-instruct" = mkCpu {
+          name = "qwen3-vl-8b-instruct";
+          ctx = 32768;
+          aliases = [ "vision-quick-fast" ];
+          mmproj = "qwen3-vl-8b-instruct-mmproj.gguf";
+        };
+        "qwen3-vl-30b-a3b" = mkCpu {
+          name = "qwen3-vl-30b-a3b";
+          ctx = 32768;
+          aliases = [
+            "vision-std-fast"
+            "vision-std-fast-moe"
+          ];
+          mmproj = "qwen3-vl-30b-a3b-mmproj.gguf";
+        };
+        "qwen3-omni-30b-a3b" = mkCpu {
+          name = "qwen3-omni-30b-a3b";
+          ctx = 32768;
+          aliases = [ "audio-std-mid" ];
+          mmproj = "qwen3-omni-30b-a3b-mmproj.gguf";
+        };
+        "ornith-1.5-35b-a3b" = mkCpu {
+          name = "ornith-1.5-35b-a3b";
+          ctx = 32768;
+          aliases = [ "vision-std-fast-alt" ];
+          mmproj = "mmproj-ornith-1.5-35b-a3b.gguf";
+        };
+        "qwen3-embedding-4b" = mkCpu {
+          name = "qwen3-embedding-4b";
+          ctx = 8192;
+          aliases = [ "embed-std-fast" ];
+        };
+        "qwen3-reranker-4b" = mkCpu {
+          name = "qwen3-reranker-4b";
+          ctx = 8192;
+          aliases = [ "rank-std-fast" ];
+        };
       };
     };
 }
