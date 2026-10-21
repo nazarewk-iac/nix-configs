@@ -14,6 +14,14 @@
 # the plugins; it also installs the `kdn-llms` agent skill. The `homeManager` target installs that
 # same skill into a user's home, so a home-manager config reaches it too.
 #
+# ## The skill path is harness-agnostic
+#
+# The skill installs to `.agents/skills/kdn-llms/SKILL.md` (project) and `~/.agents/skills/...`
+# (home). `.agents/skills/` is the cross-harness convention: opencode, Codex CLI, Cursor, Gemini
+# CLI, Amp, Copilot/VS Code and others read it, and it ties the skill to no single harness. Claude
+# Code does NOT read `.agents/skills/`; it needs a symlink from `.claude/skills` to
+# `../.agents/skills`. This repository already carries that symlink at the project root.
+#
 # ## Why it includes `opencode`
 #
 # The provider block reaches opencode through `opencode.settings`, and a provider block with no
@@ -373,6 +381,8 @@
         };
     in
     {
+      imports = [ ../common/source-repo.nix ];
+
       options.kdn.llm.client.upstreams = lib.mkOption {
         type = lib.types.attrsOf (lib.types.submodule upstreamSubmodule);
         default = { };
@@ -416,10 +426,11 @@
             ".opencode/plugins/kdn-models-discovery.ts".text = discoveryPluginText;
           })
           # The skill describes the endpoint this aspect already configures, so a consumer finds it
-          # useful whatever its upstreams hold. Install it with no gate.
-          {
-            ".claude/skills/kdn-llms/SKILL.md".source = ../../../.agents/skills/kdn-llms/SKILL.md;
-          }
+          # useful whatever its upstreams hold. Install it unconditionally, except in the source
+          # repository, which tracks the file itself and needs no copy.
+          (lib.mkIf (!config.kdn.isSourceRepo) {
+            ".agents/skills/kdn-llms/SKILL.md".source = ../../../.agents/skills/kdn-llms/SKILL.md;
+          })
         ];
       };
     };
@@ -428,8 +439,15 @@
   # too. The aspect's opencode provider lives in the devenv shell, so this target holds the skill
   # alone. No `enable` option and no entity argument, per the header rules.
   kdn.llm-client.homeManager =
-    { lib, ... }:
     {
-      home.file.".claude/skills/kdn-llms/SKILL.md".source = ../../../.agents/skills/kdn-llms/SKILL.md;
+      config,
+      lib,
+      ...
+    }:
+    {
+      imports = [ ../common/source-repo.nix ];
+      home.file = lib.mkIf (!config.kdn.isSourceRepo) {
+        ".agents/skills/kdn-llms/SKILL.md".source = ../../../.agents/skills/kdn-llms/SKILL.md;
+      };
     };
 }
