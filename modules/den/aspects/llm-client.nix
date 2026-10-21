@@ -8,9 +8,11 @@
 # `kdn.llm-client.upstreams`, and each entry becomes one `provider.<name>` block in
 # `opencode.jsonc`: the base URL, an API-key reference, and one model entry per served model.
 #
-# ## The class
+# ## The classes
 #
-# `devenv` only. The slot emits one target, `devenv`, so this aspect declares one class.
+# `devenv` and `homeManager`. The `devenv` target wires the opencode provider, the wrapper key and
+# the plugins; it also installs the `kdn-llms` agent skill. The `homeManager` target installs that
+# same skill into a user's home, so a home-manager config reaches it too.
 #
 # ## Why it includes `opencode`
 #
@@ -413,7 +415,21 @@
           (lib.optionalAttrs (discoveryPluginText != "") {
             ".opencode/plugins/kdn-models-discovery.ts".text = discoveryPluginText;
           })
+          # The skill describes the endpoint this aspect already configures, so a consumer finds it
+          # useful whatever its upstreams hold. Install it with no gate.
+          {
+            ".claude/skills/kdn-llms/SKILL.md".source = ../../../.agents/skills/kdn-llms/SKILL.md;
+          }
         ];
       };
+    };
+
+  # The home-manager route. It writes the same skill file, so a home-manager config gets the skill
+  # too. The aspect's opencode provider lives in the devenv shell, so this target holds the skill
+  # alone. No `enable` option and no entity argument, per the header rules.
+  kdn.llm-client.homeManager =
+    { lib, ... }:
+    {
+      home.file.".claude/skills/kdn-llms/SKILL.md".source = ../../../.agents/skills/kdn-llms/SKILL.md;
     };
 }
