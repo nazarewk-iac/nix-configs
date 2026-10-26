@@ -102,45 +102,49 @@ creation_rules:
           # defaults
           - *yk-brys-unattended
           - *yk-oams-unattended
-  # One rule per host, so each leaf key goes to its own host alone plus the admin touch keys.
-  # A shared rule would grant every listed host SSH access to every other host's key.
-  - path_regex: 'hosts/oams/certs/zellij\.key\.sops$'
+  # One rule per host, so each non-CA key file goes to that host's own SSH key alone, plus the two
+  # non-touch YubiKey identities (`yk-oams-unattended`, `yk-brys-unattended`). No touch-required
+  # recipient: a host decrypts its own keys at boot with no user present, and the admin decrypts any
+  # host's keys with an unattended YubiKey. Touch-required custody is reserved for the CA keys
+  # (`data/ca/*.key.sops`). A shared rule would grant every listed host SSH access to every other
+  # host's key. This covers the SSH host key (`ssh_host_ed25519.key.sops`) and the leaf keys
+  # (`zellij.key.sops`, `llm.key.sops`).
+  - path_regex: 'hosts/oams/certs/.*\.key\.sops$'
     key_groups:
       - age:
           - *ssh-oams
-          - *yk-oams-touch
-          - *yk-brys-touch
-          - *yk-pton-touch
-  - path_regex: 'hosts/brys/certs/zellij\.key\.sops$'
+          - *yk-oams-unattended
+          - *yk-brys-unattended
+  - path_regex: 'hosts/brys/certs/.*\.key\.sops$'
     key_groups:
       - age:
           - *ssh-brys
-          - *yk-oams-touch
-          - *yk-brys-touch
-          - *yk-pton-touch
-  - path_regex: 'hosts/etra/certs/zellij\.key\.sops$'
+          - *yk-oams-unattended
+          - *yk-brys-unattended
+  - path_regex: 'hosts/etra/certs/.*\.key\.sops$'
     key_groups:
       - age:
           - *ssh-etra
-          - *yk-oams-touch
-          - *yk-brys-touch
-          - *yk-pton-touch
-  - path_regex: 'hosts/moss/certs/zellij\.key\.sops$'
+          - *yk-oams-unattended
+          - *yk-brys-unattended
+  - path_regex: 'hosts/moss/certs/.*\.key\.sops$'
     key_groups:
       - age:
           - *ssh-moss
-          - *yk-oams-touch
-          - *yk-brys-touch
-          - *yk-pton-touch
-  # The brys SSH host-certificate key. sshd reads it at runtime, so the host's own age key is a
-  # recipient, next to the admin touch YubiKeys — the same shape as the zellij-web rules above.
-  - path_regex: 'hosts/brys/certs/ssh_host_ed25519\.key\.sops$'
+          - *yk-oams-unattended
+          - *yk-brys-unattended
+  - path_regex: 'hosts/anji/certs/.*\.key\.sops$'
     key_groups:
       - age:
-          - *ssh-brys
-          - *yk-oams-touch
-          - *yk-brys-touch
-          - *yk-pton-touch
+          - *ssh-anji
+          - *yk-oams-unattended
+          - *yk-brys-unattended
+  - path_regex: 'hosts/briv/certs/.*\.key\.sops$'
+    key_groups:
+      - age:
+          - *ssh-briv
+          - *yk-oams-unattended
+          - *yk-brys-unattended
   - path_regex: '.*brys.*\.key\.sops'
     key_groups:
       - age:
