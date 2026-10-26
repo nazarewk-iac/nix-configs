@@ -612,10 +612,14 @@ sops-nix. Answer: on the hosts, sops-nix does the runtime job. The manual `sops`
 sign time and in dead code.
 
 **(a) The leaf key at rest.** `hosts/moss/certs/zellij.key.sops` holds the zellij-web private key
-for `moss`. It is a raw/binary SOPS file, and the repo commits it. The `.sops.yaml` rule at
-`.sops.yaml:128` names four age recipients: `ssh-moss` (the host SSH key) plus three admin touch
-YubiKeys. One rule per host, so no host reads the key of another host. `hosts/oams`, `hosts/brys`
-and `hosts/etra` hold the same shape.
+for `moss`. It is a raw/binary SOPS file, and the repo commits it. The `.sops.yaml` rule
+`hosts/moss/certs/.*\.key\.sops$` names three age recipients: `ssh-moss` (the host SSH key) plus the
+two non-touch YubiKey identities (`yk-oams-unattended`, `yk-brys-unattended`). No touch-required
+recipient: a host decrypts its own keys at boot unattended, and the admin decrypts any host's keys
+with an unattended YubiKey. One rule per host, so no host reads the key of another host.
+`hosts/oams`, `hosts/brys`, `hosts/etra`, `hosts/anji` and `hosts/briv` hold the same shape, and the
+same rule covers each host's SSH host key (`ssh_host_ed25519.key.sops`). Touch-required custody is
+reserved for the CA keys (`data/ca/*.key.sops`).
 
 **(b) The runtime decrypt.** The `certificates` aspect writes one `sops.secrets` entry per leaf
 (`modules/den/aspects/certificates.nix:243-251`): `format = "binary"`, `sopsFile` at the committed
@@ -629,9 +633,10 @@ and `hosts/etra` hold the same shape.
 certificates, so the CA key must never reach a host through sops-nix. The `kdn-certs` CLI shells
 out to `sops decrypt` and `sops encrypt` at author time (`packages/kdn-certs/internal/sops/sops.go`).
 Custody stays with YubiKeys: `data/ca/kdn.key.sops` names the two unattended YubiKey identities
-only (`.sops.yaml:153-157`, `docs/ssh-signing.md:25`), so signing runs headless for the key holder.
-The old `data/ca/ca.key.sops` matches the generic rule at `.sops.yaml:158`: touch YubiKeys only.
-Rotation to a touch-required CA is task [007-ca-rotation](007-ca-rotation/definition.md).
+only (the rule `data/ca/kdn\.key\.sops$`, `docs/ssh-signing.md:25`), so signing runs headless for
+the key holder. The old `data/ca/ca.key.sops` matches the generic `.*\.key\.sops` rule: touch
+YubiKeys only. Rotation to a touch-required CA is task
+[007-ca-rotation](007-ca-rotation/definition.md).
 
 **(d) The dead manual path.** Before sub-task 006, each host set `keySopsFile`, and a root oneshot
 `kdn-zellij-web-key` ran `sops decrypt` into `/run/secrets/kdn/zellij/<host>.key`
