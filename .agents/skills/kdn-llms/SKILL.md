@@ -182,6 +182,14 @@ A missing or wrong chat template makes a model silently "dumber".
   `--no-context-shift` to get an error), chat-template mismatch, long-context
   OOM, loops, and the W6600 GPU hang under the Vulkan draft head (keep it off).
 
+**Watching logs when something breaks.** brys no longer runs `llama-cpp.service`;
+`llama-swap.service` spawns every `llama-server` child. So:
+`journalctl -u llama-swap -f` (child logs are present only with
+`swap.debug = true`, which gives `logToStdout = "both"`), `journalctl -u
+kdn-llm-proxy-lan -f` (the compat proxy), and on the host
+`curl -s http://127.0.0.1:39700/logs` (per-model ring buffer, no history).
+Full recipe: [docs/local-llms.md](../../../docs/local-llms.md#watching-the-logs-in-practice).
+
 ## Keeping this skill current
 
 This skill is a **living document**. Update it as we learn, in the same change

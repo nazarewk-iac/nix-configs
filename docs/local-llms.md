@@ -148,6 +148,50 @@ llama-swap has no per-model `--metrics` toggle. `perf.extraFlags` (see the model
 table) is the hook that would add `--metrics` per model if that is ever wanted.
 This document records the status only; nothing is wired.
 
+### Watching the logs in practice
+
+`services.llama-cpp` is no longer the process that serves the frontier on brys.
+Since the llama-swap migration there is **one** interactive unit, and it owns
+every child:
+
+| Unit | What it is |
+|---|---|
+| `llama-swap.service` | the swapper. It reads the generated `config.yaml`, spawns one `llama-server` per model on first request, and holds the routing policy. |
+| `kdn-llm-proxy-lan.service` | the compat proxy in front of the swapper (`https://brys.priv.nb.net.int.kdn.im/v1`). |
+| `services.llama-cpp` units (`llama-cpp.service`, `llama-cpp-<router>.service`) | still exist, but only when `swap.enable = false`. The pre-swap router names are gone from a swapped host. |
+
+```sh
+# The whole picture on a swapped host: swapper lifecycle, load/unload, and,
+# with swap.debug on, every child llama-server log line too (logToStdout=both).
+journalctl -u llama-swap -f
+
+# Only the child model logs that the journal carries (debug mode):
+journalctl -u llama-swap -f | grep -E 'llama_model_loader|llama_context|slot launch|n_ctx'
+
+# The compat proxy: routing decisions and the `usage` chunk pass-through.
+journalctl -u kdn-llm-proxy-lan -f
+
+# A host that still runs the pre-swap router:
+journalctl -u llama-cpp -f
+```
+
+**Child logs reach the journal only in debug mode.** `swap.logToStdout` defaults
+to `proxy`, which keeps the children's stdout in llama-swap's in-memory ring
+buffer alone; set `kdn.llm.local.swap.debug = true` to get `both` (proxy,
+upstream and HTTP access on stdout, `--verbose` on each child). brys runs with
+debug on, so `journalctl -u llama-swap` holds the load failures (tensor mismatch,
+OOM, bad template) as well as the swapper's own lines.
+
+**Read one model's log without the journal**, on the swap host itself:
+
+```sh
+curl -s http://127.0.0.1:39700/logs              # ring buffer, all models
+curl -sN http://127.0.0.1:39700/logs/stream/<model>   # follow one model
+curl -s http://127.0.0.1:39700/running           # currently resident models
+```
+
+The ring buffer does not survive a restart: llama-swap keeps no history.
+
 ## N-router topology and routing
 
 The compat-proxy maps each request's `model` (a name or an alias) through its
@@ -804,7 +848,9 @@ speculative path.
 
 **Server logs.** A manual one-off `llama-server` run should pass
 `--log-file <path>`, so its output stays inspectable after the run. The running
-service logs to journald: `journalctl -u llama-cpp`.
+service logs to journald: `journalctl -u llama-swap` on a swapped host,
+`journalctl -u llama-cpp` on a pre-swap host. See
+[Watching the logs in practice](#watching-the-logs-in-practice).
 
 ### Qwen3.8-Flash-Next on brys (2026-10-06)
 
