@@ -111,6 +111,26 @@ in
             (lib.mkIf config.kdn.security.secrets.allowed {
               # SOPS+age config
               services.pcscd.enable = true;
+
+              # Break the `sysinit.target` ordering cycle that the `sops-install-secrets` edge below
+              # creates. sops-nix runs `sops-install-secrets.service` `Before=sysinit.target` and
+              # `WantedBy=sysinit.target`. This module then adds `After=pcscd.socket` +
+              # `Requires=pcscd.socket` to it. A default `pcscd.socket` carries
+              # `DefaultDependencies=yes`, which makes it `After=sysinit.target`; so the cycle is
+              #   sysinit.target -> sops-install-secrets -> pcscd.socket -> sysinit.target.
+              # systemd breaks it by deleting the `sops-install-secrets.service/start` job, so no
+              # secret is ever decrypted, `kdn-secrets.target` never fires, and `sshd` (which
+              # `Requires` that target) never starts — the host then refuses port 22 on every
+              # interface.
+              #
+              # Dropping the default dependencies makes `pcscd` order after `local-fs.target` alone,
+              # so its own ordering cannot route back through `sysinit.target`.
+              # `networking/router/default.nix` writes the same fix for the same cycle on routers.
+              systemd.services.pcscd.unitConfig.DefaultDependencies = false;
+              systemd.services.pcscd.after = [ "local-fs.target" ];
+              systemd.sockets.pcscd.unitConfig.DefaultDependencies = false;
+              systemd.sockets.pcscd.after = [ "local-fs.target" ];
+
               systemd.services.sops-install-secrets.after = [ "pcscd.socket" ];
               systemd.services.sops-install-secrets.requires = [ "pcscd.socket" ];
             })
