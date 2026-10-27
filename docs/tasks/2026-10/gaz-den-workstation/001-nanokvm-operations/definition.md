@@ -64,6 +64,31 @@ Two devices now exist with the same software:
   signal. `dmesg` shows `LT6911--:-- INT!!##`. Capture is **not** `/dev/video*`;
   it is the vendor `soph_vc_driver` pipeline.
 
+## Observed on `kvm-fa56`, 2026-10-27
+
+Three distinct faults, and they must not be confused:
+
+| Symptom | Evidence | Meaning |
+|---|---|---|
+| `cube_screenshot` fails at any timeout | `retCode: -4`, `screenshot capture is temporarily unavailable`, `dmesg` `LT6911--:-- INT!!##` | no HDMI signal: the source is off, asleep, or the display is off |
+| `cube_press_keys` and `cube_type_text` fail | `write /dev/hidg0: i/o timeout`, `dwc2 4340000.usb: wakeup: signalling skipped: is not allowed by host` | the USB HID gadget is wedged, or the host is not enumerating it |
+| a screenshot works, then stops | one good frame, then `retCode -4` | the guest display went to sleep; the link is fine |
+
+What was tried, and what it cost:
+
+- A **UDC rebind** (`echo "" > /sys/kernel/config/usb_gadget/g0/UDC; sleep 2; echo
+  4340000.usb > ...`) re-bound the gadget (`dwc2 … bound driver configfs-gadget`)
+  but **did not restore HID**. The next keypress still timed out.
+- The same rebind is documented to work on `kvm-2795`, so this is the harder
+  variant from that document: **the host-side port needs a physical replug**.
+- Video and HID are independent paths. A good picture does not prove the
+  keyboard works. **Probe HID before planning a GUI step**, not after.
+
+The practical rule this adds to the skill: on this device, always send one
+harmless key (`ShiftLeft`) and require a success return **before** any step that
+depends on typing. A `timeout after 50ms: write /dev/hidg0` return is the
+signal to switch to a physical hand-off, not to retry.
+
 ## Acceptance
 
 - The skill is loadable and short enough to read in one screen.
