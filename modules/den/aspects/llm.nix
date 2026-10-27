@@ -1752,6 +1752,20 @@
             // lib.optionalAttrs (cfg.sessionStore != null) {
               SupplementaryGroups = [ cfg.sessionStore.group ];
             };
+            # llama-swap picks a GPU monitoring backend in the order LACT, nvidia-smi,
+            # rocm-smi, sysfs (`internal/perf/monitor_unix.go`). Its sysfs backend is a stub
+            # (`ErrNotImplemented`), and this host runs no LACT daemon, so `rocm-smi` is the
+            # only reader that works here. The nixpkgs module sets no unit `PATH`, so without
+            # this the binary is not found and llama-swap logs "GPU monitoring not available".
+            #
+            # `rocm-smi` is a Python ctypes wrapper that dlopen()s `libdrm_amdgpu.so` at run
+            # time, so an `LD_LIBRARY_PATH` with libdrm is required as well: without it every
+            # call prints "Fail to open libdrm_amdgpu.so" and returns degraded data.
+            llama-swap.path = [ pkgs.rocmPackages.rocm-smi ];
+            llama-swap.environment.LD_LIBRARY_PATH = lib.makeLibraryPath [
+              pkgs.rocmPackages.rocm-smi
+              pkgs.libdrm
+            ];
             # Assemble the per-key files under `apiKeyDir` into one file in llama-swap's own cache
             # directory, which its DynamicUser can write (`CacheDirectory = "llama-swap"`). It mirrors
             # the router path's `llama-cpp.preStart`: it strips a comment line and an empty line, and
