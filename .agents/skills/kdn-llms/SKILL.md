@@ -188,13 +188,22 @@ A missing or wrong chat template makes a model silently "dumber".
   `--no-context-shift` to get an error), chat-template mismatch, long-context
   OOM, loops, and the W6600 GPU hang under the Vulkan draft head (keep it off).
 
-**Watching logs when something breaks.** brys no longer runs `llama-cpp.service`;
-`llama-swap.service` spawns every `llama-server` child. So:
+**Watching logs and reading performance.** brys no longer runs
+`llama-cpp.service`; `llama-swap.service` spawns every `llama-server` child. So:
 `journalctl -u llama-swap -f` (child logs are present only with
 `swap.debug = true`, which gives `logToStdout = "both"`), `journalctl -u
 kdn-llm-proxy-lan -f` (the compat proxy), and on the host
 `curl -s http://127.0.0.1:39700/logs` (per-model ring buffer, no history).
-Full recipe: [docs/local-llms.md](../../../docs/local-llms.md#watching-the-logs-in-practice).
+
+Per-model performance is **already exposed** — do not parse logs for it:
+`GET /api/metrics/activity` returns one record per request with `model`,
+`tokens.prompt_per_second`, `tokens.tokens_per_second`, `duration_ms` and the
+status code; `/api/metrics/stats` aggregates them with p50/p95/p99 histograms;
+`/api/captures/<id>` returns the request and response (auth redacted);
+`/api/performance` gives GPU temperature, VRAM and power; `/api/hardware` gives a
+full hardware inventory. All of it is in-memory and ring-buffered, so history
+needs a small poller, not a log parser. `/metrics` (Prometheus) is system-only.
+Full recipe: [docs/local-llms.md](../../../docs/local-llms.md#observability-and-stats).
 
 ## Keeping this skill current
 

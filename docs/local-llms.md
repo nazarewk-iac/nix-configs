@@ -134,11 +134,28 @@ What is available, live only:
 
 | Source | What it gives | Persisted? |
 |---|---|---|
-| llama-swap `/metrics` | System-level Prometheus: `llamaswap_cpu_util_percent{core}`, `memory_{free,total,used}_bytes`, `swap_{total,used}_bytes`, `load_average`, `network_bytes_total`. **No per-model or token/tps metric.** | No (scrape-only) |
-| llama-server child response | Per-response `timings`: `prompt_per_second`, `predicted_per_second`, `predicted_n`, etc. This is what the benchmark tables read. | No |
-| llama-swap `/ui` (:39700) | Live per-model token metrics and request inspection in the browser. | No |
+| `/api/metrics/activity` | **Per request, per model**: `model`, `req_path`, `resp_status_code`, `tokens.{input,output,cache,draft,draft_acc}`, `tokens.prompt_per_second`, `tokens.tokens_per_second`, `duration_ms`, `has_capture`, `metadata.fifo_priority`. This is the per-model tok/s source the web UI reads. | No — ring buffer only, sized by `captureBuffer` (10 normally, 50 with `swap.debug`) |
+| `/api/metrics/stats` | Aggregate counters (`total_requests`, `total_{input,output,cache}_tokens`) plus `prompt_histogram` and `gen_histogram` with `p50`/`p95`/`p99` of tok/s. | No |
+| `/api/captures/<id>` | The full request and response for one activity record, with `Authorization` replaced by `[REDACTED]`. The UI's request inspector. | No, same ring |
+| `/api/performance` | GPU stats per card: temperature, utilisation, VRAM used/total, fan, power draw. | No |
+| `/api/hardware` | One JSON hardware inventory: CPU model and core counts, RAM capacity, accelerators, OS and kernel. Captured once at startup. | No |
+| llama-swap `/metrics` | **System-level only** Prometheus: `llamaswap_cpu_util_percent{core}`, `memory_{free,total,used}_bytes`, `swap_*`, `load_average`, `network_bytes_total`. It carries **no** model or token metric. | No (scrape-only) |
+| llama-server child response | Per-response `timings`: `prompt_per_second`, `predicted_per_second`, `predicted_n`, … — the same numbers llama-swap records, available to any direct client. | No |
 | `/logs`, `/logs/stream/:model` | In-memory log ring buffer, per model. | No |
-| `/running` | The currently loaded models. | No |
+| `/running` | The currently loaded models, with state, command line, upstream URL and `ttl`. | No |
+
+How the tok/s numbers are made: llama-swap reads them from each
+`llama-server` response's `timings` object (verified: a direct request returns
+`predicted_per_second` and the matching `/api/metrics/activity` record carries the
+same value). It does **not** parse the child's log lines for them.
+`duration_ms`, by contrast, is wall clock and **includes the model load**, so it is
+not a pure inference time.
+
+**What is still missing is history.** Every source above is in memory and
+bounded, so a restart or a full ring loses it. Per-model tps over hours still
+needs an external store — but it is a **collector that polls
+`/api/metrics/activity` and appends one line per record**, not a log parser, and
+not a child `--metrics` build. Nothing of the sort is wired yet.
 
 **Per-model tps history needs an external store.** Scrape llama-swap `/metrics`
 (system) plus each child's metrics into Prometheus/VictoriaMetrics and graph with
