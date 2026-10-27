@@ -583,13 +583,18 @@ opencode::send() {
     echo "no pane '${argc_pane}' in session '${session}'" >&2
     return 1
   fi
-  # write-chars goes to the focused pane, so focus the target first. This changes
-  # the active pane only inside this tool's own session.
-  zellij --session "$session" action focus-pane-id "$pane_id"
-  zellij --session "$session" action write-chars "$argc_text"
+  # Address the pane by id. The focused form (`write-chars` with no `-p`) is a
+  # no-op inside a headless session: `focus-pane-id` finds no attached client and
+  # the bytes never arrive. `-p <id>` targets the pane directly and leaves the
+  # user's focus alone. Verified 2026-10-12 and re-confirmed 2026-10-27.
+  #
+  # Submit with `write -p <id> 13` (a raw CR). A TUI in raw mode reads Enter as CR,
+  # not as `send-keys Enter`, and `send-keys Enter` did not submit into the OpenCode
+  # TUI. Give the TUI a moment to drain the typed line before the CR.
+  zellij --session "$session" action write-chars -p "$pane_id" "$argc_text"
   if [[ "${argc_no_submit:-0}" != 1 ]]; then
-    sleep 0.2
-    zellij --session "$session" action write 13
+    sleep 0.3
+    zellij --session "$session" action write -p "$pane_id" 13
   fi
 }
 
