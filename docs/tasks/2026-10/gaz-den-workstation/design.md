@@ -184,6 +184,11 @@ Any step that needs hands follows the same shape.
 5. The overseer sends the confirmation into the pane.
 6. The orchestrator verifies with a screenshot **before** acting again.
 
+**A power cycle is always a hand-off.** Software power control exists only on
+`brys` and the NAS mini-PCs `pwet`, `turo`, `yost`. `gaz`, the new mini-PC and
+`pryll` have no power API and no relay, so nobody may spend time looking for one.
+Ask for the button, every time.
+
 Screenshot rules, from the `anji` experience:
 
 - Save each shot as `/tmp/opencode/nanokvm/NN-name.jpg`. Never commit it.
