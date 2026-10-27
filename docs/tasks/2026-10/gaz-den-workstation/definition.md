@@ -41,23 +41,33 @@ Note also that UEFI Full ROM is the only route that matches the target layout
 (ESP, `disko`, systemd-boot, ZFS impermanence). RW_LEGACY needs no case opening
 but boots in legacy BIOS mode, which is the wrong shape for a workstation.
 
-## Relationship to the mini-PC task
+## Relationship to the mini-PC tasks
 
-[A sibling task](../minipc-den-host/definition.md) sets up a new x86 mini-PC with
-the same harness and the same evaluation. **That task mostly covers the purposes
-of this one**: it converts a host to the den convention and it produces the fleet
-evaluation. It is not blocked on any hardware purchase.
+Two sibling tasks use the same harness and the same evaluation:
+
+| Task | Host | Runtime blocker |
+|---|---|---|
+| [../minipc-den-host/definition.md](../minipc-den-host/definition.md) | a new x86 mini-PC, etra-style, SFP uplink | none |
+| [../pryll-mother-desktop/definition.md](../pryll-mother-desktop/definition.md) | the mother's desktop, LAN only | none |
+
+**Those two mostly cover the purposes of this one**: they convert a host to the
+den convention, and they produce the fleet evaluation. Neither is blocked on a
+hardware purchase. This task is the only one that needs the CR50 work or a
+SuzyQable.
 
 So the order of work is:
 
-1. the mini-PC run goes first, because it needs nothing that is not already on
-   the shelf;
-2. this run proceeds when the CR50 work or the SuzyQable arrives;
-3. the evaluation sub-task [003-fleet-evaluation](003-fleet-evaluation/definition.md)
+1. the owner decides which mini-PC candidate goes to which of the two sibling
+   tasks;
+2. that run goes first, because it needs nothing that is not already on the
+   shelf;
+3. this run proceeds when the CR50 work or the SuzyQable arrives;
+4. the evaluation sub-task [003-fleet-evaluation](003-fleet-evaluation/definition.md)
    is shared: it is written here, and it measures whichever run happens first.
 
 Nothing in [design.md](design.md) is `gaz`-specific. The harness, the model
-ladder, the watch loop and the hand-off protocol apply to both hosts unchanged.
+ladder, the watch loop and the hand-off protocol apply to all three hosts
+unchanged.
 
 ## Why
 
