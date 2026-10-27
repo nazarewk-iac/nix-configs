@@ -249,7 +249,9 @@ the MCP call, the key location, and the HID rules.
 
 ## 9. Unverified
 
-- The exact C13 Yoga model, and whether MrChromebox lists it as UEFI-supported.
+- The exact C13 Yoga model, and whether MrChromebox (often written
+  `mrchromebook`) lists it as UEFI-supported. Its device list is the only
+  authority; check it before any firmware work.
 - The presence of a 2 TB disk. The model line commonly ships eMMC; this must be
   settled with `lsblk` on the live machine before any layout is written.
 - Whether the internal keyboard, touchpad, audio and panel work under mainline.

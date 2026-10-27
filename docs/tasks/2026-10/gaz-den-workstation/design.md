@@ -125,7 +125,10 @@ zellij-llm opencode watch --pane orchestrator --for 5m
 ssh kdn-brys 'curl -s http://127.0.0.1:39700/running; journalctl -u llama-swap --since "-10min" -o cat | grep -iE "oom|killed|evict|error|timeout" | tail'
 
 # 3. is brys itself healthy?
-ssh kdn-brys 'cat /proc/loadavg; free -g | head -2; nvidia-smi --query-gpu=memory.used --format=csv,noheader 2>/dev/null || rocm-smi --showmemuse'
+ssh kdn-brys 'cat /proc/loadavg; free -g | head -2'
+# VRAM on the W6600 is card1 (8.57 GB). card0 is the 4 GB iGPU.
+ssh kdn-brys 'for c in /sys/class/drm/card*/device; do [ -e "$c/mem_info_vram_used" ] && \
+  echo "$c used=$(cat $c/mem_info_vram_used) total=$(cat $c/mem_info_vram_total)"; done'
 
 # 4. is the KVM's HID path still alive? (only when a GUI step is in play)
 ssh root@kvm-fa56... 'ioreg -c IOHIDSystem | grep HIDIdleTime'   # must reset after each injected key
