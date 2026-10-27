@@ -116,6 +116,14 @@ let
   # except for `max`. DS4 high is `reasoning_effort = "max"`. Qwen high is the
   # template's `xhigh`.
   tierAgents = ds4Agents // qwenAgents;
+
+  # One opencode subagent per brys purpose alias (chat-std-fast, code-deep-slow,
+  # ...), derived from `hosts/brys/llm-routers.nix` so the client follows the
+  # server when an alias moves. A caller that names an intent gets the model the
+  # fleet serves for it, with no base-model id in the client. See
+  # ../brys/llm-agents.nix and
+  # ../../docs/tasks/2026-10/llm-model-expansion/alias-scheme.design.md.
+  aliasAgents = import ../brys/llm-agents.nix { inherit lib; };
 in
 {
   imports = inputs.nix-configs.denLib.imports {
@@ -136,9 +144,14 @@ in
   # The slot defaults are neutral now. These two settings keep the behaviour that the old
   # slot defaults gave on this host.
   kdn.opencode.settings.provider.requesty = { };
-  # One opencode subagent per (model, thinking level). Each one names a brys
-  # provider model and carries that model's `chat_template_kwargs` for the level.
-  kdn.opencode.settings.agent = tierAgents;
+  # The subagent set. Two families:
+  #   * `tierAgents` — one agent per (base model, thinking level): `qwen-high`,
+  #     `ds4-low`, ... A caller pins a model and a depth explicitly.
+  #   * `aliasAgents` — one agent per purpose alias: `chat-std-fast`,
+  #     `code-deep-slow`, ... A caller names an intent; the server decides the
+  #     model. This is the family to prefer for routine work, so the served
+  #     model can move without a client change.
+  kdn.opencode.settings.agent = tierAgents // aliasAgents;
   kdn.opencode.allowedPaths = [
     "/nix/store/**"
     "~/dev/**"
