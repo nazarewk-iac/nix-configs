@@ -39,6 +39,30 @@ This task is the *across-models* half: how to get real throughput out of one box
 when the work is many small calls, and whether a watcher outside llama-swap can
 help.
 
+## Stated direction
+
+The owner wants, as the outcome of this task:
+
+1. **sensible parallelism enabled for every model**, not only the frontier, with
+   the value chosen per model from measurement; and
+2. **a sidecar service** that watches the fleet — on events where an event exists,
+   and on a short poll (a few seconds) where one does not.
+
+Two facts found after this task was written change the shape of both, and are
+recorded in [research.md](research.md):
+
+- **llama-swap already exposes per-model performance**, so the sidecar is not a
+  log parser. `/api/metrics/activity` returns one record per request with
+  `model`, `tokens.prompt_per_second`, `tokens.tokens_per_second` and
+  `duration_ms`. The sidecar's jobs are *control* and *durable history*, not
+  parsing.
+- **The matrix sets, not `--parallel`, are what serialise the surveyed tier.**
+  `with_surveyed` groups every surveyed model into one set, so they evict each
+  other. Three sequential test requests (`tiny-dumb-fast`, `chat-dumb-fast`,
+  `granite-4.2-3b`) left exactly one model resident. Raising `--parallel` does
+  nothing while the set forbids co-residence; the set expression must change
+  first.
+
 ## Stated premise
 
 The owner intends to drop the alternative boot specialisations and keep only
@@ -83,19 +107,41 @@ record any that are lost with `llm-small`.
 | An external watcher with cgroup admission and unload control | a new service | OOM safety, RAM-aware eviction, preload on demand |
 | A rack of small models pinned on the GPU | config + VRAM budget | many-cheap-workers behaviour, at 8 GB |
 
+## Deliverables
+
+1. **A set-expression change** that lets the chosen groups co-reside, plus
+   `--parallel` where the measurement justifies it. Both land in
+   `modules/den/aspects/llm.nix` (`matrixSets` and the per-model `perf.parallel`).
+2. **A sidecar service** (`systemd` unit, in the `llm` aspect's neighbourhood). Its
+   two jobs:
+   - **collect**: poll `/api/metrics/activity` every few seconds and append one
+     line per record to a durable file, so history survives a ring rollover and a
+     restart. Fields: timestamp, model, input/output tokens, prompt tok/s, gen
+     tok/s, duration, status.
+   - **control**: keep the fleet inside the box. Subscribe to `/api/events` where
+     it is useful, and act through the unload endpoint. It must never unload a
+     model with a request in flight, and it must never act on a guess when it can
+     read `/running` and `/api/metrics/stats`.
+   It is a small Go/shell/Python service, and it must be small: the box also runs
+   the models.
+3. **A measured table**: alias, process, slots, observed concurrent requests,
+   latency at 1 and at N, with the command that produced each number.
+4. **Updated guidance** in `.agents/skills/kdn-llms/SKILL.md` and
+   `docs/local-llms.md`: the alias-to-process map, the set groups, and the rule
+   that fan-out must be across co-resident groups.
+
 ## Acceptance
 
-- A measured table: alias, process, slots, observed concurrent requests, latency
-  at 1 and at N, with the command that produced each number.
-- A decision: which of the options above are adopted, and which are rejected with
-  a reason.
-- The fleet guidance in `.agents/skills/kdn-llms/SKILL.md` matches the measured
-  reality, including the alias-to-process map.
-- If a watcher is adopted: it is a NixOS unit in `modules/den/aspects/llm.nix`'s
-  neighbourhood, it has a test, and it cannot unload a model with a request in
-  flight.
-- If nothing is adopted: the task closes with the measurement and the reason,
-  which is still an answer.
+- Two of the previously exclusive surveyed models are resident at the same time
+  and both answer a request, with the numbers recorded.
+- A second concurrent request to a model at `--parallel 2` measurably overlaps the
+  first; the latency at N is recorded.
+- The sidecar runs as a NixOS unit, has a test, and a restart of llama-swap leaves
+  the collected history intact.
+- An OOM is either prevented by the sidecar or explained by the absence of an
+  admission gate, with the numbers.
+- Nothing unloads a model mid-request; prove it by unloading during a slow stream
+  and showing the stream completes.
 
 ## Risks
 

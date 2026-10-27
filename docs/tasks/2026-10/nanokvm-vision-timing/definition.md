@@ -56,6 +56,7 @@ swap is 30–120 s. A 2-second window cannot pay that once, let alone per frame.
 | "Copy to RAM" boot | an explicit boot entry in `configuration.nix` (`boot.loader.systemd-boot.extraEntries`) with the right kernel cmdline | becomes a menu entry that is default or selectable at leisure |
 | Legacy firmware menus | **blind key spam** (`Esc`, `F2`, `Del` every 200 ms for 20 s) | safe: a stray key at the wrong moment is harmless, unlike a stray click |
 | Reaching a menu at all when nothing shows | power cycle and watch `/api/events`-style console text, or the serial console if the device offers one | a serial console removes the graphics race entirely |
+| Powering the machine on or off by software | **not available** on these hosts | power control exists only on `brys` and the three NAS mini-PCs `pwet`, `turo` and `yost`. `gaz`, the new mini-PC and `pryll` have no software power path, so a power cycle is always a physical hand-off |
 
 The rule: **if a step can be made deterministic, it must not be driven by
 screenshots.** Vision is the fallback, not the plan.
@@ -102,6 +103,22 @@ local vision model is good at, and it is what the `gaz` task already assumes.
   gains the rule: probe HID liveness and prefer key spam over a single timed
   keypress.
 - If vision is rejected for a step, the cheaper mechanism is in place.
+
+## Constraint: power is physical on every host in scope
+
+The owner confirmed on 2026-10-27 that **software power control exists only on
+`brys` and the three NAS mini-PCs `pwet`, `turo`, `yost`**. None of the hosts this
+work touches — `gaz`, the new mini-PC, `pryll` — can be powered by software.
+
+Consequences:
+
+- A power cycle is always a `HANDS:` item for the owner. No amount of vision or
+  scripting removes it, so the harness must ask early and never idle-poll a dead
+  machine hoping it comes back.
+- The machine must be left in a state where an unattended reboot is safe, because
+  the owner may not be present to press the button again.
+- A watchdog that "just reboots it" is impossible here. The recovery path on a
+  hung host is therefore: detect over the KVM, report, and wait for hands.
 
 ## Risks
 

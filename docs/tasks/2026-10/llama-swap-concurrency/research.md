@@ -96,8 +96,81 @@ README**, so it must be confirmed against the binary (open `/ui` and inspect, or
   (the survey that chose llama-swap).
 - It does not queue by priority across models. A request for a model in another
   matrix set evicts what is not in that set.
-- It exposes no per-model throughput metric. `/metrics` is system-level only, so
-  any queueing analysis has to come from the request side.
+- It persists nothing. Every metric below is in memory and bounded.
+
+**Correction to an earlier claim in this repository.** A previous note said
+llama-swap exposes no per-model metric. That is true of `/metrics` only. The JSON
+API does expose per-model, per-request performance, and the web UI reads it from
+there. See §4b.
+
+## 4b. Per-model performance is already exposed (verified 2026-10-27)
+
+Three requests were sent to `tiny-dumb-fast`, `chat-dumb-fast` and
+`granite-4.2-3b`, then the API was read back:
+
+```
+GET /api/metrics/activity
+{"data":[
+ {"id":3,"model":"granite-4.2-3b","tokens":{"input_tokens":22,"output_tokens":2,
+   "prompt_per_second":312.2,"tokens_per_second":69.1},"duration_ms":5454},
+ {"id":2,"model":"qwen3.5-4b","tokens":{... "prompt_per_second":160.0,
+   "tokens_per_second":51.1},"duration_ms":6507},
+ {"id":1,"model":"qwen3.5-0.8b","tokens":{"prompt_per_second":303.5,
+   "tokens_per_second":75.9},"duration_ms":3350}]}
+```
+
+```
+GET /api/metrics/stats
+{"total_requests":3,"total_input_tokens":60,"total_output_tokens":6,
+ "prompt_histogram":{"p50":303.5,"p95":311.3,"p99":312.0,"bins":[...]},
+ "gen_histogram":{"p50":69.1,"p95":75.2,"p99":75.8,...}}
+```
+
+Where the numbers come from: each `llama-server` response carries a `timings`
+object (`prompt_per_second`, `predicted_per_second`, `predicted_n`, …). A direct
+client sees it, and `/api/metrics/activity` carries the same values. So
+llama-swap reads the response body, **not** the child's log lines.
+`duration_ms` is wall clock and **includes the model load** (5454 ms for a 22-token
+prompt on a model that had to start), so it is not inference time.
+
+Also present: `/api/captures/<id>` (full request and response, `Authorization`
+replaced by `[REDACTED]`), `/api/performance` (per-GPU temperature, utilisation,
+VRAM, fan, power), `/api/hardware` (one JSON inventory: CPU, cores, RAM,
+accelerators, kernel), `/api/version`, `/api/profiles`.
+
+Consequences:
+
+1. **No log parser is needed.** The user's log-parsing idea works but is
+   redundant: the timings are already structured.
+2. **History still needs a collector**, because the activity list is a ring
+   (`captureBuffer`: 10 normally, 50 with `swap.debug`). A poller is ~30 lines.
+3. The sidecar's real value is **control**: deciding what to load, unload or keep,
+   and enforcing an admission rule. That is the part llama-swap lacks.
+
+## 4c. The matrix sets serialise the surveyed tier
+
+The live config's sets:
+
+```
+main:          (deepseek-v4-flash | qwen3.8-flash-next)
+with_grunt:    (qwen3.5-4b) & (deepseek-v4-flash | qwen3.8-flash-next)
+with_surveyed: (gemma-4-12b | … | granite-4.2-3b | … | qwen3.5-4b | …)
+```
+
+The `|` operator means "these evict each other". So **every surveyed model is
+mutually exclusive with every other surveyed model**, including the GPU ones that
+would comfortably fit in 8 GB together. Observed directly: three test requests to
+three surveyed models left exactly one resident.
+
+Therefore "parallelism for all models" is a **set-expression** change first and a
+`--parallel` change second. The likely shape:
+
+- give the small GPU models a set that allows co-residence (a `&` over a chosen
+  group, or one set per VRAM class),
+- keep the frontier alone in `main`,
+- keep a CPU tier that is deliberately exclusive, because CPU models halve each
+  other,
+- only then raise `--parallel` where the measurement says it pays.
 
 ## 5. What parallelism costs, per tier
 
@@ -147,9 +220,13 @@ re-homed or dropped deliberately.
 
 ## 6d. Not verified
 
-- The exact load endpoint (`POST /api/models/load` is the likely shape, not in the
-  README for the tag).
+- Whether a load can be requested without sending a request. The UI has a
+  "manually load and unload models" panel, so a load path exists; the README only
+  documents the unload endpoints. Find it in the UI bundle
+  (`/ui/assets/api-*.js`) before relying on it.
 - Whether `hooks` in `v249` supports anything beyond startup preload. The docs
   page for hooks was not fetched; the README sentence is the only evidence used.
 - Any real latency number for a second concurrent request. Nothing is measured
   yet; the task exists to produce it.
+- Whether `/api/metrics/activity` survives a llama-swap restart. It is in memory,
+  so it should not; confirm before designing the collector.

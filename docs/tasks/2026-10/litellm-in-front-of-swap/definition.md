@@ -26,10 +26,18 @@ Two pain points the owner wants to solve, and neither is in that proxy today:
    model swap (90–120 s, longer under load), a model that got evicted by another
    request's matrix set, a child that crashed on load, or a client timeout. Today
    the caller sees a failure and an agent wastes a whole turn.
-2. **No record of what was asked and answered.** The fleet evaluation
+2. **No durable record of what was asked and answered.** The fleet evaluation
    ([../gaz-den-workstation/003-fleet-evaluation/definition.md](../gaz-den-workstation/003-fleet-evaluation/definition.md))
-  needs per-call data: alias, prompt size, latency, outcome. Today that is manual
-  note-taking, which is why it is unreliable.
+   needs per-call data: alias, prompt size, latency, outcome.
+
+   **Partly solved already, discovered after this task was written.**
+   llama-swap exposes `/api/metrics/activity` (per request: model, tokens, prompt
+   and gen tok/s, duration, status) and `/api/captures/<id>` (the request and
+   response, with `Authorization` redacted). Both are in-memory ring buffers, so
+   what is missing is only *persistence*, which the concurrency task's sidecar
+   collector provides ([../llama-swap-concurrency/definition.md](../llama-swap-concurrency/definition.md)).
+   That removes most of the logging argument for litellm: it would duplicate a
+   facility the swapper already has.
 
 ## What litellm is, before deciding anything
 
@@ -55,7 +63,7 @@ moving part that duplicates what we already run?"
 | Fallback to another model or alias | `router_settings.fallbacks`, `context_window_fallbacks` | a dead `chat-std-fast` falls back to `chat-std-mid` instead of failing |
 | Cooldown after repeated fails | `router_settings.allowed_fails`, `cooldown_time` | stops hammering a model that is OOM-ing |
 | Timeouts per model | `request_timeout`, per-deployment | a 20-minute stalled stream is cut and retried |
-| Request/response logging | `litellm_settings.callbacks`, custom callbacks, `jsonl` logging | the worklog the evaluation needs, written automatically |
+| Request/response logging | `litellm_settings.callbacks`, custom callbacks, `jsonl` logging | **already covered** by llama-swap `/api/captures/`, so this is no longer an argument for litellm |
 | Spend and token accounting | callback to a local DB | token cost per alias, per session |
 | A stable OpenAI-shaped surface | proxy | the fleet keeps one base URL |
 

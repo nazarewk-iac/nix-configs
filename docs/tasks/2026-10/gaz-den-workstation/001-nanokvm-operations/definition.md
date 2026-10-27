@@ -89,6 +89,16 @@ harmless key (`ShiftLeft`) and require a success return **before** any step that
 depends on typing. A `timeout after 50ms: write /dev/hidg0` return is the
 signal to switch to a physical hand-off, not to retry.
 
+## Power control: not available on these devices
+
+Verified with the owner on 2026-10-27: scripted power control exists only for
+`brys` and the NAS mini-PCs `pwet`, `turo` and `yost`. For `gaz`, the mini-PCs and
+`pryll` there is **no** power API, no ATX header wired to the KVM, and no relay.
+`press-and-hold the power button` is therefore always a human action.
+
+The skill must say this plainly, so no agent spends an hour looking for a power
+endpoint that does not exist, and so every boot step is planned as a hand-off.
+
 ## Acceptance
 
 - The skill is loadable and short enough to read in one screen.

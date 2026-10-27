@@ -106,10 +106,25 @@ is loading, and a swap is 90–120 s on this box, longer under CPU pressure
 So a naive `num_retries` is dangerous twice over: it can duplicate a partial
 answer, and it can add queue depth to a box whose bottleneck is the queue.
 
-## 5. What would be logged, and why it is attractive
+## 5. What would be logged — and why this is now the weakest argument
 
-The fleet evaluation wants, per call: alias, prompt tokens, completion tokens,
-latency, outcome. Today that is manual.
+**Update 2026-10-27:** llama-swap already records exactly this. Verified by
+sending three requests and reading them back:
+
+```
+GET /api/metrics/activity → per request: model, tokens.{input,output},
+                            tokens.prompt_per_second, tokens.tokens_per_second,
+                            duration_ms, resp_status_code, has_capture
+GET /api/captures/<id>    → the request and response bodies, Authorization: [REDACTED]
+GET /api/metrics/stats    → totals plus p50/p95/p99 histograms of both rates
+```
+
+So a proxy is **not** needed to obtain the data; a poller is, because the
+activity list is a ring buffer sized by `captureBuffer` (10/50). That poller is
+one of the concurrency task's deliverables.
+
+What remains genuinely absent is **retry, fallback, cooldown and timeout**, which
+is a much narrower reason to add a service.
 
 litellm can emit it through `litellm_settings.callbacks`. Options, cheapest
 first:
