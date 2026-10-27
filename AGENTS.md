@@ -44,7 +44,8 @@ read the full doc when you need detail.
 | Doc | Contents |
 |---|---|
 | [docs/tasks/2026-09/generalization/](docs/tasks/2026-09/generalization/definition.md) | Umbrella task: make the modules reusable by an external adopter. It indexes the numbered sub-tasks in the same directory. |
-| [docs/tasks/2026-10/gaz-den-workstation/](docs/tasks/2026-10/gaz-den-workstation/definition.md) | Umbrella task: convert `gaz` (Lenovo C13 Yoga) from a Crostini VM to a den NixOS workstation, driven by a supervised local-LLM fleet. Holds the personas, the harness design, and the fleet evaluation. |
+| [docs/tasks/2026-10/gaz-den-workstation/](docs/tasks/2026-10/gaz-den-workstation/definition.md) | Umbrella task: convert `gaz` (Lenovo C13 Yoga) from a Crostini VM to a den NixOS workstation, driven by a supervised local-LLM fleet. Holds the personas, the harness design, and the fleet evaluation. Blocked on CR50/SuzyQ firmware write-protect. |
+| [docs/tasks/2026-10/minipc-den-host/](docs/tasks/2026-10/minipc-den-host/definition.md) | The same harness and the same evaluation applied to a new x86 mini-PC (etra-style host, SFP uplink, headless over a NanoKVM). Mostly covers the purposes of the `gaz` task and has no hardware blocker, so it runs first. |
 | [docs/den-for-adopters.md](docs/den-for-adopters.md) | den aspects for an external adopter: the 21 aspects, four worked examples, the priority rule, 10 caveats, the lock cost |
 | [docs/slots-for-adopters.md](docs/slots-for-adopters.md) | The older `modules/slots` route for an external adopter: `mkSlots`, the packages overlay, what a slot writes into your repo |
 | [docs/den-universal-mapping.md](docs/den-universal-mapping.md) | One row per `modules/universal` module: the `kdn.*` prefix it declares, its `modules/den/aspects` counterpart, and a port status. Plus the reverse list, the known gaps, and the commands that refresh every count. |

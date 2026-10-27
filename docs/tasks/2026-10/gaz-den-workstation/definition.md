@@ -19,6 +19,46 @@ This is an **umbrella task**. It has three open sub-tasks:
 Read [research.md](research.md) for the verified facts this plan rests on, and
 [design.md](design.md) for the harness that runs the job.
 
+## Blocked: the firmware write-protect prerequisite
+
+The board is **MORPHIUS** (Lenovo ThinkPad C13 Yoga, AMD Picasso), confirmed on
+the authoritative MrChromebox device list: RW_LEGACY and UEFI Full ROM are both
+supported, and the write-protect method is **CR50 (SuzyQ, battery)**.
+
+So this run **cannot start** until one of these is true:
+
+1. the **CR50 procedure** is performed to disable firmware write protect — open
+   the bottom cover and disconnect the battery for the duration of the flash, and
+   reconnect it after; or
+2. a **SuzyQable** (Suzy-Q) is bought, so write protect can be disabled over the
+   CR50 debug interface without opening the case.
+
+This is hardware the owner must supply. Track it as the first blocking item.
+Until it is cleared, no firmware work of any kind starts, and the machine stays
+on stock ChromeOS firmware.
+
+Note also that UEFI Full ROM is the only route that matches the target layout
+(ESP, `disko`, systemd-boot, ZFS impermanence). RW_LEGACY needs no case opening
+but boots in legacy BIOS mode, which is the wrong shape for a workstation.
+
+## Relationship to the mini-PC task
+
+[A sibling task](../minipc-den-host/definition.md) sets up a new x86 mini-PC with
+the same harness and the same evaluation. **That task mostly covers the purposes
+of this one**: it converts a host to the den convention and it produces the fleet
+evaluation. It is not blocked on any hardware purchase.
+
+So the order of work is:
+
+1. the mini-PC run goes first, because it needs nothing that is not already on
+   the shelf;
+2. this run proceeds when the CR50 work or the SuzyQable arrives;
+3. the evaluation sub-task [003-fleet-evaluation](003-fleet-evaluation/definition.md)
+   is shared: it is written here, and it measures whichever run happens first.
+
+Nothing in [design.md](design.md) is `gaz`-specific. The harness, the model
+ladder, the watch loop and the hand-off protocol apply to both hosts unchanged.
+
 ## Why
 
 Two goals share one run, on purpose. Each makes the other cheaper.
@@ -166,7 +206,9 @@ must say which one it is.
 
 | Risk | Mitigation |
 |---|---|
+| **No CR50 access and no SuzyQable** | Hard blocker. Buy the SuzyQable, or plan the battery-disconnect procedure with the owner before any flash. |
 | No HDMI signal from the KVM (seen today) | Phase 0 gate: prove a screenshot works before any planning. If it fails, the owner powers the machine on. |
+| The KVM cannot inject keys at all (`hidg0` i/o timeout) | Probe a harmless key first; a timeout means a physical replug of the KVM's USB cable. A UDC rebind did not fix it on `kvm-fa56`. |
 | MrChromebox does not support this exact model | Check the supported list first, in phase 3, before any flash. Fall back to running from USB or keeping Crostini. |
 | A 2 TB disk may not exist (eMMC is common on this model) | Verify with `lsblk`/`smartctl` before writing a layout. Adapt the layout to the real device. |
 | The KVM HID path dies mid-run (documented for `anji`) | Probe `HIDIdleTime` after every pause; report early; prefer a fresh session over a rebind loop. |
