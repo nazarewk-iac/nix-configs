@@ -37,6 +37,24 @@ The server maps the alias to a model. To change the model, someone moves the
 alias string in `hosts/brys/llm-routers.nix` and redeploys — **the client keeps
 the same id**. Never hardcode the base model name in a client config.
 
+## Every alias is also an opencode sub-agent
+
+On a host with the oams opencode profile, each purpose alias is registered as an
+opencode **subagent** with the alias as its name (`hosts/brys/llm-agents.nix`,
+generated from `llm-routers.nix`). So an orchestrator delegates by naming the
+alias as the Task tool's `subagent_type`:
+
+```
+Task { subagent_type: "chat-std-fast", prompt: "..." }
+```
+
+Use a concrete alias, never a family (`qwen-*` is not a valid `subagent_type`).
+The raw-model agents `qwen-<level>` and `ds4-<level>` also exist for a caller
+that wants to pin a base model and thinking depth. A subagent with no `model`
+inherits the caller's model, so always name one. Full design:
+[opencode-subagent-model-routing/done.md](../../../docs/tasks/2026-10/opencode-subagent-model-routing/done.md).
+
+
 ## Which alias to use (decide from what is live)
 
 Pick the alias by intent, not by model. Current assignments:

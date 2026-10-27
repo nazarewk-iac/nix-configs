@@ -1,12 +1,15 @@
 ---
 type: Task
-description: Make an OpenCode orchestrator delegate to the cheap local sub-agents (qwen-*/ds4-*) instead of the slow frontier model. A custom subagent is invocable by Task only when its name is a valid subagent_type and the caller's permission.task allows it; a subagent with no explicit model inherits the caller's model.
-status: open
+description: Make an OpenCode orchestrator delegate to the cheap local sub-agents instead of the slow frontier model. A custom subagent is invocable by Task only when its name is a valid subagent_type and the caller's permission.task allows it; a subagent with no explicit model inherits the caller's model. Register one subagent per brys purpose alias.
+status: done
+solution: done.md
 authored_by: agent
 timestamp: 2026-10-27T06:42:39+01:00
 ---
 
-# OpenCode sub-agent model routing (`qwen-*` / `ds4-*`)
+# OpenCode sub-agent model routing (purpose aliases)
+
+> ✅ **Done** — see the solution in [done.md](done.md).
 
 ## Context
 
