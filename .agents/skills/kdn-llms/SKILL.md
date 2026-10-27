@@ -101,6 +101,12 @@ Rules of thumb:
   `/v1/rerank`.
 - **The two `orchestrate-deep-slow*` models are heavy** and only one fits in RAM
   at a time. Reaching one evicts the other.
+- **Only the two frontier models run `--parallel 4`.** Every other model runs
+  `--parallel 1`, so concurrent calls to one alias queue. Fan a fleet out across
+  *different* aliases, not many calls to one.
+- **Some aliases share one process.** `chat-dumb-fast`, `code-quick-fast`,
+  `tiny-quick-fast` and `grunt` are all `qwen3.5-4b` on the W6600 GPU: one
+  process, one queue, no CPU-bandwidth cost. Treat them as a single worker.
 
 ## What is registered (short summary)
 
