@@ -114,10 +114,11 @@ record any that are lost with `llm-small`.
    `modules/den/aspects/llm.nix` (`matrixSets` and the per-model `perf.parallel`).
 2. **A sidecar service** (`systemd` unit, in the `llm` aspect's neighbourhood). Its
    two jobs:
-   - **collect**: poll `/api/metrics/activity` every few seconds and append one
-     line per record to a durable file, so history survives a ring rollover and a
-     restart. Fields: timestamp, model, input/output tokens, prompt tok/s, gen
-     tok/s, duration, status.
+   - **collect**: subscribe to `/api/events` (verified to carry `activity`,
+     `modelStatus` and `inflight`) and append one line per finished request, so
+     history survives a ring rollover and a restart. Subscription, not polling,
+     because polling reads a bounded ring and loses records under a burst. The
+     durable-storage half is [../llm-metrics-persistence/definition.md](../llm-metrics-persistence/definition.md).
    - **control**: keep the fleet inside the box. Subscribe to `/api/events` where
      it is useful, and act through the unload endpoint. It must never unload a
      model with a request in flight, and it must never act on a guess when it can

@@ -172,6 +172,32 @@ Therefore "parallelism for all models" is a **set-expression** change first and 
   other,
 - only then raise `--parallel` where the measurement says it pays.
 
+## 4d. The event stream is real, and it is the right control channel
+
+Verified 2026-10-27 by holding `GET /api/events` open (SSE) while sending one
+request. The stream carries **typed events**, not just log text:
+
+| Event | Count in 25 s | Payload |
+|---|---|---|
+| `logData` | 2866 | one log line (the buffered history is replayed first, then live) |
+| `modelStatus` | 5 | the whole model list with `state` (`stopped`, `loading`, …), `id`, `aliases`, `peerID` |
+| `inflight` | 4 | `{"operation":"upsert","request":{ id, model, req_path, method, headers(with Authorization REDACTED) }}` and `{"operation":"snapshot"}` |
+| `activity` | 1 | a finished request record (same shape as `/api/metrics/activity`) |
+| `uiConfig`, `profileChanged` | 1 each | UI state |
+
+Three consequences:
+
+1. **`modelStatus` is the "model loaded" hook the owner asked about.** Not a
+   callback, but an event a sidecar can subscribe to and act on. Together with
+   `inflight` it gives real active-request awareness, which llama-swap lacks
+   internally.
+2. **Subscription beats polling**, because polling reads a ring buffer
+   (`captureBuffer` 10/50) and loses records under a burst. A connected
+   subscriber sees every event once.
+- The stream replays buffered history first, so a collector must either ignore
+  events older than its start time or request `?no-history` (the README documents
+  that flag for `/logs/stream`; confirm it applies to `/api/events`).
+
 ## 5. What parallelism costs, per tier
 
 `--parallel N` without `--kv-unified` divides the context among N slots. With
