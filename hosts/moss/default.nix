@@ -18,6 +18,7 @@
         aspects = [
           "ca-dag"
           "certificates"
+          "net-rustdesk-forward"
           "ssh-ca"
         ];
       };
@@ -65,6 +66,21 @@
         owner = "kdn";
       };
 
+      # The public TLS leaf for `rustdesk.kdn.im`, issued by the private CA `kdn`. The OSS
+      # server build ships no web client, so no service consumes it today; it is the leaf a
+      # future web-client front on this host will read.
+      kdn.certificates.certs.rustdesk = {
+        ca = "kdn";
+        type = "tls-server";
+        commonName = "rustdesk.kdn.im";
+        sans = [ "rustdesk.kdn.im" ];
+        directory = "hosts/moss/certs";
+        certFile = "rustdesk.pub";
+        keyFile = "rustdesk.key";
+        keySource = "managed";
+        owner = "kdn";
+      };
+
       # The SSH host certificate. `principals` names the short name (checked by the
       # `kdn-*` dispatcher through `HostKeyAlias`) and each FQDN a client may use.
       kdn.certificates.certs.ssh-host-moss = {
@@ -93,6 +109,11 @@
         user = "kdn";
         firewallInterfaces = [ "nb-priv" ];
       };
+    }
+    {
+      # Public traffic enters here and leaves only over the mesh: `socat` forwards the
+      # RustDesk ports to `etra`, whose nb-priv name this host resolves through NetBird.
+      kdn.net-rustdesk-forward.target = "etra.priv.nb.net.int.kdn.im";
     }
   ];
 }

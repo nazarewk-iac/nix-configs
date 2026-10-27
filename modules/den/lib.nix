@@ -133,6 +133,7 @@ let
     net-router-dhcp = ./aspects/net-router.nix;
     net-router-dns = ./aspects/net-router.nix;
     net-router-dns-rewrites = ./aspects/net-router.nix;
+    net-rustdesk-forward = ./aspects/net-rustdesk-forward.nix;
     net-tailscale = ./aspects/net-tailscale.nix;
     nix = ./aspects/nix.nix;
     nix-config = ./aspects/nix-config.nix;
@@ -210,6 +211,7 @@ let
     service-nextcloud-client = ./aspects/service-nextcloud-client.nix;
     service-postgresql = ./aspects/service-postgresql.nix;
     service-printing = ./aspects/service-printing.nix;
+    service-rustdesk = ./aspects/service-rustdesk.nix;
     service-samba = ./aspects/service-samba.nix;
     service-syncthing = ./aspects/service-syncthing.nix;
     service-zammad = ./aspects/service-zammad.nix;

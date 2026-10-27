@@ -98,6 +98,7 @@ in
         aspects = [
           "ca-dag"
           "certificates"
+          "service-rustdesk"
           "ssh-ca"
         ];
       };
@@ -497,6 +498,13 @@ in
         user = "kdn";
         firewallInterfaces = [ "nb-priv" ];
       };
+    }
+    {
+      # The public entrypoint is `moss`; `hbbs` advertises it as the relay so clients that
+      # entered through `rustdesk.kdn.im` relay through the same name. Nothing on this host
+      # opens the RustDesk ports on a public interface: the mesh forward on `moss` reaches
+      # them through `nb-priv`, which the router already trusts.
+      kdn.services.rustdesk.relayHosts = [ "rustdesk.kdn.im" ];
     }
   ];
 }
