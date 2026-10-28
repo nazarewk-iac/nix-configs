@@ -39,6 +39,49 @@ is **how much work**, and whether it beats the opencode route on something we
 actually care about: per-agent model choice, tool isolation, resumable sessions,
 and auditable delegation.
 
+## Runtime targets
+
+Pi runs **on NixOS, or inside a `devenv` shell on Linux, NixOS or Darwin**. Both
+routes matter and cost differently:
+
+- **NixOS host**: `modules/den/aspects/dev-llm-pi.nix` already registers the app
+  through `kdn.apps.pi` and keeps `~/.pi` across a wipe. A NixOS service or a
+  `zellij` pane is the natural home, and the sandbox and credential rules from
+  [isolation.research.md](isolation.research.md) apply.
+- **`devenv` shell**: this repository's own `devenv.nix` is the pattern (it wires
+  opencode, its providers and its agents). Pi in a devenv needs the same three
+  things: the package on `PATH`, a provider entry for `brys`, and the
+  extensions/skills/agents on disk. On Darwin the isolation options shrink: no
+  bubblewrap, so the boundary is a container or nothing.
+
+The current divergence: nixpkgs packages **1.1.0**, upstream is **1.4.0**. The
+version in use must be pinned explicitly, because a flag or a builtin extension
+that exists in one may be absent in the other.
+
+## Research already done
+
+| File | What it settles |
+|---|---|
+| [research.md](research.md) | The mechanism comparison from Pi's own docs: no built-in sub-agents, the two delegation routes, what each harness does better. |
+| [isolation.research.md](isolation.research.md) | Pi runs with the user's full permissions; the four isolation routes mapped onto this homelab; SSH-CA instead of long-lived keys; the pane-as-subagent design; what context files Pi reads (`AGENTS.md` from cwd and parents, `.agents/skills` as a trust-protected resource). |
+| [models.research.md](models.research.md) | No discovery for a compatible endpoint — `models.json` needs an explicit id list, so a generator from `llm-routers.nix` is required. The model cannot switch itself mid-turn; the *orchestrator* chooses the model per delegation. |
+| [costs.research.md](costs.research.md) | Usage lives in the session JSONL and in `--mode json` events; local models cost **zero money** but real wall time; the two-currency accounting model and a delegation-cost formula. |
+| [packaging.research.md](packaging.research.md) | nixpkgs **unstable already carries 1.4.0** (merged 2026-10-22) while our pin has 1.1.0, so the fix is a pin update or a `.flake.patches` entry, not a fork. Declarative surface, devenv wiring, and how to ship an extension with npm deps. |
+| [sessions-and-panes.research.md](sessions-and-panes.research.md) | Session JSONL v3 and how to read it safely; the last-text-message extraction; `agent_settled` as the completion signal; why the session file beats `--mode rpc` over a zellij pty; the pane invocation and a `zellij-llm pi` group; ~6k fixed input tokens per child. |
+
+## Decisions already implied by the research
+
+1. **Delegation = a zellij pane per sub-agent**, with the session file as the
+   result channel and `zellij action close-pane` as the stop button. It reuses
+   `zellij-llm`'s naming and run-marker conventions.
+2. **Model choice is a generator, not a hand-written list.** `models.json` comes
+   from `hosts/brys/llm-routers.nix`, aliases only, with a `capability → alias`
+   map for the delegation tool.
+3. **Two currencies in the accounting**: local tokens and wall time (money = 0),
+   and real USD for the SaaS overseer. Never mixed.
+4. **Pin Pi explicitly.** Use 1.4.0 via a pin update or a `.flake.patches` entry
+   (see the `flake-patches` skill); do not rely on whatever the lock resolves to.
+
 ## What to determine
 
 1. **Delegation mechanism.** Two documented routes:
