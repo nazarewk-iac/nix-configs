@@ -287,3 +287,38 @@ This is what makes per-alias attribution possible at all: the base id
 - `kdn-atuin-login-root` and `kdn-man-gen-caches` report failures during
   activation. Both are pre-existing and unrelated to this work; they are noted so
   a later reader does not blame the container.
+
+## Reboot check, 2026-10-28
+
+After a full reboot into the **main** profile:
+
+```
+container@prometheus     active      llm-stats                active
+llm-metrics-relay-swap   active      llm-metrics-relay-node   active
+prometheus targets:      llama-swap up, node up
+pcscd edges in sops-install-secrets: 0
+```
+
+So the container, both relays, the collector and both scrape jobs come back on
+their own after a reboot, and the persist mounts (`/var/lib/prometheus2`,
+`/var/lib/llm-stats`, `/var/lib/nixos-containers`) survive it. That closes the
+reboot-proof acceptance item.
+
+### Why `llms-frontier` looked broken
+
+A reboot landed in the `llms-frontier` specialisation, where every metrics unit
+was `inactive` and no `/var/lib/llm-stats` existed. That is **correct**: the entry
+sets `inheritParentConfig = false` and re-imports `./llm.nix` with its own
+`withSwap` flag, and `llm-stats`, the relays, the exporter and the container are
+all `lib.mkIf withSwap`. Nothing was misconfigured; the specialisation simply does
+not enable the block. Whether it *should* is a separate decision for that entry.
+
+### One more activation-time race
+
+`llm-metrics-relay-node` failed once more during activation with
+`status=1/FAILURE`, then came up and stayed up. The relay binds
+`10.233.90.1`, which the container creates; on an activation where the container
+is being restarted, the address is briefly absent. `Restart=always` covers it, but
+the unit ordering only guarantees `after nftables/network-online`, not `after the
+container`. A stricter fix is `after = [ "container@prometheus.service" ]` on both
+relays — noted, not yet applied, because the retry converges in a few seconds.
