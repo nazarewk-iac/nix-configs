@@ -50,12 +50,9 @@
     # Direct connections to the personal LANs use the OpenSSH (hardware token) agent. Without
     # this, a machine with another default agent (for example the macOS or 1Password agent)
     # offers no usable key.
-    identityAgentPatterns = [
-      "*.kdn.im"
-      "192.168.41.*" # drek lan
-      "192.168.73.*" # etra lan
-      "192.168.252.*" # etra mgmt
-    ];
+    # One definition of "the hosts this fleet owns", shared with the `ssh-ca` aspect's
+    # `certificatePatterns`, so the agent and the CA user certificate cover the same set.
+    identityAgentPatterns = (import ../net/ssh-hosts.nix).patterns;
 
     # The ISP addresses change, so they are read from files at connect time, never baked in.
     uplinks.home.ipv4File = "/run/configs/networking/ipv4/network/isp/uplink/address/client";

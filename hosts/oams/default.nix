@@ -64,6 +64,11 @@ in
           "${kdnConfig.self}/data/ca/ca-dag.nix"
           {
             kdn.certificates.repoRoot = kdnConfig.self;
+            # The CA user certificate is offered to these hosts only. It must be set in the
+            # home-manager evaluation, because that is where the drop-in is generated; a value in
+            # the host module never reaches it. One definition, shared with the `kdn-ssh-access`
+            # agent patterns in data/net/ssh-hosts.nix.
+            kdn.ssh-ca.certificatePatterns = (import ../../data/net/ssh-hosts.nix).patterns;
           }
         ];
     }

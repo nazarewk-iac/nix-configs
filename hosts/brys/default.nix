@@ -6,52 +6,12 @@
   ...
 }:
 let
-  # Shared local-LLM serving config, also used by the llm-ds4 boot
-  # specialisation (see ./llm.nix). The main profile keeps a smaller DeepSeek
-  # context (128K) and leaves its threads unpinned: it shares the box with the
-  # desktop, while the specialisation gets the isolated cores and the full 320K.
-  # The small-model set is spun out to the llm-small specialisation, so this
-  # profile serves no small models (withSmall = false).
-  #
-  # Both frontier models are served, exactly as the llms-frontier boot entry:
-  # DS4 and Qwen3.8-Flash-Next through one router with `--models-max 1`, so a
-  # request for either swaps the resident model (~90-120 s) with no reboot. The
-  # Qwen knobs mirror ./llms-frontier.nix (1M ctx, YaRN x4, q8_0 KV, MTP off,
-  # the llama-cpp-sessions build); the DS4 context stays at the default profile's
-  # 128K.
-  llm = import ./llm.nix {
+  # The whole local-LLM serving config, shared with the `specialisation.llms` appliance
+  # entry (./llm-config.nix). The desktop passes a smaller DeepSeek context (128K) because
+  # it shares RAM with a browser; the appliance passes 320K because it owns the box.
+  llm = import ./llm-config.nix {
     inherit lib pkgs kdnConfig;
     contextSize = 131072;
-    cpuPinned = false;
-    withFrontier = true;
-    withSmall = false;
-    withQwen = true;
-    # Colocate the fast GPU grunt beside the orchestrator: `routers.grunt`
-    # (:39705) serves Qwen3.5-4B on the W6600, so a `grunt` request never
-    # evicts Qwen. See docs/tasks/2026-10/brys-grunt-colocation/.
-    withGrunt = true;
-    withSurveyed = true;
-    withSwap = true;
-    qwenContextSize = 1048576;
-    qwenGpu = true;
-    qwenVulkan = false;
-    llamaPackage = pkgs.kdn.llama-cpp-sessions;
-    qwenMtp = false;
-    qwenSpecDraftNMax = 5;
-    qwenRopeScaling = "yarn";
-    qwenRopeScale = 4.0;
-    qwenRopeFreqBase = 10000000;
-    qwenYarnOrigCtx = 262144;
-    qwenCacheTypeK = "q8_0";
-    qwenCacheTypeV = "q8_0";
-    qwenCacheRam = 8192;
-    # Multimodal (vision): load the Qwen projector (`mmproj-F16.gguf`), so
-    # llama-server on the main profile accepts image and video input as well as
-    # text. Set false to serve Qwen text-only. There is no separate vision
-    # specialisation; this one switch turns it on for the main host, and the
-    # projector downloads only when it is true. See
-    # docs/tasks/2026-10/qwen-3.8-flash-next-multimodal/.
-    qwenVision = true;
   };
 
   slots = kdnConfig.self.mkSlots {
@@ -83,7 +43,7 @@ in
     kdnConfig.self.nixosModules.default
     slots.config.nixos
     # LLM secrets, model persistence and the leaf-key decrypt service. Shared
-    # with the llm-ds4 boot specialisation via ./llm.nix.
+    # with the appliance boot entry via ./llm.nix.
     llm.nixos
     # The SSH host certificate, the CA DAG and the `ssh-ca` aspect. Shared with
     # every boot specialisation (see hosts/brys/llm-appliance.nix).
@@ -390,45 +350,20 @@ in
       services.angrr.enable = false;
     }
     {
-      # Boot-selectable minimal LLM-only entry. `inheritParentConfig = false`
-      # gives it a clean top-level: only the disk/LUKS/networking/ssh/kdn-user
-      # and the LLM slot, with desktop/workstation/gaming turned off, so DeepSeek
-      # gets the whole machine. NEVER activate via switch-to-configuration —
-      # select it from the bootloader; kernel tuning only applies on a cold boot.
-      specialisation.llm-ds4 = {
-        inheritParentConfig = false;
-        configuration = {
-          imports = [
-            ./llm-ds4.nix
-          ];
-        };
-      };
-      # Small-model-only counterpart: serves the `routers.small` set with no
-      # DeepSeek frontier. The two entries are mutually exclusive (DS4 needs the
-      # whole box). See hosts/brys/llm-small.nix and docs/local-llms.md.
-      specialisation.llm-small = {
-        inheritParentConfig = false;
-        configuration = {
-          imports = [
-            ./llm-small.nix
-          ];
-        };
-      };
-      # Qwen3.8-Flash-Next-only counterpart: serves the sparse Qwen frontier
-      # alone with the whole box and the MTP draft head + main model + KV on the
-      # CPU (the W6600 is disabled; it hard-hangs). See hosts/brys/llm-qwen.nix.
-      specialisation.llm-qwen = {
-        inheritParentConfig = false;
-        configuration = {
-          imports = [
-            ./llm-qwen.nix
-          ];
-        };
-      };
-      # Combined frontier counterpart: serves DS4 and Qwen through one router
-      # with `--models-max 1`, so a request for either swaps the resident model
-      # without a reboot. See hosts/brys/llms-frontier.nix.
-      specialisation.llms-frontier = {
+      # The single boot-selectable LLM entry. `inheritParentConfig = false` gives it a clean
+      # top-level: only the disk/LUKS/networking/ssh/kdn-user and the LLM slot, with
+      # desktop/workstation/gaming turned off, so the models get the whole machine.
+      #
+      # It replaces the four entries this host used to carry (`llm-ds4`, `llm-small`,
+      # `llm-qwen`, `llms-frontier`). One entry serves the whole fleet through llama-swap's
+      # matrix engine: a request for a frontier model swaps the resident one (~90-120 s,
+      # no reboot), and the small/surveyed models co-reside on the W6600 by tier. The old
+      # split existed because a router could hold one model; the swap engine removed that
+      # reason. See hosts/brys/llms-frontier.nix and docs/local-llms.md.
+      #
+      # NEVER activate via switch-to-configuration: select it from the bootloader, because
+      # the kernel tuning only applies on a cold boot.
+      specialisation.llms = {
         inheritParentConfig = false;
         configuration = {
           imports = [

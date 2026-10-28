@@ -7,34 +7,44 @@ sops:
     age:
         - enc: |
             -----BEGIN AGE ENCRYPTED FILE-----
-            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IHBpdi1wMjU2IGNlNnAvQSBBb1RYZVl6
-            MWpxSFQ3Ti9OdThOc1N4NlFXdDdHQzJiVWJhK0pqcWF6Y1dNOApBOE5saWxKRDlZ
-            ektKbVFac3lYL1QydXJJc0d4Tm1mTmJXc0l3WndxeGlNCi0tLSBObkFuN2Z1Wkd6
-            L0VVb3dwcGoyYTFhVTJYYjZ4ZFVDckRpVjl5cmZHOUU0Ctq7LIbgOjMUlsj+LQ6S
-            4ZjeRDVM1YVVfszZGH+VA9wahj04pYlEGmEiozAC2m6GZJTZgGQUPjMZHSOhmW47
-            DdA=
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IHBpdi1wMjU2IGNlNnAvQSBBL1FDWUhH
+            NWVrWjNhb3ppa3cvMjNpRTJQSUFwOVpvWkk4Umx3RTNJVnpCbQpZQXJlalFaS1hT
+            bWsvbXpCSXl1OHBZekoxTUsyUGdTN0F4SFhJaHAzUE8wCi0tLSBkOGJ1VERUYlhk
+            aVZzNDgwbXFkV0xBR3NkUmtYcGowZnZ6Q0EzdzBBalpVCkc3y/TrEfgis464uMQT
+            caTeBWHy0XAfkpEz7u4pX4rxVAlE41+1ogrXhSMDpbT75ep4K9f2rVvCqbMxfNhV
+            Tp0=
             -----END AGE ENCRYPTED FILE-----
           recipient: age1yubikey1q2769xug0ykjgzvwhjnnppnam9srzeknm6gsu9l3j9njgzkg7qxhswqkjqn
         - enc: |
             -----BEGIN AGE ENCRYPTED FILE-----
-            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IHBpdi1wMjU2IE00amFlQSBBblJxTFpn
-            Z21XcWo3bXpxdUVGb3hLc2FXaThmZUJDdWFPQ3cwZEVWK0t4QQp3VjJhNVdpZGk3
-            ZmJBUzBxNzJkb3NMeEgrTUtSYzJOMzloYVBFYXRrbjBJCi0tLSBOY1IxUW5HTkZX
-            UERNM0taak5ncFpOMWlJM3lENjNPMitrMFhXWC9GdVVZCrMOAyb695JEqe7gd3Ce
-            /CTZi1O2OJSc4YiyqbjdB98HTDGd+Cv3XdL0ysRr/Av1/P9ezAVE1Ap/dskjdSef
-            2I8=
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IHBpdi1wMjU2IE00amFlQSBBeWdQOHJE
+            RjdWRWRTNm9oeEVHN2MyN2R0WTI3N1JMZ0IvZGg5QlBFWlczagpFWUtSWXpIMkNY
+            QnlzeWhTTUpzaWYrZkhTS0U5Q1U0Sm5YZlBhZ3ZubUowCi0tLSA2RFc4TlNIalRY
+            eUYyTEt0ZzRXOFd1MmM1dHFwZklJbHFOZWwxL29PWFIwCuR/7GqJ7Cp9kE1PYfar
+            85Vq3b5dzGCzjBe0zzs86TJN/5a3zOi/FZNDHFBpSetEduloIJbLkmex7FjpgDx6
+            ctw=
             -----END AGE ENCRYPTED FILE-----
           recipient: age1yubikey1q0ke6fjulkqg0x0elweecppfkqqr6cqsr42u8q5k5z6466mu60gjseq6p4t
         - enc: |
             -----BEGIN AGE ENCRYPTED FILE-----
-            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IHBpdi1wMjU2IHE2ZEVOdyBBOFdjdGMw
-            TjczQzcwdEN6eUVxUjRSZGkrak9JWXdqb0FPY281alJkcC9CRwpqRTBuZnc3U2NJ
-            RXhjTzdSWkJkSGt1Y0JYT3ZBRnVXaUV6dGxEK0hEMUpZCi0tLSBSUUREc3BxK3Mw
-            WG9iUWF4ZHdNdkY3b3FzKzhac3JhTldkK0RaQmhtdTZNCiP5pvmEsHtRkAyiaw7u
-            bWT+Q61Ir2oxY5qiXrP/Ylw4QJZ9tjiyQbPOBLm212swZoqDUxqPyQiPZXfnR8gn
-            23Y=
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IHBpdi1wMjU2IHE2ZEVOdyBBL0s4RDJp
+            ZG9NcFJ3aDdpRTNwVjVkSGQ3ZW1uUFhZYUc3bmlIV1lKRklnMApHWnZwN0hpT2dz
+            ZDNHNTB4bWhFMDRQdWdiYi9TZC9rQnZkZGtvSlIzZW9zCi0tLSBKYkpvaHAwYTZ0
+            TzZuc3A3dkxmWEM2aG1pYWgrcm9BaytHRHA3VEppdVpNCuq1wVWJSH+e/SC+er3a
+            YFMUN7HMLGQgX8oDVf/ypxlknQqrgpvgwxvNwwduinioZGIMSYcaucBD8nCgSYMZ
+            p7U=
             -----END AGE ENCRYPTED FILE-----
           recipient: age1yubikey1q25g9xpunct74wnn29dgcgep78q666dkhpfg2flltg92fvyrew02j28464d
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IHAyNTZ0YWcgMGNpOHV3IEJKTk1XdDVs
+            U3ExNjc3Sk5iVG5mbXJSendHNmpUSVVIVGVvOURmYkY2RWpBaHB1aHNlb2pwZWdy
+            Q3FMZ3Q1a3k0U3Z2M2NXbjh5c0N4MzEyckwwZDJoYwpjd2FMcVM3N1dkTGN4VjN4
+            dWlad0tsMEZlLzhYditZTmdaYy9UeXpZR2dZCi0tLSBKbVNkcWpkMGwvTjNaQXVH
+            S3hwUWV4OHRzeXpYSGN2cXNaZzdBWVE2cGNjCkT6PIyOBeNk3nK8hrY8Bs1t+QeK
+            NvYCsdyvfWTyCeE8aec4J6vNI8F5ct3i3tMDrXQ/e0D+n8+eYcRguKKv7FY=
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age1tag1q2l557j0rr8x5ez5fatt6rnrrqcwawnz0590yx7el59024l2alcv7xmuzuk
     lastmodified: "2026-09-03T20:34:13Z"
     mac: ENC[AES256_GCM,data:XH0WC1IPFtfo+9FS22yAD5Pb7Da6Rwa6ihsJGKd6Tlm2LdjvirylQvwXefO8sKhpmb7ZOyOeQiAhVEx1/sxVKjT/FH3tvv95vN1TB75UT0JP+KN7nO3GQEIG2vBFIboLmAwvran7LnhJHJStsOAbvq9GiVS91SfLked0JmIah8Q=,iv:aFOU43M2Oiii4anqVHhx4oAVIHuSGUJ7eSFhbVyM404=,tag:lrpnIuCEYru+Z4rp3lnq3w==,type:str]
     unencrypted_suffix: _unencrypted

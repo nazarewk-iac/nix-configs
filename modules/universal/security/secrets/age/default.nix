@@ -74,7 +74,7 @@ in
       };
       identityFile = lib.mkOption {
         type = lib.types.str;
-        default = "/persist/sops/tpm-identity.txt";
+        default = "/var/lib/sops-tpm/tpm-identity.txt";
         description = ''
           The on-disk `AGE-PLUGIN-TPM-…` blob, readable only by root. Enrolment is a one-time
           interactive step; see `docs/tasks/2026-10/tpm-age-sops-keys/`.
@@ -206,6 +206,11 @@ in
             security.tpm2.enable = lib.mkDefault cfg.tpm.enable;
             systemd.services.sops-install-secrets.after = lib.optional cfg.tpm.enable "dev-tpmrm0.device";
             systemd.services.sops-install-secrets.wants = lib.optional cfg.tpm.enable "dev-tpmrm0.device";
+            # The blob lives on a persistent bind mount. Order and require its mount unit,
+            # or the unit starts first, the generator prints nothing, and the decrypt fails.
+            systemd.services.sops-install-secrets.unitConfig.RequiresMountsFor = lib.optional
+              cfg.tpm.enable
+              cfg.tpm.identityFile;
           }
         ]
       ))

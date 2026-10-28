@@ -1,3 +1,8 @@
+# The single boot entry, `specialisation.llms` (see hosts/brys/default.nix). It serves the whole
+# fleet from one llama-swap process: both frontier models through the `matrix` engine (a request
+# for the other one swaps the resident model, no reboot), plus the surveyed set and the GPU grunt,
+# which co-reside on the W6600 by tier. It used to be one of four entries; the others (`llm-ds4`,
+# `llm-small`, `llm-qwen`) were removed when llama-swap made a single entry sufficient.
 # Combined frontier specialisation for brys.
 #
 # BOOT-SELECTED ONLY, NEVER ACTIVATED via switch-to-configuration. This is a
@@ -23,61 +28,13 @@
   ...
 }:
 let
-  # Shared local-LLM serving config (see ./llm.nix). Both frontier models on the
-  # primary router; `cpuPinned = false` for the same llama-cpp 0.4.0
-  # prefill-stall reason as the other entries. `qwenGpu = true` selects the
-  # v0.6.0 build; `qwenVulkan = false` keeps the MTP draft head off the W6600,
-  # which hard-hangs under this workload (see the note in ./llm.nix).
-  llm = import ./llm.nix {
+  # The whole local-LLM serving config, shared with the main brys profile
+  # (./llm-config.nix). The appliance passes the full 320K DeepSeek context because it
+  # owns the box; the desktop passes 128K because it shares RAM with a browser. That is
+  # the only difference.
+  llm = import ./llm-config.nix {
     inherit lib pkgs kdnConfig;
     contextSize = 327680;
-    cpuPinned = false;
-    withFrontier = true;
-    withQwen = true;
-    withSmall = false;
-    # Colocate the fast GPU grunt beside the two frontier models: `routers.grunt`
-    # (:39705) serves Qwen3.5-4B on the W6600, so a `grunt` request never evicts
-    # whichever frontier model is resident on the primary router. This also
-    # promotes `llm.gpu` (merged as `extraConfig` below) and selects the Vulkan
-    # llama.cpp build. See docs/tasks/2026-10/brys-grunt-colocation/.
-    withGrunt = true;
-    withSurveyed = true;
-    withSwap = true;
-    qwenContextSize = 1048576;
-    qwenGpu = true;
-    qwenVulkan = false;
-    # The fork build with #26004 checkpoint persistence + the rebased #29738
-    # session-keyed save/restore (packages/llama-cpp `sessions`). It replaces
-    # the plain v0.6.0 build for both models on this router.
-    #
-    # NOTE: `withGrunt = true` above overrides this with the Vulkan no-BLAS
-    # build, because the GPU grunt needs Vulkan and the aspect carries ONE
-    # `llamaPackage` for every router. The session-cache features therefore have
-    # no effect while the grunt is colocated. See the trade-off note in ./llm.nix.
-    llamaPackage = pkgs.kdn.llama-cpp-sessions;
-    # MTP speculative decode is OFF. The implementation stays (the `qwenMtp`,
-    # `qwenSpecDraftNMax`/`PMin`/`Prio` options and the draft model entry in
-    # ./llm.nix) — only this switch flips it. The Qwen MTP draft head accepted
-    # only ~0.42 of drafts (mean len 3.11, measured 2026-10-11), so the
-    # speculative overhead did not pay for itself. Set true to re-enable.
-    qwenMtp = false;
-    qwenSpecDraftNMax = 5;
-    # YaRN x4: 256K native -> 1M. q8_0 KV halves the 1M pool (~24 -> ~12 GiB),
-    # returned to the mmap'd weight working set so decode stops faulting weights
-    # from disk (measured 2026-10-10: ~80K major faults/s at 1M F16 KV pinned the
-    # box; see docs/local-llms.md). Decode is slightly slower per step but the
-    # whole run is far faster because the weights stay resident.
-    qwenRopeScaling = "yarn";
-    qwenRopeScale = 4.0;
-    qwenRopeFreqBase = 10000000;
-    qwenYarnOrigCtx = 262144;
-    qwenCacheTypeK = "q8_0";
-    qwenCacheTypeV = "q8_0";
-    # Prompt cache: 8 GiB, down from 16. The disk session store
-    # (docs/tasks/2026-10/llm-session-cache-persistence/) now persists whole
-    # sessions, so the RAM prompt cache only needs the shared system prompt.
-    # It grows on demand, so this is a ceiling, not an allocation.
-    qwenCacheRam = 8192;
   };
 in
 import ./llm-appliance.nix {

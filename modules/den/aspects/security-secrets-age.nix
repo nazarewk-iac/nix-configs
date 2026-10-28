@@ -93,8 +93,8 @@ let
         };
         identityFile = lib.mkOption {
           type = lib.types.str;
-          default = "/persist/sops/tpm-identity.txt";
-          example = "/var/lib/sops-nix/tpm-identity.txt";
+          default = "/var/lib/sops-tpm/tpm-identity.txt";
+          example = "/var/lib/sops-tpm/tpm-identity.txt";
           description = ''
             The on-disk `AGE-PLUGIN-TPM-…` identity blob. It must be a persistent path and must be
             readable only by root. The pre-start script copies it into the merged key file.
@@ -318,6 +318,15 @@ let
       security.tpm2.enable = lib.mkDefault config.kdn.security.secrets.age.tpm.enable;
       systemd.services.sops-install-secrets.after = lib.optional config.kdn.security.secrets.age.tpm.enable "dev-tpmrm0.device";
       systemd.services.sops-install-secrets.wants = lib.optional config.kdn.security.secrets.age.tpm.enable "dev-tpmrm0.device";
+      # The identity blob sits on a persistent path (`/var/lib/sops-tpm`, a bind mount from
+      # the ZFS state bucket). Without this, the unit starts before that mount exists: the
+      # generator's `test -r` then prints nothing, the merged key file has no TPM identity,
+      # and the decrypt fails — sshd never starts. `RequiresMountsFor` makes systemd order
+      # and require the mount units covering the path, which is the only reliable way: the
+      # mount's unit name is derived from the path and is not stable across layouts.
+      systemd.services.sops-install-secrets.unitConfig.RequiresMountsFor = lib.optional
+        config.kdn.security.secrets.age.tpm.enable
+        config.kdn.security.secrets.age.tpm.identityFile;
     };
 
   darwinTarget =

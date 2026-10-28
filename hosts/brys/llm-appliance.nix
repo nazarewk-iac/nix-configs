@@ -1,24 +1,11 @@
-# Shared body of the brys LLM-only boot specialisations.
+# Shared body of the brys LLM-only boot entry (`specialisation.llms`).
 #
-# brys has four boot-selected appliance entries, all `inheritParentConfig =
-# false`, so each is a clean top-level with the desktop/workstation/gaming
-# profiles left out:
-#
-#   * llm-ds4 (hosts/brys/llm-ds4.nix) — the DeepSeek V4 Flash frontier
-#     alone, with the whole box.
-#   * llm-small (hosts/brys/llm-small.nix) — the small-model router alone, with
-#     no frontier model.
-#   * llm-qwen (hosts/brys/llm-qwen.nix) — the Qwen3.8-Flash-Next model alone,
-#     with the whole box and the MTP draft head on the W6600 (Vulkan); the main
-#     model + KV stay on the CPU.
-#   * llms-frontier (hosts/brys/llms-frontier.nix) — DS4 and Qwen in one router
-#     with `--models-max 1`: a request for either swaps the resident model
-#     without a reboot.
-#
-# They differ only in the `llm` wiring, the `tag`, the pre-login `banner` and
-# the optional `extraConfig`. This file owns the common appliance body
-# (hardware, disks/LUKS, networking, the baseline profile, the service strip,
-# the kernel tuning), so the entries cannot drift.
+# brys has one boot-selected appliance entry, `inheritParentConfig = false`, so
+# it is a clean top-level with the desktop/workstation/gaming profiles left out.
+# It used to be four (`llm-ds4`, `llm-small`, `llm-qwen`, `llms-frontier`); the
+# split existed because a llama.cpp router could hold one model, and llama-swap
+# removed that limit. One entry now serves the whole fleet: a frontier swap is a
+# model swap, not a reboot.
 #
 # BOOT-SELECTED ONLY, NEVER ACTIVATED via switch-to-configuration. Kernel tuning
 # and the ZFS ARC cap only apply on a cold boot.
@@ -50,7 +37,10 @@
   ++ kdnConfig.self.denLib.imports {
     class = "nixos";
     aspects = [ "llm" ];
-  };
+  }
+  # The LLM tuning both consumers share: ARC cap, THP, NUMA, the sysctl floor and the
+  # governor as a soft default. The appliance adds its core reservation on top.
+  ++ [ ./llm-tuning-shared.nix ];
 
   config = lib.mkMerge [
     # ---- Boot as a minimal appliance ---------------------------------------
@@ -163,32 +153,41 @@
       systemd.tmpfiles.rules = [ ];
     }
 
-    # ---- Performance tuning for CPU-only inference ----------------------
+    # ---- Performance tuning: the appliance-only delta --------------------
+    #
+    # The settings that are correct on BOTH consumers live in ./llm-tuning-shared.nix:
+    # the ZFS ARC cap, `transparent_hugepage=madvise`, `numa_balancing=disable`, the
+    # sysctl floor and the performance governor as a soft default. This block adds only
+    # what an appliance may take and a desktop may not.
     {
+      # Core reservation. This is the one genuinely divisive setting: `isolcpus` removes
+      # cores from the scheduler, so every ordinary task is confined to what is left.
+      # That is correct for a box that exists to serve models and disqualifying for a
+      # desktop, which is exactly why it is here and not in the shared file.
+      #
+      # On this CPU (Ryzen 9 5950X: 16 physical cores, 32 logical) the isolated set is
+      # physical cores, so isolation holds whether or not SMT is on.
       boot.kernelParams = [
         "isolcpus=1-15"
         "nohz_full=1-15"
         "rcu_nocbs=1-15"
-        "transparent_hugepage=madvise"
+        # Never let a core drop into a deep C-state: wake latency on a bandwidth-bound
+        # decode loop is worse than the idle power.
         "processor.max_cstate=1"
         "amd_pstate=active"
-        "numa_balancing=disable"
-        # The ZFS ARC cap lives in ./llm.nix, shared with the main profile.
-        "quiet"
-        "loglevel=3"
       ];
+
+      # `mkForce` because the shared file sets a soft default, and an appliance overrides it.
       powerManagement.cpuFreqGovernor = lib.mkForce "performance";
+
+      # Memory behaviour for a 95 GiB `mmap` and no interactive user: never swap (an OOM is
+      # better than a 40 GB swap-in), overcommit freely, tolerate large writeback bursts.
       boot.kernel.sysctl = {
         "vm.swappiness" = 0;
         "vm.overcommit_memory" = 1;
-        "vm.compaction_proactiveness" = 0;
         "vm.dirty_ratio" = 40;
         "vm.dirty_background_ratio" = 10;
-        "fs.file-max" = 1048576;
       };
-      # Keep root on disk (not tmpfs) for these build-only minimal entries so
-      # they are guaranteed bootable; the reduction comes from services/desktop
-      # off.
     }
 
     # ---- Entry-specific extras -------------------------------------------

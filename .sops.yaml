@@ -84,6 +84,18 @@ creation_rules:
           # defaults
           - *yk-brys-unattended
           - *yk-oams-unattended
+          # brys decrypts this file at boot with nobody present, so it needs the TPM identity.
+          - *tpm-brys
+  # One file, one rule. `default.unattended.sops.yaml` is the NetworkManager default-connection
+  # config, which every host decrypts; brys needs it at boot, so it carries the TPM identity.
+  # It sits above the glob rule because sops uses the FIRST matching rule.
+  - path_regex: '^default\.unattended\.sops\.[^.]+$'
+    key_groups:
+      - age:
+          - *ssh-brys
+          - *yk-brys-unattended
+          - *yk-oams-unattended
+          - *tpm-brys
   - path_regex: '\.unattended\.sops\.[^.]+$'
     key_groups:
       - age:
@@ -110,6 +122,11 @@ creation_rules:
           # defaults
           - *yk-brys-unattended
           - *yk-oams-unattended
+          # NO TPM recipient here, on purpose. This rule matches every `*.unattended.sops.yaml`,
+          # now and in future, and the TPM identity is PIN-less and PCR-unbound: it decrypts
+          # with nobody present for the lifetime of the machine. That is acceptable for a file
+          # brys itself must read at boot; it is not acceptable as blanket read access to every
+          # future unattended secret. A file this host needs gets its own rule, like `llms.*`.
   # One rule per host, so each non-CA key file goes to that host's own SSH key alone, plus the two
   # non-touch YubiKey identities (`yk-oams-unattended`, `yk-brys-unattended`). No touch-required
   # recipient: a host decrypts its own keys at boot with no user present, and the admin decrypts any

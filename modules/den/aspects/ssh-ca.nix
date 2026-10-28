@@ -64,9 +64,70 @@
 # 3. **No custom module argument.** Each target module below takes `config`, `lib` and `pkgs` only.
 { kdn, ... }:
 let
+  # Declared in every class: a consumer sets it from a host file (nixos) or from a home module, and
+  # each class is a separate evaluation.
+  declaration =
+    { lib, ... }:
+    {
+      options.kdn.ssh-ca.certificatePatterns = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        example = [
+          "kdn-*"
+          "*.kdn.im"
+          "*.nb.net.int.kdn.im"
+        ];
+        description = ''
+          The hosts that may be offered the CA user certificate, as ssh `Host` patterns.
+
+          The directive goes inside a `Host` block, never at the top level: a top-level
+          `CertificateFile` is global, so `ssh` would present the fleet's user certificate to every
+          destination, including a public host.
+
+          `[ ]` (the default) derives the list from `kdn.ssh-access.identityAgentPatterns` plus
+          `kdn-*`, so one definition scopes both the access drop-in and this one. Set it explicitly
+          for a host that has no access graph, or to narrow the set.
+        '';
+      };
+    };
+
   # The client drop-in, and the user certificate it presents.
   dropInPath = ".ssh/config.d/50-kdn-ssh-ca.config";
   userCertPath = "~/.ssh/id_ed25519-cert.pub";
+
+  # The hosts the fleet owns, as ssh `Host` patterns. The client certificate must be offered to
+  # these and to nothing else.
+  #
+  # A top-level `CertificateFile` is global: `ssh_config` would offer the CA user certificate to
+  # every destination, including a random public host. So the directive belongs inside a `Host`
+  # block that lists the fleet.
+  #
+  # `[ ]` means "derive": the aspect reads `kdn.ssh-access.identityAgentPatterns` when that option
+  # exists, which is the same list the access aspect uses to force `$SSH_AUTH_SOCK` on direct
+  # addresses. One definition then scopes both files. `kdn-*` is always included, because those are
+  # the fleet aliases the access aspect emits.
+  effectivePatterns =
+    lib: config:
+    let
+      declared = config.kdn.ssh-ca.certificatePatterns or [ ];
+      fromAccess = config.kdn.ssh-access.identityAgentPatterns or null;
+    in
+    if declared != [ ] then
+      declared
+    else if fromAccess != null then
+      lib.unique ([ "kdn-*" ] ++ fromAccess)
+    else
+      # Both sources are absent. Falling back to `[ "kdn-*" ]` alone would silently stop
+      # offering the certificate to every direct FQDN and IP connection, which reads as a
+      # broken login rather than a configuration error. Fail at evaluation instead.
+      throw ''
+        kdn.ssh-ca: no `certificatePatterns` and no `kdn.ssh-access.identityAgentPatterns`.
+
+        The client certificate must be scoped to specific hosts, so one of the two must name
+        them. Set `kdn.ssh-ca.certificatePatterns` on the host that generates the drop-in
+        (the home-manager evaluation, not the host module), or include the `ssh-access`
+        aspect in that same evaluation so its pattern list is available.
+      '';
 
   # The managed `known_hosts` fragment. A store path must not be the live `~/.ssh/known_hosts`,
   # because `ssh` appends to that file at run time.
@@ -157,6 +218,7 @@ in
       hostCert = findHostCert config.kdn.certificates.certs lib;
     in
     {
+      imports = [ declaration ];
       config = lib.mkIf (sshCa != null && hostCert != null) {
         services.openssh.settings.TrustedUserCAKeys = toString (mkSshCaPubKey pkgs (caCertPath config sshCa));
         # `HostKey` and `HostCertificate` travel together in `extraConfig`. Setting
@@ -189,6 +251,7 @@ in
       hostCert = findHostCert config.kdn.certificates.certs lib;
     in
     {
+      imports = [ declaration ];
       config = lib.mkIf (sshCa != null && hostCert != null) {
         services.openssh.extraConfig =
           serverDirectives
@@ -211,9 +274,17 @@ in
       sshCa = findSshCa config.kdn.ca-dag.cas lib;
     in
     {
+      imports = [ declaration ];
       config = lib.mkIf (sshCa != null) {
+        # The certificate is scoped to the hosts the fleet owns. A top-level `CertificateFile` is
+        # global, so `ssh` would present the CA user certificate to every destination, including a
+        # public host; the `Host` block is what keeps it to the fleet.
         home.file.${dropInPath}.text = ''
-          CertificateFile ${userCertPath}
+          Host ${lib.concatStringsSep " " (effectivePatterns lib config)}
+              CertificateFile ${userCertPath}
+
+          # Additive, so it stays global: the managed fragment carries the CA's
+          # `@cert-authority` line and the live file keeps whatever the user appends.
           UserKnownHostsFile ~/.ssh/known_hosts ~/${knownHostsPath}
         '';
         home.file.${knownHostsPath}.source = mkKnownHosts pkgs (

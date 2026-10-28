@@ -1,14 +1,10 @@
 # Shared LLM serving configuration for brys.
 #
-# The main host (hosts/brys/default.nix) and the llm-ds4 boot specialisation
-# (hosts/brys/llm-ds4.nix) serve the DeepSeek V4 Flash frontier model through
-# the same `kdn.llm.local` slot. The llm-small boot specialisation
-# (hosts/brys/llm-small.nix) serves the small-model router instead, with no
-# frontier model. The llm-qwen boot specialisation (hosts/brys/llm-qwen.nix)
-# serves the Qwen3.8-Flash-Next model alone. This file owns that shared wiring
-# so the consumers cannot drift: the slot assignments, the LLM secrets, the
-# leaf-key service, the model persistence directory and the ZFS ARC cap all
-# live here.
+# Two consumers share it: the main host (hosts/brys/default.nix), which also runs a
+# desktop, and the single appliance entry (hosts/brys/llms-frontier.nix, booted as
+# `specialisation.llms`), which gives the box to the models. This file owns that shared
+# wiring so the two cannot drift: the slot assignments, the LLM secrets, the leaf-key
+# service, the model persistence directory and the ZFS ARC cap all live here.
 #
 # The consumers differ in these knobs, so all are arguments:
 #
@@ -580,6 +576,14 @@ in
         user = "prometheus";
         group = "prometheus";
       }
+      # The TPM age identity blob. This is now the ONLY unattended decryptor at boot: the
+      # SSH host key is itself a sops secret, so its generator cannot help before the
+      # decrypt, and no YubiKey is present. A tmpfs copy here would vanish at reboot and
+      # take `sops-install-secrets` and sshd with it. 0700, root-only.
+      {
+        directory = "/var/lib/sops-tpm";
+        mode = "0700";
+      }
     ];
 
     # The container's writable root (`/var/lib/nixos-containers/<name>`): rebuilt
@@ -816,13 +820,11 @@ in
       '';
     };
 
-    # Cap the ZFS ARC at 8 GiB. The model GGUFs live on ZFS, so the default ARC
-    # (up to ~half of RAM) competes for physical RAM with the page cache that
-    # holds the mmap'd ~103 GB DeepSeek weights. Without this cap the kernel
-    # evicts the weights to grow the ARC, and every request re-reads them from
-    # disk (measured 0.18 tok/s prefill, 6.3M major faults, 271 GB read). With
-    # the cap the weights stay resident: RSS ~92 GB, warm generation ~8.5 tok/s.
-    # The box needs its RAM for the model, not for cache.
-    boot.kernelParams = [ "zfs.zfs_arc_max=8589934592" ];
+    # The LLM tuning both consumers share: the ZFS ARC cap (without it the ARC
+    # evicts the mmap'd weights and every request re-reads them from disk),
+    # `transparent_hugepage=madvise` and `numa_balancing=disable`. See
+    # ./llm-tuning-shared.nix for the measured numbers and for why the core
+    # reservation stayed out of it.
+    imports = [ ./llm-tuning-shared.nix ];
   };
 }

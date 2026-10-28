@@ -247,6 +247,43 @@
       };
 
       kdn.llm.local.models = {
+        # The two mid-size CPU models that used to live only in the `small` router. The four
+        # boot specialisations collapsed to one, and `withSmall` is false there, so without
+        # these entries the aliases `fast` and `balanced` would vanish with the router. They
+        # are served from `surveyed` (evictable, CPU) so the aliases survive the collapse.
+        #
+        # They are large: 17.3 GiB and 45.2 GiB. A request for either evicts every other
+        # surveyed model and takes most of the box, which is why they are NOT in a
+        # co-residence tier — `|` keeps them alone in `with_surveyed`.
+        "qwen3-30b-a3b" = {
+          enable = true;
+          # Not `mkCpu`: that helper derives `hfFile` from the name, and these two keep the
+          # hub layout the old `small` router used, so `surveyed` never had to move them.
+          hfRepo = "surveyed";
+          hfFile = "Qwen/Qwen3-30B-A3B-GGUF/Qwen3-30B-A3B-Q4_K_M.gguf";
+          download.enable = false;
+          mainRouter = "surveyed";
+          aliases = [ "fast" ];
+          perf = {
+            contextSize = 131072;
+            parallel = 1;
+            threads = 8;
+          };
+        };
+        "qwen3-next-80b" = {
+          enable = true;
+          hfRepo = "surveyed";
+          hfFile = "unsloth/Qwen3-Next-80B-A3B-Instruct-GGUF/Qwen3-Next-80B-A3B-Instruct-Q4_K_M.gguf";
+          download.enable = false;
+          mainRouter = "surveyed";
+          aliases = [ "balanced" ];
+          perf = {
+            contextSize = 131072;
+            parallel = 1;
+            threads = 8;
+          };
+        };
+
         # Smallest models, fully on the GPU.
         "qwen3.5-0.8b" = mkGpu {
           name = "qwen3.5-0.8b";
