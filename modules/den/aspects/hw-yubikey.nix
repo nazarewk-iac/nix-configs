@@ -109,6 +109,26 @@ let
         '';
       };
 
+      options.kdn.hw.yubikey.requiredForBoot = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          Whether a smart card must answer before `sops-install-secrets` runs.
+
+          When `true` (the default), `sops-install-secrets` is ordered `after` and `requires`
+          `pcscd.socket`, so an unattended decrypt can use a YubiKey. That edge is the reason for
+          the `pcscd` ordering workaround in this aspect: a default `pcscd.socket` is
+          `After=sysinit.target`, and sops-nix runs `Before=sysinit.target`, so the two close a
+          cycle that systemd breaks by deleting the sops job — and then nothing decrypts and
+          `sshd` never starts.
+
+          Set `false` on a host that has another unattended identity (a TPM, via
+          `kdn.security.secrets.age.tpm.enable`). The aspect then leaves `pcscd` out of the
+          `sops-install-secrets` ordering entirely, which removes the cycle and its workaround from
+          that host's boot path. YubiKey recipients stay valid; only the boot-time dependency goes.
+        '';
+      };
+
       options.kdn.hw.yubikey.agePlugins = lib.mkOption {
         readOnly = true;
         type = lib.types.listOf lib.types.package;
@@ -224,7 +244,7 @@ in
           security.pam.u2f.settings.appid = cfg.appId;
           security.pam.u2f.settings.origin = cfg.appId;
         }
-        (lib.mkIf secretsAllowed {
+        (lib.mkIf (secretsAllowed && cfg.requiredForBoot) {
           services.pcscd.enable = true;
 
           # Break the `sysinit.target` ordering cycle that the `sops-install-secrets` edge below
@@ -247,7 +267,7 @@ in
         })
         # `systemd.services` accepts any name, so a class without `sops-nix` would get an empty unit.
         # The `config ? sops` test keeps that from happening.
-        (lib.mkIf (secretsAllowed && config ? sops) {
+        (lib.mkIf (secretsAllowed && config ? sops && cfg.requiredForBoot) {
           systemd.services.sops-install-secrets.after = [ "pcscd.socket" ];
           systemd.services.sops-install-secrets.requires = [ "pcscd.socket" ];
         })

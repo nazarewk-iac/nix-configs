@@ -54,6 +54,33 @@ in
       type = with lib.types; listOf package;
       default = [ ];
     };
+    tpm = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = ''
+          Seed a TPM 2.0-backed age identity into the key file, so the boot-time decrypt needs no
+          YubiKey, no smart card and no interactive touch.
+
+          `age-plugin-tpm` derives a key from the host TPM and keeps a wrapped blob in
+          `identityFile`. The blob is a plain file, so it must live on a persistent path; the TPM
+          survives a reinstall but the blob does not unless it is kept. Back it up off-host and
+          never `tpm2_clear` on an enrolled machine.
+
+          There is no PCR binding in `age-plugin-tpm` 1.0.1, so firmware and kernel updates do not
+          break decryption. That is also why it protects a stolen disk, not a live attacker; full
+          disk encryption is the control for that.
+        '';
+      };
+      identityFile = lib.mkOption {
+        type = lib.types.str;
+        default = "/persist/sops/tpm-identity.txt";
+        description = ''
+          The on-disk `AGE-PLUGIN-TPM-…` blob, readable only by root. Enrolment is a one-time
+          interactive step; see `docs/tasks/2026-10/tpm-age-sops-keys/`.
+        '';
+      };
+    };
     genScripts = lib.mkOption {
       type = with lib.types; listOf package;
       default = [ ];
@@ -116,7 +143,22 @@ in
           ssh-to-pgp
           cfg.genScripts
         ];
+        kdn.security.secrets.age.plugins =
+          lib.optionals cfg.tpm.enable [ pkgs.age-plugin-tpm ];
         kdn.security.secrets.age.genScripts = [
+          (lib.mkIf cfg.tpm.enable (pkgs.writeShellApplication {
+            name = "kdn-sops-age-gen-keys-tpm";
+            runtimeInputs = with pkgs; [
+              coreutils
+            ];
+            text = ''
+              # The blob is the whole identity; nothing is printed when it is absent, so a host
+              # without an enrolled TPM is unaffected.
+              if test -r ${lib.strings.escapeShellArg cfg.tpm.identityFile}; then
+                cat ${lib.strings.escapeShellArg cfg.tpm.identityFile}
+              fi
+            '';
+          }))
           (pkgs.writeShellApplication {
             name = "kdn-sops-age-gen-keys-ssh";
             runtimeInputs = with pkgs; [
@@ -160,6 +202,10 @@ in
           {
             systemd.services.sops-install-secrets.path = cfg.plugins;
             systemd.services.sops-install-secrets.preStart = lib.getExe cfg.service.preStart;
+            # A TPM identity reads /dev/tpmrm0, so the device must exist before the decrypt runs.
+            security.tpm2.enable = lib.mkDefault cfg.tpm.enable;
+            systemd.services.sops-install-secrets.after = lib.optional cfg.tpm.enable "dev-tpmrm0.device";
+            systemd.services.sops-install-secrets.wants = lib.optional cfg.tpm.enable "dev-tpmrm0.device";
           }
         ]
       ))

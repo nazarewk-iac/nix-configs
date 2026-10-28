@@ -20,6 +20,25 @@ in
       # TODO: kdn-specific
       default = import ./yubikeys.nix;
     };
+    requiredForBoot = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        Whether a smart card must answer before `sops-install-secrets` runs.
+
+        `true` (the default) keeps `sops-install-secrets` ordered `after`/`requires` `pcscd.socket`,
+        so an unattended decrypt can use a YubiKey. That edge is why this module carries the
+        `pcscd` ordering workaround below: a default `pcscd.socket` is `After=sysinit.target` while
+        sops-nix runs `Before=sysinit.target`, so the pair closes a cycle that systemd breaks by
+        deleting the sops job. The host then decrypts nothing and, because `sshd` requires the
+        secrets target, refuses port 22 on every interface.
+
+        Set `false` on a host with another unattended identity, for example a TPM
+        (`kdn.security.secrets.age.tpm.enable` in the den tree). The module then drops the
+        `pcscd` edge, and with it the cycle and the workaround, from that host's boot path. The
+        YubiKey recipients stay valid for a manual decrypt.
+      '';
+    };
   };
 
   config = lib.mkMerge [
@@ -108,7 +127,7 @@ in
                 origin = cfg.appId;
               };
             }
-            (lib.mkIf config.kdn.security.secrets.allowed {
+            (lib.mkIf (config.kdn.security.secrets.allowed && cfg.requiredForBoot) {
               # SOPS+age config
               services.pcscd.enable = true;
 

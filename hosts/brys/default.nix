@@ -191,6 +191,16 @@ in
       kdn.hw.nanokvm.enable = true;
     }
     {
+      # A TPM 2.0 identity decrypts sops with nobody at the machine, so the smart card is
+      # no longer on the boot path. That removes the `pcscd.socket` ordering edge, and with
+      # it the cycle whose workaround deleted the `sops-install-secrets` job on 2026-10-27
+      # and 2026-10-28 and left the host without an sshd. The YubiKey recipients remain in
+      # `.sops.yaml`, so a manual decrypt or a break-glass recovery still works.
+      # See docs/tasks/2026-10/tpm-age-sops-keys/.
+      kdn.hw.yubikey.requiredForBoot = false;
+      kdn.security.secrets.age.tpm.enable = true;
+    }
+    {
       kdn.desktop.sway.portals.debug = true;
     }
     {

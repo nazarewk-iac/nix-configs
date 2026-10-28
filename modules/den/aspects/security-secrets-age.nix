@@ -69,6 +69,39 @@ let
         '';
       };
 
+      options.kdn.security.secrets.age.tpm = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = ''
+            Seed a TPM-backed age identity into the key file, so the boot-time decrypt needs no
+            YubiKey, no smart card and no interactive touch.
+
+            `age-plugin-tpm` derives a key from the host's TPM 2.0 and stores a wrapped blob in
+            `identityFile`. The blob is a plain file, so it must live on a persistent path: the TPM
+            itself survives a reinstall, the blob does not unless it is kept. Back it up off-host,
+            and never run `tpm2_clear` on an enrolled machine, because that destroys the owner
+            hierarchy that unwraps the blob.
+
+            There is no PCR binding in `age-plugin-tpm` 1.0.1, so a firmware or kernel update does
+            not break decryption. That is also why this protects against a stolen disk, not against
+            an attacker at the console; full disk encryption is the control for that case.
+
+            Enrolment is a one-time interactive step per host; see
+            `docs/tasks/2026-10/tpm-age-sops-keys/`.
+          '';
+        };
+        identityFile = lib.mkOption {
+          type = lib.types.str;
+          default = "/persist/sops/tpm-identity.txt";
+          example = "/var/lib/sops-nix/tpm-identity.txt";
+          description = ''
+            The on-disk `AGE-PLUGIN-TPM-…` identity blob. It must be a persistent path and must be
+            readable only by root. The pre-start script copies it into the merged key file.
+          '';
+        };
+      };
+
       options.kdn.security.secrets.age.keyFile = lib.mkOption {
         type = lib.types.str;
         default = "/var/lib/sops-nix/key.txt";
@@ -120,6 +153,20 @@ let
       };
 
       config.kdn.security.secrets.age.genScripts = [
+        (lib.mkIf cfg.tpm.enable (pkgs.writeShellApplication {
+          name = "kdn-sops-age-gen-keys-tpm";
+          runtimeInputs = with pkgs; [
+            coreutils
+            age-plugin-tpm
+          ];
+          text = ''
+            # The blob is the whole identity for `age-plugin-tpm`; it prints nothing when the
+            # file is absent, so a host without an enrolled TPM is unaffected.
+            if test -r ${lib.strings.escapeShellArg cfg.tpm.identityFile}; then
+              cat ${lib.strings.escapeShellArg cfg.tpm.identityFile}
+            fi
+          '';
+        }))
         (pkgs.writeShellApplication {
           name = "kdn-sops-age-gen-keys-ssh";
           runtimeInputs = with pkgs; [
@@ -262,8 +309,15 @@ let
 
       environment.systemPackages = packagesOf { inherit config lib pkgs; };
 
-      systemd.services.sops-install-secrets.path = config.kdn.security.secrets.age.plugins;
+      systemd.services.sops-install-secrets.path =
+        config.kdn.security.secrets.age.plugins
+        ++ lib.optionals config.kdn.security.secrets.age.tpm.enable [ pkgs.age-plugin-tpm ];
       systemd.services.sops-install-secrets.preStart = lib.getExe config.kdn.security.secrets.age.service.preStart;
+
+      # A TPM identity needs the device and the module, or the decrypt races the driver.
+      security.tpm2.enable = lib.mkDefault config.kdn.security.secrets.age.tpm.enable;
+      systemd.services.sops-install-secrets.after = lib.optional config.kdn.security.secrets.age.tpm.enable "dev-tpmrm0.device";
+      systemd.services.sops-install-secrets.wants = lib.optional config.kdn.security.secrets.age.tpm.enable "dev-tpmrm0.device";
     };
 
   darwinTarget =

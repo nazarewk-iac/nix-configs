@@ -42,7 +42,15 @@ keys:
     #  ssh-to-age </etc/ssh/ssh_host_ed25519_key.pub
     #  ssh-keyscan moss.kdn.im | grep ' ssh-ed25519 ' | ssh-to-age
     briv: {age: [&ssh-briv age1fvzlv8tvmlsmes0apyrf4fwrcsyj5c959tnq36njfm2ng464a5sq7akkat]}
-    brys: {age: [&ssh-brys age1ysq2nvh5vkxra8gj74meqvfpc6axh5nv9sxn62s3mj3lz9987exqweqp0p]}
+    brys:
+      age:
+        - &ssh-brys age1ysq2nvh5vkxra8gj74meqvfpc6axh5nv9sxn62s3mj3lz9987exqweqp0p
+        # A hardware-bound age identity derived from brys' TPM 2.0 (`age-plugin-tpm`).
+        # It decrypts with no user present, which is what lets `sops-install-secrets`
+        # drop the `pcscd.socket` edge. The identity blob is
+        # /persist/sops/tpm-identity.txt on the host; back it up off-host, and never
+        # `tpm2_clear` (that destroys the owner hierarchy and makes the blob useless).
+        - &tpm-brys age1tag1q2l557j0rr8x5ez5fatt6rnrrqcwawnz0590yx7el59024l2alcv7xmuzuk
     etra: {age: [&ssh-etra age1mjjz7t44e777szehss7ywv2lpwu53mjnvzvrqsyt27apwpew6fsqxqt3cj]}
     faro: {age: [&ssh-faro age1sxyd3g9gg79vgdw2gpt9v4tjqaz9pfmyer39n2wwmelsutp7d4vqf4rrxm]}
     moss: {age: [&ssh-moss age1n32gwqk35302kl4k2q2rwys2dzwasza596zknrfgp2nwvpt2rqms4xzc9n]}
@@ -121,6 +129,9 @@ creation_rules:
           - *ssh-brys
           - *yk-oams-unattended
           - *yk-brys-unattended
+          # The TPM identity: hardware-bound, no user present. This is what lets the
+          # boot-time decrypt drop its `pcscd`/YubiKey dependency.
+          - *tpm-brys
   - path_regex: 'hosts/etra/certs/.*\.key\.sops$'
     key_groups:
       - age:
@@ -151,6 +162,9 @@ creation_rules:
           - *yk-brys-touch
           - *yk-oams-touch
           - *ssh-brys
+          # brys' TPM 2.0 identity. It is the only recipient that decrypts with nobody at
+          # the machine, which is what the boot-time decrypt needs.
+          - *tpm-brys
   # The fresh managed KDN root CA (decision D-B). It is encrypted to the two unattended YubiKey
   # identities only, so `kdn-certs ca init` runs with no touch and no PIN. The user rotates it to a
   # touch-required CA later; see docs/tasks/2026-09/declarative-certificates/007-ca-rotation/.
