@@ -38,15 +38,35 @@ one has a user who cannot. That single fact decides most of the design:
 | The machine is the user's whole computer | Her documents and photos matter more than any feature. Backups are a requirement, not a nice-to-have. |
 | Support happens rarely and remotely | Unattended remote access must work before the machine leaves the bench. |
 
+## Hard facts from the owner (2026-10-28)
+
+These change several assumptions in the earlier draft of this task, so they come
+first.
+
+| Fact | Consequence |
+|---|---|
+| **`pryll` is connected to the NanoKVM at `kvm-fa56`.** | The device documented as `gaz`'s KVM now serves `pryll`. Which machine the earlier ChromeOS observations came from must be re-confirmed before any `gaz` work; the KVM has one HDMI input and one USB path, so it serves one machine at a time. |
+| **`pryll` boots today with a YubiKey tap**, through the last active config, which uses **`modules/universal`**. | Disk unlock is LUKS + FIDO2/YubiKey. The machine is in service, so a failed experiment costs real availability. |
+| **The machine is safe to reinstall.** Build `.#install-iso` from this repo, upload it through the NanoKVM, and boot it as a virtual/attached device. | No need to preserve data across the install. The risky part is not the disk, it is the broken-boot recovery. |
+| **Owner's goal 1: decrypt with the TPM *in addition to* the YubiKey.** | Two independent unlock paths, not a replacement. See [../tpm-age-sops-keys/](../tpm-age-sops-keys/definition.md) for the TPM work already scoped for sops; the disk unlock is the same class of problem, via `systemd-cryptenroll` TPM2 enrolment. |
+| **Owner's goal 2: update it to the latest existing config.** | The running generation is behind. Bring it current before the migration, so a failure is attributable. |
+| **Owner's goal 3: fully driven by den modules, never referencing `modules/universal`.** | This is the real deliverable, and it is what makes `pryll` the first *user-facing* host on the den path. |
+| **Primary purpose: prepare the machine for `bn`, who is not technical** — browsing the internet, opening documents that arrive by mail (PDF and office suite). | The feature list is short and fixed. Every added aspect is a support call. |
+
+Because of these, the earlier "is `hosts/pryll` the same machine" open question is
+answered: yes, it is the machine with the YubiKey-unlocked LUKS volume, and its
+disk identity must be re-read from the live machine anyway.
+
 ## Premises the owner has already set
 
 | Item | State |
 |---|---|
 | A mini-PC, plugged in and powered. | owner |
-| The machine boots this repo's ISO from USB. | `nix build .#install-iso` → `result/iso/kdn-nixos-install-iso.iso` |
-| A NanoKVM is plugged into it (HDMI and USB). | owner |
-| A plain **LAN** connection, no SFP, no VLAN. | owner |
-| Host name: `pryll`, unless the owner says otherwise. | owner |
+| The machine boots this repo's ISO, uploaded through the NanoKVM. | `nix build .#install-iso` → `result/iso/kdn-nixos-install-iso.iso`, then attach it as a device |
+| The NanoKVM at `kvm-fa56` is attached (HDMI and USB). | already true |
+| A plain **LAN** connection, no SFP, no VLAN. | already true |
+| Host name: `pryll`. | already true |
+| A YubiKey is available for the current unlock path while the TPM path is built. | owner |
 
 ## Usability decisions the owner must make first
 
@@ -110,9 +130,10 @@ deliberately, not copied:
 
 | Phase | Work | Gate |
 |---|---|---|
-| 0 | Harness up as in the sibling tasks. | a test delegation returns |
+| 0 | Harness up as in the sibling tasks, plus a proven way to **upload and attach the ISO through the NanoKVM** (this is the recovery path for every later phase). | an installed system is not needed; a live ISO boot over the KVM is |
+| 0b | Safety net first: record how to reach the current YubiKey unlock and how to boot the old generation, so a broken migration is recoverable. | the recovery steps are written and once rehearsed |
 | 1 | Recon over the KVM: `dmidecode`, `lspci`, `lsblk -o NAME,SIZE,MODEL,TRAN`, RAM, NIC, Wi-Fi, firmware mode, Secure Boot. Does this match `hosts/pryll`? | a committed hardware profile, and a yes/no on "same machine" |
-| 2 | **Ask the owner the usability decisions above**, and decide the route: port `hosts/pryll` to `hosts-den/pryll`, or keep the old tree and repair it. Recommendation: port, because a fresh install happens anyway. | the answers are recorded, and the route decision carries its reason |
+| 2 | **Ask the owner the usability decisions above.** Then the migration order the owner fixed: (a) update the current universal-based config to the latest, (b) add a TPM unlock beside the YubiKey, (c) port the host to `hosts-den` with **no `modules/universal` reference at all**. | the answers are recorded; each of the three steps is a separate commit |
 | 3 | Desktop shape: KDE Plasma 6, SDDM autologin, `bn`'s locale and browser profile, and **only** the applications she uses. | the aspect list is committed and matches the recorded answers |
 | 4 | Disk and install: `kdn.disks` for the real device, install over the KVM. | first boot reaches the desktop without a keyboard |
 | 5 | Autonomy: automatic updates and garbage collection that cannot brick the boot, plus a working remote-support channel. | a reboot after an update, unattended, verified over the KVM |
@@ -157,9 +178,15 @@ and make the unit succeed on the first run.
 
 ## Open questions
 
-- **Is `hosts/pryll` the same physical machine?** The SSD serial and the Intel
-  CPU are the only clues. Recon decides it.
-- Old tree or den tree for this host? The owner's other hosts are moving to den.
+- Old tree or den tree for this host? **Answered by the owner:** den, with no
+  `modules/universal` reference left. The remaining question is only the order of
+  the three steps and how long the universal config must keep booting.
+- Does `systemd-cryptenroll` TPM2 unlock work on this machine's firmware, and does
+  it survive a firmware update (PCR 7 changes)? Decide between PCR 7 (firmware
+  state bound) and PCR 0+7, and record which PCRs were enrolled.
+- The NanoKVM can serve the ISO as a boot device. Confirm whether it can also
+  serve a **virtual USB keyboard** reliably enough for the LUKS prompt, or whether
+  the TPM path is needed to boot unattended at all.
   A desktop nobody debugs is an argument for the older, proven path; a fresh
   install is an argument for den. The phase 2 decision records the reason.
 - TeamViewer or RustDesk for support? TeamViewer is proprietary and needs a

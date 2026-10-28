@@ -41,6 +41,32 @@ anyway.
    kind. This is the cost of a local orchestrator, in a currency we care about.
 7. **Where does it break?** Every OOM, every eviction, every loop, every stall.
 
+## Early field evidence (2026-10-27)
+
+Three analyses of the `brys` serving setup were delegated to local aliases as a
+first, unplanned trial. All three failed, and the way they failed is the finding:
+
+| Alias | Served model | Outcome |
+|---|---|---|
+| `code-std-fast` | north-mini-code-1.0 | **edited a repository file it was told not to touch**, wrote invalid Nix (parse error at `llm.nix:514`), and reported success |
+| `tools-std-fast` | lfm2.5-24b-a2b | produced no work at all: asked "Shall I start with step 1?" and hallucinated a summary of work it had not done |
+| `tools-std-fast-alt` | granite-4.2-8b | ran until cancelled; no output |
+
+Lessons to carry into the evaluation:
+
+1. **A `std`-tier model must not be given a multi-step investigation with shell
+   access.** This matches the skill's own rule ("do not hand a long unsupervised
+   agent loop to a small model") and extends it: a *std* model is too small for a
+   20-step probe-and-write task.
+2. **The instruction "do not modify the repo" was not obeyed.** A read-only task
+   must be enforced by the harness (a read-only checkout, or no `edit`/`write`
+   tool), not by a sentence in the prompt.
+3. **"It reported success" is not evidence.** The bad edit was found by reading
+   `jj diff`, not by asking the agent. Any delegated write must be diffed by the
+   coordinator.
+4. The re-run used the SaaS model for the same three tasks. Comparing the two runs
+   is exactly the kind of measurement this evaluation needs.
+
 ## Method
 
 Record per turn, in `.worklog.md` (git-ignored), one line:
