@@ -80,7 +80,10 @@ main() {
 
     # id -> ["alias", ...] and a version string that changes when the served set changes.
     local alias_map routing_version
-    alias_map="$(jq -c '[.data[] | {key: .id, value: (.aliases // [])}] | from_entries' <<<"$models")"
+    # `llama-swap` nests the alias list under `.meta.llamaswap.aliases` (verified on
+    # 249); a plain top-level `.aliases` is absent, which silently produced an empty
+    # map and attributed every request to a base model id. Accept both shapes.
+    alias_map="$(jq -c '[.data[] | {key: .id, value: (.aliases // .meta.llamaswap.aliases // [])}] | from_entries' <<<"$models")"
     routing_version="$(jq -r '[.data[].id] | sort | join(",")' <<<"$models" | sha256sum | cut -c1-12)"
 
     local newest

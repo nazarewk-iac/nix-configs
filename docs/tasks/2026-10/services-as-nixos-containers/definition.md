@@ -264,12 +264,23 @@ $ curl -s '10.233.90.2:9090/api/v1/query?query=llm_tokens_per_second'
    "value":[…,"177.67399360373622"]}
 ```
 
-A gap this exposed: **`aliases` is empty**. The collector resolves aliases from
-`/v1/models`, which lists aliases nested under each model entry; the `jq` that
-builds the map reads `.aliases`, but that endpoint returns them under a different
-key for this llama-swap build. Until it is fixed, attribution is by base model id
-only, and several aliases share one id. Tracked in
-[../llm-metrics-persistence/definition.md](../llm-metrics-persistence/definition.md).
+**A gap this exposed, and its fix.** The first live record had
+`"aliases":[]`. `llama-swap` nests the alias list under
+`.meta.llamaswap.aliases` (verified: `{"id":"qwen3.5-4b","meta":{"llamaswap":
+{"aliases":["grunt","chat-dumb-fast","code-quick-fast","tiny-quick-fast"]}}}`),
+not at the top level the collector read. Fixed in the collector, which now
+accepts either shape, and confirmed on a live `chat-dumb-fast` request:
+
+```json
+{"ts":"…","id":2,"generation":0,"host":"brys","model":"qwen3.5-4b",
+ "aliases":["grunt","chat-dumb-fast","code-quick-fast","tiny-quick-fast"],
+ "routing_version":"efae15ecce68","req_path":"/v1/chat/completions","status":200,
+ "duration_ms":2441,"input_tokens":14,"output_tokens":2,"cache_tokens":0,
+ "prompt_per_second":129.5,"tokens_per_second":49.69,…}
+```
+
+This is what makes per-alias attribution possible at all: the base id
+`qwen3.5-4b` answers under four intent names, and the record now carries all four.
 
 ### Still open
 - No reboot proof yet.
