@@ -248,12 +248,30 @@ $ curl -s -o /dev/null -w '%{http_code}' http://192.168.73.248:9090/-/ready  # 0
 So the TSDB is reachable **only** from inside the container namespace and via
 the bridge, which is the intended confinement.
 
-### Still open
+### End-to-end path, proven
 
-- `/var/lib/llm-stats/activity-*.jsonl` is **0 bytes**: `llama-swap` had served no
-  request since the restart. The collector's end-to-end path is unproven until one
-  request is made (`curl` one `tiny-dumb-fast` completion, then `tail -1` the
-  JSONL and `curl -s 10.233.90.2:9090/api/v1/query?query=llm_tokens_per_second`).
+One `tiny-dumb-fast` completion, then the chain:
+
+```
+$ curl … /v1/chat/completions            -> timings.predicted_per_second 177.67
+$ tail -1 /var/lib/llm-stats/activity-<today>.jsonl
+  {"model":"qwen3.5-0.8b","aliases":[],"tokens_per_second":177.67,"status":200,"duration_ms":…}
+$ head -2 /var/lib/llm-stats/llamaswap.prom
+  llm_prompt_tokens_per_second{model="qwen3.5-0.8b",aliases=""} 236.66
+  llm_tokens_per_second{model="qwen3.5-0.8b",aliases=""} 177.67
+$ curl -s '10.233.90.2:9090/api/v1/query?query=llm_tokens_per_second'
+  {"metric":{"instance":"10.233.90.1:9100","job":"node","model":"qwen3.5-0.8b"},
+   "value":[…,"177.67399360373622"]}
+```
+
+A gap this exposed: **`aliases` is empty**. The collector resolves aliases from
+`/v1/models`, which lists aliases nested under each model entry; the `jq` that
+builds the map reads `.aliases`, but that endpoint returns them under a different
+key for this llama-swap build. Until it is fixed, attribution is by base model id
+only, and several aliases share one id. Tracked in
+[../llm-metrics-persistence/definition.md](../llm-metrics-persistence/definition.md).
+
+### Still open
 - No reboot proof yet.
 - `kdn-atuin-login-root` and `kdn-man-gen-caches` report failures during
   activation. Both are pre-existing and unrelated to this work; they are noted so
