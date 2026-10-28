@@ -663,6 +663,15 @@ in
         isReadOnly = false;
       };
       config = { pkgs, ... }: {
+        # The guest's own firewall, which is a second `policy drop` input chain. Only
+        # node_exporter's traffic and the host's scrapes need to reach it; nothing else
+        # in the network namespace is exposed. The host reaches the guest for queries and
+        # so the acceptance test can ask the guest for its own target health.
+        networking.firewall = {
+          enable = true;
+          allowedTCPPorts = [ 9090 ];
+        };
+
         services.prometheus = {
           enable = true;
           listenAddress = "0.0.0.0";
@@ -735,6 +744,27 @@ in
         DynamicUser = true;
       };
     };
+
+    # The nixpkgs container module exposes no `unitConfig`, so the ordering goes on the
+    # generated unit directly. `container@prometheus` sorts before `nftables.service`,
+    # so without this the guest boots before the firewall rule that lets it reach the
+    # relays: the bridge address then answers from the host but not from inside the
+    # guest. The interface rule below is the other half of the fix.
+    systemd.services."container@prometheus" = lib.mkIf withSwap {
+      after = [
+        "nftables.service"
+        "network-online.target"
+      ];
+      wants = [ "network-online.target" ];
+    };
+
+    # The guest must reach the two relays across the veth. The `nixos-fw` input chain
+    # has `policy drop` and trusts only `lo`, `virbr*` and NetBird; a veth is none of
+    # them. Open exactly the two relay ports, on that interface only.
+    networking.firewall.interfaces."ve-prometheus".allowedTCPPorts = lib.mkIf withSwap [
+      9100
+      39700
+    ];
 
     services.prometheus.exporters.node = lib.mkIf withSwap {
       enable = true;
