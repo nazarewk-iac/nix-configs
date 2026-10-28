@@ -194,3 +194,67 @@ tail -1 /var/lib/llm-stats/activity-$(date -u +%F).jsonl | jq .
 | Two `socat` daemons are two more things to fail | `Restart = always`, `DynamicUser`, and a target health check in the acceptance |
 | The TSDB grows past the pool | 30 d **and** 2 GB retention, both enforced |
 | A future `nixpkgs` changes `containers.<name>` semantics | the whole-host build is the gate; a container change shows up there |
+
+## Activation log, 2026-10-28 (brys)
+
+Activated on `brys` with a direct `switch-to-configuration switch` of the built
+toplevel (the flake is not on that host; `nix copy --to ssh-ng://kdn-brys
+--no-check-sigs` first, because the host is a trusted user but the build is
+unsigned).
+
+**Activation found three defects that an eval cannot.** All three are now in the
+pattern above; they are repeated here because they cost real time.
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `llm-metrics-relay-node` failed at activation | the container bridge `10.233.90.1` did not exist yet when the relay started | `after nftables.service network-online.target` on `container@prometheus`, plus `Restart=always` on the relays |
+| guest → relay timed out, host → bridge answered | `nixos-fw` input chain is `policy drop`; a veth is not in `lo`/`virbr*`/NetBird | `networking.firewall.interfaces."ve-prometheus".allowedTCPPorts = [ 9100 39700 ]` |
+| host → guest `:9090` timed out | the **guest has its own** `policy drop` firewall | `networking.firewall.allowedTCPPorts = [ 9090 ]` inside the container's `config` |
+
+Two things this proves about the pattern:
+
+1. **There are two firewalls.** A containerised service needs an ingress rule on
+   the host *and* an accept rule inside the guest. Either one missing looks
+   identical from outside: a silent timeout.
+2. **`containers.<name>` exposes no `unitConfig`.** The nixpkgs module writes the
+   `container@%i` unit itself, so ordering is added by overriding
+   `systemd.services."container@<name>"`. That override must sit outside the
+   `containers.<name>` attrset, or evaluation fails with
+   `Did you mean containers.prometheus.config'.
+
+### Verified after activation
+
+```
+container@prometheus            active
+llm-stats                       active
+llm-metrics-relay-swap          active
+llm-metrics-relay-node          active
+prometheus-node-exporter        active
+
+$ curl -s http://10.233.90.2:9090/api/v1/targets | jq -c '.data.activeTargets[] | {job: .labels.job, health}'
+{"job":"llama-swap","health":"up"}
+{"job":"node","health":"up"}
+
+$ ss -tlnp | grep -E ':(39700|9100|9090)'
+127.0.0.1:39700   (llama-swap, host-only)
+127.0.0.1:9100    (node_exporter, host-only)
+10.233.90.1:39700 (relay, bridge only)
+10.233.90.1:9100  (relay, bridge only)
+
+$ curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:9090/-/ready   # 000
+$ curl -s -o /dev/null -w '%{http_code}' http://192.168.73.248:9090/-/ready  # 000
+```
+
+So the TSDB is reachable **only** from inside the container namespace and via
+the bridge, which is the intended confinement.
+
+### Still open
+
+- `/var/lib/llm-stats/activity-*.jsonl` is **0 bytes**: `llama-swap` had served no
+  request since the restart. The collector's end-to-end path is unproven until one
+  request is made (`curl` one `tiny-dumb-fast` completion, then `tail -1` the
+  JSONL and `curl -s 10.233.90.2:9090/api/v1/query?query=llm_tokens_per_second`).
+- No reboot proof yet.
+- `kdn-atuin-login-root` and `kdn-man-gen-caches` report failures during
+  activation. Both are pre-existing and unrelated to this work; they are noted so
+  a later reader does not blame the container.
