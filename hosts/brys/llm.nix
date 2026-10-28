@@ -582,6 +582,16 @@ in
       }
     ];
 
+    # The container's writable root (`/var/lib/nixos-containers/<name>`): rebuilt
+    # data, not state. `sys/cache` is the right bucket, and it keeps the container
+    # from writing into a tmpfs root.
+    kdn.disks.persist."sys/cache".directories = [
+      {
+        directory = "/var/lib/nixos-containers";
+        mode = "0755";
+      }
+    ];
+
     users.groups.llm-stats = { };
     users.users.llm-stats = {
       isSystemUser = true;
@@ -589,7 +599,7 @@ in
       description = "llama-swap statistics collector";
     };
 
-    systemd.services.llm-stats = lib.optionalAttrs withSwap {
+    systemd.services.llm-stats = lib.mkIf withSwap {
       description = "Collect llama-swap per-request performance into JSONL";
       wantedBy = [ "multi-user.target" ];
       wants = [ "llama-swap.service" ];
@@ -623,46 +633,119 @@ in
       };
     };
 
-    # --- A small Prometheus ----------------------------------------------------
+    # --- A small Prometheus, confined in a NixOS container ---------------------
     #
     # Deliberately not `kdn.monitoring-prometheus-stack`: that aspect also brings
     # Grafana, a secret key and a Caddy vhost, and this is one scrape target pair on
-    # a box that must give its RAM to the models. The retention is capped twice, by
-    # time and by size, so a series explosion cannot fill the pool.
+    # a box that must give its RAM to the models.
     #
-    # The `llama-swap` job reads `/metrics`, which is system-level only (cpu, memory,
-    # load, network). The per-model numbers arrive through `llm-stats` and the node
-    # exporter's textfile collector, because llama-swap exposes them as JSON, not as
-    # Prometheus series.
-    services.prometheus = lib.optionalAttrs withSwap {
+    # Prometheus runs in its own NixOS container rather than on the host, because it
+    # is the least trusted thing on this box: it parses untrusted text from two HTTP
+    # endpoints and writes an unbounded directory. The container gives it its own
+    # filesystem, process table and network namespace, so a bug there cannot touch
+    # the models, the session cache or the secrets.
+    #
+    # Network: `privateNetwork = true`, so the container sees only its veth to the
+    # host. llama-swap and node_exporter stay bound to 127.0.0.1, so two socat relays
+    # expose exactly two ports on the container bridge address and nothing else.
+    # This is the confinement pattern to copy: the guest gets a narrow ingress, not
+    # a shared host network.
+    containers.prometheus = lib.mkIf withSwap {
+      autoStart = true;
+      restartIfChanged = true;
+      privateNetwork = true;
+      hostAddress = "10.233.90.1";
+      localAddress = "10.233.90.2";
+      # The TSDB lives on the host, in the persistent state bucket, and is bind
+      # mounted in. Metrics are state, not cache: they must survive a reboot.
+      bindMounts."/var/lib/prometheus2" = {
+        hostPath = "/var/lib/prometheus2";
+        isReadOnly = false;
+      };
+      config = { pkgs, ... }: {
+        services.prometheus = {
+          enable = true;
+          listenAddress = "0.0.0.0";
+          port = 9090;
+          retentionTime = "30d";
+          extraFlags = [ "--storage.tsdb.retention.size=2GB" ];
+          scrapeConfigs = [
+            {
+              job_name = "llama-swap";
+              scrape_interval = "15s";
+              static_configs = [ { targets = [ "10.233.90.1:39700" ]; } ];
+            }
+            {
+              job_name = "node";
+              scrape_interval = "30s";
+              static_configs = [ { targets = [ "10.233.90.1:9100" ]; } ];
+            }
+          ];
+        };
+        # Inside the container the TSDB is a private path; the bind mount makes it
+        # the host's persistent directory. Keep the same directory name so a reader
+        # of either config sees one path.
+        system.stateVersion = "26.05";
+        users.users.prometheus.group = "prometheus";
+      };
+    };
+
+    # The two narrow relays. `bind=` keeps each listener on the container bridge
+    # address, so these two ports are reachable from the guest and from nowhere
+    # else. This is the pattern to copy for a containerised service: a narrow
+    # ingress, never a shared host network.
+    systemd.services."llm-metrics-relay-swap" = lib.mkIf withSwap {
+      description = "Relay llama-swap /metrics to the prometheus container bridge";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "llama-swap.service" ];
+      wants = [ "llama-swap.service" ];
+      serviceConfig = {
+        ExecStart = "${pkgs.socat}/bin/socat -d TCP-LISTEN:39700,bind=10.233.90.1,fork,reuseaddr TCP:127.0.0.1:39700";
+        Restart = "always";
+        RestartSec = 3;
+        NoNewPrivileges = true;
+        PrivateTmp = true;
+        ProtectSystem = "strict";
+        ProtectHome = true;
+        RestrictAddressFamilies = [
+          "AF_INET"
+          "AF_INET6"
+        ];
+        DynamicUser = true;
+      };
+    };
+
+    systemd.services."llm-metrics-relay-node" = lib.mkIf withSwap {
+      description = "Relay node-exporter metrics to the prometheus container bridge";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "prometheus-node-exporter.service" ];
+      wants = [ "prometheus-node-exporter.service" ];
+      serviceConfig = {
+        ExecStart = "${pkgs.socat}/bin/socat -d TCP-LISTEN:9100,bind=10.233.90.1,fork,reuseaddr TCP:127.0.0.1:9100";
+        Restart = "always";
+        RestartSec = 3;
+        NoNewPrivileges = true;
+        PrivateTmp = true;
+        ProtectSystem = "strict";
+        ProtectHome = true;
+        RestrictAddressFamilies = [
+          "AF_INET"
+          "AF_INET6"
+        ];
+        DynamicUser = true;
+      };
+    };
+
+    services.prometheus.exporters.node = lib.mkIf withSwap {
       enable = true;
       listenAddress = "127.0.0.1";
-      port = 9090;
-      retentionTime = "30d";
-      extraFlags = [ "--storage.tsdb.retention.size=2GB" ];
-      scrapeConfigs = [
-        {
-          job_name = "llama-swap";
-          scrape_interval = "15s";
-          static_configs = [ { targets = [ "127.0.0.1:39700" ]; } ];
-        }
-        {
-          job_name = "node";
-          scrape_interval = "30s";
-          static_configs = [ { targets = [ "127.0.0.1:9100" ]; } ];
-        }
+      port = 9100;
+      # `textfile` picks up /var/lib/llm-stats/llamaswap.prom; the rest of the
+      # default collector set is dropped so the exporter stays small.
+      enabledCollectors = [
+        "textfile"
       ];
-      exporters.node = {
-        enable = true;
-        listenAddress = "127.0.0.1";
-        port = 9100;
-        # `textfile` picks up /var/lib/llm-stats/llamaswap.prom; the rest of the
-        # default collector set is dropped so the exporter stays small.
-        enabledCollectors = [
-          "textfile"
-        ];
-        extraFlags = [ "--collector.textfile.directory=/var/lib/llm-stats" ];
-      };
+      extraFlags = [ "--collector.textfile.directory=/var/lib/llm-stats" ];
     };
 
     # Shared /run/configs/llms secrets: HF token and llama-server API keys.
