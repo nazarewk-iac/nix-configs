@@ -1,10 +1,27 @@
 ---
 type: Task
 description: Persist llama-swap's per-model performance safely on brys: decide between a Prometheus scrape path, a log parser, and an event-driven JSONL collector, and put the data on the impermanent disk layout without losing it at boot.
-status: open
+status: in-progress
 authored_by: agent
 timestamp: 2026-10-27T23:55:00+01:00
 ---
+
+# Persisting the LLM performance data
+
+> **State 2026-10-28:** implemented in `hosts/brys/llm.nix` and packaged as
+> `packages/llm/llm-stats`. Not yet deployed, and not yet proven over a reboot.
+>
+> | Piece | State |
+> |---|---|
+> | `llm-stats` collector (route A + textfile) | built, shellcheck clean, `collect --help` verified |
+> | systemd unit `llm-stats` | wired, `ExecStart` verified by eval, hardened (no new privileges, strict `ProtectSystem`, one writable dir) |
+> | `/var/lib/llm-stats` persistence | wired (`sys/state`, mode 0755 so node_exporter can read the textfile) |
+> | Small Prometheus (`:9090`, 30 d / 2 GB) | wired, two scrape jobs verified by eval |
+> | `/var/lib/prometheus2` persistence | wired (`sys/state`, owner `prometheus`) |
+> | Both boot entries | verified: the `llms-frontier` specialisation carries the unit, the scrape configs and both persist paths |
+> | Reboot proof | **pending** |
+> | Per-alias attribution | implemented (aliases resolved from `/v1/models`), **unverified live** |
+> | Dashboard | not built, deliberately: the aspect's Grafana stack was rejected as too heavy |
 
 # Persisting the LLM performance data
 

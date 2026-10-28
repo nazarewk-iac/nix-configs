@@ -1,10 +1,26 @@
 ---
 type: Task
 description: Remove the practical concurrency ceiling of the llama-swap setup — one slot per model, four aliases sharing one process, no admission gate — and decide between config knobs, an external resource watcher, and llama-swap hooks.
-status: open
+status: in-progress
 authored_by: agent
 timestamp: 2026-10-27T21:00:00+01:00
 ---
+
+# llama-swap concurrency: the queue is the bottleneck
+
+> **State 2026-10-28:** the config half is implemented; the sidecar's *collect*
+> half lives in [../llm-metrics-persistence/](../llm-metrics-persistence/definition.md)
+> and its *control* half is still open.
+>
+> - `swap.coResidentTiers` exists, and brys names two GPU tiers. Eval renders
+>   `with_co: (0.8b | 2b | tmax-2b) & (granite-3b | ministral-3b-* | gemma-e2b) & (frontier)`,
+>   bounded at one model per tier.
+> - Tiered models are subtracted from `with_surveyed`, so no model is in two sets.
+> - Slots: frontier **2** (down from 4), tiny GPU tier **4**, everything else 1.
+>   Rationale in the commit and in the per-model table of [sets.research.md](sets.research.md).
+> - **Not measured yet.** The collector is what turns the hypothesis into a number.
+> - Control sidecar untouched: the measured fact that an unload truncates an
+>   in-flight stream silently means the guard is a prerequisite, not a nicety.
 
 # llama-swap concurrency: the queue is the bottleneck
 
