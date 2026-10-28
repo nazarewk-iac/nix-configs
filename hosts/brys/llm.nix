@@ -259,14 +259,16 @@ let
     # must be >= ubatchSize.
     batchSize = 4096;
     ubatchSize = 4096;
-    # Concurrency: four slots share one KV pool (`kvUnified`). With unified KV
-    # `ctx-size` is the pool total, not per slot, so four slots do not multiply
-    # KV RAM. A second request no longer queues behind the first request's full
-    # prefill. There is deliberately no server-side per-slot cap
-    # (`--kv-unified-per-slot`): the shared pool is usage-proportional, so a
-    # small request is automatically small and a large one reaches the full
-    # window. No context tiers are needed.
-    parallel = 4;
+    # Concurrency: two slots share one KV pool (`kvUnified`). With unified KV
+    # `ctx-size` is the pool total, not per slot, so the slots do not multiply KV
+    # RAM. Two is the deliberate number, not four: this model decodes at ~2.5 tok/s
+    # on a ~40 GB/s memory bus, so four concurrent generations split the same
+    # bandwidth and each one crawls, while the fourth slot is never used by the
+    # harness (one orchestrator, one reviewer). Small GPU models get the high slot
+    # counts instead, because their weights sit in VRAM and cost the CPU bus
+    # nothing. Raise this only with a measurement from `llm-stats`
+    # (docs/tasks/2026-10/llm-metrics-persistence/).
+    parallel = 2;
     kvUnified = true;
   }
   // lib.optionalAttrs cpuPinned {
@@ -279,11 +281,12 @@ let
   # ~3 GiB at 128K, F16. Memory-bandwidth-bound like DeepSeek; batch/ubatch
   # reuse the activated expert weights during prefill. Measured on brys:
   # batch/ubatch 4096/4096 raised prefill from 20.1 to 39.9 tok/s on a
-  # 3.4k-token prompt. `parallel = 4` with `kvUnified`: the v0.6.0 QSA indexer
+  # 3.4k-token prompt. `parallel = 2` with `kvUnified`: the v0.6.0 QSA indexer
   # cache is a side buffer over the attention cells with the same streams and
   # slots (llama-memory-hybrid-idx.h:15), and the MTP draft is per-seq
   # (common/speculative.cpp:1428), so multiple slots are supported. The unified
-  # pool makes `ctx-size` the total shared across the four slots.
+  # pool makes `ctx-size` the total shared across the slots. Two, for the same
+  # reason as DeepSeek above: this is a bandwidth-bound CPU model.
   qwenPerf = {
     contextSize = qwenContextSize;
     # Thinking is available to clients: `auto` lets the template decide, so it is
@@ -293,7 +296,7 @@ let
     reasoningEffort = "low";
     batchSize = 4096;
     ubatchSize = 4096;
-    parallel = 4;
+    parallel = 2;
     kvUnified = true;
     # The v0.6.0 and Unsloth builds dropped `--mmap` (only `--load-mode`
     # remains) and the router rejects the `mmap` preset key. Omit it; the
@@ -552,6 +555,115 @@ in
         group = "llama-cpp-sessions";
       }
     ];
+
+    # --- Observability: per-request stats, durable -----------------------------
+    #
+    # llama-swap keeps its per-request performance in a ring buffer (25 records,
+    # measured), so it survives neither a burst nor a restart. `llm-stats` polls
+    # that ring every two seconds and appends one JSONL line per request, then
+    # rewrites a Prometheus textfile. It only issues GETs: it never loads, evicts or
+    # unloads a model, so it cannot disturb the fleet.
+    #
+    # /var/lib/llm-stats must survive a boot. brys has a tmpfs root, so an unlisted
+    # path is a tmpfs directory and every sample dies at reboot; the `disposable`
+    # bucket is rolled back, so it is not a home either. `sys/state` is the right
+    # bucket. Mode 0755 because node_exporter (a different user) must read the
+    # textfile, and the data is model ids and timings, never request bodies.
+    kdn.disks.persist."sys/state".directories = [
+      {
+        directory = "/var/lib/llm-stats";
+        mode = "0755";
+      }
+      {
+        directory = "/var/lib/prometheus2";
+        mode = "0750";
+        user = "prometheus";
+        group = "prometheus";
+      }
+    ];
+
+    users.groups.llm-stats = { };
+    users.users.llm-stats = {
+      isSystemUser = true;
+      group = "llm-stats";
+      description = "llama-swap statistics collector";
+    };
+
+    systemd.services.llm-stats = lib.optionalAttrs withSwap {
+      description = "Collect llama-swap per-request performance into JSONL";
+      wantedBy = [ "multi-user.target" ];
+      wants = [ "llama-swap.service" ];
+      after = [ "llama-swap.service" ];
+      serviceConfig = {
+        User = "llm-stats";
+        Group = "llm-stats";
+        StateDirectory = "llm-stats";
+        StateDirectoryMode = "0755";
+        ExecStart = lib.concatStringsSep " " [
+          "${pkgs.kdn.llm-stats}/bin/llm-stats"
+          "collect"
+          "--state-dir /var/lib/llm-stats"
+          "--prom-textfile /var/lib/llm-stats/llamaswap.prom"
+          "--interval 2"
+        ];
+        Restart = "always";
+        RestartSec = 5;
+        # A collector that can write anywhere is a liability; it needs one directory and a socket.
+        NoNewPrivileges = true;
+        PrivateTmp = true;
+        PrivateDevices = true;
+        ProtectSystem = "strict";
+        ProtectHome = true;
+        ProtectKernelTunables = true;
+        ProtectControlGroups = true;
+        RestrictAddressFamilies = [
+          "AF_INET"
+          "AF_INET6"
+        ];
+      };
+    };
+
+    # --- A small Prometheus ----------------------------------------------------
+    #
+    # Deliberately not `kdn.monitoring-prometheus-stack`: that aspect also brings
+    # Grafana, a secret key and a Caddy vhost, and this is one scrape target pair on
+    # a box that must give its RAM to the models. The retention is capped twice, by
+    # time and by size, so a series explosion cannot fill the pool.
+    #
+    # The `llama-swap` job reads `/metrics`, which is system-level only (cpu, memory,
+    # load, network). The per-model numbers arrive through `llm-stats` and the node
+    # exporter's textfile collector, because llama-swap exposes them as JSON, not as
+    # Prometheus series.
+    services.prometheus = lib.optionalAttrs withSwap {
+      enable = true;
+      listenAddress = "127.0.0.1";
+      port = 9090;
+      retentionTime = "30d";
+      extraFlags = [ "--storage.tsdb.retention.size=2GB" ];
+      scrapeConfigs = [
+        {
+          job_name = "llama-swap";
+          scrape_interval = "15s";
+          static_configs = [ { targets = [ "127.0.0.1:39700" ]; } ];
+        }
+        {
+          job_name = "node";
+          scrape_interval = "30s";
+          static_configs = [ { targets = [ "127.0.0.1:9100" ]; } ];
+        }
+      ];
+      exporters.node = {
+        enable = true;
+        listenAddress = "127.0.0.1";
+        port = 9100;
+        # `textfile` picks up /var/lib/llm-stats/llamaswap.prom; the rest of the
+        # default collector set is dropped so the exporter stays small.
+        enabledCollectors = [
+          "textfile"
+        ];
+        extraFlags = [ "--collector.textfile.directory=/var/lib/llm-stats" ];
+      };
+    };
 
     # Shared /run/configs/llms secrets: HF token and llama-server API keys.
     # Decrypted to their full sops key paths under /run/configs/llms/. Shared

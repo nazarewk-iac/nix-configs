@@ -251,9 +251,11 @@
         "qwen3.5-0.8b" = mkGpu {
           name = "qwen3.5-0.8b";
           aliases = [ "tiny-dumb-fast" ];
-          # Two shared-KV slots: 0.50 GiB of weights leaves room for a tier-2 sibling.
+          # Four shared-KV slots. 0.50 GiB of weights, so the KV pool is tiny and the
+          # card still holds a tier-2 sibling. Small GPU models are the right place for
+          # high slot counts: their decode runs on the card, off the CPU memory bus.
           extra = {
-            parallel = 2;
+            parallel = 4;
             kvUnified = true;
           };
         };
@@ -261,14 +263,14 @@
           name = "qwen3.5-2b";
           aliases = [ "tiny-dumb-fast-alt" ];
           extra = {
-            parallel = 2;
+            parallel = 4;
             kvUnified = true;
           };
         };
         "tmax-2b" = mkGpu {
           name = "tmax-2b";
           extra = {
-            parallel = 2;
+            parallel = 4;
             kvUnified = true;
           };
         };
