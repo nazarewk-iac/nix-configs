@@ -481,6 +481,26 @@ in
         # back to false once the topology is trusted (see
         # kdn.llm.local.swap.debug).
         debug = true;
+        # Bounded co-residence on the 8 GiB W6600: at most one member of a tier at a time, and
+        # the tiers may share the card with one frontier model. Footprints are the measured GGUF
+        # sizes (docs/tasks/2026-10/llama-swap-concurrency/sets.research.md):
+        #   tier 1: 0.50 / 1.19 / 1.24 GiB -> 1.24 GiB worst case
+        #   tier 2: 2.00 / 2.09 / 2.00 / 2.89 GiB -> 2.89 GiB worst case
+        # Together with KV and compute buffers this stays under the 7.98 GiB the card reports.
+        # Bigger GPU models stay out on purpose: one of them wants most of the card.
+        coResidentTiers = [
+          [
+            "qwen3.5-0.8b"
+            "qwen3.5-2b"
+            "tmax-2b"
+          ]
+          [
+            "granite-4.2-3b"
+            "ministral-3-3b-instruct"
+            "ministral-3-3b-reasoning"
+            "gemma-4-e2b"
+          ]
+        ];
         persistentModels = [
           "deepseek-v4-flash"
           "qwen3.8-flash-next"

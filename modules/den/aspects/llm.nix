@@ -501,12 +501,29 @@
       routerIds = routerName: builtins.attrNames (routerModels routerName);
       setExpr = ids: "(" + lib.concatStringsSep " | " ids + ")";
       frontierIds = routerIds "main";
+
+      # Optional bounded co-residence. One tier is one `|` group, so at most one member of a
+      # tier is resident. The tiers are `&`-joined with each other and with the frontier
+      # expression, so the fleet holds at most one model per tier beside one frontier model.
+      #
+      # Bounded on purpose. A single `&` over every GPU model also allows co-residence, but
+      # it lets requests accumulate until the 8 GiB card is exhausted: the matrix has no
+      # capacity check. See sets.research.md risk R1.
+      coTiers = builtins.filter (t: t != [ ]) cfg.swap.coResidentTiers;
+      coTierIds = lib.unique (lib.concatLists coTiers);
+      coResidentSet = lib.optionalAttrs (coTiers != [ ] && frontierIds != [ ]) {
+        with_co = lib.concatMapStringsSep " & " setExpr coTiers + " & " + setExpr frontierIds;
+      };
+
       matrixSets =
         (lib.optionalAttrs (frontierIds != [ ]) { main = setExpr frontierIds; })
+        // coResidentSet
         // lib.mapAttrs' (
           rname: _:
           let
-            gruntIds = routerIds rname;
+            # A model that names a co-residence tier is governed by `with_co`, so it leaves
+            # its router's one-at-a-time set. A model in two sets would be ambiguous.
+            gruntIds = lib.subtractLists coTierIds (routerIds rname);
           in
           lib.optionalAttrs (gruntIds != [ ]) {
             name = "with_${rname}";
@@ -1389,6 +1406,30 @@
         description = ''
           Loopback port llama-swap listens on. The compat proxy targets it when `swap.enable` is
           set. The default is a free port beside the router ports.
+        '';
+      };
+
+      options.kdn.llm.local.swap.coResidentTiers = lib.mkOption {
+        type = lib.types.listOf (lib.types.listOf lib.types.str);
+        default = [ ];
+        example = [
+          [
+            "qwen3.5-0.8b"
+            "qwen3.5-2b"
+          ]
+          [ "granite-4.2-3b" ]
+        ];
+        description = ''
+          Model ids that may be resident at the same time, arranged as tiers. Inside one tier the
+          members are mutually exclusive; the tiers may co-exist beside one frontier model. An
+          empty list keeps the router-only behaviour, where every model of one router evicts the
+          others.
+
+          Size each tier so that one member from every tier, plus one frontier model, fits the
+          device: VRAM for a `Vulkan0` model, RAM headroom for a CPU model. The alternative, one
+          `&` over every model, also permits co-residence, but the matrix has no capacity check, so
+          requests accumulate until the card or the RAM is exhausted. Measured facts and the budget
+          arithmetic are in `docs/tasks/2026-10/llama-swap-concurrency/sets.research.md`.
         '';
       };
 

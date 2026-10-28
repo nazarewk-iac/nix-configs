@@ -251,12 +251,27 @@
         "qwen3.5-0.8b" = mkGpu {
           name = "qwen3.5-0.8b";
           aliases = [ "tiny-dumb-fast" ];
+          # Two shared-KV slots: 0.50 GiB of weights leaves room for a tier-2 sibling.
+          extra = {
+            parallel = 2;
+            kvUnified = true;
+          };
         };
         "qwen3.5-2b" = mkGpu {
           name = "qwen3.5-2b";
           aliases = [ "tiny-dumb-fast-alt" ];
+          extra = {
+            parallel = 2;
+            kvUnified = true;
+          };
         };
-        "tmax-2b" = mkGpu { name = "tmax-2b"; };
+        "tmax-2b" = mkGpu {
+          name = "tmax-2b";
+          extra = {
+            parallel = 2;
+            kvUnified = true;
+          };
+        };
         # Small dense models that fit the W6600.
         "granite-4.2-3b" = mkGpu {
           name = "granite-4.2-3b";
