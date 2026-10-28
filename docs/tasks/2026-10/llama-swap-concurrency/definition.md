@@ -141,14 +141,17 @@ record any that are lost with `llm-small`.
   the collected history intact.
 - An OOM is either prevented by the sidecar or explained by the absence of an
   admission gate, with the numbers.
-- Nothing unloads a model mid-request; prove it by unloading during a slow stream
-  and showing the stream completes.
+- Nothing unloads a model mid-request. Prove it by trying: start a slow stream,
+  call the unload endpoint through the sidecar instead of directly, and show the
+  stream still finishes. (Called directly, llama-swap truncates the stream
+  silently — see [control.research.md](control.research.md) — so the sidecar is
+  the only thing standing between a watcher and a broken answer.)
 
 ## Risks
 
 | Risk | Mitigation |
 |---|---|
 | Raising `--parallel` on a CPU model multiplies KV RAM and OOMs | measure KV per slot first; `--kv-unified` shares the pool |
-| A watcher unloads a model mid-request | llama-swap queues rather than interrupts; the watcher must only unload idle models |
+| A watcher unloads a model mid-request | **llama-swap does not protect in-flight requests.** Measured: an unload during a stream truncates it silently — HTTP 200, no `[DONE]`, no error to the client ([control.research.md](control.research.md)). The watcher must enforce the rule itself. |
 | Two processes of one GGUF fight over page cache | measure; the 45 GB threshold in the colocation research applies |
 | A preload hook delays startup past the health check | preload asynchronously, never block the listener |

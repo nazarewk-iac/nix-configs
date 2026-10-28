@@ -92,7 +92,8 @@ the raw text. So:
 ## 4. Retry semantics that are actually safe
 
 llama-swap's own behaviour matters here: it **queues** a request for a model that
-is loading, and a swap is 90–120 s on this box, longer under CPU pressure
+is loading (measured: an unload *does* cut an in-flight stream, but a request for
+a loading model waits), and a swap is 90–120 s on this box, longer under CPU pressure
 (`docs/local-llms.md`, and the frontier comment in `hosts/brys/default.nix`). So:
 
 | Situation | Retry safe? | Why |
