@@ -56,6 +56,19 @@ in
       # is a list option and concatenates every definition, so that list would sit next to the proxy
       # entries and double-count the same hosts. Empty it; the build-farm aspects own the fleet.
       kdn.profile.remote-builders.buildMachines = lib.mkForce [ ];
+
+      # oams signs the store paths it builds locally, so a builder that keeps `require-sigs` on can
+      # accept them as build inputs (otherwise: "lacks a signature by a trusted key"). The secret
+      # half is in default.unattended.sops.yaml under `nix/signing/`, installed only here; the
+      # public half is in data/nix-signing-keys.nix, trusted by every host.
+      kdn.security.secrets.sops.files."signing" = {
+        keyPrefix = "nix/signing";
+        sopsFile = config.kdn.security.secrets.sops.defaultFile;
+        basePath = "/run/configs";
+        namePrefix = "signing";
+        sops.mode = "0400";
+      };
+      nix.settings.secret-key-files = [ "/run/configs/nix/signing/oams-1" ];
     }
     {
       home-manager.sharedModules = [ slots.config.home ];
