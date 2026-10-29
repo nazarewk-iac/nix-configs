@@ -21,6 +21,22 @@ in
         ]);
       default = null;
     };
+    domains = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      example = [ "~." ];
+      description = ''
+        The `Domains=` line of `resolved.conf`. A `~` prefix makes it a **routing** domain, so
+        resolved sends every matching query to the `DNS=` servers instead of to the per-link
+        server it learned from DHCP or a VPN.
+
+        This is the knob for a host that runs its own resolver for the site zones but is also
+        handed a resolver by DHCP: without a routing domain the per-link server wins and the host
+        cannot resolve the names it manages itself.
+
+        Watch for a loop: the recipient must not forward back to resolved's stub at `127.0.0.53`.
+      '';
+    };
     nameservers = lib.mkOption {
       type = lib.types.attrsOf (
         lib.types.submodule (
@@ -64,6 +80,7 @@ in
           services.resolved.settings.Resolve.DNSOverTLS = lib.mkDefault "opportunistic";
           services.resolved.settings.Resolve.LLMNR = lib.mkDefault "true";
           services.resolved.settings.Resolve.MulticastDNS = cfg.multicastDNS;
+          services.resolved.settings.Resolve.Domains = cfg.domains;
           services.resolved.settings.Resolve.DNS = lib.pipe cfg.nameservers [
             builtins.attrValues
             (builtins.filter (nsCfg: nsCfg.enable))
