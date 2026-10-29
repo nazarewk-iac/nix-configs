@@ -36,6 +36,7 @@ in
       imports = kdnConfig.self.denLib.imports {
         class = "nixos";
         aspects = [
+          "build-farm"
           "ca-dag"
           "certificates"
           "ssh-ca"
@@ -45,6 +46,17 @@ in
   ];
 
   config = lib.mkMerge [
+    {
+      # Build-farm client: one `buildMachines` entry per system set, each at that set's proxy
+      # port. See data/build-farm.nix.
+      kdn.build-farm = (import ../../data/build-farm.nix).oams;
+
+      # The universal `remote-builders` profile still supplies the builder SSH key and account, so
+      # it stays enabled, but its static per-suffix builder list is now dead weight: `nix.buildMachines`
+      # is a list option and concatenates every definition, so that list would sit next to the proxy
+      # entries and double-count the same hosts. Empty it; the build-farm aspects own the fleet.
+      kdn.profile.remote-builders.buildMachines = lib.mkForce [ ];
+    }
     {
       home-manager.sharedModules = [ slots.config.home ];
     }

@@ -96,6 +96,7 @@ in
       imports = kdnConfig.self.denLib.imports {
         class = "nixos";
         aspects = [
+          "build-farm"
           "ca-dag"
           "certificates"
           "service-rustdesk"
@@ -106,6 +107,12 @@ in
   ];
 
   config = lib.mkMerge [
+    {
+      # The build-farm proxy: one container, HAProxy `balance first` over the fleet.
+      # The shared module is the den `build-farm` aspect; this file owns only the data.
+      # See data/build-farm.nix and docs/tasks/2026-10/location-aware-builders/.
+      kdn.build-farm = (import ../../data/build-farm.nix).etra;
+    }
     {
       kdn.hostName = "etra";
 

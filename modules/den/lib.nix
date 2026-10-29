@@ -36,6 +36,7 @@ let
   aspectModules = {
     apps = ./aspects/apps.nix;
     ca = ./aspects/ca.nix;
+    build-farm = ./aspects/build-farm.nix;
     ca-dag = ./aspects/ca-dag.nix;
     ca-manager = ./aspects/ca-manager.nix;
     certificates = ./aspects/certificates.nix;
