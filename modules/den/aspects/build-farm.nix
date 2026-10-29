@@ -259,6 +259,16 @@ in
           default = { };
           description = "Proxy entries this host sends builds to.";
         };
+        localMaxJobs = lib.mkOption {
+          type = lib.types.nullOr lib.types.ints.positive;
+          default = null;
+          description = ''
+            Cap on the host's own parallel local builds. This is the **fallback** path — when the
+            proxy is unreachable (away) or a pool is disabled — so it should reflect what the host
+            can build without thrashing, not its raw core count. A laptop that thermal-throttles
+            wants physical cores, not hyperthreads.
+          '';
+        };
         hosts = lib.mkOption {
           type = lib.types.attrsOf lib.types.str;
           default = { };
@@ -342,6 +352,16 @@ in
           }) (lib.attrValues cfg.clients);
           nix.distributedBuilds = true;
           nix.settings.builders-use-substitutes = true;
+          # The fallback is local, but Lix sets no SSH `ConnectTimeout` of its own, so a dropped
+          # link (etra down / away from the LAN) stalls the build hook until the OS TCP timeout —
+          # minutes — before it gives up and builds locally. These options make an unreachable
+          # proxy cost a few seconds. The daemon runs the build hook, so the env goes on the daemon —
+          # and on the `nix-daemon@` **template**, because the socket is `Accept=yes` and every
+          # client connection spawns a fresh instance from it, not from `nix-daemon.service`.
+          systemd.services."nix-daemon@".environment.NIX_SSHOPTS =
+            "-o ConnectTimeout=3 -o ServerAliveInterval=10 -o ServerAliveCountMax=3 -o BatchMode=yes";
+          # Cap the local fallback so a thermal-throttled laptop is not asked for every hyperthread.
+          nix.settings.max-jobs = lib.mkIf (cfg.localMaxJobs != null) cfg.localMaxJobs;
           # `.config`, not `.conf`: `/etc/ssh/ssh_config` includes `/etc/ssh/ssh_config.d/*.config`,
           # so a `.conf` name is silently ignored and the daemon cannot resolve the alias.
           environment.etc."ssh/ssh_config.d/60-kdn-build-farm.config".text = sshAliases + "\n";

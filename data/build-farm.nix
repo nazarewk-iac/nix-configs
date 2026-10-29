@@ -57,6 +57,10 @@
   };
 
   oams = {
+    # The laptop thermal-throttles (8 physical cores, 16 threads). The remote farm is the fast
+    # path; when it is unreachable this local fallback should use the physical cores, not every
+    # hyperthread, so a long local build does not cook the chassis.
+    localMaxJobs = 8;
     # One SSH alias per system set: `buildMachines` has no port field, so the port is in the alias.
     clients = {
       x86 = {
