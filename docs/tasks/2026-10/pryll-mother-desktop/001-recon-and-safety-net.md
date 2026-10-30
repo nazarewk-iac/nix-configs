@@ -51,46 +51,34 @@ Facts:
 - The LUKS header is detached onto the USB stick. `cryptsetup luksDump /dev/sda`
   fails ("not a valid LUKS device"); `cryptsetup luksDump --header /dev/sdb2
   /dev/sda` shows a LUKS2 keyslot 0 with a `systemd-fido2` token.
-- Unlock is **FIDO2** (YubiKey tap). No TPM2 token is enrolled yet. That is
-  goal 1 of this task: add TPM beside the FIDO2 token.
-- **The machine cannot boot without that USB flash.** It carries `/boot` and the
-  only copy of the LUKS header. A lost, dead, or overwritten stick makes the
-  internal SSD unrecoverable. Backing up the header is mandatory before any
-  destructive phase.
+- Unlock today is **FIDO2** (YubiKey tap). No TPM2 token is enrolled yet.
+- **The owner wants TPM2-only unlock**, not YubiKey. The target is a TPM2 token in place
+  of the FIDO2 one. Until the TPM token is enrolled the machine still needs a YubiKey tap;
+  after enrolment a reboot is unattended.
+- The 28.9 G USB stick carries `/boot` and the LUKS header, so the machine boots only while
+  it is in place. It holds **no data to keep**: the owner confirmed the machine can be
+  reformatted, so a lost or wiped stick costs a reinstall, not data.
 
 ## The safety net (recovery steps)
 
 These are written from the live state. The last step, a rehearsal reboot, is a
 hand-off to the owner because the machine needs a physical YubiKey tap.
 
-1. **Back up the detached header — done 2026-10-30.** A copy of the LUKS2 header
-   (keyslot 0, token `systemd-fido2`) was taken and verified:
-
-   ```
-   cryptsetup luksHeaderBackup /dev/sda --header /dev/sdb2 \
-     --header-backup-file /tmp/pryll-hdr.img
-   ```
-
-   - destination: `oams:/home/kdn/.local/share/pryll-backup/luks-header-sdb2-20261030.img`
-     (mode 0600, directory 0700)
-   - size 16 777 216 bytes, sha256 `895ae487b50e493cfc06ef0c63dbb30fcdb74e4f713b70f8f5c11c889a97fc59`,
-     identical on pryll and oams
-   - the temporary copy on pryll was deleted
-
-   To restore onto a replacement stick: make a 32 MiB partition, then
-   `cryptsetup luksHeaderRestore /dev/sda --header /dev/sdb2new \
-   --header-backup-file <backup>`, then rebuild `/boot`. Keep the file off the
-   machine and out of the repo; it holds keyslot material. It still needs a
-   second copy on another medium.
+1. **No header backup is required.** The owner confirmed the machine holds zero data to
+   persist and may be reformatted, so a lost USB is a reinstall, not a recovery problem.
+   A header backup was taken on 2026-10-30 and then removed at the owner's instruction. If a
+   future build ever carries real data, redo
+   `cryptsetup luksHeaderBackup /dev/sda --header /dev/sdb2 --header-backup-file <off-machine path>`.
 
 2. **Boot the previous generation.** systemd-boot is the loader. At power-on,
    hold `Space` (or press `Esc` at the boot menu) and select
    `nixos-generation-31.conf`. Generation 32 also exposes `rescue` and `debug`
    specialisations. This is the way back if a new generation fails.
 
-3. **Unlock.** Insert and tap the FIDO2 YubiKey when the LUKS prompt waits. The
-   key is plugged into the machine; the NanoKVM at `kvm-fa56` carries the video
-   and the HID, so a remote tap is not possible. Every reboot is a hand-off.
+3. **Unlock.** Today: tap the FIDO2 YubiKey at the LUKS prompt (the key is plugged into the
+   machine; the NanoKVM at `kvm-fa56` carries video and HID only, so a remote tap is not
+   possible). The owner target is TPM2-only: enrol the TPM token once (run book phase 2b),
+   then remove the FIDO2 token, after which a reboot needs no tap.
 
 4. **Keep the USB stick in place.** Do not move `/dev/sdb`. Note it in any
    install procedure: an "install to sda" step must not reformat the stick.
@@ -99,8 +87,8 @@ hand-off to the owner because the machine needs a physical YubiKey tap.
 
 | Risk | Why it matters |
 |---|---|
-| USB carries `/boot` and the LUKS header | lose or wipe it → unrecoverable SSD; back it up first |
-| Unlock needs a physical YubiKey tap | every reboot is an owner hand-off; the run cannot self-reboot over the KVM |
+| USB carries `/boot` and the LUKS header | lose or wipe it → a reinstall (no data to keep) |
+| Unlock needs a tap until TPM2 is enrolled | one YubiKey hand-off to enrol the TPM token, then reboots are unattended |
 | 7.6 GiB RAM, 7.1 used | KDE plus a browser is near the limit; keep the day-one app set small |
 | No Wi-Fi NIC | wired ethernet is the only network; the "Wi-Fi fallback" goal is moot |
 | Secure Boot disabled | a den rebuild must keep it disabled, or enrolment is a new step |
@@ -108,9 +96,9 @@ hand-off to the owner because the machine needs a physical YubiKey tap.
 
 ## Open items
 
-1. Rehearse a reboot to generation 31 and back (owner hand-off, needs the YubiKey).
-2. Copy the header backup to a second medium, off `oams` (done on oams, still one copy).
-3. Confirm the USB stick vendor/health before the reinstall phase.
+1. Enrol the TPM2 token and remove the FIDO2 token (owner hand-off; run book phase 2b), so a
+   reboot needs no tap.
+2. Confirm the USB stick vendor/health before the reinstall phase (a dead stick means reinstall).
 4. SSH host certificate is absent by design on the old tree. `sshd -T` on pryll reports
    `trustedusercakeys none` and no `HostCertificate`; `/nix/persist/sys/data/etc/ssh/`
    holds only the plain keys (persisted since 2025-01-07). pryll presents a single stable
