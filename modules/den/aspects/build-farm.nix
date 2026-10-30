@@ -377,6 +377,50 @@ in
             wants physical cores, not hyperthreads.
           '';
         };
+        localBuild = lib.mkOption {
+          type = lib.types.submodule {
+            options = {
+              enable = lib.mkOption {
+                type = lib.types.bool;
+                default = cfg.clients != { };
+                description = "Install the rebuild-less `build-local` on|off|auto switch.";
+              };
+              gamingScopes = lib.mkOption {
+                type = lib.types.listOf lib.types.str;
+                default = [ "app-steam_app_" ];
+                description = ''
+                  Scope-name **prefixes** that mean "a game is running", used by `auto`. Steam creates
+                  `app-steam-<pid>.scope` for the client and `app-steam_app_<appid>-<pid>.scope` for a
+                  running game, so the `app-steam_app_` prefix is the game-only signal. A prefix, not
+                  a glob, so the probe is a plain substring match.
+                '';
+              };
+              pollSeconds = lib.mkOption {
+                type = lib.types.ints.positive;
+                default = 30;
+                description = "How often `auto` rechecks for a running game.";
+              };
+            };
+          };
+          default = { };
+          description = ''
+            Rebuild-less switch that bans local builds (`max-jobs = 0`) while the host must not be
+            loaded, e.g. during a gaming session. It is written into `/etc/nix/nix.sensitive.conf`,
+            which every host already `!include`s, so it takes effect **without a rebuild and
+            without a daemon restart**: the daemon re-reads its config per connection.
+
+            `on` restores the normal local build slots; `off` bans them; `auto` bans them while a
+            gaming scope is running. `off` does **not** break builds that a binary cache or a remote
+            builder can satisfy — only work that needs a local compiler fails, and it fails fast and
+            loudly (`unable to start any build …`), never silently on the laptop.
+
+            **Known limitation.** A full `nixos-rebuild` can still fail while `off`: some
+            derivations of a toplevel are local-only and unsigned (for example
+            `rambox-*-fhsenv-profile`), and a builder that keeps `require-sigs` on rejects them with
+            "lacks a signature by a trusted key". Ordinary `nix build`s that a cache or the farm can
+            satisfy are fine. To rebuild while gaming, set `build-local on` for the one command.
+          '';
+        };
         autoWifi = lib.mkOption {
           type = lib.types.listOf lib.types.str;
           default = [ ];
@@ -632,6 +676,121 @@ in
                   ;;
                 *)
                   echo "usage: build-farm-brys on|off|auto|status" >&2
+                  exit 2
+                  ;;
+              esac
+              show
+            '')
+          ];
+        })
+
+        # The rebuild-less `build-local` switch. `max-jobs = 0` in `/etc/nix/nix.sensitive.conf`
+        # (already `!include`d by `nix.extraOptions` on every host) bans local compilation without a
+        # rebuild or a daemon restart. The writer edits one delimited block so the pass-managed
+        # secrets in the same file survive, and writes atomically.
+        (lib.mkIf (cfg.clients != { } && cfg.localBuild.enable) {
+          systemd.services.kdn-build-local = {
+            description = "Apply the build-local on|off|auto state to /etc/nix/nix.sensitive.conf";
+            wantedBy = [ "multi-user.target" ];
+            path = [
+              pkgs.coreutils
+              pkgs.gnugrep
+              pkgs.gnused
+              # The game probe reads the **user** bus, so this root service needs a way to reach it.
+              pkgs.systemd
+            ];
+            serviceConfig = {
+              Type = "oneshot";
+              # The switch restarts this unit on every `build-local` call and the timer runs it
+              # every 30 s, so systemd's default start-limit would eventually refuse a legitimate
+              # run. This is an idempotent, cheap writer; let it always start.
+              StartLimitIntervalSec = 0;
+              StartLimitBurst = 0;
+            };
+            environment.GAMING_SCOPES = lib.concatStringsSep " " cfg.localBuild.gamingScopes;
+            script = ''
+              set -eu
+              dir=/var/lib/kdn/build-farm
+              f=/etc/nix/nix.sensitive.conf
+              marker_begin='# BEGIN kdn-build-local'
+              marker_end='# END kdn-build-local'
+              install -d -m 0755 "$dir"
+              mode=$(cat "$dir/local-mode" 2>/dev/null || echo auto)
+              case "$mode" in
+                on) eff=on ;;
+                off) eff=off ;;
+                *)
+                  # auto: off while a gaming scope runs. Probe the **user** bus; a missing bus or a
+                  # failed probe leans to `on` (allow building), because a stuck `off` would break
+                  # ordinary work with a confusing error.
+                  eff=on
+                  # A root unit cannot read another user's bus with XDG_RUNTIME_DIR alone;
+                  # `--machine=<user>@.host --user` is the supported form. Probe every user that
+                  # has a runtime dir (the game may run under any account).
+                  for uid_dir in /run/user/*; do
+                    uid="$(basename "$uid_dir")"
+                    uname="$(id -nu "$uid" 2>/dev/null || true)"
+                    [ -n "$uname" ] || continue
+                    running="$(systemctl --machine="$uname@.host" --user --no-pager \
+                      list-units --type=scope --state=running --plain 2>/dev/null || true)"
+                    for prefix in $GAMING_SCOPES; do
+                      if printf "%s\n" "$running" | grep -qF -- "$prefix"; then
+                        eff=off
+                        break 2
+                      fi
+                    done
+                  done
+                  ;;
+              esac
+              printf '%s\n' "$eff" > "$dir/local-effective"
+
+              # Rebuild the file without the old managed block, then append the new one.
+              if [ -f "$f" ]; then
+                ${pkgs.gnused}/bin/sed -i "/^$marker_begin/,/^$marker_end/d" "$f"
+              else
+                install -m 0640 /dev/null "$f"
+              fi
+              if [ "$eff" = off ]; then
+                {
+                  printf '%s\n' "$marker_begin"
+                  printf '%s\n' 'max-jobs = 0'
+                  printf '%s\n' "$marker_end"
+                } >> "$f"
+              fi
+            '';
+          };
+
+          systemd.timers.kdn-build-local = {
+            description = "Recheck the build-local auto state";
+            wantedBy = [ "timers.target" ];
+            timerConfig = {
+              OnBootSec = "2min";
+              OnUnitActiveSec = "${toString cfg.localBuild.pollSeconds}s";
+            };
+          };
+
+          environment.systemPackages = [
+            (pkgs.writeShellScriptBin "build-local" ''
+              set -eu
+              [ "$(id -u)" = 0 ] || { echo "run with sudo" >&2; exit 1; }
+              dir=/var/lib/kdn/build-farm
+              install -d -m 0755 "$dir"
+              show() {
+                m=$(cat "$dir/local-mode" 2>/dev/null || echo auto)
+                e=$(cat "$dir/local-effective" 2>/dev/null || echo on)
+                if [ "$m" = auto ]; then printf '%s\n' "$e-auto"; else printf '%s\n' "$e"; fi
+              }
+              case "''${1:-status}" in
+                on | off | auto)
+                  printf '%s\n' "''${1}" > "$dir/local-mode"
+                  systemctl restart kdn-build-local.service
+                  ;;
+                status)
+                  show
+                  exit 0
+                  ;;
+                *)
+                  echo "usage: build-local on|off|auto|status" >&2
                   exit 2
                   ;;
               esac
