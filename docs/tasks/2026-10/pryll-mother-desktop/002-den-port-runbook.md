@@ -154,7 +154,7 @@ Demonstrate one restore from the KVM alone; record the steps.
 ## Phase 7: evaluation
 
 Fill the shared fleet evaluation
-([../../gaz-den-workstation/003-fleet-evaluation/definition.md](../../gaz-den-workstation/003-fleet-evaluation/definition.md))
+([../gaz-den-workstation/003-fleet-evaluation/definition.md](../gaz-den-workstation/003-fleet-evaluation/definition.md))
 with this run's numbers, or mark it "not observed". The Pi harness is the pane-per-sub-agent
 layout in `llm:pryll:harness`; per-turn data is in each run's session JSONL.
 
