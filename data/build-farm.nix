@@ -61,6 +61,12 @@
     # path; when it is unreachable this local fallback should use the physical cores, not every
     # hyperthread, so a long local build does not cook the chassis.
     localMaxJobs = 8;
+    # `auto` (the default switch mode) keeps brys on while one of these SSIDs is in range — the
+    # places with a fast LAN path to it — and off otherwise. On/off are manual overrides.
+    autoWifi = [
+      "Covfefe"
+      "dropout-wafer"
+    ];
     # One SSH alias per system set: `buildMachines` has no port field, so the port is in the alias.
     clients = {
       x86 = {
@@ -72,6 +78,8 @@
         identityFile = "/run/configs/nix/ssh/kdn-nix-remote-build/id_ed25519";
         maxJobs = 8;
         speedFactor = 32;
+        # This pool is brys alone, so `build-farm-brys off` drops it and x86 builds go local.
+        toggleable = true;
       };
       arm = {
         alias = "buildfarm-arm";

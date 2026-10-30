@@ -175,6 +175,17 @@ let
           builders against each other — that is the proxy's job.
         '';
       };
+      toggleable = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = ''
+          When true, this entry is dropped from the client's builder list while the `brys` switch is
+          off — a manual `build-farm-brys off`, or `auto` with none of `autoWifi` in range. This is
+          how a client pauses the fast-but-shared x86 builder without touching the proxy: the entry
+          names brys alone, so dropping it sends x86 work to the local machine while the arm/darwin
+          entries stay. Do not mark an entry that shares its pool with a builder you still want.
+        '';
+      };
     };
   };
 in
@@ -231,6 +242,23 @@ in
 
       clients = lib.attrValues cfg.clients;
 
+      # Legacy `@/etc/nix/machines` line format, one per client row. `nix.buildMachines` cannot be
+      # toggled at run time (it is a store path), so the client list is a plain file the daemon
+      # re-reads per derivation, and the on|off switch just rewrites that file.
+      features = [
+        "nixos-test"
+        "benchmark"
+        "big-parallel"
+        "kvm"
+      ];
+      machineLine =
+        c:
+        "ssh-ng://${c.user}@${c.alias} ${lib.concatStringsSep "," c.systems} - ${toString c.maxJobs} ${toString c.speedFactor} ${lib.concatStringsSep "," features} - -";
+      machinesOn = lib.concatMapStrings (c: machineLine c + "\n") clients;
+      machinesOff = lib.concatMapStrings (c: machineLine c + "\n") (
+        builtins.filter (c: !c.toggleable) clients
+      );
+
       # One `nix.buildMachines` entry per client row. The host name must be an SSH alias when the
       # port is not 22: `buildMachines` has no port field and the daemon connects with plain `ssh`.
       sshAliases = lib.concatStringsSep "\n" (
@@ -267,6 +295,16 @@ in
             proxy is unreachable (away) or a pool is disabled — so it should reflect what the host
             can build without thrashing, not its raw core count. A laptop that thermal-throttles
             wants physical cores, not hyperthreads.
+          '';
+        };
+        autoWifi = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          description = ''
+            Wi-Fi SSIDs that mean "the fast x86 builder is worth using here". In `auto` mode the
+            `build-farm-brys` switch is on when any of these is in range (shown by `nmcli`, whether
+            or not this host is connected to it), and off otherwise. Empty means `auto` is always
+            on — there is nothing to gate on.
           '';
         };
         hosts = lib.mkOption {
@@ -334,22 +372,11 @@ in
         })
 
         (lib.mkIf (cfg.clients != { }) {
-          # `buildMachines`, not `settings.builders`: the latter is a bare URI string that discards
-          # `systems`, `maxJobs` and `speedFactor`, and then Nix has no idea which builder can build
-          # what. `config` replaces the generated list, so the fleet is not double-listed.
-          nix.buildMachines = map (c: {
-            hostName = c.alias;
-            protocol = "ssh-ng";
-            sshUser = c.user;
-            inherit (c) systems maxJobs speedFactor;
-            supportedFeatures = [
-              "nixos-test"
-              "benchmark"
-              "big-parallel"
-              "kvm"
-            ];
-            mandatoryFeatures = [ ];
-          }) (lib.attrValues cfg.clients);
+          # The builder list is a plain file the daemon re-reads per derivation, so the `brys`
+          # switch (`build-farm-brys on|off`) needs no rebuild and no daemon restart. `builders`
+          # names that file; `nix.buildMachines` is deliberately not used, because it resolves to a
+          # store path fixed at build time.
+          nix.settings.builders = lib.mkForce "@/run/kdn/nix-machines";
           nix.distributedBuilds = true;
           nix.settings.builders-use-substitutes = true;
           # The fallback is local, but Lix sets no SSH `ConnectTimeout` of its own, so a dropped
@@ -365,6 +392,95 @@ in
           # `.config`, not `.conf`: `/etc/ssh/ssh_config` includes `/etc/ssh/ssh_config.d/*.config`,
           # so a `.conf` name is silently ignored and the daemon cannot resolve the alias.
           environment.etc."ssh/ssh_config.d/60-kdn-build-farm.config".text = sshAliases + "\n";
+
+          # The switch has a *mode* (`auto` by default, or a manual `on`/`off`) and an *effective*
+          # state. In `auto` the effective state is on when one of `autoWifi` is in range and off
+          # otherwise; a manual `on`/`off` overrides it. The generator recomputes the effective state
+          # and rewrites the builder file from one of two embedded lists; a timer re-runs it, so
+          # `auto` follows the Wi-Fi with no manual step.
+          systemd.services.kdn-build-farm-machines = {
+            description = "Recompute the build-farm builder list from the brys on|off|auto state";
+            wantedBy = [ "multi-user.target" ];
+            before = [
+              "nix-daemon.service"
+              "nix-daemon.socket"
+            ];
+            path = [
+              pkgs.networkmanager
+              pkgs.gnugrep
+              pkgs.coreutils
+            ];
+            serviceConfig.Type = "oneshot";
+            environment = {
+              MACHINES_ON = toString (pkgs.writeText "kdn-nix-machines-on" machinesOn);
+              MACHINES_OFF = toString (pkgs.writeText "kdn-nix-machines-off" machinesOff);
+              AUTO_SSIDS = lib.concatStringsSep " " cfg.autoWifi;
+            };
+            script = ''
+              set -eu
+              dir=/var/lib/kdn/build-farm
+              install -d -m 0755 "$dir" /run/kdn
+              mode=$(cat "$dir/mode" 2>/dev/null || echo auto)
+              case "$mode" in
+                on) eff=on ;;
+                off) eff=off ;;
+                *)
+                  # auto (and any unknown value): on iff a listed SSID is in range.
+                  eff=on
+                  if [ -n "$AUTO_SSIDS" ]; then
+                    eff=off
+                    nmcli device wifi rescan >/dev/null 2>&1 || true
+                    sleep 2
+                    list=$(nmcli --terse --fields SSID device wifi list 2>/dev/null || true)
+                    for s in $AUTO_SSIDS; do
+                      if printf '%s\n' "$list" | grep -Fxq "$s"; then eff=on; break; fi
+                    done
+                  fi
+                  ;;
+              esac
+              printf '%s\n' "$eff" > "$dir/effective"
+              if [ "$eff" = on ]; then src="$MACHINES_ON"; else src="$MACHINES_OFF"; fi
+              install -m 0644 "$src" /run/kdn/nix-machines
+            '';
+          };
+
+          systemd.timers.kdn-build-farm-machines = {
+            description = "Track the Wi-Fi for the brys auto switch";
+            wantedBy = [ "timers.target" ];
+            timerConfig = {
+              OnBootSec = "1min";
+              OnUnitActiveSec = "2min";
+            };
+          };
+
+          environment.systemPackages = [
+            (pkgs.writeShellScriptBin "build-farm-brys" ''
+              set -eu
+              [ "$(id -u)" = 0 ] || { echo "run with sudo" >&2; exit 1; }
+              dir=/var/lib/kdn/build-farm
+              install -d -m 0755 "$dir"
+              show() {
+                m=$(cat "$dir/mode" 2>/dev/null || echo auto)
+                e=$(cat "$dir/effective" 2>/dev/null || echo on)
+                if [ "$m" = auto ]; then printf '%s\n' "$e-auto"; else printf '%s\n' "$e"; fi
+              }
+              case "''${1:-status}" in
+                on | off | auto)
+                  printf '%s\n' "''${1}" > "$dir/mode"
+                  systemctl restart kdn-build-farm-machines.service
+                  ;;
+                status)
+                  show
+                  exit 0
+                  ;;
+                *)
+                  echo "usage: build-farm-brys on|off|auto|status" >&2
+                  exit 2
+                  ;;
+              esac
+              show
+            '')
+          ];
         })
       ];
     };
