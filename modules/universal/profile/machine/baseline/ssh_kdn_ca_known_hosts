@@ -2,9 +2,12 @@
 # The fleet's sshd presents per-host certificates signed by this CA (see the ssh-ca aspect), so a
 # single @cert-authority line verifies every host without tracking individual host keys — which is
 # why a plain ssh-keyscan known_hosts cannot match a certificate-presenting host.
-# Scoped to the cluster name patterns, NOT `*`: an unscoped line would let the CA stand in for
-# github.com / cache.nixos.org too, and the TOFU safety net for those must stay.
+# Scoped to the fleet host names and cluster patterns, NOT `*`: an unscoped line would let a
+# stolen unattended CA YubiKey impersonate github.com / cache.nixos.org, so keep the names bounded.
+# The bare short names (the `HostKeyAlias` the `kdn-*` dispatcher connects with) must be listed
+# explicitly: a host certificate names each short name as a principal, but OpenSSH consults this
+# pattern list before the certificate's principals, so an unlisted short name fails verification.
 # The SSH wire form below is derived from the CA certificate:
 #   openssl x509 -in data/ca/kdn.crt -pubkey -noout | ssh-keygen -i -m PKCS8 -f /dev/stdin
 # Regenerate it if the CA changes.
-@cert-authority *.net.int.kdn.im,*.kdn.im,*kdn.im,*.netbird.cloud,*.netint.kdn.im ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBPZceYC1EYC4fMrUJfB+RExMceOCm4XGCsdsQ2UwvEyc8EOQQWFgTZ1nmM7WwBfwurAeleNjpbNYh4wixLKyQyA=
+@cert-authority anji,brys,drek,etra,moss,oams,*.net.int.kdn.im,*.kdn.im,*kdn.im,*.netbird.cloud,*.netint.kdn.im ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBPZceYC1EYC4fMrUJfB+RExMceOCm4XGCsdsQ2UwvEyc8EOQQWFgTZ1nmM7WwBfwurAeleNjpbNYh4wixLKyQyA=
