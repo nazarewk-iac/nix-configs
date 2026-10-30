@@ -27,6 +27,10 @@ in
     #   begin; set file nix/nix.sensitive.conf ; pass show "$file" | sudo tee "/etc/$file" >/dev/null && sudo chmod 0640 "/etc/$file" && sudo chown root:wheel "/etc/$file"; end
     !include /etc/nix/nix.sensitive.conf
     !include /etc/nix/nix.access-tokens.auto.conf
+    # The rebuild-less `build-local` switch (see modules/den/aspects/build-farm.nix). A dedicated,
+    # optional file: Nix tolerates a missing `!include` target, so a host that never uses the
+    # switch simply has no file. It must stay LAST, because a later line wins over an earlier one.
+    !include /etc/nix/kdn-build-local.conf
   '';
 
   nix.settings = {

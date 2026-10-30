@@ -184,6 +184,9 @@ let
         default = [
           "/etc/nix/nix.sensitive.conf"
           "/etc/nix/nix.access-tokens.auto.conf"
+          # The rebuild-less `build-local` switch (modules/den/aspects/build-farm.nix). A dedicated,
+          # optional file; it must stay LAST so its value wins over the earlier ones.
+          "/etc/nix/kdn-build-local.conf"
         ];
         example = [ ];
         description = ''

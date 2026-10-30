@@ -405,20 +405,21 @@ in
           default = { };
           description = ''
             Rebuild-less switch that bans local builds (`max-jobs = 0`) while the host must not be
-            loaded, e.g. during a gaming session. It is written into `/etc/nix/nix.sensitive.conf`,
-            which every host already `!include`s, so it takes effect **without a rebuild and
-            without a daemon restart**: the daemon re-reads its config per connection.
+            loaded, e.g. during a gaming session. It is written into a dedicated, optional
+            `/etc/nix/kdn-build-local.conf` that `nix.extraOptions` includes last, so it takes effect
+            **without a rebuild and without a daemon restart**: the daemon re-reads its config per
+            connection, and a missing include is a no-op.
 
             `on` restores the normal local build slots; `off` bans them; `auto` bans them while a
             gaming scope is running. `off` does **not** break builds that a binary cache or a remote
             builder can satisfy — only work that needs a local compiler fails, and it fails fast and
             loudly (`unable to start any build …`), never silently on the laptop.
 
-            **Known limitation.** A full `nixos-rebuild` can still fail while `off`: some
-            derivations of a toplevel are local-only and unsigned (for example
-            `rambox-*-fhsenv-profile`), and a builder that keeps `require-sigs` on rejects them with
-            "lacks a signature by a trusted key". Ordinary `nix build`s that a cache or the farm can
-            satisfy are fine. To rebuild while gaming, set `build-local on` for the one command.
+            **Remote builds need signed inputs.** A builder that keeps `require-sigs` on rejects an
+            unsigned path with "lacks a signature by a trusted key". The daemon signs every path it
+            builds itself (`nix.settings.secret-key-files`), so ordinary builds are fine. A path
+            built before the key existed stays unsigned and blocks the upload; run
+            `hack/sign-local-store-paths.sh` to backfill those once.
           '';
         };
         autoWifi = lib.mkOption {
@@ -684,13 +685,13 @@ in
           ];
         })
 
-        # The rebuild-less `build-local` switch. `max-jobs = 0` in `/etc/nix/nix.sensitive.conf`
-        # (already `!include`d by `nix.extraOptions` on every host) bans local compilation without a
-        # rebuild or a daemon restart. The writer edits one delimited block so the pass-managed
-        # secrets in the same file survive, and writes atomically.
+        # The rebuild-less `build-local` switch. `max-jobs = 0` in a dedicated, optional
+        # `/etc/nix/kdn-build-local.conf` (included last by `nix.extraOptions`) bans local compilation
+        # without a rebuild or a daemon restart. The file is ours alone: `off` writes it, `on` removes
+        # it, and nothing else touches it. A missing file is a no-op in `nix.conf`.
         (lib.mkIf (cfg.clients != { } && cfg.localBuild.enable) {
           systemd.services.kdn-build-local = {
-            description = "Apply the build-local on|off|auto state to /etc/nix/nix.sensitive.conf";
+            description = "Apply the build-local on|off|auto state to /etc/nix/kdn-build-local.conf";
             wantedBy = [ "multi-user.target" ];
             path = [
               pkgs.coreutils
@@ -711,7 +712,7 @@ in
             script = ''
               set -eu
               dir=/var/lib/kdn/build-farm
-              f=/etc/nix/nix.sensitive.conf
+              f=/etc/nix/kdn-build-local.conf
               marker_begin='# BEGIN kdn-build-local'
               marker_end='# END kdn-build-local'
               install -d -m 0755 "$dir"
@@ -744,18 +745,13 @@ in
               esac
               printf '%s\n' "$eff" > "$dir/local-effective"
 
-              # Rebuild the file without the old managed block, then append the new one.
-              if [ -f "$f" ]; then
-                ${pkgs.gnused}/bin/sed -i "/^$marker_begin/,/^$marker_end/d" "$f"
-              else
-                install -m 0640 /dev/null "$f"
-              fi
               if [ "$eff" = off ]; then
-                {
-                  printf '%s\n' "$marker_begin"
-                  printf '%s\n' 'max-jobs = 0'
-                  printf '%s\n' "$marker_end"
-                } >> "$f"
+                printf '%s\n' '# managed by kdn-build-local.service — do not edit' 'max-jobs = 0' \
+                  > "$dir/kdn-build-local.conf.tmp"
+                install -m 0644 "$dir/kdn-build-local.conf.tmp" "$f"
+                rm -f "$dir/kdn-build-local.conf.tmp"
+              else
+                rm -f "$f"
               fi
             '';
           };
