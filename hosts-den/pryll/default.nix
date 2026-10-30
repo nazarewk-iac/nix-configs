@@ -3,19 +3,27 @@
 #
 # The output is `denConfigurations.pryll`; never add this host to `nixosConfigurations`.
 #
-# Measured facts (live machine, 2026-10-30) used below:
+# Measured facts (live machine, 2026-10-30):
 #   - ESP and the detached LUKS header are on the 28.9 G Lexar USB stick
 #   - the root ZFS pool is on the internal HS-SSD-E100 256G (serial 30023586951), LUKS uuid
 #     4f314bc3-6c3c-4a37-9756-5a03d286cf7b, header on partition 2
 #   - the machine can be reformatted; nothing on it must be preserved across a reinstall
 #
 # Unlock is TPM2-only by owner decision (no YubiKey at boot). Enrolment is a runtime step
-# (`systemd-cryptenroll --tpm2-device=auto`), recorded in the run book, not here.
+# (`systemd-cryptenroll --tpm2-device=auto` with the pass keyfile), recorded in the run book.
+#
+# The body stays an INLINE attrset here: a module in this entity's own `nixos` aspect cannot
+# request `pkgs` (it recurses through `_module.args`). `lib` and `inputs` come from the closure.
 { kdn, inputs, lib, ... }:
 let
   bootDevicePath = "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_04KE345HX9EUZLSW-0:0";
   rootDiskPath = "/dev/disk/by-id/ata-HS-SSD-E100_256G_30023586951";
   rootLuksUuid = "4f314bc3-6c3c-4a37-9756-5a03d286cf7b";
+  # rustdesk is marked unfree; instantiate nixpkgs with it allowed just for this package.
+  rustdesk = (import inputs.nixpkgs {
+    system = "x86_64-linux";
+    config.allowUnfree = true;
+  }).rustdesk;
 in
 {
   den.hosts.x86_64-linux.pryll.class = "nixos";
@@ -26,7 +34,6 @@ in
     hw-cpu-intel
     hw-gpu-intel
     hw-nanokvm
-    hw-yubikey
     # base
     locale
     nix-config
@@ -39,13 +46,12 @@ in
     profile-desktop
     desktop-kde
     stylix
-    # disks / impermanence (include `disks` only: it asserts mutual exclusion with `fs-luks-zfs`
-    # and generates the whole LUKS+ZFS layout and preservation itself)
+    # disks / impermanence (`disks` alone: it asserts mutual exclusion with `fs-luks-zfs` and
+    # generates the whole LUKS+ZFS layout and preservation)
     disks
     disks-persist
-    # remote support and host certificate
+    # host certificate
     ssh-ca
-    service-rustdesk
   ];
 
   den.aspects.pryll.nixos = {
@@ -60,9 +66,8 @@ in
 
     security.sudo.wheelNeedsPassword = false;
 
-    # profile-baseline sets users.mutableUsers = false, which trips the "locked out" assert
-    # (bn is not in wheel and no hash is in the repo). Allow the owner to set passwords with
-    # `passwd`; autologin means the password is a formality.
+    # profile-baseline sets users.mutableUsers = false, tripping the "locked out" assert (bn is
+    # not wheel and no hash is in the repo). Allow `passwd`; autologin makes it a formality.
     users.mutableUsers = lib.mkForce true;
 
     # The one account: the mother.
@@ -70,18 +75,8 @@ in
       uid = 27748;
       fullName = "Beata";
       extraGroups = [
-        "audio"
-        "dialout"
-        "lp"
-        "lpadmin"
-        "mlocate"
-        "networkmanager"
-        "pipewire"
-        "plugdev"
-        "power"
-        "scanner"
-        "tty"
-        "video"
+        "audio" "dialout" "lp" "lpadmin" "mlocate" "networkmanager"
+        "pipewire" "plugdev" "power" "scanner" "tty" "video"
       ];
     };
 
@@ -91,20 +86,31 @@ in
       User = "bn";
     };
 
-    # The wallpaper defect of the old tree: the stylix KDE target is disabled for root and kdn
-    # but not for bn, so the wallpaper step fails and the old host restarts `home-manager-bn`.
-    # Disable it for bn too; Plasma keeps its stock wallpaper and the unit succeeds first try.
+    # Wallpaper defect: the stylix KDE target was disabled for root and kdn but not bn, so the
+    # wallpaper step failed and the old host restarted `home-manager-bn`. Disable it for bn too.
     home-manager.users.bn.stylix.targets.kde.enable = false;
 
-    # Remote support: TeamViewer, as the old host used. RustDesk is the alternative in the run book.
-    services.teamviewer.enable = true;
+    # Remote support: RustDesk client (not TeamViewer; no server aspect here). Unattended access
+    # is set up once over the KVM (fixed password + relay). See run book phase 5.
+    environment.systemPackages = [ rustdesk ];
+    systemd.services.rustdesk = {
+      description = "RustDesk unattended client";
+      wantedBy = [ "multi-user.target" ];
+      wants = [ "network-online.target" ];
+      after = [ "network-online.target" ];
+      serviceConfig = {
+        ExecStart = "${rustdesk}/bin/rustdesk --service";
+        Restart = "always";
+        RestartSec = 5;
+      };
+    };
 
     # EFI machine (UEFI 2.31, Secure Boot off): systemd-boot, not grub.
     boot.loader.systemd-boot.enable = true;
     boot.loader.efi.canTouchEfiVariables = false;
     boot.loader.grub.enable = false;
 
-    # Disks: the detached-header LUKS volume on the internal SSD, header and ESP on the USB stick.
+    # Disks: detached-header LUKS on the internal SSD, header and ESP on the USB stick.
     kdn.disks.devices."boot".path = bootDevicePath;
     kdn.disks.luks.volumes."hs-e100-pryll" = {
       targetSpec.path = rootDiskPath;
