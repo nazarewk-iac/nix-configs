@@ -135,6 +135,21 @@ let
           name so the WAN/mesh cannot reach the forwarder.
         '';
       };
+      remoteBind = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = ''
+          The proxy host's NetBird address, when the pools should also be reachable off the LAN.
+          The host firewall opens the pool ports on `meshInterface`, and the DNAT gate lets that
+          interface through. With it, an away client reaches the same pools over the mesh. Null
+          keeps the forwarder LAN-only.
+        '';
+      };
+      meshInterface = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = "Host interface of the NetBird mesh (for `remoteBind`), e.g. `nb-priv`.";
+      };
       builders = lib.mkOption {
         type = lib.types.attrsOf (lib.types.submodule builderType);
         default = { };
@@ -154,8 +169,25 @@ let
   clientType = { lib, ... }: {
     options = {
       address = lib.mkOption {
-        type = lib.types.str;
-        description = "The proxy's host name, as this client resolves it.";
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = ''
+          A fixed proxy address. Null when `addressLan`/`addressRemote` are given instead, which
+          makes the alias pick the reachable path at connect time.
+        '';
+      };
+      addressLan = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = "The proxy address that works on the LAN (tried first when set).";
+      };
+      addressRemote = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = ''
+          The proxy address that works over the NetBird mesh, for when the LAN address does not
+          answer. The alias is the same name either way, so the builder list never changes.
+        '';
       };
       hostPort = lib.mkOption {
         type = lib.types.port;
@@ -261,6 +293,17 @@ in
         ${lib.concatMapStrings (set: poolBlock set proxy) (lib.attrNames proxy.pools)}
       '';
 
+      # Interfaces the pool ports are reachable on: the LAN, plus the NetBird mesh when
+      # `remoteBind` is set. Computed here because the proxy is the only host that has pools.
+      reachableInterfaces =
+        if cfg.proxy == null then
+          [ ]
+        else
+          lib.filter (i: i != null) [
+            cfg.proxy.lanInterface
+            (if cfg.proxy.remoteBind != null then cfg.proxy.meshInterface else null)
+          ];
+
       clients = lib.attrValues cfg.clients;
 
       # Legacy `@/etc/nix/machines` line format, one per client row. `nix.buildMachines` cannot be
@@ -282,19 +325,35 @@ in
 
       # One `nix.buildMachines` entry per client row. The host name must be an SSH alias when the
       # port is not 22: `buildMachines` has no port field and the daemon connects with plain `ssh`.
-      sshAliases = lib.concatStringsSep "\n" (
-        map (c: ''
-          Host ${c.alias}
-            HostName ${c.address}
-            Port ${toString c.hostPort}
-            User ${c.user}${lib.optionalString (c.identityFile != null) "\n  IdentityFile ${c.identityFile}"}
-            # PoC: a proxy multiplexes backends, so one name presents several host keys and strict
-            # checking cannot pass. yensid's `ca` module is the fix; see the aspect header.
-            StrictHostKeyChecking no
-            UserKnownHostsFile /dev/null
-            LogLevel ERROR
-        '') clients
-      );
+      # One alias per client row. When both `addressLan` and `addressRemote` are set, the alias picks
+      # the reachable path at connect time with `Match exec`: try the LAN name with a short connect
+      # probe, fall back to the NetBird name. The alias name never changes, so the builder file
+      # (`/run/kdn/nix-machines`) does not have to be rewritten when you move between home and away.
+      aliasBlock = c: ''
+        Host ${c.alias}
+          Port ${toString c.hostPort}
+          User ${c.user}${lib.optionalString (c.identityFile != null) "\n  IdentityFile ${c.identityFile}"}
+          # A proxy multiplexes backends, so one name presents several host keys and strict checking
+          # cannot pass. yensid's `ca` module is the fix; see the aspect header.
+          StrictHostKeyChecking no
+          UserKnownHostsFile /dev/null
+          LogLevel ERROR
+          # Pick the reachable path. ssh applies the **first** `HostName` and ignores later ones, so
+          # the condition must guard the LAN value, with the remote value as the unconditional
+          # default. `Match originalhost` matches the name as typed (the alias); the exec probe tests
+          # the LAN name with a 1 s connect. A fixed `address` skips both.
+        ${
+          if c.address != null then
+            "  HostName ${c.address}"
+          else
+            ''
+              Match originalhost ${c.alias} exec "nc -z -w1 ${c.addressLan} ${toString c.hostPort} 2>/dev/null"
+                HostName ${c.addressLan}
+              Match originalhost ${c.alias}
+                HostName ${c.addressRemote}''
+        }
+      '';
+      sshAliases = lib.concatStringsSep "\n" (map aliasBlock clients);
     in
     {
       options.kdn.build-farm = {
@@ -425,23 +484,27 @@ in
           # in `prerouting`, which rewrites a packet **before** the filter chain, so the input-chain
           # accept never sees the interface. Drop the pool ports early on every non-LAN interface, at
           # a higher nft priority than nspawn's `dstnat + 1`, so the DNAT never runs for them.
-          networking.firewall.interfaces = lib.mkIf (cfg.proxy.lanInterface != null) {
-            ${cfg.proxy.lanInterface}.allowedTCPPorts = lib.mapAttrsToList (
-              set: pool: pool.port
-            ) cfg.proxy.pools;
-          };
-          networking.firewall.allowedTCPPorts = lib.mkIf (cfg.proxy.lanInterface == null) (
+          # The pool ports are reachable on the LAN, and — when `remoteBind` is set — on the NetBird
+          # mesh too (an away client then reaches the same pools). Nothing else: the WAN never sees
+          # them.
+          networking.firewall.interfaces = lib.genAttrs reachableInterfaces (_: {
+            allowedTCPPorts = lib.mapAttrsToList (set: pool: pool.port) cfg.proxy.pools;
+          });
+          networking.firewall.allowedTCPPorts = lib.mkIf (reachableInterfaces == [ ]) (
             lib.mapAttrsToList (set: pool: pool.port) cfg.proxy.pools
           );
-          networking.nftables.tables."kdn-bf-gate" = lib.mkIf (cfg.proxy.lanInterface != null) {
+          networking.nftables.tables."kdn-bf-gate" = lib.mkIf (reachableInterfaces != [ ]) {
             family = "inet";
             # nspawn's DNAT runs at `dstnat + 1` (-99); be earlier so the packet is dropped before
-            # the DNAT can rewrite a non-LAN arrival onto the container.
+            # the DNAT can rewrite an arrival on a non-reachable interface onto the container.
             content = ''
               chain prerouting {
                 type filter hook prerouting priority -101; policy accept;${
                   lib.concatMapStrings (
-                    port: "\n  iifname != \"${cfg.proxy.lanInterface}\" tcp dport ${toString port} drop"
+                    port:
+                    "\n  iifname != { ${
+                      lib.concatStringsSep ", " (map (i: "\"${i}\"") reachableInterfaces)
+                    } } tcp dport ${toString port} drop"
                   ) (lib.mapAttrsToList (set: pool: pool.port) cfg.proxy.pools)
                 }
               }

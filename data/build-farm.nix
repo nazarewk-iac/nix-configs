@@ -17,6 +17,10 @@
       # is also what makes "away ⇒ build local" true rather than merely configured.
       bindAddress = "192.168.73.1";
       lanInterface = "lan";
+      # Also reachable over the mesh, so an away client can use the same pools. The nspawn DNAT is
+      # destination-agnostic, so only the firewall + gate need to let the mesh interface through.
+      remoteBind = "100.79.187.16";
+      meshInterface = "nb-priv";
       # The proxy must resolve builder names; a private-network container has no upstream of its own.
       dnsServers = [ "192.168.40.1" ];
       builders = {
@@ -77,7 +81,9 @@
     clients = {
       x86 = {
         alias = "buildfarm-x86";
-        address = "192.168.73.1";
+        # LAN first, NetBird fallback; the alias picks at connect time.
+        addressLan = "etra.lan.etra.net.int.kdn.im";
+        addressRemote = "etra.priv.nb.net.int.kdn.im";
         hostPort = 2222;
         systems = [ "x86_64-linux" ];
         user = "kdn-nix-remote-build";
@@ -89,7 +95,8 @@
       };
       arm = {
         alias = "buildfarm-arm";
-        address = "192.168.73.1";
+        addressLan = "etra.lan.etra.net.int.kdn.im";
+        addressRemote = "etra.priv.nb.net.int.kdn.im";
         hostPort = 2223;
         systems = [ "aarch64-linux" ];
         user = "kdn-nix-remote-build";
@@ -99,7 +106,8 @@
       };
       darwin = {
         alias = "buildfarm-darwin";
-        address = "192.168.73.1";
+        addressLan = "etra.lan.etra.net.int.kdn.im";
+        addressRemote = "etra.priv.nb.net.int.kdn.im";
         hostPort = 2224;
         systems = [
           "aarch64-darwin"
