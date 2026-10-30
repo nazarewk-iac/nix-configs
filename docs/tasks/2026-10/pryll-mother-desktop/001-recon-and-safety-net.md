@@ -63,15 +63,25 @@ Facts:
 These are written from the live state. The last step, a rehearsal reboot, is a
 hand-off to the owner because the machine needs a physical YubiKey tap.
 
-1. **Back up the detached header now.** As root on pryll:
+1. **Back up the detached header — done 2026-10-30.** A copy of the LUKS2 header
+   (keyslot 0, token `systemd-fido2`) was taken and verified:
 
    ```
-   cryptsetup luksHeaderBackup --header /dev/sdb2 \
-     --header-backup-file /some/safe/off-machine/pryll-luks-header.img
+   cryptsetup luksHeaderBackup /dev/sda --header /dev/sdb2 \
+     --header-backup-file /tmp/pryll-hdr.img
    ```
 
-   Keep it off the machine and out of the repo; it holds keyslot material. This
-   is the one action that turns "lost USB" from fatal into recoverable.
+   - destination: `oams:/home/kdn/.local/share/pryll-backup/luks-header-sdb2-20261030.img`
+     (mode 0600, directory 0700)
+   - size 16 777 216 bytes, sha256 `895ae487b50e493cfc06ef0c63dbb30fcdb74e4f713b70f8f5c11c889a97fc59`,
+     identical on pryll and oams
+   - the temporary copy on pryll was deleted
+
+   To restore onto a replacement stick: make a 32 MiB partition, then
+   `cryptsetup luksHeaderRestore /dev/sda --header /dev/sdb2new \
+   --header-backup-file <backup>`, then rebuild `/boot`. Keep the file off the
+   machine and out of the repo; it holds keyslot material. It still needs a
+   second copy on another medium.
 
 2. **Boot the previous generation.** systemd-boot is the loader. At power-on,
    hold `Space` (or press `Esc` at the boot menu) and select
@@ -99,5 +109,9 @@ hand-off to the owner because the machine needs a physical YubiKey tap.
 ## Open items
 
 1. Rehearse a reboot to generation 31 and back (owner hand-off, needs the YubiKey).
-2. Back up the detached LUKS header to an off-machine path (owner picks the place).
+2. Copy the header backup to a second medium, off `oams` (done on oams, still one copy).
 3. Confirm the USB stick vendor/health before the reinstall phase.
+4. Note: at recon pryll's sshd presented a CA host certificate, but minutes later it
+   fell back to a plain key (`SHA256:ev6CKY/DZeEUYOyTzIf9JGVpsVt+pbXxdTZMBjqIx10`) on the
+   same boot — the host-certificate path is not stable on the old tree. Record it before
+   relying on CA verification for this host.
