@@ -73,6 +73,11 @@
   inputs.nixos-crostini.url = "github:nazarewk-iac/nixos-crostini";
   inputs.nixos-generators.url = "github:nix-community/nixos-generators";
   inputs.nixos-hardware.url = "github:nixos/nixos-hardware";
+  # The build-farm proxy project. The `build-farm` aspect currently renders HAProxy directly (its
+  # `balance first` is not in yensid's strategy enum), but the away-mode design and the per-builder
+  # `ca` host-key module come from here, so the input is kept to migrate back onto its modules.
+  inputs.yensid.url = "github:garnix-io/yensid";
+  inputs.yensid.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nur.url = "github:nix-community/NUR";
   inputs.oh-my-pi.url = "github:can1357/oh-my-pi";
   # OpenCode DSML compat-proxy. The nazarewk-iac fork's `main` aggregates the
