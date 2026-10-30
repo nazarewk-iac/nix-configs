@@ -448,7 +448,15 @@ in
                 UserKnownHostsFile /dev/null
             '';
           }
-          { programs.ssh.knownHostsFiles = [ ./ssh_known_hosts ]; }
+          {
+            # `ssh_kdn_ca_known_hosts` adds `@cert-authority *` for the KDN host-certificate CA, so
+            # root and every user verify the sshd host certificates the fleet presents. The plain
+            # `ssh_known_hosts` stays for hosts that present a bare key (no certificate).
+            programs.ssh.knownHostsFiles = [
+              ./ssh_known_hosts
+              ./ssh_kdn_ca_known_hosts
+            ];
+          }
           {
             systemd.tmpfiles.rules = lib.trivial.pipe config.users.users [
               lib.attrsets.attrValues

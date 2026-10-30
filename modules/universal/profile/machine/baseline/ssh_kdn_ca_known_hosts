@@ -1,0 +1,8 @@
+# Trust the KDN host-certificate CA (data/ca/kdn.crt, "KDN certificates root CA").
+# The fleet's sshd presents per-host certificates signed by this CA (see the ssh-ca aspect), so a
+# single @cert-authority line verifies every host without tracking individual host keys — which is
+# why a plain ssh-keyscan known_hosts cannot match a certificate-presenting host.
+# The SSH wire form below is derived from the CA certificate:
+#   openssl x509 -in data/ca/kdn.crt -pubkey -noout | ssh-keygen -i -m PKCS8 -f /dev/stdin
+# Regenerate it if the CA changes.
+@cert-authority * ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBPZceYC1EYC4fMrUJfB+RExMceOCm4XGCsdsQ2UwvEyc8EOQQWFgTZ1nmM7WwBfwurAeleNjpbNYh4wixLKyQyA=
