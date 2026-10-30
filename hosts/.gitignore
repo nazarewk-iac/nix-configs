@@ -28,3 +28,6 @@
 
 # per-host aura LED configs (e.g. oams G513QY suspend animation)
 !/*/aura_*.ron
+
+# per-host sops secrets (host-specific, e.g. hosts/oams/secrets.sops.yaml)
+!/*/*.sops.yaml

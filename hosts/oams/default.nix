@@ -59,11 +59,12 @@ in
 
       # oams signs the store paths it builds locally, so a builder that keeps `require-sigs` on can
       # accept them as build inputs (otherwise: "lacks a signature by a trusted key"). The secret
-      # half is in default.unattended.sops.yaml under `nix/signing/`, installed only here; the
-      # public half is in data/nix-signing-keys.nix, trusted by every host.
+      # half is host-specific: it lives in hosts/oams/secrets.sops.yaml, decryptable only by this
+      # host (boot) and the oams + brys YubiKeys — not the fleet-wide default file. The public half
+      # is in data/nix-signing-keys.nix, trusted by every host.
       kdn.security.secrets.sops.files."signing" = {
         keyPrefix = "nix/signing";
-        sopsFile = config.kdn.security.secrets.sops.defaultFile;
+        sopsFile = "${kdnConfig.self}/hosts/oams/secrets.sops.yaml";
         basePath = "/run/configs";
         namePrefix = "signing";
         sops.mode = "0400";
