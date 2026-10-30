@@ -111,7 +111,11 @@ hand-off to the owner because the machine needs a physical YubiKey tap.
 1. Rehearse a reboot to generation 31 and back (owner hand-off, needs the YubiKey).
 2. Copy the header backup to a second medium, off `oams` (done on oams, still one copy).
 3. Confirm the USB stick vendor/health before the reinstall phase.
-4. Note: at recon pryll's sshd presented a CA host certificate, but minutes later it
-   fell back to a plain key (`SHA256:ev6CKY/DZeEUYOyTzIf9JGVpsVt+pbXxdTZMBjqIx10`) on the
-   same boot — the host-certificate path is not stable on the old tree. Record it before
-   relying on CA verification for this host.
+4. SSH host certificate is absent by design on the old tree. `sshd -T` on pryll reports
+   `trustedusercakeys none` and no `HostCertificate`; `/nix/persist/sys/data/etc/ssh/`
+   holds only the plain keys (persisted since 2025-01-07). pryll presents a single stable
+   plain ed25519 key, `SHA256:ev6CKY/DZeEUYOyTzIf9JGVpsVt+pbXxdTZMBjqIx10`, now pinned in
+   `oams:~/.ssh/known_hosts`. So `ssh pryll` is stable but TOFU, not CA-verified. The CA
+   host certificate arrives only with the den port (phase 2c: `ssh-host-pryll` plus the
+   `ssh-ca` aspect, the same shape `brys` uses). Do not rely on CA verification for pryll
+   before then.
