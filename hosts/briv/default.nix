@@ -80,6 +80,10 @@
       # kdn.nix.remote-builder.localhost.publicHostKey = "??";
       kdn.nix.remote-builder.localhost.maxJobs = 2;
       kdn.nix.remote-builder.localhost.speedFactor = 4;
+
+      # This host accepts builds from other machines, so it trusts the build-farm clients'
+      # signing keys (oams-1, ...). A client that only *uses* builders must not.
+      kdn.nix.remote-builder.trustClientSigningKeys = true;
     }
     {
       # The SSH host certificate. `principals` names the short name (checked by the

@@ -6,6 +6,7 @@
 */
 {
   config,
+  lib,
   ...
 }:
 let
@@ -36,9 +37,14 @@ in
     ];
     # `kdn.nix.substituters` keeps each URL next to its public key, so the two lists below stay
     # aligned. A substituter with no matching key fails at run time. The build-farm clients'
-    # signing keys are appended so a builder accepts their locally-built paths as inputs.
+    # signing keys are trusted only by the builder hosts (`kdn.nix.remote-builder.enable`), not by
+    # routers or NAS: otherwise compromising a laptop would let it sign arbitrary paths onto every
+    # host in the fleet.
     trusted-public-keys =
-      map (entry: entry.publicKey) cfg.nix.substituters ++ import ../../data/nix-signing-keys.nix;
+      map (entry: entry.publicKey) cfg.nix.substituters
+      ++ lib.optionals cfg.nix.remote-builder.trustClientSigningKeys (
+        import ../../data/nix-signing-keys.nix
+      );
     substituters = map (entry: entry.url) cfg.nix.substituters;
     allowed-users = adminUsers ++ allowedUsers;
     trusted-users = adminUsers;

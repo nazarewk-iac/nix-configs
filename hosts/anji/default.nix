@@ -299,6 +299,10 @@ in
       environment.systemPackages = with pkgs; [
         utm
       ];
+    {
+      # anji's aarch64-linux builds land in the Linux builder VM, not this darwin host, so trusting
+      # the build-farm clients' signing keys here (on the darwin side) would only widen the darwin
+      # host's trust for nothing. The VM gets it via anji/linux-builder.nix instead.
       kdn.toolset.network.enable = true;
     }
     {

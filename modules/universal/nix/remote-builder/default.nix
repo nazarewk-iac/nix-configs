@@ -100,5 +100,14 @@ in
       readOnly = true;
       default = cfg.user.id;
     };
+    # Trust the build-farm clients' Nix store signing keys. Only a host that *accepts* builds from
+    # other machines needs this — the actual builders. A host that merely uses remote builders, or
+    # a router/NAS, must not trust a laptop's signing key: it would let a compromised client sign
+    # arbitrary paths onto that host.
+    trustClientSigningKeys = lib.mkOption {
+      type = with lib.types; bool;
+      default = false;
+      description = "Trust the build-farm clients' signing keys (set on builder hosts only).";
+    };
   };
 }

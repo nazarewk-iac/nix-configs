@@ -192,6 +192,15 @@ let
         defaultText = lib.literalExpression "config.kdn.nix.remote-builder.user.id";
         description = "The gid of the builder group.";
       };
+
+      # Trust the build-farm clients' Nix store signing keys. Set it on the hosts that *accept*
+      # builds from other machines; a host that only uses remote builders, or a router/NAS, must not
+      # trust a laptop's signing key. Read by the nix-config aspect next to `substituters`.
+      options.kdn.nix.remote-builder.trustClientSigningKeys = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Trust the build-farm clients' signing keys (set on builder hosts only).";
+      };
     };
 in
 {

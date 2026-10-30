@@ -21,6 +21,8 @@
       kdn.profile.remote-builders.enable = true;
       kdn.nix.remote-builder.localhost.maxJobs = 4;
       kdn.nix.remote-builder.localhost.speedFactor = 8;
+      # anji accepts aarch64-linux builds, so it trusts the build-farm clients' signing keys.
+      kdn.nix.remote-builder.trustClientSigningKeys = true;
     }
     {
       kdn.profile.user.kdn.enable = true;

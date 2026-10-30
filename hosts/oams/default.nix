@@ -378,6 +378,10 @@ in
       # kdn.nix.remote-builder.localhost.publicHostKey = "??";
       kdn.nix.remote-builder.localhost.maxJobs = 6;
       kdn.nix.remote-builder.localhost.speedFactor = 16;
+
+      # This host accepts builds from other machines, so it trusts the build-farm clients'
+      # signing keys (oams-1, ...). A client that only *uses* builders must not.
+      kdn.nix.remote-builder.trustClientSigningKeys = true;
     }
     {
       kdn.fs.zfs.containers.fsname = "oams-main/containers/storage";

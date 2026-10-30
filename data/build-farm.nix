@@ -13,6 +13,10 @@
     proxy = {
       hostAddress = "10.233.98.1";
       localAddress = "10.233.98.2";
+      # Answer only on the LAN: the SSH forwarder must not face the WAN or the NetBird mesh, which
+      # is also what makes "away ⇒ build local" true rather than merely configured.
+      bindAddress = "192.168.73.1";
+      lanInterface = "lan";
       # The proxy must resolve builder names; a private-network container has no upstream of its own.
       dnsServers = [ "192.168.40.1" ];
       builders = {
@@ -23,8 +27,10 @@
         };
         anji = {
           address = "anji.lan.etra.net.int.kdn.im";
-          # Four performance/efficiency cores, and each arm build is a QEMU guest.
-          maxConnections = 4;
+          # Four performance/efficiency cores total. `anji` is in TWO pools (arm and darwin), and
+          # HAProxy caps per backend server, so keep each pool's share small: 2+2 = 4 in the worst
+          # case, as many concurrent builds as the box can carry.
+          maxConnections = 2;
         };
         briv = {
           address = "briv.lan.etra.net.int.kdn.im";

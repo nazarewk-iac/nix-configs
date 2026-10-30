@@ -73,13 +73,6 @@
   inputs.nixos-crostini.url = "github:nazarewk-iac/nixos-crostini";
   inputs.nixos-generators.url = "github:nix-community/nixos-generators";
   inputs.nixos-hardware.url = "github:nixos/nixos-hardware";
-  # A proxy in front of Nix remote builders: one `buildMachines` entry per system set, with
-  # HAProxy `balance first` over the fleet. See docs/tasks/2026-10/location-aware-builders/.
-  # Upstream is enough: `first` needs no per-builder weight, which is why the earlier fork of this
-  # input was dropped.
-  inputs.yensid.url = "github:garnix-io/yensid";
-  inputs.yensid.inputs.nixpkgs.follows = "nixpkgs";
-  inputs.yensid.inputs."nixpkgs-lib".follows = "nixpkgs";
   inputs.nur.url = "github:nix-community/NUR";
   inputs.oh-my-pi.url = "github:can1357/oh-my-pi";
   # OpenCode DSML compat-proxy. The nazarewk-iac fork's `main` aggregates the
@@ -211,12 +204,14 @@
         # nixpkgs issue #573527. The tests drive an interactive bash in a pty, and they time out
         # on darwin. Skip the checks on darwin. Remove this entry when the package passes its
         # tests on darwin again.
-        (final: prev:
+        (
+          final: prev:
           prev.lib.optionalAttrs prev.stdenv.hostPlatform.isDarwin {
             atuin = prev.atuin.overrideAttrs (_: {
               doCheck = false;
             });
-          })
+          }
+        )
       ];
 
       flake.overlays.default = inputs.nixpkgs.lib.composeManyExtensions [

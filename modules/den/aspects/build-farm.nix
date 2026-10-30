@@ -43,7 +43,7 @@
 # Strict host-key checking cannot pass for a single name. yensid's `ca` module (short-lived builder
 # certificates) is the correct fix; until it is wired, the client alias for the proxy must relax
 # checking, which is only acceptable on a trusted segment.
-{ inputs, ... }:
+{ ... }:
 let
   builderType = { lib, ... }: {
     options = {
@@ -113,6 +113,26 @@ let
         description = ''
           The proxy must resolve a builder by **name**, and HAProxy refuses to start when it cannot.
           A private-network container has no upstream of its own, so name the site resolver.
+        '';
+      };
+      bindAddress = lib.mkOption {
+        type = lib.types.str;
+        default = "0.0.0.0";
+        description = ''
+          Address the **host** binds the published pool ports to. Set it to the LAN IP so the
+          forwarder answers only on the LAN: `away mode` is then free (the LAN name is unreachable
+          from elsewhere) and the SSH-banner forwarder never faces the WAN or the mesh. The HAProxy
+          inside the container binds `*` on its own veth address; `0.0.0.0` here binds every host
+          interface, which is only acceptable behind a firewall that also scopes it.
+        '';
+      };
+      lanInterface = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = ''
+          Host interface the pool ports are opened on (`networking.firewall.interfaces.<iface>`).
+          A null falls back to a global `allowedTCPPorts`, which opens every interface — prefer a
+          name so the WAN/mesh cannot reach the forwarder.
         '';
       };
       builders = lib.mkOption {
@@ -216,20 +236,21 @@ in
         backend ${set}_out
           mode tcp
           balance first
+          # A saturated pool (every server at `maxconn` + `maxqueue`) queues the already-accepted
+          # connection; `timeout queue` bounds that wait so ssh fails fast instead of hanging at
+          # banner wait (a client's ConnectTimeout cannot fire once HAProxy has accepted).
+          timeout queue 10s
           ${lib.concatMapStrings (
             b:
             "server ${b} ${proxy.builders.${b}.address}:${
               toString proxy.builders.${b}.port
-            } check inter 10s fall 2 rise 1${
+            } check inter 10s fall 2 rise 1 maxqueue 2${
               lib.optionalString (proxy.builders.${b}.maxConnections != null)
                 " maxconn ${toString proxy.builders.${b}.maxConnections}"
             }\n  "
           ) proxy.pools.${set}.builderOrder}
       '';
       haproxyConfig = proxy: ''
-        global
-          daemon
-
         defaults
           mode tcp
           timeout connect 10s
@@ -307,6 +328,15 @@ in
             on — there is nothing to gate on.
           '';
         };
+        reachProbe = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
+          default = null;
+          description = ''
+            An SSH destination (user@host) whose reachability also counts as "home" in `auto` mode,
+            tested with `ssh -o ConnectTimeout=2 … true`. It catches the case the Wi-Fi check misses:
+            at home on wired ethernet, or with the Wi-Fi radio off. Null disables it.
+          '';
+        };
         hosts = lib.mkOption {
           type = lib.types.attrsOf lib.types.str;
           default = { };
@@ -315,6 +345,20 @@ in
       };
 
       config = lib.mkMerge [
+        # A client's `hostPort`+`systems` must name a pool on the proxy, or it silently talks to the
+        # wrong pool (HAProxy never checks `systems`; the client carries it). Only a host that runs
+        # BOTH the proxy and the clients can be checked, since pools are local data.
+        (lib.mkIf (cfg.proxy != null && cfg.clients != { }) {
+          assertions = [
+            {
+              assertion = builtins.all (
+                c: builtins.any (p: p.port == c.hostPort && p.systems == c.systems) (lib.attrValues cfg.proxy.pools)
+              ) clients;
+              message = "kdn.build-farm: every client hostPort/systems must match one proxy pool's port/systems.";
+            }
+          ];
+        })
+
         (lib.mkIf (cfg.hosts != { }) {
           networking.hosts = lib.groupBy (name: cfg.hosts.${name}) (lib.attrNames cfg.hosts);
         })
@@ -340,6 +384,8 @@ in
               isReadOnly = true;
             };
             # One published port per pool; the client dials the port of the system set it wants.
+            # Bind the host side to `bindAddress` (normally the LAN IP), so the forwarder answers
+            # only there regardless of the firewall.
             forwardPorts = lib.mapAttrsToList (set: pool: {
               protocol = "tcp";
               hostPort = pool.port;
@@ -358,7 +404,9 @@ in
                 networking.firewall.allowedTCPPorts = lib.mapAttrsToList (set: pool: pool.port) cfg.proxy.pools;
                 services.resolved.enable = lib.mkForce false;
                 networking.resolvconf.enable = lib.mkForce false;
-                networking.nameservers = [ "127.0.0.1" ];
+                # The container has nothing to run but HAProxy; a full `nix` pulls in a daemon and
+                # subuid/subgid ranges for no reason.
+                nix.enable = lib.mkForce false;
                 system.stateVersion = "26.05";
               };
           };
@@ -368,7 +416,17 @@ in
           # builder, connects, and silently gets nothing, so HAProxy marks every backend down.
           networking.firewall.trustedInterfaces = [ "ve-build-farm" ];
           networking.firewall.extraForwardRules = "iifname \"ve-build-farm\" accept\n  oifname \"ve-build-farm\" ct state established,related accept\n  ";
-          networking.firewall.allowedTCPPorts = lib.mapAttrsToList (set: pool: pool.port) cfg.proxy.pools;
+          # Open the published pool ports on the LAN interface only. A global `allowedTCPPorts`
+          # would expose the forwarder on the WAN and the NetBird mesh too, which both leaks the
+          # builder banner to the internet and defeats the "away ⇒ local" invariant.
+          networking.firewall.interfaces = lib.mkIf (cfg.proxy.lanInterface != null) {
+            ${cfg.proxy.lanInterface}.allowedTCPPorts = lib.mapAttrsToList (
+              set: pool: pool.port
+            ) cfg.proxy.pools;
+          };
+          networking.firewall.allowedTCPPorts = lib.mkIf (cfg.proxy.lanInterface == null) (
+            lib.mapAttrsToList (set: pool: pool.port) cfg.proxy.pools
+          );
         })
 
         (lib.mkIf (cfg.clients != { }) {
@@ -381,12 +439,12 @@ in
           nix.settings.builders-use-substitutes = true;
           # The fallback is local, but Lix sets no SSH `ConnectTimeout` of its own, so a dropped
           # link (etra down / away from the LAN) stalls the build hook until the OS TCP timeout —
-          # minutes — before it gives up and builds locally. These options make an unreachable
-          # proxy cost a few seconds. The daemon runs the build hook, so the env goes on the daemon —
-          # and on the `nix-daemon@` **template**, because the socket is `Accept=yes` and every
-          # client connection spawns a fresh instance from it, not from `nix-daemon.service`.
-          systemd.services."nix-daemon@".environment.NIX_SSHOPTS =
-            "-o ConnectTimeout=3 -o ServerAliveInterval=10 -o ServerAliveCountMax=3 -o BatchMode=yes";
+          # minutes — before it gives up and builds locally. A short connect timeout makes an
+          # unreachable proxy cost a few seconds. `ServerAlive*` is deliberately **off** on the
+          # long-lived side: a transient stall on Wi-Fi must not kill a build, which native Nix
+          # cannot retry. The env goes on the `nix-daemon@` **template**, because the socket is
+          # `Accept=yes` and every client connection spawns a fresh instance from it.
+          systemd.services."nix-daemon@".environment.NIX_SSHOPTS = "-o ConnectTimeout=8 -o BatchMode=yes";
           # Cap the local fallback so a thermal-throttled laptop is not asked for every hyperthread.
           nix.settings.max-jobs = lib.mkIf (cfg.localMaxJobs != null) cfg.localMaxJobs;
           # `.config`, not `.conf`: `/etc/ssh/ssh_config` includes `/etc/ssh/ssh_config.d/*.config`,
@@ -408,13 +466,19 @@ in
             path = [
               pkgs.networkmanager
               pkgs.gnugrep
+              pkgs.gnused
               pkgs.coreutils
+              pkgs.openssh
             ];
             serviceConfig.Type = "oneshot";
             environment = {
               MACHINES_ON = toString (pkgs.writeText "kdn-nix-machines-on" machinesOn);
               MACHINES_OFF = toString (pkgs.writeText "kdn-nix-machines-off" machinesOff);
-              AUTO_SSIDS = lib.concatStringsSep " " cfg.autoWifi;
+              # One SSID per line, so a name with spaces survives (`while read`, not word-split).
+              AUTO_SSIDS = lib.concatMapStrings (s: s + "\n") cfg.autoWifi;
+              # Optional reachability fallback: when set, "is brys reachable on the LAN" also
+              # counts as home, so ethernet-with-the-radio-off is not mistaken for away.
+              REACH_PROBE = cfg.reachProbe;
             };
             script = ''
               set -eu
@@ -425,22 +489,32 @@ in
                 on) eff=on ;;
                 off) eff=off ;;
                 *)
-                  # auto (and any unknown value): on iff a listed SSID is in range.
-                  eff=on
-                  if [ -n "$AUTO_SSIDS" ]; then
-                    eff=off
-                    nmcli device wifi rescan >/dev/null 2>&1 || true
-                    sleep 2
-                    list=$(nmcli --terse --fields SSID device wifi list 2>/dev/null || true)
-                    for s in $AUTO_SSIDS; do
-                      if printf '%s\n' "$list" | grep -Fxq "$s"; then eff=on; break; fi
-                    done
+                  # auto (and any unknown value): on when a listed SSID is in range, or when the
+                  # reachability probe (if configured) succeeds. A scan failure leans off, which is
+                  # the safe direction (local build still works).
+                  eff=off
+                  nmcli device wifi rescan >/dev/null 2>&1 || true
+                  sleep 2
+                  list=$(nmcli --terse --fields SSID device wifi list 2>/dev/null || true)
+                  while IFS= read -r s; do
+                    [ -n "$s" ] || continue
+                    if printf '%s\n' "$list" | grep -Fxq -- "$s"; then eff=on; break; fi
+                  done <<EOF
+              $AUTO_SSIDS
+              EOF
+                  if [ "$eff" = off ] && [ -n "$REACH_PROBE" ]; then
+                    if ssh -o ConnectTimeout=2 -o BatchMode=yes -o StrictHostKeyChecking=no \
+                         -o UserKnownHostsFile=/dev/null "$REACH_PROBE" true >/dev/null 2>&1; then
+                      eff=on
+                    fi
                   fi
                   ;;
               esac
               printf '%s\n' "$eff" > "$dir/effective"
               if [ "$eff" = on ]; then src="$MACHINES_ON"; else src="$MACHINES_OFF"; fi
-              install -m 0644 "$src" /run/kdn/nix-machines
+              # Atomic: a build hook re-reading this must never see a half-written file.
+              install -m 0644 "$src" "$dir/nix-machines.tmp"
+              mv -f "$dir/nix-machines.tmp" /run/kdn/nix-machines
             '';
           };
 
