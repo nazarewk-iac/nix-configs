@@ -419,6 +419,12 @@ in
           # Open the published pool ports on the LAN interface only. A global `allowedTCPPorts`
           # would expose the forwarder on the WAN and the NetBird mesh too, which both leaks the
           # builder banner to the internet and defeats the "away ⇒ local" invariant.
+          #
+          # `networking.firewall.interfaces` alone is NOT enough: systemd-nspawn's `forwardPorts`
+          # installs its own interface-agnostic DNAT (`fib daddr type local dnat … map_port_ipport`)
+          # in `prerouting`, which rewrites a packet **before** the filter chain, so the input-chain
+          # accept never sees the interface. Drop the pool ports early on every non-LAN interface, at
+          # a higher nft priority than nspawn's `dstnat + 1`, so the DNAT never runs for them.
           networking.firewall.interfaces = lib.mkIf (cfg.proxy.lanInterface != null) {
             ${cfg.proxy.lanInterface}.allowedTCPPorts = lib.mapAttrsToList (
               set: pool: pool.port
@@ -427,6 +433,20 @@ in
           networking.firewall.allowedTCPPorts = lib.mkIf (cfg.proxy.lanInterface == null) (
             lib.mapAttrsToList (set: pool: pool.port) cfg.proxy.pools
           );
+          networking.nftables.tables."kdn-bf-gate" = lib.mkIf (cfg.proxy.lanInterface != null) {
+            family = "inet";
+            # nspawn's DNAT runs at `dstnat + 1` (-99); be earlier so the packet is dropped before
+            # the DNAT can rewrite a non-LAN arrival onto the container.
+            content = ''
+              chain prerouting {
+                type filter hook prerouting priority -101; policy accept;${
+                  lib.concatMapStrings (
+                    port: "\n  iifname != \"${cfg.proxy.lanInterface}\" tcp dport ${toString port} drop"
+                  ) (lib.mapAttrsToList (set: pool: pool.port) cfg.proxy.pools)
+                }
+              }
+            '';
+          };
         })
 
         (lib.mkIf (cfg.clients != { }) {
