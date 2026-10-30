@@ -47,31 +47,36 @@ sudo reboot
 
 Gate: the desktop returns, autologin works, the NanoKVM shows it.
 
-## Phase 2b: TPM2-only unlock
+## Phase 2b: unlock — TPM2 is not possible on this hardware
 
-The header is detached on the USB stick, so every command names `--header /dev/sdb2`.
+Measured on the live machine (2026-10-30): `/sys/class/tpm/tpm0/tpm_version_major = 1`
+and `systemd-cryptenroll --tpm2-device=list` reports "No suitable TPM2 devices found".
+The ESPRIMO Q920 exposes a TPM **1.2**, which `systemd-cryptenroll` cannot use (it enrols
+TPM 2.0 only). So the "TPM2-only" goal cannot be met with the current firmware. Nothing was
+changed on the LUKS: it still has keyslot 0 (passphrase) + keyslot 1 (the `pass` keyfile) +
+a `systemd-fido2` token on keyslot 0.
 
-1. Confirm the TPM is visible: `systemd-cryptenroll --tpm2-device=list`.
-2. Enrol PCR 7 (firmware/secure-boot state), keeping the existing FIDO2 token for now:
+Options, in order:
+
+1. **Get a TPM 2.0.** Some ESPRIMO BIOSes can switch the TPM to 2.0, or the board takes a
+   2.0 module. This is a BIOS/physical step; check it over the KVM. If the kernel then shows
+   `tpm_version_major = 2`, enrol PCR 7 (systemd-cryptenroll has no `--header`; `/dev/sdb2`
+   is the header device itself):
 
    ```bash
-   sudo systemd-cryptenroll /dev/sda --header /dev/sdb2 \
-     --tpm2-device=auto --tpm2-pcrs=7
+   pass show luks/hs-e100-pryll/keyfile | sudo systemd-cryptenroll \
+     --unlock-key-file=/dev/stdin --tpm2-device=auto --tpm2-pcrs=7 /dev/sdb2
    ```
 
-3. Reboot **without** tapping the YubiKey. If the TPM unlocks, PCR 7 works. If not, record
-   the set that did (`--tpm2-pcrs=0+7`) and use it.
-4. Remove the FIDO2 token so unlock is TPM-only (owner decision). Also add a recovery
-   passphrase token first, so a firmware update that changes PCR 7 does not lock the disk:
+2. **Unattended boot via the `pass` keyfile on the USB stick.** The keyfile
+   (`luks/hs-e100-pryll/keyfile`) already unlocks keyslot 1. Put it on the boot USB and point
+   the initrd at it (`boot.initrd.luks.devices."hs-e100-pryll-crypted".keyFile`). Trade-off:
+   whoever holds the USB can unlock the SSD — acceptable only because this is a home desktop
+   that is reformattable.
 
-   ```bash
-   sudo systemd-cryptenroll --recovery-key /dev/sda --header /dev/sdb2   # note the key
-   sudo systemd-cryptenroll /dev/sda --header /dev/sdb2 --wipe-slot=fido2
-   ```
+3. **Keep the FIDO2 YubiKey tap** (works today): one tap per boot.
 
-   Gate: `luksDump --header /dev/sdb2 /dev/sda` shows a `systemd-tpm2` token and a recovery
-   key, and **no** `systemd-fido2` token.
-5. The machine is now reformattable, so a lost recovery key is not fatal: reinstall.
+Do not wipe the fido2 token until option 1 or 2 is verified.
 
 ## Phase 2c: den port — DONE
 
@@ -160,7 +165,8 @@ layout in `llm:pryll:harness`; per-turn data is in each run's session JSONL.
 
 ## Owner-only hand-offs
 
-1. **One YubiKey tap** to enrol the TPM2 token (phase 2b). After that, reboots are unattended.
+1. **Unlock path** (phase 2b): the TPM is 1.2, so choose — enable a TPM 2.0 in BIOS (then I
+   enrol it), or accept a keyfile-on-USB for unattended boot, or keep the YubiKey tap.
 2. **Decide TeamViewer vs RustDesk**, and provide the TeamViewer credential through the
    existing secret mechanism if TeamViewer stays.
 3. **brys disk pruning**: `/var/lib/kdn/llms/models` is 98% full (41 G free) and

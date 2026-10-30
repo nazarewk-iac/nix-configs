@@ -9,8 +9,9 @@
 #     4f314bc3-6c3c-4a37-9756-5a03d286cf7b, header on partition 2
 #   - the machine can be reformatted; nothing on it must be preserved across a reinstall
 #
-# Unlock is TPM2-only by owner decision (no YubiKey at boot). Enrolment is a runtime step
-# (`systemd-cryptenroll --tpm2-device=auto` with the pass keyfile), recorded in the run book.
+# Unlock target was TPM2-only, but the machine's TPM is 1.2 (`tpm_version_major = 1`) and
+# systemd-cryptenroll cannot use it. Unlock stays FIDO2 (YubiKey tap) or the pass keyfile
+# (keyslot 1) until a TPM 2.0 is available. See run book phase 2b.
 #
 # The body stays an INLINE attrset here: a module in this entity's own `nixos` aspect cannot
 # request `pkgs` (it recurses through `_module.args`). `lib` and `inputs` come from the closure.
