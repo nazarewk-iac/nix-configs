@@ -43,3 +43,67 @@ timestamp: 2026-09-11T22:00:00+02:00
 
 **The blocker for the comparison is named:** feature parity between `modules/universal` and
 `modules/den/aspects`. Track it in [../generalization/definition.md](../generalization/definition.md).
+
+## Update 2026-10-30 — new avenues from the Kagi research
+
+This update adds avenues only. **No measurement was taken for any item below.** Every number is
+either quoted from the source with its reference, or it is `TBD`. The source is
+[research.kagi.md](research.kagi.md), a secondary digest of one Kagi Assistant session dated
+2026-09-11. That session is an LLM answer with web references. It did not run here, and it did not
+see this repo. Treat each item as a claim to check.
+
+The system evaluator today is **Lix 2.95.3** (`nix --version`). [research.md](research.md) measured
+on 2.95.2, one patch release earlier.
+
+### The newly identified avenues
+
+1. **A non-Lix client for parallel evaluation.** The session corrects its own earlier claim: parallel
+   evaluation and lazy trees are **client-side**, not daemon-side. So a Determinate Nix or upstream
+   Nix ≥ 2.35 client against the Lix daemon is plausible. The protocol is frozen at CppNix 2.18, and
+   [research.md](research.md) already ran a CppNix 2.35.2 client against this daemon. That proves
+   the protocol, not the parallelism. The `fix` benchmark also shows parallel eval is **not** a win
+   for one NixOS config.
+2. **`fix` as an evaluator for profiling.** A Zig evaluator with `-Dprof-path` (per forcing site,
+   approximate), `--timeline` (Perfetto), `--stats` and a debugger. Alpha. Its own `.drv` equality
+   safety test fits the `drvPath` caveat in [definition.md](definition.md): valid on a den host, not
+   on a universal host.
+3. **Lix 2.96 mimalloc.** The session claims 2.96 links mimalloc and gains 5–12 % wall clock on
+   evaluation, including full NixOS configs. This is a package bump, not a config change.
+4. **`GC_INITIAL_HEAP_SIZE`.** Default is 384 MB. One source reports `4G` cut `nix eval` wall time by
+   about 25 %. [research.md](research.md) measured `gc.heapSize` at 4.85 GB. Untested here.
+5. **A config audit.** Duplicate nixpkgs imports (the devenv overlay finding, under another name),
+   `useGlobalPkgs`, flake `packages` access, and specialisations and containers. **`specialisation.llms`
+   at `hosts/brys/default.nix:370` runs with `inheritParentConfig = false`, so the session's claim
+   means `brys` evaluates a full extra NixOS config.**
+6. **The eval/build/activation split.** The session rates "measure where time goes" as rank 1 and
+   says activation can exceed 1.5 min. This repo's rebuild wrappers never split the three phases.
+
+### Ranked experiment backlog
+
+Rank is by expected value per unit of risk, not by expected size. Each item is one experiment with
+one number.
+
+| Rank | Change | Acceptance | Rollback | Risk |
+|---|---|---|---|---|
+| 1 | **Upgrade Lix to 2.96** in the flake input. Then re-run `hack/eval-profile.sh` on `anji`. | Warm `anji` wall falls by **TBD — measure**, target ≥ 5 % (the source's floor for mimalloc) | Revert the flake input and `flake.lock`; the store keeps the old Lix (verified present today at 2.95.3) | Low. A nixpkgs availability gap for 2.96 is the only blocker. Same store protocol, same CLI. No host output change |
+| 2 | **Set `GC_INITIAL_HEAP_SIZE` in the rebuild wrapper.** Add an `export` to `nixos-rebuild.sh` and `packages/darwin-rebuild/darwin-rebuild.sh`, or to the `pre_cmd` arrays. | Warm `anji` wall falls by **TBD — measure**, at a chosen heap size (start 4 GiB, then 8 GiB) | Remove the `export`; it changes no evaluated config | Low. Trades RAM for speed. Under `sudo`, confirm the variable survives. Confirm Lix honours it as Boehm GC would |
+| 3 | **Measure the eval/build/activation split.** Time `nix eval` of `.drvPath`, then `nix build`, then the switch step, as three separate numbers. | The three shares are recorded for one host in `.worklog.md`; each share is **TBD — measure** | None. A measurement only, no code change | None. Read-only. It reframes exit criterion 1 against the whole update, so record it before the next cut |
+| 4 | **Audit duplicate nixpkgs imports and specialisations.** Count distinct nixpkgs store roots per host profile. Check `useGlobalPkgs`, flake `packages` access, and every `specialisation.*` (`brys` has `specialisation.llms`). | A list of each duplicate import and each specialisation, with its measured self-time share. Each share is **TBD — measure** | None for the audit. Any cut needs a closure proof, per exit criterion 3 | Medium for cuts, none for the audit. A cut to `specialisation.llms` changes `brys` output. A cut to a nixpkgs import changes a host closure. Prove with a closure comparison, never a `drvPath` on a universal host |
+| 5 | **Time a non-Lix client against the Lix daemon, then check `.drv` equality.** Fetch `nixpkgs#nixVersions.latest`, run with `--no-eval-cache`, and compare its `.drvPath` with Lix's on a fixed revision. | Two numbers: warm wall for each client (**TBD — measure**), and `.drvPath` equality true or false | None. A measurement only. Use `--no-write-lock-file --no-update-lock-file --offline` as [research.md](research.md) does | Low for the timing. The equality check needs a quiet tree. `[research.md](research.md)` recorded a different `drvPath` between evaluators on a dirty tree, so this re-tests it clean. A den host is the valid comparison; a universal host is not, because of `kdnConfig.self` |
+| 6 | **Evaluate with `fix`, gated on `.drv` equality.** Use `fix` for evaluation only, keep `nixos-rebuild` and `darwin-rebuild` for activation. | `fix`'s `.drvPath` equals the normal one on a fixed revision, and its warm wall is **TBD — measure** | Drop `fix`. It is an experiment, not a system dependency | High. It is alpha, tested mainly on x86_64 Linux, and `local`/`auto` stores are unsupported. Gate on `.drv` equality and never activate with it |
+
+### Order notes
+
+- Items 1 and 2 are the only ones that can move exit criterion 1 without a closure proof, because
+  neither changes an evaluated config. Do them first.
+- Item 3 must land before items 4 to 6 read as wins. Without the split, a faster eval may not mean a
+  faster update.
+- Item 4's cuts carry the same closure-proof obligation as the unstarted devenv-overlay lever. Keep
+  them behind that lever unless the audit shows a bigger, safer win.
+- Item 5 repeats what [research.md](research.md) could not prove: whether a non-Lix evaluator agrees
+  on a `.drvPath` for the same input. Run it on a fixed revision.
+- Item 6 needs item 5's result first, because `fix` is one more non-Lix evaluator to trust on
+  `.drvPath`.
+
+All six items keep the existing rule: no number goes into `checks/README.md` until it is measured
+here.
