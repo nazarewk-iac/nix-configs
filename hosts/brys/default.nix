@@ -164,6 +164,12 @@ in
       kdn.desktop.sway.portals.debug = true;
     }
     {
+      # The build-farm `agent-check` responder (hosts/brys/llm.nix). HAProxy on `etra` polls it, so
+      # it must be reachable from the LAN and the mesh, and nowhere else.
+      networking.firewall.interfaces."kdn-eth-2g".allowedTCPPorts = [ 39701 ];
+      networking.firewall.interfaces."nb-priv".allowedTCPPorts = [ 39701 ];
+    }
+    {
       # VNC access over Netbird
       networking.firewall.interfaces."nb-priv".allowedTCPPorts = [
         5900

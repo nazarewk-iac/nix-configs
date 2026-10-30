@@ -131,6 +131,15 @@
   # grunt / Qwen sessions build is present, because the matrix sets name the grunt and frontier
   # routers. The default is false, so the DS4 and small entries keep router mode byte-identical.
   withSwap ? false,
+  # The build-farm `agent-check` curve (see `kdn-build-farm-agent`). Absolute free memory, in GiB:
+  # at or above `fullFreeGiB` brys takes full build capacity; at or below `oneFreeGiB` it takes a
+  # single build; in between it scales linearly. A build's own peak is a few GiB whatever the box
+  # size, so an absolute reserve is the honest unit. `maxSlots` is the full-capacity `maxconn`.
+  buildProbe ? {
+    fullFreeGiB = 30;
+    oneFreeGiB = 3;
+    maxSlots = 12;
+  },
 }:
 let
   # The small-model router sets, split out so a frontier-only host never pulls
@@ -724,6 +733,85 @@ in
           "AF_INET"
           "AF_INET6"
         ];
+        DynamicUser = true;
+      };
+    };
+
+    # The build-farm `agent-check` responder. HAProxy on `etra` cannot see llama-swap (39700 is
+    # loopback-only) or prometheus (its container is confined), so this host answers a one-line
+    # verdict on a port the proxy can reach: `ready` when ample RAM is free, `drain` when a frontier
+    # model is resident. `MemAvailable` is the honest signal — `llamaswap_memory_used_bytes` follows
+    # host page cache and does not fall when a model unloads (measured 2026-10-30).
+    #
+    # A frontier residency costs about 14 GiB (measured), so `drain` starts well before the box is
+    # starved.
+    systemd.services."kdn-build-farm-agent" = lib.mkIf withSwap {
+      description = "Answer HAProxy agent-check with the LLM RAM state";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "prometheus.service" ];
+      wants = [ "prometheus.service" ];
+      path = [
+        pkgs.curl
+        pkgs.gawk # MemTotal from /proc/meminfo
+        pkgs.gnugrep
+        pkgs.coreutils
+        pkgs.socat
+      ];
+      serviceConfig = {
+        # `socat` runs one script per agent-check connection and prints its one-word answer. It binds
+        # 0.0.0.0 and the firewall restricts it to the LAN and mesh, because HAProxy on `etra` must
+        # reach it and the internal bridge address is not routable off-host.
+        ExecStart = "${pkgs.socat}/bin/socat -d TCP-LISTEN:39701,fork,reuseaddr SYSTEM:${
+          pkgs.writeShellApplication {
+            name = "kdn-build-farm-agent";
+            text = ''
+              # The gauge is the second element of `data.result[0].value`.
+              # Fail OPEN: a prometheus hiccup must not silently stop every build on the farm, so an
+              # unreadable gauge answers `ready`. The hazard it guards (builds competing with a
+              # resident model) only exists when the host is genuinely loaded, and then it is readable.
+              set +o pipefail +o errexit
+              raw=$(curl -sS --max-time 3 "http://10.233.90.2:9090/api/v1/query?query=node_memory_MemAvailable_bytes" 2>/dev/null || true)
+              avail=$(printf '%s' "$raw" | sed -E 's/.*,"([0-9.e+]+)"\]\}\].*/\1/' | cut -d. -f1)
+              case "$avail" in
+                [0-9]*) ;;
+                *) printf 'ready\n'; exit 0 ;;
+              esac
+              # Curve on ABSOLUTE free memory, not a percentage: what matters is whether a build
+              # plus the resident model still fits, and a build peak is a few GiB whatever the box
+              # size. At or above FULL_GIB free brys takes full capacity; at or below ONE_GIB free it
+              # takes a single build; in between it scales linearly. Tunable per host if needed.
+              full_gib=${toString buildProbe.fullFreeGiB}
+              one_gib=${toString buildProbe.oneFreeGiB}
+              max_slots=${toString buildProbe.maxSlots}
+              free_gib=$((avail / 1024 / 1024 / 1024))
+              if [ "$free_gib" -ge "$full_gib" ]; then
+                slots=$max_slots
+              elif [ "$free_gib" -le "$one_gib" ]; then
+                slots=1
+              else
+                # Linear between the two anchors: (free - one) / (full - one).
+                slots=$(( 1 + (max_slots - 1) * (free_gib - one_gib) / (full_gib - one_gib) ))
+              fi
+              # The pool uses `balance first`, and the HAProxy manual states `first` "ignores the
+              # server weight", so only `maxconn` is reported: it moves the spill point, and since
+              # the x86 pool holds brys alone a lower `maxconn` means fewer concurrent builds.
+              #
+              # `ready` is NOT optional. The manual is explicit: "only the agent may revert its own
+              # actions, so if a server is set to DRAIN … the agent must implement the … actions to
+              # bring the service into operations again." A bare `maxconn:12` never clears a DRAIN
+              # the agent set earlier, so the server would stay drained forever after one busy
+              # period. Emitting `ready` every time is the fix; `maxconn` then shapes the curve.
+              printf 'ready maxconn:%s\n' "$slots"
+            '';
+          }
+        }/bin/kdn-build-farm-agent";
+        Restart = "always";
+        RestartSec = 3;
+        NoNewPrivileges = true;
+        PrivateTmp = true;
+        ProtectSystem = "strict";
+        ProtectHome = true;
+        RestrictAddressFamilies = [ "AF_INET" ];
         DynamicUser = true;
       };
     };

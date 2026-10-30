@@ -28,6 +28,10 @@
           address = "brys.lan.etra.net.int.kdn.im";
           # 12 of the box's 16 physical cores; a model can have the rest.
           maxConnections = 12;
+          # brys also serves LLMs. Its `kdn-build-farm-agent` answers HAProxy `agent-check` with
+          # `drain` while a frontier model is resident (measured: idle ~90 % free, resident ~78 %;
+          # the agent drains below 85 %), so a build does not compete with the model for RAM/CPU.
+          probePort = 39701;
         };
         anji = {
           address = "anji.lan.etra.net.int.kdn.im";

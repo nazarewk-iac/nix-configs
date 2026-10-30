@@ -68,6 +68,25 @@ let
           full and the rest of the list is dead weight.
         '';
       };
+      probePort = lib.mkOption {
+        type = lib.types.nullOr lib.types.port;
+        default = null;
+        description = ''
+          The builder's HAProxy `agent-check` port, probed with `agent-check`/`agent-port`. The probe
+          answers `ready` (take builds), `drain` (finish current, take none) or `down`. This lets a
+          builder pause itself for a reason the proxy cannot see — for `brys`, a resident LLM that
+          would compete for RAM and CPU. Null disables the probe for this builder.
+        '';
+      };
+      probeMaxConnWhenBusy = lib.mkOption {
+        type = lib.types.nullOr lib.types.ints.positiveOrZero;
+        default = null;
+        description = ''
+          The `maxconn` to apply while the probe reports busy, through HAProxy `agent-send`/weight.
+          Set it to 0 so a busy builder takes no new builds (existing ones finish), rather than being
+          hard-`down` and so unable to serve a build already dispatched.
+        '';
+      };
     };
   };
 
@@ -279,6 +298,10 @@ in
             } check inter 10s fall 2 rise 1 maxqueue 2${
               lib.optionalString (proxy.builders.${b}.maxConnections != null)
                 " maxconn ${toString proxy.builders.${b}.maxConnections}"
+            }${
+              lib.optionalString (
+                proxy.builders.${b}.probePort != null
+              ) " agent-check agent-inter 10s agent-port ${toString proxy.builders.${b}.probePort}"
             }\n  "
           ) proxy.pools.${set}.builderOrder}
       '';
