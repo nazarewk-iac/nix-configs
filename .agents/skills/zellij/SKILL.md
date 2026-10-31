@@ -109,9 +109,9 @@ must prevent this interruption.
 Two packages do this work for you. Use them. Do not write raw
 `zellij attach --create-background`, `action new-pane`, or `subscribe` calls yourself.
 
-- `zellij-llm` (`packages/llm/zellij-llm/`) is the tool you call. It has six command
-  subcommands — `spawn`, `spawn-and-watch`, `watch`, `wait`, `peek`, and `list` — plus an
-  `opencode` command group (see below). It derives the session name itself (see below), so
+- `zellij-llm` (`packages/llm/zellij-llm/`) is the tool you call. It has seven command
+  subcommands — `spawn`, `start`, `spawn-and-watch`, `watch`, `wait`, `peek`, and `list` — plus
+  an `opencode` command group (see below). It derives the session name itself (see below), so
   `--session` is optional. It creates the session (idempotent). It makes the stacked-pane layout.
   It runs the command from stdin with `bash -xeEuo pipefail`. Run `zellij-llm --help`,
   `zellij-llm <subcommand> --help`, or `zellij-llm opencode <sub> --help` for all flags.
@@ -165,6 +165,11 @@ zellij-llm peek --pane 'darwin-build' --full
 
 # f. list — list the panes (id, title, exited, exit_status, command) in your own session.
 zellij-llm list
+
+# g. start — the INTERACTIVE sibling of spawn. Runs the argv command directly in a new pane so a
+#    TUI process gets a real pty (spawn pipes a script on stdin, which makes a TUI exit). Use it
+#    for pi, opencode, or an editor; use spawn for one-shot commands.
+zellij-llm start --pane pi -- pi --provider brys --model brys/qwen3.8-flash-next
 ```
 
 Do not poll with `sleep N; zellij-llm peek`. Use `wait`, `watch`, or `spawn --wait` instead. A
@@ -290,7 +295,7 @@ Code always prompts for those, as the rule above requires.
 | `action new-pane` / `new-tab` / `go-to-tab*` / `focus-pane-id` / `close-*` / `kill-session` | Create, focus, or destroy state | Not allowlisted — always prompts. Never do this on the user's session. Do it in your own session |
 | `action new-pane --stacked --name <n> -- <cmd>` (your own session) | Run a command in a new stacked pane | Still prompts (not allowlisted). This is correct: it changes state, even in your own session |
 | `kdn-slug names --type <session\|tab\|pane> ...` | Make the naming-convention strings above | Read-only, no allowlist needed |
-| `zellij-llm spawn` / `spawn-and-watch` / `watch` / `wait` / `list` (your own session) | Preferred wrapper for the state-change calls above | Prompts the same as the raw calls. Not yet in the Bash allowlist |
+| `zellij-llm spawn` / `start` / `spawn-and-watch` / `watch` / `wait` / `list` (your own session) | Preferred wrapper for the state-change calls above (`start` = interactive/pty) | Prompts the same as the raw calls. Not yet in the Bash allowlist |
 | `zellij-llm peek` (your own session) | Preferred wrapper for `action dump-screen` | Like `dump-screen` above, but works only on your own session |
 | `zellij-llm opencode spawn/send/watch/list/attach` (your own session) | Start, drive, and watch an OpenCode session in a pane | Prompts the same as the raw calls. `send` focuses the pane and types, so it changes state; never point it at the user's session |
 

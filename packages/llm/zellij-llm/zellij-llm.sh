@@ -32,6 +32,12 @@ set -eEuo pipefail
 # Pass --ephemeral to close the pane on exit instead. Commands run under `bash -xeEuo pipefail`;
 # the `-x` trace echoes each command into the pane, so a secret in a literal arg leaks into the
 # scrollback (wrap such steps in `{ set +x; ...; set -x; } 2>/dev/null`).
+#
+# For an INTERACTIVE command (a TUI such as pi, opencode or an editor), use `start`: it runs the
+# argv command directly in a new pane, so the process gets the pane's pty. `spawn` pipes its script
+# on stdin, which makes a TUI see a non-tty and exit.
+#
+#   zellij-llm start --pane pi -- pi --provider brys --model brys/qwen3.8-flash-next
 
 # @cmd Create the session if missing and run a command from stdin in a new pane
 # @option --session Session name; overrides the kdn-slug-derived default and is used verbatim
@@ -47,6 +53,20 @@ set -eEuo pipefail
 # @option --tag* Extra name components; forwarded to kdn-slug as repeatable --tag
 spawn() {
   _run_spawn "${argc_wait:-0}"
+}
+
+# @cmd Run a command INTERACTIVELY in a new pane (argv, so the process gets the pane's pty)
+# @option --session Session name; overrides the kdn-slug-derived default and is used verbatim
+# @option --pane! Short kebab-case pane name/title (e.g. orchestrator)
+# @option --cwd Working directory for the pane (defaults to zellij's own default)
+# @flag --ephemeral Close the pane when its command exits (default: keep it, so the last frame stays)
+# @option --sep Top-level name separator; forwarded to kdn-slug (default `:`)
+# @option --repo-sep Repo-path separator; forwarded to kdn-slug (default `_`)
+# @option --max-len Extra cap on the derived name length; never exceeds the socket budget
+# @option --tag* Extra name components; forwarded to kdn-slug as repeatable --tag
+# @arg cmd* The command and its arguments (after `--`), run as argv so TUIs get a real tty
+start() {
+  _run_start
 }
 
 # @cmd Like spawn --wait: run a command, then follow the pane until it exits
@@ -198,6 +218,34 @@ _run_spawn() {
   else
     echo "spawned pane '${argc_pane}' in session '${session}' (run ${cmd_id})"
   fi
+}
+
+# Shared body for `start`. Runs the argv command in a new pane, so it inherits the pane's pty as a
+# real terminal. That is what an interactive TUI (pi, opencode, an editor) needs. `spawn` instead
+# pipes a script on stdin via `bash -c`, which makes a TUI see a non-tty and exit — use `start`
+# for anything interactive.
+_run_start() {
+  local session
+  session="$(_session_name)"
+  _validate_socket_len "$session"
+  _check_slug "$argc_pane" "pane name"
+
+  if [[ -z "${argc_cmd[*]:-}" ]]; then
+    echo "start needs a command after --, e.g. zellij-llm start --pane pi -- pi --provider ..." >&2
+    return 2
+  fi
+
+  _ensure_session "$session"
+
+  local -a cwd_args=()
+  [[ -n "${argc_cwd:-}" ]] && cwd_args=(--cwd "$argc_cwd")
+  local -a life_args=()
+  [[ "${argc_ephemeral:-0}" == 1 ]] && life_args=(--close-on-exit)
+
+  zellij --session "$session" action new-pane --name "$argc_pane" "${cwd_args[@]}" "${life_args[@]}" \
+    -- "${argc_cmd[@]}"
+  _stack_with_existing "$session"
+  echo "started pane '${argc_pane}' in session '${session}': ${argc_cmd[*]}"
 }
 
 # Follow a pane until its command exits, then print EXIT:<code> and exit with that code.
