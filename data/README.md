@@ -41,6 +41,15 @@ A non-Nix payload file is not a data module. The three CA files go in `ca/` for 
 Each file keeps its base name. The directory carries the kind, so a name such as
 `services-samba.nix` stays as it is.
 
+## `nixos/` — a NixOS-only consumer
+
+| File | What it holds | Read by | Shape |
+|---|---|---|---|
+| `passwords.nix` | The owner's password hashes for `root`, `kdn`, `bn`, `sn`, each written to a store file. Sets `kdn.profile-baseline.rootHashedPasswordFile` and `kdn.users.<name>.hashedPasswordFile`. | a den NixOS host: `hosts-den/pryll` imports it behind `pathExists` | function of `pkgs` |
+
+The universal tree inlines these same hashes in its own module files. This file is the den-side
+home, added as part of moving a host to den; the universal modules are left unchanged.
+
 ## `universal-deps/` — reads `kdnConfig`
 
 | File | What it holds | Read by | Shape |

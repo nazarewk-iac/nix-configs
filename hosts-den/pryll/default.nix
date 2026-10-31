@@ -56,7 +56,12 @@ in
   ];
 
   den.aspects.pryll.nixos = {
-    imports = [ inputs.home-manager.nixosModules.home-manager ];
+    imports = [
+      inputs.home-manager.nixosModules.home-manager
+      # The owner's password hashes as a data module (data/nixos/passwords.nix). Imported by
+      # path behind pathExists, so an adopter without the file still evaluates. It sets
+      # kdn.users.<name>.hashedPasswordFile and kdn.profile-baseline.rootHashedPasswordFile.
+    ] ++ lib.optional (builtins.pathExists ../../data/nixos/passwords.nix) ../../data/nixos/passwords.nix;
 
     kdn.hostName = "pryll";
 
@@ -74,11 +79,6 @@ in
     # profile-baseline sets users.mutableUsers = false, tripping the "locked out" assert (bn is
     # not wheel and no hash is in the repo). Allow `passwd`; autologin makes it a formality.
     users.mutableUsers = lib.mkForce true;
-
-    # Root login for the emergency/rescue shell. Without it a failed LUKS prompt drops to
-    # emergency mode with no way in (gen 33 failed this way once). The hash is the same
-    # yescrypt value the old universal tree ships, so the emergency password is unchanged.
-    users.users.root.hashedPassword = "$y$j9T$AhbnpYZawNWNGfuq1h9/p0$jmitwtZwTr72nBgvg2TEmrGmhRR30sQ.hQ7NZk1NqJD";
 
     # The one account: the mother.
     kdn.users.bn = {
