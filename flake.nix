@@ -80,6 +80,17 @@
   inputs.yensid.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nur.url = "github:nix-community/NUR";
   inputs.oh-my-pi.url = "github:can1357/oh-my-pi";
+  # Upstream Pi as a flake: npm/Bun packages, NixOS + Home Manager modules, and an
+  # overlay providing pkgs.pi-coding-agent. It tracks upstream releases (newer than the
+  # nixpkgs pin) and follows our nixpkgs so it builds against our pin.
+  inputs.pi.url = "github:lukasl-dev/pi.nix";
+  # Reuse this repo's shared pins instead of dragging duplicates. `nixpkgs-x86_64-darwin`
+  # is deliberately NOT followed: pi.nix pins it for the legacy Intel-macOS branch.
+  inputs.pi.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.pi.inputs.flake-parts.follows = "flake-parts";
+  inputs.pi.inputs.bun2nix.inputs.flake-parts.follows = "flake-parts";
+  inputs.pi.inputs.bun2nix.inputs.systems.follows = "systems";
+  inputs.pi.inputs.bun2nix.inputs.treefmt-nix.follows = "treefmt-nix";
   # OpenCode DSML compat-proxy. The nazarewk-iac fork's `main` aggregates the
   # patches this repo used to apply (Authorization forwarding, per-model routing,
   # streaming usage). Upstream has no flake.nix, so this is a plain source input.
@@ -227,6 +238,27 @@
         inputs.nix-darwin.overlays.default
         inputs.devenv.overlays.default
         inputs.oh-my-pi.overlays.default # provides pkgs.omp
+        # Pick the newer of nixpkgs and the upstream pi.nix flake. A patched copy in this
+        # repo (packages/pi-coding-agent) always wins, because a local patch is more
+        # specific than either upstream.
+        (
+          final: prev:
+          let
+            sys = final.stdenv.hostPlatform.system;
+            upstream = (inputs.pi.packages.${sys} or { }).coding-agent or prev.pi-coding-agent;
+            upstreamVer = upstream.version or (upstream.meta.version or "0");
+            nixpkgsVer = prev.pi-coding-agent.version or (prev.pi-coding-agent.meta.version or "0");
+          in
+          {
+            pi-coding-agent =
+              if builtins.pathExists (./. + "/packages/pi-coding-agent") then
+                prev.callPackage ./packages/pi-coding-agent { }
+              else if final.lib.versionAtLeast nixpkgsVer upstreamVer then
+                prev.pi-coding-agent
+              else
+                upstream;
+          }
+        )
         (final: prev: {
           inherit lib;
           kdnConfig = self.kdnMetaModule.config;
