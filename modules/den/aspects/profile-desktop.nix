@@ -131,7 +131,7 @@ in
                 clipboard)
                   type="$(wl-paste -l | grep 'image/' | head -n1)"
                   if test -z "$type" ; then
-                    notify-send "qrdecode: error" "no image type amongst: $(printf "%s," $(wl-paste -l))"
+                    notify-send "qrdecode: error" "no image type amongst: $(printf "%s," "$(wl-paste -l)")"
                     exit 1
                   fi
                   output="$(wl-paste -t "$type" | zbarimg -1 -)"
