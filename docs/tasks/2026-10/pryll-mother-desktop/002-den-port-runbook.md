@@ -157,6 +157,40 @@ works **only** with the keyfile-on-USB unlock (phase 2b option 2); the YubiKey t
 the machine, so a reboot after an update is not unattended while FIDO2 is the unlock path. Verify
 over the KVM that a boot after an update lands on the desktop, and that remote support reconnects.
 
+## Phase 5b: RustDesk unattended access (owner, one-time GUI over the KVM)
+
+The den host installs and starts the RustDesk **client** as a system service
+(`systemd.services.rustdesk` runs `rustdesk --service` as root). The service starts on boot, so a
+can connect any time the machine is up. Two things are not declarative and are set once in the
+RustDesk window over the NanoKVM at `kvm-fa56`, because they need a secret the repo does not hold:
+the fixed password, and the relay server address.
+
+The fleet runs its own RustDesk server (no public infrastructure): `hbbs` and `hbbr` run on
+**etra**, and **moss** forwards the public name `rustdesk.kdn.im` to etra. So the client points at
+that one name.
+
+One-time steps, in the RustDesk window on the desktop:
+
+1. Menu → **Settings → Security → Network (ID/Relay Server)**: turn on **Use custom ID/relay
+   server** and enter `rustdesk.kdn.im` for the **ID/Relay Server** field. Leave the other fields
+   empty and the key field empty (the server has no key when reached over the mesh/forward). Apply.
+2. **Settings → Security → Permissions** and **Unlock** the settings with the sudo/bn password.
+3. Turn on **Allow password** (a.k.a. "Use password") and type a strong **fixed password**. This
+   is the credential that grants unattended access. It is the only secret this step needs.
+4. Make sure the service is set to start on boot and to run **as the system service** (not only in
+   the user session), so the fixed password works at the lock screen and before login. The NixOS
+   unit already runs the service; confirm the window shows "Status: Ready" and no "service not
+   installed" warning.
+5. Read pryll's RustDesk **ID** from the main window (a 9-or-12-digit number). Record the ID; the
+   password does not go into a doc.
+6. Store the fixed password in the existing secret manager under `pass`:
+   `pass insert -m rustdesk/pryll/fixed-password`. Save the ID there too, or in a note.
+7. Verify from another machine: connect by ID, enter the fixed password, confirm a desktop appears
+   and that it works at the lock screen.
+
+Keep the relay address and the fixed password together: if the address changes (for example if the
+server moves off etra), re-apply step 1 over the KVM.
+
 ## Phase 6: backup
 
 The machine may be wiped, so "backup" means the owner's documents and photos, not the
@@ -175,8 +209,10 @@ layout in `llm:pryll:harness`; per-turn data is in each run's session JSONL.
 1. **Unlock path** (phase 2b): the TPM is 1.2, so TPM2-only is not possible now. Choose — enable a
    TPM 2.0 in BIOS or fit a 2.0 module (then I enrol it), accept a keyfile-on-USB for unattended
    boot, or keep the YubiKey tap.
-2. **RustDesk unattended access** (decided: RustDesk client, not TeamViewer). Set the fixed password
-   and relay once over the KVM, and put the credential through the existing secret mechanism.
+2. **RustDesk unattended access** (decided: RustDesk client, not TeamViewer). One-time GUI setup is
+   in **Phase 5b** above: point the client at `rustdesk.kdn.im`, enable a fixed password, record the
+   ID, and store the password through `pass`. It is not declarative because the password is a secret
+   the repo does not hold.
 3. **brys disk pruning**: `/var/lib/kdn/llms/models` is 98% full (41 G free) and
    `qwen3-next-80b` (~40 G) cannot fit. Choose models to drop.
 4. The usability defaults: Polish / `pl` / Europe-Warsaw / light / autologin / Firefox /
