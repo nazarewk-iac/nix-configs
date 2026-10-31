@@ -59,6 +59,9 @@ in
 
   den.aspects.pryll.nixos = {
     imports = [
+      # The fleet root CA node (`kdn.ca-dag.cas.kdn`, `ssh = true`). The `ssh-ca` aspect reads it
+      # to derive the CA public key for `TrustedUserCAKeys` and the `@cert-authority` line.
+      ../../data/ca/ca-dag.nix
       inputs.home-manager.nixosModules.home-manager
     ]
     # Account profiles (identity, groups, keys, password) from one structured data file.
@@ -89,6 +92,45 @@ in
     kdn.locale.time = "pl_PL.UTF-8";
     kdn.locale.xkbLayout = "pl";
     kdn.locale.timezone = "Europe/Warsaw";
+
+    # The CA host certificate, modelled on `hosts/brys/ssh-ca.nix`, so the already-included
+    # `ssh-ca` aspect issues it: sshd serves the CA-signed host certificate and clients that trust
+    # the `kdn` CA verify pryll by CA instead of by a pinned TOFU key.
+    #
+    # The leaf is declared only once the signing artifacts exist. The `certificates` aspect hard-
+    # requires the committed `<directory>/<keyFile>.sops` (the SOPS-encrypted host key) and
+    # `<directory>/<certFile>` (the CA-signed public certificate) at eval time, because it copies
+    # them into the system closure. Producing them needs the fleet CA private key and the SOPS
+    # recipients, so it is an OWNER HAND-OFF (run book phase 2c / owner item 5):
+    #
+    #   kdn-certs ssh host pryll
+    #
+    # generates the ed25519 host key, SOPS-encrypts it to `hosts-den/pryll/certs/
+    # ssh_host_ed25519.key.sops`, signs `ssh_host_ed25519-cert.pub` with the `kdn` CA, and writes
+    # both. Until then the `pathExists` guard keeps this change self-contained and the `ssh-ca`
+    # aspect inert (a no-op, exactly as before the leaf), so pryll keeps its plain host key. The
+    # moment the two files land the leaf activates and sshd presents the CA host certificate.
+    #
+    # `principals` names every form a client may connect with. pryll lives on the etra LAN
+    # (`hosts/etra`: `hosts.lan.pryll`), so the short name plus `pryll.lan.etra.net.int.kdn.im`.
+    # Add more (`pryll.lan.drek.net.int.kdn.im`, a netbird name) only when pryll actually joins
+    # those networks. `kdn-certs` also signs the trailing-dot form of each FQDN at signing time.
+    kdn.certificates.repoRoot = ../..;
+    kdn.certificates.certs = lib.optionalAttrs (builtins.pathExists ./certs/ssh_host_ed25519-cert.pub) {
+      ssh-host-pryll = {
+        ca = "kdn";
+        type = "ssh-host";
+        commonName = "pryll";
+        principals = [
+          "pryll"
+          "pryll.lan.etra.net.int.kdn.im"
+        ];
+        directory = "hosts-den/pryll/certs";
+        certFile = "ssh_host_ed25519-cert.pub";
+        keyFile = "ssh_host_ed25519.key";
+        keySource = "managed";
+      };
+    };
 
     # Let the initrd emergency shell accept root (same hash). A failed LUKS prompt then drops
     # to a usable shell instead of locking the machine out entirely.
