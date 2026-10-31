@@ -53,15 +53,20 @@ in
     disks-persist
     # host certificate
     ssh-ca
+    # account profiles from data/users.data.nix
+    user-profiles
   ];
 
   den.aspects.pryll.nixos = {
     imports = [
       inputs.home-manager.nixosModules.home-manager
-      # The owner's password hashes as a data module (data/nixos/passwords.nix). Imported by
-      # path behind pathExists, so an adopter without the file still evaluates. It sets
-      # kdn.users.<name>.hashedPasswordFile and kdn.profile-baseline.rootHashedPasswordFile.
-    ] ++ lib.optional (builtins.pathExists ../../data/nixos/passwords.nix) ../../data/nixos/passwords.nix;
+    ]
+    # Account profiles (identity, groups, keys, password) from one structured data file.
+    ++ lib.optional (builtins.pathExists ../../data/users.data.nix) ../../data/users.data.nix;
+
+    # Which profiles this host takes from data/users.data.nix. The whole row (uid, groups, keys,
+    # password file) arrives from the data file; the host no longer repeats it.
+    kdn.userProfiles = [ "bn" "root" ];
 
     kdn.hostName = "pryll";
 
@@ -80,15 +85,6 @@ in
     # not wheel and no hash is in the repo). Allow `passwd`; autologin makes it a formality.
     users.mutableUsers = lib.mkForce true;
 
-    # The one account: the mother.
-    kdn.users.bn = {
-      uid = 27748;
-      fullName = "Beata";
-      extraGroups = [
-        "audio" "dialout" "lp" "lpadmin" "mlocate" "networkmanager"
-        "pipewire" "plugdev" "power" "scanner" "tty" "video"
-      ];
-    };
 
     # KDE Plasma 6, SDDM autologin into Plasma as bn.
     services.displayManager.sddm.settings.Autologin = {

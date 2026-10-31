@@ -234,6 +234,7 @@ let
     toolset-tracing = ./aspects/toolset.nix;
     toolset-unix = ./aspects/toolset.nix;
     user = ./aspects/user.nix;
+    user-profiles = ./aspects/user-profiles.nix;
     virt-containers = ./aspects/virt-containers.nix;
     virt-containers-dagger = ./aspects/virt-containers-dagger.nix;
     virt-containers-distrobox = ./aspects/virt-containers-distrobox.nix;
