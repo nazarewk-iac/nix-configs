@@ -81,10 +81,9 @@ in
 
     security.sudo.wheelNeedsPassword = false;
 
-    # profile-baseline sets users.mutableUsers = false, tripping the "locked out" assert (bn is
-    # not wheel and no hash is in the repo). Allow `passwd`; autologin makes it a formality.
-    users.mutableUsers = lib.mkForce true;
-
+    # profile-baseline sets users.mutableUsers = false, and the root profile (selected below) hands
+    # its hash to profile-baseline's `users.users.root.hashedPasswordFile`, so the nixpkgs "locked
+    # out" assert is satisfied and mutableUsers stays false.
 
     # KDE Plasma 6, SDDM autologin into Plasma as bn.
     services.displayManager.sddm.settings.Autologin = {

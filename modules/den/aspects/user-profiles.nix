@@ -18,13 +18,15 @@
 # is the consumer: it declares the option, and a host imports the data file into it. An adopter
 # deletes the data file and sets no `kdn.userProfileData`; the aspect then emits nothing.
 #
-# ## Password: a written file, never an inline option
+# ## Password: a value is normal, a file is the override, and the two are exclusive
 #
-# `kdn.users.<name>.hashedPasswordFile` types as `nullOr str`. A profile may carry either:
-#   * `passwordHashFile` — a runtime path (a sops secret); it wins; or
-#   * `passwordHash`     — a hash value, which this aspect writes to a store file and passes as a
-#     **string** path.
-# This keeps the hash value in the data file and keeps a path string in `kdn.users`.
+# `kdn.users.<name>.hashedPasswordFile` types as `nullOr str`. A profile carries exactly one of:
+#   * `passwordHash`     — a hash **value** (the normal form). This aspect writes it to a store file
+#     with `pkgs.writeText` and passes that **string** path on, so the hash lives in the data file
+#     and a path lives in `kdn.users`; or
+#   * `passwordHashFile` — a runtime path (a sops secret); an optional override that wins when set.
+#
+# The two are mutually exclusive, and the aspect asserts that a profile never sets both.
 #
 # The three rules this tree holds for every aspect apply: no entity argument, no aspect-level
 # `enable` (the switch is including the aspect; `enable` below is a per-profile list, an option of
@@ -71,10 +73,28 @@ let
         passwordHash = lib.mkOption {
           type = lib.types.nullOr lib.types.str;
           default = null;
+          example = "$y$j9T$yl3J5zGJ5Yq8c6fXMGxNk.$XE3X8aWpD3FeakMBD/fUmCExXMuy7B6tm7ZECmuxpF4";
+          description = ''
+            The password hash VALUE — the normal form. A `crypt(3)` string, e.g. from
+            `mkpasswd -m yescrypt`. This is the value a data file carries.
+
+            This aspect writes it to a store file with `pkgs.writeText` and passes that path on as
+            `kdn.users.<name>.hashedPasswordFile`, so a hash stays a value in the data and a path in
+            `kdn.users`. Mutually exclusive with `passwordHashFile`: set one, never both.
+          '';
         };
         passwordHashFile = lib.mkOption {
           type = lib.types.nullOr lib.types.str;
           default = null;
+          example = "/run/secrets/password-hash";
+          description = ''
+            An optional OVERRIDE: a runtime path the machine reads at activation for the hash, e.g. a
+            sops secret. It wins over `passwordHash` when set.
+
+            Typed `str` and not `path`, so no evaluation copies or reads the file — the value is a
+            runtime location, not a store path. Mutually exclusive with `passwordHash`: set one,
+            never both.
+          '';
         };
         authorizedKeys = lib.mkOption {
           type = lib.types.listOf lib.types.str;
@@ -95,8 +115,19 @@ let
       };
     };
 
-  # The `kdn.users` row for one profile. `passwordHash` becomes a written file path; a
-  # `passwordHashFile` wins as-is.
+  # Resolve one profile's password to the `kdn.users.<name>.hashedPasswordFile` value. A
+  # `passwordHashFile` override passes through as-is; a `passwordHash` value is written to a store
+  # file and passed as a string path; neither is set yields `null`. The two are mutually exclusive
+  # (the aspect asserts it), so the `if` order never has to break a tie between two set values.
+  hashToFile = pkgs: name: p:
+    if p.passwordHashFile != null then
+      p.passwordHashFile
+    else if p.passwordHash != null then
+      "${pkgs.writeText "password-hash-${name}" (p.passwordHash + "\n")}"
+    else
+      null;
+
+  # The `kdn.users` row for one profile.
   toUserRow =
     pkgs: name: p:
     {
@@ -111,18 +142,18 @@ let
       authorizedKeysFile = p.authorizedKeysFile;
       u2fKeysFile = p.u2fKeysFile;
       gpgPublicKeysFile = p.gpgPublicKeysFile;
-      hashedPasswordFile =
-        if p.passwordHashFile != null then
-          p.passwordHashFile
-        else if p.passwordHash != null then
-          "${pkgs.writeText "password-hash-${name}" (p.passwordHash + "\n")}"
-        else
-          null;
+      hashedPasswordFile = hashToFile pkgs name p;
     };
 in
 {
   kdn.user-profiles.nixos =
     { config, options, lib, pkgs, ... }:
+    let
+      # The selected profile names that the data file actually holds. A name a host selects but the
+      # data does not carry is silently dropped here — filter before `genAttrs`, so
+      # `config.kdn.userProfileData.${name}` never hits a missing attribute.
+      present = lib.filter (name: config.kdn.userProfileData ? ${name}) config.kdn.userProfiles;
+    in
     {
       options.kdn.userProfileData = lib.mkOption {
         type = lib.types.attrsOf (lib.types.submodule profileType);
@@ -140,29 +171,37 @@ in
         '';
       };
 
-      # Every selected profile becomes a `kdn.users.<name>` row, except `root`, which is not a
-      # `kdn.users` row: a non-root profile set there would create a normal account named `root`.
-      # `root` feeds `kdn.profile-baseline.rootHashedPasswordFile` when that option exists.
-      config.kdn.users = lib.genAttrs (lib.remove "root" config.kdn.userProfiles) (
+      # Every selected, present profile becomes a `kdn.users.<name>` row, except `root`: a row set
+      # there would create a normal account named `root`. `root` instead feeds
+      # `kdn.profile-baseline.rootHashedPasswordFile` when that option exists.
+      config.kdn.users = lib.genAttrs (lib.remove "root" present) (
         name: toUserRow pkgs name config.kdn.userProfileData.${name}
       );
 
       config.kdn.profile-baseline.rootHashedPasswordFile = lib.mkIf
         (
-          builtins.elem "root" config.kdn.userProfiles
-          && (config.kdn.userProfileData ? root)
+          builtins.elem "root" present
           && (options.kdn.profile-baseline ? rootHashedPasswordFile)
         )
-        (
-          let
-            r = config.kdn.userProfileData.root;
-          in
-          if r.passwordHashFile != null then
-            r.passwordHashFile
-          else if r.passwordHash != null then
-            "${pkgs.writeText "password-hash-root" (r.passwordHash + "\n")}"
-          else
-            null
-        );
+        (hashToFile pkgs "root" config.kdn.userProfileData.root);
+
+      # `passwordHash` (a value) and `passwordHashFile` (a path override) are mutually exclusive.
+      # Assert it over every profile in the data, not just the selected ones, so a dormant row is
+      # wrong the same way a live one is.
+      config.assertions = [
+        {
+          assertion = lib.all (
+            name:
+            let
+              p = config.kdn.userProfileData.${name};
+            in
+            !(p.passwordHash != null && p.passwordHashFile != null)
+          ) (builtins.attrNames config.kdn.userProfileData);
+          message = ''
+            A `kdn.userProfileData.<name>` profile may set either `passwordHash` (the hash value) or
+            `passwordHashFile` (a runtime path override), never both.
+          '';
+        }
+      ];
     };
 }
