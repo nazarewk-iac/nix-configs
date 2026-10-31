@@ -238,25 +238,37 @@
         inputs.nix-darwin.overlays.default
         inputs.devenv.overlays.default
         inputs.oh-my-pi.overlays.default # provides pkgs.omp
-        # Pick the newer of nixpkgs and the upstream pi.nix flake. A patched copy in this
-        # repo (packages/pi-coding-agent) always wins, because a local patch is more
-        # specific than either upstream.
+        # Choose pi-coding-agent across three sources: a local copy in this repo
+        # (packages/pi-coding-agent), the upstream pi.nix flake, and nixpkgs.
+        #
+        # The local copy wins only if it is at least as new as the newest upstream, or if
+        # it carries patches (a `packages/pi-coding-agent/PATCHED` file). Otherwise the
+        # newest upstream wins, so a stale local copy does not shadow a newer release.
         (
           final: prev:
           let
             sys = final.stdenv.hostPlatform.system;
+            versionOf = p: p.version or (p.meta.version or "0");
+
+            repoDir = ./packages/pi-coding-agent;
+            repo = if builtins.pathExists repoDir then prev.callPackage repoDir { } else null;
+            repoPatched = builtins.pathExists (repoDir + "/PATCHED");
+            repoVer = if repo != null then versionOf repo else "0";
+
             upstream = (inputs.pi.packages.${sys} or { }).coding-agent or prev.pi-coding-agent;
-            upstreamVer = upstream.version or (upstream.meta.version or "0");
-            nixpkgsVer = prev.pi-coding-agent.version or (prev.pi-coding-agent.meta.version or "0");
+            upstreamVer = versionOf upstream;
+            nixpkgsVer = versionOf prev.pi-coding-agent;
+
+            upstreamIsNewer = final.lib.versionAtLeast upstreamVer nixpkgsVer;
+            best = if upstreamIsNewer then upstream else prev.pi-coding-agent;
+            bestVer = if upstreamIsNewer then upstreamVer else nixpkgsVer;
           in
           {
             pi-coding-agent =
-              if builtins.pathExists (./. + "/packages/pi-coding-agent") then
-                prev.callPackage ./packages/pi-coding-agent { }
-              else if final.lib.versionAtLeast nixpkgsVer upstreamVer then
-                prev.pi-coding-agent
+              if repo != null && (repoPatched || final.lib.versionAtLeast repoVer bestVer) then
+                repo
               else
-                upstream;
+                best;
           }
         )
         (final: prev: {
