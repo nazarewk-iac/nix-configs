@@ -25,6 +25,13 @@ pkgs.symlinkJoin {
         kdn-nix-list-roots
       ];
     };
+    kdn-nix-reap-builders = mkScript "kdn-nix-reap-builders" {
+      runtimeInputs = with pkgs; [
+        procps
+        coreutils
+        gnugrep
+      ];
+    };
     kdn-nix-list-roots = mkScript "kdn-nix-list-roots" {
       runtimeInputs = with pkgs; [
         nix
