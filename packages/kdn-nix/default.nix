@@ -32,6 +32,12 @@ pkgs.symlinkJoin {
         gnugrep
       ];
     };
+    kdn-tools = mkScript "kdn-tools" {
+      runtimeInputs = with pkgs; [
+        coreutils
+        gnugrep
+      ];
+    };
     kdn-nix-list-roots = mkScript "kdn-nix-list-roots" {
       runtimeInputs = with pkgs; [
         nix

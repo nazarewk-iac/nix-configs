@@ -33,7 +33,13 @@ in
   config = {
     # argc drives the subcommand dispatch in the zellij-llm/kdn-slug bash packages; keep it
     # on PATH so the standalone scripts run and get tested in the shell.
-    packages = [ pkgs.argc ];
+    packages = [
+      pkgs.argc
+      # This repo's own Nix maintenance tools: collect-garbage (bounded batches),
+      # reap-builders (plan/apply for leaked daemon workers), list-roots, which, and
+      # `kdn-tools` which lists this tooling. Same set the kdn-nix package installs.
+      (pkgs.callPackage ./packages/kdn-nix { })
+    ];
 
     # This repository authors the agent instruction files, so it asks for every one of
     # them. Each `installAgentRules` option defaults to false, so an adopter states its own
