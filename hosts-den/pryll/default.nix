@@ -70,6 +70,26 @@ in
 
     kdn.hostName = "pryll";
 
+    # Accepted usability defaults (run book owner item 4): Polish locale, `pl` keyboard, Warsaw
+    # time. Set through the `locale` aspect options (the aspect is in the include list), so all
+    # three classes (NixOS `i18n.*`/`time.timeZone`, the Home Manager session variables, and
+    # user-dirs) follow one declaration. `pl_PL.UTF-8` is a 24-hour locale, so the Plasma clock
+    # reads 24h once it follows the system locale; there is no separate clock option on this aspect.
+    kdn.locale.primary = "pl_PL.UTF-8";
+    # A plain assignment to a `listOf` option REPLACES the aspect `default` (it only concatenates
+    # with another non-default definition), so restate the base locales here and add the Polish one.
+    # `supportedLocales` must contain `primary` (`pl_PL.UTF-8/UTF-8`), and `C.UTF-8` /
+    # `en_US.UTF-8` are kept so tools that expect a fallback locale do not break.
+    kdn.locale.extra = [
+      "C.UTF-8/UTF-8"
+      "en_US.UTF-8/UTF-8"
+      "en_GB.UTF-8/UTF-8"
+      "pl_PL.UTF-8/UTF-8"
+    ];
+    kdn.locale.time = "pl_PL.UTF-8";
+    kdn.locale.xkbLayout = "pl";
+    kdn.locale.timezone = "Europe/Warsaw";
+
     # Let the initrd emergency shell accept root (same hash). A failed LUKS prompt then drops
     # to a usable shell instead of locking the machine out entirely.
     kdn.profile-baseline.initrd.emergencyAccess = "$y$j9T$AhbnpYZawNWNGfuq1h9/p0$jmitwtZwTr72nBgvg2TEmrGmhRR30sQ.hQ7NZk1NqJD";
