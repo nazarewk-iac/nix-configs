@@ -252,7 +252,18 @@
 
             repoDir = ./packages/pi-coding-agent;
             repo = if builtins.pathExists repoDir then prev.callPackage repoDir { } else null;
-            repoPatched = builtins.pathExists (repoDir + "/PATCHED");
+            # A derivation does not expose `.patches`, so a local copy signals patches the
+            # idiomatic way: `passthru.patches` (non-empty) or `passthru.patched = true`.
+            # A `packages/pi-coding-agent/PATCHED` file also works as a last resort.
+            repoPatches =
+              if repo == null then [ ] else (repo.passthru.patches or (repo.patches or [ ]));
+            repoPatched =
+              repo != null
+              && (
+                (repo.passthru.patched or false)
+                || repoPatches != [ ]
+                || builtins.pathExists (repoDir + "/PATCHED")
+              );
             repoVer = if repo != null then versionOf repo else "0";
 
             upstream = (inputs.pi.packages.${sys} or { }).coding-agent or prev.pi-coding-agent;
