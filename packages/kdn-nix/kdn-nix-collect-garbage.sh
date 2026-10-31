@@ -91,16 +91,61 @@ handle_leftover_result() {
   ((deleted += 1))
 }
 
+# gc_batch runs ONE bounded deletion step. Returns 1 when the store has no dead
+# paths left, 0 after it deleted something. Few dead paths use a byte-bounded
+# `nix-store --gc`; many dead paths delete at most MAX_PATHS of them directly.
+# Lix 2.95 has no `--max-links`, so the count bound uses a `--delete` slice.
+gc_batch() {
+  local -a dead
+  local before after t0 t1 freed
+  mapfile -t dead < <(nix-store --gc --print-dead)
+  if [[ ${#dead[@]} -eq 0 ]]; then
+    return 1
+  fi
+  before=$(df --output=avail -B1 /nix/store | tail -n1)
+  t0=$(date +%s)
+  if [[ ${#dead[@]} -le ${MAX_PATHS} ]]; then
+    nix-store --gc --max-freed "${MAX_FREED}"
+  else
+    nix-store --delete "${dead[@]:0:${MAX_PATHS}}" || true
+  fi
+  t1=$(date +%s)
+  after=$(df --output=avail -B1 /nix/store | tail -n1)
+  freed=$(((after - before) / 1048576))
+  log info "[GC     ] batch: dead=${#dead[@]} freed=${freed}MiB elapsed=$((t1 - t0))s"
+  return 0
+}
+
+# gc_until_done repeats bounded batches until the store is clean or a batch frees
+# nothing (a safety stop against an infinite loop).
+gc_until_done() {
+  local before after
+  while true; do
+    before=$(df --output=avail -B1 /nix/store | tail -n1)
+    if ! gc_batch; then
+      log info "[GC     ] no dead paths left"
+      break
+    fi
+    after=$(df --output=avail -B1 /nix/store | tail -n1)
+    if [[ "${after}" == "${before}" ]]; then
+      log warn "[GC     ] batch freed nothing, stopping"
+      break
+    fi
+  done
+}
+
 clean_system() {
-  nix-collect-garbage -d
+  nix-env -p /nix/var/nix/profiles/system --delete-generations old
+  gc_until_done
 }
 
 clean_users() {
   local users
   mapfile -t users < <(list_users)
   for user in "${users[@]}"; do
-    sudo -u "$user" -- nix-collect-garbage -d
+    sudo -u "$user" -- nix-collect-garbage -d --max-freed "${MAX_FREED}"
   done
+  gc_until_done
 }
 
 # clean_orphaned_users removes the profiles and the gcroots of each user that
@@ -135,20 +180,86 @@ clean_leftovers() {
 
   log info "[SUMMARY] kept ${kept} links, deleted ${deleted} links"
   if test "${deleted}" -gt 0; then
-    nix-store --gc
-    nix-store --repair --verify --check-contents
+    gc_until_done
+    if [[ "${VERIFY}" == "1" ]]; then
+      nix-store --repair --verify --check-contents
+    fi
   fi
 }
 
+usage() {
+  cat >&2 <<'EOF'
+usage: kdn-nix-collect-garbage [OPTIONS] [ACTION...]
+
+Options:
+  -c, --batch-count N   max dead paths deleted per batch (default 2000)
+  -s, --batch-size SIZE max bytes freed per batch, e.g. 2G, 500M (default 2G)
+  -h, --help            show this help
+
+Actions (default: all, in this order):
+  leftovers orphaned_users users system
+
+Each store collection runs in bounded batches: a batch stops after deleting
+MAX_PATHS dead paths or freeing MAX_FREED bytes, whichever comes first. The loop
+repeats until nothing is left, so the GC lock is held one batch at a time.
+EOF
+}
+
 main() {
-  actions=("${@}")
+  local -a actions=()
+  MAX_PATHS="${MAX_PATHS:-2000}"
+  MAX_FREED="${MAX_FREED:-2G}"
+  VERIFY="${VERIFY:-0}"
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+    -c | --batch-count)
+      MAX_PATHS="$2"
+      shift 2
+      ;;
+    --batch-count=*)
+      MAX_PATHS="${1#*=}"
+      shift
+      ;;
+    -s | --batch-size)
+      MAX_FREED="$2"
+      shift 2
+      ;;
+    --batch-size=*)
+      MAX_FREED="${1#*=}"
+      shift
+      ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    --verify)
+      VERIFY=1
+      shift
+      ;;
+    leftovers | orphaned_users | users | system)
+      actions+=("$1")
+      shift
+      ;;
+    *)
+      echo "unknown argument: $1" >&2
+      usage
+      exit 2
+      ;;
+    esac
+  done
+  export MAX_PATHS MAX_FREED VERIFY
+
   test "${#actions[@]}" -gt 0 || actions=(leftovers orphaned_users users system)
+  log info "[CONF   ] batch-count=${MAX_PATHS} batch-size=${MAX_FREED}"
 
   for action in "${actions[@]}"; do
     clean_"${action}"
   done
 
-  nix-store --repair --verify --check-contents
+  # The full-store verify is slow and holds the store for minutes, so it is opt-in.
+  if [[ "${VERIFY}" == "1" ]]; then
+    nix-store --repair --verify --check-contents
+  fi
 }
 
 main "$@"
