@@ -1,9 +1,9 @@
 ---
 type: Design
-description: The run book for the pryll migration after the den carryover landed. Phases 2-7, the two install routes (in-place update vs fresh den reinstall), the TPM2-only unlock steps, and the owner hand-offs.
+description: The run book for the pryll migration after the den carryover landed. Phases 2-7, the two install routes (in-place update vs fresh den reinstall), the unlock investigation (the TPM is 1.2), and the owner hand-offs.
 status: open
 authored_by: agent
-timestamp: 2026-10-30T22:40:00+01:00
+timestamp: 2026-10-31T17:41:00+01:00
 ---
 
 # pryll run book: phases 2 to 7
@@ -14,10 +14,11 @@ Two owner constraints shape everything below, and they simplify the plan:
 
 - **The machine may be reformatted. Nothing on it must be kept.** So a lost USB, a failed
   migration, or a bad update all cost a reinstall, never data. No header backup is needed.
-- **Unlock is TPM2-only, not YubiKey.** Today the disk has one `systemd-fido2` token. The
-  target is a TPM2 token, with the FIDO2 token removed. Enrolment is a one-time hand-off
-  (it needs one unlocked boot, which today means one YubiKey tap); after that a reboot is
-  unattended.
+- **Unlock was set to TPM2-only, but the TPM is 1.2.** The owner asked to drop the YubiKey and
+  unlock from a TPM2 token. Measured on the live machine (phase 2b): the firmware exposes a TPM
+  **1.2**, which `systemd-cryptenroll` cannot enrol. A TPM2-only boot is therefore **not reachable
+  on the current hardware**. Unlock stays FIDO2 (one YubiKey tap per boot) or the `pass` keyfile
+  until a TPM 2.0 is fitted or enabled in BIOS. See phase 2b for the three options.
 
 ## Which install route
 
@@ -27,11 +28,11 @@ the end state in one move.
 
 | Route | What | When to pick it |
 |---|---|---|
-| **A. In-place update** | update the old universal config, add TPM, then port to den | you want to keep the current install and roll back generation by generation |
+| **A. In-place update** | update the old universal config, then port to den (unlock handled in 2b) | you want to keep the current install and roll back generation by generation |
 | **B. Fresh den reinstall** (recommended) | boot the repo ISO over the NanoKVM and install `hosts-den/pryll` directly | the default: no data to keep, den is the deliverable, fastest to the goal |
 
-Route B is the recommended path. Phase 2a is skipped; go to 2b (enrol TPM in the live ISO
-or the fresh system) and phase 4.
+Route B is the recommended path. Phase 2a is skipped; go to 2b (choose the unlock path — a TPM2
+enrolment is not possible on this firmware) and phase 4.
 
 ## Phase 2a (route A only): update the current universal config
 
@@ -84,12 +85,13 @@ Do not wipe the fido2 token until option 1 or 2 is verified.
 `modules/universal` reference. Its `system.build.toplevel.drvPath` instantiates. Aspects:
 
 ```
-hw-basic hw-cpu-intel hw-gpu-intel hw-nanokvm hw-yubikey
+hw-basic hw-cpu-intel hw-gpu-intel hw-nanokvm
 locale nix-config nix-remote-builder secrets
 user hm-bootstrap
 profile-desktop desktop-kde stylix
 disks disks-persist
-ssh-ca service-rustdesk
+ssh-ca
+user-profiles
 ```
 
 What it reproduces, and the fixes made while porting:
@@ -98,10 +100,10 @@ What it reproduces, and the fixes made while porting:
 |---|---|
 | `kdn.profile.machine.desktop` | `profile-desktop` |
 | `kdn.desktop.kde` | `desktop-kde` |
-| `kdn.profile.user.bn` + sddm autologin | `user` + `kdn.users.bn` + `sddm.settings.Autologin` |
+| `kdn.profile.user.bn` + sddm autologin | `user` + `user-profiles` (the row arrives from `data/users.data.nix`; the host sets `kdn.userProfiles = [ "bn" "root" ]`) + `sddm.settings.Autologin` |
 | `kdn.disks` LUKS with detached header | `disks` + `disks-persist` (`fs-luks-zfs` is mutually exclusive with `disks`) |
 | `kdn.hw.nanokvm`, cpu/gpu intel | same aspects |
-| `services.teamviewer.enable` | `services.teamviewer.enable` (RustDesk alternative below) |
+| `services.teamviewer.enable` | a RustDesk **client** (package + `systemd.services.rustdesk`); TeamViewer dropped for its licence |
 | `home-manager-bn` restart hack on wallpaper | **removed**: `home-manager.users.bn.stylix.targets.kde.enable = false` |
 
 Two den-tree pitfalls fixed inline (both are in the file's comments):
@@ -109,25 +111,29 @@ Two den-tree pitfalls fixed inline (both are in the file's comments):
 1. **Do not include `fs-luks-zfs` beside `disks`.** The tree asserts they are mutually
    exclusive. `disks` alone generates the LUKS+ZFS layout and preservation, so the
    `/var/log/journal` mount is created and no inline fileSystem was needed.
-2. **`users.mutableUsers`.** `profile-baseline` sets it `false`, which trips the
-   "locked out" assert (bn is not in wheel and no hash is in the repo). The host forces it
-   `true`; the owner sets a password with `passwd` at install. Autologin makes it optional.
+2. **`users.mutableUsers` stays `false`.** `profile-baseline` sets it `false`, which used to trip
+   the "locked out" assert (bn is not in wheel and no hash was in the repo). The account move
+   resolved it: `user-profiles` + `data/users.data.nix` give the root profile a
+   `hashedPasswordFile`, which satisfies the assert, so the host no longer forces `mutableUsers`
+   `true`. Autologin still means `bn` never types a password.
 
-`ssh-ca` is included: add `data/.../certs.ssh-host-pryll` (principals `pryll`, the two
-FQDNs) exactly like `hosts/brys/ssh-ca.nix` to give pryll a CA host certificate (the old
-tree has none).
+`ssh-ca` is included but **inert today**: the host imports no CA data and declares no `ssh-host`
+leaf, so the aspect is a no-op. To give pryll a CA host certificate (the old tree has none), sign
+`certs/ssh_host_ed25519-cert.pub` with the fleet CA private key and declare a leaf like the one in
+`hosts/brys/ssh-ca.nix` (principals `pryll` plus each FQDN). Signing needs the CA key, so it is a
+hand-off, not repo-only work.
 
-Remote support: the old host used TeamViewer, so the den host keeps
-`services.teamviewer.enable = true`. RustDesk is the alternative the task prefers
-(self-hostable). The `service-rustdesk` aspect is the **server** suite, not a client; a
-RustDesk *client* would need a separate unattended-access setup. Decision: TeamViewer for
-parity now, revisit if the licence is a problem.
+Remote support: the den host installs a **RustDesk client**, not TeamViewer. The old host used
+TeamViewer, but its commercial-use licence is the reason to move. The `service-rustdesk` aspect is
+the **server** suite, not a client, so the client is wired inline: the `rustdesk` package (built
+with `allowUnfree`) plus a `systemd.services.rustdesk` unit running `rustdesk --service`.
+Unattended access (a fixed password and the relay) is a one-time setup done over the KVM.
 
 ## Phase 3: desktop shape
 
 Already in the den host: KDE Plasma 6, SDDM autologin to `plasma.desktop` as `bn`, Polish
 locale (via the `locale` aspect defaults), Firefox/office/PDF/image viewer/VLC (from
-`profile-desktop`), TeamViewer. No LLM serving, no games, no dev toolset, no second desktop.
+`profile-desktop`), and the RustDesk client. No LLM serving, no games, no dev toolset, no second desktop.
 
 Confirm the wallpaper fix after activation: `systemctl --user status home-manager-bn` shows
 zero restarts and `active (exited)`.
@@ -146,9 +152,10 @@ zero restarts and `active (exited)`.
 ## Phase 5: autonomy
 
 `system.autoUpgrade` with `allowReboot = false` (do not reboot the user under her) and a
-`nix.gc` window. A failed update leaves the previous generation bootable. With TPM2-only
-unlock, an unattended reboot works; verify over the KVM that a boot after an update lands on
-the desktop with no intervention, and that remote support reconnects.
+`nix.gc` window. A failed update leaves the previous generation bootable. An unattended reboot
+works **only** with the keyfile-on-USB unlock (phase 2b option 2); the YubiKey tap needs a hand at
+the machine, so a reboot after an update is not unattended while FIDO2 is the unlock path. Verify
+over the KVM that a boot after an update lands on the desktop, and that remote support reconnects.
 
 ## Phase 6: backup
 
@@ -165,10 +172,11 @@ layout in `llm:pryll:harness`; per-turn data is in each run's session JSONL.
 
 ## Owner-only hand-offs
 
-1. **Unlock path** (phase 2b): the TPM is 1.2, so choose — enable a TPM 2.0 in BIOS (then I
-   enrol it), or accept a keyfile-on-USB for unattended boot, or keep the YubiKey tap.
-2. **Decide TeamViewer vs RustDesk**, and provide the TeamViewer credential through the
-   existing secret mechanism if TeamViewer stays.
+1. **Unlock path** (phase 2b): the TPM is 1.2, so TPM2-only is not possible now. Choose — enable a
+   TPM 2.0 in BIOS or fit a 2.0 module (then I enrol it), accept a keyfile-on-USB for unattended
+   boot, or keep the YubiKey tap.
+2. **RustDesk unattended access** (decided: RustDesk client, not TeamViewer). Set the fixed password
+   and relay once over the KVM, and put the credential through the existing secret mechanism.
 3. **brys disk pruning**: `/var/lib/kdn/llms/models` is 98% full (41 G free) and
    `qwen3-next-80b` (~40 G) cannot fit. Choose models to drop.
 4. The usability defaults: Polish / `pl` / Europe-Warsaw / light / autologin / Firefox /
