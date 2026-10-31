@@ -518,18 +518,25 @@
       matrixSets =
         (lib.optionalAttrs (frontierIds != [ ]) { main = setExpr frontierIds; })
         // coResidentSet
-        // lib.mapAttrs' (
-          rname: _:
-          let
-            # A model that names a co-residence tier is governed by `with_co`, so it leaves
-            # its router's one-at-a-time set. A model in two sets would be ambiguous.
-            gruntIds = lib.subtractLists coTierIds (routerIds rname);
-          in
-          lib.optionalAttrs (gruntIds != [ ]) {
-            name = "with_${rname}";
-            value = setExpr gruntIds + " & " + setExpr frontierIds;
-          }
-        ) enabledRouters;
+        // builtins.listToAttrs (
+          # `mapAttrs'` requires every result to carry a `name`, but a router whose models are
+          # ALL covered by a co-residence tier yields `{}`. Filter those out so the set is simply
+          # omitted. This is the case when every GPU model of a router sits in one tier.
+          lib.filter (x: x ? name) (
+            lib.mapAttrsToList (
+              rname: _:
+              let
+                # A model that names a co-residence tier is governed by `with_co`, so it leaves
+                # its router's one-at-a-time set. A model in two sets would be ambiguous.
+                gruntIds = lib.subtractLists coTierIds (routerIds rname);
+              in
+              lib.optionalAttrs (gruntIds != [ ]) {
+                name = "with_${rname}";
+                value = setExpr gruntIds + " & " + setExpr frontierIds;
+              }
+            ) enabledRouters
+          )
+        );
 
       # The llama-swap `config.yaml` settings, rendered from the existing model data. The nixpkgs
       # `services.llama-swap` module writes it through `pkgs.formats.yaml`.

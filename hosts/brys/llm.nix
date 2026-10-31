@@ -496,19 +496,28 @@ in
         #   tier 2: 2.00 / 2.09 / 2.00 / 2.89 GiB -> 2.89 GiB worst case
         # Together with KV and compute buffers this stays under the 7.98 GiB the card reports.
         # Bigger GPU models stay out on purpose: one of them wants most of the card.
-        coResidentTiers = [
+        # Serialize the GPU. Put EVERY Vulkan0-backed model (grunt + surveyed) into a single
+        # co-residence tier, so at most one GPU model is resident at a time beside the CPU
+        # frontier. The old two-tier `&` layout let one grunt *and* one surveyed GPU model be
+        # resident together, which wedged the 8 GiB W6600 (`vk::Queue::submit: ErrorDeviceLost`,
+        # amdgpu ring reset). CPU models are excluded here, so they still co-reside with the
+        # frontier in RAM. Frontier ids are excluded because they live in `main` already.
+        coResidentTiers =
+          let
+            allModels =
+              (lib.optionalAttrs withSmall small.kdn.llm.local.models)
+              // (lib.optionalAttrs withGrunt grunt.kdn.llm.local.models)
+              // (lib.optionalAttrs withSurveyed surveyed.kdn.llm.local.models)
+              // frontierModels
+              // qwenModels;
+            frontierIds = builtins.attrNames (frontierModels // qwenModels);
+            gpuIds = lib.filter (
+              id: ((allModels.${id}.perf or { }).device or "") == "Vulkan0"
+            ) (builtins.attrNames allModels);
+          in
           [
-            "qwen3.5-0.8b"
-            "qwen3.5-2b"
-            "tmax-2b"
-          ]
-          [
-            "granite-4.2-3b"
-            "ministral-3-3b-instruct"
-            "ministral-3-3b-reasoning"
-            "gemma-4-e2b"
-          ]
-        ];
+            (lib.subtractLists frontierIds gpuIds)
+          ];
         persistentModels = [
           "deepseek-v4-flash"
           "qwen3.8-flash-next"
