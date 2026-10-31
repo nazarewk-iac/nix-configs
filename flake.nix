@@ -257,11 +257,25 @@
             # A `packages/pi-coding-agent/PATCHED` file also works as a last resort.
             repoPatches =
               if repo == null then [ ] else (repo.passthru.patches or (repo.patches or [ ]));
+            # Detect applied patches on the local derivation from its .drv: a patch appears
+            # there as a source input named *.patch (it is never a `patches` env var). This
+            # reads the existing .drv, so nothing is built. Guarded in case the read fails.
+            drvHasPatch =
+              d:
+              let
+                r = builtins.tryEval (
+                  builtins.match ".*[.]patch\".*" (
+                    builtins.readFile (builtins.unsafeDiscardStringContext d.drvPath)
+                  ) != null
+                );
+              in
+              r.success && r.value;
             repoPatched =
               repo != null
               && (
                 (repo.passthru.patched or false)
                 || repoPatches != [ ]
+                || drvHasPatch repo
                 || builtins.pathExists (repoDir + "/PATCHED")
               );
             repoVer = if repo != null then versionOf repo else "0";
