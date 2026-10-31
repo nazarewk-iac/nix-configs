@@ -59,6 +59,10 @@ in
     imports = [ inputs.home-manager.nixosModules.home-manager ];
 
     kdn.hostName = "pryll";
+
+    # Let the initrd emergency shell accept root (same hash). A failed LUKS prompt then drops
+    # to a usable shell instead of locking the machine out entirely.
+    kdn.profile-baseline.initrd.emergencyAccess = "$y$j9T$AhbnpYZawNWNGfuq1h9/p0$jmitwtZwTr72nBgvg2TEmrGmhRR30sQ.hQ7NZk1NqJD";
     networking.hostName = "pryll";
     networking.hostId = "25880d1d";
     system.stateVersion = "26.05";
@@ -70,6 +74,11 @@ in
     # profile-baseline sets users.mutableUsers = false, tripping the "locked out" assert (bn is
     # not wheel and no hash is in the repo). Allow `passwd`; autologin makes it a formality.
     users.mutableUsers = lib.mkForce true;
+
+    # Root login for the emergency/rescue shell. Without it a failed LUKS prompt drops to
+    # emergency mode with no way in (gen 33 failed this way once). The hash is the same
+    # yescrypt value the old universal tree ships, so the emergency password is unchanged.
+    users.users.root.hashedPassword = "$y$j9T$AhbnpYZawNWNGfuq1h9/p0$jmitwtZwTr72nBgvg2TEmrGmhRR30sQ.hQ7NZk1NqJD";
 
     # The one account: the mother.
     kdn.users.bn = {
