@@ -104,6 +104,18 @@ let
           personal, so the consumer names its own file here.
         '';
       };
+
+      options.kdn.profile-baseline.bootDebugSpecialisations = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = ''
+          Add the `emergency`, `rescue` and `boot-debug` boot specialisations.
+
+          Each one is a full copy of the system closure with debug kernel parameters and a different
+          default unit. They crowd the boot menu and triple the entry count for a machine that
+          never uses them. A host that wants them sets this `true`.
+        '';
+      };
     };
 
   packages =
@@ -373,7 +385,7 @@ in
               "rd.systemd.default_debug_tty=tty10"
             ];
           in
-          lib.mkIf config.boot.initrd.systemd.enable {
+          lib.mkIf (config.boot.initrd.systemd.enable && cfg.bootDebugSpecialisations) {
             specialisation.emergency = {
               inheritParentConfig = true;
               configuration = {
