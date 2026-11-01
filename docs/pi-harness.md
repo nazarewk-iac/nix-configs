@@ -82,8 +82,9 @@ A UUID is not memorable, so give the session a name when you start it:
 pi --name 'pryll-den-port'    # or: pi -n pryll-den-port
 ```
 
-The name is stored in the session file (`session.name`), and it shows in `--resume` and in
-`/sessions`. You can also rename a live session with `/name <name>`, or over RPC with
+The name is stored as a `session_info` entry in the session file (not on the header line), and it
+shows in `--resume` and in `/sessions`. A fork copies the history but not the name, so pass
+`--name` again when you fork. You can also rename a live session with `/name <name>`, or over RPC with
 `set_session_name`.
 
 ### Listing sessions, so you never need the hash
@@ -92,10 +93,20 @@ There is no `pi sessions` subcommand, so use the files. The name, id and working
 the first line of each session file:
 
 ```bash
-# name, id, and start time for every session in this repository, newest first
+# name, id, and start time for every session in this repository, newest first.
+# The name is a separate `session_info` entry, not a field on the header line, so read the LAST
+# one; the header is the fallback for an unnamed session.
 for f in $(ls -t ~/.pi/agent/sessions/--home-kdn-dev-github.com-nazarewk-iac-nix-configs--/*.jsonl); do
-  jq -r '[.name // "-", .id, .timestamp] | @tsv' "$f" 2>/dev/null
-done | awk -F'\t' '{printf "%-24s %s  %s\n", $1, substr($2,1,8), $3}'
+  jq -rs '([.[]|select(.type=="session_info")|.name]|last) // .[0].name // "-"
+          as $n | [$n, .[0].id, .[0].timestamp] | @tsv' "$f" 2>/dev/null
+done | awk -F'\t' '{printf "%-22s %s  %s\n", $1, substr($2,1,8), $3}'
+```
+
+Measured output on this repository:
+
+```
+pryll-den-port         01a197b5  2026-11-01T15:23:23.817Z
+-                      01a193a9  2026-10-31T20:31:47.192Z
 ```
 
 Then resume by what you read:
