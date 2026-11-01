@@ -79,6 +79,11 @@ in
   # This repository's own small extensions. They live here, not under `data/`, because they are
   # general: no repo-specific path, secret or option. A consumer outside this repository takes
   # them the same way as the vendored one.
+  # The context gate sits beside pi-orchestrator: it registers `measure`, which sizes a file or a
+  # byte count and checks it against a model alias' served context. A prompt rule cannot stop
+  # "send a 468 KB transcript to a 32k model", so this is the code that can.
+  pi-orchestrator-gate = ./pi-orchestrator;
+
   timestamps = ./timestamps;
   idle-marker = ./idle-marker;
   subagent = ./subagent;

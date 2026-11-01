@@ -63,6 +63,7 @@ let
               # `delegate` and all work goes to the subagent fleet. Replaces our ad-hoc
               # subagent extension, whose async/status/retry behaviour this one already has.
               ext.pi-orchestrator
+              ext.pi-orchestrator-gate
             ];
           };
         }
