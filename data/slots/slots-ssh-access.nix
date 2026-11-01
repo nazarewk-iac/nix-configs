@@ -34,8 +34,8 @@
 # through the `lan` and `internet` edges: a `lan` edge only wins when the machine sits on that LAN.
 #
 # Topology: drek = primary edge/WAN router (it forwards to etra); etra = secondary homelab router;
-# brys, oams, and anji sit on etra's ethernet and also reach drek (etra is preferred). anji and
-# brys reach drek over its WiFi; oams reaches it over VLAN 3547 tagged on ethernet, not WiFi.
+# brys, oams, anji, and pryll sit on etra's ethernet and also reach drek (etra is preferred). anji
+# and brys reach drek over its WiFi; oams reaches it over VLAN 3547 tagged on ethernet, not WiFi.
 # A lower `priority` is tried first. The commented relay edges need each target's address as the
 # relay host sees it; fill one in to unlock that path.
 #
@@ -199,6 +199,27 @@
           priority = 40;
         }
         # { from = "drek"; address = "<anji on drek WiFi>"; priority = 50; }
+      ];
+
+      # pryll, the mother's desktop, sits on etra's ethernet (hosts/etra: hosts.lan.pryll). It
+      # takes a DHCP lease on the `lan` net with no reservation, so the LAN edge uses the FQDN and
+      # holds no static literal. It has no `mgmt` address and no drek WiFi, so it carries only two
+      # edges: the etra LAN FQDN when this machine sits on that LAN, and the NetBird name relayed
+      # through etra (etra runs the mesh and resolves `*.priv.nb.net.int.kdn.im`).
+      pryll.hostKeyAlias = "pryll";
+      pryll.reachedFrom = [
+        {
+          from = "lan";
+          address = "pryll.lan.etra.net.int.kdn.im.";
+          priority = 10;
+        }
+        # A `from = "etra"` edge is not probed: etra relays to the final address, so the priority
+        # alone picks it. The NetBird name is what etra can resolve for pryll on the mesh.
+        {
+          from = "etra";
+          address = "pryll.priv.nb.net.int.kdn.im.";
+          priority = 43;
+        }
       ];
     };
   };
