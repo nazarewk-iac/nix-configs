@@ -52,6 +52,8 @@ let
             package =
               inputs.nix-configs.packages.${pkgs.stdenv.hostPlatform.system}.pi-coding-agent;
             models = piModelsJson;
+            # The default working style for local LLMs, appended to every session's system prompt.
+            rules = ./data/pi/AGENTS.md;
             extensions = [
               (./data/pi/extensions/timestamps.ts)
               (./data/pi/extensions/idle-marker.ts)
