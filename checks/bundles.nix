@@ -59,6 +59,11 @@ let
     "den-eval-programs"
     "den-mvp"
     "jj-experiments-pytest"
+    # Pi harness smoke checks: each starts its own tiny llama-server (tier-3). Linux only, so they
+    # are absent on darwin and the bundle filter drops them there.
+    "pi-harness-plumbing"
+    "pi-harness-prompt-stable"
+    "pi-harness-timestamps"
   ];
   # Cross-cutting: each reads a bare consumer, not one aspect.
   crossCutting = [
