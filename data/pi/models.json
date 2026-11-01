@@ -1,0 +1,182 @@
+{
+  "providers": {
+    "brys": {
+      "baseUrl": "https://brys.priv.nb.net.int.kdn.im/v1",
+      "api": "openai-completions",
+      "apiKey": "!cat /run/configs/llms/llama-server/api-keys/default",
+      "models": [
+        {
+          "id": "chat-deep-slow",
+          "contextWindow": 32768,
+          "maxTokens": 4096
+        },
+        {
+          "id": "chat-dumb-fast",
+          "contextWindow": 16384,
+          "maxTokens": 2048
+        },
+        {
+          "id": "chat-std-fast",
+          "contextWindow": 32768,
+          "maxTokens": 4096
+        },
+        {
+          "id": "chat-std-mid",
+          "contextWindow": 8192,
+          "maxTokens": 2048
+        },
+        {
+          "id": "chat-std-mid-long",
+          "contextWindow": 32768,
+          "maxTokens": 4096
+        },
+        {
+          "id": "code-deep-slow",
+          "contextWindow": 32768,
+          "maxTokens": 4096
+        },
+        {
+          "id": "code-quick-fast",
+          "contextWindow": 16384,
+          "maxTokens": 2048
+        },
+        {
+          "id": "code-std-fast",
+          "contextWindow": 32768,
+          "maxTokens": 4096
+        },
+        {
+          "id": "code-std-fast-alt",
+          "contextWindow": 32768,
+          "maxTokens": 4096
+        },
+        {
+          "id": "deepseek-v4-flash",
+          "contextWindow": 131072,
+          "maxTokens": 16384
+        },
+        {
+          "id": "orchestrate-deep-slow",
+          "contextWindow": 393216,
+          "maxTokens": 32768
+        },
+        {
+          "id": "orchestrate-deep-slow-alt",
+          "contextWindow": 131072,
+          "maxTokens": 16384
+        },
+        {
+          "id": "qwen",
+          "contextWindow": 393216,
+          "maxTokens": 32768
+        },
+        {
+          "id": "qwen3.5-35b-a3b",
+          "contextWindow": 8192,
+          "maxTokens": 2048
+        },
+        {
+          "id": "qwen3.8-27b",
+          "contextWindow": 32768,
+          "maxTokens": 4096
+        },
+        {
+          "id": "qwen3.8-flash-next",
+          "contextWindow": 393216,
+          "maxTokens": 32768
+        },
+        {
+          "id": "qwen3.8-flash-next-128k",
+          "model": "qwen3.8-flash-next",
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "qwen3.8-flash-next-256k",
+          "model": "qwen3.8-flash-next",
+          "contextWindow": 262144,
+          "maxTokens": 32768
+        },
+        {
+          "id": "qwen3.8-flash-next-long",
+          "model": "qwen3.8-flash-next",
+          "contextWindow": 524288,
+          "maxTokens": 32768
+        },
+        {
+          "id": "qwen3.8-flash-next-longest",
+          "model": "qwen3.8-flash-next",
+          "contextWindow": 1048576,
+          "maxTokens": 32768
+        },
+        {
+          "id": "reason-deep-slow",
+          "contextWindow": 32768,
+          "maxTokens": 4096
+        },
+        {
+          "id": "reason-std-fast",
+          "contextWindow": 32768,
+          "maxTokens": 4096
+        },
+        {
+          "id": "tiny-dumb-fast",
+          "contextWindow": 16384,
+          "maxTokens": 2048
+        },
+        {
+          "id": "tiny-dumb-fast-alt",
+          "contextWindow": 16384,
+          "maxTokens": 2048
+        },
+        {
+          "id": "tiny-quick-fast",
+          "contextWindow": 16384,
+          "maxTokens": 2048
+        },
+        {
+          "id": "tools-deep-slow",
+          "contextWindow": 32768,
+          "maxTokens": 4096
+        },
+        {
+          "id": "tools-dumb-fast",
+          "contextWindow": 16384,
+          "maxTokens": 2048
+        },
+        {
+          "id": "tools-std-fast",
+          "contextWindow": 32768,
+          "maxTokens": 4096
+        },
+        {
+          "id": "vision-deep-slow",
+          "contextWindow": 32768,
+          "maxTokens": 4096,
+          "input": [
+            "text",
+            "image"
+          ]
+        },
+        {
+          "id": "vision-quick-fast",
+          "contextWindow": 32768,
+          "maxTokens": 4096,
+          "input": [
+            "text",
+            "image"
+          ]
+        },
+        {
+          "id": "vision-std-fast",
+          "contextWindow": 32768,
+          "maxTokens": 4096,
+          "input": [
+            "text",
+            "image"
+          ]
+        }
+      ]
+    }
+  }
+}

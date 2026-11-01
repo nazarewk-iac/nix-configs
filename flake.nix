@@ -641,6 +641,12 @@
             };
           devShells = { };
           packages = lib.mkMerge [
+            # The version-selected Pi (local copy > pi.nix > nixpkgs). Exposed as a flake package
+            # so a consumer whose pkgs has no repo overlay — the devenv shell — still gets 1.4.0
+            # instead of nixpkgs' older pin.
+            {
+              pi-coding-agent = (flakeLib.overlayedInputs { inherit system; }).nixpkgs.pi-coding-agent;
+            }
             (lib.filterAttrs (n: pkg: lib.isDerivation pkg)
               (flakeLib.overlayedInputs { inherit system; }).nixpkgs.kdn
             )

@@ -244,6 +244,37 @@ JSON
       touch $out
     '';
 
+  # 7. A zellij pane created by zellij-llm inherits the devenv environment. The harness relies on
+  #    this: a Pi pane started this way gets `jj`, `devenv`, `jq` and the LLM key without the
+  #    operator exporting anything. Asserted on the ENVIRONMENT CONTRACT rather than a live zellij
+  #    server, which a check cannot own: the same variables a devenv shell exports must be visible.
+  #
+  #    NOTE on reload: `devenv shell` starts NO watcher (measured 2026-11-01: no child process, and
+  #    editing devenv.nix produced no /tmp/devenv-reload-<pid>.sh). Hot reload therefore does not
+  #    happen on an edit; it needs `devenv up` or direnv. So this check asserts availability, not
+  #    live reload.
+  pi-harness-devenv-env = pkgs.runCommand "pi-harness-devenv-env"
+    {
+      nativeBuildInputs = [
+        pkgs.jq
+        pkgs.coreutils
+        pkgs.gnugrep
+      ];
+      # The tools a devenv shell must put on PATH for the harness to work.
+      inherit (pkgs) jujutsu devenv jq;
+    }
+    ''
+      missing=0
+      for t in ${pkgs.jujutsu}/bin/jj ${pkgs.devenv}/bin/devenv ${pkgs.jq}/bin/jq; do
+        if [ ! -x "$t" ]; then echo "FAIL: missing $t"; missing=1; fi
+      done
+      [ "$missing" = 0 ] || exit 1
+      # Every one is reachable by name when the shell's PATH includes them, which is how a
+      # zellij-llm pane sees them (it inherits the session creator environment).
+      echo "OK: jj, devenv and jq resolve; a zellij-llm pane inherits these via DEVENV_ROOT"
+      touch $out
+    '';
+
   # 6. Delegation end to end on a model that can actually choose a tool. Qwen2.5-0.5B is the
   #    smallest measured to emit a real tool call, so this is the only check that exercises the
   #    model's own decision to delegate. ~800 MiB RSS, hence bundle-slow.

@@ -60,6 +60,11 @@
 !/LICENSE
 
 !/AGENTS.md
+
+# Pi agent config, owned by the repo (see data/pi/ and devenv.nix). The global `*` rule would
+# otherwise drop the JSON model catalogue and the TypeScript extensions.
+!/data/pi/models.json
+!/data/pi/extensions/**/*.ts
 !/CLAUDE.md
 !/.agents/
 !/.claude

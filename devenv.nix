@@ -23,6 +23,36 @@ let
     "mcp-basic-memory"
     "opencode"
   ];
+
+  # The Pi coding agent, configured from this repository's own files. `mkCodingAgent` returns a
+  # wrapper that always passes --append-system-prompt/--extension, so the shell's `pi` carries the
+  # repo config with no ~/.pi drift. `models` installs to the agent dir on first run.
+  # `inputs.pi` is the flake-CLI input; devenv gets its inputs from devenv.yaml, which does not
+  # declare `pi`. Reach the SAME pin through `nix-configs` (this repo's own flake output), so there
+  # is one `pi.nix` pin in the tree, not two.
+  pi = inputs.nix-configs.inputs.pi;
+
+  piWrapped =
+    (pi.lib.mkCodingAgent {
+      inherit pkgs;
+      modules = [
+        {
+          pi.coding-agent = {
+            # The repo flake's version-selected package (local copy > pi.nix > nixpkgs), so devenv
+            # gets the vendored 1.4.0. devenv's own `pkgs` has no repo overlay, so read the flake
+            # output instead of `pkgs.pi-coding-agent`.
+            package =
+              inputs.nix-configs.packages.${pkgs.stdenv.hostPlatform.system}.pi-coding-agent;
+            models = ./data/pi/models.json;
+            extensions = [
+              (./data/pi/extensions/timestamps.ts)
+              (./data/pi/extensions/idle-marker.ts)
+              (./data/pi/extensions/subagent)
+            ];
+          };
+        }
+      ];
+    }).package;
 in
 {
   imports = inputs.nix-configs.denLib.imports {
@@ -39,6 +69,13 @@ in
       # reap-builders (plan/apply for leaked daemon workers), list-roots, which, and
       # `kdn-tools` which lists this tooling. Same set the kdn-nix package installs.
       (pkgs.callPackage ./packages/kdn-nix { })
+      # Pi, wired from repo files so its config is versioned instead of living in ~/.pi:
+      #   data/pi/models.json     the fleet models + context tiers (no secret; the key is a
+      #                           runtime `!cat /run/configs/...` reference)
+      #   data/pi/extensions/     timestamps, idle-marker, subagent (with the model override)
+      #   data/pi/agents/         scout / worker / reviewer / planner / orchestrator
+      # The wrapper appends --extension for each, so a plain `pi` in this shell has them.
+      piWrapped
     ];
 
     # This repository authors the agent instruction files, so it asks for every one of

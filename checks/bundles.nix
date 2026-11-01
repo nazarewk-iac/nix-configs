@@ -96,6 +96,7 @@ in
       "pi-harness-timestamps"
       "pi-harness-subagent-registered"
       "pi-harness-subagent-spawn"
+      "pi-harness-devenv-env"
     ]
     ++ byPrefix "universal-eval-"
   );
