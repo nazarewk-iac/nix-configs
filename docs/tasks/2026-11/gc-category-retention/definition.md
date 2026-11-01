@@ -68,7 +68,26 @@ Measured 2026-11-01 on `oams`:
 
 ## The design
 
-Three layers, in order of preference. Ship 1 and 2; treat 3 as the safety net.
+Four stages, and they are **cumulative, not alternatives**: each one solves a case the previous
+cannot, and each ships on its own. Stop wherever the value runs out; nothing here is a choice
+between mutually exclusive approaches.
+
+| Stage | Solves | Ships without | Effort |
+|---|---|---|---|
+| **1** retune angrr classes | the age/keep-N policy for roots that exist (devenv, direnv, result, system, HM) | anything new | small — options only |
+| **2** `kdn-nix-keep` category roots | a built-but-not-activated toplevel, and "one per package" | any hook or daemon | small — one script + 3 call sites |
+| **2b** post-build hook (enqueue only) | forgetting to call stage 2 | the hook, if you only ever use the wrapper | small — one hook + one worker |
+| **3** eBPF probe + SQLite store | true last-*use* instead of birth-time | nothing — the first three already satisfy the request | large, and **gated on measurement** |
+
+**Recommended scope for the first pass: stages 1 and 2.** They are the whole request as stated
+(keep newest per class, delete by age) with no new daemon and no kernel code. Stage 2b is worth
+adding once stage 2 exists, because it removes the one manual step. Stage 3 is a separate project:
+it is the only path to a real LRU, so it is written up here but it must not block 1, 2 and 2b.
+
+The first pass is testable two ways, both verified in this task already: `angrr --config …
+validate`, then `angrr --config … run --dry-run -n` (a non-TTY run must pass `--no-prompt`, or it
+dies with "failed to prompt"), and `angrr run` needs to run as root for `profile-policies` or it
+logs "not owned by the current user" and skips them.
 
 ### Layer 1 — retune the existing classes to the requested policy
 
@@ -230,6 +249,22 @@ Keep `kdn.profile-baseline-gc.dryRun = true` until the plan has been read once o
 * **Automatic class discovery by inspecting store paths.** The store holds no such metadata; the
   per-build hook (Layer 2b) is the honest version, and it still needs the caller to state the
   class.
+
+## Measured while writing this (angrr 0.2.7, `oams`, 2026-11-01)
+
+`angrr run` is fully standalone: `--config <file> validate|run`, no daemon and no NixOS module.
+Two behaviours the config must respect, both observed:
+
+1. **`run` prompts by default** (`--interactive=once`) and aborts with
+   `failed to prompt: not a terminal` when there is no TTY. Automation must pass `-n`/`--no-prompt`.
+2. **`profile-policies` are skipped for a non-owner**: it logged
+   `ignore profile "/nix/var/nix/profiles/system" in owned only mode, not owned by the current
+   user`. The systemd service runs as root so this is fine in production, but a user-level test
+   silently tests nothing.
+
+A dry run against this host already produced real verdicts, e.g.
+`[devenv] Remove? ".../.devenv/bash-bash" (1month 12days ago)`, and named each skip reason, which
+is the stage-4 plan requirement met by angrr's own `--log-level debug`.
 
 ## Acceptance
 
