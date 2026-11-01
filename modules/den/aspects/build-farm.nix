@@ -328,6 +328,10 @@ in
           ];
 
       clients = lib.attrValues cfg.clients;
+      # The x86 pool's LAN endpoint: the mandatory reachability target for `auto` mode.
+      x86Reach = lib.findFirst (
+        c: c.addressLan != null && builtins.elem "x86_64-linux" c.systems
+      ) null clients;
 
       # Legacy `@/etc/nix/machines` line format, one per client row. `nix.buildMachines` cannot be
       # toggled at run time (it is a store path), so the client list is a plain file the daemon
@@ -620,6 +624,7 @@ in
               pkgs.gnused
               pkgs.coreutils
               pkgs.openssh
+              pkgs.netcat-openbsd
             ];
             serviceConfig.Type = "oneshot";
             environment = {
@@ -630,6 +635,10 @@ in
               # Optional reachability fallback: when set, "is brys reachable on the LAN" also
               # counts as home, so ethernet-with-the-radio-off is not mistaken for away.
               REACH_PROBE = cfg.reachProbe;
+              # Mandatory reachability target (the x86 pool's LAN endpoint), when one exists.
+              REACH_HOST = if x86Reach != null then x86Reach.addressLan else "";
+              REACH_PORT =
+                if x86Reach != null && x86Reach.hostPort != null then toString x86Reach.hostPort else "";
             };
             script = ''
               set -eu
@@ -640,23 +649,29 @@ in
                 on) eff=on ;;
                 off) eff=off ;;
                 *)
-                  # auto (and any unknown value): on when a listed SSID is in range, or when the
-                  # reachability probe (if configured) succeeds. A scan failure leans off, which is
-                  # the safe direction (local build still works).
-                  eff=off
-                  nmcli device wifi rescan >/dev/null 2>&1 || true
-                  sleep 2
-                  list=$(nmcli --terse --fields SSID device wifi list 2>/dev/null || true)
-                  while IFS= read -r s; do
-                    [ -n "$s" ] || continue
-                    if printf '%s\n' "$list" | grep -Fxq -- "$s"; then eff=on; break; fi
-                  done <<EOF
+                  # Mandatory etra reachability. When an x86-pool client with a LAN address exists
+                  # (REACH_HOST/REACH_PORT set), the farm is used ONLY if that LAN endpoint answers a
+                  # TCP connect. This supersedes the Wi-Fi heuristic: a home SSID no longer decides
+                  # alone, and wired ethernet with the radio off still counts as home. Only when no
+                  # such endpoint is configured fall back to the SSID scan plus the optional probe.
+                  if [ -n "$REACH_HOST" ] && [ -n "$REACH_PORT" ]; then
+                    if nc -z -w1 "$REACH_HOST" "$REACH_PORT" >/dev/null 2>&1; then eff=on; else eff=off; fi
+                  else
+                    eff=off
+                    nmcli device wifi rescan >/dev/null 2>&1 || true
+                    sleep 2
+                    list=$(nmcli --terse --fields SSID device wifi list 2>/dev/null || true)
+                    while IFS= read -r s; do
+                      [ -n "$s" ] || continue
+                      if printf '%s\n' "$list" | grep -Fxq -- "$s"; then eff=on; break; fi
+                    done <<EOF
               $AUTO_SSIDS
               EOF
-                  if [ "$eff" = off ] && [ -n "$REACH_PROBE" ]; then
-                    if ssh -o ConnectTimeout=2 -o BatchMode=yes -o StrictHostKeyChecking=no \
-                         -o UserKnownHostsFile=/dev/null "$REACH_PROBE" true >/dev/null 2>&1; then
-                      eff=on
+                    if [ "$eff" = off ] && [ -n "$REACH_PROBE" ]; then
+                      if ssh -o ConnectTimeout=2 -o BatchMode=yes -o StrictHostKeyChecking=no \
+                           -o UserKnownHostsFile=/dev/null "$REACH_PROBE" true >/dev/null 2>&1; then
+                        eff=on
+                      fi
                     fi
                   fi
                   ;;
