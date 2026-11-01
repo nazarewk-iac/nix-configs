@@ -21,6 +21,15 @@ in
     url = "${base}/stories260K.gguf";
     hash = "sha256-Jwy6G9UQn0LQM1D2BAYCRWBGTbFzwOOH2R8EJtO9JW0=";
   };
+
+  # Qwen2.5-0.5B-Instruct: the smallest model measured to emit REAL tool calls (finish_reason
+  # "tool_calls") under llama-server --jinja. 491 MB on disk, ~587 MiB RSS at ctx 2048. It exists
+  # only for the delegation check; the cheap checks stay on stories260K.
+  # Measured 2026-11-01 against llama-server from nixpkgs: tool call -> {"command":"echo hi"}.
+  qwen2_5_0_5b_instruct = pkgs.fetchurl {
+    url = "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf";
+    hash = "sha256-dKTajJ/bzRW9H20B1iFBDTHG/ACYb162h4JOe5PXqds=";
+  };
   # ~98 MB; used only by the prompt-stability check, which needs an instruction-following model.
   stories15M = pkgs.fetchurl {
     url = "${base}/stories15M.gguf";

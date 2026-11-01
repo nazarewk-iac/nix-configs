@@ -59,11 +59,9 @@ let
     "den-eval-programs"
     "den-mvp"
     "jj-experiments-pytest"
-    # Pi harness smoke checks: each starts its own tiny llama-server (tier-3). Linux only, so they
-    # are absent on darwin and the bundle filter drops them there.
-    "pi-harness-plumbing"
-    "pi-harness-prompt-stable"
-    "pi-harness-timestamps"
+    # The model-driven delegation check needs a 0.5B model (~800 MiB RSS). The other Pi checks are
+    # cheap and live in bundle-core.
+    "pi-harness-delegates"
   ];
   # Cross-cutting: each reads a bare consumer, not one aspect.
   crossCutting = [
@@ -86,6 +84,19 @@ in
       "conditional-imports-repository"
     ]
     ++ crossCutting
+    # Pi harness checks that need no model judgement: plumbing on a 1 MB model, prompt stability,
+    # timestamps, subagent tool registration, and the spawn argv contract (stub pi). Linux only, so
+    # the bundle filter drops them on darwin.
+    #   plumbing/prompt/timestamps  ~150-250 MiB RSS each (1 MB model)
+    #   subagent-registered          same
+    #   subagent-spawn               no server at all
+    ++ [
+      "pi-harness-plumbing"
+      "pi-harness-prompt-stable"
+      "pi-harness-timestamps"
+      "pi-harness-subagent-registered"
+      "pi-harness-subagent-spawn"
+    ]
     ++ byPrefix "universal-eval-"
   );
   # 108.0 s, measured 2026-09-11. One assertion set per den aspect: every `den-eval-*` that is neither

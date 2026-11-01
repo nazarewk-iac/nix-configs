@@ -58,9 +58,16 @@ let
   # universal-guards.nix and docs/tasks/2026-09/latent-guard-defects/.
   universalGuardTests = import ./universal-guards.nix { inherit pkgs lib inputs; };
 
-  # Pi harness smoke checks. Each starts its own tiny-llama-server, so it needs no brys, no GPU and
-  # no network after the first fetch. Linux only: the check binds a loopback port and runs an
-  # in-sandbox server, which the darwin sandbox does not allow.
+  # Pi harness smoke checks. They need no brys, no GPU and no network after the first fetch.
+  # Linux only: a check binds a loopback port and runs an in-sandbox server, which the darwin
+  # sandbox does not allow.
+  #
+  # Measured RSS per check (2026-11-01):
+  #   pi-harness-plumbing / prompt-stable / timestamps / subagent-registered
+  #       23 MiB llama-server (stories260K @ ctx 4096) + ~120-200 MiB pi  =  ~150-250 MiB
+  #   pi-harness-subagent-spawn      fake SSE server + one child pi      =  ~150-250 MiB
+  #   pi-harness-delegates           587 MiB llama-server (qwen2.5-0.5b @ 2048) + pi  =  ~800 MiB
+  # So bundle-core stays under 1.5 GiB at max-jobs 2; the delegation check alone needs ~800 MiB.
   piHarnessTests =
     if pkgs.stdenv.hostPlatform.isLinux then
       import ./pi-harness { inherit pkgs lib; }

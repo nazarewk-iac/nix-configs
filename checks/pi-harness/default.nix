@@ -34,6 +34,8 @@ let
     {
       name,
       model,
+      # `mnemonic` is only for the derivation name (the fixture is a store basename).
+      mnemonic ? "tiny",
       script,
     }:
     pkgs.runCommand name
@@ -54,7 +56,7 @@ let
         cp ${modelsJson} "$PI_CODING_AGENT_DIR/models.json"
 
         llama-server --host 127.0.0.1 --port 18080 --model ${model} \
-          --ctx-size 4096 --threads 2 -n 0 --no-warmup >llama.log 2>&1 &
+          --ctx-size 4096 --threads 4 -n 256 --jinja --no-warmup >llama.log 2>&1 &
         server=$!
         trap 'kill $server 2>/dev/null || true' EXIT
 
@@ -74,6 +76,13 @@ let
 
   # The timestamps extension source, copied in so the check does not depend on a live ~/.pi.
   timestampsExt = ./extensions/timestamps.ts;
+  # A tiny OpenAI-compatible server that answers with a subagent TOOL CALL for the parent run and
+  # plain text for any child run. It is a fake model, so the spawn contract is exercised with no
+  # GGUF and no CPU cost. `$1` is the port.
+  fakeToolCallServer = pkgs.writeShellScript "fake-pi-server" ''
+    exec ${pkgs.python3}/bin/python3 ${./fake-server.py} "$1"
+  '';
+
 in
 {
   # 1. Plumbing: Pi talks to the server and completes a run. Proves the whole client/server path on
@@ -155,6 +164,107 @@ in
         echo "FAIL: timestamp leaked into the system prompt"; exit 1
       fi
       echo "OK: $n timestamp entries, none in the prompt"
+    '';
+  };
+
+  # 4. Subagent tool registration. This is the bug that cost us: an orchestrator launched with
+  #    `--tools read,edit,write,bash` silently had NO `subagent` tool. Assert both directions, with
+  #    no model needed (the tool list is in the session system message).
+  pi-harness-subagent-registered = mkRun {
+    name = "pi-harness-subagent-registered";
+    model = models.stories260K;
+    script = ''
+      tools_for() {
+        rm -rf "$PI_CODING_AGENT_DIR/sessions"
+        printf 'x' | pi --mode json -p --provider llamatest --model test \
+          --no-skills --extension ${./extensions/subagent} "$@" >/dev/null 2>&1 || true
+        # Built-in tools live in .sections.tools; EXTENSION tools (subagent) are listed in
+        # .message.toolsAdded. A check must read both, or it silently sees no extension tools.
+        local f
+        for f in "$PI_CODING_AGENT_DIR"/sessions/*/*.jsonl; do
+          if [ -f "$f" ]; then
+            jq -r 'select(.type=="message" and .message.role=="system")
+                   | (.message.toolsAdded // [])[].name' "$f"
+            return
+          fi
+        done
+      }
+      with=$(tools_for --tools read,edit,write,bash,subagent)
+      without=$(tools_for --tools read,edit,write,bash)
+      printf '%s\n' "$with" | grep -qx 'subagent' \
+        || { echo "FAIL: subagent tool absent with --tools ...,subagent"; printf '%s\n' "$with"; exit 1; }
+      if printf '%s\n' "$without" | grep -qx 'subagent'; then
+        echo "FAIL: subagent present despite an allowlist that omits it"; exit 1
+      fi
+      echo "OK: subagent registered only when the allowlist names it"
+    '';
+  };
+
+  # 5. Spawn contract. The subagent extension runs a child `pi` with a fixed argv and appends one
+  #    JSON line to $PI_SUBAGENT_LOG. Assert that shape with a STUB `pi` first on PATH: no model, no
+  #    server, fully deterministic. This pins the interface the extension depends on, including the
+  #    per-task `model` override.
+  pi-harness-subagent-spawn = pkgs.runCommand "pi-harness-subagent-spawn"
+    {
+      nativeBuildInputs = [
+        pi
+        pkgs.python3
+        pkgs.curl
+        pkgs.jq
+        pkgs.coreutils
+        pkgs.gnugrep
+      ];
+    }
+    ''
+      export HOME="$TMPDIR/home"; mkdir -p "$HOME/.pi/agent"
+      export PI_CODING_AGENT_DIR="$HOME/.pi/agent"
+      mkdir -p "$PI_CODING_AGENT_DIR/agents"
+      cp ${./agents}/scout.md "$PI_CODING_AGENT_DIR/agents/"
+      cat >"$PI_CODING_AGENT_DIR/models.json" <<'JSON'
+      {"providers":{"fake":{"baseUrl":"http://127.0.0.1:18085/v1","api":"openai-completions",
+       "apiKey":"t","models":[{"id":"test","contextWindow":8192,"maxTokens":256}]}}}
+JSON
+
+      ${fakeToolCallServer} 18085 >server.log 2>&1 &
+      server=$!
+      trap 'kill $server 2>/dev/null || true' EXIT
+      for _ in $(seq 1 60); do curl -sf -m1 http://127.0.0.1:18085/v1/models >/dev/null 2>&1 && break; sleep 1; done
+
+      export PI_SUBAGENT_LOG="$PWD/spawn.jsonl"
+      printf 'go' | pi --mode json -p --provider fake --model test \
+        --tools read,edit,write,bash,subagent --no-skills \
+        --extension ${./extensions/subagent} >out.jsonl 2>err.txt || true
+
+      test -s "$PI_SUBAGENT_LOG" || {
+        echo "FAIL: no subagent spawn log"; cat server.log; tail -20 err.txt; exit 1;
+      }
+      jq -e 'select(.agent=="scout" and .model=="brys/chat-dumb-fast")' "$PI_SUBAGENT_LOG" >/dev/null \
+        || { echo "FAIL: spawn log lacks scout + model override"; cat "$PI_SUBAGENT_LOG"; exit 1; }
+      echo "OK: subagent spawned with the agent's model override, logged"
+      touch $out
+    '';
+
+  # 6. Delegation end to end on a model that can actually choose a tool. Qwen2.5-0.5B is the
+  #    smallest measured to emit a real tool call, so this is the only check that exercises the
+  #    model's own decision to delegate. ~800 MiB RSS, hence bundle-slow.
+  pi-harness-delegates = mkRun {
+    name = "pi-harness-delegates";
+    model = models.qwen2_5_0_5b_instruct;
+    script = ''
+      mkdir -p "$PI_CODING_AGENT_DIR/agents"
+      cp ${./agents}/scout.md "$PI_CODING_AGENT_DIR/agents/"
+      export PI_SUBAGENT_LOG="$PWD/subagents.log"
+      : >"$PI_SUBAGENT_LOG"
+      printf 'Call the subagent tool exactly once with agent "scout" and task "Reply with exactly CHILD-OK".' | \
+        pi --mode json -p --provider llamatest --model test \
+          --tools read,edit,write,bash,subagent \
+          --extension ${./extensions/subagent} >out.jsonl 2>err.txt || true
+      if [ ! -s "$PI_SUBAGENT_LOG" ]; then
+        echo "FAIL: the model never called the subagent tool"; tail -20 err.txt; exit 1
+      fi
+      jq -e 'select(.agent=="scout")' "$PI_SUBAGENT_LOG" >/dev/null \
+        || { echo "FAIL: spawn log has no scout entry"; cat "$PI_SUBAGENT_LOG"; exit 1; }
+      echo "OK: model-driven delegation spawned scout"
     '';
   };
 }
