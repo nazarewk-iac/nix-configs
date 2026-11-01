@@ -80,9 +80,10 @@ in
       ];
       contextSize = 1024 * K;  # 1M
       gpu = false;
-      # The frontier is the one model worth a real client budget: 384k of the served 1M.
+      # The frontier is the one model worth a real client budget: 512k of the served 1M. A long
+      # orchestrator session on a 127-message transcript needs more than the 384k default.
       pi = {
-        contextWindow = 384 * K;
+        contextWindow = 512 * K;
         maxTokens = 32 * K;
       };
     };
