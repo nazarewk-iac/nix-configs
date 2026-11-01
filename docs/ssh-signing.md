@@ -29,7 +29,9 @@ Other hosts gain the same by adding `"ssh-ca"` to their `denLib.imports` aspects
 
 ## Log in from `oams` to `brys`
 
-One command, run anywhere inside this repo checkout on `oams` while the YubiKey is plugged in:
+One command, run anywhere inside this repo checkout on `oams`. The CA key is the **unattended**
+identity, so there is **no touch and no PIN** — a touch-required CA is a follow-up (task 007), not a
+current requirement:
 
 ```bash
 kdn-certs ssh login brys
