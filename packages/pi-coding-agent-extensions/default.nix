@@ -76,9 +76,10 @@ in
       npmDeps = jsonc-parser;
     };
 
-  # The repo's own small extensions, kept beside the vendored ones so a consumer has one source.
-  # These are plain files in `data/pi/extensions/`, so the "package" is just that directory.
-  kdn-timestamps = ./../../data/pi/extensions/timestamps.ts;
-  kdn-idle-marker = ./../../data/pi/extensions/idle-marker.ts;
-  kdn-subagent = ./../../data/pi/extensions/subagent;
+  # This repository's own small extensions. They live here, not under `data/`, because they are
+  # general: no repo-specific path, secret or option. A consumer outside this repository takes
+  # them the same way as the vendored one.
+  timestamps = ./timestamps;
+  idle-marker = ./idle-marker;
+  subagent = ./subagent;
 }

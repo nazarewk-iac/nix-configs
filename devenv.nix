@@ -40,6 +40,8 @@ let
     }
   );
 
+  ext = pkgs.callPackage ./packages/pi-coding-agent-extensions { };
+
   piWrapped =
     (pi.lib.mkCodingAgent {
       inherit pkgs;
@@ -55,9 +57,12 @@ let
             # The default working style for local LLMs, appended to every session's system prompt.
             rules = ./data/pi/AGENTS.md;
             extensions = [
-              (./data/pi/extensions/timestamps.ts)
-              (./data/pi/extensions/idle-marker.ts)
-              (./data/pi/extensions/subagent)
+              ext.timestamps
+              ext.idle-marker
+              # Vendored pi-orchestrator: engaged by default, so the parent agent keeps only
+              # `delegate` and all work goes to the subagent fleet. Replaces our ad-hoc
+              # subagent extension, whose async/status/retry behaviour this one already has.
+              ext.pi-orchestrator
             ];
           };
         }
