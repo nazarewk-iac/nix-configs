@@ -32,6 +32,14 @@ let
   # is one `pi.nix` pin in the tree, not two.
   pi = inputs.nix-configs.inputs.pi;
 
+  # The Pi models.json, RENDERED from data/llm.nix (the single LLM source of truth). No
+  # hand-written catalogue: a model or alias change in data/llm.nix flows straight into the shell.
+  piModelsJson = pkgs.writeText "pi-models.json" (
+    builtins.toJSON {
+      providers = (import ./lib/llm.nix { inherit (inputs.nixpkgs) lib; }).mkPiModelsJson;
+    }
+  );
+
   piWrapped =
     (pi.lib.mkCodingAgent {
       inherit pkgs;
@@ -43,7 +51,7 @@ let
             # output instead of `pkgs.pi-coding-agent`.
             package =
               inputs.nix-configs.packages.${pkgs.stdenv.hostPlatform.system}.pi-coding-agent;
-            models = ./data/pi/models.json;
+            models = piModelsJson;
             extensions = [
               (./data/pi/extensions/timestamps.ts)
               (./data/pi/extensions/idle-marker.ts)

@@ -146,6 +146,8 @@ let
   # them in. `small` is the CPU set (:39704); `grunt` is the GPU set (:39705)
   # colocated with the Qwen orchestrator. See hosts/brys/llm-routers.nix.
   routers = import ./llm-routers.nix;
+  # The single LLM source of truth; only `aliases` and `contextSize` are read from it here.
+  llmData = import ../../data/llm.nix;
   small = routers.small;
   grunt = routers.grunt;
   surveyed = routers.surveyed;
@@ -458,12 +460,32 @@ in
       # Router and model definitions. The small set is included only for a
       # small-only host; a frontier host keeps DS4 alone on the box. The grunt
       # set is included only for a GPU-grunt host (the Qwen-serving entries).
-      models =
+      # The model set, with `aliases` and `perf.contextSize` OVERRIDDEN from the single source of
+      # truth `data/llm.nix`. The entries below still own the host-local knobs (hfFile, router,
+      # device, threads, chat-template fallbacks); only what the fleet DEFINES — the intent
+      # aliases and the served context — comes from the data file. One place to edit, no copy.
+      models = lib.mapAttrs (
+        name: model:
+        let
+          fromData = llmData.models.${name} or null;
+        in
+        if fromData == null then
+          model
+        else
+          model
+          // {
+            aliases = fromData.aliases or [ ];
+            perf = (model.perf or { }) // {
+              contextSize = fromData.contextSize;
+            };
+          }
+      ) (
         (lib.optionalAttrs withSmall small.kdn.llm.local.models)
         // (lib.optionalAttrs withGrunt grunt.kdn.llm.local.models)
         // (lib.optionalAttrs withSurveyed surveyed.kdn.llm.local.models)
         // frontierModels
-        // qwenModels;
+        // qwenModels
+      );
     }
     // (
       # A single `routers` key: the outer `//` is a shallow merge, so one
