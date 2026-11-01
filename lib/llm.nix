@@ -39,15 +39,14 @@ let
   mkPiModelsJson =
     let
       frontier = "qwen3.8-flash-next";
-      tierModels = lib.mapAttrsToList (
-        suffix: ctx:
-        {
-          id = "${frontier}-${suffix}";
-          model = frontier;
-          contextWindow = ctx;
-          maxTokens = lib.min (data.models.${frontier}.pi.maxTokens or data.pi.defaults.maxTokens) ctx;
-        }
-      ) data.pi.aliases;
+      # `models.json` has NO alias-to-model field: the entry `id` is the model name Pi sends to
+      # the server. A `"model": ...` hint is ignored, so an invented id such as
+      # `qwen3.8-flash-next-longest` gets a 404 "no router for requested model".
+      #
+      # So a context tier is NOT a new pi entry. It is the SAME id with a different budget, which
+      # pi cannot express twice in one provider. Keep the tiers in data/llm.nix for documentation
+      # and for any client that can express them, but do not emit them as pi models.
+      tierModels = [ ];
     in
     lib.mapAttrs (_: ep: {
       baseUrl = ep.baseUrl;
