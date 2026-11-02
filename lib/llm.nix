@@ -53,6 +53,18 @@ let
           "text"
           "image"
         ];
+      }
+      # A reasoning model declares `<model>.reasoning` (an identity fact: the model thinks). Pi
+      # auto-detects reasoning from the provider URL, but llama-swap does not advertise it, so
+      # without this Pi lists the model as non-thinking and pins `--thinking off`. `format` is the
+      # request shape (`qwen` = top-level `enable_thinking` + `reasoning_effort`); `levels` maps Pi
+      # thinking levels to the values that alias' template accepts. Pi needs `reasoning = true`
+      # before it will offer any level at all.
+      // lib.optionalAttrs (m.reasoning or null != null) {
+        reasoning = true;
+      }
+      // lib.optionalAttrs (m.reasoning or null != null) {
+        thinkingLevelMap = m.reasoning.levels;
       };
       ids = if (m.aliases or [ ]) == [ ] then [ name ] else m.aliases;
     in

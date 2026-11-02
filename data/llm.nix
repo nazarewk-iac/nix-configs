@@ -184,6 +184,19 @@ in
         contextWindow = 524288;
         maxTokens = 32768;
       };
+      # A reasoning model served with `perf.reasoning = "auto"`. `thinkingLevelMap` tells the Pi
+      # client which request value each level sends; Qwen's template accepts `low|medium|xhigh`
+      # (there is no `none`). `minimal` shares the template's `low`, and `high` maps to `xhigh`.
+      # llama-swap does not advertise this, so the data must: without it Pi lists the model as
+      # non-thinking and forces `--thinking off` (measured: the orchestrator ran at 0 thinking).
+      reasoning = {
+        format = "qwen";
+        levels = {
+          low = "low";
+          medium = "medium";
+          high = "xhigh";
+        };
+      };
       gpu = false;
       contextSize = 1048576;
       hosts.brys = {
