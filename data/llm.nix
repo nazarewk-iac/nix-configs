@@ -857,31 +857,6 @@ in
         };
       };
     };
-    "qwen3-30b-a3b" = {
-      aliases = [ "fast" ];
-      capabilities = {
-        loadSeconds = 45;
-        operation = "cpu";
-      };
-      gpu = false;
-      contextSize = 40960;
-      hosts.brys = {
-        set = "surveyed";
-        servedContext = 40960;
-        common = {
-          download = {
-            enable = false;
-          };
-          enable = true;
-          hfFile = "Qwen/Qwen3-30B-A3B-GGUF/Qwen3-30B-A3B-Q4_K_M.gguf";
-          hfRepo = "surveyed";
-          perf = {
-            parallel = 1;
-            threads = 8;
-          };
-        };
-      };
-    };
     "qwen3-embedding-4b" = {
       aliases = [ "embed-std-fast" ];
       capabilities = {
@@ -899,31 +874,6 @@ in
           };
           enable = true;
           hfFile = "qwen3-embedding-4b.gguf";
-          hfRepo = "surveyed";
-          perf = {
-            parallel = 1;
-            threads = 8;
-          };
-        };
-      };
-    };
-    "qwen3-next-80b" = {
-      aliases = [ "balanced" ];
-      capabilities = {
-        loadSeconds = 120;
-        operation = "cpu";
-      };
-      gpu = false;
-      contextSize = 131072;
-      hosts.brys = {
-        set = "surveyed";
-        servedContext = 131072;
-        common = {
-          download = {
-            enable = false;
-          };
-          enable = true;
-          hfFile = "unsloth/Qwen3-Next-80B-A3B-Instruct-GGUF/Qwen3-Next-80B-A3B-Instruct-Q4_K_M.gguf";
           hfRepo = "surveyed";
           perf = {
             parallel = 1;
