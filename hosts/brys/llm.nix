@@ -538,8 +538,22 @@ in
             ) (builtins.attrNames allModels);
           in
           [
+            # --- GPU models: mutually exclusive with each other (| within one tier) ---
             (lib.subtractLists frontierIds gpuIds)
-          ];
+          ]
+          # --- CPU models that may hold the RAM BESIDE the frontier ---
+          #
+          # Each of these is its own tier, so the tiers are AND-joined with the frontier: all three
+          # are resident at once. They are separate models of different sizes, not alternates.
+          #
+          # Budget, measured on brys 2026-11-01 (RSS at the served context):
+          #   qwen3.8-flash-next @1M   54.1 GiB
+          #   qwen3.8-27b        @128k 23.3 GiB
+          #   qwen3.5-35b-a3b    @256k 25.1 GiB
+          #   total 102.5 GiB of 106 GiB available. 256k for the 27B would be 31.5 GiB and would
+          #   overshoot, which is why data/llm.nix serves it at 128k.
+          ++ lib.optional (allModels ? "qwen3.8-27b") [ "qwen3.8-27b" ]
+          ++ lib.optional (allModels ? "qwen3.5-35b-a3b") [ "qwen3.5-35b-a3b" ];
         persistentModels = [
           "deepseek-v4-flash"
           "qwen3.8-flash-next"

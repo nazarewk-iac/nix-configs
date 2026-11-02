@@ -488,14 +488,45 @@ productive for memory-bound inference), `flash-attn=on`, `mmap=on`, and
 V4 Flash and Qwen3.8-Flash-Next both add `parallel=4` + `kv-unified=on`; the
 other models keep `parallel=1`. Context sizes:
 
-| Model | ctx-size | Notes |
-|---|---|---|
-| `deepseek-v4-flash` | 327680 (320K) | MLA; the specialisation runs 320K. See "ZFS ARC quirk" below — the old ">192K oscillates" rule was ARC churn, not the context |
-| `qwen3-30b-a3b` | 131072 | |
-| `qwen3-next-80b` | 131072 | |
-| `qwen3-coder-next` | 131072 | |
-| `qwen3-235b` | 65536 | 128K KV would exceed RAM (141 GB) |
-| `phi-4` | 16384 | hard architectural ceiling |
+## Context: supported, served, and what it costs
+
+`native` is `max_position_embeddings` in each model's Hugging Face `config.json`, read
+2026-11-01. `max` is what rope scaling can reach. `served` is what brys allocates today.
+`RSS` is measured total process memory at that served context, on brys, 2026-11-01.
+
+| model              | native | max | served | RSS GiB | note                                  |
+|--------------------|-------:|----:|-------:|--------:|---------------------------------------|
+| qwen3.8-flash-next |   256k | 1M  |    1M  |    54.1 | YaRN x4: --rope-scale 4, orig 262144   |
+| qwen3.8-27b        |   256k | 1M  |  128k  |    23.3 | 256k would be 31.5 GiB, no room        |
+| qwen3.5-35b-a3b    |   256k | 1M  |  256k  |    25.1 | native, fits beside the frontier       |
+| qwen3-next-80b     |   256k |  -  |  128k  |       - | no GGUF on disk, cannot be served      |
+| qwen3-30b-a3b      |    40k |  -  |   40k  |       - | was 128k, above its own native limit   |
+| qwen3-coder-next   |   256k |  -  |  128k  |       - | no GGUF on disk                        |
+| qwen3-235b         |   256k |  -  |   64k  |       - | 128k KV would exceed RAM (141 GB)      |
+| phi-4              |    16k |  -  |   16k  |       - | hard architectural ceiling             |
+| deepseek-v4-flash  |   128k |  -  |  320k  |       - | MLA; specialisation 320k, main 128k     |
+
+`k` is 1024. The three sizes are independent: a model can be trained for 256k, be extensible
+to 1M, and still be served at a smaller window for a reason (RAM, co-residence, or an
+architectural ceiling). A served value **above** `native` needs rope scaling, not just a flag.
+
+### Co-residence with the frontier
+
+The 27B and the 35B share RAM with the resident frontier, as three separate tiers (see
+`hosts/brys/llm.nix`, `coResidentTiers`), so all three are loaded at once:
+
+```
+frontier @1M      54.1 GiB
+qwen3.8-27b @128k 23.3 GiB
+qwen3.5-35b @256k 25.1 GiB
+                 ---------
+                 102.5 GiB  of 106 GiB available
+```
+
+26k tokens of KV cost about 0.2 GiB on these models, which is why 128k is cheap for the 27B: the
+architecture uses **hybrid attention** (`full_attention_interval = 4`, so three of every four
+layers are cheap linear attention). Serving the 27B at 256k instead would take the same triple to
+110.6 GiB, which does not fit.
 
 The **main `brys` profile** uses a smaller DeepSeek context (131072) and leaves
 its threads unpinned: it shares the box with the desktop. The specialisation

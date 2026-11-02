@@ -67,6 +67,26 @@ in
     };
   };
 
+  # ---------------------------------------------------------------- model limits
+  #
+  # Verified from each model's Hugging Face `config.json` (`max_position_embeddings`) on
+  # 2026-11-01, not from memory. `native` is what the model was trained to hold; a larger
+  # `contextSize` needs rope scaling (YaRN), which only the frontier uses today.
+  #
+  #   model               native    extended   notes
+  #   qwen3.8-flash-next  256k      1M         YaRN x4 (--rope-scale 4, --yarn-orig-ctx 262144)
+  #   qwen3.8-27b         256k      1M         extensible, not enabled
+  #   qwen3.5-35b-a3b     256k      1M         extensible, not enabled
+  #   qwen3-next-80b      256k      -          no files on disk, cannot be served
+  #   qwen3-30b-a3b       40960     -          native is ONLY 40k; 128k would exceed it
+  #
+  # Measured RSS on brys (the number that decides co-residence):
+  #   qwen3.8-flash-next @1M   54.1 GiB
+  #   qwen3.8-27b        @128k 23.3 GiB   @256k 31.5 GiB
+  #   qwen3.5-35b-a3b    @256k 25.1 GiB
+  #   available RAM 106 GiB -> frontier + 27b@128k + 35b@256k = 102.5 GiB, which fits.
+  #   frontier + both at 256k = 110.6 GiB, which does NOT.
+
   # ---------------------------------------------------------------- models
   #
   # `contextSize` is what llama-server serves. `gpu` is full W6600 offload. `vision` means a
@@ -100,7 +120,9 @@ in
     # ---- survey set: CPU, mid context
     "qwen3-30b-a3b" = {
       aliases = [ "fast" ];
-      contextSize = 128 * K;
+      # Upstream config.json says max_position_embeddings = 40960, so the old 128k exceeded the
+      # model's own limit. Cite the real number.
+      contextSize = 40 * K;
       gpu = false;
     };
     "qwen3-next-80b" = {
@@ -109,6 +131,9 @@ in
       gpu = false;
     };
     "qwen3.8-27b" = {
+      # Native 256k. Served at 128k so it can be co-resident with the frontier (23.3 GiB);
+      # 256k would be 31.5 GiB and would not fit beside it.
+      contextSize = 128 * K;
       aliases = [
         "chat-deep-slow"
         "code-deep-slow"
@@ -116,7 +141,6 @@ in
         "reason-deep-slow"
         "tools-deep-slow"
       ];
-      contextSize = 32 * K;
       gpu = false;
       vision = true;
       pi.maxTokens = 8 * K;
@@ -154,8 +178,9 @@ in
       gpu = false;
     };
     "qwen3.5-35b-a3b" = {
+      # Native 256k, and cheap enough (25.1 GiB) to sit beside the frontier.
       aliases = [ "chat-std-mid" ];
-      contextSize = 8 * K;
+      contextSize = 256 * K;
       gpu = false;
     };
     "qwen3-vl-8b-instruct" = {
