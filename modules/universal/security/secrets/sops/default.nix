@@ -223,6 +223,14 @@ in
                         libraries = with pkgs.python3Packages; [
                           fire
                         ];
+                        # Black (and ruff-format here) put spaces around the colon of a
+                        # complex slice (`line[start : end]`); pycodestyle's E203 flags that
+                        # as "whitespace before ':'". E203 is the documented black-compatible
+                        # exception, so ignore it rather than fight the formatter.
+                        flakeIgnore = [
+                          "E203"
+                          "E501"
+                        ];
                       }
                       (
                         lib.pipe ./kdn-sops-secrets.py [
