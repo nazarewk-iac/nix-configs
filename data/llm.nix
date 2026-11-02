@@ -134,7 +134,6 @@ in
             "qwen3.5-0.8b"
             "qwen3.5-2b"
             "qwen3.5-4b"
-            "qwen3.5-9b"
             "tmax-2b"
             "tmax-9b"
           ]
