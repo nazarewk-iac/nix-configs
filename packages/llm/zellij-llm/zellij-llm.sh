@@ -21,9 +21,9 @@ set -eEuo pipefail
 # @describe Run and observe long commands in a dedicated background zellij session.
 #
 # The session name is derived from kdn-slug by default, so the common case is just
-# `zellij-llm spawn --pane build`. Feed the command on stdin, ideally with a HEREDOC:
+# `zellij-llm run -b --pane build`. `run -b` reads the command on stdin, ideally with a HEREDOC:
 #
-#   zellij-llm spawn --pane darwin-build <<'EOF'
+#   zellij-llm run -b --pane darwin-build <<'EOF'
 #   nix run ".#darwin-rebuild" -- build
 #   EOF
 #
@@ -33,55 +33,74 @@ set -eEuo pipefail
 # the `-x` trace echoes each command into the pane, so a secret in a literal arg leaks into the
 # scrollback (wrap such steps in `{ set +x; ...; set -x; } 2>/dev/null`).
 #
-# For an INTERACTIVE command (a TUI such as pi, opencode or an editor), use `start`: it runs the
-# argv command directly in a new pane, so the process gets the pane's pty. `spawn` pipes its script
-# on stdin, which makes a TUI see a non-tty and exit.
+# `run` takes a MANDATORY mode flag:
 #
-#   zellij-llm start --pane pi -- pi --provider brys --model brys/qwen3.8-flash-next
+#   * `--interactive`/`-i` runs an argv command directly in a new pane, so the process gets the
+#     pane's pty. Use it for a TUI: pi, opencode, an editor.
+#       zellij-llm run -i --pane pi -- pi --provider brys --model brys/qwen3.8-flash-next
+#   * `--batch`/`-b` runs a script fed on stdin under `bash -xeEuo pipefail`. Use it for one-shot
+#     commands. A TUI fed this way sees a non-tty and exits, so it is wrong for a TUI.
+#       zellij-llm run -b --pane build <<'EOF'
+#       nix run ".#darwin-rebuild" -- build
+#       EOF
+#
+# ## A fresh session or continue one
+#
+# The pane-creating commands (`run` and `opencode spawn`) take one
+# of two MUTUALLY EXCLUSIVE flags:
+#
+#   * `--new` (or the default when neither is given) creates a fresh, empty session. A stale
+#     resurrectable session with the same name is discarded first, so no old pane comes back.
+#   * `--harness-session <id>` continues the named harness session. For Pi that id is the Pi
+#     session uuid (or any partial id Pi accepts); for OpenCode it is the `ses_...` id. The
+#     harness command is invoked with its own resume flag, so it keeps its history instead of
+#     starting over. This is the flag to use when re-attaching to an agent that was reading a
+#     large input: a fresh run would re-read it from the start.
+#
+# The flag maps to a per-harness resume argument via `--resume-flag` (default `--session`) and
+# `--resume-flag-style` (`value`, the default, or `id` for `--session-id`); pass the empty
+# resume flag with `--resume-flag=` for a harness that has no resume concept.
 
-# @cmd Create the session if missing and run a command from stdin in a new pane
+# @cmd Run a command in a new pane. REQUIRES --interactive or --batch.
 # @option --session Session name; overrides the kdn-slug-derived default and is used verbatim
-# @option --pane! Short kebab-case pane name/title (e.g. darwin-build)
+# @flag --new Start a fresh session; discard a stale resurrectable session first (default)
+# @option --harness-session Continue this harness session id (mutually exclusive with --new)
+# @option --resume-flag=--session The flag that makes the harness resume (e.g. --session, --continue)
+# @option --resume-flag-style[=value|id] value: <flag> <id>; id: use --session-id <id>
+# @flag -i --interactive Run an argv command in the pane's pty (TUI: pi, opencode, an editor)
+# @flag -b --batch Run a script fed on stdin under `bash -xeEuo pipefail` (one-shot work)
+# @option --pane! Short kebab-case pane name/title (e.g. pi, darwin-build)
 # @option --cwd Working directory for the pane (defaults to zellij's own default)
-# @flag --ephemeral Close the pane when its command exits (default: drop to a shell for review)
-# @flag --wait Follow the pane until the command exits, then print EXIT:<code> (like spawn-and-watch)
+# @flag --ephemeral Close the pane when its command exits (default: keep it for review)
+# @flag --wait Follow the pane until the command exits, then print EXIT:<code>
 # @option --mode[=stream|heartbeat] With --wait: stream forwards live output; heartbeat prints elapsed-time lines
 # @option --interval=2 Heartbeat poll interval in seconds (--wait --mode heartbeat only)
 # @option --sep Top-level name separator; forwarded to kdn-slug (default `:`)
 # @option --repo-sep Repo-path separator; forwarded to kdn-slug (default `_`)
 # @option --max-len Extra cap on the derived name length; never exceeds the socket budget
 # @option --tag* Extra name components; forwarded to kdn-slug as repeatable --tag
-spawn() {
-  _run_spawn "${argc_wait:-0}"
-}
-
-# @cmd Run a command INTERACTIVELY in a new pane (argv, so the process gets the pane's pty)
-# @option --session Session name; overrides the kdn-slug-derived default and is used verbatim
-# @option --pane! Short kebab-case pane name/title (e.g. orchestrator)
-# @option --cwd Working directory for the pane (defaults to zellij's own default)
-# @flag --ephemeral Close the pane when its command exits (default: keep it, so the last frame stays)
-# @option --sep Top-level name separator; forwarded to kdn-slug (default `:`)
-# @option --repo-sep Repo-path separator; forwarded to kdn-slug (default `_`)
-# @option --max-len Extra cap on the derived name length; never exceeds the socket budget
-# @option --tag* Extra name components; forwarded to kdn-slug as repeatable --tag
-# @arg cmd* The command and its arguments (after `--`), run as argv so TUIs get a real tty
-start() {
-  _run_start
-}
-
-# @cmd Like spawn --wait: run a command, then follow the pane until it exits
-# @option --session Session name; overrides the kdn-slug-derived default and is used verbatim
-# @option --pane! Short kebab-case pane name/title (e.g. darwin-build)
-# @option --cwd Working directory for the pane
-# @flag --ephemeral Close the pane when its command exits (default: drop to a shell for review)
-# @option --mode![stream|heartbeat] stream: forward live pane output; heartbeat: print periodic elapsed-time lines only
-# @option --interval=2 Heartbeat poll interval in seconds (--mode heartbeat only)
-# @option --sep Top-level name separator; forwarded to kdn-slug (default `:`)
-# @option --repo-sep Repo-path separator; forwarded to kdn-slug (default `_`)
-# @option --max-len Extra cap on the derived name length; never exceeds the socket budget
-# @option --tag* Extra name components; forwarded to kdn-slug as repeatable --tag
-spawn-and-watch() {
-  _run_spawn 1
+# @arg cmd* The argv command (after `--`); required with --interactive, ignored (and rejected) with --batch
+run() {
+  # Enforce exactly one mode. --interactive is argv; --batch is stdin.
+  if [[ "${argc_interactive:-0}" == 1 && "${argc_batch:-0}" == 1 ]]; then
+    echo "run: --interactive and --batch are mutually exclusive; pick one" >&2
+    return 2
+  fi
+  if [[ "${argc_interactive:-0}" != 1 && "${argc_batch:-0}" != 1 ]]; then
+    echo "run: a mode is required: --interactive (-i) or --batch (-b)" >&2
+    return 2
+  fi
+  if [[ "${argc_batch:-0}" == 1 ]]; then
+    local n=0
+    for _x in ${argc_cmd[@]+"${argc_cmd[@]}"}; do n=$((n + 1)); done
+    if [[ "$n" -gt 0 ]]; then
+      echo "run: --batch reads the command from stdin; pass no argv after --" >&2
+      return 2
+    fi
+    _run_spawn "${argc_wait:-0}"
+  else
+    _run_start "${argc_wait:-0}"
+  fi
 }
 
 # @cmd Follow an already-spawned pane until its command exits
@@ -164,14 +183,17 @@ list() {
     jq '[.[] | select(.is_plugin==false) | {id, title, exited, exit_status, terminal_command}]'
 }
 
-# Shared body for spawn and spawn-and-watch. $1 is 1 to follow the pane until exit, 0 to return.
+# Shared body for the batch path (`run -b` and `opencode spawn`). $1 is 1 to follow the pane until
+# exit, 0 to return. It pipes a script on stdin, so a TUI cannot use it (use `run -i`).
 _run_spawn() {
   local do_wait="$1"
   local session
   session="$(_session_name)"
   _validate_socket_len "$session"
   _check_slug "$argc_pane" "pane name"
-  _ensure_session "$session"
+  local mode
+  mode="$(_lifecycle_mode)" || return $?
+  _ensure_session "$session" "$mode"
 
   local encoded
   encoded="$(_stdin_to_b64)"
@@ -225,27 +247,61 @@ _run_spawn() {
 # pipes a script on stdin via `bash -c`, which makes a TUI see a non-tty and exit — use `start`
 # for anything interactive.
 _run_start() {
+  local do_wait="$1"
   local session
   session="$(_session_name)"
   _validate_socket_len "$session"
   _check_slug "$argc_pane" "pane name"
 
   if [[ -z "${argc_cmd[*]:-}" ]]; then
-    echo "start needs a command after --, e.g. zellij-llm start --pane pi -- pi --provider ..." >&2
+    echo "run --interactive needs an argv command after --, e.g. zellij-llm run -i --pane pi -- pi ..." >&2
     return 2
   fi
 
-  _ensure_session "$session"
+  local mode
+  mode="$(_lifecycle_mode)" || return $?
+  _apply_resume_to_cmd "${argc_cmd[@]}"
+
+  _ensure_session "$session" "$mode"
+
+  # An exit marker lets --wait follow an interactive command the same way spawn does. The argv
+  # command runs directly (so it keeps the pty); a subshell writes its exit code to the marker.
+  local cmd_id run_dir marker
+  cmd_id="$(_new_cmd_id)"
+  run_dir="$(_cmd_dir "$argc_pane" "$cmd_id")"
+  mkdir -p "$run_dir"
+  marker="${run_dir}/exit"
 
   local -a cwd_args=()
   [[ -n "${argc_cwd:-}" ]] && cwd_args=(--cwd "$argc_cwd")
   local -a life_args=()
   [[ "${argc_ephemeral:-0}" == 1 ]] && life_args=(--close-on-exit)
 
+  # Keep the pane after exit unless --ephemeral: drop to the user's shell so the last frame stays.
+  local tail_cmd
+  if [[ "${argc_ephemeral:-0}" == 1 ]]; then
+    tail_cmd=''
+  else
+    tail_cmd='; exec "${SHELL:-bash}" -i'
+  fi
+  # Quote each argv word so the wrapper shell reconstructs it exactly. The argv command is the
+  # last thing in the -c script, so it keeps the pty; a subshell records its exit code for --wait.
+  local quoted
+  quoted="$(printf '%q ' "${argc_cmd[@]}")"
+  local body
+  body="${quoted}; rc=\$?; printf '%s' \"\$rc\" > '${marker}'${tail_cmd}"
+
   zellij --session "$session" action new-pane --name "$argc_pane" "${cwd_args[@]}" "${life_args[@]}" \
-    -- "${argc_cmd[@]}"
+    -- bash -c "$body"
   _stack_with_existing "$session"
-  echo "started pane '${argc_pane}' in session '${session}': ${argc_cmd[*]}"
+
+  if [[ "$do_wait" == 1 ]]; then
+    local pane_id
+    pane_id="$(_pane_id_by_title "$session" "$argc_pane")"
+    _watch_pane "$session" "$pane_id" "${argc_mode:-stream}" "${argc_interval:-2}" "$marker"
+  else
+    echo "started pane '${argc_pane}' in session '${session}' (run ${cmd_id}): ${argc_cmd[*]}"
+  fi
 }
 
 # Follow a pane until its command exits, then print EXIT:<code> and exit with that code.
@@ -509,11 +565,19 @@ _check_slug() {
 }
 
 _ensure_session() {
+  # $2 (mode): "new" discards a stale, resurrectable session of the same name first, so its old
+  # panes do not come back; "resume" keeps an existing live session. A fresh start into a name
+  # that already has a LIVE process is left alone (the caller asked for that name).
+  local name="$1" mode="${2:-new}"
+  if [[ "$mode" == "new" ]] && zellij list-sessions --no-formatting 2>/dev/null | grep -qE "^${name} .*EXITED"; then
+    # Only an EXITED session is safe to discard: it has no live client or process.
+    zellij delete-session "$name" >/dev/null 2>&1 || true
+  fi
   # This exits 1 with "Session already exists" on stderr when the session is already present.
   # The docs call it "safe to call every time", but it is not a true no-op success (verified).
   # Tolerate exactly that message and surface anything else.
   local out
-  if out="$(zellij attach --create-background "$1" 2>&1)"; then
+  if out="$(zellij attach --create-background "$name" 2>&1)"; then
     return 0
   fi
   if [[ "$out" == "Session already exists" ]]; then
@@ -521,6 +585,68 @@ _ensure_session() {
   fi
   echo "$out" >&2
   return 1
+}
+
+# Resolve the session-lifecycle request into a normalised mode: "new" or "resume" plus the id.
+# Validates that at most one of --new / --harness-session is set.
+_lifecycle_mode() {
+  if [[ "${argc_new:-0}" == 1 && -n "${argc_harness_session:-}" ]]; then
+    echo "--new and --harness-session are mutually exclusive" >&2
+    return 2
+  fi
+  if [[ -n "${argc_harness_session:-}" ]]; then
+    printf 'resume'
+  else
+    printf 'new'
+  fi
+}
+
+# Build the argv for a harness command that must RESUME a session. Applies --harness-session to
+# the command's own resume flag. `--resume-flag` names the flag (default --session); an empty
+# value means the harness has no resume concept and the command runs unchanged. When the
+# resume-flag-style is `id`, it switches to `--session-id`. If <flag> already appears in the
+# command, it is not duplicated (the caller may have built it in).
+_apply_resume() {
+  local -a cmd=("$@")
+  local sid="${argc_harness_session:-}"
+  local rflag="${argc_resume_flag---session}"
+  local style="${argc_resume_flag_style:-value}"
+  [[ -z "$sid" || -z "$rflag" ]] && { printf '%s\0' "${cmd[@]}"; return 0; }
+
+  local f="$rflag"
+  [[ "$style" == "id" ]] && f="--session-id"
+
+  # Do not duplicate a flag the caller already put in the command line.
+  local existing=0 arg
+  for arg in "${cmd[@]}"; do
+    [[ "$arg" == "$f" || "$arg" == "$f="* ]] && existing=1
+  done
+  if [[ "$existing" == 1 ]]; then
+    printf '%s\0' "${cmd[@]}"
+    return 0
+  fi
+
+  # Insert the resume flag + id just before the first positional argument that is not a flag's
+  # value. A safe, simple rule: append it before a trailing `Task:`/positional prompt if the
+  # command already carries a bare positional; otherwise append at the end. In practice the
+  # harness command ends in flags or `--`, so appending at the end is correct for pi/opencode.
+  local -a out=("${cmd[@]}")
+  # If there is a `--` separator, insert before it so the flag stays a pi/opencode option.
+  local sep=-1 i
+  for i in "${!out[@]}"; do [[ "${out[$i]}" == "--" ]] && { sep=$i; break; }; done
+  if [[ "$sep" -ge 0 ]]; then
+    out=("${out[@]:0:$sep}" "$f" "$sid" "${out[@]:$sep}")
+  else
+    out+=("$f" "$sid")
+  fi
+  printf '%s\0' "${out[@]}"
+}
+
+# Parse the NUL-separated argv produced by _apply_resume into the argc_cmd array (global).
+_apply_resume_to_cmd() {
+  local -a buf=()
+  while IFS= read -r -d '' x; do buf+=("$x"); done < <(_apply_resume "$@")
+  argc_cmd=("${buf[@]}")
 }
 
 # zellij's `new-pane -- <cmd...>` runs only an argv command. It cannot attach this script's
@@ -591,6 +717,10 @@ opencode() {
 
 # @cmd Spawn an OpenCode session in a new pane (inside devenv when present)
 # @option --session Session name; overrides the kdn-slug-derived default and is used verbatim
+# @flag --new Start a fresh session; discard a stale resurrectable session first (default)
+# @option --harness-session Continue this harness session id (mutually exclusive with --new)
+# @option --resume-flag=--session The flag that makes the harness resume (e.g. --session, --continue)
+# @option --resume-flag-style[=value|id] value: <flag> <id>; id: use --session-id <id>
 # @option --pane=opencode Short kebab-case pane name/title
 # @option --cwd Working directory for the pane (defaults to the current directory)
 # @flag --ephemeral Close the pane when OpenCode exits (default: drop to a shell for review)

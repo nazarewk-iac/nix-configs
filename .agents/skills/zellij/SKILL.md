@@ -109,11 +109,12 @@ must prevent this interruption.
 Two packages do this work for you. Use them. Do not write raw
 `zellij attach --create-background`, `action new-pane`, or `subscribe` calls yourself.
 
-- `zellij-llm` (`packages/llm/zellij-llm/`) is the tool you call. It has seven command
-  subcommands — `spawn`, `start`, `spawn-and-watch`, `watch`, `wait`, `peek`, and `list` — plus
-  an `opencode` command group (see below). It derives the session name itself (see below), so
+- `zellij-llm` (`packages/llm/zellij-llm/`) is the tool you call. Its pane-creating command is
+  `run`, which takes a mandatory mode flag: `-i`/`--interactive` (argv command in the pane's pty,
+  for a TUI) or `-b`/`--batch` (a script on stdin, for one-shot work). The other subcommands are
+  `watch`, `wait`, `peek`, and `list`, plus an `opencode` command group (see below). It derives the session name itself (see below), so
   `--session` is optional. It creates the session (idempotent). It makes the stacked-pane layout.
-  It runs the command from stdin with `bash -xeEuo pipefail`. Run `zellij-llm --help`,
+  `run -b` runs the command from stdin with `bash -xeEuo pipefail`. Run `zellij-llm --help`,
   `zellij-llm <subcommand> --help`, or `zellij-llm opencode <sub> --help` for all flags.
 - `kdn-slug` (`packages/llm/kdn-slug/`) makes the names. `zellij-llm` calls it for you. You
   rarely call it directly. It finds the repository with `jj` or `git`. It finds the session id of
@@ -122,40 +123,40 @@ Two packages do this work for you. Use them. Do not write raw
   `--max-len` limit. `zellij-llm` forwards `--sep`, `--repo-sep`, `--max-len`, and `--tag` to it.
 
 `zellij-llm` derives the default session name from `kdn-slug`. It caps the name to fit zellij's
-socket-path limit. So the minimal call is `zellij-llm spawn --pane <slug>` with no `--session`.
+socket-path limit. So the minimal call is `zellij-llm run -b --pane <slug>` with no `--session`.
 Pass `--session <name>` to override the derived name; the tool then uses your name verbatim. Pass
 `--tag <slug>` (repeatable) to add trailing components to the derived name.
 
-Feed the command to `zellij-llm` with a HEREDOC. Do not use `echo ... | zellij-llm`. A HEREDOC
+Feed a batch command to `zellij-llm run -b` with a HEREDOC. Do not use `echo ... | zellij-llm`. A HEREDOC
 reads more clearly in the permission prompt. It also handles a multi-line command well.
 
 ```bash
-# a. spawn — run and return. It derives the session name when you omit --session. It creates the
+# a. run -b — run a stdin script and return. It derives the session name when you omit --session. It creates the
 #    session when no session exists yet. It runs the command (from stdin) in a new pane. It folds
-#    the pane into the stack. The pane stays open after the command exits. spawn returns at once.
-zellij-llm spawn --pane 'darwin-build' <<'EOF'
+#    the pane into the stack. The pane stays open after the command exits. run -b returns at once.
+zellij-llm run -b --pane 'darwin-build' <<'EOF'
 darwin-rebuild build
 EOF
 
-# spawn --wait — spawn, then follow the pane until the command exits. Same as spawn-and-watch.
+# run -b --wait — run the script, then follow the pane until the command exits.
 #    --mode stream:    it forwards the live pane output to this call's stdout.
 #    --mode heartbeat: it prints an elapsed-time status line at each --interval.
-zellij-llm spawn --pane 'flake-update' --wait --mode stream <<'EOF'
+zellij-llm run -b --pane 'flake-update' --wait --mode stream <<'EOF'
 nix flake update
 EOF
 
-# b. spawn-and-watch — the same as spawn --wait. It exists for compatibility.
-zellij-llm spawn-and-watch --pane 'flake-update' --mode heartbeat --interval 5 <<'EOF'
+#    Add --mode heartbeat --interval N to print an elapsed-time status line instead of streaming.
+zellij-llm run -b --pane 'flake-update' --wait --mode heartbeat --interval 5 <<'EOF'
 nix flake update
 EOF
 # every wait mode prints a final "EXIT:<code>" line and exits with that same code
 
-# c. watch — follow a pane you spawned earlier until its command exits. Same output modes as
-#    spawn --wait. Use it to attach to a still-running pane without a re-spawn.
+# b. watch — follow a pane you spawned earlier until its command exits. Same output modes as
+#    run --wait. Use it to attach to a still-running pane without a re-spawn.
 zellij-llm watch --pane 'darwin-build' --mode stream
 
 # d. wait — block until a pane's command exits. Print "EXIT:<code>" and return that code. No
-#    output stream. Use `spawn` then `wait` instead of a `sleep`+`peek` loop.
+#    output stream. Use `run -b` then `wait` instead of a `sleep`+`peek` loop.
 zellij-llm wait --pane 'darwin-build'
 
 # e. peek — dump the content of a pane in your own session (viewport, or --full for scrollback).
@@ -166,13 +167,13 @@ zellij-llm peek --pane 'darwin-build' --full
 # f. list — list the panes (id, title, exited, exit_status, command) in your own session.
 zellij-llm list
 
-# g. start — the INTERACTIVE sibling of spawn. Runs the argv command directly in a new pane so a
-#    TUI process gets a real pty (spawn pipes a script on stdin, which makes a TUI exit). Use it
-#    for pi, opencode, or an editor; use spawn for one-shot commands.
-zellij-llm start --pane pi -- pi --provider brys --model brys/qwen3.8-flash-next
+# g. run -i — the INTERACTIVE mode. Runs the argv command directly in a new pane so a TUI
+#    process gets a real pty (run -b pipes a script on stdin, which makes a TUI exit). Use it
+#    for pi, opencode, or an editor; use run -b for one-shot commands.
+zellij-llm run -i --pane pi -- pi --provider brys --model brys/qwen3.8-flash-next
 ```
 
-Do not poll with `sleep N; zellij-llm peek`. Use `wait`, `watch`, or `spawn --wait` instead. A
+Do not poll with `sleep N; zellij-llm peek`. Use `wait`, `watch`, or `run --wait` instead. A
 poll wastes time or reads a half-finished log.
 
 ### Drive an OpenCode session: `zellij-llm opencode`
@@ -244,7 +245,7 @@ short kebab-case slug for each `--pane` (for example, `darwin-build`), not a ful
 This convention lets `zellij list-sessions` and `list-tabs` show clearly which session and tab
 belong to which repository and conversation.
 
-`zellij-llm spawn` and `spawn-and-watch` fold each new pane into the stack for you. A raw
+`zellij-llm run` folds each new pane into the stack for you. A raw
 `new-pane --stacked` fails without an error in a headless session with no attached client. They
 also leave the pane open after the command stops. The user may want to read the output later.
 Close or rename a pane in your own session only with a raw `zellij action ...` call. Do it only
@@ -255,7 +256,7 @@ user.
 
 Tell the user at the start of any work that uses a dedicated session. Tell the user that you use a
 dedicated session. Tell the user how to open it. Do not assume that the user watches. `zellij-llm
-spawn` prints the session name it used (`spawned pane '<pane>' in session '<name>'`). Use that
+run` prints the session name it used (`started pane '<pane>' in session '<name>'`). Use that
 real name. For example, use `llm:nix-configs:c8a27b8a`. Do not use a placeholder:
 
 > I run this in a separate zellij session (`llm:nix-configs:c8a27b8a`), not your active one.
@@ -267,7 +268,7 @@ WezTerm. Then the user can open a new window that runs the attach command direct
 
 ```bash
 # quote the session name — it has ':' and '_', and the shell treats some punctuation as special
-SESSION='llm:nix-configs:c8a27b8a'                     # the name that spawn printed
+SESSION='llm:nix-configs:c8a27b8a'                     # the name that run printed
 wezterm start --new-tab -- zellij attach "$SESSION"    # new tab in the current window
 wezterm start -- zellij attach "$SESSION"              # new standalone window
 ```
@@ -295,7 +296,7 @@ Code always prompts for those, as the rule above requires.
 | `action new-pane` / `new-tab` / `go-to-tab*` / `focus-pane-id` / `close-*` / `kill-session` | Create, focus, or destroy state | Not allowlisted — always prompts. Never do this on the user's session. Do it in your own session |
 | `action new-pane --stacked --name <n> -- <cmd>` (your own session) | Run a command in a new stacked pane | Still prompts (not allowlisted). This is correct: it changes state, even in your own session |
 | `kdn-slug names --type <session\|tab\|pane> ...` | Make the naming-convention strings above | Read-only, no allowlist needed |
-| `zellij-llm spawn` / `start` / `spawn-and-watch` / `watch` / `wait` / `list` (your own session) | Preferred wrapper for the state-change calls above (`start` = interactive/pty) | Prompts the same as the raw calls. Not yet in the Bash allowlist |
+| `zellij-llm run -i` / `run -b` / `watch` / `wait` / `list` (your own session) | Preferred wrapper for the state-change calls above (`-i` = interactive/pty, `-b` = stdin script) | Prompts the same as the raw calls. Not yet in the Bash allowlist |
 | `zellij-llm peek` (your own session) | Preferred wrapper for `action dump-screen` | Like `dump-screen` above, but works only on your own session |
 | `zellij-llm opencode spawn/send/watch/list/attach` (your own session) | Start, drive, and watch an OpenCode session in a pane | Prompts the same as the raw calls. `send` focuses the pane and types, so it changes state; never point it at the user's session |
 
@@ -319,9 +320,8 @@ Code always prompts for those, as the rule above requires.
 - `action new-pane --stacked` does nothing in a headless session with no attached client. It
   returns a pane id. But the pane never appears in `list-panes`, and `dump-screen` on it returns
   empty. `zellij-llm` handles this with a plain `new-pane` and then `action stack-panes`. This is
-  a problem only when you write a raw `zellij action ...` call instead of `zellij-llm spawn` or
-  `spawn-and-watch`.
+  a problem only when you write a raw `zellij action ...` call instead of `zellij-llm run`.
 - `subscribe` never stops by itself, not even after the pane's command stops. It stops the events,
-  but it blocks forever. `zellij-llm spawn-and-watch --mode stream` handles this. It polls a
+  but it blocks forever. `zellij-llm run -b --wait --mode stream` handles this. It polls a
   separate exit marker. It stops `subscribe` when the marker appears. A raw `zellij subscribe ...`
   call in a script needs the same logic, or a timeout.
