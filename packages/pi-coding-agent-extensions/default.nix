@@ -100,11 +100,14 @@ in
   # zero runtime dependencies (only the Pi host peers), so no `npmDeps` tree is needed.
   pi-atelier =
     let
-      rev = "93025f2adb5bd8ce005ef8c7dee59deaf6385f03";
-      version = "0.18.0";
+      # A fork of michaelmjhhhh/pi-atelier on nazarewk-iac that (a) prefers jj over git for
+      # the workspace pulse and shows the jj change id/bookmarks, and (b) adds a STATS panel
+      # with per-sub-agent avg/latest tok/s. Bump `rev` and `hash` together when the branch moves.
+      rev = "d7bf77f24a49539b63866ed687f2459d88b3382b";
+      version = "0.18.0+jjstats";
       src = pkgs.fetchzip {
-        url = "https://github.com/michaelmjhhhh/pi-atelier/archive/${rev}.tar.gz";
-        hash = "sha256-qMOVYgquuy2Z5UsJ3IuDVfIOQYKFqWT4fHNZxcpGPig=";
+        url = "https://github.com/nazarewk-iac/pi-atelier/archive/${rev}.tar.gz";
+        hash = "sha256-hd3fgiN6nMATnTYgU3Kpzkbp9SQgdhzb2HS+RoQkXSg=";
         stripRoot = true;
       };
     in
