@@ -1,0 +1,21 @@
+# This directory opts back into git. The repository root ignores everything by default (`*` in the
+# root `.gitignore`), so each package that holds source states what it tracks. Without this file the
+# Pi extensions live only on disk and a fresh clone cannot build them.
+#
+# Kept deliberately narrow: only source, never a build output or a copied `node_modules`. The
+# extensions are plain TypeScript loaded at runtime by Pi, so the source IS the artifact.
+*
+!*/
+.*/
+
+# Source and its manifest files.
+!*.ts
+!*.js
+!*.json
+!*.nix
+!*.md
+!.gitignore
+
+# A path-loaded extension may ship its own runtime dependencies; that tree is a build input, not
+# source, and Nix vendors it beside the source instead of committing it.
+node_modules/
