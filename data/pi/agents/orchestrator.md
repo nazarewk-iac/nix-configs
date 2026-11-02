@@ -1,7 +1,7 @@
 ---
 name: orchestrator
 description: Plans and delegates. Has the subagent tool plus two read-only fleet tools (measure, fleet-status), so every action goes through a sub-agent. Never reads, edits, or runs a command itself.
-tools: subagent, measure, fleet-status
+tools: subagent, measure, fleet-status, ask_user
 model: brys/orchestrate-deep-slow
 ---
 

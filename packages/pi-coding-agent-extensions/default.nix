@@ -94,6 +94,25 @@ in
   idle-marker = ./idle-marker;
   subagent = ./subagent;
 
+  # pi-ask-user: the interactive `ask_user` tool. It lets an agent stop and ask the operator a
+  # focused question with option lists, instead of guessing or silently stalling. Vendored from a
+  # pinned commit; the Pi host injects the @sinclair/typebox and @earendil-works peers, so there is
+  # no node_modules tree to carry.
+  pi-ask-user =
+    let
+      rev = "cec297cc9bf319b1bf65c13de56bce6cf80835b5";
+      version = "0.17.2";
+      src = pkgs.fetchzip {
+        url = "https://github.com/edlsh/pi-ask-user/archive/${rev}.tar.gz";
+        hash = "sha256-MXFEgfLzpcg80Wu275iy0K5Tbbv460cz+mHBsleisyo=";
+        stripRoot = true;
+      };
+    in
+    mkExtension {
+      name = "pi-ask-user-${version}";
+      inherit src;
+    };
+
   # pi-atelier: a responsive status rail and live activity sidebar (model, context, git status,
   # usage, tool/agent activity, per-subagent cost curves, prefill progress). It is the status
   # surface for the Pi harness in place of the OpenCode built-ins. Vendored from a pinned commit;

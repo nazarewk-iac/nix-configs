@@ -80,6 +80,7 @@ let
       "delegate"
       "measure"
       "fleet-status"
+      "ask_user"
     ];
   };
 
@@ -112,6 +113,9 @@ let
               # tool/agent activity and per-subagent cost. The Pi-harness status surface in
               # place of the OpenCode built-ins.
               ext.pi-atelier
+              # `ask_user`: an agent can stop and ask the operator a focused question (option
+              # lists, multi-select, freeform) instead of guessing or silently ending its turn.
+              ext.pi-ask-user
             ];
           };
         }
