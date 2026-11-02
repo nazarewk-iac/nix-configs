@@ -204,45 +204,46 @@ in
   #    JSON line to $PI_SUBAGENT_LOG. Assert that shape with a STUB `pi` first on PATH: no model, no
   #    server, fully deterministic. This pins the interface the extension depends on, including the
   #    per-task `model` override.
-  pi-harness-subagent-spawn = pkgs.runCommand "pi-harness-subagent-spawn"
-    {
-      nativeBuildInputs = [
-        pi
-        pkgs.python3
-        pkgs.curl
-        pkgs.jq
-        pkgs.coreutils
-        pkgs.gnugrep
-      ];
-    }
-    ''
-      export HOME="$TMPDIR/home"; mkdir -p "$HOME/.pi/agent"
-      export PI_CODING_AGENT_DIR="$HOME/.pi/agent"
-      mkdir -p "$PI_CODING_AGENT_DIR/agents"
-      cp ${./agents}/scout.md "$PI_CODING_AGENT_DIR/agents/"
-      cat >"$PI_CODING_AGENT_DIR/models.json" <<'JSON'
-      {"providers":{"fake":{"baseUrl":"http://127.0.0.1:18085/v1","api":"openai-completions",
-       "apiKey":"t","models":[{"id":"test","contextWindow":8192,"maxTokens":256}]}}}
-JSON
-
-      ${fakeToolCallServer} 18085 >server.log 2>&1 &
-      server=$!
-      trap 'kill $server 2>/dev/null || true' EXIT
-      for _ in $(seq 1 60); do curl -sf -m1 http://127.0.0.1:18085/v1/models >/dev/null 2>&1 && break; sleep 1; done
-
-      export PI_SUBAGENT_LOG="$PWD/spawn.jsonl"
-      printf 'go' | pi --mode json -p --provider fake --model test \
-        --tools read,edit,write,bash,subagent --no-skills \
-        --extension ${./extensions/subagent} >out.jsonl 2>err.txt || true
-
-      test -s "$PI_SUBAGENT_LOG" || {
-        echo "FAIL: no subagent spawn log"; cat server.log; tail -20 err.txt; exit 1;
+  pi-harness-subagent-spawn =
+    pkgs.runCommand "pi-harness-subagent-spawn"
+      {
+        nativeBuildInputs = [
+          pi
+          pkgs.python3
+          pkgs.curl
+          pkgs.jq
+          pkgs.coreutils
+          pkgs.gnugrep
+        ];
       }
-      jq -e 'select(.agent=="scout" and .model=="brys/chat-dumb-fast")' "$PI_SUBAGENT_LOG" >/dev/null \
-        || { echo "FAIL: spawn log lacks scout + model override"; cat "$PI_SUBAGENT_LOG"; exit 1; }
-      echo "OK: subagent spawned with the agent's model override, logged"
-      touch $out
-    '';
+      ''
+              export HOME="$TMPDIR/home"; mkdir -p "$HOME/.pi/agent"
+              export PI_CODING_AGENT_DIR="$HOME/.pi/agent"
+              mkdir -p "$PI_CODING_AGENT_DIR/agents"
+              cp ${./agents}/scout.md "$PI_CODING_AGENT_DIR/agents/"
+              cat >"$PI_CODING_AGENT_DIR/models.json" <<'JSON'
+              {"providers":{"fake":{"baseUrl":"http://127.0.0.1:18085/v1","api":"openai-completions",
+               "apiKey":"t","models":[{"id":"test","contextWindow":8192,"maxTokens":256}]}}}
+        JSON
+
+              ${fakeToolCallServer} 18085 >server.log 2>&1 &
+              server=$!
+              trap 'kill $server 2>/dev/null || true' EXIT
+              for _ in $(seq 1 60); do curl -sf -m1 http://127.0.0.1:18085/v1/models >/dev/null 2>&1 && break; sleep 1; done
+
+              export PI_SUBAGENT_LOG="$PWD/spawn.jsonl"
+              printf 'go' | pi --mode json -p --provider fake --model test \
+                --tools read,edit,write,bash,subagent --no-skills \
+                --extension ${./extensions/subagent} >out.jsonl 2>err.txt || true
+
+              test -s "$PI_SUBAGENT_LOG" || {
+                echo "FAIL: no subagent spawn log"; cat server.log; tail -20 err.txt; exit 1;
+              }
+              jq -e 'select(.agent=="scout" and .model=="brys/chat-dumb-fast")' "$PI_SUBAGENT_LOG" >/dev/null \
+                || { echo "FAIL: spawn log lacks scout + model override"; cat "$PI_SUBAGENT_LOG"; exit 1; }
+              echo "OK: subagent spawned with the agent's model override, logged"
+              touch $out
+      '';
 
   # 7. A zellij pane created by zellij-llm inherits the devenv environment. The harness relies on
   #    this: a Pi pane started this way gets `jj`, `devenv`, `jq` and the LLM key without the
@@ -253,27 +254,28 @@ JSON
   #    editing devenv.nix produced no /tmp/devenv-reload-<pid>.sh). Hot reload therefore does not
   #    happen on an edit; it needs `devenv up` or direnv. So this check asserts availability, not
   #    live reload.
-  pi-harness-devenv-env = pkgs.runCommand "pi-harness-devenv-env"
-    {
-      nativeBuildInputs = [
-        pkgs.jq
-        pkgs.coreutils
-        pkgs.gnugrep
-      ];
-      # The tools a devenv shell must put on PATH for the harness to work.
-      inherit (pkgs) jujutsu devenv jq;
-    }
-    ''
-      missing=0
-      for t in ${pkgs.jujutsu}/bin/jj ${pkgs.devenv}/bin/devenv ${pkgs.jq}/bin/jq; do
-        if [ ! -x "$t" ]; then echo "FAIL: missing $t"; missing=1; fi
-      done
-      [ "$missing" = 0 ] || exit 1
-      # Every one is reachable by name when the shell's PATH includes them, which is how a
-      # zellij-llm pane sees them (it inherits the session creator environment).
-      echo "OK: jj, devenv and jq resolve; a zellij-llm pane inherits these via DEVENV_ROOT"
-      touch $out
-    '';
+  pi-harness-devenv-env =
+    pkgs.runCommand "pi-harness-devenv-env"
+      {
+        nativeBuildInputs = [
+          pkgs.jq
+          pkgs.coreutils
+          pkgs.gnugrep
+        ];
+        # The tools a devenv shell must put on PATH for the harness to work.
+        inherit (pkgs) jujutsu devenv jq;
+      }
+      ''
+        missing=0
+        for t in ${pkgs.jujutsu}/bin/jj ${pkgs.devenv}/bin/devenv ${pkgs.jq}/bin/jq; do
+          if [ ! -x "$t" ]; then echo "FAIL: missing $t"; missing=1; fi
+        done
+        [ "$missing" = 0 ] || exit 1
+        # Every one is reachable by name when the shell's PATH includes them, which is how a
+        # zellij-llm pane sees them (it inherits the session creator environment).
+        echo "OK: jj, devenv and jq resolve; a zellij-llm pane inherits these via DEVENV_ROOT"
+        touch $out
+      '';
 
   # 6. Delegation end to end on a model that can actually choose a tool. Qwen2.5-0.5B is the
   #    smallest measured to emit a real tool call, so this is the only check that exercises the

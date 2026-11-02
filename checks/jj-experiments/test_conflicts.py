@@ -82,4 +82,7 @@ def test_resolve_list_reports_no_conflicts_when_clean(mkrepo):
     r = repo.jj("resolve", "--list", check=False)
     # jj exits non-zero and says there is nothing to resolve.
     assert r.returncode != 0
-    assert "No conflicts" in (r.stdout + r.stderr) or "no conflicts" in (r.stdout + r.stderr).lower()
+    assert (
+        "No conflicts" in (r.stdout + r.stderr)
+        or "no conflicts" in (r.stdout + r.stderr).lower()
+    )

@@ -26,33 +26,33 @@ revset=""
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
-    --color) color_mode=always ;;
-    --color=*) color_mode="${1#*=}" ;;
-    -q | --quiet) quiet=1 ;;
-    -h | --help)
-      usage
-      exit 0
-      ;;
-    --)
-      shift
-      [ "$#" -gt 0 ] && revset="$1"
-      break
-      ;;
-    -*)
-      echo "jj-fork-audit: unknown option '$1'" >&2
-      exit 2
-      ;;
-    *) revset="$1" ;;
+  --color) color_mode=always ;;
+  --color=*) color_mode="${1#*=}" ;;
+  -q | --quiet) quiet=1 ;;
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  --)
+    shift
+    [ "$#" -gt 0 ] && revset="$1"
+    break
+    ;;
+  -*)
+    echo "jj-fork-audit: unknown option '$1'" >&2
+    exit 2
+    ;;
+  *) revset="$1" ;;
   esac
   shift
 done
 
 case "$color_mode" in
-  auto | always | never) ;;
-  *)
-    echo "jj-fork-audit: invalid --color '$color_mode' (auto|always|never)" >&2
-    exit 2
-    ;;
+auto | always | never) ;;
+*)
+  echo "jj-fork-audit: invalid --color '$color_mode' (auto|always|never)" >&2
+  exit 2
+  ;;
 esac
 
 jj root &>/dev/null || {
@@ -66,9 +66,9 @@ revset="${revset:-$default_revset}"
 # Read each whole pattern as one array element (newline-delimited). This keeps a
 # pattern that contains a space intact, so the audit matches the fork-direct revset.
 file_patterns=()
-[ -n "$SENSITIVE_FILE_PATTERNS" ] && mapfile -t file_patterns <<< "$SENSITIVE_FILE_PATTERNS"
+[ -n "$SENSITIVE_FILE_PATTERNS" ] && mapfile -t file_patterns <<<"$SENSITIVE_FILE_PATTERNS"
 msg_patterns=()
-[ -n "$SENSITIVE_MESSAGE_PATTERNS" ] && mapfile -t msg_patterns <<< "$SENSITIVE_MESSAGE_PATTERNS"
+[ -n "$SENSITIVE_MESSAGE_PATTERNS" ] && mapfile -t msg_patterns <<<"$SENSITIVE_MESSAGE_PATTERNS"
 
 if [ "${#file_patterns[@]}" -eq 0 ] && [ "${#msg_patterns[@]}" -eq 0 ]; then
   echo "jj-fork-audit: no denied patterns configured (this is not a fork repo)" >&2
@@ -118,7 +118,7 @@ if ! commits_raw="$(jj log -r "$select_revset" --no-graph -T 'change_id.short() 
   printf '%s\n' "$commits_raw" >&2
   exit 2
 fi
-mapfile -t commits <<< "$commits_raw"
+mapfile -t commits <<<"$commits_raw"
 
 found=0
 
@@ -148,7 +148,7 @@ for c in "${commits[@]}"; do
       m="$(jj file show -r "$c" "$f" 2>/dev/null | grep -nIiF --color="$grep_color" "${file_grep[@]}" || true)"
       if [ -n "$m" ]; then
         lines+="    ${CY}${f}${RST}:"$'\n'
-        while IFS= read -r ml; do lines+="      ${ml}"$'\n'; done <<< "$m"
+        while IFS= read -r ml; do lines+="      ${ml}"$'\n'; done <<<"$m"
       fi
     fi
   done < <(jj diff -r "$c" --name-only 2>/dev/null || true)
@@ -160,7 +160,7 @@ for c in "${commits[@]}"; do
     dm="$(jj diff -r "$c" --git 2>/dev/null | grep -nIiF --color="$grep_color" "${file_grep[@]}" || true)"
     if [ -n "$dm" ]; then
       lines+="    ${D}(matched in the diff only — removed or changed lines):${RST}"$'\n'
-      while IFS= read -r dl; do lines+="      ${dl}"$'\n'; done <<< "$dm"
+      while IFS= read -r dl; do lines+="      ${dl}"$'\n'; done <<<"$dm"
     fi
   fi
 

@@ -36,7 +36,7 @@ get_all_encryption_key_ids() {
 }
 
 main() {
-  :>"${GPG_ID}.new"
+  : >"${GPG_ID}.new"
 
   for filename in "${PUBKEYS}"/*; do
     key_fingerprint="$(get_identity_fingerprint "${filename}")"

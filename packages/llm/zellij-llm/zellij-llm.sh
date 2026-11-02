@@ -160,8 +160,8 @@ peek() {
 list() {
   local session
   session="$(_session_name)"
-  zellij --session "$session" action list-panes --json --all -s -c \
-    | jq '[.[] | select(.is_plugin==false) | {id, title, exited, exit_status, terminal_command}]'
+  zellij --session "$session" action list-panes --json --all -s -c |
+    jq '[.[] | select(.is_plugin==false) | {id, title, exited, exit_status, terminal_command}]'
 }
 
 # Shared body for spawn and spawn-and-watch. $1 is 1 to follow the pane until exit, 0 to return.
@@ -464,15 +464,18 @@ _marker_for_ref() {
   else
     name="$ref"
   fi
-  [[ -n "$name" ]] || { printf ''; return 0; }
+  [[ -n "$name" ]] || {
+    printf ''
+    return 0
+  }
   dir="$(_latest_cmd_dir "$name")"
   [[ -n "$dir" ]] && printf '%s/exit' "$dir" || printf ''
 }
 
 _pane_name_by_id() {
   local session="$1" id="$2"
-  zellij --session "$session" action list-panes --json --all \
-    | jq -r --arg id "$id" '
+  zellij --session "$session" action list-panes --json --all |
+    jq -r --arg id "$id" '
         [.[] | select(.is_plugin==false)
              | select((.id|tostring)==$id or ("terminal_"+(.id|tostring))==$id)]
         | .[-1].title // empty'
@@ -540,8 +543,8 @@ _decode_and_run_cmd() {
 _stack_with_existing() {
   local session="$1"
   local -a ids
-  mapfile -t ids < <(zellij --session "$session" action list-panes --json --all \
-    | jq -r '[.[] | select(.is_plugin==false)] | .[].id')
+  mapfile -t ids < <(zellij --session "$session" action list-panes --json --all |
+    jq -r '[.[] | select(.is_plugin==false)] | .[].id')
   if [[ "${#ids[@]}" -gt 1 ]]; then
     zellij --session "$session" action stack-panes -- "${ids[@]}" >/dev/null
   fi
@@ -549,8 +552,8 @@ _stack_with_existing() {
 
 _pane_id_by_title() {
   local session="$1" title="$2"
-  zellij --session "$session" action list-panes --json --all \
-    | jq -r --arg t "$title" '[.[] | select(.is_plugin==false and .title==$t)] | .[-1].id'
+  zellij --session "$session" action list-panes --json --all |
+    jq -r --arg t "$title" '[.[] | select(.is_plugin==false and .title==$t)] | .[-1].id'
 }
 
 _resolve_pane_ref() {
@@ -768,9 +771,9 @@ _watch_opencode() {
 # List the non-plugin panes and the OpenCode session id (ses_...) each one shows.
 _list_opencode() {
   local session="$1"
-  zellij --session "$session" action list-panes --json --all \
-    | jq -r '.[] | select(.is_plugin==false) | [.id, .title] | @tsv' \
-    | while IFS=$'\t' read -r id title; do
+  zellij --session "$session" action list-panes --json --all |
+    jq -r '.[] | select(.is_plugin==false) | [.id, .title] | @tsv' |
+    while IFS=$'\t' read -r id title; do
       local sid
       # `|| true` keeps `set -o pipefail` from aborting on a pane with no `ses_` id.
       sid="$(zellij --session "$session" action dump-screen -p "$id" 2>/dev/null | grep -oE 'ses_[A-Za-z0-9]+' | tail -1 || true)"

@@ -79,7 +79,9 @@ def test_revset_alias_and_user_alias_overlays_apply(mkrepo):
 
     # Command aliases cannot load from --config, so they go into the repo config
     # file via define_alias (jj refuses `aliases.*` passed as --config).
-    repo.define_alias("lg", ["log", "--no-graph", "-r", "@-", "-T", "change_id.shortest(12)"])
+    repo.define_alias(
+        "lg", ["log", "--no-graph", "-r", "@-", "-T", "change_id.shortest(12)"]
+    )
     assert repo.jj_out("lg") == tip
 
 
@@ -88,7 +90,7 @@ def test_set_records_a_dotted_config_entry(mkrepo):
     cfg = JJConfig.without_slot()
     mkrepo(cfg=cfg)
     cfg.set("ui.paginate", "never")
-    assert "ui.paginate=\"never\"" in cfg.config_args()
+    assert 'ui.paginate="never"' in cfg.config_args()
 
 
 def test_deferred_overlay_is_inactive_until_activated(mkrepo):
@@ -109,7 +111,9 @@ def test_deferred_overlay_is_inactive_until_activated(mkrepo):
 
     cfg.activate_deferred()
     # after activation the alias resolves:
-    assert repo.jj_out("log", "--no-graph", "-r", "later_tip", "-T", "change_id.shortest(12)")
+    assert repo.jj_out(
+        "log", "--no-graph", "-r", "later_tip", "-T", "change_id.shortest(12)"
+    )
 
 
 # --- config scopes -----------------------------------------------------------

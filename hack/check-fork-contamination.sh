@@ -32,11 +32,11 @@ fi
 # Read each whole pattern as one array element (newline-delimited), so a pattern that contains a
 # space stays intact.
 file_patterns=()
-[ -n "$SENSITIVE_FILE_PATTERNS" ] && mapfile -t file_patterns <<< "$SENSITIVE_FILE_PATTERNS"
+[ -n "$SENSITIVE_FILE_PATTERNS" ] && mapfile -t file_patterns <<<"$SENSITIVE_FILE_PATTERNS"
 diff_patterns=()
-[ -n "$SENSITIVE_MESSAGE_PATTERNS" ] && mapfile -t diff_patterns <<< "$SENSITIVE_MESSAGE_PATTERNS"
+[ -n "$SENSITIVE_MESSAGE_PATTERNS" ] && mapfile -t diff_patterns <<<"$SENSITIVE_MESSAGE_PATTERNS"
 if [ -n "$SENSITIVE_FILE_PATTERNS" ]; then
-  mapfile -t _fp <<< "$SENSITIVE_FILE_PATTERNS"
+  mapfile -t _fp <<<"$SENSITIVE_FILE_PATTERNS"
   diff_patterns+=("${_fp[@]}")
 fi
 

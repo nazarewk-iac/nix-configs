@@ -20,13 +20,13 @@ def test_squash_from_into_routes_chosen_files(mkrepo):
     """
     repo = mkrepo()
     a = repo.commit("A adds a", {"a.txt": "a1\n"})  # @ is now an empty child of A
-    repo.write("a.txt", "a1\na2\n")   # modify A's file
-    repo.write("c.txt", "new\n")      # unrelated new file
+    repo.write("a.txt", "a1\na2\n")  # modify A's file
+    repo.write("c.txt", "new\n")  # unrelated new file
 
     repo.jj("squash", "--from", "@", "--into", a, "--", "a.txt")
 
     assert "a2" in repo.jj_out("file", "show", "-r", a, "a.txt")  # folded into A
-    assert _names(repo, "@") == {"c.txt"}                          # the rest stays in @
+    assert _names(repo, "@") == {"c.txt"}  # the rest stays in @
 
 
 def test_absorb_routes_each_hunk_to_its_last_toucher(mkrepo):
@@ -37,15 +37,15 @@ def test_absorb_routes_each_hunk_to_its_last_toucher(mkrepo):
     repo = mkrepo()
     a = repo.commit("A adds a", {"a.txt": "a1\n"})
     b = repo.commit("B adds b", {"b.txt": "b1\n"})
-    repo.write("a.txt", "a1\na2\n")   # last touched by A
-    repo.write("b.txt", "b1\nb2\n")   # last touched by B
-    repo.write("c.txt", "new\n")      # no ancestor touched it
+    repo.write("a.txt", "a1\na2\n")  # last touched by A
+    repo.write("b.txt", "b1\nb2\n")  # last touched by B
+    repo.write("c.txt", "new\n")  # no ancestor touched it
 
     repo.jj("absorb")
 
     assert "a2" in repo.jj_out("file", "show", "-r", a, "a.txt")  # routed to A
     assert "b2" in repo.jj_out("file", "show", "-r", b, "b.txt")  # routed to B
-    assert _names(repo, "@") == {"c.txt"}                          # no-ancestor hunk stays in @
+    assert _names(repo, "@") == {"c.txt"}  # no-ancestor hunk stays in @
 
 
 def test_absorb_does_not_move_into_an_immutable_ancestor(mkrepo):
@@ -62,8 +62,8 @@ def test_absorb_does_not_move_into_an_immutable_ancestor(mkrepo):
     repo.define_config("repo", 'revset-aliases."immutable_heads()"', "present(frozenA)")
     assert a in repo.ids("immutable()")
 
-    repo.write("a.txt", "a1\na2\n")   # last touched by the now-immutable A
+    repo.write("a.txt", "a1\na2\n")  # last touched by the now-immutable A
     repo.jj("absorb")
 
-    assert "a.txt" in _names(repo, "@")            # left in @, not absorbed
-    assert repo.commit_id(a) == a_cid              # A not rewritten
+    assert "a.txt" in _names(repo, "@")  # left in @, not absorbed
+    assert repo.commit_id(a) == a_cid  # A not rewritten

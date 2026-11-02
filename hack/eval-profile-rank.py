@@ -76,7 +76,9 @@ def table(title: str, counter: collections.Counter, total: int, top: int) -> Non
 def main() -> int:
     parser = argparse.ArgumentParser(prog="eval-profile-rank")
     parser.add_argument("folded", help="the collapsed-stack file")
-    parser.add_argument("--top", type=int, default=25, help="rows per table, default 25")
+    parser.add_argument(
+        "--top", type=int, default=25, help="rows per table, default 25"
+    )
     args = parser.parse_args()
 
     self_leaf: collections.Counter = collections.Counter()

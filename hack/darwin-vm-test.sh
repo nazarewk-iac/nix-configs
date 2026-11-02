@@ -47,7 +47,10 @@ KEY_DIR=""
 export TART_NO_AUTO_PRUNE=1
 
 log() { printf '── %s\n' "$*" >&2; }
-die() { printf 'error: %s\n' "$*" >&2; exit 1; }
+die() {
+  printf 'error: %s\n' "$*" >&2
+  exit 1
+}
 
 # Rule 1. Apple Virtualization needs no root, and a root run leaves root-owned state behind.
 if [ "$(id -u)" -eq 0 ]; then
@@ -87,8 +90,8 @@ stop_vm() {
 delete_clone() {
   local vm="$1"
   case "$vm" in
-    "$CLONE_PREFIX"?*) : ;;
-    *) die "refuse to delete '$vm' — only a guest under the '$CLONE_PREFIX' prefix" ;;
+  "$CLONE_PREFIX"?*) : ;;
+  *) die "refuse to delete '$vm' — only a guest under the '$CLONE_PREFIX' prefix" ;;
   esac
   if [ "$vm" = "$BASE_VM" ] || [ "$vm" = "$GOLDEN_VM" ]; then
     die "refuse to delete the base image or the golden image"
@@ -271,13 +274,13 @@ cmd_run() {
   local keep=0
   while [ "$#" -gt 0 ]; do
     case "$1" in
-      --cold) cold=1 ;;
-      --keep) keep=1 ;;
-      --subject)
-        shift
-        SUBJECT="${1:?--subject needs a flake attribute}"
-        ;;
-      *) die "unknown flag: $1" ;;
+    --cold) cold=1 ;;
+    --keep) keep=1 ;;
+    --subject)
+      shift
+      SUBJECT="${1:?--subject needs a flake attribute}"
+      ;;
+    *) die "unknown flag: $1" ;;
     esac
     shift
   done
@@ -330,15 +333,15 @@ cmd_run() {
 }
 
 case "${1:-}" in
-  bake)
-    shift
-    cmd_bake "$@"
-    ;;
-  run)
-    shift
-    cmd_run "$@"
-    ;;
-  *)
-    die "usage: darwin-vm-test (bake | run [--cold] [--keep] [--subject <flake attr>])"
-    ;;
+bake)
+  shift
+  cmd_bake "$@"
+  ;;
+run)
+  shift
+  cmd_run "$@"
+  ;;
+*)
+  die "usage: darwin-vm-test (bake | run [--cold] [--keep] [--subject <flake attr>])"
+  ;;
 esac

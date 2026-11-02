@@ -7,9 +7,7 @@ import fire
 pattern: str = ""
 placeholder_pattern = re.compile(pattern)
 
-common_kwargs = dict(
-    output="/dev/stdout"
-)
+common_kwargs = dict(output="/dev/stdout")
 
 
 @dataclasses.dataclass
@@ -20,7 +18,7 @@ class Program:
         end = len(line)
         matches = list(placeholder_pattern.finditer(line))
         for match in matches:
-            out.write(line[start:match.start()])
+            out.write(line[start : match.start()])
             path = match["path"]
             out.write(Path(path).read_text())
             start = match.end()
@@ -37,7 +35,7 @@ class Program:
 
     def render_string(self, input: str, **kwargs):
         kwargs = common_kwargs | kwargs
-        with (Path(kwargs["output"]).open("w") as out):
+        with Path(kwargs["output"]).open("w") as out:
             for line in input.splitlines(keepends=True):
                 self._line_handler(line, out)
 

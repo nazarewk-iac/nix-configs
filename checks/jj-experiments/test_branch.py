@@ -42,7 +42,7 @@ def test_add_change_to_branch_is_a_plain_split(branch):
     repo.jj("split", "-m", "feat: branch three", "--", "branch/b3.txt")
 
     b3 = _one(repo, 'description(substring:"branch three")')
-    assert repo.ids(f"parents({b3})") == {L["B2"]}   # single parent, no merge
+    assert repo.ids(f"parents({b3})") == {L["B2"]}  # single parent, no merge
     assert b3 in repo.ids("branch")
     assert repo.ids("branch-tip") == {b3}
 
@@ -54,10 +54,12 @@ def test_integrate_trunk_by_rebase(branch):
 
     repo.jj("rebase", "-s", "roots(branch)", "-d", "trunk-incoming-tip")
 
-    assert repo.ids(f'parents({L["B1"]})') == {L["T2"]}  # branch root now on the new trunk tip
-    assert repo.ids("trunk-incoming") == set()           # all trunk integrated
-    assert repo.commit_id(L["T2"]) == t2_cid             # pushed trunk not rewritten
-    assert repo.ids("branch & merges()") == set()        # linear, no merge introduced
+    assert repo.ids(f"parents({L['B1']})") == {
+        L["T2"]
+    }  # branch root now on the new trunk tip
+    assert repo.ids("trunk-incoming") == set()  # all trunk integrated
+    assert repo.commit_id(L["T2"]) == t2_cid  # pushed trunk not rewritten
+    assert repo.ids("branch & merges()") == set()  # linear, no merge introduced
 
 
 def test_integrate_trunk_by_merge(branch):
@@ -68,10 +70,13 @@ def test_integrate_trunk_by_merge(branch):
     repo.jj("new", "branch-tip", "trunk-incoming-tip", "-m", "merge trunk")
     m = repo.change_id("@")
 
-    assert repo.ids(f"parents({m})") == {L["B2"], L["T2"]}  # merge(branch tip, new trunk)
-    assert repo.ids("trunk-incoming") == set()             # trunk integrated
-    assert repo.commit_id(L["T2"]) == t2_cid               # pushed trunk not rewritten
-    assert repo.ids(f'{L["T2"]} & ::@') == {L["T2"]}       # old trunk stays an ancestor
+    assert repo.ids(f"parents({m})") == {
+        L["B2"],
+        L["T2"],
+    }  # merge(branch tip, new trunk)
+    assert repo.ids("trunk-incoming") == set()  # trunk integrated
+    assert repo.commit_id(L["T2"]) == t2_cid  # pushed trunk not rewritten
+    assert repo.ids(f"{L['T2']} & ::@") == {L["T2"]}  # old trunk stays an ancestor
 
 
 def test_upstream_only_fetch_then_rebase_onto_tip(mkrepo):
@@ -85,7 +90,7 @@ def test_upstream_only_fetch_then_rebase_onto_tip(mkrepo):
     a = repo.commit("chore: readme", {"README.md": "# repo\n"})
     repo.register_remote("origin")
     repo.bookmark_set("main", a)
-    repo.push("origin", "main")                       # main@origin = A
+    repo.push("origin", "main")  # main@origin = A
 
     # local work built on the OLD base A
     work = repo.new(a, message="feat: local work")
@@ -98,11 +103,11 @@ def test_upstream_only_fetch_then_rebase_onto_tip(mkrepo):
     repo.git("push", "origin", f"{sha}:refs/heads/main")
     repo.jj("git", "fetch", "--remote", "origin")
 
-    assert repo.ids("main@origin") == {up}            # fetch advanced the tip
-    assert repo.ids(f"parents({work})") == {a}        # work still on the old base
+    assert repo.ids("main@origin") == {up}  # fetch advanced the tip
+    assert repo.ids(f"parents({work})") == {a}  # work still on the old base
 
     repo.jj("rebase", "-s", work, "-d", "main@origin")
-    assert repo.ids(f"parents({work})") == {up}       # work now on the fetched tip
+    assert repo.ids(f"parents({work})") == {up}  # work now on the fetched tip
 
 
 def test_cannot_rewrite_a_pushed_trunk_commit(branch):
@@ -112,5 +117,7 @@ def test_cannot_rewrite_a_pushed_trunk_commit(branch):
     assert r.returncode != 0
     assert "immutable" in r.stderr.lower()
 
-    ok = repo.jj("new", L["T2"], "-m", "forward", check=False)  # build forward is allowed
+    ok = repo.jj(
+        "new", L["T2"], "-m", "forward", check=False
+    )  # build forward is allowed
     assert ok.returncode == 0

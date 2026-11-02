@@ -15,16 +15,22 @@
 #
 # The body stays an INLINE attrset here: a module in this entity's own `nixos` aspect cannot
 # request `pkgs` (it recurses through `_module.args`). `lib` and `inputs` come from the closure.
-{ kdn, inputs, lib, ... }:
+{
+  kdn,
+  inputs,
+  lib,
+  ...
+}:
 let
   bootDevicePath = "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_04KE345HX9EUZLSW-0:0";
   rootDiskPath = "/dev/disk/by-id/ata-HS-SSD-E100_256G_30023586951";
   rootLuksUuid = "4f314bc3-6c3c-4a37-9756-5a03d286cf7b";
   # rustdesk is marked unfree; instantiate nixpkgs with it allowed just for this package.
-  rustdesk = (import inputs.nixpkgs {
-    system = "x86_64-linux";
-    config.allowUnfree = true;
-  }).rustdesk;
+  rustdesk =
+    (import inputs.nixpkgs {
+      system = "x86_64-linux";
+      config.allowUnfree = true;
+    }).rustdesk;
 in
 {
   den.hosts.x86_64-linux.pryll.class = "nixos";
@@ -69,7 +75,10 @@ in
 
     # Which profiles this host takes from data/users.data.nix. The whole row (uid, groups, keys,
     # password file) arrives from the data file; the host no longer repeats it.
-    kdn.userProfiles = [ "bn" "root" ];
+    kdn.userProfiles = [
+      "bn"
+      "root"
+    ];
 
     kdn.hostName = "pryll";
 

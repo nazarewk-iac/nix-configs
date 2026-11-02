@@ -153,20 +153,22 @@ let
       };
 
       config.kdn.security.secrets.age.genScripts = [
-        (lib.mkIf cfg.tpm.enable (pkgs.writeShellApplication {
-          name = "kdn-sops-age-gen-keys-tpm";
-          runtimeInputs = with pkgs; [
-            coreutils
-            age-plugin-tpm
-          ];
-          text = ''
-            # The blob is the whole identity for `age-plugin-tpm`; it prints nothing when the
-            # file is absent, so a host without an enrolled TPM is unaffected.
-            if test -r ${lib.strings.escapeShellArg cfg.tpm.identityFile}; then
-              cat ${lib.strings.escapeShellArg cfg.tpm.identityFile}
-            fi
-          '';
-        }))
+        (lib.mkIf cfg.tpm.enable (
+          pkgs.writeShellApplication {
+            name = "kdn-sops-age-gen-keys-tpm";
+            runtimeInputs = with pkgs; [
+              coreutils
+              age-plugin-tpm
+            ];
+            text = ''
+              # The blob is the whole identity for `age-plugin-tpm`; it prints nothing when the
+              # file is absent, so a host without an enrolled TPM is unaffected.
+              if test -r ${lib.strings.escapeShellArg cfg.tpm.identityFile}; then
+                cat ${lib.strings.escapeShellArg cfg.tpm.identityFile}
+              fi
+            '';
+          }
+        ))
         (pkgs.writeShellApplication {
           name = "kdn-sops-age-gen-keys-ssh";
           runtimeInputs = with pkgs; [
@@ -324,9 +326,8 @@ let
       # and the decrypt fails — sshd never starts. `RequiresMountsFor` makes systemd order
       # and require the mount units covering the path, which is the only reliable way: the
       # mount's unit name is derived from the path and is not stable across layouts.
-      systemd.services.sops-install-secrets.unitConfig.RequiresMountsFor = lib.optional
-        config.kdn.security.secrets.age.tpm.enable
-        config.kdn.security.secrets.age.tpm.identityFile;
+      systemd.services.sops-install-secrets.unitConfig.RequiresMountsFor =
+        lib.optional config.kdn.security.secrets.age.tpm.enable config.kdn.security.secrets.age.tpm.identityFile;
     };
 
   darwinTarget =

@@ -76,8 +76,12 @@ def test_pushed_reachability(reference):
     # `::remote_bookmarks()` also reaches jj's virtual root commit; exclude it
     # with `~root()` so the assertion covers the meaningful set.
     repo, labels = reference
-    assert repo.ids("pushed & ~root()") == _labels(labels, "A", "P1", "P2", "U1", "U2", "F1", "M")
-    assert repo.ids("pushed-fork & ~root()") == _labels(labels, "A", "U1", "U2", "F1", "M")
+    assert repo.ids("pushed & ~root()") == _labels(
+        labels, "A", "P1", "P2", "U1", "U2", "F1", "M"
+    )
+    assert repo.ids("pushed-fork & ~root()") == _labels(
+        labels, "A", "U1", "U2", "F1", "M"
+    )
     assert repo.ids("pushed-upstream & ~root()") == _labels(labels, "A", "P1", "P2")
 
 

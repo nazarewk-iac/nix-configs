@@ -9,7 +9,7 @@ for entry in "$@"; do
   # strip trailing /
   entry="${entry%/}"
 
-  if [[ "${entry}" != codecommit::*://*@*  ]]; then
+  if [[ "${entry}" != codecommit::*://*@* ]]; then
     echo "codecommit url must be in format: codecommit::REGION://PROFILE@REPO_NAME" >&2
     exit 1
   fi

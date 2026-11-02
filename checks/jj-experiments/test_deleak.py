@@ -30,16 +30,24 @@ def test_deleak_by_splitting_content(base):
     repo.write("hosts/PLACEHOLDER-SENSITIVE-mix.nix", "# sensitive\n")
     repo.describe("feat: mixed work")
     mixed = repo.change_id("@")
-    assert repo.ids("fork-leaked") == {mixed}   # the mixed commit is leaked
+    assert repo.ids("fork-leaked") == {mixed}  # the mixed commit is leaked
 
     # Split the sensitive file into its own commit; the generic remainder stays
     # in @ (jj keeps the selected files in the parent, the rest in @).
-    repo.jj("split", "-m", "feat(fork): sensitive part", "--", "hosts/PLACEHOLDER-SENSITIVE-mix.nix")
-    generic = repo.change_id("@")     # remainder — generic only
+    repo.jj(
+        "split",
+        "-m",
+        "feat(fork): sensitive part",
+        "--",
+        "hosts/PLACEHOLDER-SENSITIVE-mix.nix",
+    )
+    generic = repo.change_id("@")  # remainder — generic only
     sensitive = repo.change_id("@-")  # the split-out sensitive commit
 
-    assert repo.ids("fork-leaked") == {sensitive}   # only the sensitive commit stays leaked
-    assert generic in repo.ids("upstream-safe")       # the generic part is now clean
+    assert repo.ids("fork-leaked") == {
+        sensitive
+    }  # only the sensitive commit stays leaked
+    assert generic in repo.ids("upstream-safe")  # the generic part is now clean
     assert generic not in repo.ids("fork-leaked")
 
 
@@ -80,5 +88,8 @@ def test_make_x_an_ancestor_of_y(base):
 
     repo.jj("rebase", "-s", y, "-d", x, "-d", m)
 
-    assert repo.ids(f"parents({y})") == {x, m}     # Y is now a merge of X and its old parent
-    assert repo.ids(f"{x} & ::{y}") == {x}          # X is an ancestor of Y
+    assert repo.ids(f"parents({y})") == {
+        x,
+        m,
+    }  # Y is now a merge of X and its old parent
+    assert repo.ids(f"{x} & ::{y}") == {x}  # X is an ancestor of Y

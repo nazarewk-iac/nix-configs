@@ -68,8 +68,7 @@ def main():
 
     deprecated_services = [
         # this scheme has trouble syncing on Android (Permission Denied) most likely due to either + or : sign
-        f"git-credential-keyring+%(protocol)s://{protocolless_url}"
-        % params,
+        f"git-credential-keyring+%(protocol)s://{protocolless_url}" % params,
     ]
 
     service = "git/" + protocolless_url

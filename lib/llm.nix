@@ -29,7 +29,12 @@ let
         # it to the window so an output cap can never exceed the context it shares with the prompt.
         maxTokens = lib.min (m.pi.maxTokens or data.pi.defaults.maxTokens) ctx;
       }
-      // lib.optionalAttrs (m.vision or false) { input = [ "text" "image" ]; };
+      // lib.optionalAttrs (m.vision or false) {
+        input = [
+          "text"
+          "image"
+        ];
+      };
       ids = if (m.aliases or [ ]) == [ ] then [ name ] else m.aliases;
     in
     map (id: base // { inherit id; }) ids;

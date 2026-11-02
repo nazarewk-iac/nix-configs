@@ -15,24 +15,24 @@ update_patches_args=(--update)
 updater_args=(--apply)
 inputs=()
 test "${#args[@]}" -gt 0 || args+=("g:all")
-for arg in "${args[@]}" ; do
+for arg in "${args[@]}"; do
   case "$arg" in
-    g:patches)
-      updater_args+=("${update_patches_args[@]}")
-      ;;
-    g:upstreams)
-      mapfile -t -O "${#inputs[@]}" inputs < <(list_inputs | grep -e '-upstream$')
-      ;;
-    g:all)
-      updater_args+=("${update_patches_args[@]}")
-      mapfile -t -O "${#inputs[@]}" inputs < <(list_inputs)
-      ;;
-    i:*)
-      inputs+=("${arg#i:}")
-      ;;
-    *)
-      updater_args+=("$arg")
-      ;;
+  g:patches)
+    updater_args+=("${update_patches_args[@]}")
+    ;;
+  g:upstreams)
+    mapfile -t -O "${#inputs[@]}" inputs < <(list_inputs | grep -e '-upstream$')
+    ;;
+  g:all)
+    updater_args+=("${update_patches_args[@]}")
+    mapfile -t -O "${#inputs[@]}" inputs < <(list_inputs)
+    ;;
+  i:*)
+    inputs+=("${arg#i:}")
+    ;;
+  *)
+    updater_args+=("$arg")
+    ;;
   esac
 done
 

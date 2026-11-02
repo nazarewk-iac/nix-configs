@@ -43,7 +43,9 @@ def zellij_socket_dir():
     # short parent. The tests pass an explicit --session, so the socket path stays short. This
     # fixture is session-scoped, not per-test, because every test here shares one zellij server
     # behind this socket dir. It tears down once, after the whole run.
-    with tempfile.TemporaryDirectory(dir="/tmp", prefix="kdn-test-zellij-") as socket_dir:
+    with tempfile.TemporaryDirectory(
+        dir="/tmp", prefix="kdn-test-zellij-"
+    ) as socket_dir:
         os.environ["ZELLIJ_SOCKET_DIR"] = socket_dir
         yield socket_dir
 
@@ -91,36 +93,65 @@ def wait_for(predicate, timeout=10, interval=0.2):
 
 
 def test_spawn_creates_session_and_runs_stdin_script(session):
-    run("zellij-llm", "spawn", "--session", session, "--pane", "p1", input_text="echo hi-from-p1\n")
+    run(
+        "zellij-llm",
+        "spawn",
+        "--session",
+        session,
+        "--pane",
+        "p1",
+        input_text="echo hi-from-p1\n",
+    )
     # The pane keeps running (drops to a shell), so check the output appears, not the exited flag.
     assert wait_for(lambda: "hi-from-p1" in peek(session, "p1", full=True))
     assert any(p["title"] == "p1" for p in list_panes(session))
 
 
 def test_spawn_is_idempotent_on_existing_session(session):
-    run("zellij-llm", "spawn", "--session", session, "--pane", "p1", input_text="true\n")
+    run(
+        "zellij-llm", "spawn", "--session", session, "--pane", "p1", input_text="true\n"
+    )
     # The second spawn must not fail even though the session already exists.
-    run("zellij-llm", "spawn", "--session", session, "--pane", "p2", input_text="true\n")
+    run(
+        "zellij-llm", "spawn", "--session", session, "--pane", "p2", input_text="true\n"
+    )
     assert wait_for(lambda: len(list_panes(session)) >= 3)  # default pane + p1 + p2
 
 
 def test_peek_returns_pane_output_by_title_and_by_id(session):
-    run("zellij-llm", "spawn", "--session", session, "--pane", "p1", input_text="echo peekable\n")
+    run(
+        "zellij-llm",
+        "spawn",
+        "--session",
+        session,
+        "--pane",
+        "p1",
+        input_text="echo peekable\n",
+    )
     assert wait_for(lambda: "peekable" in peek(session, "p1", full=True))
 
     by_title = run("zellij-llm", "peek", "--session", session, "--pane", "p1", "--full")
     assert "peekable" in by_title.stdout
 
     pane_id = next(p["id"] for p in list_panes(session) if p["title"] == "p1")
-    by_id = run("zellij-llm", "peek", "--session", session, "--pane", str(pane_id), "--full")
+    by_id = run(
+        "zellij-llm", "peek", "--session", session, "--pane", str(pane_id), "--full"
+    )
     assert "peekable" in by_id.stdout
 
 
 def test_spawn_and_watch_heartbeat_reports_exit_code(session):
     out = run(
-        "zellij-llm", "spawn-and-watch",
-        "--session", session, "--pane", "watch-hb",
-        "--mode", "heartbeat", "--interval", "1",
+        "zellij-llm",
+        "spawn-and-watch",
+        "--session",
+        session,
+        "--pane",
+        "watch-hb",
+        "--mode",
+        "heartbeat",
+        "--interval",
+        "1",
         input_text="sleep 2\nexit 7\n",
         check=False,
     )
@@ -130,9 +161,14 @@ def test_spawn_and_watch_heartbeat_reports_exit_code(session):
 
 def test_spawn_and_watch_stream_reports_exit_code(session):
     out = run(
-        "zellij-llm", "spawn-and-watch",
-        "--session", session, "--pane", "watch-stream",
-        "--mode", "stream",
+        "zellij-llm",
+        "spawn-and-watch",
+        "--session",
+        session,
+        "--pane",
+        "watch-stream",
+        "--mode",
+        "stream",
         input_text="echo streamed-line\nexit 3\n",
         check=False,
     )
@@ -147,9 +183,14 @@ def test_spawn_and_watch_stream_does_not_duplicate_lines(session):
     # diffs `--format json`'s viewport array instead of a forward of raw output. This test
     # locks that fix in.
     out = run(
-        "zellij-llm", "spawn-and-watch",
-        "--session", session, "--pane", "watch-stream-dup",
-        "--mode", "stream",
+        "zellij-llm",
+        "spawn-and-watch",
+        "--session",
+        session,
+        "--pane",
+        "watch-stream-dup",
+        "--mode",
+        "stream",
         input_text="echo alpha\necho bravo\necho charlie\nexit 0\n",
         check=False,
     )
@@ -163,7 +204,15 @@ def test_spawn_and_watch_stream_does_not_duplicate_lines(session):
 def test_spawn_persists_pane_by_default(session):
     # Default behavior drops the pane to a shell after the command exits, so the user can attach
     # and review. The pane stays present and does NOT report exited (a live shell holds it open).
-    run("zellij-llm", "spawn", "--session", session, "--pane", "keep", input_text="echo kept-line\n")
+    run(
+        "zellij-llm",
+        "spawn",
+        "--session",
+        session,
+        "--pane",
+        "keep",
+        input_text="echo kept-line\n",
+    )
     assert wait_for(lambda: "kept-line" in peek(session, "keep", full=True))
     panes = {p["title"]: p for p in list_panes(session)}
     assert "keep" in panes
@@ -172,16 +221,31 @@ def test_spawn_persists_pane_by_default(session):
 
 def test_spawn_ephemeral_closes_pane_on_exit(session):
     # --ephemeral closes the pane the moment its command exits, so it disappears from the list.
-    run("zellij-llm", "spawn", "--session", session, "--pane", "eph", "--ephemeral", input_text="true\n")
+    run(
+        "zellij-llm",
+        "spawn",
+        "--session",
+        session,
+        "--pane",
+        "eph",
+        "--ephemeral",
+        input_text="true\n",
+    )
     assert wait_for(lambda: all(p["title"] != "eph" for p in list_panes(session)))
 
 
 def test_spawn_wait_stream_matches_spawn_and_watch(session):
     # `spawn --wait --mode stream` is the same behavior as `spawn-and-watch --mode stream`.
     out = run(
-        "zellij-llm", "spawn",
-        "--session", session, "--pane", "sw",
-        "--wait", "--mode", "stream",
+        "zellij-llm",
+        "spawn",
+        "--session",
+        session,
+        "--pane",
+        "sw",
+        "--wait",
+        "--mode",
+        "stream",
         input_text="echo waited-line\nexit 4\n",
         check=False,
     )
@@ -192,10 +256,24 @@ def test_spawn_wait_stream_matches_spawn_and_watch(session):
 
 def test_watch_follows_existing_pane_to_exit(session):
     # Spawn without waiting, then attach with `watch` and follow the pane until it exits.
-    run("zellij-llm", "spawn", "--session", session, "--pane", "later", input_text="sleep 1\nexit 6\n")
+    run(
+        "zellij-llm",
+        "spawn",
+        "--session",
+        session,
+        "--pane",
+        "later",
+        input_text="sleep 1\nexit 6\n",
+    )
     out = run(
-        "zellij-llm", "watch",
-        "--session", session, "--pane", "later", "--mode", "stream",
+        "zellij-llm",
+        "watch",
+        "--session",
+        session,
+        "--pane",
+        "later",
+        "--mode",
+        "stream",
         check=False,
     )
     assert out.returncode == 6
@@ -204,8 +282,26 @@ def test_watch_follows_existing_pane_to_exit(session):
 
 def test_wait_blocks_until_exit_and_returns_code(session):
     # `wait` blocks until the pane's command exits, then reports EXIT:<code> with no streaming.
-    run("zellij-llm", "spawn", "--session", session, "--pane", "wp", input_text="sleep 1\nexit 2\n")
-    out = run("zellij-llm", "wait", "--session", session, "--pane", "wp", "--interval", "1", check=False)
+    run(
+        "zellij-llm",
+        "spawn",
+        "--session",
+        session,
+        "--pane",
+        "wp",
+        input_text="sleep 1\nexit 2\n",
+    )
+    out = run(
+        "zellij-llm",
+        "wait",
+        "--session",
+        session,
+        "--pane",
+        "wp",
+        "--interval",
+        "1",
+        check=False,
+    )
     assert out.returncode == 2
     assert "EXIT:2" in out.stdout
     # No pane output leaks into a wait; it reports only the exit line.
@@ -215,14 +311,24 @@ def test_wait_blocks_until_exit_and_returns_code(session):
 def test_session_survives_after_command_exits(session):
     # Regression test for the main bug: a background session must NOT go EXITED once the fed
     # command finishes. The pane drops to a shell, which keeps the session alive and attachable.
-    run("zellij-llm", "spawn", "--session", session, "--pane", "survive", input_text="echo done-now\n")
+    run(
+        "zellij-llm",
+        "spawn",
+        "--session",
+        session,
+        "--pane",
+        "survive",
+        input_text="echo done-now\n",
+    )
     assert wait_for(lambda: "done-now" in peek(session, "survive", full=True))
     # Give the command time to finish; the session must still be reachable (list-panes succeeds)
     # and the output still present.
     time.sleep(2)
     sessions = run("zellij", "list-sessions", "--no-formatting", check=False).stdout
     assert session in sessions
-    assert "EXITED" not in next(line for line in sessions.splitlines() if line.startswith(session))
+    assert "EXITED" not in next(
+        line for line in sessions.splitlines() if line.startswith(session)
+    )
     assert "done-now" in peek(session, "survive", full=True)
 
 
@@ -233,7 +339,11 @@ def test_run_marker_written_under_cache(session, tmp_path):
     env["XDG_CACHE_HOME"] = str(tmp_path)
     subprocess.run(
         ["zellij-llm", "spawn", "--session", session, "--pane", "marked"],
-        input="exit 5\n", capture_output=True, text=True, env=env, cwd=str(tmp_path),
+        input="exit 5\n",
+        capture_output=True,
+        text=True,
+        env=env,
+        cwd=str(tmp_path),
     )
     marker_dir = tmp_path / "zellij-llm" / "marked"
     assert wait_for(lambda: marker_dir.exists() and any(marker_dir.iterdir()))
@@ -247,7 +357,16 @@ def test_spawn_rejects_oversized_session_name(session):
     # A session name that overflows the socket-path limit must fail early with a clear message,
     # not deep inside zellij. Use an explicit oversized --session to trigger the check.
     long_name = "x" * 120
-    out = run("zellij-llm", "spawn", "--session", long_name, "--pane", "p", input_text="true\n", check=False)
+    out = run(
+        "zellij-llm",
+        "spawn",
+        "--session",
+        long_name,
+        "--pane",
+        "p",
+        input_text="true\n",
+        check=False,
+    )
     assert out.returncode != 0
     assert "socket path is too long" in out.stderr
 
@@ -274,8 +393,12 @@ def test_derived_session_fits_socket_and_runs(session):
     try:
         assert len(derived) <= 24
     finally:
-        subprocess.run(["zellij", "kill-session", derived], capture_output=True, env=env)
-        subprocess.run(["zellij", "delete-session", derived], capture_output=True, env=env)
+        subprocess.run(
+            ["zellij", "kill-session", derived], capture_output=True, env=env
+        )
+        subprocess.run(
+            ["zellij", "delete-session", derived], capture_output=True, env=env
+        )
 
 
 # A fake OpenCode TUI: it shows a session id and the "esc interrupt" running
@@ -318,8 +441,15 @@ def test_opencode_spawn_dry_run_no_devenv(tmp_path):
     assert out.stdout.strip().startswith("opencode")
     # --model and --opencode-arg pass through.
     out = run(
-        "zellij-llm", "opencode", "spawn", "--cwd", str(tmp_path), "--dry-run",
-        "--model", "brys/qwen3.8-flash-next", "--opencode-arg=--print-logs",
+        "zellij-llm",
+        "opencode",
+        "spawn",
+        "--cwd",
+        str(tmp_path),
+        "--dry-run",
+        "--model",
+        "brys/qwen3.8-flash-next",
+        "--opencode-arg=--print-logs",
     )
     assert "--model brys/qwen3.8-flash-next" in out.stdout
     assert "--print-logs" in out.stdout
@@ -328,10 +458,23 @@ def test_opencode_spawn_dry_run_no_devenv(tmp_path):
 def test_opencode_spawn_and_list(session, tmp_path):
     fake = make_fake_opencode(tmp_path)
     run(
-        "zellij-llm", "opencode", "spawn", "--session", session, "--pane", "oc",
-        "--no-devenv", "--opencode-bin", "bash", "--opencode-arg", fake,
+        "zellij-llm",
+        "opencode",
+        "spawn",
+        "--session",
+        session,
+        "--pane",
+        "oc",
+        "--no-devenv",
+        "--opencode-bin",
+        "bash",
+        "--opencode-arg",
+        fake,
     )
-    assert wait_for(lambda: "ses_fake000000000000000000000000" in peek(session, "oc", full=True), timeout=15)
+    assert wait_for(
+        lambda: "ses_fake000000000000000000000000" in peek(session, "oc", full=True),
+        timeout=15,
+    )
     out = run("zellij-llm", "opencode", "list", "--session", session)
     assert "ses_fake000000000000000000000000" in out.stdout
     assert "oc" in out.stdout
@@ -340,16 +483,36 @@ def test_opencode_spawn_and_list(session, tmp_path):
 def test_opencode_watch_reports_running_then_idle(session, tmp_path):
     fake = make_fake_opencode(tmp_path)
     run(
-        "zellij-llm", "opencode", "spawn", "--session", session, "--pane", "ocw",
-        "--no-devenv", "--opencode-bin", "bash", "--opencode-arg", fake,
+        "zellij-llm",
+        "opencode",
+        "spawn",
+        "--session",
+        session,
+        "--pane",
+        "ocw",
+        "--no-devenv",
+        "--opencode-bin",
+        "bash",
+        "--opencode-arg",
+        fake,
     )
     # The fake shows "esc interrupt" for ~3s, then goes idle. A bounded watch must
     # observe both states and return on its own.
     assert wait_for(lambda: "esc interrupt" in peek(session, "ocw"), timeout=15)
     out = run(
-        "zellij-llm", "opencode", "watch", "--session", session, "--pane", "ocw",
-        "--interval", "1", "--for", "10s",
-        check=False, timeout=40,
+        "zellij-llm",
+        "opencode",
+        "watch",
+        "--session",
+        session,
+        "--pane",
+        "ocw",
+        "--interval",
+        "1",
+        "--for",
+        "10s",
+        check=False,
+        timeout=40,
     )
     assert "state=RUNNING" in out.stdout
     assert "state=IDLE" in out.stdout
@@ -359,12 +522,33 @@ def test_opencode_watch_reports_running_then_idle(session, tmp_path):
 def test_opencode_send_returns_ok(session, tmp_path):
     fake = make_fake_opencode(tmp_path)
     run(
-        "zellij-llm", "opencode", "spawn", "--session", session, "--pane", "ocs",
-        "--no-devenv", "--opencode-bin", "bash", "--opencode-arg", fake,
+        "zellij-llm",
+        "opencode",
+        "spawn",
+        "--session",
+        session,
+        "--pane",
+        "ocs",
+        "--no-devenv",
+        "--opencode-bin",
+        "bash",
+        "--opencode-arg",
+        fake,
     )
     assert wait_for(lambda: "ses_fake" in peek(session, "ocs", full=True), timeout=15)
-    out = run("zellij-llm", "opencode", "send", "--session", session, "--pane", "ocs",
-              "--text", "continue the work", check=False, timeout=15)
+    out = run(
+        "zellij-llm",
+        "opencode",
+        "send",
+        "--session",
+        session,
+        "--pane",
+        "ocs",
+        "--text",
+        "continue the work",
+        check=False,
+        timeout=15,
+    )
     assert out.returncode == 0
 
 

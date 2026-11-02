@@ -15,22 +15,11 @@
     "items-padding": 0,
     "icons": "light",
     "css-name": "panel-top",
-    "modules-left": [
-      "button-sample",
-      "playerctl"
-    ],
-    "modules-center": [
-      "clock"
-    ],
-    "modules-right": [
-      "sway-mode"
-    ],
+    "modules-left": ["button-sample", "playerctl"],
+    "modules-center": ["clock"],
+    "modules-right": ["sway-mode"],
     "controls-settings": {
-      "components": [
-        "brightness",
-        "volume",
-        "battery"
-      ],
+      "components": ["brightness", "volume", "battery"],
       "commands": {
         "battery": ""
       },
@@ -92,16 +81,7 @@
       "inner-css-name": "inner-tray"
     },
     "sway-taskbar": {
-      "workspace-menu": [
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8"
-      ],
+      "workspace-menu": ["1", "2", "3", "4", "5", "6", "7", "8"],
       "name-max-len": 20,
       "image-size": 16,
       "workspaces-spacing": 0,
@@ -116,16 +96,7 @@
       "all-outputs": true
     },
     "sway-workspaces": {
-      "numbers": [
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8"
-      ]
+      "numbers": ["1", "2", "3", "4", "5", "6", "7", "8"]
     },
     "clock": {
       "format": "%a, %d. %b  %H:%M:%S",
@@ -231,19 +202,11 @@
     "items-padding": 0,
     "icons": "",
     "css-name": "panel-bottom",
-    "modules-left": [
-      "sway-taskbar"
-    ],
+    "modules-left": ["sway-taskbar"],
     "modules-center": [],
-    "modules-right": [
-      "executor-weather"
-    ],
+    "modules-right": ["executor-weather"],
     "controls-settings": {
-      "components": [
-        "brightness",
-        "volume",
-        "battery"
-      ],
+      "components": ["brightness", "volume", "battery"],
       "commands": {
         "battery": ""
       },
@@ -270,16 +233,7 @@
       "window-margin": 0
     },
     "sway-taskbar": {
-      "workspace-menu": [
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8"
-      ],
+      "workspace-menu": ["1", "2", "3", "4", "5", "6", "7", "8"],
       "name-max-len": 20,
       "image-size": 16,
       "workspaces-spacing": 0,
@@ -294,16 +248,7 @@
       "all-outputs": false
     },
     "sway-workspaces": {
-      "numbers": [
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8"
-      ]
+      "numbers": ["1", "2", "3", "4", "5", "6", "7", "8"]
     },
     "clock": {
       "format": "%a, %d. %b  %H:%M:%S",

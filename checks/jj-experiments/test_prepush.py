@@ -50,7 +50,11 @@ def run_hook(
     env = dict(repo.env)
     # The hook falls back to these when argv holds no remote. Clear them so a
     # case that omits the remote really sees an unknown remote.
-    for key in ("PRE_COMMIT_REMOTE_NAME", "PRE_COMMIT_REMOTE_URL", "PRE_COMMIT_REMOTE_BRANCH"):
+    for key in (
+        "PRE_COMMIT_REMOTE_NAME",
+        "PRE_COMMIT_REMOTE_URL",
+        "PRE_COMMIT_REMOTE_BRANCH",
+    ):
         env.pop(key, None)
     env["PRIVATE_REMOTE"] = FORK_REMOTE
     env["SENSITIVE_FILE_PATTERNS"] = "\n".join(file_patterns)
@@ -144,7 +148,9 @@ def test_public_remote_blocks_a_sensitive_message(mkrepo):
 def test_public_remote_blocks_a_sensitive_line_in_a_public_path(mkrepo):
     """A path check is not enough: a public name can hold a private string."""
     repo, base = build_base(mkrepo)
-    tip = add_tip(repo, "docs: add a note", {PUBLIC_PATH: "see PLACEHOLDER-SENSITIVE\n"})
+    tip = add_tip(
+        repo, "docs: add a note", {PUBLIC_PATH: "see PLACEHOLDER-SENSITIVE\n"}
+    )
 
     public = run_hook(repo, PUBLIC_REMOTE, refline(tip, base))
     private = run_hook(repo, FORK_REMOTE, refline(tip, base))

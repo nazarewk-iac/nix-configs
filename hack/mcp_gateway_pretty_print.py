@@ -39,11 +39,16 @@ def discover_plugins() -> list:
     try:
         import pretty_print_plugins
     except ImportError as exc:
-        print(f"mcp-gateway-pretty-print: pretty_print_plugins not importable: {exc}", file=sys.stderr)
+        print(
+            f"mcp-gateway-pretty-print: pretty_print_plugins not importable: {exc}",
+            file=sys.stderr,
+        )
         return []
 
     modules = sorted(
-        pkgutil.iter_modules(pretty_print_plugins.__path__, pretty_print_plugins.__name__ + "."),
+        pkgutil.iter_modules(
+            pretty_print_plugins.__path__, pretty_print_plugins.__name__ + "."
+        ),
         key=lambda m: m.name,
     )
     names = [m.name.removeprefix(pretty_print_plugins.__name__ + ".") for m in modules]
@@ -61,7 +66,10 @@ def run_plugins(ctx: dict, module_infos: list) -> tuple[list[tuple[str, str]], s
                     return [], result
                 return result
         except Exception as exc:  # a broken plugin must not break the hook
-            print(f"mcp-gateway-pretty-print: plugin {module_info.name} failed: {exc}", file=sys.stderr)
+            print(
+                f"mcp-gateway-pretty-print: plugin {module_info.name} failed: {exc}",
+                file=sys.stderr,
+            )
             continue
     return [], json.dumps(ctx["arguments"], indent=2)
 
@@ -111,7 +119,9 @@ def ask_permission(title: str, fields: list[tuple[str, str]], body: str) -> bool
         root.destroy()
 
     ttk.Button(buttons, text="Deny", command=deny).pack(side=tk.RIGHT)
-    ttk.Button(buttons, text="Allow once", command=allow).pack(side=tk.RIGHT, padx=(0, 8))
+    ttk.Button(buttons, text="Allow once", command=allow).pack(
+        side=tk.RIGHT, padx=(0, 8)
+    )
 
     root.protocol("WM_DELETE_WINDOW", deny)
     root.bind("<Escape>", lambda _event: deny())

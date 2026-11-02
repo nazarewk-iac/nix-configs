@@ -49,11 +49,15 @@ def test_push_then_fetch_between_two_repos(mkrepo):
     b.register_remote("origin", bare)
     b.fetch("origin")
 
-    assert b.ids('remote_bookmarks(remote="origin")') == {base}  # the pushed tip appears
-    listing = b.jj_out("bookmark", "list", "--all-remotes")       # lists local + remote bookmarks
-    assert "main@origin" in listing                               # the remote-tracking bookmark shows
-    b.jj("new", "main@origin")                                    # bring @ onto it
-    assert b.ids('main@origin & ::@') == {base}                   # now an ancestor of @
+    assert b.ids('remote_bookmarks(remote="origin")') == {
+        base
+    }  # the pushed tip appears
+    listing = b.jj_out(
+        "bookmark", "list", "--all-remotes"
+    )  # lists local + remote bookmarks
+    assert "main@origin" in listing  # the remote-tracking bookmark shows
+    b.jj("new", "main@origin")  # bring @ onto it
+    assert b.ids("main@origin & ::@") == {base}  # now an ancestor of @
 
 
 def test_untrack_needs_gitignore_first(mkrepo):

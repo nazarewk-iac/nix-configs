@@ -71,7 +71,10 @@ FORK_ONLY_JQ='
 '
 
 fail=0
-ck() { if [ "$2" = pass ]; then echo "PASS  $1"; else echo "FAIL  $1"; fail=1; fi; }
+ck() { if [ "$2" = pass ]; then echo "PASS  $1"; else
+  echo "FAIL  $1"
+  fail=1
+fi; }
 nz() { [ -n "$(jj log -r "$1" --no-graph -T '"x"' 2>/dev/null)" ]; }
 
 ft=$(jj log -r 'fork-tip' --no-graph -T 'change_id.short()' 2>/dev/null)
@@ -136,8 +139,8 @@ for f in flake.lock devenv.lock; do
   n=$(comm -12 \
     <(jj file show -r 'upstream-tip' "$f" 2>/dev/null | jq -r '.nodes|keys[]' | sort -u) \
     <(jq -r --slurpfile U <(jj file show -r 'upstream-tip' "$f" 2>/dev/null) \
-        '$U[0] as $u | '"$LOCK_JQ$FORK_ONLY_JQ" \
-        <(jj file show -r 'fork-tip' "$f" 2>/dev/null) | sort -u) |
+      '$U[0] as $u | '"$LOCK_JQ$FORK_ONLY_JQ" \
+      <(jj file show -r 'fork-tip' "$f" 2>/dev/null) | sort -u) |
     wc -l | tr -d ' ')
   [ "$n" = 0 ] && r=pass || r=fail
   ck "$f on the upstream tip holds no fork-only node ($n found)" "$r"

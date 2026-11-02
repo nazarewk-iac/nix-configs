@@ -220,7 +220,9 @@ in
     {
       imports = [ declaration ];
       config = lib.mkIf (sshCa != null && hostCert != null) {
-        services.openssh.settings.TrustedUserCAKeys = toString (mkSshCaPubKey pkgs (caCertPath config sshCa));
+        services.openssh.settings.TrustedUserCAKeys = toString (
+          mkSshCaPubKey pkgs (caCertPath config sshCa)
+        );
         # `HostKey` and `HostCertificate` travel together in `extraConfig`. Setting
         # `services.openssh.settings.HostKey` would override nixpkgs' own `HostKey` list;
         # `extraConfig` appends, so the existing host identities stay.
@@ -253,11 +255,9 @@ in
     {
       imports = [ declaration ];
       config = lib.mkIf (sshCa != null && hostCert != null) {
-        services.openssh.extraConfig =
-          serverDirectives
-            (mkSshCaPubKey pkgs (caCertPath config sshCa))
-            hostCert.keyPath
-            (toString hostCert.certPath);
+        services.openssh.extraConfig = serverDirectives (mkSshCaPubKey pkgs (
+          caCertPath config sshCa
+        )) hostCert.keyPath (toString hostCert.certPath);
       };
     };
 

@@ -64,10 +64,12 @@ in
       # imports bare `jsonc-parser`, so it must sit at the top level of node_modules, not flattened.
       jsonc-parser = pkgs.runCommand "jsonc-parser-3.3.1-unpacked" { } ''
         mkdir -p $out/jsonc-parser
-        tar xzf ${pkgs.fetchurl {
-          url = "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz";
-          hash = "sha256-SgMVuGcedGO65698FCzfGemqe6Oes23C3zg7hkjjy8k=";
-        }} -C $out/jsonc-parser --strip-components=1
+        tar xzf ${
+          pkgs.fetchurl {
+            url = "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz";
+            hash = "sha256-SgMVuGcedGO65698FCzfGemqe6Oes23C3zg7hkjjy8k=";
+          }
+        } -C $out/jsonc-parser --strip-components=1
       '';
     in
     mkExtension {

@@ -32,16 +32,16 @@ def test_amend_in_place_with_jj_edit(mkrepo):
     old_cid = repo.commit_id(c1)
 
     repo.jj("edit", c1)
-    assert repo.change_id("@") == c1          # @ is now the commit itself
+    assert repo.change_id("@") == c1  # @ is now the commit itself
     repo.write("a.txt", "1-amended\n")
-    repo.jj("status")                          # snapshot the edit into c1
+    repo.jj("status")  # snapshot the edit into c1
 
     assert repo.jj_out("file", "show", "-r", c1, "a.txt") == "1-amended"
-    assert repo.change_id("@") == c1           # change id stable across the amend
-    assert repo.commit_id(c1) != old_cid       # but the commit was rewritten
-    assert repo.ids(c2) == {c2}                # descendant preserved (same change id)
+    assert repo.change_id("@") == c1  # change id stable across the amend
+    assert repo.commit_id(c1) != old_cid  # but the commit was rewritten
+    assert repo.ids(c2) == {c2}  # descendant preserved (same change id)
 
-    repo.jj("new", c2)                         # leave a fresh empty @ on the tip
+    repo.jj("new", c2)  # leave a fresh empty @ on the tip
     assert repo.change_id("@") != c1
 
 
@@ -52,12 +52,12 @@ def test_amend_by_squash_into(mkrepo):
     on top and route it down to the earlier commit.
     """
     repo, c1, c2 = _two_commit_repo(mkrepo)
-    repo.new()                                 # empty @ on top of c2
-    repo.write("a.txt", "1-fixed\n")           # a fixup that belongs to c1
+    repo.new()  # empty @ on top of c2
+    repo.write("a.txt", "1-fixed\n")  # a fixup that belongs to c1
     repo.jj("squash", "--into", c1)
 
     assert repo.jj_out("file", "show", "-r", c1, "a.txt") == "1-fixed"
-    assert repo.ids(c1) == {c1}                # c1 keeps its change id
+    assert repo.ids(c1) == {c1}  # c1 keeps its change id
     assert "a.txt" not in repo.jj_out("diff", "--name-only")  # @ no longer carries it
 
 
@@ -69,7 +69,9 @@ def test_reword_changes_message_only(mkrepo):
 
     repo.describe("feat: renamed one", rev=c1)
 
-    assert repo.jj_out("log", "--no-graph", "-r", c1, "-T", "description.first_line()") \
+    assert (
+        repo.jj_out("log", "--no-graph", "-r", c1, "-T", "description.first_line()")
         == "feat: renamed one"
+    )
     assert repo.jj_out("file", "show", "-r", c1, "a.txt") == before  # content unchanged
-    assert repo.change_id("@") == c2           # @ did not move
+    assert repo.change_id("@") == c2  # @ did not move

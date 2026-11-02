@@ -143,22 +143,23 @@ in
           ssh-to-pgp
           cfg.genScripts
         ];
-        kdn.security.secrets.age.plugins =
-          lib.optionals cfg.tpm.enable [ pkgs.age-plugin-tpm ];
+        kdn.security.secrets.age.plugins = lib.optionals cfg.tpm.enable [ pkgs.age-plugin-tpm ];
         kdn.security.secrets.age.genScripts = [
-          (lib.mkIf cfg.tpm.enable (pkgs.writeShellApplication {
-            name = "kdn-sops-age-gen-keys-tpm";
-            runtimeInputs = with pkgs; [
-              coreutils
-            ];
-            text = ''
-              # The blob is the whole identity; nothing is printed when it is absent, so a host
-              # without an enrolled TPM is unaffected.
-              if test -r ${lib.strings.escapeShellArg cfg.tpm.identityFile}; then
-                cat ${lib.strings.escapeShellArg cfg.tpm.identityFile}
-              fi
-            '';
-          }))
+          (lib.mkIf cfg.tpm.enable (
+            pkgs.writeShellApplication {
+              name = "kdn-sops-age-gen-keys-tpm";
+              runtimeInputs = with pkgs; [
+                coreutils
+              ];
+              text = ''
+                # The blob is the whole identity; nothing is printed when it is absent, so a host
+                # without an enrolled TPM is unaffected.
+                if test -r ${lib.strings.escapeShellArg cfg.tpm.identityFile}; then
+                  cat ${lib.strings.escapeShellArg cfg.tpm.identityFile}
+                fi
+              '';
+            }
+          ))
           (pkgs.writeShellApplication {
             name = "kdn-sops-age-gen-keys-ssh";
             runtimeInputs = with pkgs; [
@@ -208,9 +209,8 @@ in
             systemd.services.sops-install-secrets.wants = lib.optional cfg.tpm.enable "dev-tpmrm0.device";
             # The blob lives on a persistent bind mount. Order and require its mount unit,
             # or the unit starts first, the generator prints nothing, and the decrypt fails.
-            systemd.services.sops-install-secrets.unitConfig.RequiresMountsFor = lib.optional
-              cfg.tpm.enable
-              cfg.tpm.identityFile;
+            systemd.services.sops-install-secrets.unitConfig.RequiresMountsFor =
+              lib.optional cfg.tpm.enable cfg.tpm.identityFile;
           }
         ]
       ))

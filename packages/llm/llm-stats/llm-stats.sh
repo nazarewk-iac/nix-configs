@@ -42,18 +42,49 @@ main() {
   local key_file="" state_dir="" interval=2 keep_days=90 prom_file="" once=0
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      --base-url) base="$2"; shift 2 ;;
-      --key-file) key_file="$2"; shift 2 ;;
-      --state-dir) state_dir="$2"; shift 2 ;;
-      --interval) interval="$2"; shift 2 ;;
-      --keep-days) keep_days="$2"; shift 2 ;;
-      --prom-textfile) prom_file="$2"; shift 2 ;;
-      --once) once=1; shift ;;
-      -h | --help) usage; exit 0 ;;
-      *) echo "unknown argument: $1" >&2; usage; exit 2 ;;
+    --base-url)
+      base="$2"
+      shift 2
+      ;;
+    --key-file)
+      key_file="$2"
+      shift 2
+      ;;
+    --state-dir)
+      state_dir="$2"
+      shift 2
+      ;;
+    --interval)
+      interval="$2"
+      shift 2
+      ;;
+    --keep-days)
+      keep_days="$2"
+      shift 2
+      ;;
+    --prom-textfile)
+      prom_file="$2"
+      shift 2
+      ;;
+    --once)
+      once=1
+      shift
+      ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "unknown argument: $1" >&2
+      usage
+      exit 2
+      ;;
     esac
   done
-  [[ -n $state_dir ]] || { echo "--state-dir is required" >&2; exit 2; }
+  [[ -n $state_dir ]] || {
+    echo "--state-dir is required" >&2
+    exit 2
+  }
   mkdir -p "$state_dir"
 
   local auth=()

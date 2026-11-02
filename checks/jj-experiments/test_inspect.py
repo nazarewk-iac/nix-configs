@@ -37,7 +37,9 @@ def test_diff_of_a_commit_lists_changed_paths(hist):
 def test_diff_between_two_revisions(hist):
     """``jj diff --from X --to Y`` shows the change from X to Y."""
     repo, c1, c2 = hist
-    names = set(repo.jj_out("diff", "--from", c1, "--to", c2, "--name-only").splitlines())
+    names = set(
+        repo.jj_out("diff", "--from", c1, "--to", c2, "--name-only").splitlines()
+    )
     assert names == {"a.txt", "b.txt"}
 
 
@@ -65,8 +67,9 @@ def test_show_displays_a_commit(hist):
 def test_log_template_reads_the_graph_non_interactively(hist):
     """``jj log --no-pager -r <revset> -T <template>`` reads fields without a pager."""
     repo, c1, c2 = hist
-    assert repo.jj_out(
-        "log", "--no-graph", "-r", c2, "-T", "description.first_line()"
-    ) == "c2: add b, edit a"
+    assert (
+        repo.jj_out("log", "--no-graph", "-r", c2, "-T", "description.first_line()")
+        == "c2: add b, edit a"
+    )
     described = repo.ids("::@ & ~empty() & ~root()")
     assert {c1, c2} <= described

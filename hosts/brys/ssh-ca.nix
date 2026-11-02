@@ -28,7 +28,7 @@
   # with, short name and each FQDN. OpenSSH does not strip a trailing dot before
   # it matches a principal, and the fleet's `kdn-ssh-access` addresses carry one,
   # so `kdn-certs` also signs the trailing-dot form of each FQDN at signing time.
-      kdn.certificates.certs.ssh-host-brys = {
+  kdn.certificates.certs.ssh-host-brys = {
     ca = "kdn";
     type = "ssh-host";
     commonName = "brys";

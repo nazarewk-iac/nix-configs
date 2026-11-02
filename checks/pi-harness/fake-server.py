@@ -9,6 +9,7 @@ Behaviour: the FIRST chat completion answers with a `subagent` tool call, so the
 subagent extension spawns a child `pi`. Every later completion (the child) answers with
 plain text. That exercises the spawn contract with no GGUF and no CPU-heavy inference.
 """
+
 import json, sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -31,8 +32,13 @@ class H(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path.rstrip("/").endswith("/v1/models"):
-            return self._json(200, {"object": "list", "data": [
-                {"id": "test", "object": "model", "context_length": 8192}]})
+            return self._json(
+                200,
+                {
+                    "object": "list",
+                    "data": [{"id": "test", "object": "model", "context_length": 8192}],
+                },
+            )
         return self._json(404, {"error": "not found"})
 
     def do_POST(self):
@@ -52,7 +58,9 @@ class H(BaseHTTPRequestHandler):
 
         def chunk(delta, finish=None):
             body = {
-                "id": "chatcmpl-test", "object": "chat.completion.chunk", "created": 0,
+                "id": "chatcmpl-test",
+                "object": "chat.completion.chunk",
+                "created": 0,
                 "model": "test",
                 "choices": [{"index": 0, "delta": delta, "finish_reason": finish}],
             }
@@ -61,13 +69,29 @@ class H(BaseHTTPRequestHandler):
             self.wfile.flush()
 
         if tool_call:
-            chunk({"role": "assistant", "content": None,
-                   "tool_calls": [{"index": 0, "id": "call_1", "type": "function",
-                                   "function": {
-                                       "name": "subagent",
-                                       "arguments": json.dumps({"agent": "scout",
-                                                                "model": "brys/chat-dumb-fast",
-                                                                "task": "say hi"})}}]})
+            chunk(
+                {
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [
+                        {
+                            "index": 0,
+                            "id": "call_1",
+                            "type": "function",
+                            "function": {
+                                "name": "subagent",
+                                "arguments": json.dumps(
+                                    {
+                                        "agent": "scout",
+                                        "model": "brys/chat-dumb-fast",
+                                        "task": "say hi",
+                                    }
+                                ),
+                            },
+                        }
+                    ],
+                }
+            )
             chunk({}, "tool_calls")
         else:
             chunk({"role": "assistant", "content": "CHILD-OK"})

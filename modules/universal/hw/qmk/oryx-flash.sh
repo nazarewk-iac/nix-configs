@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eEuo pipefail
 
-if [[ "${1}" = */* ]] ; then
+if [[ "${1}" = */* ]]; then
   layout_id="${1%/*}"
   revision="${1#*/}"
 else

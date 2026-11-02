@@ -184,7 +184,7 @@ plan() {
     local row
     for row in "${rows[@]}"; do
       pid="${row%%|*}"
-      delta=$(( $(cpu_ticks "$pid") - ${before[$pid]:-0} ))
+      delta=$(($(cpu_ticks "$pid") - ${before[$pid]:-0}))
       ((delta <= CPU_FLOOR)) && kept+=("$row")
     done
     rows=("${kept[@]}")

@@ -39,7 +39,11 @@ def get_sso_token(session_name=None):
     cache_dir = os.path.expanduser("~/.aws/sso/cache")
     if session_name is not None:
         # AWS CLI v2 names the cache file sha1(session_name).json
-        cache_files = [os.path.join(cache_dir, hashlib.sha1(session_name.encode()).hexdigest() + ".json")]
+        cache_files = [
+            os.path.join(
+                cache_dir, hashlib.sha1(session_name.encode()).hexdigest() + ".json"
+            )
+        ]
     else:
         cache_files = glob.glob(os.path.join(cache_dir, "*.json"))
 
@@ -49,7 +53,9 @@ def get_sso_token(session_name=None):
         data = json.load(open(f))
         if "accessToken" not in data:
             continue
-        expires_at = datetime.datetime.fromisoformat(data["expiresAt"].replace("Z", "+00:00"))
+        expires_at = datetime.datetime.fromisoformat(
+            data["expiresAt"].replace("Z", "+00:00")
+        )
         if expires_at - datetime.datetime.now(datetime.timezone.utc) >= LOGIN_MARGIN:
             return data["accessToken"]
 
@@ -128,10 +134,14 @@ def block_in_file(path, content, block_id, marker_pattern="# {mark} {id}"):
 
     if begin in original:
         before = original[: original.index(begin)]
-        after = original[original.index(end) + len(end):].lstrip("\n")
-        new_content = before.rstrip("\n") + "\n\n" + block + ("\n\n" + after if after else "\n")
+        after = original[original.index(end) + len(end) :].lstrip("\n")
+        new_content = (
+            before.rstrip("\n") + "\n\n" + block + ("\n\n" + after if after else "\n")
+        )
     else:
-        new_content = original.rstrip("\n") + ("\n\n" if original else "") + block + "\n"
+        new_content = (
+            original.rstrip("\n") + ("\n\n" if original else "") + block + "\n"
+        )
 
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     open(path, "w").write(new_content)
@@ -156,10 +166,17 @@ def cmd_generate_profiles(args):
     for account_id, account_name, roles in iter_accounts_with_roles(token, sso):
         for role in roles:
             name = profile_name(account_name, role, account_id, args.prefix)
-            print(f"  {name}  ({account_name} / {role} / {account_id})", file=sys.stderr)
+            print(
+                f"  {name}  ({account_name} / {role} / {account_id})", file=sys.stderr
+            )
             stanzas.append(
                 build_profile_stanza(
-                    account_id, account_name, role, args.prefix, args.session, args.region
+                    account_id,
+                    account_name,
+                    role,
+                    args.prefix,
+                    args.session,
+                    args.region,
                 )
             )
 
@@ -182,7 +199,7 @@ def iter_sso_profiles(session_filter=None, role_pattern=None):
             continue
         if role_pattern and not role_pattern.search(profile["sso_role_name"]):
             continue
-        yield section[len("profile "):], profile
+        yield section[len("profile ") :], profile
 
 
 def iter_eks_clusters(account_id, role, token, sso, region):
@@ -220,7 +237,9 @@ def cmd_generate_kubeconfig(args):
             token, sso = sso_cache[sso_session]
             clusters = list(iter_eks_clusters(account_id, role, token, sso, eks_region))
         except botocore.exceptions.ClientError as exc:
-            print(f"  SKIP {aws_profile}: {describe_client_error(exc)}", file=sys.stderr)
+            print(
+                f"  SKIP {aws_profile}: {describe_client_error(exc)}", file=sys.stderr
+            )
             continue
 
         for cluster in clusters:
@@ -229,32 +248,49 @@ def cmd_generate_kubeconfig(args):
             user_alias = to_name(cluster, aws_profile)
             short_alias = to_name(args.prefix, cluster)
             cluster_arn = f"arn:aws:eks:{eks_region}:{account_id}:cluster/{cluster}"
-            print(f"  {aws_profile=}  ({user_alias=} {role=} / {cluster=})", file=sys.stderr)
+            print(
+                f"  {aws_profile=}  ({user_alias=} {role=} / {cluster=})",
+                file=sys.stderr,
+            )
             # Register the cluster. Continue on a command error.
             try:
                 subprocess.run(
                     [
-                        "aws", "eks", "update-kubeconfig",
-                        "--name", cluster,
-                        "--region", eks_region,
-                        "--profile", aws_profile,
-                        "--user-alias", user_alias,
-                        "--alias", cluster_long_alias,
+                        "aws",
+                        "eks",
+                        "update-kubeconfig",
+                        "--name",
+                        cluster,
+                        "--region",
+                        eks_region,
+                        "--profile",
+                        aws_profile,
+                        "--user-alias",
+                        user_alias,
+                        "--alias",
+                        cluster_long_alias,
                     ],
                     check=True,
                 )
                 if short_alias != aws_profile:
                     subprocess.run(
                         [
-                            "kubectl", "config", "set-context", short_alias,
-                            "--cluster", cluster_arn,
-                            "--user", user_alias,
+                            "kubectl",
+                            "config",
+                            "set-context",
+                            short_alias,
+                            "--cluster",
+                            cluster_arn,
+                            "--user",
+                            user_alias,
                         ],
                         check=True,
                     )
             except subprocess.CalledProcessError as exc:
-                print(f"  SKIP {cluster} ({aws_profile}): command exited {exc.returncode}",
-                      file=sys.stderr)
+                print(
+                    f"  SKIP {cluster} ({aws_profile}): command exited {exc.returncode}",
+                    file=sys.stderr,
+                )
                 continue
 
 
@@ -291,7 +327,9 @@ def main():
         "--role-pattern", default=".*", help="Regex to filter IAM roles (default: all)"
     )
     p.add_argument(
-        "--eks-region", default=None, help="AWS region to list EKS clusters in (defaults to --region)"
+        "--eks-region",
+        default=None,
+        help="AWS region to list EKS clusters in (defaults to --region)",
     )
 
     args = parser.parse_args()
@@ -306,7 +344,11 @@ def main():
     except botocore.exceptions.ClientError as exc:
         print(f"error: {describe_client_error(exc)}", file=sys.stderr)
         sys.exit(1)
-    except (botocore.exceptions.BotoCoreError, subprocess.CalledProcessError, RuntimeError) as exc:
+    except (
+        botocore.exceptions.BotoCoreError,
+        subprocess.CalledProcessError,
+        RuntimeError,
+    ) as exc:
         print(f"error: {exc}", file=sys.stderr)
         sys.exit(1)
 

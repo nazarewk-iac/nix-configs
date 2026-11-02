@@ -5,15 +5,15 @@ trap 'echo "Error when executing $BASH_COMMAND at line $LINENO!" >&2' ERR
 # WARNING: this will erase your /dev/sda drive!
 # can be started with: APPLY=1 HOST="<HOST>" bash <(curl -L 'https://raw.githubusercontent.com/nazarewk-iac/nix-configs/main/hetzner.sh')
 
-if [ "${APPLY:-}" = 1 ] ; then
-  cmd () { "$@"; }
+if [ "${APPLY:-}" = 1 ]; then
+  cmd() { "$@"; }
 else
-  cmd () { echo "$@"; }
+  cmd() { echo "$@"; }
   set +x
 fi
 
 to_file() {
-  if [ "${APPLY:-}" = 1 ] ; then
+  if [ "${APPLY:-}" = 1 ]; then
     tee "$@"
   else
     tee
@@ -21,7 +21,7 @@ to_file() {
 }
 
 installer_update() {
-  if [ ! -e /etc/nixos/configuration.bkp.nix ] ; then
+  if [ ! -e /etc/nixos/configuration.bkp.nix ]; then
     bash <(curl -L 'https://raw.githubusercontent.com/nazarewk-iac/nix-configs/main/installer-update.sh')
   fi
 }
@@ -32,7 +32,7 @@ script=(
 )
 
 cmd installer_update
-if mountpoint /mnt ; then
+if mountpoint /mnt; then
   cmd umount /mnt
 fi
 cmd parted -s /dev/sda -- "${script[@]}"
@@ -43,7 +43,7 @@ cmd mount /dev/sda1 /mnt
 checkout_dir=/mnt/home/kdn/dev/github.com/nazarewk-iac
 repo_dir="${checkout_dir}/nix-configs"
 cmd mkdir -p "${checkout_dir}"
-if [ -d "${repo_dir}" ] ; then
+if [ -d "${repo_dir}" ]; then
   cmd git pull "${repo_dir}"
 else
   cmd git clone https://github.com/nazarewk-iac/nix-configs.git "${repo_dir}"

@@ -102,7 +102,9 @@ class JJConfig:
     def without_slot(cls) -> "JJConfig":
         return cls(base_toml=None)
 
-    def _put(self, scope: str, dotted: str, value, *, deferred: bool = False) -> "JJConfig":
+    def _put(
+        self, scope: str, dotted: str, value, *, deferred: bool = False
+    ) -> "JJConfig":
         if scope not in self.SCOPES:
             raise ValueError(f"unknown scope {scope!r}; use one of {self.SCOPES}")
         if scope == "flag":
@@ -114,8 +116,12 @@ class JJConfig:
             self._persistent.append((scope, dotted, value))
         return self
 
-    def revset_alias(self, name: str, expr: str, *, scope: str = "flag", deferred: bool = False):
-        return self._put(scope, f"revset-aliases.{_toml_key(name)}", expr, deferred=deferred)
+    def revset_alias(
+        self, name: str, expr: str, *, scope: str = "flag", deferred: bool = False
+    ):
+        return self._put(
+            scope, f"revset-aliases.{_toml_key(name)}", expr, deferred=deferred
+        )
 
     def alias(self, name: str, argv, *, scope: str = "repo"):
         """Record a command alias in a file layer (user/repo/workspace).
@@ -132,7 +138,14 @@ class JJConfig:
         # `dotted` must already be a valid TOML key path (the caller controls it).
         return self._put(scope, dotted, value, deferred=deferred)
 
-    def merge(self, mapping: dict, *, prefix: str = "", scope: str = "flag", deferred: bool = False):
+    def merge(
+        self,
+        mapping: dict,
+        *,
+        prefix: str = "",
+        scope: str = "flag",
+        deferred: bool = False,
+    ):
         for key, value in mapping.items():
             dotted = f"{prefix}.{_toml_key(key)}" if prefix else _toml_key(key)
             if isinstance(value, dict):
@@ -173,7 +186,13 @@ class Repo:
     _ts: int = _EPOCH
 
     # --- raw command runners -------------------------------------------------
-    def jj(self, *args, check: bool = True, input: str | None = None, cwd: Path | None = None):
+    def jj(
+        self,
+        *args,
+        check: bool = True,
+        input: str | None = None,
+        cwd: Path | None = None,
+    ):
         # ``cwd`` defaults to the repo dir. Pass it only to run jj from a
         # subdirectory (for example, to prove which workspace jj resolves).
         cmd = ["jj", "--no-pager", *self.cfg.config_args(), *args]
@@ -215,7 +234,9 @@ class Repo:
             self._ts = max(self._ts, ts)
         return _iso(ts)
 
-    def describe(self, message: str, *, rev: str = "@", ts: int | None = None) -> "Repo":
+    def describe(
+        self, message: str, *, rev: str = "@", ts: int | None = None
+    ) -> "Repo":
         self.jj(
             "--config",
             f"debug.commit-timestamp={self._next_ts(ts)}",
@@ -226,18 +247,27 @@ class Repo:
         )
         return self
 
-    def new(self, *parents: str, message: str | None = None, ts: int | None = None) -> str:
+    def new(
+        self, *parents: str, message: str | None = None, ts: int | None = None
+    ) -> str:
         """Create a new commit on the given parents and move ``@`` onto it.
 
         Returns the new change id. Pass a message to describe it at once.
         """
-        args = ["--config", f"debug.commit-timestamp={self._next_ts(ts)}", "new", *parents]
+        args = [
+            "--config",
+            f"debug.commit-timestamp={self._next_ts(ts)}",
+            "new",
+            *parents,
+        ]
         if message is not None:
             args += ["-m", message]
         self.jj(*args)
         return self.change_id("@")
 
-    def commit(self, message: str, files: dict[str, str], *, ts: int | None = None) -> str:
+    def commit(
+        self, message: str, files: dict[str, str], *, ts: int | None = None
+    ) -> str:
         """Write files into ``@``, describe it, then start a fresh empty ``@``.
 
         Returns the change id of the just-described (now parent) commit.
@@ -251,7 +281,9 @@ class Repo:
 
     # --- queries -------------------------------------------------------------
     def change_id(self, rev: str = "@") -> str:
-        return self.jj_out("log", "--no-graph", "-r", rev, "-T", "change_id.shortest(12)")
+        return self.jj_out(
+            "log", "--no-graph", "-r", rev, "-T", "change_id.shortest(12)"
+        )
 
     def commit_id(self, rev: str = "@") -> str:
         # The git commit id changes when a commit is rewritten (unlike the stable
@@ -266,7 +298,7 @@ class Repo:
 
     def log_graph(self, revset: str = "::@ | remote_bookmarks()") -> str:
         template = (
-            'change_id.shortest(8)'
+            "change_id.shortest(8)"
             ' ++ if(current_working_copy, " @", "")'
             ' ++ if(empty, " (empty)", "")'
             ' ++ " [" ++ separate(",", bookmarks) ++ "]"'
@@ -320,7 +352,13 @@ class Repo:
     def define_alias(self, name: str, argv, *, scope: str = "repo") -> "Repo":
         """Record and write a command alias now (use after ``mkrepo``)."""
         self.cfg.alias(name, argv, scope=scope)
-        self.jj("config", "set", f"--{scope}", f"aliases.{_toml_key(name)}", _toml_value(list(argv)))
+        self.jj(
+            "config",
+            "set",
+            f"--{scope}",
+            f"aliases.{_toml_key(name)}",
+            _toml_value(list(argv)),
+        )
         return self
 
     def bookmark_set(self, name: str, rev: str) -> "Repo":
@@ -364,7 +402,9 @@ class Repo:
         if revision is not None:
             args += ["-r", revision]
         self.jj(*args, str(dest))
-        return dataclasses.replace(self, path=dest.resolve(), _ts=self._ts + 1000 * _STEP)
+        return dataclasses.replace(
+            self, path=dest.resolve(), _ts=self._ts + 1000 * _STEP
+        )
 
     def workspace_list(self) -> dict[str, str]:
         """Return ``{workspace name: change id of that workspace's ``@``}``."""
@@ -398,7 +438,14 @@ class Repo:
         operation, so the returned id stays the head after the call.
         """
         return self.jj_out(
-            "op", "log", "--ignore-working-copy", "--no-graph", "--limit", "1", "-T", "id.short()"
+            "op",
+            "log",
+            "--ignore-working-copy",
+            "--no-graph",
+            "--limit",
+            "1",
+            "-T",
+            "id.short()",
         )
 
 
@@ -420,10 +467,10 @@ class Harness:
             (self.root / sub).mkdir(parents=True, exist_ok=True)
         jj_config = self.root / "jj.toml"
         jj_config.write_text(
-            '[user]\n'
+            "[user]\n"
             'name = "Harness User"\n'
             'email = "harness@example.invalid"\n'
-            '[ui]\n'
+            "[ui]\n"
             'paginate = "never"\n'
         )
         self.env = {
@@ -498,7 +545,9 @@ class Harness:
         """
         toml = os.environ.get("JJ_FORK_CONFIG_TOML")
         if not toml:
-            pytest.skip("JJ_FORK_CONFIG_TOML is not set (run in the devenv or the check)")
+            pytest.skip(
+                "JJ_FORK_CONFIG_TOML is not set (run in the devenv or the check)"
+            )
         return JJConfig.from_slot(toml)
 
     def cleanup(self) -> None:

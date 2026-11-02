@@ -69,10 +69,7 @@ let
   #   pi-harness-delegates           587 MiB llama-server (qwen2.5-0.5b @ 2048) + pi  =  ~800 MiB
   # So bundle-core stays under 1.5 GiB at max-jobs 2; the delegation check alone needs ~800 MiB.
   piHarnessTests =
-    if pkgs.stdenv.hostPlatform.isLinux then
-      import ./pi-harness { inherit pkgs lib; }
-    else
-      { };
+    if pkgs.stdenv.hostPlatform.isLinux then import ./pi-harness { inherit pkgs lib; } else { };
 
   # The real fork slot artifacts: the config TOML the tests read through
   # JJ_FORK_CONFIG_TOML, and the pre-push script they read through

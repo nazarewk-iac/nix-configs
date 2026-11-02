@@ -24,7 +24,7 @@ confirm() {
 }
 
 main() {
-  if [ "${EUID:-}" != 0 ] ; then
+  if [ "${EUID:-}" != 0 ]; then
     err "must run as root!"
   fi
 
@@ -32,7 +32,7 @@ main() {
   in_config_name="${in_config_path##*/}"
 
   name="${name:-}"
-  if [ -z "$name"  ]; then
+  if [ -z "$name" ]; then
     name="$(xkcdpass --numwords 2 --delimiter=-)"
     confirm "generated name is '${name}'"
   else
@@ -67,8 +67,8 @@ main() {
   fi
 
   for file in "${@:2}"; do
-    if [ -e "$file"  ]; then
-    msg "moving $in_config_path to $in_dst"
+    if [ -e "$file" ]; then
+      msg "moving $in_config_path to $in_dst"
       mv "$file" "$out_path"
     else
       msg "extra file $file does not exist, ignoring."

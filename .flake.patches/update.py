@@ -248,11 +248,14 @@ def patches_apply(
             encoding="utf8",
         ).strip()
         base_branch = get_input_ref(base_input, lock=lock)
-        base_branch = base_branch or subprocess.check_output(
-            ["git", "branch", "--show-current"],
-            cwd=subrepo_path,
-            encoding="utf8",
-        ).strip()
+        base_branch = (
+            base_branch
+            or subprocess.check_output(
+                ["git", "branch", "--show-current"],
+                cwd=subrepo_path,
+                encoding="utf8",
+            ).strip()
+        )
         remotes = set(
             subprocess.check_output(
                 ["git", "remote"],

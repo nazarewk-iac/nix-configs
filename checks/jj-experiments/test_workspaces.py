@@ -146,10 +146,14 @@ def test_concurrent_snapshots_do_not_lose_content(mkrepo):
             handle.write(f"{label}.nix", content)
             result = handle.jj("status", check=False)
             if result.returncode != 0:
-                problems.append(f"{label} {i} status rc={result.returncode}: {result.stderr}")
+                problems.append(
+                    f"{label} {i} status rc={result.returncode}: {result.stderr}"
+                )
             read_back = (handle.path / f"{label}.nix").read_text()
             if read_back != content:
-                problems.append(f"{label} {i} truncated: {len(read_back)} of {len(content)} bytes")
+                problems.append(
+                    f"{label} {i} truncated: {len(read_back)} of {len(content)} bytes"
+                )
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
         futures = [
@@ -176,7 +180,9 @@ def test_concurrent_commits_land_in_separate_changes(mkrepo):
     ws = repo.workspace_add("slot")
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
-        trunk_future = pool.submit(repo.commit, "feat: trunk work", {"trunk.nix": "t\n"})
+        trunk_future = pool.submit(
+            repo.commit, "feat: trunk work", {"trunk.nix": "t\n"}
+        )
         ws_future = pool.submit(ws.commit, "feat: slot work", {"slot.nix": "s\n"})
         trunk_change = trunk_future.result()
         ws_change = ws_future.result()
@@ -260,8 +266,12 @@ def test_repo_config_is_shared_and_workspace_config_is_not(mkrepo):
     repo.commit("feat: base", {"a.nix": "1\n"})
     ws = repo.workspace_add("slot")
 
-    assert repo.jj_out("config", "path", "--repo") == ws.jj_out("config", "path", "--repo")
-    assert repo.jj_out("config", "path", "--workspace") != ws.jj_out("config", "path", "--workspace")
+    assert repo.jj_out("config", "path", "--repo") == ws.jj_out(
+        "config", "path", "--repo"
+    )
+    assert repo.jj_out("config", "path", "--workspace") != ws.jj_out(
+        "config", "path", "--workspace"
+    )
 
     # A repo-scope write from the workspace is visible in the trunk at once.
     ws.jj("config", "set", "--repo", "ui.default-command", '"log"')

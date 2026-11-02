@@ -46,17 +46,24 @@ def test_upstream_change_on_frozen_tree_unified_recipe(base):
     repo.write("modules/foo.nix", "# generic\n")
     repo.jj("new", "--no-edit", "-B", "@", "-m", "chore(upstream): merge")
     repo.jj(
-        "split", "-A", "upstream-tip", "-B", "fork-tip",
-        "-m", "feat: generic foo", "--", "modules/foo.nix",
+        "split",
+        "-A",
+        "upstream-tip",
+        "-B",
+        "fork-tip",
+        "-m",
+        "feat: generic foo",
+        "--",
+        "modules/foo.nix",
     )
 
     s = _one(repo, 'description(substring:"generic foo")')
-    assert repo.ids(f"parents({s})") == {L["U2"]}   # child of the old upstream tip
-    assert repo.ids("upstream-tip") == {s}          # now the upstream tip
-    assert repo.ids("fork-leaked") == set()         # no leak
-    assert repo.commit_id(L["M"]) == m_cid          # frozen merge not rewritten
-    assert repo.ids(f'{L["M"]} & ::@') == {L["M"]}  # still an ancestor of @
-    assert repo.ids("merge-frozen") == set()        # the new merge is mutable
+    assert repo.ids(f"parents({s})") == {L["U2"]}  # child of the old upstream tip
+    assert repo.ids("upstream-tip") == {s}  # now the upstream tip
+    assert repo.ids("fork-leaked") == set()  # no leak
+    assert repo.commit_id(L["M"]) == m_cid  # frozen merge not rewritten
+    assert repo.ids(f"{L['M']} & ::@") == {L["M"]}  # still an ancestor of @
+    assert repo.ids("merge-frozen") == set()  # the new merge is mutable
     # the new merge is merge(old frozen merge, generic commit), and it is tree-merge:
     assert repo.ids("parents(tree-merge)") == {L["M"], s}
 
@@ -74,8 +81,15 @@ def test_second_upstream_change_into_existing_mutable_merge(base):
     repo.write("modules/foo.nix", "# generic\n")
     repo.jj("new", "--no-edit", "-B", "@", "-m", "chore(upstream): merge")
     repo.jj(
-        "split", "-A", "upstream-tip", "-B", "fork-tip",
-        "-m", "feat: generic foo", "--", "modules/foo.nix",
+        "split",
+        "-A",
+        "upstream-tip",
+        "-B",
+        "fork-tip",
+        "-m",
+        "feat: generic foo",
+        "--",
+        "modules/foo.nix",
     )
     s1 = _one(repo, 'description(substring:"generic foo")')
     m_cid = repo.commit_id(L["M"])
@@ -83,15 +97,22 @@ def test_second_upstream_change_into_existing_mutable_merge(base):
     # second change: one placed split into the existing mutable merge
     repo.write("modules/bar.nix", "# generic 2\n")
     repo.jj(
-        "split", "-A", "upstream-tip", "-B", "fork-tip",
-        "-m", "feat: generic bar", "--", "modules/bar.nix",
+        "split",
+        "-A",
+        "upstream-tip",
+        "-B",
+        "fork-tip",
+        "-m",
+        "feat: generic bar",
+        "--",
+        "modules/bar.nix",
     )
 
     s2 = _one(repo, 'description(substring:"generic bar")')
-    assert repo.ids(f"parents({s2})") == {s1}       # stacks on the previous upstream tip
+    assert repo.ids(f"parents({s2})") == {s1}  # stacks on the previous upstream tip
     assert repo.ids("upstream-tip") == {s2}
     assert repo.ids("fork-leaked") == set()
-    assert repo.commit_id(L["M"]) == m_cid          # frozen merge still not rewritten
+    assert repo.commit_id(L["M"]) == m_cid  # frozen merge still not rewritten
     assert repo.ids("merge-frozen") == set()
 
 
@@ -106,15 +127,23 @@ def test_fork_leaf_change_stays_above_the_merge(base):
     repo, L = base
     m_cid = repo.commit_id(L["M"])
     repo.write("hosts/PLACEHOLDER-SENSITIVE-tweak.nix", "# leaf\n")
-    repo.jj("split", "-m", "feat(fork): host tweak", "--", "hosts/PLACEHOLDER-SENSITIVE-tweak.nix")
+    repo.jj(
+        "split",
+        "-m",
+        "feat(fork): host tweak",
+        "--",
+        "hosts/PLACEHOLDER-SENSITIVE-tweak.nix",
+    )
 
     leaf = _one(repo, 'description(substring:"host tweak")')
-    assert leaf in repo.ids("fork-chain")       # on the fork chain
-    assert repo.ids("fork-tip") == {leaf}        # fork tip advances to it
-    assert leaf in repo.ids("fork-leaked")       # informational: fork content above the merge
+    assert leaf in repo.ids("fork-chain")  # on the fork chain
+    assert repo.ids("fork-tip") == {leaf}  # fork tip advances to it
+    assert leaf in repo.ids(
+        "fork-leaked"
+    )  # informational: fork content above the merge
     assert leaf not in repo.ids("upstream-safe")
     assert repo.ids("upstream-tip") == {L["U2"]}  # upstream is untouched
-    assert repo.commit_id(L["M"]) == m_cid        # merge untouched
+    assert repo.commit_id(L["M"]) == m_cid  # merge untouched
 
 
 def test_fork_base_change_folds_into_a_new_merge(base):
@@ -130,21 +159,31 @@ def test_fork_base_change_folds_into_a_new_merge(base):
     m_cid = repo.commit_id(L["M"])
 
     repo.write("hosts/PLACEHOLDER-SENSITIVE-base.nix", "# fork base\n")
-    repo.jj("split", "-A", "fork-tip", "-m", "feat(fork): base wiring",
-            "--", "hosts/PLACEHOLDER-SENSITIVE-base.nix")
+    repo.jj(
+        "split",
+        "-A",
+        "fork-tip",
+        "-m",
+        "feat(fork): base wiring",
+        "--",
+        "hosts/PLACEHOLDER-SENSITIVE-base.nix",
+    )
     sfork = _one(repo, 'description(substring:"base wiring")')
     repo.jj("new", "upstream-tip", "fork-tip", "-m", "chore(upstream): merge")
     new_merge = repo.change_id("@")
     repo.new(new_merge)  # leave an empty @ on top; jj sync-remotes moves the bookmarks
 
-    assert repo.ids(f"parents({new_merge})") == {L["U2"], sfork}  # merge(upstream-tip, fork commit)
-    assert sfork in repo.ids("fork-chain")       # fork content on the fork side
-    assert repo.ids("to-rebase") == set()        # nothing left above the merge
-    assert repo.ids("fork-leaked") == set()      # and so no leak
+    assert repo.ids(f"parents({new_merge})") == {
+        L["U2"],
+        sfork,
+    }  # merge(upstream-tip, fork commit)
+    assert sfork in repo.ids("fork-chain")  # fork content on the fork side
+    assert repo.ids("to-rebase") == set()  # nothing left above the merge
+    assert repo.ids("fork-leaked") == set()  # and so no leak
     assert repo.ids("upstream-tip") == {L["U2"]}  # upstream untouched
-    assert repo.ids("merge-frozen") == set()      # new merge is mutable
-    assert repo.commit_id(L["M"]) == m_cid        # old frozen merge not rewritten
-    assert repo.ids(f'{L["M"]} & ::@') == {L["M"]}  # still an ancestor
+    assert repo.ids("merge-frozen") == set()  # new merge is mutable
+    assert repo.commit_id(L["M"]) == m_cid  # old frozen merge not rewritten
+    assert repo.ids(f"{L['M']} & ::@") == {L["M"]}  # still an ancestor
 
 
 def test_mixed_working_copy_split_by_content(base):
@@ -161,15 +200,30 @@ def test_mixed_working_copy_split_by_content(base):
 
     # route the generic part down onto the upstream chain (unified recipe):
     repo.jj("new", "--no-edit", "-B", "@", "-m", "chore(upstream): merge")
-    repo.jj("split", "-A", "upstream-tip", "-B", "fork-tip",
-            "-m", "feat: generic part", "--", "modules/generic.nix")
+    repo.jj(
+        "split",
+        "-A",
+        "upstream-tip",
+        "-B",
+        "fork-tip",
+        "-m",
+        "feat: generic part",
+        "--",
+        "modules/generic.nix",
+    )
     # the sensitive remainder stays in @ → carve it as a fork leaf above the merge:
-    repo.jj("split", "-m", "feat(fork): sensitive part", "--", "hosts/PLACEHOLDER-SENSITIVE-x.nix")
+    repo.jj(
+        "split",
+        "-m",
+        "feat(fork): sensitive part",
+        "--",
+        "hosts/PLACEHOLDER-SENSITIVE-x.nix",
+    )
 
     gen = _one(repo, 'description(substring:"generic part")')
     sens = _one(repo, 'description(substring:"sensitive part")')
-    assert repo.ids("upstream-tip") == {gen}        # generic on the upstream chain
-    assert gen not in repo.ids("fork-leaked")        # generic never leaks
-    assert sens in repo.ids("fork-chain")            # sensitive on the fork chain
-    assert repo.ids("fork-leaked") == {sens}         # only the sensitive leaf (informational)
-    assert repo.commit_id(L["M"]) == m_cid           # frozen merge untouched
+    assert repo.ids("upstream-tip") == {gen}  # generic on the upstream chain
+    assert gen not in repo.ids("fork-leaked")  # generic never leaks
+    assert sens in repo.ids("fork-chain")  # sensitive on the fork chain
+    assert repo.ids("fork-leaked") == {sens}  # only the sensitive leaf (informational)
+    assert repo.commit_id(L["M"]) == m_cid  # frozen merge untouched

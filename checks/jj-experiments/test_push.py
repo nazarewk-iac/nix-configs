@@ -118,7 +118,9 @@ def test_behind_whole_stack_rebase_b(mkrepo):
     a.bookmark_set("main", c2)
     stale = a.jj("git", "push", "--remote", "origin", "-b", "main", check=False)
     assert stale.returncode != 0
-    assert "stale" in stale.stderr.lower() or "unexpectedly moved" in stale.stderr.lower()
+    assert (
+        "stale" in stale.stderr.lower() or "unexpectedly moved" in stale.stderr.lower()
+    )
 
     # Reset main so the fetch reconciles cleanly (undo the stale attempt).
     a.jj("bookmark", "set", "main", "-r", base, "--allow-backwards")
@@ -130,7 +132,10 @@ def test_behind_whole_stack_rebase_b(mkrepo):
     assert "sideways" in hazard.stderr.lower()  # discards the incoming commit
 
     a.jj("rebase", "-b", "@", "-d", "main@origin")
-    assert a.ids(f"main@origin:: & ({c1} | {c2})") == {c1, c2}  # both replayed above incoming
+    assert a.ids(f"main@origin:: & ({c1} | {c2})") == {
+        c1,
+        c2,
+    }  # both replayed above incoming
     a.bookmark_set("main", c2)
     safe = a.jj("git", "push", "--remote", "origin", "-b", "main", "--dry-run")
     assert "sideways" not in safe.stderr.lower()  # now a fast-forward, no clobber
@@ -152,8 +157,10 @@ def test_behind_tip_only_rebase_r(mkrepo):
     a.fetch("origin")
 
     a.jj("rebase", "-r", c2, "-d", "main@origin")
-    assert a.ids(f"main@origin:: & {c2}") == {c2}   # c2 moved above the incoming tip
-    assert a.ids(f"main@origin:: & {c1}") == set()  # c1 did NOT move (still on old base)
+    assert a.ids(f"main@origin:: & {c2}") == {c2}  # c2 moved above the incoming tip
+    assert (
+        a.ids(f"main@origin:: & {c1}") == set()
+    )  # c1 did NOT move (still on old base)
 
 
 def test_insert_incoming_refused_for_trunk_or_untracked(mkrepo):
@@ -171,14 +178,18 @@ def test_insert_incoming_refused_for_trunk_or_untracked(mkrepo):
     # (a) the trunk main@origin is immutable even though `a` tracks it.
     topologies.advance_remote(mkrepo, bare, "feat: remote moved", {"remote.txt": "9\n"})
     a.fetch("origin")
-    refused_trunk = a.jj("rebase", "-r", "main@origin", "--insert-before", "@", check=False)
+    refused_trunk = a.jj(
+        "rebase", "-r", "main@origin", "--insert-before", "@", check=False
+    )
     assert refused_trunk.returncode != 0
     assert "immutable" in refused_trunk.stderr.lower()
 
     # (b) an UNTRACKED feature bookmark is immutable too.
     topologies.push_feature(mkrepo, bare, "featx", "feat: incoming", {"fx.txt": "1\n"})
     a.fetch("origin")  # featx@origin arrives untracked
-    refused_untracked = a.jj("rebase", "-r", "featx@origin", "--insert-before", "@", check=False)
+    refused_untracked = a.jj(
+        "rebase", "-r", "featx@origin", "--insert-before", "@", check=False
+    )
     assert refused_untracked.returncode != 0
     assert "immutable" in refused_untracked.stderr.lower()
 
@@ -199,15 +210,17 @@ def test_insert_incoming_succeeds_on_tracked_feature(mkrepo):
     topologies.push_feature(mkrepo, bare, "feat", "feat: incoming", {"inc.txt": "1\n"})
     a.fetch("origin")
 
-    a.jj("bookmark", "track", "feat@origin")          # track the non-trunk branch first
+    a.jj("bookmark", "track", "feat@origin")  # track the non-trunk branch first
     a.jj("rebase", "-r", "feat@origin", "--insert-before", "@")  # Approach A succeeds
 
-    assert a.ids("@-") == a.ids("feat")               # incoming landed directly under @
-    assert a.ids("feat-") == {c1}                     # above my work
+    assert a.ids("@-") == a.ids("feat")  # incoming landed directly under @
+    assert a.ids("feat-") == {c1}  # above my work
     # change id is stable across the rebase, so divergence shows in the commit id:
-    assert a.commit_id("feat") != a.commit_id("feat@origin")  # local diverged from remote-tracking
+    assert a.commit_id("feat") != a.commit_id(
+        "feat@origin"
+    )  # local diverged from remote-tracking
 
-    a.jj("git", "push", "--remote", "origin", "-b", "feat")   # publish the new position
+    a.jj("git", "push", "--remote", "origin", "-b", "feat")  # publish the new position
     assert a.commit_id("feat@origin") == a.commit_id("feat")
 
 
@@ -255,5 +268,5 @@ def test_push_to_second_fork_remote(mkrepo):
     a.jj("bookmark", "create", "feature", "-r", work)
     a.jj("git", "push", "--remote", "fork", "-b", "feature")
 
-    assert a.ids("feature@fork") == {work}            # lands on the fork
+    assert a.ids("feature@fork") == {work}  # lands on the fork
     assert a.ids("present(feature@origin)") == set()  # not on origin

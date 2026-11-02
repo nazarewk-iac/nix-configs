@@ -16,22 +16,26 @@ Color legend: black     = Requires
 """
 color_to_relation = {
     "black": "Requires",
-    "darkblue": "Requisite", # dark blue
+    "darkblue": "Requisite",  # dark blue
     "gold": "BindsTo",
-    "grey66": "Wants", # dark grey
+    "grey66": "Wants",  # dark grey
     "red": "Conflicts",
     "green": "After",
 }
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Finds cycles in systemd units. "
-                                                 "Based on https://github.com/jantman/misc-scripts/blob/1ef3d280b399071587f66c9dad50b8ce5b134845/dot_find_cycles.py "
-                                                 "by Jason Antman <http://blog.jasonantman.com>")
-    parser.add_argument('systemd_args', nargs='*', default=["--order"])
+    parser = argparse.ArgumentParser(
+        description="Finds cycles in systemd units. "
+        "Based on https://github.com/jantman/misc-scripts/blob/1ef3d280b399071587f66c9dad50b8ce5b134845/dot_find_cycles.py "
+        "by Jason Antman <http://blog.jasonantman.com>"
+    )
+    parser.add_argument("systemd_args", nargs="*", default=["--order"])
     args = parser.parse_args()
 
-    dot = subprocess.check_output(["systemd-analyze", "dot", "--no-pager", *args.systemd_args], encoding="utf8")
+    dot = subprocess.check_output(
+        ["systemd-analyze", "dot", "--no-pager", *args.systemd_args], encoding="utf8"
+    )
     G = nx.DiGraph(read_dot(io.StringIO(dot)))
 
     C = nx.simple_cycles(G)

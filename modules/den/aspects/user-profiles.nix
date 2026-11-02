@@ -35,7 +35,8 @@
 let
   # The record shape. The defaults let a profile name only what differs, so `root` may carry just a
   # password and `bn` may omit keys.
-  profileType = { lib, ... }:
+  profileType =
+    { lib, ... }:
     {
       options = {
         uid = lib.mkOption {
@@ -67,7 +68,11 @@ let
           default = false;
         };
         subordinateIds = lib.mkOption {
-          type = lib.types.enum [ "auto" "from-uid" "none" ];
+          type = lib.types.enum [
+            "auto"
+            "from-uid"
+            "none"
+          ];
           default = "auto";
         };
         passwordHash = lib.mkOption {
@@ -119,7 +124,8 @@ let
   # `passwordHashFile` override passes through as-is; a `passwordHash` value is written to a store
   # file and passed as a string path; neither is set yields `null`. The two are mutually exclusive
   # (the aspect asserts it), so the `if` order never has to break a tie between two set values.
-  hashToFile = pkgs: name: p:
+  hashToFile =
+    pkgs: name: p:
     if p.passwordHashFile != null then
       p.passwordHashFile
     else if p.passwordHash != null then
@@ -128,26 +134,30 @@ let
       null;
 
   # The `kdn.users` row for one profile.
-  toUserRow =
-    pkgs: name: p:
-    {
-      inherit (p) uid fullName extraGroups;
-      inherit (p)
-        linger
-        primary
-        nixTrusted
-        subordinateIds
-        ;
-      authorizedKeys = p.authorizedKeys;
-      authorizedKeysFile = p.authorizedKeysFile;
-      u2fKeysFile = p.u2fKeysFile;
-      gpgPublicKeysFile = p.gpgPublicKeysFile;
-      hashedPasswordFile = hashToFile pkgs name p;
-    };
+  toUserRow = pkgs: name: p: {
+    inherit (p) uid fullName extraGroups;
+    inherit (p)
+      linger
+      primary
+      nixTrusted
+      subordinateIds
+      ;
+    authorizedKeys = p.authorizedKeys;
+    authorizedKeysFile = p.authorizedKeysFile;
+    u2fKeysFile = p.u2fKeysFile;
+    gpgPublicKeysFile = p.gpgPublicKeysFile;
+    hashedPasswordFile = hashToFile pkgs name p;
+  };
 in
 {
   kdn.user-profiles.nixos =
-    { config, options, lib, pkgs, ... }:
+    {
+      config,
+      options,
+      lib,
+      pkgs,
+      ...
+    }:
     let
       # The selected profile names that the data file actually holds. A name a host selects but the
       # data does not carry is silently dropped here — filter before `genAttrs`, so
@@ -178,12 +188,9 @@ in
         name: toUserRow pkgs name config.kdn.userProfileData.${name}
       );
 
-      config.kdn.profile-baseline.rootHashedPasswordFile = lib.mkIf
-        (
-          builtins.elem "root" present
-          && (options.kdn.profile-baseline ? rootHashedPasswordFile)
-        )
-        (hashToFile pkgs "root" config.kdn.userProfileData.root);
+      config.kdn.profile-baseline.rootHashedPasswordFile = lib.mkIf (
+        builtins.elem "root" present && (options.kdn.profile-baseline ? rootHashedPasswordFile)
+      ) (hashToFile pkgs "root" config.kdn.userProfileData.root);
 
       # `passwordHash` (a value) and `passwordHashFile` (a path override) are mutually exclusive.
       # Assert it over every profile in the data, not just the selected ones, so a dormant row is

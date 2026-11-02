@@ -35,7 +35,7 @@ def test_reorder_two_changes(repo):
     a = repo.commit("feat: a", {"a.txt": "a\n"})
     b = repo.commit("feat: b", {"b.txt": "b\n"})  # chain: root -> a -> b
     repo.jj("rebase", "-r", a, "--insert-after", b)
-    assert repo.ids(f"parents({a})") == {b}           # a now follows b
+    assert repo.ids(f"parents({a})") == {b}  # a now follows b
     assert repo.ids(f"parents({b})") == repo.ids("root()")  # b now first
 
 
@@ -49,11 +49,13 @@ def test_split_committed_commit(repo):
     repo.jj("split", "-r", x, "-m", "feat: x part1", "--", "x1.txt")
 
     selected = _one(repo, 'description(substring:"x part1")')
-    remainder = _one(repo, 'description(substring:"feat: x") & ~description(substring:"part1")')
-    assert repo.ids(f'{selected} & files("x1.txt")') == {selected}   # selected has x1
-    assert repo.ids(f'{selected} & files("x2.txt")') == set()        # not x2
+    remainder = _one(
+        repo, 'description(substring:"feat: x") & ~description(substring:"part1")'
+    )
+    assert repo.ids(f'{selected} & files("x1.txt")') == {selected}  # selected has x1
+    assert repo.ids(f'{selected} & files("x2.txt")') == set()  # not x2
     assert repo.ids(f'{remainder} & files("x2.txt")') == {remainder}  # remainder has x2
-    assert repo.ids(f"parents({remainder})") == {selected}           # selected is the parent
+    assert repo.ids(f"parents({remainder})") == {selected}  # selected is the parent
 
 
 def test_abandon_reparents_descendants(repo):
@@ -62,9 +64,11 @@ def test_abandon_reparents_descendants(repo):
     _c2 = repo.commit("feat: c2", {"c2.txt": "2\n"})
     c3 = repo.commit("feat: c3", {"c3.txt": "3\n"})
     repo.jj("abandon", _c2)
-    assert repo.ids(f"parents({c3})") == {c1}          # c3 now sits on c1
-    assert repo.ids(f"present({_c2})") == set()         # c2 is gone
-    assert "3" == repo.jj_out("file", "show", "-r", c3, "c3.txt")  # content kept (jj_out strips)
+    assert repo.ids(f"parents({c3})") == {c1}  # c3 now sits on c1
+    assert repo.ids(f"present({_c2})") == set()  # c2 is gone
+    assert "3" == repo.jj_out(
+        "file", "show", "-r", c3, "c3.txt"
+    )  # content kept (jj_out strips)
 
 
 def test_revert_creates_an_inverse_commit(repo):
@@ -79,7 +83,7 @@ def test_revert_creates_an_inverse_commit(repo):
     rev = _one(repo, 'description(substring:"Revert")')
     # the revert removes c1.txt (inverts the add), and does not rewrite c1:
     assert repo.jj("file", "show", "-r", rev, "c1.txt", check=False).returncode != 0
-    assert repo.ids(f"present({c1})") == {c1}          # original still there
+    assert repo.ids(f"present({c1})") == {c1}  # original still there
 
 
 def test_duplicate_copies_a_commit(repo):
@@ -90,19 +94,21 @@ def test_duplicate_copies_a_commit(repo):
     repo.jj("duplicate", d, "--onto", base)
 
     copies = repo.ids('description(substring:"dup-me")')
-    assert len(copies) == 2                             # original + copy
+    assert len(copies) == 2  # original + copy
     copy = next(iter(copies - {d}))
-    assert repo.ids(f"{copy} & descendants({base})") == {copy}       # copy sits on base
-    assert "d" == repo.jj_out("file", "show", "-r", copy, "dup.txt")  # same content (jj_out strips)
+    assert repo.ids(f"{copy} & descendants({base})") == {copy}  # copy sits on base
+    assert "d" == repo.jj_out(
+        "file", "show", "-r", copy, "dup.txt"
+    )  # same content (jj_out strips)
 
 
 def test_simplify_parents_drops_a_redundant_edge(repo):
     """``jj simplify-parents`` removes a parent already reachable via another."""
     p = repo.commit("feat: p", {"p.txt": "p\n"})
     q = _commit_on(repo, p, "feat: q", {"q.txt": "q\n"})  # q descends from p
-    repo.jj("new", p, q, "-m", "merge redundant")          # @ = merge(p, q); p is redundant
+    repo.jj("new", p, q, "-m", "merge redundant")  # @ = merge(p, q); p is redundant
     m = repo.change_id("@")
-    assert repo.ids(f"parents({m})") == {p, q}             # both parents before
+    assert repo.ids(f"parents({m})") == {p, q}  # both parents before
 
     repo.jj("simplify-parents", "-r", m)
-    assert repo.ids(f"parents({m})") == {q}                # p edge dropped
+    assert repo.ids(f"parents({m})") == {q}  # p edge dropped

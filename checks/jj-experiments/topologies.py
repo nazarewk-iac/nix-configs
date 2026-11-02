@@ -76,11 +76,17 @@ def build_reference(repo, slot_cfg, *, push_main_fork: bool = True) -> dict:
 
     # Public upstream line off A (fetched, not merged into @).
     labels["P1"] = _node(repo, [a], "feat: public change 1", {"flake.lock": "v1\n"})
-    labels["P2"] = _node(repo, [labels["P1"]], "feat: public change 2", {"flake.lock": "v2\n"})
+    labels["P2"] = _node(
+        repo, [labels["P1"]], "feat: public change 2", {"flake.lock": "v2\n"}
+    )
 
     # Local upstream line off A (merged below the tree merge).
-    labels["U1"] = _node(repo, [a], "feat: shared module", {"modules/shared.nix": "# u1\n"})
-    labels["U2"] = _node(repo, [labels["U1"]], "feat: shared edit", {"modules/shared.nix": "# u2\n"})
+    labels["U1"] = _node(
+        repo, [a], "feat: shared module", {"modules/shared.nix": "# u1\n"}
+    )
+    labels["U2"] = _node(
+        repo, [labels["U1"]], "feat: shared edit", {"modules/shared.nix": "# u2\n"}
+    )
 
     # Fork-sensitive change off A (path matches a denied pattern).
     labels["F1"] = _node(
@@ -88,17 +94,23 @@ def build_reference(repo, slot_cfg, *, push_main_fork: bool = True) -> dict:
     )
 
     # The single fork merge.
-    labels["M"] = _node(repo, [labels["U2"], labels["F1"]], "chore(merge): merge in upstream")
+    labels["M"] = _node(
+        repo, [labels["U2"], labels["F1"]], "chore(merge): merge in upstream"
+    )
 
     # Local work above the merge: generic, fork-sensitive, generic.
-    labels["L1"] = _node(repo, [labels["M"]], "feat: generic foo", {"modules/foo.nix": "# l1\n"})
+    labels["L1"] = _node(
+        repo, [labels["M"]], "feat: generic foo", {"modules/foo.nix": "# l1\n"}
+    )
     labels["L2"] = _node(
         repo,
         [labels["L1"]],
         "feat: PLACEHOLDER-SENSITIVE vpn",
         {"docs/notes.md": "host = PLACEHOLDER-SENSITIVE\n"},
     )
-    labels["L3"] = _node(repo, [labels["L2"]], "feat: generic bar", {"modules/bar.nix": "# l3\n"})
+    labels["L3"] = _node(
+        repo, [labels["L2"]], "feat: generic bar", {"modules/bar.nix": "# l3\n"}
+    )
 
     # Empty working copy on top of L3 (the resting single-parent @).
     repo.new(labels["L3"])
@@ -137,12 +149,18 @@ def build_base_tree(repo, slot_cfg) -> dict:
     labels["A"] = repo.change_id("@")
     a = labels["A"]
 
-    labels["U1"] = _node(repo, [a], "feat: shared module", {"modules/shared.nix": "# u1\n"})
-    labels["U2"] = _node(repo, [labels["U1"]], "feat: shared edit", {"modules/shared.nix": "# u2\n"})
+    labels["U1"] = _node(
+        repo, [a], "feat: shared module", {"modules/shared.nix": "# u1\n"}
+    )
+    labels["U2"] = _node(
+        repo, [labels["U1"]], "feat: shared edit", {"modules/shared.nix": "# u2\n"}
+    )
     labels["F1"] = _node(
         repo, [a], "feat: host wiring", {"hosts/PLACEHOLDER-SENSITIVE.nix": "# host\n"}
     )
-    labels["M"] = _node(repo, [labels["U2"], labels["F1"]], "chore(merge): merge in upstream")
+    labels["M"] = _node(
+        repo, [labels["U2"], labels["F1"]], "chore(merge): merge in upstream"
+    )
 
     repo.new(labels["M"])
     labels["@"] = repo.change_id("@")
@@ -177,25 +195,39 @@ def build_incoming_tree(repo, slot_cfg) -> dict:
     labels["A"] = repo.change_id("@")
     a = labels["A"]
 
-    labels["U1"] = _node(repo, [a], "feat: shared module", {"modules/shared.nix": "# u1\n"})
-    labels["U2"] = _node(repo, [labels["U1"]], "feat: shared edit", {"modules/shared.nix": "# u2\n"})
+    labels["U1"] = _node(
+        repo, [a], "feat: shared module", {"modules/shared.nix": "# u1\n"}
+    )
+    labels["U2"] = _node(
+        repo, [labels["U1"]], "feat: shared edit", {"modules/shared.nix": "# u2\n"}
+    )
     labels["F1"] = _node(
         repo, [a], "feat: host wiring", {"hosts/PLACEHOLDER-SENSITIVE.nix": "# host\n"}
     )
-    labels["M"] = _node(repo, [labels["U2"], labels["F1"]], "chore(merge): merge in upstream")
+    labels["M"] = _node(
+        repo, [labels["U2"], labels["F1"]], "chore(merge): merge in upstream"
+    )
 
     repo.register_remote("upstream")
     repo.register_remote("fork")
     repo.bookmark_set("upstream", labels["U2"])
     repo.bookmark_set("main", labels["M"])
-    _push_rev_as(repo, "upstream", labels["U2"], "main")  # main@upstream = U2 (last synced)
+    _push_rev_as(
+        repo, "upstream", labels["U2"], "main"
+    )  # main@upstream = U2 (last synced)
     repo.push("fork", "upstream")
     repo.push("fork", "main")  # upstream@fork = U2, main@fork = M (frozen)
 
     # New upstream arrives as children of U2 (fetched, not merged into @).
-    labels["P1"] = _node(repo, [labels["U2"]], "feat: public one", {"flake.lock": "v1\n"})
-    labels["P2"] = _node(repo, [labels["P1"]], "feat: public two", {"flake.lock": "v2\n"})
-    _push_rev_as(repo, "upstream", labels["P2"], "main")  # main@upstream = P2 (advanced)
+    labels["P1"] = _node(
+        repo, [labels["U2"]], "feat: public one", {"flake.lock": "v1\n"}
+    )
+    labels["P2"] = _node(
+        repo, [labels["P1"]], "feat: public two", {"flake.lock": "v2\n"}
+    )
+    _push_rev_as(
+        repo, "upstream", labels["P2"], "main"
+    )  # main@upstream = P2 (advanced)
 
     repo.new(labels["M"])  # rest @ back on the merge
     labels["@"] = repo.change_id("@")
@@ -223,7 +255,9 @@ def build_mutable_incoming_tree(repo, slot_cfg) -> dict:
     labels["A"] = repo.change_id("@")
     a = labels["A"]
 
-    labels["U1"] = _node(repo, [a], "feat: shared module", {"modules/shared.nix": "# u1\n"})
+    labels["U1"] = _node(
+        repo, [a], "feat: shared module", {"modules/shared.nix": "# u1\n"}
+    )
     labels["F1"] = _node(
         repo, [a], "feat: host wiring", {"hosts/PLACEHOLDER-SENSITIVE.nix": "# host\n"}
     )
@@ -240,13 +274,22 @@ def build_mutable_incoming_tree(repo, slot_cfg) -> dict:
     repo.push("fork", "main")  # main@fork = M0 (frozen prior publish)
 
     # Local upstream work, not pushed to the public remote.
-    labels["UL1"] = _node(repo, [labels["U1"]], "feat: local upstream fix", {"modules/local.nix": "# ul1\n"})
+    labels["UL1"] = _node(
+        repo,
+        [labels["U1"]],
+        "feat: local upstream fix",
+        {"modules/local.nix": "# ul1\n"},
+    )
     # A new mutable merge folds the local upstream work over the published merge.
     labels["M1"] = _node(repo, [labels["UL1"], labels["M0"]], "chore(upstream): merge")
 
     # New upstream arrives as children of U1; the public remote advances.
-    labels["P1"] = _node(repo, [labels["U1"]], "feat: public one", {"flake.lock": "v1\n"})
-    labels["P2"] = _node(repo, [labels["P1"]], "feat: public two", {"flake.lock": "v2\n"})
+    labels["P1"] = _node(
+        repo, [labels["U1"]], "feat: public one", {"flake.lock": "v1\n"}
+    )
+    labels["P2"] = _node(
+        repo, [labels["P1"]], "feat: public two", {"flake.lock": "v2\n"}
+    )
     _push_rev_as(repo, "upstream", labels["P2"], "main")  # main@upstream = P2
 
     repo.new(labels["M1"])  # rest @ on the mutable merge
@@ -288,9 +331,13 @@ def build_conflict_tree(repo, slot_cfg) -> dict:
     repo.push("fork", "main")  # main@fork = M (frozen)
 
     # A local change above the merge edits conf.txt.
-    labels["L"] = _node(repo, [labels["M"]], "feat: local tweak", {"conf.txt": "local\n"})
+    labels["L"] = _node(
+        repo, [labels["M"]], "feat: local tweak", {"conf.txt": "local\n"}
+    )
     # New upstream edits the same file differently.
-    labels["P1"] = _node(repo, [labels["U1"]], "feat: public tweak", {"conf.txt": "public\n"})
+    labels["P1"] = _node(
+        repo, [labels["U1"]], "feat: public tweak", {"conf.txt": "public\n"}
+    )
     _push_rev_as(repo, "upstream", labels["P1"], "main")  # main@upstream = P1
 
     repo.new(labels["L"])  # @ on the local commit (fork-tip)
@@ -356,11 +403,15 @@ def build_branch_tree(repo) -> dict:
 
     # long-lived branch off A (local, mutable)
     labels["B1"] = _node(repo, [a], "feat: branch one", {"branch/b1.txt": "b1\n"})
-    labels["B2"] = _node(repo, [labels["B1"]], "feat: branch two", {"branch/b2.txt": "b2\n"})
+    labels["B2"] = _node(
+        repo, [labels["B1"]], "feat: branch two", {"branch/b2.txt": "b2\n"}
+    )
 
     # trunk advances off A and is published to origin (immutable once pushed)
     labels["T1"] = _node(repo, [a], "feat: trunk one", {"trunk/t1.txt": "t1\n"})
-    labels["T2"] = _node(repo, [labels["T1"]], "feat: trunk two", {"trunk/t2.txt": "t2\n"})
+    labels["T2"] = _node(
+        repo, [labels["T1"]], "feat: trunk two", {"trunk/t2.txt": "t2\n"}
+    )
     repo.register_remote("origin")
     _push_rev_as(repo, "origin", labels["T2"], "main")  # main@origin = T2
 

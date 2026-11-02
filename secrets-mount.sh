@@ -24,4 +24,3 @@ for mp in "${mountpoints[@]}"; do
     sudo zfs mount "${mp#/}"
   fi
 done
-

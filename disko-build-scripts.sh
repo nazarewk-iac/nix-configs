@@ -15,6 +15,6 @@ scripts["format"]="formatScript"
 scripts["mount"]="mountScript"
 scripts["recreate"]="diskoScript"
 
-for key in "${!scripts[@]}" ; do
+for key in "${!scripts[@]}"; do
   nom build -vL ".#nixosConfigurations.${host}.config.system.build.${scripts[${key}]}" -o "disko-${host}-${key}"
 done

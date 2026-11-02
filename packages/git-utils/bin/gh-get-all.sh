@@ -10,5 +10,5 @@ self() {
   fi
 }
 
-readarray -t repos <<<"$( self gh-repos "$@")"
+readarray -t repos <<<"$(self gh-repos "$@")"
 self g-get "${repos[@]}"

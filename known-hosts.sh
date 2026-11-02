@@ -16,9 +16,9 @@ tmp="${wd}/modules/universal/profile/machine/baseline/.ssh_known_hosts"
 
 # The ssh_hosts secret is one comma-separated list per host; ssh-keyscan does not split it, so
 # expand to one line per alias here (and keep each alias' certificate-covered spelling).
-sops decrypt --extract '["networking"]["ssh_hosts"]' "${wd}/default.unattended.sops.yaml" \
-  | tr ',' '\n' | sed '/^[[:space:]]*$/d' | sort -u \
-  | ssh-keyscan -f - -H -q -v 2>/dev/null | tee "${tmp}.new"
+sops decrypt --extract '["networking"]["ssh_hosts"]' "${wd}/default.unattended.sops.yaml" |
+  tr ',' '\n' | sed '/^[[:space:]]*$/d' | sort -u |
+  ssh-keyscan -f - -H -q -v 2>/dev/null | tee "${tmp}.new"
 
 if test -e "${out}"; then
   difft "${out}" "${tmp}.new"

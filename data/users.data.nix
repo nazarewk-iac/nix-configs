@@ -33,9 +33,29 @@
       fullName = "Krzysztof Nazarewski";
       email = "gpg@kdn.im";
       extraGroups = [
-        "adbusers" "audio" "deluge" "dialout" "docker" "kvm" "libvirtd" "lp" "lpadmin"
-        "mlocate" "networkmanager" "pipewire" "plugdev" "podman" "power" "samba"
-        "scanner" "tty" "video" "weechat" "wheel" "wireshark" "ydotool"
+        "adbusers"
+        "audio"
+        "deluge"
+        "dialout"
+        "docker"
+        "kvm"
+        "libvirtd"
+        "lp"
+        "lpadmin"
+        "mlocate"
+        "networkmanager"
+        "pipewire"
+        "plugdev"
+        "podman"
+        "power"
+        "samba"
+        "scanner"
+        "tty"
+        "video"
+        "weechat"
+        "wheel"
+        "wireshark"
+        "ydotool"
       ];
       linger = true;
       primary = true;
@@ -48,8 +68,18 @@
       uid = 27748;
       fullName = "Beata";
       extraGroups = [
-        "audio" "dialout" "lp" "lpadmin" "mlocate" "networkmanager"
-        "pipewire" "plugdev" "power" "scanner" "tty" "video"
+        "audio"
+        "dialout"
+        "lp"
+        "lpadmin"
+        "mlocate"
+        "networkmanager"
+        "pipewire"
+        "plugdev"
+        "power"
+        "scanner"
+        "tty"
+        "video"
       ];
       # TODO: re-hash with yescrypt (`mkpasswd -m yescrypt`); this is an old sha512-crypt ($6$) hash.
       passwordHash = "$6$rounds=4096$KyC.856JV99or3zx$X2wYf1M6rO3xqDkOlMwFaAJvgiIUewc/LtWEPNCgZUBQceFlNsgEw1IgZmjduFE41IFdJWKqKuroUAznvE0Sx0";
@@ -59,8 +89,18 @@
       uid = 48378;
       fullName = "Staś";
       extraGroups = [
-        "audio" "dialout" "lp" "lpadmin" "mlocate" "networkmanager"
-        "pipewire" "plugdev" "power" "scanner" "tty" "video"
+        "audio"
+        "dialout"
+        "lp"
+        "lpadmin"
+        "mlocate"
+        "networkmanager"
+        "pipewire"
+        "plugdev"
+        "power"
+        "scanner"
+        "tty"
+        "video"
       ];
       passwordHash = "$y$j9T$WGU0Qrlm0.jq7Y4QfyVYC0$HiYyLZMDX8M/A7WNshB5PjtZEGufQ.Qa93FY4WIlcw8";
     };

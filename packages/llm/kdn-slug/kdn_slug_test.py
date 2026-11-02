@@ -31,7 +31,15 @@ def jj_repo(tmp_path):
     repo_dir = (tmp_path / "acme-widgets").resolve()
     repo_dir.mkdir()
     run("jj", "git", "init", "--colocate", cwd=repo_dir)
-    run("jj", "git", "remote", "add", "origin", "git@github.com:some-org/acme-widgets.git", cwd=repo_dir)
+    run(
+        "jj",
+        "git",
+        "remote",
+        "add",
+        "origin",
+        "git@github.com:some-org/acme-widgets.git",
+        cwd=repo_dir,
+    )
     return repo_dir
 
 
@@ -46,14 +54,33 @@ def plain_git_repo(tmp_path):
 
 
 def test_names_session_uses_overrides_and_llm_prefix():
-    out = run("kdn-slug", "names", "--type", "session", "--repo", "myrepo", "--session-id", "deadbeef")
+    out = run(
+        "kdn-slug",
+        "names",
+        "--type",
+        "session",
+        "--repo",
+        "myrepo",
+        "--session-id",
+        "deadbeef",
+    )
     assert out.stdout.strip() == "llm:myrepo:deadbeef"
 
 
 def test_names_session_appends_tags_in_order():
     out = run(
-        "kdn-slug", "names", "--type", "session",
-        "--repo", "myrepo", "--session-id", "deadbeef", "--tag", "foo", "--tag", "bar",
+        "kdn-slug",
+        "names",
+        "--type",
+        "session",
+        "--repo",
+        "myrepo",
+        "--session-id",
+        "deadbeef",
+        "--tag",
+        "foo",
+        "--tag",
+        "bar",
     )
     assert out.stdout.strip() == "llm:myrepo:deadbeef:foo:bar"
 
@@ -64,8 +91,16 @@ def test_names_session_respects_max_len_with_hard_truncation_fallback():
     # exists. A --max-len below its length must hit the hard-truncation fallback of that single
     # candidate, not fall back to a shorter *different* candidate.
     out = run(
-        "kdn-slug", "names", "--type", "session",
-        "--repo", "myrepo", "--session-id", "deadbeef", "--max-len", "6",
+        "kdn-slug",
+        "names",
+        "--type",
+        "session",
+        "--repo",
+        "myrepo",
+        "--session-id",
+        "deadbeef",
+        "--max-len",
+        "6",
     )
     result = out.stdout.strip()
     assert result == "llm:myrepo:deadbeef"[:6]
@@ -77,7 +112,18 @@ def test_names_tab_has_no_llm_prefix():
 
 
 def test_names_custom_separator():
-    out = run("kdn-slug", "names", "--type", "tab", "--sep", "-", "--tag", "agent1", "--tag", "build")
+    out = run(
+        "kdn-slug",
+        "names",
+        "--type",
+        "tab",
+        "--sep",
+        "-",
+        "--tag",
+        "agent1",
+        "--tag",
+        "build",
+    )
     assert out.stdout.strip() == "agent1-build"
 
 
@@ -85,8 +131,16 @@ def test_names_session_host_org_repo_join_uses_repo_sep_not_slash(jj_repo):
     # The top level joins on --sep ("-" here). The repo path parts join on --repo-sep,
     # independent of --sep, so the host/org/repo stays one distinct slug. Neither may be "/".
     out = run(
-        "kdn-slug", "names", "--type", "session", "--session-id", "deadbeef",
-        "--sep", "-", "--repo-sep", "_",
+        "kdn-slug",
+        "names",
+        "--type",
+        "session",
+        "--session-id",
+        "deadbeef",
+        "--sep",
+        "-",
+        "--repo-sep",
+        "_",
         cwd=jj_repo,
     )
     result = out.stdout.strip()
@@ -98,7 +152,12 @@ def test_names_session_repo_sep_defaults_to_underscore(jj_repo):
     # No --repo-sep given: the repo path parts default-join on "_", and the top level uses the
     # default ":". This is the full session name shape kdn-slug emits by default.
     out = run(
-        "kdn-slug", "names", "--type", "session", "--session-id", "deadbeef",
+        "kdn-slug",
+        "names",
+        "--type",
+        "session",
+        "--session-id",
+        "deadbeef",
         cwd=jj_repo,
     )
     result = out.stdout.strip()
@@ -108,8 +167,15 @@ def test_names_session_repo_sep_defaults_to_underscore(jj_repo):
 
 def test_names_list_shows_multiple_candidates_most_detailed_first():
     out = run(
-        "kdn-slug", "names", "--type", "session", "--list",
-        "--repo", "myrepo", "--session-id", "0123456789abcdef",
+        "kdn-slug",
+        "names",
+        "--type",
+        "session",
+        "--list",
+        "--repo",
+        "myrepo",
+        "--session-id",
+        "0123456789abcdef",
     )
     lines = out.stdout.strip().splitlines()
     assert len(lines) > 1
@@ -138,7 +204,12 @@ def test_repo_falls_back_to_dirname_without_a_remote(plain_git_repo):
 
 def test_names_session_auto_discovers_repo_from_jj_repo(jj_repo):
     out = run(
-        "kdn-slug", "names", "--type", "session", "--session-id", "deadbeef",
+        "kdn-slug",
+        "names",
+        "--type",
+        "session",
+        "--session-id",
+        "deadbeef",
         cwd=jj_repo,
     )
     # host/org/repo must join on --repo-sep (default "_"), NOT a hardcoded "/". zellij rejects

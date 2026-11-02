@@ -464,28 +464,31 @@ in
       # truth `data/llm.nix`. The entries below still own the host-local knobs (hfFile, router,
       # device, threads, chat-template fallbacks); only what the fleet DEFINES — the intent
       # aliases and the served context — comes from the data file. One place to edit, no copy.
-      models = lib.mapAttrs (
-        name: model:
-        let
-          fromData = llmData.models.${name} or null;
-        in
-        if fromData == null then
-          model
-        else
-          model
-          // {
-            aliases = fromData.aliases or [ ];
-            perf = (model.perf or { }) // {
-              contextSize = fromData.contextSize;
-            };
-          }
-      ) (
-        (lib.optionalAttrs withSmall small.kdn.llm.local.models)
-        // (lib.optionalAttrs withGrunt grunt.kdn.llm.local.models)
-        // (lib.optionalAttrs withSurveyed surveyed.kdn.llm.local.models)
-        // frontierModels
-        // qwenModels
-      );
+      models =
+        lib.mapAttrs
+          (
+            name: model:
+            let
+              fromData = llmData.models.${name} or null;
+            in
+            if fromData == null then
+              model
+            else
+              model
+              // {
+                aliases = fromData.aliases or [ ];
+                perf = (model.perf or { }) // {
+                  contextSize = fromData.contextSize;
+                };
+              }
+          )
+          (
+            (lib.optionalAttrs withSmall small.kdn.llm.local.models)
+            // (lib.optionalAttrs withGrunt grunt.kdn.llm.local.models)
+            // (lib.optionalAttrs withSurveyed surveyed.kdn.llm.local.models)
+            // frontierModels
+            // qwenModels
+          );
     }
     // (
       # A single `routers` key: the outer `//` is a shallow merge, so one
@@ -533,9 +536,9 @@ in
               // frontierModels
               // qwenModels;
             frontierIds = builtins.attrNames (frontierModels // qwenModels);
-            gpuIds = lib.filter (
-              id: ((allModels.${id}.perf or { }).device or "") == "Vulkan0"
-            ) (builtins.attrNames allModels);
+            gpuIds = lib.filter (id: ((allModels.${id}.perf or { }).device or "") == "Vulkan0") (
+              builtins.attrNames allModels
+            );
           in
           [
             # --- GPU models: mutually exclusive with each other (| within one tier) ---

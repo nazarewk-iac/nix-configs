@@ -98,7 +98,7 @@ in
         "qwen"
         "orchestrate-deep-slow"
       ];
-      contextSize = 1024 * K;  # 1M
+      contextSize = 1024 * K; # 1M
       gpu = false;
       # The frontier is the one model worth a real client budget: 512k of the served 1M. A long
       # orchestrator session on a 127-message transcript needs more than the 384k default.

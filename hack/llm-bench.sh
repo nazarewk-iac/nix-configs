@@ -51,25 +51,61 @@ Examples:
 EOF
 }
 
-die() { echo "$PROG: $*" >&2; exit 1; }
+die() {
+  echo "$PROG: $*" >&2
+  exit 1
+}
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
-    --model) MODEL="${2:?}"; shift 2 ;;
-    --base-url) BASE_URL="${2:?}"; shift 2 ;;
-    --key-file) KEY_FILE="${2:?}"; shift 2 ;;
-    --steps) STEPS="${2:?}"; shift 2 ;;
-    --max-tokens) MAX_TOKENS="${2:?}"; shift 2 ;;
-    --prompt-tokens) PROMPT_TOKENS="${2:?}"; shift 2 ;;
-    --ssh-host) SSH_HOST="${2:-}"; shift 2 ;;
-    --json) JSON=1; shift ;;
-    --timeout) TIMEOUT="${2:?}"; shift 2 ;;
-    --help | -h) usage; exit 0 ;;
-    *) die "unknown flag: $1 (see --help)" ;;
+  --model)
+    MODEL="${2:?}"
+    shift 2
+    ;;
+  --base-url)
+    BASE_URL="${2:?}"
+    shift 2
+    ;;
+  --key-file)
+    KEY_FILE="${2:?}"
+    shift 2
+    ;;
+  --steps)
+    STEPS="${2:?}"
+    shift 2
+    ;;
+  --max-tokens)
+    MAX_TOKENS="${2:?}"
+    shift 2
+    ;;
+  --prompt-tokens)
+    PROMPT_TOKENS="${2:?}"
+    shift 2
+    ;;
+  --ssh-host)
+    SSH_HOST="${2:-}"
+    shift 2
+    ;;
+  --json)
+    JSON=1
+    shift
+    ;;
+  --timeout)
+    TIMEOUT="${2:?}"
+    shift 2
+    ;;
+  --help | -h)
+    usage
+    exit 0
+    ;;
+  *) die "unknown flag: $1 (see --help)" ;;
   esac
 done
 
-[ -n "$MODEL" ] || { usage >&2; exit 2; }
+[ -n "$MODEL" ] || {
+  usage >&2
+  exit 2
+}
 case "$MAX_TOKENS" in '' | *[!0-9]*) die "--max-tokens must be a positive integer" ;; esac
 case "$PROMPT_TOKENS" in '' | *[!0-9]*) die "--prompt-tokens must be a positive integer" ;; esac
 
@@ -82,14 +118,14 @@ if [ -z "$STEPS" ]; then
   fi
 else
   case ",$STEPS," in
-    *,all,*) STEPS="$ALL_STEPS" ;;
+  *,all,*) STEPS="$ALL_STEPS" ;;
   esac
 fi
 
 step_enabled() {
   case ",$STEPS," in
-    *",$1,"*) return 0 ;;
-    *) return 1 ;;
+  *",$1,"*) return 0 ;;
+  *) return 1 ;;
   esac
 }
 
@@ -100,15 +136,17 @@ load_key() {
     API_KEY="$(tr -d '[:space:]' <"$KEY_FILE")"
   elif [ -n "$SSH_HOST" ]; then
     API_KEY="$(ssh -o BatchMode=yes "$SSH_HOST" \
-      'sudo -n cat /run/configs/llms/llama-server/api-keys/default' 2>/dev/null \
-      | tr -d '[:space:]')" || true
+      'sudo -n cat /run/configs/llms/llama-server/api-keys/default' 2>/dev/null |
+      tr -d '[:space:]')" || true
   fi
   [ -n "$API_KEY" ] || die "no API key. Set --key-file or provide --ssh-host."
 }
 load_key
 
-TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"; readonly TS
-HOST="$(hostname)"; readonly HOST
+TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+readonly TS
+HOST="$(hostname)"
+readonly HOST
 
 box_note() {
   # A one-line note on the box state, so a reader can judge the run.
@@ -131,8 +169,8 @@ fetch_model_path() {
   body="$(curl -sS -m "$TIMEOUT" \
     -H "Authorization: Bearer $API_KEY" -H 'Content-Type: application/json' \
     "$BASE_URL/chat/completions" \
-    -d "{\"model\":\"$id\",\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}],\"max_tokens\":1,\"stream\":false}")" \
-    || return 1
+    -d "{\"model\":\"$id\",\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}],\"max_tokens\":1,\"stream\":false}")" ||
+    return 1
   jq -er '.model' <<<"$body" 2>/dev/null
 }
 
@@ -176,7 +214,7 @@ print_header() {
 # the prompt unique, which keeps it out of the server prompt cache.
 build_prompt() {
   local salt="${1:-}"
-  local chars=$(( PROMPT_TOKENS * 5 ))
+  local chars=$((PROMPT_TOKENS * 5))
   [ "$chars" -lt 24 ] && chars=24
   python3 -c "print('$salt' + ('bench mark token stream. ' * ($chars // 24 + 1))[:$chars])"
 }
@@ -199,8 +237,8 @@ stream_timings() {
     -H "Authorization: Bearer $API_KEY" -H 'Content-Type: application/json' \
     "$BASE_URL/chat/completions" \
     -d "$(jq -cn --arg m "$id" --arg p "$prompt" --argjson n "$MAX_TOKENS" \
-      '{model:$m,messages:[{role:"user",content:$p}],max_tokens:$n,stream:true,stream_options:{include_usage:true}}')" \
-    | python3 -c '
+      '{model:$m,messages:[{role:"user",content:$p}],max_tokens:$n,stream:true,stream_options:{include_usage:true}}')" |
+    python3 -c '
 import json, sys, time
 start = time.monotonic()
 ttft = None
@@ -322,8 +360,14 @@ child_pid() {
 
 step_mem() {
   local path pid status rss anon file
-  path="$(model_path "$MODEL")" || { echo "$PROG: cannot resolve the model path" >&2; return 1; }
-  pid="$(child_pid "$path")" || { echo "$PROG: no resident child for $path" >&2; return 1; }
+  path="$(model_path "$MODEL")" || {
+    echo "$PROG: cannot resolve the model path" >&2
+    return 1
+  }
+  pid="$(child_pid "$path")" || {
+    echo "$PROG: no resident child for $path" >&2
+    return 1
+  }
   status="$(ssh -o BatchMode=yes "$SSH_HOST" "cat /proc/$pid/status" 2>/dev/null)" || return 1
   rss="$(awk '/^VmRSS:/{print $2}' <<<"$status")"
   anon="$(awk '/^RssAnon:/{print $2}' <<<"$status")"
@@ -369,7 +413,10 @@ step_vram() {
     "cat /sys/class/drm/card1/device/mem_info_vram_used /sys/class/drm/card1/device/mem_info_vram_total" 2>/dev/null)" || return 1
   used="$(awk 'NR==1{print $1}' <<<"$raw")"
   total="$(awk 'NR==2{print $1}' <<<"$raw")"
-  [ -n "$used" ] && [ -n "$total" ] || { echo "$PROG: cannot read VRAM from $SSH_HOST" >&2; return 1; }
+  [ -n "$used" ] && [ -n "$total" ] || {
+    echo "$PROG: cannot read VRAM from $SSH_HOST" >&2
+    return 1
+  }
   row vram run "vram_used_MiB" "$(python3 -c "print(round($used/1048576,1))")"
   row vram run "vram_total_MiB" "$(python3 -c "print(round($total/1048576,1))")"
 }

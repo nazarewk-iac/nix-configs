@@ -36,11 +36,11 @@ ZERO_SHA="0000000000000000000000000000000000000000"
 # Read each whole pattern as one array element (newline-delimited), so a pattern
 # that contains a space stays intact.
 file_patterns=()
-[ -n "$SENSITIVE_FILE_PATTERNS" ] && mapfile -t file_patterns <<< "$SENSITIVE_FILE_PATTERNS"
+[ -n "$SENSITIVE_FILE_PATTERNS" ] && mapfile -t file_patterns <<<"$SENSITIVE_FILE_PATTERNS"
 message_patterns=()
-[ -n "$SENSITIVE_MESSAGE_PATTERNS" ] && mapfile -t message_patterns <<< "$SENSITIVE_MESSAGE_PATTERNS"
+[ -n "$SENSITIVE_MESSAGE_PATTERNS" ] && mapfile -t message_patterns <<<"$SENSITIVE_MESSAGE_PATTERNS"
 block_patterns=()
-[ -n "$BLOCK_PUSH_MESSAGE_PATTERNS" ] && mapfile -t block_patterns <<< "$BLOCK_PUSH_MESSAGE_PATTERNS"
+[ -n "$BLOCK_PUSH_MESSAGE_PATTERNS" ] && mapfile -t block_patterns <<<"$BLOCK_PUSH_MESSAGE_PATTERNS"
 
 # An empty list builds `grep -i` with no `-e`, which reads the next argument as the pattern and
 # matches almost nothing, or exits 2. `if` then reads that as "no match" and the check passes in
@@ -85,8 +85,8 @@ check_range() {
   # option default is `[ ]` — and an empty list builds `grep -i` with no `-e`, which exits 2.
   # `if` reads exit 2 as "no match", so the check would pass in silence. Test the count first,
   # so an empty list is an explicit no-op and never a silent pass.
-  if [ "${#block_patterns[@]}" -gt 0 ] \
-    && printf '%s\n' "$msgs" | grep "${block_grep_args[@]}" >/dev/null; then
+  if [ "${#block_patterns[@]}" -gt 0 ] &&
+    printf '%s\n' "$msgs" | grep "${block_grep_args[@]}" >/dev/null; then
     echo "ERROR: a commit message matches an always-blocked pattern. Refusing push to '$ref'." >&2
     printf '%s\n' "$msgs" | grep "${block_grep_args[@]}" | sed 's/^/  /' >&2 || true
     return 1
