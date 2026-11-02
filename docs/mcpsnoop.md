@@ -43,17 +43,21 @@ mcpsnoop is **enabled by default** via the `kdn.mcp.snoop` slot
 automatically whenever `kdn.mcp.enable = true`.
 
 The slot wraps `mcp-gateway-wrapper` so Claude Code actually launches:
+
 ```
 mcpsnoop -- mcp-gateway-wrapper
 ```
 
 **To disable** for a session, add to `devenv.nix`:
+
 ```nix
 kdn.mcp.snoop.enable = false;
 ```
+
 Then rebuild devenv and re-enter the shell.
 
 **Implementation files:**
+
 - `packages/mcpsnoop/default.nix` — `buildGoModule` derivation, v0.12.0
 - `modules/slots/mcp/snoop/default.nix` — devenv slot; auto-loaded by the slots loader
 - `packages/default.nix` — `mcpsnoop` entry
@@ -83,17 +87,17 @@ tool calls, responses, notifications — appears in the list immediately.
 
 ### Navigate the TUI
 
-| Key | Action | | Key | Action |
-|---|---|---|---|---|
-| `j` / `k` or `↓` / `↑` | move between frames | | `s` | tool summary |
-| `enter` | drill into a frame (pretty-printed JSON) | | `y` | copy frame to clipboard |
-| `esc` | go back | | `e` | export session |
-| `/` | open filter input | | `f` | toggle follow mode (auto-scroll to newest) |
-| `:` | open command mode | | `ctrl-d` | delete selected frame / session |
-| `g` / `G` | jump to top / bottom | | `p` | pause / unpause live capture |
-| `ctrl-f` / `ctrl-b` | page down / up | | `shift`+`<key>` | sort by column |
-| `r` | replay the selected call | | `c` | show capabilities (client-server handshake) |
-| `?` | show full keybinding help | | | |
+| Key                    | Action                                   |     | Key             | Action                                      |
+| ---------------------- | ---------------------------------------- | --- | --------------- | ------------------------------------------- |
+| `j` / `k` or `↓` / `↑` | move between frames                      |     | `s`             | tool summary                                |
+| `enter`                | drill into a frame (pretty-printed JSON) |     | `y`             | copy frame to clipboard                     |
+| `esc`                  | go back                                  |     | `e`             | export session                              |
+| `/`                    | open filter input                        |     | `f`             | toggle follow mode (auto-scroll to newest)  |
+| `:`                    | open command mode                        |     | `ctrl-d`        | delete selected frame / session             |
+| `g` / `G`              | jump to top / bottom                     |     | `p`             | pause / unpause live capture                |
+| `ctrl-f` / `ctrl-b`    | page down / up                           |     | `shift`+`<key>` | sort by column                              |
+| `r`                    | replay the selected call                 |     | `c`             | show capabilities (client-server handshake) |
+| `?`                    | show full keybinding help                |     |                 |                                             |
 
 Press `?` in the app for the complete, up-to-date list.
 
@@ -102,15 +106,15 @@ Press `?` in the app for the complete, up-to-date list.
 Press `/` and combine space-separated tokens, ANDed. Plain text matches the method, tool, id,
 and payload.
 
-| Token | Example | Matches |
-|---|---|---|
-| `tool:` | `tool:filesystem` | Calls to the filesystem backend |
-| `method:` | `method:tools/call` | Frames with a specific JSON-RPC method |
-| `status:` | `status:error` | Call outcome: `ok`, `error`, `pending`, `bad`, `warn`, `mismatch` |
-| `dir:` | `dir:c2s` | Direction: `c2s` (client→server) or `s2c` (server→client) |
-| `kind:` | `kind:notify` | Frame type: `req`, `resp`, `notify`, `stderr`, `invalid` |
-| `id:` | `id:42` | Frame with a specific request ID |
-| plain text | `read_file` | Any frame containing that string |
+| Token      | Example             | Matches                                                           |
+| ---------- | ------------------- | ----------------------------------------------------------------- |
+| `tool:`    | `tool:filesystem`   | Calls to the filesystem backend                                   |
+| `method:`  | `method:tools/call` | Frames with a specific JSON-RPC method                            |
+| `status:`  | `status:error`      | Call outcome: `ok`, `error`, `pending`, `bad`, `warn`, `mismatch` |
+| `dir:`     | `dir:c2s`           | Direction: `c2s` (client→server) or `s2c` (server→client)         |
+| `kind:`    | `kind:notify`       | Frame type: `req`, `resp`, `notify`, `stderr`, `invalid`          |
+| `id:`      | `id:42`             | Frame with a specific request ID                                  |
+| plain text | `read_file`         | Any frame containing that string                                  |
 
 Combine tokens: `tool:jj status:error` shows only failed jj calls.
 
@@ -198,13 +202,13 @@ Turn any captured session into a portable file:
 mcpsnoop export -T json|html|text|har|otlp [-o file|-] [session-id|log.jsonl|-]
 ```
 
-| Format | What you get |
-|---|---|
+| Format | What you get                                                                                           |
+| ------ | ------------------------------------------------------------------------------------------------------ |
 | `json` | correlated calls, per-tool counts and p50/p95/p99 latency, slowest calls, capabilities, and raw frames |
-| `html` | a self-contained browser file with search and collapsible JSON |
-| `text` | a pretty plain-text dump |
-| `har` | one entry per correlated call, openable in browser devtools and anything else that reads HAR |
-| `otlp` | OTLP JSON with a trace per session and a span per correlated call |
+| `html` | a self-contained browser file with search and collapsible JSON                                         |
+| `text` | a pretty plain-text dump                                                                               |
+| `har`  | one entry per correlated call, openable in browser devtools and anything else that reads HAR           |
+| `otlp` | OTLP JSON with a trace per session and a span per correlated call                                      |
 
 ```bash
 mcpsnoop export -T html -o out.html       # an HTML file to open in a browser
@@ -251,11 +255,11 @@ newest capture. `--format junit` writes one JUnit `<testcase>` per signal/sessio
 Beyond signal counts, assert the shape of a run — these compose with `--fail-on` and with each
 other:
 
-| Flag | Fails when |
-|---|---|
+| Flag                   | Fails when                                              |
+| ---------------------- | ------------------------------------------------------- |
 | `--max-duration <dur>` | a completed tool call exceeded the budget, e.g. `500ms` |
-| `--expect-tool <name>` | the named tool was never called (repeatable) |
-| `--forbid-tool <name>` | the named tool was called (repeatable) |
+| `--expect-tool <name>` | the named tool was never called (repeatable)            |
+| `--forbid-tool <name>` | the named tool was called (repeatable)                  |
 
 ```bash
 mcpsnoop check --expect-tool search --forbid-tool delete --max-duration 2s run.jsonl
@@ -342,7 +346,7 @@ ssh remote-user@remote-host 'cat ~/.local/state/mcpsnoop/sessions/session.jsonl'
 ## Redacting secrets
 
 Captured frames can include prompts, tool arguments, credentials, and results. Redaction
-scrubs the *saved trace copies* while proxied bytes still pass through unchanged:
+scrubs the _saved trace copies_ while proxied bytes still pass through unchanged:
 
 ```bash
 mcpsnoop --redact-secrets -- node build/index.js              # built-in preset of common secret keys

@@ -13,6 +13,7 @@ All modules live in `modules/universal/`. Each module is loaded in ALL contexts 
 ## Auto-loader
 
 `modules/universal/default.nix` recursively loads:
+
 - `**/default.nix` in HOST context (nixos/darwin)
 - `**/default.nix` in HM context (via `home-manager.sharedModules` injection)
 
@@ -22,19 +23,20 @@ Files NOT ending in `/default.nix` (e.g. `keys.nix`, `bundle.nix`) are NOT auto-
 
 Available via `kdnConfig.util.*` (defined in `modules/meta/default.nix`):
 
-| Guard | Returns data when | Returns `{}` when |
-|---|---|---|
-| `ifTypes ["nixos"]` | moduleType is nixos | anything else |
-| `ifTypes ["darwin"]` | moduleType is darwin | anything else |
-| `ifTypes ["nixos" "darwin"]` | moduleType is nixos or darwin | anything else |
-| `ifHM` | moduleType is home-manager | anything else |
-| `ifHMParent` | moduleType is nixos/darwin/nix-on-droid (HM parent) | home-manager or other |
-| `ifNotHMParent` | moduleType is home-manager | nixos/darwin/nix-on-droid |
-| `hasParentOfAnyType ["nixos"]` | HM with nixos parent (bool) | — |
+| Guard                          | Returns data when                                   | Returns `{}` when         |
+| ------------------------------ | --------------------------------------------------- | ------------------------- |
+| `ifTypes ["nixos"]`            | moduleType is nixos                                 | anything else             |
+| `ifTypes ["darwin"]`           | moduleType is darwin                                | anything else             |
+| `ifTypes ["nixos" "darwin"]`   | moduleType is nixos or darwin                       | anything else             |
+| `ifHM`                         | moduleType is home-manager                          | anything else             |
+| `ifHMParent`                   | moduleType is nixos/darwin/nix-on-droid (HM parent) | home-manager or other     |
+| `ifNotHMParent`                | moduleType is home-manager                          | nixos/darwin/nix-on-droid |
+| `hasParentOfAnyType ["nixos"]` | HM with nixos parent (bool)                         | —                         |
 
 ## Special Arguments (kdnConfig)
 
 Propagated via `kdnConfig.output.mkSubmodule` (in `modules/meta/`):
+
 - `kdnConfig.inputs` — Flake inputs
 - `kdnConfig.lib` — Extended library
 - `kdnConfig.self` — Self-reference to flake
@@ -80,10 +82,10 @@ in {
 
 **Use `kdn.env.packages` and `kdn.env.variables`** instead of platform-specific options:
 
-| `kdn.env.*` | NixOS | Darwin | Home Manager |
-|---|---|---|---|
-| `kdn.env.packages` | `environment.systemPackages` | `environment.systemPackages` | `home.packages` |
-| `kdn.env.variables` | `environment.sessionVariables` | `environment.variables` | `home.sessionVariables` |
+| `kdn.env.*`         | NixOS                          | Darwin                       | Home Manager            |
+| ------------------- | ------------------------------ | ---------------------------- | ----------------------- |
+| `kdn.env.packages`  | `environment.systemPackages`   | `environment.systemPackages` | `home.packages`         |
+| `kdn.env.variables` | `environment.sessionVariables` | `environment.variables`      | `home.sessionVariables` |
 
 - Generic cross-platform packages → `kdn.env.packages` **outside** any `ifTypes` guard
 - NixOS-only tooling → `kdn.env.packages` **inside** `ifTypes ["nixos"]`

@@ -22,7 +22,7 @@ slash command, which shells raw `git commit` internally. Never use `/commit` in 
 > after `jj describe`/`jj commit` — run `jj new` yourself when you want that. Do NOT create a
 > commit before you make changes (no `jj new` as a checkpoint). Let edits accumulate in `@`, then
 > carve them out with `jj split -m 'msg' -- <files>` or fold them with `jj squash --from @ --into
-> <target>`. Rebase is a last resort — use it only for a genuine topology fix or to construct a
+<target>`. Rebase is a last resort — use it only for a genuine topology fix or to construct a
 > merge commit (`jj new <a> <b>`), never as routine work.
 
 > **Always end with an unnamed `@` at the tip.** After your last commit, run `jj new` so the
@@ -40,7 +40,7 @@ slash command, which shells raw `git commit` internally. Never use `/commit` in 
 > truncates `x` **before** the read starts. `jj file show` then snapshots the empty file into `@`,
 > and jj rebases that empty file into every descendant — so the read returns nothing and the file
 > is lost at several revisions. Measured on 2026-09-09 with `devenv.lock`; `jj op restore
-> <op-before-the-snapshot>` recovered it. Write to a temporary file, then `mv`. The same rule
+<op-before-the-snapshot>` recovered it. Write to a temporary file, then `mv`. The same rule
 > covers `jj diff`, `jj show` and `jj file list`.
 
 > ⚠️ **BIG FAT WARNING — NEVER use a git worktree in this repo. A parallel agent needs a real jj
@@ -48,8 +48,8 @@ slash command, which shells raw `git commit` internally. Never use `/commit` in 
 > `git worktree` (what the Agent/Workflow tool's `isolation: "worktree"` option creates under the
 > hood) is **colocated** — it registers under this repo's own `.git/worktrees/` and has **no `.jj`
 > of its own**, so it shares the single `.jj` store with the main checkout. Concurrent work there
-> means two writers race to snapshot the *same* jj change (`@`), and it **will** corrupt files.
-> Confirmed on 2026-07-29: a git worktree was created nested *inside* the repo tree at
+> means two writers race to snapshot the _same_ jj change (`@`), and it **will** corrupt files.
+> Confirmed on 2026-07-29: a git worktree was created nested _inside_ the repo tree at
 > `.claude/worktrees/<name>/` while other work continued in the main checkout, and three
 > just-edited files were truncated to 0 bytes from that race. Never call `git worktree` directly
 > (`jj-guard` blocks it anyway). Never accept an Agent/Workflow `isolation: "worktree"` result at
@@ -86,7 +86,7 @@ slash command, which shells raw `git commit` internally. Never use `/commit` in 
 
 - **Commit and absorb as you go, into logical changesets — proactively, not on request.** The
   moment a piece of work is a self-contained change, carve it out with `jj split -m 'msg' --
-  <files>`; fold a small fixup into the changeset that introduced the line with `jj absorb`. Do
+<files>`; fold a small fixup into the changeset that introduced the line with `jj absorb`. Do
   this as the work lands; **do not wait for the user to ask you to commit**. Do not let unrelated
   edits pile up in `@` and describe them as one lump at the end.
 - **Prefer `jj split` over `jj describe` + a bare `jj new`.** `jj split` leaves the follow-on change

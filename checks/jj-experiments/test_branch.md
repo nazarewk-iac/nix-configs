@@ -20,13 +20,13 @@ A ── T1 ── T2        trunk on origin; main@origin = T2 (pushed → immut
 
 Branch-mode revset aliases (flag overlays, the direct analogs of the fork ones):
 
-| Alias | Definition | Fork analog |
-|---|---|---|
-| `trunk()` | `main@origin` | `trunk() = main@<fork-remote>` |
-| `trunk-incoming` | `@..main@origin` | `upstream-incoming` |
-| `trunk-incoming-tip` | `main@origin` | `upstream-incoming-tip` |
-| `branch` | `trunk()..@ & ~description("")` | `to-rebase` |
-| `branch-tip` | `heads(branch)` | `fork-tip` |
+| Alias                | Definition                      | Fork analog                    |
+| -------------------- | ------------------------------- | ------------------------------ |
+| `trunk()`            | `main@origin`                   | `trunk() = main@<fork-remote>` |
+| `trunk-incoming`     | `@..main@origin`                | `upstream-incoming`            |
+| `trunk-incoming-tip` | `main@origin`                   | `upstream-incoming-tip`        |
+| `branch`             | `trunk()..@ & ~description("")` | `to-rebase`                    |
+| `branch-tip`         | `heads(branch)`                 | `fork-tip`                     |
 
 So `trunk-incoming` = `{T1, T2}`, `branch` = `{B1, B2}`; the pushed trunk is
 immutable, the branch is mutable.
@@ -73,18 +73,18 @@ No merge, no content split.
 
 ## Fork <-> branch cross-check
 
-| Operation | Fork golden path | Branch analog | Class |
-|---|---|---|---|
-| Add a change | placement by content (`jj new -B @` + `jj split -A upstream-tip -B fork-tip`) | plain `jj split -m … -- <files>` | DIFFERS — the fork routes by content into one merge; a branch just appends |
-| Integrate new trunk (mutable) | `jj rebase -s 'roots(upstream-local)' -d upstream-incoming-tip` | `jj rebase -s 'roots(branch)' -d trunk-incoming-tip` | SHARED |
-| Integrate new trunk (frozen/merge) | `jj new fork-tip upstream-incoming-tip -m …` | `jj new branch-tip trunk-incoming-tip -m …` | SHARED |
-| Rewrite a pushed commit | forbidden — build forward | forbidden — build forward | SHARED |
-| `latest()` / `*-tip` timestamp rule | applies | applies | SHARED |
-| Dual-parent `@`, never `describe` it | applies (single-merge model) | applies only in merge-style integration | SHARED (merge style) / N/A (rebase style) |
-| Make X an ancestor of Y | `jj rebase -s Y -d X -d P` | same | SHARED |
-| Day-to-day (inspect, split, squash/`absorb`, amend, restructure, recover, bookmarks, conflicts) | branch-agnostic | identical | SHARED |
-| De-leak / `fork-direct` / `fork-leaked` / `jj fork-audit` | content-sensitivity routing | — | FORK-ONLY |
-| `jj sync-remotes` (advance `main`+`upstream`, push both) | two-remote bookmark dance | a branch pushes one bookmark to `origin` | FORK-ONLY / DIFFERS |
+| Operation                                                                                       | Fork golden path                                                              | Branch analog                                        | Class                                                                      |
+| ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------- |
+| Add a change                                                                                    | placement by content (`jj new -B @` + `jj split -A upstream-tip -B fork-tip`) | plain `jj split -m … -- <files>`                     | DIFFERS — the fork routes by content into one merge; a branch just appends |
+| Integrate new trunk (mutable)                                                                   | `jj rebase -s 'roots(upstream-local)' -d upstream-incoming-tip`               | `jj rebase -s 'roots(branch)' -d trunk-incoming-tip` | SHARED                                                                     |
+| Integrate new trunk (frozen/merge)                                                              | `jj new fork-tip upstream-incoming-tip -m …`                                  | `jj new branch-tip trunk-incoming-tip -m …`          | SHARED                                                                     |
+| Rewrite a pushed commit                                                                         | forbidden — build forward                                                     | forbidden — build forward                            | SHARED                                                                     |
+| `latest()` / `*-tip` timestamp rule                                                             | applies                                                                       | applies                                              | SHARED                                                                     |
+| Dual-parent `@`, never `describe` it                                                            | applies (single-merge model)                                                  | applies only in merge-style integration              | SHARED (merge style) / N/A (rebase style)                                  |
+| Make X an ancestor of Y                                                                         | `jj rebase -s Y -d X -d P`                                                    | same                                                 | SHARED                                                                     |
+| Day-to-day (inspect, split, squash/`absorb`, amend, restructure, recover, bookmarks, conflicts) | branch-agnostic                                                               | identical                                            | SHARED                                                                     |
+| De-leak / `fork-direct` / `fork-leaked` / `jj fork-audit`                                       | content-sensitivity routing                                                   | —                                                    | FORK-ONLY                                                                  |
+| `jj sync-remotes` (advance `main`+`upstream`, push both)                                        | two-remote bookmark dance                                                     | a branch pushes one bookmark to `origin`             | FORK-ONLY / DIFFERS                                                        |
 
 ## Conclusion — "~90% the same" confirmed
 

@@ -40,13 +40,13 @@ timestamp: 2026-10-09T21:15:00+02:00
 
 From `llama-server --help` and `tools/server/README.md`:
 
-| Flag | Meaning |
-|---|---|
-| `--slot-save-path PATH` | Directory for slot KV save files. Default: disabled. |
-| `-ctxcp, --ctx-checkpoints N` | Max context checkpoints per slot. Default: 32. |
-| `-cms, --checkpoint-min-step N` | Minimum token spacing between checkpoints. Default: 8192. |
-| `-cram, --cache-ram N` | RAM prompt-cache size in MiB. Default: 8192. |
-| `--cache-idle-slots` | Save idle slots to the **RAM** prompt cache on a new task. Default: on, needs `cache-ram`. |
+| Flag                            | Meaning                                                                                    |
+| ------------------------------- | ------------------------------------------------------------------------------------------ |
+| `--slot-save-path PATH`         | Directory for slot KV save files. Default: disabled.                                       |
+| `-ctxcp, --ctx-checkpoints N`   | Max context checkpoints per slot. Default: 32.                                             |
+| `-cms, --checkpoint-min-step N` | Minimum token spacing between checkpoints. Default: 8192.                                  |
+| `-cram, --cache-ram N`          | RAM prompt-cache size in MiB. Default: 8192.                                               |
+| `--cache-idle-slots`            | Save idle slots to the **RAM** prompt cache on a new task. Default: on, needs `cache-ram`. |
 
 Endpoints (`server-context.cpp`):
 
@@ -161,10 +161,10 @@ of context.
 ### 4.3 Estimate for 10-20 sessions
 
 | Session size | Per file (state only) | 10 sessions | 20 sessions |
-|---|---|---|---|
-| ~40K tokens | ~0.9 GiB | ~9 GiB | ~19 GiB |
-| ~120K tokens | ~2.8 GiB | ~28 GiB | ~57 GiB |
-| ~240K tokens | ~5.7 GiB | ~57 GiB | ~114 GiB |
+| ------------ | --------------------- | ----------- | ----------- |
+| ~40K tokens  | ~0.9 GiB              | ~9 GiB      | ~19 GiB     |
+| ~120K tokens | ~2.8 GiB              | ~28 GiB     | ~57 GiB     |
+| ~240K tokens | ~5.7 GiB              | ~57 GiB     | ~114 GiB    |
 
 These are state-only numbers. The checkpoint appendix (section 5.2) can add
 much more.
@@ -241,22 +241,22 @@ the file at the state-only size.
 
 ### 5.3 Related upstream work
 
-| Item | State | Note |
-|---|---|---|
-| [#29201](https://github.com/ggml-org/llama.cpp/issues/29201) export/import slot state over HTTP | open | `GET/PUT /slots/{id}/state`; lets a proxy move state between backends. |
-| [#20697](https://github.com/ggml-org/llama.cpp/issues/20697) disk-based checkpoint cache `--cache-disk` | open | Moves the content-based checkpoint cache to disk. Identity-based #29738 is complementary. |
-| [#24004](https://github.com/ggml-org/llama.cpp/pull/24004) `--slot-save-auto` | closed, not merged | A transparent block-hash disk cache with a model fingerprint. |
-| [#20822](https://github.com/ggml-org/llama.cpp/issues/20822) auto save/restore in router mode | open | The router-mode counterpart. |
+| Item                                                                                                    | State              | Note                                                                                      |
+| ------------------------------------------------------------------------------------------------------- | ------------------ | ----------------------------------------------------------------------------------------- |
+| [#29201](https://github.com/ggml-org/llama.cpp/issues/29201) export/import slot state over HTTP         | open               | `GET/PUT /slots/{id}/state`; lets a proxy move state between backends.                    |
+| [#20697](https://github.com/ggml-org/llama.cpp/issues/20697) disk-based checkpoint cache `--cache-disk` | open               | Moves the content-based checkpoint cache to disk. Identity-based #29738 is complementary. |
+| [#24004](https://github.com/ggml-org/llama.cpp/pull/24004) `--slot-save-auto`                           | closed, not merged | A transparent block-hash disk cache with a model fingerprint.                             |
+| [#20822](https://github.com/ggml-org/llama.cpp/issues/20822) auto save/restore in router mode           | open               | The router-mode counterpart.                                                              |
 
 ### 5.4 Known open bugs in the manual endpoints
 
-| Issue | State | Impact |
-|---|---|---|
-| [#28194](https://github.com/ggml-org/llama.cpp/issues/28194) no KV reuse on hybrid/recurrent and SWA without checkpoints | open | Fixed by #26004 for hybrid/recurrent. |
-| [#28276](https://github.com/ggml-org/llama.cpp/issues/28276) a restored slot state blocks the prompt-cache lookup | open | A restored state can hide a longer cached state. |
-| [#28619](https://github.com/ggml-org/llama.cpp/issues/28619) save/restore never persists the draft context | open | The draft state is not saved by the manual endpoints. #29738 adds a `.dft` file. |
-| [#26676](https://github.com/ggml-org/llama.cpp/issues/26676) restore reads the file but the slot stays empty | open | Reported on an older build; verify on ours. |
-| [#30129](https://github.com/ggml-org/llama.cpp/issues/30129) RAM cache restores KV under a different LoRA config | open | Not relevant here (no LoRA), but a fingerprint gap. |
+| Issue                                                                                                                    | State | Impact                                                                           |
+| ------------------------------------------------------------------------------------------------------------------------ | ----- | -------------------------------------------------------------------------------- |
+| [#28194](https://github.com/ggml-org/llama.cpp/issues/28194) no KV reuse on hybrid/recurrent and SWA without checkpoints | open  | Fixed by #26004 for hybrid/recurrent.                                            |
+| [#28276](https://github.com/ggml-org/llama.cpp/issues/28276) a restored slot state blocks the prompt-cache lookup        | open  | A restored state can hide a longer cached state.                                 |
+| [#28619](https://github.com/ggml-org/llama.cpp/issues/28619) save/restore never persists the draft context               | open  | The draft state is not saved by the manual endpoints. #29738 adds a `.dft` file. |
+| [#26676](https://github.com/ggml-org/llama.cpp/issues/26676) restore reads the file but the slot stays empty             | open  | Reported on an older build; verify on ours.                                      |
+| [#30129](https://github.com/ggml-org/llama.cpp/issues/30129) RAM cache restores KV under a different LoRA config         | open  | Not relevant here (no LoRA), but a fingerprint gap.                              |
 
 ## 6. Integration options for OpenCode
 
@@ -374,15 +374,15 @@ repo.
 All numbers are from the `llms-frontier` boot on brys, the
 `nazarewk-iac/llama.cpp` build `6beadd4d6` (`llama-cpp-sessions`).
 
-| Quantity | Value |
-|---|---|
-| GDN recurrent state (per sequence) | ~112 MiB |
-| Context checkpoint (hybrid, recurrent only) | ~112 MiB |
-| Session file, 65-token prompt, 2 checkpoints | 356 MB |
-| of which checkpoint appendix | 225.142 MiB (journal) |
-| Draft state file `.dft` | ~130-158 KB |
-| `--ctx-checkpoints 32` worst-case RAM (4 slots) | ~14 GiB |
-| Qwen child `VmRSS` with `cache-ram 16384` | ~116.5 GB |
+| Quantity                                        | Value                 |
+| ----------------------------------------------- | --------------------- |
+| GDN recurrent state (per sequence)              | ~112 MiB              |
+| Context checkpoint (hybrid, recurrent only)     | ~112 MiB              |
+| Session file, 65-token prompt, 2 checkpoints    | 356 MB                |
+| of which checkpoint appendix                    | 225.142 MiB (journal) |
+| Draft state file `.dft`                         | ~130-158 KB           |
+| `--ctx-checkpoints 32` worst-case RAM (4 slots) | ~14 GiB               |
+| Qwen child `VmRSS` with `cache-ram 16384`       | ~116.5 GB             |
 
 The recurrent state dominates a short session: the base file is ~114 MB even
 for 65 tokens, because the attention KV for a few tokens is tiny but the GDN

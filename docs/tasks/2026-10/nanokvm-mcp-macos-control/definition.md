@@ -33,14 +33,14 @@ This file records how an agent uses it.
 
 - Tools (from `tools/list`, verified 2026-10-16):
 
-  | Tool | What it does |
-  |---|---|
-  | `cube_screenshot` | Live JPEG of the `anji` console. Params: `quality` (51–60), `timeoutMs`. |
-  | `cube_move_mouse` | Move pointer. `mode`: `absolute` with `x`,`y` normalized 0.0–1.0, or `relative` with `deltaX`,`deltaY`. |
-  | `cube_click_mouse` | Click. `mode` `absolute` needs `x`,`y`; `button` left/right/middle; `clicks` 1–5. |
-  | `cube_press_keys` | One shortcut. `keys`: array of `KeyboardEvent.code` names (e.g. `["Meta","Space"]`); optional `holdMs`. |
-  | `cube_type_text` | Short text. `text`, optional `delayMs` (default 30). |
-  | `cube_scroll_mouse` | Wheel. `deltaY`. |
+  | Tool                | What it does                                                                                            |
+  | ------------------- | ------------------------------------------------------------------------------------------------------- |
+  | `cube_screenshot`   | Live JPEG of the `anji` console. Params: `quality` (51–60), `timeoutMs`.                                |
+  | `cube_move_mouse`   | Move pointer. `mode`: `absolute` with `x`,`y` normalized 0.0–1.0, or `relative` with `deltaX`,`deltaY`. |
+  | `cube_click_mouse`  | Click. `mode` `absolute` needs `x`,`y`; `button` left/right/middle; `clicks` 1–5.                       |
+  | `cube_press_keys`   | One shortcut. `keys`: array of `KeyboardEvent.code` names (e.g. `["Meta","Space"]`); optional `holdMs`. |
+  | `cube_type_text`    | Short text. `text`, optional `delayMs` (default 30).                                                    |
+  | `cube_scroll_mouse` | Wheel. `deltaY`.                                                                                        |
 
 - Example call — take a screenshot and save it (the JSON-RPC result embeds base64 JPEG):
 
@@ -87,8 +87,8 @@ This file records how an agent uses it.
   `/nix/store/f0b9dbw2gl596cm03pvdsss72381qhlp-bash-5.3p15/bin/bash` (sha256
   `0fba4021f093052f39b68e789f12be8e96c0680837679971a5be9ff6679c8821`, the shebang of the current
   system's `activate` and of the newest `anji-ext-unlock-start`). The pane reached, the "+" click
-  worked, and macOS 26 answered with a modal sheet: *"Privacy & Security is trying to modify your
-  system settings. Enter your password to continue with Privacy & Security"* (user
+  worked, and macOS 26 answered with a modal sheet: _"Privacy & Security is trying to modify your
+  system settings. Enter your password to continue with Privacy & Security"_ (user
   `Krzysztof Nazarewski`, buttons Modify Settings / Cancel). No Touch ID on a Mac mini. Reproduced
   twice (initial + one retry). The agent path needs the owner to type the login password.
 - Cmd+Space did **not** open Spotlight on `anji` (three tries, verified by screenshot diff — only

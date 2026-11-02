@@ -76,7 +76,7 @@ A dash in the "brys effect" column means the lever was not tried on brys.
   (measured on brys, prior: `docs/local-llms.md` benchmark log 2026-09-06,
   "mlock DID NOT materialize: 0 bytes locked"). `none` drops mmap and therefore
   the prefetch; on brys it OOMs the W6600 (`amdgpu: Not enough memory for
-  command submission`).
+command submission`).
 - **brys effect (measured on brys, prior).** `mlock` null; `none` crashes the
   W6600. Keep `mmap` (`docs/local-llms.md`, "Freeing RAM when colocating").
 - **To be measured.** `--load-mode dio` (direct I/O) has no brys result. It may
@@ -319,30 +319,30 @@ lost). The history below is the record of what was tried
   - `n-gpu-layers-draft 99` (draft head only): **10.82 t/s**, +18.5% over the
     CPU, VRAM 6.40 GiB. This was the only win, and it is now disabled because
     the W6600 hard-hangs at long context.
-  (`docs/tasks/2026-10/qwen-gpu-offload/done.md`.)
+    (`docs/tasks/2026-10/qwen-gpu-offload/done.md`.)
 - **To be measured.** A re-test of the draft-head offload only after an amdgpu
   driver or firmware fix. Dense-layer offload is settled: slower.
 
 ## Summary table
 
-| lever | flag | documented upstream | brys prior | brys effect |
-|---|---|---|---|---|
-| lazy-mode SSD offload | `-lzm`/`--lazy-mode` | yes (`arg.cpp`) | yes | -46 GB, decode flat |
-| load mode | `-lm`/`--load-mode` | yes (`arg.cpp`) | yes | mlock null; none OOMs GPU |
-| skip mmap prefetch | `--no-mmap-prefetch` | yes (PR #29250, closed) | yes | negative |
-| drop mmap | `--no-mmap` | removed; use `--load-mode none` | yes | null / crash |
-| CPU MoE | `-cmoe`/`--cpu-moe` | yes (`arg.cpp`) | yes | 2.01 t/s (worse) |
-| tensor override | `-ot`/`--override-tensor` | yes (`arg.cpp`) | yes | same as cpu-moe |
-| MoE stream | `--moe-stream*` | yes (PR #25294, open) | yes | -34% decode, RSS 41 GiB |
-| pin hot experts | `--pin-hot-experts*` | yes (PR #26414, open) | yes | no-op on `qwen4exp` |
-| KV type | `-ctk`/`-ctv` | yes (`arg.cpp`) | yes | q8_0 halves KV |
-| unified KV | `-kvu`/`--kv-unified` | yes (`arg.cpp`) | yes | removes HOL blocking |
-| prompt cache RAM | `-cram`/`--cache-ram` | yes (`arg.cpp`, PR #16391) | yes | 37 GiB stops evictions |
-| context checkpoints | `-ctxcp`/`--ctx-checkpoints`/`--swa-checkpoints` | yes (`arg.cpp`, PR #15293) | yes | ~112 MiB each |
-| quant choice | (GGUF file) | yes | yes | IQ3_XXS -12 GB, -4% top-1 |
-| GPU layers | `-ngl` | yes (`arg.cpp`) | yes | slower than CPU |
-| no KV offload | `-nkvo` | yes (`arg.cpp`) | yes | forces CPU KV |
-| draft GPU layers | `-ngld` | yes (`arg.cpp`) | yes | +18.5%, then disabled |
+| lever                 | flag                                             | documented upstream             | brys prior | brys effect               |
+| --------------------- | ------------------------------------------------ | ------------------------------- | ---------- | ------------------------- |
+| lazy-mode SSD offload | `-lzm`/`--lazy-mode`                             | yes (`arg.cpp`)                 | yes        | -46 GB, decode flat       |
+| load mode             | `-lm`/`--load-mode`                              | yes (`arg.cpp`)                 | yes        | mlock null; none OOMs GPU |
+| skip mmap prefetch    | `--no-mmap-prefetch`                             | yes (PR #29250, closed)         | yes        | negative                  |
+| drop mmap             | `--no-mmap`                                      | removed; use `--load-mode none` | yes        | null / crash              |
+| CPU MoE               | `-cmoe`/`--cpu-moe`                              | yes (`arg.cpp`)                 | yes        | 2.01 t/s (worse)          |
+| tensor override       | `-ot`/`--override-tensor`                        | yes (`arg.cpp`)                 | yes        | same as cpu-moe           |
+| MoE stream            | `--moe-stream*`                                  | yes (PR #25294, open)           | yes        | -34% decode, RSS 41 GiB   |
+| pin hot experts       | `--pin-hot-experts*`                             | yes (PR #26414, open)           | yes        | no-op on `qwen4exp`       |
+| KV type               | `-ctk`/`-ctv`                                    | yes (`arg.cpp`)                 | yes        | q8_0 halves KV            |
+| unified KV            | `-kvu`/`--kv-unified`                            | yes (`arg.cpp`)                 | yes        | removes HOL blocking      |
+| prompt cache RAM      | `-cram`/`--cache-ram`                            | yes (`arg.cpp`, PR #16391)      | yes        | 37 GiB stops evictions    |
+| context checkpoints   | `-ctxcp`/`--ctx-checkpoints`/`--swa-checkpoints` | yes (`arg.cpp`, PR #15293)      | yes        | ~112 MiB each             |
+| quant choice          | (GGUF file)                                      | yes                             | yes        | IQ3_XXS -12 GB, -4% top-1 |
+| GPU layers            | `-ngl`                                           | yes (`arg.cpp`)                 | yes        | slower than CPU           |
+| no KV offload         | `-nkvo`                                          | yes (`arg.cpp`)                 | yes        | forces CPU KV             |
+| draft GPU layers      | `-ngld`                                          | yes (`arg.cpp`)                 | yes        | +18.5%, then disabled     |
 
 ## Highest-value levers
 

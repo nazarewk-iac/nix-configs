@@ -111,12 +111,12 @@ packages/kdn-certs/
 
 The UI stack (the repo's `tools/kdnctl/go.mod` already pins the charmbracelet family):
 
-| Concern | Library |
-|---|---|
-| Command tree, flags, completions | `github.com/spf13/cobra` + `github.com/spf13/pflag` |
-| Structured logging | `github.com/charmbracelet/log` |
-| Pretty output (tables, colors) | `github.com/charmbracelet/lipgloss` |
-| Progress (spinner, bar) | `github.com/charmbracelet/bubbles` (`progress`, `spinner`) |
+| Concern                          | Library                                                    |
+| -------------------------------- | ---------------------------------------------------------- |
+| Command tree, flags, completions | `github.com/spf13/cobra` + `github.com/spf13/pflag`        |
+| Structured logging               | `github.com/charmbracelet/log`                             |
+| Pretty output (tables, colors)   | `github.com/charmbracelet/lipgloss`                        |
+| Progress (spinner, bar)          | `github.com/charmbracelet/bubbles` (`progress`, `spinner`) |
 
 `--json` prints machine-readable output. The pretty UI is the default for a terminal; a pipe or
 `--json` gets plain output, so the CLI stays scriptable.
@@ -132,25 +132,25 @@ kdn-certs = pkgs.callPackage ./kdn-certs { };
 
 ## Command table
 
-| Command | Job |
-|---|---|
-| `kdn-certs plan` | Walk every target, enumerate and deduplicate the declarations, print what would change, with progress. |
-| `kdn-certs apply` | Generate or regenerate. Start `step-ca` on demand and tear it down after. |
-| `kdn-certs ca init` | Initialize the CA DAG from the top: root first, then each intermediate. |
-| `kdn-certs ca sign <cert>` | Sign one leaf. Prompt for the YubiKey touch when the CA key needs it. |
+| Command                      | Job                                                                                                                   |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `kdn-certs plan`             | Walk every target, enumerate and deduplicate the declarations, print what would change, with progress.                |
+| `kdn-certs apply`            | Generate or regenerate. Start `step-ca` on demand and tear it down after.                                             |
+| `kdn-certs ca init`          | Initialize the CA DAG from the top: root first, then each intermediate.                                               |
+| `kdn-certs ca sign <cert>`   | Sign one leaf. Prompt for the YubiKey touch when the CA key needs it.                                                 |
 | `kdn-certs ssh login <host>` | Generate an SSH user cert to connect to a host. Pick the SSH CA, set the principals and prompt for the YubiKey touch. |
-| `kdn-certs status` | Per cert: valid, expiring or mismatched. |
-| `kdn-certs doctor` | Discover zombie `step-ca` processes and stale PID files. |
+| `kdn-certs status`           | Per cert: valid, expiring or mismatched.                                                                              |
+| `kdn-certs doctor`           | Discover zombie `step-ca` processes and stale PID files.                                                              |
 
 ## Global flags
 
-| Flag | Default | Job |
-|---|---|---|
-| `--flake <path>` | `.` | The flake to walk. |
-| `--dry-run` | off | Print the actions and change nothing. |
-| `--force` | off | Regenerate every cert, whatever the mismatch test says. |
-| `--json` | off | Print machine-readable output. |
-| `--verbose` | off | Print each `nix eval` command and each `step` command. |
+| Flag             | Default | Job                                                     |
+| ---------------- | ------- | ------------------------------------------------------- |
+| `--flake <path>` | `.`     | The flake to walk.                                      |
+| `--dry-run`      | off     | Print the actions and change nothing.                   |
+| `--force`        | off     | Regenerate every cert, whatever the mismatch test says. |
+| `--json`         | off     | Print machine-readable output.                          |
+| `--verbose`      | off     | Print each `nix eval` command and each `step` command.  |
 
 ## The walk
 
@@ -270,17 +270,17 @@ The plan adds the name to `bundle-pkgs` in `checks/bundles.nix`.
 
 Cover these cases:
 
-| Case | What it proves |
-|---|---|
-| ISO 8601 parsing | Every form above, plus the lowest-value rule. |
-| DAG topological order | Roots, then intermediates, then leaves. |
-| DAG cycle | A cycle fails loudly. |
-| Dedup | Two declarations with one key become one cert. |
-| Mismatch detection | A stale `notBefore` and a wrong issuer CN both trigger a regeneration. |
-| Missing-option tolerance | A target with no `kdn.certificates` returns an empty set and no error. |
-| Old-tree tolerance | A legacy target that sub-task 000 does not augment returns an empty set and no error. |
-| `--dry-run` | The command prints the plan and writes no file. |
-| Flag parsing | `--flake`, `--force`, `--json` and `--verbose` reach the command. |
+| Case                     | What it proves                                                                        |
+| ------------------------ | ------------------------------------------------------------------------------------- |
+| ISO 8601 parsing         | Every form above, plus the lowest-value rule.                                         |
+| DAG topological order    | Roots, then intermediates, then leaves.                                               |
+| DAG cycle                | A cycle fails loudly.                                                                 |
+| Dedup                    | Two declarations with one key become one cert.                                        |
+| Mismatch detection       | A stale `notBefore` and a wrong issuer CN both trigger a regeneration.                |
+| Missing-option tolerance | A target with no `kdn.certificates` returns an empty set and no error.                |
+| Old-tree tolerance       | A legacy target that sub-task 000 does not augment returns an empty set and no error. |
+| `--dry-run`              | The command prints the plan and writes no file.                                       |
+| Flag parsing             | `--flake`, `--force`, `--json` and `--verbose` reach the command.                     |
 
 Keep every case offline. Mock the `nix eval` call and the `step` call behind an interface, so the
 suite needs no flake and no CA. A test CA with an unattended key is allowed, so the suite signs

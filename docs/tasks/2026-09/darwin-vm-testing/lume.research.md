@@ -54,13 +54,13 @@ Result: **failure**. lume deleted the guest. Full log: `.cache/agent-notes/lume-
 
 Timeline, from the log:
 
-| Phase | Start (UTC) | End (UTC) | Duration |
-|---|---|---|---|
-| IPSW download | 04:08:07 | 04:13:40 | 5 min 33 s |
-| macOS install | 04:13:44 | 04:16:25 | 2 min 41 s |
-| Offline unattended patch | 04:16:28 | 04:16:53 | 25 s |
-| Verify boot plus SSH health check | 04:16:54 | 04:22:05 | 5 min 11 s |
-| Total | 04:08:02 | 04:22:06 | **14 min 04 s** |
+| Phase                             | Start (UTC) | End (UTC) | Duration        |
+| --------------------------------- | ----------- | --------- | --------------- |
+| IPSW download                     | 04:08:07    | 04:13:40  | 5 min 33 s      |
+| macOS install                     | 04:13:44    | 04:16:25  | 2 min 41 s      |
+| Offline unattended patch          | 04:16:28    | 04:16:53  | 25 s            |
+| Verify boot plus SSH health check | 04:16:54    | 04:22:05  | 5 min 11 s      |
+| Total                             | 04:08:02    | 04:22:06  | **14 min 04 s** |
 
 Key log lines, `verified`:
 
@@ -286,9 +286,9 @@ The consequence in #1440 does **not** follow here. The park does not block SSH.
 `verified` — two independent measurements, each from a confirmed `stopped` state, and each with
 the SSH multiplex socket deleted first:
 
-| Run | Result |
-|---|---|
-| `.cache/agent-notes/lume-timing.log` | `SSH_ANSWERED_AFTER=10s` |
+| Run                                   | Result                   |
+| ------------------------------------- | ------------------------ |
+| `.cache/agent-notes/lume-timing.log`  | `SSH_ANSWERED_AFTER=10s` |
 | `.cache/agent-notes/lume-timing3.log` | `SSH_ANSWERED_AFTER=11s` |
 
 The second log records the pre-conditions:
@@ -390,12 +390,12 @@ guest knows a hypervisor runs it. No Nix install and no build ran in the guest.
 
 `verified` — measurements:
 
-| Point | Free on `/` |
-|---|---|
-| Before the work | 279 GB |
-| Peak use in run 1 | 235 GB |
-| After the run-1 delete | 260 GB |
-| Now | 208 GB |
+| Point                  | Free on `/` |
+| ---------------------- | ----------- |
+| Before the work        | 279 GB      |
+| Peak use in run 1      | 235 GB      |
+| After the run-1 delete | 260 GB      |
+| Now                    | 208 GB      |
 
 Free space never fell below 208 GB, so the 40 GB abort threshold never came close.
 
@@ -432,15 +432,15 @@ The zellij session `llm:nix-configs:d80e7c83` holds six panes with the raw outpu
 
 # What I could not verify
 
-| Claim | Why not | One step that settles it |
-|---|---|---|
-| macOS local-network privacy blocks the Nix `ssh`. | The permission database needs root, and this run uses no host sudo. | Grant local network access to the Nix `ssh` binary, then retest the same command. |
-| The reject flag on the `192.168.64` route explains the `ping` failure. | `route delete` needs root. | Delete the route as root, then retest `ping 192.168.64.7`. |
-| The exact reason lume's SSH health check fails. | lume ships as a binary. I read no source. | Read the health-check code in the trycua/cua repository, or run lume under a traced `ssh`. |
-| `lume create --unattended` also fails with a cached IPSW. | Run 2 split the create and the setup on purpose, to keep a guest. | Rerun the exact run-1 command with `--ipsw <local path>`. It costs about 9 min, no download. |
-| `--ipsw latest` and the local IPSW give an identical guest. | I compared no disk image. | Compare `sw_vers` and `system_profiler` output from a guest of each path. |
-| Whether a later boot ever clears the Setup Assistant pane. | I booted the guest three times only. | Boot it several more times, or press `Continue` over VNC, then capture again. |
-| Whether `nc -z` gave false positives in the run-1 observer. | `nc -z` reported port 22 open while `ping` failed, so I distrust it. | Repeat the probe with `nc -v`, which prints the real banner. |
+| Claim                                                                  | Why not                                                              | One step that settles it                                                                     |
+| ---------------------------------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| macOS local-network privacy blocks the Nix `ssh`.                      | The permission database needs root, and this run uses no host sudo.  | Grant local network access to the Nix `ssh` binary, then retest the same command.            |
+| The reject flag on the `192.168.64` route explains the `ping` failure. | `route delete` needs root.                                           | Delete the route as root, then retest `ping 192.168.64.7`.                                   |
+| The exact reason lume's SSH health check fails.                        | lume ships as a binary. I read no source.                            | Read the health-check code in the trycua/cua repository, or run lume under a traced `ssh`.   |
+| `lume create --unattended` also fails with a cached IPSW.              | Run 2 split the create and the setup on purpose, to keep a guest.    | Rerun the exact run-1 command with `--ipsw <local path>`. It costs about 9 min, no download. |
+| `--ipsw latest` and the local IPSW give an identical guest.            | I compared no disk image.                                            | Compare `sw_vers` and `system_profiler` output from a guest of each path.                    |
+| Whether a later boot ever clears the Setup Assistant pane.             | I booted the guest three times only.                                 | Boot it several more times, or press `Continue` over VNC, then capture again.                |
+| Whether `nc -z` gave false positives in the run-1 observer.            | `nc -z` reported port 22 open while `ping` failed, so I distrust it. | Repeat the probe with `nc -v`, which prints the real banner.                                 |
 
 # Practical guidance for an external adopter
 

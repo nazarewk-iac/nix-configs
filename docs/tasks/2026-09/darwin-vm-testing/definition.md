@@ -52,27 +52,27 @@ Do **not** run the cold path per checkpoint.
 Blocker 13 below is permanent, so no single guest covers the whole first-time setup. Split the
 work and record which tier proved which claim.
 
-| Tier | Runs where | Proves |
-|---|---|---|
-| A | macOS guest | Setup Assistant to stock macOS; the Nix install; `trusted-users` and the flakes settings; the repository clone; `devenv shell` and the slots; `darwin-rebuild build`; `darwin-rebuild switch`. |
-| B | bare metal | The `nix-rosetta-builder` guest itself, and every real `x86_64-linux` build through it. |
+| Tier | Runs where  | Proves                                                                                                                                                                                         |
+| ---- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A    | macOS guest | Setup Assistant to stock macOS; the Nix install; `trusted-users` and the flakes settings; the repository clone; `devenv shell` and the slots; `darwin-rebuild build`; `darwin-rebuild switch`. |
+| B    | bare metal  | The `nix-rosetta-builder` guest itself, and every real `x86_64-linux` build through it.                                                                                                        |
 
 ## Measured on this host
 
-| Claim | State | Evidence |
-|---|---|---|
-| `lume` installs with no `sudo` and no LaunchAgent | verified | 0.5.3 at `~/.local/bin/lume`, a 95-byte wrapper for `~/.local/share/lume/lume.app`. State in `~/.lume`. |
-| `lume` builds a macOS guest from an IPSW without an operator | verified 2026-09-10 | It installs macOS and it answers Setup Assistant. But see the next two rows: `lume create --unattended` then **deletes** the guest. The 2026-09-09 "9 minutes" reading was that same failure, seen at the last line before the delete. |
-| `lume create --unattended` keeps the guest | **disproved** 2026-09-10 | The command ran 14 min 04 s, installed macOS, applied the offline patch, failed **its own** SSH health check (60 attempts over 5 minutes), and deleted the guest. lume keeps no IPSW copy, so a retry re-pays the 19 GB download. |
-| `lume create` plus `lume setup` keeps the guest | verified 2026-09-10 | `lume setup` is a separate subcommand with **no cleanup path**. `lume create` alone took 2 min 40 s. `lume setup` failed the same health check, and the guest survived. This is the split the harness must use. |
-| The guest gives a usable shell | **verified** 2026-09-10 | `id -un` → `lume`, `sw_vers` → 26.6.2 / 25G83, `csrutil status` → enabled. Confirmed twice: through `lume ssh`, and through `/usr/bin/ssh` with the password `lume`. |
-| lume's SSH health check is the defect, not the guest | verified 2026-09-10 | lume's own log prints `Wrote VNC config to VM via SSH` **4 s into** the same window in which it counted 60 SSH failures. |
-| #1440 reproduces | verified 2026-09-10 | A VNC screenshot shows the guest parked on the Setup Assistant pane "Update Mac Automatically". It survives a cold boot. But it is the **post-login** assistant: `/var/db/.AppleSetupDone` exists and `who` shows `lume console`. SSH is unaffected, so the park blocks no test. |
-| `cua` gives an agent full control of a guest | verified by source | `computer-server` is a guest-side agent on port 8000. It serves screen, pointer, keyboard, shell, file, PTY and browser surfaces over `/ws`, `/cmd`, `/status` and `/mcp`. It ships **only** in the `-cua` images (`cua_sandbox/runtime/images.py`), under launchd. Nothing bootstraps it into a vanilla guest. |
-| Tart drives the pointer and the keyboard of a macOS guest | verified by source | `Sources/tart/Commands/Run.swift`: `--no-pointer` and `--no-keyboard` detach those virtual devices, so they attach by default. `--vnc-experimental` uses Virtualization.framework's own VNC server and works "in recovery mode and in macOS installation", unlike `--vnc`, which needs the guest OS up. |
-| Rosetta 2 installs and works inside the guest | **verified** 2026-09-10 | `Install of Rosetta 2 finished successfully`, and `arch -x86_64` exits 0. So `x86_64-darwin` is testable in a guest. |
-| A macOS guest runs a Linux virtual machine | disproved, permanent | Blocker 13, now confirmed from **inside** the guest: `kern.hv_support: 0` with `kern.hv_vmm_present: 1`. |
-| A Nix-built `ssh` reaches the guest | **disproved** 2026-09-10 | Blocker 14. `/usr/bin/ssh` works. The Home Manager `ssh` and a Nix `bash` `/dev/tcp` both get `No route to host`, while `/usr/bin/nc` connects and prints the banner. |
+| Claim                                                        | State                    | Evidence                                                                                                                                                                                                                                                                                                        |
+| ------------------------------------------------------------ | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lume` installs with no `sudo` and no LaunchAgent            | verified                 | 0.5.3 at `~/.local/bin/lume`, a 95-byte wrapper for `~/.local/share/lume/lume.app`. State in `~/.lume`.                                                                                                                                                                                                         |
+| `lume` builds a macOS guest from an IPSW without an operator | verified 2026-09-10      | It installs macOS and it answers Setup Assistant. But see the next two rows: `lume create --unattended` then **deletes** the guest. The 2026-09-09 "9 minutes" reading was that same failure, seen at the last line before the delete.                                                                          |
+| `lume create --unattended` keeps the guest                   | **disproved** 2026-09-10 | The command ran 14 min 04 s, installed macOS, applied the offline patch, failed **its own** SSH health check (60 attempts over 5 minutes), and deleted the guest. lume keeps no IPSW copy, so a retry re-pays the 19 GB download.                                                                               |
+| `lume create` plus `lume setup` keeps the guest              | verified 2026-09-10      | `lume setup` is a separate subcommand with **no cleanup path**. `lume create` alone took 2 min 40 s. `lume setup` failed the same health check, and the guest survived. This is the split the harness must use.                                                                                                 |
+| The guest gives a usable shell                               | **verified** 2026-09-10  | `id -un` → `lume`, `sw_vers` → 26.6.2 / 25G83, `csrutil status` → enabled. Confirmed twice: through `lume ssh`, and through `/usr/bin/ssh` with the password `lume`.                                                                                                                                            |
+| lume's SSH health check is the defect, not the guest         | verified 2026-09-10      | lume's own log prints `Wrote VNC config to VM via SSH` **4 s into** the same window in which it counted 60 SSH failures.                                                                                                                                                                                        |
+| #1440 reproduces                                             | verified 2026-09-10      | A VNC screenshot shows the guest parked on the Setup Assistant pane "Update Mac Automatically". It survives a cold boot. But it is the **post-login** assistant: `/var/db/.AppleSetupDone` exists and `who` shows `lume console`. SSH is unaffected, so the park blocks no test.                                |
+| `cua` gives an agent full control of a guest                 | verified by source       | `computer-server` is a guest-side agent on port 8000. It serves screen, pointer, keyboard, shell, file, PTY and browser surfaces over `/ws`, `/cmd`, `/status` and `/mcp`. It ships **only** in the `-cua` images (`cua_sandbox/runtime/images.py`), under launchd. Nothing bootstraps it into a vanilla guest. |
+| Tart drives the pointer and the keyboard of a macOS guest    | verified by source       | `Sources/tart/Commands/Run.swift`: `--no-pointer` and `--no-keyboard` detach those virtual devices, so they attach by default. `--vnc-experimental` uses Virtualization.framework's own VNC server and works "in recovery mode and in macOS installation", unlike `--vnc`, which needs the guest OS up.         |
+| Rosetta 2 installs and works inside the guest                | **verified** 2026-09-10  | `Install of Rosetta 2 finished successfully`, and `arch -x86_64` exits 0. So `x86_64-darwin` is testable in a guest.                                                                                                                                                                                            |
+| A macOS guest runs a Linux virtual machine                   | disproved, permanent     | Blocker 13, now confirmed from **inside** the guest: `kern.hv_support: 0` with `kern.hv_vmm_present: 1`.                                                                                                                                                                                                        |
+| A Nix-built `ssh` reaches the guest                          | **disproved** 2026-09-10 | Blocker 14. `/usr/bin/ssh` works. The Home Manager `ssh` and a Nix `bash` `/dev/tcp` both get `No route to host`, while `/usr/bin/nc` connects and prints the banner.                                                                                                                                           |
 
 Rollback: `lume delete rehearse` reclaims the guest disk, and `rm -rf ~/Library/Caches/lume-ipsw`
 reclaims the IPSW cache. Together they hold 25 GB plus 19 GB today. The guest `rehearse` is left
@@ -81,11 +81,11 @@ reclaims the IPSW cache. Together they hold 25 GB plus 19 GB today. The guest `r
 
 ## Decisions to make first
 
-| Decision | Options | Why it blocks the rest |
-|---|---|---|
-| VM tool | Tart ≥ 2.33.0, lume, Lima, Mirage | Each has a different install path and a different image source. See the candidate table below. |
-| Nix installer | Determinate, upstream, Lix | nix-darwin **aborts** when it detects Determinate. |
-| Guest scope | public chain only | The fork chain adds four `git+ssh://` inputs a keyless guest cannot fetch. |
+| Decision      | Options                           | Why it blocks the rest                                                                         |
+| ------------- | --------------------------------- | ---------------------------------------------------------------------------------------------- |
+| VM tool       | Tart ≥ 2.33.0, lume, Lima, Mirage | Each has a different install path and a different image source. See the candidate table below. |
+| Nix installer | Determinate, upstream, Lix        | nix-darwin **aborts** when it detects Determinate.                                             |
+| Guest scope   | public chain only                 | The fork chain adds four `git+ssh://` inputs a keyless guest cannot fetch.                     |
 
 Tart relicensed to `FSL-1.1-ALv2` at 2.33.0, and the paid regime is retired. Install it with
 `brew install openai/tools/tart`. The nixpkgs package is stale at 2.30.6 and still carries
@@ -99,12 +99,12 @@ With Determinate, set `nix.enable = false;` and `determinateNix.enable = true;`,
 
 Two tools cover two different jobs. Pick both, not one.
 
-| Tool | License | Image source | First-boot test | Warm clone loop | Main risk |
-|---|---|---|---|---|---|
+| Tool              | License      | Image source                                    | First-boot test                                                                         | Warm clone loop                                                  | Main risk                                           |
+| ----------------- | ------------ | ----------------------------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------- |
 | **Tart** ≥ 2.33.0 | FSL-1.1-ALv2 | OCI registry, `ghcr.io/cirruslabs/macos-*-base` | **no** — the published image is already past Setup Assistant, with a user and SSH ready | **yes** — `tart clone` is the fast path this task designs around | a third-party image you must trust; a 27.31 GB pull |
-| **lume** 0.5.3 | MIT | Apple IPSW, plus its own registry | **yes** — `--unattended tahoe` drives Setup Assistant itself | yes, `lume clone` | v0.5.x; three open defects (#1440, #1513, #1514) |
-| Lima | Apache-2.0 | `template:macos` | yes | weak — no OCI registry | least measured of the three here |
-| Mirage | — | none published | unknown | unknown | v0.1, absent from nixpkgs, no image registry |
+| **lume** 0.5.3    | MIT          | Apple IPSW, plus its own registry               | **yes** — `--unattended tahoe` drives Setup Assistant itself                            | yes, `lume clone`                                                | v0.5.x; three open defects (#1440, #1513, #1514)    |
+| Lima              | Apache-2.0   | `template:macos`                                | yes                                                                                     | weak — no OCI registry                                           | least measured of the three here                    |
+| Mirage            | —            | none published                                  | unknown                                                                                 | unknown                                                          | v0.1, absent from nixpkgs, no image registry        |
 
 So the division of labour is:
 
@@ -136,38 +136,38 @@ premise**. Install it after the setup test, never before, and record it as a gue
 
 This answers the wider question: the guest loop is not only for `rosetta-builder`.
 
-| Feature class | In a guest | Note |
-|---|---|---|
-| Nix install, flakes settings, `trusted-users` | yes | The first thing an adopter gets wrong. |
-| `darwin-rebuild build` | yes | Pure evaluation plus build. No activation. |
-| `darwin-rebuild switch`, launchd daemons and agents | yes | Needs `sudo` inside the guest, which a throwaway guest permits. |
-| The `/etc/{bashrc,zshrc,zshenv,zprofile}` takeover | yes | The most common first-time failure. A guest is the only honest test, because the creator's host already holds the `*.before-nix-darwin` files. |
-| `system.defaults` (dock, finder, keyboard) | yes | Read the result back with `defaults read`. No GUI needed. |
-| Home Manager activation, dotfiles, shell start-up | yes | |
-| Homebrew and the `nix-homebrew` taps | yes | Needs network. A cask that wants a GUI also needs a display. |
-| `devenv shell` and every slot | yes | Cheapest path: call `mkSlots` and never touch `modules/universal`. |
-| sops secrets | partial | A new guest holds a new `/etc/ssh/ssh_host_ed25519_key`, so its age recipient is absent. Set `kdn.security.secrets.allow = false`, or re-key for the guest. |
-| Stylix, wallpaper, any GUI theme | partial | Needs a display. Run with VNC, not `--display none`. |
-| Rosetta 2 for `x86_64-darwin` | **yes — verified 2026-09-10** | Rosetta 2 translates; it does not virtualize, so blocker 13 does not apply. `softwareupdate --install-rosetta --agree-to-license` succeeded in the guest, and `arch -x86_64` exits 0. |
-| TouchID `sudo` (`security.pam.services.sudo_local.touchIdAuth`) | no | A guest has no Secure Enclave and no TouchID sensor. |
-| YubiKey, smartcard, any USB HID device | no | Virtualization.framework passes no arbitrary USB device through to a macOS guest. |
-| FileVault, secure boot, full-disk encryption | no | |
-| `nix-rosetta-builder`, or any Linux guest | no | Blocker 13. Permanent. Tier B only. |
+| Feature class                                                   | In a guest                    | Note                                                                                                                                                                                  |
+| --------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Nix install, flakes settings, `trusted-users`                   | yes                           | The first thing an adopter gets wrong.                                                                                                                                                |
+| `darwin-rebuild build`                                          | yes                           | Pure evaluation plus build. No activation.                                                                                                                                            |
+| `darwin-rebuild switch`, launchd daemons and agents             | yes                           | Needs `sudo` inside the guest, which a throwaway guest permits.                                                                                                                       |
+| The `/etc/{bashrc,zshrc,zshenv,zprofile}` takeover              | yes                           | The most common first-time failure. A guest is the only honest test, because the creator's host already holds the `*.before-nix-darwin` files.                                        |
+| `system.defaults` (dock, finder, keyboard)                      | yes                           | Read the result back with `defaults read`. No GUI needed.                                                                                                                             |
+| Home Manager activation, dotfiles, shell start-up               | yes                           |                                                                                                                                                                                       |
+| Homebrew and the `nix-homebrew` taps                            | yes                           | Needs network. A cask that wants a GUI also needs a display.                                                                                                                          |
+| `devenv shell` and every slot                                   | yes                           | Cheapest path: call `mkSlots` and never touch `modules/universal`.                                                                                                                    |
+| sops secrets                                                    | partial                       | A new guest holds a new `/etc/ssh/ssh_host_ed25519_key`, so its age recipient is absent. Set `kdn.security.secrets.allow = false`, or re-key for the guest.                           |
+| Stylix, wallpaper, any GUI theme                                | partial                       | Needs a display. Run with VNC, not `--display none`.                                                                                                                                  |
+| Rosetta 2 for `x86_64-darwin`                                   | **yes — verified 2026-09-10** | Rosetta 2 translates; it does not virtualize, so blocker 13 does not apply. `softwareupdate --install-rosetta --agree-to-license` succeeded in the guest, and `arch -x86_64` exits 0. |
+| TouchID `sudo` (`security.pam.services.sudo_local.touchIdAuth`) | no                            | A guest has no Secure Enclave and no TouchID sensor.                                                                                                                                  |
+| YubiKey, smartcard, any USB HID device                          | no                            | Virtualization.framework passes no arbitrary USB device through to a macOS guest.                                                                                                     |
+| FileVault, secure boot, full-disk encryption                    | no                            |                                                                                                                                                                                       |
+| `nix-rosetta-builder`, or any Linux guest                       | no                            | Blocker 13. Permanent. Tier B only.                                                                                                                                                   |
 
 ## Start-up cost and programmatic control
 
 Only one number below is measured. Check the state column before you plan around a row.
 
-| Phase | Cost | State |
-|---|---|---|
-| lume, first ever: `create --unattended` with the IPSW download | **14 min 04 s**, about 19 GB down — then it **deletes** the guest | verified 2026-09-10. The 2026-09-09 "9 minutes" reading was the same failure, read at the last line before the delete. |
-| lume, split path: `lume create` with a local IPSW | **2 min 40 s**, 25 GB on disk | verified 2026-09-10 |
-| lume, split path: `lume setup --unattended tahoe` | it fails its own health check, and the guest survives | verified 2026-09-10 |
-| Tart, first ever: base image pull | 27.31 GB | from the Tart research. The wall clock depends on the link. |
-| Nix install plus first activation in the guest | about 40 minutes | estimate from the Tart research, not measured |
-| lume: cold boot to an answered SSH command | **10 s and 11 s** | verified 2026-09-10, two runs, each from a confirmed `stopped` state with the mux socket removed. Far inside lume's own 5-minute budget. |
-| Warm loop per checkpoint | 2 to 5 minutes | estimate in "Target shape", not measured |
-| `clone` of a baked guest | seconds expected | unverified. APFS `clonefile` gives a copy-on-write clone, so the disk copy should cost almost nothing. Confirm with `time`. |
+| Phase                                                          | Cost                                                              | State                                                                                                                                    |
+| -------------------------------------------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| lume, first ever: `create --unattended` with the IPSW download | **14 min 04 s**, about 19 GB down — then it **deletes** the guest | verified 2026-09-10. The 2026-09-09 "9 minutes" reading was the same failure, read at the last line before the delete.                   |
+| lume, split path: `lume create` with a local IPSW              | **2 min 40 s**, 25 GB on disk                                     | verified 2026-09-10                                                                                                                      |
+| lume, split path: `lume setup --unattended tahoe`              | it fails its own health check, and the guest survives             | verified 2026-09-10                                                                                                                      |
+| Tart, first ever: base image pull                              | 27.31 GB                                                          | from the Tart research. The wall clock depends on the link.                                                                              |
+| Nix install plus first activation in the guest                 | about 40 minutes                                                  | estimate from the Tart research, not measured                                                                                            |
+| lume: cold boot to an answered SSH command                     | **10 s and 11 s**                                                 | verified 2026-09-10, two runs, each from a confirmed `stopped` state with the mux socket removed. Far inside lume's own 5-minute budget. |
+| Warm loop per checkpoint                                       | 2 to 5 minutes                                                    | estimate in "Target shape", not measured                                                                                                 |
+| `clone` of a baked guest                                       | seconds expected                                                  | unverified. APFS `clonefile` gives a copy-on-write clone, so the disk copy should cost almost nothing. Confirm with `time`.              |
 
 ### Follow-up start-ups: Tart suspends, lume does not
 
@@ -184,17 +184,17 @@ lume, and it pays the boot every time.
 
 ### Control surfaces, verified from the subcommand lists
 
-| Need | Tart | lume |
-|---|---|---|
-| Run a command in the guest | `tart exec` — no SSH needed | `lume ssh <vm> '<cmd>'`. Defect #1514 drops piped stdin; #1513 corrupts binary stdout. Fall back to plain `ssh`. |
-| Find the guest address | `tart ip` | `lume get`, `lume ls` |
-| HTTP API for a harness | none | **`lume serve`**, a local API server. `cua` drives this. |
-| Machine-readable docs for a harness | none | **`lume dump-docs`**, CLI and API documentation as JSON |
-| Copy a guest | `tart clone`, plus `import` and `export` | `lume clone`, plus OCI `pull` and `push` |
-| Change CPU, memory or disk | `tart set` | `lume set` |
-| Toggle SIP in the guest | none | **`lume sip`** |
-| Prepare the unattended install | none | **`lume setup`** |
-| GUI or console view | `--vnc-experimental`, plus `--no-pointer` and `--no-keyboard` | `lume attach` |
+| Need                                | Tart                                                          | lume                                                                                                             |
+| ----------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Run a command in the guest          | `tart exec` — no SSH needed                                   | `lume ssh <vm> '<cmd>'`. Defect #1514 drops piped stdin; #1513 corrupts binary stdout. Fall back to plain `ssh`. |
+| Find the guest address              | `tart ip`                                                     | `lume get`, `lume ls`                                                                                            |
+| HTTP API for a harness              | none                                                          | **`lume serve`**, a local API server. `cua` drives this.                                                         |
+| Machine-readable docs for a harness | none                                                          | **`lume dump-docs`**, CLI and API documentation as JSON                                                          |
+| Copy a guest                        | `tart clone`, plus `import` and `export`                      | `lume clone`, plus OCI `pull` and `push`                                                                         |
+| Change CPU, memory or disk          | `tart set`                                                    | `lume set`                                                                                                       |
+| Toggle SIP in the guest             | none                                                          | **`lume sip`**                                                                                                   |
+| Prepare the unattended install      | none                                                          | **`lume setup`**                                                                                                 |
+| GUI or console view                 | `--vnc-experimental`, plus `--no-pointer` and `--no-keyboard` | `lume attach`                                                                                                    |
 
 This table is the real reason to keep both tools. Tart gives the fast repeat and a no-SSH `exec`.
 lume gives the from-IPSW install, an HTTP API, a SIP switch, and JSON docs a harness reads directly.
@@ -232,7 +232,7 @@ lume gives the from-IPSW install, an HTTP API, a SIP switch, and JSON docs a har
 8. **VirtioFS read-write mounts corrupt data**, git repositories in particular (openai/tart #1271,
    open since 2026-06-18). Move the closure with `nix copy`, never a `--dir` share.
 9. **The Keychain blocks `tart login/clone/pull/push` over plain SSH.** Run `security
-   create-keychain` and `security unlock-keychain` before any VM starts.
+create-keychain` and `security unlock-keychain` before any VM starts.
 10. **`tart clone` auto-prune can evict the base image mid-run.** Set `TART_NO_AUTO_PRUNE`.
 11. **The macOS installer needs a display device present**, even headless. `--no-graphics` covers it.
 12. **The upstream work is not usable.** nixpkgs #429189 is a stalled draft; nix-darwin #1552 has
@@ -301,11 +301,9 @@ lume gives the from-IPSW install, an HTTP API, a SIP switch, and JSON docs a har
 ### Phase 3 — run the real tests
 
 - [ ] Run the hard exit rows in the guest. Cite each row by its criterion text, never by a line
-      number — the line numbers move.
-      - Guest: 002's scratch-flake evaluation and its no-SSH-agent repeat; both runbook rows of 003;
-        both rows of 009.
-      - **Bare metal only:** 002's "a real `x86_64-linux` derivation builds through the Rosetta
-        builder". Blocker 13 puts it out of reach of every macOS guest.
+      number — the line numbers move. - Guest: 002's scratch-flake evaluation and its no-SSH-agent repeat; both runbook rows of 003;
+      both rows of 009. - **Bare metal only:** 002's "a real `x86_64-linux` derivation builds through the Rosetta
+      builder". Blocker 13 puts it out of reach of every macOS guest.
 - [ ] Verify the 8 unverified caveats of checkpoint 003 in the guest.
 - [ ] Keep Pattern V1, the drvPath equality gate, on the warm host. Give the guest the activation
       tests only. A cold guest has no warm store, and the gate costs 93 s per warm Darwin host.

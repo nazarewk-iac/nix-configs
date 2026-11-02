@@ -67,10 +67,10 @@ The aspect signs nothing, declares no `enable` option, and is registered in `mod
 
 All commands exit 0:
 
-| Command | Result |
-|---|---|
+| Command                                                                      | Result                   |
+| ---------------------------------------------------------------------------- | ------------------------ |
 | `nix build --no-eval-cache -L '.#checks.x86_64-linux.den-eval-certificates'` | 20 of 20 assertions pass |
-| `nix build --no-eval-cache -L '.#checks.x86_64-linux.standalone-aspects'` | 3 of 3 assertions pass |
+| `nix build --no-eval-cache -L '.#checks.x86_64-linux.standalone-aspects'`    | 3 of 3 assertions pass   |
 
 `checks/den-mvp/assertions/certificates.nix` holds the subjects: the empty option set on four
 classes, the declared root/intermediate/leaf values, `certPath` under a store path, the missing

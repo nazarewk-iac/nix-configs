@@ -100,11 +100,11 @@ If a patch fails to apply, **find the cause first**. The action differs per caus
 default to deleting the patch. The full decision procedure lives in
 [flake-patches.md](flake-patches.md) and in the `flake-patches` skill.
 
-| Cause | Detection | Action |
-|---|---|---|
-| the patch landed upstream | `gh api "repos/NixOS/nixpkgs/compare/nixos-unstable...<commit>" --jq '.status'` returns `behind` or `identical` | remove the entry from `.flake.patches/config.toml`, delete the `.patch` file |
-| the patch has not landed yet, and the context moved | the same call returns `ahead`, and the hunk offsets fail | re-fetch the patch from the PR, keep the entry |
-| the upstream PR was closed or rewritten | the patch URL 404s, or the diff changed shape | decide whether the change is still wanted; re-derive or drop it |
+| Cause                                               | Detection                                                                                                       | Action                                                                       |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| the patch landed upstream                           | `gh api "repos/NixOS/nixpkgs/compare/nixos-unstable...<commit>" --jq '.status'` returns `behind` or `identical` | remove the entry from `.flake.patches/config.toml`, delete the `.patch` file |
+| the patch has not landed yet, and the context moved | the same call returns `ahead`, and the hunk offsets fail                                                        | re-fetch the patch from the PR, keep the entry                               |
+| the upstream PR was closed or rewritten             | the patch URL 404s, or the diff changed shape                                                                   | decide whether the change is still wanted; re-derive or drop it              |
 
 Then re-run patches only (the inputs are already updated):
 

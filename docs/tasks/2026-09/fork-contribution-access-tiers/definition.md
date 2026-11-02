@@ -23,15 +23,15 @@ content, and must need no rework when the maintainer returns.
 
 ## Role vocabulary
 
-| Role | Push access | Sends changes through |
-|---|---|---|
-| **maintainer** | the public remote **and** the private fork | direct push, `jj sync-remotes` |
-| **fork collaborator** | the private fork only | a queue bookmark on the private fork |
-| **outside contributor** | neither | a pull request against the public repo |
+| Role                    | Push access                                | Sends changes through                  |
+| ----------------------- | ------------------------------------------ | -------------------------------------- |
+| **maintainer**          | the public remote **and** the private fork | direct push, `jj sync-remotes`         |
+| **fork collaborator**   | the private fork only                      | a queue bookmark on the private fork   |
+| **outside contributor** | neither                                    | a pull request against the public repo |
 
 An **external adopter** ([../generalization-plan.md](../generalization/definition.md)) is a fourth,
-separate role: an adopter *consumes* the modules in their own repo, while a contributor *sends
-changes back* to this one.
+separate role: an adopter _consumes_ the modules in their own repo, while a contributor _sends
+changes back_ to this one.
 
 ## Work items
 

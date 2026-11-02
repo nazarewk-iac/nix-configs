@@ -13,6 +13,7 @@ in the channel we track (typically `nixos-unstable`). Patching is not exclusive 
 any input with an upstream fork (`{name}-upstream` in `flake.nix`) can have patches registered.
 
 nixpkgs is the most complex case because:
+
 - We track `nixos-unstable`, a release channel that lags `master` by days to weeks
 - Fixes often land in `master` or `staging-next` long before reaching `nixos-unstable`
 - `staging-next` is a long-running accumulator of larger changes — don't expect those soon
@@ -45,12 +46,14 @@ skip = 0
 ## Finding patches for build failures
 
 1. Search nixpkgs issues/PRs for the failing package:
+
    ```bash
    gh search prs "<package-name>" --repo NixOS/nixpkgs --limit 10
    gh search issues "<package-name> <error-keyword>" --repo NixOS/nixpkgs --state open --limit 5
    ```
 
 2. Find the PR number of the fix and get its patch URL:
+
    ```
    https://github.com/NixOS/nixpkgs/pull/<PR>.patch?full_index=1
    ```

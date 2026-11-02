@@ -61,10 +61,10 @@ kdn-certs ssh login brys
 
 The `ssh-ca` aspect writes these `sshd_config` lines:
 
-| Line | Job |
-|---|---|
-| `TrustedUserCAKeys <CA public key>` | Accept each user certificate the CA signs. |
-| `HostKey <private key>` + `HostCertificate <cert>` | Show the host certificate to each client. |
+| Line                                               | Job                                        |
+| -------------------------------------------------- | ------------------------------------------ |
+| `TrustedUserCAKeys <CA public key>`                | Accept each user certificate the CA signs. |
+| `HostKey <private key>` + `HostCertificate <cert>` | Show the host certificate to each client.  |
 
 To add a host in this repo:
 

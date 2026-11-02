@@ -22,11 +22,11 @@ llama-server that is **12,087 tokens** — so a cold start prefills ~12K tokens 
 Warm the base into a slot, then a fresh session that lands on that slot reuses
 it:
 
-| Request | session id | result |
-|---|---|---|
-| warm (prefill base) | `warmstart` | `prompt_n 12087, cache_n 0` |
-| fresh pinned to the warm slot | `freshpin`, `id_slot 1` | `prompt_n 16, cache_n 12075` |
-| restore the saved base into a slot | `warmstart`, `id_slot 1` | `prompt_n 4, cache_n 12087` |
+| Request                            | session id               | result                       |
+| ---------------------------------- | ------------------------ | ---------------------------- |
+| warm (prefill base)                | `warmstart`              | `prompt_n 12087, cache_n 0`  |
+| fresh pinned to the warm slot      | `freshpin`, `id_slot 1`  | `prompt_n 16, cache_n 12075` |
+| restore the saved base into a slot | `warmstart`, `id_slot 1` | `prompt_n 4, cache_n 12087`  |
 
 So a fresh session reuses the whole base when it runs on a slot that already
 holds the base, and a saved base file restores into a slot in ~150 ms (no

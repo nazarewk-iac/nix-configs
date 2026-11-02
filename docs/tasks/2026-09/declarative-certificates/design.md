@@ -19,15 +19,15 @@ This task delivers a plan. No implementation is in scope. The seven sub-tasks be
 No aspect code, no CLI code, no host edit and no `.sops.yaml` change happens in this task. The plan
 is the deliverable.
 
-| # | Directory | Job |
-|---|---|---|
+| #   | Directory                    | Job                                                         |
+| --- | ---------------------------- | ----------------------------------------------------------- |
 | 000 | `000-universal-augmentation` | Verify the § 2.1 augmentation line for the universal hosts. |
-| 001 | `001-ca-dag` | The `kdn.ca-dag` aspect. |
-| 002 | `002-cert-declarations` | The `kdn.certificates` aspect. |
-| 003 | `003-ca-manager` | The `kdn.ca-manager` aspect and the smallstep lifecycle. |
-| 004 | `004-cert-cli` | The `kdn-certs` CLI. |
-| 005 | `005-ssh-ca` | The `kdn.ssh-ca` aspect. |
-| 006 | `006-zellij-migration` | The zellij web declaration on the four universal hosts. |
+| 001 | `001-ca-dag`                 | The `kdn.ca-dag` aspect.                                    |
+| 002 | `002-cert-declarations`      | The `kdn.certificates` aspect.                              |
+| 003 | `003-ca-manager`             | The `kdn.ca-manager` aspect and the smallstep lifecycle.    |
+| 004 | `004-cert-cli`               | The `kdn-certs` CLI.                                        |
+| 005 | `005-ssh-ca`                 | The `kdn.ssh-ca` aspect.                                    |
+| 006 | `006-zellij-migration`       | The zellij web declaration on the four universal hosts.     |
 
 ---
 
@@ -36,12 +36,12 @@ is the deliverable.
 All four aspects live in `modules/den/aspects/`. Each one joins the registry in
 `modules/den/lib.nix`, next to `ca = ./aspects/ca.nix;` at `modules/den/lib.nix:38`.
 
-| Aspect | Classes | Role | Emits |
-|---|---|---|---|
-| `kdn.ca-dag` | `nixos`, `darwin`, `homeManager`, `devenv` | The CA graph as data | nothing |
-| `kdn.certificates` | `nixos`, `darwin`, `homeManager`, `devenv` | The leaf option set and consumption | `certPath`, `keyPath` |
-| `kdn.ca-manager` | `devenv` | The CLI and the CA DAG in a shell | the `kdn-certs` package |
-| `kdn.ssh-ca` | `nixos`, `darwin`, `homeManager` | SSH login trust | server and client settings |
+| Aspect             | Classes                                    | Role                                | Emits                      |
+| ------------------ | ------------------------------------------ | ----------------------------------- | -------------------------- |
+| `kdn.ca-dag`       | `nixos`, `darwin`, `homeManager`, `devenv` | The CA graph as data                | nothing                    |
+| `kdn.certificates` | `nixos`, `darwin`, `homeManager`, `devenv` | The leaf option set and consumption | `certPath`, `keyPath`      |
+| `kdn.ca-manager`   | `devenv`                                   | The CLI and the CA DAG in a shell   | the `kdn-certs` package    |
+| `kdn.ssh-ca`       | `nixos`, `darwin`, `homeManager`           | SSH login trust                     | server and client settings |
 
 Each aspect follows the three aspect rules: no entity argument, no `enable` option, no custom
 module argument. An empty option set is the no-op. `checks/standalone.nix` enforces all three.
@@ -116,18 +116,18 @@ Record this as a risk until a measurement settles it. The result belongs in the 
 
 One CA node is `kdn.ca-dag.cas.<name>`:
 
-| Option | Type | Default | Meaning |
-|---|---|---|---|
-| `type` | `"root"` or `"intermediate"` | required | The node class in the DAG. |
-| `parent` | `null` or a CA name | `null` | The parent CA. A root names no parent. |
-| `commonName` | string | required | The subject common name of the CA. |
-| `directory` | string | `"data/ca"` | The repo-relative directory of the CA files. |
-| `certFile` | string | `"${name}.crt"` | The public certificate filename. |
-| `keyFile` | string | `"${name}.key"` | The private key filename. |
-| `keySource` | `"external"` or `"managed"` | required | `managed` means the CLI generates the key. |
-| `provisioner` | `null` or string | `null` | The smallstep provisioner name. |
-| `ssh` | bool | `false` | The CA also signs SSH certificates. |
-| `minGenerationDate` | `null` or ISO 8601 string | `null` | The oldest allowed generation date. |
+| Option              | Type                         | Default         | Meaning                                      |
+| ------------------- | ---------------------------- | --------------- | -------------------------------------------- |
+| `type`              | `"root"` or `"intermediate"` | required        | The node class in the DAG.                   |
+| `parent`            | `null` or a CA name          | `null`          | The parent CA. A root names no parent.       |
+| `commonName`        | string                       | required        | The subject common name of the CA.           |
+| `directory`         | string                       | `"data/ca"`     | The repo-relative directory of the CA files. |
+| `certFile`          | string                       | `"${name}.crt"` | The public certificate filename.             |
+| `keyFile`           | string                       | `"${name}.key"` | The private key filename.                    |
+| `keySource`         | `"external"` or `"managed"`  | required        | `managed` means the CLI generates the key.   |
+| `provisioner`       | `null` or string             | `null`          | The smallstep provisioner name.              |
+| `ssh`               | bool                         | `false`         | The CA also signs SSH certificates.          |
+| `minGenerationDate` | `null` or ISO 8601 string    | `null`          | The oldest allowed generation date.          |
 
 The public certificate is `<directory>/<certFile>`. The private key is always SOPS-sourced:
 `<directory>/<keyFile>.sops`, a raw/binary SOPS file. `keySource` records who made the key, not its
@@ -162,25 +162,25 @@ directory. See § 8.1.
 
 One leaf is `kdn.certificates.certs.<name>`:
 
-| Option | Type | Default | Meaning |
-|---|---|---|---|
-| `ca` | string | required | A CA name from `kdn.ca-dag.cas`. |
-| `type` | `"tls-server"`, `"tls-client"`, `"ssh-user"` or `"ssh-host"` | required | The certificate kind. |
-| `commonName` | string | required | The subject common name of the leaf. |
-| `sans` | list of strings | `[ ]` | TLS subjectAltNames. |
-| `principals` | list of strings | `[ ]` | SSH principals. |
-| `directory` | string | `"hosts/<hostName>/certs"` | The repo-relative directory of the leaf files. |
-| `certFile` | string | `"${name}.pub"` | The public certificate filename. |
-| `keyFile` | string | `"${name}.key"` | The private key filename. |
-| `keySource` | `"external"` or `"managed"` | required | `managed` means the CLI generates the key. |
-| `minGenerationDate` | `null` or ISO 8601 string | `null` | The oldest allowed generation date. |
+| Option              | Type                                                         | Default                    | Meaning                                        |
+| ------------------- | ------------------------------------------------------------ | -------------------------- | ---------------------------------------------- |
+| `ca`                | string                                                       | required                   | A CA name from `kdn.ca-dag.cas`.               |
+| `type`              | `"tls-server"`, `"tls-client"`, `"ssh-user"` or `"ssh-host"` | required                   | The certificate kind.                          |
+| `commonName`        | string                                                       | required                   | The subject common name of the leaf.           |
+| `sans`              | list of strings                                              | `[ ]`                      | TLS subjectAltNames.                           |
+| `principals`        | list of strings                                              | `[ ]`                      | SSH principals.                                |
+| `directory`         | string                                                       | `"hosts/<hostName>/certs"` | The repo-relative directory of the leaf files. |
+| `certFile`          | string                                                       | `"${name}.pub"`            | The public certificate filename.               |
+| `keyFile`           | string                                                       | `"${name}.key"`            | The private key filename.                      |
+| `keySource`         | `"external"` or `"managed"`                                  | required                   | `managed` means the CLI generates the key.     |
+| `minGenerationDate` | `null` or ISO 8601 string                                    | `null`                     | The oldest allowed generation date.            |
 
 ### 4.1 The storage rule
 
-| File | Path | Form | Committed |
-|---|---|---|---|
-| Public certificate | `<directory>/<certFile>` | PEM, plain | yes |
-| Private key | `<directory>/<keyFile>.sops` | raw/binary SOPS | yes |
+| File               | Path                         | Form            | Committed |
+| ------------------ | ---------------------------- | --------------- | --------- |
+| Public certificate | `<directory>/<certFile>`     | PEM, plain      | yes       |
+| Private key        | `<directory>/<keyFile>.sops` | raw/binary SOPS | yes       |
 
 The aspect exposes two derived values for a consumer:
 
@@ -220,12 +220,12 @@ packages/kdn-certs/
 
 CLI and UI stack (the repo's `tools/kdnctl/go.mod` already pins the charmbracelet family):
 
-| Concern | Library |
-|---|---|
-| Command tree, flags, completions | `github.com/spf13/cobra` + `github.com/spf13/pflag` |
-| Structured logging | `github.com/charmbracelet/log` |
-| Pretty output (tables, colors) | `github.com/charmbracelet/lipgloss` |
-| Progress (spinner, bar) | `github.com/charmbracelet/bubbles` (`progress`, `spinner`) |
+| Concern                          | Library                                                    |
+| -------------------------------- | ---------------------------------------------------------- |
+| Command tree, flags, completions | `github.com/spf13/cobra` + `github.com/spf13/pflag`        |
+| Structured logging               | `github.com/charmbracelet/log`                             |
+| Pretty output (tables, colors)   | `github.com/charmbracelet/lipgloss`                        |
+| Progress (spinner, bar)          | `github.com/charmbracelet/bubbles` (`progress`, `spinner`) |
 
 `buildGoModule` wraps the binary with `makeBinaryWrapper`, so `step`, `step-ca`, `nix` and `sops`
 are on the runtime PATH. `postInstall` installs the shell completions from
@@ -238,25 +238,25 @@ sorted. `nix run .#kdn-certs` then resolves through `packages.<system>` with no 
 
 ### 5.2 Command table
 
-| Command | Job |
-|---|---|
-| `kdn-certs plan` | Walk every target, enumerate and deduplicate the declarations, print what would be generated or regenerated, with progress. |
-| `kdn-certs apply` | Generate or regenerate. Start `step-ca` on demand and tear it down after. |
-| `kdn-certs ca init` | Initialize the CA DAG from the top: root first, then each intermediate. |
-| `kdn-certs ca sign <cert>` | Sign one leaf. Prompt for the YubiKey touch when the CA key needs it. |
-| `kdn-certs ssh login <host>` | Generate an SSH user certificate to connect to a host. Pick the SSH CA and set the principals. |
-| `kdn-certs status` | Per certificate: valid, expiring or mismatched. |
-| `kdn-certs doctor` | Discover zombie `step-ca` processes and stale PID files. |
+| Command                      | Job                                                                                                                         |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `kdn-certs plan`             | Walk every target, enumerate and deduplicate the declarations, print what would be generated or regenerated, with progress. |
+| `kdn-certs apply`            | Generate or regenerate. Start `step-ca` on demand and tear it down after.                                                   |
+| `kdn-certs ca init`          | Initialize the CA DAG from the top: root first, then each intermediate.                                                     |
+| `kdn-certs ca sign <cert>`   | Sign one leaf. Prompt for the YubiKey touch when the CA key needs it.                                                       |
+| `kdn-certs ssh login <host>` | Generate an SSH user certificate to connect to a host. Pick the SSH CA and set the principals.                              |
+| `kdn-certs status`           | Per certificate: valid, expiring or mismatched.                                                                             |
+| `kdn-certs doctor`           | Discover zombie `step-ca` processes and stale PID files.                                                                    |
 
 ### 5.3 Global flags
 
-| Flag | Default | Job |
-|---|---|---|
-| `--flake <path>` | `.` | The flake to walk. |
-| `--dry-run` | off | Print the actions and change nothing. |
-| `--force` | off | Regenerate every certificate, whatever the mismatch test says. |
-| `--json` | off | Print machine-readable output. |
-| `--verbose` | off | Print each `nix eval` command and each `step` command. |
+| Flag             | Default | Job                                                            |
+| ---------------- | ------- | -------------------------------------------------------------- |
+| `--flake <path>` | `.`     | The flake to walk.                                             |
+| `--dry-run`      | off     | Print the actions and change nothing.                          |
+| `--force`        | off     | Regenerate every certificate, whatever the mismatch test says. |
+| `--json`         | off     | Print machine-readable output.                                 |
+| `--verbose`      | off     | Print each `nix eval` command and each `step` command.         |
 
 ### 5.4 The walk algorithm
 
@@ -342,10 +342,10 @@ option. An empty declaration is the no-op.
 
 The SSH CA serves two classes of consumer.
 
-| Class | Consumer | Certificate | Lifetime |
-|---|---|---|---|
+| Class       | Consumer                          | Certificate                        | Lifetime     |
+| ----------- | --------------------------------- | ---------------------------------- | ------------ |
 | Interactive | a person through `ssh` or `kdn-*` | a user certificate with principals | short, hours |
-| Automation | CI, remote builders and agents | a user or host certificate | longer, days |
+| Automation  | CI, remote builders and agents    | a user or host certificate         | longer, days |
 
 Interactive logins use short-lived user certificates with principals. `ssh` and the `kdn-*` tools
 consume them. Automation cannot manage long-lived `authorized_keys` files, so it consumes
@@ -365,10 +365,10 @@ from `kdn.certificates.certs.<name>` with `type = "ssh-host"`.
 
 The write mechanism differs per class, because the two platforms expose different options:
 
-| Class | Option | Mechanism |
-|---|---|---|
-| `nixos` | `services.openssh.settings.TrustedUserCAKeys` and `.HostCertificate` | the nixpkgs option |
-| `darwin` | `services.openssh.extraConfig` | a `sshd_config` fragment |
+| Class    | Option                                                               | Mechanism                |
+| -------- | -------------------------------------------------------------------- | ------------------------ |
+| `nixos`  | `services.openssh.settings.TrustedUserCAKeys` and `.HostCertificate` | the nixpkgs option       |
+| `darwin` | `services.openssh.extraConfig`                                       | a `sshd_config` fragment |
 
 **Measured on 2026-09-25:** nix-darwin declares `services.openssh.extraConfig`
 (`<nix-darwin>/modules/services/openssh.nix:84`), which it writes to
@@ -439,16 +439,16 @@ it as `passthru.tests.go-test` (a `runCommand` that runs `go test ./...`), as
 `packages/kdn-ssh-access` exposes its own `passthru`. Alias it in `checks/default.nix` as
 `kdn-certs-test`. Add the name to `bundle-pkgs` in `checks/bundles.nix`.
 
-| Case | What it proves |
-|---|---|
-| ISO 8601 parsing | Every form above, plus the lowest-value rule. |
-| DAG topological order | Roots, then intermediates, then leaves. |
-| DAG cycle | A cycle fails loudly. |
-| Dedup | Two declarations with one key become one certificate. |
-| Mismatch detection | A stale `notBefore` and a wrong issuer CN both trigger a regeneration. |
+| Case                     | What it proves                                                         |
+| ------------------------ | ---------------------------------------------------------------------- |
+| ISO 8601 parsing         | Every form above, plus the lowest-value rule.                          |
+| DAG topological order    | Roots, then intermediates, then leaves.                                |
+| DAG cycle                | A cycle fails loudly.                                                  |
+| Dedup                    | Two declarations with one key become one certificate.                  |
+| Mismatch detection       | A stale `notBefore` and a wrong issuer CN both trigger a regeneration. |
 | Missing-option tolerance | A target with no `kdn.certificates` returns an empty set and no error. |
-| `--dry-run` | The command prints the plan and writes no file. |
-| Flag parsing | `--flake`, `--force`, `--json` and `--verbose` reach the command. |
+| `--dry-run`              | The command prints the plan and writes no file.                        |
+| Flag parsing             | `--flake`, `--force`, `--json` and `--verbose` reach the command.      |
 
 Keep every case offline. Mock the `nix eval` call and the `step` call behind an interface, so the
 suite needs no flake and no CA. The sign cases that need a real CA use a **test CA with an
@@ -579,15 +579,15 @@ SOPS.
 
 ## 10 — Risks and open questions
 
-| # | Risk | State |
-|---|---|---|
-| 1 | A host-derived devenv shell may not reach an aspect that the host names | **UNVERIFIED** — name the aspects in the standalone shells by hand |
-| 2 | nix-darwin declares `services.openssh.extraConfig`, not `.settings` | **resolved 2026-09-25** — `darwin` writes a `sshd_config` fragment; see § 7.1 |
-| 3 | A new leaf key needs its own `creation_rules` entry above the generic rule | design rule — see [research.md](research.md) § 3 |
-| 4 | A crash may leave a zombie `step-ca` process or a stale PID file | `kdn-certs doctor` owns the cleanup |
-| 5 | The CA private key needs a YubiKey touch | the CLI prompts for the touch; the leaf work is automated |
-| 6 | The universal-host augmentation line may clash on option declarations | `000-universal-augmentation` verifies it and records the caveats |
-| 7 | `den-eval-instantiate` needs a foreign builder for some aspects | pre-existing, not a certificate defect — see § 8.5 and [015](../generalization/015-den-check-harness-platforms/definition.md) |
+| #   | Risk                                                                       | State                                                                                                                         |
+| --- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 1   | A host-derived devenv shell may not reach an aspect that the host names    | **UNVERIFIED** — name the aspects in the standalone shells by hand                                                            |
+| 2   | nix-darwin declares `services.openssh.extraConfig`, not `.settings`        | **resolved 2026-09-25** — `darwin` writes a `sshd_config` fragment; see § 7.1                                                 |
+| 3   | A new leaf key needs its own `creation_rules` entry above the generic rule | design rule — see [research.md](research.md) § 3                                                                              |
+| 4   | A crash may leave a zombie `step-ca` process or a stale PID file           | `kdn-certs doctor` owns the cleanup                                                                                           |
+| 5   | The CA private key needs a YubiKey touch                                   | the CLI prompts for the touch; the leaf work is automated                                                                     |
+| 6   | The universal-host augmentation line may clash on option declarations      | `000-universal-augmentation` verifies it and records the caveats                                                              |
+| 7   | `den-eval-instantiate` needs a foreign builder for some aspects            | pre-existing, not a certificate defect — see § 8.5 and [015](../generalization/015-den-check-harness-platforms/definition.md) |
 
 ---
 

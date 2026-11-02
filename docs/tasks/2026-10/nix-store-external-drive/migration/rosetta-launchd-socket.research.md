@@ -44,7 +44,7 @@ pointing at the same payload.
   volume access. The failure mode inside the tree is dyld: `file system sandbox blocked open()`
   on `liblix.dylib`, exit code 1.
 - Worse before that: `cp -f` onto the running binary truncates the vnode in place. The kernel
-  then kills *every* exec of that path — even after the ORIGINAL bytes are restored — with
+  then kills _every_ exec of that path — even after the ORIGINAL bytes are restored — with
   `CODE SIGNING: ... rejecting invalid page ... (tainted:1)`, until the file is replaced
   atomically (`cp` sibling + `mv`).
 - The DB does not self-heal on restoring a matching cdhash: the toggle must come back from the

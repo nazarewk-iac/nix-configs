@@ -54,7 +54,7 @@ systemd.services."llm-metrics-relay-swap" = lib.mkIf withSwap {
 };
 ```
 
-`bind=10.233.90.1` is what makes this an *ingress* rather than a hole: the
+`bind=10.233.90.1` is what makes this an _ingress_ rather than a hole: the
 listener exists only on the bridge, so the port stays closed on every host
 interface. Check with `ss -tlnp` — you should see `127.0.0.1:PORT` for the
 service and `10.233.90.1:PORT` for the relay, and nothing else.
@@ -76,12 +76,12 @@ sees one path.
 
 On the impermanence layout (tmpfs root, ZFS pool, `preservation` bind-mounts):
 
-| Bucket | Holds | Example |
-|---|---|---|
-| `sys/state` | data whose loss changes behaviour | the TSDB, a collector's JSONL |
-| `sys/cache` | data rebuilt on demand | **the container root** |
-| `usr/data` | user documents | model files under `/var/lib/kdn/llms/models` |
-| `disposable` | never anything that must survive | — |
+| Bucket       | Holds                             | Example                                      |
+| ------------ | --------------------------------- | -------------------------------------------- |
+| `sys/state`  | data whose loss changes behaviour | the TSDB, a collector's JSONL                |
+| `sys/cache`  | data rebuilt on demand            | **the container root**                       |
+| `usr/data`   | user documents                    | model files under `/var/lib/kdn/llms/models` |
+| `disposable` | never anything that must survive  | —                                            |
 
 The container root (`/var/lib/nixos-containers/<name>`) is rebuilt data, so it
 goes in `sys/cache`. Unlisted, it is a tmpfs directory and the guest boots with a
@@ -152,7 +152,7 @@ this the guest boots before the host has a rule to let it reach the relays. The
 observable symptom is asymmetric: the bridge answers **from the host** but not
 **from inside the guest**.
 
-Putting `unitConfig` *inside* `containers.<name>` fails evaluation with
+Putting `unitConfig` _inside_ `containers.<name>` fails evaluation with
 `Did you mean containers.prometheus.config?`.
 
 ## Verification
@@ -212,6 +212,6 @@ Do **not** use one when the service:
 Seen during these activations and **not** caused by the container work; noted so a
 later reader does not blame it:
 
-- `kdn-man-gen-caches.service` — *"Unit … not found"*, the activation snippet
+- `kdn-man-gen-caches.service` — _"Unit … not found"_, the activation snippet
   fails. Harmless: `mandb` runs later.
 - `kdn-atuin-login-root.service` — fails on a missing atuin key. Pre-existing.

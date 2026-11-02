@@ -55,7 +55,7 @@ Nine briefs follow, in order of what each one blocks. Two rows need no brief: se
 - **Question:** Does the personal host graph stay a tracked file here, or become git-ignored beside a
   tracked example file?
 - **Today:** the graph sits at `data/slots-ssh-access.nix`, 190 lines, tracked (`git ls-files
-  data/`). Three host files import it through `builtins.filter builtins.pathExists`
+data/`). Three host files import it through `builtins.filter builtins.pathExists`
   (`hosts/brys/default.nix:12`), so an absent file evaluates. The move of 007 item 5 landed.
 - **Options:** A — keep it tracked; an adopter overwrites it; 0 lines. B — git-ignore it and track
   `data/slots-ssh-access.example.nix`; 1 `.gitignore` rule plus one file rename; XS.
@@ -152,18 +152,18 @@ Nine briefs follow, in order of what each one blocks. Two rows need no brief: se
 
 ## Already resolved
 
-| Row | State |
-|---|---|
-| 15 — the signing key file name | **ALREADY RESOLVED** by commit `660a81f3`. Both routes now default to a neutral file name with no initials: `modules/slots/signing/default.nix:82` and `modules/den/aspects/signing.nix:206`. The aspect comment at `:49` records the old value. |
-| 58 — `llm` option examples | **ALREADY RESOLVED**. Every example holds a reserved documentation name or address: `modules/slots/llm/default.nix:455,473-474,486` and `modules/slots/llm/client/default.nix:78`. No homelab name and no overlay address remains. |
-| Section 3 item 4 — the agent rules | **DECIDED 2026-09-11**, candidate A. `installAgentRules` defaults to `false` on 5 slots and 5 aspects. |
+| Row                                | State                                                                                                                                                                                                                                            |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 15 — the signing key file name     | **ALREADY RESOLVED** by commit `660a81f3`. Both routes now default to a neutral file name with no initials: `modules/slots/signing/default.nix:82` and `modules/den/aspects/signing.nix:206`. The aspect comment at `:49` records the old value. |
+| 58 — `llm` option examples         | **ALREADY RESOLVED**. Every example holds a reserved documentation name or address: `modules/slots/llm/default.nix:455,473-474,486` and `modules/slots/llm/client/default.nix:78`. No homelab name and no overlay address remains.               |
+| Section 3 item 4 — the agent rules | **DECIDED 2026-09-11**, candidate A. `installAgentRules` defaults to `false` on 5 slots and 5 aspects.                                                                                                                                           |
 
 ## Measured corrections to the task text
 
-| Task text | Measurement |
-|---|---|
-| Row 15 "the default still carries the initials" | Refuted. `modules/slots/signing/default.nix:82` holds a neutral name. |
-| Row 58 "examples hold homelab FQDNs and two overlay addresses" | Refuted. Every example uses a reserved documentation name. |
-| Row 44 "only the file moves" | The move landed. The file is at `data/slots-ssh-access.nix` and three hosts import it through a `pathExists` filter. |
-| `modules/universal/fs/zfs/default.nix:97-99` cites baseline `:295` | The assignment sits at `modules/universal/profile/machine/baseline/default.nix:348`. |
-| The den registry holds 20 aspects | It holds 21 (`modules/den/lib.nix:36-56`). |
+| Task text                                                          | Measurement                                                                                                          |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| Row 15 "the default still carries the initials"                    | Refuted. `modules/slots/signing/default.nix:82` holds a neutral name.                                                |
+| Row 58 "examples hold homelab FQDNs and two overlay addresses"     | Refuted. Every example uses a reserved documentation name.                                                           |
+| Row 44 "only the file moves"                                       | The move landed. The file is at `data/slots-ssh-access.nix` and three hosts import it through a `pathExists` filter. |
+| `modules/universal/fs/zfs/default.nix:97-99` cites baseline `:295` | The assignment sits at `modules/universal/profile/machine/baseline/default.nix:348`.                                 |
+| The den registry holds 20 aspects                                  | It holds 21 (`modules/den/lib.nix:36-56`).                                                                           |

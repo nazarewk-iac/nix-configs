@@ -27,11 +27,11 @@ Three related efforts, tracked as sub-tasks in this directory:
 
 ## Sub-tasks
 
-| # | Sub-task | Directory | Status |
-|---|---|---|---|
-| 001 | Benchmark suite | [001-benchmark-suite/](001-benchmark-suite/definition.md) | done |
-| 002 | Disk-offload / RAM-reduction study | [002-disk-offload/](002-disk-offload/definition.md) | done |
-| 003 | Runner evaluation (Strata, others) | [003-runner-eval/](003-runner-eval/definition.md) | done (researched-only) |
+| #   | Sub-task                           | Directory                                                 | Status                 |
+| --- | ---------------------------------- | --------------------------------------------------------- | ---------------------- |
+| 001 | Benchmark suite                    | [001-benchmark-suite/](001-benchmark-suite/definition.md) | done                   |
+| 002 | Disk-offload / RAM-reduction study | [002-disk-offload/](002-disk-offload/definition.md)       | done                   |
+| 003 | Runner evaluation (Strata, others) | [003-runner-eval/](003-runner-eval/definition.md)         | done (researched-only) |
 
 ## Decisions taken (umbrella)
 

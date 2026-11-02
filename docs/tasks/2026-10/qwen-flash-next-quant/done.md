@@ -33,7 +33,7 @@ The result is a third boot specialisation, `llm-qwen`, beside `llm-ds4` and
    `qwenModels` model block.
 2. **`hosts/brys/llm-qwen.nix`** (new) wires the shared config with
    `withFrontier = false; withSmall = false; withQwen = true;
-   qwenContextSize = 131072`, and reuses the shared appliance body in
+qwenContextSize = 131072`, and reuses the shared appliance body in
    `hosts/brys/llm-appliance.nix`.
 3. **`hosts/brys/default.nix`** registers `specialisation.llm-qwen`.
 4. **Quant:** `unsloth/Qwen3.8-Flash-Next-GGUF`, `UD-IQ4_XS`, 3 shards, 93.7 GB
@@ -106,11 +106,11 @@ v0.6.0, build 11429), with MTP still on (`spec-type = draft-mtp`, self-contained
 
 Measured on brys, MTP on, parallel 1, threads 16, F16 KV, ZFS ARC 8 GiB:
 
-| ctx | rope | KV | RssAnon | RSS | free available | prefill t/s | decode t/s | coherence | OOM |
-|---|---|---|---|---|---|---|---|---|---|
-| 262144 | none | F16 | 31.8 GiB | 91.4 GiB | 81 GB | 30.6 | 7.51 | 17*23=391, Paris OK | no |
-| 524288 | yarn x2 | F16 | 40.0 GiB | 99.7 GiB | 73 GB | 29.3 | 7.58 | OK | no |
-| 1048576 | yarn x4 | F16 | 56.4 GiB | 116.0 GiB | 60 GB | 30.8 | 9.3 steady | 391, Paris, bat+ball=$0.10 OK | no |
+| ctx     | rope    | KV  | RssAnon  | RSS       | free available | prefill t/s | decode t/s | coherence                     | OOM |
+| ------- | ------- | --- | -------- | --------- | -------------- | ----------- | ---------- | ----------------------------- | --- |
+| 262144  | none    | F16 | 31.8 GiB | 91.4 GiB  | 81 GB          | 30.6        | 7.51       | 17*23=391, Paris OK           | no  |
+| 524288  | yarn x2 | F16 | 40.0 GiB | 99.7 GiB  | 73 GB          | 29.3        | 7.58       | OK                            | no  |
+| 1048576 | yarn x4 | F16 | 56.4 GiB | 116.0 GiB | 60 GB          | 30.8        | 9.3 steady | 391, Paris, bat+ball=$0.10 OK | no  |
 
 The model GGUF declares `n_ctx_train = 262144` and no rope scaling, so a context
 above 256K needs the YaRN flags (rope-scale 4.0, rope-freq-base 10000000,
@@ -132,13 +132,13 @@ MTP on, F16 KV, parallel 1, threads 16, two prompts, 300 tokens, temp 0, warm
 second run) chose `n-max 5`. "Realistic" is a Python merge-function prompt;
 "control" is a count from 1 to 300.
 
-| n-max | realistic decode t/s | realistic accept / mean len | control decode t/s | control accept |
-|---|---|---|---|---|
-| 1 | 8.13 | 0.980 / 1.98 | 8.15 | 1.000 |
-| 2 (old default) | 8.90 | 0.919 / 2.84 | 9.28 | 1.000 |
-| 3 | 10.42 | 0.893 / 3.68 | 11.38 | 1.000 |
-| **5 (chosen)** | **11.18** | 0.858 / 5.25 | 12.92 | 1.000 |
-| 8 | 8.86 | 0.711 / 6.64 | 13.72 | 1.000 |
+| n-max           | realistic decode t/s | realistic accept / mean len | control decode t/s | control accept |
+| --------------- | -------------------- | --------------------------- | ------------------ | -------------- |
+| 1               | 8.13                 | 0.980 / 1.98                | 8.15               | 1.000          |
+| 2 (old default) | 8.90                 | 0.919 / 2.84                | 9.28               | 1.000          |
+| 3               | 10.42                | 0.893 / 3.68                | 11.38              | 1.000          |
+| **5 (chosen)**  | **11.18**            | 0.858 / 5.25                | 12.92              | 1.000          |
+| 8               | 8.86                 | 0.711 / 6.64                | 13.72              | 1.000          |
 
 `n-max 8` raises control throughput but regresses the realistic prompt
 (acceptance 0.711, draft overhead dominates). `spec-draft-prio = 2` made no

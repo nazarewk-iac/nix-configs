@@ -69,8 +69,8 @@ LAN client ──HTTPS──▶ Caddy (:80/:443) ──▶ compat-proxy (:9530)
 ```
 
 The one-process design removes the three-way router split. The "never evict the
-orchestrator" rule moves from *separate processes* (the current `routers.grunt`) to
-*llama-swap routing policy* — `groups.persistent` or `matrix.evict_costs` (§2.4). That is
+orchestrator" rule moves from _separate processes_ (the current `routers.grunt`) to
+_llama-swap routing policy_ — `groups.persistent` or `matrix.evict_costs` (§2.4). That is
 the whole point of the migration: [llama-router-scheduler.research.md §3](llama-router-scheduler.research.md)
 records that `--models-max` is naive idle-LRU and can even evict a model with an
 in-flight request (llama.cpp #28698), while llama-swap offers `matrix.evict_costs`,
@@ -78,13 +78,13 @@ in-flight request (llama.cpp #28698), while llama-swap offers `matrix.evict_cost
 
 ### Where each process listens
 
-| Process | Port | Owner |
-|---|---|---|
-| Caddy | 80, 443 | the aspect (LAN gate), unchanged |
-| compat-proxy | 9530 | the aspect, unchanged ([llm.nix:1199](../../../../modules/den/aspects/llm.nix#L1199)) |
-| llama-swap | 39700 (proposed) | new; loopback only |
-| llama-server children | `startPort: 10001` and up | llama-swap assigns `${PORT}` per model |
-| old `main`/`small`/`grunt` routers | 39703/39704/39705 | **removed** |
+| Process                            | Port                      | Owner                                                                                 |
+| ---------------------------------- | ------------------------- | ------------------------------------------------------------------------------------- |
+| Caddy                              | 80, 443                   | the aspect (LAN gate), unchanged                                                      |
+| compat-proxy                       | 9530                      | the aspect, unchanged ([llm.nix:1199](../../../../modules/den/aspects/llm.nix#L1199)) |
+| llama-swap                         | 39700 (proposed)          | new; loopback only                                                                    |
+| llama-server children              | `startPort: 10001` and up | llama-swap assigns `${PORT}` per model                                                |
+| old `main`/`small`/`grunt` routers | 39703/39704/39705         | **removed**                                                                           |
 
 ## 2. Config mapping
 
@@ -95,38 +95,38 @@ flag in that argv. The mapping is mechanical.
 
 ### 2.1 Field-by-field mapping
 
-| Aspect field (`perf.*` unless noted) | Preset key (today) | llama-swap `cmd` flag | Notes |
-|---|---|---|---|
-| `model` (from `hfRepo`/`hfFile`) | `model = <path>` (INI key, `-m`) | `--model <path>` | path is `modelsDir/hfRepo/hfFile` ([llm.nix:106](../../../../modules/den/aspects/llm.nix#L106)) |
-| `mmproj.enable` | `mmproj = <path>` | `--mmproj <path>` | vision projector |
-| `threads` / `defaultThreads` | `threads` | `--threads N` | `-t` |
-| `flashAttention` | `flash-attn` | `--flash-attn {on,off,auto}` | `-fa` |
-| `cpuRange` / `cpuStrict` | `cpu-range` / `cpu-strict` | `--cpu-range` / `--cpu-strict` | off on brys, see §2.5 |
-| `loadMode` | `load-mode` | `--load-mode` | |
-| `contextSize` | `ctx-size` | `--ctx-size N` | `-c` |
-| `ropeScaling`/`ropeScale`/`ropeFreqBase`/`yarnOrigCtx` | same | `--rope-scaling`/`--rope-scale`/`--rope-freq-base`/`--yarn-orig-ctx` | |
-| `cacheTypeK`/`cacheTypeV` | same | `--cache-type-k`/`--cache-type-v` | `-ctk`/`-ctv` |
-| `cacheRam` | `cache-ram` | `--cache-ram N` | `-cram` |
-| `ctxCheckpoints` / `checkpointMinStep` | same | `--ctx-checkpoints` / `--checkpoint-min-step` | needs the sessions build |
-| `sessionHeaders` | `slot-save-path` + `slot-save-sessions` | `--slot-save-path D` + `--slot-save-sessions H` | see §5 |
-| `sessionMaxSessions` | `slot-save-sessions-max` | `--slot-save-sessions-max N` | |
-| `batchSize` / `ubatchSize` | same | `--batch-size` / `--ubatch-size` | `-b`/`-ub` |
-| `nGpuLayers` | `n-gpu-layers` | `--n-gpu-layers N` | `-ngl` |
-| `cpuMoe` | `cpu-moe = on` | `--cpu-moe` | |
-| `noKvOffload` | `no-kv-offload = on` | `--no-kv-offload` | |
-| `draftNGpuLayers` | `n-gpu-layers-draft` | `--n-gpu-layers-draft N` | |
-| `device` | `device` | `--device <name>` | `Vulkan0` for the grunt |
-| `mmap` | `mmap = on/off` | `--mmap` / `--no-mmap` | `null` omits it (v0.6.0 dropped it) |
-| `parallel` | `parallel` | `--parallel N` | `-np` |
-| `kvUnified` | `kv-unified = on/off` | `--kv-unified` / `--no-kv-unified` | |
-| `reasoning` | `reasoning` | `--reasoning {on,off,auto}` | `-rea` |
-| `reasoningEffort` | `reasoning-effort` | `--reasoning-effort` | |
-| `draft.enable` → `specType` | `spec-type` | `--spec-type` | |
-| `draft.enable` → draft file | `model-draft` | `--model-draft <path>` | |
-| `specDraftNMax`/`PMin`/`Prio` | same | `--spec-draft-n-max`/`-p-min`/`-prio` | |
-| `models.<name>.aliases` | `alias = a,b` | llama-swap top-level `aliases:` list | **not** a `llama-server` flag (§3) |
-| router `modelsMax` | `--models-max N` | llama-swap `routing` policy (groups/matrix) | the router concept disappears |
-| router `threads` | `--threads N` | drop or fold into the child `--threads` | llama-swap itself is not a compute process |
+| Aspect field (`perf.*` unless noted)                   | Preset key (today)                      | llama-swap `cmd` flag                                                | Notes                                                                                           |
+| ------------------------------------------------------ | --------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `model` (from `hfRepo`/`hfFile`)                       | `model = <path>` (INI key, `-m`)        | `--model <path>`                                                     | path is `modelsDir/hfRepo/hfFile` ([llm.nix:106](../../../../modules/den/aspects/llm.nix#L106)) |
+| `mmproj.enable`                                        | `mmproj = <path>`                       | `--mmproj <path>`                                                    | vision projector                                                                                |
+| `threads` / `defaultThreads`                           | `threads`                               | `--threads N`                                                        | `-t`                                                                                            |
+| `flashAttention`                                       | `flash-attn`                            | `--flash-attn {on,off,auto}`                                         | `-fa`                                                                                           |
+| `cpuRange` / `cpuStrict`                               | `cpu-range` / `cpu-strict`              | `--cpu-range` / `--cpu-strict`                                       | off on brys, see §2.5                                                                           |
+| `loadMode`                                             | `load-mode`                             | `--load-mode`                                                        |                                                                                                 |
+| `contextSize`                                          | `ctx-size`                              | `--ctx-size N`                                                       | `-c`                                                                                            |
+| `ropeScaling`/`ropeScale`/`ropeFreqBase`/`yarnOrigCtx` | same                                    | `--rope-scaling`/`--rope-scale`/`--rope-freq-base`/`--yarn-orig-ctx` |                                                                                                 |
+| `cacheTypeK`/`cacheTypeV`                              | same                                    | `--cache-type-k`/`--cache-type-v`                                    | `-ctk`/`-ctv`                                                                                   |
+| `cacheRam`                                             | `cache-ram`                             | `--cache-ram N`                                                      | `-cram`                                                                                         |
+| `ctxCheckpoints` / `checkpointMinStep`                 | same                                    | `--ctx-checkpoints` / `--checkpoint-min-step`                        | needs the sessions build                                                                        |
+| `sessionHeaders`                                       | `slot-save-path` + `slot-save-sessions` | `--slot-save-path D` + `--slot-save-sessions H`                      | see §5                                                                                          |
+| `sessionMaxSessions`                                   | `slot-save-sessions-max`                | `--slot-save-sessions-max N`                                         |                                                                                                 |
+| `batchSize` / `ubatchSize`                             | same                                    | `--batch-size` / `--ubatch-size`                                     | `-b`/`-ub`                                                                                      |
+| `nGpuLayers`                                           | `n-gpu-layers`                          | `--n-gpu-layers N`                                                   | `-ngl`                                                                                          |
+| `cpuMoe`                                               | `cpu-moe = on`                          | `--cpu-moe`                                                          |                                                                                                 |
+| `noKvOffload`                                          | `no-kv-offload = on`                    | `--no-kv-offload`                                                    |                                                                                                 |
+| `draftNGpuLayers`                                      | `n-gpu-layers-draft`                    | `--n-gpu-layers-draft N`                                             |                                                                                                 |
+| `device`                                               | `device`                                | `--device <name>`                                                    | `Vulkan0` for the grunt                                                                         |
+| `mmap`                                                 | `mmap = on/off`                         | `--mmap` / `--no-mmap`                                               | `null` omits it (v0.6.0 dropped it)                                                             |
+| `parallel`                                             | `parallel`                              | `--parallel N`                                                       | `-np`                                                                                           |
+| `kvUnified`                                            | `kv-unified = on/off`                   | `--kv-unified` / `--no-kv-unified`                                   |                                                                                                 |
+| `reasoning`                                            | `reasoning`                             | `--reasoning {on,off,auto}`                                          | `-rea`                                                                                          |
+| `reasoningEffort`                                      | `reasoning-effort`                      | `--reasoning-effort`                                                 |                                                                                                 |
+| `draft.enable` → `specType`                            | `spec-type`                             | `--spec-type`                                                        |                                                                                                 |
+| `draft.enable` → draft file                            | `model-draft`                           | `--model-draft <path>`                                               |                                                                                                 |
+| `specDraftNMax`/`PMin`/`Prio`                          | same                                    | `--spec-draft-n-max`/`-p-min`/`-prio`                                |                                                                                                 |
+| `models.<name>.aliases`                                | `alias = a,b`                           | llama-swap top-level `aliases:` list                                 | **not** a `llama-server` flag (§3)                                                              |
+| router `modelsMax`                                     | `--models-max N`                        | llama-swap `routing` policy (groups/matrix)                          | the router concept disappears                                                                   |
+| router `threads`                                       | `--threads N`                           | drop or fold into the child `--threads`                              | llama-swap itself is not a compute process                                                      |
 
 The aspect's `presetSection` renderer
 ([llm.nix:133-250](../../../../modules/den/aspects/llm.nix#L133)) becomes a `cmdLines`
@@ -148,9 +148,9 @@ generator.
 # measured ~90-120 s for a frontier swap, so give it generous headroom.
 healthCheckTimeout: 900
 logLevel: info
-includeAliasesInList: true          # /v1/models lists every tier alias (§3)
+includeAliasesInList: true # /v1/models lists every tier alias (§3)
 startPort: 10001
-globalTTL: 0                        # never auto-unload; see §5
+globalTTL: 0 # never auto-unload; see §5
 unloadTimeout: 30
 
 routing:
@@ -160,13 +160,13 @@ routing:
       matrix:
         vars: { ds4: deepseek-v4-flash, qw: qwen3.8-flash-next, g4: qwen3.5-4b }
         evict_costs:
-          ds4: 1000                 # frontier: never evict for a grunt
-          qw: 1000                  # orchestrator: never evict for a grunt
-          g4: 1                     # grunt: cheap to reload
+          ds4: 1000 # frontier: never evict for a grunt
+          qw: 1000 # orchestrator: never evict for a grunt
+          g4: 1 # grunt: cheap to reload
         sets:
-          main:  "ds4 & g4"         # DS4 frontier + grunt coexist
-          qmain: "qw & g4"          # Qwen orchestrator + grunt coexist
-          lone:  "(ds4 | qw)"       # a frontier alone (grunt not preloaded)
+          main: "ds4 & g4" # DS4 frontier + grunt coexist
+          qmain: "qw & g4" # Qwen orchestrator + grunt coexist
+          lone: "(ds4 | qw)" # a frontier alone (grunt not preloaded)
   scheduler:
     use: fifo
     settings:
@@ -188,7 +188,7 @@ models:
       - deepseek-v4-flash-think
       - deepseek-v4-flash-256k-think
       # ... the full ds4Aliases list, see hosts/brys/llm.nix:149
-    ttl: 0                          # stay resident once warm
+    ttl: 0 # stay resident once warm
     cmd: |
       llama-server --port ${PORT}
       --model /var/lib/kdn/llms/models/unsloth/DeepSeek-V4-Flash-GGUF/UD-IQ3_XXS/DeepSeek-V4-Flash-UD-IQ3_XXS-00001-of-00004.gguf
@@ -214,7 +214,7 @@ models:
       - qwen3.8-flash-next-768k
       - qwen3.8-flash-next-512k
       # ... the full qwenTierSuffixes list, see hosts/brys/llm.nix:165
-    ttl: 0                          # the orchestrator stays warm
+    ttl: 0 # the orchestrator stays warm
     cmd: |
       llama-server --port ${PORT}
       --model /var/lib/kdn/llms/models/unsloth/Qwen3.8-Flash-Next-GGUF/UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf
@@ -239,8 +239,8 @@ models:
 
   qwen3.5-4b:
     name: "Qwen3.5-4B (grunt)"
-    aliases: [ grunt ]
-    ttl: 300                        # a grunt may idle-unload; cheap to reload
+    aliases: [grunt]
+    ttl: 300 # a grunt may idle-unload; cheap to reload
     cmd: |
       llama-server --port ${PORT}
       --model /var/lib/kdn/llms/models/unsloth/Qwen3.5-4B-GGUF/Qwen3.5-4B-Q4_K_M.gguf
@@ -264,13 +264,13 @@ routing:
     settings:
       groups:
         frontier:
-          persistent: true          # other groups can never unload these
-          swap: true                # DS4 and Qwen swap among themselves
-          members: [ deepseek-v4-flash, qwen3.8-flash-next ]
+          persistent: true # other groups can never unload these
+          swap: true # DS4 and Qwen swap among themselves
+          members: [deepseek-v4-flash, qwen3.8-flash-next]
         grunts:
-          swap: false               # grunts coexist with each other
-          exclusive: false          # loading a grunt does not unload `frontier`
-          members: [ qwen3.5-4b, qwen3.5-9b ]
+          swap: false # grunts coexist with each other
+          exclusive: false # loading a grunt does not unload `frontier`
+          members: [qwen3.5-4b, qwen3.5-9b]
 ```
 
 `groups.<name>.persistent: true` means "other groups can never unload this group's
@@ -283,7 +283,7 @@ the smaller YAML.
 and it generalises to the future roster (a second frontier candidate, a vision model
 that only coexists with one family). `evict_costs: { ds4: 1000, qw: 1000, g4: 1 }` on
 the sets in §2.2 gives: any set keeping a frontier (`main`, `qmain`) beats any set that
-drops it, so a grunt request evicts the *other grunt*, never the frontier. This is the
+drops it, so a grunt request evicts the _other grunt_, never the frontier. This is the
 config the scheduler research already worked out
 ([llama-router-scheduler.research.md §3](llama-router-scheduler.research.md)).
 
@@ -293,13 +293,13 @@ data; the generator picks one.
 
 ### 2.4 "Never evict the orchestrator" — why either engine is enough
 
-| Rule | Group engine | Matrix engine |
-|---|---|---|
-| A grunt request never evicts Qwen/DS4 | `frontier.persistent: true` | `evict_costs: 1000` |
-| Qwen and DS4 swap only among themselves | `frontier.swap: true` | sets `main`/`qmain`/`lone` |
-| Grunts coexist | `grunts.swap: false` | set `main` = `ds4 & g4` |
-| Active-request protection | ttl resets on each request; a swap happens only between turns | same |
-| Priority | `scheduler.fifo.priority` | same |
+| Rule                                    | Group engine                                                  | Matrix engine              |
+| --------------------------------------- | ------------------------------------------------------------- | -------------------------- |
+| A grunt request never evicts Qwen/DS4   | `frontier.persistent: true`                                   | `evict_costs: 1000`        |
+| Qwen and DS4 swap only among themselves | `frontier.swap: true`                                         | sets `main`/`qmain`/`lone` |
+| Grunts coexist                          | `grunts.swap: false`                                          | set `main` = `ds4 & g4`    |
+| Active-request protection               | ttl resets on each request; a swap happens only between turns | same                       |
+| Priority                                | `scheduler.fifo.priority`                                     | same                       |
 
 ### 2.5 Fields that must NOT appear on brys
 
@@ -340,14 +340,14 @@ llama-swap has first-class `aliases:` on each model. Its `/v1/models` listing in
 the aliases when `includeAliasesInList: true` (see the config example). So the mapping
 is:
 
-| Source (aspect / brys) | llama-swap |
-|---|---|
-| `models.<name>.aliases` ([llm.nix:557](../../../../modules/den/aspects/llm.nix#L557)) | `models.<id>.aliases:` |
-| `alias = a,b` preset line ([llm.nix:216](../../../../modules/den/aspects/llm.nix#L216)) | the same `aliases:` list (remove from argv) |
+| Source (aspect / brys)                                                                                | llama-swap                                            |
+| ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `models.<name>.aliases` ([llm.nix:557](../../../../modules/den/aspects/llm.nix#L557))                 | `models.<id>.aliases:`                                |
+| `alias = a,b` preset line ([llm.nix:216](../../../../modules/den/aspects/llm.nix#L216))               | the same `aliases:` list (remove from argv)           |
 | `routerProxyEnv` `ROUTER_<NAME>_MODELS` ([llm.nix:280](../../../../modules/den/aspects/llm.nix#L280)) | **not needed** — llama-swap answers to all ids itself |
-| `ds4Aliases` ([llm.nix:149](../../../../hosts/brys/llm.nix#L149)) | `deepseek-v4-flash.aliases` |
-| `qwenAliases` ([llm.nix:174](../../../../hosts/brys/llm.nix#L174)) | `qwen3.8-flash-next.aliases` |
-| `grunt` alias ([llm-routers.nix:110](../../../../hosts/brys/llm-routers.nix#L110)) | `qwen3.5-4b.aliases: [ grunt ]` |
+| `ds4Aliases` ([llm.nix:149](../../../../hosts/brys/llm.nix#L149))                                     | `deepseek-v4-flash.aliases`                           |
+| `qwenAliases` ([llm.nix:174](../../../../hosts/brys/llm.nix#L174))                                    | `qwen3.8-flash-next.aliases`                          |
+| `grunt` alias ([llm-routers.nix:110](../../../../hosts/brys/llm-routers.nix#L110))                    | `qwen3.5-4b.aliases: [ grunt ]`                       |
 
 Two behaviours to confirm and encode:
 
@@ -432,7 +432,7 @@ to the Qwen child unchanged in §2.2. The store directory, group and prune timer
 
 ### Does llama-swap's lifecycle help or hurt warm start?
 
-- **Helps.** llama-swap's `ttl` is an *inactivity* timer that resets on every request
+- **Helps.** llama-swap's `ttl` is an _inactivity_ timer that resets on every request
   (ttl-and-unloading). Setting `ttl: 0` on the Qwen model means **never auto-unload** —
   the orchestrator stays warm indefinitely, which is exactly what the current
   `--sleep-idle-seconds -1` gives. A `persistent`/high-cost frontier keeps the model
@@ -442,8 +442,8 @@ to the Qwen child unchanged in §2.2. The store directory, group and prune timer
   restart (the files are on disk and keyed by `x-session-id`), so a client that carries
   its session id resumes from the saved state instead of re-prefilling — the session KV
   is warm even when the process is cold. This is why the session store and llama-swap
-  lifecycle are complementary, not redundant: the store covers the *restart* case, the
-  `ttl: 0`/persistent covers the *idle* case.
+  lifecycle are complementary, not redundant: the store covers the _restart_ case, the
+  `ttl: 0`/persistent covers the _idle_ case.
 - **Constraint.** The session cache needs the `llama-cpp-sessions` build. While the grunt
   is colocated it forces the Vulkan no-BLAS build on the whole aspect, so the session
   options are inert ([llm.nix:192-206](../../../../hosts/brys/llm.nix#L192)). With llama-swap
@@ -469,7 +469,7 @@ disk. There is no differential reload and no `/api/config/reload`
    proxies to a single upstream; it (or Caddy, already deployed and hitless — SSE is not
    closed, [router-hot-reload.research.md §4](router-hot-reload.research.md)) is the
    layer that changes routes without a restart. With llama-swap owning the children, the
-   `model=` id is the only route key; a *rename* of a served id is handled by adding the
+   `model=` id is the only route key; a _rename_ of a served id is handled by adding the
    new id as an **alias** (llama-swap picks up aliases only via reload, so a rename still
    needs a restart — but an alias **addition** to a new model id can be an additive
    config, restarted at a quiet moment).
@@ -478,7 +478,7 @@ disk. There is no differential reload and no `/api/config/reload`
    simple "regenerate at activation" rule is in place; it is not needed for the initial
    migration.
 
-The old per-router behaviour is actually *better* for a single-router edit: llama-server
+The old per-router behaviour is actually _better_ for a single-router edit: llama-server
 router mode reloads one preset hitlessly via `GET /models?reload=1`, evicting only the
 edited model ([router-hot-reload.research.md §3](router-hot-reload.research.md)). The
 migration **gives that up** in exchange for the routing/priority features; the mitigation
@@ -513,17 +513,17 @@ options.kdn.llm.local.swap = {
 
 ### 7.2 What changes in the aspect
 
-| Today | After |
-|---|---|
-| `presetSection` → INI text ([llm.nix:133](../../../../modules/den/aspects/llm.nix#L133)) | `cmdLines` → argv words per model; render one `models.<id>.cmd` YAML block |
-| `presetIni` ([llm.nix:258](../../../../modules/den/aspects/llm.nix#L258)) | `swapConfig` = `pkgs.formats.yaml`-generated `config.yaml` (or the nixpkgs `services.llama-swap.settings` freeform — see [.flake.patches/.../llama-swap.nix:69](../../../../.flake.patches/nixpkgs/repo/nixos/modules/services/networking/llama-swap.nix#L69)) |
-| `services.llama-cpp` ([llm.nix:1296](../../../../modules/den/aspects/llm.nix#L1296)) | `services.llama-swap = { enable = cfg.swap.enable; settings = swapConfig; ... }` |
-| `routerUnits` + `routers` ([llm.nix:270-354](../../../../modules/den/aspects/llm.nix#L270)) | **removed** when `swap.enable` — the routing policy replaces them |
-| `routerProxyEnv` ([llm.nix:280](../../../../modules/den/aspects/llm.nix#L280)) | **removed** — the proxy points at one upstream (llama-swap), no `ROUTER_*` table |
-| `compatProxy.UPSTREAM_URL = http://127.0.0.1:<server.port>` ([llm.nix:1355](../../../../modules/den/aspects/llm.nix#L1355)) | points at `http://127.0.0.1:<swap.port>` when `swap.enable` |
-| `alias = …` preset line ([llm.nix:216](../../../../modules/den/aspects/llm.nix#L216)) | model `aliases:` list |
-| router `modelsMax` ([llm.nix:521](../../../../modules/den/aspects/llm.nix#L521)) | the `routing` engine (§2.3); the `routers.<name>` option is deprecated |
-| `models.<name>.mainRouter` ([llm.nix:547](../../../../modules/den/aspects/llm.nix#L547)) | no longer needed; kept as a no-op alias for the small-set transition, or dropped |
+| Today                                                                                                                       | After                                                                                                                                                                                                                                                          |
+| --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `presetSection` → INI text ([llm.nix:133](../../../../modules/den/aspects/llm.nix#L133))                                    | `cmdLines` → argv words per model; render one `models.<id>.cmd` YAML block                                                                                                                                                                                     |
+| `presetIni` ([llm.nix:258](../../../../modules/den/aspects/llm.nix#L258))                                                   | `swapConfig` = `pkgs.formats.yaml`-generated `config.yaml` (or the nixpkgs `services.llama-swap.settings` freeform — see [.flake.patches/.../llama-swap.nix:69](../../../../.flake.patches/nixpkgs/repo/nixos/modules/services/networking/llama-swap.nix#L69)) |
+| `services.llama-cpp` ([llm.nix:1296](../../../../modules/den/aspects/llm.nix#L1296))                                        | `services.llama-swap = { enable = cfg.swap.enable; settings = swapConfig; ... }`                                                                                                                                                                               |
+| `routerUnits` + `routers` ([llm.nix:270-354](../../../../modules/den/aspects/llm.nix#L270))                                 | **removed** when `swap.enable` — the routing policy replaces them                                                                                                                                                                                              |
+| `routerProxyEnv` ([llm.nix:280](../../../../modules/den/aspects/llm.nix#L280))                                              | **removed** — the proxy points at one upstream (llama-swap), no `ROUTER_*` table                                                                                                                                                                               |
+| `compatProxy.UPSTREAM_URL = http://127.0.0.1:<server.port>` ([llm.nix:1355](../../../../modules/den/aspects/llm.nix#L1355)) | points at `http://127.0.0.1:<swap.port>` when `swap.enable`                                                                                                                                                                                                    |
+| `alias = …` preset line ([llm.nix:216](../../../../modules/den/aspects/llm.nix#L216))                                       | model `aliases:` list                                                                                                                                                                                                                                          |
+| router `modelsMax` ([llm.nix:521](../../../../modules/den/aspects/llm.nix#L521))                                            | the `routing` engine (§2.3); the `routers.<name>` option is deprecated                                                                                                                                                                                         |
+| `models.<name>.mainRouter` ([llm.nix:547](../../../../modules/den/aspects/llm.nix#L547))                                    | no longer needed; kept as a no-op alias for the small-set transition, or dropped                                                                                                                                                                               |
 
 The download service ([llm.nix:1379](../../../../modules/den/aspects/llm.nix#L1379)), the
 session store ([llm.nix:1415](../../../../modules/den/aspects/llm.nix#L1415)), the Caddy

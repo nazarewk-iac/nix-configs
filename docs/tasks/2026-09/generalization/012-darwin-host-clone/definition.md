@@ -47,13 +47,13 @@ and formulas come from consumer options, so no adopter inherits the creator's ta
 The `Bundled?` column of the map flags every place where the current tree mixes concerns that den
 must split. The five biggest offenders:
 
-| Bundle | Concerns mixed in one merge |
-|---|---|
+| Bundle                                       | Concerns mixed in one merge                                              |
+| -------------------------------------------- | ------------------------------------------------------------------------ |
 | `modules/universal/default.nix` darwin block | Homebrew stack, host names, terminfo, a desktop default, root-user fixes |
-| `profile/machine/baseline` | 12 unrelated `kdn.*` enables, plus an unconditional personal-user enable |
-| `profile/machine/dev` | 18 language and tool enables behind one switch |
-| `headless/base` | 11 enables, plus the shell, the terminal and the editor |
-| `profile/user/kdn` | identity, git, gpg, browsers, secrets and packages in one module |
+| `profile/machine/baseline`                   | 12 unrelated `kdn.*` enables, plus an unconditional personal-user enable |
+| `profile/machine/dev`                        | 18 language and tool enables behind one switch                           |
+| `headless/base`                              | 11 enables, plus the shell, the terminal and the editor                  |
+| `profile/user/kdn`                           | identity, git, gpg, browsers, secrets and packages in one module         |
 
 ## §1 The capability map
 
@@ -64,56 +64,56 @@ target is `home`; the den class is `homeManager`.
 `New?` values: `exists` (ported already), `grow` (aspect exists, needs one more class), `new`,
 `skip` (out of the public chain), `n/a` (not a darwin capability).
 
-| Capability | Source module | den aspect | New? | Class | Personal value → option | Bundled? | Batch |
-|---|---|---|---|---|---|---|---|
-| Host entity, system, `stateVersion` | `hosts/<fork-host>/default.nix` | entity file | exists | darwin | none | no | B1 |
-| home-manager on darwin | `modules/universal/default.nix` | den battery | exists | homeManager | none | no | B1 |
-| Rosetta linux builder | `slots/rosetta-builder` | `kdn.rosetta-builder` | exists | darwin | none | no | B1 |
-| FIDO2 ssh-agent replacement | `slots/ssh-agent` | `kdn.ssh-agent` | exists | homeManager | none | no | B1 |
-| devenv CLI and shell hooks | `slots/devenv` | `kdn.devenv-cli` | exists | darwin, homeManager, devenv | none | no | B1 |
-| GitHub CLI | `slots/gh` | `kdn.gh` | exists | devenv | none | no | B1 |
-| MCP gateway | `slots/mcp` | `kdn.mcp` | exists | devenv | none | no | B1 |
-| MCP knowledge bases | `slots/mcp/basic-memory` | `kdn.mcp-basic-memory` | exists | devenv | knowledge paths → options | no | B1 |
-| MCP pretty print | `slots/mcp/pretty-print` | `kdn.mcp-pretty-print` | exists | devenv | none | no | B1 |
-| MCP traffic snoop | `slots/mcp/snoop` | `kdn.mcp-snoop` | exists | devenv | none | no | B1 |
-| opencode agent | `slots/opencode` | `kdn.opencode` | exists | devenv | none | no | B1 |
-| jj VCS setup | `slots/jj` | `kdn.jj` | exists | devenv | remote names → options | no | B1 |
-| jj fork workflow | `slots/jj/fork` | `kdn.jj-fork` | exists | devenv | remote names → options | no | B1 |
-| CA trust | `slots/ca` | `kdn.ca` | exists | devenv | extra CA files → option | no | B1 |
-| Primary user, uid, home dir | `profile/user/kdn` | `kdn.user` | new | darwin, homeManager | user name, uid → `kdn.user.name`, `kdn.user.uid` | yes | B2 |
-| `home.sessionPath` entries | `profile/machine/baseline` | `kdn.user` | new | homeManager | none | yes | B2 |
-| Nix daemon settings, substituters | `universal/nix/**`, `baseline` | `kdn.nix` | grow | darwin | none | yes | B3 |
-| Automatic Nix GC | `profile/machine/baseline` | `kdn.nix-gc` | new | darwin | schedule → option | yes | B3 |
-| zellij multiplexer | `headless/base` | `kdn.zellij` | grow | homeManager | theme, scrollback → options | yes | B3 |
-| fish shell and auto attach | `headless/base` | `kdn.fish` | new | homeManager | none | yes | B3 |
-| wezterm terminal | `headless/base` | `kdn.wezterm` | new | homeManager | key map → default | yes | B3 |
-| Default editor | `headless/base` | `kdn.editor` | new | homeManager | editor name → option | yes | B3 |
-| XDG user directories | `profile/machine/baseline` | `kdn.xdg` | new | homeManager | directory names → options | yes | B3 |
-| terminfo entries | `universal/default.nix` darwin | `kdn.terminfo` | new | darwin | none | yes | B4 |
-| Homebrew taps, casks, formulas | `universal/default.nix` darwin | `kdn.homebrew` | new | darwin | taps, casks → options | yes | B4 |
-| `computerName`, `localHostName` | `universal/default.nix` darwin | `kdn.hostname` | new | darwin | host name → option | yes | B4 |
-| root user shell and home fix | `universal/default.nix` darwin | `kdn.darwin-root` | new | darwin | none | yes | B4 |
-| Locale and time zone | `universal/locale` | `kdn.locale` | new | darwin, homeManager | locale, timezone → options | no | B4 |
-| sudo policy | `headless/base` | `kdn.sudo` | new | darwin | none | yes | B4 |
-| Split-DNS resolver files | `hosts/<fork-host>/default.nix` | `kdn.split-dns` | new | darwin | zone FQDN, nameserver → `kdn.split-dns.zones` | no | B4 |
-| git identity and credential helper | `profile/user/kdn` | `kdn.git` | new | homeManager | name, email, forge user → options | yes | B5 |
-| Commit signing and the route switch | `slots/signing` | `kdn.signing` | new | homeManager | signer key, principal → options | no | B5 |
-| angrr retention sweep | `profile/machine/baseline` | `kdn.angrr` | new | darwin | none | yes | B6 |
-| openssh server | `profile/machine/baseline` | `kdn.openssh` | new | darwin | authorized keys → option | yes | B6 |
-| SSH access topology dispatcher | `slots/ssh-access` | `kdn.ssh-access` | new | homeManager | host graph, identity file → options | no | B6 |
-| Managed directory cleanup | `universal/managed` | `kdn.managed-dirs` | new | darwin, homeManager | directory list → option | no | B6 |
-| `/run/configs` permission fix | `profile/machine/baseline` | `kdn.managed-dirs` | new | darwin | path list → option | yes | B6 |
-| App directory and persistence lists | `universal/apps` | `kdn.apps` | new | homeManager | none | no | B6 |
-| sops secret discovery | `security/secrets/sops` | `kdn.secrets` | new | darwin | sops folder → option | no | B7 |
-| Language toolchains | `profile/machine/dev` | one aspect per language | new | homeManager | none | yes | B8 |
-| Network toolset | `toolset/network` | `kdn.toolset-network` | new | darwin | none | yes | B8 |
-| GUI applications | `universal/default.nix`, `desktop/**` | `kdn.gui-apps` | new | darwin | app list → option | yes | B8 |
-| Theming and wallpaper | `universal/_stylix.nix` | `kdn.theme` | new | darwin, homeManager | wallpaper URL → option | no | out (§4) |
-| `/etc/kdn/source-flake` tree copy | `profile/machine/baseline` | none — drop it | skip | — | whole-tree store copy | yes | out (§4) |
-| gpg keys and the `pass` credential helper | `profile/user/kdn` | none | skip | — | personal key material | yes | out (§4) |
-| Employer git auth and signing | `<fork-only module>` | none | skip | — | employer tooling | — | out (§4) |
-| Employer machine profile | `<fork-only module>` | none | skip | — | employer policy | — | out (§4) |
-| Disks, boot, kernel, ZFS | `disks/**`, `hw/**` | — | n/a | nixos | — | — | §5 |
+| Capability                                | Source module                         | den aspect              | New?   | Class                       | Personal value → option                          | Bundled? | Batch    |
+| ----------------------------------------- | ------------------------------------- | ----------------------- | ------ | --------------------------- | ------------------------------------------------ | -------- | -------- |
+| Host entity, system, `stateVersion`       | `hosts/<fork-host>/default.nix`       | entity file             | exists | darwin                      | none                                             | no       | B1       |
+| home-manager on darwin                    | `modules/universal/default.nix`       | den battery             | exists | homeManager                 | none                                             | no       | B1       |
+| Rosetta linux builder                     | `slots/rosetta-builder`               | `kdn.rosetta-builder`   | exists | darwin                      | none                                             | no       | B1       |
+| FIDO2 ssh-agent replacement               | `slots/ssh-agent`                     | `kdn.ssh-agent`         | exists | homeManager                 | none                                             | no       | B1       |
+| devenv CLI and shell hooks                | `slots/devenv`                        | `kdn.devenv-cli`        | exists | darwin, homeManager, devenv | none                                             | no       | B1       |
+| GitHub CLI                                | `slots/gh`                            | `kdn.gh`                | exists | devenv                      | none                                             | no       | B1       |
+| MCP gateway                               | `slots/mcp`                           | `kdn.mcp`               | exists | devenv                      | none                                             | no       | B1       |
+| MCP knowledge bases                       | `slots/mcp/basic-memory`              | `kdn.mcp-basic-memory`  | exists | devenv                      | knowledge paths → options                        | no       | B1       |
+| MCP pretty print                          | `slots/mcp/pretty-print`              | `kdn.mcp-pretty-print`  | exists | devenv                      | none                                             | no       | B1       |
+| MCP traffic snoop                         | `slots/mcp/snoop`                     | `kdn.mcp-snoop`         | exists | devenv                      | none                                             | no       | B1       |
+| opencode agent                            | `slots/opencode`                      | `kdn.opencode`          | exists | devenv                      | none                                             | no       | B1       |
+| jj VCS setup                              | `slots/jj`                            | `kdn.jj`                | exists | devenv                      | remote names → options                           | no       | B1       |
+| jj fork workflow                          | `slots/jj/fork`                       | `kdn.jj-fork`           | exists | devenv                      | remote names → options                           | no       | B1       |
+| CA trust                                  | `slots/ca`                            | `kdn.ca`                | exists | devenv                      | extra CA files → option                          | no       | B1       |
+| Primary user, uid, home dir               | `profile/user/kdn`                    | `kdn.user`              | new    | darwin, homeManager         | user name, uid → `kdn.user.name`, `kdn.user.uid` | yes      | B2       |
+| `home.sessionPath` entries                | `profile/machine/baseline`            | `kdn.user`              | new    | homeManager                 | none                                             | yes      | B2       |
+| Nix daemon settings, substituters         | `universal/nix/**`, `baseline`        | `kdn.nix`               | grow   | darwin                      | none                                             | yes      | B3       |
+| Automatic Nix GC                          | `profile/machine/baseline`            | `kdn.nix-gc`            | new    | darwin                      | schedule → option                                | yes      | B3       |
+| zellij multiplexer                        | `headless/base`                       | `kdn.zellij`            | grow   | homeManager                 | theme, scrollback → options                      | yes      | B3       |
+| fish shell and auto attach                | `headless/base`                       | `kdn.fish`              | new    | homeManager                 | none                                             | yes      | B3       |
+| wezterm terminal                          | `headless/base`                       | `kdn.wezterm`           | new    | homeManager                 | key map → default                                | yes      | B3       |
+| Default editor                            | `headless/base`                       | `kdn.editor`            | new    | homeManager                 | editor name → option                             | yes      | B3       |
+| XDG user directories                      | `profile/machine/baseline`            | `kdn.xdg`               | new    | homeManager                 | directory names → options                        | yes      | B3       |
+| terminfo entries                          | `universal/default.nix` darwin        | `kdn.terminfo`          | new    | darwin                      | none                                             | yes      | B4       |
+| Homebrew taps, casks, formulas            | `universal/default.nix` darwin        | `kdn.homebrew`          | new    | darwin                      | taps, casks → options                            | yes      | B4       |
+| `computerName`, `localHostName`           | `universal/default.nix` darwin        | `kdn.hostname`          | new    | darwin                      | host name → option                               | yes      | B4       |
+| root user shell and home fix              | `universal/default.nix` darwin        | `kdn.darwin-root`       | new    | darwin                      | none                                             | yes      | B4       |
+| Locale and time zone                      | `universal/locale`                    | `kdn.locale`            | new    | darwin, homeManager         | locale, timezone → options                       | no       | B4       |
+| sudo policy                               | `headless/base`                       | `kdn.sudo`              | new    | darwin                      | none                                             | yes      | B4       |
+| Split-DNS resolver files                  | `hosts/<fork-host>/default.nix`       | `kdn.split-dns`         | new    | darwin                      | zone FQDN, nameserver → `kdn.split-dns.zones`    | no       | B4       |
+| git identity and credential helper        | `profile/user/kdn`                    | `kdn.git`               | new    | homeManager                 | name, email, forge user → options                | yes      | B5       |
+| Commit signing and the route switch       | `slots/signing`                       | `kdn.signing`           | new    | homeManager                 | signer key, principal → options                  | no       | B5       |
+| angrr retention sweep                     | `profile/machine/baseline`            | `kdn.angrr`             | new    | darwin                      | none                                             | yes      | B6       |
+| openssh server                            | `profile/machine/baseline`            | `kdn.openssh`           | new    | darwin                      | authorized keys → option                         | yes      | B6       |
+| SSH access topology dispatcher            | `slots/ssh-access`                    | `kdn.ssh-access`        | new    | homeManager                 | host graph, identity file → options              | no       | B6       |
+| Managed directory cleanup                 | `universal/managed`                   | `kdn.managed-dirs`      | new    | darwin, homeManager         | directory list → option                          | no       | B6       |
+| `/run/configs` permission fix             | `profile/machine/baseline`            | `kdn.managed-dirs`      | new    | darwin                      | path list → option                               | yes      | B6       |
+| App directory and persistence lists       | `universal/apps`                      | `kdn.apps`              | new    | homeManager                 | none                                             | no       | B6       |
+| sops secret discovery                     | `security/secrets/sops`               | `kdn.secrets`           | new    | darwin                      | sops folder → option                             | no       | B7       |
+| Language toolchains                       | `profile/machine/dev`                 | one aspect per language | new    | homeManager                 | none                                             | yes      | B8       |
+| Network toolset                           | `toolset/network`                     | `kdn.toolset-network`   | new    | darwin                      | none                                             | yes      | B8       |
+| GUI applications                          | `universal/default.nix`, `desktop/**` | `kdn.gui-apps`          | new    | darwin                      | app list → option                                | yes      | B8       |
+| Theming and wallpaper                     | `universal/_stylix.nix`               | `kdn.theme`             | new    | darwin, homeManager         | wallpaper URL → option                           | no       | out (§4) |
+| `/etc/kdn/source-flake` tree copy         | `profile/machine/baseline`            | none — drop it          | skip   | —                           | whole-tree store copy                            | yes      | out (§4) |
+| gpg keys and the `pass` credential helper | `profile/user/kdn`                    | none                    | skip   | —                           | personal key material                            | yes      | out (§4) |
+| Employer git auth and signing             | `<fork-only module>`                  | none                    | skip   | —                           | employer tooling                                 | —        | out (§4) |
+| Employer machine profile                  | `<fork-only module>`                  | none                    | skip   | —                           | employer policy                                  | —        | out (§4) |
+| Disks, boot, kernel, ZFS                  | `disks/**`, `hw/**`                   | —                       | n/a    | nixos                       | —                                                | —        | §5       |
 
 ## §2 The batches
 
@@ -301,17 +301,17 @@ per-machine data.
 
 ## §4 What stays out
 
-| Piece | Reason |
-|---|---|
-| `<fork-only module>` machine profile | employer policy; fork chain only |
-| `<fork-only module>` password-manager git auth and signing | employer tooling; fork chain only |
-| Employer Homebrew taps and formulas | employer-specific; an adopter must never inherit them |
-| The employer email principal in `allowedSigners` | employer identity |
-| The two split-DNS zone values on the real host | homelab FQDNs; the aspect keeps the option, the entity passes a placeholder |
-| `profile/user/kdn` identity data | real name, email, forge user names, gpg keys, `authorized_keys`, u2f parts, browser profiles, password-store path, `initialHashedPassword`, uid — no clean option boundary |
-| Theming and the wallpaper URL | §3 gap 3; changes no capability, adds a personal value |
-| `/etc/kdn/source-flake` | a whole-tree store copy; task 011 removes it |
-| The `desktop/**` tree | Linux only; a darwin host reaches almost none of it |
+| Piece                                                      | Reason                                                                                                                                                                     |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<fork-only module>` machine profile                       | employer policy; fork chain only                                                                                                                                           |
+| `<fork-only module>` password-manager git auth and signing | employer tooling; fork chain only                                                                                                                                          |
+| Employer Homebrew taps and formulas                        | employer-specific; an adopter must never inherit them                                                                                                                      |
+| The employer email principal in `allowedSigners`           | employer identity                                                                                                                                                          |
+| The two split-DNS zone values on the real host             | homelab FQDNs; the aspect keeps the option, the entity passes a placeholder                                                                                                |
+| `profile/user/kdn` identity data                           | real name, email, forge user names, gpg keys, `authorized_keys`, u2f parts, browser profiles, password-store path, `initialHashedPassword`, uid — no clean option boundary |
+| Theming and the wallpaper URL                              | §3 gap 3; changes no capability, adds a personal value                                                                                                                     |
+| `/etc/kdn/source-flake`                                    | a whole-tree store copy; task 011 removes it                                                                                                                               |
+| The `desktop/**` tree                                      | Linux only; a darwin host reaches almost none of it                                                                                                                        |
 
 ## §5 Three follow-on NixOS hosts, and the parity check
 
@@ -363,7 +363,7 @@ batch.
 
 **`drvPath` equality will NOT hold between a den host and the matching existing configuration.**
 The module structure differs, so Pattern V1 does not apply here. Do not spend a run on it. Pattern
-V1 still holds *inside* the den route — between `denLib.imports` and the `flakeModule` route — and
+V1 still holds _inside_ the den route — between `denLib.imports` and the `flakeModule` route — and
 that is a different comparison.
 
 Compare capabilities instead. For each command below, `signal` means a difference is a real defect;
@@ -385,18 +385,18 @@ package the clone drops on purpose, or a version move you expect. **Signal.**
 
 The rest, in cost order:
 
-| Comparison | Command shape | Verdict |
-|---|---|---|
-| Service name sets | `nix eval … .config.launchd.daemons --apply 'builtins.attrNames'` (darwin), `.config.systemd.services` (nixos) | signal |
-| Users and uids | `nix eval --json … .config.users.users --apply 'us: builtins.mapAttrs (_: u: u.uid) us'` | signal |
-| `/etc` file name set | `nix eval … .config.environment.etc --apply 'builtins.attrNames'` | signal |
-| Home package name set | `nix eval … .config.home.packages --apply 'map (p: p.name)'` on each home configuration | signal |
-| Mount points | `nix eval … .config.fileSystems --apply 'builtins.attrNames'` | signal, nixos only |
-| Kernel version | `nix eval --raw … .config.boot.kernelPackages.kernel.version` | signal, nixos only |
-| Networking values | `nix eval --json … .config.networking --apply 'n: { inherit (n) hostName; firewall = n.firewall.allowedTCPPorts; }'` | signal |
-| Closure content | `nix store diff-closures <old-toplevel> <den-toplevel>` | signal for a missing package or a version move; noise for size deltas under a few MB |
-| Derivation structure | `nix-diff <old-drv> <den-drv>` | noise until every name set above agrees; then it answers "why" |
-| `drvPath` equality | — | **noise. It always differs. Do not run it.** |
+| Comparison            | Command shape                                                                                                        | Verdict                                                                              |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Service name sets     | `nix eval … .config.launchd.daemons --apply 'builtins.attrNames'` (darwin), `.config.systemd.services` (nixos)       | signal                                                                               |
+| Users and uids        | `nix eval --json … .config.users.users --apply 'us: builtins.mapAttrs (_: u: u.uid) us'`                             | signal                                                                               |
+| `/etc` file name set  | `nix eval … .config.environment.etc --apply 'builtins.attrNames'`                                                    | signal                                                                               |
+| Home package name set | `nix eval … .config.home.packages --apply 'map (p: p.name)'` on each home configuration                              | signal                                                                               |
+| Mount points          | `nix eval … .config.fileSystems --apply 'builtins.attrNames'`                                                        | signal, nixos only                                                                   |
+| Kernel version        | `nix eval --raw … .config.boot.kernelPackages.kernel.version`                                                        | signal, nixos only                                                                   |
+| Networking values     | `nix eval --json … .config.networking --apply 'n: { inherit (n) hostName; firewall = n.firewall.allowedTCPPorts; }'` | signal                                                                               |
+| Closure content       | `nix store diff-closures <old-toplevel> <den-toplevel>`                                                              | signal for a missing package or a version move; noise for size deltas under a few MB |
+| Derivation structure  | `nix-diff <old-drv> <den-drv>`                                                                                       | noise until every name set above agrees; then it answers "why"                       |
+| `drvPath` equality    | —                                                                                                                    | **noise. It always differs. Do not run it.**                                         |
 
 `nix store diff-closures` needs both `system.build.toplevel` paths, so it needs two real builds. Run
 it only after the name-set diffs are clean, because a name-set diff finds the same defect for a

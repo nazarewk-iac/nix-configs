@@ -26,17 +26,17 @@ Sources:
 `module.nix:219-249` generates one yaml file with `pkgs.formats.yaml`. Every field and where it
 comes from:
 
-| yaml field | source | changes when |
-|---|---|---|
-| `containerd.user: false` | constant, `module.nix:222` | never |
-| `cpus` | `cfg.cores`, `module.nix:224` | `nix-rosetta-builder.cores` edit |
-| `disk` | `cfg.diskSize`, `module.nix:226` | `nix-rosetta-builder.diskSize` edit |
-| `images[0].location` | `${imageWithFinalConfig}/${imageWithFinalConfig.passthru.filePath}`, `module.nix:230` | **any nixpkgs bump**; any input of the image derivation (section 3) |
-| `memory` | `cfg.memory`, `module.nix:234` | `nix-rosetta-builder.memory` edit |
-| `mounts[0].location` | `${workingDir}/linux-sshd-keys`, `module.nix:236-241` | `nix-rosetta-builder.workingDir` edit |
-| `rosetta.enabled: true` | constant, `module.nix:243` | never |
-| `ssh.launchdSocketName` | `"Listener"` only when `cfg.onDemand`, `module.nix:246` | `onDemand` edit |
-| `ssh.localPort` | `cfg.port`, `module.nix:247` | `port` edit |
+| yaml field               | source                                                                                | changes when                                                        |
+| ------------------------ | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `containerd.user: false` | constant, `module.nix:222`                                                            | never                                                               |
+| `cpus`                   | `cfg.cores`, `module.nix:224`                                                         | `nix-rosetta-builder.cores` edit                                    |
+| `disk`                   | `cfg.diskSize`, `module.nix:226`                                                      | `nix-rosetta-builder.diskSize` edit                                 |
+| `images[0].location`     | `${imageWithFinalConfig}/${imageWithFinalConfig.passthru.filePath}`, `module.nix:230` | **any nixpkgs bump**; any input of the image derivation (section 3) |
+| `memory`                 | `cfg.memory`, `module.nix:234`                                                        | `nix-rosetta-builder.memory` edit                                   |
+| `mounts[0].location`     | `${workingDir}/linux-sshd-keys`, `module.nix:236-241`                                 | `nix-rosetta-builder.workingDir` edit                               |
+| `rosetta.enabled: true`  | constant, `module.nix:243`                                                            | never                                                               |
+| `ssh.launchdSocketName`  | `"Listener"` only when `cfg.onDemand`, `module.nix:246`                               | `onDemand` edit                                                     |
+| `ssh.localPort`          | `cfg.port`, `module.nix:247`                                                          | `port` edit                                                         |
 
 The file lives at a `/nix/store/<hash>-rosetta-builder.yaml` path. The hash covers the content,
 so one changed line moves the path.
@@ -107,7 +107,7 @@ So the store path, and with it the yaml, changes on:
   `hosts/anji/default.nix:227-228` warns about;
 - a change to the fork's `package.nix` / `constants.nix` (a new fork rev).
 
-Nothing about the guest *disk* enters the yaml: lima copies the image to `basedisk` at create.
+Nothing about the guest _disk_ enters the yaml: lima copies the image to `basedisk` at create.
 After create, the stored yaml only names the image for a future recreate, so a mismatch on that
 line destroys a healthy guest without ever re-reading the new image.
 

@@ -14,26 +14,26 @@ No `jj` or `git` mutation ran. No `nix` command used `.#` or `git+file:` inside 
 
 ## Verdicts
 
-| Criterion | Verdict |
-|---|---|
-| 2 — an external adopter imports a resolved aspect, with no den in their own code | **PASS, with two recorded limits** |
-| 1 — a `devenv` class can exist | **PASS** |
-| 3 — conditional-imports requirement | **BLOCKED on checkpoint 005** |
-| 4 — the 1→N mixed-aspect collision | **REFUTED — it does not reproduce** |
+| Criterion                                                                        | Verdict                             |
+| -------------------------------------------------------------------------------- | ----------------------------------- |
+| 2 — an external adopter imports a resolved aspect, with no den in their own code | **PASS, with two recorded limits**  |
+| 1 — a `devenv` class can exist                                                   | **PASS**                            |
+| 3 — conditional-imports requirement                                              | **BLOCKED on checkpoint 005**       |
+| 4 — the 1→N mixed-aspect collision                                               | **REFUTED — it does not reproduce** |
 
 Recommendation: **continue to the additive `modules/den/` phase.** Read
 [Recommendation](#recommendation) for the conditions.
 
 ## Revisions under test
 
-| Component | Revision | Date | Note |
-|---|---|---|---|
-| den `main` | `d50f0fce6fc1a8ba00fd0d310746d0e8ecc2f70d` | 2026-09-04 | `fix: collapse agreeing definitions in the route merge (#674) (#675)` |
-| den `v0.18.0` | `5df0987658d6e44268abba953406480e9f066928` | 2026-06-16 | the tag commit; the task file records the release as 2026-06-23 |
-| `denful/nix-effects` | `c3c68a45deb892d028711eeff8b80937e30a90dd` | 2026-05-13 | den's own `templates/ci/flake.lock` pins this |
-| `cachix/devenv` | `190959a9a4bb52d4802f076a90c3c4e3aa2e6fa2` | 2026-09-07 | the revision this repository pins in both `flake.lock` and `devenv.lock` |
-| nixpkgs (criteria 2, 4) | `path:/nix/store/j0xsrr9a6dx6b4rf3lnzmak43ff82cs6-source` | — | `NixOS/nixpkgs` `d6524aaca2ff07876657ae2b323f24be4874944b`, already in the store |
-| nixpkgs (criterion 1) | `cachix/devenv-nixpkgs/256551e45f6303e142ab4a98be1bf243feb77dc0` | 2026-08-26 | devenv needs its own channel |
+| Component               | Revision                                                         | Date       | Note                                                                             |
+| ----------------------- | ---------------------------------------------------------------- | ---------- | -------------------------------------------------------------------------------- |
+| den `main`              | `d50f0fce6fc1a8ba00fd0d310746d0e8ecc2f70d`                       | 2026-09-04 | `fix: collapse agreeing definitions in the route merge (#674) (#675)`            |
+| den `v0.18.0`           | `5df0987658d6e44268abba953406480e9f066928`                       | 2026-06-16 | the tag commit; the task file records the release as 2026-06-23                  |
+| `denful/nix-effects`    | `c3c68a45deb892d028711eeff8b80937e30a90dd`                       | 2026-05-13 | den's own `templates/ci/flake.lock` pins this                                    |
+| `cachix/devenv`         | `190959a9a4bb52d4802f076a90c3c4e3aa2e6fa2`                       | 2026-09-07 | the revision this repository pins in both `flake.lock` and `devenv.lock`         |
+| nixpkgs (criteria 2, 4) | `path:/nix/store/j0xsrr9a6dx6b4rf3lnzmak43ff82cs6-source`        | —          | `NixOS/nixpkgs` `d6524aaca2ff07876657ae2b323f24be4874944b`, already in the store |
+| nixpkgs (criterion 1)   | `cachix/devenv-nixpkgs/256551e45f6303e142ab4a98be1bf243feb77dc0` | 2026-08-26 | devenv needs its own channel                                                     |
 
 Evaluator: `nix (Lix, like Nix) 2.95.2`, `aarch64-darwin`.
 
@@ -55,7 +55,7 @@ Two flakes:
 
 - `/tmp/den-spike/c2/producer/` — the den repository. It holds `den`, `nix-effects` and
   `nixpkgs` as inputs. It exports `nixosModules.<case> = den.lib.aspects.resolve "nixos"
-  den.aspects.<case>`.
+den.aspects.<case>`.
 - `/tmp/den-spike/c2/adopter/` — the adopter repository. Its only inputs are `nixpkgs` and
   the producer. **It has no `den` input and no `nix-effects` input.** It reads each exported
   module back two ways: through a bare `lib.evalModules`, and through a real
@@ -66,15 +66,15 @@ against den v0.18.0.
 
 ### The seven cases
 
-| Case | What it exercises | Result at the adopter |
-|---|---|---|
-| A | one plain option, no den feature | **survives** |
-| B | the aspect declares its own option and reads it back | **survives** |
-| C | one aspect depends on a second aspect through `includes` | **survives** |
-| D | the aspect needs `pkgs` | **survives** |
-| E | the aspect reads entity data (`{ host, ... }`) | **silently drops to a no-op** |
-| F | the aspect includes a den battery (`den.batteries.hostname`) | **silently drops to a no-op** |
-| G | mixed aspect: both a `nixos` key and a `homeManager` key | the `nixos` half **survives** |
+| Case | What it exercises                                            | Result at the adopter         |
+| ---- | ------------------------------------------------------------ | ----------------------------- |
+| A    | one plain option, no den feature                             | **survives**                  |
+| B    | the aspect declares its own option and reads it back         | **survives**                  |
+| C    | one aspect depends on a second aspect through `includes`     | **survives**                  |
+| D    | the aspect needs `pkgs`                                      | **survives**                  |
+| E    | the aspect reads entity data (`{ host, ... }`)               | **silently drops to a no-op** |
+| F    | the aspect includes a den battery (`den.batteries.hostname`) | **silently drops to a no-op** |
+| G    | mixed aspect: both a `nixos` key and a `homeManager` key     | the `nixos` half **survives** |
 
 ### Verified — the plain `lib.evalModules` read-back
 
@@ -252,7 +252,7 @@ Evidence, all verified against den `main`:
 - `reference/lib-deprecated.mdx` never mentions `aspects.resolve`. There is **no** `CHANGELOG`
   file anywhere in the repository.
 - One commit added both labels: `6254414` (2026-05-09) `feat: fx effects pipeline — replace
-  legacy resolver (#475)`. `git log -S'**Internal.** Resolves an aspect'` returns only that
+legacy resolver (#475)`. `git log -S'**Internal.** Resolves an aspect'` returns only that
   commit. The same commit silently changed the arity from three arguments to two.
 - v0.18.0 → `main`: `git diff 5df0987 d50f0fc -- nix/lib/aspects/default.nix` changes **one**
   line, and `resolve = fxResolveTree;` is byte-identical. `nix/lib/aspects/fx/resolve.nix`
@@ -270,13 +270,13 @@ Pass `den.lib.resolveEntity "<kind>" ctx` and you are on den's own production pa
 
 ### Discussion #569 — verified, still unanswered
 
-| Field | Value |
-|---|---|
-| Title | `Importing den aspects in non-den configuration` |
-| Created | 2026-05-24 |
-| Author | `basbebe`, `authorAssociation: NONE` |
-| Accepted answer | **none** (`isAnswered: false`) after 3.5 months |
-| Comments | 3 |
+| Field           | Value                                            |
+| --------------- | ------------------------------------------------ |
+| Title           | `Importing den aspects in non-den configuration` |
+| Created         | 2026-05-24                                       |
+| Author          | `basbebe`, `authorAssociation: NONE`             |
+| Accepted answer | **none** (`isAnswered: false`) after 3.5 months  |
+| Comments        | 3                                                |
 
 The question, verbatim: "Say I have a nix config repo (a) making use of den aspects for defining
 hosts and users. If I wanted to import some of these definitions as 'traditional' nixosModules
@@ -326,15 +326,15 @@ project = lib.evalModules {
 
 A third party reproduces all of it. The minimal recipe:
 
-| Requirement | Value |
-|---|---|
-| entry module | `<devenv-src>/src/modules/top-level.nix` |
-| `class` | `"devenv"` (cosmetic; it still works without) |
-| `specialArgs.inputs` | **mandatory key**, may be `{ }` |
-| `pkgs` | through `_module.args.pkgs` or `specialArgs` |
-| `devenv.root` | **mandatory**, no default |
-| `devenv.tmpdir` | **mandatory** unless `devenv.flakesIntegration = true` |
-| shell attribute | `config.shell` |
+| Requirement          | Value                                                  |
+| -------------------- | ------------------------------------------------------ |
+| entry module         | `<devenv-src>/src/modules/top-level.nix`               |
+| `class`              | `"devenv"` (cosmetic; it still works without)          |
+| `specialArgs.inputs` | **mandatory key**, may be `{ }`                        |
+| `pkgs`               | through `_module.args.pkgs` or `specialArgs`           |
+| `devenv.root`        | **mandatory**, no default                              |
+| `devenv.tmpdir`      | **mandatory** unless `devenv.flakesIntegration = true` |
+| shell attribute      | `config.shell`                                         |
 
 No `--impure`, no devenv CLI, no `containers` input and no `git-hooks` input. No CppNix-only
 builtin appears in `src/modules/`. Every `builtins.getEnv` call site tolerates an empty value.
@@ -509,14 +509,14 @@ must choose the scope for each aspect on purpose.
 
 Against the risk list in the task definition.
 
-| Risk | State |
-|---|---|
-| v0.x, no stable API | **Confirmed.** No `CHANGELOG` file exists. One commit changed `resolve`'s arity from 3 to 2 with no note. `resolve` is labelled Internal, and so is `mainModule`, the documented alternative. |
-| `main` carries about 2.5 months of unreleased drift | **Confirmed, and harmless so far.** Every criterion-2 and criterion-1 measurement is identical on v0.18.0 and `main`. Criterion 1's route-3 derivation path is byte-identical. `fx/resolve.nix` changed 199/85 lines in that window, and the entry point did not. |
-| Two people write about 90% of commits | Not re-measured. Unverified here. |
-| The core rests on `denful/nix-effects` despite "zero dependencies" marketing | **Confirmed, and worse than stated.** den has no flake inputs, but `nix/lib/fx.nix` reaches `nix-effects` with `builtins.fetchTarball` at evaluation time, keyed off den's own `templates/ci/flake.lock`. No consumer lock records it. A consumer must declare `nix-effects` itself to close the hole. |
-| den needs neither flakes nor flake-parts | **Confirmed and useful.** `den.nixModule` runs in a bare `lib.evalModules`. `templates/noflake` uses npins. |
-| No documented supported route to export aspects as `nixosModules`/`homeModules` | **Confirmed.** Zero `homeModules`/`darwinModules` hits in the whole repository. Discussion #569 has no accepted answer after 3.5 months. |
+| Risk                                                                            | State                                                                                                                                                                                                                                                                                                  |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| v0.x, no stable API                                                             | **Confirmed.** No `CHANGELOG` file exists. One commit changed `resolve`'s arity from 3 to 2 with no note. `resolve` is labelled Internal, and so is `mainModule`, the documented alternative.                                                                                                          |
+| `main` carries about 2.5 months of unreleased drift                             | **Confirmed, and harmless so far.** Every criterion-2 and criterion-1 measurement is identical on v0.18.0 and `main`. Criterion 1's route-3 derivation path is byte-identical. `fx/resolve.nix` changed 199/85 lines in that window, and the entry point did not.                                      |
+| Two people write about 90% of commits                                           | Not re-measured. Unverified here.                                                                                                                                                                                                                                                                      |
+| The core rests on `denful/nix-effects` despite "zero dependencies" marketing    | **Confirmed, and worse than stated.** den has no flake inputs, but `nix/lib/fx.nix` reaches `nix-effects` with `builtins.fetchTarball` at evaluation time, keyed off den's own `templates/ci/flake.lock`. No consumer lock records it. A consumer must declare `nix-effects` itself to close the hole. |
+| den needs neither flakes nor flake-parts                                        | **Confirmed and useful.** `den.nixModule` runs in a bare `lib.evalModules`. `templates/noflake` uses npins.                                                                                                                                                                                            |
+| No documented supported route to export aspects as `nixosModules`/`homeModules` | **Confirmed.** Zero `homeModules`/`darwinModules` hits in the whole repository. Discussion #569 has no accepted answer after 3.5 months.                                                                                                                                                               |
 
 ### New risks this spike found
 

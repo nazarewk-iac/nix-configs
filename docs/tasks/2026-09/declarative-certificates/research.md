@@ -17,13 +17,13 @@ open questions.
 The tool must cover four certificate kinds, run offline, and keep a committable configuration with
 separable secrets. The candidates:
 
-| Tool | TLS server | TLS client | SSH user | SSH host | Offline | Config | Verdict |
-|---|---|---|---|---|---|---|---|
-| **smallstep** (`step-cli` 0.30.6, `step-ca` 0.30.2) | yes | yes | yes | yes | yes | `config/ca.json`, Apache-2.0 | **chosen** |
-| Cloudflare Origin CA | yes | no | no | no | no | zone-bound | TLS-only fallback |
-| `cfssl` | yes | yes | no | no | yes | JSON | rejected — no SSH |
-| `mkcert` | yes | no | no | no | yes | none | rejected — no SSH, no CA |
-| Vault | yes | yes | yes | yes | no | online | rejected — online, BUSL-1.1 |
+| Tool                                                | TLS server | TLS client | SSH user | SSH host | Offline | Config                       | Verdict                     |
+| --------------------------------------------------- | ---------- | ---------- | -------- | -------- | ------- | ---------------------------- | --------------------------- |
+| **smallstep** (`step-cli` 0.30.6, `step-ca` 0.30.2) | yes        | yes        | yes      | yes      | yes     | `config/ca.json`, Apache-2.0 | **chosen**                  |
+| Cloudflare Origin CA                                | yes        | no         | no       | no       | no      | zone-bound                   | TLS-only fallback           |
+| `cfssl`                                             | yes        | yes        | no       | no       | yes     | JSON                         | rejected — no SSH           |
+| `mkcert`                                            | yes        | no         | no       | no       | yes     | none                         | rejected — no SSH, no CA    |
+| Vault                                               | yes        | yes        | yes      | yes      | no      | online                       | rejected — online, BUSL-1.1 |
 
 **Verdict: smallstep.** It is the only candidate that covers all four kinds. It runs fully offline
 through `step certificate create --ca … --ca-key …` and `step ca certificate --offline`. It keeps a
@@ -39,12 +39,12 @@ it has no SSH path. Do not design an SSH path through Cloudflare.
 The CLI must find every certificate declaration in a flake. den exposes four output shapes, plus
 three legacy shapes.
 
-| Output | Shape | Cert read |
-|---|---|---|
-| `den.hosts` | one host set per system | the host name list |
-| `denConfigurations.<host>` | a nix-darwin or a NixOS system | `.config.kdn.certificates` |
+| Output                         | Shape                                   | Cert read                  |
+| ------------------------------ | --------------------------------------- | -------------------------- |
+| `den.hosts`                    | one host set per system                 | the host name list         |
+| `denConfigurations.<host>`     | a nix-darwin or a NixOS system          | `.config.kdn.certificates` |
 | `denHomeConfigurations.<name>` | a standalone home-manager configuration | `.config.kdn.certificates` |
-| `denDevenvShells.<name>` | a devenv shell | `.kdn.certificates` |
+| `denDevenvShells.<name>`       | a devenv shell                          | `.kdn.certificates`        |
 
 The `denDevenvShells` read is one level shorter. `den.devenv.mkShell` returns `.config` alone
 (`modules/den/classes/devenv.nix:75`), so the shell has no outer `.config`. The host and home reads
@@ -169,12 +169,12 @@ validity per class is allowed.
 
 Two server settings and two client settings close the gap:
 
-| Side | Setting | Job |
-|---|---|---|
+| Side   | Setting                                       | Job                                                            |
+| ------ | --------------------------------------------- | -------------------------------------------------------------- |
 | Server | `services.openssh.settings.TrustedUserCAKeys` | the SSH CA public key; every user certificate it signs logs in |
-| Server | `services.openssh.settings.HostCertificate` | the host certificate the server presents |
-| Client | an `@cert-authority` line in `known_hosts` | trust every host certificate the CA signs |
-| Client | `CertificateFile` in the ssh drop-in | the user certificate the client presents |
+| Server | `services.openssh.settings.HostCertificate`   | the host certificate the server presents                       |
+| Client | an `@cert-authority` line in `known_hosts`    | trust every host certificate the CA signs                      |
+| Client | `CertificateFile` in the ssh drop-in          | the user certificate the client presents                       |
 
 The client drop-in directory is `~/.ssh/config.d/`. `program-ssh-client` includes it through
 `programs.ssh.includes = [ "~/.ssh/config.d/*.config" ]` (`modules/den/aspects/program-ssh-client.nix:24`).

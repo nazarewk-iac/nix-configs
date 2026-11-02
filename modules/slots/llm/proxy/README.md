@@ -80,22 +80,22 @@ llama-swap so the client's key is never sent to it.
 
 ### Top-level
 
-| Option | Type | Default | Meaning |
-|---|---|---|---|
-| `enable` | bool | `false` | enable the slot |
+| Option    | Type    | Default                      | Meaning                                          |
+| --------- | ------- | ---------------------------- | ------------------------------------------------ |
+| `enable`  | bool    | `false`                      | enable the slot                                  |
 | `package` | package | `pkgs.opencode-compat-proxy` | package for instances that don't override theirs |
 
 ### `instances.<name>`
 
-| Option | Type | Default | Meaning |
-|---|---|---|---|
-| `enable` | bool | `false` | run this instance |
-| `upstreamUrl` | string | *required* | upstream LLM backend base URL (e.g. `https://router.requesty.ai` or `http://127.0.0.1:39703`) |
-| `host` | string | `127.0.0.1` | bind address |
-| `port` | int | `9526` | listen port |
-| `openFirewall` | bool | `false` | open this port in the nixos firewall |
-| `forwardClientAuth` | bool | `false` | forward the client's Authorization header to the upstream on the streaming path (upstream is authenticated via client key) |
-| `package` | package | top-level `package` | override per instance |
+| Option              | Type    | Default             | Meaning                                                                                                                    |
+| ------------------- | ------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `enable`            | bool    | `false`             | run this instance                                                                                                          |
+| `upstreamUrl`       | string  | _required_          | upstream LLM backend base URL (e.g. `https://router.requesty.ai` or `http://127.0.0.1:39703`)                              |
+| `host`              | string  | `127.0.0.1`         | bind address                                                                                                               |
+| `port`              | int     | `9526`              | listen port                                                                                                                |
+| `openFirewall`      | bool    | `false`             | open this port in the nixos firewall                                                                                       |
+| `forwardClientAuth` | bool    | `false`             | forward the client's Authorization header to the upstream on the streaming path (upstream is authenticated via client key) |
+| `package`           | package | top-level `package` | override per instance                                                                                                      |
 
 ## Targets
 
@@ -132,14 +132,14 @@ Example `opencode.json` provider entries:
       "name": "DeepSeek V4 Flash (Requesty via DSML proxy)",
       "options": {
         "baseURL": "http://127.0.0.1:9526/v1",
-        "apiKey": "{env:REQUESTY_API_KEY}"
+        "apiKey": "{env:REQUESTY_API_KEY}",
       },
       "models": {
         "sference/deepseek-v4-flash-0731": {
           "name": "deepseek-v4-flash-0731 (proxied)",
-          "limit": { "context": 65536, "output": 8192 }
-        }
-      }
+          "limit": { "context": 65536, "output": 8192 },
+        },
+      },
     },
     "local-llm-proxy": {
       "npm": "@ai-sdk/openai-compatible",
@@ -148,11 +148,11 @@ Example `opencode.json` provider entries:
       "models": {
         "deepseek-v4-flash": {
           "name": "deepseek-v4-flash (local)",
-          "limit": { "context": 65536, "output": 8192 }
-        }
-      }
-    }
-  }
+          "limit": { "context": 65536, "output": 8192 },
+        },
+      },
+    },
+  },
 }
 ```
 
@@ -174,7 +174,7 @@ wrapper and the proxied requesty provider authenticates.
 ## Operations
 
 - NixOS: `systemctl status kdn-llm-proxy-<name>`, `journalctl -fu
-  kdn-llm-proxy-<name>`.
+kdn-llm-proxy-<name>`.
 - devenv: `devenv processes list` / `devenv up` to start instances.
 - devenv: run `opencode` (installed on PATH) — it is the wrapper, so it has
   `REQUESTY_API_KEY` loaded for the `requesty-proxy` provider.

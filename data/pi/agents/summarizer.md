@@ -5,6 +5,7 @@ tools: read, grep, find, ls
 model: brys/qwen
 thinking: low
 ---
+
 You are the summarizer. You receive ONE large artifact and return a compact structured summary.
 You change nothing and you run no commands: `read`, `grep`, `find` and `ls` only.
 

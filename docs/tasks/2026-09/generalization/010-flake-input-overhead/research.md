@@ -30,13 +30,13 @@ the subflake until an adopter complains about lock text.
 
 ## Environment
 
-| Item | Value |
-|---|---|
-| Evaluator | Lix 2.95.2, aarch64-darwin, `experimental-features = flakes nix-command` |
-| Lix source | `/nix/store/nyiq27r0br3xrgsa2pdq0vali48b7xpp-source` (the `src` of the `lix-2.95.2` derivation in use) |
-| devenv | 2.2.3+ffb790f |
-| Public root lock | 101 nodes, 55 root inputs, 54 841 bytes |
-| Scratch flakes | all under `/tmp/gen010/`, never inside this repo |
+| Item             | Value                                                                                                  |
+| ---------------- | ------------------------------------------------------------------------------------------------------ |
+| Evaluator        | Lix 2.95.2, aarch64-darwin, `experimental-features = flakes nix-command`                               |
+| Lix source       | `/nix/store/nyiq27r0br3xrgsa2pdq0vali48b7xpp-source` (the `src` of the `lix-2.95.2` derivation in use) |
+| devenv           | 2.2.3+ffb790f                                                                                          |
+| Public root lock | 101 nodes, 55 root inputs, 54 841 bytes                                                                |
+| Scratch flakes   | all under `/tmp/gen010/`, never inside this repo                                                       |
 
 Every measurement below comes from plain Lix. The one exception is the devenv paragraph in Q2,
 which names devenv explicitly.
@@ -119,10 +119,10 @@ An adopter lock stores it on the `nix-configs` node as
 `"nixpkgs-lib": ["nix-configs","nixpkgs"]`. Measured, with
 `inputs.nix-configs.url = "github:nazarewk-iac/nix-configs"`:
 
-| Run | `got tree` calls | `keeping existing input` | `creating new input` | Wall time |
-|---|---|---|---|---|
-| First lock | 3 (own path input twice, `nix-configs` once) | 100 | 1 | 1.2 s |
-| Re-lock, no edit | 2 (own path input, `nix-configs`) | 101 | 0 | 0.15 s |
+| Run              | `got tree` calls                             | `keeping existing input` | `creating new input` | Wall time |
+| ---------------- | -------------------------------------------- | ------------------------ | -------------------- | --------- |
+| First lock       | 3 (own path input twice, `nix-configs` once) | 100                      | 1                    | 1.2 s     |
+| Re-lock, no edit | 2 (own path input, `nix-configs`)            | 101                      | 0                    | 0.15 s    |
 
 The re-lock fetch of `github:nazarewk-iac/nix-configs/918fd52…` is `mustRefetch` at work. Proof
 that the one `follows` entry causes it: delete only that entry from the lock, then re-lock. The
@@ -230,16 +230,16 @@ extra tree fetch.
 
 ## Q2 — relative paths and `git+file:` purity — **confirmed**
 
-| Input URL in a plain `flake.nix` | Result on Lix 2.95.2 |
-|---|---|
-| `git+file:.` (inside its own git repo) | fails — `error: found circular import of flake 'git+file:.'` |
-| `git+file:.` (plain directory, no git) | fails — `error: program 'git' failed with exit code 128` |
-| `git+file:../target` | **locks and evaluates**, but points at the process cwd |
-| `git+file://<absolute>/target` | works (the control) |
-| `path:./inner` (inside the flake's own tree) | works |
-| `path:../target` (plain directory parent) | fails — `relative path '../target' points outside of its parent's store path '/nix/store/…-source'` |
-| `path:../target` (git repo parent) | fails — same error |
-| `path:../../../target` | fails — same error |
+| Input URL in a plain `flake.nix`             | Result on Lix 2.95.2                                                                                |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `git+file:.` (inside its own git repo)       | fails — `error: found circular import of flake 'git+file:.'`                                        |
+| `git+file:.` (plain directory, no git)       | fails — `error: program 'git' failed with exit code 128`                                            |
+| `git+file:../target`                         | **locks and evaluates**, but points at the process cwd                                              |
+| `git+file://<absolute>/target`               | works (the control)                                                                                 |
+| `path:./inner` (inside the flake's own tree) | works                                                                                               |
+| `path:../target` (plain directory parent)    | fails — `relative path '../target' points outside of its parent's store path '/nix/store/…-source'` |
+| `path:../target` (git repo parent)           | fails — same error                                                                                  |
+| `path:../../../target`                       | fails — same error                                                                                  |
 
 Two findings need care.
 
@@ -369,10 +369,10 @@ Three separate answers, all confirmed.
 **Rare.** A survey of every `flake.lock` in this machine's store found 223 lock files. It found
 only two distinct real upstream `?dir=` inputs:
 
-| Input | Nature |
-|---|---|
-| `github:wez/wezterm?dir=nix` | a flake that packages an application, inside the application repo |
-| `github:cachix/devenv?dir=src/modules` | devenv's own module tree |
+| Input                                  | Nature                                                            |
+| -------------------------------------- | ----------------------------------------------------------------- |
+| `github:wez/wezterm?dir=nix`           | a flake that packages an application, inside the application repo |
+| `github:cachix/devenv?dir=src/modules` | devenv's own module tree                                          |
 
 Neither is a public library entry point in the sense 010 asks about. The rarity is a caution about
 tool support and about adopter knowledge. It is not a technical blocker. The technique works.
@@ -386,15 +386,15 @@ for `lazy-trees` or `lazyTrees`. The CLI agrees:
 
 No candidate depends on it. Every candidate below works on Lix 2.95.2 today.
 
-| Candidate | Works today on Lix | Feature flags needed | Note |
-|---|---|---|---|
-| `?dir=<subdir>` subflake | yes | `flakes nix-command` | Proven in Q3, both `github:` and `git+file:`. |
-| `follows` dedup | yes | `flakes nix-command` | Proven in Q1. A root-level `follows` costs one tree fetch per adopter lock run. |
-| `flake = false` | yes | `flakes nix-command` | It removes lock nodes, not fetches. 33 public nodes already use it. |
-| Lix's internal `call-flake.nix` | yes | `flakes nix-command` | Not an adopter API. Its lazy `mapAttrs` is what makes the 101-node lock cheap. |
-| A `call-flake`-style pure-Nix resolver | yes | none beyond what the caller already needs | It re-implements lock resolution in Nix, as devenv's `resolve-lock.nix` does. It changes which code resolves the lock, not the fetch volume. |
-| `npins` | yes | none | `pkgs.npins` is 0.5.0. It drops flakes, so it drops the lock-node problem and the flake API with it. |
-| `flake-compat` | yes | none | Plain Nix reads `flake.nix` and `flake.lock`. Same fetch volume. |
+| Candidate                              | Works today on Lix | Feature flags needed                      | Note                                                                                                                                         |
+| -------------------------------------- | ------------------ | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `?dir=<subdir>` subflake               | yes                | `flakes nix-command`                      | Proven in Q3, both `github:` and `git+file:`.                                                                                                |
+| `follows` dedup                        | yes                | `flakes nix-command`                      | Proven in Q1. A root-level `follows` costs one tree fetch per adopter lock run.                                                              |
+| `flake = false`                        | yes                | `flakes nix-command`                      | It removes lock nodes, not fetches. 33 public nodes already use it.                                                                          |
+| Lix's internal `call-flake.nix`        | yes                | `flakes nix-command`                      | Not an adopter API. Its lazy `mapAttrs` is what makes the 101-node lock cheap.                                                               |
+| A `call-flake`-style pure-Nix resolver | yes                | none beyond what the caller already needs | It re-implements lock resolution in Nix, as devenv's `resolve-lock.nix` does. It changes which code resolves the lock, not the fetch volume. |
+| `npins`                                | yes                | none                                      | `pkgs.npins` is 0.5.0. It drops flakes, so it drops the lock-node problem and the flake API with it.                                         |
+| `flake-compat`                         | yes                | none                                      | Plain Nix reads `flake.nix` and `flake.lock`. Same fetch volume.                                                                             |
 
 One term needs care: `flakes` and `nix-command` are themselves experimental features. This repo
 already enables both (`experimental-features = flakes nix-command`). Nothing in the table needs a
@@ -483,12 +483,12 @@ whole tree again. That is a four-line fix, not an architecture change.
 
 ## Corrections to the task file
 
-| 010 statement | Correction |
-|---|---|
-| "case (b) forces a fetch, because an override takes the 'creating new input' branch" | True for a URL override or `--override-input`. False for a `follows` override, which returns early at `flake.cc:633-641`. |
+| 010 statement                                                                                                | Correction                                                                                                                                            |
+| ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| "case (b) forces a fetch, because an override takes the 'creating new input' branch"                         | True for a URL override or `--override-input`. False for a `follows` override, which returns early at `flake.cc:633-641`.                             |
 | Partial finding 2: `path.cc:129` "is the exact error a `?dir=` subflake would hit when it reads `../../lib`" | No. `path.cc:129` sits in `PathInputScheme::fetch`, and only a `path:` input reaches it. A read above the subflake root works; a pure eval proves it. |
-| "plain Nix flakes do not support `git+file:` with a relative path" | Lix accepts it and locks it. It points the URL at the process cwd and breaks a cold consumer. So the conclusion stands, for a different reason. |
-| "a `git+file://…?dir=…` metadata call resolved only that subflake's inputs" — needs a `github:` re-test | Re-tested with `github:`. Same result: 19 nodes, and the store path holds the whole 4.0 MB tree. |
+| "plain Nix flakes do not support `git+file:` with a relative path"                                           | Lix accepts it and locks it. It points the URL at the process cwd and breaks a cold consumer. So the conclusion stands, for a different reason.       |
+| "a `git+file://…?dir=…` metadata call resolved only that subflake's inputs" — needs a `github:` re-test      | Re-tested with `github:`. Same result: 19 nodes, and the store path holds the whole 4.0 MB tree.                                                      |
 
 ## Reproduction
 

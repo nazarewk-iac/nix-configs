@@ -35,9 +35,9 @@ This explicitly includes, but is not limited to, all `kdn.*` options:
 
 `checks/standalone.nix` enforces this rule. It exports two checks:
 
-| Check | It gates |
-|---|---|
-| `standalone-slots` | every `.nix` file under `modules/slots/` |
+| Check                | It gates                                       |
+| -------------------- | ---------------------------------------------- |
+| `standalone-slots`   | every `.nix` file under `modules/slots/`       |
 | `standalone-aspects` | every `.nix` file under `modules/den/aspects/` |
 
 `standalone-slots` runs two mechanisms. A **source scan** greps each slot file for every

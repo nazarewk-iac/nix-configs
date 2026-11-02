@@ -14,15 +14,15 @@ timestamp: 2026-10-28T10:20:00+01:00
 
 ## 0. Commands used
 
-| purpose | command |
-|---|---|
-| live config | `ssh kdn-brys 'cat /nix/store/vhssi9i9857zg6qkm8dwp66smakvcr1a-config.yaml'` |
-| GGUF sizes | `ssh kdn-brys 'ls -l <path>'` (sum of all shards) |
-| VRAM total | `ssh kdn-brys 'cat /sys/class/drm/card1/device/mem_info_vram_total'` |
-| host RAM | `ssh kdn-brys 'free -g'` |
+| purpose      | command                                                                                                                                                                             |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| live config  | `ssh kdn-brys 'cat /nix/store/vhssi9i9857zg6qkm8dwp66smakvcr1a-config.yaml'`                                                                                                        |
+| GGUF sizes   | `ssh kdn-brys 'ls -l <path>'` (sum of all shards)                                                                                                                                   |
+| VRAM total   | `ssh kdn-brys 'cat /sys/class/drm/card1/device/mem_info_vram_total'`                                                                                                                |
+| host RAM     | `ssh kdn-brys 'free -g'`                                                                                                                                                            |
 | resident now | `ssh kdn-brys 'bash -lc "K=\$(sudo -n cat /run/configs/llms/llama-server/api-keys/default); curl --max-time 5 -s -H \"Authorization: Bearer \$K\" http://127.0.0.1:39700/running"'` |
-| served ids | same, path `/v1/models` |
-| source code | `modules/den/aspects/llm.nix` |
+| served ids   | same, path `/v1/models`                                                                                                                                                             |
+| source code  | `modules/den/aspects/llm.nix`                                                                                                                                                       |
 
 Measured values:
 
@@ -41,64 +41,64 @@ else CPU (no device flag). Size is the sum of every GGUF shard, in GiB
 
 ### 1a. Persistent frontier (cost 1000)
 
-| id | aliases | parallel | ctx-size | device | ngl | GGUF path (under `/var/lib/kdn/llms/models`) | GiB |
-|---|---|---|---|---|---|---|---|
-| deepseek-v4-flash | frontier, orchestrate-deep-slow-alt | 4 (kv-unified) | 327680 | CPU | — | `unsloth/DeepSeek-V4-Flash-GGUF/UD-IQ3_XXS/DeepSeek-V4-Flash-UD-IQ3_XXS-00001-of-00004.gguf` (+02..04) | 95.93 |
-| qwen3.8-flash-next | qwen, orchestrate-deep-slow | 4 (kv-unified) | 1048576 | CPU | — | `unsloth/Qwen3.8-Flash-Next-GGUF/UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf` (+02,03) | 87.25 |
+| id                 | aliases                             | parallel       | ctx-size | device | ngl | GGUF path (under `/var/lib/kdn/llms/models`)                                                           | GiB   |
+| ------------------ | ----------------------------------- | -------------- | -------- | ------ | --- | ------------------------------------------------------------------------------------------------------ | ----- |
+| deepseek-v4-flash  | frontier, orchestrate-deep-slow-alt | 4 (kv-unified) | 327680   | CPU    | —   | `unsloth/DeepSeek-V4-Flash-GGUF/UD-IQ3_XXS/DeepSeek-V4-Flash-UD-IQ3_XXS-00001-of-00004.gguf` (+02..04) | 95.93 |
+| qwen3.8-flash-next | qwen, orchestrate-deep-slow         | 4 (kv-unified) | 1048576  | CPU    | —   | `unsloth/Qwen3.8-Flash-Next-GGUF/UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf` (+02,03)  | 87.25 |
 
 DS4 also loads a draft head `unsloth/DeepSeek-V4-Flash-0731-GGUF/dspark-DeepSeek-V4-Flash-0731-Q8_0.gguf` = **10.15 GiB** (same `ls -l`).
 
 ### 1b. GPU grunt/router models (`--device Vulkan0`, `--n-gpu-layers 99`)
 
-| id | aliases | parallel | ctx | GiB |
-|---|---|---|---|---|
-| qwen3.5-4b | grunt, chat-dumb-fast, code-quick-fast, tiny-quick-fast | 1 | 16384 | 2.55 |
-| qwen3.5-0.8b | tiny-dumb-fast | 1 | 16384 | 0.50 |
-| qwen3.5-2b | tiny-dumb-fast-alt | 1 | 16384 | 1.19 |
-| tmax-2b | — | 1 | 16384 | 1.19 |
-| ministral-3-3b-instruct | — | 1 | 16384 | 2.00 |
-| ministral-3-3b-reasoning | reason-quick-fast-alt | 1 | 16384 | 2.00 |
-| granite-4.2-3b | tools-dumb-fast, chat-dumb-fast-alt | 1 | 16384 | 2.09 |
-| gemma-4-e2b | — | 1 | 16384 | 2.89 |
-| olmo-3-7b-instruct | — | 1 | 16384 | 4.16 |
-| gemma-4-e4b | — | 1 | 16384 | 4.80 |
-| ministral-3-8b-instruct | — | 1 | 16384 | 4.84 |
-| ministral-3-8b-reasoning | — | 1 | 16384 | 4.84 |
-| granite-4.2-8b | tools-std-fast-alt | 1 | 16384 | 4.98 |
-| tmax-9b | — | 1 | 16384 | 5.24 |
-| mimo-v2.6-qwen-9b | — | 1 | 16384 | 5.44 |
+| id                       | aliases                                                 | parallel | ctx   | GiB  |
+| ------------------------ | ------------------------------------------------------- | -------- | ----- | ---- |
+| qwen3.5-4b               | grunt, chat-dumb-fast, code-quick-fast, tiny-quick-fast | 1        | 16384 | 2.55 |
+| qwen3.5-0.8b             | tiny-dumb-fast                                          | 1        | 16384 | 0.50 |
+| qwen3.5-2b               | tiny-dumb-fast-alt                                      | 1        | 16384 | 1.19 |
+| tmax-2b                  | —                                                       | 1        | 16384 | 1.19 |
+| ministral-3-3b-instruct  | —                                                       | 1        | 16384 | 2.00 |
+| ministral-3-3b-reasoning | reason-quick-fast-alt                                   | 1        | 16384 | 2.00 |
+| granite-4.2-3b           | tools-dumb-fast, chat-dumb-fast-alt                     | 1        | 16384 | 2.09 |
+| gemma-4-e2b              | —                                                       | 1        | 16384 | 2.89 |
+| olmo-3-7b-instruct       | —                                                       | 1        | 16384 | 4.16 |
+| gemma-4-e4b              | —                                                       | 1        | 16384 | 4.80 |
+| ministral-3-8b-instruct  | —                                                       | 1        | 16384 | 4.84 |
+| ministral-3-8b-reasoning | —                                                       | 1        | 16384 | 4.84 |
+| granite-4.2-8b           | tools-std-fast-alt                                      | 1        | 16384 | 4.98 |
+| tmax-9b                  | —                                                       | 1        | 16384 | 5.24 |
+| mimo-v2.6-qwen-9b        | —                                                       | 1        | 16384 | 5.44 |
 
 All 15 paths are `/var/lib/kdn/llms/models/surveyed/<id>.gguf` (except qwen3.5-4b, which is also `surveyed/qwen3.5-4b.gguf`). `ls -l` gives each size.
 
 ### 1c. CPU grunt models (no device flag)
 
-| id | aliases | parallel | ctx | GiB |
-|---|---|---|---|---|
-| qwen3.5-0.8b-cpu | — | 1 | 8192 | 0.50 |
-| qwen3.5-2b-cpu | — | 1 | 8192 | 1.19 |
-| tmax-2b-cpu | — | 1 | 8192 | 1.19 |
-| gemma-4-12b | — | 1 | 16384 | 6.63 |
-| mellum-2.1-12b-a2.5b-thinking | reason-quick-fast, code-std-fast-alt | 1 | 32768 | 7.52 |
-| gemma-4-26b-a4b | — | 1 | 8192 | 13.45 |
-| lfm2.5-24b-a2b | chat-std-fast, tools-std-fast | 1 | 32768 | 13.53 |
-| qwen3.8-27b | chat-deep-slow, code-deep-slow, vision-deep-slow, reason-deep-slow, tools-deep-slow | 1 | 32768 | 15.33 |
-| qwen3.6-27b | — | 1 | 8192 | 15.66 |
-| granite-4.2-30b | — | 1 | 8192 | 16.50 |
-| glm-4.7-flash | — | 1 | 8192 | 17.05 |
-| gemma-4-31b | — | 1 | 8192 | 17.07 |
-| qwen3-vl-30b-a3b | vision-std-fast, vision-std-fast-moe | 1 | 32768 | 17.28 (+1.01 mmproj) |
-| qwen3-omni-30b-a3b | audio-std-mid | 1 | 32768 | 17.28 (+1.23 mmproj) |
-| north-mini-code-1.0 | code-std-fast, code-std-fast-moe | 1 | 32768 | 17.32 |
-| olmo-3.1-32b | — | 1 | 8192 | 18.14 |
-| ornith-1.5-35b-a3b | vision-std-fast-alt | 1 | 32768 | 20.22 (+0.84 mmproj) |
-| seed-oss-36b | — | 1 | 8192 | 20.27 |
-| qwen3.5-35b-a3b | chat-std-mid | 1 | 8192 | 20.50 |
-| qwen3.6-35b-a3b | — | 1 | 8192 | 20.61 |
-| nemotron-3-nano-30b-a3b | reason-std-fast, chat-std-mid-long | 1 | 32768 | 22.89 |
-| nemotron-3.5-lightning-30b | — | 1 | 8192 | 23.53 |
-| qwen3-vl-8b-instruct | vision-quick-fast | 1 | 32768 | 4.68 (+1.08 mmproj) |
-| qwen3-embedding-4b | embed-std-fast | 1 | 8192 | 2.33 |
-| qwen3-reranker-4b | rank-std-fast | 1 | 8192 | 2.33 |
+| id                            | aliases                                                                             | parallel | ctx   | GiB                  |
+| ----------------------------- | ----------------------------------------------------------------------------------- | -------- | ----- | -------------------- |
+| qwen3.5-0.8b-cpu              | —                                                                                   | 1        | 8192  | 0.50                 |
+| qwen3.5-2b-cpu                | —                                                                                   | 1        | 8192  | 1.19                 |
+| tmax-2b-cpu                   | —                                                                                   | 1        | 8192  | 1.19                 |
+| gemma-4-12b                   | —                                                                                   | 1        | 16384 | 6.63                 |
+| mellum-2.1-12b-a2.5b-thinking | reason-quick-fast, code-std-fast-alt                                                | 1        | 32768 | 7.52                 |
+| gemma-4-26b-a4b               | —                                                                                   | 1        | 8192  | 13.45                |
+| lfm2.5-24b-a2b                | chat-std-fast, tools-std-fast                                                       | 1        | 32768 | 13.53                |
+| qwen3.8-27b                   | chat-deep-slow, code-deep-slow, vision-deep-slow, reason-deep-slow, tools-deep-slow | 1        | 32768 | 15.33                |
+| qwen3.6-27b                   | —                                                                                   | 1        | 8192  | 15.66                |
+| granite-4.2-30b               | —                                                                                   | 1        | 8192  | 16.50                |
+| glm-4.7-flash                 | —                                                                                   | 1        | 8192  | 17.05                |
+| gemma-4-31b                   | —                                                                                   | 1        | 8192  | 17.07                |
+| qwen3-vl-30b-a3b              | vision-std-fast, vision-std-fast-moe                                                | 1        | 32768 | 17.28 (+1.01 mmproj) |
+| qwen3-omni-30b-a3b            | audio-std-mid                                                                       | 1        | 32768 | 17.28 (+1.23 mmproj) |
+| north-mini-code-1.0           | code-std-fast, code-std-fast-moe                                                    | 1        | 32768 | 17.32                |
+| olmo-3.1-32b                  | —                                                                                   | 1        | 8192  | 18.14                |
+| ornith-1.5-35b-a3b            | vision-std-fast-alt                                                                 | 1        | 32768 | 20.22 (+0.84 mmproj) |
+| seed-oss-36b                  | —                                                                                   | 1        | 8192  | 20.27                |
+| qwen3.5-35b-a3b               | chat-std-mid                                                                        | 1        | 8192  | 20.50                |
+| qwen3.6-35b-a3b               | —                                                                                   | 1        | 8192  | 20.61                |
+| nemotron-3-nano-30b-a3b       | reason-std-fast, chat-std-mid-long                                                  | 1        | 32768 | 22.89                |
+| nemotron-3.5-lightning-30b    | —                                                                                   | 1        | 8192  | 23.53                |
+| qwen3-vl-8b-instruct          | vision-quick-fast                                                                   | 1        | 32768 | 4.68 (+1.08 mmproj)  |
+| qwen3-embedding-4b            | embed-std-fast                                                                      | 1        | 8192  | 2.33                 |
+| qwen3-reranker-4b             | rank-std-fast                                                                       | 1        | 8192  | 2.33                 |
 
 All paths `/var/lib/kdn/llms/models/surveyed/<id>.gguf`. Note that `qwen3-embedding-4b`,
 `qwen3-reranker-4b` and `qwen3-vl-8b-instruct` are small enough for the GPU but are
@@ -257,19 +257,19 @@ Usable for weights + KV + buffers: **≈ 7.5 GiB**.
 
 Weight-only sums (GiB, from §1b) versus the 7.5 GiB budget + KV/buffers:
 
-| combination | weights | + KV/buffers (est.) | total | fits? |
-|---|---|---|---|---|
-| qwen3.5-0.8b alone | 0.50 | ~0.5 | 1.0 | yes |
-| qwen3.5-2b + tmax-2b | 2.38 | ~0.9 | 3.3 | yes |
-| qwen3.5-2b + ministral-3-3b | 3.19 | ~1.2 | 4.4 | yes |
-| qwen3.5-2b + granite-4.2-3b + tmax-2b | 4.47 | ~1.6 | 6.1 | yes (tight) |
-| ministral-3-3b + qwen3.5-4b | 4.55 | ~1.3 | 5.9 | yes |
-| gemma-4-e2b + qwen3.5-4b | 5.44 | ~1.3 | 6.7 | yes (tight) |
-| olmo-3-7b (4.16) + qwen3.5-2b (1.19) | 5.35 | ~1.6 | 7.0 | yes (very tight) |
-| granite-4.2-8b (4.98) + tmax-2b (1.19) | 6.17 | ~1.8 | 8.0 | **no** |
-| mimo-v2.6-qwen-9b (5.44) + qwen3.5-2b | 6.63 | ~1.7 | 8.3 | **no** |
-| any 8–9B alone (5.24–5.44) | 5.44 | ~1.5 | 6.9 | yes (alone only) |
-| two 8–9B models | 10.5+ | — | — | **no** |
+| combination                            | weights | + KV/buffers (est.) | total | fits?            |
+| -------------------------------------- | ------- | ------------------- | ----- | ---------------- |
+| qwen3.5-0.8b alone                     | 0.50    | ~0.5                | 1.0   | yes              |
+| qwen3.5-2b + tmax-2b                   | 2.38    | ~0.9                | 3.3   | yes              |
+| qwen3.5-2b + ministral-3-3b            | 3.19    | ~1.2                | 4.4   | yes              |
+| qwen3.5-2b + granite-4.2-3b + tmax-2b  | 4.47    | ~1.6                | 6.1   | yes (tight)      |
+| ministral-3-3b + qwen3.5-4b            | 4.55    | ~1.3                | 5.9   | yes              |
+| gemma-4-e2b + qwen3.5-4b               | 5.44    | ~1.3                | 6.7   | yes (tight)      |
+| olmo-3-7b (4.16) + qwen3.5-2b (1.19)   | 5.35    | ~1.6                | 7.0   | yes (very tight) |
+| granite-4.2-8b (4.98) + tmax-2b (1.19) | 6.17    | ~1.8                | 8.0   | **no**           |
+| mimo-v2.6-qwen-9b (5.44) + qwen3.5-2b  | 6.63    | ~1.7                | 8.3   | **no**           |
+| any 8–9B alone (5.24–5.44)             | 5.44    | ~1.5                | 6.9   | yes (alone only) |
+| two 8–9B models                        | 10.5+   | —                   | —     | **no**           |
 
 Practical rule:
 
@@ -435,29 +435,29 @@ Current: the two frontier models use `parallel 4` + `kv-unified`; every other
 model uses the option default `1`. Proposal, with a reason per model. `→2` always
 pairs with `kvUnified = true` so the pool is shared and KV does not multiply.
 
-| id | now | proposed | reason |
-|---|---|---|---|
-| deepseek-v4-flash | 4 | 4 (kv-unified) | unchanged; one shared pool, four concurrent long requests do not multiply KV |
-| qwen3.8-flash-next | 4 | 4 (kv-unified) | unchanged; 1M ctx shared across four slots |
-| qwen3.5-0.8b | 1 | 2 (kv-unified) | 0.50 GiB weights; two slots cost <0.3 GiB KV, still leaves VRAM for a sibling |
-| qwen3.5-2b | 1 | 2 (kv-unified) | 1.19 GiB; two slots fit beside one 3B sibling |
-| tmax-2b | 1 | 2 (kv-unified) | same as 2b |
-| qwen3.5-0.8b-cpu | 1 | 2 (kv-unified) | tiny CPU model, KV negligible, no VRAM cost |
-| qwen3.5-2b-cpu | 1 | 2 (kv-unified) | same |
-| tmax-2b-cpu | 1 | 2 (kv-unified) | same |
-| qwen3.5-4b (grunt) | 1 | 1 | 2.55 GiB; a second slot would multiply KV and risk the co-resident sibling on an 8 GiB card |
-| ministral-3-3b-instruct | 1 | 1 | 2.00 GiB; keep VRAM for a co-resident sibling |
-| ministral-3-3b-reasoning | 1 | 1 | same |
-| granite-4.2-3b | 1 | 1 | 2.09 GiB; keep VRAM for a sibling |
-| gemma-4-e2b | 1 | 1 | 2.89 GiB; already consumes a third of the card |
-| olmo-3-7b-instruct | 1 | 1 | 4.16 GiB; runs alone or beside one tiny model |
-| gemma-4-e4b | 1 | 1 | 4.80 GiB; runs alone |
-| ministral-3-8b-instruct | 1 | 1 | 4.84 GiB; runs alone |
-| ministral-3-8b-reasoning | 1 | 1 | 4.84 GiB; runs alone |
-| granite-4.2-8b | 1 | 1 | 4.98 GiB; runs alone |
-| tmax-9b | 1 | 1 | 5.24 GiB; runs alone |
-| mimo-v2.6-qwen-9b | 1 | 1 | 5.44 GiB; runs alone |
-| all remaining CPU surveyed tiers | 1 | 1 | each extra slot multiplies KV in RAM and adds decode contention on the ~40 GB/s bus the frontier needs |
+| id                               | now | proposed       | reason                                                                                                 |
+| -------------------------------- | --- | -------------- | ------------------------------------------------------------------------------------------------------ |
+| deepseek-v4-flash                | 4   | 4 (kv-unified) | unchanged; one shared pool, four concurrent long requests do not multiply KV                           |
+| qwen3.8-flash-next               | 4   | 4 (kv-unified) | unchanged; 1M ctx shared across four slots                                                             |
+| qwen3.5-0.8b                     | 1   | 2 (kv-unified) | 0.50 GiB weights; two slots cost <0.3 GiB KV, still leaves VRAM for a sibling                          |
+| qwen3.5-2b                       | 1   | 2 (kv-unified) | 1.19 GiB; two slots fit beside one 3B sibling                                                          |
+| tmax-2b                          | 1   | 2 (kv-unified) | same as 2b                                                                                             |
+| qwen3.5-0.8b-cpu                 | 1   | 2 (kv-unified) | tiny CPU model, KV negligible, no VRAM cost                                                            |
+| qwen3.5-2b-cpu                   | 1   | 2 (kv-unified) | same                                                                                                   |
+| tmax-2b-cpu                      | 1   | 2 (kv-unified) | same                                                                                                   |
+| qwen3.5-4b (grunt)               | 1   | 1              | 2.55 GiB; a second slot would multiply KV and risk the co-resident sibling on an 8 GiB card            |
+| ministral-3-3b-instruct          | 1   | 1              | 2.00 GiB; keep VRAM for a co-resident sibling                                                          |
+| ministral-3-3b-reasoning         | 1   | 1              | same                                                                                                   |
+| granite-4.2-3b                   | 1   | 1              | 2.09 GiB; keep VRAM for a sibling                                                                      |
+| gemma-4-e2b                      | 1   | 1              | 2.89 GiB; already consumes a third of the card                                                         |
+| olmo-3-7b-instruct               | 1   | 1              | 4.16 GiB; runs alone or beside one tiny model                                                          |
+| gemma-4-e4b                      | 1   | 1              | 4.80 GiB; runs alone                                                                                   |
+| ministral-3-8b-instruct          | 1   | 1              | 4.84 GiB; runs alone                                                                                   |
+| ministral-3-8b-reasoning         | 1   | 1              | 4.84 GiB; runs alone                                                                                   |
+| granite-4.2-8b                   | 1   | 1              | 4.98 GiB; runs alone                                                                                   |
+| tmax-9b                          | 1   | 1              | 5.24 GiB; runs alone                                                                                   |
+| mimo-v2.6-qwen-9b                | 1   | 1              | 5.44 GiB; runs alone                                                                                   |
+| all remaining CPU surveyed tiers | 1   | 1              | each extra slot multiplies KV in RAM and adds decode contention on the ~40 GB/s bus the frontier needs |
 
 Rationale in one line: raise `parallel` only where weights are ≤1.5 GiB (KV and
 compute buffers stay small), set `kvUnified = true` so KV is one shared pool, and
@@ -466,16 +466,16 @@ the frontier's bus) over budget.
 
 ## 7. Risks, each with the measurement that settles it
 
-| # | risk | measurement that settles it |
-|---|---|---|
-| R1 | Unbounded GPU `&` lets models accumulate: request 5 small GPU models in turn and the 5th load fails on VRAM. The matrix has no capacity cap. | Request the GPU grunts in sequence, then `ssh kdn-brys 'cat /sys/class/drm/card1/device/mem_info_vram_used'` and `curl /running`; count how many load before a failure. If it OOMs, split `with_gpu` into bounded tiers (`\|` between tiers). |
-| R2 | The KV estimate is wrong, so "8–9B + tiny" may not fit. | Load each GPU model alone and read `mem_info_vram_used` before/after; the delta is its true weights + KV + buffers. |
-| R3 | Vulkan keeps a host copy, so a GPU grunt costs more host RAM than its file size. | With idle Qwen resident, load one GPU grunt; compare `free -g` and `grep VmRSS /proc/<pid>/status`. |
-| R4 | A CPU tier beside a warm frontier overflows 125 GiB (the ~45 GiB cliff). | Keep Qwen warm (~101 GiB), request `nemotron-3.5-lightning-30b`; watch `free -g` and whether Qwen's `RssFile` drops (re-fault). |
-| R5 | `parallel 2` on a tiny GPU model might tip a pair over 8 GiB. | Measure `mem_info_vram_used` for `qwen3.5-2b` at `parallel 1` vs `2` with one sibling resident. |
-| R6 | My reading of `&` (permission, not obligation) may be wrong; if `&` forces both branches resident, every GPU-grunt request would also load a frontier model. | With no frontier resident, request one GPU grunt and read `curl /running`: if a frontier child appears, `&` is an obligation and the sets must use a different shape. |
-| R7 | `evict_cost 1000` does not protect the frontier under hard memory pressure (no swap). | Under R4's load, observe whether llama-swap evicts the frontier or the child OOMs; `dmesg`/journal shows an OOM kill if it happens. |
-| R8 | `perf.device` is not set on a model that is in fact GPU-offloaded, so it lands in `with_cpu`. | `ssh kdn-brys 'cat .../config.yaml'` and grep `--device Vulkan0`; compare with the `perf.device` values in `hosts/brys/llm-routers.nix`. |
+| #   | risk                                                                                                                                                         | measurement that settles it                                                                                                                                                                                                                   |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R1  | Unbounded GPU `&` lets models accumulate: request 5 small GPU models in turn and the 5th load fails on VRAM. The matrix has no capacity cap.                 | Request the GPU grunts in sequence, then `ssh kdn-brys 'cat /sys/class/drm/card1/device/mem_info_vram_used'` and `curl /running`; count how many load before a failure. If it OOMs, split `with_gpu` into bounded tiers (`\|` between tiers). |
+| R2  | The KV estimate is wrong, so "8–9B + tiny" may not fit.                                                                                                      | Load each GPU model alone and read `mem_info_vram_used` before/after; the delta is its true weights + KV + buffers.                                                                                                                           |
+| R3  | Vulkan keeps a host copy, so a GPU grunt costs more host RAM than its file size.                                                                             | With idle Qwen resident, load one GPU grunt; compare `free -g` and `grep VmRSS /proc/<pid>/status`.                                                                                                                                           |
+| R4  | A CPU tier beside a warm frontier overflows 125 GiB (the ~45 GiB cliff).                                                                                     | Keep Qwen warm (~101 GiB), request `nemotron-3.5-lightning-30b`; watch `free -g` and whether Qwen's `RssFile` drops (re-fault).                                                                                                               |
+| R5  | `parallel 2` on a tiny GPU model might tip a pair over 8 GiB.                                                                                                | Measure `mem_info_vram_used` for `qwen3.5-2b` at `parallel 1` vs `2` with one sibling resident.                                                                                                                                               |
+| R6  | My reading of `&` (permission, not obligation) may be wrong; if `&` forces both branches resident, every GPU-grunt request would also load a frontier model. | With no frontier resident, request one GPU grunt and read `curl /running`: if a frontier child appears, `&` is an obligation and the sets must use a different shape.                                                                         |
+| R7  | `evict_cost 1000` does not protect the frontier under hard memory pressure (no swap).                                                                        | Under R4's load, observe whether llama-swap evicts the frontier or the child OOMs; `dmesg`/journal shows an OOM kill if it happens.                                                                                                           |
+| R8  | `perf.device` is not set on a model that is in fact GPU-offloaded, so it lands in `with_cpu`.                                                                | `ssh kdn-brys 'cat .../config.yaml'` and grep `--device Vulkan0`; compare with the `perf.device` values in `hosts/brys/llm-routers.nix`.                                                                                                      |
 
 ## 8. Summary
 
@@ -483,7 +483,7 @@ the frontier's bus) over budget.
 - Today all 38 surveyed models are one `|` chain, so a surveyed request evicts
   every other surveyed model — measured: one model resident now.
 - Proposed sets: `main = (DS4 | Qwen)` (frontier only); `with_gpu =
-  (gpuA & gpuB & … ) & (DS4 | Qwen)` (GPU grunts co-reside, in VRAM);
+(gpuA & gpuB & … ) & (DS4 | Qwen)` (GPU grunts co-reside, in VRAM);
   `with_cpu = (cpuA | cpuB | …) & (DS4 | Qwen)` (one CPU tier at a time).
   `evict_costs` and the `1000` persistent cost are unchanged.
 - VRAM budget: 7.98 GiB; two 2–3 GiB GPU models fit, an 8–9B model runs alone.

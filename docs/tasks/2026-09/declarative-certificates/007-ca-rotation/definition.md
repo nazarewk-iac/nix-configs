@@ -46,24 +46,24 @@ closes the gap between the D-B bootstrap and the D1 target.
 
 ## Current state, in one table
 
-| Item | Today |
-|---|---|
-| CA node | `kdn.ca-dag.cas.kdn` in `data/ca/ca-dag.nix` |
-| Public certificate | `data/ca/kdn.crt` (committed) |
-| Private key | `data/ca/kdn.key.sops` (committed, raw/binary SOPS) |
-| Recipients | `yk-oams-unattended`, `yk-brys-unattended` — no touch, no PIN |
-| Signing leaves | `hosts/{oams,brys,etra,moss}/certs/zellij.pub`, issuer `CN=KDN certificates root CA` |
-| Trust | each leaf is consumed by its own host's zellij web service through `certPath`/`keyPath` |
-| Old CA (untouched) | `data/ca/ca.pub` and `data/ca/ca.key.sops` — the separate "KDN LLM CA" |
+| Item               | Today                                                                                   |
+| ------------------ | --------------------------------------------------------------------------------------- |
+| CA node            | `kdn.ca-dag.cas.kdn` in `data/ca/ca-dag.nix`                                            |
+| Public certificate | `data/ca/kdn.crt` (committed)                                                           |
+| Private key        | `data/ca/kdn.key.sops` (committed, raw/binary SOPS)                                     |
+| Recipients         | `yk-oams-unattended`, `yk-brys-unattended` — no touch, no PIN                           |
+| Signing leaves     | `hosts/{oams,brys,etra,moss}/certs/zellij.pub`, issuer `CN=KDN certificates root CA`    |
+| Trust              | each leaf is consumed by its own host's zellij web service through `certPath`/`keyPath` |
+| Old CA (untouched) | `data/ca/ca.pub` and `data/ca/ca.key.sops` — the separate "KDN LLM CA"                  |
 
 ## Target state
 
-| Item | Target |
-|---|---|
+| Item       | Target                                                                                |
+| ---------- | ------------------------------------------------------------------------------------- |
 | Recipients | touch-required YubiKey identities only; the two `*-unattended` identities are removed |
-| CA key use | a decrypt needs a physical touch |
-| Leaves | still valid under the current root, or re-signed by the new root |
-| Consumers | the four zellij web services keep working through the change |
+| CA key use | a decrypt needs a physical touch                                                      |
+| Leaves     | still valid under the current root, or re-signed by the new root                      |
+| Consumers  | the four zellij web services keep working through the change                          |
 
 ## What changes
 

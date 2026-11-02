@@ -16,12 +16,12 @@ Every number here comes from a command I ran on 2026-09-11, on `aarch64-darwin`.
 A conditional `imports` list needs a value that Nix resolves **before** the module set. Four
 routes exist. Two work, two recurse.
 
-| Route | Result | Command |
-|---|---|---|
-| module `config` → `imports` | `error: infinite recursion encountered` | `nix eval --impure` on a `{ config, ... }: { imports = lib.optionals config.flag [ … ]; }` module |
-| `_module.args` → `imports` | `error: infinite recursion encountered` | the same module, with `_module.args.hostData` in place of `config` |
-| `specialArgs` → `imports` | `"present"` | the same module, with `specialArgs.hostData` |
-| `specialArgs` false, poisoned module | `"absent"` | the excluded module holds a `throw`, and nothing forces it |
+| Route                                | Result                                  | Command                                                                                           |
+| ------------------------------------ | --------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| module `config` → `imports`          | `error: infinite recursion encountered` | `nix eval --impure` on a `{ config, ... }: { imports = lib.optionals config.flag [ … ]; }` module |
+| `_module.args` → `imports`           | `error: infinite recursion encountered` | the same module, with `_module.args.hostData` in place of `config`                                |
+| `specialArgs` → `imports`            | `"present"`                             | the same module, with `specialArgs.hostData`                                                      |
+| `specialArgs` false, poisoned module | `"absent"`                              | the excluded module holds a `throw`, and nothing forces it                                        |
 
 nixpkgs prints its own cause on both failures, from `lib/modules.nix:269`:
 
@@ -86,25 +86,25 @@ not apply to this repository. Nothing here needs it.
 
 ### Sites where static data drives a third-party import: 6
 
-| file:line | driving data | third-party modules |
-|---|---|---|
-| `modules/universal/default.nix:21` | `moduleType`, plus `pathExists` on `${self}/data/*.nix` | 12 — `sops-nix`, `home-manager`, `nix-homebrew`, `angrr`, `disko`, `lanzaboote`, `nur`, `preservation`, in their `nixosModules`/`darwinModules`/`homeManagerModules` shapes |
-| `modules/universal/_stylix.nix:19` | `moduleType`, plus `parent == null` | 4 — `stylix.{nixosModules,darwinModules,nixOnDroidModules,homeModules}.stylix`, one per branch |
-| `modules/universal/profile/hardware/rpi4/default.nix:32` | `features.rpi4`, `features.installer`, `moduleType` | 4 — two nixpkgs sd-card image modules, `argon40-nix`, `nixos-hardware` |
-| `modules/universal/profile/hardware/darwin-utm-guest/default.nix:17` | `features.darwin-utm-guest`, `moduleType` | 1 — nixpkgs `profiles/qemu-guest.nix` |
-| `modules/universal/virtualisation/microvm/host/default.nix:12` | `moduleType` | 1 — `microvm.nixosModules.host` |
-| `modules/universal/virtualisation/microvm/guest/default.nix:15` | `!features.microvm-guest` | 1 — `microvm.nixosModules.microvm-options` |
+| file:line                                                            | driving data                                            | third-party modules                                                                                                                                                         |
+| -------------------------------------------------------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `modules/universal/default.nix:21`                                   | `moduleType`, plus `pathExists` on `${self}/data/*.nix` | 12 — `sops-nix`, `home-manager`, `nix-homebrew`, `angrr`, `disko`, `lanzaboote`, `nur`, `preservation`, in their `nixosModules`/`darwinModules`/`homeManagerModules` shapes |
+| `modules/universal/_stylix.nix:19`                                   | `moduleType`, plus `parent == null`                     | 4 — `stylix.{nixosModules,darwinModules,nixOnDroidModules,homeModules}.stylix`, one per branch                                                                              |
+| `modules/universal/profile/hardware/rpi4/default.nix:32`             | `features.rpi4`, `features.installer`, `moduleType`     | 4 — two nixpkgs sd-card image modules, `argon40-nix`, `nixos-hardware`                                                                                                      |
+| `modules/universal/profile/hardware/darwin-utm-guest/default.nix:17` | `features.darwin-utm-guest`, `moduleType`               | 1 — nixpkgs `profiles/qemu-guest.nix`                                                                                                                                       |
+| `modules/universal/virtualisation/microvm/host/default.nix:12`       | `moduleType`                                            | 1 — `microvm.nixosModules.host`                                                                                                                                             |
+| `modules/universal/virtualisation/microvm/guest/default.nix:15`      | `!features.microvm-guest`                               | 1 — `microvm.nixosModules.microvm-options`                                                                                                                                  |
 
 The task text above names 3 sites. It misses `modules/universal/default.nix:21` and
 `modules/universal/_stylix.nix:19`, and both are essential.
 
 ### Three kinds of driving data, not one
 
-| Kind | Sites | What it answers |
-|---|---|---|
-| `features.*` from `hosts/<host>/meta.json` | 3 | "does this machine have that hardware?" |
-| `moduleType` | 5 | "which evaluation universe am I in?" |
-| `parent == null` | 1 | "am I a standalone home-manager evaluation, or a child of a host?" |
+| Kind                                       | Sites | What it answers                                                    |
+| ------------------------------------------ | ----- | ------------------------------------------------------------------ |
+| `features.*` from `hosts/<host>/meta.json` | 3     | "does this machine have that hardware?"                            |
+| `moduleType`                               | 5     | "which evaluation universe am I in?"                               |
+| `parent == null`                           | 1     | "am I a standalone home-manager evaluation, or a child of a host?" |
 
 A framework must answer all three, not only the first. den answers `moduleType` natively, because
 it names one class per target and needs no data for it.
@@ -122,11 +122,11 @@ it names one class per target and needs no data for it.
 Each rpi4 third-party module declares one option that nothing else declares, so the option proves
 the import. `nix eval` on the two hosts:
 
-| option | `briv` (`features.rpi4`) | `oams` (no flag) |
-|---|---|---|
-| `sdImage` | true | false |
-| `programs.argon` | true | false |
-| `hardware.raspberry-pi` | true | false |
+| option                  | `briv` (`features.rpi4`) | `oams` (no flag) |
+| ----------------------- | ------------------------ | ---------------- |
+| `sdImage`               | true                     | false            |
+| `programs.argon`        | true                     | false            |
+| `hardware.raspberry-pi` | true                     | false            |
 
 This is an option-value probe, not a `drvPath` compare. `kdnConfig.self` reaches evaluated config
 in this repository, so any edit moves every host `drvPath` and a `drvPath` diff proves nothing.
@@ -157,35 +157,35 @@ Item 4 of the task: state whether each capability is **essential**, **replaceabl
 
 ### Essential
 
-| Capability | Sites | Why it is essential |
-|---|---|---|
-| `features.*` (5 flags, `:207-228`) | 13 lines, 15 mentions | the only per-host JSON data that drives a third-party import. 3 of the 5 flags do. |
-| `moduleType` (`:74-77`) | 17 lines | it drives 5 of the 6 third-party import sites, and every `util.if*` guard. |
+| Capability                               | Sites                                     | Why it is essential                                                                    |
+| ---------------------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------- |
+| `features.*` (5 flags, `:207-228`)       | 13 lines, 15 mentions                     | the only per-host JSON data that drives a third-party import. 3 of the 5 flags do.     |
+| `moduleType` (`:74-77`)                  | 17 lines                                  | it drives 5 of the 6 third-party import sites, and every `util.if*` guard.             |
 | `parent` (`:97`) / `parents` (`:99-107`) | 2 direct, 30 through `hasParentOfAnyType` | it answers the standalone-home-manager question at `_stylix.nix:19`. Nothing else can. |
-| `output.mkSubmodule` (`:61-64`) | 2 here, 4 in `flake.nix` | it **is** the pre-pass. It builds the child meta config for home-manager. |
-| `specialArgs` (`:86-92`) | 0 direct | the payload. `flake.nix` reads it at 6 places. |
-| `system` (`:71-73`) | 0 direct | `flake.nix` reads it to pick the platform. |
-| `modules` (`:78-85`) | 0 direct | `flake.nix` builds the module list from it. |
+| `output.mkSubmodule` (`:61-64`)          | 2 here, 4 in `flake.nix`                  | it **is** the pre-pass. It builds the child meta config for home-manager.              |
+| `specialArgs` (`:86-92`)                 | 0 direct                                  | the payload. `flake.nix` reads it at 6 places.                                         |
+| `system` (`:71-73`)                      | 0 direct                                  | `flake.nix` reads it to pick the platform.                                             |
+| `modules` (`:78-85`)                     | 0 direct                                  | `flake.nix` builds the module list from it.                                            |
 
 ### Replaceable
 
-| Capability | Sites | The replacement |
-|---|---|---|
-| `util.ifTypes` (`:151-155`) | 162 | a slot target key, or a den class name. Mechanical. |
-| `util.ifHMParent` (`:161-169`) | 58 | the same. |
-| `util.ifHM` (`:179-183`) | 57 | the same. |
-| `util.hasParentOfAnyType` (`:184-188`) | 30 | it walks the ancestor chain, so a flat target key cannot express it. It needs den's scope model. Replaceable, with care. |
-| `util.ifNotHMParent` (`:170-178`) | 9 | a target key. |
-| `util.isOfType` (`:130-134`) | 6 | a target key. |
-| `util.modules.forwardAttrsAsDefaults` (`:194-200`) | 3 | a plain `lib` helper. It needs no pre-pass. |
-| `util.hasSops` (`:135-143`) | 2 | it is `moduleType ∈ { nixos, darwin, home-manager }` — a constant per class. |
-| `util.loadModules` (`:189-193`) | 2 | den's `batteries.import-tree`, or a slot's own loader. |
-| `hostName` (`:66-69`) | 3 | den's host entity already carries `name` and `hostName`. |
-| `k8s.clusters` (`modules/meta/k8s/clusters/default.nix:8-91`) | 6 | plain per-cluster data. It fits a `data/` file or a den host schema extension. It needs no pre-pass. |
-| `inputs` (`:93`) | 9 | a plain `specialArgs.inputs`. |
-| `self` (`:95`) | 50 | a plain `specialArgs`. The count is high, so the flip is large. |
-| `nix-configs` (`:96`) | 3 | the same. |
-| `lib` (`:94`) | 0 direct | the module system supplies `lib`. |
+| Capability                                                    | Sites    | The replacement                                                                                                          |
+| ------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `util.ifTypes` (`:151-155`)                                   | 162      | a slot target key, or a den class name. Mechanical.                                                                      |
+| `util.ifHMParent` (`:161-169`)                                | 58       | the same.                                                                                                                |
+| `util.ifHM` (`:179-183`)                                      | 57       | the same.                                                                                                                |
+| `util.hasParentOfAnyType` (`:184-188`)                        | 30       | it walks the ancestor chain, so a flat target key cannot express it. It needs den's scope model. Replaceable, with care. |
+| `util.ifNotHMParent` (`:170-178`)                             | 9        | a target key.                                                                                                            |
+| `util.isOfType` (`:130-134`)                                  | 6        | a target key.                                                                                                            |
+| `util.modules.forwardAttrsAsDefaults` (`:194-200`)            | 3        | a plain `lib` helper. It needs no pre-pass.                                                                              |
+| `util.hasSops` (`:135-143`)                                   | 2        | it is `moduleType ∈ { nixos, darwin, home-manager }` — a constant per class.                                             |
+| `util.loadModules` (`:189-193`)                               | 2        | den's `batteries.import-tree`, or a slot's own loader.                                                                   |
+| `hostName` (`:66-69`)                                         | 3        | den's host entity already carries `name` and `hostName`.                                                                 |
+| `k8s.clusters` (`modules/meta/k8s/clusters/default.nix:8-91`) | 6        | plain per-cluster data. It fits a `data/` file or a den host schema extension. It needs no pre-pass.                     |
+| `inputs` (`:93`)                                              | 9        | a plain `specialArgs.inputs`.                                                                                            |
+| `self` (`:95`)                                                | 50       | a plain `specialArgs`. The count is high, so the flip is large.                                                          |
+| `nix-configs` (`:96`)                                         | 3        | the same.                                                                                                                |
+| `lib` (`:94`)                                                 | 0 direct | the module system supplies `lib`.                                                                                        |
 
 ### Removable — zero call sites outside `modules/meta` itself
 
@@ -231,10 +231,10 @@ repository's aspect rule 1, "no entity argument".
 
 The two verdicts do not conflict. They describe two kinds of aspect:
 
-| Kind | May take `{ host, ... }` | Example |
-|---|---|---|
-| a **host** aspect, inside this repository's own den evaluation | yes | `den.aspects.host-nixos` in `checks/den-mvp/host-nixos/` |
-| an **exported library** aspect, in `denModules.*` | no | every aspect in `modules/den/aspects/` |
+| Kind                                                           | May take `{ host, ... }` | Example                                                  |
+| -------------------------------------------------------------- | ------------------------ | -------------------------------------------------------- |
+| a **host** aspect, inside this repository's own den evaluation | yes                      | `den.aspects.host-nixos` in `checks/den-mvp/host-nixos/` |
+| an **exported library** aspect, in `denModules.*`              | no                       | every aspect in `modules/den/aspects/`                   |
 
 So the rpi4 concern belongs in a host aspect, not in a library aspect. A library aspect keeps a
 plain option and the host sets it — but a plain option cannot drive `imports`, so the conditional
@@ -255,11 +255,11 @@ import must live on the host side. **State this in 006.**
 
 `checks/conditional-imports.nix`, plus two probe files in `checks/conditional-imports/`.
 
-| Part | Assertions | Runs in |
-|---|---|---|
-| `conditional-imports-mechanism` | 2 — the `specialArgs` route imports the module; the excluded module stays unevaluated | `nix flake check` |
-| `conditional-imports-repository` | 3 — `briv` gets all three markers, `oams` gets none, and the flag comes from `meta.json` | `nix flake check` |
-| `.recursion` | 2 — the `config` route and the `_module.args` route both recurse | `nix run '.#checks.<system>.conditional-imports-mechanism.recursion'` |
+| Part                             | Assertions                                                                               | Runs in                                                               |
+| -------------------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `conditional-imports-mechanism`  | 2 — the `specialArgs` route imports the module; the excluded module stays unevaluated    | `nix flake check`                                                     |
+| `conditional-imports-repository` | 3 — `briv` gets all three markers, `oams` gets none, and the flag comes from `meta.json` | `nix flake check`                                                     |
+| `.recursion`                     | 2 — the `config` route and the `_module.args` route both recurse                         | `nix run '.#checks.<system>.conditional-imports-mechanism.recursion'` |
 
 A failure prints `want <json>, got <json>` per assertion and exits 1, the same shape as
 `checks/standalone.nix` and `checks/den-mvp/tests.nix` tier 1.

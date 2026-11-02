@@ -15,13 +15,13 @@ The tree itself is [modules/den/](../../modules/den/README.md).
 
 ## Layout
 
-| Path | Kind | den output |
-|---|---|---|
-| `host-darwin/` | den host, class `darwin`, `aarch64-darwin` | `denConfigurations.host-darwin`, `denDevenvShells.host-darwin` |
-| `host-nixos/` | den host, class `nixos`, `x86_64-linux` | `denConfigurations.host-nixos`, `denDevenvShells.host-nixos` |
-| `users/` | the one den user both hosts share | `home-manager.users.dev` inside each host |
-| `devenv/` | standalone shells, no den host | `denDevenvShells.devenv-darwin`, `denDevenvShells.devenv-linux` |
-| `home/` | standalone home-manager, no den host | `denHomeConfigurations.home-darwin`, `denHomeConfigurations.home-linux` |
+| Path           | Kind                                       | den output                                                              |
+| -------------- | ------------------------------------------ | ----------------------------------------------------------------------- |
+| `host-darwin/` | den host, class `darwin`, `aarch64-darwin` | `denConfigurations.host-darwin`, `denDevenvShells.host-darwin`          |
+| `host-nixos/`  | den host, class `nixos`, `x86_64-linux`    | `denConfigurations.host-nixos`, `denDevenvShells.host-nixos`            |
+| `users/`       | the one den user both hosts share          | `home-manager.users.dev` inside each host                               |
+| `devenv/`      | standalone shells, no den host             | `denDevenvShells.devenv-darwin`, `denDevenvShells.devenv-linux`         |
+| `home/`        | standalone home-manager, no den host       | `denHomeConfigurations.home-darwin`, `denHomeConfigurations.home-linux` |
 
 A den host produces two results: a system, and a shell from
 `den.policies.host-to-devenv`. Both read one aspect list. The `devenv/` and `home/` directories
@@ -116,30 +116,30 @@ finish in under 40 s:
 nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-den'
 ```
 
-| Check | Tier | What it proves |
-|---|---|---|
-| `den-eval-rosetta-builder` | 1 — evaluation | the aspect sets four option values and one launchd daemon |
-| `den-eval-gh` | 1 — evaluation | the package, the Claude Code opt-in, and that no mutating rule entered the allowlist |
-| `den-eval-guards` | 1 — evaluation | both `denLib` guards fire, the good path still returns one module, and the namespace holds the registry and no phantom |
-| `den-eval-routes` | 1 — evaluation | `denLib.imports` and `denModules` give one `drvPath` in a bare nix-darwin system |
-| `den-eval-devenv-cli` | 1 — evaluation | the full matrix: 12 assertions over all four den classes, both hosts, both home-manager routes and `denLib.imports` |
-| `den-eval-ssh-agent` | 1 — evaluation | the user scope alone: the aspect reaches a home-manager generation and no host target |
-| `den-eval-ca` | 1 — evaluation | the first `nixos`-only aspect, with the option inside the `nixos` target |
-| `den-eval-zellij` | 1 — evaluation | the skill file, the two Claude Code hooks and the `kdn.isSourceRepo` switch, on both branches |
-| `den-eval-opencode` | 1 — evaluation | the de-personalized options, and that a consumer's `settings` keeps the permission baseline |
-| `den-eval-mcp` | 1 — evaluation | the four-aspect family: one gateway per shell, every backend name in the generated YAML |
-| `den-eval-nix` | 1 — evaluation | the pre-commit hook, `den.devenv.inputs.git-hooks`, and the `$DEVENV_ROOT` expansion that replaces a frozen store path |
-| `den-eval-jj` | 1 — evaluation | the coupled pair: the generated repo config, the revset and sync aliases, both git hooks, the read-only Bash allowlist, and an empty failed-assertion list in both shells |
-| `den-artifact-host-darwin` | 2 — artifact | the built toplevel holds three `nix.conf` lines, `sw/bin/devenv`, the launchd plist and the `activate` reference |
-| `den-artifact-hm-host-darwin` | 2 — artifact | the generation den forwards to `home-manager.users.dev` writes all three shell hooks |
-| `den-artifact-home-darwin` | 2 — artifact | the same, for the **standalone** home-manager route that carries no den entity |
-| `den-artifact-host-nixos` | 2 — artifact | the NixOS toplevel holds both `nix.conf` lines and `sw/bin/devenv` |
-| `den-artifact-hm-host-nixos` | 2 — artifact | the NixOS host's forwarded generation writes all three shell hooks |
-| `den-artifact-home-linux` | 2 — artifact | the standalone Linux home-manager generation does the same |
-| `den-smoke-devenv-darwin` | 3 — smoke run | `gh` and `devenv` really run, from the standalone shell's own `enterTest` |
-| `den-smoke-host-darwin` | 3 — smoke run | the same, from the shell that `den.policies.host-to-devenv` derives |
-| `den-smoke-devenv-linux` | 3 — smoke run | the same, on `x86_64-linux` |
-| `den-smoke-host-nixos` | 3 — smoke run | the same, from the NixOS host's shell |
+| Check                         | Tier           | What it proves                                                                                                                                                            |
+| ----------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `den-eval-rosetta-builder`    | 1 — evaluation | the aspect sets four option values and one launchd daemon                                                                                                                 |
+| `den-eval-gh`                 | 1 — evaluation | the package, the Claude Code opt-in, and that no mutating rule entered the allowlist                                                                                      |
+| `den-eval-guards`             | 1 — evaluation | both `denLib` guards fire, the good path still returns one module, and the namespace holds the registry and no phantom                                                    |
+| `den-eval-routes`             | 1 — evaluation | `denLib.imports` and `denModules` give one `drvPath` in a bare nix-darwin system                                                                                          |
+| `den-eval-devenv-cli`         | 1 — evaluation | the full matrix: 12 assertions over all four den classes, both hosts, both home-manager routes and `denLib.imports`                                                       |
+| `den-eval-ssh-agent`          | 1 — evaluation | the user scope alone: the aspect reaches a home-manager generation and no host target                                                                                     |
+| `den-eval-ca`                 | 1 — evaluation | the first `nixos`-only aspect, with the option inside the `nixos` target                                                                                                  |
+| `den-eval-zellij`             | 1 — evaluation | the skill file, the two Claude Code hooks and the `kdn.isSourceRepo` switch, on both branches                                                                             |
+| `den-eval-opencode`           | 1 — evaluation | the de-personalized options, and that a consumer's `settings` keeps the permission baseline                                                                               |
+| `den-eval-mcp`                | 1 — evaluation | the four-aspect family: one gateway per shell, every backend name in the generated YAML                                                                                   |
+| `den-eval-nix`                | 1 — evaluation | the pre-commit hook, `den.devenv.inputs.git-hooks`, and the `$DEVENV_ROOT` expansion that replaces a frozen store path                                                    |
+| `den-eval-jj`                 | 1 — evaluation | the coupled pair: the generated repo config, the revset and sync aliases, both git hooks, the read-only Bash allowlist, and an empty failed-assertion list in both shells |
+| `den-artifact-host-darwin`    | 2 — artifact   | the built toplevel holds three `nix.conf` lines, `sw/bin/devenv`, the launchd plist and the `activate` reference                                                          |
+| `den-artifact-hm-host-darwin` | 2 — artifact   | the generation den forwards to `home-manager.users.dev` writes all three shell hooks                                                                                      |
+| `den-artifact-home-darwin`    | 2 — artifact   | the same, for the **standalone** home-manager route that carries no den entity                                                                                            |
+| `den-artifact-host-nixos`     | 2 — artifact   | the NixOS toplevel holds both `nix.conf` lines and `sw/bin/devenv`                                                                                                        |
+| `den-artifact-hm-host-nixos`  | 2 — artifact   | the NixOS host's forwarded generation writes all three shell hooks                                                                                                        |
+| `den-artifact-home-linux`     | 2 — artifact   | the standalone Linux home-manager generation does the same                                                                                                                |
+| `den-smoke-devenv-darwin`     | 3 — smoke run  | `gh` and `devenv` really run, from the standalone shell's own `enterTest`                                                                                                 |
+| `den-smoke-host-darwin`       | 3 — smoke run  | the same, from the shell that `den.policies.host-to-devenv` derives                                                                                                       |
+| `den-smoke-devenv-linux`      | 3 — smoke run  | the same, on `x86_64-linux`                                                                                                                                               |
+| `den-smoke-host-nixos`        | 3 — smoke run  | the same, from the NixOS host's shell                                                                                                                                     |
 
 Tier 1 runs on any machine: the comparison is an evaluation and the derivation is local. Tier 2 and
 tier 3 build a real artifact, so `tests.nix` keeps only this machine's entries — the same rule the
@@ -155,13 +155,13 @@ The registry at [`modules/den/lib.nix`](../../modules/den/lib.nix) holds **20** 
 (aspect, class) pairs. Five checks are cross-cutting. Each one reads a **bare consumer** — a plain
 evaluation with no den entity, no `kdnConfig` and no overlay, one helper per class:
 
-| Check | What it proves |
-|---|---|
-| `den-eval-defaults` | the option default an adopter really gets: the opt-in boundary, and every de-personalized value |
-| `den-eval-priority` | a consumer's own plain definition beats the aspect's, and the one place where it still cannot |
-| `den-eval-frozen-paths` | no backend freezes an environment value, and the gateway finds its configuration at run time |
-| `den-eval-coverage` | every registry aspect names a subject that evaluates its target module |
-| `den-eval-instantiate` | every one of the 25 (aspect, class) pairs forces its whole target module body, in a bare consumer, on every system |
+| Check                   | What it proves                                                                                                     |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `den-eval-defaults`     | the option default an adopter really gets: the opt-in boundary, and every de-personalized value                    |
+| `den-eval-priority`     | a consumer's own plain definition beats the aspect's, and the one place where it still cannot                      |
+| `den-eval-frozen-paths` | no backend freezes an environment value, and the gateway finds its configuration at run time                       |
+| `den-eval-coverage`     | every registry aspect names a subject that evaluates its target module                                             |
+| `den-eval-instantiate`  | every one of the 25 (aspect, class) pairs forces its whole target module body, in a bare consumer, on every system |
 
 `den-eval-coverage` reads a hand-written table, so it proves a name exists. `den-eval-instantiate`
 reads the registry and forces a `drvPath` per pair, so it proves the body evaluates. Measured on

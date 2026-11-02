@@ -41,7 +41,7 @@ build, and your own `set -eEuo pipefail` merely duplicates the wrapper's. This i
 `packages/llm/kdn-slug/kdn-slug.sh` carries the shebang header yet still packages cleanly: the
 header only matters when the file is executed directly, outside the Nix package.
 
-Net effect: you get a zero-build edit/test loop (run the file directly) *and* a proper packaged
+Net effect: you get a zero-build edit/test loop (run the file directly) _and_ a proper packaged
 artifact (built via `default.nix`), from one source file.
 
 ## When to reach for it

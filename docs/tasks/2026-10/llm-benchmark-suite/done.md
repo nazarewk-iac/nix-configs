@@ -12,11 +12,11 @@ timestamp: 2026-10-19T21:35:00+02:00
 
 All three sub-tasks are done.
 
-| Sub-task | Result | Deliverable |
-|---|---|---|
-| 001 benchmark suite | 31 brys models measured; opencode client cells on oams | [001-benchmark-suite/done.md](001-benchmark-suite/done.md) |
-| 002 disk-offload | each lever measured; lazy-mode RAM claim corrected | [002-disk-offload/done.md](002-disk-offload/done.md) |
-| 003 runner evaluation | closed researched-only; Strata not viable on brys | [003-runner-eval/done.md](003-runner-eval/done.md) |
+| Sub-task              | Result                                                 | Deliverable                                                |
+| --------------------- | ------------------------------------------------------ | ---------------------------------------------------------- |
+| 001 benchmark suite   | 31 brys models measured; opencode client cells on oams | [001-benchmark-suite/done.md](001-benchmark-suite/done.md) |
+| 002 disk-offload      | each lever measured; lazy-mode RAM claim corrected     | [002-disk-offload/done.md](002-disk-offload/done.md)       |
+| 003 runner evaluation | closed researched-only; Strata not viable on brys      | [003-runner-eval/done.md](003-runner-eval/done.md)         |
 
 ## Key results
 

@@ -33,14 +33,14 @@ facts are in
 The owner does these **before** the task starts, so the session does not begin
 blind:
 
-| Item | State |
-|---|---|
-| The machine is plugged in and powered. | owner |
-| The machine has a **host name**. | owner picks it; the task uses `<name>` as a placeholder |
-| A NanoKVM is plugged into it (HDMI and USB). | owner |
-| The machine boots this repo's ISO from USB. | `nix build .#install-iso` → `result/iso/kdn-nixos-install-iso.iso` |
-| The machine is plugged into a switch over an **SFP** link. | owner |
-| The switch port is configured for the intended VLAN. | owner, or the agent with switch access |
+| Item                                                       | State                                                              |
+| ---------------------------------------------------------- | ------------------------------------------------------------------ |
+| The machine is plugged in and powered.                     | owner                                                              |
+| The machine has a **host name**.                           | owner picks it; the task uses `<name>` as a placeholder            |
+| A NanoKVM is plugged into it (HDMI and USB).               | owner                                                              |
+| The machine boots this repo's ISO from USB.                | `nix build .#install-iso` → `result/iso/kdn-nixos-install-iso.iso` |
+| The machine is plugged into a switch over an **SFP** link. | owner                                                              |
+| The switch port is configured for the intended VLAN.       | owner, or the agent with switch access                             |
 
 Everything else follows the same rules as the Chromebook run: the fleet does the
 work, the overseer supervises, the owner has the hands, nothing is pushed.
@@ -50,14 +50,14 @@ work, the overseer supervises, the owner has the hands, nothing is pushed.
 `hosts/etra/default.nix` is the reference for a host that is wired into the
 network as a first-class citizen. The parts to copy:
 
-| Concern | How etra does it |
-|---|---|
-| Profile | `kdn.profile.machine.baseline` with an explicit initrd emergency timeout |
-| Disk | `kdn.disks` with `luks.volumes."<disk>-<host>"` and the boot device by `by-id` path |
-| Impersonation of a normal node | SSH access through the `kdn-*` dispatcher, SSH host certificate from the CA |
-| Out-of-band | `kdn.hw.nanokvm.enable = true` |
-| Address | a static IPv4 in its VLAN, a DHCP reservation keyed on the MAC, and a DNS name |
-| Switch links | `kdn.networking.router.nets.*` with a `bond` netdev and VLAN children |
+| Concern                        | How etra does it                                                                    |
+| ------------------------------ | ----------------------------------------------------------------------------------- |
+| Profile                        | `kdn.profile.machine.baseline` with an explicit initrd emergency timeout            |
+| Disk                           | `kdn.disks` with `luks.volumes."<disk>-<host>"` and the boot device by `by-id` path |
+| Impersonation of a normal node | SSH access through the `kdn-*` dispatcher, SSH host certificate from the CA         |
+| Out-of-band                    | `kdn.hw.nanokvm.enable = true`                                                      |
+| Address                        | a static IPv4 in its VLAN, a DHCP reservation keyed on the MAC, and a DNS name      |
+| Switch links                   | `kdn.networking.router.nets.*` with a `bond` netdev and VLAN children               |
 
 Not every part is needed on a non-router. Whether this machine takes a **router**
 role is an open question; the default is "no", because a router role rewrites the
@@ -68,16 +68,16 @@ default route, DNS and firewall for the whole site.
 Each phase ends with a commit and one `.worklog.md` line, as in the Chromebook
 task.
 
-| Phase | Work | Gate |
-|---|---|---|
-| 0 | Harness up: KVM reachable, screenshots and keys proven, Zellij session, orchestrator spawned, watch loop running. | a test delegation to a fast alias returns |
-| 1 | Recon from the live ISO over the KVM: `dmidecode`, `lspci`, `lsblk`, `ip -br link`, `ethtool` on the SFP NIC, RAM, firmware mode. | a committed hardware profile for `<name>` |
-| 2 | Name and identity: host name, `networking.hostId`, the SSH host key, the SOPS recipients, the DHCP reservation and DNS name. | the values are recorded and committed |
-| 3 | `hosts-den/<name>` skeleton: class, aspects, tmpfs root, no bootloader yet. | `nix eval .#denConfigurations.<name>` returns a system |
-| 4 | Disk: `kdn.disks` layout for the real devices, ESP included. | the layout evaluates and the installer finds the disk |
-| 5 | Install over the KVM, first boot, SSH reachable through the dispatcher. | `<name>` answers SSH with a valid host certificate |
-| 6 | Profile parity: the roles the machine will actually serve, nothing more. | `nixos-rebuild switch` on the machine |
-| 7 | Evaluation write-up. | the shared evaluation is done |
+| Phase | Work                                                                                                                              | Gate                                                   |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| 0     | Harness up: KVM reachable, screenshots and keys proven, Zellij session, orchestrator spawned, watch loop running.                 | a test delegation to a fast alias returns              |
+| 1     | Recon from the live ISO over the KVM: `dmidecode`, `lspci`, `lsblk`, `ip -br link`, `ethtool` on the SFP NIC, RAM, firmware mode. | a committed hardware profile for `<name>`              |
+| 2     | Name and identity: host name, `networking.hostId`, the SSH host key, the SOPS recipients, the DHCP reservation and DNS name.      | the values are recorded and committed                  |
+| 3     | `hosts-den/<name>` skeleton: class, aspects, tmpfs root, no bootloader yet.                                                       | `nix eval .#denConfigurations.<name>` returns a system |
+| 4     | Disk: `kdn.disks` layout for the real devices, ESP included.                                                                      | the layout evaluates and the installer finds the disk  |
+| 5     | Install over the KVM, first boot, SSH reachable through the dispatcher.                                                           | `<name>` answers SSH with a valid host certificate     |
+| 6     | Profile parity: the roles the machine will actually serve, nothing more.                                                          | `nixos-rebuild switch` on the machine                  |
+| 7     | Evaluation write-up.                                                                                                              | the shared evaluation is done                          |
 
 ## Requirements
 
@@ -100,15 +100,15 @@ task.
 
 ## Differences from the Chromebook run
 
-| Topic | Chromebook (`gaz`) | This machine |
-|---|---|---|
-| Firmware | MrChromebox UEFI Full ROM, needs CR50 write-protect work | stock UEFI, nothing to flash |
-| Boot media | USB installer after a firmware change | USB installer, directly |
-| Installer | any | this repo's `.#install-iso` |
-| Input device | laptop keyboard and panel | none: the KVM is the only console |
-| Network | Wi-Fi likely, then LAN | SFP into a switch, static VLAN address |
-| Reversibility | flashing is one-way in practice | nothing irreversible before the disk write |
-| Blocker | a SuzyQable purchase or a case opening | none |
+| Topic         | Chromebook (`gaz`)                                       | This machine                               |
+| ------------- | -------------------------------------------------------- | ------------------------------------------ |
+| Firmware      | MrChromebox UEFI Full ROM, needs CR50 write-protect work | stock UEFI, nothing to flash               |
+| Boot media    | USB installer after a firmware change                    | USB installer, directly                    |
+| Installer     | any                                                      | this repo's `.#install-iso`                |
+| Input device  | laptop keyboard and panel                                | none: the KVM is the only console          |
+| Network       | Wi-Fi likely, then LAN                                   | SFP into a switch, static VLAN address     |
+| Reversibility | flashing is one-way in practice                          | nothing irreversible before the disk write |
+| Blocker       | a SuzyQable purchase or a case opening                   | none                                       |
 
 The last row is the reason this task goes first.
 

@@ -80,10 +80,20 @@ A `fleet-status` extension tool that performs three HTTP GETs with a short timeo
 compact JSON object:
 
 ```json
-{ "loaded": ["qwen3.8-flash-next"],
-  "resources": { "ram_used_gb": 29, "ram_total_gb": 125, "vram_used_gb": 6.8, "vram_total_gb": 8.0,
-                 "load1": 5.7, "swap_used_gb": 13 },
-  "models": [ { "alias": "chat-std-fast", "context": 32768, "loaded": false, "load_seconds_est": 15 } ] }
+{
+  "loaded": ["qwen3.8-flash-next"],
+  "resources": {
+    "ram_used_gb": 29,
+    "ram_total_gb": 125,
+    "vram_used_gb": 6.8,
+    "vram_total_gb": 8.0,
+    "load1": 5.7,
+    "swap_used_gb": 13
+  },
+  "models": [
+    { "alias": "chat-std-fast", "context": 32768, "loaded": false, "load_seconds_est": 15 }
+  ]
+}
 ```
 
 It must: use the CA cert and bearer key the client already has, cap total time (e.g. 3 s), and
@@ -105,10 +115,10 @@ Not a heuristic in code: a short, ordered policy the model applies with the two 
 
 Each piece gets its own proof file under this task, with the exact command and its real output:
 
-| File | Proves |
-|---|---|
-| `proof-catalog.md` | the rendered catalog parses and carries capability + cost hints |
-| `proof-fleet-status.md` | the tool returns live state; and degrades correctly when brys is unreachable |
+| File                      | Proves                                                                                                                  |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `proof-catalog.md`        | the rendered catalog parses and carries capability + cost hints                                                         |
+| `proof-fleet-status.md`   | the tool returns live state; and degrades correctly when brys is unreachable                                            |
 | `proof-context-filter.md` | a delegation declaring a 468 KB input is **rejected by the extension**, showing the message and the aliases it suggests |
 
 ## Out of scope

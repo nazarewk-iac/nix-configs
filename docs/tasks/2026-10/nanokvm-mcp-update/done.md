@@ -17,6 +17,7 @@ on that whitelist. The download aborts with `unsupported content type` after thr
 `/kvmapp` is touched.
 
 Evidence:
+
 - The package itself is fine. Downloaded from the device: `Content-Type: application/x-compressed`,
   size `16594889` = manifest, sha256 `cffd68bf…` = the GitHub release sha256, untars cleanly.
 - No install side-effects: `/root/old/version` was a stale `2.3.6`, `/kvmapp/version` stayed

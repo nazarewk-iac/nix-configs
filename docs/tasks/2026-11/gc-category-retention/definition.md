@@ -13,13 +13,13 @@ timestamp: 2026-11-01T16:30:00+01:00
 Free store space by keeping only the **newest** build of each kind of thing and deleting the
 rest:
 
-| Kind | Keep |
-|---|---|
-| a NixOS toplevel (with Home Manager, containers, …) | per host: the newest |
-| a `darwinConfigurations` toplevel | per host: the newest |
-| a `devenv` shell | per repository: the newest |
-| a one-off `nix build .#foo` | per package name: the newest, or delete by age |
-| everything unclassified | delete older than ~1 h (configurable) |
+| Kind                                                | Keep                                           |
+| --------------------------------------------------- | ---------------------------------------------- |
+| a NixOS toplevel (with Home Manager, containers, …) | per host: the newest                           |
+| a `darwinConfigurations` toplevel                   | per host: the newest                           |
+| a `devenv` shell                                    | per repository: the newest                     |
+| a one-off `nix build .#foo`                         | per package name: the newest, or delete by age |
+| everything unclassified                             | delete older than ~1 h (configurable)          |
 
 It should discover the classes itself, present the plan, then delete.
 
@@ -29,8 +29,8 @@ It should discover the classes itself, present the plan, then delete.
 **auto GC roots** by policy, and it already supports exactly the "class keeps N newest and/or a
 period" shape:
 
-* `temporary-root-policies.<name> = { path-regex; period; }` — a class by path pattern.
-* `profile-policies.<name> = { profile-paths; keep-since; keep-latest-n; }` — a profile class that
+- `temporary-root-policies.<name> = { path-regex; period; }` — a class by path pattern.
+- `profile-policies.<name> = { profile-paths; keep-since; keep-latest-n; }` — a profile class that
   keeps the newest N and/or the last period.
 
 Already declared in `modules/den/aspects/profile-baseline.nix`: `direnv` (7d), `result` (5d),
@@ -60,6 +60,7 @@ Measured 2026-11-01 on `oams`:
    This constrains Layers 1, 2 and 2b to the **birth-time proxy**: `registrationTime` and the
    symlink target mtime, which is what angrr reads. It does **not** constrain Layer 3, which
    observes the open event rather than any filesystem timestamp.
+
 2. **The store carries no class metadata.** Today, on `oams`, the roots are dominated by live
    `nix-daemon` workers: `{temp:<pid>}` roots from four devenv-held workers, ~6 500 each, plus
    `run/current-system`, `run/booted-system`, the Home Manager generations and devenv's
@@ -72,12 +73,12 @@ Four stages, and they are **cumulative, not alternatives**: each one solves a ca
 cannot, and each ships on its own. Stop wherever the value runs out; nothing here is a choice
 between mutually exclusive approaches.
 
-| Stage | Solves | Ships without | Effort |
-|---|---|---|---|
-| **1** retune angrr classes | the age/keep-N policy for roots that exist (devenv, direnv, result, system, HM) | anything new | small — options only |
-| **2** `kdn-nix-keep` category roots | a built-but-not-activated toplevel, and "one per package" | any hook or daemon | small — one script + 3 call sites |
-| **2b** post-build hook (enqueue only) | forgetting to call stage 2 | the hook, if you only ever use the wrapper | small — one hook + one worker |
-| **3** eBPF probe + SQLite store | true last-*use* instead of birth-time | nothing — the first three already satisfy the request | large, and **gated on measurement** |
+| Stage                                 | Solves                                                                          | Ships without                                         | Effort                              |
+| ------------------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------- | ----------------------------------- |
+| **1** retune angrr classes            | the age/keep-N policy for roots that exist (devenv, direnv, result, system, HM) | anything new                                          | small — options only                |
+| **2** `kdn-nix-keep` category roots   | a built-but-not-activated toplevel, and "one per package"                       | any hook or daemon                                    | small — one script + 3 call sites   |
+| **2b** post-build hook (enqueue only) | forgetting to call stage 2                                                      | the hook, if you only ever use the wrapper            | small — one hook + one worker       |
+| **3** eBPF probe + SQLite store       | true last-_use_ instead of birth-time                                           | nothing — the first three already satisfy the request | large, and **gated on measurement** |
 
 **Recommended scope for the first pass: stages 1 and 2.** They are the whole request as stated
 (keep newest per class, delete by age) with no new daemon and no kernel code. Stage 2b is worth
@@ -94,13 +95,13 @@ logs "not owned by the current user" and skips them.
 Change the `period`/`keep-since` of the classes that map onto the request, and add the two
 missing classes:
 
-| Class | Route | Policy |
-|---|---|---|
-| `devenv` | temporary-root | per repo via `path-regex = "/\\.devenv/"`; short period (start `3d`, configurable) so an abandoned project drops fast |
-| `result` | temporary-root | `1d` (one-off builds) |
-| `system` | profile | already `keep-latest-n = 5`, `14d`; keep as is — this IS "per NixOS host newest plus rollback" |
-| **`home-manager`** | profile | **new**: `keep-latest-n = 2`, short period |
-| **`nixos-toplevels`** | category gcroot (Layer 2) | newest per host |
+| Class                 | Route                     | Policy                                                                                                                |
+| --------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `devenv`              | temporary-root            | per repo via `path-regex = "/\\.devenv/"`; short period (start `3d`, configurable) so an abandoned project drops fast |
+| `result`              | temporary-root            | `1d` (one-off builds)                                                                                                 |
+| `system`              | profile                   | already `keep-latest-n = 5`, `14d`; keep as is — this IS "per NixOS host newest plus rollback"                        |
+| **`home-manager`**    | profile                   | **new**: `keep-latest-n = 2`, short period                                                                            |
+| **`nixos-toplevels`** | category gcroot (Layer 2) | newest per host                                                                                                       |
 
 The requested "~1 h" belongs on the **one-off** class, not on devenv/system: 1 h for a shell you
 entered this morning would reap it immediately. So the configurable knob is
@@ -117,7 +118,7 @@ it. The honest fix is to give it one, at build time, under a namespaced director
 
 `nix-store --add-root --indirect` (or `nix build --out-link`) writes the link; a rebuild replaces
 it, so exactly one path per class+id stays live, and `nix-collect-garbage` handles the rest. This
-is the *only* way to get "newest build per configuration", because only the builder knows the
+is the _only_ way to get "newest build per configuration", because only the builder knows the
 class.
 
 Add `kdn-nix-keep` (`packages/kdn-nix/kdn-nix-keep.sh`) with one verb:
@@ -151,7 +152,7 @@ loop exits if the hook fails**:
 2. **The category must come from the caller, not from the path.** `$OUT_PATHS` is a closure of
    store paths and carries no "pryll". So the rebuild wrapper exports
    `KDN_GC_CLASS=nixos/pryll` (or `darwin/<host>`, `devenv/<repo>`) before invoking the build; the
-   hook reads it and falls back to `pkg/<drvName>` for a one-off. This is the *only* way to get the
+   hook reads it and falls back to `pkg/<drvName>` for a one-off. This is the _only_ way to get the
    class right, because the information exists nowhere else at hook time.
 
 With that, the `pkg/<name>` fallback gives "one per package" for free and an unclassified build
@@ -167,8 +168,8 @@ This is the answer to "track when store paths were last accessed", and it is **n
 The kernel side must be small and cheap; the storage side must not be. So two processes with one
 narrow interface:
 
-| Process | Runs where | Does | Must never |
-|---|---|---|---|
+| Process                   | Runs where                         | Does                               | Must never                                            |
+| ------------------------- | ---------------------------------- | ---------------------------------- | ----------------------------------------------------- |
 | **`kdn-nix-atime-probe`** | kernel (BPF program + tiny loader) | update one hash map entry per open | allocate, block, log per event, or exit on a map-full |
 
 | **`kdn-nix-atime-store`** | userspace daemon | drain the map into SQLite, non-synchronously | run in the build path |
@@ -195,13 +196,13 @@ CREATE TABLE access (
 );
 ```
 
-* **Non-synchronous**: `synchronous = NORMAL` plus one transaction per flush window (e.g. every
+- **Non-synchronous**: `synchronous = NORMAL` plus one transaction per flush window (e.g. every
   30-60 s) rather than one commit per event. Losing the last minute of access data is harmless.
-* **Batched upsert**: one `INSERT … ON CONFLICT(hash) DO UPDATE` per drained batch, inside a
+- **Batched upsert**: one `INSERT … ON CONFLICT(hash) DO UPDATE` per drained batch, inside a
   single transaction. `INSERT OR REPLACE` also works but loses `first`.
-* **Bounded growth**: the store has ~360k paths today, so the table is small. Add a periodic
+- **Bounded growth**: the store has ~360k paths today, so the table is small. Add a periodic
   `DELETE FROM access WHERE last < now - 90d` so the file cannot outlive the store's own content.
-* **Not in the build path**: the daemon's writes are its own; `nix build` never waits for it.
+- **Not in the build path**: the daemon's writes are its own; `nix build` never waits for it.
 
 #### What it buys
 
@@ -211,14 +212,14 @@ and what only the Lix `lastReferencedTime` patch solves today. angrr takes a sco
 
 #### Rules that make the signal honest
 
-* **Filter out the build users.** Skip opens by `nixbld*` (UID range) and by the daemon's own
+- **Filter out the build users.** Skip opens by `nixbld*` (UID range) and by the daemon's own
   workers, so a build's reads do not count as use. Without this the table says "used" about
   everything.
-* **Count what is executed, not only what is opened.** Add `sched:sched_process_exec` so a binary
+- **Count what is executed, not only what is opened.** Add `sched:sched_process_exec` so a binary
   you run daily is not "unused" merely because it was executed, not read.
-* **A missing row means "no history yet", not "never used".** Seed a new path's `first` at the
+- **A missing row means "no history yet", not "never used".** Seed a new path's `first` at the
   build or substitution time so nothing looks infinitely stale on first run.
-* **One store can have many hardlinks.** Record the access against the store path, not the inode,
+- **One store can have many hardlinks.** Record the access against the store path, not the inode,
   so `--optimise` does not merge the history of two unrelated packages.
 
 #### Gate: measure before building
@@ -233,6 +234,7 @@ Measure first, and record the numbers in this task:
 
 If (1) or (2) makes the probe's overhead measurable in the traced workload, or (3) is non-zero in
 steady state, record that and **do not ship it** — Layers 1, 2 and 2b already satisfy the request.
+
 ### Layer 4 — the plan, and a safe first state
 
 Before any of this deletes a file, it must print the plan. angrr already has this: `--dry-run`
@@ -241,12 +243,12 @@ Keep `kdn.profile-baseline-gc.dryRun = true` until the plan has been read once o
 
 ## Not in scope, and why
 
-* **Filesystem atime as a signal.** Dead on this host (`noatime`, fact 1) and not to be retried.
+- **Filesystem atime as a signal.** Dead on this host (`noatime`, fact 1) and not to be retried.
   This does **not** exclude Layer 3: eBPF observes the **open event itself**, builds its own
   in-memory map and dumps it to disk, so no filesystem timestamp is involved.
-* **Replacing angrr.** It does the class-plus-keep-N job already; a second engine would double the
+- **Replacing angrr.** It does the class-plus-keep-N job already; a second engine would double the
   maintenance for no behaviour.
-* **Automatic class discovery by inspecting store paths.** The store holds no such metadata; the
+- **Automatic class discovery by inspecting store paths.** The store holds no such metadata; the
   per-build hook (Layer 2b) is the honest version, and it still needs the caller to state the
   class.
 
@@ -259,7 +261,7 @@ Two behaviours the config must respect, both observed:
    `failed to prompt: not a terminal` when there is no TTY. Automation must pass `-n`/`--no-prompt`.
 2. **`profile-policies` are skipped for a non-owner**: it logged
    `ignore profile "/nix/var/nix/profiles/system" in owned only mode, not owned by the current
-   user`. The systemd service runs as root so this is fine in production, but a user-level test
+user`. The systemd service runs as root so this is fine in production, but a user-level test
    silently tests nothing.
 
 A dry run against this host already produced real verdicts, e.g.

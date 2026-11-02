@@ -39,13 +39,13 @@ inside an `imports` list fails with `error: Module imports can't be nested lists
 
 Measured on the real universal host `hosts/oams/default.nix`:
 
-| Command | Result |
-|---|---|
+| Command                                                                                            | Result                              |
+| -------------------------------------------------------------------------------------------------- | ----------------------------------- |
 | `nix eval --no-eval-cache --raw '.#nixosConfigurations.oams.config.system.build.toplevel.drvPath'` | exit 0, no "already declared" error |
-| `nix eval --no-eval-cache --json '.#nixosConfigurations.oams.config.kdn.certificates'` | `{"certs":{}}` |
-| `nix eval --no-eval-cache --json '.#nixosConfigurations.oams.config.kdn.ca-dag'` | `{"cas":{}}` |
-| the same line on `brys`, `etra`, `moss` | toplevel evaluates, exit 0 |
-| `nix build --no-eval-cache -L '.#checks.x86_64-linux.standalone-aspects'` | pass |
+| `nix eval --no-eval-cache --json '.#nixosConfigurations.oams.config.kdn.certificates'`             | `{"certs":{}}`                      |
+| `nix eval --no-eval-cache --json '.#nixosConfigurations.oams.config.kdn.ca-dag'`                   | `{"cas":{}}`                        |
+| the same line on `brys`, `etra`, `moss`                                                            | toplevel evaluates, exit 0          |
+| `nix build --no-eval-cache -L '.#checks.x86_64-linux.standalone-aspects'`                          | pass                                |
 
 ## Follow-up notes
 

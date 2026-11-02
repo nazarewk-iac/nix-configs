@@ -10,11 +10,11 @@ timestamp: 2026-10-27T19:15:00+01:00
 
 This is an **umbrella task**. It has three open sub-tasks:
 
-| Sub-task | What it delivers |
-|---|---|
+| Sub-task                                                       | What it delivers                                                                                   |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | [001-nanokvm-operations](001-nanokvm-operations/definition.md) | A skill plus a doc for the NanoKVM operations an agent needs: screenshot, keys, power, HID health. |
-| [002-gaz-to-den-hosts](002-gaz-to-den-hosts/definition.md) | `gaz` moved to `hosts-den/`, workstation profile, ZFS-on-LUKS impermanence, MrChromebox boot. |
-| [003-fleet-evaluation](003-fleet-evaluation/definition.md) | The measured answer to "how do we drive work with the local fleet most efficiently". |
+| [002-gaz-to-den-hosts](002-gaz-to-den-hosts/definition.md)     | `gaz` moved to `hosts-den/`, workstation profile, ZFS-on-LUKS impermanence, MrChromebox boot.      |
+| [003-fleet-evaluation](003-fleet-evaluation/definition.md)     | The measured answer to "how do we drive work with the local fleet most efficiently".               |
 
 Read [research.md](research.md) for the verified facts this plan rests on, and
 [design.md](design.md) for the harness that runs the job.
@@ -45,10 +45,10 @@ but boots in legacy BIOS mode, which is the wrong shape for a workstation.
 
 Two sibling tasks use the same harness and the same evaluation:
 
-| Task | Host | Runtime blocker |
-|---|---|---|
-| [../minipc-den-host/definition.md](../minipc-den-host/definition.md) | a new x86 mini-PC, etra-style, SFP uplink | none |
-| [../pryll-mother-desktop/definition.md](../pryll-mother-desktop/definition.md) | the mother's desktop, LAN only | none |
+| Task                                                                           | Host                                      | Runtime blocker |
+| ------------------------------------------------------------------------------ | ----------------------------------------- | --------------- |
+| [../minipc-den-host/definition.md](../minipc-den-host/definition.md)           | a new x86 mini-PC, etra-style, SFP uplink | none            |
+| [../pryll-mother-desktop/definition.md](../pryll-mother-desktop/definition.md) | the mother's desktop, LAN only            | none            |
 
 **Those two mostly cover the purposes of this one**: they convert a host to the
 den convention, and they produce the fleet evaluation. Neither is blocked on a
@@ -173,16 +173,16 @@ Four roles. Only one of them is a human, and it is the one with hands.
 
 Each phase ends with a commit and a one-line entry in `.worklog.md`.
 
-| Phase | Work | Gate |
-|---|---|---|
-| 0 | Harness up: KVM operations known, Zellij session, orchestrator spawned, watch loop running. | A test delegation to a fast alias returns. |
-| 1 | Recon: read the current `gaz` config, the disk aspect, `brys`, and the Crostini module. Write the migration plan. | Plan committed. |
-| 2 | `hosts-den/gaz` skeleton: class, aspects, hostId, tmpfs root, GRUB off. It evaluates. | `nix eval .#denConfigurations.gaz` returns a system. |
-| 3 | Hardware: model, keyboard, panel, `nixos-hardware` entry, firmware. Owner confirms the 2 TB disk. | `lsblk` and `dmidecode` captured from the live machine. |
-| 4 | Disk: `kdn.disks` layout for the real devices, plus the ESP. | The installer media boots and finds the layout. |
-| 5 | Install and first boot, over the KVM. | `gaz` boots to a login, and SSH answers. |
-| 6 | Workstation profile parity, then the old `hosts/gaz` removal. | `nixos-rebuild switch` on the machine. |
-| 7 | Evaluation write-up. | [003-fleet-evaluation](003-fleet-evaluation/definition.md) is done. |
+| Phase | Work                                                                                                              | Gate                                                                |
+| ----- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| 0     | Harness up: KVM operations known, Zellij session, orchestrator spawned, watch loop running.                       | A test delegation to a fast alias returns.                          |
+| 1     | Recon: read the current `gaz` config, the disk aspect, `brys`, and the Crostini module. Write the migration plan. | Plan committed.                                                     |
+| 2     | `hosts-den/gaz` skeleton: class, aspects, hostId, tmpfs root, GRUB off. It evaluates.                             | `nix eval .#denConfigurations.gaz` returns a system.                |
+| 3     | Hardware: model, keyboard, panel, `nixos-hardware` entry, firmware. Owner confirms the 2 TB disk.                 | `lsblk` and `dmidecode` captured from the live machine.             |
+| 4     | Disk: `kdn.disks` layout for the real devices, plus the ESP.                                                      | The installer media boots and finds the layout.                     |
+| 5     | Install and first boot, over the KVM.                                                                             | `gaz` boots to a login, and SSH answers.                            |
+| 6     | Workstation profile parity, then the old `hosts/gaz` removal.                                                     | `nixos-rebuild switch` on the machine.                              |
+| 7     | Evaluation write-up.                                                                                              | [003-fleet-evaluation](003-fleet-evaluation/definition.md) is done. |
 
 ## Human-in-the-loop hand-offs (expected)
 
@@ -214,18 +214,18 @@ must say which one it is.
 
 ## Risks
 
-| Risk | Mitigation |
-|---|---|
-| **No CR50 access and no SuzyQable** | Hard blocker. Buy the SuzyQable, or plan the battery-disconnect procedure with the owner before any flash. |
-| No HDMI signal from the KVM (seen today) | Phase 0 gate: prove a screenshot works before any planning. If it fails, the owner powers the machine on. |
-| The KVM cannot inject keys at all (`hidg0` i/o timeout) | Probe a harmless key first; a timeout means a physical replug of the KVM's USB cable. A UDC rebind did not fix it on `kvm-fa56`. |
-| MrChromebox does not support this exact model | Check the supported list first, in phase 3, before any flash. Fall back to running from USB or keeping Crostini. |
-| A 2 TB disk may not exist (eMMC is common on this model) | Verify with `lsblk`/`smartctl` before writing a layout. Adapt the layout to the real device. |
-| The KVM HID path dies mid-run (documented for `anji`) | Probe `HIDIdleTime` after every pause; report early; prefer a fresh session over a rebind loop. |
-| The orchestrator loops and burns hours | Watch loop with a step limit and an idle timer; the overseer interrupts. |
-| A frontier model swap stalls for minutes | The watch loop reads `/running` and the swap log, and tells the orchestrator to wait rather than retry. |
-| ZFS needs a unique 8-char `hostId` | Generate one from the machine UUID and record it. |
-| Secrets leak through a screenshot | Screenshots stay in `/tmp/opencode/`, are never committed, and are described only in plain words. |
+| Risk                                                     | Mitigation                                                                                                                       |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| **No CR50 access and no SuzyQable**                      | Hard blocker. Buy the SuzyQable, or plan the battery-disconnect procedure with the owner before any flash.                       |
+| No HDMI signal from the KVM (seen today)                 | Phase 0 gate: prove a screenshot works before any planning. If it fails, the owner powers the machine on.                        |
+| The KVM cannot inject keys at all (`hidg0` i/o timeout)  | Probe a harmless key first; a timeout means a physical replug of the KVM's USB cable. A UDC rebind did not fix it on `kvm-fa56`. |
+| MrChromebox does not support this exact model            | Check the supported list first, in phase 3, before any flash. Fall back to running from USB or keeping Crostini.                 |
+| A 2 TB disk may not exist (eMMC is common on this model) | Verify with `lsblk`/`smartctl` before writing a layout. Adapt the layout to the real device.                                     |
+| The KVM HID path dies mid-run (documented for `anji`)    | Probe `HIDIdleTime` after every pause; report early; prefer a fresh session over a rebind loop.                                  |
+| The orchestrator loops and burns hours                   | Watch loop with a step limit and an idle timer; the overseer interrupts.                                                         |
+| A frontier model swap stalls for minutes                 | The watch loop reads `/running` and the swap log, and tells the orchestrator to wait rather than retry.                          |
+| ZFS needs a unique 8-char `hostId`                       | Generate one from the machine UUID and record it.                                                                                |
+| Secrets leak through a screenshot                        | Screenshots stay in `/tmp/opencode/`, are never committed, and are described only in plain words.                                |
 
 ## Open questions
 

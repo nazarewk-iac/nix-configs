@@ -18,17 +18,17 @@ The package is `packages/ik-llama-cpp/default.nix`, registered in
 `packages/default.nix` as `ik-llama-cpp`. It builds from a pinned
 `fetchFromGitHub`. It does not use `builtins.fetchGit` of a moving branch.
 
-| Field | Value |
-|---|---|
-| Source | `ikawrakow/ik_llama.cpp` |
-| Revision | `35e72560fac6eb4e0bedc99976d3a12040749230` |
-| Hash | `sha256-FGBbmLThxMK8PFr3VaoXa4k2yPMCBne+QtR0fUrGw9w=` |
-| Date of the revision | 2026-10-19 |
-| Version | `0.0.0-unstable-2026-10-19` |
-| Build number | `2761` |
-| Build commit | `35e72560` |
-| Backend | CPU only |
-| Store path | `/nix/store/jwk7cw77lgidifyj1zbxyfrr5y2mxfcp-ik-llama-cpp-0.0.0-unstable-2026-10-19` |
+| Field                | Value                                                                                |
+| -------------------- | ------------------------------------------------------------------------------------ |
+| Source               | `ikawrakow/ik_llama.cpp`                                                             |
+| Revision             | `35e72560fac6eb4e0bedc99976d3a12040749230`                                           |
+| Hash                 | `sha256-FGBbmLThxMK8PFr3VaoXa4k2yPMCBne+QtR0fUrGw9w=`                                |
+| Date of the revision | 2026-10-19                                                                           |
+| Version              | `0.0.0-unstable-2026-10-19`                                                          |
+| Build number         | `2761`                                                                               |
+| Build commit         | `35e72560`                                                                           |
+| Backend              | CPU only                                                                             |
+| Store path           | `/nix/store/jwk7cw77lgidifyj1zbxyfrr5y2mxfcp-ik-llama-cpp-0.0.0-unstable-2026-10-19` |
 
 The fork has no release tags, so the version is date-based.
 
@@ -36,19 +36,19 @@ The fork has no release tags, so the version is date-based.
 
 The package sets these CMake flags:
 
-| Flag | Value | Reason |
-|---|---|---|
-| `GGML_NATIVE` | `OFF` | `-march=native` makes the build non-deterministic. The fork then enables AVX/AVX2/FMA/F16C by default, which is the brys baseline (a Zen3 Ryzen 5950X). |
-| `LLAMA_BUILD_EXAMPLES` | `ON` | Builds `llama-bench`, the benchmark tool. |
-| `LLAMA_BUILD_SERVER` | `ON` | Builds `llama-server`. |
-| `LLAMA_BUILD_TESTS` | `OFF` | Skips the upstream test suite. |
-| `BUILD_SHARED_LIBS` | `ON` | Shared libraries, as the in-repo llama.cpp builds. |
-| `LLAMA_CURL` | `OFF` | No libcurl. |
-| `GGML_CUDA` | `OFF` | CPU only. |
-| `GGML_HIPBLAS` | `OFF` | CPU only. |
-| `GGML_METAL` | `OFF` | CPU only. |
-| `GGML_RPC` | `OFF` | No RPC. |
-| `GGML_VULKAN` | `OFF` | CPU only. |
+| Flag                   | Value | Reason                                                                                                                                                  |
+| ---------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GGML_NATIVE`          | `OFF` | `-march=native` makes the build non-deterministic. The fork then enables AVX/AVX2/FMA/F16C by default, which is the brys baseline (a Zen3 Ryzen 5950X). |
+| `LLAMA_BUILD_EXAMPLES` | `ON`  | Builds `llama-bench`, the benchmark tool.                                                                                                               |
+| `LLAMA_BUILD_SERVER`   | `ON`  | Builds `llama-server`.                                                                                                                                  |
+| `LLAMA_BUILD_TESTS`    | `OFF` | Skips the upstream test suite.                                                                                                                          |
+| `BUILD_SHARED_LIBS`    | `ON`  | Shared libraries, as the in-repo llama.cpp builds.                                                                                                      |
+| `LLAMA_CURL`           | `OFF` | No libcurl.                                                                                                                                             |
+| `GGML_CUDA`            | `OFF` | CPU only.                                                                                                                                               |
+| `GGML_HIPBLAS`         | `OFF` | CPU only.                                                                                                                                               |
+| `GGML_METAL`           | `OFF` | CPU only.                                                                                                                                               |
+| `GGML_RPC`             | `OFF` | No RPC.                                                                                                                                                 |
+| `GGML_VULKAN`          | `OFF` | CPU only.                                                                                                                                               |
 
 The fork diverges from ggml-org llama.cpp. These flags of
 `packages/llama-cpp/default.nix` do **not** exist in the fork and are omitted:
@@ -113,13 +113,13 @@ The target model is Qwen3.8-Flash-Next (`qwen4exp`). The fork **loads it**: the
 `llama-bench` run reported `arch = qwen4exp` and a full result line. The
 comparison model is `qwen3.5-9b` (a common architecture), as the task asks.
 
-| model | engine | decode tok/s | prefill tok/s | note |
-|---|---|---|---|---|
-| qwen3.5-9b Q4_K_M | ik_llama.cpp | 7.80 | 117.56 | `-rtr 0`; 3 runs; decode std 0.76 |
-| qwen3.5-9b Q4_K_M | ik_llama.cpp (`-rtr 1`) | 8.28 | 98.34 | run-time repack; 3 runs |
-| qwen3.5-9b Q4_K_M | llama-cpp-sessions-vulkan-noblas | 7.31 | 214.64 | CPU backend (`libggml-cpu-haswell.so`); 3 runs; prefill std 1.89 |
-| Qwen3.8-Flash-Next UD-IQ4_XS (`qwen4exp`) | ik_llama.cpp | 6.48 | 66.20 | target model; 1 run |
-| Qwen3.8-Flash-Next UD-IQ4_XS (`qwen4exp`) | llama-cpp-sessions-vulkan-noblas | 5.31 | 75.07 | target model; 1 run |
+| model                                     | engine                           | decode tok/s | prefill tok/s | note                                                             |
+| ----------------------------------------- | -------------------------------- | ------------ | ------------- | ---------------------------------------------------------------- |
+| qwen3.5-9b Q4_K_M                         | ik_llama.cpp                     | 7.80         | 117.56        | `-rtr 0`; 3 runs; decode std 0.76                                |
+| qwen3.5-9b Q4_K_M                         | ik_llama.cpp (`-rtr 1`)          | 8.28         | 98.34         | run-time repack; 3 runs                                          |
+| qwen3.5-9b Q4_K_M                         | llama-cpp-sessions-vulkan-noblas | 7.31         | 214.64        | CPU backend (`libggml-cpu-haswell.so`); 3 runs; prefill std 1.89 |
+| Qwen3.8-Flash-Next UD-IQ4_XS (`qwen4exp`) | ik_llama.cpp                     | 6.48         | 66.20         | target model; 1 run                                              |
+| Qwen3.8-Flash-Next UD-IQ4_XS (`qwen4exp`) | llama-cpp-sessions-vulkan-noblas | 5.31         | 75.07         | target model; 1 run                                              |
 
 A short-prompt smoke test (qwen3.5-9b, `pp64`/`tg16`, 1 run) gave ik_llama.cpp
 92.60/7.29 tok/s against the baseline 61.18/4.72 tok/s.

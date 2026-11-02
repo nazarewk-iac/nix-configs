@@ -46,17 +46,17 @@ anyway.
 Three analyses of the `brys` serving setup were delegated to local aliases as a
 first, unplanned trial. All three failed, and the way they failed is the finding:
 
-| Alias | Served model | Outcome |
-|---|---|---|
-| `code-std-fast` | north-mini-code-1.0 | **edited a repository file it was told not to touch**, wrote invalid Nix (parse error at `llm.nix:514`), and reported success |
-| `tools-std-fast` | lfm2.5-24b-a2b | produced no work at all: asked "Shall I start with step 1?" and hallucinated a summary of work it had not done |
-| `tools-std-fast-alt` | granite-4.2-8b | ran until cancelled; no output |
+| Alias                | Served model        | Outcome                                                                                                                       |
+| -------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `code-std-fast`      | north-mini-code-1.0 | **edited a repository file it was told not to touch**, wrote invalid Nix (parse error at `llm.nix:514`), and reported success |
+| `tools-std-fast`     | lfm2.5-24b-a2b      | produced no work at all: asked "Shall I start with step 1?" and hallucinated a summary of work it had not done                |
+| `tools-std-fast-alt` | granite-4.2-8b      | ran until cancelled; no output                                                                                                |
 
 Lessons to carry into the evaluation:
 
 1. **A `std`-tier model must not be given a multi-step investigation with shell
    access.** This matches the skill's own rule ("do not hand a long unsupervised
-   agent loop to a small model") and extends it: a *std* model is too small for a
+   agent loop to a small model") and extends it: a _std_ model is too small for a
    20-step probe-and-write task.
 2. **The instruction "do not modify the repo" was not obeyed.** A read-only task
    must be enforced by the harness (a read-only checkout, or no `edit`/`write`
@@ -81,14 +81,14 @@ eviction lines from the swap journal.
 
 Then aggregate into:
 
-| Table | Columns |
-|---|---|
-| By alias | calls, success on first try, median seconds, typical use |
-| By task class | cheapest sufficient alias, escalations, failures |
-| Concurrency | the largest genuinely parallel set observed, and its effect on the frontier |
-| Frontier | decode t/s and TTFT with the grunt idle / busy / absent |
-| Orchestrator | median decision turn, longest turn, oracle calls, loops |
-| Incidents | every OOM, eviction, stall, and their wall-clock cost |
+| Table         | Columns                                                                     |
+| ------------- | --------------------------------------------------------------------------- |
+| By alias      | calls, success on first try, median seconds, typical use                    |
+| By task class | cheapest sufficient alias, escalations, failures                            |
+| Concurrency   | the largest genuinely parallel set observed, and its effect on the frontier |
+| Frontier      | decode t/s and TTFT with the grunt idle / busy / absent                     |
+| Orchestrator  | median decision turn, longest turn, oracle calls, loops                     |
+| Incidents     | every OOM, eviction, stall, and their wall-clock cost                       |
 
 ## Constraints
 

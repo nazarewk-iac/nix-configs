@@ -37,7 +37,11 @@ Activated on brys, into the swapping specialisation `llms-frontier` (a
 `GET /v1/models` now carries, for all 34 ids:
 
 ```json
-{ "id": "deepseek-v4-flash", "context_length": 327680, "meta": { "llamaswap": { "aliases": ["frontier"] } } }
+{
+  "id": "deepseek-v4-flash",
+  "context_length": 327680,
+  "meta": { "llamaswap": { "aliases": ["frontier"] } }
+}
 ```
 
 Counts: **34 ids, all 34 with `context_length`**. Aliases (`frontier`, `qwen`,
@@ -49,16 +53,16 @@ maximum — correct, because aliases are not bound per context.
 The generated plugin was run end-to-end against the live server. It produced 34
 model entries, **0 without `limit.context`**:
 
-| id | `limit.context` | `limit.output` |
-|---|---|---|
-| `deepseek-v4-flash` | 327680 | 8192 |
-| `qwen3.8-flash-next` | 1048576 | 8192 |
-| `frontier` | 327680 | 8192 |
-| `qwen` | 1048576 | 8192 |
-| `grunt` / `qwen3.5-4b` | 16384 | 4096 |
-| `tmax-2b` | 16384 | 4096 |
-| `qwen3.5-0.8b-cpu` | 8192 | 2048 |
-| `gemma-4-31b` | 8192 | 2048 |
+| id                     | `limit.context` | `limit.output` |
+| ---------------------- | --------------- | -------------- |
+| `deepseek-v4-flash`    | 327680          | 8192           |
+| `qwen3.8-flash-next`   | 1048576         | 8192           |
+| `frontier`             | 327680          | 8192           |
+| `qwen`                 | 1048576         | 8192           |
+| `grunt` / `qwen3.5-4b` | 16384           | 4096           |
+| `tmax-2b`              | 16384           | 4096           |
+| `qwen3.5-0.8b-cpu`     | 8192            | 2048           |
+| `gemma-4-31b`          | 8192            | 2048           |
 
 ## Full model sweep
 

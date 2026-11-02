@@ -18,11 +18,11 @@ This page is the operator's how-to.
 
 ## What is deployed today (2026-10-12)
 
-| Side | Host | State |
-|---|---|---|
-| Server (`ssh-ca` nixos aspect) | `brys` | live after the 2026-10-12 activation: `TrustedUserCAKeys`, plus a `HostKey`/`HostCertificate` pair for the new `ssh-host-brys` leaf |
-| Client (`ssh-ca` homeManager aspect) | `oams`, user `kdn` | live: `~/.ssh/config.d/50-kdn-ssh-ca.config` + `@cert-authority` fragment |
-| CA key | `oams` | in `data/ca/kdn.key.sops`, recipients are the two unattended YubiKeys (`yk-oams-unattended`, `yk-brys-unattended`) — signing works headless |
+| Side                                 | Host               | State                                                                                                                                       |
+| ------------------------------------ | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Server (`ssh-ca` nixos aspect)       | `brys`             | live after the 2026-10-12 activation: `TrustedUserCAKeys`, plus a `HostKey`/`HostCertificate` pair for the new `ssh-host-brys` leaf         |
+| Client (`ssh-ca` homeManager aspect) | `oams`, user `kdn` | live: `~/.ssh/config.d/50-kdn-ssh-ca.config` + `@cert-authority` fragment                                                                   |
+| CA key                               | `oams`             | in `data/ca/kdn.key.sops`, recipients are the two unattended YubiKeys (`yk-oams-unattended`, `yk-brys-unattended`) — signing works headless |
 
 Other hosts gain the same by adding `"ssh-ca"` to their `denLib.imports` aspects and one
 `kdn.certificates.certs.ssh-host-<name>` leaf.
@@ -49,11 +49,11 @@ because it was signed by the CA in `TrustedUserCAKeys` and names your login user
 
 Flags:
 
-| Flag | Default | Meaning |
-|---|---|---|
-| `--user <name>` | your local login | remote login the certificate is valid for (a principal) |
-| `--lifetime +8h` | `+8h` | OpenSSH validity interval, e.g. `+30d` for an automation token |
-| `--key <path>` | `~/.ssh/id_ed25519` | which key to certify; an existing key is reused |
+| Flag             | Default             | Meaning                                                        |
+| ---------------- | ------------------- | -------------------------------------------------------------- |
+| `--user <name>`  | your local login    | remote login the certificate is valid for (a principal)        |
+| `--lifetime +8h` | `+8h`               | OpenSSH validity interval, e.g. `+30d` for an automation token |
+| `--key <path>`   | `~/.ssh/id_ed25519` | which key to certify; an existing key is reused                |
 
 The certificate expires. Re-run `kdn-certs ssh login brys`; nothing else needs a reload.
 

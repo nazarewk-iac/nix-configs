@@ -21,11 +21,11 @@ the named file on 2026-09-11. The upstream angrr citations point at
 angrr runs today and it reaps almost nothing. Three separate root classes exist, and the service
 reached one of them.
 
-| Class | Count in the incident | Did angrr reach it? |
-|---|---|---|
-| Temporary root of a live build | 40,671 | **No.** Never. |
-| `result*` out-link of a finished build | 9 | Yes in theory. The job never ran. |
-| Stale `.devenv/**` project root | 24 | **No.** No policy matched. |
+| Class                                  | Count in the incident | Did angrr reach it?               |
+| -------------------------------------- | --------------------- | --------------------------------- |
+| Temporary root of a live build         | 40,671                | **No.** Never.                    |
+| `result*` out-link of a finished build | 9                     | Yes in theory. The job never ran. |
+| Stale `.devenv/**` project root        | 24                    | **No.** No policy matched.        |
 
 A three-host build filled the disk on 2026-09-11. Free space fell from 289 GB to 33 GB. A
 collector pass then freed 0 MB, because the live build held 40,671 store paths as temporary roots.
@@ -122,22 +122,22 @@ step.
 `U` = `modules/universal/profile/machine/baseline/default.nix`.
 `D` = `modules/den/aspects/profile-baseline.nix`.
 
-| Option | Value | `U` line | `D` line |
-|---|---|---|---|
-| the `dryRun` option declaration | `bool`, default `true` | `U:59-70` (`kdn.profile.machine.baseline.garbageCollection.dryRun`) | `D:130-142` (`kdn.profile-baseline-gc.dryRun`) |
-| `services.angrr.extraArgs` | `lib.mkIf dryRun [ "--dry-run" ]` | `U:197` | `D:486` (nixos), `D:536` (darwin) |
-| `services.angrr.logLevel` | `lib.mkIf dryRun (lib.mkDefault "debug")` | `U:198` | `D:487` (nixos), `D:537` (darwin) |
-| `…temporary-root-policies.devenv.path-regex` | `"/\\.devenv/"` | `U:224` | `D:481` (nixos), `D:533` (darwin) |
-| `…temporary-root-policies.devenv.period` | `"30d"` | `U:225` | `D:482` (nixos), `D:534` (darwin) |
-| `…temporary-root-policies.result.*` | `"/result[^/]*$"`, `"5d"` | `U:205-208` | `D:468-469` (nixos), `D:529-530` (darwin) |
-| `…temporary-root-policies.direnv.*` | `"/\\.direnv/"`, `"7d"` | `U:201-204` | `D:466-467` (nixos), `D:527-528` (darwin) |
-| `services.angrr.enable` | `lib.mkDefault true` | `U:192` | `D:461` (nixos), `D:526` (darwin) |
-| `services.angrr.enableNixGcIntegration` | `lib.mkDefault cfg.garbageCollection.enable` in `U`; `lib.mkDefault true` in `D` | `U:254` | `D:465` |
-| `services.angrr.timer.enable` | `lib.mkDefault true`, Darwin only | `U:279` | `D:545` |
-| `launchd.daemons.angrr.serviceConfig.StandardOutPath` | `"/var/log/angrr.log"` | `U:283` | `D:548` |
-| `launchd.daemons.angrr.serviceConfig.StandardErrorPath` | `"/var/log/angrr.log"` | `U:284` | `D:549` |
-| `nix.gc.options` | `lib.mkDefault "--delete-older-than 7d"` | `U:191` | `D:460` (nixos), `D:515` (darwin) |
-| `nix.gc.interval`, Darwin | `[ { Hour = 3; Minute = 15; } ]` | `U:265-270` | `D:520-525` |
+| Option                                                  | Value                                                                            | `U` line                                                            | `D` line                                       |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ---------------------------------------------- |
+| the `dryRun` option declaration                         | `bool`, default `true`                                                           | `U:59-70` (`kdn.profile.machine.baseline.garbageCollection.dryRun`) | `D:130-142` (`kdn.profile-baseline-gc.dryRun`) |
+| `services.angrr.extraArgs`                              | `lib.mkIf dryRun [ "--dry-run" ]`                                                | `U:197`                                                             | `D:486` (nixos), `D:536` (darwin)              |
+| `services.angrr.logLevel`                               | `lib.mkIf dryRun (lib.mkDefault "debug")`                                        | `U:198`                                                             | `D:487` (nixos), `D:537` (darwin)              |
+| `…temporary-root-policies.devenv.path-regex`            | `"/\\.devenv/"`                                                                  | `U:224`                                                             | `D:481` (nixos), `D:533` (darwin)              |
+| `…temporary-root-policies.devenv.period`                | `"30d"`                                                                          | `U:225`                                                             | `D:482` (nixos), `D:534` (darwin)              |
+| `…temporary-root-policies.result.*`                     | `"/result[^/]*$"`, `"5d"`                                                        | `U:205-208`                                                         | `D:468-469` (nixos), `D:529-530` (darwin)      |
+| `…temporary-root-policies.direnv.*`                     | `"/\\.direnv/"`, `"7d"`                                                          | `U:201-204`                                                         | `D:466-467` (nixos), `D:527-528` (darwin)      |
+| `services.angrr.enable`                                 | `lib.mkDefault true`                                                             | `U:192`                                                             | `D:461` (nixos), `D:526` (darwin)              |
+| `services.angrr.enableNixGcIntegration`                 | `lib.mkDefault cfg.garbageCollection.enable` in `U`; `lib.mkDefault true` in `D` | `U:254`                                                             | `D:465`                                        |
+| `services.angrr.timer.enable`                           | `lib.mkDefault true`, Darwin only                                                | `U:279`                                                             | `D:545`                                        |
+| `launchd.daemons.angrr.serviceConfig.StandardOutPath`   | `"/var/log/angrr.log"`                                                           | `U:283`                                                             | `D:548`                                        |
+| `launchd.daemons.angrr.serviceConfig.StandardErrorPath` | `"/var/log/angrr.log"`                                                           | `U:284`                                                             | `D:549`                                        |
+| `nix.gc.options`                                        | `lib.mkDefault "--delete-older-than 7d"`                                         | `U:191`                                                             | `D:460` (nixos), `D:515` (darwin)              |
+| `nix.gc.interval`, Darwin                               | `[ { Hour = 3; Minute = 15; } ]`                                                 | `U:265-270`                                                         | `D:520-525`                                    |
 
 Five details of the landed code differ from a plain reading of the plan, and they need a record.
 
@@ -158,7 +158,7 @@ Five details of the landed code differ from a plain reading of the plan, and the
 5. **The check is a new, separate assertion**, not an extension of the existing one. The existing
    collector assertion stays at `checks/den-mvp/assertions/machine-profiles.nix:390-406`. The new
    assertion, `angrr reaches the devenv root class, reports before it deletes, and wakes up on
-   Darwin`, occupies `checks/den-mvp/assertions/machine-profiles.nix:407-431`. It reads nine values:
+Darwin`, occupies `checks/den-mvp/assertions/machine-profiles.nix:407-431`. It reads nine values:
    the `devenv` regex and period on both classes, `extraArgs` on both classes, the NixOS
    `logLevel`, the Darwin `timer.enable` and the Darwin `StandardOutPath`. It does **not** read
    `StandardErrorPath`.

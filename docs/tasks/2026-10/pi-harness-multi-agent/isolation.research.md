@@ -35,13 +35,13 @@ machines with SSH, this is the first decision, not a later hardening step.
 
 Pi documents four routes. Mapped onto what exists here:
 
-| Pi's route | What it isolates | Homelab equivalent, today |
-|---|---|---|
-| Dedicated OS user | anything that user cannot reach | `kdn.users` rows + a systemd unit. Cheapest. Still shares the kernel, the network, and any group the user is in. |
-| Plain Docker (whole process) | Pi, its tools, its extensions | `kdn.virt-containers.docker` / `.podman` aspects. Needs the repo bind-mounted, and a credential strategy. |
-| Docker Sandboxes / **OpenShell** | same, with **policy-controlled credentials and inference routing** | `pkgs.openshell` is in the pinned nixpkgs (`0.0.116`). Notable: it is the only documented option that keeps provider credentials out of the sandbox and routes inference through a policy. |
-| **Gondolin** extension (tools only) | only the built-in tools and `!` commands, in a local micro-VM | `kdn.virt-microvm.host` (microvm.nix) already exists; Gondolin itself is an example extension in the Pi tree, not in nixpkgs. |
-| **bubblewrap sandbox extension** | per-command filesystem and network policy | nixpkgs has `bubblewrap` and `socat`; the extension is `examples/extensions/sandbox/index.ts` and uses `@anthropic-ai/sandbox-runtime` |
+| Pi's route                          | What it isolates                                                   | Homelab equivalent, today                                                                                                                                                                  |
+| ----------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Dedicated OS user                   | anything that user cannot reach                                    | `kdn.users` rows + a systemd unit. Cheapest. Still shares the kernel, the network, and any group the user is in.                                                                           |
+| Plain Docker (whole process)        | Pi, its tools, its extensions                                      | `kdn.virt-containers.docker` / `.podman` aspects. Needs the repo bind-mounted, and a credential strategy.                                                                                  |
+| Docker Sandboxes / **OpenShell**    | same, with **policy-controlled credentials and inference routing** | `pkgs.openshell` is in the pinned nixpkgs (`0.0.116`). Notable: it is the only documented option that keeps provider credentials out of the sandbox and routes inference through a policy. |
+| **Gondolin** extension (tools only) | only the built-in tools and `!` commands, in a local micro-VM      | `kdn.virt-microvm.host` (microvm.nix) already exists; Gondolin itself is an example extension in the Pi tree, not in nixpkgs.                                                              |
+| **bubblewrap sandbox extension**    | per-command filesystem and network policy                          | nixpkgs has `bubblewrap` and `socat`; the extension is `examples/extensions/sandbox/index.ts` and uses `@anthropic-ai/sandbox-runtime`                                                     |
 
 The sandbox extension is the pragmatic middle ground, and its config is exactly
 the shape this problem needs:
@@ -50,7 +50,11 @@ the shape this problem needs:
 {
   "enabled": true,
   "network": { "allowedDomains": ["github.com", "*.github.com"], "deniedDomains": [] },
-  "filesystem": { "denyRead": ["~/.ssh", "~/.aws"], "allowWrite": [".", "/tmp"], "denyWrite": [".env"] }
+  "filesystem": {
+    "denyRead": ["~/.ssh", "~/.aws"],
+    "allowWrite": [".", "/tmp"],
+    "denyWrite": [".env"]
+  }
 }
 ```
 
@@ -86,12 +90,12 @@ reach every host the owner can.
 What the repository already provides, and why it fits Pi's own advice ("use
 narrowly scoped, short-lived credentials"):
 
-| Primitive | What it gives |
-|---|---|
-| SSH CA + `kdn-certs ssh login <host>` | a **short-lived user certificate with explicit principals**, signed after a YubiKey touch. Nothing long-lived on disk. |
-| `kdn.ssh-access` (`kdn-*` dispatcher) | one entry point per host, with the connectivity graph, instead of ad-hoc addresses. |
-| Per-host `kdn.hw.nanokvm` + the KVM MCP key at `/etc/kvm/mcp.json` | out-of-band access, keyed per device. |
-| NetBird | transport, if a host is off-LAN. Not a credential. |
+| Primitive                                                          | What it gives                                                                                                          |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| SSH CA + `kdn-certs ssh login <host>`                              | a **short-lived user certificate with explicit principals**, signed after a YubiKey touch. Nothing long-lived on disk. |
+| `kdn.ssh-access` (`kdn-*` dispatcher)                              | one entry point per host, with the connectivity graph, instead of ad-hoc addresses.                                    |
+| Per-host `kdn.hw.nanokvm` + the KVM MCP key at `/etc/kvm/mcp.json` | out-of-band access, keyed per device.                                                                                  |
+| NetBird                                                            | transport, if a host is off-LAN. Not a credential.                                                                     |
 
 The design that follows:
 
@@ -144,7 +148,7 @@ zellij action new-pane --name "pi-$agent-$id" -- pi \
 - the **result channel is the session file**, not stdout. When the child exits,
   the parent reads the last assistant message from
   `$state/$agent-$id.jsonl` (or runs `pi --export` for an HTML artifact);
-- `store(key, value)` style state is unnecessary: the file *is* the state, and a
+- `store(key, value)` style state is unnecessary: the file _is_ the state, and a
   crashed child still leaves a partial transcript;
 - killing a pane is `zellij action close-pane`, which is the natural stop button;
 - `zellij-llm` (`packages/llm/zellij-llm`) already has the session/pane
@@ -196,26 +200,26 @@ of relying on the repository-wide one, which is written for a different job.
 
 ## 6. What is missing and must be built
 
-| Gap | Why it matters | Cheapest shape |
-|---|---|---|
-| A `tools`-style delegation tool | Pi has none built in | copy the example, change the spawn to a zellij pane, read the session file for the result |
-| Alias → model mapping | `--model` needs `provider/id`; our aliases live in `hosts/brys/llm-routers.nix` | generate `<agent-dir>/models.json` (compatible endpoint) or a `--model brys/<alias>` pattern, from the router data |
-| Fleet-aware concurrency | Pi's default of 4 exceeds what one box serves | a cap derived from `kdn.llm.local.swap.coResidentTiers`, plus an admission check before dispatch |
-| Supervision | invisible children loop | the pane + the existing watch loop and thresholds |
-| Per-agent accounting | the evaluation needs cost and tokens per role | the session file has usage; aggregate it, as the example does |
-| A stop condition | a child that loops costs hours at 2.5 t/s | wall-clock and turn caps per role, enforced by the dispatcher, not the prompt |
-| Credential scoping | see §3 | CA-signed short-lived certs; `denyRead ~/.ssh` |
+| Gap                             | Why it matters                                                                  | Cheapest shape                                                                                                     |
+| ------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| A `tools`-style delegation tool | Pi has none built in                                                            | copy the example, change the spawn to a zellij pane, read the session file for the result                          |
+| Alias → model mapping           | `--model` needs `provider/id`; our aliases live in `hosts/brys/llm-routers.nix` | generate `<agent-dir>/models.json` (compatible endpoint) or a `--model brys/<alias>` pattern, from the router data |
+| Fleet-aware concurrency         | Pi's default of 4 exceeds what one box serves                                   | a cap derived from `kdn.llm.local.swap.coResidentTiers`, plus an admission check before dispatch                   |
+| Supervision                     | invisible children loop                                                         | the pane + the existing watch loop and thresholds                                                                  |
+| Per-agent accounting            | the evaluation needs cost and tokens per role                                   | the session file has usage; aggregate it, as the example does                                                      |
+| A stop condition                | a child that loops costs hours at 2.5 t/s                                       | wall-clock and turn caps per role, enforced by the dispatcher, not the prompt                                      |
+| Credential scoping              | see §3                                                                          | CA-signed short-lived certs; `denyRead ~/.ssh`                                                                     |
 
 ## 7. Personas, mapped onto Pi
 
 The four roles from the host tasks map cleanly, with one addition:
 
-| Role | Pi shape |
-|---|---|
-| Owner | the human; presses power, answers the usability questions, approves the sandbox profile once |
-| Overseer | a separate Pi process with `--tools read` and the host's supervision skills, driving panes and reading session files. It should not be able to edit. |
-| Orchestrator | the interactive pane, `--model brys/orchestrate-deep-slow --thinking high`, with the delegation tool |
-| Workers | headless panes, small aliases, `--tools` narrowed per role |
+| Role                   | Pi shape                                                                                                                                                                                                                  |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Owner                  | the human; presses power, answers the usability questions, approves the sandbox profile once                                                                                                                              |
+| Overseer               | a separate Pi process with `--tools read` and the host's supervision skills, driving panes and reading session files. It should not be able to edit.                                                                      |
+| Orchestrator           | the interactive pane, `--model brys/orchestrate-deep-slow --thinking high`, with the delegation tool                                                                                                                      |
+| Workers                | headless panes, small aliases, `--tools` narrowed per role                                                                                                                                                                |
 | **Architect/reviewer** | a pane with `--tools read,grep,find,ls` and a **`--fork` of the orchestrator's session**, so it sees the real transcript instead of a pasted summary. This is the one role Pi does materially better than opencode today. |
 
 ## 8. Not verified
@@ -227,6 +231,6 @@ The four roles from the host tasks map cleanly, with one addition:
 - Whether a Pi child in a zellij pane exits reliably when the parent aborts
   (`close-pane` sends SIGHUP; the example uses `proc.kill`).
 - Whether `--fork` of a session is safe while the parent is still writing it.
-- Whether our repo's `.agents/skills` load under a *declined* trust decision — the
+- Whether our repo's `.agents/skills` load under a _declined_ trust decision — the
   doc lists them as trust-protected, so a headless run likely needs `--approve`
   or a user-level copy.

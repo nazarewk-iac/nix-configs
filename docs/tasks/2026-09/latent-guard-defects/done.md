@@ -30,9 +30,9 @@ missing`, a selection error, so `builtins.tryEval` does not catch it. Measured 2
 
 ## Solution
 
-| Defect | Fix |
-|---|---|
-| keepassxc guard | `lib.optional pkgs.stdenv.hostPlatform.isLinux pkgs.kdn.kdn-keepass` |
+| Defect          | Fix                                                                                                                   |
+| --------------- | --------------------------------------------------------------------------------------------------------------------- |
+| keepassxc guard | `lib.optional pkgs.stdenv.hostPlatform.isLinux pkgs.kdn.kdn-keepass`                                                  |
 | containers read | `osConfig ? null` argument, plus `hasOciHook = osConfig != null && osConfig ? boot && osConfig.boot ? kernelPackages` |
 
 The null test comes first, so neither `?` probe ever reads a null value. `null ? boot` returns

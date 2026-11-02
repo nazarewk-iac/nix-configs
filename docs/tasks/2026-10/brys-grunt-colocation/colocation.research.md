@@ -24,19 +24,19 @@ recommendation, (6) router and compat-proxy wiring.
 
 Measured on brys (`hosts/brys/performance.md:15-19`, `hosts/brys/performance.md:131-149`):
 
-| quantity | value |
-|---|---|
-| CPU | Ryzen 9 5950X, 16C/32T, boost 5086 MHz |
-| RAM | 128 GB DDR4, **125 GiB usable**, no swap |
-| L3 / L2 | 64 MiB / 8 MiB |
-| GPUs | W6600 7.98 GiB (`1002:73e3`); Lexa 4.0 GiB (`1002:699f`) |
-| **STREAM COPY (the decode ceiling)** | **39.80 GB/s** (4 MiB set), 38.81 GB/s (320 MiB) |
-| STREAM TRIAD/SCALE | 27.9 / 24.2 GB/s |
-| NVMe cold sustained read | ~2.0–2.2 GB/s per drive, ~10 GB/s mirror warm band |
-| W6600 VRAM bandwidth | ~224 GB/s (estimate from spec, `qwen-gpu-offload/definition.md:21`) |
+| quantity                             | value                                                               |
+| ------------------------------------ | ------------------------------------------------------------------- |
+| CPU                                  | Ryzen 9 5950X, 16C/32T, boost 5086 MHz                              |
+| RAM                                  | 128 GB DDR4, **125 GiB usable**, no swap                            |
+| L3 / L2                              | 64 MiB / 8 MiB                                                      |
+| GPUs                                 | W6600 7.98 GiB (`1002:73e3`); Lexa 4.0 GiB (`1002:699f`)            |
+| **STREAM COPY (the decode ceiling)** | **39.80 GB/s** (4 MiB set), 38.81 GB/s (320 MiB)                    |
+| STREAM TRIAD/SCALE                   | 27.9 / 24.2 GB/s                                                    |
+| NVMe cold sustained read             | ~2.0–2.2 GB/s per drive, ~10 GB/s mirror warm band                  |
+| W6600 VRAM bandwidth                 | ~224 GB/s (estimate from spec, `qwen-gpu-offload/definition.md:21`) |
 
 **The single binding constraint is memory bandwidth on the CPU path.** CPU decode
-reads the *activated* weights once per token, sequentially, so the ceiling is:
+reads the _activated_ weights once per token, sequentially, so the ceiling is:
 
 ```
 decode tok/s  ≈  COPY(40 GB/s) / (activated-bytes-read-per-token)
@@ -81,24 +81,24 @@ Sizes marked **✎** are estimated from the parameter count and bytes/param;
 decode t/s marked **✎** are the bandwidth-ceiling arithmetic above, not a
 measurement. Only the rows tagged **meas** are measured on brys.
 
-| model | arch | params (total / active) | Q4 file | resident RAM @32K | decode ceiling ✎ | prefill ✎ | note |
-|---|---|---|---|---|---|---|---|
-| Qwen3-0.6B | dense | 0.6B / 0.6B | ~0.4 GB | ~0.7 GB | **~57 tok/s** | 100s–1000s | fits GPU easily; too weak to be useful |
-| Qwen3-1.7B | dense | 1.7B / 1.7B | ~1.1 GB | ~1.6 GB | **~25 tok/s** | 100s | floor of "usable grunt" |
-| Qwen2.5-coder-1.5B | dense | 1.5B / 1.5B | ~1.0 GB | ~1.5 GB | **~27 tok/s** | 100s | code-tuned |
-| Llama 3.2 3B | dense | 3B / 3B | ~2.0 GB | ~2.8 GB | **~14 tok/s** | 100s | — |
-| **Qwen3-4B** | dense | 4B / 4B | ~2.5 GB | ~3.5 GB | **~11 tok/s** | 100s | **usable grunt** |
-| Phi-4-mini (3.8B) | dense | 3.8B / 3.8B | ~2.5 GB | ~3.5 GB | **~11 tok/s** | 100s | strong reasoning for size |
-| Qwen2.5-coder-7B | dense | 7B / 7B | ~4.5 GB | ~6 GB | **~6 tok/s** | ~100s | at ceiling edge |
-| **Qwen3-8B** | dense | 8B / 8B | ~5.0 GB | ~7 GB | **~8 tok/s** | 100s | **best dense grunt; fits 8 GB GPU** |
-| Llama 3.2 3B / Qwen3-4B | dense | — | — | — | — | — | — |
-| Qwen2.5-coder-14B | dense | 14B / 14B | ~9 GB | ~12 GB | **~4.4 tok/s** | ~100s | below the "grunt" decode floor |
-| **Qwen3-30B-A3B** | MoE | 30B / **3B** | ~18 GB | ~44 GB (meas) | **~13 tok/s** (meas 11.4) | ~100s | fast but 44 GB resident |
-| **Qwen3-Next-80B-A3B** | MoE | 80B / **3B** | ~48 GB | 80 GB (meas) | ~13 (meas 3.29, GDN-serial) | low | far too big to coexist |
-| **Qwen3.8-Flash-Next** (Qwen) | MoE hybrid | ~180B / ~6B | 93.7 GB (meas) | ~101–116 GB (meas) | ~9–14 (meas 9–12) | ~40 (meas) | **the orchestrator** |
-| DeepSeek V4-Flash (DS4) | MoE MLA | 284B / **~5B** | 103 GB (meas) | ~115 GB (meas) | ~8 (meas 5–8.6) | ~16 (meas) | frontier alt |
-| gpt-oss-120b | MoE | 120B / 3.6B | ~58.5–65 GB (meas) | 72 GB (meas) | ~11 (meas **12.7**) | 100s | 72 GB resident |
-| gpt-oss-20b | MoE | 20B / **3.6B** | ~12 GB ✎ | ~18 GB ✎ | **~11 tok/s** ✎ | 100s ✎ | **interesting: grunt speed, 18 GB resident** |
+| model                         | arch       | params (total / active) | Q4 file            | resident RAM @32K  | decode ceiling ✎            | prefill ✎  | note                                         |
+| ----------------------------- | ---------- | ----------------------- | ------------------ | ------------------ | --------------------------- | ---------- | -------------------------------------------- |
+| Qwen3-0.6B                    | dense      | 0.6B / 0.6B             | ~0.4 GB            | ~0.7 GB            | **~57 tok/s**               | 100s–1000s | fits GPU easily; too weak to be useful       |
+| Qwen3-1.7B                    | dense      | 1.7B / 1.7B             | ~1.1 GB            | ~1.6 GB            | **~25 tok/s**               | 100s       | floor of "usable grunt"                      |
+| Qwen2.5-coder-1.5B            | dense      | 1.5B / 1.5B             | ~1.0 GB            | ~1.5 GB            | **~27 tok/s**               | 100s       | code-tuned                                   |
+| Llama 3.2 3B                  | dense      | 3B / 3B                 | ~2.0 GB            | ~2.8 GB            | **~14 tok/s**               | 100s       | —                                            |
+| **Qwen3-4B**                  | dense      | 4B / 4B                 | ~2.5 GB            | ~3.5 GB            | **~11 tok/s**               | 100s       | **usable grunt**                             |
+| Phi-4-mini (3.8B)             | dense      | 3.8B / 3.8B             | ~2.5 GB            | ~3.5 GB            | **~11 tok/s**               | 100s       | strong reasoning for size                    |
+| Qwen2.5-coder-7B              | dense      | 7B / 7B                 | ~4.5 GB            | ~6 GB              | **~6 tok/s**                | ~100s      | at ceiling edge                              |
+| **Qwen3-8B**                  | dense      | 8B / 8B                 | ~5.0 GB            | ~7 GB              | **~8 tok/s**                | 100s       | **best dense grunt; fits 8 GB GPU**          |
+| Llama 3.2 3B / Qwen3-4B       | dense      | —                       | —                  | —                  | —                           | —          | —                                            |
+| Qwen2.5-coder-14B             | dense      | 14B / 14B               | ~9 GB              | ~12 GB             | **~4.4 tok/s**              | ~100s      | below the "grunt" decode floor               |
+| **Qwen3-30B-A3B**             | MoE        | 30B / **3B**            | ~18 GB             | ~44 GB (meas)      | **~13 tok/s** (meas 11.4)   | ~100s      | fast but 44 GB resident                      |
+| **Qwen3-Next-80B-A3B**        | MoE        | 80B / **3B**            | ~48 GB             | 80 GB (meas)       | ~13 (meas 3.29, GDN-serial) | low        | far too big to coexist                       |
+| **Qwen3.8-Flash-Next** (Qwen) | MoE hybrid | ~180B / ~6B             | 93.7 GB (meas)     | ~101–116 GB (meas) | ~9–14 (meas 9–12)           | ~40 (meas) | **the orchestrator**                         |
+| DeepSeek V4-Flash (DS4)       | MoE MLA    | 284B / **~5B**          | 103 GB (meas)      | ~115 GB (meas)     | ~8 (meas 5–8.6)             | ~16 (meas) | frontier alt                                 |
+| gpt-oss-120b                  | MoE        | 120B / 3.6B             | ~58.5–65 GB (meas) | 72 GB (meas)       | ~11 (meas **12.7**)         | 100s       | 72 GB resident                               |
+| gpt-oss-20b                   | MoE        | 20B / **3.6B**          | ~12 GB ✎           | ~18 GB ✎           | **~11 tok/s** ✎             | 100s ✎     | **interesting: grunt speed, 18 GB resident** |
 
 Key rows in detail:
 
@@ -109,12 +109,12 @@ Key rows in detail:
 - **gpt-oss-120b (measured):** `VmRSS 72.2 G`, `RssAnon 60.2 G`, `RssFile 11.8 G`,
   warm **12.7 tok/s** (`hosts/brys/performance.md:165`). Note the weird shape:
   `RssAnon` 60 G >> `RssFile` 12 G — it computes mostly from anonymous memory, so
-  it is *not* mmap-file-backed and cannot be cheaply reclaimed. 72 GB resident.
+  it is _not_ mmap-file-backed and cannot be cheaply reclaimed. 72 GB resident.
 - **gpt-oss-20b (estimate):** the 120b's little sibling. ~3.6B active is the
-  *same active set* as gpt-oss-120b, so decode should be similar (~11 tok/s), but
+  _same active set_ as gpt-oss-120b, so decode should be similar (~11 tok/s), but
   the whole file is ~12 GB → **~18 GB resident**. This is a strong grunt
   candidate: MoE decode speed at dense-ish residency.
-- **Qwen3-8B (estimate):** ~5 GB at Q4_K_M. Decode ceiling 40/5 = 8 tok/s — *below*
+- **Qwen3-8B (estimate):** ~5 GB at Q4_K_M. Decode ceiling 40/5 = 8 tok/s — _below_
   the 20 tok/s target. It only reaches 20–50 tok/s **on the GPU** (see §4). On the
   CPU it is a "medium grunt", not a fast one.
 - **Qwen3-4B / Phi-4-mini (estimate):** ~2.5 GB → 40/2.5 = **16 tok/s** ceiling.
@@ -131,11 +131,11 @@ is the outlier: fast active set, ~12 GB file). A 4–8B dense model lands at
 
 ### 1c. Dense vs MoE — the trade in one line
 
-| | dense | MoE |
-|---|---|---|
-| decode reads per token | the whole file | only active experts |
-| decode speed | ∝ 1/file-size | ∝ 1/active-size |
-| resident RAM | = file-size | = **whole file** |
+|                         | dense             | MoE                        |
+| ----------------------- | ----------------- | -------------------------- |
+| decode reads per token  | the whole file    | only active experts        |
+| decode speed            | ∝ 1/file-size     | ∝ 1/active-size            |
+| resident RAM            | = file-size       | = **whole file**           |
 | colocation friendliness | good (small file) | poor unless total is small |
 
 MoE gives fast decode but needs the **full weight set resident**, so it is the
@@ -151,13 +151,13 @@ grunts (30B-A3B, 80B-A3B, 235B) are too big.
 
 Qwen3.8-Flash-Next `UD-IQ4_XS` (93.7 GB on disk):
 
-| config | state | RssFile | RssAnon | VmRSS | available | source |
-|---|---|---|---|---|---|---|
-| 1M ctx, F16 KV, `lazy-mode off` | idle | 92.2 GB | 19.1 GB | 111.2 GB | — | `local-llms.md:550` |
-| **1M ctx, F16 KV, `lazy-mode auto`** | idle | **46.0 GB** | 19.1 GB | **65.0 GB** | — | `local-llms.md:551` |
-| 1M ctx, F16 KV, `lazy-mode auto` | after load | 59.7 GB | 56.4 GB | 116.0 GB | 60 GB | `local-llms.md:788` |
-| 1M ctx, q8_0 KV, `parallel 4` | warm | ~60 GB | ~37.5 GB | ~101 GB | — | `local-llms.md:664` |
-| 1M ctx, session cache, `cache-ram 16384` | served | — | — | ~116.5 GB | — | `session-cache/done.md:103` |
+| config                                   | state      | RssFile     | RssAnon  | VmRSS       | available | source                      |
+| ---------------------------------------- | ---------- | ----------- | -------- | ----------- | --------- | --------------------------- |
+| 1M ctx, F16 KV, `lazy-mode off`          | idle       | 92.2 GB     | 19.1 GB  | 111.2 GB    | —         | `local-llms.md:550`         |
+| **1M ctx, F16 KV, `lazy-mode auto`**     | idle       | **46.0 GB** | 19.1 GB  | **65.0 GB** | —         | `local-llms.md:551`         |
+| 1M ctx, F16 KV, `lazy-mode auto`         | after load | 59.7 GB     | 56.4 GB  | 116.0 GB    | 60 GB     | `local-llms.md:788`         |
+| 1M ctx, q8_0 KV, `parallel 4`            | warm       | ~60 GB      | ~37.5 GB | ~101 GB     | —         | `local-llms.md:664`         |
+| 1M ctx, session cache, `cache-ram 16384` | served     | —           | —        | ~116.5 GB   | —         | `session-cache/done.md:103` |
 
 **The `--lazy-mode auto` offload is real and measured:** it moves ~46 GB
 (`RssFile` 92.2 → 46.0 GB) of the PLE / n-gram table and other large tensors to
@@ -178,22 +178,22 @@ about 65 GB when idle.** The budget for a grunt is what is left:
 ```
 
 The `local-llms.md:787-796` long-context ladder says 1M ctx leaves **only ~1–2 GiB
-free** (about 60 GB reclaimable page cache). So while Qwen is *serving a 1M-context
-request*, there is essentially **no room** for a co-resident grunt. The window for
+free** (about 60 GB reclaimable page cache). So while Qwen is _serving a 1M-context
+request_, there is essentially **no room** for a co-resident grunt. The window for
 colocation is while Qwen is **resident but idle or on a short request**.
 
 ### 2b. The measured colocation penalty (DS4 experiments)
 
 From `docs/local-llms.md:200-209` and `hosts/brys/performance.md:158-173`:
 
-| co-tenant | DS4 effect | mechanism |
-|---|---|---|
-| phi-4 (17.7 G), **idle-but-resident** | DS4 **~6.7 → ~3 t/s (halved)** | bandwidth contention |
-| phi-4 (17.7 G), **actively generating** | DS4 **~1.75–2.2 t/s (67–74% hit)** | bandwidth contention + cache pressure |
-| qwen3-30b-a3b (44.4 G) | DS4 **~2.2 t/s**, cache intact | "best co-tenant by far" |
-| qwen3-coder-next (65.6 G) | DS4 **~0.9–1.1 t/s**, DS4 weights evicted (RSS 67→15 G) | **fully evicts DS4** |
-| any 45 G+ MoE | DS4 **fully evicted**, needs box alone | RAM exhaustion |
-| gpt-oss-120b (72.2 G) | DS4 5.4 GB file-cache evicted, re-faults | RAM exhaustion |
+| co-tenant                               | DS4 effect                                              | mechanism                             |
+| --------------------------------------- | ------------------------------------------------------- | ------------------------------------- |
+| phi-4 (17.7 G), **idle-but-resident**   | DS4 **~6.7 → ~3 t/s (halved)**                          | bandwidth contention                  |
+| phi-4 (17.7 G), **actively generating** | DS4 **~1.75–2.2 t/s (67–74% hit)**                      | bandwidth contention + cache pressure |
+| qwen3-30b-a3b (44.4 G)                  | DS4 **~2.2 t/s**, cache intact                          | "best co-tenant by far"               |
+| qwen3-coder-next (65.6 G)               | DS4 **~0.9–1.1 t/s**, DS4 weights evicted (RSS 67→15 G) | **fully evicts DS4**                  |
+| any 45 G+ MoE                           | DS4 **fully evicted**, needs box alone                  | RAM exhaustion                        |
+| gpt-oss-120b (72.2 G)                   | DS4 5.4 GB file-cache evicted, re-faults                | RAM exhaustion                        |
 
 Two distinct penalties:
 
@@ -206,9 +206,9 @@ Two distinct penalties:
 ### 2c. Does Qwen have the same sensitivity as DS4?
 
 **Yes — Qwen is bandwidth-bound in the same way, and the doc says so.**
-`local-llms.md:200-202`: *"on the ~40 GB/s bandwidth-bound box any resident small
-model contends for the same memory bandwidth."* And `local-llms.md:670-671`:
-Qwen and DS4 are both *"bandwidth-bound sparse MoE"*. So an idle-but-resident
+`local-llms.md:200-202`: _"on the ~40 GB/s bandwidth-bound box any resident small
+model contends for the same memory bandwidth."_ And `local-llms.md:670-671`:
+Qwen and DS4 are both _"bandwidth-bound sparse MoE"_. So an idle-but-resident
 grunt should roughly halve Qwen's decode (9–14 → ~5–7 t/s) exactly as it halves
 DS4's, and an active grunt should take it to ~2–4 t/s.
 
@@ -223,20 +223,20 @@ Qwen likely **more** sensitive to RAM pressure than DS4, not less.
 Given the budget above, the only grunt classes that genuinely coexist with a
 serving Qwen are:
 
-| co-tenant | RAM | coexists? | effect on Qwen (estimate) |
-|---|---|---|---|
-| Qwen3-1.7B / coder-1.5B (Q4, ~1 GB) | ~1.5 GB | **yes, comfortably** | halved decode (bandwidth), no eviction |
-| Qwen3-4B / Phi-4-mini (Q4, ~2.5 GB) | ~3.5 GB | **yes** | halved decode |
-| Qwen3-8B (Q4, ~5 GB) | ~7 GB | **yes vs idle Qwen; tight vs serving Qwen** | halved decode; risks TLB/faults at 1M |
-| gpt-oss-20b (MoE, ~12 GB) | ~18 GB | **only vs idle Qwen (lazy auto)** | halved decode + fault pressure |
-| phi-4 (17.7 G measured) | 17.7 GB | only vs idle Qwen | the doc's measured halving case |
-| anything ≥ ~45 GB | ≥ 45 GB | **no — evicts Qwen** | frontier re-reads from disk |
+| co-tenant                           | RAM     | coexists?                                   | effect on Qwen (estimate)              |
+| ----------------------------------- | ------- | ------------------------------------------- | -------------------------------------- |
+| Qwen3-1.7B / coder-1.5B (Q4, ~1 GB) | ~1.5 GB | **yes, comfortably**                        | halved decode (bandwidth), no eviction |
+| Qwen3-4B / Phi-4-mini (Q4, ~2.5 GB) | ~3.5 GB | **yes**                                     | halved decode                          |
+| Qwen3-8B (Q4, ~5 GB)                | ~7 GB   | **yes vs idle Qwen; tight vs serving Qwen** | halved decode; risks TLB/faults at 1M  |
+| gpt-oss-20b (MoE, ~12 GB)           | ~18 GB  | **only vs idle Qwen (lazy auto)**           | halved decode + fault pressure         |
+| phi-4 (17.7 G measured)             | 17.7 GB | only vs idle Qwen                           | the doc's measured halving case        |
+| anything ≥ ~45 GB                   | ≥ 45 GB | **no — evicts Qwen**                        | frontier re-reads from disk            |
 
 **Smallest useful set:** one dense **1.5–2B** model (~1.5 GB resident) can sit
 beside a serving Qwen with only the bandwidth penalty. A **4B** (~3.5 GB) fits the
 idle-Qwen budget cleanly. A **gpt-oss-20b** (~18 GB) fits only while Qwen is idle
 (`lazy-mode auto`, ~65 GB) — pushing the pair to ~83 GB, leaving ~42 GB, which is
-safe *if* no 1M request arrives.
+safe _if_ no 1M request arrives.
 
 **The hard truth:** any co-resident grunt halves Qwen's decode for as long as it
 is loaded, because the router's `--sleep-idle-seconds -1` pins the last resident
@@ -251,23 +251,23 @@ own boot entry (`llm-small`) rather than colocating it.
 The set is the `routers.small` router on `:39704`, `threads 8`, `modelsMax 2`
 (`hosts/brys/llm-routers.nix:13-19`). Members and verdicts:
 
-| model | file | measured t/s | resident | grunt-appropriate? | verdict |
-|---|---|---|---|---|---|
-| `phi-4` | 8.5 G | 2.86 | 17.7 G | **no** — 2.86 t/s is below grunt floor; 17.7 G is heavy | **replace** with Qwen3-4B (2.5 G, ~11–16 t/s) or Phi-4-mini |
-| `qwen3-30b-a3b` (`fast`) | 18 G | **11.41** | 44.4 G | **decode yes, residency no** | keep as a *medium* tier, not a co-tenant; 44 G cannot coexist |
-| `qwen3-next-80b` (`balanced`) | 46 G | 3.29 | 80 G | **no** — 80 G, 3.29 t/s | **remove from a grunt role**; box-alone only |
-| `qwen3-coder-next` | 45 G | 5.34 | 65.6 G | **no** — evicts the frontier | remove from a grunt role |
-| `qwen3-235b` (`IQ2_M`) | 72 G | ~slow | ~100 G | **no** — needs box alone (`performance.md:164`) | not a grunt at all |
-| `gpt-oss-120b` | 58.5 G | **12.7** | 72.2 G | **speed yes, residency no** | swap for **gpt-oss-20b** (same active set, ~18 G) |
+| model                         | file   | measured t/s | resident | grunt-appropriate?                                      | verdict                                                       |
+| ----------------------------- | ------ | ------------ | -------- | ------------------------------------------------------- | ------------------------------------------------------------- |
+| `phi-4`                       | 8.5 G  | 2.86         | 17.7 G   | **no** — 2.86 t/s is below grunt floor; 17.7 G is heavy | **replace** with Qwen3-4B (2.5 G, ~11–16 t/s) or Phi-4-mini   |
+| `qwen3-30b-a3b` (`fast`)      | 18 G   | **11.41**    | 44.4 G   | **decode yes, residency no**                            | keep as a _medium_ tier, not a co-tenant; 44 G cannot coexist |
+| `qwen3-next-80b` (`balanced`) | 46 G   | 3.29         | 80 G     | **no** — 80 G, 3.29 t/s                                 | **remove from a grunt role**; box-alone only                  |
+| `qwen3-coder-next`            | 45 G   | 5.34         | 65.6 G   | **no** — evicts the frontier                            | remove from a grunt role                                      |
+| `qwen3-235b` (`IQ2_M`)        | 72 G   | ~slow        | ~100 G   | **no** — needs box alone (`performance.md:164`)         | not a grunt at all                                            |
+| `gpt-oss-120b`                | 58.5 G | **12.7**     | 72.2 G   | **speed yes, residency no**                             | swap for **gpt-oss-20b** (same active set, ~18 G)             |
 
 **Summary of the review:**
 
 - The set was designed as a **freely-swapping replacement for the frontier when
   booted into `llm-small`**, not as grunts that sit beside the orchestrator. Every
   member except phi-4 is a box-scale model.
-- The only members with genuine grunt *speed* are `qwen3-30b-a3b` (11.4) and
+- The only members with genuine grunt _speed_ are `qwen3-30b-a3b` (11.4) and
   `gpt-oss-120b` (12.7) — both far too large to colocate (44 G / 72 G).
-- `phi-4` is the only *small* member, and it is the doc's own example of a co-tenant
+- `phi-4` is the only _small_ member, and it is the doc's own example of a co-tenant
   that halves DS4 — at only 2.86 t/s, it is a poor grunt.
 - **Recommendation:** the current set should not be reused as grunts. Grunts need a
   **new, smaller, dense set**. `qwen3-30b-a3b` and `gpt-oss-120b` can stay on
@@ -284,10 +284,10 @@ The set is the `routers.small` router on `:39704`, `threads 8`, `modelsMax 2`
 Q4_K_M** (462.96 MiB) through `llama-bench` on the W6600 via `--device Vulkan0`, and
 restarted `llama-cpp` cleanly afterwards (`qwen-gpu-offload/definition.md:120-136`):
 
-| test | `-ngl 0` (CPU) | `-ngl 99` (W6600) | speedup |
-|---|---|---|---|
-| pp512 (prefill) | 61.87 ± 2.73 t/s | **10113.74 ± 308.34 t/s** | ~163× |
-| tg128 (decode) | 94.47 ± 2.92 t/s | **336.99 ± 3.01 t/s** | ~3.6× |
+| test            | `-ngl 0` (CPU)   | `-ngl 99` (W6600)         | speedup |
+| --------------- | ---------------- | ------------------------- | ------- |
+| pp512 (prefill) | 61.87 ± 2.73 t/s | **10113.74 ± 308.34 t/s** | ~163×   |
+| tg128 (decode)  | 94.47 ± 2.92 t/s | **336.99 ± 3.01 t/s**     | ~3.6×   |
 
 The decode 336.99 t/s is consistent with the W6600's ~224 GB/s VRAM and the
 ~0.46 GB model: 224 / 0.46 ≈ 487 GB/s-equiv, minus overhead — i.e. **fully
@@ -300,14 +300,14 @@ any CPU path.**
 Budget: 7.98 GiB usable → **~7.5 GB after overhead**. At Q4 (~0.5–0.6
 GB/1B params) plus KV:
 
-| model | weights Q4 | KV @16K F16 | total | fits? |
-|---|---|---|---|---|
-| Qwen3-0.6B | ~0.4 GB | ~0.2 GB | ~0.6 GB | trivially |
-| Qwen3-1.7B | ~1.1 GB | ~0.5 GB | ~1.6 GB | yes |
-| Qwen3-4B | ~2.5 GB | ~1 GB | ~3.5 GB | yes |
-| Qwen3-8B | ~5.0 GB | ~1.5 GB (16K) → ~3 GB (32K) | ~6.5–8 GB | **tight; 16–32K only** |
-| Nemo-12B | ~7 GB | ~2 GB | ~9 GB | no |
-| 13–14B | ~8–9 GB | — | — | no |
+| model      | weights Q4 | KV @16K F16                 | total     | fits?                  |
+| ---------- | ---------- | --------------------------- | --------- | ---------------------- |
+| Qwen3-0.6B | ~0.4 GB    | ~0.2 GB                     | ~0.6 GB   | trivially              |
+| Qwen3-1.7B | ~1.1 GB    | ~0.5 GB                     | ~1.6 GB   | yes                    |
+| Qwen3-4B   | ~2.5 GB    | ~1 GB                       | ~3.5 GB   | yes                    |
+| Qwen3-8B   | ~5.0 GB    | ~1.5 GB (16K) → ~3 GB (32K) | ~6.5–8 GB | **tight; 16–32K only** |
+| Nemo-12B   | ~7 GB      | ~2 GB                       | ~9 GB     | no                     |
+| 13–14B     | ~8–9 GB    | —                           | —         | no                     |
 
 So the W6600 fits **up to a Qwen3-8B at moderate context** (16–32K) entirely in
 VRAM, or a 4B comfortably, or a 1.7B with a large context. A **Qwen3-8B on the GPU
@@ -329,14 +329,14 @@ tiny model; a measured number is needed for 8B).
 
 **Available Vulkan builds** (`packages/llama-cpp/README.md:6-17`):
 
-| attribute | source | backend |
-|---|---|---|
-| `llama-cpp-v0_6_0` | ggml-org v0.6.0 | CPU |
-| `llama-cpp-v0_6_0-vulkan` | v0.6.0 | CPU + Vulkan |
-| `llama-cpp-v0_6_0-vulkan-noblas` | v0.6.0 | CPU + Vulkan, no BLAS (the **served** Qwen build) |
-| `llama-cpp-sessions` | nazarewk-iac fork | CPU (session cache) |
-| `llama-cpp-sessions-vulkan` | fork | CPU + Vulkan |
-| `llama-cpp-master-vulkan` + 3 patched variants | master | CPU + Vulkan (experiments, not served) |
+| attribute                                      | source            | backend                                           |
+| ---------------------------------------------- | ----------------- | ------------------------------------------------- |
+| `llama-cpp-v0_6_0`                             | ggml-org v0.6.0   | CPU                                               |
+| `llama-cpp-v0_6_0-vulkan`                      | v0.6.0            | CPU + Vulkan                                      |
+| `llama-cpp-v0_6_0-vulkan-noblas`               | v0.6.0            | CPU + Vulkan, no BLAS (the **served** Qwen build) |
+| `llama-cpp-sessions`                           | nazarewk-iac fork | CPU (session cache)                               |
+| `llama-cpp-sessions-vulkan`                    | fork              | CPU + Vulkan                                      |
+| `llama-cpp-master-vulkan` + 3 patched variants | master            | CPU + Vulkan (experiments, not served)            |
 
 For a **standalone dense grunt on the GPU**, `llama-cpp-v0_6_0-vulkan-noblas` is
 the natural choice: it is the build the host already deploys, the Vulkan shaders
@@ -423,7 +423,7 @@ If the GPU is ruled out, the smallest sound CPU grunt is:
   This is the colocation that works: the GPU does not steal CPU bandwidth.
 - **CPU grunt → the existing `llm-small` boot entry** (separate boot). Colocating a
   CPU grunt with Qwen re-introduces the measured halving, and the doc's own
-  conclusion is *"the only robust answer is a separate boot entry"*
+  conclusion is _"the only robust answer is a separate boot entry"_
   (`local-llms.md:208-209`).
 
 ### 5d. Risks and unknowns (explicit)
@@ -537,11 +537,11 @@ to be resident together, set `modelsMax` above 1 (the existing `small` router us
 
 ### 6d. Which router: main, small, or a new `grunt` router?
 
-| option | verdict |
-|---|---|
-| primary `main` (`:39703`) | **no** — `models-max 1` swaps the orchestrator |
+| option                      | verdict                                                                                              |
+| --------------------------- | ---------------------------------------------------------------------------------------------------- |
+| primary `main` (`:39703`)   | **no** — `models-max 1` swaps the orchestrator                                                       |
 | existing `small` (`:39704`) | usable, but it is a **CPU** set booted separately; wrong home for a GPU model and its own boot entry |
-| **new `grunt` router** | **yes** — own port, own threads, can be GPU or CPU, colocated with Qwen on the Qwen boot entries |
+| **new `grunt` router**      | **yes** — own port, own threads, can be GPU or CPU, colocated with Qwen on the Qwen boot entries     |
 
 ---
 

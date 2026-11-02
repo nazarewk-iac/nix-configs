@@ -26,10 +26,10 @@ Because the machine is reformattable and the den host is now a full carryover
 (`hosts-den/pryll`, phase 2c below), there are two routes. Route B is simpler and reaches
 the end state in one move.
 
-| Route | What | When to pick it |
-|---|---|---|
-| **A. In-place update** | update the old universal config, then port to den (unlock handled in 2b) | you want to keep the current install and roll back generation by generation |
-| **B. Fresh den reinstall** (recommended) | boot the repo ISO over the NanoKVM and install `hosts-den/pryll` directly | the default: no data to keep, den is the deliverable, fastest to the goal |
+| Route                                    | What                                                                      | When to pick it                                                             |
+| ---------------------------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| **A. In-place update**                   | update the old universal config, then port to den (unlock handled in 2b)  | you want to keep the current install and roll back generation by generation |
+| **B. Fresh den reinstall** (recommended) | boot the repo ISO over the NanoKVM and install `hosts-den/pryll` directly | the default: no data to keep, den is the deliverable, fastest to the goal   |
 
 Route B is the recommended path. Phase 2a is skipped; go to 2b (choose the unlock path — a TPM2
 enrolment is not possible on this firmware) and phase 4.
@@ -96,15 +96,15 @@ user-profiles
 
 What it reproduces, and the fixes made while porting:
 
-| Old universal host | Den host |
-|---|---|
-| `kdn.profile.machine.desktop` | `profile-desktop` |
-| `kdn.desktop.kde` | `desktop-kde` |
-| `kdn.profile.user.bn` + sddm autologin | `user` + `user-profiles` (the row arrives from `data/users.data.nix`; the host sets `kdn.userProfiles = [ "bn" "root" ]`) + `sddm.settings.Autologin` |
-| `kdn.disks` LUKS with detached header | `disks` + `disks-persist` (`fs-luks-zfs` is mutually exclusive with `disks`) |
-| `kdn.hw.nanokvm`, cpu/gpu intel | same aspects |
-| `services.teamviewer.enable` | a RustDesk **client** (package + `systemd.services.rustdesk`); TeamViewer dropped for its licence |
-| `home-manager-bn` restart hack on wallpaper | **removed**: `home-manager.users.bn.stylix.targets.kde.enable = false` |
+| Old universal host                          | Den host                                                                                                                                              |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `kdn.profile.machine.desktop`               | `profile-desktop`                                                                                                                                     |
+| `kdn.desktop.kde`                           | `desktop-kde`                                                                                                                                         |
+| `kdn.profile.user.bn` + sddm autologin      | `user` + `user-profiles` (the row arrives from `data/users.data.nix`; the host sets `kdn.userProfiles = [ "bn" "root" ]`) + `sddm.settings.Autologin` |
+| `kdn.disks` LUKS with detached header       | `disks` + `disks-persist` (`fs-luks-zfs` is mutually exclusive with `disks`)                                                                          |
+| `kdn.hw.nanokvm`, cpu/gpu intel             | same aspects                                                                                                                                          |
+| `services.teamviewer.enable`                | a RustDesk **client** (package + `systemd.services.rustdesk`); TeamViewer dropped for its licence                                                     |
+| `home-manager-bn` restart hack on wallpaper | **removed**: `home-manager.users.bn.stylix.targets.kde.enable = false`                                                                                |
 
 Two den-tree pitfalls fixed inline (both are in the file's comments):
 

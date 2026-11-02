@@ -11,17 +11,17 @@ timestamp: 2026-10-27T23:55:00+01:00
 > **State 2026-10-28:** implemented in `hosts/brys/llm.nix` and packaged as
 > `packages/llm/llm-stats`. Not yet deployed, and not yet proven over a reboot.
 >
-> | Piece | State |
-> |---|---|
-> | `llm-stats` collector (route A + textfile) | built, shellcheck clean, `collect --help` verified |
-> | systemd unit `llm-stats` | wired, `ExecStart` verified by eval, hardened (no new privileges, strict `ProtectSystem`, one writable dir) |
-> | `/var/lib/llm-stats` persistence | wired (`sys/state`, mode 0755 so node_exporter can read the textfile) |
-> | Small Prometheus (`:9090`, 30 d / 2 GB) | wired, two scrape jobs verified by eval |
-> | `/var/lib/prometheus2` persistence | wired (`sys/state`, owner `prometheus`) |
-> | Both boot entries | verified: the `llms-frontier` specialisation carries the unit, the scrape configs and both persist paths |
-> | Reboot proof | **pending** |
-> | Per-alias attribution | implemented (aliases resolved from `/v1/models`), **unverified live** |
-> | Dashboard | not built, deliberately: the aspect's Grafana stack was rejected as too heavy |
+> | Piece                                      | State                                                                                                       |
+> | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+> | `llm-stats` collector (route A + textfile) | built, shellcheck clean, `collect --help` verified                                                          |
+> | systemd unit `llm-stats`                   | wired, `ExecStart` verified by eval, hardened (no new privileges, strict `ProtectSystem`, one writable dir) |
+> | `/var/lib/llm-stats` persistence           | wired (`sys/state`, mode 0755 so node_exporter can read the textfile)                                       |
+> | Small Prometheus (`:9090`, 30 d / 2 GB)    | wired, two scrape jobs verified by eval                                                                     |
+> | `/var/lib/prometheus2` persistence         | wired (`sys/state`, owner `prometheus`)                                                                     |
+> | Both boot entries                          | verified: the `llms-frontier` specialisation carries the unit, the scrape configs and both persist paths    |
+> | Reboot proof                               | **pending**                                                                                                 |
+> | Per-alias attribution                      | implemented (aliases resolved from `/v1/models`), **unverified live**                                       |
+> | Dashboard                                  | not built, deliberately: the aspect's Grafana stack was rejected as too heavy                               |
 
 # Persisting the LLM performance data
 
@@ -51,12 +51,12 @@ This is the missing half of both
 
 ## The three routes, priced
 
-| Route | What it needs | Cost | Verdict |
-|---|---|---|---|
-| **A. Event-driven collector → JSONL** | a small service that subscribes to `/api/events`, writes one line per `activity` event, plus a poll of `/api/performance` | ~100 lines, RSS ~10 MB, no new port | cheapest, exact, no loss |
-| **B. Same collector → Prometheus textfile** | A plus `node_exporter` with `--collector.textfile` | A plus one exporter and a `.prom` file | dashboards without a scrape endpoint |
-| **C. Prometheus server + scrape** | `monitoring-prometheus-stack` plus an exporter that serves Prometheus format from the JSON API | the aspect already exists; a scrape endpoint (~150 lines) and a server | worth it only if Grafana is wanted |
-| **D. Parse child logs** | `swap.debug` permanently on, a parser tied to llama.cpp's log format | highest fragility, most CPU and journal growth | reject: the structured data already exists |
+| Route                                       | What it needs                                                                                                             | Cost                                                                   | Verdict                                    |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------ |
+| **A. Event-driven collector → JSONL**       | a small service that subscribes to `/api/events`, writes one line per `activity` event, plus a poll of `/api/performance` | ~100 lines, RSS ~10 MB, no new port                                    | cheapest, exact, no loss                   |
+| **B. Same collector → Prometheus textfile** | A plus `node_exporter` with `--collector.textfile`                                                                        | A plus one exporter and a `.prom` file                                 | dashboards without a scrape endpoint       |
+| **C. Prometheus server + scrape**           | `monitoring-prometheus-stack` plus an exporter that serves Prometheus format from the JSON API                            | the aspect already exists; a scrape endpoint (~150 lines) and a server | worth it only if Grafana is wanted         |
+| **D. Parse child logs**                     | `swap.debug` permanently on, a parser tied to llama.cpp's log format                                                      | highest fragility, most CPU and journal growth                         | reject: the structured data already exists |
 
 The repository already has the stack: `modules/den/aspects/monitoring.nix` wires
 Prometheus (with `retentionTime` and `retentionSize`), Grafana, an optional
@@ -134,10 +134,10 @@ read the same persisted directory. The requirements:
 
 ## Risks
 
-| Risk | Mitigation |
-|---|---|
-| Data lands in tmpfs and silently evaporates | assert the persist entry in an evaluation check; the task's acceptance includes a reboot test |
-| Record lands in the `disposable` bucket | the acceptance test names the bucket |
-| The collector drops events during a reconnect | resume by timestamp; the SSE payload carries one |
-| JSONL grows without bound | rotate by day and keep the last N days, matching the Prometheus retention |
-| A second consumer (Prometheus plus the collector) doubles the work | one collector, two outputs |
+| Risk                                                               | Mitigation                                                                                    |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| Data lands in tmpfs and silently evaporates                        | assert the persist entry in an evaluation check; the task's acceptance includes a reboot test |
+| Record lands in the `disposable` bucket                            | the acceptance test names the bucket                                                          |
+| The collector drops events during a reconnect                      | resume by timestamp; the SSE payload carries one                                              |
+| JSONL grows without bound                                          | rotate by day and keep the last N days, matching the Prometheus retention                     |
+| A second consumer (Prometheus plus the collector) doubles the work | one collector, two outputs                                                                    |

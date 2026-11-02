@@ -35,7 +35,7 @@ replaces Claude Code's native "Tool use" approval dialog for `gateway_invoke` ca
 native Tk window. This was not the first design tried:
 
 - A PreToolUse hook attaching a `systemMessage` preview was built first, but empirically
-  `systemMessage` renders only *after* the dialog resolves (as a `⎿ PreToolUse:... says: ...`
+  `systemMessage` renders only _after_ the dialog resolves (as a `⎿ PreToolUse:... says: ...`
   annotation), never inside the dialog itself before the user answers.
 - `mcp-gateway`'s `surfaced_tools` (pinning specific backend tools directly in `tools/list`,
   bypassing the `gateway_invoke` dispatcher) was tried next — confirmed correct in the gateway's
@@ -52,8 +52,8 @@ native Tk window. This was not the first design tried:
   working live. basic-memory contributes a plugin splitting `write_note`/`delete_note` into
   metadata fields (title, directory, project) with just the raw content in the body.
 
-This covers the *approval-time* half of the original goal (what a specific call is about to do);
-the LLM-facing tool-description/system-prompt half (what each backend is *for*, when to prefer
+This covers the _approval-time_ half of the original goal (what a specific call is about to do);
+the LLM-facing tool-description/system-prompt half (what each backend is _for_, when to prefer
 one over another) is still open.
 
 Also produced: [docs/mcp-tools-report.md](docs/mcp-tools-report.md) — full tool inventory across
@@ -75,9 +75,11 @@ produce that report, for reuse next time backends/tools change.
 doesn't quietly reappear and get misattributed to a real `prek`/hook bug.
 
 **Symptom:** the `git-hooks-run` PostToolUse hook (`cd "$DEVENV_ROOT" && prek run`) fails with:
+
 ```
 error: You have unmerged paths. Resolve them before running prek
 ```
+
 even though `jj status` shows a clean/expected working copy state (no `(conflict)` marker on
 `@` or its named ancestors).
 
@@ -97,6 +99,7 @@ copy. `jj status` goes clean, but `git status` continues to show the path as unm
 `git add <path>` is run manually to clear the stale index stage.
 
 **Workaround (git-only, matches the "fall back to git for what jj can't do" exception):**
+
 ```bash
 git add <path>   # clears the stale 3-way merge stage; does not affect jj's own state
 ```
@@ -115,6 +118,7 @@ then stitch per-arch OCI images into one multi-arch image index entirely inside 
 daemon/registry round-trip).
 
 **Handover docs** (present viable options with tradeoffs; pick one when implementing):
+
 - [docs/multi-arch-builder.md](docs/multi-arch-builder.md) — dual-arch builder setup (Rosetta
   Linux for x86_64, single host store).
 - [docs/multi-arch-container-builder.md](docs/multi-arch-container-builder.md) — assembling the
@@ -125,7 +129,7 @@ daemon/registry round-trip).
 ### jj VCS convention to always end up on top of a merge commit
 
 Maybe should make a VCS convention and a script that would leave the history in a forked repository
- as follows:
+as follows:
 
 ```
                        /- fork-tip / (pushed) merge - fork
@@ -178,7 +182,7 @@ shell state and inherit a stale `$DEVENV_ROOT`, and whose every call fires the `
 PostToolUse hook against the main repo), launch each sub-agent as a full `claude` session inside
 its own zellij pane that has already `devenv shell`-entered from the correct workspace root. The
 coordinator drives them via the `zellij-llm` tooling (`packages/llm/zellij-llm/`, spawn /
-spawn-and-watch / peek / list). Hypothesised benefits: the sub-agent's *own* commands then run
+spawn-and-watch / peek / list). Hypothesised benefits: the sub-agent's _own_ commands then run
 with correct `DEVENV_*` and the git-hooks hook is scoped to that pane's env, not the main repo —
 addressing both halves of this hazard at once. Open questions (all unverified): how the
 coordinator feeds tasks to and reads results back from an interactive `claude` in a pane; session

@@ -45,6 +45,7 @@ nix run '.#aws-sso' -- --session myorg generate-profiles --prefix myorg
 For each role matching `--role-pattern`, fetch temporary credentials, list EKS clusters, and register them via `aws eks update-kubeconfig`.
 
 Each cluster gets two kubeconfig contexts:
+
 - **Full**: `{prefix}-{account_name}--{cluster}--{account_id}` — unambiguous, safe when multiple accounts have same-named clusters
 - **Short**: `{prefix}--{cluster}` — ergonomic alias pointing at the same credentials
 
@@ -57,10 +58,10 @@ nix run '.#aws-sso' -- --session myorg generate-kubeconfig \
 
 ## Global flags
 
-| Flag | Default | Description |
-|---|---|---|
-| `--session` | none | SSO session name from `~/.aws/config` `[sso-session ...]` |
-| `--region` | read from session config, else `us-east-1` | SSO API region |
+| Flag        | Default                                    | Description                                               |
+| ----------- | ------------------------------------------ | --------------------------------------------------------- |
+| `--session` | none                                       | SSO session name from `~/.aws/config` `[sso-session ...]` |
+| `--region`  | read from session config, else `us-east-1` | SSO API region                                            |
 
 ## Dev environment
 

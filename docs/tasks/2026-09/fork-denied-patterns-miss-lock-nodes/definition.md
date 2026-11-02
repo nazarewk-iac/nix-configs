@@ -22,24 +22,24 @@ Found while the flake update procedure gaps were repaired
 
 `kdn.jj.fork.deniedFilePatterns` and `kdn.jj.fork.deniedMessagePatterns` feed three consumers:
 
-| Consumer | Reads | Role |
-|---|---|---|
-| `modules/slots/jj/fork/fork-audit.sh` | file content at a revision | the content gate |
-| `modules/slots/jj/pre-push.sh` | the pushed range | one net on the push path |
-| `modules/slots/jj/fork/check-fork-contamination.sh` | `@` | one net for a raw `git commit` |
+| Consumer                                                    | Reads                        | Role                                                |
+| ----------------------------------------------------------- | ---------------------------- | --------------------------------------------------- |
+| `modules/slots/jj/fork/fork-audit.sh`                       | file content at a revision   | the content gate                                    |
+| `modules/slots/jj/pre-push.sh`                              | the pushed range             | one net on the push path                            |
+| `modules/slots/jj/fork/check-fork-contamination.sh`         | `@`                          | one net for a raw `git commit`                      |
 | `fork-direct` revset in `modules/slots/jj/fork/default.nix` | `files()` and `diff_lines()` | drives `fork-chain`, `upstream-safe`, `fork-leaked` |
 
 None of them matches a fork-only **lock node key**. Measured on the previous update commit:
 
-| Measurement | Value |
-|---|---|
-| lock nodes the commit changed | 45 |
-| fork-only nodes in the commit's `flake.lock` | 5 |
-| of those, changed in the commit | 4 |
-| of the 5, **private** (need a pattern) | 4 |
-| of the 5, public content that only the fork declares | 1 |
-| `jj fork-audit -q --color=never <that commit>` | "no fork-sensitive content found", exit **0** |
-| the same commit in the `upstream-safe` revset | yes |
+| Measurement                                          | Value                                         |
+| ---------------------------------------------------- | --------------------------------------------- |
+| lock nodes the commit changed                        | 45                                            |
+| fork-only nodes in the commit's `flake.lock`         | 5                                             |
+| of those, changed in the commit                      | 4                                             |
+| of the 5, **private** (need a pattern)               | 4                                             |
+| of the 5, public content that only the fork declares | 1                                             |
+| `jj fork-audit -q --color=never <that commit>`       | "no fork-sensitive content found", exit **0** |
+| the same commit in the `upstream-safe` revset        | yes                                           |
 
 So a commit that genuinely mixes private and public lock content reads as clean, and the
 revsets place it on the public chain.

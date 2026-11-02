@@ -40,6 +40,7 @@ fitting aliases: orchestrate-deep-slow (1048576), qwen (1048576), qwen3.8-flash-
 ## What this proves, and what it does not
 
 **Proves:**
+
 - the tool schema reaches the model (`measure` appears in the request's tool list);
 - the model called it with a real path;
 - the size was measured from disk (`bytes`, `lines`);

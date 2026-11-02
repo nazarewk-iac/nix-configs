@@ -31,7 +31,7 @@ The requirement is "a build must never fail because a builder is unreachable."
 The native mechanism does **not** fully deliver this. It delivers two weaker
 guarantees, and the difference matters:
 
-### 6a. Unreachable at *connection* time: handled, per build-hook process
+### 6a. Unreachable at _connection_ time: handled, per build-hook process
 
 **[VERIFIED — Lix `lix/legacy/build-remote.cc`]** `connectToBuilder()` loops over
 candidate machines. If `openStore(bestMachine)` throws, it prints
@@ -49,7 +49,8 @@ retries the next candidate:
 `printError("cannot build on '%s': %s%s", ...); bestMachine->enabled = false; continue;`.
 
 Consequences:
-- A stale **host key** or a **down SSH host** fails the *connection*; the hook
+
+- A stale **host key** or a **down SSH host** fails the _connection_; the hook
   disables that machine **for this hook process only** and tries the next
   machine. A fresh `build-remote` process is spawned per derivation
   (**[VERIFIED]** `derivation-goal.cc:1091-1095`, pool `instancesSem{4}`), and each
@@ -65,7 +66,7 @@ Consequences:
   the local machine can build the derivation (same system, required features
   available locally — `couldBuildLocally` in `build-remote.cc`).
 
-### 6b. Fails *mid-build* after acceptance: the whole build FAILS, no local retry
+### 6b. Fails _mid-build_ after acceptance: the whole build FAILS, no local retry
 
 **[VERIFIED — Lix `derivation-goal.cc:1034-1057` + `buildDone()` 955-985]**
 After the hook accepts the job and the remote run raises, the goal resolves to
@@ -75,17 +76,16 @@ After the hook accepts the job and the remote run raises, the goal resolves to
 `tryToBuild`/`tryHookLoop` for that derivation.
 
 **[VERIFIED — Nix `derivation-building-goal.cc:772-790]** the same:
-`if (!statusOk(status)) { ... co_return std::move(e); }` with a failure result.
-`build-remote.cc:386` throws `build of '<drv>' on '<storeUri>' failed: ...`.
+`if (!statusOk(status)) { ... co_return std::move(e); }`with a failure result.`build-remote.cc:386`throws`build of '<drv>' on '<storeUri>' failed: ...`.
 
 **[VERIFIED — no retry wrapper]** `grep` for `retry|TransientFailure|tryAgain`
 in `worker.cc` / `goal.cc` / `entry-points.cc` finds only the
 `keepGoing`/`ecFailed` kill loop, never a re-submission of the same goal.
 
-**So the honest statement is:** remote-build failure during the build is *not*
+**So the honest statement is:** remote-build failure during the build is _not_
 transparently retried locally. `TransientFailure` exists as a status but is not
 acted upon for distributed builds. The only local fallback is when the remote
-is unreachable *before* the hook accepts.
+is unreachable _before_ the hook accepts.
 
 ### 6c. The known-good pattern that satisfies "never fail"
 
@@ -108,10 +108,10 @@ Because of 6b, the pattern is **not** "list brys and hope Nix falls back." It is
    the upload window (and thus the window in which a flaky link can fail the
    build).
 4. **Accept the 6b residual risk, or eliminate it with a wrapper.** If a build
-   *must* survive "brys dies at minute 40", the only native-free answer is to not
+   _must_ survive "brys dies at minute 40", the only native-free answer is to not
    route it remotely (or to re-run). A wrapper around `nix build` that retries on
    the specific "failed on remote builder" error is DIY and not provided by Nix/Lix.
-5. **[UNVERIFIED, but strongly implied]** A *connection*-time disable doing the
+5. **[UNVERIFIED, but strongly implied]** A _connection_-time disable doing the
    work means the practical failure mode is "extra ~SSH connect delay, then
    local", not "build fails", **provided** the host is unreachable in a way SSH
    reports quickly. There is **no `ConnectTimeout` set by Lix** **[VERIFIED —
@@ -121,8 +121,8 @@ Because of 6b, the pattern is **not** "list brys and hope Nix falls back." It is
    `NIX_SSHOPTS="-o ConnectTimeout=5 -o ServerAliveInterval=5 -o ServerAliveCountMax=2"`
    in the daemon environment is the fix, and it is DIY config, not a Nix feature.
 
-**Bottom line for Q6:** native Nix/Lix gives *connection-time* failover to the
-next builder and to local; it does **not** give *mid-build* failover. The
+**Bottom line for Q6:** native Nix/Lix gives _connection-time_ failover to the
+next builder and to local; it does **not** give _mid-build_ failover. The
 "never fail" requirement is satisfied only by keeping local building enabled and
 treating remotes as optional, plus an SSH connect timeout of your own.
 
@@ -146,16 +146,16 @@ treating remotes as optional, plus an SSH connect timeout of your own.
 TOML parser `lix/lix-rs/src/machines.rs`]** Column order in the legacy
 space-separated file:
 
-| # | Field | Default | Notes |
-|---|---|---|---|
-| 1 | store URI | required | `ssh-ng://user@host`, schemeless gains `ssh://` |
-| 2 | system-types | local system | comma-separated |
-| 3 | ssh key file | `""` | `-` means unset |
-| 4 | `maxJobs` | `1` | positive int |
-| 5 | `speedFactor` | `1.0` | float; `0` is coerced to `1`; `<0` errors |
-| 6 | supported-features | `{}` | comma-separated |
-| 7 | mandatory-features | `{}` | comma-separated |
-| 8 | ssh-public-host-key | `""` | **base64**; sets `-oUserKnownHostsFile` to a temp file |
+| #   | Field               | Default      | Notes                                                  |
+| --- | ------------------- | ------------ | ------------------------------------------------------ |
+| 1   | store URI           | required     | `ssh-ng://user@host`, schemeless gains `ssh://`        |
+| 2   | system-types        | local system | comma-separated                                        |
+| 3   | ssh key file        | `""`         | `-` means unset                                        |
+| 4   | `maxJobs`           | `1`          | positive int                                           |
+| 5   | `speedFactor`       | `1.0`        | float; `0` is coerced to `1`; `<0` errors              |
+| 6   | supported-features  | `{}`         | comma-separated                                        |
+| 7   | mandatory-features  | `{}`         | comma-separated                                        |
+| 8   | ssh-public-host-key | `""`         | **base64**; sets `-oUserKnownHostsFile` to a temp file |
 
 - `publicHostKey` **[VERIFIED — `ssh.cc:addCommonSSHOpts`]**: if set, Lix writes
   `host <decoded key>` to a temp file and passes `-oUserKnownHostsFile=`. This
@@ -170,6 +170,7 @@ space-separated file:
 ### Selection algorithm
 
 **[VERIFIED — `selectBestMachine()` in `build-remote.cc:92-143`]**:
+
 1. `is_eligible(system, requiredFeatures)` — enabled **and** system supported
    **and** required-features ⊆ (supported ∪ mandatory) **and** mandatory ⊆ required.
 2. Open up to `maxJobs` slot lock files under
@@ -177,7 +178,7 @@ space-separated file:
 3. Score by **lowest `load / speedFactor`**; tie-break: higher `speedFactor`,
    then lower `load`.
 4. If none free but ≥1 eligible → `BuildRejected::Temporarily` (hook Postpone →
-   parent waits and retries the *hook*, not a local build); if none eligible and
+   parent waits and retries the _hook_, not a local build); if none eligible and
    local is impossible → `Permanently`; else `Permanently` (→ local attempt).
 
 No ping, no latency, no distance, no history. Speed factor is a static float
@@ -265,7 +266,7 @@ enable = true
 
 - `enable = false` drops the machine at parse time — the native "statically
   disable" switch **[VERIFIED]**.
-- Format detection: tries TOML; on *syntactic* failure retries legacy; a missing
+- Format detection: tries TOML; on _syntactic_ failure retries legacy; a missing
   `.toml` file is a **hard error** ("No such file"), whereas a missing legacy
   `@file` yields an **empty list** (silently zero builders)
   **[VERIFIED — `machines.rs:210-236` and test `bad_toml_file_doesnt_retry_legacy`]**.
@@ -285,22 +286,22 @@ enable = true
 Distinguish **dispatch** (chooses where to build) from **cache** (stores
 outputs). Very few products dispatch; most cache. Statuses checked 2026-10-28.
 
-| Project | What it does | Dispatch? | Cache? | Degrades when target down? | Status / link |
-|---|---|---|---|---|---|
-| **nixbuild.net** | Commercial build cluster; behaves as one remote builder URI; auto-scales 1-16 vCPU; auto-retries OOM builds | Yes (cloud) | Yes (result reuse) | Yes — it's the target, not a dependency; unreachable = your local builder | Active, €0.12/CPU-hr, 25 free CPU-hr/mo. `https://nixbuild.net`, `https://docs.nixbuild.net/terms` |
-| **Hydra** | CI: evaluates jobs, dispatches to its own build machines | Yes (CI-scale) | Via `nix-serve`/harmonia | Queue-based; a dead builder = job stays queued | Maintenance mode; not for a laptop. `github.com/NixOS/hydra` |
-| **nix-eval-jobs** | Parallel evaluation → JSON; no building | No | No | n/a | Active; latest commits 2026-09-17. `github.com/NixOS/nix-eval-jobs` |
-| **nix-fast-build** | Wraps `nix-eval-jobs` + `nix-output-monitor`; invokes `nix build` | Yes (thin) | No | Fails if the `nix build` it launches fails | Active; push 2026-10-25, 565★, MIT. `github.com/Mic92/nix-fast-build` |
-| **harmonia** | Rust binary cache + optional `harmonia-daemon` remote-build bridge | Optional (daemon bridge) | Yes | Cache misses just build locally | **Active, v3.3.0 (2026-09-18)**, includes `harmonia-gc`. `github.com/nix-community/harmonia` |
-| **attic** | Multi-tenant Rust binary cache | No | Yes (chunked, dedup) | Cache: substitute failure falls through to build | Active; pushed 2026-10-26, 2134★. `github.com/zhaofengli/attic` |
-| **nix-serve** | Perl narinfo/NAR server over a store | No | Yes (serves local store) | Substitute fallback | Alive but slow-moving; pushed 2025-11-24. `github.com/edolstra/nix-serve` |
-| **nar-serve** | Node NAR proxy (cache routing) | No | Proxy | Falls through | Small project; **[UNVERIFIED current]** |
-| **cache.nixos.org** | Central official cache | No | Yes | Substitute miss → build | Active |
-| **cachix** | Hosted binary cache (Cachix) | No | Yes | Substitute miss → build | Active commercial |
-| **devenv cache** | devenv's cache | No | Yes | Substitute miss → build | Active |
-| **garnix** | Hosted CI + cache | Yes (CI) | Yes | CI reruns; not interactive | Active commercial. `garnix.io` |
-| **nix-ci** | Hosted CI | Yes (CI) | Yes | CI reruns | **[UNVERIFIED current]** |
-| **nix-remote-build-controller** | K8s controller scale-to-N remote builders | Yes (K8s) | No | Controller-level | 2★, Go, 2025-09. `github.com/omarjatoi/nix-remote-build-controller` |
+| Project                         | What it does                                                                                                | Dispatch?                | Cache?                   | Degrades when target down?                                                | Status / link                                                                                      |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------ | ------------------------ | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| **nixbuild.net**                | Commercial build cluster; behaves as one remote builder URI; auto-scales 1-16 vCPU; auto-retries OOM builds | Yes (cloud)              | Yes (result reuse)       | Yes — it's the target, not a dependency; unreachable = your local builder | Active, €0.12/CPU-hr, 25 free CPU-hr/mo. `https://nixbuild.net`, `https://docs.nixbuild.net/terms` |
+| **Hydra**                       | CI: evaluates jobs, dispatches to its own build machines                                                    | Yes (CI-scale)           | Via `nix-serve`/harmonia | Queue-based; a dead builder = job stays queued                            | Maintenance mode; not for a laptop. `github.com/NixOS/hydra`                                       |
+| **nix-eval-jobs**               | Parallel evaluation → JSON; no building                                                                     | No                       | No                       | n/a                                                                       | Active; latest commits 2026-09-17. `github.com/NixOS/nix-eval-jobs`                                |
+| **nix-fast-build**              | Wraps `nix-eval-jobs` + `nix-output-monitor`; invokes `nix build`                                           | Yes (thin)               | No                       | Fails if the `nix build` it launches fails                                | Active; push 2026-10-25, 565★, MIT. `github.com/Mic92/nix-fast-build`                              |
+| **harmonia**                    | Rust binary cache + optional `harmonia-daemon` remote-build bridge                                          | Optional (daemon bridge) | Yes                      | Cache misses just build locally                                           | **Active, v3.3.0 (2026-09-18)**, includes `harmonia-gc`. `github.com/nix-community/harmonia`       |
+| **attic**                       | Multi-tenant Rust binary cache                                                                              | No                       | Yes (chunked, dedup)     | Cache: substitute failure falls through to build                          | Active; pushed 2026-10-26, 2134★. `github.com/zhaofengli/attic`                                    |
+| **nix-serve**                   | Perl narinfo/NAR server over a store                                                                        | No                       | Yes (serves local store) | Substitute fallback                                                       | Alive but slow-moving; pushed 2025-11-24. `github.com/edolstra/nix-serve`                          |
+| **nar-serve**                   | Node NAR proxy (cache routing)                                                                              | No                       | Proxy                    | Falls through                                                             | Small project; **[UNVERIFIED current]**                                                            |
+| **cache.nixos.org**             | Central official cache                                                                                      | No                       | Yes                      | Substitute miss → build                                                   | Active                                                                                             |
+| **cachix**                      | Hosted binary cache (Cachix)                                                                                | No                       | Yes                      | Substitute miss → build                                                   | Active commercial                                                                                  |
+| **devenv cache**                | devenv's cache                                                                                              | No                       | Yes                      | Substitute miss → build                                                   | Active                                                                                             |
+| **garnix**                      | Hosted CI + cache                                                                                           | Yes (CI)                 | Yes                      | CI reruns; not interactive                                                | Active commercial. `garnix.io`                                                                     |
+| **nix-ci**                      | Hosted CI                                                                                                   | Yes (CI)                 | Yes                      | CI reruns                                                                 | **[UNVERIFIED current]**                                                                           |
+| **nix-remote-build-controller** | K8s controller scale-to-N remote builders                                                                   | Yes (K8s)                | No                       | Controller-level                                                          | 2★, Go, 2025-09. `github.com/omarjatoi/nix-remote-build-controller`                                |
 
 **Dispatch-balancing projects that maintain a dynamic builder list: essentially
 none for a home-lab.** A GitHub search for "nix builder dynamic" returns the K8s
@@ -309,7 +310,7 @@ absence is hard to prove, so treat as "no established project found"]**.
 
 Key architectural point: **no cache makes a build "never fail" either** — a cache
 is a substituter, and a substituter being down already falls through to build
-that is *not* the same as the builder being down mid-build.
+that is _not_ the same as the builder being down mid-build.
 
 ---
 
@@ -356,7 +357,7 @@ central dispatcher plus a purely local fallback.
    speed hint, not a requirement. **[VERIFIED — Q6]**
 
 2. **Runtime-switchable builder file, not `nix.buildMachines`.**
-   - Set `nix.settings.builders = "@/run/kdn/nix-machines.toml"` (a *plain* file
+   - Set `nix.settings.builders = "@/run/kdn/nix-machines.toml"` (a _plain_ file
      outside `/nix/store`) and leave `nix.buildMachines = [ ]`.
    - A small writer (systemd `oneshot` + timer) owns that file.
    - Because each `build-remote` re-reads it per derivation, edits take effect
@@ -366,7 +367,7 @@ central dispatcher plus a purely local fallback.
 
 3. **Location detection = the writer's input, not Nix's.**
    - "At home" = reachable `brys` on LAN (`ssh -o ConnectTimeout=2 -o
-     BatchMode=yes brys.lan… true` succeeds within e.g. 2 s) **and** a cheap
+BatchMode=yes brys.lan… true` succeeds within e.g. 2 s) **and** a cheap
      LAN probe (default-route gateway MAC / SSID / `systemd-networkd` state).
    - At home → enable `brys.lan…` (speed-factor 32), disable the WireGuard
      duplicate. Away → disable `brys` entirely (`enable = false`), keep local.
@@ -375,7 +376,7 @@ central dispatcher plus a purely local fallback.
 
 4. **Always give the daemon an SSH connect timeout.** Set, in the
    `nix-daemon` environment, `NIX_SSHOPTS="-o ConnectTimeout=5 -o
-   ServerAliveInterval=5 -o ServerAliveCountMax=2 -o BatchMode=yes"`. Without
+ServerAliveInterval=5 -o ServerAliveCountMax=2 -o BatchMode=yes"`. Without
    this, a silently-dropped LAN link stalls the hook for the TCP timeout before
    6a can move on. **[VERIFIED — Lix sets no ConnectTimeout]**
 
@@ -384,7 +385,7 @@ central dispatcher plus a purely local fallback.
    **[VERIFIED — settings md]**
 
 6. **Retire the per-suffix duplication.** Instead of listing each host twice
-   (LAN factor 100, WG factor 20), list `brys` once and let the *writer* decide
+   (LAN factor 100, WG factor 20), list `brys` once and let the _writer_ decide
    which URI (LAN vs WG) is enabled for "home" vs "roaming". Cleaner and it
    removes the "same machine counted twice in selection" problem, since
    selection scores `load/speedFactor` and two entries for one physical host
@@ -409,21 +410,21 @@ central dispatcher plus a purely local fallback.
 
 ### DIY vs off-the-shelf
 
-| Part | Off-the-shelf | DIY |
-|---|---|---|
-| "Never fail" core (local always available) | **Yes** — `max-jobs > 0` | — |
-| Runtime-switchable list | partially (Lix TOML `enable`) | writer service |
-| Location detection | no | **yes** (probe + network state) |
-| SSH connect timeout | no | **yes** (`NIX_SSHOPTS`) |
-| Mid-build failover | **no** (Q6b) | retry wrapper (optional) |
-| Result sharing across hosts | **yes** (harmonia/attic) | wiring |
-| Central dispatch | none suitable | `etra`-hosted file generator |
+| Part                                       | Off-the-shelf                 | DIY                             |
+| ------------------------------------------ | ----------------------------- | ------------------------------- |
+| "Never fail" core (local always available) | **Yes** — `max-jobs > 0`      | —                               |
+| Runtime-switchable list                    | partially (Lix TOML `enable`) | writer service                  |
+| Location detection                         | no                            | **yes** (probe + network state) |
+| SSH connect timeout                        | no                            | **yes** (`NIX_SSHOPTS`)         |
+| Mid-build failover                         | **no** (Q6b)                  | retry wrapper (optional)        |
+| Result sharing across hosts                | **yes** (harmonia/attic)      | wiring                          |
+| Central dispatch                           | none suitable                 | `etra`-hosted file generator    |
 
 ### Failure modes to design for
 
 - **`brys` up but generating** (llama-swap): reachable, so selection sends the
   build; the build competes for CPU and is slow. Native Nix cannot see llama-swap
-  load. Mitigation: the writer can *disable* `brys` while a model is loaded
+  load. Mitigation: the writer can _disable_ `brys` while a model is loaded
   (probe llama-swap's HTTP status), or lower its `jobs`. This is DIY and is the
   main reason not to hand the whole decision to `speedFactor`.
 - **`brys` dies mid-build**: the build **fails** (Q6b). Nothing native fixes

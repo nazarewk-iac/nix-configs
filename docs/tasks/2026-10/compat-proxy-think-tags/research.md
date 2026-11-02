@@ -28,11 +28,11 @@ OpenCode stores the thinking text of a brys model as a `text` part, not a
 Group the `part` table by the session `model.providerID` and the part `type`,
 for rows whose text contains the `think` open tag:
 
-| provider | part type | count |
-|---|---|---|
-| `brys` | `text` | 10 |
-| `requesty` | `reasoning` | 1 |
-| `requesty` | `text` | 2 (incidental, not model output) |
+| provider   | part type   | count                            |
+| ---------- | ----------- | -------------------------------- |
+| `brys`     | `text`      | 10                               |
+| `requesty` | `reasoning` | 1                                |
+| `requesty` | `text`      | 2 (incidental, not model output) |
 
 So the requesty path delivers a proper `reasoning` part that OpenCode parses;
 the brys path delivers a `text` part with visible tags. The difference is the

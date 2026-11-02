@@ -35,28 +35,28 @@ each request's `model=` to the owning router.
 
 The four gaps:
 
-| Gap | What `--models-max`+LRU does today |
-|---|---|
-| Resource awareness | none — counts models, not bytes; never reads RAM/VRAM |
-| Priority / pinning | none — pure idle-LRU; a warm frontier model is a candidate victim |
-| Active-vs-idle | **buggy** — it evicts models with in-flight requests (llama.cpp #28698, #28443) `[V]` |
-| "main resident + grunts swap" | only approximated by physically separate processes/routers |
+| Gap                           | What `--models-max`+LRU does today                                                    |
+| ----------------------------- | ------------------------------------------------------------------------------------- |
+| Resource awareness            | none — counts models, not bytes; never reads RAM/VRAM                                 |
+| Priority / pinning            | none — pure idle-LRU; a warm frontier model is a candidate victim                     |
+| Active-vs-idle                | **buggy** — it evicts models with in-flight requests (llama.cpp #28698, #28443) `[V]` |
+| "main resident + grunts swap" | only approximated by physically separate processes/routers                            |
 
 ## 2. Comparison table
 
 Stars/last-commit as of the research date (2026-10-17/18).
 
-| Candidate | (a) Pin/prio | (b) Active req | (c) Resource aware | (d) OpenAI | (e) GGUF | (f) Multi 1 box | (g) NixOS | License | Verdict |
-|---|---|---|---|---|---|---|---|---|---|
-| llama.cpp router mode | ✗ | ✗ (evicts in-flight #28698) | ✗ | ✓ | ✓ | ✓ | ✓ | MIT | **No fit** (the thing replaced) |
-| **llama-swap** (mostlygeek) | ✓✓ (`matrix.evict_costs`, `groups.persistent`, `selectors.pin`) | ✓ (queues; ttl resets on request; never interrupts a reply) `[V]` | ~ (monitors CPU/RAM/GPU; **no admission gate**) `[V]` | ✓✓ | ✓✓ | ✓✓ | ✓ Go binary `[I]` | MIT `[V]` | **FIT (best)** |
-| Turbohaul-Manager | ✓ (IDLE_HOT, Fast Lane) | ✓ `[V]` | ✓✓✓ (7-gate: RAM/VRAM/CPU/iowait) `[V]` | ✓ | ✓ (vendored fork) | ✓ | ~ (C++ build) `[I]` | MIT | **Partial** — feature-perfect, NVIDIA-centric, tiny (40 stars) |
-| LiteLLM proxy | ✓ (prio queue) | ✓ | ✗ (no process/mem lifecycle) | ✓✓ | ✗ (proxies, does not spawn) | ✓ | ✓ | MIT | **No fit** — routing only |
-| Ollama | ~ (`keep_alive -1`; no eviction prio) | ✓ | ✓ (VRAM fit + queues) | ✓ | ✗ (own engine) | ✓ | ✓ | MIT | **Partial** — GGUF/100 GB MoE not its target |
-| vLLM / SGLang router | ✗ | ✓ | ✓ (GPU) | ✓ | ✗ (HF weights) | ✓ | ~ | Apache-2.0 | **No fit** — GPU-only, no GGUF |
-| Ray Serve / KServe / Triton / ModelMesh | ✗/~ | ✓ | ~ | ~ | ~ | ✓ | ~ | various | **No fit** — cluster/GPU, no priority evict |
-| LM Studio headless | ✗ | ~ | ~ | ✓ | ✓ | ~ | ✗ (proprietary) | closed | **No fit** |
-| KoboldCpp / Jan / text-gen-webui / Aphrodite / MLX | ✗/~ | ~ | ~ | ~ | ✓/~ | ~ | ~/✗ | various | **No fit** |
+| Candidate                                          | (a) Pin/prio                                                    | (b) Active req                                                    | (c) Resource aware                                    | (d) OpenAI | (e) GGUF                    | (f) Multi 1 box | (g) NixOS           | License    | Verdict                                                        |
+| -------------------------------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------- | ---------- | --------------------------- | --------------- | ------------------- | ---------- | -------------------------------------------------------------- |
+| llama.cpp router mode                              | ✗                                                               | ✗ (evicts in-flight #28698)                                       | ✗                                                     | ✓          | ✓                           | ✓               | ✓                   | MIT        | **No fit** (the thing replaced)                                |
+| **llama-swap** (mostlygeek)                        | ✓✓ (`matrix.evict_costs`, `groups.persistent`, `selectors.pin`) | ✓ (queues; ttl resets on request; never interrupts a reply) `[V]` | ~ (monitors CPU/RAM/GPU; **no admission gate**) `[V]` | ✓✓         | ✓✓                          | ✓✓              | ✓ Go binary `[I]`   | MIT `[V]`  | **FIT (best)**                                                 |
+| Turbohaul-Manager                                  | ✓ (IDLE_HOT, Fast Lane)                                         | ✓ `[V]`                                                           | ✓✓✓ (7-gate: RAM/VRAM/CPU/iowait) `[V]`               | ✓          | ✓ (vendored fork)           | ✓               | ~ (C++ build) `[I]` | MIT        | **Partial** — feature-perfect, NVIDIA-centric, tiny (40 stars) |
+| LiteLLM proxy                                      | ✓ (prio queue)                                                  | ✓                                                                 | ✗ (no process/mem lifecycle)                          | ✓✓         | ✗ (proxies, does not spawn) | ✓               | ✓                   | MIT        | **No fit** — routing only                                      |
+| Ollama                                             | ~ (`keep_alive -1`; no eviction prio)                           | ✓                                                                 | ✓ (VRAM fit + queues)                                 | ✓          | ✗ (own engine)              | ✓               | ✓                   | MIT        | **Partial** — GGUF/100 GB MoE not its target                   |
+| vLLM / SGLang router                               | ✗                                                               | ✓                                                                 | ✓ (GPU)                                               | ✓          | ✗ (HF weights)              | ✓               | ~                   | Apache-2.0 | **No fit** — GPU-only, no GGUF                                 |
+| Ray Serve / KServe / Triton / ModelMesh            | ✗/~                                                             | ✓                                                                 | ~                                                     | ~          | ~                           | ✓               | ~                   | various    | **No fit** — cluster/GPU, no priority evict                    |
+| LM Studio headless                                 | ✗                                                               | ~                                                                 | ~                                                     | ✓          | ✓                           | ~               | ✗ (proprietary)     | closed     | **No fit**                                                     |
+| KoboldCpp / Jan / text-gen-webui / Aphrodite / MLX | ✗/~                                                             | ~                                                                 | ~                                                     | ~          | ✓/~                         | ~               | ~/✗                 | various    | **No fit**                                                     |
 
 Only **llama-swap** satisfies (a)–(f) with easy Nix packaging. **Turbohaul-Manager**
 satisfies (a)–(c) more strongly but is GPU-centric and immature.
@@ -69,7 +69,7 @@ spawns/kills the upstream process on demand `[V]`.
 - **(a) Priority/pinning — three mechanisms `[V]`:** `matrix.evict_costs` (integer cost
   per model; the solver minimizes eviction cost); `groups.<name>.persistent: true`
   ("other groups can never unload this group's members"); `selectors.<name>.strategy:
-  pin`. Plus `scheduler.settings.fifo.priority` (per-model request priority).
+pin`. Plus `scheduler.settings.fifo.priority` (per-model request priority).
 - **(b) Active-request aware `[V]`:** the `ttl` idle timer "resets on every request";
   a swap only happens between turns and never interrupts a reply.
 - **(c) Resource awareness — monitoring only `[V]`:** a Performance Monitor reports
@@ -89,7 +89,7 @@ routing:
         vars: { ds4: deepseek-v4-flash, qw: qwen3.8-flash-next, g4: qwen3.5-4b }
         evict_costs: { ds4: 1000, qw: 1000, g4: 1 }
         sets:
-          main:  "ds4 & g4"
+          main: "ds4 & g4"
           qmain: "qw & g4"
           scratch: "g4 | +auto:orphans"
 ```
@@ -108,15 +108,15 @@ model starts, as the basis for scheduling/eviction"** — is exactly the missing
 
 Build a small **model lifecycle/profile table** on brys, measured at real start:
 
-| field | how to measure | use |
-|---|---|---|
-| `rss_file` (mmap weights) | `VmRSS`/`RssFile` of the child at idle | RAM budget; reclaimable |
-| `rss_anon` (KV + buffers) | `RssAnon` at served context | RAM budget; not reclaimable |
-| `vram_used` | `rocm-smi`/Vulkan query while served | GPU fit |
-| `decode_tok_s`, `prefill_tok_s` | `llama-bench`/server timings, warm | expected latency; grunt eligibility |
-| `load_time_s` | time from spawn to "listening", cold page cache | swap cost; pin if expensive |
-| `major_faults/s` at idle | `/proc/<pid>/stat` over 10 s | detect page-cache eviction thrash |
-| `coexist_penalty` | frontier tok/s with vs without this model resident | decide co-tenancy |
+| field                           | how to measure                                     | use                                 |
+| ------------------------------- | -------------------------------------------------- | ----------------------------------- |
+| `rss_file` (mmap weights)       | `VmRSS`/`RssFile` of the child at idle             | RAM budget; reclaimable             |
+| `rss_anon` (KV + buffers)       | `RssAnon` at served context                        | RAM budget; not reclaimable         |
+| `vram_used`                     | `rocm-smi`/Vulkan query while served               | GPU fit                             |
+| `decode_tok_s`, `prefill_tok_s` | `llama-bench`/server timings, warm                 | expected latency; grunt eligibility |
+| `load_time_s`                   | time from spawn to "listening", cold page cache    | swap cost; pin if expensive         |
+| `major_faults/s` at idle        | `/proc/<pid>/stat` over 10 s                       | detect page-cache eviction thrash   |
+| `coexist_penalty`               | frontier tok/s with vs without this model resident | decide co-tenancy                   |
 
 The scheduler then makes decisions from **measured** numbers, not from model names:
 
@@ -138,8 +138,8 @@ The scheduler then makes decisions from **measured** numbers, not from model nam
 3. **A systemd memory-capped slice** for the grunts (`MemoryHigh`/`MemoryMax`), so the
    kernel reclaims/kills a grunt before the pinned frontier. **Already proven on brys:**
    `docs/local-llms.md` EXPERIMENT B (2026-09-06) — a competitor under `MemoryMax=4G`
-   was OOM-killed in its own scope while DS4's weights stayed resident: *"cgroup cap IS
-   the robustness mechanism"* `[V]`.
+   was OOM-killed in its own scope while DS4's weights stayed resident: _"cgroup cap IS
+   the robustness mechanism"_ `[V]`.
 4. Keep `zfs_arc_max=8GiB` and `mmap` + `--lazy-mode auto` so the frontier's weight pages
    are reclaimable rather than OOM `[V]`.
 

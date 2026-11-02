@@ -19,7 +19,7 @@ timestamp: 2026-10-11T11:05:00+02:00
 - `qwen-gpu-offload` (done, 2026-10-07) folded `llm-qwen-gpu` into the canonical `llm-qwen`
   entry. The fold left a confusing flag combination in `hosts/brys/llm-qwen.nix`:
   `qwenGpu = true` (which once selected the Vulkan build) together with `qwenVulkan = false`
-  and a `llamaPackage` override, and the comment has to explain that the GPU is *not* used.
+  and a `llamaPackage` override, and the comment has to explain that the GPU is _not_ used.
 - The reason the W6600 is off for Qwen is measured: at ~40.6K tokens of context the amdgpu
   ring times out under the Vulkan workload and the context is lost
   (`docs/tasks/2026-10/w6600-amdgpu-hang/`, note in `hosts/brys/llm.nix`).

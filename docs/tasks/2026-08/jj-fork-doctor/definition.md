@@ -101,9 +101,11 @@ suite together.
 Two rebase forms cover the two directions of movement. Note both for the implementer.
 
 - **Step 3 — push upstream-safe changes down below the merge, onto the upstream chain:**
+
   ```bash
   jj rebase -r 'upstream-safe' --insert-after 'upstream-tip'
   ```
+
   `-r` moves only those revisions, not their descendants. `--insert-after` (`-A`) places them on
   top of `upstream-tip` and re-parents the descendants (the merge, then `@`) onto the moved chain.
   The merge keeps its fork parent, so it stays a clean 2-way merge. Follow with
@@ -118,9 +120,11 @@ Two rebase forms cover the two directions of movement. Note both for the impleme
   > doctor offers this command for the interleaved case.
 
 - **Step 5 — pull new upstream in, rebase the pre-merge upstream chain onto the fetched tip:**
+
   ```bash
   jj rebase -s 'roots(upstream-local)' -d 'upstream-incoming-tip'
   ```
+
   `-s` moves the chain root and all its descendants (the merge, `to-rebase`, `@`) as one. The
   merge keeps its fork parent. See use case 4 in
   [../jujutsu-vcs.fork.md](../../../jujutsu-vcs.fork.md) for the full sequence and the warning against

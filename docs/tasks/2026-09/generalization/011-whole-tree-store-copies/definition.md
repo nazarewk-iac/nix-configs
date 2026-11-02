@@ -35,17 +35,17 @@ Each row was found while porting a slot to a den aspect. `den`-tree ports use a 
 literal already — the creator chose that route on 2026-09-10. See
 [004-den-spike](../004-den-spike/definition.md).
 
-| Site | Reads | Found while |
-|---|---|---|
-| `modules/slots/nix/default.nix:118,120,121` | 2 skills plus `okf-format.md` | reading order 3 of the den port |
-| `modules/slots/zellij/default.nix:110` | the `zellij` skill | reading order 5 of the den port |
-| `modules/slots/jj/default.nix:171,176,178` | the `jj-expert` agent prompt, 1 rule, 1 skill | reading order 7 of the den port |
-| `modules/slots/jj/fork/default.nix:166,269,271` | 1 doc, 1 rule, 1 skill | reading order 7 of the den port |
-| `modules/slots/mcp/basic-memory/default.nix:126` | 1 rule | reading order 6 of the den port |
-| `modules/universal/profile/default-secrets/default.nix:21,25,85` | `default.unattended.sops.yaml` | overlaps [008](../008-sops-default-inventory/definition.md) |
-| `modules/universal/profile/remote-builders/default.nix:195` | the same sops file | overlaps 008 |
-| `modules/universal/profile/machine/baseline/default.nix:69` | the **whole** flake tree — `xdg.configFile."kdn/source-flake".source = kdnConfig.self` | added 2026-09-11; the table missed it |
-| `modules/universal/profile/machine/baseline/default.nix:141` | the **whole** flake tree — `environment.etc."kdn/source-flake".source` | added 2026-09-11; the table missed it |
+| Site                                                             | Reads                                                                                  | Found while                                                 |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `modules/slots/nix/default.nix:118,120,121`                      | 2 skills plus `okf-format.md`                                                          | reading order 3 of the den port                             |
+| `modules/slots/zellij/default.nix:110`                           | the `zellij` skill                                                                     | reading order 5 of the den port                             |
+| `modules/slots/jj/default.nix:171,176,178`                       | the `jj-expert` agent prompt, 1 rule, 1 skill                                          | reading order 7 of the den port                             |
+| `modules/slots/jj/fork/default.nix:166,269,271`                  | 1 doc, 1 rule, 1 skill                                                                 | reading order 7 of the den port                             |
+| `modules/slots/mcp/basic-memory/default.nix:126`                 | 1 rule                                                                                 | reading order 6 of the den port                             |
+| `modules/universal/profile/default-secrets/default.nix:21,25,85` | `default.unattended.sops.yaml`                                                         | overlaps [008](../008-sops-default-inventory/definition.md) |
+| `modules/universal/profile/remote-builders/default.nix:195`      | the same sops file                                                                     | overlaps 008                                                |
+| `modules/universal/profile/machine/baseline/default.nix:69`      | the **whole** flake tree — `xdg.configFile."kdn/source-flake".source = kdnConfig.self` | added 2026-09-11; the table missed it                       |
+| `modules/universal/profile/machine/baseline/default.nix:141`     | the **whole** flake tree — `environment.etc."kdn/source-flake".source`                 | added 2026-09-11; the table missed it                       |
 
 ## Notes per site
 

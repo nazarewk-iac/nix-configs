@@ -31,12 +31,12 @@ Measured mechanism: [research.md](research.md). Task: [definition.md](definition
 
 ## What the slot owns
 
-| Part | Mechanism |
-|---|---|
-| `allowed_signers` | one generated store file, wired into **both** `gpg.ssh.allowedSignersFile` and jj `signing.backends.ssh.allowed-signers` |
+| Part                 | Mechanism                                                                                                                                           |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `allowed_signers`    | one generated store file, wired into **both** `gpg.ssh.allowedSignersFile` and jj `signing.backends.ssh.allowed-signers`                            |
 | alternate git config | a store file that starts with `include.path = <the real global file>`, then overrides `user.signingKey`, `gpg.ssh.program` and `allowedSignersFile` |
-| alternate jj config | a store TOML file with `signing.behavior = "force"`, `backend = "ssh"`, a plain key and plain `ssh-keygen` |
-| `kdn-signing` | a script on PATH that **prints** the shell lines a route needs |
+| alternate jj config  | a store TOML file with `signing.behavior = "force"`, `backend = "ssh"`, a plain key and plain `ssh-keygen`                                          |
+| `kdn-signing`        | a script on PATH that **prints** the shell lines a route needs                                                                                      |
 
 Options, all data-free:
 
@@ -114,6 +114,7 @@ The design below is recorded; **no file exists yet**.
 
 The last two paths stay out of this file on purpose. They belong to the fork chain, and this file
 goes to the public chain.
+
 - `research.md` — the promoted research.
 
 ### Remaining

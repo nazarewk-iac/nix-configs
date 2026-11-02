@@ -44,7 +44,7 @@ heads. You put your work on top of the incoming tip.
   - One change: `jj rebase -r <tip> -d <branch>@<remote>`. It moves only that
     commit; jj reparents its descendants onto its former parent, so a lower
     commit stays on the old base. Proven by `test_behind_tip_only_rebase_r`.
-- **Approach A — land the incoming *under* your work — depends on the target.**
+- **Approach A — land the incoming _under_ your work — depends on the target.**
   `jj rebase -r <branch>@<remote> --insert-before @` is **refused when the target
   is immutable**: the trunk `main@<remote>` (always, even when tracked), or any
   **untracked** remote bookmark. Proven by

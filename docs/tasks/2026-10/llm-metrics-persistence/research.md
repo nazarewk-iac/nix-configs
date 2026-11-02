@@ -29,13 +29,13 @@ busy", useless for "which alias was slow".
 
 The model data lives in JSON:
 
-| Endpoint | Content | Shape |
-|---|---|---|
-| `/api/metrics/activity` | one record per request | JSON array, ring-buffered |
-| `/api/metrics/stats` | totals + histograms | JSON object |
-| `/api/performance` | GPU stats | JSON array |
-| `/api/captures/<id>` | request/response bodies | JSON, auth redacted |
-| `/api/events` | live typed events | SSE |
+| Endpoint                | Content                 | Shape                     |
+| ----------------------- | ----------------------- | ------------------------- |
+| `/api/metrics/activity` | one record per request  | JSON array, ring-buffered |
+| `/api/metrics/stats`    | totals + histograms     | JSON object               |
+| `/api/performance`      | GPU stats               | JSON array                |
+| `/api/captures/<id>`    | request/response bodies | JSON, auth redacted       |
+| `/api/events`           | live typed events       | SSE                       |
 
 An exporter is therefore **required** for any Prometheus route. There is no
 configuration that makes llama-swap emit model metrics in Prometheus format.
@@ -44,13 +44,13 @@ configuration that makes llama-swap emit model metrics in Prometheus format.
 
 Held `GET /api/events` open for 25 s while one request ran. Event types by count:
 
-| Type | Count | Payload |
-|---|---|---|
-| `logData` | 2866 | a log line |
-| `modelStatus` | 5 | full model list: `id`, `name`, `state` (`stopped`/`loading`/`ready`), `aliases`, `peerID` |
-| `inflight` | 4 | `{"operation":"upsert"|"snapshot","request":{id,model,req_path,method,headers}}` |
-| `activity` | 1 | the finished request record |
-| `uiConfig`, `profileChanged` | 1 each | UI state |
+| Type                         | Count  | Payload                                                                                   |
+| ---------------------------- | ------ | ----------------------------------------------------------------------------------------- |
+| `logData`                    | 2866   | a log line                                                                                |
+| `modelStatus`                | 5      | full model list: `id`, `name`, `state` (`stopped`/`loading`/`ready`), `aliases`, `peerID` |
+| `inflight`                   | 4      | `{"operation":"upsert"                                                                    | "snapshot","request":{id,model,req_path,method,headers}}` |
+| `activity`                   | 1      | the finished request record                                                               |
+| `uiConfig`, `profileChanged` | 1 each | UI state                                                                                  |
 
 Two practical notes:
 
@@ -76,11 +76,11 @@ output tokens total, prompt tok/s gauge, gen tok/s gauge, duration gauge, plus o
 
 Memory and CPU:
 
-| Component | RSS | CPU |
-|---|---|---|
-| Prometheus (this series count) | ~120–200 MB | ~0.1 % idle, brief spike per scrape |
-| Grafana | ~180–300 MB | ~0.1 % |
-| One shell/Go collector | ~10 MB, or 0 on a timer | negligible |
+| Component                      | RSS                     | CPU                                 |
+| ------------------------------ | ----------------------- | ----------------------------------- |
+| Prometheus (this series count) | ~120–200 MB             | ~0.1 % idle, brief spike per scrape |
+| Grafana                        | ~180–300 MB             | ~0.1 %                              |
+| One shell/Go collector         | ~10 MB, or 0 on a timer | negligible                          |
 
 On a 128 GB box that is nothing in absolute terms. The real objection is not
 memory, it is that `llms-frontier` exists to give the models the whole machine —
@@ -96,7 +96,7 @@ another host scraping over the network. The owner has accepted it in both entrie
 - the persist buckets include a **`disposable`** set (`:678`), which is
   deliberately not kept across boots;
 - the existing entries show the shape: `kdn.disks.persist."sys/state".directories
-  = [ "/var/lib/systemd/coredump" ]`, and the `{ directory = "…"; mode = "…"; }`
+= [ "/var/lib/systemd/coredump" ]`, and the `{ directory = "…"; mode = "…"; }`
   form for paths that need a mode.
 
 So the deliverable is one entry per data directory in a **non-disposable** bucket,
@@ -133,12 +133,12 @@ It is a legitimate fallback only if a future llama-swap removes the JSON API.
 
 ## 6. Cost summary, to answer "how much"
 
-| Route | New processes | New code | RAM | Disk |
-|---|---|---|---|---|
-| JSONL collector, event-driven | 1 | ~100 lines | ~10 MB | ~1 MB/1000 requests |
-| Collector + node_exporter textfile | 2 | ~120 lines | ~30 MB | same |
-| Prometheus + Grafana + exporter | 3–4 | ~150 lines | ~350–500 MB total | 60–120 MB / 30 days |
-| Log parser | 1 | ~200 lines | ~20 MB | + journal growth |
+| Route                              | New processes | New code   | RAM               | Disk                |
+| ---------------------------------- | ------------- | ---------- | ----------------- | ------------------- |
+| JSONL collector, event-driven      | 1             | ~100 lines | ~10 MB            | ~1 MB/1000 requests |
+| Collector + node_exporter textfile | 2             | ~120 lines | ~30 MB            | same                |
+| Prometheus + Grafana + exporter    | 3–4           | ~150 lines | ~350–500 MB total | 60–120 MB / 30 days |
+| Log parser                         | 1             | ~200 lines | ~20 MB            | + journal growth    |
 
 Recommended order: JSONL collector first (it satisfies both tasks and is the
 cheapest), Prometheus second if dashboards are actually wanted, log parsing never

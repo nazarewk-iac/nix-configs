@@ -21,19 +21,19 @@ servers, themes, and session files.
 
 The relevant CLI surface, verbatim from `pi --help`:
 
-| Flag | Meaning |
-|---|---|
-| `--model <pattern>` / `--provider <name>` | per-run model, `provider/id`, optional `:<thinking>` suffix |
-| `--thinking <level>` | `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max` |
-| `--models <patterns>` | comma-separated patterns for interactive cycling |
-| `--mode <text\|json\|rpc>` | output mode; **`rpc`** is the programmatic one |
-| `--print`, `-p` | non-interactive: process the prompt and exit |
-| `--session <path\|id>`, `--session-id <id>`, `--fork <id>`, `--continue` | session identity and forking |
-| `--tools`, `--exclude-tools`, `--no-tools`, `--no-builtin-tools` | per-run tool allowlist/denylist, with patterns |
-| `--system-prompt`, `--append-system-prompt` | per-run prompt control (repeatable) |
-| `--extension -e <path\|builtin:name>`, `--skill`, `--prompt-template` | load resources explicitly |
-| `--export <file>` | export a session to HTML |
-| `--approve` / `--no-approve` | trust or ignore project-local files |
+| Flag                                                                     | Meaning                                                     |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| `--model <pattern>` / `--provider <name>`                                | per-run model, `provider/id`, optional `:<thinking>` suffix |
+| `--thinking <level>`                                                     | `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`   |
+| `--models <patterns>`                                                    | comma-separated patterns for interactive cycling            |
+| `--mode <text\|json\|rpc>`                                               | output mode; **`rpc`** is the programmatic one              |
+| `--print`, `-p`                                                          | non-interactive: process the prompt and exit                |
+| `--session <path\|id>`, `--session-id <id>`, `--fork <id>`, `--continue` | session identity and forking                                |
+| `--tools`, `--exclude-tools`, `--no-tools`, `--no-builtin-tools`         | per-run tool allowlist/denylist, with patterns              |
+| `--system-prompt`, `--append-system-prompt`                              | per-run prompt control (repeatable)                         |
+| `--extension -e <path\|builtin:name>`, `--skill`, `--prompt-template`    | load resources explicitly                                   |
+| `--export <file>`                                                        | export a session to HTML                                    |
+| `--approve` / `--no-approve`                                             | trust or ignore project-local files                         |
 
 So the primitives a coordinator needs — per-agent model, per-agent thinking, per-agent
 tools, resumable sessions, machine-readable output — all exist as flags.
@@ -116,13 +116,13 @@ equivalent generator, or a manual provider list that can drift.
 
 ## 6. What Pi has that opencode does not
 
-| Primitive | Why it matters for this workflow |
-|---|---|
-| `--mode rpc` | the supervisor drives the orchestrator as a process, not by typing into a TUI |
-| file sessions + `--fork` | a reviewer can read the real transcript; a run can be replayed |
-| per-run `--tools` | a hard guarantee that the reviewer cannot write |
-| in-process SDK | several agents and warm models in one runtime |
-| `--export` to HTML | a transcript artifact per agent, for the evaluation |
+| Primitive                | Why it matters for this workflow                                              |
+| ------------------------ | ----------------------------------------------------------------------------- |
+| `--mode rpc`             | the supervisor drives the orchestrator as a process, not by typing into a TUI |
+| file sessions + `--fork` | a reviewer can read the real transcript; a run can be replayed                |
+| per-run `--tools`        | a hard guarantee that the reviewer cannot write                               |
+| in-process SDK           | several agents and warm models in one runtime                                 |
+| `--export` to HTML       | a transcript artifact per agent, for the evaluation                           |
 
 ## 7. What opencode has that Pi does not
 

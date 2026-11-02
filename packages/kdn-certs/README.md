@@ -11,25 +11,25 @@ them, and drives `step` and `step-ca` to produce the files.
 
 ## Command table
 
-| Command | Job |
-|---|---|
-| `kdn-certs plan` | Walk every target, enumerate and deduplicate the declarations, print what would change. |
-| `kdn-certs apply` | Generate or regenerate. Start `step-ca` on demand and tear it down after. |
-| `kdn-certs ca init` | Initialize the CA graph from the top: root first, then each intermediate. |
-| `kdn-certs ca sign <cert>` | Sign one leaf. Prompt for the YubiKey touch when the CA key needs it. |
-| `kdn-certs ssh login <host>` | Generate an SSH user certificate to connect to a host. |
-| `kdn-certs status` | Per certificate: valid, expiring or mismatched. |
-| `kdn-certs doctor` | Discover zombie `step-ca` processes and stale PID files. |
+| Command                      | Job                                                                                     |
+| ---------------------------- | --------------------------------------------------------------------------------------- |
+| `kdn-certs plan`             | Walk every target, enumerate and deduplicate the declarations, print what would change. |
+| `kdn-certs apply`            | Generate or regenerate. Start `step-ca` on demand and tear it down after.               |
+| `kdn-certs ca init`          | Initialize the CA graph from the top: root first, then each intermediate.               |
+| `kdn-certs ca sign <cert>`   | Sign one leaf. Prompt for the YubiKey touch when the CA key needs it.                   |
+| `kdn-certs ssh login <host>` | Generate an SSH user certificate to connect to a host.                                  |
+| `kdn-certs status`           | Per certificate: valid, expiring or mismatched.                                         |
+| `kdn-certs doctor`           | Discover zombie `step-ca` processes and stale PID files.                                |
 
 ## Global flags
 
-| Flag | Default | Job |
-|---|---|---|
-| `--flake <path>` | `.` | The flake to walk. |
-| `--dry-run` | off | Print the actions and change nothing. |
-| `--force` | off | Regenerate every certificate. |
-| `--json` | off | Print machine-readable output. |
-| `--verbose` | off | Print each `nix eval` and each `step` command. |
+| Flag             | Default | Job                                            |
+| ---------------- | ------- | ---------------------------------------------- |
+| `--flake <path>` | `.`     | The flake to walk.                             |
+| `--dry-run`      | off     | Print the actions and change nothing.          |
+| `--force`        | off     | Regenerate every certificate.                  |
+| `--json`         | off     | Print machine-readable output.                 |
+| `--verbose`      | off     | Print each `nix eval` and each `step` command. |
 
 ## The walk
 

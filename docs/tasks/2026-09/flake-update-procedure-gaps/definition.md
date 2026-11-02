@@ -134,9 +134,9 @@ and appeared only when the operator entered the shell.
 
 Add one build per chain to the verify step. Both passed after the D5 repair:
 
-| Chain | `@` position | Result |
-|---|---|---|
-| fork | `fork-tip` | `devenv build shell` exit 0 |
+| Chain    | `@` position   | Result                      |
+| -------- | -------------- | --------------------------- |
+| fork     | `fork-tip`     | `devenv build shell` exit 0 |
 | upstream | `upstream-tip` | `devenv build shell` exit 0 |
 
 ### D8 — no darwin evaluation gate, and no chain rule for a post-update fix
@@ -292,7 +292,7 @@ rebuild of the tool, not because the plain form is wrong.
       lock node keys. **The owner did this on 2026-09-09.** The measurement then showed the
       confirmation step was wrong: a line-level check cannot see a value-only lock node update,
       because the org name sits on the unchanged key line. So `jj fork-audit <the update
-      commit>` stays exit 0 by design, and assertion 7 stays the gate. Own task, now closed:
+commit>` stays exit 0 by design, and assertion 7 stays the gate. Own task, now closed:
       [fork-denied-patterns-miss-lock-nodes.md](../fork-denied-patterns-miss-lock-nodes/definition.md).
 - [x] `modules/slots/jj/fork/check-fork-contamination.sh` — the hook runs at `pre-commit`
       and reads the git index, so jj never triggers it. Decide whether to move the content
@@ -332,11 +332,11 @@ that leaf. So the check rejected a correctly finished update — the same trap t
 the `-B tree-merge`, never `-B fork-tip` rule. A new assertion 3b keeps the old intent: the fork
 tip is the merge, or a descendant of it.
 
-| Criterion | State |
-|---|---|
+| Criterion                                                                          | State                                                                     |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
 | the completion check FAILs on the incomplete state and PASSes on a finished update | **met**. It reported 3 FAIL before the operator's split, and 0 FAIL after |
-| `jj fork-audit -q --color=never 'upstream-tip'` exits 0 | **met** as written. Read it with the caveat below |
-| every host evaluates to a `drvPath` on both chains | **open**. Not run |
+| `jj fork-audit -q --color=never 'upstream-tip'` exits 0                            | **met** as written. Read it with the caveat below                         |
+| every host evaluates to a `drvPath` on both chains                                 | **open**. Not run                                                         |
 
 Caveat on the fork-audit criterion: exit 0 is weak evidence on its own, and the owner's pattern
 fix does not change that. A line-level check cannot see a value-only lock node update, because the

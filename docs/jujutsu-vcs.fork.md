@@ -73,20 +73,20 @@ upstream-safe. A task that produces both kinds of content is normal — route ea
 The `kdn.jj.fork` devenv slot defines these. Prefer the named alias over an inline revset. Their
 behavior is verified in [test_revsets.md](../checks/jj-experiments/test_revsets.md).
 
-| Alias                   | Meaning |
-|-------------------------|---------|
-| `tree-merge`            | The merge commit `@` sits on. The anchor between local work above and history below. |
-| `upstream-incoming`     | Upstream commits fetched but not yet in the local tree. |
-| `upstream-incoming-tip` | The public remote tip (`main@<upstream-remote>`). The integration destination. |
-| `to-rebase`             | All local described work above the merge. |
-| `upstream-safe`         | The content-clean subset of `to-rebase` (safe to push upstream). |
-| `fork-leaked`           | Local work above the merge that carries fork-sensitive content. |
-| `merge-frozen`          | Non-empty when the merge is already pushed or immutable. |
-| `upstream-local`        | Local upstream-side commits below the merge, not yet on the public remote. |
-| `pushed` / `pushed-fork` / `pushed-upstream` | Changes reachable from a (fork/upstream) remote bookmark. |
-| `fork` / `fork-direct`  | Fork-tagged changes (topology + content) / the content-only predicate. |
-| `upstream-chain` / `fork-chain` | Named non-empty commits on the upstream / fork side. |
-| `upstream-tip` / `fork-tip` | Latest commit in the upstream / fork chain (by commit time). |
+| Alias                                        | Meaning                                                                              |
+| -------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `tree-merge`                                 | The merge commit `@` sits on. The anchor between local work above and history below. |
+| `upstream-incoming`                          | Upstream commits fetched but not yet in the local tree.                              |
+| `upstream-incoming-tip`                      | The public remote tip (`main@<upstream-remote>`). The integration destination.       |
+| `to-rebase`                                  | All local described work above the merge.                                            |
+| `upstream-safe`                              | The content-clean subset of `to-rebase` (safe to push upstream).                     |
+| `fork-leaked`                                | Local work above the merge that carries fork-sensitive content.                      |
+| `merge-frozen`                               | Non-empty when the merge is already pushed or immutable.                             |
+| `upstream-local`                             | Local upstream-side commits below the merge, not yet on the public remote.           |
+| `pushed` / `pushed-fork` / `pushed-upstream` | Changes reachable from a (fork/upstream) remote bookmark.                            |
+| `fork` / `fork-direct`                       | Fork-tagged changes (topology + content) / the content-only predicate.               |
+| `upstream-chain` / `fork-chain`              | Named non-empty commits on the upstream / fork side.                                 |
+| `upstream-tip` / `fork-tip`                  | Latest commit in the upstream / fork chain (by commit time).                         |
 
 ## State checks
 

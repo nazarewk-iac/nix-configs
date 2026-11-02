@@ -29,14 +29,14 @@ stubs (`definition.md:97-98`).
 
 [research.md](research.md) holds the four lists the deliverable names. It is 25 069 bytes.
 
-| List | Line | Content |
-|---|---|---|
-| 1 — the key schema | `:116` | every key the default sops file must hold |
-| 2 — the consumers | `:145` | 22 rows. Each row carries a `file:line` and a bold **verified** tag for its absent-file behaviour |
-| 3 — the effort rank | `:189` | the same rows, ordered by fix effort, so 009 starts at the top |
-| 4 — the hard couplings | `:203` | the sites that cannot take an absent file |
-| the transcript | `:257` | the evaluation runs behind the verified tags |
-| notes for 009 | `:351` | what 009 inherits |
+| List                   | Line   | Content                                                                                           |
+| ---------------------- | ------ | ------------------------------------------------------------------------------------------------- |
+| 1 — the key schema     | `:116` | every key the default sops file must hold                                                         |
+| 2 — the consumers      | `:145` | 22 rows. Each row carries a `file:line` and a bold **verified** tag for its absent-file behaviour |
+| 3 — the effort rank    | `:189` | the same rows, ordered by fix effort, so 009 starts at the top                                    |
+| 4 — the hard couplings | `:203` | the sites that cannot take an absent file                                                         |
+| the transcript         | `:257` | the evaluation runs behind the verified tags                                                      |
+| notes for 009          | `:351` | what 009 inherits                                                                                 |
 
 The four hard couplings sit in two files:
 

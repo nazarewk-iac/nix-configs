@@ -15,6 +15,7 @@ Add `description:` (one sentence) and `timestamp:` (ISO 8601, from `git log -1 -
 files rather than inventing new ones per file.
 
 Exceptions:
+
 - A repo's public GitHub-facing root `README.md` may be left frontmatter-free — GitHub renders
   raw YAML as visible text on `.md` files, unlike Jekyll front-matter-aware pages.
 - Files with their own required frontmatter contract (e.g. Claude Code `SKILL.md`'s

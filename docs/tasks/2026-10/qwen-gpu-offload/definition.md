@@ -122,16 +122,16 @@ The W6600 is `Vulkan0` / `AMD Radeon Pro W6600 (RADV NAVI23)`; the 4 GB Lexa is
 `llama-bench -p 512 -n 128 -r 3 -t 16`, W6600 via `--device Vulkan0`, llama-cpp
 stopped during the run and restarted after:
 
-| test | `-ngl 0` (CPU) | `-ngl 99` (W6600) | speedup |
-|---|---|---|---|
-| pp512 | 61.87 ± 2.73 t/s | 10113.74 ± 308.34 t/s | ~163× |
-| tg128 | 94.47 ± 2.92 t/s | 336.99 ± 3.01 t/s | ~3.6× |
+| test  | `-ngl 0` (CPU)   | `-ngl 99` (W6600)     | speedup |
+| ----- | ---------------- | --------------------- | ------- |
+| pp512 | 61.87 ± 2.73 t/s | 10113.74 ± 308.34 t/s | ~163×   |
+| tg128 | 94.47 ± 2.92 t/s | 336.99 ± 3.01 t/s     | ~3.6×   |
 
 ### Verdict
 
 The Vulkan backend works on the W6600 and is dramatically faster for a fully
 offloaded dense model, so the GPU is **worth pursuing**. The open question is
-the *MoE* case: the smoke test offloads a dense model, while the real target
+the _MoE_ case: the smoke test offloads a dense model, while the real target
 offloads only the ~4.68 GB of dense layers and keeps the ~80 GB of experts on the
 CPU. That is the benchmark the `llm-qwen-gpu` specialisation must run.
 

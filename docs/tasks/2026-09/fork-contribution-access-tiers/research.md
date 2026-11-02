@@ -54,9 +54,9 @@ Every revset alias and every command emits only when `cfg.enable && cfg.fork.ena
 
 #### Repo-level git defaults
 
-| Setting | Value | Line | Access needed |
-|---|---|---|---|
-| `git.push` | the fork remote | 53 | fork push |
+| Setting     | Value                           | Line  | Access needed |
+| ----------- | ------------------------------- | ----- | ------------- |
+| `git.push`  | the fork remote                 | 53    | fork push     |
 | `git.fetch` | fork remote, then public remote | 54-57 | fetch on both |
 
 **verified** at run time: `jj config list` reports `git.push = "<fork-remote>"` and
@@ -66,21 +66,21 @@ So a bare `jj git push` targets the private fork. That default is the collaborat
 
 #### Revset aliases
 
-| Alias | Line | Reads | Writes | Push access |
-|---|---|---|---|---|
-| `trunk()` | 60 | fork remote ref | — | none |
-| `fork` | 63-70 | fork remote refs, content, messages | — | none |
-| `fork-direct` | 71-77 | file paths, diff lines, messages | — | none |
-| `upstream-chain` / `fork-chain` | 78-79 | local graph, `fork` | — | none |
-| `upstream-tip` / `fork-tip` | 80-81 | the two chains, by commit time | — | none |
-| `tree-merge` | 85 | local graph | — | none |
-| `upstream-incoming` / `upstream-incoming-tip` | 89-90 | **public remote ref** | — | none, but needs the public remote to exist locally |
-| `to-rebase` | 94 | local graph | — | none |
-| `upstream-safe` | 99 | `to-rebase`, `fork-direct` | — | none |
-| `pushed` / `pushed-fork` / `pushed-upstream` | 105-107 | remote refs | — | none |
-| `fork-leaked` | 111 | `to-rebase`, `fork-direct` | — | none |
-| `merge-frozen` | 115 | `tree-merge`, `immutable()`, `pushed` | — | none |
-| `upstream-local` | 122 | `pushed-upstream`, `tree-merge` | — | none |
+| Alias                                         | Line    | Reads                                 | Writes | Push access                                        |
+| --------------------------------------------- | ------- | ------------------------------------- | ------ | -------------------------------------------------- |
+| `trunk()`                                     | 60      | fork remote ref                       | —      | none                                               |
+| `fork`                                        | 63-70   | fork remote refs, content, messages   | —      | none                                               |
+| `fork-direct`                                 | 71-77   | file paths, diff lines, messages      | —      | none                                               |
+| `upstream-chain` / `fork-chain`               | 78-79   | local graph, `fork`                   | —      | none                                               |
+| `upstream-tip` / `fork-tip`                   | 80-81   | the two chains, by commit time        | —      | none                                               |
+| `tree-merge`                                  | 85      | local graph                           | —      | none                                               |
+| `upstream-incoming` / `upstream-incoming-tip` | 89-90   | **public remote ref**                 | —      | none, but needs the public remote to exist locally |
+| `to-rebase`                                   | 94      | local graph                           | —      | none                                               |
+| `upstream-safe`                               | 99      | `to-rebase`, `fork-direct`            | —      | none                                               |
+| `pushed` / `pushed-fork` / `pushed-upstream`  | 105-107 | remote refs                           | —      | none                                               |
+| `fork-leaked`                                 | 111     | `to-rebase`, `fork-direct`            | —      | none                                               |
+| `merge-frozen`                                | 115     | `tree-merge`, `immutable()`, `pushed` | —      | none                                               |
+| `upstream-local`                              | 122     | `pushed-upstream`, `tree-merge`       | —      | none                                               |
 
 Every alias is read-only. Two of them (`upstream-incoming`, `upstream-incoming-tip`) name
 `main@<upstream-remote>`, so they fail when the public remote is absent from the local repo.
@@ -88,14 +88,14 @@ Every alias is read-only. Two of them (`upstream-incoming`, `upstream-incoming-t
 
 #### Commands
 
-| Command | Line | Reads | Writes | Push access needed |
-|---|---|---|---|---|
-| `jj fork-audit` | 124-129 | local commits, the denied patterns | nothing | **none** |
-| `jj fork-help` | 130-149 | `docs/jujutsu-vcs.fork.md` in the store | nothing | **none** |
-| `jj sync-upstream` | 175-200 | both remotes | **public `main`**, fork `upstream` | **both remotes** |
-| `jj sync-remotes` | 150-174 | both remotes | public `main`, fork `upstream`, fork `main` | **both remotes** |
-| pre-commit hook `jj-check-fork-contamination` | 212-220 | git index | nothing | none |
-| pre-push hook `jj-pre-push` | 223-230 | the push range | nothing | none |
+| Command                                       | Line    | Reads                                   | Writes                                      | Push access needed |
+| --------------------------------------------- | ------- | --------------------------------------- | ------------------------------------------- | ------------------ |
+| `jj fork-audit`                               | 124-129 | local commits, the denied patterns      | nothing                                     | **none**           |
+| `jj fork-help`                                | 130-149 | `docs/jujutsu-vcs.fork.md` in the store | nothing                                     | **none**           |
+| `jj sync-upstream`                            | 175-200 | both remotes                            | **public `main`**, fork `upstream`          | **both remotes**   |
+| `jj sync-remotes`                             | 150-174 | both remotes                            | public `main`, fork `upstream`, fork `main` | **both remotes**   |
+| pre-commit hook `jj-check-fork-contamination` | 212-220 | git index                               | nothing                                     | none               |
+| pre-push hook `jj-pre-push`                   | 223-230 | the push range                          | nothing                                     | none               |
 
 **verified** by a source read.
 
@@ -148,23 +148,23 @@ reasoned consequence, so treat the consequence as **unverified** in practice.
 
 ### A3. Procedure → assumed tier → what a reader without the access hits
 
-| Procedure (file:line) | Assumed tier | What a reader without that access hits |
-|---|---|---|
-| `docs/flake-update.fork.md:32` — "The user runs `jj sync-remotes` manually to place the bookmarks and push" | maintainer | The one publish step in the whole file. No alternative exists. |
-| `docs/flake-update.fork.md:25-33` — "NEVER move bookmarks by hand … `jj sync-remotes` moves both" | maintainer | The reader is told not to move a bookmark, and the only sanctioned mover needs public push access. A dead end. |
-| `docs/flake-update.fork.md:111` — "NEVER run `jj bookmark set` — `jj sync-remotes` does that" | maintainer | Same dead end, restated in the quick summary. |
-| `docs/flake-update.fork.md:232-244` — "After `jj sync-remotes`, stack new work" | maintainer | A collaborator's tree never reaches that state, so the one correct dual-parent `@` never becomes available. |
-| `docs/flake-update.fork.md:368-373` — "Confirm before the user pushes" | maintainer | The verify step exists; the push step does not. |
-| `docs/flake-update.md:42` and `:77` — `jj bookmark set upstream -r @-` | maintainer | The fork-free base doc moves the public bookmark directly, with no privacy gate at all. |
-| `docs/flake-update.md:114` — `jj log -r 'upstream@<fork-remote>'` | maintainer | The base doc, which claims to be fork-free, reads a fork remote ref. A reader with no fork gets an unresolvable revset. |
-| `docs/jujutsu-vcs.fork.md:172` — "Bookmarks are moved by `jj sync-remotes`, not by hand" | maintainer | Same dead end as above. |
-| `docs/jujutsu-vcs.fork.md:35-44` — the topology diagram | maintainer | The diagram shows one person who owns both chains. It offers no shape for a queued change. |
-| `docs/jujutsu-vcs.fork.md:46-50` — "Right after you publish (`jj sync-remotes`)" | maintainer | The reader cannot publish, so the paragraph does not apply. |
-| `docs/jujutsu-vcs.md:102-103` — "'Never push' (the repo rule) is for agents. The push recipes here are for the maintainer to run." | maintainer | The only place in the docs that names a role. It names exactly one. |
-| `docs/jujutsu-vcs.md:440-444` — "Safe default — push a feature/PR branch, never over the primary" | any | The closest thing to a collaborator recipe. It names no remote tier and no privacy gate, so a reader can aim it at the public remote. |
-| `.agents/rules/flake-update.fork.md:8-9` — "The user runs `jj sync-remotes` and pushes" | maintainer | One user. |
-| `.agents/rules/jujutsu-vcs.md` — "**NEVER push changes** — the user reviews and pushes" | maintainer | One user. |
-| `docs/generalization-plan.md:210` — "Any push. The creator reviews and pushes." | maintainer | One creator. |
+| Procedure (file:line)                                                                                                              | Assumed tier | What a reader without that access hits                                                                                                |
+| ---------------------------------------------------------------------------------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/flake-update.fork.md:32` — "The user runs `jj sync-remotes` manually to place the bookmarks and push"                        | maintainer   | The one publish step in the whole file. No alternative exists.                                                                        |
+| `docs/flake-update.fork.md:25-33` — "NEVER move bookmarks by hand … `jj sync-remotes` moves both"                                  | maintainer   | The reader is told not to move a bookmark, and the only sanctioned mover needs public push access. A dead end.                        |
+| `docs/flake-update.fork.md:111` — "NEVER run `jj bookmark set` — `jj sync-remotes` does that"                                      | maintainer   | Same dead end, restated in the quick summary.                                                                                         |
+| `docs/flake-update.fork.md:232-244` — "After `jj sync-remotes`, stack new work"                                                    | maintainer   | A collaborator's tree never reaches that state, so the one correct dual-parent `@` never becomes available.                           |
+| `docs/flake-update.fork.md:368-373` — "Confirm before the user pushes"                                                             | maintainer   | The verify step exists; the push step does not.                                                                                       |
+| `docs/flake-update.md:42` and `:77` — `jj bookmark set upstream -r @-`                                                             | maintainer   | The fork-free base doc moves the public bookmark directly, with no privacy gate at all.                                               |
+| `docs/flake-update.md:114` — `jj log -r 'upstream@<fork-remote>'`                                                                  | maintainer   | The base doc, which claims to be fork-free, reads a fork remote ref. A reader with no fork gets an unresolvable revset.               |
+| `docs/jujutsu-vcs.fork.md:172` — "Bookmarks are moved by `jj sync-remotes`, not by hand"                                           | maintainer   | Same dead end as above.                                                                                                               |
+| `docs/jujutsu-vcs.fork.md:35-44` — the topology diagram                                                                            | maintainer   | The diagram shows one person who owns both chains. It offers no shape for a queued change.                                            |
+| `docs/jujutsu-vcs.fork.md:46-50` — "Right after you publish (`jj sync-remotes`)"                                                   | maintainer   | The reader cannot publish, so the paragraph does not apply.                                                                           |
+| `docs/jujutsu-vcs.md:102-103` — "'Never push' (the repo rule) is for agents. The push recipes here are for the maintainer to run." | maintainer   | The only place in the docs that names a role. It names exactly one.                                                                   |
+| `docs/jujutsu-vcs.md:440-444` — "Safe default — push a feature/PR branch, never over the primary"                                  | any          | The closest thing to a collaborator recipe. It names no remote tier and no privacy gate, so a reader can aim it at the public remote. |
+| `.agents/rules/flake-update.fork.md:8-9` — "The user runs `jj sync-remotes` and pushes"                                            | maintainer   | One user.                                                                                                                             |
+| `.agents/rules/jujutsu-vcs.md` — "**NEVER push changes** — the user reviews and pushes"                                            | maintainer   | One user.                                                                                                                             |
+| `docs/generalization-plan.md:210` — "Any push. The creator reviews and pushes."                                                    | maintainer   | One creator.                                                                                                                          |
 
 **verified** — each row comes from a direct read of the named line.
 
@@ -175,13 +175,13 @@ The placement golden path is `jj split -A upstream-tip -B fork-tip …`
 
 Current tree, **verified** with `jj log -r '<alias>'`:
 
-| Alias | Resolves to |
-|---|---|
-| `tree-merge` | `xxxuyknszklq` `chore(upstream): merge` |
-| `fork-tip` | `vtprpzrkvknv` `chore(flake): update` — the **top** of the local stack, six commits above the merge |
-| `upstream-tip` | `wonzvknwzrwm` `fix(kdn-ssh-access): …` — **below** the merge |
-| `fork-chain` | all six local commits above the merge |
-| `upstream-chain` | seven commits below the merge |
+| Alias            | Resolves to                                                                                         |
+| ---------------- | --------------------------------------------------------------------------------------------------- |
+| `tree-merge`     | `xxxuyknszklq` `chore(upstream): merge`                                                             |
+| `fork-tip`       | `vtprpzrkvknv` `chore(flake): update` — the **top** of the local stack, six commits above the merge |
+| `upstream-tip`   | `wonzvknwzrwm` `fix(kdn-ssh-access): …` — **below** the merge                                       |
+| `fork-chain`     | all six local commits above the merge                                                               |
+| `upstream-chain` | seven commits below the merge                                                                       |
 
 Cause, **verified** by a source read of lines 63-70 and 78-81: `fork` folds in the topology term
 `(remote_bookmarks(remote="<fork-remote>") ~ upstream@<fork-remote>)::`, so every descendant of
@@ -245,11 +245,11 @@ a working denied-content check.**
 repo held an executable `.git/hooks/pre-push` and `.git/hooks/pre-commit`. Each hook printed a
 marker and exited 1.
 
-| Command | Hook marker | Exit | Effect |
-|---|---|---|---|
-| `jj git push --remote=origin --bookmark=main` | **absent** | **0** | the remote gained `refs/heads/main` |
-| `git push origin main` (control) | **present** | **1** | git refused the push |
-| `jj commit -m …` | **absent** | **0** | jj created the commit |
+| Command                                       | Hook marker | Exit  | Effect                              |
+| --------------------------------------------- | ----------- | ----- | ----------------------------------- |
+| `jj git push --remote=origin --bookmark=main` | **absent**  | **0** | the remote gained `refs/heads/main` |
+| `git push origin main` (control)              | **present** | **1** | git refused the push                |
+| `jj commit -m …`                              | **absent**  | **0** | jj created the commit               |
 
 **verified.** So:
 
@@ -305,11 +305,11 @@ compound:
 
 ## B. Role vocabulary
 
-| Role | Push access | Sends changes through |
-|---|---|---|
-| **maintainer** | the public remote **and** the private fork | direct push, `jj sync-remotes` |
-| **fork collaborator** | the private fork only | a queue bookmark on the private fork |
-| **outside contributor** | neither | a pull request against the public repo |
+| Role                    | Push access                                | Sends changes through                  |
+| ----------------------- | ------------------------------------------ | -------------------------------------- |
+| **maintainer**          | the public remote **and** the private fork | direct push, `jj sync-remotes`         |
+| **fork collaborator**   | the private fork only                      | a queue bookmark on the private fork   |
+| **outside contributor** | neither                                    | a pull request against the public repo |
 
 The evidence needed no fourth contributor role. One refinement: the fork collaborator splits into
 two states — a collaborator with the local slot settings file present, who holds the fork aliases
@@ -317,8 +317,8 @@ and the `sync-remotes` footgun, and one without it, who holds neither. § H cove
 
 **Reconciliation with `external adopter`.** `docs/generalization-plan.md:10,37` defines an
 external adopter as anybody but this repo's creator, and their repo as the adopter repo. An
-adopter *consumes* the modules in their own repo and sends nothing back; a contributor *sends
-changes back* to this repo, and needs no adopter repo at all.
+adopter _consumes_ the modules in their own repo and sends nothing back; a contributor _sends
+changes back_ to this repo, and needs no adopter repo at all.
 
 ---
 
@@ -326,12 +326,12 @@ changes back* to this repo, and needs no adopter repo at all.
 
 ### C1. maintainer
 
-| Change type | Command sequence |
-|---|---|
-| (a) upstream-safe | `jj log -r 'merge-frozen'` (empty → the merge is mutable) · `jj split -A upstream-tip -B fork-tip -m 'feat(...): generic' -- <files>` · on a frozen tree first `jj new --no-edit -B @ -m 'chore(upstream): merge'` · `jj fork-audit 'upstream-safe'` · `jj log -r 'fork-leaked'` · `jj sync-remotes` |
-| (b) fork-only | `jj split -m 'feat(fork): ...' -- <files>` · `jj sync-remotes` |
-| (c) flake update | `docs/flake-update.fork.md` steps 1-6, then `jj sync-remotes` |
-| (d) upstream-safe on top of fork work | § C4 |
+| Change type                           | Command sequence                                                                                                                                                                                                                                                                                     |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| (a) upstream-safe                     | `jj log -r 'merge-frozen'` (empty → the merge is mutable) · `jj split -A upstream-tip -B fork-tip -m 'feat(...): generic' -- <files>` · on a frozen tree first `jj new --no-edit -B @ -m 'chore(upstream): merge'` · `jj fork-audit 'upstream-safe'` · `jj log -r 'fork-leaked'` · `jj sync-remotes` |
+| (b) fork-only                         | `jj split -m 'feat(fork): ...' -- <files>` · `jj sync-remotes`                                                                                                                                                                                                                                       |
+| (c) flake update                      | `docs/flake-update.fork.md` steps 1-6, then `jj sync-remotes`                                                                                                                                                                                                                                        |
+| (d) upstream-safe on top of fork work | § C4                                                                                                                                                                                                                                                                                                 |
 
 Source for (a) and (b): `docs/jujutsu-vcs.fork.md:106-136`. **verified** by a read. Read § A4
 first: the two tip aliases do not resolve where that recipe assumes.
@@ -364,7 +364,7 @@ jj git push --remote=<fork-remote> --bookmark='upstream-queue/<name>/<slug>'
 - `upstream@<fork-remote>` is the published public anchor. `docs/flake-update.fork.md:14` calls it
   "the stable anchor". **verified**: it resolves to `ktxtouorppsz`, the same commit as
   `main@<upstream-remote>` (`jj log -r 'upstream@<fork-remote>'` and `jj bookmark list
-  --all-remotes`). So a queue parented there rests on published public history only.
+--all-remotes`). So a queue parented there rests on published public history only.
 - `jj duplicate` copies and leaves the original chain intact. `docs/jujutsu-vcs.md:324` lists
   `jj duplicate <id> --onto <dest>` as the cherry-pick golden path. **verified.**
 - `jj bookmark create <new-name>` is not the banned operation. The ban covers `jj bookmark set`
@@ -444,12 +444,12 @@ zrtvyyymtrns   refactor(hosts/<private-host>): use kdn's shared ssh-access graph
 xxxuyknszklq   chore(upstream): merge                      ← tree-merge
 ```
 
-| Alias | Count | Members |
-|---|---|---|
-| `to-rebase` | **6** | all six commits above the merge |
-| `upstream-safe` | 4 | the three documentation commits **and** `chore(flake): update` |
-| `fork-leaked` | 2 | the two fork-only commits |
-| `merge-frozen` | 0 | the merge is mutable |
+| Alias           | Count | Members                                                        |
+| --------------- | ----- | -------------------------------------------------------------- |
+| `to-rebase`     | **6** | all six commits above the merge                                |
+| `upstream-safe` | 4     | the three documentation commits **and** `chore(flake): update` |
+| `fork-leaked`   | 2     | the two fork-only commits                                      |
+| `merge-frozen`  | 0     | the merge is mutable                                           |
 
 All three documentation commits are mutable. **verified** with
 `jj log -r '<ids>' -T 'if(immutable,"IMMUTABLE","mutable")'`.
@@ -580,13 +580,13 @@ that records the change **inside** the queued commit, so the intent travels with
 
 `jj fork-audit` is necessary and **not sufficient**. Measured proof:
 
-| Measurement | Result | Command |
-|---|---|---|
-| `jj fork-audit -q 'upstream-safe'` | exit **0**, "no fork-sensitive content found" | **verified** |
-| `ssh://` lines in the local `flake.lock` | **12** | `jj file show -r @ flake.lock \| grep -c 'ssh://'` — **verified** |
-| `ssh://` lines in the public `flake.lock` | **2** | `git show refs/remotes/kdn/main:flake.lock \| grep -c 'ssh://'` — **verified** |
-| lock nodes present locally and absent publicly | **5** | `comm -23` over `jq -r '.nodes\|keys[]'` — **verified** |
-| does `upstream-safe` include a commit that touches `flake.lock`? | **yes** | `jj diff -r vtprpzrkvknv --name-only` — **verified** |
+| Measurement                                                      | Result                                        | Command                                                                        |
+| ---------------------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------ |
+| `jj fork-audit -q 'upstream-safe'`                               | exit **0**, "no fork-sensitive content found" | **verified**                                                                   |
+| `ssh://` lines in the local `flake.lock`                         | **12**                                        | `jj file show -r @ flake.lock \| grep -c 'ssh://'` — **verified**              |
+| `ssh://` lines in the public `flake.lock`                        | **2**                                         | `git show refs/remotes/kdn/main:flake.lock \| grep -c 'ssh://'` — **verified** |
+| lock nodes present locally and absent publicly                   | **5**                                         | `comm -23` over `jq -r '.nodes\|keys[]'` — **verified**                        |
+| does `upstream-safe` include a commit that touches `flake.lock`? | **yes**                                       | `jj diff -r vtprpzrkvknv --name-only` — **verified**                           |
 
 So the audit calls the `upstream-safe` set clean, while that set holds a `flake.lock` with ten
 more private `ssh://` URL lines than the public lock. The reason is not defect 2 alone: the
@@ -647,17 +647,17 @@ by construction, not by pattern.
 
 ### Fork collaborator
 
-| Never run | Reason |
-|---|---|
-| `jj sync-remotes` | It calls `jj sync-upstream` first (`fork/default.nix:159`), which moves the local `upstream` bookmark (line 192) and then pushes to the **public** remote with raw git (line 193). With no public access the push fails after the bookmark move, and the repair needs `jj undo` or a banned backward `jj bookmark set`. **verified** by source. |
-| `jj sync-upstream` | The inner half of the same command. Same failure. |
-| `jj bookmark set main` · `jj bookmark set upstream` | Both bookmarks belong to the sync procedure. A hand-move breaks the topology the aliases read (`docs/flake-update.fork.md:25`). |
-| `jj bookmark set … --allow-backwards` | It hides a divergence instead of a repair. |
-| any push to the public remote — `jj git push --remote=<upstream-remote> …`, `git push <upstream-remote> …` | The pre-push guard skips every denied check for a non-fork remote (`pre-push.sh:64-67`). The push has no content protection at all. |
-| `jj git push --bookmark=main` | It publishes the local fork chain over a shared bookmark. |
-| `jj git push --all` | It can push `upstream` and other shared bookmarks in one step. |
-| `git worktree` (and an Agent `isolation: "worktree"`) | A git worktree shares the single `.jj` store, and the race truncated three files to 0 bytes (`docs/jujutsu-vcs.md:220-240`). **verified** by a read. |
-| `nix run '.#update'` on the public half | Step 3 of `docs/flake-update.fork.md` ends in a public push the collaborator cannot make. |
+| Never run                                                                                                  | Reason                                                                                                                                                                                                                                                                                                                                          |
+| ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `jj sync-remotes`                                                                                          | It calls `jj sync-upstream` first (`fork/default.nix:159`), which moves the local `upstream` bookmark (line 192) and then pushes to the **public** remote with raw git (line 193). With no public access the push fails after the bookmark move, and the repair needs `jj undo` or a banned backward `jj bookmark set`. **verified** by source. |
+| `jj sync-upstream`                                                                                         | The inner half of the same command. Same failure.                                                                                                                                                                                                                                                                                               |
+| `jj bookmark set main` · `jj bookmark set upstream`                                                        | Both bookmarks belong to the sync procedure. A hand-move breaks the topology the aliases read (`docs/flake-update.fork.md:25`).                                                                                                                                                                                                                 |
+| `jj bookmark set … --allow-backwards`                                                                      | It hides a divergence instead of a repair.                                                                                                                                                                                                                                                                                                      |
+| any push to the public remote — `jj git push --remote=<upstream-remote> …`, `git push <upstream-remote> …` | The pre-push guard skips every denied check for a non-fork remote (`pre-push.sh:64-67`). The push has no content protection at all.                                                                                                                                                                                                             |
+| `jj git push --bookmark=main`                                                                              | It publishes the local fork chain over a shared bookmark.                                                                                                                                                                                                                                                                                       |
+| `jj git push --all`                                                                                        | It can push `upstream` and other shared bookmarks in one step.                                                                                                                                                                                                                                                                                  |
+| `git worktree` (and an Agent `isolation: "worktree"`)                                                      | A git worktree shares the single `.jj` store, and the race truncated three files to 0 bytes (`docs/jujutsu-vcs.md:220-240`). **verified** by a read.                                                                                                                                                                                            |
+| `nix run '.#update'` on the public half                                                                    | Step 3 of `docs/flake-update.fork.md` ends in a public push the collaborator cannot make.                                                                                                                                                                                                                                                       |
 
 **`jj sync-remotes` confirmed by source, not by assumption.** Lines 150-174 define it; line 159
 runs `jj sync-upstream`; lines 192-194 move the local `upstream` bookmark and then push to the
@@ -670,12 +670,12 @@ to remove it.
 
 ### Outside contributor
 
-| Never run | Reason |
-|---|---|
-| `jj sync-remotes` · `jj sync-upstream` | They do not exist without the fork slot, and they target remotes the contributor does not own. **verified** by `fork/default.nix:50`. |
-| `jj git push --remote=<upstream-remote> --bookmark=main` | Never push over the upstream primary. Open a pull request (`docs/jujutsu-vcs.md:440`). |
-| `jj bookmark set main` · `jj bookmark set upstream` | Same reason. |
-| `git worktree` | Same data-loss hazard as above. |
+| Never run                                                | Reason                                                                                                                                |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `jj sync-remotes` · `jj sync-upstream`                   | They do not exist without the fork slot, and they target remotes the contributor does not own. **verified** by `fork/default.nix:50`. |
+| `jj git push --remote=<upstream-remote> --bookmark=main` | Never push over the upstream primary. Open a pull request (`docs/jujutsu-vcs.md:440`).                                                |
+| `jj bookmark set main` · `jj bookmark set upstream`      | Same reason.                                                                                                                          |
+| `git worktree`                                           | Same data-loss hazard as above.                                                                                                       |
 
 ---
 
@@ -687,7 +687,7 @@ What I confirmed by reading the public ref:
 
 - The public `flake.nix` declares exactly **one** `ssh://` input:
   `inputs.brew-tap--browsers-software--homebrew-tap.url =
-  "git+ssh://git@github.com/browsers-software/homebrew-tap"` at line 14. **verified** with
+"git+ssh://git@github.com/browsers-software/homebrew-tap"` at line 14. **verified** with
   `git show refs/remotes/kdn/main:flake.nix | grep -n 'ssh://'`.
 - The public `flake.lock` holds two `ssh` URL lines for that one input, and no other.
   **verified** with `git show refs/remotes/kdn/main:flake.lock | grep -n 'ssh'`.

@@ -25,7 +25,7 @@ document the happy path.
    need `--max-len` / a shorter name until it explodes.
 3. **`--help` discoverability.** It should be obvious from `zellij-llm --help` and each
    subcommand's `--help` what the minimal invocation is (ideally just `zellij-llm spawn --pane
-   '...'` once name derivation lands).
+'...'` once name derivation lands).
 
 ## Convention: feed commands via HEREDOC, not `echo`
 

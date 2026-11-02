@@ -12,13 +12,13 @@ Draft. Read-only research. No repository change.
 
 ## Versions and sources
 
-| Label | Source |
-|---|---|
-| **pi-1.4.0** | `https://raw.githubusercontent.com/earendil-works/pi/v1.4.0/packages/coding-agent/docs/*.md` and `examples/extensions/subagent/*` |
-| **pi-0.85.1** | `/nix/store/qf702rins357mp8jlr1s5k1s3kp2d2ms-pi-coding-agent-0.85.1/lib/node_modules/pi-monorepo/docs/` and `dist/core/session-manager.js` |
-| **pi-1.1.0** | the installed CLI, `pi --version` = `1.1.0`, `pi --help` |
-| **zellij-0.45.1** | the installed CLI, `zellij --version`, `zellij action <cmd> --help` |
-| **repo** | `packages/llm/zellij-llm/zellij-llm.sh`, `.agents/skills/zellij/SKILL.md`, `docs/tasks/2026-10/zellij-llm-opencode/done.md` |
+| Label             | Source                                                                                                                                     |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **pi-1.4.0**      | `https://raw.githubusercontent.com/earendil-works/pi/v1.4.0/packages/coding-agent/docs/*.md` and `examples/extensions/subagent/*`          |
+| **pi-0.85.1**     | `/nix/store/qf702rins357mp8jlr1s5k1s3kp2d2ms-pi-coding-agent-0.85.1/lib/node_modules/pi-monorepo/docs/` and `dist/core/session-manager.js` |
+| **pi-1.1.0**      | the installed CLI, `pi --version` = `1.1.0`, `pi --help`                                                                                   |
+| **zellij-0.45.1** | the installed CLI, `zellij --version`, `zellij action <cmd> --help`                                                                        |
+| **repo**          | `packages/llm/zellij-llm/zellij-llm.sh`, `.agents/skills/zellij/SKILL.md`, `docs/tasks/2026-10/zellij-llm-opencode/done.md`                |
 
 Installed pi is **1.1.0**. Upstream is **1.4.0**. The session-file behaviour below is
 checked in the **0.85.1** source tree. Marked items are unverified.
@@ -37,7 +37,14 @@ Entry types (pi-1.4.0): `session` (header, first line), `message`, `model_change
 `session` header example (pi-1.4.0):
 
 ```json
-{"type":"session","version":3,"id":"uuid","timestamp":"...","cwd":"/path","parentSession":"..."}
+{
+  "type": "session",
+  "version": 3,
+  "id": "uuid",
+  "timestamp": "...",
+  "cwd": "/path",
+  "parentSession": "..."
+}
 ```
 
 **Location (pi-1.4.0):**
@@ -51,14 +58,14 @@ Entry types (pi-1.4.0): `session` (header, first line), `message`, `model_change
 
 **Flag interaction (pi-1.4.0 `cli.md`, confirmed in `pi --help` 1.1.0):**
 
-| Pair | Rule |
-|---|---|
-| `--session <path\|id>` + `--session-id` | Not allowed together (1.4.0 constrains `--session-id` with `--session`). |
-| `--fork <path\|id>` + `--session` / `--continue` / `--resume` / `--no-session` | Not allowed. `--fork` + `--session-id` is allowed and names the new session. |
-| `--session-dir <dir>` | Highest precedence over `PI_CODING_AGENT_SESSION_DIR` and the `sessionDir` setting. |
-| `--continue` / `-c` | Most recent session for this cwd. |
-| `--session-id <id>` | Opens the exact project session id, or **creates it if absent**. This is the flag the tool needs. |
-| `--no-session` | In-memory only. Not resumable. |
+| Pair                                                                           | Rule                                                                                              |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| `--session <path\|id>` + `--session-id`                                        | Not allowed together (1.4.0 constrains `--session-id` with `--session`).                          |
+| `--fork <path\|id>` + `--session` / `--continue` / `--resume` / `--no-session` | Not allowed. `--fork` + `--session-id` is allowed and names the new session.                      |
+| `--session-dir <dir>`                                                          | Highest precedence over `PI_CODING_AGENT_SESSION_DIR` and the `sessionDir` setting.               |
+| `--continue` / `-c`                                                            | Most recent session for this cwd.                                                                 |
+| `--session-id <id>`                                                            | Opens the exact project session id, or **creates it if absent**. This is the flag the tool needs. |
+| `--no-session`                                                                 | In-memory only. Not resumable.                                                                    |
 
 The `--session-id` "create if absent" rule is the key fact for a delegation tool: a fresh
 `--session-id` gives a deterministic path you can read before the child starts.
@@ -82,7 +89,7 @@ than the docs suggest.
 - Loader: `loadEntriesFromFile` (`:276-340`) **skips malformed lines** and appends a missing
   trailing `\n`. A torn final line is dropped and does not break the load.
 
-**Answer:** safe to *tail* in steady state. Two hazards remain: the file may not exist yet, and
+**Answer:** safe to _tail_ in steady state. Two hazards remain: the file may not exist yet, and
 a whole-file rewrite truncates it briefly. Therefore the parent must (a) treat "no file" as
 "running", (b) retry the parse, and (c) never trust a file mid-rewrite. A torn final line is
 safe because the loader skips it.
@@ -135,12 +142,14 @@ subagent example falls back to `stderr` and `errorMessage` for that case (pi-1.4
 Source: pi-1.4.0 `cli-integration.md`, `json.md`, `rpc.md`.
 
 **`--print` (pi-1.4.0 `cli-integration.md:22-32`):**
+
 - Writes the **final assistant text to stdout**, then exits.
 - A final response with `error` or `aborted` stop reason gives a **nonzero exit status**.
 - A `length` (output limit) stop still prints partial text, warns on stderr, exits nonzero.
 - No events. So: exit code + stdout is the whole signal.
 
 **`--mode json` (pi-1.4.0 `json.md`, `cli-integration.md:39-50`):**
+
 - One `session` header, then events, then exit.
 - `agent_end` closes one low-level run. `agent_settled` (`aborted` flag) means Pi will not
   continue automatically. **Completion = `agent_settled`.**
@@ -150,6 +159,7 @@ Source: pi-1.4.0 `cli-integration.md`, `json.md`, `rpc.md`.
   use `agent_end` (or the session file). Treat `agent_settled` as 1.4.0+.
 
 **Killed process:**
+
 - The session file holds the entries appended so far (0.85.1 `_persist`). If the kill lands
   before the first assistant message, **no file exists**.
 - A torn last line is skipped on reload (0.85.1 loader), so the session **stays resumable**.
@@ -173,6 +183,7 @@ JSONL stdin/stdout. Commands: `prompt`, `steer`, `follow_up`, `abort`, `clear_qu
 (pi-1.4.0 `rpc.md:91-95`).
 
 **Verdict: RPC is the better channel only when the parent owns the child's stdin.**
+
 - For a direct `spawn` (the 1.4.0 subagent example), RPC or `--mode json` on a pipe beats the
   session file: no polling, real `abort`, typed commands, `get_last_assistant_text` returns the
   answer in one call (`pi-0.85.1 rpc.md:775`).
@@ -191,7 +202,7 @@ JSONL stdin/stdout. Commands: `prompt`, `steer`, `follow_up`, `abort`, `clear_qu
 ## 6. zellij mechanics (quoted from `.agents/skills/zellij/SKILL.md`, zellij-0.45.1)
 
 - **Create a pane with a command:** `zellij --session <S> action new-pane --name <N> [--cwd DIR]
-  [--close-on-exit] -- <cmd...>` (SKILL.md:290, `zellij action new-pane --help`). It returns the
+[--close-on-exit] -- <cmd...>` (SKILL.md:290, `zellij action new-pane --help`). It returns the
   pane id as `terminal_<id>`.
 - **Address by id:** pass `-p <id>` to `write-chars`, `send-keys`, `paste`, `write`,
   `dump-screen`, and `close-pane`. "A pane id is a plain integer, `terminal_<id>`, or
@@ -218,7 +229,7 @@ JSONL stdin/stdout. Commands: `prompt`, `steer`, `follow_up`, `abort`, `clear_qu
 ## 7. Failure detection: bad `--model` or missing provider
 
 - A bad model id fails the command: RPC returns `{"success":false,"error":"Model not found:
-  invalid/model"}` (pi-1.4.0 `rpc.md:78`). In print/json mode Pi exits **early** with a
+invalid/model"}` (pi-1.4.0 `rpc.md:78`). In print/json mode Pi exits **early** with a
   nonzero status and a stderr message (pi-1.4.0 `cli-integration.md:30`).
 - Unknown provider: `--provider` "requires `--model`" and a fuzzy match with several providers
   either prefers one with credentials or **asks for `--provider`** (pi-1.4.0 `cli.md:63-66`).
@@ -271,6 +282,7 @@ zellij --session "$session" action new-pane \
 ```
 
 Notes:
+
 - Use `--session "$path"` (explicit file) so the parent knows the exact path without parsing the
   header. Do **not** pre-create the file: pi creates it on the first assistant message
   (0.85.1 source). An existing empty file breaks `openSync(...,"wx")`.
@@ -337,13 +349,13 @@ Mirror `zellij-llm opencode` (`zellij-llm.sh:517-655`, `done.md`): argc `parent:
 functions, shared `_session_name`, `_ensure_session`, `_cmd_dir`, `_new_cmd_id`,
 `_resolve_pane_ref`, `_watch_pane`, and the exit-marker convention.
 
-| Command | Behaviour |
-|---|---|
-| `pi spawn` | Start one sub-agent in a pane. Flags: `--pane <slug>`, `--role <name>`, `--task <text>`, `--model`, `--thinking`, `--tools`, `--append-system-prompt` (repeatable), `--session-file <path>` (default `<run-dir>/pi.jsonl`), `--cwd`, `--wait`, `--mode stream\|heartbeat`, `--dry-run`. Prints `spawned pane '<pane>' in session '<name>' (run <id>, session <file>)`. |
-| `pi send` | Type a follow-up into a running pane (long-lived worker). `--text`, `--no-submit`. Uses `write-chars` + `write 13`. |
-| `pi watch` | Follow a pane to its exit marker, then print `EXIT:<code>` and the extracted answer. Modes as today. |
-| `pi list` | Table of panes: pane id, title, role, exited, exit_status, session file, and whether an answer was extracted. |
-| `pi attach` | Print `zellij attach %q <session>` (same as `opencode::attach`). |
+| Command     | Behaviour                                                                                                                                                                                                                                                                                                                                                              |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pi spawn`  | Start one sub-agent in a pane. Flags: `--pane <slug>`, `--role <name>`, `--task <text>`, `--model`, `--thinking`, `--tools`, `--append-system-prompt` (repeatable), `--session-file <path>` (default `<run-dir>/pi.jsonl`), `--cwd`, `--wait`, `--mode stream\|heartbeat`, `--dry-run`. Prints `spawned pane '<pane>' in session '<name>' (run <id>, session <file>)`. |
+| `pi send`   | Type a follow-up into a running pane (long-lived worker). `--text`, `--no-submit`. Uses `write-chars` + `write 13`.                                                                                                                                                                                                                                                    |
+| `pi watch`  | Follow a pane to its exit marker, then print `EXIT:<code>` and the extracted answer. Modes as today.                                                                                                                                                                                                                                                                   |
+| `pi list`   | Table of panes: pane id, title, role, exited, exit_status, session file, and whether an answer was extracted.                                                                                                                                                                                                                                                          |
+| `pi attach` | Print `zellij attach %q <session>` (same as `opencode::attach`).                                                                                                                                                                                                                                                                                                       |
 
 - Reuse the naming convention `llm:<repo-slug>:<llm-session-id>[:<slug>...]` and pane slug
   `<role>-<slug>` (SKILL.md:215-240). Do not invent a new scheme.
@@ -366,11 +378,11 @@ A pane child is a **fresh process**. It re-reads every time:
 Take **≈6k input tokens of pure overhead per child** (system prompt + AGENTS.md + skill index;
 measure with `pi --mode json` and read `usage.input` of the first assistant message).
 
-| Case | Overhead input tokens | Notes |
-|---|---|---|
-| Fan-out of N=8 panes | **≈48k** | before any task text or tool output |
-| Same 8 tasks, one persistent worker | **≈6k once** | later runs re-send history; prompt caching turns most of it into cheap `cacheRead` (see `usage.cacheRead`) |
-| Returned text into the parent | 8 × cap | a 50 KB cap is ~12.5k tokens each (~100k); an 8 KB cap is ~2k each (~16k) |
+| Case                                | Overhead input tokens | Notes                                                                                                      |
+| ----------------------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Fan-out of N=8 panes                | **≈48k**              | before any task text or tool output                                                                        |
+| Same 8 tasks, one persistent worker | **≈6k once**          | later runs re-send history; prompt caching turns most of it into cheap `cacheRead` (see `usage.cacheRead`) |
+| Returned text into the parent       | 8 × cap               | a 50 KB cap is ~12.5k tokens each (~100k); an 8 KB cap is ~2k each (~16k)                                  |
 
 So a fan-out of 8 costs roughly **8× the fixed prompt cost** and adds every child's result to
 the parent's context. Two mitigations: pass `--no-context-files` and a minimal
@@ -424,5 +436,3 @@ zellij-llm pi spawn --session pi-spike --pane bad-model --task x \
 3. Non-TTY behaviour when several providers match a fuzzy `--model`.
 4. Exact default skill/context token selection; measure the first assistant `usage.input`.
 5. `agent_settled` presence before 1.4.0 (0.85.1 `json.md` shows only `agent_end`).
-
-

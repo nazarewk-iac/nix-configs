@@ -18,14 +18,14 @@ this repo's own hosts. A changed drvPath means a real behaviour change that need
 
 ## Item status, measured 2026-09-11
 
-| Item | State | Where the work landed |
-|---|---|---|
-| 1 — split the commercial provider out | **done** | `kdn.opencode.settings` and `kdn.opencode.authKeys` both default to `{ }`. This repository restores its own provider and credential in `devenv.nix`. |
-| 2 — lift the personal defaults out | **done** for every measured row (`kdn.jj.upstream.remote`, `kdn.jj.alwaysBlockedMessagePatterns`, `kdn.opencode.allowedPaths`, the `kdn.llm` examples, the `kdn.ca` example). Two rows stay open as **decisions**, not as work: the client env-var name and the service unit prefix. | The three restores sit in `devenv.nix`. |
-| 3 — make the two default-on slots side-effect free | **done** | Both children now use a bare `lib.mkEnableOption`. `devenv.nix` sets both to `true`. |
-| 4 — decide what a slot writes into the adopter repo | **done** | Five `installAgentRules` options, all `default = false`, each gated by `cfg.installAgentRules && !isSourceRepo`. `devenv.nix` sets all five to `true`. |
-| 5 — move the ssh-access graph out of the slots tree | **in progress** | The file move is done; the adopter-facing pattern document is open. |
-| 6 — the two non-goals | not applicable | No action by design. |
+| Item                                                | State                                                                                                                                                                                                                                                                                | Where the work landed                                                                                                                                  |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1 — split the commercial provider out               | **done**                                                                                                                                                                                                                                                                             | `kdn.opencode.settings` and `kdn.opencode.authKeys` both default to `{ }`. This repository restores its own provider and credential in `devenv.nix`.   |
+| 2 — lift the personal defaults out                  | **done** for every measured row (`kdn.jj.upstream.remote`, `kdn.jj.alwaysBlockedMessagePatterns`, `kdn.opencode.allowedPaths`, the `kdn.llm` examples, the `kdn.ca` example). Two rows stay open as **decisions**, not as work: the client env-var name and the service unit prefix. | The three restores sit in `devenv.nix`.                                                                                                                |
+| 3 — make the two default-on slots side-effect free  | **done**                                                                                                                                                                                                                                                                             | Both children now use a bare `lib.mkEnableOption`. `devenv.nix` sets both to `true`.                                                                   |
+| 4 — decide what a slot writes into the adopter repo | **done**                                                                                                                                                                                                                                                                             | Five `installAgentRules` options, all `default = false`, each gated by `cfg.installAgentRules && !isSourceRepo`. `devenv.nix` sets all five to `true`. |
+| 5 — move the ssh-access graph out of the slots tree | **in progress**                                                                                                                                                                                                                                                                      | The file move is done; the adopter-facing pattern document is open.                                                                                    |
+| 6 — the two non-goals                               | not applicable                                                                                                                                                                                                                                                                       | No action by design.                                                                                                                                   |
 
 A sweep for a personal literal under `modules/slots/` (`~/dev/`, a home checkout path, a personal
 DNS zone, a home LAN CIDR) returns **no file**. Items 1 to 4 need no further code change.
@@ -39,11 +39,11 @@ DNS zone, a home LAN CIDR) returns **no file**. Items 1 to 4 need no further cod
 
 `modules/slots/opencode/default.nix` hardwires the commercial provider `requesty`:
 
-| Line | Content |
-|---|---|
+| Line   | Content                                                         |
+| ------ | --------------------------------------------------------------- |
 | `:103` | `export REQUESTY_API_KEY="$(jq -r '.requesty.key // empty' …)"` |
-| `:105` | a warning message that names requesty |
-| `:140` | `provider.requesty = {};` in the default settings |
+| `:105` | a warning message that names requesty                           |
+| `:140` | `provider.requesty = {};` in the default settings               |
 
 Move it into its own sub-module. An adopter does not have to enable that sub-module. An adopter who
 enables `kdn.opencode` must not get a commercial provider by default.
@@ -63,14 +63,14 @@ Follow that pattern.
 > the variable or reads the unit name, and it buys an adopter nothing that a prefix option does
 > not. Leave both as they are until the owner decides.
 
-| Option | File | Current default | Action |
-|---|---|---|---|
-| `kdn.jj.upstream.remote` | `modules/slots/jj/default.nix:31` | `"kdn"` | no default, or a neutral one |
-| `kdn.jj.alwaysBlockedMessagePatterns` | `modules/slots/jj/default.nix:25` | `[ "scratchpad" ]` | empty default; see the note below |
-| `"~/dev/**" = "allow"` | `modules/slots/opencode/default.nix:51,55,59,63,67` | 5 blocks | make the path an option |
-| `kdn.llm` option examples | `modules/slots/llm/default.nix:432,450-451,462-463` | homelab FQDNs and overlay IPs | neutral examples |
-| `KDN_LLM_API_KEY_<name>` | `modules/slots/llm/client/default.nix:39` | env-var contract carries the brand | decide: keep or parametrize |
-| service unit names | several | hardcoded `kdn-` prefix | decide: keep or parametrize |
+| Option                                | File                                                | Current default                    | Action                            |
+| ------------------------------------- | --------------------------------------------------- | ---------------------------------- | --------------------------------- |
+| `kdn.jj.upstream.remote`              | `modules/slots/jj/default.nix:31`                   | `"kdn"`                            | no default, or a neutral one      |
+| `kdn.jj.alwaysBlockedMessagePatterns` | `modules/slots/jj/default.nix:25`                   | `[ "scratchpad" ]`                 | empty default; see the note below |
+| `"~/dev/**" = "allow"`                | `modules/slots/opencode/default.nix:51,55,59,63,67` | 5 blocks                           | make the path an option           |
+| `kdn.llm` option examples             | `modules/slots/llm/default.nix:432,450-451,462-463` | homelab FQDNs and overlay IPs      | neutral examples                  |
+| `KDN_LLM_API_KEY_<name>`              | `modules/slots/llm/client/default.nix:39`           | env-var contract carries the brand | decide: keep or parametrize       |
+| service unit names                    | several                                             | hardcoded `kdn-` prefix            | decide: keep or parametrize       |
 
 > **Care with `alwaysBlockedMessagePatterns`.** 001 fixes a bug where an empty pattern list
 > silently disables a protective check. Change the default only after that fix lands, so an empty
@@ -89,9 +89,9 @@ rule violation. But it misleads a reader. Fix the example.
 > behaviour. Two probes confirm it: `devenv eval 'slots.kdn.mcp.snoop.enable'` and
 > `devenv eval 'slots.kdn.mcp.pretty-print.enable'` both return `true`.
 
-| File | Line |
-|---|---|
-| `modules/slots/mcp/snoop/default.nix` | `:18` — `default = true` |
+| File                                         | Line                      |
+| -------------------------------------------- | ------------------------- |
+| `modules/slots/mcp/snoop/default.nix`        | `:18` — `default = true`  |
 | `modules/slots/mcp/pretty-print/default.nix` | `:103` — `default = true` |
 
 `.agents/rules/nix-conventions.md` states that all modules must be side-effect free by default.

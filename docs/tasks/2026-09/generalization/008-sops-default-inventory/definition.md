@@ -63,13 +63,13 @@ down today.
 
 Every file that reaches into the default sops secrets. For each row record:
 
-| Column | Meaning |
-|---|---|
-| File and line | where |
-| Key path | what it reads |
-| Guard | `.allowed`, `util.hasSops`, `lib.mkIf`, or **none** |
-| Guard position | inside `config`, or inside an option `type`/`default` |
-| Absent-file behaviour | evaluates, or fails — **verified, not assumed** |
+| Column                | Meaning                                               |
+| --------------------- | ----------------------------------------------------- |
+| File and line         | where                                                 |
+| Key path              | what it reads                                         |
+| Guard                 | `.allowed`, `util.hasSops`, `lib.mkIf`, or **none**   |
+| Guard position        | inside `config`, or inside an option `type`/`default` |
+| Absent-file behaviour | evaluates, or fails — **verified, not assumed**       |
 
 The guard position column matters more than the guard column. A guard inside `config` does not
 protect an option `type` or a `default` in the same file.

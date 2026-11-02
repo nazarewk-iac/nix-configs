@@ -60,14 +60,14 @@ that exists in one may be absent in the other.
 
 ## Research already done
 
-| File | What it settles |
-|---|---|
-| [research.md](research.md) | The mechanism comparison from Pi's own docs: no built-in sub-agents, the two delegation routes, what each harness does better. |
-| [isolation.research.md](isolation.research.md) | Pi runs with the user's full permissions; the four isolation routes mapped onto this homelab; SSH-CA instead of long-lived keys; the pane-as-subagent design; what context files Pi reads (`AGENTS.md` from cwd and parents, `.agents/skills` as a trust-protected resource). |
-| [models.research.md](models.research.md) | No discovery for a compatible endpoint — `models.json` needs an explicit id list, so a generator from `llm-routers.nix` is required. The model cannot switch itself mid-turn; the *orchestrator* chooses the model per delegation. |
-| [costs.research.md](costs.research.md) | Usage lives in the session JSONL and in `--mode json` events; local models cost **zero money** but real wall time; the two-currency accounting model and a delegation-cost formula. |
-| [packaging.research.md](packaging.research.md) | nixpkgs **unstable already carries 1.4.0** (merged 2026-10-22) while our pin has 1.1.0, so the fix is a pin update or a `.flake.patches` entry, not a fork. Declarative surface, devenv wiring, and how to ship an extension with npm deps. |
-| [sessions-and-panes.research.md](sessions-and-panes.research.md) | Session JSONL v3 and how to read it safely; the last-text-message extraction; `agent_settled` as the completion signal; why the session file beats `--mode rpc` over a zellij pty; the pane invocation and a `zellij-llm pi` group; ~6k fixed input tokens per child. |
+| File                                                             | What it settles                                                                                                                                                                                                                                                               |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [research.md](research.md)                                       | The mechanism comparison from Pi's own docs: no built-in sub-agents, the two delegation routes, what each harness does better.                                                                                                                                                |
+| [isolation.research.md](isolation.research.md)                   | Pi runs with the user's full permissions; the four isolation routes mapped onto this homelab; SSH-CA instead of long-lived keys; the pane-as-subagent design; what context files Pi reads (`AGENTS.md` from cwd and parents, `.agents/skills` as a trust-protected resource). |
+| [models.research.md](models.research.md)                         | No discovery for a compatible endpoint — `models.json` needs an explicit id list, so a generator from `llm-routers.nix` is required. The model cannot switch itself mid-turn; the _orchestrator_ chooses the model per delegation.                                            |
+| [costs.research.md](costs.research.md)                           | Usage lives in the session JSONL and in `--mode json` events; local models cost **zero money** but real wall time; the two-currency accounting model and a delegation-cost formula.                                                                                           |
+| [packaging.research.md](packaging.research.md)                   | nixpkgs **unstable already carries 1.4.0** (merged 2026-10-22) while our pin has 1.1.0, so the fix is a pin update or a `.flake.patches` entry, not a fork. Declarative surface, devenv wiring, and how to ship an extension with npm deps.                                   |
+| [sessions-and-panes.research.md](sessions-and-panes.research.md) | Session JSONL v3 and how to read it safely; the last-text-message extraction; `agent_settled` as the completion signal; why the session file beats `--mode rpc` over a zellij pty; the pane invocation and a `zellij-llm pi` group; ~6k fixed input tokens per child.         |
 
 ## Decisions already implied by the research
 
@@ -91,8 +91,8 @@ that exists in one may be absent in the other.
    - the **SDK** (`@earendil-works/pi-coding-agent`, `createAgentSession`,
      `SessionManager.inMemory()`, event subscription) embedding several agents in
      one process.
-   Which one gives a better audit trail, and which one lets each worker run a
-   *different* model without extra plumbing?
+     Which one gives a better audit trail, and which one lets each worker run a
+     _different_ model without extra plumbing?
 2. **Per-agent model and depth.** A worker must run a small fast model while the
    orchestrator runs a slow capable one. Determine whether that is a per-call
    parameter, a per-extension setting, or one process per agent.
@@ -118,15 +118,15 @@ that exists in one may be absent in the other.
 
 ## The honest comparison
 
-| Concern | opencode today | Pi, as documented |
-|---|---|---|
-| Sub-agents | built in (`subagent_type`) | must be built (extension or SDK) |
-| Per-agent model | per agent config, aliases generated from `llm-routers.nix` | per run (`--model`, `--thinking`) |
-| Tool isolation | permission config | per-run `--tools` allowlist |
-| Sessions | database, `opencode export` | files, `--session-id`/`--fork`/`--export` |
-| Programmatic control | `opencode run`, server API | `--mode rpc`, SDK |
-| Extensibility | plugins in TypeScript | extensions in TypeScript |
-| Local fleet | native provider with discovery | provider config, must be confirmed |
+| Concern              | opencode today                                             | Pi, as documented                         |
+| -------------------- | ---------------------------------------------------------- | ----------------------------------------- |
+| Sub-agents           | built in (`subagent_type`)                                 | must be built (extension or SDK)          |
+| Per-agent model      | per agent config, aliases generated from `llm-routers.nix` | per run (`--model`, `--thinking`)         |
+| Tool isolation       | permission config                                          | per-run `--tools` allowlist               |
+| Sessions             | database, `opencode export`                                | files, `--session-id`/`--fork`/`--export` |
+| Programmatic control | `opencode run`, server API                                 | `--mode rpc`, SDK                         |
+| Extensibility        | plugins in TypeScript                                      | extensions in TypeScript                  |
+| Local fleet          | native provider with discovery                             | provider config, must be confirmed        |
 
 Nothing above is a verdict. It is the list the task must fill with evidence.
 
@@ -153,12 +153,12 @@ Nothing above is a verdict. It is the list the task must fill with evidence.
 
 ## Risks
 
-| Risk | Mitigation |
-|---|---|
-| Building a sub-agent framework from scratch is a project in itself | timebox the spike; if the extension route needs more than a day, say so and stop |
-| Pi's per-run model choice makes every worker a new process with a cold model load | measure it; brys loads are 30–120 s, so persistent workers may be required |
-| Two agent frameworks in one repository doubles the documentation burden | prefer one; only adopt Pi for a role that opencode does badly |
-| Sessions on disk hold prompts and code | treat them as user data, keep them out of git |
+| Risk                                                                              | Mitigation                                                                       |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Building a sub-agent framework from scratch is a project in itself                | timebox the spike; if the extension route needs more than a day, say so and stop |
+| Pi's per-run model choice makes every worker a new process with a cold model load | measure it; brys loads are 30–120 s, so persistent workers may be required       |
+| Two agent frameworks in one repository doubles the documentation burden           | prefer one; only adopt Pi for a role that opencode does badly                    |
+| Sessions on disk hold prompts and code                                            | treat them as user data, keep them out of git                                    |
 
 ## Open questions
 

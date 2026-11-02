@@ -20,13 +20,13 @@ a few lines. Each row names its command, so a re-measurement is cheap.
 
 ## 1. Parity
 
-| Measure | slots | den | Command |
-|---|---|---|---|
-| Module files | **19** slots + 1 loader | **21** aspects | `find modules/slots -name default.nix` (20), `ls modules/den/aspects` (21) |
-| Nix lines | 3 686 | 5 815 | `find … -name '*.nix' -print0 \| xargs -0 wc -l` |
-| Shared assets (`.sh`, `.py`) | 927 lines, 9 files | reads all 9 | `find modules/slots -type f \( -name '*.sh' -o -name '*.py' \)` |
-| README lines | 844 (6 files) + `lib/slots` 72 | 346 (1 file) | `wc -l` |
-| Valid target pairs | 26 target keys across 19 slots | **26** (aspect, class) pairs | see below |
+| Measure                      | slots                          | den                          | Command                                                                    |
+| ---------------------------- | ------------------------------ | ---------------------------- | -------------------------------------------------------------------------- |
+| Module files                 | **19** slots + 1 loader        | **21** aspects               | `find modules/slots -name default.nix` (20), `ls modules/den/aspects` (21) |
+| Nix lines                    | 3 686                          | 5 815                        | `find … -name '*.nix' -print0 \| xargs -0 wc -l`                           |
+| Shared assets (`.sh`, `.py`) | 927 lines, 9 files             | reads all 9                  | `find modules/slots -type f \( -name '*.sh' -o -name '*.py' \)`            |
+| README lines                 | 844 (6 files) + `lib/slots` 72 | 346 (1 file)                 | `wc -l`                                                                    |
+| Valid target pairs           | 26 target keys across 19 slots | **26** (aspect, class) pairs | see below                                                                  |
 
 `modules/slots/default.nix` is the loader, not a slot. So the slot count is 19, and the 006
 definition's "12 of 19 slots target devenv" figure is right.
@@ -38,12 +38,12 @@ Those two come from `modules/universal`, not from `modules/slots`.
 **The 26 pairs.** `modules/den/lib.nix` builds the pair list from the aspect itself, not from a hand
 list. `nix eval --no-eval-cache --json '.#denLib.pairs'` returns:
 
-| Class | Pairs | Aspects |
-|---|---|---|
-| `devenv` | 14 | devenv-cli, gh, jj, jj-fork, llm-client, llm-proxy, mcp, mcp-basic-memory, mcp-pretty-print, mcp-snoop, nix, opencode, ssh-access, zellij |
-| `nixos` | 4 | ca, devenv-cli, llm, llm-proxy |
-| `darwin` | 4 | devenv-cli, homebrew, homebrew-nix-managed, rosetta-builder |
-| `homeManager` | 4 | devenv-cli, signing, ssh-access, ssh-agent |
+| Class         | Pairs | Aspects                                                                                                                                   |
+| ------------- | ----- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `devenv`      | 14    | devenv-cli, gh, jj, jj-fork, llm-client, llm-proxy, mcp, mcp-basic-memory, mcp-pretty-print, mcp-snoop, nix, opencode, ssh-access, zellij |
+| `nixos`       | 4     | ca, devenv-cli, llm, llm-proxy                                                                                                            |
+| `darwin`      | 4     | devenv-cli, homebrew, homebrew-nix-managed, rosetta-builder                                                                               |
+| `homeManager` | 4     | devenv-cli, signing, ssh-access, ssh-agent                                                                                                |
 
 Total 26. `nix eval '.#denModules' --apply 'x: builtins.length (builtins.attrNames x)'` returns
 **43** keys: the 26 explicit `<aspect>-<class>` keys plus 17 short zero-argument keys for the aspects
@@ -65,10 +65,10 @@ as the fix.
 
 ## 2. Real consumers today
 
-| Route | Hosts | Other call sites |
-|---|---|---|
-| slots | **5** host directories: anji, brys, oams, orr, the work host | 13 `mkSlots` call sites in 13 files |
-| den | **1** host directory: orr | 6 den entities in `checks/den-mvp/`, plus 1 template |
+| Route | Hosts                                                        | Other call sites                                     |
+| ----- | ------------------------------------------------------------ | ---------------------------------------------------- |
+| slots | **5** host directories: anji, brys, oams, orr, the work host | 13 `mkSlots` call sites in 13 files                  |
+| den   | **1** host directory: orr                                    | 6 den entities in `checks/den-mvp/`, plus 1 template |
 
 `grep -rn mkSlots --include='*.nix' .` finds 13 call sites: `devenv.nix:31`,
 `hosts/anji/default.nix:13`, `hosts/brys/default.nix:9`, `hosts/brys/devenv.nix:21`,
@@ -94,27 +94,27 @@ host. The slots tree carries five.
 
 `nix eval --no-eval-cache '.#checks.<system>' --apply 'x: builtins.length (builtins.attrNames x)'`:
 
-| System | Checks |
-|---|---|
+| System           | Checks |
+| ---------------- | ------ |
 | `aarch64-darwin` | **33** |
-| `x86_64-linux` | **33** |
-| `aarch64-linux` | **28** |
+| `x86_64-linux`   | **33** |
+| `aarch64-linux`  | **28** |
 
 The 5-check difference is the artifact and smoke family. `aarch64-linux` gets no
 `den-artifact-*` and no `den-smoke-*` check, because no den entity targets that system.
 
 Which route each family covers:
 
-| Family | Count on darwin | Route it covers |
-|---|---|---|
-| `den-eval-*` | 21 | den |
-| `den-artifact-*` | 3 | den |
-| `den-smoke-*` | 2 | den |
-| `den-mvp` | 1 | den (build gate for all den entities of this system) |
-| `standalone-aspects` | 1 | den (the three aspect rules) |
-| `standalone-slots` | 1 | slots (the standalone rule) |
-| `jj-experiments-pytest` | 1 | slots (`render-fork-config.nix` renders through `mkSlots`) |
-| `hello`, `kdn-slug-pytest`, `zellij-llm-pytest` | 3 | neither — plumbing and packages |
+| Family                                          | Count on darwin | Route it covers                                            |
+| ----------------------------------------------- | --------------- | ---------------------------------------------------------- |
+| `den-eval-*`                                    | 21              | den                                                        |
+| `den-artifact-*`                                | 3               | den                                                        |
+| `den-smoke-*`                                   | 2               | den                                                        |
+| `den-mvp`                                       | 1               | den (build gate for all den entities of this system)       |
+| `standalone-aspects`                            | 1               | den (the three aspect rules)                               |
+| `standalone-slots`                              | 1               | slots (the standalone rule)                                |
+| `jj-experiments-pytest`                         | 1               | slots (`render-fork-config.nix` renders through `mkSlots`) |
+| `hello`, `kdn-slug-pytest`, `zellij-llm-pytest` | 3               | neither — plumbing and packages                            |
 
 **28 of 33 checks cover den. 2 cover slots.** The test investment is already almost entirely on the
 den side: `checks/den-mvp/` holds 3 805 lines, of which `tests.nix` is 2 925. `checks/standalone.nix`
@@ -144,16 +144,16 @@ So neither route forces the extended `lib`.
 
 Cost, side by side:
 
-| Adopter cost | slots | den |
-|---|---|---|
-| `imports` lines for one small feature | 3 (`mkSlots` call, `.config.devenv`, overlay) | **1** (`denModules.gh`) |
-| Overlay | **required** | none |
-| `pkgs` argument | required | none |
-| Template size | 48 lines | 55 lines |
-| Feature switch | `kdn.<slot>.enable = true` | inclusion in `imports` |
+| Adopter cost                              | slots                                                                                                   | den                                                                                                                                 |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `imports` lines for one small feature     | 3 (`mkSlots` call, `.config.devenv`, overlay)                                                           | **1** (`denModules.gh`)                                                                                                             |
+| Overlay                                   | **required**                                                                                            | none                                                                                                                                |
+| `pkgs` argument                           | required                                                                                                | none                                                                                                                                |
+| Template size                             | 48 lines                                                                                                | 55 lines                                                                                                                            |
+| Feature switch                            | `kdn.<slot>.enable = true`                                                                              | inclusion in `imports`                                                                                                              |
 | Files it writes into the tree, by default | agent rules and skills, because `kdn.isSourceRepo` defaults to `false` and `false` means "install them" | one file, `.claude/settings.json`; five aspects gate their rule files behind `installAgentRules`, and all five default to **false** |
-| `mcp-servers-nix` | no option exists, so `kdn.mcp.programs` stays inert | `kdn.mcp.serversNix` takes the adopter's own source |
-| Lock cost | this repository's whole lock | 103 lock nodes, per `docs/den-for-adopters.md:523` |
+| `mcp-servers-nix`                         | no option exists, so `kdn.mcp.programs` stays inert                                                     | `kdn.mcp.serversNix` takes the adopter's own source                                                                                 |
+| Lock cost                                 | this repository's whole lock                                                                            | 103 lock nodes, per `docs/den-for-adopters.md:523`                                                                                  |
 
 The default-file direction is the sharper difference. On the slot route the adopter opts **out** of
 the author's agent rules. On the den route the adopter opts **in**.
@@ -162,16 +162,16 @@ the author's agent rules. On the den route the adopter opts **in**.
 
 ### If den wins
 
-| Action | Lines |
-|---|---|
-| Delete `modules/slots/**/*.nix` | 3 686 |
-| Delete `lib/slots/{default,schema}.nix` | 72 |
-| Delete the 6 slot `README.md` files | 844 |
-| Delete `templates/adopter/` | 114 |
-| Delete `docs/slots-for-adopters.md` | 249 |
-| **Move**, not delete: the 9 shared `.sh` and `.py` assets | 927 |
-| **Rewire**: 13 `mkSlots` call sites in 13 files | — |
-| **Rewire**: `flake.mkSlots` at `flake.nix:309-333` | 25 |
+| Action                                                    | Lines |
+| --------------------------------------------------------- | ----- |
+| Delete `modules/slots/**/*.nix`                           | 3 686 |
+| Delete `lib/slots/{default,schema}.nix`                   | 72    |
+| Delete the 6 slot `README.md` files                       | 844   |
+| Delete `templates/adopter/`                               | 114   |
+| Delete `docs/slots-for-adopters.md`                       | 249   |
+| **Move**, not delete: the 9 shared `.sh` and `.py` assets | 927   |
+| **Rewire**: 13 `mkSlots` call sites in 13 files           | —     |
+| **Rewire**: `flake.mkSlots` at `flake.nix:309-333`        | 25    |
 
 Total deleted: about **4 965** lines. Total moved: **927** lines.
 
@@ -187,16 +187,16 @@ host or a shell depends on: `devenv.nix`, four host `default.nix` files, two hos
 
 ### If slots wins
 
-| Action | Lines |
-|---|---|
-| Delete `modules/den/` | 5 815 nix + 346 README |
-| Delete `checks/den-mvp/` | 3 805 |
-| Delete `docs/den-for-adopters.md` | 661 |
-| Delete `templates/adopter-den/` | 120 |
-| Delete the `standalone-aspects` half of `checks/standalone.nix` | part of 291 |
-| Drop 2 flake inputs (`den`, `nix-effects`) | `flake.nix:52,73` |
-| Rewire: `hosts/orr/default.nix` back to one route | part of 98 |
-| Rewire: `flake.nix:186` drops the den flake-module import | 1 |
+| Action                                                          | Lines                  |
+| --------------------------------------------------------------- | ---------------------- |
+| Delete `modules/den/`                                           | 5 815 nix + 346 README |
+| Delete `checks/den-mvp/`                                        | 3 805                  |
+| Delete `docs/den-for-adopters.md`                               | 661                    |
+| Delete `templates/adopter-den/`                                 | 120                    |
+| Delete the `standalone-aspects` half of `checks/standalone.nix` | part of 291            |
+| Drop 2 flake inputs (`den`, `nix-effects`)                      | `flake.nix:52,73`      |
+| Rewire: `hosts/orr/default.nix` back to one route               | part of 98             |
+| Rewire: `flake.nix:186` drops the den flake-module import       | 1                      |
 
 Total deleted: about **10 750** lines. One consumer file changes.
 
@@ -232,15 +232,15 @@ This repository calls `resolve` at three sites: `modules/den/lib.nix:128`,
 **The full upstream contact surface is 7 symbols.** A `grep -rn 'inputs\.den'` over `modules/den/`
 returns:
 
-| Symbol | Sites | Public? |
-|---|---|---|
-| `inputs.den.namespace` | `namespaces.nix:56,57`, `lib.nix:112` | yes |
-| `inputs.den.nixModule` | `lib.nix:109,270` | yes |
-| `inputs.den.flakeModule` | `flake-module.nix:49` | yes |
-| `inputs.den.flakeOutputs.*Configurations` | `flake-module.nix:53,54` | yes |
-| `import (inputs.den + "/modules/aspects.nix")` | `lib.nix:72` | **a path into den's own tree** |
-| `den.lib.aspects.resolve` | `lib.nix:128`, `flake-module.nix:95` | **documented as not public** |
-| `den.lib.policy.instantiate` | `classes/devenv.nix:159` | not marked internal |
+| Symbol                                         | Sites                                 | Public?                        |
+| ---------------------------------------------- | ------------------------------------- | ------------------------------ |
+| `inputs.den.namespace`                         | `namespaces.nix:56,57`, `lib.nix:112` | yes                            |
+| `inputs.den.nixModule`                         | `lib.nix:109,270`                     | yes                            |
+| `inputs.den.flakeModule`                       | `flake-module.nix:49`                 | yes                            |
+| `inputs.den.flakeOutputs.*Configurations`      | `flake-module.nix:53,54`              | yes                            |
+| `import (inputs.den + "/modules/aspects.nix")` | `lib.nix:72`                          | **a path into den's own tree** |
+| `den.lib.aspects.resolve`                      | `lib.nix:128`, `flake-module.nix:95`  | **documented as not public**   |
+| `den.lib.policy.instantiate`                   | `classes/devenv.nix:159`              | not marked internal            |
 
 The path import at `lib.nix:72` is the deepest coupling. It reaches a file inside den's `modules/`
 directory, and den's own module list is free to move it.
@@ -252,7 +252,7 @@ directory, and den's own module list is free to move it.
 - **v0.x, and fast-paced by policy.** `releases.mdx:10-17` states the v0 series, and it states that
   development is "fast-paced, evolving and being shaped by its current users".
 - **`main` moves on every merge.** `releases.mdx:36-39` states that `inputs.den.url =
-  "github:denful/den"` "updates on each PR merge".
+"github:denful/den"` "updates on each PR merge".
 - **The upstream breaking-change channel is a discussion label, not a file.** `releases.mdx:44-46`
   says that a PR "might introduce changes that require you being aware", and it routes those to
   GitHub discussions with the `heads-up` label, plus Zulip and Matrix.
@@ -282,33 +282,33 @@ break arrives silently at update time, and this repository's 33 checks are the o
 Weight 5 is decisive. Weight 1 is a tie-breaker. A score is 0 to 5, where 5 is best. Row 1 stays
 unscored, because it waits on the gates.
 
-| # | Criterion | Weight | slots | den | Evidence |
-|---|---|---|---|---|---|
-| 1 | Satisfies the 005 conditional-imports requirement | 5 | — | — | 005 is `open`; 004 criterion 3 is `BLOCKED`. Not scorable. |
-| 2 | An adopter imports a drop-in and learns no framework | 5 | 3 | **5** | den: 1 `imports` line, no `pkgs`, no overlay. slots: 3 lines plus the overlay. |
-| 3 | A devenv target exists | 4 | **5** | **5** | slots: 12 of 19 slots. den: 14 of 26 pairs, plus `devenv-cli`, which the slot lacks. |
-| 4 | Parity for the pieces this repository keeps | 3 | **5** | **5** | 19 of 19 slots have an aspect; den adds 2 more and one extra class. |
-| 5 | Adopter cost outside the import line | 3 | 2 | **5** | 7 slot files force `overlays.packages`. den has 0 real `pkgs.kdn` hits. |
-| 6 | Automated test coverage today | 3 | 2 | **5** | 28 of 33 checks cover den; 2 cover slots. `den-eval-instantiate` forces every pair. |
-| 7 | Live consumers in this repository | 2 | **5** | 2 | slots: 5 hosts, 13 call sites. den: 1 host, and it runs both routes. |
-| 8 | API stability of the substrate | 4 | **5** | 2 | slots: a 72-line schema this repository owns. den: v0.x, `resolve` not public, no changelog. |
-| 9 | Maintenance burden over time | 3 | 2 | 4 | slots: every future need is local work. den: shared upstream, with drift risk. |
-| 10 | Retirement cost when this route wins (cheap is better) | 2 | 4 | 3 | slots wins: delete about 10 750 lines, 1 consumer changes. den wins: delete about 4 965, move 927, rewire 13 call sites. |
-| | **Weighted total, of 145** | 29 | **106 (73 %)** | **120 (83 %)** | |
+| #   | Criterion                                              | Weight | slots          | den            | Evidence                                                                                                                 |
+| --- | ------------------------------------------------------ | ------ | -------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| 1   | Satisfies the 005 conditional-imports requirement      | 5      | —              | —              | 005 is `open`; 004 criterion 3 is `BLOCKED`. Not scorable.                                                               |
+| 2   | An adopter imports a drop-in and learns no framework   | 5      | 3              | **5**          | den: 1 `imports` line, no `pkgs`, no overlay. slots: 3 lines plus the overlay.                                           |
+| 3   | A devenv target exists                                 | 4      | **5**          | **5**          | slots: 12 of 19 slots. den: 14 of 26 pairs, plus `devenv-cli`, which the slot lacks.                                     |
+| 4   | Parity for the pieces this repository keeps            | 3      | **5**          | **5**          | 19 of 19 slots have an aspect; den adds 2 more and one extra class.                                                      |
+| 5   | Adopter cost outside the import line                   | 3      | 2              | **5**          | 7 slot files force `overlays.packages`. den has 0 real `pkgs.kdn` hits.                                                  |
+| 6   | Automated test coverage today                          | 3      | 2              | **5**          | 28 of 33 checks cover den; 2 cover slots. `den-eval-instantiate` forces every pair.                                      |
+| 7   | Live consumers in this repository                      | 2      | **5**          | 2              | slots: 5 hosts, 13 call sites. den: 1 host, and it runs both routes.                                                     |
+| 8   | API stability of the substrate                         | 4      | **5**          | 2              | slots: a 72-line schema this repository owns. den: v0.x, `resolve` not public, no changelog.                             |
+| 9   | Maintenance burden over time                           | 3      | 2              | 4              | slots: every future need is local work. den: shared upstream, with drift risk.                                           |
+| 10  | Retirement cost when this route wins (cheap is better) | 2      | 4              | 3              | slots wins: delete about 10 750 lines, 1 consumer changes. den wins: delete about 4 965, move 927, rewire 13 call sites. |
+|     | **Weighted total, of 145**                             | 29     | **106 (73 %)** | **120 (83 %)** |                                                                                                                          |
 
 Row-by-row weighted contribution:
 
-| # | Weight | slots | den |
-|---|---|---|---|
-| 2 | 5 | 15 | 25 |
-| 3 | 4 | 20 | 20 |
-| 4 | 3 | 15 | 15 |
-| 5 | 3 | 6 | 15 |
-| 6 | 3 | 6 | 15 |
-| 7 | 2 | 10 | 4 |
-| 8 | 4 | 20 | 8 |
-| 9 | 3 | 6 | 12 |
-| 10 | 2 | 8 | 6 |
+| #         | Weight | slots   | den     |
+| --------- | ------ | ------- | ------- |
+| 2         | 5      | 15      | 25      |
+| 3         | 4      | 20      | 20      |
+| 4         | 3      | 15      | 15      |
+| 5         | 3      | 6       | 15      |
+| 6         | 3      | 6       | 15      |
+| 7         | 2      | 10      | 4       |
+| 8         | 4      | 20      | 8       |
+| 9         | 3      | 6       | 12      |
+| 10        | 2      | 8       | 6       |
 | **Total** | **29** | **106** | **120** |
 
 ## 8. Recommendation
@@ -351,7 +351,7 @@ extension to an unwritten requirement. This file records the base only.
 
 **3. Whether the adopter boundary survives either choice.** The definition's closing constraint says
 the adopter entry point must not force the adopter to learn the framework choice. 001 and 002 both
-have status `open`, and they establish that boundary. The two templates measure the *current* cost of
+have status `open`, and they establish that boundary. The two templates measure the _current_ cost of
 each route — 1 import line for den, 3 plus an overlay for slots — but the boundary itself is not
 ratified yet. So this file scores the cost, not the constraint.
 

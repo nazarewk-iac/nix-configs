@@ -53,12 +53,12 @@ Each entry declares a `namePrefix` (the attr name by default) and a `keyPrefix`.
 `modules/universal/security/secrets/sops/default.nix:80-123` derives one sops-nix secret per
 discovered key, named `<namePrefix>/<key-without-keyPrefix>`.
 
-| Entry | Declared at | `keyPrefix` | Secret count | Secret name shape |
-|---|---|---|---|---|
-| `default` | `modules/universal/profile/default-secrets/default.nix:20-22` | `""` | 65 | `default/<full key>` |
-| `networking` | `modules/universal/profile/default-secrets/default.nix:23-28` | `networking` | 47 | `networking/<key>` |
-| `anonymization` | `modules/universal/profile/default-secrets/default.nix:83-88` | `anonymization` | 1 | `anonymization/<key>` |
-| `ssh` | `modules/universal/profile/remote-builders/default.nix:193-198` | `nix/ssh` | 2 | `ssh/<user>/<file>` |
+| Entry           | Declared at                                                     | `keyPrefix`     | Secret count | Secret name shape     |
+| --------------- | --------------------------------------------------------------- | --------------- | ------------ | --------------------- |
+| `default`       | `modules/universal/profile/default-secrets/default.nix:20-22`   | `""`            | 65           | `default/<full key>`  |
+| `networking`    | `modules/universal/profile/default-secrets/default.nix:23-28`   | `networking`    | 47           | `networking/<key>`    |
+| `anonymization` | `modules/universal/profile/default-secrets/default.nix:83-88`   | `anonymization` | 1            | `anonymization/<key>` |
+| `ssh`           | `modules/universal/profile/remote-builders/default.nix:193-198` | `nix/ssh`       | 2            | `ssh/<user>/<file>`   |
 
 The `default` entry has an empty `keyPrefix`, so it maps the whole file a second time under the
 `default/` name prefix. That is why one key reaches the tree under two names — for example
@@ -83,10 +83,10 @@ darwin, and home-manager module types, and `{ }` elsewhere.
 
 ### The two absent-file modes
 
-| Mode | Trigger | Behaviour | Tag |
-|---|---|---|---|
-| A | `kdn.security.secrets.allow = false` | Both derived sets are `{ }`. The engine never reads the file, so the file may also be absent. | verified |
-| B | `allow = true` and the path does not exist | `lib/sops/default.nix:41` calls `builtins.readFile`. Evaluation stops with `opening file '<path>': No such file or directory`. | verified |
+| Mode | Trigger                                    | Behaviour                                                                                                                      | Tag      |
+| ---- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| A    | `kdn.security.secrets.allow = false`       | Both derived sets are `{ }`. The engine never reads the file, so the file may also be absent.                                  | verified |
+| B    | `allow = true` and the path does not exist | `lib/sops/default.nix:41` calls `builtins.readFile`. Evaluation stops with `opening file '<path>': No such file or directory`. | verified |
 
 Mode A plus an absent file also evaluates: `oams` produces a `toplevel` drvPath with the allow
 switch off and all four `sopsFile` paths redirected to a path that does not exist.
@@ -118,22 +118,22 @@ Positive control: each probe also ran with `allow = true`, and each one returns 
 65 keys, grouped by top-level key. An adopter must supply this layout to reuse the affected
 modules. Each row names the shape the consumer expects.
 
-| Top-level key | Key shape | Count | Value shape the consumer expects | Read by |
-|---|---|---|---|---|
-| `tailscale` | `tailscale/default/auth_keys/<name>` | 3 | attrset of names; each leaf needs `.path` | `modules/universal/networking/tailscale/default.nix:11,17,33` |
-| `netbird` | `netbird/<client>/<type>/setup-key`, `netbird/<client>/env` | 5 | attrset keyed by client, then by type; leaf needs `.path` | `modules/universal/networking/netbird/default.nix:83,249,262` |
-| `atuin` | `atuin/username`, `atuin/password`, `atuin/key` | 3 | three strings; each needs `.path` | `modules/universal/programs/atuin/default.nix:249-251` |
-| `nextcloud` | `nextcloud/nixos/{url,username,password}` | 3 | three strings; each needs `.path` | `modules/universal/services/nextcloud-client-nixos/default.nix:18-20` |
-| `nix` | `nix/access-tokens/<host>` | 1 | attrset of host names; leaf is a placeholder string | `modules/universal/profile/default-secrets/default.nix:56` |
-| `nix` | `nix/ssh/<user>/id_*` and `nix/ssh/<user>/id_*.pub` | 2 | attrset keyed by user, then by file name; leaf needs `.path` | `modules/universal/profile/remote-builders/default.nix:19` |
-| `anonymization` | `anonymization/<entry>/pattern` | 1 | attrset of entries; the leaf is a file on disk under `basePath` | consumed at runtime by `kdn-anonymize`, not at evaluation |
-| `networking` | `networking/wlan/<ssid>/password` | 15 | attrset keyed by SSID; each leaf needs `.password.path` | `modules/universal/profile/machine/basic/default.nix:113` |
-| `networking` | `networking/hosts/<name>` | 1 | attrset of names; each leaf is a placeholder string | `modules/universal/profile/default-secrets/default.nix:33` |
-| `networking` | `networking/iperf-server/rsa/{priv,pub}`, `networking/iperf-server/users.csv`, `networking/iperf-server/users/<user>` | 4 | `.path` on three leaves, plus an attrset of user names | `modules/universal/services/iperf3/default.nix:37,39,64` |
-| `networking` | `networking/ipv4/network/<...>` | 4 | nested placeholder strings, plus one `.path` | `hosts/etra/default.nix:389` |
-| `networking` | `networking/ipv6/network/<name>/<...>/{address,netmask,network}` | 17 | nested placeholder strings, plus one `.path` | `hosts/etra/default.nix:11,219,247,253,268,285,391` |
-| `networking` | `networking/anonymization/<entry>/pattern` | 4 | file on disk under `basePath` | consumed at runtime, not at evaluation |
-| `networking` | `networking/ssh_config/<name>`, `networking/ssh_hosts` | 2 | file on disk under `basePath` | consumed at runtime, not at evaluation |
+| Top-level key   | Key shape                                                                                                             | Count | Value shape the consumer expects                                | Read by                                                               |
+| --------------- | --------------------------------------------------------------------------------------------------------------------- | ----- | --------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `tailscale`     | `tailscale/default/auth_keys/<name>`                                                                                  | 3     | attrset of names; each leaf needs `.path`                       | `modules/universal/networking/tailscale/default.nix:11,17,33`         |
+| `netbird`       | `netbird/<client>/<type>/setup-key`, `netbird/<client>/env`                                                           | 5     | attrset keyed by client, then by type; leaf needs `.path`       | `modules/universal/networking/netbird/default.nix:83,249,262`         |
+| `atuin`         | `atuin/username`, `atuin/password`, `atuin/key`                                                                       | 3     | three strings; each needs `.path`                               | `modules/universal/programs/atuin/default.nix:249-251`                |
+| `nextcloud`     | `nextcloud/nixos/{url,username,password}`                                                                             | 3     | three strings; each needs `.path`                               | `modules/universal/services/nextcloud-client-nixos/default.nix:18-20` |
+| `nix`           | `nix/access-tokens/<host>`                                                                                            | 1     | attrset of host names; leaf is a placeholder string             | `modules/universal/profile/default-secrets/default.nix:56`            |
+| `nix`           | `nix/ssh/<user>/id_*` and `nix/ssh/<user>/id_*.pub`                                                                   | 2     | attrset keyed by user, then by file name; leaf needs `.path`    | `modules/universal/profile/remote-builders/default.nix:19`            |
+| `anonymization` | `anonymization/<entry>/pattern`                                                                                       | 1     | attrset of entries; the leaf is a file on disk under `basePath` | consumed at runtime by `kdn-anonymize`, not at evaluation             |
+| `networking`    | `networking/wlan/<ssid>/password`                                                                                     | 15    | attrset keyed by SSID; each leaf needs `.password.path`         | `modules/universal/profile/machine/basic/default.nix:113`             |
+| `networking`    | `networking/hosts/<name>`                                                                                             | 1     | attrset of names; each leaf is a placeholder string             | `modules/universal/profile/default-secrets/default.nix:33`            |
+| `networking`    | `networking/iperf-server/rsa/{priv,pub}`, `networking/iperf-server/users.csv`, `networking/iperf-server/users/<user>` | 4     | `.path` on three leaves, plus an attrset of user names          | `modules/universal/services/iperf3/default.nix:37,39,64`              |
+| `networking`    | `networking/ipv4/network/<...>`                                                                                       | 4     | nested placeholder strings, plus one `.path`                    | `hosts/etra/default.nix:389`                                          |
+| `networking`    | `networking/ipv6/network/<name>/<...>/{address,netmask,network}`                                                      | 17    | nested placeholder strings, plus one `.path`                    | `hosts/etra/default.nix:11,219,247,253,268,285,391`                   |
+| `networking`    | `networking/anonymization/<entry>/pattern`                                                                            | 4     | file on disk under `basePath`                                   | consumed at runtime, not at evaluation                                |
+| `networking`    | `networking/ssh_config/<name>`, `networking/ssh_hosts`                                                                | 2     | file on disk under `basePath`                                   | consumed at runtime, not at evaluation                                |
 
 Two shapes matter most for 009, because a consumer indexes them by a literal name:
 
@@ -147,30 +147,30 @@ Two shapes matter most for 009, because a consumer indexes them by a literal nam
 `Guard` names the condition that stops the read. `Guard position` states where the read sits.
 `Mode A` is the verified behaviour with the allow switch off.
 
-| # | File and line | Key path it reads | Guard | Guard position | Mode A behaviour | Tag |
-|---|---|---|---|---|---|---|
-| 1 | `modules/universal/networking/tailscale/default.nix:11` | `secrets.default.tailscale.default.auth_keys` | none | top-level `let` | fails when Nix forces the option | **verified** |
-| 2 | `modules/universal/networking/tailscale/default.nix:17` | the same value, through `builtins.attrNames` | none | option `type` (`lib.types.enum`) | fails when Nix forces the option | **verified** |
-| 3 | `modules/universal/networking/tailscale/default.nix:33` | `authKeys."<key>".path` | `lib.mkIf cfg.enable`, then `lib.mkIf (cfg.auth_key != null)` | inside `config` | fails; row 2 fails first | **verified** |
-| 4 | `modules/universal/networking/netbird/default.nix:83` | `secrets.default.netbird` | none | submodule option `default` (`readOnly`) | fails when Nix forces the option | **verified** |
-| 5 | `modules/universal/networking/netbird/default.nix:246,249,257,259,262` | `nbCfg.secrets."<type>".setup-key.path`, `nbCfg.secrets.env.path` | `lib.mkIf config.kdn.security.secrets.allowed` (line 242) | inside `config` | evaluates | **verified** |
-| 6 | `modules/universal/profile/machine/basic/default.nix:113` | `secrets.networking.wlan` | `lib.mkIf config.kdn.security.secrets.allowed` (line 114) | inside `config` | evaluates | **verified** |
-| 7 | `modules/universal/services/iperf3/default.nix:37` | `secrets.default.networking.iperf-server.rsa.priv.path` | `lib.mkIf config.kdn.security.secrets.allowed` (line 30) | inside `config` | evaluates | **verified** |
-| 8 | `modules/universal/services/iperf3/default.nix:39` | `secrets.default.networking.iperf-server."users.csv".path` | same as row 7 | inside `config` | evaluates | **verified** |
-| 9 | `modules/universal/services/iperf3/default.nix:64` | `secrets.default.networking.iperf-server.users` | same as row 7 | inside `config` | evaluates | **verified** |
-| 10 | `modules/universal/programs/atuin/default.nix:249` | `config.sops.secrets."default/atuin/username"` | `lib.mkIf config.kdn.security.secrets.allowed` (line 227) | inside `config` | evaluates | **verified** |
-| 11 | `modules/universal/programs/atuin/default.nix:250` | `config.sops.secrets."default/atuin/password"` | same as row 10 | inside `config` | evaluates | **verified** |
-| 12 | `modules/universal/programs/atuin/default.nix:251` | `config.sops.secrets."default/atuin/key"` | same as row 10 | inside `config` | evaluates | **verified** |
-| 13 | `modules/universal/services/nextcloud-client-nixos/default.nix:18` | `config.sops.secrets."default/nextcloud/nixos/url"` | `lib.mkIf cfg.enable` (line 38) only; the `allowed` test sits at the enable site, `modules/universal/profile/machine/baseline/default.nix:360` | top-level `let`; `config` forces it | evaluates on the current hosts; fails when a consumer sets `enable = true` | **verified** |
-| 14 | `modules/universal/services/nextcloud-client-nixos/default.nix:19` | `config.sops.secrets."default/nextcloud/nixos/username"` | same as row 13 | top-level `let` | same as row 13 | **verified** |
-| 15 | `modules/universal/services/nextcloud-client-nixos/default.nix:20` | `config.sops.secrets."default/nextcloud/nixos/password"` | same as row 13 | top-level `let` | same as row 13 | **verified** |
-| 16 | `modules/universal/profile/remote-builders/default.nix:19` | `secrets.ssh or { }` | `kdnConfig.util.hasSops && config.kdn.security.secrets.allowed`, plus an `or { }` fallback | top-level `let` | evaluates | **verified** |
-| 17 | `modules/universal/profile/default-secrets/default.nix:33` | `placeholders.networking.hosts` | `lib.mkIf config.kdn.security.secrets.allowed` (line 32) | inside `config` | evaluates | **verified** |
-| 18 | `modules/universal/profile/default-secrets/default.nix:56` | `placeholders.default.nix.access-tokens` | same as row 17 | inside `config` | evaluates | **verified** |
-| 19 | `modules/universal/managed/default.nix:151` | `config.sops.templates` (iterate, no index) | `lib.mkIf config.kdn.security.secrets.allowed` (line 150) | inside `config` | evaluates; the shape is safe on `{ }` | **verified** |
-| 20 | `hosts/etra/default.nix:11`, read at `219,247,253,268,285` | `placeholders.networking.ipv6.network.<name>.<net>` | none | inside `config`, as `kdn.networking.router.*` definitions | fails | **verified** |
-| 21 | `hosts/etra/default.nix:389` | `config.sops.secrets."networking/ipv4/network/isp/uplink/address/client"` | none | inside `config` | fails | **verified** |
-| 22 | `hosts/etra/default.nix:391` | `config.sops.secrets."networking/ipv6/network/isp/prefix/etra/address/gateway"` | none | inside `config` | fails | **verified** |
+| #   | File and line                                                          | Key path it reads                                                               | Guard                                                                                                                                          | Guard position                                            | Mode A behaviour                                                           | Tag          |
+| --- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------- | ------------ |
+| 1   | `modules/universal/networking/tailscale/default.nix:11`                | `secrets.default.tailscale.default.auth_keys`                                   | none                                                                                                                                           | top-level `let`                                           | fails when Nix forces the option                                           | **verified** |
+| 2   | `modules/universal/networking/tailscale/default.nix:17`                | the same value, through `builtins.attrNames`                                    | none                                                                                                                                           | option `type` (`lib.types.enum`)                          | fails when Nix forces the option                                           | **verified** |
+| 3   | `modules/universal/networking/tailscale/default.nix:33`                | `authKeys."<key>".path`                                                         | `lib.mkIf cfg.enable`, then `lib.mkIf (cfg.auth_key != null)`                                                                                  | inside `config`                                           | fails; row 2 fails first                                                   | **verified** |
+| 4   | `modules/universal/networking/netbird/default.nix:83`                  | `secrets.default.netbird`                                                       | none                                                                                                                                           | submodule option `default` (`readOnly`)                   | fails when Nix forces the option                                           | **verified** |
+| 5   | `modules/universal/networking/netbird/default.nix:246,249,257,259,262` | `nbCfg.secrets."<type>".setup-key.path`, `nbCfg.secrets.env.path`               | `lib.mkIf config.kdn.security.secrets.allowed` (line 242)                                                                                      | inside `config`                                           | evaluates                                                                  | **verified** |
+| 6   | `modules/universal/profile/machine/basic/default.nix:113`              | `secrets.networking.wlan`                                                       | `lib.mkIf config.kdn.security.secrets.allowed` (line 114)                                                                                      | inside `config`                                           | evaluates                                                                  | **verified** |
+| 7   | `modules/universal/services/iperf3/default.nix:37`                     | `secrets.default.networking.iperf-server.rsa.priv.path`                         | `lib.mkIf config.kdn.security.secrets.allowed` (line 30)                                                                                       | inside `config`                                           | evaluates                                                                  | **verified** |
+| 8   | `modules/universal/services/iperf3/default.nix:39`                     | `secrets.default.networking.iperf-server."users.csv".path`                      | same as row 7                                                                                                                                  | inside `config`                                           | evaluates                                                                  | **verified** |
+| 9   | `modules/universal/services/iperf3/default.nix:64`                     | `secrets.default.networking.iperf-server.users`                                 | same as row 7                                                                                                                                  | inside `config`                                           | evaluates                                                                  | **verified** |
+| 10  | `modules/universal/programs/atuin/default.nix:249`                     | `config.sops.secrets."default/atuin/username"`                                  | `lib.mkIf config.kdn.security.secrets.allowed` (line 227)                                                                                      | inside `config`                                           | evaluates                                                                  | **verified** |
+| 11  | `modules/universal/programs/atuin/default.nix:250`                     | `config.sops.secrets."default/atuin/password"`                                  | same as row 10                                                                                                                                 | inside `config`                                           | evaluates                                                                  | **verified** |
+| 12  | `modules/universal/programs/atuin/default.nix:251`                     | `config.sops.secrets."default/atuin/key"`                                       | same as row 10                                                                                                                                 | inside `config`                                           | evaluates                                                                  | **verified** |
+| 13  | `modules/universal/services/nextcloud-client-nixos/default.nix:18`     | `config.sops.secrets."default/nextcloud/nixos/url"`                             | `lib.mkIf cfg.enable` (line 38) only; the `allowed` test sits at the enable site, `modules/universal/profile/machine/baseline/default.nix:360` | top-level `let`; `config` forces it                       | evaluates on the current hosts; fails when a consumer sets `enable = true` | **verified** |
+| 14  | `modules/universal/services/nextcloud-client-nixos/default.nix:19`     | `config.sops.secrets."default/nextcloud/nixos/username"`                        | same as row 13                                                                                                                                 | top-level `let`                                           | same as row 13                                                             | **verified** |
+| 15  | `modules/universal/services/nextcloud-client-nixos/default.nix:20`     | `config.sops.secrets."default/nextcloud/nixos/password"`                        | same as row 13                                                                                                                                 | top-level `let`                                           | same as row 13                                                             | **verified** |
+| 16  | `modules/universal/profile/remote-builders/default.nix:19`             | `secrets.ssh or { }`                                                            | `kdnConfig.util.hasSops && config.kdn.security.secrets.allowed`, plus an `or { }` fallback                                                     | top-level `let`                                           | evaluates                                                                  | **verified** |
+| 17  | `modules/universal/profile/default-secrets/default.nix:33`             | `placeholders.networking.hosts`                                                 | `lib.mkIf config.kdn.security.secrets.allowed` (line 32)                                                                                       | inside `config`                                           | evaluates                                                                  | **verified** |
+| 18  | `modules/universal/profile/default-secrets/default.nix:56`             | `placeholders.default.nix.access-tokens`                                        | same as row 17                                                                                                                                 | inside `config`                                           | evaluates                                                                  | **verified** |
+| 19  | `modules/universal/managed/default.nix:151`                            | `config.sops.templates` (iterate, no index)                                     | `lib.mkIf config.kdn.security.secrets.allowed` (line 150)                                                                                      | inside `config`                                           | evaluates; the shape is safe on `{ }`                                      | **verified** |
+| 20  | `hosts/etra/default.nix:11`, read at `219,247,253,268,285`             | `placeholders.networking.ipv6.network.<name>.<net>`                             | none                                                                                                                                           | inside `config`, as `kdn.networking.router.*` definitions | fails                                                                      | **verified** |
+| 21  | `hosts/etra/default.nix:389`                                           | `config.sops.secrets."networking/ipv4/network/isp/uplink/address/client"`       | none                                                                                                                                           | inside `config`                                           | fails                                                                      | **verified** |
+| 22  | `hosts/etra/default.nix:391`                                           | `config.sops.secrets."networking/ipv6/network/isp/prefix/etra/address/gateway"` | none                                                                                                                                           | inside `config`                                           | fails                                                                      | **verified** |
 
 Rows 20-22 are the reason `nixosConfigurations.etra` does not evaluate in mode A.
 
@@ -190,13 +190,13 @@ Rows 3, 5, and 13 show why the task asks for the position column:
 
 These rows fail in mode A. The work list for 009, in order of fix effort — cheapest first.
 
-| Rank | Site | Failure | Fix shape | Effort |
-|---|---|---|---|---|
-| 1 | `modules/universal/networking/netbird/default.nix:83` | `attribute 'default' missing` | Change the `let` to `config.kdn.security.secrets.sops.secrets.default.netbird or { }`. The next line already tests membership with `?`. | `or` fallback — one line |
-| 2 | `modules/universal/services/nextcloud-client-nixos/default.nix:18-20` | `attribute '"default/nextcloud/nixos/password"' missing` | Move the three reads behind the module's own `lib.mkIf config.kdn.security.secrets.allowed`, or add an assertion that states the requirement. | guard move — one block |
-| 3 | `modules/universal/networking/tailscale/default.nix:11,17` | `attribute 'default' missing`, raised from an option `type` | Make the `let` use `or { }`, and relax the `type` from `lib.types.enum` to `nullOr str` plus an assertion. An `enum` over discovered data cannot stay lazy. | lazier option type — two edits |
-| 4 | `hosts/etra/default.nix:389,391` | `attribute '"networking/ipv4/…"' missing` | Read through a helper that returns a placeholder path when the secret is absent, or move both definitions behind `lib.mkIf config.kdn.security.secrets.allowed`. | guard move — two lines |
-| 5 | `hosts/etra/default.nix:11` (read at `219,247,253,268,285`) | `attribute 'networking' missing` | The five reads feed `kdn.networking.router.networks.*` address and prefix strings. A guard cannot cover them, because the router needs the values. This host needs its personal network data in the personal data folder, and it needs a documented "no personal data, no router" state. | real restructure |
+| Rank | Site                                                                  | Failure                                                     | Fix shape                                                                                                                                                                                                                                                                                | Effort                         |
+| ---- | --------------------------------------------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| 1    | `modules/universal/networking/netbird/default.nix:83`                 | `attribute 'default' missing`                               | Change the `let` to `config.kdn.security.secrets.sops.secrets.default.netbird or { }`. The next line already tests membership with `?`.                                                                                                                                                  | `or` fallback — one line       |
+| 2    | `modules/universal/services/nextcloud-client-nixos/default.nix:18-20` | `attribute '"default/nextcloud/nixos/password"' missing`    | Move the three reads behind the module's own `lib.mkIf config.kdn.security.secrets.allowed`, or add an assertion that states the requirement.                                                                                                                                            | guard move — one block         |
+| 3    | `modules/universal/networking/tailscale/default.nix:11,17`            | `attribute 'default' missing`, raised from an option `type` | Make the `let` use `or { }`, and relax the `type` from `lib.types.enum` to `nullOr str` plus an assertion. An `enum` over discovered data cannot stay lazy.                                                                                                                              | lazier option type — two edits |
+| 4    | `hosts/etra/default.nix:389,391`                                      | `attribute '"networking/ipv4/…"' missing`                   | Read through a helper that returns a placeholder path when the secret is absent, or move both definitions behind `lib.mkIf config.kdn.security.secrets.allowed`.                                                                                                                         | guard move — two lines         |
+| 5    | `hosts/etra/default.nix:11` (read at `219,247,253,268,285`)           | `attribute 'networking' missing`                            | The five reads feed `kdn.networking.router.networks.*` address and prefix strings. A guard cannot cover them, because the router needs the values. This host needs its personal network data in the personal data folder, and it needs a documented "no personal data, no router" state. | real restructure               |
 
 Rank 5 is the only row that needs design work. Ranks 1 to 4 are mechanical.
 
@@ -207,36 +207,36 @@ Rank 5 is the only row that needs design work. Ranks 1 to 4 are mechanical.
 Four sites, not three. Every one interpolates `kdnConfig.self`, so the file must sit at the flake
 root.
 
-| # | Site | Entry |
-|---|---|---|
-| 1 | `modules/universal/profile/default-secrets/default.nix:21` | `default` |
-| 2 | `modules/universal/profile/default-secrets/default.nix:25` | `networking` |
-| 3 | `modules/universal/profile/default-secrets/default.nix:85` | `anonymization` |
-| 4 | `modules/universal/profile/remote-builders/default.nix:195` | `ssh` |
+| #   | Site                                                        | Entry           |
+| --- | ----------------------------------------------------------- | --------------- |
+| 1   | `modules/universal/profile/default-secrets/default.nix:21`  | `default`       |
+| 2   | `modules/universal/profile/default-secrets/default.nix:25`  | `networking`    |
+| 3   | `modules/universal/profile/default-secrets/default.nix:85`  | `anonymization` |
+| 4   | `modules/universal/profile/remote-builders/default.nix:195` | `ssh`           |
 
 ### Sites that pin a key layout
 
-| Site | Coupling |
-|---|---|
+| Site                                                          | Coupling                                                                                                 |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | `modules/universal/profile/default-secrets/default.nix:23-27` | `keyPrefix = "networking"` plus `basePath = "/run/configs"`, so the on-disk layout equals the key layout |
-| `modules/universal/profile/default-secrets/default.nix:83-88` | `keyPrefix = "anonymization"`, same on-disk rule |
-| `modules/universal/profile/remote-builders/default.nix:195` | `keyPrefix = "nix/ssh"`, plus the `id_` prefix and `.pub` suffix tests at lines 10-15 |
-| `modules/universal/profile/machine/basic/default.nix:113` | expects a `password` leaf under `networking/wlan/<ssid>` |
-| `modules/universal/profile/machine/basic/default.nix:98` | hardwires the derived file name `default.unattended.sops.env`, which repeats the sops file base name |
-| `modules/universal/services/iperf3/default.nix:37-64` | expects `rsa/priv`, `users.csv`, and a non-empty `users/` attrset |
-| `modules/universal/profile/default-secrets/default.nix:56` | expects `nix/access-tokens/<host>` |
-| `lib/sops/default.nix:37-39` | throws unless the file name ends with `.sops.yaml` |
+| `modules/universal/profile/default-secrets/default.nix:83-88` | `keyPrefix = "anonymization"`, same on-disk rule                                                         |
+| `modules/universal/profile/remote-builders/default.nix:195`   | `keyPrefix = "nix/ssh"`, plus the `id_` prefix and `.pub` suffix tests at lines 10-15                    |
+| `modules/universal/profile/machine/basic/default.nix:113`     | expects a `password` leaf under `networking/wlan/<ssid>`                                                 |
+| `modules/universal/profile/machine/basic/default.nix:98`      | hardwires the derived file name `default.unattended.sops.env`, which repeats the sops file base name     |
+| `modules/universal/services/iperf3/default.nix:37-64`         | expects `rsa/priv`, `users.csv`, and a non-empty `users/` attrset                                        |
+| `modules/universal/profile/default-secrets/default.nix:56`    | expects `nix/access-tokens/<host>`                                                                       |
+| `lib/sops/default.nix:37-39`                                  | throws unless the file name ends with `.sops.yaml`                                                       |
 
 ### Other sops files at the flake root
 
 These are outside the default file, and they show the same path coupling. 009 must move them too.
 
-| Site | File |
-|---|---|
-| `hosts/etra/default.nix:398,405` | `dns.sops.yaml` |
-| `hosts/oams/default.nix:315` | `llms.nonsensitive.sops.yaml` |
-| `hosts/brys/default.nix:419` | `llms.nonsensitive.sops.yaml` |
-| `hosts/brys/llm-minimal.nix:217` | `llms.nonsensitive.sops.yaml` |
+| Site                                                           | File                                                                       |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `hosts/etra/default.nix:398,405`                               | `dns.sops.yaml`                                                            |
+| `hosts/oams/default.nix:315`                                   | `llms.nonsensitive.sops.yaml`                                              |
+| `hosts/brys/default.nix:419`                                   | `llms.nonsensitive.sops.yaml`                                              |
+| `hosts/brys/llm-minimal.nix:217`                               | `llms.nonsensitive.sops.yaml`                                              |
 | `hosts/brys/default.nix:445`, `hosts/brys/llm-minimal.nix:241` | `hosts/brys/certs/llm.key.sops`, a raw encrypted blob under the flake root |
 
 ## Adjacent findings
@@ -244,11 +244,11 @@ These are outside the default file, and they show the same path coupling. 009 mu
 These consumers read a different sops file, and the mechanism is identical. They matter to 009
 because they break `etra` before any default-file row does.
 
-| Site | Key path | Guard | Mode A behaviour | Tag |
-|---|---|---|---|---|
-| `hosts/etra/default.nix:401` | `placeholders.dns.knot-dns.keys` (file `dns`) | none | fails; this is the first failure of `etra` in mode A | **verified** |
-| `hosts/etra/default.nix:408` | `secrets.dns-kea` (file `dns-kea`) | none | fails | **verified** |
-| `modules/universal/networking/router/default.nix:45,63` | `config.sops.templates."knot/sops-key.admin.conf"` | none | fails when Nix forces it; the template comes from `cfg.tsig.keyTpls`, which row 401 feeds | **verified** |
+| Site                                                    | Key path                                           | Guard | Mode A behaviour                                                                          | Tag          |
+| ------------------------------------------------------- | -------------------------------------------------- | ----- | ----------------------------------------------------------------------------------------- | ------------ |
+| `hosts/etra/default.nix:401`                            | `placeholders.dns.knot-dns.keys` (file `dns`)      | none  | fails; this is the first failure of `etra` in mode A                                      | **verified** |
+| `hosts/etra/default.nix:408`                            | `secrets.dns-kea` (file `dns-kea`)                 | none  | fails                                                                                     | **verified** |
+| `modules/universal/networking/router/default.nix:45,63` | `config.sops.templates."knot/sops-key.admin.conf"` | none  | fails when Nix forces it; the template comes from `cfg.tsig.keyTpls`, which row 401 feeds | **verified** |
 
 The `llms` file entries in `hosts/oams` and `hosts/brys` read **no** derived value at evaluation
 time. They declare the file and then use the on-disk paths under `/run/configs/llms/` at runtime.

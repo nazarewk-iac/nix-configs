@@ -38,13 +38,13 @@ decision. The method is the same as
 
 All five files verified: the sha256 on brys matches the Hugging Face LFS oid.
 
-| model | repo | file | size GB | sha256 match |
-|---|---|---|---|---|
-| Qwen3-Coder-30B-A3B-Instruct | `unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF` | `Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf` | 18.56 | yes |
-| Qwen3-VL-30B-A3B-Instruct | `Qwen/Qwen3-VL-30B-A3B-Instruct-GGUF` | `Qwen3VL-30B-A3B-Instruct-Q4_K_M.gguf` + `mmproj-...-F16.gguf` | 18.56 + 1.08 | yes |
-| Qwen3-Omni-30B-A3B-Instruct | `ggml-org/Qwen3-Omni-30B-A3B-Instruct-GGUF` | `Qwen3-Omni-30B-A3B-Instruct-Q4_K_M.gguf` + `mmproj-...-Q8_0.gguf` | 18.56 + 1.33 | yes |
-| QwQ-32B | `Qwen/QwQ-32B-GGUF` | `qwq-32b-q4_k_m.gguf` | 19.85 | yes |
-| Qwen3-VL-32B-Instruct | `Qwen/Qwen3-VL-32B-Instruct-GGUF` | `Qwen3VL-32B-Instruct-Q4_K_M.gguf` + `mmproj-...-F16.gguf` | 19.76 + 1.20 | yes |
+| model                        | repo                                        | file                                                               | size GB      | sha256 match |
+| ---------------------------- | ------------------------------------------- | ------------------------------------------------------------------ | ------------ | ------------ |
+| Qwen3-Coder-30B-A3B-Instruct | `unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF` | `Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf`                         | 18.56        | yes          |
+| Qwen3-VL-30B-A3B-Instruct    | `Qwen/Qwen3-VL-30B-A3B-Instruct-GGUF`       | `Qwen3VL-30B-A3B-Instruct-Q4_K_M.gguf` + `mmproj-...-F16.gguf`     | 18.56 + 1.08 | yes          |
+| Qwen3-Omni-30B-A3B-Instruct  | `ggml-org/Qwen3-Omni-30B-A3B-Instruct-GGUF` | `Qwen3-Omni-30B-A3B-Instruct-Q4_K_M.gguf` + `mmproj-...-Q8_0.gguf` | 18.56 + 1.33 | yes          |
+| QwQ-32B                      | `Qwen/QwQ-32B-GGUF`                         | `qwq-32b-q4_k_m.gguf`                                              | 19.85        | yes          |
+| Qwen3-VL-32B-Instruct        | `Qwen/Qwen3-VL-32B-Instruct-GGUF`           | `Qwen3VL-32B-Instruct-Q4_K_M.gguf` + `mmproj-...-F16.gguf`         | 19.76 + 1.20 | yes          |
 
 Notes:
 
@@ -60,13 +60,13 @@ Each throughput number is measured. `ngl 0` for all rows (CPU only). `RssFile` /
 `RssAnon` / `VmRSS` are shown in MiB. `SYS_used_MB` is the whole-system `used`
 after the load. `prompt_n` is about 968 in every row.
 
-| model | repo | file | size GB | arch | load_s | decode_tok_s | prefill_tok_s | RssFile/RssAnon/VmRSS MiB | SYS_MB | modality smoke test | load OK? | note |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Qwen3-Coder-30B-A3B | `unsloth/...-GGUF` | Q4_K_M | 18.56 | `qwen3moe` | 30.3 | 9.10 | 207.0 | 18148/3215/21363 | 22409 | code prompt OK (coherent Fibonacci, found the mutable-default bug) | yes | MoE; fastest prefill of the set |
-| Qwen3-VL-30B-A3B | `Qwen/Qwen3-VL-30B-A3B-Instruct-GGUF` | Q4_K_M + mmproj F16 | 18.56 + 1.08 | `qwen3vlmoe` | 30.3 | 15.70 | 167.2 | 18148/3220/21368 | 22183 | image OK ("blue at the top to yellow at the bottom"; "solid red circle") | yes | MoE VLM; best decode of the 30B set |
-| Qwen3-Omni-30B-A3B | `ggml-org/...-Instruct-GGUF` | Q4_K_M + mmproj Q8_0 | 18.56 + 1.33 | `qwen3vlmoe` | 31.3 | 8.78 | 168.6 | 18149/3248/21397 | 22458 | image OK ("solid red circle"); audio OK (exact transcript of an espeak-ng clip) | yes | audio + vision + text in one server |
-| QwQ-32B | `Qwen/QwQ-32B-GGUF` | Q4_K_M | 19.85 | `qwen2` | 35.3 | 1.65 | 84.7 | 19412/8460/27871 | 27571 | n/a (text) | yes | dense 32B; slow and heavy |
-| Qwen3-VL-32B | `Qwen/Qwen3-VL-32B-Instruct-GGUF` | Q4_K_M + mmproj F16 | 19.76 + 1.20 | `qwen3vl` | 34.3 | 2.16 | 81.5 | 19325/8464/27790 | 27374 | image OK ("solid red circle on a white background"; gradient described) | yes | dense VLM; slow decode |
+| model               | repo                                  | file                 | size GB      | arch         | load_s | decode_tok_s | prefill_tok_s | RssFile/RssAnon/VmRSS MiB | SYS_MB | modality smoke test                                                             | load OK? | note                                |
+| ------------------- | ------------------------------------- | -------------------- | ------------ | ------------ | ------ | ------------ | ------------- | ------------------------- | ------ | ------------------------------------------------------------------------------- | -------- | ----------------------------------- |
+| Qwen3-Coder-30B-A3B | `unsloth/...-GGUF`                    | Q4_K_M               | 18.56        | `qwen3moe`   | 30.3   | 9.10         | 207.0         | 18148/3215/21363          | 22409  | code prompt OK (coherent Fibonacci, found the mutable-default bug)              | yes      | MoE; fastest prefill of the set     |
+| Qwen3-VL-30B-A3B    | `Qwen/Qwen3-VL-30B-A3B-Instruct-GGUF` | Q4_K_M + mmproj F16  | 18.56 + 1.08 | `qwen3vlmoe` | 30.3   | 15.70        | 167.2         | 18148/3220/21368          | 22183  | image OK ("blue at the top to yellow at the bottom"; "solid red circle")        | yes      | MoE VLM; best decode of the 30B set |
+| Qwen3-Omni-30B-A3B  | `ggml-org/...-Instruct-GGUF`          | Q4_K_M + mmproj Q8_0 | 18.56 + 1.33 | `qwen3vlmoe` | 31.3   | 8.78         | 168.6         | 18149/3248/21397          | 22458  | image OK ("solid red circle"); audio OK (exact transcript of an espeak-ng clip) | yes      | audio + vision + text in one server |
+| QwQ-32B             | `Qwen/QwQ-32B-GGUF`                   | Q4_K_M               | 19.85        | `qwen2`      | 35.3   | 1.65         | 84.7          | 19412/8460/27871          | 27571  | n/a (text)                                                                      | yes      | dense 32B; slow and heavy           |
+| Qwen3-VL-32B        | `Qwen/Qwen3-VL-32B-Instruct-GGUF`     | Q4_K_M + mmproj F16  | 19.76 + 1.20 | `qwen3vl`    | 34.3   | 2.16         | 81.5          | 19325/8464/27790          | 27374  | image OK ("solid red circle on a white background"; gradient described)         | yes      | dense VLM; slow decode              |
 
 Reference CPU values from the same class: `qwen3.8-27b` 2.45 decode / 78 prefill;
 `north-mini-code-1.0` 18.0 / 178; `lfm2.5-24b-a2b` 24.1 / 280.

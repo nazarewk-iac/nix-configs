@@ -19,11 +19,11 @@ could score a candidate framework.
 A probe of the four routes into `imports` corrected the claim. Two routes work and two recurse
 ([research.md](research.md) § "The four routes"):
 
-| Route | Result |
-|---|---|
-| module `config` → `imports` | infinite recursion |
-| `_module.args` → `imports` | infinite recursion |
-| `specialArgs` → `imports` | works |
+| Route                                | Result                       |
+| ------------------------------------ | ---------------------------- |
+| module `config` → `imports`          | infinite recursion           |
+| `_module.args` → `imports`           | infinite recursion           |
+| `specialArgs` → `imports`            | works                        |
 | `specialArgs` false, poisoned module | the module stays unevaluated |
 
 nixpkgs names the cause itself, at `lib/modules.nix:269`. So `modules/meta` is not the capability.
@@ -53,11 +53,11 @@ evaluation universe, and the parent chain.
 
 ### The three kinds of driving data
 
-| Kind | Sites | The question it answers |
-|---|---|---|
-| `features.*` from `hosts/<host>/meta.json` | 3 | does this machine have that hardware? |
-| `moduleType` | 5 | which evaluation universe am I in? |
-| `parent == null` | 1 | am I a standalone home-manager evaluation? |
+| Kind                                       | Sites | The question it answers                    |
+| ------------------------------------------ | ----- | ------------------------------------------ |
+| `features.*` from `hosts/<host>/meta.json` | 3     | does this machine have that hardware?      |
+| `moduleType`                               | 5     | which evaluation universe am I in?         |
+| `parent == null`                           | 1     | am I a standalone home-manager evaluation? |
 
 A framework must answer all three. den answers `moduleType` for free, because it names one class
 per target.
@@ -67,11 +67,11 @@ per target.
 `checks/conditional-imports.nix` plus two probe files in `checks/conditional-imports/`. It has
 three parts:
 
-| Part | Assertions | What it proves |
-|---|---|---|
-| `conditional-imports-mechanism` (`:87-119`) | 2 | the `specialArgs` route imports the module, and the excluded module stays unevaluated |
-| `conditional-imports-repository` (`:183-213`) | 3 | `briv` gets all three rpi4 markers, `oams` gets none, and the flag comes from `meta.json` |
-| `.recursion` (`:123-130`) | 2 | the `config` route and the `_module.args` route both recurse |
+| Part                                          | Assertions | What it proves                                                                            |
+| --------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------- |
+| `conditional-imports-mechanism` (`:87-119`)   | 2          | the `specialArgs` route imports the module, and the excluded module stays unevaluated     |
+| `conditional-imports-repository` (`:183-213`) | 3          | `briv` gets all three rpi4 markers, `oams` gets none, and the flag comes from `meta.json` |
+| `.recursion` (`:123-130`)                     | 2          | the `config` route and the `_module.args` route both recurse                              |
 
 The recursion part is an app, not a check, because a build sandbox has no daemon. It reaches the
 two probe files through `passthru.recursion` on the mechanism check (`:216-223`).

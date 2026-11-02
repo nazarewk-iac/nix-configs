@@ -21,12 +21,12 @@ One stdio connection. ~14 meta-tools regardless of backend count. Backends are m
 
 ## Key files
 
-| Path | Purpose |
-|---|---|
-| `modules/slots/mcp/default.nix` | Slot: generates YAML, registers with Claude Code |
-| `modules/slots/mcp/basic-memory/default.nix` | basic-memory KB submodule |
-| `.devenv/mcp-gateway.yaml` | Symlink → generated config in `/nix/store/` (read-only) |
-| `devenv.nix` | Where backends are declared |
+| Path                                         | Purpose                                                 |
+| -------------------------------------------- | ------------------------------------------------------- |
+| `modules/slots/mcp/default.nix`              | Slot: generates YAML, registers with Claude Code        |
+| `modules/slots/mcp/basic-memory/default.nix` | basic-memory KB submodule                               |
+| `.devenv/mcp-gateway.yaml`                   | Symlink → generated config in `/nix/store/` (read-only) |
+| `devenv.nix`                                 | Where backends are declared                             |
 
 ## Adding a backend
 
@@ -46,6 +46,7 @@ After adding: rebuild devenv → re-enter shell → `gateway_kill_server` + `gat
 ## Reload without session restart
 
 Use mcp-gateway meta-tools inside Claude Code:
+
 ```
 gateway_kill_server <name>
 gateway_revive_server <name>

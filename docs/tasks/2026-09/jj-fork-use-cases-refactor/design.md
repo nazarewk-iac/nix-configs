@@ -241,7 +241,7 @@ Real failure modes to encode (verified from history):
   without `-m` opened `hx` and exited 101 (08-26). Every `describe`/`split`/`squash` passes
   `-m 'msg'`; set `JJ_EDITOR=true` for a `split` file-selection step.
 - **Squash form.** Use `jj squash --from <src> --into <dst> -- <files>`. Never `jj squash -r @
-  --into` (mutually exclusive flags — a real error, 08-07).
+--into` (mutually exclusive flags — a real error, 08-07).
 - **On a fork update, do not hand-place bookmarks.** The human's worst thrash — repeated `jj undo`
   of their own placement (08-04, 08-07) — was manual bookmark placement. Run one placed
   `jj split -A upstream-tip -B fork-tip -m '…' -- <files>` and let `jj sync-remotes` set the
@@ -302,8 +302,8 @@ layer (user, git config off) always stays underneath.
   `JJ_FORK_CONFIG_TOML` into a `runCommand` (jujutsu+git+python3-pytest, `HOME=$(mktemp -d)`), like
   `kdn-slug`. Run one check: `nix build .#checks.<system>.jj-experiments-pytest`.
 - Interactive: `checks/jj-experiments/devenv.{yaml,nix}` with `inputs.nix-configs.url =
-  "path:../.."` and a `mkSlots { kdn.jj.fork.remote="fork"; upstream.remote="upstream";
-  deniedFilePatterns=["PLACEHOLDER-SENSITIVE" ...]; }` import. `devenv shell`, then
+"path:../.."` and a `mkSlots { kdn.jj.fork.remote="fork"; upstream.remote="upstream";
+deniedFilePatterns=["PLACEHOLDER-SENSITIVE" ...]; }` import. `devenv shell`, then
   `pytest -k <case>`.
 
 The test reads the aliases from `JJ_FORK_CONFIG_TOML` in both modes. The test file is the same in
@@ -472,7 +472,7 @@ record each as a documented analysis idiom. Sensitive names stay placeholders.
   `jj new --insert-after upstream-tip --insert-before fork-tip -m '...'`.
 - Subtree rebase by revset: `jj rebase -s 'roots(to-rebase)' -d upstream-tip`.
 - Build or rebuild the dual-parent merge: `jj new fork-tip upstream-tip`, `jj new -d main -d
-  upstream`.
+upstream`.
 - Repoint or de-duplicate merge parents: `jj rebase -r <merge> -d P1 -d P2`;
   `jj simplify-parents -r <rev>`.
 - Placed squash to a named target with a pathspec: `jj squash --from @ --into <rev> -- <files>`.
@@ -506,7 +506,7 @@ record each as a documented analysis idiom. Sensitive names stay placeholders.
 **Introspection / config.**
 
 - Discover repo aliases before composing a revset: `jj config list --repo | grep -iE
-  'revset-aliases|aliases'`; `jj config get aliases.<name>`.
+'revset-aliases|aliases'`; `jj config get aliases.<name>`.
 - Probe flag availability before a rewrite: `jj rebase --help | grep -i immutable`;
   `jj split --help | grep -iE 'insert|destination'`.
 

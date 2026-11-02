@@ -14,13 +14,13 @@ hard to find. Every fact below is measured on the Darwin workstation on 2026-09-
 
 ## Two levers, fully independent
 
-| Lever | Reads `ssh_config`? | Reads `$SSH_AUTH_SOCK`? | Steers |
-|---|---|---|---|
-| `ssh` | yes | yes, unless `IdentityAgent` overrides it | authentication |
-| `ssh-keygen -Y sign` | **no** | yes, and `-f` also works | signing |
-| `op-ssh-sign` | no | **no** | signing |
-| `git` (`gpg.ssh.program`) | — | — | which signer runs |
-| `jj` (`signing.backends.ssh.program`) | — | — | which signer runs |
+| Lever                                 | Reads `ssh_config`? | Reads `$SSH_AUTH_SOCK`?                  | Steers            |
+| ------------------------------------- | ------------------- | ---------------------------------------- | ----------------- |
+| `ssh`                                 | yes                 | yes, unless `IdentityAgent` overrides it | authentication    |
+| `ssh-keygen -Y sign`                  | **no**              | yes, and `-f` also works                 | signing           |
+| `op-ssh-sign`                         | no                  | **no**                                   | signing           |
+| `git` (`gpg.ssh.program`)             | —                   | —                                        | which signer runs |
+| `jj` (`signing.backends.ssh.program`) | —                   | —                                        | which signer runs |
 
 `ssh-keygen` holds no `ssh_config` string in the binary. `-Y sign` accepts no config-file flag. So
 `ssh_config` cannot change or repair signing. `op-ssh-sign` talks to the password manager
@@ -72,7 +72,7 @@ application over its own channel, so the agent socket cannot reach it either.
     (`lib/src/ssh_signing.rs`, `expand_home_path`). A **relative** `signing.key` is still read as
     inline key material, so an absolute path stays the safe choice.
 16. `GIT_CONFIG_GLOBAL` replaces the whole global file. An `[include] path = <the real global
-    file>` brings the credential helpers and the diff settings back. A **missing** include target
+file>` brings the credential helpers and the diff settings back. A **missing** include target
     is silently ignored — measured in a throwaway repository.
 17. A plain `ssh-keygen` route verifies end to end. In a throwaway `/tmp` repository, with a
     throwaway key, `git log --show-signature` reported `Good "git" signature`, and

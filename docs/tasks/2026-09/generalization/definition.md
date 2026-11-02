@@ -19,12 +19,12 @@ reads this hub plus one task file.
 
 The repo holds four module trees. Re-measured on 2026-09-11:
 
-| Tree | Files | LOC | Nature |
-|---|---|---|---|
-| `modules/meta/` | 3 | 363 | A separate `lib.evalModules` universe (`class = "kdn-meta"`). The repo evaluates it **before** NixOS/Darwin/HM, then injects it as `specialArgs.kdnConfig`. |
-| `modules/universal/` | 194 | 20,370 | Every context loads it. The `kdnConfig.util.*` guards scope it. |
-| `modules/slots/` | 19 slots + 1 loader | 3,686 | Self-contained by rule. Emits into 5 `deferredModule` targets. `find` returns 20 `default.nix` files; `modules/slots/default.nix` is the recursive loader, not a slot. |
-| `modules/den/` | 26 | 5,815 | The den route: 21 aspects, a loader, the classes and the flake module. It is additive — no file of the other three trees changed. |
+| Tree                 | Files               | LOC    | Nature                                                                                                                                                                 |
+| -------------------- | ------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `modules/meta/`      | 3                   | 363    | A separate `lib.evalModules` universe (`class = "kdn-meta"`). The repo evaluates it **before** NixOS/Darwin/HM, then injects it as `specialArgs.kdnConfig`.            |
+| `modules/universal/` | 194                 | 20,370 | Every context loads it. The `kdnConfig.util.*` guards scope it.                                                                                                        |
+| `modules/slots/`     | 19 slots + 1 loader | 3,686  | Self-contained by rule. Emits into 5 `deferredModule` targets. `find` returns 20 `default.nix` files; `modules/slots/default.nix` is the recursive loader, not a slot. |
+| `modules/den/`       | 26                  | 5,815  | The den route: 21 aspects, a loader, the classes and the flake module. It is additive — no file of the other three trees changed.                                      |
 
 `modules/slots/` is already close to shareable. `modules/universal/` and `modules/meta/` carry
 personal data: homelab topologies, sops files, YubiKey serials, WiFi SSIDs, real password hashes.
@@ -34,36 +34,36 @@ in anybody's nix-darwin. Then an adopter builds multi-arch containers in their o
 
 ## Decisions
 
-| Question | Decision |
-|---|---|
-| Term for anybody but the creator | **external adopter**; their repo is the **adopter repo**. |
-| Where code lives | **ONE public repo.** Do not add a separate library repo. |
-| Where personal data lives | **ONE folder.** Modules reference it from there. This supersedes the scattered `kdn-*.nix`-next-to-the-module precedent. |
-| Evaluator | **Lix 2.95.2.** Assume no CppNix and no Determinate Nix. |
-| Adopter API | A call to a **minimal `mkSlots`** is fine. The requirement: a slot does not depend on the other module types. A slot does not need to become a plain module. |
-| Retrofit `modules/universal` into slots | **No.** See [Direction](#direction-slots-or-den). |
+| Question                                              | Decision                                                                                                                                                                                                        |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Term for anybody but the creator                      | **external adopter**; their repo is the **adopter repo**.                                                                                                                                                       |
+| Where code lives                                      | **ONE public repo.** Do not add a separate library repo.                                                                                                                                                        |
+| Where personal data lives                             | **ONE folder.** Modules reference it from there. This supersedes the scattered `kdn-*.nix`-next-to-the-module precedent.                                                                                        |
+| Evaluator                                             | **Lix 2.95.2.** Assume no CppNix and no Determinate Nix.                                                                                                                                                        |
+| Adopter API                                           | A call to a **minimal `mkSlots`** is fine. The requirement: a slot does not depend on the other module types. A slot does not need to become a plain module.                                                    |
+| Retrofit `modules/universal` into slots               | **No.** See [Direction](#direction-slots-or-den).                                                                                                                                                               |
 | Migrate `modules/universal` onto the chosen framework | **Yes.** [014](014-machine-layer-migration/definition.md) owns it. This is a different question from the row above: that row rejects `modules/slots/` as the target; this row migrates onto whatever 006 picks. |
-| den | Evaluate it **early**, before any reimplementation work. |
+| den                                                   | Evaluate it **early**, before any reimplementation work.                                                                                                                                                        |
 
 ## Checkpoint index
 
-| # | Task file | Goal |
-|---|---|---|
-| 001 | [001-slots-sharing-readiness](001-slots-sharing-readiness/definition.md) | An adopter consumes `modules/slots` today. Fix the one bug that leaks private content. |
-| 002 | [002-rosetta-builder-adopter-dropin](002-rosetta-builder-adopter-dropin/definition.md) | `rosetta-builder` works in an adopter's nix-darwin through a minimal `mkSlots`. |
-| 003 | [003-nix-darwin-getting-started](003-nix-darwin-getting-started/definition.md) | A runbook from zero to a multi-arch build, with real pain points. |
-| 004 | [004-den-spike](004-den-spike/definition.md) | Decide whether den can be the target framework. **Direction gate.** |
-| 005 | [005-conditional-imports-requirement](005-conditional-imports-requirement/definition.md) | State what `modules/meta` solves, as a testable requirement. |
-| 006 | [006-direction-decision](006-direction-decision/definition.md) | Choose slots or den as the reimplementation target. Gate: 004 + 005. |
-| 007 | [007-depersonalize-slots](007-depersonalize-slots/definition.md) | Lift the creator's personal defaults and opinions out of shared slot options. |
-| 008 | [008-sops-default-inventory](008-sops-default-inventory/definition.md) | An exact list of what depends on the default sops file, plus its key schema. |
-| 009 | [009-personal-data-folder](009-personal-data-folder/definition.md) | One folder holds all personal data. The tree evaluates without it. |
-| 010 | [010-flake-input-overhead](010-flake-input-overhead/definition.md) | Research, then maybe spike, ways to make a 108-node lock cheaper. |
-| 011 | [011-whole-tree-store-copies](011-whole-tree-store-copies/definition.md) | Replace a whole-repository store copy with a single-file reference, so an unrelated edit stops a rebuild. |
-| 012 | [012-darwin-host-clone](012-darwin-host-clone/definition.md) | A reference map that sizes a den clone of the darwin workstation, plus three NixOS follow-on hosts and the parity method. |
-| 013 | [013-opt-in-boundaries](013-opt-in-boundaries/definition.md) | 66 measured rows: every item an adopter wants to switch off and today cannot, with one verdict each. |
-| 014 | [014-machine-layer-migration](014-machine-layer-migration/definition.md) | Migrate the machine layer — `modules/universal` plus `modules/meta` — onto the chosen framework, in measured batches. Gate: 005 + 006 + 009. |
-| 015 | [015-den-check-harness-platforms](015-den-check-harness-platforms/definition.md) | Give the den check harness a second platform, and lower three plain-priority values to `lib.mkDefault`. It blocks `hw-rpi4` and any aspect that owns the boot loader. |
+| #   | Task file                                                                                | Goal                                                                                                                                                                  |
+| --- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 001 | [001-slots-sharing-readiness](001-slots-sharing-readiness/definition.md)                 | An adopter consumes `modules/slots` today. Fix the one bug that leaks private content.                                                                                |
+| 002 | [002-rosetta-builder-adopter-dropin](002-rosetta-builder-adopter-dropin/definition.md)   | `rosetta-builder` works in an adopter's nix-darwin through a minimal `mkSlots`.                                                                                       |
+| 003 | [003-nix-darwin-getting-started](003-nix-darwin-getting-started/definition.md)           | A runbook from zero to a multi-arch build, with real pain points.                                                                                                     |
+| 004 | [004-den-spike](004-den-spike/definition.md)                                             | Decide whether den can be the target framework. **Direction gate.**                                                                                                   |
+| 005 | [005-conditional-imports-requirement](005-conditional-imports-requirement/definition.md) | State what `modules/meta` solves, as a testable requirement.                                                                                                          |
+| 006 | [006-direction-decision](006-direction-decision/definition.md)                           | Choose slots or den as the reimplementation target. Gate: 004 + 005.                                                                                                  |
+| 007 | [007-depersonalize-slots](007-depersonalize-slots/definition.md)                         | Lift the creator's personal defaults and opinions out of shared slot options.                                                                                         |
+| 008 | [008-sops-default-inventory](008-sops-default-inventory/definition.md)                   | An exact list of what depends on the default sops file, plus its key schema.                                                                                          |
+| 009 | [009-personal-data-folder](009-personal-data-folder/definition.md)                       | One folder holds all personal data. The tree evaluates without it.                                                                                                    |
+| 010 | [010-flake-input-overhead](010-flake-input-overhead/definition.md)                       | Research, then maybe spike, ways to make a 108-node lock cheaper.                                                                                                     |
+| 011 | [011-whole-tree-store-copies](011-whole-tree-store-copies/definition.md)                 | Replace a whole-repository store copy with a single-file reference, so an unrelated edit stops a rebuild.                                                             |
+| 012 | [012-darwin-host-clone](012-darwin-host-clone/definition.md)                             | A reference map that sizes a den clone of the darwin workstation, plus three NixOS follow-on hosts and the parity method.                                             |
+| 013 | [013-opt-in-boundaries](013-opt-in-boundaries/definition.md)                             | 66 measured rows: every item an adopter wants to switch off and today cannot, with one verdict each.                                                                  |
+| 014 | [014-machine-layer-migration](014-machine-layer-migration/definition.md)                 | Migrate the machine layer — `modules/universal` plus `modules/meta` — onto the chosen framework, in measured batches. Gate: 005 + 006 + 009.                          |
+| 015 | [015-den-check-harness-platforms](015-den-check-harness-platforms/definition.md)         | Give the den check harness a second platform, and lower three plain-priority values to `lib.mkDefault`. It blocks `hw-rpi4` and any aspect that owns the boot loader. |
 
 Four checkpoints are `done`: 003, 005, 008 and 010. Each carries a `done.md`. Two are
 `in-progress`: 004 and 015. 012 is `not-scheduled` — it is a reference map, not a schedule. The
@@ -169,20 +169,20 @@ Severity is from an adopter's point of view. The listed checkpoint fixes the gap
 7 down to Low with one item each left. Gaps 10 and 11 keep their "do not change" verdict. So gap 5
 and gap 12 are the only open gaps with an owning checkpoint.
 
-| # | Gap | Severity | Owner |
-|---|---|---|---|
-| 1 | `pre-push.sh` remote guard is inverted — it permits private content to the public remote | **P0** — **fixed 2026-09-10**, plus 15 tests | 001 |
-| 2 | Nothing documents the overlay requirement `overlays = [ inputs.nix-configs.overlays.packages ]`; 7 slots use `pkgs.kdn.*` | High — **fixed 2026-09-10** in `docs/slots-for-adopters.md` and `templates/adopter/` | 001 |
-| 3 | No adopter entry point — no template, no example `devenv.yaml`/`devenv.nix`, no adopter-facing doc | High — **fixed 2026-09-10**: `templates/adopter/` plus `docs/slots-for-adopters.md` | 001 |
-| 4 | `devenv.yaml` pins the adopter's nixpkgs to the creator's nixpkgs fork through `follows: nix-configs/nixpkgs` | High — **fixed 2026-09-10**: the template points `nixpkgs` at nixos-unstable and says why | 001 |
-| 5 | Personal data in the `data/` folder, which the slots read — `data/slots-ssh-access.nix`, 190 LOC of hosts, LAN IPs, WAN ports, `*.kdn.im` zones | Medium — the folder consolidation of 009 partly landed 2026-09-11: `data/` now holds 10 personal-data files, and the tree still needs them | 007, 009 |
-| 6 | Personal defaults in shared options — the `jj` upstream remote name, the always-blocked message pattern, `opencode`'s hardwired provider, `llm` examples with homelab FQDNs, and `identityAgentPatterns` (see below) | Low — **4 of 5 fixed 2026-09-11**: the upstream remote defaults to `origin`, the blocked-pattern list is empty, `opencode` names no provider, and the `llm` examples use `*.example.invalid`. Only `identityAgentPatterns` remains | 007 |
-| 7 | Slots ship the creator's opinions — `kdn.jj` installs a jj-only mandate as an agent rule; 5 slots read repo content through the whole-tree store path | Low — **the opinion is opt-in since 2026-09-11**: `installAgentRules` gates the rule, the `jj-expert` subagent and the instruction files on all 5 slots, and it defaults to false. The whole-tree read stays; 011 owns it | 007, 011 |
-| 8 | Two slots default to `enable = true` (`mcp/snoop`, `mcp/pretty-print`), against this repo's own side-effect-free rule | **fixed 2026-09-10** — both options read `lib.mkEnableOption`, and `devenv.nix` restores the two `true` values | 007 |
-| 9 | No CI check proves that a slot evaluates standalone and avoids universal options — `.agents/rules/slots-standalone.md` states the rule, nothing enforces it | **fixed 2026-09-11** — `checks/standalone.nix` runs a source scan plus an option-tree walk, for the slots **and** the aspects. `checks/default.nix` registers it | 001 |
-| 10 | `kdn.*` is a personal namespace on a shared library | Low — **do not rename**, the churn buys nothing | — |
-| 11 | No slot assigns the `users` slot target | Low — **keep it** | — |
-| 12 | Lock size: 108 nodes / 62 root inputs reach an adopter's lock as text | Low — the **fetch** is gated since 2026-09-11; only the text remains | 010 |
+| #   | Gap                                                                                                                                                                                                                  | Severity                                                                                                                                                                                                                           | Owner    |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 1   | `pre-push.sh` remote guard is inverted — it permits private content to the public remote                                                                                                                             | **P0** — **fixed 2026-09-10**, plus 15 tests                                                                                                                                                                                       | 001      |
+| 2   | Nothing documents the overlay requirement `overlays = [ inputs.nix-configs.overlays.packages ]`; 7 slots use `pkgs.kdn.*`                                                                                            | High — **fixed 2026-09-10** in `docs/slots-for-adopters.md` and `templates/adopter/`                                                                                                                                               | 001      |
+| 3   | No adopter entry point — no template, no example `devenv.yaml`/`devenv.nix`, no adopter-facing doc                                                                                                                   | High — **fixed 2026-09-10**: `templates/adopter/` plus `docs/slots-for-adopters.md`                                                                                                                                                | 001      |
+| 4   | `devenv.yaml` pins the adopter's nixpkgs to the creator's nixpkgs fork through `follows: nix-configs/nixpkgs`                                                                                                        | High — **fixed 2026-09-10**: the template points `nixpkgs` at nixos-unstable and says why                                                                                                                                          | 001      |
+| 5   | Personal data in the `data/` folder, which the slots read — `data/slots-ssh-access.nix`, 190 LOC of hosts, LAN IPs, WAN ports, `*.kdn.im` zones                                                                      | Medium — the folder consolidation of 009 partly landed 2026-09-11: `data/` now holds 10 personal-data files, and the tree still needs them                                                                                         | 007, 009 |
+| 6   | Personal defaults in shared options — the `jj` upstream remote name, the always-blocked message pattern, `opencode`'s hardwired provider, `llm` examples with homelab FQDNs, and `identityAgentPatterns` (see below) | Low — **4 of 5 fixed 2026-09-11**: the upstream remote defaults to `origin`, the blocked-pattern list is empty, `opencode` names no provider, and the `llm` examples use `*.example.invalid`. Only `identityAgentPatterns` remains | 007      |
+| 7   | Slots ship the creator's opinions — `kdn.jj` installs a jj-only mandate as an agent rule; 5 slots read repo content through the whole-tree store path                                                                | Low — **the opinion is opt-in since 2026-09-11**: `installAgentRules` gates the rule, the `jj-expert` subagent and the instruction files on all 5 slots, and it defaults to false. The whole-tree read stays; 011 owns it          | 007, 011 |
+| 8   | Two slots default to `enable = true` (`mcp/snoop`, `mcp/pretty-print`), against this repo's own side-effect-free rule                                                                                                | **fixed 2026-09-10** — both options read `lib.mkEnableOption`, and `devenv.nix` restores the two `true` values                                                                                                                     | 007      |
+| 9   | No CI check proves that a slot evaluates standalone and avoids universal options — `.agents/rules/slots-standalone.md` states the rule, nothing enforces it                                                          | **fixed 2026-09-11** — `checks/standalone.nix` runs a source scan plus an option-tree walk, for the slots **and** the aspects. `checks/default.nix` registers it                                                                   | 001      |
+| 10  | `kdn.*` is a personal namespace on a shared library                                                                                                                                                                  | Low — **do not rename**, the churn buys nothing                                                                                                                                                                                    | —        |
+| 11  | No slot assigns the `users` slot target                                                                                                                                                                              | Low — **keep it**                                                                                                                                                                                                                  | —        |
+| 12  | Lock size: 108 nodes / 62 root inputs reach an adopter's lock as text                                                                                                                                                | Low — the **fetch** is gated since 2026-09-11; only the text remains                                                                                                                                                               | 010      |
 
 ### Gap 1 was verified, then fixed
 
@@ -334,15 +334,15 @@ input and enables one thing. Create it under `/tmp`. Never create it inside this
 
 ## Verification
 
-| Level | Command | When |
-|---|---|---|
-| Option value | `devenv eval '<option.path>'` | per edit |
-| Evaluation | `nix flake check` | per checkpoint |
-| Adopter shape | Pattern V3 scratch flake | 001, 002 |
-| No-op proof | Pattern V1 option-value probe | 007, 009, 014 |
-| Hook behaviour | `checks/jj-experiments` per-remote cases | 001 |
-| Format | `nix run .#kdn-nix-fmt --` | before each commit |
-| Adopter safety | Pattern V2 | 001, 002, 009 |
+| Level          | Command                                  | When               |
+| -------------- | ---------------------------------------- | ------------------ |
+| Option value   | `devenv eval '<option.path>'`            | per edit           |
+| Evaluation     | `nix flake check`                        | per checkpoint     |
+| Adopter shape  | Pattern V3 scratch flake                 | 001, 002           |
+| No-op proof    | Pattern V1 option-value probe            | 007, 009, 014      |
+| Hook behaviour | `checks/jj-experiments` per-remote cases | 001                |
+| Format         | `nix run .#kdn-nix-fmt --`               | before each commit |
+| Adopter safety | Pattern V2                               | 001, 002, 009      |
 
 Darwin hosts build on a Darwin machine, or through `remote=`. Do not run
 `nom build .#darwinConfigurations.<host>.system` on Linux.
@@ -375,10 +375,10 @@ Darwin hosts build on a Darwin machine, or through `remote=`. Do not run
 Two research passes serve 008 and 010. Both are read-only. Neither changes a module. Each delivers
 a `.research.md` sibling next to its task file. A third pass is complete and now has an owning task.
 
-| Research | Feeds | Scope |
-|---|---|---|
-| Default sops file inventory | [008](008-sops-default-inventory/definition.md) | The four lists in 008 |
-| Lix flake laziness | [010](010-flake-input-overhead/definition.md) | Q1-Q4 in 010 |
+| Research                                               | Feeds                                                      | Scope                                                                |
+| ------------------------------------------------------ | ---------------------------------------------------------- | -------------------------------------------------------------------- |
+| Default sops file inventory                            | [008](008-sops-default-inventory/definition.md)            | The four lists in 008                                                |
+| Lix flake laziness                                     | [010](010-flake-input-overhead/definition.md)              | Q1-Q4 in 010                                                         |
 | Darwin VM testing — **done**, two `.research.md` files | [darwin-vm-testing.md](../darwin-vm-testing/definition.md) | A guest loop for the activation-level exit tests of 002, 003 and 009 |
 
 The Darwin VM testing task carried one finding that changed this hub: a fresh-guest Darwin build

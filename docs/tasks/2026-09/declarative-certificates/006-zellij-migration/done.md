@@ -79,11 +79,11 @@ file was created.
 
 The declaration and the service read the two paths on all four hosts. Each command exits 0:
 
-| Command | Result |
-|---|---|
-| `nix eval --no-eval-cache --json '.#nixosConfigurations.<host>.config.kdn.certificates.certs.zellij-web'` | the exact leaf values, with `certPath` a store path and `keyPath` `/run/secrets/kdn/certificates/zellij-web.key` |
+| Command                                                                                                                                           | Result                                                                                                               |
+| ------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `nix eval --no-eval-cache --json '.#nixosConfigurations.<host>.config.kdn.certificates.certs.zellij-web'`                                         | the exact leaf values, with `certPath` a store path and `keyPath` `/run/secrets/kdn/certificates/zellij-web.key`     |
 | `nix eval --no-eval-cache --json '.#nixosConfigurations.<host>.config.home-manager.users.kdn.systemd.user.services.zellij-web.Service.ExecStart'` | `… --cert /nix/store/<hash>-source/hosts/<host>/certs/zellij.pub --key /run/secrets/kdn/certificates/zellij-web.key` |
-| `nix run .#kdn-certs -- plan --flake .` | four `zellij-web  kdn  tls-server  missing` rows |
+| `nix run .#kdn-certs -- plan --flake .`                                                                                                           | four `zellij-web  kdn  tls-server  missing` rows                                                                     |
 
 The toplevel `drvPath` is **pending on the real key files**. The exact command
 
@@ -104,8 +104,8 @@ at evaluation time. The migration introduces the `sops.secrets` entry, so the to
 `.sops` file that `kdn-certs apply` will write. With a temporary, uncommitted
 `sops.validateSopsFiles = false` override, all four toplevels evaluate:
 
-| Host | `drvPath` (validation off) |
-|---|---|
+| Host | `drvPath` (validation off)                                                                 |
+| ---- | ------------------------------------------------------------------------------------------ |
 | oams | `/nix/store/ki295xi992spcn26g2459qih52gwgfi0-nixos-system-oams-26.11.20260908.d6524aa.drv` |
 | brys | `/nix/store/ahr1agx0aj3xwy8l0vb1cp62w0kkycr9-nixos-system-brys-26.11.20260908.d6524aa.drv` |
 | etra | `/nix/store/p6gh63aba3j70186ywpy5ypvzpjpklyb-nixos-system-etra-26.11.20260908.d6524aa.drv` |

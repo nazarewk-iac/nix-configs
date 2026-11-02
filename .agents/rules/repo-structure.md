@@ -34,18 +34,19 @@ nix-configs/
 
 ## Infrastructure files
 
-| File | Purpose |
-|---|---|
-| `modules/universal/default.nix` | Entry point: auto-loader, HM injection, platform-specific flake input imports |
-| `modules/universal/_options.nix` | Declares `kdn.{enable, hostName, nixConfig}` — loaded in both host and HM contexts |
-| `modules/universal/_hm-bootstrap.nix` | HM-specific bootstrap (nixpkgs overlays/config bridging from parent, xdg, systemd) |
-| `modules/meta/default.nix` | Meta-module: defines `kdnConfig` structure, `util.*` guards, `mkSubmodule`, `loadModules` |
+| File                                  | Purpose                                                                                   |
+| ------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `modules/universal/default.nix`       | Entry point: auto-loader, HM injection, platform-specific flake input imports             |
+| `modules/universal/_options.nix`      | Declares `kdn.{enable, hostName, nixConfig}` — loaded in both host and HM contexts        |
+| `modules/universal/_hm-bootstrap.nix` | HM-specific bootstrap (nixpkgs overlays/config bridging from parent, xdg, systemd)        |
+| `modules/meta/default.nix`            | Meta-module: defines `kdnConfig` structure, `util.*` guards, `mkSubmodule`, `loadModules` |
 
 ## Host configurations
 
 Hosts are in `hosts/<name>/` with `meta.json` (moduleType, system, features) + `default.nix`.
 
 Build commands:
+
 ```bash
 ~/dev/github.com/nazarewk-iac/nix-configs/nixos-rebuild.sh build              # local NixOS host
 ~/dev/github.com/nazarewk-iac/nix-configs/nixos-rebuild.sh build remote=oams  # remote NixOS host
@@ -79,6 +80,7 @@ Two things `devenv.nix` deliberately does NOT do:
 When the MCP gateway is unavailable, use `WebFetch` on **https://devenv.sh/reference/options/** to look up devenv module options (git-hooks, files, packages, etc.).
 
 Alternatively, grep the devenv source directly from the Nix store:
+
 ```bash
 DEVENV_SRC=$(nix flake prefetch "github:cachix/devenv/$(jq -r '.nodes.devenv.locked.rev' flake.lock)" --json | jq -r '.storePath')
 grep -rn "your-option" "$DEVENV_SRC/src/modules/"

@@ -20,11 +20,11 @@ API key, and re-learns the timing rules by breaking them.
 
 Two devices now exist with the same software:
 
-| Device | Host | Purpose |
-|---|---|---|
+| Device     | Host                    | Purpose                                 |
+| ---------- | ----------------------- | --------------------------------------- |
 | `kvm-fa56` | `gaz` (Lenovo C13 Yoga) | the machine this umbrella task converts |
-| `kvm-2795` | `anji` (Mac mini) | the Full Disk Access work |
-| `kvm-26e2` | `brys` | out-of-band console for the LLM box |
+| `kvm-2795` | `anji` (Mac mini)       | the Full Disk Access work               |
+| `kvm-26e2` | `brys`                  | out-of-band console for the LLM box     |
 
 ## What to build
 
@@ -68,16 +68,16 @@ Two devices now exist with the same software:
 
 Three distinct faults, and they must not be confused:
 
-| Symptom | Evidence | Meaning |
-|---|---|---|
-| `cube_screenshot` fails at any timeout | `retCode: -4`, `screenshot capture is temporarily unavailable`, `dmesg` `LT6911--:-- INT!!##` | no HDMI signal: the source is off, asleep, or the display is off |
-| `cube_press_keys` and `cube_type_text` fail | `write /dev/hidg0: i/o timeout`, `dwc2 4340000.usb: wakeup: signalling skipped: is not allowed by host` | the USB HID gadget is wedged, or the host is not enumerating it |
-| a screenshot works, then stops | one good frame, then `retCode -4` | the guest display went to sleep; the link is fine |
+| Symptom                                     | Evidence                                                                                                | Meaning                                                          |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `cube_screenshot` fails at any timeout      | `retCode: -4`, `screenshot capture is temporarily unavailable`, `dmesg` `LT6911--:-- INT!!##`           | no HDMI signal: the source is off, asleep, or the display is off |
+| `cube_press_keys` and `cube_type_text` fail | `write /dev/hidg0: i/o timeout`, `dwc2 4340000.usb: wakeup: signalling skipped: is not allowed by host` | the USB HID gadget is wedged, or the host is not enumerating it  |
+| a screenshot works, then stops              | one good frame, then `retCode -4`                                                                       | the guest display went to sleep; the link is fine                |
 
 What was tried, and what it cost:
 
 - A **UDC rebind** (`echo "" > /sys/kernel/config/usb_gadget/g0/UDC; sleep 2; echo
-  4340000.usb > ...`) re-bound the gadget (`dwc2 … bound driver configfs-gadget`)
+4340000.usb > ...`) re-bound the gadget (`dwc2 … bound driver configfs-gadget`)
   but **did not restore HID**. The next keypress still timed out.
 - The same rebind is documented to work on `kvm-2795`, so this is the harder
   variant from that document: **the host-side port needs a physical replug**.

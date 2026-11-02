@@ -99,18 +99,18 @@ absent. Both variables come from `render-fork-config.nix`, which returns
   and every persistent (file-layer) entry. `mkrepo` calls it; call it again after
   you swap `repo.cfg`.
 - `.define_config(scope, "dotted.key", value)` / `.define_alias(name, argv,
-  scope="repo")` — set one entry now at a chosen scope.
+scope="repo")` — set one entry now at a chosen scope.
 
 ### `JJConfig` and the four config scopes
 
 jj has four config targets, each a `scope`:
 
-| scope | where | precedence | notes |
-|---|---|---|---|
-| `flag` | `--config NAME=VALUE` per call | highest | ephemeral; **cannot** hold command aliases |
-| `repo` | `jj config path --repo` | over user | the default for the slot base and for `alias` |
-| `workspace` | `jj config path --workspace` | over repo? per jj | per-workspace file |
-| `user` | `jj config path --user` (`JJ_CONFIG`) | lowest file layer | shared user config |
+| scope       | where                                 | precedence        | notes                                         |
+| ----------- | ------------------------------------- | ----------------- | --------------------------------------------- |
+| `flag`      | `--config NAME=VALUE` per call        | highest           | ephemeral; **cannot** hold command aliases    |
+| `repo`      | `jj config path --repo`               | over user         | the default for the slot base and for `alias` |
+| `workspace` | `jj config path --workspace`          | over repo? per jj | per-workspace file                            |
+| `user`      | `jj config path --user` (`JJ_CONFIG`) | lowest file layer | shared user config                            |
 
 jj does **not** read `.jj/repo/config.toml`; that path is a jj-made symlink to
 the canonical `jj config path --repo`. The harness writes to the canonical path.

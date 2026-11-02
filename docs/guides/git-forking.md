@@ -41,10 +41,10 @@ path. For example, `g-dir github.com/nazarewk/nix-rosetta-builder` prints
 
 Do not pass these flags:
 
-| Flag | Result |
-|---|---|
+| Flag                     | Result                                                                                                                      |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
 | `--remote-name nazarewk` | Accepted, but no effect when you use a repository argument. The clone path hardcodes fork=`origin` and upstream=`upstream`. |
-| `--remote` | Error: `the --remote flag is unsupported when a repository argument is provided`. |
+| `--remote`               | Error: `the --remote flag is unsupported when a repository argument is provided`.                                           |
 
 ### Rename the remotes
 
@@ -77,18 +77,18 @@ gh repo edit nazarewk/nix-rosetta-builder \
 Use `gh api` when `gh repo edit` has no flag for a feature. Use `-F` for a JSON boolean. Do not use
 `-f`, because `-f` sends the string `"false"`.
 
-| Feature | Command |
-|---|---|
-| Issues | `gh api -X PATCH repos/nazarewk/nix-rosetta-builder -F has_issues=false` |
-| Wiki | `gh api -X PATCH repos/nazarewk/nix-rosetta-builder -F has_wiki=false` |
-| Projects | `gh api -X PATCH repos/nazarewk/nix-rosetta-builder -F has_projects=false` |
-| Pull requests | `gh api -X PATCH repos/nazarewk/nix-rosetta-builder -F has_pull_requests=false` |
-| Merge commits | `gh api -X PATCH repos/nazarewk/nix-rosetta-builder -F allow_merge_commit=false` |
-| Squash merges | `gh api -X PATCH repos/nazarewk/nix-rosetta-builder -F allow_squash_merge=false` |
-| Rebase merges | `gh api -X PATCH repos/nazarewk/nix-rosetta-builder -F allow_rebase_merge=false` |
-| Auto-merge | `gh api -X PATCH repos/nazarewk/nix-rosetta-builder -F allow_auto_merge=false` |
-| Actions | `gh api -X PUT repos/nazarewk/nix-rosetta-builder/actions/permissions -F enabled=false` |
-| Discussions | `gh repo edit nazarewk/nix-rosetta-builder --enable-discussions=false` |
+| Feature       | Command                                                                                 |
+| ------------- | --------------------------------------------------------------------------------------- |
+| Issues        | `gh api -X PATCH repos/nazarewk/nix-rosetta-builder -F has_issues=false`                |
+| Wiki          | `gh api -X PATCH repos/nazarewk/nix-rosetta-builder -F has_wiki=false`                  |
+| Projects      | `gh api -X PATCH repos/nazarewk/nix-rosetta-builder -F has_projects=false`              |
+| Pull requests | `gh api -X PATCH repos/nazarewk/nix-rosetta-builder -F has_pull_requests=false`         |
+| Merge commits | `gh api -X PATCH repos/nazarewk/nix-rosetta-builder -F allow_merge_commit=false`        |
+| Squash merges | `gh api -X PATCH repos/nazarewk/nix-rosetta-builder -F allow_squash_merge=false`        |
+| Rebase merges | `gh api -X PATCH repos/nazarewk/nix-rosetta-builder -F allow_rebase_merge=false`        |
+| Auto-merge    | `gh api -X PATCH repos/nazarewk/nix-rosetta-builder -F allow_auto_merge=false`          |
+| Actions       | `gh api -X PUT repos/nazarewk/nix-rosetta-builder/actions/permissions -F enabled=false` |
+| Discussions   | `gh repo edit nazarewk/nix-rosetta-builder --enable-discussions=false`                  |
 
 The REST PATCH endpoint has no `has_discussions` field. Use GraphQL for Discussions, or use the
 `gh repo edit` command above.

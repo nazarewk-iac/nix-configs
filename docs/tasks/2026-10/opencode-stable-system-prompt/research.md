@@ -74,16 +74,20 @@ system prompt is built:
 
 ```ts
 const system = [
-  [ ...(input.agent.prompt ? [input.agent.prompt] : SystemPrompt.provider(input.model)),
+  [
+    ...(input.agent.prompt ? [input.agent.prompt] : SystemPrompt.provider(input.model)),
     ...input.system,
     ...(input.user.system ? [input.user.system] : []),
-  ].filter((x) => x).join("\n"),
-]
-yield* input.plugin.trigger(
-  "experimental.chat.system.transform",
-  { sessionID: input.sessionID, model: input.model },
-  { system },
-)
+  ]
+    .filter((x) => x)
+    .join("\n"),
+];
+yield *
+  input.plugin.trigger(
+    "experimental.chat.system.transform",
+    { sessionID: input.sessionID, model: input.model },
+    { system },
+  );
 ```
 
 `system` is an array with one joined string. The plugin may mutate it, so it can

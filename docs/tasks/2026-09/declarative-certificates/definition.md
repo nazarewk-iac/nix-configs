@@ -57,12 +57,12 @@ Three gaps follow:
 Four den aspects carry the work. All four live in `modules/den/aspects/` and join the registry in
 `modules/den/lib.nix`.
 
-| Aspect | Classes | Role |
-|---|---|---|
-| `kdn.ca-dag` | `nixos`, `darwin`, `homeManager`, `devenv` | Declares the CA DAG option set only. Data lives in `data/`. No generation. |
-| `kdn.certificates` | `nixos`, `darwin`, `homeManager`, `devenv` | Declares the leaf option set and wires consumption. Exposes `certPath` and `keyPath`. |
-| `kdn.ca-manager` | `devenv` | Puts the `kdn-certs` CLI and the CA DAG into a devenv shell. |
-| `kdn.ssh-ca` | `nixos`, `darwin`, `homeManager` | SSH login trust. Server `TrustedUserCAKeys` and `HostCertificate`; client `@cert-authority` and `CertificateFile`. |
+| Aspect             | Classes                                    | Role                                                                                                               |
+| ------------------ | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| `kdn.ca-dag`       | `nixos`, `darwin`, `homeManager`, `devenv` | Declares the CA DAG option set only. Data lives in `data/`. No generation.                                         |
+| `kdn.certificates` | `nixos`, `darwin`, `homeManager`, `devenv` | Declares the leaf option set and wires consumption. Exposes `certPath` and `keyPath`.                              |
+| `kdn.ca-manager`   | `devenv`                                   | Puts the `kdn-certs` CLI and the CA DAG into a devenv shell.                                                       |
+| `kdn.ssh-ca`       | `nixos`, `darwin`, `homeManager`           | SSH login trust. Server `TrustedUserCAKeys` and `HostCertificate`; client `@cert-authority` and `CertificateFile`. |
 
 `kdn.ca-manager` is separate from the existing `kdn.ca`. Do not redeclare `options.kdn.ca` in the
 same class tree.
@@ -81,17 +81,17 @@ shells out to `step`, `step-ca`, `nix` and `sops`.
 
 ## Sub-task index
 
-| # | Task file | Goal |
-|---|---|---|
+| #   | Task file                                                                            | Goal                                                                                                                                   |
+| --- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
 | 000 | [000-universal-augmentation/definition.md](000-universal-augmentation/definition.md) | Verify partial augmentation of a universal host with one den aspect through `denLib.imports`, so a host migrates one aspect at a time. |
-| 001 | [001-ca-dag/definition.md](001-ca-dag/definition.md) | Add the `kdn.ca-dag` aspect: the CA graph as data, with no generation and no system trust. |
-| 002 | [002-cert-declarations/definition.md](002-cert-declarations/definition.md) | Add the `kdn.certificates` aspect: the leaf option set and the `certPath`/`keyPath` consumption. |
-| 003 | [003-ca-manager/definition.md](003-ca-manager/definition.md) | Add the `kdn.ca-manager` aspect: the CLI and the CA DAG in a devenv shell, plus the smallstep lifecycle. |
-| 004 | [004-cert-cli/definition.md](004-cert-cli/definition.md) | Add the `kdn-certs` Go CLI: the walk, the dedup, the rotation test and the smallstep driver. |
-| 005 | [005-ssh-ca/definition.md](005-ssh-ca/definition.md) | Add the `kdn.ssh-ca` aspect: server trust, client trust, host certificates and the `ssh login` flow. |
-| 006 | [006-zellij-migration/definition.md](006-zellij-migration/definition.md) | Replace the manual zellij file pair on four hosts with a `kdn.certificates` declaration. |
-| 007 | [007-ca-rotation/definition.md](007-ca-rotation/definition.md) | Rotate the unattended KDN root CA to a touch-required CA, with a migration window for the leaves. |
-| 008 | [008-apply-ssh-signing/definition.md](008-apply-ssh-signing/definition.md) | Wire the SSH sign branch into `kdn-certs apply`, so `apply` generates and signs `ssh-user` and `ssh-host` leaves too. |
+| 001 | [001-ca-dag/definition.md](001-ca-dag/definition.md)                                 | Add the `kdn.ca-dag` aspect: the CA graph as data, with no generation and no system trust.                                             |
+| 002 | [002-cert-declarations/definition.md](002-cert-declarations/definition.md)           | Add the `kdn.certificates` aspect: the leaf option set and the `certPath`/`keyPath` consumption.                                       |
+| 003 | [003-ca-manager/definition.md](003-ca-manager/definition.md)                         | Add the `kdn.ca-manager` aspect: the CLI and the CA DAG in a devenv shell, plus the smallstep lifecycle.                               |
+| 004 | [004-cert-cli/definition.md](004-cert-cli/definition.md)                             | Add the `kdn-certs` Go CLI: the walk, the dedup, the rotation test and the smallstep driver.                                           |
+| 005 | [005-ssh-ca/definition.md](005-ssh-ca/definition.md)                                 | Add the `kdn.ssh-ca` aspect: server trust, client trust, host certificates and the `ssh login` flow.                                   |
+| 006 | [006-zellij-migration/definition.md](006-zellij-migration/definition.md)             | Replace the manual zellij file pair on four hosts with a `kdn.certificates` declaration.                                               |
+| 007 | [007-ca-rotation/definition.md](007-ca-rotation/definition.md)                       | Rotate the unattended KDN root CA to a touch-required CA, with a migration window for the leaves.                                      |
+| 008 | [008-apply-ssh-signing/definition.md](008-apply-ssh-signing/definition.md)           | Wire the SSH sign branch into `kdn-certs apply`, so `apply` generates and signs `ssh-user` and `ssh-host` leaves too.                  |
 
 The umbrella stays `status: in-progress` until every sub-task is `done`.
 

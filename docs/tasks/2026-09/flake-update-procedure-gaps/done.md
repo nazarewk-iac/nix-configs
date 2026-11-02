@@ -84,19 +84,19 @@ needs `jj op restore <op-before-the-snapshot>`. Measured on 2026-09-09 with `dev
 
 Eleven commits, all on the public chain, below the tree merge.
 
-| Change | Commit |
-|---|---|
-| `docs(flake-update)`: fetch, start-state, strip and completion steps | `zwtpvztk` |
-| `docs(jj)`: never redirect into the file a jj read is reading | `nslouuss` |
-| `docs(rules/flake-update)`: the fetch, start-state and completion gates | `ptturzwt` |
-| `docs(skills/flake-update)`: fix the dead links and add the missing gates | `wuttyzlx` |
-| `feat(slots/jj)`: add the `fork-incoming` revset aliases | `yompknqn` |
-| `feat(hack)`: add the fork flake update completion check | `txyzmvmt` |
-| `fix(slots/jj)`: guard the public remote and check diff content, not only paths | `ypurxpxq` |
-| `feat(slots/jj)`: show the update completion check before the public push | `knpopvtz` |
-| `docs(tasks)`: record the denied-pattern gap for fork-only lock nodes | `rwwrqstw` |
+| Change                                                                           | Commit     |
+| -------------------------------------------------------------------------------- | ---------- |
+| `docs(flake-update)`: fetch, start-state, strip and completion steps             | `zwtpvztk` |
+| `docs(jj)`: never redirect into the file a jj read is reading                    | `nslouuss` |
+| `docs(rules/flake-update)`: the fetch, start-state and completion gates          | `ptturzwt` |
+| `docs(skills/flake-update)`: fix the dead links and add the missing gates        | `wuttyzlx` |
+| `feat(slots/jj)`: add the `fork-incoming` revset aliases                         | `yompknqn` |
+| `feat(hack)`: add the fork flake update completion check                         | `txyzmvmt` |
+| `fix(slots/jj)`: guard the public remote and check diff content, not only paths  | `ypurxpxq` |
+| `feat(slots/jj)`: show the update completion check before the public push        | `knpopvtz` |
+| `docs(tasks)`: record the denied-pattern gap for fork-only lock nodes            | `rwwrqstw` |
 | `docs(flake-update)`: add the fetch and reconcile step to the non-fork procedure | `oqyvntru` |
-| `docs(jj)`: fix the follows-path assertion and add the redirect rule | `xtzurqnt` |
+| `docs(jj)`: fix the follows-path assertion and add the redirect rule             | `xtzurqnt` |
 
 ### Documents
 
@@ -190,19 +190,19 @@ They complete the pair with `upstream-incoming`. Step 0 reads both pairs after a
 
 ## Verification steps
 
-| What | Command | Result |
-|---|---|---|
-| the completion check FAILs on an incomplete graph | `bash hack/flake-update-complete.sh` | 3 FAIL, 9 PASS, exit 1 before the operator split the update |
-| the completion check PASSes on the finished graph | the same command, after the split and the assertion 2/3 fix | **21 PASS, 0 FAIL, exit 0** |
-| read the exit code without a pipe | `… >/tmp/log 2>&1; echo $?` | a `\| tail` pipeline reports **tail's** status, so it printed 0 while the script exited 1 |
-| the jq resolver has no false positives | baseline run on `flake.lock` | dangling 0, unreachable 0 |
-| the resolver still detects a real fault | drop a referenced node | dangling 1 |
-| the resolver still detects an unreachable node | drop a root edge | unreachable 1 |
-| the script is tracked | `git ls-files -- hack/flake-update-complete.sh` | one line; `hack/.gitignore` gained `!/*.sh` |
-| the new derivation evaluates | `devenv eval 'packages'` | holds `jj-flake-update-complete` |
-| the shell builds on the fork chain | `devenv build shell` with `@` above `fork-tip` | exit 0 |
-| the shell builds on the public chain | `devenv build shell` with `@` on `upstream-tip` | exit 0, `/nix/store/s91v65wcp47g3gs9kwyr8c8qnn6whiw3-devenv-shell` |
-| every relative link resolves | link sweep over the 7 doc, rule and skill files | clean |
+| What                                              | Command                                                     | Result                                                                                    |
+| ------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| the completion check FAILs on an incomplete graph | `bash hack/flake-update-complete.sh`                        | 3 FAIL, 9 PASS, exit 1 before the operator split the update                               |
+| the completion check PASSes on the finished graph | the same command, after the split and the assertion 2/3 fix | **21 PASS, 0 FAIL, exit 0**                                                               |
+| read the exit code without a pipe                 | `… >/tmp/log 2>&1; echo $?`                                 | a `\| tail` pipeline reports **tail's** status, so it printed 0 while the script exited 1 |
+| the jq resolver has no false positives            | baseline run on `flake.lock`                                | dangling 0, unreachable 0                                                                 |
+| the resolver still detects a real fault           | drop a referenced node                                      | dangling 1                                                                                |
+| the resolver still detects an unreachable node    | drop a root edge                                            | unreachable 1                                                                             |
+| the script is tracked                             | `git ls-files -- hack/flake-update-complete.sh`             | one line; `hack/.gitignore` gained `!/*.sh`                                               |
+| the new derivation evaluates                      | `devenv eval 'packages'`                                    | holds `jj-flake-update-complete`                                                          |
+| the shell builds on the fork chain                | `devenv build shell` with `@` above `fork-tip`              | exit 0                                                                                    |
+| the shell builds on the public chain              | `devenv build shell` with `@` on `upstream-tip`             | exit 0, `/nix/store/s91v65wcp47g3gs9kwyr8c8qnn6whiw3-devenv-shell`                        |
+| every relative link resolves                      | link sweep over the 7 doc, rule and skill files             | clean                                                                                     |
 
 `devenv eval 'kdn.jj.config.aliases.update-check'` does **not** work — a slot option is not in the
 devenv module set. Use `devenv eval 'packages'` instead.

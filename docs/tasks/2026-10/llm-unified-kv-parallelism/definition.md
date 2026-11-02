@@ -35,7 +35,7 @@ Two structural limits follow:
    when the slot count is left at its auto default (`n_parallel = -1`): see
    `common/common.h` (`kv_unified = false`), `common/arg.cpp` (server default
    `n_parallel = -1`) and `tools/server/server.cpp` (`if (n_parallel < 0) {
-   n_parallel = 4; kv_unified = true; }`). With one slot this is a no-op
+n_parallel = 4; kv_unified = true; }`). With one slot this is a no-op
    (`n_ctx_slot == ctx-size`), but it is the switch that decides whether raising
    `--parallel` divides or shares the context.
 
@@ -68,13 +68,13 @@ The explored candidate is `--parallel 4 --kv-unified --ctx-size 327680` (one
 shared 320K pool, each slot free to use it; see [`research.md`](research.md)).
 Small-context sub-agents need no server change — a shared pool is
 usage-proportional, so a small request is automatically small — but a
-*guarantee* needs a preconfigured client model entry (smaller `limit.context`) or
+_guarantee_ needs a preconfigured client model entry (smaller `limit.context`) or
 a uniform server cap.
 
 - Add a `perf.kvUnified` (and keep `perf.parallel`) option to the slot and the
   den `llm` aspect; emit `--kv-unified`/`--no-kv-unified`. See `perf.batchSize`
   for the pattern just added.
-- With unified KV, size `--ctx-size` as the *shared* pool. Decide the target:
+- With unified KV, size `--ctx-size` as the _shared_ pool. Decide the target:
   e.g. `parallel 4`, unified, `ctx-size ~131072–196608` shared. Confirm memory:
   DS4 weights are ~101 GB resident; total KV must fit beside it and the 8 GiB ARC
   cap.

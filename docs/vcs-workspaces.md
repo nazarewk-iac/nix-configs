@@ -7,9 +7,9 @@ timestamp: 2026-07-30T16:23:55+02:00
 # Working in a sibling `jj workspace add` directory
 
 > **See also:** [jujutsu-vcs.md](jujutsu-vcs.md) for the workspace mandate itself (why
-> `jj workspace add --name <slug> ../.nix-configs--<slug>` is the *only* sanctioned parallel-isolation
+> `jj workspace add --name <slug> ../.nix-configs--<slug>` is the _only_ sanctioned parallel-isolation
 > mechanism, why git-worktree corrupts the shared `.jj` store, and how to verify isolation is
-> real). This doc covers two environment/tracking hazards that bite *after* you're set up in a
+> real). This doc covers two environment/tracking hazards that bite _after_ you're set up in a
 > sibling workspace — neither is a jj-mechanics bug; both are consequences of state that doesn't
 > follow you into the sibling dir.
 
@@ -53,7 +53,7 @@ Another git process seems to be running in this repository, or the lock file may
 This is structurally the same class of hazard as the git-worktree warning in
 [jujutsu-vcs.md](jujutsu-vcs.md) (a background agent silently touching the main checkout's git
 state), just introduced via an inherited env var instead of a colocated worktree. The lock
-contention is timing-dependent, so *not* seeing it in one run does not mean it's safe.
+contention is timing-dependent, so _not_ seeing it in one run does not mean it's safe.
 
 **Fix / avoidance:**
 
@@ -85,7 +85,7 @@ but that lockfile was gitignored — so it never carried into the sibling, break
 deny-everything-then-allow-list pattern; add the file via a sibling `.gitignore` next to it
 (e.g. `packages/jj-mcp/.gitignore` with `!package-lock.json`). Devenv-generated symlinks
 (`.claude/settings.json`, `.mcp.json`, `.pre-commit-config.yaml`) and `link-python`-style local
-symlinks are *expected* to be regenerated per-workspace by `devenv shell` — those don't need
+symlinks are _expected_ to be regenerated per-workspace by `devenv shell` — those don't need
 tracking, but they do reinforce that a sibling workspace needs its own `devenv shell` entry.
 
 **One devenv-managed target is NOT per workspace:** the shared jj repo config at

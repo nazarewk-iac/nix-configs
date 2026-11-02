@@ -12,14 +12,14 @@ Desk research only. No build and no hardware run.
 
 ## Target host: brys
 
-| Part | Value |
-|---|---|
-| GPU | AMD Radeon Pro W6600, 8 GB VRAM, RDNA2, PCI 1002:73e3, LLVM/ROCm target gfx1032 |
-| GPU runtime | Mesa RADV Vulkan works; llama.cpp uses it for small models |
-| CPU | AMD Ryzen 5950X, 16C/32T, AVX2, F16C, FMA, no AVX-512 |
-| RAM | 128 GB DDR4 |
-| OS | NixOS |
-| Storage | ZFS |
+| Part        | Value                                                                           |
+| ----------- | ------------------------------------------------------------------------------- |
+| GPU         | AMD Radeon Pro W6600, 8 GB VRAM, RDNA2, PCI 1002:73e3, LLVM/ROCm target gfx1032 |
+| GPU runtime | Mesa RADV Vulkan works; llama.cpp uses it for small models                      |
+| CPU         | AMD Ryzen 5950X, 16C/32T, AVX2, F16C, FMA, no AVX-512                           |
+| RAM         | 128 GB DDR4                                                                     |
+| OS          | NixOS                                                                           |
+| Storage     | ZFS                                                                             |
 
 ## Answer 1: Vulkan or HIP only
 
@@ -103,13 +103,13 @@ Strata has **no pure CPU-only mode**. Its engine always uses a GPU: the README
 GPU row is mandatory, and every backend is a GPU backend (CUDA, HIP, Metal,
 Intel). There is no `--cpu-only` switch.
 
-There **is** an AVX2-only host path, but it is the CPU *side* of a GPU run, not a
+There **is** an AVX2-only host path, but it is the CPU _side_ of a GPU run, not a
 GPU-less mode:
 
 - `docs/INSTALL.md` "Older CPUs (experimental)": the ready-made engine needs
   AVX2 (Haswell 2013 / Zen 2017 or newer). brys's Ryzen 5950X has AVX2, so it is
   inside the normal CPU requirement, not the experimental one.
-- The experimental path (`STRATA_ISA_FLOOR=avx` or `none`) is for CPUs *older*
+- The experimental path (`STRATA_ISA_FLOOR=avx` or `none`) is for CPUs _older_
   than AVX2 (AVX-only or SSE4.2-only). It is compiled on the PC. brys does not
   need it.
 - AVX-512 (Ryzen 7000/9000) is "a bit faster" but not required. brys has no
@@ -246,14 +246,14 @@ CPU/GPU build, MoE options, model-support notes).
 
 ## Summary
 
-| Question | Result |
-|---|---|
-| Vulkan backend | No. AMD path is HIP/ROCm only |
-| gfx1032 in AMD targets | No. List stops at gfx1030/gfx1031 |
-| Min memory | 32 GB RAM+VRAM; brys total passes; 8 GB VRAM under 12 GB rec |
-| CPU-only mode | None. AVX2 host path exists, but a GPU is mandatory |
-| Relation to llama.cpp | Build dependency pinned at commit `3cf03257...` |
-| Offline build | Possible via `STRATA_GGML_DIR`; no `STRATA_NO_ACQUIRE` flag |
-| Verdict A: runs on brys as-is | No |
-| Verdict B: fallbacks | HSA override (risky), ROCm 7 + TheRock, Vulkan-via-llama.cpp, or not viable |
-| ik_llama.cpp | Lower-risk CPU/MoE comparison runner than Strata here |
+| Question                      | Result                                                                      |
+| ----------------------------- | --------------------------------------------------------------------------- |
+| Vulkan backend                | No. AMD path is HIP/ROCm only                                               |
+| gfx1032 in AMD targets        | No. List stops at gfx1030/gfx1031                                           |
+| Min memory                    | 32 GB RAM+VRAM; brys total passes; 8 GB VRAM under 12 GB rec                |
+| CPU-only mode                 | None. AVX2 host path exists, but a GPU is mandatory                         |
+| Relation to llama.cpp         | Build dependency pinned at commit `3cf03257...`                             |
+| Offline build                 | Possible via `STRATA_GGML_DIR`; no `STRATA_NO_ACQUIRE` flag                 |
+| Verdict A: runs on brys as-is | No                                                                          |
+| Verdict B: fallbacks          | HSA override (risky), ROCm 7 + TheRock, Vulkan-via-llama.cpp, or not viable |
+| ik_llama.cpp                  | Lower-risk CPU/MoE comparison runner than Strata here                       |

@@ -21,10 +21,10 @@ minimum viable design that works and stays nix-idiomatic.
 ## Current wiring (facts, verified)
 
 - `modules/slots/llm/default.nix` — `services.llama-cpp` (singleton, `:39703`, `--models-preset
-  <global INI>`, `--models-max 1`, `--sleep-idle-seconds -1`, `--api-key-file`); one
+<global INI>`, `--models-max 1`, `--sleep-idle-seconds -1`, `--api-key-file`); one
   `kdn-llm-proxy-lan` compat-proxy (`127.0.0.1:9530`, `UPSTREAM_URL=http://127.0.0.1:39703`,
   `PROXY_HOST/PROXY_PORT`); one Caddy vhost keyed on `cfg.domain` with `extraConfig
-  "reverse_proxy 127.0.0.1:9530"`, no matcher.
+"reverse_proxy 127.0.0.1:9530"`, no matcher.
 - The model preset INI is generated **once from ALL enabled models** (`modelPresetIni`,
   `presetSection`, lines 102-104). Router/INI/proxy are singletons.
 - A separate, proven parametrized proxy slot exists: `modules/slots/llm/proxy/default.nix`
@@ -106,14 +106,14 @@ B's job is free swapping among itself (it never needs DS4 resident too), so it c
 non-frontier model — its only constraint is RAM for exactly one at a time, same as the current
 single router. Frontier `deepseek-v4-flash` stays `mainRouter = "main"` and never enters B.
 
-| Router B member | ctx | t/s | peak resident | note |
-|---|---|---|---|---|
-| phi-4 | 16384 (arch ceiling) | 2.86 | 17.7 G | lightweight, coexists anyway |
-| qwen3-30b-a3b | 131072 | 11.4 | 44.4 G | coexists w/ DS4 already |
-| qwen3-coder-next | 131072 | 5.34 | 65.6 G | — |
-| qwen3-next-80b | 131072 | 3.29 | 80 G | — |
-| gpt-oss-120b Q4_K_M | 131072 | 12.7 | 72 G | fast, worth having |
-| qwen3-235b (IQ2_M) | 65536 | ~slow | ~100 G | box-alone; near RAM ceiling |
+| Router B member     | ctx                  | t/s   | peak resident | note                         |
+| ------------------- | -------------------- | ----- | ------------- | ---------------------------- |
+| phi-4               | 16384 (arch ceiling) | 2.86  | 17.7 G        | lightweight, coexists anyway |
+| qwen3-30b-a3b       | 131072               | 11.4  | 44.4 G        | coexists w/ DS4 already      |
+| qwen3-coder-next    | 131072               | 5.34  | 65.6 G        | —                            |
+| qwen3-next-80b      | 131072               | 3.29  | 80 G          | —                            |
+| gpt-oss-120b Q4_K_M | 131072               | 12.7  | 72 G          | fast, worth having           |
+| qwen3-235b (IQ2_M)  | 65536                | ~slow | ~100 G        | box-alone; near RAM ceiling  |
 
 These are already the exact `perf.contextSize` values on `hosts/brys/default.nix`; the design
 simply keeps them. Load-time cost per switch on `:39704` is the real UX tax — this is why the

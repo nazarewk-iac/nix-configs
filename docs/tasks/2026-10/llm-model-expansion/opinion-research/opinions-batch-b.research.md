@@ -356,7 +356,7 @@ central bank" comment threads (Oct and Sep 2026).
 comments `[HN]`. It is a unified, encoder-free multimodal model.
 
 - Good at: running on a laptop. Press coverage: "designed to run on any laptop
-  with 16GB of RAM"; one reviewer "  tested Gemma4 12B on my 8GB GPU, now I don't
+  with 16GB of RAM"; one reviewer " tested Gemma4 12B on my 8GB GPU, now I don't
   want to go back to smaller models" `[HN]`. In an independent structured-output
   benchmark, "Gemma-4-31B leads images" across text and audio too `[HN]`.
   An independent user index of "a year of video locally" with Gemma4-31B drew

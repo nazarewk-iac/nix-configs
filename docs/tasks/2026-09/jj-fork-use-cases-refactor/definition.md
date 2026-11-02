@@ -30,21 +30,21 @@ sequence, proven by an automated harness, and mirrored in short skill examples.
 Fork topology and alias definitions: `docs/jujutsu-vcs.fork.md` (Topology + alias table); alias
 source in `modules/slots/jj/fork/default.nix` (`revset-aliases`). Exact expressions:
 
-| Alias | Expression |
-|---|---|
-| `trunk()` | `main@<fork-remote>` |
-| `tree-merge` | `heads(::@ & merges())` |
-| `upstream-chain` | `~description("") & ~fork` |
-| `fork-chain` | `~description("") & fork` |
-| `upstream-tip` | `latest(upstream-chain)` |
-| `fork-tip` | `latest(fork-chain)` |
-| `to-rebase` | `tree-merge..@ & ~description("")` |
-| `upstream-safe` | `to-rebase & ~fork-direct` |
-| `fork-leaked` | `to-rebase & fork-direct` |
-| `merge-frozen` | `tree-merge & (immutable() \| pushed)` |
-| `pushed` | `::remote_bookmarks()` |
-| `upstream-local` | `pushed-upstream..(::tree-merge & ~fork)` |
-| `fork-direct` | content predicate (paths/diff/description matching the configured denied patterns) |
+| Alias            | Expression                                                                         |
+| ---------------- | ---------------------------------------------------------------------------------- |
+| `trunk()`        | `main@<fork-remote>`                                                               |
+| `tree-merge`     | `heads(::@ & merges())`                                                            |
+| `upstream-chain` | `~description("") & ~fork`                                                         |
+| `fork-chain`     | `~description("") & fork`                                                          |
+| `upstream-tip`   | `latest(upstream-chain)`                                                           |
+| `fork-tip`       | `latest(fork-chain)`                                                               |
+| `to-rebase`      | `tree-merge..@ & ~description("")`                                                 |
+| `upstream-safe`  | `to-rebase & ~fork-direct`                                                         |
+| `fork-leaked`    | `to-rebase & fork-direct`                                                          |
+| `merge-frozen`   | `tree-merge & (immutable() \| pushed)`                                             |
+| `pushed`         | `::remote_bookmarks()`                                                             |
+| `upstream-local` | `pushed-upstream..(::tree-merge & ~fork)`                                          |
+| `fork-direct`    | content predicate (paths/diff/description matching the configured denied patterns) |
 
 Flag semantics (jj 0.44.0, verified with `jj split --help`):
 
@@ -57,7 +57,7 @@ Existing authoritative recipes (reconcile, do not duplicate):
 
 - `docs/flake-update.fork.md` § "Post-update fixes":
   - **tips NOT pushed (mutable):** `jj split --insert-after upstream-tip --insert-before fork-tip
-    -m '…' -- <files>`.
+-m '…' -- <files>`.
   - **tips ALREADY pushed (frozen):** `jj describe …` → `jj rebase -r @ -d upstream-tip` →
     `jj new fork-tip <fix> -m 'chore(fork): merge …'` → `jj new fork-tip`.
   - **fork-specific fix:** plain `jj split -m '…' -- <files>` on the fork side.
@@ -77,6 +77,7 @@ configured denied patterns) → fork side.
 "Immutable tree" = `merge-frozen` non-empty (tips pushed). "Mutable tree" = `merge-frozen` empty.
 
 Immutable tree (build forward; no rewrite of pushed history):
+
 1. upstream (generic) change
 2. fork (sensitive) change
 3. mixed upstream + fork change in `@` (split by content, place each part)
@@ -84,13 +85,10 @@ Immutable tree (build forward; no rewrite of pushed history):
 5. make the tree mutable by adding a fork change (a `jj split` variant that yields a new mutable
    fork-tip merge)
 
-Mutable tree (splice/rewrite allowed):
-6. upstream change
-7. fork change
-8. mixed upstream + fork change
-9. squash updates into an existing (mutable) commit
+Mutable tree (splice/rewrite allowed): 6. upstream change 7. fork change 8. mixed upstream + fork change 9. squash updates into an existing (mutable) commit
 
 Candidate missing cases (confirm/add):
+
 - fork change that **depends on a new upstream commit** not yet in its ancestry (use case 6, X→Y)
   — both immutable and mutable variants.
 - a change that is **partly generic and partly sensitive** (split hunks, or reword to
@@ -113,6 +111,7 @@ isolated devenv activation, so the repo-scoped jj revset aliases and `jj sync-re
 `jj fork-help` exist for a throwaway repo.
 
 Open items for the future session (locate; do not assume):
+
 - where existing tests/checks live (search `packages/`, `checks`, `modules/slots/jj`, flake
   `checks` outputs).
 - how devenv is activated in isolation for a temp repo, and how the jj fork slot config

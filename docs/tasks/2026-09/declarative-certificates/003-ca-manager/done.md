@@ -33,11 +33,11 @@ The registry entry is `ca-manager = ./aspects/ca-manager.nix;` in `modules/den/l
 
 All commands exit 0:
 
-| Command | Result |
-|---|---|
-| `nix build --no-eval-cache -L '.#checks.x86_64-linux.den-eval-certificates'` | 25 of 25 assertions pass |
-| `nix build --no-eval-cache -L '.#checks.x86_64-linux.standalone-aspects'` | 3 of 3 assertions pass |
-| `nix build --no-eval-cache -L '.#checks.x86_64-linux.den-eval-coverage'` | 1 of 1 assertions pass |
+| Command                                                                       | Result                                  |
+| ----------------------------------------------------------------------------- | --------------------------------------- |
+| `nix build --no-eval-cache -L '.#checks.x86_64-linux.den-eval-certificates'`  | 25 of 25 assertions pass                |
+| `nix build --no-eval-cache -L '.#checks.x86_64-linux.standalone-aspects'`     | 3 of 3 assertions pass                  |
+| `nix build --no-eval-cache -L '.#checks.x86_64-linux.den-eval-coverage'`      | 1 of 1 assertions pass                  |
 | `nix build --no-eval-cache -L '.#checks.x86_64-linux.den-smoke-devenv-linux'` | the `enterTest` runs `kdn-certs --help` |
 
 `checks/den-mvp/assertions/certificates.nix` holds the `ca-manager` subjects: the single `devenv`

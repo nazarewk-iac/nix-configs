@@ -37,25 +37,25 @@ Content sensitivity uses placeholder patterns (`PLACEHOLDER-SENSITIVE`,
 
 ## Alias -> expected set -> test
 
-| Alias | Expected set | Test |
-|---|---|---|
-| `tree-merge` | `{M}` | `test_tree_merge_is_the_single_merge` |
-| `upstream-incoming` | `{P1, P2}` | `test_upstream_incoming_is_fetched_but_unmerged` |
-| `upstream-incoming-tip` | `{P2}` | same |
-| `to-rebase` | `{L1, L2, L3}` | `test_to_rebase_is_local_described_work_above_the_merge` |
-| `fork-direct` | `{F1, L2}` | `test_fork_direct_matches_content_only` |
-| `upstream-safe` | `{L1, L3}` | `test_upstream_safe_is_the_clean_subset` |
-| `fork-leaked` | `{L2}` | `test_fork_leaked_is_sensitive_work_above_the_merge` |
-| `upstream-local` | `{U1, U2}` | `test_upstream_local_is_the_pre_merge_upstream_chain` |
-| `pushed` (minus `root()`) | `{A, P1, P2, U1, U2, F1, M}` | `test_pushed_reachability` |
-| `pushed-fork` (minus `root()`) | `{A, U1, U2, F1, M}` | same |
-| `pushed-upstream` (minus `root()`) | `{A, P1, P2}` | same |
-| `upstream-tip` | `{U2}` | `test_tips_resolve_by_time` |
-| `fork-tip` | `{L3}` | same |
-| `fork-chain` | `{F1, M, L1, L2, L3}` | `test_chains` |
-| `upstream-chain` | `{A, P1, P2, U1, U2}` | same |
-| `merge-frozen` (pushed) | `{M}` | `test_merge_frozen_when_pushed` |
-| `merge-frozen` (unpushed) | `{}` | `test_merge_mutable_when_unpushed` |
+| Alias                              | Expected set                 | Test                                                     |
+| ---------------------------------- | ---------------------------- | -------------------------------------------------------- |
+| `tree-merge`                       | `{M}`                        | `test_tree_merge_is_the_single_merge`                    |
+| `upstream-incoming`                | `{P1, P2}`                   | `test_upstream_incoming_is_fetched_but_unmerged`         |
+| `upstream-incoming-tip`            | `{P2}`                       | same                                                     |
+| `to-rebase`                        | `{L1, L2, L3}`               | `test_to_rebase_is_local_described_work_above_the_merge` |
+| `fork-direct`                      | `{F1, L2}`                   | `test_fork_direct_matches_content_only`                  |
+| `upstream-safe`                    | `{L1, L3}`                   | `test_upstream_safe_is_the_clean_subset`                 |
+| `fork-leaked`                      | `{L2}`                       | `test_fork_leaked_is_sensitive_work_above_the_merge`     |
+| `upstream-local`                   | `{U1, U2}`                   | `test_upstream_local_is_the_pre_merge_upstream_chain`    |
+| `pushed` (minus `root()`)          | `{A, P1, P2, U1, U2, F1, M}` | `test_pushed_reachability`                               |
+| `pushed-fork` (minus `root()`)     | `{A, U1, U2, F1, M}`         | same                                                     |
+| `pushed-upstream` (minus `root()`) | `{A, P1, P2}`                | same                                                     |
+| `upstream-tip`                     | `{U2}`                       | `test_tips_resolve_by_time`                              |
+| `fork-tip`                         | `{L3}`                       | same                                                     |
+| `fork-chain`                       | `{F1, M, L1, L2, L3}`        | `test_chains`                                            |
+| `upstream-chain`                   | `{A, P1, P2, U1, U2}`        | same                                                     |
+| `merge-frozen` (pushed)            | `{M}`                        | `test_merge_frozen_when_pushed`                          |
+| `merge-frozen` (unpushed)          | `{}`                         | `test_merge_mutable_when_unpushed`                       |
 
 ## The `~fork` trap (caveat)
 

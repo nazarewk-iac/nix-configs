@@ -26,7 +26,7 @@ never fired, and `sshd` (which `Requires` that target through the `ssh-ca` aspec
 box was alive (Caddy served 80/443) but unreachable.
 
 The immediate cycle fix belongs in this same change set. This task is the next step: remove the
-*mandatory* dependence on PCSC and on a smart card at all.
+_mandatory_ dependence on PCSC and on a smart card at all.
 
 Today the unattended identities are:
 
@@ -35,7 +35,7 @@ Today the unattended identities are:
    (`modules/den/aspects/security-secrets-age.nix:122-138`).
 
 Both have a cost. The YubiKey path drags in `pcscd` and the ordering cycle. The SSH host key path
-needs the host key to exist *and* to be a recipient of the encrypted file. Neither is a property of
+needs the host key to exist _and_ to be a recipient of the encrypted file. Neither is a property of
 the hardware itself.
 
 The TPM 2.0 on the motherboard is such a property. It can hold an age identity that decrypts with no
@@ -76,7 +76,7 @@ A new den aspect, or a branch inside `security-secrets-age.nix`, that:
    `genScripts`/`preStart` contract (`security-secrets-age.nix:143-160`). The identity is either
    generated once at enrollment or read from a persistent path mirrored into `/run`.
 4. Orders `sops-install-secrets` after `dev-tpmrm0.device`, `Wants` that device.
-5. Makes the `hw-yubikey` PCSC edge conditional on a *new* option (for example
+5. Makes the `hw-yubikey` PCSC edge conditional on a _new_ option (for example
    `kdn.hw.yubikey.requiredForBoot`, default `false` once a TPM identity exists), so the
    `After=pcscd.socket`/`Requires=pcscd.socket` pair is written only when a host still needs the
    YubiKey to decrypt at boot.
@@ -101,7 +101,7 @@ A new den aspect, or a branch inside `security-secrets-age.nix`, that:
 - **Identity storage path.** `/persist/sops/` (repo convention) versus `/var/lib/sops-nix/tpm/`.
   Check what the fleet's persistence layout expects on `brys`, `etra`, `oams`, `anji`.
 - **One-member key groups.** After a TPM recipient joins a rule, is it acceptable to drop the
-  touch-YubiKeys from the *non-CA* rules, or keep them as break-glass? Research recommends keeping at
+  touch-YubiKeys from the _non-CA_ rules, or keep them as break-glass? Research recommends keeping at
   least one human-held recipient on every rule.
 - **Plugin maturity.** `age-plugin-tpm` is labelled experimental. Decide whether to gate it behind an
   opt-in option per host, or enable it fleet-wide once the first host proves it.

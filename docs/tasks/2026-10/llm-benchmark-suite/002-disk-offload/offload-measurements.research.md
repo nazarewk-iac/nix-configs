@@ -64,31 +64,31 @@ load. It is the honest RAM figure; `VmRSS` counts only the process.
 
 ### Mid model: gemma-4-12b (7.1 GB, ctx 16384)
 
-| lever | model | load_s | decode_tok_s | prefill_tok_s | RssFile_MiB | RssAnon_MiB | VmRSS_MiB | read_MB | idle_faults_s | note |
-|---|---|---|---|---|---|---|---|---|---|---|
-| baseline (mmap, lazy auto) | gemma-4-12b | 31 | 5.30 | 62.5 | 4952 | 1338 | 6290 | 4 | 0 | read_load 8381 MB |
-| `--lazy-mode off` | gemma-4-12b | 30 | 5.26 | 61.7 | 4952 | 1338 | 6290 | 3 | 0 | no tensor >4 GiB; no-op |
-| `--lazy-mode on` | gemma-4-12b | 31 | 5.45 | 61.9 | 4952 | 1338 | 6290 | 3 | 0 | no-op |
-| `--load-mode mmap` | gemma-4-12b | 29 | 5.36 | 62.0 | 4952 | 1338 | 6290 | 0 | 0 | same as baseline |
-| `--load-mode mlock` | gemma-4-12b | — | — | — | — | — | — | — | — | **ABORT (core dumped)** at load: `RLIMIT_MEMLOCK` is 8 MiB |
-| `--load-mode none` | gemma-4-12b | 22 | 4.97 | 65.3 | 32 | 1339 | 1371 | 2 | 0 | RssFile→0; read_load 8602 MB |
-| `--load-mode dio` | gemma-4-12b | 22 | 5.22 | 65.3 | 32 | 1338 | 1370 | 0 | 0 | like `none`; read_load 7364 MB |
-| `--cache-ram 256` | gemma-4-12b | 30 | 5.02 | 61.7 | 4952 | 1338 | 6290 | 2 | 0 | no effect on one request |
-| `-ctk q8_0 -ctv q8_0` | gemma-4-12b | 31 | 5.13 | 49.5 | 4833 | 763 | 5596 | 0 | 0 | KV F16→q8_0; prefill −20% |
-| `-ctk q4_0 -ctv q4_0` | gemma-4-12b | 30 | 5.21 | 50.0 | 4698 | 468 | 5166 | 1 | 0 | KV→q4_0; prefill −20% |
-| `-ngl 99 -cmoe -nkvo` | gemma-4-12b | 18 | — | — | 575 | 1862 | 2437 | — | — | **HANG** >300 s on the request; killed. GPU path unusable |
+| lever                      | model       | load_s | decode_tok_s | prefill_tok_s | RssFile_MiB | RssAnon_MiB | VmRSS_MiB | read_MB | idle_faults_s | note                                                       |
+| -------------------------- | ----------- | ------ | ------------ | ------------- | ----------- | ----------- | --------- | ------- | ------------- | ---------------------------------------------------------- |
+| baseline (mmap, lazy auto) | gemma-4-12b | 31     | 5.30         | 62.5          | 4952        | 1338        | 6290      | 4       | 0             | read_load 8381 MB                                          |
+| `--lazy-mode off`          | gemma-4-12b | 30     | 5.26         | 61.7          | 4952        | 1338        | 6290      | 3       | 0             | no tensor >4 GiB; no-op                                    |
+| `--lazy-mode on`           | gemma-4-12b | 31     | 5.45         | 61.9          | 4952        | 1338        | 6290      | 3       | 0             | no-op                                                      |
+| `--load-mode mmap`         | gemma-4-12b | 29     | 5.36         | 62.0          | 4952        | 1338        | 6290      | 0       | 0             | same as baseline                                           |
+| `--load-mode mlock`        | gemma-4-12b | —      | —            | —             | —           | —           | —         | —       | —             | **ABORT (core dumped)** at load: `RLIMIT_MEMLOCK` is 8 MiB |
+| `--load-mode none`         | gemma-4-12b | 22     | 4.97         | 65.3          | 32          | 1339        | 1371      | 2       | 0             | RssFile→0; read_load 8602 MB                               |
+| `--load-mode dio`          | gemma-4-12b | 22     | 5.22         | 65.3          | 32          | 1338        | 1370      | 0       | 0             | like `none`; read_load 7364 MB                             |
+| `--cache-ram 256`          | gemma-4-12b | 30     | 5.02         | 61.7          | 4952        | 1338        | 6290      | 2       | 0             | no effect on one request                                   |
+| `-ctk q8_0 -ctv q8_0`      | gemma-4-12b | 31     | 5.13         | 49.5          | 4833        | 763         | 5596      | 0       | 0             | KV F16→q8_0; prefill −20%                                  |
+| `-ctk q4_0 -ctv q4_0`      | gemma-4-12b | 30     | 5.21         | 50.0          | 4698        | 468         | 5166      | 1       | 0             | KV→q4_0; prefill −20%                                      |
+| `-ngl 99 -cmoe -nkvo`      | gemma-4-12b | 18     | —            | —             | 575         | 1862        | 2437      | —       | —             | **HANG** >300 s on the request; killed. GPU path unusable  |
 
 ### Frontier: Qwen3.8-Flash-Next UD-IQ4_XS (94 GB, ctx 16384)
 
-| lever | model | load_s | decode_tok_s | prefill_tok_s | RssFile_MiB | RssAnon_MiB | VmRSS_MiB | read_MB | idle_faults_s | note |
-|---|---|---|---|---|---|---|---|---|---|---|
-| baseline (mmap, lazy auto) | Qwen3.8-Flash-Next | 83 | 3.23 | 44.3 | 45169 | 148 | 45312 | 24488 | 0 | SYS_USED 15.7 GB; read_load 91.9 GB |
-| `--lazy-mode off` (mmap) | Qwen3.8-Flash-Next | 146 | 5.22 | 73.6 | 88835 | 144 | 88935 | 0 | 0 | SYS_USED 15.9 GB; read_load 176.7 GB |
-| `--load-mode none` | Qwen3.8-Flash-Next | 40 | 4.43 | 98.3 | 32 | 239 | 271 | 2236 | 0 | SYS_USED **71.2 GB**; read_load 90.3 GB |
-| `--load-mode dio` | Qwen3.8-Flash-Next | — | — | — | — | — | — | — | — | **CRASH (device lost)** at load: `ggml_vulkan: device fault on Vulkan0`, `vk::Queue::submit: ErrorDeviceLost` |
-| lazy off + `-ctk q8_0 -ctv q8_0` | Qwen3.8-Flash-Next | 147 | 6.08 | 73.7 | 88838 | 141 | 88935 | 0 | 0 | RssAnon ~same as F16; KV tiny at 16K |
-| lazy off + `--cache-ram 256` | Qwen3.8-Flash-Next | 148 | 5.93 | 73.0 | 88835 | 145 | 88896 | 0 | 0 | no effect on one request |
-| `-ngl 99 -cmoe -nkvo` | Qwen3.8-Flash-Next | 74 | 1.94 | 36.0 | 44099 | 1064 | 45154 | 26109 | 0 | SYS_USED ~14 GB; decode −63% vs baseline |
+| lever                            | model              | load_s | decode_tok_s | prefill_tok_s | RssFile_MiB | RssAnon_MiB | VmRSS_MiB | read_MB | idle_faults_s | note                                                                                                          |
+| -------------------------------- | ------------------ | ------ | ------------ | ------------- | ----------- | ----------- | --------- | ------- | ------------- | ------------------------------------------------------------------------------------------------------------- |
+| baseline (mmap, lazy auto)       | Qwen3.8-Flash-Next | 83     | 3.23         | 44.3          | 45169       | 148         | 45312     | 24488   | 0             | SYS_USED 15.7 GB; read_load 91.9 GB                                                                           |
+| `--lazy-mode off` (mmap)         | Qwen3.8-Flash-Next | 146    | 5.22         | 73.6          | 88835       | 144         | 88935     | 0       | 0             | SYS_USED 15.9 GB; read_load 176.7 GB                                                                          |
+| `--load-mode none`               | Qwen3.8-Flash-Next | 40     | 4.43         | 98.3          | 32          | 239         | 271       | 2236    | 0             | SYS_USED **71.2 GB**; read_load 90.3 GB                                                                       |
+| `--load-mode dio`                | Qwen3.8-Flash-Next | —      | —            | —             | —           | —           | —         | —       | —             | **CRASH (device lost)** at load: `ggml_vulkan: device fault on Vulkan0`, `vk::Queue::submit: ErrorDeviceLost` |
+| lazy off + `-ctk q8_0 -ctv q8_0` | Qwen3.8-Flash-Next | 147    | 6.08         | 73.7          | 88838       | 141         | 88935     | 0       | 0             | RssAnon ~same as F16; KV tiny at 16K                                                                          |
+| lazy off + `--cache-ram 256`     | Qwen3.8-Flash-Next | 148    | 5.93         | 73.0          | 88835       | 145         | 88896     | 0       | 0             | no effect on one request                                                                                      |
+| `-ngl 99 -cmoe -nkvo`            | Qwen3.8-Flash-Next | 74     | 1.94         | 36.0          | 44099       | 1064        | 45154     | 26109   | 0             | SYS_USED ~14 GB; decode −63% vs baseline                                                                      |
 
 Notes on the frontier table:
 

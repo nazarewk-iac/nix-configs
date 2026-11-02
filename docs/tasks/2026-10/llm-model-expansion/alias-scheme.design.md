@@ -73,83 +73,83 @@ to the alternate model for the slot. A bare id is the primary; there is no
 
 ### chat — everyday Q&A and writing
 
-| id | model | decode |
-|---|---|---|
-| `chat-dumb-fast` | `qwen3.5-4b` | 61 |
-| `chat-dumb-fast-alt` | `granite-4.2-3b` | 85 |
-| `chat-std-fast` | `lfm2.5-24b-a2b` | 23 |
-| `chat-std-mid` | `qwen3.5-35b-a3b` | 23 |
-| `chat-std-mid-long` | `nemotron-3-nano-30b-a3b` | 12.1 |
-| `chat-deep-slow` | `qwen3.8-27b` | 2.45 |
+| id                   | model                     | decode |
+| -------------------- | ------------------------- | ------ |
+| `chat-dumb-fast`     | `qwen3.5-4b`              | 61     |
+| `chat-dumb-fast-alt` | `granite-4.2-3b`          | 85     |
+| `chat-std-fast`      | `lfm2.5-24b-a2b`          | 23     |
+| `chat-std-mid`       | `qwen3.5-35b-a3b`         | 23     |
+| `chat-std-mid-long`  | `nemotron-3-nano-30b-a3b` | 12.1   |
+| `chat-deep-slow`     | `qwen3.8-27b`             | 2.45   |
 
 ### code — code generation and edits
 
-| id | model | decode |
-|---|---|---|
-| `code-quick-fast` | `qwen3.5-4b` | 61 |
-| `code-std-fast` | `north-mini-code-1.0` | 18 |
-| `code-std-fast-alt` | `mellum-2.1-12b-a2.5b-thinking` | 14.8 |
-| `code-deep-slow` | `qwen3.8-27b` | 2.45 |
+| id                  | model                           | decode |
+| ------------------- | ------------------------------- | ------ |
+| `code-quick-fast`   | `qwen3.5-4b`                    | 61     |
+| `code-std-fast`     | `north-mini-code-1.0`           | 18     |
+| `code-std-fast-alt` | `mellum-2.1-12b-a2.5b-thinking` | 14.8   |
+| `code-deep-slow`    | `qwen3.8-27b`                   | 2.45   |
 
 ### vision — images
 
-| id | model | decode |
-|---|---|---|
-| `vision-quick-fast` | `qwen3-vl-8b-instruct` | 8.4 |
-| `vision-std-fast` | `qwen3-vl-30b-a3b` | 15.7 |
-| `vision-std-fast-alt` | `ornith-1.5-35b-a3b` | 8.8 |
-| `vision-deep-slow` | `qwen3.8-27b` | 2.45 |
+| id                    | model                  | decode |
+| --------------------- | ---------------------- | ------ |
+| `vision-quick-fast`   | `qwen3-vl-8b-instruct` | 8.4    |
+| `vision-std-fast`     | `qwen3-vl-30b-a3b`     | 15.7   |
+| `vision-std-fast-alt` | `ornith-1.5-35b-a3b`   | 8.8    |
+| `vision-deep-slow`    | `qwen3.8-27b`          | 2.45   |
 
 ### audio — speech in
 
-| id | model | decode |
-|---|---|---|
-| `audio-std-mid` | `qwen3-omni-30b-a3b` | 8.8 |
+| id              | model                | decode |
+| --------------- | -------------------- | ------ |
+| `audio-std-mid` | `qwen3-omni-30b-a3b` | 8.8    |
 
 ### reason — step-by-step sub-agent
 
-| id | model | decode |
-|---|---|---|
-| `reason-quick-fast` | `mellum-2.1-12b-a2.5b-thinking` | 14.8 |
-| `reason-quick-fast-alt` | `ministral-3-3b-reasoning` | 81 |
-| `reason-std-fast` | `nemotron-3-nano-30b-a3b` | 12.1 |
-| `reason-deep-slow` | `qwen3.8-27b` | 2.45 |
+| id                      | model                           | decode |
+| ----------------------- | ------------------------------- | ------ |
+| `reason-quick-fast`     | `mellum-2.1-12b-a2.5b-thinking` | 14.8   |
+| `reason-quick-fast-alt` | `ministral-3-3b-reasoning`      | 81     |
+| `reason-std-fast`       | `nemotron-3-nano-30b-a3b`       | 12.1   |
+| `reason-deep-slow`      | `qwen3.8-27b`                   | 2.45   |
 
 ### tools — agent tools, function calling
 
-| id | model | decode |
-|---|---|---|
-| `tools-dumb-fast` | `granite-4.2-3b` | 85 |
-| `tools-std-fast` | `lfm2.5-24b-a2b` | 23 |
-| `tools-std-fast-alt` | `granite-4.2-8b` | 39 |
-| `tools-deep-slow` | `qwen3.8-27b` | 2.45 |
+| id                   | model            | decode |
+| -------------------- | ---------------- | ------ |
+| `tools-dumb-fast`    | `granite-4.2-3b` | 85     |
+| `tools-std-fast`     | `lfm2.5-24b-a2b` | 23     |
+| `tools-std-fast-alt` | `granite-4.2-8b` | 39     |
+| `tools-deep-slow`    | `qwen3.8-27b`    | 2.45   |
 
 ### embed — retrieval embeddings
 
-| id | model | endpoint |
-|---|---|---|
+| id               | model                | endpoint         |
+| ---------------- | -------------------- | ---------------- |
 | `embed-std-fast` | `qwen3-embedding-4b` | `/v1/embeddings` |
 
 ### rank — retrieval reranking
 
-| id | model | endpoint |
-|---|---|---|
+| id              | model               | endpoint     |
+| --------------- | ------------------- | ------------ |
 | `rank-std-fast` | `qwen3-reranker-4b` | `/v1/rerank` |
 
 ### tiny — always-on, latency-first
 
-| id | model | decode |
-|---|---|---|
-| `tiny-dumb-fast` | `qwen3.5-0.8b` | 208 |
-| `tiny-dumb-fast-alt` | `qwen3.5-2b` | 120 |
-| `tiny-quick-fast` | `qwen3.5-4b` | 61 |
+| id                   | model          | decode |
+| -------------------- | -------------- | ------ |
+| `tiny-dumb-fast`     | `qwen3.5-0.8b` | 208    |
+| `tiny-dumb-fast-alt` | `qwen3.5-2b`   | 120    |
+| `tiny-quick-fast`    | `qwen3.5-4b`   | 61     |
 
 ### orchestrate — the heavy planners
 
-| id | model | context |
-|---|---|---|
-| `orchestrate-deep-slow` | `qwen3.8-flash-next` | 1M, vision |
-| `orchestrate-deep-slow-alt` | `deepseek-v4-flash` | 320K |
+| id                          | model                | context    |
+| --------------------------- | -------------------- | ---------- |
+| `orchestrate-deep-slow`     | `qwen3.8-flash-next` | 1M, vision |
+| `orchestrate-deep-slow-alt` | `deepseek-v4-flash`  | 320K       |
 
 Two orchestrator ids, because only one fits in RAM at a time.
 
@@ -158,11 +158,11 @@ Two orchestrator ids, because only one fits in RAM at a time.
 A tag narrows an id without a new complexity or speed. The `-alt` suffix stays
 last. These four are implemented:
 
-| id | meaning | model |
-|---|---|---|
-| `chat-std-mid-long` | long-context chat | `nemotron-3-nano-30b-a3b` |
-| `code-std-fast-moe` | fast MoE coder | `north-mini-code-1.0` |
-| `vision-std-fast-moe` | fast MoE VLM | `qwen3-vl-30b-a3b` |
+| id                      | meaning                  | model                      |
+| ----------------------- | ------------------------ | -------------------------- |
+| `chat-std-mid-long`     | long-context chat        | `nemotron-3-nano-30b-a3b`  |
+| `code-std-fast-moe`     | fast MoE coder           | `north-mini-code-1.0`      |
+| `vision-std-fast-moe`   | fast MoE VLM             | `qwen3-vl-30b-a3b`         |
 | `reason-quick-fast-alt` | alternate quick reasoner | `ministral-3-3b-reasoning` |
 
 ## How to re-point or add an alias

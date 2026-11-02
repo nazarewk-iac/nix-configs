@@ -31,12 +31,12 @@ nothing in its place.
 Those flags are **static data**, not module config. They come from `hosts/<host>/meta.json`, which
 `flake.nix:260` reads:
 
-| Host | `features` in `meta.json` |
-|---|---|
-| `briv` | `{"rpi4":true}` |
+| Host                 | `features` in `meta.json`        |
+| -------------------- | -------------------------------- |
+| `briv`               | `{"rpi4":true}`                  |
 | `kdn-rpi4-bootstrap` | `{"rpi4":true,"installer":true}` |
-| `oams` | `{"microvm-host":true}` |
-| the other 12 hosts | none |
+| `oams`               | `{"microvm-host":true}`          |
+| the other 12 hosts   | none                             |
 
 The table covers the **15** host directories that carry a `meta.json`. `hosts/` holds 16
 directories; `hosts/install-iso/` has no `meta.json`, because it is an installer image and not a
@@ -74,13 +74,13 @@ target than the hub states. See [research.md](research.md) § "The four routes".
 
 Other call sites of the same capability:
 
-| File | Flag | Use |
-|---|---|---|
-| `modules/universal/virtualisation/microvm/guest/default.nix:15` | `microvm-guest` | `imports = … optionals (!flag)` |
-| `modules/universal/profile/hardware/darwin-utm-guest/default.nix:13` | `darwin-utm-guest` | gate |
-| `modules/universal/virtualisation/microvm/host/default.nix:19` | `microvm-host` | option default |
-| `modules/universal/default.nix:135` | `microvm-guest` | `lib.mkIf` on config — **not** an import, so not in scope |
-| `hosts/briv/default.nix:17,21`, `hosts/kdn-rpi4-bootstrap/default.nix:13,17` | `rpi4`, `installer` | assertions |
+| File                                                                         | Flag                | Use                                                       |
+| ---------------------------------------------------------------------------- | ------------------- | --------------------------------------------------------- |
+| `modules/universal/virtualisation/microvm/guest/default.nix:15`              | `microvm-guest`     | `imports = … optionals (!flag)`                           |
+| `modules/universal/profile/hardware/darwin-utm-guest/default.nix:13`         | `darwin-utm-guest`  | gate                                                      |
+| `modules/universal/virtualisation/microvm/host/default.nix:19`               | `microvm-host`      | option default                                            |
+| `modules/universal/default.nix:135`                                          | `microvm-guest`     | `lib.mkIf` on config — **not** an import, so not in scope |
+| `hosts/briv/default.nix:17,21`, `hosts/kdn-rpi4-bootstrap/default.nix:13,17` | `rpi4`, `installer` | assertions                                                |
 
 ## The critical distinction
 
@@ -124,12 +124,12 @@ Met on 2026-09-11.
 
 ## The deliverables, as landed
 
-| Item | Where |
-|---|---|
-| 1. the requirement statement | [done.md](done.md) § "Solution" |
-| 2. the audit | [research.md](research.md) § "Every `imports` site" — 37 sites, **0** driven by evaluated `config` |
-| 3. the conformance test | `checks/conditional-imports.nix` plus `checks/conditional-imports/` |
-| 4. what else `modules/meta` provides | [research.md](research.md) § "The rest of `modules/meta`" |
+| Item                                 | Where                                                                                              |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| 1. the requirement statement         | [done.md](done.md) § "Solution"                                                                    |
+| 2. the audit                         | [research.md](research.md) § "Every `imports` site" — 37 sites, **0** driven by evaluated `config` |
+| 3. the conformance test              | `checks/conditional-imports.nix` plus `checks/conditional-imports/`                                |
+| 4. what else `modules/meta` provides | [research.md](research.md) § "The rest of `modules/meta`"                                          |
 
 The audit found **6** third-party conditional import sites, not 3. Three kinds of static data
 drive them: `features.*` at 3 sites, `moduleType` at 5 sites, `parent == null` at 1 site. Two

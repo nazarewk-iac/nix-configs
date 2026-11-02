@@ -39,18 +39,18 @@ remote=brys` + `select-boot-entry.sh brys llm-ds4 --reboot`. Running
 `n_slots = 4, n_ctx_slot = 327680, kv_unified = 'true'`. Only `llama-cpp.service`
 runs (no small router).
 
-| check | result |
-|---|---|
-| head-of-line blocking | a short request (8 tok) returned in **3.7 s** while a 256-token request was in flight (121.8 s) |
-| DS4 residency | `RssFile` 92.6 GB, `RssAnon` 22.9 GB, `VmRSS` 115.5 GB |
-| idle major faults (5 s) | **0** |
-| OOM | none |
-| DSpark at `parallel 4` | acceptance 0.44, mean len 2.32 (draft still works) |
-| memory | 923 Mi free, 93 Gi buff/cache, 91 Gi available |
+| check                   | result                                                                                          |
+| ----------------------- | ----------------------------------------------------------------------------------------------- |
+| head-of-line blocking   | a short request (8 tok) returned in **3.7 s** while a 256-token request was in flight (121.8 s) |
+| DS4 residency           | `RssFile` 92.6 GB, `RssAnon` 22.9 GB, `VmRSS` 115.5 GB                                          |
+| idle major faults (5 s) | **0**                                                                                           |
+| OOM                     | none                                                                                            |
+| DSpark at `parallel 4`  | acceptance 0.44, mean len 2.32 (draft still works)                                              |
+| memory                  | 923 Mi free, 93 Gi buff/cache, 91 Gi available                                                  |
 
 **The client tiers needed a server-side fix.** The research claimed an unknown
 model id falls back to the frontier router. It does not: the compat-proxy routes
-an unknown id to the frontier *upstream* but does not rewrite the id, and
+an unknown id to the frontier _upstream_ but does not rewrite the id, and
 llama-server rejects the unknown id with HTTP 400 (`model '...' not found`). A
 tier is therefore routable only if the id is a real server alias. The
 `deepseek-v4-flash-<n>k` ids are now aliases of `deepseek-v4-flash` in
@@ -66,7 +66,7 @@ tier is therefore routable only if the id is a real server alias. The
 
 - Cold-boot `llm-small` once and confirm it serves the small set with DS4 absent
   (`nixos-rebuild.sh boot remote=brys` then `select-boot-entry.sh brys llm-small
-  --reboot`).
+--reboot`).
 - Aggregate-versus-serial throughput rows at `parallel 4` (the concurrency
   isolation is proven; the aggregate figure is not yet measured against a
   `parallel 1` baseline).

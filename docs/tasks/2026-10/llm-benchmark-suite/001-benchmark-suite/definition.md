@@ -18,32 +18,32 @@ across runs.
 
 ### Server side (through the compat-proxy or direct to llama-swap)
 
-| measurement | definition | unit |
-|---|---|---|
-| cold start | wall time from the request that first loads the model to its first token, page cache cold for that model | s |
-| warm start | the same, with the model already resident (no load) | s |
-| decode tok/s | generation rate at a fixed generation length | tok/s |
-| prefill tok/s | prompt-processing rate at a fixed prompt length | tok/s |
-| TTFT | time to first token at a fixed prompt | s |
-| context (served) | the model's real maximum (`context_length`) | tokens |
-| KV cache | KV bytes at the served context, per the model's KV type | MiB |
-| prompt/reuse cache | prefix-reuse speed on a repeated prompt (cache_n) | tok/s, x speed-up |
-| RssFile | mmap'd weights | MiB |
-| RssAnon | KV + compute buffers | MiB |
-| VmRSS | total resident | MiB |
-| VRAM | GPU memory while served (GPU-mode models) | MiB |
-| idle major faults | page-cache thrash detector | faults/s |
+| measurement        | definition                                                                                               | unit              |
+| ------------------ | -------------------------------------------------------------------------------------------------------- | ----------------- |
+| cold start         | wall time from the request that first loads the model to its first token, page cache cold for that model | s                 |
+| warm start         | the same, with the model already resident (no load)                                                      | s                 |
+| decode tok/s       | generation rate at a fixed generation length                                                             | tok/s             |
+| prefill tok/s      | prompt-processing rate at a fixed prompt length                                                          | tok/s             |
+| TTFT               | time to first token at a fixed prompt                                                                    | s                 |
+| context (served)   | the model's real maximum (`context_length`)                                                              | tokens            |
+| KV cache           | KV bytes at the served context, per the model's KV type                                                  | MiB               |
+| prompt/reuse cache | prefix-reuse speed on a repeated prompt (cache_n)                                                        | tok/s, x speed-up |
+| RssFile            | mmap'd weights                                                                                           | MiB               |
+| RssAnon            | KV + compute buffers                                                                                     | MiB               |
+| VmRSS              | total resident                                                                                           | MiB               |
+| VRAM               | GPU memory while served (GPU-mode models)                                                                | MiB               |
+| idle major faults  | page-cache thrash detector                                                                               | faults/s          |
 
 ### Client side (opencode)
 
-| measurement | definition |
-|---|---|
-| opencode cold start | start a fresh opencode (no prior process/cache) to first usable prompt |
-| opencode warm start | the same with a warm process/cache |
+| measurement                        | definition                                                                      |
+| ---------------------------------- | ------------------------------------------------------------------------------- |
+| opencode cold start                | start a fresh opencode (no prior process/cache) to first usable prompt          |
+| opencode warm start                | the same with a warm process/cache                                              |
 | opencode cold start in nix-configs | a fresh opencode in this repository (project config + MCP + agent rules loaded) |
-| opencode warm start in nix-configs | the same, warm |
-| first-turn latency | cold, first request to first token, against a model |
-| first-turn latency | warm |
+| opencode warm start in nix-configs | the same, warm                                                                  |
+| first-turn latency                 | cold, first request to first token, against a model                             |
+| first-turn latency                 | warm                                                                            |
 
 The client-side runs use `zellij-llm opencode spawn/send/watch`
 (`packages/llm/zellij-llm/`). The prompt is fixed and minimal.

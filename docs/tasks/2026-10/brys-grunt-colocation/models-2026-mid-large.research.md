@@ -26,35 +26,35 @@ were read from the GGUF blob list; others scaled from bf16 bytes / 3.3.
 
 ## Master table
 
-| model | HF repo | GGUF | released | params tot/act | Q4 size | placement | license | tool-calling |
-|---|---|---|---|---|---|---|---|---|
-| Qwen3.6-27B | `Qwen/Qwen3.6-27B` | unsloth `[V]` | 2026-04-21 | 27B dense | ~16.8 GB | CPU | Apache-2.0 | strong `[I]` |
-| Qwen3.6-35B-A3B | `Qwen/Qwen3.6-35B-A3B` | unsloth `[V]` | 2026-04-15 | 35B / ~3B | ~22 GB | CPU (~13 t/s) | Apache-2.0 | strong `[I]` |
-| Qwen3.5-27B | `Qwen/Qwen3.5-27B` | unsloth `[I]` | 2026-02-24 | 27B dense | ~16.8 GB | CPU | Apache-2.0 | strong `[I]` |
-| Qwen3.5-122B-A10B | `Qwen/Qwen3.5-122B-A10B` | unsloth `[I]` | 2026-02-24 | 122B / 10B | ~68 GB | CPU (~4 t/s) | Apache-2.0 | strong `[I]` |
-| Qwen3.5-397B-A17B | `Qwen/Qwen3.5-397B-A17B` | yes `[I]` | 2026-02-16 | 397B / 17B | ~215 GB | too big | Apache-2.0 | strong `[I]` |
-| GLM-4.7-Flash | `zai-org/GLM-4.7-Flash` | community `[V]` | 2026-01-19 | 30B / 3B | ~18 GB | CPU (~13 t/s) | MIT | strong `[I]` |
-| GLM-5.3-Flash | `zai-org/GLM-5.3-Flash` | community `[V]` | 2026-08-25 | 320B / 18B | ~180 GB | too big | MIT | excellent `[V]` |
-| GLM-5.2 / GLM-5.3 | `zai-org/GLM-5.2`,`-5.3` | community | 2026-06/-08 | ~355B / ~30B; ~560B | ~200-300 GB | too big | custom | strong |
-| Gemma-4-31B-it | `google/gemma-4-31B-it` | Google QAT + unsloth `[V]` | 2026-06 | 31B dense | ~18.3 GB | CPU | Apache-2.0 | good `[I]` |
-| Mistral-Small-4-119B | `mistralai/Mistral-Small-4-119B-2603` | likely `[I]` | 2026-01-23 | 119B | ~66 GB | CPU, slow | Mistral Research | strong `[I]` |
-| DeepSeek-V4-Flash | `deepseek-ai/DeepSeek-V4-Flash-0731` | gguf `[V]` | 2026-07-31 | ~180B MoE | ~100 GB | borderline | custom | strong `[I]` |
-| DeepSeek-V4.1-Flash | `deepseek-ai/DeepSeek-V4.1-Flash-1017` | community `[V]` | 2026-10-17 | ~256B MoE | ~140 GB | too big | custom | strong `[I]` |
-| Phi-4-reasoning-vision-15B | `microsoft/Phi-4-reasoning-vision-15B` | gguf `[I]` | 2026-01-23 | 15B | ~9 GB | CPU (~4.5 t/s) | MIT `[I]` | good `[I]` |
-| Granite-4.2-30B | `ibm-granite/granite-4.2-30b` | official `[V]` | 2026-08 | 30B dense | ~17.7 GB | CPU | Apache-2.0 | good `[I]` |
-| Granite-4.2-8B / 3B | `ibm-granite/granite-4.2-{8b,3b}` | official `[V]` | 2026-08 | 8B / 3B | 5 / 2 GB | GPU (3B) | Apache-2.0 | good `[I]` |
-| Granite-Switch-4.1-30B | `ibm-granite/granite-switch-4.1-30b` | — | 2026-10-14 | 30B | ~18 GB | CPU | Apache-2.0 | good `[I]` |
-| Tmax-27B | `allenai/tmax-27b` | pending `[V]` | 2026-06-21 | 27B dense | ~16.8 GB | CPU | Apache-2.0 | agent SOTA `[V]` |
-| Tmax-9B / 8B / 2B | `allenai/tmax-{9b,8b,2b}` | mradermacher `[V]` | 2026-06-17 | 9/8/2B | 5/4.5/1.2 GB | GPU/CPU | Apache-2.0 | agent `[V]` |
-| Nemotron-3.5-Bolt-74B-A9B | `nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB` | official `[V]` | 2026-10-07 | 74B / 9B | ~44 GB | CPU (~4.4 t/s) | OpenMDW-1.1 | tool-choice `[V]` |
-| Nemotron-3.5-Super-VL-120B-A12B | `nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B` | gguf `[V]` | 2026-10-12 | 120B / 12B | ~72 GB | CPU (~3.3 t/s) | OpenMDW-1.1 | strong `[I]` |
-| Nemotron-Dory-1.0-4B | `nvidia/NVIDIA-Nemotron-Labs-Dory1.0-4B` | official `[V]` | 2026-10-16 | 4B | ~2.5 GB | GPU | OpenMDW | modest `[I]` |
-| MiMo-V2.6-Distill-Qwen-9B | `XiaomiMiMo/MiMo-V2.6-Distill-Qwen-9B` | bartowski `[V]` | 2026-09-21 | 9B dense | ~5.8 GB | GPU | Apache-2.0 `[I]` | good `[I]` |
-| MiMo-V2.6-Pro-RL | `XiaomiMiMo/MiMo-V2.6-Pro-RL` | community `[V]` | 2026-09-21 | ~575B | ~300 GB | too big | Apache-2.0 `[I]` | strong `[I]` |
-| Seed-OSS-36B | `ByteDance-Seed/Seed-OSS-36B-Instruct` | unsloth `[V]` | 2026 rehost | 36B dense | ~21.8 GB | CPU (~1.8 t/s) | Apache-2.0 | good `[I]` |
-| Intern-Decision 0.8/2/4B | `internlm/Intern-Decision-*` | few `[I]` | 2026-09-26 | 0.8/2/4B | 0.5/1.4/2.8 GB | GPU | Apache-2.0 `[I]` | weak `[I]` |
-| Jamba-2-3B | `llmware/jamba-2-3b-gguf` | yes `[V]` | 2026-09 | 3B | ~2 GB | GPU | Apache-2.0 `[I]` | weak `[I]` |
-| OLMo-3.1-32B | `allenai/Olmo-3.1-32B` | community `[V]` | 2026 | 32B | ~18 GB | CPU | Apache-2.0 | weak `[I]` |
+| model                           | HF repo                                         | GGUF                       | released    | params tot/act      | Q4 size        | placement      | license          | tool-calling      |
+| ------------------------------- | ----------------------------------------------- | -------------------------- | ----------- | ------------------- | -------------- | -------------- | ---------------- | ----------------- |
+| Qwen3.6-27B                     | `Qwen/Qwen3.6-27B`                              | unsloth `[V]`              | 2026-04-21  | 27B dense           | ~16.8 GB       | CPU            | Apache-2.0       | strong `[I]`      |
+| Qwen3.6-35B-A3B                 | `Qwen/Qwen3.6-35B-A3B`                          | unsloth `[V]`              | 2026-04-15  | 35B / ~3B           | ~22 GB         | CPU (~13 t/s)  | Apache-2.0       | strong `[I]`      |
+| Qwen3.5-27B                     | `Qwen/Qwen3.5-27B`                              | unsloth `[I]`              | 2026-02-24  | 27B dense           | ~16.8 GB       | CPU            | Apache-2.0       | strong `[I]`      |
+| Qwen3.5-122B-A10B               | `Qwen/Qwen3.5-122B-A10B`                        | unsloth `[I]`              | 2026-02-24  | 122B / 10B          | ~68 GB         | CPU (~4 t/s)   | Apache-2.0       | strong `[I]`      |
+| Qwen3.5-397B-A17B               | `Qwen/Qwen3.5-397B-A17B`                        | yes `[I]`                  | 2026-02-16  | 397B / 17B          | ~215 GB        | too big        | Apache-2.0       | strong `[I]`      |
+| GLM-4.7-Flash                   | `zai-org/GLM-4.7-Flash`                         | community `[V]`            | 2026-01-19  | 30B / 3B            | ~18 GB         | CPU (~13 t/s)  | MIT              | strong `[I]`      |
+| GLM-5.3-Flash                   | `zai-org/GLM-5.3-Flash`                         | community `[V]`            | 2026-08-25  | 320B / 18B          | ~180 GB        | too big        | MIT              | excellent `[V]`   |
+| GLM-5.2 / GLM-5.3               | `zai-org/GLM-5.2`,`-5.3`                        | community                  | 2026-06/-08 | ~355B / ~30B; ~560B | ~200-300 GB    | too big        | custom           | strong            |
+| Gemma-4-31B-it                  | `google/gemma-4-31B-it`                         | Google QAT + unsloth `[V]` | 2026-06     | 31B dense           | ~18.3 GB       | CPU            | Apache-2.0       | good `[I]`        |
+| Mistral-Small-4-119B            | `mistralai/Mistral-Small-4-119B-2603`           | likely `[I]`               | 2026-01-23  | 119B                | ~66 GB         | CPU, slow      | Mistral Research | strong `[I]`      |
+| DeepSeek-V4-Flash               | `deepseek-ai/DeepSeek-V4-Flash-0731`            | gguf `[V]`                 | 2026-07-31  | ~180B MoE           | ~100 GB        | borderline     | custom           | strong `[I]`      |
+| DeepSeek-V4.1-Flash             | `deepseek-ai/DeepSeek-V4.1-Flash-1017`          | community `[V]`            | 2026-10-17  | ~256B MoE           | ~140 GB        | too big        | custom           | strong `[I]`      |
+| Phi-4-reasoning-vision-15B      | `microsoft/Phi-4-reasoning-vision-15B`          | gguf `[I]`                 | 2026-01-23  | 15B                 | ~9 GB          | CPU (~4.5 t/s) | MIT `[I]`        | good `[I]`        |
+| Granite-4.2-30B                 | `ibm-granite/granite-4.2-30b`                   | official `[V]`             | 2026-08     | 30B dense           | ~17.7 GB       | CPU            | Apache-2.0       | good `[I]`        |
+| Granite-4.2-8B / 3B             | `ibm-granite/granite-4.2-{8b,3b}`               | official `[V]`             | 2026-08     | 8B / 3B             | 5 / 2 GB       | GPU (3B)       | Apache-2.0       | good `[I]`        |
+| Granite-Switch-4.1-30B          | `ibm-granite/granite-switch-4.1-30b`            | —                          | 2026-10-14  | 30B                 | ~18 GB         | CPU            | Apache-2.0       | good `[I]`        |
+| Tmax-27B                        | `allenai/tmax-27b`                              | pending `[V]`              | 2026-06-21  | 27B dense           | ~16.8 GB       | CPU            | Apache-2.0       | agent SOTA `[V]`  |
+| Tmax-9B / 8B / 2B               | `allenai/tmax-{9b,8b,2b}`                       | mradermacher `[V]`         | 2026-06-17  | 9/8/2B              | 5/4.5/1.2 GB   | GPU/CPU        | Apache-2.0       | agent `[V]`       |
+| Nemotron-3.5-Bolt-74B-A9B       | `nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB`  | official `[V]`             | 2026-10-07  | 74B / 9B            | ~44 GB         | CPU (~4.4 t/s) | OpenMDW-1.1      | tool-choice `[V]` |
+| Nemotron-3.5-Super-VL-120B-A12B | `nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B` | gguf `[V]`                 | 2026-10-12  | 120B / 12B          | ~72 GB         | CPU (~3.3 t/s) | OpenMDW-1.1      | strong `[I]`      |
+| Nemotron-Dory-1.0-4B            | `nvidia/NVIDIA-Nemotron-Labs-Dory1.0-4B`        | official `[V]`             | 2026-10-16  | 4B                  | ~2.5 GB        | GPU            | OpenMDW          | modest `[I]`      |
+| MiMo-V2.6-Distill-Qwen-9B       | `XiaomiMiMo/MiMo-V2.6-Distill-Qwen-9B`          | bartowski `[V]`            | 2026-09-21  | 9B dense            | ~5.8 GB        | GPU            | Apache-2.0 `[I]` | good `[I]`        |
+| MiMo-V2.6-Pro-RL                | `XiaomiMiMo/MiMo-V2.6-Pro-RL`                   | community `[V]`            | 2026-09-21  | ~575B               | ~300 GB        | too big        | Apache-2.0 `[I]` | strong `[I]`      |
+| Seed-OSS-36B                    | `ByteDance-Seed/Seed-OSS-36B-Instruct`          | unsloth `[V]`              | 2026 rehost | 36B dense           | ~21.8 GB       | CPU (~1.8 t/s) | Apache-2.0       | good `[I]`        |
+| Intern-Decision 0.8/2/4B        | `internlm/Intern-Decision-*`                    | few `[I]`                  | 2026-09-26  | 0.8/2/4B            | 0.5/1.4/2.8 GB | GPU            | Apache-2.0 `[I]` | weak `[I]`        |
+| Jamba-2-3B                      | `llmware/jamba-2-3b-gguf`                       | yes `[V]`                  | 2026-09     | 3B                  | ~2 GB          | GPU            | Apache-2.0 `[I]` | weak `[I]`        |
+| OLMo-3.1-32B                    | `allenai/Olmo-3.1-32B`                          | community `[V]`            | 2026        | 32B                 | ~18 GB         | CPU            | Apache-2.0       | weak `[I]`        |
 
 ## Family notes
 
@@ -108,11 +108,11 @@ Q4_K_M, `-p 512 -n 128 -r 2 -t 16`. CPU column is `-ngl 0`; the W6600 column is
 `-ngl 99 --device Vulkan0` (partial offload; the model exceeds the 8 GB card).
 Units: tokens/second.
 
-| model | weights | CPU pp512 | CPU tg128 | W6600 pp512 | W6600 tg128 |
-|---|---|---|---|---|---|
-| GLM-4.7-Flash 30B-A3B | 17.05 GiB | 182.6 | **16.02** | 98.3 | 10.00 |
-| Qwen3.5-35B-A3B | 20.49 GiB | 168.0 | **10.85** | 89.5 | 7.49 |
-| Granite-4.2-30B (dense) | 16.50 GiB | 98.1 | **2.50** | 39.7 | 1.40 |
+| model                   | weights   | CPU pp512 | CPU tg128 | W6600 pp512 | W6600 tg128 |
+| ----------------------- | --------- | --------- | --------- | ----------- | ----------- |
+| GLM-4.7-Flash 30B-A3B   | 17.05 GiB | 182.6     | **16.02** | 98.3        | 10.00       |
+| Qwen3.5-35B-A3B         | 20.49 GiB | 168.0     | **10.85** | 89.5        | 7.49        |
+| Granite-4.2-30B (dense) | 16.50 GiB | 98.1      | **2.50**  | 39.7        | 1.40        |
 
 Two findings:
 

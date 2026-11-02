@@ -18,11 +18,11 @@ documented mechanisms.
 
 ## 1. Requirement
 
-| Constraint | Meaning |
-|---|---|
-| Hot reload | a config change takes effect without a restart of the listener |
-| Zero dropped requests | no in-flight request is cut; no queued request is failed, for a reload that keeps the affected models resident |
-| Zero model eviction (ideal) | an edit to one model does not unload the other models |
+| Constraint                  | Meaning                                                                                                        |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Hot reload                  | a config change takes effect without a restart of the listener                                                 |
+| Zero dropped requests       | no in-flight request is cut; no queued request is failed, for a reload that keeps the affected models resident |
+| Zero model eviction (ideal) | an edit to one model does not unload the other models                                                          |
 
 ## 2. llama-swap — watches config, but reload is stop-the-world `[V]`
 
@@ -57,12 +57,12 @@ routers, so a small-set edit does not touch the frontier.
 
 ## 4. Generic proxies — hitless reload, but no model management `[V]`
 
-| Proxy | Reload mechanism | In-flight behaviour | Model processes |
-|---|---|---|---|
-| **Caddy** | `caddy reload` / `POST /load` / `SIGUSR1` | provisions the new config **in-process**, keeps listeners; SSE (used by OpenCode) is **not** closed, only WebSockets (unless `stream_close_delay`) | none |
-| **HAProxy** | `-sf <pid> -x <sock>` with `bind ... expose-fd listeners` | the **only** tool with a published zero-drop measurement (**0 failed / 2000**) | none |
-| **nginx** | `SIGHUP` | **drains** old workers | none |
-| **Envoy** | hot restart | **drains**, but does **not** transfer connections | none |
+| Proxy       | Reload mechanism                                          | In-flight behaviour                                                                                                                                | Model processes |
+| ----------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| **Caddy**   | `caddy reload` / `POST /load` / `SIGUSR1`                 | provisions the new config **in-process**, keeps listeners; SSE (used by OpenCode) is **not** closed, only WebSockets (unless `stream_close_delay`) | none            |
+| **HAProxy** | `-sf <pid> -x <sock>` with `bind ... expose-fd listeners` | the **only** tool with a published zero-drop measurement (**0 failed / 2000**)                                                                     | none            |
+| **nginx**   | `SIGHUP`                                                  | **drains** old workers                                                                                                                             | none            |
+| **Envoy**   | hot restart                                               | **drains**, but does **not** transfer connections                                                                                                  | none            |
 
 Sources: `caddyserver.com/docs/command-line`,
 `haproxy.com/blog/truly-seamless-reloads-with-haproxy-no-more-hacks`,

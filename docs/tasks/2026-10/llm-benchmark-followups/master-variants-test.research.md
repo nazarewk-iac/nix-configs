@@ -21,8 +21,7 @@ supply the method and the earlier levers.
   SSDs (pool 50% fragmented, 78% full), Radeon Pro W6600. The ZFS ARC is capped
   at 8 GiB, so a cold read hits the disks.
 - Model: Qwen3.8-Flash-Next `UD-IQ4_XS` (94 GB, three shards). Fixed context
-  **16384**, `-ngl 0`, `--threads 16`, `--flash-attn on`. One-off server on port
-  18080.
+  **16384**, `-ngl 0`, `--threads 16`, `--flash-attn on`. One-off server on port 18080.
 - Binary: the matching master build for each run. The four store paths are on
   brys (copied with `nix copy --no-check-sigs`).
 - Before each run: `llama-swap` was stopped and `echo 3 > /proc/sys/vm/drop_caches`
@@ -42,17 +41,17 @@ supply the method and the earlier levers.
 
 ## Results
 
-| variant | flag | load_s | first_req_s | decode_tok_s | prefill_tok_s | SYS_used_MB | RssAnon_MiB | read_load_MB | note |
-|---|---|---|---|---|---|---|---|---|---|
-| control | none | 70.7 | 576.3 | 3.04 | 5.5 | 13705 | 1065 | 89234 | baseline; RssFile 44629 MiB; read_req 25147 MB |
-| noprefetch | `--no-mmap-prefetch` | 16.2 | 720.1 | 2.48 | 4.4 | 13734 | 1065 | 16106 | RssFile 7853 MiB; read_req 98158 MB |
-| moe-stream | `--moe-stream` | — | — | — | — | — | — | — | **ABORT** at load: cache has 20 slots, needs 30 |
-| moe-stream | `--moe-stream-cache 8G` | 7.1 | 915.5 | 1.24 | 3.5 | 20698 | 2932 | 12311 | RssFile 32 MiB; read_req 345629 MB |
-| moe-stream | `--moe-stream-direct` | — | — | — | — | — | — | — | **ABORT** at load (same cache check) |
-| moe-stream | `--moe-stream-direct --moe-stream-cache 8G` | 6.1 | 939.8 | 1.23 | 3.4 | 20629 | 2932 | 11816 | RssFile 32 MiB; read_req 327346 MB |
-| pin-hot | `--pin-hot-experts 8` | 70.6 | 591.4 | 2.91 | 5.4 | 13708 | 1065 | 87769 | mlock denied (8 MiB limit) → no-op, equals control |
-| pin-hot | `--pin-hot-experts 8` (memlock unlimited) | 119.1 | 601.6 | 2.65 | 5.3 | 48734 | 1065 | 145281 | locks ~35 GB; read_req 25272 MB |
-| pin-hot | `--pin-hot-experts 32 --pin-hot-experts-budget-mib 32768` | 119.1 | 587.8 | 3.46 | 5.4 | 48069 | 1065 | 146123 | locks ~34 GB; read_req 27729 MB |
+| variant    | flag                                                      | load_s | first_req_s | decode_tok_s | prefill_tok_s | SYS_used_MB | RssAnon_MiB | read_load_MB | note                                               |
+| ---------- | --------------------------------------------------------- | ------ | ----------- | ------------ | ------------- | ----------- | ----------- | ------------ | -------------------------------------------------- |
+| control    | none                                                      | 70.7   | 576.3       | 3.04         | 5.5           | 13705       | 1065        | 89234        | baseline; RssFile 44629 MiB; read_req 25147 MB     |
+| noprefetch | `--no-mmap-prefetch`                                      | 16.2   | 720.1       | 2.48         | 4.4           | 13734       | 1065        | 16106        | RssFile 7853 MiB; read_req 98158 MB                |
+| moe-stream | `--moe-stream`                                            | —      | —           | —            | —             | —           | —           | —            | **ABORT** at load: cache has 20 slots, needs 30    |
+| moe-stream | `--moe-stream-cache 8G`                                   | 7.1    | 915.5       | 1.24         | 3.5           | 20698       | 2932        | 12311        | RssFile 32 MiB; read_req 345629 MB                 |
+| moe-stream | `--moe-stream-direct`                                     | —      | —           | —            | —             | —           | —           | —            | **ABORT** at load (same cache check)               |
+| moe-stream | `--moe-stream-direct --moe-stream-cache 8G`               | 6.1    | 939.8       | 1.23         | 3.4           | 20629       | 2932        | 11816        | RssFile 32 MiB; read_req 327346 MB                 |
+| pin-hot    | `--pin-hot-experts 8`                                     | 70.6   | 591.4       | 2.91         | 5.4           | 13708       | 1065        | 87769        | mlock denied (8 MiB limit) → no-op, equals control |
+| pin-hot    | `--pin-hot-experts 8` (memlock unlimited)                 | 119.1  | 601.6       | 2.65         | 5.3           | 48734       | 1065        | 145281       | locks ~35 GB; read_req 25272 MB                    |
+| pin-hot    | `--pin-hot-experts 32 --pin-hot-experts-budget-mib 32768` | 119.1  | 587.8       | 3.46         | 5.4           | 48069       | 1065        | 146123       | locks ~34 GB; read_req 27729 MB                    |
 
 `idle_faults_s` is 0.00 for every run that loaded. The model stays in the page
 cache, so no major fault happens while the server is idle.

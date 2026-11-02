@@ -36,14 +36,14 @@ The digest below regroups the claims by theme, then tabulates them, then states 
 
 ## 1 — Profiling tools
 
-| Tool | What the session claims | Reference |
-|---|---|---|
-| `--eval-profiler flamegraph` | Samples the function call stack. Writes folded stacks for `flamegraph.pl` and speedscope. Settings: `--eval-profiler flamegraph`, `--eval-profile-file`, `--eval-profiler-frequency` (default 99 Hz) | `[^3]` `[^4]` `[^5]` |
-| Availability | **CppNix ≥ 2.30 only.** The session first says it is "available in upstream Nix and Lix" `[^3]`, then corrects itself in turn 2: "There is no flamegraph eval profiler in Lix as of 2.95" | `[^11]` |
-| `NIX_SHOW_STATS`, `NIX_COUNT_CALLS`, `NIX_SHOW_STATS_PATH` | Present in all Nix versions, **including Lix**. Give allocation, thunk and call counts. No flame graph | `[^7]` `[^9]` |
-| `nix-evaluator-stats` | A community web dashboard for `NIX_SHOW_STATS` JSON. Has a snapshot-compare mode to diff two runs. Works with Lix because it only reads the JSON | `[^8]` `[^10]` |
-| speedscope.app | Interactive viewer. The "Sandwich View", filtered on `derivationStrict`, ranks derivations | `[^5]` |
-| eBPF USDT probes | Lix 2.93 added USDT probes for production instrumentation. Aimed at Lix developers, not config profiling | `[^8]` |
+| Tool                                                       | What the session claims                                                                                                                                                                              | Reference            |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| `--eval-profiler flamegraph`                               | Samples the function call stack. Writes folded stacks for `flamegraph.pl` and speedscope. Settings: `--eval-profiler flamegraph`, `--eval-profile-file`, `--eval-profiler-frequency` (default 99 Hz) | `[^3]` `[^4]` `[^5]` |
+| Availability                                               | **CppNix ≥ 2.30 only.** The session first says it is "available in upstream Nix and Lix" `[^3]`, then corrects itself in turn 2: "There is no flamegraph eval profiler in Lix as of 2.95"            | `[^11]`              |
+| `NIX_SHOW_STATS`, `NIX_COUNT_CALLS`, `NIX_SHOW_STATS_PATH` | Present in all Nix versions, **including Lix**. Give allocation, thunk and call counts. No flame graph                                                                                               | `[^7]` `[^9]`        |
+| `nix-evaluator-stats`                                      | A community web dashboard for `NIX_SHOW_STATS` JSON. Has a snapshot-compare mode to diff two runs. Works with Lix because it only reads the JSON                                                     | `[^8]` `[^10]`       |
+| speedscope.app                                             | Interactive viewer. The "Sandwich View", filtered on `derivationStrict`, ranks derivations                                                                                                           | `[^5]`               |
+| eBPF USDT probes                                           | Lix 2.93 added USDT probes for production instrumentation. Aimed at Lix developers, not config profiling                                                                                             | `[^8]`               |
 
 [research.md](research.md) already proved the first and third rows on this machine. The new item is
 `nix-evaluator-stats`. It is a viewer, not a profiler, so it cannot show self time either.
@@ -88,26 +88,26 @@ or more disk for lazy trees `[^17]`. The session itself calls these hints, not p
 
 ## 3 — Lix
 
-| Claim | Reference |
-|---|---|
-| Lix's evaluator is 8–20 % faster than CppNix 2.18 overall | `[^5]` |
-| **Lix 2.96** (released 2026-10-13) links **mimalloc** for all non-GC allocations. Reported "5–12 % wall-clock improvement on evaluation workloads, from `nix-instantiate hello` to `nix-env -qa` and full NixOS configurations" | `[^7]` |
-| **Lix 2.95** launches sandboxed builds up to **80 % faster** on Linux. Helps graphs with many `runCommand` derivations. A build-phase gain, not eval | `[^4]` |
-| Lix 2.96 releases an experimental **Cap'n'Proto** RPC protocol for local daemon connections. It runs beside the legacy protocol, so old clients keep working | `[^4]` |
-| **No parallel evaluation** in Lix, confirmed absent mid-2026, no timeline | `[^12]` |
-| **No lazy trees** in Lix; the upstream implementation was rejected; a replacement is planned with no timeline | `[^5]` |
-| **No `--eval-profiler flamegraph`** in Lix, branched from 2.18, not backported | `[^11]` |
+| Claim                                                                                                                                                                                                                           | Reference |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| Lix's evaluator is 8–20 % faster than CppNix 2.18 overall                                                                                                                                                                       | `[^5]`    |
+| **Lix 2.96** (released 2026-10-13) links **mimalloc** for all non-GC allocations. Reported "5–12 % wall-clock improvement on evaluation workloads, from `nix-instantiate hello` to `nix-env -qa` and full NixOS configurations" | `[^7]`    |
+| **Lix 2.95** launches sandboxed builds up to **80 % faster** on Linux. Helps graphs with many `runCommand` derivations. A build-phase gain, not eval                                                                            | `[^4]`    |
+| Lix 2.96 releases an experimental **Cap'n'Proto** RPC protocol for local daemon connections. It runs beside the legacy protocol, so old clients keep working                                                                    | `[^4]`    |
+| **No parallel evaluation** in Lix, confirmed absent mid-2026, no timeline                                                                                                                                                       | `[^12]`   |
+| **No lazy trees** in Lix; the upstream implementation was rejected; a replacement is planned with no timeline                                                                                                                   | `[^5]`    |
+| **No `--eval-profiler flamegraph`** in Lix, branched from 2.18, not backported                                                                                                                                                  | `[^11]`   |
 
 A quoted nixpkgs eval benchmark `[^6]` gave these single-host times:
 
-| Version | Time (s) |
-|---|---|
-| lix-2.96 dev (2026-07-14) | 30.42 |
-| lix-2.95.3 | 33.75 |
-| lix-2.94.2 | 34.60 |
-| nix-2.36 pre (2026-07-13) | 29.73 |
-| nix-2.35.2 | 31.74 |
-| nix-2.34.9 | 33.69 |
+| Version                   | Time (s) |
+| ------------------------- | -------- |
+| lix-2.96 dev (2026-07-14) | 30.42    |
+| lix-2.95.3                | 33.75    |
+| lix-2.94.2                | 34.60    |
+| nix-2.36 pre (2026-07-13) | 29.73    |
+| nix-2.35.2                | 31.74    |
+| nix-2.34.9                | 33.69    |
 
 The session reads this as "Lix 2.95 and current CppNix are roughly on par". The mimalloc gap is
 visible in the same table (2.96 dev 30.42 s against 2.95.3 33.75 s). This machine runs 2.95.3, so
@@ -119,27 +119,27 @@ the mimalloc gain is one release away, if the claim holds.
 
 The project is `psyclyx/fix` `[^10]`. It is a **from-scratch** evaluator in Zig, alpha quality.
 
-| Feature | Claim | Reference |
-|---|---|---|
-| Evaluator | Parallel **lazy** evaluator with a **bytecode compile cache** | `[^10]` |
-| Worker protocol | Speaks the stable store worker protocol to CppNix and Lix daemons. Use `protocol=any` for Lix | `[^11]` |
-| `-Dprof-path` | A tree of thunk forcing. Total, self and estimated critical-path time per **body chunk**, which is roughly one Nix source location | `[^2]` |
-| `--timeline` | Perfetto JSON with spans, worker quanta, GC pauses, demand waits and counters | `[^1]` |
-| `--stats` | Heap, intern, chunk, scheduler and speculation counters on stderr | `[^1]` |
-| `-Dthunks-log`, `fix thunks diff` | Per-thunk lifecycle log, compared across runs by `(file, line, col)` | `[^1]` |
-| Debugger | Breakpoints, stepping, locals, backtraces, VM explorer | `[^1]` |
-| Limits | `local` and `auto` stores unsupported. `fix switch` experimental. Mainly tested on x86_64 Linux. Hooks need the exact CLI root the rebuild runs | `[^10]` |
+| Feature                           | Claim                                                                                                                                           | Reference |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| Evaluator                         | Parallel **lazy** evaluator with a **bytecode compile cache**                                                                                   | `[^10]`   |
+| Worker protocol                   | Speaks the stable store worker protocol to CppNix and Lix daemons. Use `protocol=any` for Lix                                                   | `[^11]`   |
+| `-Dprof-path`                     | A tree of thunk forcing. Total, self and estimated critical-path time per **body chunk**, which is roughly one Nix source location              | `[^2]`    |
+| `--timeline`                      | Perfetto JSON with spans, worker quanta, GC pauses, demand waits and counters                                                                   | `[^1]`    |
+| `--stats`                         | Heap, intern, chunk, scheduler and speculation counters on stderr                                                                               | `[^1]`    |
+| `-Dthunks-log`, `fix thunks diff` | Per-thunk lifecycle log, compared across runs by `(file, line, col)`                                                                            | `[^1]`    |
+| Debugger                          | Breakpoints, stepping, locals, backtraces, VM explorer                                                                                          | `[^1]`    |
+| Limits                            | `local` and `auto` stores unsupported. `fix switch` experimental. Mainly tested on x86_64 Linux. Hooks need the exact CLI root the rebuild runs | `[^10]`   |
 
 ### Its own benchmark on one config
 
 These numbers come from the `fix` project's own harness `[^1]` `[^3]`, not from this repo:
 
-| Evaluator | Single NixOS config (ms) |
-|---|---|
-| Determinate Nix 3.21.7, all cores | 3432 |
-| Nix 2.34.8 | 2812 |
-| Lix 2.95.2 | 2678 |
-| `fix` 0.3.0 (warm) | about 890 |
+| Evaluator                         | Single NixOS config (ms) |
+| --------------------------------- | ------------------------ |
+| Determinate Nix 3.21.7, all cores | 3432                     |
+| Nix 2.34.8                        | 2812                     |
+| Lix 2.95.2                        | 2678                     |
+| `fix` 0.3.0 (warm)                | about 890                |
 
 The session reads this two ways, and both matter:
 
@@ -163,20 +163,20 @@ universal-tree host, because `kdnConfig.self` reaches the config there.
 
 ## 5 — Configuration-level items
 
-| Item | Claim | Reference |
-|---|---|---|
-| Duplicate nixpkgs imports | The highest-impact config lever. Every separate nixpkgs import re-evaluates nixpkgs | `[^9]` |
-| Home Manager as a NixOS module | A second module-system evaluation, of similar size to NixOS. One user went from 30 s to 10 s after dropping it | `[^4]` |
-| `home-manager.useGlobalPkgs = true` | Avoids a second nixpkgs import when HM runs as a NixOS module | `[^6]` |
-| Flake `packages` output access | Reading a flake's `packages` from a NixOS config causes a hidden nixpkgs import | `[^6]` |
-| `follows` on inputs | One thread cut evaluation from 3–4 min to about 2 min with `follows`, then to 1 min 15 s after one more patch removal; an `applyPatch` alone cost about 30 s | `[^11]` |
-| `documentation.enable = false` | Stops manpage and HTML processing. A heavy hitter in a NixOS eval. The session found **no measured saving for this option alone** | `[^5]` `[^6]` |
-| Specialisations and containers | **Each triggers a full extra NixOS module evaluation** | `[^4]` |
-| Extra binary caches | Each is queried for missing paths before the build starts | `[^4]` |
-| `with lib;` | Forces the whole attribute set. Explicit `lib.mkIf` access stays lazy | `[^10]` |
-| Import from derivation | Runs a store build during evaluation. Sequential, blocks parallelism | `[^11]` |
-| Module count | 10–20 of your own modules is negligible against about 2,700 nixpkgs and about 1,200 HM modules. "Don't refactor files for speed" | `[^6]` |
-| `baseModules` trimming | A smaller base list is possible but fragile. A community `nixosMinimal` uses about 185 modules | `[^2]` `[^12]` |
+| Item                                | Claim                                                                                                                                                        | Reference      |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------- |
+| Duplicate nixpkgs imports           | The highest-impact config lever. Every separate nixpkgs import re-evaluates nixpkgs                                                                          | `[^9]`         |
+| Home Manager as a NixOS module      | A second module-system evaluation, of similar size to NixOS. One user went from 30 s to 10 s after dropping it                                               | `[^4]`         |
+| `home-manager.useGlobalPkgs = true` | Avoids a second nixpkgs import when HM runs as a NixOS module                                                                                                | `[^6]`         |
+| Flake `packages` output access      | Reading a flake's `packages` from a NixOS config causes a hidden nixpkgs import                                                                              | `[^6]`         |
+| `follows` on inputs                 | One thread cut evaluation from 3–4 min to about 2 min with `follows`, then to 1 min 15 s after one more patch removal; an `applyPatch` alone cost about 30 s | `[^11]`        |
+| `documentation.enable = false`      | Stops manpage and HTML processing. A heavy hitter in a NixOS eval. The session found **no measured saving for this option alone**                            | `[^5]` `[^6]`  |
+| Specialisations and containers      | **Each triggers a full extra NixOS module evaluation**                                                                                                       | `[^4]`         |
+| Extra binary caches                 | Each is queried for missing paths before the build starts                                                                                                    | `[^4]`         |
+| `with lib;`                         | Forces the whole attribute set. Explicit `lib.mkIf` access stays lazy                                                                                        | `[^10]`        |
+| Import from derivation              | Runs a store build during evaluation. Sequential, blocks parallelism                                                                                         | `[^11]`        |
+| Module count                        | 10–20 of your own modules is negligible against about 2,700 nixpkgs and about 1,200 HM modules. "Don't refactor files for speed"                             | `[^6]`         |
+| `baseModules` trimming              | A smaller base list is possible but fragile. A community `nixosMinimal` uses about 185 modules                                                               | `[^2]` `[^12]` |
 
 ---
 
@@ -224,43 +224,43 @@ This repo never measured that split. Every number in [research.md](research.md) 
 Status is `unverified here` for every row. None of these ran on this repo's hardware with this repo's
 config, except where the last column says otherwise.
 
-| # | Claim | Ref | Status here |
-|---|---|---|---|
-| 1 | `--eval-profiler flamegraph` arrived in CppNix 2.30 (2025-07-07), absent in Lix | `[^3]` `[^11]` | unverified here (research.md agrees from its own probe) |
-| 2 | `NIX_SHOW_STATS` / `NIX_COUNT_CALLS` work in Lix | `[^7]` `[^9]` | unverified here (research.md proved it) |
-| 3 | `nix-evaluator-stats` is a dashboard with snapshot diff | `[^8]` `[^10]` | unverified here |
-| 4 | Parallel eval and lazy trees are client-side, not daemon-side | `[^1]` `[^2]` `[^3]` | unverified here |
-| 5 | A Determinate / Nix ≥ 2.35 client against a Lix daemon is plausible | `[^3]` | unverified here (research.md proved the protocol part only) |
-| 6 | Lix protocol frozen at CppNix 2.18 | `[^1]` | unverified here (research.md agrees) |
-| 7 | Nix 2.35 copies flake sources lazily, about 2× faster fetch/unpack | `[^4]` `[^7]` | unverified here |
-| 8 | Lix evaluator 8–20 % faster than CppNix 2.18 | `[^5]` | unverified here |
-| 9 | Lix 2.96 links mimalloc, 5–12 % wall-clock gain | `[^7]` | unverified here |
-| 10 | Lix 2.95 launches sandboxed builds up to 80 % faster | `[^4]` | unverified here |
-| 11 | Lix 2.96 has experimental Cap'n'Proto local protocol | `[^4]` | unverified here |
-| 12 | Lix has no parallel eval, no lazy trees, no flamegraph profiler | `[^11]` `[^12]` `[^5]` | unverified here (research.md agrees) |
-| 13 | nixpkgs eval benchmark table (2.96 dev 30.42 s … 2.34.9 33.69 s) | `[^6]` | unverified here |
-| 14 | `fix` is a parallel lazy evaluator with a bytecode cache | `[^10]` | unverified here |
-| 15 | `fix` speaks the worker protocol, `protocol=any` for Lix | `[^11]` | unverified here |
-| 16 | `fix -Dprof-path` gives per-body-chunk time, approximate, workers=1 | `[^2]` | unverified here |
-| 17 | `fix --timeline` gives Perfetto spans; `--stats` gives counters | `[^1]` | unverified here |
-| 18 | `fix` has a debugger with breakpoints and stepping | `[^1]` | unverified here |
-| 19 | Determinate with all cores is the slowest on one NixOS config (3432 ms) | `[^1]` `[^3]` | unverified here |
-| 20 | Nix 2.34.8 2812 ms, Lix 2.95.2 2678 ms on the same config | `[^1]` | unverified here |
-| 21 | `fix` reports about 3× on real-world desktop configs | `[^1]` `[^15]` | unverified here |
-| 22 | Duplicate nixpkgs imports are the highest-impact config lever | `[^9]` | unverified here |
-| 23 | HM as a NixOS module is a second module evaluation; 30 s to 10 s | `[^4]` | unverified here |
-| 24 | `useGlobalPkgs = true` avoids a second nixpkgs import | `[^6]` | unverified here |
-| 25 | Flake `packages` access from a config imports nixpkgs | `[^6]` | unverified here |
-| 26 | Specialisations and containers each trigger a full extra NixOS eval | `[^4]` | unverified here |
-| 27 | Extra binary caches are queried before the build | `[^4]` | unverified here |
-| 28 | `documentation.enable = false` is a heavy hitter, no measured saving alone | `[^5]` `[^6]` | unverified here |
-| 29 | `with lib;` forces the whole attr set | `[^10]` | unverified here |
-| 30 | IFD blocks parallelism | `[^11]` | unverified here |
-| 31 | Module count is negligible against 2,700 nixpkgs modules | `[^6]` | unverified here (research.md agrees: repo code is 0.5 % of self time) |
-| 32 | `GC_INITIAL_HEAP_SIZE=4G` cut wall time about 25 %, default 384 MB | `[^9]` | unverified here (research.md did not test it) |
-| 33 | A Nix commit defaults the heap to 80 % RAM capped 8 GiB | `[^13]` | unverified here |
-| 34 | `nix-eval-jobs` / `nix-fast-build` help many outputs, not one toplevel | `[^8]` | unverified here (research.md agrees) |
-| 35 | Activation often exceeds 1.5 min, mostly systemd-boot and services | `[^4]` | unverified here |
+| #   | Claim                                                                           | Ref                    | Status here                                                           |
+| --- | ------------------------------------------------------------------------------- | ---------------------- | --------------------------------------------------------------------- |
+| 1   | `--eval-profiler flamegraph` arrived in CppNix 2.30 (2025-07-07), absent in Lix | `[^3]` `[^11]`         | unverified here (research.md agrees from its own probe)               |
+| 2   | `NIX_SHOW_STATS` / `NIX_COUNT_CALLS` work in Lix                                | `[^7]` `[^9]`          | unverified here (research.md proved it)                               |
+| 3   | `nix-evaluator-stats` is a dashboard with snapshot diff                         | `[^8]` `[^10]`         | unverified here                                                       |
+| 4   | Parallel eval and lazy trees are client-side, not daemon-side                   | `[^1]` `[^2]` `[^3]`   | unverified here                                                       |
+| 5   | A Determinate / Nix ≥ 2.35 client against a Lix daemon is plausible             | `[^3]`                 | unverified here (research.md proved the protocol part only)           |
+| 6   | Lix protocol frozen at CppNix 2.18                                              | `[^1]`                 | unverified here (research.md agrees)                                  |
+| 7   | Nix 2.35 copies flake sources lazily, about 2× faster fetch/unpack              | `[^4]` `[^7]`          | unverified here                                                       |
+| 8   | Lix evaluator 8–20 % faster than CppNix 2.18                                    | `[^5]`                 | unverified here                                                       |
+| 9   | Lix 2.96 links mimalloc, 5–12 % wall-clock gain                                 | `[^7]`                 | unverified here                                                       |
+| 10  | Lix 2.95 launches sandboxed builds up to 80 % faster                            | `[^4]`                 | unverified here                                                       |
+| 11  | Lix 2.96 has experimental Cap'n'Proto local protocol                            | `[^4]`                 | unverified here                                                       |
+| 12  | Lix has no parallel eval, no lazy trees, no flamegraph profiler                 | `[^11]` `[^12]` `[^5]` | unverified here (research.md agrees)                                  |
+| 13  | nixpkgs eval benchmark table (2.96 dev 30.42 s … 2.34.9 33.69 s)                | `[^6]`                 | unverified here                                                       |
+| 14  | `fix` is a parallel lazy evaluator with a bytecode cache                        | `[^10]`                | unverified here                                                       |
+| 15  | `fix` speaks the worker protocol, `protocol=any` for Lix                        | `[^11]`                | unverified here                                                       |
+| 16  | `fix -Dprof-path` gives per-body-chunk time, approximate, workers=1             | `[^2]`                 | unverified here                                                       |
+| 17  | `fix --timeline` gives Perfetto spans; `--stats` gives counters                 | `[^1]`                 | unverified here                                                       |
+| 18  | `fix` has a debugger with breakpoints and stepping                              | `[^1]`                 | unverified here                                                       |
+| 19  | Determinate with all cores is the slowest on one NixOS config (3432 ms)         | `[^1]` `[^3]`          | unverified here                                                       |
+| 20  | Nix 2.34.8 2812 ms, Lix 2.95.2 2678 ms on the same config                       | `[^1]`                 | unverified here                                                       |
+| 21  | `fix` reports about 3× on real-world desktop configs                            | `[^1]` `[^15]`         | unverified here                                                       |
+| 22  | Duplicate nixpkgs imports are the highest-impact config lever                   | `[^9]`                 | unverified here                                                       |
+| 23  | HM as a NixOS module is a second module evaluation; 30 s to 10 s                | `[^4]`                 | unverified here                                                       |
+| 24  | `useGlobalPkgs = true` avoids a second nixpkgs import                           | `[^6]`                 | unverified here                                                       |
+| 25  | Flake `packages` access from a config imports nixpkgs                           | `[^6]`                 | unverified here                                                       |
+| 26  | Specialisations and containers each trigger a full extra NixOS eval             | `[^4]`                 | unverified here                                                       |
+| 27  | Extra binary caches are queried before the build                                | `[^4]`                 | unverified here                                                       |
+| 28  | `documentation.enable = false` is a heavy hitter, no measured saving alone      | `[^5]` `[^6]`          | unverified here                                                       |
+| 29  | `with lib;` forces the whole attr set                                           | `[^10]`                | unverified here                                                       |
+| 30  | IFD blocks parallelism                                                          | `[^11]`                | unverified here                                                       |
+| 31  | Module count is negligible against 2,700 nixpkgs modules                        | `[^6]`                 | unverified here (research.md agrees: repo code is 0.5 % of self time) |
+| 32  | `GC_INITIAL_HEAP_SIZE=4G` cut wall time about 25 %, default 384 MB              | `[^9]`                 | unverified here (research.md did not test it)                         |
+| 33  | A Nix commit defaults the heap to 80 % RAM capped 8 GiB                         | `[^13]`                | unverified here                                                       |
+| 34  | `nix-eval-jobs` / `nix-fast-build` help many outputs, not one toplevel          | `[^8]`                 | unverified here (research.md agrees)                                  |
+| 35  | Activation often exceeds 1.5 min, mostly systemd-boot and services              | `[^4]`                 | unverified here                                                       |
 
 ---
 
@@ -272,7 +272,7 @@ Facts about this repo, not measurements of these claims:
   session puts mimalloc in 2.96, which released 2026-10-13, before today. An upgrade is a package
   bump, not a config change. Whether nixpkgs carries 2.96 yet is untested here.
 - **`anji` is a Darwin host.** Lix 2.95's "80 % faster sandbox launch" is a Linux build-phase claim,
-  so it does not touch `anji`. It could touch a Linux host's *build* time, which is outside this
+  so it does not touch `anji`. It could touch a Linux host's _build_ time, which is outside this
   task's exit criteria.
 - **The single biggest config lever the session names is already measured here.** "Duplicate nixpkgs
   imports" is the devenv overlay finding in [research.md](research.md) at 14.9 % self time. The
@@ -294,7 +294,7 @@ Facts about this repo, not measurements of these claims:
   against a 384 MB start, so the claim is plausible here. It is still unmeasured.
 - **Parallel evaluation is not the answer for a single host.** Both this session and
   [research.md](research.md) reach that. The `fix` benchmark makes it sharper: Determinate with all
-  cores was the *slowest* on one NixOS config.
+  cores was the _slowest_ on one NixOS config.
 
 No number in this file was measured in this repo. The next step for every avenue is in
 [status.md](status.md) § "Update 2026-10-30".

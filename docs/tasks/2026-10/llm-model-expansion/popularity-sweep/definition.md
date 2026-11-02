@@ -23,8 +23,8 @@ Hugging Face catalog by popularity, then filter by what actually fits brys.
      `text-ranking`),
    - `createdSince=2026-01-01` (current generation),
    - paginate (`limit` max 1000, follow with `?cursor=`).
-   API shape:
-   `https://huggingface.co/api/models?filter=gguf&pipeline_tag=text-generation&sort=downloads&direction=-1&limit=100&createdSince=2026-01-01`
+     API shape:
+     `https://huggingface.co/api/models?filter=gguf&pipeline_tag=text-generation&sort=downloads&direction=-1&limit=100&createdSince=2026-01-01`
 2. Deduplicate by base model (many GGUF repos repackage the same weights).
 3. Screen each candidate against the brys fit rules (below).
 4. Rank the survivors and hand the top ones to measurement.

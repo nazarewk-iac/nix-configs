@@ -17,21 +17,21 @@ message, so the whole string is the cacheable prefix
 
 ## Stability table (two requests, same repo, same session)
 
-| Part | Source | Stable? | Why it changes |
-|---|---|---|---|
-| Agent/provider prompt | `request.ts:60`, `system.ts:27-49` | volatile across turns | `agent.prompt` replaces it, and the agent switches (plan/build) per message |
-| `<env>`: cwd, worktree, vcs, platform | `system.ts:77-80` | **stable** | fixed for the session |
-| `Today's date` | `system.ts:81` | **volatile** (daily) | `new Date().toDateString()` — **handled by the plugin** |
-| Model name / exact model ID | `system.ts:74` | stable per model | changes only if the model changes |
-| `<available_references>` | `system.ts:84-101` | stable | sorted; changes only if references are added/removed |
-| Instructions (AGENTS.md / CLAUDE.md / CONTEXT.md **content**) | `instruction.ts:155-169` | **volatile** | the file **content is re-read every request**; editing AGENTS.md changes the prefix |
-| MCP instructions | `system.ts:117-133` | stable normally | changes if a server reconnects or its `instructions` text is dynamic |
-| Skills listing (name + description) | `system.ts:105-114`, `skill/index.ts:310-347` | stable | sorted by name; changes only if skill files or frontmatter change |
-| `STRUCTURED_OUTPUT_SYSTEM_PROMPT` | `prompt.ts:1271` | volatile | only when a message asks for `json_schema` output |
-| Per-message `user.system` | `request.ts:62`, `prompt.ts:668` | volatile | per-message custom system prompt |
-| Plugin `experimental.chat.system.transform` additions | `request.ts:70-83` | volatile | arbitrary plugin output |
-| `MAX_STEPS_PROMPT` (assistant message) | `prompt.ts:1281` | volatile | only on the last allowed step |
-| Plan-mode / build-switch reminders | `prompt.ts:1235`, `reminders.ts` | volatile | synthetic parts in the last user message |
+| Part                                                          | Source                                        | Stable?               | Why it changes                                                                      |
+| ------------------------------------------------------------- | --------------------------------------------- | --------------------- | ----------------------------------------------------------------------------------- |
+| Agent/provider prompt                                         | `request.ts:60`, `system.ts:27-49`            | volatile across turns | `agent.prompt` replaces it, and the agent switches (plan/build) per message         |
+| `<env>`: cwd, worktree, vcs, platform                         | `system.ts:77-80`                             | **stable**            | fixed for the session                                                               |
+| `Today's date`                                                | `system.ts:81`                                | **volatile** (daily)  | `new Date().toDateString()` — **handled by the plugin**                             |
+| Model name / exact model ID                                   | `system.ts:74`                                | stable per model      | changes only if the model changes                                                   |
+| `<available_references>`                                      | `system.ts:84-101`                            | stable                | sorted; changes only if references are added/removed                                |
+| Instructions (AGENTS.md / CLAUDE.md / CONTEXT.md **content**) | `instruction.ts:155-169`                      | **volatile**          | the file **content is re-read every request**; editing AGENTS.md changes the prefix |
+| MCP instructions                                              | `system.ts:117-133`                           | stable normally       | changes if a server reconnects or its `instructions` text is dynamic                |
+| Skills listing (name + description)                           | `system.ts:105-114`, `skill/index.ts:310-347` | stable                | sorted by name; changes only if skill files or frontmatter change                   |
+| `STRUCTURED_OUTPUT_SYSTEM_PROMPT`                             | `prompt.ts:1271`                              | volatile              | only when a message asks for `json_schema` output                                   |
+| Per-message `user.system`                                     | `request.ts:62`, `prompt.ts:668`              | volatile              | per-message custom system prompt                                                    |
+| Plugin `experimental.chat.system.transform` additions         | `request.ts:70-83`                            | volatile              | arbitrary plugin output                                                             |
+| `MAX_STEPS_PROMPT` (assistant message)                        | `prompt.ts:1281`                              | volatile              | only on the last allowed step                                                       |
+| Plan-mode / build-switch reminders                            | `prompt.ts:1235`, `reminders.ts`              | volatile              | synthetic parts in the last user message                                            |
 
 ## What this means for the same repo
 

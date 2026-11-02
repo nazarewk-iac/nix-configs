@@ -15,12 +15,12 @@ is invisible from inside the session.
 
 ## 1. The roster
 
-| Role | Where it runs | Model | Why this one |
-|---|---|---|---|
-| Overseer | one opencode session, this shell | SaaS (`requesty/deepseek-v4.1-flash-1017` in the reference run) | It must be fast, cheap to keep open for hours, and better than the local models at unblocking. |
-| Orchestrator | one opencode session in Zellij | `brys/qwen3.8-flash-next` at thinking `high` | Capable, 1M context, accepts images, and it is the alias the fleet already labels "orchestrate". |
-| Workers | sub-agents of the orchestrator | aliases, see the ladder | Start cheap, escalate on evidence. |
-| Owner | the physical world | — | Only hands in the system. |
+| Role         | Where it runs                    | Model                                                           | Why this one                                                                                     |
+| ------------ | -------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Overseer     | one opencode session, this shell | SaaS (`requesty/deepseek-v4.1-flash-1017` in the reference run) | It must be fast, cheap to keep open for hours, and better than the local models at unblocking.   |
+| Orchestrator | one opencode session in Zellij   | `brys/qwen3.8-flash-next` at thinking `high`                    | Capable, 1M context, accepts images, and it is the alias the fleet already labels "orchestrate". |
+| Workers      | sub-agents of the orchestrator   | aliases, see the ladder                                         | Start cheap, escalate on evidence.                                                               |
+| Owner        | the physical world               | —                                                               | Only hands in the system.                                                                        |
 
 The overseer and the orchestrator never share a session. The overseer talks to
 the orchestrator only through `zellij-llm opencode send`, so every instruction is
@@ -74,13 +74,13 @@ Start at the top of this table and only move down on evidence. "Evidence" means
 the worker returned a wrong or unusable answer **twice**, or the task is
 obviously beyond the tier.
 
-| Tier | Aliases | Served model | Use |
-|---|---|---|---|
-| micro | `tiny-dumb-fast`, `tiny-dumb-fast-alt` | qwen3.5-0.8b / qwen3.5-2b (GPU) | routing, classification, one-field extraction |
-| fast | `chat-dumb-fast`, `code-quick-fast`, `tools-dumb-fast` | qwen3.5-4b (GPU) / granite-4.2-3b | one small edit, one shell command, one rewrite |
-| std | `chat-std-fast`, `code-std-fast`, `tools-std-fast`, `vision-std-fast` | lfm2.5-24b-a2b (CPU), north-mini-code-1.0, qwen3-vl-30b-a3b | the normal working tier |
-| deep | `chat-deep-slow`, `code-deep-slow`, `reason-deep-slow`, `vision-deep-slow` | qwen3.8-27b (CPU, dense, ~2.5 t/s) | genuinely hard reasoning, careful code |
-| orchestrator | `orchestrate-deep-slow` | qwen3.8-flash-next | planning and review only |
+| Tier         | Aliases                                                                    | Served model                                                | Use                                            |
+| ------------ | -------------------------------------------------------------------------- | ----------------------------------------------------------- | ---------------------------------------------- |
+| micro        | `tiny-dumb-fast`, `tiny-dumb-fast-alt`                                     | qwen3.5-0.8b / qwen3.5-2b (GPU)                             | routing, classification, one-field extraction  |
+| fast         | `chat-dumb-fast`, `code-quick-fast`, `tools-dumb-fast`                     | qwen3.5-4b (GPU) / granite-4.2-3b                           | one small edit, one shell command, one rewrite |
+| std          | `chat-std-fast`, `code-std-fast`, `tools-std-fast`, `vision-std-fast`      | lfm2.5-24b-a2b (CPU), north-mini-code-1.0, qwen3-vl-30b-a3b | the normal working tier                        |
+| deep         | `chat-deep-slow`, `code-deep-slow`, `reason-deep-slow`, `vision-deep-slow` | qwen3.8-27b (CPU, dense, ~2.5 t/s)                          | genuinely hard reasoning, careful code         |
+| orchestrator | `orchestrate-deep-slow`                                                    | qwen3.8-flash-next                                          | planning and review only                       |
 
 Rules the orchestrator must follow, and the overseer must enforce:
 
@@ -139,17 +139,17 @@ jj -R ~/dev/github.com/nazarewk-iac/nix-configs log -r '@|@-' --no-graph
 
 Thresholds and the action for each:
 
-| Signal | Threshold | Action |
-|---|---|---|
-| `state=RUNNING` for one turn | > 25 min without a new tool call | interrupt with a scoped instruction ("stop, report what is blocking you in 5 lines") |
-| Same tool call repeated | 3 times | name the loop explicitly and forbid the call |
-| Same file edited | 5 times with no progress | send the diff and ask for a decision or the overseer's answer |
-| `jj log` unchanged | 40 min of work | ask for a plan checkpoint; consider resetting the sub-goal |
-| Fleet eviction in the log | any `evict` of the frontier | tell the orchestrator to wait for the swap, not retry |
-| `free -g` available | < 8 GB | stop CPU worker bursts |
-| brys load average | > core count for 10 min | serialise; do not spawn more |
-| KVM `HIDIdleTime` climbing after a key | 2 samples | stop GUI work, report, prefer a fresh session |
-| `cube_screenshot` error | 3 attempts | stop, ask the owner to power the machine |
+| Signal                                 | Threshold                        | Action                                                                               |
+| -------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------ |
+| `state=RUNNING` for one turn           | > 25 min without a new tool call | interrupt with a scoped instruction ("stop, report what is blocking you in 5 lines") |
+| Same tool call repeated                | 3 times                          | name the loop explicitly and forbid the call                                         |
+| Same file edited                       | 5 times with no progress         | send the diff and ask for a decision or the overseer's answer                        |
+| `jj log` unchanged                     | 40 min of work                   | ask for a plan checkpoint; consider resetting the sub-goal                           |
+| Fleet eviction in the log              | any `evict` of the frontier      | tell the orchestrator to wait for the swap, not retry                                |
+| `free -g` available                    | < 8 GB                           | stop CPU worker bursts                                                               |
+| brys load average                      | > core count for 10 min          | serialise; do not spawn more                                                         |
+| KVM `HIDIdleTime` climbing after a key | 2 samples                        | stop GUI work, report, prefer a fresh session                                        |
+| `cube_screenshot` error                | 3 attempts                       | stop, ask the owner to power the machine                                             |
 
 The overseer writes one line per cycle into
 `docs/tasks/2026-10/gaz-den-workstation/.worklog.md` (git-ignored). That file is

@@ -52,8 +52,8 @@ Two findings:
    include `x86_64-linux` —
    `(builtins.filter (builder: !(builtins.elem "x86_64-linux" builder.systems)))`
    with the comment `# TODO: implement the most common "x86_64-linux" builder
-   properly`. So the most common case in this fleet is deliberately skipped, and
-   only the *foreign* systems (`aarch64-*`, darwin) actually dispatch. Every
+properly`. So the most common case in this fleet is deliberately skipped, and
+   only the _foreign_ systems (`aarch64-*`, darwin) actually dispatch. Every
    native build on `oams` is local today, whatever the config appears to say.
 2. **The builder SSH identity is unreadable.** `ssh` runs as `kdn` and the key at
    `/run/configs/nix/ssh/kdn-nix-remote-build/id_ed25519` is root-only, so even a
@@ -98,16 +98,16 @@ shape the design:
 - **I4. The daemon always has an SSH timeout.** `NIX_SSHOPTS` with
   `ConnectTimeout`, `ServerAlive*` and `BatchMode=yes` in the daemon environment.
 - **I5. One entry per physical host.** No per-suffix duplication; the writer
-  decides *which URI* (LAN or NetBird) is enabled. Two entries for one host
+  decides _which URI_ (LAN or NetBird) is enabled. Two entries for one host
   double-count its slots in selection.
 
 ### The two switches
 
-| Mode | Detection | Enabled entries |
-|---|---|---|
-| **home** | `brys` reachable on its LAN name within ~2 s **and** the default route is the home gateway | `brys` on the LAN URI |
-| **away** | otherwise | none (local only) |
-| **away + explicit** | user asks | `brys` on the NetBird URI |
+| Mode                | Detection                                                                                  | Enabled entries           |
+| ------------------- | ------------------------------------------------------------------------------------------ | ------------------------- |
+| **home**            | `brys` reachable on its LAN name within ~2 s **and** the default route is the home gateway | `brys` on the LAN URI     |
+| **away**            | otherwise                                                                                  | none (local only)         |
+| **away + explicit** | user asks                                                                                  | `brys` on the NetBird URI |
 
 "Reachable" is a real probe (`ssh -o ConnectTimeout=2 -o BatchMode=yes …
 true`), not a ping and not a DNS guess: the capability that matters is
@@ -115,10 +115,11 @@ true`), not a ping and not a DNS guess: the capability that matters is
 
 ### `brys` is special: it also serves models
 
-A reachable `brys` is not always a *good* builder. When `llama-swap` holds the
+A reachable `brys` is not always a _good_ builder. When `llama-swap` holds the
 frontier model, a build competes for the same RAM and CPU, and a 95 GiB model
 resident means a big build can OOM it. The writer probes
 `http://127.0.0.1:39700/running` through the builder entry and:
+
 - keeps `brys` enabled when only small models are resident (cheap, GPU-bound);
 - **disables** it when a frontier model is loaded, unless the user forces it.
 
@@ -149,14 +150,14 @@ buildMachines = [{
 
 Its stated advantages, all of which map onto this task:
 
-| yensid feature | What it gives here |
-|---|---|
-| Load balancing **globally**, not per client | every host's builds counted together, unlike `speedFactor` |
-| `leastconn`, or a **custom HAProxy Lua** strategy | can query builders for CPU/RAM/disk — the signal that matters on `brys`, which also serves models |
-| Runs on **HAProxy** | the proxy is an L4/SSH forwarder, not a reimplementation of the store protocol |
+| yensid feature                                    | What it gives here                                                                                            |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Load balancing **globally**, not per client       | every host's builds counted together, unlike `speedFactor`                                                    |
+| `leastconn`, or a **custom HAProxy Lua** strategy | can query builders for CPU/RAM/disk — the signal that matters on `brys`, which also serves models             |
+| Runs on **HAProxy**                               | the proxy is an L4/SSH forwarder, not a reimplementation of the store protocol                                |
 | Optional **SSH CA** with short-lived builder keys | a new builder needs no client change; a removed builder's key expires. This repo already runs a CA for hosts. |
-| "You can even run the proxy on your computer" | a try-it-without-deploying path |
-| Homogeneous systems per proxy | which is why the owner's "one entry **per architecture**" instinct is right, not a limitation |
+| "You can even run the proxy on your computer"     | a try-it-without-deploying path                                                                               |
+| Homogeneous systems per proxy                     | which is why the owner's "one entry **per architecture**" instinct is right, not a limitation                 |
 
 ### The switch becomes free
 
@@ -173,18 +174,18 @@ the NetBird address, added only when wanted.
 
 ### Implementation surface, if it were DIY
 
-| Approach | Protocol work | LOC (est.) | Decision granularity | Mid-build retry |
-|---|---|---|---|---|
-| Regenerate `nix-machines.toml` | none | ~100 | per timer tick | no |
-| **SSH/L4 proxy in front of real builders** (yensid's shape) | none — forward the stream | ~150–400 (or use yensid) | per connection | no |
-| Wrapper `build-hook` that sets `builders` and execs the real hook | none, but must be transparent | ~30–60 | **per derivation** | yes, at the wrapper |
-| Implement the store/Serve protocol | full framing + handshake | 500–2000 | per derivation | yes |
-| Implement a Lix `build-hook` natively | **capnp RPC** (`rpc::build_remote::HookInstance`) | large | per derivation | yes |
+| Approach                                                          | Protocol work                                     | LOC (est.)               | Decision granularity | Mid-build retry     |
+| ----------------------------------------------------------------- | ------------------------------------------------- | ------------------------ | -------------------- | ------------------- |
+| Regenerate `nix-machines.toml`                                    | none                                              | ~100                     | per timer tick       | no                  |
+| **SSH/L4 proxy in front of real builders** (yensid's shape)       | none — forward the stream                         | ~150–400 (or use yensid) | per connection       | no                  |
+| Wrapper `build-hook` that sets `builders` and execs the real hook | none, but must be transparent                     | ~30–60                   | **per derivation**   | yes, at the wrapper |
+| Implement the store/Serve protocol                                | full framing + handshake                          | 500–2000                 | per derivation       | yes                 |
+| Implement a Lix `build-hook` natively                             | **capnp RPC** (`rpc::build_remote::HookInstance`) | large                    | per derivation       | yes                 |
 
 **A finding that rules out the cheap hook:** in Lix 2.95 the build hook is no
 longer the old text protocol. `lix/libstore/build/hook-instance.cc` creates a
 **capnproto two-party RPC** over a socketpair and calls
-`rpc.initRequest()` on it; the hook is the *server*. So a from-scratch hook on
+`rpc.initRequest()` on it; the hook is the _server_. So a from-scratch hook on
 Lix means generating code from the capnp schema. The only cheap hook is a
 **transparent wrapper**: `build-hook` is a list, so a script can inspect the
 arguments, set `NIX_CONFIG`/`--option builders`, and `exec` the real
@@ -195,28 +196,28 @@ proxy — which is the argument for the proxy route.
 
 ## Why not the alternatives
 
-| Option | Verdict |
-|---|---|
-| `speedFactor` tuning | static; cannot express "at home". |
-| `--builders` on the client | **dead in multi-user mode**: the daemon ignores it unless the client is trusted, and then only `""`. |
-| Hydra / nix-eval-jobs / nix-fast-build | evaluation CI, not build dispatch for a laptop. |
-| nixbuild.net | works as a normal remote builder, but commercial; out of scope. |
-| harmonia / attic / nix-serve / cachix | **caches**, not dispatchers. Useful for the second half (do not rebuild what another host built), not the first. |
-| A central scheduler on `etra` as a **file generator** | works, but it is a second-best version of the proxy: same dependency, weaker decisions. |
+| Option                                                                 | Verdict                                                                                                                                       |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `speedFactor` tuning                                                   | static; cannot express "at home".                                                                                                             |
+| `--builders` on the client                                             | **dead in multi-user mode**: the daemon ignores it unless the client is trusted, and then only `""`.                                          |
+| Hydra / nix-eval-jobs / nix-fast-build                                 | evaluation CI, not build dispatch for a laptop.                                                                                               |
+| nixbuild.net                                                           | works as a normal remote builder, but commercial; out of scope.                                                                               |
+| harmonia / attic / nix-serve / cachix                                  | **caches**, not dispatchers. Useful for the second half (do not rebuild what another host built), not the first.                              |
+| A central scheduler on `etra` as a **file generator**                  | works, but it is a second-best version of the proxy: same dependency, weaker decisions.                                                       |
 | **A central SSH proxy on `etra`** (`yensid` or a HAProxy/L4 forwarder) | **recommended.** One entry per architecture, global balancing, free away-mode via a LAN-only address, no protocol work, no client-side logic. |
 
 ## Phases
 
-| Phase | Work | Gate |
-|---|---|---|
-| 0 | Make `brys` a builder for `x86_64-linux` at all (the filter at `remote-builders/default.nix:103` currently drops every native builder), and fix the root-key readability so a hook can use it. | a real `nix build` lands on `brys` |
-| 1 | Measure **before** designing policy: same `nixos-rebuild` on `oams` local, on `brys` idle, and on `brys` with a frontier model resident. | three wall-clock numbers, plus `tokens_per_second` deltas from `/var/lib/llm-stats/` |
-| 2 | Stand up the proxy: `yensid`'s `proxy` module on `etra` (or a HAProxy/L4 forwarder), one entry per architecture, `leastconn` first. Client config becomes one `buildMachines` entry. | a build balances to `brys`; a second client's builds are counted in the same pool |
-| 3 | Away-mode with no logic: bind the proxy to its **LAN-only** address, verify a build from a non-LAN network falls back to local at connect time. | builds complete locally when the proxy is unreachable, with no config change |
-| 4 | The `brys`-serves-models signal: a Lua strategy or a probe-driven weight that lowers or disables `brys` while a frontier model is resident. | a build during generation either avoids `brys` or is shown to be acceptable |
-| 5 | `NIX_SSHOPTS` on the daemon, `builders-use-substitutes = true`, and retire the per-suffix duplication. | an unreachable builder costs < 10 s |
-| 6 | Fallback if the proxy is rejected: the TOML writer (`/run/kdn/nix-machines.toml` + timer + location probe). | the file flips on a network change |
-| 7 | Optional: harmonia/attic as a shared cache, so a host does not rebuild what another already built. | only if phases 1–5 leave a real gap |
+| Phase | Work                                                                                                                                                                                           | Gate                                                                                 |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| 0     | Make `brys` a builder for `x86_64-linux` at all (the filter at `remote-builders/default.nix:103` currently drops every native builder), and fix the root-key readability so a hook can use it. | a real `nix build` lands on `brys`                                                   |
+| 1     | Measure **before** designing policy: same `nixos-rebuild` on `oams` local, on `brys` idle, and on `brys` with a frontier model resident.                                                       | three wall-clock numbers, plus `tokens_per_second` deltas from `/var/lib/llm-stats/` |
+| 2     | Stand up the proxy: `yensid`'s `proxy` module on `etra` (or a HAProxy/L4 forwarder), one entry per architecture, `leastconn` first. Client config becomes one `buildMachines` entry.           | a build balances to `brys`; a second client's builds are counted in the same pool    |
+| 3     | Away-mode with no logic: bind the proxy to its **LAN-only** address, verify a build from a non-LAN network falls back to local at connect time.                                                | builds complete locally when the proxy is unreachable, with no config change         |
+| 4     | The `brys`-serves-models signal: a Lua strategy or a probe-driven weight that lowers or disables `brys` while a frontier model is resident.                                                    | a build during generation either avoids `brys` or is shown to be acceptable          |
+| 5     | `NIX_SSHOPTS` on the daemon, `builders-use-substitutes = true`, and retire the per-suffix duplication.                                                                                         | an unreachable builder costs < 10 s                                                  |
+| 6     | Fallback if the proxy is rejected: the TOML writer (`/run/kdn/nix-machines.toml` + timer + location probe).                                                                                    | the file flips on a network change                                                   |
+| 7     | Optional: harmonia/attic as a shared cache, so a host does not rebuild what another already built.                                                                                             | only if phases 1–5 leave a real gap                                                  |
 
 ## Measurement: the two questions that started this
 
@@ -251,11 +252,11 @@ force-unloading the frontier, or wait.
 
 ## Risks
 
-| Risk | Mitigation |
-|---|---|
-| **A `brys` death mid-build fails the build** (native, unavoidable) | decide explicitly: accept, or add a retry wrapper. Not silently ignored. |
-| Building on `brys` while a frontier model is resident OOMs it | the model-load probe disables it, unless forced |
-| The TOML file is missing/malformed → every build errors | the writer always emits a valid file; a systemd `ExecStartPre` check |
-| Home detection flaps on a slow link | hysteresis: enable immediately, disable only after N consecutive failures |
-| `brys` is reachable but the SSH host key rotated | connection fails → connection-time failover to local (I1), and root's `known_hosts` is managed by the ssh-ca work |
-| The NetBird URI is enabled but slow, making a build slower than local | `speedFactor` on the NetBird entry stays low, and it is enabled only when explicitly asked |
+| Risk                                                                  | Mitigation                                                                                                        |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **A `brys` death mid-build fails the build** (native, unavoidable)    | decide explicitly: accept, or add a retry wrapper. Not silently ignored.                                          |
+| Building on `brys` while a frontier model is resident OOMs it         | the model-load probe disables it, unless forced                                                                   |
+| The TOML file is missing/malformed → every build errors               | the writer always emits a valid file; a systemd `ExecStartPre` check                                              |
+| Home detection flaps on a slow link                                   | hysteresis: enable immediately, disable only after N consecutive failures                                         |
+| `brys` is reachable but the SSH host key rotated                      | connection fails → connection-time failover to local (I1), and root's `known_hosts` is managed by the ssh-ca work |
+| The NetBird URI is enabled but slow, making a build slower than local | `speedFactor` on the NetBird entry stays low, and it is enabled only when explicitly asked                        |

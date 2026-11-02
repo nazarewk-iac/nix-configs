@@ -29,7 +29,7 @@ A one-task job then cost about eight hours at the slowest possible rate.
 
 2. **The Task tool CAN invoke them by name.** Verified live:
    `opencode run --model brys/tiny-quick-fast "<call Task with
-   subagent_type='qwen-low'>"` printed `Qwen-Low Agent` then `PONG`. So a
+subagent_type='qwen-low'>"` printed `Qwen-Low Agent` then `PONG`. So a
    custom `subagent_type` works; it is not limited to `explore`/`general`.
 
 3. **The failure was a naming/discovery gap, not a hard limit.** In the test
@@ -75,7 +75,7 @@ sub-task.
   gate? Verify with a run that logs the tool schema.
 - Should `explore`/`general` be pinned to a cheap model in `opencode.jsonc`, so
   a caller that forgets to name a custom type still gets the cheap model?
-- Is there a way to make the *default* sub-agent choice cheap without editing
+- Is there a way to make the _default_ sub-agent choice cheap without editing
   every caller?
 
 ## References

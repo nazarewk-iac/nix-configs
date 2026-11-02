@@ -16,10 +16,10 @@ repeat it. [docs/slots-for-adopters.md](slots-for-adopters.md) describes the old
 
 > **How proven is this route? Read this before you pick it.**
 >
-> | Route | Real consumers in this repository | State |
-> |---|---|---|
-> | den aspects — this page | none; every den entity is a test artifact under `checks/den-mvp/` | evaluated, never activated |
-> | slots — [docs/slots-for-adopters.md](slots-for-adopters.md) | 5 host directories under `hosts/`, plus the root `devenv.nix` | the route the repository runs on |
+> | Route                                                       | Real consumers in this repository                                 | State                            |
+> | ----------------------------------------------------------- | ----------------------------------------------------------------- | -------------------------------- |
+> | den aspects — this page                                     | none; every den entity is a test artifact under `checks/den-mvp/` | evaluated, never activated       |
+> | slots — [docs/slots-for-adopters.md](slots-for-adopters.md) | 5 host directories under `hosts/`, plus the root `devenv.nix`     | the route the repository runs on |
 >
 > `modules/den/flake-module.nix:70-71` names the den entities "test artifacts, not real hosts". So
 > no machine activates a den aspect today, and the § "What is untested" list below is the honest
@@ -66,12 +66,12 @@ from the `modules/slots/` route, which needs one `overlays` line.
 
 ## The two entry points
 
-| Handle | Shape | Use |
-|---|---|---|
-| `denModules.<aspect>` | an already-resolved plain module | one aspect, in its one common class |
-| `denModules.<aspect>-<class>` | an already-resolved plain module | one aspect, in one named class it emits |
-| `denLib.imports { class; aspects; }` | a **list** of plain modules | any aspect, in any class it emits |
-| `denLib.pairs` | aspect name → a list of class names | list the valid `<aspect>-<class>` keys |
+| Handle                               | Shape                               | Use                                     |
+| ------------------------------------ | ----------------------------------- | --------------------------------------- |
+| `denModules.<aspect>`                | an already-resolved plain module    | one aspect, in its one common class     |
+| `denModules.<aspect>-<class>`        | an already-resolved plain module    | one aspect, in one named class it emits |
+| `denLib.imports { class; aspects; }` | a **list** of plain modules         | any aspect, in any class it emits       |
+| `denLib.pairs`                       | aspect name → a list of class names | list the valid `<aspect>-<class>` keys  |
 
 `denModules.<aspect>` drops straight into a `modules` list.
 
@@ -329,49 +329,49 @@ itself.
 
 ### The verified commands
 
-| Example | Command | Exit |
-|---|---|---|
-| nix-darwin | `nix eval --no-eval-cache --raw '.#darwinConfigurations.example.config.system.build.toplevel.drvPath'` | 0 |
-| NixOS | `nix eval --no-eval-cache --raw '.#nixosConfigurations.example.config.system.build.toplevel.drvPath'` | 0 |
-| Home Manager | `nix eval --no-eval-cache --raw '.#homeConfigurations.adopter.activationPackage.drvPath'` | 0 |
-| devenv, CLI | `devenv build shell` | 0 |
-| devenv, no CLI | `nix eval --no-eval-cache --raw '.#packages.aarch64-darwin.shell.drvPath'` | 0 |
+| Example        | Command                                                                                                | Exit |
+| -------------- | ------------------------------------------------------------------------------------------------------ | ---- |
+| nix-darwin     | `nix eval --no-eval-cache --raw '.#darwinConfigurations.example.config.system.build.toplevel.drvPath'` | 0    |
+| NixOS          | `nix eval --no-eval-cache --raw '.#nixosConfigurations.example.config.system.build.toplevel.drvPath'`  | 0    |
+| Home Manager   | `nix eval --no-eval-cache --raw '.#homeConfigurations.adopter.activationPackage.drvPath'`              | 0    |
+| devenv, CLI    | `devenv build shell`                                                                                   | 0    |
+| devenv, no CLI | `nix eval --no-eval-cache --raw '.#packages.aarch64-darwin.shell.drvPath'`                             | 0    |
 
 Four more evaluations cover **every** aspect in **every** class it emits — 26 aspect-class pairs
 across 21 aspects. All four exit 0:
 
-| Class | Aspects in one evaluation |
-|---|---|
-| `devenv` | `devenv-cli`, `gh`, `jj`, `jj-fork`, `llm-client`, `llm-proxy`, `mcp`, `mcp-basic-memory`, `mcp-pretty-print`, `mcp-snoop`, `nix`, `opencode`, `ssh-access`, `zellij` |
-| `nixos` | `ca`, `devenv-cli`, `llm`, `llm-proxy` |
-| `darwin` | `devenv-cli`, `homebrew`, `homebrew-nix-managed`, `rosetta-builder` |
-| `homeManager` | `devenv-cli`, `signing`, `ssh-access`, `ssh-agent` |
+| Class         | Aspects in one evaluation                                                                                                                                             |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `devenv`      | `devenv-cli`, `gh`, `jj`, `jj-fork`, `llm-client`, `llm-proxy`, `mcp`, `mcp-basic-memory`, `mcp-pretty-print`, `mcp-snoop`, `nix`, `opencode`, `ssh-access`, `zellij` |
+| `nixos`       | `ca`, `devenv-cli`, `llm`, `llm-proxy`                                                                                                                                |
+| `darwin`      | `devenv-cli`, `homebrew`, `homebrew-nix-managed`, `rosetta-builder`                                                                                                   |
+| `homeManager` | `devenv-cli`, `signing`, `ssh-access`, `ssh-agent`                                                                                                                    |
 
 ## The 21 aspects
 
-| Aspect | Classes | `denModules` | What it gives you |
-|---|---|---|---|
-| `ca` | `nixos` | yes | Trusts your own certificate authorities as system CAs. |
-| `devenv-cli` | `nixos`, `darwin`, `homeManager`, `devenv` | **no** | Puts the `devenv` CLI on PATH. The one four-class aspect. |
-| `gh` | `devenv` | yes | The GitHub CLI, plus a read-only Bash allowlist for Claude Code. |
-| `homebrew` | `darwin` | yes | Turns nix-darwin's `homebrew` module on. Three empty lists, three `onActivation` values. |
-| `homebrew-nix-managed` | `darwin` | pair form only | Lets nix-homebrew own the Homebrew installation, with immutable taps. Includes `homebrew`. |
-| `jj` | `devenv` | yes | The `jj` binary, a repo config, an agent rule, a `jj-mcp` backend. Includes `mcp`. |
-| `jj-fork` | `devenv` | yes | The fork-remote half: 2 remotes, 20 revset aliases, 5 aliases, 2 git hooks. Includes `jj`. |
-| `llm` | `nixos` | yes | Serves local GGUF models from one `llama-server` router, behind one Caddy vhost. |
-| `llm-client` | `devenv` | yes | One opencode provider per remote llama-server endpoint. Includes `opencode`. |
-| `llm-proxy` | `nixos`, `devenv` | **no** | Runs `opencode-compat-proxy` instances that translate raw tool calls to OpenAI JSON. |
-| `mcp` | `devenv` | yes | One `mcp-gateway` process, and one Claude Code registration for it. |
-| `mcp-basic-memory` | `devenv` | yes | One gateway backend per knowledge base. Includes `mcp-pretty-print`. |
-| `mcp-pretty-print` | `devenv` | yes | Replaces the Claude Code approval dialog with a Tk preview. Includes `mcp`. |
-| `mcp-snoop` | `devenv` | yes | Puts `mcpsnoop` in front of the gateway as a JSON-RPC traffic proxy. Includes `mcp`. |
-| `nix` | `devenv` | yes | Two Nix language servers, the formatter, a pre-commit hook, 2 MCP backends. Includes `mcp`. |
-| `opencode` | `devenv` | yes | A project `opencode.jsonc`, plus a credential wrapper named `opencode` on PATH. |
-| `rosetta-builder` | `darwin` | yes | An on-demand `aarch64-linux` plus `x86_64-linux` Linux builder VM for Apple Silicon. |
-| `signing` | `homeManager` | yes | An `allowed_signers` file, an alternate git/jj signing pair, `kdn-signing` on PATH. |
-| `ssh-access` | `homeManager`, `devenv` | **no** | Topology-aware ssh. Each `kdn-<name>` alias picks the cheapest route at connect time. |
-| `ssh-agent` | `homeManager` | yes | OpenSSH `ssh-agent` in place of the macOS built-in agent, so a FIDO2 security key works. |
-| `zellij` | `devenv` | yes | zellij plus two helper packages, two Claude Code hooks, one agent skill. |
+| Aspect                 | Classes                                    | `denModules`   | What it gives you                                                                           |
+| ---------------------- | ------------------------------------------ | -------------- | ------------------------------------------------------------------------------------------- |
+| `ca`                   | `nixos`                                    | yes            | Trusts your own certificate authorities as system CAs.                                      |
+| `devenv-cli`           | `nixos`, `darwin`, `homeManager`, `devenv` | **no**         | Puts the `devenv` CLI on PATH. The one four-class aspect.                                   |
+| `gh`                   | `devenv`                                   | yes            | The GitHub CLI, plus a read-only Bash allowlist for Claude Code.                            |
+| `homebrew`             | `darwin`                                   | yes            | Turns nix-darwin's `homebrew` module on. Three empty lists, three `onActivation` values.    |
+| `homebrew-nix-managed` | `darwin`                                   | pair form only | Lets nix-homebrew own the Homebrew installation, with immutable taps. Includes `homebrew`.  |
+| `jj`                   | `devenv`                                   | yes            | The `jj` binary, a repo config, an agent rule, a `jj-mcp` backend. Includes `mcp`.          |
+| `jj-fork`              | `devenv`                                   | yes            | The fork-remote half: 2 remotes, 20 revset aliases, 5 aliases, 2 git hooks. Includes `jj`.  |
+| `llm`                  | `nixos`                                    | yes            | Serves local GGUF models from one `llama-server` router, behind one Caddy vhost.            |
+| `llm-client`           | `devenv`                                   | yes            | One opencode provider per remote llama-server endpoint. Includes `opencode`.                |
+| `llm-proxy`            | `nixos`, `devenv`                          | **no**         | Runs `opencode-compat-proxy` instances that translate raw tool calls to OpenAI JSON.        |
+| `mcp`                  | `devenv`                                   | yes            | One `mcp-gateway` process, and one Claude Code registration for it.                         |
+| `mcp-basic-memory`     | `devenv`                                   | yes            | One gateway backend per knowledge base. Includes `mcp-pretty-print`.                        |
+| `mcp-pretty-print`     | `devenv`                                   | yes            | Replaces the Claude Code approval dialog with a Tk preview. Includes `mcp`.                 |
+| `mcp-snoop`            | `devenv`                                   | yes            | Puts `mcpsnoop` in front of the gateway as a JSON-RPC traffic proxy. Includes `mcp`.        |
+| `nix`                  | `devenv`                                   | yes            | Two Nix language servers, the formatter, a pre-commit hook, 2 MCP backends. Includes `mcp`. |
+| `opencode`             | `devenv`                                   | yes            | A project `opencode.jsonc`, plus a credential wrapper named `opencode` on PATH.             |
+| `rosetta-builder`      | `darwin`                                   | yes            | An on-demand `aarch64-linux` plus `x86_64-linux` Linux builder VM for Apple Silicon.        |
+| `signing`              | `homeManager`                              | yes            | An `allowed_signers` file, an alternate git/jj signing pair, `kdn-signing` on PATH.         |
+| `ssh-access`           | `homeManager`, `devenv`                    | **no**         | Topology-aware ssh. Each `kdn-<name>` alias picks the cheapest route at connect time.       |
+| `ssh-agent`            | `homeManager`                              | yes            | OpenSSH `ssh-agent` in place of the macOS built-in agent, so a FIDO2 security key works.    |
+| `zellij`               | `devenv`                                   | yes            | zellij plus two helper packages, two Claude Code hooks, one agent skill.                    |
 
 Verify the list yourself:
 
@@ -389,25 +389,25 @@ nix eval --no-eval-cache --json '<flakeref>#denModules'          --apply builtin
 Four aspects declare no option at all: `devenv-cli`, `gh`, `mcp-snoop` and `ssh-agent`. For the
 rest, the prefix is this:
 
-| Aspect | Option prefix |
-|---|---|
-| `ca` | `kdn.ca.<instance>` |
-| `homebrew` | `kdn.homebrew` |
-| `homebrew-nix-managed` | `kdn.homebrew.nixManaged` |
-| `jj` | `kdn.jj` |
-| `jj-fork` | `kdn.jj.fork`, plus `kdn.jj.alwaysBlockedMessagePatterns` |
-| `llm` | `kdn.llm.local` |
-| `llm-client` | `kdn.llm.client` |
-| `llm-proxy` | `kdn.llm.proxy` |
-| `mcp` | `kdn.mcp` |
-| `mcp-basic-memory` | `kdn.mcp.basic-memory` |
-| `mcp-pretty-print` | `kdn.mcp.pretty-print` |
-| `nix` | `kdn.nix` |
-| `opencode` | `kdn.opencode` |
-| `rosetta-builder` | `kdn.rosetta-builder.guest` |
-| `signing` | `kdn.signing` |
-| `ssh-access` | `kdn.ssh-access` |
-| `zellij` | `kdn.zellij` |
+| Aspect                 | Option prefix                                             |
+| ---------------------- | --------------------------------------------------------- |
+| `ca`                   | `kdn.ca.<instance>`                                       |
+| `homebrew`             | `kdn.homebrew`                                            |
+| `homebrew-nix-managed` | `kdn.homebrew.nixManaged`                                 |
+| `jj`                   | `kdn.jj`                                                  |
+| `jj-fork`              | `kdn.jj.fork`, plus `kdn.jj.alwaysBlockedMessagePatterns` |
+| `llm`                  | `kdn.llm.local`                                           |
+| `llm-client`           | `kdn.llm.client`                                          |
+| `llm-proxy`            | `kdn.llm.proxy`                                           |
+| `mcp`                  | `kdn.mcp`                                                 |
+| `mcp-basic-memory`     | `kdn.mcp.basic-memory`                                    |
+| `mcp-pretty-print`     | `kdn.mcp.pretty-print`                                    |
+| `nix`                  | `kdn.nix`                                                 |
+| `opencode`             | `kdn.opencode`                                            |
+| `rosetta-builder`      | `kdn.rosetta-builder.guest`                               |
+| `signing`              | `kdn.signing`                                             |
+| `ssh-access`           | `kdn.ssh-access`                                          |
+| `zellij`               | `kdn.zellij`                                              |
 
 No rule maps an aspect name to its option prefix. Read the aspect file when you are not sure.
 
@@ -418,12 +418,12 @@ special case.
 
 A lower number wins. Four priorities matter:
 
-| Definition | Priority | Wins against |
-|---|---|---|
-| `lib.mkForce x` | 50 | everything below |
-| a plain assignment | 100 | every default |
-| `lib.mkDefault x` | 1000 | an option's own declared default |
-| an option's own `default = x` | 1500 | nothing |
+| Definition                    | Priority | Wins against                     |
+| ----------------------------- | -------- | -------------------------------- |
+| `lib.mkForce x`               | 50       | everything below                 |
+| a plain assignment            | 100      | every default                    |
+| `lib.mkDefault x`             | 1000     | an option's own declared default |
+| an option's own `default = x` | 1500     | nothing                          |
 
 Two definitions at the **same** priority do not resolve. A mergeable type concatenates them, and a
 scalar type stops the evaluation.
@@ -461,12 +461,12 @@ Eleven items. Each one is measured.
 Three of the four are multi-class. The fourth, `homebrew-nix-managed`, emits one class only, and
 `flake-module.nix` registers no zero-argument name for it. Use the pair form for all four.
 
-| Aspect | Classes | Reach it with |
-|---|---|---|
-| `devenv-cli` | 4 | `denLib.imports { class = "<one of the four>"; aspects = [ "devenv-cli" ]; }` |
-| `llm-proxy` | 2 | `denLib.imports { class = "nixos"; … }` or `class = "devenv"` |
-| `ssh-access` | 2 | `denLib.imports { class = "homeManager"; … }` or `class = "devenv"` |
-| `homebrew-nix-managed` | 1 | `denModules.homebrew-nix-managed-darwin`, or `denLib.imports { class = "darwin"; … }` |
+| Aspect                 | Classes | Reach it with                                                                         |
+| ---------------------- | ------- | ------------------------------------------------------------------------------------- |
+| `devenv-cli`           | 4       | `denLib.imports { class = "<one of the four>"; aspects = [ "devenv-cli" ]; }`         |
+| `llm-proxy`            | 2       | `denLib.imports { class = "nixos"; … }` or `class = "devenv"`                         |
+| `ssh-access`           | 2       | `denLib.imports { class = "homeManager"; … }` or `class = "devenv"`                   |
+| `homebrew-nix-managed` | 1       | `denModules.homebrew-nix-managed-darwin`, or `denLib.imports { class = "darwin"; … }` |
 
 `denLib.aspectModules` holds 21 names. `denModules` holds 43: 17 zero-argument names plus 26
 pairs. `modules/den/flake-module.nix` states the multi-class reason in a comment.
@@ -474,7 +474,7 @@ pairs. `modules/den/flake-module.nix` states the multi-class reason in a comment
 ### 2. devenv needs an explicit `git-hooks` input
 
 - **Symptom:** `error: Failed assertions: - To use 'git-hooks', run the following command: $ devenv
-  inputs add git-hooks github:cachix/git-hooks.nix --follows nixpkgs`
+inputs add git-hooks github:cachix/git-hooks.nix --follows nixpkgs`
 - **Cause:** devenv reads `inputs.git-hooks` out of `specialArgs.inputs`, and it falls back to a
   stub that accepts no real hook. The `nix` and `jj-fork` aspects register real hooks. `jj-fork`
   includes `jj`, so a shell that takes `jj-fork` needs it too.
@@ -486,8 +486,8 @@ Measured with devenv 2.3.1: the CLI does **not** supply the input by itself. Bot
 ### 3. `kdn.mcp.serversNix` defaults to `null`
 
 - **Symptom:** the evaluation prints `warning: kdn.mcp.serversNix is null, so every
-  kdn.mcp.programs declaration stays inert and only kdn.mcp.extraBackends reaches the gateway. Set
-  kdn.mcp.serversNix to your own mcp-servers-nix source to turn the translation on.`
+kdn.mcp.programs declaration stays inert and only kdn.mcp.extraBackends reaches the gateway. Set
+kdn.mcp.serversNix to your own mcp-servers-nix source to turn the translation on.`
   The gateway starts, and it serves no `programs.*` backend.
 - **Cause:** `mcp-servers-nix` is a `devenv.yaml` input of this repository, so no den evaluation
   reaches it. The aspect takes the source as a plain option instead.
@@ -601,15 +601,15 @@ on its own.
 
 **You cannot get this builder in one `darwin-rebuild switch`.** `nix-rosetta-builder` builds its
 own Lima guest image, and that image is a Linux closure. Nix builds a whole closure **before** it
-activates the generation, so a stock `nix.linux-builder` that the *same* generation turns on is
+activates the generation, so a stock `nix.linux-builder` that the _same_ generation turns on is
 not running yet. Upstream states the same dance (`nix-rosetta-builder/README.md`). Run three
 switches:
 
-| Switch | Your configuration | What it gives you |
-|---|---|---|
-| 1 | `nix.linux-builder.enable = true;`, and **no** `denModules.rosetta-builder` import | A stock `aarch64-linux` builder. Keep it uncustomized, so it comes from the binary cache. |
-| 2 | Keep `nix.linux-builder.enable = true;`, and add the `denModules.rosetta-builder` import | Switch 1's builder builds the Rosetta guest image. Both builders then run. |
-| 3 | Drop `nix.linux-builder.enable`, keep the import | The Rosetta guest alone. |
+| Switch | Your configuration                                                                       | What it gives you                                                                         |
+| ------ | ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| 1      | `nix.linux-builder.enable = true;`, and **no** `denModules.rosetta-builder` import       | A stock `aarch64-linux` builder. Keep it uncustomized, so it comes from the binary cache. |
+| 2      | Keep `nix.linux-builder.enable = true;`, and add the `denModules.rosetta-builder` import | Switch 1's builder builds the Rosetta guest image. Both builders then run.                |
+| 3      | Drop `nix.linux-builder.enable`, keep the import                                         | The Rosetta guest alone.                                                                  |
 
 Switch 3 is optional. The two builders coexist with no conflict: upstream picks ssh port `31122`
 because `nix.linux-builder` uses `31022`, the two `nix.buildMachines` host names differ
@@ -654,15 +654,15 @@ error: 'packages.aarch64-darwin' is not an attribute set
 
 Measured from the nix-darwin example, which is the smallest of the four.
 
-| Item | Value | Measured with |
-|---|---|---|
-| lock nodes, without the root node | 108 | `jq` over the adopter `flake.lock` |
-| by type | 97 `github`, 9 `git`, 1 `gitlab`, 1 `tarball` — the `github:` form gives 98 and 8 | same |
-| `ssh://` inputs | 6, all Homebrew taps on github.com, and no aspect reads one | same |
-| nixpkgs source tree | 334 MB | `du -sm` |
-| every direct input, deduplicated | 1314 MB across 52 paths | `du -sm` over `nix flake archive --json` |
-| full lock tree | about 3.0 GB across 92 paths | `nix flake archive` |
-| first fetch of one evaluation | about 342 MB | **not repeatable here** — see below |
+| Item                              | Value                                                                             | Measured with                            |
+| --------------------------------- | --------------------------------------------------------------------------------- | ---------------------------------------- |
+| lock nodes, without the root node | 108                                                                               | `jq` over the adopter `flake.lock`       |
+| by type                           | 97 `github`, 9 `git`, 1 `gitlab`, 1 `tarball` — the `github:` form gives 98 and 8 | same                                     |
+| `ssh://` inputs                   | 6, all Homebrew taps on github.com, and no aspect reads one                       | same                                     |
+| nixpkgs source tree               | 334 MB                                                                            | `du -sm`                                 |
+| every direct input, deduplicated  | 1314 MB across 52 paths                                                           | `du -sm` over `nix flake archive --json` |
+| full lock tree                    | about 3.0 GB across 92 paths                                                      | `nix flake archive`                      |
+| first fetch of one evaluation     | about 342 MB                                                                      | **not repeatable here** — see below      |
 
 **Read those last three rows. They are not the same number.**
 
@@ -703,9 +703,9 @@ inputs.nixpkgs.follows = "nix-configs/nixpkgs";
 
 ## Where to look next
 
-| Question | File |
-|---|---|
-| How does an aspect resolve into a plain module? | [modules/den/lib.nix](../modules/den/lib.nix) |
-| Which class does `denModules.<aspect>` name, and why? | [modules/den/flake-module.nix](../modules/den/flake-module.nix) |
-| What does one aspect really do? | `modules/den/aspects/<name>.nix` — each file opens with a full header |
-| What is the older route? | [docs/slots-for-adopters.md](slots-for-adopters.md) |
+| Question                                              | File                                                                  |
+| ----------------------------------------------------- | --------------------------------------------------------------------- |
+| How does an aspect resolve into a plain module?       | [modules/den/lib.nix](../modules/den/lib.nix)                         |
+| Which class does `denModules.<aspect>` name, and why? | [modules/den/flake-module.nix](../modules/den/flake-module.nix)       |
+| What does one aspect really do?                       | `modules/den/aspects/<name>.nix` — each file opens with a full header |
+| What is the older route?                              | [docs/slots-for-adopters.md](slots-for-adopters.md)                   |

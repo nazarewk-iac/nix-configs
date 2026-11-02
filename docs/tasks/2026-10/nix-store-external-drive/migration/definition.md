@@ -20,15 +20,15 @@ this change). The host `/nix/store` must move too.
 
 ## Measured facts (2026-10-11, real launchd probes on `anji`, macOS 26.1)
 
-| # | Context | Access to a USB volume by a `/nix/store` binary | Result |
-|---|---|---|---|
-| 1 | launchd job, top-level `/bin/sh` | direct write | allowed (Apple platform binary) |
-| 2 | launchd job, top-level `/nix/store/.../bash` | direct write | **blocked (EPERM)** |
-| 3 | launchd `/bin/sh -c "exec /nix/store/.../bash"` | write | **blocked** |
-| 4 | launchd `/bin/sh` → forked `/nix/store/bash` child | write | **blocked** |
-| 5 | mount option `nobrowse` | any of the above | no change |
-| 6 | user login context (ssh session) | `/nix/store/bash` write | allowed |
-| 7 | throughput, external ext-02 | `dd oflag=sync` 2 GiB | 590 MB/s (internal: 1.7 GB/s) |
+| #   | Context                                            | Access to a USB volume by a `/nix/store` binary | Result                          |
+| --- | -------------------------------------------------- | ----------------------------------------------- | ------------------------------- |
+| 1   | launchd job, top-level `/bin/sh`                   | direct write                                    | allowed (Apple platform binary) |
+| 2   | launchd job, top-level `/nix/store/.../bash`       | direct write                                    | **blocked (EPERM)**             |
+| 3   | launchd `/bin/sh -c "exec /nix/store/.../bash"`    | write                                           | **blocked**                     |
+| 4   | launchd `/bin/sh` → forked `/nix/store/bash` child | write                                           | **blocked**                     |
+| 5   | mount option `nobrowse`                            | any of the above                                | no change                       |
+| 6   | user login context (ssh session)                   | `/nix/store/bash` write                         | allowed                         |
+| 7   | throughput, external ext-02                        | `dd oflag=sync` 2 GiB                           | 590 MB/s (internal: 1.7 GB/s)   |
 
 Both external SSDs enumerate as **USB** (`diskutil info` → `Protocol: USB`, `Removable Media:
 Fixed`). That combination is what TCC's removable-volume policy gates. The existing builder daemons
@@ -147,7 +147,7 @@ staged config above.
 
 1. A launchd-only boot (no user login) reaches `running` with nix-daemon serving builds from the
    external store: `nix build nixpkgs#legacyPackages.x86_64-linux.hello` with `--option substitute
-   false` after a cold reboot.
+false` after a cold reboot.
 2. One Full Disk Access grant (the bootstrap path) covers every nix daemon job; no per-store-path
    grants remain.
 3. A nixpkgs bump changes zero TCC grants: re-run the probe set from `docs/darwin-quirks.md`.

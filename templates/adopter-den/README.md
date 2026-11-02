@@ -26,3 +26,4 @@ the den tree to reach `main`, or point the input at a local clone:
 ```yaml
 nix-configs:
   url: git+file:///absolute/path/to/your/clone/of/nix-configs
+```

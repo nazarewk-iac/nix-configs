@@ -15,12 +15,12 @@ directory's own README states "These entities exist to build. They never activat
 
 ## The shape of a host
 
-| Item | Rule |
-|---|---|
-| Path | `hosts-den/<name>/default.nix` |
-| `meta.json` | **none.** The host file states its own system and its own class. |
-| Output | `denConfigurations.<name>`, plus `denDevenvShells.<name>` from `den.policies.host-to-devenv` |
-| Name | the same short name as the old-tree twin in `hosts/` |
+| Item        | Rule                                                                                         |
+| ----------- | -------------------------------------------------------------------------------------------- |
+| Path        | `hosts-den/<name>/default.nix`                                                               |
+| `meta.json` | **none.** The host file states its own system and its own class.                             |
+| Output      | `denConfigurations.<name>`, plus `denDevenvShells.<name>` from `den.policies.host-to-devenv` |
+| Name        | the same short name as the old-tree twin in `hosts/`                                         |
 
 The loader keeps a directory alone, so this file stays out of the module list.
 
@@ -52,6 +52,6 @@ A den-to-den `drvPath` comparison is still valid, because den never reads `self`
 
 ## The hosts
 
-| Directory | Class | System | Old-tree twin | Aspects |
-|---|---|---|---|---|
-| `orr/` | `nixos` | `aarch64-linux` | `hosts/orr/` | `nix-config`, `nix-remote-builder` |
+| Directory | Class   | System          | Old-tree twin | Aspects                            |
+| --------- | ------- | --------------- | ------------- | ---------------------------------- |
+| `orr/`    | `nixos` | `aarch64-linux` | `hosts/orr/`  | `nix-config`, `nix-remote-builder` |

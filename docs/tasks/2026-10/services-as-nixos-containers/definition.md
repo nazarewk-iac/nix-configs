@@ -86,12 +86,12 @@ sees one path.
 **Bucket choice matters on this repository's impermanence layout** (tmpfs root,
 ZFS pool, `preservation` bind-mounts):
 
-| Bucket | For |
-|---|---|
-| `sys/state` | data whose loss changes behaviour: the TSDB, the JSONL collector output |
-| `sys/cache` | data that is rebuilt on demand: the **container root** |
-| `usr/data` | user documents |
-| `disposable` | never for anything that must survive |
+| Bucket       | For                                                                     |
+| ------------ | ----------------------------------------------------------------------- |
+| `sys/state`  | data whose loss changes behaviour: the TSDB, the JSONL collector output |
+| `sys/cache`  | data that is rebuilt on demand: the **container root**                  |
+| `usr/data`   | user documents                                                          |
+| `disposable` | never for anything that must survive                                    |
 
 Metrics are state, not cache, so the TSDB lives in `sys/state`. The container's
 own writable root (`/var/lib/nixos-containers/<name>`) is rebuilt data, so it
@@ -122,14 +122,14 @@ same `stateVersion`, the same users, and its own `services.*`. No image build, n
 
 `hosts/brys/llm.nix`:
 
-| Piece | Where |
-|---|---|
-| `containers.prometheus` | `privateNetwork`, `10.233.90.1/2`, `/var/lib/prometheus2` bind-mounted, `services.prometheus` inside with 30 d / 2 GB retention and two jobs |
-| `systemd.services."llm-metrics-relay-swap"` | publishes `127.0.0.1:39700` (llama-swap `/metrics`) on the bridge |
-| `systemd.services."llm-metrics-relay-node"` | publishes `127.0.0.1:9100` (node_exporter textfile) on the bridge |
-| `services.prometheus.exporters.node` | stays on the host: it must read `/var/lib/llm-stats/*.prom`, and it needs no ingress of its own |
-| `kdn.disks.persist."sys/state"` | `/var/lib/llm-stats` (0755), `/var/lib/prometheus2` (0750, `prometheus`) |
-| `kdn.disks.persist."sys/cache"` | `/var/lib/nixos-containers` (0755) |
+| Piece                                       | Where                                                                                                                                        |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `containers.prometheus`                     | `privateNetwork`, `10.233.90.1/2`, `/var/lib/prometheus2` bind-mounted, `services.prometheus` inside with 30 d / 2 GB retention and two jobs |
+| `systemd.services."llm-metrics-relay-swap"` | publishes `127.0.0.1:39700` (llama-swap `/metrics`) on the bridge                                                                            |
+| `systemd.services."llm-metrics-relay-node"` | publishes `127.0.0.1:9100` (node_exporter textfile) on the bridge                                                                            |
+| `services.prometheus.exporters.node`        | stays on the host: it must read `/var/lib/llm-stats/*.prom`, and it needs no ingress of its own                                              |
+| `kdn.disks.persist."sys/state"`             | `/var/lib/llm-stats` (0755), `/var/lib/prometheus2` (0750, `prometheus`)                                                                     |
+| `kdn.disks.persist."sys/cache"`             | `/var/lib/nixos-containers` (0755)                                                                                                           |
 
 The scrape targets inside the guest are `10.233.90.1:39700` and
 `10.233.90.1:9100`, because from the guest the host is the bridge address.
@@ -186,14 +186,14 @@ tail -1 /var/lib/llm-stats/activity-$(date -u +%F).jsonl | jq .
 
 ## Risks
 
-| Risk | Mitigation |
-|---|---|
-| A specialisation with `inheritParentConfig = false` fails on a container option | `lib.mkIf`, and always build the whole host, never one attribute |
-| `privateNetwork = true` blocks a target the service needs | add a third relay, never `privateNetwork = false` |
-| The container root lands in tmpfs and resets on boot | `sys/cache` persist entry, verified by eval |
-| Two `socat` daemons are two more things to fail | `Restart = always`, `DynamicUser`, and a target health check in the acceptance |
-| The TSDB grows past the pool | 30 d **and** 2 GB retention, both enforced |
-| A future `nixpkgs` changes `containers.<name>` semantics | the whole-host build is the gate; a container change shows up there |
+| Risk                                                                            | Mitigation                                                                     |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| A specialisation with `inheritParentConfig = false` fails on a container option | `lib.mkIf`, and always build the whole host, never one attribute               |
+| `privateNetwork = true` blocks a target the service needs                       | add a third relay, never `privateNetwork = false`                              |
+| The container root lands in tmpfs and resets on boot                            | `sys/cache` persist entry, verified by eval                                    |
+| Two `socat` daemons are two more things to fail                                 | `Restart = always`, `DynamicUser`, and a target health check in the acceptance |
+| The TSDB grows past the pool                                                    | 30 d **and** 2 GB retention, both enforced                                     |
+| A future `nixpkgs` changes `containers.<name>` semantics                        | the whole-host build is the gate; a container change shows up there            |
 
 ## Activation log, 2026-10-28 (brys)
 
@@ -205,16 +205,16 @@ unsigned).
 **Activation found three defects that an eval cannot.** All three are now in the
 pattern above; they are repeated here because they cost real time.
 
-| Symptom | Cause | Fix |
-|---|---|---|
-| `llm-metrics-relay-node` failed at activation | the container bridge `10.233.90.1` did not exist yet when the relay started | `after nftables.service network-online.target` on `container@prometheus`, plus `Restart=always` on the relays |
-| guest → relay timed out, host → bridge answered | `nixos-fw` input chain is `policy drop`; a veth is not in `lo`/`virbr*`/NetBird | `networking.firewall.interfaces."ve-prometheus".allowedTCPPorts = [ 9100 39700 ]` |
-| host → guest `:9090` timed out | the **guest has its own** `policy drop` firewall | `networking.firewall.allowedTCPPorts = [ 9090 ]` inside the container's `config` |
+| Symptom                                         | Cause                                                                           | Fix                                                                                                           |
+| ----------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `llm-metrics-relay-node` failed at activation   | the container bridge `10.233.90.1` did not exist yet when the relay started     | `after nftables.service network-online.target` on `container@prometheus`, plus `Restart=always` on the relays |
+| guest → relay timed out, host → bridge answered | `nixos-fw` input chain is `policy drop`; a veth is not in `lo`/`virbr*`/NetBird | `networking.firewall.interfaces."ve-prometheus".allowedTCPPorts = [ 9100 39700 ]`                             |
+| host → guest `:9090` timed out                  | the **guest has its own** `policy drop` firewall                                | `networking.firewall.allowedTCPPorts = [ 9090 ]` inside the container's `config`                              |
 
 Two things this proves about the pattern:
 
 1. **There are two firewalls.** A containerised service needs an ingress rule on
-   the host *and* an accept rule inside the guest. Either one missing looks
+   the host _and_ an accept rule inside the guest. Either one missing looks
    identical from outside: a silent timeout.
 2. **`containers.<name>` exposes no `unitConfig`.** The nixpkgs module writes the
    `container@%i` unit itself, so ordering is added by overriding
@@ -283,6 +283,7 @@ This is what makes per-alias attribution possible at all: the base id
 `qwen3.5-4b` answers under four intent names, and the record now carries all four.
 
 ### Still open
+
 - No reboot proof yet.
 - `kdn-atuin-login-root` and `kdn-man-gen-caches` report failures during
   activation. Both are pre-existing and unrelated to this work; they are noted so
@@ -311,7 +312,7 @@ was `inactive` and no `/var/lib/llm-stats` existed. That is **correct**: the ent
 sets `inheritParentConfig = false` and re-imports `./llm.nix` with its own
 `withSwap` flag, and `llm-stats`, the relays, the exporter and the container are
 all `lib.mkIf withSwap`. Nothing was misconfigured; the specialisation simply does
-not enable the block. Whether it *should* is a separate decision for that entry.
+not enable the block. Whether it _should_ is a separate decision for that entry.
 
 ### One more activation-time race
 

@@ -8,9 +8,9 @@ timestamp: 2026-10-27T21:00:00+01:00
 
 # llama-swap concurrency: the queue is the bottleneck
 
-> **State 2026-10-28:** the config half is implemented; the sidecar's *collect*
+> **State 2026-10-28:** the config half is implemented; the sidecar's _collect_
 > half lives in [../llm-metrics-persistence/](../llm-metrics-persistence/definition.md)
-> and its *control* half is still open.
+> and its _control_ half is still open.
 >
 > - `swap.coResidentTiers` exists, and brys names two GPU tiers. Eval renders
 >   `with_co: (0.8b | 2b | tmax-2b) & (granite-3b | ministral-3b-* | gemma-e2b) & (frontier)`,
@@ -31,12 +31,12 @@ cannot, and the reason is in the generated config, not in the clients.
 
 Measured from the live config on 2026-10-27 (`/nix/store/vhssi9i…-config.yaml`):
 
-| Fact | Value |
-|---|---|
-| Models with `--parallel 4` | exactly two: `deepseek-v4-flash` and `qwen3.8-flash-next`, both with `--kv-unified` |
-| Models with `--parallel 1` | every other model, including all the fast ones |
+| Fact                        | Value                                                                                |
+| --------------------------- | ------------------------------------------------------------------------------------ |
+| Models with `--parallel 4`  | exactly two: `deepseek-v4-flash` and `qwen3.8-flash-next`, both with `--kv-unified`  |
+| Models with `--parallel 1`  | every other model, including all the fast ones                                       |
 | Aliases sharing one process | `chat-dumb-fast`, `code-quick-fast`, `tiny-quick-fast`, `grunt` are all `qwen3.5-4b` |
-| Admission control | none. llama-swap counts models, not bytes |
+| Admission control           | none. llama-swap counts models, not bytes                                            |
 
 So five "parallel" calls to `chat-dumb-fast` are five calls to one process with
 one slot. They queue. See
@@ -46,12 +46,12 @@ Related, and not duplicated here:
 
 - [../llm-unified-kv-parallelism/definition.md](../llm-unified-kv-parallelism/definition.md) —
   gives a router unified KV plus parallel slots, and measures the result. That is
-  the *inside-one-model* half.
+  the _inside-one-model_ half.
 - [../brys-grunt-colocation/llama-router-scheduler.research.md](../brys-grunt-colocation/llama-router-scheduler.research.md) —
   the survey that chose llama-swap and rejected the alternatives. It also records
   that llama-swap has **no admission gate**.
 
-This task is the *across-models* half: how to get real throughput out of one box
+This task is the _across-models_ half: how to get real throughput out of one box
 when the work is many small calls, and whether a watcher outside llama-swap can
 help.
 
@@ -70,7 +70,7 @@ recorded in [research.md](research.md):
 - **llama-swap already exposes per-model performance**, so the sidecar is not a
   log parser. `/api/metrics/activity` returns one record per request with
   `model`, `tokens.prompt_per_second`, `tokens.tokens_per_second` and
-  `duration_ms`. The sidecar's jobs are *control* and *durable history*, not
+  `duration_ms`. The sidecar's jobs are _control_ and _durable history_, not
   parsing.
 - **The matrix sets, not `--parallel`, are what serialise the surveyed tier.**
   `with_surveyed` groups every surveyed model into one set, so they evict each
@@ -97,7 +97,7 @@ record any that are lost with `llm-small`.
 3. **Does raising `--parallel` help a small model?** It divides KV cache per
    slot unless `--kv-unified` shares it. For a 16K-context 4B model on a GPU the
    KV is cheap; for a 30B on the CPU it is not. Measure one of each.
-4. **Can a model be *loaded* on demand without a client paying for it?** The
+4. **Can a model be _loaded_ on demand without a client paying for it?** The
    first request to a cold alias pays a 30–120 s load, and under CPU pressure
    more. A preload step would remove that from the critical path.
 5. **Is there a hook on model load?** This is the owner's explicit question. The
@@ -113,15 +113,15 @@ record any that are lost with `llm-small`.
 
 ## Proposals to evaluate, in order of cost
 
-| Option | Cost | What it buys |
-|---|---|---|
-| Re-point the fleet at **distinct** aliases instead of one | none, a docs change | real parallelism across processes, no code |
-| Per-model `--parallel` + `--kv-unified` on the fast tier | a config line | concurrent requests inside one model |
-| Second process of the same GGUF on a second port | one more model entry | true parallelism when one process is the limit |
-| `hooks.on_startup.preload` for the aliases the harness uses | a config key | no cold-start stall at session start |
-| A tiny "preload this alias" call in the harness before delegating | a script step | cold start moved off the critical path |
-| An external watcher with cgroup admission and unload control | a new service | OOM safety, RAM-aware eviction, preload on demand |
-| A rack of small models pinned on the GPU | config + VRAM budget | many-cheap-workers behaviour, at 8 GB |
+| Option                                                            | Cost                 | What it buys                                      |
+| ----------------------------------------------------------------- | -------------------- | ------------------------------------------------- |
+| Re-point the fleet at **distinct** aliases instead of one         | none, a docs change  | real parallelism across processes, no code        |
+| Per-model `--parallel` + `--kv-unified` on the fast tier          | a config line        | concurrent requests inside one model              |
+| Second process of the same GGUF on a second port                  | one more model entry | true parallelism when one process is the limit    |
+| `hooks.on_startup.preload` for the aliases the harness uses       | a config key         | no cold-start stall at session start              |
+| A tiny "preload this alias" call in the harness before delegating | a script step        | cold start moved off the critical path            |
+| An external watcher with cgroup admission and unload control      | a new service        | OOM safety, RAM-aware eviction, preload on demand |
+| A rack of small models pinned on the GPU                          | config + VRAM budget | many-cheap-workers behaviour, at 8 GB             |
 
 ## Deliverables
 
@@ -139,8 +139,8 @@ record any that are lost with `llm-small`.
      it is useful, and act through the unload endpoint. It must never unload a
      model with a request in flight, and it must never act on a guess when it can
      read `/running` and `/api/metrics/stats`.
-   It is a small Go/shell/Python service, and it must be small: the box also runs
-   the models.
+     It is a small Go/shell/Python service, and it must be small: the box also runs
+     the models.
 3. **A measured table**: alias, process, slots, observed concurrent requests,
    latency at 1 and at N, with the command that produced each number.
 4. **Updated guidance** in `.agents/skills/kdn-llms/SKILL.md` and
@@ -165,9 +165,9 @@ record any that are lost with `llm-small`.
 
 ## Risks
 
-| Risk | Mitigation |
-|---|---|
-| Raising `--parallel` on a CPU model multiplies KV RAM and OOMs | measure KV per slot first; `--kv-unified` shares the pool |
-| A watcher unloads a model mid-request | **llama-swap does not protect in-flight requests.** Measured: an unload during a stream truncates it silently — HTTP 200, no `[DONE]`, no error to the client ([control.research.md](control.research.md)). The watcher must enforce the rule itself. |
-| Two processes of one GGUF fight over page cache | measure; the 45 GB threshold in the colocation research applies |
-| A preload hook delays startup past the health check | preload asynchronously, never block the listener |
+| Risk                                                           | Mitigation                                                                                                                                                                                                                                            |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Raising `--parallel` on a CPU model multiplies KV RAM and OOMs | measure KV per slot first; `--kv-unified` shares the pool                                                                                                                                                                                             |
+| A watcher unloads a model mid-request                          | **llama-swap does not protect in-flight requests.** Measured: an unload during a stream truncates it silently — HTTP 200, no `[DONE]`, no error to the client ([control.research.md](control.research.md)). The watcher must enforce the rule itself. |
+| Two processes of one GGUF fight over page cache                | measure; the 45 GB threshold in the colocation research applies                                                                                                                                                                                       |
+| A preload hook delays startup past the health check            | preload asynchronously, never block the listener                                                                                                                                                                                                      |

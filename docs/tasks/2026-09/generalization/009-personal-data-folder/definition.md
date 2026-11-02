@@ -32,38 +32,38 @@ Use **Pattern V1** throughout. A data move must not change any host's derivation
 
 Measured across `modules/universal/` (194 files, 19,689 LOC):
 
-| Tier | Size | Meaning |
-|---|---|---|
-| Publishable as is | ~158 files, ~13,600 LOC (~69%) | All 30 of `development/`, all of `toolset/` and `virtualisation/`, 38 of 40 `programs/`, 15 of 17 `hw/`, 11 of 14 `services/`. Standouts: `networking/router/default.nix` at 1827 LOC is fully options-driven; `disks/default.nix` at 675 LOC is a pure option schema. |
-| Generic shape, personal data in defaults | ~22 files, ~3,500 LOC (~18%) | The work of this checkpoint. |
-| Irreducibly personal | ~14 files, 2,573 LOC (~13%) plus 5 data files | Moves wholesale into the folder. |
+| Tier                                     | Size                                          | Meaning                                                                                                                                                                                                                                                                |
+| ---------------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Publishable as is                        | ~158 files, ~13,600 LOC (~69%)                | All 30 of `development/`, all of `toolset/` and `virtualisation/`, 38 of 40 `programs/`, 15 of 17 `hw/`, 11 of 14 `services/`. Standouts: `networking/router/default.nix` at 1827 LOC is fully options-driven; `disks/default.nix` at 675 LOC is a pure option schema. |
+| Generic shape, personal data in defaults | ~22 files, ~3,500 LOC (~18%)                  | The work of this checkpoint.                                                                                                                                                                                                                                           |
+| Irreducibly personal                     | ~14 files, 2,573 LOC (~13%) plus 5 data files | Moves wholesale into the folder.                                                                                                                                                                                                                                       |
 
 ## Tier 2 — the files to parametrize
 
-| File | Personal data |
-|---|---|
+| File                                                    | Personal data                                                                                                   |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `modules/universal/profile/default-secrets/default.nix` | `sopsFile = "${kdnConfig.self}/default.unattended.sops.yaml"` at 3 sites, plus that file's key layout — see 008 |
-| `modules/universal/profile/remote-builders/default.nix` | a 4th pin of the same sops file — see [008/research.md](../008-sops-default-inventory/research.md) |
-| `modules/universal/locale/default.nix` | defaults `Europe/Warsaw` and `pl` |
-| `modules/universal/_stylix.nix:42` | a wallpaper URL on the creator's own Nextcloud |
-| `modules/universal/development/nix/default.nix:27` | defaults to the creator's checkout path |
-| `modules/universal/services/printing/default.nix` | a named printer and an IP |
-| `modules/universal/services/samba/default.nix` | a home-LAN CIDR `192.168.0.0/16` |
-| `modules/universal/disks/config.nix:157-162` | a host-specific ZFS rename |
+| `modules/universal/profile/remote-builders/default.nix` | a 4th pin of the same sops file — see [008/research.md](../008-sops-default-inventory/research.md)              |
+| `modules/universal/locale/default.nix`                  | defaults `Europe/Warsaw` and `pl`                                                                               |
+| `modules/universal/_stylix.nix:42`                      | a wallpaper URL on the creator's own Nextcloud                                                                  |
+| `modules/universal/development/nix/default.nix:27`      | defaults to the creator's checkout path                                                                         |
+| `modules/universal/services/printing/default.nix`       | a named printer and an IP                                                                                       |
+| `modules/universal/services/samba/default.nix`          | a home-LAN CIDR `192.168.0.0/16`                                                                                |
+| `modules/universal/disks/config.nix:157-162`            | a host-specific ZFS rename                                                                                      |
 
 ## Tier 3 — the files to move
 
-| Path | Content |
-|---|---|
-| `modules/universal/profile/user/{kdn,sn,bn}` | real `initialHashedPassword` values, gpg public keys, `authorized_keys`, u2f keys |
-| `modules/universal/profile/machine/{baseline,basic,workstation}` | WiFi SSIDs, a 55-line `ssh_known_hosts` fleet |
-| `modules/universal/profile/remote-builders/` | host inventory and homelab FQDNs |
-| `modules/universal/profile/default-secrets/` | the sops configuration |
-| `modules/universal/hw/yubikey/yubikeys.nix` | 2 YubiKey serials and age recipients |
-| `modules/universal/hw/edid/` | 3 named monitors |
-| `modules/universal/desktop/sway/**/kanshi` | named display arrangements |
-| `modules/meta/k8s/clusters/pic` | a cluster definition |
-| `data/slots-ssh-access.nix` | 176 LOC — coordinated with [007](../007-depersonalize-slots/definition.md) item 5 |
+| Path                                                             | Content                                                                           |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `modules/universal/profile/user/{kdn,sn,bn}`                     | real `initialHashedPassword` values, gpg public keys, `authorized_keys`, u2f keys |
+| `modules/universal/profile/machine/{baseline,basic,workstation}` | WiFi SSIDs, a 55-line `ssh_known_hosts` fleet                                     |
+| `modules/universal/profile/remote-builders/`                     | host inventory and homelab FQDNs                                                  |
+| `modules/universal/profile/default-secrets/`                     | the sops configuration                                                            |
+| `modules/universal/hw/yubikey/yubikeys.nix`                      | 2 YubiKey serials and age recipients                                              |
+| `modules/universal/hw/edid/`                                     | 3 named monitors                                                                  |
+| `modules/universal/desktop/sway/**/kanshi`                       | named display arrangements                                                        |
+| `modules/meta/k8s/clusters/pic`                                  | a cluster definition                                                              |
+| `data/slots-ssh-access.nix`                                      | 176 LOC — coordinated with [007](../007-depersonalize-slots/definition.md) item 5 |
 
 ## The two hard blockers
 
@@ -73,7 +73,7 @@ Solve both, or the folder cannot be optional.
    switch.** **Partly shipped 2026-09-11:** the assignment is no longer unconditional. The option
    `kdn.profile.machine.baseline.primaryUser.enable` is declared at
    `modules/universal/profile/machine/baseline/default.nix:30`, the guard `lib.mkIf
-   cfg.primaryUser.enable` sits at `:115`, and the assignment reads
+cfg.primaryUser.enable` sits at `:115`, and the assignment reads
    `kdn.profile.user.kdn.enable = lib.mkDefault true;` at `:116`. An adopter writes
    `primaryUser.enable = false` and gets the baseline without the user. The end state — a
    baseline that names no user at all — stays open, and section 3 item 7 of
@@ -113,19 +113,19 @@ So an aspect declares an option and reads it; the entity supplies the value. `ca
 aspect that shows the shape — it declares `kdn.ca.<name>` and holds no certificate path of its own.
 The test entity generates throwaway certificates instead.
 
-| Aspect / slot | Personal data it holds today | Expected destination |
-|---|---|---|
-| `ca` | none — the option carries the data | n/a. The creator's own certificates join the folder as data files. |
-| `ssh-agent` | none | n/a |
-| `gh`, `devenv-cli`, `rosetta-builder` | none | n/a |
-| `jj` | `upstream.remote` default `"kdn"`; `alwaysBlockedMessagePatterns` default `[ "scratchpad" ]` | the folder supplies both as data; the option default becomes empty. Overlaps [007](../007-depersonalize-slots/definition.md) item 1. |
-| `opencode` | the commercial provider `requesty`; `"~/dev/**" = "allow"` in 5 blocks | **the den aspect already holds neither.** `modules/den/aspects/opencode.nix` declares `authKeys`, `settings` and `allowedPaths`, and the consumer supplies each value. The folder then holds the creator's three values as data. Overlaps 007 item 2. |
-| `llm` | homelab FQDNs and overlay IP addresses in the option examples | the folder holds the real values; the examples become neutral. Overlaps 007 item 3. |
-| `ssh-access` | `data/slots-ssh-access.nix`, 176 LOC of hosts, LAN addresses, WAN ports and `*.kdn.im` zones | the folder, wholesale. Already listed in Tier 3 above. This is why `ssh-access` is last in the port order. |
-| `mcp` | none — `kdn.mcp.serversNix`, `programs` and `extraBackends` all take consumer values | n/a. The creator's own gateway host, port and backend set join the folder as data. |
-| `mcp-snoop`, `mcp-pretty-print` | none | n/a for the data. Resolved: `mcp_gateway_pretty_print.py` now lives in `hack/`, and both trees read it by relative path literal. Same shape as the `zellij` row below. |
-| `mcp-basic-memory` | **the den aspect already holds none.** The slot names the creator's two bases `public` and `sensitive`, their aliases `bmp` and `bms`, their descriptions, and the root `~/.local/share/kdn-nix-configs/knowledge`. `modules/den/aspects/mcp-basic-memory.nix` declares `kdn.mcp.basic-memory.{knowledgeRoot,bases}` and names no base at all. | the folder holds those five values as data. The aspect still reads one repository file, `.agents/rules/basic-memory.md`, and that file is generic. |
-| `zellij` | none | n/a for the data. Resolved: both scripts now live in `hack/`, and both trees read them by relative path literal. No duplicate exists, so nothing can drift. |
+| Aspect / slot                         | Personal data it holds today                                                                                                                                                                                                                                                                                                                   | Expected destination                                                                                                                                                                                                                                  |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ca`                                  | none — the option carries the data                                                                                                                                                                                                                                                                                                             | n/a. The creator's own certificates join the folder as data files.                                                                                                                                                                                    |
+| `ssh-agent`                           | none                                                                                                                                                                                                                                                                                                                                           | n/a                                                                                                                                                                                                                                                   |
+| `gh`, `devenv-cli`, `rosetta-builder` | none                                                                                                                                                                                                                                                                                                                                           | n/a                                                                                                                                                                                                                                                   |
+| `jj`                                  | `upstream.remote` default `"kdn"`; `alwaysBlockedMessagePatterns` default `[ "scratchpad" ]`                                                                                                                                                                                                                                                   | the folder supplies both as data; the option default becomes empty. Overlaps [007](../007-depersonalize-slots/definition.md) item 1.                                                                                                                  |
+| `opencode`                            | the commercial provider `requesty`; `"~/dev/**" = "allow"` in 5 blocks                                                                                                                                                                                                                                                                         | **the den aspect already holds neither.** `modules/den/aspects/opencode.nix` declares `authKeys`, `settings` and `allowedPaths`, and the consumer supplies each value. The folder then holds the creator's three values as data. Overlaps 007 item 2. |
+| `llm`                                 | homelab FQDNs and overlay IP addresses in the option examples                                                                                                                                                                                                                                                                                  | the folder holds the real values; the examples become neutral. Overlaps 007 item 3.                                                                                                                                                                   |
+| `ssh-access`                          | `data/slots-ssh-access.nix`, 176 LOC of hosts, LAN addresses, WAN ports and `*.kdn.im` zones                                                                                                                                                                                                                                                   | the folder, wholesale. Already listed in Tier 3 above. This is why `ssh-access` is last in the port order.                                                                                                                                            |
+| `mcp`                                 | none — `kdn.mcp.serversNix`, `programs` and `extraBackends` all take consumer values                                                                                                                                                                                                                                                           | n/a. The creator's own gateway host, port and backend set join the folder as data.                                                                                                                                                                    |
+| `mcp-snoop`, `mcp-pretty-print`       | none                                                                                                                                                                                                                                                                                                                                           | n/a for the data. Resolved: `mcp_gateway_pretty_print.py` now lives in `hack/`, and both trees read it by relative path literal. Same shape as the `zellij` row below.                                                                                |
+| `mcp-basic-memory`                    | **the den aspect already holds none.** The slot names the creator's two bases `public` and `sensitive`, their aliases `bmp` and `bms`, their descriptions, and the root `~/.local/share/kdn-nix-configs/knowledge`. `modules/den/aspects/mcp-basic-memory.nix` declares `kdn.mcp.basic-memory.{knowledgeRoot,bases}` and names no base at all. | the folder holds those five values as data. The aspect still reads one repository file, `.agents/rules/basic-memory.md`, and that file is generic.                                                                                                    |
+| `zellij`                              | none                                                                                                                                                                                                                                                                                                                                           | n/a for the data. Resolved: both scripts now live in `hack/`, and both trees read them by relative path literal. No duplicate exists, so nothing can drift.                                                                                           |
 
 Keep this table current as each order lands. It is the input list for the move, and it records what
 the port deliberately did not fix.

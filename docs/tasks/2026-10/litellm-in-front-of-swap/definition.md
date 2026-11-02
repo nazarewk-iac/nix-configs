@@ -34,7 +34,7 @@ Two pain points the owner wants to solve, and neither is in that proxy today:
    llama-swap exposes `/api/metrics/activity` (per request: model, tokens, prompt
    and gen tok/s, duration, status) and `/api/captures/<id>` (the request and
    response, with `Authorization` redacted). Both are in-memory ring buffers, so
-   what is missing is only *persistence*, which the concurrency task's sidecar
+   what is missing is only _persistence_, which the concurrency task's sidecar
    collector provides ([../llama-swap-concurrency/definition.md](../llama-swap-concurrency/definition.md)).
    That removes most of the logging argument for litellm: it would duplicate a
    facility the swapper already has.
@@ -49,7 +49,7 @@ Two pain points the owner wants to solve, and neither is in that proxy today:
   [../brys-grunt-colocation/llama-router-scheduler.research.md](../brys-grunt-colocation/llama-router-scheduler.research.md)
   ("LiteLLM proxy … No fit — routing only"), and it still holds: **litellm cannot
   fix the concurrency ceiling** ([../llama-swap-concurrency/definition.md](../llama-swap-concurrency/definition.md)).
-  It can only improve what happens *around* a request.
+  It can only improve what happens _around_ a request.
 
 So the honest framing: this task is not "litellm or a scheduler". It is "is
 litellm the cheapest way to get retries and request logs, or is it a second
@@ -57,15 +57,15 @@ moving part that duplicates what we already run?"
 
 ## What it would add
 
-| Capability | Where it lives in litellm | Why we want it |
-|---|---|---|
-| Retry on a failed request | `litellm_settings.num_retries`, `request_timeout`; `router_settings.retry_policy` | a swap or a cold load stops costing a whole agent turn |
-| Fallback to another model or alias | `router_settings.fallbacks`, `context_window_fallbacks` | a dead `chat-std-fast` falls back to `chat-std-mid` instead of failing |
-| Cooldown after repeated fails | `router_settings.allowed_fails`, `cooldown_time` | stops hammering a model that is OOM-ing |
-| Timeouts per model | `request_timeout`, per-deployment | a 20-minute stalled stream is cut and retried |
-| Request/response logging | `litellm_settings.callbacks`, custom callbacks, `jsonl` logging | **already covered** by llama-swap `/api/captures/`, so this is no longer an argument for litellm |
-| Spend and token accounting | callback to a local DB | token cost per alias, per session |
-| A stable OpenAI-shaped surface | proxy | the fleet keeps one base URL |
+| Capability                         | Where it lives in litellm                                                         | Why we want it                                                                                   |
+| ---------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Retry on a failed request          | `litellm_settings.num_retries`, `request_timeout`; `router_settings.retry_policy` | a swap or a cold load stops costing a whole agent turn                                           |
+| Fallback to another model or alias | `router_settings.fallbacks`, `context_window_fallbacks`                           | a dead `chat-std-fast` falls back to `chat-std-mid` instead of failing                           |
+| Cooldown after repeated fails      | `router_settings.allowed_fails`, `cooldown_time`                                  | stops hammering a model that is OOM-ing                                                          |
+| Timeouts per model                 | `request_timeout`, per-deployment                                                 | a 20-minute stalled stream is cut and retried                                                    |
+| Request/response logging           | `litellm_settings.callbacks`, custom callbacks, `jsonl` logging                   | **already covered** by llama-swap `/api/captures/`, so this is no longer an argument for litellm |
+| Spend and token accounting         | callback to a local DB                                                            | token cost per alias, per session                                                                |
+| A stable OpenAI-shaped surface     | proxy                                                                             | the fleet keeps one base URL                                                                     |
 
 ## Design questions that decide it
 
@@ -90,12 +90,12 @@ moving part that duplicates what we already run?"
 
 ## The alternatives, which must be priced first
 
-| Option | Effort | What it gives |
-|---|---|---|
-| **Client-side retry/timeout** in the opencode provider config | a config line | most interrupted-query cases, no new service |
-| Retry inside the **existing compat proxy** (`opencode-compat-proxy` is already ours) | a small patch | retries plus logging, no new daemon, no new auth tier |
-| litellm as a new service | a new unit, a config, a database for spend | retries, fallbacks, logging, spend, a well-known config format |
-| Do nothing, and let the orchestrator retry | none | honest, but the overseer then burns turns noticing |
+| Option                                                                               | Effort                                     | What it gives                                                  |
+| ------------------------------------------------------------------------------------ | ------------------------------------------ | -------------------------------------------------------------- |
+| **Client-side retry/timeout** in the opencode provider config                        | a config line                              | most interrupted-query cases, no new service                   |
+| Retry inside the **existing compat proxy** (`opencode-compat-proxy` is already ours) | a small patch                              | retries plus logging, no new daemon, no new auth tier          |
+| litellm as a new service                                                             | a new unit, a config, a database for spend | retries, fallbacks, logging, spend, a well-known config format |
+| Do nothing, and let the orchestrator retry                                           | none                                       | honest, but the overseer then burns turns noticing             |
 
 The task must pick one of these with numbers, not vibes.
 
@@ -113,10 +113,10 @@ The task must pick one of these with numbers, not vibes.
 
 ## Risks
 
-| Risk | Mitigation |
-|---|---|
-| A retry loop doubles load on a box already swapping | retry only on connection error, with a backoff and a cap |
-| litellm breaks the DSML tool-call path silently | test a streamed tool call end to end before adopting |
-| A second proxy adds latency to every token | measure TTFT before and after; reject on regression |
-| Request logs capture secrets or personal text | treat them as user data: `/tmp/opencode` or a git-ignored path |
-| A second auth layer confuses the fleet | one master key, injected by the existing wrapper environment, never in the repo |
+| Risk                                                | Mitigation                                                                      |
+| --------------------------------------------------- | ------------------------------------------------------------------------------- |
+| A retry loop doubles load on a box already swapping | retry only on connection error, with a backoff and a cap                        |
+| litellm breaks the DSML tool-call path silently     | test a streamed tool call end to end before adopting                            |
+| A second proxy adds latency to every token          | measure TTFT before and after; reject on regression                             |
+| Request logs capture secrets or personal text       | treat them as user data: `/tmp/opencode` or a git-ignored path                  |
+| A second auth layer confuses the fleet              | one master key, injected by the existing wrapper environment, never in the repo |

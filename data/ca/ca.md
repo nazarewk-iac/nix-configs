@@ -5,10 +5,10 @@ certificates for KDN services, notably the LLM endpoint on `brys`.
 
 ## Files
 
-| File | Contents | Automation? |
-|---|---|---|
-| `ca.pub` | PEM public CA certificate (self-signed, EC P-256, 100 years) | trusted via the `kdn.ca` slot |
-| `ca.key.sops` | SOPS-encrypted CA **private** key (raw/binary format) | **not** read by automation yet; path is exposed via `kdn.ca.keySopsFile` for reference only |
+| File          | Contents                                                     | Automation?                                                                                 |
+| ------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| `ca.pub`      | PEM public CA certificate (self-signed, EC P-256, 100 years) | trusted via the `kdn.ca` slot                                                               |
+| `ca.key.sops` | SOPS-encrypted CA **private** key (raw/binary format)        | **not** read by automation yet; path is exposed via `kdn.ca.keySopsFile` for reference only |
 
 The CA private key must never be loaded by a running service. It is kept
 encrypted on disk and only decrypted manually when (re)signing a leaf cert.

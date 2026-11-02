@@ -14,12 +14,12 @@ brys only.
 
 ## Items
 
-| # | Item | Owner | Status |
-|---|---|---|---|
-| F1 | Harness `VRAM_MiB` step | sub-agent | open |
-| F2 | KV quant + `--cache-ram` at the served 1M context | sub-agent | open |
-| F3 | Build and test the llama.cpp master variants | sub-agent | open |
-| F4 | Package `ik_llama.cpp` for a runner comparison | sub-agent | open |
+| #   | Item                                              | Owner     | Status |
+| --- | ------------------------------------------------- | --------- | ------ |
+| F1  | Harness `VRAM_MiB` step                           | sub-agent | open   |
+| F2  | KV quant + `--cache-ram` at the served 1M context | sub-agent | open   |
+| F3  | Build and test the llama.cpp master variants      | sub-agent | open   |
+| F4  | Package `ik_llama.cpp` for a runner comparison    | sub-agent | open   |
 
 ## Notes
 

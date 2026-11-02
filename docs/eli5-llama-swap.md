@@ -86,11 +86,11 @@ Your Ryzen 3950X uses DDR4 memory. DDR4 is slower than newer DDR5. Reading a big
 
 Here are honest, realistic ranges for this machine:
 
-| Model | File size | Rough load time |
-|---|---|---|
-| deepseek-v4-flash | ~103 GB | several minutes, possibly up to 10+ minutes on slower disk |
-| qwen3-next-80b | ~48 GB | a few minutes |
-| qwen3-30b-a3b | ~18 GB | well under a minute |
+| Model             | File size | Rough load time                                            |
+| ----------------- | --------- | ---------------------------------------------------------- |
+| deepseek-v4-flash | ~103 GB   | several minutes, possibly up to 10+ minutes on slower disk |
+| qwen3-next-80b    | ~48 GB    | a few minutes                                              |
+| qwen3-30b-a3b     | ~18 GB    | well under a minute                                        |
 
 These numbers are estimates. They are not exact. The exact time depends on your disk speed and your exact memory speed.
 

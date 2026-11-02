@@ -23,11 +23,11 @@ parallelism is the only route to the other cores, and this design does not take 
 
 Three committed files:
 
-| File | Job |
-|---|---|
-| `hack/eval-profile.sh` | Profile one attribute end to end |
+| File                        | Job                                     |
+| --------------------------- | --------------------------------------- |
+| `hack/eval-profile.sh`      | Profile one attribute end to end        |
 | `hack/eval-profile-rank.py` | Rank one folded-stack file by self time |
-| `hack/eval-compare.sh` | The A/B protocol of § 2 |
+| `hack/eval-compare.sh`      | The A/B protocol of § 2                 |
 
 `hack/` already holds nine shell helpers and one plain Python helper, so both file kinds match the
 convention. `.gitignore` allowlists `!*.sh` and `!*.py`.
@@ -44,12 +44,12 @@ the Lix daemon with no protocol error (research.md § "The CppNix-client-on-Lix-
 
 ### It guards four hazards
 
-| Guard | The hazard it answers |
-|---|---|
-| `--no-write-lock-file --no-update-lock-file --offline`, plus a shasum of both lock files before and after | A silent lock rewrite. It never fired across nine CppNix runs, and it stays because the failure is unrecoverable in a fork repository |
-| One pinned revision through `git+file://$PWD?rev=<REV>` | A dirty tree that changes mid-run. Two earlier profiler runs failed part way with "the contents have changed" |
-| `--no-eval-cache` on every call | A replayed failure. `den-eval-instantiate` failed in 58 s and then replayed that failure in 0.6 s ([../../../../checks/README.md](../../../../checks/README.md)) |
-| A one-minute load ceiling, with a `KDN_EVAL_FORCE=1` escape | A loaded machine. This design was itself written while a `nix build` blocked every timing |
+| Guard                                                                                                     | The hazard it answers                                                                                                                                            |
+| --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--no-write-lock-file --no-update-lock-file --offline`, plus a shasum of both lock files before and after | A silent lock rewrite. It never fired across nine CppNix runs, and it stays because the failure is unrecoverable in a fork repository                            |
+| One pinned revision through `git+file://$PWD?rev=<REV>`                                                   | A dirty tree that changes mid-run. Two earlier profiler runs failed part way with "the contents have changed"                                                    |
+| `--no-eval-cache` on every call                                                                           | A replayed failure. `den-eval-instantiate` failed in 58 s and then replayed that failure in 0.6 s ([../../../../checks/README.md](../../../../checks/README.md)) |
+| A one-minute load ceiling, with a `KDN_EVAL_FORCE=1` escape                                               | A loaded machine. This design was itself written while a `nix build` blocked every timing                                                                        |
 
 ### The output stays ephemeral
 
@@ -84,29 +84,29 @@ Point 3 is the real test. It proves the harness reproduces the earlier finding.
 
 One host, two ways, one machine, one pinned revision, one evaluator:
 
-| Side | Attribute |
-|---|---|
-| A | `.#darwinConfigurations.anji.config.system.build.toplevel.drvPath` |
-| B | `.#denConfigurations.<the anji entity>.config.system.build.toplevel.drvPath` |
+| Side | Attribute                                                                    |
+| ---- | ---------------------------------------------------------------------------- |
+| A    | `.#darwinConfigurations.anji.config.system.build.toplevel.drvPath`           |
+| B    | `.#denConfigurations.<the anji entity>.config.system.build.toplevel.drvPath` |
 
 `anji` is the host, for one reason: side A already has a baseline of 64.07 s warm
 ([research.md](research.md) timing table, row 3). No NixOS host has a profile yet.
 
 ### The confounders, and how the design removes each one
 
-| Confounder | The removal |
-|---|---|
-| Machine drift, thermal throttling | 5 measured runs, interleaved A-B-A-B-A. Median and range, never mean |
-| A cold store | One discard run per side. Rows 2 and 3 show a 16 s cold-page penalty |
-| The evaluation cache | `--no-eval-cache` on every call |
-| A dirty tree | One pinned revision for the whole batch |
-| A loaded machine | A load gate before the batch, and again between the two series |
-| Two evaluators | One binary, and its version in the report header |
-| A flake update mid-batch | The pinned revision fixes both lock files, and the lock guard proves it |
+| Confounder                                         | The removal                                                                        |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Machine drift, thermal throttling                  | 5 measured runs, interleaved A-B-A-B-A. Median and range, never mean               |
+| A cold store                                       | One discard run per side. Rows 2 and 3 show a 16 s cold-page penalty               |
+| The evaluation cache                               | `--no-eval-cache` on every call                                                    |
+| A dirty tree                                       | One pinned revision for the whole batch                                            |
+| A loaded machine                                   | A load gate before the batch, and again between the two series                     |
+| Two evaluators                                     | One binary, and its version in the report header                                   |
+| A flake update mid-batch                           | The pinned revision fixes both lock files, and the lock guard proves it            |
 | Instantiation, which is 64 % of the Lix wall clock | Two separate series: plain and `--read-only`. Rows 3 and 5 are 64.07 s and 23.35 s |
-| Parity | Three figures, never one. See below |
-| The nixpkgs instance count | The "SELF TIME by source root" table of § 1, run per side |
-| The nested-evaluation count | Not automated. The report prints a reminder to count by hand |
+| Parity                                             | Three figures, never one. See below                                                |
+| The nixpkgs instance count                         | The "SELF TIME by source root" table of § 1, run per side                          |
+| The nested-evaluation count                        | Not automated. The report prints a reminder to count by hand                       |
 
 ### Parity is the confounder that voids everything
 
@@ -179,12 +179,12 @@ silent, which is a strictly stronger guard.
 A `drvPath` equality proof is invalid here: `kdnConfig.self` reaches the evaluated config, so any
 edit changes every host's path. This change edits a check, so the check's own verdict is the proof.
 
-| Step | Command | Record |
-|---|---|---|
-| 1 | `nix build --no-eval-cache -L '.#checks.aarch64-darwin.den-eval-instantiate'` | The `den eval instantiate: <N> of <N> assertions pass` line, verbatim, before and after. Same `N`, both `pass` |
-| 2 | Compare the sorted pair-name list — it is the `expected` value of the one assertion, so it **is** the covered set | Identical before and after, or the change dropped coverage |
-| 3 | `nix build --no-eval-cache -L --keep-going '.#checks.aarch64-darwin.bundle-den'`, then `bundle-core` | Every member passes. `bundle-den` reads `denLib.pairs` from ten files |
-| 4 | Plant one `throw` in one aspect's `nixos` body, run step 1 | It fails on exactly that pair. The same method is recorded in the file for 2026-09-11 |
+| Step | Command                                                                                                           | Record                                                                                                         |
+| ---- | ----------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| 1    | `nix build --no-eval-cache -L '.#checks.aarch64-darwin.den-eval-instantiate'`                                     | The `den eval instantiate: <N> of <N> assertions pass` line, verbatim, before and after. Same `N`, both `pass` |
+| 2    | Compare the sorted pair-name list — it is the `expected` value of the one assertion, so it **is** the covered set | Identical before and after, or the change dropped coverage                                                     |
+| 3    | `nix build --no-eval-cache -L --keep-going '.#checks.aarch64-darwin.bundle-den'`, then `bundle-core`              | Every member passes. `bundle-den` reads `denLib.pairs` from ten files                                          |
+| 4    | Plant one `throw` in one aspect's `nixos` body, run step 1                                                        | It fails on exactly that pair. The same method is recorded in the file for 2026-09-11                          |
 
 ### Acceptance test, with the number
 
@@ -213,14 +213,14 @@ edit there breaks `bundle-den`, `bundle-core` and `bundle-slow` at once.
 
 ## 4 — the ranked scope
 
-| Rank | Item | Value | Risk | Verdict |
-|---|---|---|---|---|
-| 1 | The profile harness and the ranker | High — every later cut needs it for exit criterion 5 | Very low — two new files, no evaluation path | Land now |
-| 2 | These task documents | High — the task is parked with no `status.md` | None | Land now |
-| 3 | `hack/eval-compare.sh` | Medium now, high later — a protocol in prose decays | Very low — it refuses to run | Land now, do not run |
-| 4 | The `denLib.pairModules` lever | High — an estimated 180 s off a 358 s check | Medium — it edits the shared check harness | Land last, alone, with the four-step proof |
-| 5 | The other 79 `denLib.imports` call sites in `checks/` | Medium — about 80 duplicated den evaluations | High — a site that passes `modules`, `extraInputs` or `select` cannot use `pairModules` | Defer to a sub-task, one area file per commit |
-| 6 | Remove the devenv overlay from a host `pkgs` (about 17 %), and make the rosetta-builder image reference lazy (about 31 %) | Highest of all on the 64 s host figure | High — both change host output, so both need a closure proof | Defer. This is the item that meets exit criterion 1 |
+| Rank | Item                                                                                                                      | Value                                                | Risk                                                                                    | Verdict                                             |
+| ---- | ------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| 1    | The profile harness and the ranker                                                                                        | High — every later cut needs it for exit criterion 5 | Very low — two new files, no evaluation path                                            | Land now                                            |
+| 2    | These task documents                                                                                                      | High — the task is parked with no `status.md`        | None                                                                                    | Land now                                            |
+| 3    | `hack/eval-compare.sh`                                                                                                    | Medium now, high later — a protocol in prose decays  | Very low — it refuses to run                                                            | Land now, do not run                                |
+| 4    | The `denLib.pairModules` lever                                                                                            | High — an estimated 180 s off a 358 s check          | Medium — it edits the shared check harness                                              | Land last, alone, with the four-step proof          |
+| 5    | The other 79 `denLib.imports` call sites in `checks/`                                                                     | Medium — about 80 duplicated den evaluations         | High — a site that passes `modules`, `extraInputs` or `select` cannot use `pairModules` | Defer to a sub-task, one area file per commit       |
+| 6    | Remove the devenv overlay from a host `pkgs` (about 17 %), and make the rosetta-builder image reference lazy (about 31 %) | Highest of all on the 64 s host figure               | High — both change host output, so both need a closure proof                            | Defer. This is the item that meets exit criterion 1 |
 
 **Item 6 holds the task's own exit criterion 1.** Items 1 to 5 touch the check tree, not a host
 evaluation, so the task stays `status: in-progress` after this design lands.

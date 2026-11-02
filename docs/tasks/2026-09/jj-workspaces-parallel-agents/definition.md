@@ -152,14 +152,14 @@ of megabytes" stays **UNVERIFIED** — the real directory was never measured.
 
 devenv state is per-directory, so a workspace and the trunk do not collide:
 
-| devenv value | Definition | Independent? |
-|---|---|---|
-| `DEVENV_ROOT` | the shell's directory | yes |
-| `DEVENV_DOTFILE` | `DEVENV_ROOT + "/.devenv"` | yes |
-| `DEVENV_STATE` | `DEVENV_DOTFILE + "/state"` | yes |
-| `devenv.runtime` | `<XDG_RUNTIME_DIR or /tmp>/devenv-<hash>` | yes — measured `/tmp/devenv-18f6d5f` (trunk) against `/tmp/devenv-34e4006` (workspace); the `sha256(dotfile)[0:7]` formula itself is UNTESTED |
-| `PREK_HOME`, `devenv.local.yaml`, git hooks | under `DEVENV_ROOT` | yes |
-| Nix daemon store, `~/.cache/nix` | machine-global | shared, and already concurrency-safe |
+| devenv value                                | Definition                                | Independent?                                                                                                                                  |
+| ------------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DEVENV_ROOT`                               | the shell's directory                     | yes                                                                                                                                           |
+| `DEVENV_DOTFILE`                            | `DEVENV_ROOT + "/.devenv"`                | yes                                                                                                                                           |
+| `DEVENV_STATE`                              | `DEVENV_DOTFILE + "/state"`               | yes                                                                                                                                           |
+| `devenv.runtime`                            | `<XDG_RUNTIME_DIR or /tmp>/devenv-<hash>` | yes — measured `/tmp/devenv-18f6d5f` (trunk) against `/tmp/devenv-34e4006` (workspace); the `sha256(dotfile)[0:7]` formula itself is UNTESTED |
+| `PREK_HOME`, `devenv.local.yaml`, git hooks | under `DEVENV_ROOT`                       | yes                                                                                                                                           |
+| Nix daemon store, `~/.cache/nix`            | machine-global                            | shared, and already concurrency-safe                                                                                                          |
 
 Two `devenv shell` sessions, one per directory, therefore run with separate state including separate
 runtime socket dirs.
@@ -224,11 +224,11 @@ A `switch` is always the user's call, from the trunk.
 **The hazard is real and quantified.** `jj config path --repo` returns the same absolute file from
 the trunk and from a workspace. The generated config in three states:
 
-| State | Size | `fork-tip` / `upstream-tip` mentions |
-|---|---|---|
-| Trunk, live symlink target | 2568 B | 4 |
-| Workspace **with** `devenv.slots.local.nix` | 2568 B | 4 |
-| Workspace **without** it | **64 B** | **0** |
+| State                                       | Size     | `fork-tip` / `upstream-tip` mentions |
+| ------------------------------------------- | -------- | ------------------------------------ |
+| Trunk, live symlink target                  | 2568 B   | 4                                    |
+| Workspace **with** `devenv.slots.local.nix` | 2568 B   | 4                                    |
+| Workspace **without** it                    | **64 B** | **0**                                |
 
 The 64-byte stub holds only the `"#schema"` line. A bootstrap-less `devenv shell` in a workspace
 therefore strips `revset-aliases.fork-tip`, `revset-aliases.upstream-tip`, `aliases.fork-audit`,
@@ -313,10 +313,10 @@ devenv falls back to a default branch and this repo has no `master`:
 devenv itself.** A probe dependency repo at `v1-COMMITTED`, then modified to
 `v2-DIRTY-UNCOMMITTED` without a commit:
 
-| URL | `locked` | evaluated value |
-|---|---|---|
-| unpinned `git+file:///<abs>` | `{type, url}` — nothing volatile at all | `"v2-DIRTY-UNCOMMITTED"` |
-| `?ref=<REV>&rev=<REV>` | `{ref: <REV>, type, url}` — `rev` stripped | `"v1-COMMITTED"` |
+| URL                          | `locked`                                   | evaluated value          |
+| ---------------------------- | ------------------------------------------ | ------------------------ |
+| unpinned `git+file:///<abs>` | `{type, url}` — nothing volatile at all    | `"v2-DIRTY-UNCOMMITTED"` |
+| `?ref=<REV>&rev=<REV>`       | `{ref: <REV>, type, url}` — `rev` stripped | `"v1-COMMITTED"`         |
 
 **This corrects the `locked` column of the earlier version of this table**, which claimed the
 unpinned form records `dirtyRev` and the pinned form keeps `rev` and a narHash. Neither is true of

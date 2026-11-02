@@ -10,24 +10,24 @@ authored_by: agent
 This file records the VLANs and the physical links of the home network. It reflects the live
 state on 2026-09-28. The devices are:
 
-| Device   | Role                     | Model                    | Management address                       |
-|----------|--------------------------|--------------------------|------------------------------------------|
-| `etra`   | Router and DHCP server   | NixOS host               | 192.168.73.1, 192.168.252.1, 10.92.0.1   |
-| `coll`   | Core switch              | TP-Link SG3428X-M2       | 192.168.73.207, 192.168.252.11           |
-| `talt`   | Access switch            | MikroTik CRS312-4C+8XG   | 192.168.73.95, 192.168.88.1              |
-| `quip`   | Access switch            | Zyxel XGS1250-12         | 192.168.252.5                            |
-| `oams`   | Laptop (this host)       | —                        | 192.168.73.49, 192.168.252.33            |
+| Device | Role                   | Model                  | Management address                     |
+| ------ | ---------------------- | ---------------------- | -------------------------------------- |
+| `etra` | Router and DHCP server | NixOS host             | 192.168.73.1, 192.168.252.1, 10.92.0.1 |
+| `coll` | Core switch            | TP-Link SG3428X-M2     | 192.168.73.207, 192.168.252.11         |
+| `talt` | Access switch          | MikroTik CRS312-4C+8XG | 192.168.73.95, 192.168.88.1            |
+| `quip` | Access switch          | Zyxel XGS1250-12       | 192.168.252.5                          |
+| `oams` | Laptop (this host)     | —                      | 192.168.73.49, 192.168.252.33          |
 
 ## VLANs
 
-| VLAN   | Name                  | Purpose                 | IPv4 subnet        | Gateway                  | Status       |
-|--------|-----------------------|-------------------------|--------------------|--------------------------|--------------|
-| 1      | System-VLAN (`lan`)   | Primary LAN             | 192.168.73.0/24    | 192.168.73.1 (`etra`)    | Active       |
-| 946    | `mgmt`                | Management              | 192.168.252.0/24   | 192.168.252.1 (`etra`)   | Active       |
-| 1342   | `yelk-lan`            | `yelk` host network     | unknown            | unknown                  | Unverified   |
-| 1859   | `pic-vlan`            | `pic` cluster network   | 10.92.0.0/24       | 10.92.0.1 (`etra`)       | Active       |
-| 2199   | `etra-lan`            | Unused                  | none               | none                     | Vestigial    |
-| 3547   | `drek-lan`            | `drek` network          | 192.168.41.0/24    | 192.168.41.1 (`drek`)    | Active       |
+| VLAN | Name                | Purpose               | IPv4 subnet      | Gateway                | Status     |
+| ---- | ------------------- | --------------------- | ---------------- | ---------------------- | ---------- |
+| 1    | System-VLAN (`lan`) | Primary LAN           | 192.168.73.0/24  | 192.168.73.1 (`etra`)  | Active     |
+| 946  | `mgmt`              | Management            | 192.168.252.0/24 | 192.168.252.1 (`etra`) | Active     |
+| 1342 | `yelk-lan`          | `yelk` host network   | unknown          | unknown                | Unverified |
+| 1859 | `pic-vlan`          | `pic` cluster network | 10.92.0.0/24     | 10.92.0.1 (`etra`)     | Active     |
+| 2199 | `etra-lan`          | Unused                | none             | none                   | Vestigial  |
+| 3547 | `drek-lan`          | `drek` network        | 192.168.41.0/24  | 192.168.41.1 (`drek`)  | Active     |
 
 Notes:
 
@@ -41,12 +41,12 @@ Notes:
 
 `U` = untagged member, `T` = tagged member, `—` = no member.
 
-| Device   | 1   | 946   | 1342   | 1859   | 2199   | 3547   |
-|----------|-----|-------|--------|--------|--------|--------|
-| `etra`   | U   | T     | —      | T      | —      | —      |
-| `coll`   | U   | T     | T      | T      | T      | T      |
-| `talt`   | U   | T     | T      | T      | T      | T      |
-| `quip`   | U   | T     | —      | —      | —      | —      |
+| Device | 1   | 946 | 1342 | 1859 | 2199 | 3547 |
+| ------ | --- | --- | ---- | ---- | ---- | ---- |
+| `etra` | U   | T   | —    | T    | —    | —    |
+| `coll` | U   | T   | T    | T    | T    | T    |
+| `talt` | U   | T   | T    | T    | T    | T    |
+| `quip` | U   | T   | —    | —    | —    | —    |
 
 Membership details:
 
@@ -60,21 +60,21 @@ Membership details:
 
 ## Physical links
 
-| Endpoint A   | Port A                             | Endpoint B               | Port B                          | Medium   | Speed       | Notes                     |
-|--------------|------------------------------------|--------------------------|---------------------------------|----------|-------------|---------------------------|
-| `etra`       | `enp2s0` + `enp3s0` (bond `lan`)   | `coll`                   | Po5 = Tw1/0/23 + Tw1/0/24       | Copper   | 2.5G each   | 802.3ad LACP              |
-| `coll`       | Po1 = Te1/0/27 + Te1/0/28          | `talt`                   | `bond-coll` = combo3 + combo4   | Fiber    | 10G         | 802.3ad LACP              |
-| `talt`       | `ether1`                           | `quip`                   | port 11                         | Copper   | 10G         | Uplink                    |
-| `quip`       | port 8                             | `oams`                   | `enp4s0`                        | Copper   | 1G          | This host                 |
-| `talt`       | `ether2`                           | `drek`                   | —                               | Copper   | —           | Tagged only, PVID 3547    |
-| `talt`       | `ether3`                           | `anji`                   | —                               | Copper   | —           | VLAN 1 untagged           |
-| `talt`       | `ether4`                           | `brys`                   | —                               | Copper   | —           | VLAN 1 untagged           |
-| `talt`       | `ether5`                           | `moak` and other hosts   | —                               | Copper   | —           | VLAN 1 untagged           |
-| `talt`       | `ether9`                           | management network       | —                               | Copper   | —           | `br-mgmt`, 192.168.88.1   |
-| `coll`       | Po2 = Tw1/0/11-14                  | `pwet`                   | —                               | Copper   | down        | `pic` cluster host        |
-| `coll`       | Po3 = Tw1/0/15-18                  | `turo`                   | —                               | Copper   | down        | `pic` cluster host        |
-| `coll`       | Po4 = Tw1/0/19-22                  | `yost`                   | —                               | Copper   | down        | `pic` cluster host        |
-| `coll`       | Tw1/0/9                            | unknown                  | —                               | Copper   | 1G          | Unidentified              |
+| Endpoint A | Port A                           | Endpoint B             | Port B                        | Medium | Speed     | Notes                   |
+| ---------- | -------------------------------- | ---------------------- | ----------------------------- | ------ | --------- | ----------------------- |
+| `etra`     | `enp2s0` + `enp3s0` (bond `lan`) | `coll`                 | Po5 = Tw1/0/23 + Tw1/0/24     | Copper | 2.5G each | 802.3ad LACP            |
+| `coll`     | Po1 = Te1/0/27 + Te1/0/28        | `talt`                 | `bond-coll` = combo3 + combo4 | Fiber  | 10G       | 802.3ad LACP            |
+| `talt`     | `ether1`                         | `quip`                 | port 11                       | Copper | 10G       | Uplink                  |
+| `quip`     | port 8                           | `oams`                 | `enp4s0`                      | Copper | 1G        | This host               |
+| `talt`     | `ether2`                         | `drek`                 | —                             | Copper | —         | Tagged only, PVID 3547  |
+| `talt`     | `ether3`                         | `anji`                 | —                             | Copper | —         | VLAN 1 untagged         |
+| `talt`     | `ether4`                         | `brys`                 | —                             | Copper | —         | VLAN 1 untagged         |
+| `talt`     | `ether5`                         | `moak` and other hosts | —                             | Copper | —         | VLAN 1 untagged         |
+| `talt`     | `ether9`                         | management network     | —                             | Copper | —         | `br-mgmt`, 192.168.88.1 |
+| `coll`     | Po2 = Tw1/0/11-14                | `pwet`                 | —                             | Copper | down      | `pic` cluster host      |
+| `coll`     | Po3 = Tw1/0/15-18                | `turo`                 | —                             | Copper | down      | `pic` cluster host      |
+| `coll`     | Po4 = Tw1/0/19-22                | `yost`                 | —                             | Copper | down      | `pic` cluster host      |
+| `coll`     | Tw1/0/9                          | unknown                | —                             | Copper | 1G        | Unidentified            |
 
 Notes:
 
@@ -84,11 +84,11 @@ Notes:
 
 ### `quip` port map
 
-| Port    | Connection        | PVID      | Notes                                                         |
-|---------|-------------------|-----------|---------------------------------------------------------------|
-| 8       | `oams` `enp4s0`   | 1         | This host                                                     |
-| 11      | `talt` `ether1`   | 1         | Uplink, VLAN 946 tagged; PVID changed 946 → 1 on 2026-09-28   |
-| other   | unknown           | unknown   | Not read from the device                                      |
+| Port  | Connection      | PVID    | Notes                                                       |
+| ----- | --------------- | ------- | ----------------------------------------------------------- |
+| 8     | `oams` `enp4s0` | 1       | This host                                                   |
+| 11    | `talt` `ether1` | 1       | Uplink, VLAN 946 tagged; PVID changed 946 → 1 on 2026-09-28 |
+| other | unknown         | unknown | Not read from the device                                    |
 
 ## Path from `oams` to `etra`
 

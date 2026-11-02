@@ -82,11 +82,11 @@ CppNix has the profiler since **2.30.0**, released 2025-07-08. Release notes:
 
 Three settings, verified on the CppNix 2.35.2 binary in this machine's store:
 
-| Setting | Default | Meaning |
-|---|---|---|
-| `eval-profiler` | `disabled` | `flamegraph` is the only mode |
-| `eval-profile-file` | `nix.profile` | Where the profile goes |
-| `eval-profiler-frequency` | `99` (Hz) | Sample rate. `0` samples after every function call |
+| Setting                   | Default       | Meaning                                            |
+| ------------------------- | ------------- | -------------------------------------------------- |
+| `eval-profiler`           | `disabled`    | `flamegraph` is the only mode                      |
+| `eval-profile-file`       | `nix.profile` | Where the profile goes                             |
+| `eval-profiler-frequency` | `99` (Hz)     | Sample rate. `0` samples after every function call |
 
 **No experimental feature is needed.** The proof is the run itself: the command in
 [§ How to run it](#how-to-run-it) works with `experimental-features = fetch-tree flakes
@@ -145,9 +145,9 @@ the first two. `NIX_SHOW_STATS_PATH` appears only in the contributors' page,
 
 **Overhead is near zero on wall clock.** Same warm evaluation, back to back:
 
-| Run | Wall | User |
-|---|---|---|
-| Plain | 64.07 s | 23.72 s |
+| Run                                  | Wall    | User    |
+| ------------------------------------ | ------- | ------- |
+| Plain                                | 64.07 s | 23.72 s |
 | `NIX_SHOW_STATS=1 NIX_COUNT_CALLS=1` | 64.12 s | 27.15 s |
 
 Wall clock rises 0.1 %. User CPU rises 14.5 %. Always leave these two on.
@@ -223,17 +223,17 @@ trade-off: each worker may re-evaluate shared dependencies.
 
 Three back-to-back warm runs of the same deep attribute:
 
-| Run | Wall |
-|---|---|
-| `--no-eval-cache` | 80.03 s (first after the cold run; page cache still filling) |
-| default, cache on | 65.51 s |
-| default, cache on, again | 64.07 s |
+| Run                      | Wall                                                         |
+| ------------------------ | ------------------------------------------------------------ |
+| `--no-eval-cache`        | 80.03 s (first after the cold run; page cache still filling) |
+| default, cache on        | 65.51 s                                                      |
+| default, cache on, again | 64.07 s                                                      |
 
 The cache gives **no measurable saving**. The reason: the flake evaluation cache memoizes a
 shallow flake output attribute, not a deep recursive path such as
 `config.system.build.toplevel.drvPath`.
 
-**Still pass `--no-eval-cache` for every measurement.** The cache also stores a *failure*, and
+**Still pass `--no-eval-cache` for every measurement.** The cache also stores a _failure_, and
 it replays that failure in under a second. That has produced fake results before, both here (see
 `checks/README.md`) and upstream
 (<https://discourse.nixos.org/t/profiling-optimising-nixos-configuration-derivation/75095>,
@@ -241,29 +241,29 @@ where a user reported a fake 1m30 to 25 s win that was only the cache).
 
 ### Other knobs the installed evaluator offers
 
-| Knob | What it does | Measured effect |
-|---|---|---|
-| `nix eval --read-only` | Skips `.drv` instantiation | **64.07 s to 23.35 s** on the same expression |
-| `nix eval --debugger` | Interactive prompt when evaluation fails | Not timed. Disables parallel evaluation where that exists |
-| `max-call-depth` | Default 10000, errors above it | Not a cost knob |
-| `GC_INITIAL_HEAP_SIZE` | Boehm GC start size | Not tested. `gc.heapSize` reached 4.85 GB, so a larger start may cut GC cycles |
-| `NIX_SHOW_SYMBOLS` | Dumps the symbol table into the stats JSON | Removes the `symbols` summary. Avoid |
+| Knob                   | What it does                               | Measured effect                                                                |
+| ---------------------- | ------------------------------------------ | ------------------------------------------------------------------------------ |
+| `nix eval --read-only` | Skips `.drv` instantiation                 | **64.07 s to 23.35 s** on the same expression                                  |
+| `nix eval --debugger`  | Interactive prompt when evaluation fails   | Not timed. Disables parallel evaluation where that exists                      |
+| `max-call-depth`       | Default 10000, errors above it             | Not a cost knob                                                                |
+| `GC_INITIAL_HEAP_SIZE` | Boehm GC start size                        | Not tested. `gc.heapSize` reached 4.85 GB, so a larger start may cut GC cycles |
+| `NIX_SHOW_SYMBOLS`     | Dumps the symbol table into the stats JSON | Removes the `symbols` summary. Avoid                                           |
 
 There is no heap profiler and no GC-cycle counter beyond `gc.heapSize` and `gc.totalBytes`.
 Peak resident memory comes from the operating system, with `/usr/bin/time -l`.
 
 ### What upstream has and this machine does not
 
-| Capability | Where it exists | Available here? | URL |
-|---|---|---|---|
-| Flamegraph eval profiler | CppNix ≥ 2.30.0 (2025-07-08) | **Yes, through a CppNix client** | <https://nix.dev/manual/nix/latest/advanced-topics/eval-profiler> |
-| Derivation names inside profile frames | CppNix, PR 13261 | Yes, same route | <https://github.com/NixOS/nix/pull/13261> |
-| Multi-threaded evaluation (`eval-cores`) | Determinate Nix ≥ 3.11.1 | **No** | <https://determinate.systems/blog/changelog-determinate-nix-3111> |
-| `builtins.parallel` | Determinate Nix, `parallel-eval` feature | **No** | <https://determinate.systems/blog/parallel-nix-eval> |
-| Lix-native profiler | Nowhere yet; declined | **No** | <https://git.lix.systems/lix-project/lix/issues/881> |
-| `contrib/stack-collapse.py` | Nix and Lix source trees | Yes, but the trace is about 5 GB | <https://github.com/NixOS/nix/blob/master/contrib/stack-collapse.py> |
-| Process-parallel evaluation | `nix-eval-jobs` | Yes, not yet adopted here | <https://github.com/nix-community/nix-eval-jobs> |
-| Folded-stack viewer | `speedscope`, `flamelens`, `inferno` | Yes, all in nixpkgs | <https://speedscope.app/> |
+| Capability                               | Where it exists                          | Available here?                  | URL                                                                  |
+| ---------------------------------------- | ---------------------------------------- | -------------------------------- | -------------------------------------------------------------------- |
+| Flamegraph eval profiler                 | CppNix ≥ 2.30.0 (2025-07-08)             | **Yes, through a CppNix client** | <https://nix.dev/manual/nix/latest/advanced-topics/eval-profiler>    |
+| Derivation names inside profile frames   | CppNix, PR 13261                         | Yes, same route                  | <https://github.com/NixOS/nix/pull/13261>                            |
+| Multi-threaded evaluation (`eval-cores`) | Determinate Nix ≥ 3.11.1                 | **No**                           | <https://determinate.systems/blog/changelog-determinate-nix-3111>    |
+| `builtins.parallel`                      | Determinate Nix, `parallel-eval` feature | **No**                           | <https://determinate.systems/blog/parallel-nix-eval>                 |
+| Lix-native profiler                      | Nowhere yet; declined                    | **No**                           | <https://git.lix.systems/lix-project/lix/issues/881>                 |
+| `contrib/stack-collapse.py`              | Nix and Lix source trees                 | Yes, but the trace is about 5 GB | <https://github.com/NixOS/nix/blob/master/contrib/stack-collapse.py> |
+| Process-parallel evaluation              | `nix-eval-jobs`                          | Yes, not yet adopted here        | <https://github.com/nix-community/nix-eval-jobs>                     |
+| Folded-stack viewer                      | `speedscope`, `flamelens`, `inferno`     | Yes, all in nixpkgs              | <https://speedscope.app/>                                            |
 
 ---
 
@@ -366,12 +366,12 @@ runs returned a different `drvPath` each time, because the tree kept changing.
 
 Same fixed revision, back to back:
 
-| Run | Wall | User | Sys | Peak RSS |
-|---|---|---|---|---|
-| CppNix, plain | 41.02 s | 21.01 s | 7.65 s | 3.86 GB |
-| CppNix, `eval-profiler flamegraph` @ 99 Hz | 50.27 s | 22.92 s | 9.07 s | 3.91 GB |
-| CppNix, `--read-only`, plain | 23.20 s | 19.42 s | 5.88 s | 3.91 GB |
-| CppNix, `--read-only` + profiler @ 99 Hz | 25.05 s | 20.73 s | 6.28 s | 3.91 GB |
+| Run                                        | Wall    | User    | Sys    | Peak RSS |
+| ------------------------------------------ | ------- | ------- | ------ | -------- |
+| CppNix, plain                              | 41.02 s | 21.01 s | 7.65 s | 3.86 GB  |
+| CppNix, `eval-profiler flamegraph` @ 99 Hz | 50.27 s | 22.92 s | 9.07 s | 3.91 GB  |
+| CppNix, `--read-only`, plain               | 23.20 s | 19.42 s | 5.88 s | 3.91 GB  |
+| CppNix, `--read-only` + profiler @ 99 Hz   | 25.05 s | 20.73 s | 6.28 s | 3.91 GB  |
 
 Profiler overhead: **+22.5 % wall** and **+9.1 % user** on the full run, **+8.0 % wall** on the
 read-only run. A 999 Hz run wrote a 184 MB profile against 33 MB at 99 Hz. **Keep 99 Hz.**
@@ -409,13 +409,13 @@ Reasons to keep it narrow:
 
 ### The artifacts
 
-| File | Contents |
-|---|---|
-| `anji-eval-flamegraph-fixedrev-99hz.svg` | Full evaluation, with instantiation. 3570 samples |
-| `anji-eval-flamegraph-readonly-99hz.svg` | `--read-only`, pure evaluation. 2341 samples |
-| `anji-eval-flamegraph-99hz.svg` | Live dirty tree, partial run. Keep for comparison only |
-| `raw/*.folded` | The raw collapsed stacks that produced each SVG |
-| `raw/anji-stats-*.json` | `NIX_SHOW_STATS` plus `NIX_COUNT_CALLS` output |
+| File                                     | Contents                                               |
+| ---------------------------------------- | ------------------------------------------------------ |
+| `anji-eval-flamegraph-fixedrev-99hz.svg` | Full evaluation, with instantiation. 3570 samples      |
+| `anji-eval-flamegraph-readonly-99hz.svg` | `--read-only`, pure evaluation. 2341 samples           |
+| `anji-eval-flamegraph-99hz.svg`          | Live dirty tree, partial run. Keep for comparison only |
+| `raw/*.folded`                           | The raw collapsed stacks that produced each SVG        |
+| `raw/anji-stats-*.json`                  | `NIX_SHOW_STATS` plus `NIX_COUNT_CALLS` output         |
 
 3570 samples at 99 Hz is 36.1 s of sampled evaluation inside a 50.27 s run. The 14 s difference
 is time the sampler could not attribute, mostly store input and output.
@@ -424,15 +424,15 @@ is time the sampler could not attribute, mostly store input and output.
 
 Every row is one warm run of the same expression on this machine.
 
-| # | Evaluator | Flags | Wall | User | Sys | Peak RSS |
-|---|---|---|---|---|---|---|
-| 1 | Lix 2.95.2 | cold, first of the day, `--no-eval-cache` | 243.67 s | 28.94 s | 9.34 s | 5.57 GB |
-| 2 | Lix 2.95.2 | `--no-eval-cache` | 80.03 s | 24.14 s | 8.21 s | 5.50 GB |
-| 3 | Lix 2.95.2 | default (cache on) | 64.07 s | 23.72 s | 8.60 s | 5.13 GB |
-| 4 | Lix 2.95.2 | `--no-eval-cache` + stats | 64.12 s | 27.15 s | 8.71 s | 5.57 GB |
-| 5 | Lix 2.95.2 | `--read-only --no-eval-cache` + stats | 23.35 s | 22.46 s | 6.25 s | 5.56 GB |
-| 6 | CppNix 2.35.2 | fixed revision, plain | 41.02 s | 21.01 s | 7.65 s | 3.86 GB |
-| 7 | CppNix 2.35.2 | fixed revision, `--read-only` | 23.20 s | 19.42 s | 5.88 s | 3.91 GB |
+| #   | Evaluator     | Flags                                     | Wall     | User    | Sys    | Peak RSS |
+| --- | ------------- | ----------------------------------------- | -------- | ------- | ------ | -------- |
+| 1   | Lix 2.95.2    | cold, first of the day, `--no-eval-cache` | 243.67 s | 28.94 s | 9.34 s | 5.57 GB  |
+| 2   | Lix 2.95.2    | `--no-eval-cache`                         | 80.03 s  | 24.14 s | 8.21 s | 5.50 GB  |
+| 3   | Lix 2.95.2    | default (cache on)                        | 64.07 s  | 23.72 s | 8.60 s | 5.13 GB  |
+| 4   | Lix 2.95.2    | `--no-eval-cache` + stats                 | 64.12 s  | 27.15 s | 8.71 s | 5.57 GB  |
+| 5   | Lix 2.95.2    | `--read-only --no-eval-cache` + stats     | 23.35 s  | 22.46 s | 6.25 s | 5.56 GB  |
+| 6   | CppNix 2.35.2 | fixed revision, plain                     | 41.02 s  | 21.01 s | 7.65 s | 3.86 GB  |
+| 7   | CppNix 2.35.2 | fixed revision, `--read-only`             | 23.20 s  | 19.42 s | 5.88 s | 3.91 GB  |
 
 Read three things out of it.
 
@@ -447,50 +447,50 @@ Read three things out of it.
 
 Self time, from the complete fixed-revision profile, 3570 samples.
 
-| Share | Cost centre |
-|---|---|
-| **31.3 %** | `nixpkgs/lib/sources.nix:61:5` — `cleanSourceFilter` |
-| 7.3 % | `nixpkgs/pkgs/stdenv/generic/make-derivation.nix:970:24` — `makeCMakeFlags` |
-| 5.1 % | `nixpkgs/pkgs/stdenv/generic/make-derivation.nix:983:18` |
-| 3.4 % | devenv's nixpkgs, `pkgs/build-support/rust/build-rust-crate/default.nix:52:14` |
-| 2.4 % | devenv's nixpkgs, `lib/lists.nix:1956:20` |
-| 1.7 % | `nixpkgs/lib/trivial.nix:1109:86` — `primop functionArgs` |
-| 1.4 % | `nixpkgs/lib/modules.nix:707:56` — `applyModuleArgs` |
-| 1.2 % | `nixpkgs/pkgs/stdenv/generic/make-derivation.nix:971:24` — `makeMesonFlags` |
-| 1.2 % | `nixpkgs/pkgs/development/interpreters/python/mk-python-derivation.nix:407:9` |
+| Share      | Cost centre                                                                    |
+| ---------- | ------------------------------------------------------------------------------ |
+| **31.3 %** | `nixpkgs/lib/sources.nix:61:5` — `cleanSourceFilter`                           |
+| 7.3 %      | `nixpkgs/pkgs/stdenv/generic/make-derivation.nix:970:24` — `makeCMakeFlags`    |
+| 5.1 %      | `nixpkgs/pkgs/stdenv/generic/make-derivation.nix:983:18`                       |
+| 3.4 %      | devenv's nixpkgs, `pkgs/build-support/rust/build-rust-crate/default.nix:52:14` |
+| 2.4 %      | devenv's nixpkgs, `lib/lists.nix:1956:20`                                      |
+| 1.7 %      | `nixpkgs/lib/trivial.nix:1109:86` — `primop functionArgs`                      |
+| 1.4 %      | `nixpkgs/lib/modules.nix:707:56` — `applyModuleArgs`                           |
+| 1.2 %      | `nixpkgs/pkgs/stdenv/generic/make-derivation.nix:971:24` — `makeMesonFlags`    |
+| 1.2 %      | `nixpkgs/pkgs/development/interpreters/python/mk-python-derivation.nix:407:9`  |
 
 Grouped by file:
 
-| Share | File |
-|---|---|
-| **31.7 %** | `nixpkgs/lib/sources.nix` |
-| **20.4 %** | `nixpkgs/pkgs/stdenv/generic/make-derivation.nix` |
-| 4.9 % | `nixpkgs/lib/modules.nix` |
-| 4.5 % | devenv nixpkgs, `pkgs/build-support/rust/build-rust-crate/default.nix` |
-| 2.8 % | devenv nixpkgs, `lib/lists.nix` |
-| 2.1 % | devenv nixpkgs, `pkgs/stdenv/generic/make-derivation.nix` |
-| 2.0 % | `nixpkgs/pkgs/development/interpreters/python/mk-python-derivation.nix` |
-| 1.9 % | `nixpkgs/pkgs/development/haskell-modules/generic-builder.nix` |
+| Share      | File                                                                    |
+| ---------- | ----------------------------------------------------------------------- |
+| **31.7 %** | `nixpkgs/lib/sources.nix`                                               |
+| **20.4 %** | `nixpkgs/pkgs/stdenv/generic/make-derivation.nix`                       |
+| 4.9 %      | `nixpkgs/lib/modules.nix`                                               |
+| 4.5 %      | devenv nixpkgs, `pkgs/build-support/rust/build-rust-crate/default.nix`  |
+| 2.8 %      | devenv nixpkgs, `lib/lists.nix`                                         |
+| 2.1 %      | devenv nixpkgs, `pkgs/stdenv/generic/make-derivation.nix`               |
+| 2.0 %      | `nixpkgs/pkgs/development/interpreters/python/mk-python-derivation.nix` |
+| 1.9 %      | `nixpkgs/pkgs/development/haskell-modules/generic-builder.nix`          |
 
-`lib/modules.nix` is only 4.9 % of **self** time, but it is **99.96 %** of *inclusive* time. That
+`lib/modules.nix` is only 4.9 % of **self** time, but it is **99.96 %** of _inclusive_ time. That
 is expected: every module evaluation passes through it.
 
 ### Grouped by source tree — the decisive table
 
 Self time per source root, both profiles:
 
-| Source root | Full run | `--read-only` |
-|---|---|---|
-| the repo's nixpkgs fork | 79.69 % | 77.87 % |
-| **devenv's patched nixpkgs (second copy)** | **14.76 %** | **14.91 %** |
-| upstream nixpkgs (third copy) | 1.74 % | 1.88 % |
-| the devenv flake itself | 1.12 % | 1.03 % |
-| primops with no source position | 1.09 % | 2.05 % |
-| Nix internals | 0.36 % | 0.56 % |
-| home-manager | 0.28 % | 0.13 % |
-| **`nix-configs` — this repo's own code** | **0.25 %** | **0.51 %** |
-| nix-darwin | below 0.2 % | 0.17 % |
-| stylix | 0.06 % | 0.13 % |
+| Source root                                | Full run    | `--read-only` |
+| ------------------------------------------ | ----------- | ------------- |
+| the repo's nixpkgs fork                    | 79.69 %     | 77.87 %       |
+| **devenv's patched nixpkgs (second copy)** | **14.76 %** | **14.91 %**   |
+| upstream nixpkgs (third copy)              | 1.74 %      | 1.88 %        |
+| the devenv flake itself                    | 1.12 %      | 1.03 %        |
+| primops with no source position            | 1.09 %      | 2.05 %        |
+| Nix internals                              | 0.36 %      | 0.56 %        |
+| home-manager                               | 0.28 %      | 0.13 %        |
+| **`nix-configs` — this repo's own code**   | **0.25 %**  | **0.51 %**    |
+| nix-darwin                                 | below 0.2 % | 0.17 %        |
+| stylix                                     | 0.06 %      | 0.13 %        |
 
 **Read this carefully.** The repo's own 194-file universal tree plus its 105-file den tree
 account for **0.5 %** of evaluation self time. The extra nixpkgs copies account for **16.8 %**.
@@ -558,14 +558,14 @@ whole Rust crate graph evaluates with it.
 
 The Lix counters, from the same expression, rank source trees the same way.
 
-| Function calls | Share | Source root |
-|---|---|---|
-| 19,947,837 | 72.5 % | the repo's nixpkgs fork |
-| 4,711,753 | 17.1 % | devenv's patched nixpkgs |
-| 2,162,934 | 7.9 % | the devenv flake (`Cargo.nix`) |
-| 268,502 | 1.0 % | upstream nixpkgs, third copy |
-| 106,685 | 0.4 % | home-manager |
-| 21,558 | **0.08 %** | this repo |
+| Function calls | Share      | Source root                    |
+| -------------- | ---------- | ------------------------------ |
+| 19,947,837     | 72.5 %     | the repo's nixpkgs fork        |
+| 4,711,753      | 17.1 %     | devenv's patched nixpkgs       |
+| 2,162,934      | 7.9 %      | the devenv flake (`Cargo.nix`) |
+| 268,502        | 1.0 %      | upstream nixpkgs, third copy   |
+| 106,685        | 0.4 %      | home-manager                   |
+| 21,558         | **0.08 %** | this repo                      |
 
 Top file by call count is `lib/modules.nix` at 7,000,932 calls, 25.4 % of all calls. That
 matches the flamegraph's 99.96 % inclusive share.
@@ -584,7 +584,7 @@ time. Both are true: `modules.nix` runs a huge number of very cheap calls, and
 
 ### Import-from-derivation runs inside the evaluation
 
-The cold run built three things *during* evaluation:
+The cold run built three things _during_ evaluation:
 
 ```
 building '/nix/store/...-devenv-nixpkgs-patched.drv'
@@ -602,16 +602,16 @@ fresh machine, every CI runner and every garbage-collected store.
 
 ### What each mechanism reveals, and what it cannot
 
-| Mechanism | It reveals | It cannot |
-|---|---|---|
-| `/usr/bin/time -l` | Wall, user, sys, peak RSS, page faults | Anything about where the time goes |
-| `NIX_SHOW_STATS=1` | `cpuTime`, thunks, allocations, GC heap, `//` copies | Attribute any of it to a function |
-| `NIX_COUNT_CALLS=1` | Per-function **call counts** with `file:line:column`, per-primop counts | Report **time**. A cheap hot function outranks an expensive one |
-| CppNix `eval-profiler flamegraph` | Per-frame **self and inclusive time**, full call stacks, derivation names | Run on Lix. Describe Lix internals |
-| `--trace-function-calls` | Every entry and exit with a timestamp | Fit on disk here (about 5 GB) |
-| `nix eval --read-only` | Splits pure evaluation from `.drv` instantiation | Produce a `.drv` you can build |
-| CppNix against Lix, same expression | Which evaluator costs less on this workload | Prove a Nix-code cost share for Lix |
-| `nix build --dry-run` | Download size before a fetch | Anything about evaluation |
+| Mechanism                           | It reveals                                                                | It cannot                                                       |
+| ----------------------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `/usr/bin/time -l`                  | Wall, user, sys, peak RSS, page faults                                    | Anything about where the time goes                              |
+| `NIX_SHOW_STATS=1`                  | `cpuTime`, thunks, allocations, GC heap, `//` copies                      | Attribute any of it to a function                               |
+| `NIX_COUNT_CALLS=1`                 | Per-function **call counts** with `file:line:column`, per-primop counts   | Report **time**. A cheap hot function outranks an expensive one |
+| CppNix `eval-profiler flamegraph`   | Per-frame **self and inclusive time**, full call stacks, derivation names | Run on Lix. Describe Lix internals                              |
+| `--trace-function-calls`            | Every entry and exit with a timestamp                                     | Fit on disk here (about 5 GB)                                   |
+| `nix eval --read-only`              | Splits pure evaluation from `.drv` instantiation                          | Produce a `.drv` you can build                                  |
+| CppNix against Lix, same expression | Which evaluator costs less on this workload                               | Prove a Nix-code cost share for Lix                             |
+| `nix build --dry-run`               | Download size before a fetch                                              | Anything about evaluation                                       |
 
 ### How to run it
 
@@ -691,33 +691,33 @@ This section is the protocol to run once parity arrives.
 
 ### Hold these constant
 
-| Thing | How |
-|---|---|
-| Host | One host, evaluated both ways. Never compare host A on one tree to host B on the other |
-| Machine | One machine, one architecture. No cross-machine number |
-| Load | No other build, no other agent, no concurrent evaluation. Check with `uptime` before each batch |
-| nixpkgs revision | The same `flake.lock`. Never compare across a flake update |
-| Evaluator | One binary for the whole batch. State which one in every result |
-| Store warmth | Warm. Run one discard run first. Never quote a cold run |
-| Cache state | `--no-eval-cache` on every run |
-| Tree state | A **fixed revision** through `git+file://$PWD?rev=<REV>`. Never the live tree |
-| Instantiation | Both `--read-only` and plain, as two separate series |
-| Option surface | The same set of enabled features. See [§ The parity confound](#the-parity-confound) |
+| Thing            | How                                                                                             |
+| ---------------- | ----------------------------------------------------------------------------------------------- |
+| Host             | One host, evaluated both ways. Never compare host A on one tree to host B on the other          |
+| Machine          | One machine, one architecture. No cross-machine number                                          |
+| Load             | No other build, no other agent, no concurrent evaluation. Check with `uptime` before each batch |
+| nixpkgs revision | The same `flake.lock`. Never compare across a flake update                                      |
+| Evaluator        | One binary for the whole batch. State which one in every result                                 |
+| Store warmth     | Warm. Run one discard run first. Never quote a cold run                                         |
+| Cache state      | `--no-eval-cache` on every run                                                                  |
+| Tree state       | A **fixed revision** through `git+file://$PWD?rev=<REV>`. Never the live tree                   |
+| Instantiation    | Both `--read-only` and plain, as two separate series                                            |
+| Option surface   | The same set of enabled features. See [§ The parity confound](#the-parity-confound)             |
 
 ### Measure these
 
-| Metric | Source | Why |
-|---|---|---|
-| Wall clock | `/usr/bin/time -l` | The number a person feels |
-| User CPU | `/usr/bin/time -l` | Language work, free of daemon wait |
-| System CPU | `/usr/bin/time -l` | Store and syscall work |
-| Peak RSS | `/usr/bin/time -l` | 5.13 GB today. A regression here breaks small machines |
-| `cpuTime` | `NIX_SHOW_STATS` | The evaluator's own view, less noisy than wall clock |
-| `nrFunctionCalls` | `NIX_SHOW_STATS` | Deterministic. Identical inputs give an identical count |
-| `nrThunks`, `nrAvoided` | `NIX_SHOW_STATS` | Laziness. A rise in `nrThunks` with no rise in `nrAvoided` means new strict work |
-| `nrOpUpdateValuesCopied` | `NIX_SHOW_STATS` | Merge cost. 204 M today |
-| `sets.bytes`, `gc.heapSize` | `NIX_SHOW_STATS` | Allocation pressure |
-| Self-time shares | CppNix flamegraph | Which tree's own code costs what |
+| Metric                      | Source             | Why                                                                              |
+| --------------------------- | ------------------ | -------------------------------------------------------------------------------- |
+| Wall clock                  | `/usr/bin/time -l` | The number a person feels                                                        |
+| User CPU                    | `/usr/bin/time -l` | Language work, free of daemon wait                                               |
+| System CPU                  | `/usr/bin/time -l` | Store and syscall work                                                           |
+| Peak RSS                    | `/usr/bin/time -l` | 5.13 GB today. A regression here breaks small machines                           |
+| `cpuTime`                   | `NIX_SHOW_STATS`   | The evaluator's own view, less noisy than wall clock                             |
+| `nrFunctionCalls`           | `NIX_SHOW_STATS`   | Deterministic. Identical inputs give an identical count                          |
+| `nrThunks`, `nrAvoided`     | `NIX_SHOW_STATS`   | Laziness. A rise in `nrThunks` with no rise in `nrAvoided` means new strict work |
+| `nrOpUpdateValuesCopied`    | `NIX_SHOW_STATS`   | Merge cost. 204 M today                                                          |
+| `sets.bytes`, `gc.heapSize` | `NIX_SHOW_STATS`   | Allocation pressure                                                              |
+| Self-time shares            | CppNix flamegraph  | Which tree's own code costs what                                                 |
 
 **The deterministic counters are the primary evidence, not the clock.** `nrFunctionCalls`,
 `nrThunks` and `nrOpUpdateValuesCopied` repeat exactly for identical inputs — this spike measured
@@ -809,18 +809,18 @@ nix run 'nixpkgs#nix-diff' -- /tmp/a.drv /tmp/b.drv
 
 Named, with a `file:line` and an estimated weight. **Nothing was changed.**
 
-| Weight | Where | What it is |
-|---|---|---|
-| **about 31 %** | `hosts/anji/default.nix:32` — `kdn.darwin.rosetta-builder.enable = true` | Pulls `nix-rosetta-builder`, whose `module.nix:213` interpolates a `nixos-disk-image`. That forces a nested full `nixosSystem` evaluation plus a `closure-info`. Measured 1133 of 3570 samples. **Look for a lazier way to reference the image, or gate it behind an option that a plain build does not touch.** |
-| **about 17 %** | `flake.nix:207` — `inputs.devenv.overlays.default` in `flake.overlays.default` | Adds devenv's own patched nixpkgs as a second full nixpkgs instance, 14.9 % of self time, and the unpatched source as a third, 1.9 %. **A host does not need devenv. Move that overlay to the devenv shell only.** |
-| **about 8 %** | the same overlay, through `system-applications` → `devenv-wrapped-2.3.1` | devenv's generated `Cargo.nix` is about 39,000 lines and takes 2,162,934 of 27,526,141 function calls. It evaluates because `devenv` reaches a host package list. |
-| unmeasured, likely large on NixOS | `modules/universal/default.nix:96` — `home-manager.useGlobalPkgs = false` | Each Home Manager user imports its own nixpkgs instance. `nixos/modules/misc/nixpkgs.nix` states that sharing one instance exists "to increase the performance of evaluation". home-manager is only 0.28 % of self time on `anji`, which has few users, so measure a NixOS host before you act. |
-| unmeasured, expect a few percent | `modules/universal/default.nix:207-210` — `documentation.nixos.enable = true` and the man-db cache | The famous "39 % of evaluation" figure ([nixpkgs#83871](https://github.com/NixOS/nixpkgs/pull/83871)) is stale. The docs split in [nixpkgs#149532](https://github.com/NixOS/nixpkgs/pull/149532) cut it to about 4 %. NixOS hosts only, so it does not touch `anji`. Measure before you turn it off. |
-| about 5 % of self time, 25 % of calls | `modules/meta/default.nix:28` — `mkSubmodule` runs a nested `lib.evalModules` | It also passes `builtins.removeAttrs config [...]` **into** the child at priority 1100, so the whole parent `config` must evaluate and then merge into the child. Called at `flake.nix:293`, `flake.nix:423`, `flake.nix:507`, `flake.nix:533`, `modules/universal/default.nix:94`, `hosts/anji/default.nix:213`. Upstream calls a data-only submodule fixpoint avoidable: [nixpkgs#257511](https://github.com/NixOS/nixpkgs/pull/257511). |
-| **near zero** | `modules/meta/default.nix:15` — `lib.filesystem.listFilesRecursive` | The recursive loader scan itself. Upstream measured `listFilesRecursive` over all ~85,000 nixpkgs files at **708.6 ms to 665.2 ms** total: [nixpkgs#449744](https://github.com/NixOS/nixpkgs/pull/449744). 194 files cost microseconds. **Do not optimise the scan.** The cost is the fan-out of what it imports, not the read. |
-| **near zero** | `modules/den/flake-module.nix:58` — `builtins.readDir ../../hosts-den` | The same reasoning. It reads one directory. |
-| **near zero** | the many `builtins.readFile` calls in `modules/den/aspects/*.nix` | Each reads one small shell script. `modules/den/aspects/jj-fork.nix:95`, `nix.nix:81`, `zellij.nix:82`, and about twenty more. Not a cost. |
-| cold runs only, but large | three IFD builds during a cold evaluation | `devenv-nixpkgs-patched`, `cabal2nix-cachix-api`, `cabal2nix-hnix-store-nar`, plus `kdn-authorized-keys` at `modules/universal/profile/user/kdn/default.nix:99`. They turn 64 s into 244 s on a fresh store. Remove the devenv overlay and the first one goes away. |
+| Weight                                | Where                                                                                              | What it is                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **about 31 %**                        | `hosts/anji/default.nix:32` — `kdn.darwin.rosetta-builder.enable = true`                           | Pulls `nix-rosetta-builder`, whose `module.nix:213` interpolates a `nixos-disk-image`. That forces a nested full `nixosSystem` evaluation plus a `closure-info`. Measured 1133 of 3570 samples. **Look for a lazier way to reference the image, or gate it behind an option that a plain build does not touch.**                                                                                                                           |
+| **about 17 %**                        | `flake.nix:207` — `inputs.devenv.overlays.default` in `flake.overlays.default`                     | Adds devenv's own patched nixpkgs as a second full nixpkgs instance, 14.9 % of self time, and the unpatched source as a third, 1.9 %. **A host does not need devenv. Move that overlay to the devenv shell only.**                                                                                                                                                                                                                         |
+| **about 8 %**                         | the same overlay, through `system-applications` → `devenv-wrapped-2.3.1`                           | devenv's generated `Cargo.nix` is about 39,000 lines and takes 2,162,934 of 27,526,141 function calls. It evaluates because `devenv` reaches a host package list.                                                                                                                                                                                                                                                                          |
+| unmeasured, likely large on NixOS     | `modules/universal/default.nix:96` — `home-manager.useGlobalPkgs = false`                          | Each Home Manager user imports its own nixpkgs instance. `nixos/modules/misc/nixpkgs.nix` states that sharing one instance exists "to increase the performance of evaluation". home-manager is only 0.28 % of self time on `anji`, which has few users, so measure a NixOS host before you act.                                                                                                                                            |
+| unmeasured, expect a few percent      | `modules/universal/default.nix:207-210` — `documentation.nixos.enable = true` and the man-db cache | The famous "39 % of evaluation" figure ([nixpkgs#83871](https://github.com/NixOS/nixpkgs/pull/83871)) is stale. The docs split in [nixpkgs#149532](https://github.com/NixOS/nixpkgs/pull/149532) cut it to about 4 %. NixOS hosts only, so it does not touch `anji`. Measure before you turn it off.                                                                                                                                       |
+| about 5 % of self time, 25 % of calls | `modules/meta/default.nix:28` — `mkSubmodule` runs a nested `lib.evalModules`                      | It also passes `builtins.removeAttrs config [...]` **into** the child at priority 1100, so the whole parent `config` must evaluate and then merge into the child. Called at `flake.nix:293`, `flake.nix:423`, `flake.nix:507`, `flake.nix:533`, `modules/universal/default.nix:94`, `hosts/anji/default.nix:213`. Upstream calls a data-only submodule fixpoint avoidable: [nixpkgs#257511](https://github.com/NixOS/nixpkgs/pull/257511). |
+| **near zero**                         | `modules/meta/default.nix:15` — `lib.filesystem.listFilesRecursive`                                | The recursive loader scan itself. Upstream measured `listFilesRecursive` over all ~85,000 nixpkgs files at **708.6 ms to 665.2 ms** total: [nixpkgs#449744](https://github.com/NixOS/nixpkgs/pull/449744). 194 files cost microseconds. **Do not optimise the scan.** The cost is the fan-out of what it imports, not the read.                                                                                                            |
+| **near zero**                         | `modules/den/flake-module.nix:58` — `builtins.readDir ../../hosts-den`                             | The same reasoning. It reads one directory.                                                                                                                                                                                                                                                                                                                                                                                                |
+| **near zero**                         | the many `builtins.readFile` calls in `modules/den/aspects/*.nix`                                  | Each reads one small shell script. `modules/den/aspects/jj-fork.nix:95`, `nix.nix:81`, `zellij.nix:82`, and about twenty more. Not a cost.                                                                                                                                                                                                                                                                                                 |
+| cold runs only, but large             | three IFD builds during a cold evaluation                                                          | `devenv-nixpkgs-patched`, `cabal2nix-cachix-api`, `cabal2nix-hnix-store-nar`, plus `kdn-authorized-keys` at `modules/universal/profile/user/kdn/default.nix:99`. They turn 64 s into 244 s on a fresh store. Remove the devenv overlay and the first one goes away.                                                                                                                                                                        |
 
 ### The wall-clock gap is instantiation, and it is the cheapest win
 
@@ -870,38 +870,38 @@ Three routes, in rising order of effort:
 
 Every upstream claim, with its URL.
 
-| Claim | URL |
-|---|---|
-| CppNix eval profiler feature doc | <https://nix.dev/manual/nix/latest/advanced-topics/eval-profiler> |
-| Nix 2.30.0 release notes, profiler paragraph | <https://nix.dev/manual/nix/latest/release-notes/rl-2.30> |
-| Nix 2.30.0 announcement, 2025-07-08 | <https://discourse.nixos.org/t/nix-2-30-0-released/66449> |
-| The profiler pull request | <https://github.com/NixOS/nix/pull/13220> |
-| Derivation names in frames | <https://github.com/NixOS/nix/pull/13261> |
-| Lix declines the port, issue 881 | <https://git.lix.systems/lix-project/lix/issues/881> |
-| Lix manual, single page (zero profiler hits) | <https://docs.lix.systems/manual/lix/stable/print.html> |
-| Lix `NIX_SHOW_STATS` and `NIX_COUNT_CALLS` docs | <https://docs.lix.systems/manual/lix/stable/command-ref/env-common.html> |
-| Lix `NIX_SHOW_STATS_PATH`, contributors' page | <https://docs.lix.systems/manual/lix/stable/contributing/testing.html> |
-| Lix diverged at Nix 2.18 | <https://lix.systems/about/> |
-| `eval-cores` in Determinate Nix 3.11.1 | <https://determinate.systems/blog/changelog-determinate-nix-3111> |
-| `eval-cores` default raised, 3.16.3 | <https://determinate.systems/blog/changelog-determinate-nix-3163> |
-| Parallel evaluation design post | <https://determinate.systems/blog/parallel-nix-eval> |
-| Upstream multithreaded evaluator, closed unmerged | <https://github.com/NixOS/nix/pull/10938> |
-| Upstream parallel evaluation issue, open | <https://github.com/NixOS/nix/issues/2652> |
-| `contrib/stack-collapse.py` | <https://github.com/NixOS/nix/blob/master/contrib/stack-collapse.py> |
-| The trace-to-flamegraph route, and the 59 GB trace | <https://discourse.nixos.org/t/nix-flamegraph-or-profiling-tool/33333> |
-| FlameGraph, upstream | <https://github.com/brendangregg/FlameGraph> |
-| speedscope | <https://speedscope.app/> |
-| `nix-eval-jobs` | <https://github.com/nix-community/nix-eval-jobs> |
-| `nix-fast-build` | <https://github.com/Mic92/nix-fast-build> |
-| NixOS rebuild slowness, tracking issue | <https://github.com/NixOS/nixpkgs/issues/57477> |
-| Evaluation times over the years | <https://discourse.nixos.org/t/a-look-at-nixos-nixpkgs-evaluation-times-over-the-years/65114> |
-| A modern end-to-end profiling walk-through | <https://discourse.nixos.org/t/profiling-optimising-nixos-configuration-derivation/75095> |
-| Module `imports` fan-out proof of concept, 4.0 s to 1.4 s | <https://github.com/NixOS/nixpkgs/issues/137168> |
-| Minimal modules, RFC 22 | <https://github.com/NixOS/rfcs/pull/22> |
-| List concatenation is O(n) in the merge machinery | <https://github.com/NixOS/nixpkgs/pull/152046> |
-| Module system speed-up, merged 2026-09-09 | <https://github.com/NixOS/nixpkgs/pull/517881> |
-| Submodule fixpoint is avoidable for data | <https://github.com/NixOS/nixpkgs/pull/257511> |
-| `documentation.nixos.enable` at 39 %, stale | <https://github.com/NixOS/nixpkgs/pull/83871> |
-| The docs split that made it stale | <https://github.com/NixOS/nixpkgs/pull/149532> |
-| `listFilesRecursive` costs milliseconds | <https://github.com/NixOS/nixpkgs/pull/449744> |
-| NixOS wiki, evaluation performance | <https://wiki.nixos.org/wiki/Nix_Evaluation_Performance> |
+| Claim                                                     | URL                                                                                           |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| CppNix eval profiler feature doc                          | <https://nix.dev/manual/nix/latest/advanced-topics/eval-profiler>                             |
+| Nix 2.30.0 release notes, profiler paragraph              | <https://nix.dev/manual/nix/latest/release-notes/rl-2.30>                                     |
+| Nix 2.30.0 announcement, 2025-07-08                       | <https://discourse.nixos.org/t/nix-2-30-0-released/66449>                                     |
+| The profiler pull request                                 | <https://github.com/NixOS/nix/pull/13220>                                                     |
+| Derivation names in frames                                | <https://github.com/NixOS/nix/pull/13261>                                                     |
+| Lix declines the port, issue 881                          | <https://git.lix.systems/lix-project/lix/issues/881>                                          |
+| Lix manual, single page (zero profiler hits)              | <https://docs.lix.systems/manual/lix/stable/print.html>                                       |
+| Lix `NIX_SHOW_STATS` and `NIX_COUNT_CALLS` docs           | <https://docs.lix.systems/manual/lix/stable/command-ref/env-common.html>                      |
+| Lix `NIX_SHOW_STATS_PATH`, contributors' page             | <https://docs.lix.systems/manual/lix/stable/contributing/testing.html>                        |
+| Lix diverged at Nix 2.18                                  | <https://lix.systems/about/>                                                                  |
+| `eval-cores` in Determinate Nix 3.11.1                    | <https://determinate.systems/blog/changelog-determinate-nix-3111>                             |
+| `eval-cores` default raised, 3.16.3                       | <https://determinate.systems/blog/changelog-determinate-nix-3163>                             |
+| Parallel evaluation design post                           | <https://determinate.systems/blog/parallel-nix-eval>                                          |
+| Upstream multithreaded evaluator, closed unmerged         | <https://github.com/NixOS/nix/pull/10938>                                                     |
+| Upstream parallel evaluation issue, open                  | <https://github.com/NixOS/nix/issues/2652>                                                    |
+| `contrib/stack-collapse.py`                               | <https://github.com/NixOS/nix/blob/master/contrib/stack-collapse.py>                          |
+| The trace-to-flamegraph route, and the 59 GB trace        | <https://discourse.nixos.org/t/nix-flamegraph-or-profiling-tool/33333>                        |
+| FlameGraph, upstream                                      | <https://github.com/brendangregg/FlameGraph>                                                  |
+| speedscope                                                | <https://speedscope.app/>                                                                     |
+| `nix-eval-jobs`                                           | <https://github.com/nix-community/nix-eval-jobs>                                              |
+| `nix-fast-build`                                          | <https://github.com/Mic92/nix-fast-build>                                                     |
+| NixOS rebuild slowness, tracking issue                    | <https://github.com/NixOS/nixpkgs/issues/57477>                                               |
+| Evaluation times over the years                           | <https://discourse.nixos.org/t/a-look-at-nixos-nixpkgs-evaluation-times-over-the-years/65114> |
+| A modern end-to-end profiling walk-through                | <https://discourse.nixos.org/t/profiling-optimising-nixos-configuration-derivation/75095>     |
+| Module `imports` fan-out proof of concept, 4.0 s to 1.4 s | <https://github.com/NixOS/nixpkgs/issues/137168>                                              |
+| Minimal modules, RFC 22                                   | <https://github.com/NixOS/rfcs/pull/22>                                                       |
+| List concatenation is O(n) in the merge machinery         | <https://github.com/NixOS/nixpkgs/pull/152046>                                                |
+| Module system speed-up, merged 2026-09-09                 | <https://github.com/NixOS/nixpkgs/pull/517881>                                                |
+| Submodule fixpoint is avoidable for data                  | <https://github.com/NixOS/nixpkgs/pull/257511>                                                |
+| `documentation.nixos.enable` at 39 %, stale               | <https://github.com/NixOS/nixpkgs/pull/83871>                                                 |
+| The docs split that made it stale                         | <https://github.com/NixOS/nixpkgs/pull/149532>                                                |
+| `listFilesRecursive` costs milliseconds                   | <https://github.com/NixOS/nixpkgs/pull/449744>                                                |
+| NixOS wiki, evaluation performance                        | <https://wiki.nixos.org/wiki/Nix_Evaluation_Performance>                                      |

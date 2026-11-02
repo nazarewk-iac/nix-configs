@@ -3,19 +3,19 @@
 This directory holds llama.cpp builds from source, for the Qwen3.8-Flash-Next
 (`qwen4exp`) work on brys:
 
-| Attribute | Source | Version | Build | Commit | Backend |
-|---|---|---|---|---|---|
-| `llama-cpp-v0_6_0` | `ggml-org/llama.cpp` | 0.6.0 | 11429 | `d812350` | CPU |
-| `llama-cpp-v0_6_0-vulkan` | `ggml-org/llama.cpp` | 0.6.0 | 11429 | `d812350` | CPU + Vulkan |
-| `llama-cpp-v0_6_0-vulkan-noblas` | `ggml-org/llama.cpp` | 0.6.0 | 11429 | `d812350` | CPU + Vulkan, no BLAS |
-| `llama-cpp-master-vulkan` | `ggml-org/llama.cpp` master | 0.6.0-unstable-2026-10-08 | 11490 | `9c2e0e4` | CPU + Vulkan |
-| `llama-cpp-master-noprefetch-vulkan` | the same master + PR #29250 | 0.6.0-unstable-2026-10-08 | 11490 | `9c2e0e4` | CPU + Vulkan |
-| `llama-cpp-master-moe-stream-vulkan` | the same master + PR #25294 | 0.6.0-unstable-2026-10-08 | 11490 | `9c2e0e4` | CPU + Vulkan |
-| `llama-cpp-master-pin-hot-experts-vulkan` | the same master + PR #26414 | 0.6.0-unstable-2026-10-08 | 11490 | `9c2e0e4` | CPU + Vulkan |
-| `llama-cpp-unsloth-mtp` | `danielhanchen/llama.cpp`, branch `qwen4exp/mtp` | 0.4.1 | 11098 | `6fcaa16` | CPU |
-| `llama-cpp-sessions` | `nazarewk-iac/llama.cpp`, branch `main` (master + #26004 + rebased #29738) | 0.6.0-unstable-2026-10-09 | 11539 | `6beadd4d6` | CPU |
-| `llama-cpp-sessions-vulkan` | the same fork source | 0.6.0-unstable-2026-10-09 | 11539 | `6beadd4d6` | CPU + Vulkan |
-| `llama-cpp-sessions-vulkan-noblas` | the same fork source | 0.6.0-unstable-2026-10-09 | 11539 | `6beadd4d6` | CPU + Vulkan, no BLAS |
+| Attribute                                 | Source                                                                     | Version                   | Build | Commit      | Backend               |
+| ----------------------------------------- | -------------------------------------------------------------------------- | ------------------------- | ----- | ----------- | --------------------- |
+| `llama-cpp-v0_6_0`                        | `ggml-org/llama.cpp`                                                       | 0.6.0                     | 11429 | `d812350`   | CPU                   |
+| `llama-cpp-v0_6_0-vulkan`                 | `ggml-org/llama.cpp`                                                       | 0.6.0                     | 11429 | `d812350`   | CPU + Vulkan          |
+| `llama-cpp-v0_6_0-vulkan-noblas`          | `ggml-org/llama.cpp`                                                       | 0.6.0                     | 11429 | `d812350`   | CPU + Vulkan, no BLAS |
+| `llama-cpp-master-vulkan`                 | `ggml-org/llama.cpp` master                                                | 0.6.0-unstable-2026-10-08 | 11490 | `9c2e0e4`   | CPU + Vulkan          |
+| `llama-cpp-master-noprefetch-vulkan`      | the same master + PR #29250                                                | 0.6.0-unstable-2026-10-08 | 11490 | `9c2e0e4`   | CPU + Vulkan          |
+| `llama-cpp-master-moe-stream-vulkan`      | the same master + PR #25294                                                | 0.6.0-unstable-2026-10-08 | 11490 | `9c2e0e4`   | CPU + Vulkan          |
+| `llama-cpp-master-pin-hot-experts-vulkan` | the same master + PR #26414                                                | 0.6.0-unstable-2026-10-08 | 11490 | `9c2e0e4`   | CPU + Vulkan          |
+| `llama-cpp-unsloth-mtp`                   | `danielhanchen/llama.cpp`, branch `qwen4exp/mtp`                           | 0.4.1                     | 11098 | `6fcaa16`   | CPU                   |
+| `llama-cpp-sessions`                      | `nazarewk-iac/llama.cpp`, branch `main` (master + #26004 + rebased #29738) | 0.6.0-unstable-2026-10-09 | 11539 | `6beadd4d6` | CPU                   |
+| `llama-cpp-sessions-vulkan`               | the same fork source                                                       | 0.6.0-unstable-2026-10-09 | 11539 | `6beadd4d6` | CPU + Vulkan          |
+| `llama-cpp-sessions-vulkan-noblas`        | the same fork source                                                       | 0.6.0-unstable-2026-10-09 | 11539 | `6beadd4d6` | CPU + Vulkan, no BLAS |
 
 The `master` rows are experiments, not served builds. The `master-vulkan` and
 `master-noprefetch-vulkan` rows test whether a
@@ -85,10 +85,10 @@ from disk lowers the RAM of the mostly-resident model. Both are manual ports of
 open upstream PRs onto master `9c2e0e4`, carried as patch files in this
 directory. They are kept only as a record. **No host selects them.**
 
-| Attribute | PR | Flags | Patch |
-|---|---|---|---|
-| `llama-cpp-master-moe-stream-vulkan` | #25294 | `--moe-stream`, `--moe-stream-cache <NG\|Ns>`, `--moe-stream-io-threads N`, `--moe-stream-direct` (O_DIRECT) | `25294-moe-stream.patch` |
-| `llama-cpp-master-pin-hot-experts-vulkan` | #26414 | `--pin-hot-experts N`, `--pin-hot-experts-budget-mib N`, `--load-mode mmap+pin` | `26414-pin-hot-experts.patch` |
+| Attribute                                 | PR     | Flags                                                                                                        | Patch                         |
+| ----------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------ | ----------------------------- |
+| `llama-cpp-master-moe-stream-vulkan`      | #25294 | `--moe-stream`, `--moe-stream-cache <NG\|Ns>`, `--moe-stream-io-threads N`, `--moe-stream-direct` (O_DIRECT) | `25294-moe-stream.patch`      |
+| `llama-cpp-master-pin-hot-experts-vulkan` | #26414 | `--pin-hot-experts N`, `--pin-hot-experts-budget-mib N`, `--load-mode mmap+pin`                              | `26414-pin-hot-experts.patch` |
 
 `--moe-stream` reads the routed-expert weights from disk on demand and
 auto-disables mmap. `--pin-hot-experts` mlock's the N hottest experts per layer
@@ -99,11 +99,11 @@ Benchmark on brys: the served `llm-qwen` shape (Qwen3.8-Flash-Next `UD-IQ4_XS`,
 cache was dropped before each run. The baseline is master or v0.6.0 with no
 flag; the two match.
 
-| build / flag | steady decode | prefill | RSS |
-|---|---|---|---|
-| baseline (master or v0.6.0) | ~4.68 t/s | ~16.5 t/s | ~91 GiB |
+| build / flag                                                       | steady decode   | prefill        | RSS     |
+| ------------------------------------------------------------------ | --------------- | -------------- | ------- |
+| baseline (master or v0.6.0)                                        | ~4.68 t/s       | ~16.5 t/s      | ~91 GiB |
 | master + `--moe-stream --moe-stream-direct --moe-stream-cache 64s` | 3.10 t/s (−34%) | 5.7 t/s (−65%) | ~41 GiB |
-| master + `--pin-hot-experts` | = baseline | = baseline | ~91 GiB |
+| master + `--pin-hot-experts`                                       | = baseline      | = baseline     | ~91 GiB |
 
 Verdict: **expert streaming hurts when the model is mostly resident.** The
 weights already fit in ~75% of the 125 GB RAM, so the page cache serves them.
@@ -124,12 +124,12 @@ Bugs found:
 
 Skipped PRs, with reasons:
 
-| PR | Reason |
-|---|---|
-| #26003 `--lazy-experts` | closed, not merged |
-| #29191 | needs an external `guanaco/` library; not buildable |
-| #27861 | superseded by master's GPU `--moe-cache-mib` |
-| #28414, #29250 | draft, or already tested (see "The first-request stall") |
+| PR                      | Reason                                                   |
+| ----------------------- | -------------------------------------------------------- |
+| #26003 `--lazy-experts` | closed, not merged                                       |
+| #29191                  | needs an external `guanaco/` library; not buildable      |
+| #27861                  | superseded by master's GPU `--moe-cache-mib`             |
+| #28414, #29250          | draft, or already tested (see "The first-request stall") |
 
 ## Find the new target
 

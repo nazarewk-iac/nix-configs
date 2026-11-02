@@ -28,11 +28,11 @@ the same path yields two different ids. A secondary workspace reaches the same i
 `modules/slots/jj/default.nix` `enterShell` wrote that path unconditionally. So a `devenv shell` in
 a workspace retargeted the trunk's config. The severity depended on one git-ignored file:
 
-| State | Generated config | Fork alias mentions |
-|---|---|---|
-| Trunk | 2568 B | 4 |
-| Workspace **with** `devenv.slots.local.nix` | 2568 B | 4 |
-| Workspace **without** it | 64 B (only the `"#schema"` line) | 0 |
+| State                                       | Generated config                 | Fork alias mentions |
+| ------------------------------------------- | -------------------------------- | ------------------- |
+| Trunk                                       | 2568 B                           | 4                   |
+| Workspace **with** `devenv.slots.local.nix` | 2568 B                           | 4                   |
+| Workspace **without** it                    | 64 B (only the `"#schema"` line) | 0                   |
 
 The failure was silent because `devenv.nix:22` loads that file through
 `lib.optional (builtins.pathExists ./devenv.slots.local.nix)`, which skips a missing file with no
@@ -68,7 +68,7 @@ the file, which is today's behaviour, and never makes the default workspace lose
 **Rejected: writing to `jj config path --workspace` instead.** That layer is genuinely per workspace,
 so it looks like the root-cause fix, and it was the empirical agent's recommendation. It loses on two
 counts. `test_fork_revset_aliases_resolve_from_a_workspace` proves a fresh workspace already resolves
-`fork-tip` through the shared `--repo` layer *before* it runs any `devenv shell` — under
+`fork-tip` through the shared `--repo` layer _before_ it runs any `devenv shell` — under
 `--workspace` a new workspace would have no fork aliases when it needs them most. And the existing
 `--repo` symlink would remain as a stale merging layer, so the change needs a migration. Nobody wants
 per-workspace jj aliases; the sharing is a feature. Guard the write, keep the share.
@@ -97,15 +97,15 @@ activation ban, the shared-config note, and hazard 3.
 
 **Files changed**
 
-| Path | Change |
-|---|---|
-| `modules/slots/jj/default.nix` | the `enterShell` guard, with the mechanism in a comment |
-| `checks/jj-experiments/test_workspaces.py` | `test_secondary_workspace_is_detectable_from_the_filesystem` |
-| `docs/jujutsu-vcs.md` | new § "jj workspaces", ~140 lines; the worktree section now points at it |
-| `.agents/rules/jujutsu-vcs.md` | the five-step pointer and the activation ban in short form |
-| `docs/vcs-workspaces.md` | hazard 3, the shared-config exception, a fourth checklist item |
-| `AGENTS.md` | `docs/` table row for `docs/vcs-workspaces.md` |
-| `docs/tasks/jj-workspaces-parallel-agents.md` | both decisions recorded, seven claims corrected |
+| Path                                          | Change                                                                   |
+| --------------------------------------------- | ------------------------------------------------------------------------ |
+| `modules/slots/jj/default.nix`                | the `enterShell` guard, with the mechanism in a comment                  |
+| `checks/jj-experiments/test_workspaces.py`    | `test_secondary_workspace_is_detectable_from_the_filesystem`             |
+| `docs/jujutsu-vcs.md`                         | new § "jj workspaces", ~140 lines; the worktree section now points at it |
+| `.agents/rules/jujutsu-vcs.md`                | the five-step pointer and the activation ban in short form               |
+| `docs/vcs-workspaces.md`                      | hazard 3, the shared-config exception, a fourth checklist item           |
+| `AGENTS.md`                                   | `docs/` table row for `docs/vcs-workspaces.md`                           |
+| `docs/tasks/jj-workspaces-parallel-agents.md` | both decisions recorded, seven claims corrected                          |
 
 ## Verification steps
 
@@ -119,20 +119,20 @@ nix run '.#jj-experiments-run' -- -k workspaces      # 17 passed, 93 deselected
 
 Measured from a real probe workspace at `../.nix-configs--wsprobe`, created at `fork-tip`:
 
-| Check | Result |
-|---|---|
-| `jj log -r @ -T change_id`, both dirs | `qolwvvnm…` against `kqutwywk…` — isolation real |
-| `jj config path --repo`, both dirs | identical file |
-| `jj config path --workspace`, both dirs | different files |
-| `devenv info`, stock `devenv.yaml` | fails with the SSH-to-host-`file` error |
-| `devenv eval 'claude.code.hooks.jj-guard'`, pinned | full hook attrset |
-| `devenv build shell`, pinned | `/nix/store/…-devenv-shell` |
-| `devenv shell -- <cmd>`, pinned | shell enters, exits 0; `DEVENV_ROOT` points at the workspace |
-| the guard, in that same shell | message printed; shared config sha and 4 fork aliases unchanged |
-| `devenv:git-hooks:run`, same shell | **fails** — `git rev-parse --show-toplevel` exit 128, no `.git` |
-| unpinned URL against a dirty tracked file | evaluates the **uncommitted** value; `locked` holds nothing volatile |
-| pinned URL against the same dirty file | evaluates the **committed** value; `locked` keeps `ref` only |
-| `DEVENV_ROOT` / `DOTFILE` / `STATE` / runtime | all four differ from the trunk's |
+| Check                                              | Result                                                               |
+| -------------------------------------------------- | -------------------------------------------------------------------- |
+| `jj log -r @ -T change_id`, both dirs              | `qolwvvnm…` against `kqutwywk…` — isolation real                     |
+| `jj config path --repo`, both dirs                 | identical file                                                       |
+| `jj config path --workspace`, both dirs            | different files                                                      |
+| `devenv info`, stock `devenv.yaml`                 | fails with the SSH-to-host-`file` error                              |
+| `devenv eval 'claude.code.hooks.jj-guard'`, pinned | full hook attrset                                                    |
+| `devenv build shell`, pinned                       | `/nix/store/…-devenv-shell`                                          |
+| `devenv shell -- <cmd>`, pinned                    | shell enters, exits 0; `DEVENV_ROOT` points at the workspace         |
+| the guard, in that same shell                      | message printed; shared config sha and 4 fork aliases unchanged      |
+| `devenv:git-hooks:run`, same shell                 | **fails** — `git rev-parse --show-toplevel` exit 128, no `.git`      |
+| unpinned URL against a dirty tracked file          | evaluates the **uncommitted** value; `locked` holds nothing volatile |
+| pinned URL against the same dirty file             | evaluates the **committed** value; `locked` keeps `ref` only         |
+| `DEVENV_ROOT` / `DOTFILE` / `STATE` / runtime      | all four differ from the trunk's                                     |
 
 The probe workspace was forgotten and removed, and the trunk's shared jj config was verified
 byte-identical before and after (`sha256 7656a6c2…` both times).
@@ -145,7 +145,7 @@ byte-identical before and after (`sha256 7656a6c2…` both times).
   file first claimed: `devenv:git-hooks:run` **fails** on `git rev-parse --show-toplevel` exit 128
   and cascades into `devenv:enterTest`. The shell still enters and exits 0. So a workspace runs no
   pre-commit checks — run the formatter and the linters from the trunk.
-- **Still UNVERIFIED.** The claim that `jj workspace update-stale` has *exactly one* cause: jj
+- **Still UNVERIFIED.** The claim that `jj workspace update-stale` has _exactly one_ cause: jj
   0.45.1's help text names no condition and only the `op restore` case is proven. The
   `sha256(dotfile)[0:7]` formula for `devenv.runtime`; only the independence was measured. The real
   `.devenv/` size, so "hundreds of megabytes" stays a guess.
@@ -173,5 +173,5 @@ byte-identical before and after (`sha256 7656a6c2…` both times).
 - **The guard is not enforced.** Nothing stops a future edit from writing the shared path again. A
   `checks/` case that renders `enterShell` and greps for the test would close that.
 - **jj 0.45.1 additions worth a look later:** `jj workspace rename`, and `jj workspace list -T
-  <template>` over a `WorkspaceRef` type. No `is_current`-style template keyword exists, which is why
+<template>` over a `WorkspaceRef` type. No `is_current`-style template keyword exists, which is why
   the guard uses the filesystem rather than a template.

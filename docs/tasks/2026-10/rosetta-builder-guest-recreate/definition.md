@@ -24,9 +24,9 @@ store path, and the qcow2 file name carries the nixpkgs version:
 
 ```yaml
 images:
-- location: >-
-    /nix/store/kfxv598rx3rsvhadj2wacznnh53xx1z9-nixos-disk-image/
-    nixos-image-efi-qcow2-26.11.20261011.7fd4004-aarch64-linux.qcow2
+  - location: >-
+      /nix/store/kfxv598rx3rsvhadj2wacznnh53xx1z9-nixos-disk-image/
+      nixos-image-efi-qcow2-26.11.20261011.7fd4004-aarch64-linux.qcow2
 ```
 
 Any nixpkgs bump changes both the hash and the version in that string. The 2026-10-15 cutover hit

@@ -35,7 +35,7 @@ use it at your own risk)"), the repo's own age aspect
   standardized".
 
 **Consequence for this fleet.** The plugin gives hardware-bound, unattended, PIN-less decryption. Its
-"TPM" protects against *offline key extraction* (a stolen disk), not against a live attacker at the
+"TPM" protects against _offline key extraction_ (a stolen disk), not against a live attacker at the
 console. For boot-time sops decryption that is the right threat model; the live-attacker case is the
 job of full disk encryption.
 
@@ -82,13 +82,13 @@ The `hw-yubikey` aspect shows the pattern: it publishes `kdn.hw.yubikey.agePlugi
 
 ## 3. Alternatives — what can actually feed sops-nix
 
-| Approach | Feeds sops-nix? | Verdict |
-|---|---|---|
-| **`age-plugin-tpm`** | **Yes**, directly (`sops.age.plugins` + `keyFile`). | The only native path. Unattended, no PCR brittleness. Recommended. |
-| `systemd-creds` | Indirect: `systemd-creds encrypt --with-key=tpm2` holds an age key, `decrypt` writes it at boot. | Works but needs scripting; sops-nix has no hook. Default `host+tpm2` also binds a disk file (`/var/lib/systemd/credential.secret`). More moving parts. |
-| `systemd-cryptenroll --tpm2` | **No.** It enrolls a LUKS keyslot; it does not yield a plaintext key for sops. | Right tool for FDE, wrong tool for sops. |
-| `clevis` + `tang` | **No** (tang is network-bound; clevis tpm2 is LUKS-oriented). | Out of scope; heavier. |
-| TPM SSH key (`ssh-tpm-agent`, `ssh-tpm-keygen`) | Indirect at best. The public half converts to an age recipient, but age cannot drive an ssh-agent to decrypt. Foxboron states this in #33. | Not viable for unattended decrypt. |
+| Approach                                        | Feeds sops-nix?                                                                                                                            | Verdict                                                                                                                                                |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **`age-plugin-tpm`**                            | **Yes**, directly (`sops.age.plugins` + `keyFile`).                                                                                        | The only native path. Unattended, no PCR brittleness. Recommended.                                                                                     |
+| `systemd-creds`                                 | Indirect: `systemd-creds encrypt --with-key=tpm2` holds an age key, `decrypt` writes it at boot.                                           | Works but needs scripting; sops-nix has no hook. Default `host+tpm2` also binds a disk file (`/var/lib/systemd/credential.secret`). More moving parts. |
+| `systemd-cryptenroll --tpm2`                    | **No.** It enrolls a LUKS keyslot; it does not yield a plaintext key for sops.                                                             | Right tool for FDE, wrong tool for sops.                                                                                                               |
+| `clevis` + `tang`                               | **No** (tang is network-bound; clevis tpm2 is LUKS-oriented).                                                                              | Out of scope; heavier.                                                                                                                                 |
+| TPM SSH key (`ssh-tpm-agent`, `ssh-tpm-keygen`) | Indirect at best. The public half converts to an age recipient, but age cannot drive an ssh-agent to decrypt. Foxboron states this in #33. | Not viable for unattended decrypt.                                                                                                                     |
 
 **NixOS requirements:** `security.tpm2.enable = true;` (creates `/dev/tpmrm0` udev rules and the
 `tss` group) and a kernel module (`tpm_tis` or the platform variant, e.g. `tpm_crb`) loaded before
@@ -122,8 +122,8 @@ The authoritative source is Foxboron's answer in age-plugin-tpm issue #33 (comme
    is always recoverable. The public `age1tpm...` recipient can be regenerated from the identity with
    `age-plugin-tpm -y`, but not without the blob.
 
-**Answer to "set it once, survive reinstalls?"** — Set the TPM once and it survives a reinstall *only
-if* (a) you keep the identity blob backed up off the host and restore it, and (b) nobody clears the
+**Answer to "set it once, survive reinstalls?"** — Set the TPM once and it survives a reinstall _only
+if_ (a) you keep the identity blob backed up off the host and restore it, and (b) nobody clears the
 TPM owner hierarchy. The TPM hardware and its seed are stable across reinstalls; the disk file and the
 hierarchy state are the fragile parts. Treat the blob like any other key backup, and keep the YubiKey
 recipients as the recovery path.

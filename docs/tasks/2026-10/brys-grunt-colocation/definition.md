@@ -41,15 +41,15 @@ The three research files that support this task are:
 All rows are Q4_K_M. `-p 512 -n 128 -r 3 -t 16`. The CPU columns are `-ngl 0`;
 the W6600 columns are `-ngl 99 --device Vulkan0`. Units are tokens/second.
 
-| model | released | weights | CPU pp512 | CPU tg128 | W6600 pp512 | W6600 tg128 |
-|---|---|---|---|---|---|---|
-| Qwen3.5-2B | 2026-02 | 1.27 GB | 906 | 28.30 | 2737 | **125.01** |
-| Granite-4.2-3B | 2026-08 | 2.24 GB | 825 | 19.89 | 1441 | **86.65** |
-| Qwen3-4B-Instruct-2507 | 2025-10 | 2.49 GB | 596 | 14.14 | 1173 | 74.94 |
-| Qwen3.5-4B | 2026-02 | 2.73 GB | 452 | 12.03 | 1073 | **62.34** |
-| Qwen3-8B | 2025-04 | 5.02 GB | 297 | 8.03 | 644 | 42.77 |
-| Qwen3.5-9B | 2026-02 | 5.67 GB | 270 | 7.26 | 594 | **36.99** |
-| Qwen2.5-0.5B-Instruct | 2024-09 | 0.46 GB | - | - | 10113 | 337 |
+| model                  | released | weights | CPU pp512 | CPU tg128 | W6600 pp512 | W6600 tg128 |
+| ---------------------- | -------- | ------- | --------- | --------- | ----------- | ----------- |
+| Qwen3.5-2B             | 2026-02  | 1.27 GB | 906       | 28.30     | 2737        | **125.01**  |
+| Granite-4.2-3B         | 2026-08  | 2.24 GB | 825       | 19.89     | 1441        | **86.65**   |
+| Qwen3-4B-Instruct-2507 | 2025-10  | 2.49 GB | 596       | 14.14     | 1173        | 74.94       |
+| Qwen3.5-4B             | 2026-02  | 2.73 GB | 452       | 12.03     | 1073        | **62.34**   |
+| Qwen3-8B               | 2025-04  | 5.02 GB | 297       | 8.03      | 644         | 42.77       |
+| Qwen3.5-9B             | 2026-02  | 5.67 GB | 270       | 7.26      | 594         | **36.99**   |
+| Qwen2.5-0.5B-Instruct  | 2024-09  | 0.46 GB | -         | -         | 10113       | 337         |
 
 The 0.5B row comes from
 [docs/tasks/2026-10/qwen-gpu-offload/definition.md](../qwen-gpu-offload/definition.md).
@@ -107,15 +107,15 @@ The grunt needs a router/scheduler with:
 
 The profile holds these fields, measured at real start:
 
-| field | meaning |
-|---|---|
-| `rss_file` | mmap'd weights at idle (RAM budget; reclaimable) |
-| `rss_anon` | KV + compute buffers at served context (RAM budget; not reclaimable) |
-| `vram` | GPU VRAM used while served |
-| `decode_tok_s`, `prefill_tok_s` | warm llama-bench/server timings |
-| `load_time` | spawn to "listening", cold page cache (swap cost) |
-| `fault rate` | major faults/s at idle (detect page-cache thrash) |
-| `coexist penalty` | orchestrator tok/s with versus without this model resident |
+| field                           | meaning                                                              |
+| ------------------------------- | -------------------------------------------------------------------- |
+| `rss_file`                      | mmap'd weights at idle (RAM budget; reclaimable)                     |
+| `rss_anon`                      | KV + compute buffers at served context (RAM budget; not reclaimable) |
+| `vram`                          | GPU VRAM used while served                                           |
+| `decode_tok_s`, `prefill_tok_s` | warm llama-bench/server timings                                      |
+| `load_time`                     | spawn to "listening", cold page cache (swap cost)                    |
+| `fault rate`                    | major faults/s at idle (detect page-cache thrash)                    |
+| `coexist penalty`               | orchestrator tok/s with versus without this model resident           |
 
 The scheduler decides from measured numbers, not from model names. See
 [llama-router-scheduler.research.md](llama-router-scheduler.research.md) sections

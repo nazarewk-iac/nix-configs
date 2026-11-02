@@ -52,5 +52,5 @@ hid the tool's sessions from the user's plain `zellij list-sessions`.
 ## Follow-up notes
 
 - Committed as `feat(zellij-llm): derive session name from kdn-slug; add watch/wait +
-  persist-by-default` (change `kkxrzzxx`). This commit also covers the sibling docs-clarity task
+persist-by-default` (change `kkxrzzxx`). This commit also covers the sibling docs-clarity task
   ([[zellij-llm-docs-clarity]]).

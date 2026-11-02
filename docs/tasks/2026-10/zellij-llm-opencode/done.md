@@ -23,13 +23,13 @@ did not was wrong.
 
 Added an `opencode` command group to `packages/llm/zellij-llm/zellij-llm.sh`:
 
-| Command | Behavior |
-|---|---|
-| `opencode spawn` | Start OpenCode in a new pane. Wraps the command in `devenv shell --` when `devenv.nix`/`devenv.yaml` is present (opt out with `--no-devenv`). `--dry-run` prints the command. `--model`, `--opencode-arg` (repeatable), `--opencode-bin`, `--wait`, `--ephemeral` pass through. |
-| `opencode send` | Focus the pane and type a prompt, then Enter (`--no-submit` types only). |
-| `opencode watch` | Follow a turn: `state=RUNNING` while OpenCode's `esc interrupt` indicator is present, `state=IDLE` when it is gone; report an error line; return on the first `RUNNING -> IDLE`, or after `--for <duration>` (`30m`, `2h`). |
-| `opencode list` | The non-plugin panes and the OpenCode session id (`ses_...`) each shows. |
-| `opencode attach` | Print the `zellij attach` command. |
+| Command           | Behavior                                                                                                                                                                                                                                                                        |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `opencode spawn`  | Start OpenCode in a new pane. Wraps the command in `devenv shell --` when `devenv.nix`/`devenv.yaml` is present (opt out with `--no-devenv`). `--dry-run` prints the command. `--model`, `--opencode-arg` (repeatable), `--opencode-bin`, `--wait`, `--ephemeral` pass through. |
+| `opencode send`   | Focus the pane and type a prompt, then Enter (`--no-submit` types only).                                                                                                                                                                                                        |
+| `opencode watch`  | Follow a turn: `state=RUNNING` while OpenCode's `esc interrupt` indicator is present, `state=IDLE` when it is gone; report an error line; return on the first `RUNNING -> IDLE`, or after `--for <duration>` (`30m`, `2h`).                                                     |
+| `opencode list`   | The non-plugin panes and the OpenCode session id (`ses_...`) each shows.                                                                                                                                                                                                        |
+| `opencode attach` | Print the `zellij attach` command.                                                                                                                                                                                                                                              |
 
 Helpers: `_has_devenv`, `_opencode_command` (quotes with `%q` so the pane's
 `bash -xeEuo pipefail` runs it unchanged), `_parse_duration`, `_watch_opencode`,

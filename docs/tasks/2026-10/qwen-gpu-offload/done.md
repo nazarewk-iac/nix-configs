@@ -102,16 +102,16 @@ The generated preset INI (`models-preset.ini`) holds `device = Vulkan0` and
 Benchmark (same prompt, temp 0, 300-token decode, warm second run; fresh ~1.04k
 prompt for prefill). `accept` = `draft_n_accepted / draft_n`:
 
-| variant | decode t/s | prefill t/s | accept | RSS | VRAM | gpu busy avg/max |
-|---|---|---|---|---|---|---|
-| CPU `llm-qwen` (router) | 9.13 | 17.4 | 0.697 | 117.7 GB | 0.05 GiB | 0/0% |
-| `-ngl 99 -cmoe -nkvo` (router) | 2.01 | 44.7 | 0.708 | 95.6 GB | 7.30 GiB | 11/75% |
-| `-ngl 99 -nkvo -ot ffn_.*_exps=CPU` | 2.01 | 63.6 | 0.708 | 97.4 GB | 7.30 GiB | 12/88% |
-| `-ngl 20` | 5.04 | 14.6 | 0.734 | 56.3 GB | 7.94 GiB | 72/99% |
-| `-ngl 8` | 5.89 | 14.4 | 0.746 | 79.7 GB | 7.97 GiB | 51/99% |
-| `-ngl 40 -cmoe -nkvo` | 1.61 | 42.4 | 0.681 | 97.4 GB | 6.41 GiB | 14/89% |
-| `n-gpu-layers-draft 99` (standalone) | 10.48 | 19.1 | 0.731 | 95.3 GB | 6.40 GiB | 10/96% |
-| **`n-gpu-layers-draft 99` (router, final)** | **10.82** | 16.9 | 0.731 | 95.3 GB | 6.40 GiB | 12/99% |
+| variant                                     | decode t/s | prefill t/s | accept | RSS      | VRAM     | gpu busy avg/max |
+| ------------------------------------------- | ---------- | ----------- | ------ | -------- | -------- | ---------------- |
+| CPU `llm-qwen` (router)                     | 9.13       | 17.4        | 0.697  | 117.7 GB | 0.05 GiB | 0/0%             |
+| `-ngl 99 -cmoe -nkvo` (router)              | 2.01       | 44.7        | 0.708  | 95.6 GB  | 7.30 GiB | 11/75%           |
+| `-ngl 99 -nkvo -ot ffn_.*_exps=CPU`         | 2.01       | 63.6        | 0.708  | 97.4 GB  | 7.30 GiB | 12/88%           |
+| `-ngl 20`                                   | 5.04       | 14.6        | 0.734  | 56.3 GB  | 7.94 GiB | 72/99%           |
+| `-ngl 8`                                    | 5.89       | 14.4        | 0.746  | 79.7 GB  | 7.97 GiB | 51/99%           |
+| `-ngl 40 -cmoe -nkvo`                       | 1.61       | 42.4        | 0.681  | 97.4 GB  | 6.41 GiB | 14/89%           |
+| `n-gpu-layers-draft 99` (standalone)        | 10.48      | 19.1        | 0.731  | 95.3 GB  | 6.40 GiB | 10/96%           |
+| **`n-gpu-layers-draft 99` (router, final)** | **10.82**  | 16.9        | 0.731  | 95.3 GB  | 6.40 GiB | 12/99%           |
 
 The final variant: MTP acceptance 0.731, mean accepted length 4.55, VmRSS
 95.3 GB (RssAnon 33.9 GB, RssFile 61.5 GB), `VmSwap` 0, 0 idle major faults,
@@ -130,7 +130,7 @@ no OOM.
   parity (-3%); the same prompt would likely show the same +15-30% win.
 - **Cosmetic Vulkan warning.** Every load prints
   `Failed to allocate pinned memory (Requested buffer size exceeds device buffer
-  size limit: ErrorOutOfDeviceMemory)`. RADV refuses the pinned staging buffer;
+size limit: ErrorOutOfDeviceMemory)`. RADV refuses the pinned staging buffer;
   llama.cpp falls back to unpinned transfers. The model loads and runs.
 - **Unused slot options.** The final config uses only `draftNGpuLayers` and
   `device`. `nGpuLayers`, `cpuMoe` and `noKvOffload` stay in the slot and den

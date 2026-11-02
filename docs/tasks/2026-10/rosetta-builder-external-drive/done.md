@@ -13,7 +13,7 @@ authored_by: agent
   (default `/var/lib/${name}`); `flake.nix` consumes the fork.
 - `modules/slots/rosetta-builder/default.nix` exposes `guest.workingDir` and passes it through.
 - `hosts/anji/default.nix` sets `kdn.darwin.rosetta-builder.guest.workingDir =
-  "/anji-ext-01/rosetta-builder"`.
+"/anji-ext-01/rosetta-builder"`.
 
 The host had no Rosetta guest yet (the bootstrap was at phase 1), so the move was free: the guest
 was **created** on the external volume during the phase-2 switch of

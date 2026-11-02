@@ -28,19 +28,20 @@ with a stable line that points at a `current-date` skill. It uses the v1 hook
 mutable `string[]`:
 
 ```ts
-const DATE_LINE = /^([ \t]*)Today's date:.*$/gm
-const STABLE_DATE_LINE = "$1Today's date: not injected (kept out of the prompt so it stays stable); use the `current-date` skill when you need it."
+const DATE_LINE = /^([ \t]*)Today's date:.*$/gm;
+const STABLE_DATE_LINE =
+  "$1Today's date: not injected (kept out of the prompt so it stays stable); use the `current-date` skill when you need it.";
 
 export const KdnStableSystemPrompt: Plugin = async () => {
   return {
     "experimental.chat.system.transform": async (_input, output) => {
-      if (!output || !Array.isArray(output.system)) return
+      if (!output || !Array.isArray(output.system)) return;
       output.system = output.system.map((part) =>
         typeof part === "string" ? part.replace(DATE_LINE, STABLE_DATE_LINE) : part,
-      )
+      );
     },
-  }
-}
+  };
+};
 ```
 
 The skill `.opencode/skills/current-date/SKILL.md` tells the model to run `date`
@@ -122,7 +123,7 @@ The system prompt is now byte-identical for the life of a conversation.
 The first plugin reassigned the array instead of mutating it:
 
 ```ts
-output.system = output.system.map((part) => part.replace(DATE_LINE, STABLE_DATE_LINE))
+output.system = output.system.map((part) => part.replace(DATE_LINE, STABLE_DATE_LINE));
 ```
 
 OpenCode ignores the hook's return value. `LLMRequestPrep.prepare` builds its own
@@ -141,7 +142,7 @@ The fix mutates the array in place:
 ```ts
 for (let i = 0; i < output.system.length; i++) {
   if (typeof output.system[i] === "string") {
-    output.system[i] = output.system[i].replace(DATE_LINE, STABLE_DATE_LINE)
+    output.system[i] = output.system[i].replace(DATE_LINE, STABLE_DATE_LINE);
   }
 }
 ```

@@ -17,13 +17,13 @@ Private content may reach the **private fork remote** only. Every other remote
 gets the content checks. One check is stricter: an always-blocked commit message
 stops a push to **every** remote, the fork included.
 
-| Case | public remote | private fork remote | Test |
-|---|---|---|---|
-| A path matches a file pattern | blocked | permitted | `test_public_remote_blocks_a_sensitive_path`, `test_private_remote_permits_a_sensitive_path` |
-| A commit message matches a message pattern | blocked | permitted | `test_public_remote_blocks_a_sensitive_message` |
-| A diff line matches a file pattern | blocked | permitted | `test_public_remote_blocks_a_sensitive_line_in_a_public_path` |
-| A commit message matches an always-blocked pattern | blocked | blocked | `test_always_blocked_message_stops_both_remotes` |
-| Nothing matches | permitted | permitted | `test_a_clean_commit_passes_on_both_remotes` |
+| Case                                               | public remote | private fork remote | Test                                                                                         |
+| -------------------------------------------------- | ------------- | ------------------- | -------------------------------------------------------------------------------------------- |
+| A path matches a file pattern                      | blocked       | permitted           | `test_public_remote_blocks_a_sensitive_path`, `test_private_remote_permits_a_sensitive_path` |
+| A commit message matches a message pattern         | blocked       | permitted           | `test_public_remote_blocks_a_sensitive_message`                                              |
+| A diff line matches a file pattern                 | blocked       | permitted           | `test_public_remote_blocks_a_sensitive_line_in_a_public_path`                                |
+| A commit message matches an always-blocked pattern | blocked       | blocked             | `test_always_blocked_message_stops_both_remotes`                                             |
+| Nothing matches                                    | permitted     | permitted           | `test_a_clean_commit_passes_on_both_remotes`                                                 |
 
 The direction is easy to invert by accident, and an inverted guard reads as
 "working" — it still blocks something, just the wrong remote. So the first two

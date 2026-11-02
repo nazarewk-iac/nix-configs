@@ -45,17 +45,17 @@ design.
 
 Measured on the current tree merge, the commit that carries the full locks:
 
-| Measurement | Value |
-|---|---|
-| org-bearing lines in `jj diff -r tree-merge --git` | 12 |
-| of those, **added** (`+`) | **0** |
-| of those, **removed** (`-`) | **0** |
-| of those, context | 12 |
-| org-bearing lines in `jj file show -r tree-merge flake.lock` | 16 |
-| `tree-merge & mutable()` | hit |
-| `tree-merge & diff_lines(glob-i:*<segment>*)` | empty |
-| `tree-merge & fork-direct` | empty |
-| `jj fork-audit -q --color=never 'tree-merge'` | clean, exit 0 |
+| Measurement                                                  | Value         |
+| ------------------------------------------------------------ | ------------- |
+| org-bearing lines in `jj diff -r tree-merge --git`           | 12            |
+| of those, **added** (`+`)                                    | **0**         |
+| of those, **removed** (`-`)                                  | **0**         |
+| of those, context                                            | 12            |
+| org-bearing lines in `jj file show -r tree-merge flake.lock` | 16            |
+| `tree-merge & mutable()`                                     | hit           |
+| `tree-merge & diff_lines(glob-i:*<segment>*)`                | empty         |
+| `tree-merge & fork-direct`                                   | empty         |
+| `jj fork-audit -q --color=never 'tree-merge'`                | clean, exit 0 |
 
 This is not a merge-commit artifact. The same holds for a single-parent commit that updates an
 existing node. A merge is caught when it really changes an org-bearing line — one of the four
@@ -78,14 +78,14 @@ content net. Making them read lock **structure** would duplicate
 
 ## Verification steps
 
-| What | Command | Result |
-|---|---|---|
-| the pattern is live in the generated config | `grep -c -i '<segment>' "$(readlink -f "$(jj config path --repo)")"` | 2 (one `files()` term, one `diff_lines()` term) |
-| the pattern catches a node **add or rename** | `jj log -r 'diff_lines(glob-i:*<segment>*) & files(flake.lock)'` | **4 commits**, one of them a merge |
-| the pattern does **not** catch a value-only update | `jj log -r 'tree-merge & fork-direct'` | empty, as explained above |
-| no false positive on the public chain | `jj fork-audit -q --color=never 'upstream-tip'` | clean, exit 0 |
-| no false positive in published public history | `git grep -i '<segment>' refs/remotes/<public-remote>/main` | 0 hits |
-| the structural gate still passes | `bash hack/flake-update-complete.sh` | 21 PASS, 0 FAIL, exit 0 |
+| What                                               | Command                                                              | Result                                          |
+| -------------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------- |
+| the pattern is live in the generated config        | `grep -c -i '<segment>' "$(readlink -f "$(jj config path --repo)")"` | 2 (one `files()` term, one `diff_lines()` term) |
+| the pattern catches a node **add or rename**       | `jj log -r 'diff_lines(glob-i:*<segment>*) & files(flake.lock)'`     | **4 commits**, one of them a merge              |
+| the pattern does **not** catch a value-only update | `jj log -r 'tree-merge & fork-direct'`                               | empty, as explained above                       |
+| no false positive on the public chain              | `jj fork-audit -q --color=never 'upstream-tip'`                      | clean, exit 0                                   |
+| no false positive in published public history      | `git grep -i '<segment>' refs/remotes/<public-remote>/main`          | 0 hits                                          |
+| the structural gate still passes                   | `bash hack/flake-update-complete.sh`                                 | 21 PASS, 0 FAIL, exit 0                         |
 
 ## Follow-up notes
 

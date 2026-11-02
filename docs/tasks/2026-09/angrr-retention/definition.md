@@ -25,12 +25,12 @@ removal.
 
 ## What this task does
 
-| Change | Where | Effect |
-|---|---|---|
-| A | both trees | Add a `devenv` temporary-root policy, `path-regex = "/\\.devenv/"`, `period = "30d"`. |
-| B | Darwin branch of both trees | Set `services.angrr.timer.enable = lib.mkDefault true;`. |
-| C | Darwin branch of both trees | Write `StandardOutPath` and `StandardErrorPath` to `/var/log/angrr.log`, because launchd sends a daemon's output to `/dev/null` when neither is set. |
-| D | both trees | Add one option, default `true`, that puts angrr in report-only mode. |
+| Change | Where                       | Effect                                                                                                                                               |
+| ------ | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A      | both trees                  | Add a `devenv` temporary-root policy, `path-regex = "/\\.devenv/"`, `period = "30d"`.                                                                |
+| B      | Darwin branch of both trees | Set `services.angrr.timer.enable = lib.mkDefault true;`.                                                                                             |
+| C      | Darwin branch of both trees | Write `StandardOutPath` and `StandardErrorPath` to `/var/log/angrr.log`, because launchd sends a daemon's output to `/dev/null` when neither is set. |
+| D      | both trees                  | Add one option, default `true`, that puts angrr in report-only mode.                                                                                 |
 
 The full reasoning, every source citation and eight open questions are in the design that this task
 carries. The `filter.program` route stays **out of scope** — see `## Not in scope`.

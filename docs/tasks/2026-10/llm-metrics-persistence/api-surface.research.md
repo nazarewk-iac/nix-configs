@@ -74,40 +74,60 @@ Wire format of every SSE frame: one `event:message` line, one `data:` line whose
 `{"type":"<t>","data":"<JSON encoded as a STRING>"}` — the payload is **double-encoded**.
 
 ### `modelStatus` — full list, sent on every state change and on connect
+
 ```
 data:{"type":"modelStatus","data":"[{\"id\":\"deepseek-v4-flash\",...,\"state\":\"stopped\",\"unlisted\":false,\"peerID\":\"\",\"aliases\":[\"frontier\",\"orchestrate-deep-slow-alt\"]},{...,\"id\":\"granite-4.2-8b\",\"state\":\"ready\",\"aliases\":[\"tools-std-fast-alt\"]},{...,\"id\":\"qwen3.5-4b\",\"state\":\"stopped\",\"aliases\":[\"grunt\",\"chat-dumb-fast\",\"code-quick-fast\",\"tiny-quick-fast\"]},...]"}
 ```
+
 Element shape: `{ id, name, description, state, unlisted, peerID, aliases? }`.
 `state ∈ stopped|loading|ready`; `aliases` present only when non-empty.
 
 ### `inflight` — three operations
+
 ```
 data:{"type":"inflight","data":"{\"operation\":\"snapshot\"}"}
 data:{"type":"inflight","data":"{\"operation\":\"upsert\",\"request\":{\"id\":\"620\",\"timestamp\":\"2026-10-28T10:06:15.153740649+01:00\",\"model\":\"qwen3.5-0.8b\",\"req_path\":\"/v1/chat/completions\",\"method\":\"POST\",\"req_headers\":{\"Accept\":\"*/*\",\"Authorization\":\"[REDACTED]\",\"Content-Length\":\"104\",\"Content-Type\":\"application/json\",\"User-Agent\":\"curl/8.22.0\"},\"remote_ip\":\"127.0.0.1\",\"resp_headers\":{},\"resp_bytes\":0,\"elapsed_ms\":0}}"}
 data:{"type":"inflight","data":"{\"operation\":\"remove\",\"id\":\"621\"}"}
 ```
+
 `upsert` repeats many times during one request (progress); `remove` closes it;
 `snapshot` opens the stream. `Authorization` is `[REDACTED]` in `req_headers`.
 The `request.id` is the same integer id used by the activity record and the capture.
 
 ### `activity` — **only the id, not the record**
+
 ```
 data:{"type":"activity","data":"{\"id\":621}"}
 ```
+
 **Critical:** the `activity` event carries `{"id":N}` only. The full record must be read
 from `/api/metrics/activity` (there is **no** `GET /api/metrics/activity/<id>` — it 404s).
 
 ### The full record the collector actually wants (`/api/metrics/activity` → `.data[]`)
+
 ```json
-{"id":631,"timestamp":"2026-10-28T10:09:07+01:00","model":"granite-4.2-3b",
- "req_path":"/v1/chat/completions",
- "resp_content_type":"application/json; charset=utf-8",
- "resp_status_code":200,
- "tokens":{"cache_tokens":0,"draft_tokens":-1,"draft_acc_tokens":-1,
-           "input_tokens":16,"output_tokens":6,
-           "prompt_per_second":195.70907845487682,"tokens_per_second":81.10563197508435},
- "duration_ms":2416,"has_capture":true,"metadata":{"fifo_priority":"0"}}
+{
+  "id": 631,
+  "timestamp": "2026-10-28T10:09:07+01:00",
+  "model": "granite-4.2-3b",
+  "req_path": "/v1/chat/completions",
+  "resp_content_type": "application/json; charset=utf-8",
+  "resp_status_code": 200,
+  "tokens": {
+    "cache_tokens": 0,
+    "draft_tokens": -1,
+    "draft_acc_tokens": -1,
+    "input_tokens": 16,
+    "output_tokens": 6,
+    "prompt_per_second": 195.70907845487682,
+    "tokens_per_second": 81.10563197508435
+  },
+  "duration_ms": 2416,
+  "has_capture": true,
+  "metadata": { "fifo_priority": "0" }
+}
 ```
+
 Keys (exact): `id timestamp model req_path resp_content_type resp_status_code tokens
 duration_ms has_capture metadata`. `tokens` keys: `cache_tokens draft_tokens
 draft_acc_tokens input_tokens output_tokens prompt_per_second tokens_per_second`.
@@ -117,6 +137,7 @@ nanosecond precision). `resp_content_type` distinguishes streaming (`text/event-
 from non-stream (`application/json; charset=utf-8`).
 
 ### Empirical: the `activity` event is emitted on **streaming responses only**
+
 - Streaming (`tiny-dumb-fast`, id 621/622): `data:{"type":"activity","data":"{\"id\":621}"}`
   observed, followed by `inflight:remove`.
 - Non-streaming (`granite-4.2-3b`, id 631; and `tiny-dumb-fast`, ids 619/620): **no**
@@ -172,6 +193,7 @@ that (design assumes ≤ 2 s, i.e. 12 req/s of headroom) or use event+wake for s
 $ curl -sS http://127.0.0.1:39700/api/captures/618 | jq -c .req_headers.Authorization
 "[REDACTED]"
 ```
+
 Top-level keys: `id req_path req_headers req_body resp_headers resp_body`.
 `req_body`/`resp_body` are base64. `Authorization` in `req_headers` is always
 `[REDACTED]`, including for a request that carried a real `Bearer` token (id 618).
@@ -180,19 +202,20 @@ No key is needed to read captures, activity or stats (only `/v1/*` needs the API
 ## 6. Is `/api/metrics/activity` cleared by `systemctl restart llama-swap`? — **Yes (design implies it).** No restart performed.
 
 Evidence that nothing persists it:
+
 - `/proc/<pid>/cwd -> /tmp` (PrivateTmp; tmpfs root on brys).
 - Writable dirs hold no metrics DB: `/var/cache/private/llama-swap/` = `api-keys`,
   `mesa_shader_cache`, `radv_builtin_shaders`; `/var/lib/kdn/llms/sessions/` = `*.bin`
   llama.cpp KV sessions only. No `.db`/`.sqlite`/`.jsonl` anywhere.
 - `config.yaml` top-level keys (`captureBuffer globalTTL healthCheckTimeout
-  includeAliasesInList logLevel logTimeFormat logToStdout models routing startPort
-  unloadTimeout`) contain **no** persistence key.
+includeAliasesInList logLevel logTimeFormat logToStdout models routing startPort
+unloadTimeout`) contain **no** persistence key.
 - The sqlite strings in the binary (`PRAGMA journal_mode = WAL`, `migrations`) are from a
   linked library / unused code — no DB file is ever created.
 - `id` is a per-process monotonic counter (now 631 after 15 h of uptime); after a restart
   it restarts from 1. This is the in-memory design's tell.
 
-**Consequence:** the collector needs a *generation* marker (service start time) so it can
+**Consequence:** the collector needs a _generation_ marker (service start time) so it can
 tell a restarted id sequence from a continued one, and must persist the JSONL itself.
 
 ---
@@ -203,7 +226,7 @@ tell a restarted id sequence from a continued one, and must persist the JSONL it
 2. §2 lists 5 event types; the stream also emits `uiConfig` and `profileChanged` on every
    connect, and `inflight` has `snapshot`/`upsert`/`remove`.
 3. It assumes `captureBuffer` bounds the activity ring. It does not: activity is a fixed
-   **25**; `captureBuffer`=50 bounds *captures* (§4).
+   **25**; `captureBuffer`=50 bounds _captures_ (§4).
 4. It leaves `?no-history` "not verified". Verified: it does nothing on `/api/events` (§1).
 5. `activity` is emitted for streaming calls only; non-stream calls are silent on the SSE
    stream (§2). Polling is mandatory.
@@ -219,29 +242,29 @@ API, appending JSONL, and (optionally) writing a Prometheus textfile. No new por
 
 File: `/var/lib/llm-stats/requests/YYYY-MM-DD.jsonl` (UTC day).
 
-| field | type | source | notes |
-|---|---|---|---|
-| `ts` | string RFC3339 | `record.timestamp` | second precision, +01:00 offset |
-| `id` | integer | `record.id` | monotonic **within a generation** |
-| `generation` | string | `systemctl show -p ActiveEnterTimestamp` | id sequence scope (§6) |
-| `host` | string | const `"brys"` | multi-host future |
-| `model` | string | `record.model` | **base id**, e.g. `qwen3.5-4b` |
-| `aliases` | array<string> | `modelStatus` map | aliases at write time (`[]` if none) |
-| `routing_version` | string | `sha256` of sorted id→aliases map | detects routing-table change (§B) |
-| `req_path` | string | `record.req_path` | e.g. `/v1/chat/completions` |
-| `status` | integer | `record.resp_status_code` | HTTP status |
-| `content_type` | string | `record.resp_content_type` | stream vs json |
-| `duration_ms` | integer | `record.duration_ms` | wall time |
-| `input_tokens` | integer | `tokens.input_tokens` | |
-| `output_tokens` | integer | `tokens.output_tokens` | |
-| `cache_tokens` | integer | `tokens.cache_tokens` | prompt-cache hits |
-| `draft_tokens` | integer | `tokens.draft_tokens` | `-1` when spec-decode off |
-| `draft_acc_tokens` | integer | `tokens.draft_acc_tokens` | `-1` when off |
-| `prompt_per_second` | number | `tokens.prompt_per_second` | prefill rate |
-| `tokens_per_second` | number | `tokens.tokens_per_second` | decode rate |
-| `fifo_priority` | string | `metadata.fifo_priority` | string, keep as string |
-| `has_capture` | boolean | `record.has_capture` | capture ring may have rotated |
-| `collected_at` | string RFC3339 | collector clock | when the line was written |
+| field               | type           | source                                   | notes                                |
+| ------------------- | -------------- | ---------------------------------------- | ------------------------------------ |
+| `ts`                | string RFC3339 | `record.timestamp`                       | second precision, +01:00 offset      |
+| `id`                | integer        | `record.id`                              | monotonic **within a generation**    |
+| `generation`        | string         | `systemctl show -p ActiveEnterTimestamp` | id sequence scope (§6)               |
+| `host`              | string         | const `"brys"`                           | multi-host future                    |
+| `model`             | string         | `record.model`                           | **base id**, e.g. `qwen3.5-4b`       |
+| `aliases`           | array<string>  | `modelStatus` map                        | aliases at write time (`[]` if none) |
+| `routing_version`   | string         | `sha256` of sorted id→aliases map        | detects routing-table change (§B)    |
+| `req_path`          | string         | `record.req_path`                        | e.g. `/v1/chat/completions`          |
+| `status`            | integer        | `record.resp_status_code`                | HTTP status                          |
+| `content_type`      | string         | `record.resp_content_type`               | stream vs json                       |
+| `duration_ms`       | integer        | `record.duration_ms`                     | wall time                            |
+| `input_tokens`      | integer        | `tokens.input_tokens`                    |                                      |
+| `output_tokens`     | integer        | `tokens.output_tokens`                   |                                      |
+| `cache_tokens`      | integer        | `tokens.cache_tokens`                    | prompt-cache hits                    |
+| `draft_tokens`      | integer        | `tokens.draft_tokens`                    | `-1` when spec-decode off            |
+| `draft_acc_tokens`  | integer        | `tokens.draft_acc_tokens`                | `-1` when off                        |
+| `prompt_per_second` | number         | `tokens.prompt_per_second`               | prefill rate                         |
+| `tokens_per_second` | number         | `tokens.tokens_per_second`               | decode rate                          |
+| `fifo_priority`     | string         | `metadata.fifo_priority`                 | string, keep as string               |
+| `has_capture`       | boolean        | `record.has_capture`                     | capture ring may have rotated        |
+| `collected_at`      | string RFC3339 | collector clock                          | when the line was written            |
 
 Notes: `aliases` is a JSON array; keep it as data (not just a label) so historical lines
 stay self-describing after the routing table changes. Numeric rates are floats; keep full
@@ -329,6 +352,7 @@ answers to (a model with 4 aliases yields 4 series; a model with none uses `alia
 few hundred series.
 
 ### NixOS wiring — option 1: node_exporter textfile collector (recommended, standard)
+
 `node_exporter` is not enabled anywhere in the repo today, so add it:
 
 ```nix
@@ -344,10 +368,12 @@ services.prometheus.scrapeConfigs = [{
   }];
 }];
 ```
+
 The collector's systemd unit gets `ReadWritePaths = [ "/var/lib/node-exporter/textfile" ]`
 and writes the `.prom` file there.
 
 ### NixOS wiring — option 2: dedicated exporter (no node_exporter)
+
 The collector serves `GET /metrics` on `127.0.0.1:39701` in Prometheus format; scrape it:
 
 ```nix

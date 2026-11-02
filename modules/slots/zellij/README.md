@@ -7,7 +7,7 @@ timestamp: 2026-07-29T17:03:03+02:00
 # kdn.zellij
 
 Devenv slot module that installs [zellij](https://zellij.dev) and wires a Claude Code Bash
-permission allowlist that covers *only* pure discovery — never pane content reads or session
+permission allowlist that covers _only_ pure discovery — never pane content reads or session
 mutation. Pairs with [.agents/skills/zellij/SKILL.md](../../../.agents/skills/zellij/SKILL.md),
 which spells out the consent policy this allowlist implements.
 
@@ -34,19 +34,19 @@ which spells out the consent policy this allowlist implements.
 Everything allow-listed is either pure discovery/metadata (reveals no pane content, cannot mutate
 state) or a fully static, wildcard-free command that can only ever target the agent's own pane:
 
-| Rule | Why it's safe unprompted |
-|---|---|
-| `zellij --help` / `zellij help*` / `zellij * --help` | Static help text only |
-| `zellij list-sessions*` | Session names only |
-| `zellij action list-panes *` (+ `--session *` variant) | Pane ids/titles/tab, no content |
-| `zellij action list-tabs *` (+ `--session *` variant) | Tab ids/names/state, no content |
-| `zellij action list-clients*` (+ `--session *` variant) | Attached clients, no content |
-| `zellij action current-tab-info*` (+ `--session *` variant) | Active tab info, no content |
-| `zellij attach --create-background *` | Idempotent; only ever creates/reuses the agent's *own* session, never touches an existing one |
-| `` zellij action dump-screen -p "$ZELLIJ_PANE_ID" \| tail -n 1 `` | Exact string, zero wildcards — Claude Code matches the literal, unexpanded command text, so this can only ever read the agent's own pane's last line (e.g. to check an async `devenv` rebuild's status), never an arbitrary pane |
+| Rule                                                          | Why it's safe unprompted                                                                                                                                                                                                         |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `zellij --help` / `zellij help*` / `zellij * --help`          | Static help text only                                                                                                                                                                                                            |
+| `zellij list-sessions*`                                       | Session names only                                                                                                                                                                                                               |
+| `zellij action list-panes *` (+ `--session *` variant)        | Pane ids/titles/tab, no content                                                                                                                                                                                                  |
+| `zellij action list-tabs *` (+ `--session *` variant)         | Tab ids/names/state, no content                                                                                                                                                                                                  |
+| `zellij action list-clients*` (+ `--session *` variant)       | Attached clients, no content                                                                                                                                                                                                     |
+| `zellij action current-tab-info*` (+ `--session *` variant)   | Active tab info, no content                                                                                                                                                                                                      |
+| `zellij attach --create-background *`                         | Idempotent; only ever creates/reuses the agent's _own_ session, never touches an existing one                                                                                                                                    |
+| `zellij action dump-screen -p "$ZELLIJ_PANE_ID" \| tail -n 1` | Exact string, zero wildcards — Claude Code matches the literal, unexpanded command text, so this can only ever read the agent's own pane's last line (e.g. to check an async `devenv` rebuild's status), never an arbitrary pane |
 
 Deliberately **not** allow-listed, so Claude Code always prompts: `dump-screen -p <other>`,
-`subscribe`, `edit-scrollback` (any read of pane *content* beyond the one static exception above),
+`subscribe`, `edit-scrollback` (any read of pane _content_ beyond the one static exception above),
 and every mutating action — `new-pane`, `new-tab`, `go-to-tab*`, `focus-pane-id`, `close-*`,
 `kill-session`, `delete-session`, `write*`, `paste`, `send-keys`. See the skill for the full
 rationale: reading a user's pane content or touching their session state must always be an
@@ -55,7 +55,7 @@ explicit, per-action ask, never a standing grant.
 ## `zellij-wait-for-devenv` hook
 
 `wait-for-devenv.sh` (wrapped by `pkgs.writeShellApplication`, wired as a `PreToolUse` hook
-matching `Bash`) delays a tool call while devenv is mid-rebuild in the *same* zellij pane the
+matching `Bash`) delays a tool call while devenv is mid-rebuild in the _same_ zellij pane the
 agent is running in, so the command doesn't race a half-applied environment reload after editing
 `devenv.nix`/`modules/*`.
 
@@ -94,7 +94,7 @@ would see a still-stale `devenv ready` and skip its wait entirely, even though a
 to start.
 
 - Polls the same pane status line every 0.1s, up to ~1s (10 iterations), waiting only for
-  `devenv building` to *appear* — never for the rebuild to *finish* (that's the other hook's job).
+  `devenv building` to _appear_ — never for the rebuild to _finish_ (that's the other hook's job).
 - Always proceeds afterward regardless of outcome — a write that doesn't trigger a rebuild (e.g.
   touches a file outside `files.`'s watch set, or produces identical content) is not an error
   here; it just means there's nothing for the next `PreToolUse` hook to wait on.
@@ -115,7 +115,7 @@ No dependency on `kdn.mcp` or other slots — standalone.
 
 ## Future work (not implemented)
 
-Two ideas for widening safe automation without widening the *content-read*/*mutation* allowlist,
+Two ideas for widening safe automation without widening the _content-read_/_mutation_ allowlist,
 noted here rather than built, since neither is needed yet and both need real design work first:
 
 - **A `PermissionRequest` hook dedicated to zellij.** Instead of a static glob allowlist, a hook
@@ -129,11 +129,11 @@ noted here rather than built, since neither is needed yet and both need real des
 - **A safe wrapper script + wildcard allow.** A small script (e.g. `zellij-agent-safe`) that
   accepts a constrained subcommand vocabulary, validates arguments itself (e.g. refuses to target
   a pane/session it doesn't recognize as agent-owned, refuses mutation subcommands entirely), and
-  is the *only* thing allow-listed as a wildcard (`Bash(zellij-agent-safe *)`) — pushing the safety
+  is the _only_ thing allow-listed as a wildcard (`Bash(zellij-agent-safe *)`) — pushing the safety
   logic into a reviewable, testable script instead of a glob pattern or an LLM-interpreted hook.
   Would need real design: how the script tracks "panes/sessions the agent owns" persistently
   across invocations, what subset of read-only zellij functionality it exposes, and how it fails
   closed on anything unrecognized.
 
 Either approach should preserve the current policy's invariant — content reads and mutation of
-the *user's* session always require an explicit ask — rather than trade it away for convenience.
+the _user's_ session always require an explicit ask — rather than trade it away for convenience.

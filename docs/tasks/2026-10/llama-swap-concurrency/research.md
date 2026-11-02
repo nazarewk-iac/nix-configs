@@ -16,11 +16,11 @@ README and configuration docs for that tag.
 
 The live config is `/nix/store/vhssi9i…-config.yaml`. Per-model slot counts:
 
-| Model | Slots | Notes |
-|---|---|---|
+| Model                | Slots          | Notes                                            |
+| -------------------- | -------------- | ------------------------------------------------ |
 | `qwen3.8-flash-next` | `--parallel 4` | `--kv-unified`, `--reasoning-effort low`, 1M ctx |
-| `deepseek-v4-flash` | `--parallel 4` | `--kv-unified`, 320K ctx |
-| every other model | `--parallel 1` | CPU or Vulkan0 |
+| `deepseek-v4-flash`  | `--parallel 4` | `--kv-unified`, 320K ctx                         |
+| every other model    | `--parallel 1` | CPU or Vulkan0                                   |
 
 Alias groups resolved from the same file (`aliases:` under each model):
 
@@ -54,12 +54,12 @@ one function.
 
 ## 3. Hooks: what exists, what does not
 
-| Want | Available in this version |
-|---|---|
-| Preload a set of models when llama-swap starts | **yes**, `hooks` — documented as "Preload models on startup with `hooks`" (upstream PR #235) |
-| Run a command after a specific model finishes loading | **no** documented hook |
-| Run something before a model is evicted | **no** documented hook |
-| React to load/unload events from outside | **yes, indirectly**: an SSE stream (the README's nginx example proxies `/api/events`, which is the event stream the web UI uses) |
+| Want                                                  | Available in this version                                                                                                        |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Preload a set of models when llama-swap starts        | **yes**, `hooks` — documented as "Preload models on startup with `hooks`" (upstream PR #235)                                     |
+| Run a command after a specific model finishes loading | **no** documented hook                                                                                                           |
+| Run something before a model is evicted               | **no** documented hook                                                                                                           |
+| React to load/unload events from outside              | **yes, indirectly**: an SSE stream (the README's nginx example proxies `/api/events`, which is the event stream the web UI uses) |
 
 So the answer to "is there a hook we could use when loading new models" is: **not
 for per-model events, but there is a startup-preload hook and an event stream
@@ -70,17 +70,17 @@ pattern, not a hack.
 
 From the project README, tag `v249`:
 
-| Endpoint | Verified meaning |
-|---|---|
-| `GET /running` | models resident now |
-| `POST /api/models/unload` | unload all running models |
-| `POST /api/models/unload/:model_id` | unload one model |
-| `/logs`, `/logs/stream`, plus `/proxy`, `/upstream` and `/{model}` variants | buffered and live logs, per stream or per model |
-| `/metrics` | system and GPU metrics for Prometheus (no per-model t/s) |
-| `/health` | liveness |
-| `/ui` | web UI, including a model load/unload panel |
-| `/upstream/:model_id` | direct access to one model's server |
-| `GET/PUT /api/profiles[/active]` | switch model-id replacement profiles |
+| Endpoint                                                                    | Verified meaning                                         |
+| --------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `GET /running`                                                              | models resident now                                      |
+| `POST /api/models/unload`                                                   | unload all running models                                |
+| `POST /api/models/unload/:model_id`                                         | unload one model                                         |
+| `/logs`, `/logs/stream`, plus `/proxy`, `/upstream` and `/{model}` variants | buffered and live logs, per stream or per model          |
+| `/metrics`                                                                  | system and GPU metrics for Prometheus (no per-model t/s) |
+| `/health`                                                                   | liveness                                                 |
+| `/ui`                                                                       | web UI, including a model load/unload panel              |
+| `/upstream/:model_id`                                                       | direct access to one model's server                      |
+| `GET/PUT /api/profiles[/active]`                                            | switch model-id replacement profiles                     |
 
 The README shows "manually load and unload models" as a UI feature and documents
 the unload endpoints explicitly. **The load endpoint path is not enumerated in the
@@ -177,13 +177,13 @@ Therefore "parallelism for all models" is a **set-expression** change first and 
 Verified 2026-10-27 by holding `GET /api/events` open (SSE) while sending one
 request. The stream carries **typed events**, not just log text:
 
-| Event | Count in 25 s | Payload |
-|---|---|---|
-| `logData` | 2866 | one log line (the buffered history is replayed first, then live) |
-| `modelStatus` | 5 | the whole model list with `state` (`stopped`, `loading`, …), `id`, `aliases`, `peerID` |
-| `inflight` | 4 | `{"operation":"upsert","request":{ id, model, req_path, method, headers(with Authorization REDACTED) }}` and `{"operation":"snapshot"}` |
-| `activity` | 1 | a finished request record (same shape as `/api/metrics/activity`) |
-| `uiConfig`, `profileChanged` | 1 each | UI state |
+| Event                        | Count in 25 s | Payload                                                                                                                                 |
+| ---------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `logData`                    | 2866          | one log line (the buffered history is replayed first, then live)                                                                        |
+| `modelStatus`                | 5             | the whole model list with `state` (`stopped`, `loading`, …), `id`, `aliases`, `peerID`                                                  |
+| `inflight`                   | 4             | `{"operation":"upsert","request":{ id, model, req_path, method, headers(with Authorization REDACTED) }}` and `{"operation":"snapshot"}` |
+| `activity`                   | 1             | a finished request record (same shape as `/api/metrics/activity`)                                                                       |
+| `uiConfig`, `profileChanged` | 1 each        | UI state                                                                                                                                |
 
 Three consequences:
 
@@ -194,6 +194,7 @@ Three consequences:
 2. **Subscription beats polling**, because polling reads a ring buffer
    (`captureBuffer` 10/50) and loses records under a burst. A connected
    subscriber sees every event once.
+
 - The stream replays buffered history first, so a collector must either ignore
   events older than its start time or request `?no-history` (the README documents
   that flag for `/logs/stream`; confirm it applies to `/api/events`).

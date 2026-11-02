@@ -23,10 +23,10 @@ run instead of destroying a guest later.
 
 - `nix build nixpkgs#legacyPackages.{aarch64,x86_64}-linux.hello` — both succeed.
 - Non-cached probes (`runCommand` with a unique `builtins.currentTime`): `building
-  '/nix/store/…-probe.drv' on 'ssh-ng://rosetta-builder'` for both architectures — real builds, not
+'/nix/store/…-probe.drv' on 'ssh-ng://rosetta-builder'` for both architectures — real builds, not
   substitutes.
 - `pgrep` shows the lima hostagent running with `--pidfile
-  /anji-ext-01/rosetta-builder/.lima/rosetta-builder-vm/…` and `launchctl list` shows
+/anji-ext-01/rosetta-builder/.lima/rosetta-builder-vm/…` and `launchctl list` shows
   `org.nixos.rosetta-builderd` loaded — a launchd daemon serving from the external volume with no
   new Full Disk Access grant beyond what `linux-builder` already needed.
 - Phase 2 (both builders on) built the custom 6-core stock image and the Rosetta image on the same

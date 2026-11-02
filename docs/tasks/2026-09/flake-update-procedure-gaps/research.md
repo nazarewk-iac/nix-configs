@@ -44,14 +44,14 @@ Every claim below carries a **verified** tag with the command or the source line
 
 Current graph, above the tree merge `xxxuyknszklq` (**verified**, `jj log -r 'to-rebase'`):
 
-| change id | chain | note |
-|---|---|---|
+| change id      | chain                              | note                                             |
+| -------------- | ---------------------------------- | ------------------------------------------------ |
 | `vtprpzrkvknv` | `upstream-safe` **and** `fork-tip` | `chore(flake): update` — the mixed update commit |
-| `vzrtokzpmqvn` | `upstream-safe` | public docs work |
-| `mzprwzwusxpn` | `upstream-safe` | public docs work |
-| `rtsyynwvmoxr` | `upstream-safe` | public docs work |
-| `sommnqortuuz` | `fork-leaked` | fork-only |
-| `zrtvyyymtrns` | `fork-leaked` | fork-only |
+| `vzrtokzpmqvn` | `upstream-safe`                    | public docs work                                 |
+| `mzprwzwusxpn` | `upstream-safe`                    | public docs work                                 |
+| `rtsyynwvmoxr` | `upstream-safe`                    | public docs work                                 |
+| `sommnqortuuz` | `fork-leaked`                      | fork-only                                        |
+| `zrtvyyymtrns` | `fork-leaked`                      | fork-only                                        |
 
 `to-rebase` holds 6 commits; `upstream-safe` holds 4; `fork-leaked` holds 2
 (**verified**). `@` is `zrytponuzysr`, it holds content, and it has one parent
@@ -142,17 +142,16 @@ show the range → prompt → move the `main` bookmark → push `main` to the pr
 
 ### Does `jj bookmark set` run before the push?
 
-**Yes, in both aliases.** `sync-upstream` moves `upstream` on line 192 and pushes on line
-193. `sync-remotes` moves `main` on line 167 and pushes on line 168 (**verified**, source
+**Yes, in both aliases.** `sync-upstream` moves `upstream` on line 192 and pushes on line 193. `sync-remotes` moves `main` on line 167 and pushes on line 168 (**verified**, source
 lines above).
 
 State after a failed push:
 
-| Failure | State that remains | Recovery |
-|---|---|---|
-| line 193 rejects the public push (non-fast-forward, or the network is down) | local `upstream` already points at the new tip. Line 194 never runs, because `-e` aborts. Local `upstream` now differs from `upstream@<fork-remote>`. | `jj op undo` reverts the bookmark move. Or read the old target from `jj op log` and set the bookmark back. Then reconcile and re-run `jj sync-upstream`. |
-| line 194 fails after 193 succeeded | the public remote holds the commits; the private remote's `upstream` tracking bookmark lags | re-run `jj git push --remote=<fork-remote> --bookmark=upstream`. It is idempotent. |
-| line 168 fails | local `main` already points at `fork-tip` and differs from `main@<fork-remote>`. The public side is **already published**, because line 159 ran first. | `jj op undo` for the bookmark, then re-run `jj sync-remotes`. The public push is not reversible. |
+| Failure                                                                     | State that remains                                                                                                                                     | Recovery                                                                                                                                                 |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| line 193 rejects the public push (non-fast-forward, or the network is down) | local `upstream` already points at the new tip. Line 194 never runs, because `-e` aborts. Local `upstream` now differs from `upstream@<fork-remote>`.  | `jj op undo` reverts the bookmark move. Or read the old target from `jj op log` and set the bookmark back. Then reconcile and re-run `jj sync-upstream`. |
+| line 194 fails after 193 succeeded                                          | the public remote holds the commits; the private remote's `upstream` tracking bookmark lags                                                            | re-run `jj git push --remote=<fork-remote> --bookmark=upstream`. It is idempotent.                                                                       |
+| line 168 fails                                                              | local `main` already points at `fork-tip` and differs from `main@<fork-remote>`. The public side is **already published**, because line 159 ran first. | `jj op undo` for the bookmark, then re-run `jj sync-remotes`. The public push is not reversible.                                                         |
 
 So the recovery is always available for the **local** state. The public push is not
 reversible. This matters, because `sync-remotes` publishes the public chain **first**
@@ -180,21 +179,21 @@ Aliases whose value can change after a fetch (**verified** — I read every defi
 `modules/slots/jj/fork/default.nix` lines 59–123, and `jj config list --include-defaults`
 for `immutable_heads()`):
 
-| Alias | Changes after a fetch? | Why |
-|---|---|---|
-| `trunk()` | yes | `main@<fork-remote>` (line 60) |
-| `immutable()` / `mutable()` | yes | `builtin_immutable_heads() = trunk() \| tags() \| untracked_remote_bookmarks()` |
-| `fork` | yes | reads `remote_bookmarks(remote=<fork-remote>)` and `upstream@<fork-remote>` (lines 63–70) |
-| `upstream-chain` / `fork-chain` | yes | both derive from `fork` (lines 78–79) |
-| `upstream-tip` / `fork-tip` | yes | `latest()` over those chains (lines 80–81) |
-| `pushed` / `pushed-fork` / `pushed-upstream` | yes | read `remote_bookmarks()` (lines 105–107) |
-| `merge-frozen` | yes | `tree-merge & (immutable() \| pushed)` (line 115) |
-| `upstream-incoming` / `upstream-incoming-tip` | yes | read `main@<upstream-remote>` (lines 89–90) |
-| `upstream-local` | yes | reads `pushed-upstream` (line 122) |
-| `tree-merge` | no | reads `::@` and `merges()` only (line 85) |
-| `to-rebase` | no | `tree-merge..@ & ~description("")` (line 94) |
-| `fork-direct` | no | a content predicate only (lines 71–77) |
-| `upstream-safe` / `fork-leaked` | no | `to-rebase` intersected with `fork-direct` (lines 99, 111) |
+| Alias                                         | Changes after a fetch? | Why                                                                                       |
+| --------------------------------------------- | ---------------------- | ----------------------------------------------------------------------------------------- |
+| `trunk()`                                     | yes                    | `main@<fork-remote>` (line 60)                                                            |
+| `immutable()` / `mutable()`                   | yes                    | `builtin_immutable_heads() = trunk() \| tags() \| untracked_remote_bookmarks()`           |
+| `fork`                                        | yes                    | reads `remote_bookmarks(remote=<fork-remote>)` and `upstream@<fork-remote>` (lines 63–70) |
+| `upstream-chain` / `fork-chain`               | yes                    | both derive from `fork` (lines 78–79)                                                     |
+| `upstream-tip` / `fork-tip`                   | yes                    | `latest()` over those chains (lines 80–81)                                                |
+| `pushed` / `pushed-fork` / `pushed-upstream`  | yes                    | read `remote_bookmarks()` (lines 105–107)                                                 |
+| `merge-frozen`                                | yes                    | `tree-merge & (immutable() \| pushed)` (line 115)                                         |
+| `upstream-incoming` / `upstream-incoming-tip` | yes                    | read `main@<upstream-remote>` (lines 89–90)                                               |
+| `upstream-local`                              | yes                    | reads `pushed-upstream` (line 122)                                                        |
+| `tree-merge`                                  | no                     | reads `::@` and `merges()` only (line 85)                                                 |
+| `to-rebase`                                   | no                     | `tree-merge..@ & ~description("")` (line 94)                                              |
+| `fork-direct`                                 | no                     | a content predicate only (lines 71–77)                                                    |
+| `upstream-safe` / `fork-leaked`               | no                     | `to-rebase` intersected with `fork-direct` (lines 99, 111)                                |
 
 Two consequences the docs do not state:
 
@@ -217,12 +216,12 @@ jj log -r '@..main@<fork-remote>' -T 'change_id.short() ++ " " ++ description.fi
 jj log -r 'merge-frozen'   # empty → the tree merge is mutable
 ```
 
-| Outcome | Detection | Action |
-|---|---|---|
-| nothing moved | both incoming sets are empty | go on to the start-state branch. No rebase. |
-| the public tip moved | `upstream-incoming` is not empty | integrate the public tip **before** the update, so the new locks resolve against the new public base. Mutable tree merge: `jj rebase -s 'roots(upstream-local)' -d 'upstream-incoming-tip'`. Frozen tree merge (`merge-frozen` not empty): `jj new fork-tip upstream-incoming-tip -m 'chore(upstream): merge'`, then `jj new` for an empty `@`. |
-| the fork tip moved | `@..main@<fork-remote>` is not empty | the fetched fork commits are immutable, because `trunk()` is `main@<fork-remote>`. Build forward: `jj new fork-tip 'main@<fork-remote>' -m 'chore(fork): merge fork main'`, then `jj new`. |
-| both moved | both sets are not empty | do the public integration first, then the fork merge forward. Re-read `merge-frozen` and `fork-leaked` after each step. |
+| Outcome              | Detection                            | Action                                                                                                                                                                                                                                                                                                                                          |
+| -------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| nothing moved        | both incoming sets are empty         | go on to the start-state branch. No rebase.                                                                                                                                                                                                                                                                                                     |
+| the public tip moved | `upstream-incoming` is not empty     | integrate the public tip **before** the update, so the new locks resolve against the new public base. Mutable tree merge: `jj rebase -s 'roots(upstream-local)' -d 'upstream-incoming-tip'`. Frozen tree merge (`merge-frozen` not empty): `jj new fork-tip upstream-incoming-tip -m 'chore(upstream): merge'`, then `jj new` for an empty `@`. |
+| the fork tip moved   | `@..main@<fork-remote>` is not empty | the fetched fork commits are immutable, because `trunk()` is `main@<fork-remote>`. Build forward: `jj new fork-tip 'main@<fork-remote>' -m 'chore(fork): merge fork main'`, then `jj new`.                                                                                                                                                      |
+| both moved           | both sets are not empty              | do the public integration first, then the fork merge forward. Re-read `merge-frozen` and `fork-leaked` after each step.                                                                                                                                                                                                                         |
 
 **A rebase is genuinely required in one case only:** the public tip moved **and** the tree
 merge is still mutable. That is a real topology fix, which
@@ -293,13 +292,13 @@ semantics and from the measured alias values. I ran no write command.
 
 ### 5. The real start states
 
-| # | Start state | Detection | First step |
-|---|---|---|---|
-| i | `@` empty, two parents, right after `jj sync-remotes` | `jj log -r '@' -T 'if(empty,"empty","content") ++ " " ++ parents.len()'` prints `empty 2`; `to-rebase` is empty | fetch, reconcile, then run the update. This is the documented path. |
-| ii | `@` empty on a linear stack of local commits | prints `empty 1`; `to-rebase` is not empty; `fork-tip & merges()` is empty | **work first:** route or publish the stack, so the two-chain shape exists. Then update. |
-| iii | `@` holds content | prints `content …` | **work first:** route the content out of `@` with the mixed-working-copy recipe (`checks/jj-experiments/test_placement.md:120-131`). Leave `@` empty. Never mix that content with the update. |
-| iv | local commits mix `upstream-safe` and fork-only, safe above fork-only | `jj log -r 'fork-leaked & ::upstream-safe'` is not empty | **work first:** reorder, see below. Then update. |
-| v | `@` empty, one parent, `to-rebase` empty, the tree merge is frozen | prints `empty 1`; `to-rebase` empty; `merge-frozen` not empty | fetch, reconcile, then update. Step 3b must manufacture a mutable merge. |
+| #   | Start state                                                           | Detection                                                                                                       | First step                                                                                                                                                                                    |
+| --- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| i   | `@` empty, two parents, right after `jj sync-remotes`                 | `jj log -r '@' -T 'if(empty,"empty","content") ++ " " ++ parents.len()'` prints `empty 2`; `to-rebase` is empty | fetch, reconcile, then run the update. This is the documented path.                                                                                                                           |
+| ii  | `@` empty on a linear stack of local commits                          | prints `empty 1`; `to-rebase` is not empty; `fork-tip & merges()` is empty                                      | **work first:** route or publish the stack, so the two-chain shape exists. Then update.                                                                                                       |
+| iii | `@` holds content                                                     | prints `content …`                                                                                              | **work first:** route the content out of `@` with the mixed-working-copy recipe (`checks/jj-experiments/test_placement.md:120-131`). Leave `@` empty. Never mix that content with the update. |
+| iv  | local commits mix `upstream-safe` and fork-only, safe above fork-only | `jj log -r 'fork-leaked & ::upstream-safe'` is not empty                                                        | **work first:** reorder, see below. Then update.                                                                                                                                              |
+| v   | `@` empty, one parent, `to-rebase` empty, the tree merge is frozen    | prints `empty 1`; `to-rebase` empty; `merge-frozen` not empty                                                   | fetch, reconcile, then update. Step 3b must manufacture a mutable merge.                                                                                                                      |
 
 **The current state is (iii) and (iv) together, with the update already run.**
 `@` holds content and has one parent. `fork-leaked & ::upstream-safe` returns
@@ -494,14 +493,14 @@ lock nodes. The same result comes out of the revsets: `vtprpzrkvknv` is inside
 
 Measured lock content of the current update commit `vtprpzrkvknv`:
 
-| Measurement | Value |
-|---|---|
-| lock nodes changed in the commit | 45 |
-| fork-only `brew-tap--*` nodes in the commit's `flake.lock` | 5 |
-| of those, changed in the commit | 4 |
-| `brew-tap--*` nodes on `refs/remotes/kdn/main` | 3 |
-| fork root inputs vs public root inputs | 60 vs 55 |
-| fork-only root inputs that do **not** match `^brew-tap--` | 0 |
+| Measurement                                                | Value    |
+| ---------------------------------------------------------- | -------- |
+| lock nodes changed in the commit                           | 45       |
+| fork-only `brew-tap--*` nodes in the commit's `flake.lock` | 5        |
+| of those, changed in the commit                            | 4        |
+| `brew-tap--*` nodes on `refs/remotes/kdn/main`             | 3        |
+| fork root inputs vs public root inputs                     | 60 vs 55 |
+| fork-only root inputs that do **not** match `^brew-tap--`  | 0        |
 
 So the commit genuinely mixes public and private lock content, and the split is mandatory.
 
@@ -526,26 +525,26 @@ Prefer `jj fork-audit -q`.
 
 ## 10. Other defects
 
-| # | File and line | Defect | Corrected text |
-|---|---|---|---|
-| O1 | `docs/flake-update.md:22-30` | Claims the update makes a chain on top of `upstream`, and that `@` sits on top of `upstream`. False in a fork repo. | Add a guard: "This procedure applies when `kdn.jj.fork.enable = false`. In a fork repo use [flake-update.fork.md](../../../flake-update.fork.md), which overrides every step below." In `docs/flake-update.md` the target is a sibling, so write it there as the plain file name `flake-update.fork.md`. |
-| O2 | `docs/flake-update.md:41-42,77,99`; `.agents/rules/flake-update.md:22-23,26,52-53` | Tells the operator to run `jj bookmark set upstream`. The fork rule forbids it. | Same guard as O1, plus one line: "In a fork repo `jj sync-remotes` moves every bookmark. Never run `jj bookmark set`." |
-| O3 | `docs/flake-update.md:114`; `.agents/rules/flake-update.md:33`; `.agents/skills/flake-update/SKILL.md:42` | The non-fork files use `upstream@<fork-remote>` as the pre-update anchor. A non-fork repo has no fork remote. | Use `main@<public-remote>`. |
-| O4 | `.agents/rules/flake-update.md:9,11,13` | Links are relative to the repo root, so they resolve to `.agents/rules/docs/…`. All three are broken (**verified** with a file test). | `../../docs/flake-update.md`, `../../docs/flake-update.fork.md`, `../../docs/jujutsu-vcs.md`, `jujutsu-vcs.md`. |
-| O5 | `.agents/skills/flake-update/SKILL.md:8,9,10` | `../../docs/…` resolves to `.agents/docs/…`. All three broken (**verified**). | `../../../docs/…`. |
-| O6 | `.agents/skills/flake-update-fork/SKILL.md:8` | `../../../../docs/…` resolves above the repo root. Broken (**verified**). | `../../../docs/flake-update.fork.md`. |
-| O7 | `docs/flake-update.fork.md:9-11` | Claims this file is installed as `.claude/rules/flake-update.fork.md`. The slot installs `.agents/rules/flake-update.fork.md` (`modules/slots/jj/fork/default.nix:233-234`). | "The agent rule `.agents/rules/flake-update.fork.md` is installed as `.claude/rules/flake-update.fork.md` by the `kdn.jj.fork` slot. This file is the full doc it points to." |
-| O8 | `docs/flake-update.fork.md:227` | The verify loop hardcodes `flake.lock` inside a `for f in flake.lock devenv.lock` loop. | Use `"$f"`. |
-| O9 | `docs/flake-update.fork.md:99-106,185-192`; `.agents/skills/flake-update-fork/SKILL.md:39-46` | The strip list hardcodes `^brew-tap--`. A fork-only input with another name leaks in silence. Today all 5 fork-only root inputs match the prefix, so the defect is latent (**verified**). | Derive the set with no prefix filter: `comm -23 <(fork root inputs) <(public root inputs)`, then strip those node keys and their input edges. |
-| O10 | `docs/flake-update.fork.md:185-193` | No check that `STRIP` is not empty. When `flake-lock-merge` writes nothing, the `jq` transform is a no-op and every fork node stays in the public `devenv.lock`. | Add `test "$STRIP" != '[]' \|\| { echo 'FAIL: empty strip list'; exit 1; }`. |
-| O11 | `docs/flake-update.fork.md:82-112` | The quick summary omits the patch-file move that the same file documents at 248-258 and the skill lists as step 4. This cycle changes `.flake.patches/config.toml` and one `.patch` file (**verified**), so the omission bites now. | Add `jj squash --from "$FORK_UPDATE" --into upstream-tip -- .flake.patches/` to the quick summary, with the note that a lock-only update skips it. |
-| O12 | `docs/flake-update.fork.md:95,159`; `.agents/rules/flake-update.fork.md:52`; `.agents/skills/flake-update-fork/SKILL.md:35` | The insert command needs `fork-tip` to be a **mutable merge**. There is no precondition and no branch for a frozen or non-merge `fork-tip`. | Add the guard from `docs/jujutsu-vcs.fork.md:112`: when `fork-tip & merges() & mutable()` is empty, first run `jj new --no-edit -B @ -m 'chore(upstream): merge'`. |
-| O13 | `docs/flake-update.fork.md:209-215` | "Verify the topology" prints values and asserts nothing. | Replace with the completion check from § 8. |
-| O14 | `docs/flake-update.md:66-71` | The patch branch assumes the patch landed upstream. No branch for another failure cause. The decision procedure lives only in `.agents/skills/flake-update/SKILL.md:27-36`. | Point at `docs/flake-patches.md` and the `flake-patches` skill, and keep one branch per cause. |
-| O15 | `docs/flake-update.fork.md:399-408` | The test section states no order and no gate. | State that the NixOS build of `upstream-tip` gates the public push, and that the Darwin build of `fork-tip` gates the private push. |
-| O16 | `docs/flake-update.fork.md` (whole file) | Never mentions `jj fork-audit`, although `.agents/rules/flake-update.fork.md:63` requires it. | Add `jj fork-audit -q --color=never 'upstream-tip'` to the verify step. |
-| O17 | `modules/slots/jj/fork/default.nix:159,168` — not documented anywhere | The two pushes are not atomic, and `sync-remotes` publishes the **public** chain first. A cancelled fork push leaves the public side published. | Add a warning to `docs/flake-update.fork.md`: run the completion check and both builds **before** `jj sync-remotes`, because the public push is not reversible. |
-| O18 | `modules/slots/jj/pre-push.sh:10,65-67,69`; `modules/slots/jj/fork/check-fork-contamination.sh:23,42,51` | Four code defects, out of scope for the doc edits. See below. | Separate commits. |
+| #   | File and line                                                                                                               | Defect                                                                                                                                                                                                                              | Corrected text                                                                                                                                                                                                                                                                                           |
+| --- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| O1  | `docs/flake-update.md:22-30`                                                                                                | Claims the update makes a chain on top of `upstream`, and that `@` sits on top of `upstream`. False in a fork repo.                                                                                                                 | Add a guard: "This procedure applies when `kdn.jj.fork.enable = false`. In a fork repo use [flake-update.fork.md](../../../flake-update.fork.md), which overrides every step below." In `docs/flake-update.md` the target is a sibling, so write it there as the plain file name `flake-update.fork.md`. |
+| O2  | `docs/flake-update.md:41-42,77,99`; `.agents/rules/flake-update.md:22-23,26,52-53`                                          | Tells the operator to run `jj bookmark set upstream`. The fork rule forbids it.                                                                                                                                                     | Same guard as O1, plus one line: "In a fork repo `jj sync-remotes` moves every bookmark. Never run `jj bookmark set`."                                                                                                                                                                                   |
+| O3  | `docs/flake-update.md:114`; `.agents/rules/flake-update.md:33`; `.agents/skills/flake-update/SKILL.md:42`                   | The non-fork files use `upstream@<fork-remote>` as the pre-update anchor. A non-fork repo has no fork remote.                                                                                                                       | Use `main@<public-remote>`.                                                                                                                                                                                                                                                                              |
+| O4  | `.agents/rules/flake-update.md:9,11,13`                                                                                     | Links are relative to the repo root, so they resolve to `.agents/rules/docs/…`. All three are broken (**verified** with a file test).                                                                                               | `../../docs/flake-update.md`, `../../docs/flake-update.fork.md`, `../../docs/jujutsu-vcs.md`, `jujutsu-vcs.md`.                                                                                                                                                                                          |
+| O5  | `.agents/skills/flake-update/SKILL.md:8,9,10`                                                                               | `../../docs/…` resolves to `.agents/docs/…`. All three broken (**verified**).                                                                                                                                                       | `../../../docs/…`.                                                                                                                                                                                                                                                                                       |
+| O6  | `.agents/skills/flake-update-fork/SKILL.md:8`                                                                               | `../../../../docs/…` resolves above the repo root. Broken (**verified**).                                                                                                                                                           | `../../../docs/flake-update.fork.md`.                                                                                                                                                                                                                                                                    |
+| O7  | `docs/flake-update.fork.md:9-11`                                                                                            | Claims this file is installed as `.claude/rules/flake-update.fork.md`. The slot installs `.agents/rules/flake-update.fork.md` (`modules/slots/jj/fork/default.nix:233-234`).                                                        | "The agent rule `.agents/rules/flake-update.fork.md` is installed as `.claude/rules/flake-update.fork.md` by the `kdn.jj.fork` slot. This file is the full doc it points to."                                                                                                                            |
+| O8  | `docs/flake-update.fork.md:227`                                                                                             | The verify loop hardcodes `flake.lock` inside a `for f in flake.lock devenv.lock` loop.                                                                                                                                             | Use `"$f"`.                                                                                                                                                                                                                                                                                              |
+| O9  | `docs/flake-update.fork.md:99-106,185-192`; `.agents/skills/flake-update-fork/SKILL.md:39-46`                               | The strip list hardcodes `^brew-tap--`. A fork-only input with another name leaks in silence. Today all 5 fork-only root inputs match the prefix, so the defect is latent (**verified**).                                           | Derive the set with no prefix filter: `comm -23 <(fork root inputs) <(public root inputs)`, then strip those node keys and their input edges.                                                                                                                                                            |
+| O10 | `docs/flake-update.fork.md:185-193`                                                                                         | No check that `STRIP` is not empty. When `flake-lock-merge` writes nothing, the `jq` transform is a no-op and every fork node stays in the public `devenv.lock`.                                                                    | Add `test "$STRIP" != '[]' \|\| { echo 'FAIL: empty strip list'; exit 1; }`.                                                                                                                                                                                                                             |
+| O11 | `docs/flake-update.fork.md:82-112`                                                                                          | The quick summary omits the patch-file move that the same file documents at 248-258 and the skill lists as step 4. This cycle changes `.flake.patches/config.toml` and one `.patch` file (**verified**), so the omission bites now. | Add `jj squash --from "$FORK_UPDATE" --into upstream-tip -- .flake.patches/` to the quick summary, with the note that a lock-only update skips it.                                                                                                                                                       |
+| O12 | `docs/flake-update.fork.md:95,159`; `.agents/rules/flake-update.fork.md:52`; `.agents/skills/flake-update-fork/SKILL.md:35` | The insert command needs `fork-tip` to be a **mutable merge**. There is no precondition and no branch for a frozen or non-merge `fork-tip`.                                                                                         | Add the guard from `docs/jujutsu-vcs.fork.md:112`: when `fork-tip & merges() & mutable()` is empty, first run `jj new --no-edit -B @ -m 'chore(upstream): merge'`.                                                                                                                                       |
+| O13 | `docs/flake-update.fork.md:209-215`                                                                                         | "Verify the topology" prints values and asserts nothing.                                                                                                                                                                            | Replace with the completion check from § 8.                                                                                                                                                                                                                                                              |
+| O14 | `docs/flake-update.md:66-71`                                                                                                | The patch branch assumes the patch landed upstream. No branch for another failure cause. The decision procedure lives only in `.agents/skills/flake-update/SKILL.md:27-36`.                                                         | Point at `docs/flake-patches.md` and the `flake-patches` skill, and keep one branch per cause.                                                                                                                                                                                                           |
+| O15 | `docs/flake-update.fork.md:399-408`                                                                                         | The test section states no order and no gate.                                                                                                                                                                                       | State that the NixOS build of `upstream-tip` gates the public push, and that the Darwin build of `fork-tip` gates the private push.                                                                                                                                                                      |
+| O16 | `docs/flake-update.fork.md` (whole file)                                                                                    | Never mentions `jj fork-audit`, although `.agents/rules/flake-update.fork.md:63` requires it.                                                                                                                                       | Add `jj fork-audit -q --color=never 'upstream-tip'` to the verify step.                                                                                                                                                                                                                                  |
+| O17 | `modules/slots/jj/fork/default.nix:159,168` — not documented anywhere                                                       | The two pushes are not atomic, and `sync-remotes` publishes the **public** chain first. A cancelled fork push leaves the public side published.                                                                                     | Add a warning to `docs/flake-update.fork.md`: run the completion check and both builds **before** `jj sync-remotes`, because the public push is not reversible.                                                                                                                                          |
+| O18 | `modules/slots/jj/pre-push.sh:10,65-67,69`; `modules/slots/jj/fork/check-fork-contamination.sh:23,42,51`                    | Four code defects, out of scope for the doc edits. See below.                                                                                                                                                                       | Separate commits.                                                                                                                                                                                                                                                                                        |
 
 **O18 runtime behavior is now measured.** Tested on 2026-09-09 in throwaway repos under `/tmp`
 (isolated `HOME`, `JJ_CONFIG`, `GIT_CONFIG_GLOBAL=/dev/null`; jj 0.44.0, prek 0.5.2). The full
@@ -592,20 +591,20 @@ O18 in detail (all **verified at source level**; runtime behavior measured as ab
 
 ## 11. Skill divergences
 
-| # | Divergence |
-|---|---|
-| S1 | `.agents/skills/flake-update/SKILL.md:20-21` keeps `jj bookmark set upstream -r @-` with no fork guard. Same as O2. |
-| S2 | `.agents/skills/flake-update/SKILL.md:8-10` — three broken links. Same as O5. |
-| S3 | `.agents/skills/flake-update/SKILL.md:42` uses `upstream@<fork-remote>` in the non-fork skill. Same as O3. |
-| S4 | The patch decision procedure exists only in `.agents/skills/flake-update/SKILL.md:27-36`. `docs/flake-update.md:66-71` holds a shorter, different version. The skill is richer than the doc it points to. |
-| S5 | `.agents/skills/flake-update-fork/SKILL.md:8` — broken link depth. Same as O6. |
-| S6 | Step numbers diverge. The skill numbers the patch move as step 4 (`:51-52`); the doc puts it in a separate section (`docs:248-258`) and omits it from the quick summary. The skill's note "the `jq` transform (step 2)" (`:137`) points at its own step 2; the doc calls the same thing step 3 (`docs:275`). |
-| S7 | The graph drawings differ. `.agents/skills/flake-update-fork/SKILL.md:66-67` lists `main@<fork-remote>` and `upstream@<fork-remote>` as two rows with no edge marks. `docs/flake-update.fork.md:58-60` draws the second `├─╮`. `.agents/rules/flake-update.fork.md:28-34` omits the `upstream@<fork-remote>` row. Three drawings of one topology. |
-| S8 | No skill and no rule mentions a fetch, a reconcile, or a completion check. D1 and D3 apply to all six files. |
-| S9 | No skill states the mutable-merge precondition for the insert command. Same as O12. |
-| S10 | Both skills link into `docs/…`. The slots install them into a consumer repo (`modules/slots/nix/default.nix:91-92`, `modules/slots/jj/fork/default.nix:235-236`), where `docs/` does not exist. Every link is dead in every consumer. |
-| S11 | `.agents/skills/flake-update/SKILL.md:9` points at the fork **doc**, and never names the `flake-update-fork` **skill**, which is the artifact the fork slot installs. |
-| S12 | `.agents/rules/flake-update.md:17-27` omits `devenv update`, which `docs/flake-update.md:58-60` and both skills require. A lock-only update from the rule alone leaves `devenv.lock` stale. |
+| #   | Divergence                                                                                                                                                                                                                                                                                                                                        |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S1  | `.agents/skills/flake-update/SKILL.md:20-21` keeps `jj bookmark set upstream -r @-` with no fork guard. Same as O2.                                                                                                                                                                                                                               |
+| S2  | `.agents/skills/flake-update/SKILL.md:8-10` — three broken links. Same as O5.                                                                                                                                                                                                                                                                     |
+| S3  | `.agents/skills/flake-update/SKILL.md:42` uses `upstream@<fork-remote>` in the non-fork skill. Same as O3.                                                                                                                                                                                                                                        |
+| S4  | The patch decision procedure exists only in `.agents/skills/flake-update/SKILL.md:27-36`. `docs/flake-update.md:66-71` holds a shorter, different version. The skill is richer than the doc it points to.                                                                                                                                         |
+| S5  | `.agents/skills/flake-update-fork/SKILL.md:8` — broken link depth. Same as O6.                                                                                                                                                                                                                                                                    |
+| S6  | Step numbers diverge. The skill numbers the patch move as step 4 (`:51-52`); the doc puts it in a separate section (`docs:248-258`) and omits it from the quick summary. The skill's note "the `jq` transform (step 2)" (`:137`) points at its own step 2; the doc calls the same thing step 3 (`docs:275`).                                      |
+| S7  | The graph drawings differ. `.agents/skills/flake-update-fork/SKILL.md:66-67` lists `main@<fork-remote>` and `upstream@<fork-remote>` as two rows with no edge marks. `docs/flake-update.fork.md:58-60` draws the second `├─╮`. `.agents/rules/flake-update.fork.md:28-34` omits the `upstream@<fork-remote>` row. Three drawings of one topology. |
+| S8  | No skill and no rule mentions a fetch, a reconcile, or a completion check. D1 and D3 apply to all six files.                                                                                                                                                                                                                                      |
+| S9  | No skill states the mutable-merge precondition for the insert command. Same as O12.                                                                                                                                                                                                                                                               |
+| S10 | Both skills link into `docs/…`. The slots install them into a consumer repo (`modules/slots/nix/default.nix:91-92`, `modules/slots/jj/fork/default.nix:235-236`), where `docs/` does not exist. Every link is dead in every consumer.                                                                                                             |
+| S11 | `.agents/skills/flake-update/SKILL.md:9` points at the fork **doc**, and never names the `flake-update-fork` **skill**, which is the artifact the fork slot installs.                                                                                                                                                                             |
+| S12 | `.agents/rules/flake-update.md:17-27` omits `devenv update`, which `docs/flake-update.md:58-60` and both skills require. A lock-only update from the rule alone leaves `devenv.lock` stale.                                                                                                                                                       |
 
 `if(immutable, "PUSHED", "not pushed")` in `.agents/skills/flake-update-fork/SKILL.md:76`
 and `docs/flake-update.fork.md:306` works as written (**verified**, I ran the template).

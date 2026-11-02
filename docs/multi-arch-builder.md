@@ -71,11 +71,11 @@ up.
 `hosts/anji/default.nix` splits the two builders into two independent flags, so the bootstrap is
 three switches:
 
-| Phase | `legacyLinuxBuilder` | `rosettaBuilder` | `bootstrapBuilder` | What the switch does |
-|---|---|---|---|---|
-| 1 | `true` | `false` | `true` | The stock builder comes up. Its image **is** substitutable, so it needs no Linux builder. |
-| 2 | `true` | `true` | `false` | The build phase dispatches the Rosetta image to the now-running stock builder. Both guests run. |
-| 3 | `false` | `true` | `false` | The stock builder detaches. The Rosetta guest keeps its already-built image. |
+| Phase | `legacyLinuxBuilder` | `rosettaBuilder` | `bootstrapBuilder` | What the switch does                                                                            |
+| ----- | -------------------- | ---------------- | ------------------ | ----------------------------------------------------------------------------------------------- |
+| 1     | `true`               | `false`          | `true`             | The stock builder comes up. Its image **is** substitutable, so it needs no Linux builder.       |
+| 2     | `true`               | `true`           | `false`            | The build phase dispatches the Rosetta image to the now-running stock builder. Both guests run. |
+| 3     | `false`              | `true`           | `false`            | The stock builder detaches. The Rosetta guest keeps its already-built image.                    |
 
 Do not skip phase 2. A direct jump from phase 1 to phase 3 removes the only builder that can build
 the Rosetta image, and the switch fails before the Rosetta guest exists.
@@ -165,7 +165,7 @@ drop the attribute entirely.
 
 ---
 
-## Background: why the store is *already* single & how transfer works
+## Background: why the store is _already_ single & how transfer works
 
 Understanding this decides most of the design. In **remote-builder** mode (what
 `nix.buildMachines` / `nix.linux-builder` set up), the host daemon drives everything:
@@ -174,7 +174,7 @@ Understanding this decides most of the design. In **remote-builder** mode (what
 2. Host checks its store + substituters. **Remote builders are not substituters** — Nix never
    asks a builder "do you already have this output?".
 3. Host ensures all build **inputs** are valid in the **host** store first (building/fetching
-   locally as needed) — *before* it picks a builder.
+   locally as needed) — _before_ it picks a builder.
 4. Host ensures the builder has the inputs: with `builders-use-substitutes = true` the **builder**
    fetches missing inputs from its own substituters; anything still missing is uploaded
    host → builder.
@@ -186,7 +186,7 @@ Understanding this decides most of the design. In **remote-builder** mode (what
 - After step 6 the full closure lives on the **host**. The builder store is pure scratch —
   **correctness never requires it to persist anything**, which is exactly why
   `nix.linux-builder.ephemeral = true` (already set on this host) is safe.
-- Transient duplication is unavoidable *during* a build (inputs exist in both stores while
+- Transient duplication is unavoidable _during_ a build (inputs exist in both stores while
   building), but it's one in-flight closure, not a second full store, and it's gone on VM restart.
 - The host store accumulates build **inputs** even for remote builds (step 3). For a
   "single authoritative store" that's desirable — the host is the source of truth.
@@ -202,7 +202,7 @@ Sources: <https://nix.dev/manual/nix/2.25/advanced-topics/distributed-builds>,
 All produce working `aarch64-linux` + `x86_64-linux`. They differ in speed, how much new
 machinery, and how far they diverge from the current `nix.linux-builder` setup.
 
-### Option A — binfmt/QEMU emulation inside the existing VM  *(zero new deps, slowest x86)*
+### Option A — binfmt/QEMU emulation inside the existing VM _(zero new deps, slowest x86)_
 
 Add x86_64 emulation to the **existing** aarch64 builder VM via the `nix.linux-builder.config`
 deferred module, and advertise both systems.
@@ -227,7 +227,7 @@ Sources: <https://github.com/nix-darwin/nix-darwin/issues/1192>,
 <https://search.nixos.org/options?show=boot.binfmt.emulatedSystems>,
 <https://github.com/NixOS/nixpkgs/issues/262941>.
 
-### Option B — `applicative-systems/vzvm`: Rosetta-backed, drop-in `package` swap  *(recommended: smallest diff)*
+### Option B — `applicative-systems/vzvm`: Rosetta-backed, drop-in `package` swap _(recommended: smallest diff)_
 
 A Virtualization.framework backend that is a **drop-in** for `nix.linux-builder`: same port, same
 host key, same options. One aarch64 VM, Rosetta exposed → near-native x86_64-linux.
@@ -254,11 +254,11 @@ nix.linux-builder = {
   `sudo rm -f /var/lib/linux-builder/nixos.qcow2` (adjust to `nix.linux-builder.workingDirectory`).
 - **Requirements:** `aarch64-darwin`, macOS 13+, Rosetta (already installed here).
 - **Honesty caveat vzvm states:** the 2.5× headline is one compile-bound workload (`zstd`,
-  Rosetta's best case); `openssl` was ~7% *slower*; SIMD-heavy x86 (ffmpeg) untested.
+  Rosetta's best case); `openssl` was ~7% _slower_; SIMD-heavy x86 (ffmpeg) untested.
 
 Source: <https://github.com/applicative-systems/vzvm>.
 
-### Option C — `cpick/nix-rosetta-builder`: Rosetta-backed, standalone module  *(recommended: most features)*
+### Option C — `cpick/nix-rosetta-builder`: Rosetta-backed, standalone module _(recommended: most features)_
 
 A separate nix-darwin module (Lima/vz, `rosetta.enabled = true`) that registers **both** systems
 from one VM and adds on-demand idle-poweroff + hardening (non-root service account, loopback-only,
@@ -281,11 +281,11 @@ nix-rosetta-builder = {
 - **Cons:** it replaces / runs alongside `nix.linux-builder` (a bigger conceptual change than
   Option B's `package` swap). **Bootstrap dance:** it needs an existing Linux builder to build
   itself the first time — keep stock `nix.linux-builder` enabled for the first `darwin-rebuild
-  switch`, then swap.
+switch`, then swap.
 
 Source: <https://github.com/cpick/nix-rosetta-builder>.
 
-### Option D — container-based builders (OrbStack / colima / docker)  *(only if already standardized on containers)*
+### Option D — container-based builders (OrbStack / colima / docker) _(only if already standardized on containers)_
 
 Run one or two Linux Nix-daemon builders as containers, expose `sshd`, register each in
 `nix.buildMachines`. OrbStack runs amd64 Linux via Rosetta (near-native), so it can match Option
@@ -298,7 +298,7 @@ B/C speed.
 
 Sources: <https://docs.orbstack.dev/machines/>, <https://github.com/abiosoft/colima>.
 
-### Option E — two separate `nix.linux-builder` instances  *(not recommended)*
+### Option E — two separate `nix.linux-builder` instances _(not recommended)_
 
 Both cached builder images default to `hostPort = 31022`, and you can't build a custom-port image
 until you already have a builder — bootstrapping two is a fragile, multi-step dance (often needs
@@ -316,7 +316,7 @@ automatically (see Background). Two knobs + one optional service refine how deps
 
 Makes the **builder** pull inputs from its own substituters (public caches) instead of the host
 uploading everything over the slow VM link. The nixpkgs darwin-builder docs literally note it
-*"will reduce your disk utilization"*.
+_"will reduce your disk utilization"_.
 
 ```nix
 # host side, alongside the other nix.settings (see modules/universal/nix.nix):
@@ -333,7 +333,7 @@ nix.settings.builders-use-substitutes = true;
   largest single build closure so GC can't starve a build.
 - **Alternative — RAM-backed store:** `virtualisation.darwin-builder` sets
   `writableStoreUseTmpfs = false` by default (disk-backed, persistent across guest restarts). You
-  *can* flip it to `true` to back the guest store with tmpfs so it resets each boot — but then the
+  _can_ flip it to `true` to back the guest store with tmpfs so it resets each boot — but then the
   store must fit in `memorySize` RAM, usually too small for real builds. Prefer disk-backed +
   `ephemeral`.
 
@@ -376,7 +376,7 @@ pattern in `modules/universal/virtualisation/microvm/host/default.nix` to model 
 
 > **Do NOT add a `post-build-hook` or manual `nix copy`** for the normal flow — the remote-builder
 > protocol already copies each output + runtime closure back to the host store. A post-build-hook
-> is only for pushing to an *external* cache, which is out of scope here.
+> is only for pushing to an _external_ cache, which is out of scope here.
 
 Sources: <https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/profiles/nix-builder-vm.nix>,
 <https://github.com/NixOS/nixpkgs/blob/master/doc/packages/darwin-builder.section.md>,
@@ -410,11 +410,11 @@ Source: <https://releases.nixos.org/nix/nix-2.34.8/manual/advanced-topics/distri
 For this host (already has the aarch64 VM + `ephemeral = true`, Rosetta installed, wants x86_64,
 prefers declarative + near-native):
 
-1. **Option B (vzvm)** if you want the *smallest* change — one input + overlay + `package` swap.
+1. **Option B (vzvm)** if you want the _smallest_ change — one input + overlay + `package` swap.
 2. **Option C (nix-rosetta-builder)** if you want on-demand idle-poweroff + hardening and don't
    mind the separate module + bootstrap dance.
 3. **Option A (binfmt/QEMU)** as a zero-dependency stopgap if x86 build volume is low and you want
-   it working *today* without a new flake input.
+   it working _today_ without a new flake input.
 
 Regardless of option: set `nix.settings.builders-use-substitutes = true`, keep the builder
 `ephemeral`, leave the host store as the single authoritative store (no post-build-hook).

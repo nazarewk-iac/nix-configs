@@ -26,17 +26,17 @@ activates in place; no reboot).
 The acceptance criterion (definition.md) is **"the grunt routes through the
 compat-proxy without evicting Qwen"**. Proven, with one caveat.
 
-| Test | Command | Outcome |
-|---|---|---|
-| Baseline `/v1/models` | `curl :39700/v1/models` | PASS — 31 ids + the `frontier`/`grunt`/`qwen` aliases |
-| Frontier load | `POST {"model":"qwen3.8-flash-next"}` | PASS — child PID 1044764, RSS ~64.8 GiB, port 10027 |
-| Surveyed grunt co-residence | while Qwen resident, `POST {"model":"tmax-2b"}` | **PASS** — Qwen PID 1044764 stays resident, `tmax-2b` starts beside it (PID 1045452) |
-| DS4-alone | `POST {"model":"deepseek-v4-flash"}` | **PASS** — Qwen evicted, DS4 loads; journal: `model=deepseek-v4-flash set=with_surveyed evict=[qwen3.8-flash-next] cost=1000` |
-| `with_grunt` path | `POST {"model":"qwen3.5-4b"}` | **BLOCKED** — see defect below |
+| Test                        | Command                                         | Outcome                                                                                                                       |
+| --------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Baseline `/v1/models`       | `curl :39700/v1/models`                         | PASS — 31 ids + the `frontier`/`grunt`/`qwen` aliases                                                                         |
+| Frontier load               | `POST {"model":"qwen3.8-flash-next"}`           | PASS — child PID 1044764, RSS ~64.8 GiB, port 10027                                                                           |
+| Surveyed grunt co-residence | while Qwen resident, `POST {"model":"tmax-2b"}` | **PASS** — Qwen PID 1044764 stays resident, `tmax-2b` starts beside it (PID 1045452)                                          |
+| DS4-alone                   | `POST {"model":"deepseek-v4-flash"}`            | **PASS** — Qwen evicted, DS4 loads; journal: `model=deepseek-v4-flash set=with_surveyed evict=[qwen3.8-flash-next] cost=1000` |
+| `with_grunt` path           | `POST {"model":"qwen3.5-4b"}`                   | **BLOCKED** — see defect below                                                                                                |
 
 The never-evict guarantee holds in both directions that were reachable: a
 frontier request keeps its slot while a surveyed grunt runs beside it, and a
-request for DS4 evicts the *other heavy model* only, at cost 1000. A cost-1
+request for DS4 evicts the _other heavy model_ only, at cost 1000. A cost-1
 grunt is never the reason a frontier is evicted.
 
 ## Defect found: `with_grunt` references a missing file

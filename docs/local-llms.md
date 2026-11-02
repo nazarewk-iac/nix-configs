@@ -65,16 +65,16 @@ bearer the router path validated.
 
 The swap-mode options (all inert until `swap.enable` is set):
 
-| Option | Meaning |
-|---|---|
-| `swap.enable` | Turn llama-swap into the single model-lifecycle owner. |
-| `swap.port` | Loopback port llama-swap listens on (default `39700`); the compat-proxy targets it. |
-| `swap.healthCheckTimeout` | Seconds llama-swap waits for a new child to answer before it fails the request (default `900`, so a cold frontier load of ~90-120 s fits). |
-| `swap.routerEngine` | `"matrix"` (evict-cost policy, chosen on brys) or `"group"` (one group per router). |
-| `swap.persistentModels` | Model ids llama-swap must never evict for another model. |
-| `swap.packageOverrides` | Per-model llama.cpp build, so one child can differ from `kdn.llm.local.package`. |
-| `swap.vulkanDeviceSelect` | Value of `MESA_VK_DEVICE_SELECT` for the llama-swap unit (replaces the router-mode pin on `llama-cpp`). |
-| `swap.debug` | Verbose diagnostics window: llama-swap `logLevel = "debug"`, `logToStdout = "both"`, `logTimeFormat = "rfc3339nano"`, a larger capture buffer, and `--verbose` on every child. The **upstream** stdout stream copies each child's own log, which carries the real reason a model failed to load. Noisier and slower, so it is off by default and meant only while bringing a host up. |
+| Option                    | Meaning                                                                                                                                                                                                                                                                                                                                                                               |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `swap.enable`             | Turn llama-swap into the single model-lifecycle owner.                                                                                                                                                                                                                                                                                                                                |
+| `swap.port`               | Loopback port llama-swap listens on (default `39700`); the compat-proxy targets it.                                                                                                                                                                                                                                                                                                   |
+| `swap.healthCheckTimeout` | Seconds llama-swap waits for a new child to answer before it fails the request (default `900`, so a cold frontier load of ~90-120 s fits).                                                                                                                                                                                                                                            |
+| `swap.routerEngine`       | `"matrix"` (evict-cost policy, chosen on brys) or `"group"` (one group per router).                                                                                                                                                                                                                                                                                                   |
+| `swap.persistentModels`   | Model ids llama-swap must never evict for another model.                                                                                                                                                                                                                                                                                                                              |
+| `swap.packageOverrides`   | Per-model llama.cpp build, so one child can differ from `kdn.llm.local.package`.                                                                                                                                                                                                                                                                                                      |
+| `swap.vulkanDeviceSelect` | Value of `MESA_VK_DEVICE_SELECT` for the llama-swap unit (replaces the router-mode pin on `llama-cpp`).                                                                                                                                                                                                                                                                               |
+| `swap.debug`              | Verbose diagnostics window: llama-swap `logLevel = "debug"`, `logToStdout = "both"`, `logTimeFormat = "rfc3339nano"`, a larger capture buffer, and `--verbose` on every child. The **upstream** stdout stream copies each child's own log, which carries the real reason a model failed to load. Noisier and slower, so it is off by default and meant only while bringing a host up. |
 
 ### Matrix routing on brys
 
@@ -132,17 +132,17 @@ a restart.
 
 What is available, live only:
 
-| Source | What it gives | Persisted? |
-|---|---|---|
-| `/api/metrics/activity` | **Per request, per model**: `model`, `req_path`, `resp_status_code`, `tokens.{input,output,cache,draft,draft_acc}`, `tokens.prompt_per_second`, `tokens.tokens_per_second`, `duration_ms`, `has_capture`, `metadata.fifo_priority`. This is the per-model tok/s source the web UI reads. | No — ring buffer only, sized by `captureBuffer` (10 normally, 50 with `swap.debug`) |
-| `/api/metrics/stats` | Aggregate counters (`total_requests`, `total_{input,output,cache}_tokens`) plus `prompt_histogram` and `gen_histogram` with `p50`/`p95`/`p99` of tok/s. | No |
-| `/api/captures/<id>` | The full request and response for one activity record, with `Authorization` replaced by `[REDACTED]`. The UI's request inspector. | No, same ring |
-| `/api/performance` | GPU stats per card: temperature, utilisation, VRAM used/total, fan, power draw. | No |
-| `/api/hardware` | One JSON hardware inventory: CPU model and core counts, RAM capacity, accelerators, OS and kernel. Captured once at startup. | No |
-| llama-swap `/metrics` | **System-level only** Prometheus: `llamaswap_cpu_util_percent{core}`, `memory_{free,total,used}_bytes`, `swap_*`, `load_average`, `network_bytes_total`. It carries **no** model or token metric. | No (scrape-only) |
-| llama-server child response | Per-response `timings`: `prompt_per_second`, `predicted_per_second`, `predicted_n`, … — the same numbers llama-swap records, available to any direct client. | No |
-| `/logs`, `/logs/stream/:model` | In-memory log ring buffer, per model. | No |
-| `/running` | The currently loaded models, with state, command line, upstream URL and `ttl`. | No |
+| Source                         | What it gives                                                                                                                                                                                                                                                                            | Persisted?                                                                          |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `/api/metrics/activity`        | **Per request, per model**: `model`, `req_path`, `resp_status_code`, `tokens.{input,output,cache,draft,draft_acc}`, `tokens.prompt_per_second`, `tokens.tokens_per_second`, `duration_ms`, `has_capture`, `metadata.fifo_priority`. This is the per-model tok/s source the web UI reads. | No — ring buffer only, sized by `captureBuffer` (10 normally, 50 with `swap.debug`) |
+| `/api/metrics/stats`           | Aggregate counters (`total_requests`, `total_{input,output,cache}_tokens`) plus `prompt_histogram` and `gen_histogram` with `p50`/`p95`/`p99` of tok/s.                                                                                                                                  | No                                                                                  |
+| `/api/captures/<id>`           | The full request and response for one activity record, with `Authorization` replaced by `[REDACTED]`. The UI's request inspector.                                                                                                                                                        | No, same ring                                                                       |
+| `/api/performance`             | GPU stats per card: temperature, utilisation, VRAM used/total, fan, power draw.                                                                                                                                                                                                          | No                                                                                  |
+| `/api/hardware`                | One JSON hardware inventory: CPU model and core counts, RAM capacity, accelerators, OS and kernel. Captured once at startup.                                                                                                                                                             | No                                                                                  |
+| llama-swap `/metrics`          | **System-level only** Prometheus: `llamaswap_cpu_util_percent{core}`, `memory_{free,total,used}_bytes`, `swap_*`, `load_average`, `network_bytes_total`. It carries **no** model or token metric.                                                                                        | No (scrape-only)                                                                    |
+| llama-server child response    | Per-response `timings`: `prompt_per_second`, `predicted_per_second`, `predicted_n`, … — the same numbers llama-swap records, available to any direct client.                                                                                                                             | No                                                                                  |
+| `/logs`, `/logs/stream/:model` | In-memory log ring buffer, per model.                                                                                                                                                                                                                                                    | No                                                                                  |
+| `/running`                     | The currently loaded models, with state, command line, upstream URL and `ttl`.                                                                                                                                                                                                           | No                                                                                  |
 
 How the tok/s numbers are made: llama-swap reads them from each
 `llama-server` response's `timings` object (verified: a direct request returns
@@ -171,11 +171,11 @@ This document records the status only; nothing is wired.
 Since the llama-swap migration there is **one** interactive unit, and it owns
 every child:
 
-| Unit | What it is |
-|---|---|
-| `llama-swap.service` | the swapper. It reads the generated `config.yaml`, spawns one `llama-server` per model on first request, and holds the routing policy. |
-| `kdn-llm-proxy-lan.service` | the compat proxy in front of the swapper (`https://brys.priv.nb.net.int.kdn.im/v1`). |
-| `services.llama-cpp` units (`llama-cpp.service`, `llama-cpp-<router>.service`) | still exist, but only when `swap.enable = false`. The pre-swap router names are gone from a swapped host. |
+| Unit                                                                           | What it is                                                                                                                             |
+| ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `llama-swap.service`                                                           | the swapper. It reads the generated `config.yaml`, spawns one `llama-server` per model on first request, and holds the routing policy. |
+| `kdn-llm-proxy-lan.service`                                                    | the compat proxy in front of the swapper (`https://brys.priv.nb.net.int.kdn.im/v1`).                                                   |
+| `services.llama-cpp` units (`llama-cpp.service`, `llama-cpp-<router>.service`) | still exist, but only when `swap.enable = false`. The pre-swap router names are gone from a swapped host.                              |
 
 ```sh
 # The whole picture on a swapped host: swapper lifecycle, load/unload, and,
@@ -228,8 +228,8 @@ lets DS4 stay resident/hot on the frontier router (its ~92 GB working set held
 against page-cache pressure) while the small set swaps freely on its own
 router; only `phi-4` (17.7 G) or `qwen3-30b-a3b` (44.4 G but evicting ~45 G of
 DS4 cache) ever risk touching the frontier's cache in a single-router layout.
-  Facts only — no extrapolation beyond the measured footprints in
-  [hosts/brys/performance.md](../hosts/brys/performance.md).
+Facts only — no extrapolation beyond the measured footprints in
+[hosts/brys/performance.md](../hosts/brys/performance.md).
 
 ### Token usage in streams
 
@@ -293,61 +293,61 @@ Every numeric column is measured on brys on 2026-10-18 except
 run used: 16384 for every measured run, or the registered served context for a
 model with no measurement. A dash means not applicable.
 
-| model | class | params (active) | license | file GB | ctx (served) | RssAnon | VmRSS | decode t/s | prefill t/s | mode | registered in |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| qwen3.8-flash-next | frontier | — | — | 93.7 | 1048576 | — | — | — | — | — | swap main |
-| deepseek-v4-flash | frontier | ~180B MoE | custom | 103 | 327680 | — | — | — | — | — | swap main |
-| qwen3.5-4b | grunt | 4B dense (hybrid Gated-DeltaNet) | Apache-2.0 | 2.6 | 16384 | 114 | 643 | 60.8 | 158.0 | GPU | swap with_grunt (:39705) |
-| qwen3.5-4b | grunt | 4B dense (hybrid Gated-DeltaNet) | Apache-2.0 | 2.6 | 16384 | 2118 | 4733 | 13.0 | 68.7 | CPU | swap with_grunt (:39705) |
-| qwen3.5-9b | grunt | 9B dense (hybrid) | Apache-2.0 | 5.3 | 16384 | 3437 | 8855 | 5.6 | 40.8 | CPU | swap with_grunt (:39705, disabled) |
-| phi-4 | small-cpu | — | — | 9 | 16384 | — | — | — | — | — | router small (:39704, llm-small) |
-| qwen3-30b-a3b | small-cpu | — | — | 18 | 131072 | — | — | — | — | — | router small (:39704, llm-small) |
-| qwen3-next-80b | small-cpu | — | — | 48 | 131072 | — | — | — | — | — | router small (:39704, llm-small) |
-| qwen3-coder-next | small-cpu | — | — | 48 | 131072 | — | — | — | — | — | router small (:39704, llm-small) |
-| gpt-oss-120b | small-cpu | — | — | 65 | — | — | — | — | — | — | router small (:39704, llm-small) |
-| qwen3-235b | small-cpu | — | — | 77 | 65536 | — | — | — | — | — | router small (:39704, llm-small) |
-| qwen3.5-0.8b | surveyed-gpu | 0.8B dense | Apache-2.0 | 0.5 | 16384 | 114 | 348 | 163.4 | 63.8 | GPU | swap with_surveyed (:39706, GPU) |
-| qwen3.5-0.8b | surveyed-gpu | 0.8B dense | Apache-2.0 | 0.5 | 16384 | 535 | 1043 | 55.8 | 43.0 | CPU | swap with_surveyed (:39706, GPU) |
-| qwen3.5-2b | surveyed-gpu | 2B dense (hybrid) | Apache-2.0 | 1.2 | 16384 | 114 | 544 | 116.8 | 273.5 | GPU | swap with_surveyed (:39706, GPU) |
-| qwen3.5-2b | surveyed-gpu | 2B dense (hybrid) | Apache-2.0 | 1.2 | 16384 | 864 | 2085 | 20.1 | 118.5 | CPU | swap with_surveyed (:39706, GPU) |
-| tmax-2b | surveyed-gpu | 2B dense | Apache-2.0 | 1.27 | 16384 | 117 | 557 | 110.7 | 311 | GPU | swap with_surveyed (:39706, GPU) |
-| tmax-2b | surveyed-gpu | 2B dense | Apache-2.0 | 1.27 | 16384 | 385 | 1650 | 28.6 | 79.7 | CPU | swap with_surveyed (:39706, GPU) |
-| granite-4.2-3b | surveyed-gpu | 3B dense | Apache-2.0 | 2.1 | 16384 | 59 | 232 | 83.9 | 223.6 | GPU | swap with_surveyed (:39706, GPU) |
-| granite-4.2-3b | surveyed-gpu | 3B dense | Apache-2.0 | 2.1 | 16384 | 2770 | 4906 | 19.8 | 174.0 | CPU | swap with_surveyed (:39706, GPU) |
-| ministral-3-3b-instruct | surveyed-gpu | — | — | 2.15 | 16384 | 74 | 429 | 79.3 | 1369 | GPU | swap with_surveyed (:39706, GPU) |
-| ministral-3-3b-instruct | surveyed-gpu | — | — | 2.15 | 16384 | 1778 | 3898 | 17.4 | 480 | CPU | swap with_surveyed (:39706, GPU) |
-| ministral-3-3b-reasoning | surveyed-gpu | — | — | 2.15 | 16384 | 74 | 429 | 80.9 | 933 | GPU | swap with_surveyed (:39706, GPU) |
-| ministral-3-3b-reasoning | surveyed-gpu | — | — | 2.15 | 16384 | 1778 | 3898 | 18.9 | 202 | CPU | swap with_surveyed (:39706, GPU) |
-| gemma-4-e2b | surveyed-gpu | — | — | 3.11 | 16384 | 133 | 1967 | 83.5 | 38.8 | GPU | swap with_surveyed (:39706, GPU) |
-| gemma-4-e2b | surveyed-gpu | — | — | 3.11 | 16384 | 263 | 3315 | 23.8 | 37.8 | CPU | swap with_surveyed (:39706, GPU) |
-| olmo-3-7b-instruct | surveyed-gpu | — | — | 4.47 | 16384 | 62 | 323 | 40.4 | 136 | GPU | swap with_surveyed (:39706, GPU) |
-| olmo-3-7b-instruct | surveyed-gpu | — | — | 4.47 | 16384 | 11445 | 15819 | 9.83 | 25.9 | CPU | swap with_surveyed (:39706, GPU) |
-| gemma-4-e4b | surveyed-gpu | 4.5B eff (8B w/ embeddings) | Apache-2.0 | 4.8 | 16384 | 170 | 2936 | 56.6 | 46.6 | GPU | swap with_surveyed (:39706, GPU) |
-| gemma-4-e4b | surveyed-gpu | 4.5B eff (8B w/ embeddings) | Apache-2.0 | 4.8 | 16384 | 2600 | 7512 | 9.6 | 50.5 | CPU | swap with_surveyed (:39706, GPU) |
-| granite-4.2-8b | surveyed-gpu | 8B dense | Apache-2.0 | 5.0 | 16384 | 46 | 298 | 38.6 | 146.0 | GPU | swap with_surveyed (:39706, GPU) |
-| granite-4.2-8b | surveyed-gpu | 8B dense | Apache-2.0 | 5.0 | 16384 | 6270 | 11349 | 8.2 | 71.1 | CPU | swap with_surveyed (:39706, GPU) |
-| ministral-3-8b-instruct | surveyed-gpu | — | — | 5.2 | 16384 | 74 | 402 | 38.4 | 576 | GPU | swap with_surveyed (:39706, GPU) |
-| ministral-3-8b-instruct | surveyed-gpu | — | — | 5.2 | 16384 | 2303 | 7403 | 8.1 | 244 | CPU | swap with_surveyed (:39706, GPU) |
-| ministral-3-8b-reasoning | surveyed-gpu | — | — | 5.2 | 16384 | 74 | 402 | 38.9 | 458 | GPU | swap with_surveyed (:39706, GPU) |
-| ministral-3-8b-reasoning | surveyed-gpu | — | — | 5.2 | 16384 | 2303 | 7403 | 8.5 | 56 | CPU | swap with_surveyed (:39706, GPU) |
-| mimo-v2.6-qwen-9b | surveyed-gpu | 9B dense | Apache-2.0 | 5.5 | 16384 | 3754 | 9325 | 5.7 | 28.1 | CPU | swap with_surveyed (:39706, GPU) |
-| tmax-9b | surveyed-gpu | 9B dense | Apache-2.0 | 5.63 | 16384 | 117 | 708 | 36.9 | 121 | GPU | swap with_surveyed (:39706, GPU) |
-| tmax-9b | surveyed-gpu | 9B dense | Apache-2.0 | 5.63 | 16384 | 839 | 6358 | 7.18 | 20.7 | CPU | swap with_surveyed (:39706, GPU) |
-| qwen3.5-0.8b-cpu | surveyed-cpu | 0.8B dense | Apache-2.0 | 0.5 | 16384 | 535 | 1043 | 55.8 | 43.0 | CPU | swap with_surveyed (:39706, CPU) |
-| qwen3.5-2b-cpu | surveyed-cpu | 2B dense (hybrid) | Apache-2.0 | 1.2 | 16384 | 864 | 2085 | 20.1 | 118.5 | CPU | swap with_surveyed (:39706, CPU) |
-| tmax-2b-cpu | surveyed-cpu | 2B dense | Apache-2.0 | 1.27 | 16384 | 385 | 1650 | 28.6 | 79.7 | CPU | swap with_surveyed (:39706, CPU) |
-| gemma-4-12b | surveyed-cpu | 11.95B dense | Apache-2.0 | 7.12 | 16384 | 1871 | 8842 | 5.76 | 10.4 | CPU | swap with_surveyed (:39706, CPU) |
-| gemma-4-26b-a4b | surveyed-cpu | 25.2B / 3.8B (MoE) | Apache-2.0 | 14 | 16384 | 14482 | 28248 | 14.5 | 67.7 | CPU | swap with_surveyed (:39706, CPU) |
-| qwen3.6-27b | surveyed-cpu | 27B dense | Apache-2.0 | 16 | 16384 | 11759 | 27798 | 1.8 | 10.1 | CPU | swap with_surveyed (:39706, CPU) |
-| granite-4.2-30b | surveyed-cpu | 30B dense | Apache-2.0 | 17 | 16384 | 17029 | 33865 | 2.1 | 17.1 | CPU | swap with_surveyed (:39706, CPU) |
-| gemma-4-31b | surveyed-cpu | 31B dense | Apache-2.0 | 18 | 16384 | 19319 | 36790 | 1.7 | 9.3 | CPU | swap with_surveyed (:39706, CPU) |
-| glm-4.7-flash | surveyed-cpu | 30B / ~3B (MoE) | MIT | 18 | 16384 | 13886 | 31352 | 11.5 | 46.5 | CPU | swap with_surveyed (:39706, CPU) |
-| olmo-3.1-32b | surveyed-cpu | 32B | Apache-2.0 | 19 | 16384 | 18361 | 36951 | 2.3 | 17.6 | CPU | swap with_surveyed (:39706, CPU) |
-| seed-oss-36b | surveyed-cpu | 36B dense | Apache-2.0 | 20 | 16384 | 20178 | 40937 | 2.0 | 12.0 | CPU | swap with_surveyed (:39706, CPU) |
-| qwen3.5-35b-a3b | surveyed-cpu | 35B / 3B (MoE) | Apache-2.0 | 21 | 16384 | 12210 | 33206 | 9.2 | 45.9 | CPU | swap with_surveyed (:39706, CPU) |
-| qwen3.6-35b-a3b | surveyed-cpu | 35B / ~3B (MoE) | Apache-2.0 | 21 | 16384 | 12210 | 33320 | 10.9 | 49.7 | CPU | swap with_surveyed (:39706, CPU) |
-| nemotron-3.5-lightning-30b | surveyed-cpu | 30B / 3B (Mamba-2 + MoE hybrid) | OpenMDW-1.1 | 24 | 16384 | 363 | 23527 | 12.9 | 44.0 | CPU | swap with_surveyed (:39706, CPU) |
-| nemotron-3.5-bolt-74b | bench-only | 74B / 9B | OpenMDW-1.1 | 21 | — | — | — | — | — | — | — (bench only) |
+| model                      | class        | params (active)                  | license     | file GB | ctx (served) | RssAnon | VmRSS | decode t/s | prefill t/s | mode | registered in                      |
+| -------------------------- | ------------ | -------------------------------- | ----------- | ------- | ------------ | ------- | ----- | ---------- | ----------- | ---- | ---------------------------------- |
+| qwen3.8-flash-next         | frontier     | —                                | —           | 93.7    | 1048576      | —       | —     | —          | —           | —    | swap main                          |
+| deepseek-v4-flash          | frontier     | ~180B MoE                        | custom      | 103     | 327680       | —       | —     | —          | —           | —    | swap main                          |
+| qwen3.5-4b                 | grunt        | 4B dense (hybrid Gated-DeltaNet) | Apache-2.0  | 2.6     | 16384        | 114     | 643   | 60.8       | 158.0       | GPU  | swap with_grunt (:39705)           |
+| qwen3.5-4b                 | grunt        | 4B dense (hybrid Gated-DeltaNet) | Apache-2.0  | 2.6     | 16384        | 2118    | 4733  | 13.0       | 68.7        | CPU  | swap with_grunt (:39705)           |
+| qwen3.5-9b                 | grunt        | 9B dense (hybrid)                | Apache-2.0  | 5.3     | 16384        | 3437    | 8855  | 5.6        | 40.8        | CPU  | swap with_grunt (:39705, disabled) |
+| phi-4                      | small-cpu    | —                                | —           | 9       | 16384        | —       | —     | —          | —           | —    | router small (:39704, llm-small)   |
+| qwen3-30b-a3b              | small-cpu    | —                                | —           | 18      | 131072       | —       | —     | —          | —           | —    | router small (:39704, llm-small)   |
+| qwen3-next-80b             | small-cpu    | —                                | —           | 48      | 131072       | —       | —     | —          | —           | —    | router small (:39704, llm-small)   |
+| qwen3-coder-next           | small-cpu    | —                                | —           | 48      | 131072       | —       | —     | —          | —           | —    | router small (:39704, llm-small)   |
+| gpt-oss-120b               | small-cpu    | —                                | —           | 65      | —            | —       | —     | —          | —           | —    | router small (:39704, llm-small)   |
+| qwen3-235b                 | small-cpu    | —                                | —           | 77      | 65536        | —       | —     | —          | —           | —    | router small (:39704, llm-small)   |
+| qwen3.5-0.8b               | surveyed-gpu | 0.8B dense                       | Apache-2.0  | 0.5     | 16384        | 114     | 348   | 163.4      | 63.8        | GPU  | swap with_surveyed (:39706, GPU)   |
+| qwen3.5-0.8b               | surveyed-gpu | 0.8B dense                       | Apache-2.0  | 0.5     | 16384        | 535     | 1043  | 55.8       | 43.0        | CPU  | swap with_surveyed (:39706, GPU)   |
+| qwen3.5-2b                 | surveyed-gpu | 2B dense (hybrid)                | Apache-2.0  | 1.2     | 16384        | 114     | 544   | 116.8      | 273.5       | GPU  | swap with_surveyed (:39706, GPU)   |
+| qwen3.5-2b                 | surveyed-gpu | 2B dense (hybrid)                | Apache-2.0  | 1.2     | 16384        | 864     | 2085  | 20.1       | 118.5       | CPU  | swap with_surveyed (:39706, GPU)   |
+| tmax-2b                    | surveyed-gpu | 2B dense                         | Apache-2.0  | 1.27    | 16384        | 117     | 557   | 110.7      | 311         | GPU  | swap with_surveyed (:39706, GPU)   |
+| tmax-2b                    | surveyed-gpu | 2B dense                         | Apache-2.0  | 1.27    | 16384        | 385     | 1650  | 28.6       | 79.7        | CPU  | swap with_surveyed (:39706, GPU)   |
+| granite-4.2-3b             | surveyed-gpu | 3B dense                         | Apache-2.0  | 2.1     | 16384        | 59      | 232   | 83.9       | 223.6       | GPU  | swap with_surveyed (:39706, GPU)   |
+| granite-4.2-3b             | surveyed-gpu | 3B dense                         | Apache-2.0  | 2.1     | 16384        | 2770    | 4906  | 19.8       | 174.0       | CPU  | swap with_surveyed (:39706, GPU)   |
+| ministral-3-3b-instruct    | surveyed-gpu | —                                | —           | 2.15    | 16384        | 74      | 429   | 79.3       | 1369        | GPU  | swap with_surveyed (:39706, GPU)   |
+| ministral-3-3b-instruct    | surveyed-gpu | —                                | —           | 2.15    | 16384        | 1778    | 3898  | 17.4       | 480         | CPU  | swap with_surveyed (:39706, GPU)   |
+| ministral-3-3b-reasoning   | surveyed-gpu | —                                | —           | 2.15    | 16384        | 74      | 429   | 80.9       | 933         | GPU  | swap with_surveyed (:39706, GPU)   |
+| ministral-3-3b-reasoning   | surveyed-gpu | —                                | —           | 2.15    | 16384        | 1778    | 3898  | 18.9       | 202         | CPU  | swap with_surveyed (:39706, GPU)   |
+| gemma-4-e2b                | surveyed-gpu | —                                | —           | 3.11    | 16384        | 133     | 1967  | 83.5       | 38.8        | GPU  | swap with_surveyed (:39706, GPU)   |
+| gemma-4-e2b                | surveyed-gpu | —                                | —           | 3.11    | 16384        | 263     | 3315  | 23.8       | 37.8        | CPU  | swap with_surveyed (:39706, GPU)   |
+| olmo-3-7b-instruct         | surveyed-gpu | —                                | —           | 4.47    | 16384        | 62      | 323   | 40.4       | 136         | GPU  | swap with_surveyed (:39706, GPU)   |
+| olmo-3-7b-instruct         | surveyed-gpu | —                                | —           | 4.47    | 16384        | 11445   | 15819 | 9.83       | 25.9        | CPU  | swap with_surveyed (:39706, GPU)   |
+| gemma-4-e4b                | surveyed-gpu | 4.5B eff (8B w/ embeddings)      | Apache-2.0  | 4.8     | 16384        | 170     | 2936  | 56.6       | 46.6        | GPU  | swap with_surveyed (:39706, GPU)   |
+| gemma-4-e4b                | surveyed-gpu | 4.5B eff (8B w/ embeddings)      | Apache-2.0  | 4.8     | 16384        | 2600    | 7512  | 9.6        | 50.5        | CPU  | swap with_surveyed (:39706, GPU)   |
+| granite-4.2-8b             | surveyed-gpu | 8B dense                         | Apache-2.0  | 5.0     | 16384        | 46      | 298   | 38.6       | 146.0       | GPU  | swap with_surveyed (:39706, GPU)   |
+| granite-4.2-8b             | surveyed-gpu | 8B dense                         | Apache-2.0  | 5.0     | 16384        | 6270    | 11349 | 8.2        | 71.1        | CPU  | swap with_surveyed (:39706, GPU)   |
+| ministral-3-8b-instruct    | surveyed-gpu | —                                | —           | 5.2     | 16384        | 74      | 402   | 38.4       | 576         | GPU  | swap with_surveyed (:39706, GPU)   |
+| ministral-3-8b-instruct    | surveyed-gpu | —                                | —           | 5.2     | 16384        | 2303    | 7403  | 8.1        | 244         | CPU  | swap with_surveyed (:39706, GPU)   |
+| ministral-3-8b-reasoning   | surveyed-gpu | —                                | —           | 5.2     | 16384        | 74      | 402   | 38.9       | 458         | GPU  | swap with_surveyed (:39706, GPU)   |
+| ministral-3-8b-reasoning   | surveyed-gpu | —                                | —           | 5.2     | 16384        | 2303    | 7403  | 8.5        | 56          | CPU  | swap with_surveyed (:39706, GPU)   |
+| mimo-v2.6-qwen-9b          | surveyed-gpu | 9B dense                         | Apache-2.0  | 5.5     | 16384        | 3754    | 9325  | 5.7        | 28.1        | CPU  | swap with_surveyed (:39706, GPU)   |
+| tmax-9b                    | surveyed-gpu | 9B dense                         | Apache-2.0  | 5.63    | 16384        | 117     | 708   | 36.9       | 121         | GPU  | swap with_surveyed (:39706, GPU)   |
+| tmax-9b                    | surveyed-gpu | 9B dense                         | Apache-2.0  | 5.63    | 16384        | 839     | 6358  | 7.18       | 20.7        | CPU  | swap with_surveyed (:39706, GPU)   |
+| qwen3.5-0.8b-cpu           | surveyed-cpu | 0.8B dense                       | Apache-2.0  | 0.5     | 16384        | 535     | 1043  | 55.8       | 43.0        | CPU  | swap with_surveyed (:39706, CPU)   |
+| qwen3.5-2b-cpu             | surveyed-cpu | 2B dense (hybrid)                | Apache-2.0  | 1.2     | 16384        | 864     | 2085  | 20.1       | 118.5       | CPU  | swap with_surveyed (:39706, CPU)   |
+| tmax-2b-cpu                | surveyed-cpu | 2B dense                         | Apache-2.0  | 1.27    | 16384        | 385     | 1650  | 28.6       | 79.7        | CPU  | swap with_surveyed (:39706, CPU)   |
+| gemma-4-12b                | surveyed-cpu | 11.95B dense                     | Apache-2.0  | 7.12    | 16384        | 1871    | 8842  | 5.76       | 10.4        | CPU  | swap with_surveyed (:39706, CPU)   |
+| gemma-4-26b-a4b            | surveyed-cpu | 25.2B / 3.8B (MoE)               | Apache-2.0  | 14      | 16384        | 14482   | 28248 | 14.5       | 67.7        | CPU  | swap with_surveyed (:39706, CPU)   |
+| qwen3.6-27b                | surveyed-cpu | 27B dense                        | Apache-2.0  | 16      | 16384        | 11759   | 27798 | 1.8        | 10.1        | CPU  | swap with_surveyed (:39706, CPU)   |
+| granite-4.2-30b            | surveyed-cpu | 30B dense                        | Apache-2.0  | 17      | 16384        | 17029   | 33865 | 2.1        | 17.1        | CPU  | swap with_surveyed (:39706, CPU)   |
+| gemma-4-31b                | surveyed-cpu | 31B dense                        | Apache-2.0  | 18      | 16384        | 19319   | 36790 | 1.7        | 9.3         | CPU  | swap with_surveyed (:39706, CPU)   |
+| glm-4.7-flash              | surveyed-cpu | 30B / ~3B (MoE)                  | MIT         | 18      | 16384        | 13886   | 31352 | 11.5       | 46.5        | CPU  | swap with_surveyed (:39706, CPU)   |
+| olmo-3.1-32b               | surveyed-cpu | 32B                              | Apache-2.0  | 19      | 16384        | 18361   | 36951 | 2.3        | 17.6        | CPU  | swap with_surveyed (:39706, CPU)   |
+| seed-oss-36b               | surveyed-cpu | 36B dense                        | Apache-2.0  | 20      | 16384        | 20178   | 40937 | 2.0        | 12.0        | CPU  | swap with_surveyed (:39706, CPU)   |
+| qwen3.5-35b-a3b            | surveyed-cpu | 35B / 3B (MoE)                   | Apache-2.0  | 21      | 16384        | 12210   | 33206 | 9.2        | 45.9        | CPU  | swap with_surveyed (:39706, CPU)   |
+| qwen3.6-35b-a3b            | surveyed-cpu | 35B / ~3B (MoE)                  | Apache-2.0  | 21      | 16384        | 12210   | 33320 | 10.9       | 49.7        | CPU  | swap with_surveyed (:39706, CPU)   |
+| nemotron-3.5-lightning-30b | surveyed-cpu | 30B / 3B (Mamba-2 + MoE hybrid)  | OpenMDW-1.1 | 24      | 16384        | 363     | 23527 | 12.9       | 44.0        | CPU  | swap with_surveyed (:39706, CPU)   |
+| nemotron-3.5-bolt-74b      | bench-only   | 74B / 9B                         | OpenMDW-1.1 | 21      | —            | —       | —     | —          | —           | —    | — (bench only)                     |
 
 Source research files: [coresidency-measured.research.md](tasks/2026-10/brys-grunt-colocation/coresidency-measured.research.md)
 (all measured columns), [models-2026.research.md](tasks/2026-10/brys-grunt-colocation/models-2026.research.md)
@@ -378,7 +378,7 @@ Applies to all models equally (not per model):
   - `"slow"` (default): Xet disabled, regular HTTP. Gentlest.
   - `"fast-polite"`: Xet enabled, low pinned concurrency (Tier 1 mitigation).
     Faster than `"slow"` while staying gentle on a shared link.
-  how aggressive Xet is.
+    how aggressive Xet is.
 - **`download.tokenFile`** — optional HF token path, loaded via systemd
   `LoadCredential`.
 
@@ -437,12 +437,12 @@ The frontier model and the small set no longer share a boot. All entries are
 - **`llm-qwen`** (`hosts/brys/llm-qwen.nix`) — Qwen3.8-Flash-Next alone.
   `withFrontier = false; withSmall = false; withQwen = true`. 1M context
   (YaRN x4), batch/ubatch 4096, F16 KV, and the MTP draft head + the main model
-  + KV all on the CPU. The W6600 is **not** used (it hard-hangs; see
-  [GPU draft head](#gpu-draft-head-llm-qwen-2026-10-07--disabled-2026-10-09)).
-  **Four slots share one unified
-  KV pool** (`parallel=4`, `kv-unified=on`, `ctx-size=1048576`), so a second
-  request no longer queues behind the first. The earlier CPU-only entry and the
-  separate `llm-qwen-gpu` entry were folded into this one.
+  - KV all on the CPU. The W6600 is **not** used (it hard-hangs; see
+    [GPU draft head](#gpu-draft-head-llm-qwen-2026-10-07--disabled-2026-10-09)).
+    **Four slots share one unified
+    KV pool** (`parallel=4`, `kv-unified=on`, `ctx-size=1048576`), so a second
+    request no longer queues behind the first. The earlier CPU-only entry and the
+    separate `llm-qwen-gpu` entry were folded into this one.
 
 **Multimodal (vision).** Qwen is `image-text-to-text`, so it accepts image and
 video input once its projector loads. The `qwenVision` argument in
@@ -458,8 +458,8 @@ The choice lives in `hosts/brys/llm.nix`'s `withFrontier` / `withSmall` /
 
 **Why the split (measured, Phase 3):** on the ~40 GB/s bandwidth-bound box any
 resident small model contends for the same memory bandwidth. Even an
-*idle-but-resident* small model (phi-4, 8 GB) halves DS4 (~6.7 → ~3 t/s); an
-*actively generating* small model drops DS4 to ~1.75–2.2 t/s (67–74% hit) and a
+_idle-but-resident_ small model (phi-4, 8 GB) halves DS4 (~6.7 → ~3 t/s); an
+_actively generating_ small model drops DS4 to ~1.75–2.2 t/s (67–74% hit) and a
 65 GB+ MoE (qwen3-coder-next) crushes it to ~0.9–1.1 t/s and evicts DS4's weight
 cache (RSS 67→15 GB). Best co-tenant by far is `qwen3-30b-a3b` (fast, low
 bandwidth, ~2.2 t/s DS4 hit, cache intact), but a router's
@@ -469,16 +469,16 @@ separate boot entry.
 
 ### Models (all enabled on brys)
 
-| Name | Alias | hfRepo / file | Size |
-|---|---|---|---|
-| `qwen3-30b-a3b` | `fast` | `Qwen/Qwen3-30B-A3B-GGUF` / `Qwen3-30B-A3B-Q4_K_M.gguf` | ~18 GB |
-| `qwen3-next-80b` | `balanced` | `unsloth/Qwen3-Next-80B-A3B-Instruct-GGUF` / `...-Q4_K_M.gguf` | ~48 GB |
-| `deepseek-v4-flash` | `frontier` | `unsloth/DeepSeek-V4-Flash-GGUF` / `UD-IQ3_XXS/...-00001-of-00004.gguf` | ~103 GB (multi-shard) |
-| `qwen3.8-flash-next` | `qwen`/`frontier` | `unsloth/Qwen3.8-Flash-Next-GGUF` / `UD-IQ4_XS/...-00001-of-00003.gguf` | ~94 GB (3 shards) |
-| `qwen3-235b` | — | `mradermacher/Qwen3-235B-A22B-i1-GGUF` / `...IQ2_M.gguf.part1of2` | ~77 GB |
-| `qwen3-coder-next` | — | `Qwen/Qwen3-Coder-Next-GGUF` / `...-Q4_K_M-00001-of-00004.gguf` | ~48 GB |
-| `gpt-oss-120b` | — | `unsloth/gpt-oss-120b-GGUF` / `gpt-oss-120b-F16.gguf` | ~65 GB |
-| `phi-4` | — | `microsoft/phi-4-gguf` / `phi-4-Q4_K.gguf` | ~9 GB |
+| Name                 | Alias             | hfRepo / file                                                           | Size                  |
+| -------------------- | ----------------- | ----------------------------------------------------------------------- | --------------------- |
+| `qwen3-30b-a3b`      | `fast`            | `Qwen/Qwen3-30B-A3B-GGUF` / `Qwen3-30B-A3B-Q4_K_M.gguf`                 | ~18 GB                |
+| `qwen3-next-80b`     | `balanced`        | `unsloth/Qwen3-Next-80B-A3B-Instruct-GGUF` / `...-Q4_K_M.gguf`          | ~48 GB                |
+| `deepseek-v4-flash`  | `frontier`        | `unsloth/DeepSeek-V4-Flash-GGUF` / `UD-IQ3_XXS/...-00001-of-00004.gguf` | ~103 GB (multi-shard) |
+| `qwen3.8-flash-next` | `qwen`/`frontier` | `unsloth/Qwen3.8-Flash-Next-GGUF` / `UD-IQ4_XS/...-00001-of-00003.gguf` | ~94 GB (3 shards)     |
+| `qwen3-235b`         | —                 | `mradermacher/Qwen3-235B-A22B-i1-GGUF` / `...IQ2_M.gguf.part1of2`       | ~77 GB                |
+| `qwen3-coder-next`   | —                 | `Qwen/Qwen3-Coder-Next-GGUF` / `...-Q4_K_M-00001-of-00004.gguf`         | ~48 GB                |
+| `gpt-oss-120b`       | —                 | `unsloth/gpt-oss-120b-GGUF` / `gpt-oss-120b-F16.gguf`                   | ~65 GB                |
+| `phi-4`              | —                 | `microsoft/phi-4-gguf` / `phi-4-Q4_K.gguf`                              | ~9 GB                 |
 
 Serving runs the main model on the CPU. The W6600 is unusable for the dense
 weights, and its use for the Qwen MTP draft head is disabled (see below).
@@ -494,17 +494,17 @@ other models keep `parallel=1`. Context sizes:
 2026-11-01. `max` is what rope scaling can reach. `served` is what brys allocates today.
 `RSS` is measured total process memory at that served context, on brys, 2026-11-01.
 
-| model              | native | max | served | RSS GiB | note                                  |
-|--------------------|-------:|----:|-------:|--------:|---------------------------------------|
-| qwen3.8-flash-next |   256k | 1M  |    1M  |    54.1 | YaRN x4: --rope-scale 4, orig 262144   |
-| qwen3.8-27b        |   256k | 1M  |  128k  |    23.3 | 256k would be 31.5 GiB, no room        |
-| qwen3.5-35b-a3b    |   256k | 1M  |  256k  |    25.1 | native, fits beside the frontier       |
-| qwen3-next-80b     |   256k |  -  |  128k  |       - | no GGUF on disk, cannot be served      |
-| qwen3-30b-a3b      |    40k |  -  |   40k  |       - | was 128k, above its own native limit   |
-| qwen3-coder-next   |   256k |  -  |  128k  |       - | no GGUF on disk                        |
-| qwen3-235b         |   256k |  -  |   64k  |       - | 128k KV would exceed RAM (141 GB)      |
-| phi-4              |    16k |  -  |   16k  |       - | hard architectural ceiling             |
-| deepseek-v4-flash  |   128k |  -  |  320k  |       - | MLA; specialisation 320k, main 128k     |
+| model              | native | max | served | RSS GiB | note                                 |
+| ------------------ | -----: | --: | -----: | ------: | ------------------------------------ |
+| qwen3.8-flash-next |   256k |  1M |     1M |    54.1 | YaRN x4: --rope-scale 4, orig 262144 |
+| qwen3.8-27b        |   256k |  1M |   128k |    23.3 | 256k would be 31.5 GiB, no room      |
+| qwen3.5-35b-a3b    |   256k |  1M |   256k |    25.1 | native, fits beside the frontier     |
+| qwen3-next-80b     |   256k |   - |   128k |       - | no GGUF on disk, cannot be served    |
+| qwen3-30b-a3b      |    40k |   - |    40k |       - | was 128k, above its own native limit |
+| qwen3-coder-next   |   256k |   - |   128k |       - | no GGUF on disk                      |
+| qwen3-235b         |   256k |   - |    64k |       - | 128k KV would exceed RAM (141 GB)    |
+| phi-4              |    16k |   - |    16k |       - | hard architectural ceiling           |
+| deepseek-v4-flash  |   128k |   - |   320k |       - | MLA; specialisation 320k, main 128k  |
 
 `k` is 1024. The three sizes are independent: a model can be trained for 256k, be extensible
 to 1M, and still be served at a smaller window for a reason (RAM, co-residence, or an
@@ -568,12 +568,12 @@ template default). A client overrides both per request: opencode passes an
 agent's `options` object **verbatim** into the chat-completions body (verified
 with an echo server).
 
-| level | DS4 `deepseek-v4-flash` | Qwen `qwen3.8-flash-next` |
-|---|---|---|
-| `off` | `enable_thinking=false` | `enable_thinking=false` |
-| `low` | `enable_thinking=true` | `enable_thinking=true`, `reasoning_effort="low"` |
-| `medium` | `enable_thinking=true` | `enable_thinking=true`, `reasoning_effort="medium"` |
-| `high` | `enable_thinking=true`, `reasoning_effort="max"` | `enable_thinking=true`, `reasoning_effort="xhigh"` |
+| level    | DS4 `deepseek-v4-flash`                          | Qwen `qwen3.8-flash-next`                           |
+| -------- | ------------------------------------------------ | --------------------------------------------------- |
+| `off`    | `enable_thinking=false`                          | `enable_thinking=false`                             |
+| `low`    | `enable_thinking=true`                           | `enable_thinking=true`, `reasoning_effort="low"`    |
+| `medium` | `enable_thinking=true`                           | `enable_thinking=true`, `reasoning_effort="medium"` |
+| `high`   | `enable_thinking=true`, `reasoning_effort="max"` | `enable_thinking=true`, `reasoning_effort="xhigh"`  |
 
 DS4's template honours only `reasoning_effort = "max"`, so its `low` and
 `medium` are equivalent thinking-on. Qwen's template accepts `xhigh`, `medium`
@@ -591,7 +591,7 @@ agent.
 
 > **Server-driven context needs no aliases.** Earlier the client used
 > `<n>k` tier aliases, which required every id to be a server alias: the
-> compat-proxy routes an unknown id to the frontier *upstream* but does not
+> compat-proxy routes an unknown id to the frontier _upstream_ but does not
 > rewrite it, and llama-server then rejects the unknown id with HTTP 400
 > (`model '...' not found`). With server-driven context the only ids are the base
 > model ids and the `frontier`/`qwen`/`grunt` names; context comes from
@@ -600,7 +600,7 @@ agent.
 
 ### ZFS ARC quirk (required for large contexts)
 
-The model GGUFs live on ZFS (`usr/data`). ZFS's ARC is a *second* cache beside
+The model GGUFs live on ZFS (`usr/data`). ZFS's ARC is a _second_ cache beside
 the Linux page cache that backs the `mmap`'d weights, and its default `c_max`
 is about half of RAM. On brys it grew to ~65 GB and the kernel then evicted the
 mmap'd ~103 GB DeepSeek weights to make room — every request re-read them from
@@ -623,11 +623,11 @@ a reboot: `echo 8589934592 | sudo tee /sys/module/zfs/parameters/zfs_arc_max`.
 With the cap the weights stay fully resident and the context is no longer the
 constraint. Measured on brys, 8 GiB ARC, warm (DSpark acceptance in parens):
 
-| ctx | DS4 RSS | RssAnon (KV) | idle major faults |
-|---|---|---|---|
-| 192K (old, uncapped) | ~92 GB | ~14 GB | 138/s (ARC thrash) |
-| 256K | 115.7 GB | 14.6 GB | 0/s |
-| 320K | 110.6 GB | 15.0 GB | 0/s |
+| ctx                  | DS4 RSS  | RssAnon (KV) | idle major faults  |
+| -------------------- | -------- | ------------ | ------------------ |
+| 192K (old, uncapped) | ~92 GB   | ~14 GB       | 138/s (ARC thrash) |
+| 256K                 | 115.7 GB | 14.6 GB      | 0/s                |
+| 320K                 | 110.6 GB | 15.0 GB      | 0/s                |
 
 KV is cheap for this MLA model (~0.4–1.4 GB per 64K), so RSS is dominated by
 the ~101 GB of weights. Decode throughput is draft-acceptance bound: ~4.8 tok/s
@@ -654,13 +654,13 @@ Two faults made long prompts appear hung. Both are now fixed in
    prefill lever. Measured on brys at 320K with the DSpark draft, warm,
    cache-miss prompt (1385 tokens):
 
-   | ubatch | prefill | wall |
-   |---|---|---|
-   | 512 (default) | 7.2 tok/s | 194 s |
-   | 1024 | 10.2 | 137 s |
-   | 2048 | 13.8 | 103 s |
-   | **4096** | **15.8** | 89 s |
-   | 8192 | 17.1 @128K / regresses memory | — |
+   | ubatch        | prefill                       | wall  |
+   | ------------- | ----------------------------- | ----- |
+   | 512 (default) | 7.2 tok/s                     | 194 s |
+   | 1024          | 10.2                          | 137 s |
+   | 2048          | 13.8                          | 103 s |
+   | **4096**      | **15.8**                      | 89 s  |
+   | 8192          | 17.1 @128K / regresses memory | —     |
 
    Live through the router (threads 16, ctx 320K): **15.2–16.5 tok/s**. Threads
    above 12 did not help (15 threads: 13.2). The knobs live in the slot as
@@ -682,16 +682,16 @@ The numbers are from brys with Qwen3.8-Flash-Next `UD-IQ4_XS` (93.7 GB), unless
 a row says otherwise. **brys** means a measured brys experiment. **general**
 means the effect follows from the mechanism and was not timed on brys.
 
-| lever | effect on RAM | trade-off | source |
-|---|---|---|---|
-| `--lazy-mode auto` (default) | offloads the PLE / n-gram table and other large tensors to SSD; `off` → `auto` freed **~46 GB** (`RssFile` 92.2 → 46.0 GB) | none measured; decode rose slightly (11.14 → 12.26 t/s). `on` is identical to `auto` here | brys |
-| context size | the direct KV-RAM knob; Qwen 1M → 512K F16 KV freed **~16 GB** (`RssAnon` 35.7 → 19.9 GB) | a shorter window; keep ≥512K for the current workload | brys |
-| `-ctk q8_0 -ctv q8_0` | halves KV (1M: ~24 → ~12 GiB); at 512K `RssAnon` 19.9 → 13.1 GB | decode is slightly slower (~8.49 → ~7.9 t/s) | brys |
-| `--cache-ram` (default 8192 MiB) | lower it to shrink the prompt cache; `1024` frees RAM. The Qwen entries raise it to **36864** (37 GiB) instead, to stop the constant evictions of the ~5.7 GiB entries | decode is slightly slower (~7.9 t/s at 512K q8_0); a full 37 GiB cache evicts weight pages | brys |
-| `parallel` (slots) | `4` → `1` frees a few GB of per-slot state | loses concurrency; head-of-line blocking returns | brys |
-| MTP draft on the GPU | moves the ~4–6 GB draft head to VRAM, off system RAM | needs a GPU; speeds decode | general |
-| smaller quant | `UD-IQ3_XXS` (82 GB) vs `UD-IQ4_XS` (93.7 GB) frees **~12 GB** | a quality drop (85.4% vs 89.6% top-1) | brys |
-| `mmap` + 8 GiB ZFS ARC cap | weights stay file-backed and reclaimable; the cap stops ZFS from holding a second copy | none for serving; see the [ZFS ARC quirk](#zfs-arc-quirk-required-for-large-contexts) | brys |
+| lever                            | effect on RAM                                                                                                                                                          | trade-off                                                                                  | source  |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------- |
+| `--lazy-mode auto` (default)     | offloads the PLE / n-gram table and other large tensors to SSD; `off` → `auto` freed **~46 GB** (`RssFile` 92.2 → 46.0 GB)                                             | none measured; decode rose slightly (11.14 → 12.26 t/s). `on` is identical to `auto` here  | brys    |
+| context size                     | the direct KV-RAM knob; Qwen 1M → 512K F16 KV freed **~16 GB** (`RssAnon` 35.7 → 19.9 GB)                                                                              | a shorter window; keep ≥512K for the current workload                                      | brys    |
+| `-ctk q8_0 -ctv q8_0`            | halves KV (1M: ~24 → ~12 GiB); at 512K `RssAnon` 19.9 → 13.1 GB                                                                                                        | decode is slightly slower (~8.49 → ~7.9 t/s)                                               | brys    |
+| `--cache-ram` (default 8192 MiB) | lower it to shrink the prompt cache; `1024` frees RAM. The Qwen entries raise it to **36864** (37 GiB) instead, to stop the constant evictions of the ~5.7 GiB entries | decode is slightly slower (~7.9 t/s at 512K q8_0); a full 37 GiB cache evicts weight pages | brys    |
+| `parallel` (slots)               | `4` → `1` frees a few GB of per-slot state                                                                                                                             | loses concurrency; head-of-line blocking returns                                           | brys    |
+| MTP draft on the GPU             | moves the ~4–6 GB draft head to VRAM, off system RAM                                                                                                                   | needs a GPU; speeds decode                                                                 | general |
+| smaller quant                    | `UD-IQ3_XXS` (82 GB) vs `UD-IQ4_XS` (93.7 GB) frees **~12 GB**                                                                                                         | a quality drop (85.4% vs 89.6% top-1)                                                      | brys    |
+| `mmap` + 8 GiB ZFS ARC cap       | weights stay file-backed and reclaimable; the cap stops ZFS from holding a second copy                                                                                 | none for serving; see the [ZFS ARC quirk](#zfs-arc-quirk-required-for-large-contexts)      | brys    |
 
 Notes on the table:
 
@@ -706,7 +706,7 @@ Notes on the table:
 - **The prompt cache is a separate ceiling, not the KV cache.** `--cache-ram`
   (default 8192 MiB) bounds the cross-request prompt cache; when it fills,
   llama-server evicts the oldest entry (the `making room for prompt cache
-  entry` log line). One long Qwen prompt is ~5.7 GiB, so the default held
+entry` log line). One long Qwen prompt is ~5.7 GiB, so the default held
   barely one and evicted constantly. The Qwen entries (`llm-qwen`,
   `llms-frontier`) set `perf.cacheRam = 36864` (37 GiB). The cache grows on
   demand, so the value is a ceiling, not an allocation; a full one still leaves
@@ -862,11 +862,11 @@ The v0.6.0 Vulkan build has
 4 GiB). A manual server at ctx 524288 (YaRN x2), `parallel 4`, `kv-unified`,
 F16 KV, threads 16, MTP `draft-mtp` n-max 5, `--load-mode mmap`, on the W6600:
 
-| `--lazy-mode` | idle VmRSS | RssFile | RssAnon | prefill 1.7K tok | decode 128 tok warm |
-|---|---|---|---|---|---|
-| `off` | 111.2 GB | 92.2 GB | 19.1 GB | 19.70 t/s | 11.14 t/s |
-| `auto` (default) | 65.0 GB | 46.0 GB | 19.1 GB | 19.20 t/s | 12.26 t/s |
-| `on` | 65.0 GB | 46.0 GB | 19.1 GB | 19.19 t/s | 12.69 t/s |
+| `--lazy-mode`    | idle VmRSS | RssFile | RssAnon | prefill 1.7K tok | decode 128 tok warm |
+| ---------------- | ---------- | ------- | ------- | ---------------- | ------------------- |
+| `off`            | 111.2 GB   | 92.2 GB | 19.1 GB | 19.70 t/s        | 11.14 t/s           |
+| `auto` (default) | 65.0 GB    | 46.0 GB | 19.1 GB | 19.20 t/s        | 12.26 t/s           |
+| `on`             | 65.0 GB    | 46.0 GB | 19.1 GB | 19.19 t/s        | 12.69 t/s           |
 
 `auto` and `on` are identical: the default already offloads the same tensors,
 so the served behaviour already keeps the lazy tensors on SSD. Forcing
@@ -1003,19 +1003,19 @@ throughput stays near the single-request ceiling.
 
 Qwen3.8-Flash-Next (`llm-qwen`, 1M ctx, YaRN x4, MTP on the W6600, unified KV):
 
-| p | single decode t/s | agg t/s C=4 | agg t/s C=8 | VmRSS / RssAnon / RssFile | errors |
-|---|---|---|---|---|---|
-| 4 | 9.29-9.35 | 2.01 | 1.65 | ~98-101 / ~37-39 / ~60-61 GB | none |
-| 8 | 7.84 | 1.34 | pathological (>40 min, 0.05 t/s) | 81 / 42.9 / 38.1 GB | none |
-| 16 | 4.24 | timeout 180 s | timeout | 98.8 / 44.8 / 54.0 GB | none |
-| 32 | — | — | — | — | `ggml_abort` at load, HTTP 500 |
+| p   | single decode t/s | agg t/s C=4   | agg t/s C=8                      | VmRSS / RssAnon / RssFile    | errors                         |
+| --- | ----------------- | ------------- | -------------------------------- | ---------------------------- | ------------------------------ |
+| 4   | 9.29-9.35         | 2.01          | 1.65                             | ~98-101 / ~37-39 / ~60-61 GB | none                           |
+| 8   | 7.84              | 1.34          | pathological (>40 min, 0.05 t/s) | 81 / 42.9 / 38.1 GB          | none                           |
+| 16  | 4.24              | timeout 180 s | timeout                          | 98.8 / 44.8 / 54.0 GB        | none                           |
+| 32  | —                 | —             | —                                | —                            | `ggml_abort` at load, HTTP 500 |
 
 DS4 (`llm-ds4`, 320K, DSpark draft on the CPU, unified KV):
 
-| p | single decode t/s | agg t/s C=4 | agg t/s C=8 | VmRSS / RssAnon / RssFile |
-|---|---|---|---|---|
-| 4 | 5.10 | 2.80 | 2.11 | 119 / 24.3 / 94.9 GB |
-| 8 | 4.17 | 2.21 | timeout 900 s | 118.8 / 36.5 / 82.4 GB (3971 faults/5 s) |
+| p   | single decode t/s | agg t/s C=4 | agg t/s C=8   | VmRSS / RssAnon / RssFile                |
+| --- | ----------------- | ----------- | ------------- | ---------------------------------------- |
+| 4   | 5.10              | 2.80        | 2.11          | 119 / 24.3 / 94.9 GB                     |
+| 8   | 4.17              | 2.21        | timeout 900 s | 118.8 / 36.5 / 82.4 GB (3971 faults/5 s) |
 
 Findings:
 
@@ -1078,13 +1078,13 @@ warm second run) shows that deeper drafts help until acceptance falls.
 "Realistic" is a Python merge-function prompt; "control" is a plain count from
 1 to 300.
 
-| n-max | realistic decode t/s | realistic accept / mean len | control decode t/s | control accept |
-|---|---|---|---|---|
-| 1 | 8.13 | 0.980 / 1.98 | 8.15 | 1.000 |
-| 2 (old default) | 8.90 | 0.919 / 2.84 | 9.28 | 1.000 |
-| 3 | 10.42 | 0.893 / 3.68 | 11.38 | 1.000 |
-| **5 (chosen)** | **11.18** | 0.858 / 5.25 | 12.92 | 1.000 |
-| 8 | 8.86 | 0.711 / 6.64 | 13.72 | 1.000 |
+| n-max           | realistic decode t/s | realistic accept / mean len | control decode t/s | control accept |
+| --------------- | -------------------- | --------------------------- | ------------------ | -------------- |
+| 1               | 8.13                 | 0.980 / 1.98                | 8.15               | 1.000          |
+| 2 (old default) | 8.90                 | 0.919 / 2.84                | 9.28               | 1.000          |
+| 3               | 10.42                | 0.893 / 3.68                | 11.38              | 1.000          |
+| **5 (chosen)**  | **11.18**            | 0.858 / 5.25                | 12.92              | 1.000          |
+| 8               | 8.86                 | 0.711 / 6.64                | 13.72              | 1.000          |
 
 `n-max 5` is the best realistic decode (11.18 t/s). `n-max 8` raises control
 throughput (13.72 t/s) but regresses the realistic prompt: acceptance falls to
@@ -1112,11 +1112,11 @@ The model GGUF declares `n_ctx_train = 262144` (256K) and no rope scaling, so a
 context above 256K needs the YaRN flags. Measured on brys with MTP on, parallel
 1 pre-concurrency, threads 16, F16 KV, ZFS ARC 8 GiB:
 
-| ctx | rope | KV | RssFile | RssAnon | RSS | free available | idle maj_fault/s | prefill t/s | decode t/s | coherence | OOM |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| 262144 | none | F16 | 59.7 GiB | 31.8 GiB | 91.4 GiB | 81 GB | 0 | 30.6 | 7.51 | 17*23=391, Paris OK | no |
-| 524288 | yarn x2 | F16 | 59.7 GiB | 40.0 GiB | 99.7 GiB | 73 GB | 0 | 29.3 | 7.58 | OK | no |
-| 1048576 | yarn x4 | F16 | 59.7 GiB | 56.4 GiB | 116.0 GiB | 60 GB | 0 | 30.8 | 9.3 steady | 391, Paris, bat+ball=$0.10 OK | no |
+| ctx     | rope    | KV  | RssFile  | RssAnon  | RSS       | free available | idle maj_fault/s | prefill t/s | decode t/s | coherence                     | OOM |
+| ------- | ------- | --- | -------- | -------- | --------- | -------------- | ---------------- | ----------- | ---------- | ----------------------------- | --- |
+| 262144  | none    | F16 | 59.7 GiB | 31.8 GiB | 91.4 GiB  | 81 GB          | 0                | 30.6        | 7.51       | 17*23=391, Paris OK           | no  |
+| 524288  | yarn x2 | F16 | 59.7 GiB | 40.0 GiB | 99.7 GiB  | 73 GB          | 0                | 29.3        | 7.58       | OK                            | no  |
+| 1048576 | yarn x4 | F16 | 59.7 GiB | 56.4 GiB | 116.0 GiB | 60 GB          | 0                | 30.8        | 9.3 steady | 391, Paris, bat+ball=$0.10 OK | no  |
 
 KV is 24 KiB/token at F16 (12 full-attention layers x 2 KV heads x 256 head_dim
 x 2 x 2 bytes), so 6/12/24 GiB at 256K/512K/1M. F16 KV fits at 1M, so the q8_0
@@ -1164,54 +1164,54 @@ Each row records a config tweak, the resulting server-side `print_timing`
 eval tok/s on DS4 (warm), and the model load time. New results are appended
 at the bottom.
 
-| timestamp | tweak | server eval tok/s | ms/tok | vs prev | client tok/s | load time | note |
-|---|---|---|---|---|---|---|---|
-| 2026-09-05 19:41 | baseline (isolcpus=1-15, threads=16, no cpu-range) | 2.28 | 439 | — | 0.30 | ~1:40 | page-cache cold/churned |
-| 2026-09-05 20:03 | `cpu-range=1-15` + `cpu-strict=1` + `threads=15` | 2.33 | 428 | 0.05 (==) | 0.31 | 1:45 (19:53:20 → 19:55:05) | still cold |
-| 2026-09-05 20:07 | cpu-range same config, run 1 | 3.92 | 255 | ↑ | 0.53 | warm | page cache recovering |
-| 2026-09-05 20:08 | cpu-range same config, run 2 | **5.75** | 174 | ↑ | 0.78 | warm | fully warm → matches 6.5-6.7 baseline |
-| 2026-09-05 20:21 | `transparent_hugepage=always` (reboot), run 1 | 5.03 | 199 | — | 0.34 | cold | still warming |
-| 2026-09-05 20:22 | `transparent_hugepage=always`, run 2 (warm) | 6.37 | 157 | ≈ | 0.82 | warm | no change vs madvise (THP no-op on file mmaps) |
-| 2026-09-05 20:39 | `cpu-range` + `specDraftNMax=4` + `specDraftPrio=2`, run 1 | 3.21 | 312 | ↓ | 0.44 | warm | mean len↑3.95 but still warming |
-| 2026-09-05 20:41 | cpu-range + n_max=4 + prio=2, run 2 (warm) | **4.39** | 228 | **↓ regression** | 0.58 | warm | draft mean len 3.62, acceptance 0.66; HIGHER n_max slower on CPU (matches rohitraj) → REVERT |
-| 2026-09-05 20:50 | revert: cpu-range, DSpark defaults + madvise (reboot), run 1 | 6.21 | 161 | ↑ | 0.41 | cold→warm | confirms revert |
-| 2026-09-05 20:51 | revert confirmed, run 2 (warm) | **6.91** | 145 | ↑↑ NEW BEST | 0.89 | warm | ~86% of ~8 t/s ceiling; DSpark n_max+prio was the regression |
-| 2026-09-06 00:15 | session control (loopback router, threads=15, re-warm) | 6.41 | 156 | ≈ | 6.39 | warm | harness validated; client==server tok/s |
-| 2026-09-06 00:2x | EXPERIMENT 1: `load-mode=mlock` + LimitMEMLOCK=inf (reboot) run a | 7.20 | 139 | ≈ NEW warm peak | 7.17 | warm | mlock DID NOT materialize: 0 bytes locked (ENOMEM on 101 GB; mmap conflict) → effectively control |
-| 2026-09-06 00:2x | EXPERIMENT 1 (mlock), run b | 7.04 | 142 | ≈ | 7.01 | warm | confirms mlock null; \~90% of \~8 t/s ceiling |
-| 2026-09-06 01:0x | EXPERIMENT 2: threads 15→12, cpu-range 1-12 (reboot) r1/2/3 | 6.89/6.88/6.91 | 145 | == | 6.86/6.84/6.88 | warm | dead-flat; bandwidth already saturated at ≤12 cores → no change |
-| 2026-09-06 01:1x | EXPERIMENT 3: `--poll 100` + `--spec-draft-prio 2` (manual server) | (5.79-5.93 client) | — | — | 5.79/5.93 | warm | INCONCLUSIVE: manual harness unreliable/thrashing on loaded box; not attributed |
-| 2026-09-06 01:3x | EXPERIMENT 4: `vm.vfs_cache_pressure` 50→10 (runtime) | 3.11 | 319 | ↓/worse | 3.11 | warm-ish | cache stayed ~50 GB → weights NOT resident; physical RAM capacity is the binding constraint, not reclaim policy |
-| 2026-09-06 02:0x | EXPERIMENT A: ctx 262144→131072 (reboot), warm runs 1-4 / converged | 6.65/6.61/6.68/6.85 → **6.78** | 147 | ≈ (stable) | 7.05/6.62/6.58/6.85 | warm | weights resident throughout (buff/cache ~103-104 GB stable, no 2-4 collapse); halving KV freed headroom → ROBUSTNESS, not higher peak |
-| 2026-09-06 02:3x | EXPERIMENT B: memcg-v2 cap (runtime, competing allocator) — unprotected | 5.28 | 189 | ↓ | 5.27 | warm | default-cgroup `stress-ng --vm-bytes 18G` evicted ~18 GB weights (buff/cache 103→85) → collapse |
-| 2026-09-06 02:3x | EXPERIMENT B: memcg-v2 cap (runtime) — same allocator under `MemoryMax=4G` scope | **6.49** | 154 | ↑ PROTECTED | 6.49 | warm | competitor memcg-OOM-killed in its own scope; weights stayed resident; serving stayed fast → cgroup cap IS the robustness mechanism |
-| 2026-09-06 03:0x | EXPERIMENT C: ik_llama.cpp fork swap | — | — | SKIP | — | — | not drop-in (no router mode, no `--cpu-range`); bandwidth-bound → no peak upside; DSpark syntax differs. Packaging easy (own flake) but moot. Kept upstream llama.cpp |
-| 2026-10-06 12:4x | unified KV: `parallel 4` + `kv-unified on`, ctx 327680 (cold boot `llm-ds4` gen 652) | 2.22 | 451 | — | — | ~3:16 (first load) | **concurrency confirmed**: a short request (8 tok) returned in **3.7 s** while a 256-token request was in flight (121.8 s) — no head-of-line blocking; server logged `n_slots = 4, n_ctx_slot = 327680, kv_unified = 'true'`; DS4 `RssFile` 92.6 GB, **0 idle major faults**, no OOM; DSpark acceptance 0.44 at `parallel 4` (draft still works) |
-| 2026-10-06 | **Qwen3.8-Flash-Next** UD-IQ4_XS, ubatch/batch 1024 (baseline) | 20.1 (prefill) | — | — | — | ~90 s (cold) | model warm on `llm-qwen`; 964 tok / 47.9 s; this row is Qwen, not DS4 |
-| 2026-10-06 | **Qwen3.8-Flash-Next** UD-IQ4_XS, ubatch/batch 4096 | **39.9 (prefill)** | — | ~2x | — | ~90 s (cold) | run 1: 3425 tok / 85.7 s = 39.95; run 2: 3430 tok / 85.9 s = 39.91; decode 300 tok at 4.75 t/s; VmRSS ~86 GB, 0 idle major faults; this row is Qwen, not DS4 |
-| 2026-10-07 | **Qwen3.8-Flash-Next** + llama.cpp **0.4.0 b10809** (control), no MTP | 5.65 | — | — | — | warm | decode 300 tok; prefill 36.6 t/s; RSS 82.3 GiB; 0 idle major faults; this row is Qwen, not DS4 |
-| 2026-10-07 | **Qwen3.8-Flash-Next** + llama.cpp **0.6.0 b11429** (config A), no MTP | 5.81 | — | vs 0.4.0 ≈ | — | warm | decode 300 tok; prefill 37.7 t/s; RSS 81.3 GiB; 0 idle major faults; this row is Qwen, not DS4 |
-| 2026-10-07 | **Qwen3.8-Flash-Next** + llama.cpp **0.6.0 b11429** (config B), MTP on | **9.50** | — | +68% | — | warm | decode 300 tok; prefill 35.2 t/s; MTP acceptance 1.000, mean len 2.99; RSS 87.8 GiB; 0 idle major faults; this row is Qwen, not DS4 |
-| 2026-10-07 | **Qwen3.8-Flash-Next** + llama.cpp **unsloth b11098** (config C), MTP on | **9.56** | — | +69% (≈ B) | — | warm | decode 300 tok; prefill 36.8 t/s; MTP acceptance 1.000, mean len 2.99; RSS 86.6 GiB; 0 idle major faults; short-context fork result, not deployed; this row is Qwen, not DS4 |
-| 2026-10-07 | **Qwen3.8-Flash-Next** + v0.6.0 b11429, MTP on, ctx 262144 (ladder) | 30.6 (prefill) | — | — | — | warm | decode 7.51 t/s; RssFile 59.7 GiB, RssAnon 31.8 GiB, RSS 91.4 GiB, free available 81 GB; 0 idle major faults; no OOM; coherence 17*23=391, Paris OK; this row is Qwen, not DS4 |
-| 2026-10-07 | **Qwen3.8-Flash-Next** + v0.6.0 b11429, MTP on, ctx 524288, YaRN x2 | 29.3 (prefill) | — | — | — | warm | decode 7.58 t/s; RssFile 59.7 GiB, RssAnon 40.0 GiB, RSS 99.7 GiB, free available 73 GB; 0 idle major faults; no OOM; coherence OK; this row is Qwen, not DS4 |
-| 2026-10-07 | **Qwen3.8-Flash-Next** + v0.6.0 b11429, MTP on, ctx 1048576, YaRN x4 (parallel 1, pre-concurrency) | 30.8 (prefill) | — | — | — | warm | decode 9.3 t/s steady; RssFile 59.7 GiB, RssAnon 56.4 GiB, RSS 116.0 GiB, free available 60 GB; 0 idle major faults; no OOM; coherence 391, Paris, bat+ball=$0.10 OK; F16 KV; this row is Qwen, not DS4 |
-| 2026-10-07 | **Qwen MTP** sweep: v0.6.0 b11429, MTP on, ctx 1048576, `spec-draft-n-max 1` | 8.13 | — | — | — | warm | Qwen MTP sweep: realistic decode 8.13 t/s, accept 0.980, mean len 1.98; control decode 8.15 t/s, accept 1.000; this row is Qwen, not DS4 |
-| 2026-10-07 | **Qwen MTP** sweep: `spec-draft-n-max 2` (old default) | 8.90 | — | — | — | warm | Qwen MTP sweep: realistic decode 8.90 t/s, accept 0.919, mean len 2.84; control decode 9.28 t/s, accept 1.000; this row is Qwen, not DS4 |
-| 2026-10-07 | **Qwen MTP** sweep: `spec-draft-n-max 3` | 10.42 | — | — | — | warm | Qwen MTP sweep: realistic decode 10.42 t/s, accept 0.893, mean len 3.68; control decode 11.38 t/s, accept 1.000; this row is Qwen, not DS4 |
-| 2026-10-07 | **Qwen MTP** sweep: `spec-draft-n-max 5` (**chosen**) | **11.18** | — | — | — | warm | Qwen MTP sweep: realistic decode 11.18 t/s, accept 0.858, mean len 5.25; control decode 12.92 t/s, accept 1.000; this row is Qwen, not DS4 |
-| 2026-10-07 | **Qwen MTP** sweep: `spec-draft-n-max 8` | 8.86 | — | — | — | warm | Qwen MTP sweep: realistic decode 8.86 t/s, accept 0.711, mean len 6.64; control decode 13.72 t/s, accept 1.000; regresses the realistic prompt; this row is Qwen, not DS4 |
-| 2026-10-07 | **Qwen MTP** knobs: `spec-draft-prio 2`, and `spec-draft-p-min` 0.5/0.8 | — | — | — | — | warm | prio 2: 11.09 vs 11.18 t/s (noise); p-min 0.5/0.8: accept 0.886/0.908 but mean len 5.16/4.95, net flat or worse; both kept null; this row is Qwen, not DS4 |
-| 2026-10-07 | **Qwen GPU** `llm-qwen-gpu`: Vulkan build, `-ngl 99 -cmoe -nkvo` | 2.01 | — | — | — | warm | decode 2.01 t/s (vs 9.13 CPU same prompt); prefill 44.7 t/s; accept 0.708; VRAM 7.30 GiB; GPU busy 11%/75%; the 24 GiB CPU KV makes every attention step cross PCIe; this row is Qwen, not DS4 |
-| 2026-10-07 | **Qwen GPU** partial `-ngl 8` / `-ngl 20` (no `-cmoe`) | 5.89 / 5.04 | — | — | — | warm | decode 5.89/5.04 t/s; prefill 14.4/14.6 t/s; VRAM ~7.9 GiB; still slower than CPU; this row is Qwen, not DS4 |
-| 2026-10-07 | **Qwen GPU** `llm-qwen-gpu` final: `n-gpu-layers-draft 99` + `device Vulkan0` | **10.82** | — | — | — | warm | decode 10.82 t/s (**+18.5%** vs 9.13 CPU same prompt); prefill 16.9 t/s; accept 0.731, mean len 4.55; RSS 95.3 GB, VRAM 6.40 GiB, GPU busy 12%/99%; 0 idle major faults, no OOM; MTP draft head on the W6600, main model + KV on CPU; this row is Qwen, not DS4 |
-| 2026-10-07 | **Qwen3.8-Flash-Next** + v0.6.0 b11429, MTP on, ctx 1048576, `parallel 4` + `kv-unified on` (**deployed**) | 14.16 | — | vs `parallel 1` ≈ | — | warm | **concurrency**: short request returned in **2.4-4.6 s** while a 400-token request was in flight; at `parallel 1` the same short request waited **51.5 s** (serialised); server logged `n_slots = 4, n_ctx_slot = 1048576, kv_unified = 'true'`; counting-300 decode 14.16 t/s vs 13.44 at `parallel 1`; prose-300 4.97 t/s (acceptance-bound); prefill ~22.4 vs 18.0 t/s; VmRSS ~101 GB, RssAnon ~37.5 GB, VmSwap 0, no OOM; QSA indexer cache is a per-slot side buffer, so the Kagi single-slot claim is false; this row is Qwen, not DS4 |
-| 2026-10-19 | **server-driven context + all-model sweep** (`llms-frontier`, llama-swap) | — | — | — | — | cold/warm | `/v1/models` = 34 ids, all 34 carry `context_length` (from each model's `capabilities.context`); the discovery plugin set `limit.context` on all 34; a one-line prompt to every id returned **34/34 HTTP 200, 0 failures**; cold-load wall time 1-8 s (small), 30-50 s (large surveyed), ~120 s (DS4/Qwen cold); `*-reasoning` and the frontier models return empty content (output in the reasoning field); tier aliases removed (56 → 34 ids) |
+| timestamp        | tweak                                                                                                      | server eval tok/s              | ms/tok | vs prev           | client tok/s        | load time                  | note                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ---------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------ | ------ | ----------------- | ------------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-05 19:41 | baseline (isolcpus=1-15, threads=16, no cpu-range)                                                         | 2.28                           | 439    | —                 | 0.30                | ~1:40                      | page-cache cold/churned                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| 2026-09-05 20:03 | `cpu-range=1-15` + `cpu-strict=1` + `threads=15`                                                           | 2.33                           | 428    | 0.05 (==)         | 0.31                | 1:45 (19:53:20 → 19:55:05) | still cold                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| 2026-09-05 20:07 | cpu-range same config, run 1                                                                               | 3.92                           | 255    | ↑                 | 0.53                | warm                       | page cache recovering                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| 2026-09-05 20:08 | cpu-range same config, run 2                                                                               | **5.75**                       | 174    | ↑                 | 0.78                | warm                       | fully warm → matches 6.5-6.7 baseline                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| 2026-09-05 20:21 | `transparent_hugepage=always` (reboot), run 1                                                              | 5.03                           | 199    | —                 | 0.34                | cold                       | still warming                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| 2026-09-05 20:22 | `transparent_hugepage=always`, run 2 (warm)                                                                | 6.37                           | 157    | ≈                 | 0.82                | warm                       | no change vs madvise (THP no-op on file mmaps)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| 2026-09-05 20:39 | `cpu-range` + `specDraftNMax=4` + `specDraftPrio=2`, run 1                                                 | 3.21                           | 312    | ↓                 | 0.44                | warm                       | mean len↑3.95 but still warming                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| 2026-09-05 20:41 | cpu-range + n_max=4 + prio=2, run 2 (warm)                                                                 | **4.39**                       | 228    | **↓ regression**  | 0.58                | warm                       | draft mean len 3.62, acceptance 0.66; HIGHER n_max slower on CPU (matches rohitraj) → REVERT                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| 2026-09-05 20:50 | revert: cpu-range, DSpark defaults + madvise (reboot), run 1                                               | 6.21                           | 161    | ↑                 | 0.41                | cold→warm                  | confirms revert                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| 2026-09-05 20:51 | revert confirmed, run 2 (warm)                                                                             | **6.91**                       | 145    | ↑↑ NEW BEST       | 0.89                | warm                       | ~86% of ~8 t/s ceiling; DSpark n_max+prio was the regression                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| 2026-09-06 00:15 | session control (loopback router, threads=15, re-warm)                                                     | 6.41                           | 156    | ≈                 | 6.39                | warm                       | harness validated; client==server tok/s                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| 2026-09-06 00:2x | EXPERIMENT 1: `load-mode=mlock` + LimitMEMLOCK=inf (reboot) run a                                          | 7.20                           | 139    | ≈ NEW warm peak   | 7.17                | warm                       | mlock DID NOT materialize: 0 bytes locked (ENOMEM on 101 GB; mmap conflict) → effectively control                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| 2026-09-06 00:2x | EXPERIMENT 1 (mlock), run b                                                                                | 7.04                           | 142    | ≈                 | 7.01                | warm                       | confirms mlock null; \~90% of \~8 t/s ceiling                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| 2026-09-06 01:0x | EXPERIMENT 2: threads 15→12, cpu-range 1-12 (reboot) r1/2/3                                                | 6.89/6.88/6.91                 | 145    | ==                | 6.86/6.84/6.88      | warm                       | dead-flat; bandwidth already saturated at ≤12 cores → no change                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| 2026-09-06 01:1x | EXPERIMENT 3: `--poll 100` + `--spec-draft-prio 2` (manual server)                                         | (5.79-5.93 client)             | —      | —                 | 5.79/5.93           | warm                       | INCONCLUSIVE: manual harness unreliable/thrashing on loaded box; not attributed                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| 2026-09-06 01:3x | EXPERIMENT 4: `vm.vfs_cache_pressure` 50→10 (runtime)                                                      | 3.11                           | 319    | ↓/worse           | 3.11                | warm-ish                   | cache stayed ~50 GB → weights NOT resident; physical RAM capacity is the binding constraint, not reclaim policy                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| 2026-09-06 02:0x | EXPERIMENT A: ctx 262144→131072 (reboot), warm runs 1-4 / converged                                        | 6.65/6.61/6.68/6.85 → **6.78** | 147    | ≈ (stable)        | 7.05/6.62/6.58/6.85 | warm                       | weights resident throughout (buff/cache ~103-104 GB stable, no 2-4 collapse); halving KV freed headroom → ROBUSTNESS, not higher peak                                                                                                                                                                                                                                                                                                                                                                                                        |
+| 2026-09-06 02:3x | EXPERIMENT B: memcg-v2 cap (runtime, competing allocator) — unprotected                                    | 5.28                           | 189    | ↓                 | 5.27                | warm                       | default-cgroup `stress-ng --vm-bytes 18G` evicted ~18 GB weights (buff/cache 103→85) → collapse                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| 2026-09-06 02:3x | EXPERIMENT B: memcg-v2 cap (runtime) — same allocator under `MemoryMax=4G` scope                           | **6.49**                       | 154    | ↑ PROTECTED       | 6.49                | warm                       | competitor memcg-OOM-killed in its own scope; weights stayed resident; serving stayed fast → cgroup cap IS the robustness mechanism                                                                                                                                                                                                                                                                                                                                                                                                          |
+| 2026-09-06 03:0x | EXPERIMENT C: ik_llama.cpp fork swap                                                                       | —                              | —      | SKIP              | —                   | —                          | not drop-in (no router mode, no `--cpu-range`); bandwidth-bound → no peak upside; DSpark syntax differs. Packaging easy (own flake) but moot. Kept upstream llama.cpp                                                                                                                                                                                                                                                                                                                                                                        |
+| 2026-10-06 12:4x | unified KV: `parallel 4` + `kv-unified on`, ctx 327680 (cold boot `llm-ds4` gen 652)                       | 2.22                           | 451    | —                 | —                   | ~3:16 (first load)         | **concurrency confirmed**: a short request (8 tok) returned in **3.7 s** while a 256-token request was in flight (121.8 s) — no head-of-line blocking; server logged `n_slots = 4, n_ctx_slot = 327680, kv_unified = 'true'`; DS4 `RssFile` 92.6 GB, **0 idle major faults**, no OOM; DSpark acceptance 0.44 at `parallel 4` (draft still works)                                                                                                                                                                                             |
+| 2026-10-06       | **Qwen3.8-Flash-Next** UD-IQ4_XS, ubatch/batch 1024 (baseline)                                             | 20.1 (prefill)                 | —      | —                 | —                   | ~90 s (cold)               | model warm on `llm-qwen`; 964 tok / 47.9 s; this row is Qwen, not DS4                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| 2026-10-06       | **Qwen3.8-Flash-Next** UD-IQ4_XS, ubatch/batch 4096                                                        | **39.9 (prefill)**             | —      | ~2x               | —                   | ~90 s (cold)               | run 1: 3425 tok / 85.7 s = 39.95; run 2: 3430 tok / 85.9 s = 39.91; decode 300 tok at 4.75 t/s; VmRSS ~86 GB, 0 idle major faults; this row is Qwen, not DS4                                                                                                                                                                                                                                                                                                                                                                                 |
+| 2026-10-07       | **Qwen3.8-Flash-Next** + llama.cpp **0.4.0 b10809** (control), no MTP                                      | 5.65                           | —      | —                 | —                   | warm                       | decode 300 tok; prefill 36.6 t/s; RSS 82.3 GiB; 0 idle major faults; this row is Qwen, not DS4                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| 2026-10-07       | **Qwen3.8-Flash-Next** + llama.cpp **0.6.0 b11429** (config A), no MTP                                     | 5.81                           | —      | vs 0.4.0 ≈        | —                   | warm                       | decode 300 tok; prefill 37.7 t/s; RSS 81.3 GiB; 0 idle major faults; this row is Qwen, not DS4                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| 2026-10-07       | **Qwen3.8-Flash-Next** + llama.cpp **0.6.0 b11429** (config B), MTP on                                     | **9.50**                       | —      | +68%              | —                   | warm                       | decode 300 tok; prefill 35.2 t/s; MTP acceptance 1.000, mean len 2.99; RSS 87.8 GiB; 0 idle major faults; this row is Qwen, not DS4                                                                                                                                                                                                                                                                                                                                                                                                          |
+| 2026-10-07       | **Qwen3.8-Flash-Next** + llama.cpp **unsloth b11098** (config C), MTP on                                   | **9.56**                       | —      | +69% (≈ B)        | —                   | warm                       | decode 300 tok; prefill 36.8 t/s; MTP acceptance 1.000, mean len 2.99; RSS 86.6 GiB; 0 idle major faults; short-context fork result, not deployed; this row is Qwen, not DS4                                                                                                                                                                                                                                                                                                                                                                 |
+| 2026-10-07       | **Qwen3.8-Flash-Next** + v0.6.0 b11429, MTP on, ctx 262144 (ladder)                                        | 30.6 (prefill)                 | —      | —                 | —                   | warm                       | decode 7.51 t/s; RssFile 59.7 GiB, RssAnon 31.8 GiB, RSS 91.4 GiB, free available 81 GB; 0 idle major faults; no OOM; coherence 17*23=391, Paris OK; this row is Qwen, not DS4                                                                                                                                                                                                                                                                                                                                                               |
+| 2026-10-07       | **Qwen3.8-Flash-Next** + v0.6.0 b11429, MTP on, ctx 524288, YaRN x2                                        | 29.3 (prefill)                 | —      | —                 | —                   | warm                       | decode 7.58 t/s; RssFile 59.7 GiB, RssAnon 40.0 GiB, RSS 99.7 GiB, free available 73 GB; 0 idle major faults; no OOM; coherence OK; this row is Qwen, not DS4                                                                                                                                                                                                                                                                                                                                                                                |
+| 2026-10-07       | **Qwen3.8-Flash-Next** + v0.6.0 b11429, MTP on, ctx 1048576, YaRN x4 (parallel 1, pre-concurrency)         | 30.8 (prefill)                 | —      | —                 | —                   | warm                       | decode 9.3 t/s steady; RssFile 59.7 GiB, RssAnon 56.4 GiB, RSS 116.0 GiB, free available 60 GB; 0 idle major faults; no OOM; coherence 391, Paris, bat+ball=$0.10 OK; F16 KV; this row is Qwen, not DS4                                                                                                                                                                                                                                                                                                                                      |
+| 2026-10-07       | **Qwen MTP** sweep: v0.6.0 b11429, MTP on, ctx 1048576, `spec-draft-n-max 1`                               | 8.13                           | —      | —                 | —                   | warm                       | Qwen MTP sweep: realistic decode 8.13 t/s, accept 0.980, mean len 1.98; control decode 8.15 t/s, accept 1.000; this row is Qwen, not DS4                                                                                                                                                                                                                                                                                                                                                                                                     |
+| 2026-10-07       | **Qwen MTP** sweep: `spec-draft-n-max 2` (old default)                                                     | 8.90                           | —      | —                 | —                   | warm                       | Qwen MTP sweep: realistic decode 8.90 t/s, accept 0.919, mean len 2.84; control decode 9.28 t/s, accept 1.000; this row is Qwen, not DS4                                                                                                                                                                                                                                                                                                                                                                                                     |
+| 2026-10-07       | **Qwen MTP** sweep: `spec-draft-n-max 3`                                                                   | 10.42                          | —      | —                 | —                   | warm                       | Qwen MTP sweep: realistic decode 10.42 t/s, accept 0.893, mean len 3.68; control decode 11.38 t/s, accept 1.000; this row is Qwen, not DS4                                                                                                                                                                                                                                                                                                                                                                                                   |
+| 2026-10-07       | **Qwen MTP** sweep: `spec-draft-n-max 5` (**chosen**)                                                      | **11.18**                      | —      | —                 | —                   | warm                       | Qwen MTP sweep: realistic decode 11.18 t/s, accept 0.858, mean len 5.25; control decode 12.92 t/s, accept 1.000; this row is Qwen, not DS4                                                                                                                                                                                                                                                                                                                                                                                                   |
+| 2026-10-07       | **Qwen MTP** sweep: `spec-draft-n-max 8`                                                                   | 8.86                           | —      | —                 | —                   | warm                       | Qwen MTP sweep: realistic decode 8.86 t/s, accept 0.711, mean len 6.64; control decode 13.72 t/s, accept 1.000; regresses the realistic prompt; this row is Qwen, not DS4                                                                                                                                                                                                                                                                                                                                                                    |
+| 2026-10-07       | **Qwen MTP** knobs: `spec-draft-prio 2`, and `spec-draft-p-min` 0.5/0.8                                    | —                              | —      | —                 | —                   | warm                       | prio 2: 11.09 vs 11.18 t/s (noise); p-min 0.5/0.8: accept 0.886/0.908 but mean len 5.16/4.95, net flat or worse; both kept null; this row is Qwen, not DS4                                                                                                                                                                                                                                                                                                                                                                                   |
+| 2026-10-07       | **Qwen GPU** `llm-qwen-gpu`: Vulkan build, `-ngl 99 -cmoe -nkvo`                                           | 2.01                           | —      | —                 | —                   | warm                       | decode 2.01 t/s (vs 9.13 CPU same prompt); prefill 44.7 t/s; accept 0.708; VRAM 7.30 GiB; GPU busy 11%/75%; the 24 GiB CPU KV makes every attention step cross PCIe; this row is Qwen, not DS4                                                                                                                                                                                                                                                                                                                                               |
+| 2026-10-07       | **Qwen GPU** partial `-ngl 8` / `-ngl 20` (no `-cmoe`)                                                     | 5.89 / 5.04                    | —      | —                 | —                   | warm                       | decode 5.89/5.04 t/s; prefill 14.4/14.6 t/s; VRAM ~7.9 GiB; still slower than CPU; this row is Qwen, not DS4                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| 2026-10-07       | **Qwen GPU** `llm-qwen-gpu` final: `n-gpu-layers-draft 99` + `device Vulkan0`                              | **10.82**                      | —      | —                 | —                   | warm                       | decode 10.82 t/s (**+18.5%** vs 9.13 CPU same prompt); prefill 16.9 t/s; accept 0.731, mean len 4.55; RSS 95.3 GB, VRAM 6.40 GiB, GPU busy 12%/99%; 0 idle major faults, no OOM; MTP draft head on the W6600, main model + KV on CPU; this row is Qwen, not DS4                                                                                                                                                                                                                                                                              |
+| 2026-10-07       | **Qwen3.8-Flash-Next** + v0.6.0 b11429, MTP on, ctx 1048576, `parallel 4` + `kv-unified on` (**deployed**) | 14.16                          | —      | vs `parallel 1` ≈ | —                   | warm                       | **concurrency**: short request returned in **2.4-4.6 s** while a 400-token request was in flight; at `parallel 1` the same short request waited **51.5 s** (serialised); server logged `n_slots = 4, n_ctx_slot = 1048576, kv_unified = 'true'`; counting-300 decode 14.16 t/s vs 13.44 at `parallel 1`; prose-300 4.97 t/s (acceptance-bound); prefill ~22.4 vs 18.0 t/s; VmRSS ~101 GB, RssAnon ~37.5 GB, VmSwap 0, no OOM; QSA indexer cache is a per-slot side buffer, so the Kagi single-slot claim is false; this row is Qwen, not DS4 |
+| 2026-10-19       | **server-driven context + all-model sweep** (`llms-frontier`, llama-swap)                                  | —                              | —      | —                 | —                   | cold/warm                  | `/v1/models` = 34 ids, all 34 carry `context_length` (from each model's `capabilities.context`); the discovery plugin set `limit.context` on all 34; a one-line prompt to every id returned **34/34 HTTP 200, 0 failures**; cold-load wall time 1-8 s (small), 30-50 s (large surveyed), ~120 s (DS4/Qwen cold); `*-reasoning` and the frontier models return empty content (output in the reasoning field); tier aliases removed (56 → 34 ids)                                                                                              |
 
 **Key mechanism finding (2026-09-05 ~20:10):** the DS4 weights are `mmap`-backed and go
 fully resident as **file-backed page cache** (~77 GB `RssFile` on the worker), plus ~14 GB
-anonymous (`RssAnon`) → ~92 GB RSS on a 128 GB host. It does NOT re-read on demand *after the
-first warm pass*, BUT if anything pressures page cache (a nix build/copy, a stream bench, erm:
+anonymous (`RssAnon`) → ~92 GB RSS on a 128 GB host. It does NOT re-read on demand _after the
+first warm pass_, BUT if anything pressures page cache (a nix build/copy, a stream bench, erm:
 essentially any large alloc), the kernel evicts those file pages and llama re-reads them from
 disk on next decode → throughput collapses to disk-bound (~2-3 t/s, even 0.9). Once warm and
 undisturbed it holds ~5.75-6.7 t/s. **Thus the 2.28/0.9 "regressions" were page-cache churn,
@@ -1224,17 +1224,18 @@ read 6.51 and 6.69 t/s at 19:14/19:16, then 2.28 at 19:41 right after nix-daemon
 disk reads began. The mmap'd ~103 GB GGUF re-reads from disk if page cache is evicted
 → disk-bound. Treat any single bench that follows a build/copy as invalid; re-warm and re-run.
 
-**Root cause refined (2026-09-06, follow-up session):** the recurring *active-serving* oscillation
+**Root cause refined (2026-09-06, follow-up session):** the recurring _active-serving_ oscillation
 (2.9→4.5→4.8→6.9 t/s on the router as `buff/cache` cycles 48→75→62→50 GB) is a **physical RAM
 capacity** problem, not a VM-policy one. The ~90 GB working set (77 GB file weights + ~14 GB KV/anon
-+ OS) on 128 GB leaves only ~1-3 GB free; during generation the KV/anon allocations force the kernel
-to reclaim weight file pages because there is no headroom. Verified NULL levers: `--load-mode mlock`
-(ENOMEM locking ~101 GB + `mmap` conflict), `vm.vfs_cache_pressure` 50→10 (no help, weights still
-not resident), threads 15→12 (identical), `--poll`/`--spec-draft-prio` (inconclusive / unreliable
-manual harness). Practical warm peak is **~6.9-7.2 t/s ≈ 87-90 % of the ~8 t/s bandwidth ceiling**;
-the only remaining lever flagged for a future session is **memory cgroup v2 isolation** of the
-serving unit (so spiky allocs fail in their own cgroup and cannot reclaim the weights), or shrinking
-the working set via a smaller `contextSize`.
+
+- OS) on 128 GB leaves only ~1-3 GB free; during generation the KV/anon allocations force the kernel
+  to reclaim weight file pages because there is no headroom. Verified NULL levers: `--load-mode mlock`
+  (ENOMEM locking ~101 GB + `mmap` conflict), `vm.vfs_cache_pressure` 50→10 (no help, weights still
+  not resident), threads 15→12 (identical), `--poll`/`--spec-draft-prio` (inconclusive / unreliable
+  manual harness). Practical warm peak is **~6.9-7.2 t/s ≈ 87-90 % of the ~8 t/s bandwidth ceiling**;
+  the only remaining lever flagged for a future session is **memory cgroup v2 isolation** of the
+  serving unit (so spiky allocs fail in their own cgroup and cannot reclaim the weights), or shrinking
+  the working set via a smaller `contextSize`.
 
 **Resolved (2026-10-02):** the "physical RAM capacity" framing above was incomplete. The missing
 allocator was the **ZFS ARC** (default `c_max` ≈ half of RAM), which grew to ~65 GB and competed for
@@ -1263,16 +1264,16 @@ before each run, so every run starts cold. `first` is a fresh 201-token prompt
 right after load; `steady` is a 300-token decode, temp 0; `prefill` is 1821
 tokens.
 
-| build / flag | load | first request | steady decode | prefill 1.8K |
-|---|---|---|---|---|
-| v0.6.0 (default) | 140.2 s | 141.8 s (1.42 t/s) | 4.20 t/s | 19.6 t/s |
-| master (default) | 140.3 s | 143.5 s (1.40 t/s) | 4.20 t/s | 19.9 t/s |
-| master + `--no-mmap-prefetch` | 84.0 s | 191.7 s (1.05 t/s) | 2.36 t/s | 15.6 t/s |
-| master + `--load-mode none` | — | crashed (W6600 OOM) | — | — |
+| build / flag                  | load    | first request       | steady decode | prefill 1.8K |
+| ----------------------------- | ------- | ------------------- | ------------- | ------------ |
+| v0.6.0 (default)              | 140.2 s | 141.8 s (1.42 t/s)  | 4.20 t/s      | 19.6 t/s     |
+| master (default)              | 140.3 s | 143.5 s (1.40 t/s)  | 4.20 t/s      | 19.9 t/s     |
+| master + `--no-mmap-prefetch` | 84.0 s  | 191.7 s (1.05 t/s)  | 2.36 t/s      | 15.6 t/s     |
+| master + `--load-mode none`   | —       | crashed (W6600 OOM) | —             | —            |
 
 Verdict: **neither a newer master nor `--no-mmap-prefetch` removes the stall.**
 The stall is cold-read bound, not prefetch bound. The load-time prefetch warms
-the page cache, so it *helps* the first request; skipping it moves the cost from
+the page cache, so it _helps_ the first request; skipping it moves the cost from
 load into the first request and lowers steady decode. The total time to the first
 token is about the same either way (v0.6.0 282 s, noprefetch 276 s).
 `--load-mode none` fails: the W6600 reports `amdgpu: Not enough memory for
@@ -1296,13 +1297,13 @@ session; `bin/libggml-blas.so` is the only difference.
 
 Qwen3.8-Flash-Next, manual server:
 
-| fresh prefill | BLAS | no-BLAS | ratio |
-|---|---|---|---|
-| 124 tok (first after load) | 1.03 t/s | 8.0-10.3 t/s | ~10x |
-| 124 tok (second) | 1.10 t/s | 16.6-17.7 t/s | ~16x |
-| 1762 tok | 19.35 t/s | 26.1-30.8 t/s | ~1.6x |
-| 14047 tok | 32.69 t/s | 38.15 t/s | ~1.2x |
-| decode 300 tok | 4.35 t/s | 5.66 t/s | ~1.3x |
+| fresh prefill              | BLAS      | no-BLAS       | ratio |
+| -------------------------- | --------- | ------------- | ----- |
+| 124 tok (first after load) | 1.03 t/s  | 8.0-10.3 t/s  | ~10x  |
+| 124 tok (second)           | 1.10 t/s  | 16.6-17.7 t/s | ~16x  |
+| 1762 tok                   | 19.35 t/s | 26.1-30.8 t/s | ~1.6x |
+| 14047 tok                  | 32.69 t/s | 38.15 t/s     | ~1.2x |
+| decode 300 tok             | 4.35 t/s  | 5.66 t/s      | ~1.3x |
 
 Load was 82 s (BLAS) and 77-80 s (no-BLAS). The earlier inconsistency is
 resolved: **the catastrophic stall is specific to small fresh prompts.** A
@@ -1311,11 +1312,11 @@ and 16K. BLAS is still slower at every size, and decode is about 30% slower.
 
 DeepSeek V4 Flash (IQ3_XXS, DSpark draft, 327680 ctx), manual server, warm:
 
-| fresh prefill | BLAS | no-BLAS |
-|---|---|---|
-| 127 tok | 0.58 t/s | 1.91 t/s |
-| 1807 tok | 13.92 t/s | 31.26 t/s |
-| decode 300 tok | 4.97 t/s | 4.84 t/s |
+| fresh prefill  | BLAS      | no-BLAS   |
+| -------------- | --------- | --------- |
+| 127 tok        | 0.58 t/s  | 1.91 t/s  |
+| 1807 tok       | 13.92 t/s | 31.26 t/s |
+| decode 300 tok | 4.97 t/s  | 4.84 t/s  |
 
 The same small-prompt stall appears on DS4 (3.3x), the 2K prefill is 2.2x
 faster, and decode is unchanged.
@@ -1327,12 +1328,12 @@ combined entry serves DS4 through the same build).
 
 Served `llms-frontier` (no-BLAS), measured after a cold boot (generation 693):
 
-| metric | value |
-|---|---|
-| first request (cold boot) | 169 s wall = ~141 s cold model load + 27.7 s first prefill (123 tok, 4.43 t/s) |
-| warm fresh 124-tok prefill | 7.0 s (17.45 t/s) |
-| warm fresh 1761-tok prefill | 65.4 s (26.92 t/s) |
-| warm decode 300 tok | 4.22 t/s |
+| metric                      | value                                                                          |
+| --------------------------- | ------------------------------------------------------------------------------ |
+| first request (cold boot)   | 169 s wall = ~141 s cold model load + 27.7 s first prefill (123 tok, 4.43 t/s) |
+| warm fresh 124-tok prefill  | 7.0 s (17.45 t/s)                                                              |
+| warm fresh 1761-tok prefill | 65.4 s (26.92 t/s)                                                             |
+| warm decode 300 tok         | 4.22 t/s                                                                       |
 
 Before, the served first request after a load was ~130 s, dominated by the BLAS
 prefill stall (a 124-token prefill at 1.03 t/s). The warm first-request prefill

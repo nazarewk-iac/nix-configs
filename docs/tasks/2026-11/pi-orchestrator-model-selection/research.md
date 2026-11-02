@@ -15,12 +15,12 @@ Measured on `oams` against `brys`, 2026-11-01.
 Every endpoint below answers `200` **from a client**, through the same TLS proxy and CA the LLM
 client already trusts (`https://brys.priv.nb.net.int.kdn.im`), with the existing bearer key.
 
-| Path | Content | Use for picking a model |
-|---|---|---|
-| `/running` | `{"running":[{"model","state","cmd",...}]}` — the models **loaded right now** | the only source of truth for "would this switch cost a cold load?" |
-| `/v1/models` | every alias with `context_length` and `meta.llamaswap.modelID` | alias → served model id → real context |
-| `/metrics` | 16 Prometheus families, below | live resource headroom |
-| `/health` | readiness | liveness only |
+| Path         | Content                                                                       | Use for picking a model                                            |
+| ------------ | ----------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `/running`   | `{"running":[{"model","state","cmd",...}]}` — the models **loaded right now** | the only source of truth for "would this switch cost a cold load?" |
+| `/v1/models` | every alias with `context_length` and `meta.llamaswap.modelID`                | alias → served model id → real context                             |
+| `/metrics`   | 16 Prometheus families, below                                                 | live resource headroom                                             |
+| `/health`    | readiness                                                                     | liveness only                                                      |
 
 `/api/info` and `/api/activity` are **404** on this build. Do not design against them.
 
@@ -50,7 +50,7 @@ matters: the two questions have different sources.
 - whether a model accepts images,
 - the purpose alias (`chat-std-fast`) versus a base id.
 
-What it does **not** have is what each alias is *good at* beyond the alias name, nor any live state.
+What it does **not** have is what each alias is _good at_ beyond the alias name, nor any live state.
 `data/llm.nix` carries `aliases`, `contextSize`, `gpu`, `vision`, and a per-tool `pi` sub-config,
 but **no capability description** and **no cost hint** (GPU vs CPU, expected tokens/second).
 
@@ -59,16 +59,16 @@ but **no capability description** and **no cost hint** (GPU vs CPU, expected tok
 A swap is not free. From this repo's own measurements
 (`docs/tasks/2026-10/llama-swap-concurrency/sets.research.md`, `hosts/brys/performance.md`):
 
-| Model class | Cold load | Notes |
-|---|---|---|
-| frontier on CPU (Qwen3.8-Flash-Next 1M ctx) | **~90 s** | `--ctx-size 1048576`, YaRN, q8_0 KV |
-| dense CPU 27B (`qwen3.8-27b`) | tens of seconds | CPU-bound |
-| small GPU (≤3.8b) | **1–3 s** | fits the 8 GiB W6600 |
-| mid CPU MoE (`lfm2.5-24b-a2b`) | ~10–20 s | CPU, contended |
+| Model class                                 | Cold load       | Notes                               |
+| ------------------------------------------- | --------------- | ----------------------------------- |
+| frontier on CPU (Qwen3.8-Flash-Next 1M ctx) | **~90 s**       | `--ctx-size 1048576`, YaRN, q8_0 KV |
+| dense CPU 27B (`qwen3.8-27b`)               | tens of seconds | CPU-bound                           |
+| small GPU (≤3.8b)                           | **1–3 s**       | fits the 8 GiB W6600                |
+| mid CPU MoE (`lfm2.5-24b-a2b`)              | ~10–20 s        | CPU, contended                      |
 
 And a CPU model **resident beside the frontier halves its throughput** (the same research file).
 So "pick the best model" is a **scheduling** decision, not a lookup: a request that asks for a
-32k CPU model while the frontier is loaded pays a load *and* steals the frontier's bandwidth.
+32k CPU model while the frontier is loaded pays a load _and_ steals the frontier's bandwidth.
 
 ## 4. Observed orchestrator failure this task must prevent
 
@@ -82,9 +82,9 @@ have skipped both failed runs. That is the concrete acceptance target.
 
 ## 5. Options considered
 
-| # | Option | Verdict |
-|---|---|---|
-| A | A `select-model` extension tool that returns live fleet state; the orchestrator calls it before delegating | **chosen** — matches the researched API, no new daemon |
-| B | Bake the decision into each agent file (`model:`) | static, wrong under load changes |
-| C | A local router/proxy that picks server-side | out of scope: the fleet already has one (llama-swap matrix); a second router would fight it |
-| D | Rely on the model to reason from `/v1/models` alone | it has no live state and cannot see `/running` |
+| #   | Option                                                                                                     | Verdict                                                                                     |
+| --- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| A   | A `select-model` extension tool that returns live fleet state; the orchestrator calls it before delegating | **chosen** — matches the researched API, no new daemon                                      |
+| B   | Bake the decision into each agent file (`model:`)                                                          | static, wrong under load changes                                                            |
+| C   | A local router/proxy that picks server-side                                                                | out of scope: the fleet already has one (llama-swap matrix); a second router would fight it |
+| D   | Rely on the model to reason from `/v1/models` alone                                                        | it has no live state and cannot see `/running`                                              |

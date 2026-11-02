@@ -15,17 +15,17 @@ tool category, through mcpsnoop.
 
 These are the only tools Claude Code sees directly (~14, regardless of backend count):
 
-| Tool | Role | Notes |
-|---|---|---|
-| `gateway_list_servers` | selector | Lists backends, status, circuit-breaker state. Safe, read-only. |
-| `gateway_list_tools` | selector | Lists tools for one/all backends, with schemas. Safe, read-only. |
-| `gateway_search_tools` | selector | Ranked keyword search over tool schemas. Safe, read-only. |
-| `gateway_invoke` | **dispatcher** | Routes `(server, tool, arguments)` to a backend. All actual work funnels through this one tool name — see [Allow-listing limitation](#allow-listing-limitation) below. |
-| `gateway_run_playbook` | action | Executes a named multi-step playbook. Not used by any backend here; no playbooks defined. |
+| Tool                                                                    | Role            | Notes                                                                                                                                                                         |
+| ----------------------------------------------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `gateway_list_servers`                                                  | selector        | Lists backends, status, circuit-breaker state. Safe, read-only.                                                                                                               |
+| `gateway_list_tools`                                                    | selector        | Lists tools for one/all backends, with schemas. Safe, read-only.                                                                                                              |
+| `gateway_search_tools`                                                  | selector        | Ranked keyword search over tool schemas. Safe, read-only.                                                                                                                     |
+| `gateway_invoke`                                                        | **dispatcher**  | Routes `(server, tool, arguments)` to a backend. All actual work funnels through this one tool name — see [Allow-listing limitation](#allow-listing-limitation) below.        |
+| `gateway_run_playbook`                                                  | action          | Executes a named multi-step playbook. Not used by any backend here; no playbooks defined.                                                                                     |
 | `gateway_get_profile` / `gateway_list_profiles` / `gateway_set_profile` | selector/action | Routing profiles (tool/backend allow-deny sets). No profiles are currently defined (`gateway_list_profiles` → empty); see [Routing profiles](#routing-profiles-unused) below. |
-| `gateway_get_stats` / `gateway_cost_report` | selector | Invocation counts, latency, token/cost estimates. Safe, read-only. |
-| `gateway_list_disabled_capabilities` / `gateway_reload_capabilities` | selector/action | Circuit-breaker introspection and capability-YAML hot-reload. Not relevant to this repo (no capability YAMLs defined). |
-| `gateway_kill_server` / `gateway_revive_server` | action | Manual backend restart — used for reloading `.devenv/mcp-gateway.yaml` after a devenv rebuild without restarting the Claude Code session (see mcp-setup.md Lifecycle). |
+| `gateway_get_stats` / `gateway_cost_report`                             | selector        | Invocation counts, latency, token/cost estimates. Safe, read-only.                                                                                                            |
+| `gateway_list_disabled_capabilities` / `gateway_reload_capabilities`    | selector/action | Circuit-breaker introspection and capability-YAML hot-reload. Not relevant to this repo (no capability YAMLs defined).                                                        |
+| `gateway_kill_server` / `gateway_revive_server`                         | action          | Manual backend restart — used for reloading `.devenv/mcp-gateway.yaml` after a devenv rebuild without restarting the Claude Code session (see mcp-setup.md Lifecycle).        |
 
 ## Backend tools
 
@@ -169,7 +169,7 @@ look identical to the permission UI as one `gateway_invoke` call.
 1. **PreToolUse + `systemMessage`** (first attempt). A PreToolUse hook attached a readable
    preview via `hookSpecificOutput.systemMessage`, leaving `permissionDecision` unset so the
    normal allow/ask/deny flow proceeds untouched. Empirically, `systemMessage` renders only
-   *after* the approval dialog resolves (as a `⎿ PreToolUse:<matcher> says: ...` annotation
+   _after_ the approval dialog resolves (as a `⎿ PreToolUse:<matcher> says: ...` annotation
    attached to the tool-call result), never inside the dialog itself before the user answers —
    so this didn't solve the actual problem (an unreadable dialog at decision time).
 2. **`surfaced_tools`** (second attempt). mcp-gateway supports pinning specific backend tools
@@ -178,7 +178,7 @@ look identical to the permission UI as one `gateway_invoke` call.
    the approval dialog. Confirmed the config schema against the gateway's own Rust source
    (`SurfacedToolConfig`, `MetaMcpConfig`) — our config was correct. But empirically unreliable:
    `resolve_surfaced_tool` requires the backend's tool cache to already be populated when the
-   *first* `tools/list` is served, and stdio warm-start (`spawn_warm_start_task`) fires
+   _first_ `tools/list` is served, and stdio warm-start (`spawn_warm_start_task`) fires
    asynchronously right as the read loop starts — a race that appears to be lost every time on a
    fresh session, since backend subprocesses need real wall-clock time to spawn and respond.
    There's no config flag to block startup on warm-start completing. Abandoned.
@@ -188,7 +188,7 @@ look identical to the permission UI as one `gateway_invoke` call.
    hook builds a readable preview (via the same per-backend plugin package as design 1) and
    shows it in a native Tk window (title + key/value metadata fields + plain-text body +
    Allow/Deny buttons), blocking until the user answers. Confirmed working live. This replaces —
-   rather than customizes — the dialog, since no hook output field can rewrite the *native*
+   rather than customizes — the dialog, since no hook output field can rewrite the _native_
    dialog's own rendering of tool name/arguments (confirmed empirically and against current
    docs).
 

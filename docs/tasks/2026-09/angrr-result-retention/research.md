@@ -81,10 +81,10 @@ A prototype was built with `pkgs.writeShellApplication`, so it also passed the `
 
 Behaviour against all 12 real matching out-links on the Darwin host:
 
-| verdict | out-links |
-|---|---|
-| keep (exit 1) | `result-solo-brys-1`, `result-solo-brys-1-dist`, `result6-etra`, `result`, `result-fd`, `result-fix`, `result-hm-vfkit`, `result-probe`, `result-qemu-example`, `result-vfkit-example` |
-| monitor (exit 0) | `result-fd-1`, `result-fix-1` |
+| verdict          | out-links                                                                                                                                                                              |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| keep (exit 1)    | `result-solo-brys-1`, `result-solo-brys-1-dist`, `result6-etra`, `result`, `result-fd`, `result-fix`, `result-hm-vfkit`, `result-probe`, `result-qemu-example`, `result-vfkit-example` |
+| monitor (exit 0) | `result-fd-1`, `result-fix-1`                                                                                                                                                          |
 
 Exactly the intended shape. The newest member of every group survives, and only the superseded
 `-1` generations stay prunable.
@@ -94,13 +94,13 @@ runs. That sits well inside the 1000 ms default, so `--filter-timeout` needs no 
 
 ## What needs no further change
 
-| Root kind | Why it is already safe |
-|---|---|
-| devenv roots | No policy matches them, so `run.rs:156` keeps them forever. |
-| System profiles | The `system` profile policy keeps the union of 5 newest, under 14 days, current and booted. |
+| Root kind                | Why it is already safe                                                                                                                                                         |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| devenv roots             | No policy matches them, so `run.rs:156` keeps them forever.                                                                                                                    |
+| System profiles          | The `system` profile policy keeps the union of 5 newest, under 14 days, current and booted.                                                                                    |
 | Home Manager generations | On the Darwin host, home-manager is a nix-darwin module, so its closure sits inside the system generation. `~/.local/state/home-manager/gcroots` holds the only separate root. |
-| User profiles | The `user` profile policy carries `enable = false`, and the `ignore-prefixes-in-home` defaults cover the rest. |
-| The `direnv` policy | It matches `/\.direnv/`, and this repository produces no such root. |
+| User profiles            | The `user` profile policy carries `enable = false`, and the `ignore-prefixes-in-home` defaults cover the rest.                                                                 |
+| The `direnv` policy      | It matches `/\.direnv/`, and this repository produces no such root.                                                                                                            |
 
 ## One item left unverified
 

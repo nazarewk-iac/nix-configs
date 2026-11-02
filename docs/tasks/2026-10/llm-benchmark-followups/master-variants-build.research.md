@@ -31,16 +31,16 @@ not test on `brys` here. A later task does that.
 - Each variant built in about 5 minutes (292 s to 296 s). The whole set built in
   20 minutes. No patch failed.
 - The flag check is `llama-server --help | grep -iE
-  "moe-stream|pin-hot|no-mmap-prefetch|load-mode"`.
+"moe-stream|pin-hot|no-mmap-prefetch|load-mode"`.
 
 ## Results
 
-| Variant | Patch | Builds? | Store path | Flags present | Note |
-|---|---|---|---|---|---|
-| `llama-cpp-master-vulkan` | none (control) | yes, exit 0 | `/nix/store/is3isrxbkmbmkw82nb82v90nrf5yimz1-llama-cpp-master-vulkan-0.6.0-unstable-2026-10-08` | `--load-mode` | The base source builds. A patched failure below is not the base source. |
-| `llama-cpp-master-noprefetch-vulkan` | `29250-no-mmap-prefetch.patch` | yes, exit 0 | `/nix/store/36laj0v3hicp7gk9ilbv4s7r9a0fa76i-llama-cpp-master-noprefetch-vulkan-0.6.0-unstable-2026-10-08` | `--no-mmap-prefetch`, `--load-mode` | The patch applies. |
-| `llama-cpp-master-moe-stream-vulkan` | `25294-moe-stream.patch` | yes, exit 0 | `/nix/store/zr6mk40vdj1aspw1r4ms7cklsmkj7927-llama-cpp-master-moe-stream-vulkan-0.6.0-unstable-2026-10-08` | `--moe-stream`, `--moe-stream-cache <NG\|Ns>`, `--moe-stream-io-threads N`, `--moe-stream-direct`, `--load-mode` | The manual port applies. |
-| `llama-cpp-master-pin-hot-experts-vulkan` | `26414-pin-hot-experts.patch` | yes, exit 0 | `/nix/store/s19bsy6yi4p9l114d49m5qqq4v9cqvz9-llama-cpp-master-pin-hot-experts-vulkan-0.6.0-unstable-2026-10-08` | `--pin-hot-experts N`, `--pin-hot-experts-budget-mib N`, `--pin-hot-experts-stats-interval N`, `--load-mode mmap+pin` | The manual port applies. |
+| Variant                                   | Patch                          | Builds?     | Store path                                                                                                      | Flags present                                                                                                         | Note                                                                    |
+| ----------------------------------------- | ------------------------------ | ----------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `llama-cpp-master-vulkan`                 | none (control)                 | yes, exit 0 | `/nix/store/is3isrxbkmbmkw82nb82v90nrf5yimz1-llama-cpp-master-vulkan-0.6.0-unstable-2026-10-08`                 | `--load-mode`                                                                                                         | The base source builds. A patched failure below is not the base source. |
+| `llama-cpp-master-noprefetch-vulkan`      | `29250-no-mmap-prefetch.patch` | yes, exit 0 | `/nix/store/36laj0v3hicp7gk9ilbv4s7r9a0fa76i-llama-cpp-master-noprefetch-vulkan-0.6.0-unstable-2026-10-08`      | `--no-mmap-prefetch`, `--load-mode`                                                                                   | The patch applies.                                                      |
+| `llama-cpp-master-moe-stream-vulkan`      | `25294-moe-stream.patch`       | yes, exit 0 | `/nix/store/zr6mk40vdj1aspw1r4ms7cklsmkj7927-llama-cpp-master-moe-stream-vulkan-0.6.0-unstable-2026-10-08`      | `--moe-stream`, `--moe-stream-cache <NG\|Ns>`, `--moe-stream-io-threads N`, `--moe-stream-direct`, `--load-mode`      | The manual port applies.                                                |
+| `llama-cpp-master-pin-hot-experts-vulkan` | `26414-pin-hot-experts.patch`  | yes, exit 0 | `/nix/store/s19bsy6yi4p9l114d49m5qqq4v9cqvz9-llama-cpp-master-pin-hot-experts-vulkan-0.6.0-unstable-2026-10-08` | `--pin-hot-experts N`, `--pin-hot-experts-budget-mib N`, `--pin-hot-experts-stats-interval N`, `--load-mode mmap+pin` | The manual port applies.                                                |
 
 Every binary reports the same version:
 

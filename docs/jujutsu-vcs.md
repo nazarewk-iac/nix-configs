@@ -61,32 +61,32 @@ tip avoids. Full convention:
 
 ### Revset cheatsheet (the six you need first)
 
-| Revset | Meaning |
-|---|---|
-| `@` | the working copy |
-| `@-` | the working copy's parent |
-| `x::` | `x` and its descendants |
-| `::x` | `x` and its ancestors |
-| `x..y` | commits in `y` but not in `x` |
+| Revset                  | Meaning                                      |
+| ----------------------- | -------------------------------------------- |
+| `@`                     | the working copy                             |
+| `@-`                    | the working copy's parent                    |
+| `x::`                   | `x` and its descendants                      |
+| `::x`                   | `x` and its ancestors                        |
+| `x..y`                  | commits in `y` but not in `x`                |
 | `trunk()` / `mutable()` | the main-branch tip / all rewritable commits |
 
 `x::` (descendants) is not the same as `x..` (a range). Do not confuse them.
 
 ### git → jj command map
 
-| git | jj |
-|---|---|
-| `git status` | `jj status` |
-| `git commit` / `--amend` | `jj describe` (message) · `jj commit` · amend: `jj edit <rev>` … edit … then `jj new <tip>` to return to an empty tip |
-| `git checkout <branch>` / switch | `jj new <rev>` or `jj edit <rev>` — no checkout; you edit a commit directly |
-| `git switch -c <name>` | `jj bookmark create <name>` |
-| `git stash` | park: `jj new`; resume: `jj edit <parked>` (no separate stash/pop) |
-| `git rebase` | `jj rebase -s/-b/-r <rev> -d <dest>` |
-| `git cherry-pick` | `jj duplicate` |
-| `git reset --hard` | `jj restore` (files) · `jj abandon` (whole commit) |
-| `git revert` | `jj revert` |
-| `git reflog` | `jj op log` + `jj undo` / `jj op restore` |
-| `git push` | `jj git push` |
+| git                              | jj                                                                                                                    |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `git status`                     | `jj status`                                                                                                           |
+| `git commit` / `--amend`         | `jj describe` (message) · `jj commit` · amend: `jj edit <rev>` … edit … then `jj new <tip>` to return to an empty tip |
+| `git checkout <branch>` / switch | `jj new <rev>` or `jj edit <rev>` — no checkout; you edit a commit directly                                           |
+| `git switch -c <name>`           | `jj bookmark create <name>`                                                                                           |
+| `git stash`                      | park: `jj new`; resume: `jj edit <parked>` (no separate stash/pop)                                                    |
+| `git rebase`                     | `jj rebase -s/-b/-r <rev> -d <dest>`                                                                                  |
+| `git cherry-pick`                | `jj duplicate`                                                                                                        |
+| `git reset --hard`               | `jj restore` (files) · `jj abandon` (whole commit)                                                                    |
+| `git revert`                     | `jj revert`                                                                                                           |
+| `git reflog`                     | `jj op log` + `jj undo` / `jj op restore`                                                                             |
+| `git push`                       | `jj git push`                                                                                                         |
 
 ### Safe push checklist
 
@@ -266,15 +266,15 @@ itself: `jj file show -r @ x | … > x` truncates `x` before the read.
 
 **Mechanism, precisely:** a `git worktree` registers a new checkout under this repo's own
 `.git/worktrees/<name>/` and gives it a `.git` file that points back there. But it does **not**
-get its own `.jj` directory. It is colocated with, and shares, the *single* `.jj` store that the
+get its own `.jj` directory. It is colocated with, and shares, the _single_ `.jj` store that the
 main checkout uses. `jj workspace list` run from either directory shows only one workspace
 (`default`), and `jj log -r @ --no-graph -T change_id` run from both directories resolves to the
 identical change id. There is no real working-copy isolation, despite the separate directory.
 
 **Why this is dangerous:** concurrent work in that worktree and the main working copy means two
-processes snapshot the *same* jj change (`@`) at the same time — a straight race on jj's
+processes snapshot the _same_ jj change (`@`) at the same time — a straight race on jj's
 working-copy state. **Confirmed in this repo on 2026-07-29:** a worktree-isolated subagent was
-created nested *inside* the repo tree at `.claude/worktrees/<agent-id>/` (itself a second mistake
+created nested _inside_ the repo tree at `.claude/worktrees/<agent-id>/` (itself a second mistake
 — a worktree must never live under the tree it checks out) while unrelated edits continued in the
 main working copy. Three files just written/formatted in the main checkout (`devenv.nix`,
 `modules/slots/zellij/default.nix`, `.agents/skills/zellij/SKILL.md`) were truncated to 0 bytes
@@ -293,7 +293,7 @@ jj file show --revision @ --at-op <op-id> <path> > /tmp/recovered-<name>
 **What works:** a real second jj workspace. Read the next section before you create one — the
 creation command is only step one of five, and two of the remaining steps stop a silent failure.
 
-Before you trust *any* claimed isolation (a tool's `isolation: "worktree"` flag, a manually
+Before you trust _any_ claimed isolation (a tool's `isolation: "worktree"` flag, a manually
 created directory, anything), verify it is real:
 
 ```bash
@@ -401,10 +401,10 @@ repo has no `master`: `revspec 'master' not found`.
 
 Measured against a dirty dependency tree, with devenv 2.2.3:
 
-| url form | `locked` node | evaluated value |
-|---|---|---|
-| unpinned `git+file:///<abs>` | `{type, url}` — nothing volatile | the **uncommitted** working-tree value |
-| `?ref=<REV>&rev=<REV>` | `{ref: <REV>, type, url}` — `rev` stripped | the **committed** value |
+| url form                     | `locked` node                              | evaluated value                        |
+| ---------------------------- | ------------------------------------------ | -------------------------------------- |
+| unpinned `git+file:///<abs>` | `{type, url}` — nothing volatile           | the **uncommitted** working-tree value |
+| `?ref=<REV>&rev=<REV>`       | `{ref: <REV>, type, url}` — `rev` stripped | the **committed** value                |
 
 So the unpinned form reads the trunk's working tree on every evaluation, which re-introduces the
 `prek` / `git write-tree` race. The pin ignores the working tree. Do not read a missing `rev` in
@@ -493,6 +493,7 @@ jj new
 ```
 
 **Before you declare done:**
+
 ```bash
 # check for stray commits (orphans from rebases, or undescribed changes left in the middle):
 jj log -r '::(@ | bookmarks())' --no-graph -T 'change_id.short() ++ " " ++ bookmarks ++ " " ++ description.first_line() ++ "\n"'
@@ -519,32 +520,32 @@ placement, pull upstream in, frozen-vs-mutable, forbidden rewrites) live in
 
 ### Golden-path index
 
-| Operation | Golden path | Detail |
-|---|---|---|
-| Read a file at a revision | `jj file show -r <rev> <path>` | [test_inspect.md](../checks/jj-experiments/test_inspect.md) |
-| Diff a commit / a range | `jj diff -r <id>` · `jj diff --from <X> --to <Y>` (`--stat`, `--name-only`) | [test_inspect.md](../checks/jj-experiments/test_inspect.md) |
-| Read the graph | `jj log --no-pager -r '<revset>' -T '<template>'` | [test_inspect.md](../checks/jj-experiments/test_inspect.md) |
-| Amend in place | `jj edit <id>` … edit … `jj new <tip>` | [test_amend.md](../checks/jj-experiments/test_amend.md) |
-| Fold a fixup down | `jj squash --into <id>` | [test_amend.md](../checks/jj-experiments/test_amend.md) |
-| Reword | `jj describe -r <id> -m '…'` | [test_amend.md](../checks/jj-experiments/test_amend.md) |
-| Auto-route fixups | `jj absorb` | [test_squash_absorb.md](../checks/jj-experiments/test_squash_absorb.md) |
-| Squash chosen files | `jj squash --from @ --into <id> -- <files>` | [test_squash_absorb.md](../checks/jj-experiments/test_squash_absorb.md) |
-| Reorder two changes | `jj rebase -r <A> --insert-after <B>` | [test_restructure.md](../checks/jj-experiments/test_restructure.md) |
-| Split a committed commit | `jj split -r <id> -m '…' -- <files>` | [test_restructure.md](../checks/jj-experiments/test_restructure.md) |
-| Abandon a change | `jj abandon <id>` | [test_restructure.md](../checks/jj-experiments/test_restructure.md) |
-| Revert-forward (pushed) | `jj revert -r <id> --insert-after <tip>` | [test_restructure.md](../checks/jj-experiments/test_restructure.md) |
-| Duplicate (cherry-pick) | `jj duplicate <id> --onto <dest>` | [test_restructure.md](../checks/jj-experiments/test_restructure.md) |
-| Drop a redundant merge parent | `jj simplify-parents -r <merge>` | [test_restructure.md](../checks/jj-experiments/test_restructure.md) |
-| Discard one file / all of `@` | `jj restore <path>` · `jj restore` | [test_recover.md](../checks/jj-experiments/test_recover.md) |
-| Restore a file from a revision | `jj restore --from <rev> <path>` | [test_recover.md](../checks/jj-experiments/test_recover.md) |
-| Roll back | `jj undo` (last op) · `jj op log` + `jj op restore <op>` (multi-step) | [test_recover.md](../checks/jj-experiments/test_recover.md) |
-| Bookmark CRUD | `jj bookmark create/set[/--allow-backwards]/delete/list --all-remotes` | [test_bookmarks.md](../checks/jj-experiments/test_bookmarks.md) |
-| Push / fetch a bookmark | `jj git push --remote <r> --bookmark <b>` · `jj git fetch --remote <r>` | [test_bookmarks.md](../checks/jj-experiments/test_bookmarks.md) |
-| Push a change to a branch/fork | fetch · `jj rebase -b @ -d <branch>@<remote>` · set · `jj git push -b <branch>` | [test_push.md](../checks/jj-experiments/test_push.md) |
-| Inspect what you fetched | `jj op show @` · `jj log -r '@..main@<remote>'` (all incoming) · `jj log -r 'main@<remote>..@ & ~empty()'` (divergence) | [test_rebase.md](../checks/jj-experiments/test_rebase.md) |
-| Merge in incoming changes | `jj new <mine> <incoming-tip> -m 'chore(upstream): merge'` | [test_rebase.md](../checks/jj-experiments/test_rebase.md) |
-| Untrack a file | add to `.gitignore`, then `jj file untrack <path>` | [test_bookmarks.md](../checks/jj-experiments/test_bookmarks.md) |
-| Detect / resolve a conflict | `jj log -r 'conflicts()'` → edit to merged content → snapshot | [test_conflicts.md](../checks/jj-experiments/test_conflicts.md) |
+| Operation                      | Golden path                                                                                                             | Detail                                                                  |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Read a file at a revision      | `jj file show -r <rev> <path>`                                                                                          | [test_inspect.md](../checks/jj-experiments/test_inspect.md)             |
+| Diff a commit / a range        | `jj diff -r <id>` · `jj diff --from <X> --to <Y>` (`--stat`, `--name-only`)                                             | [test_inspect.md](../checks/jj-experiments/test_inspect.md)             |
+| Read the graph                 | `jj log --no-pager -r '<revset>' -T '<template>'`                                                                       | [test_inspect.md](../checks/jj-experiments/test_inspect.md)             |
+| Amend in place                 | `jj edit <id>` … edit … `jj new <tip>`                                                                                  | [test_amend.md](../checks/jj-experiments/test_amend.md)                 |
+| Fold a fixup down              | `jj squash --into <id>`                                                                                                 | [test_amend.md](../checks/jj-experiments/test_amend.md)                 |
+| Reword                         | `jj describe -r <id> -m '…'`                                                                                            | [test_amend.md](../checks/jj-experiments/test_amend.md)                 |
+| Auto-route fixups              | `jj absorb`                                                                                                             | [test_squash_absorb.md](../checks/jj-experiments/test_squash_absorb.md) |
+| Squash chosen files            | `jj squash --from @ --into <id> -- <files>`                                                                             | [test_squash_absorb.md](../checks/jj-experiments/test_squash_absorb.md) |
+| Reorder two changes            | `jj rebase -r <A> --insert-after <B>`                                                                                   | [test_restructure.md](../checks/jj-experiments/test_restructure.md)     |
+| Split a committed commit       | `jj split -r <id> -m '…' -- <files>`                                                                                    | [test_restructure.md](../checks/jj-experiments/test_restructure.md)     |
+| Abandon a change               | `jj abandon <id>`                                                                                                       | [test_restructure.md](../checks/jj-experiments/test_restructure.md)     |
+| Revert-forward (pushed)        | `jj revert -r <id> --insert-after <tip>`                                                                                | [test_restructure.md](../checks/jj-experiments/test_restructure.md)     |
+| Duplicate (cherry-pick)        | `jj duplicate <id> --onto <dest>`                                                                                       | [test_restructure.md](../checks/jj-experiments/test_restructure.md)     |
+| Drop a redundant merge parent  | `jj simplify-parents -r <merge>`                                                                                        | [test_restructure.md](../checks/jj-experiments/test_restructure.md)     |
+| Discard one file / all of `@`  | `jj restore <path>` · `jj restore`                                                                                      | [test_recover.md](../checks/jj-experiments/test_recover.md)             |
+| Restore a file from a revision | `jj restore --from <rev> <path>`                                                                                        | [test_recover.md](../checks/jj-experiments/test_recover.md)             |
+| Roll back                      | `jj undo` (last op) · `jj op log` + `jj op restore <op>` (multi-step)                                                   | [test_recover.md](../checks/jj-experiments/test_recover.md)             |
+| Bookmark CRUD                  | `jj bookmark create/set[/--allow-backwards]/delete/list --all-remotes`                                                  | [test_bookmarks.md](../checks/jj-experiments/test_bookmarks.md)         |
+| Push / fetch a bookmark        | `jj git push --remote <r> --bookmark <b>` · `jj git fetch --remote <r>`                                                 | [test_bookmarks.md](../checks/jj-experiments/test_bookmarks.md)         |
+| Push a change to a branch/fork | fetch · `jj rebase -b @ -d <branch>@<remote>` · set · `jj git push -b <branch>`                                         | [test_push.md](../checks/jj-experiments/test_push.md)                   |
+| Inspect what you fetched       | `jj op show @` · `jj log -r '@..main@<remote>'` (all incoming) · `jj log -r 'main@<remote>..@ & ~empty()'` (divergence) | [test_rebase.md](../checks/jj-experiments/test_rebase.md)               |
+| Merge in incoming changes      | `jj new <mine> <incoming-tip> -m 'chore(upstream): merge'`                                                              | [test_rebase.md](../checks/jj-experiments/test_rebase.md)               |
+| Untrack a file                 | add to `.gitignore`, then `jj file untrack <path>`                                                                      | [test_bookmarks.md](../checks/jj-experiments/test_bookmarks.md)         |
+| Detect / resolve a conflict    | `jj log -r 'conflicts()'` → edit to merged content → snapshot                                                           | [test_conflicts.md](../checks/jj-experiments/test_conflicts.md)         |
 
 ### Notes and gotchas
 
@@ -555,7 +556,7 @@ placement, pull upstream in, frozen-vs-mutable, forbidden rewrites) live in
   build forward instead. To undo a pushed change, revert-forward with `jj revert`.
 - `jj absorb` sends each hunk to the mutable ancestor that last touched those lines. It skips
   immutable ancestors and leaves ambiguous hunks in `@`. Use explicit `jj squash --from/--into --
-  <files>` when you need a specific target.
+<files>` when you need a specific target.
 - `jj file untrack` needs the path gitignored first, or the next snapshot re-adds it. The
   subcommand is `jj file untrack`, not `jj untrack`.
 - `jj bookmark set` refuses a backward or sideways move without `--allow-backwards`.
@@ -564,7 +565,7 @@ placement, pull upstream in, frozen-vs-mutable, forbidden rewrites) live in
   content and running any jj command to snapshot. Never run the interactive `jj resolve` in an
   agent — it opens a merge tool and hangs.
 - After `jj edit <interior commit>`, a plain `jj new` makes a child of that commit; run `jj new
-  <tip>` to return to the tip.
+<tip>` to return to the tip.
 
 ### Branch and fork topology
 
@@ -657,7 +658,7 @@ jj git push --remote=<remote> -b <branch>
 - **Move your work, not the incoming.** You cannot rebase the fetched tip under your work when it is
   immutable: `main@<remote>` (`trunk()`, always) or an untracked bookmark — `jj rebase -r … --insert-before @`
   is refused. Rebase your own mutable stack (`-b @`) or one change (`-r <tip>`) onto it instead. (The
-  insert *does* work on a **tracked, non-trunk feature branch**: `jj bookmark track feat@<remote>` first.)
+  insert _does_ work on a **tracked, non-trunk feature branch**: `jj bookmark track feat@<remote>` first.)
 - **A stale push is rejected; a post-fetch push can clobber.** With force-with-lease, a push made
   **before** you fetch the moved remote is **rejected** ("stale info") — the real guard. Only **after**
   a fetch does a bare push move the bookmark **sideways** and discard the remote's commit. So fetch,

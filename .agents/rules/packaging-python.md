@@ -59,18 +59,18 @@ mkPythonScript {
 
 ## Key parameters of `mkPythonScript`
 
-| Parameter | Default | Notes |
-|---|---|---|
-| `src` | required | Use `lib.fileset.toSource` to include only `.py` files |
-| `name` | required | Binary name; also the package name |
-| `python` | required | e.g. `pkgs.python314` |
-| `pythonModule` | `""` | If set, runs `python -m <module>`; otherwise runs `scriptFile` directly |
-| `scriptFile` | auto | Defaults to `src/<name>.py` if it exists, else `scriptFileText` |
-| `scriptFileText` | `""` | Inline script text (alternative to a file) |
-| `requirementsFileText` | `""` | pip-style requirements (one package per line, no version pins needed) |
-| `requirementsFile` | auto | Path to `requirements.txt`; auto-detected from `src` |
-| `runtimeDeps` | `[]` | Non-Python binaries to add to PATH via `makeBinaryWrapper` |
-| `makeWrapperArgs` | `[]` | Extra `makeWrapper` arguments |
+| Parameter              | Default  | Notes                                                                   |
+| ---------------------- | -------- | ----------------------------------------------------------------------- |
+| `src`                  | required | Use `lib.fileset.toSource` to include only `.py` files                  |
+| `name`                 | required | Binary name; also the package name                                      |
+| `python`               | required | e.g. `pkgs.python314`                                                   |
+| `pythonModule`         | `""`     | If set, runs `python -m <module>`; otherwise runs `scriptFile` directly |
+| `scriptFile`           | auto     | Defaults to `src/<name>.py` if it exists, else `scriptFileText`         |
+| `scriptFileText`       | `""`     | Inline script text (alternative to a file)                              |
+| `requirementsFileText` | `""`     | pip-style requirements (one package per line, no version pins needed)   |
+| `requirementsFile`     | auto     | Path to `requirements.txt`; auto-detected from `src`                    |
+| `runtimeDeps`          | `[]`     | Non-Python binaries to add to PATH via `makeBinaryWrapper`              |
+| `makeWrapperArgs`      | `[]`     | Extra `makeWrapper` arguments                                           |
 
 ## Notes
 

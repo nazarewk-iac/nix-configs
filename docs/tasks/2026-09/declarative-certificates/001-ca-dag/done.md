@@ -28,13 +28,13 @@ The option set is identical in all four classes, so one module serves each of `n
 
 All commands exit 0:
 
-| Command | Result |
-|---|---|
-| `nix build --no-eval-cache -L '.#checks.x86_64-linux.den-eval-certificates'` | pass |
-| `nix build --no-eval-cache -L '.#checks.x86_64-linux.standalone-aspects'` | pass |
-| `nix build --no-eval-cache -L '.#checks.x86_64-linux.den-eval-coverage'` | pass |
-| `nix build --no-eval-cache -L '.#checks.x86_64-linux.den-eval-guards'` | pass |
-| `nix build --no-eval-cache -L '.#checks.x86_64-linux.bundle-core'` | pass |
+| Command                                                                      | Result |
+| ---------------------------------------------------------------------------- | ------ |
+| `nix build --no-eval-cache -L '.#checks.x86_64-linux.den-eval-certificates'` | pass   |
+| `nix build --no-eval-cache -L '.#checks.x86_64-linux.standalone-aspects'`    | pass   |
+| `nix build --no-eval-cache -L '.#checks.x86_64-linux.den-eval-coverage'`     | pass   |
+| `nix build --no-eval-cache -L '.#checks.x86_64-linux.den-eval-guards'`       | pass   |
+| `nix build --no-eval-cache -L '.#checks.x86_64-linux.bundle-core'`           | pass   |
 
 `checks/den-mvp/assertions/certificates.nix` holds one bare-consumer subject per class plus a
 declared root and intermediate, and the `instantiatedBy` row for `ca-dag`.

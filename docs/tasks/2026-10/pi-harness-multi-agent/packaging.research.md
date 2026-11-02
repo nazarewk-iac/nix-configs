@@ -11,12 +11,12 @@ timestamp: 2026-10-28T11:45:00+01:00
 Research date: 2026-10-28. Read-only on the repo; no build was run.
 Versions in play:
 
-| Thing | Version | Source |
-|---|---|---|
-| nixpkgs in this repo (`.flake.patches/nixpkgs/repo`) | `pi-coding-agent` 1.1.0 | `.flake.patches/nixpkgs/repo/pkgs/by-name/pi/pi-coding-agent/package.nix` |
-| nixpkgs pinned by the flake | rev `256551e45f63`, lastModified 2026-08-26 | `flake.lock` |
-| nixpkgs master / nixos-unstable (fetched) | `pi-coding-agent` 1.4.0 | raw.githubusercontent.com/NixOS/nixpkgs/{master,nixos-unstable}/…/pi-coding-agent/package.nix |
-| upstream latest | `v1.4.0`, released 2026-10-21 | `packages/coding-agent/CHANGELOG.md:1` |
+| Thing                                                | Version                                     | Source                                                                                        |
+| ---------------------------------------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| nixpkgs in this repo (`.flake.patches/nixpkgs/repo`) | `pi-coding-agent` 1.1.0                     | `.flake.patches/nixpkgs/repo/pkgs/by-name/pi/pi-coding-agent/package.nix`                     |
+| nixpkgs pinned by the flake                          | rev `256551e45f63`, lastModified 2026-08-26 | `flake.lock`                                                                                  |
+| nixpkgs master / nixos-unstable (fetched)            | `pi-coding-agent` 1.4.0                     | raw.githubusercontent.com/NixOS/nixpkgs/{master,nixos-unstable}/…/pi-coding-agent/package.nix |
+| upstream latest                                      | `v1.4.0`, released 2026-10-21               | `packages/coding-agent/CHANGELOG.md:1`                                                        |
 
 ## 1. The bump path (1.1.0 → 1.4.0)
 
@@ -47,10 +47,10 @@ option, hook, `preConfigure`/`buildPhase` line, or `meta` field differs.
 
 Workspaces at each tag (GitHub tree API, `git/trees/<tag>?recursive=1`):
 
-| tag | packages/ |
-|---|---|
+| tag    | packages/                                                                                                    |
+| ------ | ------------------------------------------------------------------------------------------------------------ |
 | v1.1.0 | agent, ai, chord, client, codemode, coding-agent, durable, env, evals, mcp, protocol, server, telemetry, tui |
-| v1.4.0 | agent, ai, chord, codemode, coding-agent, durable, env, evals, mcp, telemetry, tui |
+| v1.4.0 | agent, ai, chord, codemode, coding-agent, durable, env, evals, mcp, telemetry, tui                           |
 
 `client`, `protocol` and `server` were removed between the tags. `postInstall`
 does `rm "$nm/$pkg"` (no `-f`), so keeping `pi-client`/`pi-protocol` in the loop
@@ -61,7 +61,7 @@ match what nixpkgs master ships.
 
 The CHANGELOG entry "Removed `npm-shrinkwrap.json` from the published package"
 sits under `## [1.0.0] - 2026-10-01` (CHANGELOG line 322) — i.e. **before**
-1.1.0. It refers to the *published npm tarball*, not the git tree. Neither tag
+1.1.0. It refers to the _published npm tarball_, not the git tree. Neither tag
 has a root `npm-shrinkwrap.json`; both have `package-lock.json` (tree listing,
 `shrinkwrap: []` for both tags). `buildNpmPackage` therefore hashed
 `package-lock.json` at 1.1.0 and still does at 1.4.0. `npmDepsHash` semantics are
@@ -69,17 +69,17 @@ unchanged; only its value moves.
 
 ### What the derivation still gets right at 1.4.0 (checked, not assumed)
 
-* `modelData` mechanism: `packages/ai` `build:offline` is byte-identical at both
+- `modelData` mechanism: `packages/ai` `build:offline` is byte-identical at both
   tags (`check:model-data && tsc && rm -rf dist/providers/data && cp -r
-  src/providers/data dist/providers/data`). The published `pi-ai-1.4.0.tgz`
+src/providers/data dist/providers/data`). The published `pi-ai-1.4.0.tgz`
   (837 kB, fetched) contains `package/dist/providers/data/*.json`, so
   `tar --strip-components=4` into `packages/ai/src/providers/data` still lands
   the files flat in the right place.
-* `build:offline` chain at 1.4.0 builds telemetry, chord, tui, codemode, mcp, ai
+- `build:offline` chain at 1.4.0 builds telemetry, chord, tui, codemode, mcp, ai
   (`build:offline`), durable, env, agent, coding-agent.
-* `bin.pi` is `dist/bundle/cli.js` at both tags, and the coding-agent `build`
+- `bin.pi` is `dist/bundle/cli.js` at both tags, and the coding-agent `build`
   runs `scripts/build-coding-agent-bundle.mjs` (esbuild). Unchanged shape.
-* `engines.node` is `>=22.19.0` at both tags; nixpkgs' build node satisfies it.
+- `engines.node` is `>=22.19.0` at both tags; nixpkgs' build node satisfies it.
 
 ### Route A (preferred, least maintenance): let nixpkgs carry it
 
@@ -110,16 +110,16 @@ See §2. Use this only when the flake's nixpkgs must stay pinned.
 
 Repo conventions found:
 
-* `packages/<name>/` holds a derivation; consumed two ways:
-  * as `pkgs.kdn.<name>` from `packages/default.nix`
+- `packages/<name>/` holds a derivation; consumed two ways:
+  - as `pkgs.kdn.<name>` from `packages/default.nix`
     (`llama-cpp`, `ik-llama-cpp`, `kagi-cli/package.nix`, `lnav/package.nix`, …);
-  * as `pkgs.callPackage ../../../packages/<name> { }` from a den aspect — the
+  - as `pkgs.callPackage ../../../packages/<name> { }` from a den aspect — the
     **preferred** den route. `modules/den/aspects/mcp-snoop.nix:16` states the
-    rule: *"The package comes from a plain `callPackage`. The slot reads
+    rule: _"The package comes from a plain `callPackage`. The slot reads
     `pkgs.kdn.mcpsnoop`, so a consumer must add this repository's overlay first.
-    A relative path needs no overlay."* Same pattern in `jj.nix`, `toolset.nix`,
+    A relative path needs no overlay."_ Same pattern in `jj.nix`, `toolset.nix`,
     `program-firefox.nix`, `mcp-basic-memory.nix`, `llm-proxy.nix`.
-* File name is either `default.nix` (dir package) or `package.nix` (`kagi-cli`,
+- File name is either `default.nix` (dir package) or `package.nix` (`kagi-cli`,
   `lnav`, `llama-cpp`, plus nixpkgs' own `package.nix`).
 
 `llama-cpp` is the closest precedent in intent: nixpkgs' version is too old, so
@@ -157,7 +157,7 @@ kdn.apps.pi.package.original = pkgs.callPackage ../../../packages/pi-coding-agen
 (`github:earendil-works/pi`, `flake.nix` + `nix/package.nix` at v1.4.0) that
 exposes `packages.<system>.default` (attribute name `pi`) and
 `overlays.default`. It uses `importNpmLock` + `install-lock/`, and it is
-*stricter* than nixpkgs (see §6). Adding `inputs.pi = github:earendil-works/pi`
+_stricter_ than nixpkgs (see §6). Adding `inputs.pi = github:earendil-works/pi`
 and pointing the package at `inputs.pi.packages.${system}.default` avoids all
 four hashes, and this repo already threads `__inputs__` into
 `packages/default.nix` (`basic-memory`, `opencode-compat-proxy` do exactly that).
@@ -169,32 +169,32 @@ input and duplicates what nixpkgs will soon have.
 Agent dir facts (Pi `docs/configuration.md` and `docs/environment-variables.md`
 at v1.4.0):
 
-* Agent dir defaults to `~/.pi/agent` (**not** `~/.pi`). The existing aspect's
+- Agent dir defaults to `~/.pi/agent` (**not** `~/.pi`). The existing aspect's
   `dirs.data = [ "/.pi" ]` already covers it, sessions included.
-* `PI_CODING_AGENT_DIR` overrides the agent dir; `PI_CODING_AGENT_SESSION_DIR`
+- `PI_CODING_AGENT_DIR` overrides the agent dir; `PI_CODING_AGENT_SESSION_DIR`
   and `setting sessionDir` override only session storage; `PI_PACKAGE_DIR`
   overrides the package dir ("useful for Nix/Guix store paths"); `PI_OFFLINE`
   disables catalog refresh and other network activity.
-* Resource lists live in `<agent-dir>/settings.json` and accept absolute paths
+- Resource lists live in `<agent-dir>/settings.json` and accept absolute paths
   and `~`: `extensions`, `skills`, `prompts`, `themes`, `packages`.
 
-| File | Declarative today? | How |
-|---|---|---|
-| `<agent-dir>/settings.json` | yes | `home.file.".pi/agent/settings.json".source = (pkgs.formats.json {}).generate …`. Caveat: `pi install` and `/settings` **write** this file, and `pi install` writes there by default — a store symlink turns those into EROFS errors. |
-| `<agent-dir>/models.json` | yes | same, `pkgs.formats.json {}`. A `brys`-style endpoint: `providers.brys = { baseUrl = "…/v1"; api = "openai-completions"; apiKey = "$BRYS_API_KEY"; models = [ … ]; }` (schema: `docs/models-configuration.md`). |
-| `<agent-dir>/mcp.json` | yes | same; docs v1.4.0 `docs/mcp.md`. |
-| `<agent-dir>/extensions/` | yes, but do **not** symlink into it | put the `.ts` in the store and name its absolute path in `settings.extensions`. Docs (`packages.md`) say *"List dot-prefixed or symlinked resource roots directly when traversal through a glob would not discover them."* An explicit path is the safe form. |
-| `<agent-dir>/skills/` | yes | same as extensions: absolute store paths in `settings.skills` (a skill is a dir with `SKILL.md`). |
-| `<agent-dir>/prompts/` | yes | absolute store paths in `settings.prompts` (one `.md` per `/command`). |
-| `<agent-dir>/AGENTS.md` | yes | `home.file.".pi/agent/AGENTS.md".source = …`. Also `SYSTEM.md`, `APPEND_SYSTEM.md`, `AGENTS.override.md`. |
-| `<agent-dir>/auth.json` | **no** | written at runtime by `/login`; never manage it. |
+| File                        | Declarative today?                  | How                                                                                                                                                                                                                                                           |
+| --------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<agent-dir>/settings.json` | yes                                 | `home.file.".pi/agent/settings.json".source = (pkgs.formats.json {}).generate …`. Caveat: `pi install` and `/settings` **write** this file, and `pi install` writes there by default — a store symlink turns those into EROFS errors.                         |
+| `<agent-dir>/models.json`   | yes                                 | same, `pkgs.formats.json {}`. A `brys`-style endpoint: `providers.brys = { baseUrl = "…/v1"; api = "openai-completions"; apiKey = "$BRYS_API_KEY"; models = [ … ]; }` (schema: `docs/models-configuration.md`).                                               |
+| `<agent-dir>/mcp.json`      | yes                                 | same; docs v1.4.0 `docs/mcp.md`.                                                                                                                                                                                                                              |
+| `<agent-dir>/extensions/`   | yes, but do **not** symlink into it | put the `.ts` in the store and name its absolute path in `settings.extensions`. Docs (`packages.md`) say _"List dot-prefixed or symlinked resource roots directly when traversal through a glob would not discover them."_ An explicit path is the safe form. |
+| `<agent-dir>/skills/`       | yes                                 | same as extensions: absolute store paths in `settings.skills` (a skill is a dir with `SKILL.md`).                                                                                                                                                             |
+| `<agent-dir>/prompts/`      | yes                                 | absolute store paths in `settings.prompts` (one `.md` per `/command`).                                                                                                                                                                                        |
+| `<agent-dir>/AGENTS.md`     | yes                                 | `home.file.".pi/agent/AGENTS.md".source = …`. Also `SYSTEM.md`, `APPEND_SYSTEM.md`, `AGENTS.override.md`.                                                                                                                                                     |
+| `<agent-dir>/auth.json`     | **no**                              | written at runtime by `/login`; never manage it.                                                                                                                                                                                                              |
 
 `PI_CODING_AGENT_DIR` as the lever: pointing it at a pure store path makes the
 whole dir read-only, which breaks `auth.json`, sessions and `pi install`. The
 working shape is one of:
 
 1. keep the agent dir as the persisted writable `~/.pi/agent` and symlink only
-   the *config* files into it (what the repo does for Claude Code:
+   the _config_ files into it (what the repo does for Claude Code:
    `files.config = [ "/.claude.json" ]` in `dev-llm-claude-code.nix`); or
 2. set `PI_CODING_AGENT_DIR` to a persisted path (e.g. under
    `~/.local/share/pi/agent`) and still symlink the config files in.
@@ -255,11 +255,11 @@ Keep the key out of the store by reading the file at runtime (never
 
 Runtime facts (Pi `docs/extensions.md:38`, `docs/packages.md`):
 
-* `jiti` loads a local `.ts` with no build step — a single file, or a dir with
+- `jiti` loads a local `.ts` with no build step — a single file, or a dir with
   `index.ts`.
-* npm deps of a **local** extension are the author's problem: *"Local packages
+- npm deps of a **local** extension are the author's problem: _"Local packages
   are not installed or modified, so their dependency tree remains the package
-  author's responsibility."* Pi only aliases the five host-provided modules
+  author's responsibility."_ Pi only aliases the five host-provided modules
   (`pi-ai`, `pi-agent-core`, `pi-coding-agent`, `pi-tui`, `typebox`); a third-party
   import must exist in `node_modules` next to the file. The `sandbox` example is
   exactly that case (`examples/extensions/sandbox/{index.ts,package.json,package-lock.json}`,
@@ -299,20 +299,20 @@ pulls a library (e.g. `zod`); then the `package.nix` above is the answer and the
 lockfile comes from the extension's own repo.
 
 Resolution check: `jiti` resolves relative to the file, so `node_modules` must
-sit in the *same* store directory as `index.ts` (Shape B copies both to `$out`).
+sit in the _same_ store directory as `index.ts` (Shape B copies both to `$out`).
 A plain `writeText` of a file that imports a package will fail at load time.
 
 ## 6. Darwin / Linux differences
 
-* **Native clipboard/TUI helpers are prebuilt and checked in.** At both tags the
+- **Native clipboard/TUI helpers are prebuilt and checked in.** At both tags the
   tarball carries `packages/tui/native/{darwin,linux,win32}/prebuilds/<os>-<arch>/*.node`
   (darwin-arm64, darwin-x64, linux-arm64, linux-x64, win32-arm64, win32-x64).
   Nothing is compiled during the Nix build, so `npmRebuildFlags = [ "--ignore-scripts" ]`
   is compatible with both platforms. Do not enable `build:native:*`; the scripts
   want `cc`/`xcrun` and a macOS SDK.
-* **Linux helper dlopens `libxcb.so.1`.** `packages/tui/native/linux/README.md`
-  says it reads X11 via `libxcb.so.1` and that *"coding-agent falls back to
-  command-line tools when native reads are unavailable."* The nixpkgs derivation
+- **Linux helper dlopens `libxcb.so.1`.** `packages/tui/native/linux/README.md`
+  says it reads X11 via `libxcb.so.1` and that _"coding-agent falls back to
+  command-line tools when native reads are unavailable."_ The nixpkgs derivation
   adds only `ripgrep`/`fd` to PATH and does **not** add `libxcb`,
   `wl-clipboard` or `xclip`; upstream's `nix/package.nix` at v1.4.0 does add
   `libxcb` (buildInputs, with `autoPatchelfHook`) and
@@ -321,25 +321,25 @@ A plain `writeText` of a file that imports a package will fail at load time.
   fallback means the worst case is degraded native X11 read/paste, not a crash.
   If native clipboard matters, add `libxcb` to the wrapper's
   `LD_LIBRARY_PATH` and `wl-clipboard`/`xclip` to PATH in the in-repo copy.
-* That Darwin `postInstall` block removing
+- That Darwin `postInstall` block removing
   `@anthropic-ai/sandbox-runtime/**/vendor/seccomp` is still present in nixpkgs
   master at 1.4.0; it only deletes ELF files that would trip `audit-tmpdir` on
   Darwin. Keep it on a copy; `rm -rf` is a no-op if the dep is gone.
-* `@silvia-odwyer/photon-node` is **wasm only** (`photon_rs_bg.wasm`, no `os`/
+- `@silvia-odwyer/photon-node` is **wasm only** (`photon_rs_bg.wasm`, no `os`/
   `cpu` fields — checked in the 0.3.4 tarball), so it is platform-neutral. No
   Windows/Darwin native addon needs handling in the derivation.
-* `x86_64-darwin` is unsupported by nixpkgs `26.11` (already dropped and filtered
+- `x86_64-darwin` is unsupported by nixpkgs `26.11` (already dropped and filtered
   in `flake.nix`), so the only Darwin target is `aarch64-darwin`; upstream's own
   flake keeps a `nixpkgs-26.05-darwin` input for x86_64 and is irrelevant here.
 
 ## Unverified / open
 
-* Whether `PI_PACKAGE_DIR` is needed for a store install. Upstream's own
+- Whether `PI_PACKAGE_DIR` is needed for a store install. Upstream's own
   derivation does not set it; nixpkgs does not either. Both simply exec the
   bundled `dist/bundle/cli.js`.
-* Whether `pi`/`/settings` rewrite `settings.json` atomically (matters only if it
+- Whether `pi`/`/settings` rewrite `settings.json` atomically (matters only if it
   is a symlink). Docs say personal installs are written there; treat a symlinked
   `settings.json` as read-only by design.
-* `pi update` behaviour under a Nix install (CHANGELOG mentions managed-install
+- `pi update` behaviour under a Nix install (CHANGELOG mentions managed-install
   markers). `PI_SKIP_VERSION_CHECK=1` is set by the nixpkgs wrapper; the
   self-update path is not exercised in a store install.

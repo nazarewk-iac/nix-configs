@@ -17,7 +17,7 @@ RADV. Our exact topology (main model + KV on CPU, only the MTP draft head on the
 GPU) has no direct report, but the trigger — the extra draft-context decode after
 each target ubatch — is independent of where the target runs.
 
-The kernel recovers the *device*, but the guilty context's GPU state is dropped.
+The kernel recovers the _device_, but the guilty context's GPU state is dropped.
 RADV has no device-loss recovery: the first `-ETIME` submit latches
 `VK_ERROR_DEVICE_LOST`, so llama-server must restart.
 
@@ -63,7 +63,7 @@ link is by mechanism, not confirmed.
 - **"device wedged, but recovered through reset"** means the per-queue reset
   succeeded (`drm_dev_wedged_event(..., DRM_WEDGE_RECOVERY_NONE)`), but the KCQ
   reset marks the timed-out fence `-ETIME` and every other unprocessed fence from
-  that context `-ECANCELED`; the owning context is flagged *guilty* and later
+  that context `-ECANCELED`; the owning context is flagged _guilty_ and later
   submits return `-ECANCELED`. See `amdgpu_job.c`, `gfx_v10_0.c`
   (`gfx_v10_0_reset_kcq`), `amdgpu_fence.c`, `amdgpu_cs.c`.
 - RADV maps `-ECANCELED` / `-ENODATA` / `-ETIME` to `VK_ERROR_DEVICE_LOST` and
@@ -82,15 +82,15 @@ link is by mechanism, not confirmed.
 
 Relevant module parameters (`drivers/gpu/drm/amd/amdgpu/amdgpu_drv.c`):
 
-| param | effect | relevance |
-|---|---|---|
-| `amdgpu.queue_preemption_timeout_ms` | queue preemption timeout (default 9000) | the #27306 workaround sets `60000` |
-| `amdgpu.gpu_recovery` | `0` disables all resets (job stalls, scheduler suspends) | preserve state for a dump; not a fix |
-| `amdgpu.debug_mask` | `BIT(6)` disables ring reset, `BIT(2)` disables soft recovery | force a full reset for diagnosis |
-| `amdgpu.noretry` | disables XNACK retry faults | **not** defaulted on for gfx10.3 (only gfx10.1.x) |
-| `amdgpu.lockup_timeout` | `[GFX,Compute,SDMA,Video]` timeouts | detection latency only |
-| `amdgpu.num_kcq` | kernel compute queues (default 8) | queue-budget pressure, not a single-process issue |
-| `amdgpu.ppfeaturemask=0xfffd3fff` | disables GFXOFF | credible mitigation for a GFXOFF/TLB ring-timeout race (drm/amd #5249) |
+| param                                | effect                                                        | relevance                                                              |
+| ------------------------------------ | ------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `amdgpu.queue_preemption_timeout_ms` | queue preemption timeout (default 9000)                       | the #27306 workaround sets `60000`                                     |
+| `amdgpu.gpu_recovery`                | `0` disables all resets (job stalls, scheduler suspends)      | preserve state for a dump; not a fix                                   |
+| `amdgpu.debug_mask`                  | `BIT(6)` disables ring reset, `BIT(2)` disables soft recovery | force a full reset for diagnosis                                       |
+| `amdgpu.noretry`                     | disables XNACK retry faults                                   | **not** defaulted on for gfx10.3 (only gfx10.1.x)                      |
+| `amdgpu.lockup_timeout`              | `[GFX,Compute,SDMA,Video]` timeouts                           | detection latency only                                                 |
+| `amdgpu.num_kcq`                     | kernel compute queues (default 8)                             | queue-budget pressure, not a single-process issue                      |
+| `amdgpu.ppfeaturemask=0xfffd3fff`    | disables GFXOFF                                               | credible mitigation for a GFXOFF/TLB ring-timeout race (drm/amd #5249) |
 
 ## Mesa / radv side
 

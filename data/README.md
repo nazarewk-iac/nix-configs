@@ -20,13 +20,13 @@ import sits behind `builtins.filter builtins.pathExists`, so an absent file is a
 
 Apply the five steps in order. The first match wins.
 
-| # | Test | Directory |
-|---|---|---|
-| 1 | The file references `kdnConfig` in any way (argument, `kdnConfig.self`, `kdnConfig.util`, `kdnConfig.features`). | `universal-deps/` |
-| 2 | No `kdnConfig`, and every consumer is under `modules/universal/**`. | `universal-safe/` |
-| 3 | No `kdnConfig`, and every consumer sits in one system kind only. | `nixos/`, `darwin/` or `hm/` |
-| 4 | Nothing above fits. | `data/` top level — ask the owner |
-| 5 | Every consumer is a slot or a den aspect, through `mkSlots { imports = … }` or a den entity. | `slots/` |
+| #   | Test                                                                                                             | Directory                         |
+| --- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| 1   | The file references `kdnConfig` in any way (argument, `kdnConfig.self`, `kdnConfig.util`, `kdnConfig.features`). | `universal-deps/`                 |
+| 2   | No `kdnConfig`, and every consumer is under `modules/universal/**`.                                              | `universal-safe/`                 |
+| 3   | No `kdnConfig`, and every consumer sits in one system kind only.                                                 | `nixos/`, `darwin/` or `hm/`      |
+| 4   | Nothing above fits.                                                                                              | `data/` top level — ask the owner |
+| 5   | Every consumer is a slot or a den aspect, through `mkSlots { imports = … }` or a den entity.                     | `slots/`                          |
 
 Rule 1 beats rule 3. When both match, the row carries a `Kind:` note, so a later re-sort is
 possible.
@@ -43,40 +43,40 @@ Each file keeps its base name. The directory carries the kind, so a name such as
 
 ## `universal-deps/` — reads `kdnConfig`
 
-| File | What it holds | Read by | Shape |
-|---|---|---|---|
+| File                      | What it holds                                                                                                             | Read by                                     | Shape                                                |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | ---------------------------------------------------- |
 | `desktop-sway-kanshi.nix` | The owner's monitors and their sway workspace arrangement. Kind: home-manager under a NixOS parent (rule 1 beats rule 3). | `modules/universal/default.nix` import list | function of `config`, `lib`, `kdnConfig`, `osConfig` |
-| `development-nix.nix` | The absolute path of the owner's checkout of this repository. Kind: nixos and darwin host (rule 1 beats rule 3). | `modules/universal/default.nix` import list | function of `config`, `kdnConfig` |
-| `stylix.nix` | The URL and hash of the owner's wallpaper. | `modules/universal/default.nix` import list | function of `lib`, `pkgs`, `kdnConfig` |
+| `development-nix.nix`     | The absolute path of the owner's checkout of this repository. Kind: nixos and darwin host (rule 1 beats rule 3).          | `modules/universal/default.nix` import list | function of `config`, `kdnConfig`                    |
+| `stylix.nix`              | The URL and hash of the owner's wallpaper.                                                                                | `modules/universal/default.nix` import list | function of `lib`, `pkgs`, `kdnConfig`               |
 
 ## `universal-safe/` — no `kdnConfig`
 
-| File | What it holds | Read by | Shape |
-|---|---|---|---|
-| `hw-edid.nix` | Three EDID modelines, keyed by monitor name. | `modules/universal/default.nix` import list | attrset, was a function |
-| `locale.nix` | The local time zone, the national keyboard layout and the extra locale list. | `modules/universal/default.nix` import list | attrset, was a function |
-| `programs-photoprism.nix` | The path of the owner's photo source directory. | `modules/universal/default.nix` import list | function of `config` |
-| `services-printing.nix` | One printer: name, location, device URI and driver. | `modules/universal/default.nix` import list | attrset, was a function |
-| `services-samba.nix` | The Samba `hostsAllow` list: the home LAN plus loopback. | `modules/universal/default.nix` import list | attrset, was a function |
+| File                      | What it holds                                                                | Read by                                     | Shape                   |
+| ------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------- | ----------------------- |
+| `hw-edid.nix`             | Three EDID modelines, keyed by monitor name.                                 | `modules/universal/default.nix` import list | attrset, was a function |
+| `locale.nix`              | The local time zone, the national keyboard layout and the extra locale list. | `modules/universal/default.nix` import list | attrset, was a function |
+| `programs-photoprism.nix` | The path of the owner's photo source directory.                              | `modules/universal/default.nix` import list | function of `config`    |
+| `services-printing.nix`   | One printer: name, location, device URI and driver.                          | `modules/universal/default.nix` import list | attrset, was a function |
+| `services-samba.nix`      | The Samba `hostsAllow` list: the home LAN plus loopback.                     | `modules/universal/default.nix` import list | attrset, was a function |
 
 ## `ca/` — CA payload files, not modules
 
-| File | What it holds | Read by | Shape |
-|---|---|---|---|
-| `ca.pub` | The PEM public CA certificate. | `hosts/brys`, `hosts/oams` — `kdn.ca.kdn.certFile`, as a path string | payload file, not Nix |
-| `ca.key.sops` | The SOPS-encrypted CA private key. | `hosts/brys`, `hosts/oams` — `kdn.ca.kdn.keySopsFile`, as a path string | payload file, not Nix |
-| `ca.md` | The manual procedure to decrypt the key and to sign a leaf certificate. | a human reader only | Markdown |
+| File          | What it holds                                                           | Read by                                                                 | Shape                 |
+| ------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------- | --------------------- |
+| `ca.pub`      | The PEM public CA certificate.                                          | `hosts/brys`, `hosts/oams` — `kdn.ca.kdn.certFile`, as a path string    | payload file, not Nix |
+| `ca.key.sops` | The SOPS-encrypted CA private key.                                      | `hosts/brys`, `hosts/oams` — `kdn.ca.kdn.keySopsFile`, as a path string | payload file, not Nix |
+| `ca.md`       | The manual procedure to decrypt the key and to sign a leaf certificate. | a human reader only                                                     | Markdown              |
 
 `.gitignore` carries one negation per payload file. Add a new negation for a new payload file,
 because line 5 ignores everything by default.
 
 ## `slots/` — read by a slot or a den aspect
 
-| File | What it holds | Read by | Shape |
-|---|---|---|---|
-| `den-users.nix` | The owner's three human accounts: login name, uid, full name, groups and the three public key file paths. It holds no password hash. | nothing yet — `modules/den/aspects/user.nix` reads the option shape, and a den host adds the import | attrset |
-| `users.data.nix` | One **structurally typed** record per login (`root`, `kdn`, `bn`, `sn`): uid, fullName, email, groups, the row switches, the password hash and the key payload paths. A user profile sources its basic data from here. | `modules/den/aspects/user-profiles.nix`, imported by `hosts-den/pryll` behind `pathExists` | pure data value (no option, no imports) |
-| `slots-ssh-access.nix` | The owner's SSH connectivity graph: host aliases, reach paths, uplink files and agent match patterns. | `hosts/anji`, `hosts/brys`, `hosts/oams` and the work host, through `mkSlots { imports = … }` | attrset, was a function |
+| File                   | What it holds                                                                                                                                                                                                          | Read by                                                                                             | Shape                                   |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| `den-users.nix`        | The owner's three human accounts: login name, uid, full name, groups and the three public key file paths. It holds no password hash.                                                                                   | nothing yet — `modules/den/aspects/user.nix` reads the option shape, and a den host adds the import | attrset                                 |
+| `users.data.nix`       | One **structurally typed** record per login (`root`, `kdn`, `bn`, `sn`): uid, fullName, email, groups, the row switches, the password hash and the key payload paths. A user profile sources its basic data from here. | `modules/den/aspects/user-profiles.nix`, imported by `hosts-den/pryll` behind `pathExists`          | pure data value (no option, no imports) |
+| `slots-ssh-access.nix` | The owner's SSH connectivity graph: host aliases, reach paths, uplink files and agent match patterns.                                                                                                                  | `hosts/anji`, `hosts/brys`, `hosts/oams` and the work host, through `mkSlots { imports = … }`       | attrset, was a function                 |
 
 Why the file sits here:
 

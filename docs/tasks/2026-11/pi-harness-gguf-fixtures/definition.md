@@ -27,7 +27,7 @@ Two problems remain, and both have already bitten once:
 2. **A deletion breaks even a commit URL.** If the upstream repo is removed, the pinned
    URL stops resolving and every check that needs a fixture fails to build.
 
-The hash pins the *bytes*; it does not pin *availability*. A mirror closes that gap.
+The hash pins the _bytes_; it does not pin _availability_. A mirror closes that gap.
 
 ## What
 

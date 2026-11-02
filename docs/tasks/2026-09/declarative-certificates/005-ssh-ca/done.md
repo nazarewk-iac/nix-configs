@@ -64,14 +64,14 @@ unattended, so the suite signs with no YubiKey. The real CA key is never read.
 
 All commands exit 0:
 
-| Command | Result |
-|---|---|
-| `nix build --no-eval-cache -L '.#checks.x86_64-linux.den-eval-ssh-ca'` | the area assertions pass |
-| `nix build --no-eval-cache -L '.#checks.x86_64-linux.standalone-aspects'` | pass |
-| `nix build --no-eval-cache -L '.#checks.x86_64-linux.den-eval-coverage'` | pass |
-| `nix build --no-eval-cache -L '.#checks.x86_64-linux.den-eval-guards'` | pass |
-| `nix build --no-eval-cache -L '.#checks.x86_64-linux.kdn-certs-test'` | the mocked Go suite passes |
-| `nix build --no-eval-cache -L '.#checks.x86_64-linux.kdn-certs-test-ca'` | the SSH sign cases run against the test CA |
+| Command                                                                   | Result                                     |
+| ------------------------------------------------------------------------- | ------------------------------------------ |
+| `nix build --no-eval-cache -L '.#checks.x86_64-linux.den-eval-ssh-ca'`    | the area assertions pass                   |
+| `nix build --no-eval-cache -L '.#checks.x86_64-linux.standalone-aspects'` | pass                                       |
+| `nix build --no-eval-cache -L '.#checks.x86_64-linux.den-eval-coverage'`  | pass                                       |
+| `nix build --no-eval-cache -L '.#checks.x86_64-linux.den-eval-guards'`    | pass                                       |
+| `nix build --no-eval-cache -L '.#checks.x86_64-linux.kdn-certs-test'`     | the mocked Go suite passes                 |
+| `nix build --no-eval-cache -L '.#checks.x86_64-linux.kdn-certs-test-ca'`  | the SSH sign cases run against the test CA |
 
 `checks/den-mvp/assertions/ssh-ca.nix` holds one bare-consumer subject per class plus a declared
 root CA and an `ssh-host` leaf. `checks/den-mvp/tests.nix` gains `ssh-ca` in the `den-eval-guards`

@@ -30,28 +30,28 @@ in [../gaz-den-workstation/research.md](../gaz-den-workstation/research.md) and
 Every other host in this repository has an owner who can read a stack trace. This
 one has a user who cannot. That single fact decides most of the design:
 
-| Constraint | Consequence |
-|---|---|
-| The user cannot repair the system | It must update itself, and a failed update must not leave a dead desktop. |
-| The user cannot diagnose a network fault | The NanoKVM stays plugged in, permanently. It is the only remote way in. |
-| The user will not report a subtle fault | Prefer boring, stable, and few moving parts over new and clever. |
+| Constraint                               | Consequence                                                                                           |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| The user cannot repair the system        | It must update itself, and a failed update must not leave a dead desktop.                             |
+| The user cannot diagnose a network fault | The NanoKVM stays plugged in, permanently. It is the only remote way in.                              |
+| The user will not report a subtle fault  | Prefer boring, stable, and few moving parts over new and clever.                                      |
 | The machine is the user's whole computer | Her documents and photos matter more than any feature. Backups are a requirement, not a nice-to-have. |
-| Support happens rarely and remotely | Unattended remote access must work before the machine leaves the bench. |
+| Support happens rarely and remotely      | Unattended remote access must work before the machine leaves the bench.                               |
 
 ## Hard facts from the owner (2026-10-28)
 
 These change several assumptions in the earlier draft of this task, so they come
 first.
 
-| Fact | Consequence |
-|---|---|
-| **`pryll` is connected to the NanoKVM at `kvm-fa56`.** | The device documented as `gaz`'s KVM now serves `pryll`. Which machine the earlier ChromeOS observations came from must be re-confirmed before any `gaz` work; the KVM has one HDMI input and one USB path, so it serves one machine at a time. |
-| **`pryll` boots today with a YubiKey tap**, through the last active config, which uses **`modules/universal`**. | Disk unlock is LUKS + FIDO2/YubiKey. The machine is in service, so a failed experiment costs real availability. |
-| **The machine is safe to reinstall.** Build `.#install-iso` from this repo, upload it through the NanoKVM, and boot it as a virtual/attached device. | No need to preserve data across the install. The risky part is not the disk, it is the broken-boot recovery. |
-| **Owner's goal 1: decrypt with the TPM *in addition to* the YubiKey.** | Two independent unlock paths, not a replacement. See [../tpm-age-sops-keys/](../tpm-age-sops-keys/definition.md) for the TPM work already scoped for sops; the disk unlock is the same class of problem, via `systemd-cryptenroll` TPM2 enrolment. |
-| **Owner's goal 2: update it to the latest existing config.** | The running generation is behind. Bring it current before the migration, so a failure is attributable. |
-| **Owner's goal 3: fully driven by den modules, never referencing `modules/universal`.** | This is the real deliverable, and it is what makes `pryll` the first *user-facing* host on the den path. |
-| **Primary purpose: prepare the machine for `bn`, who is not technical** — browsing the internet, opening documents that arrive by mail (PDF and office suite). | The feature list is short and fixed. Every added aspect is a support call. |
+| Fact                                                                                                                                                           | Consequence                                                                                                                                                                                                                                        |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`pryll` is connected to the NanoKVM at `kvm-fa56`.**                                                                                                         | The device documented as `gaz`'s KVM now serves `pryll`. Which machine the earlier ChromeOS observations came from must be re-confirmed before any `gaz` work; the KVM has one HDMI input and one USB path, so it serves one machine at a time.    |
+| **`pryll` boots today with a YubiKey tap**, through the last active config, which uses **`modules/universal`**.                                                | Disk unlock is LUKS + FIDO2/YubiKey. The machine is in service, so a failed experiment costs real availability.                                                                                                                                    |
+| **The machine is safe to reinstall.** Build `.#install-iso` from this repo, upload it through the NanoKVM, and boot it as a virtual/attached device.           | No need to preserve data across the install. The risky part is not the disk, it is the broken-boot recovery.                                                                                                                                       |
+| **Owner's goal 1: decrypt with the TPM _in addition to_ the YubiKey.**                                                                                         | Two independent unlock paths, not a replacement. See [../tpm-age-sops-keys/](../tpm-age-sops-keys/definition.md) for the TPM work already scoped for sops; the disk unlock is the same class of problem, via `systemd-cryptenroll` TPM2 enrolment. |
+| **Owner's goal 2: update it to the latest existing config.**                                                                                                   | The running generation is behind. Bring it current before the migration, so a failure is attributable.                                                                                                                                             |
+| **Owner's goal 3: fully driven by den modules, never referencing `modules/universal`.**                                                                        | This is the real deliverable, and it is what makes `pryll` the first _user-facing_ host on the den path.                                                                                                                                           |
+| **Primary purpose: prepare the machine for `bn`, who is not technical** — browsing the internet, opening documents that arrive by mail (PDF and office suite). | The feature list is short and fixed. Every added aspect is a support call.                                                                                                                                                                         |
 
 Because of these, the earlier "is `hosts/pryll` the same machine" open question is
 answered: yes, it is the machine with the YubiKey-unlocked LUKS volume, and its
@@ -59,14 +59,14 @@ disk identity must be re-read from the live machine anyway.
 
 ## Premises the owner has already set
 
-| Item | State |
-|---|---|
-| A mini-PC, plugged in and powered. | owner |
-| The machine boots this repo's ISO, uploaded through the NanoKVM. | `nix build .#install-iso` → `result/iso/kdn-nixos-install-iso.iso`, then attach it as a device |
-| The NanoKVM at `kvm-fa56` is attached (HDMI and USB). | already true |
-| A plain **LAN** connection, no SFP, no VLAN. | already true |
-| Host name: `pryll`. | already true |
-| A YubiKey is available for the current unlock path while the TPM path is built. | owner |
+| Item                                                                            | State                                                                                          |
+| ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| A mini-PC, plugged in and powered.                                              | owner                                                                                          |
+| The machine boots this repo's ISO, uploaded through the NanoKVM.                | `nix build .#install-iso` → `result/iso/kdn-nixos-install-iso.iso`, then attach it as a device |
+| The NanoKVM at `kvm-fa56` is attached (HDMI and USB).                           | already true                                                                                   |
+| A plain **LAN** connection, no SFP, no VLAN.                                    | already true                                                                                   |
+| Host name: `pryll`.                                                             | already true                                                                                   |
+| A YubiKey is available for the current unlock path while the TPM path is built. | owner                                                                                          |
 
 ## Usability decisions the owner must make first
 
@@ -75,18 +75,18 @@ the owner answers them before the run starts, because every one of them shapes
 `bn`'s daily experience and cannot be judged by a model. They are asked once, in
 one message, and recorded in the task before phase 3.
 
-| Decision | Why it cannot be delegated | Suggested default |
-|---|---|---|
-| **Interface language** (Polish, English, both) | It sets the system, the browser and the office suite at once. A wrong choice is a constant irritation. | Polish (`pl_PL.UTF-8`), as the current profile does |
-| **Keyboard layout** | The physical keyboard decides it; a symbol in the wrong place is a daily papercut. | Plain `pl`, unless she needs the ChromeOS-style layout |
-| **Time zone and clock format** | Small, and permanent. | Europe/Warsaw, 24-hour |
-| **Desktop look** (light or dark, wallpaper) | Purely taste. | Light theme, the current image, or her own photo |
-| **Autologin** (yes or no) | Convenience against privacy: anyone who opens the lid gets in. | Yes, it is the whole point of a desktop she cannot log into |
-| **Applications on day one** | An empty menu is as bad as a cluttered one. | Browser, office suite, PDF reader, image viewer, file manager, VLC |
-| **Browser** (Firefox or Chromium) | Her bookmarks and habits live in one. | Firefox, with the `bn` profile |
-| **Remote support tool** (TeamViewer or RustDesk) | Licensing and her consent to be watched. | RustDesk if it tests clean, else TeamViewer |
-| **Backup target** (USB disk, network, cloud) | Where her photos may live. | A local USB disk, plugged in permanently |
-| **Any peripheral** (printer, scanner, webcam, speakers) | It must work on day one or it is a support call. | none assumed |
+| Decision                                                | Why it cannot be delegated                                                                             | Suggested default                                                  |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| **Interface language** (Polish, English, both)          | It sets the system, the browser and the office suite at once. A wrong choice is a constant irritation. | Polish (`pl_PL.UTF-8`), as the current profile does                |
+| **Keyboard layout**                                     | The physical keyboard decides it; a symbol in the wrong place is a daily papercut.                     | Plain `pl`, unless she needs the ChromeOS-style layout             |
+| **Time zone and clock format**                          | Small, and permanent.                                                                                  | Europe/Warsaw, 24-hour                                             |
+| **Desktop look** (light or dark, wallpaper)             | Purely taste.                                                                                          | Light theme, the current image, or her own photo                   |
+| **Autologin** (yes or no)                               | Convenience against privacy: anyone who opens the lid gets in.                                         | Yes, it is the whole point of a desktop she cannot log into        |
+| **Applications on day one**                             | An empty menu is as bad as a cluttered one.                                                            | Browser, office suite, PDF reader, image viewer, file manager, VLC |
+| **Browser** (Firefox or Chromium)                       | Her bookmarks and habits live in one.                                                                  | Firefox, with the `bn` profile                                     |
+| **Remote support tool** (TeamViewer or RustDesk)        | Licensing and her consent to be watched.                                                               | RustDesk if it tests clean, else TeamViewer                        |
+| **Backup target** (USB disk, network, cloud)            | Where her photos may live.                                                                             | A local USB disk, plugged in permanently                           |
+| **Any peripheral** (printer, scanner, webcam, speakers) | It must work on day one or it is a support call.                                                       | none assumed                                                       |
 
 If the owner answers only some, the agent starts with the defaults for the rest
 and says so in the worklog.
@@ -115,7 +115,7 @@ Three things in that file are evidence of trouble and must be handled
 deliberately, not copied:
 
 1. `systemd.services."home-manager-bn".serviceConfig` carries a `Restart =
-   on-failure` hack with the comment `# fails on wallpaper`. The KDE wallpaper
+on-failure` hack with the comment `# fails on wallpaper`. The KDE wallpaper
    step fails. That is a defect to fix, not to paper over on a machine nobody
    can debug.
 2. It is written against the **old tree** (`kdn.profile.user.bn`,
@@ -128,17 +128,17 @@ deliberately, not copied:
 
 ## Phases
 
-| Phase | Work | Gate |
-|---|---|---|
-| 0 | Harness up as in the sibling tasks, plus a proven way to **upload and attach the ISO through the NanoKVM** (this is the recovery path for every later phase). | an installed system is not needed; a live ISO boot over the KVM is |
-| 0b | Safety net first: record how to reach the current YubiKey unlock and how to boot the old generation, so a broken migration is recoverable. | the recovery steps are written and once rehearsed |
-| 1 | Recon over the KVM: `dmidecode`, `lspci`, `lsblk -o NAME,SIZE,MODEL,TRAN`, RAM, NIC, Wi-Fi, firmware mode, Secure Boot. Does this match `hosts/pryll`? | a committed hardware profile, and a yes/no on "same machine" |
-| 2 | **Ask the owner the usability decisions above.** Then the migration order the owner fixed: (a) update the current universal-based config to the latest, (b) add a TPM unlock beside the YubiKey, (c) port the host to `hosts-den` with **no `modules/universal` reference at all**. | the answers are recorded; each of the three steps is a separate commit |
-| 3 | Desktop shape: KDE Plasma 6, SDDM autologin, `bn`'s locale and browser profile, and **only** the applications she uses. | the aspect list is committed and matches the recorded answers |
-| 4 | Disk and install: `kdn.disks` for the real device, install over the KVM. | first boot reaches the desktop without a keyboard |
-| 5 | Autonomy: automatic updates and garbage collection that cannot brick the boot, plus a working remote-support channel. | a reboot after an update, unattended, verified over the KVM |
-| 6 | Safety net: a snapshot or backup of home directories, and a documented way to restore the machine from the KVM alone. | a restore is demonstrated once |
-| 7 | Evaluation write-up. | the shared evaluation is done |
+| Phase | Work                                                                                                                                                                                                                                                                                | Gate                                                                   |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| 0     | Harness up as in the sibling tasks, plus a proven way to **upload and attach the ISO through the NanoKVM** (this is the recovery path for every later phase).                                                                                                                       | an installed system is not needed; a live ISO boot over the KVM is     |
+| 0b    | Safety net first: record how to reach the current YubiKey unlock and how to boot the old generation, so a broken migration is recoverable.                                                                                                                                          | the recovery steps are written and once rehearsed                      |
+| 1     | Recon over the KVM: `dmidecode`, `lspci`, `lsblk -o NAME,SIZE,MODEL,TRAN`, RAM, NIC, Wi-Fi, firmware mode, Secure Boot. Does this match `hosts/pryll`?                                                                                                                              | a committed hardware profile, and a yes/no on "same machine"           |
+| 2     | **Ask the owner the usability decisions above.** Then the migration order the owner fixed: (a) update the current universal-based config to the latest, (b) add a TPM unlock beside the YubiKey, (c) port the host to `hosts-den` with **no `modules/universal` reference at all**. | the answers are recorded; each of the three steps is a separate commit |
+| 3     | Desktop shape: KDE Plasma 6, SDDM autologin, `bn`'s locale and browser profile, and **only** the applications she uses.                                                                                                                                                             | the aspect list is committed and matches the recorded answers          |
+| 4     | Disk and install: `kdn.disks` for the real device, install over the KVM.                                                                                                                                                                                                            | first boot reaches the desktop without a keyboard                      |
+| 5     | Autonomy: automatic updates and garbage collection that cannot brick the boot, plus a working remote-support channel.                                                                                                                                                               | a reboot after an update, unattended, verified over the KVM            |
+| 6     | Safety net: a snapshot or backup of home directories, and a documented way to restore the machine from the KVM alone.                                                                                                                                                               | a restore is demonstrated once                                         |
+| 7     | Evaluation write-up.                                                                                                                                                                                                                                                                | the shared evaluation is done                                          |
 
 ## Requirements
 

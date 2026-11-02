@@ -69,13 +69,13 @@ in
 
 A slot has exactly these targets, declared in `lib/slots/schema.nix`:
 
-| target | purpose |
-|---|---|
-| `nixos` | NixOS system module |
-| `darwin` | nix-darwin system module |
-| `home` | home-manager module (all users via sharedModules) |
-| `devenv` | devenv.sh module |
-| `users` | per-user home-manager modules, keyed by username |
+| target   | purpose                                           |
+| -------- | ------------------------------------------------- |
+| `nixos`  | NixOS system module                               |
+| `darwin` | nix-darwin system module                          |
+| `home`   | home-manager module (all users via sharedModules) |
+| `devenv` | devenv.sh module                                  |
+| `users`  | per-user home-manager modules, keyed by username  |
 
 The slot's outer `config` attribute only ever holds those five keys. It never
 holds real NixOS/HM options directly. Real side effects live under a target.
@@ -114,7 +114,7 @@ as a module function:
   };
   ```
 
-  The arguments inside the function are the *target* module's arguments, not
+  The arguments inside the function are the _target_ module's arguments, not
   the slot's.
 
 ### The two-level confusion trap

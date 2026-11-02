@@ -133,20 +133,20 @@ hindsight and badly at the time, and a wrong name is worse than a hash because i
 
 ## Quick reference
 
-| Task | Command |
-|---|---|
-| list models | `pi --list-models [search]` |
-| use a specific model | `pi --model brys/<alias> --thinking <level>` |
-| continue the newest session here | `pi -c` |
-| resume by partial id | `pi --session <prefix>` |
-| branch a session | `pi --fork <prefix>` |
-| name at start | `pi -n <slug>` |
-| rename live | `/name <slug>` inside Pi |
-| set the model live | `/model` (picker), `Ctrl+P` (cycle) |
-| set depth live | `/thinking` |
-| non-interactive one-shot | `pi -p "..."` |
-| export a transcript | `pi --export out.html --session <prefix>` |
-| list the repo's agents | `ls data/pi/agents/` |
+| Task                             | Command                                      |
+| -------------------------------- | -------------------------------------------- |
+| list models                      | `pi --list-models [search]`                  |
+| use a specific model             | `pi --model brys/<alias> --thinking <level>` |
+| continue the newest session here | `pi -c`                                      |
+| resume by partial id             | `pi --session <prefix>`                      |
+| branch a session                 | `pi --fork <prefix>`                         |
+| name at start                    | `pi -n <slug>`                               |
+| rename live                      | `/name <slug>` inside Pi                     |
+| set the model live               | `/model` (picker), `Ctrl+P` (cycle)          |
+| set depth live                   | `/thinking`                                  |
+| non-interactive one-shot         | `pi -p "..."`                                |
+| export a transcript              | `pi --export out.html --session <prefix>`    |
+| list the repo's agents           | `ls data/pi/agents/`                         |
 
 ## Related
 

@@ -27,14 +27,14 @@ All measurements come from jj 0.44.0.
 
 ## 1. Structural isolation
 
-| Test | Claim |
-|---|---|
-| `test_workspace_has_own_jj_and_no_git` | The workspace has its own `.jj/working_copy`. `.jj/repo` is a plain text file that holds a **relative** path to the trunk's `.jj/repo`, resolved against the workspace's own `.jj` dir. The workspace has **no `.git`**. The trunk's `.git/worktrees/` stays empty. |
-| `test_workspace_sits_outside_the_repo_tree` | The workspace dir is a sibling of the repo dir, named `.<repo-dir>--<slug>`. The repo dir is not one of its parents. |
-| `test_workspace_change_id_differs_from_trunk` | Each workspace owns a distinct `@`. The two new commits are siblings: both have the same parent, so neither rewrites the other's history. |
-| `test_workspace_add_accepts_a_base_revision` | `-r <rev>` puts the workspace `@` on a chosen base. |
-| `test_nested_dir_resolves_to_the_enclosing_workspace` | `jj` run from a subdirectory of the workspace resolves to the workspace, never to the trunk. |
-| `test_untracked_file_does_not_travel_into_a_workspace` | A fresh workspace holds tracked files only. Every git-ignored file is absent. |
+| Test                                                   | Claim                                                                                                                                                                                                                                                               |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test_workspace_has_own_jj_and_no_git`                 | The workspace has its own `.jj/working_copy`. `.jj/repo` is a plain text file that holds a **relative** path to the trunk's `.jj/repo`, resolved against the workspace's own `.jj` dir. The workspace has **no `.git`**. The trunk's `.git/worktrees/` stays empty. |
+| `test_workspace_sits_outside_the_repo_tree`            | The workspace dir is a sibling of the repo dir, named `.<repo-dir>--<slug>`. The repo dir is not one of its parents.                                                                                                                                                |
+| `test_workspace_change_id_differs_from_trunk`          | Each workspace owns a distinct `@`. The two new commits are siblings: both have the same parent, so neither rewrites the other's history.                                                                                                                           |
+| `test_workspace_add_accepts_a_base_revision`           | `-r <rev>` puts the workspace `@` on a chosen base.                                                                                                                                                                                                                 |
+| `test_nested_dir_resolves_to_the_enclosing_workspace`  | `jj` run from a subdirectory of the workspace resolves to the workspace, never to the trunk.                                                                                                                                                                        |
+| `test_untracked_file_does_not_travel_into_a_workspace` | A fresh workspace holds tracked files only. Every git-ignored file is absent.                                                                                                                                                                                       |
 
 The empty `.git/worktrees/` assertion is the point of the whole group. It is the single mechanical
 difference from the forbidden mechanism.
@@ -57,10 +57,10 @@ itself; the test needs no lock and no retry.
 
 ## 3. Lifecycle
 
-| Test | Claim |
-|---|---|
-| `test_forget_then_remove_directory` | `jj workspace forget <name>` drops the record and leaves the files. Removing the dir afterwards is safe. |
-| `test_remove_directory_then_forget` | The reverse order also works. The trunk keeps working with a dangling record; `forget` then cleans it. |
+| Test                                            | Claim                                                                                                                                |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `test_forget_then_remove_directory`             | `jj workspace forget <name>` drops the record and leaves the files. Removing the dir afterwards is safe.                             |
+| `test_remove_directory_then_forget`             | The reverse order also works. The trunk keeps working with a dangling record; `forget` then cleans it.                               |
 | `test_op_restore_makes_another_workspace_stale` | A repo-wide op-log rewind (`jj op restore`) from the trunk makes the other workspace stale. `jj workspace update-stale` recovers it. |
 
 The stale case needed a real rewind to reproduce. An ordinary rewrite of the other workspace's `@`
@@ -72,10 +72,10 @@ operation does. `jj op restore` is the one such command an agent may plausibly r
 
 `test_repo_config_is_shared_and_workspace_config_is_not` proves the split:
 
-| Scope | Path | Shared? |
-|---|---|---|
-| `jj config path --repo` | `$XDG_CONFIG_HOME/jj/repos/<hash>/config.toml` | **Yes** — one file for the trunk and every workspace |
-| `jj config path --workspace` | `$XDG_CONFIG_HOME/jj/workspaces/<hash>/config.toml` | No — one file per workspace |
+| Scope                        | Path                                                | Shared?                                              |
+| ---------------------------- | --------------------------------------------------- | ---------------------------------------------------- |
+| `jj config path --repo`      | `$XDG_CONFIG_HOME/jj/repos/<hash>/config.toml`      | **Yes** — one file for the trunk and every workspace |
+| `jj config path --workspace` | `$XDG_CONFIG_HOME/jj/workspaces/<hash>/config.toml` | No — one file per workspace                          |
 
 The `jj` aspect's `enterShell` runs `ln -sfn <generated> "$(jj config path --repo)"`. That target
 is the **shared** file. A `devenv shell` in a workspace therefore rewrites the trunk's repo config
@@ -128,14 +128,14 @@ Two findings are outside the reach of a jj-only harness. They are recorded in th
 
 ## Helpers added to `conftest.py`
 
-| Helper | Purpose |
-|---|---|
+| Helper                                       | Purpose                                                                                                                                                                                                                                                               |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Repo.workspace_add(name, *, revision=None)` | Adds a workspace at `<parent>/.<repo-dir>--<name>` and returns a `Repo` handle for it. The handle shares `env`, `cfg`, and `harness`, so `Harness.cleanup` removes the dir. Its timestamp counter starts 1000 steps ahead, so two handles never stamp one time twice. |
-| `Repo.workspace_list()` | Returns `{workspace name: change id of that workspace's @}`. |
-| `Repo.workspace_forget(name)` | Drops a workspace record. Leaves the dir. |
-| `Repo.workspace_root(*, cwd=None)` | Returns the workspace root jj resolves from `cwd`. |
-| `Repo.op_id()` | Returns the operation head id. Uses `--ignore-working-copy`, so the query adds no operation. |
-| `Repo.jj(..., cwd=None)` | New keyword. Defaults to the repo dir, so every existing call is unchanged. |
+| `Repo.workspace_list()`                      | Returns `{workspace name: change id of that workspace's @}`.                                                                                                                                                                                                          |
+| `Repo.workspace_forget(name)`                | Drops a workspace record. Leaves the dir.                                                                                                                                                                                                                             |
+| `Repo.workspace_root(*, cwd=None)`           | Returns the workspace root jj resolves from `cwd`.                                                                                                                                                                                                                    |
+| `Repo.op_id()`                               | Returns the operation head id. Uses `--ignore-working-copy`, so the query adds no operation.                                                                                                                                                                          |
+| `Repo.jj(..., cwd=None)`                     | New keyword. Defaults to the repo dir, so every existing call is unchanged.                                                                                                                                                                                           |
 
 ## How to run
 

@@ -46,7 +46,7 @@ asserts the `<<<<<<<`, `%%%%%%%`, and `>>>>>>>` markers are present.
 
 - `test_merge_conflict_detect_inspect_and_resolve` — a merge of two sides that
   edit the same line conflicts; `conflicts()` lists the merge, `jj resolve
-  --list` names the file, the markers are jj's, and writing the merged content
+--list` names the file, the markers are jj's, and writing the merged content
   plus a snapshot clears it.
 - `test_rebase_into_conflict_and_resolve` — a rebase that replays one edit over
   a conflicting edit makes the rebased commit conflicted; `jj edit` it, write the

@@ -35,17 +35,17 @@ refetch the whole tree.
 [research.md](research.md) is the deliverable the task names at `definition.md:133-145`. It
 answers all three required parts.
 
-| Part | Line | Content |
-|---|---|---|
-| Q1 — the adopter lock and re-lock cost | `:55` | **confirmed** |
-| Q2 | `:231` | **confirmed** |
-| Q3 — the subflake shape | `:301` | **confirmed** |
-| Q4 | `:380` | **confirmed** |
-| the ranked technique lists, (a) this repository and (b) an adopter | `:403-461` | ranked by value against effort |
-| the plain statement | `:462` | "Very little helps, and here is why" |
-| the spike decision | `:473-475` | **"Do not spike the subflake yet."** |
-| corrections to the task file | `:484` | four rows |
-| the reproduction | `:493` | every command, each run outside this repository |
+| Part                                                               | Line       | Content                                         |
+| ------------------------------------------------------------------ | ---------- | ----------------------------------------------- |
+| Q1 — the adopter lock and re-lock cost                             | `:55`      | **confirmed**                                   |
+| Q2                                                                 | `:231`     | **confirmed**                                   |
+| Q3 — the subflake shape                                            | `:301`     | **confirmed**                                   |
+| Q4                                                                 | `:380`     | **confirmed**                                   |
+| the ranked technique lists, (a) this repository and (b) an adopter | `:403-461` | ranked by value against effort                  |
+| the plain statement                                                | `:462`     | "Very little helps, and here is why"            |
+| the spike decision                                                 | `:473-475` | **"Do not spike the subflake yet."**            |
+| corrections to the task file                                       | `:484`     | four rows                                       |
+| the reproduction                                                   | `:493`     | every command, each run outside this repository |
 
 The headline numbers: a fresh adopter pays one 4.1 MB tree fetch and 54 841 bytes of lock text.
 The first lock run takes 1.2 s. A read of `lib.kdn` plus the package overlay takes 0.14 s. Lix

@@ -79,9 +79,10 @@ Fork build:
 `qwen4exp::graph_mtp` symbol; version `0.6.0 (build 11539, commit 6beadd4d6)`.
 
 Deployed on brys (`llms-frontier`, `nixos-rebuild switch`):
+
 - Child args contain `--slot-save-path /var/lib/kdn/llms/sessions
-  --slot-save-sessions x-session-id --slot-save-sessions-max 64
-  --ctx-checkpoints 32 --checkpoint-min-step 10500`.
+--slot-save-sessions x-session-id --slot-save-sessions-max 64
+--ctx-checkpoints 32 --checkpoint-min-step 10500`.
 - A request with `session_id: "test-1"` lands in slot 3
   (`GET /slots?model=qwen3.8-flash-next` reports it).
 - A second session pinned to slot 3 evicts `test-1` to disk:

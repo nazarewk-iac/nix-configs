@@ -17,7 +17,7 @@ timestamp: 2026-10-01T17:38:07+02:00
   (UUID `b5b3a9c8-86a2-4aff-b45a-bf563b7152a2`) mounted at `/nix`. The Determinate Systems
   nix-installer created this volume.
 - `/etc/fstab` mounts it with `UUID=b5b3a9c8-86a2-4aff-b45a-bf563b7152a2 /nix apfs
-  rw,noauto,nobrowse,suid,owners`.
+rw,noauto,nobrowse,suid,owners`.
 - The `Nix Store` volume shares the internal APFS container. So it consumes the 256 GB
   internal disk.
 - Two external encrypted APFS volumes exist: `anji-ext-01` and `anji-ext-02`, both 2 TB.
@@ -97,7 +97,7 @@ The Nix installer does not manage such a binary. This task must decide whether t
 - **Upstream reports the same failure.** `nix-darwin` issue 1792 reports
   `org.nixos.activate-system` failing with exit 126 on an external store even with Full Disk
   Access. `NixOS/nix` issue 6291 is the same class.
-- **Boot ordering.** nix-darwin activation runs *from* `/nix/store`, and
+- **Boot ordering.** nix-darwin activation runs _from_ `/nix/store`, and
   `org.nixos.activate-system` waits on `/bin/wait4path /nix/store`. The external volume must
   be mounted and decrypted before activation. The mount must be a launchd service ordered
   ahead of `activate-system`, not a `preActivation` step.

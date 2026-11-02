@@ -107,10 +107,10 @@ Today the adopter must know this and wire it by hand.
 Make the slot express the phases. Settle the option surface during implementation. This is a
 sketch:
 
-| Phase | Meaning |
-|---|---|
+| Phase     | Meaning                                                            |
+| --------- | ------------------------------------------------------------------ |
 | bootstrap | Stock `nix.linux-builder` on, Rosetta builder on. Both advertised. |
-| steady | Rosetta builder only. |
+| steady    | Rosetta builder only.                                              |
 
 Requirements:
 

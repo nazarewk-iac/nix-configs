@@ -90,11 +90,11 @@ So a collection after a switch cannot free the closure of the generation that th
 
 ### Procedure and effect
 
-| Step | Effect on disk |
-|---|---|
-| `switch` | The new closure lands in the store. The old and the new closure both stay. |
-| garbage collection after the switch | Frees every generation and every unreachable path, **except the booted closure**. |
-| reboot (or `systemctl kexec`) | `/run/booted-system` moves to the new generation. The kernel releases the old image. |
+| Step                                | Effect on disk                                                                           |
+| ----------------------------------- | ---------------------------------------------------------------------------------------- |
+| `switch`                            | The new closure lands in the store. The old and the new closure both stay.               |
+| garbage collection after the switch | Frees every generation and every unreachable path, **except the booted closure**.        |
+| reboot (or `systemctl kexec`)       | `/run/booted-system` moves to the new generation. The kernel releases the old image.     |
 | garbage collection after the reboot | Frees the old booted closure. Disk use drops to the current closure plus a small margin. |
 
 A `kexec` boot is a fast reboot. It is the only way to move the booted generation without a full
@@ -112,12 +112,11 @@ power cycle.
 
 ### Worked measurement (`moss`, 38 GB disk)
 
-| Point | Store | Free |
-|---|---|---|
-| Start | 22 GB | 9.7 GB |
-| After switch and collection | 18 GB | 14 GB |
-| After reboot and collection | 6.8 GB | 24 GB |
+| Point                       | Store  | Free   |
+| --------------------------- | ------ | ------ |
+| Start                       | 22 GB  | 9.7 GB |
+| After switch and collection | 18 GB  | 14 GB  |
+| After reboot and collection | 6.8 GB | 24 GB  |
 
 The system closure fell from 10.4 GiB to 6.06 GiB through the `kdn.minimalServer` switches. The
 store now holds the closure plus a small margin.
-

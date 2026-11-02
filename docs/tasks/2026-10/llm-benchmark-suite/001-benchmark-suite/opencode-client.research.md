@@ -41,14 +41,14 @@ thinking.
 
 ## Environment
 
-| item | value |
-|---|---|
-| host | oams (this host) |
-| `opencode --version` | 1.19.0 |
-| binary | `/nix/store/0nl0...-opencode-1.19.0/bin/opencode` |
-| CPU count | 16 |
-| up (at first run) | 2 days 3 h 50 min |
-| one-minute load during the pass | 2.3 to 6.0 (see the tables) |
+| item                            | value                                             |
+| ------------------------------- | ------------------------------------------------- |
+| host                            | oams (this host)                                  |
+| `opencode --version`            | 1.19.0                                            |
+| binary                          | `/nix/store/0nl0...-opencode-1.19.0/bin/opencode` |
+| CPU count                       | 16                                                |
+| up (at first run)               | 2 days 3 h 50 min                                 |
+| one-minute load during the pass | 2.3 to 6.0 (see the tables)                       |
 
 ## Cache control
 
@@ -64,10 +64,10 @@ it is safe to move aside. This measurement does **not** delete user data.
 `~/.local/share/opencode/*` (the session database, `auth.json`) and
 `~/.local/state/opencode/*` (settings) were not touched.
 
-| mode | action before each run |
-|---|---|
+| mode | action before each run                                                                  |
+| ---- | --------------------------------------------------------------------------------------- |
 | cold | move `models.json` aside (to `models.json.benchbak`) if present, so the run rebuilds it |
-| warm | leave `models.json` in place |
+| warm | leave `models.json` in place                                                            |
 
 The cold action runs **before every cold run**, not only before the first one.
 Without this, run 1 rebuilds the cache and runs 2 and 3 are warm, which hides
@@ -86,10 +86,10 @@ All values are seconds. `median` is the middle value of the three runs.
 Cold action applied before each run.
 
 | run | elapsed s | one-minute load |
-|---|---|---|
-| 1 | 3.447 | 5.65 |
-| 2 | 3.407 | 5.52 |
-| 3 | 3.613 | 5.16 |
+| --- | --------- | --------------- |
+| 1   | 3.447     | 5.65            |
+| 2   | 3.407     | 5.52            |
+| 3   | 3.613     | 5.16            |
 
 **Median: 3.447 s**
 
@@ -98,10 +98,10 @@ Cold action applied before each run.
 Cache left in place.
 
 | run | elapsed s | one-minute load |
-|---|---|---|
-| 1 | 3.955 | 5.57 |
-| 2 | 3.469 | 4.72 |
-| 3 | 3.179 | 4.42 |
+| --- | --------- | --------------- |
+| 1   | 3.955     | 5.57            |
+| 2   | 3.469     | 4.72            |
+| 3   | 3.179     | 4.42            |
 
 **Median: 3.469 s**
 
@@ -112,10 +112,10 @@ Cold action applied before each run. This directory loads
 rules, and MCP.
 
 | run | elapsed s | one-minute load |
-|---|---|---|
-| 1 | 3.471 | 3.79 |
-| 2 | 3.607 | 3.73 |
-| 3 | 3.414 | 3.51 |
+| --- | --------- | --------------- |
+| 1   | 3.471     | 3.79            |
+| 2   | 3.607     | 3.73            |
+| 3   | 3.414     | 3.51            |
 
 **Median: 3.471 s**
 
@@ -124,21 +124,21 @@ rules, and MCP.
 Cache left in place.
 
 | run | elapsed s | one-minute load |
-|---|---|---|
-| 1 | 4.011 | 4.84 |
-| 2 | 3.753 | 4.53 |
-| 3 | 4.083 | 4.22 |
+| --- | --------- | --------------- |
+| 1   | 4.011     | 4.84            |
+| 2   | 3.753     | 4.53            |
+| 3   | 4.083     | 4.22            |
 
 **Median: 4.011 s**
 
 ### Summary
 
-| cell | median s |
-|---|---|
-| opencode cold start | 3.447 |
-| opencode warm start | 3.469 |
-| opencode cold start in nix-configs | 3.471 |
-| opencode warm start in nix-configs | 4.011 |
+| cell                               | median s |
+| ---------------------------------- | -------- |
+| opencode cold start                | 3.447    |
+| opencode warm start                | 3.469    |
+| opencode cold start in nix-configs | 3.471    |
+| opencode warm start in nix-configs | 4.011    |
 
 ## Model-discovery plugin (brys)
 

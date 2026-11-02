@@ -84,11 +84,11 @@ The switch fabric is also declared there: `kdn.networking.router.nets.wan` and
 
 From `data/network-topology.md`:
 
-| Switch | Model | Address |
-|---|---|---|
+| Switch | Model                     | Address                        |
+| ------ | ------------------------- | ------------------------------ |
 | `coll` | TP-Link SG3428X-M2 (core) | 192.168.73.207, 192.168.252.11 |
-| `talt` | MikroTik CRS312-4C+8XG | 192.168.73.95, 192.168.88.1 |
-| `quip` | Zyxel XGS1250-12 | 192.168.252.5 |
+| `talt` | MikroTik CRS312-4C+8XG    | 192.168.73.95, 192.168.88.1    |
+| `quip` | Zyxel XGS1250-12          | 192.168.252.5                  |
 
 VLAN 946 (management) is tagged on every inter-switch link. `talt` has SFP+
 cages and several hosts hang off it.

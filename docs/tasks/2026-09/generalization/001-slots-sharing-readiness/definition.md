@@ -36,16 +36,16 @@ read "blocked from pushing to non-fork remotes".
 
 ### What the fix covers
 
-| Old defect | Where it is fixed now |
-|---|---|
-| Inverted remote comparison | `pre-push.sh:92-95` — the private remote is the only exemption |
-| `push_remote` resolved to the literal `refs` | `:23` reads `$1`, then `PRE_COMMIT_REMOTE_NAME`; `:24-32` match the remote URL as a last resort; `:21-22` record the trap |
-| Empty pattern list passed in silence | `:49-58` fail loudly, with a `KDN_JJ_PRE_PUSH_ALLOW_EMPTY=1` escape hatch |
-| Empty stdin skipped the whole loop | `:136-152` fail closed for a public remote, pass for the private one, and accept a named `KDN_JJ_PRE_PUSH_RANGE` |
-| The file check ignored the computed range | `check_range` at `:77-116` takes revision arguments; `:126-133` build them per ref |
-| A new ref used `main..$local_sha`, empty when the branch **is** `main` | `:132` uses `--not --remotes=` instead |
-| A path check could not see a private string in a public file | `:107-114` grep the diff content too |
-| `grep -q` plus `pipefail` read a match as "no match" | `:60-68` never pass `-q` |
+| Old defect                                                             | Where it is fixed now                                                                                                     |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Inverted remote comparison                                             | `pre-push.sh:92-95` — the private remote is the only exemption                                                            |
+| `push_remote` resolved to the literal `refs`                           | `:23` reads `$1`, then `PRE_COMMIT_REMOTE_NAME`; `:24-32` match the remote URL as a last resort; `:21-22` record the trap |
+| Empty pattern list passed in silence                                   | `:49-58` fail loudly, with a `KDN_JJ_PRE_PUSH_ALLOW_EMPTY=1` escape hatch                                                 |
+| Empty stdin skipped the whole loop                                     | `:136-152` fail closed for a public remote, pass for the private one, and accept a named `KDN_JJ_PRE_PUSH_RANGE`          |
+| The file check ignored the computed range                              | `check_range` at `:77-116` takes revision arguments; `:126-133` build them per ref                                        |
+| A new ref used `main..$local_sha`, empty when the branch **is** `main` | `:132` uses `--not --remotes=` instead                                                                                    |
+| A path check could not see a private string in a public file           | `:107-114` grep the diff content too                                                                                      |
+| `grep -q` plus `pipefail` read a match as "no match"                   | `:60-68` never pass `-q`                                                                                                  |
 
 The two known limits are written into the script header at `:11-17`.
 
@@ -131,18 +131,18 @@ outputs, so `nix flake check` runs it. It exports two checks: `standalone-slots`
 
 `standalone-slots` asserts two things:
 
-| Assertion | Mechanism |
-|---|---|
+| Assertion                                                       | Mechanism                                                                  |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------- |
 | No slot names a universal option, a meta option, or `kdnConfig` | a source scan of every `.nix` file under `modules/slots/`, over 31 needles |
-| The whole slots tree resolves with `pkgs` and `inputs` alone | one `mkSlots` render; the target key set must equal the six known targets |
+| The whole slots tree resolves with `pkgs` and `inputs` alone    | one `mkSlots` render; the target key set must equal the six known targets  |
 
 Measured on 2026-09-11:
 
-* `nix eval --no-eval-cache '.#checks.aarch64-darwin' --apply builtins.attrNames` lists both
+- `nix eval --no-eval-cache '.#checks.aarch64-darwin' --apply builtins.attrNames` lists both
   checks.
-* The `standalone-slots` build script reads
+- The `standalone-slots` build script reads
   `standalone slots: 2 of 2 assertions pass`.
-* A shell replica of the scan finds **zero** violations across the 19 slot files.
+- A shell replica of the scan finds **zero** violations across the 19 slot files.
 
 So the check needs **no allowlist for a slot**. `checks/standalone.nix:232` allowlists exactly
 one aspect `enable` option, and that entry is a debt of the aspect tree, not of the slots tree.

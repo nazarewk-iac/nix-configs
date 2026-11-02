@@ -6,7 +6,7 @@ timestamp: 2026-07-30T16:14:54+02:00
 
 # Multi-arch container images from Nix (no runtime, no registry)
 
-> **Agent summary:** produce a single multi-arch container image (an OCI *image index*
+> **Agent summary:** produce a single multi-arch container image (an OCI _image index_
 > covering `aarch64-linux` + `x86_64-linux`) entirely inside Nix — no Docker/podman daemon, no
 > registry round-trip. Requires the dual-arch builder from
 > [multi-arch-builder.md](./multi-arch-builder.md) so both per-arch images can be realised on one
@@ -60,12 +60,12 @@ in ...
 - On an `aarch64-darwin` host with the dual-arch builder in place, `forSystem "x86_64-linux"` is
   realised on the Rosetta/QEMU builder and copied back to the host store (see builder doc).
 - **Known blocker without the x86_64 builder:** nix2container emits tiny config derivations
-  (`history.json`, `group.json`, …) with `allowSubstitutes = false`, so they must be *built* on
+  (`history.json`, `group.json`, …) with `allowSubstitutes = false`, so they must be _built_ on
   `x86_64-linux` — they can't be substituted from a cache. No x86_64 builder / no binfmt ⇒
   `a 'x86_64-linux' with features {} is required to build ...` failure. This is the single reason
   the whole thing needs the companion doc.
 - **Copy wrappers run on the host, not in the image.** nix2container's `copyTo*` passthru wrappers
-  are skopeo apps built from the *image's* (Linux) `pkgs`; on a darwin host they die with
+  are skopeo apps built from the _image's_ (Linux) `pkgs`; on a darwin host they die with
   `exec format error`. Rebuild them from the **host** package set
   (`hostPkgs.writeShellApplication` wrapping `hostSkopeo`), pointing skopeo at `nix:${image}` (the
   `nix:` transport only needs the arch-neutral image-json path). Pass `hostPkgs`/`hostSkopeo` into
@@ -76,19 +76,19 @@ in ...
 ## Half 2 — stitch the index locally (options)
 
 Requirement recap: assemble an OCI image index **in a Nix build step**, **no registry**, **no
-daemon**. The tools below are all in nixpkgs. Only some can *create* an index against a local
+daemon**. The tools below are all in nixpkgs. Only some can _create_ an index against a local
 `oci-layout` directory — that distinction is the whole decision.
 
-| Tool | Create index into a **local** `oci-layout`? | Notes |
-|------|--------------------------------------------|-------|
-| **`regctl index create`** | ✅ yes (`ocidir://`) | Purpose-built; works fully offline. **Recommended.** |
-| `crane index append` | ❌ registry-oriented | `--append`/filter work against **remote** refs; not a local-layout index creator. |
-| `skopeo copy` | ⚠️ copies *into* a layout, but | **cannot create** the index manifest that ties arches together. |
-| `manifest-tool push` | ❌ push-only | Designed to push a list to a registry. |
-| `umoci` | ⚠️ layout-aware | Image/layout surgery, not a convenient index-builder for this. |
-| `buildah manifest` | ⚠️ needs storage | Works, but pulls in a container-storage backend — heavier, less "pure Nix step". |
+| Tool                      | Create index into a **local** `oci-layout`? | Notes                                                                             |
+| ------------------------- | ------------------------------------------- | --------------------------------------------------------------------------------- |
+| **`regctl index create`** | ✅ yes (`ocidir://`)                        | Purpose-built; works fully offline. **Recommended.**                              |
+| `crane index append`      | ❌ registry-oriented                        | `--append`/filter work against **remote** refs; not a local-layout index creator. |
+| `skopeo copy`             | ⚠️ copies _into_ a layout, but              | **cannot create** the index manifest that ties arches together.                   |
+| `manifest-tool push`      | ❌ push-only                                | Designed to push a list to a registry.                                            |
+| `umoci`                   | ⚠️ layout-aware                             | Image/layout surgery, not a convenient index-builder for this.                    |
+| `buildah manifest`        | ⚠️ needs storage                            | Works, but pulls in a container-storage backend — heavier, less "pure Nix step".  |
 
-### Option 1 — `regctl index create` against `ocidir://` *(recommended)*
+### Option 1 — `regctl index create` against `ocidir://` _(recommended)_
 
 `regctl` (from `regclient`) creates an image index directly in a local OCI layout directory with
 no network and no daemon. Proven pattern in a `runCommand`:
@@ -170,7 +170,7 @@ per-arch nix2container images (aarch64 + x86_64, both in host store)
 - All of `regctl`, `skopeo`, `crane`, `manifest-tool`, `umoci`, `buildah` are in nixpkgs — no new
   flake input needed for the stitch step; it's a `runCommand` with `nativeBuildInputs`.
 - Keep the stitch derivation host-arch (`hostPkgs`): skopeo/regctl run on the host, only the image
-  *contents* are Linux.
+  _contents_ are Linux.
 - Verify the result offline before pushing:
   ```bash
   skopeo inspect --raw oci:$out:index | jq '.mediaType, .manifests[].platform'

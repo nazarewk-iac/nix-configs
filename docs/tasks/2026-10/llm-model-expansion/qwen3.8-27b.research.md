@@ -15,15 +15,15 @@ another step deploys the config.
 
 ## Artifact
 
-| field | value |
-|---|---|
-| HF repo | `unsloth/Qwen3.8-27B-GGUF` |
-| HF file | `Qwen3.8-27B-UD-Q4_K_M.gguf` |
-| size | 16,464,440,224 bytes (15.33 GiB) |
-| LFS oid (sha256) | `322e194ff79741c7baa497c240f677f54b201b0efab44ca8e50f122b39123482` |
+| field                   | value                                                                        |
+| ----------------------- | ---------------------------------------------------------------------------- |
+| HF repo                 | `unsloth/Qwen3.8-27B-GGUF`                                                   |
+| HF file                 | `Qwen3.8-27B-UD-Q4_K_M.gguf`                                                 |
+| size                    | 16,464,440,224 bytes (15.33 GiB)                                             |
+| LFS oid (sha256)        | `322e194ff79741c7baa497c240f677f54b201b0efab44ca8e50f122b39123482`           |
 | verified sha256 on brys | `322e194ff79741c7baa497c240f677f54b201b0efab44ca8e50f122b39123482` (matches) |
-| path on brys | `/var/lib/kdn/llms/models/surveyed/qwen3.8-27b.gguf` |
-| download method | `hf download` on brys, token at `/run/configs/llms/huggingface/token` |
+| path on brys            | `/var/lib/kdn/llms/models/surveyed/qwen3.8-27b.gguf`                         |
+| download method         | `hf download` on brys, token at `/run/configs/llms/huggingface/token`        |
 
 The Xet transfer path stalled at 1.34 GB. The download used
 `HF_HUB_DISABLE_XET=1` and then completed at about 100 MB/s. The file was
@@ -49,15 +49,15 @@ removed after the move.
 Each throughput number below is measured. `ngl 0` is the CPU row; the others
 offload that many layers to the W6600.
 
-| config | ctx | ngl | load_s | decode_tok_s | prefill_tok_s | RssFile_MiB | RssAnon_MiB | VmRSS_MiB | SYS_used_MB | note |
-|---|---|---|---|---|---|---|---|---|---|---|
-| cpu-ngl0 | 32768 | 0 | 27.3 | 2.45 | 78.3 | 15388 | 3250 | 18639 | 22226 | prompt_n=1033; second CPU run |
-| cpu-ngl0 | 32768 | 0 | 27.3 | 2.40 | 81.7 | 15388 | 3251 | 18640 | 22235 | prompt_n=1033; first CPU run |
-| gpu-ngl24 | 32768 | 24 | 28.3 | 2.66 | 60.6 | 9415 | 2442 | 11857 | 21554 | prompt_n=1033 |
-| gpu-ngl32 | 32768 | 32 | 29.3 | 3.05 | 56.4 | 7704 | 2169 | 9874 | 21162 | prompt_n=1033 |
-| gpu-ngl36 | 32768 | 36 | 29.3 | 2.85 | 52.7 | 6874 | 2032 | 8907 | 21149 | prompt_n=1033 |
-| gpu-ngl40 | 32768 | 40 | 30.3 | 3.13 | 49.2 | 6014 | 1896 | 7910 | 21278 | prompt_n=1033; best decode |
-| gpu-ngl99 | 32768 | 99 | 32.3 | 1.62 | 24.8 | 714 | 1063 | 1778 | 25860 | prompt_n=1033; all layers; worst |
+| config    | ctx   | ngl | load_s | decode_tok_s | prefill_tok_s | RssFile_MiB | RssAnon_MiB | VmRSS_MiB | SYS_used_MB | note                             |
+| --------- | ----- | --- | ------ | ------------ | ------------- | ----------- | ----------- | --------- | ----------- | -------------------------------- |
+| cpu-ngl0  | 32768 | 0   | 27.3   | 2.45         | 78.3          | 15388       | 3250        | 18639     | 22226       | prompt_n=1033; second CPU run    |
+| cpu-ngl0  | 32768 | 0   | 27.3   | 2.40         | 81.7          | 15388       | 3251        | 18640     | 22235       | prompt_n=1033; first CPU run     |
+| gpu-ngl24 | 32768 | 24  | 28.3   | 2.66         | 60.6          | 9415        | 2442        | 11857     | 21554       | prompt_n=1033                    |
+| gpu-ngl32 | 32768 | 32  | 29.3   | 3.05         | 56.4          | 7704        | 2169        | 9874      | 21162       | prompt_n=1033                    |
+| gpu-ngl36 | 32768 | 36  | 29.3   | 2.85         | 52.7          | 6874        | 2032        | 8907      | 21149       | prompt_n=1033                    |
+| gpu-ngl40 | 32768 | 40  | 30.3   | 3.13         | 49.2          | 6014        | 1896        | 7910      | 21278       | prompt_n=1033; best decode       |
+| gpu-ngl99 | 32768 | 99  | 32.3   | 1.62         | 24.8          | 714         | 1063        | 1778      | 25860       | prompt_n=1033; all layers; worst |
 
 Reference CPU values from the 2026-10-19 suite for the same class:
 `qwen3.6-27b` 3.13 t/s decode, 102 prefill; `granite-4.2-30b` 3.00 / 95.8.

@@ -31,26 +31,26 @@ enables it.
 
 ### 1. The slot — `modules/slots/llm/default.nix`
 
-| Line | Content |
-|---|---|
-| `:121-146` | the per-router preset and filter helpers |
+| Line       | Content                                                                     |
+| ---------- | --------------------------------------------------------------------------- |
+| `:121-146` | the per-router preset and filter helpers                                    |
 | `:171-176` | one systemd unit per router, `lib.nameValuePair "llama-cpp-router-${name}"` |
-| `:184` | the `ExecStart` that runs `llama-server` |
-| `:385-441` | the `kdn.llm.local.routers` option |
-| `:559-569` | `models.<name>.mainRouter` — each model picks its router |
-| `:788` | an assertion that a router name is lowercase alphanumeric |
-| `:820-823` | the unit merge, so the extra routers join the default one |
+| `:184`     | the `ExecStart` that runs `llama-server`                                    |
+| `:385-441` | the `kdn.llm.local.routers` option                                          |
+| `:559-569` | `models.<name>.mainRouter` — each model picks its router                    |
+| `:788`     | an assertion that a router name is lowercase alphanumeric                   |
+| `:820-823` | the unit merge, so the extra routers join the default one                   |
 
 A host that names no extra router keeps the old single-router behaviour.
 
 ### 2. The proxy — the `router` branch of the `nazarewk-iac/opencode_compat_proxy` fork
 
-| Line | Content |
-|---|---|
-| `:20` | `UPSTREAMS = {"frontier": UPSTREAM}` — the upstream table |
-| `:23` | `ROUTE` — the model-to-upstream map |
-| `:71-72` | `_build_route` builds the map from the environment |
-| `:76-78` | the per-model upstream resolution |
+| Line       | Content                                                                  |
+| ---------- | ------------------------------------------------------------------------ |
+| `:20`      | `UPSTREAMS = {"frontier": UPSTREAM}` — the upstream table                |
+| `:23`      | `ROUTE` — the model-to-upstream map                                      |
+| `:71-72`   | `_build_route` builds the map from the environment                       |
+| `:76-78`   | the per-model upstream resolution                                        |
 | `:125-146` | `GET /v1/models` merges the model list across every entry of `UPSTREAMS` |
 
 A model the map does not name falls back to the frontier upstream, so an unknown model still
@@ -68,12 +68,12 @@ original single-router behaviour (`docs/local-llms.md:155-157`).
 
 ### The exit test, item by item
 
-| Item | State | Evidence |
-|---|---|---|
-| 1. the host enables a second router, and both answer on their own ports | met | `hosts/brys/llm-minimal.nix:49-56`; the port map at `docs/local-llms.md:136-157` |
-| 2. a frontier request and a small request both succeed through one endpoint | met | the proxy resolves per model at `router.patch:76-78`; the measured run at `docs/local-llms.md:159-169` drove both sides |
-| 3. the frontier weights stay hot across a small-model swap | met, measured | `docs/local-llms.md:159-169` — the frontier model never cold-reloads across a swap on the small router |
-| 4. `/v1/models` lists the models of both routers | met by code and documentation, **not** by a recorded response | `router.patch:125-146` merges the lists; `docs/local-llms.md:27` and `:40` state the contract |
+| Item                                                                        | State                                                         | Evidence                                                                                                                |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| 1. the host enables a second router, and both answer on their own ports     | met                                                           | `hosts/brys/llm-minimal.nix:49-56`; the port map at `docs/local-llms.md:136-157`                                        |
+| 2. a frontier request and a small request both succeed through one endpoint | met                                                           | the proxy resolves per model at `router.patch:76-78`; the measured run at `docs/local-llms.md:159-169` drove both sides |
+| 3. the frontier weights stay hot across a small-model swap                  | met, measured                                                 | `docs/local-llms.md:159-169` — the frontier model never cold-reloads across a swap on the small router                  |
+| 4. `/v1/models` lists the models of both routers                            | met by code and documentation, **not** by a recorded response | `router.patch:125-146` merges the lists; `docs/local-llms.md:27` and `:40` state the contract                           |
 
 ## Verification steps
 

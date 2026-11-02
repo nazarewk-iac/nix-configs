@@ -29,18 +29,18 @@ The registry entry goes in `modules/den/lib.nix:36-242`, next to `ca = ./aspects
 
 One leaf is `kdn.certificates.certs.<name>`:
 
-| Option | Type | Default | Meaning |
-|---|---|---|---|
-| `ca` | a CA name from `kdn.ca-dag.cas` | required | The signing CA. |
-| `type` | `"tls-server"`, `"tls-client"`, `"ssh-user"` or `"ssh-host"` | required | The certificate class. |
-| `commonName` | string | required | The subject common name. |
-| `sans` | list of strings | `[ ]` | The TLS subject alternative names. |
-| `principals` | list of strings | `[ ]` | The SSH principals. |
-| `directory` | string | `"hosts/<hostName>/certs"` | The repo-relative directory. |
-| `certFile` | string | `"${name}.pub"` | The public certificate filename. |
-| `keyFile` | string | `"${name}.key"` | The private key filename. The stored key is `<keyFile>.sops`. |
-| `keySource` | `"external"` or `"managed"` | — | `external` means the key pre-exists. `managed` means the CLI generates the key. |
-| `minGenerationDate` | `null` or ISO 8601 string | `null` | The oldest allowed generation date. |
+| Option              | Type                                                         | Default                    | Meaning                                                                         |
+| ------------------- | ------------------------------------------------------------ | -------------------------- | ------------------------------------------------------------------------------- |
+| `ca`                | a CA name from `kdn.ca-dag.cas`                              | required                   | The signing CA.                                                                 |
+| `type`              | `"tls-server"`, `"tls-client"`, `"ssh-user"` or `"ssh-host"` | required                   | The certificate class.                                                          |
+| `commonName`        | string                                                       | required                   | The subject common name.                                                        |
+| `sans`              | list of strings                                              | `[ ]`                      | The TLS subject alternative names.                                              |
+| `principals`        | list of strings                                              | `[ ]`                      | The SSH principals.                                                             |
+| `directory`         | string                                                       | `"hosts/<hostName>/certs"` | The repo-relative directory.                                                    |
+| `certFile`          | string                                                       | `"${name}.pub"`            | The public certificate filename.                                                |
+| `keyFile`           | string                                                       | `"${name}.key"`            | The private key filename. The stored key is `<keyFile>.sops`.                   |
+| `keySource`         | `"external"` or `"managed"`                                  | —                          | `external` means the key pre-exists. `managed` means the CLI generates the key. |
+| `minGenerationDate` | `null` or ISO 8601 string                                    | `null`                     | The oldest allowed generation date.                                             |
 
 The four classes split the two certificate families:
 

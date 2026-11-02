@@ -20,15 +20,15 @@ The table below comes from the sibling inventory. Do not re-derive it. See
 [hardware.research.md](../hardware-inventory/hardware.research.md) for the sources and the
 full list.
 
-| Machine | CPU | RAM | GPU | State | Notes |
-|---|---|---|---|---|---|
-| brys | AMD Ryzen 9 5950X 16C/32T | 128 GB DDR4 | Radeon PRO W6600 8 GB | serving today | the production LLM server, CPU-bound |
-| Orion O6 | CIX P1 12-core SoC | 64 GB LPDDR5 | Mali (slower than CPU) | **unconfigured** | free PCIe Gen4 x16 slot; no Nix config; numbers unmeasured |
-| oams | AMD Ryzen 9 5900HX class | not documented | Radeon RX 6800M 12 GB | **interactive** | gaming/dev laptop; only real dGPU |
-| 3x N100 NAS | Intel N100 | 32 GB DDR4-3200 | iGPU only | **offline** | small MoE grunts possible |
-| 1x CWWK mini PC | Intel i5-1240P (12th gen) | **DDR5, 64 GB** | iGPU | **offline** | Proxmox/firewall box |
-| 3x RPi4 | BCM2711 Cortex-A72 | 4 GB | VideoCore VI | **offline** | very low fit |
-| briv | Raspberry Pi 4 | (Pi4) | VideoCore VI | serving (Home Assistant) | not an inference host |
+| Machine         | CPU                       | RAM             | GPU                    | State                    | Notes                                                      |
+| --------------- | ------------------------- | --------------- | ---------------------- | ------------------------ | ---------------------------------------------------------- |
+| brys            | AMD Ryzen 9 5950X 16C/32T | 128 GB DDR4     | Radeon PRO W6600 8 GB  | serving today            | the production LLM server, CPU-bound                       |
+| Orion O6        | CIX P1 12-core SoC        | 64 GB LPDDR5    | Mali (slower than CPU) | **unconfigured**         | free PCIe Gen4 x16 slot; no Nix config; numbers unmeasured |
+| oams            | AMD Ryzen 9 5900HX class  | not documented  | Radeon RX 6800M 12 GB  | **interactive**          | gaming/dev laptop; only real dGPU                          |
+| 3x N100 NAS     | Intel N100                | 32 GB DDR4-3200 | iGPU only              | **offline**              | small MoE grunts possible                                  |
+| 1x CWWK mini PC | Intel i5-1240P (12th gen) | **DDR5, 64 GB** | iGPU                   | **offline**              | Proxmox/firewall box                                       |
+| 3x RPi4         | BCM2711 Cortex-A72        | 4 GB            | VideoCore VI           | **offline**              | very low fit                                               |
+| briv            | Raspberry Pi 4            | (Pi4)           | VideoCore VI           | serving (Home Assistant) | not an inference host                                      |
 
 ## Why research first
 

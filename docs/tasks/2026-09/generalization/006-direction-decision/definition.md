@@ -50,12 +50,12 @@ reasons.
 First, `.agents/rules/slots-standalone.md` forbids exactly the intra-tree option coupling that
 makes the universal tree valuable. The measured coupling:
 
-| Coupling | Reach |
-|---|---|
-| `kdn.env.packages` / `kdn.env.variables` | 108 files, 152 references, one declaration in `modules/universal/env/default.nix` |
-| `kdn.security.secrets.sops.files` | 18 files, 50 references |
-| `kdn.profile.*` | sets 105 distinct `kdn.*.enable` paths against 169 distinct `options.kdn.*` prefixes |
-| `kdn.disks.persist` | across the disko/ZFS engine |
+| Coupling                                 | Reach                                                                                |
+| ---------------------------------------- | ------------------------------------------------------------------------------------ |
+| `kdn.env.packages` / `kdn.env.variables` | 108 files, 152 references, one declaration in `modules/universal/env/default.nix`    |
+| `kdn.security.secrets.sops.files`        | 18 files, 50 references                                                              |
+| `kdn.profile.*`                          | sets 105 distinct `kdn.*.enable` paths against 169 distinct `options.kdn.*` prefixes |
+| `kdn.disks.persist`                      | across the disko/ZFS engine                                                          |
 
 A conversion that honours the standalone rule loses this. A conversion that breaks the rule
 re-invents `modules/universal` under a new name.
@@ -70,12 +70,12 @@ this repo keeps.
 
 From [004](../004-den-spike/definition.md):
 
-| Criterion | Weight |
-|---|---|
-| 2 — an adopter imports a resolved aspect as a plain drop-in, and does not adopt den | **decisive** |
-| 1 — a `devenv` class can exist (12 of 19 slots target devenv) | near-fatal if it fails |
-| 3 — den satisfies the 005 requirement | required |
-| 4 — the 1→N mixed-aspect collision is gone | important, workaround exists |
+| Criterion                                                                           | Weight                       |
+| ----------------------------------------------------------------------------------- | ---------------------------- |
+| 2 — an adopter imports a resolved aspect as a plain drop-in, and does not adopt den | **decisive**                 |
+| 1 — a `devenv` class can exist (12 of 19 slots target devenv)                       | near-fatal if it fails       |
+| 3 — den satisfies the 005 requirement                                               | required                     |
+| 4 — the 1→N mixed-aspect collision is gone                                          | important, workaround exists |
 
 From [005](../005-conditional-imports-requirement/definition.md): the conformance test, and the
 confirmed answer to whether any `imports` list depends on evaluated `config` rather than static
@@ -85,14 +85,14 @@ data.
 
 Score both options against the same list. Write the score down.
 
-| Question | slots | den |
-|---|---|---|
-| Satisfies the 005 requirement | needs new mechanism — cost? | 004 criterion 3 |
-| Adopter imports a drop-in with no need to learn the framework | already true — `mkSlots` is small | 004 criterion 2 |
-| devenv support | native, 12 slots ship today | 004 criterion 1 |
-| API stability | this repo owns it | v0.x, no stable API, 2 maintainers do 90% of commits |
-| Maintenance burden | this repo carries it all | shared, but with upstream drift risk |
-| Cost to reach parity for the pieces this repo keeps | — | — |
+| Question                                                      | slots                             | den                                                  |
+| ------------------------------------------------------------- | --------------------------------- | ---------------------------------------------------- |
+| Satisfies the 005 requirement                                 | needs new mechanism — cost?       | 004 criterion 3                                      |
+| Adopter imports a drop-in with no need to learn the framework | already true — `mkSlots` is small | 004 criterion 2                                      |
+| devenv support                                                | native, 12 slots ship today       | 004 criterion 1                                      |
+| API stability                                                 | this repo owns it                 | v0.x, no stable API, 2 maintainers do 90% of commits |
+| Maintenance burden                                            | this repo carries it all          | shared, but with upstream drift risk                 |
+| Cost to reach parity for the pieces this repo keeps           | —                                 | —                                                    |
 
 Two honest asymmetries to weigh, not to hide:
 

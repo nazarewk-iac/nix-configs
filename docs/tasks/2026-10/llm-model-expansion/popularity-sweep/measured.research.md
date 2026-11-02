@@ -42,17 +42,17 @@ and [new-candidates.research.md](../new-candidates.research.md).
 
 ## Downloads
 
-| # | repo | file | size GB | local name | note |
-|---|---|---|---|---|---|
-| 1 | `ornith-ai/Ornith-1.5-9B-GGUF` | `Ornith-1.5-9B-Q4_K_M.gguf` | 5.38 | `ornith-1.5-9b.gguf` | + mmproj 0.86 GB |
-| 2 | `ornith-ai/Ornith-1.5-35B-A3B-GGUF` | `Ornith-1.5-35B-Q4_K_M.gguf` | 20.22 | `ornith-1.5-35b-a3b.gguf` | + mmproj 0.84 GB |
-| 3 | `openbmb/MiniCPM-V-4.7-35B-A3B-gguf` | `MiniCPM-V-4_7-35B-A3B-Q4_K_M.gguf` | 19.71 | `minicpm-v-4.7-35b-a3b.gguf` | + mmproj 1.04 GB |
-| 4 | `LiquidAI/LFM2.5-2.6B-GGUF` | `LFM2.5-2.6B-Q4_K_M.gguf` | 1.56 | `lfm2.5-2.6b.gguf` | text |
-| 5 | `unsloth/Muse-Glimmer-30B-GGUF` | `Muse-Glimmer-30B-UD-Q4_K_XL.gguf` | 14.79 | `muse-glimmer-30b.gguf` | + mmproj 1.91 GB |
-| 6 | `unsloth/Inkling-Small-GGUF` | `Inkling-Small-UD-Q4_K_M-*` | **158** | — | **not downloaded; see below** |
-| 7 | `peculiar-ragdoll/Tiel-Coder-35B-A3B-GGUF-MTP` | `Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf` | 21.19 | `tiel-coder-35b-a3b-mtp.gguf` | + mmproj 0.84 GB |
-| 8 | `JetBrains/Mellum2.1-12B-A2.5B-Thinking-GGUF` | `Mellum2.1-12B-A2.5B-Thinking-Q4_K_M.gguf` | 7.52 | `mellum-2.1-12b-a2.5b-thinking.gguf` | text |
-| 9 | `tencent/Hy-Memory-30B-A3B-GGUF` | `hy3a3b-memrl1009-step250-Q4_K_M-imat.gguf` | 16.98 | `hy-memory-30b-a3b.gguf` | text |
+| #   | repo                                           | file                                        | size GB | local name                           | note                          |
+| --- | ---------------------------------------------- | ------------------------------------------- | ------- | ------------------------------------ | ----------------------------- |
+| 1   | `ornith-ai/Ornith-1.5-9B-GGUF`                 | `Ornith-1.5-9B-Q4_K_M.gguf`                 | 5.38    | `ornith-1.5-9b.gguf`                 | + mmproj 0.86 GB              |
+| 2   | `ornith-ai/Ornith-1.5-35B-A3B-GGUF`            | `Ornith-1.5-35B-Q4_K_M.gguf`                | 20.22   | `ornith-1.5-35b-a3b.gguf`            | + mmproj 0.84 GB              |
+| 3   | `openbmb/MiniCPM-V-4.7-35B-A3B-gguf`           | `MiniCPM-V-4_7-35B-A3B-Q4_K_M.gguf`         | 19.71   | `minicpm-v-4.7-35b-a3b.gguf`         | + mmproj 1.04 GB              |
+| 4   | `LiquidAI/LFM2.5-2.6B-GGUF`                    | `LFM2.5-2.6B-Q4_K_M.gguf`                   | 1.56    | `lfm2.5-2.6b.gguf`                   | text                          |
+| 5   | `unsloth/Muse-Glimmer-30B-GGUF`                | `Muse-Glimmer-30B-UD-Q4_K_XL.gguf`          | 14.79   | `muse-glimmer-30b.gguf`              | + mmproj 1.91 GB              |
+| 6   | `unsloth/Inkling-Small-GGUF`                   | `Inkling-Small-UD-Q4_K_M-*`                 | **158** | —                                    | **not downloaded; see below** |
+| 7   | `peculiar-ragdoll/Tiel-Coder-35B-A3B-GGUF-MTP` | `Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf`    | 21.19   | `tiel-coder-35b-a3b-mtp.gguf`        | + mmproj 0.84 GB              |
+| 8   | `JetBrains/Mellum2.1-12B-A2.5B-Thinking-GGUF`  | `Mellum2.1-12B-A2.5B-Thinking-Q4_K_M.gguf`  | 7.52    | `mellum-2.1-12b-a2.5b-thinking.gguf` | text                          |
+| 9   | `tencent/Hy-Memory-30B-A3B-GGUF`               | `hy3a3b-memrl1009-step250-Q4_K_M-imat.gguf` | 16.98   | `hy-memory-30b-a3b.gguf`             | text                          |
 
 ### Candidate 6: Inkling-Small is far larger than the sweep says
 
@@ -72,33 +72,33 @@ that show a text value answered an image request; the empty cells are explained
 in the notes. The MiniCPM row uses the text-only path, because its projector
 does not load.
 
-| model | repo | file | size GB | arch | load_s | decode_tok_s | prefill_tok_s | RssFile/RssAnon/VmRSS MiB | SYS_MB | modality smoke test | load OK? | note |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Ornith-1.5-9B | `ornith-ai/Ornith-1.5-9B-GGUF` | Q4_K_M + mmproj BF16 | 5.38 + 0.86 | `qwen35` | 11.1 | 7.22 | 266.4 | 5393/1677/7070 | 20672 | image OK ("A red circle.") | yes (sessions) | dense 9B; vision works; best size/speed on the 8 GB GPU |
-| Ornith-1.5-35B-A3B | `ornith-ai/Ornith-1.5-35B-A3B-GGUF` | Q4_K_M + mmproj BF16 | 20.22 + 0.84 | `qwen35moe` | 34.3 | 8.78 | 167.3 | 20211/1394/21606 | 20882 | image OK ("The image shows a red circle.") | yes (sessions) | MoE ~3B active; vision works |
-| MiniCPM-V-4.7-35B-A3B | `openbmb/MiniCPM-V-4.7-35B-A3B-gguf` | Q4_K_M (text path) | 19.71 | `qwen35moe` | 32.3 | 13.89 | 184.7 | 20207/1225/21433 | 20262 | image NOT tested; projector fails to load | yes, text only (sessions) | projector type `minicpmv4_7` unsupported; see below |
-| LFM2.5-2.6B | `LiquidAI/LFM2.5-2.6B-GGUF` | Q4_K_M | 1.56 | `lfm2` | 4.1 | 13.65 | 540.1 | 1620/601/2222 | 19039 | n/a (text) | yes (sessions) | tiny; fastest prefill of the set |
-| Muse-Glimmer-30B | `unsloth/Muse-Glimmer-30B-GGUF` | UD-Q4_K_XL + mmproj Q8_0 | 14.79 + 1.91 | `muse-glimmer` | 28.3 | 1.88 | 100.5 | 15165/822/15988 | 19956 | image OK ("A red circle", in `reasoning_content`) | yes (sessions) | new arch; thinking model; very slow decode |
-| Inkling-Small | `unsloth/Inkling-Small-GGUF` | UD-Q4_K_M | 158 (claimed 15) | — | — | — | — | — | — | — | no | not downloaded; real size ~158 GB |
-| Tiel-Coder-35B-A3B-MTP | `peculiar-ragdoll/Tiel-Coder-35B-A3B-GGUF-MTP` | UD-Q4_K_XL + mmproj BF16 | 21.19 + 0.84 | `qwen35moe` | 37.4 | 6.67 | 156.0 | 21350/1269/22620 | 20679 | image OK ("A red circle.") | yes (sessions) | MoE coder with an MTP head (MTP not exercised); vision works |
-| Mellum2.1-12B-A2.5B-Thinking | `JetBrains/Mellum2.1-12B-A2.5B-Thinking-GGUF` | Q4_K_M | 7.52 | `mellum` | 13.1 | 14.75 | 411.0 | 7729/641/8370 | 19931 | n/a (text) | yes (sessions) | new arch; fast; small footprint |
-| Hy-Memory-30B-A3B | `tencent/Hy-Memory-30B-A3B-GGUF` | Q4_K_M imat | 16.98 | `hy_v3` | 29.3 | 14.30 | 236.6 | 17419/3151/20570 | 22132 | n/a (text) | yes (sessions) | new arch; MoE; fast decode |
+| model                        | repo                                           | file                     | size GB          | arch           | load_s | decode_tok_s | prefill_tok_s | RssFile/RssAnon/VmRSS MiB | SYS_MB | modality smoke test                               | load OK?                  | note                                                         |
+| ---------------------------- | ---------------------------------------------- | ------------------------ | ---------------- | -------------- | ------ | ------------ | ------------- | ------------------------- | ------ | ------------------------------------------------- | ------------------------- | ------------------------------------------------------------ |
+| Ornith-1.5-9B                | `ornith-ai/Ornith-1.5-9B-GGUF`                 | Q4_K_M + mmproj BF16     | 5.38 + 0.86      | `qwen35`       | 11.1   | 7.22         | 266.4         | 5393/1677/7070            | 20672  | image OK ("A red circle.")                        | yes (sessions)            | dense 9B; vision works; best size/speed on the 8 GB GPU      |
+| Ornith-1.5-35B-A3B           | `ornith-ai/Ornith-1.5-35B-A3B-GGUF`            | Q4_K_M + mmproj BF16     | 20.22 + 0.84     | `qwen35moe`    | 34.3   | 8.78         | 167.3         | 20211/1394/21606          | 20882  | image OK ("The image shows a red circle.")        | yes (sessions)            | MoE ~3B active; vision works                                 |
+| MiniCPM-V-4.7-35B-A3B        | `openbmb/MiniCPM-V-4.7-35B-A3B-gguf`           | Q4_K_M (text path)       | 19.71            | `qwen35moe`    | 32.3   | 13.89        | 184.7         | 20207/1225/21433          | 20262  | image NOT tested; projector fails to load         | yes, text only (sessions) | projector type `minicpmv4_7` unsupported; see below          |
+| LFM2.5-2.6B                  | `LiquidAI/LFM2.5-2.6B-GGUF`                    | Q4_K_M                   | 1.56             | `lfm2`         | 4.1    | 13.65        | 540.1         | 1620/601/2222             | 19039  | n/a (text)                                        | yes (sessions)            | tiny; fastest prefill of the set                             |
+| Muse-Glimmer-30B             | `unsloth/Muse-Glimmer-30B-GGUF`                | UD-Q4_K_XL + mmproj Q8_0 | 14.79 + 1.91     | `muse-glimmer` | 28.3   | 1.88         | 100.5         | 15165/822/15988           | 19956  | image OK ("A red circle", in `reasoning_content`) | yes (sessions)            | new arch; thinking model; very slow decode                   |
+| Inkling-Small                | `unsloth/Inkling-Small-GGUF`                   | UD-Q4_K_M                | 158 (claimed 15) | —              | —      | —            | —             | —                         | —      | —                                                 | no                        | not downloaded; real size ~158 GB                            |
+| Tiel-Coder-35B-A3B-MTP       | `peculiar-ragdoll/Tiel-Coder-35B-A3B-GGUF-MTP` | UD-Q4_K_XL + mmproj BF16 | 21.19 + 0.84     | `qwen35moe`    | 37.4   | 6.67         | 156.0         | 21350/1269/22620          | 20679  | image OK ("A red circle.")                        | yes (sessions)            | MoE coder with an MTP head (MTP not exercised); vision works |
+| Mellum2.1-12B-A2.5B-Thinking | `JetBrains/Mellum2.1-12B-A2.5B-Thinking-GGUF`  | Q4_K_M                   | 7.52             | `mellum`       | 13.1   | 14.75        | 411.0         | 7729/641/8370             | 19931  | n/a (text)                                        | yes (sessions)            | new arch; fast; small footprint                              |
+| Hy-Memory-30B-A3B            | `tencent/Hy-Memory-30B-A3B-GGUF`               | Q4_K_M imat              | 16.98            | `hy_v3`        | 29.3   | 14.30        | 236.6         | 17419/3151/20570          | 22132  | n/a (text)                                        | yes (sessions)            | new arch; MoE; fast decode                                   |
 
 Reference CPU values from the same class: `qwen3.8-27b` 2.45 decode / 78
 prefill; `north-mini-code-1.0` 18.0 / 178; `lfm2.5-24b-a2b` 24.1 / 280.
 
 ## Arch support
 
-| arch | model | sessions build 11539 | master build 11539 |
-|---|---|---|---|
-| `qwen35` | Ornith-1.5-9B | yes | not tried |
-| `qwen35moe` | Ornith-1.5-35B-A3B | yes | not tried |
-| `qwen35moe` | MiniCPM-V-4.7-35B-A3B (base) | yes | not tried |
-| `qwen35moe` | Tiel-Coder-35B-A3B-MTP | yes | not tried |
-| `lfm2` | LFM2.5-2.6B | yes | not tried |
-| `muse-glimmer` | Muse-Glimmer-30B | yes | not tried |
-| `mellum` | Mellum2.1-12B-A2.5B-Thinking | yes | not tried |
-| `hy_v3` | Hy-Memory-30B-A3B | yes | not tried |
+| arch           | model                        | sessions build 11539 | master build 11539 |
+| -------------- | ---------------------------- | -------------------- | ------------------ |
+| `qwen35`       | Ornith-1.5-9B                | yes                  | not tried          |
+| `qwen35moe`    | Ornith-1.5-35B-A3B           | yes                  | not tried          |
+| `qwen35moe`    | MiniCPM-V-4.7-35B-A3B (base) | yes                  | not tried          |
+| `qwen35moe`    | Tiel-Coder-35B-A3B-MTP       | yes                  | not tried          |
+| `lfm2`         | LFM2.5-2.6B                  | yes                  | not tried          |
+| `muse-glimmer` | Muse-Glimmer-30B             | yes                  | not tried          |
+| `mellum`       | Mellum2.1-12B-A2.5B-Thinking | yes                  | not tried          |
+| `hy_v3`        | Hy-Memory-30B-A3B            | yes                  | not tried          |
 
 ### Every base model loaded on the served sessions build
 

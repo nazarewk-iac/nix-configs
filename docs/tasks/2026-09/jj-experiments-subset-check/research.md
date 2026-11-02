@@ -70,12 +70,12 @@ so they do not change the meaning of `jj-experiments-pytest`.
   Acceptable in a script or a Justfile wrapper, clumsy by hand. No `--impure`
   needed.
 
-### 3. Impure env passthrough (`builtins.getEnv "JJX_PYTEST_K"`)  — RECOMMENDED
+### 3. Impure env passthrough (`builtins.getEnv "JJX_PYTEST_K"`) — RECOMMENDED
 
 - Works: yes. Proven (see PoC). One extra check attr reads the filter with
   `builtins.getEnv` and injects it as a build-time env var; pytest uses `-k`.
-- Purity: the *evaluation* is impure (`--impure` required, `getEnv`). The
-  *build* stays fully sandboxed — no network, `HOME=$(mktemp -d)`, only the
+- Purity: the _evaluation_ is impure (`--impure` required, `getEnv`). The
+  _build_ stays fully sandboxed — no network, `HOME=$(mktemp -d)`, only the
   declared inputs. So the test isolation guarantee is unchanged; only the
   attr's identity depends on an env var.
 - Caching: the env value is captured into the derivation (as an env var), so it
@@ -92,7 +92,7 @@ so they do not change the meaning of `jj-experiments-pytest`.
 - Works: yes. An app (`writeShellApplication`) with `python3+pytest`, `jujutsu`,
   `git` as `runtimeInputs`, `JJ_FORK_CONFIG_TOML` exported to the rendered TOML,
   that copies the suite to a temp dir and runs `pytest "$@"`.
-- Purity: the app runs in the *user's* environment, NOT a hermetic sandbox. It
+- Purity: the app runs in the _user's_ environment, NOT a hermetic sandbox. It
   still sets `HOME=$(mktemp -d)` and the XDG/JJ_CONFIG isolation from conftest,
   so the developer's real jj/git config is safe. But it is not a reproducible
   build artifact and it is not cached — it re-runs every time.
@@ -249,7 +249,7 @@ a parameterized builder plus `nix build --file ... --argstr`, wrapped in a
 - **Free-form `-k` with no `--impure` flag IS achievable** through
   `nix build --file <runner.nix> --argstr extraArgsJSON '...'`. Classic `-f`
   evaluation runs in impure mode by default, so `builtins.getFlake (toString
-  <repo>)` and `builtins.currentSystem` work with no flag. `--arg`/`--argstr`
+<repo>)` and `builtins.currentSystem` work with no flag. `--arg`/`--argstr`
   are pure and only work with `-f` (auto-called function), not with a flake ref.
   The eval is technically impure (it reads the working tree and the current
   system), but it needs no flag and is reproducible per git commit. The build
@@ -266,11 +266,11 @@ longer needed — `--argstr` replaces the env var and drops the `--impure` flag.
 
 ### Eval-mode facts (measured, Lix 2.95.2)
 
-| Installable form | eval mode | `getFlake(path)` / `currentSystem` | takes `--arg` |
-|---|---|---|---|
-| `.#checks.<sys>.attr` (flake) | pure | needs `--impure` | no |
-| `--expr '...'` | pure | needs `--impure` | no |
-| `--file runner.nix` / `nix-build` | impure by default | works, **no flag** | yes |
+| Installable form                  | eval mode         | `getFlake(path)` / `currentSystem` | takes `--arg` |
+| --------------------------------- | ----------------- | ---------------------------------- | ------------- |
+| `.#checks.<sys>.attr` (flake)     | pure              | needs `--impure`                   | no            |
+| `--expr '...'`                    | pure              | needs `--impure`                   | no            |
+| `--file runner.nix` / `nix-build` | impure by default | works, **no flag**                 | yes           |
 
 ### Recommended design
 

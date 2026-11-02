@@ -16,15 +16,15 @@ Everything below was read from this repository or measured on a live host on
 `hosts/gaz/default.nix` is a **Crostini VM**, built by the
 `nixos-crostini.nixosModules.baguette` module:
 
-| Fact | Value |
-|---|---|
-| Class and system | `nixos`, `x86_64-linux` (`hosts/gaz/meta.json`) |
-| Boot module | `kdnConfig.inputs.nixos-crostini.nixosModules.baguette` |
-| Disk | `virtualisation.diskImageSize = 20 * 1024` — a 20 GB image, no `disko` |
-| RAM | `virtualisation.buildMemorySize = 16 * 1024` |
-| Profile | `kdn.profile.machine.baseline`, desktop off, all LLM CLIs off |
-| Secrets | **no SSH host keys** (`# TODO: add SSH host keys (using kdnctl?)`) |
-| Network | firewall trusted on `nb-priv` and `eth0` |
+| Fact             | Value                                                                  |
+| ---------------- | ---------------------------------------------------------------------- |
+| Class and system | `nixos`, `x86_64-linux` (`hosts/gaz/meta.json`)                        |
+| Boot module      | `kdnConfig.inputs.nixos-crostini.nixosModules.baguette`                |
+| Disk             | `virtualisation.diskImageSize = 20 * 1024` — a 20 GB image, no `disko` |
+| RAM              | `virtualisation.buildMemorySize = 16 * 1024`                           |
+| Profile          | `kdn.profile.machine.baseline`, desktop off, all LLM CLIs off          |
+| Secrets          | **no SSH host keys** (`# TODO: add SSH host keys (using kdnctl?)`)     |
+| Network          | firewall trusted on `nb-priv` and `eth0`                               |
 
 So this host has no disk layout, no workstation profile, no aspects, and no
 graphical session. It is a container that runs a baseline NixOS.
@@ -36,13 +36,13 @@ The host is not in `hosts-den/` at all. `hosts-den/` holds one host: `orr`.
 `modules/den/flake-module.nix` reads `hosts-den/` with `builtins.readDir` and
 imports every directory. A new host is one directory, with no wiring edit.
 
-| Rule | Source |
-|---|---|
-| Path is `hosts-den/<name>/default.nix`. | `hosts-den/README.md` |
-| There is **no** `meta.json`; the file states its own system and class. | same |
-| The output is `denConfigurations.<name>`, **not** `nixosConfigurations.<name>`. | same |
-| A den host must **never** be added to `nixosConfigurations`; two k8s modules do a by-name lookup there and would see a host with no `kdn.networking.*`. | same |
-| Compare **option values**, never `drvPath`; the baseline profile copies the whole repo into the store. | same |
+| Rule                                                                                                                                                    | Source                |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| Path is `hosts-den/<name>/default.nix`.                                                                                                                 | `hosts-den/README.md` |
+| There is **no** `meta.json`; the file states its own system and class.                                                                                  | same                  |
+| The output is `denConfigurations.<name>`, **not** `nixosConfigurations.<name>`.                                                                         | same                  |
+| A den host must **never** be added to `nixosConfigurations`; two k8s modules do a by-name lookup there and would see a host with no `kdn.networking.*`. | same                  |
+| Compare **option values**, never `drvPath`; the baseline profile copies the whole repo into the store.                                                  | same                  |
 
 The one existing host, `hosts-den/orr/default.nix`, is a skeleton:
 
@@ -120,17 +120,17 @@ kind of file, plus `nixos-hardware` (the input is already pinned in
 
 ## 5. The NanoKVM on `gaz`
 
-| Fact | Value | How verified |
-|---|---|---|
-| Address | `kvm-fa56.lan.etra.net.int.kdn.im` = `192.168.73.122` | `getent hosts` |
-| Registered in the config | yes, MAC `48:da:35:6f:fa:56` → name `kvm-fa56` | `hosts/etra/default.nix:215` |
-| Firmware version | `2.5.2` | `cat /kvmapp/version` over SSH |
-| SSH | `ssh root@kvm-fa56...` works | verified |
-| MCP endpoint | `POST https://kvm-fa56.../api/mcp`, Streamable HTTP, self-signed TLS (`-k`) | `401` without the key, `tools/list` with it |
-| Key | `/etc/kvm/mcp.json`, field `apiKey`, mode `0600` | read over SSH, never recorded |
-| Tools | `cube_screenshot`, `cube_move_mouse`, `cube_click_mouse`, `cube_press_keys`, `cube_type_text`, `cube_scroll_mouse` | `tools/list` |
-| **Video capture right now** | **unavailable**. `cube_screenshot` returns `screenshot capture is temporarily unavailable` at any `timeoutMs`. | 3 attempts |
-| Device load | load average ≈ 5.5 on a 128 MB box | `uptime` |
+| Fact                        | Value                                                                                                              | How verified                                |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- |
+| Address                     | `kvm-fa56.lan.etra.net.int.kdn.im` = `192.168.73.122`                                                              | `getent hosts`                              |
+| Registered in the config    | yes, MAC `48:da:35:6f:fa:56` → name `kvm-fa56`                                                                     | `hosts/etra/default.nix:215`                |
+| Firmware version            | `2.5.2`                                                                                                            | `cat /kvmapp/version` over SSH              |
+| SSH                         | `ssh root@kvm-fa56...` works                                                                                       | verified                                    |
+| MCP endpoint                | `POST https://kvm-fa56.../api/mcp`, Streamable HTTP, self-signed TLS (`-k`)                                        | `401` without the key, `tools/list` with it |
+| Key                         | `/etc/kvm/mcp.json`, field `apiKey`, mode `0600`                                                                   | read over SSH, never recorded               |
+| Tools                       | `cube_screenshot`, `cube_move_mouse`, `cube_click_mouse`, `cube_press_keys`, `cube_type_text`, `cube_scroll_mouse` | `tools/list`                                |
+| **Video capture right now** | **unavailable**. `cube_screenshot` returns `screenshot capture is temporarily unavailable` at any `timeoutMs`.     | 3 attempts                                  |
+| Device load                 | load average ≈ 5.5 on a 128 MB box                                                                                 | `uptime`                                    |
 
 The capture failure has a likely cause. `dmesg` shows repeated `LT6911--:-- INT!!##`
 — the LT6911 is the HDMI-to-CSI bridge, and that line is the no-signal path.
@@ -187,7 +187,7 @@ Consequences for the design:
 1. Parallel sub-agents only truly overlap when their aliases map to **different
    processes**, and those processes fit in RAM (CPU) or VRAM (GPU).
 2. A fan-out of five `chat-dumb-fast` tasks is **serial**, not parallel. Fan out
-   across *distinct* aliases instead.
+   across _distinct_ aliases instead.
 3. The frontier at `--parallel 4` can absorb four concurrent requests, so the
    orchestrator itself is rarely the bottleneck; the small tier is.
 
@@ -196,13 +196,13 @@ Consequences for the design:
 `zellij-llm opencode` exists and is tested
 ([../zellij-llm-opencode/done.md](../zellij-llm-opencode/done.md)):
 
-| Command | Effect |
-|---|---|
+| Command                                           | Effect                                                                           |
+| ------------------------------------------------- | -------------------------------------------------------------------------------- |
 | `spawn --pane oc --model <id> [--opencode-arg …]` | starts opencode in a new pane, inside `devenv shell --` when the project has one |
-| `send --pane oc --text '…'` | types a prompt and presses Enter |
-| `watch --pane oc [--for 30m]` | prints `state=RUNNING` / `state=IDLE`; returns on the first RUNNING→IDLE |
-| `list` | pane name and opencode session id |
-| `attach` | prints the `zellij attach` command |
+| `send --pane oc --text '…'`                       | types a prompt and presses Enter                                                 |
+| `watch --pane oc [--for 30m]`                     | prints `state=RUNNING` / `state=IDLE`; returns on the first RUNNING→IDLE         |
+| `list`                                            | pane name and opencode session id                                                |
+| `attach`                                          | prints the `zellij attach` command                                               |
 
 `opencode` itself takes `--model provider/model`, `--agent <name>` and `--auto`
 on the TUI. `--auto` auto-approves permissions that are not explicitly denied —
@@ -234,7 +234,7 @@ reason matters:
 
 - `ses_e81f21854ffedoN4pTTKPBieAt` (2026-10-27 15:50) holds **one** part: the
   prompt. The spawned orchestrator never ran a turn.
-- `ses_e81e02567ffeEyVoXEDZejrLrU` (16:09) is the *SSH* session: it found the
+- `ses_e81e02567ffeEyVoXEDZejrLrU` (16:09) is the _SSH_ session: it found the
   `pcscd.socket` ordering cycle that stopped `sshd` on `brys`, and wrote the
   `hw-yubikey.nix` fix plus the TPM task. It never touched `gaz`.
 - `ses_e81de0d85` is the session that wrote this document.

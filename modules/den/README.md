@@ -23,12 +23,12 @@ inputs, and one `imports` entry for `flake-module.nix`. A flake input cannot liv
 
 ## Layout
 
-| Path | Role |
-|---|---|
-| `flake-module.nix` | The only wiring. It evaluates den and exports the outputs. |
-| `namespaces.nix` | The two den namespaces. Every reusable aspect sits at `den.ful.kdn.<name>`. |
-| `classes/devenv.nix` | A den class for devenv. den ships none, and 12 of 19 slots target devenv. |
-| `aspects/<slot>.nix` | One aspect per reimplemented slot. |
+| Path                 | Role                                                                        |
+| -------------------- | --------------------------------------------------------------------------- |
+| `flake-module.nix`   | The only wiring. It evaluates den and exports the outputs.                  |
+| `namespaces.nix`     | The two den namespaces. Every reusable aspect sits at `den.ful.kdn.<name>`. |
+| `classes/devenv.nix` | A den class for devenv. den ships none, and 12 of 19 slots target devenv.   |
+| `aspects/<slot>.nix` | One aspect per reimplemented slot.                                          |
 
 The entities live **outside** this tree, at
 [`checks/den-mvp/`](../../checks/den-mvp/README.md). That directory holds one build-only host per
@@ -39,10 +39,10 @@ class, plus every standalone devenv shell. Its README states the layout and the 
 Every reusable aspect sits under a **den namespace**. [`namespaces.nix`](namespaces.nix) creates two
 of them with `inputs.den.namespace`:
 
-| Namespace | Exported | Holds |
-|---|---|---|
-| `den.ful.kdn` | yes, as the flake output `flake.denful.kdn` | every reusable aspect |
-| `den.ful.personal` | no, never | the creator's own data-carrying aspects. It is empty today. |
+| Namespace          | Exported                                    | Holds                                                       |
+| ------------------ | ------------------------------------------- | ----------------------------------------------------------- |
+| `den.ful.kdn`      | yes, as the flake output `flake.denful.kdn` | every reusable aspect                                       |
+| `den.ful.personal` | no, never                                   | the creator's own data-carrying aspects. It is empty today. |
 
 **The non-export is the enforcement point.** An external adopter cannot name a `personal` aspect at
 all, because no flake output carries it. The split is structural, not a doc rule.
@@ -81,17 +81,17 @@ of length 1 and one option declaration. The `mcp` family depends on that behavio
 
 ## Outputs
 
-| Output | Contents |
-|---|---|
-| `den` | The raw den evaluation. Use it to read `den.ful.kdn`, `den.aspects` and `den.hosts` in a debug session. |
-| `denful.kdn` | The exported namespace — every reusable aspect, for a consumer that runs den itself. |
-| `denConfigurations.<host>` | A nix-darwin or a NixOS system that den builds. Both classes share one flat set. |
-| `denDevenvShells.<host>` | A devenv shell that den builds. |
-| `denHomeConfigurations.<name>` | A **standalone** home-manager configuration. It belongs to no den host. |
-| `denModules.<aspect>` | A **plain module** for an external adopter. It holds no den. One aspect, its common class. |
-| `denModules.<aspect>-<class>` | The same, for every valid aspect-class pair. 26 keys on 2026-09-11. |
-| `denLib` | The adopter-facing library. `denLib.imports { … }` returns a list for `imports = [ … ]`. |
-| `denLib.pairs` | aspect name → the classes it emits. The list of valid pairs. |
+| Output                         | Contents                                                                                                |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| `den`                          | The raw den evaluation. Use it to read `den.ful.kdn`, `den.aspects` and `den.hosts` in a debug session. |
+| `denful.kdn`                   | The exported namespace — every reusable aspect, for a consumer that runs den itself.                    |
+| `denConfigurations.<host>`     | A nix-darwin or a NixOS system that den builds. Both classes share one flat set.                        |
+| `denDevenvShells.<host>`       | A devenv shell that den builds.                                                                         |
+| `denHomeConfigurations.<name>` | A **standalone** home-manager configuration. It belongs to no den host.                                 |
+| `denModules.<aspect>`          | A **plain module** for an external adopter. It holds no den. One aspect, its common class.              |
+| `denModules.<aspect>-<class>`  | The same, for every valid aspect-class pair. 26 keys on 2026-09-11.                                     |
+| `denLib`                       | The adopter-facing library. `denLib.imports { … }` returns a list for `imports = [ … ]`.                |
+| `denLib.pairs`                 | aspect name → the classes it emits. The list of valid pairs.                                            |
 
 `denLib` and `denModules` are the point of the whole tree. An adopter imports a plain module, and
 the adopter never adopts den. `denLib.imports` is the general form. `denModules.<aspect>` is the
@@ -173,15 +173,15 @@ so the library route and the `flakeModule` route read one list. The thin wrapper
 
 The raw machinery sits beside the wrapper, for a caller that needs more:
 
-| Handle | Use |
-|---|---|
-| `denLib.imports` | The thin wrapper. It returns a list for `imports = [ … ]`. |
-| `denLib.aspectModules` | The aspect registry — one path per reimplemented slot. |
-| `denLib.eval` | One den library evaluation. It returns the `den` handle. |
-| `denLib.resolve` | `resolve <den> <class> <aspect>`, with the non-empty-`imports` guard. |
-| `denLib.pairsFor` | `pairsFor <den>` — aspect name → the classes it emits. |
-| `denLib.pairModulesFor` | `pairModulesFor <den>` — `"<aspect>-<class>"` → a resolved module. |
-| `denLib.nixModule` | den's own entry point, unwrapped. |
+| Handle                  | Use                                                                   |
+| ----------------------- | --------------------------------------------------------------------- |
+| `denLib.imports`        | The thin wrapper. It returns a list for `imports = [ … ]`.            |
+| `denLib.aspectModules`  | The aspect registry — one path per reimplemented slot.                |
+| `denLib.eval`           | One den library evaluation. It returns the `den` handle.              |
+| `denLib.resolve`        | `resolve <den> <class> <aspect>`, with the non-empty-`imports` guard. |
+| `denLib.pairsFor`       | `pairsFor <den>` — aspect name → the classes it emits.                |
+| `denLib.pairModulesFor` | `pairModulesFor <den>` — `"<aspect>-<class>"` → a resolved module.    |
+| `denLib.nixModule`      | den's own entry point, unwrapped.                                     |
 
 `imports` takes five arguments. `class` names any evaluation domain. `aspects` names registry
 entries. `select` takes the `den` handle and returns a list of aspects, so an aspect of your own
@@ -200,10 +200,10 @@ and the library route avoids that entity machinery. The library route creates th
 
 Measured on 2026-09-10, for both ported aspects, against the full `flakeModule` route:
 
-| aspect | class | library-mode result | same `drvPath` as `flakeModule` |
-|---|---|---|---|
-| `gh` | `devenv` | `gh-2.100.0` in the shell, `claude.code.enable = true` | yes |
-| `rosetta-builder` | `darwin` | `nix.buildMachines` carries `aarch64-linux x86_64-linux` | yes |
+| aspect            | class    | library-mode result                                      | same `drvPath` as `flakeModule` |
+| ----------------- | -------- | -------------------------------------------------------- | ------------------------------- |
+| `gh`              | `devenv` | `gh-2.100.0` in the shell, `claude.code.enable = true`   | yes                             |
+| `rosetta-builder` | `darwin` | `nix.buildMachines` carries `aarch64-linux x86_64-linux` | yes                             |
 
 Three limits hold:
 
@@ -248,41 +248,41 @@ it. The adopter surface is library mode, and `flake.denLib` ships it.
 
 ## Status
 
-| Item | State |
-|---|---|
-| devenv class | present |
-| den namespaces | present — `namespaces.nix` creates the exported `kdn` and the never-exported `personal`. Every reusable aspect sits at `den.ful.kdn.<name>`. |
-| `rosetta-builder` aspect | present — a full port. It carries the core content plus the three `kdn.rosetta-builder.guest.*` options, and it is the only aspect with an `assertions` entry. |
-| `gh` aspect | present — the first `devenv`-target aspect, a full port of `modules/slots/gh/` |
-| `ssh-agent` aspect | present — the first **`homeManager`-only** aspect. A full port of `modules/slots/ssh-agent/`. |
-| `ca` aspect | present — the first **`nixos`-only** aspect. A full port of `modules/slots/ca/`. It declares `kdn.ca` **inside** its own `nixos` target, so one plain module both declares the option and serves it. |
-| `devenv-cli` aspect | present — the **four-target** aspect. It ports `modules/slots/devenv/` and adds a `devenv` target the slot has none of. |
-| `zellij` aspect | present — a full port of `modules/slots/zellij/`. It is the first aspect with a Claude Code hook, the first that installs a repository file, and the first that reaches a `packages/` derivation with a plain `pkgs.callPackage` and **no overlay**. |
-| `opencode` aspect | present — a full port of `modules/slots/opencode/`. It is the **de-personalized** port: the slot hardcodes one commercial provider and the creator's checkout path, and the aspect declares an option for each instead. |
-| `mcp` aspect | present — a full port of `modules/slots/mcp/`. It holds the gateway, the backend translation and the Claude Code registration. `mcp-servers-nix` is a `devenv.yaml` input, so no den evaluation reaches it: the aspect takes the source as the option `kdn.mcp.serversNix` instead, and the consumer passes it. |
-| `mcp-snoop` aspect | present — a port of `modules/slots/mcp/snoop/`. It carries **no `enable`**; inclusion is the switch. It wraps the gateway command through the `kdn.mcp.commandOverlays` list. |
-| `mcp-pretty-print` aspect | present — a port of `modules/slots/mcp/pretty-print/`. It builds a Python application and a plugin package, and it registers a `PermissionRequest` hook. It carries no `enable` either. |
-| `mcp-basic-memory` aspect | present — the second **de-personalized** port. The slot names the creator's two knowledge bases, their aliases and their root path; the aspect names none and declares `kdn.mcp.basic-memory.{knowledgeRoot,bases}` instead. |
-| `jj` aspect | present — a port of `modules/slots/jj/`. It includes `mcp`, because it writes that aspect's `extraBackends.jj` and turns the gateway's own `git` backend off. It is the third **de-personalized** port: the slot defaults the public remote to one person's own remote name, and the aspect defaults it to `origin`. |
-| `jj-fork` aspect | present — a port of `modules/slots/jj/fork/`. It includes `jj`, so the pair is the second parent-child couple after `mcp-snoop`. It holds 20 revset aliases, 5 jj aliases, 2 git hooks and 2 commands. Its own `alwaysBlockedMessagePatterns` default is empty; the slot defaults it to one real pattern. |
-| The `mcp` diamond | measured 2026-09-10. Four aspects include `mcp` — `mcp-snoop`, `mcp-pretty-print`, `nix` and `jj` — and den collapses the diamond: one shell holds one gateway package. It dedupes a nested diamond and separately resolved siblings alike, because it keys each target module per aspect. So an option belongs in the aspect that reads it, and no shared declaration file is needed. |
-| `kdn.isSourceRepo` | present — [common/source-repo.nix](common/source-repo.nix) declares it once. An aspect imports that file **by path**, because the module system dedupes an import by path and rejects two inline declarations of one option. |
-| `kdn.graphical` | present — [common/graphical.nix](common/graphical.nix) declares the shared desktop switch once, by the same import-by-path route. Four aspects read it as the default of their own switch: `hw-qmk`, `hw-audio`, `hw-yubikey` and `dev-k8s`. A desktop aspect writes `kdn.graphical = lib.mkDefault true;` in its own target. |
-| `host-darwin` host | evaluates and builds a nix-darwin system, a devenv shell and one home-manager generation |
-| `host-nixos` host | evaluates a NixOS system, a devenv shell and one home-manager generation. It carries a real `nixos`-class aspect. |
-| Standalone devenv shells | present — `devenv-darwin` and `devenv-linux`, with no den entity |
-| Standalone home-manager | present — `home-darwin` and `home-linux`, with no den entity. This is the adopter shape. |
-| The `dev` den user | present — one shared user at `checks/den-mvp/users/`. It makes the `homeManager` class reachable. |
-| `checks.<system>.den-mvp` | present — the current architecture, with `.all` for every system |
-| Test harness | present — 3 tiers. **Per system** it holds 26 den checks: 21 evaluation, 3 artifact and 2 smoke, plus the `den-mvp` build gate. `aarch64-darwin` holds 26, and `x86_64-linux` holds 26. **Across all systems** the totals are 6 artifact checks and 4 smoke runs, because each class has its own artifact. See [checks/den-mvp/README.md](../../checks/den-mvp/README.md#tests). `den-eval-guards` passes 11 of 11, and 6 of those assertions cover the namespaces. `den-eval-jj` passes 32 of 32. |
-| Smoke-test runner | present — `nix run '.#checks.aarch64-darwin.den-mvp.smoke'`. It builds the 26 `aarch64-darwin` den checks plus the `den-mvp` build gate, so the summary counts 27. |
-| A VM test for `host-nixos` | deferred — tier 1 and tier 2 read every value a guest would, and no darwin VM framework exists |
-| An automated `hosts/anji` parity check | deferred — it evaluates a whole personal host (~93 s) and it reads sops metadata |
-| Library mode (`den.nixModule`) | shipped as `denLib` — a thin `imports` wrapper plus the raw machinery |
-| A `nixos`-class aspect | present — `devenv-cli` reaches `host-nixos` |
-| `home` target | present — through `devenv-cli`, on both routes |
-| A coupled pair of slots (`jj` plus `mcp`) | present — order 7 of the milestone 2 plan. `jj-fork` includes `jj`, and `jj` includes `mcp`, so the pair sits in the same diamond as the `mcp` family. |
-| Parity with all 19 slots | **reached 2026-09-11.** 19 of 19 done. The registry holds 21 aspects, because the `devenv` slot gains a `devenv-cli` aspect and the two Homebrew aspects have no slot. See [004-den-spike](../../docs/tasks/2026-09/generalization/004-den-spike/definition.md#milestone-2-covers-every-slot--scope-decision-2026-09-10). |
+| Item                                      | State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| devenv class                              | present                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| den namespaces                            | present — `namespaces.nix` creates the exported `kdn` and the never-exported `personal`. Every reusable aspect sits at `den.ful.kdn.<name>`.                                                                                                                                                                                                                                                                                                                                                       |
+| `rosetta-builder` aspect                  | present — a full port. It carries the core content plus the three `kdn.rosetta-builder.guest.*` options, and it is the only aspect with an `assertions` entry.                                                                                                                                                                                                                                                                                                                                     |
+| `gh` aspect                               | present — the first `devenv`-target aspect, a full port of `modules/slots/gh/`                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `ssh-agent` aspect                        | present — the first **`homeManager`-only** aspect. A full port of `modules/slots/ssh-agent/`.                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `ca` aspect                               | present — the first **`nixos`-only** aspect. A full port of `modules/slots/ca/`. It declares `kdn.ca` **inside** its own `nixos` target, so one plain module both declares the option and serves it.                                                                                                                                                                                                                                                                                               |
+| `devenv-cli` aspect                       | present — the **four-target** aspect. It ports `modules/slots/devenv/` and adds a `devenv` target the slot has none of.                                                                                                                                                                                                                                                                                                                                                                            |
+| `zellij` aspect                           | present — a full port of `modules/slots/zellij/`. It is the first aspect with a Claude Code hook, the first that installs a repository file, and the first that reaches a `packages/` derivation with a plain `pkgs.callPackage` and **no overlay**.                                                                                                                                                                                                                                               |
+| `opencode` aspect                         | present — a full port of `modules/slots/opencode/`. It is the **de-personalized** port: the slot hardcodes one commercial provider and the creator's checkout path, and the aspect declares an option for each instead.                                                                                                                                                                                                                                                                            |
+| `mcp` aspect                              | present — a full port of `modules/slots/mcp/`. It holds the gateway, the backend translation and the Claude Code registration. `mcp-servers-nix` is a `devenv.yaml` input, so no den evaluation reaches it: the aspect takes the source as the option `kdn.mcp.serversNix` instead, and the consumer passes it.                                                                                                                                                                                    |
+| `mcp-snoop` aspect                        | present — a port of `modules/slots/mcp/snoop/`. It carries **no `enable`**; inclusion is the switch. It wraps the gateway command through the `kdn.mcp.commandOverlays` list.                                                                                                                                                                                                                                                                                                                      |
+| `mcp-pretty-print` aspect                 | present — a port of `modules/slots/mcp/pretty-print/`. It builds a Python application and a plugin package, and it registers a `PermissionRequest` hook. It carries no `enable` either.                                                                                                                                                                                                                                                                                                            |
+| `mcp-basic-memory` aspect                 | present — the second **de-personalized** port. The slot names the creator's two knowledge bases, their aliases and their root path; the aspect names none and declares `kdn.mcp.basic-memory.{knowledgeRoot,bases}` instead.                                                                                                                                                                                                                                                                       |
+| `jj` aspect                               | present — a port of `modules/slots/jj/`. It includes `mcp`, because it writes that aspect's `extraBackends.jj` and turns the gateway's own `git` backend off. It is the third **de-personalized** port: the slot defaults the public remote to one person's own remote name, and the aspect defaults it to `origin`.                                                                                                                                                                               |
+| `jj-fork` aspect                          | present — a port of `modules/slots/jj/fork/`. It includes `jj`, so the pair is the second parent-child couple after `mcp-snoop`. It holds 20 revset aliases, 5 jj aliases, 2 git hooks and 2 commands. Its own `alwaysBlockedMessagePatterns` default is empty; the slot defaults it to one real pattern.                                                                                                                                                                                          |
+| The `mcp` diamond                         | measured 2026-09-10. Four aspects include `mcp` — `mcp-snoop`, `mcp-pretty-print`, `nix` and `jj` — and den collapses the diamond: one shell holds one gateway package. It dedupes a nested diamond and separately resolved siblings alike, because it keys each target module per aspect. So an option belongs in the aspect that reads it, and no shared declaration file is needed.                                                                                                             |
+| `kdn.isSourceRepo`                        | present — [common/source-repo.nix](common/source-repo.nix) declares it once. An aspect imports that file **by path**, because the module system dedupes an import by path and rejects two inline declarations of one option.                                                                                                                                                                                                                                                                       |
+| `kdn.graphical`                           | present — [common/graphical.nix](common/graphical.nix) declares the shared desktop switch once, by the same import-by-path route. Four aspects read it as the default of their own switch: `hw-qmk`, `hw-audio`, `hw-yubikey` and `dev-k8s`. A desktop aspect writes `kdn.graphical = lib.mkDefault true;` in its own target.                                                                                                                                                                      |
+| `host-darwin` host                        | evaluates and builds a nix-darwin system, a devenv shell and one home-manager generation                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `host-nixos` host                         | evaluates a NixOS system, a devenv shell and one home-manager generation. It carries a real `nixos`-class aspect.                                                                                                                                                                                                                                                                                                                                                                                  |
+| Standalone devenv shells                  | present — `devenv-darwin` and `devenv-linux`, with no den entity                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Standalone home-manager                   | present — `home-darwin` and `home-linux`, with no den entity. This is the adopter shape.                                                                                                                                                                                                                                                                                                                                                                                                           |
+| The `dev` den user                        | present — one shared user at `checks/den-mvp/users/`. It makes the `homeManager` class reachable.                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `checks.<system>.den-mvp`                 | present — the current architecture, with `.all` for every system                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Test harness                              | present — 3 tiers. **Per system** it holds 26 den checks: 21 evaluation, 3 artifact and 2 smoke, plus the `den-mvp` build gate. `aarch64-darwin` holds 26, and `x86_64-linux` holds 26. **Across all systems** the totals are 6 artifact checks and 4 smoke runs, because each class has its own artifact. See [checks/den-mvp/README.md](../../checks/den-mvp/README.md#tests). `den-eval-guards` passes 11 of 11, and 6 of those assertions cover the namespaces. `den-eval-jj` passes 32 of 32. |
+| Smoke-test runner                         | present — `nix run '.#checks.aarch64-darwin.den-mvp.smoke'`. It builds the 26 `aarch64-darwin` den checks plus the `den-mvp` build gate, so the summary counts 27.                                                                                                                                                                                                                                                                                                                                 |
+| A VM test for `host-nixos`                | deferred — tier 1 and tier 2 read every value a guest would, and no darwin VM framework exists                                                                                                                                                                                                                                                                                                                                                                                                     |
+| An automated `hosts/anji` parity check    | deferred — it evaluates a whole personal host (~93 s) and it reads sops metadata                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Library mode (`den.nixModule`)            | shipped as `denLib` — a thin `imports` wrapper plus the raw machinery                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| A `nixos`-class aspect                    | present — `devenv-cli` reaches `host-nixos`                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `home` target                             | present — through `devenv-cli`, on both routes                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| A coupled pair of slots (`jj` plus `mcp`) | present — order 7 of the milestone 2 plan. `jj-fork` includes `jj`, and `jj` includes `mcp`, so the pair sits in the same diamond as the `mcp` family.                                                                                                                                                                                                                                                                                                                                             |
+| Parity with all 19 slots                  | **reached 2026-09-11.** 19 of 19 done. The registry holds 21 aspects, because the `devenv` slot gains a `devenv-cli` aspect and the two Homebrew aspects have no slot. See [004-den-spike](../../docs/tasks/2026-09/generalization/004-den-spike/definition.md#milestone-2-covers-every-slot--scope-decision-2026-09-10).                                                                                                                                                                          |
 
 The slot tree remains the supported route. See
 [docs/slots-for-adopters.md](../../docs/slots-for-adopters.md).

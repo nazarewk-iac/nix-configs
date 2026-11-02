@@ -63,7 +63,7 @@ least the common prefix.
 2. **Prefill it under a fixed session id on startup.** Two routes:
    - **#29738 session store**: on model load, send one request with
      `session_id: "warmstart"` (or the agent-specific ids) and the base prompt,
-     then keep it. A fresh session cannot reuse a *different* session's file,
+     then keep it. A fresh session cannot reuse a _different_ session's file,
      so this needs the **body `session_id` to be the caller's** unless we add
      server support to seed a session from another.
    - **RAM prompt cache**: rely on `--cache-ram` holding the base-prompt entry.

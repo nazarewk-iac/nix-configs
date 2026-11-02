@@ -20,13 +20,13 @@ first. Spike only if the research finds a worthwhile target.
 
 ## The measured baseline
 
-| Metric | Value |
-|---|---|
-| `flake.lock` | 108 nodes, 62 root inputs (re-measured 2026-09-11) |
-| `devenv.lock` | 114 nodes (re-measured 2026-09-11) |
-| Repo tree | 4.1 MB, 2292 revisions |
-| Evaluator | Lix 2.95.2, aarch64-darwin |
-| devenv | 2.2.3 |
+| Metric        | Value                                              |
+| ------------- | -------------------------------------------------- |
+| `flake.lock`  | 108 nodes, 62 root inputs (re-measured 2026-09-11) |
+| `devenv.lock` | 114 nodes (re-measured 2026-09-11)                 |
+| Repo tree     | 4.1 MB, 2292 revisions                             |
+| Evaluator     | Lix 2.95.2, aarch64-darwin                         |
+| devenv        | 2.2.3                                              |
 
 100 locks is "bordering on massive", not massive. Treat this checkpoint as an optimization with a
 real chance of a negative result. A negative result is a valid, useful outcome. Write it down. Then

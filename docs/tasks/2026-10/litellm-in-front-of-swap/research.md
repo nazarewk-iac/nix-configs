@@ -52,9 +52,9 @@ admission gate. Verbatim from
 
 > LiteLLM proxy — Pin/prio ✓, active-request ✓, resource aware ✗ ("no
 > process/mem lifecycle"), GGUF ✗ (proxies, does not spawn) → **No fit — routing
-  only**.
+> only**.
 
-That conclusion stands and is the reason this task is scoped to *around* the
+That conclusion stands and is the reason this task is scoped to _around_ the
 request, never to concurrency.
 
 ## 3. What we already run, which overlaps
@@ -92,17 +92,17 @@ the raw text. So:
 ## 4. Retry semantics that are actually safe
 
 llama-swap's own behaviour matters here: it **queues** a request for a model that
-is loading (measured: an unload *does* cut an in-flight stream, but a request for
+is loading (measured: an unload _does_ cut an in-flight stream, but a request for
 a loading model waits), and a swap is 90–120 s on this box, longer under CPU pressure
 (`docs/local-llms.md`, and the frontier comment in `hosts/brys/default.nix`). So:
 
-| Situation | Retry safe? | Why |
-|---|---|---|
-| Connection refused (model failed to start) | yes, after backoff | no output was produced |
-| HTTP 5xx before any stream byte | yes | nothing was sent to the user |
-| Timeout with zero tokens received | yes | the client saw nothing |
-| Stream ended after N tokens | **no** transparent retry | the client already rendered them; a retry duplicates or contradicts |
-| Swap in progress (long TTFT, stream alive) | **no** | the request is healthy, just slow; a second one queues behind the same load |
+| Situation                                  | Retry safe?              | Why                                                                         |
+| ------------------------------------------ | ------------------------ | --------------------------------------------------------------------------- |
+| Connection refused (model failed to start) | yes, after backoff       | no output was produced                                                      |
+| HTTP 5xx before any stream byte            | yes                      | nothing was sent to the user                                                |
+| Timeout with zero tokens received          | yes                      | the client saw nothing                                                      |
+| Stream ended after N tokens                | **no** transparent retry | the client already rendered them; a retry duplicates or contradicts         |
+| Swap in progress (long TTFT, stream alive) | **no**                   | the request is healthy, just slow; a second one queues behind the same load |
 
 So a naive `num_retries` is dangerous twice over: it can duplicate a partial
 answer, and it can add queue depth to a box whose bottleneck is the queue.
@@ -131,6 +131,7 @@ litellm can emit it through `litellm_settings.callbacks`. Options, cheapest
 first:
 
 1. a **custom callback** that appends one JSON line per request to a file;
+
 - `jsonl` logging to a directory;
 - a Langfuse/OTEL exporter (a dependency and a service we would then have to run).
 

@@ -39,18 +39,18 @@ plain modules from `denLib.imports` and drops them into the host `imports`.
 
 One CA node is `kdn.ca-dag.cas.<name>`:
 
-| Option | Type | Default | Meaning |
-|---|---|---|---|
-| `type` | `"root"` or `"intermediate"` | required | The node class in the DAG. |
-| `parent` | `null` or a CA name | `null` | The parent CA. A root names no parent. |
-| `commonName` | string | required | The subject common name of the CA. |
-| `directory` | string | `"data/ca"` | The repo-relative directory of the CA files. |
-| `certFile` | string | `"${name}.crt"` | The public certificate filename. |
-| `keyFile` | string | `"${name}.key"` | The private key filename. The stored key is `<keyFile>.sops`. |
-| `keySource` | `"external"` or `"managed"` | — | `external` means the key pre-exists, for example a YubiKey-backed key. `managed` means the CLI generates the key. |
-| `provisioner` | `null` or string | `null` | The smallstep provisioner name. |
-| `ssh` | bool | `false` | The CA also signs SSH certificates. |
-| `minGenerationDate` | `null` or ISO 8601 string | `null` | The oldest allowed generation date. |
+| Option              | Type                         | Default         | Meaning                                                                                                           |
+| ------------------- | ---------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `type`              | `"root"` or `"intermediate"` | required        | The node class in the DAG.                                                                                        |
+| `parent`            | `null` or a CA name          | `null`          | The parent CA. A root names no parent.                                                                            |
+| `commonName`        | string                       | required        | The subject common name of the CA.                                                                                |
+| `directory`         | string                       | `"data/ca"`     | The repo-relative directory of the CA files.                                                                      |
+| `certFile`          | string                       | `"${name}.crt"` | The public certificate filename.                                                                                  |
+| `keyFile`           | string                       | `"${name}.key"` | The private key filename. The stored key is `<keyFile>.sops`.                                                     |
+| `keySource`         | `"external"` or `"managed"`  | —               | `external` means the key pre-exists, for example a YubiKey-backed key. `managed` means the CLI generates the key. |
+| `provisioner`       | `null` or string             | `null`          | The smallstep provisioner name.                                                                                   |
+| `ssh`               | bool                         | `false`         | The CA also signs SSH certificates.                                                                               |
+| `minGenerationDate` | `null` or ISO 8601 string    | `null`          | The oldest allowed generation date.                                                                               |
 
 `minGenerationDate` accepts arbitrary precision: `YYYY`, `YYYY-MM`, `YYYY-MM-DD`,
 `YYYY-MM-DDThh:mm`, `YYYY-MM-DDThh:mm:ss`, and any of these with a trailing `Z`. A missing component

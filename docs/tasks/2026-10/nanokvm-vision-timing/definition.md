@@ -29,7 +29,7 @@ Known inputs, from the `gaz` run on 2026-10-27:
 - the operating rule is "wait 2 s after an injection, then shoot" — the feed lags
   the injection, and acting on a stale frame is how the `anji` attempt failed;
 - the KVM's HID path on `kvm-fa56` is currently dead, and capture is
-  intermittent — so the *device* is the slow and unreliable part, not the model;
+  intermittent — so the _device_ is the slow and unreliable part, not the model;
 - vision aliases and their measured decode rates: `vision-quick-fast`
   (`qwen3-vl-8b-instruct`, 8.4 t/s), `vision-std-fast` (`qwen3-vl-30b-a3b`,
   15.7 t/s), `vision-deep-slow` (`qwen3.8-27b`, 2.5 t/s).
@@ -40,23 +40,23 @@ swap is 30–120 s. A 2-second window cannot pay that once, let alone per frame.
 ## The two questions
 
 1. **Does the loop fit?** Build the budget: capture, transfer, image prefill,
-  decode of a short answer, and the action. Compare it to each real window. This
-  is a measurement, not an argument.
+   decode of a short answer, and the action. Compare it to each real window. This
+   is a measurement, not an argument.
 2. **Should we race the window at all?** For most of these steps the window can
-  be **removed** instead of raced. That is cheaper and works when the network,
-  the model, or the KVM is slow.
+   be **removed** instead of raced. That is cheaper and works when the network,
+   the model, or the KVM is slow.
 
 ## Removing the window (preferred, and mostly not vision at all)
 
-| Step | Timing-free mechanism | Notes |
-|---|---|---|
-| Enter firmware setup | `systemctl reboot --firmware-setup` | uses the UEFI `OsIndications` variable; no keypress race, and it works when the machine is already in NixOS |
-| Boot a specific entry | declarative `systemd-boot` default entry, and a long `boot.loader.timeout` | the owner's own machine should not need a menu choice at all |
-| Boot the installer | `boot.loader.timeout = 600` in the installer, or a first install, or one-shot `systemd-boot` entry selection (`bootctl set-oneshot`) | a menu that waits 10 minutes costs nothing on a fresh install |
-| "Copy to RAM" boot | an explicit boot entry in `configuration.nix` (`boot.loader.systemd-boot.extraEntries`) with the right kernel cmdline | becomes a menu entry that is default or selectable at leisure |
-| Legacy firmware menus | **blind key spam** (`Esc`, `F2`, `Del` every 200 ms for 20 s) | safe: a stray key at the wrong moment is harmless, unlike a stray click |
-| Reaching a menu at all when nothing shows | power cycle and watch `/api/events`-style console text, or the serial console if the device offers one | a serial console removes the graphics race entirely |
-| Powering the machine on or off by software | **not available** on these hosts | power control exists only on `brys` and the three NAS mini-PCs `pwet`, `turo` and `yost`. `gaz`, the new mini-PC and `pryll` have no software power path, so a power cycle is always a physical hand-off |
+| Step                                       | Timing-free mechanism                                                                                                                | Notes                                                                                                                                                                                                    |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Enter firmware setup                       | `systemctl reboot --firmware-setup`                                                                                                  | uses the UEFI `OsIndications` variable; no keypress race, and it works when the machine is already in NixOS                                                                                              |
+| Boot a specific entry                      | declarative `systemd-boot` default entry, and a long `boot.loader.timeout`                                                           | the owner's own machine should not need a menu choice at all                                                                                                                                             |
+| Boot the installer                         | `boot.loader.timeout = 600` in the installer, or a first install, or one-shot `systemd-boot` entry selection (`bootctl set-oneshot`) | a menu that waits 10 minutes costs nothing on a fresh install                                                                                                                                            |
+| "Copy to RAM" boot                         | an explicit boot entry in `configuration.nix` (`boot.loader.systemd-boot.extraEntries`) with the right kernel cmdline                | becomes a menu entry that is default or selectable at leisure                                                                                                                                            |
+| Legacy firmware menus                      | **blind key spam** (`Esc`, `F2`, `Del` every 200 ms for 20 s)                                                                        | safe: a stray key at the wrong moment is harmless, unlike a stray click                                                                                                                                  |
+| Reaching a menu at all when nothing shows  | power cycle and watch `/api/events`-style console text, or the serial console if the device offers one                               | a serial console removes the graphics race entirely                                                                                                                                                      |
+| Powering the machine on or off by software | **not available** on these hosts                                                                                                     | power control exists only on `brys` and the three NAS mini-PCs `pwet`, `turo` and `yost`. `gaz`, the new mini-PC and `pryll` have no software power path, so a power cycle is always a physical hand-off |
 
 The rule: **if a step can be made deterministic, it must not be driven by
 screenshots.** Vision is the fallback, not the plan.
@@ -122,10 +122,10 @@ Consequences:
 
 ## Risks
 
-| Risk | Mitigation |
-|---|---|
-| A model confirms the wrong screen and an operation proceeds | require two independent confirmations (two frames, or model plus a text assertion) before anything irreversible |
-| A vision model is slow because it is cold | preload before the step, or accept and use the deterministic mechanism instead |
-| Key spam lands in a menu and selects something unwanted | spam only keys that open or cancel a menu, never `Enter` or a letter |
-| `systemctl reboot --firmware-setup` is unsupported on the hardware | verify per host; fall back to key spam, not to vision |
-| Screenshots contain the user's data | same rule as everywhere: `/tmp/opencode/`, never committed |
+| Risk                                                               | Mitigation                                                                                                      |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| A model confirms the wrong screen and an operation proceeds        | require two independent confirmations (two frames, or model plus a text assertion) before anything irreversible |
+| A vision model is slow because it is cold                          | preload before the step, or accept and use the deterministic mechanism instead                                  |
+| Key spam lands in a menu and selects something unwanted            | spam only keys that open or cancel a menu, never `Enter` or a letter                                            |
+| `systemctl reboot --firmware-setup` is unsupported on the hardware | verify per host; fall back to key spam, not to vision                                                           |
+| Screenshots contain the user's data                                | same rule as everywhere: `/tmp/opencode/`, never committed                                                      |

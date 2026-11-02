@@ -12,14 +12,14 @@ Desk research only. No build and no measurement on any host.
 
 ## Target host: brys
 
-| Part | Value |
-|---|---|
-| CPU | AMD Ryzen 5950X, 16 cores / 32 threads, AVX2, no AVX-512 |
-| RAM | 128 GB DDR4 |
-| GPU | 1x AMD Radeon Pro W6600, 8 GB VRAM, Vulkan capable, RDNA2 (gfx1032 / Navi 23) |
-| Storage | ZFS |
-| Incumbent | llama.cpp `llama-server` behind llama-swap |
-| Model | Qwen3.8-Flash-Next MoE, ~94-104 GB GGUF (model is 125 B parameters in the reference articles) |
+| Part      | Value                                                                                         |
+| --------- | --------------------------------------------------------------------------------------------- |
+| CPU       | AMD Ryzen 5950X, 16 cores / 32 threads, AVX2, no AVX-512                                      |
+| RAM       | 128 GB DDR4                                                                                   |
+| GPU       | 1x AMD Radeon Pro W6600, 8 GB VRAM, Vulkan capable, RDNA2 (gfx1032 / Navi 23)                 |
+| Storage   | ZFS                                                                                           |
+| Incumbent | llama.cpp `llama-server` behind llama-swap                                                    |
+| Model     | Qwen3.8-Flash-Next MoE, ~94-104 GB GGUF (model is 125 B parameters in the reference articles) |
 
 Consequence: the box has a large RAM pool and a small, non-CUDA GPU. A runner
 fits here only when it does CPU inference and expert or layer offload well. A
@@ -27,17 +27,17 @@ GPU-first runner does not fit: 8 GB VRAM cannot hold a 94-104 GB model.
 
 ## Summary table
 
-| Runner | License | Lang / build | CPU MoE offload | Small-GPU offload | OpenAI API | In nixpkgs | Fit for brys |
-|---|---|---|---|---|---|---|---|
-| llama.cpp / llama-server | MIT | C/C++, CMake | yes (expert offload) | yes (expert + layer, Vulkan) | yes | yes (`llama-cpp`) | best (incumbent) |
-| Strata | MIT | C/C++ engine + Python control, CMake | yes (all experts in RAM) | yes, but HIP only and 12 GB+ validated | yes (+Anthropic) | no | conditional |
-| ktransformers | Apache-2.0 | C++/Python, CMake + PyTorch | yes (CPU expert kernel) | yes (CUDA + CPU) | yes | no | weak |
-| SGLang | Apache-2.0 | Python, pip | partial (no CPU MoE path) | CUDA only | yes | no | poor |
-| vLLM | Apache-2.0 | Python, pip | partial (CPU exec) | CUDA/ROCm, not 8 GB | yes | yes (`vllm`) | poor |
-| exllamav2 / exllamav3 | MIT | C++/Python, CUDA | no (GPU only) | no (VRAM floor too high) | yes | exllamav3 in nixpkgs only | no |
-| ollama | MIT | Go, wraps llama.cpp | yes (via llama.cpp) | yes (via llama.cpp, Vulkan) | yes | yes (`ollama`) | no gain |
-| LM Studio | proprietary | Electron app | via llama.cpp | via llama.cpp | yes | yes (`lmstudio`) | no (not headless-first) |
-| llamafile | Apache-2.0 | C/C++, Cosmopolitan | via llama.cpp | via llama.cpp | yes | no | no gain |
+| Runner                   | License     | Lang / build                         | CPU MoE offload           | Small-GPU offload                      | OpenAI API       | In nixpkgs                | Fit for brys            |
+| ------------------------ | ----------- | ------------------------------------ | ------------------------- | -------------------------------------- | ---------------- | ------------------------- | ----------------------- |
+| llama.cpp / llama-server | MIT         | C/C++, CMake                         | yes (expert offload)      | yes (expert + layer, Vulkan)           | yes              | yes (`llama-cpp`)         | best (incumbent)        |
+| Strata                   | MIT         | C/C++ engine + Python control, CMake | yes (all experts in RAM)  | yes, but HIP only and 12 GB+ validated | yes (+Anthropic) | no                        | conditional             |
+| ktransformers            | Apache-2.0  | C++/Python, CMake + PyTorch          | yes (CPU expert kernel)   | yes (CUDA + CPU)                       | yes              | no                        | weak                    |
+| SGLang                   | Apache-2.0  | Python, pip                          | partial (no CPU MoE path) | CUDA only                              | yes              | no                        | poor                    |
+| vLLM                     | Apache-2.0  | Python, pip                          | partial (CPU exec)        | CUDA/ROCm, not 8 GB                    | yes              | yes (`vllm`)              | poor                    |
+| exllamav2 / exllamav3    | MIT         | C++/Python, CUDA                     | no (GPU only)             | no (VRAM floor too high)               | yes              | exllamav3 in nixpkgs only | no                      |
+| ollama                   | MIT         | Go, wraps llama.cpp                  | yes (via llama.cpp)       | yes (via llama.cpp, Vulkan)            | yes              | yes (`ollama`)            | no gain                 |
+| LM Studio                | proprietary | Electron app                         | via llama.cpp             | via llama.cpp                          | yes              | yes (`lmstudio`)          | no (not headless-first) |
+| llamafile                | Apache-2.0  | C/C++, Cosmopolitan                  | via llama.cpp             | via llama.cpp                          | yes              | no                        | no gain                 |
 
 Exact `nix search nixpkgs` / `nix eval` results on this machine:
 `llama-cpp-0.6.0`, `llama-swap-249`, `ollama-0.40.2`, `vllm-0.29.0`,

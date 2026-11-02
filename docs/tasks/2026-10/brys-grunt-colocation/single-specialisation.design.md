@@ -17,13 +17,13 @@ orchestrator, and a model with an in-flight request could be evicted (llama.cpp
 #28698, #28443). So each RAM class got its own boot entry, and only one class
 could be resident:
 
-| Entry | Serves | Why separate |
-|---|---|---|
-| `llm-ds4` | DeepSeek V4 Flash alone | ~92 GB, needs the whole box |
-| `llm-qwen` | Qwen3.8-Flash-Next alone | ~101-116 GB warm, needs the whole box |
-| `llms-frontier` | DS4 + Qwen, swap | one router, `--models-max 1`, no reboot to switch |
-| `llm-small` | the six-model CPU set | RAM-exclusive with DS4 |
-| `default` | DS4 (128K) + Qwen (1M) + grunt | shares the box with the desktop |
+| Entry           | Serves                         | Why separate                                      |
+| --------------- | ------------------------------ | ------------------------------------------------- |
+| `llm-ds4`       | DeepSeek V4 Flash alone        | ~92 GB, needs the whole box                       |
+| `llm-qwen`      | Qwen3.8-Flash-Next alone       | ~101-116 GB warm, needs the whole box             |
+| `llms-frontier` | DS4 + Qwen, swap               | one router, `--models-max 1`, no reboot to switch |
+| `llm-small`     | the six-model CPU set          | RAM-exclusive with DS4                            |
+| `default`       | DS4 (128K) + Qwen (1M) + grunt | shares the box with the desktop                   |
 
 The `matrix` engine in llama-swap removes the reason. It has `evict_costs`
 (priority) and `sets` (which models may co-reside). That turns each RAM
@@ -43,19 +43,19 @@ It expresses "DS4 runs alone" as a set:
 
 ```yaml
 models:
-  deepseek-v4-flash:  { evict_cost: 1000 }
+  deepseek-v4-flash: { evict_cost: 1000 }
   qwen3.8-flash-next: { evict_cost: 1000 }
-  qwen3.5-4b:         { evict_cost: 1 }     # GPU grunt
-  <surveyed small>:   { evict_cost: 1 }     # CPU/GPU grunts
+  qwen3.5-4b: { evict_cost: 1 } # GPU grunt
+  <surveyed small>: { evict_cost: 1 } # CPU/GPU grunts
 sets:
   # DS4 may co-run with nothing.
-  ds4_alone:      (deepseek-v4-flash)
+  ds4_alone: (deepseek-v4-flash)
   # The frontier pair swap among themselves; DS4 keeps its own slot.
-  main:           (qwen3.8-flash-next | deepseek-v4-flash)
+  main: (qwen3.8-flash-next | deepseek-v4-flash)
   # The grunts run ALONGSIDE whichever frontier is resident, and never
   # evict it, because the frontier asks for its own set and the grunt costs 1.
-  with_grunt:     (qwen3.5-4b | <surveyed gpu grunts>) & (qwen3.8-flash-next | deepseek-v4-flash)
-  with_surveyed:  (<surveyed cpu grunts>) & (qwen3.8-flash-next | deepseek-v4-flash)
+  with_grunt: (qwen3.5-4b | <surveyed gpu grunts>) & (qwen3.8-flash-next | deepseek-v4-flash)
+  with_surveyed: (<surveyed cpu grunts>) & (qwen3.8-flash-next | deepseek-v4-flash)
 ```
 
 Outcomes:
@@ -71,10 +71,10 @@ other's slot semantics, exactly as `llms-frontier` does today, without a reboot.
 
 ## What collapses
 
-| Today | After |
-|---|---|
-| `llm-qwen`, `llms-frontier`, `default`, `llm-small` | **one** swap config: frontier pair + grunt + surveyed grunts |
-| `llm-ds4` | kept as a *convenience* boot entry (start with DS4 loaded), not a separate topology |
+| Today                                               | After                                                                               |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `llm-qwen`, `llms-frontier`, `default`, `llm-small` | **one** swap config: frontier pair + grunt + surveyed grunts                        |
+| `llm-ds4`                                           | kept as a _convenience_ boot entry (start with DS4 loaded), not a separate topology |
 
 So the design is **4 top-level topologies -> 1 swap config** (plus an optional
 DS4-head-start entry). The RAM classes become `sets`, not boot entries.

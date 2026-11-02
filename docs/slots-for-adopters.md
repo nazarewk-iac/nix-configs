@@ -24,10 +24,10 @@ A copy-ready starting point is in [templates/adopter/](../templates/adopter/READ
 
 > **Two routes exist. Read this before you pick one.**
 >
-> | Route | Real consumers in this repository | State |
-> |---|---|---|
-> | slots — this page | 5 host directories under `hosts/`, plus the root `devenv.nix` | the route the repository runs on |
-> | den aspects — [docs/den-for-adopters.md](den-for-adopters.md) | none; every den entity is a test artifact under `checks/den-mvp/` | evaluated, never activated |
+> | Route                                                         | Real consumers in this repository                                 | State                            |
+> | ------------------------------------------------------------- | ----------------------------------------------------------------- | -------------------------------- |
+> | slots — this page                                             | 5 host directories under `hosts/`, plus the root `devenv.nix`     | the route the repository runs on |
+> | den aspects — [docs/den-for-adopters.md](den-for-adopters.md) | none; every den entity is a test artifact under `checks/den-mvp/` | evaluated, never activated       |
 >
 > So the slot route is proven in daily use, and the den route is proven only by evaluation. The
 > den route is the newer surface, and it needs no overlay and no `mkSlots` call. The repository
@@ -52,28 +52,28 @@ personal data and they will be rewritten.
 There are **19** slots today. Count them with `find modules/slots -name default.nix`: that returns
 20 files, and `modules/slots/default.nix` is the recursive loader, not a slot.
 
-| Slot | Slot | Slot |
-|---|---|---|
-| `ca` | `llm/proxy` | `nix` |
-| `devenv` | `mcp` | `opencode` |
-| `gh` | `mcp/basic-memory` | `rosetta-builder` |
-| `jj` | `mcp/pretty-print` | `signing` |
-| `jj/fork` | `mcp/snoop` | `ssh-access` |
-| `llm` | | `ssh-agent` |
-| `llm/client` | | `zellij` |
+| Slot         | Slot               | Slot              |
+| ------------ | ------------------ | ----------------- |
+| `ca`         | `llm/proxy`        | `nix`             |
+| `devenv`     | `mcp`              | `opencode`        |
+| `gh`         | `mcp/basic-memory` | `rosetta-builder` |
+| `jj`         | `mcp/pretty-print` | `signing`         |
+| `jj/fork`    | `mcp/snoop`        | `ssh-access`      |
+| `llm`        |                    | `ssh-agent`       |
+| `llm/client` |                    | `zellij`          |
 
 ## The five targets
 
 `lib/slots/schema.nix` declares exactly five targets. A slot writes into these, never into a flat
 `config`.
 
-| Target | Consumer | Note |
-|---|---|---|
-| `nixos` | NixOS system modules | |
-| `darwin` | nix-darwin modules | |
-| `home` | home-manager modules for every user | goes through `sharedModules` |
-| `devenv` | devenv.sh modules | most slots target this one |
-| `users` | per-user home-manager modules, keyed by user name | declared, and no slot assigns it today |
+| Target   | Consumer                                          | Note                                   |
+| -------- | ------------------------------------------------- | -------------------------------------- |
+| `nixos`  | NixOS system modules                              |                                        |
+| `darwin` | nix-darwin modules                                |                                        |
+| `home`   | home-manager modules for every user               | goes through `sharedModules`           |
+| `devenv` | devenv.sh modules                                 | most slots target this one             |
+| `users`  | per-user home-manager modules, keyed by user name | declared, and no slot assigns it today |
 
 ## The API: call `mkSlots`
 
@@ -187,11 +187,11 @@ as exceptions. They are not exceptions any more. You write no line to keep a slo
 An earlier version of this page named three personal defaults. All three are gone. Measured on
 2026-09-11:
 
-| Option | Default today | Note |
-|---|---|---|
-| `kdn.jj.upstream.remote` | `"origin"` | `modules/slots/jj/default.nix:56`; the git default |
-| `kdn.jj.alwaysBlockedMessagePatterns` | `[ ]` | `modules/slots/jj/default.nix:44`; a pattern belongs to one repository |
-| `kdn.opencode.settings` | `{ }` | `modules/slots/opencode/default.nix:141`; the slot names no provider |
+| Option                                | Default today | Note                                                                   |
+| ------------------------------------- | ------------- | ---------------------------------------------------------------------- |
+| `kdn.jj.upstream.remote`              | `"origin"`    | `modules/slots/jj/default.nix:56`; the git default                     |
+| `kdn.jj.alwaysBlockedMessagePatterns` | `[ ]`         | `modules/slots/jj/default.nix:44`; a pattern belongs to one repository |
+| `kdn.opencode.settings`               | `{ }`         | `modules/slots/opencode/default.nix:141`; the slot names no provider   |
 
 This repository sets its own values in its own `devenv.nix`, not in the slot. So you inherit
 nothing personal from these three. Other slots may still carry a personal default;

@@ -26,7 +26,7 @@ one-off `llama-server` process, not wired into a boot entry or `llama-swap`.
   `/var/lib/kdn/llms/models/unsloth/Qwen3.8-Flash-Next-GGUF/UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf`
   (3 shards, ~94 GB).
 - Fixed flags: `--host 127.0.0.1 --port 18080 -ngl 0 --threads 16
-  --ctx-size 1048576 --parallel 4 --kv-unified --flash-attn on`, `--load-mode`
+--ctx-size 1048576 --parallel 4 --kv-unified --flash-attn on`, `--load-mode`
   default (`mmap`).
 - Prompt: one long unique prompt of **45986 tokens** (built from 1000 unique
   lines). The target was about 30K tokens; the generator produced about 46K.
@@ -48,13 +48,13 @@ one-off `llama-server` process, not wired into a boot entry or `llama-swap`.
 the process anonymous memory (this holds the KV cache). `VmRSS` is the full
 process RSS.
 
-| config | KV type | cache-ram | SYS_used_MB | SYS_avail_MB | RssAnon_MiB | VmRSS_MiB | decode_tok_s | prefill_tok_s | cache_n | note |
-|---|---|---|---|---|---|---|---|---|---|---|
-| kv-f16-cr8192 | f16 | 8192 | 48685 | 80033 | 31409 | 76036 | 3.29 | 39.30 | 45982 | baseline; KV F16 |
-| kv-q8-cr8192 | q8_0 | 8192 | 32243 | 96475 | 17010 | 61635 | 3.29 | 44.99 | 45982 | KV halved; no decode cost |
-| kv-q4-cr8192 | q4_0 | 8192 | 24534 | 104184 | 9330 | 53953 | 3.43 | 43.40 | 45982 | KV quartered; no decode cost |
-| kv-f16-cr36864 | f16 | 36864 | 48720 | 79998 | 31406 | 76033 | 3.56 | 39.31 | 45982 | served value; no idle change |
-| kv-f16-cr131072 | f16 | 131072 | 48690 | 80028 | 31409 | 76036 | 3.56 | 39.29 | 45982 | 128 GiB ceiling; no preallocation, no OOM |
+| config          | KV type | cache-ram | SYS_used_MB | SYS_avail_MB | RssAnon_MiB | VmRSS_MiB | decode_tok_s | prefill_tok_s | cache_n | note                                      |
+| --------------- | ------- | --------- | ----------- | ------------ | ----------- | --------- | ------------ | ------------- | ------- | ----------------------------------------- |
+| kv-f16-cr8192   | f16     | 8192      | 48685       | 80033        | 31409       | 76036     | 3.29         | 39.30         | 45982   | baseline; KV F16                          |
+| kv-q8-cr8192    | q8_0    | 8192      | 32243       | 96475        | 17010       | 61635     | 3.29         | 44.99         | 45982   | KV halved; no decode cost                 |
+| kv-q4-cr8192    | q4_0    | 8192      | 24534       | 104184       | 9330        | 53953     | 3.43         | 43.40         | 45982   | KV quartered; no decode cost              |
+| kv-f16-cr36864  | f16     | 36864     | 48720       | 79998        | 31406       | 76033     | 3.56         | 39.31         | 45982   | served value; no idle change              |
+| kv-f16-cr131072 | f16     | 131072    | 48690       | 80028        | 31409       | 76036     | 3.56         | 39.29         | 45982   | 128 GiB ceiling; no preallocation, no OOM |
 
 Notes on the table:
 

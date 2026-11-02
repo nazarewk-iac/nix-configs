@@ -61,15 +61,15 @@ harness achieves by a wrapper environment file.
 
 ## 3. Run-time selection, in the order you will use it
 
-| Surface | Effect |
-|---|---|
-| `--model <provider>/<id>` (optionally `:<thinking>`) | pin one model for the run |
-| `--provider <name>` | disambiguate when a pattern matches several providers |
-| `--thinking <off…max>` | reasoning depth for that run |
-| `--models <patterns>` | comma-separated globs/fuzzy patterns for the `Ctrl+P` cycle |
-| `/model`, `/scoped-models` | interactive switch, and control over the cycle list (saved) |
-| `--list-models [search]` | what is actually available, with fuzzy search |
-| `modelOverrides` in `models.json` | change metadata for an existing model without replacing the provider |
+| Surface                                              | Effect                                                               |
+| ---------------------------------------------------- | -------------------------------------------------------------------- |
+| `--model <provider>/<id>` (optionally `:<thinking>`) | pin one model for the run                                            |
+| `--provider <name>`                                  | disambiguate when a pattern matches several providers                |
+| `--thinking <off…max>`                               | reasoning depth for that run                                         |
+| `--models <patterns>`                                | comma-separated globs/fuzzy patterns for the `Ctrl+P` cycle          |
+| `/model`, `/scoped-models`                           | interactive switch, and control over the cycle list (saved)          |
+| `--list-models [search]`                             | what is actually available, with fuzzy search                        |
+| `modelOverrides` in `models.json`                    | change metadata for an existing model without replacing the provider |
 
 `/ui`-style discovery is absent; `--list-models` is the discovery command.
 
@@ -79,7 +79,7 @@ Two different questions, two different answers.
 
 **Mid-turn, no.** A running session has one model. Pi has no tool that switches
 the active model from inside a turn, and `codemode`'s `models` global explicitly
-lists chat models as *not runnable* from a script:
+lists chat models as _not runnable_ from a script:
 
 > Chat models are listed but cannot be run from scripts.
 
@@ -95,7 +95,7 @@ model: claude-sonnet-4-5
 ---
 ```
 
-so the orchestrator's choice of *agent* is the model choice. The dispatch then
+so the orchestrator's choice of _agent_ is the model choice. The dispatch then
 runs `pi --model <that model>`. Nothing stops a delegation tool from exposing
 `{ agent, task, model? }` so the orchestrator can pick a model per task, or from
 exposing a small "capability" enum (`{ tier: "fast" | "std" | "deep" }`) that the

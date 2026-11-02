@@ -31,6 +31,6 @@ nix build --no-eval-cache -L ".#checks.$SYS.bundle-core"   # a whole bundle
 nix build --no-eval-cache -L ".#checks.$SYS.den-eval-gh"   # one check, standalone
 ```
 
-Three flags, three traps: **`--no-eval-cache`**, because Nix caches an evaluation *failure* and replays
+Three flags, three traps: **`--no-eval-cache`**, because Nix caches an evaluation _failure_ and replays
 it — a sub-second failure is almost always a stale entry. **`-L`**, because the assertion lines live in
 the build log. **`--keep-going`**, because a bundle stops at its first failed member.

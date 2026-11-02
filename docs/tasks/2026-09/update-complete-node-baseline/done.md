@@ -21,11 +21,11 @@ upstream lock is the list of inputs the public flake declares.
 
 Measured on 2026-09-12 for node `den`:
 
-| Term | Value |
-|---|---|
-| in the already-pushed public lock | false |
-| in the fork-tip lock | true |
-| in the upstream-tip lock | true |
+| Term                                     | Value    |
+| ---------------------------------------- | -------- |
+| in the already-pushed public lock        | false    |
+| in the fork-tip lock                     | true     |
+| in the upstream-tip lock                 | true     |
 | declared as an input by the public flake | **true** |
 
 The first three rows put `den` in the flagged set. The fourth row shows it is public.
@@ -58,11 +58,11 @@ is `@ is empty with one parent`, which reports the working copy, not the locks.
 
 Three measurements taken on the real locks on 2026-09-12:
 
-| Case | Old rule | New rule |
-|---|---|---|
-| the real public lock | 2 flagged (false) | **0 flagged** |
-| the private tap inputs, in `flake.lock` and in `devenv.lock` | flagged | **5 flagged, both files** |
-| a private tap forged into a copy of the public lock, node only | flagged | **1 flagged** |
+| Case                                                           | Old rule          | New rule                  |
+| -------------------------------------------------------------- | ----------------- | ------------------------- |
+| the real public lock                                           | 2 flagged (false) | **0 flagged**             |
+| the private tap inputs, in `flake.lock` and in `devenv.lock`   | flagged           | **5 flagged, both files** |
+| a private tap forged into a copy of the public lock, node only | flagged           | **1 flagged**             |
 
 The forged case is the negative test. It also fails assertion 10, so two independent assertions
 catch it.

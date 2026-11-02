@@ -12,7 +12,7 @@ Task: [flake-checks-output.md](definition.md).
 
 ## Root cause analysis
 
-`self.kdnMetaModule` is the `lib.evalModules {...}` result — a module *configuration set*
+`self.kdnMetaModule` is the `lib.evalModules {...}` result — a module _configuration set_
 (`{ _type = "configuration"; ... }`), **not** a function. Line 444 of `flake.nix` called it
 directly (`self.kdnMetaModule { moduleType = "checks"; }`), so evaluation failed with
 `attempt to call something which is not a function but a set`.
@@ -28,6 +28,7 @@ successfully. Confirmed pre-existing at commit `21c72b92`, before that package w
 ## Solution
 
 1. **Fixed the wiring** in `flake.nix` (line ~444) to match the other call sites:
+
    ```nix
    checks = pkgs.callPackages ./checks (
      self.kdnMetaModule.config.output.mkSubmodule {
@@ -37,7 +38,7 @@ successfully. Confirmed pre-existing at commit `21c72b92`, before that package w
    ```
 
 2. **Added a minimal "hello world" check** to `checks/default.nix` to prove the
-   `checks.<system>` plumbing evaluates *and* builds end-to-end, independent of the heavier
+   `checks.<system>` plumbing evaluates _and_ builds end-to-end, independent of the heavier
    pytest checks:
    ```nix
    hello = pkgs.runCommand "check-hello" { } ''

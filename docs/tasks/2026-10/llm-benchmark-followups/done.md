@@ -20,11 +20,11 @@ Measured: `tmax-2b` holds 1536 MiB VRAM. The harness README is now tracked
 [kv-cache-1m.research.md](../llm-benchmark-suite/002-disk-offload/kv-cache-1m.research.md).
 At ctx 1048576:
 
-| KV type | RssAnon | SYS used | decode | prefill |
-|---|---|---|---|---|
-| F16 | 31409 MiB | 48685 MB | 3.29 t/s | 39.3 t/s |
-| q8_0 | 17010 MiB | 32243 MB | 3.29 t/s | 45.0 t/s |
-| q4_0 | 9330 MiB | 24534 MB | 3.43 t/s | 43.4 t/s |
+| KV type | RssAnon   | SYS used | decode   | prefill  |
+| ------- | --------- | -------- | -------- | -------- |
+| F16     | 31409 MiB | 48685 MB | 3.29 t/s | 39.3 t/s |
+| q8_0    | 17010 MiB | 32243 MB | 3.29 t/s | 45.0 t/s |
+| q4_0    | 9330 MiB  | 24534 MB | 3.43 t/s | 43.4 t/s |
 
 **q8_0 KV saves about 14 GiB of non-reclaimable RAM at no decode cost.** This
 is a recommended served-config change (not applied by this task).
@@ -55,12 +55,12 @@ The intended large-model streaming case is not present on brys.
 `packages/ik-llama-cpp/`. Packaged from a pinned `fetchFromGitHub`, CPU-only.
 It builds and **loads the qwen4exp arch**. First comparison at ctx 16384:
 
-| model | engine | decode | prefill |
-|---|---|---|---|
-| Qwen3.8-Flash-Next | ik_llama.cpp | 6.48 | 66.2 |
-| Qwen3.8-Flash-Next | llama-cpp-sessions-vulkan-noblas | 5.31 | 75.1 |
-| qwen3.5-9b | ik_llama.cpp | 7.80 | 117.6 |
-| qwen3.5-9b | llama-cpp-sessions-vulkan-noblas | 7.31 | 214.6 |
+| model              | engine                           | decode | prefill |
+| ------------------ | -------------------------------- | ------ | ------- |
+| Qwen3.8-Flash-Next | ik_llama.cpp                     | 6.48   | 66.2    |
+| Qwen3.8-Flash-Next | llama-cpp-sessions-vulkan-noblas | 5.31   | 75.1    |
+| qwen3.5-9b         | ik_llama.cpp                     | 7.80   | 117.6   |
+| qwen3.5-9b         | llama-cpp-sessions-vulkan-noblas | 7.31   | 214.6   |
 
 ik_llama.cpp wins decode; llama.cpp wins the large-context prefill. A served
 A/B (through llama-swap) is the next step if wanted.

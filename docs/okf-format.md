@@ -19,13 +19,13 @@ consistent set of values across similar files rather than inventing one per file
 
 ## Recommended frontmatter (priority order)
 
-| Key | Purpose |
-|---|---|
-| `title` | Human-readable display name (often redundant with an `# H1` or `name:`) |
-| `description` | One-sentence summary |
-| `resource` | URI uniquely identifying the underlying asset |
-| `tags` | YAML list for cross-cutting categorization |
-| `timestamp` | ISO 8601 datetime, typically last-modified |
+| Key           | Purpose                                                                 |
+| ------------- | ----------------------------------------------------------------------- |
+| `title`       | Human-readable display name (often redundant with an `# H1` or `name:`) |
+| `description` | One-sentence summary                                                    |
+| `resource`    | URI uniquely identifying the underlying asset                           |
+| `tags`        | YAML list for cross-cutting categorization                              |
+| `timestamp`   | ISO 8601 datetime, typically last-modified                              |
 
 Producers may add arbitrary extra keys; consumers must tolerate unknown keys. Files that already
 carry mechanism-specific frontmatter (e.g. a Claude Code `SKILL.md`'s `name:`/`description:`, or
@@ -36,11 +36,11 @@ or replace.
 
 Favor structural markdown (headings, lists, tables) over prose. Conventional section headings:
 
-| Heading | Purpose |
-|---|---|
-| `# Schema` | Structured description of asset columns/fields |
-| `# Examples` | Concrete usage examples in code blocks |
-| `# Citations` | External sources supporting claims |
+| Heading       | Purpose                                        |
+| ------------- | ---------------------------------------------- |
+| `# Schema`    | Structured description of asset columns/fields |
+| `# Examples`  | Concrete usage examples in code blocks         |
+| `# Citations` | External sources supporting claims             |
 
 ## Cross-linking
 

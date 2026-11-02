@@ -60,7 +60,7 @@ a measured best-fit quant, and a tuning pass in practice.
 - **llama.cpp support is recent.** Added by PR #27742, merged 2026-08-27. Verify
   that the pinned `llama-cpp` 0.4.0 (build 10809) actually loads `qwen4exp`
   before the full download — a common error is `unknown model architecture:
-  'qwen4exp'` on an older build.
+'qwen4exp'` on an older build.
 - GGUF source: `unsloth/Qwen3.8-Flash-Next-GGUF`; alternative
   `Atomic Chat` (AD-4.27bpw, n-gram on SSD).
 
@@ -70,17 +70,17 @@ Two size figures exist. The Kagi thread uses Unsloth's published table (which
 runs larger); the second column is this repo's measured shard totals from the HF
 API on 2026-10-06.
 
-| quant | Kagi/Unsloth | measured | top-1 vs BF16 | note |
-|---|---|---|---|---|
-| `Q8_0` | — | 175.3 GB | — | does not fit |
-| `UD-Q5_K_XL` | — | 147.4 GB | — | does not fit |
-| `UD-Q4_K_XL` | 111.3 GB | 103.7 GB | 92.3% | **tight** at full context (~123 GiB with OS+KV) |
-| `UD-IQ4_XS` | 93.7 GB | 87.2 GB | 89.6% | **primary candidate** — good balance |
-| `UD-Q3_K_XL` | 90.0 GB | 83.8 GB | 88.3% | comfortable |
-| `UD-IQ3_XXS` | 82.0 GB | 76.3 GB | 85.4% | comfortable, most KV room |
-| `UD-Q2_K_XL` | — | 73.5 GB | — | low |
-| `UD-IQ1_M` | — | 69.4 GB | — | very low |
-| `UD-IQ1_S` | — | 67.6 GB | — | very low |
+| quant        | Kagi/Unsloth | measured | top-1 vs BF16 | note                                            |
+| ------------ | ------------ | -------- | ------------- | ----------------------------------------------- |
+| `Q8_0`       | —            | 175.3 GB | —             | does not fit                                    |
+| `UD-Q5_K_XL` | —            | 147.4 GB | —             | does not fit                                    |
+| `UD-Q4_K_XL` | 111.3 GB     | 103.7 GB | 92.3%         | **tight** at full context (~123 GiB with OS+KV) |
+| `UD-IQ4_XS`  | 93.7 GB      | 87.2 GB  | 89.6%         | **primary candidate** — good balance            |
+| `UD-Q3_K_XL` | 90.0 GB      | 83.8 GB  | 88.3%         | comfortable                                     |
+| `UD-IQ3_XXS` | 82.0 GB      | 76.3 GB  | 85.4%         | comfortable, most KV room                       |
+| `UD-Q2_K_XL` | —            | 73.5 GB  | —             | low                                             |
+| `UD-IQ1_M`   | —            | 69.4 GB  | —             | very low                                        |
+| `UD-IQ1_S`   | —            | 67.6 GB  | —             | very low                                        |
 
 **Start with `UD-IQ4_XS`**, not `UD-Q4_K_XL`: the Kagi thread's recommendation is
 IQ4_XS with **F16 KV** and a context of **128K–200K**. Q4_K_XL is tight once the
@@ -89,11 +89,11 @@ experts, so residency and prefill are the constraints, not compute.
 
 ### Expected speed (CPU-only, from the Kagi thread; verify on brys)
 
-| config | generation | prefill |
-|---|---|---|
-| `IQ3_XXS` / `Q3_K_XL` | ~8–11 tok/s | ~20–40 tok/s |
-| `IQ4_XS` / `Q4_K_XL` | ~6–9 tok/s | ~20–40 tok/s |
-| 70K+ context depth | roughly half | lower still |
+| config                | generation   | prefill      |
+| --------------------- | ------------ | ------------ |
+| `IQ3_XXS` / `Q3_K_XL` | ~8–11 tok/s  | ~20–40 tok/s |
+| `IQ4_XS` / `Q4_K_XL`  | ~6–9 tok/s   | ~20–40 tok/s |
+| 70K+ context depth    | roughly half | lower still  |
 
 Reference points: a near-twin 5950X + RTX 3090 Ti at Q4_K_XL reached 15 tok/s at
 30K context and ~340 tok/s prefill; a CPU-only Core Ultra 9 285K reached

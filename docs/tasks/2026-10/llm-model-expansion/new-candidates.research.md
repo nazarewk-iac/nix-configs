@@ -32,15 +32,15 @@ does not register anything; registration is a separate decision.
 
 ## Downloads
 
-| # | repo | file | size GB | sha256 match | note |
-|---|---|---|---|---|---|
-| 1 | `LiquidAI/LFM2.5-24B-A2B-GGUF` | `LFM2.5-24B-A2B-Q4_K_M.gguf` | 14.53 | yes | new |
-| 2 | `unsloth/Nemotron-3-Nano-30B-A3B-GGUF` | `Nemotron-3-Nano-30B-A3B-Q4_K_M.gguf` | 24.57 | yes | new |
-| 3 | `ibm-granite/granite-switch-4.1-30b` | — | — | — | no GGUF exists; skipped |
-| 4 | `unsloth/Olmo-3.1-32B-Think-GGUF` | `Olmo-3.1-32B-Think-Q4_K_M.gguf` | 19.48 | — | already present as `olmo-3.1-32b.gguf`; not re-measured |
-| 5 | `NANI-Nithin/north-mini-code-gguf` | `North-Mini-Code-1.0-Q4_K_M.gguf` | 18.59 | yes | new |
-| 6 | `Qwen/Qwen3-VL-8B-Instruct-GGUF` | `Qwen3VL-8B-Instruct-Q4_K_M.gguf` | 5.03 | yes | new |
-| 6 | `Qwen/Qwen3-VL-8B-Instruct-GGUF` | `mmproj-Qwen3VL-8B-Instruct-F16.gguf` | 1.16 | yes | vision projector |
+| #   | repo                                   | file                                  | size GB | sha256 match | note                                                    |
+| --- | -------------------------------------- | ------------------------------------- | ------- | ------------ | ------------------------------------------------------- |
+| 1   | `LiquidAI/LFM2.5-24B-A2B-GGUF`         | `LFM2.5-24B-A2B-Q4_K_M.gguf`          | 14.53   | yes          | new                                                     |
+| 2   | `unsloth/Nemotron-3-Nano-30B-A3B-GGUF` | `Nemotron-3-Nano-30B-A3B-Q4_K_M.gguf` | 24.57   | yes          | new                                                     |
+| 3   | `ibm-granite/granite-switch-4.1-30b`   | —                                     | —       | —            | no GGUF exists; skipped                                 |
+| 4   | `unsloth/Olmo-3.1-32B-Think-GGUF`      | `Olmo-3.1-32B-Think-Q4_K_M.gguf`      | 19.48   | —            | already present as `olmo-3.1-32b.gguf`; not re-measured |
+| 5   | `NANI-Nithin/north-mini-code-gguf`     | `North-Mini-Code-1.0-Q4_K_M.gguf`     | 18.59   | yes          | new                                                     |
+| 6   | `Qwen/Qwen3-VL-8B-Instruct-GGUF`       | `Qwen3VL-8B-Instruct-Q4_K_M.gguf`     | 5.03    | yes          | new                                                     |
+| 6   | `Qwen/Qwen3-VL-8B-Instruct-GGUF`       | `mmproj-Qwen3VL-8B-Instruct-F16.gguf` | 1.16    | yes          | vision projector                                        |
 
 ### Candidate 3: Granite-Switch-4.1-30B has no GGUF
 
@@ -63,13 +63,13 @@ re-downloaded and not re-measured; the served suite covers it.
 Measured on 2026-10-20. `ngl 0` for all rows (CPU only). Each throughput number
 is measured. `RssFile` / `RssAnon` / `VmRSS` are KiB; the table shows MiB.
 
-| model | repo | file | size GB | load_s | decode_tok_s | prefill_tok_s | RssFile_MiB | RssAnon_MiB | VmRSS_MiB | SYS_used_MB | load OK? | note |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| LFM2.5-24B-A2B | `LiquidAI/LFM2.5-24B-A2B-GGUF` | Q4_K_M | 14.53 | 22.4 | 22.3-24.1 | 276-287 | 13876 | 720 | 14597 | 19729 | yes | MoE, fast; two runs decode 24.1/22.3 |
-| Nemotron-3-Nano-30B-A3B | `unsloth/Nemotron-3-Nano-30B-A3B-GGUF` | Q4_K_M | 24.57 | 36.6 | 12.1 | 186 | 23460 | 317 | 23777 | 19723 | yes | hybrid Mamba; largest RSS |
-| North-Mini-Code-1.0 | `NANI-Nithin/north-mini-code-gguf` | Q4_K_M | 18.59 | 28.5 | 18.0 | 178 | 17753 | 1256 | 19010 | 20457 | yes | code specialist; MoE, fast |
-| Qwen3-VL-8B-Instruct | `Qwen/Qwen3-VL-8B-Instruct-GGUF` | Q4_K_M + mmproj | 5.03 + 1.16 | 11.7 | 8.2-8.5 | 299-303 | 4821 | 4677 | 9498 | 22695 | yes | vision; image request OK ("Gradient") |
-| Olmo-3.1-32B-Think | `unsloth/Olmo-3.1-32B-Think-GGUF` | Q4_K_M | 19.48 | — | — | — | — | — | — | — | (present) | already served; not re-measured |
+| model                   | repo                                   | file            | size GB     | load_s | decode_tok_s | prefill_tok_s | RssFile_MiB | RssAnon_MiB | VmRSS_MiB | SYS_used_MB | load OK?  | note                                  |
+| ----------------------- | -------------------------------------- | --------------- | ----------- | ------ | ------------ | ------------- | ----------- | ----------- | --------- | ----------- | --------- | ------------------------------------- |
+| LFM2.5-24B-A2B          | `LiquidAI/LFM2.5-24B-A2B-GGUF`         | Q4_K_M          | 14.53       | 22.4   | 22.3-24.1    | 276-287       | 13876       | 720         | 14597     | 19729       | yes       | MoE, fast; two runs decode 24.1/22.3  |
+| Nemotron-3-Nano-30B-A3B | `unsloth/Nemotron-3-Nano-30B-A3B-GGUF` | Q4_K_M          | 24.57       | 36.6   | 12.1         | 186           | 23460       | 317         | 23777     | 19723       | yes       | hybrid Mamba; largest RSS             |
+| North-Mini-Code-1.0     | `NANI-Nithin/north-mini-code-gguf`     | Q4_K_M          | 18.59       | 28.5   | 18.0         | 178           | 17753       | 1256        | 19010     | 20457       | yes       | code specialist; MoE, fast            |
+| Qwen3-VL-8B-Instruct    | `Qwen/Qwen3-VL-8B-Instruct-GGUF`       | Q4_K_M + mmproj | 5.03 + 1.16 | 11.7   | 8.2-8.5      | 299-303       | 4821        | 4677        | 9498      | 22695       | yes       | vision; image request OK ("Gradient") |
+| Olmo-3.1-32B-Think      | `unsloth/Olmo-3.1-32B-Think-GGUF`      | Q4_K_M          | 19.48       | —      | —            | —             | —           | —           | —         | —           | (present) | already served; not re-measured       |
 
 `prompt_n` per row: LFM 1267, Nemotron 1280, North 1372, Qwen3-VL 1270.
 

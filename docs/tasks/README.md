@@ -44,17 +44,17 @@ docs/tasks/
 
 ## File names
 
-| File | Purpose |
-|---|---|
-| `definition.md` | The task itself: context, root cause, proposed approach. Always present. |
-| `research.md` | Findings that support the task. Optional. |
-| `design.md` | The chosen design, when the task needs one before the work starts. Optional. |
-| `status.md` | **Transient** progress checkpoint for a task that is paused mid-flight. Optional. Delete it when the task is done. |
-| `done.md` | The solution, created **only when the task is done**. |
+| File              | Purpose                                                                                                                      |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `definition.md`   | The task itself: context, root cause, proposed approach. Always present.                                                     |
+| `research.md`     | Findings that support the task. Optional.                                                                                    |
+| `design.md`       | The chosen design, when the task needs one before the work starts. Optional.                                                 |
+| `status.md`       | **Transient** progress checkpoint for a task that is paused mid-flight. Optional. Delete it when the task is done.           |
+| `done.md`         | The solution, created **only when the task is done**.                                                                        |
 | `<sub>.<kind>.md` | A supporting document, for example `tart.research.md`. Use it when one task needs more than one research or design document. |
-| `<sub-slug>/` | A **sub-task** directory. It holds the same file names as its parent. |
-| `.worklog.md` | Git-ignored work record. See [The worklog and the board](#the-worklog-and-the-board). |
-| `.board.md` | Git-ignored current state. Same section. |
+| `<sub-slug>/`     | A **sub-task** directory. It holds the same file names as its parent.                                                        |
+| `.worklog.md`     | Git-ignored work record. See [The worklog and the board](#the-worklog-and-the-board).                                        |
+| `.board.md`       | Git-ignored current state. Same section.                                                                                     |
 
 The month comes from the `timestamp:` in `definition.md`. **Never move a task to a new month
 later.** The month records when the task started, not when it finished.
@@ -76,20 +76,20 @@ that are too large for one definition, but too closely related to stand alone.
 
 A sub-task is not the same thing as a supporting document:
 
-| What you have | What to use |
-|---|---|
+| What you have                                              | What to use                                       |
+| ---------------------------------------------------------- | ------------------------------------------------- |
 | More than one research or design document for **one** task | `<sub>.<kind>.md`, for example `tart.research.md` |
-| A part with its **own** definition, status and solution | a sub-task directory |
+| A part with its **own** definition, status and solution    | a sub-task directory                              |
 
 ## The worklog and the board
 
 Two files record the state of the work, not the definition of it. Both live in the task directory
 and both start with a dot. The `.*.md` rule in `.gitignore` keeps them out of every commit.
 
-| File | Contents |
-|---|---|
+| File                     | Contents                                                                |
+| ------------------------ | ----------------------------------------------------------------------- |
 | `<task-dir>/.worklog.md` | Append-only. One dated section per work run. Never edit an older entry. |
-| `<task-dir>/.board.md` | The current state. One row per open item. Overwrite it freely. |
+| `<task-dir>/.board.md`   | The current state. One row per open item. Overwrite it freely.          |
 
 A build, a verification run, a measurement or a debug session belongs here. An umbrella task keeps
 one worklog and one board for the whole family, in the umbrella directory.
@@ -119,8 +119,8 @@ Every file uses OKF frontmatter (see [okf-format.md](../okf-format.md)). The key
 type: Task
 description: <one sentence — what is wrong / what needs doing>
 status: open | in-progress | done
-solution: done.md          # present once status: done; omit while open
-authored_by: agent | human  # who wrote THIS file — people forget to set this; default to agent when an agent writes it
+solution: done.md # present once status: done; omit while open
+authored_by: agent | human # who wrote THIS file — people forget to set this; default to agent when an agent writes it
 timestamp: <ISO 8601>
 ---
 ```
@@ -131,7 +131,7 @@ timestamp: <ISO 8601>
 ---
 type: Solution
 description: <one sentence — what the fix was>
-task: definition.md        # back-link to the task
+task: definition.md # back-link to the task
 authored_by: agent | human
 timestamp: <ISO 8601>
 ---
@@ -143,7 +143,7 @@ timestamp: <ISO 8601>
 ---
 type: Status
 description: <one sentence — where the work was parked and what remains>
-task: definition.md        # back-link to the task
+task: definition.md # back-link to the task
 authored_by: agent | human
 timestamp: <ISO 8601>
 ---
@@ -155,7 +155,7 @@ timestamp: <ISO 8601>
 ---
 type: Research | Design
 description: <one sentence>
-task: definition.md        # back-link to the task
+task: definition.md # back-link to the task
 authored_by: agent | human
 timestamp: <ISO 8601>
 ---

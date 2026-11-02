@@ -33,11 +33,11 @@ So `pkgs.kdn.kdn-keepass` never reaches `environment.systemPackages` on a NixOS 
 **The question to answer:** does the author want the package on the host, in the user profile, or in
 both? The fix follows from the answer:
 
-| Intent | Fix |
-|---|---|
-| Linux only, either context | `pkgs.stdenv.hostPlatform.isLinux` |
-| the user profile only | keep the guard, and say so in a comment |
-| both | `kdnConfig.util.ifTypes [ "nixos" ]` beside the current line |
+| Intent                     | Fix                                                          |
+| -------------------------- | ------------------------------------------------------------ |
+| Linux only, either context | `pkgs.stdenv.hostPlatform.isLinux`                           |
+| the user profile only      | keep the guard, and say so in a comment                      |
+| both                       | `kdnConfig.util.ifTypes [ "nixos" ]` beside the current line |
 
 The measurement that matters: **25 of the 30 `hasParentOfAnyType` call sites want
 `pkgs.stdenv.hostPlatform.isLinux`, not a parent read.** This site is one of them.

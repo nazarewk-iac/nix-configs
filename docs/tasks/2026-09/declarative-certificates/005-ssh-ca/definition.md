@@ -47,10 +47,10 @@ The aspect writes two directives into the server configuration:
 
 The write mechanism differs per class, because the two platforms expose different options:
 
-| Class | Option |
-|---|---|
-| `nixos` | `services.openssh.settings.TrustedUserCAKeys` and `.HostCertificate` |
-| `darwin` | `services.openssh.extraConfig`, as a `sshd_config` fragment |
+| Class    | Option                                                               |
+| -------- | -------------------------------------------------------------------- |
+| `nixos`  | `services.openssh.settings.TrustedUserCAKeys` and `.HostCertificate` |
+| `darwin` | `services.openssh.extraConfig`, as a `sshd_config` fragment          |
 
 **Measured on 2026-09-25:** nix-darwin declares `services.openssh.extraConfig`
 (`<nix-darwin>/modules/services/openssh.nix:84`), not `services.openssh.settings`. The user chose
@@ -85,10 +85,10 @@ certificate is valid for. The server `TrustedUserCAKeys` trusts the signing CA.
 
 Two classes of user cert share the CA:
 
-| Class | Consumer | Lifetime | Principals |
-|---|---|---|---|
-| Interactive | `ssh`, `kdn-*` | short, so a stolen certificate expires | the login names of the target |
-| Automation | CI, remote builders, agents | longer, because the agent cannot renew on demand | the dedicated service login names |
+| Class       | Consumer                    | Lifetime                                         | Principals                        |
+| ----------- | --------------------------- | ------------------------------------------------ | --------------------------------- |
+| Interactive | `ssh`, `kdn-*`              | short, so a stolen certificate expires           | the login names of the target     |
+| Automation  | CI, remote builders, agents | longer, because the agent cannot renew on demand | the dedicated service login names |
 
 The plan sets the lifetime per class. The exact values belong to the aspect option set in sub-task
 [002 — cert declarations](../002-cert-declarations/definition.md).

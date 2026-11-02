@@ -21,11 +21,11 @@ values, cannot enter the registry.
 
 Three lines cause this:
 
-| Site | Value | Effect |
-|---|---|---|
-| `checks/den-mvp/harness.nix:84` | `nixpkgs.hostPlatform = "x86_64-linux"` | every bare NixOS evaluation is x86_64 |
-| `checks/den-mvp/harness.nix:85-88` | `fileSystems."/"` at PLAIN priority | a module that also sets it at plain priority stops the evaluation |
-| `checks/den-mvp/harness.nix:89` | `boot.loader.grub.enable = false` at PLAIN priority | an aspect's `lib.mkDefault` can never win |
+| Site                               | Value                                               | Effect                                                            |
+| ---------------------------------- | --------------------------------------------------- | ----------------------------------------------------------------- |
+| `checks/den-mvp/harness.nix:84`    | `nixpkgs.hostPlatform = "x86_64-linux"`             | every bare NixOS evaluation is x86_64                             |
+| `checks/den-mvp/harness.nix:85-88` | `fileSystems."/"` at PLAIN priority                 | a module that also sets it at plain priority stops the evaluation |
+| `checks/den-mvp/harness.nix:89`    | `boot.loader.grub.enable = false` at PLAIN priority | an aspect's `lib.mkDefault` can never win                         |
 
 ## The blocked work
 

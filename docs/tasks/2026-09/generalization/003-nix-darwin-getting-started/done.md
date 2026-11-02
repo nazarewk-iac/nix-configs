@@ -29,14 +29,14 @@ sends an adopter down a path only the creator can walk.
 `docs/nix-darwin-getting-started.md`, `type: How-To`, 444 lines. It takes one ordered path:
 a stock Mac, then nix-darwin, then a Rosetta-backed Linux builder, then one `x86_64-linux` build.
 
-| Section | Line | Content |
-|---|---|---|
-| the bootstrap dance | `:149` | the ordered install steps |
-| the exit test | `:274` | the command that proves a cross-platform build |
-| the caveats table | `:329` | 33 rows, each with a cause and a fix |
+| Section             | Line   | Content                                         |
+| ------------------- | ------ | ----------------------------------------------- |
+| the bootstrap dance | `:149` | the ordered install steps                       |
+| the exit test       | `:274` | the command that proves a cross-platform build  |
+| the caveats table   | `:329` | 33 rows, each with a cause and a fix            |
 | unconfirmable traps | `:383` | the folklore, kept apart from the verified rows |
-| known gaps | `:406` | what the runbook does not cover |
-| time and disk | `:424` | the cost an adopter pays |
+| known gaps          | `:406` | what the runbook does not cover                 |
+| time and disk       | `:424` | the cost an adopter pays                        |
 
 Each exit criterion:
 

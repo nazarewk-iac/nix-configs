@@ -10,7 +10,7 @@ timestamp: 2026-09-04T00:00:00+02:00
 
 ## Root cause analysis (the gap)
 
-The docs, the skill, and the harness covered how to *place* content in the fork
+The docs, the skill, and the harness covered how to _place_ content in the fork
 topology, but not the plain workflow: you have a local change and you want to
 **push it to a branch or fork** (the shared `main`/`master`, a feature branch, or
 a second fork remote) after a fresh fetch. The harness also had no single worked

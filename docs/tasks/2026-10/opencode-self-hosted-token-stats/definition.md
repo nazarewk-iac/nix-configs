@@ -29,10 +29,10 @@ The OpenCode session database (`~/.local/share/opencode/opencode-stable.db`)
 records the split directly. Every session whose `model` is `brys` has zero
 tokens; every `requesty` session has real counts.
 
-| provider | example model | `tokens_input` / `tokens_output` |
-|---|---|---|
-| `requesty` | `deepseek-v4.1-flash` | e.g. `164041 / 18371` |
-| `brys` | `deepseek-v4-flash` | `0 / 0` |
+| provider   | example model         | `tokens_input` / `tokens_output` |
+| ---------- | --------------------- | -------------------------------- |
+| `requesty` | `deepseek-v4.1-flash` | e.g. `164041 / 18371`            |
+| `brys`     | `deepseek-v4-flash`   | `0 / 0`                          |
 
 The same zero appears in each assistant `message.data.tokens` and each
 `step-finish` part. Tool calls themselves worked (they were translated by the

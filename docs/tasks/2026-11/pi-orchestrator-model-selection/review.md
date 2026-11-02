@@ -26,8 +26,8 @@ only `delegate`. A file "a sub-agent can read" is useless to the entity choosing
 → **Fix:** the status tool does both requests and returns alias-keyed state; the research file
 claimed this was one call and is corrected.
 
-**A3. The context filter cannot be enforced by prompt alone.** The orchestrator hands a *task
-text* to `delegate`; it cannot know in advance that the sub-agent will open a 468 KB file.
+**A3. The context filter cannot be enforced by prompt alone.** The orchestrator hands a _task
+text_ to `delegate`; it cannot know in advance that the sub-agent will open a 468 KB file.
 → **Fix:** move the gate into the tool. `delegate` gains an optional `inputBytes` argument; the
 extension **rejects** a delegation whose declared input exceeds the target model's served context
 (and says which alias would fit). Plus a cheap `measure` action that returns a file's size, so the
@@ -43,15 +43,15 @@ host-scoped. The headroom design stands.
 
 ## Noted, and deliberately accepted as caveats
 
-| # | Caveat | Why we accept it |
-|---|---|---|
-| C1 | A client alias choice cannot stop llama-swap evicting the frontier | It is a hint by design; the matrix owns eviction. The value is *avoiding* a bad request, not controlling the server. |
-| C2 | `loadSeconds` / `tokensPerSecond` are static and will drift | Accept. They are hints with an order-of-magnitude purpose (1 s vs 90 s), not predictions. Marked as estimates in the catalog. |
-| C3 | `capabilities.strengths` duplicates the alias naming | Accept but narrow: keep only what the alias cannot say — `operation` (cpu/gpu) and `loadSeconds`. Drop `strengths`. |
-| C4 | "Escalate after two failures" needs per-tier state | Accept: the orchestrator's own context *is* the state within a session. Documented, not hidden. |
-| C5 | Three TLS GETs under 3 s may fail exactly under load | Accept, and it is why the tool must always return the **static** view plus a `stale: true` flag rather than an error. |
-| C6 | `proof-context-filter.md` could be satisfied by the model merely saying "I reject this" | Accept the criticism. The proof must show the **rejection is emitted by code**, with the exit path and message, not by prose. |
-| C7 | llama-swap's eviction/matrix policy is opaque here | Accept. Recorded as a caveat; the task does not depend on modelling it. |
+| #   | Caveat                                                                                  | Why we accept it                                                                                                              |
+| --- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| C1  | A client alias choice cannot stop llama-swap evicting the frontier                      | It is a hint by design; the matrix owns eviction. The value is _avoiding_ a bad request, not controlling the server.          |
+| C2  | `loadSeconds` / `tokensPerSecond` are static and will drift                             | Accept. They are hints with an order-of-magnitude purpose (1 s vs 90 s), not predictions. Marked as estimates in the catalog. |
+| C3  | `capabilities.strengths` duplicates the alias naming                                    | Accept but narrow: keep only what the alias cannot say — `operation` (cpu/gpu) and `loadSeconds`. Drop `strengths`.           |
+| C4  | "Escalate after two failures" needs per-tier state                                      | Accept: the orchestrator's own context _is_ the state within a session. Documented, not hidden.                               |
+| C5  | Three TLS GETs under 3 s may fail exactly under load                                    | Accept, and it is why the tool must always return the **static** view plus a `stale: true` flag rather than an error.         |
+| C6  | `proof-context-filter.md` could be satisfied by the model merely saying "I reject this" | Accept the criticism. The proof must show the **rejection is emitted by code**, with the exit path and message, not by prose. |
+| C7  | llama-swap's eviction/matrix policy is opaque here                                      | Accept. Recorded as a caveat; the task does not depend on modelling it.                                                       |
 
 ## Verdict adopted
 

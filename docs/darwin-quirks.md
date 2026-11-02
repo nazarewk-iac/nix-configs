@@ -33,14 +33,14 @@ fragile.
 **Evidence.** Measured on 2026-10-01 with real launchd jobs. A denied binary was `bash-5.2p37`
 (`auth_value=0`); a granted binary was `bash-5.3p9` (`auth_value=2`):
 
-| Job top-level | Action | Result |
-|---|---|---|
-| granted binary | spawns a denied binary | **OK** |
-| granted binary | grandchild (denied spawns denied) | **OK** |
-| granted binary | `exec`-replaces itself with a denied binary | **OK** |
-| `/bin/sh` | spawns granted, then denied | **OK** |
-| denied binary | runs itself | **FAIL** |
-| job A granted, job B denied | two separate jobs | **B fails** |
+| Job top-level               | Action                                      | Result      |
+| --------------------------- | ------------------------------------------- | ----------- |
+| granted binary              | spawns a denied binary                      | **OK**      |
+| granted binary              | grandchild (denied spawns denied)           | **OK**      |
+| granted binary              | `exec`-replaces itself with a denied binary | **OK**      |
+| `/bin/sh`                   | spawns granted, then denied                 | **OK**      |
+| denied binary               | runs itself                                 | **FAIL**    |
+| job A granted, job B denied | two separate jobs                           | **B fails** |
 
 **Refined 2026-10-11 (macOS 26.1, `anji`, USB SSDs).** Two rows of that table need a sharper edge.
 The tree coverage comes from a **granted** top-level, never from a platform binary. With the volume
@@ -76,11 +76,11 @@ launchd job (`tcc-ok`). Three further measurements from the same host:
 Earlier, on 2026-09-26, every test ran as root in the same directory with the same uid. Only the
 binary changed the result:
 
-| Binary | Internal disk | External volume |
-|---|---|---|
-| denied `bash` | write OK | write **denied** |
-| allowed `bash` | write OK | write OK |
-| `/bin/sh` (platform binary) | write OK | write OK |
+| Binary                      | Internal disk | External volume  |
+| --------------------------- | ------------- | ---------------- |
+| denied `bash`               | write OK      | write **denied** |
+| allowed `bash`              | write OK      | write OK         |
+| `/bin/sh` (platform binary) | write OK      | write OK         |
 
 The TCC database shows the grant state. `auth_value=2` allows. `auth_value=0` denies:
 

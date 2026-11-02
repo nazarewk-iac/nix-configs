@@ -39,11 +39,11 @@ by hand. Edit the Home Manager module.
 
 Three files exist in `~/.ssh/config.d/`. Measured directive counts:
 
-| File | `IdentityAgent` directives | `Host *` blanket |
-|---|---|---|
-| `40-kdn-ssh-access.config` | 2 | 0 |
-| `50-1password.config` | 1 | 1 |
-| `kdn.config` | 0 | 0 |
+| File                       | `IdentityAgent` directives | `Host *` blanket |
+| -------------------------- | -------------------------- | ---------------- |
+| `40-kdn-ssh-access.config` | 2                          | 0                |
+| `50-1password.config`      | 1                          | 1                |
+| `kdn.config`               | 0                          | 0                |
 
 `IdentityAgent` **overrides `SSH_AUTH_SOCK`**. So the blanket in `50-1password.config` makes the
 1Password agent serve every host. It bypasses the Home Manager agent

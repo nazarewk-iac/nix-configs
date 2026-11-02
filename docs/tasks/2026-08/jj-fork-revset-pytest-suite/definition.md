@@ -34,6 +34,7 @@ A pytest suite that, per test function, builds an isolated world:
    alias returns the expected change ids.
 
 Cover at least:
+
 - `upstream-incoming` = fetched-but-not-merged upstream commits; `upstream-incoming-tip` = its
   latest.
 - `to-rebase` = local described work above `tree-merge`.
@@ -68,9 +69,9 @@ depend on it. Drop or change it if it does not hold.
   - `git+file:` reads git's index. It shows committed changes and dirty edits to tracked files,
     but NOT a brand-new untracked file until `git add`.
   - `path:` copies the working directory (filtered by `.gitignore`) and sees new files at once.
-  The suite very likely needs `path:` — an isolated flake test would otherwise resolve this repo
-  through `/nix/store` and miss uncommitted test fixtures. Verify: does the chosen fetcher read a
-  symlinked, possibly-dirty tree the way the test needs?
+    The suite very likely needs `path:` — an isolated flake test would otherwise resolve this repo
+    through `/nix/store` and miss uncommitted test fixtures. Verify: does the chosen fetcher read a
+    symlinked, possibly-dirty tree the way the test needs?
 
 ## Notes
 

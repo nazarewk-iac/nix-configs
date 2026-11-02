@@ -26,11 +26,11 @@ Add one `filter.program` key to the `result` temporary-root policy in
 
 The program reads one JSON object per candidate on stdin, and the exit code is the verdict:
 
-| Field | Value |
-|---|---|
-| stdin | `{"path":"<out-link>","gc_root":"<gcroots/auto entry>"}` |
-| exit 0 | angrr monitors the path, so `period` can expire it |
-| exit non-zero | angrr ignores the path, so angrr keeps it forever |
+| Field         | Value                                                    |
+| ------------- | -------------------------------------------------------- |
+| stdin         | `{"path":"<out-link>","gc_root":"<gcroots/auto entry>"}` |
+| exit 0        | angrr monitors the path, so `period` can expire it       |
+| exit non-zero | angrr ignores the path, so angrr keeps it forever        |
 
 The key is `snake_case`, because angrr's `Input` struct carries no `rename_all`.
 

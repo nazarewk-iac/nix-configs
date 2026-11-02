@@ -23,12 +23,12 @@ swap.
 ASUS ROG Strix X570-E Gaming WiFi II (X570S, passive chipset). `lspci -tv`
 confirms:
 
-| device | slot | link | root port |
-|---|---|---|---|
-| `nvme0n1` (Goodram PX700 2 TB) | M.2_1 | CPU Gen4 x4 | `00:01.1` |
-| `nvme1n1` (Viper VP4300L 2 TB) | M.2_2 | chipset Gen4 x4 | `00:01.2` → `02:00.0` |
-| W6600 `0d:00.0` | PCIEX16_1 | CPU Gen4 x8 | |
-| Radeon 550 "Lexa" `0e:00.0` | PCIEX16_2 | CPU Gen4 x8 | |
+| device                         | slot      | link            | root port             |
+| ------------------------------ | --------- | --------------- | --------------------- |
+| `nvme0n1` (Goodram PX700 2 TB) | M.2_1     | CPU Gen4 x4     | `00:01.1`             |
+| `nvme1n1` (Viper VP4300L 2 TB) | M.2_2     | chipset Gen4 x4 | `00:01.2` → `02:00.0` |
+| W6600 `0d:00.0`                | PCIEX16_1 | CPU Gen4 x8     |                       |
+| Radeon 550 "Lexa" `0e:00.0`    | PCIEX16_2 | CPU Gen4 x8     |                       |
 
 `nvme1n1` sits behind the X570 uplink (`00:01.2` → `02:00.0`). That PCIe 4.0 x4
 link is shared with the MT7921K Wi-Fi, the RTL8125 2.5GbE, the I211 GbE, the
@@ -42,10 +42,10 @@ MT7921K) driver issues are mostly on Windows. brys shows no PCIe AER errors.
 
 ## GPUs
 
-| PCI | device | id | VRAM |
-|---|---|---|---|
+| PCI       | device                         | id          | VRAM                      |
+| --------- | ------------------------------ | ----------- | ------------------------- |
 | `0d:00.0` | Radeon PRO W6600 (RADV NAVI23) | `1002:73e3` | 7.98 GiB (`8573157376` B) |
-| `0e:00.0` | Lexa PRO (Radeon 540/550) | `1002:699f` | 4.00 GiB (`4294967296` B) |
+| `0e:00.0` | Lexa PRO (Radeon 540/550)      | `1002:699f` | 4.00 GiB (`4294967296` B) |
 
 `MESA_VK_DEVICE_SELECT=1002:73e3!` pins the W6600 as `Vulkan0`; the Lexa is
 never selected. The W6600 is unusable for the dense model weights, but it runs
@@ -57,10 +57,10 @@ the Qwen MTP draft head — see [docs/local-llms.md](../../docs/local-llms.md),
 Two NVMe devices hold the pool. Two SATA HDDs and a USB stick are not part of
 it.
 
-| device | size | model |
-|---|---|---|
+| device    | size  | model              |
+| --------- | ----- | ------------------ |
 | `nvme0n1` | 1.9 T | SSDPR-PX700-02T-80 |
-| `nvme1n1` | 1.8 T | Viper VP4300L 2TB |
+| `nvme1n1` | 1.8 T | Viper VP4300L 2TB  |
 
 Both are LUKS2-encrypted (`px700-brys-crypted`, `vp4300-brys-crypted`) and form
 a **2-device mirror**:
@@ -86,11 +86,11 @@ not the drive. Re-measured with **asynchronous high queue depth** (`fio
 io_uring`, `iodepth=64`, `numjobs=4`, `bs=128k`, `--direct=1`) on a 32 GiB
 incompressible scratch file after `drop_caches`:
 
-| read | throughput |
-|---|---|
-| cold sustained, per drive | **~2.0–2.2 GB/s** |
+| read                                    | throughput        |
+| --------------------------------------- | ----------------- |
+| cold sustained, per drive               | **~2.0–2.2 GB/s** |
 | warm band, per drive, at ~800–900 G LBA | **~5.4–6.0 GB/s** |
-| mirror dataset, warm | **~10 GB/s** |
+| mirror dataset, warm                    | **~10 GB/s**      |
 
 The advertised rate is 7,400 MB/s. 1M blocks are worse than 128k. **dm-crypt is
 not the cap:** `cryptsetup benchmark` gives aes-xts ~4.8 GB/s, above the cold
@@ -110,7 +110,7 @@ depth (a QD1/psync test measures latency, not the drive).
 ## ZFS ARC cap
 
 `hosts/brys/llm.nix` caps the ZFS ARC at 8 GiB with the kernel parameter
-`zfs.zfs_arc_max=8589934592`. The ARC is a *second* cache beside the Linux page
+`zfs.zfs_arc_max=8589934592`. The ARC is a _second_ cache beside the Linux page
 cache that backs the `mmap`'d model weights. At its default `c_max` (about half
 of RAM) it grew to ~65 GB and the kernel evicted the weights to make room. The
 cap keeps the weights resident. It is a kernel module parameter, so it applies
@@ -132,15 +132,15 @@ model with a workstation".
 
 Real RAM throughput measured via a STREAM-style benchmark compiled for `znver3`
 and run on brys under the `performance` governor (2026-09-05). This supersedes
-the earlier *assumed* DDR4 figure of ~50 GB/s.
+the earlier _assumed_ DDR4 figure of ~50 GB/s.
 
-| op | MiB working set | GB/s |
-|---|---|---|
-| COPY | 4096 | 39.80 |
-| TRIAD | 4096 | 27.90 |
-| ADD | 4096 | 26.74 |
-| SCALE | 4096 | 24.20 |
-| COPY | 320 | 38.81 |
+| op    | MiB working set | GB/s  |
+| ----- | --------------- | ----- |
+| COPY  | 4096            | 39.80 |
+| TRIAD | 4096            | 27.90 |
+| ADD   | 4096            | 26.74 |
+| SCALE | 4096            | 24.20 |
+| COPY  | 320             | 38.81 |
 
 Implication for the tok/s ceiling: CPU decode reads activated weights
 sequentially, so **COPY (~40 GB/s)** is the right figure. DeepSeek V4 Flash
@@ -150,19 +150,18 @@ IQ3_XXS reads ~5 GB of activated params per token, so the realistic ceiling is
 
 ## Measured per-model resident footprints
 
-Each model loaded via a manual `llama-server` (llama.cpp 10408, `mmap`, threads
-12) one at a time on the 128 GB box (DeepSeek router also resident for the small
+Each model loaded via a manual `llama-server` (llama.cpp 10408, `mmap`, threads 12) one at a time on the 128 GB box (DeepSeek router also resident for the small
 models). Resident working set = `VmRSS` = `RssAnon` (compute/KV buffers) +
 `RssFile` (mmap'd weights). `warm t/s` = 128-token generation.
 
-| model | file | VmRSS | RssAnon | RssFile | VmPeak | load | warm t/s | coexist w/ DS4? |
-|---|---|---|---|---|---|---|---|---|
-| `phi-4` | 8.5 G | 17.7 G | 8.9 G | 8.7 G | 23 G | ~18 s | 2.86 | yes (fits; evicts little) |
-| `qwen3-30b-a3b` | 18 G | 44.4 G | 26.4 G | 18.0 G | 50 G | ~42 s | 11.41 | partial (evicts ~45 G of DS4 cache) |
-| `qwen3-coder-next` | 45 G | 65.6 G | 39.6 G | 25.9 G | 91 G | ~105 s | 5.34 | no (fully evicts DS4) |
-| `qwen3-next-80b` | 46 G | 80.0 G | 39.2 G | 40.8 G | 94 G | ~99 s | 3.29 | no (fully evicts DS4) |
-| `qwen3-235b` | 72 G | (fail) ~100 G est | — | — | — | fail @65 G avail | — | no (needs box alone) |
-| `gpt-oss-120b` (Q4_K_M) | 58.5 G | 72.2 G | 60.2 G | 11.8 G | 128 G | ~129 s | **12.7** | yes (fits; DS4 file-cache evicted, re-faults) |
+| model                   | file   | VmRSS             | RssAnon | RssFile | VmPeak | load             | warm t/s | coexist w/ DS4?                               |
+| ----------------------- | ------ | ----------------- | ------- | ------- | ------ | ---------------- | -------- | --------------------------------------------- |
+| `phi-4`                 | 8.5 G  | 17.7 G            | 8.9 G   | 8.7 G   | 23 G   | ~18 s            | 2.86     | yes (fits; evicts little)                     |
+| `qwen3-30b-a3b`         | 18 G   | 44.4 G            | 26.4 G  | 18.0 G  | 50 G   | ~42 s            | 11.41    | partial (evicts ~45 G of DS4 cache)           |
+| `qwen3-coder-next`      | 45 G   | 65.6 G            | 39.6 G  | 25.9 G  | 91 G   | ~105 s           | 5.34     | no (fully evicts DS4)                         |
+| `qwen3-next-80b`        | 46 G   | 80.0 G            | 39.2 G  | 40.8 G  | 94 G   | ~99 s            | 3.29     | no (fully evicts DS4)                         |
+| `qwen3-235b`            | 72 G   | (fail) ~100 G est | —       | —       | —      | fail @65 G avail | —        | no (needs box alone)                          |
+| `gpt-oss-120b` (Q4_K_M) | 58.5 G | 72.2 G            | 60.2 G  | 11.8 G  | 128 G  | ~129 s           | **12.7** | yes (fits; DS4 file-cache evicted, re-faults) |
 
 Multi-model implication: `models-max=1` (one resident at a time) is the right
 policy on 128 GB. Only `phi-4` (17.7 G) fits comfortably alongside DeepSeek;
@@ -180,12 +179,12 @@ on 1500–2000-token generations at temp 0. These are **post-no-BLAS** numbers
 "Sustained decode" covers the whole generation; "1st-half → 2nd-half" splits it
 in two.
 
-| model | ctx depth | sustained decode | spec acceptance / mean-len | 1st-half → 2nd-half |
-|---|---|---|---|---|
-| Qwen3.8-Flash-Next | ~0.2K | 9.9 t/s | 0.73 / 4.65 | 9.1 → 10.8 |
-| Qwen3.8-Flash-Next | ~16K | 8.1 t/s | 0.64 / 4.18 | 7.8 → 8.5 |
-| DeepSeek V4 Flash | ~0.2K | 3.2–3.4 t/s | 0.65–0.69 / 4.2–4.4 | 2.7 → 3.9 |
-| DeepSeek V4 Flash | ~16K | 3.2 t/s | 0.63 / 4.2 | 2.7 → 3.9 |
+| model              | ctx depth | sustained decode | spec acceptance / mean-len | 1st-half → 2nd-half |
+| ------------------ | --------- | ---------------- | -------------------------- | ------------------- |
+| Qwen3.8-Flash-Next | ~0.2K     | 9.9 t/s          | 0.73 / 4.65                | 9.1 → 10.8          |
+| Qwen3.8-Flash-Next | ~16K      | 8.1 t/s          | 0.64 / 4.18                | 7.8 → 8.5           |
+| DeepSeek V4 Flash  | ~0.2K     | 3.2–3.4 t/s      | 0.65–0.69 / 4.2–4.4        | 2.7 → 3.9           |
+| DeepSeek V4 Flash  | ~16K      | 3.2 t/s          | 0.63 / 4.2                 | 2.7 → 3.9           |
 
 **Qwen is ~2.5–3× faster than DS4** for warm long coding tasks (2.53× at 16K).
 

@@ -13,7 +13,7 @@ timestamp: 2026-10-06T00:34:43+02:00
 > [`docs/local-llms.md`](../../../docs/local-llms.md) (weights ~101 GB resident,
 > whole process ~115.8 GB RSS on a 125 GB box, `RssAnon` ~18 GB at 320K with
 > `ubatch 4096`, prefill ~15 t/s, decode ~4-8 t/s). Every claim marked
-> *verify* needs a run.
+> _verify_ needs a run.
 
 ## Part 1 — `ctx-size 327680` with `--parallel 4` and `--kv-unified`
 
@@ -43,16 +43,16 @@ So for `--parallel 4 --kv-unified --ctx-size 327680`:
   `4 × 320K`. Each slot may use up to the full pool while others are idle; the
   **sum over simultaneously-active sequences is bounded by 327680**.
 - `n_stream = 1`, so the compute/graph buffers are sized like one sequence, not
-  four — *cheaper* than the equivalent non-unified `parallel 4`.
+  four — _cheaper_ than the equivalent non-unified `parallel 4`.
 
 ### Memory
 
-| item | today (`parallel 1`, non-unified, 320K) | candidate (`parallel 4`, unified, 320K) |
-|---|---|---|
-| weights (RssFile) | ~97 GB | ~97 GB |
-| KV pool | 320K (~one context) | 320K (~one context, shared) |
-| compute/graph buffer | 1 stream | 1 stream (unified) |
-| `RssAnon` total | ~18 GB | ~18 GB (estimate; **verify**) |
+| item                 | today (`parallel 1`, non-unified, 320K) | candidate (`parallel 4`, unified, 320K) |
+| -------------------- | --------------------------------------- | --------------------------------------- |
+| weights (RssFile)    | ~97 GB                                  | ~97 GB                                  |
+| KV pool              | 320K (~one context)                     | 320K (~one context, shared)             |
+| compute/graph buffer | 1 stream                                | 1 stream (unified)                      |
+| `RssAnon` total      | ~18 GB                                  | ~18 GB (estimate; **verify**)           |
 
 The key result: **raising `N` does not multiply KV RAM** when unified. The pool
 is one context's worth regardless of `N`. The cost of `N` is slot bookkeeping and
@@ -65,7 +65,7 @@ eviction. Starting at 256K is the safe first rung. **verify.**
 ### Compute / throughput
 
 - **Decode:** the server batches tokens from active slots into one forward pass.
-  For a *dense* model that amortises the weight reads and aggregate throughput can
+  For a _dense_ model that amortises the weight reads and aggregate throughput can
   approach `N ×`. DS4 is a sparse 284B MoE: each sequence routes to different
   experts, so the **union** of experts read per step grows with the batch, and the
   amortisation is sublinear — possibly near-flat for disjoint routings. Expect
@@ -74,8 +74,8 @@ eviction. Starting at 256K is the safe first rung. **verify.**
   (memory-heavy) improves core utilisation over serial prefill. This is where
   concurrency can help aggregate throughput, not just latency.
 - **Per-request under full 4-way load:** each request roughly gets `1/N` of the
-  bandwidth → ~1–2 t/s decode, ~4 t/s prefill. The win is *no head-of-line
-  blocking*: four requests finish in ~the time one would have, instead of four
+  bandwidth → ~1–2 t/s decode, ~4 t/s prefill. The win is _no head-of-line
+  blocking_: four requests finish in ~the time one would have, instead of four
   serial waits.
 
 ### Context sharing under load
@@ -104,13 +104,13 @@ combination may be unsupported. **verify** — and if it regresses, test
 
 ### On-demand vs preconfigured
 
-| lever | on-demand? | where |
-|---|---|---|
-| a request uses only the KV it needs (shared pool) | **yes, automatic** | server (unified KV) |
-| per-request context size in the API | **no such parameter** | — |
-| uniform per-slot cap | no, preconfigured | server `--kv-unified-per-slot`, `--parallel` |
-| a distinct provider model id + `limit.context` | no, Nix-time | client `kdn.llm.client.upstreams.<name>.models` |
-| which model a sub-agent uses | no, config-time | opencode agent definition |
+| lever                                             | on-demand?            | where                                           |
+| ------------------------------------------------- | --------------------- | ----------------------------------------------- |
+| a request uses only the KV it needs (shared pool) | **yes, automatic**    | server (unified KV)                             |
+| per-request context size in the API               | **no such parameter** | —                                               |
+| uniform per-slot cap                              | no, preconfigured     | server `--kv-unified-per-slot`, `--parallel`    |
+| a distinct provider model id + `limit.context`    | no, Nix-time          | client `kdn.llm.client.upstreams.<name>.models` |
+| which model a sub-agent uses                      | no, config-time       | opencode agent definition                       |
 
 The two levels:
 
@@ -118,7 +118,7 @@ The two levels:
    consumes only the tokens it actually sends and generates — it does not reserve
    320K. So a sub-agent that naturally has a short prompt is already cheap; no
    configuration is needed to "make it small".
-2. **Being *capped* or *distinct* is preconfigured.** To guarantee a sub-agent
+2. **Being _capped_ or _distinct_ is preconfigured.** To guarantee a sub-agent
    cannot exceed some context, or to give it a separate label/limit, you must set
    it up ahead of time — either a uniform server-side per-slot cap, or a
    client-side model entry with a smaller `limit.context` plus an agent that
@@ -131,7 +131,7 @@ The two levels:
 - `--kv-unified-per-slot N` is a **uniform** ceiling for all slots; it cannot
   single out sub-agents. Useful as a floor of safety, not for differentiation.
 - Because the pool is shared and unified, small requests are cheap without any
-  flag. The flag is only needed to bound the *worst* request.
+  flag. The flag is only needed to bound the _worst_ request.
 
 ### Client side (opencode)
 
@@ -142,7 +142,7 @@ The two levels:
 - opencode agents/sub-agents name a `model` in their definition. Assigning a
   sub-agent a "small" model is a **config-time** choice, not a per-call one.
 - **Working route to smaller-context sub-agents (preconfigured):** add a second
-  provider entry that points at the *same* endpoint with a smaller
+  provider entry that points at the _same_ endpoint with a smaller
   `limit.context`, e.g. `"deepseek-v4-flash-sub"` with `context = 65536` and a
   `[64K]` label, then point the sub-agent definitions at it. The server treats an
   unknown model id by **falling back to the frontier router**

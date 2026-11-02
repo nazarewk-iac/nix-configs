@@ -41,18 +41,18 @@ decision.
 
 ## Downloads
 
-| # | repo | file | size GB | local name | note |
-|---|---|---|---|---|---|
-| 1 | `openbmb/MiniCPM-V-4.7-1B-gguf` | `MiniCPM-V-4_7-1B-Q4_K_M.gguf` | 0.63 | `minicpm-v-4.7-1b.gguf` | + mmproj f16 1.03 GB |
-| 2 | `prism-ml/Ternary-Bonsai-2-27B-gguf` | `Ternary-Bonsai-2-27B-PTQ1_0.gguf` | 5.54 | `ternary-bonsai-2-27b.gguf` | + mmproj BF16 0.87 GB |
-| 3 | `CMSManhattan/JiRackUltra_1b` | `JiRackUltra_1b_Q4_K_M.gguf` | 1.04 | `jirackultra-1b.gguf` | text |
-| 4 | `CMSManhattan/JiRackDeltaNet_27b` | `JiRackDeltaNet_27b.Q4_K_M.gguf` | 15.66 | `jirackdeltanet-27b.gguf` | text |
-| 5 | `ornith-ai/Ornith-1.0-35B-GGUF` | `ornith-1.0-35b-Q4_K_M.gguf` | 19.71 | `ornith-1.0-35b.gguf` | text |
-| 6 | `ukisai/Swift-1.5-Qwen3.8-27B-GSQ-RCO-GGUF` | `Swift-1.5-Qwen3.8-27B-GSQ-RCO-IQ3_S.gguf` | 10.96 | `swift-1.5-qwen3.8-27b-gsq-rco.gguf` | text |
-| 7 | `Qwen/Qwen3-Embedding-4B-GGUF` | `Qwen3-Embedding-4B-Q4_K_M.gguf` | 2.33 | `qwen3-embedding-4b.gguf` | embedding |
-| 8 | `Voodisss/Qwen3-Reranker-4B-GGUF-llama_cpp` | `Qwen3-Reranker-4B-Q4_K_M.gguf` | 2.33 | `qwen3-reranker-4b.gguf` | reranker |
-| 9 | `handy-computer/parakeet-unified-en-0.6b-gguf` | `parakeet-unified-en-0.6b-Q4_K_M.gguf` | 0.44 | `parakeet-unified-en-0.6b.gguf` | ASR |
-| 10 | `google/gemma-4-12B-it-qat-q4_0-gguf` | `gemma-4-12b-it-qat-q4_0.gguf` | 6.50 | `gemma-4-12b-it-qat-q4_0.gguf` | + mmproj 0.16 GB |
+| #   | repo                                           | file                                       | size GB | local name                           | note                  |
+| --- | ---------------------------------------------- | ------------------------------------------ | ------- | ------------------------------------ | --------------------- |
+| 1   | `openbmb/MiniCPM-V-4.7-1B-gguf`                | `MiniCPM-V-4_7-1B-Q4_K_M.gguf`             | 0.63    | `minicpm-v-4.7-1b.gguf`              | + mmproj f16 1.03 GB  |
+| 2   | `prism-ml/Ternary-Bonsai-2-27B-gguf`           | `Ternary-Bonsai-2-27B-PTQ1_0.gguf`         | 5.54    | `ternary-bonsai-2-27b.gguf`          | + mmproj BF16 0.87 GB |
+| 3   | `CMSManhattan/JiRackUltra_1b`                  | `JiRackUltra_1b_Q4_K_M.gguf`               | 1.04    | `jirackultra-1b.gguf`                | text                  |
+| 4   | `CMSManhattan/JiRackDeltaNet_27b`              | `JiRackDeltaNet_27b.Q4_K_M.gguf`           | 15.66   | `jirackdeltanet-27b.gguf`            | text                  |
+| 5   | `ornith-ai/Ornith-1.0-35B-GGUF`                | `ornith-1.0-35b-Q4_K_M.gguf`               | 19.71   | `ornith-1.0-35b.gguf`                | text                  |
+| 6   | `ukisai/Swift-1.5-Qwen3.8-27B-GSQ-RCO-GGUF`    | `Swift-1.5-Qwen3.8-27B-GSQ-RCO-IQ3_S.gguf` | 10.96   | `swift-1.5-qwen3.8-27b-gsq-rco.gguf` | text                  |
+| 7   | `Qwen/Qwen3-Embedding-4B-GGUF`                 | `Qwen3-Embedding-4B-Q4_K_M.gguf`           | 2.33    | `qwen3-embedding-4b.gguf`            | embedding             |
+| 8   | `Voodisss/Qwen3-Reranker-4B-GGUF-llama_cpp`    | `Qwen3-Reranker-4B-Q4_K_M.gguf`            | 2.33    | `qwen3-reranker-4b.gguf`             | reranker              |
+| 9   | `handy-computer/parakeet-unified-en-0.6b-gguf` | `parakeet-unified-en-0.6b-Q4_K_M.gguf`     | 0.44    | `parakeet-unified-en-0.6b.gguf`      | ASR                   |
+| 10  | `google/gemma-4-12B-it-qat-q4_0-gguf`          | `gemma-4-12b-it-qat-q4_0.gguf`             | 6.50    | `gemma-4-12b-it-qat-q4_0.gguf`       | + mmproj 0.16 GB      |
 
 Sizes are GiB as written to disk (`stat` size / 1024^3), not decimal GB.
 
@@ -78,18 +78,18 @@ rows that show a text value answered an image request; the empty cells are
 explained in the notes. The gemma timing figures come from the text path; a
 separate image request confirmed that its projector works.
 
-| model | repo | file | size GB | arch | load_s | decode_tok_s | prefill_tok_s | RssFile/RssAnon/VmRSS MiB | SYS_MB | modality/endpoint smoke test | load OK? | note |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| MiniCPM-V-4.7-1B | `openbmb/MiniCPM-V-4.7-1B-gguf` | Q4_K_M + mmproj f16 | 0.63 + 1.03 | `qwen35` | 3.1 | 51.78 | 759.9 | 662/667/1329 | 16637 | image FAIL; text OK | text only | projector type `minicpmv4_7` unsupported; see below |
-| Ternary-Bonsai-2-27B | `prism-ml/Ternary-Bonsai-2-27B-gguf` | PTQ1_0 + mmproj BF16 | 5.54 + 0.87 | `qwen35` | — | — | — | — | — | — | **no** | ggml type 143 unknown to both builds |
-| JiRackUltra-1B | `CMSManhattan/JiRackUltra_1b` | Q4_K_M | 1.04 | `qwen2` | 3.1 | 28.29 | 1307.6 | 1091/973/2065 | 17875 | text in `reasoning_content` | yes | thinking model; 1.78B |
-| JiRackDeltaNet-27B | `CMSManhattan/JiRackDeltaNet_27b` | Q4_K_M | 15.66 | `qwen35` | 38.4 | 2.21 | 77.5 | 15802/3255/19058 | 22781 | text OK ("The sea breathes in and out...") | yes | very slow; dense-class decode |
-| Ornith-1.0-35B | `ornith-ai/Ornith-1.0-35B-GGUF` | Q4_K_M | 19.71 | `qwen35moe` | 34.3 | 11.79 | 153.8 | 20208/1226/21434 | 20602 | text in `reasoning_content` | yes | superseded by 1.5-35B-A3B |
-| Swift-1.5-Qwen3.8-27B-GSQ-RCO | `ukisai/Swift-1.5-Qwen3.8-27B-GSQ-RCO-GGUF` | IQ3_S | 10.96 | `qwen35` | 25.3 | 2.01 | 83.0 | 11251/3261/14512 | 23031 | text OK ("The sea stretches endlessly...") | yes | low-quant merge of Qwen3.8-27B |
-| Qwen3-Embedding-4B | `Qwen/Qwen3-Embedding-4B-GGUF` | Q4_K_M | 2.33 | `qwen3` | 7.3 | n/a | n/a | 2406/4674/7081 | 22254 | `/v1/embeddings` OK, dim 2560, multi-input OK | yes | `--embedding --pooling last` |
-| Qwen3-Reranker-4B | `Voodisss/Qwen3-Reranker-4B-GGUF-llama_cpp` | Q4_K_M | 2.33 | `qwen3` | 7.3 | n/a | n/a | 2407/4721/7129 | 23224 | `/v1/rerank` OK (0.867 vs 0.0001); `/v1/score` 404 | yes | `--rerank` |
-| parakeet-unified-en-0.6b | `handy-computer/parakeet-unified-en-0.6b-gguf` | Q4_K_M | 0.44 | `parakeet` | — | — | — | — | — | — | **no** | unknown arch `parakeet` |
-| gemma-4-12b-it-qat | `google/gemma-4-12B-it-qat-q4_0-gguf` | q4_0 + mmproj | 6.50 + 0.16 | `gemma4` | 15.2 | 3.54 | 157.3 | 6673/2096/8769 | 21543 | image OK ("The image contains a red circle."); text in `reasoning_content` | yes | QAT variant; thinking model |
+| model                         | repo                                           | file                 | size GB     | arch        | load_s | decode_tok_s | prefill_tok_s | RssFile/RssAnon/VmRSS MiB | SYS_MB | modality/endpoint smoke test                                               | load OK?  | note                                                |
+| ----------------------------- | ---------------------------------------------- | -------------------- | ----------- | ----------- | ------ | ------------ | ------------- | ------------------------- | ------ | -------------------------------------------------------------------------- | --------- | --------------------------------------------------- |
+| MiniCPM-V-4.7-1B              | `openbmb/MiniCPM-V-4.7-1B-gguf`                | Q4_K_M + mmproj f16  | 0.63 + 1.03 | `qwen35`    | 3.1    | 51.78        | 759.9         | 662/667/1329              | 16637  | image FAIL; text OK                                                        | text only | projector type `minicpmv4_7` unsupported; see below |
+| Ternary-Bonsai-2-27B          | `prism-ml/Ternary-Bonsai-2-27B-gguf`           | PTQ1_0 + mmproj BF16 | 5.54 + 0.87 | `qwen35`    | —      | —            | —             | —                         | —      | —                                                                          | **no**    | ggml type 143 unknown to both builds                |
+| JiRackUltra-1B                | `CMSManhattan/JiRackUltra_1b`                  | Q4_K_M               | 1.04        | `qwen2`     | 3.1    | 28.29        | 1307.6        | 1091/973/2065             | 17875  | text in `reasoning_content`                                                | yes       | thinking model; 1.78B                               |
+| JiRackDeltaNet-27B            | `CMSManhattan/JiRackDeltaNet_27b`              | Q4_K_M               | 15.66       | `qwen35`    | 38.4   | 2.21         | 77.5          | 15802/3255/19058          | 22781  | text OK ("The sea breathes in and out...")                                 | yes       | very slow; dense-class decode                       |
+| Ornith-1.0-35B                | `ornith-ai/Ornith-1.0-35B-GGUF`                | Q4_K_M               | 19.71       | `qwen35moe` | 34.3   | 11.79        | 153.8         | 20208/1226/21434          | 20602  | text in `reasoning_content`                                                | yes       | superseded by 1.5-35B-A3B                           |
+| Swift-1.5-Qwen3.8-27B-GSQ-RCO | `ukisai/Swift-1.5-Qwen3.8-27B-GSQ-RCO-GGUF`    | IQ3_S                | 10.96       | `qwen35`    | 25.3   | 2.01         | 83.0          | 11251/3261/14512          | 23031  | text OK ("The sea stretches endlessly...")                                 | yes       | low-quant merge of Qwen3.8-27B                      |
+| Qwen3-Embedding-4B            | `Qwen/Qwen3-Embedding-4B-GGUF`                 | Q4_K_M               | 2.33        | `qwen3`     | 7.3    | n/a          | n/a           | 2406/4674/7081            | 22254  | `/v1/embeddings` OK, dim 2560, multi-input OK                              | yes       | `--embedding --pooling last`                        |
+| Qwen3-Reranker-4B             | `Voodisss/Qwen3-Reranker-4B-GGUF-llama_cpp`    | Q4_K_M               | 2.33        | `qwen3`     | 7.3    | n/a          | n/a           | 2407/4721/7129            | 23224  | `/v1/rerank` OK (0.867 vs 0.0001); `/v1/score` 404                         | yes       | `--rerank`                                          |
+| parakeet-unified-en-0.6b      | `handy-computer/parakeet-unified-en-0.6b-gguf` | Q4_K_M               | 0.44        | `parakeet`  | —      | —            | —             | —                         | —      | —                                                                          | **no**    | unknown arch `parakeet`                             |
+| gemma-4-12b-it-qat            | `google/gemma-4-12B-it-qat-q4_0-gguf`          | q4_0 + mmproj        | 6.50 + 0.16 | `gemma4`    | 15.2   | 3.54         | 157.3         | 6673/2096/8769            | 21543  | image OK ("The image contains a red circle."); text in `reasoning_content` | yes       | QAT variant; thinking model                         |
 
 Reference CPU values from the same class: `qwen3.8-27b` 2.45 decode / 78
 prefill; `ornith-1.5-35b-a3b` 8.78 / 167; `north-mini-code-1.0` 18.0 / 178.

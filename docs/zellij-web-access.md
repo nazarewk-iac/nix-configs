@@ -165,6 +165,7 @@ all four leaves the day after the first issuance, fixed 2026-10-12). Renew befor
    ```
 
    An expired leaf reports reason `expired` and is re-signed with a fresh key.
+
 2. Commit the changed `hosts/<host>/certs/zellij.pub` and `zellij.key.sops`.
 3. Activate each affected host (`nixos-rebuild switch`), then restart the user service — the
    activation may leave the old process holding the old certificate:

@@ -111,4 +111,3 @@ one reasoning block. It passes on the fixed tree and the new package, and fails
 on the previous package with three blocks. Package `w487g7vh…`; brys main
 toplevel `z3ql1hh9…`; `llms-frontier` `fdcpp0ii…` and `llm-qwen` `06qyyn5b…`
 carry the fix. **Not activated** — left for the maintainer.
-

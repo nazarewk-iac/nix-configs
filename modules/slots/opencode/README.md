@@ -15,7 +15,7 @@ over the global one, so unrelated global settings still apply.
 
 ## Bare capability
 
-The slot is intentionally generalised — it exposes the *capability* and declares
+The slot is intentionally generalised — it exposes the _capability_ and declares
 no specific providers, models, or upstreams itself:
 
 - Generates `opencode.jsonc` from the `settings` option (free-form attrset).
@@ -40,14 +40,14 @@ wiring.
 
 ## Options
 
-| Option | Type | Default | Meaning |
-|---|---|---|---|
-| `enable` | bool | `false` | enable in-devenv opencode config |
-| `package` | package | `pkgs.opencode` | real opencode binary the wrapper execs (kept off bare PATH) |
-| `settings` | attrsOf anything | `{ }` | opencode config written to `opencode.jsonc` (model, provider, permission) |
-| `allowedPaths` | listOf str | `[ "/nix/store/**" ]` | path globs a read-only tool reaches with no question |
-| `authFile` | str | `$HOME/.local/share/opencode/auth.json` | opencode's own credential store, read by the wrapper |
-| `authKeys` | attrsOf str | `{ }` | env var name → provider id in `authFile` |
+| Option         | Type             | Default                                 | Meaning                                                                   |
+| -------------- | ---------------- | --------------------------------------- | ------------------------------------------------------------------------- |
+| `enable`       | bool             | `false`                                 | enable in-devenv opencode config                                          |
+| `package`      | package          | `pkgs.opencode`                         | real opencode binary the wrapper execs (kept off bare PATH)               |
+| `settings`     | attrsOf anything | `{ }`                                   | opencode config written to `opencode.jsonc` (model, provider, permission) |
+| `allowedPaths` | listOf str       | `[ "/nix/store/**" ]`                   | path globs a read-only tool reaches with no question                      |
+| `authFile`     | str              | `$HOME/.local/share/opencode/auth.json` | opencode's own credential store, read by the wrapper                      |
+| `authKeys`     | attrsOf str      | `{ }`                                   | env var name → provider id in `authFile`                                  |
 
 `settings` is written verbatim to `opencode.jsonc`; use it to set `model`,
 `provider`, `permission`, or any other opencode key. The default is empty. The

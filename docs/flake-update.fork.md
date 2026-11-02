@@ -157,12 +157,12 @@ jj log -r 'merge-frozen'      # empty → the tree merge is mutable
 
 Then apply this table. Do not go on while either incoming set holds a commit.
 
-| Outcome | Detection | Action |
-|---|---|---|
-| nothing moved | both incoming sets are empty | go on to step 1. **No rebase.** |
+| Outcome              | Detection                        | Action                                                                                                                                                                                                                                                                                              |
+| -------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| nothing moved        | both incoming sets are empty     | go on to step 1. **No rebase.**                                                                                                                                                                                                                                                                     |
 | the public tip moved | `upstream-incoming` is not empty | integrate the public tip **before** the update, so the new locks resolve against the new public base. Mutable tree merge: `jj rebase -s 'roots(upstream-local)' -d 'upstream-incoming-tip'`. Frozen tree merge: `jj new fork-tip upstream-incoming-tip -m 'chore(upstream): merge'`, then `jj new`. |
-| the fork tip moved | `fork-incoming` is not empty | the fetched fork commits are immutable, because `trunk()` is `main@<fork-remote>`. Build forward: `jj new fork-tip fork-incoming-tip -m 'chore(fork): merge fork main'`, then `jj new`. |
-| both moved | both sets are not empty | do the public integration first, then the fork merge forward. Re-read `merge-frozen` and `fork-leaked` after each step. |
+| the fork tip moved   | `fork-incoming` is not empty     | the fetched fork commits are immutable, because `trunk()` is `main@<fork-remote>`. Build forward: `jj new fork-tip fork-incoming-tip -m 'chore(fork): merge fork main'`, then `jj new`.                                                                                                             |
+| both moved           | both sets are not empty          | do the public integration first, then the fork merge forward. Re-read `merge-frozen` and `fork-leaked` after each step.                                                                                                                                                                             |
 
 **A rebase is genuinely required in one case only:** the public tip moved **and** the tree merge
 is still mutable. That is a real topology fix, which `.agents/rules/jujutsu-vcs.md` permits.
@@ -198,13 +198,13 @@ jj log -r 'to-rebase' --no-graph -T 'change_id.short() ++ "\n"'
 jj log -r 'fork-leaked & ::upstream-safe' --no-graph -T 'change_id.short() ++ "\n"'
 ```
 
-| # | Start state | Detection | First step |
-|---|---|---|---|
-| i | `@` empty, two parents, right after `jj sync-remotes` | prints `empty 2`; `to-rebase` is empty | fetch, reconcile, then run the update. This is the documented path. |
-| ii | `@` empty on a linear stack of local commits | prints `empty 1`; `to-rebase` is not empty; `tree-merge & merges() & mutable()` is empty | **work first:** route or publish the stack, so the two-chain shape exists. Then update. |
-| iii | `@` holds content | prints `content …` | **work first:** route the content out of `@` with golden path 4 in [test_placement.md](../checks/jj-experiments/test_placement.md). Leave `@` empty. Never mix that content with the update. |
-| iv | local commits mix `upstream-safe` and fork-only, safe above fork-only | `fork-leaked & ::upstream-safe` is not empty | **work first:** reorder, see below. Then update. |
-| v | `@` empty, one parent, `to-rebase` empty, the tree merge is frozen | prints `empty 1`; `to-rebase` empty; `merge-frozen` not empty | fetch, reconcile, then update. Step 3b must manufacture a mutable merge. |
+| #   | Start state                                                           | Detection                                                                                | First step                                                                                                                                                                                   |
+| --- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| i   | `@` empty, two parents, right after `jj sync-remotes`                 | prints `empty 2`; `to-rebase` is empty                                                   | fetch, reconcile, then run the update. This is the documented path.                                                                                                                          |
+| ii  | `@` empty on a linear stack of local commits                          | prints `empty 1`; `to-rebase` is not empty; `tree-merge & merges() & mutable()` is empty | **work first:** route or publish the stack, so the two-chain shape exists. Then update.                                                                                                      |
+| iii | `@` holds content                                                     | prints `content …`                                                                       | **work first:** route the content out of `@` with golden path 4 in [test_placement.md](../checks/jj-experiments/test_placement.md). Leave `@` empty. Never mix that content with the update. |
+| iv  | local commits mix `upstream-safe` and fork-only, safe above fork-only | `fork-leaked & ::upstream-safe` is not empty                                             | **work first:** reorder, see below. Then update.                                                                                                                                             |
+| v   | `@` empty, one parent, `to-rebase` empty, the tree merge is frozen    | prints `empty 1`; `to-rebase` empty; `merge-frozen` not empty                            | fetch, reconcile, then update. Step 3b must manufacture a mutable merge.                                                                                                                     |
 
 **States (ii), (iii) and (iv) need work before the update starts.** Only (i) and (v) may start
 one.
@@ -311,7 +311,7 @@ re-parent the merge, so the fork build would never see the public commit.
 > `-B tree-merge` is correct in both shapes, because the tree merge is the join point by
 > definition.
 
-> **Why `upstream-tip` can resolve *below* the tree merge.**
+> **Why `upstream-tip` can resolve _below_ the tree merge.**
 > `modules/slots/jj/fork/default.nix` defines the third term of the `fork` alias as
 > `((remote_bookmarks(remote=<fork-remote>) ~ upstream@<fork-remote>)::)`. The `::` suffix tags
 > **every descendant** of the fork bookmark. So `upstream-chain`, which is
@@ -505,10 +505,10 @@ parked. Evaluation is cheap; a re-split is not.
 
 #### 8e. The build gates, and their order
 
-| Build | Chain | Gates |
-|---|---|---|
-| `./nixos-rebuild.sh build remote=<hostname>` | `upstream-tip` | the **public** push |
-| `nix run '.#darwin-rebuild' -- build` | `fork-tip` | the **private** push |
+| Build                                        | Chain          | Gates                |
+| -------------------------------------------- | -------------- | -------------------- |
+| `./nixos-rebuild.sh build remote=<hostname>` | `upstream-tip` | the **public** push  |
+| `nix run '.#darwin-rebuild' -- build`        | `fork-tip`     | the **private** push |
 
 A NixOS host cannot be built from macOS, and a Darwin host must be built on a Darwin machine or
 through `remote=`. `switch` needs sudo — hand it to the user.
@@ -566,7 +566,7 @@ self-input declared in `devenv.yaml` as `url: git+file:.` — holds no `rev`, no
 `lastModified`:
 
 ```json
-{"type": "git", "url": "file:."}
+{ "type": "git", "url": "file:." }
 ```
 
 Nix strips every volatile attribute from the `locked` node of a **local** input, and a git input

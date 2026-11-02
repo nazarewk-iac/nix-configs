@@ -20,10 +20,10 @@ profilers this machine has, the profilers it does not have, and the top cost cen
 One `darwinConfiguration` toplevel `drvPath` evaluation for host `anji`, measured 2026-09-11 on
 Lix 2.95.2, `aarch64-darwin`:
 
-| Run | Wall | User | Sys | Peak RSS |
-|---|---|---|---|---|
-| Cold, first run of the day | 243.7 s | 28.9 s | 9.3 s | 5.57 GB |
-| Warm, repeated | 64.1 s | 23.7 s | 8.6 s | 5.13 GB |
+| Run                        | Wall    | User   | Sys   | Peak RSS |
+| -------------------------- | ------- | ------ | ----- | -------- |
+| Cold, first run of the day | 243.7 s | 28.9 s | 9.3 s | 5.57 GB  |
+| Warm, repeated             | 64.1 s  | 23.7 s | 8.6 s | 5.13 GB  |
 
 Two gaps drive the task:
 

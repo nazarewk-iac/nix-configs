@@ -45,7 +45,7 @@ the main reason to centralize name derivation inside `zellij-llm` rather than le
 caller: the tool knows the zellij-specific length ceiling, the caller shouldn't have to.
 
 **Do NOT solve this by making `zellij-llm` use its own `ZELLIJ_SOCKET_DIR`.** The fix is a
-shorter *session name* that fits the default socket path — not relocating the socket to a
+shorter _session name_ that fits the default socket path — not relocating the socket to a
 private dir. Using a custom socket dir would fragment sessions (the tool's sessions wouldn't be
 visible under the user's normal `zellij list-sessions` / default socket) and mask the real
 length problem. Shorten the name; keep the default socket location.

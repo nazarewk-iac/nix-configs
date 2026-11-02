@@ -16,29 +16,29 @@ can set it, and links to the detailed section below.
 
 ## Settings
 
-| Name | Description | Programmatic? | Detail |
-|---|---|---|---|
-| Hostname | `ComputerName`, `LocalHostName`, `HostName` are all `anji`. | Yes — nix-darwin `networking.{computerName,hostName,localHostName}` | [Hostname](#hostname) |
-| Time zone | `Europe/Warsaw`, network time on. | Yes — nix-darwin `time.timeZone` | [Time zone](#time-zone) |
-| Locale | `AppleLocale` is `en_US@rg=plzzzz`; languages `en-US`, `pl-PL`. | Partial — `system.defaults.CustomUserPreferences` or a manual `defaults write` | [Locale](#locale) |
-| FileVault | On. The internal disk is encrypted. | Partial — `fdesetup` on the command line; no nix-darwin option | [FileVault](#filevault) |
-| SIP | Enabled. | No — Recovery Mode only | [SIP](#sip) |
-| Remote Login (SSH) | On. | Yes — nix-darwin `services.openssh.enable` | [SSH](#ssh) |
-| SSH daemon config | Extra `sshd_config.d` fragments, host keys, `AuthorizedKeysCommand`. | Yes — nix-darwin `services.openssh.extraConfig` plus the repo's own fragments | [SSH](#ssh) |
-| Application firewall | On, stealth mode off. | Yes — nix-darwin `networking.applicationFirewall` | [Firewall](#firewall) |
-| Screen Sharing | Enabled. | No nix-darwin option — `kickstart` or System Settings | [Screen Sharing](#screen-sharing) |
-| Remote Management (ARD) | Not configured. | No nix-darwin option — `kickstart` | [Screen Sharing](#screen-sharing) |
-| Power management | Sleep off, display sleep off, disk sleep 10 min, wake-on-LAN on, Power Nap on. | Partial — nix-darwin `power.sleep.*` covers sleep only | [Power](#power) |
-| Software update | Automatic download and install on. | Partial — `system.defaults.SoftwareUpdate.AutomaticallyInstallMacOSUpdates` | [Software update](#software-update) |
-| Nix store volume | `/nix` is `Nix Store Ext`, an unencrypted volume on the external encrypted `anji-ext-02` container, since the 2026-10-15 cutover. | No — `diskutil` creates it; `kdn-nix-bootstrap` mounts it | [Nix store volume](#nix-store-volume) |
-| External volumes | `anji-ext-01`, `anji-ext-02` on `/etc/fstab` and `/etc/synthetic.conf`. | No — manual `diskutil` and `/etc/fstab` | [External volumes](#external-volumes) |
-| Full Disk Access | Grants for `sshd`, the Nix bash, and UTM. | No — SIP protects the TCC database | [Full Disk Access](#full-disk-access) |
-| Users | `kdn` (admin), plus `kdn-nix-remote-build` and the Nix `nixbld*` accounts. | Partial — nix-darwin `users.users`; the remote-builder account comes from the repo | [Users](#users) |
-| Sudo | Touch ID and `pam_reattach` via `/etc/pam.d/sudo_local`. | Yes — nix-darwin `security.pam.services.sudo_local` | [Sudo](#sudo) |
-| Homebrew | `/opt/homebrew`, managed by nix-darwin `homebrew`. | Yes — nix-darwin `homebrew` | [Homebrew](#homebrew) |
-| NetBird | A launchd daemon from `/usr/local/bin/netbird`, a symlink into `NetBird.app`. | Partial — nix-darwin `services.netbird`; the app is a cask | [NetBird](#netbird) |
-| Login items | `diskutil` (from `org.nixos.darwin-store`), NetBird, several `sh` jobs. | Partial — a launchd daemon registers its own item | [Login items](#login-items) |
-| Shell | `kdn` uses `/bin/zsh`; `/etc/shells` adds the Nix `fish`. | Yes — nix-darwin `users.users.<name>.shell` | [Shell](#shell) |
+| Name                    | Description                                                                                                                       | Programmatic?                                                                      | Detail                                |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------- |
+| Hostname                | `ComputerName`, `LocalHostName`, `HostName` are all `anji`.                                                                       | Yes — nix-darwin `networking.{computerName,hostName,localHostName}`                | [Hostname](#hostname)                 |
+| Time zone               | `Europe/Warsaw`, network time on.                                                                                                 | Yes — nix-darwin `time.timeZone`                                                   | [Time zone](#time-zone)               |
+| Locale                  | `AppleLocale` is `en_US@rg=plzzzz`; languages `en-US`, `pl-PL`.                                                                   | Partial — `system.defaults.CustomUserPreferences` or a manual `defaults write`     | [Locale](#locale)                     |
+| FileVault               | On. The internal disk is encrypted.                                                                                               | Partial — `fdesetup` on the command line; no nix-darwin option                     | [FileVault](#filevault)               |
+| SIP                     | Enabled.                                                                                                                          | No — Recovery Mode only                                                            | [SIP](#sip)                           |
+| Remote Login (SSH)      | On.                                                                                                                               | Yes — nix-darwin `services.openssh.enable`                                         | [SSH](#ssh)                           |
+| SSH daemon config       | Extra `sshd_config.d` fragments, host keys, `AuthorizedKeysCommand`.                                                              | Yes — nix-darwin `services.openssh.extraConfig` plus the repo's own fragments      | [SSH](#ssh)                           |
+| Application firewall    | On, stealth mode off.                                                                                                             | Yes — nix-darwin `networking.applicationFirewall`                                  | [Firewall](#firewall)                 |
+| Screen Sharing          | Enabled.                                                                                                                          | No nix-darwin option — `kickstart` or System Settings                              | [Screen Sharing](#screen-sharing)     |
+| Remote Management (ARD) | Not configured.                                                                                                                   | No nix-darwin option — `kickstart`                                                 | [Screen Sharing](#screen-sharing)     |
+| Power management        | Sleep off, display sleep off, disk sleep 10 min, wake-on-LAN on, Power Nap on.                                                    | Partial — nix-darwin `power.sleep.*` covers sleep only                             | [Power](#power)                       |
+| Software update         | Automatic download and install on.                                                                                                | Partial — `system.defaults.SoftwareUpdate.AutomaticallyInstallMacOSUpdates`        | [Software update](#software-update)   |
+| Nix store volume        | `/nix` is `Nix Store Ext`, an unencrypted volume on the external encrypted `anji-ext-02` container, since the 2026-10-15 cutover. | No — `diskutil` creates it; `kdn-nix-bootstrap` mounts it                          | [Nix store volume](#nix-store-volume) |
+| External volumes        | `anji-ext-01`, `anji-ext-02` on `/etc/fstab` and `/etc/synthetic.conf`.                                                           | No — manual `diskutil` and `/etc/fstab`                                            | [External volumes](#external-volumes) |
+| Full Disk Access        | Grants for `sshd`, the Nix bash, and UTM.                                                                                         | No — SIP protects the TCC database                                                 | [Full Disk Access](#full-disk-access) |
+| Users                   | `kdn` (admin), plus `kdn-nix-remote-build` and the Nix `nixbld*` accounts.                                                        | Partial — nix-darwin `users.users`; the remote-builder account comes from the repo | [Users](#users)                       |
+| Sudo                    | Touch ID and `pam_reattach` via `/etc/pam.d/sudo_local`.                                                                          | Yes — nix-darwin `security.pam.services.sudo_local`                                | [Sudo](#sudo)                         |
+| Homebrew                | `/opt/homebrew`, managed by nix-darwin `homebrew`.                                                                                | Yes — nix-darwin `homebrew`                                                        | [Homebrew](#homebrew)                 |
+| NetBird                 | A launchd daemon from `/usr/local/bin/netbird`, a symlink into `NetBird.app`.                                                     | Partial — nix-darwin `services.netbird`; the app is a cask                         | [NetBird](#netbird)                   |
+| Login items             | `diskutil` (from `org.nixos.darwin-store`), NetBird, several `sh` jobs.                                                           | Partial — a launchd daemon registers its own item                                  | [Login items](#login-items)           |
+| Shell                   | `kdn` uses `/bin/zsh`; `/etc/shells` adds the Nix `fish`.                                                                         | Yes — nix-darwin `users.users.<name>.shell`                                        | [Shell](#shell)                       |
 
 ## Hostname
 
@@ -116,14 +116,14 @@ csrutil status
 Remote Login is on. nix-darwin sets `services.openssh.enable = true`. The daemon config is split
 across `/etc/ssh/sshd_config.d/`:
 
-| Fragment | Managed by | Purpose |
-|---|---|---|
-| `050-kdn-authorized-keys-command.conf` | repo | `AuthorizedKeysCommand` for the remote-builder account |
-| `050-kdn-debug.conf` | repo | `LogLevel DEBUG` |
-| `099-host-keys.conf` | nix-darwin | the three host key paths |
-| `100-macos.conf` | macOS | `UsePAM`, `AcceptEnv`, `sftp` |
-| `100-nix-darwin.conf` | nix-darwin | `services.openssh.extraConfig` |
-| `101-authorized-keys.conf` | nix-darwin | `AuthorizedKeysCommand /bin/cat` |
+| Fragment                               | Managed by | Purpose                                                |
+| -------------------------------------- | ---------- | ------------------------------------------------------ |
+| `050-kdn-authorized-keys-command.conf` | repo       | `AuthorizedKeysCommand` for the remote-builder account |
+| `050-kdn-debug.conf`                   | repo       | `LogLevel DEBUG`                                       |
+| `099-host-keys.conf`                   | nix-darwin | the three host key paths                               |
+| `100-macos.conf`                       | macOS      | `UsePAM`, `AcceptEnv`, `sftp`                          |
+| `100-nix-darwin.conf`                  | nix-darwin | `services.openssh.extraConfig`                         |
+| `101-authorized-keys.conf`             | nix-darwin | `AuthorizedKeysCommand /bin/cat`                       |
 
 The host keys live in `/etc/ssh/ssh_host_*_key`. They are **not** managed by nix-darwin and survive
 a rebuild only if the disk survives. On a fresh disk, regenerate them:
@@ -193,15 +193,15 @@ sudo pmset -a ttyskeepawake 1
 
 Current values:
 
-| Key | Value | Meaning |
-|---|---|---|
-| `sleep` | 0 | never sleep |
-| `displaysleep` | 0 | display never sleeps |
-| `disksleep` | 10 | disk sleeps after 10 min |
-| `womp` | 1 | wake on LAN |
-| `powernap` | 1 | Power Nap on |
-| `autorestart` | 1 | restart after power failure |
-| `ttyskeepawake` | 1 | keep awake while a tty is active |
+| Key             | Value | Meaning                          |
+| --------------- | ----- | -------------------------------- |
+| `sleep`         | 0     | never sleep                      |
+| `displaysleep`  | 0     | display never sleeps             |
+| `disksleep`     | 10    | disk sleeps after 10 min         |
+| `womp`          | 1     | wake on LAN                      |
+| `powernap`      | 1     | Power Nap on                     |
+| `autorestart`   | 1     | restart after power failure      |
+| `ttyskeepawake` | 1     | keep awake while a tty is active |
 
 ## Software update
 
@@ -251,14 +251,14 @@ A full wipe gives every APFS volume a new random UUID. This section lists every 
 
 ### Where the UUIDs live
 
-| Holder | What it holds |
-|---|---|
-| `/etc/fstab` | three lines: `/nix` (store UUID), `/anji-ext-01`, `/anji-ext-02`, all `rw,noauto,nobrowse,suid,owners`. A manual file |
-| System keychain | one generic-password item per encrypted volume, keyed by that volume's UUID as service and account: items for `anji-ext-01` and `anji-ext-02`. The store volume needs no item of its own: it is unencrypted, and the `anji-ext-02` item unlocks its container |
-| `hosts/anji/default.nix` | `storeVolumeUuid` (line 63), `storeUnlockAnchorUuid` (line 64), and the two UUIDs in `unlockVolumesScript` (lines 148-149). Four reads, three values: the ext-02 UUID appears twice |
-| `/etc/kdn/nix-bootstrap/store.json` | generated from those nix values at every activation. Not hand-edited |
-| launchd plists | `org.nixos.darwin-store.plist` holds no UUID; it names the bootstrap path. The bootstrap reads `store.json` |
-| docs | the tables here, in [hosts/anji/disks.md](disks.md), and in the migration task |
+| Holder                              | What it holds                                                                                                                                                                                                                                                 |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/etc/fstab`                        | three lines: `/nix` (store UUID), `/anji-ext-01`, `/anji-ext-02`, all `rw,noauto,nobrowse,suid,owners`. A manual file                                                                                                                                         |
+| System keychain                     | one generic-password item per encrypted volume, keyed by that volume's UUID as service and account: items for `anji-ext-01` and `anji-ext-02`. The store volume needs no item of its own: it is unencrypted, and the `anji-ext-02` item unlocks its container |
+| `hosts/anji/default.nix`            | `storeVolumeUuid` (line 63), `storeUnlockAnchorUuid` (line 64), and the two UUIDs in `unlockVolumesScript` (lines 148-149). Four reads, three values: the ext-02 UUID appears twice                                                                           |
+| `/etc/kdn/nix-bootstrap/store.json` | generated from those nix values at every activation. Not hand-edited                                                                                                                                                                                          |
+| launchd plists                      | `org.nixos.darwin-store.plist` holds no UUID; it names the bootstrap path. The bootstrap reads `store.json`                                                                                                                                                   |
+| docs                                | the tables here, in [hosts/anji/disks.md](disks.md), and in the migration task                                                                                                                                                                                |
 
 ### The first-boot window
 
@@ -345,13 +345,13 @@ anji-ext-02
 
 TCC grants Full Disk Access to the exact binary path. The grants on `anji`:
 
-| Binary | Why |
-|---|---|
-| `/usr/libexec/sshd-keygen-wrapper` | SSH sessions inherit the grant |
-| `/bin/sh` | platform binary, implicitly allowed |
-| `/nix/store/...-bash-5.3p9/bin/bash` | legacy grant |
-| `/nix/store/...-bash-5.3p15/bin/bash` | the stock builder daemon |
-| `com.utmapp.UTM` | the UTM app |
+| Binary                                | Why                                 |
+| ------------------------------------- | ----------------------------------- |
+| `/usr/libexec/sshd-keygen-wrapper`    | SSH sessions inherit the grant      |
+| `/bin/sh`                             | platform binary, implicitly allowed |
+| `/nix/store/...-bash-5.3p9/bin/bash`  | legacy grant                        |
+| `/nix/store/...-bash-5.3p15/bin/bash` | the stock builder daemon            |
+| `com.utmapp.UTM`                      | the UTM app                         |
 
 A nixpkgs bump changes the bash path, so the grant must repeat. SIP protects the TCC database, so
 no script can add a grant. The owner adds it in System Settings → Privacy & Security → Full Disk
@@ -360,11 +360,11 @@ repeat.
 
 ## Users
 
-| User | Kind | Source |
-|---|---|---|
-| `kdn` | admin, uid 501 | manual / macOS setup |
+| User                   | Kind            | Source                                    |
+| ---------------------- | --------------- | ----------------------------------------- |
+| `kdn`                  | admin, uid 501  | manual / macOS setup                      |
 | `kdn-nix-remote-build` | service account | this repo's `kdn.profile.remote-builders` |
-| `nixbld1`..`nixbld32` | build users | the Nix installer |
+| `nixbld1`..`nixbld32`  | build users     | the Nix installer                         |
 
 `kdn` is in the `admin` group. The remote-builder account is created by nix-darwin from the repo's
 remote-builder module. The `nixbld*` accounts come from the Nix installer.

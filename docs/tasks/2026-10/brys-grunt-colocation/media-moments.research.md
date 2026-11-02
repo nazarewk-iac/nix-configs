@@ -41,20 +41,20 @@ score = w1 * ASR-keyword-match
 
 ## Per-stage candidate table
 
-| Stage | Name | URL | Modality | Params | License | Runtime | Released | 8GB? | Long? |
-|---|---|---|---|---|---|---|---|---|---|
-| 0 | ffmpeg | ffmpeg.org | audio+video | n/a | LGPL/GPL | native | ongoing | n/a | yes |
-| 1 | whisper.cpp large-v3 | github.com/ggerganov/whisper.cpp | audio | 1.5B | MIT | ggml (Vulkan/CPU) | 2023 | yes (GPU/CPU) | via VAD |
-| 1 | WhisperX | github.com/m-bain/whisperX | audio | (2 models) | BSD | Python (CPU int8) | 2023 | yes | yes |
-| 1 | Parakeet-TDT-0.6B-v3 | HF | audio | 0.6B | (per repo) | GGUF | 2026 | yes | yes |
-| 2 | PANNs Cnn14_DecisionLevelMax | github.com/qiuqiangkong/audioset_tagging_cnn | audio | 80M | MIT | PyTorch | 2020 | yes | frame-wise |
-| 2 | PaSST | github.com/kkoutini/PaSST | audio | ~87M | (per repo) | PyTorch | 2022 | yes | embeddings |
-| 2 | CLAP | github.com/LAION-AI/CLAP | audio+text | (per repo) | (per repo) | PyTorch | 2023 | yes | zero-shot |
-| 3 | PySceneDetect ContentDetector | scenedetect.com | video | n/a | BSD-3 | Python/OpenCV | v0.7.2 2026-10-11 | n/a | yes |
-| 4 | Qwen3-VL-8B GGUF Q4 | HF | image+text | 8B | (per repo) | llama.cpp-Vulkan | 2026 | marginal (Q4) | sampled |
-| 4 | InternVideo3-8B | HF | video+text | 8B | (per repo) | (per repo) | 2026 | inferred no | agent loop |
-| 5 | SigLIP2 | HF | image+text | (per repo) | Apache-2.0 | PyTorch/ONNX | 2024 | yes | per-frame |
-| 6 | Moment-DETR / QVHighlights | github.com/jayleicn/moment_detr | video+text | (per repo) | (per repo) | PyTorch | 2021 | inferred | ranked spans |
+| Stage | Name                          | URL                                          | Modality    | Params     | License    | Runtime           | Released          | 8GB?          | Long?        |
+| ----- | ----------------------------- | -------------------------------------------- | ----------- | ---------- | ---------- | ----------------- | ----------------- | ------------- | ------------ |
+| 0     | ffmpeg                        | ffmpeg.org                                   | audio+video | n/a        | LGPL/GPL   | native            | ongoing           | n/a           | yes          |
+| 1     | whisper.cpp large-v3          | github.com/ggerganov/whisper.cpp             | audio       | 1.5B       | MIT        | ggml (Vulkan/CPU) | 2023              | yes (GPU/CPU) | via VAD      |
+| 1     | WhisperX                      | github.com/m-bain/whisperX                   | audio       | (2 models) | BSD        | Python (CPU int8) | 2023              | yes           | yes          |
+| 1     | Parakeet-TDT-0.6B-v3          | HF                                           | audio       | 0.6B       | (per repo) | GGUF              | 2026              | yes           | yes          |
+| 2     | PANNs Cnn14_DecisionLevelMax  | github.com/qiuqiangkong/audioset_tagging_cnn | audio       | 80M        | MIT        | PyTorch           | 2020              | yes           | frame-wise   |
+| 2     | PaSST                         | github.com/kkoutini/PaSST                    | audio       | ~87M       | (per repo) | PyTorch           | 2022              | yes           | embeddings   |
+| 2     | CLAP                          | github.com/LAION-AI/CLAP                     | audio+text  | (per repo) | (per repo) | PyTorch           | 2023              | yes           | zero-shot    |
+| 3     | PySceneDetect ContentDetector | scenedetect.com                              | video       | n/a        | BSD-3      | Python/OpenCV     | v0.7.2 2026-10-11 | n/a           | yes          |
+| 4     | Qwen3-VL-8B GGUF Q4           | HF                                           | image+text  | 8B         | (per repo) | llama.cpp-Vulkan  | 2026              | marginal (Q4) | sampled      |
+| 4     | InternVideo3-8B               | HF                                           | video+text  | 8B         | (per repo) | (per repo)        | 2026              | inferred no   | agent loop   |
+| 5     | SigLIP2                       | HF                                           | image+text  | (per repo) | Apache-2.0 | PyTorch/ONNX      | 2024              | yes           | per-frame    |
+| 6     | Moment-DETR / QVHighlights    | github.com/jayleicn/moment_detr              | video+text  | (per repo) | (per repo) | PyTorch           | 2021              | inferred      | ranked spans |
 
 **Verified** against the HF API / repo listing on 2026-10-18 unless the cell says `inferred`,
 `per repo`, or `yes (GPU/CPU)`. Every `8GB?` and `Long?` value is an inference, not a measurement.

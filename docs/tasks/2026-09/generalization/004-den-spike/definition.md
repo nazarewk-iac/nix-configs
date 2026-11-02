@@ -18,12 +18,12 @@ Goal: decide whether `denful/den` can be the target framework, before anybody re
 Measured in scratch flakes under `/tmp/den-spike/`, on den `main` and on v0.18.0. Every command
 and output is in [research.md](research.md). No file in this repository changed.
 
-| Criterion | Verdict |
-|---|---|
-| 2 — an adopter imports a resolved aspect, with no den in their own code | **PASS**, with two limits |
-| 1 — a `devenv` class can exist | **PASS** |
-| 3 — the conditional-imports requirement | **BLOCKED** on 005, not tested |
-| 4 — the 1→N mixed-aspect collision | **REFUTED** — it does not reproduce |
+| Criterion                                                               | Verdict                             |
+| ----------------------------------------------------------------------- | ----------------------------------- |
+| 2 — an adopter imports a resolved aspect, with no den in their own code | **PASS**, with two limits           |
+| 1 — a `devenv` class can exist                                          | **PASS**                            |
+| 3 — the conditional-imports requirement                                 | **BLOCKED** on 005, not tested      |
+| 4 — the 1→N mixed-aspect collision                                      | **REFUTED** — it does not reproduce |
 
 The kill criterion does not fire. So phase 2 starts: build `modules/den/` additively.
 
@@ -74,14 +74,14 @@ list, the ported aspect takes no entity argument, and `nix-effects` is an explic
 changed. `flake.nix` gained two inputs and one `imports` line, because a flake input cannot live
 anywhere else. `flake.lock` gained exactly two nodes — den declares no flake input of its own.
 
-| Piece | Path | Note |
-|---|---|---|
-| Loader and the four outputs | `modules/den/flake-module.nix` | A nested `lib.evalModules`, not a flake-parts module. |
-| `devenv` class | `modules/den/classes/devenv.nix` | den ships none. 13 of 18 slots need it. |
-| First aspect | `modules/den/aspects/rosetta-builder.nix` | Core options only. The guest-size options stay in the slot. |
-| First devenv aspect | `modules/den/aspects/gh.nix` | A full port of `modules/slots/gh/`. |
-| Parallel entities | `checks/den-mvp/{host-darwin,host-nixos,devenv}/` | They evaluate and build. None activates. |
-| Build gate | `checks.<system>.den-mvp` | The current architecture. `.all` covers every system. |
+| Piece                       | Path                                              | Note                                                        |
+| --------------------------- | ------------------------------------------------- | ----------------------------------------------------------- |
+| Loader and the four outputs | `modules/den/flake-module.nix`                    | A nested `lib.evalModules`, not a flake-parts module.       |
+| `devenv` class              | `modules/den/classes/devenv.nix`                  | den ships none. 13 of 18 slots need it.                     |
+| First aspect                | `modules/den/aspects/rosetta-builder.nix`         | Core options only. The guest-size options stay in the slot. |
+| First devenv aspect         | `modules/den/aspects/gh.nix`                      | A full port of `modules/slots/gh/`.                         |
+| Parallel entities           | `checks/den-mvp/{host-darwin,host-nixos,devenv}/` | They evaluate and build. None activates.                    |
+| Build gate                  | `checks.<system>.den-mvp`                         | The current architecture. `.all` covers every system.       |
 
 **The entities live at `checks/den-mvp/`, not in `hosts/`.** They build and never activate, so they
 are test artifacts, and `checks/` states that in the path. `hosts/` is wrong for a second reason:
@@ -131,10 +131,10 @@ shape in `templates/ci/modules/internal-api/den-as-lib.nix`.
 Measured on 2026-09-10, for both ported aspects, the library route and the `flakeModule` route give
 one **identical** `drvPath`:
 
-| aspect | class | library-mode result | identical `drvPath` |
-|---|---|---|---|
-| `gh` | `devenv` | `gh-2.100.0` in the shell, `claude.code.enable = true` | yes |
-| `rosetta-builder` | `darwin` | `nix.buildMachines` carries `aarch64-linux x86_64-linux` | yes |
+| aspect            | class    | library-mode result                                      | identical `drvPath` |
+| ----------------- | -------- | -------------------------------------------------------- | ------------------- |
+| `gh`              | `devenv` | `gh-2.100.0` in the shell, `claude.code.enable = true`   | yes                 |
+| `rosetta-builder` | `darwin` | `nix.buildMachines` carries `aarch64-linux x86_64-linux` | yes                 |
 
 The `rosetta-builder` test used a bare `nix-darwin.lib.darwinSystem` with no `modules/universal`, no
 `mkSlots` and no `kdnConfig` — the real adopter shape. Three limits hold: the consumer must pass
@@ -162,7 +162,7 @@ evaluation with `attribute 'host' missing`. So the guard catches the first shape
 **Two failures closed, and their root causes are separate.**
 
 1. A den host with `class = "devenv"` fails with `The option 'nixpkgs' does not exist. Definition
-   values: - In 'devenv@insecure-predicate/os'`. den always includes its `insecure-predicate` aspect
+values: - In 'devenv@insecure-predicate/os'`. den always includes its `insecure-predicate` aspect
    through `den.default.includes`, and the aspect injects `${host.class}.imports` with an OS-shaped
    module that sets `config.nixpkgs`. A host whose class is not an OS class then breaks. A bare
    `resolve` never reads `den.default`, so the standalone shells declare no entity at all.
@@ -247,11 +247,11 @@ one step in a full port.
 aspects exist now** (re-measured 2026-09-11; the text below keeps the figures of 2026-09-10). The order table below marks each finished slot **Done**. These three were the
 first ports, at the time of the scope decision:
 
-| Slot | LOC | State |
-|---|---|---|
-| `gh` | 53 | full port — `modules/den/aspects/gh.nix` |
-| `devenv` | 61 | full port, plus a `devenv` target the slot has none of — `modules/den/aspects/devenv-cli.nix` |
-| `rosetta-builder` | 180 | core options only. The guest-size options stay in the slot. |
+| Slot              | LOC | State                                                                                         |
+| ----------------- | --- | --------------------------------------------------------------------------------------------- |
+| `gh`              | 53  | full port — `modules/den/aspects/gh.nix`                                                      |
+| `devenv`          | 61  | full port, plus a `devenv` target the slot has none of — `modules/den/aspects/devenv-cli.nix` |
+| `rosetta-builder` | 180 | core options only. The guest-size options stay in the slot.                                   |
 
 **Superseded 2026-09-11: no slot file remains unported.** All five now have an aspect in
 `modules/den/lib.nix:36-56`. The figure below is the state of 2026-09-10, kept for the record.
@@ -267,28 +267,28 @@ of the scope decision, so a row can differ from a fresh `wc -l`. The `jj` row is
 carries the measured 457 lines of `default.nix`, where the earlier 949 counted four shell files too.
 The order groups the slots by the den mechanism each one needs, and it puts the cheap tests first:
 
-| Order | Slot or family | LOC | Slot targets | What it tests |
-|---|---|---|---|---|
-| 1 | `ssh-agent` | 76 | `home` | **Done.** The user scope alone. No host target at all. |
-| 2 | `ca` | 91 | `nixos` | **Done.** The first `nixos`-only aspect. The option lives inside the `nixos` target. |
-| 3 | `nix` | 148 | `devenv` | **Done.** A slot that reads repository content through `${inputs.nix-configs}`. It also sets `kdn.mcp.*`, so it ran **after** the `mcp` family. It needed one new mechanism, `den.devenv.inputs`, because a pre-commit hook needs the `git-hooks` flake input. It also fixes one whole-tree store copy: a run-time wrapper expands `$DEVENV_ROOT`, where the slot froze a read-only store path. |
-| 4 | `opencode` | 197 | `devenv` | **Done.** The first de-personalized port: `authKeys`, `settings` and `allowedPaths` replace the provider name and the checkout path that the slot hardcodes. It also fixes one slot defect — a consumer that set `settings` lost the whole permission baseline. |
-| 5 | `zellij` | 221 | `devenv` | **Done.** It ships a skill file, two Claude Code hooks and two `packages/` derivations. It needed two new mechanisms: `kdn.isSourceRepo` in `modules/den/common/source-repo.nix`, and a plain `pkgs.callPackage` route to `packages/llm/` with no overlay. |
-| 6 | `mcp` family — `mcp`, `snoop`, `pretty-print`, `basic-memory` | 476 | `devenv` | **Done.** Slot-to-slot option coupling, solved with `includes` and no shared declaration file. Two mechanisms measured — see below. |
-| 7 | `jj` family — `jj`, `jj/fork` | 457 | `devenv` | **Done.** The second coupled pair, and the largest shell payload. Two aspects, `jj` and `jj-fork`, where `jj-fork` names `jj` in `includes` and `jj` names `mcp`. So one shell now holds four direct includers of one parent and still gets one gateway. It needed no new mechanism. See below. |
-| 8 | `llm` family — `llm`, `llm/client`, `llm/proxy` | 1,287 | `nixos`, `devenv` | One family that spans two classes. |
-| 9 | `ssh-access` | 251 | `devenv`, `home` | **Ported 2026-09-11** as `modules/den/aspects/ssh-access.nix`. The personal data stays with 009. The 251 is the family total: `default.nix` 75 plus `kdn-graph.nix` 176. The 75 quoted above counts `default.nix` alone. |
-| 10 | `signing` | 196 | `home` | The `home` target alone, plus a second `home` aspect beside `ssh-agent`. It carries personal data too — a signer principal and a key path. |
+| Order | Slot or family                                                | LOC   | Slot targets      | What it tests                                                                                                                                                                                                                                                                                                                                                                                   |
+| ----- | ------------------------------------------------------------- | ----- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | `ssh-agent`                                                   | 76    | `home`            | **Done.** The user scope alone. No host target at all.                                                                                                                                                                                                                                                                                                                                          |
+| 2     | `ca`                                                          | 91    | `nixos`           | **Done.** The first `nixos`-only aspect. The option lives inside the `nixos` target.                                                                                                                                                                                                                                                                                                            |
+| 3     | `nix`                                                         | 148   | `devenv`          | **Done.** A slot that reads repository content through `${inputs.nix-configs}`. It also sets `kdn.mcp.*`, so it ran **after** the `mcp` family. It needed one new mechanism, `den.devenv.inputs`, because a pre-commit hook needs the `git-hooks` flake input. It also fixes one whole-tree store copy: a run-time wrapper expands `$DEVENV_ROOT`, where the slot froze a read-only store path. |
+| 4     | `opencode`                                                    | 197   | `devenv`          | **Done.** The first de-personalized port: `authKeys`, `settings` and `allowedPaths` replace the provider name and the checkout path that the slot hardcodes. It also fixes one slot defect — a consumer that set `settings` lost the whole permission baseline.                                                                                                                                 |
+| 5     | `zellij`                                                      | 221   | `devenv`          | **Done.** It ships a skill file, two Claude Code hooks and two `packages/` derivations. It needed two new mechanisms: `kdn.isSourceRepo` in `modules/den/common/source-repo.nix`, and a plain `pkgs.callPackage` route to `packages/llm/` with no overlay.                                                                                                                                      |
+| 6     | `mcp` family — `mcp`, `snoop`, `pretty-print`, `basic-memory` | 476   | `devenv`          | **Done.** Slot-to-slot option coupling, solved with `includes` and no shared declaration file. Two mechanisms measured — see below.                                                                                                                                                                                                                                                             |
+| 7     | `jj` family — `jj`, `jj/fork`                                 | 457   | `devenv`          | **Done.** The second coupled pair, and the largest shell payload. Two aspects, `jj` and `jj-fork`, where `jj-fork` names `jj` in `includes` and `jj` names `mcp`. So one shell now holds four direct includers of one parent and still gets one gateway. It needed no new mechanism. See below.                                                                                                 |
+| 8     | `llm` family — `llm`, `llm/client`, `llm/proxy`               | 1,287 | `nixos`, `devenv` | One family that spans two classes.                                                                                                                                                                                                                                                                                                                                                              |
+| 9     | `ssh-access`                                                  | 251   | `devenv`, `home`  | **Ported 2026-09-11** as `modules/den/aspects/ssh-access.nix`. The personal data stays with 009. The 251 is the family total: `default.nix` 75 plus `kdn-graph.nix` 176. The 75 quoted above counts `default.nix` alone.                                                                                                                                                                        |
+| 10    | `signing`                                                     | 196   | `home`            | The `home` target alone, plus a second `home` aspect beside `ssh-agent`. It carries personal data too — a signer principal and a key path.                                                                                                                                                                                                                                                      |
 
 ### den namespaces land — 2026-09-10, after order 6 and before order 3
 
 **Done.** Every reusable aspect moved from `den.aspects.<name>` to `den.ful.kdn.<name>`. The new file
 `modules/den/namespaces.nix` creates two namespaces with `inputs.den.namespace`:
 
-| Namespace | Exported | Holds |
-|---|---|---|
-| `den.ful.kdn` | yes, as the flake output `flake.denful.kdn` | every reusable aspect |
-| `den.ful.personal` | no, never | the creator's own data-carrying aspects. It is empty today. |
+| Namespace          | Exported                                    | Holds                                                       |
+| ------------------ | ------------------------------------------- | ----------------------------------------------------------- |
+| `den.ful.kdn`      | yes, as the flake output `flake.denful.kdn` | every reusable aspect                                       |
+| `den.ful.personal` | no, never                                   | the creator's own data-carrying aspects. It is empty today. |
 
 **The non-export is the enforcement.** An external adopter cannot name a `personal` aspect at all,
 because no flake output carries it. So condition 2 of phase 2 is structural now, not a doc rule.
@@ -407,6 +407,7 @@ Each one is read from the source. Each entry states whether it is solved.
    So a shared option needs **no** shared declaration file. It belongs in the aspect that reads
    it, next to that code. `modules/den/common/source-repo.nix` stays a by-path import only because
    `kdn.isSourceRepo` has several unrelated writers.
+
 2. **A slot writes a target option flat.** `modules/slots/mcp/snoop/default.nix:34` sets
    `devenv.packages` with no target wrapper. The slot loader accepts that. den needs the value
    inside a class target, so each such site needs a rewrite.

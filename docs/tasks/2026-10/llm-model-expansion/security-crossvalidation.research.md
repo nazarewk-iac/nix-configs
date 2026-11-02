@@ -54,10 +54,10 @@ Two facts, separate from the security claim, already argue for removal:
 
 ## Recommendation 1 — deregister and clean up
 
-| model | id / alias | size | reason |
-|---|---|---|---|
-| `qwen3-coder-30b-a3b` | `code-std-fast-alt` | 18.5 GB | the exact model in the study; old, non-reasoning, 80% hallucination; superseded by `north-mini-code-1.0` |
-| `qwq-32b` | not registered | 19.8 GB | old (2025-03) dense reasoner, superseded, known language-mixing; already measured-not-registered, so this is file cleanup only |
+| model                 | id / alias          | size    | reason                                                                                                                         |
+| --------------------- | ------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `qwen3-coder-30b-a3b` | `code-std-fast-alt` | 18.5 GB | the exact model in the study; old, non-reasoning, 80% hallucination; superseded by `north-mini-code-1.0`                       |
+| `qwq-32b`             | not registered      | 19.8 GB | old (2025-03) dense reasoner, superseded, known language-mixing; already measured-not-registered, so this is file cleanup only |
 
 Optional, in the `llm-small` boot entry only (not currently served by
 `llms-frontier`): `qwen3-30b-a3b` (Qwen3, 2025) and `qwen3-coder-next` (2026-01)
@@ -82,24 +82,24 @@ most dependable; the thread's own numbers support this (`Qwen3.8-27B` AA 34,
 
 **Qwen general (dependable):**
 
-| model | release | note |
-|---|---|---|
-| `qwen3.8-flash-next` | 2026-08 | newest; frontier orchestrator; vision; 1M ctx |
-| `qwen3.8-27b` | 2026-08 | newest mid; vision; reasoning; the thread's recommended upgrade |
-| `qwen3.6-35b-a3b` | 2026-04 | fast MoE generalist |
-| `qwen3.6-27b` | 2026-04 | proven daily driver |
-| `qwen3.5-35b-a3b` | 2026-02 | fast MoE generalist |
-| `qwen3.5-4b` / `-2b` / `-0.8b` | 2026-02 | small grunts |
+| model                          | release | note                                                            |
+| ------------------------------ | ------- | --------------------------------------------------------------- |
+| `qwen3.8-flash-next`           | 2026-08 | newest; frontier orchestrator; vision; 1M ctx                   |
+| `qwen3.8-27b`                  | 2026-08 | newest mid; vision; reasoning; the thread's recommended upgrade |
+| `qwen3.6-35b-a3b`              | 2026-04 | fast MoE generalist                                             |
+| `qwen3.6-27b`                  | 2026-04 | proven daily driver                                             |
+| `qwen3.5-35b-a3b`              | 2026-02 | fast MoE generalist                                             |
+| `qwen3.5-4b` / `-2b` / `-0.8b` | 2026-02 | small grunts                                                    |
 
 **Qwen specialized (dependable):**
 
-| model | release | note |
-|---|---|---|
-| `qwen3-vl-30b-a3b` | 2025-10 | vision, MoE, fast; current VL line |
-| `qwen3-vl-8b-instruct` | 2025-10 | small vision |
-| `qwen3-omni-30b-a3b` | 2025-09 | audio + vision + text |
-| `qwen3-embedding-4b` | 2025-05 | retrieval; no code generation |
-| `qwen3-reranker-4b` | 2025-06 | reranking; no code generation |
+| model                  | release | note                               |
+| ---------------------- | ------- | ---------------------------------- |
+| `qwen3-vl-30b-a3b`     | 2025-10 | vision, MoE, fast; current VL line |
+| `qwen3-vl-8b-instruct` | 2025-10 | small vision                       |
+| `qwen3-omni-30b-a3b`   | 2025-09 | audio + vision + text              |
+| `qwen3-embedding-4b`   | 2025-05 | retrieval; no code generation      |
+| `qwen3-reranker-4b`    | 2025-06 | reranking; no code generation      |
 
 The specialized models are not code generators, so the study's specific claim
 does not apply to them. They are older than Qwen3.5/3.6 but are the current
@@ -108,11 +108,11 @@ members of their lines.
 **For code specifically (sidestep the concern entirely):** prefer the non-Qwen
 code models, which carry no CCP-alignment training:
 
-| model | vendor | note |
-|---|---|---|
-| `north-mini-code-1.0` | CohereLabs (Canada) | `code-std-fast`; 18 tok/s |
-| `mellum-2.1-12b-a2.5b-thinking` | JetBrains (Czech) | `reason-quick-fast`; code-tuned |
-| `tiel-coder-35b-a3b` | community | measured, not registered |
+| model                           | vendor              | note                            |
+| ------------------------------- | ------------------- | ------------------------------- |
+| `north-mini-code-1.0`           | CohereLabs (Canada) | `code-std-fast`; 18 tok/s       |
+| `mellum-2.1-12b-a2.5b-thinking` | JetBrains (Czech)   | `reason-quick-fast`; code-tuned |
+| `tiel-coder-35b-a3b`            | community           | measured, not registered        |
 
 ## Confidence
 

@@ -27,13 +27,13 @@ absence of evidence.
 now **stale**. The repository holds 57 checks plus 6 bundles (`checks/README.md`), and five of
 them read a Darwin artifact.
 
-| Check | Site | What it proves |
-|---|---|---|
-| `den-artifact-host-darwin` | `checks/den-mvp/tests.nix:3502-3517` | three `nix.conf` settings; `devenv` on the system path; the launchd plist file exists; the `activate` **text** names the daemon |
-| `den-artifact-hm-host-darwin` | `tests.nix:3522-3524` | the home-manager generation of the `dev` user |
-| `den-artifact-home-darwin` | `tests.nix:3525-3527` | the same half, standalone |
-| `den-smoke-devenv-darwin` | `tests.nix:3529` | devenv's `config.test` runs |
-| `den-smoke-host-darwin` | `tests.nix:3530` | the same, for the derived host shell |
+| Check                         | Site                                 | What it proves                                                                                                                  |
+| ----------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `den-artifact-host-darwin`    | `checks/den-mvp/tests.nix:3502-3517` | three `nix.conf` settings; `devenv` on the system path; the launchd plist file exists; the `activate` **text** names the daemon |
+| `den-artifact-hm-host-darwin` | `tests.nix:3522-3524`                | the home-manager generation of the `dev` user                                                                                   |
+| `den-artifact-home-darwin`    | `tests.nix:3525-3527`                | the same half, standalone                                                                                                       |
+| `den-smoke-devenv-darwin`     | `tests.nix:3529`                     | devenv's `config.test` runs                                                                                                     |
+| `den-smoke-host-darwin`       | `tests.nix:3530`                     | the same, for the derived host shell                                                                                            |
 
 State: `verified` by reading the file.
 
@@ -50,10 +50,10 @@ never executes it."
 This retires four blockers of `repo-surface.research.md`, because all four assume the subject is
 the creator's own host:
 
-| Blocker | State now |
-|---|---|
-| H2 the creator's macOS account | not applicable — the den host has one user, `dev` |
-| H3 sops decryption at activation | not applicable — the den host reads no sops file |
+| Blocker                                | State now                                            |
+| -------------------------------------- | ---------------------------------------------------- |
+| H2 the creator's macOS account         | not applicable — the den host has one user, `dev`    |
+| H3 sops decryption at activation       | not applicable — the den host reads no sops file     |
 | H4 `stylix.image` from a personal host | not applicable — the den host loads no stylix module |
 
 ### 3. The Homebrew tap scan is now opt-in
@@ -75,15 +75,15 @@ State: `verified` by reading the file. A den subject sets the option nowhere, so
 
 I read tart's `LICENSE` on `main` this session. State: `verified`.
 
-| Fact | Value |
-|---|---|
-| Identifier | `FSL-1.1-ALv2` |
-| Copyright | `Copyright 2022-2026 OpenAI` |
-| Permitted Purpose | "A Permitted Purpose is any purpose other than a Competing Use." |
-| Competing Use | a commercial product or service that substitutes for the software, substitutes for another product the licensor offers with it, or offers substantially similar functionality |
-| Employee-count threshold | **none** |
-| Revenue threshold | **none** |
-| Future licence | Apache-2.0, on the second anniversary of each release |
+| Fact                     | Value                                                                                                                                                                         |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Identifier               | `FSL-1.1-ALv2`                                                                                                                                                                |
+| Copyright                | `Copyright 2022-2026 OpenAI`                                                                                                                                                  |
+| Permitted Purpose        | "A Permitted Purpose is any purpose other than a Competing Use."                                                                                                              |
+| Competing Use            | a commercial product or service that substitutes for the software, substitutes for another product the licensor offers with it, or offers substantially similar functionality |
+| Employee-count threshold | **none**                                                                                                                                                                      |
+| Revenue threshold        | **none**                                                                                                                                                                      |
+| Future licence           | Apache-2.0, on the second anniversary of each release                                                                                                                         |
 
 So internal use on a company-owned laptop is a Permitted Purpose. This agrees with
 `tart.research.md:31`, and it adds a fresh reading of the same file.
@@ -119,15 +119,15 @@ the measured numbers, not the README.
 
 Each row below blocks no decision, but a plan must not present any of them as a measurement.
 
-| Claim | Why it matters |
-|---|---|
-| The wall clock of a `tart clone` | The whole warm-loop budget rests on "copy-on-write is near free" |
-| The wall clock of a `tart` cold boot to an answered `tart exec` | lume measured 10 s and 11 s. The tart number is absent |
-| Whether a Nix-built `ssh` reaches a **tart** guest on macOS 26 | Proved broken for a **lume** guest. `nix copy` is the only step that needs `ssh` |
-| Whether the base image gives the guest user passwordless `sudo` | Every activation step needs guest root |
-| Whether the base image runs `sshd` by default | `nix copy` needs it |
-| The exact argument shape of `tart exec` and the output shape of `tart list` | Two helper functions of the harness depend on both |
-| The closure size of `denConfigurations.host-darwin` | It sets the guest disk size and the copy time |
-| Whether `activate` still exits 0 when `org.nixos.rosetta-builderd` cannot start | It decides whether the subject needs a variant without `kdn.rosetta-builder` |
-| The `bake` wall clock | `definition.md:152` gives "about 40 minutes" as an estimate, not a measurement |
-| The `run` wall clock | `definition.md:154` gives 2 to 5 minutes as an estimate. The design widens it to 5 to 15 |
+| Claim                                                                           | Why it matters                                                                           |
+| ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| The wall clock of a `tart clone`                                                | The whole warm-loop budget rests on "copy-on-write is near free"                         |
+| The wall clock of a `tart` cold boot to an answered `tart exec`                 | lume measured 10 s and 11 s. The tart number is absent                                   |
+| Whether a Nix-built `ssh` reaches a **tart** guest on macOS 26                  | Proved broken for a **lume** guest. `nix copy` is the only step that needs `ssh`         |
+| Whether the base image gives the guest user passwordless `sudo`                 | Every activation step needs guest root                                                   |
+| Whether the base image runs `sshd` by default                                   | `nix copy` needs it                                                                      |
+| The exact argument shape of `tart exec` and the output shape of `tart list`     | Two helper functions of the harness depend on both                                       |
+| The closure size of `denConfigurations.host-darwin`                             | It sets the guest disk size and the copy time                                            |
+| Whether `activate` still exits 0 when `org.nixos.rosetta-builderd` cannot start | It decides whether the subject needs a variant without `kdn.rosetta-builder`             |
+| The `bake` wall clock                                                           | `definition.md:152` gives "about 40 minutes" as an estimate, not a measurement           |
+| The `run` wall clock                                                            | `definition.md:154` gives 2 to 5 minutes as an estimate. The design widens it to 5 to 15 |

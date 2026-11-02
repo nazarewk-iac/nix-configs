@@ -16,11 +16,11 @@ You do not select a route. You run `ssh kdn-<host>` and the dispatcher selects o
 
 A host declares `reachedFrom` edges. Each edge names an origin:
 
-| `from` | Meaning | Address field |
-|---|---|---|
-| `internet` | An entry point, reachable from anywhere | `uplink` (a WAN address) or a literal |
-| `lan` | Direct, and only when the machine is on that LAN | `address` / `addressFile` |
-| `<host>` | A relay hop; the address is the target **as that relay sees it** | `address` / `addressFile` |
+| `from`     | Meaning                                                          | Address field                         |
+| ---------- | ---------------------------------------------------------------- | ------------------------------------- |
+| `internet` | An entry point, reachable from anywhere                          | `uplink` (a WAN address) or a literal |
+| `lan`      | Direct, and only when the machine is on that LAN                 | `address` / `addressFile`             |
+| `<host>`   | A relay hop; the address is the target **as that relay sees it** | `address` / `addressFile`             |
 
 A relay address is resolved **on the relay**, not locally. A NetBird name or a private LAN IP is
 therefore a valid relay address. No local overlay is needed.
@@ -48,11 +48,11 @@ persisted master for one relay serve a connection meant for another one.
 The option schema lives in [`module.nix`](module.nix) — read it for the authoritative field list.
 Three ways to use it:
 
-| Use | Entry point |
-|---|---|
-| Embed the schema in a NixOS/HM config | `pkgs.kdn.kdn-ssh-access.configType` |
-| Build a validated, config-baked binary | `pkgs.kdn.kdn-ssh-access.withModule { … }` |
-| Whole-machine wiring | the `kdn.ssh-access` slot (`modules/slots/ssh-access`) |
+| Use                                    | Entry point                                            |
+| -------------------------------------- | ------------------------------------------------------ |
+| Embed the schema in a NixOS/HM config  | `pkgs.kdn.kdn-ssh-access.configType`                   |
+| Build a validated, config-baked binary | `pkgs.kdn.kdn-ssh-access.withModule { … }`             |
+| Whole-machine wiring                   | the `kdn.ssh-access` slot (`modules/slots/ssh-access`) |
 
 The slot installs `~/.ssh/config.d/40-kdn-ssh-access.config` and puts the binary on `PATH`. The
 binary is the single source of that drop-in (`emit-ssh-config`).
@@ -82,12 +82,12 @@ kdn-ssh-access debug [host...]      # full diagnosis, and a real session (see be
 
 The ssh alias is `kdn-<name>`, with optional `+tag` suffixes:
 
-| Tag | Effect |
-|---|---|
-| `+direct` | Keep only LAN-origin paths |
-| `+remote` | Keep only internet-origin paths (a WAN entry or a relay chain) |
-| `+via=<host>` | Keep only paths through that relay |
-| `+4` / `+6` | Force an address family. It filters IP literals only — a hostname always passes, because its family is unknown until the hop that dials it resolves it |
+| Tag           | Effect                                                                                                                                                 |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `+direct`     | Keep only LAN-origin paths                                                                                                                             |
+| `+remote`     | Keep only internet-origin paths (a WAN entry or a relay chain)                                                                                         |
+| `+via=<host>` | Keep only paths through that relay                                                                                                                     |
+| `+4` / `+6`   | Force an address family. It filters IP literals only — a hostname always passes, because its family is unknown until the hop that dials it resolves it |
 
 ```bash
 ssh kdn-myhost           # let the dispatcher select
@@ -106,12 +106,12 @@ kdn-ssh-access debug --no-connect    # checks and probes only — no session, no
 
 `debug` runs in four stages, and prints one line per result:
 
-| Stage | Does |
-|---|---|
-| `checks` | Reads the config, validates the graph, checks `ssh` and the agent, resolves the uplinks, counts the cached verdicts |
-| `routes` | Ranks the paths per host, resolves the entry addresses, probes the first hop |
-| `session` | Opens a real ssh session per host and runs `true` there |
-| `summary` | Counts the failures and the warnings, and names what stayed untested |
+| Stage     | Does                                                                                                                |
+| --------- | ------------------------------------------------------------------------------------------------------------------- |
+| `checks`  | Reads the config, validates the graph, checks `ssh` and the agent, resolves the uplinks, counts the cached verdicts |
+| `routes`  | Ranks the paths per host, resolves the entry addresses, probes the first hop                                        |
+| `session` | Opens a real ssh session per host and runs `true` there                                                             |
+| `summary` | Counts the failures and the warnings, and names what stayed untested                                                |
 
 **The session runs by default**, because the first three stages stop before authentication. Only a
 real session covers the auth, the host keys, and every hop after the first. `debug` prints a banner
@@ -126,14 +126,14 @@ before it starts one. The caveats:
 With no host argument it covers **every** host in the graph. Name one or more hosts (a bare name or
 a full `kdn-name+tag` spec) to narrow the run.
 
-| Flag | Effect |
-|---|---|
-| `--no-connect` | Skip the session. Checks and probes only, and no tap |
-| `--config-only` | Static checks only — no probe and no session. Offline and instant. `--no-probe` is an alias |
-| `--clear-cache` | Delete every cached reachability verdict for the current network first |
-| `--timeout <ms>` | Override `defaults.lanProbeTimeoutMs` for the probes |
-| `--connect-timeout <s>` | Deadline per session (30 s by default) |
-| `-v` / `--verbose` / `--details` | Add one level of detail. Repeat it: `-vv`, `-vvv` |
+| Flag                             | Effect                                                                                      |
+| -------------------------------- | ------------------------------------------------------------------------------------------- |
+| `--no-connect`                   | Skip the session. Checks and probes only, and no tap                                        |
+| `--config-only`                  | Static checks only — no probe and no session. Offline and instant. `--no-probe` is an alias |
+| `--clear-cache`                  | Delete every cached reachability verdict for the current network first                      |
+| `--timeout <ms>`                 | Override `defaults.lanProbeTimeoutMs` for the probes                                        |
+| `--connect-timeout <s>`          | Deadline per session (30 s by default)                                                      |
+| `-v` / `--verbose` / `--details` | Add one level of detail. Repeat it: `-vv`, `-vvv`                                           |
 
 Use `--config-only` after a config change, when offline, or when the probes are too slow to wait
 for. Use `--no-connect` when you cannot tap the token.
@@ -142,12 +142,12 @@ for. Use `--no-connect` when you cannot tap the token.
 
 The default output is a summary. Each level adds to it:
 
-| Level | Adds |
-|---|---|
-| (default) | One line per check, one line per host route, one line per session, the summary |
-| `-v` | The `defaults`, the resolved paths of the binaries and the addresses, the ranked path list per host, the ssh command line |
-| `-vv` | Each probe with its timing, the cached verdicts, the paths that the tags drop, the `Host kdnhopN-<relay>` stanzas of a chain, and ssh's own stderr |
-| `-vvv` | Passes `-v` to ssh, so its full handshake goes to the trace |
+| Level     | Adds                                                                                                                                               |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| (default) | One line per check, one line per host route, one line per session, the summary                                                                     |
+| `-v`      | The `defaults`, the resolved paths of the binaries and the addresses, the ranked path list per host, the ssh command line                          |
+| `-vv`     | Each probe with its timing, the cached verdicts, the paths that the tags drop, the `Host kdnhopN-<relay>` stanzas of a chain, and ssh's own stderr |
+| `-vvv`    | Passes `-v` to ssh, so its full handshake goes to the trace                                                                                        |
 
 A line where ssh asks you for something — a hardware-key tap, a PIN, a passphrase — always passes
 through live, at every level. One case escapes that: when the **agent** holds a touch-required key,
@@ -205,7 +205,7 @@ ${XDG_RUNTIME_DIR:-$TMPDIR}/kdn-ssh-access/reach/<net-fingerprint>_<address>
   old verdict.
 - Only first-hop addresses are cached. Relay edges are declared, not probed.
 
-**The one trap:** a *fresh negative* verdict makes a real run skip an address with no dial. The
+**The one trap:** a _fresh negative_ verdict makes a real run skip an address with no dial. The
 address can answer again while the verdict still says unreachable. This is the "debug says ok but
 ssh still fails" case, and `debug` prints an explicit warning for it. Clear the cache:
 
@@ -234,12 +234,12 @@ KDN_SSH_ACCESS_DEBUG=1 ssh -vvv kdn-myhost
 The first three stages stop before authentication, so these need the session — or a manual
 `KDN_SSH_ACCESS_DEBUG=1 ssh -vvv`. `debug` prints a hint next to each of them:
 
-| Symptom | Likely cause |
-|---|---|
-| `Host key verification failed` | A `hostKeyAlias` change, or one alias reused for two hosts. Compare `emit-ssh-config` against `~/.ssh/known_hosts` |
-| `Permission denied (publickey)` | Wrong `user` for that host, or the agent holds no accepted key |
-| The entry hop connects, then the chain fails | A later relay edge has a wrong `address` — that name resolves **on the relay**, so test it there |
-| A hardware token never prompts | `SSH_AUTH_SOCK` points at an agent without the resident key |
+| Symptom                                      | Likely cause                                                                                                       |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `Host key verification failed`               | A `hostKeyAlias` change, or one alias reused for two hosts. Compare `emit-ssh-config` against `~/.ssh/known_hosts` |
+| `Permission denied (publickey)`              | Wrong `user` for that host, or the agent holds no accepted key                                                     |
+| The entry hop connects, then the chain fails | A later relay edge has a wrong `address` — that name resolves **on the relay**, so test it there                   |
+| A hardware token never prompts               | `SSH_AUTH_SOCK` points at an agent without the resident key                                                        |
 
 ## Quick checklist
 

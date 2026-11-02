@@ -25,15 +25,15 @@ actual GGUF blob size read from the blob list.
 
 ## Summary by class
 
-| class | best brys fit | GGUF | verdict |
-|---|---|---|---|
-| code | `CohereLabs/North-Mini-Code-1.0` (30B MoE, ~3B active) | community `[V]` | fits CPU; best all-round code specialist |
-| code (alt) | `Qwen/Qwen3-Coder-Next` (80B / 3B, 512 experts) | official `[V]` | fits CPU but 48 GB Q4, slow to load |
-| vision | `Qwen/Qwen3-VL-8B-Instruct` or `-4B` | official `[V]` | 8B fits GPU (Q4 5.03 GB); 4B is a clean GPU fit |
-| reasoning | no dedicated 2026 open fit | — | no fit; use the general fleet's thinking mode |
-| embedding | `Qwen/Qwen3-Embedding-4B` (2560-d) | official `[V]` | fits CPU easily |
-| reranker | `Qwen/Qwen3-Reranker-4B` | community `[V]` | fits CPU easily |
-| speech | `Qwen/Qwen3-ASR-0.6B` (ASR) | community `[I]` | optional, tiny |
+| class      | best brys fit                                          | GGUF            | verdict                                         |
+| ---------- | ------------------------------------------------------ | --------------- | ----------------------------------------------- |
+| code       | `CohereLabs/North-Mini-Code-1.0` (30B MoE, ~3B active) | community `[V]` | fits CPU; best all-round code specialist        |
+| code (alt) | `Qwen/Qwen3-Coder-Next` (80B / 3B, 512 experts)        | official `[V]`  | fits CPU but 48 GB Q4, slow to load             |
+| vision     | `Qwen/Qwen3-VL-8B-Instruct` or `-4B`                   | official `[V]`  | 8B fits GPU (Q4 5.03 GB); 4B is a clean GPU fit |
+| reasoning  | no dedicated 2026 open fit                             | —               | no fit; use the general fleet's thinking mode   |
+| embedding  | `Qwen/Qwen3-Embedding-4B` (2560-d)                     | official `[V]`  | fits CPU easily                                 |
+| reranker   | `Qwen/Qwen3-Reranker-4B`                               | community `[V]` | fits CPU easily                                 |
+| speech     | `Qwen/Qwen3-ASR-0.6B` (ASR)                            | community `[I]` | optional, tiny                                  |
 
 ## 1. Code-specialized
 
@@ -158,7 +158,7 @@ to 2.2B) also exists but is a pre-2026 line.
 
 ## 3. Reasoning-specialized
 
-There is **no dedicated, distinct 2026 open *small* reasoning model** that fits
+There is **no dedicated, distinct 2026 open _small_ reasoning model** that fits
 brys and is separate from the general fleet. The situation:
 
 - Reasoning is now a mode, not a separate model: Qwen3.8-27B, the Qwen3-VL

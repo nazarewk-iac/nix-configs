@@ -12,11 +12,11 @@ Draft for the Pi harness on this homelab. Read-only research; no repo changes.
 
 ## 0. Versions and how to read the citations
 
-| Version | What it is | Where |
-|---|---|---|
-| **1.4.0** | Upstream docs, the authoritative spec for the current API | `https://raw.githubusercontent.com/earendil-works/pi/v1.4.0/packages/coding-agent/docs/<file>.md` |
-| **1.1.0** | The installed CLI (`pi --version` → `1.1.0`); the code claims below are checked against its shipped `dist/` | `/nix/store/yyrq47f5z3rpzax1ka5znmn2fj5kfkha-pi-coding-agent-1.1.0/lib/node_modules/pi-monorepo/` |
-| **0.85.1** | Local vendored docs, cross-check only | `/nix/store/qf702rins357mp8jlr1s5k1s3kp2d2ms-pi-coding-agent-0.85.1/lib/node_modules/pi-monorepo/docs/` |
+| Version    | What it is                                                                                                  | Where                                                                                                   |
+| ---------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| **1.4.0**  | Upstream docs, the authoritative spec for the current API                                                   | `https://raw.githubusercontent.com/earendil-works/pi/v1.4.0/packages/coding-agent/docs/<file>.md`       |
+| **1.1.0**  | The installed CLI (`pi --version` → `1.1.0`); the code claims below are checked against its shipped `dist/` | `/nix/store/yyrq47f5z3rpzax1ka5znmn2fj5kfkha-pi-coding-agent-1.1.0/lib/node_modules/pi-monorepo/`       |
+| **0.85.1** | Local vendored docs, cross-check only                                                                       | `/nix/store/qf702rins357mp8jlr1s5k1s3kp2d2ms-pi-coding-agent-0.85.1/lib/node_modules/pi-monorepo/docs/` |
 
 Every claim names its source. Claims checked only against 1.1.0 `dist/` say so. The live `brys` probe could **not** be run from this host (`oams`: `curl 127.0.0.1:39700` refused; no local llama-swap), so any "what brys returns" statement is either from the repo's own verified `docs/local-llms.md` / `b-stats.md`, or marked **not verified**.
 
@@ -35,7 +35,11 @@ interface Usage {
   cacheWrite: number;
   totalTokens: number;
   cost: {
-    input: number; output: number; cacheRead: number; cacheWrite: number; total: number;
+    input: number;
+    output: number;
+    cacheRead: number;
+    cacheWrite: number;
+    total: number;
   };
 }
 ```
@@ -47,7 +51,18 @@ interface Usage {
 Source: `v1.4.0 json.md:95-99` (same example in 1.1.0 `docs/json.md:98`):
 
 ```json
-{"type":"message_update","usage":{"input":100,"output":1,"cacheRead":0,"cacheWrite":0,"totalTokens":101,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}},"assistantMessageEvent":{"type":"text_delta","contentIndex":0,"delta":"Hello "}}
+{
+  "type": "message_update",
+  "usage": {
+    "input": 100,
+    "output": 1,
+    "cacheRead": 0,
+    "cacheWrite": 0,
+    "totalTokens": 101,
+    "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "total": 0 }
+  },
+  "assistantMessageEvent": { "type": "text_delta", "contentIndex": 0, "delta": "Hello " }
+}
 ```
 
 `json.md:95` says: "The top-level `usage` is the latest cumulative provider-reported usage for the assistant response. It can remain zero until completion when a provider does not report usage while streaming."
@@ -119,6 +134,7 @@ So a compatible brys endpoint that honours `include_usage` will populate Pi's `u
    With `rates = {0,0,0,0}`, every field and `total` is `0`.
 
 And the usage object is **always initialized with a zero cost object** before `calculateCost` runs — 1.1.0 `dist/…/pi-ai/dist/api/openai-completions.js:1180-1190` (`parseChunkUsage`):
+
 ```js
 const usage = { input, output, cacheRead, cacheWrite, reasoning: …,
   totalTokens: input + outputTokens + cacheReadTokens + cacheWriteTokens,
@@ -128,7 +144,7 @@ calculateCost(model, usage);
 
 So the answer to "zero, null, or omitted" is: **zero**, never `null`, never omitted. Downstream code even tolerates omission (`usage.cost?.total || 0`, §4), but Pi does emit the object.
 
-**Consequence for this homelab:** Pi's `cost.total` on the brys fleet is worthless as money. It is a faithful *"if this were billed at catalog price"* field, which is exactly why it must be kept separate from the paid overseer's dollars (§8). If a notional local price is ever wanted, put a `cost` block on the brys model definitions in `models.json` (1.1.0 `dist/core/model-config.js:160-177`: `cost` is an optional `ModelCostSchema` on a model definition, per-million-token rates) and then `calculateCost` will produce it — but that is fiction unless you deliberately price the homelab.
+**Consequence for this homelab:** Pi's `cost.total` on the brys fleet is worthless as money. It is a faithful _"if this were billed at catalog price"_ field, which is exactly why it must be kept separate from the paid overseer's dollars (§8). If a notional local price is ever wanted, put a `cost` block on the brys model definitions in `models.json` (1.1.0 `dist/core/model-config.js:160-177`: `cost` is an optional `ModelCostSchema` on a model definition, per-million-token rates) and then `calculateCost` will produce it — but that is fiction unless you deliberately price the homelab.
 
 **Live-level check: not verified.** I could not send a request to brys from `oams`. The code path above is from the installed 1.1.0 binary and is deterministic; the only assumption is that the brys model is declared without `cost`, which is the documented local setup.
 
@@ -137,35 +153,44 @@ So the answer to "zero, null, or omitted" is: **zero**, never `null`, never omit
 ### 3a. What `contextTokens` is
 
 Pi computes a context size from the last good assistant usage — 1.1.0 `dist/bundle/chunks/chunk-OIM2DMFI.js` (`calculateContextTokens`):
+
 ```js
-function calculateContextTokens(usage){ return usage.totalTokens || usage.input+usage.output+usage.cacheRead+usage.cacheWrite }
+function calculateContextTokens(usage) {
+  return usage.totalTokens || usage.input + usage.output + usage.cacheRead + usage.cacheWrite;
+}
 ```
+
 and `estimateContextTokens` adds a char-based estimate for messages after that usage point (`trailingTokens`). In the JSON stream the raw `usage.totalTokens` is `input+output+cacheRead+cacheWrite` for that response (`parseChunkUsage`, §2).
 
-The **subagent example's** `usage.contextTokens` is *not* this estimate: it is simply the last assistant message's `totalTokens` (see §4, `currentResult.usage.contextTokens = usage.totalTokens || 0`). Use it as "context after the last turn", not as "tokens before the next request".
+The **subagent example's** `usage.contextTokens` is _not_ this estimate: it is simply the last assistant message's `totalTokens` (see §4, `currentResult.usage.contextTokens = usage.totalTokens || 0`). Use it as "context after the last turn", not as "tokens before the next request".
 
 ### 3b. Compaction trigger
 
 `v1.4.0 compaction.md:32-35`:
+
 ```
 contextTokens > contextWindow - reserveTokens
 ```
+
 Defaults (`compaction.md:36`, `compaction.md:55`): `reserveTokens = 16384`, `keepRecentTokens = 20000`. The same defaults are hard-coded in 1.1.0 `dist/bundle/chunks/chunk-OIM2DMFI.js`:
+
 ```js
-var DEFAULT_COMPACTION_SETTINGS={enabled:!0,reserveTokens:16384,keepRecentTokens:2e4};
-function shouldCompact(contextTokens,contextWindow,settings){ return settings.enabled ? contextTokens>contextWindow-settings.reserveTokens : !1 }
+var DEFAULT_COMPACTION_SETTINGS = { enabled: !0, reserveTokens: 16384, keepRecentTokens: 2e4 };
+function shouldCompact(contextTokens, contextWindow, settings) {
+  return settings.enabled ? contextTokens > contextWindow - settings.reserveTokens : !1;
+}
 ```
 
 ### 3c. Disable / tune per run
 
 Settings file (`v1.4.0 settings.md:69-76`, and 1.1.0 `dist/core/settings-manager.js:621-658`):
 
-| Key | Default | Effect |
-|---|---|---|
-| `compaction.enabled` | `true` | `false` disables auto-compaction entirely (`shouldCompact` returns false). `/compact` still works manually. |
-| `compaction.reserveTokens` | `16384` | Trigger headroom. |
-| `compaction.keepRecentTokens` | `20000` | Recent tokens kept unsummarized. |
-| `compaction.modelOverrides` | none | Per `provider/modelId` overrides of the two numbers. |
+| Key                           | Default | Effect                                                                                                      |
+| ----------------------------- | ------- | ----------------------------------------------------------------------------------------------------------- |
+| `compaction.enabled`          | `true`  | `false` disables auto-compaction entirely (`shouldCompact` returns false). `/compact` still works manually. |
+| `compaction.reserveTokens`    | `16384` | Trigger headroom.                                                                                           |
+| `compaction.keepRecentTokens` | `20000` | Recent tokens kept unsummarized.                                                                            |
+| `compaction.modelOverrides`   | none    | Per `provider/modelId` overrides of the two numbers.                                                        |
 
 Set them in `~/.pi/agent/settings.json` or `<project>/.pi/settings.json`. **There is no per-invocation CLI flag** for compaction; a run's compaction policy is the settings file's. An extension can intercept via `session_before_compact` and cancel (`compaction.md`, "Custom Summarization via Extensions"), which is the only per-run override.
 
@@ -176,6 +201,7 @@ For the harness: run each worker with a **fixed, small** context policy (e.g. `c
 Source: `v1.4.0 examples/extensions/subagent/index.ts` (1036 lines, fetched). The mechanism is: **spawn one `pi` per agent in `--mode json`, parse `message_end`, sum `usage` per assistant message.**
 
 Spawn args (`subagent.ts:296`):
+
 ```ts
 const args: string[] = ["--mode", "json", "-p", "--no-session"];
 ...
@@ -186,16 +212,17 @@ args.push(`Task: ${task}`);
 ```
 
 The aggregation (`subagent.ts:363-374`):
+
 ```ts
 if (msg.role === "assistant") {
   currentResult.usage.turns++;
   const usage = msg.usage;
   if (usage) {
-    currentResult.usage.input      += usage.input      || 0;
-    currentResult.usage.output     += usage.output     || 0;
-    currentResult.usage.cacheRead  += usage.cacheRead  || 0;
+    currentResult.usage.input += usage.input || 0;
+    currentResult.usage.output += usage.output || 0;
+    currentResult.usage.cacheRead += usage.cacheRead || 0;
     currentResult.usage.cacheWrite += usage.cacheWrite || 0;
-    currentResult.usage.cost       += usage.cost?.total || 0;
+    currentResult.usage.cost += usage.cost?.total || 0;
     currentResult.usage.contextTokens = usage.totalTokens || 0;
   }
   if (!currentResult.model && msg.model) currentResult.model = msg.model;
@@ -204,6 +231,7 @@ if (msg.role === "assistant") {
 ```
 
 Note the three asymmetries that matter:
+
 - `cost` is summed as `cost.total` (the scalar), into a flat `usage.cost` number.
 - `contextTokens` is **overwritten** each turn (latest), not summed — it is a gauge, not a counter.
 - `turns` counts assistant messages, i.e. model responses, not tool calls.
@@ -215,6 +243,7 @@ Per-mode accumulation:
 - **Parallel** (`subagent.ts:607-700`): `mapWithConcurrencyLimit(..., MAX_CONCURRENCY=4, ...)` (line 634), one `runSingleAgent` per task; `allResults[index] = result`.
 
 The run-level total is a pure sum over per-result usages (`subagent.ts:849-859`):
+
 ```ts
 const aggregateUsage = (results: SingleResult[]) => {
   const total = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0, turns: 0 };
@@ -229,9 +258,10 @@ const aggregateUsage = (results: SingleResult[]) => {
   return total;
 };
 ```
+
 Used for the "Total:" footer in chain/parallel/single detail rendering (`subagent.ts:916, 937, 1001, 1025`). `details.results` (with full messages) is the persisted tool result; `usage` is only the compact summary.
 
-**Important:** the subagent example uses `--no-session` (line 296), so this path is stdout-only. Your zellij-pane children will *not* have that (§5).
+**Important:** the subagent example uses `--no-session` (line 296), so this path is stdout-only. Your zellij-pane children will _not_ have that (§5).
 
 ## 5. Cheapest per-turn usage for a zellij-pane child
 
@@ -246,7 +276,7 @@ The child runs interactively in a zellij pane, so stdout is the TUI, not JSONL. 
 
 Why not RPC: `--mode rpc` gives events on stdin/stdout, which would again be the pane's stream and needs a second protocol client. Why not `--export`: HTML only (§1d). Why not `/session`: interactive text only.
 
-If the child *can* be driven non-interactively, `--mode json` + parse is strictly better (structured, no file scan), which is what the subagent example does. For a pane you keep interactive, the session file is the cheapest and it is complete.
+If the child _can_ be driven non-interactively, `--mode json` + parse is strictly better (structured, no file scan), which is what the subagent example does. For a pane you keep interactive, the session file is the cheapest and it is complete.
 
 Caveat: session entries are a **tree**. Sum only the active branch, or sum all — for cost you want **all** assistant messages ever produced (abandoned branches did cost tokens). Pi's own `getUsageCostBreakdown` walks entries and does not filter by branch, so "sum every assistant `usage` in the file" matches Pi's `/session` total. Use that.
 
@@ -257,23 +287,25 @@ These are all **prefill**, not output. Pi persists them verbatim in the first sy
 The structured prompt sections (1.1.0 `dist/core/system-prompt.js:70-128`):
 `preamble`, `tools` (tool snippets), `rules`, `docs`, `addendum` (`--append-system-prompt`), `project_context` (AGENTS.md/CLAUDE.md), `skills`, `cwd`, plus any custom section. Tool declarations also persist as `toolsAdded[].description` + `parameters` (`v1.4.0 session-format.md:80-84`).
 
-| Contributor | Where it is stored | How to measure |
-|---|---|---|
-| Base preamble, rules, docs | first `role:"system"` entry, `sections.preamble/rules/docs` | length of each string |
-| AGENTS.md / CLAUDE.md | `sections.project_context` | length |
-| Skill files loaded | `sections.skills` (+ each skill's own file only when read by a tool) | length |
-| Tool descriptions + JSON schemas | `toolsAdded[]` on the same entry | `JSON.stringify(toolsAdded).length` |
-| Images | history entries | Pi estimates 4800 chars each |
+| Contributor                      | Where it is stored                                                   | How to measure                      |
+| -------------------------------- | -------------------------------------------------------------------- | ----------------------------------- |
+| Base preamble, rules, docs       | first `role:"system"` entry, `sections.preamble/rules/docs`          | length of each string               |
+| AGENTS.md / CLAUDE.md            | `sections.project_context`                                           | length                              |
+| Skill files loaded               | `sections.skills` (+ each skill's own file only when read by a tool) | length                              |
+| Tool descriptions + JSON schemas | `toolsAdded[]` on the same entry                                     | `JSON.stringify(toolsAdded).length` |
+| Images                           | history entries                                                      | Pi estimates 4800 chars each        |
 
 Pi's own estimator is a **chars/4** approximation (1.1.0 `dist/bundle/chunks/chunk-OIM2DMFI.js`, `estimateTokens2`):
+
 ```js
-Math.ceil(chars/4)   // text; images count as 4800 chars; system includes sections + JSON.stringify(toolsAdded)
+Math.ceil(chars / 4); // text; images count as 4800 chars; system includes sections + JSON.stringify(toolsAdded)
 ```
+
 So you can compute a per-section token estimate from the session file with the same rule and stay consistent with Pi's compaction math.
 
 The **cross-check** for the sum is the first assistant turn's `usage.input + usage.cacheRead + usage.cacheWrite` (the whole prefill) and, on the server, llama-swap's `tokens.input_tokens` (`docs/local-llms.md:137`). Note the two are not identical in definition: Pi's `input` excludes cache reads/writes (`parseChunkUsage` subtracts them, §2), whereas brys' `input_tokens` is the raw prompt count. Reconcile as `pi_input + pi_cacheRead + pi_cacheWrite ≈ brys_input_tokens`.
 
-## 7. What is *not* measurable from Pi alone
+## 7. What is _not_ measurable from Pi alone
 
 - **Queue wait / cold-load time**: `duration_ms` on the server includes load (`local-llms.md:151`); Pi has no field for it. Must come from brys `/api/metrics/activity` + `/api/events` `inflight` (`b-stats.md §2`).
 - **GPU occupancy / power**: brys `/api/performance` (`local-llms.md:138`), not in Pi.
@@ -284,74 +316,76 @@ The **cross-check** for the sum is the first assistant turn's `usage.input + usa
 
 ### 8.1 Two currencies, never mixed
 
-| Class | Counters | Unit | Sources |
-|---|---|---|---|
-| **Local** (brys fleet) | tokens in/out/cache, wall seconds, GPU-seconds, queue seconds, prefill/decode tok/s | time + tokens | Pi `usage` + `message_end` timestamps; brys activity/performance |
-| **Paid** (overseer, escalation, any SaaS) | tokens in/out/cache, **USD** | money | Pi `cost.total` (catalog price is real here) |
+| Class                                     | Counters                                                                            | Unit          | Sources                                                          |
+| ----------------------------------------- | ----------------------------------------------------------------------------------- | ------------- | ---------------------------------------------------------------- |
+| **Local** (brys fleet)                    | tokens in/out/cache, wall seconds, GPU-seconds, queue seconds, prefill/decode tok/s | time + tokens | Pi `usage` + `message_end` timestamps; brys activity/performance |
+| **Paid** (overseer, escalation, any SaaS) | tokens in/out/cache, **USD**                                                        | money         | Pi `cost.total` (catalog price is real here)                     |
 
-Rule: a report has two subtotals, `local` and `paid`. Never add a local `cost.total` to a paid `cost.total`. Local `cost.total` is `0` and carries no information (§2); a *notional* USD (`tokens × catalog rate`, or a deliberately set `models.json` `cost`) may be printed as a secondary figure but never in the spend column.
+Rule: a report has two subtotals, `local` and `paid`. Never add a local `cost.total` to a paid `cost.total`. Local `cost.total` is `0` and carries no information (§2); a _notional_ USD (`tokens × catalog rate`, or a deliberately set `models.json` `cost`) may be printed as a secondary figure but never in the spend column.
 
 ### 8.2 Per-agent-turn record
 
 One JSONL line per assistant message (plus one per summarizer/cache call). Field names mirror Pi where possible.
 
-| Field | Type | Source |
-|---|---|---|
-| `v` | int | schema version (`1`) |
-| `kind` | `"turn"` | literal |
-| `run_id` | string | harness |
-| `agent_id` | string | `orch`, `worker:<name>#<i>`, `overseer` |
-| `role` | enum | `orchestrator｜worker｜overseer｜summarizer` |
-| `provider`,`model`,`alias` | string | Pi `message.provider/model`; brys `modelStatus.aliases` (`b-stats.md §3`) |
-| `local` | bool | `provider ∈ {brys, llama-swap}` |
-| `session_id`,`entry_id` | string | session header + entry `id` |
-| `turn_index` | int | count within session |
-| `ts_start`,`ts_end`,`wall_ms` | time | `turn_start`…`message_end`; fallback entry timestamps |
-| `ttft_ms` | int? | **not verified** — no Pi field; from server `inflight.upsert` elapsed if joined |
-| `usage.input/output/cacheRead/cacheWrite/totalTokens` | int | Pi `usage` |
-| `usage.cost.total` | number | Pi (`0` when local) |
-| `reasoning_tokens` | int? | Pi `usage.reasoning` (1.1.0 `parseChunkUsage`) |
-| `context_tokens` | int | last `totalTokens` (gauge, §3a) |
-| `compaction` | `null｜{reason,tokensBefore,usage}` | `compaction_end` / `CompactionEntry` |
-| `stop_reason` | string | `message.stopReason` |
-| `tool_calls` | int | count in `message.content` |
-| `server` | object? | join: `{activity_id, prompt_per_second, tokens_per_second, duration_ms, load_ms, gpu_util}` |
-| `outcome` | enum | `ok｜error｜aborted｜length` |
+| Field                                                 | Type                                | Source                                                                                      |
+| ----------------------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------- |
+| `v`                                                   | int                                 | schema version (`1`)                                                                        |
+| `kind`                                                | `"turn"`                            | literal                                                                                     |
+| `run_id`                                              | string                              | harness                                                                                     |
+| `agent_id`                                            | string                              | `orch`, `worker:<name>#<i>`, `overseer`                                                     |
+| `role`                                                | enum                                | `orchestrator｜worker｜overseer｜summarizer`                                                |
+| `provider`,`model`,`alias`                            | string                              | Pi `message.provider/model`; brys `modelStatus.aliases` (`b-stats.md §3`)                   |
+| `local`                                               | bool                                | `provider ∈ {brys, llama-swap}`                                                             |
+| `session_id`,`entry_id`                               | string                              | session header + entry `id`                                                                 |
+| `turn_index`                                          | int                                 | count within session                                                                        |
+| `ts_start`,`ts_end`,`wall_ms`                         | time                                | `turn_start`…`message_end`; fallback entry timestamps                                       |
+| `ttft_ms`                                             | int?                                | **not verified** — no Pi field; from server `inflight.upsert` elapsed if joined             |
+| `usage.input/output/cacheRead/cacheWrite/totalTokens` | int                                 | Pi `usage`                                                                                  |
+| `usage.cost.total`                                    | number                              | Pi (`0` when local)                                                                         |
+| `reasoning_tokens`                                    | int?                                | Pi `usage.reasoning` (1.1.0 `parseChunkUsage`)                                              |
+| `context_tokens`                                      | int                                 | last `totalTokens` (gauge, §3a)                                                             |
+| `compaction`                                          | `null｜{reason,tokensBefore,usage}` | `compaction_end` / `CompactionEntry`                                                        |
+| `stop_reason`                                         | string                              | `message.stopReason`                                                                        |
+| `tool_calls`                                          | int                                 | count in `message.content`                                                                  |
+| `server`                                              | object?                             | join: `{activity_id, prompt_per_second, tokens_per_second, duration_ms, load_ms, gpu_util}` |
+| `outcome`                                             | enum                                | `ok｜error｜aborted｜length`                                                                |
 
 ### 8.3 Per-run record
 
-| Field | Meaning |
-|---|---|
-| `run_id`,`task`,`agents` | identity |
-| `turns` | Σ per-turn |
-| `local_tokens{in,out,cache_r,cache_w}` | local subtotal |
-| `paid{tokens{…},usd}` | paid subtotal (real money) |
-| `wall_s` | critical-path wall time (spawn → settle) |
-| `sum_agent_compute_s` | Σ per-agent wall (parallel work counted once each) |
-| `gpu_seconds` | Σ `wall × occupancy` |
-| `queue_s` | Σ cold-load/FIFO wait from brys |
-| `quality` | `q ∈ [0,1]` from the evaluation rubric (tests pass fraction / judge score) |
-| `rework_p` | measured or `1-q` |
-| `cost_cs` | compute-seconds, §8.5 |
-| `efficiency` | `q / cost_cs` |
-| `outcome` | final |
+| Field                                  | Meaning                                                                    |
+| -------------------------------------- | -------------------------------------------------------------------------- |
+| `run_id`,`task`,`agents`               | identity                                                                   |
+| `turns`                                | Σ per-turn                                                                 |
+| `local_tokens{in,out,cache_r,cache_w}` | local subtotal                                                             |
+| `paid{tokens{…},usd}`                  | paid subtotal (real money)                                                 |
+| `wall_s`                               | critical-path wall time (spawn → settle)                                   |
+| `sum_agent_compute_s`                  | Σ per-agent wall (parallel work counted once each)                         |
+| `gpu_seconds`                          | Σ `wall × occupancy`                                                       |
+| `queue_s`                              | Σ cold-load/FIFO wait from brys                                            |
+| `quality`                              | `q ∈ [0,1]` from the evaluation rubric (tests pass fraction / judge score) |
+| `rework_p`                             | measured or `1-q`                                                          |
+| `cost_cs`                              | compute-seconds, §8.5                                                      |
+| `efficiency`                           | `q / cost_cs`                                                              |
+| `outcome`                              | final                                                                      |
 
 ### 8.4 Cost of a local fleet: seconds, not dollars
 
 Local "cost" is a vector, reported as-is:
+
 - **wall-clock seconds** — what the user waits;
 - **decode tok/s** (`tokens_per_second`) and **prefill tok/s** (`prompt_per_second`) — throughput;
 - **queue wait seconds** — cold load + FIFO, the hidden latency (`duration_ms` includes load);
 - **GPU-seconds** = `wall_s × occupancy` — the scarce resource (one GPU, N models);
 - optional **joules** = `power_W × wall_s` from `/api/performance`.
 
-Do not collapse these into one fake dollar. Collapse them into *one comparable number* only inside the evaluation formula below, and keep the vector alongside.
+Do not collapse these into one fake dollar. Collapse them into _one comparable number_ only inside the evaluation formula below, and keep the vector alongside.
 
 ### 8.5 "Cost of a delegation" formula
 
 Goal: make a slow-but-good orchestrator comparable with a fast-but-wrong worker.
 
 Define **compute-seconds** (`cs`), a single unit for both classes:
+
 ```
 C_turn = W + α·G + β·Q + γ·P
   W = wall seconds of the turn
@@ -364,6 +398,7 @@ C_turn = W + α·G + β·Q + γ·P
 ```
 
 Then the **cost of a delegation** includes the coordinator's own work, integration, and the risk of redoing it:
+
 ```
 C_del = C_plan + Σ_workers C_worker + C_integrate + (1 - q)·C_rework
   C_plan, C_integrate = orchestrator turns spent composing/reading the task
@@ -372,14 +407,17 @@ C_del = C_plan + Σ_workers C_worker + C_integrate + (1 - q)·C_rework
 ```
 
 **Efficiency** (higher is better, comparable across models and fleet sizes):
+
 ```
 E = q / max(C_del, ε)
 ```
+
 Two agents are directly comparable: a fast-wrong worker with `q=0.4` and a slow-good one with `q=0.9`.
 Worked example (same `C_rework = 180 cs`):
+
 - O: `W=120, q=0.9` → `C = 120 + 0.1·180 = 138`, `E = 0.9/138 = 0.0065`
 - F: `W=20,  q=0.4` → `C = 20  + 0.6·180 = 128`, `E = 0.4/128 = 0.0031`
-O wins despite 6× the wall time. Raise `C_rework` (a costly downstream step) and the gap widens; set `C_rework=0` (isolated benchmark, no downstream) and F wins — which is correct, and shows why the formula needs the evaluation's rework cost, not the benchmark's.
+  O wins despite 6× the wall time. Raise `C_rework` (a costly downstream step) and the gap widens; set `C_rework=0` (isolated benchmark, no downstream) and F wins — which is correct, and shows why the formula needs the evaluation's rework cost, not the benchmark's.
 
 For a run with parallel workers, report both `wall_s` (critical path) and `Σ C_worker` (total compute); they answer different questions ("how long" vs "what it consumed"). Use `Σ` in `C_del`, `wall_s` in latency SLAs.
 

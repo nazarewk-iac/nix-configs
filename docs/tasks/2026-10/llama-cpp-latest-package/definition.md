@@ -66,12 +66,12 @@ The packages are reachable as:
 Warm run, 300-token decode, ctx 131072, batch/ubatch 4096, threads 16,
 parallel 1. The `control` is the pinned nixpkgs 0.4.0.
 
-| config | package | MTP | prefill t/s | decode t/s | MTP acceptance | RSS | idle maj_fault/s |
-|---|---|---|---|---|---|---|---|
-| control | 0.4.0 b10809 | no | 36.6 | 5.65 | — | 82.3 GiB | 0 |
-| A | 0.6.0 b11429 | no | 37.7 | 5.81 | — | 81.3 GiB | 0 |
-| B | 0.6.0 b11429 | yes | 35.2 | 9.50 | 1.000, mean len 2.99 | 87.8 GiB | 0 |
-| C | unsloth b11098 | yes | 36.8 | 9.56 | 1.000, mean len 2.99 | 86.6 GiB | 0 |
+| config  | package        | MTP | prefill t/s | decode t/s | MTP acceptance       | RSS      | idle maj_fault/s |
+| ------- | -------------- | --- | ----------- | ---------- | -------------------- | -------- | ---------------- |
+| control | 0.4.0 b10809   | no  | 36.6        | 5.65       | —                    | 82.3 GiB | 0                |
+| A       | 0.6.0 b11429   | no  | 37.7        | 5.81       | —                    | 81.3 GiB | 0                |
+| B       | 0.6.0 b11429   | yes | 35.2        | 9.50       | 1.000, mean len 2.99 | 87.8 GiB | 0                |
+| C       | unsloth b11098 | yes | 36.8        | 9.56       | 1.000, mean len 2.99 | 86.6 GiB | 0                |
 
 Findings:
 

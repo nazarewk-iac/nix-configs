@@ -53,10 +53,10 @@ forwards each foreign build to its own builders.
 
 **Evidence (2026-10-13, Lix 2.95.3 client, Lix 2.95.2 builder).**
 
-| Command | Result |
-|---|---|
-| `nix build` from the client, builder trusted | fails: `but I am a 'aarch64-darwin'` |
-| `nix-store --realise --store ssh-ng://<builder>` | forwards to the VM |
-| `nix build` from the client, builder allowed but untrusted | forwards to the VM |
+| Command                                                    | Result                               |
+| ---------------------------------------------------------- | ------------------------------------ |
+| `nix build` from the client, builder trusted               | fails: `but I am a 'aarch64-darwin'` |
+| `nix-store --realise --store ssh-ng://<builder>`           | forwards to the VM                   |
+| `nix build` from the client, builder allowed but untrusted | forwards to the VM                   |
 
 The third row is the fix.

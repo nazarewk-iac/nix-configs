@@ -11,7 +11,7 @@ timestamp: 2026-09-03T00:00:00+02:00
 
 ## Gap
 
-The docs, the skill, and the harness cover how to *place* content in the fork
+The docs, the skill, and the harness cover how to _place_ content in the fork
 topology. They do not cover the plain workflow: you have a local change and you
 want to **push it to a specific target** — the shared `main`/`master`, a feature
 branch, or a second fork remote — after a fresh fetch, remediating the status.
@@ -66,7 +66,7 @@ choice is a real decision; the harness confirms the exact jj-0.44 flag behavior.
     onto its former parent, so the rest of your local work stays put.
 - **Approach A — land the incoming under your work (insert).** Insert the fetched
   commit into your local chain: `jj rebase -r <incoming> --insert-before <@ or
-  @->`. jj 0.44 **refuses it when the target is immutable** — the trunk
+@->`. jj 0.44 **refuses it when the target is immutable** — the trunk
   `main@<remote>` (always, even when tracked) or an **untracked** remote bookmark
   ("would rewrite N immutable commits"). It **succeeds on a tracked, non-trunk
   feature branch**: `jj bookmark track feat@<remote>` first, then insert, then
@@ -95,17 +95,17 @@ move it. To avoid touching the primary at all, push a feature/PR branch.
 
 ## Sub-cases the harness proves
 
-| Case | Setup | Expected |
-|---|---|---|
-| Anonymous PR branch | remote has no such branch; publish one change | `jj git push -c <rev>` creates `push-<id>@<remote>` at the rev |
-| Named tracked branch | remote has no such bookmark | `bookmark create` + push (no `--allow-new` in jj 0.44) publishes `<name>@<remote>`; it starts tracking |
-| Fast-forward update | local work descends from `<branch>@<remote>` | set + push; remote bookmark advances; no rebase |
-| Behind — B, whole stack | a second repo advanced `<branch>@<remote>`; local 2-commit stack | a pre-fetch push is rejected ("stale info"); after fetch, `-b @` replays both commits on the incoming tip, order kept, push fast-forwards; a bare post-fetch push would clobber sideways (`--dry-run` shows it) |
-| Behind — B, tip only | same 2-commit stack | `-r <tip>` moves only the tip; the lower commit stays on the old base |
-| Insert incoming — refused | target is the trunk `main@<remote>` or an untracked bookmark | `jj rebase -r … --insert-before @` errors "would rewrite immutable commits" |
-| Insert incoming — tracked feature | track a non-trunk `feat@<remote>` | the insert succeeds; local `feat` diverges from `feat@<remote>`; `jj git push -b feat` publishes |
-| Divergent | both local and remote advanced | the Approach B remediation resolves it |
-| Second remote (fork) | two bare remotes registered | `--remote=<fork>` lands the branch on the fork bare, not on origin |
+| Case                              | Setup                                                            | Expected                                                                                                                                                                                                        |
+| --------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Anonymous PR branch               | remote has no such branch; publish one change                    | `jj git push -c <rev>` creates `push-<id>@<remote>` at the rev                                                                                                                                                  |
+| Named tracked branch              | remote has no such bookmark                                      | `bookmark create` + push (no `--allow-new` in jj 0.44) publishes `<name>@<remote>`; it starts tracking                                                                                                          |
+| Fast-forward update               | local work descends from `<branch>@<remote>`                     | set + push; remote bookmark advances; no rebase                                                                                                                                                                 |
+| Behind — B, whole stack           | a second repo advanced `<branch>@<remote>`; local 2-commit stack | a pre-fetch push is rejected ("stale info"); after fetch, `-b @` replays both commits on the incoming tip, order kept, push fast-forwards; a bare post-fetch push would clobber sideways (`--dry-run` shows it) |
+| Behind — B, tip only              | same 2-commit stack                                              | `-r <tip>` moves only the tip; the lower commit stays on the old base                                                                                                                                           |
+| Insert incoming — refused         | target is the trunk `main@<remote>` or an untracked bookmark     | `jj rebase -r … --insert-before @` errors "would rewrite immutable commits"                                                                                                                                     |
+| Insert incoming — tracked feature | track a non-trunk `feat@<remote>`                                | the insert succeeds; local `feat` diverges from `feat@<remote>`; `jj git push -b feat` publishes                                                                                                                |
+| Divergent                         | both local and remote advanced                                   | the Approach B remediation resolves it                                                                                                                                                                          |
+| Second remote (fork)              | two bare remotes registered                                      | `--remote=<fork>` lands the branch on the fork bare, not on origin                                                                                                                                              |
 
 ## Harness extension shape
 
@@ -147,7 +147,7 @@ skill and from `docs/jujutsu-vcs.fork.md` (the fork case is `--remote=<fork>`).
 2. **Implement (inline)** — `test_push.py` (self-contained functions) +
    `test_push.md` + the golden path in `docs/jujutsu-vcs.md`; verify the whole
    suite stays green. → checkpoint.
-2b. **Extract** — a follow-up commit refactors the shared setup into a reusable
+   2b. **Extract** — a follow-up commit refactors the shared setup into a reusable
    `topologies.py` builder (the inline-first decision).
 3. **Review + fix** — independent review of the new group, then a fix loop.
    → checkpoint.

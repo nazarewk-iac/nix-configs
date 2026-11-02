@@ -38,7 +38,7 @@ cannot execute i686 build tools.
 ## Directions to investigate
 
 1. **qemu-user (TCG) binfmt inside the VM image.** Add `boot.binfmt.emulatedSystems = [
-   "i686-linux" ]` (or the i686 handler) to the rosetta VM's NixOS image, through
+"i686-linux" ]` (or the i686 handler) to the rosetta VM's NixOS image, through
    `nix-rosetta-builder`'s `potentiallyInsecureExtraNixosModule` or an upstream option. Then
    advertise `i686-linux` in `buildMachines.systems`. Slow (TCG emulation), but correct.
 2. **Accept the gap.** Keep the darwin sanity check as "eval + all buildable derivations", and
