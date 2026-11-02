@@ -2,19 +2,19 @@
 #
 # Two consumers, and they differ in exactly **one** value: the boot `profile`.
 #
-#   * the main profile (hosts/brys/default.nix) — a desktop that also serves the fleet,
-#     booted with `profile = "desktop"` (DeepSeek 128K because it shares RAM with a browser);
-#   * the `llms` appliance entry (hosts/brys/llms-frontier.nix, booted as
-#     `specialisation.llms`) — a dedicated box, booted with `profile = "appliance"`
-#     (DeepSeek 320K because it owns the box).
+#   * `desktop` — the main brys host (hosts/brys/default.nix), a desktop that also serves
+#     the fleet;
+#   * `appliance` — the `llms` boot entry (hosts/brys/llms-frontier.nix, booted as
+#     `specialisation.llms`), a dedicated box with isolcpus/ARC kernel tuning.
 #
-# Everything else is identical on purpose. The fleet is one set of models, one alias map,
-# one build and one cache policy; a second copy of those settings is how the two consumers
-# drift. The only honest difference is the profile, and the served context is part of the
-# data (`data/llm.nix` -> `servers.brys.profiles`), not a knob here.
+# The two profiles now serve the SAME models; they remain separate boot entries for the
+# appliance-only kernel tuning. Everything else is identical on purpose: one set of models,
+# one alias map, one build and one cache policy.
 #
-# If a second difference ever appears, add it as a named argument **and say why in this
-# header** — a bare extra argument is how this file becomes a settings soup.
+# The served model set and the per-profile served context are part of the data
+# (`data/llm.nix` -> `servers.brys.profiles`), not knobs here. If a second difference ever
+# appears, add it as a named argument **and say why in this header** — a bare extra argument
+# is how this file becomes a settings soup.
 #
 # See ./llm.nix for what each knob does. The measurements behind them are in
 # docs/local-llms.md and hosts/brys/performance.md.

@@ -46,15 +46,15 @@
       # Local llama-swap model via the local DSML proxy; no auth.
       local-llm-proxy = {
         npm = "@ai-sdk/openai-compatible";
-        name = "DeepSeek V4 Flash (local llama-swap via DSML proxy)";
+        name = "Qwen3.8-Flash-Next (local llama-swap via DSML proxy)";
         options = {
           baseURL = "http://127.0.0.1:9533/v1";
           apiKey = "dummy";
         };
-        models."deepseek-v4-flash" = {
-          name = "deepseek-v4-flash (local)";
-          limit.context = 65536;
-          limit.output = 8192;
+        models."qwen3.8-flash-next" = {
+          name = "qwen3.8-flash-next (local)";
+          limit.context = 1048576;
+          limit.output = 32768;
         };
       };
     };

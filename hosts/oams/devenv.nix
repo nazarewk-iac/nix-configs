@@ -31,25 +31,6 @@ let
   # opencode sends an agent's `options` object verbatim in the request body, so
   # these reach llama-server unchanged.
   #
-  # DS4's template honours only `reasoning_effort = "max"`; it ignores every
-  # other value. So `low` and `medium` are equivalent thinking-on, and `high` is
-  # the only level that differs (it adds `reasoning_effort = "max"`).
-  ds4Thinking = {
-    off = {
-      enable_thinking = false;
-    };
-    low = {
-      enable_thinking = true;
-    };
-    medium = {
-      enable_thinking = true;
-    };
-    high = {
-      enable_thinking = true;
-      reasoning_effort = "max";
-    };
-  };
-
   # Qwen's template accepts the `reasoning_effort` values `xhigh`, `medium` and
   # `low` (there is no `none`). `high` maps to the template's `xhigh`.
   qwenThinking = {
@@ -75,8 +56,8 @@ let
   # small request is automatically small and a large one reaches the full window.
   # There is deliberately no server-side per-slot cap (`--kv-unified-per-slot`),
   # and llama-swap has no per-alias context either, so a model's context cannot be
-  # limited per client. Each request therefore runs at the model's real maximum:
-  # DS4 at 320K, Qwen at 1M. Discovery reads those maxima from the server (see
+  # limited per client. Each request therefore runs at the model's real maximum
+  # (Qwen at 1M). Discovery reads that maximum from the server (see
   # `kdn.llm.client.upstreams.brys` below); no tier aliases are used.
   #
   # One opencode subagent per (model, level). The agent's `options` carry that
@@ -100,22 +81,14 @@ let
       ) thinkingLevels
     );
 
-  ds4Agents = mkAgents {
-    prefix = "ds4";
-    modelLabel = "DeepSeek V4 Flash";
-    modelId = "deepseek-v4-flash";
-    thinking = ds4Thinking;
-  };
   qwenAgents = mkAgents {
     prefix = "qwen";
     modelLabel = "Qwen3.8-Flash-Next";
     modelId = "qwen3.8-flash-next";
     thinking = qwenThinking;
   };
-  # DS4 low and medium are equivalent: its template ignores `reasoning_effort`
-  # except for `max`. DS4 high is `reasoning_effort = "max"`. Qwen high is the
-  # template's `xhigh`.
-  tierAgents = ds4Agents // qwenAgents;
+  # Qwen's `high` is the template's `xhigh`.
+  tierAgents = qwenAgents;
 
   # One opencode subagent per brys purpose alias (chat-std-fast, code-deep-slow,
   # ...), derived from `data/llm.nix` so the client follows the server when an
@@ -146,7 +119,7 @@ in
   kdn.opencode.settings.provider.requesty = { };
   # The subagent set. Two families:
   #   * `tierAgents` — one agent per (base model, thinking level): `qwen-high`,
-  #     `ds4-low`, ... A caller pins a model and a depth explicitly.
+  #     ... A caller pins a model and a depth explicitly.
   #   * `aliasAgents` — one agent per purpose alias: `chat-std-fast`,
   #     `code-deep-slow`, ... A caller names an intent; the server decides the
   #     model. This is the family to prefer for routine work, so the served
@@ -168,7 +141,7 @@ in
     # per-model names all come from the server's `/v1/models` (llama-swap publishes
     # each model's context as the top-level `context_length`). There is no
     # hand-written overlay, so every request runs at the model's real maximum
-    # context (DS4 320K, Qwen 1M).
+    # context (Qwen 1M).
     discovery.enable = true;
   };
 }

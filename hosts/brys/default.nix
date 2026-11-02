@@ -7,8 +7,8 @@
 }:
 let
   # The whole local-LLM serving config, shared with the `specialisation.llms` appliance
-  # entry (./llm-config.nix). This desktop profile serves DeepSeek at 128K because it shares
-  # RAM with a browser; the appliance profile serves 320K because it owns the box.
+  # entry (./llm-config.nix). The `desktop` and `appliance` profiles serve the same models;
+  # they remain separate boot entries for the appliance's isolcpus/ARC kernel tuning.
   llm = import ./llm-config.nix {
     inherit lib pkgs kdnConfig;
     profile = "desktop";

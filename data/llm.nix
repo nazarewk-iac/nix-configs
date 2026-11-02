@@ -141,10 +141,7 @@ in
           [ "qwen3.8-27b" ]
           [ "qwen3.5-35b-a3b" ]
         ];
-        persistentModels = [
-          "deepseek-v4-flash"
-          "qwen3.8-flash-next"
-        ];
+        persistentModels = [ "qwen3.8-flash-next" ];
         vulkanDeviceSelect = "1002:73e3!";
       };
 
@@ -174,60 +171,9 @@ in
   # One entry per served model. Identity on top; `hosts.brys` is the serving data.
   # `common` is what llama-server needs to load the model; `perf` is the preset INI.
   models = {
-    "deepseek-v4-flash" = {
-      aliases = [
-        "frontier"
-        "orchestrate-deep-slow-alt"
-      ];
-      capabilities = {
-        loadSeconds = 60;
-        operation = "cpu";
-      };
-      pi = {
-        maxTokens = 16384;
-      };
-      gpu = false;
-      contextSize = 131072;
-      hosts.brys = {
-        set = "main";
-        servedContext = 131072;
-        common = {
-          download = {
-            enable = true;
-            glob = "UD-IQ3_XXS/DeepSeek-V4-Flash-UD-IQ3_XXS-*.gguf";
-          };
-          draft = {
-            enable = true;
-            hfFile = "dspark-DeepSeek-V4-Flash-0731-Q8_0.gguf";
-            hfRepo = "unsloth/DeepSeek-V4-Flash-0731-GGUF";
-          };
-          enable = true;
-          hfFile = "UD-IQ3_XXS/DeepSeek-V4-Flash-UD-IQ3_XXS-00001-of-00004.gguf";
-          hfRepo = "unsloth/DeepSeek-V4-Flash-GGUF";
-          perf = {
-            batchSize = 4096;
-            kvUnified = true;
-            mmap = null;
-            parallel = 2;
-            reasoning = "auto";
-            reasoningEffort = "low";
-            specDraftNMax = 5;
-            specType = "draft-dspark";
-            ubatchSize = 4096;
-          };
-        };
-        profiles = {
-          appliance = {
-            servedContext = 327680;
-          };
-          desktop = {
-            servedContext = 131072;
-          };
-        };
-      };
-    };
     "qwen3.8-flash-next" = {
       aliases = [
+        "frontier"
         "qwen"
         "orchestrate-deep-slow"
       ];
