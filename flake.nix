@@ -192,7 +192,12 @@
       systems = builtins.filter (system: system != "x86_64-darwin") (import inputs.systems);
 
       # The parallel den tree. It adds outputs and it changes none. See modules/den/README.md.
-      imports = [ ./modules/den/flake-module.nix ];
+      imports = [
+        ./modules/den/flake-module.nix
+        # `nix fmt` and the check: one formatter for Markdown (and room for more). Nix stays with
+        # `kdn-nix-fmt`; see treefmt.nix for why.
+        inputs.treefmt-nix.flakeModule
+      ];
 
       flake.overlays.packages = inputs.nixpkgs.lib.composeManyExtensions [
         (final: prev: {
@@ -255,8 +260,7 @@
             # A derivation does not expose `.patches`, so a local copy signals patches the
             # idiomatic way: `passthru.patches` (non-empty) or `passthru.patched = true`.
             # A `packages/pi-coding-agent/PATCHED` file also works as a last resort.
-            repoPatches =
-              if repo == null then [ ] else (repo.passthru.patches or (repo.patches or [ ]));
+            repoPatches = if repo == null then [ ] else (repo.passthru.patches or (repo.patches or [ ]));
             # Detect applied patches on the local derivation from its .drv: a patch appears
             # there as a source input named *.patch (it is never a `patches` env var). This
             # reads the existing .drv, so nothing is built. Guarded in case the read fails.
@@ -264,9 +268,8 @@
               d:
               let
                 r = builtins.tryEval (
-                  builtins.match ".*[.]patch\".*" (
-                    builtins.readFile (builtins.unsafeDiscardStringContext d.drvPath)
-                  ) != null
+                  builtins.match ".*[.]patch\".*" (builtins.readFile (builtins.unsafeDiscardStringContext d.drvPath))
+                  != null
                 );
               in
               r.success && r.value;
@@ -290,10 +293,7 @@
           in
           {
             pi-coding-agent =
-              if repo != null && (repoPatched || final.lib.versionAtLeast repoVer bestVer) then
-                repo
-              else
-                best;
+              if repo != null && (repoPatched || final.lib.versionAtLeast repoVer bestVer) then repo else best;
           }
         )
         (final: prev: {
@@ -524,6 +524,10 @@
         }:
         {
           _module.args.pkgs = inputs'.nixpkgs.legacyPackages.extend self.overlays.default;
+
+          # The formatter for every language, defined in ./treefmt.nix. `nix fmt` runs it; the same
+          # module adds `checks.<system>.treefmt` so `nix flake check` fails on unformatted files.
+          treefmt.config = import ./treefmt.nix { };
           # inspired by https://github.com/NixOS/nix/issues/3803#issuecomment-748612294
           # usage: nix run '.#repl'
           apps.repl = {
@@ -641,6 +645,16 @@
             };
           devShells = { };
           packages = lib.mkMerge [
+            # The generated treefmt.toml, so `devenv.nix` can symlink it into the repository. `jj fix`
+            # then calls `treefmt --stdin`, governed by that one file, instead of repeating a
+            # per-tool list. `config.treefmt.build.configFile` and `.wrapper` are the treefmt-nix
+            # outputs.
+            {
+              treefmt-config = config.treefmt.build.configFile;
+              # The wrapper is `treefmt --config-file <treefmt-config>`; `jj fix` runs it with
+              # `--stdin`, so the two packages go together.
+              treefmt-wrapper = config.treefmt.build.wrapper;
+            }
             # The version-selected Pi (local copy > pi.nix > nixpkgs). Exposed as a flake package
             # so a consumer whose pkgs has no repo overlay — the devenv shell — still gets 1.4.0
             # instead of nixpkgs' older pin.

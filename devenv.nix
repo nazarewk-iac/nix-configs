@@ -92,6 +92,10 @@ in
       #   data/pi/agents/         scout / worker / reviewer / planner / orchestrator
       # The wrapper appends --extension for each, so a plain `pi` in this shell has them.
       piWrapped
+      # The Markdown formatter. It is installed here so that `jj fix` can call a bare `prettier`,
+      # which is a stable name, instead of a `/nix/store/...` path that a rebuild would move.
+      # `treefmt.nix` enables the same program for `nix fmt`.
+      pkgs.prettier
     ];
 
     # This repository authors the agent instruction files, so it asks for every one of
@@ -111,6 +115,49 @@ in
     # This value belongs to this repository, not to the aspect. The aspect default is
     # neutral (`origin`), so this line keeps the behaviour.
     kdn.jj.upstream.remote = "kdn";
+
+    # Format every language as jj snapshots the working copy. `jj fix` pipes each matching file
+    # through the treefmt wrapper on every snapshot, so the tree stays formatted while you work
+    # instead of only when you remember to run `nix fmt`.
+    #
+    # The command is the treefmt wrapper with ONE config, `packages.treefmt-config`, built from
+    # `treefmt.nix`. A per-tool list here would be a second source of truth that drifts from
+    # `treefmt.nix`; the wrapper reads the same generated `treefmt.toml` that `nix fmt` reads, so
+    # there is nothing to keep in step.
+    #
+    # `treefmt --stdin` picks the formatter by the path's extension, which is why `$path` is passed
+    # as an argument. The config's commands are `/nix/store/...` paths from the same build that
+    # produces this symlink, so they are valid for as long as the shell lives.
+    #
+    # `revsets.fix` defaults to `reachable(@, mutable())`, so a fix also reaches mutable ancestors.
+    # That is jj's default and it is what makes the feature useful: a forgotten table gets aligned
+    # when a descendant changes it.
+    kdn.jj.config.fix.tools.treefmt = {
+      # The wrapper already carries its own `--config-file`; `--stdin $path` makes it read this
+      # file's content from stdin and pick the formatter by the extension of `$path`. jj passes the
+      # content on stdin and substitutes `$path` in the command.
+      command = [
+        "${inputs.nix-configs.packages.${pkgs.stdenv.hostPlatform.system}.treefmt-wrapper}/bin/treefmt"
+        # `--quiet` is required, not cosmetic: without it the wrapper prints its progress log on
+        # stdout beside the formatted file, and `jj fix` takes the WHOLE stdout as the new content.
+        "--quiet"
+        "--stdin"
+        "$path"
+      ];
+      patterns = [
+        "glob:'**/*.nix'"
+        "glob:'**/*.md'"
+        "glob:'**/*.mdx'"
+        "glob:'**/*.py'"
+        "glob:'**/*.go'"
+        "glob:'**/*.sh'"
+        "glob:'**/*.bash'"
+        "glob:'**/*.toml'"
+        "glob:'**/*.json'"
+        "glob:'**/*.yaml'"
+        "glob:'**/*.yml'"
+      ];
+    };
 
     # `mcp-servers-nix` is a `devenv.yaml` input, so the aspect cannot reach it. The shell
     # passes it here; without it every `kdn.mcp.programs` entry stays inert.
