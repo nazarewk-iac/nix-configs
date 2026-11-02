@@ -8,6 +8,10 @@
  *   - Single: { agent: "name", task: "..." }
  *   - Parallel: { tasks: [{ agent: "name", task: "..." }, ...] }
  *   - Chain: { chain: [{ agent: "name", task: "... {previous} ..." }, ...] }
+ *   - Slice: { agent: "summarizer", slice: "/path/to/file.md" } splits the file into windows
+ *     that fit the agent model's context, runs one child per window, then a merge pass. This is
+ *     the only way to read an artifact larger than the window: the split happens before the model
+ *     sees any of it.
  *
  * Uses JSON mode to capture structured output from subagents.
  */
@@ -29,6 +33,7 @@ import {
 import { Container, Markdown, Spacer, Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 import { type AgentConfig, type AgentScope, discoverAgents } from "./agents.ts";
+import { mergeTask, planSlices, sliceTask } from "./slice.ts";
 
 const MAX_PARALLEL_TASKS = 8;
 const MAX_CONCURRENCY = 4;
@@ -161,7 +166,7 @@ interface SingleResult {
 }
 
 interface SubagentDetails {
-	mode: "single" | "parallel" | "chain";
+	mode: "single" | "parallel" | "chain" | "slice";
 	agentScope: AgentScope;
 	projectAgentsDir: string | null;
 	results: SingleResult[];
@@ -478,6 +483,20 @@ const SubagentParams = Type.Object({
 	agent: Type.Optional(Type.String({ description: "Name of the agent to invoke (for single mode)" })),
 	model: Type.Optional(Type.String({ description: "Override the model (provider/id) for single mode." })),
 	task: Type.Optional(Type.String({ description: "Task to delegate (for single mode)" })),
+	slice: Type.Optional(
+		Type.String({
+			description:
+				"Path to an artifact to read in windows for single mode. The file is split into line ranges that fit the agent model's context, one child per range, then merged. Use instead of task for a file larger than the model window.",
+		}),
+	),
+	sliceContextTokens: Type.Optional(
+		Type.Number({
+			description: "With slice: the target model's served context in tokens. Default 16384.",
+		}),
+	),
+	sliceReserveTokens: Type.Optional(
+		Type.Number({ description: "With slice: tokens reserved for the prompt and the reply. Default 2000." }),
+	),
 	tasks: Type.Optional(Type.Array(TaskItem, { description: "Array of {agent, task} for parallel execution" })),
 	chain: Type.Optional(Type.Array(ChainItem, { description: "Array of {agent, task} for sequential execution" })),
 	agentScope: Type.Optional(AgentScopeSchema),
@@ -511,11 +530,12 @@ export default function (pi: ExtensionAPI) {
 
 			const hasChain = (params.chain?.length ?? 0) > 0;
 			const hasTasks = (params.tasks?.length ?? 0) > 0;
-			const hasSingle = Boolean(params.agent && params.task);
-			const modeCount = Number(hasChain) + Number(hasTasks) + Number(hasSingle);
+			const hasSlice = Boolean(params.agent && params.slice);
+			const hasSingle = Boolean(params.agent && params.task) && !hasSlice;
+			const modeCount = Number(hasChain) + Number(hasTasks) + Number(hasSingle) + Number(hasSlice);
 
 			const makeDetails =
-				(mode: "single" | "parallel" | "chain") =>
+				(mode: "single" | "parallel" | "chain" | "slice") =>
 				(results: SingleResult[]): SubagentDetails => ({
 					mode,
 					agentScope,
@@ -564,6 +584,77 @@ export default function (pi: ExtensionAPI) {
 							details: makeDetails(hasChain ? "chain" : hasTasks ? "parallel" : "single")([]),
 						};
 				}
+			}
+
+			if (hasSlice) {
+				const filePath = params.slice as string;
+				let text: string;
+				try {
+					text = fs.readFileSync(filePath, "utf8");
+				} catch (error) {
+					return {
+						content: [{ type: "text", text: `Cannot read ${filePath}: ${String(error)}` }],
+						details: makeDetails("slice")([]),
+					};
+				}
+				const plan = planSlices({
+					text,
+					contextTokens: params.sliceContextTokens ?? 16_384,
+					...(params.sliceReserveTokens !== undefined ? { reserveTokens: params.sliceReserveTokens } : {}),
+				});
+				if (plan.slices.length > MAX_PARALLEL_TASKS) {
+					return {
+						content: [
+							{
+								type: "text",
+								text: `Too many slices (${plan.slices.length}) for ${filePath}. Raise sliceContextTokens or split the file first.`,
+							},
+						],
+						details: makeDetails("slice")([]),
+					};
+				}
+				const results = await mapWithConcurrencyLimit(plan.slices, MAX_CONCURRENCY, (slice) =>
+					runSingleAgent(
+						ctx.cwd,
+						dispatchDefaults,
+						agents,
+						params.agent as string,
+						params.model,
+						sliceTask(filePath, slice, plan.slices.length),
+						params.cwd,
+						undefined,
+						signal,
+						undefined,
+						makeDetails("slice"),
+					),
+				);
+				const ok = results.filter((r) => !isFailedResult(r));
+				if (ok.length === 0) {
+					return {
+						content: [{ type: "text", text: `Every slice failed for ${filePath}.` }],
+						details: makeDetails("slice")(results),
+					};
+				}
+				const merged = await runSingleAgent(
+					ctx.cwd,
+					dispatchDefaults,
+					agents,
+					params.agent as string,
+					params.model,
+					mergeTask(filePath, ok.map((r, i) => `### slice ${i + 1}\n${getResultOutput(r)}`).join("\n\n")),
+					params.cwd,
+					undefined,
+					signal,
+					undefined,
+					makeDetails("slice"),
+				);
+				const header = `Sliced ${filePath}: ${plan.totalLines} lines in ${plan.slices.length} window(s) of ~${plan.linesPerSlice} lines${
+					ok.length < results.length ? ` (${results.length - ok.length} failed)` : ""
+				}.`;
+				return {
+					content: [{ type: "text", text: `${header}\n\n${getResultOutput(merged)}` }],
+					details: makeDetails("slice")([...results, merged]),
+				};
 			}
 
 			if (params.chain && params.chain.length > 0) {
@@ -965,7 +1056,7 @@ export default function (pi: ExtensionAPI) {
 				return new Text(text, 0, 0);
 			}
 
-			if (details.mode === "parallel") {
+			if (details.mode === "parallel" || details.mode === "slice") {
 				const running = details.results.filter((r) => r.exitCode === -1).length;
 				const successCount = details.results.filter((r) => r.exitCode !== -1 && !isFailedResult(r)).length;
 				const failCount = details.results.filter((r) => r.exitCode !== -1 && isFailedResult(r)).length;

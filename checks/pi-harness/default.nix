@@ -47,6 +47,7 @@ let
           pkgs.jq
           pkgs.gnugrep
           pkgs.coreutils
+          pkgs.nodejs
         ];
       }
       ''
@@ -276,6 +277,19 @@ in
         echo "OK: jj, devenv and jq resolve; a zellij-llm pane inherits these via DEVENV_ROOT"
         touch $out
       '';
+
+  # 5b. The slice planner is deterministic, so prove it without a model.
+  pi-harness-slice-planner = mkRun {
+    name = "pi-harness-slice-planner";
+    model = models.qwen2_5_0_5b_instruct;
+    script = ''
+      cp ${../../packages/pi-coding-agent-extensions/subagent/slice.ts} slice.ts
+      cp ${../../packages/pi-coding-agent-extensions/subagent/slice.test.ts} slice.test.ts
+      node --experimental-strip-types --test slice.test.ts 2>&1 | tee test.log
+      grep -q "fail 0" test.log || { echo "FAIL: slice planner tests failed"; exit 1; }
+      echo "OK: slice planner splits within budget"
+    '';
+  };
 
   # 6. Delegation end to end on a model that can actually choose a tool. Qwen2.5-0.5B is the
   #    smallest measured to emit a real tool call, so this is the only check that exercises the
