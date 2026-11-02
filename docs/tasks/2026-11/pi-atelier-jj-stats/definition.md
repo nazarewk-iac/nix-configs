@@ -1,12 +1,16 @@
 ---
 type: Task
 description: Extend the vendored pi-atelier status rail with Jujutsu (jj) stats and with sub-agent performance stats (live and historical TTFT and tok/s). Records what exists today, what it costs to add, and the caveats.
-status: open
+status: done
 authored_by: agent
 timestamp: 2026-11-02T20:16:15+01:00
 ---
 
 # jj stats and sub-agent performance stats in pi-atelier
+
+> **Done.** Implemented in the fork `nazarewk-iac/pi-atelier` (branch
+> `nazarewk-iac/jj-and-stats`, rev `d7bf77f`), vendored by
+> `packages/pi-coding-agent-extensions/default.nix`. See [done.md](done.md).
 
 pi-atelier is vendored at `packages/pi-coding-agent-extensions/default.nix` (rev `93025f2`,
 v0.18.0). Two extensions are asked for:
