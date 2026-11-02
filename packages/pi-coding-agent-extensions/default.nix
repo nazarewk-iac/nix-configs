@@ -86,6 +86,10 @@ in
   # "send a 468 KB transcript to a 32k model", so this is the code that can.
   pi-orchestrator-gate = ./pi-orchestrator;
 
+  # Live fleet state for the orchestrator: which aliases are loaded, their served context, and the
+  # host headroom, in one tool. It degrades to the static view on a network fault.
+  fleet-status = ./fleet-status;
+
   timestamps = ./timestamps;
   idle-marker = ./idle-marker;
   subagent = ./subagent;

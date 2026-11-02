@@ -64,8 +64,58 @@ let
   purposeAliases = lib.filterAttrs (
     name: _: builtins.match "[a-z]+-(dumb|quick|std|deep)-[a-z]+(-[a-z]+)*(-alt)?" name != null
   ) aliasToModel;
+
+  # The orchestrator's model catalog, as a compact aligned table for the system prompt.
+  #
+  # One row per PURPOSE ALIAS, not per model: the orchestrator picks an intent (`chat-std-fast`),
+  # so the alias is the key it needs. Columns are what the alias name does not already say:
+  #
+  #   alias      the intent the orchestrator names in `delegate`
+  #   ctx        served context (tokens) — the hard filter
+  #   op         cpu | gpu — where it runs
+  #   load~s     estimated cold-load seconds — is a switch affordable?
+  #   vision     `yes` when the model accepts images
+  #   model      the served base id, for a human reading a trace
+  #
+  # A model with no `capabilities` still appears, with `-` for op/load, so the row count matches
+  # what can actually be delegated to. Sorted by alias, so the prompt is stable across renders.
+  #
+  # The table is padded to aligned columns in the source, but the prompt only needs one space; a
+  # consumer that wants a fixed width pipes it through a formatter. Keep it plain text: the model
+  # reads it, so no box drawing.
+  mkCatalog =
+    let
+      rows = lib.concatMap (
+        name:
+        let
+          m = data.models.${name};
+          caps = m.capabilities or { };
+          aliases = m.aliases or [ ];
+          ctx = toString (lib.min (m.pi.contextWindow or data.pi.defaults.contextWindow) m.contextSize);
+        in
+        map (alias: {
+          inherit alias ctx name;
+          op = caps.operation or "-";
+          load = if caps ? loadSeconds then toString caps.loadSeconds else "-";
+          vision = if m.vision or false then "yes" else "-";
+        }) aliases
+      ) (builtins.attrNames data.models);
+
+      table = lib.sort (a: b: a.alias < b.alias) rows;
+
+      fmt = r: "${r.alias}\t${r.ctx}\t${r.op}\t${r.load}\t${r.vision}\t${r.name}";
+      headerRow = {
+        alias = "alias";
+        ctx = "ctx";
+        op = "op";
+        load = "load~s";
+        vision = "vision";
+        name = "model";
+      };
+    in
+    lib.concatStringsSep "\n" (map fmt ([ headerRow ] ++ table));
 in
 {
   inherit data aliasToModel purposeAliases;
-  inherit mkPiModelsJson;
+  inherit mkPiModelsJson mkCatalog;
 }

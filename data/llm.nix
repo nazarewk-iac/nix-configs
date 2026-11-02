@@ -22,6 +22,20 @@
 # an output cap. Those live under `<model>.pi`, and under `.opencode` when a tool needs its own
 # view. A missing sub-config means "use the tool's global default" (`pi.defaults` below).
 #
+# ## Capability hints
+#
+# `<model>.capabilities` carries what the alias name cannot say, read by the orchestrator's model
+# catalog (`lib/llm.nix` renders it into the system prompt):
+#
+#   * `operation`  — `cpu` or `gpu`: where the model is served. A GPU model loads in seconds; a
+#                    CPU model can take a minute. It decides whether a switch is affordable.
+#   * `loadSeconds` — the ESTIMATED cold-load time. An order-of-magnitude hint (1 s vs 90 s), not
+#                    a prediction; it drifts with host load. Measured classes are recorded in
+#                    `docs/tasks/2026-10/llama-swap-concurrency/` and `hosts/brys/performance.md`.
+#
+# Only models that a caller picks by purpose alias carry `capabilities`; a bare-id model needs no
+# hint because nothing routes to it by intent.
+#
 # ## Deliberately NOT here
 #
 # Server runtime knobs that are not part of a model's identity: threads, flash-attn, device pin,
@@ -100,6 +114,10 @@ in
       ];
       contextSize = 1024 * K; # 1M
       gpu = false;
+      capabilities = {
+        operation = "cpu";
+        loadSeconds = 90;
+      };
       # The frontier is the one model worth a real client budget: 512k of the served 1M. A long
       # orchestrator session on a 127-message transcript needs more than the 384k default.
       pi = {
@@ -114,6 +132,10 @@ in
       ];
       contextSize = 128 * K;
       gpu = false;
+      capabilities = {
+        operation = "cpu";
+        loadSeconds = 60;
+      };
       pi.maxTokens = 16 * K;
     };
 
@@ -124,11 +146,19 @@ in
       # model's own limit. Cite the real number.
       contextSize = 40 * K;
       gpu = false;
+      capabilities = {
+        operation = "cpu";
+        loadSeconds = 45;
+      };
     };
     "qwen3-next-80b" = {
       aliases = [ "balanced" ];
       contextSize = 128 * K;
       gpu = false;
+      capabilities = {
+        operation = "cpu";
+        loadSeconds = 120;
+      };
     };
     "qwen3.8-27b" = {
       # Native 256k. Served at 128k so it can be co-resident with the frontier (23.3 GiB);
@@ -142,6 +172,10 @@ in
         "tools-deep-slow"
       ];
       gpu = false;
+      capabilities = {
+        operation = "cpu";
+        loadSeconds = 40;
+      };
       vision = true;
       pi.maxTokens = 8 * K;
     };
@@ -152,6 +186,10 @@ in
       ];
       contextSize = 32 * K;
       gpu = false;
+      capabilities = {
+        operation = "cpu";
+        loadSeconds = 15;
+      };
     };
     "mellum-2.1-12b-a2.5b-thinking" = {
       aliases = [
@@ -160,6 +198,10 @@ in
       ];
       contextSize = 32 * K;
       gpu = false;
+      capabilities = {
+        operation = "cpu";
+        loadSeconds = 12;
+      };
     };
     "nemotron-3-nano-30b-a3b" = {
       aliases = [
@@ -168,6 +210,10 @@ in
       ];
       contextSize = 32 * K;
       gpu = false;
+      capabilities = {
+        operation = "cpu";
+        loadSeconds = 20;
+      };
     };
     "north-mini-code-1.0" = {
       aliases = [
@@ -176,17 +222,29 @@ in
       ];
       contextSize = 32 * K;
       gpu = false;
+      capabilities = {
+        operation = "cpu";
+        loadSeconds = 15;
+      };
     };
     "qwen3.5-35b-a3b" = {
       # Native 256k, and cheap enough (25.1 GiB) to sit beside the frontier.
       aliases = [ "chat-std-mid" ];
       contextSize = 256 * K;
       gpu = false;
+      capabilities = {
+        operation = "cpu";
+        loadSeconds = 25;
+      };
     };
     "qwen3-vl-8b-instruct" = {
       aliases = [ "vision-quick-fast" ];
       contextSize = 32 * K;
       gpu = false;
+      capabilities = {
+        operation = "gpu";
+        loadSeconds = 3;
+      };
       vision = true;
     };
     "qwen3-vl-30b-a3b" = {
@@ -196,29 +254,49 @@ in
       ];
       contextSize = 32 * K;
       gpu = false;
+      capabilities = {
+        operation = "cpu";
+        loadSeconds = 20;
+      };
       vision = true;
     };
     "qwen3-omni-30b-a3b" = {
       aliases = [ "audio-std-mid" ];
       contextSize = 32 * K;
       gpu = false;
+      capabilities = {
+        operation = "cpu";
+        loadSeconds = 20;
+      };
       vision = true;
     };
     "ornith-1.5-35b-a3b" = {
       aliases = [ "vision-std-fast-alt" ];
       contextSize = 32 * K;
       gpu = false;
+      capabilities = {
+        operation = "cpu";
+        loadSeconds = 25;
+      };
       vision = true;
     };
     "qwen3-embedding-4b" = {
       aliases = [ "embed-std-fast" ];
       contextSize = 8 * K;
       gpu = false;
+      capabilities = {
+        operation = "gpu";
+        loadSeconds = 2;
+      };
     };
     "qwen3-reranker-4b" = {
       aliases = [ "rank-std-fast" ];
       contextSize = 8 * K;
       gpu = false;
+      capabilities = {
+        operation = "gpu";
+        loadSeconds = 2;
+      };
     };
 
     # ---- small GPU models
@@ -226,12 +304,20 @@ in
       aliases = [ "tiny-dumb-fast" ];
       contextSize = 16 * K;
       gpu = true;
+      capabilities = {
+        operation = "gpu";
+        loadSeconds = 1;
+      };
       stats.parallel = 4;
     };
     "qwen3.5-2b" = {
       aliases = [ "tiny-dumb-fast-alt" ];
       contextSize = 16 * K;
       gpu = true;
+      capabilities = {
+        operation = "gpu";
+        loadSeconds = 1;
+      };
       stats.parallel = 4;
     };
     "qwen3.5-4b" = {
@@ -243,6 +329,10 @@ in
       ];
       contextSize = 16 * K;
       gpu = true;
+      capabilities = {
+        operation = "gpu";
+        loadSeconds = 2;
+      };
     };
     "tmax-2b" = {
       contextSize = 16 * K;
@@ -256,6 +346,10 @@ in
       ];
       contextSize = 16 * K;
       gpu = true;
+      capabilities = {
+        operation = "gpu";
+        loadSeconds = 1;
+      };
     };
     "ministral-3-3b-instruct" = {
       contextSize = 16 * K;
@@ -265,6 +359,10 @@ in
       aliases = [ "reason-quick-fast-alt" ];
       contextSize = 16 * K;
       gpu = true;
+      capabilities = {
+        operation = "gpu";
+        loadSeconds = 1;
+      };
     };
     "gemma-4-e2b" = {
       contextSize = 16 * K;
@@ -282,6 +380,10 @@ in
       aliases = [ "tools-std-fast-alt" ];
       contextSize = 16 * K;
       gpu = true;
+      capabilities = {
+        operation = "gpu";
+        loadSeconds = 3;
+      };
     };
     "ministral-3-8b-instruct" = {
       contextSize = 16 * K;
