@@ -227,8 +227,10 @@ in
     # (key/svc auth) on PATH. The brys-specific model/proxy wiring lives in the
     # hostname-gated profile below.
     #
-    # These three values belong to this repository, not to the aspect. The aspect defaults
-    # are neutral (an empty provider set, the store path only, and no credential).
+    # These values belong to this repository, not to the aspect. The aspect defaults are
+    # neutral (an empty provider set, the store path only, and no credential). The Requesty
+    # cloud provider is enabled but hardcodes no model; the local fleet provider is added by
+    # the hostname-gated profiles below.
     kdn.opencode.settings.provider.requesty = { };
     kdn.opencode.allowedPaths = [
       "/nix/store/**"
@@ -236,8 +238,8 @@ in
     ];
     kdn.opencode.authKeys.REQUESTY_API_KEY = "requesty";
 
-    # brys-specific profile: feeds the rich provider/model config and the model proxies
-    # (requesty :9526, local llama-swap :9533). Auto-activated only on a host whose hostname
+    # brys-specific profile: feeds the local provider/model config and the model proxy
+    # (local llama-swap :9533). Auto-activated only on a host whose hostname
     # is "brys"; every other host keeps the benign global opencode skeleton.
     profiles.hostname."brys".module = import ./hosts/brys/devenv.nix;
 

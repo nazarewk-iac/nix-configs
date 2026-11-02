@@ -114,8 +114,9 @@ in
   # skeleton, and provides the `opencode` wrapper. `kdn.llm.client` adds the per-upstream
   # provider, and wires the API key itself from `apiKeyFile`.
   #
-  # The slot defaults are neutral now. These two settings keep the behaviour that the old
-  # slot defaults gave on this host.
+  # These two settings keep the behaviour the old slot defaults gave on this host: the
+  # Requesty cloud provider (auth from auth.json, hardcodes no model) and its credential,
+  # plus the local brys fleet reached through `kdn.llm.client.upstreams.brys` below.
   kdn.opencode.settings.provider.requesty = { };
   # The subagent set. Two families:
   #   * `tierAgents` — one agent per (base model, thinking level): `qwen-high`,

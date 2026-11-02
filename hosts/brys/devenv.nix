@@ -6,7 +6,7 @@
 # so den collapses the diamond and one wrapper reaches this shell.
 #
 # It enables the in-devenv opencode capability with the brys-specific model wiring:
-#   - requesty routed through the DSML proxy (:9526, forwardClientAuth)
+#   - requesty via the DSML proxy (:9526, forwardClientAuth), hardcoding no model
 #   - the local llama-swap model routed through a local DSML proxy (:9533)
 #
 # Only the host whose hostname is `brys` auto-activates this profile, so the rich
@@ -22,25 +22,20 @@
     aspects = [ "llm-proxy" ];
   };
 
-  # The slot named no credential of its own, so this line keeps the wrapper's
-  # REQUESTY_API_KEY export that the `requesty-proxy` provider below reads.
+  # The wrapper exports REQUESTY_API_KEY; the `requesty-proxy` provider below reads it.
   kdn.opencode.authKeys.REQUESTY_API_KEY = "requesty";
   kdn.opencode.settings = {
     provider = {
-      # Native requesty — direct API, auth from auth.json.
+      # Native requesty — direct API, auth from auth.json; no model is hardcoded.
       requesty = { };
-      # Requesty via DSML proxy; needs REQUESTY_API_KEY (see the opencode wrapper).
+      # Requesty via the DSML proxy; needs REQUESTY_API_KEY. No model is hardcoded here: the
+      # client discovers the catalog, so a model is never pinned to one that later goes away.
       requesty-proxy = {
         npm = "@ai-sdk/openai-compatible";
-        name = "DeepSeek V4 Flash (Requesty via DSML proxy)";
+        name = "Requesty (via DSML proxy)";
         options = {
           baseURL = "http://127.0.0.1:9532/v1";
           apiKey = "{env:REQUESTY_API_KEY}";
-        };
-        models."sference/deepseek-v4-flash-0731" = {
-          name = "deepseek-v4-flash-0731 (proxied)";
-          limit.context = 65536;
-          limit.output = 8192;
         };
       };
       # Local llama-swap model via the local DSML proxy; no auth.
