@@ -232,6 +232,7 @@ in
         "grunt"
         "chat-dumb-fast"
         "code-quick-fast"
+        "code-std-fast"
         "tiny-quick-fast"
       ];
       capabilities = {
@@ -689,34 +690,6 @@ in
           };
           enable = true;
           hfFile = "nemotron-3.5-lightning-30b.gguf";
-          hfRepo = "surveyed";
-          perf = {
-            parallel = 1;
-            threads = 8;
-          };
-        };
-      };
-    };
-    "north-mini-code-1.0" = {
-      aliases = [
-        "code-std-fast"
-        "code-std-fast-moe"
-      ];
-      capabilities = {
-        loadSeconds = 15;
-        operation = "cpu";
-      };
-      gpu = false;
-      contextSize = 32768;
-      hosts.brys = {
-        set = "surveyed";
-        servedContext = 32768;
-        common = {
-          download = {
-            enable = false;
-          };
-          enable = true;
-          hfFile = "north-mini-code-1.0.gguf";
           hfRepo = "surveyed";
           perf = {
             parallel = 1;
