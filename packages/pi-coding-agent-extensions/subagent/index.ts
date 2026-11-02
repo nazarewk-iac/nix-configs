@@ -641,7 +641,16 @@ export default function (pi: ExtensionAPI) {
 					agents,
 					params.agent as string,
 					params.model,
-					mergeTask(filePath, ok.map((r, i) => `### slice ${i + 1}\n${getResultOutput(r)}`).join("\n\n")),
+					mergeTask(
+						filePath,
+						// Pair each completed child with its slice index so the merge input is in
+						// CHUNK order regardless of which child finished first.
+						results
+							.map((r, i) => ({ r, i }))
+							.filter(({ r }) => !isFailedResult(r))
+							.map(({ r, i }) => `### CHUNK ${i + 1}\n${getResultOutput(r)}`)
+							.join("\n\n"),
+					),
 					params.cwd,
 					undefined,
 					signal,

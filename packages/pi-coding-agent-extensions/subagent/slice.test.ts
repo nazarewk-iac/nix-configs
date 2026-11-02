@@ -40,12 +40,14 @@ describe("planSlices", () => {
 });
 
 describe("sliceTask", () => {
-	it("names the exact offset and limit the child must read", () => {
+	it("precomputes the 1-indexed offset so the child does no arithmetic", () => {
 		const task = sliceTask("/a/b.md", { index: 2, startLine: 201, endLine: 400 }, 5);
 		assert.ok(String(task).includes("lines 201-400"));
-		assert.ok(String(task).includes("offset=200"));
+		// read's offset is 1-indexed: the offset IS the start line, not start-1.
+		assert.ok(String(task).includes("offset=201"));
 		assert.ok(String(task).includes("limit=200"));
-		assert.ok(String(task).includes("slice 3 of 5"));
+		assert.ok(String(task).includes("chunk 3 of 5"));
+		assert.ok(String(task).includes("CHUNK 3"));
 	});
 });
 
@@ -54,6 +56,6 @@ describe("mergeTask", () => {
 		const task = mergeTask("/a/b.md", "### slice 1\nfoo\n\n### slice 2\nbar");
 		assert.ok(String(task).includes("/a/b.md"));
 		assert.ok(String(task).includes("### slice 1"));
-		assert.match(task, /Do not invent/);
+		assert.match(task, /invent/);
 	});
 });

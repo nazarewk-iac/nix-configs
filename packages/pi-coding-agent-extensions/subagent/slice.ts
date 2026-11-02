@@ -75,29 +75,44 @@ export function planSlices(options: PlanSlicesOptions): SlicePlan {
 }
 
 /**
- * The instruction for one slice. It names the exact range so the child reads only that window,
- * and it asks for a compact structured summary rather than prose.
+ * The instruction for one slice.
+ *
+ * Every number is PRE-COMPUTED and printed literally: `read`'s `offset` is 1-indexed, and a small
+ * model must not do arithmetic to turn a chunk index into an offset. The child's only job is to
+ * copy `offset` and `limit` from the text into the `read` call.
+ *
+ * It also asks for a one-line "CHUNK n" header on the output, so a later merge pass can order the
+ * summaries by chunk number even if the children finish out of order.
  */
 export function sliceTask(path: string, slice: Slice, total: number): string {
 	return [
-		`Read ONLY lines ${slice.startLine}-${slice.endLine} of ${path}`,
-		`(slice ${slice.index + 1} of ${total}; use read with offset=${slice.startLine - 1} limit=${
-			slice.endLine - slice.startLine + 1
-		}).`,
+		`Read lines ${slice.startLine}-${slice.endLine} of ${path}.`,
+		"Call read with exactly these two numbers (copy them; do not calculate):",
+		`  offset=${slice.startLine}`,
+		`  limit=${slice.endLine - slice.startLine + 1}`,
 		"",
-		"Return a compact structured summary of exactly those lines:",
+		`This is chunk ${slice.index + 1} of ${total}.`,
+		"",
+		"Then return a compact structured summary of those lines. Start your reply with the literal line",
+		`CHUNK ${slice.index + 1}`,
+		"and then:",
 		"- concrete facts only (paths, commands, options, commit messages, errors, exit codes);",
-		"- no reasoning, no preamble, no conclusion you cannot see in the text;",
+		"- no reasoning, no preamble, nothing you cannot see in the text;",
 		"- if the range starts or ends mid-thought, say so in one line.",
 	].join("\n");
 }
 
-/** The instruction for the merge pass over the per-slice summaries. */
+/**
+ * The instruction for the merge pass. Each summary already carries its `CHUNK n` header, so the
+ * merge child sorts by that number rather than relying on arrival order, and joins them.
+ */
 export function mergeTask(path: string, summaries: string): string {
 	return [
-		`Below are summaries of consecutive slices of ${path}, in order.`,
-		"Merge them into ONE structured summary of the whole artifact. Keep every distinct concrete",
-		"fact; drop repetition; keep the original order. Do not invent anything not present.",
+		`Below are summaries of consecutive chunks of ${path}. Each starts with "CHUNK n".`,
+		"Merge them into ONE structured summary of the whole file:",
+		"- process the chunks in ascending CHUNK number, whatever their order here;",
+		"- keep every distinct concrete fact; drop repetition; keep the original order;",
+		"- do not invent anything not present.",
 		"",
 		summaries,
 	].join("\n");
