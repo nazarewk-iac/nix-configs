@@ -93,4 +93,23 @@ in
   timestamps = ./timestamps;
   idle-marker = ./idle-marker;
   subagent = ./subagent;
+
+  # pi-atelier: a responsive status rail and live activity sidebar (model, context, git status,
+  # usage, tool/agent activity, per-subagent cost curves, prefill progress). It is the status
+  # surface for the Pi harness in place of the OpenCode built-ins. Vendored from a pinned commit;
+  # zero runtime dependencies (only the Pi host peers), so no `npmDeps` tree is needed.
+  pi-atelier =
+    let
+      rev = "93025f2adb5bd8ce005ef8c7dee59deaf6385f03";
+      version = "0.18.0";
+      src = pkgs.fetchzip {
+        url = "https://github.com/michaelmjhhhh/pi-atelier/archive/${rev}.tar.gz";
+        hash = "sha256-qMOVYgquuy2Z5UsJ3IuDVfIOQYKFqWT4fHNZxcpGPig=";
+        stripRoot = true;
+      };
+    in
+    mkExtension {
+      name = "pi-atelier-${version}";
+      inherit src;
+    };
 }

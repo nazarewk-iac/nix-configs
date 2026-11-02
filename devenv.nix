@@ -108,6 +108,10 @@ let
               # Live fleet state (loaded aliases, served context, host headroom) so the
               # orchestrator can pick a model from intent AND cost, not a fixed tier.
               ext.fleet-status
+              # Status rail and live activity sidebar: model, context, usage, git status,
+              # tool/agent activity and per-subagent cost. The Pi-harness status surface in
+              # place of the OpenCode built-ins.
+              ext.pi-atelier
             ];
           };
         }
