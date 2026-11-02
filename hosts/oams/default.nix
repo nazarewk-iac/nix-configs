@@ -121,6 +121,11 @@ in
 
       boot.kernelModules = [ "kvm-amd" ];
 
+      # Cap the ZFS ARC at 8 GiB, the same value brys uses. Without it the ARC grows to about
+      # half of RAM (measured ~25 GiB of 62 GiB here) and competes with a Pi harness that spawns
+      # one process per subagent. 8 GiB still caches ordinary file I/O. 8589934592 = 8 GiB.
+      boot.kernelParams = [ "zfs.zfs_arc_max=8589934592" ];
+
       # 12G was not enough for large rebuild
       boot.tmp.tmpfsSize = "32G";
     }
