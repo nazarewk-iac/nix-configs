@@ -29,12 +29,12 @@
 }:
 let
   # The whole local-LLM serving config, shared with the main brys profile
-  # (./llm-config.nix). The appliance passes the full 320K DeepSeek context because it
-  # owns the box; the desktop passes 128K because it shares RAM with a browser. That is
-  # the only difference.
+  # (./llm-config.nix). The appliance boots the `appliance` profile, which serves DeepSeek
+  # at 320K because it owns the box; the desktop profile serves 128K. That is the only
+  # difference, and it lives in `data/llm.nix`, not here.
   llm = import ./llm-config.nix {
     inherit lib pkgs kdnConfig;
-    contextSize = 327680;
+    profile = "appliance";
   };
 in
 import ./llm-appliance.nix {

@@ -2,55 +2,46 @@
 #
 # ## What lives here
 #
-# One entry per SERVED MODEL, plus the endpoint it is reached through. Every consumer derives
-# from this file and none of them repeats a model id, an alias or a context size:
+# One entry per SERVED MODEL, plus the endpoint it is reached through and the
+# cross-model serving data for each host. Every consumer derives from this file
+# and none of them repeats a model id, an alias or a context size:
 #
-#   * the server        `hosts/brys/llm-routers.nix` reads `aliases`, `contextSize`, `gpu`, and the
-#                       per-model serve flags (`stats`), so brys stops declaring them itself.
-#   * the Pi client     `lib/llm.nix` renders `models.json` from `contextSize` + `pi.*`.
-#   * the OpenCode      `hosts/brys/llm-agents.nix` builds one sub-agent per purpose alias.
-#     client
+#   * the server   `hosts/brys/llm.nix` projects `mkServerModels data "brys" <profile>`
+#                  into `kdn.llm.local`: what to load, which router, what per-host perf.
+#   * the client   `lib/llm.nix` renders Pi's `models.json` and the orchestrator catalog
+#                  from each model's identity (`contextSize`, `pi.*`, `capabilities`, `vision`).
+#   * the member   `lib/llm.nix`'s `mkMemberView data "<host>"` gives a host the endpoint and
+#                  the alias-to-model map, with no serving plumbing (no file, no perf, no port).
+#
+# See docs/tasks/2026-11/fleet-llm-data-model/design.md for the shape and the review record.
 #
 # ## Pure data
 #
-# No imports, no `pkgs`, no host facts beyond the endpoint. An adopter replaces this file with
-# their own fleet and every consumer follows.
+# No imports, no `pkgs`, no host-specific store paths. A host supplies the few
+# values that need `pkgs`/`self` (the package, the TLS cert path) when it builds
+# `kdn.llm.local`; everything model-shaped is here. An adopter replaces this file
+# with their own fleet and every consumer follows.
 #
-# ## The per-tool sub-config
+# ## Identity vs serving
 #
-# A client sometimes needs more than the served size: Pi needs a client-side context budget and
-# an output cap. Those live under `<model>.pi`, and under `.opencode` when a tool needs its own
-# view. A missing sub-config means "use the tool's global default" (`pi.defaults` below).
+# A model's IDENTITY is the same on every host: `aliases`, `contextSize` (native),
+# `capabilities`, `pi`, `vision`, `gpu`, `source`. Its SERVING data is per host:
+# `hosts.<host>.set` (the router), `hosts.<host>.servedContext` (the window this
+# host serves), `hosts.<host>.common` (file, download, mmproj, draft, perf), and an
+# optional `hosts.<host>.profiles.<profile>` delta (a boot profile that differs).
 #
-# ## Capability hints
+# ## Context values
 #
-# `<model>.capabilities` carries what the alias name cannot say, read by the orchestrator's model
-# catalog (`lib/llm.nix` renders it into the system prompt):
-#
-#   * `operation`  — `cpu` or `gpu`: where the model is served. A GPU model loads in seconds; a
-#                    CPU model can take a minute. It decides whether a switch is affordable.
-#   * `loadSeconds` — the ESTIMATED cold-load time. An order-of-magnitude hint (1 s vs 90 s), not
-#                    a prediction; it drifts with host load. Measured classes are recorded in
-#                    `docs/tasks/2026-10/llama-swap-concurrency/` and `hosts/brys/performance.md`.
-#
-# Only models that a caller picks by purpose alias carry `capabilities`; a bare-id model needs no
-# hint because nothing routes to it by intent.
-#
-# ## Deliberately NOT here
-#
-# Server runtime knobs that are not part of a model's identity: threads, flash-attn, device pin,
-# chat-template fallbacks, slot counts. Those stay in `hosts/brys/llm-routers.nix`, because they
-# describe how THIS host serves a model, not what the model is.
+# `contextSize`        (identity)            the NATIVE trained window.
+# `servedContext`      (model x host)        the window this host serves.
+# `profiles.<p>.servedContext` (x profile)   the window a specific boot profile serves.
+# Precedence: profile ?? host ?? native.
 let
-  # `K` is 1024, so a size reads like the number a human would say: `384 * K`, `32 * K`. Every
-  # context and output value in this file uses it. It is a `let` binding because this file is
-  # data plus this one helper, not a module.
+  # `K` is 1024, so a size reads like the number a human would say: `384 * K`, `32 * K`.
   K = 1024;
 in
 {
   # ---------------------------------------------------------------- endpoints
-  # The client-facing base URL and the API dialect. `apiKey` is a runtime command reference, so no
-  # secret is stored here.
   endpoints = {
     brys = {
       baseUrl = "https://brys.priv.nb.net.int.kdn.im/v1";
@@ -60,19 +51,13 @@ in
   };
 
   # ---------------------------------------------------------------- client-wide defaults
-  #
-  # What the Pi client uses when a model has no `pi` sub-config of its own.
-  #
-  # `contextWindow` is a BUDGET, not the served size: a 1M model is cheap to request and
-  # expensive to hold in RAM, so a session stops at 384k by default. `maxTokens` is an explicit
-  # per-model number below; the fallback here is only for a model that sets none.
   pi = {
     defaults = {
       contextWindow = 384 * K;
       maxTokens = 4 * K;
     };
-    # Extra label-only aliases for the frontier, so a caller picks a context budget without a
-    # config edit. Each is the SAME server model with a different client-side window.
+    # Extra label-only aliases for the frontier, so a caller picks a context budget
+    # without a config edit. Each is the SAME server model with a different window.
     aliases = {
       "128k" = 128 * K;
       "256k" = 256 * K;
@@ -81,244 +66,220 @@ in
     };
   };
 
-  # ---------------------------------------------------------------- model limits
+  # ---------------------------------------------------------------- servers
   #
-  # Verified from each model's Hugging Face `config.json` (`max_position_embeddings`) on
-  # 2026-11-01, not from memory. `native` is what the model was trained to hold; a larger
-  # `contextSize` needs rope scaling (YaRN), which only the frontier uses today.
-  #
-  #   model               native    extended   notes
-  #   qwen3.8-flash-next  256k      1M         YaRN x4 (--rope-scale 4, --yarn-orig-ctx 262144)
-  #   qwen3.8-27b         256k      1M         extensible, not enabled
-  #   qwen3.5-35b-a3b     256k      1M         extensible, not enabled
-  #   qwen3-next-80b      256k      -          no files on disk, cannot be served
-  #   qwen3-30b-a3b       40960     -          native is ONLY 40k; 128k would exceed it
-  #
-  # Measured RSS on brys (the number that decides co-residence):
-  #   qwen3.8-flash-next @1M   54.1 GiB
-  #   qwen3.8-27b        @128k 23.3 GiB   @256k 31.5 GiB
-  #   qwen3.5-35b-a3b    @256k 25.1 GiB
-  #   available RAM 106 GiB -> frontier + 27b@128k + 35b@256k = 102.5 GiB, which fits.
-  #   frontier + both at 256k = 110.6 GiB, which does NOT.
+  # Cross-model serving data for a host. Pure: the host adds `package` (mapped
+  # to a `pkgs` attr) and the TLS cert path (`self`), which need the build inputs.
+  servers = {
+    brys = {
+      # A named key; the host maps it to `pkgs.kdn.<key>`. `withGrunt` on brys selects
+      # the Vulkan no-BLAS build with the session-cache patches.
+      package = "llama-cpp-sessions-vulkan-noblas";
+      defaultThreads = 16;
+      modelsDir = "/var/lib/kdn/llms/models";
+      download = {
+        tokenFile = "/run/configs/llms/huggingface/token";
+        mode = "fast-polite";
+        xetConcurrency = 8;
+      };
+      apiKeyDir = "/run/configs/llms/llama-server/api-keys";
+
+      # Disk-backed session cache for the Qwen specialisations. A model opts in with
+      # `perf.sessionHeaders`. Persisted under usr/cache and pruned to maxBytes.
+      sessionStore = {
+        path = "/var/lib/kdn/llms/sessions";
+        group = "llama-cpp-sessions";
+        maxBytes = 200 * 1024 * 1024 * 1024;
+      };
+
+      # Extra routers on this host. `main` is llama-swap's primary router (the
+      # primary `services.llama-cpp` server), so it is not listed here; it is
+      # selected by `set = "main"` below. These two are extra routers.
+      routers = {
+        grunt = {
+          enable = true;
+          port = 39705;
+          threads = 8;
+          modelsMax = 1;
+          apiKeyDir = "/run/configs/llms/llama-server/api-keys";
+        };
+        surveyed = {
+          enable = true;
+          port = 39706;
+          threads = 8;
+          modelsMax = 1;
+          apiKeyDir = "/run/configs/llms/llama-server/api-keys";
+        };
+      };
+
+      # Cross-model serving policy, the resolved value. `coResidentTiers` is the
+      # resolved list of co-residence groups: one tier of mutually-exclusive GPU
+      # (Vulkan0) models, then the CPU models that may hold RAM beside the frontier.
+      swap = {
+        enable = true;
+        routerEngine = "matrix";
+        debug = true;
+        coResidentTiers = [
+          [
+            "gemma-4-e2b"
+            "gemma-4-e4b"
+            "granite-4.2-3b"
+            "granite-4.2-8b"
+            "mimo-v2.6-qwen-9b"
+            "ministral-3-3b-instruct"
+            "ministral-3-3b-reasoning"
+            "ministral-3-8b-instruct"
+            "ministral-3-8b-reasoning"
+            "olmo-3-7b-instruct"
+            "qwen3.5-0.8b"
+            "qwen3.5-2b"
+            "qwen3.5-4b"
+            "qwen3.5-9b"
+            "tmax-2b"
+            "tmax-9b"
+          ]
+          [ "qwen3.8-27b" ]
+          [ "qwen3.5-35b-a3b" ]
+        ];
+        persistentModels = [
+          "deepseek-v4-flash"
+          "qwen3.8-flash-next"
+        ];
+        vulkanDeviceSelect = "1002:73e3!";
+      };
+
+      # Boot profiles: WHICH ROUTERS ARE SERVED. A model is served when its
+      # `hosts.brys.set` is one of these names.
+      profiles = {
+        desktop = {
+          sets = [
+            "main"
+            "grunt"
+            "surveyed"
+          ];
+        };
+        appliance = {
+          sets = [
+            "main"
+            "grunt"
+            "surveyed"
+          ];
+        };
+      };
+    };
+  };
 
   # ---------------------------------------------------------------- models
   #
-  # `contextSize` is what llama-server serves. `gpu` is full W6600 offload. `vision` means a
-  # multimodal projector is attached. `stats` are serve flags the router passes through.
+  # One entry per served model. Identity on top; `hosts.brys` is the serving data.
+  # `common` is what llama-server needs to load the model; `perf` is the preset INI.
   models = {
-    # ---- frontier (CPU, very large context)
-    "qwen3.8-flash-next" = {
-      aliases = [
-        "qwen"
-        "orchestrate-deep-slow"
-      ];
-      contextSize = 1024 * K; # 1M
-      gpu = false;
-      capabilities = {
-        operation = "cpu";
-        loadSeconds = 90;
-      };
-      # The frontier is the one model worth a real client budget: 512k of the served 1M. A long
-      # orchestrator session on a 127-message transcript needs more than the 384k default.
-      pi = {
-        contextWindow = 512 * K;
-        maxTokens = 32 * K;
-      };
-    };
     "deepseek-v4-flash" = {
       aliases = [
         "frontier"
         "orchestrate-deep-slow-alt"
       ];
-      contextSize = 128 * K;
-      gpu = false;
       capabilities = {
-        operation = "cpu";
         loadSeconds = 60;
-      };
-      pi.maxTokens = 16 * K;
-    };
-
-    # ---- survey set: CPU, mid context
-    "qwen3-30b-a3b" = {
-      aliases = [ "fast" ];
-      # Upstream config.json says max_position_embeddings = 40960, so the old 128k exceeded the
-      # model's own limit. Cite the real number.
-      contextSize = 40 * K;
-      gpu = false;
-      capabilities = {
         operation = "cpu";
-        loadSeconds = 45;
       };
-    };
-    "qwen3-next-80b" = {
-      aliases = [ "balanced" ];
-      contextSize = 128 * K;
+      pi = {
+        maxTokens = 16384;
+      };
       gpu = false;
-      capabilities = {
-        operation = "cpu";
-        loadSeconds = 120;
+      contextSize = 131072;
+      hosts.brys = {
+        set = "main";
+        servedContext = 131072;
+        common = {
+          download = {
+            enable = true;
+            glob = "UD-IQ3_XXS/DeepSeek-V4-Flash-UD-IQ3_XXS-*.gguf";
+          };
+          draft = {
+            enable = true;
+            hfFile = "dspark-DeepSeek-V4-Flash-0731-Q8_0.gguf";
+            hfRepo = "unsloth/DeepSeek-V4-Flash-0731-GGUF";
+          };
+          enable = true;
+          hfFile = "UD-IQ3_XXS/DeepSeek-V4-Flash-UD-IQ3_XXS-00001-of-00004.gguf";
+          hfRepo = "unsloth/DeepSeek-V4-Flash-GGUF";
+          perf = {
+            batchSize = 4096;
+            kvUnified = true;
+            mmap = null;
+            parallel = 2;
+            reasoning = "auto";
+            reasoningEffort = "low";
+            specDraftNMax = 5;
+            specType = "draft-dspark";
+            ubatchSize = 4096;
+          };
+        };
+        profiles = {
+          appliance = {
+            servedContext = 327680;
+          };
+          desktop = {
+            servedContext = 131072;
+          };
+        };
       };
     };
-    "qwen3.8-27b" = {
-      # Native 256k. Served at 128k so it can be co-resident with the frontier (23.3 GiB);
-      # 256k would be 31.5 GiB and would not fit beside it.
-      contextSize = 128 * K;
+    "qwen3.8-flash-next" = {
       aliases = [
-        "chat-deep-slow"
-        "code-deep-slow"
-        "vision-deep-slow"
-        "reason-deep-slow"
-        "tools-deep-slow"
+        "qwen"
+        "orchestrate-deep-slow"
       ];
-      gpu = false;
       capabilities = {
+        loadSeconds = 90;
         operation = "cpu";
-        loadSeconds = 40;
       };
-      vision = true;
-      pi.maxTokens = 8 * K;
-    };
-    "lfm2.5-24b-a2b" = {
-      aliases = [
-        "chat-std-fast"
-        "tools-std-fast"
-      ];
-      contextSize = 32 * K;
+      pi = {
+        contextWindow = 524288;
+        maxTokens = 32768;
+      };
       gpu = false;
-      capabilities = {
-        operation = "cpu";
-        loadSeconds = 15;
+      contextSize = 1048576;
+      hosts.brys = {
+        set = "main";
+        servedContext = 1048576;
+        common = {
+          download = {
+            enable = true;
+            glob = "UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-*.gguf";
+            minBytes = 10000000;
+          };
+          enable = true;
+          hfFile = "UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf";
+          hfRepo = "unsloth/Qwen3.8-Flash-Next-GGUF";
+          mmproj = {
+            enable = true;
+            hfFile = "mmproj-F16.gguf";
+            hfRepo = "unsloth/Qwen3.8-Flash-Next-GGUF";
+          };
+          perf = {
+            batchSize = 4096;
+            cacheRam = 8192;
+            cacheTypeK = "q8_0";
+            cacheTypeV = "q8_0";
+            checkpointMinStep = 900;
+            ctxCheckpoints = 32;
+            kvUnified = true;
+            mmap = null;
+            parallel = 2;
+            reasoning = "auto";
+            reasoningEffort = "low";
+            ropeFreqBase = 10000000;
+            ropeScale = 4.0;
+            ropeScaling = "yarn";
+            sessionHeaders = "x-session-id";
+            sessionMaxSessions = 64;
+            ubatchSize = 4096;
+            yarnOrigCtx = 262144;
+          };
+        };
       };
-    };
-    "mellum-2.1-12b-a2.5b-thinking" = {
-      aliases = [
-        "reason-quick-fast"
-        "code-std-fast-alt"
-      ];
-      contextSize = 32 * K;
-      gpu = false;
-      capabilities = {
-        operation = "cpu";
-        loadSeconds = 12;
-      };
-    };
-    "nemotron-3-nano-30b-a3b" = {
-      aliases = [
-        "reason-std-fast"
-        "chat-std-mid-long"
-      ];
-      contextSize = 32 * K;
-      gpu = false;
-      capabilities = {
-        operation = "cpu";
-        loadSeconds = 20;
-      };
-    };
-    "north-mini-code-1.0" = {
-      aliases = [
-        "code-std-fast"
-        "code-std-fast-moe"
-      ];
-      contextSize = 32 * K;
-      gpu = false;
-      capabilities = {
-        operation = "cpu";
-        loadSeconds = 15;
-      };
-    };
-    "qwen3.5-35b-a3b" = {
-      # Native 256k, and cheap enough (25.1 GiB) to sit beside the frontier.
-      aliases = [ "chat-std-mid" ];
-      contextSize = 256 * K;
-      gpu = false;
-      capabilities = {
-        operation = "cpu";
-        loadSeconds = 25;
-      };
-    };
-    "qwen3-vl-8b-instruct" = {
-      aliases = [ "vision-quick-fast" ];
-      contextSize = 32 * K;
-      gpu = false;
-      capabilities = {
-        operation = "gpu";
-        loadSeconds = 3;
-      };
-      vision = true;
-    };
-    "qwen3-vl-30b-a3b" = {
-      aliases = [
-        "vision-std-fast"
-        "vision-std-fast-moe"
-      ];
-      contextSize = 32 * K;
-      gpu = false;
-      capabilities = {
-        operation = "cpu";
-        loadSeconds = 20;
-      };
-      vision = true;
-    };
-    "qwen3-omni-30b-a3b" = {
-      aliases = [ "audio-std-mid" ];
-      contextSize = 32 * K;
-      gpu = false;
-      capabilities = {
-        operation = "cpu";
-        loadSeconds = 20;
-      };
-      vision = true;
-    };
-    "ornith-1.5-35b-a3b" = {
-      aliases = [ "vision-std-fast-alt" ];
-      contextSize = 32 * K;
-      gpu = false;
-      capabilities = {
-        operation = "cpu";
-        loadSeconds = 25;
-      };
-      vision = true;
-    };
-    "qwen3-embedding-4b" = {
-      aliases = [ "embed-std-fast" ];
-      contextSize = 8 * K;
-      gpu = false;
-      capabilities = {
-        operation = "gpu";
-        loadSeconds = 2;
-      };
-    };
-    "qwen3-reranker-4b" = {
-      aliases = [ "rank-std-fast" ];
-      contextSize = 8 * K;
-      gpu = false;
-      capabilities = {
-        operation = "gpu";
-        loadSeconds = 2;
-      };
-    };
-
-    # ---- small GPU models
-    "qwen3.5-0.8b" = {
-      aliases = [ "tiny-dumb-fast" ];
-      contextSize = 16 * K;
-      gpu = true;
-      capabilities = {
-        operation = "gpu";
-        loadSeconds = 1;
-      };
-      stats.parallel = 4;
-    };
-    "qwen3.5-2b" = {
-      aliases = [ "tiny-dumb-fast-alt" ];
-      contextSize = 16 * K;
-      gpu = true;
-      capabilities = {
-        operation = "gpu";
-        loadSeconds = 1;
-      };
-      stats.parallel = 4;
     };
     "qwen3.5-4b" = {
       aliases = [
@@ -327,138 +288,1054 @@ in
         "code-quick-fast"
         "tiny-quick-fast"
       ];
-      contextSize = 16 * K;
-      gpu = true;
       capabilities = {
-        operation = "gpu";
         loadSeconds = 2;
+        operation = "gpu";
+      };
+      gpu = true;
+      contextSize = 16384;
+      hosts.brys = {
+        set = "grunt";
+        servedContext = 16384;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "qwen3.5-4b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            device = "Vulkan0";
+            nGpuLayers = 99;
+            parallel = 1;
+          };
+        };
       };
     };
-    "tmax-2b" = {
-      contextSize = 16 * K;
+    "qwen3.5-9b" = {
+      hosts.brys = {
+        set = "grunt";
+        servedContext = 16384;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = false;
+          hfFile = "qwen3.5-9b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            device = "Vulkan0";
+            nGpuLayers = 99;
+            parallel = 1;
+          };
+        };
+      };
+    };
+    "gemma-4-12b" = {
+      gpu = false;
+      contextSize = 16384;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 16384;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "gemma-4-12b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "gemma-4-26b-a4b" = {
+      gpu = false;
+      contextSize = 8192;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 8192;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "gemma-4-26b-a4b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "gemma-4-31b" = {
+      gpu = false;
+      contextSize = 8192;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 8192;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "gemma-4-31b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "gemma-4-e2b" = {
       gpu = true;
-      stats.parallel = 4;
+      contextSize = 16384;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 16384;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "gemma-4-e2b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            device = "Vulkan0";
+            nGpuLayers = 99;
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "gemma-4-e4b" = {
+      gpu = true;
+      contextSize = 16384;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 16384;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "gemma-4-e4b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            device = "Vulkan0";
+            nGpuLayers = 99;
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "glm-4.7-flash" = {
+      gpu = false;
+      contextSize = 8192;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 8192;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "glm-4.7-flash.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "granite-4.2-30b" = {
+      gpu = false;
+      contextSize = 8192;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 8192;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "granite-4.2-30b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
     };
     "granite-4.2-3b" = {
       aliases = [
         "tools-dumb-fast"
         "chat-dumb-fast-alt"
       ];
-      contextSize = 16 * K;
-      gpu = true;
       capabilities = {
-        operation = "gpu";
         loadSeconds = 1;
-      };
-    };
-    "ministral-3-3b-instruct" = {
-      contextSize = 16 * K;
-      gpu = true;
-    };
-    "ministral-3-3b-reasoning" = {
-      aliases = [ "reason-quick-fast-alt" ];
-      contextSize = 16 * K;
-      gpu = true;
-      capabilities = {
         operation = "gpu";
-        loadSeconds = 1;
       };
-    };
-    "gemma-4-e2b" = {
-      contextSize = 16 * K;
       gpu = true;
-    };
-    "olmo-3-7b-instruct" = {
-      contextSize = 16 * K;
-      gpu = true;
-    };
-    "gemma-4-e4b" = {
-      contextSize = 16 * K;
-      gpu = true;
+      contextSize = 16384;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 16384;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "granite-4.2-3b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            device = "Vulkan0";
+            nGpuLayers = 99;
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
     };
     "granite-4.2-8b" = {
       aliases = [ "tools-std-fast-alt" ];
-      contextSize = 16 * K;
-      gpu = true;
       capabilities = {
-        operation = "gpu";
         loadSeconds = 3;
+        operation = "gpu";
+      };
+      gpu = true;
+      contextSize = 16384;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 16384;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "granite-4.2-8b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            device = "Vulkan0";
+            nGpuLayers = 99;
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "lfm2.5-24b-a2b" = {
+      aliases = [
+        "chat-std-fast"
+        "tools-std-fast"
+      ];
+      capabilities = {
+        loadSeconds = 15;
+        operation = "cpu";
+      };
+      gpu = false;
+      contextSize = 32768;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 32768;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "lfm2.5-24b-a2b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "mellum-2.1-12b-a2.5b-thinking" = {
+      aliases = [
+        "reason-quick-fast"
+        "code-std-fast-alt"
+      ];
+      capabilities = {
+        loadSeconds = 12;
+        operation = "cpu";
+      };
+      gpu = false;
+      contextSize = 32768;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 32768;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "mellum-2.1-12b-a2.5b-thinking.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "mimo-v2.6-qwen-9b" = {
+      gpu = true;
+      contextSize = 16384;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 16384;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "mimo-v2.6-qwen-9b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            device = "Vulkan0";
+            nGpuLayers = 99;
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "ministral-3-3b-instruct" = {
+      gpu = true;
+      contextSize = 16384;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 16384;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "ministral-3-3b-instruct.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            device = "Vulkan0";
+            nGpuLayers = 99;
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "ministral-3-3b-reasoning" = {
+      aliases = [ "reason-quick-fast-alt" ];
+      capabilities = {
+        loadSeconds = 1;
+        operation = "gpu";
+      };
+      gpu = true;
+      contextSize = 16384;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 16384;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "ministral-3-3b-reasoning.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            device = "Vulkan0";
+            nGpuLayers = 99;
+            parallel = 1;
+            threads = 8;
+          };
+        };
       };
     };
     "ministral-3-8b-instruct" = {
-      contextSize = 16 * K;
       gpu = true;
+      contextSize = 16384;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 16384;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "ministral-3-8b-instruct.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            device = "Vulkan0";
+            nGpuLayers = 99;
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
     };
     "ministral-3-8b-reasoning" = {
-      contextSize = 16 * K;
       gpu = true;
+      contextSize = 16384;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 16384;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "ministral-3-8b-reasoning.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            device = "Vulkan0";
+            nGpuLayers = 99;
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
     };
-    "tmax-9b" = {
-      contextSize = 16 * K;
-      gpu = true;
-    };
-    "mimo-v2.6-qwen-9b" = {
-      contextSize = 16 * K;
-      gpu = true;
-    };
-
-    # ---- CPU variants of the smallest, reachable by a `-cpu` id
-    "qwen3.5-0.8b-cpu" = {
-      source = "qwen3.5-0.8b";
-      contextSize = 8 * K;
+    "nemotron-3-nano-30b-a3b" = {
+      aliases = [
+        "reason-std-fast"
+        "chat-std-mid-long"
+      ];
+      capabilities = {
+        loadSeconds = 20;
+        operation = "cpu";
+      };
       gpu = false;
-    };
-    "qwen3.5-2b-cpu" = {
-      source = "qwen3.5-2b";
-      contextSize = 8 * K;
-      gpu = false;
-    };
-    "tmax-2b-cpu" = {
-      source = "tmax-2b";
-      contextSize = 8 * K;
-      gpu = false;
-    };
-
-    # ---- CPU models with a small serve context
-    "gemma-4-12b" = {
-      contextSize = 16 * K;
-      gpu = false;
-    };
-    "gemma-4-26b-a4b" = {
-      contextSize = 8 * K;
-      gpu = false;
-    };
-    "gemma-4-31b" = {
-      contextSize = 8 * K;
-      gpu = false;
-    };
-    "granite-4.2-30b" = {
-      contextSize = 8 * K;
-      gpu = false;
-    };
-    "glm-4.7-flash" = {
-      contextSize = 8 * K;
-      gpu = false;
-    };
-    "olmo-3.1-32b" = {
-      contextSize = 8 * K;
-      gpu = false;
-    };
-    "qwen3.6-27b" = {
-      contextSize = 8 * K;
-      gpu = false;
-    };
-    "qwen3.6-35b-a3b" = {
-      contextSize = 8 * K;
-      gpu = false;
+      contextSize = 32768;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 32768;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "nemotron-3-nano-30b-a3b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
     };
     "nemotron-3.5-lightning-30b" = {
-      contextSize = 8 * K;
       gpu = false;
+      contextSize = 8192;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 8192;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "nemotron-3.5-lightning-30b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "north-mini-code-1.0" = {
+      aliases = [
+        "code-std-fast"
+        "code-std-fast-moe"
+      ];
+      capabilities = {
+        loadSeconds = 15;
+        operation = "cpu";
+      };
+      gpu = false;
+      contextSize = 32768;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 32768;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "north-mini-code-1.0.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "olmo-3-7b-instruct" = {
+      gpu = true;
+      contextSize = 16384;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 16384;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "olmo-3-7b-instruct.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            device = "Vulkan0";
+            extraFlags = [
+              "--no-jinja"
+              "--chat-template"
+              "chatml"
+            ];
+            nGpuLayers = 99;
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "olmo-3.1-32b" = {
+      gpu = false;
+      contextSize = 8192;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 8192;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "olmo-3.1-32b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "ornith-1.5-35b-a3b" = {
+      aliases = [ "vision-std-fast-alt" ];
+      capabilities = {
+        loadSeconds = 25;
+        operation = "cpu";
+      };
+      vision = true;
+      gpu = false;
+      contextSize = 32768;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 32768;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "ornith-1.5-35b-a3b.gguf";
+          hfRepo = "surveyed";
+          mmproj = {
+            enable = true;
+            hfFile = "mmproj-ornith-1.5-35b-a3b.gguf";
+            hfRepo = "surveyed";
+          };
+          perf = {
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "qwen3-30b-a3b" = {
+      aliases = [ "fast" ];
+      capabilities = {
+        loadSeconds = 45;
+        operation = "cpu";
+      };
+      gpu = false;
+      contextSize = 40960;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 40960;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "Qwen/Qwen3-30B-A3B-GGUF/Qwen3-30B-A3B-Q4_K_M.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "qwen3-embedding-4b" = {
+      aliases = [ "embed-std-fast" ];
+      capabilities = {
+        loadSeconds = 2;
+        operation = "gpu";
+      };
+      gpu = false;
+      contextSize = 8192;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 8192;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "qwen3-embedding-4b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "qwen3-next-80b" = {
+      aliases = [ "balanced" ];
+      capabilities = {
+        loadSeconds = 120;
+        operation = "cpu";
+      };
+      gpu = false;
+      contextSize = 131072;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 131072;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "unsloth/Qwen3-Next-80B-A3B-Instruct-GGUF/Qwen3-Next-80B-A3B-Instruct-Q4_K_M.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "qwen3-omni-30b-a3b" = {
+      aliases = [ "audio-std-mid" ];
+      capabilities = {
+        loadSeconds = 20;
+        operation = "cpu";
+      };
+      vision = true;
+      gpu = false;
+      contextSize = 32768;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 32768;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "qwen3-omni-30b-a3b.gguf";
+          hfRepo = "surveyed";
+          mmproj = {
+            enable = true;
+            hfFile = "qwen3-omni-30b-a3b-mmproj.gguf";
+            hfRepo = "surveyed";
+          };
+          perf = {
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "qwen3-reranker-4b" = {
+      aliases = [ "rank-std-fast" ];
+      capabilities = {
+        loadSeconds = 2;
+        operation = "gpu";
+      };
+      gpu = false;
+      contextSize = 8192;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 8192;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "qwen3-reranker-4b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "qwen3-vl-30b-a3b" = {
+      aliases = [
+        "vision-std-fast"
+        "vision-std-fast-moe"
+      ];
+      capabilities = {
+        loadSeconds = 20;
+        operation = "cpu";
+      };
+      vision = true;
+      gpu = false;
+      contextSize = 32768;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 32768;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "qwen3-vl-30b-a3b.gguf";
+          hfRepo = "surveyed";
+          mmproj = {
+            enable = true;
+            hfFile = "qwen3-vl-30b-a3b-mmproj.gguf";
+            hfRepo = "surveyed";
+          };
+          perf = {
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "qwen3-vl-8b-instruct" = {
+      aliases = [ "vision-quick-fast" ];
+      capabilities = {
+        loadSeconds = 3;
+        operation = "gpu";
+      };
+      vision = true;
+      gpu = false;
+      contextSize = 32768;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 32768;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "qwen3-vl-8b-instruct.gguf";
+          hfRepo = "surveyed";
+          mmproj = {
+            enable = true;
+            hfFile = "qwen3-vl-8b-instruct-mmproj.gguf";
+            hfRepo = "surveyed";
+          };
+          perf = {
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "qwen3.5-0.8b" = {
+      aliases = [ "tiny-dumb-fast" ];
+      capabilities = {
+        loadSeconds = 1;
+        operation = "gpu";
+      };
+      gpu = true;
+      contextSize = 16384;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 16384;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "qwen3.5-0.8b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            device = "Vulkan0";
+            kvUnified = true;
+            nGpuLayers = 99;
+            parallel = 4;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "qwen3.5-0.8b-cpu" = {
+      gpu = false;
+      source = "qwen3.5-0.8b";
+      contextSize = 8192;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 8192;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "qwen3.5-0.8b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "qwen3.5-2b" = {
+      aliases = [ "tiny-dumb-fast-alt" ];
+      capabilities = {
+        loadSeconds = 1;
+        operation = "gpu";
+      };
+      gpu = true;
+      contextSize = 16384;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 16384;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "qwen3.5-2b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            device = "Vulkan0";
+            kvUnified = true;
+            nGpuLayers = 99;
+            parallel = 4;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "qwen3.5-2b-cpu" = {
+      gpu = false;
+      source = "qwen3.5-2b";
+      contextSize = 8192;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 8192;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "qwen3.5-2b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "qwen3.5-35b-a3b" = {
+      aliases = [ "chat-std-mid" ];
+      capabilities = {
+        loadSeconds = 25;
+        operation = "cpu";
+      };
+      gpu = false;
+      contextSize = 262144;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 262144;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "qwen3.5-35b-a3b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "qwen3.6-27b" = {
+      gpu = false;
+      contextSize = 8192;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 8192;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "qwen3.6-27b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "qwen3.6-35b-a3b" = {
+      gpu = false;
+      contextSize = 8192;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 8192;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "qwen3.6-35b-a3b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "qwen3.8-27b" = {
+      aliases = [
+        "chat-deep-slow"
+        "code-deep-slow"
+        "vision-deep-slow"
+        "reason-deep-slow"
+        "tools-deep-slow"
+      ];
+      capabilities = {
+        loadSeconds = 40;
+        operation = "cpu";
+      };
+      pi = {
+        maxTokens = 8192;
+      };
+      vision = true;
+      gpu = false;
+      contextSize = 131072;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 131072;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "qwen3.8-27b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
     };
     "seed-oss-36b" = {
-      contextSize = 8 * K;
       gpu = false;
+      contextSize = 8192;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 8192;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "seed-oss-36b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "tmax-2b" = {
+      gpu = true;
+      contextSize = 16384;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 16384;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "tmax-2b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            device = "Vulkan0";
+            kvUnified = true;
+            nGpuLayers = 99;
+            parallel = 4;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "tmax-2b-cpu" = {
+      gpu = false;
+      source = "tmax-2b";
+      contextSize = 8192;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 8192;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "tmax-2b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
+    "tmax-9b" = {
+      gpu = true;
+      contextSize = 16384;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 16384;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "tmax-9b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            device = "Vulkan0";
+            nGpuLayers = 99;
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
     };
   };
 }

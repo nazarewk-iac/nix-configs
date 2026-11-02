@@ -1,15 +1,34 @@
-# Render each client's config from the single LLM source of truth, `data/llm.nix`.
+# Render each consumer's config from the single LLM source of truth, `data/llm.nix`.
 #
 # One function per consumer. Nothing here declares a model id, an alias or a context size; every
 # value is read from the data file, so the only place to edit is `data/llm.nix`.
+#
+#   * `mkServerModels data host profile` — the server view: what a host loads, which router, and
+#     the per-host perf. Used by `hosts/brys/llm.nix` to fill `kdn.llm.local.models`.
+#   * `mkPiModelsJson` — the Pi client's `models.json`, one entry per served alias.
+#   * `mkCatalog` — the orchestrator's intent table for the system prompt.
+#   * `mkMemberView data host` — a fleet member's view: the endpoint and the alias-to-model map,
+#     with the serving plumbing physically absent.
+#
+# See docs/tasks/2026-11/fleet-llm-data-model/design.md for the shape.
 { lib }:
 let
   data = import ../data/llm.nix;
 
-  # alias -> model id, inverted once. A model may answer to several aliases.
+  hostNames = builtins.attrNames data.servers;
+
+  # A host serves a model when its serving block leaves it enabled. `qwen3.5-9b` is declared with
+  # `enable = false`, so it is not advertised to a client even though its file is still described.
+  enabledOn = host: m: m.hosts ? ${host} && (m.hosts.${host}.common.enable or true);
+  isServed = m: lib.any (host: enabledOn host m) hostNames;
+
+  # The models a client or catalog may name: only those served somewhere.
+  servedModels = lib.filterAttrs (_: m: isServed m) data.models;
+
+  # alias -> model id, inverted once over the served models. A model may answer to several aliases.
   aliasToModel = lib.foldl' (
-    acc: name: lib.foldl' (a: alias: a // { ${alias} = name; }) acc data.models.${name}.aliases or [ ]
-  ) { } (builtins.attrNames data.models);
+    acc: name: lib.foldl' (a: alias: a // { ${alias} = name; }) acc (data.models.${name}.aliases or [ ])
+  ) { } (builtins.attrNames servedModels);
 
   # The client view of one SERVED MODEL, expanded to one entry PER ALIAS.
   #
@@ -21,7 +40,7 @@ let
     let
       m = data.models.${name};
       # A model may set its OWN `pi.contextWindow` (a client budget below the served size) and
-      # `pi.maxTokens`. Absent, the client-wide defaults apply, clamped to the served window.
+      # `pi.maxTokens`. Absent, the client-wide defaults apply, clamped to the native window.
       ctx = lib.min (m.pi.contextWindow or data.pi.defaults.contextWindow) m.contextSize;
       base = {
         contextWindow = ctx;
@@ -39,26 +58,13 @@ let
     in
     map (id: base // { inherit id; }) ids;
 
-  # One provider entry per endpoint. `models` is every model PLUS the label-only context tiers of
-  # the frontier, each tier pointing at the same served model with a different client window.
-  mkPiModelsJson =
-    let
-      frontier = "qwen3.8-flash-next";
-      # `models.json` has NO alias-to-model field: the entry `id` is the model name Pi sends to
-      # the server. A `"model": ...` hint is ignored, so an invented id such as
-      # `qwen3.8-flash-next-longest` gets a 404 "no router for requested model".
-      #
-      # So a context tier is NOT a new pi entry. It is the SAME id with a different budget, which
-      # pi cannot express twice in one provider. Keep the tiers in data/llm.nix for documentation
-      # and for any client that can express them, but do not emit them as pi models.
-      tierModels = [ ];
-    in
-    lib.mapAttrs (_: ep: {
-      baseUrl = ep.baseUrl;
-      api = ep.api;
-      apiKey = ep.apiKey;
-      models = builtins.concatLists (map piEntries (builtins.attrNames data.models)) ++ tierModels;
-    }) data.endpoints;
+  # One provider entry per endpoint. `models` is every SERVED model, one entry per alias.
+  mkPiModelsJson = lib.mapAttrs (_: ep: {
+    baseUrl = ep.baseUrl;
+    api = ep.api;
+    apiKey = ep.apiKey;
+    models = builtins.concatLists (map piEntries (builtins.attrNames servedModels));
+  }) data.endpoints;
 
   # The purpose aliases only (legacy bare ids like `fast` are not purposes).
   purposeAliases = lib.filterAttrs (
@@ -79,10 +85,6 @@ let
   #
   # A model with no `capabilities` still appears, with `-` for op/load, so the row count matches
   # what can actually be delegated to. Sorted by alias, so the prompt is stable across renders.
-  #
-  # The table is padded to aligned columns in the source, but the prompt only needs one space; a
-  # consumer that wants a fixed width pipes it through a formatter. Keep it plain text: the model
-  # reads it, so no box drawing.
   mkCatalog =
     let
       rows = lib.concatMap (
@@ -99,7 +101,7 @@ let
           load = if caps ? loadSeconds then toString caps.loadSeconds else "-";
           vision = if m.vision or false then "yes" else "-";
         }) aliases
-      ) (builtins.attrNames data.models);
+      ) (builtins.attrNames servedModels);
 
       table = lib.sort (a: b: a.alias < b.alias) rows;
 
@@ -114,8 +116,85 @@ let
       };
     in
     lib.concatStringsSep "\n" (map fmt ([ headerRow ] ++ table));
+
+  # ---------------------------------------------------------------- server projection
+  #
+  # The model set a host serves for a boot profile: every model whose `set` is one of the
+  # profile's enabled routers. The entry is exactly what `kdn.llm.local.models.<id>` accepts; the
+  # module fills every unset option with its own default.
+  servedContextFor =
+    host: profile: m:
+    let
+      h = m.hosts.${host};
+      p = h.profiles.${profile} or { };
+    in
+    p.servedContext or h.servedContext or m.contextSize;
+
+  serverEntry =
+    host: profile: m:
+    let
+      h = m.hosts.${host};
+      p = h.profiles.${profile} or { };
+      c = h.common;
+      perf =
+        (c.perf or { })
+        // (p.perf or { })
+        // {
+          contextSize = servedContextFor host profile m;
+        };
+    in
+    {
+      aliases = m.aliases or [ ];
+      enable = c.enable or true;
+      mainRouter = h.set;
+      inherit (c) hfRepo hfFile;
+      download = c.download or { };
+      mmproj = c.mmproj or { };
+      draft = c.draft or { };
+      perf = perf;
+    };
+
+  mkServerModels =
+    data: host: profile:
+    let
+      srv = data.servers.${host};
+      enabled = srv.profiles.${profile}.sets;
+    in
+    lib.mapAttrs (_id: m: serverEntry host profile m) (
+      lib.filterAttrs (_id: m: m.hosts ? ${host} && builtins.elem m.hosts.${host}.set enabled) data.models
+    );
+
+  # ---------------------------------------------------------------- member projection
+  #
+  # Host-presence only: every model this host has a serving block for, regardless of the boot
+  # profile. The serving plumbing (file, perf, ports, device pins) is physically absent, so it
+  # cannot leak into a member.
+  modelsOnHost = data: host: lib.filterAttrs (_id: m: m.hosts ? ${host}) data.models;
+
+  mkMemberView =
+    data: host:
+    let
+      onHost = modelsOnHost data host;
+    in
+    {
+      endpoint = data.endpoints.${host};
+      # alias -> base id, over every model this host serves.
+      aliasToModel = lib.foldl' (
+        acc: id: lib.foldl' (a: alias: a // { ${alias} = id; }) acc (data.models.${id}.aliases or [ ])
+      ) { } (builtins.attrNames onHost);
+      # Identity only; serving keys physically absent.
+      models = lib.mapAttrs (_id: m: {
+        aliases = m.aliases or [ ];
+        inherit (m) contextSize vision capabilities;
+      }) onHost;
+    };
 in
 {
   inherit data aliasToModel purposeAliases;
-  inherit mkPiModelsJson mkCatalog;
+  inherit
+    mkPiModelsJson
+    mkCatalog
+    mkServerModels
+    mkMemberView
+    ;
 }

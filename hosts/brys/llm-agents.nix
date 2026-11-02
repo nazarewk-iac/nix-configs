@@ -11,11 +11,18 @@
 #
 # ## The single source of truth
 #
-# The alias set is not written here. It is read from `llm-routers.nix`, the same
-# attrset the server uses. When an alias moves to another model there, the client
-# agent follows with no second edit. A client that names an intent never names a
-# base model id (see
+# The alias set is not written here. It is read from `data/llm.nix`, the same
+# file the server serves from. When an alias moves to another model there, the
+# client agent follows with no second edit. A client that names an intent never
+# names a base model id (see
 # ../../docs/tasks/2026-10/llm-model-expansion/alias-scheme.design.md).
+#
+# ## The frontier models are not sub-agents
+#
+# The models on the `main` router (DeepSeek, Qwen3.8-Flash-Next) are the
+# orchestrator itself; registering them as sub-agents would only let a turn
+# recurse into the same slow model. Only the grunt/surveyed intent models become
+# agents.
 #
 # ## The name of one agent
 #
@@ -41,26 +48,18 @@
 # model without a config change.
 { lib }:
 let
-  routers = import ./llm-routers.nix;
+  data = import ../../data/llm.nix;
 
-  # Every set that declares models. `small` and `grunt` are boot-entry-scoped
-  # sets and `surveyed` is the purpose-alias set; all three carry `models`.
-  modelSets = [
-    routers.small
-    routers.grunt
-    routers.surveyed
-  ];
+  # The non-frontier models brys serves: a model with a `hosts.brys` block that is
+  # enabled and not on the `main` router (the orchestrator itself).
+  agentModels = lib.filterAttrs (
+    _id: m: m.hosts ? brys && (m.hosts.brys.common.enable or true) && m.hosts.brys.set != "main"
+  ) data.models;
 
-  # alias -> base model id, inverted from every model's `aliases` list. The
-  # model's attribute name is its base id (the `mkGpu`/`mkCpu` helpers set no
-  # separate `name`).
+  # alias -> base model id, inverted from every agent model's `aliases` list.
   aliasToModel = lib.foldl' (
-    acc: set:
-    lib.foldl' (
-      acc': entry:
-      lib.foldl' (acc'': alias: acc'' // { ${alias} = entry.name; }) acc' (entry.model.aliases or [ ])
-    ) acc (lib.mapAttrsToList (name: model: { inherit name model; }) (set.kdn.llm.local.models or { }))
-  ) { } modelSets;
+    acc: id: lib.foldl' (a: alias: a // { ${alias} = id; }) acc (agentModels.${id}.aliases or [ ])
+  ) { } (builtins.attrNames agentModels);
 
   # The purpose aliases only. The bare `fast`/`balanced`/`grunt` ids are legacy
   # router aliases, not purposes; the scheme's rule is `<purpose>-<complexity>-<speed>`.

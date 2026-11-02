@@ -353,8 +353,8 @@ Source research files: [coresidency-measured.research.md](tasks/2026-10/brys-gru
 (all measured columns), [models-2026.research.md](tasks/2026-10/brys-grunt-colocation/models-2026.research.md)
 and [models-2026-mid-large.research.md](tasks/2026-10/brys-grunt-colocation/models-2026-mid-large.research.md)
 (`params`/`license`), [single-specialisation.design.md](tasks/2026-10/brys-grunt-colocation/single-specialisation.design.md)
-(the `sets`/`evict_costs`), `hosts/brys/llm-routers.nix` and
-`hosts/brys/{default,llm-qwen,llms-frontier,llm-ds4,llm-small}.nix` (registration).
+(the `sets`/`evict_costs`), `data/llm.nix` (model registration) and
+`hosts/brys/{default,llm-config,llms-frontier,llm-appliance}.nix` (host wiring).
 
 ### Coverage gaps
 

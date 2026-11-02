@@ -118,9 +118,9 @@ let
   tierAgents = ds4Agents // qwenAgents;
 
   # One opencode subagent per brys purpose alias (chat-std-fast, code-deep-slow,
-  # ...), derived from `hosts/brys/llm-routers.nix` so the client follows the
-  # server when an alias moves. A caller that names an intent gets the model the
-  # fleet serves for it, with no base-model id in the client. See
+  # ...), derived from `data/llm.nix` so the client follows the server when an
+  # alias moves. A caller that names an intent gets the model the fleet serves for
+  # it, with no base-model id in the client. See
   # ../brys/llm-agents.nix and
   # ../../docs/tasks/2026-10/llm-model-expansion/alias-scheme.design.md.
   aliasAgents = import ../brys/llm-agents.nix { inherit lib; };

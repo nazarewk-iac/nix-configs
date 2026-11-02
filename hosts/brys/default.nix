@@ -7,11 +7,11 @@
 }:
 let
   # The whole local-LLM serving config, shared with the `specialisation.llms` appliance
-  # entry (./llm-config.nix). The desktop passes a smaller DeepSeek context (128K) because
-  # it shares RAM with a browser; the appliance passes 320K because it owns the box.
+  # entry (./llm-config.nix). This desktop profile serves DeepSeek at 128K because it shares
+  # RAM with a browser; the appliance profile serves 320K because it owns the box.
   llm = import ./llm-config.nix {
     inherit lib pkgs kdnConfig;
-    contextSize = 131072;
+    profile = "desktop";
   };
 
   slots = kdnConfig.self.mkSlots {
@@ -65,8 +65,8 @@ in
     }
     # The W6600 Vulkan runtime config for the GPU grunt (`hardware.graphics`,
     # `mesa`, and `MESA_VK_DEVICE_SELECT`), owned by ./llm.nix (`llm.gpu`) so the
-    # main profile and the Qwen specialisations cannot drift. Empty unless
-    # `withGrunt`/`qwenVulkan` is set.
+    # main profile and the Qwen specialisations cannot drift. The shipping host
+    # always serves a GPU grunt, so this is always on.
     llm.gpu
     {
       kdn.hostName = "brys";

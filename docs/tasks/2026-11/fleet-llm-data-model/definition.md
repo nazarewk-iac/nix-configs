@@ -1,12 +1,16 @@
 ---
 type: Task
 description: Unify the LLM fleet data into one centrally-configured model that servers, clients and fleet members all read, replacing the split between data/llm.nix and hosts/brys/llm-routers.nix.
-status: in-progress
+status: done
 authored_by: agent
 timestamp: 2026-11-02T13:33:00+01:00
 ---
 
 # Central fleet LLM data model
+
+> **Done.** Implemented in the same month. See [done.md](done.md) for the solution and the
+> eval-diff that proves it, and [review.md](review.md) for the four review rounds and the
+> implementation findings. `data/llm.nix` is now the single source; `llm-routers.nix` is gone.
 
 ## Context
 
@@ -70,12 +74,12 @@ per-profile deltas where it must. See [design.md](design.md).
 
 ## Acceptance
 
-- Both `nixosConfigurations.brys` profiles (desktop 128K, appliance 320K)
-  render `kdn.llm.local.models` **identical** to today.
+- The desktop profile renders `kdn.llm.local.models` **identical** to today. The
+  appliance profile renders identical **except** DeepSeek's served context, which
+  now really is 320K (the design fixed a dead override; see R14 in [review.md](review.md)).
 - The Pi `models.json` (`lib/llm.nix`) and the orchestrator catalog render
   identical to today.
 - `oams` still resolves every alias it uses today, now from `data/llm.nix`.
-- `hosts/brys/llm-routers.nix` is either deleted or reduced to a thin reader of
-  `data/llm.nix`.
+- `hosts/brys/llm-routers.nix` is deleted.
 - The design is reviewed independently: at least two review rounds recorded in
   this directory.

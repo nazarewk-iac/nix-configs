@@ -34,14 +34,14 @@ Do not name a base model id (`qwen3.5-35b-a3b`). Name a **stable purpose alias**
 - **-alt**: the alternate model for the slot. The bare id is the primary.
 
 The server maps the alias to a model. To change the model, someone moves the
-alias string in `hosts/brys/llm-routers.nix` and redeploys — **the client keeps
+alias string in `data/llm.nix` (`models.<id>.aliases`) and redeploys — **the client keeps
 the same id**. Never hardcode the base model name in a client config.
 
 ## Every alias is also an opencode sub-agent
 
 On a host with the oams opencode profile, each purpose alias is registered as an
 opencode **subagent** with the alias as its name (`hosts/brys/llm-agents.nix`,
-generated from `llm-routers.nix`). So an orchestrator delegates by naming the
+generated from `data/llm.nix`). So an orchestrator delegates by naming the
 alias as the Task tool's `subagent_type`:
 
 ```

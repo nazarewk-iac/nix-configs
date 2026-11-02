@@ -274,3 +274,53 @@ holds.
 
 v4 = v3 with R13 applied. A one-line diff; no new review round needed beyond
 confirming the router vocabulary.
+
+---
+
+# Implementation findings (while migrating)
+
+These surfaced only when the design met the real evaluated config, and they
+changed the implementation from the v4 text.
+
+## R14 [BLOCKER, resolved] the two brys profiles are byte-identical today
+
+The design assumed the only desktop/appliance difference is DeepSeek's served
+context. It is not: today `hosts/brys/llm.nix` overwrites every model's
+`perf.contextSize` from `data/llm.nix`, so the appliance's `contextSize = 327680`
+in `llms-frontier.nix` is **dead** and both profiles serve DeepSeek at 131072.
+Verified: `kdn.llm.local.models` evaluated for the desktop profile and for
+`specialisation.llms.configuration` are equal.
+
+Resolution (user decision): honour the intent. `data/llm.nix` now carries
+`models.deepseek-v4-flash.hosts.brys.profiles.{desktop=131072, appliance=327680}`.
+The desktop output is unchanged; the appliance now really serves 320K. This is the
+one intended output change, proven by the eval-diff (see done.md).
+
+## R15 [note] the router vocabulary is `main | grunt | surveyed`; `small` is dead
+
+`kdn.llm.local.routers` only declares the EXTRA routers (`grunt`, `surveyed`); the
+primary router (`main`) is the `services.llama-cpp` server and is not in that set.
+The `small` set is never enabled on any boot entry (`withSmall` is always false),
+so its models are dropped from the data. The design's `servers.brys.routers` lists
+only `grunt` and `surveyed`; `main` is selected by `set = "main"`.
+
+## R16 [note] `package` and the TLS cert path stay host-side
+
+`servers.brys.package` is a named key (`"llama-cpp-sessions-vulkan-noblas"`); the
+host maps it to `pkgs.kdn.<key>`. The TLS `certs.certFile` needs `kdnConfig.self`,
+so it stays in `hosts/brys/llm.nix` too. The data file stays pure (no `pkgs`, no
+`self`).
+
+## R17 [note] Pi and the catalog see only ENABLED models
+
+`qwen3.5-9b` is declared with `enable = false` (a manual grunt upgrade). It is in
+the data now, but a client must not advertise it, so `mkPiModelsJson` and
+`mkCatalog` iterate the ENABLED models only. Before the migration it was simply
+absent from `data.models`; the filtered result is byte-identical.
+
+## R18 [note] sub-agents exclude the frontier
+
+`llm-agents.nix` registers a sub-agent per purpose alias over the non-`main`
+(enabled) models. The `main` models (DeepSeek, Qwen3.8-Flash-Next) are the
+orchestrator itself; registering them as sub-agents would recurse. The agent set
+is byte-identical to before (30 agents, equal descriptions).
