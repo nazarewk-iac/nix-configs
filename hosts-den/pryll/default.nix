@@ -25,12 +25,12 @@ let
   bootDevicePath = "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_04KE345HX9EUZLSW-0:0";
   rootDiskPath = "/dev/disk/by-id/ata-HS-SSD-E100_256G_30023586951";
   rootLuksUuid = "4f314bc3-6c3c-4a37-9756-5a03d286cf7b";
-  # rustdesk is marked unfree; instantiate nixpkgs with it allowed just for this package.
-  rustdesk =
-    (import inputs.nixpkgs {
-      system = "x86_64-linux";
-      config.allowUnfree = true;
-    }).rustdesk;
+  # rustdesk is marked unfree; instantiate nixpkgs with it allowed for this host's packages.
+  hostPkgs = import inputs.nixpkgs {
+    system = "x86_64-linux";
+    config.allowUnfree = true;
+  };
+  rustdesk = hostPkgs.rustdesk;
 in
 {
   den.hosts.x86_64-linux.pryll.class = "nixos";
@@ -168,7 +168,17 @@ in
 
     # Remote support: RustDesk client (not TeamViewer; no server aspect here). Unattended access
     # is set up once over the KVM (fixed password + relay). See run book phase 5.
-    environment.systemPackages = [ rustdesk ];
+    environment.systemPackages = with hostPkgs; [
+      rustdesk
+      # Desktop apps wanted on the mother's workstation (run book owner item: document viewing,
+      # image viewing, file manager, media player). `desktop-kde` only brings Plasma + the QQc2
+      # breeze styles, so these are added here explicitly. okular/gwenview/dolphin are KDE apps,
+      # vlc is a top-level package.
+      kdePackages.okular
+      kdePackages.gwenview
+      kdePackages.dolphin
+      vlc
+    ];
     systemd.services.rustdesk = {
       description = "RustDesk unattended client";
       wantedBy = [ "multi-user.target" ];
