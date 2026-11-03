@@ -70,9 +70,10 @@ no `--no-skills`, so a harness child still loads AGENTS.md (about 3.8k tokens). 
 config accepts `childExtensions` and `childBlockedTools`, but **no context flag and no extra
 argument**. Therefore the harness fix is one of:
 
-- fork pi-orchestrator (as pi-atelier) and add a `childContext: "minimal" | "full"` option that
-  appends `--no-context-files --no-skills --no-prompt-templates` and a bundled `child-rules.md`;
-- or upstream that option to the project.
+- **done**: forked pi-orchestrator as `nazarewk-iac/pi-orchestrator` (branch
+  `nazarewk-iac/child-context`). It reads `PI_ORCHESTRATOR_CHILD_MINIMAL=1` and then spawns a child
+  with `--no-context-files --no-skills --no-prompt-templates`, skips parent-prompt forwarding, and
+  appends a compact rules block. `devenv.nix` sets the variable.
 
 The `subagent` extension change here is still correct and useful for anything that calls the
 `subagent` tool directly; it does not reach the orchestrator's `delegate` path.

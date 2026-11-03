@@ -50,11 +50,16 @@ in
   # Vendored at the commit this repo first tested. Bump `rev` and `hash` together.
   pi-orchestrator =
     let
-      rev = "d62e40d48a9c15f4b4f6c5b632ed3f943bdd5ea5";
-      version = "0.11.0";
+      # Forked to nazarewk-iac to add minimal child context: with
+      # PI_ORCHESTRATOR_CHILD_MINIMAL=1 a child spawns with --no-context-files
+      # --no-skills --no-prompt-templates, skips parent-prompt forwarding, and gets a
+      # compact rules block. Upstream had no context flag, so a child loaded AGENTS.md
+      # (~3.8k tokens, about 45% of a 16k window). Bump `rev` and `hash` together.
+      rev = "45a24ae196474272d7d711625391cc2a809939eb";
+      version = "0.11.0+nazarewk.1";
       src = pkgs.fetchzip {
-        url = "https://github.com/saifymatteo/pi-orchestrator/archive/${rev}.tar.gz";
-        hash = "sha256-wdEeMikoG4S6eXLPEd5RrH2c6PmaKR2j6SjOvpZ6iTo=";
+        url = "https://github.com/nazarewk-iac/pi-orchestrator/archive/${rev}.tar.gz";
+        hash = "sha256-a8ie9Lq4cp/ocuMVpM/GwXUrW+k1SK3URQa6jSh0x4A=";
         stripRoot = true;
       };
 

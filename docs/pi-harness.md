@@ -131,6 +131,23 @@ Three options, cheapest first:
 What is **not** worth automating: deriving the name from the transcript. It reads well in
 hindsight and badly at the time, and a wrong name is worse than a hash because it lies.
 
+## Vendored forks
+
+Two extensions are forked into `nazarewk-iac` and vendored by
+`packages/pi-coding-agent-extensions/default.nix`. Keep the fork's `main` identical to upstream
+so a rebase is trivial; carry only the patch.
+
+| upstream                      | fork branch                  | patch                                                                     |
+| ----------------------------- | ---------------------------- | ------------------------------------------------------------------------- |
+| `michaelmjhhhh/pi-atelier`    | `nazarewk-iac/jj-and-stats`  | prefer jj over git, show the change id and bookmarks, add the STATS panel |
+| `saifymatteo/pi-orchestrator` | `nazarewk-iac/child-context` | minimal child context (see below)                                         |
+
+The orchestrator fork reads `PI_ORCHESTRATOR_CHILD_MINIMAL`. When it is `1` (set in `devenv.nix`),
+a child spawns with `--no-context-files --no-skills --no-prompt-templates`, does not receive the
+forwarded parent prompt, and gets a compact rules block instead. A child otherwise loads AGENTS.md
+(about 3.8k tokens, about 45% of a 16k window). Upstream exposes no such flag, which is why the
+fork exists.
+
 ## 4. Caveats and solutions
 
 Measured on 2026-11-03 from a live run (the `pryll` work) and from a cross-check of an external
