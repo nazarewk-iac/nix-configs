@@ -172,13 +172,14 @@ in
   pi-atelier =
     let
       # A fork of michaelmjhhhh/pi-atelier on nazarewk-iac that (a) prefers jj over git for
-      # the workspace pulse and shows the jj change id/bookmarks, and (b) adds a STATS panel
-      # with per-sub-agent avg/latest tok/s. Bump `rev` and `hash` together when the branch moves.
-      rev = "d7bf77f24a49539b63866ed687f2459d88b3382b";
+      # the workspace pulse and shows the jj change id/bookmarks, (b) adds a STATS panel
+      # with per-sub-agent avg/latest tok/s, and (c) shows trusted contributed panels
+      # (pi-orchestrator fleet) by default. Bump `rev` and `hash` together when the branch moves.
+      rev = "4b914e45686cb7c8a949cd9f685512c069145a91";
       version = "0.18.0+jjstats";
       src = pkgs.fetchzip {
         url = "https://github.com/nazarewk-iac/pi-atelier/archive/${rev}.tar.gz";
-        hash = "sha256-hd3fgiN6nMATnTYgU3Kpzkbp9SQgdhzb2HS+RoQkXSg=";
+        hash = "sha256-bMr2HoCJshgMUR431y063V6cJeZ5ofEau1urvfZOnHI=";
         stripRoot = true;
       };
     in
