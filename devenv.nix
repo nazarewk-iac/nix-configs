@@ -81,6 +81,9 @@ let
       "measure"
       "fleet-status"
       "ask_user"
+      "session_list"
+      "session_digest"
+      "session_detail"
     ];
   };
 
@@ -116,6 +119,10 @@ let
               # `ask_user`: an agent can stop and ask the operator a focused question (option
               # lists, multi-select, freeform) instead of guessing or silently ending its turn.
               ext.pi-ask-user
+              # `session_list` / `session_digest` / `session_detail`: read Pi sessions in widening
+              # steps (list -> digest with #n refs -> exact detail) so an agent learns what a prior
+              # session did without loading the whole file into context.
+              ext.session-digest
             ];
           };
         }

@@ -90,6 +90,30 @@ in
   # host headroom, in one tool. It degrades to the static view on a network fault.
   fleet-status = ./fleet-status;
 
+  # session-digest: read Pi sessions in three widening steps (list -> digest with `#n` refs ->
+  # exact detail for the steps you pick), with fuzzy search over session id/repo/name. Read-only;
+  # default scope is this repository, with an explicit scope="all" opt-in. It reuses Fuse.js rather
+  # than hand-rolling a scorer.
+  session-digest =
+    let
+      # Closest npm match for a dependency-free fuzzy search: Fuse.js ships ESM and has no
+      # transitive deps of its own. Unpacked as a top-level node_modules entry, like jsonc-parser.
+      fusejs = pkgs.runCommand "fuse.js-7.5.0-unpacked" { } ''
+        mkdir -p $out/fuse.js
+        tar xzf ${
+          pkgs.fetchurl {
+            url = "https://registry.npmjs.org/fuse.js/-/fuse.js-7.5.0.tgz";
+            hash = "sha256-B25zdVEM0vQLhhCM19h1NM87MmgugN8jzSum8lc38Wg=";
+          }
+        } -C $out/fuse.js --strip-components=1
+      '';
+    in
+    mkExtension {
+      name = "session-digest";
+      src = ./session-digest;
+      npmDeps = fusejs;
+    };
+
   timestamps = ./timestamps;
   idle-marker = ./idle-marker;
   subagent = ./subagent;
