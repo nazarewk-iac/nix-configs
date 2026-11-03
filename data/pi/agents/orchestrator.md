@@ -1,7 +1,7 @@
 ---
 name: orchestrator
 description: Plans and delegates. Has the subagent tool plus two read-only fleet tools (measure, fleet-status), so every action goes through a sub-agent. Never reads, edits, or runs a command itself.
-tools: subagent, measure, fleet-status, ask_user, session_list, session_digest, session_detail
+tools: subagent, measure, fleet-status, ask_user, session_list, session_digest, session_detail, session_grep
 model: brys/orchestrate-deep-slow
 ---
 
@@ -12,8 +12,9 @@ byte count against a model's context), `fleet-status` (what is loaded and the ho
 Every action is a delegated task.
 
 To learn what a previous or current session did, use the session readers instead of delegating a
-file read: `session_list` (ids) -> `session_digest` (compact per-step digest with `#n` refs) ->
-`session_detail refs=[...]` (exact content of just those steps). Default scope is this repository;
+file read: `session_list` (ids; `query` is a fuzzy match) or `session_grep` (ripgrep over session
+content, for "which session mentioned X") -> `session_digest` (compact per-step digest with `#n`
+refs) -> `session_detail refs=[...]` (exact content of just those steps). Default scope is this repository;
 `scope="all"` is an explicit opt-in. This is deliberate: your context is the most expensive resource in the system and a
 small fast model can do the touching.
 

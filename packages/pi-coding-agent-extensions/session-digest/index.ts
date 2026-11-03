@@ -28,6 +28,7 @@ import { Type } from "typebox";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import { execFile } from "node:child_process";
 import Fuse from "fuse.js";
 
 const MAX_SESSIONS = 200;
@@ -352,6 +353,41 @@ function fuzzyFilter(sessions: SessionFile[], query: string): SessionFile[] {
 	return fuse.search(query).map((r) => r.item);
 }
 
+/** Resolve the ripgrep binary (the pi wrapper already prepends it to PATH). */
+function rgPath(): string {
+	return process.env.KDN_RG || "rg";
+}
+
+/**
+ * Run ripgrep over the candidate session files and return {file -> match count} for those that
+ * match. Fixed-string by default so a plain phrase is not read as a regex; `regex: true` opts in.
+ */
+function rgCounts(
+	files: string[],
+	pattern: string,
+	options: { regex: boolean; ignoreCase: boolean },
+): Promise<{ counts: Map<string, number>; missing: boolean }> {
+	return new Promise((resolve) => {
+		const args = ["--count-matches", "--no-messages", "--with-filename"];
+		if (!options.regex) args.push("--fixed-strings");
+		if (options.ignoreCase) args.push("--ignore-case");
+		args.push("--", pattern, ...files);
+		execFile(rgPath(), args, { maxBuffer: 8 * 1024 * 1024 }, (error, stdout) => {
+			const counts = new Map<string, number>();
+			// rg exits 1 when there are no matches; both cases are normal.
+			for (const line of String(stdout || "").split("\n")) {
+				const idx = line.lastIndexOf(":");
+				if (idx <= 0) continue;
+				const file = line.slice(0, idx);
+				const count = Number.parseInt(line.slice(idx + 1), 10);
+				if (Number.isFinite(count)) counts.set(file, (counts.get(file) ?? 0) + count);
+			}
+			const missing = Boolean(error && (error as NodeJS.ErrnoException).code === "ENOENT");
+			resolve({ counts, missing });
+		});
+	});
+}
+
 export default function (pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "session_list",
@@ -465,6 +501,76 @@ export default function (pi: ExtensionAPI) {
 			const { steps, origin } = readSteps(target, ctx);
 			return {
 				content: [{ type: "text", text: detailText(origin, steps, want, params.includeMetadata === true) }],
+			};
+		},
+	});
+
+	pi.registerTool({
+		name: "session_grep",
+		label: "Search sessions",
+		description:
+			"Find sessions whose content matches a pattern, using ripgrep. This is the right tool for " +
+			"'which session talked about X': it searches the files directly, so it sees every turn. " +
+			"Returns the matching session ids with match counts, newest first; follow up with " +
+			"session_digest / session_detail on the ids you pick. Fixed-string by default; pass regex=true " +
+			"for a regular expression. Default scope is this repository; scope=\"all\" searches every " +
+			"Pi session on the machine.",
+		parameters: Type.Object({
+			pattern: Type.String({ description: "Text to find (fixed string unless regex=true)." }),
+			scope: Type.Optional(
+				Type.Union([Type.Literal("repo"), Type.Literal("all")], { description: 'Default "repo".' }),
+			),
+			regex: Type.Optional(Type.Boolean({ description: "Treat pattern as a regular expression." })),
+			ignoreCase: Type.Optional(Type.Boolean({ description: "Case-insensitive match (default false)." })),
+			limit: Type.Optional(Type.Number({ description: "Max sessions to return (default 20)." })),
+		}),
+		annotations: { readOnlyHint: true },
+		async execute(_id: string, params: any, _signal: unknown, _onUpdate: unknown, ctx: any) {
+			const scope: Scope = params.scope ?? "repo";
+			const pattern = String(params.pattern ?? "").trim();
+			if (!pattern) {
+				return { content: [{ type: "text", text: "session_grep needs a non-empty pattern" }] };
+			}
+			const sessions = listSessionFiles(ctx, scope);
+			if (sessions.length === 0) {
+				return { content: [{ type: "text", text: `no sessions (scope=${scope})` }] };
+			}
+			const { counts, missing } = await rgCounts(
+				sessions.map((s) => s.file),
+				pattern,
+				{ regex: params.regex === true, ignoreCase: params.ignoreCase === true },
+			);
+			if (missing) {
+				return {
+					content: [
+						{ type: "text", text: "ripgrep (rg) is not on PATH; set KDN_RG to its path or load via the pi wrapper" },
+					],
+				};
+			}
+			if (counts.size === 0) {
+				return {
+					content: [
+						{ type: "text", text: `no session matches "${pattern}" (scope=${scope}; ${sessions.length} searched)` },
+					],
+				};
+			}
+			const limit = Math.max(1, Math.min(100, params.limit ?? 20));
+			const hits = sessions
+				.filter((s) => counts.has(s.file))
+				.map((s) => ({ s, n: counts.get(s.file) ?? 0 }))
+				.sort((a, b) => b.n - a.n)
+				.slice(0, limit);
+			const rows = hits.map(({ s, n }) => {
+				const repo = s.repo ? repoShort(s.repo) : "?";
+				return `${s.id}  ${String(n).padStart(4)} hits  ${repo}  ${s.name || "(unnamed)"}`;
+			});
+			return {
+				content: [
+					{
+						type: "text",
+						text: `${counts.size} session(s) match "${pattern}" (scope=${scope}); top ${hits.length} by hit count:\nid        hits  repo  name\n${rows.join("\n")}\n\nuse session_digest id=<id> to read one`,
+					},
+				],
 			};
 		},
 	});

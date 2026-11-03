@@ -84,6 +84,7 @@ let
       "session_list"
       "session_digest"
       "session_detail"
+      "session_grep"
     ];
   };
 
