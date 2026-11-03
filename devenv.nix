@@ -140,11 +140,6 @@ in
   };
 
   config = {
-    # The orchestrator's fork (packages/pi-coding-agent-extensions/default.nix) reads this and
-    # spawns children with no project context files, no skills, no templates, and no forwarded
-    # parent prompt. A child otherwise loads AGENTS.md (about 3.8k tokens, 45% of a 16k window).
-    env.PI_ORCHESTRATOR_CHILD_MINIMAL = "1";
-
     # argc drives the subcommand dispatch in the zellij-llm/kdn-slug bash packages; keep it
     # on PATH so the standalone scripts run and get tested in the shell.
     packages = [

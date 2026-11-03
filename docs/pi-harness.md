@@ -195,6 +195,8 @@ Rules that follow from the table:
 ## Related
 
 - [kdn-llms skill](../.agents/skills/kdn-llms/SKILL.md) — which alias for which purpose.
+- [docs/pi-extension-forks.md](pi-extension-forks.md) — how a Pi extension is forked, patched and
+  vendored.
 - [docs/tasks/2026-10/pi-harness-multi-agent/](tasks/2026-10/pi-harness-multi-agent/definition.md)
   — the research and design behind the harness, including the subagent extension.
 - `data/pi/` — the models, extensions and agents this repository owns.

@@ -50,16 +50,17 @@ in
   # Vendored at the commit this repo first tested. Bump `rev` and `hash` together.
   pi-orchestrator =
     let
-      # Forked to nazarewk-iac to add minimal child context: with
-      # PI_ORCHESTRATOR_CHILD_MINIMAL=1 a child spawns with --no-context-files
-      # --no-skills --no-prompt-templates, skips parent-prompt forwarding, and gets a
-      # compact rules block. Upstream had no context flag, so a child loaded AGENTS.md
-      # (~3.8k tokens, about 45% of a 16k window). Bump `rev` and `hash` together.
-      rev = "45a24ae196474272d7d711625391cc2a809939eb";
-      version = "0.11.0+nazarewk.1";
+      # Forked to nazarewk-iac to add a config-driven child context policy. childContext
+      # defaults to `auto`: a child on a listed provider/model (default ["brys"]) spawns with
+      # --no-context-files --no-skills --no-prompt-templates, skips parent-prompt forwarding,
+      # and gets a compact rules block; `fullAgents` opts an agent out. Upstream had no context
+      # flag, so a child loaded AGENTS.md (~3.8k tokens, about 45% of a 16k window).
+      # PI_ORCHESTRATOR_CHILD_MINIMAL still overrides. Bump `rev` and `hash` together.
+      rev = "169de0ac854e80316444cc8be3722a92be60976a";
+      version = "0.11.0+nazarewk.2";
       src = pkgs.fetchzip {
         url = "https://github.com/nazarewk-iac/pi-orchestrator/archive/${rev}.tar.gz";
-        hash = "sha256-a8ie9Lq4cp/ocuMVpM/GwXUrW+k1SK3URQa6jSh0x4A=";
+        hash = "sha256-jeXXbL3gqaz8xRvcmcPstjcKkxDvu8qAkWVVsOOzkNw=";
         stripRoot = true;
       };
 
