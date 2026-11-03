@@ -131,6 +131,33 @@ Three options, cheapest first:
 What is **not** worth automating: deriving the name from the transcript. It reads well in
 hindsight and badly at the time, and a wrong name is worse than a hash because it lies.
 
+## 4. Caveats and solutions
+
+Measured on 2026-11-03 from a live run (the `pryll` work) and from a cross-check of an external
+compaction research thread. Each row is a problem seen in practice, its evidence, and the fix.
+
+| #   | Caveat                                                          | Evidence                                                                                                                                                                    | Solution                                                                                                                                                                          |
+| --- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | A child session spends about 45% of a 16k window on boilerplate | Child system prompt: preamble+tools+rules 1.9k chars, docs 1.4k, addendum (this repo's AGENTS + catalog) 4.4k, project_context 15.4k = about 23.3k chars, about 7.3k tokens | An **isolated editor agent**: `--no-context-files`, no addendum, a tiny prompt (or `--system-prompt` to replace the base). The prompt falls to about 500 tokens and the 400s stop |
+| 2   | A 16k child overflows on ordinary tasks                         | Delegations failed with `400 ... request (17043/18061 tokens) exceeds ... (16384)`; the edited file was only about 3.4k tokens                                              | Shrink the prompt (row 1) first; else use a 32k model (`lfm2.5-24b-a2b`, 23 tok/s)                                                                                                |
+| 3   | About 39% of delegations are wasted                             | 9 of 23 in one run: 3 context errors, 6 empty or truncated replies (`"The"`, `"DONE"`)                                                                                      | Pass `inputBytes` to `delegate` so the context gate rejects an oversized task and names an alias that fits                                                                        |
+| 4   | The orchestrator over-decomposes                                | 16 scouts each ran one `grep`/`sed`, sequentially; one 131k-context scout could read the file and its neighbours                                                            | Right-size the child model; prefer fewer, larger recon tasks                                                                                                                      |
+| 5   | Compaction degrades tool use                                    | After `Session compacted 1 time` the orchestrator narrated "I'll delegate" and ended the turn with no tool call, twice                                                      | Do not resume a fat session; start fresh with a short brief. Treat compaction as the last resort (row 7)                                                                          |
+| 6   | A resume costs a full prefill                                   | After resume: 23.7k tokens prefilled at about 83 tok/s, about 296 s before the first output token                                                                           | Keep the carried context small; retrieval over resume (row 7)                                                                                                                     |
+| 7   | Compaction is not memory                                        | Research and measurement agree: a rewrite breaks the prompt cache and loses detail                                                                                          | **Retrieval over summarisation**: keep the session store, read it with `session_list`/`session_grep`/`session_digest`/`session_detail`                                            |
+| 8   | Two agents on one jj working copy corrupt each other            | A harness `jj commit` swept another agent's uncommitted files into its commit; a later split rewrote history under the running agent                                        | Give each agent its own `jj workspace`; always pass jj an explicit file set (`jj commit -- <paths>`)                                                                              |
+| 9   | Mechanical edits pay for a model they do not need               | Trivial appends failed as context errors, then succeeded only after retries                                                                                                 | A **deterministic patch tool** (strict exact match `path + old + new`, fail loudly) that applies the change with no model                                                         |
+| 10  | A small model edits from stale context                          | It edits lines it read several turns ago; another agent may also write the file                                                                                             | **Hashline edits**: each line carries a short hash; an edit names `(line, hash)` and is rejected on mismatch instead of misapplied                                                |
+| 11  | A hybrid model may re-prefill every turn (unverified)           | llama.cpp can silently fall back to full prompt re-processing on SWA/hybrid models; ours is hybrid GDN+QSA and showed no cache hit on resume                                | Check the served flags and the debug log for `forcing full prompt re-processing`; record the result before trusting prompt reuse                                                  |
+
+Rules that follow from the table:
+
+- **Isolate the surgical agents.** An editor needs no project context and no catalog.
+- **Prefer a deterministic tool over a model** when the caller already knows the exact change.
+- **Retrieve, do not rewrite.** The session tools exist so a turn can read history without
+  compacting it.
+- **One workspace per agent.** A shared `@` is a race, not a convenience.
+
 ## Quick reference
 
 | Task                             | Command                                      |
