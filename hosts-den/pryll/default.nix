@@ -174,6 +174,21 @@ in
 
     security.sudo.wheelNeedsPassword = false;
 
+    # --- Backup skeleton (OWNER HAND-OFF) ---------------------------------
+    # Restic backup of the persisted home state to a local USB disk. Left DISABLED on
+    # purpose: activating it needs the owner to (1) mount the USB target and set a real
+    # `repository` path, (2) create a restic password secret and point `passwordFile` at
+    # it, and (3) confirm the persist mount (assumed `/persist` via the `disks-persist`
+    # aspect) matches this host. With `enable = false` this is an inert, eval-clean
+    # placeholder; nothing is scheduled and no missing-secret assertion fires.
+    services.restic.backups.pryll-usb = {
+      enable = false;
+      repository = "/mnt/usb-backup/pryll";
+      passwordFile = "/run/secrets/restic-pryll-password";
+      paths = [ "/persist/home/bn" ];
+      timerConfig = { OnCalendar = "daily"; };
+    };
+
     # profile-baseline sets users.mutableUsers = false, and the root profile (selected below) hands
     # its hash to profile-baseline's `users.users.root.hashedPasswordFile`, so the nixpkgs "locked
     # out" assert is satisfied and mutableUsers stays false.
