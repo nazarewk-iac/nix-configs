@@ -626,19 +626,17 @@ _apply_resume() {
     return 0
   fi
 
-  # Insert the resume flag + id just before the first positional argument that is not a flag's
-  # value. A safe, simple rule: append it before a trailing `Task:`/positional prompt if the
-  # command already carries a bare positional; otherwise append at the end. In practice the
-  # harness command ends in flags or `--`, so appending at the end is correct for pi/opencode.
+  # Append the resume flag + id to the END of the command's argv. This is correct when the
+  # harness is the direct command (`zellij-llm run -i -- pi ... --session <id>`), and also when a
+  # pass-through wrapper prefixes it (`... -- devenv shell -- pi ...`): the wrapper forwards
+  # everything after its own `--`, so the trailing flag reaches pi and opencode. pi's own parser
+  # accepts flags after a positional prompt, so position does not matter for it.
+  #
+  # It does NOT work through a shell string (`-- bash -lc 'pi ...'`): there the trailing words
+  # become that shell's $0/$1 and never reach the harness. To continue such a command, write
+  # `--session <id>` inside the script itself.
   local -a out=("${cmd[@]}")
-  # If there is a `--` separator, insert before it so the flag stays a pi/opencode option.
-  local sep=-1 i
-  for i in "${!out[@]}"; do [[ "${out[$i]}" == "--" ]] && { sep=$i; break; }; done
-  if [[ "$sep" -ge 0 ]]; then
-    out=("${out[@]:0:$sep}" "$f" "$sid" "${out[@]:$sep}")
-  else
-    out+=("$f" "$sid")
-  fi
+  out+=("$f" "$sid")
   printf '%s\0' "${out[@]}"
 }
 
