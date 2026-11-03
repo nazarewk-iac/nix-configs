@@ -87,10 +87,12 @@ in
   # This repository's own small extensions. They live here, not under `data/`, because they are
   # general: no repo-specific path, secret or option. A consumer outside this repository takes
   # them the same way as the vendored one.
-  # The context gate sits beside pi-orchestrator: it registers `measure`, which sizes a file or a
-  # byte count and checks it against a model alias' served context. A prompt rule cannot stop
-  # "send a 468 KB transcript to a 32k model", so this is the code that can.
-  pi-orchestrator-gate = ./pi-orchestrator;
+  # The context gate is interim: it registers `measure`, which sizes a file or a byte count and
+  # checks it against a model alias' served context. A prompt rule cannot stop "send a 468 KB
+  # transcript to a 32k model", so this is the code that can. Interim because it belongs in the
+  # pi-orchestrator fork (see docs/tasks/2026-11/pi-harness-consolidation/); the fork keeps
+  # `upstream` mergeable, so a ported tool is a rebase, not a second extension.
+  orchestrator-gate = ./orchestrator-gate;
 
   # Live fleet state for the orchestrator: which aliases are loaded, their served context, and the
   # host headroom, in one tool. It degrades to the static view on a network fault.
@@ -144,7 +146,6 @@ in
 
   timestamps = ./timestamps;
   idle-marker = ./idle-marker;
-  subagent = ./subagent;
 
   # pi-ask-user: the interactive `ask_user` tool. It lets an agent stop and ask the operator a
   # focused question with option lists, instead of guessing or silently stalling. Vendored from a

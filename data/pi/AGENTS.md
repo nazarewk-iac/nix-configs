@@ -11,7 +11,7 @@ file only adds the multi-model working style on top.
 Local models are cheap and fast; your own context is the expensive resource. So:
 
 - **Recon goes to a sub-agent.** Never hand-read more than two files to find something. Send a
-  `scout` through the `subagent` tool, and batch independent lookups into ONE parallel `tasks` call.
+  `scout` through `delegate`, and batch independent lookups into ONE `delegate` call with `tasks`.
 - **Verification goes to a sub-agent** (`reviewer`) when a change is subtle.
 - **Mechanical edits go to a sub-agent** (`worker`) with ONE exact task per call: "rewrite
   attribute X to Y", not "improve the config". A vague task to a fast model fails confidently.

@@ -109,7 +109,7 @@ let
               # `delegate` and all work goes to the subagent fleet. Replaces our ad-hoc
               # subagent extension, whose async/status/retry behaviour this one already has.
               ext.pi-orchestrator
-              ext.pi-orchestrator-gate
+              ext.orchestrator-gate
               # Live fleet state (loaded aliases, served context, host headroom) so the
               # orchestrator can pick a model from intent AND cost, not a fixed tier.
               ext.fleet-status
@@ -151,7 +151,7 @@ in
       # Pi, wired from repo files so its config is versioned instead of living in ~/.pi:
       #   data/pi/models.json     the fleet models + context tiers (no secret; the key is a
       #                           runtime `!cat /run/configs/...` reference)
-      #   data/pi/extensions/     timestamps, idle-marker, subagent (with the model override)
+      #   data/pi/extensions/     timestamps, idle-marker (the agent roster lives in data/pi/agents/)
       #   data/pi/agents/         scout / worker / reviewer / planner / orchestrator
       # The wrapper appends --extension for each, so a plain `pi` in this shell has them.
       piWrapped

@@ -137,16 +137,48 @@ Two extensions are forked into `nazarewk-iac` and vendored by
 `packages/pi-coding-agent-extensions/default.nix`. Keep the fork's `main` identical to upstream
 so a rebase is trivial; carry only the patch.
 
-| upstream                      | fork branch                  | patch                                                                     |
-| ----------------------------- | ---------------------------- | ------------------------------------------------------------------------- |
-| `michaelmjhhhh/pi-atelier`    | `nazarewk-iac/jj-and-stats`  | prefer jj over git, show the change id and bookmarks, add the STATS panel |
-| `saifymatteo/pi-orchestrator` | `nazarewk-iac/child-context` | minimal child context (see below)                                         |
+| upstream                      | fork branch                  | patch                                                                                                                 |
+| ----------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `michaelmjhhhh/pi-atelier`    | `nazarewk-iac/jj-and-stats`  | prefer jj over git, show the change id and bookmarks, add the STATS panel, show trusted contributed panels by default |
+| `saifymatteo/pi-orchestrator` | `nazarewk-iac/child-context` | config-driven minimal child context (see below)                                                                       |
 
-The orchestrator fork reads `PI_ORCHESTRATOR_CHILD_MINIMAL`. When it is `1` (set in `devenv.nix`),
-a child spawns with `--no-context-files --no-skills --no-prompt-templates`, does not receive the
+The orchestrator fork replaces upstream's fixed behaviour with a `childContext` block in
+`orchestrator.jsonc`: `{ default, providers, models, fullAgents }`. When a child matches the policy,
+it spawns with `--no-context-files --no-skills --no-prompt-templates`, does not receive the
 forwarded parent prompt, and gets a compact rules block instead. A child otherwise loads AGENTS.md
-(about 3.8k tokens, about 45% of a 16k window). Upstream exposes no such flag, which is why the
-fork exists.
+(about 3.8k tokens, about 45% of a 16k window). There is no environment variable; the policy is data
+in the config file. Upstream exposes no such knob, which is why the fork exists.
+
+**The orchestrator is a mode, not an agent file.** Do not ship `agents/orchestrator.md`.
+`discoverAgents` reads `~/.pi/agent/agents/*.md` and offers every file there as a delegatable child,
+so an `orchestrator.md` appears in the fleet as a child named `orchestrator`. That child gets
+`PI_ORCHESTRATOR_CHILD=1`, which makes the extension disable itself (no `delegate`), and the
+`subagent` extension is not loaded, so such a child cannot delegate and its prompt is unsatisfiable.
+The engaged persona is the parent's; the fleet holds only real workers.
+
+## Extension inventory and policy
+
+`pi-orchestrator` owns delegation. Do not add a second extension that also spawns children: two
+delegation tools (`delegate` and a rival `subagent`), two agent-directory readers with different
+frontmatter dialects, and two context-minimisation paths are all confusion. When an orchestrator
+feature is missing, implement it in the `pi-orchestrator` fork — a rebase keeps upstream mergeable,
+so a ported tool costs no parallel extension.
+
+| extension           | origin                            | what it adds                                                               | overlap                          |
+| ------------------- | --------------------------------- | -------------------------------------------------------------------------- | -------------------------------- |
+| `pi-orchestrator`   | fork `nazarewk-iac/child-context` | `delegate`, engaged mode, fleet panel, child context policy                | —                                |
+| `pi-atelier`        | fork `nazarewk-iac/jj-and-stats`  | status rail, jj workspace panel, STATS, default-visible contributed panels | —                                |
+| `pi-ask-user`       | upstream `edlsh/pi-ask-user`      | `ask_user`                                                                 | —                                |
+| `pi-hashline-edit`  | upstream `@ravshansbox`           | hashline `read`/`edit` with stale-tag rejection                            | —                                |
+| `session-digest`    | ours                              | `session_list`/`session_grep`/`session_digest`/`session_detail`            | —                                |
+| `orchestrator-gate` | ours, **interim**                 | `measure` (size a task against a model's served context)                   | belongs in the orchestrator fork |
+| `fleet-status`      | ours, **interim**                 | loaded aliases, served context, host headroom                              | belongs in the orchestrator fork |
+| `timestamps`        | ours                              | per-message timestamps                                                     | —                                |
+| `idle-marker`       | ours                              | an idle marker in the status line                                          | —                                |
+
+The pattern-slicing tool (`slice`: split one oversized artifact into bounded child windows) was
+dropped with the old `subagent` extension. It is a real missing feature of `delegate`; see
+[docs/tasks/2026-11/pi-harness-consolidation/](tasks/2026-11/pi-harness-consolidation/definition.md).
 
 ## 4. Caveats and solutions
 
