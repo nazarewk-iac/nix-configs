@@ -147,6 +147,28 @@ in
     networking.hostName = "pryll";
     networking.hostId = "25880d1d";
     system.stateVersion = "26.05";
+
+    # Unattended updates (run book owner item): pull and switch on a weekly timer.
+    #
+    # CAVEAT — LUKS unlock path. This host's root is a detached-header LUKS volume on the
+    # internal SSD. It unlocks only with a FIDO2 tap (YubiKey) or the keyslot-1 pass keyfile:
+    # the machine's TPM is 1.2 and systemd-cryptenroll cannot enrol it, so there is NO
+    # unattended unlock. A reboot drops the machine to the initrd LUKS prompt and it stays
+    # offline until a person is physically present. Therefore `allowReboot` is left FALSE: the
+    # timer does the safe part (fetch + switch, no reboot) and the new generation activates on
+    # the next manual, attended restart. Flip `allowReboot` true only while someone is at the
+    # machine; `rebootWindow` then bounds that reboot to the early-morning hour.
+    system.autoUpgrade = {
+      enable = true;
+      dates = "sun *-*-* 04:30";
+      randomizedDelaySec = "45min";
+      operation = "switch";
+      allowReboot = false;
+      rebootWindow = {
+        lower = "04:00";
+        upper = "05:00";
+      };
+    };
     home-manager.useGlobalPkgs = true;
     home-manager.sharedModules = [ { home.stateVersion = "26.05"; } ];
 
