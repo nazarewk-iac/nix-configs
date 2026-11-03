@@ -63,6 +63,20 @@ ancestors, and children run in the same directory as the parent. Use the spawn a
 Related work already in place: `isolated: true` on the `editor` agent, and the `pi-hashline-edit`
 extension. Both stay.
 
+**Where the harness actually spawns children (verified 2026-11-03).** The orchestrator's `delegate`
+comes from **pi-orchestrator**, not this repo's `subagent` extension. `delegate.ts` spawns children
+with `--mode rpc` and appends `--append-system-prompt`, but passes **no** `--no-context-files` and
+no `--no-skills`, so a harness child still loads AGENTS.md (about 3.8k tokens). pi-orchestrator's
+config accepts `childExtensions` and `childBlockedTools`, but **no context flag and no extra
+argument**. Therefore the harness fix is one of:
+
+- fork pi-orchestrator (as pi-atelier) and add a `childContext: "minimal" | "full"` option that
+  appends `--no-context-files --no-skills --no-prompt-templates` and a bundled `child-rules.md`;
+- or upstream that option to the project.
+
+The `subagent` extension change here is still correct and useful for anything that calls the
+`subagent` tool directly; it does not reach the orchestrator's `delegate` path.
+
 ### B. A compact shared rules file
 
 `data/pi/subagent-rules.md`, about 40 lines: simple technical English, one exact task, do not run
@@ -93,18 +107,57 @@ frontmatter_index { roots: ["docs", ".agents/rules"], match?: "zfs|rag", type?: 
 ### D. Trim AGENTS.md
 
 - Remove the duplication between `## Topic Files` and the `docs/` table (one list only).
-- Compress each row to path plus one short clause, or drop the table and point at
+- Compress each row to path plus one short clause, or drop the table and point at `index.md` /
   `frontmatter_index`.
 - Tighten the prose (the STE rule already applies). Several blocks are two to three times longer
   than needed.
 - Target: AGENTS.md about 3,770 to about 1,000 tokens, with the docs table removed from the
   prompt entirely.
 
-### E. Keep the descriptions short with Vale
+### E. Adopt OKF as the document schema (not ad-hoc frontmatter)
 
-`vale` is in nixpkgs (3.17.1). Community ASD-STE100-style rule sets are partial; a certified
-checker is commercial. Use Vale as a **check** on `docs/` so a `description:` stays a short
-phrase. This keeps the index terse and the prose STE-shaped.
+The repo already has an OKF rule: `.agents/rules/okf-format.md` and [docs/okf-format.md](../../okf-format.md).
+OKF (Open Knowledge Format) is Google's vendor-neutral convention for knowledge as markdown plus
+YAML frontmatter, in a directory tree. Verified against upstream
+(`GoogleCloudPlatform/knowledge-catalog/okf/README.md`, 2026-11-03):
+
+- **Required**: a small set of keys; in practice a non-empty `type:`. Extra keys must be tolerated
+  by every consumer.
+- **Recommended, queryable**: `title`, `description`, `resource`, `tags`, `timestamp`. v0.2 adds
+  trust and freshness keys (`sources`, `generated`, `verified`, `status`, `stale_after`); add them
+  only if a checker enforces them.
+- **Reserved filenames**: `index.md` (directory listing) and `log.md` (date-grouped history). They
+  carry their own structure and are exempt from the ordinary document rules.
+- OKF is explicitly designed for **agents ingesting files into context**, so it is the right
+  schema for what this task indexes.
+
+So `frontmatter_index` reads OKF keys, and the check validates OKF conformance.
+
+### F. Progressive discovery: OKF `index.md` plus a live index tool
+
+Upstream states the property directly: OKF has "**progressive disclosure built in** —
+auto-generated `index.md` files let an agent navigate the hierarchy one level at a time instead of
+loading the entire bundle into context."
+
+Two ways to use that, and this task does both:
+
+1. **`frontmatter_index`** (live, no artifact) for cross-tree queries by `type`/`tags`/`match`.
+   Nothing to keep in step.
+2. **Generated `index.md`** per directory, in the OKF format
+   (`* [Title](url) - description`), produced at **build time** (Nix `devenv files.` or a package)
+   and never committed, so it cannot drift. An agent reads the nearest `index.md` first, then the
+   one document it needs.
+
+### G. OKF conformance check (and optional Vale for prose)
+
+A small checker validates the OKF rules that matter for discovery:
+
+- every non-reserved `.md` has parseable YAML frontmatter with a non-empty `type:`;
+- `description:` is one short phrase;
+- reserved `index.md`/`log.md` are exempt and, if generated, match the OKF entry format.
+
+This replaces "Vale for STE" as the enforcement mechanism. Vale (`nixpkgs`, 3.17.1) stays optional
+for prose style; the OKF check is what keeps the index valid and terse.
 
 ## Caveats learned during this work
 

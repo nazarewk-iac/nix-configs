@@ -15,6 +15,8 @@ export interface AgentConfig {
 	model?: string;
 	/** Run with no project context (AGENTS.md/CLAUDE.md) and no skills: a surgical, tiny prompt. */
 	isolated?: boolean;
+	/** Run with the full project context. Default is minimal (see `minimalContext` below). */
+	context?: "minimal" | "full";
 	systemPrompt: string;
 	source: "user" | "project";
 	filePath: string;
@@ -39,6 +41,7 @@ type AgentFrontmatter = {
 	tools?: unknown;
 	model?: unknown;
 	isolated?: unknown;
+	context?: unknown;
 };
 
 /**
@@ -100,6 +103,7 @@ function loadAgentsFromDir(dir: string, source: "user" | "project"): AgentConfig
 			tools: parseToolList(frontmatter.tools),
 			model: typeof frontmatter.model === "string" ? frontmatter.model : undefined,
 			isolated: frontmatter.isolated === true,
+			context: frontmatter.context === "full" ? "full" : undefined,
 			systemPrompt: body,
 			source,
 			filePath,

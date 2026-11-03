@@ -324,9 +324,16 @@ async function runSingleAgent(
 		args.push("--thinking", dispatchDefaults.thinkingLevel);
 	}
 	if (agent.tools && agent.tools.length > 0) args.push("--tools", agent.tools.join(","));
-	// An isolated agent runs with a tiny prompt: no project context files (AGENTS.md/CLAUDE.md),
-	// no skill index, no prompt templates. This keeps a surgical child far below its window.
-	if (agent.isolated) args.push("--no-context-files", "--no-skills", "--no-prompt-templates");
+	// Children get a minimal prompt by default: no project context files (AGENTS.md/CLAUDE.md), no
+	// skill index, no prompt templates, plus a compact shared rules file. AGENTS.md is about 45% of a
+	// 16k child's window and mostly a docs table a child does not need. An agent that genuinely
+	// needs the repo rules opts in with `context: full`.
+	const fullContext = agent.context === "full" && agent.isolated !== true;
+	if (!fullContext) {
+		args.push("--no-context-files", "--no-skills", "--no-prompt-templates");
+		const rules = path.join(path.dirname(fileURLToPath(import.meta.url)), "subagent-rules.md");
+		if (fs.existsSync(rules)) args.push("--append-system-prompt", rules);
+	}
 
 	let tmpPromptDir: string | null = null;
 	let tmpPromptPath: string | null = null;
