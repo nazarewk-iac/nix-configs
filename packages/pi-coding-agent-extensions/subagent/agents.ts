@@ -13,6 +13,8 @@ export interface AgentConfig {
 	description: string;
 	tools?: string[];
 	model?: string;
+	/** Run with no project context (AGENTS.md/CLAUDE.md) and no skills: a surgical, tiny prompt. */
+	isolated?: boolean;
 	systemPrompt: string;
 	source: "user" | "project";
 	filePath: string;
@@ -36,6 +38,7 @@ type AgentFrontmatter = {
 	description?: unknown;
 	tools?: unknown;
 	model?: unknown;
+	isolated?: unknown;
 };
 
 /**
@@ -96,6 +99,7 @@ function loadAgentsFromDir(dir: string, source: "user" | "project"): AgentConfig
 			description: frontmatter.description,
 			tools: parseToolList(frontmatter.tools),
 			model: typeof frontmatter.model === "string" ? frontmatter.model : undefined,
+			isolated: frontmatter.isolated === true,
 			systemPrompt: body,
 			source,
 			filePath,

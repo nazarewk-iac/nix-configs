@@ -124,6 +124,9 @@ let
               # steps (list -> digest with #n refs -> exact detail) so an agent learns what a prior
               # session did without loading the whole file into context.
               ext.session-digest
+              # Hashline read/edit: read emits [path#TAG] + N: lines; edit takes a line-anchored
+              # patch and rejects a stale tag, so a small model cannot edit lines from an old read.
+              ext.pi-hashline-edit
             ];
           };
         }

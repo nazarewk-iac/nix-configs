@@ -90,6 +90,28 @@ in
   # host headroom, in one tool. It degrades to the static view on a network fault.
   fleet-status = ./fleet-status;
 
+  # pi-hashline-edit: replaces the built-in read/edit with hashline versions. read prefixes each
+  # line with "N:" and a [path#TAG] header; edit takes a line-anchored patch and REJECTS it when
+  # the tag no longer matches the file. That solves two real problems here: a small model editing
+  # stale lines (it must re-read), and two agents writing one file. It echoes no old text, so it
+  # is cheaper than a search/replace edit. Vendored; its only peers are host-injected.
+  pi-hashline-edit =
+    let
+      src = pkgs.fetchurl {
+        url = "https://registry.npmjs.org/@ravshansbox/pi-hashline-edit/-/pi-hashline-edit-3.0.4.tgz";
+        hash = "sha256-0jGiJvrmHxkgEPXh02uMkQn2d0c2pZaFuACv4YuqwN8=";
+      };
+      unpacked = pkgs.runCommand "pi-hashline-edit-3.0.4" { } ''
+        mkdir -p $out
+        tar xzf ${src} -C $out --strip-components=1
+        chmod -R u+w $out
+      '';
+    in
+    mkExtension {
+      name = "pi-hashline-edit-3.0.4";
+      src = unpacked;
+    };
+
   # session-digest: read Pi sessions in three widening steps (list -> digest with `#n` refs ->
   # exact detail for the steps you pick), with fuzzy search over session id/repo/name. Read-only;
   # default scope is this repository, with an explicit scope="all" opt-in. It reuses Fuse.js rather

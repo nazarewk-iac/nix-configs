@@ -324,6 +324,9 @@ async function runSingleAgent(
 		args.push("--thinking", dispatchDefaults.thinkingLevel);
 	}
 	if (agent.tools && agent.tools.length > 0) args.push("--tools", agent.tools.join(","));
+	// An isolated agent runs with a tiny prompt: no project context files (AGENTS.md/CLAUDE.md),
+	// no skill index, no prompt templates. This keeps a surgical child far below its window.
+	if (agent.isolated) args.push("--no-context-files", "--no-skills", "--no-prompt-templates");
 
 	let tmpPromptDir: string | null = null;
 	let tmpPromptPath: string | null = null;
