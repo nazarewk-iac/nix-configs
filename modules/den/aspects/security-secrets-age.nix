@@ -343,12 +343,16 @@ let
       # So: order after the encrypted volumes, wait up to 30 s for a usable TPM, then continue
       # ANYWAY (exit 0). Continuing is deliberate — the SSH host key identity decrypts, and
       # blocking here would repeat the lockout. `Restart=on-failure` is the second net.
+      # NO `pcscd.service` or `cryptsetup.target` edge here: `pcscd` pulls in `basic.target`,
+      # `sockets.target`, `cups.socket` and `sysinit.target`, which closes a cycle back through
+      # sops. systemd then DELETES this job, sshd (Requires=kdn-secrets.target, BindsTo this
+      # service) goes with it, and the host is reachable only over the KVM. Measured twice:
+      # 2026-10-27/28 in the old tree, and 2026-11-04 with this edge added. The ordering is
+      # already safe: `dev-tpmrm0.device` and `RequiresMountsFor` cover the real dependencies.
       systemd.services.sops-install-secrets.after =
-        [ "cryptsetup.target" "pcscd.service" ]
-        ++ lib.optional config.kdn.security.secrets.age.tpm.enable "dev-tpmrm0.device";
+        lib.optional config.kdn.security.secrets.age.tpm.enable "dev-tpmrm0.device";
       systemd.services.sops-install-secrets.wants =
-        [ "pcscd.service" ]
-        ++ lib.optional config.kdn.security.secrets.age.tpm.enable "dev-tpmrm0.device";
+        lib.optional config.kdn.security.secrets.age.tpm.enable "dev-tpmrm0.device";
       systemd.services.sops-install-secrets.serviceConfig = {
         Restart = lib.mkDefault "on-failure";
         RestartSec = lib.mkDefault 5;
