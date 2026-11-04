@@ -91,6 +91,21 @@ let
             `docs/tasks/2026-10/tpm-age-sops-keys/`.
           '';
         };
+        waitSeconds = lib.mkOption {
+          type = lib.types.ints.unsigned;
+          default = 0;
+          example = 30;
+          description = ''
+          Wait up to this many seconds for a USABLE TPM before the decrypt, and then continue
+          regardless. The TPM is busy early in boot (cryptsetup unseals the LUKS volumes and
+          libvirtd opens a TPM secret in the same seconds), and the resource manager then answers
+          `Esys_Load` with a TPM error. On 2026-11-04 that made the boot-time decrypt fail, so
+          `kdn-secrets.target` was never reached and sshd failed its dependency.
+
+          `0` disables the wait. The probe is opt-in per host: it costs up to this many seconds of
+          boot, and most hosts do not need it because their SSH host key is already a recipient.
+                  '';
+        };
         identityFile = lib.mkOption {
           type = lib.types.str;
           default = "/var/lib/sops-tpm/tpm-identity.txt";
@@ -318,8 +333,40 @@ let
 
       # A TPM identity needs the device and the module, or the decrypt races the driver.
       security.tpm2.enable = lib.mkDefault config.kdn.security.secrets.age.tpm.enable;
-      systemd.services.sops-install-secrets.after = lib.optional config.kdn.security.secrets.age.tpm.enable "dev-tpmrm0.device";
-      systemd.services.sops-install-secrets.wants = lib.optional config.kdn.security.secrets.age.tpm.enable "dev-tpmrm0.device";
+
+      # The TPM is BUSY early in boot, not missing: cryptsetup unseals the LUKS volumes and
+      # libvirtd opens a TPM secret in the same seconds, and the resource manager then answers
+      # `Esys_Load` with a TPM error ("No locks available"). On 2026-11-04 that cost brys its
+      # sshd: sops-install-secrets failed, kdn-secrets.target was never reached, and sshd
+      # (Requires=kdn-secrets.target) failed its dependency.
+      #
+      # So: order after the encrypted volumes, wait up to 30 s for a usable TPM, then continue
+      # ANYWAY (exit 0). Continuing is deliberate — the SSH host key identity decrypts, and
+      # blocking here would repeat the lockout. `Restart=on-failure` is the second net.
+      systemd.services.sops-install-secrets.after =
+        [ "cryptsetup.target" "pcscd.service" ]
+        ++ lib.optional config.kdn.security.secrets.age.tpm.enable "dev-tpmrm0.device";
+      systemd.services.sops-install-secrets.wants =
+        [ "pcscd.service" ]
+        ++ lib.optional config.kdn.security.secrets.age.tpm.enable "dev-tpmrm0.device";
+      systemd.services.sops-install-secrets.serviceConfig = {
+        Restart = lib.mkDefault "on-failure";
+        RestartSec = lib.mkDefault 5;
+        ExecStartPre = lib.optional (config.kdn.security.secrets.age.tpm.enable && config.kdn.security.secrets.age.tpm.waitSeconds > 0) (
+          pkgs.writeShellScript "kdn-sops-wait-tpm" ''
+            if [ ! -e /dev/tpmrm0 ]; then exit 0; fi
+            deadline=$(( $(date +%s) + ${toString config.kdn.security.secrets.age.tpm.waitSeconds} ))
+            while [ "$(date +%s)" -lt "$deadline" ]; do
+              if ${pkgs.tpm2-tools}/bin/tpm2_getrandom 1 >/dev/null 2>&1; then exit 0; fi
+              sleep 2
+            done
+            echo "kdn-sops-wait-tpm: TPM still busy after ${toString config.kdn.security.secrets.age.tpm.waitSeconds} s; continuing with the other identities" >&2
+            exit 0
+          ''
+        );
+      };
+      systemd.services.sops-install-secrets.unitConfig.StartLimitIntervalSec = lib.mkDefault 0;
+
       # The identity blob sits on a persistent path (`/var/lib/sops-tpm`, a bind mount from
       # the ZFS state bucket). Without this, the unit starts before that mount exists: the
       # generator's `test -r` then prints nothing, the merged key file has no TPM identity,

@@ -72,6 +72,21 @@ in
           disk encryption is the control for that.
         '';
       };
+      waitSeconds = lib.mkOption {
+        type = lib.types.ints.unsigned;
+        default = 0;
+        example = 30;
+        description = ''
+          Wait up to this many seconds for a USABLE TPM before the decrypt, and then continue
+          regardless. The TPM is busy early in boot (cryptsetup unseals the LUKS volumes and
+          libvirtd opens a TPM secret in the same seconds), and the resource manager then answers
+          `Esys_Load` with a TPM error. On 2026-11-04 that made the boot-time decrypt fail, so
+          `kdn-secrets.target` was never reached and sshd failed its dependency.
+
+          `0` disables the wait. The probe is opt-in per host: it costs up to this many seconds of
+          boot, and most hosts do not need it because their SSH host key is already a recipient.
+                '';
+      };
       identityFile = lib.mkOption {
         type = lib.types.str;
         default = "/var/lib/sops-tpm/tpm-identity.txt";
@@ -205,8 +220,38 @@ in
             systemd.services.sops-install-secrets.preStart = lib.getExe cfg.service.preStart;
             # A TPM identity reads /dev/tpmrm0, so the device must exist before the decrypt runs.
             security.tpm2.enable = lib.mkDefault cfg.tpm.enable;
-            systemd.services.sops-install-secrets.after = lib.optional cfg.tpm.enable "dev-tpmrm0.device";
-            systemd.services.sops-install-secrets.wants = lib.optional cfg.tpm.enable "dev-tpmrm0.device";
+            # The TPM is BUSY early in boot, not missing: cryptsetup unseals the LUKS volumes and
+            # libvirtd opens a TPM secret in the same seconds, and the resource manager then
+            # answers Esys_Load with a TPM error. On 2026-11-04 that cost brys its sshd:
+            # sops-install-secrets failed, kdn-secrets.target was never reached, and sshd
+            # (Requires=kdn-secrets.target) failed its dependency.
+            #
+            # Order after the encrypted volumes, wait up to 30 s for a usable TPM, then continue
+            # ANYWAY (exit 0): the SSH host key identity decrypts, and blocking would repeat the
+            # lockout. Restart=on-failure is the second net.
+            systemd.services.sops-install-secrets.after =
+              [ "cryptsetup.target" "pcscd.service" ]
+              ++ lib.optional cfg.tpm.enable "dev-tpmrm0.device";
+            systemd.services.sops-install-secrets.wants =
+              [ "pcscd.service" ]
+              ++ lib.optional cfg.tpm.enable "dev-tpmrm0.device";
+            systemd.services.sops-install-secrets.serviceConfig = {
+              Restart = lib.mkDefault "on-failure";
+              RestartSec = lib.mkDefault 5;
+              ExecStartPre = lib.optional (cfg.tpm.enable && cfg.tpm.waitSeconds > 0) (
+                pkgs.writeShellScript "kdn-sops-wait-tpm" ''
+                  if [ ! -e /dev/tpmrm0 ]; then exit 0; fi
+                  deadline=$(( $(date +%s) + ${toString cfg.tpm.waitSeconds} ))
+                  while [ "$(date +%s)" -lt "$deadline" ]; do
+                    if ${pkgs.tpm2-tools}/bin/tpm2_getrandom 1 >/dev/null 2>&1; then exit 0; fi
+                    sleep 2
+                  done
+                  echo "kdn-sops-wait-tpm: TPM still busy after ${toString cfg.tpm.waitSeconds} s; continuing with the other identities" >&2
+                  exit 0
+                ''
+              );
+            };
+            systemd.services.sops-install-secrets.unitConfig.StartLimitIntervalSec = lib.mkDefault 0;
             # The blob lives on a persistent bind mount. Order and require its mount unit,
             # or the unit starts first, the generator prints nothing, and the decrypt fails.
             systemd.services.sops-install-secrets.unitConfig.RequiresMountsFor =

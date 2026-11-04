@@ -159,6 +159,10 @@ in
       # See docs/tasks/2026-10/tpm-age-sops-keys/.
       kdn.hw.yubikey.requiredForBoot = false;
       kdn.security.secrets.age.tpm.enable = true;
+      # The TPM is contended in the first seconds of boot here (two LUKS volumes unseal with it,
+      # and libvirtd opens a TPM secret). Wait up to 30 s for a usable TPM, then continue anyway;
+      # without this a busy TPM cost the host its sshd on 2026-11-04.
+      kdn.security.secrets.age.tpm.waitSeconds = 30;
     }
     {
       kdn.desktop.sway.portals.debug = true;
