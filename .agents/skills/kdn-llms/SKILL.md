@@ -69,9 +69,8 @@ Pick the alias by intent, not by model. Current assignments:
 | `code-quick-fast` | tiny code edits | qwen3.5-4b | 61 |
 | `code-std-fast` | normal coding | north-mini-code-1.0 | 18 |
 | `code-deep-slow` | hard coding | qwen3.8-flash-next | 2.4 |
-| `vision-quick-fast` | quick image Q&A / OCR | qwen3-vl-30b-a3b | 15.7 |
 | `vision-std-fast` | images, general | qwen3-vl-30b-a3b | 15.7 |
-| `vision-deep-slow` | hard image tasks | qwen3.8-flash-next | 2.4 |
+| `vision-deep-slow` | hard image tasks / dense text | ornith-1.5-35b-a3b | 8.8 |
 | `audio-std-mid` | speech in (audio+vision+text) | qwen3-omni-30b-a3b | 8.8 |
 | `reason-quick-fast` | cheap step-by-step | mellum-2.1-12b-a2.5b-thinking | 14.8 |
 | `reason-std-fast` | reasoning, long context | nemotron-3-nano-30b-a3b | 12.1 |
@@ -116,7 +115,7 @@ id. Speeds are measured decode tok/s on brys.
 - **Frontier / orchestrate**: `qwen3.8-flash-next` (1M ctx, vision), `deepseek-v4-flash` (320K).
 - **Fast 24-35B MoE (20-23 t/s)**: `qwen3.5-35b-a3b`, `qwen3.6-35b-a3b`, `glm-4.7-flash`, `nemotron-3.5-lightning-30b`, `lfm2.5-24b-a2b`.
 - **Quality 27-36B dense (1.7-2.3 t/s)**: this whole class was dropped on 2026-11-04 — `qwen3.8-27b`, `qwen3.6-27b` (1.8), `granite-4.2-30b` (2.1), `gemma-4-31b` (1.7), `olmo-3.1-32b` (2.3), `seed-oss-36b` (2.0). All are dense, CPU-only, and slower than the 1M-context flash-next (2.36), which also has a far larger window. Use `qwen3.8-flash-next` for that tier.
-- **Multimodal**: `qwen3-vl-30b-a3b` (the workhorse, 15.7), `qwen3.8-flash-next` (vision via mmproj, but a text frontier), `ornith-1.5-35b-a3b` (vision), `qwen3-omni-30b-a3b` (audio+vision), `gemma-4-12b/26b-a4b/e2b/e4b` (image+audio). `qwen3-vl-8b-instruct` was dropped on 2026-11-04: at 8.4 t/s it was slower than the 15.7 t/s 30B VL model.
+- **Multimodal**: `qwen3-vl-30b-a3b` (fast workhorse, 15.7), `ornith-1.5-35b-a3b` (**best at dense terminal text**, 8.8), `qwen3-omni-30b-a3b` (audio+vision), `gemma-4-12b/26b-a4b/e2b/e4b` (image+audio). `qwen3.8-flash-next` has vision DISABLED (2026-11-04): the projector cost ~0.8 GB and its CPU prefill made a 256px icon take 259 s and a 2560px screenshot exceed 900 s. `vision-quick-fast` and `qwen3-vl-8b-instruct` are retired.
 - **Code**: `north-mini-code-1.0`.
 - **Reasoning**: `mellum-2.1-12b-a2.5b-thinking`, `nemotron-3-nano-30b-a3b`, `ministral-3-3b-reasoning`.
 - **Tools**: `granite-4.2-3b`, `granite-4.2-8b`.

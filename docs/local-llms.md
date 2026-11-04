@@ -510,6 +510,50 @@ other models keep `parallel=1`. Context sizes:
 to 1M, and still be served at a smaller window for a reason (RAM, co-residence, or an
 architectural ceiling). A served value **above** `native` needs rope scaling, not just a flag.
 
+### Vision: what it costs and which model to use
+
+Measured 2026-11-04 on brys with `pi -p --model <alias> @<image>` and wall clock:
+
+| model                                     | 256px icon                   | 2560px terminal screenshot                                                                                                                          |
+| ----------------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `vision-std-fast` (`qwen3-vl-30b-a3b`)    | 23 s, correct                | 105-141 s, right idea, wrong counts, hallucinated duplicate rows                                                                                    |
+| `vision-deep-slow` (`ornith-1.5-35b-a3b`) | 25 s, correct, best phrasing | 53 s, **only model that got the failed-unit count right**, right symlink and right cause; still miscounted dataset rows and read `6.79M` as `6.79G` |
+| `qwen3.8-flash-next`                      | 259 s, correct               | **timed out at 900 s, no output**                                                                                                                   |
+
+Two consequences, both applied to `data/llm.nix`:
+
+- **`qwen3.8-flash-next` vision is disabled.** The projector is ~0.8 GB and every image pays a
+  CPU prefill; on text its throughput is unchanged either way, so there was nothing to gain.
+  `vision-deep-slow` moved to `ornith-1.5-35b-a3b`.
+- **`vision-quick-fast` is retired.** It resolved to the same model as `vision-std-fast`; on the
+  icon it said "pig" where the same model said "elephant" — one sample, two answers, no tier.
+
+### Feeding a screenshot of text (the accuracy lever)
+
+Every model miscounted the dense `zfs list` (19 rows actual; answers ranged 21-25) and every model
+mangled the `\x2d` unit escapes. That is a _pre-processing_ problem, not a model problem: a 2560px
+wide, mostly-empty screenshot is resized down until each glyph is a few pixels. Four levers, cheapest
+first:
+
+1. **Trim and upscale before sending.** The dead right margin costs tokens and resolution:
+   ```sh
+   magick shot.png -fuzz 5% -trim +repage -resize 200% -colorspace Gray -level 10%,90% /tmp/v/full.png
+   ```
+2. **Cut at command boundaries, one tile per command.** The prompt rows (`[root@pryll:~]# …`) are
+   reliable separators: find them with `tesseract --psm 6 tsv` (words `root@…`), crop between two
+   markers, and send each tile with a 40px overlap. Each answer is then short, and "how many lines"
+   stops being a 19-row counting task.
+3. **Separate transcription from counting.** Ask one question per tile: "transcribe these lines
+   verbatim"; count the lines from the transcript (`wc -l`) or with OCR, never by asking the model to
+   count. Models transcribe well and count badly.
+4. **Use OCR as the numerics oracle.** `tesseract` is reliable on glyphs and useless on layout;
+   the VL model is the reverse. Ask the model for structure (which command, which dataset, which
+   unit path) and take the sizes from OCR, or at least cross-check them.
+
+Tile height matters: qwen-vl maps area to tokens, so a 2000px-wide full screenshot is ~4k tokens no
+matter how it is cut; three 700px tiles cost about the same but each region keeps its pixels, which
+is what fixes the glyph errors.
+
 ### Co-residence with the frontier
 
 The 35B shares RAM with the resident frontier, as two separate tiers (see

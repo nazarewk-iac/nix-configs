@@ -207,7 +207,6 @@ in
         "orchestrate-deep-slow"
         "chat-deep-slow"
         "code-deep-slow"
-        "vision-deep-slow"
         "reason-deep-slow"
         "tools-deep-slow"
       ];
@@ -233,7 +232,9 @@ in
         };
       };
       gpu = false;
-      vision = true;
+      # Vision is deliberately OFF. The projector loads ~0.8 GB and every image prompt pays a
+      # CPU prefill: measured 2026-11-04, a 256px icon took 259 s and a 2560px terminal
+      # screenshot did not finish in 900 s. Use the VL models for images.
       contextSize = 1048576;
       hosts.brys = {
         set = "main";
@@ -247,11 +248,6 @@ in
           enable = true;
           hfFile = "UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf";
           hfRepo = "unsloth/Qwen3.8-Flash-Next-GGUF";
-          mmproj = {
-            enable = true;
-            hfFile = "mmproj-F16.gguf";
-            hfRepo = "unsloth/Qwen3.8-Flash-Next-GGUF";
-          };
           perf = {
             batchSize = 4096;
             cacheRam = 8192;
@@ -734,7 +730,12 @@ in
       };
     };
     "ornith-1.5-35b-a3b" = {
-      aliases = [ "vision-std-fast-alt" ];
+      # The best reader of dense terminal text in the 2026-11-04 probe: it alone got the failed
+      # unit count right, the /nix/var/nix symlink target right, and the emergency-mode cause right.
+      aliases = [
+        "vision-deep-slow"
+        "vision-std-fast-alt"
+      ];
       capabilities = {
         loadSeconds = 25;
         operation = "cpu";
@@ -846,10 +847,10 @@ in
       };
     };
     "qwen3-vl-30b-a3b" = {
-      # vision-quick-fast moved here when qwen3-vl-8b-instruct was dropped (2026-11-04):
-      # the 8b "quick" model measured 8.4 t/s, slower than this 30B MoE at 15.7 t/s.
+      # vision-quick-fast is retired: it resolved to this same model, so the "quick" tier was
+      # the standard tier with a different sample. Measured on a 256px icon it said "pig"
+      # where the same model said "elephant" — a label that promised nothing.
       aliases = [
-        "vision-quick-fast"
         "vision-std-fast"
         "vision-std-fast-moe"
       ];
