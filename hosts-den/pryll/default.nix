@@ -156,18 +156,17 @@ in
     # unattended unlock. A reboot drops the machine to the initrd LUKS prompt and it stays
     # offline until a person is physically present. Therefore `allowReboot` is left FALSE: the
     # timer does the safe part (fetch + switch, no reboot) and the new generation activates on
-    # the next manual, attended restart. Flip `allowReboot` true only while someone is at the
-    # machine; `rebootWindow` then bounds that reboot to the early-morning hour.
+    # the next manual, attended restart. The owner reboots manually after an upgrade.
     system.autoUpgrade = {
       enable = true;
       dates = "sun *-*-* 04:30";
       randomizedDelaySec = "45min";
       operation = "switch";
+      # No automatic reboot: this host uses LUKS/FIDO2 unlock, so a reboot lands on an
+      # attended initrd prompt the owner must answer over the KVM. The owner reboots
+      # manually after an upgrade. `rebootWindow` is intentionally omitted — it only has
+      # an effect when `allowReboot = true`.
       allowReboot = false;
-      rebootWindow = {
-        lower = "04:00";
-        upper = "05:00";
-      };
     };
     home-manager.useGlobalPkgs = true;
     home-manager.sharedModules = [ { home.stateVersion = "26.05"; } ];
@@ -175,17 +174,16 @@ in
     security.sudo.wheelNeedsPassword = false;
 
     # --- Backup skeleton (OWNER HAND-OFF) ---------------------------------
-    # Restic backup of the persisted home state to a local USB disk. Left DISABLED on
-    # purpose: activating it needs the owner to (1) mount the USB target and set a real
-    # `repository` path, (2) create a restic password secret and point `passwordFile` at
-    # it, and (3) confirm the persist mount (assumed `/persist` via the `disks-persist`
-    # aspect) matches this host. With `enable = false` this is an inert, eval-clean
-    # placeholder; nothing is scheduled and no missing-secret assertion fires.
-    services.restic.backups.pryll-usb = {
-      enable = false;
+    # USB backup for the mother's workstation — OWNER-ACTIVATION PLACEHOLDER.
+    # `services.restic.backups.<name>` has no `enable` option, and nixpkgs creates the
+    # restic-backups-pryll-usb timer the moment the entry is declared, so the whole subtree
+    # is guarded with `lib.mkIf false` to keep it inert and eval-clean (no timer, no
+    # missing-secret assertion). To activate: drop `lib.mkIf false`, mount the USB target and
+    # set a real `repository`, and create the `passwordFile` secret.
+    services.restic.backups.pryll-usb = lib.mkIf false {
       repository = "/mnt/usb-backup/pryll";
       passwordFile = "/run/secrets/restic-pryll-password";
-      paths = [ "/persist/home/bn" ];
+      paths = [ "/home/bn" ];
       timerConfig = { OnCalendar = "daily"; };
     };
 
@@ -205,16 +203,14 @@ in
 
     # Remote support: RustDesk client (not TeamViewer; no server aspect here). Unattended access
     # is set up once over the KVM (fixed password + relay). See run book phase 5.
-    environment.systemPackages = with hostPkgs; [
-      rustdesk
-      # Desktop apps wanted on the mother's workstation (run book owner item: document viewing,
-      # image viewing, file manager, media player). `desktop-kde` only brings Plasma + the QQc2
-      # breeze styles, so these are added here explicitly. okular/gwenview/dolphin are KDE apps,
-      # vlc is a top-level package.
-      kdePackages.okular
-      kdePackages.gwenview
-      kdePackages.dolphin
-      vlc
+    environment.systemPackages = [
+      # Desktop apps the owner wants (document/image viewing, file manager, media player).
+      # `desktop-kde` brings Plasma but not these, so they are added explicitly here.
+      hostPkgs.rustdesk
+      hostPkgs.kdePackages.okular
+      hostPkgs.kdePackages.gwenview
+      hostPkgs.kdePackages.dolphin
+      hostPkgs.vlc
     ];
     systemd.services.rustdesk = {
       description = "RustDesk unattended client";
