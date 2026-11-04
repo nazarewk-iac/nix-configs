@@ -65,20 +65,20 @@ Pick the alias by intent, not by model. Current assignments:
 | `chat-std-fast` | normal chat/assistant | lfm2.5-24b-a2b | 23 |
 | `chat-std-mid` | normal chat, more quality | qwen3.5-35b-a3b | 23 |
 | `chat-std-mid-long` | long-context chat | nemotron-3-nano-30b-a3b | 12 |
-| `chat-deep-slow` | hard/creative questions | qwen3.8-27b | 2.5 |
+| `chat-deep-slow` | hard/creative questions | qwen3.8-flash-next | 2.4 |
 | `code-quick-fast` | tiny code edits | qwen3.5-4b | 61 |
 | `code-std-fast` | normal coding | north-mini-code-1.0 | 18 |
-| `code-deep-slow` | hard coding | qwen3.8-27b | 2.5 |
+| `code-deep-slow` | hard coding | qwen3.8-flash-next | 2.4 |
 | `vision-quick-fast` | quick image Q&A / OCR | qwen3-vl-8b-instruct | 8.4 |
 | `vision-std-fast` | images, general | qwen3-vl-30b-a3b | 15.7 |
-| `vision-deep-slow` | hard image tasks | qwen3.8-27b | 2.5 |
+| `vision-deep-slow` | hard image tasks | qwen3.8-flash-next | 2.4 |
 | `audio-std-mid` | speech in (audio+vision+text) | qwen3-omni-30b-a3b | 8.8 |
 | `reason-quick-fast` | cheap step-by-step | mellum-2.1-12b-a2.5b-thinking | 14.8 |
 | `reason-std-fast` | reasoning, long context | nemotron-3-nano-30b-a3b | 12.1 |
-| `reason-deep-slow` | hard reasoning | qwen3.8-27b | 2.5 |
+| `reason-deep-slow` | hard reasoning | qwen3.8-flash-next | 2.4 |
 | `tools-dumb-fast` | mechanical tool calls | granite-4.2-3b | 85 |
 | `tools-std-fast` | agent tools, RAG, terminal | lfm2.5-24b-a2b | 23 |
-| `tools-deep-slow` | hard agent tasks | qwen3.8-27b | 2.5 |
+| `tools-deep-slow` | hard agent tasks | qwen3.8-flash-next | 2.4 |
 | `embed-std-fast` | embeddings (RAG) | qwen3-embedding-4b | — |
 | `rank-std-fast` | reranking (RAG) | qwen3-reranker-4b | — |
 | `tiny-dumb-fast` | routing/classification | qwen3.5-0.8b | 208 |
@@ -115,7 +115,7 @@ id. Speeds are measured decode tok/s on brys.
 
 - **Frontier / orchestrate**: `qwen3.8-flash-next` (1M ctx, vision), `deepseek-v4-flash` (320K).
 - **Fast 24-35B MoE (20-23 t/s)**: `qwen3.5-35b-a3b`, `qwen3.6-35b-a3b`, `glm-4.7-flash`, `nemotron-3.5-lightning-30b`, `lfm2.5-24b-a2b`.
-- **Quality 27-36B dense (2-3 t/s)**: `qwen3.8-27b`, `qwen3.6-27b`, `gemma-4-31b`, `granite-4.2-30b`, `olmo-3.1-32b`, `seed-oss-36b`.
+- **Quality 27-36B dense (2-3 t/s)**: `qwen3.6-27b`, `gemma-4-31b`, `granite-4.2-30b`, `olmo-3.1-32b`, `seed-oss-36b`. `qwen3.8-27b` was dropped on 2026-11-04: on 8 CPU threads it measured 0.80 tok/s against 2.36 for the 1M-context flash-next, so the dense 27B was slower AND smaller-windowed.
 - **Multimodal**: `qwen3-vl-30b-a3b`, `qwen3-vl-8b-instruct`, `ornith-1.5-35b-a3b` (all vision), `qwen3-omni-30b-a3b` (audio+vision), `gemma-4-12b/26b-a4b/e2b/e4b` (image+audio).
 - **Code**: `north-mini-code-1.0`.
 - **Reasoning**: `mellum-2.1-12b-a2.5b-thinking`, `nemotron-3-nano-30b-a3b`, `ministral-3-3b-reasoning`.

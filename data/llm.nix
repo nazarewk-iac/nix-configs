@@ -137,7 +137,6 @@ in
             "tmax-2b"
             "tmax-9b"
           ]
-          [ "qwen3.8-27b" ]
           [ "qwen3.5-35b-a3b" ]
         ];
         persistentModels = [ "qwen3.8-flash-next" ];
@@ -171,10 +170,19 @@ in
   # `common` is what llama-server needs to load the model; `perf` is the preset INI.
   models = {
     "qwen3.8-flash-next" = {
+      # The deep aliases landed here when qwen3.8-27b was dropped. Measured on 2026-11-04 on
+      # the same prompt: 27b on 8 CPU threads produced 0.80 tok/s, flash-next on 16 threads
+      # 2.36 tok/s. The dense 27b was three times slower AND had a smaller window (131k vs
+      # 1M), so it bought nothing for a deep tier and cost a model slot.
       aliases = [
         "frontier"
         "qwen"
         "orchestrate-deep-slow"
+        "chat-deep-slow"
+        "code-deep-slow"
+        "vision-deep-slow"
+        "reason-deep-slow"
+        "tools-deep-slow"
       ];
       capabilities = {
         loadSeconds = 90;
@@ -198,6 +206,7 @@ in
         };
       };
       gpu = false;
+      vision = true;
       contextSize = 1048576;
       hosts.brys = {
         set = "main";
@@ -1089,41 +1098,6 @@ in
           };
           enable = true;
           hfFile = "qwen3.6-35b-a3b.gguf";
-          hfRepo = "surveyed";
-          perf = {
-            parallel = 1;
-            threads = 8;
-          };
-        };
-      };
-    };
-    "qwen3.8-27b" = {
-      aliases = [
-        "chat-deep-slow"
-        "code-deep-slow"
-        "vision-deep-slow"
-        "reason-deep-slow"
-        "tools-deep-slow"
-      ];
-      capabilities = {
-        loadSeconds = 40;
-        operation = "cpu";
-      };
-      pi = {
-        maxTokens = 8192;
-      };
-      vision = true;
-      gpu = false;
-      contextSize = 131072;
-      hosts.brys = {
-        set = "surveyed";
-        servedContext = 131072;
-        common = {
-          download = {
-            enable = false;
-          };
-          enable = true;
-          hfFile = "qwen3.8-27b.gguf";
           hfRepo = "surveyed";
           perf = {
             parallel = 1;
