@@ -230,11 +230,15 @@ in
           HostKey ${hostCert.keyPath}
           HostCertificate ${toString hostCert.certPath}
         '';
-        # sshd reads the managed host key from its SOPS runtime path, so it must wait for the
-        # secrets. Without this order the host certificate is absent on a cold boot: sshd starts
-        # before `sops-install-secrets` and never retries the load. See `kdn-secrets.target`.
+        # sshd reads the managed host KEY from its SOPS runtime path, so it must wait for the
+        # secrets. A `requires` here is a fault-amplifier though: the target is
+        # `BindsTo=sops-install-secrets`, so ONE failed decrypt elsewhere deleted the sshd job and
+        # left the host reachable only over a KVM (2026-11-04 on brys). `wants` + `after` keeps the
+        # ordering, and a failed decrypt then costs the host certificate, not SSH itself. The HOST
+        # KEY is not part of this dependency on a host that syncs it from the repo: see
+        # `kdn.ssh-ca.hostKey.autoloadFrom` and `kdnctl host ensure ssh-host-keys`.
         systemd.services.sshd.after = [ "kdn-secrets.target" ];
-        systemd.services.sshd.requires = [ "kdn-secrets.target" ];
+        systemd.services.sshd.wants = [ "kdn-secrets.target" ];
       };
     };
 

@@ -93,12 +93,10 @@ creation_rules:
           # defaults
           - *yk-brys-unattended
           - *yk-oams-unattended
-          # brys decrypts this file at boot with nobody present. Two unattended identities are
-          # listed on purpose: the SSH host key exists from the very first boot stage, while the
-          # TPM identity needs its blob on a persistent path. On 2026-11-04 only the TPM was
-          # listed and that race cost brys its sshd: sops-install-secrets failed, kdn-secrets.target
-          # was never reached, and sshd (Requires=kdn-secrets.target) failed its dependency.
-          - *ssh-brys
+          # brys decrypts this file at boot with nobody present, so its TPM identity is a
+          # recipient. No `ssh-brys` here: the host key is no longer a sops dependency at boot
+          # (sshd starts on its own, verified 2026-11-04), so a host's SSH identity must not be
+          # able to read the fleet's LLM keys.
           - *tpm-brys
   # One file, one rule. `default.unattended.sops.yaml` is the NetworkManager default-connection
   # config, which every host decrypts; brys needs it at boot, so it carries the TPM identity.
@@ -185,6 +183,20 @@ creation_rules:
     key_groups:
       - age:
           - *ssh-briv
+          - *yk-oams-unattended
+          - *yk-brys-unattended
+  # A host's SSH host key, kept in the repo so an install or a re-key is reproducible.
+  # `kdnctl host ensure ssh-host-keys` reads it, compares the DECRYPTED bytes with the host, and
+  # uploads only on a difference.
+  #
+  # Custody: the two admin YubiKeys, in their ATTENDED (no-touch) form — the same pair that
+  # already guards `hosts/brys/certs/ssh_host_ed25519.key.sops`. Deliberately NOT the host's own
+  # SSH identity (`ssh-brys`): this key IS that identity, and a sync is a per-host operator
+  # action, never a boot-time read. Touch/PIN variants would make every sync need a physical
+  # touch, which buys nothing here because the file is only read on demand.
+  - path_regex: '^secrets/hosts/brys/ssh-keys/.*\.sops(\.|$)'
+    key_groups:
+      - age:
           - *yk-oams-unattended
           - *yk-brys-unattended
   - path_regex: '.*brys.*\.key\.sops'
