@@ -26,6 +26,23 @@ Use this when a vendored Pi extension must change and upstream does not have the
 Keep the fork's `main` **identical to upstream**. Do not commit to `main`. This makes a later
 rebase and a re-vendor trivial.
 
+### One branch per feature, merged into the vendoring branch
+
+Do not stack unrelated work on the vendored branch. Branch per feature from the vendored rev, and
+merge the feature branch into the branch the pin names:
+
+```sh
+git -C /tmp/<repo>-fork checkout -b nazarewk-iac/<feature> <vendored-rev>
+# ... commits, tests ...
+git -C /tmp/<repo>-fork checkout nazarewk-iac/<vendoring-branch>
+git -C /tmp/<repo>-fork merge --no-ff -m "merge nazarewk-iac/<feature>: <what>" nazarewk-iac/<feature>
+```
+
+The pin then points at the **merge commit**. Two reasons: a feature can be dropped or reverted by
+one merge, and `git log --first-parent` still reads as the vendoring line. `pi-orchestrator` works
+this way — `nazarewk-iac/child-context` is the vendoring branch, and `runs-peek`, `session-stats`
+are features merged into it.
+
 ## Patch
 
 - One commit per change, with a message that says what and why.
@@ -92,7 +109,7 @@ branch.
 
 ## Forks today
 
-| upstream                      | branch                       | patch                                             |
-| ----------------------------- | ---------------------------- | ------------------------------------------------- |
-| `michaelmjhhhh/pi-atelier`    | `nazarewk-iac/jj-and-stats`  | jj over git, change id and bookmarks, STATS panel |
-| `saifymatteo/pi-orchestrator` | `nazarewk-iac/child-context` | config-driven minimal child context               |
+| upstream                      | branch                                                                                                       | patch                                                                                                                              |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `michaelmjhhhh/pi-atelier`    | `nazarewk-iac/jj-and-stats`                                                                                  | jj over git, change id and bookmarks, STATS panel                                                                                  |
+| `saifymatteo/pi-orchestrator` | `nazarewk-iac/child-context` (vendoring) + `nazarewk-iac/session-stats`, `nazarewk-iac/runs-peek` (features) | config-driven minimal child context, session stats in the fleet panel, `/orchestrator-runs` + `ctrl+alt+r` to open a run in a pane |

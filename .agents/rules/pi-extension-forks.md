@@ -11,6 +11,9 @@ Full doc: [docs/pi-extension-forks.md](../../docs/pi-extension-forks.md)
 When a vendored Pi extension must change and upstream does not have the change:
 
 - Fork into `nazarewk-iac` and branch **from the vendored revision**, not from `main`.
+- One branch per feature (`nazarewk-iac/<feature>`), merged with `--no-ff` into the vendoring
+  branch the pin names; point `rev` at the merge commit. Never stack unrelated features on one
+  branch, and never commit to `main`.
 - Keep the fork's `main` identical to upstream. Never commit to it.
 - One small, upstreamable patch commit. Prefer a config switch over a hard-coded behaviour.
 - Run the fork's `tsc --noEmit` and tests before you push.
