@@ -8,58 +8,17 @@ timestamp: 2026-11-03T13:40:00+01:00
 
 Use this when a vendored Pi extension must change and upstream does not have the change.
 
-## Fork and branch — jj bookmarks, joined into `main`
+## Fork and branch
 
-The fork is a normal git repo that we drive with **jujutsu** (`jj git init --colocate` converts an
-existing clone, so the git remote and the jj view share one object store). Bookmarks are branches;
-there is no branch checkout to get wrong.
+The fork, the bookmark layout and the upstream-update flow are **not** Pi-specific: follow
+[docs/guides/git-forking.md](guides/git-forking.md#keep-the-patch-line-on-jj-bookmarks-joined-into-main)
+— one bookmark per patch, joined by a two-parent change bookmarked `main`, and the consumer pins
+`main`'s commit. Two Pi-only points to add to that recipe:
 
-1. Fork into the `nazarewk-iac` organisation and clone into a scratch dir, then add upstream:
-   ```sh
-   gh repo fork <owner>/<repo> --org nazarewk-iac --clone=false
-   gh repo clone nazarewk-iac/<repo> /tmp/<repo>-fork
-   jj git init --colocate                       # one store, git remotes still work
-   jj git remote add upstream https://github.com/<owner>/<repo>.git
-   jj git fetch --remote upstream
-   ```
-2. **One bookmark per feature**, cut from the commit we currently vendor:
-   ```sh
-   jj new <vendored-rev> -m "feat: <feature>"
-   # ... edits ...
-   jj bookmark create <feature>                 # e.g. runs-peek, session-stats
-   ```
-3. **Join the features in one change, bookmarked `main`.** A change with two parents is a merge;
-   nothing is rewritten:
-   ```sh
-   jj new <feature-a> <feature-b> -m "merge <feature-a> and <feature-b>"
-   jj bookmark set main -r @
-   jj new                                       # keep @ empty; @- is now the join
-   ```
-   So the vendoring point is always `@-` while you work, and it is the `main` bookmark. A feature
-   is added later by `jj new main <new-feature>` + `jj bookmark set main -r @`.
-4. Push the bookmarks (never a branch checkout, never a force-push of unrelated refs):
-   ```sh
-   jj git push --bookmark main --bookmark <feature>
-   ```
-5. Vendor the **`main` commit**: `rev` is `main`'s commit id, so "the vendored line" and "the fork's
-   main" are the same thing and no branch name has to be remembered.
-
-### Upstream moves
-
-`upstream/main` is the reference, not the fork's `main`. On an upstream update:
-
-```sh
-jj git fetch --remote upstream
-jj rebase -s <feature-a> -d upstream/main      # and each other feature bookmark
-jj new <feature-a> <feature-b> -m "merge ..."  # re-join
-jj bookmark set main -r @
-jj new
-```
-
-Consequence, recorded because it reverses the older rule: the fork's `main` is **no longer identical
-to upstream**. It is the joined integration line, and `upstream/main` holds the pristine copy. That
-is the price of a single, always-vendorable bookmark; the alternative (topic branches we vendor
-directly) needs a branch name in every bump and loses the merge topology.
+- Cut the patch from the **exact revision this repo vendors**, so the patch applies to what is
+  built; the vendoring bump then moves `main` and the `rev` together.
+- A vendored extension has runtime peers that the Pi host injects (`@earendil-works/*`,
+  `@sinclair/typebox`). Never vendor those; see [Vendor it](#vendor-it).
 
 ## Patch
 

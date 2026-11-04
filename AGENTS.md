@@ -30,7 +30,7 @@ change, and the user reviews from the tip. See
 - [Nix Conventions](.agents/rules/nix-conventions.md) — formatting, module design principles (auto-loaded for `.nix` files)
 - [Slots Standalone](.agents/rules/slots-standalone.md) — slots must not reference or assign any `modules/universal`- or `modules/meta`-declared option inside their own target configs (full architecture: [modules/slots/README.md](modules/slots/README.md))
 - [Packaging Python Scripts](.agents/rules/packaging-python.md) — `init-py-script`, `mkPythonScript`, `default.nix` pattern
-- [Forking a Pi extension](.agents/rules/pi-extension-forks.md) — fork into nazarewk-iac, branch from the vendored rev, keep `main` equal to upstream, vendor by pinned rev+hash (full doc: [docs/pi-extension-forks.md](docs/pi-extension-forks.md))
+- [Forking and vendoring](.agents/rules/forking.md) — fork into nazarewk-iac, one jj bookmark per patch joined into `main`, vendor by pinned rev+hash (general guide: [docs/guides/git-forking.md](docs/guides/git-forking.md); Pi specifics: [docs/pi-extension-forks.md](docs/pi-extension-forks.md))
 - [Flake Update](.agents/rules/flake-update.md) — update procedure, patch handling, testing (full doc: [docs/flake-update.md](docs/flake-update.md))
 - [MCP Setup](.agents/rules/mcp-setup.md) — gateway architecture, adding backends, mcpsnoop (full doc: [docs/mcp-setup.md](docs/mcp-setup.md))
 - [Tasks](.agents/rules/tasks.md) — one directory per task at `docs/tasks/<YYYY-MM>/<slug>/`, recursive sub-tasks, done-tag + sibling solution file; a work-run status belongs in the task's `.worklog.md` (full doc: [docs/tasks/README.md](docs/tasks/README.md))

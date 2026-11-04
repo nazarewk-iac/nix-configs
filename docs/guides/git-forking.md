@@ -1,6 +1,6 @@
 ---
 type: How-To
-description: Fork a git repository with the GitHub CLI, rename the remotes, and disable unused repository features.
+description: Fork a git repository with the GitHub CLI, rename the remotes, keep the patch line on jj bookmarks joined into main, disable unused repository features, and vendor the result by pinned revision.
 timestamp: 2026-10-01T17:38:07+02:00
 ---
 
@@ -57,6 +57,82 @@ git -C "$repo" remote rename origin nazarewk
 git -C "$repo" remote rename upstream origin
 git -C "$repo" remote -v
 ```
+
+## Keep the patch line on jj bookmarks, joined into `main`
+
+A fork that carries local patches needs a branch layout, and this is the same for any repository we
+vendor: one **bookmark per patch**, joined by a two-parent change that is the fork's `main`.
+
+### Paths and clones: always `g-dir` and `g-get`
+
+Never hard-code a scratch path. `g-dir <host>/<owner>/<repo>` prints where this machine keeps that
+repository (`$HOME/dev/<host>/<owner>/<repo>` unless `GIT_UTILS_KDN_BASE_DIR` says otherwise), and
+`g-get <host>/<owner>/<repo>` clones it there, or fetches and updates it when the directory already
+exists. Both live in `packages/git-utils` and are on the shell PATH:
+
+```bash
+repo="$(g-dir github.com/nazarewk/<repo>)"
+```
+
+For a **jj-managed** fork, clone only and let jj do the fetching. `g-get` updates an existing clone
+with `git pull --rebase`, which fights a colocated jj working copy:
+
+```bash
+GIT_UTILS_KDN_UPDATE=0 g-get github.com/nazarewk/<repo>   # clone if missing, never pull
+jj git init --colocate --repository "$repo"               # first time only
+jj -R "$repo" git remote add upstream https://github.com/<owner>/<repo>.git
+jj -R "$repo" git fetch --remote upstream
+```
+
+### One bookmark per patch
+
+Cut every patch from the revision you currently build, never from `main`:
+
+```bash
+jj new <vendored-rev> -m "feat: <patch>"
+# ... edits, tests ...
+jj bookmark create <patch>          # short name, no owner prefix
+```
+
+### Join the patches into `main`
+
+A change with two parents is a merge; nothing is rewritten. Keep the working copy empty so the
+build point is always `@-` and it is the `main` bookmark:
+
+```bash
+jj new <patch-a> <patch-b> -m "merge <patch-a> and <patch-b>"
+jj bookmark set main -r @
+jj new                               # @ empty; @- is the join, bookmarked main
+```
+
+Add a later patch with `jj new main <new-patch>` and `jj bookmark set main -r @`.
+
+### Push and consume
+
+```bash
+jj git push --bookmark main --bookmark <patch>
+```
+
+The consumer pins `main`'s commit id. "The vendored line" and "the fork's main" are then the same
+thing, so no branch name has to be remembered on a bump.
+
+### Upstream moves
+
+`upstream/main` is the pristine copy, not the fork's `main`:
+
+```bash
+repo="$(g-dir github.com/nazarewk/<repo>)"
+jj -R "$repo" git fetch --remote upstream
+jj -R "$repo" rebase -s <patch> -d upstream/main   # repeat per patch bookmark
+jj new <patch-a> <patch-b> -m "merge ..."
+jj bookmark set main -r @
+jj new
+```
+
+Consequence, recorded because it reverses an older habit: the fork's `main` is **not** identical to
+upstream. It is the joined integration line, and `upstream/main` holds the pristine copy. That is
+the price of a single always-buildable bookmark; the alternative — vendoring a topic branch
+directly — needs a branch name in every bump and loses the merge topology.
 
 ## Disable features
 

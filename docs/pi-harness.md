@@ -134,13 +134,14 @@ hindsight and badly at the time, and a wrong name is worse than a hash because i
 ## Vendored forks
 
 Two extensions are forked into `nazarewk-iac` and vendored by
-`packages/pi-coding-agent-extensions/default.nix`. Keep the fork's `main` identical to upstream
-so a rebase is trivial; carry only the patch.
+`packages/pi-coding-agent-extensions/default.nix`. The fork mechanics are the general ones in
+[docs/guides/git-forking.md](guides/git-forking.md#keep-the-patch-line-on-jj-bookmarks-joined-into-main):
+one jj bookmark per patch, joined into the fork's `main`, which is the pinned commit.
 
-| upstream                      | fork branch                  | patch                                                                                                                 |
-| ----------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `michaelmjhhhh/pi-atelier`    | `nazarewk-iac/jj-and-stats`  | prefer jj over git, show the change id and bookmarks, add the STATS panel, show trusted contributed panels by default |
-| `saifymatteo/pi-orchestrator` | `nazarewk-iac/child-context` | config-driven minimal child context (see below)                                                                       |
+| upstream                      | fork bookmarks                                | patch                                                                                                                 |
+| ----------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `michaelmjhhhh/pi-atelier`    | `nazarewk-iac/jj-and-stats` (single bookmark) | prefer jj over git, show the change id and bookmarks, add the STATS panel, show trusted contributed panels by default |
+| `saifymatteo/pi-orchestrator` | `main` (join) + `session-stats`, `runs-peek`  | config-driven minimal child context, session stats in the fleet panel, `/orchestrator-runs` + `ctrl+alt+r`            |
 
 The orchestrator fork replaces upstream's fixed behaviour with a `childContext` block in
 `orchestrator.jsonc`: `{ default, providers, models, fullAgents }`. When a child matches the policy,
