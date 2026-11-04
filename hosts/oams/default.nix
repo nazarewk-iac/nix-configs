@@ -82,7 +82,7 @@ in
       home-manager.sharedModules =
         (kdnConfig.self.denLib.imports {
           class = "homeManager";
-          aspects = [ "ssh-ca" ];
+          aspects = [ "ssh-ca" "pi-client" ];
         })
         ++ [
           # The home-manager copy of the option trees resolves the CA path the same way, so it

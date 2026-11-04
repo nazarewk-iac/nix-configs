@@ -73,6 +73,7 @@ let
     dev-llm-omp = ./aspects/dev-llm-omp.nix;
     dev-llm-opencode = ./aspects/dev-llm-opencode.nix;
     dev-llm-pi = ./aspects/dev-llm-pi.nix;
+    pi-client = ./aspects/pi-client.nix;
     dev-lua = ./aspects/dev-lua.nix;
     dev-nickel = ./aspects/dev-nickel.nix;
     dev-nix = ./aspects/dev-nix.nix;

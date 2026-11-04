@@ -32,14 +32,6 @@ let
   # is one `pi.nix` pin in the tree, not two.
   pi = inputs.nix-configs.inputs.pi;
 
-  # The Pi models.json, RENDERED from data/llm.nix (the single LLM source of truth). No
-  # hand-written catalogue: a model or alias change in data/llm.nix flows straight into the shell.
-  piModelsJson = pkgs.writeText "pi-models.json" (
-    builtins.toJSON {
-      providers = (import ./lib/llm.nix { inherit (inputs.nixpkgs) lib; }).mkPiModelsJson;
-    }
-  );
-
   ext = pkgs.callPackage ./packages/pi-coding-agent-extensions { };
 
   # The system prompt for every extension's agent: the repository working style plus the model
@@ -98,7 +90,6 @@ let
             # gets the vendored 1.4.0. devenv's own `pkgs` has no repo overlay, so read the flake
             # output instead of `pkgs.pi-coding-agent`.
             package = inputs.nix-configs.packages.${pkgs.stdenv.hostPlatform.system}.pi-coding-agent;
-            models = piModelsJson;
             # The default working style for local LLMs plus the model catalog, appended to every
             # session's system prompt. Built above as one file because `rules` takes a single path.
             rules = piRules;
