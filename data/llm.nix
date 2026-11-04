@@ -339,26 +339,6 @@ in
         };
       };
     };
-    "gemma-4-31b" = {
-      gpu = false;
-      contextSize = 8192;
-      hosts.brys = {
-        set = "surveyed";
-        servedContext = 8192;
-        common = {
-          download = {
-            enable = false;
-          };
-          enable = true;
-          hfFile = "gemma-4-31b.gguf";
-          hfRepo = "surveyed";
-          perf = {
-            parallel = 1;
-            threads = 8;
-          };
-        };
-      };
-    };
     "gemma-4-e2b" = {
       gpu = true;
       contextSize = 16384;
@@ -415,26 +395,6 @@ in
           };
           enable = true;
           hfFile = "glm-4.7-flash.gguf";
-          hfRepo = "surveyed";
-          perf = {
-            parallel = 1;
-            threads = 8;
-          };
-        };
-      };
-    };
-    "granite-4.2-30b" = {
-      gpu = false;
-      contextSize = 8192;
-      hosts.brys = {
-        set = "surveyed";
-        servedContext = 8192;
-        common = {
-          download = {
-            enable = false;
-          };
-          enable = true;
-          hfFile = "granite-4.2-30b.gguf";
           hfRepo = "surveyed";
           perf = {
             parallel = 1;
@@ -746,26 +706,6 @@ in
         };
       };
     };
-    "olmo-3.1-32b" = {
-      gpu = false;
-      contextSize = 8192;
-      hosts.brys = {
-        set = "surveyed";
-        servedContext = 8192;
-        common = {
-          download = {
-            enable = false;
-          };
-          enable = true;
-          hfFile = "olmo-3.1-32b.gguf";
-          hfRepo = "surveyed";
-          perf = {
-            parallel = 1;
-            threads = 8;
-          };
-        };
-      };
-    };
     "ornith-1.5-35b-a3b" = {
       aliases = [ "vision-std-fast-alt" ];
       capabilities = {
@@ -879,7 +819,10 @@ in
       };
     };
     "qwen3-vl-30b-a3b" = {
+      # vision-quick-fast moved here when qwen3-vl-8b-instruct was dropped (2026-11-04):
+      # the 8b "quick" model measured 8.4 t/s, slower than this 30B MoE at 15.7 t/s.
       aliases = [
+        "vision-quick-fast"
         "vision-std-fast"
         "vision-std-fast-moe"
       ];
@@ -903,37 +846,6 @@ in
           mmproj = {
             enable = true;
             hfFile = "qwen3-vl-30b-a3b-mmproj.gguf";
-            hfRepo = "surveyed";
-          };
-          perf = {
-            parallel = 1;
-            threads = 8;
-          };
-        };
-      };
-    };
-    "qwen3-vl-8b-instruct" = {
-      aliases = [ "vision-quick-fast" ];
-      capabilities = {
-        loadSeconds = 3;
-        operation = "gpu";
-      };
-      vision = true;
-      gpu = false;
-      contextSize = 32768;
-      hosts.brys = {
-        set = "surveyed";
-        servedContext = 32768;
-        common = {
-          download = {
-            enable = false;
-          };
-          enable = true;
-          hfFile = "qwen3-vl-8b-instruct.gguf";
-          hfRepo = "surveyed";
-          mmproj = {
-            enable = true;
-            hfFile = "qwen3-vl-8b-instruct-mmproj.gguf";
             hfRepo = "surveyed";
           };
           perf = {
@@ -974,10 +886,10 @@ in
     "qwen3.5-0.8b-cpu" = {
       gpu = false;
       source = "qwen3.5-0.8b";
-      contextSize = 8192;
+      contextSize = 16384;
       hosts.brys = {
         set = "surveyed";
-        servedContext = 8192;
+        servedContext = 16384;
         common = {
           download = {
             enable = false;
@@ -1023,10 +935,10 @@ in
     "qwen3.5-2b-cpu" = {
       gpu = false;
       source = "qwen3.5-2b";
-      contextSize = 8192;
+      contextSize = 16384;
       hosts.brys = {
         set = "surveyed";
-        servedContext = 8192;
+        servedContext = 16384;
         common = {
           download = {
             enable = false;
@@ -1066,26 +978,6 @@ in
         };
       };
     };
-    "qwen3.6-27b" = {
-      gpu = false;
-      contextSize = 8192;
-      hosts.brys = {
-        set = "surveyed";
-        servedContext = 8192;
-        common = {
-          download = {
-            enable = false;
-          };
-          enable = true;
-          hfFile = "qwen3.6-27b.gguf";
-          hfRepo = "surveyed";
-          perf = {
-            parallel = 1;
-            threads = 8;
-          };
-        };
-      };
-    };
     "qwen3.6-35b-a3b" = {
       gpu = false;
       contextSize = 8192;
@@ -1098,26 +990,6 @@ in
           };
           enable = true;
           hfFile = "qwen3.6-35b-a3b.gguf";
-          hfRepo = "surveyed";
-          perf = {
-            parallel = 1;
-            threads = 8;
-          };
-        };
-      };
-    };
-    "seed-oss-36b" = {
-      gpu = false;
-      contextSize = 8192;
-      hosts.brys = {
-        set = "surveyed";
-        servedContext = 8192;
-        common = {
-          download = {
-            enable = false;
-          };
-          enable = true;
-          hfFile = "seed-oss-36b.gguf";
           hfRepo = "surveyed";
           perf = {
             parallel = 1;
@@ -1152,10 +1024,10 @@ in
     "tmax-2b-cpu" = {
       gpu = false;
       source = "tmax-2b";
-      contextSize = 8192;
+      contextSize = 16384;
       hosts.brys = {
         set = "surveyed";
-        servedContext = 8192;
+        servedContext = 16384;
         common = {
           download = {
             enable = false;
