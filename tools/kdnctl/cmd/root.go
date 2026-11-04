@@ -131,17 +131,33 @@ func initializeConfig(cmd *cobra.Command) (err error) {
 		viper.SetConfigFile(viper.ConfigFileUsed())
 	}
 
-	// manually bind PFlags to ignore some of them
-	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
-		switch flag.Name {
-		case "config-file", "help":
-			return
-		default:
-			if e := viper.BindPFlag(flag.Name, flag); e != nil {
-				err = errors.Join(err, fmt.Errorf("initializeConfig: viper.BindPFlag(%s): %w", flag.Name, e))
+	// Bind every flag that is visible to THIS command, inherited ones included. Visiting only
+	// `cmd.Flags()` bound the leaf's own flags, so a parent flag (`--hostname`, `--config-file`)
+	// was parsed with cobra but never reached viper, and the parent's PersistentPreRunE read an
+	// empty value. `cmd.Flags()` merges the persistent flags of the parents only after a parse,
+	// so walk the command chain instead.
+	for current := cmd; current != nil; current = current.Parent() {
+		current.Flags().VisitAll(func(flag *pflag.Flag) {
+			switch flag.Name {
+			case "config-file", "help":
+				return
+			default:
+				if e := viper.BindPFlag(flag.Name, flag); e != nil {
+					err = errors.Join(err, fmt.Errorf("initializeConfig: viper.BindPFlag(%s): %w", flag.Name, e))
+				}
 			}
-		}
-	})
+		})
+		current.PersistentFlags().VisitAll(func(flag *pflag.Flag) {
+			switch flag.Name {
+			case "config-file", "help":
+				return
+			default:
+				if e := viper.BindPFlag(flag.Name, flag); e != nil {
+					err = errors.Join(err, fmt.Errorf("initializeConfig: viper.BindPFlag(%s): %w", flag.Name, e))
+				}
+			}
+		})
+	}
 	if err != nil {
 		return err
 	}

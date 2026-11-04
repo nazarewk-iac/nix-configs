@@ -4,6 +4,7 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"fmt"
 	hostmod "github.com/nazarewk-iac/nix-configs/tools/kdnctl/internal/host"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -27,6 +28,9 @@ var hostCmd = &cobra.Command{
 		address := viper.GetString("address")
 		if address == "" {
 			address = hostName
+		}
+		if hostName == "" {
+			return fmt.Errorf("host: no hostname configured; pass --hostname before the subcommand or set `hostname` in the config file")
 		}
 		host = hostmod.New(hostName, address)
 		return

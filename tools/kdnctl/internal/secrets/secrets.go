@@ -89,8 +89,12 @@ func (s *sopsSecretStorage) Exists(path string) bool {
 
 func (s *sopsSecretStorage) EncryptBytes(path string, data []byte) (err error) {
 	encryptedPath := s.toEncryptedPath(path)
+	// The override must be the path as it will EXIST, not the notional decrypted name: sops picks
+	// the creation rule by matching that string, and `hosts/x/ssh-keys/key` does not match a rule
+	// written for `.../key.sops`. With the wrong string a generic catch-all rule wins and the file
+	// is encrypted to the wrong recipients — silently, until a decrypt fails.
 	cmd := exec.LocalCommand("sops", "encrypt",
-		"--filename-override", path,
+		"--filename-override", encryptedPath,
 		"--output", encryptedPath,
 	)
 
