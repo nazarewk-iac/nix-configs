@@ -19,11 +19,25 @@ let
 
   # A host serves a model when its serving block leaves it enabled. `qwen3.5-9b` is declared with
   # `enable = false`, so it is not advertised to a client even though its file is still described.
-  enabledOn = host: m: m.hosts ? ${host} && (m.hosts.${host}.common.enable or true);
+  # A remote model (a cloud endpoint) has no `hosts` block at all, so the check must not assume one.
+  enabledOn = host: m: (m.hosts or { }) ? ${host} && (m.hosts.${host}.common.enable or true);
   isServed = m: lib.any (host: enabledOn host m) hostNames;
 
   # The models a client or catalog may name: only those served somewhere.
   servedModels = lib.filterAttrs (_: m: isServed m) data.models;
+
+  # Which endpoint a model answers through. A local model omits the field and belongs to `brys`;
+  # a remote model (a cloud router) names its endpoint and has no host block.
+  endpointOf = m: m.endpoint or "brys";
+
+  # A model is listed under one endpoint. A local endpoint additionally requires the model to be
+  # enabled on some host; a remote endpoint accepts everything that names it, so a cloud model
+  # needs no local serving block.
+  modelsForEndpoint =
+    ep:
+    lib.filterAttrs (
+      _: m: endpointOf m == ep && (!(data.servers ? ${ep}) || isServed m)
+    ) data.models;
 
   # alias -> model id, inverted once over the served models. A model may answer to several aliases.
   aliasToModel = lib.foldl' (
@@ -71,11 +85,11 @@ let
     map (id: base // { inherit id; }) ids;
 
   # One provider entry per endpoint. `models` is every SERVED model, one entry per alias.
-  mkPiModelsJson = lib.mapAttrs (_: ep: {
+  mkPiModelsJson = lib.mapAttrs (epName: ep: {
     baseUrl = ep.baseUrl;
     api = ep.api;
     apiKey = ep.apiKey;
-    models = builtins.concatLists (map piEntries (builtins.attrNames servedModels));
+    models = builtins.concatLists (map piEntries (builtins.attrNames (modelsForEndpoint epName)));
   }) data.endpoints;
 
   # The purpose aliases only (legacy bare ids like `fast` are not purposes).
@@ -173,7 +187,7 @@ let
       enabled = srv.profiles.${profile}.sets;
     in
     lib.mapAttrs (_id: m: serverEntry host profile m) (
-      lib.filterAttrs (_id: m: m.hosts ? ${host} && builtins.elem m.hosts.${host}.set enabled) data.models
+      lib.filterAttrs (_: m: (m.hosts or { }) ? ${host} && builtins.elem m.hosts.${host}.set enabled) data.models
     );
 
   # ---------------------------------------------------------------- member projection
@@ -181,7 +195,7 @@ let
   # Host-presence only: every model this host has a serving block for, regardless of the boot
   # profile. The serving plumbing (file, perf, ports, device pins) is physically absent, so it
   # cannot leak into a member.
-  modelsOnHost = data: host: lib.filterAttrs (_id: m: m.hosts ? ${host}) data.models;
+  modelsOnHost = data: host: lib.filterAttrs (_: m: (m.hosts or { }) ? ${host}) data.models;
 
   mkMemberView =
     data: host:

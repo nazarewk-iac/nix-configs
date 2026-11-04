@@ -48,6 +48,16 @@ in
       api = "openai-completions";
       apiKey = "!cat /run/configs/llms/llama-server/api-keys/default";
     };
+    # A remote router. Unlike `brys`, models here name `endpoint = "requesty"` and have no host
+    # block, so they never appear in the local fleet catalog or the llama-swap serving set.
+    requesty = {
+      baseUrl = "https://router.requesty.ai/v1";
+      api = "openai-completions";
+      # The key is a sops secret at `/run/configs/llms/requesty/api-key` (llms.nonsensitive.sops
+      # tree). The fallback reads opencode's own credential store, so a shell that has not switched
+      # to the new sops tree yet still resolves the key instead of failing the whole provider.
+      apiKey = "!cat /run/configs/llms/requesty/api-key 2>/dev/null || jq -r '.requesty.key // empty' \"$HOME/.local/share/opencode/auth.json\"";
+    };
   };
 
   # ---------------------------------------------------------------- client-wide defaults
@@ -169,6 +179,23 @@ in
   # One entry per served model. Identity on top; `hosts.brys` is the serving data.
   # `common` is what llama-server needs to load the model; `perf` is the preset INI.
   models = {
+    # A cloud model: served by Requesty, not by any local host. `endpoint` keeps it out of the
+    # local fleet and its serving arithmetic; `contextSize` is only the client budget.
+    "deepseek-v4.1-flash-1017" = {
+      endpoint = "requesty";
+      aliases = [
+        "ds4"
+        "remote"
+      ];
+      capabilities = {
+        operation = "remote";
+      };
+      pi = {
+        contextWindow = 128 * K;
+        maxTokens = 16 * K;
+      };
+      contextSize = 128 * K;
+    };
     "qwen3.8-flash-next" = {
       # The deep aliases landed here when qwen3.8-27b was dropped. Measured on 2026-11-04 on
       # the same prompt: 27b on 8 CPU threads produced 0.80 tok/s, flash-next on 16 threads

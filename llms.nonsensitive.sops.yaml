@@ -3,6 +3,8 @@ huggingface:
 llama-server:
     api-keys:
         default: ENC[AES256_GCM,data:4zrTmRJvQ0qCs8hi5m0blG+PvJZnr5NZEn7zGpDwXejsVFflh3GMmg==,iv:WQG7Sk+DKJHGvCKDN+3sQ4hpd9tLNLwTrpCgUAZ0mEA=,tag:3vY9FsoYe26CAGjUj0oP/Q==,type:str]
+requesty:
+    api-key: ENC[AES256_GCM,data:jRAQVIhrrPiBzY+823oueUKepKFrk2YJgEsNatdGbDeiuUDPlLIhM/r++RdWDwhlKGajvcUK3L10mtwPeXHiohNqHIVDfhhvmVhDaFuv6T/ZzBPw5Htj2Q2wcvQVjj2FlH7dxXz2BQn7u9upDS9eyE6ON053,iv:Lfu8KXgD/aOeIQPwT5Jm3rU1X7hZY8u2a+lYcmkn9hE=,tag:DYH1KZMKK5I6nMIVicGY9Q==,type:str]
 sops:
     age:
         - enc: |
@@ -45,7 +47,7 @@ sops:
             NvYCsdyvfWTyCeE8aec4J6vNI8F5ct3i3tMDrXQ/e0D+n8+eYcRguKKv7FY=
             -----END AGE ENCRYPTED FILE-----
           recipient: age1tag1q2l557j0rr8x5ez5fatt6rnrrqcwawnz0590yx7el59024l2alcv7xmuzuk
-    lastmodified: "2026-09-03T20:34:13Z"
-    mac: ENC[AES256_GCM,data:XH0WC1IPFtfo+9FS22yAD5Pb7Da6Rwa6ihsJGKd6Tlm2LdjvirylQvwXefO8sKhpmb7ZOyOeQiAhVEx1/sxVKjT/FH3tvv95vN1TB75UT0JP+KN7nO3GQEIG2vBFIboLmAwvran7LnhJHJStsOAbvq9GiVS91SfLked0JmIah8Q=,iv:aFOU43M2Oiii4anqVHhx4oAVIHuSGUJ7eSFhbVyM404=,tag:lrpnIuCEYru+Z4rp3lnq3w==,type:str]
+    lastmodified: "2026-11-04T15:55:09Z"
+    mac: ENC[AES256_GCM,data:6e3ueqcnVKfDGmNfJmedPgzqsfky0N7LZOB32oEOLa+VLlZCheCUNTYz7Be5Wvf4Sksr7WvUZTeLhmU+5WTCrjIYWJImI2e291oBMNdvmNMwXgHcBCgDGYoS+ZiIXuCW9AYmGWj9LlrM3zIkkGfQRqXAb/f0CMVAoFIA1zGIqak=,iv:4cRd3OrqvvTTksU8GRsjRiNpkxv7UbZS2LWbV8gawuU=,tag:Zb9JRjO+x/ydIKbZroqLbw==,type:str]
     unencrypted_suffix: _unencrypted
     version: 3.13.3

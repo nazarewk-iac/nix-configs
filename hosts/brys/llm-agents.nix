@@ -53,7 +53,7 @@ let
   # The non-frontier models brys serves: a model with a `hosts.brys` block that is
   # enabled and not on the `main` router (the orchestrator itself).
   agentModels = lib.filterAttrs (
-    _id: m: m.hosts ? brys && (m.hosts.brys.common.enable or true) && m.hosts.brys.set != "main"
+    _: m: (m.hosts or { }) ? brys && (m.hosts.brys.common.enable or true) && m.hosts.brys.set != "main"
   ) data.models;
 
   # alias -> base model id, inverted from every agent model's `aliases` list.
