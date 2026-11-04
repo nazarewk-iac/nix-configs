@@ -351,9 +351,12 @@ in
           hosts.talt.ip = "192.168.252.3"; # TODO: configure
           hosts.drek.ip = "192.168.252.4";
           hosts.quip.ip = "192.168.252.5";
-          hosts.cafal.ip = "192.168.252.6"; # TODO: configure
-          hosts.feren.ip = "192.168.252.7"; # TODO: configure
-          hosts.moak.ip = "192.168.252.8"; # TODO: configure
+          hosts.cafal.ip = "192.168.252.6";
+          hosts.cafal.ident.hw-address = "00:23:79:00:18:A1";
+          hosts.feren.ip = "192.168.252.7";
+          hosts.feren.ident.hw-address = "00:23:79:00:18:9F";
+          hosts.moak.ip = "192.168.252.8";
+          hosts.moak.ident.hw-address = "00:23:79:00:18:A0";
           hosts.turb.ip = "192.168.252.9"; # TODO: configure
           hosts.eap773.ip = "192.168.252.10";
           hosts.eap773.ident.hw-address = "20:36:26:d2:5b:70";
