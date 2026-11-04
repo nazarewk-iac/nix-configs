@@ -8,40 +8,58 @@ timestamp: 2026-11-03T13:40:00+01:00
 
 Use this when a vendored Pi extension must change and upstream does not have the change.
 
-## Fork and branch
+## Fork and branch — jj bookmarks, joined into `main`
 
-1. Fork into the `nazarewk-iac` organisation: `gh repo fork <owner>/<repo> --org nazarewk-iac --clone=false`.
-2. Clone the fork, then add upstream and fetch it:
+The fork is a normal git repo that we drive with **jujutsu** (`jj git init --colocate` converts an
+existing clone, so the git remote and the jj view share one object store). Bookmarks are branches;
+there is no branch checkout to get wrong.
+
+1. Fork into the `nazarewk-iac` organisation and clone into a scratch dir, then add upstream:
    ```sh
+   gh repo fork <owner>/<repo> --org nazarewk-iac --clone=false
    gh repo clone nazarewk-iac/<repo> /tmp/<repo>-fork
-   git -C /tmp/<repo>-fork remote add upstream https://github.com/<owner>/<repo>.git
-   git -C /tmp/<repo>-fork fetch upstream --tags
+   jj git init --colocate                       # one store, git remotes still work
+   jj git remote add upstream https://github.com/<owner>/<repo>.git
+   jj git fetch --remote upstream
    ```
-3. Branch from the **exact revision we vendor**, not from `main`, so the patch applies to what is
-   built:
+2. **One bookmark per feature**, cut from the commit we currently vendor:
    ```sh
-   git -C /tmp/<repo>-fork checkout -b nazarewk-iac/<topic> <vendored-rev>
+   jj new <vendored-rev> -m "feat: <feature>"
+   # ... edits ...
+   jj bookmark create <feature>                 # e.g. runs-peek, session-stats
    ```
+3. **Join the features in one change, bookmarked `main`.** A change with two parents is a merge;
+   nothing is rewritten:
+   ```sh
+   jj new <feature-a> <feature-b> -m "merge <feature-a> and <feature-b>"
+   jj bookmark set main -r @
+   jj new                                       # keep @ empty; @- is now the join
+   ```
+   So the vendoring point is always `@-` while you work, and it is the `main` bookmark. A feature
+   is added later by `jj new main <new-feature>` + `jj bookmark set main -r @`.
+4. Push the bookmarks (never a branch checkout, never a force-push of unrelated refs):
+   ```sh
+   jj git push --bookmark main --bookmark <feature>
+   ```
+5. Vendor the **`main` commit**: `rev` is `main`'s commit id, so "the vendored line" and "the fork's
+   main" are the same thing and no branch name has to be remembered.
 
-Keep the fork's `main` **identical to upstream**. Do not commit to `main`. This makes a later
-rebase and a re-vendor trivial.
+### Upstream moves
 
-### One branch per feature, merged into the vendoring branch
-
-Do not stack unrelated work on the vendored branch. Branch per feature from the vendored rev, and
-merge the feature branch into the branch the pin names:
+`upstream/main` is the reference, not the fork's `main`. On an upstream update:
 
 ```sh
-git -C /tmp/<repo>-fork checkout -b nazarewk-iac/<feature> <vendored-rev>
-# ... commits, tests ...
-git -C /tmp/<repo>-fork checkout nazarewk-iac/<vendoring-branch>
-git -C /tmp/<repo>-fork merge --no-ff -m "merge nazarewk-iac/<feature>: <what>" nazarewk-iac/<feature>
+jj git fetch --remote upstream
+jj rebase -s <feature-a> -d upstream/main      # and each other feature bookmark
+jj new <feature-a> <feature-b> -m "merge ..."  # re-join
+jj bookmark set main -r @
+jj new
 ```
 
-The pin then points at the **merge commit**. Two reasons: a feature can be dropped or reverted by
-one merge, and `git log --first-parent` still reads as the vendoring line. `pi-orchestrator` works
-this way — `nazarewk-iac/child-context` is the vendoring branch, and `runs-peek`, `session-stats`
-are features merged into it.
+Consequence, recorded because it reverses the older rule: the fork's `main` is **no longer identical
+to upstream**. It is the joined integration line, and `upstream/main` holds the pristine copy. That
+is the price of a single, always-vendorable bookmark; the alternative (topic branches we vendor
+directly) needs a branch name in every bump and loses the merge topology.
 
 ## Patch
 
@@ -109,7 +127,7 @@ branch.
 
 ## Forks today
 
-| upstream                      | branch                                                                                                       | patch                                                                                                                              |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `michaelmjhhhh/pi-atelier`    | `nazarewk-iac/jj-and-stats`                                                                                  | jj over git, change id and bookmarks, STATS panel                                                                                  |
-| `saifymatteo/pi-orchestrator` | `nazarewk-iac/child-context` (vendoring) + `nazarewk-iac/session-stats`, `nazarewk-iac/runs-peek` (features) | config-driven minimal child context, session stats in the fleet panel, `/orchestrator-runs` + `ctrl+alt+r` to open a run in a pane |
+| upstream                      | branch                                                         | patch                                                                                                                              |
+| ----------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `michaelmjhhhh/pi-atelier`    | `nazarewk-iac/jj-and-stats`                                    | jj over git, change id and bookmarks, STATS panel                                                                                  |
+| `saifymatteo/pi-orchestrator` | `main` (integration) + `session-stats`, `runs-peek` (features) | config-driven minimal child context, session stats in the fleet panel, `/orchestrator-runs` + `ctrl+alt+r` to open a run in a pane |
