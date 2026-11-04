@@ -93,7 +93,12 @@ creation_rules:
           # defaults
           - *yk-brys-unattended
           - *yk-oams-unattended
-          # brys decrypts this file at boot with nobody present, so it needs the TPM identity.
+          # brys decrypts this file at boot with nobody present. Two unattended identities are
+          # listed on purpose: the SSH host key exists from the very first boot stage, while the
+          # TPM identity needs its blob on a persistent path. On 2026-11-04 only the TPM was
+          # listed and that race cost brys its sshd: sops-install-secrets failed, kdn-secrets.target
+          # was never reached, and sshd (Requires=kdn-secrets.target) failed its dependency.
+          - *ssh-brys
           - *tpm-brys
   # One file, one rule. `default.unattended.sops.yaml` is the NetworkManager default-connection
   # config, which every host decrypts; brys needs it at boot, so it carries the TPM identity.
