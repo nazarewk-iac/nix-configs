@@ -55,12 +55,14 @@ in
       # --no-context-files --no-skills --no-prompt-templates, skips parent-prompt forwarding,
       # and gets a compact rules block; `fullAgents` opts an agent out. Upstream had no context
       # flag, so a child loaded AGENTS.md (~3.8k tokens, about 45% of a 16k window).
-      # PI_ORCHESTRATOR_CHILD_MINIMAL still overrides. Bump `rev` and `hash` together.
-      rev = "169de0ac854e80316444cc8be3722a92be60976a";
-      version = "0.11.0+nazarewk.2";
+      # PI_ORCHESTRATOR_CHILD_MINIMAL still overrides. nazarewk.3 adds session stats to the
+      # fleet panel (per-agent runs/tokens for the whole session, not just the live run).
+      # Bump `rev` and `hash` together.
+      rev = "a1f00e2d3b43fe5401563b5626400759d606fbb5";
+      version = "0.11.0+nazarewk.3";
       src = pkgs.fetchzip {
         url = "https://github.com/nazarewk-iac/pi-orchestrator/archive/${rev}.tar.gz";
-        hash = "sha256-jeXXbL3gqaz8xRvcmcPstjcKkxDvu8qAkWVVsOOzkNw=";
+        hash = "sha256-bp1Sc+Q/Svdu1MbiFCVao6qpVPxpfinOnbMaerBfekY=";
         stripRoot = true;
       };
 
