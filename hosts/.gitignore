@@ -31,3 +31,6 @@
 
 # per-host sops secrets (host-specific, e.g. hosts/oams/secrets.sops.yaml)
 !/*/*.sops.yaml
+
+# per-host service config files (e.g. hosts/etra/litellm.config.yaml)
+!/*/*.config.yaml

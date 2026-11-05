@@ -91,6 +91,9 @@ in
 {
   imports = [
     kdnConfig.self.nixosModules.default
+    # LiteLLM gateway (docs/tasks/2026-11/litellm-gateway/). autoStart=false:
+    # inert until a brys-side firewall opening lets it reach a backend.
+    ./litellm.nix
     "${kdnConfig.self}/data/ca/ca-dag.nix"
     {
       imports = kdnConfig.self.denLib.imports {

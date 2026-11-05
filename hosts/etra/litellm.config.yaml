@@ -1,0 +1,252 @@
+# LiteLLM gateway config — GENERATED from data/llm.nix (brys member view).
+# Regenerate with docs/tasks/2026-11/litellm-gateway/ (see definition.md).
+#
+# Every alias brys serves is exposed here as an OpenAI-compatible model whose
+# upstream is brys's llama-swap, reached through the host socat egress relay
+# (10.233.100.1:8443 -> brys:443). The relay keeps the container on its private
+# network: it only ever talks to its host bridge address.
+
+model_list:
+  - model_name: audio-std-mid
+    litellm_params:
+      model: openai/qwen3-omni-30b-a3b
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-audio-std-mid
+  - model_name: chat-deep-slow
+    litellm_params:
+      model: openai/qwen3.8-flash-next
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-chat-deep-slow
+  - model_name: chat-dumb-fast
+    litellm_params:
+      model: openai/qwen3.5-4b
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-chat-dumb-fast
+  - model_name: chat-dumb-fast-alt
+    litellm_params:
+      model: openai/granite-4.2-3b
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-chat-dumb-fast-alt
+  - model_name: chat-std-fast
+    litellm_params:
+      model: openai/lfm2.5-24b-a2b
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-chat-std-fast
+  - model_name: chat-std-mid
+    litellm_params:
+      model: openai/qwen3.5-35b-a3b
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-chat-std-mid
+  - model_name: chat-std-mid-long
+    litellm_params:
+      model: openai/nemotron-3-nano-30b-a3b
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-chat-std-mid-long
+  - model_name: code-deep-slow
+    litellm_params:
+      model: openai/qwen3.8-flash-next
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-code-deep-slow
+  - model_name: code-quick-fast
+    litellm_params:
+      model: openai/qwen3.5-4b
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-code-quick-fast
+  - model_name: code-std-fast
+    litellm_params:
+      model: openai/qwen3.5-4b
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-code-std-fast
+  - model_name: code-std-fast-alt
+    litellm_params:
+      model: openai/mellum-2.1-12b-a2.5b-thinking
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-code-std-fast-alt
+  - model_name: embed-std-fast
+    litellm_params:
+      model: openai/qwen3-embedding-4b
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-embed-std-fast
+  - model_name: frontier
+    litellm_params:
+      model: openai/qwen3.8-flash-next
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-frontier
+  - model_name: grunt
+    litellm_params:
+      model: openai/qwen3.5-4b
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-grunt
+  - model_name: orchestrate-deep-slow
+    litellm_params:
+      model: openai/qwen3.8-flash-next
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-orchestrate-deep-slow
+  - model_name: qwen
+    litellm_params:
+      model: openai/qwen3.8-flash-next
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-qwen
+  - model_name: rank-std-fast
+    litellm_params:
+      model: openai/qwen3-reranker-4b
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-rank-std-fast
+  - model_name: reason-deep-slow
+    litellm_params:
+      model: openai/qwen3.8-flash-next
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-reason-deep-slow
+  - model_name: reason-quick-fast
+    litellm_params:
+      model: openai/mellum-2.1-12b-a2.5b-thinking
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-reason-quick-fast
+  - model_name: reason-quick-fast-alt
+    litellm_params:
+      model: openai/ministral-3-3b-reasoning
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-reason-quick-fast-alt
+  - model_name: reason-std-fast
+    litellm_params:
+      model: openai/nemotron-3-nano-30b-a3b
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-reason-std-fast
+  - model_name: tiny-dumb-fast
+    litellm_params:
+      model: openai/qwen3.5-0.8b
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-tiny-dumb-fast
+  - model_name: tiny-dumb-fast-alt
+    litellm_params:
+      model: openai/qwen3.5-2b
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-tiny-dumb-fast-alt
+  - model_name: tiny-quick-fast
+    litellm_params:
+      model: openai/qwen3.5-4b
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-tiny-quick-fast
+  - model_name: tools-deep-slow
+    litellm_params:
+      model: openai/qwen3.8-flash-next
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-tools-deep-slow
+  - model_name: tools-dumb-fast
+    litellm_params:
+      model: openai/granite-4.2-3b
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-tools-dumb-fast
+  - model_name: tools-std-fast
+    litellm_params:
+      model: openai/lfm2.5-24b-a2b
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-tools-std-fast
+  - model_name: tools-std-fast-alt
+    litellm_params:
+      model: openai/granite-4.2-8b
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-tools-std-fast-alt
+  - model_name: vision-deep-slow
+    litellm_params:
+      model: openai/ornith-1.5-35b-a3b
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-vision-deep-slow
+  - model_name: vision-std-fast
+    litellm_params:
+      model: openai/qwen3-vl-30b-a3b
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-vision-std-fast
+  - model_name: vision-std-fast-alt
+    litellm_params:
+      model: openai/ornith-1.5-35b-a3b
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-vision-std-fast-alt
+  - model_name: vision-std-fast-moe
+    litellm_params:
+      model: openai/qwen3-vl-30b-a3b
+      api_base: os.environ/BRYS_API_BASE
+      api_key: os.environ/BRYS_API_KEY
+    model_info:
+      id: brys-vision-std-fast-moe
+
+litellm_settings:
+  # Prometheus metrics: the metric to alert on is litellm_deployment_state
+  # (0 healthy / 1 partial / 2 outage).
+  callbacks: [prometheus]
+  drop_params: true
+
+general_settings:
+  # A database is deliberately NOT configured: no virtual keys, no budgets,
+  # no spend logs. One shared master key. See research.md.
+  master_key: os.environ/LITELLM_MASTER_KEY
+
+router_settings:
+  # The default request timeout is 6000 s; clamp it or a dead backend hangs a
+  # request for over an hour. All-down returns 429 with retry-after.
+  timeout: 60
+  num_retries: 1
+  cooldown_time: 30
+  allowed_fails: 2
