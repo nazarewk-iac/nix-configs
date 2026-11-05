@@ -385,11 +385,24 @@ in
       };
     };
     "gemma-4-e4b" = {
+      # Effective 4.5B (8B with embeddings), native text + image + audio. Measured 2026-11-05
+      # on the W6600 (docs/local-llms.md, "Gemma 4 E4B"): tool calling 6/6 including parallel
+      # calls and JSON-in-argument escaping, UI screenshots and tables correct, dense OCR 17/18
+      # at --image-max-tokens 1120, native audio ASR correct. Decode is ~15 tok/s and prefill
+      # ~80 tok/s, so it is a serial workhorse, not a fast tier. GPU is only ~6% ahead of CPU
+      # on this card; it stays on the GPU because that costs nothing when co-resident.
+      capabilities = {
+        loadSeconds = 25;
+        operation = "gpu";
+      };
+      vision = true;
       gpu = true;
-      contextSize = 16384;
+      # The card's native window is 128K, but prefill at ~80 tok/s makes anything past ~30k
+      # unusable in practice (30k took 1549 s). Serve what is actually usable.
+      contextSize = 32768;
       hosts.brys = {
         set = "surveyed";
-        servedContext = 16384;
+        servedContext = 32768;
         common = {
           download = {
             enable = false;
@@ -397,11 +410,20 @@ in
           enable = true;
           hfFile = "gemma-4-e4b.gguf";
           hfRepo = "surveyed";
+          # No mmproj was configured before, so the model had no vision and no audio at all.
+          mmproj = {
+            enable = true;
+            hfFile = "mmproj-gemma-4-E4B-it-Q8_0.gguf";
+            hfRepo = "surveyed";
+          };
           perf = {
             device = "Vulkan0";
             nGpuLayers = 99;
             parallel = 1;
-            threads = 8;
+            threads = 16;
+            # 1120 is the OCR lever: it took dense-text transcription from 14/18 to 17/18
+            # exact. The model's own budget ladder is 70/140/280/560/1120.
+            imageMaxTokens = 1120;
           };
         };
       };
