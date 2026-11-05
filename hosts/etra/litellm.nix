@@ -38,8 +38,10 @@ let
   localAddress = "10.233.100.2";
   gatewayPort = 4000;
   egressPort = 8443;
-  brysHost = "brys.lan.etra.net.int.kdn.im";
-  brysPort = 39701;
+  # brys over the NetBird mesh (nb-priv). Its llama-swap is exposed there on
+  # 39704 by a narrow relay (hosts/brys/llm.nix); 39700 itself is loopback-only.
+  brysHost = "100.79.164.36";
+  brysPort = 39704;
 in
 {
   # State for the gateway. DB-less, so this is only logs / a local cache / the
@@ -60,8 +62,7 @@ in
   ];
 
   containers.litellm = {
-    # Safeguard: inert until activated deliberately (see header).
-    autoStart = false;
+    autoStart = true;
     restartIfChanged = true;
     privateNetwork = true;
     inherit hostAddress localAddress;
