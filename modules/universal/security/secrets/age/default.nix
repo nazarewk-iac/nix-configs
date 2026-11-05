@@ -121,7 +121,22 @@ in
                   outdir="''${output%/*}"
                   test "$outdir" == "$output" || mkdir -p "$outdir"
                 fi
-                ( ${text} ) >"$output"
+                # BEST-EFFORT per source. A source that is merely UNAVAILABLE must not abort
+                # the others. At boot the YubiKey generator errors while pcscd is still coming
+                # up ("PC/SC error: Access was denied"); with `set -e` that killed the whole
+                # subshell, the SSH host-key identity was never captured, the pre-start
+                # pipeline failed, `mv` never ran, and key.txt kept no usable key — so
+                # sops-install-secrets failed and sshd's dependency took SSH down (oams
+                # 2026-11-05; same class as brys 2026-11-04). Each source now runs on its own
+                # and is skipped if it fails.
+                {
+                  while IFS= read -r _kdn_gen_script; do
+                    [ -n "$_kdn_gen_script" ] || continue
+                    "$_kdn_gen_script" || true
+                  done <<'__KDN_GEN_SCRIPTS__'
+${text}
+__KDN_GEN_SCRIPTS__
+                } >"$output"
               '';
             }
           )
